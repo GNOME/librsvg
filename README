@@ -1,10 +1,3 @@
-This is librsvg 2.1 - the GNOME 2.2 platform development version of
-librsvg.
+This is librsvg - A high performance SVG rendering library associated with the Gnome Project.
 
-If you are looking for the stable version to use with the GNOME
-1.4 platform, please obtain librsvg from GNOME CVS as follows:
-
-	cvs co -r librsvg-1-0 librsvg
-
-If you have questions or comments about librsvg, please send 
-email to nautilus-list@lists.eazel.com
+If you have questions or comments about librsvg, please send email to librsvg-devel@lists.sourceforge.net. Any bugs should be reported to http://bugzilla.gnome.org/
