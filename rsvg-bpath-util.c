@@ -98,7 +98,7 @@ rsvg_bpath_def_moveto (RsvgBpathDef *bpd, double x, double y)
 			{
 				bpath[n_bpath - 1].x3 = x;
 				bpath[n_bpath - 1].y3 = y;
-				bpd->moveto_idx = n_bpath;
+				bpd->moveto_idx = n_bpath - 1;
 				return;
 			}
 
@@ -158,6 +158,24 @@ rsvg_bpath_def_curveto (RsvgBpathDef *bpd, double x1, double y1, double x2, doub
 	bpath[n_bpath].y3 = y3;
 }
 
+static void
+rsvg_bpath_def_replicate (RsvgBpathDef *bpd, int index)
+{
+	ArtBpath *bpath;
+	int n_bpath;
+  
+	g_return_if_fail (bpd != NULL);
+	g_return_if_fail (bpd->moveto_idx >= 0);
+	
+	n_bpath = bpd->n_bpath++;
+	
+	if (n_bpath == bpd->n_bpath_max)
+		bpd->bpath = g_realloc (bpd->bpath,
+								(bpd->n_bpath_max <<= 1) * sizeof (ArtBpath));
+	bpath = bpd->bpath;
+	bpath[n_bpath] = bpath[index];
+}
+
 void
 rsvg_bpath_def_closepath (RsvgBpathDef *bpd)
 {
@@ -179,6 +197,8 @@ rsvg_bpath_def_closepath (RsvgBpathDef *bpd)
 								   bpath[bpd->moveto_idx].y3);
 			bpath = bpd->bpath;
 		}
+
+	rsvg_bpath_def_replicate (bpd, bpd->moveto_idx);
 	bpath[bpd->moveto_idx].code = ART_MOVETO;
 	bpd->moveto_idx = -1;
 }
