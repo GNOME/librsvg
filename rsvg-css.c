@@ -186,14 +186,14 @@ rsvg_css_param_arg_offset (const char *str)
 }
 
 static gint
-rsvg_css_clip_rgb_percent (gint in_percent)
+rsvg_css_clip_rgb_percent (gdouble in_percent)
 {
 	/* spec says to clip these values */
-	if (in_percent > 100)
+	if (in_percent > 100.)
 		return 255;
-	else if (in_percent <= 0)
+	else if (in_percent <= 0.)
 		return 0;	
-	return (gint)floor(255. * (double)in_percent / 100. + 0.5);
+	return (gint)floor(255. * in_percent / 100. + 0.5);
 }
 
 static gint
@@ -267,15 +267,32 @@ rsvg_css_parse_color (const char *str)
 			
 			if (strstr (str, "%") != 0)
 				{
-					/* assume "rgb (r%, g%, b%)" */
-					if (3 == sscanf (str, " rgb ( %d %% , %d %% , %d %% ) ", &r, &g, &b))
+					gint i;
+					char * tok, * ptr, * str2;
+
+					/* assume rgb (9%, 100%, 23%) */
+					for(i = 0; str[i] != '('; i++)
+						;
+
+					i++;
+
+					str2 = (char *)(str + i);
+
+					tok = strtok_r (str2, ",", &ptr);
+					if (tok != NULL) 
 						{
-							r = rsvg_css_clip_rgb_percent (r);
-							g = rsvg_css_clip_rgb_percent (g);
-							b = rsvg_css_clip_rgb_percent (b);
+							r = rsvg_css_clip_rgb_percent (g_ascii_strtod (tok, NULL));
+							
+							tok = strtok_r (NULL, ",", &ptr);
+							if (tok != NULL)
+								{
+									g = rsvg_css_clip_rgb_percent (g_ascii_strtod (tok, NULL));
+
+									tok = strtok_r (NULL, ",", &ptr);
+									if (tok != NULL)
+										b = rsvg_css_clip_rgb_percent (g_ascii_strtod (tok, NULL));
+								}
 						}
-					else
-						r = g = b = 0;
 				}
 			else
 				{
