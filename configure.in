@@ -222,7 +222,7 @@ dnl ====================================
 
 
 LIBRSVG_LIBDIR='-L${libdir}'
-LIBRSVG_INCLUDEDIR='-I${includedir} ${FREETYPE2_CFLAGS}'
+LIBRSVG_INCLUDEDIR='-I${includedir}/librsvg-1 ${FREETYPE2_CFLAGS}'
 LIBRSVG_LIBS='-lrsvg -lart_lgpl ${FREETYPE2_LIBS}'
 
 AC_SUBST(LIBRSVG_LIBDIR)

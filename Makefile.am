@@ -30,7 +30,7 @@ librsvg_la_SOURCES = \
 
 librsvg_la_LDFLAGS = -version-info @LIBRSVG_VERSION_INFO@
 
-librsvgincdir = $(includedir)/librsvg
+librsvgincdir = $(includedir)/librsvg-1/librsvg
 librsvginc_HEADERS = \
 	art_render.h \
 	art_render_gradient.h \

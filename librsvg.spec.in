@@ -89,14 +89,14 @@ fi
 
 %defattr(0555, bin, bin)
 %doc AUTHORS COPYING COPYING.LIB ChangeLog NEWS README
-%{prefix}/lib/*.so*
+%{_libdir}/*.so*
 
 %files devel
 
 %defattr(0555, bin, bin)
-%{prefix}/lib/*.la
-%{prefix}/lib/*.sh
-%{prefix}/bin/librsvg-config
+%{_libdir}/*.la
+%{_libdir}/*.sh
+%{_bindir}/librsvg-config
 
 %defattr(0444, bin, bin)
-%{prefix}/include/librsvg/*.h
+%{_includedir}/librsvg-1/librsvg/*.h
