@@ -24,6 +24,8 @@
 #include "rsvg-gz.h"
 #include "rsvg-private.h"
 
+#ifdef HAVE_SVGZ
+
 #include <gsf/gsf-input-gzip.h>
 #include <gsf/gsf-input-memory.h>
 #include <gsf/gsf-output-memory.h>
@@ -104,17 +106,8 @@ rsvg_handle_gz_free_impl (RsvgHandle *handle)
 	rsvg_handle_free_impl (handle);
 }
 
-/**
- * rsvg_handle_new_gz
- *
- * See rsvg_handle_new, except that this will handle GZipped SVGs (svgz)
- * Use the returned handle identically to how you use a handle returned
- * from rsvg_handle_new()
- *
- * Returns: a new SVGZ handle
- */
-RsvgHandle *
-rsvg_handle_new_gz (void)
+static RsvgHandle *
+rsvg_handle_new_gz_impl (void)
 {
 	RsvgHandleGz * me = g_new0 (RsvgHandleGz, 1);
 
@@ -127,4 +120,30 @@ rsvg_handle_new_gz (void)
 	me->super.free  = rsvg_handle_gz_free_impl;
 
 	return (RsvgHandle*)me;
+}
+
+#else
+
+static RsvgHandle *
+rsvg_handle_new_gz_impl (void)
+{
+	g_warning ("Doesn't support GZipped SVG files");
+	return NULL;
+}
+
+#endif
+
+/**
+ * rsvg_handle_new_gz
+ *
+ * See rsvg_handle_new, except that this will handle GZipped SVGs (svgz)
+ * Use the returned handle identically to how you use a handle returned
+ * from rsvg_handle_new()
+ *
+ * Returns: a new SVGZ handle or null if it isn't supported
+ */
+RsvgHandle *
+rsvg_handle_new_gz (void)
+{
+	return rsvg_handle_new_gz_impl ();
 }

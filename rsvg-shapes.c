@@ -1278,7 +1278,7 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 		g_set_error (error,
 					 GDK_PIXBUF_ERROR,
 					 GDK_PIXBUF_ERROR_FAILED,
-					 "Failed to load image: reason not known, probably a corrupt image.");
+					 _("Failed to load image: reason not known, probably a corrupt image."));
 		return NULL;
 	}
 	
@@ -1291,7 +1291,7 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	return pixbuf;
 }
 
-static GdkPixbuf *
+GdkPixbuf *
 rsvg_pixbuf_new_from_file_at_size (const char *filename,
 								   int         width, 
 								   int         height,
@@ -1318,7 +1318,7 @@ rsvg_pixbuf_new_from_file_at_size (const char *filename,
 		g_set_error (error,
 					 G_FILE_ERROR,
 					 g_file_error_from_errno (errno),
-					 "Failed to open file '%s': %s",
+					 _("Failed to open file '%s': %s"),
 					 filename, g_strerror (errno));
 		return NULL;
 	}
@@ -1356,7 +1356,7 @@ rsvg_pixbuf_new_from_file_at_size (const char *filename,
 		g_set_error (error,
 					 GDK_PIXBUF_ERROR,
 					 GDK_PIXBUF_ERROR_FAILED,
-					 "Failed to load image '%s': reason not known, probably a corrupt image file",
+					 _("Failed to load image '%s': reason not known, probably a corrupt image file"),
 					 filename);
 		return NULL;
 	}
@@ -1575,7 +1575,7 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 								}
 						}
 					default:
-						g_warning ("Unhandled defs entry/type %s %d\n", id, 
+						g_warning (_("Unhandled defs entry/type %s %d\n"), id, 
 								   parent->type);
 						return;
 					}

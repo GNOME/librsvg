@@ -73,6 +73,13 @@ struct _RsvgDefsDrawableUse {
  	RsvgDefsDrawable *child;
 };
 
+GdkPixbuf *
+rsvg_pixbuf_new_from_file_at_size (const char *filename,
+								   int         width, 
+								   int         height,
+								   gboolean    keep_aspect_ratio,
+								   GError    **error);
+
 void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
 							  int dominate);
 

@@ -3741,15 +3741,6 @@ struct _RsvgFilterPrimitiveImage
 	GString *href;
 };
 
-#ifndef GDK_PIXBUF_CHECK_VERSION
-#define GDK_PIXBUF_CHECK_VERSION(major,minor,micro)    \
-    (GDK_PIXBUF_MAJOR > (major) || \
-     (GDK_PIXBUF_MAJOR == (major) && GDK_PIXBUF_MINOR > (minor)) || \
-     (GDK_PIXBUF_MAJOR == (major) && GDK_PIXBUF_MINOR == (minor) && \
-      GDK_PIXBUF_MICRO >= (micro)))
-#endif
-
-
 static GdkPixbuf *
 rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
 									   RsvgFilterContext * context)
@@ -3810,10 +3801,7 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 										RsvgFilterContext * ctx)
 {
 	FPBox boundarys;
-	
 	RsvgFilterPrimitiveImage *oself;
-	
-	GdkPixbuf *img;
 	
 	oself = (RsvgFilterPrimitiveImage *) self;
 
@@ -3822,27 +3810,10 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 
 	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
-#if GDK_PIXBUF_CHECK_VERSION(2,3,2)
-	img = gdk_pixbuf_new_from_file_at_size(oself->href->str,
-										   boundarys.x2 - boundarys.x1,
-										   boundarys.y2 - boundarys.y1,
-										   NULL);
-#else
-	img = gdk_pixbuf_new_from_file(oself->href->str, NULL);
-	if(img)
-		{
-			GdkPixbuf *scaled;
-
-			scaled = gdk_pixbuf_scale_simple(img, boundarys.x2 - boundarys.x1,
+	return rsvg_pixbuf_new_from_file_at_size(oself->href->str,
+											 boundarys.x2 - boundarys.x1,											
 											 boundarys.y2 - boundarys.y1,
-											 GDK_INTERP_BILINEAR);
-
-			g_object_unref (G_OBJECT (img));
-			img = scaled;
-		}
-#endif
-
-	return img;
+											 FALSE, NULL);
 }
 
 static void

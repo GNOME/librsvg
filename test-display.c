@@ -33,11 +33,6 @@
 #define DEFAULT_WIDTH  240
 #define DEFAULT_HEIGHT 240
 
-/* prepare for gettext */
-#ifndef _
-#define _(X) X
-#endif
-
 static void
 quit_cb (GtkWidget *win, gpointer unused)
 {

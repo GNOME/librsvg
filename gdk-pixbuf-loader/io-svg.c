@@ -25,10 +25,8 @@
 #include <stdlib.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gdk-pixbuf/gdk-pixbuf-io.h>
-
-#if HAVE_SVGZ
 #include <rsvg-gz.h>
-#endif
+#include "rsvg-private.h"
 
 typedef struct {
         RsvgHandle                 *handle;
@@ -97,20 +95,20 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
         if (context->first_write == TRUE) {
                 context->first_write = FALSE;
 
-
-#ifdef HAVE_SVGZ
                 /* lazy create a SVGZ or SVG loader */
                 if ((size >= 2) && (buf[0] == (guchar)0x1f) && (buf[1] == (guchar)0x8b))
                         context->handle = rsvg_handle_new_gz ();
                 else
-#endif
                         context->handle = rsvg_handle_new ();
+
+                if (!context->handle)
+                        return FALSE;
 
                 rsvg_handle_set_size_callback (context->handle, context->size_func, context->user_data, NULL);
         }
 
         if (!rsvg_handle_write (context->handle, buf, size, error)) {
-                rsvg_propegate_error (error, "Error writing", ERROR_WRITING);
+                rsvg_propegate_error (error, _("Error writing"), ERROR_WRITING);
                 return FALSE;
         }
 
@@ -147,7 +145,7 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
                                            gdk_pixbuf_get_height (context->pixbuf), 
                                            context->user_data);
         else if (!context->pixbuf) {
-                rsvg_propegate_error (error, "Error displaying image", ERROR_DISPLAYING_IMAGE);
+                rsvg_propegate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
                 result = FALSE;
         }
 
@@ -174,9 +172,6 @@ fill_info (GdkPixbufFormat *info)
                 { "<?xml", NULL, 50 },
                 { "<svg", NULL, 100 },
                 { "<!DOCTYPE svg", NULL, 100 },
-#if HAVE_SVGZ
-                { "\x1f\x8b", NULL, 50 }, /* todo: recognizes any gzipped file, not much we can do */
-#endif
                 { NULL, NULL, 0 }
         };
         static gchar *mime_types[] = { 
@@ -186,15 +181,13 @@ fill_info (GdkPixbufFormat *info)
         };
         static gchar *extensions[] = { 
                 "svg", 
-#if HAVE_SVGZ
                 "svgz",
-#endif
                 NULL 
         };
         
         info->name        = "svg";
         info->signature   = signature;
-        info->description = "Scalable Vector Graphics";
+        info->description = _("Scalable Vector Graphics");
         info->mime_types  = mime_types;
         info->extensions  = extensions;
         info->flags       = 0;

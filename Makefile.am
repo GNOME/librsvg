@@ -12,14 +12,6 @@ noinst_PROGRAMS = test-performance
 
 man_MANS = rsvg.1
 
-if WITH_LIBGSF
-GSFHEADERS = rsvg-gz.h
-GSFSOURCES = rsvg-gz.c
-else
-GSFHEADERS = 
-GSFSOURCES = 
-endif
-
 if OS_WIN32
 else
 libm = -lm
@@ -28,7 +20,7 @@ endif
 lib_LTLIBRARIES = librsvg-2.la
 
 librsvg_2_la_SOURCES = 		\
-	$(GSFSOURCES) 		\
+	rsvg-gz.c		\
 	librsvg-features.c 	\
 	rsvg-bpath-util.c 	\
 	rsvg-bpath-util.h 	\
@@ -60,7 +52,7 @@ librsvg_2_la_LIBADD = $(LIBRSVG_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS)
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = 	\
-	$(GSFHEADERS) 	\
+	rsvg-gz.h	\
 	rsvg.h 		\
 	librsvg-features.h
 

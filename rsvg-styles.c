@@ -838,7 +838,7 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
     
 	if (status != CR_OK)
         {
-			g_warning ("Error setting CSS SAC handler\n");
+			g_warning (_("Error setting CSS SAC handler"));
 			cr_parser_destroy (parser);
 			cr_doc_handler_destroy (css_handler);
 			return;
@@ -1232,7 +1232,7 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 
 	if (!gdk_pixbuf_get_has_alpha (pixbuf))
     {
-		g_warning ("push/pop transparency group on non-alpha buffer nyi");
+		g_warning (_("push/pop transparency group on non-alpha buffer nyi"));
 		return;
     }
 	
@@ -1274,7 +1274,7 @@ rsvg_use_opacity (RsvgHandle *ctx, int opacity,
 	
 	if (!gdk_pixbuf_get_has_alpha (nos))
 		{
-			g_warning ("push/pop transparency group on non-alpha buffer nyi");
+			g_warning (_("push/pop transparency group on non-alpha buffer nyi"));
 			return;
 		}
 	

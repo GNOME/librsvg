@@ -698,12 +698,13 @@ get_pixbuf(GByteArray * arr, gint width, gint height)
   if(!arr || !arr->len)
     return NULL;
 
-#ifdef HAVE_SVGZ
   if((arr->len >= 2) && (arr->data[0] == (guchar)0x1f) && (arr->data[1] == (guchar)0x8b))
     handle = rsvg_handle_new_gz();
   else
-#endif
     handle = rsvg_handle_new();
+
+  if (!handle)
+    return NULL;
 
   if(width > 0 && height > 0)
     {

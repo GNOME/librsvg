@@ -26,19 +26,12 @@
 #include "config.h"
 #include "rsvg.h"
 #include "rsvg-private.h"
-
-#if HAVE_SVGZ
 #include "rsvg-gz.h"
-#endif
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
-#ifdef G_OS_UNIX
-#include <fcntl.h>
-#endif
 
 #define SVG_BUFFER_SIZE (1024 * 8)
 
@@ -152,15 +145,17 @@ rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
 		return NULL;
 	}
 
-#if HAVE_SVGZ
 	/* test for GZ marker */
 	if ((result >= 2) && (chars[0] == (guchar)0x1f) && (chars[1] == (guchar)0x8b))
 		handle = rsvg_handle_new_gz ();
 	else
 		handle = rsvg_handle_new ();
-#else
-	handle = rsvg_handle_new ();
-#endif
+
+	if (!handle) {
+		g_set_error (error, rsvg_error_quark (), 0,
+					 _("Error creating SVG reader (probably a gzipped SVG)"));
+		return NULL;
+	}
 
 	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
 

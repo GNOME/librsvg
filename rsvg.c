@@ -124,7 +124,7 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 					/* bogus hack */
 					if (new_width <= 0 || new_height <= 0)
 						{
-							g_warning ("rsvg_start_svg: width and height not specified in the SVG");
+							g_warning (_("rsvg_start_svg: width and height not specified in the SVG"));
 							if (new_width <= 0) {width = new_width = 512;}
 							if (new_height <= 0) {height = new_height = 512;}
 						}
@@ -170,7 +170,7 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 			if (new_width <= 0 || new_height <= 0)
 				{
-					g_warning ("rsvg_start_svg: width and height not specified in the SVG, nor supplied by the size callback");
+					g_warning (_("rsvg_start_svg: width and height not specified in the SVG, nor supplied by the size callback"));
 					if (new_width <= 0) new_width = 512;
 					if (new_height <= 0) new_height = 512;
 				}
@@ -178,14 +178,14 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if (new_width >= INT_MAX / 4)
 				{
 					/* FIXME: GError here? */
-					g_warning ("rsvg_start_svg: width too large");
+					g_warning (_("rsvg_start_svg: width too large"));
 					return;
 				}
 			rowstride = (new_width * 4 + 3) & ~3;
 			if (rowstride > INT_MAX / new_height)
 				{
 					/* FIXME: GError here? */
-					g_warning ("rsvg_start_svg: width too large");
+					g_warning (_("rsvg_start_svg: width too large"));
 					return;
 				}
 
@@ -195,7 +195,7 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if (pixels == NULL)
 				{
 					/* FIXME: GError here? */
-					g_warning ("rsvg_start_svg: dimensions too large");
+					g_warning (_("rsvg_start_svg: dimensions too large"));
 					return;
 				}
 			memset (pixels, 0, rowstride * new_height);
@@ -309,7 +309,7 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	
 	if (!got_offset)
 		{
-			g_warning ("gradient stop must specify offset\n");
+			g_warning (_("gradient stop must specify offset\n"));
 			return;
 		}
 	

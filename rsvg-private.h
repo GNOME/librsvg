@@ -41,6 +41,11 @@ typedef struct _RsvgDefs RsvgDefs;
 typedef struct _RsvgDefVal RsvgDefVal;
 typedef struct _RsvgFilter RsvgFilter;
 
+/* prepare for gettext */
+#ifndef _
+#define _(X) X
+#endif
+
 struct RsvgSaxHandler {
 	void (*free) (RsvgSaxHandler *self);
 	void (*start_element) (RsvgSaxHandler *self, const xmlChar *name, RsvgPropertyBag *atts);

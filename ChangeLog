@@ -1,5 +1,11 @@
 2004-03-20  Dom Lachowicz <cinamod@hotmail.com>
 
+	* *.c: Better external image scaling policy (mainly for SVG images)
+	* *.c: Modifications to the GZip SVG handle
+	* *.c: Preparation for gettext and better error handling
+	
+2004-03-20  Dom Lachowicz <cinamod@hotmail.com>
+
 	* test-display.c, moz-plugin.c: Allow rsvg-view to set a bgcolor other
 	than transparent. Make moz plugin set that color to be "white"
 	
