@@ -73,23 +73,25 @@ rsvg_cond_parse_required_features (const char * value)
 {
 	guint nb_elems = 0;
 	char ** elems;
-	gboolean whatever = TRUE;
+	gboolean permitted = TRUE;
 
 	elems = rsvg_css_parse_list(value, &nb_elems);
 
 	if(elems && nb_elems) {
 		guint i;
 
-		for(i = 0; (i < nb_elems) && whatever; i++)
+		for(i = 0; (i < nb_elems) && permitted; i++)
 			if(!bsearch (elems[i], implemented_features, 
 						 nb_implemented_features, sizeof(char *),
 						 rsvg_feature_compare))
-				whatever = FALSE;
+				permitted = FALSE;
 
 		g_strfreev(elems);
-	}
+	} 
+	else
+		permitted = FALSE;
 
-	return whatever;
+	return permitted;
 }
 
 static const char * implemented_extensions [] = 
@@ -103,31 +105,45 @@ rsvg_cond_parse_required_extensions (const char * value)
 {
 	guint nb_elems = 0;
 	char ** elems;
-	gboolean whatever = TRUE;
+	gboolean permitted = TRUE;
 
 	elems = rsvg_css_parse_list(value, &nb_elems);
 
 	if(elems && nb_elems) {
 		guint i;
 
-		for(i = 0; (i < nb_elems) && whatever; i++)
+		for(i = 0; (i < nb_elems) && permitted; i++)
 			if(!bsearch (elems[i], implemented_extensions, 
 						 nb_implemented_extensions, sizeof(char *),
 						 rsvg_feature_compare))
-				whatever = FALSE;
+				permitted = FALSE;
 
 		g_strfreev(elems);
 	}
+	else
+		permitted = FALSE;
 
-	return whatever;
+	return permitted;
 }
 
 static gboolean
 rsvg_locale_compare (const char * a, const char * b)
 {
-	/* TODO: we're required to do a lot more, but i'm lazy...
-	   http://www.w3.org/TR/SVG/struct.html#SystemLanguageAttribute */
-	return (!g_ascii_strcasecmp (a, b));
+	const char * hyphen;
+
+	/* http://www.w3.org/TR/SVG/struct.html#SystemLanguageAttribute */
+
+	/* check for an exact-ish match first */
+	if(!g_ascii_strncasecmp (a, b, strlen(b)))
+		return TRUE;
+
+	/* check to see if there's a hyphen */
+	hyphen = strstr (b, "-");
+	if(!hyphen)
+		return FALSE;
+
+	/* compare up to the hyphen */
+	return !g_ascii_strncasecmp (a, b, (hyphen - b));
 }
 
 /* http://www.w3.org/TR/SVG/struct.html#SystemLanguageAttribute */
@@ -136,7 +152,7 @@ rsvg_cond_parse_system_language (const char * value)
 {
 	guint nb_elems = 0;
 	char ** elems;
-	gboolean whatever = TRUE;
+	gboolean permitted = TRUE;
 
 	elems = rsvg_css_parse_list(value, &nb_elems);
 
@@ -145,21 +161,22 @@ rsvg_cond_parse_system_language (const char * value)
 		gchar * locale = NULL;
 		
 		/* we're required to be pessimistic until we hit a language we recognize */
-		whatever = FALSE;
+		permitted = FALSE;
 
 #if defined(G_OS_WIN32)
 		locale = g_win32_getlocale ();
 #elif defined(HAVE_LC_MESSAGES)
 		locale = g_strdup (setlocale (LC_MESSAGES, NULL));
 #else
+		/* catch-all */
 		locale = g_strdup (setlocale (LC_ALL, NULL));
 #endif
 
 		if (locale)
 			{				
-				for(i = 0; (i < nb_elems) && !whatever; i++) {
+				for(i = 0; (i < nb_elems) && !permitted; i++) {
 					if (rsvg_locale_compare (locale, elems[i]))
-						whatever = TRUE;
+						permitted = TRUE;
 				}
 				
 				g_free (locale);
@@ -167,8 +184,10 @@ rsvg_cond_parse_system_language (const char * value)
 
 		g_strfreev(elems);
 	}
+	else
+		permitted = FALSE;
 
-	return whatever;
+	return permitted;
 }
 
 /* returns TRUE if this element should be processed according to <switch> semantics
@@ -176,21 +195,21 @@ rsvg_cond_parse_system_language (const char * value)
 gboolean 
 rsvg_eval_switch_attributes (RsvgPropertyBag *atts)
 {
-	gboolean whatever = TRUE;
+	gboolean permitted = TRUE;
 
 	if (atts && rsvg_property_bag_size (atts))
 		{
 			const char * value;
 
 			if ((value = rsvg_property_bag_lookup (atts, "requiredFeatures")))
-				whatever = rsvg_cond_parse_required_features (value);
+				permitted = rsvg_cond_parse_required_features (value);
 
-			if (whatever && (value = rsvg_property_bag_lookup (atts, "requiredExtensions")))
-				whatever = rsvg_cond_parse_required_extensions (value);
+			if (permitted && (value = rsvg_property_bag_lookup (atts, "requiredExtensions")))
+				permitted = rsvg_cond_parse_required_extensions (value);
 
-			if (whatever && (value = rsvg_property_bag_lookup (atts, "systemLanguage")))
-				whatever = rsvg_cond_parse_system_language (value);
+			if (permitted && (value = rsvg_property_bag_lookup (atts, "systemLanguage")))
+				permitted = rsvg_cond_parse_system_language (value);
 		}
 
-	return whatever;
+	return permitted;
 }
