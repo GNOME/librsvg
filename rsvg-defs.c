@@ -79,6 +79,6 @@ rsvg_defs_free (RsvgDefs *defs)
 	for (i = 0; i < defs->unnamed->len; i++)
 		((RsvgDefVal *)g_ptr_array_index(defs->unnamed, i))->free(g_ptr_array_index(defs->unnamed, i));
 
-	g_ptr_array_free(defs->unnamed, FALSE);
+	g_ptr_array_free(defs->unnamed, TRUE);
 	g_free (defs);
 }
