@@ -26,7 +26,6 @@
 
 #include <string.h>
 #include <math.h>
-#include <ctype.h>
 
 #include <glib.h>
 
@@ -383,7 +382,7 @@ rsvg_parse_transform (double dst[6], const char *src)
   while (src[idx])
     {
       /* skip initial whitespace */
-      while (isspace (src[idx]))
+      while (g_ascii_isspace (src[idx]))
 	idx++;
 
       /* parse keyword */
@@ -392,7 +391,7 @@ rsvg_parse_transform (double dst[6], const char *src)
 	  char c;
 
 	  c = src[idx];
-	  if (isalpha (c) || c == '-')
+	  if (g_ascii_isalpha (c) || c == '-')
 	    keyword[key_len] = src[idx++];
 	  else
 	    break;
@@ -402,7 +401,7 @@ rsvg_parse_transform (double dst[6], const char *src)
       keyword[key_len] = '\0';
 
       /* skip whitespace */
-      while (isspace (src[idx]))
+      while (g_ascii_isspace (src[idx]))
 	idx++;
 
       if (src[idx] != '(')
@@ -415,17 +414,17 @@ rsvg_parse_transform (double dst[6], const char *src)
 	  char *end_ptr;
 
 	  /* skip whitespace */
-	  while (isspace (src[idx]))
+	  while (g_ascii_isspace (src[idx]))
 	    idx++;
 	  c = src[idx];
-	  if (isdigit (c) || c == '+' || c == '-' || c == '.')
+	  if (g_ascii_isdigit (c) || c == '+' || c == '-' || c == '.')
 	    {
 	      if (n_args == sizeof(args) / sizeof(args[0]))
 		return FALSE; /* too many args */
 	      args[n_args] = strtod (src + idx, &end_ptr);
 	      idx = end_ptr - src;
 
-	      while (isspace (src[idx]))
+	      while (g_ascii_isspace (src[idx]))
 		idx++;
 
 	      /* skip optional comma */
@@ -921,11 +920,11 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 
   /* Copy ch into string, chopping off leading and trailing whitespace */
   for (beg = 0; beg < len; beg++)
-    if (!isspace (ch[beg]))
+    if (!g_ascii_isspace (ch[beg]))
       break;
 
   for (end = len; end > beg; end--)
-    if (!isspace (ch[end - 1]))
+    if (!g_ascii_isspace (ch[end - 1]))
       break;
 
   string = g_malloc (end - beg + 1);

@@ -1,3 +1,10 @@
+2001-08-31  Darin Adler  <darin@bentspoon.com>
+
+	* rsvg-paint-server.c: (rsvg_paint_server_parse):
+	* rsvg.c: (rsvg_parse_transform), (rsvg_text_handler_characters):
+	Get rid of all includes of <ctype.h> and use non-locale-specific
+	g_ascii_* calls from glib instead.
+
 2001-08-24  Darin Adler  <darin@bentspoon.com>
 
 	* Makefile.am: Need to export rsvg-ft.h for eel for now.

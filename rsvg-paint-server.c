@@ -22,7 +22,6 @@
 */
 
 #include <string.h>
-#include <ctype.h>
 
 #include <glib.h>
 
@@ -274,7 +273,7 @@ rsvg_paint_server_parse (const RsvgDefs *defs, const char *str)
       char *name;
       RsvgDefVal *val;
 
-      while (isspace (*p)) p++;
+      while (g_ascii_isspace (*p)) p++;
       if (*p != '#')
 	return NULL;
       p++;
