@@ -161,7 +161,7 @@ main (int argc, char **argv)
 		{ "width",       'w',  POPT_ARG_INT,    &width,       0, _("Set the image's width"), _("<int>") },
 		{ "height",      'h',  POPT_ARG_INT,    &height,      0, _("Set the image's height"), _("<int>") },
 		{ "bg-color",    'b',  POPT_ARG_STRING, &bg_color,    0, _("Set the image background color (default: transparent)"), _("<string>") },
-		{ "keep-aspect", 'k',  POPT_ARG_NONE,   &bKeepAspect, 0, _(""), NULL },
+		{ "keep-aspect", 'k',  POPT_ARG_NONE,   &bKeepAspect, 0, _("Preserve the image's aspect ratio"), NULL },
 		{ "version",     'v',  POPT_ARG_NONE,   &bVersion,    0, _("Show version information"), NULL },
 		POPT_AUTOHELP
 		POPT_TABLEEND

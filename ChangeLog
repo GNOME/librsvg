@@ -1,3 +1,10 @@
+=== librsvg-2.7.1 ===
+
+2004-03-21  Dom Lachowicz <cinamod@hotmail.com>
+
+	* TODO: update
+	* NEWS: ditto
+	
 2004-03-21  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-view.c: Support aspect-ratio preservation, use app icon

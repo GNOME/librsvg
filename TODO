@@ -2,18 +2,11 @@ TODO:
 
  * Clipping paths
 
- * Masks
-
- * Fixing image transforms
+ * Fix image transforms
 
  * Fill patterns
 
- * Add actual GError support in the loader, rather then the g_warnings
+ * Add GError support in the loader, rather then the g_warnings
    that we currently use.
 
-On the back burner:
-
  * Make error messages translatable (requires adding gettext).
-
-Requests from Christian:
- * gtk theme engine supporting automatic mouseover-and-light-up effect
