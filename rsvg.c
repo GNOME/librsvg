@@ -718,51 +718,10 @@ rsvg_defs_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 }
 
 static void
-rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
-						 const xmlChar **atts)
+rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
+						   const xmlChar **atts)
 {
-	RsvgSaxHandlerDefs *z = (RsvgSaxHandlerDefs *)self;
-	RsvgHandle *ctx = z->ctx;
-	
-	/* push the state stack */
-	if (ctx->n_state == ctx->n_state_max)
-		ctx->state = g_renew (RsvgState, ctx->state, ctx->n_state_max <<= 1);
-	if (ctx->n_state)
-		rsvg_state_clone (&ctx->state[ctx->n_state],
-						  &ctx->state[ctx->n_state - 1]);
-	else
-		rsvg_state_init (ctx->state);
-	ctx->n_state++;
-
-	/*
-	 * conicalGradient isn't in the SVG spec and I'm not sure exactly what it does. libart definitely
-	 * has no analogue. But it does seem similar enough to a radialGradient that i'd rather get the
-	 * onscreen representation of the colour wrong than not have any colour displayed whatsoever
-	 */
-
-	if (!strcmp ((char *)name, "linearGradient"))
-		rsvg_start_linear_gradient (ctx, atts);
-	else if (!strcmp ((char *)name, "radialGradient"))
-		rsvg_start_radial_gradient (ctx, atts, "radialGradient");
-	else if (!strcmp((char *)name, "conicalGradient"))
-		rsvg_start_radial_gradient (ctx, atts, "conicalGradient");
-	else if (!strcmp ((char *)name, "style"))
-		rsvg_start_style (ctx, atts);
-	else if (!strcmp ((char *)name, "path"))
-		rsvg_start_path (ctx, atts);
-	else if (!strcmp ((char *)name, "line"))
-		rsvg_start_line (ctx, atts);
-	else if (!strcmp ((char *)name, "rect"))
-		rsvg_start_rect (ctx, atts);
-	else if (!strcmp ((char *)name, "circle"))
-		rsvg_start_circle (ctx, atts);
-	else if (!strcmp ((char *)name, "ellipse"))
-		rsvg_start_ellipse (ctx, atts);
-	else if (!strcmp ((char *)name, "polygon"))
-		rsvg_start_polygon (ctx, atts);
-	else if (!strcmp ((char *)name, "polyline"))
-		rsvg_start_polyline (ctx, atts);
-	else if (!strcmp ((char *)name, "filter"))
+	if (!strcmp ((char *)name, "filter"))
 		rsvg_start_filter (ctx, atts);
 	else if (!strcmp ((char *)name, "feBlend"))
 		rsvg_start_filter_primitive_blend (ctx, atts);
@@ -812,6 +771,55 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_filter_primitive_component_transfer_function(ctx, atts, 'b');
 	else if (!strcmp ((char *)name, "feFuncA"))
 		rsvg_start_filter_primitive_component_transfer_function(ctx, atts, 'a');
+}
+
+static void
+rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
+						 const xmlChar **atts)
+{
+	RsvgSaxHandlerDefs *z = (RsvgSaxHandlerDefs *)self;
+	RsvgHandle *ctx = z->ctx;
+	
+	/* push the state stack */
+	if (ctx->n_state == ctx->n_state_max)
+		ctx->state = g_renew (RsvgState, ctx->state, ctx->n_state_max <<= 1);
+	if (ctx->n_state)
+		rsvg_state_clone (&ctx->state[ctx->n_state],
+						  &ctx->state[ctx->n_state - 1]);
+	else
+		rsvg_state_init (ctx->state);
+	ctx->n_state++;
+
+	/*
+	 * conicalGradient isn't in the SVG spec and I'm not sure exactly what it does. libart definitely
+	 * has no analogue. But it does seem similar enough to a radialGradient that i'd rather get the
+	 * onscreen representation of the colour wrong than not have any colour displayed whatsoever
+	 */
+
+	if (!strcmp ((char *)name, "linearGradient"))
+		rsvg_start_linear_gradient (ctx, atts);
+	else if (!strcmp ((char *)name, "radialGradient"))
+		rsvg_start_radial_gradient (ctx, atts, "radialGradient");
+	else if (!strcmp((char *)name, "conicalGradient"))
+		rsvg_start_radial_gradient (ctx, atts, "conicalGradient");
+	else if (!strcmp ((char *)name, "style"))
+		rsvg_start_style (ctx, atts);
+	else if (!strcmp ((char *)name, "path"))
+		rsvg_start_path (ctx, atts);
+	else if (!strcmp ((char *)name, "line"))
+		rsvg_start_line (ctx, atts);
+	else if (!strcmp ((char *)name, "rect"))
+		rsvg_start_rect (ctx, atts);
+	else if (!strcmp ((char *)name, "circle"))
+		rsvg_start_circle (ctx, atts);
+	else if (!strcmp ((char *)name, "ellipse"))
+		rsvg_start_ellipse (ctx, atts);
+	else if (!strcmp ((char *)name, "polygon"))
+		rsvg_start_polygon (ctx, atts);
+	else if (!strcmp ((char *)name, "polyline"))
+		rsvg_start_polyline (ctx, atts);
+	
+	rsvg_filter_handler_start (ctx, name, atts);
 }
 
 static void
@@ -1069,6 +1077,8 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 				rsvg_start_radial_gradient (ctx, atts, "radialGradient");
 			else if (!strcmp ((char *)name, "conicalGradient"))
 				rsvg_start_radial_gradient (ctx, atts, "conicalGradient");
+
+			rsvg_filter_handler_start (ctx, name, atts);
     }
 }
 
