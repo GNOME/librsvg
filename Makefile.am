@@ -18,7 +18,6 @@ librsvg_2_la_SOURCES = \
 	rsvg-defs.c \
 	rsvg-defs.h \
 	rsvg-ft.c \
-	rsvg-ft.h \
 	rsvg-paint-server.c \
 	rsvg-paint-server.h \
 	rsvg-path.c \
@@ -30,6 +29,7 @@ librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = \
 	rsvg.h \
+	rsvg-ft.h \
 	librsvg-features.h
 
 INCLUDES =\
