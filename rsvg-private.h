@@ -88,7 +88,6 @@ struct RsvgHandle {
 	   file is converted into at the end */
 	void *treebase;
 
-	guint in_switch;
 	GHashTable *css_props;
 	
 	/* not a handler stack. each nested handler keeps
@@ -116,6 +115,8 @@ struct RsvgHandle {
 	gchar * base_uri;
 
 	gboolean finished;
+
+	int in_switch;
 
 	void * currentfilter;
 	void * currentsubfilter;

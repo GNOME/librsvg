@@ -344,12 +344,6 @@ rsvg_render_bpath (RsvgDrawingCtx *ctx, const ArtBpath *bpath)
 	
 	state = rsvg_state_current (ctx);
 
-	/* todo: handle visibility stuff earlier for performance benefits 
-	 * handles all path based shapes. will handle text and images separately
-	 */
-	if (!state->visible || !state->cond_true)
-		return;
-
 	affine_bpath = art_bpath_affine_transform (bpath,
 											   state->affine);
 	

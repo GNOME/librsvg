@@ -892,6 +892,6 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	pattern->vbh = (cloned && !got_vbox) ? pattern->vbh : vbh;
 	pattern->vbox = (cloned && !got_vbox) ? pattern->vbox : got_vbox;
 
-	pattern->g = &(rsvg_push_part_def_group (ctx, NULL, state)->super);
+	pattern->g = &(rsvg_push_part_def_group (ctx, NULL, &state)->super);
 }
 

@@ -60,7 +60,7 @@ static const char * implemented_features [] =
 static const guint nb_implemented_features = G_N_ELEMENTS(implemented_features);
 
 static const char ** implemented_extensions = NULL;
-static const guint nb_implemented_extensions = G_N_ELEMENTS(implemented_extensions);
+static const guint nb_implemented_extensions = 0;
 
 static int 
 rsvg_feature_compare(const void *a, const void *b)

@@ -154,7 +154,7 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	/* set up the defval stuff */
 	marker->super.type = RSVG_DEF_MARKER;
 
-	marker->contents =	(RsvgDefsDrawable *)rsvg_push_part_def_group(ctx, NULL, state);
+	marker->contents =	(RsvgDefsDrawable *)rsvg_push_part_def_group(ctx, NULL, &state);
 
 	rsvg_state_init (&marker->contents->state);
 	marker->super.free = rsvg_marker_free;

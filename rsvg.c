@@ -524,8 +524,10 @@ rsvg_start_element (void *data, const xmlChar *name,
 				rsvg_start_clip_path(ctx, bag);
 			else if (!strcmp ((char *)name, "marker"))
 				rsvg_start_marker (ctx, bag);
-			else if (!strcmp ((char *)name, "switch"))
+			else if (!strcmp ((char *)name, "switch")) {
 				ctx->in_switch++;
+				rsvg_start_g (ctx, bag); /* treat switches as groups for now */
+			}
 			/* see conicalGradient discussion above */
 			else if (!strcmp ((char *)name, "linearGradient"))
 				rsvg_start_linear_gradient (ctx, bag);
@@ -586,10 +588,10 @@ rsvg_end_element (void *data, const xmlChar *name)
 				rsvg_end_clip_path(ctx);
 			else if (!strcmp ((char *)name, "marker"))
 				rsvg_pop_def_group(ctx);
-			else if (!strcmp ((char *)name, "switch"))
-				{
-					ctx->in_switch--;
-				}
+			else if (!strcmp ((char *)name, "switch")) {
+				rsvg_end_g (ctx); /* treat switches as groups for now */
+				ctx->in_switch--;
+			}
 			else if (!strcmp ((char *)name, "pattern"))
 				rsvg_pop_def_group(ctx);
 		}

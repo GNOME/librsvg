@@ -86,9 +86,9 @@ struct _RsvgDefsDrawableSvg {
 };
 
 RsvgDefsDrawable * rsvg_push_def_group (RsvgHandle *ctx, const char * id, 
-					RsvgState);
+					RsvgState *);
 RsvgDefsDrawable * rsvg_push_part_def_group (RsvgHandle *ctx, const char * id, 
-					     RsvgState);
+					     RsvgState *);
 void rsvg_pop_def_group (RsvgHandle *ctx);
 void rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, 
 				    RsvgDefsDrawable *child);

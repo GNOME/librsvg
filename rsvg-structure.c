@@ -36,6 +36,13 @@ void
 rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 						 int dominate)
 {
+	RsvgState *state;
+
+	state = &self->state;
+
+	if (0 /*!state->visible*/)
+		return;
+
 	self->draw(self, ctx, dominate);
 }
 
@@ -56,7 +63,7 @@ rsvg_start_g (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			rsvg_parse_style_attrs (ctx, &state, "g", klazz, id, atts);
 		}	
   
-	rsvg_push_def_group (ctx, id, state);
+	rsvg_push_def_group (ctx, id, &state);
 }
 
 void
@@ -74,18 +81,13 @@ rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 
 	rsvg_state_reinherit_top(ctx, &self->state, dominate);
 
-	if (!self->state.visible || !self->state.cond_true)
-		return;
-
-	rsvg_push_discrete_layer (ctx);
+	rsvg_push_discrete_layer (ctx);	
 
 	for (i = 0; i < group->children->len; i++)
 		{
 			rsvg_state_push(ctx);
-
 			rsvg_defs_drawable_draw (g_ptr_array_index(group->children, i), 
 									 ctx, 0);
-	
 			rsvg_state_pop(ctx);
 		}			
 
@@ -103,7 +105,7 @@ rsvg_defs_drawable_group_free (RsvgDefVal *self)
 
 RsvgDefsDrawable * 
 rsvg_push_def_group (RsvgHandle *ctx, const char * id, 
-					 RsvgState state)
+					 RsvgState *state)
 {
 	RsvgDefsDrawable * group;
 
@@ -128,7 +130,6 @@ rsvg_pop_def_group (RsvgHandle *ctx)
 
 }
 
-
 void 
 rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawable *child)
 {
@@ -137,15 +138,16 @@ rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawable *ch
 	g_ptr_array_add(self->children, child);
 }
 
+/* warning: takes ownership of @tempstate */
 RsvgDefsDrawable * 
 rsvg_push_part_def_group (RsvgHandle *ctx, const char * id, 
-						  RsvgState tempstate)
+						  RsvgState * tempstate)
 {
 	RsvgDefsDrawableGroup *group;
 
 	group = g_new (RsvgDefsDrawableGroup, 1);
 	group->children = g_ptr_array_new();
-	group->super.state = tempstate;
+	group->super.state = *tempstate;
 
 	group->super.super.type = RSVG_DEF_PATH;
 	group->super.super.free = rsvg_defs_drawable_group_free;
@@ -582,5 +584,5 @@ rsvg_start_defs (RsvgHandle *ctx, RsvgPropertyBag *atts)
   
 	/*I don't know if I am proud or discusted by this hack. It seems to 
 	  have the same effect as the spec but not be in its spirit.*/
-	rsvg_push_part_def_group (ctx, id, state);
+	rsvg_push_part_def_group (ctx, id, &state);
 }
