@@ -1,3 +1,9 @@
+2002-01-03  Darin Adler  <darin@bentspoon.com>
+
+	* rsvg-paint-server.c: (rsvg_paint_server_lin_grad_render),
+	(rsvg_paint_server_rad_grad_render): Fix bug when gradients
+	are empty.
+
 2001-10-19  Darin Adler  <darin@bentspoon.com>
 
 	* hack-macros/nautilus-macros.m4: Change comment so that we
