@@ -1,3 +1,7 @@
+Version 1.1.6
+
+- Fix division by zero crashes when scaling an .svg without dimensions (Darin)
+
 Version 1.1.5
 
 - Add another new function for use in Nautilus icons (Alex Larsson)

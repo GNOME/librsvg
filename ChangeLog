@@ -1,5 +1,10 @@
 2002-03-07  Darin Adler  <darin@bentspoon.com>
 
+	* NEWS: News for 1.1.6.
+	* configure.in: Bump version.
+
+2002-03-07  Darin Adler  <darin@bentspoon.com>
+
 	* rsvg.c: (rsvg_start_svg): Check for width 0 and height 0
 	cases. Make warnings clearer.
 	(rsvg_size_callback): Explicitly check for bad width and
