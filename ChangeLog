@@ -1,3 +1,14 @@
+2003-03-14  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-path.c (rsvg_path_arc): Fix NaN issue, bug 108380
+	* rsvg-shapes.c (start_rect): SVG conformance issues fixed
+	
+=== librsvg 2.2.4 ===
+	
+2003-03-10  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Bump version number
+	
 2003-02-26  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.c (close_impl): Fix bug 106399

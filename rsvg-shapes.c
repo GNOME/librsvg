@@ -440,7 +440,7 @@ void
 rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 {
 	int i;
-	double x = -1, y = -1, w = -1, h = -1, rx = 0., ry = 0.;
+	double x = 0., y = 0., w = -1, h = -1, rx = 0., ry = 0.;
 	GString * d = NULL;
 	const char * klazz = NULL, * id = NULL;
 	RsvgState *state;
@@ -482,10 +482,15 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	if (got_rx && !got_ry)
 		ry = rx;
 	else if (got_ry && !got_rx)
-		rx = ry;
-	
-	if (x < 0. || y < 0. || w < 0. || h < 0. || rx < 0. || ry < 0.)
+		rx = ry;	
+
+	if (x < 0. || y < 0. || w <= 0. || h <= 0. || rx < 0. || ry < 0.)
 		return;
+
+	if (rx > (w / 2.))
+		rx = w / 2.;
+	if (ry > (h / 2.))
+		ry = h / 2.;
 	
 	rsvg_parse_style_attrs (ctx, "rect", klazz, id, atts);
 	
