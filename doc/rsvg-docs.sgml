@@ -1,14 +1,14 @@
-<!doctype book PUBLIC "-//OASIS//DTD DocBook V3.1//EN" [
-<!notation PNG system "PNG">
-<!entity % local.notation.class "| PNG">
-
-<!entity hash "#">
-<!entity percent "%">
-<!entity RSVG	SYSTEM "sgml/rsvg.sgml">
-<!entity SVGZ	SYSTEM "sgml/rsvg-gz.sgml">
-<!entity Utilities	SYSTEM "sgml/rsvg-file-util.sgml">
-<!entity ObjectIndex	SYSTEM "sgml/object_index.sgml">
-<!entity TreeIndex	SYSTEM "sgml/tree_index.sgml">
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+               "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+<!NOTATION PNG SYSTEM "PNG">
+<!ENTITY hash "#">
+<!ENTITY % local.notation.class "| PNG">
+<!ENTITY RSVG SYSTEM "xml/rsvg.xml">
+<!ENTITY SVGZ SYSTEM "xml/rsvg-gz.xml">
+<!ENTITY Utilities SYSTEM "xml/rsvg-file-util.xml">
+<!ENTITY ObjectIndex SYSTEM "xml/object_index.sgml">
+<!ENTITY TreeIndex SYSTEM "xml/tree_index.sgml">
 ]>
 
 <book id="index">

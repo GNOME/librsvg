@@ -18,7 +18,7 @@ SCANGOBJ_OPTIONS=--type-init-func="g_type_init ()"
 SCAN_OPTIONS=
 
 # Extra options to supply to gtkdoc-mkdb
-MKDB_OPTIONS=--sgml-mode
+MKDB_OPTIONS = --sgml-mode --output-format=xml --ignore-files=trio
 
 # Extra options to supply to gtkdoc-fixref
 FIXXREF_OPTIONS=
@@ -121,12 +121,12 @@ tmpl-build.stamp: $(DOC_MODULE)-decl.txt $(SCANOBJ_FILES) $(DOC_MODULE)-sections
 tmpl.stamp: tmpl-build.stamp
 	@true
 
-#### sgml ####
+#### xml ####
 
 sgml-build.stamp: tmpl.stamp $(CFILE_GLOB) $(srcdir)/tmpl/*.sgml
-	@echo '*** Building SGML ***'
+	@echo '*** Building XML ***'
 	cd $(srcdir) && \
-	gtkdoc-mkdb --module=$(DOC_MODULE) --source-dir=$(DOC_SOURCE_DIR) $(MKDB_OPTIONS)
+	gtkdoc-mkdb --module=$(DOC_MODULE) --source-dir=$(DOC_SOURCE_DIR) --output-format=xml $(MKDB_OPTIONS)
 	touch sgml-build.stamp
 
 sgml.stamp: sgml-build.stamp
