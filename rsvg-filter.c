@@ -878,7 +878,7 @@ rsvg_start_filter_primitive_blend (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.x =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -887,7 +887,7 @@ rsvg_start_filter_primitive_blend (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.y =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -896,7 +896,7 @@ rsvg_start_filter_primitive_blend (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.width =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -905,7 +905,7 @@ rsvg_start_filter_primitive_blend (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.height =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1097,7 +1097,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 							filter->super.x =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1106,7 +1106,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 							filter->super.y =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1115,7 +1115,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 							filter->super.width =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1124,7 +1124,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 							filter->super.height =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1553,7 +1553,7 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle * ctx,
 							filter->super.x =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1562,7 +1562,7 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle * ctx,
 							filter->super.y =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1571,7 +1571,7 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle * ctx,
 							filter->super.width =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1580,7 +1580,7 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle * ctx,
 							filter->super.height =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1709,7 +1709,7 @@ rsvg_start_filter_primitive_offset (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.x =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1718,7 +1718,7 @@ rsvg_start_filter_primitive_offset (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.y =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1727,7 +1727,7 @@ rsvg_start_filter_primitive_offset (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.width =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1736,7 +1736,7 @@ rsvg_start_filter_primitive_offset (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.height =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1744,13 +1744,13 @@ rsvg_start_filter_primitive_offset (RsvgHandle * ctx, const xmlChar ** atts)
 						filter->dx =
 							rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 															  ctx->dpi,
-															  (gdouble) ctx->width,
+															  1,
 															  font_size);
 					else if (!strcmp ((char *) atts[i], "dy"))
 						filter->dy =
 							rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 															  ctx->dpi,
-															  (gdouble) ctx->width,
+															  1,
 															  font_size);
 				}
 		}
@@ -1846,7 +1846,7 @@ rsvg_start_filter_primitive_merge (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.x =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1855,7 +1855,7 @@ rsvg_start_filter_primitive_merge (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.y =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1864,7 +1864,7 @@ rsvg_start_filter_primitive_merge (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.width =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -1873,7 +1873,7 @@ rsvg_start_filter_primitive_merge (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.height =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2030,7 +2030,7 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 							filter->super.x =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2039,7 +2039,7 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 							filter->super.y =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2048,7 +2048,7 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 							filter->super.width =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2057,7 +2057,7 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 							filter->super.height =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2396,7 +2396,7 @@ rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
 							filter->super.x =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2405,7 +2405,7 @@ rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
 							filter->super.y =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2414,7 +2414,7 @@ rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
 							filter->super.width =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2423,7 +2423,7 @@ rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
 							filter->super.height =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2660,7 +2660,7 @@ rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 							filter->super.x =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2669,7 +2669,7 @@ rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 							filter->super.y =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2678,7 +2678,7 @@ rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 							filter->super.width =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2687,7 +2687,7 @@ rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 							filter->super.height =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2936,7 +2936,7 @@ rsvg_start_filter_primitive_composite (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.x =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2945,7 +2945,7 @@ rsvg_start_filter_primitive_composite (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.y =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2954,7 +2954,7 @@ rsvg_start_filter_primitive_composite (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.width =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -2963,7 +2963,7 @@ rsvg_start_filter_primitive_composite (RsvgHandle * ctx, const xmlChar ** atts)
 							filter->super.height =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -3004,26 +3004,47 @@ struct _RsvgFilterPrimitiveFlood
 {
 	RsvgFilterPrimitive super;
 	guint32 colour;
-	char opacity;
+	guint opacity;
 };
 
 static void
 rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self,
 									RsvgFilterContext * ctx)
 {
-	GdkPixbuf * output;
-	guint32 pixel;
+	guchar i;
+	gint x, y;
+	gint rowstride, height, width;
+	FPBox boundarys;
+	
+	guchar *output_pixels;
+	
+	RsvgFilterPrimitiveFlood *bself;
+	
+	GdkPixbuf *output;
+	
+	bself = (RsvgFilterPrimitiveFlood *) self;
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	height = ctx->height;
+	width = ctx->width;
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	rowstride = gdk_pixbuf_get_rowstride (output);
+	
+	output_pixels = gdk_pixbuf_get_pixels (output);
 
-	RsvgFilterPrimitiveFlood *fself;	
-	fself = (RsvgFilterPrimitiveFlood *) self;
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
+			{
+				for (i = 0; i < 3; i++)
+					{
+						output_pixels[4 * x + y * rowstride + i] = ((char *)
+							(&bself->colour))[2 - i];
+					}
+				output_pixels[4 * x + y * rowstride + 3] = bself->opacity;
+			}
 
-	pixel = fself->colour << 8 | (guint32) fself->opacity;
-
-	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, ctx->width, ctx->height);
-
-	gdk_pixbuf_fill(output, pixel);
-
-	rsvg_filter_store_result (self->result, output, ctx);	
+	rsvg_filter_store_result (self->result, output, ctx);
+	
 	g_object_unref (G_OBJECT (output));
 }
 
@@ -3053,6 +3074,7 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 
 	filter->super.in = g_string_new ("none");
 	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
 
 	filter->opacity = 255;
 	filter->colour = 0;
@@ -3068,7 +3090,7 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 							filter->super.x =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -3077,7 +3099,7 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 							filter->super.y =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -3086,7 +3108,7 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 							filter->super.width =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
@@ -3095,7 +3117,7 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 							filter->super.height =
 								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
 																  ctx->dpi,
-																  (gdouble) ctx->width,
+																  1,
 																  font_size);
 							filter->super.sizedefaults = 0;
 						}
