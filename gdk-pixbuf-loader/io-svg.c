@@ -26,9 +26,6 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gdk-pixbuf/gdk-pixbuf-io.h>
 
-void fill_vtable (GdkPixbufModule *module);
-void fill_info   (GdkPixbufFormat *info);
-
 typedef struct {
         RsvgHandle                 *handle;
         GdkPixbuf                  *pixbuf;
@@ -105,7 +102,7 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
         return TRUE;
 }
 
-void
+G_MODULE_EXPORT void
 fill_vtable (GdkPixbufModule *module)
 {
         module->begin_load = gdk_pixbuf__svg_image_begin_load;
@@ -113,7 +110,7 @@ fill_vtable (GdkPixbufModule *module)
         module->load_increment = gdk_pixbuf__svg_image_load_increment;
 }
 
-void
+G_MODULE_EXPORT void
 fill_info (GdkPixbufFormat *info)
 {
         static GdkPixbufModulePattern signature[] = {
