@@ -503,7 +503,9 @@ rsvg_text_layout_new (RsvgHandle *ctx,
 		pango_context_set_language (ctx->pango_context,
 									pango_language_from_string (state->lang));
 	
-	pango_context_set_base_dir (ctx->pango_context, state->text_dir);
+	if (state->unicode_bidi == UNICODE_BIDI_OVERRIDE ||
+		state->unicode_bidi == UNICODE_BIDI_EMBED)
+		pango_context_set_base_dir (ctx->pango_context, state->text_dir);
 	
 	layout = g_new0 (RsvgTextLayout, 1);
 	layout->layout = pango_layout_new (ctx->pango_context);

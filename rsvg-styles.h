@@ -56,6 +56,12 @@ enum {
 	FILL_RULE_NONZERO = 1
 };
 
+typedef enum {
+	UNICODE_BIDI_NORMAL = 0,
+	UNICODE_BIDI_EMBED = 1,
+	UNICODE_BIDI_OVERRIDE = 2	
+} UnicodeBidi;
+
 struct _RsvgState {
 	double affine[6];
 	double personal_affine[6];
@@ -106,6 +112,8 @@ struct _RsvgState {
 	gboolean has_font_decor;
 	PangoDirection text_dir;
 	gboolean has_text_dir;
+	UnicodeBidi unicode_bidi;
+	gboolean has_unicode_bidi;
 	TextAnchor     text_anchor;
 	gboolean has_text_anchor;	
 

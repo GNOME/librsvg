@@ -89,6 +89,7 @@ rsvg_state_init (RsvgState *state)
 	state->font_weight  = PANGO_WEIGHT_NORMAL;
 	state->font_stretch = PANGO_STRETCH_NORMAL;
 	state->text_dir     = PANGO_DIRECTION_LTR;
+	state->unicode_bidi = UNICODE_BIDI_NORMAL;
 	state->text_anchor  = TEXT_ANCHOR_START;
 	state->visible      = TRUE;
 	state->filter       = NULL;
@@ -119,6 +120,7 @@ rsvg_state_init (RsvgState *state)
 	state->has_font_stretch = FALSE;
 	state->has_font_decor = FALSE;
 	state->has_text_dir = FALSE;
+	state->has_unicode_bidi = FALSE;
 	state->has_text_anchor = FALSE;
 	state->has_startMarker = FALSE;
 	state->has_middleMarker = FALSE;
@@ -198,6 +200,8 @@ rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 		dst->font_decor = src->font_decor;
 	if (!dst->has_text_dir)
 		dst->text_dir = src->text_dir;
+	if (!dst->has_unicode_bidi)
+		dst->unicode_bidi = src->unicode_bidi;
 	if (!dst->has_text_anchor)
 		dst->text_anchor = src->text_anchor;
 	if (!dst->has_startMarker)
@@ -278,6 +282,8 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 		dst->font_decor = src->font_decor;
 	if (!dst->has_text_dir || src->has_text_dir)
 		dst->text_dir = src->text_dir;
+	if (!dst->has_unicode_bidi || src->has_unicode_bidi)
+		dst->unicode_bidi = src->unicode_bidi;
 	if (!dst->has_text_anchor || src->has_text_anchor)
 		dst->text_anchor = src->text_anchor;
 	if (!dst->has_startMarker || !src->has_startMarker)
@@ -557,25 +563,53 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 					state->has_font_decor = TRUE;
 				}
 		}
-	else if (rsvg_css_param_match (str, "writing-mode"))
+	else if (rsvg_css_param_match (str, "direction"))
 		{
 			state->has_text_dir = TRUE;
-			/* lr-tb | rl-tb | tb-rl | lr | rl | tb | inherit */
 			if (!strcmp (str + arg_off, "inherit"))
 				{
 					state->text_dir = (parent_state ? parent_state->text_dir : PANGO_DIRECTION_LTR);
 					state->has_text_dir = FALSE;
 				}
+			else if (!strcmp (str + arg_off, "rtl"))
+				state->text_dir = PANGO_DIRECTION_RTL;
+			else /* ltr */
+				state->text_dir = PANGO_DIRECTION_LTR;
+		}
+	else if (rsvg_css_param_match (str, "unicode-bidi"))
+		{
+			state->has_unicode_bidi = TRUE;
+			if (!strcmp (str + arg_off, "inherit"))
+				{
+					state->unicode_bidi = (parent_state ? parent_state->unicode_bidi : PANGO_DIRECTION_LTR);
+					state->has_unicode_bidi = FALSE;
+				}
+			else if (!strcmp (str + arg_off, "embed"))
+				state->unicode_bidi = UNICODE_BIDI_EMBED;
+			else if (!strcmp (str + arg_off, "bidi-override"))
+				state->unicode_bidi = UNICODE_BIDI_OVERRIDE;
+			else /* normal */
+				state->unicode_bidi = UNICODE_BIDI_NORMAL;
+		}
+	else if (rsvg_css_param_match (str, "writing-mode"))
+		{
+			/* TODO: these aren't quite right... */
+
+			state->has_text_dir = TRUE;
+			if (!strcmp (str + arg_off, "inherit")) {
+				state->text_dir = parent_state->text_dir;
+				state->has_text_dir = FALSE;
+			}
+			else if (!strcmp (str + arg_off, "lr-tb") ||
+					 !strcmp (str + arg_off, "tb"))
+				state->text_dir = PANGO_DIRECTION_TTB_LTR;
 			else if (!strcmp (str + arg_off, "rl"))
 				state->text_dir = PANGO_DIRECTION_RTL;
 			else if (!strcmp (str + arg_off, "tb-rl") || 
-					 !strcmp (str + arg_off, "rl-tb")) /* not sure of tb-rl vs. rl-tb */
+					 !strcmp (str + arg_off, "rl-tb"))
 				state->text_dir = PANGO_DIRECTION_TTB_RTL;
-			else if (!strcmp (str + arg_off, "lr-tb"))
-				state->text_dir = PANGO_DIRECTION_TTB_LTR;
 			else
 				state->text_dir = PANGO_DIRECTION_LTR;
-
 		}
 	else if (rsvg_css_param_match (str, "text-anchor"))
 		{
@@ -711,20 +745,24 @@ rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state,
 			rsvg_lookup_parse_style_pair (ctx, state, "a:adobe-blending-mode", atts);
 #endif
 			rsvg_lookup_parse_style_pair (ctx, state, "color", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "direction", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "display", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "enable-background", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "fill", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "fill-opacity", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "fill-rule", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "filter", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "font-family", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "font-size", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "font-stretch", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "font-style", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "font-variant", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "font-weight", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "opacity", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "marker-end", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "mask", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "filter", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "marker-mid", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "marker-start", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "opacity", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "stop-color", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "stop-opacity", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "stroke", atts);
@@ -737,12 +775,10 @@ rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state,
 			rsvg_lookup_parse_style_pair (ctx, state, "stroke-width", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "text-anchor", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "text-decoration", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "unicode-bidi", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "visibility", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "writing-mode", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "xml:lang", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "marker-start", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "marker-mid", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "marker-end", atts);
 }
 
 /* Split a CSS2 style into individual style arguments, setting attributes
