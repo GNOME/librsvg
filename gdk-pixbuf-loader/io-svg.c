@@ -85,7 +85,7 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
                 context->first_write = FALSE;
 
                 /* lazy create a SVGZ or SVG loader */
-                if ((size >= 2) && (buf[0] == (char)0x1f) && (buf[1] == (char)0x8b))
+                if ((size >= 2) && (buf[0] == (guchar)0x1f) && (buf[1] == (guchar)0x8b))
                         context->handle = rsvg_handle_new_gz ();
                 else
                         context->handle = rsvg_handle_new ();
