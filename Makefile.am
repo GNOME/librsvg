@@ -19,13 +19,14 @@ else
 libm = -lm
 endif
 
-EXTRA_DIST =			\
-	COPYING.LIB 		\
-	librsvg.spec.in 	\
-	librsvg-2.0.pc.in 	\
-	librsvg-zip.in 		\
-	rsvg-gz.c 		\
-	rsvg-gz.h 		\
+EXTRA_DIST =				\
+	COPYING.LIB 			\
+	librsvg.spec.in 		\
+	librsvg-2.0.pc.in 		\
+	librsvg-2.0-uninstalled.pc.in 	\
+	librsvg-zip.in 			\
+	rsvg-gz.c 			\
+	rsvg-gz.h 			\
 	$(man_MANS)
 
 lib_LTLIBRARIES = librsvg-2.la
