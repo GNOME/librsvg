@@ -170,7 +170,7 @@ main (int argc, char **argv)
 	
 	if (bVersion != 0)
 		{
-			printf ("rsvg-view version %s\n", VERSION);
+			g_message ("rsvg-view version %s\n", VERSION);
 			return 0;
 		}
 	
@@ -226,7 +226,7 @@ main (int argc, char **argv)
 
 	if (!pixbuf)
 		{
-			fprintf (stderr, "Error displaying pixbuf!\n");
+			g_critical ("Error displaying pixbuf!\n");
 			return 1;
 		}
 	
