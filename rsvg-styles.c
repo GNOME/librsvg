@@ -1440,6 +1440,8 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 		!state->backgroundnew && state->mask == NULL)
 		return;
 
+	printf("popping\n");
+
 	operationsleft = 0;
 	
 	if (opacity != 0xFF)
@@ -1502,6 +1504,10 @@ rsvg_pop_discrete_layer(RsvgHandle *ctx)
 	RsvgState *state;
 
 	state = rsvg_state_current(ctx);
+
+	if (state->filter == NULL && state->opacity == 0xFF && 
+		!state->backgroundnew && state->mask == NULL)
+		return;
 
 	tos = ctx->pixbuf;
 	nos = state->save_pixbuf;
