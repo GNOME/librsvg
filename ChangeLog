@@ -1,5 +1,10 @@
 2004-07-09  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-styles.c: Fix bug #145392, by 
+	timmacfarlane@blueyonder.co.uk (Tim Macfarlane)
+
+2004-07-09  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-paint-server.c: Fix bug #145426
 	
 2004-06-30  Dom Lachowicz <cinamod@hotmail.com>

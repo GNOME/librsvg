@@ -1157,10 +1157,20 @@ rsvg_parse_transform (double dst[6], const char *src)
 				}
 			else if (!strcmp (keyword, "rotate"))
 				{
-					if (n_args != 1)
+					if (n_args == 1) {
+						art_affine_rotate (tmp_affine, args[0]);
+						art_affine_multiply (dst, tmp_affine, dst);
+					} else if (n_args == 3) {
+						art_affine_translate (tmp_affine, args[1], args[2]);
+						art_affine_multiply (dst, tmp_affine, dst);
+					
+						art_affine_rotate (tmp_affine, args[0]);
+						art_affine_multiply (dst, tmp_affine, dst);
+						
+						art_affine_translate (tmp_affine, -args[1], -args[2]);
+						art_affine_multiply (dst, tmp_affine, dst);
+					} else
 						return FALSE;
-					art_affine_rotate (tmp_affine, args[0]);
-					art_affine_multiply (dst, tmp_affine, dst);
 				}
 			else if (!strcmp (keyword, "skewX"))
 				{
