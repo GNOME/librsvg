@@ -1,3 +1,9 @@
+2001-08-06  Darin Adler  <darin@bentspoon.com>
+
+	* configure.in: Replace uses of GNOME_PKGCONFIG_CHECK_MODULES
+	with a single call to PKG_CHECK_MODULES.
+	* Makefile.am: Use a single set of CFLAGS and LIBS for all.
+
 2001-07-25  Ramiro Estrugo  <ramiro@fateware.com>
 
 	* librsvg.spec.in:

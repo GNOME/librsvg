@@ -43,12 +43,8 @@ librsvginc_HEADERS = \
 INCLUDES =\
 	-I$(top_srcdir) \
 	-I$(top_builddir) \
+	$(MODULES_CFLAGS) \
 	$(FREETYPE2_CFLAGS) \
-	$(GLIB_CFLAGS) \
-	$(GDK_PIXBUF_CFLAGS) \
-	$(GTK_CFLAGS) \
-	$(XML_CFLAGS) \
-	$(ART_CFLAGS) \
 	-DG_LOG_DOMAIN=\"librsvg\" \
 	-DG_DISABLE_DEPRECATED \
 	-DGDK_DISABLE_DEPRECATED \
@@ -57,13 +53,8 @@ INCLUDES =\
 
 DEPS = $(top_builddir)/librsvg-2.la
 LDADDS = $(top_builddir)/librsvg-2.la \
-	$(XML_LIBS) \
+	$(MODULES_LIBS) \
 	$(FREETYPE2_LIBS) \
-	$(GDK_PIXBUF_LIBS) \
-	$(GTK_LIBS) \
-	$(GLIB_LIBS) \
-	$(FREETYPE2_LIBS) \
-	$(ART_LIBS) \
 	$(POPT_LIBS) \
 	$(LIBPNG)
 
