@@ -504,7 +504,7 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	if (xlink_href != NULL)
 		{
-			RsvgLinearGradient * parent = (RsvgLinearGradient*)rsvg_defs_lookup (ctx->defs, xlink_href+1);
+			RsvgLinearGradient * parent = (RsvgLinearGradient*)rsvg_defs_lookup (ctx->defs, xlink_href);
 			if (parent != NULL)
 				{
 					cloned = TRUE;
@@ -649,7 +649,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 	
 	if (xlink_href != NULL)
 		{
-			RsvgRadialGradient * parent = (RsvgRadialGradient*)rsvg_defs_lookup (ctx->defs, xlink_href+1);
+			RsvgRadialGradient * parent = (RsvgRadialGradient*)rsvg_defs_lookup (ctx->defs, xlink_href);
 			if (parent != NULL)
 				{
 					cloned = TRUE;
@@ -809,7 +809,7 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	if (xlink_href != NULL)
 		{
-			RsvgPattern * parent = (RsvgPattern*)rsvg_defs_lookup (ctx->defs, xlink_href+1);
+			RsvgPattern * parent = (RsvgPattern*)rsvg_defs_lookup (ctx->defs, xlink_href);
 			if (parent != NULL)
 				{
 					cloned = TRUE;

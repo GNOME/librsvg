@@ -109,9 +109,13 @@ rsvg_defs_lookup (const RsvgDefs *defs, const char *name)
 	char * hashpos;
 	hashpos = g_strrstr (name, "#");
 	if (!hashpos)
-		return NULL;
+		{
+			return NULL;
+		}
 	if (hashpos == name)
-		return (RsvgDefVal *)g_hash_table_lookup (defs->hash, name+1);
+		{	
+			return (RsvgDefVal *)g_hash_table_lookup (defs->hash, name+1);
+		}
 	else
 		{
 			gchar ** splitbits;
