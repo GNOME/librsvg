@@ -1620,6 +1620,7 @@ struct RsvgSizeCallbackData
   gint width;
   gint height;
   gboolean zoom_set;
+  gboolean max_size_set;
 };
 
 static void
@@ -1628,11 +1629,21 @@ rsvg_size_callback (gint     *width,
 		    gpointer  data)
 {
   struct RsvgSizeCallbackData *real_data = (struct RsvgSizeCallbackData *)data;
+  gdouble zoomx, zoomy, zoom;
 
   if (real_data->zoom_set)
     {
-      (* width) = real_data->x_zoom * (* width);
-      (* height) = real_data->y_zoom * (* height);
+      (* width) = floor (real_data->x_zoom * (* width) + 0.5);
+      (* height) = floor (real_data->y_zoom * (* height) + 0.5);
+    }
+  else if (real_data->max_size_set)
+    {
+      zoomx = (gdouble) real_data->width / (* width);
+      zoomy = (gdouble) real_data->height / (* height);
+      zoom = MIN (zoomx, zoomy);
+      
+      (* width) = floor (zoom * (* width) + 0.5);
+      (* height) = floor (zoom * (* height) + 0.5);
     }
   else
     {
@@ -1670,7 +1681,7 @@ rsvg_pixbuf_from_file (const gchar *file_name,
  * 
  * Loads a new #GdkPixbuf from @file_name and returns it.  This pixbuf is scaled
  * from the size indicated by the file by a factor of @x_zoom and @y_zoom.  The
- * caller must assume the reference to the reurned pixbuf. If an error
+ * caller must assume the reference to the returned pixbuf. If an error
  * occurred, @error is set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
@@ -1700,6 +1711,7 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
 
   handle = rsvg_handle_new ();
   data.zoom_set = TRUE;
+  data.max_size_set = FALSE;
   data.x_zoom = x_zoom;
   data.y_zoom = y_zoom;
 
@@ -1725,7 +1737,7 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
  * Loads a new #GdkPixbuf from @file_name and returns it.  This pixbuf is scaled
  * from the size indicated to the new size indicated by @width and @height.  If
  * either of these are -1, then the default size of the image being loaded is
- * used.  The caller must assume the reference to the reurned pixbuf. If an
+ * used.  The caller must assume the reference to the returned pixbuf. If an
  * error occurred, @error is set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
@@ -1751,8 +1763,61 @@ rsvg_pixbuf_from_file_at_size (const gchar *file_name,
     }
   handle = rsvg_handle_new ();
   data.zoom_set = FALSE;
+  data.max_size_set = FALSE;
   data.width = width;
   data.height = height;
+
+  rsvg_handle_set_size_callback (handle, rsvg_size_callback, &data, NULL);
+  while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
+    rsvg_handle_write (handle, chars, result, error);
+
+  rsvg_handle_close (handle, error);
+  
+  retval = rsvg_handle_get_pixbuf (handle);
+
+  fclose (f);
+  rsvg_handle_free (handle);
+  return retval;
+}
+
+/**
+ * rsvg_pixbuf_from_file_at_max_size:
+ * @file_name: A file name
+ * @max_width: The requested max width
+ * @max_height: The requested max heigh
+ * @error: return location for errors
+ * 
+ * Loads a new #GdkPixbuf from @file_name and returns it.  This pixbuf is uniformly
+ * scaled so that the it fits into a rectangle of size max_width * max_height. The
+ * caller must assume the reference to the returned pixbuf. If an error occurred,
+ * @error is set and %NULL is returned.
+ * 
+ * Return value: A newly allocated #GdkPixbuf, or %NULL
+ **/
+GdkPixbuf  *
+rsvg_pixbuf_from_file_at_max_size (const gchar     *file_name,
+				   gint             max_width,
+				   gint             max_height,
+				   GError         **error)
+{
+  FILE *f;
+  char chars[SVG_BUFFER_SIZE];
+  gint result;
+  GdkPixbuf *retval;
+  RsvgHandle *handle;
+  struct RsvgSizeCallbackData data;
+
+  f = fopen (file_name, "r");
+  if (!f)
+    {
+      /* FIXME: Set up error. */
+      return NULL;
+    }
+  handle = rsvg_handle_new ();
+  data.zoom_set = FALSE;
+  data.max_size_set = TRUE;
+  data.width = max_width;
+  data.height = max_height;
 
   rsvg_handle_set_size_callback (handle, rsvg_size_callback, &data, NULL);
   while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)

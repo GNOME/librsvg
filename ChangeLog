@@ -1,3 +1,13 @@
+2002-02-24  Alexander Larsson  <alla@lysator.liu.se>
+
+	* rsvg.c: (rsvg_pixbuf_from_file_at_max_size): New function
+	for scaling an svg uniformly to fit in a rectangle.
+	(rsvg_size_callback): Handle max_size_set
+	(rsvg_pixbuf_from_file_at_zoom),(rsvg_pixbuf_from_file_at_size):
+	Set max_size_set to false.
+	
+	* rsvg.h: Add rsvg_pixbuf_from_file_at_max_size()
+
 2002-02-20  Michael Meeks  <michael@ximian.com>
 
 	* Makefile.am: add test-performance.c
