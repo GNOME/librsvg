@@ -1,3 +1,10 @@
+2001-11-05  Darin Adler  <darin@bentspoon.com>
+
+	* test-62614.svg:
+	* test-62620.svg:
+	* test-rsvg.c: (main): If no output file name is given,
+	don't try to write the image (would segfault before).
+
 2001-10-22  Darin Adler  <darin@bentspoon.com>
 
 	* .cvsignore: Don't ignore tarballs.

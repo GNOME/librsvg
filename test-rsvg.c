@@ -59,9 +59,10 @@ main (int argc, const char **argv)
 						atof (x_zoom_str),
 						atof (y_zoom_str),
 						NULL);
-	if (pixbuf)
-		gdk_pixbuf_save (pixbuf, args[1], "png", NULL, NULL);
-	else {
+	if (pixbuf) {
+		if (args[1] != NULL)
+			gdk_pixbuf_save (pixbuf, args[1], "png", NULL, NULL);
+	} else {
 		fprintf (stderr, "Error loading SVG file.\n");
 		return 1;
 	}
