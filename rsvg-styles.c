@@ -888,8 +888,6 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 				}
 		}
 
-	state->opacity = 0xff; /* inheritance of opacity is done elsewhere,opacity must be reset so it doesn't inherit twice */
-
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)

@@ -126,6 +126,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	PangoRectangle ink_rect, line_ink_rect, logical_rect;
 	FT_Bitmap bitmap;
 	RsvgPSCtx gradctx;
+	int i;
 	
 	state = rsvg_state_current (ctx);
 	if (state->fill == NULL && state->font_size <= 0)
@@ -264,8 +265,8 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	gradctx.y0 = line_ink_rect.y;
 	gradctx.x1 = line_ink_rect.x + logical_rect.width;
 	gradctx.y1 = line_ink_rect.y + logical_rect.height;
-	gradctx.width = ctx->width;
-	gradctx.height = ctx->height;
+	for (i = 0; i < 6; i++)
+		gradctx.affine[i] = state->affine[i];
 	
 	rsvg_render_paint_server (render, state->fill, &gradctx);
 

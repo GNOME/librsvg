@@ -47,8 +47,7 @@ struct _RsvgPSCtx {
 	int x1;
 	int y1;
 
-	int height;
-	int width;
+	double affine[6];
 	/* todo: we need to take in some context information, including:
 	   
 	1. The global affine transformation.

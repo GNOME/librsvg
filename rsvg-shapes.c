@@ -170,7 +170,9 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 	gboolean has_alpha;
 	ArtIRect temprect;
 	RsvgPSCtx gradctx;
-	
+	RsvgState *state;
+	int i;	
+
 	pixbuf = ctx->pixbuf;
 	if (pixbuf == NULL)
 		{
@@ -200,8 +202,10 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 	gradctx.y0 = temprect.y0;
 	gradctx.x1 = temprect.x1;
 	gradctx.y1 = temprect.y1;
-	gradctx.width = ctx->width;
-	gradctx.height = ctx->height;
+
+	state = rsvg_state_current(ctx);
+	for (i = 0; i < 6; i++)
+		gradctx.affine[i] = state->affine[i];
 
 	rsvg_render_paint_server (render, ps, &gradctx);
 	art_render_invoke (render);
