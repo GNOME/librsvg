@@ -1,3 +1,8 @@
+2004-03-11  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-shapes.c: Improve image scaling, translation. Rotation is still
+	horked, though. Agree with Caleb's comments below.
+	
 2004-03-11  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-shapes.c, rsvg-styles.c: added state domination, ability for a
