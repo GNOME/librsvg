@@ -483,7 +483,7 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
 			return output;
 		}
 
-	printf("%s not found\n",name->str);
+	g_warning(_("%s not found\n"),name->str);
 	
 	output = ctx->lastresult;
 	g_object_ref (G_OBJECT (ctx->lastresult.result));

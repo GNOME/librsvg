@@ -74,6 +74,9 @@ rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 
 	rsvg_state_reinherit_top(ctx, &self->state, dominate);
 
+	if (!self->state.visible || !self->state.cond_true)
+		return;
+
 	rsvg_push_discrete_layer (ctx);
 
 	for (i = 0; i < group->children->len; i++)
