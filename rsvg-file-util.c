@@ -41,8 +41,13 @@ rsvg_size_callback (int *width,
 					gpointer  data)
 {
 	struct RsvgSizeCallbackData *real_data = (struct RsvgSizeCallbackData *) data;
-	double zoomx, zoomy, zoom;
-	
+	double zoomx, zoomy, zoom;   
+
+	int in_width, in_height;
+
+	in_width = *width;
+	in_height = *height;
+
 	switch (real_data->type) {
 	case RSVG_SIZE_ZOOM:
 		if (*width < 0 || *height < 0)
@@ -50,7 +55,7 @@ rsvg_size_callback (int *width,
 		
 		*width = floor (real_data->x_zoom * *width + 0.5);
 		*height = floor (real_data->y_zoom * *height + 0.5);
-		return;
+		break;
 		
 	case RSVG_SIZE_ZOOM_MAX:
 		if (*width < 0 || *height < 0)
@@ -68,7 +73,7 @@ rsvg_size_callback (int *width,
 				*width = floor (zoom * *width + 0.5);
 				*height = floor (zoom * *height + 0.5);
 			}
-		return;
+		break;
 		
 	case RSVG_SIZE_WH_MAX:
 		if (*width < 0 || *height < 0)
@@ -80,7 +85,7 @@ rsvg_size_callback (int *width,
 		
 		*width = floor (zoom * *width + 0.5);
 		*height = floor (zoom * *height + 0.5);
-		return;
+		break;
 		
 	case RSVG_SIZE_WH:
 		
@@ -88,10 +93,30 @@ rsvg_size_callback (int *width,
 			*width = real_data->width;
 		if (real_data->height != -1)
 			*height = real_data->height;
-		return;
+		break;
+
+	default:
+		g_assert_not_reached ();
 	}
-	
-	g_assert_not_reached ();
+
+	if (real_data->keep_aspect_ratio)
+		{
+			int out_min = MIN(*width, *height);
+
+			if (out_min == *width) 
+				{
+					*height = in_height * ((double)*width / (double)in_width);
+				}
+			else
+				{
+					*width = in_width * ((double)*height / (double)in_height);
+				}
+		}
+
+#if 0	
+	fprintf (stderr, "In: (%d, %d) | Out: (%d, %d)\n", in_width, in_height,
+			 *width, *height);
+#endif
 }
 
 static GdkPixbuf *
@@ -227,6 +252,7 @@ rsvg_pixbuf_from_file_at_size_ex (RsvgHandle * handle,
 	data.type = RSVG_SIZE_WH;
 	data.width = width;
 	data.height = height;
+	data.keep_aspect_ratio = FALSE;
 	
 	return rsvg_pixbuf_from_file_with_size_data_ex (handle, file_name, &data, error);
 }
@@ -287,6 +313,7 @@ rsvg_pixbuf_from_file_at_zoom_ex (RsvgHandle * handle,
 	data.type = RSVG_SIZE_ZOOM;
 	data.x_zoom = x_zoom;
 	data.y_zoom = y_zoom;
+	data.keep_aspect_ratio = FALSE;
 	
 	return rsvg_pixbuf_from_file_with_size_data_ex (handle, file_name, &data, error);
 }
@@ -321,6 +348,7 @@ rsvg_pixbuf_from_file_at_max_size_ex (RsvgHandle * handle,
 	data.type = RSVG_SIZE_WH_MAX;
 	data.width = max_width;
 	data.height = max_height;
+	data.keep_aspect_ratio = FALSE;
 	
 	return rsvg_pixbuf_from_file_with_size_data_ex (handle, file_name, &data, error);
 }
@@ -365,6 +393,7 @@ rsvg_pixbuf_from_file_at_zoom_with_max_ex (RsvgHandle * handle,
 	data.y_zoom = y_zoom;
 	data.width = max_width;
 	data.height = max_height;
+	data.keep_aspect_ratio = FALSE;
 	
 	return rsvg_pixbuf_from_file_with_size_data_ex (handle, file_name, &data, error);
 }
@@ -415,6 +444,7 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
 	data.type = RSVG_SIZE_ZOOM;
 	data.x_zoom = x_zoom;
 	data.y_zoom = y_zoom;
+	data.keep_aspect_ratio = FALSE;
 	
 	return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
@@ -454,6 +484,7 @@ rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
 	data.y_zoom = y_zoom;
 	data.width = max_width;
 	data.height = max_height;
+	data.keep_aspect_ratio = FALSE;
 	
 	return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
@@ -484,6 +515,7 @@ rsvg_pixbuf_from_file_at_size (const gchar *file_name,
 	data.type = RSVG_SIZE_WH;
 	data.width = width;
 	data.height = height;
+	data.keep_aspect_ratio = FALSE;
 	
 	return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
@@ -513,6 +545,7 @@ rsvg_pixbuf_from_file_at_max_size (const gchar     *file_name,
 	data.type = RSVG_SIZE_WH_MAX;
 	data.width = max_width;
 	data.height = max_height;
+	data.keep_aspect_ratio = FALSE;
 	
 	return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }

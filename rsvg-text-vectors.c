@@ -210,15 +210,15 @@ rsvg_text_vector_coords (RenderCtx       *ctx,
 						 gdouble         *x,
 						 gdouble         *y)
 {
-	*x = ctx->offset_x + (gdouble)vector->x / 64.;
-	*y = ctx->offset_y - (gdouble)vector->y / 64.;
+	*x = ctx->offset_x + (gdouble)vector->x /* / 64. */;
+	*y = ctx->offset_y - (gdouble)vector->y /* / 64. */;
 }
 
 static void
 print266 (FT_Vector *pnt,
 		  gchar     *msg)
 {
-#ifdef RSVG_TEXT_DEBUG
+#if 0 /* def RSVG_TEXT_DEBUG */
 	g_print ("%s Point (%d,%d)\n",
 			 msg, (gint)pnt->x,
 			 (gint)pnt->y);
@@ -362,7 +362,7 @@ rsvg_text_layout_render_trafo (RsvgTextLayout *layout,
 	RsvgState * state;
 
 	state = rsvg_state_current(layout->ctx);
-	if(state) 
+	if(0 /* state */) 
 		{
 			trafo->xx = state->affine[0] * 65536.0;
 			trafo->xy = state->affine[1] * 65536.0;

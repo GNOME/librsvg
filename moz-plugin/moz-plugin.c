@@ -47,7 +47,8 @@ typedef struct
 	NPP instance;
 	Window window;
 
-	int width, height;
+	int width, height, window_width, window_height;
+	int sizes_in_percentages;
 
 	GByteArray * bytes;
 
@@ -79,8 +80,10 @@ static void
 plugin_fork (Plugin * plugin)
 {
 	char xid_str[20];
-	char width_str[20];
-	char height_str[20];
+	char width_str[G_ASCII_DTOSTR_BUF_SIZE];
+	char height_str[G_ASCII_DTOSTR_BUF_SIZE];
+	char window_width_str[G_ASCII_DTOSTR_BUF_SIZE];
+	char window_height_str[G_ASCII_DTOSTR_BUF_SIZE];
 	char *argv[20];
 	int argc = 0;
 	GError *err = NULL;
@@ -90,20 +93,52 @@ plugin_fork (Plugin * plugin)
 	sprintf (xid_str, "%ld", plugin->window);
 			
 	argv[argc++] = BINDIR "rsvg-view";
-	argv[argc++] = "-i"; /* xid */
+
+	/* xid */
+	argv[argc++] = "-i";
 	argv[argc++] = xid_str;
 	
 	if (plugin->width)
 		{
-			sprintf (width_str, "%d", plugin->width);
-			argv[argc++] = "-w"; /* width */
+			/* width */
+			if (plugin->sizes_in_percentages) {
+
+				if(plugin->window_width > 0) {
+					sprintf (window_width_str, "%d", plugin->window_width);
+					argv[argc++] = "-w";
+					argv[argc++] = window_width_str;
+				}
+
+				g_ascii_dtostr (width_str, sizeof (width_str), (double)plugin->width / 100.);
+				argv[argc++] = "-x";
+			} 
+			else {
+				sprintf (width_str, "%d", plugin->width);
+				argv[argc++] = "-w";
+			}
+
 			argv[argc++] = width_str;
 		}
 	
 	if (plugin->height)
 		{
-			sprintf (height_str, "%d", plugin->height);
-			argv[argc++] = "-h"; /* height */
+			/* height */
+			if (plugin->sizes_in_percentages) {
+
+				if(plugin->window_height > 0) {
+					sprintf (window_height_str, "%d", plugin->window_height);
+					argv[argc++] = "-h";
+					argv[argc++] = window_height_str;
+				}
+
+				g_ascii_dtostr (height_str, sizeof (height_str), (double)plugin->height / 100.);
+				argv[argc++] = "-y";
+			} 
+			else {
+				sprintf (height_str, "%d", plugin->height);
+				argv[argc++] = "-h";
+			}
+
 			argv[argc++] = height_str;
 		}
 	
@@ -111,6 +146,12 @@ plugin_fork (Plugin * plugin)
 	argv[argc++] = "--bg-color";
 	argv[argc++] = "white";
 
+	/* HACK: keep aspect ratio */
+	if (plugin->sizes_in_percentages) {
+		argv[argc++] = "-k";
+	}
+
+	/* read from stdin */
 	argv[argc++] = "-s";
 	argv[argc] = NULL;
 
@@ -179,11 +220,17 @@ plugin_newp (NPMIMEType mime_type, NPP instance,
 		{
 			DEBUG (("argv[%d] %s %s\n", i, argn[i], argv[i]));
 			
-			if (strcmp (argn[i], "width") == 0)
+			if (strcmp (argn[i], "width") == 0) {
+				if (strstr (argv [i], "%") != NULL)
+					plugin->sizes_in_percentages = 1;
 				plugin->width = strtol (argv[i], NULL, 0);
+			}
 
-			if (strcmp (argn[i], "height") == 0)
+			if (strcmp (argn[i], "height") == 0) {
+				if (strstr (argv [i], "%") != NULL)
+					plugin->sizes_in_percentages = 1;
 				plugin->height = strtol (argv[i], NULL, 0);
+			}
 		}   
 
   return NPERR_NO_ERROR;
@@ -235,9 +282,9 @@ plugin_set_window (NPP instance, NPWindow * window)
 			if (plugin->window == (Window) window->window)
 				{
 					DEBUG (("resize\n"));
-					
-					plugin->width = window->width;
-					plugin->height = window->height;
+
+					plugin->window_width = window->width;
+					plugin->window_height = window->height;
 
 					plugin_redraw (plugin);
 				}

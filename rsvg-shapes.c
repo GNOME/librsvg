@@ -1030,24 +1030,30 @@ size_prepared_cb (GdkPixbufLoader *loader,
 		gboolean keep_aspect_ratio;
 	} *info = data;
 	
-	if (info->keep_aspect_ratio) {
-		if (width < 0)
-	    width = 500;
-		if (height < 0)
-			height = 500;
-		
-		if ((double)height * (double)info->width >
-			(double)width * (double)info->height) {
-			width = 0.5 + (double)width * (double)info->height / (double)height;
-			height = info->height;
-		} else {
-			height = 0.5 + (double)height * (double)info->width / (double)width;
+	if (info->keep_aspect_ratio) 
+		{
+			if (width < 0)
+				width = 512;
+			if (height < 0)
+				height = 512;
+			
+			if ((double)height * (double)info->width >
+				(double)width * (double)info->height) 
+				{
+					width = 0.5 + (double)width * (double)info->height / (double)height;
+					height = info->height;
+				} 
+			else 
+				{
+					height = 0.5 + (double)height * (double)info->width / (double)width;
+					width = info->width;
+				}
+		} 
+	else 
+		{
 			width = info->width;
+			height = info->height;
 		}
-	} else {
-		width = info->width;
-		height = info->height;
-	}
 	
 	gdk_pixbuf_loader_set_size (loader, width, height);
 }

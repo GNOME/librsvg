@@ -135,6 +135,8 @@ struct RsvgSizeCallbackData
 	double y_zoom;
 	gint width;
 	gint height;
+
+	gboolean keep_aspect_ratio;
 };
 
 /* private */

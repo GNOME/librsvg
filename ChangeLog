@@ -1,3 +1,9 @@
+2004-03-21  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-view.c: Support aspect-ratio preservation, use app icon
+	* moz-plugin.c: Better handling of sizes
+	* rsvg-file-util.c: Aspect-ratio preservation
+	
 2004-03-31  Christian Schaller <Uraeus@gnome.org>
 
 	* Add appicon for rsvg-viewer

@@ -33,6 +33,8 @@
 #define DEFAULT_WIDTH  240
 #define DEFAULT_HEIGHT 240
 
+#define ICON_NAME "svg-viewer.svg"
+
 static void
 quit_cb (GtkWidget *win, gpointer unused)
 {
@@ -51,6 +53,7 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid, const char * color)
 	GtkWidget *win, *img;
 	gint width, height;
 	GdkColor bg_color;
+	char * window_icon;
 
 	/* create toplevel window and set its title */
 
@@ -112,6 +115,10 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid, const char * color)
 				g_warning (_("Couldn't parse color '%s'"), color);
 		}
 
+	window_icon = g_build_filename (PIXMAPDIR, ICON_NAME, NULL);
+	gtk_window_set_default_icon_from_file (window_icon, NULL);
+	g_free (window_icon);
+
 	gtk_widget_show_all (win);
 
 #ifdef ENABLE_XEMBED
@@ -136,6 +143,7 @@ main (int argc, char **argv)
 	int height = -1;
 	int bVersion = 0;
 	char * bg_color = NULL;
+	int bKeepAspect = 0;
 
 	int xid = -1;
 	int from_stdin = 0;
@@ -144,16 +152,17 @@ main (int argc, char **argv)
 
 	struct poptOption options_table[] = {
 #ifdef ENABLE_XEMBED
-		{ "xid",      'i',  POPT_ARG_INT,    &xid,        0, _("XWindow ID [for X11 embedding]"), _("<int>") },
+		{ "xid",         'i',  POPT_ARG_INT,    &xid,         0, _("XWindow ID [for X11 embedding]"), _("<int>") },
 #endif
-		{ "stdin",    's',  POPT_ARG_NONE,   &from_stdin, 0, _("Read from stdin instead of a file"), NULL },
-		{ "dpi",      'd',  POPT_ARG_DOUBLE, &dpi,        0, _("Set the # of Pixels Per Inch"), _("<float>") },
-		{ "x-zoom",   'x',  POPT_ARG_DOUBLE, &x_zoom,     0, _("Set the x zoom factor"), _("<float>") },
-		{ "y-zoom",   'y',  POPT_ARG_DOUBLE, &y_zoom,     0, _("Set the y zoom factor"), _("<float>") },
-		{ "width",    'w',  POPT_ARG_INT,    &width,      0, _("Set the image's width"), _("<int>") },
-		{ "height",   'h',  POPT_ARG_INT,    &height,     0, _("Set the image's height"), _("<int>") },
-		{ "bg-color", 'b',  POPT_ARG_STRING, &bg_color,   0, _("Set the image background color (default: transparent)"), _("<string>") },
-		{ "version",  'v',  POPT_ARG_NONE,   &bVersion,   0, _("Show version information"), NULL },
+		{ "stdin",       's',  POPT_ARG_NONE,   &from_stdin,  0, _("Read from stdin instead of a file"), NULL },
+		{ "dpi",         'd',  POPT_ARG_DOUBLE, &dpi,         0, _("Set the # of Pixels Per Inch"), _("<float>") },
+		{ "x-zoom",      'x',  POPT_ARG_DOUBLE, &x_zoom,      0, _("Set the x zoom factor"), _("<float>") },
+		{ "y-zoom",      'y',  POPT_ARG_DOUBLE, &y_zoom,      0, _("Set the y zoom factor"), _("<float>") },
+		{ "width",       'w',  POPT_ARG_INT,    &width,       0, _("Set the image's width"), _("<int>") },
+		{ "height",      'h',  POPT_ARG_INT,    &height,      0, _("Set the image's height"), _("<int>") },
+		{ "bg-color",    'b',  POPT_ARG_STRING, &bg_color,    0, _("Set the image background color (default: transparent)"), _("<string>") },
+		{ "keep-aspect", 'k',  POPT_ARG_NONE,   &bKeepAspect, 0, _(""), NULL },
+		{ "version",     'v',  POPT_ARG_NONE,   &bVersion,    0, _("Show version information"), NULL },
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
@@ -216,6 +225,8 @@ main (int argc, char **argv)
 			size_data.width = width;
 			size_data.height = height;
 		}
+
+	size_data.keep_aspect_ratio = bKeepAspect;
 	
 	if(from_stdin)
 		pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data (stdin, &size_data, NULL);
