@@ -11,7 +11,7 @@ BuildRoot:        %{_tmppath}/%{name}-%{version}-root
 BuildRequires:    pkgconfig >= 0.8
 Requires:         gtk2 >= @GDK_PIXBUF_REQUIRED@
 Requires:         glib2 >= @GLIB_REQUIRED@
-Requires:         libart_lgpl >= @ART_REQUIRED@
+Requires:         libart_lgpl >= @LIBART_REQUIRED@
 Requires:         libxml2 >= @LIBXML_REQUIRED@
 Requires:         pango >= @PANGOFT2_REQUIRED@
 BuildRequires:    gtk2-devel >= @GDK_PIXBUF_REQUIRED@

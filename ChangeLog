@@ -1,3 +1,9 @@
+2002-07-09  Alexander Larsson  <alexl@redhat.com>
+
+	* librsvg.spec.in:
+	s/@ART_REQUIRED@/@LIBART_REQUIRED@/
+	Patch from Pierre Sarrazin <sarrazip@sympatico.ca>
+
 2002-07-01  Alexander Larsson  <alexl@redhat.com>
 
 	* configure.in:
