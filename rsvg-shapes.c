@@ -1908,7 +1908,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		{
 			if (err)
 				{
-					g_warning ("Couldn't load image: %s\n", err->message);
+					g_warning (_("Couldn't load image: %s\n"), err->message);
 					g_error_free (err);
 				}
 			return;

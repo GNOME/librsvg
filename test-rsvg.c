@@ -25,6 +25,7 @@
 
 #include "config.h"
 #include "rsvg.h"
+#include "rsvg-private.h"
 
 #include <popt.h>
 #include <stdio.h>
@@ -122,7 +123,7 @@ main (int argc, const char **argv)
 		}
 	else {
 		poptFreeContext (popt_context);
-		g_warning ("Error loading SVG file.\n");
+		g_warning (_("Error loading SVG file.\n"));
 		return 1;
 	}
 

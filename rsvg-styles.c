@@ -549,7 +549,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			else if (!strcmp (str + arg_off, "square"))
 				state->cap = ART_PATH_STROKE_CAP_SQUARE;
 			else
-				g_warning ("unknown line cap style %s", str + arg_off);
+				g_warning (_("unknown line cap style %s\n"), str + arg_off);
 		}
 	else if (rsvg_css_param_match (str, "stroke-opacity"))
 		{
@@ -566,7 +566,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			else if (!strcmp (str + arg_off, "bevel"))
 				state->join = ART_PATH_STROKE_JOIN_BEVEL;
 			else
-				g_warning ("unknown line join style %s", str + arg_off);
+				g_warning (_("unknown line join style %s\n"), str + arg_off);
 		}
 	else if (rsvg_css_param_match (str, "font-size"))
 		{
@@ -989,7 +989,7 @@ ccss_error (CRDocHandler *a_handler)
 {
 	/* yup, like i care about CSS parsing errors ;-)
 	   ignore, chug along */
-	g_warning ("CSS parsing error\n");
+	g_warning (_("CSS parsing error\n"));
 }
 
 static void
@@ -997,7 +997,7 @@ ccss_unrecoverable_error (CRDocHandler *a_handler)
 {
 	/* yup, like i care about CSS parsing errors ;-)
 	   ignore, chug along */
-	g_warning ("CSS unrecoverable error\n");
+	g_warning (_("CSS unrecoverable error\n"));
 }
 
 static void
@@ -1042,7 +1042,7 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
     
 	if (status != CR_OK)
         {
-			g_warning (_("Error setting CSS SAC handler"));
+			g_warning (_("Error setting CSS SAC handler\n"));
 			cr_parser_destroy (parser);
 			return;
         }        
@@ -1457,7 +1457,7 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 
 	if (!gdk_pixbuf_get_has_alpha (pixbuf))
     {
-		g_warning (_("push/pop transparency group on non-alpha buffer nyi"));
+		g_warning (_("push/pop transparency group on non-alpha buffer nyi\n"));
 		return;
     }
 	
@@ -1499,7 +1499,7 @@ rsvg_use_opacity (RsvgHandle *ctx, int opacity,
 	
 	if (!gdk_pixbuf_get_has_alpha (nos))
 		{
-			g_warning (_("push/pop transparency group on non-alpha buffer nyi"));
+			g_warning (_("push/pop transparency group on non-alpha buffer nyi\n"));
 			return;
 		}
 	
