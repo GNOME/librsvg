@@ -58,8 +58,8 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid)
 			GdkWindow *gdk_parent;
 
 			win = gtk_plug_new(0);
-			gtk_signal_connect(GTK_OBJECT(win), "embedded",
-							   GTK_SIGNAL_FUNC(win_embedded_cb), NULL);
+			g_signal_connect(G_OBJECT(win), "embedded",
+							 G_CALLBACK(win_embedded_cb), NULL);
 
 			gdk_parent = gdk_window_foreign_new(xid);
 			gdk_window_get_geometry(gdk_parent, NULL, NULL, &width, &height, NULL);			
@@ -86,7 +86,6 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid)
 	if(xid > 0)
 		{
 			gtk_container_add(GTK_CONTAINER(win), img);
-			fprintf(stderr, "added foo");
 		}
 	else
 		{
