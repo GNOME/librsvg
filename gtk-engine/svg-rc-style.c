@@ -704,7 +704,7 @@ rsvg_rc_style_parse (GtkRcStyle *rc_style,
 
   guint old_scope;
   guint token;
-  gint i;
+  guint i;
   ThemeImage *img;
   
   /* Set up a new scope in this scanner. */

@@ -1,3 +1,5 @@
+SUBDIRS = gtk-engine
+
 noinst_PROGRAMS = test-rsvg test-performance
 
 EXTRA_DIST =\

@@ -25,7 +25,7 @@
 
 #include "svg.h"
 #include <gdk-pixbuf/gdk-pixbuf.h>
-#include <librsvg/rsvg.h>
+#include <rsvg.h>
 
 GCache *pixbuf_cache = NULL;
 
@@ -43,7 +43,8 @@ bilinear_gradient (GdkPixbuf    *src,
   guint dest_rowstride;
   guchar *dest_pixels;
   GdkPixbuf *result;
-  int i, j, k;
+  int i, j;
+  guint k;
 
   p1 = src_pixels + (src_y - 1) * src_rowstride + (src_x - 1) * n_channels;
   p2 = p1 + n_channels;
@@ -96,7 +97,8 @@ horizontal_gradient (GdkPixbuf    *src,
   guint dest_rowstride;
   guchar *dest_pixels;
   GdkPixbuf *result;
-  int i, j, k;
+  int i, j;
+  guint k;
 
   result = gdk_pixbuf_new (GDK_COLORSPACE_RGB, n_channels == 4, 8,
 			   width, height);
@@ -640,12 +642,12 @@ theme_pixbuf_set_stretch (ThemePixbuf *theme_pb,
     theme_pixbuf_compute_hints (theme_pb);
 }
 
-GdkPixbuf *
+static GdkPixbuf *
 pixbuf_cache_value_new (gchar *filename)
 {
   GError *err = NULL;
     
-  GdkPixbuf *result = rsvg_pixbuf_new_from_file (filename, &err);
+  GdkPixbuf *result = rsvg_pixbuf_from_file (filename, &err);
   if (!result)
     {
       g_warning ("Rsvg theme: Cannot load SVG file %s: %s\n",
