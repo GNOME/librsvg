@@ -19,7 +19,8 @@
    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.
   
-   Author: Raph Levien <raph@artofcode.com>
+   Authors: Dom Lachowicz <cinamod@hotmail.com> 
+   Raph Levien <raph@artofcode.com>
 */
 
 #include "config.h"
@@ -196,10 +197,9 @@ rsvg_css_clip_rgb_percent (gint in_percent)
 {
 	/* spec says to clip these values */
 	if (in_percent > 100)
-		in_percent = 100;
+		return 255;
 	else if (in_percent <= 0)
-		return 0;
-	
+		return 0;	
 	return (gint)floor(255. * (double)in_percent / 100. + 0.5);
 }
 
@@ -208,10 +208,9 @@ rsvg_css_clip_rgb (gint rgb)
 {
 	/* spec says to clip these values */
 	if (rgb > 255)
-		rgb = 255;
+		return 255;
 	else if (rgb < 0)
-		rgb = 0;
-	
+		return 0;	
 	return rgb;
 }
 
@@ -608,32 +607,32 @@ rsvg_css_parse_font_weight (const char * str, PangoWeight inherit)
 {
 	if (str)
 		{
-      if (!strcmp (str, "lighter"))
-		  return PANGO_WEIGHT_LIGHT;
-      else if (!strcmp (str, "bold"))
-		  return PANGO_WEIGHT_BOLD;
-      else if (!strcmp (str, "bolder"))
-		  return PANGO_WEIGHT_ULTRABOLD;
-      else if (!strcmp (str, "100"))
-		  return (PangoWeight)100;
-      else if (!strcmp (str, "200"))
-		  return (PangoWeight)200;
-      else if (!strcmp (str, "300"))
-		  return (PangoWeight)300;
-      else if (!strcmp (str, "400"))
-		  return (PangoWeight)400;
-      else if (!strcmp (str, "500"))
-		  return (PangoWeight)500;
-      else if (!strcmp (str, "600"))
-		  return (PangoWeight)600;
-      else if (!strcmp (str, "700"))
-		  return (PangoWeight)700;
-      else if (!strcmp (str, "800"))
-		  return (PangoWeight)800;
-      else if (!strcmp (str, "900"))
-		  return (PangoWeight)900;
-      else if (!strcmp(str, "inherit"))
-		  return inherit;
+			if (!strcmp (str, "lighter"))
+				return PANGO_WEIGHT_LIGHT;
+			else if (!strcmp (str, "bold"))
+				return PANGO_WEIGHT_BOLD;
+			else if (!strcmp (str, "bolder"))
+				return PANGO_WEIGHT_ULTRABOLD;
+			else if (!strcmp (str, "100"))
+				return (PangoWeight)100;
+			else if (!strcmp (str, "200"))
+				return (PangoWeight)200;
+			else if (!strcmp (str, "300"))
+				return (PangoWeight)300;
+			else if (!strcmp (str, "400"))
+				return (PangoWeight)400;
+			else if (!strcmp (str, "500"))
+				return (PangoWeight)500;
+			else if (!strcmp (str, "600"))
+				return (PangoWeight)600;
+			else if (!strcmp (str, "700"))
+				return (PangoWeight)700;
+			else if (!strcmp (str, "800"))
+				return (PangoWeight)800;
+			else if (!strcmp (str, "900"))
+				return (PangoWeight)900;
+			else if (!strcmp(str, "inherit"))
+				return inherit;
 		}
 	
 	return PANGO_WEIGHT_NORMAL; 
@@ -670,9 +669,8 @@ const char *
 rsvg_css_parse_font_family (const char * str, const char * inherit)
 {
 	if (!str)
-		return NULL;
-	
-	if (!strcmp (str, "inherit"))
+		return NULL;	
+	else if (!strcmp (str, "inherit"))
 		return inherit;
 	else
 		return str;

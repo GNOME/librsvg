@@ -402,9 +402,9 @@ rsvg_start_any_poly(RsvgHandle *ctx, const xmlChar **atts, gboolean is_polyline)
 			if (!is_polyline)
 				g_string_append (d, "Z");
 			
+			g_strfreev(pointlist);
 			rsvg_handle_path (ctx, d->str, id);
 			g_string_free (d, TRUE);
-			g_strfreev(pointlist);
 		}
 }
 

@@ -527,7 +527,7 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 
 #else /* !HAVE_LIBCROCO */
 
-/* #warning Building without libcroco support. Will experience sub-optimal CSS parsing. */
+#warning Building without libcroco support. Will experience sub-optimal CSS parsing.
 
 static void
 rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
@@ -740,13 +740,7 @@ rsvg_parse_transform_attr (RsvgHandle *ctx, RsvgState *state, const char *str)
 	double affine[6];
 	
 	if (rsvg_parse_transform (affine, str))
-		{
-			art_affine_multiply (state->affine, affine, state->affine);
-		}
-	else
-		{
-			/* parse error for transform attribute. todo: report */
-		}
+		art_affine_multiply (state->affine, affine, state->affine);
 }
 
 static gboolean
