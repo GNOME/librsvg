@@ -1,3 +1,10 @@
+2004-03-05  Dodji Seketeli  <dodji@gnome.org>
+
+	* rsvg-styles.c: 
+	(ccss_property): changed the signature of this function
+	to comply with the new signature of CRDocHandler::property()
+	in libcroco.
+
 2004-03-04  Glynn Foster  <glynn.foster@sun.com>
 
 	* Makefile.am, configure.in, librsvg-2.0-uninstalled.pc.in:

@@ -473,7 +473,8 @@ ccss_end_selector (CRDocHandler *a_handler,
 }
 
 static void
-ccss_property (CRDocHandler *a_handler, GString *a_name, CRTerm *a_expr)
+ccss_property (CRDocHandler *a_handler, GString *a_name, 
+			   CRTerm *a_expr, gboolean a_important)
 {
 	CSSUserData * user_data;
 	char * expr = NULL;
