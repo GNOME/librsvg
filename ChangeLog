@@ -5,6 +5,10 @@
 
 2002-10-01  Dom Lachowicz <doml@appligent.com>
 
+	* rsvg-css.c (rsvg_css_parse_color): Handle all 146 of svg's named colors. Please someone check this for correctness
+	
+2002-10-01  Dom Lachowicz <doml@appligent.com>
+
 	* rsvg.c (gradient_stop): Handle % gradient stop offsets
 	
 2002-10-01  Dom Lachowicz <doml@appligent.com>
