@@ -1,3 +1,9 @@
+2004-06-17  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-css.c (rsvg_css_parse_list): Fix memory leak
+	(rsvg_css_parse_aspect_ratio): Better detection code
+	* rsvg-cond.c: New file; meant to evaluate <switch> statement conditions
+	
 2004-06-14  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-text.c: Removed old text harness, replaced entirely with vector

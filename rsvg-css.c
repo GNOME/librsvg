@@ -735,7 +735,7 @@ gchar **
 rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 {
 
-	/*the following code is defective because it creates blank entries when two splitting chars are next to each other*/
+	/* the following code is defective because it creates blank entries when two splitting chars are next to each other*/
 #if 0 /* GLIB_CHECK_VERSION(2, 3, 2) */
 
 	gchar ** string_array;
@@ -754,7 +754,7 @@ rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 #else
 
 	char *ptr, *tok;
-	char *str, *tmp;
+	char *str;
 
 	guint n = 0;
 	GSList * string_list = NULL;
@@ -763,18 +763,16 @@ rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 	str = g_strdup (in_str);
     tok = strtok_r (str, ", \t", &ptr);
 	if (tok != NULL) {
-		tmp = g_strdup(tok);
-		if (strcmp(tmp, " "))
+		if (strcmp(tok, " ") != 0)
 			{
-				string_list = g_slist_prepend(string_list, tmp);
+				string_list = g_slist_prepend(string_list, g_strdup(tok));
 				n++;
 			}
 
 		while((tok = strtok_r (NULL, ", \t", &ptr)) != NULL) {
-			tmp = g_strdup(tok);
-			if (strcmp(tmp, " "))
+			if (strcmp(tok, " ") != 0)
 				{
-					string_list = g_slist_prepend(string_list, tmp);
+					string_list = g_slist_prepend(string_list, g_strdup(tok));
 					n++;
 				}
 		}
@@ -851,34 +849,42 @@ rsvg_css_parse_number_optional_number(const char * str,
 
 int rsvg_css_parse_aspect_ratio(const char * str)
 {
+	char ** elems;
+	guint nb_elems;
+
 	int ratio = RSVG_ASPECT_RATIO_NONE;
 
-	/* TODO: better detection code */
+	elems = rsvg_css_parse_list (str, &nb_elems);
 
-	if (strstr (str, "xMinYMin") != NULL)
-		ratio = RSVG_ASPECT_RATIO_XMIN_YMIN;
-	else if (strstr (str, "xMidYMin") != NULL)
-		ratio = RSVG_ASPECT_RATIO_XMID_YMIN;
-	else if (strstr (str, "xMaxYMin") != NULL)
-		ratio = RSVG_ASPECT_RATIO_XMAX_YMIN;
-	else if (strstr (str, "xMinYMid") != NULL)
-		ratio = RSVG_ASPECT_RATIO_XMIN_YMID;
-	else if (strstr (str, "xMidYMid") != NULL)
-		ratio = RSVG_ASPECT_RATIO_XMIN_YMID;
-	else if (strstr (str, "xMaxYMid") != NULL)
-		ratio = RSVG_ASPECT_RATIO_XMAX_YMID;
-	else if (strstr (str, "xMinYMax") != NULL)
-		ratio = RSVG_ASPECT_RATIO_XMIN_YMAX;
-	else if (strstr (str, "xMidYMax") != NULL)
-		ratio = RSVG_ASPECT_RATIO_XMID_YMAX;
-	else if (strstr (str, "xMaxYMax") != NULL)
-		ratio = RSVG_ASPECT_RATIO_XMAX_YMAX;
+	if (elems && nb_elems)
+		{
+			guint i;
 
-	if (ratio == RSVG_ASPECT_RATIO_NONE)
-		return ratio;
+			for (i = 0; i < nb_elems; i++) {
+				if (!strcmp (elems[i], "xMinYMin"))
+					ratio = RSVG_ASPECT_RATIO_XMIN_YMIN;
+				else if (!strcmp (elems[i], "xMidYMin"))
+					ratio = RSVG_ASPECT_RATIO_XMID_YMIN;
+				else if (!strcmp (elems[i], "xMaxYMin"))
+					ratio = RSVG_ASPECT_RATIO_XMAX_YMIN;
+				else if (!strcmp (elems[i], "xMinYMid"))
+					ratio = RSVG_ASPECT_RATIO_XMIN_YMID;
+				else if (!strcmp (elems[i], "xMidYMid"))
+					ratio = RSVG_ASPECT_RATIO_XMIN_YMID;
+				else if (!strcmp (elems[i], "xMaxYMid"))
+					ratio = RSVG_ASPECT_RATIO_XMAX_YMID;
+				else if (!strcmp (elems[i], "xMinYMax"))
+					ratio = RSVG_ASPECT_RATIO_XMIN_YMAX;
+				else if (!strcmp (elems[i], "xMidYMax"))
+					ratio = RSVG_ASPECT_RATIO_XMID_YMAX;
+				else if (!strcmp (elems[i], "xMaxYMax"))
+					ratio = RSVG_ASPECT_RATIO_XMAX_YMAX;
+				else if (!strcmp (elems[i], "slice"))
+					ratio |= RSVG_ASPECT_RATIO_SLICE;			
+			}
 
-	if (strstr (str, "slice") != NULL)
-		ratio |= RSVG_ASPECT_RATIO_SLICE;
+			g_strfreev (elems);
+		}
 
 	return ratio;
 }

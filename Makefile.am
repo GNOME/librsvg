@@ -44,7 +44,8 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-styles.h		\
 	rsvg-text.c		\
 	rsvg-text.h		\
-	rsvg.c
+	rsvg.c			\
+	rsvg-cond.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
 librsvg_2_la_LIBADD = $(LIBRSVG_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBGNOME_VFS_LIBS)
