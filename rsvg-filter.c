@@ -2382,6 +2382,10 @@ rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
 	filter->Gfunction = identity_component_transfer_func;
 	filter->Bfunction = identity_component_transfer_func;
 	filter->Afunction = identity_component_transfer_func;
+	filter->Rdata.nbTableValues = 0;
+	filter->Gdata.nbTableValues = 0;
+	filter->Bdata.nbTableValues = 0;
+	filter->Adata.nbTableValues = 0;
 
 	if (atts != NULL)
 		{

@@ -36,7 +36,7 @@
 
 #include "rsvg-shapes.h"
 
-/* #define NO_VECTOR_TEXT */
+#define NO_VECTOR_TEXT
 
 char *
 make_valid_utf8 (const char *str)
@@ -105,8 +105,7 @@ rsvg_text_render_text_bitmap (RsvgHandle *ctx,
 	RsvgPSCtx gradctx;
 	int i;
 
-	if (state->filter)
-		rsvg_push_opacity_group(ctx);
+	rsvg_push_discrete_layer(ctx);
 
 	pixbuf = ctx->pixbuf;
 	if (pixbuf == NULL)
@@ -229,8 +228,7 @@ rsvg_text_render_text_bitmap (RsvgHandle *ctx,
 
 	state->text_offset += line_ink_rect.width;
 
-	if (state->filter)
-		rsvg_pop_opacity_group_as_filter(ctx, state->filter, 0xFF);
+	rsvg_pop_discrete_layer(ctx);
 
 }
 

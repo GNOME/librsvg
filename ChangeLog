@@ -1,5 +1,11 @@
 2004-02-28  Caleb Moore <c.moore@student.unsw.edu.au>
 
+	* rsvg-text.c: Made standard text the default. Vector text was 
+	annoying me.
+	* rsvg-filter.c: Fixed a segfault in feComponentTransfer
+
+2004-02-28  Caleb Moore <c.moore@student.unsw.edu.au>
+
 	* rsvg-styles.c: made filters render before opacity is taken care of, 
 	this seems like the official way it is done
 	* rsvg-filter.c: fixed a few problem with coordinate units and 
