@@ -1,3 +1,9 @@
+2003-01-20  Alexander Larsson  <alexl@redhat.com>
+
+	* NEWS: 
+	* configure.in:
+	Update to 2.2.0
+
 2003-01-16  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.1: Improve manual page

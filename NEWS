@@ -1,8 +1,10 @@
-Version 2.1.6
+Version 2.2.0
 
 - Better CSS style handling
 - Works in "international" locales (non-C locales) in a threadsafe manner
 - Handle rounded rects
+- Add manpage
+- Handle "ex" units better
 
 Version 2.1.5
 
