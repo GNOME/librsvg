@@ -413,14 +413,14 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 
 	g_object_ref (G_OBJECT (source));
 
+	rsvg_filter_fix_coordinate_system (ctx, rsvg_state_current (context));
+
 	ctx->lastresult.result = source;
 	ctx->lastresult.Rused = 1;
 	ctx->lastresult.Gused = 1;
 	ctx->lastresult.Bused = 1;
 	ctx->lastresult.Aused = 1;
 	ctx->lastresult.bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);	
-
-	rsvg_filter_fix_coordinate_system (ctx, rsvg_state_current (context));
 
 	for (i = 0; i < self->primitives->len; i++)
 		{
