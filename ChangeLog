@@ -1,5 +1,10 @@
 2002-09-15  Dom Lachowicz <doml@appligent.com>
 
+	* rsvg.c (): Use g_ascii_strtod instead of atof, strtod, g_strtod
+	* rsvg-css.c (): ditto
+	
+2002-09-15  Dom Lachowicz <doml@appligent.com>
+
 	* rsvg.c (rsvg_parse_style_attrs): Support styles in the form of fill="color" in addition to style="fill:color"
 	(rsvg_is_style_arg): Helper fn for above
 	(rsvg_parse_style_pair): Ditto

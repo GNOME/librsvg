@@ -57,7 +57,7 @@ rsvg_css_parse_length (const char *str, gdouble pixels_per_inch, gint *fixed)
    *  em, ex, px, pt, pc, cm, mm, in, and percentages. 
    */
 
-  length = g_strtod (str, &p);
+  length = g_ascii_strtod (str, &p);
   
   /* todo: error condition - figure out how to best represent it */
   if ((length == -HUGE_VAL || length == HUGE_VAL) && (ERANGE == errno))
@@ -278,7 +278,7 @@ rsvg_css_parse_opacity (const char *str)
   char *end_ptr;
   double opacity;
 
-  opacity = g_strtod (str, &end_ptr);
+  opacity = g_ascii_strtod (str, &end_ptr);
 
   if (end_ptr && end_ptr[0] == '%')
     opacity *= 0.01;
@@ -294,7 +294,7 @@ rsvg_css_parse_fontsize (const char *str)
 
   /* todo: handle absolute-size and relative-size tags and proper units */
   /* todo: should this call rsvg_css_parse_length and then modify the return value? */
-  size = g_strtod (str, &end_ptr);
+  size = g_ascii_strtod (str, &end_ptr);
 
   if (end_ptr && end_ptr[0] == '%')
     size = (36 * size * 0.01); /* todo: egregious hack */

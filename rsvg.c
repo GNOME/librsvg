@@ -470,7 +470,7 @@ rsvg_parse_transform (double dst[6], const char *src)
 	    {
 	      if (n_args == sizeof(args) / sizeof(args[0]))
 		return FALSE; /* too many args */
-	      args[n_args] = strtod (src + idx, &end_ptr);
+	      args[n_args] = g_ascii_strtod (src + idx, &end_ptr);
 	      idx = end_ptr - src;
 
 	      while (g_ascii_isspace (src[idx]))
@@ -1149,7 +1149,7 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	{
 	  if (!strcmp ((char *)atts[i], "offset"))
 	    {
-	      offset = atof ((char *)atts[i + 1]);
+	      offset = g_ascii_strtod ((char *)atts[i + 1], NULL);
 	      got_offset = TRUE;
 	    }
 	  else if (!strcmp ((char *)atts[i], "style"))
