@@ -22,12 +22,10 @@
 */
 
 #include <config.h>
+#include "rsvg.h"
 
 #include <string.h>
 #include <math.h>
-
-#include <glib.h>
-#include "rsvg.h"
 
 #include <libart_lgpl/art_misc.h>
 #include <libart_lgpl/art_filterlevel.h>
@@ -96,7 +94,6 @@ struct _RsvgSaxHandler {
 };
 
 struct RsvgHandle {
-  gchar *fonts_dir;
   RsvgSizeFunc size_func;
   gpointer user_data;
   GDestroyNotify user_data_destroy;
@@ -119,6 +116,7 @@ struct RsvgHandle {
   GError **error;
 };
 
+char *fonts_dir;
 
 static void
 rsvg_state_init (RsvgState *state)
@@ -902,10 +900,10 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
    * like the Nautilus font mapping stuff in NautilusScalableFont. See
    * bug for details.
    */
-  if (ctx->fonts_dir == NULL) {
+  if (fonts_dir == NULL) {
     dir = DATADIR "/eel/fonts";
   } else {
-    dir = ctx->fonts_dir;
+    dir = fonts_dir;
   }
   path = g_strconcat (dir, "/urw/n019003l.pfb", NULL);
   fh = rsvg_ft_intern (ctx->ft_ctx, path);
@@ -1397,25 +1395,11 @@ rsvg_handle_new (void)
   return handle;
 }
 
-/**
- * rsvg_handle_set_fonts_dir:
- * @handle: An #RsvgHandle
- * @fonts_dir: A search path for fonts, or %NULL
- *
- * Sets the search path for fonts.  This is a ':' seperated list of directories.
- * If @fonts_dir is %NULL, then the default path is used.
- **/
 void
-rsvg_handle_set_fonts_dir (RsvgHandle *handle,
-			   const char *fonts_dir)
+rsvg_set_fonts_dir (const char *new_fonts_dir)
 {
-  g_return_if_fail (handle != NULL);
-
-  g_free (handle->fonts_dir);
-  if (fonts_dir)
-    handle->fonts_dir = g_strdup (fonts_dir);
-  else
-    handle->fonts_dir = NULL;
+  g_free (fonts_dir);
+  fonts_dir = g_strdup (new_fonts_dir);
 }
 
 /**

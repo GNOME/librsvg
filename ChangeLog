@@ -1,3 +1,11 @@
+2001-09-17  Darin Adler  <darin@bentspoon.com>
+
+	* rsvg.h:
+	* rsvg.c: (rsvg_text_handler_characters), (rsvg_set_fonts_dir):
+	Roll back fonts_dir to be global like before. We can get rid
+	of fonts_dir altogether when we port librsvg to use pango
+	instead of using freetype directly.
+
 2001-09-15  Darin Adler  <darin@bentspoon.com>
 
 	* rsvg-paint-server.c: (rsvg_paint_server_lin_grad_free),
