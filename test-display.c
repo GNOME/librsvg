@@ -119,6 +119,12 @@ main (int argc, char **argv)
   
   poptFreeContext (popt_context);
 
+  if (!pixbuf)
+	  {
+		  fprintf (stderr, "Error displaying pixbuf!\n");
+		  return 1;
+	  }
+
   view_pixbuf (pixbuf);
 
   /* run the gtk+ main loop */

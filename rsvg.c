@@ -63,7 +63,8 @@
 /*
  * This is configurable at runtime
  */
-#define RSVG_DPI 90.0
+#define RSVG_DEFAULT_DPI 90.0
+static double internal_dpi = RSVG_DEFAULT_DPI;
 
 typedef struct {
   double affine[6];
@@ -267,13 +268,6 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	    (* ctx->size_func) (&new_width, &new_height, ctx->user_data);
 	}
 
-      if (new_width <= 0 || new_height <= 0)
-	{
-          /* FIXME: GError here? */
-          g_warning ("rsvg_start_svg: can't render 0-sized SVG");
-          return;
-	}
-
       /* set these here because % are relative to viewbox */
       ctx->width = new_width;
       ctx->height = new_height;
@@ -284,9 +278,14 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	  y_zoom = (height < 0 || new_height < 0) ? 1 : (double) new_height / height;
 	}
       else
-	{	  
+	{
+#if 1
+	  x_zoom = (width < 0 || new_width < 0) ? 1 : (double) width / new_width;
+	  y_zoom = (height < 0 || new_height < 0) ? 1 : (double) height / new_height;
+#else
 	  x_zoom = (width < 0 || new_width < 0) ? 1 : (double) new_width / width;
-	  y_zoom = (height < 0 || new_height < 0) ? 1 : (double) new_height / height;
+	  y_zoom = (height < 0 || new_height < 0) ? 1 : (double) new_height / height;	  
+#endif
 
 	  /* reset these so that we get a properly sized SVG and not a huge one */
 	  new_width  = (width == -1 ? new_width : width);
@@ -296,6 +295,15 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
       /* Scale size of target pixbuf */
       state = &ctx->state[ctx->n_state - 1];
       art_affine_scale (state->affine, x_zoom, y_zoom);
+
+#if 0
+      if (vbox_x != 0. || vbox_y != 0.)
+	{
+	  double affine[6];
+	  art_affine_translate (affine, vbox_x, vbox_y);
+	  art_affine_multiply (state->affine, affine, state->affine);
+	}
+#endif
 
       if (new_width < 0 || new_height < 0)
         {
@@ -1588,8 +1596,7 @@ rsvg_gradient_stop_handler_end (RsvgSaxHandler *self, const xmlChar *name)
       if (ctx->handler != NULL)
 	{
 	  ctx->handler->free (ctx->handler);
-	  /* hack for adobe illustrator 9 */
-	  ctx->handler = (z->parent ? &z->parent->super : NULL);
+	  ctx->handler = &z->parent->super;
 	}
     }
 }
@@ -2392,7 +2399,7 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
       else if (!strcmp ((char *)name, "polyline"))
 	rsvg_start_polyline (ctx, atts);
 
-      /* HACK for Adobe 9 */
+      /* */
       else if (!strcmp ((char *)name, "linearGradient"))
 	rsvg_start_linear_gradient (ctx, atts);
       else if (!strcmp ((char *)name, "radialGradient"))
@@ -2505,6 +2512,8 @@ static xmlSAXHandler rsvgSAXHandlerStruct = {
     rsvg_error_cb, /* xmlParserError */
     rsvg_error_cb, /* xmlParserFatalError */
     NULL, /* getParameterEntity */
+    rsvg_characters, /* cdataCallback */
+    NULL /* */
 };
 
 GQuark
@@ -2540,7 +2549,7 @@ rsvg_handle_new (void)
   handle->defs = rsvg_defs_new ();
   handle->handler_nest = 0;
   handle->entities = g_hash_table_new (g_str_hash, g_str_equal);
-  handle->dpi = RSVG_DPI;
+  handle->dpi = internal_dpi;
 
   handle->css_props = g_hash_table_new_full (g_str_hash, g_str_equal,
 					     g_free, g_free);
@@ -2548,6 +2557,23 @@ rsvg_handle_new (void)
   handle->ctxt = NULL;
 
   return handle;
+}
+
+/**
+ * rsvg_set_dpi
+ * @dpi: Dots Per Inch (aka Pixels Per Inch)
+ *
+ * Sets the DPI for the all future outgoing pixbufs. Common values are
+ * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * reset the DPI to whatever the default value happens to be.
+ */
+void
+rsvg_set_dpi (double dpi)
+{
+  if (dpi <= 0.)
+    internal_dpi = RSVG_DEFAULT_DPI;
+  else
+    internal_dpi = dpi;
 }
 
 /**
@@ -2565,7 +2591,7 @@ rsvg_handle_set_dpi (RsvgHandle * handle, double dpi)
   g_return_if_fail (handle != NULL);
 
     if (dpi <= 0.)
-        handle->dpi = RSVG_DPI;
+        handle->dpi = internal_dpi;
     else
         handle->dpi = dpi;
 }

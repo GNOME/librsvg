@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- Generator: Adobe Illustrator 9.0, SVG Export Plug-In  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20000303 Stylable//EN"   "http://www.w3.org/TR/2000/03/WD-SVG-20000303/DTD/svg-20000303-stylable.dtd" [
+	<!ENTITY st0 "fill:url(#aigrd1);">
+	<!ENTITY st1 "fill:url(#aigrd2);">
+	<!ENTITY st2 "fill-rule:nonzero;clip-rule:nonzero;stroke:#000000;stroke-miterlimit:4;">
+]>
+<svg  width="91.722pt" height="109.144pt" viewBox="0 0 91.722 109.144" xml:space="preserve">
+	<g id="Layer_x0020_1" style="&st2;">
+		<linearGradient id="aigrd1" gradientUnits="userSpaceOnUse" x1="0.5" y1="22.7686" x2="90.8091" y2="22.7686">
+			<stop  offset="0" style="stop-color:#FB0F0C"/>
+			<stop  offset="0.2" style="stop-color:#F7F619"/>
+			<stop  offset="0.4" style="stop-color:#168638"/>
+			<stop  offset="0.6" style="stop-color:#1A9ABF"/>
+			<stop  offset="0.8" style="stop-color:#19037A"/>
+			<stop  offset="1" style="stop-color:#EF097C"/>
+		</linearGradient>
+		<path style="&st0;" d="M90.809,45.037H0.5V0.5h90.309v44.537z"/>
+		<radialGradient id="aigrd2" cx="46.0679" cy="86.376" r="35.6003" fx="46.0679" fy="86.376" gradientUnits="userSpaceOnUse">
+			<stop  offset="0" style="stop-color:#FB0F0C"/>
+			<stop  offset="0.2" style="stop-color:#F7F619"/>
+			<stop  offset="0.4" style="stop-color:#168638"/>
+			<stop  offset="0.6" style="stop-color:#1A9ABF"/>
+			<stop  offset="0.8" style="stop-color:#19037A"/>
+			<stop  offset="1" style="stop-color:#EF097C"/>
+		</radialGradient>
+		<path style="&st1;" d="M91.222,108.644H0.913V64.107h90.309v44.536z"/>
+	</g>
+</svg>

@@ -469,7 +469,7 @@ rsvg_parse_path_data (RSVGParsePathCtx *ctx, const char *data)
 #else
 		  /* rule: even-numbered params are x-relative, odd-numbered
 		     are y-relative */
-		  if (ctx->param == 0 || (ctx->param % 2 ==0))
+		  if (ctx->param == 0 || (ctx->param % 2 == 0))
 		    val += ctx->cpx;
 		  else 
 		    val += ctx->cpy;

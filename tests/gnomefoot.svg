@@ -1,0 +1,67 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg
+   style="fill:#000000;fill-opacity:0.5;stroke:none"
+   width="595.275591"
+   height="841.889764"
+   id="svg1"
+   sodipodi:docbase="/home/waldgeist/"
+   sodipodi:docname="/home/waldgeist/gnomefoot.svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs
+     id="defs3">
+    <linearGradient
+       id="linearGradient39">
+      <stop
+         style="stop-color:#000;stop-opacity:1;"
+         offset="0"
+         id="stop40" />
+      <stop
+         style="stop-color:#fff;stop-opacity:1;"
+         offset="1"
+         id="stop41" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient39"
+       id="linearGradient42"
+       x1="-0.964639"
+       y1="0.195312"
+       x2="1.1277"
+       y2="0.320312" />
+  </defs>
+  <sodipodi:namedview
+     id="base" />
+  <path
+     style="fill:#7f7f7f; fill-rule:evenodd; stroke-linejoin:miter; stroke-linecap:butt; fill-opacity:0.498039; "
+     id="path5"
+     d="M 239.276 183.943 C 239.185 170.465 209.065 178.234 209.358 183.789 C 209.754 210.681 184.672 195.1 184.777 185.621 C 184.834 169.243 236.3 157.838 236.425 132.808 C 236.001 100.484 141.031 114.105 142.047 159.871 C 142.797 190.627 174.364 218.458 201.189 218.367 C 222.606 218.677 239.35 194.692 239.276 183.943 z "
+     sodipodi:nodetypes="ccccccs"
+     transform="matrix(4.106,0,0,4.106,-504.521,-180.649)" />
+  <path
+     style="opacity:1; fill:#7f7f7f; fill-rule:evenodd; stroke-linejoin:miter; stroke-linecap:butt; fill-opacity:0.498039; "
+     id="path14"
+     d="M 128.261 117.115 C 128.407 106.159 146.425 102.095 146.101 126.037 C 145.641 145.722 128.332 126.411 128.261 117.115 z "
+     sodipodi:nodetypes="ccc"
+     transform="matrix(4.106,0,0,4.106,-491.324,-213.639)" />
+  <path
+     style="fill:#7f7f7f; fill-rule:evenodd; stroke-linejoin:miter; stroke-linecap:butt; "
+     id="path7"
+     d="M 152.86 91.9863 C 153.511 107.416 171.218 121.742 171.478 96.0288 C 171.718 73.3601 152.784 78.3235 152.86 91.9863 z "
+     sodipodi:nodetypes="ccc"
+     transform="matrix(4.106,0,0,4.106,-502.635,-180.649)" />
+  <path
+     style="fill:#7f7f7f; fill-rule:evenodd; stroke-linejoin:miter; stroke-linecap:butt; "
+     id="path8"
+     d="M 231.257 83.7835 C 232.002 68.3487 209.646 69.7136 209.578 89.7006 C 209.744 114.149 229.402 115.161 231.257 83.7835 z "
+     transform="matrix(4.106,0,0,4.106,-618.253,-203.268)"
+     sodipodi:nodetypes="ccc" />
+  <path
+     style="fill:#7f7f7f; fill-rule:evenodd; stroke-linejoin:miter; stroke-linecap:butt; "
+     id="path9"
+     d="M 215.036 93.9947 C 215.008 76.142 229.604 61.6018 245.233 61.8596 C 255.998 61.8579 258.759 67.0836 258.801 72.7754 C 258.289 91.8945 215.305 127.966 215.036 93.9947 z "
+     sodipodi:nodetypes="cccc"
+     transform="matrix(4.106,0,0,4.106,-504.521,-180.649)" />
+</svg>
