@@ -247,7 +247,7 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	art_free (vpath);
 }
 
-static void
+void
 rsvg_render_path(RsvgHandle *ctx, const char *d)
 {
 	RsvgBpathDef *bpath_def;
@@ -379,10 +379,10 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
 {
 	int i;
 	double x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-	char * d = NULL;
+	GString * d = NULL;
 	const char * klazz = NULL;
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
-	char *oldlocale;
+	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 
 	if (atts != NULL)
 		{
@@ -403,23 +403,31 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
 	rsvg_parse_style_attrs (ctx, "line", klazz, atts);
 	
 	/* emulate a line using a path */
-	oldlocale = rsvg_c_setlocale ();
-	d = g_strdup_printf ("M %f %f L %f %f", x1, y1, x2, y2);
-	rsvg_resetlocale (oldlocale);
+	/* ("M %f %f L %f %f", x1, y1, x2, y2) */
+	d = g_string_new ("M ");   
 
-	rsvg_render_path (ctx, d);
-	g_free (d);
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x1));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y1));
+	g_string_append (d, " L ");	
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x2));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y2));    
+
+	rsvg_render_path (ctx, d->str);
+	g_string_free (d, TRUE);
 }
 
 void
 rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 {
 	int i;
-	double x = -1, y = -1, w = -1, h = -1, rx = 0, ry = 0;
-	char * d = NULL;
+	double x = -1, y = -1, w = -1, h = -1, rx = 0., ry = 0.;
+	GString * d = NULL;
 	const char * klazz = NULL;
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
-	char *oldlocale;
+	char buf [G_ASCII_DTOSTR_BUF_SIZE];
+	gboolean got_rx = FALSE, got_ry = FALSE;
 
 	if (atts != NULL)
 		{
@@ -433,14 +441,21 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 						w = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 					else if (!strcmp ((char *)atts[i], "height"))
 						h = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
-					else if (!strcmp ((char *)atts[i], "rx"))
+					else if (!strcmp ((char *)atts[i], "rx")) {
 						rx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
-					else if (!strcmp ((char *)atts[i], "ry"))
+						got_rx = TRUE;
+					}
+					else if (!strcmp ((char *)atts[i], "ry")) {
 						ry = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						got_ry = TRUE;
+					}
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
 				}
 		}
+
+	if (got_rx && !got_ry)
+		ry = rx;
 	
 	if (x < 0. || y < 0. || w < 0. || h < 0. || rx < 0. || ry < 0.)
 		return;
@@ -448,10 +463,10 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	rsvg_parse_style_attrs (ctx, "rect", klazz, atts);
 	
 	/* incrementing y by 1 properly draws borders. this is a HACK */
-	y++;
+	y += 1.;
 	
 	/* emulate a rect using a path */
-	oldlocale = rsvg_c_setlocale ();
+	/*
 	d = g_strdup_printf ("M %f %f "
 						 "H %f "
 						 "A %f,%f %f,%f %f %f,%f "
@@ -470,10 +485,87 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 						 rx, ry, 0., 0., 1., x, y + h - ry,
 						 y + ry,
 						 rx, ry, 0., 0., 1., x + rx, y);
-	rsvg_resetlocale (oldlocale);
+	*/
 
-	rsvg_render_path (ctx, d);
-	g_free (d);
+	d = g_string_new ("M ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y));
+
+	g_string_append (d, " H ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + w - rx));
+
+	g_string_append (d, " A");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ry));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 1.));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x+w));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y+ry));
+
+	g_string_append (d, " V ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y+h-ry));
+
+	g_string_append (d, " A");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ry));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 1.));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + w - rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y + h));
+
+	g_string_append (d, " H ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + rx));
+
+	g_string_append (d, " A");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ry));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
+	g_string_append_c (d, ' ');	
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 1.));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y + h - ry));
+
+	g_string_append (d, " V ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y+ry));
+
+	g_string_append (d, " A");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ry));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
+	g_string_append_c (d, ' ');	
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 1.));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x+rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y));
+
+	rsvg_render_path (ctx, d->str);
+	g_string_free (d, TRUE);
 }
 
 void
@@ -481,10 +573,10 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 {
 	int i;
 	double cx = 0, cy = 0, r = 0;
-	char * d = NULL;
+	GString * d = NULL;
 	const char * klazz = NULL;
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
-	char *oldlocale;
+	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 
 	if (atts != NULL)
 		{
@@ -509,7 +601,7 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 	rsvg_parse_style_attrs (ctx, "circle", klazz, atts);
 	
 	/* approximate a circle using 4 bezier curves */
-	oldlocale = rsvg_c_setlocale ();
+	/* 
 	d = g_strdup_printf ("M %f %f "
 						 "C %f %f %f %f %f %f "
 						 "C %f %f %f %f %f %f "
@@ -522,10 +614,69 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 						 cx - r, cy - r * RSVG_ARC_MAGIC, cx - r * RSVG_ARC_MAGIC, cy - r, cx, cy - r,
 						 cx + r * RSVG_ARC_MAGIC, cy - r, cx + r, cy - r * RSVG_ARC_MAGIC, cx + r, cy
 						 );
-	rsvg_resetlocale (oldlocale);
+	*/
 
-	rsvg_render_path (ctx, d);
-	g_free (d);
+	d = g_string_new ("M ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx+r));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
+
+	g_string_append (d, " C ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx+r));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r * RSVG_ARC_MAGIC));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r * RSVG_ARC_MAGIC));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r));
+
+	g_string_append (d, " C ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r * RSVG_ARC_MAGIC));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r * RSVG_ARC_MAGIC));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
+
+	g_string_append (d, " C ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r * RSVG_ARC_MAGIC));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r * RSVG_ARC_MAGIC));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r));
+
+	g_string_append (d, " C ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r * RSVG_ARC_MAGIC));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r * RSVG_ARC_MAGIC));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
+
+	g_string_append (d, " Z");
+
+	rsvg_render_path (ctx, d->str);
+	g_string_free (d, TRUE);
 }
 
 void
@@ -533,10 +684,10 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 {
 	int i;
 	double cx = 0, cy = 0, rx = 0, ry = 0;
-	char * d = NULL;
+	GString * d = NULL;
 	const char * klazz = NULL;
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
-	char *oldlocale;
+	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 
 	if (atts != NULL)
 		{
@@ -561,7 +712,7 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 	rsvg_parse_style_attrs (ctx, "ellipse", klazz, atts);
 	
 	/* approximate an ellipse using 4 bezier curves */
-	oldlocale = rsvg_c_setlocale ();
+	/*
 	d = g_strdup_printf ("M %f %f "
 						 "C %f %f %f %f %f %f "
 						 "C %f %f %f %f %f %f "
@@ -574,10 +725,68 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 						 cx - rx, cy + RSVG_ARC_MAGIC * ry, cx - RSVG_ARC_MAGIC * rx, cy + ry, cx, cy + ry,
 						 cx + RSVG_ARC_MAGIC * rx, cy + ry, cx + rx, cy + RSVG_ARC_MAGIC * ry, cx + rx, cy
 						 );
-	rsvg_resetlocale (oldlocale);
-	
-	rsvg_render_path (ctx, d);
-	g_free (d);
+	*/
+	d = g_string_new ("M ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
+
+	g_string_append (d, " C ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - RSVG_ARC_MAGIC * ry));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + RSVG_ARC_MAGIC * rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - ry));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - ry));
+
+	g_string_append (d, " C ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - RSVG_ARC_MAGIC * rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - ry));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - RSVG_ARC_MAGIC * ry));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
+
+	g_string_append (d, " C ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + RSVG_ARC_MAGIC * ry));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - RSVG_ARC_MAGIC * rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + ry));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + ry));
+
+	g_string_append (d, " C ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + RSVG_ARC_MAGIC * rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + ry));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + RSVG_ARC_MAGIC * ry));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
+
+	g_string_append (d, " Z");
+
+	rsvg_render_path (ctx, d->str);
+	g_string_free (d, TRUE);
 }
 
 /* TODO 1: issue with affining alpha images - this is gdkpixbuf's fault...

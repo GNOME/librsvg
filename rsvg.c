@@ -35,7 +35,6 @@
 #include <math.h>
 #include <string.h>
 #include <stdarg.h>
-#include <locale.h>
 
 #include <libart_lgpl/art_affine.h>
 
@@ -86,7 +85,6 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	
 	double vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
 	gboolean has_vbox = TRUE;
-	char *oldlocale;
 
 	if (atts != NULL)
 		{
@@ -104,13 +102,8 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 						y = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
 					else if (!strcmp ((char *)atts[i], "viewBox"))
 						{
-							/* todo: viewbox can have whitespace and/or comma but we're only likely to see
-							   these 2 combinations */
-							oldlocale = rsvg_c_setlocale ();
-							if (4 == sscanf ((char *)atts[i + 1], " %lf %lf %lf %lf ", &vbox_x, &vbox_y, &vbox_w, &vbox_h) ||
-								4 == sscanf ((char *)atts[i + 1], " %lf , %lf , %lf , %lf ", &vbox_x, &vbox_y, &vbox_w, &vbox_h))
-								has_vbox = TRUE;
-							rsvg_resetlocale (oldlocale);
+							has_vbox = rsvg_css_parse_vbox ((char *)atts[i + 1], &vbox_x, &vbox_y,
+															&vbox_w, &vbox_h);
 						}
 				}
 			
@@ -1115,17 +1108,3 @@ rsvg_handle_free (RsvgHandle *handle)
 	g_free (handle);
 }
 
-char *
-rsvg_c_setlocale (void)
-{
-	return g_strdup (setlocale (LC_NUMERIC, "C"));
-}
-
-void
-rsvg_resetlocale (char * locale)
-{
-	if (locale) {
-		setlocale (LC_NUMERIC, locale);
-		g_free (locale);
-	}
-}

@@ -75,6 +75,10 @@ rsvg_css_parse_font_stretch (const char * str, PangoStretch inherit);
 const char *
 rsvg_css_parse_font_family (const char * str, const char * inherit);
 
+gboolean
+rsvg_css_parse_vbox (const char * vbox, double * x, double * y,
+					 double * w, double * h);
+
 G_END_DECLS
 
 #endif /* RSVG_CSS_H */

@@ -39,18 +39,25 @@
 static void 
 rsvg_draw_hline (RsvgHandle *ctx, double x, double w, double y)
 {
-	char *oldlocale;
-	char * d;
-	
-	oldlocale = rsvg_c_setlocale ();
-	d = g_strdup_printf ("M %f %f L %f %f", x, y, x+w, y);
-	rsvg_resetlocale (oldlocale);
+	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 
-	rsvg_render_path (ctx, d);
-	g_free (d);
+	/* ("M %f %f L %f %f", x, y, x+w, y) */
+	GString * d = g_string_new ("M ");   
+
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y));
+	g_string_append (d, " L ");	
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x+w));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y));   
+
+	rsvg_render_path (ctx, d->str);
+
+	g_string_free (d, TRUE);
 }
 
-#endif
+#endif /* ENABLE_TEXT_DECOR */
 
 static char *
 make_valid_utf8 (const char *str)

@@ -42,6 +42,47 @@
 #define PICA_PER_INCH   (6.0)
 
 /**
+ * rsvg_css_parse_vbox
+ * @vbox: The CSS viewBox
+ * @x : The X output
+ * @y: The Y output
+ * @w: The Width output
+ * @h: The Height output
+ *
+ * Returns: Success or failure
+ */
+gboolean
+rsvg_css_parse_vbox (const char * vbox, double * x, double * y,
+					 double * w, double * h)
+{
+	/* TODO: make me cleaner and more efficient */
+	char *ptr, *tok;
+	char *str = g_strdup (vbox);
+	gboolean has_vbox = FALSE;
+	
+	tok = strtok_r (str, ", \t", &ptr);
+	if (tok != NULL) {
+		*x = g_ascii_strtod (tok, NULL);
+		tok = strtok_r (NULL, ", \t", &ptr);
+		if (tok != NULL) {
+			*y = g_ascii_strtod (tok, NULL);
+			tok = strtok_r (NULL, ", \t", &ptr);
+			if (tok != NULL) {
+				*w = g_ascii_strtod (tok, NULL);
+				tok = strtok_r (NULL, ", \t", &ptr);
+				if (tok != NULL) {
+					*h = g_ascii_strtod (tok, NULL);
+					has_vbox = TRUE;
+				}
+			}
+		}
+	}
+	g_free (str);
+	
+	return has_vbox;
+}
+
+/**
  * rsvg_css_parse_length: Parse CSS2 length to a pixel value.
  * @str: Original string.
  * @pixels_per_inch: Pixels per inch

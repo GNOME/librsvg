@@ -1,5 +1,9 @@
 2003-01-13  Dom Lachowicz <cinamod@hotmail.com>
 
+	* *: Rework previous commit to use g_ascii_dtostr and g_ascii_strtod
+	
+2003-01-13  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-private.h: Add setlocale wrapper fns. Problem found by George 
 	Lebl (jirka@5z.com), work based on/inspired by a patch by him.
 	* rsvg.c: Use above fns
