@@ -1,5 +1,9 @@
 2004-03-11  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg.c: Ability to scale SVGs that don't provide a width or height
+	
+2004-03-11  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-shapes.c: Improve image scaling, translation. Rotation is still
 	horked, though. Agree with Caleb's comments below.
 	
