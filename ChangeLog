@@ -1,3 +1,15 @@
+2001-06-01  Darin Adler  <darin@bentspoon.com>
+
+	* Makefile.am:
+	* rsvg.h:
+	* rsvg.c: (rsvg_text_handler_characters), (rsvg_set_fonts_dir):
+	Add a call to set the fonts dir so it can work without eel, and
+	a future version of eel will work even if it's in a different
+	prefix from librsvg.
+	
+	* configure.in: Bump version to 1.0.0.1
+	* NEWS: Mention the possibility of a 1.0.1 release.
+
 2001-05-14  Darin Adler  <darin@eazel.com>
 
 	* Makefile.am:
@@ -5,6 +17,8 @@
 	Change awful nasty Nautilus dependency into a slightly-less-awful
 	nasty Eel dependency. Also fix problem where not finding a font
 	would lead to a core dump instead of missing text.
+
+==== librsvg 1.0.0 ====
 
 2001-05-04  Robin * Slomkowski  <rslomkow@rslomkow.org>
 

@@ -117,6 +117,8 @@ struct _RsvgSaxHandler {
   void (*characters) (RsvgSaxHandler *self, const xmlChar *ch, int len);
 };
 
+char *fonts_dir;
+
 static RsvgCtx *
 rsvg_ctx_new (void)
 {
@@ -922,6 +924,8 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
   GdkPixbuf *pixbuf;
   gboolean has_alpha;
   int opacity;
+  const char *dir;
+  char *path;
 
   /* Copy ch into string, chopping off leading and trailing whitespace */
   for (beg = 0; beg < len; beg++)
@@ -943,14 +947,21 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
   if (ctx->ft_ctx == NULL)
     ctx->ft_ctx = rsvg_ft_ctx_new ();
 
-  /* FIXME bugzilla.eazel.com 3904: We need to make rsvg use the 
-   * Nautilus font mapping stuff in NautilusScalableFont.  See bug
-   * for details.
+  /* FIXME bugzilla.eazel.com 3904: We need to make rsvg use something
+   * like the Nautilus font mapping stuff in NautilusScalableFont. See
+   * bug for details.
    */
-  fh = rsvg_ft_intern (ctx->ft_ctx,
-		       EEL_DATADIR "/fonts/urw/n019003l.pfb");
-  rsvg_ft_font_attach (ctx->ft_ctx, fh,
-		       EEL_DATADIR "/fonts/urw/n019003l.afm");
+  if (fonts_dir == NULL) {
+    dir = DATADIR "/eel/fonts";
+  } else {
+    dir = fonts_dir;
+  }
+  path = g_strconcat (dir, "/urw/n019003l.pfb", NULL);
+  fh = rsvg_ft_intern (ctx->ft_ctx, path);
+  g_free (path);
+  path = g_strconcat (dir, "/urw/n019003l.afm", NULL);
+  rsvg_ft_font_attach (ctx->ft_ctx, fh, path);
+  g_free (path);
 
   state = &ctx->state[ctx->n_state - 1];
 
@@ -1395,6 +1406,13 @@ static xmlSAXHandler rsvgSAXHandlerStruct = {
 };
 
 static xmlSAXHandlerPtr rsvgSAXHandler = &rsvgSAXHandlerStruct;
+
+void
+rsvg_set_fonts_dir (const char *new_fonts_dir)
+{
+  g_free (fonts_dir);
+  fonts_dir = g_strdup (new_fonts_dir);
+}
 
 GdkPixbuf *
 rsvg_render_file (FILE *f, double zoom)

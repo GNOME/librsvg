@@ -55,7 +55,7 @@ INCLUDES =\
 	$(GTK_CFLAGS) \
 	$(XML_CFLAGS) \
 	$(ART_CFLAGS) \
-	-DEEL_DATADIR="\"$(datadir)/eel\""
+	-DDATADIR="\"$(datadir)\""
 
 DEPS = $(top_builddir)/librsvg.la
 LDADDS = $(top_builddir)/librsvg.la \

@@ -31,8 +31,9 @@ extern "C" {
 #include <stdio.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
-GdkPixbuf *
-rsvg_render_file (FILE *f, double zoom);
+void       rsvg_set_fonts_dir (const char *fonts_dir);
+GdkPixbuf *rsvg_render_file   (FILE       *f,
+			       double      zoom);
 
 #ifdef __cplusplus
 }

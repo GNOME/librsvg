@@ -1,2 +1,3 @@
-Writeme
-
+We will probably make a 1.0.1 release soon, since we have a bug fix
+that prevents Nautilus from crashing when certain SVG files are
+present.
