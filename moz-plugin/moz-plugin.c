@@ -63,6 +63,8 @@ static NPNetscapeFuncs mozilla_funcs;
 static void
 plugin_kill (Plugin * plugin)
 {
+	DEBUG(("plugin_kill\n"));
+
 	if(plugin->send_fd > 0)
 		{
 			close (plugin->send_fd);
@@ -78,7 +80,7 @@ plugin_kill (Plugin * plugin)
 		}
 }
 
-static void
+static NPError
 plugin_fork (Plugin * plugin)
 {
 	char xid_str[20];
@@ -90,7 +92,7 @@ plugin_fork (Plugin * plugin)
 	int argc = 0;
 	GError *err = NULL;
 	
-	DEBUG(("plugin fork\n"));
+	DEBUG(("plugin_fork\n"));
 
 	sprintf (xid_str, "%ld", plugin->window);
 			
@@ -173,31 +175,43 @@ plugin_fork (Plugin * plugin)
 					fprintf(stderr, "%s\n", err->message);
 					g_error_free(err);
 				}
+
+			return NPERR_INVALID_INSTANCE_ERROR;
 		}
+
+	return NPERR_NO_ERROR;
 }
 
-static void
+static NPError
 plugin_redraw (Plugin * plugin)
 {
-	DEBUG(("plugin redraw\n"));
+	NPError res = NPERR_NO_ERROR;
+
+	DEBUG(("plugin_redraw\n"));
 
 	if(plugin && plugin->bytes && plugin->bytes->len)
 		{
 			if (plugin->player_pid <= 0)
 				{
-					plugin_fork (plugin);
-
-					if(plugin->player_pid > 0)
-						{
-							size_t nwritten = 0;
-							while(nwritten < plugin->bytes->len)
-								nwritten += write (plugin->send_fd, plugin->bytes->data + nwritten, plugin->bytes->len - nwritten);
-						
-							g_byte_array_free (plugin->bytes, TRUE);
-							plugin->bytes = 0;
-						}
+					if ((res = plugin_fork (plugin)) == NPERR_NO_ERROR) {
+						if(plugin->player_pid > 0)
+							{
+								size_t nwritten = 0;
+								while(nwritten < plugin->bytes->len)
+									nwritten += write (plugin->send_fd, plugin->bytes->data + nwritten, plugin->bytes->len - nwritten);
+								
+								g_byte_array_free (plugin->bytes, TRUE);
+								plugin->bytes = 0;
+							}
+						else
+							{
+								res = NPERR_INVALID_INSTANCE_ERROR;
+							}
+					}
 				}
 		}
+
+	return res;
 }
 
 static NPError
@@ -220,8 +234,6 @@ plugin_newp (NPMIMEType mime_type, NPP instance,
 		return NPERR_OUT_OF_MEMORY_ERROR;
 	memset (plugin, 0, sizeof (Plugin));
 	
-	/* TODO: get the current URI, if possible */
-
 	/* mode is NP_EMBED, NP_FULL, or NP_BACKGROUND (see npapi.h) */
 	plugin->instance = instance;
 	
@@ -277,6 +289,7 @@ static NPError
 plugin_set_window (NPP instance, NPWindow * window)
 {
 	Plugin *plugin;
+	NPError res = NPERR_NO_ERROR;
 	
 	DEBUG (("plugin_set_window\n"));
 	
@@ -298,7 +311,7 @@ plugin_set_window (NPP instance, NPWindow * window)
 					plugin->window_width = window->width;
 					plugin->window_height = window->height;
 
-					plugin_redraw (plugin);
+					res = plugin_redraw (plugin);
 				}
 			else
 				{
@@ -317,7 +330,7 @@ plugin_set_window (NPP instance, NPWindow * window)
 	
 	DEBUG (("leaving plugin_set_window\n"));
 	
-	return NPERR_NO_ERROR;
+	return res;
 }
 
 static NPError
@@ -346,6 +359,7 @@ static NPError
 plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 {
 	Plugin *plugin;
+	NPError res = NPERR_NO_ERROR;
 	size_t url_len;
 
 	DEBUG (("plugin_destroy_stream\n"));
@@ -363,7 +377,7 @@ plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 	plugin->base_url[url_len] = '\0';
 
 	/* trigger */
-	plugin_redraw (plugin);
+	res = plugin_redraw (plugin);
 
 	if(plugin->send_fd > 0)
 		{
@@ -371,16 +385,15 @@ plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 			plugin->send_fd = -1;
 		}
 
-	return NPERR_NO_ERROR;
+	return res;
 }
 
 static int32
 plugin_write_ready (NPP instance, NPStream * stream)
 {
-	/* This is arbitrary */
-	
 	DEBUG (("plugin_write_ready\n"));
 	
+	/* This is arbitrary */
 	return (8*1024);
 }
 
@@ -403,7 +416,7 @@ plugin_write (NPP instance, NPStream * stream, int32 offset,
 	if (!plugin->bytes)
 		return 0;
 	
-	g_byte_array_append (plugin->bytes, buffer, len);
+	(void)g_byte_array_append (plugin->bytes, buffer, len);
 
 	return len;
 }
@@ -421,19 +434,17 @@ plugin_stream_as_file (NPP instance, NPStream * stream, const char *fname)
 	
 	if (plugin == NULL)
 		return;
-	
-	DEBUG (("plugin_stream_as_file\n"));
 }
 
 /* exported functions */
-
-NPError NP_GetValue (void *future, NPPVariable variable, void *value);
 
 NPError
 NP_GetValue (void *future, NPPVariable variable, void *value)
 {
 	NPError err = NPERR_NO_ERROR;
 	
+	DEBUG (("NP_GetValue\n"));
+
 	switch (variable)
 		{
 		case NPPVpluginNameString:
@@ -460,6 +471,8 @@ NP_GetValue (void *future, NPPVariable variable, void *value)
 char *
 NP_GetMIMEDescription (void)
 {
+	DEBUG (("NP_GetMIMEDescription\n"));
+
 	/* unfortunately, a lot of win32 servers serving up Adobe content return bogus mime-types... */
 	return ("image/svg+xml:svg,svgz:Scalable Vector Graphics;image/svg-xml:svg,svgz:Scalable Vector Graphics;"
 			"image/svg:svg,svgz:Scalable Vector Graphics;image/vnd.adobe.svg+xml:svg,svgz:Scalable Vector Graphics;"
@@ -501,5 +514,7 @@ NP_Initialize (NPNetscapeFuncs * moz_funcs, NPPluginFuncs * plugin_funcs)
 NPError
 NP_Shutdown (void)
 {
+	DEBUG(("NP_Shutdown"));
+
 	return NPERR_NO_ERROR;
 }
