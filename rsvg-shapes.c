@@ -200,6 +200,8 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 	state = rsvg_state_current(ctx);
 	for (i = 0; i < 6; i++)
 		gradctx.affine[i] = state->affine[i];
+	
+	gradctx.color = state->current_color;
 	rsvg_render_paint_server (render, ps, &gradctx);
 	art_render_invoke (render);
 }

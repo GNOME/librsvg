@@ -110,7 +110,8 @@ rsvg_paint_server_lin_grad_free (RsvgPaintServer *self)
 }
 
 static ArtGradientStop *
-rsvg_paint_art_stops_from_rsvg (RsvgGradientStops *rstops)
+rsvg_paint_art_stops_from_rsvg (RsvgGradientStops *rstops, 
+								guint32 current_color)
 {
 	ArtGradientStop *stops;
 	int n_stop = rstops->n_stop;
@@ -123,9 +124,12 @@ rsvg_paint_art_stops_from_rsvg (RsvgGradientStops *rstops)
 			guint32 r, g, b, a;
 			
 			stops[i].offset = rstops->stop[i].offset;
-			rgba = rstops->stop[i].rgba;
+			if (!rstops->stop[i].is_current_color)
+				rgba = rstops->stop[i].rgba;
+			else
+				rgba = current_color << 8;
 			/* convert from separated to premultiplied alpha */
-			a = rgba & 0xff;
+			a = rstops->stop[i].rgba & 0xff;
 			r = (rgba >> 24) * a + 0x80;
 			r = (r + (r >> 8)) >> 8;
 			g = ((rgba >> 16) & 0xff) * a + 0x80;
@@ -150,18 +154,23 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	double x1, y1, x2, y2;
 	double dx, dy, scale;
 	double affine[6];
+	guint32 current_color;
 	int i;
 
 	agl = z->agl;
 	if (agl == NULL)
 		{
+			if (rlg->has_current_color)
+				current_color = rlg->current_color;
+			else
+				current_color = ctx->color;
 			if (rlg->stops->n_stop == 0)
 				{
 					return;
 				}
 			agl = g_new (ArtGradientLinear, 1);
 			agl->n_stops = rlg->stops->n_stop;
-			agl->stops = rsvg_paint_art_stops_from_rsvg (rlg->stops);
+			agl->stops = rsvg_paint_art_stops_from_rsvg (rlg->stops, current_color);
 			z->agl = agl;
 		}
 
@@ -261,6 +270,7 @@ rsvg_paint_server_rad_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	RsvgRadialGradient *rrg = z->gradient;
 	ArtGradientRadial *agr;
 	double aff1[6], aff2[6], affine[6];
+	guint32 current_color;
 	int i;
 
 	if (rrg->obj_bbox) {
@@ -281,13 +291,17 @@ rsvg_paint_server_rad_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	agr = z->agr;
 	if (agr == NULL)
 		{
+			if (rrg->has_current_color)
+				current_color = rrg->current_color;
+			else
+				current_color = ctx->color;
 			if (rrg->stops->n_stop == 0)
 				{
 					return;
 				}
 			agr = g_new (ArtGradientRadial, 1);
 			agr->n_stops = rrg->stops->n_stop;
-			agr->stops = rsvg_paint_art_stops_from_rsvg (rrg->stops);
+			agr->stops = rsvg_paint_art_stops_from_rsvg (rrg->stops, current_color);
 			z->agr = agr;
 		}
 	

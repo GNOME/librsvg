@@ -89,6 +89,7 @@ rsvg_state_init (RsvgState *state)
 	state->visible      = TRUE;
 	state->filter       = NULL;
 
+	state->has_current_color = FALSE;
 	state->has_fill_server = FALSE;
 	state->has_fill_opacity = FALSE;
 	state->has_fill_rule = FALSE;
@@ -139,6 +140,8 @@ rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 {
 	gint i;
 	
+	if (!dst->has_current_color)
+		dst->current_color = src->current_color;
 	if (!dst->has_fill_server)
 		{
 			rsvg_paint_server_ref (src->fill);
@@ -211,6 +214,8 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 {
 	gint i;
 	
+	if (!dst->has_current_color || src->has_current_color)
+		dst->current_color = src->current_color;
 	if (!dst->has_fill_server || src->has_fill_server)
 		{
 			rsvg_paint_server_ref (src->fill);

@@ -278,6 +278,7 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	gboolean got_offset = FALSE;
 	RsvgState state;
 	int n_stop;
+	gboolean is_current_color = FALSE;
 	const char *value;
 	
 	if (strcmp ((char *)name, "stop"))
@@ -302,6 +303,9 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 			if ((value = rsvg_property_bag_lookup (atts, "style")))
 				rsvg_parse_style (z->ctx, &state, value);
 			
+			if ((value = rsvg_property_bag_lookup (atts, "stop-color")))
+				if (!strcmp(value, "currentColor"))
+					is_current_color = TRUE;
 			rsvg_parse_style_pairs (z->ctx, &state, atts);
 		}
 	
@@ -320,6 +324,7 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		/* double the allocation if size is a power of two */
 		stops->stop = g_renew (RsvgGradientStop, stops->stop, n_stop << 1);
 	stops->stop[n_stop].offset = offset;
+	stops->stop[n_stop].is_current_color = is_current_color;
 	stops->stop[n_stop].rgba = (state.stop_color << 8) | state.stop_opacity;
 }
 
@@ -402,6 +407,8 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	gboolean obj_bbox = TRUE;
 	gboolean got_x1, got_x2, got_y1, got_y2, got_spread, got_transform, got_bbox, cloned, shallow_cloned;
 	double affine[6];
+	guint32 color = 0;
+	gboolean got_color = FALSE;
 	int i;
 
 	got_x1 = got_x2 = got_y1 = got_y2 = got_spread = got_transform = got_bbox = cloned = shallow_cloned = FALSE;
@@ -445,6 +452,11 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				xlink_href = value;
 			if ((value = rsvg_property_bag_lookup (atts, "gradientTransform")))
 				got_transform = rsvg_parse_transform (affine, value);
+			if ((value = rsvg_property_bag_lookup (atts, "color")))
+				{
+					got_color = TRUE;
+					color = rsvg_css_parse_color (value, 0);
+				}
 			if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
 				if (!strcmp (value, "userSpaceOnUse"))
 					obj_bbox = FALSE;
@@ -487,6 +499,12 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	else
 		art_affine_identity(grad->affine);
 
+	if (got_color)
+		{
+			grad->current_color = color;
+			grad->has_current_color = TRUE;
+		}
+
 	/* gradient inherits parent/cloned information unless it's explicity gotten */
 	grad->obj_bbox = (cloned && !got_bbox) ? grad->obj_bbox : obj_bbox;
 	grad->x1 = (cloned && !got_x1) ? grad->x1 : x1;
@@ -518,6 +536,8 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 	ArtGradientSpread spread = ART_GRADIENT_PAD;
 	gboolean obj_bbox = TRUE;
 	gboolean got_cx, got_cy, got_r, got_fx, got_fy, got_spread, got_transform, got_bbox, cloned, shallow_cloned;
+	guint32 color = 0;
+	gboolean got_color = FALSE;
 	double affine[6];
 	int i;
 
@@ -553,6 +573,11 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 			if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
 				got_transform = rsvg_parse_transform (affine, value);
 			}
+			if ((value = rsvg_property_bag_lookup (atts, "color")))
+				{
+					got_color = TRUE;
+					color = rsvg_css_parse_color (value, 0);
+				}
 			if ((value = rsvg_property_bag_lookup (atts, "spreadMethod")))
 				{
 					if (!strcmp (value, "pad")) {
@@ -627,6 +652,12 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 	else
 		art_affine_identity(grad->affine);
 	
+	if (got_color)
+		{
+			grad->current_color = color;
+			grad->has_current_color = TRUE;
+		}
+
 	/* gradient inherits parent/cloned information unless it's explicity gotten */
 	grad->obj_bbox = (cloned && !got_bbox) ? grad->obj_bbox : obj_bbox;
 	grad->cx = (cloned && !got_cx) ? grad->cx : cx;

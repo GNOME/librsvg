@@ -47,23 +47,13 @@ struct _RsvgPSCtx {
 	int x1;
 	int y1;
 
+	guint32 color;
 	double affine[6];
-	/* todo: we need to take in some context information, including:
-	   
-	1. The global affine transformation.
-	
-	2. User coordinates at time of reference (to implement
-	gradientUnits = "userSpaceOnUse").
-	
-	3. Object bounding box (to implement gradientUnits =
-	"objectBoundingBox").
-	
-	Maybe signal for lazy evaluation of object bbox.
-	*/
 };
 
 struct _RsvgGradientStop {
 	double offset;
+	gboolean is_current_color;
 	guint32 rgba;
 };
 
@@ -80,6 +70,8 @@ struct _RsvgLinearGradient {
 	ArtGradientSpread spread;
 	double x1, y1;
 	double x2, y2;
+	guint32 current_color;
+	gboolean has_current_color;
 };
 
 struct _RsvgRadialGradient {
@@ -91,6 +83,8 @@ struct _RsvgRadialGradient {
 	double cx, cy;
 	double r;
 	double fx, fy;
+	guint32 current_color;
+	gboolean has_current_color;
 };
 
 /* Create a new paint server based on a specification string. */

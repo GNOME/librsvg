@@ -1,3 +1,7 @@
+2004-03-30  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-paint-server.c: made currentColor work for gradients
+	
 2004-03-27  Dom Lachowicz <cinamod@hotmail.com>
 
 	* moz-plugin.c: Support a few additional "mime types" for SVG.
