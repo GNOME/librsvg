@@ -49,6 +49,8 @@
 	* rsvg.c (rsvg_start_ellipse): correct the ellipse rendering
 	coordinates.
 
+=== librsvg 2.1.0 ===
+	
 2002-09-27  Alexander Larsson  <alexl@redhat.com>
 
 	* NEWS:
