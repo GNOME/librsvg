@@ -25,10 +25,12 @@
 #include "config.h"
 #include "rsvg-bpath-util.h"
 
-#include <glib/gmem.h>
-#include <glib/gmessages.h>
+#include <stdio.h>
 #include <math.h>
 #include <string.h>
+
+#include <glib/gmem.h>
+#include <glib/gmessages.h>
 
 /* This is adapted from gnome-canvas-bpath-util in libgnomeprint
    (originally developed as part of Gill). */
@@ -71,7 +73,6 @@ rsvg_bpath_def_new_from (ArtBpath *path)
 	return bpd;
 }
 
-
 void
 rsvg_bpath_def_free (RsvgBpathDef *bpd)
 {
@@ -80,9 +81,6 @@ rsvg_bpath_def_free (RsvgBpathDef *bpd)
 	g_free (bpd->bpath);
 	g_free (bpd);
 }
-
-
-#include <stdio.h>
 
 void
 rsvg_bpath_def_moveto (RsvgBpathDef *bpd, double x, double y)
@@ -168,9 +166,6 @@ rsvg_bpath_def_replicate (RsvgBpathDef *bpd, int index)
 	ArtBpath *bpath;
 	int n_bpath;
   
-	g_return_if_fail (bpd != NULL);
-	g_return_if_fail (bpd->moveto_idx >= 0);
-	
 	n_bpath = bpd->n_bpath++;
 	
 	if (n_bpath == bpd->n_bpath_max)
@@ -199,9 +194,11 @@ rsvg_bpath_def_closepath (RsvgBpathDef *bpd)
 		{
 			rsvg_bpath_def_lineto (bpd, bpath[bpd->moveto_idx].x3,
 								   bpath[bpd->moveto_idx].y3);
-			bpath = bpd->bpath;
 		}
+
 	rsvg_bpath_def_replicate (bpd, bpd->moveto_idx);
+	bpath = bpd->bpath;
+
 	bpath[bpd->moveto_idx].code = ART_MOVETO;
 	bpd->moveto_idx = -1;
 }
