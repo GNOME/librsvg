@@ -445,7 +445,7 @@ ccss_property (CRDocHandler *a_handler, GString *a_name, CRTerm *a_expr)
 
 	user_data = (CSSUserData *)a_handler->app_data;
 
-	if (a_name && a_name->str && a_expr)
+	if (a_name && a_name->str && a_expr && user_data->def)
 		{
 			g_string_append_len (user_data->def, a_name->str, a_name->len);
 			g_string_append (user_data->def, ": ");
