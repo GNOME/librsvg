@@ -405,6 +405,7 @@ rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				id = value;
 		}
 
+	rsvg_parse_style_pairs (ctx, rsvg_state_current(ctx), atts);
 
 	ctx->current_defs_group = &clip_path->super;
 	

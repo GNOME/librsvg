@@ -452,7 +452,6 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "clip-path"))
 		{
 			state->clip_path_ref = rsvg_clip_path_parse(ctx->defs, str + arg_off);
-			state->clippath = rsvg_clip_path_render (state->clip_path_ref, ctx);
 		}
 	else if (rsvg_css_param_match (str, "enable-background"))
 		{
@@ -1434,10 +1433,15 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 	state = &ctx->state[ctx->n_state - 1];
 	pixbuf = ctx->pixbuf;
 	
+	/*probably a bad place for this, but at least it gets loaded before anything is actually drawn*/
+	if (state->clip_path_ref && !state->clippath)
+		state->clippath = rsvg_clip_path_render (state->clip_path_ref, ctx);
+	
+
 	if (state->filter == NULL && state->opacity == 0xFF && 
 		!state->backgroundnew && state->mask == NULL && !state->adobe_blend && ctx->in_defs > 0)
 		return;
-
+	
 	state->save_pixbuf = pixbuf;
 	state->underbbox = ctx->bbox;	
 	ctx->bbox.x0 = 0;

@@ -35,6 +35,7 @@
 #include "rsvg-path.h"
 #include "rsvg-defs.h"
 #include "rsvg-filter.h"
+#include "rsvg-mask.h"
 
 #include <libart_lgpl/art_affine.h>
 #include <libart_lgpl/art_vpath_bpath.h>
@@ -296,6 +297,11 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	
 	state = rsvg_state_current (ctx);
 
+
+	/*probably a bad place for this, but at lest it gets loaded before anything is actually drawn*/
+	if (state->clip_path_ref && !state->clippath)
+		state->clippath = rsvg_clip_path_render (state->clip_path_ref, ctx);
+
 	/* todo: handle visibility stuff earlier for performance benefits 
 	 * handles all path based shapes. will handle text and images separately
 	 */
@@ -353,43 +359,21 @@ rsvg_render_bpath_into_svp (RsvgHandle *ctx, const ArtBpath *bpath)
 	RsvgState *state;
 	ArtBpath *affine_bpath;
 	ArtVpath *vpath;
-	ArtSVP *svpi;
-	ArtSVP *svpo;
-	ArtSVP *svpx;
+	ArtSVP *svp;
 	
 	state = rsvg_state_current (ctx);
 
 	affine_bpath = art_bpath_affine_transform (bpath,
 											   state->affine);
-	svpi = svpo = svpx = NULL;	
 
 	vpath = art_bez_path_to_vec (affine_bpath, 0.25);
 	art_free (affine_bpath);
 	state->fill_rule = state->clip_rule;
-	if (state->fill != NULL)
-		{
-			svpi = rsvg_render_filling(state, vpath);
-			svpx = svpi;
-		}
-	
-	if (state->stroke != NULL)
-		{
-			svpo = rsvg_render_outline(state, vpath);
-			if (svpx != NULL)
-				{
-					svpx = art_svp_union(svpi, svpo);
-					art_free(svpi);
-					art_free(svpo);
-				}
-			else
-				{
-					svpx = svpo;
-				}
-				
-		}
-	
+
+	svp = rsvg_render_filling(state, vpath);
+
 	art_free (vpath);
-	return svpx;
+	return svp;
 }
 
 static void
@@ -1911,9 +1895,8 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		}
 	
 	if (!href || w <= 0. || h <= 0.)
-		return;   
+		return;   	
 
-	
 	/* figure out if image is visible or not */
 	if (!state->visible || !state->cond_true)
 		return;
