@@ -354,6 +354,8 @@ rsvg_parse_style (RsvgHandle *ctx, RsvgState *state, const char *str)
 /*
  * Extremely poor man's CSS parser. Not robust. Not compliant.
  * Should work well enough for our needs ;-)
+ * See also: http://www.w3.org/TR/REC-CSS2/syndata.html
+ * I should use that sometime in order to make a complaint parser
  */
 void
 rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
@@ -362,9 +364,10 @@ rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 	
 	while (loc < buflen)
 		{
-			GString * style_name = g_string_new (NULL);
+			GString * style_name  = g_string_new (NULL);
 			GString * style_props = g_string_new (NULL);
-			
+			GString * existing    = NULL;
+
 			/* advance to the style's name */
 			while (loc < buflen && g_ascii_isspace (buff[loc]))
 				loc++;
@@ -399,8 +402,13 @@ rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 				}
 
 			/* push name/style pair into HT */
+			existing = g_hash_table_lookup (ctx->css_props, style_name->str);
+			if (existing != NULL)
+				g_string_append_len (style_props, existing->str, existing->len);
+
+			/* will destroy the existing key and value for us */
 			g_hash_table_insert (ctx->css_props, style_name->str, style_props->str);
-			
+
 			g_string_free (style_name, FALSE);
 			g_string_free (style_props, FALSE);
 			

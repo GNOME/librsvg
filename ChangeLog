@@ -1,5 +1,13 @@
 2003-01-27  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-styles.c (parse_cssbuffer): Allow multiple declarations to be 
+	additive ( H1 { font-weight: bold } H1 { font-family: Times } now 
+	evaluate properly to H1 { font-weight: bold ; font-family: Times })
+	
+=== librsvg 2.2.1 ===
+	
+2003-01-27  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg.c (): Patheticly handle conical gradients (not part of SVG spec,
 	but that doesn't stop KIllustrator/Kontour...), work on 
 	gradientTransform as well as spreads on radialGradients	
