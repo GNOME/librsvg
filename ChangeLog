@@ -1,5 +1,10 @@
 2003-03-19  Dom Lachowicz <cinamod@hotmail.com>
 
+	* configure.in: Re-enable libcroco support, make it the default
+	* rsvg-styles.c (ccss_end_selector): Make libcroco support work
+	
+2003-03-19  Dom Lachowicz <cinamod@hotmail.com>
+
 	* configure.in: Disable libcroco support until libcroco implements
 	the 1 remaining fn that I need from it
 	* rsvg-styles.c (rsvg_parse_style_attrs): Handle tag#id, tag.klazz#id, 

@@ -55,7 +55,7 @@ rsvg_state_init (RsvgState *state)
 	state->join = ART_PATH_STROKE_JOIN_MITER;
 	state->stop_opacity = 0xff;
 	
-	state->font_family  = g_strdup ("Times Roman");
+	state->font_family  = g_strdup ("Times New Roman");
 	state->font_size    = 12.0;
 	state->font_style   = PANGO_STYLE_NORMAL;
 	state->font_variant = PANGO_VARIANT_NORMAL;
@@ -407,11 +407,13 @@ ccss_end_selector (CRDocHandler *a_handler,
 
 	if (a_selector_list)
 		for (cur = a_selector_list; cur; cur = cur->next) {
-			/* TODO: rewrite the various dump routines to return strings
-			   char * style_name = cr_selector_to_string (cur);
-			   rsvg_css_define_style (user_data->ctx, style_name, user_data->def->str);
-			   g_free (style_name);
-			*/
+			if (cur->simple_sel) {
+			   guchar * style_name = cr_simple_sel_to_string (cur->simple_sel);
+			   if (style_name) {
+				   rsvg_css_define_style (user_data->ctx, style_name, user_data->def->str);
+				   g_free (style_name);
+			   }
+			}
 		}
 
 	g_string_free (user_data->def, TRUE);

@@ -1,6 +1,8 @@
 Version 2.3.0
 
 - Support Paths inside of <defs> and use them in <use/> statements
+- Vastly improved CSS support (libcroco and builtin)
+- LibCroco CSS support
 
 == gnome-2-2 branch ==
 

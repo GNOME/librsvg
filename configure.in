@@ -103,8 +103,7 @@ LIBCROCO_CFLAGS=""
 LIBCROCO_LIBS=""
 LIBCROCOPKG=""
 
-# DOM: re-enable this sometime when our libcroco support works
-test_croco=false
+test_croco=true
 AC_ARG_WITH(croco,[  --with-croco  Use libcroco for CSS parsing],[
 	if test "x$withval" = "xno"; then
 		test_croco=false
