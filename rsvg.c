@@ -488,10 +488,9 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	
 	rsvg_defs_set (ctx->defs, id, &grad->super);
 	
-#if 0
+
 	for (i = 0; i < 6; i++)
 		grad->affine[i] = state->affine[i];
-#endif
 
 	if (got_transform)
 		art_affine_multiply (grad->affine, affine, grad->affine);
@@ -634,10 +633,8 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts, const char * 
 	
 	rsvg_defs_set (ctx->defs, id, &grad->super);
 
-#if 0	
 	for (i = 0; i < 6; i++)
 		grad->affine[i] = state->affine[i];
-#endif
 
 	if (got_transform)
 		art_affine_multiply (grad->affine, affine, grad->affine);
