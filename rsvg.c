@@ -51,6 +51,11 @@
 
 #define SVG_BUFFER_SIZE (1024 * 8)
 
+/*
+ * Ideally this will be configurable
+ */
+#define RSVG_PIXELS_PER_INCH 72.0
+
 typedef struct {
   double affine[6];
 
@@ -184,9 +189,9 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
       for (i = 0; atts[i] != NULL; i += 2)
 	{
 	  if (!strcmp ((char *)atts[i], "width"))
-	    width = rsvg_css_parse_length ((char *)atts[i + 1], &fixed);
+	    width = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	  else if (!strcmp ((char *)atts[i], "height"))
-	    height = rsvg_css_parse_length ((char *)atts[i + 1], &fixed);
+	    height = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	}
 
 #ifdef VERBOSE
@@ -289,7 +294,8 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
   else if (rsvg_css_param_match (str, "stroke-width"))
     {
       int fixed;
-      state->stroke_width = rsvg_css_parse_length (str + arg_off, &fixed);
+      /* should be rsvg_css_parse_normalized_length */
+      state->stroke_width = rsvg_css_parse_length (str + arg_off, RSVG_PIXELS_PER_INCH, &fixed);
     }
   else if (rsvg_css_param_match (str, "stroke-linecap"))
     {
@@ -1079,7 +1085,6 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
   int i;
   double offset = 0;
   gboolean got_offset = FALSE;
-  gint fixed;
   RsvgState state;
   int n_stop;
 
@@ -1097,7 +1102,7 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	{
 	  if (!strcmp ((char *)atts[i], "offset"))
 	    {
-	      offset = rsvg_css_parse_length ((char *)atts[i + 1], &fixed);
+	      offset = atof ((char *)atts[i + 1]);
 	      got_offset = TRUE;
 	    }
 	  else if (!strcmp ((char *)atts[i], "style"))
@@ -1166,6 +1171,7 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
   char *id = NULL;
   double x1 = 0, y1 = 0, x2 = 100, y2 = 0;
   ArtGradientSpread spread = ART_GRADIENT_PAD;
+  gint fixed = FALSE;
 
   /* todo: only handles numeric coordinates in gradientUnits = userSpace */
   if (atts != NULL)
@@ -1175,13 +1181,13 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	  if (!strcmp ((char *)atts[i], "id"))
 	    id = (char *)atts[i + 1];
 	  else if (!strcmp ((char *)atts[i], "x1"))
-	    x1 = atof ((char *)atts[i + 1]);
+	    x1 = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	  else if (!strcmp ((char *)atts[i], "y1"))
-	    y1 = atof ((char *)atts[i + 1]);
+	    y1 = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	  else if (!strcmp ((char *)atts[i], "x2"))
-	    x2 = atof ((char *)atts[i + 1]);
+	    x2 = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	  else if (!strcmp ((char *)atts[i], "y2"))
-	    y2 = atof ((char *)atts[i + 1]);
+	    y2 = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	  else if (!strcmp ((char *)atts[i], "spreadMethod"))
 	    {
 	      if (!strcmp ((char *)atts[i + 1], "pad"))
@@ -1229,6 +1235,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
   int i;
   char *id = NULL;
   double cx = 50, cy = 50, r = 50, fx = 50, fy = 50;
+  gint fixed = FALSE;
 
   /* todo: only handles numeric coordinates in gradientUnits = userSpace */
   if (atts != NULL)
@@ -1238,15 +1245,15 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	  if (!strcmp ((char *)atts[i], "id"))
 	    id = (char *)atts[i + 1];
 	  else if (!strcmp ((char *)atts[i], "cx"))
-	    cx = atof ((char *)atts[i + 1]);
+	    cx = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	  else if (!strcmp ((char *)atts[i], "cy"))
-	    cy = atof ((char *)atts[i + 1]);
+	    cy = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	  else if (!strcmp ((char *)atts[i], "r"))
-	    r = atof ((char *)atts[i + 1]);
+	    r = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	  else if (!strcmp ((char *)atts[i], "fx"))
-	    fx = atof ((char *)atts[i + 1]);
+	    fx = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	  else if (!strcmp ((char *)atts[i], "fy"))
-	    fy = atof ((char *)atts[i + 1]);
+	    fy = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	}
     }
 

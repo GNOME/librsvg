@@ -24,15 +24,22 @@
 #include "config.h"
 #include "rsvg-css.h"
 
-#include <glib/ghash.h>
-#include <glib/gstring.h>
+#include <glib.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <locale.h>
+
+#define POINTS_PER_INCH (72.0)
+#define CM_PER_INCH (2.54)
+#define MM_PER_INCH (25.4)
+#define PICA_PER_INCH (6.0)
 
 /**
  * rsvg_css_parse_length: Parse CSS2 length to a pixel value.
  * @str: Original string.
+ * @pixels_per_inch: Pixels per inch
  * @fixed: Where to store boolean value of whether length is fixed.
  *
  * Parses a CSS2 length into a pixel value.
@@ -40,35 +47,75 @@
  * Returns: returns the length.
  **/
 double
-rsvg_css_parse_length (const char *str, gint *fixed)
+rsvg_css_parse_length (const char *str, gdouble pixels_per_inch, gint *fixed)
 {
-  char *p;
+  double length = 0.0;
+  char *p = NULL;
   
   /* 
    *  The supported CSS length unit specifiers are: 
    *  em, ex, px, pt, pc, cm, mm, in, and percentages. 
    */
-  
-  *fixed = FALSE;
 
-  p = strstr (str, "px");
-  if (p != NULL)
+  char * old_locale = setlocale (LC_NUMERIC, "C");
+  length = g_strtod (str, &p);
+  setlocale (LC_NUMERIC, old_locale);
+  
+  /* todo: error condition - figure out how to best represent it */
+  if ((length == -HUGE_VAL || length == HUGE_VAL) && (ERANGE == errno))
     {
-      *fixed = TRUE;
-      return atof (str);
+      *fixed = FALSE;
+      return 0.0;
     }
-  p = strstr (str, "in");
-  if (p != NULL)
+
+  *fixed = TRUE;
+
+  /* test for either pixels or no unit, which is assumed to be pixels */
+  if (p && (strcmp(p, "px") != 0))
     {
-      *fixed = TRUE;
-      /* return svg->pixels_per_inch * atof (str); */
+      if (!strcmp(p, "pt"))
+	length *= (pixels_per_inch / POINTS_PER_INCH);
+      else if (!strcmp(p, "in"))
+	length *= pixels_per_inch;
+      else if (!strcmp(p, "cm"))
+	length *= (pixels_per_inch / CM_PER_INCH);
+      else if (!strcmp(p, "mm"))
+	length *= (pixels_per_inch / MM_PER_INCH);
+      else if (!strcmp(p, "pc"))
+	length *= (pixels_per_inch / PICA_PER_INCH);
+      else if (!strcmp(p, "%"))
+	{
+	  *fixed = FALSE;
+	  length *= 0.01;
+	}
+      /* todo: em, ex */
     }
-  p = strstr (str, "%");
-  if (p != NULL)
-    {
-      return 0.01 * atof (str);
-    }
-  return atof (str);
+
+  return length;
+}
+
+/**
+ * rsvg_css_parse_normalized_length: Parse CSS2 length to a pixel value.
+ * @str: Original string.
+ * @pixels_per_inch: Pixels per inch
+ * @normalize_to: Bounding box's width or height, as appropriate, or 0
+ *
+ * Parses a CSS2 length into a pixel value.
+ *
+ * Returns: returns the length.
+ */
+double
+rsvg_css_parse_normalized_length(const char *str, gdouble pixels_per_inch,
+				 gdouble normalize_to)
+{
+  gint fixed = FALSE;
+
+  double length = rsvg_css_parse_length (str, pixels_per_inch, &fixed);
+  if (fixed)
+    return length;
+
+  /* length is a percent, normalize */
+  return (length * normalize_to);
 }
 
 gboolean
@@ -139,7 +186,7 @@ rsvg_css_parse_color (const char *str)
     } 
   else
     {
-      GString * string;
+      GString * string, * tmp;
       if (!colors)
 	{
 	  colors = g_hash_table_new (g_str_hash, g_str_equal);
@@ -162,10 +209,14 @@ rsvg_css_parse_color (const char *str)
 	  g_hash_table_insert (colors, "aqua",     GINT_TO_POINTER (0x00FFFF));
 	}
 
-      string = g_string_ascii_down (g_string_new (str));
+      tmp = g_string_new (str);
+      string = g_string_ascii_down (tmp);
 
       /* this will default to black on a failed lookup */
       val = GPOINTER_TO_INT (g_hash_table_lookup (colors, string->str)); 
+
+      g_string_free (tmp, TRUE);
+      g_string_free (string, TRUE);
     }
 
   return val;
@@ -192,11 +243,11 @@ rsvg_css_parse_fontsize (const char *str)
   double size;
 
   /* todo: handle absolute-size and relative-size tags and proper units */
-  size = strtod (str, &end_ptr);
+  /* todo: should this call rsvg_css_parse_length and then modify the return value? */
+  size = g_strtod (str, &end_ptr);
 
   if (end_ptr[0] == '%')
     size = (36 * size * 0.01); /* todo: egregious hack */
 
   return size;
 }
-

@@ -1,3 +1,15 @@
+2002-09-12  Dom Lachowicz <doml@appligent.com>
+
+	* rsvg-css.c (rsvg_css_parse_length): 
+	Handle errors, handle more units, reduce number of string compares
+	(rsvg_css_parse_normalized_length): New function, like rsvg_parse_length, except normalizes output to a width or height argument
+	(rsvg_css_parse_color): fix 2 memory leaks in color parsing routine
+
+	* rsvg.c (rsvg_start_svg): Use rsvg_css_parse_length
+	(rsvg_parse_style_arg): ditto
+	(rsvg_start_linear_gradient): ditto
+	(rsvg_start_radial_gradient): ditto
+	
 === librsvg 2.0.1 ===
 	
 2002-07-22  Alexander Larsson  <alexl@redhat.com>
