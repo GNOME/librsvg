@@ -67,7 +67,7 @@ main (int argc, const char **argv)
 
 	if (bVersion != 0)
 		{
-			printf ("rsvg version %s\n", VERSION);
+		    g_print ("rsvg version %s\n", VERSION);
 			return 0;
 		}
 
@@ -84,7 +84,7 @@ main (int argc, const char **argv)
 			return 1;
 		}
 
-	if (strstr (format, "jpeg") != NULL)
+	if (strstr (format, "jpeg") != NULL || strstr (format, "jpg") != NULL)
 		format = "jpeg";
 	else
 		format = "png";
@@ -109,7 +109,7 @@ main (int argc, const char **argv)
 		gdk_pixbuf_save (pixbuf, args[1], format, NULL, NULL);
 	else {
 		poptFreeContext (popt_context);
-		fprintf (stderr, "Error loading SVG file.\n");
+		g_warning ("Error loading SVG file.\n");
 		return 1;
 	}
 

@@ -3,32 +3,32 @@
 rsvg \- Turn SVG files into raster images
 .SH SYNOPSIS
 .B rsvg
-[option] file.svg file.png
+[option] in.svg out.png
 .I ""
 .SH DESCRIPTION
-rsvg coverts SVG images into PNG and JPEG raster images
+RSVG coverts SVG images into PNG and JPEG raster images.
 .SS OPTIONS
 .TP
 .I "\-d \-\-dpi number"
-Set the resolution of the image in pixels per inch
+Set the resolution of the image in pixels per inch. RSVG's current default is 90dpi
 .TP
 .I "\-x \-\-x\-zoom number"
-X Zoom factor, as a percentage
+X Zoom factor, as a percentage. If unspecified, 1.0 is used as the default.
 .TP
 .I "\-y \-\-y\-zoom number"
-Y Zoom factor, as a percentage
+Y Zoom factor, as a percentage. If unspecified, 1.0 is used as the default.
 .TP
 .I "\-w \-\-width integer"
-Specify how wide you wish the image to be
+Specify how wide you wish the image to be. If unspecified, the natural width of the image is used as the default.
 .TP
 .I "\-h \-\-height integer"
-Specify how tall you wish the image to be
+Specify how tall you wish the image to be. If unspecified, the natural height of the image is used as the default.
 .TP
 .I "\-f \-\-format [png, jpeg]"
-Specify the output format you wish the image to be saved in
+Specify the output format you wish the image to be saved in. If unspecified, PNG is used as the default.
 .TP
 .I "\-v \-\-version"
-Display what version of rsvg this is
+Display what version of rsvg this is.
 .SH MORE INFORMATION
 http://www.gnome.org/
 http://librsvg.sourceforge.net/

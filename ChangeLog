@@ -1,3 +1,9 @@
+2003-01-16  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.1: Improve manual page
+
+	* test-rsvg.c: Support .jpg as well as .jpeg as JPEG format specifier
+	
 2003-01-14  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-XXX.c (*): Rework css_parse_normalized_length to "properly" 
