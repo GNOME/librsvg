@@ -66,6 +66,7 @@ struct RsvgHandle {
 	
 	RsvgDefs *defs;
 	guint in_defs;
+	guint nest_level;
 	void *current_defs_group;
 
 	GHashTable *css_props;
