@@ -210,7 +210,7 @@ rsvg_css_parse_color (const char *str)
       if (strstr (str, "%") != 0)
 	{
 	  /* assume "rgb (r%, g%, b%)" */
-	  if (3 == sscanf (str, "rgb ( %d %% , %d %% , %d %% ) ", &r, &g, &b))
+	  if (3 == sscanf (str, " rgb ( %d %% , %d %% , %d %% ) ", &r, &g, &b))
 	    {
 	      r = rsvg_css_normalize_rgb_percent (r);
 	      g = rsvg_css_normalize_rgb_percent (g);
@@ -222,7 +222,7 @@ rsvg_css_parse_color (const char *str)
       else
 	{
 	  /* assume "rgb (r, g, b)" */
-	  if (3 == sscanf (str, "rgb ( %d , %d , %d ) ", &r, &g, &b))
+	  if (3 == sscanf (str, " rgb ( %d , %d , %d ) ", &r, &g, &b))
 	    {
 	      r = rsvg_css_normalize_rgb (r);
 	      g = rsvg_css_normalize_rgb (g);
