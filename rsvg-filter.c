@@ -1117,7 +1117,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 	filter->targety = 0;
 	filter->dx = 0;
 	filter->dy = 0;
-	
+	filter->preservealpha = FALSE;	
 	filter->edgemode = 0;
 
 	if (rsvg_property_bag_size (atts))
