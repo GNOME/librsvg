@@ -2,7 +2,6 @@
 *.lo
 .deps
 .libs
-ABOUT-NLS
 Makefile
 Makefile.in
 aclocal.m4
