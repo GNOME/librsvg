@@ -1,4 +1,19 @@
-The 1.0.1 release fixes a bug that caused Nautilus to crash
-when certain malformed SVG files were present and another bug
-that made librsvg fail when it was not in the same prefix as
-Nautilus.
+Version 1.0.2
+
+* Fix bug where scaled text would be clipped (Darin)
+* Fix bug where empty .svg file cause segfault (Darin)
+* Fix bug where some .svg files with certain kinds of degenerate
+  gradients would cause segfault (Darin)
+* Change install and packaging so that librsvg 1 and librsvg 2
+  can be installed on the same system.
+* Fix bug where we would read past the end of a string when the
+  string has multibyte sequences in it (Darin)
+* Remove vestiges of unused gettext and xml-i18n-tools (Darin)
+
+
+Version 1.0.1
+
+* Fix bug that caused Nautilus crash when SVG files mention missing
+  font names (Darin)
+* fix bug that made librsvg fail when it was not in the same prefix
+  as Nautilus (Darin)
