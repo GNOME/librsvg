@@ -2,9 +2,9 @@ INCLUDES = $(GTK_CFLAGS)
 
 enginedir = $(libdir)/gtk-2.0/$(GTK_VERSION)/engines
 
-engine_LTLIBRARIES = libpixmap.la
+engine_LTLIBRARIES = libsvg.la
 
-libpixmap_la_SOURCES = 		\
+libsvg_la_SOURCES = 		\
 	pixbuf-draw.c		\
 	pixbuf-main.c		\
 	pixbuf-render.c		\
@@ -13,8 +13,8 @@ libpixmap_la_SOURCES = 		\
 	pixbuf-style.h		\
 	pixbuf.h
 
-libpixmap_la_LDFLAGS =  -avoid-version -module
-libpixmap_la_LIBADD = $(GTK_LIBS)
+libsvg_la_LDFLAGS =  -avoid-version -module
+libsvg_la_LIBADD = $(GTK_LIBS)
 
 dist-hook:
 	cp -pr examples $(distdir);					\
