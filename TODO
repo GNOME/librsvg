@@ -13,8 +13,6 @@ TODO:
  * Add actual GError support in the loader, rather then the g_warnings
    that we currently use.
 
- * Allow affine's other than scaling (we do this already, da?)
-
 On the back burner:
 
  * Consider storing the paths so that the file can be rerendered
