@@ -1,10 +1,10 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
-includedir=@includedir@
+includedir=@includedir@/librsvg-2
 
 Name: librsvg
 Description: LGPL version of the librsvg library
 Version: @VERSION@
-Libs: -L${libdir} -lrsvg -lart_lgpl
+Libs: -L${libdir} -lrsvg-2 -lart_lgpl
 Cflags: -I${includedir}

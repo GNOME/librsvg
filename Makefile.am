@@ -6,9 +6,9 @@ EXTRA_DIST =\
 	librsvg.m4 \
 	librsvg-2.0.pc.in
 
-lib_LTLIBRARIES = librsvg.la
+lib_LTLIBRARIES = librsvg-2.la
 
-librsvg_la_SOURCES = \
+librsvg_2_la_SOURCES = \
 	art_render.c \
 	art_render_gradient.c \
 	art_render_mask.c \
@@ -23,9 +23,9 @@ librsvg_la_SOURCES = \
 	rsvg-path.c \
 	rsvg.c
 
-librsvg_la_LDFLAGS = -version-info @LIBRSVG_VERSION_INFO@
+librsvg_2_la_LDFLAGS = -version-info @LIBRSVG_VERSION_INFO@
 
-librsvgincdir = $(includedir)/librsvg
+librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = \
 	art_render.h \
 	art_render_gradient.h \
@@ -56,8 +56,8 @@ INCLUDES =\
 	-DGTK_DISABLE_DEPRECATED \
 	-DDATADIR="\"$(datadir)\""
 
-DEPS = $(top_builddir)/librsvg.la
-LDADDS = $(top_builddir)/librsvg.la \
+DEPS = $(top_builddir)/librsvg-2.la
+LDADDS = $(top_builddir)/librsvg-2.la \
 	$(XML_LIBS) \
 	$(FREETYPE2_LIBS) \
 	$(GDK_PIXBUF_LIBS) \

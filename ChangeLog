@@ -1,3 +1,22 @@
+2001-07-25  Ramiro Estrugo  <ramiro@fateware.com>
+
+	* .cvsignore:
+	Add generated files, even though im not 100% sure where they are
+	coming from.
+
+	* Makefile.am:
+	Rename library to librsvg-2 so that it can cohabitate with librsvg
+	from the GNOME1 platform.
+	Change includedir to librsvg-2/librsvg for the same purpose.
+	
+	* librsvg-2.0.pc.in:
+	Change includedir to librsvg-2/librsvg.
+	Change link flags to '-lrsvg-2' instead of '-lrsvg'
+	
+	* librsvg.spec.in:
+	Update for library and includedir name changes, plus some extra
+	cleanup.
+	
 2001-07-25  Darin Adler  <darin@bentspoon.com>
 
 	* configure.in: Use more warnings when compiling from CVS.
