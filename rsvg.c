@@ -792,6 +792,8 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_filter_primitive_offset(ctx, atts);
 	else if (!strcmp ((char *)name, "feSpecularLighting"))
 		rsvg_start_filter_primitive_specular_lighting(ctx, atts);
+	else if (!strcmp ((char *)name, "feTile"))
+		rsvg_start_filter_primitive_tile(ctx, atts);
 	else if (!strcmp ((char *)name, "feTurbulence"))
 		rsvg_start_filter_primitive_turbulence(ctx, atts);
 	else if (!strcmp ((char *)name, "feDistantLight"))

@@ -117,6 +117,9 @@ rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
 void
 rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, const xmlChar ** atts);
 
+void
+rsvg_start_filter_primitive_tile (RsvgHandle * ctx, const xmlChar ** atts);
+
 G_END_DECLS
 
 #endif

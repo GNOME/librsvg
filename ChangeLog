@@ -1,5 +1,9 @@
 2004-03-04  Caleb Moore <c.moore@student.unsw.edu.au>
 
+	* rsvg-filter.c: Added final filter: feTile
+
+2004-03-04  Caleb Moore <c.moore@student.unsw.edu.au>
+
 	* rsvg-filter.c: Fixed feDiffuseLighting and feSpecular lighting to scale
 	more consistantly
 
