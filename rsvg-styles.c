@@ -1779,10 +1779,12 @@ rsvg_state_push(RsvgHandle * ctx)
 void
 rsvg_state_pop(RsvgHandle * ctx)
 {
-	RsvgState * toremove = g_slist_nth_data(ctx->state, 0);
-	rsvg_state_finalize (toremove);
-	ctx->state = g_slist_remove(ctx->state, toremove);	
-	g_mem_chunk_free(ctx->state_allocator, toremove);
+	GSList * link = g_slist_nth(ctx->state, 0);
+	RsvgState * dead_state = (RsvgState *)link->data;
+
+	rsvg_state_finalize (dead_state);
+	ctx->state = g_slist_delete_link(ctx->state, link);
+	g_mem_chunk_free(ctx->state_allocator, dead_state);
 }
 
 void
