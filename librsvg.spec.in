@@ -69,11 +69,9 @@ rm -rf $RPM_BUILD_ROOT
 # Clean out files that should not be part of the rpm.
 # This is the recommended way of dealing with it for RH8
 rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.2.0/engines/*.la
-rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.2.0/engines/*.a
 rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.2.0/loaders/*.la
-rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.2.0/loaders/*.a
-rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
+rm -f $RPM_BUILD_ROOT%{_libdir}/mozilla/plugins/libmozsvgdec.la
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
 
 %clean
@@ -97,19 +95,25 @@ gdk-pixbuf-query-loaders > %{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
 
 %files devel
 %defattr(-, root, root)
-%{_libdir}/*.so
+%{_libdir}/*
 %{_includedir}/librsvg-2/librsvg/*.h
 %{_libdir}/pkgconfig/librsvg-2.0.pc
 %{_datadir}/doc/librsvg/html/*
 
 %files -n librsvg2-gtk
 %defattr(-, root, root)
-%{_libdir}/gtk-2.0/2.2.0/engines/*.so
-%{_libdir}/gtk-2.0/2.2.0/loaders/*.so
+%{_bindir}/rsvg-view
+%{_libdir}/gtk-2.0/2.2.0/engines/*
+%{_libdir}/gtk-2.0/2.2.0/loaders/*
+%{_libdir}/mozilla/plugins/*
 # %{_datadir}/themes/bubble/gtk-2.0/*
 # %{_datadir}/themes/bubble/README
 
 %changelog
+* Thu Mar 18 2004 Christian Schaller <Uraeus@gnome.org>
+- Add mozilla plugins (to gtk for now)
+- Add .a files since they should probably be installed
+
 * Sun Feb 02 2003 Christian Schaller <Uraeus@linuxrising.org>
 - Update to handle latest changes
 - Add some fixes from the RH spec file

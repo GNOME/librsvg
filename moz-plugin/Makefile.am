@@ -6,7 +6,7 @@ else
 plugin_LTLIBRARIES = 
 endif
 
-INCLUDES+=$(MOZILLA_CFLAGS) -DBINDIR=\"$(bindir)/\" $(GDK_X11_CFLAGS)
+INCLUDES=$(MOZILLA_CFLAGS) -DBINDIR=\"$(bindir)/\" $(GDK_X11_CFLAGS)
 
 libmozsvgdec_la_SOURCES = moz-plugin.c
 libmozsvgdec_la_LDFLAGS = -module -avoid-version 
