@@ -46,6 +46,14 @@ Requires:         pango-devel >= @PANGOFT2_REQUIRED@
 This package provides the necessary development libraries and include
 files to allow you to develop with librsvg.
 
+%package -n rsvg-gtk
+Summary:        Gtk+ 2.0 theme engine for SVG based themes
+Group:          System Environment/Libraries
+
+%description -n rsvg-gtk
+This package installs a GTK+ 2.0 theme engine that uses SVG images. It is based
+on the gdkpixbuf engine.
+
 %prep
 %setup -q -n librsvg-%{version}
 
@@ -55,7 +63,15 @@ make
 
 %install
 rm -rf $RPM_BUILD_ROOT
+
 %makeinstall
+# Clean out files that should not be part of the rpm.
+# This is the recommended way of dealing with it for RH8
+rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.0.0/engines/*.la
+rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.0.0/engines//*.a
+rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
+rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
+
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -69,16 +85,27 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-, root, root)
 %doc AUTHORS COPYING COPYING.LIB ChangeLog NEWS README
 %{_libdir}/*.so.*
+%{_bindir}/rsvg
+%{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
 
 %files devel
 %defattr(-, root, root)
 %{_libdir}/*.so
-%{_libdir}/*.la
-%{_libdir}/*.a
 %{_includedir}/librsvg-2/librsvg
 %{_libdir}/pkgconfig/librsvg-2.0.pc
 
+%files -n rsvg-gtk
+%defattr(-, root, root)
+%{_libdir}/gtk-2.0/2.0.0/engines/*.so
+%{_datadir}/themes/bubble/gtk-2.0/*
+%{_datadir}/themes/bubble/README
+
 %changelog
+* Mon Oct 21 2002 Christian Schaller <Uraeus@linuxrising.org>
+- Fixes for RH 8 
+- Adding gtk theme engine
+- adding gdk-loader
+
 * Tue Mar 05 2002 Chris Chabot <chabotc@reviewboard.com>
 - Deps
 - Formatting
