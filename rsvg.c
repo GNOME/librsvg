@@ -223,17 +223,14 @@ rsvg_start_g (RsvgHandle *ctx, const xmlChar **atts)
 		}
 	
 	rsvg_parse_style_attrs (ctx, state, "g", klazz, id, atts);
-	if (state->filter != NULL || state->opacity != 0xff)
-		rsvg_push_discrete_layer (ctx);
+
+	rsvg_push_discrete_layer (ctx);
 }
 
 static void
 rsvg_end_g (RsvgHandle *ctx)
 {
-	RsvgState *state = rsvg_state_current (ctx);
-	
-	if (state->filter != NULL || state->opacity != 0xff)
-		rsvg_pop_discrete_layer (ctx, state->filter, state->opacity);
+	rsvg_pop_discrete_layer (ctx);
 }
 
 typedef struct _RsvgSaxHandlerDefs {
@@ -787,6 +784,8 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_filter_primitive_component_transfer(ctx, atts);
 	else if (!strcmp ((char *)name, "feComposite"))
 		rsvg_start_filter_primitive_composite(ctx, atts);
+	else if (!strcmp ((char *)name, "feFlood"))
+		rsvg_start_filter_primitive_flood(ctx, atts);
 	else if (!strcmp ((char *)name, "feFuncR"))
 		rsvg_start_filter_primitive_component_transfer_function(ctx, atts, 'r');
 	else if (!strcmp ((char *)name, "feFuncG"))

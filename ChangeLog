@@ -1,5 +1,13 @@
 2004-02-19  Caleb Moore <c.moore@student.unsw.edu.au>
 
+	* rsvg-styles.c: implemented the "enable-background" style value.
+	This allows backgrounds to be used by filters even when they are
+	are based on multiple opacity levels. It also allows one to specify
+	exactly how many levels of groups one wants to be included in the 
+	background.
+
+2004-02-19  Caleb Moore <c.moore@student.unsw.edu.au>
+
 	* rsvg-styles.c, rsvg-styles.h: Changed "opacity groups" into 
 	"discrete layers" which are like opacity groups but handle filters
 	as well as opacity groups and will eventually handle masks. This fixes 

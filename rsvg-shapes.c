@@ -310,8 +310,8 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 		}
 
 	if (need_tmpbuf)
-		rsvg_pop_discrete_layer (ctx, state->filter, state->opacity);	
-
+		rsvg_pop_discrete_layer (ctx);	
+	
 	art_free (vpath);
 }
 
@@ -1047,8 +1047,7 @@ rsvg_start_use (RsvgHandle *ctx, const xmlChar **atts)
 							rsvg_render_path (ctx, path->d);
 	  
 							if (state->opacity != 0xff || state->filter)
-								rsvg_pop_discrete_layer (ctx, state->filter, 
-														 state->opacity);
+								rsvg_pop_discrete_layer (ctx);
 
 							break;
 						}

@@ -47,7 +47,7 @@ struct _RsvgFilter {
 };
 
 void 
-rsvg_filter_render (RsvgFilter *self, GdkPixbuf *source, GdkPixbuf *bg, RsvgHandle *context);
+rsvg_filter_render (RsvgFilter *self, GdkPixbuf *source, GdkPixbuf *output, GdkPixbuf *bg, RsvgHandle *context);
 
 void 
 rsvg_start_filter (RsvgHandle *ctx, const xmlChar **atts);
@@ -93,6 +93,10 @@ rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 
 void
 rsvg_start_filter_primitive_composite (RsvgHandle * ctx, const xmlChar ** atts);
+
+void
+rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
+								   const xmlChar ** atts);
 
 G_END_DECLS
 

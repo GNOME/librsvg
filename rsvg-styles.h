@@ -67,6 +67,7 @@ typedef struct {
 	
 	gint fill_rule;	
 	RsvgFilter *filter;
+	gboolean backgroundnew;
 
 	RsvgPaintServer *stroke;
 	gint stroke_opacity; /* 0..255 */
@@ -115,8 +116,7 @@ void rsvg_parse_style_attrs (RsvgHandle *ctx, RsvgState *state, const char * tag
 
 gdouble rsvg_viewport_percentage (gdouble width, gdouble height);
 void
-rsvg_pop_discrete_layer(RsvgHandle *ctx, RsvgFilter *filter, 
-						int opacity);
+rsvg_pop_discrete_layer(RsvgHandle *ctx);
 void rsvg_push_discrete_layer (RsvgHandle *ctx);
 gboolean rsvg_parse_transform (double dst[6], const char *src);
 

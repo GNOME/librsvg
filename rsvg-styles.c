@@ -55,6 +55,7 @@ rsvg_state_init (RsvgState *state)
 	state->join = ART_PATH_STROKE_JOIN_MITER;
 	state->stop_opacity = 0xff;
 	state->fill_rule = FILL_RULE_NONZERO;
+	state->backgroundnew = FALSE;
 	
 	state->font_family  = g_strdup ("Times New Roman");
 	state->font_size    = 12.0;
@@ -84,6 +85,7 @@ rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 	/*ok, I don't think this is where these lines go*/	
 	dst->opacity = 0xff;
 	dst->filter = NULL;
+	dst->backgroundnew = FALSE;
 
 	if (src->dash.n_dash > 0)
 		{
@@ -119,6 +121,14 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "filter"))
 		state->filter = rsvg_filter_parse(ctx->defs, str + arg_off);
+	else if (rsvg_css_param_match (str, "enable-background"))
+		{
+			if (!strcmp (str + arg_off, "new"))
+				state->backgroundnew = TRUE;
+			else
+				state->backgroundnew = FALSE;
+			/* else inherit */
+		}	
 	else if (rsvg_css_param_match (str, "display"))
 		{
 			if (!strcmp (str + arg_off, "none"))
@@ -340,6 +350,7 @@ rsvg_is_style_arg(const char *str)
 			styles = g_hash_table_new (g_str_hash, g_str_equal);
 			
 			g_hash_table_insert (styles, "display",           GINT_TO_POINTER (TRUE));
+			g_hash_table_insert (styles, "enable-background",              GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "fill",              GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "fill-opacity",      GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "fill-rule",         GINT_TO_POINTER (TRUE));
@@ -930,10 +941,14 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 	GdkPixbuf *pixbuf;
 	art_u8 *pixels;
 	int width, height, rowstride;
-	
+
 	state = &ctx->state[ctx->n_state - 1];
 	pixbuf = ctx->pixbuf;
 	
+	if (state->filter == NULL && state->opacity == 0xFF && 
+		!state->backgroundnew)
+		return;
+
 	state->save_pixbuf = pixbuf;
 	
 	if (pixbuf == NULL)
@@ -1058,22 +1073,63 @@ get_next_out(gint * operationsleft, GdkPixbuf * in, GdkPixbuf * tos,
 	return out;
 }
 
-void
-rsvg_pop_discrete_layer(RsvgHandle *ctx, RsvgFilter *filter, 
-						int opacity)
-{
-	RsvgState *state = &ctx->state[ctx->n_state - 1];
-	GdkPixbuf *tos, *nos, *intermediate;
+static void
+rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, 
+					 GdkPixbuf *nos);
 
-	GdkPixbuf *in, *out;
-	
+static GdkPixbuf *
+rsvg_compile_bg(RsvgHandle *ctx, RsvgState *topstate)
+{
+	int i, foundstate;
+	GdkPixbuf *intermediate, *lastintermediate;
+	RsvgState *state, *lastvalid;
+	lastvalid = NULL;
+	foundstate = 0;	
+
+	lastintermediate = gdk_pixbuf_copy(topstate->save_pixbuf);
+			
+	for (i = ctx->n_state - 1; i >= 0; i--)
+		{
+			state = &ctx->state[i];
+			if (state == topstate)
+				{
+					foundstate = 1;
+				}
+			else if (!foundstate)
+				continue;
+			if (state->backgroundnew)
+				break;
+			if (state->save_pixbuf)
+				{
+					if (lastvalid)
+						{
+							intermediate = gdk_pixbuf_copy(state->save_pixbuf);
+							rsvg_use_opacity(ctx, 0xFF, lastintermediate, intermediate);
+							g_object_unref(lastintermediate);
+							lastintermediate = intermediate;
+						}
+					lastvalid = state;
+				}
+		}
+	return lastintermediate;
+}
+
+static void
+rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbuf *nos)
+{
+	RsvgFilter *filter = state->filter;
+	int opacity = state->opacity;
+	GdkPixbuf *intermediate;
+	GdkPixbuf *in, *out, *insidebg;
+	int operationsleft;
+
 	intermediate = NULL;
 
-	int operationsleft;
-	operationsleft = 0;
+	if (state->filter == NULL && state->opacity == 0xFF && 
+		!state->backgroundnew)
+		return;
 
-	tos = ctx->pixbuf;
-	nos = state->save_pixbuf;
+	operationsleft = 0;
 	
 	if (opacity != 0xFF)
 		operationsleft++;
@@ -1087,6 +1143,11 @@ rsvg_pop_discrete_layer(RsvgHandle *ctx, RsvgFilter *filter,
 
 	in = tos;
 
+	if (operationsleft == 0)
+		{
+			rsvg_use_opacity (ctx, 0xFF, tos, nos);			
+		}
+
 	if (opacity != 0xFF)
 		{
 			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
@@ -1096,13 +1157,34 @@ rsvg_pop_discrete_layer(RsvgHandle *ctx, RsvgFilter *filter,
 	if (filter != NULL)
 		{
 			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
-			rsvg_filter_render (filter, in, out, ctx);
+			insidebg = rsvg_compile_bg(ctx, state);
+			rsvg_filter_render (filter, in, out, insidebg, ctx);
+			g_object_unref (insidebg);
 			in = out;
 		}
 
 	if (intermediate != NULL)
 		g_object_unref (intermediate);
+}
 
+void
+rsvg_pop_discrete_layer(RsvgHandle *ctx)
+{
+	GdkPixbuf *tos, *nos;
+	RsvgState *state;
+
+	state = rsvg_state_current(ctx);
+
+	if (state->filter == NULL && 
+		state->opacity == 0xFF && 
+		!state->backgroundnew)
+		return;
+
+	tos = ctx->pixbuf;
+	nos = state->save_pixbuf;
+	
+	rsvg_composite_layer(ctx, state, tos, nos);
+	
 	g_object_unref (tos);
 	ctx->pixbuf = nos;
 }
