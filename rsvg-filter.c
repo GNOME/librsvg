@@ -2279,3 +2279,198 @@ rsvg_start_filter_primitive_component_transfer_function (RsvgHandle * ctx,
 				}
 		}
 }
+
+
+/*************************************************************/
+/*************************************************************/
+
+typedef struct _RsvgFilterPrimitiveErode
+RsvgFilterPrimitiveErode;
+
+struct _RsvgFilterPrimitiveErode
+{
+	RsvgFilterPrimitive super;
+	double rx, ry;
+	int mode;
+};
+
+static void
+rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self,
+									RsvgFilterContext * ctx)
+{
+	guchar ch, extreme;
+	gint x, y;
+	gint i, j;
+	gint rowstride, height, width;
+	FPBox boundarys;
+	
+	guchar *in_pixels;
+	guchar *output_pixels;
+	
+	RsvgFilterPrimitiveErode *cself;
+	
+	GdkPixbuf *output;
+	GdkPixbuf *in;
+	
+	gint kx, ky;
+	guchar val;
+	
+	cself = (RsvgFilterPrimitiveErode *) self;
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	in = rsvg_filter_get_in (self->in, ctx);
+	in_pixels = gdk_pixbuf_get_pixels (in);
+	
+	height = gdk_pixbuf_get_height (in);
+	width = gdk_pixbuf_get_width (in);
+	
+	rowstride = gdk_pixbuf_get_rowstride (in);
+	
+	/* scale the radius values */
+	kx = cself->rx * ctx->paffine[0];
+	ky = cself->ry * ctx->paffine[3];
+
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+
+	output_pixels = gdk_pixbuf_get_pixels (output);
+	
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
+			for (ch = 0; ch < 4; ch++)
+				{
+					if (cself->mode == 0)
+						extreme = 255;
+					else
+						extreme = 0;
+					for (i = -ky; i < ky + 1; i++)
+						for (j = -kx; j < kx + 1; j++)
+							{
+								if (y + i >= height || y + i < 0 || 
+									x + j >= width || x + j < 0)
+									continue;
+								
+								val = in_pixels[(y + i) * rowstride 
+												+ (x + j) * 4 + ch];
+							   
+
+								if (cself->mode == 0)
+									{	
+										if (extreme > val)
+											extreme = val;
+									}
+								else
+									{
+										if (extreme < val)
+											extreme = val;
+									}
+								
+							}
+					output_pixels[y * rowstride + x * 4 + ch] = extreme;
+				}
+	rsvg_filter_store_result (self->result, output, ctx);
+	
+	g_object_unref (G_OBJECT (in));
+	g_object_unref (G_OBJECT (output));
+}
+
+static void
+rsvg_filter_primitive_erode_free (RsvgFilterPrimitive * self)
+{
+	RsvgFilterPrimitiveErode *cself;
+	
+	cself = (RsvgFilterPrimitiveErode *) self;
+	g_string_free (self->result, TRUE);
+	g_string_free (self->in, TRUE);
+	g_free (cself);
+}
+
+void
+rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
+								   const xmlChar ** atts)
+{
+	int i;
+	
+	double font_size;
+	RsvgFilterPrimitiveErode *filter;
+
+	if (ctx->n_state > 0)
+		font_size = rsvg_state_current (ctx)->font_size;
+	else
+		font_size = 12.0;
+	
+	filter = g_new (RsvgFilterPrimitiveErode, 1);
+
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->rx = 0;
+	filter->ry = 0;
+	filter->mode = 0;
+	
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				{
+					if (!strcmp ((char *) atts[i], "in"))
+						g_string_assign (filter->super.in, (char *) atts[i + 1]);					
+					else if (!strcmp ((char *) atts[i], "result"))
+						g_string_assign (filter->super.result, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "x"))
+						{
+							filter->super.x =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "y"))
+						{
+							filter->super.y =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "width"))
+						{
+							filter->super.width =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "height"))
+						{
+							filter->super.height =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "radius"))
+						{
+						rsvg_css_parse_number_optional_number ((char *) atts[i + 1],
+															   &filter->rx,
+															   &filter->ry);
+						}
+					else if (!strcmp ((char *) atts[i], "operator"))
+						{
+							if (!strcmp ((char *) atts[i + 1], "erode"))
+								filter->mode = 0;
+							else if (!strcmp ((char *) atts[i + 1], "dilate"))
+								filter->mode = 1;
+						}
+				}
+		}
+
+	filter->super.render = &rsvg_filter_primitive_erode_render;
+	filter->super.free = &rsvg_filter_primitive_erode_free;
+	
+	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
+					 &filter->super);
+}
+

@@ -785,6 +785,8 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_filter_primitive_merge_node(ctx, atts);
 	else if (!strcmp ((char *)name, "feColorMatrix"))
 		rsvg_start_filter_primitive_colour_matrix(ctx, atts);
+	else if (!strcmp ((char *)name, "feMorphology"))
+		rsvg_start_filter_primitive_erode(ctx, atts);
 	else if (!strcmp ((char *)name, "feComponentTransfer"))
 		rsvg_start_filter_primitive_component_transfer(ctx, atts);
 	else if (!strcmp ((char *)name, "feFuncR"))

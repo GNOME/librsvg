@@ -5,6 +5,10 @@
 	
 2003-02-04  Caleb Moore <c.moore@student.unsw.edu.au>
 	
+	* rsvg-filter.c: Implemented the feMorphology filter
+
+2003-02-04  Caleb Moore <c.moore@student.unsw.edu.au>
+	
 	* rsvg-filter.c: Implemented the ComponentTransfer filter, it works properly now
 	
 2003-02-03  Dom Lachowicz <cinamod@hotmail.com>
