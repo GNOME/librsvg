@@ -176,7 +176,7 @@ rsvg_new_mask (void)
 void 
 rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	const char *id = NULL, *value;
+	const char *id = NULL, *klazz = NULL, *value;
 	RsvgMask *mask;
 	double font_size;
 	
@@ -225,9 +225,12 @@ rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts)
 													  font_size);					
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
+			if ((value = rsvg_property_bag_lookup (atts, "class")))
+				klazz = value;
 		}
 
-	rsvg_parse_style_pairs (ctx, rsvg_state_current(ctx), atts);
+
+	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "mask", klazz, id, atts);
 
 	mask->super.super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
 
@@ -301,7 +304,7 @@ rsvg_clip_path_render (RsvgClipPath * self, RsvgHandle *ctx)
 
 	ArtSVP *svp, *svpx;
 	svpx = NULL;
-
+	
 	rsvg_state_reinherit_top(ctx, &self->super.super.state, 0);
 
 	if (self->units == objectBoundingBox)
@@ -356,7 +359,7 @@ rsvg_new_clip_path (void)
 void 
 rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	const char *id = NULL, *value = NULL;
+	const char *id = NULL, *klazz = NULL, *value = NULL;
 	RsvgClipPath *clip_path;
 	double font_size;
 	
@@ -374,15 +377,17 @@ rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				}				
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
+			if ((value = rsvg_property_bag_lookup (atts, "class")))
+				klazz = value;
 		}
 
-	rsvg_parse_style_pairs (ctx, rsvg_state_current(ctx), atts);
+	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "clipPath", klazz, id, atts);
+
+	rsvg_state_clone (&clip_path->super.super.state, rsvg_state_current (ctx));
 
 	clip_path->super.super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
 
 	ctx->current_defs_group = &clip_path->super;
-
-	rsvg_state_clone (&clip_path->super.super.state, rsvg_state_current (ctx));
 	
 	/* set up the defval stuff */
 	clip_path->super.super.super.type = RSVG_DEF_CLIP_PATH;

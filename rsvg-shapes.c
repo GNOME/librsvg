@@ -624,6 +624,24 @@ rsvg_defs_drawable_use_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 
 	if (state->opacity != 0xff || rsvg_needs_discrete_layer(state))
 		rsvg_pop_discrete_layer (ctx);
+}	
+
+static ArtSVP *
+rsvg_defs_drawable_use_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+									int dominate)
+{
+	RsvgDefsDrawableUse *use = (RsvgDefsDrawableUse*)self;
+	ArtSVP * svp;
+
+	rsvg_state_reinherit_top(ctx,  &self->state, dominate);
+
+	rsvg_state_push(ctx);
+	
+	svp = rsvg_defs_drawable_draw_as_svp (use->child, ctx, 1);
+
+	rsvg_state_pop(ctx);
+	
+	return svp;
 }			
 
 static void 
@@ -1953,6 +1971,7 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 							use->super.super.type = RSVG_DEF_PATH;
 							use->super.super.free = rsvg_defs_drawable_use_free;
 							use->super.draw = rsvg_defs_drawable_use_draw;
+							use->super.draw_as_svp = rsvg_defs_drawable_use_draw_as_svp;
 							art_affine_translate(affine, x, y);
 							art_affine_multiply(use->super.state.affine, affine, use->super.state.affine);
 							art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);			
