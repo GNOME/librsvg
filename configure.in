@@ -1,21 +1,9 @@
 AC_INIT(rsvg.h)
-
-LIBXML_REQUIRED=1.8.10
-LIBART_REQUIRED=2.2.0
-GLIB_REQUIRED=1.2.9
-GTK_REQUIRED=1.2.9
-FREETYPE_REQUIRED=2.0.1
-FREETYPE_LIBRARY_REQUIRED=6.1.0
-GDK_PIXBUF_REQUIRED=0.10.0
-POPT_REQUIRED=1.5
-
-dnl ====================================
-
 AM_CONFIG_HEADER(config.h)
 
 LIBRSVG_MAJOR_VERSION=1
-LIBRSVG_MINOR_VERSION=0
-LIBRSVG_MICRO_VERSION=1
+LIBRSVG_MINOR_VERSION=1
+LIBRSVG_MICRO_VERSION=0
 LIBRSVG_VERSION=$LIBRSVG_MAJOR_VERSION.$LIBRSVG_MINOR_VERSION.$LIBRSVG_MICRO_VERSION
 LIBRSVG_VERSION_INFO=`expr $LIBRSVG_MAJOR_VERSION + $LIBRSVG_MINOR_VERSION`:$LIBRSVG_MICRO_VERSION:$LIBRSVG_MINOR_VERSION
 
@@ -28,21 +16,63 @@ AC_SUBST(LIBRSVG_VERSION_INFO)
 VERSION=$LIBRSVG_VERSION
 
 AM_INIT_AUTOMAKE(librsvg, $VERSION)
+GNOME_COMMON_INIT
 
 AM_MAINTAINER_MODE
 
+AM_PROG_XML_I18N_TOOLS
+
+AC_ISC_POSIX
 AC_PROG_CC
 AC_PROG_CPP
-AC_STDC_HEADERS
-AC_ARG_PROGRAM
+AC_PROG_AWK
 AM_PROG_LIBTOOL
+AC_STDC_HEADERS
 
-AC_SUBST(LIBXML_REQUIRED)
-AC_SUBST(LIBART_REQUIRED)
+GNOME_REQUIRE_PKGCONFIG
+
+GNOME_PLATFORM_GNOME_2(yes)
+
+GLIB_REQUIRED=1.3.1
+XML_REQUIRED=2.2.8
+ART_REQUIRED=2.3.4
+GTK_REQUIRED=1.3.7
+GDK_PIXBUF_REQUIRED=1.3.7
+FREETYPE_REQUIRED=2.0.1
+FREETYPE_LIBRARY_REQUIRED=6.1.0
+POPT_REQUIRED=1.5
+
 AC_SUBST(GLIB_REQUIRED)
+AC_SUBST(XML_REQUIRED)
+AC_SUBST(ART_REQUIRED)
 AC_SUBST(GTK_REQUIRED)
+AC_SUBST(GDK_PIXBUF_REQUIRED)
 AC_SUBST(FREETYPE_REQUIRED)
 AC_SUBST(POPT_REQUIRED)
+
+GNOME_PKGCONFIG_CHECK_MODULES(GLIB, glib-2.0:$GLIB_REQUIRED gmodule-2.0:$GLIB_REQUIRED gthread-2.0:$GLIB_REQUIRED gtk+-2.0:$GLIB_REQUIRED)
+GNOME_PKGCONFIG_CHECK_MODULES(GTK, gtk+-2.0:$GTK_REQUIRED)
+GNOME_PKGCONFIG_CHECK_MODULES(GDK_PIXBUF, gdk-pixbuf-2.0:$GDK_PIXBUF_REQUIRED)
+GNOME_PKGCONFIG_CHECK_MODULES(XML, libxml-2.0:$XML_REQUIRED)
+GNOME_PKGCONFIG_CHECK_MODULES(ART, libart-2.0:$ART_REQUIRED)
+
+dnl AC_DEFINE(GNOME_PLATFORM_VERSION, 1095000)
+
+AC_SUBST(GLIB_LIBS)
+AC_SUBST(GLIB_CFLAGS)
+AC_SUBST(GMODULE_LIBS)
+AC_SUBST(GMODULE_CFLAGS)
+AC_SUBST(GTHREAD_LIBS)
+AC_SUBST(GTHREAD_CFLAGS)
+AC_SUBST(GTK_LIBS)
+AC_SUBST(GTK_CFLAGS)
+AC_SUBST(GDK_PIXBUF_LIBS)
+AC_SUBST(GDK_PIXBUF_CFLAGS)
+AC_SUBST(XML_LIBS)
+AC_SUBST(XML_CFLAGS)
+AC_SUBST(ART_LIBS)
+AC_SUBST(ART_CFLAGS)
+
 
 dnl ====================================
 dnl = Begin tests for popt
@@ -84,71 +114,6 @@ dnl =======================
 dnl = End tests for libpng
 dnl =======================
 
-dnl ====================================
-dnl = Begin tests for glib
-dnl ====================================
-AC_PATH_PROG(GLIB_CONFIG,glib-config,no)
-if test x$GLIB_CONFIG = xno; then
-  AC_MSG_ERROR(Couldn't find glib-config please install the glib package)
-fi
-
-GLIB_VERSION="`$GLIB_CONFIG --version`"
-case "$GLIB_VERSION" in
-	1.2.*)
-		:
-  	;;
-
-	*)
-		AC_ERROR(librsvg needs glib version 1.2.x not $GLIB_VERSION)
-	;;
-esac
-
-GLIB_LIBS=`$GLIB_CONFIG --libs`
-GLIB_CFLAGS=`$GLIB_CONFIG --cflags`
-AC_SUBST(GLIB_LIBS)
-AC_SUBST(GLIB_CFLAGS)
-dnl ====================================
-dnl = End tests for glib
-dnl ====================================
-
-dnl ====================================
-dnl = Begin tests for gtk
-dnl ====================================
-AC_PATH_PROG(GTK_CONFIG,gtk-config,no)
-if test x$GTK_CONFIG = xno; then
-  AC_MSG_ERROR(Couldn't find gtk-config please install the gtk package)
-fi
-
-GTK_VERSION="`$GTK_CONFIG --version`"
-case "$GTK_VERSION" in
-	1.2.*)
-		:
-  	;;
-
-	*)
-		AC_ERROR(librsvg needs gtk version 1.2.x not $GTK_VERSION)
-	;;
-esac
-
-GTK_LIBS=`$GTK_CONFIG --libs`
-GTK_CFLAGS=`$GTK_CONFIG --cflags`
-AC_SUBST(GTK_LIBS)
-AC_SUBST(GTK_CFLAGS)
-dnl ====================================
-dnl = End tests for gtk
-dnl ====================================
-
-dnl ====================================
-dnl = begin gdk-pixbuf checks
-dnl ====================================
-AM_PATH_GDK_PIXBUF($GDK_PIXBUF_REQUIRED,,
-AC_MSG_ERROR([*** gdk_pixbuf $GDK_PIXBUF_REQUIRED or better is required.]))
-
-AC_SUBST(GDK_PIXBUF_REQUIRED)
-dnl ====================================
-dnl = end gdk-pixbuf checks
-dnl ====================================
-
 dnl =======================
 dnl = begin tests for FreeType2
 dnl =======================
@@ -165,70 +130,6 @@ dnl =======================
 dnl = End tests for FreeType2
 dnl =======================
 
-dnl ====================================
-dnl = Begin tests for libxml
-dnl ====================================
-AC_PATH_PROG(XML_CONFIG,xml-config,no)
-if test x$XML_CONFIG = xno; then
-  AC_MSG_ERROR(Couldn't find xml-config please install the gnome-xml package)
-fi
-
-XML_VERSION="`$XML_CONFIG --version`"
-case "$XML_VERSION" in
-	1.*)
-		:
-  	;;
-
-	*)
-		AC_ERROR(librsvg needs gnome-xml version 1.x not $XML_VERSION)
-	;;
-esac
-
-XML_LIBS=`$XML_CONFIG --libs`
-XML_CFLAGS=`$XML_CONFIG --cflags`
-AC_SUBST(XML_LIBS)
-AC_SUBST(XML_CFLAGS)
-dnl ====================================
-dnl = End tests for libxml
-dnl ====================================
-
-
-dnl ====================================
-dnl = Begin tests for libart
-dnl ====================================
-AC_PATH_PROG(ART_CONFIG,libart-config,no)
-if test x$ART_CONFIG = xno; then
-  AC_MSG_ERROR(Couldn't find libart-config please install the gnome-libs package)
-fi
-
-ART_VERSION="`$ART_CONFIG --version`"
-case "$ART_VERSION" in
-	2.2.*)
-		:
-  	;;
-
-	*)
-		AC_ERROR(librsvg needs libart version 2.2.x not $ART_VERSION)
-	;;
-esac
-
-ART_LIBS=`$ART_CONFIG --libs`
-ART_CFLAGS=`$ART_CONFIG --cflags`
-AC_SUBST(ART_LIBS)
-AC_SUBST(ART_CFLAGS)
-dnl ====================================
-dnl = End tests for libxml
-dnl ====================================
-
-
-dnl AM_PROG_XML_I18N_TOOLS
-
-dnl GNOME_INIT
-
-dnl GNOME_COMPILE_WARNINGS
-dnl GNOME_X_CHECKS
-dnl GNOME_XML_CHECK
-
 LIBRSVG_LIBDIR='-L${libdir}'
 LIBRSVG_INCLUDEDIR='-I${includedir} ${FREETYPE2_CFLAGS}'
 LIBRSVG_LIBS='-lrsvg -lart_lgpl ${FREETYPE2_LIBS}'
@@ -243,5 +144,4 @@ AC_OUTPUT([
 librsvg.spec
 librsvg-features.h
 Makefile
-librsvg-config
-librsvg-1.0.pc], [case "$CONFIG_FILES" in *librsvg-config*) chmod +x librsvg-config;; esac])
+librsvg-2.0.pc])

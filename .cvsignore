@@ -2,6 +2,7 @@
 *.lo
 .deps
 .libs
+ABOUT-NLS
 Makefile
 Makefile.in
 aclocal.m4
@@ -13,9 +14,10 @@ config.log
 config.status
 config.sub
 configure
+intl
 librsvg-*.tar.gz
 librsvg-1.0.pc
-librsvg-config
+librsvg-2.0.pc
 librsvg-features.h
 librsvg.spec
 librsvgConf.sh
@@ -33,6 +35,4 @@ xml-i18n-merge
 xml-i18n-merge.in
 xml-i18n-update
 xml-i18n-update.in
-intl
-ABOUT-NLS
-
+po

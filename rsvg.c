@@ -49,8 +49,8 @@
 #include "art_render_svp.h"
 #include "art_render_mask.h"
 
-#include <gnome-xml/SAX.h>
-#include <gnome-xml/xmlmemory.h>
+#include <libxml/SAX.h>
+#include <libxml/xmlmemory.h>
 
 #include "rsvg-bpath-util.h"
 #include "rsvg-defs.h"
@@ -1366,7 +1366,7 @@ rsvg_entity_decl (void *data, const xmlChar *name, int type,
 
   entity = g_new (xmlEntity, 1);
   entity->type = type;
-  entity->len = strlen (name);
+  entity->length = strlen (name);
   dupname = g_strdup (name);
   entity->name = dupname;
   entity->ExternalID = g_strdup (publicId);

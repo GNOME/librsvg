@@ -182,6 +182,8 @@ main (int argc, char **argv)
 	const char * const *args;
 	int i;
 
+	g_type_init ();
+
 	optCtx = poptGetContext ("test-rsvg", argc, (const char **)argv, optionsTable, 0);
 
 	c = poptGetNextOpt (optCtx);

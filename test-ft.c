@@ -367,6 +367,8 @@ int main(int argc, char **argv)
 	art_affine_identity (affine);
 #endif
 
+	g_type_init ();
+
 	optCtx =
 	    poptGetContext("test-ft", argc, (const char **) argv,
 			   optionsTable, 0);
@@ -378,6 +380,7 @@ int main(int argc, char **argv)
 		out_fn = "-";
 	else
 		out_fn = (char *) args[0];
+
 
 	ctx = rsvg_ft_ctx_new ();
 	fh = rsvg_ft_intern (ctx, font_file_name);

@@ -1,3 +1,21 @@
+2001-07-09  Ramiro Estrugo  <ramiro@fateware.com>
+
+	* .cvsignore:
+	* Makefile.am:
+	* README:
+	* autogen.sh:
+	* configure.in:
+	* librsvg-1.0.pc.in:
+	* librsvg-2.0.pc.in:
+	* librsvg-config.in:
+	* librsvg.spec.in:
+	* librsvgConf.sh.in:
+	* rsvg.c: (rsvg_entity_decl):
+	* test-ft-gtk.c: (main):
+	* test-ft.c: (main):
+	* test-rsvg.c: (main):
+	Port to GNOME2.
+
 ==== librsvg 1.0.1 ====
 
 2001-07-05  Darin Adler  <darin@bentspoon.com>

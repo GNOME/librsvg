@@ -96,7 +96,6 @@ fi
 %defattr(0555, bin, bin)
 %{prefix}/lib/*.la
 %{prefix}/lib/*.sh
-%{prefix}/bin/librsvg-config
 
 %defattr(0444, bin, bin)
 %{prefix}/include/librsvg/*.h
