@@ -148,16 +148,11 @@ gdk_pixbuf_new_cleared (GdkColorspace colorspace, gboolean has_alpha, int bits_p
 						int width, int height)
 {
 	GdkPixbuf *pb;
-
-	gint i;
 	guchar *data;
 
 	pb = gdk_pixbuf_new (colorspace, has_alpha, bits_per_sample, width, height);
-
 	data = gdk_pixbuf_get_pixels (pb);
-	
-	for (i = 0; i < width * height * 4; i++)
-		data[i] = 0;
+	memset(data, 0, width * height * 4);
 
 	return pb;
 }
@@ -210,14 +205,17 @@ alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
 		srcoffsetx = 0 - srcx;
 	else
 		srcoffsetx = 0;
+
 	if (srcy < 0)
 		srcoffsety = 0 - srcy;
 	else
 		srcoffsety = 0;
+
 	if (dstx < 0)
 		dstoffsetx = 0 - dstx;
 	else
 		dstoffsetx = 0;
+
 	if (dsty < 0)
 		dstoffsety = 0 - dsty;
 	else
@@ -291,8 +289,7 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state)
 			if (y != -1)
 				break;
 		}
-	
-	
+		
 	/* move in from the bottom to find the height */
 	for (i = gdk_pixbuf_get_height (ctx->source) - 1; i >= 0; i--)
 		{
@@ -459,24 +456,23 @@ rsvg_filter_store_result (GString * name, GdkPixbuf * result,
 static GdkPixbuf *
 pixbuf_get_alpha (GdkPixbuf * pb)
 {
-	gint i, j;
 	guchar *data;
 	guchar *pbdata;
 	GdkPixbuf *output;
 	
-	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8,
-							 gdk_pixbuf_get_width (pb),
-							 gdk_pixbuf_get_height (pb));
+	gsize i, pbsize;
+
+	pbsize = gdk_pixbuf_get_width (pb) * gdk_pixbuf_get_height (pb);
+
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8,
+									 gdk_pixbuf_get_width (pb),
+									 gdk_pixbuf_get_height (pb));
 	
 	data = gdk_pixbuf_get_pixels (output);
 	pbdata = gdk_pixbuf_get_pixels (pb);
 	
-	for (i = 0; i < gdk_pixbuf_get_width (pb) * gdk_pixbuf_get_width (pb); i++)
-		{
-			for (j = 0; j < 3; j++)
-				data[i * 4 + j] = 0;
-			data[i * 4 + 3] = pbdata[i * 4 + 3];
-		}
+	for (i = 0; i < pbsize; i++)
+		data[i * 4 + 3] = pbdata[i * 4 + 3];
 	
 	return output;
 }
@@ -1921,10 +1917,6 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 					 &filter->super);
 }
 
-
-/*************************************************************/
-/*************************************************************/
-
 /*************************************************************/
 /*************************************************************/
 
@@ -1981,7 +1973,7 @@ get_component_transfer_table_value (gdouble C,
 
 static gdouble
 identity_component_transfer_func (gdouble C,
-				  struct ComponentTransferData *user_data)
+								  struct ComponentTransferData *user_data)
 {
 	return C;
 }
@@ -2074,28 +2066,28 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 				temp = cself->Rfunction((double)in_pixels[y * rowstride + x * 4] / 255, &cself->Rdata) * 255;
 				if (temp > 255)
 					temp = 255;
-				if (temp < 0)
+				else if (temp < 0)
 					temp = 0;
 				output_pixels[y * rowstride + x * 4] = temp;
 		
 				temp = cself->Gfunction((double)in_pixels[y * rowstride + x * 4 + 1] / 255, &cself->Gdata) * 255;
 				if (temp > 255)
 					temp = 255;
-				if (temp < 0)
+				else if (temp < 0)
 					temp = 0;
 				output_pixels[y * rowstride + x * 4 + 1] = temp;
 
 				temp = cself->Bfunction((double)in_pixels[y * rowstride + x * 4 + 2] / 255, &cself->Bdata) * 255;
 				if (temp > 255)
 					temp = 255;
-				if (temp < 0)
+				else if (temp < 0)
 					temp = 0;				
 				output_pixels[y * rowstride + x * 4 + 2] = temp;
 
 				temp = cself->Afunction((double)in_pixels[y * rowstride + x * 4 + 3] / 255, &cself->Adata) * 255;
 				if (temp > 255)
 					temp = 255;
-				if (temp < 0)
+				else if (temp < 0)
 					temp = 0;
 				output_pixels[y * rowstride + x * 4 + 3] = temp;		
 			}
@@ -2235,6 +2227,10 @@ rsvg_start_filter_primitive_component_transfer_function (RsvgHandle * ctx,
 		{
 			function = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentsubfilter))->Afunction;
 			data = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentsubfilter))->Adata;
+		}
+	else
+		{
+			g_assert_not_reached();
 		}
 
 	if (atts != NULL)

@@ -1,3 +1,8 @@
+2003-02-04  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-filter.c: Fix bug in pixbuf_get_alpha(), speed up pixbuf_new_cleared(),
+	be more paranoid in ComponentTransfer
+	
 2003-02-04  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-filter.c: Implemented the ComponentTransfer filter, it works properly now
