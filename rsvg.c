@@ -159,6 +159,12 @@ rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
+rsvg_pixmap_destroy (guchar *pixels, gpointer data)
+{
+  g_free (pixels);
+}
+
+static void
 rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 {
   int i;
@@ -213,7 +219,7 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 					      has_alpha, 8,
 					      new_width, new_height,
 					      rowstride,
-					      NULL,
+					      rsvg_pixmap_destroy,
 					      NULL);
     }
 }
@@ -540,7 +546,7 @@ rsvg_push_opacity_group (RsvgHandle *ctx)
 				     width,
 				     height,
 				     rowstride,
-				     NULL,
+				     rsvg_pixmap_destroy,
 				     NULL);
   ctx->pixbuf = pixbuf;
 }
@@ -1649,7 +1655,8 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
   rsvg_handle_set_size_callback (handle, rsvg_size_callback, &data, NULL);
   while ((result = fread (chars, 1, 3, f)) > 0)
     rsvg_handle_write (handle, chars, result, error);
-
+  rsvg_handle_close (handle, error);
+  
   retval = rsvg_handle_get_pixbuf (handle);
 
   fclose (f);
@@ -1700,6 +1707,8 @@ rsvg_pixbuf_from_file_at_size (const gchar *file_name,
   while ((result = fread (chars, 1, 3, f)) > 0)
     rsvg_handle_write (handle, chars, result, error);
 
+  rsvg_handle_close (handle, error);
+  
   retval = rsvg_handle_get_pixbuf (handle);
 
   fclose (f);
