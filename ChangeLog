@@ -1,5 +1,12 @@
 2003-01-29  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-paint-server.[ch]: Handle objectBoundingBox units for linear gradients, radialGradients. Radial are untested and do not work properly.
+	* rsvg.c: Query the gradientUnits param, in order to pass to ^^^
+	* TODO: Update info so that the objectBoundingBox gets handled properly in case of percentage values.
+	* tests/obj_bbox.svg: Test for the above
+
+2003-01-29  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-gz.c: Fix build
 	* rsvg-file-util.c: Remove GNOME VFS code.
 	

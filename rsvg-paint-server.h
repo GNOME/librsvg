@@ -42,48 +42,50 @@ typedef struct _RsvgPaintServer RsvgPaintServer;
 typedef struct _RsvgPSCtx RsvgPSCtx;
 
 struct _RsvgPSCtx {
-  int dummy;
-/* todo: we need to take in some context information, including:
-
-   1. The global affine transformation.
-
-   2. User coordinates at time of reference (to implement
-   gradientUnits = "userSpaceOnUse").
-
-   3. Object bounding box (to implement gradientUnits =
-   "objectBoundingBox").
-
-   Maybe signal for lazy evaluation of object bbox.
-*/
+	int dummy;
+	/* todo: we need to take in some context information, including:
+	   
+	1. The global affine transformation.
+	
+	2. User coordinates at time of reference (to implement
+	gradientUnits = "userSpaceOnUse").
+	
+	3. Object bounding box (to implement gradientUnits =
+	"objectBoundingBox").
+	
+	Maybe signal for lazy evaluation of object bbox.
+	*/
 };
 
 struct _RsvgGradientStop {
-  double offset;
-  guint32 rgba;
+	double offset;
+	guint32 rgba;
 };
 
 struct _RsvgGradientStops {
-  int n_stop;
-  RsvgGradientStop *stop;
+	int n_stop;
+	RsvgGradientStop *stop;
 };
 
 struct _RsvgLinearGradient {
-  RsvgDefVal super;
-  double affine[6]; /* user space to actual at time of gradient def */
-  RsvgGradientStops *stops;
-  ArtGradientSpread spread;
-  double x1, y1;
-  double x2, y2;
+	RsvgDefVal super;
+	gboolean obj_bbox;
+	double affine[6]; /* user space to actual at time of gradient def */
+	RsvgGradientStops *stops;
+	ArtGradientSpread spread;
+	double x1, y1;
+	double x2, y2;
 };
 
 struct _RsvgRadialGradient {
-  RsvgDefVal super;
-  double affine[6]; /* user space to actual at time of gradient def */
-  RsvgGradientStops *stops;
-  ArtGradientSpread spread;
-  double cx, cy;
-  double r;
-  double fx, fy;
+	RsvgDefVal super;
+	gboolean obj_bbox;
+	double affine[6]; /* user space to actual at time of gradient def */
+	RsvgGradientStops *stops;
+	ArtGradientSpread spread;
+	double cx, cy;
+	double r;
+	double fx, fy;
 };
 
 /* Create a new paint server based on a specification string. */
@@ -92,7 +94,7 @@ rsvg_paint_server_parse (const RsvgDefs *defs, const char *str);
 
 void
 rsvg_render_paint_server (ArtRender *ar, RsvgPaintServer *ps,
-			  const RsvgPSCtx *ctx);
+						  const RsvgPSCtx *ctx);
 
 void
 rsvg_paint_server_ref (RsvgPaintServer *ps);

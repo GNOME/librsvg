@@ -1,5 +1,7 @@
 TODO:
 
+ * Handle percentages correctly for gradients in objectBoundingBox space
+
  * Clipping paths
 
  * Masks
@@ -14,8 +16,5 @@ TODO:
    that we currently use.
 
 On the back burner:
-
- * Consider storing the paths so that the file can be rerendered
-   multiple times without reparsing.
 
  * Make error messages translatable (requires adding gettext).
