@@ -424,11 +424,6 @@ typedef void (* RsvgTextRenderFunc) (PangoFont  *font,
 #define FT_LOAD_TARGET_MONO FT_LOAD_MONOCHROME
 #endif
 
-/* TODO: stuff these into the RsvgHandle object, expose API for manipulating them */
-#define ANTIALIAS_TEXT 0
-#define HINT_TEXT 0
-#define AUTO_HINT_TEXT 0
-
 static RenderCtx *
 rsvg_render_ctx_new (void)
 {
@@ -455,9 +450,10 @@ rsvg_text_ft2_subst_func (FcPattern *pattern,
 
 	(void)ctx;
 
-	FcPatternAddBool (pattern, FC_HINTING, HINT_TEXT);
-	FcPatternAddBool (pattern, FC_ANTIALIAS, ANTIALIAS_TEXT);
-	FcPatternAddBool (pattern, FC_AUTOHINT, AUTO_HINT_TEXT);	
+	FcPatternAddBool (pattern, FC_HINTING, 0);
+	FcPatternAddBool (pattern, FC_ANTIALIAS, 0);
+	FcPatternAddBool (pattern, FC_AUTOHINT, 0);	
+	FcPatternAddBool (pattern, FC_SCALABLE, 1);
 }
 
 static PangoContext *
@@ -561,17 +557,10 @@ static FT_Int32
 rsvg_text_layout_render_flags (RsvgTextLayout *layout)
 {
 	gint flags = 0;
-	
-	if (ANTIALIAS_TEXT)
-		flags |= FT_LOAD_NO_BITMAP;
-	else
-		flags |= FT_LOAD_TARGET_MONO;
-	
-	if (!HINT_TEXT)
-		flags |= FT_LOAD_NO_HINTING;
-	
-	if (AUTO_HINT_TEXT)
-		flags |= FT_LOAD_FORCE_AUTOHINT;	
+
+	flags |= FT_LOAD_NO_BITMAP;
+	flags |= FT_LOAD_TARGET_MONO;
+	flags |= FT_LOAD_NO_HINTING;
 
 	return flags;
 }
