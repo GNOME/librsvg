@@ -8,6 +8,7 @@ typedef struct _RsvgPaintServer RsvgPaintServer;
 typedef struct _RsvgPSCtx RsvgPSCtx;
 
 struct _RsvgPSCtx {
+  int dummy;
 /* todo: we need to take in some context information, including:
 
    1. The global affine transformation.

@@ -1,3 +1,8 @@
+2001-12-06  Darin Adler  <darin@bentspoon.com>
+
+	* rsvg-paint-server.h: Add a dummy member since empty structs
+	are illegal.
+
 2001-12-03  Darin Adler  <darin@bentspoon.com>
 
 	* rsvg-paint-server.c: (rsvg_paint_server_lin_grad_render),
