@@ -1,3 +1,13 @@
+2003-2-1  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-syles.c: implemented filter groups using the same code as the opacity grops
+	* rsvg-private.h: added a current filter pointer for loading primitives in context
+	* rsvg-defs.c: added new def type: filter
+	* rsvg.c: allowed filters and filter primitives to be specified in file, also added the ability for a group to use a filter if neccisary
+	* rsvg-shapes.c: added the ability for a shape to use a filter if it needs to
+	* rsvg-text.c: added the ability for text to use a filter if it needs to
+	* rsvg-filter.c: added new file
+	* rsvg-filter.h: added new file
 2004-01-29  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: bug #132569

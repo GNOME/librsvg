@@ -223,6 +223,8 @@ rsvg_start_g (RsvgHandle *ctx, const xmlChar **atts)
 		}
 	
 	rsvg_parse_style_attrs (ctx, state, "g", klazz, id, atts);
+	if (state->filter != NULL) /* filters use opacity groups as well*/
+		rsvg_push_opacity_group (ctx);
 	if (state->opacity != 0xff)
 		rsvg_push_opacity_group (ctx);
 }
@@ -234,6 +236,8 @@ rsvg_end_g (RsvgHandle *ctx)
 	
 	if (state->opacity != 0xff)
 		rsvg_pop_opacity_group (ctx, state->opacity);
+	if (state->filter != NULL) /* filters use opacity groups as well*/
+		rsvg_pop_opacity_group_as_filter (ctx, state->filter);
 }
 
 typedef struct _RsvgSaxHandlerDefs {
@@ -765,6 +769,8 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_polygon (ctx, atts);
 	else if (!strcmp ((char *)name, "polyline"))
 		rsvg_start_polyline (ctx, atts);
+	else if (!strcmp ((char *)name, "filter"))
+		rsvg_start_filter (ctx, atts);
 }
 
 static void
@@ -1046,6 +1052,8 @@ rsvg_end_element (void *data, const xmlChar *name)
 
 			if (!strcmp ((char *)name, "g"))
 				rsvg_end_g (ctx);
+			if (!strcmp ((char *)name, "filter"))
+				rsvg_end_filter (ctx);
 			else if (!strcmp ((char *)name, "defs")) {
 				ctx->in_defs = FALSE;
 			}

@@ -77,6 +77,8 @@ struct RsvgHandle {
 	GString * title;
 	GString * desc;
 
+	void * currentfilter;
+
 	/* virtual fns */
 	gboolean (* write) (RsvgHandle    *handle,
 						const guchar  *buf,

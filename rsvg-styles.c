@@ -65,6 +65,8 @@ rsvg_state_init (RsvgState *state)
 	state->text_dir     = PANGO_DIRECTION_LTR;
 	state->text_anchor  = TEXT_ANCHOR_START;
 	state->visible      = TRUE;
+
+	state->filter       = NULL;
 }
 
 void
@@ -78,7 +80,10 @@ rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 	rsvg_paint_server_ref (dst->fill);
 	rsvg_paint_server_ref (dst->stroke);
 	dst->save_pixbuf = NULL;
-	dst->opacity = 0xff;	
+
+	/*ok, I don't think this is where these lines go*/	
+	dst->opacity = 0xff;
+	dst->filter = NULL;
 
 	if (src->dash.n_dash > 0)
 		{
@@ -112,6 +117,8 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		{
 			state->opacity = rsvg_css_parse_opacity (str + arg_off);
 		}
+	else if (rsvg_css_param_match (str, "filter"))
+		state->filter = rsvg_filter_parse(ctx->defs, str + arg_off);
 	else if (rsvg_css_param_match (str, "display"))
 		{
 			if (!strcmp (str + arg_off, "none"))
@@ -335,8 +342,7 @@ rsvg_is_style_arg(const char *str)
 			g_hash_table_insert (styles, "display",           GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "fill",              GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "fill-opacity",      GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "fill-rule",         GINT_TO_POINTER 
-(TRUE));
+			g_hash_table_insert (styles, "fill-rule",         GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "font-family",       GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "font-size",         GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "font-stretch",      GINT_TO_POINTER (TRUE));
@@ -344,6 +350,7 @@ rsvg_is_style_arg(const char *str)
 			g_hash_table_insert (styles, "font-variant",      GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "font-weight",       GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "opacity",           GINT_TO_POINTER (TRUE));
+			g_hash_table_insert (styles, "filter",            GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "stop-color",        GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "stop-opacity",      GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "stroke",            GINT_TO_POINTER (TRUE));
@@ -1021,6 +1028,37 @@ rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity)
 			nos_pixels += rowstride;
 		}
 	
+	g_object_unref (tos);
+	ctx->pixbuf = nos;
+}
+
+/**
+ * rsvg_pop_opacity_group_as_filter: End a transparency group using a filter.
+ * @ctx: Context in which to push.
+ * @filter: A pointer to the filter to be used.
+ *
+ * Pops a new transparency group from the stack, recompositing with the
+ * next on stack using a filter to do so.
+ * It is a little bit of a hack to use this stacks for filters too, but it the
+ * same principle in general
+ **/
+void
+rsvg_pop_opacity_group_as_filter (RsvgHandle *ctx, RsvgFilter *filter)
+{
+	RsvgState *state = &ctx->state[ctx->n_state - 1];
+	GdkPixbuf *tos, *nos;
+
+	tos = ctx->pixbuf;
+	nos = state->save_pixbuf;
+	
+	if (tos == NULL || nos == NULL)
+		{
+			/* FIXME: What warning/GError here? */
+			return;
+		}
+	
+	rsvg_filter_render (filter, tos, nos, ctx);
+
 	g_object_unref (tos);
 	ctx->pixbuf = nos;
 }

@@ -249,6 +249,9 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	
 	if (need_tmpbuf)
 		rsvg_push_opacity_group (ctx);
+
+	if (state->filter)
+		rsvg_push_opacity_group (ctx);
 	
 	if (state->fill != NULL)
 		{
@@ -311,6 +314,9 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	
 	if (need_tmpbuf)
 		rsvg_pop_opacity_group (ctx, state->opacity);
+
+	if (state->filter)
+		rsvg_pop_opacity_group_as_filter (ctx, state->filter);
 	
 	art_free (vpath);
 }

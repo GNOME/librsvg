@@ -43,7 +43,8 @@ typedef enum {
 	RSVG_DEF_LINGRAD,
 	RSVG_DEF_RADGRAD,
 	RSVG_DEF_PATTERN,
-	RSVG_DEF_PATH
+	RSVG_DEF_PATH,
+	RSVG_DEF_FILTER
 } RsvgDefType;
 
 struct _RsvgDefVal {
