@@ -26,6 +26,8 @@
 #define RSVG_ART_RENDER_H
 
 #include "rsvg-private.h"
+#include <libart_lgpl/art_rect.h>
+#include <libart_lgpl/art_svp.h>
 
 G_BEGIN_DECLS
 
@@ -36,6 +38,8 @@ struct RsvgArtRender {
 	RsvgRender super;
 	GdkPixbuf *pixbuf;
 	GSList * layers;
+	ArtIRect bbox;
+	ArtSVP * clippath;
 };
 
 struct RsvgArtSVPRender {

@@ -236,16 +236,17 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state)
 	int i;
 	guchar *pixels;
 	int stride;
-	
+	ArtIRect bbox = ((RsvgArtRender *)ctx->ctx->render)->bbox;
+
 	/* First for object bounding box coordinates we need to know how much of the 
 	   source has been drawn on */
 	pixels = gdk_pixbuf_get_pixels (ctx->source);
 	stride = gdk_pixbuf_get_rowstride (ctx->source);
 
-	x = ctx->ctx->bbox.x0;
-	y = ctx->ctx->bbox.y0;
-	width = ctx->ctx->bbox.x1 - ctx->ctx->bbox.x0;
-	height = ctx->ctx->bbox.y1 - ctx->ctx->bbox.y0;
+	x = bbox.x0;
+	y = bbox.y0;
+	width = bbox.x1 - bbox.x0;
+	height = bbox.y1 -bbox.y0;
 
 	ctx->width = gdk_pixbuf_get_width (ctx->source);
 	ctx->height = gdk_pixbuf_get_height (ctx->source);
@@ -306,6 +307,7 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 					GdkPixbuf * bg, RsvgDrawingCtx * context)
 {
 	RsvgFilterContext *ctx;
+	RsvgArtRender * render = ((RsvgArtRender *)context->render);
 	RsvgFilterPrimitive *current;
 	guint i;
 	FPBox bounds;
@@ -338,15 +340,15 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 
 	bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);	
 
-	if (rsvg_state_current (context)->clippath)
-		rsvg_art_clip_image(ctx->lastresult.result, rsvg_state_current (context)->clippath);
+	if (render->clippath)
+		rsvg_art_clip_image(ctx->lastresult.result, render->clippath);
 
 	rsvg_art_alpha_blt (ctx->lastresult.result, bounds.x1, bounds.y1, bounds.x2 - bounds.x1,
 					bounds.y2 - bounds.y1, output, bounds.x1, bounds.y1);
-	context->bbox.x0 = bounds.x1;
-	context->bbox.y0 = bounds.y1;
-	context->bbox.x1 = bounds.x2;
-	context->bbox.y1 = bounds.y2;
+	render->bbox.x0 = bounds.x1;
+	render->bbox.y0 = bounds.y1;
+	render->bbox.x1 = bounds.x2;
+	render->bbox.y1 = bounds.y2;
 	g_object_unref (G_OBJECT (ctx->lastresult.result));
 	g_free(ctx);
 }
@@ -826,10 +828,10 @@ void rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixb
 	FPBox boundarys;
 	RsvgFilterPrimitiveBlendMode mode;
 
-	boundarys.x1 = ctx->bbox.x0;
-	boundarys.y1 = ctx->bbox.y0;
-	boundarys.x2 = ctx->bbox.x1;
-	boundarys.y2 = ctx->bbox.y1;
+	boundarys.x1 = ((RsvgArtRender *)ctx->render)->bbox.x0;
+	boundarys.y1 = ((RsvgArtRender *)ctx->render)->bbox.y0;
+	boundarys.x2 = ((RsvgArtRender *)ctx->render)->bbox.x1;
+	boundarys.y2 = ((RsvgArtRender *)ctx->render)->bbox.y1;
 
 	mode = normal;
 

@@ -34,10 +34,6 @@
 #include "rsvg-shapes.h"
 #include "rsvg-css.h"
 #include "rsvg-defs.h"
-#include "rsvg-filter.h"
-#include "rsvg-mask.h"
-#include "rsvg-image.h"
-#include "rsvg-art-draw.h"
 
 #include <libart_lgpl/art_affine.h>
 

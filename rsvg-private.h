@@ -31,8 +31,6 @@
 #include <libxml/SAX.h>
 #include <libxml/xmlmemory.h>
 #include <pango/pango.h>
-#include <libart_lgpl/art_rect.h>
-#include <libart_lgpl/art_svp.h>
 #include <glib/gslist.h>
 
 G_BEGIN_DECLS
@@ -69,7 +67,6 @@ struct RsvgHandle {
 	RsvgSizeFunc size_func;
 	gpointer user_data;
 	GDestroyNotify user_data_destroy;
-	ArtIRect bbox;
 
 	/* stack; there is a state for each element */
 	
@@ -130,7 +127,6 @@ struct RsvgHandle {
 
 struct RsvgDrawingCtx {
 	RsvgRender *render;
-	ArtIRect bbox;
 	GSList * state;
 	GError **error;
 	RsvgDefs *defs;
@@ -149,6 +145,8 @@ struct RsvgRender {
 						   double x, double y, double w, double h);
 	void (* pop_discrete_layer) (RsvgDrawingCtx *ctx);
 	void (* push_discrete_layer) (RsvgDrawingCtx *ctx);
+	void (* add_clipping_rect) (RsvgDrawingCtx *ctx,
+								double x, double y, double w, double h);
 };
 
 struct RsvgDimensionData {
@@ -244,6 +242,9 @@ void rsvg_push_discrete_layer (RsvgDrawingCtx *ctx);
 void rsvg_render_path (RsvgDrawingCtx *ctx, const char *d);
 void rsvg_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * pb, 
 						double x, double y, double w, double h);
+void rsvg_add_clipping_rect (RsvgDrawingCtx *ctx, double x, double y, 
+							 double w, double h);
+
 
 G_END_DECLS
 

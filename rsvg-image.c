@@ -30,14 +30,8 @@
 #include <string.h>
 #include <math.h>
 #include <errno.h>
-#include "rsvg-filter.h"
 #include <libart_lgpl/art_affine.h>
-#include <libart_lgpl/art_rgb_svp.h>
 #include "rsvg-css.h"
-#include "rsvg-mask.h"
-/*very art dependant at the moment*/
-#include "rsvg-art-composite.h"
-#include "rsvg-art-render.h"
 
 static const char s_UTF8_B64Alphabet[64] = {
 	0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
@@ -509,24 +503,18 @@ rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 	double x = z->x, y = z->y, w = z->w, h = z->h;
 	unsigned int aspect_ratio = z->preserve_aspect_ratio;
 	GdkPixbuf *img = z->img;
-	RsvgState *state = rsvg_state_current(ctx);
-	ArtSVP * temppath;
-	/*this will have to change*/
 
 	rsvg_state_reinherit_top(ctx, &self->state, dominate);
 
+	rsvg_push_discrete_layer(ctx);
+
 	if (!z->overflow && (aspect_ratio & RSVG_ASPECT_RATIO_SLICE)){
-		temppath = rsvg_rect_clip_path(x, y, w, h, ctx);
-		state->clip_path_loaded = TRUE;
-		state->clippath = rsvg_clip_path_merge(temppath,
-											   state->clippath, 'i');
+		rsvg_add_clipping_rect(ctx, x, y, w, h);
 	}
 
 	rsvg_preserve_aspect_ratio(aspect_ratio, (double)gdk_pixbuf_get_width(img),
 							   (double)gdk_pixbuf_get_height(img), &w, &h,
 							   &x, &y);
-
-	rsvg_push_discrete_layer(ctx);
 
 	rsvg_render_image(ctx, img, x, y, w, h);
 

@@ -3,6 +3,10 @@
 	* rsvg-paint-server.c: modified to allow patterns to be rendered on a 
 	pixbuf of the exact nessisary size. Not Cairo based I know, but it
 	needed to be done.
+	* rsvg-styles.c: moved pretty much all libart dependant stuff out of RsvgState
+	* rsvg-private.c: created a new function in RsvgRender: add_clipping_rect 
+	which basically sets up a clipping viewport
+	* rsvg-art-composite.c: broke clip paths in a hardcore way
 	
 2005-2-16  Caleb Moore <c.moore@student.unsw.edu.au>
 

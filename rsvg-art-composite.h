@@ -31,6 +31,7 @@
 #define RSVG_ART_COMPOSITE_H
 
 #include "rsvg-private.h"
+#include <libart_lgpl/art_svp.h>
 
 G_BEGIN_DECLS
 
@@ -44,7 +45,7 @@ void rsvg_art_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy,
 void rsvg_art_clip_image (GdkPixbuf *intermediate, ArtSVP *path);
 void rsvg_art_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate, 
 						   double * affine, double w, double h);
-
+void rsvg_art_add_clipping_rect(RsvgDrawingCtx *ctx, double x, double y, double w, double h);
 G_END_DECLS
 
 #endif

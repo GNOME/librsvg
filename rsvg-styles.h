@@ -144,12 +144,6 @@ struct _RsvgState {
 	gboolean has_startMarker;
 	gboolean has_middleMarker;
 	gboolean has_endMarker;	
-
-	GdkPixbuf *save_pixbuf;
-	ArtIRect underbbox;
-
-	ArtSVP * clippath;
-	int clip_path_loaded : 1;
 };
 
 RsvgState * rsvg_state_new ();
@@ -180,8 +174,6 @@ gboolean rsvg_parse_transform (double dst[6], const char *src);
 RsvgState * rsvg_state_parent (RsvgDrawingCtx *ctx);
 RsvgState * rsvg_state_current (RsvgDrawingCtx *ctx);
 double rsvg_state_current_font_size (RsvgHandle *ctx);
-
-void rsvg_state_clip_path_assure(RsvgDrawingCtx * ctx);
 
 void rsvg_state_pop(RsvgDrawingCtx * ctx);
 void rsvg_state_push(RsvgDrawingCtx * ctx);

@@ -88,7 +88,6 @@ rsvg_state_init (RsvgState *state)
 	state->fill_rule = FILL_RULE_NONZERO;
 	state->clip_rule = FILL_RULE_NONZERO;
 	state->backgroundnew = FALSE;
-	state->save_pixbuf = NULL;
 
 	state->font_family  = g_strdup (RSVG_DEFAULT_FONT);
 	state->font_size    = 12.0;
@@ -137,9 +136,6 @@ rsvg_state_init (RsvgState *state)
 	state->has_startMarker = FALSE;
 	state->has_middleMarker = FALSE;
 	state->has_endMarker = FALSE;
-
-	state->clippath = NULL;
-	state->clip_path_loaded = FALSE;
 }
 
 typedef int (*InheritanceFunction) (int dst, int src);
@@ -154,7 +150,6 @@ rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 	dst->lang = g_strdup (src->lang);
 	rsvg_paint_server_ref (dst->fill);
 	rsvg_paint_server_ref (dst->stroke);
-	dst->save_pixbuf = NULL;
 
 	if (src->dash.n_dash > 0)
 		{
@@ -261,9 +256,6 @@ rsvg_state_inherit_run (RsvgState *dst, const RsvgState *src,
 			for (i = 0; i < src->dash.n_dash; i++)
 				dst->dash.dash[i] = src->dash.dash[i];
 		} 
-
-	if (src->clippath != NULL)
-		dst->clippath = src->clippath;
 
 	if (inherituninheritables)
 		{
@@ -1414,31 +1406,6 @@ void
 rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPropertyBagEnumFunc func, gpointer user_data)
 {
 	g_hash_table_foreach (bag->props, (GHFunc)func, user_data);
-}
-
-void 
-rsvg_state_clip_path_assure(RsvgDrawingCtx * ctx)
-{
-	ArtSVP * tmppath;
-	RsvgState * state;
-
-	state = rsvg_state_current(ctx);
-
-	if (state->clip_path_loaded)
-		return;
-
-	if (state->clip_path_ref)
-		{
-			rsvg_state_push(ctx);
-
-			tmppath = rsvg_clip_path_render (state->clip_path_ref, ctx);
-
-			rsvg_state_pop(ctx);
-
-			state->clip_path_loaded = TRUE;
-			state->clippath = rsvg_clip_path_merge(tmppath, 
-												   state->clippath, 'i');
-		}
 }
 
 void

@@ -28,9 +28,7 @@
 
 #include "rsvg-structure.h"
 #include "rsvg-image.h"
-#include "rsvg-mask.h"
 #include "rsvg-css.h"
-#include "rsvg-art-composite.h"
 
 #include <libart_lgpl/art_affine.h>
 
@@ -169,7 +167,8 @@ rsvg_defs_drawable_use_resolve(RsvgDefsDrawableUse * self, RsvgDrawingCtx *ctx, 
 	width = self->w;
 	height = self->h;
 
-	RsvgDefVal * parent = rsvg_defs_lookup (ctx->defs, self->href->str);
+	RsvgDefVal * parent = self->link;
+
 	if (parent != NULL)
 		switch(parent->type)
 			{
@@ -226,6 +225,10 @@ rsvg_defs_drawable_use_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 
 	child = rsvg_defs_drawable_use_resolve(use, ctx, rsvg_state_current(ctx)->affine);
 
+	/* If it can find nothing to draw... draw nothing */
+	if (!use->link)
+		return;
+
 	rsvg_push_discrete_layer (ctx);
 
 	rsvg_state_push(ctx);
@@ -251,28 +254,19 @@ rsvg_defs_drawable_svg_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 {
 	RsvgDefsDrawableSvg * sself;
 	RsvgState *state;
-	ArtSVP * temppath = NULL;
 	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
 	guint i;
 	sself = (RsvgDefsDrawableSvg *)self;
 
-	if (!sself->overflow)
-		temppath = rsvg_rect_clip_path(sself->x,
-									   sself->y,
-									   sself->w,
-									   sself->h,
-									   ctx);
+	rsvg_push_discrete_layer (ctx);
+
+	rsvg_add_clipping_rect(ctx, sself->x, sself->y, sself->w, sself->h);
 
 	rsvg_state_reinherit_top(ctx, &self->state, dominate);
 
-	rsvg_push_discrete_layer (ctx);
-
 	state = rsvg_state_current (ctx);
-	if (temppath != NULL){
-		state->clip_path_loaded = TRUE;
-		state->clippath = rsvg_clip_path_merge(temppath,
-											   state->clippath, 'i');
-	}
+
+	if (!sself->overflow)
 
 	for (i = 0; i < group->children->len; i++)
 		{
@@ -436,7 +430,7 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (got_width || got_height)
 		if (width <= 0. || height <= 0.)
 			return;
-	
+
 	RsvgDefsDrawableUse * use;
 	use = g_new (RsvgDefsDrawableUse, 1);
 	use->super.state = state;
@@ -447,7 +441,8 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	use->y = y;
 	use->w = width;
 	use->h = height;
-	use->href = g_string_new(xlink_href);
+	use->link = NULL;
+	rsvg_defs_add_resolver (ctx->defs, &use->link, xlink_href);
 	rsvg_defs_set (ctx->defs, id, &use->super.super);
 	
 	use->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
@@ -471,7 +466,6 @@ rsvg_defs_drawable_symbol_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 {
 	RsvgDefsDrawableSymbol * sself;
 	RsvgState *state;
-	ArtSVP * temppath = NULL;
 	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
 	guint i;
 	sself = (RsvgDefsDrawableSymbol *)self;
@@ -483,14 +477,7 @@ rsvg_defs_drawable_symbol_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 	state = rsvg_state_current (ctx);
 
 	if (!sself->overflow){
-		temppath = rsvg_rect_clip_path(sself->x,
-									   sself->y,
-									   sself->width,
-									   sself->height,
-									   ctx);
-		state->clip_path_loaded = TRUE;
-		state->clippath = rsvg_clip_path_merge(temppath,
-											   state->clippath, 'i');
+		rsvg_add_clipping_rect(ctx, sself->x, sself->y, sself->width, sself->height);
 	}
 
 	for (i = 0; i < group->children->len; i++)

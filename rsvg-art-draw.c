@@ -209,14 +209,13 @@ rsvg_render_svp (RsvgDrawingCtx *ctx, ArtSVP *svp,
 {
 	GdkPixbuf *pixbuf;
 	ArtRender *render;
+	RsvgArtRender *arender = (RsvgArtRender *)ctx->render;
 	gboolean has_alpha;
 	RsvgFRect temprect;
 	ArtIRect temptemprect;
 	RsvgPSCtx gradctx;
 	RsvgState *state;
 	int i;	
-
-	rsvg_state_clip_path_assure(ctx);
 
 	pixbuf = ((RsvgArtRender *)ctx->render)->pixbuf;
 	if (pixbuf == NULL)
@@ -242,18 +241,18 @@ rsvg_render_svp (RsvgDrawingCtx *ctx, ArtSVP *svp,
 	
 	temprect = rsvg_calculate_svp_bounds(svp, state->affine);
 	
-	if (state->clippath != NULL)
+	if (arender->clippath != NULL)
 		{
 		  ArtSVP * svpx;
-		  svpx = art_svp_intersect(svp, state->clippath);
-			svp = svpx;
+		  svpx = art_svp_intersect(svp, arender->clippath);
+		  svp = svpx;
 		}
 	
 	art_render_svp (render, svp);
 	art_render_mask_solid (render, (opacity << 8) + opacity + (opacity >> 7));
 
 	temptemprect = rsvg_frect_pixelspaceise(temprect, state->affine);
-	art_irect_union(&ctx->bbox, &ctx->bbox, &temptemprect);
+	art_irect_union(&arender->bbox, &arender->bbox, &temptemprect);
 
 	gradctx.x0 = temprect.x0;
 	gradctx.y0 = temprect.y0;
@@ -268,7 +267,7 @@ rsvg_render_svp (RsvgDrawingCtx *ctx, ArtSVP *svp,
 	rsvg_render_paint_server (render, ps, &gradctx);
 	art_render_invoke (render);
 
-	if (state->clippath != NULL) /*we don't need svpx any more*/
+	if (arender->clippath != NULL) /*we don't need svpx any more*/
 		art_free(svp);
 }
 
@@ -546,6 +545,7 @@ void rsvg_art_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * img,
 	double tmp_tmp_affine[6];
 	RsvgState *state = rsvg_state_current(ctx);
 	GdkPixbuf *intermediate;
+	RsvgArtRender *arender = (RsvgArtRender *)ctx->render;
 	double basex, basey;
 	ArtIRect temprect;
 	/*this will have to change*/
@@ -568,9 +568,9 @@ void rsvg_art_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * img,
 
 	rsvg_art_affine_image(img, intermediate, tmp_affine, w, h);
 
-	if (state->clippath)
+	if (arender->clippath)
 		{
-			rsvg_art_clip_image(intermediate, state->clippath);
+			rsvg_art_clip_image(intermediate, arender->clippath);
 		}
 
 	/*slap it down*/
@@ -596,7 +596,7 @@ void rsvg_art_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * img,
 				temprect.y1 = MAX(basey, temprect.y1);
 			}
 
-	art_irect_union(&ctx->bbox, &ctx->bbox, &temprect);
+	art_irect_union(&arender->bbox, &arender->bbox, &temprect);
 
 	g_object_unref (G_OBJECT (intermediate));
 }

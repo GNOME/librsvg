@@ -27,14 +27,10 @@
 
 #include "rsvg-private.h"
 #include "rsvg-styles.h"
-#include "rsvg-art-draw.h"
-#include "rsvg-filter.h"
 #include "rsvg-text.h"
 #include "rsvg-css.h"
-#include "rsvg-mask.h"
 
 #include <libart_lgpl/art_affine.h>
-#include <libart_lgpl/art_render_mask.h>
 
 #include "rsvg-shapes.h"
 

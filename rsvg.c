@@ -1504,6 +1504,8 @@ rsvg_handle_close_impl (RsvgHandle  *handle,
       g_propagate_error (error, real_error);
       return FALSE;
       }*/
+	rsvg_defs_resolve_all(handle->defs);
+
 	handle->finished = TRUE;
 
 	return TRUE;
@@ -1654,8 +1656,6 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 	draw->state = NULL;
 	/* should this be G_ALLOC_ONLY? */
 	draw->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
-
-	draw->bbox.x0 = draw->bbox.y0 = draw->bbox.x1 = draw->bbox.y1 = 0;
 
 	new_width = handle->new_width;
 	new_height = handle->new_height;
@@ -1967,20 +1967,29 @@ rsvg_term (void)
 	xmlCleanupParser ();
 }
 
-void rsvg_pop_discrete_layer(RsvgDrawingCtx *ctx)
+void 
+rsvg_pop_discrete_layer(RsvgDrawingCtx *ctx)
 {
 	ctx->render->pop_discrete_layer(ctx);
 }
-void rsvg_push_discrete_layer (RsvgDrawingCtx *ctx)
+void 
+rsvg_push_discrete_layer (RsvgDrawingCtx *ctx)
 {
 	ctx->render->push_discrete_layer(ctx);
 }
-void rsvg_render_path (RsvgDrawingCtx *ctx, const char *d)
+void 
+rsvg_render_path (RsvgDrawingCtx *ctx, const char *d)
 {
 	ctx->render->render_path(ctx, d);
 }
-void rsvg_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * pb, 
+void 
+rsvg_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * pb, 
 						double x, double y, double w, double h)
 {
 	ctx->render->render_image(ctx, pb, x, y, w, h);
+}
+void 
+rsvg_add_clipping_rect (RsvgDrawingCtx *ctx, double x, double y, double w, double h)
+{
+	ctx->render->add_clipping_rect(ctx, x, y, w, h);
 }

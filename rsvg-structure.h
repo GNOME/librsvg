@@ -72,7 +72,7 @@ struct _RsvgDefsDrawableSymbol {
 
 struct _RsvgDefsDrawableUse {
  	RsvgDefsDrawable super;
- 	GString * href;
+	RsvgDefVal * link;
 	gint x, y, w, h;
 };
 

@@ -35,9 +35,12 @@ RsvgArtRender * rsvg_art_render_new(GdkPixbuf * pb)
 	output->super.render_image         = rsvg_art_render_image;
 	output->super.pop_discrete_layer   = rsvg_art_pop_discrete_layer;
 	output->super.push_discrete_layer  = rsvg_art_push_discrete_layer;
+	output->super.add_clipping_rect    = rsvg_art_add_clipping_rect;
 
+	output->bbox.x0 = output->bbox.y0 = output->bbox.x1 = output->bbox.y1 = 0;
 	output->pixbuf = pb;
 	output->layers = NULL;
+	output->clippath = NULL;
 	return output;
 }
 
@@ -48,6 +51,10 @@ bogus(RsvgDrawingCtx *ctx)
 static void 
 image_bogus(RsvgDrawingCtx *ctx, GdkPixbuf *pb, 
 			double x, double y, double w, double h)
+{
+}
+static void 
+cr_bogus(RsvgDrawingCtx *ctx, double x, double y, double w, double h)
 {
 }
 
@@ -61,6 +68,7 @@ RsvgArtSVPRender * rsvg_art_svp_render_new()
 	output->super.render_image         = image_bogus;
 	output->super.pop_discrete_layer   = bogus;
 	output->super.push_discrete_layer  = bogus;
+	output->super.add_clipping_rect    = cr_bogus;
 
 	output->outline = NULL;
 	return output;

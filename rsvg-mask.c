@@ -298,12 +298,14 @@ rsvg_clip_path_render (RsvgClipPath * self, RsvgDrawingCtx *ctx)
 
 	if (self->units == objectBoundingBox)
 		{
-			state->affine[0] = ctx->bbox.x1 - ctx->bbox.x0;
+			state->affine[0] = ((RsvgArtRender *)ctx->render)->bbox.x1 
+				- ((RsvgArtRender *)ctx->render)->bbox.x0;
 			state->affine[1] = 0;
 			state->affine[2] = 0;
-			state->affine[3] = ctx->bbox.y1 - ctx->bbox.y0;
-			state->affine[4] = ctx->bbox.x0;
-			state->affine[5] = ctx->bbox.y0;
+			state->affine[3] = ((RsvgArtRender *)ctx->render)->bbox.y1 - 
+				((RsvgArtRender *)ctx->render)->bbox.y0;
+			state->affine[4] = ((RsvgArtRender *)ctx->render)->bbox.x0;
+			state->affine[5] = ((RsvgArtRender *)ctx->render)->bbox.y0;
 		}
 
 	for (i = 0; i < group->children->len; i++)
@@ -485,7 +487,6 @@ rsvg_clip_path_merge(ArtSVP * first, ArtSVP * second, char operation)
 				tmppath = art_svp_intersect(first, second);
 			else
 				tmppath = art_svp_union(first, second);
-			art_free(first);
 			art_free(second);
 			return tmppath;
 		}

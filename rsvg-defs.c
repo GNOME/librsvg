@@ -31,6 +31,7 @@
 
 #include <glib/ghash.h>
 #include <glib/gmem.h>
+#include <glib/gslist.h>
 #include <glib/gstrfuncs.h>
 #include <glib/gmessages.h>
 
@@ -39,6 +40,15 @@ struct _RsvgDefs {
 	GPtrArray *unnamed;
 	GHashTable *externs;
 	gchar * base_uri;
+	GSList * toresolve;
+};
+
+typedef struct _RsvgResolutionPending RsvgResolutionPending;
+
+struct _RsvgResolutionPending
+{
+	RsvgDefVal ** tochange;
+	GString * name;
 };
 
 RsvgDefs *
@@ -50,6 +60,7 @@ rsvg_defs_new (void)
 	result->externs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	result->unnamed = g_ptr_array_new ();
 	result->base_uri = NULL;
+	result->toresolve = NULL;
 
 	return result;
 }
@@ -151,4 +162,30 @@ rsvg_defs_free (RsvgDefs *defs)
 	g_ptr_array_free(defs->unnamed, TRUE);
 
 	g_free (defs);
+}
+
+void
+rsvg_defs_add_resolver(RsvgDefs *defs, RsvgDefVal ** tochange, 
+					   const gchar * name)
+{
+	RsvgResolutionPending * data;
+	data = g_new(RsvgResolutionPending, 1);
+	data->tochange = tochange;
+	data->name = g_string_new(name);
+	defs->toresolve	= g_slist_prepend(defs->toresolve, data);
+}
+
+void
+rsvg_defs_resolve_all(RsvgDefs *defs)
+{
+	while (defs->toresolve)
+		{	
+			RsvgResolutionPending * data;
+			data = defs->toresolve->data;
+			*(data->tochange) = rsvg_defs_lookup (defs, data->name->str);
+			g_free(data);
+			defs->toresolve = g_slist_delete_link(defs->toresolve,
+												  defs->toresolve);
+
+		}
 }

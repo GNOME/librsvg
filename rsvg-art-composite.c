@@ -46,6 +46,17 @@ rsvg_pixmap_destroy (gchar *pixels, gpointer data)
   g_free (pixels);
 }
 
+typedef struct _RsvgArtDiscreteLayer RsvgArtDiscreteLayer;
+
+struct _RsvgArtDiscreteLayer
+{
+	GdkPixbuf *save_pixbuf;
+	ArtIRect underbbox;
+	RsvgState * state;
+	ArtSVP * clippath_save;
+	gboolean clippath_loaded;
+};
+
 void
 rsvg_art_push_discrete_layer (RsvgDrawingCtx *ctx)
 {
@@ -54,51 +65,68 @@ rsvg_art_push_discrete_layer (RsvgDrawingCtx *ctx)
 	RsvgArtRender *render = (RsvgArtRender *)ctx->render;
 	art_u8 *pixels;
 	int width, height, rowstride;
+	RsvgArtDiscreteLayer * layer;
 
 	state = rsvg_state_current(ctx);
 	pixbuf = render->pixbuf;
 
-	rsvg_state_clip_path_assure(ctx);
+	layer = g_new(RsvgArtDiscreteLayer, 1);
+	render->layers = g_slist_prepend(render->layers, layer);
+	layer->state = state;
+	layer->save_pixbuf = NULL;
 
-	if (state->filter == NULL && state->opacity == 0xFF && 
-		!state->backgroundnew && state->mask == NULL && !state->adobe_blend)
-		return;
-	
-	state->save_pixbuf = pixbuf;
-	state->underbbox = ctx->bbox;	
-	ctx->bbox.x0 = 0;
-	ctx->bbox.x1 = 0;
-	ctx->bbox.y0 = 0;
-	ctx->bbox.y1 = 0;
-
-	if (pixbuf == NULL)
+	if (state->filter != NULL || state->opacity != 0xFF || 
+		state->backgroundnew || state->mask != NULL || state->adobe_blend)
 		{
-			/* FIXME: What warning/GError here? */
-			return;
+			layer->save_pixbuf = pixbuf;
+			layer->underbbox = render->bbox;
+			
+			render->bbox.x0 = 0;
+			render->bbox.x1 = 0;
+			render->bbox.y0 = 0;
+			render->bbox.y1 = 0;
+
+			if (pixbuf == NULL)
+				{
+					/* FIXME: What warning/GError here? */
+					return;
+				}
+			
+			width = gdk_pixbuf_get_width (pixbuf);
+			height = gdk_pixbuf_get_height (pixbuf);
+			rowstride = gdk_pixbuf_get_rowstride (pixbuf);
+			pixels = g_new (art_u8, rowstride * height);
+			memset (pixels, 0, rowstride * height);
+			
+			pixbuf = gdk_pixbuf_new_from_data (pixels,
+											   GDK_COLORSPACE_RGB,
+											   TRUE,
+											   gdk_pixbuf_get_bits_per_sample (pixbuf),
+											   width,
+											   height,
+											   rowstride,
+											   (GdkPixbufDestroyNotify)rsvg_pixmap_destroy,
+											   NULL);
+			render->pixbuf = pixbuf;
 		}
 
-	if (!gdk_pixbuf_get_has_alpha (pixbuf))
-    {
-		g_warning (_("push/pop transparency group on non-alpha buffer nyi\n"));
-		return;
-    }
-	
-	width = gdk_pixbuf_get_width (pixbuf);
-	height = gdk_pixbuf_get_height (pixbuf);
-	rowstride = gdk_pixbuf_get_rowstride (pixbuf);
-	pixels = g_new (art_u8, rowstride * height);
-	memset (pixels, 0, rowstride * height);
-	
-	pixbuf = gdk_pixbuf_new_from_data (pixels,
-									   GDK_COLORSPACE_RGB,
-									   TRUE,
-									   gdk_pixbuf_get_bits_per_sample (pixbuf),
-									   width,
-									   height,
-									   rowstride,
-									   (GdkPixbufDestroyNotify)rsvg_pixmap_destroy,
-									   NULL);
-	render->pixbuf = pixbuf;
+	if (state->clip_path_ref)
+		{
+			ArtSVP * tmppath;
+
+			rsvg_state_push(ctx);   
+			tmppath = rsvg_clip_path_render (state->clip_path_ref, ctx);		
+			rsvg_state_pop(ctx);
+
+			render->clippath = rsvg_clip_path_merge(render->clippath, tmppath, 'i');
+			layer->clippath_loaded = TRUE;
+			layer->clippath_save = render->clippath;
+		}
+	else
+		{
+			layer->clippath_save = render->clippath;
+			layer->clippath_loaded = FALSE;
+		}
 }
 
 static void
@@ -111,6 +139,7 @@ rsvg_use_opacity (RsvgDrawingCtx *ctx, int opacity,
 	int rowstride;
 	int x, y;
 	int tmp;
+	RsvgArtRender *render = (RsvgArtRender *)ctx->render;
 	
 	
 	if (tos == NULL || nos == NULL)
@@ -132,12 +161,12 @@ rsvg_use_opacity (RsvgDrawingCtx *ctx, int opacity,
 	tos_pixels = gdk_pixbuf_get_pixels (tos);
 	nos_pixels = gdk_pixbuf_get_pixels (nos);
 
-	tos_pixels += rowstride * MAX(ctx->bbox.y0, 0);
-	nos_pixels += rowstride * MAX(ctx->bbox.y0, 0);
+	tos_pixels += rowstride * MAX(render->bbox.y0, 0);
+	nos_pixels += rowstride * MAX(render->bbox.y0, 0);
 	
-	for (y = MAX(ctx->bbox.y0, 0); y < MIN(ctx->bbox.y1 + 1, height); y++)
+	for (y = MAX(render->bbox.y0, 0); y < MIN(render->bbox.y1 + 1, height); y++)
 		{
-			for (x = MAX(ctx->bbox.x0, 0); x < MIN(ctx->bbox.x1 + 1, width); x++)
+			for (x = MAX(render->bbox.x0, 0); x < MIN(render->bbox.x1 + 1, width); x++)
 				{
 					art_u8 r, g, b, a;
 					a = tos_pixels[4 * x + 3];
@@ -180,34 +209,35 @@ get_next_out(gint * operationsleft, GdkPixbuf * in, GdkPixbuf * tos,
 static GdkPixbuf *
 rsvg_compile_bg(RsvgDrawingCtx *ctx, RsvgState *topstate)
 {
-	RsvgArtRender *render = (RsvgArtRender *)ctx->render;
 	int i, foundstate;
 	GdkPixbuf *intermediate, *lastintermediate;
-	RsvgState *state, *lastvalid;
+	RsvgArtDiscreteLayer *state, *lastvalid;
 	ArtIRect save;
-
-	lastvalid = NULL;
+	RsvgArtRender *render = (RsvgArtRender *)ctx->render;
 
 	foundstate = 0;	
 
-	lastintermediate = gdk_pixbuf_copy(topstate->save_pixbuf);
+	lastvalid = render->layers->data;
+	lastintermediate = gdk_pixbuf_copy(lastvalid->save_pixbuf);
+
+	lastvalid = NULL;
 			
-	save = ctx->bbox;
+	save = render->bbox;
 
-	ctx->bbox.x0 = 0;
-	ctx->bbox.y0 = 0;
-	ctx->bbox.x1 = gdk_pixbuf_get_width(render->pixbuf);
-	ctx->bbox.y1 = gdk_pixbuf_get_height(render->pixbuf);
+	render->bbox.x0 = 0;
+	render->bbox.y0 = 0;
+	render->bbox.x1 = gdk_pixbuf_get_width(render->pixbuf);
+	render->bbox.y1 = gdk_pixbuf_get_height(render->pixbuf);
 
-	for (i = 0; (state = g_slist_nth_data(ctx->state, i)) != NULL; i++)
+	for (i = 0; (state = g_slist_nth_data(render->layers, i)) != NULL; i++)
 		{
-			if (state == topstate)
+			if (state->state == topstate)
 				{
 					foundstate = 1;
 				}
 			else if (!foundstate)
 				continue;
-			if (state->backgroundnew)
+			if (state->state->backgroundnew)
 				break;
 			if (state->save_pixbuf)
 				{
@@ -222,7 +252,7 @@ rsvg_compile_bg(RsvgDrawingCtx *ctx, RsvgState *topstate)
 				}
 		}
 
-	ctx->bbox = save;
+	render->bbox = save;
 	return lastintermediate;
 }
 
@@ -318,22 +348,33 @@ rsvg_art_pop_discrete_layer(RsvgDrawingCtx *ctx)
 	GdkPixbuf *tos, *nos;
 	RsvgState *state;
 	RsvgArtRender *render = (RsvgArtRender *)ctx->render;
+	GSList * link;
+	RsvgArtDiscreteLayer * layer;
 
 	state = rsvg_state_current(ctx);
 
-	if (state->filter == NULL && state->opacity == 0xFF && 
-		!state->backgroundnew && state->mask == NULL && !state->adobe_blend)
-		return;
+	link = g_slist_nth(render->layers, 0);
+	layer = link->data;
 
-	tos = render->pixbuf;
-	nos = state->save_pixbuf;
-	
-	if (nos != NULL)
-		rsvg_composite_layer(ctx, state, tos, nos);
-	
-	g_object_unref (tos);
-	render->pixbuf = nos;
-	art_irect_union(&ctx->bbox, &ctx->bbox, &state->underbbox);
+	if (layer->save_pixbuf)
+		{
+			tos = render->pixbuf;
+			nos = layer->save_pixbuf;
+			
+			if (nos != NULL)
+				rsvg_composite_layer(ctx, state, tos, nos);
+			
+			g_object_unref (tos);
+			render->pixbuf = nos;
+			art_irect_union(&render->bbox, &render->bbox, &layer->underbbox);
+		}
+	if (layer->clippath_loaded)
+		{
+			art_free(render->clippath);
+		}
+	render->clippath = layer->clippath_save;
+	g_free (layer);
+	render->layers = g_slist_delete_link(render->layers, link);
 }
 
 gboolean
@@ -572,4 +613,16 @@ rsvg_art_clip_image(GdkPixbuf *intermediate, ArtSVP *path)
 				intpix[i * 4 + j * intstride + 3] = intpix[i * 4 + j * intstride + 3] * 
 					basepix[i * 3 + j * basestride] / 255;
 			}
+}
+
+void 
+rsvg_art_add_clipping_rect(RsvgDrawingCtx *ctx, double x, double y, double w, double h)
+{
+	ArtSVP * temppath;
+	RsvgArtRender * render = (RsvgArtRender *)ctx->render;
+	RsvgArtDiscreteLayer * data = g_slist_nth(render->layers, 0)->data;	
+	temppath = rsvg_rect_clip_path(x, y, w, h, ctx);
+	data->clippath_loaded = TRUE;
+	render->clippath = rsvg_clip_path_merge(render->clippath, temppath, 'i');
+	
 }
