@@ -185,6 +185,45 @@ rsvg_tspan_dy(RsvgTspan * self)
 	return total;
 }
 
+static void
+rsvg_tchunk_remove_leading(RsvgTChunk * self);
+
+static void
+rsvg_tspan_remove_leading(RsvgTspan * self)
+{
+	rsvg_tchunk_remove_leading(g_ptr_array_index(self->contents, 0));
+}
+
+static void
+rsvg_tchunk_remove_leading(RsvgTChunk * self)
+{
+	if (self->string)
+		if (self->string->str[0] == ' ')
+			g_string_erase(self->string, 0, 1);
+	if (self->span)
+		rsvg_tspan_remove_leading(self->span);
+}
+
+static void
+rsvg_tchunk_remove_trailing(RsvgTChunk * self);
+
+static void
+rsvg_tspan_remove_trailing(RsvgTspan * self)
+{
+	rsvg_tchunk_remove_trailing(g_ptr_array_index(self->contents, 
+												  self->contents->len - 1));
+}
+
+static void
+rsvg_tchunk_remove_trailing(RsvgTChunk * self)
+{
+	if (self->string)
+		if (self->string->str[self->string->len] == ' ')
+			g_string_erase(self->string, self->string->len - 1, 1);
+	if (self->span)
+		rsvg_tspan_remove_trailing(self->span);
+}
+
 typedef struct _RsvgSaxHandlerText {
 	RsvgSaxHandler super;
 	RsvgSaxHandler *parent;
@@ -201,6 +240,10 @@ rsvg_text_handler_free (RsvgSaxHandler *self)
 	RsvgSaxHandlerText * z;
 	z = (RsvgSaxHandlerText *)self;
 
+	/*maybe this isn't the best place for this*/
+	rsvg_tspan_remove_leading(z->tspan);
+	rsvg_tspan_remove_trailing(z->tspan);
+
 	g_string_free(z->id, TRUE);
 	g_free (self);
 }
@@ -209,28 +252,51 @@ static void
 rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 {
 	char *string, *tmp;
-	int beg, end;
+	int i, j;
 	RsvgSaxHandlerText * z;
 	RsvgTChunk * tchunk;
 
 	z = (RsvgSaxHandlerText *)self;	
 
-	beg = 0;
-	end = len;
-	
-	if (end - beg == 0)
+	string = g_malloc (len + 1);
+
+	for (i = 0; i < len; i++)
 		{
-			/* TODO: be smarter with some "last was space" logic */
-			end = 1; beg = 0;
-			string = g_strdup (" ");
+			
+			if (ch[i] == '\n' || ch[i] == '\t')
+				string[i] = ' ';
+			else
+				string[i] = ch[i];
+		}
+
+	if (1 /*todo replace with something about xml:space*/)
+		{
+			tmp = g_malloc (len + 1);
+			j = 0;
+			for (i = 0; i < len; i++)
+				{
+					if (j == 0)					
+						tmp[j++] = string[i];
+					else
+						{
+							if (string[i] != ' ' || string[i - 1] != ' ')
+								tmp[j++] = string[i];
+						}
+				}
+			tmp[j] = '\0';
+			g_free (string);
+			string = tmp;
 		}
 	else
-		{
-			string = g_malloc (end - beg + 1);
-			memcpy (string, ch + beg, end - beg);
-			string[end - beg] = 0;
-		}
+		j = len;
 	
+	if (j == 0)
+		{
+			g_free (string);
+			return;
+		}
+
+
 	if (!g_utf8_validate (string, -1, NULL))
 		{
 			tmp = rsvg_make_valid_utf8 (string);
@@ -317,8 +383,7 @@ rsvg_text_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 			child = z->innerspan;
 			z->innerspan = child->parent;
 		}
-	
-		else if (!strcmp ((char *)name, "text"))
+	else if (!strcmp ((char *)name, "text"))
 		{
 			if (ctx->handler != NULL)
 				{

@@ -151,7 +151,7 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
                 return FALSE;
         }
 
-        context->pixbuf = rsvg_handle_get_pixbuf (context->handle);
+        /*       context->pixbuf = rsvg_handle_get_pixbuf (context->handle);*/
 
         emit_prepared (context);
         maybe_update (context);

@@ -105,6 +105,8 @@ struct RsvgHandle {
 	
 	gchar * base_uri;
 
+	gboolean finished;
+
 	void * currentfilter;
 	void * currentsubfilter;
 

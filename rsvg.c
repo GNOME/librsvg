@@ -1529,6 +1529,8 @@ rsvg_handle_close_impl (RsvgHandle  *handle,
       g_propagate_error (error, real_error);
       return FALSE;
       }*/
+	handle->finished = TRUE;
+
 	return TRUE;
 }
 
@@ -1660,6 +1662,8 @@ rsvg_handle_new (void)
 	handle->write = rsvg_handle_write_impl;
 	handle->close = rsvg_handle_close_impl;
 	handle->free  = rsvg_handle_free_impl;
+
+	handle->finished = 0;
 
 	return handle;
 }
@@ -1917,6 +1921,10 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 	GdkPixbuf * output;
 	DrawingCtx * draw;
 	g_return_val_if_fail (handle != NULL, NULL);
+
+	if (!handle->finished)
+		return NULL;
+
 	draw = rsvg_new_drawing_ctx(handle);
 
 	rsvg_defs_drawable_draw((RsvgDefsDrawable *)handle->treebase, draw, 0);
