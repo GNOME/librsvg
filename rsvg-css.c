@@ -39,44 +39,6 @@
 #define MM_PER_INCH     (25.4)
 #define PICA_PER_INCH   (6.0)
 
-#ifndef HAVE_STRTOK_R
-
-static char *
-strtok_r(char *s, const char *delim, char **last)
-{
-	char *p;
-
-	if (s == NULL)
-		s = *last;
-
-	if (s == NULL)
-		return NULL;
-
-	while (*s && strchr (delim, *s))
-		s++;
-
-	if (*s == '\0') {
-		*last = NULL;
-		return NULL;
-	}
-
-	p = s;
-	while (*p && !strchr (delim, *p))
-		p++;
-
-	if (*p == '\0')
-		*last = NULL;
-	else {
-		*p = '\0';
-		p++;
-		*last = p;
-	}
-	
-	return s;
-}
-
-#endif /* !HAVE_STRTOK_R */
-
 /**
  * rsvg_css_parse_vbox
  * @vbox: The CSS viewBox
@@ -91,31 +53,27 @@ gboolean
 rsvg_css_parse_vbox (const char * vbox, double * x, double * y,
 					 double * w, double * h)
 {
-	/* TODO: make me cleaner and more efficient */
-	char *ptr, *tok;
-	char *str = g_strdup (vbox);
-	gboolean has_vbox = FALSE;
-	
-	tok = strtok_r (str, ", \t", &ptr);
-	if (tok != NULL) {
-		*x = g_ascii_strtod (tok, NULL);
-		tok = strtok_r (NULL, ", \t", &ptr);
-		if (tok != NULL) {
-			*y = g_ascii_strtod (tok, NULL);
-			tok = strtok_r (NULL, ", \t", &ptr);
-			if (tok != NULL) {
-				*w = g_ascii_strtod (tok, NULL);
-				tok = strtok_r (NULL, ", \t", &ptr);
-				if (tok != NULL) {
-					*h = g_ascii_strtod (tok, NULL);
-					has_vbox = TRUE;
-				}
-			}
-		}
+	gchar ** list;
+	guint list_len;
+
+	list = rsvg_css_parse_list(vbox, &list_len);
+
+	if(!list)
+		return FALSE;
+	else if(list_len != 4) {
+		g_strfreev(list);
+		return FALSE;
+	} 
+	else {
+		/* TODO: error checking */
+		*x = g_ascii_strtod(list[0], NULL);
+		*y = g_ascii_strtod(list[1], NULL);
+		*w = g_ascii_strtod(list[2], NULL);
+		*h = g_ascii_strtod(list[3], NULL);
+
+		g_strfreev(list);
+		return TRUE;
 	}
-	g_free (str);
-	
-	return has_vbox;
 }
 
 /**
@@ -709,4 +667,122 @@ rsvg_css_parse_font_family (const char * str, const char * inherit)
 		return inherit;
 	else
 		return str;
+}
+
+#if !defined(HAVE_STRTOK_R) && !GLIB_CHECK_VERSION(2, 3, 2)
+
+static char *
+strtok_r(char *s, const char *delim, char **last)
+{
+	char *p;
+
+	if (s == NULL)
+		s = *last;
+
+	if (s == NULL)
+		return NULL;
+
+	while (*s && strchr (delim, *s))
+		s++;
+
+	if (*s == '\0') {
+		*last = NULL;
+		return NULL;
+	}
+
+	p = s;
+	while (*p && !strchr (delim, *p))
+		p++;
+
+	if (*p == '\0')
+		*last = NULL;
+	else {
+		*p = '\0';
+		p++;
+		*last = p;
+	}
+	
+	return s;
+}
+
+#endif /* !HAVE_STRTOK_R */
+
+gchar **
+rsvg_css_parse_list(const char * in_str, guint * out_list_len)
+{
+#if GLIB_CHECK_VERSION(2, 3, 2)
+
+	gchar ** string_array, ** ptr;
+	guint n;
+
+	/* this may fix bug #113538 */
+
+	string_array = g_strsplit_set(in_str, ", \t", -1);
+
+	for(n = 0, ptr == string_array; *ptr; n++, ptr++)
+		;
+
+	*out_list_len = 0;
+	return string_array;
+
+#else
+
+	char *ptr, *tok;
+	char *str;
+
+	guint n = 0;
+	GSList * string_list = NULL;
+	gchar ** string_array = NULL;
+
+	str = g_strdup (in_str);
+    tok = strtok_r (str, ", \t", &ptr);
+	if (tok != NULL) {
+		string_list = g_slist_append(string_list, g_strdup(tok));
+		n++;
+
+		while((tok = strtok_r (NULL, ", \t", &ptr)) != NULL) {
+			string_list = g_slist_append(string_list, g_strdup(tok));
+			n++;
+		}
+	}
+	g_free (str);
+
+	if(out_list_len)
+		*out_list_len = n;
+
+	if (string_list) {
+		GSList *slist;
+
+		string_array = g_new(gchar *, n + 1);
+
+		string_array[n--] = NULL;
+		for (slist = string_list; slist; slist = slist->next)
+			string_array[n--] = (gchar *)slist->data;
+
+		g_slist_free (string_list);		
+	}
+
+	return string_array;
+
+#endif
+}
+
+void 
+rsvg_css_parse_number_optional_number(const char * str, 
+									  double *x, double *y)
+{
+  char *endptr;
+
+  /* TODO: some error checking */
+
+  *x = g_ascii_strtod(str, &endptr);
+
+  if(endptr && *endptr != '\0')
+    while(g_ascii_isspace(*endptr) && *endptr)
+      endptr++;
+
+  if(endptr && *endptr)
+    *y = g_ascii_strtod(endptr, NULL);
+  else
+    *y = *x;
 }
