@@ -1175,8 +1175,6 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive *self, RsvgFilte
 		}
 	}
 
-	printf("%i, %i\n", kw, kh);
-
 	double *KernelMatrix;
 	KernelMatrix = g_new(double, kw * kh);
 
