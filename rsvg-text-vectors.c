@@ -37,8 +37,6 @@
 #include FT_GLYPH_H
 #include FT_OUTLINE_H
 
-//#define RSVG_TEXT_DEBUG
-
 typedef struct _RsvgTextLayout RsvgTextLayout;
 
 struct _RsvgTextLayout
@@ -210,12 +208,12 @@ rsvg_text_layout_get_offsets (RsvgTextLayout *layout,
 static FT_Int32
 rsvg_text_layout_render_flags (RsvgTextLayout *layout)
 {
-	gint flags;
+	gint flags = 0;
 	
 	if (ANTIALIAS_TEXT)
-		flags = FT_LOAD_NO_BITMAP;
+		flags |= FT_LOAD_NO_BITMAP;
 	else
-		flags = FT_LOAD_TARGET_MONO;
+		flags |= FT_LOAD_TARGET_MONO;
 	
 	if (!HINT_TEXT)
 		flags |= FT_LOAD_NO_HINTING;
@@ -236,17 +234,6 @@ rsvg_text_vector_coords (RenderCtx       *ctx,
 	*y = ctx->offset_y - (double)vector->y / 64. + ctx->position_y;
 }
 
-static void
-print266 (FT_Vector *pnt,
-		  gchar     *msg)
-{
-#ifdef RSVG_TEXT_DEBUG
-	fprintf (stderr, "%s Point (%d,%d)\n",
-			 msg, (gint)pnt->x,
-			 (gint)pnt->y);
-#endif
-}
-
 static gint
 moveto (FT_Vector *to,
 		gpointer   data)
@@ -257,8 +244,6 @@ moveto (FT_Vector *to,
 	
 	ctx = (RenderCtx *)data;
 	
-	print266(to, "Moveto");
-
 	if (ctx->wrote)
 		g_string_append(ctx->path, "Z ");
 	else
@@ -288,8 +273,6 @@ lineto (FT_Vector *to,
 	if (!ctx->wrote)
 		return 0;
 
-	print266(to, "Lineto");
-
 	g_string_append_c(ctx->path, 'L');
 	
 	rsvg_text_vector_coords(ctx, to, &x, &y);
@@ -314,9 +297,6 @@ conicto (FT_Vector *ftcontrol,
 
 	if (!ctx->wrote)
 		return 0;
-
-	print266(ftcontrol, "Conicto Control");
-	print266(to, "Conicto");
 
 	g_string_append_c(ctx->path, 'Q');
 	
@@ -349,10 +329,6 @@ cubicto (FT_Vector *ftcontrol1,
 	
 	if (!ctx->wrote)
 		return 0;
-
-	print266(ftcontrol1, "Cubicto Control1");
-	print266(ftcontrol2, "Cubicto Control2");
-	print266(to, "Cubicto");
 
 	g_string_append_c(ctx->path, 'C');
 	
