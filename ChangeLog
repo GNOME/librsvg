@@ -1,3 +1,7 @@
+2004-07-17  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.[ch]: Bug #147662
+	
 2004-07-17  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-shapes.c: rewrote some of the image code so it transforms the image correctly, pitty about loosing bilinear filtering, but we can get that back I suppose

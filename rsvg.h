@@ -54,10 +54,15 @@ typedef void (* RsvgSizeFunc) (gint     *width,
 							   gpointer  user_data);
 
 
-void        rsvg_set_default_dpi          (double dpi_x, double dpi_y);
+#ifndef RSVG_DISABLE_DEPRECATED
+void        rsvg_set_default_dpi          (double dpi);
+void        rsvg_handle_set_dpi           (RsvgHandle * handle, double dpi);
+#endif
+
+void        rsvg_set_default_dpi_x_y          (double dpi_x, double dpi_y);
+void        rsvg_handle_set_dpi_x_y           (RsvgHandle * handle, double dpi_x, double dpi_y);
 
 RsvgHandle *rsvg_handle_new               (void);
-void        rsvg_handle_set_dpi           (RsvgHandle * handle, double dpi_x, double dpi_y);
 void        rsvg_handle_set_size_callback (RsvgHandle      *handle,
 										   RsvgSizeFunc     size_func,
 										   gpointer         user_data,

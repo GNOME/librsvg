@@ -533,7 +533,7 @@ main (int argc, char **argv)
 	/* initialize gtk+ */
 	gtk_init (&argc, &argv) ;
 
-	rsvg_set_default_dpi (dpi_x, dpi_y);
+	rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 	
 	/* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
 	if (width == -1 && height == -1)
