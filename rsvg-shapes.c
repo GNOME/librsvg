@@ -512,6 +512,7 @@ rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id)
 	if (!ctx->in_defs)
 		rsvg_render_path (ctx, d);
 	else {
+	   
 		RsvgDefsDrawablePath *path;
 
 		path = g_new (RsvgDefsDrawablePath, 1);

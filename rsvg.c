@@ -792,7 +792,9 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	 * onscreen representation of the colour wrong than not have any colour displayed whatsoever
 	 */
 
-	if (!strcmp ((char *)name, "linearGradient"))
+	if (!strcmp ((char *)name, "defs"))
+		ctx->in_defs++;
+	else if (!strcmp ((char *)name, "linearGradient"))
 		rsvg_start_linear_gradient (ctx, atts);
 	else if (!strcmp ((char *)name, "radialGradient"))
 		rsvg_start_radial_gradient (ctx, atts, "radialGradient");
@@ -1127,7 +1129,7 @@ rsvg_end_element (void *data, const xmlChar *name)
 			if (!strcmp ((char *)name, "filter"))
 				rsvg_end_filter (ctx);
 			else if (!strcmp ((char *)name, "defs")) {
-				ctx->in_defs--;
+				ctx->in_defs--;	
 			}
 			else if (!strcmp ((char *)name, "mask")){
 				rsvg_end_mask(ctx);
