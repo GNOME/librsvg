@@ -1,13 +1,17 @@
 #!/bin/sh
 # Run this to generate all the initial makefiles, etc.
-# This was lifted from the Gimp, and adapted slightly by
-# Raph Levien <raph@acm.org>.
 
-DIE=0
 srcdir=`dirname $0`
 test -z "$srcdir" && srcdir=.
 
+ORIGDIR=`pwd`
+cd $srcdir
+
 PROJECT=librsvg
+TEST_TYPE=-f
+FILE=rsvg.c
+
+DIE=0
 
 (autoconf --version) < /dev/null > /dev/null 2>&1 || {
 	echo
@@ -17,11 +21,10 @@ PROJECT=librsvg
 	DIE=1
 }
 
-# Do we really need libtool?
 (libtool --version) < /dev/null > /dev/null 2>&1 || {
 	echo
 	echo "You must have libtool installed to compile $PROJECT."
-	echo "Get ftp://ftp.gnu.org/pub/gnu/libtool-1.2.tar.gz"
+	echo "Get ftp://alpha.gnu.org/gnu/libtool-1.0h.tar.gz"
 	echo "(or a newer version if it is available)"
 	DIE=1
 }
@@ -29,14 +32,24 @@ PROJECT=librsvg
 (automake --version) < /dev/null > /dev/null 2>&1 || {
 	echo
 	echo "You must have automake installed to compile $PROJECT."
-	echo "Get ftp://ftp.gnu.org/pub/gnu/automake-1.3.tar.gz"
+	echo "Get ftp://ftp.cygnus.com/pub/home/tromey/automake-1.2d.tar.gz"
 	echo "(or a newer version if it is available)"
 	DIE=1
+}
+
+(xml-i18n-toolize --version) < /dev/null > /dev/null 2>&1 || {
+	echo
+	echo "You must have xml-i18n-tools installed to compile $PROJECT."
 }
 
 if test "$DIE" -eq 1; then
 	exit 1
 fi
+
+test $TEST_TYPE $FILE || {
+	echo "You must run this script in the top-level $PROJECT directory"
+	exit 1
+}
 
 if test -z "$*"; then
 	echo "I am going to run ./configure with no arguments - if you wish "
@@ -44,20 +57,51 @@ if test -z "$*"; then
 fi
 
 case $CC in
-xlc )
-    am_opt=--include-deps;;
+*lcc | *lcc\ *) am_opt=--include-deps;;
 esac
 
-for dir in $srcdir
-do 
-  echo processing $dir
-  (cd $dir; \
-  aclocalinclude="$ACLOCAL_FLAGS"; \
-  aclocal $aclocalinclude; \
-  autoheader; automake --add-missing --gnu $am_opt; autoconf)
-done
+echo "Running gettextize...  Ignore non-fatal messages."
+# Hmm, we specify --force here, since otherwise things don't
+# get added reliably, but we don't want to overwrite intl
+# while making dist.
+echo "no" | gettextize --copy --force
 
-$srcdir/configure "$@"
+echo "Running xml-i18n-toolize"
+xml-i18n-toolize --copy --force --automake
 
-echo 
-echo "Now type 'make' to compile $PROJECT."
+echo "Running libtoolize"
+libtoolize --copy --force
+
+if test -z "$GNOME_INTERFACE_VERSION"; then
+	ACLOCAL_FLAGS="-I hack-macros $ACLOCAL_FLAGS"
+fi
+
+aclocal $ACLOCAL_FLAGS
+
+# optionally feature autoheader
+(autoheader --version)  < /dev/null > /dev/null 2>&1 && autoheader
+
+automake -a $am_opt
+
+autoconf
+
+cd $ORIGDIR
+
+if [ "`whoami`" = "sopwith" ]; then
+	SOPWITH_FLAGS_HACK="--enable-fatal-warnings=no --enable-more-warnings=no"
+fi
+
+$srcdir/configure --enable-maintainer-mode "$@" $SOPWITH_FLAGS_HACK
+
+rv=$?
+
+if [ $rv -eq 0 ]
+then
+    echo
+    echo "Now type 'make' to compile $PROJECT."
+    exit 0
+fi
+
+echo
+echo "There was a problem running $srcdir/configure for $PROJECT."
+exit 1
