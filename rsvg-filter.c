@@ -4089,8 +4089,9 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 								   boundarys.y2 - boundarys.y1);
 
 	rsvg_affine_image(img, intermediate, 
-					  ctx->paffine, boundarys.x2 - boundarys.x1, 
-					  boundarys.y2 - boundarys.y1);
+					  ctx->paffine, 
+					  (boundarys.x2 - boundarys.x1) / ctx->paffine[0], 
+					  (boundarys.y2 - boundarys.y1) / ctx->paffine[3]);
 
 	if (!intermediate)
 		{
