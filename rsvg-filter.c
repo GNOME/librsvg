@@ -4312,11 +4312,11 @@ rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "azimuth")))
 				{
-					data->x = rsvg_css_parse_angle(value); 
+					data->x = rsvg_css_parse_angle(value) / 180.0 * M_PI; 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "elevation")))
 				{
-					data->y = rsvg_css_parse_angle(value);
+					data->y = rsvg_css_parse_angle(value) / 180.0 * M_PI;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
 				{
