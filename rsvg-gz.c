@@ -60,18 +60,15 @@ rsvg_handle_gz_close_impl (RsvgHandle  *handle,
 	bytes = gsf_output_memory_get_bytes (GSF_OUTPUT_MEMORY (me->mem));
 	size = gsf_output_size (me->mem);
 
-	gzip = GSF_INPUT (gsf_input_gzip_new (gsf_input_memory_new (bytes, size, FALSE), error));
-	while (TRUE) {
-		size = MIN (gsf_input_remaining (gzip), 1024);
-		if (size == 0) break;
-
+	gzip = GSF_INPUT (gsf_input_gzip_new (GSF_INPUT (gsf_input_memory_new (bytes, size, FALSE), error)));
+	while ((size = MIN (gsf_input_remaining (gzip), 1024)) > 0) {
 		/* write to parent */
 		rsvg_handle_write_impl (&(me->super),
 								gsf_input_read (gzip, size, NULL),
 								size, error);
 	}
 	gsf_input_close (gzip);
-	g_object_unref (gzip);
+	g_object_unref (G_OBJECT (gzip));
 
 	/* close parent */
 	gsf_output_close (me->mem);
@@ -100,7 +97,7 @@ rsvg_handle_new_gz (void)
 
 	/* init parent */
 	rsvg_handle_init (&me->super);
-	me->mem = gsf_output_memory_new ();
+	me->mem = GSF_OUTPUT (gsf_output_memory_new ());
 
 	me->super.write = rsvg_handle_gz_write_impl;
 	me->super.close = rsvg_handle_gz_close_impl;
