@@ -34,14 +34,48 @@
 #include <errno.h>
 #include <math.h>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif  /*  M_PI  */
-
 #define POINTS_PER_INCH (72.0)
 #define CM_PER_INCH     (2.54)
 #define MM_PER_INCH     (25.4)
 #define PICA_PER_INCH   (6.0)
+
+#ifndef HAVE_STRTOK_R
+
+static char *
+strtok_r(char *s, const char *delim, char **last)
+{
+	char *p;
+
+	if (s == NULL)
+		s = *last;
+
+	if (s == NULL)
+		return NULL;
+
+	while (*s && strchr (delim, *s))
+		s++;
+
+	if (*s == '\0') {
+		*last = NULL;
+		return NULL;
+	}
+
+	p = s;
+	while (*p && !strchr (delim, *p))
+		p++;
+
+	if (*p == '\0')
+		*last = NULL;
+	else {
+		*p = '\0';
+		p++;
+		*last = p;
+	}
+	
+	return s;
+}
+
+#endif /* !HAVE_STRTOK_R */
 
 /**
  * rsvg_css_parse_vbox
@@ -511,7 +545,7 @@ rsvg_css_parse_angle (const char * str)
 	if (end_ptr)
 		{
 			if (!strcmp(end_ptr, "rad"))
-				return degrees * 180. / M_PI;
+				return degrees * 180. / G_PI;
 			else if (!strcmp(end_ptr, "grad"))
 				return degrees * 360. / 400.;
 		}

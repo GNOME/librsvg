@@ -14,6 +14,11 @@ GSFHEADERS =
 GSFSOURCES = 
 endif
 
+if OS_WIN32
+else
+libm = -lm
+endif
+
 EXTRA_DIST =\
 	COPYING.LIB \
 	librsvg.spec.in \
@@ -47,7 +52,7 @@ librsvg_2_la_SOURCES = $(GSFSOURCES) \
 	rsvg.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
-librsvg_2_la_LIBADD = $(LIBRSVG_LIBS)
+librsvg_2_la_LIBADD = $(LIBRSVG_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS)
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = $(GSFHEADERS) \
@@ -78,17 +83,17 @@ LDADDS =$(LIBGSF_LIBS)\
 rsvg_SOURCES=test-rsvg.c
 rsvg_LDFLAGS =
 rsvg_DEPENDENCIES = $(DEPS)
-rsvg_LDADD = $(LDADDS) -lm
+rsvg_LDADD = $(LDADDS) $(libm)
 
 test_performance_SOURCES=test-performance.c
 test_performance_LDFLAGS =
 test_performance_DEPENDENCIES = $(DEPS)
-test_performance_LDADD = $(LDADDS) -lm
+test_performance_LDADD = $(LDADDS) $(libm)
 
 #test_display_SOURCES=test-display.c
 #test_display_LDFLAGS =
 #test_display_DEPENDENCIES = $(DEPS)
-#test_display_LDADD = $(LDADDS) $(GTK_LIBS) -lm
+#test_display_LDADD = $(LDADDS) $(GTK_LIBS) $(libm)
 
 tests: rsvg
 

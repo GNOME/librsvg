@@ -65,6 +65,18 @@ esac
 AC_MSG_RESULT([$platform_win32])
 AM_CONDITIONAL(PLATFORM_WIN32, test "$platform_win32" = "yes")
 
+AC_MSG_CHECKING([for native Win32])
+case "$host" in
+  *-*-mingw*)
+    native_win32=yes
+    ;;
+  *)
+    native_win32=no
+    ;;
+esac
+AC_MSG_RESULT([$native_win32])
+AM_CONDITIONAL(OS_WIN32, test "$native_win32" = "yes")
+
 dnl ===========================================================================
 
 PKG_CHECK_MODULES(LIBRSVG, \
@@ -142,6 +154,10 @@ fi
 AC_SUBST(LIBCROCOPKG)
 AC_SUBST(LIBCROCO_CFLAGS)
 AC_SUBST(LIBCROCO_LIBS)
+
+dnl ===========================================================================
+
+AC_CHECK_FUNCS(strtok_r)
 
 dnl ===========================================================================
 
