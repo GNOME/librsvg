@@ -1,3 +1,5 @@
+== librsvg 2.6.2 ==	
+
 2004-03-15  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-bpath-util.c: Applied double move fix contributed by ross 
