@@ -574,6 +574,10 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			grad->current_color = color;
 			grad->has_current_color = TRUE;
 		}
+	else
+		{
+			grad->has_current_color = FALSE;
+		}
 
 	/* gradient inherits parent/cloned information unless it's explicity gotten */
 	grad->obj_bbox = (cloned && !got_bbox) ? grad->obj_bbox : obj_bbox;
@@ -737,6 +741,10 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 		{
 			grad->current_color = color;
 			grad->has_current_color = TRUE;
+		}
+	else
+		{
+			grad->has_current_color = FALSE;
 		}
 
 	/* gradient inherits parent/cloned information unless it's explicity gotten */
