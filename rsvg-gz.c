@@ -85,9 +85,13 @@ rsvg_handle_gz_free_impl (RsvgHandle *handle)
 }
 
 /**
+ * rsvg_handle_new_gz
+ *
  * See rsvg_handle_new, except that this will handle GZipped SVGs (svgz)
  * Use the returned handle identically to how you use a handle returned
  * from rsvg_handle_new()
+ *
+ * Returns: a new SVGZ handle
  */
 RsvgHandle *
 rsvg_handle_new_gz (void)

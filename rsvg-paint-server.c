@@ -31,6 +31,8 @@
 #include <glib/gstrfuncs.h>
 #include <libart_lgpl/art_affine.h>
 #include <string.h>
+#include <math.h>
+
 #include "rsvg-css.h"
 
 typedef struct _RsvgPaintServerSolid RsvgPaintServerSolid;
@@ -186,7 +188,12 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	   gradient is in x1,y1 to x2,y2 dir */
 	dx = x2 - x1;
 	dy = y2 - y1;
-	scale = 1.0 / (dx * dx + dy * dy);
+
+	/* workaround for an evil devide by 0 bug - not sure if this is sufficient */
+	if (fabs(dx + dy) <= 0.0000001)
+		scale = 0.;
+	else
+		scale = 1.0 / (dx * dx + dy * dy);
 	agl->a = dx * scale;
 	agl->b = dy * scale;
 	agl->c = -(x1 * agl->a + y1 * agl->b);

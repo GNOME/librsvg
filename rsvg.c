@@ -451,7 +451,8 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 					else if (!strcmp ((char *)atts[i], "gradientTransform"))
 						got_transform = rsvg_parse_transform (affine, (const char *)atts[i + 1]);
 					else if (!strcmp ((char *)atts[i], "gradientUnits")) {
-						obj_bbox = (strcmp ((char *)atts[i+1], "userSpaceOnUse") != 0);
+						if (!strcmp ((char *)atts[i+1], "userSpaceOnUse"))
+							obj_bbox = FALSE;
 						got_bbox = TRUE;
 					}
 				}
@@ -577,7 +578,8 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts, const char * 
 							}
 						}
 					else if (!strcmp ((char *)atts[i], "gradientUnits")) {
-						obj_bbox = (strcmp ((char *)atts[i+1], "userSpaceOnUse") != 0);
+						if (!strcmp ((char *)atts[i+1], "userSpaceOnUse"))
+							obj_bbox = FALSE;
 						got_bbox = TRUE;
 					}
 				}
@@ -735,7 +737,7 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_state_init (ctx->state);
 	ctx->n_state++;
 
-	/**
+	/*
 	 * conicalGradient isn't in the SVG spec and I'm not sure exactly what it does. libart definitely
 	 * has no analogue. But it does seem similar enough to a radialGradient that i'd rather get the
 	 * onscreen representation of the colour wrong than not have any colour displayed whatsoever
@@ -959,6 +961,13 @@ static xmlSAXHandler rsvgSAXHandlerStruct = {
     NULL /* */
 };
 
+/**
+ * rsvg_error_quark
+ *
+ * The error domain for RSVG
+ *
+ * Returns: The error domain
+ */
 GQuark
 rsvg_error_quark (void)
 {
@@ -1049,14 +1058,13 @@ rsvg_handle_free_impl (RsvgHandle *handle)
 
 /**
  * rsvg_handle_new:
- * @void:
  *
  * Returns a new rsvg handle.  Must be freed with @rsvg_handle_free.  This
  * handle can be used for dynamically loading an image.  You need to feed it
  * data using @rsvg_handle_write, then call @rsvg_handle_close when done.  No
  * more than one image can be loaded with one handle.
  *
- * Return value: A new #RsvgHandle
+ * Returns: A new #RsvgHandle
  **/
 RsvgHandle *
 rsvg_handle_new (void)
@@ -1168,7 +1176,7 @@ rsvg_handle_set_size_callback (RsvgHandle     *handle,
  * the loader will be closed, and will not accept further writes. If FALSE is
  * returned, @error will be set to an error from the #RSVG_ERROR domain.
  *
- * Return value: #TRUE if the write was successful, or #FALSE if there was an
+ * Returns: #TRUE if the write was successful, or #FALSE if there was an
  * error.
  **/
 gboolean
@@ -1185,13 +1193,14 @@ rsvg_handle_write (RsvgHandle    *handle,
 
 /**
  * rsvg_handle_close:
- * @handle: An #RsvgHandle
+ * @handle: A #RsvgHandle
+ * @error: A #GError
  *
  * Closes @handle, to indicate that loading the image is complete.  This will
  * return #TRUE if the loader closed successfully.  Note that @handle isn't
  * freed until @rsvg_handle_free is called.
  *
- * Return value: #TRUE if the loader closed successfully, or #FALSE if there was
+ * Returns: #TRUE if the loader closed successfully, or #FALSE if there was
  * an error.
  **/
 gboolean
@@ -1214,7 +1223,7 @@ rsvg_handle_close (RsvgHandle  *handle,
  * will be returned.  Note that the pixbuf may not be complete until
  * @rsvg_handle_close has been called.
  *
- * Return value: the pixbuf loaded by #handle, or %NULL.
+ * Returns: the pixbuf loaded by #handle, or %NULL.
  **/
 GdkPixbuf *
 rsvg_handle_get_pixbuf (RsvgHandle *handle)

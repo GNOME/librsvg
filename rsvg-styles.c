@@ -22,6 +22,7 @@
 
    Author: Raph Levien <raph@artofcode.com>
 */
+#include <string.h>
 
 #include "rsvg.h"
 #include "rsvg-css.h"
