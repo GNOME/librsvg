@@ -207,8 +207,6 @@ rsvg_render_svp (RsvgHandle *ctx, ArtSVP *svp,
 	art_render_svp (render, svp);
 	art_render_mask_solid (render, (opacity << 8) + opacity + (opacity >> 7));
 
-
-
 	art_irect_union(&ctx->bbox, &ctx->bbox, &temprect);
 
 	gradctx.x0 = temprect.x0;
@@ -248,6 +246,7 @@ rsvg_render_filling (RsvgState *state, const ArtVpath *vpath)
 			
 			svp2 = art_svp_writer_rewind_reap (swr);
 			art_svp_free (svp);
+
 			return svp2;
 }
 
@@ -1373,6 +1372,8 @@ static gboolean utf8_base64_decode(char ** binptr, size_t * binlen, const char *
 			decoded = FALSE;
 			break;
 		}
+
+	g_free(ucs4_str);
 	return decoded;
 }
 
@@ -1409,9 +1410,11 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	if (!gdk_pixbuf_loader_write (loader, buffer, buffer_len, error)) {
 		gdk_pixbuf_loader_close (loader, NULL);
 		g_object_unref (loader);
+		g_free(buffer);
 		return NULL;
 	}
 	
+	g_free(buffer);
 	if (!gdk_pixbuf_loader_close (loader, error)) {
 		g_object_unref (loader);
 		return NULL;
@@ -1431,8 +1434,6 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	g_object_ref (pixbuf);
 	
 	g_object_unref (loader);
-	
-	g_free(buffer);
 	
 	return pixbuf;
 }
