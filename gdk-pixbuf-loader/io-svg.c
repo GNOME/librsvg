@@ -28,6 +28,9 @@
 
 #define BUFFER_SIZE (1024 * 8)
 
+void fill_vtable (GdkPixbufModule *module);
+void fill_info   (GdkPixbufFormat *info);
+
 typedef struct {
         RsvgHandle                 *handle;
         GdkPixbuf                  *pixbuf;

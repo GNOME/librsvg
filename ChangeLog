@@ -1,3 +1,8 @@
+2002-10-05  Alexander Larsson  <alexl@redhat.com>
+
+	* gdk-pixbuf-loader/io-svg.c:
+	Declare fill_vtable and fill_info to avoid warning.
+
 2002-10-04  Dom Lachowicz <doml@appligent.com>
 
 	* rsvg.c (): fix bugs with gradient style handling, few other bugs left in radial gradient
