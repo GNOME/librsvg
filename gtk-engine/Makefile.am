@@ -1,4 +1,4 @@
-DIST_SUBDIRS=examples
+DIST_SUBDIRS=
 
 INCLUDES = $(GTK_CFLAGS) $(LIBRSVG_CFLAGS) -I$(top_srcdir)
 

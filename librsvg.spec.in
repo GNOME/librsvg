@@ -97,10 +97,13 @@ rm -rf $RPM_BUILD_ROOT
 %files -n rsvg-gtk
 %defattr(-, root, root)
 %{_libdir}/gtk-2.0/2.0.0/engines/*.so
-%{_datadir}/themes/bubble/gtk-2.0/*
-%{_datadir}/themes/bubble/README
+# %{_datadir}/themes/bubble/gtk-2.0/*
+# %{_datadir}/themes/bubble/README
 
 %changelog
+* Thu Oct 22 2002 Christian Schaller <Uraeus@linuxrising.org>
+- Disabled building of example theme (as done in gtk-engines)
+
 * Mon Oct 21 2002 Christian Schaller <Uraeus@linuxrising.org>
 - Fixes for RH 8 
 - Adding gtk theme engine

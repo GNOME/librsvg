@@ -1,4 +1,8 @@
 === librsvg 2.1.1 ===
+
+2002-10-22 Christian Schaller <Uraeus@linuxrising.org>
+	
+	* Disable building of example bubble SVG theme
 	
 2002-10-14  Alexander Larsson  <alexl@redhat.com>
 
