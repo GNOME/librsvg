@@ -567,19 +567,19 @@ rsvg_css_parse_angle (const char * str)
 double
 rsvg_css_parse_frequency (const char * str)
 {
-	double hz;
+	double f_hz;
 	char *end_ptr;
 	
-	hz = g_ascii_strtod (str, &end_ptr);
+	f_hz = g_ascii_strtod (str, &end_ptr);
 	
 	/* todo: error condition - figure out how to best represent it */
-	if ((hz == -HUGE_VAL || hz == HUGE_VAL) && (ERANGE == errno))
+	if ((f_hz == -HUGE_VAL || f_hz == HUGE_VAL) && (ERANGE == errno))
 		return 0.0;
 	
 	if (end_ptr && !strcmp(end_ptr, "kHz"))
-		return hz * 1000.;
+		return f_hz * 1000.;
 	
-	return hz;
+	return f_hz;
 }
 
 /*
