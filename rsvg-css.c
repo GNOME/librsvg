@@ -715,34 +715,18 @@ void
 rsvg_css_parse_number_optional_number(const char * str, 
 									  double *x, double *y)
 {
-	gint i;
-	gint onsecond;
-	GString * current;
-	GString * first;
-	GString * second;
+  char *endptr;
 
-	onsecond = 0;
-	first = g_string_new("");
-	second = g_string_new("");
-	current = first;
+  /* TODO: some error checking */
 
-	for (i = 0; str[i] != '\0'; i++) {
-		if (str[i] == '.' || (str[i] >= '0' && str[i] <= '9'))
-			g_string_append_c(current, str[i]);
-		else
-			if (onsecond == 0){
-				current = second;
-				onsecond = 1;
-			}
-			else if (onsecond == 2)
-				break;
-	}
+  *x = g_ascii_strtod(str, &endptr);
 
-	if (onsecond == 0){
-		*x = g_ascii_strtod(first->str, NULL);
-		*y = *x;
-		return;
-	}
-	*x = g_ascii_strtod(first->str, NULL);
-	*y = g_ascii_strtod(second->str, NULL);
+  if(endptr && endptr != '\0')
+    while(g_ascii_isspace(*endptr) && *endptr)
+      endptr++;
+
+  if(endptr && *endptr)
+    *y = g_ascii_strtod(endptr, NULL);
+  else
+    *y = *x;
 }
