@@ -411,7 +411,6 @@ struct _RenderCtx
 typedef void (* RsvgTextRenderFunc) (PangoFont  *font,
 									 PangoGlyph  glyph,
 									 FT_Int32    load_flags,
-									 FT_Matrix  *trafo,
 									 gint        x,
 									 gint        y,
 									 gpointer    render_data);
@@ -706,29 +705,6 @@ cubicto (FT_Vector *ftcontrol1,
 }
 
 static void
-rsvg_text_layout_render_trafo (RsvgTextLayout *layout,
-                               FT_Matrix      *trafo)
-{
-	RsvgState * state;
-
-	state = rsvg_state_current(layout->ctx);
-	if(0 /* state */) 
-		{
-			trafo->xx = state->affine[0] * 65536.0;
-			trafo->xy = state->affine[1] * 65536.0;
-			trafo->yx = state->affine[2] * 65536.0;
-			trafo->yy = state->affine[3] * 65536.0;
-		}
-	else 
-		{
-			trafo->xx = 1 * 65536.0;
-			trafo->xy = 0 * 65536.0;
-			trafo->yx = 0 * 65536.0;
-			trafo->yy = 1 * 65536.0;
-		}
-}
-
-static void
 rsvg_text_layout_render_glyphs (RsvgTextLayout     *layout,
 								PangoFont          *font,
 								PangoGlyphString   *glyphs,
@@ -739,13 +715,11 @@ rsvg_text_layout_render_glyphs (RsvgTextLayout     *layout,
 {
 	PangoGlyphInfo *gi;
 	FT_Int32        flags;
-	FT_Matrix       trafo;
 	FT_Vector       pos;
 	gint            i;
 	gint            x_position = 0;
 	
 	flags = rsvg_text_layout_render_flags (layout);
-	rsvg_text_layout_render_trafo (layout, &trafo);
 
 	for (i = 0, gi = glyphs->glyphs; i < glyphs->num_glyphs; i++, gi++)
 		{
@@ -754,9 +728,7 @@ rsvg_text_layout_render_glyphs (RsvgTextLayout     *layout,
 					pos.x = x + x_position + gi->geometry.x_offset;
 					pos.y = y + gi->geometry.y_offset;
 					
-					FT_Vector_Transform (&pos, &trafo);
-
-					render_func (font, gi->glyph, flags, &trafo,
+					render_func (font, gi->glyph, flags,
 								 pos.x, pos.y,
 								 render_data);
 				}
@@ -769,7 +741,6 @@ static void
 rsvg_text_render_vectors (PangoFont     *font,
 						  PangoGlyph     pango_glyph,
 						  FT_Int32       flags,
-						  FT_Matrix     *trafo,
 						  gint           x,
 						  gint           y,
 						  gpointer       ud)

@@ -693,7 +693,7 @@ rsvg_css_parse_font_family (const char * str, const char * inherit)
 		return str;
 }
 
-#if !defined(HAVE_STRTOK_R) && !GLIB_CHECK_VERSION(2, 3, 2)
+#if !defined(HAVE_STRTOK_R) /* && !GLIB_CHECK_VERSION(2, 3, 2) */
 
 static char *
 strtok_r(char *s, const char *delim, char **last)
@@ -734,7 +734,6 @@ strtok_r(char *s, const char *delim, char **last)
 gchar **
 rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 {
-
 	/* the following code is defective because it creates blank entries when two splitting chars are next to each other*/
 #if 0 /* GLIB_CHECK_VERSION(2, 3, 2) */
 
