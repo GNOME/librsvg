@@ -116,7 +116,8 @@ main (int argc, const char **argv)
 	}
 
 	fprintf (stdout, "Rendering took %g(s)\n",
-		 (double)g_timer_elapsed (timer, NULL) / count);
+		 g_timer_elapsed (timer, NULL) / count);
+	g_timer_destroy(timer);
 
 	return 0;
 }
