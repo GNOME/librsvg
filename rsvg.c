@@ -940,6 +940,84 @@ rsvg_error_quark (void)
 	return q;
 }
 
+gboolean
+rsvg_handle_write_impl (RsvgHandle    *handle,
+						const guchar  *buf,
+						gsize          count,
+						GError       **error)
+{
+	GError *real_error;
+	g_return_val_if_fail (handle != NULL, FALSE);
+	
+	handle->error = &real_error;
+	if (handle->ctxt == NULL)
+		{
+			handle->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0, NULL);
+			handle->ctxt->replaceEntities = TRUE;
+		}
+	
+	xmlParseChunk (handle->ctxt, buf, count, 0);
+	
+	handle->error = NULL;
+	/* FIXME: Error handling not implemented. */
+	/*  if (*real_error != NULL)
+		{
+		g_propagate_error (error, real_error);
+		return FALSE;
+		}*/
+  return TRUE;
+}
+
+gboolean
+rsvg_handle_close_impl (RsvgHandle  *handle,
+						GError     **error)
+{
+	gchar chars[1] = { '\0' };
+	GError *real_error;
+	
+	handle->error = &real_error;
+	
+	if (handle->ctxt != NULL)
+		{
+			xmlParseChunk (handle->ctxt, chars, 1, TRUE);
+			xmlFreeParserCtxt (handle->ctxt);
+		}
+  
+	/* FIXME: Error handling not implemented. */
+	/*
+	  if (real_error != NULL)
+	  {
+      g_propagate_error (error, real_error);
+      return FALSE;
+      }*/
+	return TRUE;
+}
+
+void
+rsvg_handle_free_impl (RsvgHandle *handle)
+{
+	int i;
+	
+	if (handle->pango_context != NULL)
+		g_object_unref (handle->pango_context);
+	rsvg_defs_free (handle->defs);
+	
+	for (i = 0; i < handle->n_state; i++)
+		rsvg_state_finalize (&handle->state[i]);
+	g_free (handle->state);
+	
+	g_hash_table_foreach (handle->entities, rsvg_ctx_free_helper, NULL);
+	g_hash_table_destroy (handle->entities);
+	
+	g_hash_table_destroy (handle->css_props);
+	
+	if (handle->user_data_destroy)
+		(* handle->user_data_destroy) (handle->user_data);
+	if (handle->pixbuf)
+		g_object_unref (handle->pixbuf);
+	g_free (handle);
+}
+
 /**
  * rsvg_handle_new:
  * @void:
@@ -957,6 +1035,18 @@ rsvg_handle_new (void)
 	RsvgHandle *handle;
 	
 	handle = g_new0 (RsvgHandle, 1);
+	rsvg_handle_init (handle);
+
+	handle->write = rsvg_handle_write_impl;
+	handle->close = rsvg_handle_close_impl;
+	handle->free  = rsvg_handle_free_impl;
+
+	return handle;
+}
+
+void
+rsvg_handle_init (RsvgHandle * handle)
+{
 	handle->n_state = 0;
 	handle->n_state_max = 16;
 	handle->state = g_new (RsvgState, handle->n_state_max);
@@ -969,8 +1059,6 @@ rsvg_handle_new (void)
 											   g_free, g_free);
 	
 	handle->ctxt = NULL;
-	
-	return handle;
 }
 
 /**
@@ -1060,26 +1148,10 @@ rsvg_handle_write (RsvgHandle    *handle,
 				   gsize          count,
 				   GError       **error)
 {
-	GError *real_error;
-	g_return_val_if_fail (handle != NULL, FALSE);
-	
-	handle->error = &real_error;
-	if (handle->ctxt == NULL)
-		{
-			handle->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0, NULL);
-			handle->ctxt->replaceEntities = TRUE;
-		}
-	
-	xmlParseChunk (handle->ctxt, buf, count, 0);
-	
-	handle->error = NULL;
-	/* FIXME: Error handling not implemented. */
-	/*  if (*real_error != NULL)
-		{
-		g_propagate_error (error, real_error);
-		return FALSE;
-		}*/
-  return TRUE;
+	if (handle->write)
+		return (*handle->write) (handle, buf, count, error);
+
+	return FALSE;
 }
 
 /**
@@ -1097,25 +1169,10 @@ gboolean
 rsvg_handle_close (RsvgHandle  *handle,
 				   GError     **error)
 {
-	gchar chars[1] = { '\0' };
-	GError *real_error;
-	
-	handle->error = &real_error;
-	
-	if (handle->ctxt != NULL)
-		{
-			xmlParseChunk (handle->ctxt, chars, 1, TRUE);
-			xmlFreeParserCtxt (handle->ctxt);
-		}
-  
-	/* FIXME: Error handling not implemented. */
-	/*
-	  if (real_error != NULL)
-	  {
-      g_propagate_error (error, real_error);
-      return FALSE;
-      }*/
-	return TRUE;
+	if (handle->close)
+		return (*handle->close) (handle, error);
+
+	return FALSE;
 }
 
 /**
@@ -1150,25 +1207,7 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 void
 rsvg_handle_free (RsvgHandle *handle)
 {
-	int i;
-	
-	if (handle->pango_context != NULL)
-		g_object_unref (handle->pango_context);
-	rsvg_defs_free (handle->defs);
-	
-	for (i = 0; i < handle->n_state; i++)
-		rsvg_state_finalize (&handle->state[i]);
-	g_free (handle->state);
-	
-	g_hash_table_foreach (handle->entities, rsvg_ctx_free_helper, NULL);
-	g_hash_table_destroy (handle->entities);
-	
-	g_hash_table_destroy (handle->css_props);
-	
-	if (handle->user_data_destroy)
-		(* handle->user_data_destroy) (handle->user_data);
-	if (handle->pixbuf)
-		g_object_unref (handle->pixbuf);
-	g_free (handle);
+	if (handle->free)
+		(*handle->free) (handle);
 }
 

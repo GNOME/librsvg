@@ -1,3 +1,9 @@
+2003-01-28  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-gz.[ch]: New handle type, capable of reading SVGZ files.
+	Not built currently, but will soon be conditionally compiled in.
+	* *: Groundwork needed for the above (method virtualization)
+	
 2003-01-27  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-styles.c (parse_cssbuffer): Allow multiple declarations to be 

@@ -37,45 +37,66 @@ G_BEGIN_DECLS
 typedef struct RsvgSaxHandler RsvgSaxHandler;
 
 struct RsvgSaxHandler {
-  void (*free) (RsvgSaxHandler *self);
-  void (*start_element) (RsvgSaxHandler *self, const xmlChar *name, const xmlChar **atts);
-  void (*end_element) (RsvgSaxHandler *self, const xmlChar *name);
-  void (*characters) (RsvgSaxHandler *self, const xmlChar *ch, int len);
+	void (*free) (RsvgSaxHandler *self);
+	void (*start_element) (RsvgSaxHandler *self, const xmlChar *name, const xmlChar **atts);
+	void (*end_element) (RsvgSaxHandler *self, const xmlChar *name);
+	void (*characters) (RsvgSaxHandler *self, const xmlChar *ch, int len);
 };
 
 struct RsvgHandle {
-  RsvgSizeFunc size_func;
-  gpointer user_data;
-  GDestroyNotify user_data_destroy;
-  GdkPixbuf *pixbuf;
+	RsvgSizeFunc size_func;
+	gpointer user_data;
+	GDestroyNotify user_data_destroy;
+	GdkPixbuf *pixbuf;
+	
+	/* stack; there is a state for each element */
+	RsvgState *state;
+	int n_state;
+	int n_state_max;
+	
+	RsvgDefs *defs;
+	GHashTable *css_props;
+	
+	/* not a handler stack. each nested handler keeps
+	 * track of its parent
+	 */
+	RsvgSaxHandler *handler;
+	int handler_nest;
+	
+	GHashTable *entities; /* g_malloc'd string -> xmlEntityPtr */
+	
+	PangoContext *pango_context;
+	xmlParserCtxtPtr ctxt;
+	GError **error;
+	
+	int width;
+	int height;
+	double dpi;
+	
+	/* virtual fns */
+	gboolean (* write) (RsvgHandle    *handle,
+						const guchar  *buf,
+						gsize          count,
+						GError       **error);
+	
+	gboolean (* close) (RsvgHandle  *handle,
+						GError     **error);
 
-  /* stack; there is a state for each element */
-  RsvgState *state;
-  int n_state;
-  int n_state_max;
-
-  RsvgDefs *defs;
-  GHashTable *css_props;
-
-  /* not a handler stack. each nested handler keeps
-   * track of its parent
-   */
-  RsvgSaxHandler *handler;
-  int handler_nest;
-
-  GHashTable *entities; /* g_malloc'd string -> xmlEntityPtr */
-
-  PangoContext *pango_context;
-  xmlParserCtxtPtr ctxt;
-  GError **error;
-
-  int width;
-  int height;
-  double dpi;
+	void (* free) (RsvgHandle * handle);
 };
 
 void rsvg_linear_gradient_free (RsvgDefVal *self);
 void rsvg_radial_gradient_free (RsvgDefVal *self);
+
+/* "super"/parent calls */
+void rsvg_handle_init (RsvgHandle * handle);
+gboolean rsvg_handle_write_impl (RsvgHandle    *handle,
+								 const guchar  *buf,
+								 gsize          count,
+								 GError       **error);
+gboolean rsvg_handle_close_impl (RsvgHandle  *handle, 
+								 GError     **error);
+void rsvg_handle_free_impl (RsvgHandle *handle);
 
 G_END_DECLS
 
