@@ -1,3 +1,8 @@
+2004-09-10  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.[ch]: rsvg_init(), rsvg_term(). Cuts down on libxml2 memory leaks
+	* test-*.c: Use above fns
+	
 2004-08-31  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-text.c: made text not cause crashes

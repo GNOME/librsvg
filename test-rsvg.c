@@ -93,7 +93,7 @@ main (int argc, const char **argv)
 	else if (strstr (format, "jpg") != NULL) /* backward compatibility */
 		format = "jpeg";
 
-	g_type_init ();
+	rsvg_init ();
 
 	rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 
@@ -130,5 +130,7 @@ main (int argc, const char **argv)
 	g_object_unref (G_OBJECT (pixbuf));
 
 	poptFreeContext (popt_context);
+	rsvg_term();
+
 	return 0;
 }

@@ -1873,3 +1873,27 @@ rsvg_handle_free (RsvgHandle *handle)
 		(*handle->free) (handle);
 }
 
+/**
+ * rsvg_init:
+ *
+ * Initializes librsvg
+ * Since: 2.9
+ **/
+void 
+rsvg_init (void)
+{
+	g_type_init ();
+	xmlInitParser ();
+}
+
+/**
+ * rsvg_term:
+ *
+ * De-initializes librsvg
+ * Since: 2.9
+ **/
+void
+rsvg_term (void)
+{
+	xmlCleanupParser ();
+}

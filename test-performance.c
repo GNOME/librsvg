@@ -93,7 +93,7 @@ main (int argc, const char **argv)
 			return 1;
 		}
 
-	g_type_init ();
+	rsvg_init ();
 
 	fprintf (stdout, "File '%s'\n", args[0]);
 
@@ -118,6 +118,8 @@ main (int argc, const char **argv)
 	fprintf (stdout, "Rendering took %g(s)\n",
 		 g_timer_elapsed (timer, NULL) / count);
 	g_timer_destroy(timer);
+
+	rsvg_term ();
 
 	return 0;
 }

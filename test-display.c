@@ -587,6 +587,7 @@ main (int argc, char **argv)
 	
 	/* initialize gtk+ */
 	gtk_init (&argc, &argv) ;
+	rsvg_init ();
 
 	rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 	
@@ -686,6 +687,7 @@ main (int argc, char **argv)
 
 	g_object_unref (G_OBJECT (info.pixbuf));
 	g_byte_array_free (info.svg_bytes, TRUE);
+	rsvg_term ();
 
 	return 0;
 }
