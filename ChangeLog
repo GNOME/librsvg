@@ -1,3 +1,30 @@
+2001-08-22  Darin Adler  <darin@bentspoon.com>
+
+	* Makefile.am: Remove things that are duplicates of stuff
+	already moved into libart. Only install public headers.
+
+	* art_render.c: Removed.
+	* art_render.h: Removed.
+	* art_render_gradient.c: Removed.
+	* art_render_gradient.h: Removed.
+	* art_render_svp.c: Removed.
+	* art_render_svp.h: Removed.
+	* art_rgba.c: Removed.
+	* art_rgba.h: Removed.
+
+	* configure.in: Update for autoconf 2.52. Sadly, the version is
+	now repeated twice, but I don't see how to avoid this.
+	
+	* librsvg-features.h.in:
+
+	* art_render_mask.c:
+	* rsvg-ft.c:
+	* rsvg-paint-server.c:
+	* rsvg.c:
+	* test-ft-gtk.c:
+	* test-ft.c:
+	Fix includes.
+
 2001-08-13  Darin Adler  <darin@bentspoon.com>
 
 	* test-ft-gtk.c: (new_test_window): Use the new

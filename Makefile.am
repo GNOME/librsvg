@@ -8,35 +8,27 @@ EXTRA_DIST =\
 lib_LTLIBRARIES = librsvg-2.la
 
 librsvg_2_la_SOURCES = \
-	art_render.c \
-	art_render_gradient.c \
 	art_render_mask.c \
-	art_render_svp.c \
-	art_rgba.c \
+	art_render_mask.h \
 	librsvg-features.c \
 	rsvg-bpath-util.c \
+	rsvg-bpath-util.h \
 	rsvg-css.c \
+	rsvg-css.h \
 	rsvg-defs.c \
+	rsvg-defs.h \
 	rsvg-ft.c \
+	rsvg-ft.h \
 	rsvg-paint-server.c \
+	rsvg-paint-server.h \
 	rsvg-path.c \
+	rsvg-path.h \
 	rsvg.c
 
-librsvg_2_la_LDFLAGS = -version-info @LIBRSVG_VERSION_INFO@
+librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = \
-	art_render.h \
-	art_render_gradient.h \
-	art_render_mask.h \
-	art_render_svp.h \
-	art_rgba.h \
-	rsvg-bpath-util.h \
-	rsvg-css.h \
-	rsvg-defs.h \
-	rsvg-ft.h \
-	rsvg-paint-server.h \
-	rsvg-path.h \
 	rsvg.h \
 	librsvg-features.h
 

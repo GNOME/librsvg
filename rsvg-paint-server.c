@@ -30,8 +30,8 @@
 #include <libart_lgpl/art_alphagamma.h>
 #include <libart_lgpl/art_filterlevel.h>
 #include <libart_lgpl/art_affine.h>
-#include "art_render.h"
-#include "art_render_gradient.h"
+#include <libart_lgpl/art_render.h>
+#include <libart_lgpl/art_render_gradient.h>
 
 #include "rsvg-css.h"
 #include "rsvg-defs.h"

@@ -25,8 +25,8 @@
 #include <string.h>
 #include <libart_lgpl/art_misc.h>
 #include <libart_lgpl/art_alphagamma.h>
+#include <libart_lgpl/art_render.h>
 
-#include "art_render.h"
 #include "art_render_mask.h"
 
 typedef struct _ArtMaskSourceMask ArtMaskSourceMask;

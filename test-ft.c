@@ -37,7 +37,7 @@
 #include <libart_lgpl/art_alphagamma.h>
 #include <libart_lgpl/art_affine.h>
 #include <libart_lgpl/art_affine.h>
-#include "art_render.h"
+#include <libart_lgpl/art_render.h>
 #include "art_render_mask.h"
 
 #include "rsvg.h"
