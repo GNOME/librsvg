@@ -1,3 +1,8 @@
+2002-09-17  Dom Lachowicz <doml@appligent.com>
+
+	* rsvg.c (rsvg_start_svg): Parse viewbox as floats, not ints.
+	(rsvg_start_text): Handle x & y attributes. TODO: dx,dy
+	
 2002-09-16  Dom Lachowicz <doml@appligent.com>
 
 	* rsvg.c (rsvg_start_svg): Support the viewbox

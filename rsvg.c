@@ -187,7 +187,7 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
   double x_zoom = 1.;
   double y_zoom = 1.;
 
-  int vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
+  double vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
   gboolean has_vbox = TRUE;
 
   if (atts != NULL)
@@ -204,8 +204,8 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	    {
 	      /* todo: viewbox can have whitespace and/or comma but we're only likely to see
 		 these 2 combinations */
-	      if (4 == sscanf ((char *)atts[i + 1], "%d %d %d %d", &vbox_x, &vbox_y, &vbox_w, &vbox_h) ||
-		  4 == sscanf ((char *)atts[i + 1], "%d , %d , %d , %d", &vbox_x, &vbox_y, &vbox_w, &vbox_h))
+	      if (4 == sscanf ((char *)atts[i + 1], "%lf %lf %lf %lf", &vbox_x, &vbox_y, &vbox_w, &vbox_h) ||
+		  4 == sscanf ((char *)atts[i + 1], "%lf , %lf , %lf , %lf", &vbox_x, &vbox_y, &vbox_w, &vbox_h))
 		has_vbox = TRUE;
 	    }
 	}
@@ -222,10 +222,10 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
           return;
         }
 
-      if (has_vbox && vbox_w > 0 && vbox_h > 0)
+      if (has_vbox && vbox_w > 0. && vbox_h > 0.)
 	{
-	  new_width  = vbox_w - vbox_x;
-	  new_height = vbox_h - vbox_y;
+	  new_width  = (int)floor (vbox_w - vbox_x);
+	  new_height = (int)floor (vbox_h - vbox_y);
 
 	  /* apply the sizing function on the *original* width and height
 	     to acquire our real destination size. we'll scale it against
@@ -235,7 +235,7 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	}
       else
 	{
-	  new_width = width;
+	  new_width  = width;
 	  new_height = height;
 
 	  /* apply the sizing function to acquire our new width and height.
@@ -1000,8 +1000,6 @@ typedef struct _RsvgSaxHandlerText RsvgSaxHandlerText;
 struct _RsvgSaxHandlerText {
   RsvgSaxHandler super;
   RsvgHandle *ctx;
-  double xpos;
-  double ypos;
 };
 
 static void
@@ -1124,15 +1122,40 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 static void
 rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
 {
-  RsvgSaxHandlerText *handler = g_new0 (RsvgSaxHandlerText, 1);
+  int i, fixed;
+  double affine[6] ;
+  double x, y, dx, dy;
+  RsvgState *state;
 
+  RsvgSaxHandlerText *handler = g_new0 (RsvgSaxHandlerText, 1);
   handler->super.free = rsvg_text_handler_free;
   handler->super.characters = rsvg_text_handler_characters;
   handler->ctx = ctx;
 
-  /* todo: parse "x" and "y" attributes */
-  handler->xpos = 0;
-  handler->ypos = 0;
+  x = y = dx = dy = 0.;
+
+  if (atts != NULL)
+    {
+      for (i = 0; atts[i] != NULL; i += 2)
+	{
+	  if (!strcmp ((char *)atts[i], "x"))
+	    x = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  if (!strcmp ((char *)atts[i], "y"))
+	    y = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  if (!strcmp ((char *)atts[i], "dx"))
+	    dx = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  if (!strcmp ((char *)atts[i], "dy"))
+	    dy = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	}
+    }
+
+  state = &ctx->state[ctx->n_state - 1];
+
+  if (x >= 0 && y >= 0)
+    {
+      art_affine_translate (affine, x, y);
+      art_affine_multiply (state->affine, affine, state->affine);
+    }
 
   rsvg_parse_style_attrs (ctx, atts);
   ctx->handler = &handler->super;
