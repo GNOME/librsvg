@@ -145,20 +145,9 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	RsvgLinearGradient *rlg = z->gradient;
 	ArtGradientLinear *agl;
 	double x1, y1, x2, y2;
-	double g_x1, g_y1, g_x2, g_y2;
 	double dx, dy, scale;
-	
-	g_x1 = rlg->x1;
-	g_x2 = rlg->x2;
-	g_y1 = rlg->y1;
-	g_y2 = rlg->y2;
-
-	if (rlg->obj_bbox == TRUE) {
-		g_x1 *= ar->x0;
-		g_x2 *= ar->x1;
-		g_y1 *= ar->y0;
-		g_y2 *= ar->y1;
-	}
+	double affine[6];
+	int i;
 
 	agl = z->agl;
 	if (agl == NULL)
@@ -172,12 +161,26 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 			agl->stops = rsvg_paint_art_stops_from_rsvg (rlg->stops);
 			z->agl = agl;
 		}
+
+	if (rlg->obj_bbox) {
+		affine[0] = ar->x1 - ar->x0;
+		affine[1] = 0.;		
+		affine[2] = 0.;
+		affine[3] = ar->y1 - ar->y0;
+		affine[4] = ar->x0;
+		affine[5] = ar->y0;
+
+		art_affine_multiply (affine, affine, rlg->affine);
+	} else {
+		for (i = 0; i < 6; i++)
+			affine[i] = rlg->affine[i];
+	}
 	
 	/* compute [xy][12] in pixel space */
-	x1 = g_x1 * rlg->affine[0] + g_y1 * rlg->affine[2] + rlg->affine[4];
-	y1 = g_x1 * rlg->affine[1] + g_y1 * rlg->affine[3] + rlg->affine[5];
-	x2 = g_x2 * rlg->affine[0] + g_y2 * rlg->affine[2] + rlg->affine[4];
-	y2 = g_x2 * rlg->affine[1] + g_y2 * rlg->affine[3] + rlg->affine[5];
+	x1 = rlg->x1 * affine[0] + rlg->y1 * affine[2] + affine[4];
+	y1 = rlg->x1 * affine[1] + rlg->y1 * affine[3] + affine[5];
+	x2 = rlg->x2 * affine[0] + rlg->y2 * affine[2] + affine[4];
+	y2 = rlg->x2 * affine[1] + rlg->y2 * affine[3] + affine[5];
 	
 	/* solve a, b, c so ax1 + by1 + c = 0 and ax2 + by2 + c = 1, maximum
 	   gradient is in x1,y1 to x2,y2 dir */
@@ -225,27 +228,21 @@ rsvg_paint_server_rad_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	RsvgPaintServerRadGrad *z = (RsvgPaintServerRadGrad *)self;
 	RsvgRadialGradient *rrg = z->gradient;
 	ArtGradientRadial *agr;
-	double aff1[6], aff2[6];
-	
-	double r, cx, cy, fx, fy;
-
-	r  = rrg->r;
-	cx = rrg->cx;
-	cy = rrg->cy;
-	fx = rrg->fx;
-	fy = rrg->fy;
+	double aff1[6], aff2[6], affine[6];
+	int i;
 
 	if (rrg->obj_bbox) {
-		/* http://www.w3.org/TR/SVG11/pservers.html#RadialGradientUnitsAttribute 
-		   not quite sure of the math needed here in order to make this happen
-		   relative to [ar->x0 ar->x1 ar->y0 ar->y1]
-		*/
-		/* todo: untested, known to be *quite* broken */
-		r  *= (((ar->x1 - ar->x0) + (ar->y1 - ar->y0)) / 2.);
-		cx *= ((ar->x1 - ar->x0));
-		cy *= ((ar->y1 - ar->y0));
-		fx *= ((ar->x1 - ar->x0));
-		fy *= ((ar->y1 - ar->y0));
+		affine[0] = ar->x1 - ar->x0;
+		affine[1] = 0.;		
+		affine[2] = 0.;
+		affine[3] = ar->y1 - ar->y0;
+		affine[4] = ar->x0;
+		affine[5] = ar->y0;
+
+		art_affine_multiply (affine, affine, rrg->affine);
+	} else {
+		for (i = 0; i < 6; i++)
+			affine[i] = rrg->affine[i];
 	}
 
 	agr = z->agr;
@@ -261,16 +258,16 @@ rsvg_paint_server_rad_grad_render (RsvgPaintServer *self, ArtRender *ar,
 			z->agr = agr;
 		}
 	
-	art_affine_scale (aff1, r, r);
-	art_affine_translate (aff2, cx, cy);
+	art_affine_scale (aff1, rrg->r, rrg->r);
+	art_affine_translate (aff2, rrg->cx, rrg->cy);
 	art_affine_multiply (aff1, aff1, aff2);
-	art_affine_multiply (aff1, aff1, rrg->affine);
+	art_affine_multiply (aff1, aff1, affine);
 	art_affine_invert (agr->affine, aff1);
 	
 	/* todo: libart doesn't support spreads on radial gradients */
 
-	agr->fx = (fx - cx) / r;
-	agr->fy = (fy - cy) / r;
+	agr->fx = (rrg->fx - rrg->cx) / rrg->r;
+	agr->fy = (rrg->fy - rrg->cy) / rrg->r;
 	
 	art_render_gradient_radial (ar, agr, ART_FILTER_NEAREST);
 }
