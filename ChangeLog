@@ -1,8 +1,9 @@
 2005-2-7  Caleb Moore <c.moore@student.unsw.edu.au>
 
-	* rsvg-styles.c: made a consistant framework for combining states
+	* rsvg-styles.c: made a consistent framework for combining states
 	* rsvg-shapes.c: subtle rewrite of <use> to allow things to be instanced before they are actually specified.
 	* rsvg.c: treat <a> tag like <g> tag for now
+	* rsvg-styles.c: made style override any attributes, as per what the w3 guys told me to do when I asked them what had preference. Now pirate flags and stuff look right.
 
 2005-01-28  Dom Lachowicz <cinamod@hotmail.com>
 

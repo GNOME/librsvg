@@ -1342,12 +1342,12 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 		{
 			const char * value;
 
+			rsvg_parse_style_pairs (ctx, state, atts);
+
 			if ((value = rsvg_property_bag_lookup (atts, "style")) != NULL)
 				rsvg_parse_style (ctx, state, value);
 			if ((value = rsvg_property_bag_lookup (atts, "transform")) != NULL)
 				rsvg_parse_transform_attr (ctx, state, value);
-
-			rsvg_parse_style_pairs (ctx, state, atts);
 		}
 }
 
