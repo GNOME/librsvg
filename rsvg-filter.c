@@ -4144,16 +4144,16 @@ get_surface_normal (guchar * I, FPBox boundarys, gint x, gint y,
 	gdouble Nx, Ny;
 	vector3 output;
 
-	if (x + dx >= boundarys.x2)
+	if (x + dx >= boundarys.x2 - 1)
 		mcol = 2;
-	else if (x - dx < boundarys.x1)
+	else if (x - dx < boundarys.x1 + 1)
 		mcol = 0;
 	else
 		mcol = 1;
 
-	if (y + dy >= boundarys.y2)
+	if (y + dy >= boundarys.y2 - 1)
 		mrow = 2;
-	else if (y - dy < boundarys.y1)
+	else if (y - dy < boundarys.y1 + 1)
 		mrow = 0;
 	else
 		mrow = 1;

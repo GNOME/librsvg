@@ -1,7 +1,13 @@
-2004-03-02  Caleb Moore <c.moore@student.unsw.edu.au>
+2004-03-04  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-filter.c: Fixed feDiffuseLighting and feSpecular lighting to scale
+	more consistantly
+
+2004-03-03  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-filter.c: Fixed feDiffuseLighting and feSpecular lighting for small
-	kernel length
+	kernel length at the expense of speed, hopefully this can be optimised later.
+	Fixed a "what the hell was I thinking?!" bug in filter dimentioning.
 	
 2004-03-02  Caleb Moore <c.moore@student.unsw.edu.au>
 
