@@ -546,7 +546,6 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 	css_user_data_init (&user_data, ctx);
 	css_handler->app_data = &user_data;
 
-	/* TODO: fix libcroco to take in const strings */
 	parser = cr_parser_new_from_buf ((guchar *)buff, (gulong)buflen, CR_UTF_8, FALSE);	
 	status = cr_parser_set_sac_handler (parser, css_handler);
     
@@ -554,7 +553,6 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
         {
 			g_warning ("Error setting CSS SAC handler\n");
 			cr_parser_destroy (parser);			
-			cr_doc_handler_destroy (css_handler);
 			return;
         }        
 	
@@ -562,7 +560,6 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 	status = cr_parser_parse (parser);
 	
 	cr_parser_destroy (parser);
-	cr_doc_handler_destroy (css_handler);
 }
 
 #else /* !HAVE_LIBCROCO */
