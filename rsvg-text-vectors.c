@@ -49,6 +49,7 @@ typedef struct _RenderCtx RenderCtx;
 struct _RenderCtx
 {
 	GString      *path;
+	gboolean      wrote;
 	gdouble       offset_x;
 	gdouble       offset_y;
 };
@@ -56,6 +57,7 @@ struct _RenderCtx
 typedef void (* RsvgTextRenderFunc) (PangoFont  *font,
 									 PangoGlyph  glyph,
 									 FT_Int32    load_flags,
+									 FT_Matrix  *trafo,
 									 gint        x,
 									 gint        y,
 									 gpointer    render_data);
@@ -90,17 +92,9 @@ static void
 rsvg_text_ft2_subst_func (FcPattern *pattern,
                           gpointer   data)
 {
-#if 0
-	RsvgHandle * ctx = (RsvgHandle *)data;
-	
-	FcPatternAddBool (pattern, FC_HINTING,   ctx->txt_hinting);
-	FcPatternAddBool (pattern, FC_AUTOHINT,  ctx->txt_autohint);
-	FcPatternAddBool (pattern, FC_ANTIALIAS, ctx->txt_antialias);
-#else
 	FcPatternAddBool (pattern, FC_HINTING, 0);
 	FcPatternAddBool (pattern, FC_ANTIALIAS, 1);
 	FcPatternAddBool (pattern, FC_AUTOHINT, 0);	
-#endif
 }
 
 static PangoContext *
@@ -202,23 +196,7 @@ rsvg_text_layout_render_flags (RsvgTextLayout *layout)
 {
 	gint flags;
 	
-#if 0
-	RsvgHandle *ctx;
-	ctx = layout->ctx;
-
-	if (ctx->txt_antialias)
-		flags = FT_LOAD_NO_BITMAP;
-	else
-		flags = FT_LOAD_TARGET_MONO;
-	
-	if (!ctx->txt_hinting)
-		flags |= FT_LOAD_NO_HINTING;
-	
-	if (ctx->txt_autohint)
-		flags |= FT_LOAD_FORCE_AUTOHINT;
-#else
-	flags = FT_LOAD_NO_BITMAP;
-#endif
+	flags = FT_LOAD_NO_BITMAP | FT_LOAD_FORCE_AUTOHINT;
 	
 	return flags;
 }
@@ -247,7 +225,9 @@ rsvg_text_layout_render_glyphs (RsvgTextLayout     *layout,
 					pos.x = x + x_position + gi->geometry.x_offset;
 					pos.y = y + gi->geometry.y_offset;
 					
-					render_func (font, gi->glyph, flags,
+					/* FT_Vector_Transform (&pos, &trafo); */
+
+					render_func (font, gi->glyph, flags, NULL /* &trafo */,
 								 pos.x, pos.y,
 								 render_data);
 				}
@@ -290,8 +270,8 @@ rsvg_text_vector_coords (RenderCtx       *ctx,
 						 gdouble         *x,
 						 gdouble         *y)
 {
-	*x = ctx->offset_x + (gdouble)vector->x / 64.0;
-	*y = ctx->offset_y + (gdouble)vector->y / 64.0;
+	*x = (gdouble)vector->x;
+	*y = (gdouble)vector->y;
 }
 
 static gint
@@ -304,13 +284,19 @@ moveto (FT_Vector *to,
 	
 	ctx = (RenderCtx *)data;
 	
-	g_string_append(ctx->path, " m");
+	if (ctx->wrote)
+		g_string_append(ctx->path, "Z ");
+	else
+		ctx->wrote = TRUE;
+
+	g_string_append_c(ctx->path, 'M');
 	
 	rsvg_text_vector_coords(ctx, to, &x, &y);
 	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), x));
 	g_string_append_c(ctx->path, ',');
 	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), y));
-	
+	g_string_append_c(ctx->path, ' ');
+
 	return 0;
 }
 
@@ -324,13 +310,14 @@ lineto (FT_Vector *to,
 	
 	ctx = (RenderCtx *)data;
 	
-	g_string_append(ctx->path, " l");
+	g_string_append_c(ctx->path, 'L');
 	
 	rsvg_text_vector_coords(ctx, to, &x, &y);
 	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), x));
 	g_string_append_c(ctx->path, ',');
 	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), y));
-	
+	g_string_append_c(ctx->path, ' ');
+
 	return 0;
 }
 
@@ -345,7 +332,7 @@ conicto (FT_Vector *ftcontrol,
 	
 	ctx = (RenderCtx *)data;
 
-	g_string_append(ctx->path, " q");
+	g_string_append_c(ctx->path, 'Q');
 	
 	rsvg_text_vector_coords(ctx, ftcontrol, &x, &y);
 	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), x));
@@ -357,7 +344,8 @@ conicto (FT_Vector *ftcontrol,
 	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), x));
 	g_string_append_c(ctx->path, ',');
 	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), y));
-	
+	g_string_append_c(ctx->path, ' ');
+
 	return 0;
 }
 
@@ -373,7 +361,7 @@ cubicto (FT_Vector *ftcontrol1,
 	
 	ctx = (RenderCtx *)data;
 	
-	g_string_append(ctx->path, " c");
+	g_string_append_c(ctx->path, 'C');
 	
 	rsvg_text_vector_coords(ctx, ftcontrol1, &x, &y);
 	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), x));
@@ -391,7 +379,8 @@ cubicto (FT_Vector *ftcontrol1,
 	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), x));
 	g_string_append_c(ctx->path, ',');
 	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), y));
-	
+	g_string_append_c(ctx->path, ' ');	
+
 	return 0;
 }
 
@@ -399,6 +388,7 @@ static void
 rsvg_text_render_vectors (PangoFont     *font,
 						  PangoGlyph     pango_glyph,
 						  FT_Int32       flags,
+						  FT_Matrix     *trafo,
 						  gint           x,
 						  gint           y,
 						  gpointer       ud)
@@ -431,9 +421,7 @@ rsvg_text_render_vectors (PangoFont     *font,
 			context->offset_x = (gdouble) x / PANGO_SCALE;
 			context->offset_y = (gdouble) y / PANGO_SCALE;
 			
-			FT_Outline_Decompose (&outline_glyph->outline, &outline_funcs, context);
-			
-			g_string_append(context->path, " z");
+			FT_Outline_Decompose (&outline_glyph->outline, &outline_funcs, context);			
 		}
 	
 	FT_Done_Glyph (glyph);
@@ -491,8 +479,11 @@ rsvg_text_render_text (RsvgHandle *ctx,
 	rsvg_text_layout_render (layout, rsvg_text_render_vectors, 
 							 (gpointer)render);
 
-	/* Only a debugging message for now */
-	g_print("%s\n", render->path->str);
+	if (render->wrote)
+		g_string_append_c(render->path, 'Z');
+
+	/* Only a debugging aid for now */
+	g_print("%s\n\n", render->path->str);
 	
 	rsvg_handle_path (ctx, render->path->str, id);
 
