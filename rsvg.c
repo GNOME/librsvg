@@ -382,7 +382,8 @@ rsvg_gradient_stop_handler_new (RsvgHandle *ctx, RsvgGradientStops **p_stops,
 	return &gstops->super;
 }
 
-static void
+/* exported to the paint server via rsvg-private.h */
+void
 rsvg_linear_gradient_free (RsvgDefVal *self)
 {
 	RsvgLinearGradient *z = (RsvgLinearGradient *)self;
@@ -398,13 +399,13 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
 	RsvgLinearGradient *grad = NULL;
 	int i;
-	char *id = NULL;
+	const char *id = NULL;
 	double x1 = 0., y1 = 0., x2 = 0., y2 = 0.;
 	ArtGradientSpread spread = ART_GRADIENT_PAD;
 	const char * xlink_href = NULL;
-	gboolean got_x1, got_x2, got_y1, got_y2, got_spread, cloned;
+	gboolean got_x1, got_x2, got_y1, got_y2, got_spread, cloned, shallow_cloned;
 	
-	got_x1 = got_x2 = got_y1 = got_y2 = got_spread = cloned = FALSE;
+	got_x1 = got_x2 = got_y1 = got_y2 = got_spread = cloned = shallow_cloned = FALSE;
 	
 	/* 100% is the default */
 	x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi, (gdouble)ctx->width, state->font_size);
@@ -415,23 +416,37 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
 					if (!strcmp ((char *)atts[i], "id"))
-						id = (char *)atts[i + 1];
-					else if (!strcmp ((char *)atts[i], "x1"))
+						id = (const char *)atts[i + 1];
+					else if (!strcmp ((char *)atts[i], "x1")) {
 						x1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
-					else if (!strcmp ((char *)atts[i], "y1"))
+						got_x1 = TRUE;
+					}
+					else if (!strcmp ((char *)atts[i], "y1")) {
 						y1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
-					else if (!strcmp ((char *)atts[i], "x2"))
+						got_y1 = TRUE;
+					}
+					else if (!strcmp ((char *)atts[i], "x2")) {
 						x2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
-					else if (!strcmp ((char *)atts[i], "y2"))
+						got_x2 = TRUE;
+					}
+					else if (!strcmp ((char *)atts[i], "y2")) {
 						y2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
+						got_y2 = TRUE;
+					}
 					else if (!strcmp ((char *)atts[i], "spreadMethod"))
 						{
-							if (!strcmp ((char *)atts[i + 1], "pad"))
+							if (!strcmp ((char *)atts[i + 1], "pad")) {
 								spread = ART_GRADIENT_PAD;
-							else if (!strcmp ((char *)atts[i + 1], "reflect"))
+								got_spread = TRUE;
+							}
+							else if (!strcmp ((char *)atts[i + 1], "reflect")) {
 								spread = ART_GRADIENT_REFLECT;
-							else if (!strcmp ((char *)atts[i + 1], "repeat"))
+								got_spread = TRUE;
+							}
+							else if (!strcmp ((char *)atts[i + 1], "repeat")) {
 								spread = ART_GRADIENT_REPEAT;
+								got_spread = TRUE;
+							}
 						}
 					else if (!strcmp ((char *)atts[i], "xlink:href"))
 						xlink_href = (const char *)atts[i + 1];
@@ -444,7 +459,7 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 			if (parent != NULL)
 				{
 					cloned = TRUE;
-					grad = rsvg_clone_linear_gradient (parent); 
+					grad = rsvg_clone_linear_gradient (parent, &shallow_cloned); 
 					ctx->handler = rsvg_gradient_stop_handler_new_clone (ctx, grad->stops, "linearGradient");
 				}
 		}
@@ -470,7 +485,8 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	grad->spread = (cloned && !got_spread) ? grad->spread : spread;
 }
 
-static void
+/* exported to the paint server via rsvg-private.h */
+void
 rsvg_radial_gradient_free (RsvgDefVal *self)
 {
 	RsvgRadialGradient *z = (RsvgRadialGradient *)self;
@@ -486,12 +502,12 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
 	RsvgRadialGradient *grad = NULL;
 	int i;
-	char *id = NULL;
+	const char *id = NULL;
 	double cx = 0., cy = 0., r = 0., fx = 0., fy = 0.;  
 	const char * xlink_href = NULL;
-	gboolean got_cx, got_cy, got_r, got_fx, got_fy, cloned;
+	gboolean got_cx, got_cy, got_r, got_fx, got_fy, cloned, shallow_cloned;
 	
-	got_cx = got_cy = got_r = got_fx = got_fy = cloned = FALSE;
+	got_cx = got_cy = got_r = got_fx = got_fy = cloned = shallow_cloned = FALSE;
 	
 	/* setup defaults */
 	cx = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->width, state->font_size);
@@ -504,7 +520,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
 					if (!strcmp ((char *)atts[i], "id"))
-						id = (char *)atts[i + 1];
+						id = (const char *)atts[i + 1];
 					else if (!strcmp ((char *)atts[i], "cx")) {
 						cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 						got_cx = TRUE;
@@ -538,7 +554,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 			if (parent != NULL)
 				{
 					cloned = TRUE;
-					grad = rsvg_clone_radial_gradient (parent); 
+					grad = rsvg_clone_radial_gradient (parent, &shallow_cloned); 
 					ctx->handler = rsvg_gradient_stop_handler_new_clone (ctx, grad->stops, "radialGradient");
 				}
     }
@@ -547,13 +563,19 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 			grad = g_new (RsvgRadialGradient, 1);
 			grad->super.type = RSVG_DEF_RADGRAD;
 			grad->super.free = rsvg_radial_gradient_free;
-			ctx->handler = rsvg_gradient_stop_handler_new (ctx, &grad->stops, "radialGradient");
-			
-			if (!got_fx)
-				fx = cx;
-			if (!got_fy)
-				fy = cy;
+			ctx->handler = rsvg_gradient_stop_handler_new (ctx, &grad->stops, "radialGradient");		   
 		}
+
+	if (!cloned || shallow_cloned) {
+		if (!got_fx) {
+			fx = cx;
+			got_fx = TRUE;
+		}
+		if (!got_fy) {
+			fy = cy;
+			got_fy = TRUE;
+		}
+	}
 	
 	rsvg_defs_set (ctx->defs, id, &grad->super);
 	
@@ -561,9 +583,9 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 		grad->affine[i] = state->affine[i];
 	
 	/* state inherits parent/cloned information unless it's explicity gotten */
-	grad->cx = (cloned && !got_cx) ? grad->cx: cx;
-	grad->cy = (cloned && !got_cy) ? grad->cy: cy;
-	grad->r =  (cloned && !got_r) ? grad->r : r;
+	grad->cx = (cloned && !got_cx) ? grad->cx : cx;
+	grad->cy = (cloned && !got_cy) ? grad->cy : cy;
+	grad->r =  (cloned && !got_r)  ? grad->r  : r;
 	grad->fx = (cloned && !got_fx) ? grad->fx : fx;
 	grad->fy = (cloned && !got_fy) ? grad->fy : fy;
 }

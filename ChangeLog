@@ -1,4 +1,8 @@
-2003-01-25  Dom Lachowicz <cinamod@hotmail.com>
+2003-01-27  Dom Lachowicz <cinamod@hotmail.com>
+
+	* *: Fix a bunch of brokenness caused by Sodipodi's handling of gradients. Output still doesn't look quite right, though, unfortunately....
+	
+2003-01-26  Dom Lachowicz <cinamod@hotmail.com>
 
 	* *: Support CSS id as well as class, style
 	

@@ -24,6 +24,7 @@
 
 #include "config.h"
 #include "rsvg-paint-server.h"
+#include "rsvg-private.h"
 
 #include <glib/gmem.h>
 #include <glib/gmessages.h>
@@ -353,57 +354,87 @@ rsvg_paint_server_unref (RsvgPaintServer *ps)
 }
 
 RsvgRadialGradient *
-rsvg_clone_radial_gradient (const RsvgRadialGradient *grad)
+rsvg_clone_radial_gradient (const RsvgRadialGradient *grad, gboolean * shallow_cloned)
 {
 	RsvgRadialGradient * clone = NULL;
 	int i;
 	
-	clone = g_new (RsvgRadialGradient, 1);
-	clone->super.type = grad->super.type;
-	clone->super.free = grad->super.free;
+	clone = g_new0 (RsvgRadialGradient, 1);
+	clone->super.type = RSVG_DEF_RADGRAD;
+	clone->super.free = rsvg_radial_gradient_free;
 	
 	for (i = 0; i < 6; i++)
 		clone->affine[i] = grad->affine[i];
-	clone->cx = grad->cx;
-	clone->cy = grad->cy;
-	clone->r  = grad->r;
-	clone->fx = grad->fx;
-	clone->fy = grad->fy;
+
+	if (grad->stops != NULL) {
+		clone->stops = g_new (RsvgGradientStops, 1);
+		clone->stops->n_stop = grad->stops->n_stop;
+		clone->stops->stop = g_new (RsvgGradientStop, grad->stops->n_stop);
 	
-	clone->stops = g_new (RsvgGradientStops, 1);
-	clone->stops->n_stop = grad->stops->n_stop;
-	clone->stops->stop = g_new (RsvgGradientStop, clone->stops->n_stop);
-	
-	for (i = 0; i < grad->stops->n_stop; i++)
-		clone->stops->stop[i] = grad->stops->stop[i];
+		for (i = 0; i < grad->stops->n_stop; i++)
+			clone->stops->stop[i] = grad->stops->stop[i];
+	} else {
+		clone->stops = NULL;
+	}
+
+	/* EVIL EVIL - sodipodi can base LinearGradients on
+	   RadialGradients, and vice-versa. it is legal, though:
+	   http://www.w3.org/TR/SVG11/pservers.html#LinearGradients
+	*/
+	if (grad->super.type == RSVG_DEF_RADGRAD) {
+		clone->cx = grad->cx;
+		clone->cy = grad->cy;
+		clone->r  = grad->r;
+		clone->fx = grad->fx;
+		clone->fy = grad->fy;
+		
+		*shallow_cloned = FALSE;
+	} else {
+		*shallow_cloned = TRUE;
+	}
 	
 	return clone;
 }
 
 RsvgLinearGradient *
-rsvg_clone_linear_gradient (const RsvgLinearGradient *grad)
+rsvg_clone_linear_gradient (const RsvgLinearGradient *grad, gboolean * shallow_cloned)
 {
 	RsvgLinearGradient * clone = NULL;
 	int i;
 	
-	clone = g_new (RsvgLinearGradient, 1);
-	clone->super.type = grad->super.type;
-	clone->super.free = grad->super.free;
+	clone = g_new0 (RsvgLinearGradient, 1);
+	clone->super.type = RSVG_DEF_LINGRAD;
+	clone->super.free = rsvg_linear_gradient_free;
 	
 	for (i = 0; i < 6; i++)
 		clone->affine[i] = grad->affine[i];
-	clone->x1 = grad->x1;
-	clone->y1 = grad->y1;
-	clone->x2 = grad->x2;
-	clone->y2 = grad->y2;
-	clone->spread = grad->spread;
-	
-	clone->stops = g_new (RsvgGradientStops, 1);
-	clone->stops->n_stop = grad->stops->n_stop;
-	clone->stops->stop = g_new (RsvgGradientStop, clone->stops->n_stop);
-	
-	for (i = 0; i < grad->stops->n_stop; i++)
-		clone->stops->stop[i] = grad->stops->stop[i];
-	
+
+	if (grad->stops != NULL) {
+		clone->stops = g_new (RsvgGradientStops, 1);
+		clone->stops->n_stop = grad->stops->n_stop;
+		clone->stops->stop = g_new (RsvgGradientStop, grad->stops->n_stop);
+		
+		for (i = 0; i < grad->stops->n_stop; i++)
+			clone->stops->stop[i] = grad->stops->stop[i];
+	} else {
+		clone->stops = NULL;
+	}
+
+	/* EVIL EVIL - sodipodi can base LinearGradients on
+	   RadialGradients, and vice-versa. it is legal, though:
+	   http://www.w3.org/TR/SVG11/pservers.html#LinearGradients
+	*/
+	if (grad->super.type == RSVG_DEF_LINGRAD) {
+		clone->x1 = grad->x1;
+		clone->y1 = grad->y1;
+		clone->x2 = grad->x2;
+		clone->y2 = grad->y2;
+		clone->spread = grad->spread;
+
+		*shallow_cloned = FALSE;
+	} else {
+		*shallow_cloned = TRUE;
+	}
+
 	return clone;
 }

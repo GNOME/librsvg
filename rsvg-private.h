@@ -74,6 +74,9 @@ struct RsvgHandle {
   double dpi;
 };
 
+void rsvg_linear_gradient_free (RsvgDefVal *self);
+void rsvg_radial_gradient_free (RsvgDefVal *self);
+
 G_END_DECLS
 
 #endif

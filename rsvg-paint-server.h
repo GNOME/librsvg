@@ -70,19 +70,19 @@ struct _RsvgGradientStops {
 struct _RsvgLinearGradient {
   RsvgDefVal super;
   double affine[6]; /* user space to actual at time of gradient def */
+  RsvgGradientStops *stops;
   double x1, y1;
   double x2, y2;
   ArtGradientSpread spread;
-  RsvgGradientStops *stops;
 };
 
 struct _RsvgRadialGradient {
   RsvgDefVal super;
   double affine[6]; /* user space to actual at time of gradient def */
+  RsvgGradientStops *stops;
   double cx, cy;
   double r;
   double fx, fy;
-  RsvgGradientStops *stops;
 };
 
 /* Create a new paint server based on a specification string. */
@@ -100,10 +100,10 @@ void
 rsvg_paint_server_unref (RsvgPaintServer *ps);
 
 RsvgRadialGradient *
-rsvg_clone_radial_gradient (const RsvgRadialGradient *grad);
+rsvg_clone_radial_gradient (const RsvgRadialGradient *grad, gboolean * shallow_cloned);
 
 RsvgLinearGradient *
-rsvg_clone_linear_gradient (const RsvgLinearGradient *grad);
+rsvg_clone_linear_gradient (const RsvgLinearGradient *grad, gboolean * shallow_cloned);
 
 G_END_DECLS
 
