@@ -1,3 +1,17 @@
+2001-12-03  Darin Adler  <darin@bentspoon.com>
+
+	* rsvg-paint-server.c: (rsvg_paint_server_lin_grad_render),
+	(rsvg_paint_server_rad_grad_render): Prevent empty gradients
+	from crashing librsvg.
+
+	* rsvg.c: (rsvg_start_svg): Prevent huge image sizes from causing
+	a core dump by doing overflow checking and using g_try_malloc
+	instead of g_new.
+
+	* test-64684-1.svg:
+	* test-64684-2.svg:
+	Add some more test cases.
+
 Tue Nov 20 20:20:50 2001  Owen Taylor  <otaylor@redhat.com>
 
 	* configure.in (dnl): Add some quoting needed by

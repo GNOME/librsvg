@@ -1,0 +1,118 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg
+   style="fill:#000000;fill-opacity:0.5;stroke:none"
+   width="595.275591"
+   height="841.889764"
+   id="svg1"
+   sodipodi:docbase="/home/gpoo/images/sodipodi/"
+   sodipodi:docname="/home/gpoo/images/sodipodi/folder-smooth.svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink">  <defs
+     id="defs3">    <linearGradient
+       id="linearGradient47">      <stop
+         offset="0.000000"
+         style="stop-color:#001fa7;stop-opacity:0.231373;"
+         id="stop48">
+      </stop>
+      <stop
+         offset="1.000000"
+         style="stop-color:#5397cf;stop-opacity:0.168627;"
+         id="stop49">
+      </stop>
+
+    </linearGradient>
+    <linearGradient
+       id="linearGradient11">      <stop
+         style="stop-color:#00276f;stop-opacity:1;"
+         offset="0.000000"
+         id="stop12">
+      </stop>
+      <stop
+         style="stop-color:#83bfff;stop-opacity:1;"
+         offset="1.000000"
+         id="stop13">
+      </stop>
+
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient11"
+       id="linearGradient14"
+       x1="0.314787"
+       y1="0.742188"
+       x2="0.497871"
+       y2="-0.187500">
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient11"
+       id="linearGradient15"
+       x1="0.511877"
+       y1="0.867188"
+       x2="1.000000"
+       y2="0.000000">
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient47"
+       id="linearGradient46"
+       x1="0.884488"
+       y1="0.767893"
+       x2="0.514851"
+       y2="0.310243">
+    </linearGradient>
+
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     showgrid="true"
+     gridoriginx="0.000000"
+     gridoriginy="0.000000"
+     gridspacingx="2.834646"
+     gridspacingy="2.834646"
+     gridtolerance="5.000000"
+     gridcolor="#07071d"
+     gridopacity="1.000000"
+     guidetolerance="5.000000"
+     guidecolor="#0000ff"
+     guideopacity="0.498039"
+     guidehicolor="#ff0000"
+     guidehiopacity="0.498039">
+  </sodipodi:namedview>
+  <path
+     transform="matrix(-0.738222 -0.0999986 0.25555 0.304609 680.242 119.58)"
+     style="stroke:none; stroke-opacity:100%; stroke-width:1pt; stroke-linejoin:miter; stroke-linecap:butt; fill:url(#linearGradient46); "
+     d="M 934.968 1028.58 L 991.877 1084.67 L 1106.54 1084.67 L 1054.76 1032.3 L 934.968 1028.58 z "
+     id="path44"
+     sodipodi:nodetypes="ccccc">
+  </path>
+  <path
+     transform="matrix(-0.680497 -0.100835 0.270288 1.05858 604.79 -697.844)"
+     style="stroke:#000000;stroke-opacity:100%;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill:url(#linearGradient15);"
+     d="M 934.968 1028.58 L 991.877 1084.67 L 1106.54 1084.67 L 1054.76 1032.3 L 934.968 1028.58 z "
+     id="path8"
+     sodipodi:nodetypes="ccccc">
+  </path>
+  <path
+     transform="matrix(-0.657375 -0.0779928 0.288258 0.993857 558.78 -650.218)"
+     style="stroke:#000000; fill:#ffffff; fill-opacity:100%; stroke-opacity:100%; stroke-width:1pt; stroke-linejoin:miter; stroke-linecap:butt; "
+     d="M 952.894 1029.89 C 944.555 1030.9 950.826 1049.44 991.877 1084.67 L 1102.48 1082.34 C 1063.83 1063.85 1052.77 1031.69 1063.34 1030.89 C 1067.78 1031.27 965.731 1029.07 952.894 1029.89 z "
+     id="path9"
+     sodipodi:nodetypes="cccss">
+  </path>
+  <path
+     transform="matrix(-0.615361 -0.0753501 0.269835 0.960181 536.27 -618.312)"
+     style="stroke:#000000; fill:#ffffff; fill-opacity:100%; stroke-opacity:100%; stroke-width:1pt; stroke-linejoin:miter; stroke-linecap:butt; "
+     d="M 972.372 1037.67 C 963.239 1040.97 944.37 1047.96 991.877 1084.67 L 1109.59 1084.22 C 1086.96 1070.96 1083.88 1045.41 1093.69 1039.52 C 1099.67 1036.34 974.542 1036.68 972.372 1037.67 z "
+     id="path10"
+     sodipodi:nodetypes="cccss">
+  </path>
+  <path
+     transform="matrix(-0.673811 -0.0898752 0.2001 0.943524 674.29 -583.922)"
+     style="stroke:#000000;stroke-opacity:100%;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;fill:url(#linearGradient14);"
+     d="M 1016.74 1042.45 C 987.875 1042.14 974.45 1065.62 992.895 1084.77 L 1108.59 1084.87 C 1082.38 1058.66 1139.83 1043.81 1113.64 1043.52 L 1016.74 1042.45 z "
+     id="path7"
+     sodipodi:nodetypes="cccss">
+  </path>
+
+</svg>

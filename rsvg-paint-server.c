@@ -153,6 +153,11 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
   agl = z->agl;
   if (agl == NULL)
     {
+      if (rlg->stops->n_stop == 0)
+	{
+	  /* g_warning ("gradient with no stops -- should be rejected by parser"); */
+	  return;
+	}
       agl = g_new (ArtGradientLinear, 1);
       agl->n_stops = rlg->stops->n_stop;
       agl->stops = rsvg_paint_art_stops_from_rsvg (rlg->stops);
@@ -217,6 +222,11 @@ rsvg_paint_server_rad_grad_render (RsvgPaintServer *self, ArtRender *ar,
   agr = z->agr;
   if (agr == NULL)
     {
+      if (rrg->stops->n_stop == 0)
+	{
+	  /* g_warning ("gradient with no stops -- should be rejected by parser"); */
+	  return;
+	}
       agr = g_new (ArtGradientRadial, 1);
       agr->n_stops = rrg->stops->n_stop;
       agr->stops = rsvg_paint_art_stops_from_rsvg (rrg->stops);

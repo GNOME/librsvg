@@ -207,8 +207,14 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
       state = &ctx->state[ctx->n_state - 1];
       art_affine_scale (state->affine, x_zoom, y_zoom);
 
-      rowstride = (new_width * (has_alpha ? 4 : 3) + 3) & -4;
-      pixels = g_new (art_u8, rowstride * new_height);
+      if (new_width >= INT_MAX / 4)
+	return;
+      rowstride = (new_width * (has_alpha ? 4 : 3) + 3) & ~3;
+      if (rowstride > INT_MAX / new_height)
+	return;
+      pixels = g_try_malloc (rowstride * new_height);
+      if (pixels == NULL)
+	return;
       memset (pixels, has_alpha ? 0 : 255, rowstride * new_height);
       ctx->pixbuf = gdk_pixbuf_new_from_data (pixels,
 					      GDK_COLORSPACE_RGB,
