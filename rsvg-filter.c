@@ -1916,8 +1916,8 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self,
 	
 	output_pixels = gdk_pixbuf_get_pixels (output);
 	
-	ox = ctx->paffine[0] * oself->dx;
-	oy = ctx->paffine[3] * oself->dy;
+	ox = ctx->paffine[0] * oself->dx + ctx->paffine[2] * oself->dy;
+	oy = ctx->paffine[1] * oself->dx + ctx->paffine[3] * oself->dy;
 	
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)

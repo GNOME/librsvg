@@ -1,3 +1,7 @@
+2004-10-19  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-defs.c: stopped passing the hash table a destroy function since giving it a function to destroy document structure because of a name conflict is just BEGGING for a segfault.
+	
 2004-10-15  Dom Lachowicz <cinamod@hotmail.com>
 
 	* Makefile.am: bug 155530, ckelso@heliosphere.org (Chris Kelso)

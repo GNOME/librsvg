@@ -36,19 +36,12 @@ struct _RsvgDefs {
 	GPtrArray *unnamed;
 };
 
-static void
-rsvg_defs_free_value (gpointer value)
-{
-	RsvgDefVal *def_val = (RsvgDefVal *)value;
-	def_val->free (def_val);
-}
-
 RsvgDefs *
 rsvg_defs_new (void)
 {
 	RsvgDefs *result = g_new (RsvgDefs, 1);
 	
-	result->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, rsvg_defs_free_value);
+	result->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	result->unnamed = g_ptr_array_new ();
 	
 	return result;
