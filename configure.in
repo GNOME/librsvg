@@ -1,9 +1,4 @@
-AC_PREREQ(2.52)
-AC_INIT(librsvg, 1.1,
-	[http://bugzilla.gnome.org/enter_bug.cgi?product=librsvg])
-AC_CONFIG_SRCDIR(rsvg.h)
-AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
+AC_INIT(rsvg.h)
 
 dnl ===========================================================================
 
@@ -14,10 +9,15 @@ AC_SUBST(LIBRSVG_MAJOR_VERSION)
 AC_SUBST(LIBRSVG_MINOR_VERSION)
 AC_SUBST(LIBRSVG_MICRO_VERSION)
 
+LIBRSVG_VERSION=$LIBRSVG_MAJOR_VERSION.$LIBRSVG_MINOR_VERSION.$LIBRSVG_MICRO_VERSION
+
 VERSION_INFO=`expr $LIBRSVG_MAJOR_VERSION + $LIBRSVG_MINOR_VERSION`:$LIBRSVG_MICRO_VERSION:$LIBRSVG_MINOR_VERSION
 AC_SUBST(VERSION_INFO)
 
 dnl ===========================================================================
+
+AM_INIT_AUTOMAKE(librsvg, $LIBRSVG_VERSION)
+AM_CONFIG_HEADER(config.h)
 
 GNOME_COMMON_INIT
 

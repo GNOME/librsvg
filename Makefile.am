@@ -8,8 +8,6 @@ EXTRA_DIST =\
 lib_LTLIBRARIES = librsvg-2.la
 
 librsvg_2_la_SOURCES = \
-	art_render_mask.c \
-	art_render_mask.h \
 	librsvg-features.c \
 	rsvg-bpath-util.c \
 	rsvg-bpath-util.h \

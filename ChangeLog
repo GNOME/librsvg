@@ -1,5 +1,17 @@
 2002-01-03  Darin Adler  <darin@bentspoon.com>
 
+	* rsvg.c: Use art_render_mask in libart.
+
+	* Makefile.am:
+	* art_render_mask.c: Remove.
+	* art_render_mask.h: Remove.
+	Get rid of our own copy of art_render_mask.
+
+	* configure.in: Change back so compatible with older autoconf
+	and automake. We'll go back to the future when glib does.
+
+2002-01-03  Darin Adler  <darin@bentspoon.com>
+
 	* acinclude.m4: Remove.
 	We don't need the NAUTILUS_FREETYPE2 macro any more.
 

@@ -40,10 +40,9 @@
 #include <libart_lgpl/art_svp_wind.h>
 #include <libart_lgpl/art_render.h>
 #include <libart_lgpl/art_render_gradient.h>
+#include <libart_lgpl/art_render_mask.h>
 #include <libart_lgpl/art_render_svp.h>
 #include <libart_lgpl/art_rgba.h>
-
-#include "art_render_mask.h"
 
 #include <libxml/SAX.h>
 #include <libxml/xmlmemory.h>
