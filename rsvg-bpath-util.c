@@ -21,10 +21,13 @@
    Author: Raph Levien <raph@artofcode.com>
 */
 
-#include <glib.h>
+#include "config.h"
+#include "rsvg-bpath-util.h"
+
+#include <glib/gmem.h>
+#include <glib/gmessages.h>
 #include <math.h>
 #include <string.h>
-#include "rsvg-bpath-util.h"
 
 /* This is adapted from gnome-canvas-bpath-util in libgnomeprint
    (originally developed as part of Gill). */

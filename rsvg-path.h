@@ -24,6 +24,8 @@
 #ifndef RSVG_PATH_H
 #define RSVG_PATH_H
 
+#include "rsvg-bpath-util.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */

@@ -21,20 +21,14 @@
    Author: Raph Levien <raph@artofcode.com>
 */
 
-#include <string.h>
-
-#include <glib.h>
-
-#include <libart_lgpl/art_misc.h>
-#include <libart_lgpl/art_alphagamma.h>
-#include <libart_lgpl/art_filterlevel.h>
-#include <libart_lgpl/art_affine.h>
-#include <libart_lgpl/art_render.h>
-#include <libart_lgpl/art_render_gradient.h>
-
-#include "rsvg-css.h"
-#include "rsvg-defs.h"
+#include "config.h"
 #include "rsvg-paint-server.h"
+
+#include <glib/gmem.h>
+#include <glib/gstrfuncs.h>
+#include <libart_lgpl/art_affine.h>
+#include <string.h>
+#include "rsvg-css.h"
 
 typedef struct _RsvgPaintServerSolid RsvgPaintServerSolid;
 typedef struct _RsvgPaintServerLinGrad RsvgPaintServerLinGrad;

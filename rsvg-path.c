@@ -23,14 +23,13 @@
 
 /* This is adapted from svg-path in Gill. */
 
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
-
-#include <glib.h>
-
-#include "rsvg-bpath-util.h"
+#include "config.h"
 #include "rsvg-path.h"
+
+#include <glib/gtypes.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* This module parses an SVG path element into an RsvgBpathDef.
 

@@ -21,13 +21,14 @@
    Author: Raph Levien <raph@artofcode.com>
 */
 
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
-
-#include <glib.h>
-
+#include "config.h"
 #include "rsvg-css.h"
+
+#include <glib/ghash.h>
+#include <glib/gstring.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
 /**
  * rsvg_css_parse_length: Parse CSS2 length to a pixel value.

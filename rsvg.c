@@ -21,25 +21,17 @@
    Author: Raph Levien <raph@artofcode.com>
 */
 
-#include <config.h>
+#include "config.h"
 #include "rsvg.h"
 
-#include <string.h>
 #include <math.h>
+#include <string.h>
 
-#include <libart_lgpl/art_misc.h>
-#include <libart_lgpl/art_filterlevel.h>
 #include <libart_lgpl/art_affine.h>
-#include <libart_lgpl/art_svp.h>
-#include <libart_lgpl/art_bpath.h>
-#include <libart_lgpl/art_vpath.h>
 #include <libart_lgpl/art_vpath_bpath.h>
-#include <libart_lgpl/art_rgb_svp.h>
 #include <libart_lgpl/art_svp_vpath_stroke.h>
 #include <libart_lgpl/art_svp_vpath.h>
 #include <libart_lgpl/art_svp_wind.h>
-#include <libart_lgpl/art_render.h>
-#include <libart_lgpl/art_render_gradient.h>
 #include <libart_lgpl/art_render_mask.h>
 #include <libart_lgpl/art_render_svp.h>
 #include <libart_lgpl/art_rgba.h>
@@ -50,7 +42,6 @@
 #include <pango/pangoft2.h>
 
 #include "rsvg-bpath-util.h"
-#include "rsvg-defs.h"
 #include "rsvg-path.h"
 #include "rsvg-css.h"
 #include "rsvg-paint-server.h"

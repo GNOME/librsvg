@@ -1,3 +1,21 @@
+2002-01-04  Darin Adler  <darin@bentspoon.com>
+
+	* configure.in: Bump version, update dependencies.
+	* librsvg-2.0.pc.in: Update dependencies.
+
+	* rsvg-bpath-util.c:
+	* rsvg-css.c:
+	* rsvg-css.h:
+	* rsvg-defs.c:
+	* rsvg-paint-server.c:
+	* rsvg-paint-server.h:
+	* rsvg-path.c:
+	* rsvg-path.h:
+	* rsvg.c:
+	Fix includes to include only what's needed.
+
+	* test-62699.svg: Add a test case for another bug.
+
 2002-01-03  Darin Adler  <darin@bentspoon.com>
 
 	* rsvg.c: Use art_render_mask in libart.

@@ -1,6 +1,7 @@
+#include <glib/gtypes.h>
 
 double
-rsvg_css_parse_length (const char *str, gint *fixed);
+rsvg_css_parse_length (const char *str, int *fixed);
 
 gboolean
 rsvg_css_param_match (const char *str, const char *param_name);

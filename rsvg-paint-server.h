@@ -1,3 +1,7 @@
+#include <glib/gtypes.h>
+#include <libart_lgpl/art_render_gradient.h>
+#include "rsvg-defs.h"
+
 typedef struct _RsvgGradientStop RsvgGradientStop;
 typedef struct _RsvgGradientStops RsvgGradientStops;
 typedef struct _RsvgLinearGradient RsvgLinearGradient;

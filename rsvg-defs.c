@@ -21,8 +21,12 @@
    Author: Raph Levien <raph@artofcode.com>
 */
 
-#include <glib.h>
+#include "config.h"
 #include "rsvg-defs.h"
+
+#include <glib/ghash.h>
+#include <glib/gmem.h>
+#include <glib/gstrfuncs.h>
 
 struct _RsvgDefs {
   GHashTable *hash;
