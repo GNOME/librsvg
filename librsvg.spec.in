@@ -73,7 +73,7 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.2.0/loaders/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.2.0/loaders/*.a
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
-
+rm -f $RPM_BUILD_ROOT%{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -92,7 +92,6 @@ gdk-pixbuf-query-loaders > %{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
 %doc AUTHORS COPYING COPYING.LIB ChangeLog NEWS README TODO
 %{_libdir}/*.so.*
 %{_bindir}/rsvg
-%{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
 %{_mandir}/*/*
 
 %files devel
