@@ -181,6 +181,8 @@ rsvg_text_handler_free (RsvgSaxHandler *self)
 {
 	RsvgSaxHandlerText * z;
 	z = (RsvgSaxHandlerText *)self;
+
+	rsvg_tspan_free(z->tspan);
 	g_string_free(z->id, TRUE);
 	g_free (self);
 }
