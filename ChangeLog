@@ -1,3 +1,9 @@
+2004-03-01  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-filter.c: Implemented bi-linear filtering for displacement
+	map. The algorithm is still pretty crap but it makes it look a lot
+	better than it did before.
+	
 2004-02-29  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-filter.c: Added new filter: feDisplacementMap

@@ -166,6 +166,50 @@ gdk_pixbuf_new_cleared (GdkColorspace colorspace, gboolean has_alpha, int bits_p
 	return pb;
 }
 
+static guchar
+gdk_pixbuf_get_interp_pixel(guchar * src, gdouble ox, gdouble oy, guchar ch, FPBox boundarys, guint rowstride)
+{
+	double xmod, ymod;
+	double dist1, dist2, dist3, dist4;
+	double c, c1, c2, c3, c4;
+
+	xmod = fmod(ox, 1.0);
+	ymod = fmod(oy, 1.0);
+
+	dist1 = (1 - xmod) * (1 - ymod);
+	dist2 = (xmod) * (1 - ymod);
+	dist3 = (xmod) * (ymod);
+	dist4 = (1 - xmod) * (ymod);
+
+	if (floor(ox) <= boundarys.x1 || floor(ox) >= boundarys.x2 || 
+		floor(oy) <= boundarys.y1 || floor(oy) >= boundarys.y2)
+		c1 = 0;
+	else
+		c1 = src[(guint)floor(oy) * rowstride + (guint)floor(ox) * 4 + ch];
+
+	if (ceil(ox) <= boundarys.x1 || ceil(ox) >= boundarys.x2 || 
+		floor(oy) <= boundarys.y1 || floor(oy) >= boundarys.y2)
+		c2 = 0;
+	else
+		c2 = src[(guint)floor(oy) * rowstride + (guint)ceil(ox) * 4 + ch];
+
+	if (ceil(ox) <= boundarys.x1 || ceil(ox) >= boundarys.x2 || 
+		ceil(oy) <= boundarys.y1 || ceil(oy) >= boundarys.y2)
+		c3 = 0;
+	else
+		c3 = src[(guint)ceil(oy) * rowstride + (guint)ceil(ox) * 4 + ch];
+	
+	if (floor(ox) <= boundarys.x1 || floor(ox) >= boundarys.x2 || 
+		ceil(oy) <= boundarys.y1 || ceil(oy) >= boundarys.y2)
+		c4 = 0;
+	else
+		c4 = src[(guint)ceil(oy) * rowstride + (guint)floor(ox) * 4 + ch];
+
+	c = (c1 * dist1 + c2 * dist2 + c3 * dist3 + c4 * dist4) / (dist1 + dist2 + dist3 + dist4);
+
+	return (guchar)c;
+}
+
 static void
 alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
 		   gint srcheight, GdkPixbuf * dst, gint dstx, gint dsty)
@@ -1995,7 +2039,8 @@ rsvg_filter_primitive_colour_matrix_free (RsvgFilterPrimitive * self)
 	cself = (RsvgFilterPrimitiveColourMatrix *) self;
 	g_string_free (self->result, TRUE);
 	g_string_free (self->in, TRUE);
-	g_free (cself->KernelMatrix);
+	if (cself->KernelMatrix)
+		g_free (cself->KernelMatrix);
 	g_free (cself);
 }
 
@@ -2015,6 +2060,8 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 	filter->super.result = g_string_new ("none");
 	filter->super.sizedefaults = 1;
 	
+	filter->KernelMatrix = NULL;
+
 	type = 0;
 	
 	if (atts != NULL)
@@ -2062,8 +2109,10 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 							filter->super.sizedefaults = 0;
 						}
 					else if (!strcmp ((char *) atts[i], "values"))
-						filter->KernelMatrix =
-							rsvg_css_parse_number_list ((char *) atts[i + 1], &listlen);
+						{
+							filter->KernelMatrix =
+								rsvg_css_parse_number_list ((char *) atts[i + 1], &listlen);
+						}
 					else if (!strcmp ((char *) atts[i], "type"))
 						{
 							if (!strcmp ((char *) atts[i + 1], "matrix"))
@@ -3176,7 +3225,7 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self,
 	GdkPixbuf *in;
 	GdkPixbuf *in2;
 	
-	int ox, oy;
+	double ox, oy;
 	
 	oself = (RsvgFilterPrimitiveDisplacementMap *) self;
 	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
@@ -3207,9 +3256,11 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self,
 		case 'B':
 			xch = 2;
 			break;
-		default:
+		case 'A':
 			xch = 3;
 			break;
+		default:
+			xch = 4;
 		};
 
 	switch (oself->yChannelSelector)
@@ -3223,28 +3274,33 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self,
 		case 'B':
 			ych = 2;
 			break;
-		default:
+		case 'A':
 			ych = 3;
 			break;
+		default:
+			ych = 4;
 		};
 
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
-				ox = x + oself->scale * ctx->paffine[0] * 
-					((double)in2_pixels[y * rowstride + x * 4 + xch] / 255.0 - 0.5);
-				oy = y + oself->scale * ctx->paffine[3] * 
-					((double)in2_pixels[y * rowstride + x * 4 + ych] / 255.0 - 0.5);
+				if (xch != 4)
+					ox = x + oself->scale * ctx->paffine[0] * 
+						((double)in2_pixels[y * rowstride + x * 4 + xch] / 255.0 - 0.5);
+				else
+					ox = x;
 
-				if (ox < boundarys.x1 || ox >= boundarys.x2)
-					continue;
-				if (oy < boundarys.y1 || oy >= boundarys.y2)
-					continue;
-				
+				if (ych != 4)
+					oy = y + oself->scale * ctx->paffine[3] * 
+						((double)in2_pixels[y * rowstride + x * 4 + ych] / 255.0 - 0.5);
+				else
+					oy = y;
+
 				for (ch = 0; ch < 4; ch++)
 					{
 						output_pixels[y * rowstride + x * 4 + ch] =
-							in_pixels[oy * rowstride + ox * 4 + ch];
+							gdk_pixbuf_get_interp_pixel(in_pixels, ox, oy, ch, boundarys, 
+														rowstride);
 					}
 			}
 
@@ -3282,8 +3338,8 @@ rsvg_start_filter_primitive_displacement_map (RsvgHandle * ctx, const xmlChar **
 	filter->in2 = g_string_new ("none");
 	filter->super.result = g_string_new ("none");
 	filter->super.sizedefaults = 1;
-	filter->xChannelSelector = 'A';
-	filter->yChannelSelector = 'A';
+	filter->xChannelSelector = ' ';
+	filter->yChannelSelector = ' ';
 	filter->scale = 0;
 	
 	if (atts != NULL)
@@ -3347,3 +3403,7 @@ rsvg_start_filter_primitive_displacement_map (RsvgHandle * ctx, const xmlChar **
 	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
 					 &filter->super);
 }
+
+/*************************************************************/
+/*************************************************************/
+
