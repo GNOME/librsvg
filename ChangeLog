@@ -1,3 +1,9 @@
+2001-10-22  Darin Adler  <darin@bentspoon.com>
+
+	* .cvsignore: Don't ignore tarballs.
+	* test-ft-gtk.c: (check_button), (new_test_window):
+	Switch from gtk_signal_connect to g_signal_connect.
+
 2001-10-19  Anders Carlsson  <andersca@gnu.org>
 
 	* acinclude.m4: Change comment so that we won't fool

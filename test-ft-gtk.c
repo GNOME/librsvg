@@ -286,8 +286,8 @@ check_button (const char *label, gboolean *bool) {
 
 	result = gtk_check_button_new_with_label (label);
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (result), *bool);
-	gtk_signal_connect (GTK_OBJECT (result), "state_changed",
-			    (GtkSignalFunc) check_toggle, bool);
+	g_signal_connect (G_OBJECT (result), "state_changed",
+			  G_CALLBACK (check_toggle), bool);
 	return result;
 }
 
@@ -320,8 +320,8 @@ static TestCtx *new_test_window (const char *fn, const char *afn,
 	ctx = g_new (TestCtx, 1);
 
 	topwin = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-	gtk_signal_connect (GTK_OBJECT (topwin), "destroy",
-			    (GtkSignalFunc) test_ft_quit, ctx);
+	g_signal_connect (G_OBJECT (topwin), "destroy",
+			  G_CALLBACK (test_ft_quit), ctx);
 
 	vbox = gtk_vbox_new (FALSE, 0);
 	gtk_container_add (GTK_CONTAINER (topwin), vbox);
@@ -343,8 +343,8 @@ static TestCtx *new_test_window (const char *fn, const char *afn,
 	ctx->do_scrolling = TRUE;
 	ctx->do_invert = TRUE;
 
-	gtk_signal_connect (GTK_OBJECT (drawingarea), "expose_event",
-			    (GtkSignalFunc) test_expose, ctx);
+	g_signal_connect (G_OBJECT (drawingarea), "expose_event",
+			  G_CALLBACK (test_expose), ctx);
 
 	buttonbar = gtk_hbox_new (FALSE, 5);
 	gtk_box_pack_start (GTK_BOX (vbox), buttonbar, FALSE, FALSE, 0);
@@ -360,8 +360,8 @@ static TestCtx *new_test_window (const char *fn, const char *afn,
 
 	button = gtk_button_new_with_label ("Start scroll test");
 	gtk_container_add (GTK_CONTAINER (buttonbar), button);
-	gtk_signal_connect (GTK_OBJECT (button), "clicked",
-			    (GtkSignalFunc) start_scrolling, ctx);
+	g_signal_connect (G_OBJECT (button), "clicked",
+			  G_CALLBACK (start_scrolling), ctx);
 
 	ctx->status = gtk_label_new ("");
 	gtk_box_pack_start (GTK_BOX (vbox), ctx->status, FALSE, FALSE, 2);

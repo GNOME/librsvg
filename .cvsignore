@@ -13,7 +13,6 @@ config.log
 config.status
 config.sub
 configure
-librsvg-*.tar.gz
 librsvg-2.0.pc
 librsvg-features.h
 librsvg.spec
