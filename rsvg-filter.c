@@ -4474,9 +4474,14 @@ struct _lightSource
 };
 
 static vector3
-get_light_direction (lightSource source, gdouble x, gdouble y, gdouble z, gdouble * affine)
+get_light_direction (lightSource source, gdouble x1, gdouble y1, gdouble z, gdouble * affine)
 {
 	vector3 output;
+
+	double x, y;
+
+	x = affine[0] * x1 + affine[2] * y1 + affine[4];
+	y = affine[1] * x1 + affine[3] * y1 + affine[5];
 
 	switch (source.type)
 		{
@@ -4487,9 +4492,9 @@ get_light_direction (lightSource source, gdouble x, gdouble y, gdouble z, gdoubl
 			break;
 		case POINTLIGHT:
 		case SPOTLIGHT:
-			output.x = source.x * affine[0] + affine[4] - x;
-			output.y = source.y * affine[3] + affine[5] - y;
-			output.z = source.z * sqrt(affine[0] * affine[3]) - z;
+			output.x = source.x - x;
+			output.y = source.y - y;
+			output.z = source.z - z;
 			output = normalise(output);
 			break;
 		}
@@ -4498,24 +4503,27 @@ get_light_direction (lightSource source, gdouble x, gdouble y, gdouble z, gdoubl
 
 static vector3
 get_light_colour(lightSource source, vector3 colour, 
-				 gdouble x, gdouble y, gdouble z, gdouble * affine)
+				 gdouble x1, gdouble y1, gdouble z, gdouble * affine)
 {
-	double base, angle;
+	double base, angle, x, y;
 	vector3 s;
 	vector3 L;
 	vector3 output;
 
 	if (source.type != SPOTLIGHT)
 		return colour;
+	
+	x = affine[0] * x1 + affine[2] * y1 + affine[4];
+	y = affine[1] * x1 + affine[3] * y1 + affine[5];
 
-	L.x = source.x * affine[0] + affine[4] - x;
-	L.y = source.y * affine[3] + affine[5] - y;
-	L.z = source.z * sqrt(affine[0] * affine[3]) - z;
+	L.x = source.x - x;
+	L.y = source.y - y;
+	L.z = source.z - z;
 	L = normalise(L);
 
-	s.x = (source.pointsAtX - source.x) * affine[0];
-	s.y = (source.pointsAtY - source.y) * affine[3];
-	s.z = (source.pointsAtZ - source.z) * sqrt(affine[0] * affine[3]);
+	s.x = source.pointsAtX - source.x;
+	s.y = source.pointsAtY - source.y;
+	s.z = source.pointsAtZ - source.z;
 	s = normalise(s);
 
 	base = -dotproduct(L, s);
@@ -4635,6 +4643,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 	gdouble factor, surfaceScale;
 	vector3 lightcolour, L, N;
 	vector3 colour;
+	gdouble iaffine[6];
 
 	FPBox boundarys;
 	
@@ -4665,8 +4674,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 	colour.y = ((guchar *)(&oself->lightingcolour))[1] / 255.0;
 	colour.z = ((guchar *)(&oself->lightingcolour))[0] / 255.0;
 
-	surfaceScale =  oself->surfaceScale / 255.0
-		* sqrt(ctx->paffine[0] * ctx->paffine[3]);
+	surfaceScale =  oself->surfaceScale / 255.0;
 
 	if (oself->dy < 0 || oself->dx < 0)
 		{
@@ -4683,16 +4691,18 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 			rawdy = oself->dy;
 		}
 
+	art_affine_invert(iaffine, ctx->paffine);
+
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				z = surfaceScale * (double)in_pixels[y * rowstride + x * 4 + 3];
-				L = get_light_direction(oself->source, x, y, z, ctx->paffine);
+				L = get_light_direction(oself->source, x, y, z, iaffine);
 				N = get_surface_normal(in_pixels, boundarys, x, y, 
 									   dx, dy, rawdx, rawdy, oself->surfaceScale, 
 									   rowstride);
 				lightcolour = get_light_colour(oself->source, colour, x, y, z,
-											   ctx->paffine);
+											   iaffine);
 				factor = dotproduct(N, L);
 
 				output_pixels[y * rowstride + x * 4    ] = MAX(0,MIN(255, oself->diffuseConstant * factor * 
@@ -4831,7 +4841,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 	vector3 lightcolour;
 	vector3 colour;
 	vector3 L;
-
+	gdouble iaffine[6];
 	FPBox boundarys;
 	
 	guchar *in_pixels;
@@ -4861,18 +4871,20 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 	colour.y = ((guchar *)(&oself->lightingcolour))[1] / 255.0;
 	colour.z = ((guchar *)(&oself->lightingcolour))[0] / 255.0;
 
-	surfaceScale = oself->surfaceScale * sqrt(ctx->paffine[0] * ctx->paffine[3]) / 255.0; 
+	surfaceScale = oself->surfaceScale / 255.0; 
+
+	art_affine_invert(iaffine, ctx->paffine);
 
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				z = in_pixels[y * rowstride + x * 4 + 3] * surfaceScale;
-				L = get_light_direction(oself->source, x, y, z, ctx->paffine);	
+				L = get_light_direction(oself->source, x, y, z, iaffine);	
 				L.z += 1;
 				L = normalise(L);
 
 				lightcolour = get_light_colour(oself->source, colour, x, y, z, 
-											   ctx->paffine);
+											   iaffine);
 				base = dotproduct(get_surface_normal(in_pixels, boundarys, x, y, 
 													 1, 1, 1.0 /  ctx->paffine[0], 1.0 / ctx->paffine[3], 
 													 oself->surfaceScale, 
