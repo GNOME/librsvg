@@ -1234,8 +1234,10 @@ rsvg_handle_free_impl (RsvgHandle *handle)
 	if (handle->pixbuf)
 		g_object_unref (handle->pixbuf);
 
-	g_string_free (handle->title, TRUE);
-	g_string_free (handle->desc, TRUE);
+	if (handle->title)
+		g_string_free (handle->title, TRUE);
+	if (handle->desc)
+	    	g_string_free (handle->desc, TRUE);
 
 	g_free (handle);
 }
