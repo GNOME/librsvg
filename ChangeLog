@@ -1,3 +1,8 @@
+2003-12-07  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.c:
+	* rsvg-paint-server.c: Fix userspace gradients (Caleb Moore)
+	
 2003-11-27  Caleb Moore <calebmm@tpg.com.au>
 
 	* *: Implement bounding box based gradients

@@ -486,13 +486,12 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	
 	rsvg_defs_set (ctx->defs, id, &grad->super);
 	
-
-	for (i = 0; i < 6; i++)
-		grad->affine[i] = state->affine[i];
-
 	if (got_transform)
-		art_affine_multiply (grad->affine, affine, grad->affine);
-	
+		for (i = 0; i < 6; i++)
+			grad->affine[i] = affine[i];
+	else
+		art_affine_identity(grad->affine);
+
 	/* gradient inherits parent/cloned information unless it's explicity gotten */
 	grad->obj_bbox = (cloned && !got_bbox) ? grad->obj_bbox : obj_bbox;
 	grad->x1 = (cloned && !got_x1) ? grad->x1 : x1;
@@ -631,11 +630,11 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts, const char * 
 	
 	rsvg_defs_set (ctx->defs, id, &grad->super);
 
-	for (i = 0; i < 6; i++)
-		grad->affine[i] = state->affine[i];
-
 	if (got_transform)
-		art_affine_multiply (grad->affine, affine, grad->affine);
+		for (i = 0; i < 6; i++)
+			grad->affine[i] = affine[i];
+	else
+		art_affine_identity(grad->affine);
 	
 	/* gradient inherits parent/cloned information unless it's explicity gotten */
 	grad->obj_bbox = (cloned && !got_bbox) ? grad->obj_bbox : obj_bbox;

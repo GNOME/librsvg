@@ -175,6 +175,8 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 		for (i = 0; i < 6; i++)
 			affine[i] = ctx->affine[i];
 	}
+
+	art_affine_multiply(affine, rlg->affine, affine);
 	
 	/* compute [xy][12] in pixel space */
 	x1 = rlg->x1 * affine[0] + rlg->y1 * affine[2] + affine[4];
@@ -248,6 +250,8 @@ rsvg_paint_server_rad_grad_render (RsvgPaintServer *self, ArtRender *ar,
 		for (i = 0; i < 6; i++)
 			affine[i] = ctx->affine[i];
 	}
+
+	art_affine_multiply(affine, rrg->affine, affine);
 
 	agr = z->agr;
 	if (agr == NULL)
