@@ -1,5 +1,9 @@
-== librsvg 2.6.2 ==	
+== librsvg 2.6.3 ==	
 
+2004-03-18  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-styles.c: Fix CSS memory leak
+	
 2004-03-15  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-bpath-util.c: Applied double move fix contributed by ross 
