@@ -5,7 +5,7 @@ Version 1.0.2
 * Fix bug where some .svg files with certain kinds of degenerate
   gradients would cause segfault (Darin)
 * Change install and packaging so that librsvg 1 and librsvg 2
-  can be installed on the same system.
+  can be installed on the same system. (Ramiro)
 * Fix bug where we would read past the end of a string when the
   string has multibyte sequences in it (Darin)
 * Remove vestiges of unused gettext and xml-i18n-tools (Darin)
