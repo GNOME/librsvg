@@ -23,6 +23,7 @@
    Author: Raph Levien <raph@artofcode.com>
 */
 #include <string.h>
+#include <math.h>
 
 #include "rsvg.h"
 #include "rsvg-private.h"
@@ -54,7 +55,7 @@ rsvg_state_current_color (RsvgState * cur_state, RsvgState * parent_state)
 gdouble
 rsvg_viewport_percentage (gdouble width, gdouble height)
 {
-	return ((width * width) + (height * height)) / M_SQRT2;
+	return sqrt(width * height);
 }
 
 void

@@ -1,3 +1,8 @@
+2004-06-09  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-styles.c (rsvg_viewport_percentage): Fix
+	http://www.w3.org/Graphics/SVG/Test/20030813/htmlframe/full-coords-units-02-b.html
+	
 2004-06-10  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-paint-server.c: fixed all known pattern geometry problems
