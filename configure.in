@@ -120,6 +120,16 @@ else
         AC_MSG_RESULT(no)
 fi
 
+AC_ARG_ENABLE(gtk-theme,
+    [  --enable-gtk-theme  Enable a RSVG based GTK+ theme engine [default=auto]],
+    enable_gtk_theme="$enableval", enable_gtk_theme=auto)
+
+if test x$enable_gtk_theme = xauto ; then
+    enable_gtk_theme=yes
+fi
+
+AM_CONDITIONAL(ENABLE_GTK_ENGINE, test x$enable_gtk_theme = xyes)
+
 dnl ===========================================================================
 
 AC_OUTPUT([
