@@ -48,7 +48,7 @@ librsvg_2_la_SOURCES = 		\
 	rsvg.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
-librsvg_2_la_LIBADD = $(LIBRSVG_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS)
+librsvg_2_la_LIBADD = $(LIBRSVG_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBGNOME_VFS_LIBS)
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = 	\
