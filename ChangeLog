@@ -1,3 +1,8 @@
+2002-02-16  Alexander Larsson  <alla@lysator.liu.se>
+
+	* test-71297.svg:
+	Add test case.
+
 2002-02-12  Darin Adler  <darin@bentspoon.com>
 
 	* rsvg-paint-server.c: (rsvg_render_paint_server): Add a
