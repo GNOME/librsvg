@@ -332,7 +332,7 @@ AC_SUBST(MOZILLA_CFLAGS)
 AC_ARG_WITH(html-dir, [  --with-html-dir=PATH    path to installed docs ])
 
 if test "x$with_html_dir" = "x" ; then
-  HTML_DIR='${datadir}/doc/librsvg/html'
+  HTML_DIR='${datadir}/gtk-doc/html/rsvg'
 else
   HTML_DIR=$with_html_dir
 fi

@@ -1,3 +1,7 @@
+2004-01-11  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Install gtk docs in a standard place that devhelp knows about. From Stephane LOEUILLET <LeRoutier@leroutier.net>
+	
 2004-12-22  Dom Lachowicz <cinamod@hotmail.com>
 
 	* moz-plugin/moz-plugin.c: Fix bug #161823
