@@ -37,7 +37,7 @@
 #include FT_GLYPH_H
 #include FT_OUTLINE_H
 
-#define RSVG_TEXT_DEBUG
+//#define RSVG_TEXT_DEBUG
 
 typedef struct _RsvgTextLayout RsvgTextLayout;
 
@@ -45,6 +45,7 @@ struct _RsvgTextLayout
 {
 	PangoLayout * layout;
 	RsvgHandle  * ctx;
+	TextAnchor anchor;
 };
 
 typedef struct _RenderCtx RenderCtx;
@@ -160,8 +161,6 @@ rsvg_text_layout_new (RsvgHandle *ctx,
 	
 	font_desc = pango_font_description_copy (pango_context_get_font_description (ctx->pango_context));
 	
-	pango_font_description_set_size (font_desc, state->font_size);
-	
 	if (state->font_family)
 		pango_font_description_set_family_static (font_desc, state->font_family);
 	
@@ -169,6 +168,7 @@ rsvg_text_layout_new (RsvgHandle *ctx,
 	pango_font_description_set_variant (font_desc, state->font_variant);
 	pango_font_description_set_weight (font_desc, state->font_weight);
 	pango_font_description_set_stretch (font_desc, state->font_stretch); 
+	pango_font_description_set_size (font_desc, state->font_size * PANGO_SCALE); 
 	pango_layout_set_font_description (layout->layout, font_desc);
 	pango_font_description_free (font_desc);
 	
@@ -181,6 +181,8 @@ rsvg_text_layout_new (RsvgHandle *ctx,
 												 state->text_dir == PANGO_DIRECTION_TTB_LTR) ? 
 								PANGO_ALIGN_LEFT : PANGO_ALIGN_RIGHT);
 	
+	layout->anchor = state->text_anchor;
+
 	return layout;
 }
 
@@ -218,8 +220,6 @@ rsvg_text_layout_render_flags (RsvgTextLayout *layout)
 	
 	if (AUTO_HINT_TEXT)
 		flags |= FT_LOAD_FORCE_AUTOHINT;	
-	
-	flags |= FT_LOAD_NO_SCALE ;
 
 	return flags;
 }
@@ -460,9 +460,9 @@ rsvg_text_render_vectors (PangoFont     *font,
 	RenderCtx *context = (RenderCtx *)ud;
 	
 	face = pango_ft2_font_get_face (font);
-	
+
 	FT_Load_Glyph (face, (FT_UInt) pango_glyph, flags);
-	
+
 	FT_Get_Glyph (face->glyph, &glyph);
 	
 	if (face->glyph->format == FT_GLYPH_FORMAT_OUTLINE)
@@ -470,7 +470,7 @@ rsvg_text_render_vectors (PangoFont     *font,
 			FT_OutlineGlyph outline_glyph = (FT_OutlineGlyph) glyph;
 			
 			context->offset_x = (gdouble) x / PANGO_SCALE;
-			context->offset_y = (gdouble) y / PANGO_SCALE;
+			context->offset_y = (gdouble) y / PANGO_SCALE - (int)face->size->metrics.ascender / 64;
 
 			FT_Outline_Decompose (&outline_glyph->outline, &outline_funcs, context);			
 		}
@@ -513,7 +513,8 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 {
 	PangoLayoutIter *iter;
 	gint             x, y;
-	
+	gint anchoroffset;
+
 	rsvg_text_layout_get_offsets (layout, &x, &y);
 	
 	x *= PANGO_SCALE;
@@ -532,9 +533,16 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 			pango_layout_iter_get_line_extents (iter, NULL, &rect);
 			baseline = pango_layout_iter_get_baseline (iter);
 			
+			if (layout->anchor == TEXT_ANCHOR_START)
+				anchoroffset = 0;
+			else if (layout->anchor == TEXT_ANCHOR_MIDDLE)
+				anchoroffset = rect.width / 2;
+			else
+				anchoroffset = rect.width;
+			
 			rsvg_text_layout_render_line (layout, line,
 										  render_func,
-										  x + rect.x,
+										  x + rect.x - anchoroffset,
 										  y + baseline,
 										  render_data);
 		}
