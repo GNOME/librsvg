@@ -54,6 +54,7 @@ rsvg_state_init (RsvgState *state)
 	state->cap = ART_PATH_STROKE_CAP_BUTT;
 	state->join = ART_PATH_STROKE_JOIN_MITER;
 	state->stop_opacity = 0xff;
+	state->fill_rule = FILL_RULE_NONZERO;
 	
 	state->font_family  = g_strdup ("Times New Roman");
 	state->font_size    = 12.0;
@@ -134,6 +135,14 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "fill-opacity"))
 		{
 			state->fill_opacity = rsvg_css_parse_opacity (str + arg_off);
+		}
+	else if (rsvg_css_param_match (str, "fill-rule"))
+		{
+			if (!strcmp (str + arg_off, "nonzero"))
+				state->fill_rule = FILL_RULE_NONZERO;
+			else if (!strcmp (str + arg_off, "evenodd"))
+				state->fill_rule = FILL_RULE_EVENODD;
+			/*else inherit*/
 		}
 	else if (rsvg_css_param_match (str, "stroke"))
 		{
@@ -325,6 +334,8 @@ rsvg_is_style_arg(const char *str)
 			g_hash_table_insert (styles, "display",           GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "fill",              GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "fill-opacity",      GINT_TO_POINTER (TRUE));
+			g_hash_table_insert (styles, "fill-rule",         GINT_TO_POINTER 
+(TRUE));
 			g_hash_table_insert (styles, "font-family",       GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "font-size",         GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "font-stretch",      GINT_TO_POINTER (TRUE));

@@ -1,3 +1,10 @@
+2003-11-24  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-styles.c
+	* rsvg-styles.h
+	* rsvg-shape.c: Fix Sodipodi flags, implement fill rules. From
+	"Caleb Moore" <calebmm@tpg.com.au>
+	
 2003-10-16  Sven Neumann  <sven@gimp.org>
 
 	* rsvg.c: fixed inline docs.

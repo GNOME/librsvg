@@ -23,6 +23,7 @@
    Author: Raph Levien <raph@artofcode.com>
 */
 #include <string.h>
+#include <math.h>
 
 #include "rsvg-shapes.h"
 #include "rsvg-styles.h"
@@ -206,7 +207,11 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 			svp = art_svp_from_vpath (closed_vpath);
 			g_free (closed_vpath);
 			
-			swr = art_svp_writer_rewind_new (ART_WIND_RULE_NONZERO);
+			if (state->fill_rule == FILL_RULE_EVENODD)
+				swr = art_svp_writer_rewind_new (ART_WIND_RULE_ODDEVEN);
+			else /* state->fill_rule == FILL_RULE_NONZERO */
+				swr = art_svp_writer_rewind_new (ART_WIND_RULE_NONZERO);
+
 			art_svp_intersector (svp, swr);
 			
 			svp2 = art_svp_writer_rewind_reap (swr);
@@ -475,7 +480,7 @@ void
 rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 {
 	int i;
-	double x = 0., y = 0., w = -1, h = -1, rx = 0., ry = 0.;
+	double x = 0., y = 0., w = 0, h = 0, rx = 0., ry = 0.;
 	GString * d = NULL;
 	const char * klazz = NULL, * id = NULL;
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
@@ -519,13 +524,13 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	else if (got_ry && !got_rx)
 		rx = ry;	
 
-	if (x < 0. || y < 0. || w <= 0. || h <= 0. || rx < 0. || ry < 0.)
+	if (w == 0. || h == 0. || rx < 0. || ry < 0.)
 		return;
 
-	if (rx > (w / 2.))
-		rx = w / 2.;
-	if (ry > (h / 2.))
-		ry = h / 2.;
+	if (rx > fabs(w / 2.))
+		rx = fabs(w / 2.);
+	if (ry > fabs(h / 2.))
+		ry = fabs(h / 2.);
 	
 	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "rect", klazz, id, atts);
 	
@@ -649,7 +654,7 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 				}
 		}
 	
-	if (cx < 0. || cy < 0. || r <= 0.)
+	if (r <= 0.)
 		return;
 	
 	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "circle", klazz, id, atts);
@@ -753,7 +758,7 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 				}
 		}
 	
-	if (cx < 0. || cy < 0. || rx <= 0. || ry <= 0.)
+	if (rx <= 0. || ry <= 0.)
 		return;
 	
 	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "ellipse", klazz, id, atts);

@@ -51,6 +51,11 @@ typedef enum {
 	TEXT_ANCHOR_END
 } TextAnchor;
 
+enum {
+	FILL_RULE_EVENODD = 0,
+	FILL_RULE_NONZERO = 1
+};
+
 typedef struct {
 	double affine[6];
 	
@@ -59,6 +64,8 @@ typedef struct {
 	RsvgPaintServer *fill;
 	gint fill_opacity; /* 0..255 */
 	
+	gint fill_rule;	
+
 	RsvgPaintServer *stroke;
 	gint stroke_opacity; /* 0..255 */
 	double stroke_width;
