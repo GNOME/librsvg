@@ -1,3 +1,8 @@
+2003-11-25  Dom Lachowicz <cinamod@hotmail.com>
+
+	* moz-plugin/*: Start of work on a RSVG Mozilla/Netscape plugin. 
+	Doesn't work quite yet - needs some help along.
+	
 2003-11-24  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-styles.c
