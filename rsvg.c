@@ -1436,7 +1436,7 @@ rsvg_get_base_uri_from_filename(const gchar * file_name)
 
 	last = 0;
 	for (i = 0; file_name[i] != '\0'; i++)
-		if (file_name[i] == '/')
+		if (file_name[i] == G_DIR_SEPARATOR)
 			last = i;
 
 	base_uri = g_new(gchar, i + 2);

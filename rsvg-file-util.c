@@ -120,33 +120,33 @@ rsvg_pixbuf_from_file_with_size_data_ex (RsvgHandle * handle,
 										 struct RsvgSizeCallbackData * data,
 										 GError ** error)
 {
-	guchar chars[SVG_BUFFER_SIZE];
 	GdkPixbuf *retval;
-	gint result;
-	FILE *f = fopen (file_name, "rb");
 	gchar *base_uri;
-
-	if (!f)
-		{
-			g_set_error (error, G_FILE_ERROR,
-						 g_file_error_from_errno (errno),
-						 g_strerror (errno));
-			return NULL;
-		}
+	GByteArray *f;
 
 	base_uri = rsvg_get_base_uri_from_filename(file_name);
-	rsvg_handle_set_base_uri (handle, base_uri);
+	f = _rsvg_acquire_xlink_href_resource (file_name, base_uri, error);
+
+	if (f)
+		{
+			rsvg_handle_set_base_uri (handle, base_uri);
+
+			rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
+			
+			rsvg_handle_write (handle, f->data, f->len, error);
+			
+			rsvg_handle_close (handle, error);
+			retval = rsvg_handle_get_pixbuf (handle);
+			
+			g_byte_array_free (f, TRUE);			
+		}
+	else
+		{
+			retval = NULL;
+		}
+
 	g_free(base_uri);
 
-	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
-
-	while (!feof(f) && !ferror(f) && ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0))
-		rsvg_handle_write (handle, chars, result, error);
-	
-	rsvg_handle_close (handle, error);
-	retval = rsvg_handle_get_pixbuf (handle);
-	
-	fclose (f);	
 	return retval;
 }
 
@@ -187,27 +187,17 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 }
 
 static GdkPixbuf *
-rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
+rsvg_pixbuf_from_stdio_file_with_size_data(GByteArray *f,
 										   struct RsvgSizeCallbackData * data,
 										   gchar *base_uri,
 										   GError ** error)
 {
 	RsvgHandle * handle;
 	GdkPixbuf * retval;
-	guchar chars[SVG_BUFFER_SIZE];
-	int result;
-
-	result = fread (chars, 1, SVG_BUFFER_SIZE, f);
-
-	if (result == 0) {
-		g_set_error (error, G_FILE_ERROR,
-					 g_file_error_from_errno (errno),
-					 g_strerror (errno));
-		return NULL;
-	}
+	const guchar * chars = f->data;
 
 	/* test for GZ marker */
-	if ((result >= 2) && (chars[0] == (guchar)0x1f) && (chars[1] == (guchar)0x8b))
+	if ((f->len >= 2) && (chars[0] == (guchar)0x1f) && (chars[1] == (guchar)0x8b))
 		handle = rsvg_handle_new_gz ();
 	else
 		handle = rsvg_handle_new ();
@@ -222,11 +212,8 @@ rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
 
 	rsvg_handle_set_base_uri(handle, base_uri);
 
-	rsvg_handle_write (handle, chars, result, error);
+	rsvg_handle_write (handle, f->data, f->len, error);
 
-	while (!feof(f) && !ferror(f) && ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0))
-		rsvg_handle_write (handle, chars, result, error);
-	
 	rsvg_handle_close (handle, error);
 	retval = rsvg_handle_get_pixbuf (handle);
 	rsvg_handle_free (handle);
@@ -240,24 +227,24 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
 									  GError ** error)
 {
 	GdkPixbuf * pixbuf;
-	FILE *f = fopen (file_name, "rb");
 	gchar * base_uri;
+	GByteArray *f;
 
-	if (!f)
-		{
-			g_set_error (error, G_FILE_ERROR,
-						 g_file_error_from_errno (errno),
-						 g_strerror (errno));
-			return NULL;
-		}
-	
 	base_uri = rsvg_get_base_uri_from_filename(file_name);
+	f = _rsvg_acquire_xlink_href_resource (file_name, base_uri, error);
 
-	pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data(f, data, 
-														base_uri, error);
-
+	if (f)
+		{
+			pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data(f, data, 
+																base_uri, error);
+			g_byte_array_free (f, TRUE);
+		} 
+	else 
+		{
+			pixbuf = NULL;
+		}	
+	
 	g_free(base_uri);
-	fclose(f);
 
 	return pixbuf;
 }

@@ -1,3 +1,8 @@
+2004-11-17  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-file-util.c: RSVG's convenience API should now be able to transparently handle remote files via gnome-vfs, if available.
+	* rsvg.c: Some Win32/Unix path portability changes
+	
 2004-11-17  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-defs.c: Interfile vfs linking now implemented. Utility api automatically gives contextual information.
