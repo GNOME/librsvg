@@ -50,9 +50,10 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-styles.c		\
 	rsvg-styles.h		\
 	rsvg-text.c		\
-	rsvg-text-vectors.c 	\
 	rsvg-text.h		\
 	rsvg.c
+
+EXTRA_DIST=librsvg_text_vectors.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
 librsvg_2_la_LIBADD = $(LIBRSVG_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS)
