@@ -108,20 +108,22 @@ rsvg_art_push_discrete_layer (RsvgDrawingCtx *ctx)
 											   NULL);
 			render->pixbuf = pixbuf;
 		}
-
 	if (state->clip_path_ref)
 		{
-			ArtSVP * tmppath;
-
-			rsvg_state_push(ctx);   
-			tmppath = rsvg_art_clip_path_render (state->clip_path_ref, ctx);		
+	 		ArtSVP * tmppath;
+			
+			rsvg_state_push(ctx);
+			tmppath = rsvg_art_clip_path_render (state->clip_path_ref, ctx);
 			rsvg_state_pop(ctx);
 
-			render->clippath = rsvg_art_clip_path_merge(render->clippath, tmppath, 'i');
-			layer->clippath_loaded = TRUE;
-			layer->clippath_save = render->clippath;
+		 	layer->clippath_save = render->clippath;
+			render->clippath = rsvg_art_clip_path_merge(render->clippath, tmppath, TRUE, 'i');
+			if (tmppath)
+			 	layer->clippath_loaded = TRUE;
+			else
+				layer->clippath_loaded = FALSE;
 		}
-	else
+		else
 		{
 			layer->clippath_save = render->clippath;
 			layer->clippath_loaded = FALSE;
@@ -369,7 +371,7 @@ rsvg_art_pop_discrete_layer(RsvgDrawingCtx *ctx)
 		}
 	if (layer->clippath_loaded)
 		{
-			art_free(render->clippath);
+			art_svp_free(render->clippath);
 		}
 	render->clippath = layer->clippath_save;
 	g_free (layer);
@@ -379,7 +381,7 @@ rsvg_art_pop_discrete_layer(RsvgDrawingCtx *ctx)
 gboolean
 rsvg_art_needs_discrete_layer(RsvgState *state)
 {
-	return state->filter || state->mask || state->adobe_blend || state->backgroundnew;
+	return state->filter || state->mask || state->adobe_blend || state->backgroundnew || state->clip_path_ref;
 }
 
 void
@@ -621,7 +623,10 @@ rsvg_art_add_clipping_rect(RsvgDrawingCtx *ctx, double x, double y, double w, do
 	RsvgArtRender * render = (RsvgArtRender *)ctx->render;
 	RsvgArtDiscreteLayer * data = g_slist_nth(render->layers, 0)->data;	
 	temppath = rsvg_art_rect_clip_path(x, y, w, h, ctx);
-	data->clippath_loaded = TRUE;
-	render->clippath = rsvg_art_clip_path_merge(render->clippath, temppath, 'i');
-	
+	render->clippath = rsvg_art_clip_path_merge(render->clippath, 
+												temppath, TRUE, 'i');
+	if (temppath)
+		data->clippath_loaded = TRUE;
+	else
+		data->clippath_loaded = FALSE;	
 }

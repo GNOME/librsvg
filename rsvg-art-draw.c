@@ -39,6 +39,7 @@
 #include "rsvg-art-draw.h"
 #include "rsvg-art-composite.h"
 #include "rsvg-art-render.h"
+#include "rsvg-art-mask.h"
 #include "rsvg-art-paint-server.h"
 #include "rsvg-styles.h"
 #include "rsvg-bpath-util.h"
@@ -509,18 +510,12 @@ void
 rsvg_art_svp_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 {
 	RsvgArtSVPRender *render = (RsvgArtSVPRender *)ctx->render;
-	ArtSVP *svp2, *svp3;
+	ArtSVP *svp;
 
-	svp2 = rsvg_render_bpath_into_svp (ctx, (ArtBpath *)bpath_def->bpath);
+	svp = rsvg_render_bpath_into_svp (ctx, (ArtBpath *)bpath_def->bpath);
 
-	if (render->outline != NULL)
-		{
-			svp3 = art_svp_union(svp2, render->outline);
-			art_free(render->outline);
-			render->outline = svp3;
-		}
-	else
-		render->outline = svp2;
+	render->outline = rsvg_art_clip_path_merge(svp, render->outline, FALSE, 
+											   'u');
 }
 
 void rsvg_art_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * img, 

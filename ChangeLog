@@ -1,3 +1,7 @@
+2005-03-03  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-art-composite.c: make clippaths work again
+
 2005-03-02  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-image.c: Bug #169051, from Ed Catmur <ed@catmur.co.uk>

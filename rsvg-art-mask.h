@@ -40,7 +40,7 @@ ArtSVP *
 rsvg_art_rect_clip_path(double x, double y, double w, double h, RsvgDrawingCtx * ctx);
 
 ArtSVP *
-rsvg_art_clip_path_merge(ArtSVP * first, ArtSVP * second, char operation);
+rsvg_art_clip_path_merge(ArtSVP * first, ArtSVP * second, int save, char operation);
 
 G_END_DECLS
 

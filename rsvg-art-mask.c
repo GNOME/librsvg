@@ -72,14 +72,17 @@ rsvg_art_rect_clip_path(double x, double y, double w, double h, RsvgDrawingCtx *
 	ctx->render = save;
 
 	output = asvpr->outline;
-	/* todo, free the render */
+
+	rsvg_render_free((RsvgRender *)asvpr);
 
 	g_string_free (d, TRUE);
 	return output;
 }
 
+/*in case anyone is wondering, if the save value is true, it means that we 
+  don't want to be deleting the first SVP */
 ArtSVP *
-rsvg_art_clip_path_merge(ArtSVP * first, ArtSVP * second, char operation)
+rsvg_art_clip_path_merge(ArtSVP * first, ArtSVP * second, int save, char operation)
 {
 	ArtSVP * tmppath;
 	if (first != NULL && second != NULL)
@@ -88,7 +91,9 @@ rsvg_art_clip_path_merge(ArtSVP * first, ArtSVP * second, char operation)
 				tmppath = art_svp_intersect(first, second);
 			else
 				tmppath = art_svp_union(first, second);
-			art_free(second);
+			art_svp_free(second);
+			if (!save)
+				art_svp_free(first);
 			return tmppath;
 		}
 	else if (first != NULL)
@@ -104,9 +109,10 @@ rsvg_art_clip_path_render (RsvgClipPath * self, RsvgDrawingCtx *ctx)
 	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
 	guint i;
 
-	ArtSVP *svp, *svpx;
-	svpx = NULL;
-	
+	ArtSVP *svp;
+	RsvgArtSVPRender * asvpr;
+	RsvgRender * save;	
+
 	rsvg_state_reinherit_top(ctx, &self->super.super.state, 0);
 
 	if (self->units == objectBoundingBox)
@@ -121,41 +127,21 @@ rsvg_art_clip_path_render (RsvgClipPath * self, RsvgDrawingCtx *ctx)
 			state->affine[5] = ((RsvgArtRender *)ctx->render)->bbox.y0;
 		}
 
+	asvpr = rsvg_art_svp_render_new();
+	save = ctx->render;
+	ctx->render = (RsvgRender *)asvpr;
+
 	for (i = 0; i < group->children->len; i++)
 		{
-			RsvgArtSVPRender * asvpr;
-			RsvgRender * save;
-			rsvg_state_push(ctx);
-
-			asvpr = rsvg_art_svp_render_new();
-			save = ctx->render;
-			ctx->render = (RsvgRender *)asvpr;
-
 			rsvg_defs_drawable_draw (g_ptr_array_index(group->children, i), 
 									 ctx, 0);
-
-			svp = asvpr->outline;
-			/*todo, free the render*/
-			ctx->render = save;
-
-			if (svp != NULL)
-				{
-					if (svpx != NULL)
-						{
-							ArtSVP * svpn;
-							svpn = art_svp_union(svpx, svp);
-							art_free(svpx);
-							art_free(svp);
-							svpx = svpn;
-						}
-					else
-						svpx = svp;
-				}
-
-			rsvg_state_pop(ctx);
 		}
 
-	return svpx;
+	svp = asvpr->outline;
+	rsvg_render_free(ctx->render);
+	ctx->render = save;
+
+	return svp;
 }
 
 void 

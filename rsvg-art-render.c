@@ -113,10 +113,6 @@ static void
 rsvg_art_svp_render_free (RsvgRender * self)
 {
 	RsvgArtSVPRender * me = (RsvgArtSVPRender *)self;
-
-	if (me->outline)
-		art_svp_free (me->outline);
-
 	g_free (me);
 }
 
