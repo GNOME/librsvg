@@ -76,7 +76,6 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	int width = -1, height = -1, x = -1, y = -1;
 	int rowstride;
 	art_u8 *pixels;
-	gint percent, em, ex;
 	RsvgState *state;
 	gint new_width, new_height;
 	double x_zoom = 1.;
@@ -91,19 +90,19 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		{
 			/* x & y should be ignored since we should always be the outermost SVG,
 			   at least for now, but i'll include them here anyway */
-			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				width = rsvg_css_parse_length (value, ctx->dpi, &percent, &em, &ex);
-			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				height = rsvg_css_parse_length (value, ctx->dpi, &percent, &em, &ex);
-			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_length (value, ctx->dpi, &percent, &em, &ex);
-			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_length (value, ctx->dpi, &percent, &em, &ex);
 			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
 				{
 					has_vbox = rsvg_css_parse_vbox (value, &vbox_x, &vbox_y,
 													&vbox_w, &vbox_h);
 				}
+			if ((value = rsvg_property_bag_lookup (atts, "width")))
+				width = rsvg_css_parse_normalized_length (value, ctx->dpi, vbox_w, 1);
+			if ((value = rsvg_property_bag_lookup (atts, "height")))
+				height = rsvg_css_parse_normalized_length (value, ctx->dpi, vbox_h, 1);
+			if ((value = rsvg_property_bag_lookup (atts, "x")))
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi, vbox_w, 1);
+			if ((value = rsvg_property_bag_lookup (atts, "y")))
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi, vbox_h, 1);
 	
 			if (has_vbox && vbox_w > 0. && vbox_h > 0.)
 				{

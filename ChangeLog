@@ -8,7 +8,8 @@
 
 	* rsvg-styles.c: fixes to masks.
 	* rsvg-filter.c: fixes to feComposite
-
+	* rsvg.c: percentage based SVG dimentions work
+	
 2004-03-18  Dom Lachowicz <cinamod@hotmail.com>
 
 	* *: Memory leak fixes
