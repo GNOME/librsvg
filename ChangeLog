@@ -2,6 +2,7 @@
 
 	* rsvg-styles.c (rsvg_viewport_percentage): Fix
 	http://www.w3.org/Graphics/SVG/Test/20030813/htmlframe/full-coords-units-02-b.html
+	* rsvg-styles.c: Disabled a:adobe-blending-mode, as it caused bug 144049. Bug 144049 still open.
 	
 2004-06-10  Caleb Moore <c.moore@student.unsw.edu.au>
 	

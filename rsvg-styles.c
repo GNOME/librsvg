@@ -336,6 +336,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "filter"))
 		state->filter = rsvg_filter_parse(ctx->defs, str + arg_off);
+#if ENABLE_ADOBE_EXTENSIONS
 	else if (rsvg_css_param_match (str, "a:adobe-blending-mode"))
 		{
 			if (!strcmp (str + arg_off, "normal"))
@@ -365,6 +366,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			else
 				state->adobe_blend = 0;
 		}
+#endif
 	else if (rsvg_css_param_match (str, "mask"))
 		state->mask = rsvg_mask_parse(ctx->defs, str + arg_off);
 	else if (rsvg_css_param_match (str, "enable-background"))
@@ -670,7 +672,9 @@ void
 rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state, 
 						RsvgPropertyBag *atts)
 {
+#if ENABLE_ADOBE_EXTENSIONS
 			rsvg_lookup_parse_style_pair (ctx, state, "a:adobe-blending-mode", atts);
+#endif
 			rsvg_lookup_parse_style_pair (ctx, state, "color", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "display", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "enable-background", atts);
