@@ -1547,10 +1547,6 @@ rsvg_pixbuf_new_from_href (const char *href,
 	return img;
 }
 
-/* TODO 1: issue with affining alpha images - this is gdkpixbuf's fault...
- * TODO 2: issue with rotating images - do we want to rotate the whole
- *         canvas 2x to get this right, only to have #1 bite us?
- */
 void
 rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {

@@ -3,11 +3,12 @@ Version 2.7.x
 - Filters
 - GTK+ theme engine
 - Masks
-- Markers
+- Path markers
 - Mozilla plugin
-- Numerous bug fixes
 - Patterns
 - Standalone viewer
+- Decent <image> support
+- Numerous bug fixes
 
 == gnome-2-6 branch ==
 

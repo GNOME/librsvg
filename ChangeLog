@@ -1,3 +1,9 @@
+2004-07-18  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Bump version number (2.7.4)
+	* rsvg.1: Add stuff to the man page
+	* NEWS: Document newer developments
+	
 2004-07-19  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-filter.c: made lighting work much better
