@@ -290,6 +290,7 @@ save_svg (GObject * ignored, gpointer user_data)
 		{
 			FILE * fp;
 			
+			/* todo: make this support gnome vfs */
 			fp = fopen(filename, "wb");
 			if (!fp) 
 				{
@@ -546,7 +547,6 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 int 
 main (int argc, char **argv)
 {
-	FILE * in;
 	GError * err = NULL;
 	poptContext popt_context;
 	double x_zoom = 1.0;
@@ -651,14 +651,42 @@ main (int argc, char **argv)
 
 	size_data.keep_aspect_ratio = bKeepAspect;
 	
-	if(from_stdin)
-		in = stdin;
-	else {
-		in = fopen (args[0], "rb");
-		base_uri = (char *)args[0];
+	if(!from_stdin) {
+		if (base_uri == NULL)
+			base_uri = (char *)args[0];
+	
+		info.svg_bytes = _rsvg_acquire_xlink_href_resource(args[0], base_uri, NULL);
+	} else {
+		info.svg_bytes = g_byte_array_new ();
+
+		for (;;)
+			{
+				char buf[1024 * 8];
+				size_t nread = fread (buf, 1, sizeof(buf), stdin);
+			
+				if (nread > 0)
+					g_byte_array_append (info.svg_bytes, buf, nread);
+				
+				if (nread < sizeof (buf))
+				{
+					if (ferror (stdin))
+						{
+							g_critical (_("Error reading\n"));
+							g_byte_array_free (info.svg_bytes, TRUE);
+							poptFreeContext (popt_context);
+							fclose(stdin);
+							
+							return 1;
+						}
+					else if (feof(stdin))
+						break;
+				}
+			}
+		
+		fclose(stdin);		
 	}
 
-	if(!in)
+	if(!info.svg_bytes || !info.svg_bytes->len)
 		{
 			g_critical (_("Couldn't open %s\n"), args[0]);
 			poptFreeContext (popt_context);
@@ -667,33 +695,6 @@ main (int argc, char **argv)
 		}
 
 	info.base_uri = base_uri;
-	info.svg_bytes = g_byte_array_new ();
-
-	for (;;)
-		{
-			char buf[1024 * 8];
-			size_t nread = fread (buf, 1, sizeof(buf), in);
-			
-			if (nread > 0)
-				g_byte_array_append (info.svg_bytes, buf, nread);
-			
-			if (nread < sizeof (buf))
-				{
-					if (ferror (in))
-						{
-							g_critical (_("Error reading\n"));
-							g_byte_array_free (info.svg_bytes, TRUE);
-							poptFreeContext (popt_context);
-							fclose(in);
-							
-							return 1;
-						}
-					else if (feof(in))
-						break;
-				}
-		}
-	
-	fclose(in);
 
 	poptFreeContext (popt_context);
 

@@ -1,3 +1,9 @@
+2005-02-23  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-image.c: Fix bug 168182
+	* test-display.c: rsvg-view now can view images on any medium that
+	gnome-vfs can see.
+	
 2005-02-23  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-art-mask.c: new file with art specific masking stuff
