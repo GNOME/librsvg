@@ -37,8 +37,8 @@
 G_BEGIN_DECLS
 
 typedef struct RsvgSaxHandler RsvgSaxHandler;
-typedef struct DrawingCtx DrawingCtx;
-typedef struct RsvgDimentionData RsvgDimentionData;
+typedef struct RsvgDrawingCtx RsvgDrawingCtx;
+typedef struct RsvgDimensionData RsvgDimensionData;
 typedef struct _RsvgPropertyBag RsvgPropertyBag;
 typedef struct _RsvgState RsvgState;
 typedef struct _RsvgDefs RsvgDefs;
@@ -60,6 +60,8 @@ struct RsvgSaxHandler {
 	void (*end_element) (RsvgSaxHandler *self, const xmlChar *name);
 	void (*characters) (RsvgSaxHandler *self, const xmlChar *ch, int len);
 };
+
+/* Contextual information for the parsing phase*/
 
 struct RsvgHandle {
 	RsvgSizeFunc size_func;
@@ -122,8 +124,9 @@ struct RsvgHandle {
 	void (* free) (RsvgHandle * handle);
 };
 
+/*Contextual information for the drawing phase*/
 
-struct DrawingCtx {
+struct RsvgDrawingCtx {
 	GdkPixbuf *pixbuf;
 	ArtIRect bbox;
 	GSList * state;
@@ -136,7 +139,7 @@ struct DrawingCtx {
 	double dpi_y;
 };
 
-struct RsvgDimentionData {
+struct RsvgDimensionData {
 	int width;
 	int height;
 	gdouble em, ex;

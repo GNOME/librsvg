@@ -25,7 +25,7 @@
 #include "rsvg-private.h"
 #include "rsvg-filter.h"
 #include "rsvg-styles.h"
-#include "rsvg-shapes.h"
+#include "rsvg-image.h"
 #include "rsvg-css.h"
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_affine.h>
@@ -74,7 +74,7 @@ struct _RsvgFilterContext
 	RsvgFilterPrimitiveOutput lastresult;
 	double affine[6];
 	double paffine[6];
-	DrawingCtx * ctx;
+	RsvgDrawingCtx * ctx;
 };
 
 typedef struct _RsvgFilterPrimitive RsvgFilterPrimitive;
@@ -400,7 +400,7 @@ rsvg_filter_free_pair (gpointer value)
  **/
 void
 rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output, 
-					GdkPixbuf * bg, DrawingCtx * context)
+					GdkPixbuf * bg, RsvgDrawingCtx * context)
 {
 	RsvgFilterContext *ctx;
 	RsvgFilterPrimitive *current;
@@ -918,7 +918,7 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
 	g_object_unref (G_OBJECT (output));
 }
 
-void rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output, DrawingCtx * ctx)
+void rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output, RsvgDrawingCtx * ctx)
 {
 	FPBox boundarys;
 	RsvgFilterPrimitiveBlendMode mode;
@@ -4022,7 +4022,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
 									   RsvgFilterContext * context)
 {
 	FPBox boundarys;
-	DrawingCtx * ctx;
+	RsvgDrawingCtx * ctx;
 	RsvgFilterPrimitiveImage *oself;
 	int i;
 	RsvgDefVal * parent;

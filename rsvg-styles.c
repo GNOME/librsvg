@@ -32,6 +32,7 @@
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"
 #include "rsvg-mask.h"
+#include "rsvg-marker.h"
 
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_affine.h>
@@ -525,7 +526,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			state->has_font_size = TRUE;
 			if (ctx != NULL)
 				{
-					((RsvgDimentionData *)g_slist_nth(ctx->dimensions, 
+					((RsvgDimensionData *)g_slist_nth(ctx->dimensions, 
 													  0)->data)->em 
 						= state->font_size;
 				}
@@ -1366,7 +1367,7 @@ rsvg_pixmap_destroy (gchar *pixels, gpointer data)
  * stack.
  **/
 void
-rsvg_push_discrete_layer (DrawingCtx *ctx)
+rsvg_push_discrete_layer (RsvgDrawingCtx *ctx)
 {
 	RsvgState *state;
 	GdkPixbuf *pixbuf;
@@ -1420,7 +1421,7 @@ rsvg_push_discrete_layer (DrawingCtx *ctx)
 }
 
 static void
-rsvg_use_opacity (DrawingCtx *ctx, int opacity, 
+rsvg_use_opacity (RsvgDrawingCtx *ctx, int opacity, 
 				  GdkPixbuf *tos, GdkPixbuf *nos)
 {
 	art_u8 *tos_pixels, *nos_pixels;
@@ -1496,7 +1497,7 @@ get_next_out(gint * operationsleft, GdkPixbuf * in, GdkPixbuf * tos,
 }
 
 static GdkPixbuf *
-rsvg_compile_bg(DrawingCtx *ctx, RsvgState *topstate)
+rsvg_compile_bg(RsvgDrawingCtx *ctx, RsvgState *topstate)
 {
 	int i, foundstate;
 	GdkPixbuf *intermediate, *lastintermediate;
@@ -1544,7 +1545,7 @@ rsvg_compile_bg(DrawingCtx *ctx, RsvgState *topstate)
 }
 
 static void
-rsvg_composite_layer(DrawingCtx *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbuf *nos)
+rsvg_composite_layer(RsvgDrawingCtx *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbuf *nos)
 {
 	RsvgFilter *filter = state->filter;
 	int opacity = state->opacity;
@@ -1630,7 +1631,7 @@ rsvg_composite_layer(DrawingCtx *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
  **/
 
 void
-rsvg_pop_discrete_layer(DrawingCtx *ctx)
+rsvg_pop_discrete_layer(RsvgDrawingCtx *ctx)
 {
 	GdkPixbuf *tos, *nos;
 	RsvgState *state;
@@ -1659,13 +1660,13 @@ rsvg_needs_discrete_layer(RsvgState *state)
 }
 
 RsvgState * 
-rsvg_state_current (DrawingCtx *ctx)
+rsvg_state_current (RsvgDrawingCtx *ctx)
 {
 	return g_slist_nth_data(ctx->state, 0);
 }
 
 RsvgState *
-rsvg_state_parent (DrawingCtx *ctx)
+rsvg_state_parent (RsvgDrawingCtx *ctx)
 {
 	return g_slist_nth_data(ctx->state, 1);
 }
@@ -1677,7 +1678,7 @@ rsvg_state_current_font_size (RsvgHandle *ctx)
 {
 	if (ctx->dimensions == NULL)
 		return 12.0;
-	return ((RsvgDimentionData *)g_slist_nth(ctx->dimensions, 0)->data)->em;
+	return ((RsvgDimensionData *)g_slist_nth(ctx->dimensions, 0)->data)->em;
 }
 
 RsvgPropertyBag *
@@ -1724,7 +1725,7 @@ rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPropertyBagEnumFunc func
 }
 
 void 
-rsvg_state_clip_path_assure(DrawingCtx * ctx)
+rsvg_state_clip_path_assure(RsvgDrawingCtx * ctx)
 {
 	ArtSVP * tmppath;
 	RsvgState * state;
@@ -1749,7 +1750,7 @@ rsvg_state_clip_path_assure(DrawingCtx * ctx)
 }
 
 void
-rsvg_state_push(DrawingCtx * ctx)
+rsvg_state_push(RsvgDrawingCtx * ctx)
 {
 	RsvgState * data;
 	RsvgState * baseon;
@@ -1772,7 +1773,7 @@ rsvg_state_push(DrawingCtx * ctx)
 }
 
 void
-rsvg_state_pop(DrawingCtx * ctx)
+rsvg_state_pop(RsvgDrawingCtx * ctx)
 {
 	GSList * link = g_slist_nth(ctx->state, 0);
 	RsvgState * dead_state = (RsvgState *)link->data;
@@ -1797,7 +1798,7 @@ rsvg_state_pop(DrawingCtx * ctx)
 */
 
 void
-rsvg_state_reinherit_top(DrawingCtx * ctx, RsvgState * state, int dominate)
+rsvg_state_reinherit_top(RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
 {
 	if (dominate == 3)
 		return;

@@ -27,7 +27,7 @@
 
 #include "rsvg-private.h"
 #include "rsvg-styles.h"
-#include "rsvg-shapes.h"
+#include "rsvg-art-draw.h"
 #include "rsvg-filter.h"
 #include "rsvg-text.h"
 #include "rsvg-css.h"
@@ -385,26 +385,26 @@ rsvg_defs_drawable_text_free (RsvgDefVal *self)
 }
 
 void 
-rsvg_text_render_text (DrawingCtx *ctx,
+rsvg_text_render_text (RsvgDrawingCtx *ctx,
 					   RsvgTspan  *tspan,
 					   const char *text,
 					   gdouble *x,
 					   gdouble *y);
 
 ArtSVP *
-rsvg_text_render_text_as_svp (DrawingCtx *ctx,
+rsvg_text_render_text_as_svp (RsvgDrawingCtx *ctx,
 							  RsvgTspan  *tspan,
 							  const char *text,
 							  gdouble *x,
 							  gdouble *y);
 
 static gdouble
-rsvg_text_width  (DrawingCtx *ctx,
+rsvg_text_width  (RsvgDrawingCtx *ctx,
 				  RsvgTspan  *tspan,
 				  const char *text);
 
 static gdouble
-rsvg_text_tspan_width (DrawingCtx *ctx,
+rsvg_text_tspan_width (RsvgDrawingCtx *ctx,
 					   RsvgTspan  *tspan)
 {
 	RsvgTspan  *currentspan = tspan;
@@ -439,10 +439,10 @@ rsvg_text_tspan_width (DrawingCtx *ctx,
 }
 
 static void
-rsvg_tspan_draw(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y, int dominate);
+rsvg_tspan_draw(RsvgTspan * self, RsvgDrawingCtx *ctx, gdouble *x, gdouble *y, int dominate);
 
 static void
-rsvg_tchunk_draw(RsvgTChunk * self, DrawingCtx *ctx, RsvgTspan *span, gdouble *x, gdouble *y)
+rsvg_tchunk_draw(RsvgTChunk * self, RsvgDrawingCtx *ctx, RsvgTspan *span, gdouble *x, gdouble *y)
 {
 	if (self->string)
 		rsvg_text_render_text (ctx, span, self->string->str, x, y);
@@ -455,7 +455,7 @@ rsvg_tchunk_draw(RsvgTChunk * self, DrawingCtx *ctx, RsvgTspan *span, gdouble *x
 }
 
 static void
-rsvg_tspan_draw(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y, int dominate)
+rsvg_tspan_draw(RsvgTspan * self, RsvgDrawingCtx *ctx, gdouble *x, gdouble *y, int dominate)
 {
 	unsigned int i;
 	rsvg_state_reinherit_top(ctx, &self->state, dominate);
@@ -493,10 +493,10 @@ rsvg_tspan_draw(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y, int d
 }
 
 static ArtSVP *
-rsvg_tspan_draw_as_svp(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y, int dominate);
+rsvg_tspan_draw_as_svp(RsvgTspan * self, RsvgDrawingCtx *ctx, gdouble *x, gdouble *y, int dominate);
 
 static ArtSVP *
-rsvg_tchunk_draw_as_svp(RsvgTChunk * self, DrawingCtx *ctx, RsvgTspan *span, gdouble *x, gdouble *y)
+rsvg_tchunk_draw_as_svp(RsvgTChunk * self, RsvgDrawingCtx *ctx, RsvgTspan *span, gdouble *x, gdouble *y)
 {
 	if (self->string)
 		return rsvg_text_render_text_as_svp (ctx, span, self->string->str, x, y);
@@ -514,7 +514,7 @@ rsvg_tchunk_draw_as_svp(RsvgTChunk * self, DrawingCtx *ctx, RsvgTspan *span, gdo
 /*todo: remove unnesicary code duplication*/
 
 static ArtSVP *
-rsvg_tspan_draw_as_svp(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y, int dominate)
+rsvg_tspan_draw_as_svp(RsvgTspan * self, RsvgDrawingCtx *ctx, gdouble *x, gdouble *y, int dominate)
 {
 	unsigned int i;
 	ArtSVP *svp1, *svp2, *svp3;
@@ -554,7 +554,7 @@ rsvg_tspan_draw_as_svp(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y
 
 
 static void 
-rsvg_defs_drawable_text_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
+rsvg_defs_drawable_text_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
 							  int dominate)
 {
 	gdouble x, y;
@@ -564,7 +564,7 @@ rsvg_defs_drawable_text_draw (RsvgDefsDrawable * self, DrawingCtx *ctx,
 }
 
 static ArtSVP *
-rsvg_defs_drawable_text_draw_as_svp (RsvgDefsDrawable * self, DrawingCtx *ctx, 
+rsvg_defs_drawable_text_draw_as_svp (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
 									 int dominate)
 {
 	gdouble x, y;
@@ -649,7 +649,7 @@ typedef struct _RsvgTextLayout RsvgTextLayout;
 struct _RsvgTextLayout
 {
 	PangoLayout * layout;
-	DrawingCtx  * ctx;
+	RsvgDrawingCtx  * ctx;
 	TextAnchor anchor;
 	RsvgTspan    *span;
 	gdouble x, y;
@@ -714,7 +714,7 @@ rsvg_text_ft2_subst_func (FcPattern *pattern,
 }
 
 static PangoContext *
-rsvg_text_get_pango_context (DrawingCtx *ctx)
+rsvg_text_get_pango_context (RsvgDrawingCtx *ctx)
 {
 	PangoContext    *context;
 	PangoFT2FontMap *fontmap;
@@ -742,7 +742,7 @@ rsvg_text_layout_free(RsvgTextLayout * layout)
 }
 
 static RsvgTextLayout *
-rsvg_text_layout_new (DrawingCtx *ctx,
+rsvg_text_layout_new (RsvgDrawingCtx *ctx,
 					  RsvgState *state,
 					  const char *text)
 {
@@ -1097,7 +1097,7 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 }
 
 static GString * 
-rsvg_text_render_text_as_string (DrawingCtx *ctx,
+rsvg_text_render_text_as_string (RsvgDrawingCtx *ctx,
 								 RsvgTspan  *tspan,
 								 const char *text,
 								 gdouble *x,
@@ -1136,7 +1136,7 @@ rsvg_text_render_text_as_string (DrawingCtx *ctx,
 }
 
 void
-rsvg_text_render_text (DrawingCtx *ctx,
+rsvg_text_render_text (RsvgDrawingCtx *ctx,
 					   RsvgTspan  *tspan,
 					   const char *text,
 					   gdouble *x,
@@ -1149,7 +1149,7 @@ rsvg_text_render_text (DrawingCtx *ctx,
 }
 
 ArtSVP *
-rsvg_text_render_text_as_svp (DrawingCtx *ctx,
+rsvg_text_render_text_as_svp (RsvgDrawingCtx *ctx,
 							  RsvgTspan  *tspan,
 							  const char *text,
 							  gdouble *x,
@@ -1190,7 +1190,7 @@ rsvg_text_layout_width  (RsvgTextLayout *layout)
 }
 
 static gdouble
-rsvg_text_width       (DrawingCtx *ctx,
+rsvg_text_width       (RsvgDrawingCtx *ctx,
 					   RsvgTspan  *tspan,
 					   const char *text)
 {

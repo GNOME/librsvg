@@ -1,3 +1,8 @@
+2005-2-12  Caleb Moore <c.moore@student.unsw.edu.au>	
+
+	* rsvg-shapes.c chopped up into rsvg-structure.c, rsvg-marker.c, rsvg-art-draw.c, rsvg-image.c, for maintainability
+	* rsvg-private.h et. al.: Renamed DrawingCtx to RsvgDrawingCtx
+	
 2005-2-10  Alexander McCormmach <alexander at tunicate dot org>
 
 	* rsvg.c, rsvg-styles.c, rsvg-private.h: Applied patch by "makingnonsense" fixing spelling

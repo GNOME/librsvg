@@ -1,6 +1,6 @@
 /* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /*
-   rsvg-shapes.h: Draw SVG shapes
+   rsvg-image.h: Image loading and displaying
 
    Copyright (C) 2000 Eazel, Inc.
    Copyright (C) 2002, 2003, 2004, 2005 Dom Lachowicz <cinamod@hotmail.com>
@@ -26,30 +26,40 @@
             Caleb Moore <c.moore@student.unsw.edu.au>
 */
 
-#ifndef RSVG_SHAPES_H
-#define RSVG_SHAPES_H
+#ifndef RSVG_IMAGE_H
+#define RSVG_IMAGE_H
 
 #include "rsvg-structure.h"
 
 G_BEGIN_DECLS
 
-void rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id, RsvgState);
-void rsvg_start_path (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_polygon (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_polyline (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_line (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_rect (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_circle (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts);
+void rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts);
 
+typedef struct _RsvgDefsDrawableImage RsvgDefsDrawableImage;
 
-typedef struct _RsvgDefsDrawablePath RsvgDefsDrawablePath;
-
-struct _RsvgDefsDrawablePath {
+struct _RsvgDefsDrawableImage {
  	RsvgDefsDrawable super;
- 	char       *d;
+	gboolean overflow;
+	gint preserve_aspect_ratio, x, y, w, h;
+ 	GdkPixbuf *img;
 };
+
+void rsvg_preserve_aspect_ratio(unsigned int aspect_ratio, double width, 
+				double height, double * w, double * h,
+				double * x, double * y);
+
+void
+rsvg_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate, 
+				  double * affine, double w, double h);
+
+gchar *
+rsvg_get_file_path (const gchar * filename, const gchar *basedir);
+
+GdkPixbuf *
+rsvg_pixbuf_new_from_href (const char *href,
+						   const char *base_uri,
+						   GError    **error);
 
 G_END_DECLS
 
-#endif /* RSVG_SHAPES_H */
+#endif /* RSVG_IMAGE_H */

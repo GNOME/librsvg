@@ -27,7 +27,7 @@
 #include "rsvg-defs.h"
 #include "rsvg-paint-server.h"
 #include "rsvg-styles.h"
-#include "rsvg-shapes.h"
+#include "rsvg-image.h"
 
 #include <glib/gmem.h>
 #include <glib/gmessages.h>
@@ -518,7 +518,7 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 	RsvgPaintServerPattern *z = (RsvgPaintServerPattern *)self;
 	RsvgPattern *pattern = z->pattern;
 	RsvgDefsDrawable *drawable = (RsvgDefsDrawable *)pattern->g;
-	DrawingCtx *hctx = ctx->ctx;
+	RsvgDrawingCtx *hctx = ctx->ctx;
 	double affine[6];
 	double caffine[6];
 	int i, j;

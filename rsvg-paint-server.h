@@ -50,7 +50,7 @@ struct _RsvgPSCtx {
 
 	guint32 color;
 	double affine[6];
-	DrawingCtx *ctx;
+	RsvgDrawingCtx *ctx;
 };
 
 struct _RsvgGradientStop {

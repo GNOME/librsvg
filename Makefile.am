@@ -36,6 +36,8 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-css.h 		\
 	rsvg-defs.c 		\
 	rsvg-defs.h 		\
+	rsvg-image.c		\
+	rsvg-image.h		\
 	rsvg-paint-server.c 	\
 	rsvg-paint-server.h 	\
 	rsvg-path.c 		\
@@ -44,16 +46,22 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-file-util.c 	\
 	rsvg-filter.c		\
 	rsvg-filter.h		\
+	rsvg-marker.c		\
+	rsvg-marker.h		\
 	rsvg-mask.c		\
 	rsvg-mask.h		\
 	rsvg-shapes.c		\
 	rsvg-shapes.h		\
+	rsvg-structure.c	\
+	rsvg-structure.h	\
 	rsvg-styles.c		\
 	rsvg-styles.h		\
 	rsvg-text.c		\
 	rsvg-text.h		\
 	rsvg.c			\
 	rsvg-cond.c		\
+	rsvg-art-draw.c		\
+	rsvg-art-draw.h		\
 	librsvg-enum-types.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic

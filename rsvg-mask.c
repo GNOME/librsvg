@@ -25,7 +25,7 @@
 #include "rsvg-private.h"
 #include "rsvg-mask.h"
 #include "rsvg-styles.h"
-#include "rsvg-shapes.h"
+#include "rsvg-art-draw.h"
 #include "rsvg-css.h"
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_svp_ops.h>
@@ -41,7 +41,7 @@ rsvg_mask_free (RsvgDefVal * self)
 }
 
 void 
-rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, DrawingCtx *ctx)
+rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgDrawingCtx *ctx)
 {
 	art_u8 *tos_pixels, *nos_pixels, *mask_pixels;
 	int width;
@@ -121,7 +121,7 @@ rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, DrawingCtx *ct
 }
 
 static void 
-rsvg_defs_drawable_mask_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
+rsvg_defs_drawable_mask_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
 							  int dominate)
 {
 	RsvgState *state = rsvg_state_current (ctx);
@@ -283,7 +283,7 @@ rsvg_clip_path_free (RsvgDefVal * self)
 }
 
 ArtSVP *
-rsvg_clip_path_render (RsvgClipPath * self, DrawingCtx *ctx)
+rsvg_clip_path_render (RsvgClipPath * self, RsvgDrawingCtx *ctx)
 {
 	RsvgState *state = rsvg_state_current (ctx);
 	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
@@ -419,7 +419,7 @@ rsvg_clip_path_parse (const RsvgDefs * defs, const char *str)
 }
 
 ArtSVP *
-rsvg_rect_clip_path(double x, double y, double w, double h, DrawingCtx * ctx)
+rsvg_rect_clip_path(double x, double y, double w, double h, RsvgDrawingCtx * ctx)
 {	
 	GString * d = NULL;
 	ArtSVP * output = NULL;

@@ -175,21 +175,21 @@ void rsvg_parse_style_attrs (RsvgHandle *ctx, RsvgState *state, const char * tag
 gdouble rsvg_viewport_percentage (gdouble width, gdouble height);
 gdouble rsvg_dpi_percentage (RsvgHandle * ctx);
 
-void rsvg_pop_discrete_layer(DrawingCtx *ctx);
-void rsvg_push_discrete_layer (DrawingCtx *ctx);
+void rsvg_pop_discrete_layer(RsvgDrawingCtx *ctx);
+void rsvg_push_discrete_layer (RsvgDrawingCtx *ctx);
 gboolean rsvg_needs_discrete_layer(RsvgState *state);
 gboolean rsvg_parse_transform (double dst[6], const char *src);
 
-RsvgState * rsvg_state_parent (DrawingCtx *ctx);
-RsvgState * rsvg_state_current (DrawingCtx *ctx);
+RsvgState * rsvg_state_parent (RsvgDrawingCtx *ctx);
+RsvgState * rsvg_state_current (RsvgDrawingCtx *ctx);
 double rsvg_state_current_font_size (RsvgHandle *ctx);
 
-void rsvg_state_clip_path_assure(DrawingCtx * ctx);
+void rsvg_state_clip_path_assure(RsvgDrawingCtx * ctx);
 
-void rsvg_state_pop(DrawingCtx * ctx);
-void rsvg_state_push(DrawingCtx * ctx);
+void rsvg_state_pop(RsvgDrawingCtx * ctx);
+void rsvg_state_push(RsvgDrawingCtx * ctx);
 
-void rsvg_state_reinherit_top(DrawingCtx * ctx, RsvgState * state, int dominate);
+void rsvg_state_reinherit_top(RsvgDrawingCtx * ctx, RsvgState * state, int dominate);
 
 G_END_DECLS
 

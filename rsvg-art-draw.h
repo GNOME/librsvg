@@ -1,10 +1,9 @@
 /* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /*
-   rsvg-shapes.h: Draw SVG shapes
+   rsvg-shapes.c: Draw shapes with libart
 
    Copyright (C) 2000 Eazel, Inc.
-   Copyright (C) 2002, 2003, 2004, 2005 Dom Lachowicz <cinamod@hotmail.com>
-   Copyright (C) 2003, 2004, 2005 Caleb Moore <c.moore@student.unsw.edu.au>
+   Copyright (C) 2002 Dom Lachowicz <cinamod@hotmail.com>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as
@@ -25,31 +24,16 @@
             Dom Lachowicz <cinamod@hotmail.com>, 
             Caleb Moore <c.moore@student.unsw.edu.au>
 */
+#ifndef RSVG_ART_DRAW_H
+#define RSVG_ART_DRAW_H
 
-#ifndef RSVG_SHAPES_H
-#define RSVG_SHAPES_H
-
-#include "rsvg-structure.h"
+#include "rsvg-private.h"
 
 G_BEGIN_DECLS
 
-void rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id, RsvgState);
-void rsvg_start_path (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_polygon (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_polyline (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_line (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_rect (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_circle (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts);
-
-
-typedef struct _RsvgDefsDrawablePath RsvgDefsDrawablePath;
-
-struct _RsvgDefsDrawablePath {
- 	RsvgDefsDrawable super;
- 	char       *d;
-};
+void rsvg_render_path (RsvgDrawingCtx *ctx, const char *d);
+ArtSVP * rsvg_render_path_as_svp(RsvgDrawingCtx *ctx, const char *d);
 
 G_END_DECLS
 
-#endif /* RSVG_SHAPES_H */
+#endif /*RSVG_ART_DRAW_H*/

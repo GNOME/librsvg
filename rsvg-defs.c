@@ -27,7 +27,7 @@
 #include "rsvg-defs.h"
 #include "rsvg-gz.h"
 #include "rsvg-styles.h"
-#include "rsvg-shapes.h"
+#include "rsvg-image.h"
 
 #include <glib/ghash.h>
 #include <glib/gmem.h>

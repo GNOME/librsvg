@@ -30,9 +30,11 @@
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"
+#include "rsvg-image.h"
 #include "rsvg-text.h"
 #include "rsvg-filter.h"
 #include "rsvg-mask.h"
+#include "rsvg-marker.h"
 
 #include <math.h>
 #include <string.h>
@@ -57,10 +59,10 @@ static double internal_dpi_x = RSVG_DEFAULT_DPI_X;
 static double internal_dpi_y = RSVG_DEFAULT_DPI_Y;
 
 static void
-rsvg_drawing_ctx_free (DrawingCtx *handle);
+rsvg_drawing_ctx_free (RsvgDrawingCtx *handle);
 
 void
-rsvg_drawing_ctx_init(DrawingCtx * handle);
+rsvg_drawing_ctx_init(RsvgDrawingCtx * handle);
 
 static void
 rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
@@ -206,61 +208,6 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	ctx->nest_level = 1;
 	ctx->current_defs_group = NULL;
 	ctx->treebase = rsvg_push_def_group(ctx, NULL, state);
-}
-
-static void
-rsvg_end_sub_svg(RsvgHandle *ctx)
-{
-	ctx->nest_level--;
-	rsvg_pop_def_group (ctx);
-}
-
-static void
-rsvg_start_g (RsvgHandle *ctx, RsvgPropertyBag *atts)
-{
-	RsvgState state;
-	const char * klazz = NULL, * id = NULL, *value;
-	rsvg_state_init(&state);
-
-	if (rsvg_property_bag_size (atts))
-		{
-			if ((value = rsvg_property_bag_lookup (atts, "class")))
-				klazz = value;
-			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				id = value;
-
-			rsvg_parse_style_attrs (ctx, &state, "g", klazz, id, atts);
-		}	
-  
-	rsvg_push_def_group (ctx, id, state);
-}
-
-static void
-rsvg_end_g (RsvgHandle *ctx)
-{
-	rsvg_pop_def_group (ctx);
-}
-
-static void
-rsvg_start_defs (RsvgHandle *ctx, RsvgPropertyBag *atts)
-{
-	RsvgState state;
-	const char * klazz = NULL, * id = NULL, *value;
-	rsvg_state_init(&state);	
-
-	if (rsvg_property_bag_size (atts))
-		{
-			if ((value = rsvg_property_bag_lookup (atts, "class")))
-				klazz = value;
-			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				id = value;
-
-			rsvg_parse_style_attrs (ctx, &state, "defs", klazz, id, atts);
-		}	
-  
-	/*I don't know if I am proud or discusted by this hack. It seems to 
-	  have the same effect as the spec but not be in its spirit.*/
-	rsvg_push_part_def_group (ctx, id, state);
 }
 
 typedef struct _RsvgSaxHandlerDefs {
@@ -1220,12 +1167,12 @@ rsvg_start_element (void *data, const xmlChar *name,
 
 	RsvgPropertyBag * bag;
   
-	RsvgDimentionData * newdimention;
-	newdimention = g_new(RsvgDimentionData, 1);
-	newdimention->width = ctx->width;
-	newdimention->height = ctx->height;
-	newdimention->em = rsvg_state_current_font_size(ctx);
-	ctx->dimensions = g_slist_prepend(ctx->dimensions, newdimention);
+	RsvgDimensionData * newdimension;
+	newdimension = g_new(RsvgDimensionData, 1);
+	newdimension->width = ctx->width;
+	newdimension->height = ctx->height;
+	newdimension->em = rsvg_state_current_font_size(ctx);
+	ctx->dimensions = g_slist_prepend(ctx->dimensions, newdimension);
 
 	bag = rsvg_property_bag_new(atts);
 
@@ -1310,10 +1257,10 @@ rsvg_end_element (void *data, const xmlChar *name)
 	RsvgHandle *ctx = (RsvgHandle *)data;
 	
 	GSList * link = g_slist_nth(ctx->dimensions, 0);
-	RsvgDimentionData * dead_dimention = (RsvgDimentionData *)link->data;
-	ctx->width = dead_dimention->width;
-	ctx->height = dead_dimention->height;
-	g_free (dead_dimention);
+	RsvgDimensionData * dead_dimension = (RsvgDimensionData *)link->data;
+	ctx->width = dead_dimension->width;
+	ctx->height = dead_dimension->height;
+	g_free (dead_dimension);
 	ctx->dimensions = g_slist_delete_link(ctx->dimensions, link);
 
 	if (ctx->handler_nest > 0 && ctx->handler != NULL)
@@ -1562,13 +1509,13 @@ rsvg_handle_close_impl (RsvgHandle  *handle,
 static void
 rsvg_state_free_func(gpointer data, gpointer user_data)
 {
-	DrawingCtx * ctx = (DrawingCtx *)user_data;
+	RsvgDrawingCtx * ctx = (RsvgDrawingCtx *)user_data;
 	rsvg_state_finalize((RsvgState *)data);
 	g_mem_chunk_free(ctx->state_allocator, data);
 }
 
 static void
-rsvg_drawing_ctx_free (DrawingCtx *handle)
+rsvg_drawing_ctx_free (RsvgDrawingCtx *handle)
 {
 	rsvg_defs_free (handle->defs);
 	
@@ -1693,13 +1640,13 @@ rsvg_handle_new (void)
 	return handle;
 }
 
-static DrawingCtx * 
+static RsvgDrawingCtx * 
 rsvg_new_drawing_ctx(RsvgHandle * handle)
 {
 	art_u8 *pixels;
 	int rowstride, new_width, new_height;
-	DrawingCtx * draw;
-	draw = g_new(DrawingCtx, 1);	
+	RsvgDrawingCtx * draw;
+	draw = g_new(RsvgDrawingCtx, 1);	
 
 	draw->state = NULL;
 	/* should this be G_ALLOC_ONLY? */
@@ -1944,7 +1891,7 @@ GdkPixbuf *
 rsvg_handle_get_pixbuf (RsvgHandle *handle)
 {
 	GdkPixbuf * output;
-	DrawingCtx * draw;
+	RsvgDrawingCtx * draw;
 	g_return_val_if_fail (handle != NULL, NULL);
 
 	if (!handle->finished)
