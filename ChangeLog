@@ -1,3 +1,9 @@
+2001-08-08  Darin Adler  <darin@bentspoon.com>
+
+	* acinclude.m4: Move code for finding freetype here instead
+	of getting it from the hack-macros directory.
+	* autogen.sh: Don't use the hack-macros directory any more.
+
 2001-08-06  Darin Adler  <darin@bentspoon.com>
 
 	* configure.in: Replace uses of GNOME_PKGCONFIG_CHECK_MODULES
