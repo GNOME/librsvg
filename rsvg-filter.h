@@ -79,6 +79,14 @@ rsvg_start_filter_primitive_merge_node (RsvgHandle *ctx, const xmlChar **atts);
 void 
 rsvg_start_filter_primitive_colour_matrix (RsvgHandle *ctx, const xmlChar **atts);
 
+void 
+rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
+												const xmlChar ** atts);
+
+void 
+rsvg_start_filter_primitive_component_transfer_function (RsvgHandle * ctx,
+														 const xmlChar ** atts, char channel);
+
 G_END_DECLS
 
 #endif

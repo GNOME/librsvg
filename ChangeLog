@@ -1,8 +1,26 @@
+2003-02-04  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-filter.c: Implemented more of the ComponentTransfer filter, still doesn't quite work right
+	
 2003-02-03  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-filter.[ch]: Start implementing ComponentTransfer filter
 	Indent, make code ansi-compliant.
 	* rsvg-css.[ch]: Tweak VBOX parsing, free unused string array properly
+
+
+2003-02-03  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-filter.c: Implemented ColorMatrix filter, Made GaussianBlur scaled according to the current coordinate system
+	* rsvg-css.c: Added \n to the types of whitespace that splits arguments in list
+	
+2003-02-02  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-filter.c: Implemented Merge filter, implemented Offset filter
+
+2003-02-01  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-filter.c: Implemented ConvolveMatrix filter
 	
 2003-02-01  Caleb Moore <c.moore@student.unsw.edu.au>
 

@@ -785,6 +785,16 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_filter_primitive_merge_node(ctx, atts);
 	else if (!strcmp ((char *)name, "feColorMatrix"))
 		rsvg_start_filter_primitive_colour_matrix(ctx, atts);
+	else if (!strcmp ((char *)name, "feComponentTransfer"))
+		rsvg_start_filter_primitive_component_transfer(ctx, atts);
+	else if (!strcmp ((char *)name, "feFuncR"))
+		rsvg_start_filter_primitive_component_transfer_function(ctx, atts, 'r');
+	else if (!strcmp ((char *)name, "feFuncG"))
+		rsvg_start_filter_primitive_component_transfer_function(ctx, atts, 'g');
+	else if (!strcmp ((char *)name, "feFuncB"))
+		rsvg_start_filter_primitive_component_transfer_function(ctx, atts, 'b');
+	else if (!strcmp ((char *)name, "feFuncA"))
+		rsvg_start_filter_primitive_component_transfer_function(ctx, atts, 'a');
 }
 
 static void

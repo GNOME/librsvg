@@ -1658,7 +1658,7 @@ rsvg_start_filter_primitive_merge (RsvgHandle * ctx, const xmlChar ** atts)
 	
 	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
 					 &filter->super);
-	ctx->currentmergefilter = filter;
+	ctx->currentsubfilter = filter;
 }
 
 void
@@ -1673,7 +1673,7 @@ rsvg_start_filter_primitive_merge_node (RsvgHandle * ctx,
 				{
 					if (!strcmp ((char *) atts[i], "in"))
 						g_ptr_array_add (((RsvgFilterPrimitiveMerge *) (ctx->
-																		currentmergefilter))->
+																		currentsubfilter))->
 										 nodes, g_string_new ((char *) atts[i + 1]));
 				}
 		}
@@ -1921,7 +1921,9 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 					 &filter->super);
 }
 
-#if 0
+
+/*************************************************************/
+/*************************************************************/
 
 /*************************************************************/
 /*************************************************************/
@@ -1941,6 +1943,23 @@ struct ComponentTransferData
 typedef guint8 (*ComponentTransferFunc) (guint8 C,
 										 struct ComponentTransferData *
 										 user_data);
+
+typedef struct _RsvgFilterPrimitiveComponentTransfer
+RsvgFilterPrimitiveComponentTransfer;
+
+
+struct _RsvgFilterPrimitiveComponentTransfer
+{
+	RsvgFilterPrimitive super;
+	ComponentTransferFunc Rfunction;
+	struct ComponentTransferData Rdata;
+	ComponentTransferFunc Gfunction;
+	struct ComponentTransferData Gdata;
+	ComponentTransferFunc Bfunction;
+	struct ComponentTransferData Bdata;
+	ComponentTransferFunc Afunction;
+	struct ComponentTransferData Adata;
+};
 
 static gdouble
 get_component_transfer_table_value (guint8 C,
@@ -2017,12 +2036,230 @@ gamma_component_transfer_func (guint8 C,
 									   user_data->exponent) + user_data->offset;
 }
 
-void rsvg_start_filter_component_transfer (RsvgHandle * ctx,
-										   const xmlChar ** atts);
-void rsvg_filter_primitive_component_transer_render (RsvgFilterPrimitive *
-													 self,
-													 RsvgFilterContext * ctx);
-void rsvg_filter_primitive_component_transfer_free (RsvgFilterPrimitive *
-													self);
+static void 
+rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
+												self,
+												RsvgFilterContext * ctx)
+{
+	gint x, y;
+	gint rowstride, height, width;
+	FPBox boundarys;
+	
+	guchar *in_pixels;
+	guchar *output_pixels;
+	
+	RsvgFilterPrimitiveComponentTransfer *cself;
+	
+	GdkPixbuf *output;
+	GdkPixbuf *in;
+	cself = (RsvgFilterPrimitiveComponentTransfer *) self;
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	in = rsvg_filter_get_in (self->in, ctx);
+	in_pixels = gdk_pixbuf_get_pixels (in);
+	
+	height = gdk_pixbuf_get_height (in);
+	width = gdk_pixbuf_get_width (in);
+	
+	rowstride = gdk_pixbuf_get_rowstride (in);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	
+	output_pixels = gdk_pixbuf_get_pixels (output);
 
-#endif
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
+			{
+				output_pixels[y * rowstride + x * 4] =
+					cself->Rfunction(in_pixels[y * rowstride + x * 4], &cself->Rdata);
+				output_pixels[y * rowstride + x * 4 + 1] =
+					cself->Gfunction(in_pixels[y * rowstride + x * 4 + 1], &cself->Gdata);
+				output_pixels[y * rowstride + x * 4 + 2] =
+					cself->Bfunction(in_pixels[y * rowstride + x * 4 + 2], &cself->Bdata);
+				output_pixels[y * rowstride + x * 4 + 3] =
+					cself->Afunction(in_pixels[y * rowstride + x * 4 + 3], &cself->Adata);
+			}
+	rsvg_filter_store_result (self->result, output, ctx);
+	
+	g_object_unref (G_OBJECT (in));
+	g_object_unref (G_OBJECT (output));
+}
+
+static void 
+rsvg_filter_primitive_component_transfer_free (RsvgFilterPrimitive *
+											   self)
+{
+	RsvgFilterPrimitiveComponentTransfer *cself;
+
+	cself = (RsvgFilterPrimitiveComponentTransfer *) self;
+	g_string_free (self->result, TRUE);
+	if (cself->Rdata.nbTableValues)
+		g_free (cself->Rdata.tableValues);
+	if (cself->Gdata.nbTableValues)
+		g_free (cself->Gdata.tableValues);
+	if (cself->Bdata.nbTableValues)
+		g_free (cself->Bdata.tableValues);
+	if (cself->Adata.nbTableValues)
+		g_free (cself->Adata.tableValues);
+	g_free (cself);
+}
+
+
+void 
+rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
+												const xmlChar ** atts)
+{
+	int i;
+		double font_size;
+	RsvgFilterPrimitiveComponentTransfer *filter;
+	
+	if (ctx->n_state > 0)
+		font_size = rsvg_state_current (ctx)->font_size;
+	else
+		font_size = 12.0;
+	
+	filter = g_new (RsvgFilterPrimitiveComponentTransfer, 1);
+	
+	filter->super.result = g_string_new ("none");
+	filter->super.in = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->Rfunction = identity_component_transfer_func;
+	filter->Gfunction = identity_component_transfer_func;
+	filter->Bfunction = identity_component_transfer_func;
+	filter->Afunction = identity_component_transfer_func;
+
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				{
+					if (!strcmp ((char *) atts[i], "result"))
+						g_string_assign (filter->super.result, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "in"))
+						g_string_assign (filter->super.in, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "x"))
+						{
+							filter->super.x =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "y"))
+						{
+							filter->super.y =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "width"))
+						{
+							filter->super.width =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "height"))
+						{
+							filter->super.height =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+				}
+		}
+	
+	filter->super.render = &rsvg_filter_primitive_component_transfer_render;
+	filter->super.free = &rsvg_filter_primitive_component_transfer_free;
+	
+	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
+					 &filter->super);
+
+	ctx->currentsubfilter = filter;
+}
+
+void 
+rsvg_start_filter_primitive_component_transfer_function (RsvgHandle * ctx,
+														 const xmlChar ** atts, char channel)
+{
+	int i;
+
+	ComponentTransferFunc * function;
+	struct ComponentTransferData * data;
+	
+	function = NULL;
+	data = NULL;
+
+	if (channel == 'r')
+		{
+			function = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentsubfilter))->Rfunction;
+			data = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentsubfilter))->Rdata;
+		}
+	else if (channel == 'g')
+		{
+			function = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentsubfilter))->Gfunction;
+			data = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentsubfilter))->Gdata;
+		}
+	else if (channel == 'b')
+		{
+			function = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentsubfilter))->Bfunction;
+			data = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentsubfilter))->Bdata;
+		}
+	else if (channel == 'a')
+		{
+			function = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentsubfilter))->Afunction;
+			data = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentsubfilter))->Adata;
+		}
+
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				{
+					if (!strcmp ((char *) atts[i], "type"))
+						{
+							if (!strcmp ((char *) atts[i + 1], "identity"))
+								*function = identity_component_transfer_func;
+							else if (!strcmp ((char *) atts[i + 1], "table"))
+								*function = table_component_transfer_func;
+							else if (!strcmp ((char *) atts[i + 1], "discrete"))
+								*function = discrete_component_transfer_func;
+							else if (!strcmp ((char *) atts[i + 1], "linear"))
+								*function = linear_component_transfer_func;
+							else if (!strcmp ((char *) atts[i + 1], "gamma"))
+								*function = gamma_component_transfer_func;
+						}
+					else if (!strcmp ((char *) atts[i], "tableValues"))
+						{
+							data->tableValues = 
+								rsvg_css_parse_number_list ((char *) atts[i + 1], 
+															&data->nbTableValues);
+						}
+					else if (!strcmp ((char *) atts[i], "slope"))
+						{
+							data->slope = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "intercept"))
+						{
+							data->intercept = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "amplitude"))
+						{
+							data->amplitude = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "exponent"))
+						{
+							data->exponent = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "offset"))
+						{
+							data->offset = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+				}
+		}
+}
