@@ -1,5 +1,10 @@
 2001-05-01  Ramiro Estrugo  <ramiro@eazel.com>
 
+	* .cvsignore:
+	Ignore generated xml-i18n-tools droppings.
+	
+2001-05-01  Ramiro Estrugo  <ramiro@eazel.com>
+
 	* autogen.sh:
 	* configure.in:
 	Simplify the freetype2 detection insanity by using autoconf macro
