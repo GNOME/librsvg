@@ -1,3 +1,9 @@
+2004-04-18  Dodji Seketeli  <dodji@gnome.org>
+
+	* configure.in: use libcroco 0.6.0
+	* rsvg-styles.c: 
+	(ccss_property): libcroco use CRString now, no GString.
+
 2004-04-12  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-shapes.c, rsvg-filter.c: Support data: images in filters

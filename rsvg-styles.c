@@ -764,19 +764,22 @@ ccss_end_selector (CRDocHandler *a_handler,
 }
 
 static void
-ccss_property (CRDocHandler *a_handler, GString *a_name, 
+ccss_property (CRDocHandler *a_handler, CRString *a_name, 
 			   CRTerm *a_expr, gboolean a_important)
 {
 	CSSUserData * user_data;
-	char * expr = NULL;
+	char * expr = NULL, *name =NULL;
+	int len = 0 ;
 
 	g_return_if_fail (a_handler);
 
 	user_data = (CSSUserData *)a_handler->app_data;
 
-	if (a_name && a_name->str && a_expr && user_data->def)
+	if (a_name && a_expr && user_data->def)
 		{
-			g_string_append_len (user_data->def, a_name->str, a_name->len);
+			name = (char*) cr_string_peek_raw_str (a_name) ;
+			len = cr_string_peek_raw_str_len (a_name) ;
+			g_string_append_len (user_data->def, name, len);
 			g_string_append (user_data->def, ": ");
 			expr = cr_term_to_string (a_expr);
 			g_string_append_len (user_data->def, expr, strlen (expr));
