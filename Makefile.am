@@ -2,7 +2,7 @@ SUBDIRS = . gtk-engine gdk-pixbuf-loader
 
 bin_PROGRAMS = rsvg
 
-noinst_PROGRAMS = test-performance
+noinst_PROGRAMS = test-performance test-display
 
 EXTRA_DIST =\
 	COPYING.LIB \
@@ -36,6 +36,7 @@ INCLUDES =\
 	-I$(top_srcdir) \
 	-I$(top_builddir) \
 	$(LIBRSVG_CFLAGS) \
+	$(GTK_CFLAGS)	\
 	-DG_LOG_DOMAIN=\"librsvg\" \
 	-DG_DISABLE_DEPRECATED \
 	-DPANGO_DISABLE_DEPRECATED \
@@ -58,6 +59,11 @@ test_performance_SOURCES=test-performance.c
 test_performance_LDFLAGS =
 test_performance_DEPENDENCIES = $(DEPS)
 test_performance_LDADD = $(LDADDS) -lm
+
+test_display_SOURCES=test-display.c
+test_display_LDFLAGS =
+test_display_DEPENDENCIES = $(DEPS)
+test_display_LDADD = $(LDADDS) $(GTK_LIBS) -lm
 
 tests: rsvg
 

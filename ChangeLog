@@ -1,3 +1,12 @@
+2002-10-09  Dom Lachowicz <doml@appligent.com>
+
+	* rsvg.c (rsvg_start_svg): Fix for zoom calculations
+	(rsvg_start_element): hack for Illustrator 9
+	(rsvg_stop_handler_end): ditto
+
+	* test-display.c (*): major updates. now gets built. useful utility
+	* Makefile.am: ditto
+	
 2002-10-07  Dom Lachowicz <doml@appligent.com>
 
 	* rsvg.c (rsvg_start_svg): Handle case where size isn't supplied by 

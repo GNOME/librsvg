@@ -90,8 +90,6 @@ typedef struct {
 
   ArtVpathDash dash;
 
-  gboolean in_defs;
-
   GdkPixbuf *save_pixbuf;
 } RsvgState;
 
@@ -287,8 +285,8 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	}
       else
 	{	  
-	  x_zoom = (width < 0 || new_width < 0) ? 1 : (double) width / new_width;
-	  y_zoom = (height < 0 || new_height < 0) ? 1 : (double) height / new_height;
+	  x_zoom = (width < 0 || new_width < 0) ? 1 : (double) new_width / width;
+	  y_zoom = (height < 0 || new_height < 0) ? 1 : (double) new_height / height;
 
 	  /* reset these so that we get a properly sized SVG and not a huge one */
 	  new_width  = (width == -1 ? new_width : width);
@@ -1590,7 +1588,8 @@ rsvg_gradient_stop_handler_end (RsvgSaxHandler *self, const xmlChar *name)
       if (ctx->handler != NULL)
 	{
 	  ctx->handler->free (ctx->handler);
-	  ctx->handler = &z->parent->super;
+	  /* hack for adobe illustrator 9 */
+	  ctx->handler = (z->parent ? &z->parent->super : NULL);
 	}
     }
 }
@@ -1942,9 +1941,6 @@ static void
 rsvg_start_defs (RsvgHandle *ctx, const xmlChar **atts)
 {
   RsvgSaxHandlerDefs *handler = g_new0 (RsvgSaxHandlerDefs, 1);
-
-  RsvgState *state = &ctx->state[ctx->n_state - 1];
-  state->in_defs = TRUE;
 
   handler->super.free = rsvg_defs_handler_free;
   handler->super.characters = rsvg_defs_handler_characters;
@@ -2395,6 +2391,12 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 	rsvg_start_polygon (ctx, atts);
       else if (!strcmp ((char *)name, "polyline"))
 	rsvg_start_polyline (ctx, atts);
+
+      /* HACK for Adobe 9 */
+      else if (!strcmp ((char *)name, "linearGradient"))
+	rsvg_start_linear_gradient (ctx, atts);
+      else if (!strcmp ((char *)name, "radialGradient"))
+	rsvg_start_radial_gradient (ctx, atts);
     }
 }
 
