@@ -1,5 +1,10 @@
 2001-04-03  Ramiro Estrugo  <ramiro@eazel.com>
 
+	* .cvsignore:
+	Ignore generated files.
+	
+2001-04-03  Ramiro Estrugo  <ramiro@eazel.com>
+
 	* COPYING.LIB:
 	* Makefile.am:
 	Add to make rpm happy.

@@ -22,3 +22,4 @@ test-ft-gtk
 test-ft
 test-rsvg
 librsvg-*.tar.gz
+librsvg.spec
