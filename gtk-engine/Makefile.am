@@ -5,13 +5,13 @@ enginedir = $(libdir)/gtk-2.0/$(GTK_VERSION)/engines
 engine_LTLIBRARIES = libsvg.la
 
 libsvg_la_SOURCES = 		\
-	pixbuf-draw.c		\
-	pixbuf-main.c		\
-	pixbuf-render.c		\
-	pixbuf-rc-style.c	\
-	pixbuf-rc-style.h	\
-	pixbuf-style.h		\
-	pixbuf.h
+	svg-draw.c		\
+	svg-main.c		\
+	svg-render.c		\
+	svg-rc-style.c		\
+	svg-rc-style.h		\
+	svg-style.h		\
+	svg.h
 
 libsvg_la_LDFLAGS =  -avoid-version -module
 libsvg_la_LIBADD = $(GTK_LIBS)

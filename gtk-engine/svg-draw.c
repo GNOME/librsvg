@@ -24,9 +24,9 @@
 #include <math.h>
 #include <string.h>
 
-#include "pixbuf.h"
-#include "pixbuf-rc-style.h"
-#include "pixbuf-style.h"
+#include "svg.h"
+#include "svg-rc-style.h"
+#include "svg-style.h"
 
 static void rsvg_style_init       (RsvgStyle      *style);
 static void rsvg_style_class_init (RsvgStyleClass *klass);

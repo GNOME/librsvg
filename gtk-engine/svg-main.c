@@ -21,9 +21,9 @@
  * Carsten Haitzler <raster@rasterman.com>
  */
 
-#include "pixbuf.h"
-#include "pixbuf-style.h"
-#include "pixbuf-rc-style.h"
+#include "svg.h"
+#include "svg-style.h"
+#include "svg-rc-style.h"
 #include <gmodule.h>
 
 G_MODULE_EXPORT void

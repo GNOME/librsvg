@@ -23,7 +23,7 @@
 
 #include <string.h>
 
-#include "pixbuf.h"
+#include "svg.h"
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <librsvg/rsvg.h>
 

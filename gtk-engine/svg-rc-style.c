@@ -21,9 +21,9 @@
  * Carsten Haitzler <raster@rasterman.com>
  */
 
-#include "pixbuf.h"
-#include "pixbuf-style.h"
-#include "pixbuf-rc-style.h"
+#include "svg.h"
+#include "svg-style.h"
+#include "svg-rc-style.h"
 
 static void      rsvg_rc_style_init         (RsvgRcStyle      *style);
 static void      rsvg_rc_style_class_init   (RsvgRcStyleClass *klass);
