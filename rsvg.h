@@ -76,6 +76,12 @@ gboolean    rsvg_handle_close             (RsvgHandle      *handle,
 GdkPixbuf  *rsvg_handle_get_pixbuf        (RsvgHandle      *handle);
 void        rsvg_handle_free              (RsvgHandle      *handle);
 
+G_CONST_RETURN char *
+rsvg_handle_get_base_uri (RsvgHandle *handle);
+void rsvg_handle_set_base_uri (RsvgHandle *handle,
+							   const char *base_uri);
+
+
 /* Convenience API */
 
 GdkPixbuf  *rsvg_pixbuf_from_file                  (const gchar  *file_name,

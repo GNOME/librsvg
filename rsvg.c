@@ -1371,6 +1371,14 @@ static void rsvg_SAX_handler_struct_init()
     rsvgSAXHandlerStruct.endElement = rsvg_end_element;
 }
 
+/**
+ * Set the base URI for this SVG
+ *
+ * @handle: A #RsvgHandle
+ * @base_uri: 
+ *
+ * Since: 2.9 (really present in 2.8 as well)
+ */
 void rsvg_handle_set_base_uri (RsvgHandle *handle,
 							   const char *base_uri)
 {
@@ -1381,6 +1389,13 @@ void rsvg_handle_set_base_uri (RsvgHandle *handle,
 	}
 }
 
+/**
+ * Gets the base uri for this RsvgHandle.
+ * @handle: A #RsvgHandle
+ *
+ * Returns: the base uri, possibly null
+ * Since: 2.9 (really present in 2.8 as well)
+ */
 G_CONST_RETURN char *rsvg_handle_get_base_uri (RsvgHandle *handle)
 {
 	return handle->base_uri;

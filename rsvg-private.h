@@ -174,12 +174,6 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 									  const char * base_uri,
 									  GError ** error);
 
-G_CONST_RETURN char *
-rsvg_handle_get_base_uri (RsvgHandle *handle);
-
-void rsvg_handle_set_base_uri (RsvgHandle *handle,
-							   const char *base_uri);
-
 gboolean 
 rsvg_eval_switch_attributes (RsvgPropertyBag *atts, gboolean * p_has_cond);
 
