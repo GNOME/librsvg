@@ -21,3 +21,4 @@ librsvg-1.0.pc
 test-ft-gtk
 test-ft
 test-rsvg
+librsvg-*.tar.gz

@@ -3,10 +3,11 @@ noinst_PROGRAMS = test-ft-gtk test-ft test-rsvg
 bin_SCRIPTS = \
 	librsvg-config
 
-EXTRA_DIST = 			\
-	librsvg.m4		\
-	librsvgConf.sh.in	\
-	librsvg-config.in	\
+EXTRA_DIST =\
+	librsvg.spec.in \
+	librsvg.m4 \
+	librsvgConf.sh.in \
+	librsvg-config.in \
 	librsvg-1.0.pc.in
 
 lib_LTLIBRARIES = librsvg.la
@@ -109,3 +110,6 @@ librsvgConf.sh: librsvgConf.sh.in Makefile
 	    -e 's?\@LIBRSVG_LIBS\@?$(LIBRSVG_LIBS)?g' \
 	      < $(srcdir)/librsvgConf.sh.in > librsvgConf.tmp \
 	  && mv librsvgConf.tmp librsvgConf.sh
+
+dist-hook: librsvg.spec
+	cp librsvg.spec $(distdir)

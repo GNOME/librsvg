@@ -352,6 +352,7 @@ AC_SUBST(LIBRSVG_LIBS)
 AC_C_BIGENDIAN
 
 AC_OUTPUT([
+librsvg.spec
 librsvg-features.h
 Makefile
 librsvg-config
