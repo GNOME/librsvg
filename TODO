@@ -16,3 +16,7 @@ TODO:
 On the back burner:
 
  * Make error messages translatable (requires adding gettext).
+
+Requests from Christian:
+ * gaussian blur
+ * gtk theme engine supporting automatic mouseover-and-light-up effect
