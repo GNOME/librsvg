@@ -484,10 +484,10 @@ static void
 rsvg_filter_store_output(GString * name, RsvgFilterPrimitiveOutput result,
 						  RsvgFilterContext * ctx)
 {
-	g_object_unref (G_OBJECT (ctx->lastresult.result));
-	
 	RsvgFilterPrimitiveOutput * store;
 
+	g_object_unref (G_OBJECT (ctx->lastresult.result));
+	
 	store = g_new(RsvgFilterPrimitiveOutput, 1);
 	*store = result;
 
