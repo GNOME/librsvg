@@ -26,8 +26,6 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gdk-pixbuf/gdk-pixbuf-io.h>
 
-#define BUFFER_SIZE (1024 * 8)
-
 void fill_vtable (GdkPixbufModule *module);
 void fill_info   (GdkPixbufFormat *info);
 
