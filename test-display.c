@@ -47,13 +47,36 @@ struct _ViewerCbInfo
 };
 
 static void
-rsvg_window_set_default_icon (GtkWindow * window, GdkPixbuf *icon)
+rsvg_window_set_default_icon (GtkWindow * window, GdkPixbuf *src)
 {
   GList *list;
-  
+  GdkPixbuf * icon;
+  gint width, height;
+
+  width = gdk_pixbuf_get_width(src);
+  height = gdk_pixbuf_get_height(src);
+
+  if(width > 128 || height > 128) {
+	  /* sending images greater than 128x128 has this nasty tendency to 
+		 cause broken pipe errors X11 Servers */
+	  if(width > height) {
+		  width = 0.5 + width * 128. / height;
+		  height = 128;
+	  } else {
+		  height = 0.5 + height * 128. / width;
+		  width = 128;
+	  }
+
+	  icon = gdk_pixbuf_scale_simple(src, width, height, GDK_INTERP_BILINEAR);
+  } else {
+	  icon = g_object_ref(G_OBJECT(src));
+  }
+
   list = g_list_prepend (NULL, icon);
   gtk_window_set_icon_list (window, list);
   g_list_free (list);
+
+  g_object_unref(G_OBJECT (icon));
 }
 
 #ifdef HAVE_GNOME_PRINT
