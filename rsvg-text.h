@@ -38,7 +38,9 @@ void
 rsvg_text_render_text (RsvgHandle *ctx,
 					   RsvgState  *state,
 					   const char *text,
-					   const char *id);
+					   const char *id,
+					   gdouble x,
+					   gdouble y);
 
 G_END_DECLS
 

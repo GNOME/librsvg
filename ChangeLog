@@ -1,3 +1,7 @@
+2004-06-15  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-text.c, rsvg-text-vectors.c: well, um, I've been doing a fair bit of tweaking. Mainly very late at night so my memory of it is far from complete.
+
 2004-06-13  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-shapes.c: Implemented markers for streight lines

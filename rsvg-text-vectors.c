@@ -56,6 +56,8 @@ struct _RenderCtx
 	gboolean      wrote;
 	gdouble       offset_x;
 	gdouble       offset_y;
+	gdouble       position_x;
+	gdouble       position_y;
 };
 
 typedef void (* RsvgTextRenderFunc) (PangoFont  *font,
@@ -230,8 +232,8 @@ rsvg_text_vector_coords (RenderCtx       *ctx,
 						 gdouble         *x,
 						 gdouble         *y)
 {
-	*x = ctx->offset_x + (double)vector->x / 64.;
-	*y = ctx->offset_y - (double)vector->y / 64.;
+	*x = ctx->offset_x + (double)vector->x / 64. + ctx->position_x;
+	*y = ctx->offset_y - (double)vector->y / 64. + ctx->position_y;
 }
 
 static void
@@ -516,7 +518,7 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 	gint anchoroffset;
 
 	rsvg_text_layout_get_offsets (layout, &x, &y);
-	
+
 	x *= PANGO_SCALE;
 	y *= PANGO_SCALE;
 	
@@ -555,7 +557,9 @@ void
 rsvg_text_render_text (RsvgHandle *ctx,
 					   RsvgState  *state,
 					   const char *text,
-					   const char *id)
+					   const char *id,
+					   gdouble x, 
+					   gdouble y)
 {
 	RsvgTextLayout *layout;
 	RenderCtx      *render;
@@ -565,7 +569,10 @@ rsvg_text_render_text (RsvgHandle *ctx,
 
 	layout = rsvg_text_layout_new (ctx, state, text);
 	render = rsvg_render_ctx_new ();
-	
+
+	render->position_x = x;
+	render->position_y = y;
+
 	rsvg_text_layout_render (layout, rsvg_text_render_vectors, 
 							 (gpointer)render);
 

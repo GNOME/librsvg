@@ -77,6 +77,7 @@ typedef struct _RsvgSaxHandlerText {
 	RsvgSaxHandler super;
 	RsvgSaxHandler *parent;
 	RsvgHandle *ctx;
+	gdouble x, y;
 } RsvgSaxHandlerText;
 
 static void
@@ -278,7 +279,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 		}
 
 	if(g_getenv("RSVG_TEXT_VECTORS"))
-		rsvg_text_render_text (ctx, state, string, NULL);
+		rsvg_text_render_text (ctx, state, string, NULL, z->x, z->y);
 	else
 		rsvg_text_render_text_bitmap (ctx, state, string, NULL);
 
@@ -377,7 +378,6 @@ rsvg_text_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 void
 rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	double affine[6] ;
 	double x, y, dx, dy;
 	const char * klazz = NULL, * id = NULL, *value;
 	RsvgState *state;
@@ -414,9 +414,9 @@ rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	x += dx ;
 	y += dy ;
 	
-	art_affine_translate (affine, x, y);
-	art_affine_multiply (state->affine, affine, state->affine);	
-	
+	handler->x = x;
+	handler->y = y;
+
 	handler->parent = ctx->handler;
 	ctx->handler = &handler->super;
 }
