@@ -1,3 +1,7 @@
+2003-12-13  Caleb Moore <calebmm@tpg.com.au>
+
+	* rsvg-bpath-util.c: Fixed double move bug in path
+
 2003-12-10  Federico Mena Quintero  <federico@ximian.com>
 
 	* rsvg-defs.c: #include <glib/gmessages.h>

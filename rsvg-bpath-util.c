@@ -89,6 +89,19 @@ rsvg_bpath_def_moveto (RsvgBpathDef *bpd, double x, double y)
 	
 	g_return_if_fail (bpd != NULL);
 	
+	/* if the last command was a moveto then change that last moveto instead of
+	   creating a new one */
+	bpath = bpd->bpath;
+	n_bpath = bpd->n_bpath;
+	if (n_bpath > 0)
+		if (bpath[n_bpath - 1].code == ART_MOVETO_OPEN)
+			{
+				bpath[n_bpath].x3 = x;
+				bpath[n_bpath].y3 = y;
+				bpd->moveto_idx = n_bpath;
+				return;
+			}
+
 	n_bpath = bpd->n_bpath++;
 	
 	if (n_bpath == bpd->n_bpath_max)
