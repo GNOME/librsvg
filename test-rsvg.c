@@ -105,13 +105,14 @@ main (int argc, const char **argv)
 		pixbuf = rsvg_pixbuf_from_file_at_zoom_with_max (args[0], x_zoom, y_zoom,
 														 width, height, NULL);
 
-	poptFreeContext (popt_context);
-
-	if (pixbuf) 
+	if (pixbuf)
 		gdk_pixbuf_save (pixbuf, args[1], format, NULL, NULL);
 	else {
+		poptFreeContext (popt_context);
 		fprintf (stderr, "Error loading SVG file.\n");
 		return 1;
 	}
+
+	poptFreeContext (popt_context);
 	return 0;
 }
