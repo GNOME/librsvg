@@ -200,6 +200,7 @@ main (int argc, char **argv)
 			f = fopen(args[0], "r");
 			if (f == NULL) {
 				fprintf(stderr, "Error opening source file %s\n", argv[0]);
+				exit (1);
 			}
 			if (args[1] == NULL)
 				out_fn = "-";

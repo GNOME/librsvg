@@ -1,3 +1,11 @@
+2001-09-15  Darin Adler  <darin@bentspoon.com>
+
+	* rsvg-paint-server.c: (rsvg_paint_server_lin_grad_free),
+	(rsvg_paint_server_rad_grad_free): Fix some code that does
+	a null dereference.
+
+	* test-rsvg.c: (main): Add a missing exit statement.
+
 2001-07-25  Ramiro Estrugo  <ramiro@fateware.com>
 
 	* librsvg.spec.in:
