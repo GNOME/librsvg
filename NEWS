@@ -1,3 +1,8 @@
+Version 2.4.0
+
+- gdk-pixbuf loader fix
+- support for title and desc elements
+
 Version 2.3.0
 
 - Support Paths inside of <defs> and use them in <use/> statements
