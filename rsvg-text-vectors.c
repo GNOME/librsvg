@@ -219,6 +219,8 @@ rsvg_text_layout_render_flags (RsvgTextLayout *layout)
 	if (AUTO_HINT_TEXT)
 		flags |= FT_LOAD_FORCE_AUTOHINT;	
 	
+	flags |= FT_LOAD_NO_SCALE ;
+
 	return flags;
 }
 
@@ -228,8 +230,8 @@ rsvg_text_vector_coords (RenderCtx       *ctx,
 						 gdouble         *x,
 						 gdouble         *y)
 {
-	*x = ctx->offset_x + (gdouble)vector->x /* / 64. */;
-	*y = ctx->offset_y - (gdouble)vector->y /* / 64. */;
+	*x = ctx->offset_x + (long)vector->x / 64;
+	*y = ctx->offset_y - (long)vector->y / 64;
 }
 
 static void
@@ -469,7 +471,7 @@ rsvg_text_render_vectors (PangoFont     *font,
 			
 			context->offset_x = (gdouble) x / PANGO_SCALE;
 			context->offset_y = (gdouble) y / PANGO_SCALE;
-			
+
 			FT_Outline_Decompose (&outline_glyph->outline, &outline_funcs, context);			
 		}
 	
@@ -550,6 +552,9 @@ rsvg_text_render_text (RsvgHandle *ctx,
 	RsvgTextLayout *layout;
 	RenderCtx      *render;
 	
+	state->fill_rule = FILL_RULE_EVENODD;	
+	state->has_fill_rule = TRUE;
+
 	layout = rsvg_text_layout_new (ctx, state, text);
 	render = rsvg_render_ctx_new ();
 	

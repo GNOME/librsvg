@@ -3038,8 +3038,8 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self,
 					
 					for (i = 0; i < 3; i++)
 						{
-							ca = (double) in_pixels[4 * x + y * rowstride + i] / 255.0;
-							cb = (double) in2_pixels[4 * x + y * rowstride + i] / 255.0;
+							ca = (double) in_pixels[4 * x + y * rowstride + i] / 255.0 * qa;
+							cb = (double) in2_pixels[4 * x + y * rowstride + i] / 255.0 * qb;
 							
 							cr = (ca * bself->k2 + cb * bself->k3 + 
 								  ca * cb * bself->k1 + bself->k4);
