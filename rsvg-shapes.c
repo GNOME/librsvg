@@ -1152,7 +1152,7 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	const char * klazz = NULL, *id = NULL, *xlink_href = NULL, *value;
 	double x = 0, y = 0, width = 0, height = 0;	
 	gboolean got_width = FALSE, got_height = FALSE;
-	/*	double affine[6];*/
+	double affine[6];
 
 	if (rsvg_property_bag_size(atts))
 		{
@@ -1198,8 +1198,9 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 							use->super.super.type = RSVG_DEF_PATH;
 							use->super.super.free = rsvg_defs_drawable_use_free;
 							use->super.draw = rsvg_defs_drawable_use_draw;
-							use->x = x;
-							use->y = y;
+							art_affine_translate(affine, x, y);
+							art_affine_multiply(use->super.state.affine, affine, use->super.state.affine);
+							art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);
 							
 							if (!ctx->in_defs)
 								{
