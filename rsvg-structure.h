@@ -35,8 +35,6 @@
 
 G_BEGIN_DECLS
 
-typedef struct _RsvgDefsDrawable RsvgDefsDrawable;
-
 void rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_symbol (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts);
@@ -47,39 +45,31 @@ void rsvg_end_g (RsvgHandle *ctx);
 void rsvg_end_svg (RsvgHandle *ctx);
 void rsvg_end_switch (RsvgHandle *ctx);
 
-typedef struct _RsvgDefsDrawableGroup RsvgDefsDrawableGroup;
-typedef struct _RsvgDefsDrawableUse RsvgDefsDrawableUse;
-typedef struct _RsvgDefsDrawableSymbol RsvgDefsDrawableSymbol;
-typedef struct _RsvgDefsDrawableSvg RsvgDefsDrawableSvg;
+typedef struct _RsvgNodeGroup RsvgNodeGroup;
+typedef struct _RsvgNodeUse RsvgNodeUse;
+typedef struct _RsvgNodeSymbol RsvgNodeSymbol;
+typedef struct _RsvgNodeSvg RsvgNodeSvg;
 
-struct _RsvgDefsDrawable {
- 	RsvgDefVal super;
-	RsvgState  state;
-	RsvgDefsDrawable * parent;
-	void (*draw) (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, int dominate);
-};
-
-
-struct _RsvgDefsDrawableGroup {
- 	RsvgDefsDrawable super;
+struct _RsvgNodeGroup {
+ 	RsvgNode super;
  	GPtrArray *children;
 };
 
-struct _RsvgDefsDrawableSymbol {
- 	RsvgDefsDrawableGroup super;
+struct _RsvgNodeSymbol {
+ 	RsvgNodeGroup super;
 	gint preserve_aspect_ratio;
 	gboolean overflow, has_vbox;
  	double x, y, width, height;
 };
 
-struct _RsvgDefsDrawableUse {
- 	RsvgDefsDrawable super;
-	RsvgDefVal * link;
+struct _RsvgNodeUse {
+ 	RsvgNode super;
+	RsvgNode * link;
 	gint x, y, w, h;
 };
 
-struct _RsvgDefsDrawableSvg {
- 	RsvgDefsDrawableGroup super;
+struct _RsvgNodeSvg {
+ 	RsvgNodeGroup super;
 	gint preserve_aspect_ratio;
 	gdouble x, y, w, h;
 	gdouble vbx, vby, vbw, vbh;
@@ -87,15 +77,15 @@ struct _RsvgDefsDrawableSvg {
  	GdkPixbuf *img;
 };
 
-RsvgDefsDrawable * rsvg_push_def_group (RsvgHandle *ctx, const char * id, 
+RsvgNode * rsvg_push_def_group (RsvgHandle *ctx, const char * id, 
 					RsvgState *);
-RsvgDefsDrawable * rsvg_push_part_def_group (RsvgHandle *ctx, const char * id, 
+RsvgNode * rsvg_push_part_def_group (RsvgHandle *ctx, const char * id, 
 					     RsvgState *);
 void rsvg_pop_def_group (RsvgHandle *ctx);
-void rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, 
-				    RsvgDefsDrawable *child);
+void rsvg_node_drawable_group_pack (RsvgNodeGroup *self, 
+				    RsvgNode *child);
 
-void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
+void rsvg_node_drawable_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 			      int dominate);
 
 G_END_DECLS

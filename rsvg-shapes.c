@@ -39,21 +39,22 @@
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
 
 static void 
-rsvg_defs_drawable_path_free (RsvgDefVal *self)
+rsvg_node_drawable_path_free (RsvgNode *self)
 {
-	RsvgDefsDrawablePath *z = (RsvgDefsDrawablePath *)self;
-	rsvg_state_finalize (&z->super.state);
+	RsvgNodePath *z = (RsvgNodePath *)self;
+	rsvg_state_finalize (z->super.state);
+	g_free(z->super.state);
 	g_free (z->d);
 	g_free (z);
 }
 
 static void 
-rsvg_defs_drawable_path_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
+rsvg_node_drawable_path_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							  int dominate)
 {
-	RsvgDefsDrawablePath *path = (RsvgDefsDrawablePath*)self;
+	RsvgNodePath *path = (RsvgNodePath*)self;
 
-	rsvg_state_reinherit_top(ctx, &self->state, dominate);
+	rsvg_state_reinherit_top(ctx, self->state, dominate);
 
 	rsvg_render_path (ctx, path->d);
 	
@@ -62,19 +63,20 @@ rsvg_defs_drawable_path_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 void
 rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id, RsvgState state)
 {
-	RsvgDefsDrawablePath *path;
+	RsvgNodePath *path;
 	
-	path = g_new (RsvgDefsDrawablePath, 1);
+	path = g_new (RsvgNodePath, 1);
 	path->d = g_strdup(d);
-	path->super.state = state;
-	path->super.super.type = RSVG_DEF_PATH;
-	path->super.super.free = rsvg_defs_drawable_path_free;
-	path->super.draw = rsvg_defs_drawable_path_draw;
-	rsvg_defs_set (ctx->defs, id, &path->super.super);
+	path->super.state = g_new(RsvgState, 1);
+	*path->super.state = state;
+	path->super.type = RSVG_NODE_PATH;
+	path->super.free = rsvg_node_drawable_path_free;
+	path->super.draw = rsvg_node_drawable_path_draw;
+	rsvg_defs_set (ctx->defs, id, &path->super);
 	
-	path->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
+	path->super.parent = (RsvgNode *)ctx->current_defs_group;
 	if (path->super.parent != NULL)
-		rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)path->super.parent, 
+		rsvg_node_drawable_group_pack((RsvgNodeGroup *)path->super.parent, 
 									  &path->super);
 }
 

@@ -1,3 +1,11 @@
+2005-03-16  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* everywhere: we no longer have RsvgDef* we have RsvgNode*
+	* rsvg-defs.h, rsvg-private.h: moved RsvgNode to rsvg-private
+	* rsvg-structure.h: get rid of RsvgDefsDrawable, integrated with RsvgNode
+	* rsvg-private.h: store states with pointers, as per dom's suggestion
+	* everywhere: fixed everything up to get stuff to compile. N.b. there is probably quite a few memleaks and stuff... valgrind doesn't work on my shiney new chip though.
+
 2005-03-13  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-art-paint-server.c: Bug 170164

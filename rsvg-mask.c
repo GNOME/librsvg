@@ -29,22 +29,23 @@
 #include <string.h>
 
 static void 
-rsvg_mask_free (RsvgDefVal * self)
+rsvg_mask_free (RsvgNode * self)
 {
 	RsvgMask *z = (RsvgMask *)self;
 	g_ptr_array_free(z->super.children, TRUE);
-	rsvg_state_finalize (&z->super.super.state);
+	rsvg_state_finalize (z->super.super.state);
+	g_free(z->super.super.state);
 	g_free (z);
 }
 
 static void 
-rsvg_defs_drawable_mask_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
+rsvg_node_drawable_mask_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							  int dominate)
 {
-	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
+	RsvgNodeGroup *group = (RsvgNodeGroup*)self;
 	guint i;
 
-	rsvg_state_reinherit_top(ctx, &self->state, 0);
+	rsvg_state_reinherit_top(ctx, self->state, 0);
 
 	rsvg_push_discrete_layer (ctx);
 
@@ -52,7 +53,7 @@ rsvg_defs_drawable_mask_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 		{
 			rsvg_state_push(ctx);
 
-			rsvg_defs_drawable_draw (g_ptr_array_index(group->children, i), 
+			rsvg_node_drawable_draw (g_ptr_array_index(group->children, i), 
 									 ctx, 0);
 	
 			rsvg_state_pop(ctx);
@@ -74,6 +75,7 @@ rsvg_new_mask (void)
 	mask->y = 0;
 	mask->width = 1;
 	mask->height = 1;
+	mask->super.super.state = g_new(RsvgState, 1);
 	mask->super.children = g_ptr_array_new ();
 
 	return mask;
@@ -136,28 +138,28 @@ rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		}
 
 
-	rsvg_state_init(&mask->super.super.state);
-	rsvg_parse_style_attrs (ctx, &mask->super.super.state, "mask", klazz, id, atts);
+	rsvg_state_init(mask->super.super.state);
+	rsvg_parse_style_attrs (ctx, mask->super.super.state, "mask", klazz, id, atts);
 
-	mask->super.super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
+	mask->super.super.parent = (RsvgNode *)ctx->current_defs_group;
 
 	ctx->current_defs_group = &mask->super;
 	
 	/* set up the defval stuff */
-	mask->super.super.super.type = RSVG_DEF_MASK;
-	mask->super.super.super.free = &rsvg_mask_free;
-	mask->super.super.draw = &rsvg_defs_drawable_mask_draw;
+	mask->super.super.type = RSVG_NODE_MASK;
+	mask->super.super.free = &rsvg_mask_free;
+	mask->super.super.draw = &rsvg_node_drawable_mask_draw;
 
-	rsvg_defs_set (ctx->defs, id, &mask->super.super.super);
+	rsvg_defs_set (ctx->defs, id, &mask->super.super);
 }
 
 void 
 rsvg_end_mask (RsvgHandle *ctx)
 {
-	ctx->current_defs_group = ((RsvgDefsDrawable *)ctx->current_defs_group)->parent;
+	ctx->current_defs_group = ((RsvgNode *)ctx->current_defs_group)->parent;
 }
 
-RsvgDefsDrawable *
+RsvgNode *
 rsvg_mask_parse (const RsvgDefs * defs, const char *str)
 {
 	if (!strncmp (str, "url(", 4))
@@ -165,7 +167,7 @@ rsvg_mask_parse (const RsvgDefs * defs, const char *str)
 			const char *p = str + 4;
 			int ix;
 			char *name;
-			RsvgDefVal *val;
+			RsvgNode *val;
 			
 			while (g_ascii_isspace (*p))
 				p++;
@@ -180,19 +182,20 @@ rsvg_mask_parse (const RsvgDefs * defs, const char *str)
 					val = rsvg_defs_lookup (defs, name);
 					g_free (name);
 					
-					if (val && val->type == RSVG_DEF_MASK)
-						return (RsvgDefsDrawable *) val;
+					if (val && val->type == RSVG_NODE_MASK)
+						return (RsvgNode *) val;
 				}
 		}
 	return NULL;
 }
 
 static void 
-rsvg_clip_path_free (RsvgDefVal * self)
+rsvg_clip_path_free (RsvgNode * self)
 {
 	RsvgClipPath *z = (RsvgClipPath *)self;
 	g_ptr_array_free(z->super.children, TRUE);
-	rsvg_state_finalize (&z->super.super.state);
+	rsvg_state_finalize (z->super.super.state);
+	g_free(z->super.super.state);
 	g_free (z);
 }
 
@@ -204,6 +207,7 @@ rsvg_new_clip_path (void)
 	clip_path = g_new (RsvgClipPath, 1);
 	clip_path->super.children = g_ptr_array_new ();
 	clip_path->units = userSpaceOnUse;
+	clip_path->super.super.state = g_new(RsvgState, 1);
 	return clip_path;
 }
 
@@ -232,27 +236,27 @@ rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				klazz = value;
 		}
 
-	rsvg_state_init (&clip_path->super.super.state);
+	rsvg_state_init (clip_path->super.super.state);
 
-	rsvg_parse_style_attrs (ctx, &clip_path->super.super.state, "clipPath", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, clip_path->super.super.state, "clipPath", klazz, id, atts);
 
-	clip_path->super.super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
+	clip_path->super.super.parent = (RsvgNode *)ctx->current_defs_group;
 
 	ctx->current_defs_group = &clip_path->super;
 	
 	/* set up the defval stuff */
-	clip_path->super.super.super.type = RSVG_DEF_CLIP_PATH;
-	clip_path->super.super.super.free = &rsvg_clip_path_free;
-	rsvg_defs_set (ctx->defs, id, &clip_path->super.super.super);
+	clip_path->super.super.type = RSVG_NODE_CLIP_PATH;
+	clip_path->super.super.free = &rsvg_clip_path_free;
+	rsvg_defs_set (ctx->defs, id, &clip_path->super.super);
 }
 
 void 
 rsvg_end_clip_path (RsvgHandle *ctx)
 {
-	ctx->current_defs_group = ((RsvgDefsDrawable *)ctx->current_defs_group)->parent;
+	ctx->current_defs_group = ((RsvgNode *)ctx->current_defs_group)->parent;
 }
 
-RsvgDefsDrawable *
+RsvgNode *
 rsvg_clip_path_parse (const RsvgDefs * defs, const char *str)
 {
 	if (!strncmp (str, "url(", 4))
@@ -260,7 +264,7 @@ rsvg_clip_path_parse (const RsvgDefs * defs, const char *str)
 			const char *p = str + 4;
 			int ix;
 			char *name;
-			RsvgDefVal *val;
+			RsvgNode *val;
 			
 			while (g_ascii_isspace (*p))
 				p++;
@@ -275,8 +279,8 @@ rsvg_clip_path_parse (const RsvgDefs * defs, const char *str)
 					val = rsvg_defs_lookup (defs, name);
 					g_free (name);
 					
-					if (val && val->type == RSVG_DEF_CLIP_PATH)
-						return (RsvgDefsDrawable *) val;
+					if (val && val->type == RSVG_NODE_CLIP_PATH)
+						return (RsvgNode *) val;
 				}
 		}
 	return NULL;

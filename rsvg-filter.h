@@ -34,7 +34,7 @@ G_BEGIN_DECLS
 typedef RsvgCoordUnits RsvgFilterUnits;
 
 struct _RsvgFilter {
-	RsvgDefVal super;
+	RsvgNode super;
 	int refcnt;
 	GPtrArray * primitives;
 	double x, y, width, height; 

@@ -37,7 +37,7 @@
 #include <errno.h>
 
 static void
-rsvg_marker_free(RsvgDefVal* self)
+rsvg_marker_free(RsvgNode* self)
 {
 	RsvgMarker *marker;
 	marker = (RsvgMarker *)self;
@@ -152,18 +152,17 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		marker->vbox = FALSE;
 	
 	/* set up the defval stuff */
-	marker->super.type = RSVG_DEF_MARKER;
+	marker->super.type = RSVG_NODE_MARKER;
 
-	marker->contents =	(RsvgDefsDrawable *)rsvg_push_part_def_group(ctx, NULL, &state);
+	marker->contents =	(RsvgNode *)rsvg_push_part_def_group(ctx, NULL, &state);
 
-	rsvg_state_init (&marker->contents->state);
 	marker->super.free = rsvg_marker_free;
 
 	rsvg_defs_set (ctx->defs, id, &marker->super);
 }
 
 static void
-rsvg_state_reassemble(RsvgDefsDrawable * self, RsvgState * state)
+rsvg_state_reassemble(RsvgNode * self, RsvgState * state)
 {
 	RsvgState store;
 	if (self == NULL)
@@ -172,7 +171,7 @@ rsvg_state_reassemble(RsvgDefsDrawable * self, RsvgState * state)
 		}
 	rsvg_state_reassemble(self->parent, state);
 
-	rsvg_state_clone (&store, &self->state);
+	rsvg_state_clone (&store, self->state);
 	rsvg_state_reinherit(&store, state);
 	rsvg_state_finalize(state);
 	*state = store;
@@ -239,7 +238,7 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 	/*don't inherit anything from the current context*/
 	rsvg_state_finalize(state);
 	rsvg_state_init(state);
-	rsvg_state_reassemble((RsvgDefsDrawable *)self->contents, state);
+	rsvg_state_reassemble((RsvgNode *)self->contents, state);
 
 	rsvg_state_push(ctx);
 	state = rsvg_state_current(ctx);
@@ -249,12 +248,12 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 			state->affine[i] = affine[i];
 		}
 
-	rsvg_defs_drawable_draw (self->contents, ctx, 3);
+	rsvg_node_drawable_draw (self->contents, ctx, 3);
 	
 	rsvg_state_pop(ctx);
 }
 
-RsvgDefVal *
+RsvgNode *
 rsvg_marker_parse (const RsvgDefs * defs, const char *str)
 {
 	if (!strncmp (str, "url(", 4))
@@ -262,7 +261,7 @@ rsvg_marker_parse (const RsvgDefs * defs, const char *str)
 			const char *p = str + 4;
 			int ix;
 			char *name;
-			RsvgDefVal *val;
+			RsvgNode *val;
 			
 			while (g_ascii_isspace (*p))
 				p++;
@@ -277,8 +276,8 @@ rsvg_marker_parse (const RsvgDefs * defs, const char *str)
 					val = rsvg_defs_lookup (defs, name);
 					g_free (name);
 					
-					if (val && val->type == RSVG_DEF_MARKER)
-						return (RsvgDefVal *) val;
+					if (val && val->type == RSVG_NODE_MARKER)
+						return (RsvgNode *) val;
 				}
 		}
 	return NULL;

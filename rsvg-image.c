@@ -491,24 +491,25 @@ rsvg_preserve_aspect_ratio(unsigned int aspect_ratio, double width,
 }
 
 static void 
-rsvg_defs_drawable_image_free (RsvgDefVal * self)
+rsvg_node_drawable_image_free (RsvgNode * self)
 {
-	RsvgDefsDrawableImage *z = (RsvgDefsDrawableImage *)self;
-	rsvg_state_finalize (&z->super.state);
+	RsvgNodeImage *z = (RsvgNodeImage *)self;
+	rsvg_state_finalize (z->super.state);
+	g_free(z->super.state);
 	g_object_unref (G_OBJECT (z->img)); 
 	g_free (z);	
 }
 
 static void 
-rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
+rsvg_node_drawable_image_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							   int dominate)
 {
-	RsvgDefsDrawableImage *z = (RsvgDefsDrawableImage *)self;
+	RsvgNodeImage *z = (RsvgNodeImage *)self;
 	double x = z->x, y = z->y, w = z->w, h = z->h;
 	unsigned int aspect_ratio = z->preserve_aspect_ratio;
 	GdkPixbuf *img = z->img;
 
-	rsvg_state_reinherit_top(ctx, &self->state, dominate);
+	rsvg_state_reinherit_top(ctx, z->super.state, dominate);
 
 	rsvg_push_discrete_layer(ctx);
 
@@ -534,10 +535,11 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	int aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	GdkPixbuf *img;
 	GError *err = NULL;
-	RsvgState state;
-	RsvgDefsDrawableImage *image;
+	RsvgState * state;
+	RsvgNodeImage *image;
 	gboolean overflow = FALSE;
-	rsvg_state_init(&state);
+	state = g_new(RsvgState, 1);
+	rsvg_state_init(state);
 	font_size = rsvg_state_current_font_size(ctx);
 	
 	if (rsvg_property_bag_size (atts))
@@ -562,7 +564,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
 				overflow = rsvg_css_parse_overflow(value);
 
-			rsvg_parse_style_attrs (ctx, &state, "image", klazz, id, atts);
+			rsvg_parse_style_attrs (ctx, state, "image", klazz, id, atts);
 		}
 	
 	if (!href || w <= 0. || h <= 0.)
@@ -581,7 +583,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			return;
 		}
 	
-	image = g_new (RsvgDefsDrawableImage, 1);
+	image = g_new (RsvgNodeImage, 1);
 	image->img = img;
 	image->preserve_aspect_ratio = aspect_ratio;
 	image->x = x;
@@ -590,14 +592,14 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	image->h = h;
 	image->overflow = overflow;
 	image->super.state = state;
-	image->super.super.type = RSVG_DEF_PATH;
-	image->super.super.free = rsvg_defs_drawable_image_free;
-	image->super.draw = rsvg_defs_drawable_image_draw;
-	rsvg_defs_set (ctx->defs, id, &image->super.super);
+	image->super.type = RSVG_NODE_PATH;
+	image->super.free = rsvg_node_drawable_image_free;
+	image->super.draw = rsvg_node_drawable_image_draw;
+	rsvg_defs_set (ctx->defs, id, &image->super);
 	
-	image->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
+	image->super.parent = (RsvgNode *)ctx->current_defs_group;
 	if (image->super.parent != NULL)
-		rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)image->super.parent, 
+		rsvg_node_drawable_group_pack((RsvgNodeGroup *)image->super.parent, 
 									  &image->super);
 
 }

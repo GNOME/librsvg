@@ -37,9 +37,9 @@
 
 #include "rsvg-css.h"
 
-static void rsvg_linear_gradient_free (RsvgDefVal *self);
-static void rsvg_radial_gradient_free (RsvgDefVal *self);
-static void rsvg_pattern_free (RsvgDefVal *self);
+static void rsvg_linear_gradient_free (RsvgNode *self);
+static void rsvg_radial_gradient_free (RsvgNode *self);
+static void rsvg_pattern_free (RsvgNode *self);
 
 static RsvgPaintServer *
 rsvg_paint_server_solid (guint32 rgb)
@@ -129,7 +129,7 @@ rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs *defs, const char *s
 			const char *p = str + 4;
 			int ix;
 			char *name;
-			RsvgDefVal *val;
+			RsvgNode *val;
 			
 			while (g_ascii_isspace (*p)) p++;
 			for (ix = 0; p[ix]; ix++)
@@ -143,11 +143,11 @@ rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs *defs, const char *s
 				return NULL;
 			switch (val->type)
 				{
-				case RSVG_DEF_LINGRAD:
+				case RSVG_NODE_LINGRAD:
 					return rsvg_paint_server_lin_grad ((RsvgLinearGradient *)val);
-				case RSVG_DEF_RADGRAD:
+				case RSVG_NODE_RADGRAD:
 					return rsvg_paint_server_rad_grad ((RsvgRadialGradient *)val);
-				case RSVG_DEF_PATTERN:
+				case RSVG_NODE_PATTERN:
 					return rsvg_paint_server_pattern ((RsvgPattern *)val);
 				default:
 					return NULL;
@@ -208,7 +208,7 @@ rsvg_clone_radial_gradient (const RsvgRadialGradient *grad, gboolean * shallow_c
 	int i;
 	
 	clone = g_new0 (RsvgRadialGradient, 1);
-	clone->super.type = RSVG_DEF_RADGRAD;
+	clone->super.type = RSVG_NODE_RADGRAD;
 	clone->super.free = rsvg_radial_gradient_free;
 	
 	clone->obj_bbox = grad->obj_bbox;
@@ -230,7 +230,7 @@ rsvg_clone_radial_gradient (const RsvgRadialGradient *grad, gboolean * shallow_c
 	   RadialGradients, and vice-versa. it is legal, though:
 	   http://www.w3.org/TR/SVG11/pservers.html#LinearGradients
 	*/
-	if (grad->super.type == RSVG_DEF_RADGRAD) {
+	if (grad->super.type == RSVG_NODE_RADGRAD) {
 		clone->cx = grad->cx;
 		clone->cy = grad->cy;
 		clone->r  = grad->r;
@@ -252,7 +252,7 @@ rsvg_clone_linear_gradient (const RsvgLinearGradient *grad, gboolean * shallow_c
 	int i;
 	
 	clone = g_new0 (RsvgLinearGradient, 1);
-	clone->super.type = RSVG_DEF_LINGRAD;
+	clone->super.type = RSVG_NODE_LINGRAD;
 	clone->super.free = rsvg_linear_gradient_free;
 	
 	clone->obj_bbox = grad->obj_bbox;
@@ -274,7 +274,7 @@ rsvg_clone_linear_gradient (const RsvgLinearGradient *grad, gboolean * shallow_c
 	   RadialGradients, and vice-versa. it is legal, though:
 	   http://www.w3.org/TR/SVG11/pservers.html#LinearGradients
 	*/
-	if (grad->super.type == RSVG_DEF_LINGRAD) {
+	if (grad->super.type == RSVG_NODE_LINGRAD) {
 		clone->x1 = grad->x1;
 		clone->y1 = grad->y1;
 		clone->x2 = grad->x2;
@@ -295,7 +295,7 @@ rsvg_clone_pattern (const RsvgPattern *pattern)
 	int i;
 	
 	clone = g_new0 (RsvgPattern, 1);
-	clone->super.type = RSVG_DEF_PATTERN;
+	clone->super.type = RSVG_NODE_PATTERN;
 	clone->super.free = rsvg_pattern_free;
 	
 	clone->obj_bbox = pattern->obj_bbox;
@@ -304,7 +304,7 @@ rsvg_clone_pattern (const RsvgPattern *pattern)
 	for (i = 0; i < 6; i++)
 		clone->affine[i] = pattern->affine[i];
 
-	if (((RsvgDefsDrawableGroup *)pattern->g)->children->len ||
+	if (((RsvgNodeGroup *)pattern->g)->children->len ||
 		pattern->gfallback == NULL)
 		clone->gfallback = pattern->g;
 	else
@@ -453,7 +453,7 @@ rsvg_gradient_stop_handler_new (RsvgHandle *ctx, RsvgGradientStops **p_stops,
 }
 
 static void
-rsvg_linear_gradient_free (RsvgDefVal *self)
+rsvg_linear_gradient_free (RsvgNode *self)
 {
 	RsvgLinearGradient *z = (RsvgLinearGradient *)self;
 	
@@ -557,7 +557,7 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (!cloned)
 		{
 			grad = g_new (RsvgLinearGradient, 1);
-			grad->super.type = RSVG_DEF_LINGRAD;
+			grad->super.type = RSVG_NODE_LINGRAD;
 			grad->super.free = rsvg_linear_gradient_free;
 			ctx->handler = rsvg_gradient_stop_handler_new (ctx, &grad->stops, "linearGradient");
 		}
@@ -601,7 +601,7 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 /* exported to the paint server via rsvg-private.h */
 static void
-rsvg_radial_gradient_free (RsvgDefVal *self)
+rsvg_radial_gradient_free (RsvgNode *self)
 {
 	RsvgRadialGradient *z = (RsvgRadialGradient *)self;
 	
@@ -701,7 +701,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 	if (!cloned)
 		{
 			grad = g_new (RsvgRadialGradient, 1);
-			grad->super.type = RSVG_DEF_RADGRAD;
+			grad->super.type = RSVG_NODE_RADGRAD;
 			grad->super.free = rsvg_radial_gradient_free;
 			ctx->handler = rsvg_gradient_stop_handler_new (ctx, &grad->stops, tag);		   
 		}
@@ -772,7 +772,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 }
 
 static void
-rsvg_pattern_free (RsvgDefVal *self)
+rsvg_pattern_free (RsvgNode *self)
 {
 	RsvgPattern *z = (RsvgPattern *)self;
 	
@@ -861,7 +861,7 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (!cloned)
 		{
 			pattern = g_new (RsvgPattern, 1);
-			pattern->super.type = RSVG_DEF_PATTERN;
+			pattern->super.type = RSVG_NODE_PATTERN;
 			pattern->super.free = rsvg_pattern_free;
 			pattern->gfallback = NULL;
 		}
@@ -892,6 +892,6 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	pattern->vbh = (cloned && !got_vbox) ? pattern->vbh : vbh;
 	pattern->vbox = (cloned && !got_vbox) ? pattern->vbox : got_vbox;
 
-	pattern->g = &(rsvg_push_part_def_group (ctx, NULL, &state)->super);
+	pattern->g = (rsvg_push_part_def_group (ctx, NULL, &state));
 }
 

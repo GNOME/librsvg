@@ -160,9 +160,9 @@ struct _RsvgState {
 	guint32 current_color;
 	gboolean has_current_color;
 
-	RsvgDefVal * startMarker;
-	RsvgDefVal * middleMarker;
-	RsvgDefVal * endMarker;	
+	RsvgNode * startMarker;
+	RsvgNode * middleMarker;
+	RsvgNode * endMarker;	
 	gboolean has_startMarker;
 	gboolean has_middleMarker;
 	gboolean has_endMarker;	

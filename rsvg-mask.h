@@ -38,7 +38,7 @@ typedef RsvgCoordUnits RsvgMaskUnits;
 typedef struct _RsvgMask RsvgMask;
 
 struct _RsvgMask {
-	RsvgDefsDrawableGroup super;
+	RsvgNodeGroup super;
 	double x, y, width, height; 
 	RsvgMaskUnits maskunits;
 	RsvgMaskUnits contentunits;
@@ -50,13 +50,13 @@ rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void 
 rsvg_end_mask (RsvgHandle *ctx);
 
-RsvgDefsDrawable * 
+RsvgNode * 
 rsvg_mask_parse (const RsvgDefs * defs, const char *str);
 
 typedef struct _RsvgClipPath RsvgClipPath;
 
 struct _RsvgClipPath {
-	RsvgDefsDrawableGroup super;
+	RsvgNodeGroup super;
 	RsvgCoordUnits units;
 };
 
@@ -66,7 +66,7 @@ rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void 
 rsvg_end_clip_path (RsvgHandle *ctx);
 
-RsvgDefsDrawable * 
+RsvgNode * 
 rsvg_clip_path_parse (const RsvgDefs * defs, const char *str);
 
 

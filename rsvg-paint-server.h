@@ -71,7 +71,7 @@ struct _RsvgGradientStops {
 };
 
 struct _RsvgLinearGradient {
-	RsvgDefVal super;
+	RsvgNode super;
 	gboolean obj_bbox;
 	double affine[6]; /* user space to actual at time of gradient def */
 	RsvgGradientStops *stops;
@@ -83,7 +83,7 @@ struct _RsvgLinearGradient {
 };
 
 struct _RsvgRadialGradient {
-	RsvgDefVal super;
+	RsvgNode super;
 	gboolean obj_bbox;
 	double affine[6]; /* user space to actual at time of gradient def */
 	RsvgGradientStops *stops;
@@ -96,15 +96,15 @@ struct _RsvgRadialGradient {
 };
 
 struct _RsvgPattern {
-	RsvgDefVal super;
+	RsvgNode super;
 	gboolean obj_cbbox;
 	gboolean obj_bbox;
 	gboolean vbox;
 	double affine[6]; /* user space to actual at time of gradient def */
 	double x, y, width, height;
 	double vbx, vby, vbh, vbw;
-	RsvgDefVal * g;
-	RsvgDefVal * gfallback;
+	RsvgNode * g;
+	RsvgNode * gfallback;
 	unsigned int preserve_aspect_ratio;
 };
 

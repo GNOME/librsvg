@@ -946,8 +946,8 @@ static RsvgDimensionData
 rsvg_get_dimentions(RsvgHandle * handle)
 {
 	RsvgDimensionData output;
-	RsvgDefsDrawableSvg * sself;
-	sself = (RsvgDefsDrawableSvg *)handle->treebase;
+	RsvgNodeSvg * sself;
+	sself = (RsvgNodeSvg *)handle->treebase;
 	
 	output.em = sself->w;
 	output.ex = sself->h;
@@ -1241,7 +1241,7 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 	if (!draw)
 		return NULL;
 	rsvg_state_push(draw);
-	rsvg_defs_drawable_draw((RsvgDefsDrawable *)handle->treebase, draw, 0);
+	rsvg_node_drawable_draw((RsvgNode *)handle->treebase, draw, 0);
 	rsvg_state_pop(draw);
 	output = ((RsvgArtRender *)draw->render)->pixbuf;
 	rsvg_drawing_ctx_free(draw);

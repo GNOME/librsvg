@@ -46,7 +46,7 @@ typedef struct _RsvgResolutionPending RsvgResolutionPending;
 
 struct _RsvgResolutionPending
 {
-	RsvgDefVal ** tochange;
+	RsvgNode ** tochange;
 	GString * name;
 };
 
@@ -100,7 +100,7 @@ rsvg_defs_load_extern(const RsvgDefs *defs, const char *name)
 	return 0;
 }
 
-static RsvgDefVal *
+static RsvgNode *
 rsvg_defs_extern_lookup (const RsvgDefs *defs, const char *filename, const char *name)
 {
 	RsvgHandle * file;
@@ -113,12 +113,12 @@ rsvg_defs_extern_lookup (const RsvgDefs *defs, const char *filename, const char 
 		}
 
 	if (file != NULL)
-		return (RsvgDefVal *)g_hash_table_lookup (file->defs->hash, name);
+		return (RsvgNode *)g_hash_table_lookup (file->defs->hash, name);
 	else
 		return NULL;
 }
 
-RsvgDefVal *
+RsvgNode *
 rsvg_defs_lookup (const RsvgDefs *defs, const char *name)
 {
 	char * hashpos;
@@ -129,12 +129,12 @@ rsvg_defs_lookup (const RsvgDefs *defs, const char *name)
 		}
 	if (hashpos == name)
 		{	
-			return (RsvgDefVal *)g_hash_table_lookup (defs->hash, name+1);
+			return (RsvgNode *)g_hash_table_lookup (defs->hash, name+1);
 		}
 	else
 		{
 			gchar ** splitbits;
-			RsvgDefVal * toreturn;
+			RsvgNode * toreturn;
 			splitbits = g_strsplit (name, "#", 2);
 			toreturn = rsvg_defs_extern_lookup(defs, splitbits[0], splitbits[1]);
 			g_strfreev(splitbits);
@@ -143,7 +143,7 @@ rsvg_defs_lookup (const RsvgDefs *defs, const char *name)
 }
 
 void
-rsvg_defs_set (RsvgDefs *defs, const char *name, RsvgDefVal *val)
+rsvg_defs_set (RsvgDefs *defs, const char *name, RsvgNode *val)
 {
 	if (name == NULL)
 		;
@@ -162,14 +162,14 @@ rsvg_defs_free (RsvgDefs *defs)
 	g_hash_table_destroy (defs->hash);
 
 	for (i = 0; i < defs->unnamed->len; i++)
-		((RsvgDefVal *)g_ptr_array_index(defs->unnamed, i))->free(g_ptr_array_index(defs->unnamed, i));
+		((RsvgNode *)g_ptr_array_index(defs->unnamed, i))->free(g_ptr_array_index(defs->unnamed, i));
 	g_ptr_array_free(defs->unnamed, TRUE);
 
 	g_free (defs);
 }
 
 void
-rsvg_defs_add_resolver(RsvgDefs *defs, RsvgDefVal ** tochange, 
+rsvg_defs_add_resolver(RsvgDefs *defs, RsvgNode ** tochange, 
 					   const gchar * name)
 {
 	RsvgResolutionPending * data;

@@ -508,7 +508,7 @@ rsvg_filter_parse (const RsvgDefs * defs, const char *str)
 			const char *p = str + 4;
 			int ix;
 			char *name;
-			RsvgDefVal *val;
+			RsvgNode *val;
 			
 			while (g_ascii_isspace (*p))
 				p++;
@@ -523,7 +523,7 @@ rsvg_filter_parse (const RsvgDefs * defs, const char *str)
 					val = rsvg_defs_lookup (defs, name);
 					g_free (name);
 					
-					if (val && val->type == RSVG_DEF_FILTER)
+					if (val && val->type == RSVG_NODE_FILTER)
 						return (RsvgFilter *) val;
 				}
 		}
@@ -561,7 +561,7 @@ rsvg_new_filter (void)
  * to be set as its free function to be used with rsvg defs
  **/
 static void
-rsvg_filter_free (RsvgDefVal * dself)
+rsvg_filter_free (RsvgNode * dself)
 {
 	RsvgFilterPrimitive *current;
 	RsvgFilter *self;
@@ -642,7 +642,7 @@ rsvg_start_filter (RsvgHandle * ctx, RsvgPropertyBag * atts)
 
 	ctx->currentfilter = filter;
 	/* set up the defval stuff */
-	filter->super.type = RSVG_DEF_FILTER;
+	filter->super.type = RSVG_NODE_FILTER;
 	filter->super.free = &rsvg_filter_free;
 	rsvg_defs_set (ctx->defs, id, &filter->super);
 }
@@ -3925,9 +3925,9 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
 	RsvgDrawingCtx * ctx;
 	RsvgFilterPrimitiveImage *oself;
 	int i;
-	RsvgDefVal * parent;
+	RsvgNode * parent;
 	GdkPixbuf *img, *save;
-	RsvgDefsDrawable *drawable;	
+	RsvgNode *drawable;	
 
 	ctx = context->ctx;
 	oself = (RsvgFilterPrimitiveImage *) self;
@@ -3939,7 +3939,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
 	if (!parent)
 		return NULL;
 
-	drawable = (RsvgDefsDrawable*)parent;
+	drawable = (RsvgNode*)parent;
 
 	boundarys = rsvg_filter_primitive_get_bounds (self, context);
 	
@@ -3953,7 +3953,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
 
 	rsvg_state_push(ctx);
 	
-	rsvg_defs_drawable_draw (drawable, ctx, 0);
+	rsvg_node_drawable_draw (drawable, ctx, 0);
 	
 	rsvg_state_pop(ctx);
 		

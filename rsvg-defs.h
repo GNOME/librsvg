@@ -32,35 +32,14 @@
 
 G_BEGIN_DECLS
 
-typedef enum {
-	/* todo: general question: should this be high level, ie a generic
-	   paint server, coupled with a paint server interface; or low level,
-	   ie specific definable things? For now, we're going low level,
-	   but it's not clear that's the best way to go. */
-	RSVG_DEF_LINGRAD,
-	RSVG_DEF_RADGRAD,
-	RSVG_DEF_PATTERN,
-	RSVG_DEF_PATH,
-	RSVG_DEF_FILTER,
-	RSVG_DEF_MASK,
-	RSVG_DEF_MARKER,
-	RSVG_DEF_SYMBOL,
-	RSVG_DEF_CLIP_PATH
-} RsvgDefType;
-
-struct _RsvgDefVal {
-	RsvgDefType type;
-	void (*free) (RsvgDefVal *self);
-};
-
 RsvgDefs *
 rsvg_defs_new (void);
 
-RsvgDefVal *
+RsvgNode *
 rsvg_defs_lookup (const RsvgDefs *defs, const char *name);
 
 void
-rsvg_defs_set (RsvgDefs *defs, const char *name, RsvgDefVal *val);
+rsvg_defs_set (RsvgDefs *defs, const char *name, RsvgNode *val);
 
 void
 rsvg_defs_free (RsvgDefs *defs);
@@ -69,7 +48,7 @@ void
 rsvg_defs_set_base_uri (RsvgDefs * self, gchar * base_uri);
 
 void
-rsvg_defs_add_resolver(RsvgDefs *defs, RsvgDefVal ** tochange, 
+rsvg_defs_add_resolver(RsvgDefs *defs, RsvgNode ** tochange, 
 					   const gchar * name);
 
 void

@@ -32,8 +32,8 @@ G_BEGIN_DECLS
 typedef struct _RsvgMarker RsvgMarker;
 
 struct _RsvgMarker {
-	RsvgDefVal super;
- 	RsvgDefsDrawable * contents;
+	RsvgNode super;
+ 	RsvgNode * contents;
 	gboolean bbox;
 	double refX, refY, orient;
 	double vbx, vby, vbw, vbh, width, height;
@@ -47,7 +47,7 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void 
 rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdouble linewidth, RsvgDrawingCtx *ctx);
 
-RsvgDefVal *
+RsvgNode *
 rsvg_marker_parse (const RsvgDefs * defs, const char *str);
 
 void

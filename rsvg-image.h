@@ -35,10 +35,10 @@ G_BEGIN_DECLS
 
 void rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts);
 
-typedef struct _RsvgDefsDrawableImage RsvgDefsDrawableImage;
+typedef struct _RsvgNodeImage RsvgNodeImage;
 
-struct _RsvgDefsDrawableImage {
- 	RsvgDefsDrawable super;
+struct _RsvgNodeImage {
+ 	RsvgNode super;
 	gboolean overflow;
 	gint preserve_aspect_ratio, x, y, w, h;
  	GdkPixbuf *img;

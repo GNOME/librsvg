@@ -43,10 +43,10 @@ void rsvg_start_circle (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts);
 
 
-typedef struct _RsvgDefsDrawablePath RsvgDefsDrawablePath;
+typedef struct _RsvgNodePath RsvgNodePath;
 
-struct _RsvgDefsDrawablePath {
- 	RsvgDefsDrawable super;
+struct _RsvgNodePath {
+ 	RsvgNode super;
  	char       *d;
 };
 

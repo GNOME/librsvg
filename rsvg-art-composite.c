@@ -249,7 +249,7 @@ rsvg_composite_layer(RsvgDrawingCtx *ctx, RsvgState *state, GdkPixbuf *tos, GdkP
 {
 	RsvgFilter *filter = state->filter;
 	int opacity = state->opacity;
-	RsvgDefsDrawable * mask = state->mask;
+	RsvgNode * mask = state->mask;
 	GdkPixbuf *intermediate;
 	GdkPixbuf *in, *out, *insidebg;
 	int operationsleft;

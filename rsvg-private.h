@@ -44,7 +44,7 @@ typedef struct RsvgDimensionData RsvgDimensionData;
 typedef struct _RsvgPropertyBag RsvgPropertyBag;
 typedef struct _RsvgState RsvgState;
 typedef struct _RsvgDefs RsvgDefs;
-typedef struct _RsvgDefVal RsvgDefVal;
+typedef struct _RsvgNode RsvgNode;
 typedef struct _RsvgFilter RsvgFilter;
 
 /* prepare for gettext */
@@ -183,6 +183,26 @@ struct RsvgSizeCallbackData
 struct _RsvgPropertyBag
 {
 	GHashTable * props;
+};
+
+typedef enum {
+	RSVG_NODE_LINGRAD,
+	RSVG_NODE_RADGRAD,
+	RSVG_NODE_PATTERN,
+	RSVG_NODE_PATH,
+	RSVG_NODE_FILTER,
+	RSVG_NODE_MASK,
+	RSVG_NODE_MARKER,
+	RSVG_NODE_SYMBOL,
+	RSVG_NODE_CLIP_PATH
+} RsvgNodeType;
+
+struct _RsvgNode {
+	RsvgNodeType type;
+	RsvgState * state;
+	void (*free) (RsvgNode *self);
+	RsvgNode * parent;
+	void (*draw) (RsvgNode * self, RsvgDrawingCtx *ctx, int dominate);
 };
 
 typedef void (*RsvgPropertyBagEnumFunc) (const char * key,

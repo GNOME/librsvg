@@ -106,14 +106,14 @@ ArtSVP *
 rsvg_art_clip_path_render (RsvgClipPath * self, RsvgDrawingCtx *ctx)
 {
 	RsvgState *state = rsvg_state_current (ctx);
-	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
+	RsvgNodeGroup *group = (RsvgNodeGroup*)self;
 	guint i;
 
 	ArtSVP *svp;
 	RsvgArtSVPRender * asvpr;
 	RsvgRender * save;	
 
-	rsvg_state_reinherit_top(ctx, &self->super.super.state, 0);
+	rsvg_state_reinherit_top(ctx, self->super.super.state, 0);
 
 	if (self->units == objectBoundingBox)
 		{
@@ -133,7 +133,7 @@ rsvg_art_clip_path_render (RsvgClipPath * self, RsvgDrawingCtx *ctx)
 
 	for (i = 0; i < group->children->len; i++)
 		{
-			rsvg_defs_drawable_draw (g_ptr_array_index(group->children, i), 
+			rsvg_node_drawable_draw (g_ptr_array_index(group->children, i), 
 									 ctx, 0);
 		}
 
@@ -154,9 +154,9 @@ rsvg_art_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgDrawin
 	int x, y;
 	
 	GdkPixbuf *save, *mask;
-	RsvgDefsDrawable *drawable;	
+	RsvgNode *drawable;	
 
-	drawable = (RsvgDefsDrawable*)self;
+	drawable = (RsvgNode*)self;
 	
 	mask = _rsvg_pixbuf_new_cleared(GDK_COLORSPACE_RGB, 1, 8, 
 									gdk_pixbuf_get_width(tos), 
@@ -166,7 +166,7 @@ rsvg_art_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgDrawin
 	((RsvgArtRender *)ctx->render)->pixbuf = mask;
 
 	rsvg_state_push(ctx);
-	rsvg_defs_drawable_draw (drawable, ctx, 0);
+	rsvg_node_drawable_draw (drawable, ctx, 0);
 	rsvg_state_pop(ctx);
 
 	((RsvgArtRender *)ctx->render)->pixbuf = save;
