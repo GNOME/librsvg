@@ -1,3 +1,8 @@
+2001-09-25  Darin Adler  <darin@bentspoon.com>
+
+	* test-61082.svg: Check in test file for bug. I should really
+	do this more often.
+
 2001-09-24  Darin Adler  <darin@bentspoon.com>
 
 	* rsvg.h:
