@@ -1,6 +1,7 @@
 Version 2.7.x
 
 - Filters
+- Hugely improved text support
 - GTK+ theme engine
 - Masks
 - Path markers
