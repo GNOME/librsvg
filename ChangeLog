@@ -1,5 +1,10 @@
 2003-04-08  Alex Duggan  <aldug@astrolinux.com>
 
+	* configure.in: print out a summary displaying what
+	parts of librsvg are to be built.
+
+2003-04-08  Alex Duggan  <aldug@astrolinux.com>
+
 	* doc/.cvsignore:
 	* gimp-plugin/.cvsignore: create .cvsignore files for these
 	two directories.

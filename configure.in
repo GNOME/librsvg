@@ -314,3 +314,17 @@ gtk-engine/examples/bubble/gtk-2.0/Makefile
 gdk-pixbuf-loader/Makefile
 gimp-plugin/Makefile
 ])
+
+dnl =============================================================================================
+echo "
+librsvg-$LIBRSVG_VERSION
+
+	prefix:                         ${prefix}
+	compiler:                       ${CC}
+	
+	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
+	Build theme engine:             ${enable_gtk_theme}
+	Handle svgz files:              ${test_gsf}
+	Use libcroco for css parsing:   ${test_croco}
+	Build gimp plugin:              ${test_gimp}
+"
