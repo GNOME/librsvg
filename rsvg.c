@@ -472,14 +472,6 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi, (gdouble)ctx->width, state->font_size);
 	}
 
-	/* set up 100% as the default if not gotten */
-	if (!got_y2) {
-		if (obj_bbox)
-			y2 = 1.0;
-		else
-			y2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi, (gdouble)ctx->width, state->font_size);
-	}
-
 	if (xlink_href != NULL)
 		{
 			RsvgLinearGradient * parent = (RsvgLinearGradient*)rsvg_defs_lookup (ctx->defs, xlink_href+1);
