@@ -1566,8 +1566,13 @@ rsvg_handle_close (RsvgHandle  *handle,
   GError *real_error;
 
   handle->error = &real_error;
-  xmlParseChunk (handle->ctxt, chars, 1, TRUE);
-  xmlFreeParserCtxt (handle->ctxt);
+
+  if (handle->ctxt != NULL)
+  {
+    xmlParseChunk (handle->ctxt, chars, 1, TRUE);
+    xmlFreeParserCtxt (handle->ctxt);
+  }
+  
   /* FIXME: Error handling not implemented. */
   /*
   if (real_error != NULL)
