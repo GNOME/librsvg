@@ -481,7 +481,10 @@ rsvg_css_parse_color (const char *str, gboolean * inherit)
 			
 			/* default to black on failed lookup */
 			if (result == NULL)
-				val = 0;
+				{
+					UNSETINHERIT ();
+					val = 0;
+				}
 			else
 				val = result->rgb;
 		}
@@ -613,6 +616,7 @@ rsvg_css_parse_font_style (const char * str, gboolean * inherit)
 					return PANGO_STYLE_NORMAL;
 				}
 		}
+	UNSETINHERIT ();
 	return PANGO_STYLE_NORMAL;
 }
 
@@ -631,6 +635,7 @@ rsvg_css_parse_font_variant (const char * str, gboolean * inherit)
 				return PANGO_VARIANT_NORMAL;
 			}
     }
+	UNSETINHERIT ();
 	return PANGO_VARIANT_NORMAL;
 }
 
@@ -670,7 +675,8 @@ rsvg_css_parse_font_weight (const char * str, gboolean * inherit)
 					return PANGO_WEIGHT_NORMAL;
 				}
 		}
-	
+
+	UNSETINHERIT ();	
 	return PANGO_WEIGHT_NORMAL; 
 }
 
@@ -699,10 +705,11 @@ rsvg_css_parse_font_stretch (const char * str, gboolean * inherit)
 				return PANGO_STRETCH_ULTRA_EXPANDED;
 			else if (!strcmp(str, "inherit"))
 				{
-					inherit = 0;
+					UNSETINHERIT ();
 					return PANGO_STRETCH_NORMAL;
 				}
-		}
+		}	
+	UNSETINHERIT ();
 	return PANGO_STRETCH_NORMAL;
 }
 

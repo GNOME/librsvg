@@ -697,17 +697,17 @@ rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs *defs, const char *s
 		{
 			if (inherit != NULL)
 				*inherit = 0;
-			return NULL;
+			return rsvg_paint_server_solid (0);
 		}
 	else if (!strcmp (str, "currentColor"))
 		{	
 			RsvgPaintServer * ps;			
-			ps = rsvg_paint_server_solid_current_colour (0);
+			ps = rsvg_paint_server_solid_current_colour ();
 			return ps;
 		}
 	else
 		{
-			rgb = rsvg_css_parse_color (str, 0);
+			rgb = rsvg_css_parse_color (str, inherit);
 			return rsvg_paint_server_solid (rgb);
 		}
 }
