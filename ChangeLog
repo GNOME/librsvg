@@ -1,3 +1,7 @@
+2004-06-05  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-filter: optimised bounding box calculation, optimised colour chanel skipping, made feTile work in some cases (when it is used after another properly modified primitive)
+	
 2004-06-01  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-paint-server.c: fixed bug 139268
