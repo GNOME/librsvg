@@ -1,3 +1,12 @@
+2003-01-13  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-private.h: Add setlocale wrapper fns. Problem found by George 
+	Lebl (jirka@5z.com), work based on/inspired by a patch by him.
+	* rsvg.c: Use above fns
+	* rsvg-css.c: Ditto
+	* rsvg-text.c: Ditto
+	* rsvg-shapes.c: Ditto
+	
 === librsvg 2.1.5 ===
 	
 2003-01-13  Alexander Larsson  <alexl@redhat.com>

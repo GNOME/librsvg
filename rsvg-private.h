@@ -74,6 +74,20 @@ struct RsvgHandle {
   double dpi;
 };
 
+/* George Lebl and I disagree on the proper handling of
+ * RSVG wrt locales. I think it should be done outside of
+ * the RSVG call (i.e. wrap RSVG calls with setlocale), he believes
+ * that RSVG should use setlocale itself around the locale-sensitive
+ * operations. Both arguments have merit.
+ */
+#ifndef RSVG_IGNORING_LOCALE
+char * rsvg_c_setlocale (void);
+void rsvg_resetlocale (char * locale);
+#else
+#define rsvg_c_setlocale() NULL
+#define rsvg_resetlocale(locale) (void)0
+#endif
+
 G_END_DECLS
 
 #endif

@@ -382,7 +382,8 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
 	char * d = NULL;
 	const char * klazz = NULL;
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
-	
+	char *oldlocale;
+
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
@@ -402,8 +403,10 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
 	rsvg_parse_style_attrs (ctx, "line", klazz, atts);
 	
 	/* emulate a line using a path */
+	oldlocale = rsvg_c_setlocale ();
 	d = g_strdup_printf ("M %f %f L %f %f", x1, y1, x2, y2);
-	
+	rsvg_resetlocale (oldlocale);
+
 	rsvg_render_path (ctx, d);
 	g_free (d);
 }
@@ -416,7 +419,8 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	char * d = NULL;
 	const char * klazz = NULL;
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
-	
+	char *oldlocale;
+
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
@@ -447,6 +451,7 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	y++;
 	
 	/* emulate a rect using a path */
+	oldlocale = rsvg_c_setlocale ();
 	d = g_strdup_printf ("M %f %f "
 						 "H %f "
 						 "A %f,%f %f,%f %f %f,%f "
@@ -465,7 +470,8 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 						 rx, ry, 0., 0., 1., x, y + h - ry,
 						 y + ry,
 						 rx, ry, 0., 0., 1., x + rx, y);
-	
+	rsvg_resetlocale (oldlocale);
+
 	rsvg_render_path (ctx, d);
 	g_free (d);
 }
@@ -478,7 +484,8 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 	char * d = NULL;
 	const char * klazz = NULL;
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
-	
+	char *oldlocale;
+
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
@@ -502,6 +509,7 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 	rsvg_parse_style_attrs (ctx, "circle", klazz, atts);
 	
 	/* approximate a circle using 4 bezier curves */
+	oldlocale = rsvg_c_setlocale ();
 	d = g_strdup_printf ("M %f %f "
 						 "C %f %f %f %f %f %f "
 						 "C %f %f %f %f %f %f "
@@ -514,7 +522,8 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 						 cx - r, cy - r * RSVG_ARC_MAGIC, cx - r * RSVG_ARC_MAGIC, cy - r, cx, cy - r,
 						 cx + r * RSVG_ARC_MAGIC, cy - r, cx + r, cy - r * RSVG_ARC_MAGIC, cx + r, cy
 						 );
-	
+	rsvg_resetlocale (oldlocale);
+
 	rsvg_render_path (ctx, d);
 	g_free (d);
 }
@@ -527,7 +536,8 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 	char * d = NULL;
 	const char * klazz = NULL;
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
-	
+	char *oldlocale;
+
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
@@ -551,6 +561,7 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 	rsvg_parse_style_attrs (ctx, "ellipse", klazz, atts);
 	
 	/* approximate an ellipse using 4 bezier curves */
+	oldlocale = rsvg_c_setlocale ();
 	d = g_strdup_printf ("M %f %f "
 						 "C %f %f %f %f %f %f "
 						 "C %f %f %f %f %f %f "
@@ -563,6 +574,7 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 						 cx - rx, cy + RSVG_ARC_MAGIC * ry, cx - RSVG_ARC_MAGIC * rx, cy + ry, cx, cy + ry,
 						 cx + RSVG_ARC_MAGIC * rx, cy + ry, cx + rx, cy + RSVG_ARC_MAGIC * ry, cx + rx, cy
 						 );
+	rsvg_resetlocale (oldlocale);
 	
 	rsvg_render_path (ctx, d);
 	g_free (d);

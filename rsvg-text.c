@@ -39,7 +39,13 @@
 static void 
 rsvg_draw_hline (RsvgHandle *ctx, double x, double w, double y)
 {
-	char * d = g_strdup_printf ("M %f %f L %f %f", x, y, x+w, y);
+	char *oldlocale;
+	char * d;
+	
+	oldlocale = rsvg_c_setlocale ();
+	d = g_strdup_printf ("M %f %f L %f %f", x, y, x+w, y);
+	rsvg_resetlocale (oldlocale);
+
 	rsvg_render_path (ctx, d);
 	g_free (d);
 }
