@@ -1,3 +1,8 @@
+2004-07-18  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-filter.c: made feImage work better, now it transforms it better.
+	* rsvg-shapes.c: fixed filters on images and bounding boxes on images
+
 2004-07-17  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.[ch]: Bug #147662

@@ -98,9 +98,6 @@ rsvg_marker_parse (const RsvgDefs * defs, const char *str);
 GdkPixbuf *
 rsvg_pixbuf_new_from_href (const char *href,
 						   const char *base_uri,
-						   int         w, 
-						   int         h,
-						   gboolean    keep_aspect_ratio,
 						   GError    **err);
 
 void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 

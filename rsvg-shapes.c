@@ -1289,9 +1289,6 @@ static gboolean utf8_base64_decode(char ** binptr, size_t * binlen, const char *
 
 static GdkPixbuf *
 rsvg_pixbuf_new_from_data_at_size (const char *data,
-								   int         width, 
-								   int         height,
-								   gboolean    keep_aspect_ratio,
 								   GError    **error)
 {
 	GdkPixbufLoader *loader;
@@ -1301,7 +1298,6 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	size_t buffer_len, buffer_max_len, data_len;
 
 	g_return_val_if_fail (data != NULL, NULL);
-	g_return_val_if_fail (width > 0 && height > 0, NULL);
 
 	while (*data) if (*data++ == ',') break;
 
@@ -1377,9 +1373,6 @@ rsvg_get_file_path (const gchar * filename, const gchar *basedir)
 static GdkPixbuf *
 rsvg_pixbuf_new_from_file_at_size (const char *filename,
 								   const char *base_uri,
-								   int         width, 
-								   int         height,
-								   gboolean    keep_aspect_ratio,
 								   GError    **error)
 {
 	GdkPixbufLoader *loader;
@@ -1451,9 +1444,6 @@ rsvg_pixbuf_new_from_file_at_size (const char *filename,
 static GdkPixbuf *
 rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
 								  const char *base_uri,
-								  int         width, 
-								  int         height,
-								  gboolean    keep_aspect_ratio,
 								  GError    **error)
 {
 	GdkPixbufLoader *loader;
@@ -1465,7 +1455,6 @@ rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
 	GnomeVFSResult res;
 	
 	g_return_val_if_fail (filename != NULL, NULL);
-	g_return_val_if_fail (width > 0 && height > 0, NULL);
 	
 	if (!gnome_vfs_initialized())
 		gnome_vfs_init();
@@ -1540,22 +1529,19 @@ rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
 GdkPixbuf *
 rsvg_pixbuf_new_from_href (const char *href,
 						   const char *base_uri,
-						   int         w, 
-						   int         h,
-						   gboolean    keep_aspect_ratio,
 						   GError    **err)
 {
 	GdkPixbuf * img = NULL;
 
 	if(!strncmp(href, "data:", 5))
-		img = rsvg_pixbuf_new_from_data_at_size (href, w, h, keep_aspect_ratio, err);
+		img = rsvg_pixbuf_new_from_data_at_size (href, err);
 	
 	if(!img)
-		img = rsvg_pixbuf_new_from_file_at_size (href, base_uri, w, h, keep_aspect_ratio, err);
+		img = rsvg_pixbuf_new_from_file_at_size (href, base_uri, err);
 
 #ifdef HAVE_GNOME_VFS
 	if(!img)
-		img = rsvg_pixbuf_new_from_vfs_at_size (href, base_uri, w, h, keep_aspect_ratio, err);
+		img = rsvg_pixbuf_new_from_vfs_at_size (href, base_uri, err);
 #endif
 
 	return img;
@@ -1627,7 +1613,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	/* figure out if image is visible or not */
 	if (!state->visible || !state->cond_true)
 		return;
-	img = rsvg_pixbuf_new_from_href (href, rsvg_handle_get_base_uri (ctx), w, h, (aspect_ratio != RSVG_ASPECT_RATIO_NONE), &err);
+	img = rsvg_pixbuf_new_from_href (href, rsvg_handle_get_base_uri (ctx), &err);
 
 	if (!img)
 		{
@@ -1726,16 +1712,28 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 					gdk_pixbuf_get_height (intermediate),
 					ctx->pixbuf, 
 					0, 0);
-
-	rsvg_pop_discrete_layer(ctx);
 	
-	/*fix me, this is not the propper rectangle*/
-	temprect.x0 = 0;;
-	temprect.y0 = 0;;
-	temprect.x1 = gdk_pixbuf_get_width (intermediate);
-	temprect.y1 = gdk_pixbuf_get_height (intermediate);
+	temprect.x0 = gdk_pixbuf_get_width (intermediate);
+	temprect.y0 = gdk_pixbuf_get_height (intermediate);
+	temprect.x1 = 0;
+	temprect.y1 = 0;
+
+	for (i = 0; i < 2; i++)
+		for (j = 0; j < 2; j++)
+			{
+				basex = tmp_affine[0] * w * i + tmp_affine[2] * h * j + tmp_affine[4];
+				basey = tmp_affine[1] * w * i + tmp_affine[3] * h * j + tmp_affine[5];
+				temprect.x0 = MIN(basex, temprect.x0);
+				temprect.y0 = MIN(basey, temprect.y0);
+				temprect.x1 = MAX(basex, temprect.x1);
+				temprect.y1 = MAX(basey, temprect.y1);
+			}
+
 
 	art_irect_union(&ctx->bbox, &ctx->bbox, &temprect);
+	rsvg_pop_discrete_layer(ctx);
+
+	g_object_unref (G_OBJECT (intermediate));
 }
 
 void 
