@@ -1,4 +1,9 @@
-2004-03-18 Christian Schaller <Uraeus@gnome.org>
+2004-03-20  Dom Lachowicz <cinamod@hotmail.com>
+
+	* autogen.sh: Downgrade libtool requirement to 1.4.2
+	* rsvg.c: 137765
+	
+2004-03-18  Christian Schaller <Uraeus@gnome.org>
 
 	* autogen.sh: Remove need for gnome-common
 	  mozilla-plugin: Remove + symbol in Makefile that made autogen barf

@@ -122,11 +122,11 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 					new_height = height;
 
 					/* bogus hack */
-					if (new_width < 0 || new_height < 0)
+					if (new_width <= 0 || new_height <= 0)
 						{
 							g_warning ("rsvg_start_svg: width and height not specified in the SVG");
-							if (new_width < 0) {width = new_width = 512;}
-							if (new_height < 0) {height = new_height = 512;}
+							if (new_width <= 0) {width = new_width = 512;}
+							if (new_height <= 0) {height = new_height = 512;}
 						}
 
 					/* apply the sizing function to acquire our new width and height.
@@ -168,11 +168,11 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			art_affine_scale (affine, x_zoom, y_zoom);
 			art_affine_multiply (state->affine, state->affine, affine);
 
-			if (new_width < 0 || new_height < 0)
+			if (new_width <= 0 || new_height <= 0)
 				{
 					g_warning ("rsvg_start_svg: width and height not specified in the SVG, nor supplied by the size callback");
-					if (new_width < 0) new_width = 512;
-					if (new_height < 0) new_height = 512;
+					if (new_width <= 0) new_width = 512;
+					if (new_height <= 0) new_height = 512;
 				}
 
 			if (new_width >= INT_MAX / 4)
