@@ -25,6 +25,13 @@
 
 #include "config.h"
 
+#ifdef HAVE_SVGZ
+#include <gsf/gsf-input-gzip.h>
+#include <gsf/gsf-input-memory.h>
+#include <gsf/gsf-output-memory.h>
+#include <gsf/gsf-utils.h>
+#endif
+
 #include "rsvg.h"
 #include "rsvg-private.h"
 #include "rsvg-css.h"
@@ -48,10 +55,6 @@
 
 #include "rsvg-art-render.h"
 #include "rsvg-art-draw.h"
-
-#ifdef HAVE_SVGZ
-#include <gsf/gsf-utils.h>
-#endif
 
 /*
  * This is configurable at runtime
@@ -1450,7 +1453,7 @@ rsvg_error_quark (void)
 	return q;
 }
 
-gboolean
+static gboolean
 rsvg_handle_write_impl (RsvgHandle    *handle,
 						const guchar  *buf,
 						gsize          count,
@@ -1478,7 +1481,7 @@ rsvg_handle_write_impl (RsvgHandle    *handle,
   return TRUE;
 }
 
-gboolean
+static gboolean
 rsvg_handle_close_impl (RsvgHandle  *handle,
 						GError     **error)
 {
@@ -1538,7 +1541,7 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx *handle)
 	g_free (handle);
 }
 
-void
+static void
 rsvg_handle_free_impl (RsvgHandle *handle)
 {
 	g_hash_table_foreach (handle->entities, rsvg_ctx_free_helper, NULL);
@@ -1634,13 +1637,24 @@ rsvg_handle_new (void)
 	RsvgHandle *handle;
 	
 	handle = g_new0 (RsvgHandle, 1);
-	rsvg_handle_init (handle);
 
-	handle->write = rsvg_handle_write_impl;
-	handle->close = rsvg_handle_close_impl;
-	handle->free  = rsvg_handle_free_impl;
+	handle->defs = rsvg_defs_new ();
+	handle->handler_nest = 0;
+	handle->entities = g_hash_table_new (g_str_hash, g_str_equal);
+	handle->dpi_x = internal_dpi_x;
+	handle->dpi_y = internal_dpi_y;
+	
+	handle->css_props = g_hash_table_new_full (g_str_hash, g_str_equal,
+											   g_free, g_free);
+	rsvg_SAX_handler_struct_init();
+	
+	handle->ctxt = NULL;
+	handle->current_defs_group = NULL;
+	handle->treebase = NULL;
 
+	handle->dimensions = NULL;
 	handle->finished = 0;
+	handle->first_write = TRUE;
 
 	return handle;
 }
@@ -1693,28 +1707,7 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 	return draw;
 }
 
-void
-rsvg_handle_init (RsvgHandle * handle)
-{
-	handle->defs = rsvg_defs_new ();
-	handle->handler_nest = 0;
-	handle->entities = g_hash_table_new (g_str_hash, g_str_equal);
-	handle->dpi_x = internal_dpi_x;
-	handle->dpi_y = internal_dpi_y;
-	
-	handle->css_props = g_hash_table_new_full (g_str_hash, g_str_equal,
-											   g_free, g_free);
-	rsvg_SAX_handler_struct_init();
-	
-	handle->ctxt = NULL;
-	handle->current_defs_group = NULL;
-	handle->treebase = NULL;
-
-	handle->dimensions = NULL;
-}
-
-/**
- * rsvg_set_default_dpi_x_y
+/** rsvg_set_default_dpi_x_y
  * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
@@ -1851,10 +1844,29 @@ rsvg_handle_write (RsvgHandle    *handle,
 				   gsize          count,
 				   GError       **error)
 {
-	if (handle->write)
-		return (*handle->write) (handle, buf, count, error);
+	if (handle->first_write) {
+		handle->first_write = FALSE;
 
-	return FALSE;
+		/* test for GZ marker. todo: store the first 2 bytes in the odd circumstance that someone calls
+		 * write() in 1 byte increments */
+		if ((count >= 2) && (buf[0] == (guchar)0x1f) && (buf[1] == (guchar)0x8b)) {
+			handle->is_gzipped = TRUE;
+
+#ifdef HAVE_SVGZ
+			handle->gzipped_data = GSF_OUTPUT (gsf_output_memory_new ());
+#endif
+		}
+	}
+
+	if (handle->is_gzipped) {
+#ifdef HAVE_SVGZ
+		return gsf_output_write (handle->gzipped_data, count, buf);
+#else
+		return FALSE;
+#endif
+	}
+
+	return rsvg_handle_write_impl (handle, buf, count, error);
 }
 
 /**
@@ -1873,10 +1885,50 @@ gboolean
 rsvg_handle_close (RsvgHandle  *handle,
 				   GError     **error)
 {
-	if (handle->close)
-		return (*handle->close) (handle, error);
+#if HAVE_SVGZ
+	if (handle->is_gzipped) {
+		GsfInput * gzip;
+		const guchar * bytes;
+		gsize size;
+		gsize remaining;
+		
+		bytes = gsf_output_memory_get_bytes (GSF_OUTPUT_MEMORY (handle->gzipped_data));
+		size = gsf_output_size (handle->gzipped_data);
 
-	return FALSE;
+		gzip = GSF_INPUT (gsf_input_gzip_new (GSF_INPUT (gsf_input_memory_new (bytes, size, FALSE)), error));
+		remaining = gsf_input_remaining (gzip);
+		while ((size = MIN (remaining, 1024)) > 0) {
+			guint8 const *buf;
+			
+			/* write to parent */
+			buf = gsf_input_read (gzip, size, NULL);
+			if (!buf)
+				{
+					/* an error occured, so bail */
+					g_warning (_("rsvg_gz_handle_close_impl: gsf_input_read returned NULL"));
+					break;
+				}
+			
+			rsvg_handle_write_impl (handle,
+									buf,
+									size, error);
+			/* if we didn't manage to lower remaining number of bytes,
+			 * something is wrong, and we should avoid an endless loop */
+			if (remaining == ((gsize) gsf_input_remaining (gzip)))
+				{
+					g_warning (_("rsvg_gz_handle_close_impl: write_impl didn't lower the input_remaining count"));
+					break;
+				}
+			remaining = gsf_input_remaining (gzip);
+		}
+		g_object_unref (G_OBJECT (gzip));
+		
+		/* close parent */
+		gsf_output_close (handle->gzipped_data);
+	}
+#endif
+
+	return rsvg_handle_close_impl (handle, error);
 }
 
 /**
@@ -1921,8 +1973,12 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 void
 rsvg_handle_free (RsvgHandle *handle)
 {
-	if (handle->free)
-		(*handle->free) (handle);
+#if HAVE_SVGZ
+	if (handle->is_gzipped)
+		g_object_unref (G_OBJECT (handle->gzipped_data));
+#endif
+
+	rsvg_handle_free_impl (handle);
 }
 
 #ifdef HAVE_GNOME_VFS

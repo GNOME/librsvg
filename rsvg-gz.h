@@ -27,7 +27,9 @@
 
 G_BEGIN_DECLS
 
+#ifndef RSVG_DISABLE_DEPRECATED
 RsvgHandle * rsvg_handle_new_gz (void);
+#endif
 
 G_END_DECLS
 

@@ -111,16 +111,9 @@ struct RsvgHandle {
 	void * currentfilter;
 	void * currentsubfilter;
 
-	/* virtual fns */
-	gboolean (* write) (RsvgHandle    *handle,
-						const guchar  *buf,
-						gsize          count,
-						GError       **error);
-	
-	gboolean (* close) (RsvgHandle  *handle,
-						GError     **error);
-
-	void (* free) (RsvgHandle * handle);
+	gboolean first_write;
+	gboolean is_gzipped;
+	void * gzipped_data; /* really a GsfOutput */
 };
 
 /*Contextual information for the drawing phase*/
@@ -158,16 +151,6 @@ struct RsvgDimensionData {
 void rsvg_linear_gradient_free (RsvgDefVal *self);
 void rsvg_radial_gradient_free (RsvgDefVal *self);
 void rsvg_pattern_free (RsvgDefVal *self);
-
-/* "super"/parent calls */
-void rsvg_handle_init (RsvgHandle * handle);
-gboolean rsvg_handle_write_impl (RsvgHandle    *handle,
-								 const guchar  *buf,
-								 gsize          count,
-								 GError       **error);
-gboolean rsvg_handle_close_impl (RsvgHandle  *handle, 
-								 GError     **error);
-void rsvg_handle_free_impl (RsvgHandle *handle);
 
 typedef enum {
 	RSVG_SIZE_ZOOM,

@@ -26,7 +26,6 @@
 #include "config.h"
 #include "rsvg.h"
 #include "rsvg-private.h"
-#include "rsvg-gz.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -161,15 +160,11 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 	RsvgHandle * handle;
 	GdkPixbuf * retval;
 
-	/* test for GZ marker */
-	if ((len >= 2) && (buff[0] == (guchar)0x1f) && (buff[1] == (guchar)0x8b))
-		handle = rsvg_handle_new_gz ();
-	else
-		handle = rsvg_handle_new ();	
+	handle = rsvg_handle_new ();	
 
 	if (!handle) {
 		g_set_error (error, rsvg_error_quark (), 0,
-					 _("Error creating SVG reader (probably a gzipped SVG)"));
+					 _("Error creating SVG reader"));
 		return NULL;
 	}
 
@@ -194,17 +189,12 @@ rsvg_pixbuf_from_stdio_file_with_size_data(GByteArray *f,
 {
 	RsvgHandle * handle;
 	GdkPixbuf * retval;
-	const guchar * chars = f->data;
 
-	/* test for GZ marker */
-	if ((f->len >= 2) && (chars[0] == (guchar)0x1f) && (chars[1] == (guchar)0x8b))
-		handle = rsvg_handle_new_gz ();
-	else
-		handle = rsvg_handle_new ();
+	handle = rsvg_handle_new ();
 
 	if (!handle) {
 		g_set_error (error, rsvg_error_quark (), 0,
-					 _("Error creating SVG reader (probably a gzipped SVG)"));
+					 _("Error creating SVG reader"));
 		return NULL;
 	}
 

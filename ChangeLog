@@ -1,8 +1,10 @@
 2005-02-23  Dom Lachowicz <cinamod@hotmail.com>
 
-	* rsvg-image.c: Fix bug 168182
+	* rsvg-image.c: Fix bug #168182
 	* test-display.c: rsvg-view now can view images on any medium that
 	gnome-vfs can see.
+	* *: Deprecate rsvg-gz. Move its functionality directly into RsvgHandle instead.
+	Greatly simplifies much code.
 	
 2005-02-23  Caleb Moore <c.moore@student.unsw.edu.au>
 
@@ -12,7 +14,7 @@
 	
 2005-02-18 Dom Lachowicz <cinamod@hotmail.com>
 
-	* rsvg-structure.c: bug 167813
+	* rsvg-structure.c: bug #167813
 
 2005-2-17  Caleb Moore <c.moore@student.unsw.edu.au>
 

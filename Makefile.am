@@ -18,7 +18,7 @@ libm = -lm
 endif
 
 headers = \
-	rsvg-gz.h	\
+	rsvg-gz.h		\
 	rsvg.h
 
 enum_sources = \

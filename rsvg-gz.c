@@ -24,126 +24,15 @@
 #include "rsvg-gz.h"
 #include "rsvg-private.h"
 
-#ifdef HAVE_SVGZ
-
-#include <gsf/gsf-input-gzip.h>
-#include <gsf/gsf-input-memory.h>
-#include <gsf/gsf-output-memory.h>
-
-/* TODO: this could probably be done about a billion times better */
-
-struct RsvgHandleGz
-{
-	RsvgHandle super;
-	GsfOutput * mem;
-};
-
-typedef struct RsvgHandleGz RsvgHandleGz;
-
-static gboolean
-rsvg_handle_gz_write_impl (RsvgHandle    *handle,
-						   const guchar  *buf,
-						   gsize          num_bytes,
-						   GError       **error)
-{
-	RsvgHandleGz * me = (RsvgHandleGz*)handle;
-	return gsf_output_write (me->mem, num_bytes, buf);
-}
-
-static gboolean
-rsvg_handle_gz_close_impl (RsvgHandle  *handle,
-						   GError     **error)
-{
-	RsvgHandleGz * me = (RsvgHandleGz*)handle;
-	GsfInput * gzip;
-	const guchar * bytes;
-	gsize size;
-	gsize remaining;
-
-	bytes = gsf_output_memory_get_bytes (GSF_OUTPUT_MEMORY (me->mem));
-	size = gsf_output_size (me->mem);
-
-	gzip = GSF_INPUT (gsf_input_gzip_new (GSF_INPUT (gsf_input_memory_new (bytes, size, FALSE)), error));
-	remaining = gsf_input_remaining (gzip);
-	while ((size = MIN (remaining, 1024)) > 0) {
-		guint8 const *buf;
-
-		/* write to parent */
-		buf = gsf_input_read (gzip, size, NULL);
-		if (!buf)
-		{
-			/* an error occured, so bail */
-			g_warning ("rsvg_gz_handle_close_impl: gsf_input_read returned NULL");
-			break;
-		}
-
-		rsvg_handle_write_impl (&(me->super),
-								buf,
-								size, error);
-		/* if we didn't manage to lower remaining number of bytes,
-                 * something is wrong, and we should avoid an endless loop */
-		if (remaining == ((gsize) gsf_input_remaining (gzip)))
-		{
-			g_warning ("rsvg_gz_handle_close_impl: write_impl didn't lower the input_remaining count");
-			break;
-		}
-		remaining = gsf_input_remaining (gzip);
-	}
-	g_object_unref (G_OBJECT (gzip));
-
-	/* close parent */
-	gsf_output_close (me->mem);
-	return rsvg_handle_close_impl (handle, error);
-}
-
-static void
-rsvg_handle_gz_free_impl (RsvgHandle *handle)
-{
-	RsvgHandleGz * me = (RsvgHandleGz*)handle;
-	g_object_unref (G_OBJECT (me->mem));
-
-	/* free parent */
-	rsvg_handle_free_impl (handle);
-}
-
-static RsvgHandle *
-rsvg_handle_new_gz_impl (void)
-{
-	RsvgHandleGz * me = g_new0 (RsvgHandleGz, 1);
-
-	/* init parent */
-	rsvg_handle_init (&me->super);
-	me->mem = GSF_OUTPUT (gsf_output_memory_new ());
-
-	me->super.write = rsvg_handle_gz_write_impl;
-	me->super.close = rsvg_handle_gz_close_impl;
-	me->super.free  = rsvg_handle_gz_free_impl;
-
-	return (RsvgHandle*)me;
-}
-
-#else
-
-static RsvgHandle *
-rsvg_handle_new_gz_impl (void)
-{
-	g_warning ("Doesn't support GZipped SVG files");
-	return NULL;
-}
-
-#endif
-
 /**
  * rsvg_handle_new_gz
  *
- * See rsvg_handle_new, except that this will handle GZipped SVGs (svgz)
- * Use the returned handle identically to how you use a handle returned
- * from rsvg_handle_new()
+ * DEPRECATED. Please use rsvg_handle_new () instead.
  *
- * Returns: a new SVGZ handle or null if it isn't supported
+ * Returns: a new SVGZ handle
  */
 RsvgHandle *
 rsvg_handle_new_gz (void)
 {
-	return rsvg_handle_new_gz_impl ();
+	return rsvg_handle_new ();
 }

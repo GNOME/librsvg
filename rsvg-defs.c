@@ -25,7 +25,6 @@
 #include "config.h"
 #include "rsvg-private.h"
 #include "rsvg-defs.h"
-#include "rsvg-gz.h"
 #include "rsvg-styles.h"
 #include "rsvg-image.h"
 

@@ -27,7 +27,6 @@
 #include "svg.h"
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <rsvg.h>
-#include <rsvg-gz.h>
 
 GCache *pixbuf_cache = NULL;
 
@@ -698,10 +697,7 @@ get_pixbuf(GByteArray * arr, gint width, gint height)
   if(!arr || !arr->len)
     return NULL;
 
-  if((arr->len >= 2) && (arr->data[0] == (guchar)0x1f) && (arr->data[1] == (guchar)0x8b))
-    handle = rsvg_handle_new_gz();
-  else
-    handle = rsvg_handle_new();
+  handle = rsvg_handle_new();
 
   if (!handle)
     return NULL;

@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gdk-pixbuf/gdk-pixbuf-io.h>
-#include <rsvg-gz.h>
 #include "rsvg-private.h"
 
 typedef struct {
@@ -112,11 +111,7 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
         if (context->first_write == TRUE) {
                 context->first_write = FALSE;
 
-                /* lazy create a SVGZ or SVG loader */
-                if ((size >= 2) && (buf[0] == (guchar)0x1f) && (buf[1] == (guchar)0x8b))
-                        context->handle = rsvg_handle_new_gz ();
-                else
-                        context->handle = rsvg_handle_new ();
+                context->handle = rsvg_handle_new ();
 
                 if (!context->handle) {
                         rsvg_propegate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
