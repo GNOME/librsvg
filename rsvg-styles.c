@@ -855,7 +855,7 @@ rsvg_parse_style (RsvgHandle *ctx, RsvgState *state, const char *str)
 }
 
 static void
-rsvg_css_define_style (RsvgHandle *ctx, const char * style_name, const char * style_def)
+rsvg_css_define_style (RsvgHandle *ctx, const gchar * style_name, const char * style_def)
 {
 	GString * str = g_string_new (style_def);
 	char * existing = NULL;
@@ -866,7 +866,7 @@ rsvg_css_define_style (RsvgHandle *ctx, const char * style_name, const char * st
 		g_string_append_len (str, existing, strlen (existing));
 	
 	/* will destroy the existing key and value for us */
-	g_hash_table_insert (ctx->css_props, (gpointer)g_strdup (style_name), (gpointer)str->str);
+	g_hash_table_insert (ctx->css_props, (gpointer)g_strdup ((gchar *)style_name), (gpointer)str->str);
 	g_string_free (str, FALSE);
 }
 
@@ -913,7 +913,7 @@ ccss_end_selector (CRDocHandler *a_handler,
 	if (a_selector_list)
 		for (cur = a_selector_list; cur; cur = cur->next) {
 			if (cur->simple_sel) {
-			   guchar * style_name = cr_simple_sel_to_string (cur->simple_sel);
+			   gchar * style_name = (gchar *)cr_simple_sel_to_string (cur->simple_sel);
 			   if (style_name) {
 				   rsvg_css_define_style (user_data->ctx, style_name, user_data->def->str);
 				   g_free (style_name);
@@ -929,7 +929,7 @@ ccss_property (CRDocHandler *a_handler, CRString *a_name,
 			   CRTerm *a_expr, gboolean a_important)
 {
 	CSSUserData * user_data;
-	char * expr = NULL, *name = NULL;
+	gchar * expr = NULL, *name = NULL;
 	size_t len = 0 ;
 
 	g_return_if_fail (a_handler);
@@ -938,12 +938,12 @@ ccss_property (CRDocHandler *a_handler, CRString *a_name,
 
 	if (a_name && a_expr && user_data->def)
 		{
-			name = (char*) cr_string_peek_raw_str (a_name) ;
+			name = (gchar*) cr_string_peek_raw_str (a_name) ;
 			len = cr_string_peek_raw_str_len (a_name) ;
 
-			g_string_append_len (user_data->def, name, len);
+			g_string_append_len (user_data->def, (gchar *)name, len);
 			g_string_append (user_data->def, ": ");
-			expr = cr_term_to_string (a_expr);
+			expr = (gchar *)cr_term_to_string (a_expr);
 			g_string_append_len (user_data->def, expr, strlen (expr));
 			g_free (expr);
 			g_string_append (user_data->def, "; ");
@@ -1375,7 +1375,7 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 }
 
 static void
-rsvg_pixmap_destroy (guchar *pixels, gpointer data)
+rsvg_pixmap_destroy (gchar *pixels, gpointer data)
 {
   g_free (pixels);
 }
@@ -1437,7 +1437,7 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 									   width,
 									   height,
 									   rowstride,
-									   rsvg_pixmap_destroy,
+									   (GdkPixbufDestroyNotify)rsvg_pixmap_destroy,
 									   NULL);
 	ctx->pixbuf = pixbuf;
 }
@@ -1524,11 +1524,21 @@ rsvg_compile_bg(RsvgHandle *ctx, RsvgState *topstate)
 	int i, foundstate;
 	GdkPixbuf *intermediate, *lastintermediate;
 	RsvgState *state, *lastvalid;
+	ArtIRect save;
+
 	lastvalid = NULL;
+
 	foundstate = 0;	
 
 	lastintermediate = gdk_pixbuf_copy(topstate->save_pixbuf);
 			
+	save = ctx->bbox;
+
+	ctx->bbox.x0 = 0;
+	ctx->bbox.y0 = 0;
+	ctx->bbox.x1 = ctx->width;
+	ctx->bbox.y1 = ctx->height;
+
 	for (i = 0; (state = g_slist_nth_data(ctx->state, i)) != NULL; i++)
 		{
 			if (state == topstate)
@@ -1551,6 +1561,8 @@ rsvg_compile_bg(RsvgHandle *ctx, RsvgState *topstate)
 					lastvalid = state;
 				}
 		}
+
+	ctx->bbox = save;
 	return lastintermediate;
 }
 

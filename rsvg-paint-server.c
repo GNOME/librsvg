@@ -393,7 +393,7 @@ render_image_pattern_render(ArtRenderCallback *self, ArtRender *render,
 	for (i = 0; i < x1 - x0; i++)
 		{
 			px = i;
-			py = y;// + (z->y * z->affine[3] + z->affine[5]);
+			py = y;
 			
 			gx = px * z->invaffine[0] + py * z->invaffine[2] + z->invaffine[4] - z->x;
 			gy = px * z->invaffine[1] + py * z->invaffine[3] + z->invaffine[5] - z->y;
@@ -405,8 +405,6 @@ render_image_pattern_render(ArtRenderCallback *self, ArtRender *render,
 				+ z->xoffset + tx;
 			sy = py - gnx * z->width * z->affine[1] - gny * z->height * z->affine[3] - z->affine[5]
 				+ z->yoffset + ty;
-
-			/*printf("(%i, %i)->(%i, %i)\n", i, y, sx, sy);*/
 
 			if (sx < 0 || sx >= z->realwidth || sy < 0 || sy >= z->realheight)
 				{
@@ -432,7 +430,7 @@ render_image_pattern_negotiate (ArtImageSource *self, ArtRender *render,
 }
 
 static void
-render_image_pattern (ArtRender *render, gchar * pixels, gdouble x, gdouble y, 
+render_image_pattern (ArtRender *render, guchar * pixels, gdouble x, gdouble y, 
 					  gdouble width, gdouble height, gint realwidth, gint realheight, gint rowstride,
 					  gdouble xoffset, gdouble yoffset, double * affine)
 {	
@@ -488,13 +486,11 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 	double affine[6];
 	double caffine[6];
 	int i, j;
+	gdouble minx, miny, maxx, maxy, xcoord, ycoord, xoffset, yoffset;
+	GdkPixbuf *save, *render;
 
 	if (ctx->ctx == NULL)
 		return;
-
-	gdouble minx, miny, maxx, maxy, xcoord, ycoord, xoffset, yoffset;
-	
-	GdkPixbuf *save, *render;
 
 	if (pattern->obj_bbox) {
 		affine[0] = ctx->x1 - ctx->x0;

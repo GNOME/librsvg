@@ -1216,7 +1216,8 @@ void
 rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 											 RsvgPropertyBag * atts)
 {
-	int i, j, listlen;
+	gint i, j;
+	guint listlen;
 	double font_size;
 	const char *value;
 	gboolean has_target_x, has_target_y;
@@ -1340,7 +1341,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 	if (filter->divisor == 0)
 		filter->divisor = 1;
 		
-	if (listlen < filter->orderx * filter->ordery)
+	if ((gint)listlen < filter->orderx * filter->ordery)
 		filter->orderx = filter->ordery = 0;
 
 	if (!has_target_x)
@@ -2284,7 +2285,8 @@ void
 rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 										   RsvgPropertyBag * atts)
 {
-	gint type, listlen;
+	gint type;
+	guint listlen;
 	double font_size;
 	const char *value;
 	RsvgFilterPrimitiveColourMatrix *filter;
@@ -3881,7 +3883,9 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self,
 			for (x = 0; x < tileWidth; x++)
 				{
 					gint i;
-					double point[2] = {x+boundarys.x1, y+boundarys.y1};
+					double point[2];
+					point[0] = x+boundarys.x1;
+					point[1] = y+boundarys.y1;
 					
 					for (i = 0; i < 4; i++)
 						{

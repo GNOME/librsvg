@@ -1,3 +1,9 @@
+2004-08-21  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* prettymuch-everywhere: made the majority compile with -ansi -pedantic
+	* rsvg-styles.c: little hack to make background generation for filters 
+	work a little better
+
 2004-08-13  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-styles.c: Fix memory leak in the new "state stack thingie".

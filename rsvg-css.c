@@ -276,7 +276,7 @@ rsvg_css_parse_color (const char *str, guint32 inherit)
 			
 			if (strstr (str, "%") != 0)
 				{
-					gint i, nb_toks;
+					guint i, nb_toks;
 					char ** toks;
 
 					/* assume rgb (9%, 100%, 23%) */
@@ -728,6 +728,11 @@ strtok_r(char *s, const char *delim, char **last)
 	
 	return s;
 }
+
+#else
+
+char *
+strtok_r(char *s, const char *delim, char **last);
 
 #endif /* !HAVE_STRTOK_R */
 

@@ -646,9 +646,9 @@ rsvg_defs_drawable_use_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx,
 static void 
 rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawable *child)
 {
+	RsvgDefsDrawableGroup *z = (RsvgDefsDrawableGroup *)self;
 	if (self == NULL)
 		return;
-	RsvgDefsDrawableGroup *z = (RsvgDefsDrawableGroup *)self;
 	g_ptr_array_add(z->children, child);
 }
 
@@ -704,11 +704,9 @@ rsvg_pop_def_group (RsvgHandle *ctx)
 void
 rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id)
 {
+	RsvgDefsDrawablePath *path;
 	if (!ctx->in_defs)
 		rsvg_render_path (ctx, d);
-
-	   
-	RsvgDefsDrawablePath *path;
 	
 	path = g_new (RsvgDefsDrawablePath, 1);
 	path->d = g_strdup(d);
@@ -1254,7 +1252,7 @@ static gboolean b64_decode_char (char c, int * b64)
 	return FALSE;
 }
 
-static gboolean utf8_base64_decode(char ** binptr, size_t * binlen, const char * b64ptr, size_t b64len)
+static gboolean utf8_base64_decode(guchar ** binptr, size_t * binlen, const char * b64ptr, size_t b64len)
 {
 	gboolean decoded = TRUE;
 	gboolean padding = FALSE;
@@ -1384,7 +1382,7 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	GdkPixbufLoader *loader;
 	GdkPixbuf       *pixbuf;
 	
-	char * buffer, *bufptr;
+	guchar * buffer, *bufptr;
 	size_t buffer_len, buffer_max_len, data_len;
 
 	g_return_val_if_fail (data != NULL, NULL);
@@ -1395,7 +1393,7 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	
 	buffer_max_len = ((data_len >> 2) + 1) * 3;
 	buffer_len = buffer_max_len;
-	buffer = g_new(char, buffer_max_len);
+	buffer = g_new(guchar, buffer_max_len);
 	bufptr = buffer;
 
 	if(!utf8_base64_decode(&bufptr, &buffer_len, data, data_len)) {
