@@ -4,6 +4,7 @@ theme_DATA = \
 	blue.svg	\
 	green.svg	\
 	orange.svg	\
+	purple.svg	\
 	red.svg
 
 EXTRA_DIST = $(theme_DATA)
