@@ -1,5 +1,9 @@
 2001-09-25  Darin Adler  <darin@bentspoon.com>
 
+	* test-60544.svg: Another test file, from another bug.
+
+2001-09-25  Darin Adler  <darin@bentspoon.com>
+
 	* test-61082.svg: Check in test file for bug. I should really
 	do this more often.
 
