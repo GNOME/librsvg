@@ -564,7 +564,7 @@ main (int argc, char **argv)
 		in = stdin;
 	else {
 		in = fopen (args[0], "rb");
-		/* base_uri = args[0]; */
+		base_uri = (char *)args[0];
 	}
 
 	if(!in)

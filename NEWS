@@ -1,11 +1,13 @@
 Version 2.7.x
 
 - Filters
-- Masks
-- Tons of bug fixes
-- Mozilla plugin
-- Standalone viewer
 - GTK+ theme engine
+- Masks
+- Markers
+- Mozilla plugin
+- Numerous bug fixes
+- Patterns
+- Standalone viewer
 
 == gnome-2-6 branch ==
 

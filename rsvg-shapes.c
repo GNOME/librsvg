@@ -1421,8 +1421,31 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	return rsvg_pixbuf_ensure_alpha_channel(pixbuf);
 }
 
+static gchar *
+rsvg_get_file_path (const gchar * filename, const gchar *basedir)
+{
+	gchar *absolute_filename;
+
+	if (g_path_is_absolute(filename)) {
+		absolute_filename = g_strdup (filename);
+	} else {
+		gchar *tmpcdir;
+
+		if (basedir)
+			tmpcdir = g_path_get_dirname (basedir);
+		else
+			tmpcdir = g_get_current_dir ();
+
+		absolute_filename = g_build_filename (tmpcdir, filename, NULL);
+		g_free(tmpcdir);
+	}
+
+	return absolute_filename;
+}
+
 static GdkPixbuf *
 rsvg_pixbuf_new_from_file_at_size (const char *filename,
+								   const char *base_uri,
 								   int         width, 
 								   int         height,
 								   gboolean    keep_aspect_ratio,
@@ -1430,7 +1453,8 @@ rsvg_pixbuf_new_from_file_at_size (const char *filename,
 {
 	GdkPixbufLoader *loader;
 	GdkPixbuf       *pixbuf;
-	
+	gchar *path;
+
 	guchar buffer [4096];
 	int length;
 	FILE *f;
@@ -1443,7 +1467,10 @@ rsvg_pixbuf_new_from_file_at_size (const char *filename,
 	g_return_val_if_fail (filename != NULL, NULL);
 	g_return_val_if_fail (width > 0 && height > 0, NULL);
 	
-	f = fopen (filename, "rb");
+	path = rsvg_get_file_path (filename, base_uri);
+	f = fopen (path, "rb");
+	g_free (path);
+	
 	if (!f) {
 		g_set_error (error,
 					 G_FILE_ERROR,
@@ -1616,7 +1643,7 @@ rsvg_pixbuf_new_from_href (const char *href,
 		img = rsvg_pixbuf_new_from_data_at_size (href, w, h, keep_aspect_ratio, err);
 	
 	if(!img)
-		img = rsvg_pixbuf_new_from_file_at_size (href, w, h, keep_aspect_ratio, err);
+		img = rsvg_pixbuf_new_from_file_at_size (href, base_uri, w, h, keep_aspect_ratio, err);
 
 #ifdef HAVE_GNOME_VFS
 	if(!img)
