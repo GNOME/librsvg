@@ -1,5 +1,11 @@
 2003-09-12  Sven Neumann  <sven@gimp.org>
-	
+
+	* configure.in
+	* rsvg-styles.c (rsvg_real_parse_cssbuffer): removed the #warning
+	here and instead output it when configure is run (bug #122119).
+
+2003-09-12  Sven Neumann  <sven@gimp.org>
+
 	* configure.in: depend on Pango version 1.2.0 or newer.
 
 	* rsvg-text.c (rsvg_text_handler_characters): don't use

@@ -527,7 +527,6 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 
 #else /* !HAVE_LIBCROCO */
 
-#warning Building without libcroco support. Will experience sub-optimal CSS parsing.
 
 static void
 rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)

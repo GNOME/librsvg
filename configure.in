@@ -135,6 +135,8 @@ if test "x$test_croco" = "xtrue"; then
 	LIBCROCOPKG="libcroco"
 else
 	AC_MSG_WARN([LibCroco support disabled, as requested (Use --with-croco to enable)])
+        croco_warning="
+Building without libcroco support. Will experience sub-optimal CSS parsing."
 fi
 
 AC_SUBST(LIBCROCOPKG)
@@ -332,3 +334,6 @@ librsvg-$LIBRSVG_VERSION
 	Use libcroco for css parsing:   ${test_croco}
 	Build gimp plugin:              ${test_gimp}
 "
+
+AC_MSG_RESULT([$croco_warning
+]);
