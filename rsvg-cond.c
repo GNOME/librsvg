@@ -35,7 +35,7 @@
 
 static const char * implemented_features [] = 
 	{
-		"http://www.w3.org/TRr/SVG11/feature#BasicText",
+		"http://www.w3.org/TR/SVG11/feature#BasicText",
 		"http://www.w3.org/TR/SVG11/feature#BasicFilter",
 		"http://www.w3.org/TR/SVG11/feature#BasicGraphicsAttribute",
 		"http://www.w3.org/TR/SVG11/feature#BasicPaintAttribute",
