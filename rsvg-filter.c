@@ -137,14 +137,15 @@ void
 clear_pixbuf(GdkPixbuf *pb);
 
 void
-clear_pixbuf(GdkPixbuf *pb)
-{
+clear_pixbuf(GdkPixbuf *pb){
 	gint i;
 	guchar * data;
 	data = gdk_pixbuf_get_pixels(pb);
 
 	for (i=0; i<gdk_pixbuf_get_width(pb)*gdk_pixbuf_get_width(pb)*4;i++)
 		data[i] = 0;
+
+
 }
 
 void
@@ -356,7 +357,7 @@ void
 rsvg_filter_free_pair(gpointer key, gpointer value, gpointer user_data)
 {
 	g_object_unref(G_OBJECT(value));
-	g_string_free(key, 1);
+	g_free((gchar *)key);
 }
 
 /**
@@ -415,11 +416,37 @@ rsvg_filter_store_result (GString *name, GdkPixbuf *result, RsvgFilterContext *c
 
 	if (strcmp(name->str, "")){
 		g_object_ref(G_OBJECT(result)); /*increments the references for the table*/
-		g_hash_table_insert (ctx->results, g_string_new(name->str), result);
+		g_hash_table_insert (ctx->results, g_strdup(name->str), result);
 	}
 
 	g_object_ref(G_OBJECT(result)); /*increments the references for the last result*/
 	ctx->lastresult = result;
+}
+
+GdkPixbuf *
+pixbuf_get_alpha(GdkPixbuf *pb);
+
+GdkPixbuf *
+pixbuf_get_alpha(GdkPixbuf *pb){
+	gint i,j;
+	guchar * data;
+	guchar * pbdata;
+	GdkPixbuf *output;
+
+	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+							 gdk_pixbuf_get_width(pb), 
+							 gdk_pixbuf_get_height(pb));
+
+	data = gdk_pixbuf_get_pixels(output);
+	pbdata = gdk_pixbuf_get_pixels(pb);
+	
+	for (i=0; i<gdk_pixbuf_get_width(pb)*gdk_pixbuf_get_width(pb);i++){
+		for (j=0; j< 3;j++)
+			data[i*4 + j] = 0;
+		data[i*4 + 3] = pbdata[i*4 + 3];
+	}
+	
+	return output;
 }
 
 /**
@@ -449,16 +476,17 @@ rsvg_filter_get_in (GString *name, RsvgFilterContext *ctx){
 			g_object_ref(G_OBJECT(ctx->lastresult));
 			return ctx->lastresult;
 		}
-	/*if (!strcmp(name->str, "SourceAlpha"))
-		return ctx->source;
+	if (!strcmp(name->str, "SourceAlpha"))
+		return pixbuf_get_alpha(ctx->source);
 	if (!strcmp(name->str, "BackgroundAlpha"))
-	return ctx->source;*/
+		return pixbuf_get_alpha(ctx->bg);
 
-	output = g_hash_table_lookup (ctx->results, name);
+	output = g_hash_table_lookup (ctx->results, name->str);
 	g_object_ref(G_OBJECT(output));
 
-	if (output != NULL)
+	if (output != NULL){
 		return output;
+	}
 	g_object_ref(G_OBJECT(ctx->lastresult));
 	return ctx->lastresult;
 }
@@ -862,6 +890,8 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive *self, RsvgFil
 
 	output_pixels = gdk_pixbuf_get_pixels(output);
 	
+	gint tempresult;
+
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2 ; x++){
 			for (ch = 0; ch < 3 + !cself->preservealpha; ch++){
@@ -879,8 +909,13 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive *self, RsvgFil
 						kval = cself->KernelMatrix[kx + ky * cself->orderx];
 						sum += (double)sval * kval;
 					}
-				output_pixels[4 * x + y * rowstride + ch] = sum / 
-					cself->divisor; 
+				tempresult =  sum / cself->divisor + cself->bias; 
+				if (tempresult > 255)
+					tempresult = 255;
+				if (tempresult < 0)
+					tempresult = 0;
+		
+				output_pixels[4 * x + y * rowstride + ch] = tempresult;
 			}
 			if (cself->preservealpha)
 				output_pixels[4 * x + y * rowstride + 3] = 
@@ -896,8 +931,10 @@ void
 rsvg_filter_primitive_convolve_matrix_free (RsvgFilterPrimitive * self){
 	RsvgFilterPrimitiveConvolveMatrix *cself;
 	cself = (RsvgFilterPrimitiveConvolveMatrix *)self;
-	/*g_free(self->result);
-	  g_free(cself);*/
+	g_string_free(self->result, TRUE);
+	g_string_free(self->in, TRUE);	
+	g_free(cself->KernelMatrix);
+	g_free(cself);
 }
 
 void 
@@ -954,20 +991,28 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle *ctx, const xmlChar **at
 						filter->targety = atoi((char *)atts[i + 1]);
 					else if (!strcmp ((char *)atts[i], "bias"))
 						filter->bias = atof((char *)atts[i + 1]);
-					else if (!strcmp ((char *)atts[i], "PreserveAlpha"))
+					else if (!strcmp ((char *)atts[i], "preserveAlpha"))
 						if (!strcmp ((char *)atts[i + 1], "true"))
 							filter->preservealpha = TRUE;
 						else
 							filter->preservealpha = FALSE;
 					else if (!strcmp ((char *)atts[i], "divisor"))
 						filter->divisor = atof((char *)atts[i + 1]);
-					/*double *KernelMatrix;
-					gint orderx, ordery;
-					GString *in2;
-					*/
-				}
-		}
 
+					else if (!strcmp ((char *)atts[i], "order")){
+						double tempx, tempy;
+						rsvg_css_parse_number_optional_number((char *)atts[i + 1], &tempx, &tempy);
+						filter->orderx = tempx;
+						filter->ordery = tempy;
+						
+						/*double *KernelMatrix;
+						 */
+					}
+					else if (!strcmp ((char *)atts[i], "kernelMatrix"))
+						filter->KernelMatrix = rsvg_css_parse_number_list((char *)atts[i + 1], NULL);
+				}
+			
+		}
 	if (filter->divisor == 0){
 		for (j = 0; j < filter->orderx; j++)
 			for (i = 0; i < filter->ordery; i++)
@@ -975,7 +1020,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle *ctx, const xmlChar **at
 	}
 	if (filter->divisor == 0)
 		filter->divisor = 1;
-
+	
 
 	filter->super.render = &rsvg_filter_primitive_convolve_matrix_render;
 	filter->super.free = &rsvg_filter_primitive_convolve_matrix_free;
@@ -1030,7 +1075,6 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle *ctx, const xmlChar **atts
 						filter->super.height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
 						filter->super.sizedefaults = 0;
 					}			
-					
 					else if (!strcmp ((char *)atts[i], "stdDeviation"))
 						rsvg_css_parse_number_optional_number((char *)atts[i + 1], &sdx, &sdy);	
 				}

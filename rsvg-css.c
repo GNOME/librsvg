@@ -768,6 +768,25 @@ rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 #endif
 }
 
+double *
+rsvg_css_parse_number_list(const char * in_str, guint * out_list_len){
+	gchar ** string_array;
+	double * output;
+	guint len;
+
+	string_array = rsvg_css_parse_list(in_str, &len);
+
+	output = g_new(double, len);
+	guint i;
+	for (i = 0; i < len; i++){
+		output[i] = g_ascii_strtod(string_array[i], NULL);
+		g_free(string_array[i]);
+	}
+	if (out_list_len != NULL)
+		*out_list_len = len;
+	return output;
+}
+
 void 
 rsvg_css_parse_number_optional_number(const char * str, 
 									  double *x, double *y)

@@ -775,6 +775,8 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_filter_primitive_blend (ctx, atts);
 	else if (!strcmp ((char *)name, "feGaussianBlur"))
 		rsvg_start_filter_primitive_gaussian_blur (ctx, atts);
+	else if (!strcmp ((char *)name, "feConvolveMatrix"))
+		rsvg_start_filter_primitive_convolve_matrix (ctx, atts);
 }
 
 static void
