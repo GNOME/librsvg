@@ -1,6 +1,10 @@
+2002-09-22  Dom Lachowicz <doml@appligent.com>
+
+	* rsvg-css.c (clip_rgb_percent): fix bug. stoopid math...
+
 2002-09-19  Dom Lachowicz <doml@appligent.com>
 
-	* rscg.c (rsvg_start_ellipse): Ellipses work ok
+	* rsvg.c (rsvg_start_ellipse): Ellipses work ok
 	(rsvg_start_tspan): Start of tspan work. Needs to handle x offset
 	
 2002-09-18  Dom Lachowicz <doml@appligent.com>

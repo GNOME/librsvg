@@ -147,7 +147,7 @@ rsvg_css_clip_rgb_percent (gint in_percent)
   else if (in_percent <= 0)
     return 0;
 
-  return (gint)floor(25500.0 / (double)in_percent);
+  return (gint)floor(255. * (double)in_percent / 100.);
 }
 
 static gint
