@@ -1,3 +1,8 @@
+Version 2.2.3
+
+- All sorts of build and installation fixes
+- "Bugfix" for a regression in GTK+'s pixbuf-io loader scheme
+
 Version 2.2.2
 
 - Handle SVGZ files (Gzipped SVG)
