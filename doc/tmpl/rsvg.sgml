@@ -1,0 +1,109 @@
+<!-- ##### SECTION Title ##### -->
+Core API
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION rsvg_error_quark ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### USER_FUNCTION RsvgSizeFunc ##### -->
+<para>
+
+</para>
+
+@width: 
+@height: 
+@user_data: 
+
+
+<!-- ##### FUNCTION rsvg_set_default_dpi ##### -->
+<para>
+
+</para>
+
+@dpi: 
+
+
+<!-- ##### FUNCTION rsvg_handle_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_set_dpi ##### -->
+<para>
+
+</para>
+
+@handle: 
+@dpi: 
+
+
+<!-- ##### FUNCTION rsvg_handle_set_size_callback ##### -->
+<para>
+
+</para>
+
+@handle: 
+@size_func: 
+@user_data: 
+@user_data_destroy: 
+
+
+<!-- ##### FUNCTION rsvg_handle_write ##### -->
+<para>
+
+</para>
+
+@handle: 
+@buf: 
+@count: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_close ##### -->
+<para>
+
+</para>
+
+@handle: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_get_pixbuf ##### -->
+<para>
+
+</para>
+
+@handle: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_free ##### -->
+<para>
+
+</para>
+
+@handle: 
+
+

@@ -1,0 +1,37 @@
+<SECTION>
+<FILE>rsvg</FILE>
+<TITLE>Core API</TITLE>
+rsvg_error_quark
+RsvgSizeFunc
+rsvg_set_default_dpi
+rsvg_handle_new
+rsvg_handle_set_dpi
+rsvg_handle_set_size_callback
+rsvg_handle_write
+rsvg_handle_close
+rsvg_handle_get_pixbuf
+rsvg_handle_free
+</SECTION>
+
+<SECTION>
+<FILE>rsvg-gz</FILE>
+<TITLE>Creating a SVGZ reader</TITLE>
+rsvg_handle_new_gz
+</SECTION>
+
+<SECTION>
+<FILE>rsvg-file-util</FILE>
+<TITLE>Utility/Convenience Functions</TITLE>
+rsvg_pixbuf_from_file
+rsvg_pixbuf_from_file_at_zoom
+rsvg_pixbuf_from_file_at_size
+rsvg_pixbuf_from_file_at_max_size
+rsvg_pixbuf_from_file_at_zoom_with_max
+rsvg_pixbuf_from_file_ex
+rsvg_pixbuf_from_file_at_zoom_ex
+rsvg_pixbuf_from_file_at_size_ex
+rsvg_pixbuf_from_file_at_max_size_ex
+rsvg_pixbuf_from_file_at_zoom_with_max_ex
+</SECTION>
+
+
