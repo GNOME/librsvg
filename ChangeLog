@@ -2,7 +2,7 @@
 
 	* configure.in: Bump version
 	* *.pc.in: Remove libcroco && libgsf deps
-	* rsvg-styles.c: Bug #140797
+	* rsvg-styles.c: Make #140797 less poignant
 	
 == librsvg 2.6.4 ==	
 	
