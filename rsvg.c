@@ -69,6 +69,15 @@
 #define RSVG_DEFAULT_DPI 90.0
 static double internal_dpi = RSVG_DEFAULT_DPI;
 
+typedef int TextDecoration;
+
+enum {
+  TEXT_NORMAL    = 0x00,
+  TEXT_OVERLINE  = 0x01,
+  TEXT_UNDERLINE = 0x02,
+  TEXT_STRIKE    = 0x04
+};
+
 typedef struct {
   double affine[6];
 
@@ -85,17 +94,18 @@ typedef struct {
   ArtPathStrokeCapType cap;
   ArtPathStrokeJoinType join;
 
-  double       font_size;
-  char        *font_family;
-  PangoStyle   font_style;
-  PangoVariant font_variant;
-  PangoWeight  font_weight;
-  PangoStretch font_stretch;
+  double         font_size;
+  char        *  font_family;
+  PangoStyle     font_style;
+  PangoVariant   font_variant;
+  PangoWeight    font_weight;
+  PangoStretch   font_stretch;
+  TextDecoration font_decor;
 
   guint text_offset;
 
   guint32 stop_color; /* rgb */
-  gint stop_opacity; /* 0..255 */
+  gint stop_opacity;  /* 0..255 */
 
   ArtVpathDash dash;
 
@@ -369,6 +379,7 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 static void
 rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 {
+  RsvgState * parent_state = state; /* TODO: temporary hack */
   int arg_off;
 
   arg_off = rsvg_css_param_arg_offset (str);
@@ -428,25 +439,39 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
     }
   else if (rsvg_css_param_match (str, "font-family"))
     {
-      char * save = g_strdup (rsvg_css_parse_font_family (str + arg_off, state->font_family));
+      char * save = g_strdup (rsvg_css_parse_font_family (str + arg_off, parent_state->font_family));
       g_free (state->font_family);
       state->font_family = save;
     }
   else if (rsvg_css_param_match (str, "font-style"))
     {
-      state->font_style = rsvg_css_parse_font_style (str + arg_off, state->font_style);
+      state->font_style = rsvg_css_parse_font_style (str + arg_off, parent_state->font_style);
     }
   else if (rsvg_css_param_match (str, "font-variant"))
     {
-      state->font_variant = rsvg_css_parse_font_variant (str + arg_off, state->font_variant);
+      state->font_variant = rsvg_css_parse_font_variant (str + arg_off, parent_state->font_variant);
     }
   else if (rsvg_css_param_match (str, "font-weight"))
     {
-      state->font_weight = rsvg_css_parse_font_weight (str + arg_off, state->font_weight);
+      state->font_weight = rsvg_css_parse_font_weight (str + arg_off, parent_state->font_weight);
     }
   else if (rsvg_css_param_match (str, "font-stretch"))
     {
-      state->font_stretch = rsvg_css_parse_font_stretch (str + arg_off, state->font_stretch);
+      state->font_stretch = rsvg_css_parse_font_stretch (str + arg_off, parent_state->font_stretch);
+    }
+  else if (rsvg_css_param_match (str, "text-decoration"))
+    {
+      if (!strcmp (str, "inherit"))
+	state->font_decor = parent_state->font_decor;
+      else 
+	{
+	  if (strstr (str, "underline"))
+	    state->font_decor |= TEXT_UNDERLINE;
+	  if (strstr (str, "overline"))
+	    state->font_decor |= TEXT_OVERLINE;
+	  if (strstr (str, "strike") || strstr (str, "line-through")) /* strike though or line-through */
+	    state->font_decor |= TEXT_STRIKE;
+	}
     }
   else if (rsvg_css_param_match (str, "stop-color"))
     {
@@ -542,6 +567,7 @@ rsvg_is_style_arg(const char *str)
       g_hash_table_insert (styles, "stroke-miterlimit", GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "stroke-opacity",    GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "stroke-width",      GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "text-decoration",   GINT_TO_POINTER (TRUE));
     }
   
   /* this will default to 0 (FALSE) on a failed lookup */
@@ -1265,6 +1291,18 @@ rsvg_start_path (RsvgHandle *ctx, const xmlChar **atts)
 
 /* begin text - this should likely get split into its own .c file */
 
+#if ENABLE_TEXT_DECOR
+
+static void 
+rsvg_draw_hline (RsvgHandle *ctx, double x, double w, double y)
+{
+  char * d = g_strdup_printf ("M %f %f L %f %f", x, y, x+w, y);
+  rsvg_render_path (ctx, d);
+  g_free (d);
+}
+
+#endif
+
 static char *
 make_valid_utf8 (const char *str)
 {
@@ -1299,7 +1337,6 @@ make_valid_utf8 (const char *str)
 	
   return g_string_free (string, FALSE);
 }
-
 
 typedef struct _RsvgSaxHandlerText {
   RsvgSaxHandler super;
@@ -1442,6 +1479,18 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 
   g_free (bitmap.buffer);
   g_free (string);
+
+#if ENABLE_TEXT_DECOR
+  if (state->font_decor & TEXT_OVERLINE) {
+    rsvg_draw_hline (ctx, 0, line_ink_rect.width, line_ink_rect.y - line_ink_rect.height);
+  }
+  if (state->font_decor & TEXT_UNDERLINE) {
+    rsvg_draw_hline (ctx, 0, line_ink_rect.width, line_ink_rect.y);
+  }
+  if (state->font_decor & TEXT_STRIKE) {
+    rsvg_draw_hline (ctx, 0, ink_rect.width, line_ink_rect.y - (line_ink_rect.height/2));
+  }
+#endif
 
   state->text_offset += line_ink_rect.width;
 }
