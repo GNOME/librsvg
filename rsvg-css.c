@@ -161,7 +161,7 @@ rsvg_css_parse_color (const char *str)
 	  g_hash_table_insert (colors, "aqua",     GINT_TO_POINTER (0x00FFFF));
 	}
 
-      string = g_string_down (g_string_new (str));
+      string = g_string_ascii_down (g_string_new (str));
 
       /* this will default to black on a failed lookup */
       val = GPOINTER_TO_INT (g_hash_table_lookup (colors, string->str)); 

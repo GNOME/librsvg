@@ -50,6 +50,10 @@ INCLUDES =\
 	$(GTK_CFLAGS) \
 	$(XML_CFLAGS) \
 	$(ART_CFLAGS) \
+	-DG_LOG_DOMAIN=\"librsvg\" \
+	-DG_DISABLE_DEPRECATED \
+	-DGDK_DISABLE_DEPRECATED \
+	-DGTK_DISABLE_DEPRECATED \
 	-DDATADIR="\"$(datadir)\""
 
 DEPS = $(top_builddir)/librsvg.la

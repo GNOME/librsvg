@@ -1,3 +1,18 @@
+2001-07-25  Darin Adler  <darin@bentspoon.com>
+
+	* configure.in: Use more warnings when compiling from CVS.
+	* CVSVERSION: Flag to tell configure.in that these are
+	CVS sources, not a tarball.
+
+	* Makefile.am: Set log domain to "librsvg", disable
+	deprecated stuff from glib, gdk, and gtk.
+
+	* rsvg-css.c: (rsvg_css_parse_color): Use new
+	g_string_ascii_down instead of deprecated g_string_down.
+	* test-ft-gtk.c: (new_test_window): Use gtk_widget_set_usize
+	instead of deprecated gtk_drawing_area_set_size.
+	(main): Remove unnecessary call to deprecated gdk_rgb_init.
+
 2001-07-24  Darin Adler  <darin@bentspoon.com>
 
 	* .cvsignore: Don't ignore files that aren't made any more.
