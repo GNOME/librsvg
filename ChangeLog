@@ -12,7 +12,7 @@
 	(rsvg_render_bpath): Handle NULL pixbuf case.
 	(rsvg_text_handler_characters): Handle NULL pixbuf case.
 	
-	* test-20020212.svg: Add a test file from Sodipodo without a width
+	* test-20020212.svg: Add a test file from Sodipodi without a width
 	or height.
 
 ==== librsvg 1.1.3 ====
