@@ -44,7 +44,7 @@ main (int argc, const char **argv)
 	int bVersion = 0;
 	int quality = 100;
 	char * quality_str = NULL;
-	char * format = "png";
+	char * format = NULL;
 
 	struct poptOption options_table[] = {
 		{ "dpi-x",   'd',  POPT_ARG_DOUBLE, &dpi_x,    0, "pixels per inch", "<float>"},
@@ -87,10 +87,10 @@ main (int argc, const char **argv)
 			return 1;
 		}
 
-	if (strstr (format, "jpeg") != NULL || strstr (format, "jpg") != NULL)
-		format = "jpeg";
-	else
+	if(format == NULL)
 		format = "png";
+	else if (strstr (format, "jpg") != NULL) /* backward compatibility */
+		format = "jpeg";
 
 	g_type_init ();
 
@@ -108,12 +108,17 @@ main (int argc, const char **argv)
 														 width, height, NULL);
 
 	if (pixbuf)
-		if (strcmp (format, "jpeg") != 0 || (quality < 1 || quality > 100)) /* is a png or is an invalid quality */
-			gdk_pixbuf_save (pixbuf, args[1], format, NULL, NULL);
+		if (strcmp (format, "jpeg") == 0) {
+			if (quality < 1 || quality > 100) /* is an invalid quality */
+				gdk_pixbuf_save (pixbuf, args[1], format, NULL, NULL);
+			else {
+				quality_str = g_strdup_printf ("%d", quality);
+				gdk_pixbuf_save (pixbuf, args[1], format, NULL, "quality", quality_str, NULL);
+				g_free (quality_str);
+			}
+		}
 		else {
-			quality_str = g_strdup_printf ("%d", quality);
-			gdk_pixbuf_save (pixbuf, args[1], format, NULL, "quality", quality_str, NULL);
-			g_free (quality_str);
+			gdk_pixbuf_save (pixbuf, args[1], format, NULL, NULL);
 		}
 	else {
 		poptFreeContext (popt_context);

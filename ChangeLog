@@ -1,3 +1,10 @@
+2004-07-12  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.1: Update documentation
+	* configure.in: Fix build
+	* test-rsvg.c: Refactor a bit - allow for saving to ICO or anything
+	else that GdkPixbuf supports
+	
 2004-07-10  Dom Lachowicz <cinamod@hotmail.com>
 
 	* *.c: Allow for different X & Y resolutions (DPI). This needs more work;
