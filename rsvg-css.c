@@ -887,3 +887,14 @@ int rsvg_css_parse_aspect_ratio(const char * str)
 
 	return ratio;
 }
+
+gboolean rsvg_css_parse_overflow(const char * str)
+{
+	if (!strcmp(str, "hidden"))
+		return 0;
+	if (!strcmp(str, "scroll"))
+		return 0;
+	if (!strcmp(str, "visible"))
+		return 1;
+	return 0;
+}

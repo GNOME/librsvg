@@ -1,3 +1,7 @@
+2004-08-28  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-shapes.c: added an optional clippath around svg elements
+
 2004-08-27  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-shapes.c: Implemented preserveAspectRatio as per the standard

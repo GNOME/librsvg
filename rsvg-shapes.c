@@ -2392,3 +2392,147 @@ rsvg_marker_parse (const RsvgDefs * defs, const char *str)
 		}
 	return NULL;
 }
+
+static void
+rsvg_defs_drawable_svg_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+							 int dominate)
+{
+	RsvgDefsDrawableSvg * sself;
+	RsvgState *state;
+	ArtSVP * temppath = NULL;
+	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
+	guint i;
+	sself = (RsvgDefsDrawableSvg *)self;
+
+	if (!sself->overflow)
+		temppath = rsvg_rect_clip_path(sself->x,
+									   sself->y,
+									   sself->w,
+									   sself->h,
+									   ctx);
+
+	rsvg_state_reinherit_top(ctx, &self->state, dominate);
+
+	rsvg_push_discrete_layer (ctx);
+
+	state = rsvg_state_current (ctx);
+	if (temppath != NULL){
+		state->clip_path_loaded = TRUE;
+		state->clippath = rsvg_clip_path_merge(temppath,
+											   state->clippath, 'i');
+	}
+
+	for (i = 0; i < group->children->len; i++)
+		{
+			rsvg_state_push(ctx);
+
+			rsvg_defs_drawable_draw (g_ptr_array_index(group->children, i), 
+									 ctx, 0);
+	
+			rsvg_state_pop(ctx);
+		}			
+
+	rsvg_pop_discrete_layer (ctx);
+}
+
+static void 
+rsvg_defs_drawable_svg_free (RsvgDefVal *self)
+{
+	RsvgDefsDrawableGroup *z = (RsvgDefsDrawableGroup *)self;
+	rsvg_state_finalize (&z->super.state);
+	g_ptr_array_free(z->children, TRUE);
+	g_free (z);
+}
+
+void
+rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
+{
+	int width = -1, height = -1, x = -1, y = -1, i;
+	double affine[6];
+	const char * id, *value;
+	RsvgState * state;
+	double vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
+	gboolean has_vbox = FALSE, overflow = 0;
+	id = NULL;
+	RsvgDefsDrawableSvg * svg;
+	RsvgDefsDrawableGroup * group;
+
+	if (rsvg_property_bag_size (atts))
+		{
+			/* x & y should be ignored since we should always be the outermost SVG,
+			   at least for now, but i'll include them here anyway */
+			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
+				{
+					has_vbox = rsvg_css_parse_vbox (value, &vbox_x, &vbox_y,
+													&vbox_w, &vbox_h);
+				}
+			if ((value = rsvg_property_bag_lookup (atts, "width")))
+				width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, ctx->width, 1);
+			if ((value = rsvg_property_bag_lookup (atts, "height")))
+				height = rsvg_css_parse_normalized_length (value, ctx->dpi_y, ctx->height, 1);
+			if ((value = rsvg_property_bag_lookup (atts, "x")))
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, ctx->width, 1);
+			if ((value = rsvg_property_bag_lookup (atts, "y")))
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, ctx->height, 1);
+			if ((value = rsvg_property_bag_lookup (atts, "id")))
+				id = value;
+			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
+				overflow = rsvg_css_parse_overflow(value);
+		}
+	state = rsvg_state_current(ctx);
+	if (has_vbox)
+		{
+			affine[0] = width / vbox_w;
+			affine[1] = 0;
+			affine[2] = 0;
+			affine[3] = height / vbox_h;
+			affine[4] = x - vbox_x * width / vbox_w;
+			affine[5] = y - vbox_y * height / vbox_h;
+			for (i = 0; i < 6; i++)
+				rsvg_state_current(ctx)->personal_affine[i] = affine[i];
+			art_affine_multiply(state->affine, affine, 
+								state->affine);	
+		}
+	else
+		{
+			affine[0] = 1;
+			affine[1] = 0;
+			affine[2] = 0;
+			affine[3] = 1;
+			affine[4] = x;
+			affine[5] = y;
+			for (i = 0; i < 6; i++)
+				rsvg_state_current(ctx)->personal_affine[i] = affine[i];
+			art_affine_multiply(state->affine, affine, 
+								state->affine);
+		}
+
+	svg = g_new (RsvgDefsDrawableSvg, 1);
+	group = &svg->super;
+	svg->has_vbox = has_vbox;
+	svg->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
+
+	svg->x = x; svg->y = y; svg->w = width; svg->h = height;
+	svg->vbx = vbox_x; svg->vby = vbox_y; svg->vbw = vbox_w; svg->vbh = vbox_h;
+	svg->overflow = overflow;
+
+	group->children = g_ptr_array_new();
+	rsvg_state_clone (&group->super.state, rsvg_state_current (ctx));
+
+	group->super.super.type = RSVG_DEF_PATH;
+	group->super.super.free = rsvg_defs_drawable_svg_free;
+	group->super.draw = rsvg_defs_drawable_svg_draw;
+	group->super.draw_as_svp = rsvg_defs_drawable_group_draw_as_svp;
+
+	rsvg_defs_set (ctx->defs, id, &group->super.super);
+
+	group->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
+
+	ctx->current_defs_group = group;
+
+	if (group->super.parent != NULL)
+		rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)group->super.parent, 
+									  &group->super);
+
+	ctx->nest_level++;
+}

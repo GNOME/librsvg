@@ -46,6 +46,7 @@ void rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_symbol (RsvgHandle *ctx, RsvgPropertyBag *atts);
+void rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts);
 
 RsvgDefsDrawable * rsvg_push_def_group (RsvgHandle *ctx, const char * id);
 RsvgDefsDrawable * rsvg_push_part_def_group (RsvgHandle *ctx, const char * id);
@@ -56,6 +57,7 @@ typedef struct _RsvgDefsDrawableGroup RsvgDefsDrawableGroup;
 typedef struct _RsvgDefsDrawableUse RsvgDefsDrawableUse;
 typedef struct _RsvgDefsDrawableImage RsvgDefsDrawableImage;
 typedef struct _RsvgDefsDrawableSymbol RsvgDefsDrawableSymbol;
+typedef struct _RsvgDefsDrawableSvg RsvgDefsDrawableSvg;
 
 struct _RsvgDefsDrawable {
  	RsvgDefVal super;
@@ -90,6 +92,15 @@ struct _RsvgDefsDrawableUse {
 struct _RsvgDefsDrawableImage {
  	RsvgDefsDrawable super;
 	gint preserve_aspect_ratio, x, y, w, h;
+ 	GdkPixbuf *img;
+};
+
+struct _RsvgDefsDrawableSvg {
+ 	RsvgDefsDrawableGroup super;
+	gint preserve_aspect_ratio;
+	gdouble x, y, w, h;
+	gdouble vbx, vby, vbw, vbh;
+	gboolean overflow, has_vbox;
  	GdkPixbuf *img;
 };
 

@@ -217,69 +217,6 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 }
 
 static void
-rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
-{
-	int width = -1, height = -1, x = -1, y = -1, i;
-	double affine[6];
-	const char * id, *value;
-	RsvgState * state;
-	double vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
-	gboolean has_vbox = FALSE;
-	id = NULL;
-
-	if (rsvg_property_bag_size (atts))
-		{
-			/* x & y should be ignored since we should always be the outermost SVG,
-			   at least for now, but i'll include them here anyway */
-			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
-				{
-					has_vbox = rsvg_css_parse_vbox (value, &vbox_x, &vbox_y,
-													&vbox_w, &vbox_h);
-				}
-			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, ctx->width, 1);
-			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				height = rsvg_css_parse_normalized_length (value, ctx->dpi_y, ctx->height, 1);
-			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, ctx->width, 1);
-			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, ctx->height, 1);
-			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				id = value;
-
-		}
-	state = rsvg_state_current(ctx);
-	if (has_vbox)
-		{
-			affine[0] = width / vbox_w;
-			affine[1] = 0;
-			affine[2] = 0;
-			affine[3] = height / vbox_h;
-			affine[4] = x - vbox_x * width / vbox_w;
-			affine[5] = y - vbox_y * height / vbox_h;
-			for (i = 0; i < 6; i++)
-				rsvg_state_current(ctx)->personal_affine[i] = affine[i];
-			art_affine_multiply(state->affine, affine, 
-								state->affine);	
-		}
-	else
-		{
-			affine[0] = 1;
-			affine[1] = 0;
-			affine[2] = 0;
-			affine[3] = 1;
-			affine[4] = x;
-			affine[5] = y;
-			for (i = 0; i < 6; i++)
-				rsvg_state_current(ctx)->personal_affine[i] = affine[i];
-			art_affine_multiply(state->affine, affine, 
-								state->affine);
-		}
-	rsvg_push_def_group (ctx, id);
-	ctx->nest_level++;
-}
-
-static void
 rsvg_end_sub_svg(RsvgHandle *ctx)
 {
 	if (ctx->nest_level-- > 1)
