@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: librsvg
 Description: library that renders svg files using libart and pango
 Version: @VERSION@
-Requires: glib-2.0 gdk-pixbuf-2.0 libart-2.0 libxml-2.0 pangoft2 @LIBGSFPKG@ @LIBCROCOPKG@
+Requires: glib-2.0 gdk-pixbuf-2.0 libart-2.0 libxml-2.0 pangoft2
 Libs: ${pc_top_builddir}/${pcfiledir}/librsvg-2.la
 Cflags: -I${pc_top_builddir}/${pcfiledir}

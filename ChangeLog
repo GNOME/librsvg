@@ -1,3 +1,8 @@
+== librsvg 2.6.5 ==
+
+	* configure.in: Bump version
+	* *.pc.in: Remove libcroco && libgsf deps
+	
 == librsvg 2.6.4 ==	
 	
 2004-03-28  Caleb Moore <c.moore@student.unsw.edu.au>
