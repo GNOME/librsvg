@@ -74,6 +74,8 @@ typedef struct {
 	guint32 stop_color; /* rgb */
 	gint stop_opacity;  /* 0..255 */
 	
+	gboolean visible;
+
 	ArtVpathDash dash;
 	
 	GdkPixbuf *save_pixbuf;

@@ -63,6 +63,8 @@ rsvg_state_init (RsvgState *state)
 	state->font_variant = PANGO_VARIANT_NORMAL;
 	state->font_weight  = PANGO_WEIGHT_NORMAL;
 	state->font_stretch = PANGO_STRETCH_NORMAL;
+
+	state->visible = TRUE;
 }
 
 void
@@ -106,6 +108,22 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	if (rsvg_css_param_match (str, "opacity"))
 		{
 			state->opacity = rsvg_css_parse_opacity (str + arg_off);
+		}
+	else if (rsvg_css_param_match (str, "display"))
+		{
+			if (!strcmp (str + arg_off, "none"))
+				state->visible = FALSE;
+			else if (strcmp (str + arg_off, "inherit") != 0)
+				state->visible = TRUE;
+			/* else inherit */
+		}
+	else if (rsvg_css_param_match (str, "visibility"))
+		{
+			if (!strcmp (str + arg_off, "visable"))
+				state->visible = TRUE;
+			else if (strcmp (str + arg_off, "inherit") != 0)
+				state->visible = FALSE; /* collapse or hidden */
+			/* else inherit */
 		}
 	else if (rsvg_css_param_match (str, "fill"))
 		{
@@ -268,6 +286,7 @@ rsvg_is_style_arg(const char *str)
 		{
 			styles = g_hash_table_new (g_str_hash, g_str_equal);
 			
+			g_hash_table_insert (styles, "display",           GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "fill",              GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "fill-opacity",      GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "font-family",       GINT_TO_POINTER (TRUE));
@@ -288,6 +307,7 @@ rsvg_is_style_arg(const char *str)
 			g_hash_table_insert (styles, "stroke-opacity",    GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "stroke-width",      GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "text-decoration",   GINT_TO_POINTER (TRUE));
+			g_hash_table_insert (styles, "visibility",        GINT_TO_POINTER (TRUE));
 		}
 	
 	/* this will default to 0 (FALSE) on a failed lookup */

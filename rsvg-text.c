@@ -113,10 +113,12 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	
 	state = &ctx->state[ctx->n_state - 1];
 	if (state->fill == NULL && state->font_size <= 0)
-		{
-			return;
-		}
-	
+		return;
+
+	/* not quite up to spec, but good enough */
+	if (!state->visible)
+		return;
+
 	pixbuf = ctx->pixbuf;
 	if (pixbuf == NULL)
     {

@@ -158,7 +158,7 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	gboolean need_tmpbuf;
 	int opacity;
 	int tmp;
-	
+
 	pixbuf = ctx->pixbuf;
 	if (pixbuf == NULL)
 		{
@@ -167,6 +167,13 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 		}
 	
 	state = &ctx->state[ctx->n_state - 1];
+
+	/* todo: handle visibility stuff earlier for performance benefits 
+	 * handles all path based shapes. will handle text and images separately
+	 */
+	if (!state->visible)
+		return;
+
 	affine_bpath = art_bpath_affine_transform (bpath,
 											   state->affine);
 	
@@ -607,6 +614,10 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
 	
 	rsvg_parse_style_attrs (ctx, "image", klazz, atts);
 	
+	/* figure out if image is visible or not */
+	if (!state->visible)
+		return;
+
 	img = gdk_pixbuf_new_from_file (href, &err);
 	
 	if (!img)
