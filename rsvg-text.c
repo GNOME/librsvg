@@ -123,7 +123,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	PangoLayout *layout;
 	PangoFontDescription *font;
 	PangoLayoutLine *line;
-	PangoRectangle ink_rect, line_ink_rect;
+	PangoRectangle ink_rect, line_ink_rect, logical_rect;
 	FT_Bitmap bitmap;
 	
 	state = rsvg_state_current (ctx);
@@ -219,8 +219,34 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	bitmap.pixel_mode = ft_pixel_mode_grays;
 	
 	pango_ft2_render_layout (&bitmap, layout, -ink_rect.x, -ink_rect.y);
+	pango_layout_get_pixel_extents (layout, NULL, &logical_rect);
+	if ((state->text_dir == PANGO_DIRECTION_RTL) ||
+		(state->text_dir == PANGO_DIRECTION_LTR)) {
+		switch (state->text_anchor) {
+		case TEXT_ANCHOR_MIDDLE:
+			logical_rect.width /= 2;
+			break;
+		case TEXT_ANCHOR_END:
+			break;
+		default:
+			logical_rect.width = 0;
+			break;
+		}
+		logical_rect.height = 0;
+	} else {
+		switch (state->text_anchor) {
+		case TEXT_ANCHOR_MIDDLE:
+			logical_rect.height /= 2;
+			break;
+		case TEXT_ANCHOR_END:
+			break;
+		default:
+			logical_rect.height = 0;
+			break;
+		}
+		logical_rect.width = 0;
+	}
 	g_object_unref (layout);
-
 	has_alpha = gdk_pixbuf_get_has_alpha (pixbuf);
 	render = art_render_new (0, 0,
 							 gdk_pixbuf_get_width (pixbuf),
@@ -239,10 +265,10 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	
 	art_render_mask_solid (render, opacity);
 	art_render_mask (render,
-					 state->affine[4] + line_ink_rect.x + state->text_offset,
-					 state->affine[5] + line_ink_rect.y,
-					 state->affine[4] + line_ink_rect.x + bitmap.width + state->text_offset,
-					 state->affine[5] + line_ink_rect.y + bitmap.rows,
+					 state->affine[4] + line_ink_rect.x + state->text_offset - logical_rect.width,
+					 state->affine[5] + line_ink_rect.y - logical_rect.height,
+					 state->affine[4] + line_ink_rect.x + bitmap.width + state->text_offset - logical_rect.width,
+					 state->affine[5] + line_ink_rect.y + bitmap.rows - logical_rect.height,
 					 bitmap.buffer, bitmap.pitch);
 	art_render_invoke (render);
 	

@@ -62,6 +62,7 @@ rsvg_state_init (RsvgState *state)
 	state->font_weight  = PANGO_WEIGHT_NORMAL;
 	state->font_stretch = PANGO_STRETCH_NORMAL;
 	state->text_dir     = PANGO_DIRECTION_LTR;
+	state->text_anchor  = TEXT_ANCHOR_START;
 	state->visible      = TRUE;
 }
 
@@ -232,6 +233,20 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			else
 				state->text_dir = PANGO_DIRECTION_LTR;
 		}
+	else if (rsvg_css_param_match (str, "text-anchor"))
+		{
+			if (!strcmp (str + arg_off, "inherit"))
+				state->text_anchor = parent_state->text_anchor;
+			else 
+				{
+					if (strstr (str + arg_off, "start"))
+						state->text_anchor = TEXT_ANCHOR_START;
+					else if (strstr (str + arg_off, "middle"))
+						state->text_anchor = TEXT_ANCHOR_MIDDLE;
+					else if (strstr (str + arg_off, "end") )
+						state->text_anchor = TEXT_ANCHOR_END;
+				}
+		}
 	else if (rsvg_css_param_match (str, "stop-color"))
 		{
 			state->stop_color = rsvg_css_parse_color (str + arg_off);
@@ -327,6 +342,7 @@ rsvg_is_style_arg(const char *str)
 			g_hash_table_insert (styles, "stroke-miterlimit", GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "stroke-opacity",    GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "stroke-width",      GINT_TO_POINTER (TRUE));
+			g_hash_table_insert (styles, "text-anchor",       GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "text-decoration",   GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "visibility",        GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "writing-mode",      GINT_TO_POINTER (TRUE));

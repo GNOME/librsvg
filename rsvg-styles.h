@@ -45,6 +45,12 @@ enum {
 	TEXT_STRIKE    = 0x04
 };
 
+typedef enum {
+	TEXT_ANCHOR_START,
+	TEXT_ANCHOR_MIDDLE,
+	TEXT_ANCHOR_END
+} TextAnchor;
+
 typedef struct {
 	double affine[6];
 	
@@ -69,7 +75,8 @@ typedef struct {
 	PangoWeight    font_weight;
 	PangoStretch   font_stretch;
 	TextDecoration font_decor;
-	PangoDirection text_dir;	
+	PangoDirection text_dir;
+	TextAnchor     text_anchor;	
 
 	guint text_offset;
 	
