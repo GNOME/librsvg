@@ -1,3 +1,7 @@
+2004-11-17  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-defs.c: Interfile vfs linking now implemented. Utility api automatically gives contextual information.
+	
 2004-11-17  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-shapes.c: Refactored the image downloading code into a generic xlink:href downloading code.

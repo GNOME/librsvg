@@ -216,11 +216,13 @@ GdkPixbuf *
 _rsvg_pixbuf_new_cleared (GdkColorspace colorspace, gboolean has_alpha, int bits_per_sample,
 						  int width, int height);
 
+gchar *
+rsvg_get_base_uri_from_filename(const gchar * file_name);
+
 GByteArray *
 _rsvg_acquire_xlink_href_resource (const char *href,
 								   const char *base_uri,
 								   GError **err);
-
 G_END_DECLS
 
 #endif

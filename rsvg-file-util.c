@@ -124,6 +124,7 @@ rsvg_pixbuf_from_file_with_size_data_ex (RsvgHandle * handle,
 	GdkPixbuf *retval;
 	gint result;
 	FILE *f = fopen (file_name, "rb");
+	gchar *base_uri;
 
 	if (!f)
 		{
@@ -133,7 +134,9 @@ rsvg_pixbuf_from_file_with_size_data_ex (RsvgHandle * handle,
 			return NULL;
 		}
 
-	rsvg_handle_set_base_uri (handle, file_name);
+	base_uri = rsvg_get_base_uri_from_filename(file_name);
+	rsvg_handle_set_base_uri (handle, base_uri);
+	g_free(base_uri);
 
 	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
 
@@ -171,7 +174,9 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 	}
 
 	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
+
 	rsvg_handle_set_base_uri (handle, base_uri);
+
 	rsvg_handle_write (handle, buff, len, error);
 
 	rsvg_handle_close (handle, error);
@@ -184,6 +189,7 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 static GdkPixbuf *
 rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
 										   struct RsvgSizeCallbackData * data,
+										   gchar *base_uri,
 										   GError ** error)
 {
 	RsvgHandle * handle;
@@ -214,6 +220,8 @@ rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
 
 	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
 
+	rsvg_handle_set_base_uri(handle, base_uri);
+
 	rsvg_handle_write (handle, chars, result, error);
 
 	while (!feof(f) && !ferror(f) && ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0))
@@ -233,6 +241,7 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
 {
 	GdkPixbuf * pixbuf;
 	FILE *f = fopen (file_name, "rb");
+	gchar * base_uri;
 
 	if (!f)
 		{
@@ -242,8 +251,12 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
 			return NULL;
 		}
 	
-	pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data(f, data, error);
+	base_uri = rsvg_get_base_uri_from_filename(file_name);
 
+	pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data(f, data, 
+														base_uri, error);
+
+	g_free(base_uri);
 	fclose(f);
 
 	return pixbuf;

@@ -1428,6 +1428,26 @@ static void rsvg_SAX_handler_struct_init()
 		}
 }
 
+gchar *
+rsvg_get_base_uri_from_filename(const gchar * file_name)
+{
+	gchar *base_uri;
+	int i, last;
+
+	last = 0;
+	for (i = 0; file_name[i] != '\0'; i++)
+		if (file_name[i] == '/')
+			last = i;
+
+	base_uri = g_new(gchar, i + 2);
+  
+	for (i = 0; i <= last; i++)
+		base_uri[i] = file_name[i];
+
+	base_uri[i] = '\0';
+	return base_uri;
+}
+
 /**
  * Set the base URI for this SVG
  *

@@ -60,48 +60,26 @@ rsvg_defs_set_base_uri (RsvgDefs * self, gchar * base_uri)
 	self->base_uri = base_uri;
 }
 
-
-#define SVG_BUFFER_SIZE (1024 * 8)
-
 static int
 rsvg_defs_load_extern(const RsvgDefs *defs, const char *name)
 {
 	RsvgHandle * handle;
-	guchar chars[SVG_BUFFER_SIZE];
-	int result;
-	gchar * filename;
-	if (defs->base_uri)
-		filename = rsvg_get_file_path(name,defs->base_uri); 
-	else
-		filename = g_strdup(name);
+	gchar * filename, *base_uri;
+	GByteArray * chars;
 
-	FILE *f = fopen (filename, "rb");
-	if (!f)
-		{
-			printf("file: %s not found\n", filename );
-			g_free(filename);
-			return 1;
-		}
-	result = fread (chars, 1, SVG_BUFFER_SIZE, f);
 
-	/* test for GZ marker */
-	if ((result >= 2) && (chars[0] == (guchar)0x1f) && (chars[1] == (guchar)0x8b))
-		handle = rsvg_handle_new_gz ();
-	else
-		handle = rsvg_handle_new ();
+	filename = rsvg_get_file_path (name, defs->base_uri);
 
-	if (!handle)
-		{
-			g_free(filename);
-			return 1;
-		}
+	chars = _rsvg_acquire_xlink_href_resource(name, defs->base_uri, NULL);
 
-	rsvg_handle_set_base_uri (handle, name);
+	handle = rsvg_handle_new ();
 
-	rsvg_handle_write (handle, chars, result, NULL);
+	base_uri = rsvg_get_base_uri_from_filename(filename);
+	rsvg_handle_set_base_uri (handle, base_uri);
+	g_free(base_uri);
 
-	while (!feof(f) && ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0))
-		rsvg_handle_write (handle, chars, result, NULL);
+	rsvg_handle_write (handle, chars->data, chars->len, NULL);
+	g_byte_array_free (chars, TRUE);
 	
 	rsvg_handle_close (handle, NULL);
 	
