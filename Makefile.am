@@ -97,14 +97,15 @@ rsvg_view_LDFLAGS =
 rsvg_view_DEPENDENCIES = $(DEPS)
 rsvg_view_LDADD = $(LDADDS) $(GTK_LIBS) $(GDK_X11_LIBS) $(libm)
 
-EXTRA_DIST =			\
-	COPYING.LIB 		\
-	librsvg.spec.in 	\
-	librsvg-2.0.pc.in 	\
-	librsvg-zip.in 		\
-	rsvg-gz.c 		\
-	rsvg-gz.h 		\
-	$(man_MANS)		\
+EXTRA_DIST =				\
+	COPYING.LIB 			\
+	librsvg.spec.in 		\
+	librsvg-2.0.pc.in 		\
+	librsvg-2.0-uninstalled.pc.in 	\
+	librsvg-zip.in 			\
+	rsvg-gz.c 			\
+	rsvg-gz.h 			\
+	$(man_MANS)			\
 	$(rsvg_view_SOURCES)
 
 tests: rsvg

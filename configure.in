@@ -335,6 +335,7 @@ librsvg.spec
 librsvg-features.h
 Makefile
 librsvg-2.0.pc
+librsvg-2.0-uninstalled.pc
 librsvg-zip
 doc/Makefile
 gtk-engine/Makefile
