@@ -1,3 +1,13 @@
+2002-03-07  Darin Adler  <darin@bentspoon.com>
+
+	* rsvg.c: (rsvg_start_svg): Check for width 0 and height 0
+	cases. Make warnings clearer.
+	(rsvg_size_callback): Explicitly check for bad width and
+	height. Before, we sometimes did math starting with -1 and
+	yielding 0, which led to a divide by zero.
+	
+	* test-71622.svg: New test case.
+
 === librsvg 1.1.5 ===
 
 2002-03-04  Darin Adler  <darin@bentspoon.com>

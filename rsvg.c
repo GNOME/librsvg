@@ -49,12 +49,9 @@
 
 #define noVERBOSE
 
-typedef struct _RsvgState RsvgState;
-typedef struct _RsvgSaxHandler RsvgSaxHandler;
-
 #define SVG_BUFFER_SIZE (1024 * 8)
 
-struct _RsvgState {
+typedef struct {
   double affine[6];
 
   gint opacity; /* 0..255 */
@@ -78,9 +75,11 @@ struct _RsvgState {
   gboolean in_defs;
 
   GdkPixbuf *save_pixbuf;
-};
+} RsvgState;
 
-struct _RsvgSaxHandler {
+typedef struct RsvgSaxHandler RsvgSaxHandler;
+
+struct RsvgSaxHandler {
   void (*free) (RsvgSaxHandler *self);
   void (*start_element) (RsvgSaxHandler *self, const xmlChar *name, const xmlChar **atts);
   void (*end_element) (RsvgSaxHandler *self, const xmlChar *name);
@@ -152,9 +151,9 @@ rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
 
   /* key == entval->name, so it's implicitly freed below */
 
-  g_free ((xmlChar *)entval->name);
-  g_free ((xmlChar *)entval->ExternalID);
-  g_free ((xmlChar *)entval->SystemID);
+  g_free ((char *) entval->name);
+  g_free ((char *) entval->ExternalID);
+  g_free ((char *) entval->SystemID);
   xmlFree (entval->content);
   xmlFree (entval->orig);
   g_free (entval);
@@ -177,8 +176,8 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
   RsvgState *state;
   gboolean has_alpha = 1;
   gint new_width, new_height;
-  gdouble x_zoom;
-  gdouble y_zoom;
+  double x_zoom;
+  double y_zoom;
 
   if (atts != NULL)
     {
@@ -189,15 +188,30 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	  else if (!strcmp ((char *)atts[i], "height"))
 	    height = rsvg_css_parse_length ((char *)atts[i + 1], &fixed);
 	}
+
 #ifdef VERBOSE
       fprintf (stdout, "rsvg_start_svg: width = %d, height = %d\n",
 	       width, height);
 #endif
 
+      if (width == 0 || height == 0)
+        {
+          /* FIXME: GError here? */
+          g_warning ("rsvg_start_svg: can't render 0-sized SVG");
+          return;
+        }
+
       new_width = width;
       new_height = height;
       if (ctx->size_func)
 	(* ctx->size_func) (&new_width, &new_height, ctx->user_data);
+
+      if (new_width == 0 || new_height == 0)
+	{
+          /* FIXME: GError here? */
+          g_warning ("rsvg_start_svg: can't render 0-sized SVG");
+          return;
+	}
 
       x_zoom = (width < 0 || new_width < 0) ? 1 : (double) new_width / width;
       y_zoom = (height < 0 || new_height < 0) ? 1 : (double) new_height / height;
@@ -208,20 +222,22 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 
       if (new_width < 0 || new_height < 0)
         {
-          g_warning ("rsvg_start_svg: no width and height attributes in SVG, nor supplied by size_func");
+          g_warning ("rsvg_start_svg: width and height not specified in the SVG, nor supplied by the size callback");
           if (new_width < 0) new_width = 500;
           if (new_height < 0) new_height = 500;
         }
 
       if (new_width >= INT_MAX / 4)
         {
-          /* FIXME: What warning, GError here? */
+          /* FIXME: GError here? */
+          g_warning ("rsvg_start_svg: width too large");
 	  return;
         }
       rowstride = (new_width * (has_alpha ? 4 : 3) + 3) & ~3;
       if (rowstride > INT_MAX / new_height)
         {
-          /* FIXME: What warning, GError here? */
+          /* FIXME: GError here? */
+          g_warning ("rsvg_start_svg: width too large");
 	  return;
         }
 
@@ -230,7 +246,8 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
       pixels = g_try_malloc (rowstride * new_height);
       if (pixels == NULL)
         {
-          /* FIXME: What warning, GError here? */
+          /* FIXME: GError here? */
+          g_warning ("rsvg_start_svg: dimensions too large");
 	  return;
         }
       memset (pixels, has_alpha ? 0 : 255, rowstride * new_height);
@@ -1622,8 +1639,8 @@ typedef enum {
 
 struct RsvgSizeCallbackData
 {
-  gdouble x_zoom;
-  gdouble y_zoom;
+  double x_zoom;
+  double y_zoom;
   gint width;
   gint height;
   RsvgSizeType type;
@@ -1632,47 +1649,64 @@ struct RsvgSizeCallbackData
 };
 
 static void
-rsvg_size_callback (gint     *width,
-		    gint     *height,
+rsvg_size_callback (int *width,
+		    int *height,
 		    gpointer  data)
 {
-  struct RsvgSizeCallbackData *real_data = (struct RsvgSizeCallbackData *)data;
-  gdouble zoomx, zoomy, zoom;
+  struct RsvgSizeCallbackData *real_data = (struct RsvgSizeCallbackData *) data;
+  double zoomx, zoomy, zoom;
 
   switch (real_data->type) {
   case RSVG_SIZE_ZOOM:
-	  (* width) = floor (real_data->x_zoom * (* width) + 0.5);
-	  (* height) = floor (real_data->y_zoom * (* height) + 0.5);
-	  break;
-  case RSVG_SIZE_ZOOM_MAX:
-	  (* width) = floor (real_data->x_zoom * (* width) + 0.5);
-	  (* height) = floor (real_data->y_zoom * (* height) + 0.5);
+    if (*width < 0 || *height < 0)
+      return;
 
-	  if (*width > real_data->width || *height > real_data->height) {
-		  zoomx = (gdouble) real_data->width / (* width);
-		  zoomy = (gdouble) real_data->height / (* height);
-		  zoom = MIN (zoomx, zoomy);
-		  
-		  (* width) = floor (zoom * (* width) + 0.5);
-		  (* height) = floor (zoom * (* height) + 0.5);
-	  }
-	  break;
+    *width = floor (real_data->x_zoom * *width + 0.5);
+    *height = floor (real_data->y_zoom * *height + 0.5);
+    return;
+
+  case RSVG_SIZE_ZOOM_MAX:
+    if (*width < 0 || *height < 0)
+      return;
+
+    *width = floor (real_data->x_zoom * *width + 0.5);
+    *height = floor (real_data->y_zoom * *height + 0.5);
+    
+    if (*width > real_data->width || *height > real_data->height)
+      {
+	zoomx = (double) real_data->width / *width;
+	zoomy = (double) real_data->height / *height;
+	zoom = MIN (zoomx, zoomy);
+	
+	*width = floor (zoom * *width + 0.5);
+	*height = floor (zoom * *height + 0.5);
+      }
+    return;
+
   case RSVG_SIZE_WH_MAX:
-	  zoomx = (gdouble) real_data->width / (* width);
-	  zoomy = (gdouble) real_data->height / (* height);
-	  zoom = MIN (zoomx, zoomy);
-	  
-	  (* width) = floor (zoom * (* width) + 0.5);
-	  (* height) = floor (zoom * (* height) + 0.5);
-	  break;
+    if (*width < 0 || *height < 0)
+      return;
+
+    zoomx = (double) real_data->width / *width;
+    zoomy = (double) real_data->height / *height;
+    zoom = MIN (zoomx, zoomy);
+    
+    *width = floor (zoom * *width + 0.5);
+    *height = floor (zoom * *height + 0.5);
+    return;
+
   case RSVG_SIZE_WH:
-  default:
-	  if (real_data->width != -1)
-		  *width = real_data->width;
-	  if (real_data->height != -1)
-		  *height = real_data->height;
-	  break;
+    if (*width < 0 || *height < 0)
+      return;
+
+    if (real_data->width != -1)
+      *width = real_data->width;
+    if (real_data->height != -1)
+      *height = real_data->height;
+    return;
   }
+
+  g_assert_not_reached ();
 }
 
 /**
