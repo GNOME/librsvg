@@ -1,3 +1,8 @@
+2001-07-13  Darin Adler  <darin@bentspoon.com>
+
+	* configure.in: Remove xml-i18n-tools invocation so we don't
+	end up with a po directory.
+
 2001-07-09  Ramiro Estrugo  <ramiro@fateware.com>
 
 	* .cvsignore:
