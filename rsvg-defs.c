@@ -72,18 +72,20 @@ rsvg_defs_load_extern(const RsvgDefs *defs, const char *name)
 
 	chars = _rsvg_acquire_xlink_href_resource(name, defs->base_uri, NULL);
 
-	handle = rsvg_handle_new ();
-
-	base_uri = rsvg_get_base_uri_from_filename(filename);
-	rsvg_handle_set_base_uri (handle, base_uri);
-	g_free(base_uri);
-
-	rsvg_handle_write (handle, chars->data, chars->len, NULL);
-	g_byte_array_free (chars, TRUE);
-	
-	rsvg_handle_close (handle, NULL);
-	
-	g_hash_table_insert (defs->externs, g_strdup (name), handle);
+	if (chars != NULL) {
+		handle = rsvg_handle_new ();
+		
+		base_uri = rsvg_get_base_uri_from_filename(filename);
+		rsvg_handle_set_base_uri (handle, base_uri);
+		g_free(base_uri);
+		
+		rsvg_handle_write (handle, chars->data, chars->len, NULL);
+		g_byte_array_free (chars, TRUE);
+		
+		rsvg_handle_close (handle, NULL);
+		
+		g_hash_table_insert (defs->externs, g_strdup (name), handle);
+	}
 
 	g_free(filename);
 	return 0;
@@ -100,7 +102,11 @@ rsvg_defs_extern_lookup (const RsvgDefs *defs, const char *filename, const char 
 				return NULL;
 			file = (RsvgHandle *)g_hash_table_lookup (defs->externs, filename);
 		}
-	return (RsvgDefVal *)g_hash_table_lookup (file->defs->hash, name);
+
+	if (file != NULL)
+		return (RsvgDefVal *)g_hash_table_lookup (file->defs->hash, name);
+	else
+		return NULL;
 }
 
 RsvgDefVal *

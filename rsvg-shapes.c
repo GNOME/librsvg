@@ -1598,12 +1598,18 @@ rsvg_acquire_file_resource (const char *filename,
 	
 	while (!feof (f)) {
 		length = fread (buffer, 1, sizeof (buffer), f);
-		if (length > 0)
+		if (length > 0) {
 			if (g_byte_array_append (array, buffer, length) == NULL) {
 				fclose (f);
 				g_byte_array_free (array, TRUE);
 				return NULL;
 			}
+		} else if (ferror (f)) {
+			fclose (f);
+			g_byte_array_free (array, TRUE);
+			return NULL;
+		}
+
 	}
 	
 	fclose (f);

@@ -1,3 +1,7 @@
+2005-03-03  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-shapes.c, rsvg-defs.c: Bug #169051
+	
 2005-2-10  Alexander McCormmach <alexander at tunicate dot org>
 
 	* rsvg.c, rsvg-styles.c, rsvg-private.h: Applied patch by "makingnonsense" fixing spelling
