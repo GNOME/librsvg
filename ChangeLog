@@ -1,3 +1,9 @@
+2004-01-04  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-text-vectors.h: Start of work toward representing text as 
+	vector paths. Mad props go to the boys @ the Gimp for pointing me in
+	the right direction here (bug #107668).
+	
 2003-12-13  Caleb Moore <calebmm@tpg.com.au>
 
 	* rsvg-bpath-util.c: Fixed double move bug in path
