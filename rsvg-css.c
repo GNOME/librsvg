@@ -729,11 +729,6 @@ strtok_r(char *s, const char *delim, char **last)
 	return s;
 }
 
-#else
-
-char *
-strtok_r(char *s, const char *delim, char **last);
-
 #endif /* !HAVE_STRTOK_R */
 
 gchar **
