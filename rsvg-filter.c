@@ -2156,7 +2156,8 @@ rsvg_start_filter_primitive_merge_node (RsvgHandle * ctx,
 	const char *value;
 	if (rsvg_property_bag_size (atts))
 		{
-			if ((value = rsvg_property_bag_lookup (atts, "in")))
+			/* see bug 145149 - sodipodi generates bad SVG... */
+			if (ctx && ctx->currentsubfilter && (value = rsvg_property_bag_lookup (atts, "in")))
 				g_ptr_array_add (((RsvgFilterPrimitiveMerge *) (ctx->
 																currentsubfilter))->
 								 nodes, g_string_new (value));
