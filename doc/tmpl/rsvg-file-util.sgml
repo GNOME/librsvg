@@ -74,3 +74,68 @@ Utility/Convenience Functions
 @Returns: 
 
 
+<!-- ##### FUNCTION rsvg_pixbuf_from_file_ex ##### -->
+<para>
+
+</para>
+
+@handle: 
+@file_name: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_pixbuf_from_file_at_zoom_ex ##### -->
+<para>
+
+</para>
+
+@handle: 
+@file_name: 
+@x_zoom: 
+@y_zoom: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_pixbuf_from_file_at_size_ex ##### -->
+<para>
+
+</para>
+
+@handle: 
+@file_name: 
+@width: 
+@height: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_pixbuf_from_file_at_max_size_ex ##### -->
+<para>
+
+</para>
+
+@handle: 
+@file_name: 
+@max_width: 
+@max_height: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_pixbuf_from_file_at_zoom_with_max_ex ##### -->
+<para>
+
+</para>
+
+@handle: 
+@file_name: 
+@x_zoom: 
+@y_zoom: 
+@max_width: 
+@max_height: 
+@error: 
+@Returns: 
+
+
