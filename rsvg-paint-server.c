@@ -165,12 +165,12 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 		}
 
 	if (rlg->obj_bbox) {
-		affine[0] = ar->x1 - ar->x0;
+		affine[0] = ctx->x1 - ctx->x0;
 		affine[1] = 0.;		
 		affine[2] = 0.;
-		affine[3] = ar->y1 - ar->y0;
-		affine[4] = ar->x0;
-		affine[5] = ar->y0;
+		affine[3] = ctx->y1 - ctx->y0;
+		affine[4] = ctx->x0;
+		affine[5] = ctx->y0;
 
 		art_affine_multiply (affine, affine, rlg->affine);
 	} else {
@@ -239,12 +239,12 @@ rsvg_paint_server_rad_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	int i;
 
 	if (rrg->obj_bbox) {
-		affine[0] = ar->x1 - ar->x0;
+		affine[0] = ctx->x1 - ctx->x0;
 		affine[1] = 0.;		
 		affine[2] = 0.;
-		affine[3] = ar->y1 - ar->y0;
-		affine[4] = ar->x0;
-		affine[5] = ar->y0;
+		affine[3] = ctx->y1 - ctx->y0;
+		affine[4] = ctx->x0;
+		affine[5] = ctx->y0;
 
 		art_affine_multiply (affine, affine, rrg->affine);
 	} else {

@@ -1,3 +1,7 @@
+2003-11-27  Caleb Moore <calebmm@tpg.com.au>
+
+	* *: Implement bounding box based gradients
+	
 2003-11-25  Caleb Moore <calebmm@tpg.com.au>
 
 	* rsvg-styles.c: Fix opacity inheritance. Fixes a few bugs

@@ -125,6 +125,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	PangoLayoutLine *line;
 	PangoRectangle ink_rect, line_ink_rect, logical_rect;
 	FT_Bitmap bitmap;
+	RsvgPSCtx gradctx;
 	
 	state = rsvg_state_current (ctx);
 	if (state->fill == NULL && state->font_size <= 0)
@@ -259,7 +260,15 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 							 has_alpha ? ART_ALPHA_SEPARATE : ART_ALPHA_NONE,
 							 NULL);
 	
-	rsvg_render_paint_server (render, state->fill, NULL); /* todo: paint server ctx */
+	gradctx.x0 = line_ink_rect.x;
+	gradctx.y0 = line_ink_rect.y;
+	gradctx.x1 = line_ink_rect.x + logical_rect.width;
+	gradctx.y1 = line_ink_rect.y + logical_rect.height;
+	gradctx.width = ctx->width;
+	gradctx.height = ctx->height;
+	
+	rsvg_render_paint_server (render, state->fill, &gradctx);
+
 	opacity = state->fill_opacity * state->opacity;
 	opacity = opacity + (opacity >> 7) + (opacity >> 14);
 	

@@ -78,7 +78,8 @@ rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 	rsvg_paint_server_ref (dst->fill);
 	rsvg_paint_server_ref (dst->stroke);
 	dst->save_pixbuf = NULL;
-	
+	dst->opacity = 0xff;	
+
 	if (src->dash.n_dash > 0)
 		{
 			dst->dash.dash = g_new (gdouble, src->dash.n_dash);

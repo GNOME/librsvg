@@ -42,7 +42,13 @@ typedef struct _RsvgPaintServer RsvgPaintServer;
 typedef struct _RsvgPSCtx RsvgPSCtx;
 
 struct _RsvgPSCtx {
-	int dummy;
+	int x0;
+	int y0;
+	int x1;
+	int y1;
+
+	int height;
+	int width;
 	/* todo: we need to take in some context information, including:
 	   
 	1. The global affine transformation.

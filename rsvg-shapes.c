@@ -115,6 +115,43 @@ rsvg_close_vpath (const ArtVpath *src)
 	return result;
 }
 
+/* calculates how big an svp is */
+static ArtIRect
+rsvg_calculate_svp_bounds (const ArtSVP *svp)
+{
+	int i, j;	
+	int bigx, littlex, bigy, littley, assignedonce;
+	ArtIRect output;
+
+	bigx = littlex = bigy = littley = assignedonce = 0;	
+
+	for (i = 0; i < svp->n_segs; i++)
+		for (j = 0; j < svp->segs[i].n_points; j++)
+			{
+				if (!assignedonce)
+					{
+						bigx = svp->segs[i].points[j].x;
+						littlex = svp->segs[i].points[j].x;
+						bigy = svp->segs[i].points[j].y; 
+						littley = svp->segs[i].points[j].y;
+						assignedonce = 1;
+					}
+				if (svp->segs[i].points[j].x > bigx)
+					bigx = svp->segs[i].points[j].x;
+				if (svp->segs[i].points[j].x < littlex)
+					littlex = svp->segs[i].points[j].x;
+				if (svp->segs[i].points[j].y > bigy)
+					bigy = svp->segs[i].points[j].y; 
+				if (svp->segs[i].points[j].y < littley)
+					littley = svp->segs[i].points[j].y;
+			}
+	output.x0 = littlex;
+	output.y0 = littley;
+	output.x1 = bigx;
+	output.y1 = bigy;
+	return output;
+}
+
 /**
  * rsvg_render_svp: Render an SVP.
  * @ctx: Context in which to render.
@@ -131,6 +168,8 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 	GdkPixbuf *pixbuf;
 	ArtRender *render;
 	gboolean has_alpha;
+	ArtIRect temprect;
+	RsvgPSCtx gradctx;
 	
 	pixbuf = ctx->pixbuf;
 	if (pixbuf == NULL)
@@ -154,7 +193,17 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 	
 	art_render_svp (render, svp);
 	art_render_mask_solid (render, (opacity << 8) + opacity + (opacity >> 7));
-	rsvg_render_paint_server (render, ps, NULL); /* todo: paint server ctx */
+
+	temprect = rsvg_calculate_svp_bounds(svp);
+
+	gradctx.x0 = temprect.x0;
+	gradctx.y0 = temprect.y0;
+	gradctx.x1 = temprect.x1;
+	gradctx.y1 = temprect.y1;
+	gradctx.width = ctx->width;
+	gradctx.height = ctx->height;
+
+	rsvg_render_paint_server (render, ps, &gradctx);
 	art_render_invoke (render);
 }
 
