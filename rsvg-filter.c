@@ -641,22 +641,6 @@ struct _RsvgFilterPrimitiveBlend {
 	GString *in2;
 };
 
-double Min(double a, double b);
-double 
-Min(double a, double b){
-	if (a > b)
-		return b;
-	return a;
-}
-
-double Max(double a, double b);
-double 
-Max(double a, double b){
-	if (a < b)
-		return b;
-	return a;
-}
-
 void rsvg_start_filter_primitive_blend (RsvgHandle *ctx, const xmlChar **atts);
 void rsvg_filter_primitive_blend_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx);
 void rsvg_filter_primitive_blend_free (RsvgFilterPrimitive * self);
@@ -721,10 +705,10 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive *self, RsvgFilterContext
 							cr = cb + ca - ca * cb;
 							break;
 						case darken:
-							cr = Min ((1 - qa) * cb + ca, (1 - qb) * ca + cb);
+							cr = MIN ((1 - qa) * cb + ca, (1 - qb) * ca + cb);
 							break;
 						case lighten: 	
-							cr = Max ((1 - qa) * cb + ca, (1 - qb) * ca + cb);
+							cr = MAX ((1 - qa) * cb + ca, (1 - qb) * ca + cb);
 							break;
 						}
 						cr *= 255.0 / qr;
