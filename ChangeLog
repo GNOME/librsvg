@@ -1,3 +1,7 @@
+2001-08-24  Darin Adler  <darin@bentspoon.com>
+
+	* test-ft-gtk.c: (scroll_to): gdk_draw_pixmap -> gdk_draw_drawable.
+
 2001-08-22  Darin Adler  <darin@bentspoon.com>
 
 	* configure.in: Require newer libart.

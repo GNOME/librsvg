@@ -221,23 +221,23 @@ scroll_to (TestCtx *ctx, int new_y)
 		y0 = height - scroll_amt;
 		y1 = height;
 		if (ctx->do_scrolling) {
-			gdk_draw_pixmap (drawingarea->window,
-					 drawingarea->style->white_gc,
-					 drawingarea->window,
-					 0, scroll_amt,
-					 0, 0,
-					 width, y0);
+			gdk_draw_drawable (drawingarea->window,
+					   drawingarea->style->white_gc,
+					   drawingarea->window,
+					   0, scroll_amt,
+					   0, 0,
+					   width, y0);
 		}
 	} else if (scroll_amt < 0 && -scroll_amt < height) {
 		y0 = 0;
 		y1 = -scroll_amt;
 		if (ctx->do_scrolling) {
-			gdk_draw_pixmap (drawingarea->window,
-					 drawingarea->style->white_gc,
-					 drawingarea->window,
-					 0, 0,
-					 0, y1,
-					 width, height - y1);
+			gdk_draw_drawable (drawingarea->window,
+					   drawingarea->style->white_gc,
+					   drawingarea->window,
+					   0, 0,
+					   0, y1,
+					   width, height - y1);
 		}
 	} else {
 		y0 = 0;
