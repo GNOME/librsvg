@@ -22,53 +22,25 @@
    Author: Caleb Moore <calebmm@tpg.com.au>
 */
 
-#ifndef RSVG_MASK_H
-#define RSVG_MASK_H
+#ifndef RSVG_ART_MASK_H
+#define RSVG_ART_MASK_H
 
-#include "rsvg.h"
-#include "rsvg-defs.h"
-#include "rsvg-styles.h"
-#include "rsvg-shapes.h"
-#include <libxml/SAX.h>
+#include "rsvg-mask.h"
+#include <libart_lgpl/art_svp.h>
 
 G_BEGIN_DECLS
 
-typedef RsvgCoordUnits RsvgMaskUnits;
-
-typedef struct _RsvgMask RsvgMask;
-
-struct _RsvgMask {
-	RsvgDefsDrawableGroup super;
-	double x, y, width, height; 
-	RsvgMaskUnits maskunits;
-	RsvgMaskUnits contentunits;
-};
-
 void 
-rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts);
+rsvg_art_mask_render (RsvgMask *self, GdkPixbuf *source, GdkPixbuf *output, RsvgDrawingCtx *ctx);
 
-void 
-rsvg_end_mask (RsvgHandle *ctx);
+ArtSVP * 
+rsvg_art_clip_path_render (RsvgClipPath *s, RsvgDrawingCtx *ctx);
 
-RsvgDefsDrawable * 
-rsvg_mask_parse (const RsvgDefs * defs, const char *str);
+ArtSVP *
+rsvg_art_rect_clip_path(double x, double y, double w, double h, RsvgDrawingCtx * ctx);
 
-typedef struct _RsvgClipPath RsvgClipPath;
-
-struct _RsvgClipPath {
-	RsvgDefsDrawableGroup super;
-	RsvgCoordUnits units;
-};
-
-void 
-rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts);
-
-void 
-rsvg_end_clip_path (RsvgHandle *ctx);
-
-RsvgDefsDrawable * 
-rsvg_clip_path_parse (const RsvgDefs * defs, const char *str);
-
+ArtSVP *
+rsvg_art_clip_path_merge(ArtSVP * first, ArtSVP * second, char operation);
 
 G_END_DECLS
 

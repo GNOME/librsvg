@@ -1,3 +1,9 @@
+2005-02-23  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-art-mask.c: new file with art specific masking stuff
+	* rsvg-art-mask.h: see above
+	* rsvg-paint-server.c: bug 155752
+	
 2005-02-18 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-structure.c: bug 167813

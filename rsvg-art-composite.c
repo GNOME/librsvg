@@ -34,7 +34,7 @@
 #include "rsvg-styles.h"
 #include "rsvg-structure.h"
 #include "rsvg-filter.h"
-#include "rsvg-mask.h"
+#include "rsvg-art-mask.h"
 
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_affine.h>
@@ -115,10 +115,10 @@ rsvg_art_push_discrete_layer (RsvgDrawingCtx *ctx)
 			ArtSVP * tmppath;
 
 			rsvg_state_push(ctx);   
-			tmppath = rsvg_clip_path_render (state->clip_path_ref, ctx);		
+			tmppath = rsvg_art_clip_path_render (state->clip_path_ref, ctx);		
 			rsvg_state_pop(ctx);
 
-			render->clippath = rsvg_clip_path_merge(render->clippath, tmppath, 'i');
+			render->clippath = rsvg_art_clip_path_merge(render->clippath, tmppath, 'i');
 			layer->clippath_loaded = TRUE;
 			layer->clippath_save = render->clippath;
 		}
@@ -314,7 +314,7 @@ rsvg_composite_layer(RsvgDrawingCtx *ctx, RsvgState *state, GdkPixbuf *tos, GdkP
 	if (mask != NULL)
 		{
 			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
-			rsvg_mask_render ((RsvgMask *)mask, in, out, ctx);
+			rsvg_art_mask_render ((RsvgMask *)mask, in, out, ctx);
 			in = out;
 		}
 	if (adobe_blend)
@@ -621,8 +621,8 @@ rsvg_art_add_clipping_rect(RsvgDrawingCtx *ctx, double x, double y, double w, do
 	ArtSVP * temppath;
 	RsvgArtRender * render = (RsvgArtRender *)ctx->render;
 	RsvgArtDiscreteLayer * data = g_slist_nth(render->layers, 0)->data;	
-	temppath = rsvg_rect_clip_path(x, y, w, h, ctx);
+	temppath = rsvg_art_rect_clip_path(x, y, w, h, ctx);
 	data->clippath_loaded = TRUE;
-	render->clippath = rsvg_clip_path_merge(render->clippath, temppath, 'i');
+	render->clippath = rsvg_art_clip_path_merge(render->clippath, temppath, 'i');
 	
 }

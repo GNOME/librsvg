@@ -185,8 +185,9 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	guint32 current_color;
 	int i;
 	double xchange, ychange, pointlen,unitlen;
-	double nx2, ny2;
-	double x0, y0;
+	double cx, cy, cxt, cyt;
+	double px, py, pxt, pyt;
+	double x2t, y2t;
 
 	agl = z->agl;
 	if (agl == NULL)
@@ -219,7 +220,7 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 			affine[i] = ctx->affine[i];
 	}
 
-	art_affine_multiply(affine, affine, rlg->affine);
+	art_affine_multiply(affine, rlg->affine, affine);
 
 	/*
 	in case I am hit by a bus, here is how the following code works:
@@ -242,31 +243,36 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	***Start explained section***/
 
 	/*calculate (nx2, ny2), the point perpendicular to the gradient*/
-	xchange = rlg->x2 - rlg->x1;
-	ychange = rlg->y2 - rlg->y1;
-	nx2 = rlg->x1 - ychange;
-	ny2 = rlg->y1 + xchange;
+	cx = (rlg->x2 + rlg->x1) / 2;
+	cy = (rlg->y2 + rlg->y1) / 2;
+	xchange = cx - rlg->x1;
+	ychange = cy - rlg->y1;
+	px = cx - ychange;
+	py = cy + xchange;
 
 	/* compute [xy][12] in pixel space */
-	x1 = rlg->x1 * affine[0] + rlg->y1 * affine[2] + affine[4];
-	y1 = rlg->x1 * affine[1] + rlg->y1 * affine[3] + affine[5];
-	x0 = rlg->x2 * affine[0] + rlg->y2 * affine[2] + affine[4];
-	y0 = rlg->x2 * affine[1] + rlg->y2 * affine[3] + affine[5];
-	x2 = nx2 * affine[0] + ny2 * affine[2] + affine[4];
-	y2 = nx2 * affine[1] + ny2 * affine[3] + affine[5];
+	cxt = cx * affine[0] + cy * affine[2] + affine[4];
+	cyt = cx * affine[1] + cy * affine[3] + affine[5];
+	x2t = rlg->x2 * affine[0] + rlg->y2 * affine[2] + affine[4];
+	y2t = rlg->x2 * affine[1] + rlg->y2 * affine[3] + affine[5];
+	pxt = px * affine[0] + py * affine[2] + affine[4];
+	pyt = px * affine[1] + py * affine[3] + affine[5];
 
-	pointlen = abs((x2 - x1)*(y1 - y0)  - (x1 - x0)*(y2 - y1)) / 
-		sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+	pointlen = abs((pxt - cxt)*(cyt - y2t)  - (cxt - x2t)*(pyt - cyt)) / 
+		sqrt((pxt - cxt) * (pxt - cxt) + (pyt - cyt) * (pyt - cyt));
 
-	xchange = x2 - x1;
-	ychange = y2 - y1;
+	xchange = pxt - cxt;
+	ychange = pyt - cyt;
 	unitlen = sqrt(xchange*xchange + ychange*ychange);
 
-	if (unitlen == 0 || pointlen == 0) {
-		x2 = y2 = 0;
+	if (unitlen == 0) {
+		x2 = x1 = cxt; 
+		y2 = y1 = cyt;
 	} else {
-		x2 = x1 + ychange / unitlen * pointlen;
-		y2 = y1 - xchange / unitlen * pointlen;
+		x1 = cxt - ychange / unitlen * pointlen;
+		y1 = cyt + xchange / unitlen * pointlen;
+		x2 = cxt + ychange / unitlen * pointlen;
+		y2 = cyt - xchange / unitlen * pointlen;
 	}
 
 	/***end explained section***/
@@ -277,6 +283,7 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	dy = y2 - y1;
 
 	/* workaround for an evil devide by 0 bug - not sure if this is sufficient */
+
 	if (fabs(dx) + fabs(dy) <= 0.0000001)
 		scale = 100000000.;
 	else
