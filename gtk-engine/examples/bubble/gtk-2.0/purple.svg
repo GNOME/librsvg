@@ -1,0 +1,18 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20001102//EN" 
+  "http://www.w3.org/TR/2000/CR-SVG-20001102/DTD/svg-20001102.dtd">
+<svg width="266" height="244">
+  <desc>Gradients apply to leaf nodes
+  </desc>
+  <g>
+    <defs>
+      <linearGradient id="MyGradient" gradientUnits="objectBoundingBox">
+        <stop offset="0%" style="stop-color:#60F"/>
+        <stop offset="100%" style="stop-color:#F6F"/>
+      </linearGradient>
+    </defs>
+    <g style="fill:url(#MyGradient)">
+      <rect x="0" y="0" width="266" height="244"/>
+   </g>
+  </g>
+</svg>

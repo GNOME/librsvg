@@ -1,0 +1,77 @@
+style "default"
+{
+  fg[NORMAL] = "#ffffff"
+  fg[PRELIGHT] = "#ffffff"
+
+  engine "svg" 
+    {
+    image 
+      {
+        function        = BOX
+	file            = "blue.svg"
+	border          = { 8, 8, 8, 8 }
+	stretch         = TRUE
+      }
+    }
+
+  bg_pixmap[NORMAL]      = "purple.svg"
+  bg_pixmap[PRELIGHT]    = "purple.svg"
+  bg_pixmap[ACTIVE]      = "red.svg"  
+  bg_pixmap[INSENSITIVE] = "green.svg"
+}
+
+class "GtkWidget" style "default"
+
+style "bubble-button"
+{
+  engine "svg" 
+    {
+    image 
+      {
+        function        = BOX
+	file            = "purple.svg"
+	border          = { 8, 8, 8, 8 }
+	stretch         = TRUE
+      }
+    }
+}
+
+# common default
+class "GtkButton" style "bubble-button"
+
+style "bubble-range"
+{
+  GtkRange::slider_width = 16
+  GtkRange::stepper_size = 16
+
+  engine "svg" 
+    {
+    image 
+      {
+        function        = BOX
+	file            = "red.svg"
+	border          = { 8, 8, 8, 8 }
+	stretch         = TRUE
+      }
+    }
+}
+
+# common default
+class "GtkRange" style "bubble-range"
+
+style "bubble-menuitem"
+{
+  engine "svg" 
+    {
+    image 
+      {
+        function        = BOX
+	file            = "orange.svg"
+	border          = { 8, 8, 8, 8 }
+	stretch         = TRUE
+      }
+    }
+}
+
+# common default
+class "GtkMenuItem" style "bubble-menuitem"
