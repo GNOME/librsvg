@@ -4,15 +4,13 @@ bin_PROGRAMS = rsvg
 
 noinst_PROGRAMS = test-performance test-display
 
-manonedir = $(prefix)/man/man1
-MANPAGES = rsvg.1
-manone_DATA = $(MANPAGES)
+man_MANS = rsvg.1
 
 EXTRA_DIST =\
 	COPYING.LIB \
 	librsvg.spec.in \
 	librsvg-2.0.pc.in \
-	$(MANPAGES)
+	$(man_MANS)
 
 lib_LTLIBRARIES = librsvg-2.la
 

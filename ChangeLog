@@ -1,3 +1,10 @@
+2003-01-21  Alexander Larsson  <alexl@redhat.com>
+
+	* Makefile.am:
+	Better manpage installation.
+
+=== librsvg 2.2.0 ===
+	
 2003-01-20  Alexander Larsson  <alexl@redhat.com>
 
 	* NEWS: 
