@@ -200,7 +200,7 @@ draw_gap_image(GtkStyle       *style,
 	components |= COMPONENT_CENTER;
 
       if (image->gap_start)
-	pixbuf = theme_pixbuf_get_pixbuf (image->gap_start);
+	pixbuf = theme_pixbuf_get_pixbuf (image->gap_start, -1, -1);
 
       switch (gap_side)
 	{

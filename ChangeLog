@@ -1,4 +1,9 @@
-2003-03-04  Dom Lachowicz <cinamod@hotmail.com>
+2004-03-07  Dom Lachowicz <cinamod@hotmail.com>
+
+	* gtk-engine/*.[ch]: Theme engine now renders SVGs at their display
+	size, thus cutting down on a lot of nasty raster scaling
+	
+2004-03-04  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Forward-port things from Gman
 	* rsvg-styles.c: Forward-port patch from Dodji
