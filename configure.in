@@ -138,4 +138,7 @@ librsvg-features.h
 Makefile
 librsvg-2.0.pc
 gtk-engine/Makefile
+gtk-engine/examples/Makefile
+gtk-engine/examples/bubble/Makefile
+gtk-engine/examples/bubble/gtk-2.0/Makefile
 ])

@@ -1,3 +1,13 @@
+2002-09-25  jacob berkman  <jacob@ximian.com>
+
+	* gtk-engine/Makefile.am: add $(top_srcdir) to $INCLUDES, remove
+	broken and non-portable dist-hook in favor of real SUBDIRS (which
+	only get built if the engine is enabled)
+
+	* gtk-engine/ChangeLog: rename to ChangeLog-old
+
+	* configure.in (AC_OUTPUT): add new Makefiles
+
 2002-09-25  Dom Lachowicz <doml@appligent.com>
 
 	* (configure.in): --enable-gtk-theme argument (default=yes)

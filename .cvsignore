@@ -19,3 +19,8 @@ stamp-h
 stamp-h.in
 test-performance
 test-rsvg
+
+INSTALL
+install-sh
+missing
+mkinstalldirs
