@@ -598,6 +598,9 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
 	gboolean found = FALSE;
 	GString * klazz_list = NULL;
 	
+	/* handle the all-encompassing "star" entry first, ignoring found-ness */
+	rsvg_lookup_apply_css_style (ctx, "*");
+
 	if (tag != NULL && klazz != NULL)
 		{
 			target = g_strdup_printf ("%s.%s", tag, klazz);

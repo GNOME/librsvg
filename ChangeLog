@@ -1,3 +1,7 @@
+2003-01-14  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-styles.c (rsvg_parse_style_attrs): Also honor the "*" style
+	
 2003-01-13  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.1 : New man page, gets installed
