@@ -1,3 +1,8 @@
+2002-02-25  Darin Adler  <darin@bentspoon.com>
+
+	* .cvsignore: Ignore new test program binary.
+	* configure.in: Bump version.
+
 2002-02-24  Alexander Larsson  <alla@lysator.liu.se>
 
 	* rsvg.c: (rsvg_pixbuf_from_file_at_max_size): New function
