@@ -96,6 +96,7 @@ struct _RsvgPattern {
 	double affine[6]; /* user space to actual at time of gradient def */
 	double x, y, width, height;
 	RsvgDefVal * g;
+	RsvgDefVal * gfallback;
 };
 
 /* Create a new paint server based on a specification string. */

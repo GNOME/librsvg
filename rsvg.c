@@ -284,7 +284,7 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	if (strcmp ((char *)name, "stop"))
 		return;
 	
-	rsvg_state_init (&state);
+	rsvg_state_clone(&state ,rsvg_state_current(z->ctx));
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -309,7 +309,7 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 			rsvg_parse_style_pairs (z->ctx, &state, atts);
 		}
 	
-	rsvg_state_finalize (&state);
+	rsvg_state_finalize(&state);
 	
 	if (!got_offset)
 		{
@@ -461,7 +461,9 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				if (!strcmp (value, "userSpaceOnUse"))
 					obj_bbox = FALSE;
 				got_bbox = TRUE;
+
 			}
+			rsvg_parse_style_pairs (ctx, state, atts);
 		}
 	
 	/* set up 100% as the default if not gotten */
@@ -608,6 +610,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 					obj_bbox = FALSE;
 				got_bbox = TRUE;
 			}
+			rsvg_parse_style_pairs (ctx, state, atts);
 		}
 	
 	if (xlink_href != NULL)
@@ -777,6 +780,7 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			pattern = g_new (RsvgPattern, 1);
 			pattern->super.type = RSVG_DEF_PATTERN;
 			pattern->super.free = rsvg_pattern_free;
+			pattern->gfallback = NULL;
 		}
 	
 	rsvg_defs_set (ctx->defs, id, &pattern->super);

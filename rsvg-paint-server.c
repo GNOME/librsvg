@@ -494,6 +494,7 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 	}
 
 	art_affine_multiply(affine, pattern->affine, affine);
+	art_affine_multiply(caffine, pattern->affine, caffine);
 
 	render = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
 							 gdk_pixbuf_get_width(hctx->pixbuf), 
@@ -521,15 +522,17 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 			rsvg_state_current(hctx)->affine[i] = caffine[i];
 		}
 
-	rsvg_defs_drawable_draw (drawable, hctx, 2);
+	if (((RsvgDefsDrawableGroup *)drawable)->children->len ||
+		pattern->gfallback == NULL)
+		rsvg_defs_drawable_draw (drawable, hctx, 2);
+	else
+		rsvg_defs_drawable_draw ((RsvgDefsDrawable *)pattern->gfallback, hctx, 2);		
 
 	/* pop the state stack */
 	hctx->n_state--;
 	rsvg_state_finalize (&hctx->state[hctx->n_state]);
 
   	hctx->pixbuf = save;
-
-
 
 	render_image_pattern (ar, gdk_pixbuf_get_pixels (render),
 						  pattern->x * affine[0] + affine[4], 
@@ -753,7 +756,6 @@ rsvg_clone_linear_gradient (const RsvgLinearGradient *grad, gboolean * shallow_c
 RsvgPattern *
 rsvg_clone_pattern (const RsvgPattern *pattern)
 {
-	printf("cloneing pattern\n"); 
 	RsvgPattern * clone = NULL;
 	int i;
 	
@@ -765,7 +767,12 @@ rsvg_clone_pattern (const RsvgPattern *pattern)
 	clone->obj_cbbox = pattern->obj_cbbox;
 	for (i = 0; i < 6; i++)
 		clone->affine[i] = pattern->affine[i];
-	printf("cloned\n"); 
+
+	if (((RsvgDefsDrawableGroup *)pattern->g)->children->len ||
+		pattern->gfallback == NULL)
+		clone->gfallback = pattern->g;
+	else
+		clone->gfallback = pattern->gfallback;		
 
 	return clone;
 }

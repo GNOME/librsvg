@@ -244,7 +244,7 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 	if (!dst->has_join || src->has_join)
 		dst->join = src->join;
 	if (!dst->has_stop_color || src->has_stop_color)
-		dst->stop_color = src->stop_color;
+		dst->stop_color = src->stop_color;				
 	if (!dst->has_stop_opacity || src->has_stop_opacity)
 		dst->stop_opacity = src->stop_opacity;
 	if (!dst->has_visible || src->has_visible)
@@ -575,14 +575,19 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "stop-color"))
 		{
 			guint32 current_color = rsvg_state_current_color (state, parent_state);
-
-			state->has_stop_color = TRUE;
-			state->stop_color = rsvg_css_parse_color (str + arg_off, current_color);
+			if (strcmp(str + arg_off, "inherit"))
+				{
+					state->has_stop_color = TRUE;
+					state->stop_color = rsvg_css_parse_color (str + arg_off, current_color);
+				}
 		}
 	else if (rsvg_css_param_match (str, "stop-opacity"))
 		{
-			state->has_stop_opacity = TRUE;
-			state->stop_opacity = rsvg_css_parse_opacity (str + arg_off);
+			if (strcmp(str + arg_off, "inherit"))
+				{
+					state->has_stop_opacity = TRUE;
+					state->stop_opacity = rsvg_css_parse_opacity (str + arg_off);
+				}
 		}
 	else if (rsvg_css_param_match (str, "stroke-miterlimit"))
 		{
