@@ -1077,25 +1077,245 @@ size_prepared_cb (GdkPixbufLoader *loader,
 	gdk_pixbuf_loader_set_size (loader, width, height);
 }
 
-/**
- * rsvg_pixbuf_new_from_file_at_size:
- * @filename: Name of file to load.
- * @width: The width the image should have
- * @height: The height the image should have
- * @error: Return location for an error
- *
- * Creates a new pixbuf by loading an image from a file.  The file format is
- * detected automatically. If %NULL is returned, then @error will be set.
- * Possible errors are in the #GDK_PIXBUF_ERROR and #G_FILE_ERROR domains.
- * The image will be scaled to fit in the requested size, preserving its aspect ratio.
- *
- * Return value: A newly-created pixbuf with a reference count of 1, or %NULL if
- * any of several error conditions occurred:  the file could not be opened,
- * there was no loader for the file's format, there was not enough memory to
- * allocate the image buffer, or the image file contained invalid data.
- *
- * Since: 2.4
- **/
+static const char s_UTF8_B64Alphabet[64] = {
+	0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
+	0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, /* A-Z */
+	0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f,
+	0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, /* a-z */
+	0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, /* 0-9 */
+	0x2b, /* + */
+	0x2f  /* / */
+};
+static const char utf8_b64_pad = 0x3d;
+
+static gboolean b64_decode_char (char c, int * b64)
+{
+	if ((c >= 0x41) && (c <= 0x5a))
+		{
+			*b64 = c - 0x41;
+			return TRUE;
+		}
+	if ((c >= 0x61) && (c <= 0x7a))
+		{
+			*b64 = c - (0x61 - 26);
+			return TRUE;
+		}
+	if ((c >= 0x30) && (c <= 0x39))
+		{
+			*b64 = c + (52 - 0x30);
+			return TRUE;
+		}
+	if (c == 0x2b)
+		{
+			*b64 = 62;
+			return TRUE;
+		}
+	if (c == 0x2f)
+		{
+			*b64 = 63;
+			return TRUE;
+		}
+	return FALSE;
+}
+
+static gboolean utf8_base64_decode(char ** binptr, size_t * binlen, const char * b64ptr, size_t b64len)
+{
+	gboolean decoded = TRUE;
+	gboolean padding = FALSE;
+	
+	int i = 0;
+	glong ucs4_len, j;
+
+	unsigned char byte1 = 0;
+	unsigned char byte2;
+	
+	gunichar ucs4, * ucs4_str;
+	
+	if (b64len == 0) 
+		return TRUE;
+	
+	if ((binptr == 0) || (b64ptr == 0)) 
+		return FALSE;
+	
+	ucs4_str = g_utf8_to_ucs4_fast(b64ptr, b64len, &ucs4_len);
+	
+	for(j = 0; j < ucs4_len; j++)
+		{
+			ucs4 = ucs4_str[j];
+			if ((ucs4 & 0x7f) == ucs4)
+				{
+					int b64;
+					char c = (char)(ucs4);
+
+					if (b64_decode_char (c, &b64))
+						{
+							if (padding || (*binlen == 0))
+								{
+									decoded = FALSE;
+									break;
+								}
+
+							switch (i)
+								{
+								case 0:
+									byte1 = (unsigned char)(b64) << 2;
+									i++;
+									break;
+								case 1:
+									byte2 = (unsigned char)(b64);
+									byte1 |= byte2 >> 4;
+									*(*binptr)++ = (char)(byte1);
+									(*binlen)--;
+									byte1 = (byte2 & 0x0f) << 4;
+									i++;
+									break;
+								case 2:
+									byte2 = (unsigned char)(b64);
+									byte1 |= byte2 >> 2;
+									*(*binptr)++ = (char)(byte1);
+									(*binlen)--;
+									byte1 = (byte2 & 0x03) << 6;
+									i++;
+									break;
+								default:
+									byte1 |= (unsigned char)(b64);
+									*(*binptr)++ = (char)(byte1);
+									(*binlen)--;
+									i = 0;
+									break;
+								}
+							
+							if (!decoded) 
+								break;
+
+							continue;
+						}
+					else if (c == utf8_b64_pad)
+						{
+							switch (i)
+								{
+								case 0:
+								case 1:
+									decoded = FALSE;
+									break;
+								case 2:
+									if (*binlen == 0) 
+										decoded = FALSE;
+									else
+										{
+											*(*binptr)++ = (char)(byte1);
+											(*binlen)--;
+											padding = TRUE;
+										}
+									i++;
+									break;
+								default:
+									if (!padding)
+										{
+											if (*binlen == 0) 
+												decoded = FALSE;
+											else
+												{
+													*(*binptr)++ = (char)(byte1);
+													(*binlen)--;
+													padding = TRUE;
+												}
+										}
+									i = 0;
+									break;
+								}
+							if (!decoded) 
+								break;
+
+							continue;
+						}
+				}
+			if (g_unichar_isspace (ucs4)) 
+				continue;
+
+			decoded = FALSE;
+			break;
+		}
+	return decoded;
+}
+
+static GdkPixbuf *
+rsvg_pixbuf_new_from_data_at_size (const char *data,
+								   int         width, 
+								   int         height,
+								   gboolean    keep_aspect_ratio,
+								   GError    **error)
+{
+	GdkPixbufLoader *loader;
+	GdkPixbuf       *pixbuf;
+	
+	char * buffer, *bufptr;
+	size_t buffer_len, buffer_max_len, data_len;
+
+	struct {
+		gint width;
+		gint height;
+		gboolean keep_aspect_ratio;
+	} info;
+	
+	g_return_val_if_fail (data != NULL, NULL);
+	g_return_val_if_fail (width > 0 && height > 0, NULL);
+
+	while (*data) if (*data++ == ',') break;
+
+	data_len = strlen(data);
+	
+	buffer_max_len = ((data_len >> 2) + 1) * 3;
+	buffer_len = buffer_max_len;
+	buffer = g_new(char, buffer_max_len);
+	bufptr = buffer;
+
+	if(!utf8_base64_decode(&bufptr, &buffer_len, data, data_len)) {
+		g_free(buffer);
+		return NULL;
+	}
+
+	buffer_len = buffer_max_len - buffer_len;
+
+	loader = gdk_pixbuf_loader_new ();
+	
+	info.width = width;
+	info.height = height;
+	info.keep_aspect_ratio = keep_aspect_ratio;
+	
+	g_signal_connect (loader, "size-prepared", G_CALLBACK (size_prepared_cb), &info);
+
+	if (!gdk_pixbuf_loader_write (loader, buffer, buffer_len, error)) {
+		gdk_pixbuf_loader_close (loader, NULL);
+		g_object_unref (loader);
+		return NULL;
+	}
+	
+	if (!gdk_pixbuf_loader_close (loader, error)) {
+		g_object_unref (loader);
+		return NULL;
+	}
+	
+	pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
+	
+	if (!pixbuf) {
+		g_object_unref (loader);
+		g_set_error (error,
+					 GDK_PIXBUF_ERROR,
+					 GDK_PIXBUF_ERROR_FAILED,
+					 "Failed to load image: reason not known, probably a corrupt image.");
+		return NULL;
+	}
+	
+	g_object_ref (pixbuf);
+	
+	g_object_unref (loader);
+	
+	g_free(buffer);
+	
+	return pixbuf;
+}
+
 static GdkPixbuf *
 rsvg_pixbuf_new_from_file_at_size (const char *filename,
 								   int         width, 
@@ -1183,11 +1403,11 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	double x = 0., y = 0., w = -1., h = -1.;
 	const char * href = NULL;
 	const char * klazz = NULL, * id = NULL, *value;
-	
+	gboolean has_alpha;
+
 	GdkPixbuf *img;
 	GError *err = NULL;
 	
-	gboolean has_alpha;
 	guchar *rgb = NULL;
 	int dest_rowstride;
 	double tmp_affine[6];
@@ -1229,19 +1449,31 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	w *= state->affine[0];
 	h *= state->affine[3];
 
-	img = rsvg_pixbuf_new_from_file_at_size (href, w, h, FALSE, &err);
+	if(!strncmp(href, "data:", 5))
+		img = rsvg_pixbuf_new_from_data_at_size (href, w, h, FALSE, &err);
+	else
+		img = rsvg_pixbuf_new_from_file_at_size (href, w, h, FALSE, &err);
 	
 	if (!img)
 		{
 			if (err)
 				{
-					g_warning ("Couldn't load pixbuf (%s): %s\n", href, err->message);
+					g_warning ("Couldn't load image: %s\n", err->message);
 					g_error_free (err);
 				}
 			return;
 		}
 
 	has_alpha = gdk_pixbuf_get_has_alpha (img);
+	if(0 /* has_alpha */)
+		{
+			GdkPixbuf *tmp_pixbuf;
+			
+			tmp_pixbuf = gdk_pixbuf_add_alpha(img, FALSE, 0, 0, 0);
+			g_object_unref(img);
+			img = tmp_pixbuf;
+			has_alpha = TRUE;
+		}
 
 	dest_rowstride = (int)(w * (has_alpha ? 4 : 3) + 3) & ~3;
 	rgb = g_new (guchar, h * dest_rowstride);
@@ -1255,20 +1487,16 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if(has_alpha)
 		art_rgb_rgba_affine (rgb, 0, 0, w, h, dest_rowstride,
 							 gdk_pixbuf_get_pixels (img),
-							 gdk_pixbuf_get_width (img),
-							 gdk_pixbuf_get_height (img),
-							 gdk_pixbuf_get_rowstride (img),
+							 w, h, dest_rowstride,
 							 tmp_affine,
-							 ART_FILTER_BILINEAR,
+							 ART_FILTER_NEAREST,
 							 NULL);
 	else
 		art_rgb_affine (rgb, 0, 0, w, h, dest_rowstride,
 						gdk_pixbuf_get_pixels (img),
-						gdk_pixbuf_get_width (img),
-						gdk_pixbuf_get_height (img),
-						gdk_pixbuf_get_rowstride (img),
+						w, h, dest_rowstride,
 						tmp_affine,
-						ART_FILTER_BILINEAR,
+						ART_FILTER_NEAREST,
 						NULL);
 	
 	g_object_unref (G_OBJECT (img));
