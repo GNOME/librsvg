@@ -19,7 +19,7 @@
    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.
   
-   Author: Caleb Moore <calebmm@tpg.com.au>
+   Author: Caleb Moore <c.moore@student.unsw.edu.au>
 */
 
 #include "rsvg-private.h"
@@ -325,54 +325,20 @@ alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
 static void
 rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state)
 {
-	int i, j;
-	int x, y, height, width, x2, y2;
+	int x, y, height, width;
+	int i;
 	guchar *pixels;
 	int stride;
-	int currentindex;
-	
-	i = j = 0;
 	
 	/* First for object bounding box coordinates we need to know how much of the 
 	   source has been drawn on */
 	pixels = gdk_pixbuf_get_pixels (ctx->source);
 	stride = gdk_pixbuf_get_rowstride (ctx->source);
-	x = gdk_pixbuf_get_width (ctx->source);
-	y = gdk_pixbuf_get_height (ctx->source);
-	
-	x2 = 0; y2 = 0;
 
-
-	if (ctx->filter->filterunits == objectBoundingBox || 
-		ctx->filter->primitiveunits != objectBoundingBox)
-		{
-			/* move in from the top to find the y value */
-			for (i = 0; i < gdk_pixbuf_get_height (ctx->source); i++)
-				{
-					for (j = 0; j < gdk_pixbuf_get_width (ctx->source); j++)
-						{
-							currentindex = i * stride + j * 4;
-							if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0
-								|| pixels[currentindex + 2] != 0
-								|| pixels[currentindex + 3] != 0)
-								{
-									if (j < x)
-										x = j;
-									if (i < y)
-										y = i;
-									if (j > x2)
-										x2 = j;
-									if (i > y2)
-										y2 = i;	
-								}
-						}
-
-				}
-
-		}			
-
-	width = x2 - x;
-	height = y2 - y;
+	x = ctx->ctx->bbox.x0;
+	y = ctx->ctx->bbox.y0;
+	width = ctx->ctx->bbox.x1 - ctx->ctx->bbox.x0;
+	height = ctx->ctx->bbox.y1 - ctx->ctx->bbox.y0;
 
 	ctx->width = gdk_pixbuf_get_width (ctx->source);
 	ctx->height = gdk_pixbuf_get_height (ctx->source);
@@ -468,6 +434,10 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 
 	alpha_blt (ctx->lastresult.result, bounds.x1, bounds.y1, bounds.x2 - bounds.x1,
 			   bounds.y2 - bounds.y1, output, bounds.x1, bounds.y1);
+	context->bbox.x0 = bounds.x1;
+	context->bbox.y0 = bounds.y1;
+	context->bbox.x1 = bounds.x2;
+	context->bbox.y1 = bounds.y2;
 	g_object_unref (G_OBJECT (ctx->lastresult.result));
 	g_free(ctx);
 }
@@ -936,15 +906,15 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
 	g_object_unref (G_OBJECT (output));
 }
 
-void rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output)
+void rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output, RsvgHandle * ctx)
 {
 	FPBox boundarys;
 	RsvgFilterPrimitiveBlendMode mode;
 
-	boundarys.x1 = 0;
-	boundarys.y1 = 0;
-	boundarys.x2 = gdk_pixbuf_get_width (in);
-	boundarys.y2 = gdk_pixbuf_get_height (in);
+	boundarys.x1 = ctx->bbox.x0;
+	boundarys.y1 = ctx->bbox.y0;
+	boundarys.x2 = ctx->bbox.x1;
+	boundarys.y2 = ctx->bbox.y1;
 
 	mode = normal;
 

@@ -1,3 +1,7 @@
+2004-07-17  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-shapes.c, rsvg-styles.c, rsvg-private.h: Made it remember how bit the vboxes of discrete layers are for alpha optimisations and better filter positioning
+
 2004-07-12  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.1: Update documentation

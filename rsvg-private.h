@@ -31,6 +31,7 @@
 #include <libxml/SAX.h>
 #include <libxml/xmlmemory.h>
 #include <pango/pango.h>
+#include <libart_lgpl/art_rect.h>
 
 G_BEGIN_DECLS
 
@@ -58,7 +59,8 @@ struct RsvgHandle {
 	gpointer user_data;
 	GDestroyNotify user_data_destroy;
 	GdkPixbuf *pixbuf;
-	
+	ArtIRect bbox;
+
 	/* stack; there is a state for each element */
 	RsvgState *state;
 	int n_state;

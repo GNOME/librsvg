@@ -144,6 +144,7 @@ struct _RsvgState {
 	gboolean has_endMarker;	
 
 	GdkPixbuf *save_pixbuf;
+	ArtIRect underbbox;
 };
 
 void rsvg_state_init (RsvgState *state);

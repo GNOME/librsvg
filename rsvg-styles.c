@@ -1374,7 +1374,12 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 		return;
 
 	state->save_pixbuf = pixbuf;
-	
+	state->underbbox = ctx->bbox;	
+	ctx->bbox.x0 = 0;
+	ctx->bbox.x1 = 0;
+	ctx->bbox.y0 = 0;
+	ctx->bbox.y1 = 0;
+
 	if (pixbuf == NULL)
 		{
 			/* FIXME: What warning/GError here? */
@@ -1435,10 +1440,13 @@ rsvg_use_opacity (RsvgHandle *ctx, int opacity,
 	
 	tos_pixels = gdk_pixbuf_get_pixels (tos);
 	nos_pixels = gdk_pixbuf_get_pixels (nos);
+
+	tos_pixels += rowstride * MAX(ctx->bbox.y0, 0);
+	nos_pixels += rowstride * MAX(ctx->bbox.y0, 0);
 	
-	for (y = 0; y < height; y++)
+	for (y = MAX(ctx->bbox.y0, 0); y < MIN(ctx->bbox.y1 + 1, height); y++)
 		{
-			for (x = 0; x < width; x++)
+			for (x = MAX(ctx->bbox.x0, 0); x < MIN(ctx->bbox.x1 + 1, width); x++)
 				{
 					art_u8 r, g, b, a;
 					a = tos_pixels[4 * x + 3];
@@ -1583,7 +1591,7 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 	if (adobe_blend)
 		{
 			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
-			rsvg_filter_adobe_blend (adobe_blend, in, insidebg, out);
+			rsvg_filter_adobe_blend (adobe_blend, in, insidebg, out, ctx);
 			in = out;
 		}
 
@@ -1625,6 +1633,7 @@ rsvg_pop_discrete_layer(RsvgHandle *ctx)
 	
 	g_object_unref (tos);
 	ctx->pixbuf = nos;
+	art_irect_union(&ctx->bbox, &ctx->bbox, &state->underbbox);
 }
 
 gboolean

@@ -192,6 +192,8 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 
 	temprect = rsvg_calculate_svp_bounds(svp);
 
+	art_irect_union(&ctx->bbox, &ctx->bbox, &temprect);
+
 	gradctx.x0 = temprect.x0;
 	gradctx.y0 = temprect.y0;
 	gradctx.x1 = temprect.x1;
@@ -1665,7 +1667,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	const char * klazz = NULL, * id = NULL, *value;
 	gboolean has_alpha;
 	int aspect_ratio = RSVG_ASPECT_RATIO_NONE;
-
+	ArtIRect temprect;
 	GdkPixbuf *img;
 	GError *err = NULL;
 	
@@ -1783,6 +1785,13 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	rsvg_pop_discrete_layer(ctx);
 	
+	temprect.x0 = state->affine[4] + x;
+	temprect.y0 = state->affine[5] + y;
+	temprect.x1 = state->affine[4] + x + gdk_pixbuf_get_width (img);
+	temprect.y1 = state->affine[5] + y + gdk_pixbuf_get_height (img);
+
+	art_irect_union(&ctx->bbox, &ctx->bbox, &temprect);
+
 	g_object_unref (G_OBJECT (img));
 	g_free (rgb);
 }

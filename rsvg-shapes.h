@@ -106,6 +106,7 @@ rsvg_pixbuf_new_from_href (const char *href,
 void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
 							  int dominate);
 
+
 G_END_DECLS
 
 #endif /* RSVG_SHAPES_H */
