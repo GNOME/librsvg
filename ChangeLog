@@ -1,6 +1,19 @@
+2002-09-14  Dom Lachowicz <doml@appligent.com>
+
+	* rsvg.c (rsvg_start_element): Support for more tags
+	(rsvg_start_ellipse): draw ellipses (buggy - ellipses are off-center)
+	(rsvg_start_circle): draw circles
+	(rsvg_start_rect): draw rectangles
+	(rsvg_start_line): draw lines
+	(rsvg_start_img): eventually will draw images (todo)
+	(rsvg_start_polyline): draw polylines
+	(rsvg_start_polygon): draw polygons
+	(rsvg_start_any_poly): helper fn for polyline|polygon
+	(rsvg_make_poly_point_list): ditto
+	
 2002-09-13  Dom Lachowicz <doml@appligent.com>
 
-	* rsvg-css.c(rsvg_css_parse_color): Optimize RGB value determination from rgb() spec
+	* rsvg-css.c (rsvg_css_parse_color): Optimize RGB value determination from rgb() spec
 	(rsvg_css_normalize_rgb_percent): Floor returned value
 	(rsvg_css_parse_opacity): Check for null, use g_strtod
 	(rsvg_css_parse_fontsize): ditto

@@ -51,6 +51,9 @@
 
 #define SVG_BUFFER_SIZE (1024 * 8)
 
+/* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
+#define RSVG_ARC_MAGIC ((double) 0.552284749)
+
 /*
  * Ideally this will be configurable
  */
@@ -891,6 +894,7 @@ rsvg_start_path (RsvgHandle *ctx, const xmlChar **atts)
 	    d = (char *)atts[i + 1];
 	}
     }
+
   if (d != NULL)
     {
       RsvgBpathDef *bpath_def;
@@ -1274,6 +1278,340 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
   grad->fy = fy;
 }
 
+static GString *
+rsvg_make_poly_point_list(const char * points)
+{
+  guint idx = 0, size = strlen(points);
+  GString * str = g_string_sized_new (size);
+	
+  while (idx < size) 
+    {
+      /* scan for first point */
+      while (!g_ascii_isdigit (points[idx]) && (points[idx] != '.') 
+	     && (points[idx] != '-') && (idx < size))
+	idx++;
+      
+      /* now build up the point list (everything until next letter!) */
+      if (idx < size && points[idx] == '-')
+	g_string_append_c (str, points[idx++]); /* handle leading '-' */
+      while ((g_ascii_isdigit (points[idx]) || (points[idx] == '.')) && (idx < size)) 
+	  g_string_append_c (str, points[idx++]);
+
+      g_string_append_c (str, ' ');
+    }
+
+  return str;
+}
+
+static void
+rsvg_start_any_poly(RsvgHandle *ctx, const xmlChar **atts, gboolean is_polyline)
+{
+  /* the only difference i'm making between polygon and polyline is
+     that a polyline closes the path */
+
+  int i;
+  const char * verts = (const char *)NULL;
+  GString * g = NULL;
+  gchar ** pointlist = NULL;
+  xmlChar *path_atts[3];
+
+  rsvg_parse_style_attrs (ctx, atts);
+  if (atts != NULL)
+    {
+      for (i = 0; atts[i] != NULL; i += 2)
+	{
+	  /* support for svg < 1.0 which used verts */
+	  if (!strcmp ((char *)atts[i], "verts") || !strcmp ((char *)atts[i], "points"))
+	    verts = (const char *)atts[i + 1];
+	}
+    }
+
+  if (!verts)
+    return;
+
+  /* todo: make the following more memory and CPU friendly */
+  g = rsvg_make_poly_point_list (verts);
+  pointlist = g_strsplit (g->str, " ", -1);
+  g_string_free (g, TRUE);
+
+  /* represent as a "moveto, lineto*, close" path */  
+  if (pointlist)
+    {
+      GString * d = g_string_sized_new (strlen(verts));
+      g_string_append_printf (d, "M %s %s ", pointlist[0], pointlist[1] );
+
+      for (i = 2; pointlist[i] != NULL && pointlist[i][0] != '\0'; i += 2)
+	  g_string_append_printf (d, "L %s %s ", pointlist[i], pointlist[i+1]);
+
+      if (!is_polyline)
+	g_string_append (d, "Z");
+
+      path_atts[0] = (xmlChar*)"d";
+      path_atts[1] = (xmlChar*)d->str;
+      path_atts[2] = (xmlChar*)NULL;
+      rsvg_start_path (ctx, (const xmlChar **)path_atts);
+
+      g_string_free (d, TRUE);
+      g_strfreev(pointlist);
+    }
+}
+
+static void
+rsvg_start_polygon (RsvgHandle *ctx, const xmlChar **atts)
+{
+  rsvg_start_any_poly (ctx, atts, FALSE);
+}
+
+static void
+rsvg_start_polyline (RsvgHandle *ctx, const xmlChar **atts)
+{
+  rsvg_start_any_poly (ctx, atts, TRUE);
+}
+
+static void
+rsvg_start_img (RsvgHandle *ctx, const xmlChar **atts)
+{
+  int i;
+  double x = -1, y = -1, w = -1, h = -1;
+  const char * path = (const char *)NULL;
+
+  rsvg_parse_style_attrs (ctx, atts);
+  if (atts != NULL)
+    {
+      gint fixed = FALSE;
+      
+      for (i = 0; atts[i] != NULL; i += 2)
+	{
+	  if (!strcmp ((char *)atts[i], "x"))
+	    x = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "y"))
+	    y = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "width"))
+	    w = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "height"))
+	    h = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "path"))
+	    path = (const char *)atts[i + 1];
+	}
+    }
+
+  if (!path || x < 0. || y < 0. || w < 0. || h < 0.)
+    return;
+
+  return;
+}
+
+static void
+rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
+{
+  int i;
+  double x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+  char * d = NULL;
+  xmlChar *path_atts[3];
+
+  rsvg_parse_style_attrs (ctx, atts);
+  if (atts != NULL)
+    {
+      gint fixed = FALSE;
+      
+      for (i = 0; atts[i] != NULL; i += 2)
+	{
+	  if (!strcmp ((char *)atts[i], "x1"))
+	    x1 = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "y1"))
+	    y1 = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  if (!strcmp ((char *)atts[i], "x2"))
+	    x2 = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "y2"))
+	    y2 = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	}      
+    }
+
+  /* emulate a line using a path */
+  d = g_strdup_printf ("M %f %f L %f %f", x1, y1, x2, y2);
+
+  path_atts[0] = (xmlChar*)"d";
+  path_atts[1] = (xmlChar*)d;
+  path_atts[2] = (xmlChar*)NULL;
+  rsvg_start_path (ctx, (const xmlChar **)path_atts);
+
+  g_free (d);
+}
+
+static void
+rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
+{
+  int i;
+  double x = -1, y = -1, w = -1, h = -1, rx = 0, ry = 0;
+  char * d = NULL;
+  xmlChar *path_atts[3];
+  
+  rsvg_parse_style_attrs (ctx, atts);
+  if (atts != NULL)
+    {
+      gint fixed = FALSE;
+      
+      for (i = 0; atts[i] != NULL; i += 2)
+	{
+	  if (!strcmp ((char *)atts[i], "x"))
+	    x = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "y"))
+	    y = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "width"))
+	    w = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "height"))
+	    h = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "rx"))
+	    rx = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "ry"))
+	    ry = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	}
+    }
+
+  if (x < 0. || y < 0. || w < 0. || h < 0. || rx < 0. || ry < 0.)
+    return;
+ 
+  /* emulate a rect using a path */
+  d = g_strdup_printf ("M %f %f "
+		       "H %f "
+		       "A %f,%f %f,%f %f %f,%f "
+		       "V %f "
+		       "A %f,%f %f,%f %f %f,%f "
+		       "H %f "
+		       "A %f,%f %f,%f %f %f,%f "
+		       "V %f "
+		       "A %f,%f %f,%f %f %f,%f",
+		       x + rx, y,
+		       x + w - rx,
+		       rx, ry, 0., 0., 1., x + w, y + ry,
+		       y + h - ry,
+		       rx, ry, 0., 0., 1., x + w - rx, y + h,
+		       x + rx,
+		       rx, ry, 0., 0., 1., x, y + h - ry,
+		       y + ry,
+		       rx, ry, 0., 0., 1., x + rx, y);
+
+  path_atts[0] = (xmlChar*)"d";
+  path_atts[1] = (xmlChar*)d;
+  path_atts[2] = (xmlChar*)NULL;
+  rsvg_start_path (ctx, (const xmlChar **)path_atts);
+  
+  g_free (d);
+}
+
+static void
+rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
+{
+  int i;
+  double cx = 0, cy = 0, r = 0;
+  char * d = NULL;
+  xmlChar *path_atts[3];
+  
+  rsvg_parse_style_attrs (ctx, atts);
+  if (atts != NULL)
+    {
+      gint fixed = FALSE;
+      
+      for (i = 0; atts[i] != NULL; i += 2)
+	{
+	  if (!strcmp ((char *)atts[i], "cx"))
+	    cx = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "cy"))
+	    cy = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "r"))
+	    r = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	}
+    }
+
+  if (cx < 0. || cy < 0. || r <= 0.)
+    return;
+
+  /* approximate a circle using 4 bezier paths */
+  d = g_strdup_printf ("M %f %f "
+		       "C %f %f %f %f %f %f "
+		       "C %f %f %f %f %f %f "
+		       "C %f %f %f %f %f %f "
+		       "C %f %f %f %f %f %f "
+		       "Z",
+		       cx + r, cy,
+		       cx + r, cy + r * RSVG_ARC_MAGIC, cx + r * RSVG_ARC_MAGIC, cy + r, cx, cy + r,
+		       cx - r * RSVG_ARC_MAGIC, cy + r, cx - r, cy + r * RSVG_ARC_MAGIC, cx - r, cy,
+		       cx - r, cy - r * RSVG_ARC_MAGIC, cx - r * RSVG_ARC_MAGIC, cy - r, cx, cy - r,
+		       cx + r * RSVG_ARC_MAGIC, cy - r, cx + r, cy - r * RSVG_ARC_MAGIC, cx + r, cy
+		       );
+
+  path_atts[0] = (xmlChar*)"d";
+  path_atts[1] = (xmlChar*)d;
+  path_atts[2] = (xmlChar*)NULL;
+  rsvg_start_path (ctx, (const xmlChar **)path_atts);
+  
+  g_free (d);
+}
+
+static void
+rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
+{
+  int i;
+  double cx = 0, cy = 0, rx = 0, ry = 0;
+  char * d = NULL;
+  xmlChar *path_atts[3];
+
+  double r1x, r1y, r2x, r2y, r3x, r3y, r4x, r4y;
+  
+  rsvg_parse_style_attrs (ctx, atts);
+  if (atts != NULL)
+    {
+      gint fixed = FALSE;
+      
+      for (i = 0; atts[i] != NULL; i += 2)
+	{
+	  if (!strcmp ((char *)atts[i], "cx"))
+	    cx = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "cy"))
+	    cy = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "rx"))
+	    rx = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  else if (!strcmp ((char *)atts[i], "ry"))
+	    ry = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	}
+    }
+
+  if (cx < 0. || cy < 0. || rx <= 0. || ry <= 0.)
+    return;
+
+  r1x = cx - rx ;
+  r1y = cy ;
+  r2x = cx + rx ; 
+  r2y = cy ;
+  r3x = cx ;
+  r3y = cy + ry ;
+  r4x = cx ;
+  r4y = cy - ry ;
+
+  /* approximate an ellipse using 4 bezier paths: todo: this is buggy */
+  d = g_strdup_printf ("M %f %f "
+		       "C %f %f %f %f %f %f "
+		       "C %f %f %f %f %f %f "
+		       "C %f %f %f %f %f %f "
+		       "C %f %f %f %f %f %f "
+		       "Z",
+		       r2x, r2y,
+		       r2x, ( r2y + r4y ) / 2., ( r2x + r4x ) / 2., r4y, r4x, r4y,
+		       ( r4x + r1x ) / 2., r4y, r1x, ( r1y + r4y ) / 2., r1x, r1y,
+		       r1x, ( r1y + r3y ) / 2., ( r1x + r3x ) / 2., r3y, r3x, r3y,
+		       ( r3x + r2x ) / 2., r3y, r2x, ( r3y + r2y ) / 2., r2x, r2y
+		       );
+
+  path_atts[0] = (xmlChar*)"d";
+  path_atts[1] = (xmlChar*)d;
+  path_atts[2] = (xmlChar*)NULL;
+  rsvg_start_path (ctx, (const xmlChar **)path_atts);
+  
+  g_free (d);
+
+  return;
+}
+
 static void
 rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 {
@@ -1319,8 +1657,22 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 	rsvg_start_path (ctx, atts);
       else if (!strcmp ((char *)name, "text"))
 	rsvg_start_text (ctx, atts);
+      else if (!strcmp ((char *)name, "img"))
+	rsvg_start_img (ctx, atts);
+      else if (!strcmp ((char *)name, "line"))
+	rsvg_start_line (ctx, atts);
+      else if (!strcmp ((char *)name, "rect"))
+	rsvg_start_rect (ctx, atts);
+      else if (!strcmp ((char *)name, "circle"))
+	rsvg_start_circle (ctx, atts);
+      else if (!strcmp ((char *)name, "ellipse"))
+	rsvg_start_ellipse (ctx, atts);
       else if (!strcmp ((char *)name, "defs"))
 	rsvg_start_defs (ctx, atts);
+      else if (!strcmp ((char *)name, "polygon"))
+	rsvg_start_polygon (ctx, atts);
+      else if (!strcmp ((char *)name, "polyline"))
+	rsvg_start_polyline (ctx, atts);
       else if (!strcmp ((char *)name, "linearGradient"))
 	rsvg_start_linear_gradient (ctx, atts);
       else if (!strcmp ((char *)name, "radialGradient"))
@@ -1805,7 +2157,7 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
  * Loads a new #GdkPixbuf from @file_name and returns it.  This pixbuf is scaled
  * from the size indicated by the file by a factor of @x_zoom and @y_zoom. If the
  * resulting pixbuf would be larger than max_width/max_heigh it is uniformly scaled
- * down to fit in that rectangle.�The caller must assume the reference to the
+ * down to fit in that rectangle. The caller must assume the reference to the
  * returned pixbuf. If an error occurred, @error is set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
