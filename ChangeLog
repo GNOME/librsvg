@@ -1,5 +1,9 @@
 2002-10-01  Dom Lachowicz <doml@appligent.com>
 
+	* rsvg.c (gradient_stop): Handle % gradient stop offsets
+	
+2002-10-01  Dom Lachowicz <doml@appligent.com>
+
 	* rsvg-css.c (rsvg_css_parse_length): handle %, em units now. ex can easily be handled once we have a way to get the font's XHeight
 	(rsvg_css_parse_normalized_length): updated for above ^^^
 	

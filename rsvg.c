@@ -1309,7 +1309,8 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	{
 	  if (!strcmp ((char *)atts[i], "offset"))
 	    {
-	      offset = g_ascii_strtod ((char *)atts[i + 1], NULL);
+	      /* either a number [0,1] or a percentage */
+	      offset = rsvg_css_parse_normalized_length ((char *)atts[i + 1], z->ctx->dpi, 1., 0., 0.);
 	      got_offset = TRUE;
 	    }
 	  else if (!strcmp ((char *)atts[i], "style"))
