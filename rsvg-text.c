@@ -81,16 +81,64 @@ rsvg_make_valid_utf8 (const char *str)
 
 typedef struct _RsvgTspan RsvgTspan;
 
+typedef struct _RsvgTChunk RsvgTChunk;
+
 struct _RsvgTspan {
 	gdouble x, y;
 	gboolean hasx, hasy;
 	gdouble dx, dy;
 	RsvgTspan * parent;
+	GPtrArray * contents;
+	RsvgState state;
 };
+
+struct _RsvgTChunk {
+	GString * string;
+	RsvgTspan * span;
+};
+
+static RsvgTChunk *
+rsvg_tchunk_new_text(gchar *text)
+{
+	RsvgTChunk * output;
+	output = g_new(RsvgTChunk, 1);
+	output->string = g_string_new(text);
+	output->span = NULL;
+	return output;
+}
+
+static RsvgTChunk *
+rsvg_tchunk_new_span(RsvgTspan *span)
+{
+	RsvgTChunk * output;
+	output = g_new(RsvgTChunk, 1);
+	output->string = NULL;
+	output->span = span;
+	return output;
+}
+
+static void
+rsvg_tchunk_free(RsvgTChunk * self);
 
 static void
 rsvg_tspan_free(RsvgTspan * self)
 {
+	unsigned int i;
+	rsvg_state_finalize(&self->state);
+	for (i = 0; i < self->contents->len; i++) {
+		rsvg_tchunk_free (g_ptr_array_index(self->contents, i));
+	}
+	g_ptr_array_free(self->contents, 1);
+	g_free(self);
+}
+
+static void
+rsvg_tchunk_free(RsvgTChunk * self)
+{
+	if (self->string)
+		g_string_free(self->string, 1);
+	if (self->span)
+		rsvg_tspan_free(self->span);
 	g_free(self);
 }
 
@@ -103,46 +151,9 @@ rsvg_tspan_new()
 	self->dy = 0;
 	self->hasx = FALSE;
 	self->hasy = FALSE;
+	self->contents = g_ptr_array_new();
 	return self;
 }
-
-static gdouble
-rsvg_tspan_x(RsvgTspan * self)
-{
-	RsvgTspan * i;
-	for (i = self; i->hasx == FALSE; i = i->parent)
-		;
-	return i->x;
-}
-
-static gdouble
-rsvg_tspan_y(RsvgTspan * self)
-{
-	RsvgTspan * i;
-	for (i = self; i->hasy == FALSE; i = i->parent)
-		;
-	return i->y;
-}
-
-static void
-rsvg_tspan_set_x(RsvgTspan * self, gdouble setto)
-{
-	RsvgTspan * i;
-	for (i = self; i->hasx == FALSE; i = i->parent)
-		;
-	i->x = setto;
-}
-
-/*
-static void
-rsvg_tspan_set_y(RsvgTspan * self, gdouble setto)
-{
-	RsvgTspan * i;
-	for (i = self; i->hasy == FALSE; i = i->parent)
-		;
-	i->y = setto;
-}
-*/
 
 static gdouble
 rsvg_tspan_dx(RsvgTspan * self)
@@ -186,23 +197,20 @@ rsvg_text_handler_free (RsvgSaxHandler *self)
 	RsvgSaxHandlerText * z;
 	z = (RsvgSaxHandlerText *)self;
 
-	rsvg_tspan_free(z->tspan);
 	g_string_free(z->id, TRUE);
 	g_free (self);
 }
-
-void 
-rsvg_text_render_text (RsvgSaxHandlerText *ctx,
-					   RsvgState  *state,
-					   const char *text,
-					   const char *id);
 
 static void
 rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 {
 	char *string, *tmp;
 	int beg, end;
-	
+	RsvgSaxHandlerText * z;
+	RsvgTChunk * tchunk;
+
+	z = (RsvgSaxHandlerText *)self;	
+
 	/* Copy ch into string, chopping off leading and trailing whitespace */
 	for (beg = 0; beg < len; beg++)
 		if (!g_ascii_isspace (ch[beg]))
@@ -232,23 +240,28 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 			string = tmp;
 		}
 
+	tchunk = rsvg_tchunk_new_text(string);
+
+	g_ptr_array_add (z->innerspan->contents, tchunk);
+
 	g_free (string);
 }
 
 static void
 rsvg_start_tspan (RsvgSaxHandlerText *self, RsvgPropertyBag *atts)
 {
-	RsvgState state;
 	RsvgHandle *ctx;
+	RsvgState state;
 	RsvgSaxHandlerText *z;
 	RsvgTspan * tspan;
+	RsvgTChunk * tchunk;
 	const char * klazz = NULL, * id = NULL, *value;
 	double font_size;
 	tspan = rsvg_tspan_new();
 	z = (RsvgSaxHandlerText *)self;
 	ctx = z->ctx;
-	rsvg_state_init(&state);
 	font_size = rsvg_state_current_font_size(ctx);
+	rsvg_state_init(&state);
 
 	if (rsvg_property_bag_size (atts))
 		{
@@ -273,9 +286,14 @@ rsvg_start_tspan (RsvgSaxHandlerText *self, RsvgPropertyBag *atts)
 
 			rsvg_parse_style_attrs (ctx, &state, "tspan", klazz, id, atts);
 		}
-	
+
+	tchunk = rsvg_tchunk_new_span(tspan);
+
 	tspan->parent = z->innerspan;
+	tspan->state = state;
+	g_ptr_array_add (z->innerspan->contents, tchunk);
 	z->innerspan = tspan;
+	
 }
 
 static void
@@ -299,7 +317,6 @@ rsvg_text_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 			RsvgTspan * child;
 			child = z->innerspan;
 			z->innerspan = child->parent;
-			rsvg_tspan_free(child);
 		}
 	
 		else if (!strcmp ((char *)name, "text"))
@@ -317,54 +334,57 @@ static void
 rsvg_defs_drawable_text_free (RsvgDefVal *self)
 {
 	RsvgDefsDrawableText *z = (RsvgDefsDrawableText *)self;
-	unsigned int i;
-	rsvg_state_finalize (&z->super.state);
-	for (i = 0; i < z->chunks->len; i++) {
-		rsvg_state_finalize (g_ptr_array_index(z->styles, i));
-		g_free (g_ptr_array_index(z->styles, i));
-		g_free (g_ptr_array_index(z->chunks, i));
-	}
-	g_ptr_array_free(z->styles, 1);
-	g_ptr_array_free(z->chunks, 1);
+	rsvg_tspan_free (z->chunk);
 	g_free (z);
+}
+
+void 
+rsvg_text_render_text (DrawingCtx *ctx,
+					   RsvgTspan  *tspan,
+					   const char *text,
+					   gdouble *x,
+					   gdouble *y);
+
+static void
+rsvg_tspan_draw(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y, int dominate);
+
+static void
+rsvg_tchunk_draw(RsvgTChunk * self, DrawingCtx *ctx, RsvgTspan *span, gdouble *x, gdouble *y)
+{
+	if (self->string)
+		rsvg_text_render_text (ctx, span, self->string->str, x, y);
+	if (self->span)
+		{
+			rsvg_state_push(ctx);
+			rsvg_tspan_draw (self->span, ctx, x, y, 0);
+			rsvg_state_pop(ctx);
+		}
+}
+
+static void
+rsvg_tspan_draw(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y, int dominate)
+{
+	unsigned int i;
+	rsvg_state_reinherit_top(ctx, &self->state, dominate);
+	if (self->hasx || self->hasy)
+		{
+			*x = self->x;
+			*y = self->y;
+		}
+
+	for (i = 0; i < self->contents->len; i++) {
+		rsvg_tchunk_draw (g_ptr_array_index(self->contents, i), ctx, self, x, y);
+	}
 }
 
 static void 
 rsvg_defs_drawable_text_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 							  int dominate)
 {
+	gdouble x, y;
 	RsvgDefsDrawableText *text = (RsvgDefsDrawableText*)self;
-	unsigned int i;
 
-	rsvg_state_reinherit_top(ctx, &self->state, dominate);
-	for (i = 0; i < text->chunks->len; i++) {
-		rsvg_state_push(ctx);
-		rsvg_state_reinherit_top(ctx, g_ptr_array_index(text->styles, i), 1);
-		rsvg_render_path (ctx, g_ptr_array_index(text->chunks, i));
-		rsvg_state_pop(ctx);
-	}
-	
-}
-
-static ArtSVP *
-rsvg_defs_drawable_text_draw_as_svp (RsvgDefsDrawable * self, DrawingCtx *ctx, 
-									 int dominate)
-{
-	RsvgDefsDrawableText *text = (RsvgDefsDrawableText*)self;
-	ArtSVP * output = NULL;
-	unsigned int i;
-
-	rsvg_state_reinherit_top(ctx,  &self->state, dominate);
-
-	for (i = 0; i < text->chunks->len; i++) {
-		rsvg_state_push(ctx);
-		rsvg_state_reinherit_top(ctx, g_ptr_array_index(text->styles, i), 0);
-		output = rsvg_clip_path_merge(output, 
-									  rsvg_render_path_as_svp (ctx, g_ptr_array_index(text->chunks, i)),
-									  'u');
-		rsvg_state_pop(ctx);
-	}
-	return output;
+	rsvg_tspan_draw(text->chunk, ctx, &x, &y, dominate);
 }
 
 void
@@ -405,13 +425,10 @@ rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		}
 	
 	text = g_new (RsvgDefsDrawableText, 1);
-	text->chunks = g_ptr_array_new();
-	text->styles = g_ptr_array_new();
-	text->super.state = state;
+
 	text->super.super.type = RSVG_DEF_PATH;
 	text->super.super.free = rsvg_defs_drawable_text_free;
 	text->super.draw = rsvg_defs_drawable_text_draw;
-	text->super.draw_as_svp = rsvg_defs_drawable_text_draw_as_svp;
 	rsvg_defs_set (ctx->defs, id, &text->super.super);
 	
 	text->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
@@ -434,9 +451,11 @@ rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	handler->innerspan = handler->tspan;
 	handler->block = text;
+	handler->tspan->state = state;
 
 	handler->parent = ctx->handler;
 	ctx->handler = &handler->super;
+	text->chunk = handler->tspan;
 }
 
 typedef struct _RsvgTextLayout RsvgTextLayout;
@@ -444,9 +463,10 @@ typedef struct _RsvgTextLayout RsvgTextLayout;
 struct _RsvgTextLayout
 {
 	PangoLayout * layout;
-	RsvgHandle  * ctx;
-	RsvgSaxHandlerText * th;
+	DrawingCtx  * ctx;
 	TextAnchor anchor;
+	RsvgTspan    *span;
+	gdouble x, y;
 };
 
 typedef struct _RenderCtx RenderCtx;
@@ -507,7 +527,7 @@ rsvg_text_ft2_subst_func (FcPattern *pattern,
 }
 
 static PangoContext *
-rsvg_text_get_pango_context (RsvgHandle *ctx)
+rsvg_text_get_pango_context (DrawingCtx *ctx)
 {
 	PangoContext    *context;
 	PangoFT2FontMap *fontmap;
@@ -535,13 +555,13 @@ rsvg_text_layout_free(RsvgTextLayout * layout)
 }
 
 static RsvgTextLayout *
-rsvg_text_layout_new (RsvgHandle *ctx,
+rsvg_text_layout_new (DrawingCtx *ctx,
 					  RsvgState *state,
 					  const char *text)
 {
 	RsvgTextLayout * layout;
 	PangoFontDescription *font_desc;
-	
+
 	if (ctx->pango_context == NULL)
 		ctx->pango_context = rsvg_text_get_pango_context (ctx);
 	
@@ -856,18 +876,17 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 	gint             offx, offy;
 	gint             x, y;
 	gdouble          xshift;
-	gint anchoroffset;
 
 	xshift = 0;
 
 	rsvg_text_layout_get_offsets (layout, &offx, &offy);
 
-	offx += rsvg_tspan_dx(layout->th->innerspan);
-	offy += rsvg_tspan_dy(layout->th->innerspan);
+	offx += rsvg_tspan_dx(layout->span);
+	offy += rsvg_tspan_dy(layout->span);
    
 
-	x = offx + rsvg_tspan_x(layout->th->innerspan);
-	y = offy + rsvg_tspan_y(layout->th->innerspan);
+	x = offx + layout->x;
+	y = offy + layout->y;
 
 	x *= PANGO_SCALE;
 	y *= PANGO_SCALE;
@@ -885,16 +904,9 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 			pango_layout_iter_get_line_extents (iter, NULL, &rect);
 			baseline = pango_layout_iter_get_baseline (iter);
 			
-			if (layout->anchor == TEXT_ANCHOR_START)
-				anchoroffset = 0;
-			else if (layout->anchor == TEXT_ANCHOR_MIDDLE)
-				anchoroffset = rect.width / 2;
-			else
-				anchoroffset = rect.width;
-			
 			rsvg_text_layout_render_line (layout, line,
 										  render_func,
-										  x + rect.x - anchoroffset,
+										  x + rect.x,
 										  y + baseline,
 										  render_data);
 			xshift += rect.width;
@@ -903,40 +915,28 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 	
 	pango_layout_iter_free (iter);
 
-	rsvg_tspan_set_x(layout->th->innerspan, (x + xshift) / PANGO_SCALE);
-
-}
-
-static void
-rsvg_text_add_chunk(RsvgDefsDrawableText *text, const char *d, RsvgHandle *ctx)
-{
-	RsvgState * toinsert = g_new(RsvgState, 1);
-	char *cd = g_strdup(d);
-
-	/*
-	rsvg_state_clone(toinsert, rsvg_state_current(ctx));
-	*/
-	g_ptr_array_add(text->chunks, cd);
-	g_ptr_array_add(text->styles, toinsert);
-
+	layout->x += xshift;
 }
 
 void 
-rsvg_text_render_text (RsvgSaxHandlerText *self,
-					   RsvgState  *state,
+rsvg_text_render_text (DrawingCtx *ctx,
+					   RsvgTspan  *tspan,
 					   const char *text,
-					   const char *id)
+					   gdouble *x,
+					   gdouble *y)
 {
 	RsvgTextLayout *layout;
 	RenderCtx      *render;
-	RsvgHandle     *ctx = self->ctx;
-	RsvgDefsDrawableText *block;
+	RsvgState      *state;
+	state = &tspan->state;
 
 	state->fill_rule = FILL_RULE_EVENODD;	
 	state->has_fill_rule = TRUE;
 
 	layout = rsvg_text_layout_new (ctx, state, text);
-	layout->th = self;
+	layout->span = tspan;
+	layout->x = *x;
+	layout->y = *y;
 	render = rsvg_render_ctx_new ();
 
 	rsvg_text_layout_render (layout, rsvg_text_render_vectors, 
@@ -948,10 +948,10 @@ rsvg_text_render_text (RsvgSaxHandlerText *self,
 #ifdef RSVG_TEXT_DEBUG
 	fprintf(stderr, "%s\n", render->path->str);
 #endif
+	*x = layout->x;
+	*y = layout->y;
 
-	block = self->block;
-	
-	rsvg_text_add_chunk (block, render->path->str, ctx);
+	rsvg_render_path (ctx, render->path->str);
 	rsvg_render_ctx_free (render);
 	rsvg_text_layout_free (layout);
 }

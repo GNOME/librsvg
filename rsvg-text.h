@@ -38,8 +38,7 @@ typedef struct _RsvgDefsDrawableText RsvgDefsDrawableText;
 
 struct _RsvgDefsDrawableText {
 	RsvgDefsDrawable super;
-	GPtrArray * chunks;
-	GPtrArray * styles;
+	void * chunk;
 };
 
 G_END_DECLS

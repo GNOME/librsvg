@@ -87,7 +87,6 @@ struct RsvgHandle {
 	
 	GHashTable *entities; /* g_malloc'd string -> xmlEntityPtr */
 	
-	PangoContext *pango_context;
 	xmlParserCtxtPtr ctxt;
 	GError **error;
 	
@@ -130,6 +129,9 @@ struct DrawingCtx {
 	RsvgDefs *defs;
 	gchar * base_uri;
 	GMemChunk * state_allocator;
+	PangoContext *pango_context;
+	double dpi_x;
+	double dpi_y;
 };
 
 struct RsvgDimentionData {

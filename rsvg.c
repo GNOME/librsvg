@@ -1553,15 +1553,15 @@ rsvg_drawing_ctx_free (DrawingCtx *handle)
 
 	g_mem_chunk_destroy(handle->state_allocator);
 
+	if (handle->pango_context != NULL)
+		g_object_unref (handle->pango_context);
+
 	g_free (handle);
 }
 
 void
 rsvg_handle_free_impl (RsvgHandle *handle)
 {
-	if (handle->pango_context != NULL)
-		g_object_unref (handle->pango_context);
-	
 	g_hash_table_foreach (handle->entities, rsvg_ctx_free_helper, NULL);
 	g_hash_table_destroy (handle->entities);
 	
@@ -1908,6 +1908,9 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 											 NULL);
 	draw->defs = handle->defs;
 	draw->base_uri = g_strdup(handle->base_uri);
+	draw->dpi_x = handle->dpi_x;
+	draw->dpi_y = handle->dpi_y;
+	draw->pango_context = NULL;
 	rsvg_defs_drawable_draw((RsvgDefsDrawable *)handle->treebase, draw, 2);
 	output = draw->pixbuf;
 	rsvg_drawing_ctx_free(draw);
