@@ -47,26 +47,27 @@
  * Returns: returns the length.
  **/
 double
-rsvg_css_parse_length (const char *str, gdouble pixels_per_inch, gint *fixed)
+rsvg_css_parse_length (const char *str, gdouble pixels_per_inch, 
+		       gint *percent, gint *em, gint *ex)
 {
   double length = 0.0;
   char *p = NULL;
   
   /* 
    *  The supported CSS length unit specifiers are: 
-   *  em, ex, px, pt, pc, cm, mm, in, and percentages. 
+   *  em, ex, px, pt, pc, cm, mm, in, and %
    */
+  *percent = FALSE;
+  *em      = FALSE;
+  *ex      = FALSE;
 
   length = g_ascii_strtod (str, &p);
   
   /* todo: error condition - figure out how to best represent it */
   if ((length == -HUGE_VAL || length == HUGE_VAL) && (ERANGE == errno))
     {
-      *fixed = FALSE;
       return 0.0;
     }
-
-  *fixed = TRUE;
 
   /* test for either pixels or no unit, which is assumed to be pixels */
   if (p && (strcmp(p, "px") != 0))
@@ -81,12 +82,15 @@ rsvg_css_parse_length (const char *str, gdouble pixels_per_inch, gint *fixed)
 	length *= (pixels_per_inch / MM_PER_INCH);
       else if (!strcmp(p, "pc"))
 	length *= (pixels_per_inch / PICA_PER_INCH);
+      else if (!strcmp(p, "em"))
+	*em = TRUE;
+      else if (!strcmp(p, "ex"))
+	*ex = TRUE;
       else if (!strcmp(p, "%"))
 	{
-	  *fixed = FALSE;
+	  *percent = TRUE;
 	  length *= 0.01;
 	}
-      /* todo: em, ex */
     }
 
   return length;
@@ -104,16 +108,21 @@ rsvg_css_parse_length (const char *str, gdouble pixels_per_inch, gint *fixed)
  */
 double
 rsvg_css_parse_normalized_length(const char *str, gdouble pixels_per_inch,
-				 gdouble normalize_to)
+				 gdouble width_or_height, gdouble font_size,
+				 gdouble x_height)
 {
-  gint fixed = FALSE;
+  gint percent, em, ex;
+  percent = em = ex = FALSE;
 
-  double length = rsvg_css_parse_length (str, pixels_per_inch, &fixed);
-  if (fixed)
+  double length = rsvg_css_parse_length (str, pixels_per_inch, &percent, &em, &ex);
+  if (percent)
+    return length * width_or_height;
+  else if (em)
+    return length * font_size;
+  else if (ex)
+    return length * x_height;
+  else
     return length;
-
-  /* length is a percent, normalize */
-  return (length * normalize_to);
 }
 
 gboolean

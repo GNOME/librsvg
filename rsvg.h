@@ -43,6 +43,7 @@ typedef void (* RsvgSizeFunc) (gint     *width,
 
 
 RsvgHandle *rsvg_handle_new               (void);
+void        rsvg_handle_set_dpi           (RsvgHandle * handle, double dpi);
 void        rsvg_handle_set_size_callback (RsvgHandle      *handle,
 					   RsvgSizeFunc     size_func,
 					   gpointer         user_data,

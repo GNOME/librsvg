@@ -1,6 +1,17 @@
 2002-10-01  Dom Lachowicz <doml@appligent.com>
 
-	* rsvg.c (): Make drawing functions handle % widths, heights too
+	* rsvg-css.c (rsvg_css_parse_length): handle %, em units now. ex can easily be handled once we have a way to get the font's XHeight
+	(rsvg_css_parse_normalized_length): updated for above ^^^
+	
+	* rsvg.c (rsvg_handle_set_dpi): new function for setting the DPI
+	(macro) RSVG_DPI: assume default of 90 DPI instead of 72
+	(rsvg_viewport_percentage): new fn for calculating percentages relative to viewports
+	(*): update to use new CSS length routines
+	(rsvg_start_text): handle -x and -y values for text offsets
+	
+2002-10-01  Dom Lachowicz <doml@appligent.com>
+
+	* rsvg.c (*): Make drawing functions handle % widths, heights too
 	Use parse_normalized_length for font sizes as well
 	
 	* rsvg-css.[ch] (rsvg_css_parse_fontsize): kill function

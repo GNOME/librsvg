@@ -56,9 +56,9 @@
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
 
 /*
- * Ideally this will be configurable
+ * This is configurable at runtime
  */
-#define RSVG_PIXELS_PER_INCH 72.0
+#define RSVG_DPI 90.0
 
 typedef struct {
   double affine[6];
@@ -119,7 +119,14 @@ struct RsvgHandle {
 
   int width;
   int height;
+  double dpi;
 };
+
+static gdouble
+rsvg_viewport_percentage (gdouble width, gdouble height)
+{
+  return ((width * width) + (height * height)) / 1.414213562; /* sqrt(2) */
+}
 
 static void
 rsvg_state_init (RsvgState *state)
@@ -184,7 +191,7 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
   int width = -1, height = -1;
   int rowstride;
   art_u8 *pixels;
-  gint fixed;
+  gint percent, em, ex;
   RsvgState *state;
   gboolean has_alpha = TRUE;
   gint new_width, new_height;
@@ -201,9 +208,9 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	  /* x & y should be ignored since we should always be the outermost SVG,
 	     at least for now */
 	  if (!strcmp ((char *)atts[i], "width"))
-	    width = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	    width = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
 	  else if (!strcmp ((char *)atts[i], "height"))	    
-	    height = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	    height = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
 	  else if (!strcmp ((char *)atts[i], "viewBox"))
 	    {
 	      /* todo: viewbox can have whitespace and/or comma but we're only likely to see
@@ -254,6 +261,10 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
           g_warning ("rsvg_start_svg: can't render 0-sized SVG");
           return;
 	}
+
+      /* set these here because % are relative to viewbox */
+      ctx->width = new_width;
+      ctx->height = new_height;
 
       if (!has_vbox)
 	{
@@ -312,9 +323,6 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 					      rowstride,
 					      rsvg_pixmap_destroy,
 					      NULL);
-
-      ctx->width = new_width;
-      ctx->height = new_height;
     }
 }
 
@@ -345,8 +353,8 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
     }
   else if (rsvg_css_param_match (str, "stroke-width"))
     {
-      state->stroke_width = rsvg_css_parse_normalized_length (str + arg_off, RSVG_PIXELS_PER_INCH, 
-							      (gdouble)ctx->height);
+      state->stroke_width = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
+							      (gdouble)ctx->height, state->font_size, 0.);
     }
   else if (rsvg_css_param_match (str, "stroke-linecap"))
     {
@@ -376,7 +384,8 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
     }
   else if (rsvg_css_param_match (str, "font-size"))
     {
-      state->font_size = rsvg_css_parse_normalized_length (str + arg_off, RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+      state->font_size = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
+							   (gdouble)ctx->height, state->font_size, 0.);
     }
   else if (rsvg_css_param_match (str, "font-family"))
     {
@@ -1063,7 +1072,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 #endif
 
   if (ctx->pango_context == NULL)
-    ctx->pango_context = pango_ft2_get_context ((guint)RSVG_PIXELS_PER_INCH, (guint)RSVG_PIXELS_PER_INCH); /* FIXME: dpi? */
+    ctx->pango_context = pango_ft2_get_context ((guint)ctx->dpi, (guint)ctx->dpi); /* FIXME: dpi? */
 
   has_alpha = gdk_pixbuf_get_has_alpha (pixbuf);
   
@@ -1137,22 +1146,22 @@ rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
   RsvgState *state;
   x = y = dx = dy = 0.;
 
+  state = &ctx->state[ctx->n_state - 1];
+
   if (atts != NULL)
     {
       for (i = 0; atts[i] != NULL; i += 2)
 	{
 	  if (!strcmp ((char *)atts[i], "x"))
-	    x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  if (!strcmp ((char *)atts[i], "y"))
-	    y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	  if (!strcmp ((char *)atts[i], "dx"))
-	    dx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    dx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  if (!strcmp ((char *)atts[i], "dy"))
-	    dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	}
     }
-
-  state = &ctx->state[ctx->n_state - 1];
 
   x += dx ;
   y += dy ;
@@ -1220,31 +1229,28 @@ rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
 
   x = y = dx = dy = 0.;
 
+  state = &ctx->state[ctx->n_state - 1];
+
   if (atts != NULL)
     {
       for (i = 0; atts[i] != NULL; i += 2)
 	{
 	  if (!strcmp ((char *)atts[i], "x"))
-	    x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  if (!strcmp ((char *)atts[i], "y"))
-	    y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	  if (!strcmp ((char *)atts[i], "dx"))
-	    dx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    dx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  if (!strcmp ((char *)atts[i], "dy"))
-	    dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	}
     }
-
-  state = &ctx->state[ctx->n_state - 1];
 
   x += dx ;
   y += dy ;
 
-  if (x >= 0 && y >= 0)
-    {
-      art_affine_translate (affine, x, y);
-      art_affine_multiply (state->affine, affine, state->affine);
-    }
+  art_affine_translate (affine, x, y);
+  art_affine_multiply (state->affine, affine, state->affine);
 
   rsvg_parse_style_attrs (ctx, atts);
   ctx->handler = &handler->super;
@@ -1381,13 +1387,13 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	  if (!strcmp ((char *)atts[i], "id"))
 	    id = (char *)atts[i + 1];
 	  else if (!strcmp ((char *)atts[i], "x1"))
-	    x1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    x1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "y1"))
-	    y1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    y1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "x2"))
-	    x2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    x2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "y2"))
-	    y2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    y2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "spreadMethod"))
 	    {
 	      if (!strcmp ((char *)atts[i + 1], "pad"))
@@ -1444,15 +1450,17 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	  if (!strcmp ((char *)atts[i], "id"))
 	    id = (char *)atts[i + 1];
 	  else if (!strcmp ((char *)atts[i], "cx"))
-	    cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "cy"))
-	    cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "r"))
-	    r = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    r = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, 
+						  rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), 
+						  state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "fx"))
-	    fx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    fx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "fy"))
-	    fy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    fy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	}
     }
 
@@ -1571,6 +1579,7 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
   const char * href = (const char *)NULL;
   GdkPixbuf *pixbuf, *img;
   gboolean has_alpha;
+  RsvgState *state = &ctx->state[ctx->n_state - 1];
 
   rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
@@ -1578,13 +1587,13 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
       for (i = 0; atts[i] != NULL; i += 2)
 	{
 	  if (!strcmp ((char *)atts[i], "x"))
-	    x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "y"))
-	    y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "width"))
-	    w = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    w = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "height"))
-	    h = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    h = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	  /* path is used by some older adobe illustrator versions */
 	  else if (!strcmp ((char *)atts[i], "path") || !strcmp((char *)atts[i], "xlink:href"))
 	    href = (const char *)atts[i + 1];
@@ -1622,6 +1631,7 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
   double x1 = 0, y1 = 0, x2 = 0, y2 = 0;
   char * d = NULL;
   xmlChar *path_atts[3];
+  RsvgState *state = &ctx->state[ctx->n_state - 1];
 
   rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
@@ -1629,13 +1639,13 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
       for (i = 0; atts[i] != NULL; i += 2)
 	{
 	  if (!strcmp ((char *)atts[i], "x1"))
-	    x1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    x1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "y1"))
-	    y1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    y1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	  if (!strcmp ((char *)atts[i], "x2"))
-	    x2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    x2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "y2"))
-	    y2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    y2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	}      
     }
 
@@ -1657,6 +1667,7 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
   double x = -1, y = -1, w = -1, h = -1, rx = 0, ry = 0;
   char * d = NULL;
   xmlChar *path_atts[3];
+  RsvgState *state = &ctx->state[ctx->n_state - 1];
   
   rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
@@ -1664,17 +1675,17 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
       for (i = 0; atts[i] != NULL; i += 2)
 	{
 	  if (!strcmp ((char *)atts[i], "x"))
-	    x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "y"))
-	    y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "width"))
-	    w = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    w = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "height"))
-	    h = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    h = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "rx"))
-	    rx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    rx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "ry"))
-	    ry = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    ry = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	}
     }
 
@@ -1719,6 +1730,7 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
   double cx = 0, cy = 0, r = 0;
   char * d = NULL;
   xmlChar *path_atts[3];
+  RsvgState *state = &ctx->state[ctx->n_state - 1];
   
   rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
@@ -1726,11 +1738,13 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
       for (i = 0; atts[i] != NULL; i += 2)
 	{
 	  if (!strcmp ((char *)atts[i], "cx"))
-	    cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "cy"))
-	    cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "r"))
-	    r = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    r = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, 
+						  rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), 
+						  state->font_size, 0.);
 	}
     }
 
@@ -1766,6 +1780,7 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
   double cx = 0, cy = 0, rx = 0, ry = 0;
   char * d = NULL;
   xmlChar *path_atts[3];
+  RsvgState *state = &ctx->state[ctx->n_state - 1];
 
   rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
@@ -1773,13 +1788,13 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
       for (i = 0; atts[i] != NULL; i += 2)
 	{
 	  if (!strcmp ((char *)atts[i], "cx"))
-	    cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "cy"))
-	    cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "rx"))
-	    rx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->width);
+	    rx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "ry"))
-	    ry = rsvg_css_parse_normalized_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, (gdouble)ctx->height);
+	    ry = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	}
     }
 
@@ -2025,10 +2040,28 @@ rsvg_handle_new (void)
   handle->defs = rsvg_defs_new ();
   handle->handler_nest = 0;
   handle->entities = g_hash_table_new (g_str_hash, g_str_equal);
+  handle->dpi = RSVG_DPI;
 
   handle->ctxt = NULL;
 
   return handle;
+}
+
+/**
+ * rsvg_handle_set_dpi
+ * @handle: An #RsvgHandle
+ * @dpi: Dots Per Inch (aka Pixels Per Inch)
+ *
+ * Sets the DPI for the outgoing pixbuf. Common values are
+ * 72, 90, and 300 DPI. If not specified, 90 is assumed
+ */
+void
+rsvg_handle_set_dpi (RsvgHandle * handle, double dpi)
+{
+  g_return_if_fail (handle != NULL);
+  g_return_if_fail (dpi > 0.);
+
+  handle->dpi = dpi;
 }
 
 /**
