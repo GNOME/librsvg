@@ -1,3 +1,10 @@
+2002-10-04  Alexander Larsson  <alexl@redhat.com>
+
+	* Makefile.am:
+	* configure.in:
+	Install test-rsvg as rsvg
+	Fix gdk-pixbuf-loader build when you have an old version of gdk-pixbuf.
+
 2002-10-03  Dom Lachowicz <doml@appligent.com>
 
 	* rsvg.c (start_svg): Fix error that was hurting nautilus icon themes

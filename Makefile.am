@@ -1,6 +1,8 @@
 SUBDIRS = gtk-engine gdk-pixbuf-loader
 
-noinst_PROGRAMS = test-rsvg test-performance
+bin_PROGRAMS = rsvg
+
+noinst_PROGRAMS = test-performance
 
 EXTRA_DIST =\
 	COPYING.LIB \
@@ -47,17 +49,17 @@ LDADDS = $(top_builddir)/librsvg-2.la \
 	$(LIBRSVG_LIBS) \
 	$(POPT_LIBS)
 
-test_rsvg_SOURCES=test-rsvg.c
-test_rsvg_LDFLAGS =
-test_rsvg_DEPENDENCIES = $(DEPS)
-test_rsvg_LDADD = $(LDADDS) -lm
+rsvg_SOURCES=test-rsvg.c
+rsvg_LDFLAGS =
+rsvg_DEPENDENCIES = $(DEPS)
+rsvg_LDADD = $(LDADDS) -lm
 
 test_performance_SOURCES=test-performance.c
 test_performance_LDFLAGS =
 test_performance_DEPENDENCIES = $(DEPS)
 test_performance_LDADD = $(LDADDS) -lm
 
-tests: test-rsvg
+tests: rsvg
 
 ## Put `exec' in the name because this should be installed by
 ## `install-exec', not `install-data'.
