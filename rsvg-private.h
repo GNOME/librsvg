@@ -27,18 +27,23 @@
 #define RSVG_PRIVATE_H
 
 #include "rsvg.h"
-#include "rsvg-styles.h"
 
 #include <libxml/SAX.h>
 #include <libxml/xmlmemory.h>
+#include <pango/pangoft2.h>
 
 G_BEGIN_DECLS
 
 typedef struct RsvgSaxHandler RsvgSaxHandler;
+typedef struct _RsvgPropertyBag RsvgPropertyBag;
+typedef struct _RsvgState RsvgState;
+typedef struct _RsvgDefs RsvgDefs;
+typedef struct _RsvgDefVal RsvgDefVal;
+typedef struct _RsvgFilter RsvgFilter;
 
 struct RsvgSaxHandler {
 	void (*free) (RsvgSaxHandler *self);
-	void (*start_element) (RsvgSaxHandler *self, const xmlChar *name, const xmlChar **atts);
+	void (*start_element) (RsvgSaxHandler *self, const xmlChar *name, RsvgPropertyBag *atts);
 	void (*end_element) (RsvgSaxHandler *self, const xmlChar *name);
 	void (*characters) (RsvgSaxHandler *self, const xmlChar *ch, int len);
 };
@@ -131,6 +136,23 @@ GdkPixbuf *
 rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
 										   struct RsvgSizeCallbackData * data,
 										   GError ** error);
+
+struct _RsvgPropertyBag
+{
+	GHashTable * props;
+};
+
+RsvgPropertyBag *
+rsvg_property_bag_new (const xmlChar **atts);
+
+void
+rsvg_property_bag_free (RsvgPropertyBag *bag);
+
+const char *
+rsvg_property_bag_lookup (RsvgPropertyBag *bag, const char * key);
+
+guint
+rsvg_property_bag_size (RsvgPropertyBag *bag);
 
 G_END_DECLS
 

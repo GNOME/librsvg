@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "rsvg-private.h"
+#include "rsvg-styles.h"
 #include "rsvg-text.h"
 #include "rsvg-shapes.h"
 #include "rsvg-css.h"

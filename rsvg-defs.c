@@ -23,6 +23,7 @@
 */
 
 #include "config.h"
+#include "rsvg-private.h"
 #include "rsvg-defs.h"
 
 #include <glib/ghash.h>

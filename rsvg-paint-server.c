@@ -23,8 +23,9 @@
 */
 
 #include "config.h"
-#include "rsvg-paint-server.h"
 #include "rsvg-private.h"
+#include "rsvg-defs.h"
+#include "rsvg-paint-server.h"
 
 #include <glib/gmem.h>
 #include <glib/gmessages.h>

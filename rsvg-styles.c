@@ -25,9 +25,10 @@
 #include <string.h>
 
 #include "rsvg.h"
+#include "rsvg-private.h"
+#include "rsvg-filter.h"
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
-#include "rsvg-private.h"
 
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_affine.h>
@@ -336,60 +337,56 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 }
 
-/* tell whether @str is a supported style argument 
-   whenever something gets added to parse_arg, please
-   remember to add it here too
-*/
-gboolean
-rsvg_is_style_arg(const char *str)
-{
-	static GHashTable *styles = NULL;
-	if (!styles)
-		{
-			styles = g_hash_table_new (g_str_hash, g_str_equal);
-			
-			g_hash_table_insert (styles, "display",           GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "enable-background",              GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "fill",              GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "fill-opacity",      GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "fill-rule",         GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "font-family",       GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "font-size",         GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "font-stretch",      GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "font-style",        GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "font-variant",      GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "font-weight",       GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "opacity",           GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "filter",            GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stop-color",        GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stop-opacity",      GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke",            GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-dasharray",  GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-dashoffset", GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-linecap",    GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-linejoin",   GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-miterlimit", GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-opacity",    GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-width",      GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "text-anchor",       GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "text-decoration",   GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "visibility",        GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "writing-mode",      GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "xml:lang",          GINT_TO_POINTER (TRUE));
-		}
-	
-	/* this will default to 0 (FALSE) on a failed lookup */
-	return GPOINTER_TO_INT (g_hash_table_lookup (styles, str)); 
-}
-
-/* take a pair of the form (fill="#ff00ff") and parse it as a style */
-void
-rsvg_parse_style_pair (RsvgHandle *ctx, RsvgState *state, 
-					   const char *key, const char *val)
+void rsvg_parse_style_pair (RsvgHandle *ctx, RsvgState *state, 
+							const char *key, const char *val)
 {
 	gchar * str = g_strdup_printf ("%s:%s", key, val);
 	rsvg_parse_style_arg (ctx, state, str);
 	g_free (str);
+}
+
+static void rsvg_lookup_parse_style_pair(RsvgHandle *ctx, RsvgState *state, 
+										 const char *key, RsvgPropertyBag *atts)
+{
+	const char * value;
+
+	if((value = rsvg_property_bag_lookup (atts, key)) != NULL)
+		rsvg_parse_style_pair (ctx, state, key, value);
+}
+
+/* take a pair of the form (fill="#ff00ff") and parse it as a style */
+void
+rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state, 
+						RsvgPropertyBag *atts)
+{
+			rsvg_lookup_parse_style_pair (ctx, state, "display", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "enable-background", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "fill", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "fill-opacity", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "fill-rule", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "font-family", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "font-size", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "font-stretch", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "font-style", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "font-variant", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "font-weight", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "opacity", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "filter", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stop-color", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stop-opacity", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-dasharray", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-dashoffset", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-linecap", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-linejoin", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-miterlimit", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-opacity", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-width", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "text-anchor", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "text-decoration", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "visibility", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "writing-mode", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "xml:lang", atts);
 }
 
 /* Split a CSS2 style into individual style arguments, setting attributes
@@ -490,7 +487,8 @@ ccss_end_selector (CRDocHandler *a_handler,
 }
 
 static void
-ccss_property (CRDocHandler *a_handler, GString *a_name, CRTerm *a_expr)
+ccss_property (CRDocHandler *a_handler, GString *a_name, 
+			   CRTerm *a_expr, gboolean a_important)
 {
 	CSSUserData * user_data;
 	char * expr = NULL;
@@ -826,7 +824,7 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 						const char * tag,
 						const char * klazz,
 						const char * id,
-						const xmlChar **atts)
+						RsvgPropertyBag *atts)
 {
 	int i = 0, j = 0;
 	char * target = NULL;
@@ -905,17 +903,16 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 				}
 		}
 
-	if (atts != NULL)
+	if (rsvg_property_bag_size(atts) > 0)
 		{
-			for (i = 0; atts[i] != NULL; i += 2)
-				{
-					if (!strcmp ((char *)atts[i], "style"))
-						rsvg_parse_style (ctx, state, (char *)atts[i + 1]);
-					else if (!strcmp ((char *)atts[i], "transform"))
-						rsvg_parse_transform_attr (ctx, state, (char *)atts[i + 1]);
-					else if (rsvg_is_style_arg ((char *)atts[i]))
-						rsvg_parse_style_pair (ctx, state, (char *)atts[i], (char *)atts[i + 1]);
-				}
+			const char * value;
+
+			if ((value = rsvg_property_bag_lookup (atts, "style")) != NULL)
+				rsvg_parse_style (ctx, state, value);
+			if ((value = rsvg_property_bag_lookup (atts, "transform")) != NULL)
+				rsvg_parse_transform_attr (ctx, state, value);
+
+			rsvg_parse_style_pairs (ctx, state, atts);
 		}
 }
 
@@ -1203,4 +1200,41 @@ rsvg_state_current_font_size (RsvgHandle *ctx)
 		return ctx->state[ctx->n_state - 1].font_size;
 	else
 		return 12.0;
+}
+
+RsvgPropertyBag *
+rsvg_property_bag_new (const xmlChar **atts)
+{
+	RsvgPropertyBag * bag;
+	int i;   
+
+	bag = g_new (RsvgPropertyBag, 1);
+	bag->props = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, NULL);
+
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				g_hash_table_insert (bag->props, (gpointer)atts[i], (gpointer)atts[i+1]);
+		}
+
+	return bag;
+}
+
+void
+rsvg_property_bag_free (RsvgPropertyBag *bag)
+{
+	g_hash_table_destroy (bag->props);
+	g_free (bag);
+}
+
+const char *
+rsvg_property_bag_lookup (RsvgPropertyBag *bag, const char * key)
+{
+	return (const char *)g_hash_table_lookup (bag->props, (gconstpointer)key);
+}
+
+guint
+rsvg_property_bag_size (RsvgPropertyBag *bag)
+{
+	return g_hash_table_size (bag->props);
 }

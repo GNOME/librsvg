@@ -26,11 +26,12 @@
 #include "config.h"
 
 #include "rsvg.h"
+#include "rsvg-private.h"
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
-#include "rsvg-private.h"
 #include "rsvg-shapes.h"
 #include "rsvg-text.h"
+#include "rsvg-filter.h"
 
 #include <math.h>
 #include <string.h>
@@ -70,9 +71,8 @@ rsvg_pixmap_destroy (guchar *pixels, gpointer data)
 }
 
 static void
-rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
+rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	int i;
 	int width = -1, height = -1, x = -1, y = -1;
 	int rowstride;
 	art_u8 *pixels;
@@ -83,36 +83,34 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	double x_zoom = 1.;
 	double y_zoom = 1.;
 	double affine[6];
+	const char * value;
 
 	double vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
 	gboolean has_vbox = FALSE;
 
-	if (atts != NULL)
+	if (rsvg_property_bag_size (atts))
 		{
-			for (i = 0; atts[i] != NULL; i += 2)
+			/* x & y should be ignored since we should always be the outermost SVG,
+			   at least for now, but i'll include them here anyway */
+			if ((value = rsvg_property_bag_lookup (atts, "width")))
+				width = rsvg_css_parse_length (value, ctx->dpi, &percent, &em, &ex);
+			if ((value = rsvg_property_bag_lookup (atts, "height")))
+				height = rsvg_css_parse_length (value, ctx->dpi, &percent, &em, &ex);
+			if ((value = rsvg_property_bag_lookup (atts, "x")))
+				x = rsvg_css_parse_length (value, ctx->dpi, &percent, &em, &ex);
+			if ((value = rsvg_property_bag_lookup (atts, "y")))
+				y = rsvg_css_parse_length (value, ctx->dpi, &percent, &em, &ex);
+			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
 				{
-					/* x & y should be ignored since we should always be the outermost SVG,
-					   at least for now, but i'll include them here anyway */
-					if (!strcmp ((char *)atts[i], "width"))
-						width = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
-					else if (!strcmp ((char *)atts[i], "height"))
-						height = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
-					else if (!strcmp ((char *)atts[i], "x"))
-						x = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
-					else if (!strcmp ((char *)atts[i], "y"))
-						y = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
-					else if (!strcmp ((char *)atts[i], "viewBox"))
-						{
-							has_vbox = rsvg_css_parse_vbox ((char *)atts[i + 1], &vbox_x, &vbox_y,
-															&vbox_w, &vbox_h);
-						}
+					has_vbox = rsvg_css_parse_vbox (value, &vbox_x, &vbox_y,
+													&vbox_w, &vbox_h);
 				}
-
+	
 			if (has_vbox && vbox_w > 0. && vbox_h > 0.)
 				{
 					new_width  = (int)floor (vbox_w);
 					new_height = (int)floor (vbox_h);
-
+					
 					/* apply the sizing function on the *original* width and height
 					   to acquire our real destination size. we'll scale it against
 					   the viewBox's coordinates later */
@@ -205,24 +203,20 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 }
 
 static void
-rsvg_start_g (RsvgHandle *ctx, const xmlChar **atts)
+rsvg_start_g (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	RsvgState *state = rsvg_state_current (ctx);
-	const char * klazz = NULL, * id = NULL;
-	int i;
+	const char * klazz = NULL, * id = NULL, *value;
 	
-	if (atts != NULL)
+	if (rsvg_property_bag_size (atts))
 		{
-			for (i = 0; atts[i] != NULL; i += 2)
-				{
-					if (!strcmp ((char *)atts[i], "class"))
-						klazz = (const char *)atts[i + 1];
-					else if (!strcmp ((char *)atts[i], "id"))
-						id = (const char *)atts[i + 1];
-				}
-		}
-	
-	rsvg_parse_style_attrs (ctx, state, "g", klazz, id, atts);
+			if ((value = rsvg_property_bag_lookup (atts, "class")))
+				klazz = value;
+			if ((value = rsvg_property_bag_lookup (atts, "id")))
+				id = value;
+
+			rsvg_parse_style_attrs (ctx, state, "g", klazz, id, atts);
+		}	
 
 	rsvg_push_discrete_layer (ctx);
 }
@@ -265,43 +259,39 @@ rsvg_gradient_stop_handler_free (RsvgSaxHandler *self)
 
 static void
 rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
-								  const xmlChar **atts)
+								  RsvgPropertyBag *atts)
 {
 	RsvgSaxHandlerGstops *z = (RsvgSaxHandlerGstops *)self;
 	RsvgGradientStops *stops = z->stops;
-	int i;
 	double offset = 0;
 	gboolean got_offset = FALSE;
 	RsvgState state;
 	int n_stop;
+	const char *value;
 	
 	if (strcmp ((char *)name, "stop"))
 		return;
 	
 	rsvg_state_init (&state);
 	
-	if (atts != NULL)
+	if (rsvg_property_bag_size (atts))
 		{
-			for (i = 0; atts[i] != NULL; i += 2)
+			if ((value = rsvg_property_bag_lookup (atts, "offset")))
 				{
-					if (!strcmp ((char *)atts[i], "offset"))
-						{
-							/* either a number [0,1] or a percentage */
-							offset = rsvg_css_parse_normalized_length ((char *)atts[i + 1], z->ctx->dpi, 1., 0.);
-							
-							if (offset < 0.)
-								offset = 0.;
-							else if (offset > 1.)
-								offset = 1.;
-							
-							got_offset = TRUE;
-						}
-					else if (!strcmp ((char *)atts[i], "style"))
-						rsvg_parse_style (z->ctx, &state, (char *)atts[i + 1]);
-					else if (rsvg_is_style_arg ((char *)atts[i]))
-						rsvg_parse_style_pair (z->ctx, &state,
-											   (char *)atts[i], (char *)atts[i + 1]);
+					/* either a number [0,1] or a percentage */
+					offset = rsvg_css_parse_normalized_length (value, z->ctx->dpi, 1., 0.);
+					
+					if (offset < 0.)
+						offset = 0.;
+					else if (offset > 1.)
+						offset = 1.;
+					
+					got_offset = TRUE;
 				}
+			if ((value = rsvg_property_bag_lookup (atts, "style")))
+				rsvg_parse_style (z->ctx, &state, value);
+			
+			rsvg_parse_style_pairs (z->ctx, &state, atts);
 		}
 	
 	rsvg_state_finalize (&state);
@@ -390,70 +380,67 @@ rsvg_linear_gradient_free (RsvgDefVal *self)
 }
 
 static void
-rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
+rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	RsvgState *state = rsvg_state_current (ctx);
 	RsvgLinearGradient *grad = NULL;
-	int i;
-	const char *id = NULL;
+	const char *id = NULL, *value;
 	double x1 = 0., y1 = 0., x2 = 0., y2 = 0.;
 	ArtGradientSpread spread = ART_GRADIENT_PAD;
 	const char * xlink_href = NULL;
 	gboolean obj_bbox = TRUE;
 	gboolean got_x1, got_x2, got_y1, got_y2, got_spread, got_transform, got_bbox, cloned, shallow_cloned;
 	double affine[6];
+	int i;
 
 	got_x1 = got_x2 = got_y1 = got_y2 = got_spread = got_transform = got_bbox = cloned = shallow_cloned = FALSE;
 		
-	if (atts != NULL)
+	if (rsvg_property_bag_size (atts))
 		{
-			for (i = 0; atts[i] != NULL; i += 2)
+			if ((value = rsvg_property_bag_lookup (atts, "id")))
+				id = value;
+			if ((value = rsvg_property_bag_lookup (atts, "x1"))) {
+				x1 = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, state->font_size);
+				got_x1 = TRUE;
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "y1"))) {
+				y1 = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, state->font_size);
+				got_y1 = TRUE;
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "x2"))) {
+				x2 = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, state->font_size);
+				got_x2 = TRUE;
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "y2"))) {
+				y2 = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, state->font_size);
+				got_y2 = TRUE;
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "spreadMethod")))
 				{
-					if (!strcmp ((char *)atts[i], "id"))
-						id = (const char *)atts[i + 1];
-					else if (!strcmp ((char *)atts[i], "x1")) {
-						x1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
-						got_x1 = TRUE;
+					if (!strcmp (value, "pad")) {
+						spread = ART_GRADIENT_PAD;
+						got_spread = TRUE;
 					}
-					else if (!strcmp ((char *)atts[i], "y1")) {
-						y1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
-						got_y1 = TRUE;
+					else if (!strcmp (value, "reflect")) {
+						spread = ART_GRADIENT_REFLECT;
+						got_spread = TRUE;
 					}
-					else if (!strcmp ((char *)atts[i], "x2")) {
-						x2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
-						got_x2 = TRUE;
-					}
-					else if (!strcmp ((char *)atts[i], "y2")) {
-						y2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
-						got_y2 = TRUE;
-					}
-					else if (!strcmp ((char *)atts[i], "spreadMethod"))
-						{
-							if (!strcmp ((char *)atts[i + 1], "pad")) {
-								spread = ART_GRADIENT_PAD;
-								got_spread = TRUE;
-							}
-							else if (!strcmp ((char *)atts[i + 1], "reflect")) {
-								spread = ART_GRADIENT_REFLECT;
-								got_spread = TRUE;
-							}
-							else if (!strcmp ((char *)atts[i + 1], "repeat")) {
-								spread = ART_GRADIENT_REPEAT;
-								got_spread = TRUE;
-							}
-						}
-					else if (!strcmp ((char *)atts[i], "xlink:href"))
-						xlink_href = (const char *)atts[i + 1];
-					else if (!strcmp ((char *)atts[i], "gradientTransform"))
-						got_transform = rsvg_parse_transform (affine, (const char *)atts[i + 1]);
-					else if (!strcmp ((char *)atts[i], "gradientUnits")) {
-						if (!strcmp ((char *)atts[i+1], "userSpaceOnUse"))
-							obj_bbox = FALSE;
-						got_bbox = TRUE;
+					else if (!strcmp (value, "repeat")) {
+						spread = ART_GRADIENT_REPEAT;
+						got_spread = TRUE;
 					}
 				}
+			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
+				xlink_href = value;
+			if ((value = rsvg_property_bag_lookup (atts, "gradientTransform")))
+				got_transform = rsvg_parse_transform (affine, value);
+			if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
+				if (!strcmp (value, "userSpaceOnUse"))
+					obj_bbox = FALSE;
+				got_bbox = TRUE;
+			}
 		}
-
+	
 	/* set up 100% as the default if not gotten */
 	if (!got_x2) {
 		if (obj_bbox)
@@ -510,75 +497,72 @@ rsvg_radial_gradient_free (RsvgDefVal *self)
 }
 
 static void
-rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts, const char * tag) /* tag for conicalGradient */
+rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char * tag) /* tag for conicalGradient */
 {
 	RsvgState *state = rsvg_state_current (ctx);
 	RsvgRadialGradient *grad = NULL;
-	int i;
 	const char *id = NULL;
 	double cx = 0., cy = 0., r = 0., fx = 0., fy = 0.;  
-	const char * xlink_href = NULL;
+	const char * xlink_href = NULL, *value;
 	ArtGradientSpread spread = ART_GRADIENT_PAD;
 	gboolean obj_bbox = TRUE;
 	gboolean got_cx, got_cy, got_r, got_fx, got_fy, got_spread, got_transform, got_bbox, cloned, shallow_cloned;
 	double affine[6];
-	
+	int i;
+
 	got_cx = got_cy = got_r = got_fx = got_fy = got_spread = got_transform = got_bbox = cloned = shallow_cloned = FALSE;
 	
-	if (atts != NULL)
+	if (rsvg_property_bag_size (atts))
 		{
-			for (i = 0; atts[i] != NULL; i += 2)
+			if ((value = rsvg_property_bag_lookup (atts, "id")))
+				id = value;
+			if ((value = rsvg_property_bag_lookup (atts, "cx"))) {
+				cx = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, state->font_size);
+				got_cx = TRUE;
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "cy"))) {
+				cy = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, state->font_size);
+				got_cy = TRUE;
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "r"))) {
+				r = rsvg_css_parse_normalized_length (value, ctx->dpi, 
+													  rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), 
+													  state->font_size);
+				got_r = TRUE;
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "fx"))) {
+				fx = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, state->font_size);
+				got_fx = TRUE;
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "fy"))) {
+				fy = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, state->font_size);
+				got_fy = TRUE;
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
+				xlink_href = value;
+			if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
+				got_transform = rsvg_parse_transform (affine, value);
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "spreadMethod")))
 				{
-					if (!strcmp ((char *)atts[i], "id"))
-						id = (const char *)atts[i + 1];
-					else if (!strcmp ((char *)atts[i], "cx")) {
-						cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
-						got_cx = TRUE;
+					if (!strcmp (value, "pad")) {
+						spread = ART_GRADIENT_PAD;
+						got_spread = TRUE;
 					}
-					else if (!strcmp ((char *)atts[i], "cy")) {
-						cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
-						got_cy = TRUE;
+					else if (!strcmp (value, "reflect")) {
+						spread = ART_GRADIENT_REFLECT;
+						got_spread = TRUE;
 					}
-					else if (!strcmp ((char *)atts[i], "r")) {
-						r = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, 
-															  rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), 
-															  state->font_size);
-						got_r = TRUE;
-					}
-					else if (!strcmp ((char *)atts[i], "fx")) {
-						fx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
-						got_fx = TRUE;
-					}
-					else if (!strcmp ((char *)atts[i], "fy")) {
-						fy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
-						got_fy = TRUE;
-					}
-					else if (!strcmp ((char *)atts[i], "xlink:href"))
-						xlink_href = (const char *)atts[i + 1];
-					else if (!strcmp ((char *)atts[i], "gradientTransform")) {
-						got_transform = rsvg_parse_transform (affine, (const char *)atts[i + 1]);
-					}
-					else if (!strcmp ((char *)atts[i], "spreadMethod"))
-						{
-							if (!strcmp ((char *)atts[i + 1], "pad")) {
-								spread = ART_GRADIENT_PAD;
-								got_spread = TRUE;
-							}
-							else if (!strcmp ((char *)atts[i + 1], "reflect")) {
-								spread = ART_GRADIENT_REFLECT;
-								got_spread = TRUE;
-							}
-							else if (!strcmp ((char *)atts[i + 1], "repeat")) {
-								spread = ART_GRADIENT_REPEAT;
-								got_spread = TRUE;
-							}
-						}
-					else if (!strcmp ((char *)atts[i], "gradientUnits")) {
-						if (!strcmp ((char *)atts[i+1], "userSpaceOnUse"))
-							obj_bbox = FALSE;
-						got_bbox = TRUE;
+					else if (!strcmp (value, "repeat")) {
+						spread = ART_GRADIENT_REPEAT;
+						got_spread = TRUE;
 					}
 				}
+			if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
+				if (!strcmp (value, "userSpaceOnUse"))
+					obj_bbox = FALSE;
+				got_bbox = TRUE;
+			}
 		}
 	
 	if (xlink_href != NULL)
@@ -666,7 +650,7 @@ rsvg_style_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 
 static void
 rsvg_style_handler_start (RsvgSaxHandler *self, const xmlChar *name,
-						  const xmlChar **atts)
+						  RsvgPropertyBag *atts)
 {
 }
 
@@ -688,7 +672,7 @@ rsvg_style_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 }
 
 static void
-rsvg_start_style (RsvgHandle *ctx, const xmlChar **atts)
+rsvg_start_style (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	RsvgSaxHandlerStyle *handler = g_new0 (RsvgSaxHandlerStyle, 1);
 	
@@ -719,7 +703,7 @@ rsvg_defs_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 
 static void
 rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
-						   const xmlChar **atts)
+						   RsvgPropertyBag *atts)
 {
 	if (!strcmp ((char *)name, "filter"))
 		rsvg_start_filter (ctx, atts);
@@ -775,7 +759,7 @@ rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 
 static void
 rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
-						 const xmlChar **atts)
+						 RsvgPropertyBag *atts)
 {
 	RsvgSaxHandlerDefs *z = (RsvgSaxHandlerDefs *)self;
 	RsvgHandle *ctx = z->ctx;
@@ -844,7 +828,7 @@ rsvg_defs_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 }
 
 static void
-rsvg_start_defs (RsvgHandle *ctx, const xmlChar **atts)
+rsvg_start_defs (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	RsvgSaxHandlerDefs *handler = g_new0 (RsvgSaxHandlerDefs, 1);
 	
@@ -897,7 +881,7 @@ rsvg_desc_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 
 static void
 rsvg_desc_handler_start (RsvgSaxHandler *self, const xmlChar *name,
-						 const xmlChar **atts)
+						 RsvgPropertyBag *atts)
 {
 }
 
@@ -922,7 +906,7 @@ rsvg_desc_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 }
 
 static void
-rsvg_start_desc (RsvgHandle *ctx, const xmlChar **atts)
+rsvg_start_desc (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	RsvgSaxHandlerDesc *handler = g_new0 (RsvgSaxHandlerDesc, 1);
 	
@@ -974,7 +958,7 @@ rsvg_title_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 
 static void
 rsvg_title_handler_start (RsvgSaxHandler *self, const xmlChar *name,
-						 const xmlChar **atts)
+						 RsvgPropertyBag *atts)
 {
 }
 
@@ -999,7 +983,7 @@ rsvg_title_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 }
 
 static void
-rsvg_start_title (RsvgHandle *ctx, const xmlChar **atts)
+rsvg_start_title (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	RsvgSaxHandlerTitle *handler = g_new0 (RsvgSaxHandlerTitle, 1);
 	
@@ -1019,11 +1003,15 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 {
 	RsvgHandle *ctx = (RsvgHandle *)data;
 
+	RsvgPropertyBag * bag;
+
+	bag = rsvg_property_bag_new(atts);
+
 	if (ctx->handler)
 		{
 			ctx->handler_nest++;
 			if (ctx->handler->start_element != NULL)
-				ctx->handler->start_element (ctx->handler, name, atts);
+				ctx->handler->start_element (ctx->handler, name, bag);
 		}
 	else
 		{
@@ -1038,48 +1026,50 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 			ctx->n_state++;
 			
 			if (!strcmp ((char *)name, "svg"))
-				rsvg_start_svg (ctx, atts);
+				rsvg_start_svg (ctx, bag);
 			else if (!strcmp ((char *)name, "g"))
-				rsvg_start_g (ctx, atts);
+				rsvg_start_g (ctx, bag);
 			else if (!strcmp ((char *)name, "defs"))
-				rsvg_start_defs (ctx, atts);
+				rsvg_start_defs (ctx, bag);
 			else if (!strcmp ((char *)name, "path"))
-				rsvg_start_path (ctx, atts);
+				rsvg_start_path (ctx, bag);
 			else if (!strcmp ((char *)name, "line"))
-				rsvg_start_line (ctx, atts);
+				rsvg_start_line (ctx, bag);
 			else if (!strcmp ((char *)name, "rect"))
-				rsvg_start_rect (ctx, atts);
+				rsvg_start_rect (ctx, bag);
 			else if (!strcmp ((char *)name, "circle"))
-				rsvg_start_circle (ctx, atts);
+				rsvg_start_circle (ctx, bag);
 			else if (!strcmp ((char *)name, "ellipse"))
-				rsvg_start_ellipse (ctx, atts);
+				rsvg_start_ellipse (ctx, bag);
 			else if (!strcmp ((char *)name, "polygon"))
-				rsvg_start_polygon (ctx, atts);
+				rsvg_start_polygon (ctx, bag);
 			else if (!strcmp ((char *)name, "polyline"))
-				rsvg_start_polyline (ctx, atts);
+				rsvg_start_polyline (ctx, bag);
 			else if (!strcmp ((char *)name, "use"))
-				rsvg_start_use (ctx, atts);
+				rsvg_start_use (ctx, bag);
 			else if (!strcmp ((char *)name, "text"))
-				rsvg_start_text (ctx, atts);
+				rsvg_start_text (ctx, bag);
 			else if (!strcmp ((char *)name, "image"))
-				rsvg_start_image (ctx, atts);
+				rsvg_start_image (ctx, bag);
 			else if (!strcmp ((char *)name, "style"))
-				rsvg_start_style (ctx, atts);
+				rsvg_start_style (ctx, bag);
 			else if (!strcmp ((char *)name, "title"))
-				rsvg_start_title (ctx, atts);
+				rsvg_start_title (ctx, bag);
 			else if (!strcmp ((char *)name, "desc"))
-				rsvg_start_desc (ctx, atts);
+				rsvg_start_desc (ctx, bag);
 			
 			/* see conicalGradient discussion above */
 			else if (!strcmp ((char *)name, "linearGradient"))
-				rsvg_start_linear_gradient (ctx, atts);
+				rsvg_start_linear_gradient (ctx, bag);
 			else if (!strcmp ((char *)name, "radialGradient"))
-				rsvg_start_radial_gradient (ctx, atts, "radialGradient");
+				rsvg_start_radial_gradient (ctx, bag, "radialGradient");
 			else if (!strcmp ((char *)name, "conicalGradient"))
-				rsvg_start_radial_gradient (ctx, atts, "conicalGradient");
+				rsvg_start_radial_gradient (ctx, bag, "conicalGradient");
 
-			rsvg_filter_handler_start (ctx, name, atts);
+			rsvg_filter_handler_start (ctx, name, bag);
     }
+
+	rsvg_property_bag_free(bag);
 }
 
 static void

@@ -28,7 +28,6 @@
 
 #include "rsvg.h"
 #include "rsvg-paint-server.h"
-#include "rsvg-filter.h"
 
 #include <libxml/SAX.h>
 #include <libart_lgpl/art_svp_vpath_stroke.h>
@@ -57,7 +56,7 @@ enum {
 	FILL_RULE_NONZERO = 1
 };
 
-typedef struct {
+struct _RsvgState {
 	double affine[6];
 	
 	gint opacity; /* 0..255 */
@@ -98,13 +97,14 @@ typedef struct {
 	ArtVpathDash dash;
 	
 	GdkPixbuf *save_pixbuf;
-} RsvgState;
+};
 
 void rsvg_state_init (RsvgState *state);
 void rsvg_state_clone (RsvgState *dst, const RsvgState *src);
 void rsvg_state_finalize (RsvgState *state);
 
-gboolean rsvg_is_style_arg(const char *str);
+void rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state, 
+							 RsvgPropertyBag *atts);
 void rsvg_parse_style_pair (RsvgHandle *ctx, RsvgState *state, 
 							const char *key, const char *val);
 void rsvg_parse_style (RsvgHandle *ctx, RsvgState *state, const char *str);
@@ -112,7 +112,7 @@ void rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen);
 
 void rsvg_parse_style_attrs (RsvgHandle *ctx, RsvgState *state, const char * tag,
 							 const char * klazz, const char * id,
-							 const xmlChar **atts);
+							 RsvgPropertyBag *atts);
 
 gdouble rsvg_viewport_percentage (gdouble width, gdouble height);
 void

@@ -1,3 +1,9 @@
+2003-03-04  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Forward-port things from Gman
+	* rsvg-styles.c: Forward-port patch from Dodji
+	* *.c: Use new RsvgPropertyBag interface
+	
 2004-03-04  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-filter.c: Added final filter: feTile

@@ -33,15 +33,15 @@ G_BEGIN_DECLS
 
 void rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id);
 void rsvg_render_path (RsvgHandle *ctx, const char *d);
-void rsvg_start_path (RsvgHandle *ctx, const xmlChar **atts);
-void rsvg_start_polygon (RsvgHandle *ctx, const xmlChar **atts);
-void rsvg_start_polyline (RsvgHandle *ctx, const xmlChar **atts);
-void rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts);
-void rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts);
-void rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts);
-void rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts);
-void rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts);
-void rsvg_start_use (RsvgHandle *ctx, const xmlChar **atts);
+void rsvg_start_path (RsvgHandle *ctx, RsvgPropertyBag *atts);
+void rsvg_start_polygon (RsvgHandle *ctx, RsvgPropertyBag *atts);
+void rsvg_start_polyline (RsvgHandle *ctx, RsvgPropertyBag *atts);
+void rsvg_start_line (RsvgHandle *ctx, RsvgPropertyBag *atts);
+void rsvg_start_rect (RsvgHandle *ctx, RsvgPropertyBag *atts);
+void rsvg_start_circle (RsvgHandle *ctx, RsvgPropertyBag *atts);
+void rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts);
+void rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts);
+void rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts);
 
 G_END_DECLS
 
