@@ -489,12 +489,12 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 	double caffine[6];
 	int i, j;
 
+	gdouble minx, miny, maxx, maxy, xcoord, ycoord, xoffset, yoffset;
+
+	GdkPixbuf *save, *render;
+
 	if (ctx->ctx == NULL)
 		return;
-
-	gdouble minx, miny, maxx, maxy, xcoord, ycoord, xoffset, yoffset;
-	
-	GdkPixbuf *save, *render;
 
 	if (pattern->obj_bbox) {
 		affine[0] = ctx->x1 - ctx->x0;

@@ -646,9 +646,10 @@ rsvg_defs_drawable_use_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx,
 static void 
 rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawable *child)
 {
+	RsvgDefsDrawableGroup *z;
 	if (self == NULL)
 		return;
-	RsvgDefsDrawableGroup *z = (RsvgDefsDrawableGroup *)self;
+	z = (RsvgDefsDrawableGroup *)self;
 	g_ptr_array_add(z->children, child);
 }
 
@@ -704,12 +705,11 @@ rsvg_pop_def_group (RsvgHandle *ctx)
 void
 rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id)
 {
+	RsvgDefsDrawablePath *path;
+
 	if (!ctx->in_defs)
 		rsvg_render_path (ctx, d);
 
-	   
-	RsvgDefsDrawablePath *path;
-	
 	path = g_new (RsvgDefsDrawablePath, 1);
 	path->d = g_strdup(d);
 	rsvg_state_clone (&path->super.state, rsvg_state_current (ctx));
