@@ -116,6 +116,8 @@ if test "x$test_gsf" = "xtrue"; then
 	LIBGSFPKG="libgsf-1"
 else
 	AC_MSG_WARN([SVGZ support disabled, as requested (Use --with-svgz to enable)])
+	gsf_warning="
+	You are building without libgsf support. LibRSVG will not be able to handle GZipped SVGs, as is required per the SVG specification. If you are a library vendor or distributor, you are doing the world a disservice and should strongly consider shipping libgsf."
 fi
 AM_CONDITIONAL(WITH_LIBGSF,[test "$LIBGSFPKG" != ""])
 
@@ -173,7 +175,7 @@ if test "x$test_croco" = "xtrue"; then
 else
 	AC_MSG_WARN([LibCroco support disabled, as requested (Use --with-croco to enable)])
         croco_warning="
-You are building without libcroco support. LibRSVG will not be able to handle embedded CSS, as is required per the CSS specification. If you are a library vendor or distributor, you are doing the world a disservice and should strongly consider shipping libcroco. Even KSVG needs libcroco now...."
+You are building without libcroco support. LibRSVG will not be able to handle embedded CSS, as is required per the SVG specification. If you are a library vendor or distributor, you are doing the world a disservice and should strongly consider shipping libcroco. Even KSVG needs libcroco now..."
 fi
 
 AC_SUBST(LIBCROCOPKG)
@@ -403,3 +405,4 @@ librsvg-$LIBRSVG_VERSION
 "
 
 AC_MSG_RESULT([$croco_warning]);
+AC_MSG_RESULT([$gsf_warning]);
