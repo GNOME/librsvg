@@ -1,5 +1,9 @@
 2002-10-07  Dom Lachowicz <doml@appligent.com>
 
+	* gimp-plugin/svg.c (): New file, gimp SVG plugin loader
+	
+2002-10-07  Dom Lachowicz <doml@appligent.com>
+
 	* rsvg-paint-server.c (rsvg_clone_linear_gradient, rsvg_clone_radial_gradient): new functions for cloning gradient states
 	* rsvg.c (rsvg_gradient_stop_handler_new_clone): new function for setting up a gradient stop handler from a cloned gradient
 	(rsvg_start_radial_gradient): Handle xlink:href for cloned gradients

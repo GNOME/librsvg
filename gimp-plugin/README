@@ -1,0 +1,4 @@
+svg.c is a temporary copy of a plugin I'm hoping to get pushed up into The Gimp
+proper. Until then, this is just a play/staging area, and a place for Gimp
+people to grab this plugin from, and perhaps come up with a build system for,
+as my auto* foo is horrible.
