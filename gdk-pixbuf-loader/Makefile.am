@@ -26,7 +26,7 @@ svg_loader_la_LIBADD = $(LIBRSVG_LIBS) \
 
 loader_LTLIBRARIES = $(target_pixbuf_loader)
 
-install-data-local: 
+install-data-hook: 
 	if [ -z "$(DESTDIR)" ] ; then \
 	  $(mkinstalldirs) $(DESTDIR)$(sysconfdir)/gtk-2.0 ; \
 	  $(QUERYLOADERS) > $(DESTDIR)$(sysconfdir)/gtk-2.0/gdk-pixbuf.loaders ; \
