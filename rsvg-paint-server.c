@@ -152,6 +152,7 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	RsvgLinearGradient *rlg = z->gradient;
 	ArtGradientLinear *agl;
 	double x1, y1, x2, y2;
+	double fx1, fy1, fx2, fy2;
 	double dx, dy, scale;
 	double affine[6];
 	guint32 current_color;
@@ -191,19 +192,22 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 			affine[i] = ctx->affine[i];
 	}
 
-	art_affine_multiply(affine, rlg->affine, affine);
+	fx1 = rlg->x1 * rlg->affine[0] + rlg->y1 * rlg->affine[2] + rlg->affine[4];
+	fy1 = rlg->x1 * rlg->affine[1] + rlg->y1 * rlg->affine[3] + rlg->affine[5];
+	fx2 = rlg->x2 * rlg->affine[0] + rlg->y2 * rlg->affine[2] + rlg->affine[4];
+	fy2 = rlg->x2 * rlg->affine[1] + rlg->y2 * rlg->affine[3] + rlg->affine[5];
 
-	xchange = rlg->x2 - rlg->x1;
-	ychange = rlg->y2 - rlg->y1;
+	xchange = fx2 - fx1;
+	ychange = fy2 - fy1;
 
-	nx2 = rlg->x1 - ychange;
-	ny2 = rlg->y1 + xchange;
+	nx2 = fx1 - ychange;
+	ny2 = fy1 + xchange;
 
 	/* compute [xy][12] in pixel space */
-	x1 = rlg->x1 * affine[0] + rlg->y1 * affine[2] + affine[4];
-	y1 = rlg->x1 * affine[1] + rlg->y1 * affine[3] + affine[5];
-	x0 = rlg->x2 * affine[0] + rlg->y2 * affine[2] + affine[4];
-	y0 = rlg->x2 * affine[1] + rlg->y2 * affine[3] + affine[5];
+	x1 = fx1 * affine[0] + fy1 * affine[2] + affine[4];
+	y1 = fx1 * affine[1] + fy1 * affine[3] + affine[5];
+	x0 = fx2 * affine[0] + fy2 * affine[2] + affine[4];
+	y0 = fx2 * affine[1] + fy2 * affine[3] + affine[5];
 	x2 = nx2 * affine[0] + ny2 * affine[2] + affine[4];
 	y2 = nx2 * affine[1] + ny2 * affine[3] + affine[5];
 
