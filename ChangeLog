@@ -1,3 +1,12 @@
+2002-06-19  Alexander Larsson  <alla@lysator.liu.se>
+
+	* NEWS:
+	Add news
+	
+	* configure.in:
+	Bump version to 2.0.0
+	Update requirements 
+
 2002-06-08  Michael Meeks  <michael@ximian.com>
 
 	* rsvg.c (rsvg_render_bpath): perturb the 
