@@ -1,5 +1,12 @@
+/* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+
+#ifndef RSVG_CSS_H
+#define RSVG_CSS_H
+
 #include <glib/gtypes.h>
 #include <pango/pangoft2.h>
+
+G_BEGIN_DECLS
 
 double
 rsvg_css_parse_length (const char *str, gdouble pixels_per_inch, 
@@ -45,3 +52,7 @@ rsvg_css_parse_font_stretch (const char * str, PangoStretch inherit);
 
 const char *
 rsvg_css_parse_font_family (const char * str, const char * inherit);
+
+G_END_DECLS
+
+#endif /* RSVG_CSS_H */

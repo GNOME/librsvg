@@ -23,6 +23,13 @@ librsvg_2_la_SOURCES = \
 	rsvg-paint-server.h \
 	rsvg-path.c \
 	rsvg-path.h \
+	rsvg-file-util.c \
+	rsvg-shapes.c	\
+	rsvg-shapes.h	\
+	rsvg-styles.c	\
+	rsvg-styles.h	\
+	rsvg-text.c	\
+	rsvg-text.h	\
 	rsvg.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@

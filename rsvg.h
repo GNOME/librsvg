@@ -1,3 +1,4 @@
+/* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /* 
    rsvg.h: SAX-based renderer for SVG files into a GdkPixbuf.
  
@@ -81,7 +82,6 @@ GdkPixbuf  *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
 						    gint          max_height,
 						    GError      **error);
 
-
 G_END_DECLS
 
-#endif
+#endif /* RSVG_H */

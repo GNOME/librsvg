@@ -1,3 +1,7 @@
+2003-01-08 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-file-util.c, rsvg-private.h, rsvg-shapes.c, rsvg-shapes.h, rsvg-styles.c, rsvg-styles.h, rsvg-text.c, rsvg-text.h : Separate functionality out into separate, managable files
+
 2003-01-07 Dom Lachowicz <cinamod@hotmail.com>
 
 	* test-rsvg.c : Unref pixbuf, free memory leak. Thanks valgrind.

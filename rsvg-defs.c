@@ -1,3 +1,4 @@
+/* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /* 
    rsvg-defs.c: Manage SVG defs and references.
  
@@ -29,43 +30,43 @@
 #include <glib/gstrfuncs.h>
 
 struct _RsvgDefs {
-  GHashTable *hash;
+	GHashTable *hash;
 };
 
 RsvgDefs *
 rsvg_defs_new (void)
 {
-  RsvgDefs *result = g_new (RsvgDefs, 1);
-
-  result->hash = g_hash_table_new (g_str_hash, g_str_equal);
-
-  return result;
+	RsvgDefs *result = g_new (RsvgDefs, 1);
+	
+	result->hash = g_hash_table_new (g_str_hash, g_str_equal);
+	
+	return result;
 }
 
 RsvgDefVal *
 rsvg_defs_lookup (const RsvgDefs *defs, const char *name)
 {
-  return (RsvgDefVal *)g_hash_table_lookup (defs->hash, name);
+	return (RsvgDefVal *)g_hash_table_lookup (defs->hash, name);
 }
 
 void
 rsvg_defs_set (RsvgDefs *defs, const char *name, RsvgDefVal *val)
 {
-  g_hash_table_insert (defs->hash, g_strdup (name), val);
+	g_hash_table_insert (defs->hash, g_strdup (name), val);
 }
 
 static void
 rsvg_defs_free_each (gpointer key, gpointer value, gpointer user_data)
 {
-  RsvgDefVal *def_val = (RsvgDefVal *)value;
-  g_free (key);
-  def_val->free (def_val);
+	RsvgDefVal *def_val = (RsvgDefVal *)value;
+	g_free (key);
+	def_val->free (def_val);
 }
 
 void
 rsvg_defs_free (RsvgDefs *defs)
 {
-  g_hash_table_foreach (defs->hash, rsvg_defs_free_each, NULL);
-  g_hash_table_destroy (defs->hash);
-  g_free (defs);
+	g_hash_table_foreach (defs->hash, rsvg_defs_free_each, NULL);
+	g_hash_table_destroy (defs->hash);
+	g_free (defs);
 }

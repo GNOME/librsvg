@@ -1,6 +1,13 @@
+/* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+
+#ifndef RSVG_PAINT_SERVER_H
+#define RSVG_PAINT_SERVER_H
+
 #include <glib/gtypes.h>
 #include <libart_lgpl/art_render_gradient.h>
 #include "rsvg-defs.h"
+
+G_BEGIN_DECLS
 
 typedef struct _RsvgGradientStop RsvgGradientStop;
 typedef struct _RsvgGradientStops RsvgGradientStops;
@@ -74,3 +81,7 @@ rsvg_clone_radial_gradient (const RsvgRadialGradient *grad);
 
 RsvgLinearGradient *
 rsvg_clone_linear_gradient (const RsvgLinearGradient *grad);
+
+G_END_DECLS
+
+#endif
