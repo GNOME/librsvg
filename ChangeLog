@@ -1,3 +1,8 @@
+2004-01-05  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-text.c:
+	* rsvg-text-vectors.c: Factor out bitmap vs. vector text routines
+	
 2004-01-04  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-text-vectors.c: Start of work toward representing text as 

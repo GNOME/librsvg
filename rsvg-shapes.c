@@ -336,10 +336,7 @@ rsvg_defs_path_free (RsvgDefVal *self)
 	g_free (z);
 }
 
-/**
- * Todo: Possibly publicly export this (for text)
- */
-static void
+void
 rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id)
 {
 	if (!ctx->in_defs)

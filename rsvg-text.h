@@ -34,6 +34,12 @@ void rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts);
 void rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts);
 char * make_valid_utf8 (const char *str);
 
+void 
+rsvg_text_render_text (RsvgHandle *ctx,
+					   RsvgState  *state,
+					   const char *text,
+					   const char *id);
+
 G_END_DECLS
 
 #endif /* RSVG_TEXT_H */

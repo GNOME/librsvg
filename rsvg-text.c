@@ -36,30 +36,7 @@
 
 #include "rsvg-shapes.h"
 
-#if 0
-
-static void 
-rsvg_draw_hline (RsvgHandle *ctx, double x, double w, double y)
-{
-	char buf [G_ASCII_DTOSTR_BUF_SIZE];
-
-	/* ("M %f %f L %f %f", x, y, x+w, y) */
-	GString * d = g_string_new ("M ");   
-
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x));
-	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y));
-	g_string_append (d, " L ");	
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x+w));
-	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y));   
-
-	rsvg_render_path (ctx, d->str);
-
-	g_string_free (d, TRUE);
-}
-
-#endif
+#define NO_VECTOR_TEXT
 
 char *
 make_valid_utf8 (const char *str)
@@ -108,14 +85,14 @@ rsvg_text_handler_free (RsvgSaxHandler *self)
 	g_free (self);
 }
 
-static void
-rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
+#ifdef NO_VECTOR_TEXT
+
+static void 
+rsvg_text_render_text_bitmap (RsvgHandle *ctx,
+							  RsvgState  *state,
+							  const char *string,
+							  const char *id)
 {
-	RsvgSaxHandlerText *z = (RsvgSaxHandlerText *)self;
-	RsvgHandle *ctx = z->ctx;
-	char *string, *tmp;
-	int beg, end;
-	RsvgState *state;
 	ArtRender *render;
 	GdkPixbuf *pixbuf;
 	gboolean has_alpha;
@@ -127,14 +104,6 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	FT_Bitmap bitmap;
 	RsvgPSCtx gradctx;
 	int i;
-	
-	state = rsvg_state_current (ctx);
-	if (state->fill == NULL && state->font_size <= 0)
-		return;
-
-	/* not quite up to spec, but good enough */
-	if (!state->visible)
-		return;
 
 	pixbuf = ctx->pixbuf;
 	if (pixbuf == NULL)
@@ -142,36 +111,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 		/* FIXME: What warning/GError here? */
 		return;
     }
-	
-	/* Copy ch into string, chopping off leading and trailing whitespace */
-	for (beg = 0; beg < len; beg++)
-		if (!g_ascii_isspace (ch[beg]))
-			break;
-	
-	for (end = len; end > beg; end--)
-		if (!g_ascii_isspace (ch[end - 1]))
-			break;
-	
-	if (end - beg == 0)
-		{
-			/* TODO: be smarter with some "last was space" logic */
-			end = 1; beg = 0;
-			string = g_strdup (" ");
-		}
-	else
-		{
-			string = g_malloc (end - beg + 1);
-			memcpy (string, ch + beg, end - beg);
-			string[end - beg] = 0;
-		}
-	
-	if (!g_utf8_validate (string, -1, NULL))
-		{
-			tmp = make_valid_utf8 (string);
-			g_free (string);
-			string = tmp;
-		}
-	
+
 	if (ctx->pango_context == NULL)
 		{
 			PangoFT2FontMap *fontmap;
@@ -283,19 +223,65 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	art_render_invoke (render);
 	
 	g_free (bitmap.buffer);
-	g_free (string);
 
-#if 0	
-	/* TODO: store the various line widths for these */
-	if (state->font_decor & TEXT_OVERLINE)
-		rsvg_draw_hline (ctx, state->text_offset, line_ink_rect.width, -line_ink_rect.y + line_ink_rect.height);
-	if (state->font_decor & TEXT_UNDERLINE)
-		rsvg_draw_hline (ctx, state->text_offset, line_ink_rect.width, -line_ink_rect.y);
-	if (state->font_decor & TEXT_STRIKE)
-		rsvg_draw_hline (ctx, state->text_offset, ink_rect.width, -line_ink_rect.y - (line_ink_rect.height/2));
-#endif
-	
 	state->text_offset += line_ink_rect.width;
+}
+
+#endif
+
+static void
+rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
+{
+	RsvgSaxHandlerText *z = (RsvgSaxHandlerText *)self;
+	RsvgHandle *ctx = z->ctx;
+	char *string, *tmp;
+	int beg, end;
+	RsvgState *state;
+	
+	state = rsvg_state_current (ctx);
+	if (state->fill == NULL && state->font_size <= 0)
+		return;
+
+	/* not quite up to spec, but good enough */
+	if (!state->visible)
+		return;
+	
+	/* Copy ch into string, chopping off leading and trailing whitespace */
+	for (beg = 0; beg < len; beg++)
+		if (!g_ascii_isspace (ch[beg]))
+			break;
+	
+	for (end = len; end > beg; end--)
+		if (!g_ascii_isspace (ch[end - 1]))
+			break;
+	
+	if (end - beg == 0)
+		{
+			/* TODO: be smarter with some "last was space" logic */
+			end = 1; beg = 0;
+			string = g_strdup (" ");
+		}
+	else
+		{
+			string = g_malloc (end - beg + 1);
+			memcpy (string, ch + beg, end - beg);
+			string[end - beg] = 0;
+		}
+	
+	if (!g_utf8_validate (string, -1, NULL))
+		{
+			tmp = make_valid_utf8 (string);
+			g_free (string);
+			string = tmp;
+		}
+
+#ifdef NO_VECTOR_TEXT
+	rsvg_text_render_text_bitmap (ctx, state, string, NULL);
+#else
+	rsvg_text_render_text (ctx, state, string, NULL);
+#endif
+
+	g_free (string);
 }
 
 void

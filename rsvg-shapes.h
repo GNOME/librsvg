@@ -31,6 +31,7 @@
 
 G_BEGIN_DECLS
 
+void rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id);
 void rsvg_render_path (RsvgHandle *ctx, const char *d);
 void rsvg_start_path (RsvgHandle *ctx, const xmlChar **atts);
 void rsvg_start_polygon (RsvgHandle *ctx, const xmlChar **atts);

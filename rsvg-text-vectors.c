@@ -24,6 +24,7 @@
 
 #include "rsvg-private.h"
 #include "rsvg-text.h"
+#include "rsvg-shapes.h"
 #include "rsvg-css.h"
 
 #include <libart_lgpl/art_affine.h>
@@ -34,14 +35,6 @@
 #include <ft2build.h>
 #include FT_GLYPH_H
 #include FT_OUTLINE_H
-
-#include "rsvg-shapes.h"
-
-void 
-rsvg_text_render_text (RsvgHandle *ctx,
-					   RsvgState  *state,
-					   const char *text,
-					   const char *id);
 
 typedef struct _RsvgTextLayout RsvgTextLayout;
 
@@ -497,6 +490,9 @@ rsvg_text_render_text (RsvgHandle *ctx,
 	
 	rsvg_text_layout_render (layout, rsvg_text_render_vectors, 
 							 (gpointer)render);
+
+	/* Only a debugging message for now */
+	g_print("%s\n", render->path->str);
 	
 	rsvg_handle_path (ctx, render->path->str, id);
 
