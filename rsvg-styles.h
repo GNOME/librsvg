@@ -122,7 +122,8 @@ struct _RsvgState {
 	gboolean has_dash;
 
 	guint32 current_color;
-	
+	gboolean has_current_color;
+
 	GdkPixbuf *save_pixbuf;
 };
 

@@ -37,6 +37,20 @@
 
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
+static guint32
+rsvg_state_current_color (RsvgState * cur_state, RsvgState * parent_state)
+{
+	if (cur_state)
+		{
+			if (cur_state->has_current_color)
+				return cur_state->current_color;
+			else if (parent_state)
+				return parent_state->current_color;
+		}
+	
+	return 0;
+}
+
 gdouble
 rsvg_viewport_percentage (gdouble width, gdouble height)
 {
@@ -297,7 +311,19 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	
 	parent_state = rsvg_state_parent (ctx);
 	arg_off = rsvg_css_param_arg_offset (str);
-	if (rsvg_css_param_match (str, "opacity"))
+
+	if (rsvg_css_param_match (str, "color"))
+		{
+			RsvgState * parent_state = rsvg_state_parent (ctx);
+
+			if (parent_state)
+				state->current_color = rsvg_css_parse_color (str + arg_off, parent_state->current_color);
+			else
+				state->current_color = rsvg_css_parse_color (str + arg_off, 0);
+
+			state->has_current_color = TRUE;
+		}
+	else if (rsvg_css_param_match (str, "opacity"))
 		{
 			state->opacity = rsvg_css_parse_opacity (str + arg_off);
 		}
@@ -335,11 +361,12 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "fill"))
 		{
 			RsvgPaintServer * fill = state->fill;
+			guint32 current_color = rsvg_state_current_color (state, parent_state);
 
 			if (parent_state)
-				state->fill = rsvg_paint_server_parse (parent_state->fill, ctx->defs, str + arg_off, parent_state->current_color);
+				state->fill = rsvg_paint_server_parse (parent_state->fill, ctx->defs, str + arg_off, current_color);
 			else
-				state->fill = rsvg_paint_server_parse (NULL, ctx->defs, str + arg_off, 0);
+				state->fill = rsvg_paint_server_parse (NULL, ctx->defs, str + arg_off, current_color);
 
 			state->has_fill_server = TRUE;
 
@@ -363,11 +390,12 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "stroke"))
 		{
 			RsvgPaintServer * stroke = state->stroke;
+			guint32 current_color = rsvg_state_current_color (state, parent_state);
 
 			if (parent_state)
-				state->stroke = rsvg_paint_server_parse (parent_state->stroke, ctx->defs, str + arg_off, parent_state->current_color);
+				state->stroke = rsvg_paint_server_parse (parent_state->stroke, ctx->defs, str + arg_off, current_color);
 			else
-				state->stroke = rsvg_paint_server_parse (NULL, ctx->defs, str + arg_off, 0);
+				state->stroke = rsvg_paint_server_parse (NULL, ctx->defs, str + arg_off, current_color);
 
 			state->has_stroke_server = TRUE;		
 
@@ -511,9 +539,10 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "stop-color"))
 		{
+			guint32 current_color = rsvg_state_current_color (state, parent_state);
+
 			state->has_stop_color = TRUE;
-			state->stop_color = rsvg_css_parse_color (str + arg_off, 
-													  (parent_state ? parent_state->current_color : 0));
+			state->stop_color = rsvg_css_parse_color (str + arg_off, current_color);
 		}
 	else if (rsvg_css_param_match (str, "stop-opacity"))
 		{
@@ -575,15 +604,6 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 							g_strfreev (dashes) ;
 						}
 				}
-		}
-	else if (rsvg_css_param_match (str, "color"))
-		{
-			RsvgState * parent_state = rsvg_state_parent (ctx);
-
-			if (parent_state)
-				state->current_color = rsvg_css_parse_color (str + arg_off, parent_state->current_color);
-			else
-				state->current_color = rsvg_css_parse_color (str + arg_off, 0);
 		}
 }
 
