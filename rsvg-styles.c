@@ -34,26 +34,9 @@
 #include "rsvg-mask.h"
 #include "rsvg-marker.h"
 
-#include <libart_lgpl/art_affine.h>
 #include <libart_lgpl/art_svp_ops.h>
 
 #define RSVG_DEFAULT_FONT "Times New Roman"
-
-/*
-static guint32
-rsvg_state_current_color (RsvgState * cur_state, RsvgState * parent_state)
-{
-	if (cur_state)
-		{
-			if (cur_state->has_current_color)
-				return cur_state->current_color;
-			else if (parent_state)
-				return parent_state->current_color;
-		}
-	
-	return 0;
-}
-*/
 
 gdouble
 rsvg_viewport_percentage (gdouble width, gdouble height)
@@ -72,8 +55,8 @@ rsvg_state_init (RsvgState *state)
 {
 	memset (state, 0, sizeof (RsvgState));
 	
-	art_affine_identity (state->affine);
-	art_affine_identity (state->personal_affine);
+	_rsvg_affine_identity (state->affine);
+	_rsvg_affine_identity (state->personal_affine);
 	state->mask = NULL;
 	state->opacity = 0xff;
 	state->adobe_blend = 0;
@@ -1071,7 +1054,7 @@ rsvg_parse_transform (double dst[6], const char *src)
 	guint key_len;
 	double tmp_affine[6];
 	
-	art_affine_identity (dst);
+	_rsvg_affine_identity (dst);
 	
 	idx = 0;
 	while (src[idx])
@@ -1141,7 +1124,7 @@ rsvg_parse_transform (double dst[6], const char *src)
 				{
 					if (n_args != 6)
 						return FALSE;
-					art_affine_multiply (dst, args, dst);
+					_rsvg_affine_multiply (dst, args, dst);
 				}
 			else if (!strcmp (keyword, "translate"))
 				{
@@ -1149,8 +1132,8 @@ rsvg_parse_transform (double dst[6], const char *src)
 						args[1] = 0;
 					else if (n_args != 2)
 						return FALSE;
-					art_affine_translate (tmp_affine, args[0], args[1]);
-					art_affine_multiply (dst, tmp_affine, dst);
+					_rsvg_affine_translate (tmp_affine, args[0], args[1]);
+					_rsvg_affine_multiply (dst, tmp_affine, dst);
 				}
 			else if (!strcmp (keyword, "scale"))
 				{
@@ -1158,23 +1141,23 @@ rsvg_parse_transform (double dst[6], const char *src)
 						args[1] = args[0];
 					else if (n_args != 2)
 						return FALSE;
-					art_affine_scale (tmp_affine, args[0], args[1]);
-					art_affine_multiply (dst, tmp_affine, dst);
+					_rsvg_affine_scale (tmp_affine, args[0], args[1]);
+					_rsvg_affine_multiply (dst, tmp_affine, dst);
 				}
 			else if (!strcmp (keyword, "rotate"))
 				{
 					if (n_args == 1) {
-						art_affine_rotate (tmp_affine, args[0]);
-						art_affine_multiply (dst, tmp_affine, dst);
+						_rsvg_affine_rotate (tmp_affine, args[0]);
+						_rsvg_affine_multiply (dst, tmp_affine, dst);
 					} else if (n_args == 3) {
-						art_affine_translate (tmp_affine, args[1], args[2]);
-						art_affine_multiply (dst, tmp_affine, dst);
+						_rsvg_affine_translate (tmp_affine, args[1], args[2]);
+						_rsvg_affine_multiply (dst, tmp_affine, dst);
 					
-						art_affine_rotate (tmp_affine, args[0]);
-						art_affine_multiply (dst, tmp_affine, dst);
+						_rsvg_affine_rotate (tmp_affine, args[0]);
+						_rsvg_affine_multiply (dst, tmp_affine, dst);
 						
-						art_affine_translate (tmp_affine, -args[1], -args[2]);
-						art_affine_multiply (dst, tmp_affine, dst);
+						_rsvg_affine_translate (tmp_affine, -args[1], -args[2]);
+						_rsvg_affine_multiply (dst, tmp_affine, dst);
 					} else
 						return FALSE;
 				}
@@ -1182,18 +1165,18 @@ rsvg_parse_transform (double dst[6], const char *src)
 				{
 					if (n_args != 1)
 						return FALSE;
-					art_affine_shear (tmp_affine, args[0]);
-					art_affine_multiply (dst, tmp_affine, dst);
+					_rsvg_affine_shear (tmp_affine, args[0]);
+					_rsvg_affine_multiply (dst, tmp_affine, dst);
 				}
 			else if (!strcmp (keyword, "skewY"))
 				{
 					if (n_args != 1)
 						return FALSE;
-					art_affine_shear (tmp_affine, args[0]);
+					_rsvg_affine_shear (tmp_affine, args[0]);
 					/* transpose the affine, given that we know [1] is zero */
 					tmp_affine[1] = tmp_affine[2];
 					tmp_affine[2] = 0;
-					art_affine_multiply (dst, tmp_affine, dst);
+					_rsvg_affine_multiply (dst, tmp_affine, dst);
 				}
 			else
 				return FALSE; /* unknown keyword */
@@ -1216,8 +1199,8 @@ rsvg_parse_transform_attr (RsvgHandle *ctx, RsvgState *state, const char *str)
 	
 	if (rsvg_parse_transform (affine, str))
 		{
-			art_affine_multiply (state->personal_affine, affine, state->personal_affine);
-			art_affine_multiply (state->affine, affine, state->affine);
+			_rsvg_affine_multiply (state->personal_affine, affine, state->personal_affine);
+			_rsvg_affine_multiply (state->affine, affine, state->affine);
 		}
 }
 
@@ -1477,7 +1460,7 @@ rsvg_state_reinherit_top(RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
 			if (parent)
 				{
 					rsvg_state_dominate(rsvg_state_current(ctx), rsvg_state_parent(ctx));
-					art_affine_multiply (rsvg_state_current(ctx)->affine, rsvg_state_current(ctx)->affine,
+					_rsvg_affine_multiply (rsvg_state_current(ctx)->affine, rsvg_state_current(ctx)->affine,
 										 rsvg_state_parent(ctx)->affine);
 				}
 		}
@@ -1490,7 +1473,7 @@ rsvg_state_reinherit_top(RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
 			if (parent)
 				{
 					rsvg_state_reinherit(rsvg_state_current(ctx), rsvg_state_parent(ctx));
-					art_affine_multiply (rsvg_state_current(ctx)->affine, rsvg_state_current(ctx)->affine,
+					_rsvg_affine_multiply (rsvg_state_current(ctx)->affine, rsvg_state_current(ctx)->affine,
 										 rsvg_state_parent(ctx)->affine);
 				}
 		}

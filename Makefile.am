@@ -29,6 +29,7 @@ lib_LTLIBRARIES = librsvg-2.la
 
 librsvg_2_la_SOURCES = 		\
 	rsvg-gz.c		\
+	rsvg-affine.c		\
 	librsvg-features.c 	\
 	rsvg-bpath-util.c 	\
 	rsvg-bpath-util.h 	\

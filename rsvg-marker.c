@@ -32,7 +32,6 @@
 #include "rsvg-mask.h"
 #include "rsvg-image.h"
 
-#include <libart_lgpl/art_affine.h>
 #include <string.h>
 #include <math.h>
 #include <errno.h>
@@ -189,7 +188,7 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 	RsvgState * state = rsvg_state_current(ctx);
 
 	if (self->bbox) {
-		art_affine_scale(affine,linewidth * state->affine[0], 
+		_rsvg_affine_scale(affine,linewidth * state->affine[0], 
 						 linewidth * state->affine[3]);
 	} else {
 		for (i = 0; i < 6; i++)
@@ -217,25 +216,25 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 		taffine[3] = h / self->vbh;
 		taffine[4] = x;
 		taffine[5] = y;
-		art_affine_multiply(affine, taffine, affine);		
+		_rsvg_affine_multiply(affine, taffine, affine);		
 	}
 
-	art_affine_translate(taffine, -self->refX, -self->refY);
+	_rsvg_affine_translate(taffine, -self->refX, -self->refY);
 
-	art_affine_multiply(affine, taffine, affine);
+	_rsvg_affine_multiply(affine, taffine, affine);
 
 	if (self->orientAuto)
 		rotation = orient * 180. / M_PI;
 	else
 		rotation = self->orient;
 
-	art_affine_rotate(taffine, rotation);
+	_rsvg_affine_rotate(taffine, rotation);
 	
-	art_affine_multiply(affine, affine, taffine);
+	_rsvg_affine_multiply(affine, affine, taffine);
 
-	art_affine_translate(taffine, x, y);
+	_rsvg_affine_translate(taffine, x, y);
 	
-	art_affine_multiply(affine, affine, taffine);
+	_rsvg_affine_multiply(affine, affine, taffine);
 
 	/*don't inherit anything from the current context*/
 	rsvg_state_finalize(state);

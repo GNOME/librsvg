@@ -47,8 +47,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <libart_lgpl/art_affine.h>
-
 #include "rsvg-bpath-util.h"
 #include "rsvg-path.h"
 #include "rsvg-paint-server.h"
@@ -178,16 +176,16 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 			/* Scale size of target pixbuf */
 
-			art_affine_identity (state.affine);
+			_rsvg_affine_identity (state.affine);
 
 			if (has_vbox && (vbox_x != 0. || vbox_y != 0.))
 				{
-					art_affine_translate (affine, - vbox_x, - vbox_y);
-					art_affine_multiply (state.affine, state.affine, affine);
+					_rsvg_affine_translate (affine, - vbox_x, - vbox_y);
+					_rsvg_affine_multiply (state.affine, state.affine, affine);
 				}
 
-			art_affine_scale (affine, x_zoom, y_zoom);
-			art_affine_multiply (state.affine, state.affine, affine);
+			_rsvg_affine_scale (affine, x_zoom, y_zoom);
+			_rsvg_affine_multiply (state.affine, state.affine, affine);
 
 			if (new_width <= 0 || new_height <= 0)
 				{
@@ -480,7 +478,7 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		for (i = 0; i < 6; i++)
 			grad->affine[i] = affine[i];
 	else
-		art_affine_identity(grad->affine);
+		_rsvg_affine_identity(grad->affine);
 
 	if (got_color)
 		{
@@ -650,7 +648,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 		for (i = 0; i < 6; i++)
 			grad->affine[i] = affine[i];
 	else
-		art_affine_identity(grad->affine);
+		_rsvg_affine_identity(grad->affine);
 	
 	if (got_color)
 		{
@@ -784,7 +782,7 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		for (i = 0; i < 6; i++)
 			pattern->affine[i] = affine[i];
 	else
-		art_affine_identity(pattern->affine);
+		_rsvg_affine_identity(pattern->affine);
 
 	if (got_aspect_ratio)
 		pattern->preserve_aspect_ratio = aspect_ratio;
@@ -1707,7 +1705,8 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 	return draw;
 }
 
-/** rsvg_set_default_dpi_x_y
+/** 
+ * rsvg_set_default_dpi_x_y
  * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *

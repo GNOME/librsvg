@@ -28,7 +28,6 @@
 #include "rsvg-image.h"
 #include "rsvg-css.h"
 #include <libart_lgpl/art_rgba.h>
-#include <libart_lgpl/art_affine.h>
 #include <string.h>
 
 #include <math.h>
@@ -3778,7 +3777,7 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self,
 	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	output_pixels = gdk_pixbuf_get_pixels (output);
 
-	art_affine_invert(affine, ctx->paffine);
+	_rsvg_affine_invert(affine, ctx->paffine);
 
 	for (y = 0; y < tileHeight; y++)
 		{
@@ -4624,7 +4623,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 			rawdy = oself->dy;
 		}
 
-	art_affine_invert(iaffine, ctx->paffine);
+	_rsvg_affine_invert(iaffine, ctx->paffine);
 
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
@@ -4806,7 +4805,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 
 	surfaceScale = oself->surfaceScale / 255.0; 
 
-	art_affine_invert(iaffine, ctx->paffine);
+	_rsvg_affine_invert(iaffine, ctx->paffine);
 
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)

@@ -30,7 +30,6 @@
 #include <string.h>
 #include <math.h>
 #include <errno.h>
-#include <libart_lgpl/art_affine.h>
 #include "rsvg-css.h"
 
 static const char s_UTF8_B64Alphabet[64] = {

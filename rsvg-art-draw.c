@@ -31,7 +31,6 @@
 #include <libart_lgpl/art_rgb_affine.h>
 #include <libart_lgpl/art_rgb_rgba_affine.h>
 #include <libart_lgpl/art_rgb_svp.h>
-#include <libart_lgpl/art_affine.h>
 #include <libart_lgpl/art_svp_intersect.h>
 #include <libart_lgpl/art_svp_ops.h>
 
@@ -127,7 +126,7 @@ rsvg_calculate_svp_bounds (const ArtSVP *svp, double * useraffine)
 	float bigx, littlex, bigy, littley, assignedonce;
 	RsvgFRect output;
 
-	art_affine_invert(affine, useraffine);
+	_rsvg_affine_invert(affine, useraffine);
 	bigx = littlex = bigy = littley = assignedonce = 0;	
 
 	for (i = 0; i < svp->n_segs; i++)
@@ -302,7 +301,7 @@ rsvg_render_outline (RsvgState *state, ArtVpath *vpath)
 
 	/* todo: libart doesn't yet implement anamorphic scaling of strokes */
 	double stroke_width = state->stroke_width *
-		art_affine_expansion (state->affine);
+		_rsvg_affine_expansion (state->affine);
 
 	if (stroke_width < 0.25)
 		stroke_width = 0.25;
@@ -560,7 +559,7 @@ void rsvg_art_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * img,
 	tmp_tmp_affine[4] = x;
 	tmp_tmp_affine[5] = y;
 
-	art_affine_multiply(tmp_affine, tmp_tmp_affine, tmp_affine);
+	_rsvg_affine_multiply(tmp_affine, tmp_tmp_affine, tmp_affine);
 
 	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
 								   gdk_pixbuf_get_width (pixbuf),

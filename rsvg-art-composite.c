@@ -37,7 +37,6 @@
 #include "rsvg-art-mask.h"
 
 #include <libart_lgpl/art_rgba.h>
-#include <libart_lgpl/art_affine.h>
 #include <libart_lgpl/art_rgb_svp.h>
 
 static void
@@ -513,15 +512,15 @@ rsvg_art_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate,
 	intpix = gdk_pixbuf_get_pixels (intermediate);
 	basebpp = has_alpha ? 4 : 3;
 
-	art_affine_invert(raw_inv_affine, affine);
+	_rsvg_affine_invert(raw_inv_affine, affine);
 
 	/*scale to w and h*/
 	tmp_affine[0] = (double)w;
 	tmp_affine[3] = (double)h;
 	tmp_affine[1] = tmp_affine[2] = tmp_affine[4] = tmp_affine[5] = 0;
-	art_affine_multiply(tmp_affine, tmp_affine, affine);
+	_rsvg_affine_multiply(tmp_affine, tmp_affine, affine);
 
-	art_affine_invert(inv_affine, tmp_affine);
+	_rsvg_affine_invert(inv_affine, tmp_affine);
 
 
 	/*apply the transformation*/

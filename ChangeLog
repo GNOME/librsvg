@@ -5,6 +5,8 @@
 	gnome-vfs can see.
 	* *: Deprecate rsvg-gz. Move its functionality directly into RsvgHandle instead.
 	Greatly simplifies much code.
+	* rsvg-affine.c: Steal libart's matrix affine code
+	* *: Use above instead of libart's matrix affine functions
 	
 2005-02-23  Caleb Moore <c.moore@student.unsw.edu.au>
 

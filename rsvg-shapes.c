@@ -35,8 +35,6 @@
 #include "rsvg-css.h"
 #include "rsvg-defs.h"
 
-#include <libart_lgpl/art_affine.h>
-
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
 

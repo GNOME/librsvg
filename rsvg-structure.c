@@ -30,8 +30,6 @@
 #include "rsvg-image.h"
 #include "rsvg-css.h"
 
-#include <libart_lgpl/art_affine.h>
-
 void 
 rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 						 int dominate)
@@ -178,8 +176,8 @@ rsvg_defs_drawable_use_resolve(RsvgDefsDrawableUse * self, RsvgDrawingCtx *ctx, 
 			case RSVG_DEF_PATH:
 				{
 					
-					art_affine_translate(affine, x, y);
-					art_affine_multiply(affine_out, affine, affine_out);	
+					_rsvg_affine_translate(affine, x, y);
+					_rsvg_affine_multiply(affine_out, affine, affine_out);	
 					return (RsvgDefsDrawable *)parent;
 				}
 			case RSVG_DEF_SYMBOL:
@@ -194,19 +192,19 @@ rsvg_defs_drawable_use_resolve(RsvgDefsDrawableUse * self, RsvgDrawingCtx *ctx, 
 							(symbol->preserve_aspect_ratio, 
 							 symbol->width, symbol->height, 
 							 &width, &height, &x, &y);
-						art_affine_translate(affine, x, y);
-						art_affine_multiply(affine_out, affine, affine_out);	
+						_rsvg_affine_translate(affine, x, y);
+						_rsvg_affine_multiply(affine_out, affine, affine_out);	
 						
-						art_affine_scale(affine, width / symbol->width,
+						_rsvg_affine_scale(affine, width / symbol->width,
 										 height / symbol->height);
-						art_affine_multiply(affine_out, affine, affine_out);
-						art_affine_translate(affine, -symbol->x, 
+						_rsvg_affine_multiply(affine_out, affine, affine_out);
+						_rsvg_affine_translate(affine, -symbol->x, 
 											 -symbol->y);
-						art_affine_multiply(affine_out, affine, affine_out);
+						_rsvg_affine_multiply(affine_out, affine, affine_out);
 					}
 					else {
-						art_affine_translate(affine, x, y);
-						art_affine_multiply(affine_out, affine, affine_out);	
+						_rsvg_affine_translate(affine, x, y);
+						_rsvg_affine_multiply(affine_out, affine, affine_out);	
 					}
 					
 					return drawable;
@@ -338,7 +336,7 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			affine[5] = y - vbox_y * height / vbox_h;
 			for (i = 0; i < 6; i++)
 				state.personal_affine[i] = affine[i];
-			art_affine_multiply(state.affine, affine, 
+			_rsvg_affine_multiply(state.affine, affine, 
 								state.affine);
 			ctx->width = vbox_w;
 			ctx->height = vbox_h;
@@ -353,7 +351,7 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			affine[5] = y;
 			for (i = 0; i < 6; i++)
 				state.personal_affine[i] = affine[i];
-			art_affine_multiply(state.affine, affine, 
+			_rsvg_affine_multiply(state.affine, affine, 
 								state.affine);
 		}
 

@@ -229,6 +229,54 @@ void rsvg_add_clipping_rect (RsvgDrawingCtx *ctx, double x, double y,
 							 double w, double h);
 
 
+void
+_rsvg_affine_invert (double dst_affine[6], const double src_affine[6]);
+
+/* flip the matrix, FALSE, FALSE is a simple copy operation, and
+   TRUE, TRUE equals a rotation by 180 degrees */
+void
+_rsvg_affine_flip (double dst_affine[6], const double src_affine[6],
+                 int horz, int vert);
+
+void
+_rsvg_affine_multiply (double dst[6],
+		     const double src1[6], const double src2[6]);
+
+/* set up the identity matrix */
+void
+_rsvg_affine_identity (double dst[6]);
+
+/* set up a scaling matrix */
+void
+_rsvg_affine_scale (double dst[6], double sx, double sy);
+
+/* set up a rotation matrix; theta is given in degrees */
+void
+_rsvg_affine_rotate (double dst[6], double theta);
+
+/* set up a shearing matrix; theta is given in degrees */
+void
+_rsvg_affine_shear (double dst[6], double theta);
+
+/* set up a translation matrix */
+void
+_rsvg_affine_translate (double dst[6], double tx, double ty);
+
+
+/* find the affine's "expansion factor", i.e. the scale amount */
+double
+_rsvg_affine_expansion (const double src[6]);
+
+/* Determine whether the affine transformation is rectilinear,
+   i.e. whether a rectangle aligned to the grid is transformed into
+   another rectangle aligned to the grid. */
+int
+_rsvg_affine_rectilinear (const double src[6]);
+
+/* Determine whether two affine transformations are equal within grid allignment */
+int
+_rsvg_affine_equal (double matrix1[6], double matrix2[6]);
+
 G_END_DECLS
 
 #endif

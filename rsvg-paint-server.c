@@ -33,7 +33,6 @@
 #include <glib/gmem.h>
 #include <glib/gmessages.h>
 #include <glib/gstrfuncs.h>
-#include <libart_lgpl/art_affine.h>
 #include <libart_lgpl/art_render_mask.h>
 #include <string.h>
 #include <math.h>
@@ -214,13 +213,13 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 		affine[3] = ctx->y1 - ctx->y0;
 		affine[4] = ctx->x0;
 		affine[5] = ctx->y0;
-		art_affine_multiply(affine, affine, ctx->affine);
+		_rsvg_affine_multiply(affine, affine, ctx->affine);
 	} else {
 		for (i = 0; i < 6; i++)
 			affine[i] = ctx->affine[i];
 	}
 
-	art_affine_multiply(affine, rlg->affine, affine);
+	_rsvg_affine_multiply(affine, rlg->affine, affine);
 
 	/*
 	in case I am hit by a bus, here is how the following code works:
@@ -340,13 +339,13 @@ rsvg_paint_server_rad_grad_render (RsvgPaintServer *self, ArtRender *ar,
 		affine[3] = ctx->y1 - ctx->y0;
 		affine[4] = ctx->x0;
 		affine[5] = ctx->y0;
-		art_affine_multiply(affine, affine, ctx->affine);
+		_rsvg_affine_multiply(affine, affine, ctx->affine);
 	} else {
 		for (i = 0; i < 6; i++)
 			affine[i] = ctx->affine[i];
 	}
 
-	art_affine_multiply(affine, rrg->affine, affine);
+	_rsvg_affine_multiply(affine, rrg->affine, affine);
 
 	agr = z->agr;
 	if (agr == NULL)
@@ -365,11 +364,11 @@ rsvg_paint_server_rad_grad_render (RsvgPaintServer *self, ArtRender *ar,
 			z->agr = agr;
 		}
 	
-	art_affine_scale (aff1, rrg->r, rrg->r);
-	art_affine_translate (aff2, rrg->cx, rrg->cy);
-	art_affine_multiply (aff1, aff1, aff2);
-	art_affine_multiply (aff1, aff1, affine);
-	art_affine_invert (agr->affine, aff1);
+	_rsvg_affine_scale (aff1, rrg->r, rrg->r);
+	_rsvg_affine_translate (aff2, rrg->cx, rrg->cy);
+	_rsvg_affine_multiply (aff1, aff1, aff2);
+	_rsvg_affine_multiply (aff1, aff1, affine);
+	_rsvg_affine_invert (agr->affine, aff1);
 	
 	/* todo: libart doesn't support spreads on radial gradients */
 
@@ -504,7 +503,7 @@ render_image_pattern (ArtRender *render, guchar * pixels, gdouble x, gdouble y,
 	for (i = 0; i < 6; i++)
 		image_source->affine[i] = affine[i];  
 
-	art_affine_invert(image_source->invaffine, affine);
+	_rsvg_affine_invert(image_source->invaffine, affine);
 
 	image_source->init = ART_FALSE;
 	
@@ -544,7 +543,7 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 		affine[3] = ctx->y1 - ctx->y0;
 		affine[4] = ctx->x0;
 		affine[5] = ctx->y0;
-		art_affine_multiply(affine, affine, ctx->affine);
+		_rsvg_affine_multiply(affine, affine, ctx->affine);
 	} else {
 		for (i = 0; i < 6; i++)
 			affine[i] = ctx->affine[i];
@@ -570,7 +569,7 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 		caffine[3] = h / pattern->vbh;
 		caffine[4] = x;
 		caffine[5] = y;
-		art_affine_multiply(caffine, caffine, affine);
+		_rsvg_affine_multiply(caffine, caffine, affine);
 	}
 	else if (pattern->obj_cbbox) {
 		caffine[0] = ctx->x1 - ctx->x0;
@@ -579,14 +578,14 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 		caffine[3] = ctx->y1 - ctx->y0;
 		caffine[4] = ctx->x0;
 		caffine[5] = ctx->y0;
-		art_affine_multiply(caffine, caffine, ctx->affine);
+		_rsvg_affine_multiply(caffine, caffine, ctx->affine);
 	} else {
 		for (i = 0; i < 6; i++)
 			caffine[i] = ctx->affine[i];
 	}
 
-	art_affine_multiply(affine, affine, pattern->affine);
-	art_affine_multiply(caffine, caffine, pattern->affine);
+	_rsvg_affine_multiply(affine, affine, pattern->affine);
+	_rsvg_affine_multiply(caffine, caffine, pattern->affine);
 
 	/*check if everything is going to be within the boundaries of the rendering surface*/
 	maxx = maxy = minx = miny = xoffset = yoffset = 0;

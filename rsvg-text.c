@@ -30,8 +30,6 @@
 #include "rsvg-text.h"
 #include "rsvg-css.h"
 
-#include <libart_lgpl/art_affine.h>
-
 #include "rsvg-shapes.h"
 
 #include <ft2build.h>
