@@ -1,5 +1,9 @@
 2004-02-29  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-filter.c: Added new filter: feImage
+	
+2004-02-29  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-filter.c: Added new filter: feTurbulence
 	
 2004-03-01  Caleb Moore <c.moore@student.unsw.edu.au>

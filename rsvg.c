@@ -766,28 +766,30 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_filter (ctx, atts);
 	else if (!strcmp ((char *)name, "feBlend"))
 		rsvg_start_filter_primitive_blend (ctx, atts);
-	else if (!strcmp ((char *)name, "feGaussianBlur"))
-		rsvg_start_filter_primitive_gaussian_blur (ctx, atts);
-	else if (!strcmp ((char *)name, "feConvolveMatrix"))
-		rsvg_start_filter_primitive_convolve_matrix (ctx, atts);
-	else if (!strcmp ((char *)name, "feOffset"))
-		rsvg_start_filter_primitive_offset(ctx, atts);
-	else if (!strcmp ((char *)name, "feMerge"))
-		rsvg_start_filter_primitive_merge(ctx, atts);
-	else if (!strcmp ((char *)name, "feMergeNode"))
-		rsvg_start_filter_primitive_merge_node(ctx, atts);
 	else if (!strcmp ((char *)name, "feColorMatrix"))
 		rsvg_start_filter_primitive_colour_matrix(ctx, atts);
-	else if (!strcmp ((char *)name, "feMorphology"))
-		rsvg_start_filter_primitive_erode(ctx, atts);
 	else if (!strcmp ((char *)name, "feComponentTransfer"))
 		rsvg_start_filter_primitive_component_transfer(ctx, atts);
 	else if (!strcmp ((char *)name, "feComposite"))
 		rsvg_start_filter_primitive_composite(ctx, atts);
-	else if (!strcmp ((char *)name, "feFlood"))
-		rsvg_start_filter_primitive_flood(ctx, atts);
+	else if (!strcmp ((char *)name, "feConvolveMatrix"))
+		rsvg_start_filter_primitive_convolve_matrix (ctx, atts);
 	else if (!strcmp ((char *)name, "feDisplacementMap"))
 		rsvg_start_filter_primitive_displacement_map(ctx, atts);
+	else if (!strcmp ((char *)name, "feFlood"))
+		rsvg_start_filter_primitive_flood(ctx, atts);
+	else if (!strcmp ((char *)name, "feGaussianBlur"))
+		rsvg_start_filter_primitive_gaussian_blur (ctx, atts);
+	else if (!strcmp ((char *)name, "feImage"))
+		rsvg_start_filter_primitive_image (ctx, atts);
+	else if (!strcmp ((char *)name, "feMerge"))
+		rsvg_start_filter_primitive_merge(ctx, atts);
+	else if (!strcmp ((char *)name, "feMergeNode"))
+		rsvg_start_filter_primitive_merge_node(ctx, atts);
+	else if (!strcmp ((char *)name, "feMorphology"))
+		rsvg_start_filter_primitive_erode(ctx, atts);
+	else if (!strcmp ((char *)name, "feOffset"))
+		rsvg_start_filter_primitive_offset(ctx, atts);
 	else if (!strcmp ((char *)name, "feTurbulence"))
 		rsvg_start_filter_primitive_turbulence(ctx, atts);
 	else if (!strcmp ((char *)name, "feFuncR"))
