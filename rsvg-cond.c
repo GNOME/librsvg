@@ -59,6 +59,9 @@ static const char * implemented_features [] =
 	};
 static const guint nb_implemented_features = G_N_ELEMENTS(implemented_features);
 
+static const char ** implemented_extensions = NULL;
+static const guint nb_implemented_extensions = G_N_ELEMENTS(implemented_extensions);
+
 static int 
 rsvg_feature_compare(const void *a, const void *b)
 {
@@ -67,7 +70,9 @@ rsvg_feature_compare(const void *a, const void *b)
 
 /* http://www.w3.org/TR/SVG/struct.html#RequiredFeaturesAttribute */
 static gboolean 
-rsvg_cond_parse_required_features (const char * value)
+rsvg_cond_fulfills_requirement (const char * value,
+								const char ** features,
+								guint nb_features)
 {
 	guint nb_elems = 0;
 	char ** elems;
@@ -79,43 +84,13 @@ rsvg_cond_parse_required_features (const char * value)
 		guint i;
 
 		for(i = 0; (i < nb_elems) && permitted; i++)
-			if(!bsearch (elems[i], implemented_features, 
-						 nb_implemented_features, sizeof(char *),
+			if(!bsearch (elems[i], features, 
+						 nb_features, sizeof(char *),
 						 rsvg_feature_compare))
 				permitted = FALSE;
 
 		g_strfreev(elems);
 	} 
-	else
-		permitted = FALSE;
-
-	return permitted;
-}
-
-static const char ** implemented_extensions = NULL;
-static const guint nb_implemented_extensions = G_N_ELEMENTS(implemented_extensions);
-
-/* http://www.w3.org/TR/SVG/struct.html#SystemLanguageAttribute */
-static gboolean 
-rsvg_cond_parse_required_extensions (const char * value)
-{
-	guint nb_elems = 0;
-	char ** elems;
-	gboolean permitted = TRUE;
-
-	elems = rsvg_css_parse_list(value, &nb_elems);
-
-	if(elems && nb_elems) {
-		guint i;
-
-		for(i = 0; (i < nb_elems) && permitted; i++)
-			if(!bsearch (elems[i], implemented_extensions, 
-						 nb_implemented_extensions, sizeof(char *),
-						 rsvg_feature_compare))
-				permitted = FALSE;
-
-		g_strfreev(elems);
-	}
 	else
 		permitted = FALSE;
 
@@ -198,12 +173,12 @@ rsvg_eval_switch_attributes (RsvgPropertyBag *atts, gboolean * p_has_cond)
 			const char * value;
 
 			if ((value = rsvg_property_bag_lookup (atts, "requiredFeatures"))) {
-				permitted = rsvg_cond_parse_required_features (value);
+				permitted = rsvg_cond_fulfills_requirement (value, implemented_features, nb_implemented_features);
 				has_cond = TRUE;
 			}
 
 			if (permitted && (value = rsvg_property_bag_lookup (atts, "requiredExtensions"))) {
-				permitted = rsvg_cond_parse_required_extensions (value);
+				permitted = rsvg_cond_fulfills_requirement (value, implemented_extensions, nb_implemented_extensions);
 				has_cond = TRUE;
 			}
 
