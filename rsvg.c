@@ -786,6 +786,8 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_filter_primitive_composite(ctx, atts);
 	else if (!strcmp ((char *)name, "feFlood"))
 		rsvg_start_filter_primitive_flood(ctx, atts);
+	else if (!strcmp ((char *)name, "feDisplacementMap"))
+		rsvg_start_filter_primitive_displacement_map(ctx, atts);
 	else if (!strcmp ((char *)name, "feFuncR"))
 		rsvg_start_filter_primitive_component_transfer_function(ctx, atts, 'r');
 	else if (!strcmp ((char *)name, "feFuncG"))

@@ -1,3 +1,8 @@
+2004-02-29  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-filter.c: Added new filter: feDisplacementMap
+
+	
 2004-02-28  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-text.c: Made standard text the default. Vector text was 

@@ -3142,3 +3142,208 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
 					 &filter->super);
 }
+
+/*************************************************************/
+/*************************************************************/
+
+typedef struct _RsvgFilterPrimitiveDisplacementMap RsvgFilterPrimitiveDisplacementMap;
+
+struct _RsvgFilterPrimitiveDisplacementMap
+{
+	RsvgFilterPrimitive super;
+	gint dx, dy;
+	char xChannelSelector, yChannelSelector;
+	GString *in2;
+	double scale;
+};
+
+static void
+rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self,
+									 RsvgFilterContext * ctx)
+{
+	guchar ch, xch, ych;
+	gint x, y;
+	gint rowstride, height, width;
+	FPBox boundarys;
+	
+	guchar *in_pixels;
+	guchar *in2_pixels;
+	guchar *output_pixels;
+	
+	RsvgFilterPrimitiveDisplacementMap *oself;
+	
+	GdkPixbuf *output;
+	GdkPixbuf *in;
+	GdkPixbuf *in2;
+	
+	int ox, oy;
+	
+	oself = (RsvgFilterPrimitiveDisplacementMap *) self;
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	in = rsvg_filter_get_in (self->in, ctx);
+	in_pixels = gdk_pixbuf_get_pixels (in);
+
+	in2 = rsvg_filter_get_in (oself->in2, ctx);
+	in2_pixels = gdk_pixbuf_get_pixels (in2);
+	
+	height = gdk_pixbuf_get_height (in);
+	width = gdk_pixbuf_get_width (in);
+	
+	rowstride = gdk_pixbuf_get_rowstride (in);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	
+	output_pixels = gdk_pixbuf_get_pixels (output);
+	
+	switch (oself->xChannelSelector)
+		{
+		case 'R':
+			xch = 0;
+			break;
+		case 'G':
+			xch = 1;
+			break;
+		case 'B':
+			xch = 2;
+			break;
+		default:
+			xch = 3;
+			break;
+		};
+
+	switch (oself->yChannelSelector)
+		{
+		case 'R':
+			ych = 0;
+			break;
+		case 'G':
+			ych = 1;
+			break;
+		case 'B':
+			ych = 2;
+			break;
+		default:
+			ych = 3;
+			break;
+		};
+
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
+			{
+				ox = x + oself->scale * ctx->paffine[0] * 
+					((double)in2_pixels[y * rowstride + x * 4 + xch] / 255.0 - 0.5);
+				oy = y + oself->scale * ctx->paffine[3] * 
+					((double)in2_pixels[y * rowstride + x * 4 + ych] / 255.0 - 0.5);
+
+				if (ox < boundarys.x1 || ox >= boundarys.x2)
+					continue;
+				if (oy < boundarys.y1 || oy >= boundarys.y2)
+					continue;
+				
+				for (ch = 0; ch < 4; ch++)
+					{
+						output_pixels[y * rowstride + x * 4 + ch] =
+							in_pixels[oy * rowstride + ox * 4 + ch];
+					}
+			}
+
+	rsvg_filter_store_result (self->result, output, ctx);
+	
+	g_object_unref (G_OBJECT (in));
+	g_object_unref (G_OBJECT (output));
+}
+
+static void
+rsvg_filter_primitive_displacement_map_free (RsvgFilterPrimitive * self)
+{
+	RsvgFilterPrimitiveDisplacementMap *oself;
+	
+	oself = (RsvgFilterPrimitiveDisplacementMap *) self;
+	g_string_free (self->result, TRUE);
+	g_string_free (self->in, TRUE);
+	g_string_free (oself->in2, TRUE);
+	g_free (oself);
+}
+
+void
+rsvg_start_filter_primitive_displacement_map (RsvgHandle * ctx, const xmlChar ** atts)
+{
+	int i;
+	
+	double font_size;
+	RsvgFilterPrimitiveDisplacementMap *filter;
+	
+	font_size = rsvg_state_current_font_size (ctx);
+	
+	filter = g_new (RsvgFilterPrimitiveDisplacementMap, 1);
+	
+	filter->super.in = g_string_new ("none");
+	filter->in2 = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->xChannelSelector = 'A';
+	filter->yChannelSelector = 'A';
+	filter->scale = 0;
+	
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				{
+					if (!strcmp ((char *) atts[i], "in"))
+						g_string_assign (filter->super.in, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "in2"))
+						g_string_assign (filter->in2, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "result"))
+						g_string_assign (filter->super.result, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "x"))
+						{
+							filter->super.x =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  1,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "y"))
+						{
+							filter->super.y =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  1,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "width"))
+						{
+							filter->super.width =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  1,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "height"))
+						{
+							filter->super.height =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  1,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "xChannelSelector"))
+						filter->xChannelSelector = ((char *) atts[i + 1])[0];
+					else if (!strcmp ((char *) atts[i], "yChannelSelector"))
+						filter->yChannelSelector = ((char *) atts[i + 1])[0];
+					else if (!strcmp ((char *) atts[i], "scale"))
+						filter->scale = g_ascii_strtod(atts[i + 1], NULL);
+				}
+		}
+	
+	filter->super.render = &rsvg_filter_primitive_displacement_map_render;
+	filter->super.free = &rsvg_filter_primitive_displacement_map_free;
+	
+	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
+					 &filter->super);
+}
