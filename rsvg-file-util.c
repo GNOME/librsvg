@@ -152,6 +152,39 @@ rsvg_pixbuf_from_file_with_size_data_ex (RsvgHandle * handle,
 
 /* private */
 GdkPixbuf *
+rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
+									  size_t len,
+									  struct RsvgSizeCallbackData * data,
+									  GError ** error)
+{
+	RsvgHandle * handle;
+	GdkPixbuf * retval;
+
+	/* test for GZ marker */
+	if ((len >= 2) && (buff[0] == (guchar)0x1f) && (buff[1] == (guchar)0x8b))
+		handle = rsvg_handle_new_gz ();
+	else
+		handle = rsvg_handle_new ();
+
+	if (!handle) {
+		g_set_error (error, rsvg_error_quark (), 0,
+					 _("Error creating SVG reader (probably a gzipped SVG)"));
+		return NULL;
+	}
+
+	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
+
+	rsvg_handle_write (handle, buff, len, error);
+
+	rsvg_handle_close (handle, error);
+	retval = rsvg_handle_get_pixbuf (handle);
+	rsvg_handle_free (handle);
+
+	return retval;
+	
+}
+
+static GdkPixbuf *
 rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
 										   struct RsvgSizeCallbackData * data,
 										   GError ** error)
@@ -196,8 +229,7 @@ rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
 	return retval;
 }
 
-/* private */
-GdkPixbuf *
+static GdkPixbuf *
 rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
 									  struct RsvgSizeCallbackData * data,
 									  GError ** error)
@@ -219,7 +251,6 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
 
 	return pixbuf;
 }
-
 
 /**
  * rsvg_pixbuf_from_file_at_size_ex:

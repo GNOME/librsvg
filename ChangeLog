@@ -1,3 +1,8 @@
+2004-06-06  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.c: Back out elementNs functions. They're not needed after all.
+	* test-display.c: Save the input SVG to a file. Better printing code - scales nicely, preserves aspect-ratio
+	
 2004-06-05  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-css.c: fixed css to break strings on the LAST colon rather than the fist one. This allows namespaces to work once more!!!

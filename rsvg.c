@@ -1048,19 +1048,6 @@ rsvg_start_element (void *data, const xmlChar *name,
 }
 
 static void
-rsvg_start_elementns (void *data, const xmlChar *name,
-					  const xmlChar * prefix, 
-					  const xmlChar * URI, 
-					  int nb_namespaces, 
-					  const xmlChar ** namespaces, 
-					  int nb_attributes, 
-					  int nb_defaulted, 
-					  const xmlChar ** atts)
-{
-	rsvg_start_element (data, name,	atts);
-}
-
-static void
 rsvg_end_element (void *data, const xmlChar *name)
 {
 	RsvgHandle *ctx = (RsvgHandle *)data;
@@ -1099,14 +1086,6 @@ rsvg_end_element (void *data, const xmlChar *name)
 			ctx->n_state--;
 			rsvg_state_finalize (&ctx->state[ctx->n_state]);
 		}
-}
-
-static void
-rsvg_end_elementns (void *data, const xmlChar *name,
-					const xmlChar * prefix, 
-					const xmlChar * URI)
-{
-	rsvg_end_element (data, name);	
 }
 
 static void
@@ -1172,8 +1151,6 @@ static void rsvg_SAX_handler_struct_init()
 	rsvgSAXHandlerStruct.cdataBlock = rsvg_characters;
     rsvgSAXHandlerStruct.startElement = rsvg_start_element;
     rsvgSAXHandlerStruct.endElement = rsvg_end_element;
-    rsvgSAXHandlerStruct.startElementNs = rsvg_start_elementns;
-    rsvgSAXHandlerStruct.endElementNs = rsvg_end_elementns;
 }
 
 /**

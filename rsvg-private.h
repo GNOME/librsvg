@@ -139,17 +139,6 @@ struct RsvgSizeCallbackData
 	gboolean keep_aspect_ratio;
 };
 
-/* private */
-GdkPixbuf *
-rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
-									  struct RsvgSizeCallbackData * data,
-									  GError ** error);
-/* private */
-GdkPixbuf *
-rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
-										   struct RsvgSizeCallbackData * data,
-										   GError ** error);
-
 struct _RsvgPropertyBag
 {
 	GHashTable * props;
@@ -166,6 +155,12 @@ rsvg_property_bag_lookup (RsvgPropertyBag *bag, const char * key);
 
 guint
 rsvg_property_bag_size (RsvgPropertyBag *bag);
+
+GdkPixbuf *
+rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
+									  size_t len,
+									  struct RsvgSizeCallbackData * data,
+									  GError ** error);
 
 G_END_DECLS
 
