@@ -1223,6 +1223,26 @@ static gboolean utf8_base64_decode(char ** binptr, size_t * binlen, const char *
 }
 
 static GdkPixbuf *
+rsvg_pixbuf_ensure_alpha_channel(GdkPixbuf * pixbuf)
+{
+	if (gdk_pixbuf_get_has_alpha(pixbuf))
+		return pixbuf;
+	else {
+#if 0
+		/* why doesn't this work properly?? */
+		GdkPixbuf *alpha;
+
+		alpha = gdk_pixbuf_add_alpha(pixbuf, FALSE, 255, 255, 255);
+		g_object_unref(pixbuf);
+
+		return alpha;
+#else
+		return pixbuf;
+#endif
+	}
+}
+
+GdkPixbuf *
 rsvg_pixbuf_new_from_data_at_size (const char *data,
 								   int         width, 
 								   int         height,
@@ -1296,7 +1316,7 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	
 	g_free(buffer);
 	
-	return pixbuf;
+	return rsvg_pixbuf_ensure_alpha_channel(pixbuf);
 }
 
 GdkPixbuf *
@@ -1372,8 +1392,8 @@ rsvg_pixbuf_new_from_file_at_size (const char *filename,
 	g_object_ref (pixbuf);
 	
 	g_object_unref (loader);
-	
-	return pixbuf;
+
+	return rsvg_pixbuf_ensure_alpha_channel(pixbuf);
 }
 
 /* TODO 1: issue with affining alpha images - this is gdkpixbuf's fault...
@@ -1470,14 +1490,14 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if(has_alpha)
 		art_rgb_rgba_affine (rgb, 0, 0, w, h, dest_rowstride,
 							 gdk_pixbuf_get_pixels (img),
-							 w, h, dest_rowstride,
+							 w, h, gdk_pixbuf_get_rowstride (img),
 							 tmp_affine,
 							 ART_FILTER_NEAREST,
 							 NULL);
 	else
 		art_rgb_affine (rgb, 0, 0, w, h, dest_rowstride,
 						gdk_pixbuf_get_pixels (img),
-						w, h, dest_rowstride,
+						w, h, gdk_pixbuf_get_rowstride (img),
 						tmp_affine,
 						ART_FILTER_NEAREST,
 						NULL);
