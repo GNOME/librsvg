@@ -191,6 +191,10 @@ rsvg_tchunk_remove_leading(RsvgTChunk * self);
 static void
 rsvg_tspan_remove_leading(RsvgTspan * self)
 {
+	if (!self)
+		return;
+	if (!self->contents->len == 0)
+		return
 	rsvg_tchunk_remove_leading(g_ptr_array_index(self->contents, 0));
 }
 
@@ -210,6 +214,10 @@ rsvg_tchunk_remove_trailing(RsvgTChunk * self);
 static void
 rsvg_tspan_remove_trailing(RsvgTspan * self)
 {
+	if (!self)
+		return;
+	if (!self->contents->len == 0)
+		return
 	rsvg_tchunk_remove_trailing(g_ptr_array_index(self->contents, 
 												  self->contents->len - 1));
 }

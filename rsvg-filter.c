@@ -613,22 +613,18 @@ rsvg_filter_parse (const RsvgDefs * defs, const char *str)
 			while (g_ascii_isspace (*p))
 				p++;
 
-			if (*p == '#')
+			for (ix = 0; p[ix]; ix++)
+				if (p[ix] == ')')
+					break;
+			
+			if (p[ix] == ')')
 				{
-					p++;
-					for (ix = 0; p[ix]; ix++)
-						if (p[ix] == ')')
-							break;
-
-					if (p[ix] == ')')
-						{
-							name = g_strndup (p, ix);
-							val = rsvg_defs_lookup (defs, name);
-							g_free (name);
-							
-							if (val && val->type == RSVG_DEF_FILTER)
-								return (RsvgFilter *) val;
-						}
+					name = g_strndup (p, ix);
+					val = rsvg_defs_lookup (defs, name);
+					g_free (name);
+					
+					if (val && val->type == RSVG_DEF_FILTER)
+						return (RsvgFilter *) val;
 				}
 		}
 	

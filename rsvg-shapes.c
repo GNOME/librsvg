@@ -1514,7 +1514,7 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	return pixbuf;
 }
 
-static gchar *
+gchar *
 rsvg_get_file_path (const gchar * filename, const gchar *basedir)
 {
 	gchar *absolute_filename;
@@ -2115,7 +2115,7 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	
 	if (xlink_href != NULL)
 		{
-			RsvgDefVal * parent = rsvg_defs_lookup (ctx->defs, xlink_href+1);
+			RsvgDefVal * parent = rsvg_defs_lookup (ctx->defs, xlink_href);
 			if (parent != NULL)
 				switch(parent->type)
 					{

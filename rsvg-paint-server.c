@@ -669,9 +669,6 @@ rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs *defs, const char *s
 			RsvgDefVal *val;
 			
 			while (g_ascii_isspace (*p)) p++;
-			if (*p != '#')
-				return NULL;
-			p++;
 			for (ix = 0; p[ix]; ix++)
 				if (p[ix] == ')') break;
 			if (p[ix] != ')')

@@ -1,5 +1,9 @@
 2004-11-17  Caleb Moore <c.moore@student.unsw.edu.au>
 
+	* rsvg-defs.c: Interfile linking now implemented. Can't yet use gnome-vfs
+
+2004-11-17  Caleb Moore <c.moore@student.unsw.edu.au>
+
 	* everywhere: split RsvgHandle into two parts.
 	* rsvg.c: made the image be rendered when get_pixbuf is actually called. 
 	* rsvg-text.c: Large number of text improvements: formatting, alignment, whitespace handling and styling. 

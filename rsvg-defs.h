@@ -65,6 +65,9 @@ rsvg_defs_set (RsvgDefs *defs, const char *name, RsvgDefVal *val);
 void
 rsvg_defs_free (RsvgDefs *defs);
 
+void
+rsvg_defs_set_base_uri (RsvgDefs * self, gchar * base_uri);
+
 G_END_DECLS
 
 #endif

@@ -146,6 +146,9 @@ rsvg_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate,
 
 void rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawable *child);
 
+gchar *
+rsvg_get_file_path (const gchar * filename, const gchar *basedir);
+
 G_END_DECLS
 
 #endif /* RSVG_SHAPES_H */

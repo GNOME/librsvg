@@ -1443,6 +1443,7 @@ void rsvg_handle_set_base_uri (RsvgHandle *handle,
 		if (handle->base_uri)
 			g_free (handle->base_uri);
 		handle->base_uri = g_strdup (base_uri);
+		rsvg_defs_set_base_uri(handle->defs, handle->base_uri);
 	}
 }
 
