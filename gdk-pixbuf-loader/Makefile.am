@@ -1,7 +1,7 @@
 
 loaderdir = $(libdir)/gtk-2.0/$(GTK_VERSION)/loaders
 
-INCLUDES = @LIBRSVG_CFLAGS@ @GDK_PIXBUF_CFLAGS@ -DGDK_PIXBUF_ENABLE_BACKEND -I$(top_srcdir)
+INCLUDES = @LIBRSVG_CFLAGS@ @GDK_PIXBUF_CFLAGS@ $(LIBGSF_CFLAGS) -DGDK_PIXBUF_ENABLE_BACKEND -I$(top_srcdir)
 
 if ENABLE_PIXBUF_LOADER
 target_pixbuf_loader = svg_loader.la 
@@ -11,7 +11,7 @@ endif
 
 svg_loader_la_SOURCES = io-svg.c
 svg_loader_la_LDFLAGS = -avoid-version -module
-svg_loader_la_LIBADD = $(GDK_PIXBUF_LIBS) $(LIBRSVG_LIBS) $(top_builddir)/librsvg-2.la
+svg_loader_la_LIBADD = $(GDK_PIXBUF_LIBS) $(LIBRSVG_LIBS) $(LIBGSF_LIBS) $(top_builddir)/librsvg-2.la
 
 loader_LTLIBRARIES = $(target_pixbuf_loader)
 

@@ -26,14 +26,14 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gdk-pixbuf/gdk-pixbuf-io.h>
 
-#if HAVE_LIBGSF
+#if HAVE_SVGZ
 #include <rsvg-gz.h>
 #endif
 
 typedef struct {
         RsvgHandle                 *handle;
 
-#if HAVE_LIBGSF
+#if HAVE_SVGZ
         gboolean                    first_write;
 #endif
 
@@ -55,7 +55,7 @@ gdk_pixbuf__svg_image_begin_load (GdkPixbufModuleSizeFunc size_func,
 {
         SvgContext *context    = g_new0 (SvgContext, 1);
 
-#if HAVE_LIBGSF
+#if HAVE_SVGZ
         /* lazy create the handle on the first write */
         context->handle        = NULL;
         context->first_write   = TRUE;
@@ -80,7 +80,7 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
         SvgContext *context = (SvgContext *)data;
         gboolean result;
 
-#if HAVE_LIBGSF
+#if HAVE_SVGZ
         if (context->first_write == TRUE) {
                 context->first_write = FALSE;
 
@@ -145,7 +145,7 @@ fill_info (GdkPixbufFormat *info)
                 { "<?xml", NULL, 50 },
                 { "<svg", NULL, 100 },
                 { "<!DOCTYPE svg", NULL, 100 },
-#if HAVE_LIBGSF
+#if HAVE_SVGZ
                 { "\x1f\x8b", NULL, 50 }, /* todo: recognizes any gzipped file, not much we can do */
 #endif
                 { NULL, NULL, 0 }
@@ -157,7 +157,7 @@ fill_info (GdkPixbufFormat *info)
         };
         static gchar *extensions[] = { 
                 "svg", 
-#if HAVE_LIBGSF
+#if HAVE_SVGZ
                 "svgz",
 #endif
                 NULL 

@@ -84,19 +84,18 @@ AC_SUBST(POPT_LIBS)
 
 dnl ===========================================================================
 
-LIBGSFPKG=""
-
 LIBGSF_CFLAGS=""
 LIBGSF_LIBS=""
 
-AC_ARG_WITH(libgsf,[  --with-libgsf  Use libgsf for run-time decompression],[
-	if test "x$withval" != "xno"; then
-		LIBGSFPKG="libgsf-1"
+test_gsf=true
+AC_ARG_WITH(svgz,[  --with-svgz  Use libgsf for run-time decompression],[
+	if test "x$withval" = "xno"; then
+		test_gsf=false
 	fi
 ])
-if test "$LIBGSFPKG" != ""; then
+if test "x$test_gsf" = "xtrue"; then
 	PKG_CHECK_MODULES(LIBGSF,[libgsf-1 >= 0.5])
-	LIBGSF_CFLAGS="$LIBGSF_CFLAGS -DHAVE_LIBGSF=1"
+	LIBGSF_CFLAGS="$LIBGSF_CFLAGS -DHAVE_SVGZ=1"
 fi
 AM_CONDITIONAL(WITH_LIBGSF,[test "$LIBGSFPKG" != ""])
 
