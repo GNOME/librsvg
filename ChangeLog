@@ -1,3 +1,8 @@
+Tue Nov 20 20:20:50 2001  Owen Taylor  <otaylor@redhat.com>
+
+	* configure.in (dnl): Add some quoting needed by
+	some autoconf versions.
+
 2001-11-08  jacob berkman  <jacob@ximian.com>
 
 	* configure.in (AC_INIT): call ourselves librsvg rather than
