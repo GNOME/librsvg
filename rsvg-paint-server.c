@@ -506,12 +506,25 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 	}
 
 	if (pattern->vbox) {
-		caffine[0] = pattern->width / pattern->vbw;
+		double w, h, x, y;
+		w = pattern->width;
+		h = pattern->height;
+		x = 0;
+		y = 0;
+
+		rsvg_preserve_aspect_ratio(pattern->preserve_aspect_ratio,
+								   pattern->vbw, pattern->vbh, 
+								   &w, &h, &x, &y);
+
+		x -= pattern->vbx * w / pattern->vbw;
+		y -= pattern->vby * h / pattern->vbh;
+
+		caffine[0] = w / pattern->vbw;
 		caffine[1] = 0.;		
 		caffine[2] = 0.;
-		caffine[3] = pattern->height / pattern->vbh;
-		caffine[4] = - pattern->vbx * pattern->width / pattern->vbw;
-		caffine[5] = - pattern->vby * pattern->height / pattern->vbh;
+		caffine[3] = h / pattern->vbh;
+		caffine[4] = x;
+		caffine[5] = y;
 		art_affine_multiply(caffine, caffine, affine);		
 	}
 	else if (pattern->obj_cbbox) {

@@ -1771,6 +1771,54 @@ rsvg_clip_image(GdkPixbuf *intermediate, ArtSVP *path)
 			}
 }
 
+void
+rsvg_preserve_aspect_ratio(unsigned int aspect_ratio, double width, 
+						   double height, double * w, double * h,
+						   double * x, double * y)
+{
+	double neww, newh;
+	if (aspect_ratio)
+		{
+			neww = *w;
+			newh = *h; 
+			if (height * *w >
+				width * *h != (aspect_ratio & RSVG_ASPECT_RATIO_SLICE))
+				{
+					neww = width * *h 
+						/ height;
+				} 
+			else 
+				{
+					newh = height * *w 
+						/ width;
+				}
+
+			if (aspect_ratio & RSVG_ASPECT_RATIO_XMIN_YMIN ||
+				aspect_ratio & RSVG_ASPECT_RATIO_XMIN_YMID ||
+				aspect_ratio & RSVG_ASPECT_RATIO_XMIN_YMAX)
+				{}
+			else if (aspect_ratio & RSVG_ASPECT_RATIO_XMID_YMIN ||
+					 aspect_ratio & RSVG_ASPECT_RATIO_XMID_YMID ||
+					 aspect_ratio & RSVG_ASPECT_RATIO_XMID_YMAX)
+				*x -= (neww - *w) / 2;
+			else
+				*x -= neww - *w;			
+			if (aspect_ratio & RSVG_ASPECT_RATIO_XMIN_YMIN ||
+				aspect_ratio & RSVG_ASPECT_RATIO_XMID_YMIN ||
+				aspect_ratio & RSVG_ASPECT_RATIO_XMAX_YMIN)
+				{}
+			else if (aspect_ratio & RSVG_ASPECT_RATIO_XMIN_YMID ||
+					 aspect_ratio & RSVG_ASPECT_RATIO_XMID_YMID ||
+					 aspect_ratio & RSVG_ASPECT_RATIO_XMAX_YMID)
+				*y -= (newh - *h) / 2;
+			else
+				*y -= newh - *h;
+
+			*w = neww;
+			*h = newh;
+		}
+}
+
 static void 
 rsvg_defs_drawable_image_free (RsvgDefVal * self)
 {
@@ -1786,7 +1834,7 @@ rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 {
 	RsvgDefsDrawableImage *z = (RsvgDefsDrawableImage *)self;
 	double x = z->x, y = z->y, w = z->w, h = z->h;
-	int aspect_ratio = z->preserve_aspect_ratio;
+	unsigned int aspect_ratio = z->preserve_aspect_ratio;
 	ArtIRect temprect;
 	GdkPixbuf *img = z->img;
 	int i, j;
@@ -1798,23 +1846,13 @@ rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 
 	rsvg_state_reinherit_top(ctx, &self->state, dominate);
 
-	if (aspect_ratio)
-		{
-			if ((double)gdk_pixbuf_get_height (img) * (double)w >
-				(double)gdk_pixbuf_get_width (img) * (double)h) 
-				{
-					w = 0.5 + (double)gdk_pixbuf_get_width (img) * (double)h 
-						/ (double)gdk_pixbuf_get_height (img);
-				} 
-			else 
-				{
-					h = 0.5 + (double)gdk_pixbuf_get_height (img) * (double)w 
-						/ (double)gdk_pixbuf_get_width (img);
-				}
-		}
 
 	for (i = 0; i < 6; i++)
 		tmp_affine[i] = state->affine[i];
+
+	rsvg_preserve_aspect_ratio(aspect_ratio, (double)gdk_pixbuf_get_width(img),
+							   (double)gdk_pixbuf_get_height(img), &w, &h,
+							   &x, &y);
 
 	/*translate to x and y*/
 	tmp_tmp_affine[0] = tmp_tmp_affine[3] = 1;
@@ -1881,7 +1919,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	double x = 0., y = 0., w = -1., h = -1.;
 	const char * href = NULL;
 	const char * klazz = NULL, * id = NULL, *value;
-	int aspect_ratio = RSVG_ASPECT_RATIO_NONE;
+	int aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	GdkPixbuf *img;
 	GError *err = NULL;
 	RsvgState *state;
@@ -2019,12 +2057,121 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 							
 							break;
 						}
+					case RSVG_DEF_SYMBOL:
+						{
+							RsvgDefsDrawable *drawable = 
+								(RsvgDefsDrawable*)parent;
+							RsvgDefsDrawableSymbol *symbol = 
+								(RsvgDefsDrawableSymbol*)parent;
+							RsvgDefsDrawableUse * use;
+							use = g_new (RsvgDefsDrawableUse, 1);
+							use->child = drawable;
+							rsvg_state_clone (&use->super.state, state);
+							use->super.super.type = RSVG_DEF_PATH;
+							use->super.super.free = rsvg_defs_drawable_use_free;
+							use->super.draw = rsvg_defs_drawable_use_draw;
+							use->super.draw_as_svp = rsvg_defs_drawable_use_draw_as_svp;		
+							
+							if (symbol->has_vbox){
+								rsvg_preserve_aspect_ratio
+									(symbol->preserve_aspect_ratio, 
+									 symbol->width, symbol->height, 
+									 &width, &height, &x, &y);
+								art_affine_translate(affine, x, y);
+								art_affine_multiply(use->super.state.affine, affine, use->super.state.affine);
+								art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);	
+								
+								art_affine_scale(affine, width / symbol->width,
+												 height / symbol->height);
+								art_affine_multiply(use->super.state.affine, affine, use->super.state.affine);
+								art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);
+								art_affine_translate(affine, -symbol->x, 
+													 -symbol->y);
+								art_affine_multiply(use->super.state.affine, affine, use->super.state.affine);
+								art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);
+								printf("scaling for vbox\n");
+							}
+							else {
+								art_affine_translate(affine, x, y);
+								art_affine_multiply(use->super.state.affine, affine, use->super.state.affine);
+								art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);	
+							}
+								
+
+							rsvg_defs_set (ctx->defs, id, &use->super.super);
+							
+							use->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
+							if (use->super.parent != NULL)
+								rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)use->super.parent, 
+															  &use->super);
+							
+							break;
+						}
 					default:
 						g_warning (_("Unhandled defs entry/type %s %d\n"), id, 
 								   parent->type);
 						return;
 					}
 		}
+}
+
+static void 
+rsvg_defs_drawable_symbol_free (RsvgDefVal *self)
+{
+	RsvgDefsDrawableGroup *z = (RsvgDefsDrawableGroup *)self;
+	rsvg_state_finalize (&z->super.state);
+	g_ptr_array_free(z->children, TRUE);
+	g_free (z);
+}
+
+void 
+rsvg_start_symbol(RsvgHandle *ctx, RsvgPropertyBag *atts)
+{
+	RsvgDefsDrawableSymbol *symbol;
+	RsvgDefsDrawableGroup *group;
+	RsvgState *state = rsvg_state_current (ctx);
+	const char * klazz = NULL, *id = NULL, *value;
+
+	symbol = g_new (RsvgDefsDrawableSymbol, 1);
+	group = &symbol->super;
+	symbol->has_vbox = 0;
+	symbol->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
+
+	if (rsvg_property_bag_size(atts))
+		{
+			if ((value = rsvg_property_bag_lookup (atts, "class")))
+				klazz = value;
+			if ((value = rsvg_property_bag_lookup (atts, "id")))
+				id = value;
+			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
+				{
+					symbol->has_vbox = rsvg_css_parse_vbox (value, 
+															&symbol->x, 
+															&symbol->y,
+															&symbol->width, 
+															&symbol->height);
+				}
+			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
+				symbol->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);			
+
+
+		}
+
+	rsvg_parse_style_attrs (ctx, state, "symbol", klazz, id, atts);
+
+	group->children = g_ptr_array_new();
+	rsvg_state_clone (&group->super.state, rsvg_state_current (ctx));
+
+	group->super.super.type = RSVG_DEF_SYMBOL;
+	group->super.super.free = rsvg_defs_drawable_symbol_free;
+	group->super.draw = rsvg_defs_drawable_group_draw;
+	group->super.draw_as_svp = rsvg_defs_drawable_group_draw_as_svp;
+
+	rsvg_defs_set (ctx->defs, id, &group->super.super);
+
+	group->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
+
+	ctx->current_defs_group = group;
 }
 
 static void
@@ -2052,6 +2199,7 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		
 	marker->orient = 0;
 	marker->orientAuto = FALSE;
+	marker->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -2091,6 +2239,9 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 					obj_bbox = TRUE;					
 				got_bbox = TRUE;
 			}	
+			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
+				marker->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
+
 		}
 	
 	if (got_x)
@@ -2156,12 +2307,25 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 	}	
 
 	if (self->vbox) {
-		taffine[0] = self->width / self->vbw;
-		taffine[1] = 0.;		
+		double w, h, x, y;
+		w = self->width;
+		h = self->height;
+		x = 0;
+		y = 0;
+
+		rsvg_preserve_aspect_ratio(self->preserve_aspect_ratio,
+								   self->vbw, self->vbh, 
+								   &w, &h, &x, &y);		
+
+		x -= self->vbx / self->vbw;
+		y -= self->vby / self->vbh;
+
+		taffine[0] = w / self->vbw;
+		taffine[1] = 0.;
 		taffine[2] = 0.;
-		taffine[3] = self->height / self->vbh;
-		taffine[4] = - self->vbx / self->vbw;
-		taffine[5] = - self->vby / self->vbh;
+		taffine[3] = h / self->vbh;
+		taffine[4] = x;
+		taffine[5] = y;
 		art_affine_multiply(affine, taffine, affine);		
 	}
 

@@ -817,11 +817,12 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	const char * xlink_href = NULL;
 	gboolean obj_bbox = TRUE;
 	gboolean obj_cbbox = FALSE;
-	gboolean got_x, got_y, got_width, got_height, got_transform, got_bbox, got_cbbox, cloned, got_vbox;
+	gboolean got_x, got_y, got_width, got_height, got_transform, got_bbox, got_cbbox, cloned, got_vbox, got_aspect_ratio;
 	double affine[6];
 	int i;
+	guint aspect_ratio;
 
-	got_x = got_y = got_width = got_height = got_transform = got_bbox = got_cbbox = cloned = got_vbox = FALSE;
+	got_x = got_y = got_width = got_height = got_transform = got_bbox = got_cbbox = cloned = got_vbox = got_aspect_ratio = FALSE;
 		
 	if (rsvg_property_bag_size (atts))
 		{
@@ -866,6 +867,10 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 					obj_cbbox = TRUE;					
 				got_cbbox = TRUE;
 			}
+			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
+				aspect_ratio = rsvg_css_parse_aspect_ratio (value);
+
+
 		}
 
 	if (xlink_href != NULL)
@@ -893,6 +898,11 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			pattern->affine[i] = affine[i];
 	else
 		art_affine_identity(pattern->affine);
+
+	if (got_aspect_ratio)
+		pattern->preserve_aspect_ratio = aspect_ratio;
+	else
+		pattern->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 
 	/* gradient inherits parent/cloned information unless it's explicity gotten */
 	pattern->obj_bbox = (cloned && !got_bbox) ? pattern->obj_bbox : obj_bbox;
@@ -1298,7 +1308,7 @@ rsvg_start_element (void *data, const xmlChar *name,
 			else if (!strcmp ((char *)name, "g"))
 				rsvg_start_g (ctx, bag);
 			else if (!strcmp ((char *)name, "symbol"))
-				rsvg_start_g (ctx, bag);
+				rsvg_start_symbol (ctx, bag);
 			else if (!strcmp ((char *)name, "defs"))
 				rsvg_start_defs(ctx, bag);	
 			else if (!strcmp ((char *)name, "path"))

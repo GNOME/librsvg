@@ -1,3 +1,7 @@
+2004-08-27  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-shapes.c: Implemented preserveAspectRatio as per the standard
+
 2004-08-22  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.c, rsvg.h, rsvg-private.h: Return metadata to caller if requested

@@ -44,6 +44,7 @@ void rsvg_start_circle (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts);
+void rsvg_start_symbol (RsvgHandle *ctx, RsvgPropertyBag *atts);
 
 RsvgDefsDrawable * rsvg_push_def_group (RsvgHandle *ctx, const char * id);
 RsvgDefsDrawable * rsvg_push_part_def_group (RsvgHandle *ctx, const char * id);
@@ -53,6 +54,7 @@ typedef struct _RsvgDefsDrawablePath RsvgDefsDrawablePath;
 typedef struct _RsvgDefsDrawableGroup RsvgDefsDrawableGroup;
 typedef struct _RsvgDefsDrawableUse RsvgDefsDrawableUse;
 typedef struct _RsvgDefsDrawableImage RsvgDefsDrawableImage;
+typedef struct _RsvgDefsDrawableSymbol RsvgDefsDrawableSymbol;
 
 struct _RsvgDefsDrawable {
  	RsvgDefVal super;
@@ -70,6 +72,13 @@ struct _RsvgDefsDrawablePath {
 struct _RsvgDefsDrawableGroup {
  	RsvgDefsDrawable super;
  	GPtrArray *children;
+};
+
+struct _RsvgDefsDrawableSymbol {
+ 	RsvgDefsDrawableGroup super;
+	gint preserve_aspect_ratio;
+	int has_vbox;
+ 	double x, y, width, height;
 };
 
 struct _RsvgDefsDrawableUse {
@@ -91,6 +100,7 @@ struct _RsvgMarker {
 	gboolean bbox;
 	double refX, refY, orient;
 	double vbx, vby, vbw, vbh, width, height;
+	gint preserve_aspect_ratio;
 	gboolean vbox;
 	gboolean orientAuto;
 };
@@ -113,6 +123,10 @@ void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 							  int dominate);
 ArtSVP * rsvg_defs_drawable_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx, 
 										 int dominate);
+
+void rsvg_preserve_aspect_ratio(unsigned int aspect_ratio, double width, 
+								double height, double * w, double * h,
+								double * x, double * y);
 
 void
 rsvg_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate, 

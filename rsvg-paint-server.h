@@ -99,6 +99,7 @@ struct _RsvgPattern {
 	double vbx, vby, vbh, vbw;
 	RsvgDefVal * g;
 	RsvgDefVal * gfallback;
+	unsigned int preserve_aspect_ratio;
 };
 
 /* Create a new paint server based on a specification string. */
