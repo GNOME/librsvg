@@ -1,6 +1,10 @@
 2003-01-30  Dom Lachowicz <cinamod@hotmail.com>
 
-	* gdk-pixbuf-loader: Conditionally support SVGZ files
+	* rsvg-file-util.c: Support SVGZ through the OLD API as well
+	
+2003-01-30  Dom Lachowicz <cinamod@hotmail.com>
+
+	* gdk-pixbuf-loader/io-svg.c: Conditionally support SVGZ files
 	* TODO: Remove SVGZ in pixbuf loader TODO-item
 	* tests/104201.svg, tests/folder_home-2.2.svg, tests/stock_home.svg,
 	tests/stock_paste.svg, tests/undo-128-d-sodipodi.svg.gz: New testcases

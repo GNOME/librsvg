@@ -87,6 +87,7 @@ dnl ===========================================================================
 LIBGSF_CFLAGS=""
 LIBGSF_LIBS=""
 
+LIBGSFPKG=""
 test_gsf=true
 AC_ARG_WITH(svgz,[  --with-svgz  Use libgsf for run-time decompression],[
 	if test "x$withval" = "xno"; then
@@ -96,6 +97,7 @@ AC_ARG_WITH(svgz,[  --with-svgz  Use libgsf for run-time decompression],[
 if test "x$test_gsf" = "xtrue"; then
 	PKG_CHECK_MODULES(LIBGSF,[libgsf-1 >= 0.5])
 	LIBGSF_CFLAGS="$LIBGSF_CFLAGS -DHAVE_SVGZ=1"
+	LIBGSFPKG="libgsf-1"
 fi
 AM_CONDITIONAL(WITH_LIBGSF,[test "$LIBGSFPKG" != ""])
 

@@ -26,6 +26,10 @@
 #include "config.h"
 #include "rsvg.h"
 
+#if HAVE_SVGZ
+#include "rsvg-gz.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -108,15 +112,15 @@ rsvg_size_callback (int *width,
 }
 
 static GdkPixbuf *
-rsvg_pixbuf_from_file_with_size_data (RsvgHandle * handle,
-									  const gchar * file_name,
-									  struct RsvgSizeCallbackData * data,
-									  GError ** error)
+rsvg_pixbuf_from_file_with_size_data_ex (RsvgHandle * handle,
+										 const gchar * file_name,
+										 struct RsvgSizeCallbackData * data,
+										 GError ** error)
 {
-	char chars[SVG_BUFFER_SIZE];
+	guchar chars[SVG_BUFFER_SIZE];
 	GdkPixbuf *retval;
 	gint result;
-	FILE *f = fopen (file_name, "r");
+	FILE *f = fopen (file_name, "rb");
 
 	if (!f)
 		{
@@ -135,6 +139,58 @@ rsvg_pixbuf_from_file_with_size_data (RsvgHandle * handle,
 	fclose (f);	
 	return retval;
 }
+
+static GdkPixbuf *
+rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
+									  struct RsvgSizeCallbackData * data,
+									  GError ** error)
+{
+#if HAVE_SVGZ
+	RsvgHandle * handle;
+	guchar chars[SVG_BUFFER_SIZE];
+	GdkPixbuf *retval;
+	gint result;
+	FILE *f = fopen (file_name, "rb");
+
+	if (!f)
+		{
+			/* FIXME: Set up error. */
+			return NULL;
+		}
+	
+	result = fread (chars, 1, SVG_BUFFER_SIZE, f);
+
+	if (result == 0) {
+		fclose (f);
+		return NULL;
+	}
+
+	/* test for GZ marker */
+	if ((result >= 2) && (chars[0] == (guchar)0x1f) && (chars[1] == (guchar)0x8b))
+		handle = rsvg_handle_new_gz ();
+	else
+		handle = rsvg_handle_new ();
+
+	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
+	rsvg_handle_write (handle, chars, result, error);
+
+	while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
+		rsvg_handle_write (handle, chars, result, error);
+	
+	rsvg_handle_close (handle, error);
+	retval = rsvg_handle_get_pixbuf (handle);
+	
+	fclose (f);	
+	rsvg_handle_free (handle);
+	return retval;
+#else
+	RsvgHandle * handle = rsvg_handle_new ();
+	GdkPixbuf * retval = rsvg_pixbuf_from_file_with_size_data_ex (handle, file_name, data, error);
+	rsvg_handle_free (handle);
+	return retval;
+#endif
+}
+
 
 /**
  * rsvg_pixbuf_from_file_at_size_ex:
@@ -166,7 +222,7 @@ rsvg_pixbuf_from_file_at_size_ex (RsvgHandle * handle,
 	data.width = width;
 	data.height = height;
 	
-	return rsvg_pixbuf_from_file_with_size_data (handle, file_name, &data, error);
+	return rsvg_pixbuf_from_file_with_size_data_ex (handle, file_name, &data, error);
 }
 
 /**
@@ -222,7 +278,7 @@ rsvg_pixbuf_from_file_at_zoom_ex (RsvgHandle * handle,
 	data.x_zoom = x_zoom;
 	data.y_zoom = y_zoom;
 	
-	return rsvg_pixbuf_from_file_with_size_data (handle, file_name, &data, error);
+	return rsvg_pixbuf_from_file_with_size_data_ex (handle, file_name, &data, error);
 }
 
 /**
@@ -254,7 +310,7 @@ rsvg_pixbuf_from_file_at_max_size_ex (RsvgHandle * handle,
 	data.width = max_width;
 	data.height = max_height;
 	
-	return rsvg_pixbuf_from_file_with_size_data (handle, file_name, &data, error);
+	return rsvg_pixbuf_from_file_with_size_data_ex (handle, file_name, &data, error);
 }
 
 /**
@@ -296,7 +352,7 @@ rsvg_pixbuf_from_file_at_zoom_with_max_ex (RsvgHandle * handle,
 	data.width = max_width;
 	data.height = max_height;
 	
-	return rsvg_pixbuf_from_file_with_size_data (handle, file_name, &data, error);
+	return rsvg_pixbuf_from_file_with_size_data_ex (handle, file_name, &data, error);
 }
 
 /**
@@ -314,10 +370,7 @@ GdkPixbuf *
 rsvg_pixbuf_from_file (const gchar *file_name,
 					   GError     **error)
 {
-	RsvgHandle * handle = rsvg_handle_new ();
-	GdkPixbuf * pixbuf = rsvg_pixbuf_from_file_ex (handle, file_name, error);
-	rsvg_handle_free (handle);
-	return pixbuf;
+	return rsvg_pixbuf_from_file_at_size (file_name, -1, -1, error);
 }
 
 /**
@@ -340,10 +393,16 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
 							   double       y_zoom,
 							   GError     **error)
 {
-	RsvgHandle * handle = rsvg_handle_new ();
-	GdkPixbuf * pixbuf = rsvg_pixbuf_from_file_at_zoom_ex (handle, file_name, x_zoom, y_zoom, error);
-	rsvg_handle_free (handle);
-	return pixbuf;
+	struct RsvgSizeCallbackData data;
+	
+	g_return_val_if_fail (file_name != NULL, NULL);
+	g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
+	
+	data.type = RSVG_SIZE_ZOOM;
+	data.x_zoom = x_zoom;
+	data.y_zoom = y_zoom;
+	
+	return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
 
 /**
@@ -371,10 +430,18 @@ rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
 										gint          max_height,
 										GError      **error)
 {
-	RsvgHandle * handle = rsvg_handle_new ();
-	GdkPixbuf * pixbuf = rsvg_pixbuf_from_file_at_zoom_with_max_ex (handle, file_name, x_zoom, y_zoom, max_width, max_height, error);
-	rsvg_handle_free (handle);
-	return pixbuf;
+	struct RsvgSizeCallbackData data;
+	
+	g_return_val_if_fail (file_name != NULL, NULL);
+	g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
+	
+	data.type = RSVG_SIZE_ZOOM_MAX;
+	data.x_zoom = x_zoom;
+	data.y_zoom = y_zoom;
+	data.width = max_width;
+	data.height = max_height;
+	
+	return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
 
 /**
@@ -398,10 +465,13 @@ rsvg_pixbuf_from_file_at_size (const gchar *file_name,
 							   gint         height,
 							   GError     **error)
 {
-	RsvgHandle * handle = rsvg_handle_new ();
-	GdkPixbuf * pixbuf = rsvg_pixbuf_from_file_at_size_ex (handle, file_name, width, height, error);
-	rsvg_handle_free (handle);
-	return pixbuf;
+	struct RsvgSizeCallbackData data;
+	
+	data.type = RSVG_SIZE_WH;
+	data.width = width;
+	data.height = height;
+	
+	return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
 
 /**
@@ -424,8 +494,11 @@ rsvg_pixbuf_from_file_at_max_size (const gchar     *file_name,
 								   gint             max_height,
 								   GError         **error)
 {
-	RsvgHandle * handle = rsvg_handle_new ();
-	GdkPixbuf * pixbuf = rsvg_pixbuf_from_file_at_max_size_ex (handle, file_name, max_width, max_height, error);
-	rsvg_handle_free (handle);
-	return pixbuf;
+	struct RsvgSizeCallbackData data;
+	
+	data.type = RSVG_SIZE_WH_MAX;
+	data.width = max_width;
+	data.height = max_height;
+	
+	return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
