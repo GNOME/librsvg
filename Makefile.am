@@ -6,6 +6,10 @@ noinst_PROGRAMS = test-performance test-display
 
 man_MANS = rsvg.1
 
+if PLATFORM_WIN32
+no_undefined = -no-undefined
+endif
+
 if WITH_LIBGSF
 GSFHEADERS = rsvg-gz.h
 GSFSOURCES = rsvg-gz.c
@@ -46,7 +50,8 @@ librsvg_2_la_SOURCES = $(GSFSOURCES) \
 	rsvg-text.h	\
 	rsvg.c
 
-librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@
+librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ $(no_undefined)
+librsvg_2_la_LIBADD = $(LIBRSVG_LIBS)
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = $(GSFHEADERS) \

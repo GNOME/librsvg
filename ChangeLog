@@ -1,3 +1,12 @@
+2003-04-03  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Fixes so that we link and build a DLL on Cygwin. 
+	Adapted from work by Masahiro Sakai <s01397ms at sfc.keio.ac.jp>
+	(http://web.sfc.keio.ac.jp/~s01397ms/cygwin/librsvg-2.2.3-1.patch)
+	* Makefile.am: Ditto
+	* gtk-engine/Makefile.am: Ditto
+	* gimp-plugin/Makefile.am: Ditto
+	
 2003-04-02  Frederic Crozat  <fcrozat@mandrakesoft.com>
 
 	* configure.in: use correct name for libcroco in .pc file

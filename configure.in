@@ -41,12 +41,29 @@ AC_ISC_POSIX
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_AWK
+AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
 AC_STDC_HEADERS
 
 AC_C_BIGENDIAN
 
 GNOME_REQUIRE_PKGCONFIG
+
+dnl ===========================================================================
+
+#AC_CANONICAL_HOST
+
+AC_MSG_CHECKING([for some Win32 platform])
+case "$host" in
+  *-*-mingw*|*-*-cygwin*)
+    platform_win32=yes
+    ;;
+  *)
+    platform_win32=no
+    ;;
+esac
+AC_MSG_RESULT([$platform_win32])
+AM_CONDITIONAL(PLATFORM_WIN32, test "$platform_win32" = "yes")
 
 dnl ===========================================================================
 

@@ -1,5 +1,9 @@
 gimpdir = $(libdir)/gimp/1.3/plug-ins
 
+if PLATFORM_WIN32
+no_undefined = -no-undefined
+endif
+
 INCLUDES = $(GTK_CFLAGS)\
 	$(LIBRSVG_CFLAGS) \
 	$(LIBGIMP_CFLAGS) \
@@ -20,7 +24,7 @@ LDADDS =$(LIBGSF_LIBS)\
 	$(LIBRSVG_LIBS)
 
 svg_SOURCES=svg.c
-svg_LDFLAGS = -avoid-version -module
+svg_LDFLAGS = -avoid-version -module $(no_undefined)
 svg_DEPENDENCIES = $(DEPS)
 svg_LDADD = $(LDADDS) -lm
 

@@ -1,6 +1,10 @@
 
 loaderdir = $(libdir)/gtk-2.0/$(GTK_VERSION)/loaders
 
+if PLATFORM_WIN32
+no_undefined = -no-undefined
+endif
+
 INCLUDES = \
 	$(LIBRSVG_CFLAGS) \
 	$(LIBGSF_CFLAGS) \
@@ -15,7 +19,7 @@ target_pixbuf_loader =
 endif
 
 svg_loader_la_SOURCES = io-svg.c
-svg_loader_la_LDFLAGS = -avoid-version -module
+svg_loader_la_LDFLAGS = -avoid-version -module $(no_undefined)
 svg_loader_la_LIBADD = $(LIBRSVG_LIBS) \
 	$(LIBGSF_LIBS) \
 	$(top_builddir)/librsvg-2.la
