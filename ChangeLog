@@ -1,3 +1,8 @@
+2004-06-09  Dodji Seketeli  <dodji@gnome.org>
+
+	* configure.in: several versions of libcroco can now be
+	installed in parallel. We compile and link against the 0.6.xx serie.
+
 2004-06-08  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg.c, rsvg-styles.c: made stop colours inheritable

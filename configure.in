@@ -166,12 +166,12 @@ AC_ARG_WITH(croco,[  --with-croco  Use libcroco for CSS parsing],[
 	fi
 ])
 if test "x$test_croco" = "xtrue"; then
-	PKG_CHECK_MODULES(LIBCROCO,[libcroco >= 0.6.0], test_croco=true, test_croco=false)
+	PKG_CHECK_MODULES(LIBCROCO,[libcroco-0.6 >= 0.6.0], test_croco=true, test_croco=false)
 fi
 
 if test "x$test_croco" = "xtrue"; then
 	LIBCROCO_CFLAGS="$LIBCROCO_CFLAGS -DHAVE_LIBCROCO=1"
-	LIBCROCOPKG="libcroco"
+	LIBCROCOPKG="libcroco-0.6"
 else
 	AC_MSG_WARN([LibCroco support disabled, as requested (Use --with-croco to enable)])
         croco_warning="
