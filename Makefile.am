@@ -45,6 +45,8 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-path.h 		\
 	rsvg-private.h 		\
 	rsvg-file-util.c 	\
+	rsvg-filter.c		\
+	rsvg-filter.h		\
 	rsvg-shapes.c		\
 	rsvg-shapes.h		\
 	rsvg-styles.c		\
