@@ -1,12 +1,18 @@
 2002-09-13  Dom Lachowicz <doml@appligent.com>
 
-	* rsvg-css.c (rsvg_css_parse_length):
-	Remove setlocale calls - this should be done at a level higher than this
+	* rsvg-css.c (rsvg_css_parse_color): Handle rgb(r,g,b) and rgb(r%,g%,b%) color specifications
+	(rsvg_css_normalize_rgb): new function used in parse_color
+	(rsvg_css_normalize_rgb_percent): ditto
+
+	* test-rgb.svg: Testcase for the above
+	
+2002-09-13  Dom Lachowicz <doml@appligent.com>
+
+	* rsvg-css.c (rsvg_css_parse_length): Remove setlocale calls - this should be done at a level higher than this
 	
 2002-09-12  Dom Lachowicz <doml@appligent.com>
 
-	* rsvg-css.c (rsvg_css_parse_length): 
-	Handle errors, handle more units, reduce number of string compares
+	* rsvg-css.c (rsvg_css_parse_length): Handle errors, handle more units, reduce number of string compares
 	(rsvg_css_parse_normalized_length): New function, like rsvg_parse_length, except normalizes output to a width or height argument
 	(rsvg_css_parse_color): fix 2 memory leaks in color parsing routine
 

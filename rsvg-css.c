@@ -29,11 +29,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdio.h>
 
 #define POINTS_PER_INCH (72.0)
-#define CM_PER_INCH (2.54)
-#define MM_PER_INCH (25.4)
-#define PICA_PER_INCH (6.0)
+#define CM_PER_INCH     (2.54)
+#define MM_PER_INCH     (25.4)
+#define PICA_PER_INCH   (6.0)
 
 /**
  * rsvg_css_parse_length: Parse CSS2 length to a pixel value.
@@ -137,6 +138,30 @@ rsvg_css_param_arg_offset (const char *str)
   return i;
 }
 
+static gint
+rsvg_css_normalize_rgb_percent (gint in_percent)
+{
+  /* spec says to clip these values */
+  if (in_percent > 100)
+    in_percent = 100;
+  else if (in_percent <= 0)
+    return 0;
+
+  return (gint)(25500.0 / (double)in_percent);
+}
+
+static gint
+rsvg_css_normalize_rgb (gint rgb)
+{
+  /* spec says to clip these values */
+  if (rgb > 255)
+    rgb = 255;
+  else if (rgb < 0)
+    rgb = 0;
+
+  return rgb;
+}
+
 /* Parse a CSS2 color, returning rgb */
 guint32
 rsvg_css_parse_color (const char *str)
@@ -146,10 +171,6 @@ rsvg_css_parse_color (const char *str)
 
   /* todo: better failure detection */
 
-  /* 
-   * todo: handle the rgb (r, g, b) and rgb ( r%, g%, b%), syntax 
-   * defined in http://www.w3.org/TR/REC-CSS2/syndata.html#color-units 
-   */
 #ifdef VERBOSE
   g_print ("color = %s\n", str);
 #endif
@@ -181,6 +202,38 @@ rsvg_css_parse_color (const char *str)
       printf ("val = %x\n", val);
 #endif
     } 
+  else if (strstr (str, "rgb") != 0)
+    {
+      gint r, g, b;
+      r = g = b = 0;
+
+      if (strstr (str, "%") != 0)
+	{
+	  /* assume "rgb (r%, g%, b%)" */
+	  if (3 == sscanf (str, "rgb ( %d %% , %d %% , %d %% ) ", &r, &g, &b))
+	    {
+	      r = rsvg_css_normalize_rgb_percent (r);
+	      g = rsvg_css_normalize_rgb_percent (g);
+	      b = rsvg_css_normalize_rgb_percent (b);
+	    }
+	  else
+	      r = g = b = 0;
+	}
+      else
+	{
+	  /* assume "rgb (r, g, b)" */
+	  if (3 == sscanf (str, "rgb ( %d , %d , %d ) ", &r, &g, &b))
+	    {
+	      r = rsvg_css_normalize_rgb (r);
+	      g = rsvg_css_normalize_rgb (g);
+	      b = rsvg_css_normalize_rgb (b);
+	    }
+	  else
+	    r = g = b = 0;
+	}
+
+      val =  (((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF));
+    }
   else
     {
       GString * string, * tmp;
