@@ -1,3 +1,11 @@
+2005-02-26  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-private.h: Move M_PI's definition here
+	* rsvg-private.h: Add rsvg_render_free ()
+	* rsvg-art-render.c: 2 implementations of ^^
+	* *: Changes to pass RsvgBpathDefs instead of "const char * d" to renders
+	* TODO: update to reflect some of the work remaining
+	
 2005-02-25  Dom Lachowicz <cinamod@hotmail.com>
 
 	* *: Get rid of deprecated stuff.

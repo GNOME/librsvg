@@ -418,7 +418,7 @@ rsvg_render_bpath_into_svp (RsvgDrawingCtx *ctx, const ArtBpath *bpath)
 }
 
 static void
-rsvg_render_markers(RsvgBpathDef * bpath_def, RsvgDrawingCtx *ctx)
+rsvg_render_markers(const RsvgBpathDef * bpath_def, RsvgDrawingCtx *ctx)
 {
 	int i;
 
@@ -459,7 +459,6 @@ rsvg_render_markers(RsvgBpathDef * bpath_def, RsvgDrawingCtx *ctx)
 				state->affine[2] * bpath_def->bpath[i + 1].y3 + state->affine[4];
 			nexty = state->affine[1] * bpath_def->bpath[i + 1].x3 + 
 				state->affine[3] * bpath_def->bpath[i + 1].y3 + state->affine[5];
-
 			
 			if(bpath_def->bpath[i + 1].code == ART_MOVETO || 
 					bpath_def->bpath[i + 1].code == ART_MOVETO_OPEN || 
@@ -500,31 +499,19 @@ rsvg_render_markers(RsvgBpathDef * bpath_def, RsvgDrawingCtx *ctx)
 }
 
 void
-rsvg_art_render_path(RsvgDrawingCtx *ctx, const char *d)
+rsvg_art_render_path(RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 {
-	RsvgBpathDef *bpath_def;
-	
-	bpath_def = rsvg_parse_path (d);
-	rsvg_bpath_def_art_finish (bpath_def);
-	
 	rsvg_render_bpath (ctx, (ArtBpath *)bpath_def->bpath);
-	
 	rsvg_render_markers(bpath_def, ctx);
-
-	rsvg_bpath_def_free (bpath_def);
 }
 
 void
-rsvg_art_svp_render_path (RsvgDrawingCtx *ctx, const char *d)
+rsvg_art_svp_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 {
-	RsvgBpathDef *bpath_def;
 	RsvgArtSVPRender *render = (RsvgArtSVPRender *)ctx->render;
 	ArtSVP *svp2, *svp3;
 
-	bpath_def = rsvg_parse_path (d);
-	rsvg_bpath_def_art_finish (bpath_def);
-	
-	svp2 = 	rsvg_render_bpath_into_svp (ctx, (ArtBpath *)bpath_def->bpath);
+	svp2 = rsvg_render_bpath_into_svp (ctx, (ArtBpath *)bpath_def->bpath);
 
 	if (render->outline != NULL)
 		{
@@ -534,11 +521,9 @@ rsvg_art_svp_render_path (RsvgDrawingCtx *ctx, const char *d)
 		}
 	else
 		render->outline = svp2;
-
-	rsvg_bpath_def_free (bpath_def);
 }
 
-void rsvg_art_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * img, 
+void rsvg_art_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * img, 
 							double x, double y, double w, double h)
 {
 	int i, j;

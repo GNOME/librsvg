@@ -479,7 +479,7 @@ rsvg_art_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
 }
 
 void
-rsvg_art_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate, 
+rsvg_art_affine_image(const GdkPixbuf *img, GdkPixbuf *intermediate, 
 					  double * affine, double w, double h)
 {
 	gdouble tmp_affine[6];

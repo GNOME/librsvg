@@ -31,9 +31,9 @@
 
 G_BEGIN_DECLS
 
-void rsvg_art_render_path (RsvgDrawingCtx *ctx, const char *d);
-void rsvg_art_svp_render_path (RsvgDrawingCtx *ctx, const char *d);
-void rsvg_art_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * img, 
+void rsvg_art_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef * path);
+void rsvg_art_svp_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef * path);
+void rsvg_art_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * img, 
 							double x, double y, double w, double h);
 
 G_END_DECLS

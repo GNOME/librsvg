@@ -67,7 +67,7 @@ rsvg_art_rect_clip_path(double x, double y, double w, double h, RsvgDrawingCtx *
 	save = ctx->render;
 	ctx->render = (RsvgRender *)asvpr;
 
-	asvpr->super.render_path(ctx, d->str);
+	rsvg_render_path (ctx, d->str);
 
 	ctx->render = save;
 

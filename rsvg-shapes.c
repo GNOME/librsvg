@@ -38,10 +38,6 @@
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif  /*  M_PI  */
-
 static void 
 rsvg_defs_drawable_path_free (RsvgDefVal *self)
 {

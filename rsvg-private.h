@@ -27,11 +27,13 @@
 #define RSVG_PRIVATE_H
 
 #include "rsvg.h"
+#include "rsvg-bpath-util.h"
 
 #include <libxml/SAX.h>
 #include <libxml/xmlmemory.h>
 #include <pango/pango.h>
 #include <glib/gslist.h>
+#include <math.h>
 
 G_BEGIN_DECLS
 
@@ -53,6 +55,15 @@ typedef struct _RsvgFilter RsvgFilter;
 #ifndef N_
 #define N_(X) X
 #endif
+
+#ifndef M_PI
+#  ifdef G_PI
+#    define M_PI G_PI
+#  else
+#    define M_PI 3.14159265358979323846
+#  endif /* G_PI */
+#endif /*  M_PI  */
+
 
 struct RsvgSaxHandler {
 	void (*free) (RsvgSaxHandler *self);
@@ -133,8 +144,10 @@ struct RsvgDrawingCtx {
 /*Abstract base class for context for our backends (one as yet)*/
 
 struct RsvgRender {
-	void (* render_path) (RsvgDrawingCtx *ctx, const char *d);
-	void (* render_image) (RsvgDrawingCtx *ctx, GdkPixbuf * pixbuf,
+	void (* free) (RsvgRender * self);
+
+	void (* render_path) (RsvgDrawingCtx *ctx, const RsvgBpathDef * path);
+	void (* render_image) (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 						   double x, double y, double w, double h);
 	void (* pop_discrete_layer) (RsvgDrawingCtx *ctx);
 	void (* push_discrete_layer) (RsvgDrawingCtx *ctx);
@@ -225,6 +238,7 @@ void rsvg_push_discrete_layer (RsvgDrawingCtx *ctx);
 void rsvg_render_path (RsvgDrawingCtx *ctx, const char *d);
 void rsvg_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * pb, 
 						double x, double y, double w, double h);
+void rsvg_render_free (RsvgRender * render);
 void rsvg_add_clipping_rect (RsvgDrawingCtx *ctx, double x, double y, 
 							 double w, double h);
 

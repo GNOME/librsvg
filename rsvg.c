@@ -84,12 +84,6 @@ rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
-rsvg_pixmap_destroy (guchar *pixels, gpointer data)
-{
-	g_free (pixels);
-}
-
-static void
 rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	int width = -1, height = -1, x = -1, y = -1, i;
@@ -1660,40 +1654,16 @@ rsvg_handle_new (void)
 static RsvgDrawingCtx * 
 rsvg_new_drawing_ctx(RsvgHandle * handle)
 {
-	art_u8 *pixels;
-	int rowstride, new_width, new_height;
 	RsvgDrawingCtx * draw;
 	draw = g_new(RsvgDrawingCtx, 1);	
 
 	draw->state = NULL;
+
 	/* should this be G_ALLOC_ONLY? */
 	draw->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
 
-	new_width = handle->new_width;
-	new_height = handle->new_height;
-	rowstride = (new_width * 4 + 3) & ~3;
-	if (new_height <= 0 || rowstride > INT_MAX / new_height)
-		{
-			/* FIXME: GError here? */
-			g_warning (_("rsvg_start_svg: width too large"));
-			return NULL;
-		}
-	pixels = g_try_malloc (rowstride * new_height);
-	if (pixels == NULL)
-		{
-			/* FIXME: GError here? */
-			g_warning (_("rsvg_start_svg: dimensions too large"));
-			return NULL;
-		}
-	memset (pixels, 0, rowstride * new_height);
-	draw->render = (RsvgRender *) rsvg_art_render_new
-		(gdk_pixbuf_new_from_data (pixels,
-								   GDK_COLORSPACE_RGB,
-								   TRUE, 8,
-								   new_width, new_height,
-								   rowstride,
-								   rsvg_pixmap_destroy,
-								   NULL));
+	draw->render = (RsvgRender *) rsvg_art_render_new (handle->new_width, handle->new_height);
+
 	draw->defs = handle->defs;
 	draw->base_uri = g_strdup(handle->base_uri);
 	draw->dpi_x = handle->dpi_x;
@@ -1992,24 +1962,42 @@ rsvg_pop_discrete_layer(RsvgDrawingCtx *ctx)
 {
 	ctx->render->pop_discrete_layer(ctx);
 }
+
 void 
 rsvg_push_discrete_layer (RsvgDrawingCtx *ctx)
 {
 	ctx->render->push_discrete_layer(ctx);
 }
+
 void 
 rsvg_render_path (RsvgDrawingCtx *ctx, const char *d)
 {
-	ctx->render->render_path(ctx, d);
+	/* todo: store and use the bpath higher up */
+	RsvgBpathDef * bpath_def;
+
+	bpath_def = rsvg_parse_path (d);
+	rsvg_bpath_def_art_finish (bpath_def);
+
+	ctx->render->render_path(ctx, bpath_def);
+
+	rsvg_bpath_def_free (bpath_def);
 }
+
 void 
 rsvg_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * pb, 
 						double x, double y, double w, double h)
 {
 	ctx->render->render_image(ctx, pb, x, y, w, h);
 }
+
 void 
 rsvg_add_clipping_rect (RsvgDrawingCtx *ctx, double x, double y, double w, double h)
 {
 	ctx->render->add_clipping_rect(ctx, x, y, w, h);
+}
+
+void 
+rsvg_render_free (RsvgRender * render)
+{
+	render->free (render);
 }

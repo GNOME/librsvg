@@ -1,6 +1,64 @@
-TODO:
+High Priority (absolutely must be done before our next major release - GNOME 3.0):
 
- * Add GError support in the loader, rather then the g_warnings
-   that we currently use.
+ * Implement a Cairo RsvgRender backend (http://www.cairographics.org/)
+	* Enables us to draw directly onto X11 Drawables, OSX/Quartz, and Win32 HDCs, rather than a RGBA buffer that later gets composited.
+	* Enables printing to PS/PDF.
+	* Ensures that our baby isn't thrown out with the bathwater in GNOME 3.0, where libart's (stupid...) deprecation takes effect.
 
- * Make error messages translatable (requires adding gettext).
+ * Split librsvg into several separate libraries in order to decrease dependencies and increase modularity
+	* librsvg-base
+	* librsvg-libart
+	* librsvg-cairo
+	* ...
+
+ * Stabilize the API/ABI for the GNOME 3.0 timeframe
+
+ * Give librsvg a thorough valgrinding and a code/organizational sanity check. No memleaks or errors are acceptable.
+	* Pay special attention to be sure that the RsvgRenders get free'd.
+	* Split out the libart and cairo code into their own subdirs.
+
+ * Try to pass much of the SVG 1.1 static conformance test
+	* Try to pass as many tests as possible. We're shooting for 90% +.
+	* Upload the tests and our results into a matrix online somewhere, maybe Wiki-based.
+
+ * Speed improvements whenever possible
+	* Some initial tests show that using Cairo instead of libart for SVG->PNG might be a big win.
+
+ * Decrease memory usage whenever possible
+
+ * Improvements to the Mozilla plugin
+	* Possibly use a Cairo backend to draw directly onto Mozilla's Drawable, rather than using our XEmbed hack.
+		* Should enable proper translucency, but could be SLOW
+	* Enable printing support, integrated with Mozilla's (http://wp.netscape.com/eng/mozilla/3.0/handbook/plugins/pi4.htm#npprint)
+		* Ideally would use Cairo->PS for this
+			* In a pinch, embedding a PNG inside of a PS snippet would also work
+
+ * Improvements to the rsvg-view application
+	* Add zooming
+	* Add panning
+
+ * Improvements to the rsvg application
+	* Support input from stdin
+
+ * Areas in need of improvement:
+	* Switch/conditionals
+	* Text
+		* Whitespace issues
+		* "International" issues - bi-directional, top->bottom, etc.
+		* Text along paths
+	* Fonts
+		* CSS-defined fonts (do we want to support this?)
+		* SVG fonts (do we want to support this?)
+
+Lower Priority:
+
+ * Any SVG 1.2 features that we want to sneak in. SVG 1.2 conformance is not a priority. Top candidates include:
+	* <multiImage>
+	* <pageSet>
+
+ * Improved GError support in the loader and error propegation, rather then the g_warnings that we currently use.
+	 * Make error messages translatable (requires adding gettext).
+
+ * Improved Gimp plugin (choose 1 of "A" or "B". "A" would be easier, but perhaps less compelling. Jimmac and Tigert would be estatic if we could do either.)
+	* A) Store layer names, composite layers onto the Gimp itself
+	* B) Implement a Gimp-based RsvgRender that drew SVGs in terms of Gimp's path, gradient, pattern, etc. APIs

@@ -48,7 +48,7 @@ struct RsvgArtSVPRender {
 };
 
 RsvgArtSVPRender * rsvg_art_svp_render_new(void);
-RsvgArtRender * rsvg_art_render_new(GdkPixbuf *);
+RsvgArtRender * rsvg_art_render_new(int new_width, int new_height);
 
 G_END_DECLS
 

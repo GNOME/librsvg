@@ -26,10 +26,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif /*  M_PI  */
-
 /**
  * _rsvg_affine_invert: Find the inverse of an affine transformation.
  * @dst: Where the resulting affine is stored.
