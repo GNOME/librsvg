@@ -179,7 +179,6 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	RsvgLinearGradient *rlg = z->gradient;
 	ArtGradientLinear *agl;
 	double x1, y1, x2, y2;
-	double fx1, fy1, fx2, fy2;
 	double dx, dy, scale;
 	double affine[6];
 	guint32 current_color;
@@ -219,22 +218,39 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 			affine[i] = ctx->affine[i];
 	}
 
-	fx1 = rlg->x1 * rlg->affine[0] + rlg->y1 * rlg->affine[2] + rlg->affine[4];
-	fy1 = rlg->x1 * rlg->affine[1] + rlg->y1 * rlg->affine[3] + rlg->affine[5];
-	fx2 = rlg->x2 * rlg->affine[0] + rlg->y2 * rlg->affine[2] + rlg->affine[4];
-	fy2 = rlg->x2 * rlg->affine[1] + rlg->y2 * rlg->affine[3] + rlg->affine[5];
+	art_affine_multiply(affine, affine, rlg->affine);
 
-	xchange = fx2 - fx1;
-	ychange = fy2 - fy1;
+	/*
+	in case I am hit by a bus, here is how the following code works:
 
-	nx2 = fx1 - ychange;
-	ny2 = fy1 + xchange;
+	in the spec, the various transformations are not applied to the coordinates
+	that determine the gradient, they are applied to the gradient itself, which
+	is logical. However after transformation, these things become different.
+	which is where this code comes in. The effective gradient is two things:
+	the slope of the lines of the same colour (perpendicular to the gradient 
+	without transform), and the distance between the first and the last of 
+	these strips. What this code figures out, is the slope of the lines of
+	equal colour, and the distance between them. It transforms them both and 
+	finally spits out a new two point gradient which is basically the original
+	(x1, y1) point, and the second point which is the point on the line where
+	(x2, y2) lay that is closest to (x1, y1)
+
+	I'm not sure if this is the right solution to the problem, but it works
+	for now.
+
+	***Start explained section***/
+
+	/*calculate (nx2, ny2), the point perpendicular to the gradient*/
+	xchange = rlg->x2 - rlg->x1;
+	ychange = rlg->y2 - rlg->y1;
+	nx2 = rlg->x1 - ychange;
+	ny2 = rlg->y1 + xchange;
 
 	/* compute [xy][12] in pixel space */
-	x1 = fx1 * affine[0] + fy1 * affine[2] + affine[4];
-	y1 = fx1 * affine[1] + fy1 * affine[3] + affine[5];
-	x0 = fx2 * affine[0] + fy2 * affine[2] + affine[4];
-	y0 = fx2 * affine[1] + fy2 * affine[3] + affine[5];
+	x1 = rlg->x1 * affine[0] + rlg->y1 * affine[2] + affine[4];
+	y1 = rlg->x1 * affine[1] + rlg->y1 * affine[3] + affine[5];
+	x0 = rlg->x2 * affine[0] + rlg->y2 * affine[2] + affine[4];
+	y0 = rlg->x2 * affine[1] + rlg->y2 * affine[3] + affine[5];
 	x2 = nx2 * affine[0] + ny2 * affine[2] + affine[4];
 	y2 = nx2 * affine[1] + ny2 * affine[3] + affine[5];
 
@@ -251,6 +267,8 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 		x2 = x1 + ychange / unitlen * pointlen;
 		y2 = y1 - xchange / unitlen * pointlen;
 	}
+
+	/***end explained section***/
 
 	/* solve a, b, c so ax1 + by1 + c = 0 and ax2 + by2 + c = 1, maximum
 	   gradient is in x1,y1 to x2,y2 dir */
