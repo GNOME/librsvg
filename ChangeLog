@@ -1,5 +1,10 @@
 2004-03-20  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-css.c: Fix rgb percent handling for 
+	http://www.w3.org/Graphics/SVG/Test/20030813/htmlframe/full-color-prop-02-f.html
+	
+2004-03-20  Dom Lachowicz <cinamod@hotmail.com>
+
 	* autogen.sh: Downgrade libtool requirement to 1.4.2
 	* rsvg.c: 137765
 	

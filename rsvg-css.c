@@ -686,7 +686,7 @@ rsvg_css_parse_font_family (const char * str, const char * inherit)
 		return str;
 }
 
-#if !defined(HAVE_STRTOK_R) && !GLIB_CHECK_VERSION(2, 3, 2)
+#if !defined(HAVE_STRTOK_R)
 
 static char *
 strtok_r(char *s, const char *delim, char **last)
