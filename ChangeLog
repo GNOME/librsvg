@@ -1,5 +1,9 @@
 2003-03-25  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-shapes.c: Support style information inside of defs paths
+	
+2003-03-25  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg.c: Support for <style> outside of a <defs> block
 	
 2003-03-24  Dom Lachowicz <cinamod@hotmail.com>

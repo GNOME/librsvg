@@ -124,7 +124,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	PangoRectangle ink_rect, line_ink_rect;
 	FT_Bitmap bitmap;
 	
-	state = &ctx->state[ctx->n_state - 1];
+	state = rsvg_state_current (ctx);
 	if (state->fill == NULL && state->font_size <= 0)
 		return;
 
@@ -258,7 +258,7 @@ rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
 	const char * klazz = NULL, * id = NULL;
 	x = y = dx = dy = 0.;
 	
-	state = &ctx->state[ctx->n_state - 1];
+	state = rsvg_state_current (ctx);
 	
 	if (atts != NULL)
 		{
@@ -288,7 +288,7 @@ rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
 			art_affine_translate (affine, x, y);
 			art_affine_multiply (state->affine, affine, state->affine);
 		}
-	rsvg_parse_style_attrs (ctx, "tspan", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, state, "tspan", klazz, id, atts);
 }
 
 static void
@@ -358,7 +358,7 @@ rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
 	
 	x = y = dx = dy = 0.;
 	
-	state = &ctx->state[ctx->n_state - 1];
+	state = rsvg_state_current (ctx);
 	
 	if (atts != NULL)
 		{
@@ -385,7 +385,7 @@ rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
 	art_affine_translate (affine, x, y);
 	art_affine_multiply (state->affine, affine, state->affine);
 	
-	rsvg_parse_style_attrs (ctx, "text", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, state, "text", klazz, id, atts);
 	
 	handler->parent = ctx->handler;
 	ctx->handler = &handler->super;

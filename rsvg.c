@@ -154,7 +154,7 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 				}
 
 			/* Scale size of target pixbuf */
-			state = &ctx->state[ctx->n_state - 1];
+			state = rsvg_state_current (ctx);
 			art_affine_scale (state->affine, x_zoom, y_zoom);
 			
 #if 0
@@ -210,7 +210,7 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 static void
 rsvg_start_g (RsvgHandle *ctx, const xmlChar **atts)
 {
-	RsvgState *state = &ctx->state[ctx->n_state - 1];
+	RsvgState *state = rsvg_state_current (ctx);
 	const char * klazz = NULL, * id = NULL;
 	int i;
 	
@@ -225,7 +225,7 @@ rsvg_start_g (RsvgHandle *ctx, const xmlChar **atts)
 				}
 		}
 	
-	rsvg_parse_style_attrs (ctx, "g", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, state, "g", klazz, id, atts);
 	if (state->opacity != 0xff)
 		rsvg_push_opacity_group (ctx);
 }
@@ -233,7 +233,7 @@ rsvg_start_g (RsvgHandle *ctx, const xmlChar **atts)
 static void
 rsvg_end_g (RsvgHandle *ctx)
 {
-	RsvgState *state = &ctx->state[ctx->n_state - 1];
+	RsvgState *state = rsvg_state_current (ctx);
 	
 	if (state->opacity != 0xff)
 		rsvg_pop_opacity_group (ctx, state->opacity);
@@ -396,7 +396,7 @@ rsvg_linear_gradient_free (RsvgDefVal *self)
 static void
 rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 {
-	RsvgState *state = &ctx->state[ctx->n_state - 1];
+	RsvgState *state = rsvg_state_current (ctx);
 	RsvgLinearGradient *grad = NULL;
 	int i;
 	const char *id = NULL;
@@ -516,7 +516,7 @@ rsvg_radial_gradient_free (RsvgDefVal *self)
 static void
 rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts, const char * tag) /* tag for conicalGradient */
 {
-	RsvgState *state = &ctx->state[ctx->n_state - 1];
+	RsvgState *state = rsvg_state_current (ctx);
 	RsvgRadialGradient *grad = NULL;
 	int i;
 	const char *id = NULL;

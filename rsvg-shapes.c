@@ -46,7 +46,8 @@
 
 struct _RsvgDefsPath {
  	RsvgDefVal super;
- 	char *d;
+	RsvgState  state;
+ 	char       *d;
 };
  
 typedef struct _RsvgDefsPath RsvgDefsPath;
@@ -175,7 +176,7 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 			return;
 		}
 	
-	state = &ctx->state[ctx->n_state - 1];
+	state = rsvg_state_current (ctx);
 
 	/* todo: handle visibility stuff earlier for performance benefits 
 	 * handles all path based shapes. will handle text and images separately
@@ -273,6 +274,7 @@ static void
 rsvg_defs_path_free (RsvgDefVal *self)
 {
 	RsvgDefsPath *z = (RsvgDefsPath *)self;
+	rsvg_state_finalize (&z->state);
 	g_free (z);
 }
 
@@ -292,6 +294,7 @@ rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id)
 
 		path = g_new (RsvgDefsPath, 1);
 		path->d = g_strdup(d);
+		rsvg_state_clone (&path->state, rsvg_state_current (ctx));
 		path->super.type = RSVG_DEF_PATH;
 		path->super.free = rsvg_defs_path_free;
 		
@@ -322,7 +325,7 @@ rsvg_start_path (RsvgHandle *ctx, const xmlChar **atts)
 	if (d == NULL)
 		return;
 	
-	rsvg_parse_style_attrs (ctx, "path", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "path", klazz, id, atts);
 	rsvg_handle_path (ctx, d, id);
 }
 
@@ -380,7 +383,7 @@ rsvg_start_any_poly(RsvgHandle *ctx, const xmlChar **atts, gboolean is_polyline)
 	if (!verts)
 		return;
 	
-	rsvg_parse_style_attrs (ctx, (is_polyline ? "polyline" : "polygon"), klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), (is_polyline ? "polyline" : "polygon"), klazz, id, atts);
 	
 	/* todo: make the following more memory and CPU friendly */
 	g = rsvg_make_poly_point_list (verts);
@@ -428,7 +431,7 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
 	double font_size;
 
 	if (ctx->n_state > 0)
-		font_size = ctx->state[ctx->n_state - 1].font_size;
+		font_size = rsvg_state_current (ctx)->font_size;
 	else
 		font_size = 12.0;
 
@@ -450,7 +453,7 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
 						id = (const char *)atts[i + 1];
 				}      
 		}
-	rsvg_parse_style_attrs (ctx, "line", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "line", klazz, id, atts);
 	
 	/* emulate a line using a path */
 	/* ("M %f %f L %f %f", x1, y1, x2, y2) */
@@ -480,7 +483,7 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	double font_size;
 
 	if (ctx->n_state > 0)
-		font_size = ctx->state[ctx->n_state - 1].font_size;
+		font_size = rsvg_state_current (ctx)->font_size;
 	else
 		font_size = 12.0;
 
@@ -524,7 +527,7 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	if (ry > (h / 2.))
 		ry = h / 2.;
 	
-	rsvg_parse_style_attrs (ctx, "rect", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "rect", klazz, id, atts);
 	
 	/* incrementing y by 1 properly draws borders. this is a HACK */
 	y += 1.;
@@ -623,7 +626,7 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 	double font_size;
 	
 	if (ctx->n_state > 0)
-		font_size = ctx->state[ctx->n_state - 1].font_size;
+		font_size = rsvg_state_current (ctx)->font_size;
 	else
 		font_size = 12.0;
 
@@ -649,7 +652,7 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 	if (cx < 0. || cy < 0. || r <= 0.)
 		return;
 	
-	rsvg_parse_style_attrs (ctx, "circle", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "circle", klazz, id, atts);
 	
 	/* approximate a circle using 4 bezier curves */
 
@@ -727,7 +730,7 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 	double font_size;
 	
 	if (ctx->n_state > 0)
-		font_size = ctx->state[ctx->n_state - 1].font_size;
+		font_size = rsvg_state_current (ctx)->font_size;
 	else
 		font_size = 12.0;
 
@@ -753,7 +756,7 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 	if (cx < 0. || cy < 0. || rx <= 0. || ry <= 0.)
 		return;
 	
-	rsvg_parse_style_attrs (ctx, "ellipse", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "ellipse", klazz, id, atts);
 	
 	/* approximate an ellipse using 4 bezier curves */
 
@@ -844,7 +847,7 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
 	/* skip over defs entries for now */
 	if (ctx->in_defs) return;
 
-	state = &ctx->state[ctx->n_state - 1];
+	state = rsvg_state_current (ctx);
 	
 	if (atts != NULL)
 		{
@@ -871,7 +874,7 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
 	if (!href || x < 0. || y < 0. || w <= 0. || h <= 0.)
 		return;
 	
-	rsvg_parse_style_attrs (ctx, "image", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, state, "image", klazz, id, atts);
 	
 	/* figure out if image is visible or not */
 	if (!state->visible)
@@ -940,12 +943,13 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
 void 
 rsvg_start_use (RsvgHandle *ctx, const xmlChar **atts)
 {
-	RsvgState *state = &ctx->state[ctx->n_state - 1];
+	RsvgState *state = rsvg_state_current (ctx);
 	const char * klazz = NULL, *id = NULL, *xlink_href = NULL;
-	double x = 0, y = 0;
+	double x = 0, y = 0, width = 0, height = 0;
 	int i;
 	double affine[6];
-	
+	gboolean got_width = FALSE, got_height = FALSE;
+
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
@@ -954,7 +958,14 @@ rsvg_start_use (RsvgHandle *ctx, const xmlChar **atts)
 						x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "y"))
 						y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
-					
+					else if (!strcmp ((char *)atts[i], "width")) {
+						width = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
+						got_width = TRUE;
+					}
+					else if (!strcmp ((char *)atts[i], "height")) {
+						height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);					
+						got_height = TRUE;
+					}
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
 					else if (!strcmp ((char *)atts[i], "id"))
@@ -964,12 +975,10 @@ rsvg_start_use (RsvgHandle *ctx, const xmlChar **atts)
 				}
 		}
 	
-	art_affine_translate (affine, x, y);
-	art_affine_multiply (state->affine, affine, state->affine);
-	
-	rsvg_parse_style_attrs (ctx, "use", klazz, id, atts);
-	if (state->opacity != 0xff)
-		rsvg_push_opacity_group (ctx);
+	/* < 0 is an error, 0 disables rendering. TODO: handle positive values correctly */
+	if (got_width || got_height)
+		if (width <= 0. || height <= 0.)
+			return;
 	
 	if (xlink_href != NULL)
 		{
@@ -980,7 +989,17 @@ rsvg_start_use (RsvgHandle *ctx, const xmlChar **atts)
 					case RSVG_DEF_PATH:
 						{
 							RsvgDefsPath *path = (RsvgDefsPath*)parent;
-							/* always want to render inside of a USE */
+
+							/* combine state definitions */
+							rsvg_state_clone (state, &path->state);
+							art_affine_translate (affine, x, y);
+							art_affine_multiply (state->affine, affine, state->affine);
+
+							rsvg_parse_style_attrs (ctx, state, "use", klazz, id, atts);
+							if (state->opacity != 0xff)
+								rsvg_push_opacity_group (ctx);
+
+							/* always want to render inside of a <use/> */
 							rsvg_render_path (ctx, path->d);
 							break;
 						}

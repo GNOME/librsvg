@@ -750,6 +750,7 @@ rsvg_lookup_apply_css_style (RsvgHandle *ctx, const char * target)
 /**
  * rsvg_parse_style_attrs: Parse style attribute.
  * @ctx: Rsvg context.
+ * @state: Rsvg state
  * @tag: The SVG tag we're processing (eg: circle, ellipse), optionally %NULL
  * @klazz: The space delimited class list, optionally %NULL
  * @atts: Attributes in SAX style.
@@ -758,7 +759,8 @@ rsvg_lookup_apply_css_style (RsvgHandle *ctx, const char * target)
  * stack.
  **/
 void
-rsvg_parse_style_attrs (RsvgHandle *ctx, 
+rsvg_parse_style_attrs (RsvgHandle * ctx, 
+						RsvgState  * state,
 						const char * tag,
 						const char * klazz,
 						const char * id,
@@ -777,7 +779,7 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
 	 * tag.class
 	 * tag.class#id
 	 *
-	 * TODO: test that this reasonably works and conforms to the SVG/CSS spec
+	 * This is basically a semi-compliant CSS2 selection engine
 	 */
 
 	/* * */
@@ -846,14 +848,11 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
 					if (!strcmp ((char *)atts[i], "style"))
-						rsvg_parse_style (ctx, &ctx->state[ctx->n_state - 1],
-										  (char *)atts[i + 1]);
+						rsvg_parse_style (ctx, state, (char *)atts[i + 1]);
 					else if (!strcmp ((char *)atts[i], "transform"))
-						rsvg_parse_transform_attr (ctx, &ctx->state[ctx->n_state - 1],
-												   (char *)atts[i + 1]);
+						rsvg_parse_transform_attr (ctx, state, (char *)atts[i + 1]);
 					else if (rsvg_is_style_arg ((char *)atts[i]))
-						rsvg_parse_style_pair (ctx, &ctx->state[ctx->n_state - 1],
-											   (char *)atts[i], (char *)atts[i + 1]);
+						rsvg_parse_style_pair (ctx, state, (char *)atts[i], (char *)atts[i + 1]);
 				}
 		}
 }
@@ -979,4 +978,12 @@ rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity)
 	
 	g_object_unref (tos);
 	ctx->pixbuf = nos;
+}
+
+RsvgState * 
+rsvg_state_current (RsvgHandle *ctx)
+{
+	if (ctx->n_state > 0)
+		return &ctx->state[ctx->n_state - 1];
+	return NULL;
 }
