@@ -20,7 +20,6 @@ BuildRequires:    libart_lgpl-devel >= @LIBART_REQUIRED@
 BuildRequires:    libxml2-devel >= @LIBXML_REQUIRED@
 BuildRequires:    pango-devel >= @PANGOFT2_REQUIRED@
 
-
 %description
 An SVG library based on libart.
 
@@ -58,7 +57,7 @@ on the gdkpixbuf engine.
 %setup -q -n librsvg-%{version}
 
 %build
-%configure
+%configure --enable-svgz
 make
 
 %install
@@ -67,8 +66,10 @@ rm -rf $RPM_BUILD_ROOT
 %makeinstall
 # Clean out files that should not be part of the rpm.
 # This is the recommended way of dealing with it for RH8
-rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.0.0/engines/*.la
-rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.0.0/engines//*.a
+rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.2.0/engines/*.la
+rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.2.0/engines/*.a
+rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.2.0/loaders/*.la
+rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.2.0/loaders/*.a
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 
@@ -87,20 +88,25 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/*.so.*
 %{_bindir}/rsvg
 %{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
+%{_datadir}/man/man1/rsvg.1.gz
 
 %files devel
 %defattr(-, root, root)
 %{_libdir}/*.so
-%{_includedir}/librsvg-2/librsvg
+%{_includedir}/librsvg-2/librsvg/*.h
 %{_libdir}/pkgconfig/librsvg-2.0.pc
+%{_datadir}/doc/librsvg/html/*
 
 %files -n rsvg-gtk
 %defattr(-, root, root)
-%{_libdir}/gtk-2.0/2.0.0/engines/*.so
+%{_libdir}/gtk-2.0/2.2.0/engines/*.so
+%{_libdir}/gtk-2.0/2.2.0/loaders/*.so
 # %{_datadir}/themes/bubble/gtk-2.0/*
 # %{_datadir}/themes/bubble/README
 
 %changelog
+* Sun Feb 02 2003 Christian Schaller <Uraeus@linuxrising.org>
+- Update to handle latest changes
 * Thu Oct 22 2002 Christian Schaller <Uraeus@linuxrising.org>
 - Disabled building of example theme (as done in gtk-engines)
 
