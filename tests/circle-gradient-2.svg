@@ -1,0 +1,13 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" width="249" height="655">
+<defs>
+<linearGradient id="defitem0" gradientUnits="userSpaceOnUse" x1="180" y1="550" x2="137" y2="615" >
+<stop stop-color="#ff0000" offset="0" />
+<stop stop-color="#ffff00" offset="1" />
+</linearGradient>
+</defs>
+<g transform="scale(1, -1) translate(0, -655)">
+<path d=" M 94 579 C 94 539.788 127.579 508 169 508 C 210.421 508 244 539.788 244 579 C 244 618.212 210.421 650 169 650 C 127.579 650 94 618.212 94 579Z" fill="url(#defitem0)" fill-opacity="1" fill-rule="nonzero" stroke="#0e3b80" stroke-opacity="1" stroke-width="10" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" />
+</g>
+</svg>

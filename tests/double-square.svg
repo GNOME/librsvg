@@ -1,0 +1,10 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" width="327.5" height="772.5">
+<defs>
+</defs>
+<g transform="scale(1, -1) translate(0, -772.5)">
+<path d=" M 54 772 L 54 520 L 327 520 L 327 772 L 54 772Z" fill="#040404" fill-opacity="1" fill-rule="nonzero" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" />
+<path d=" M 111 713 L 111 569 L 273 569 L 273 713 L 111 713Z" fill="#ffffff" fill-opacity="1" fill-rule="nonzero" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" />
+</g>
+</svg>

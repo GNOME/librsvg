@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="ISO-8859-1" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+    "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd" [
+    <!ATTLIST svg
+              xmlns:a3 CDATA #IMPLIED
+              xmlns:gui CDATA #IMPLIED
+              a3:scriptImplementation CDATA #IMPLIED>
+    <!ATTLIST script
+              a3:scriptImplementation CDATA #IMPLIED>
+    <!ATTLIST circle
+              gui:edit CDATA #IMPLIED>
+    <!ATTLIST ellipse
+              gui:edit CDATA #IMPLIED>
+    <!ATTLIST line
+              gui:edit CDATA #IMPLIED>
+    <!ATTLIST path
+              gui:edit CDATA #IMPLIED>
+    <!ATTLIST polygon
+              gui:edit CDATA #IMPLIED>
+    <!ATTLIST rectangle
+              gui:edit CDATA #IMPLIED>
+]>
+<svg onload="init(evt)"
+     xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     xmlns:gui="http://www.kevlindev.com/gui"
+     xmlns:a3="http://ns.adobe.com/AdobeSVGViewerExtensions/3.0/"
+     a3:scriptImplementation="Adobe">
+    <script type="text/ecmascript" a3:scriptImplementation="Adobe"
+            xlink:href="../../../gui/2D.js.gz"/>
+    <script type="text/ecmascript" a3:scriptImplementation="Adobe"
+            xlink:href="IntersectionUtilities.js"/>
+    <defs>
+        <g id="intersection">
+            <circle r="3" fill="none" stroke="red" stroke-width="1"/>
+            <circle r="1" fill="black"/>
+        </g>
+    </defs>
+    <rect id="background" width="100%" height="100%" opacity="0"
+          onmousedown="mouser.unregisterShapes()"/>
+    <path gui:edit="editable" d="M50,20 Q200,300 350,10"
+          stroke="blue" stroke-width="5" fill="none" opacity="0.5"/>
+    <ellipse gui:edit="editable" cx="80" cy="80" rx="30" ry="40"
+             fill="orange" opacity="0.5"/>
+    <text id="info" x="5" y="1em">Loading...</text>
+</svg>

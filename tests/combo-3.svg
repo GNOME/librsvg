@@ -1,0 +1,9 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" width="355.5" height="670.5">
+<defs>
+</defs>
+<path d=" M 158 570 C 158 515.876 201.652 472 255.5 472 C 309.348 472 353 515.876 353 570 C 353 624.124 309.348 668 255.5 668 C 201.652 668 158 624.124 158 570Z" fill="#ffffff" fill-opacity="1" fill-rule="evenodd" stroke="#d38314" stroke-opacity="1" stroke-width="5" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" />
+<path d=" M 52 537 C 52 485.085 93.6375 443 145 443 C 196.362 443 238 485.085 238 537 C 238 588.915 196.362 631 145 631 C 93.6375 631 52 588.915 52 537Z" fill="#5d99f2" fill-opacity="1" fill-rule="evenodd" stroke="#020779" stroke-opacity="0.5" stroke-width="15" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" />
+<path d=" M 129 534 L 129 381 L 330 381 L 330 534 L 129 534Z" fill="#ffffff" fill-opacity="0.5" fill-rule="evenodd" stroke="#0e801f" stroke-opacity="0.4" stroke-width="10" stroke-linecap="butt" stroke-linejoin="round" />
+</svg>

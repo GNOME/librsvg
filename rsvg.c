@@ -38,6 +38,8 @@
 #include <libart_lgpl/art_render_mask.h>
 #include <libart_lgpl/art_render_svp.h>
 #include <libart_lgpl/art_rgba.h>
+#include <libart_lgpl/art_rgb_affine.h>
+#include <libart_lgpl/art_rgb_rgba_affine.h>
 
 #include <libxml/SAX.h>
 #include <libxml/xmlmemory.h>
@@ -1681,14 +1683,24 @@ rsvg_start_polyline (RsvgHandle *ctx, const xmlChar **atts)
   rsvg_start_any_poly (ctx, atts, TRUE);
 }
 
+/* TODO 1: issue with affining alpha images - this is gdkpixbuf's fault...
+ * TODO 2: issue with rotating images - do we want to rotate the whole
+ *         canvas 2x to get this right, only to have #1 bite us?
+ */
 static void
 rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
 {
   int i;
-  double x = 0, y = 0, w = 0, h = 0;
-  const char * href = (const char *)NULL;
-  GdkPixbuf *pixbuf, *img;
+  double x = 0., y = 0., w = -1., h = -1.;
+  const char * href = NULL;
+
+  GdkPixbuf *img;
+  GError *err = NULL;
+
   gboolean has_alpha;
+  guchar *rgb = NULL;
+  int dest_rowstride;
+  double tmp_affine[6];
   RsvgState *state = &ctx->state[ctx->n_state - 1];
 
   rsvg_parse_style_attrs (ctx, atts);
@@ -1713,25 +1725,64 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
   if (!href || x < 0. || y < 0. || w <= 0. || h <= 0.)
     return;
   
-  img = gdk_pixbuf_new_from_file (href, NULL);
+  img = gdk_pixbuf_new_from_file (href, &err);
   
   if (!img)
-    return;
-  
-  pixbuf = ctx->pixbuf;
-  has_alpha = gdk_pixbuf_get_has_alpha (img);
+    {
+      if (err)
+	{
+	  g_warning ("Couldn't load pixbuf (%s): %s\n", href, err->message);
+	  g_error_free (err);
+	}
+      return;
+    }
 
-  /* composite our source image onto our context's pixbuf 
-     todo: handle current transform affine: state->affine[4], state->affine[5]
-  */
-  gdk_pixbuf_composite (img, pixbuf,
-			x, y, w, h,
-			(double)x, (double)y, 
-			(double)w / (double)gdk_pixbuf_get_width (img),
-			(double)h / (double)gdk_pixbuf_get_height (img),
-			GDK_INTERP_BILINEAR, has_alpha ? 255 : 0);
+  /* scale/resize the dest image */
+  art_affine_scale (tmp_affine, (double)w / (double)gdk_pixbuf_get_width (img),
+		    (double)h / (double)gdk_pixbuf_get_height (img));
+  art_affine_multiply (state->affine, tmp_affine, state->affine);
+
+  has_alpha = gdk_pixbuf_get_has_alpha (img);
+  dest_rowstride = (int)(w * (has_alpha ? 4 : 3) + 3) & ~3;
+  rgb = g_new (guchar, h * dest_rowstride);
+
+  if(has_alpha)
+    art_rgb_rgba_affine (rgb, 0, 0, w, h, dest_rowstride,
+			 gdk_pixbuf_get_pixels (img),
+			 gdk_pixbuf_get_width (img),
+			 gdk_pixbuf_get_height (img),
+			 gdk_pixbuf_get_rowstride (img),
+			 state->affine,
+			 ART_FILTER_NEAREST,
+			 NULL);
+  else
+    art_rgb_affine (rgb, 0, 0, w, h, dest_rowstride,
+		    gdk_pixbuf_get_pixels (img),
+		    gdk_pixbuf_get_width (img),
+		    gdk_pixbuf_get_height (img),
+		    gdk_pixbuf_get_rowstride (img),
+		    state->affine,
+		    ART_FILTER_NEAREST,
+		    NULL);
+
+  g_object_unref (G_OBJECT (img));
+  img = gdk_pixbuf_new_from_data (rgb, GDK_COLORSPACE_RGB, has_alpha, 8, w, h, dest_rowstride, NULL, NULL);
+
+  if (!img)
+    {
+      g_free (rgb);
+      return;
+    }
+
+  gdk_pixbuf_copy_area (img, 0, 0,
+			gdk_pixbuf_get_width (img) * state->affine[0],
+			gdk_pixbuf_get_height (img) * state->affine[3],
+			ctx->pixbuf, 
+			state->affine[4] + x,
+			state->affine[5] + y);
   
   g_object_unref (G_OBJECT (img));
+  g_free (rgb);
 }
 
 static void

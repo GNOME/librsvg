@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+
+<!-- ========================================================================= -->
+<!-- SVG Sample Pool : Telephone                                               -->
+<!--                                                                           -->
+<!-- This sample shows different type of basic shapes and path of SVG          -->
+<!-- The telephone is made of rectangles, ellipses, circles, a polygon,        -->
+<!-- a polyline and a path of quadratic bezier curve.                          -->
+<!--                                                                           -->
+<!-- @author        Sheng Pei,    XML Technology Center, Sun Microsystems Inc. -->
+<!-- @version       1.1, July 24  2000                                         -->
+<!-- @version       1.0, June 15  2000                                         -->
+<!--                                                                           -->
+<!-- Copyright Sun Microsystems Inc., 2000-2002                                -->
+<!-- ========================================================================= -->
+
+
+<svg width="800" height="600" xml:space="default" style="stroke: blue; fill: none"> 
+
+	<desc> This example mixes SVG BASIC shapes to build a phone. </desc>
+	<title> Sample 2: telephone </title>
+
+
+<!-- ===================================================================== -->
+<!-- Paint definitions for the phone parts                                 -->
+<!-- ===================================================================== -->
+	<defs>
+
+		<!-- ====================== -->
+		<!-- Gradients              -->
+		<!-- ====================== -->
+		<linearGradient id="handsetGradientA" x1="0" y1="-30" x2="0" y2="10" gradientUnits="userSpaceOnUse">
+			<stop style="stop-color:black" offset="0%" />
+			<stop style="stop-color:white" offset="20%" />
+			<stop style="stop-color:black" offset="60%" />
+			<stop style="stop-color:black" offset="100%" />
+		</linearGradient>
+
+		<radialGradient id="handsetGradientB" cx="-10" cy="0" r="35" gradientUnits="userSpaceOnUse">
+			<stop style="stop-color:white" offset="0%" />
+			<stop style="stop-color:black" offset="100%" />
+		</radialGradient>
+
+		<linearGradient id="cradleGradient" x1="-30" y1="0" x2="-20" y2="0" gradientUnits="userSpaceOnUse">
+			<stop style="stop-color:black" offset="0%" />
+			<stop style="stop-color:white" offset="20%" />
+			<stop style="stop-color:black" offset="100%" />
+		</linearGradient>
+
+		<radialGradient id="phoneKeyGradient" cx="0" cy="0" r="14" fx="-5" fy="-5" gradientUnits="userSpaceOnUse">
+			<stop style="stop-color:white" offset="0%" />
+			<stop style="stop-color:black" offset="100%" />
+		</radialGradient>
+
+		<!-- ======================= -->
+		<!-- Shapes definitions      -->
+		<!-- ======================= -->
+		<circle id="phoneKey" cx="0" cy="0" r="14" style="fill:url(#phoneKeyGradient); stroke:none;"/>
+
+  	<path id="cord" d="M 235,130 q 25,0 25,25 q 0,25 25,25 q 25,0 25,25 q 0,25 25,25 q 25,0 25,25 q 0,25 25,25 q 25,0 25,25 q 0,25 25,25 q 25,0 25,25"/>
+
+	</defs>
+
+<!-- ===================================================================== -->
+<!-- The handset of the telephone. Three parts are grouped together:       -->
+<!-- a rectangular handle, an ear piece of ellipse and a mouth piece       -->
+<!-- of ellipse								   -->
+<!-- ===================================================================== -->
+
+  
+	<g id="Handset" transform="translate(70, 90)" >
+		<rect y="-30" height="40" width="260" style="fill:url(#handsetGradientA); stroke:none;"/>
+
+		<ellipse cy="20" rx="45" ry="50" style="fill:url(#handsetGradientB); stroke:none;"/>
+		<ellipse cy="20" rx="45" ry="50" transform="translate(260)" style="fill:url(#handsetGradientB); stroke:none;"/>
+	</g>	
+	
+<!-- ===================================================================== -->
+<!-- The two cradles of the telephone. Two rectangles are skewed along     -->
+<!-- the X axis								   -->
+<!-- ===================================================================== -->
+
+	<g transform="translate(200, 80)">
+		<rect x="-30" height="50" width="10" transform="skewX(10)" style="fill:url(#cradleGradient); stroke:none;"/>
+  	<rect x="-30" height="50" width="10" transform="skewX(-10) translate(50, 0)"  style="fill:url(#cradleGradient); stroke:none;"/>
+	</g>
+ 
+<!-- ===================================================================== -->
+<!-- The body, buttons and the key pad					   -->
+<!-- ===================================================================== -->
+
+	<g transform="translate(200, 130)" >
+
+		<linearGradient id="bodyGradient" x1="0" y1="0" x2="0" y2="220" gradientUnits="userSpaceOnUse">
+			<stop style="stop-color:white" offset="0%" />
+			<stop style="stop-color:black" offset="6%" />
+			<stop style="stop-color:black" offset="18%" />
+			<stop style="stop-color:white" offset="20%" />
+			<stop style="stop-color:black" offset="35%" />
+			<stop style="stop-color:black" offset="100%" />
+		</linearGradient>
+
+		<polyline points="-75,0 75,0 80,40 110,50 140,230 -140,230 -110,50 -80,40 -75,0" style="fill:url(#bodyGradient); stroke:none;"/>
+		
+		
+	    <g transform="translate(0, 105)">  	
+
+		<polygon points="-65,-20 65,-20 65,110 -65,110" style="fill:none; stroke:white; stroke-width:2; visibility:visible;"/>
+
+		<use xlink:href="#phoneKey" x="-40" y="0" />
+		<use xlink:href="#phoneKey" x="-40" y="30" />
+		<use xlink:href="#phoneKey" x="-40" y="60" />
+		<use xlink:href="#phoneKey" x="-40" y="90" />
+		<use xlink:href="#phoneKey" x="0" y="0" />
+		<use xlink:href="#phoneKey" x="0" y="30" />
+		<use xlink:href="#phoneKey" x="0" y="60" />
+		<use xlink:href="#phoneKey" x="0" y="90" />
+		<use xlink:href="#phoneKey" x="40" y="0" />
+		<use xlink:href="#phoneKey" x="40" y="30" />
+		<use xlink:href="#phoneKey" x="40" y="60" />
+		<use xlink:href="#phoneKey" x="40" y="90" />
+
+	    </g>	
+	</g>
+
+<!-- ===================================================================== -->
+<!-- The cord, drawn of several quadratic bezier curves			   -->
+<!-- ===================================================================== -->
+
+	<g id="cordGroup" transform="translate(40, 20)" >
+		<use xlink:href="#cord" style="stroke:black; stroke-width:12" />
+		<use xlink:href="#cord" style="stroke:#202020; stroke-width:10" />
+		<use xlink:href="#cord" style="stroke:#3f3f3f; stroke-width:8" />
+		<use xlink:href="#cord" style="stroke:#6f6f6f; stroke-width:6" />
+		<use xlink:href="#cord" style="stroke:#afafaf; stroke-width:4" />
+		<use xlink:href="#cord" style="stroke:#dfdfdf; stroke-width:2" />
+		<use xlink:href="#cord" style="stroke:white; stroke-width:1" />
+  </g>
+
+</svg>

@@ -1,0 +1,14 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
+  "http://www.w3.org/TR/2002/WD-SVG11-20020215/DTD/svg11.dtd">
+<svg width="12cm" height="4cm" viewBox="0 0 1200 400"
+     xmlns="http://www.w3.org/2000/svg" version="1.1">
+  <desc>Example rect01 - rectangle with sharp corners</desc>
+
+  <!-- Show outline of canvas using 'rect' element -->
+  <rect x="0" y="0" width="1200" height="400"
+        style="fill:none; stroke:blue; stroke-width:2"/>
+
+  <rect x="3" y="3" width="70%" height="70%"
+        style="fill:#00ffff; stroke:#ff0fff; stroke-width:10; stroke-offset:0; stroke-dasharray:5,3,2,6"  />
+</svg>

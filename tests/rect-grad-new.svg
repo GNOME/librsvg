@@ -1,0 +1,13 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" width="292" height="455">
+<defs>
+<conicalGradient id="defitem1" gradientUnits="userSpaceOnUse" cx="195" cy="384" r="53.0094" >
+<stop stop-color="#77a7db" offset="0" />
+<stop stop-color="#0060ef" offset="1" />
+</conicalGradient>
+</defs>
+<g transform="scale(1, -1) translate(0, -455">
+<path d=" M 97 450 L 97 318 L 287 318 L 287 450 L 97 450Z" fill="url(#defitem1)" fill-opacity="1" fill-rule="nonzero" stroke="#0b2a5e" stroke-opacity="1" stroke-width="10" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" />
+</g>
+</svg>

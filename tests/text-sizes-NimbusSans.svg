@@ -1,0 +1,28 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" width="10cm" height="10cm">
+<defs>
+</defs>
+<g style="font-family:'Nimbus Sans l'; font-style:normal; font-weight:normal; fill:black ">
+<text x="10pt" y="10pt" style="font-size:12pt; ">
+ABCDEFGHIJKLMNOPQRSTUVWXYZ</text>
+<text x="10pt" y="24pt" style="font-size:12pt; ">
+abcdefghijklmnopqrstuvwxyz 1234567890</text>
+
+<text x="10pt" y="46pt" style="font-size:11pt; ">
+ABCDEFGHIJKLMNOPQRSTUVWXYZ</text>
+<text x="10pt" y="58pt" style="font-size:11pt; ">
+abcdefghijklmnopqrstuvwxyz 1234567890</text>
+
+<text x="10pt" y="80pt" style="font-size:10pt; ">
+ABCDEFGHIJKLMNOPQRSTUVWXYZ</text>
+<text x="10pt" y="91pt" style="font-size:10pt; ">
+abcdefghijklmnopqrstuvwxyz 1234567890</text>
+
+<text x="10pt" y="113pt" style="font-size:9pt; ">
+ABCDEFGHIJKLMNOPQRSTUVWXYZ</text>
+<text x="10pt" y="123pt" style="font-size:9pt; ">
+abcdefghijklmnopqrstuvwxyz 1234567890</text>
+</g>
+
+</svg>
