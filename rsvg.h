@@ -53,12 +53,6 @@ typedef void (* RsvgSizeFunc) (gint     *width,
 							   gint     *height,
 							   gpointer  user_data);
 
-
-#ifndef RSVG_DISABLE_DEPRECATED
-void        rsvg_set_default_dpi          (double dpi);
-void        rsvg_handle_set_dpi           (RsvgHandle * handle, double dpi);
-#endif
-
 void        rsvg_init (void);
 void        rsvg_term (void);
 
@@ -114,7 +108,9 @@ G_CONST_RETURN char *rsvg_handle_get_title         (RsvgHandle *handle);
 G_CONST_RETURN char *rsvg_handle_get_desc          (RsvgHandle *handle);
 G_CONST_RETURN char *rsvg_handle_get_metadata      (RsvgHandle *handle);
 
-/* Extended Convenience API */
+#ifndef RSVG_DISABLE_DEPRECATED
+void        rsvg_set_default_dpi          (double dpi);
+void        rsvg_handle_set_dpi           (RsvgHandle * handle, double dpi);
 
 GdkPixbuf  * rsvg_pixbuf_from_file_at_size_ex (RsvgHandle * handle,
 											   const gchar  *file_name,
@@ -141,6 +137,7 @@ GdkPixbuf  * rsvg_pixbuf_from_file_at_zoom_with_max_ex (RsvgHandle * handle,
 														gint          max_width,
 														gint          max_height,
 														GError      **error);
+#endif
 
 G_END_DECLS
 
