@@ -1,3 +1,10 @@
+2002-02-01  Laszlo Peter  <laca@ireland.sun.com>
+
+	*  rsvg-bpath-util.c rsvg-bpath-util.h rsvg-css.c rsvg-css.c
+	   rsvg-defs.c rsvg-paint-server.c rsvg-path.c rsvg-path.h
+	   rsvg.c rsvg.h test-rsvg.c: correct licensing information
+           in the headers by permission of the Copyright holder.
+
 2002-01-21  Alex Larsson  <alexl@redhat.com>
 
 	* rsvg.c (rsvg_render_bpath):
