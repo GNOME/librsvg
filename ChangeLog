@@ -1,3 +1,9 @@
+2001-04-03  Darin Adler  <darin@eazel.com>
+
+	* Makefile.am: Change order of libraries in LDADD
+	as a workaround to problem where it finds the wrong
+	version of libxml.
+
 2001-04-03  Ramiro Estrugo  <ramiro@eazel.com>
 
 	* .cvsignore:

@@ -59,11 +59,11 @@ INCLUDES =\
 
 DEPS = $(top_builddir)/librsvg.la
 LDADDS = $(top_builddir)/librsvg.la \
+	$(XML_LIBS) \
 	$(FREETYPE2_LIBS) \
 	$(GDK_PIXBUF_LIBS) \
 	$(GTK_LIBS) \
 	$(GLIB_LIBS) \
-	$(XML_LIBS) \
 	$(FREETYPE2_LIBS) \
 	$(ART_LIBS) \
 	$(POPT_LIBS) \
