@@ -11,6 +11,10 @@
 	blurs because they are really quite silly most of the time, Dom was 
 	right.
 
+2004-02-18  Brian Koebbe  <brian@koebbe.org>
+
+	* rsvg-css.c (rsvg_css_parse_list): fix a loop run amuck (#134801)
+
 2004-02-17  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* rsvg-gz.c: (rsvg_handle_gz_close_impl):
