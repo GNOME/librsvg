@@ -32,6 +32,8 @@
 #include <libart_lgpl/art_affine.h>
 #include <libart_lgpl/art_render_mask.h>
 
+#include <pango/pangoft2.h>
+
 #include "rsvg-shapes.h"
 
 #if 0
@@ -169,8 +171,16 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 		}
 	
 	if (ctx->pango_context == NULL)
-		ctx->pango_context = pango_ft2_get_context ((guint)ctx->dpi, (guint)ctx->dpi);   
-		
+		{
+			PangoFT2FontMap *fontmap;
+
+			fontmap = PANGO_FT2_FONT_MAP (pango_ft2_font_map_new ());
+			pango_ft2_font_map_set_resolution (fontmap, ctx->dpi, ctx->dpi);
+
+			ctx->pango_context = pango_ft2_font_map_create_context (fontmap);
+			g_object_unref (fontmap);
+		}
+
 	layout = pango_layout_new (ctx->pango_context);
 	pango_layout_set_text (layout, string, -1);
 	font = pango_font_description_copy (pango_context_get_font_description (ctx->pango_context));

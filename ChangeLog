@@ -1,3 +1,15 @@
+2003-09-12  Sven Neumann  <sven@gimp.org>
+	
+	* configure.in: depend on Pango version 1.2.0 or newer.
+
+	* rsvg-text.c (rsvg_text_handler_characters): don't use
+	pango_ft2_get_context() which is deprecated in Pango HEAD, but
+	create the Pango context from the fontmap instead (bug #122121).
+
+	* rsvg-path.c (rsvg_parse_path_do_cmd): fixed storage of
+	reflection point in Q command which caused the next T command to
+	create a wrong stroke (bug #122118).
+
 2003-09-11  Sven Neumann  <sven@gimp.org>
 
 	* gimp-plugin/svg.c: Sprinkled the code with const qualifiers.

@@ -306,8 +306,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx *ctx, gboolean final)
 	  y2 = (y3 + 2 * ctx->params[1]) * (1.0 / 3.0);
 	  rsvg_bpath_def_curveto (ctx->bpath,
 				  x1, y1, x2, y2, x3, y3);
-	  ctx->rpx = x2;
-	  ctx->rpy = y2;
+	  ctx->rpx = ctx->params[0];
+	  ctx->rpy = ctx->params[1];
 	  ctx->cpx = x3;
 	  ctx->cpy = y3;
 	  ctx->param = 0;
@@ -350,8 +350,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx *ctx, gboolean final)
 	      y2 = (y3 + 2 * ctx->params[1]) * (1.0 / 3.0);
 	      rsvg_bpath_def_curveto (ctx->bpath,
 				      x1, y1, x2, y2, x3, y3);
-	      ctx->rpx = x2;
-	      ctx->rpy = y2;
+              ctx->rpx = ctx->params[0];
+              ctx->rpy = ctx->params[1];
 	      ctx->cpx = x3;
 	      ctx->cpy = y3;
 	    }
