@@ -825,7 +825,7 @@ static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, 
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
-				double qr, cr, qa, qb, ca, cb;
+				double qr, cr, qa, qb, ca, cb, bca, bcb;
 				
 				qa = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
 				qb = (double) in2_pixels[4 * x + y * rowstride + 3] / 255.0;
@@ -835,6 +835,9 @@ static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, 
 					{
 						ca = (double) in_pixels[4 * x + y * rowstride + i] * qa / 255.0;
 						cb = (double) in2_pixels[4 * x + y * rowstride + i] * qb / 255.0;
+						/*these are the ca and cb that are used in the non-standard blend functions*/
+						bcb = (1 - qa) * cb + ca;
+						bca = (1 - qb) * ca + cb;
 						switch (mode)
 							{
 							case normal:
@@ -853,40 +856,40 @@ static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, 
 								cr = MAX ((1 - qa) * cb + ca, (1 - qb) * ca + cb);
 								break;
 							case softlight:
-								if (cb < 0.5)
-									cr = 2 * ca * cb + ca * ca * (1 - 2 * cb);
+								if (bcb < 0.5)
+									cr = 2 * bca * bcb + bca * bca * (1 - 2 * bcb);
 								else
-									cr = sqrt(ca)*(2*cb-1)+(2*ca)*(1-cb);
+									cr = sqrt(bca)*(2*bcb-1)+(2*bca)*(1-bcb);
 								break;
 							case hardlight:
 								if (cb < 0.5)
-									cr = 2 * ca * cb;
+									cr = 2 * bca * bcb;
 								else
-									cr = 1 - 2 * (1 - ca) * (1 - cb);
+									cr = 1 - 2 * (1 - bca) * (1 - bcb);
 								break;
 							case colordodge:
-								if (cb == 1)
+								if (bcb == 1)
 									cr = 1;
 								else
-									cr = MIN(ca / (1 - cb), 1);
+									cr = MIN(bca / (1 - bcb), 1);
 								break;
 							case colorburn:
-								if (cb == 0)
+								if (bcb == 0)
 									cr = 0;
 								else
-									cr = MAX(1 - (1 - ca) / cb, 0);
+									cr = MAX(1 - (1 - bca) / bcb, 0);
 								break;
 							case overlay:
-								if (ca < 0.5)
-									cr = 2 * ca * cb;
+								if (bca < 0.5)
+									cr = 2 * bca * bcb;
 								else
-									cr = 1 - 2 * (1 - ca) * (1 - cb);
+									cr = 1 - 2 * (1 - bca) * (1 - bcb);
 								break;
 							case exclusion:
-								cr = ca + cb - 2 * ca * cb;
+								cr = bca + bcb - 2 * bca * bcb;
 								break;
 							case difference:
-								cr = abs(ca - cb);
+								cr = abs(bca - bcb);
 								break;
 							}
 						cr *= 255.0 / qr;

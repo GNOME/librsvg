@@ -38,6 +38,8 @@
 
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
+#define ENABLE_ADOBE_EXTENSIONS 1
+
 static guint32
 rsvg_state_current_color (RsvgState * cur_state, RsvgState * parent_state)
 {

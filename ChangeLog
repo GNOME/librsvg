@@ -1,3 +1,8 @@
+2004-06-10  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-filter.c: fixed overlay filter
+	* rsvg-styles.c: reenabled a:adobe-blending-mode
+
 2004-06-09  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-styles.c (rsvg_viewport_percentage): Fix
