@@ -6,7 +6,11 @@ configure
 librsvgConf.sh
 config.log
 config.h
+config.sub
+config.guess
 libtool
+ltmain.sh
+ltconfig
 config.cache
 config.status
 stamp-h
