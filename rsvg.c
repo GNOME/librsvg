@@ -1001,10 +1001,9 @@ rsvg_handle_write (RsvgHandle    *handle,
 	handle->error = &real_error;
 	if (handle->ctxt == NULL)
 		{
-			handle->ctxt = xmlCreatePushParserCtxt (
-													&rsvgSAXHandlerStruct, handle, NULL, 0, NULL);
+			handle->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0, NULL);
 			handle->ctxt->replaceEntities = TRUE;
-    }
+		}
 	
 	xmlParseChunk (handle->ctxt, buf, count, 0);
 	
