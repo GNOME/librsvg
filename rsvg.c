@@ -750,18 +750,6 @@ rsvg_start_style (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	ctx->handler = &handler->super;
 }
 
-/* start defs */
-
-static void
-rsvg_defs_handler_free (RsvgSaxHandler *self)
-{
-	g_free (self);
-}
-
-static void
-rsvg_defs_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
-{
-}
 
 static void
 rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
@@ -818,119 +806,6 @@ rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 	else if (!strcmp ((char *)name, "feFuncA"))
 		rsvg_start_filter_primitive_component_transfer_function(ctx, atts, 'a');
 }
-
-static void
-rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
-						 RsvgPropertyBag *atts)
-{
-	RsvgSaxHandlerDefs *z = (RsvgSaxHandlerDefs *)self;
-	RsvgHandle *ctx = z->ctx;
-	
-	/* push the state stack */
-	if (ctx->n_state == ctx->n_state_max)
-		ctx->state = g_renew (RsvgState, ctx->state, ctx->n_state_max <<= 1);
-	if (ctx->n_state)
-		{
-			rsvg_state_inherit (&ctx->state[ctx->n_state],
-								&ctx->state[ctx->n_state - 1]);
-		}
-	else
-		rsvg_state_init (ctx->state);
-	ctx->n_state++;
-
-	/*
-	 * conicalGradient isn't in the SVG spec and I'm not sure exactly what it does. libart definitely
-	 * has no analogue. But it does seem similar enough to a radialGradient that i'd rather get the
-	 * onscreen representation of the colour wrong than not have any colour displayed whatsoever
-	 */
-
-	if (!strcmp ((char *)name, "defs"))
-		ctx->in_defs++;
-	else if (!strcmp ((char *)name, "linearGradient"))
-		rsvg_start_linear_gradient (ctx, atts);
-	else if (!strcmp ((char *)name, "radialGradient"))
-		rsvg_start_radial_gradient (ctx, atts, "radialGradient");
-	else if (!strcmp((char *)name, "conicalGradient"))
-		rsvg_start_radial_gradient (ctx, atts, "conicalGradient");
-	else if (!strcmp ((char *)name, "style"))
-		rsvg_start_style (ctx, atts);
-	else if (!strcmp ((char *)name, "g"))
-		rsvg_start_g (ctx, atts);
-	else if (!strcmp ((char *)name, "symbol"))
-		{
-			ctx->in_defs++;
-			rsvg_start_g (ctx, atts);
-		}
-	else if (!strcmp ((char *)name, "use"))
-		rsvg_start_use (ctx, atts);
-	else if (!strcmp ((char *)name, "path"))
-		rsvg_start_path (ctx, atts);
-	else if (!strcmp ((char *)name, "line"))
-		rsvg_start_line (ctx, atts);
-	else if (!strcmp ((char *)name, "rect"))
-		rsvg_start_rect (ctx, atts);
-	else if (!strcmp ((char *)name, "circle"))
-		rsvg_start_circle (ctx, atts);
-	else if (!strcmp ((char *)name, "ellipse"))
-		rsvg_start_ellipse (ctx, atts);
-	else if (!strcmp ((char *)name, "polygon"))
-		rsvg_start_polygon (ctx, atts);
-	else if (!strcmp ((char *)name, "polyline"))
-		rsvg_start_polyline (ctx, atts);
-	else if (!strcmp ((char *)name, "mask"))
-		rsvg_start_mask(ctx, atts);	
-	rsvg_filter_handler_start (ctx, name, atts);
-}
-
-static void
-rsvg_defs_handler_end (RsvgSaxHandler *self, const xmlChar *name)
-{
-	RsvgSaxHandlerDefs *z = (RsvgSaxHandlerDefs *)self;
-	RsvgHandle *ctx = z->ctx;
-	
-	if (!strcmp((char *)name, "defs"))
-		{
-			if (ctx->handler != NULL)
-				{
-					ctx->handler->free (ctx->handler);
-					ctx->handler = NULL;
-				}
-			ctx->in_defs--;
-		}
-
-	if (!strcmp ((char *)name, "g"))
-		rsvg_end_g (ctx);
-	else if (!strcmp ((char *)name, "symbol"))
-		{
-			ctx->in_defs--;
-			rsvg_end_g (ctx);
-		}
-	else if (!strcmp ((char *)name, "filter"))
-		rsvg_end_filter (ctx);
-	else if (!strcmp ((char *)name, "mask"))
-		rsvg_end_mask(ctx);
-	
-	/* pop the state stack */
-	ctx->n_state--;
-	rsvg_state_finalize (&ctx->state[ctx->n_state]);
-}
-
-static void
-rsvg_start_defs (RsvgHandle *ctx, RsvgPropertyBag *atts)
-{
-	RsvgSaxHandlerDefs *handler = g_new0 (RsvgSaxHandlerDefs, 1);
-	
-	handler->super.free = rsvg_defs_handler_free;
-	handler->super.characters = rsvg_defs_handler_characters;
-	handler->super.start_element = rsvg_defs_handler_start;
-	handler->super.end_element   = rsvg_defs_handler_end;
-	handler->ctx = ctx;
-
-	ctx->in_defs++;	
-	ctx->handler = &handler->super;
-}
-
-/* end defs */
 
 /* start desc */
 
@@ -1085,9 +960,9 @@ rsvg_start_title (RsvgHandle *ctx, RsvgPropertyBag *atts)
 }
 
 /* end title */
-
 static void
-rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
+rsvg_start_element (void *data, const xmlChar *name,
+					const xmlChar ** atts)
 {
 	RsvgHandle *ctx = (RsvgHandle *)data;
 
@@ -1125,7 +1000,7 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 					rsvg_start_g (ctx, bag);
 				}
 			else if (!strcmp ((char *)name, "defs"))
-				rsvg_start_defs (ctx, bag);
+				ctx->in_defs++;	
 			else if (!strcmp ((char *)name, "path"))
 				rsvg_start_path (ctx, bag);
 			else if (!strcmp ((char *)name, "line"))
@@ -1173,6 +1048,19 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 }
 
 static void
+rsvg_start_elementns (void *data, const xmlChar *name,
+					  const xmlChar * prefix, 
+					  const xmlChar * URI, 
+					  int nb_namespaces, 
+					  const xmlChar ** namespaces, 
+					  int nb_attributes, 
+					  int nb_defaulted, 
+					  const xmlChar ** atts)
+{
+	rsvg_start_element (data, name,	atts);
+}
+
+static void
 rsvg_end_element (void *data, const xmlChar *name)
 {
 	RsvgHandle *ctx = (RsvgHandle *)data;
@@ -1211,6 +1099,14 @@ rsvg_end_element (void *data, const xmlChar *name)
 			ctx->n_state--;
 			rsvg_state_finalize (&ctx->state[ctx->n_state]);
 		}
+}
+
+static void
+rsvg_end_elementns (void *data, const xmlChar *name,
+					const xmlChar * prefix, 
+					const xmlChar * URI)
+{
+	rsvg_end_element (data, name);	
 }
 
 static void
@@ -1264,36 +1160,21 @@ rsvg_error_cb (void *data, const char *msg, ...)
 	va_end (args);
 }
 
-static xmlSAXHandler rsvgSAXHandlerStruct = {
-    NULL, /* internalSubset */
-    NULL, /* isStandalone */
-    NULL, /* hasInternalSubset */
-    NULL, /* hasExternalSubset */
-    NULL, /* resolveEntity */
-    rsvg_get_entity, /* getEntity */
-    rsvg_entity_decl, /* entityDecl */
-    NULL, /* notationDecl */
-    NULL, /* attributeDecl */
-    NULL, /* elementDecl */
-    NULL, /* unparsedEntityDecl */
-    NULL, /* setDocumentLocator */
-    NULL, /* startDocument */
-    NULL, /* endDocument */
-    rsvg_start_element, /* startElement */
-    rsvg_end_element, /* endElement */
-    NULL, /* reference */
-    rsvg_characters, /* characters */
-    NULL, /* ignorableWhitespace */
-    NULL, /* processingInstruction */
-    NULL, /* comment */
-    NULL, /* xmlParserWarning */
-    rsvg_error_cb, /* xmlParserError */
-    rsvg_error_cb, /* xmlParserFatalError */
-    NULL, /* getParameterEntity */
-    rsvg_characters, /* cdataCallback */
-    NULL /* externalSubset */
-	/* initialized */
-};
+static xmlSAXHandler rsvgSAXHandlerStruct;
+
+static void rsvg_SAX_handler_struct_init()
+{
+	rsvgSAXHandlerStruct.getEntity = rsvg_get_entity;
+    rsvgSAXHandlerStruct.entityDecl = rsvg_entity_decl;
+    rsvgSAXHandlerStruct.characters = rsvg_characters;
+    rsvgSAXHandlerStruct.error = rsvg_error_cb;
+	rsvgSAXHandlerStruct.error = rsvg_error_cb;
+	rsvgSAXHandlerStruct.cdataBlock = rsvg_characters;
+    rsvgSAXHandlerStruct.startElement = rsvg_start_element;
+    rsvgSAXHandlerStruct.endElement = rsvg_end_element;
+    rsvgSAXHandlerStruct.startElementNs = rsvg_start_elementns;
+    rsvgSAXHandlerStruct.endElementNs = rsvg_end_elementns;
+}
 
 /**
  * rsvg_error_quark
@@ -1470,6 +1351,7 @@ rsvg_handle_init (RsvgHandle * handle)
 	
 	handle->css_props = g_hash_table_new_full (g_str_hash, g_str_equal,
 											   g_free, g_free);
+	rsvg_SAX_handler_struct_init();
 	
 	handle->ctxt = NULL;
 	handle->current_defs_group = NULL;

@@ -116,6 +116,9 @@ rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, RsvgPropertyBag
 void
 rsvg_start_filter_primitive_tile (RsvgHandle * ctx, RsvgPropertyBag * atts);
 
+void 
+rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output);
+
 G_END_DECLS
 
 #endif

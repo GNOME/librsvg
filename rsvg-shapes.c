@@ -239,7 +239,7 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	art_free (affine_bpath);
 	
 	need_tmpbuf = ((state->fill != NULL) && (state->stroke != NULL) &&
-				   state->opacity != 0xff) || state->filter || state->mask;
+				   state->opacity != 0xff) || rsvg_needs_discrete_layer(state);
 	
 	if (need_tmpbuf)
 		rsvg_push_discrete_layer (ctx);
@@ -439,7 +439,7 @@ rsvg_defs_drawable_use_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
 		}	
 	
-	if (state->opacity != 0xff || state->filter)
+	if (state->opacity != 0xff || rsvg_needs_discrete_layer(state))
 		rsvg_push_discrete_layer (ctx);
 
 
@@ -460,7 +460,7 @@ rsvg_defs_drawable_use_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 	ctx->n_state--;
 	rsvg_state_finalize (&ctx->state[ctx->n_state]);
 
-	if (state->opacity != 0xff || state->filter)
+	if (state->opacity != 0xff || rsvg_needs_discrete_layer(state))
 		rsvg_pop_discrete_layer (ctx);
 }			
 

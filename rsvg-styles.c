@@ -66,6 +66,7 @@ rsvg_state_init (RsvgState *state)
 	art_affine_identity (state->personal_affine);
 	state->mask = NULL;
 	state->opacity = 0xff;
+	state->adobe_blend = 0;
 	state->fill = rsvg_paint_server_parse (NULL, NULL, "#000", 0);
 	state->fill_opacity = 0xff;
 	state->stroke_opacity = 0xff;
@@ -334,6 +335,35 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "filter"))
 		state->filter = rsvg_filter_parse(ctx->defs, str + arg_off);
+	else if (rsvg_css_param_match (str, "adobe-blending-mode"))
+		{
+			if (!strcmp (str + arg_off, "normal"))
+				state->adobe_blend = 0;
+			else if (!strcmp (str + arg_off, "multiply"))
+				state->adobe_blend = 1;
+			else if (!strcmp (str + arg_off, "screen"))
+				state->adobe_blend = 2;
+			else if (!strcmp (str + arg_off, "darken"))
+				state->adobe_blend = 3;
+			else if (!strcmp (str + arg_off, "lighten"))
+				state->adobe_blend = 4;
+			else if (!strcmp (str + arg_off, "softlight"))
+				state->adobe_blend = 5;
+			else if (!strcmp (str + arg_off, "hardlight"))
+				state->adobe_blend = 6;
+			else if (!strcmp (str + arg_off, "colordodge"))
+				state->adobe_blend = 7;
+			else if (!strcmp (str + arg_off, "colorburn"))
+				state->adobe_blend = 8;
+			else if (!strcmp (str + arg_off, "overlay"))
+				state->adobe_blend = 9;
+			else if (!strcmp (str + arg_off, "exclusion"))
+				state->adobe_blend = 10;
+			else if (!strcmp (str + arg_off, "difference"))
+				state->adobe_blend = 11;
+			else
+				state->adobe_blend = 0;
+		}
 	else if (rsvg_css_param_match (str, "mask"))
 		state->mask = rsvg_mask_parse(ctx->defs, str + arg_off);
 	else if (rsvg_css_param_match (str, "enable-background"))
@@ -634,6 +664,7 @@ void
 rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state, 
 						RsvgPropertyBag *atts)
 {
+			rsvg_lookup_parse_style_pair (ctx, state, "adobe-blending-mode", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "color", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "display", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "enable-background", atts);
@@ -1226,7 +1257,7 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 	pixbuf = ctx->pixbuf;
 	
 	if (state->filter == NULL && state->opacity == 0xFF && 
-		!state->backgroundnew && state->mask == NULL)
+		!state->backgroundnew && state->mask == NULL && !state->adobe_blend)
 		return;
 
 	state->save_pixbuf = pixbuf;
@@ -1380,11 +1411,12 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 	GdkPixbuf *intermediate;
 	GdkPixbuf *in, *out, *insidebg;
 	int operationsleft;
+	gint adobe_blend = state->adobe_blend;
 
 	intermediate = NULL;
 
 	if (state->filter == NULL && state->opacity == 0xFF && 
-		!state->backgroundnew && state->mask == NULL)
+		!state->backgroundnew && state->mask == NULL && !state->adobe_blend)
 		return;
 
 	operationsleft = 0;
@@ -1395,6 +1427,8 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 		operationsleft++;
 	if (mask != NULL)
 		operationsleft++;
+	if (adobe_blend)
+		operationsleft++;		
 
 	if (operationsleft > 1)
 		intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
@@ -1408,12 +1442,17 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 			rsvg_use_opacity (ctx, 0xFF, tos, nos);			
 		}
 
+	if (filter != NULL || adobe_blend)
+		{
+			insidebg = rsvg_compile_bg(ctx, state);
+		}
+	else
+		insidebg = NULL;
+
 	if (filter != NULL)
 		{
 			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
-			insidebg = rsvg_compile_bg(ctx, state);
 			rsvg_filter_render (filter, in, out, insidebg, ctx);
-			g_object_unref (insidebg);
 			in = out;
 		}
 	if (opacity != 0xFF)
@@ -1427,6 +1466,17 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
 			rsvg_mask_render ((RsvgMask *)mask, in, out, ctx);
 			in = out;
+		}
+	if (adobe_blend)
+		{
+			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
+			rsvg_filter_adobe_blend (adobe_blend, in, insidebg, out);
+			in = out;
+		}
+
+	if (filter != NULL || adobe_blend)
+		{
+			g_object_unref (insidebg);
 		}
 
 	if (intermediate != NULL)
@@ -1451,7 +1501,7 @@ rsvg_pop_discrete_layer(RsvgHandle *ctx)
 	state = rsvg_state_current(ctx);
 
 	if (state->filter == NULL && state->opacity == 0xFF && 
-		!state->backgroundnew && state->mask == NULL)
+		!state->backgroundnew && state->mask == NULL && !state->adobe_blend)
 		return;
 
 	tos = ctx->pixbuf;
@@ -1462,6 +1512,12 @@ rsvg_pop_discrete_layer(RsvgHandle *ctx)
 	
 	g_object_unref (tos);
 	ctx->pixbuf = nos;
+}
+
+gboolean
+rsvg_needs_discrete_layer(RsvgState *state)
+{
+	return state->filter || state->mask || state->adobe_blend || state->backgroundnew;
 }
 
 RsvgState * 

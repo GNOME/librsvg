@@ -792,7 +792,9 @@ rsvg_end_filter (RsvgHandle * ctx)
 
 typedef enum
 {
-  normal, multiply, screen, darken, lighten
+	normal, multiply, screen, darken, lighten, softlight, 
+	hardlight, colordodge, colorburn, overlay, exclusion,
+	difference
 }
 RsvgFilterPrimitiveBlendMode;
 
@@ -804,46 +806,27 @@ struct _RsvgFilterPrimitiveBlend
 	GString *in2;
 };
 
-static void
-rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
-									RsvgFilterContext * ctx)
+static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, GdkPixbuf *in2, GdkPixbuf *output, FPBox boundarys)
 {
 	guchar i;
 	gint x, y;
 	gint rowstride, height, width;
-	FPBox boundarys;
-	
 	guchar *in_pixels;
 	guchar *in2_pixels;
 	guchar *output_pixels;
-	
-	RsvgFilterPrimitiveBlend *bself;
-	
-	GdkPixbuf *output;
-	GdkPixbuf *in;
-	GdkPixbuf *in2;
-	
-	bself = (RsvgFilterPrimitiveBlend *) self;
-	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
-	
-	in = rsvg_filter_get_in (self->in, ctx);
-	in_pixels = gdk_pixbuf_get_pixels (in);
-	in2 = rsvg_filter_get_in (bself->in2, ctx);
-	in2_pixels = gdk_pixbuf_get_pixels (in2);
-	
 	height = gdk_pixbuf_get_height (in);
 	width = gdk_pixbuf_get_width (in);
-	
 	rowstride = gdk_pixbuf_get_rowstride (in);
-	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+
 	output_pixels = gdk_pixbuf_get_pixels (output);
-	
+	in_pixels = gdk_pixbuf_get_pixels (in);
+	in2_pixels = gdk_pixbuf_get_pixels (in2);
+
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				double qr, cr, qa, qb, ca, cb;
-
+				
 				qa = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
 				qb = (double) in2_pixels[4 * x + y * rowstride + 3] / 255.0;
 				qr = 1 - (1 - qa) * (1 - qb);
@@ -852,7 +835,7 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
 					{
 						ca = (double) in_pixels[4 * x + y * rowstride + i] * qa / 255.0;
 						cb = (double) in2_pixels[4 * x + y * rowstride + i] * qb / 255.0;
-						switch (bself->mode)
+						switch (mode)
 							{
 							case normal:
 								cr = (1 - qa) * cb + ca;
@@ -869,6 +852,42 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
 							case lighten:
 								cr = MAX ((1 - qa) * cb + ca, (1 - qb) * ca + cb);
 								break;
+							case softlight:
+								if (cb < 0.5)
+									cr = 2 * ca * cb + ca * ca * (1 - 2 * cb);
+								else
+									cr = sqrt(ca)*(2*cb-1)+(2*ca)*(1-cb);
+								break;
+							case hardlight:
+								if (cb < 0.5)
+									cr = 2 * ca * cb;
+								else
+									cr = 1 - 2 * (1 - ca) * (1 - cb);
+								break;
+							case colordodge:
+								if (cb == 1)
+									cr = 1;
+								else
+									cr = MIN(ca / (1 - cb), 1);
+								break;
+							case colorburn:
+								if (cb == 0)
+									cr = 0;
+								else
+									cr = MAX(1 - (1 - ca) / cb, 0);
+								break;
+							case overlay:
+								if (ca < 0.5)
+									cr = 2 * ca * cb;
+								else
+									cr = 1 - 2 * (1 - ca) * (1 - cb);
+								break;
+							case exclusion:
+								cr = ca + cb - 2 * ca * cb;
+								break;
+							case difference:
+								cr = abs(ca - cb);
+								break;
 							}
 						cr *= 255.0 / qr;
 						if (cr > 255)
@@ -881,11 +900,91 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
 				output_pixels[4 * x + y * rowstride + 3] = qr * 255.0;
 			}
 
+}
+
+
+static void
+rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
+									RsvgFilterContext * ctx)
+{
+	FPBox boundarys;
+	
+	RsvgFilterPrimitiveBlend *bself;
+	
+	GdkPixbuf *output;
+	GdkPixbuf *in;
+	GdkPixbuf *in2;
+	
+	bself = (RsvgFilterPrimitiveBlend *) self;
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	in = rsvg_filter_get_in (self->in, ctx);
+	in2 = rsvg_filter_get_in (bself->in2, ctx);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, gdk_pixbuf_get_width (in), gdk_pixbuf_get_height (in));
+	
+	rsvg_filter_blend(bself->mode, in, in2, output, boundarys);
+
 	rsvg_filter_store_result (self->result, output, ctx);
 	
 	g_object_unref (G_OBJECT (in));
 	g_object_unref (G_OBJECT (in2));
 	g_object_unref (G_OBJECT (output));
+}
+
+void rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output)
+{
+	FPBox boundarys;
+	RsvgFilterPrimitiveBlendMode mode;
+
+	boundarys.x1 = 0;
+	boundarys.y1 = 0;
+	boundarys.x2 = gdk_pixbuf_get_width (in);
+	boundarys.y2 = gdk_pixbuf_get_height (in);
+
+	mode = normal;
+
+	switch(modenum)
+		{
+		case 0:
+			mode = normal;
+			break;
+		case 1:
+			mode = multiply; 
+			break;
+		case 2:
+			mode = screen;
+			break;
+		case 3:
+			mode = darken; 
+			break;
+		case 4:
+			mode = lighten;
+			break;
+		case 5:
+			mode = softlight; 
+			break;
+		case 6:
+			mode = hardlight;
+			break;
+		case 7:
+			mode = colordodge; 
+			break;
+		case 8:
+			mode = colorburn;
+			break;
+		case 9:
+			mode = overlay; 
+			break;
+		case 10:
+			mode = exclusion;
+			break;
+		case 11:
+			mode = difference; 
+			break;
+		}
+
+	rsvg_filter_blend(mode, in, bg, output, boundarys);
 }
 
 static void
