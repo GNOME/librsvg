@@ -460,9 +460,10 @@ NP_GetValue (void *future, NPPVariable variable, void *value)
 char *
 NP_GetMIMEDescription (void)
 {
-	/* unfortunately, a lot of win32 servers serving up Adobe content return image/svg-xml */
+	/* unfortunately, a lot of win32 servers serving up Adobe content return bogus mime-types... */
 	return ("image/svg+xml:svg:Scalable Vector Graphics;image/svg-xml:svg:Scalable Vector Graphics;"
-			"image/svg:svg:Scalable Vector Graphics");
+			"image/svg:svg:Scalable Vector Graphics;image/vnd.adobe.svg+xml:svg:Scalable Vector Graphics;"
+			"text/xml-svg:svg:Scalable Vector Graphics");
 }
 
 NPError

@@ -1,3 +1,7 @@
+2004-06-21  Dom Lachiwicz <cinamod@hotmail.com>
+
+	* configure.in: Fix bug #137934
+	
 2004-06-18  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.c: Beginnings of <switch> support
