@@ -46,6 +46,17 @@ void rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_push_def_group (RsvgHandle *ctx, const char * id);
 void rsvg_pop_def_group (RsvgHandle *ctx);
 
+typedef struct _RsvgDefsDrawable RsvgDefsDrawable;
+
+struct _RsvgDefsDrawable {
+ 	RsvgDefVal super;
+	RsvgState  state;
+	RsvgDefsDrawable * parent;
+	void (*draw) (RsvgDefsDrawable * self, RsvgHandle *ctx);
+};
+
+void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx);
+
 G_END_DECLS
 
 #endif /* RSVG_SHAPES_H */

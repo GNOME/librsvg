@@ -1,3 +1,9 @@
+2004-03-10  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-shapes.c: exported drawable structures and functions 
+	* rsvg-filter.c: made feImage work for internal references (like use)
+	* rsvg-css.c: fixed spelling of dodgerblue (was dogerblue)
+
 2004-03-09  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-shapes.c: HUUUUGE fixes to use

@@ -45,17 +45,10 @@
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
 
+
 typedef struct _RsvgDefsDrawablePath RsvgDefsDrawablePath;
 typedef struct _RsvgDefsDrawableGroup RsvgDefsDrawableGroup;
 typedef struct _RsvgDefsDrawableUse RsvgDefsDrawableUse;
-typedef struct _RsvgDefsDrawable RsvgDefsDrawable;
-
-struct _RsvgDefsDrawable {
- 	RsvgDefVal super;
-	RsvgState  state;
-	RsvgDefsDrawableGroup * parent;
-	void (*draw) (RsvgDefsDrawable * self, RsvgHandle *ctx);
-};
 
 struct _RsvgDefsDrawablePath {
  	RsvgDefsDrawable super;
@@ -69,9 +62,9 @@ struct _RsvgDefsDrawableGroup {
 
 struct _RsvgDefsDrawableUse {
  	RsvgDefsDrawable super;
-	gdouble x, y;
  	RsvgDefsDrawable *child;
 };
+
 
 /**
  * rsvg_close_vpath: Close a vector path.
@@ -347,7 +340,7 @@ rsvg_render_path(RsvgHandle *ctx, const char *d)
 	rsvg_bpath_def_free (bpath_def);
 }
 
-static void 
+void 
 rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx)
 {
 	self->draw(self, ctx);
@@ -502,9 +495,9 @@ rsvg_push_def_group (RsvgHandle *ctx, const char * id)
 	if (id != NULL)
 		rsvg_defs_set (ctx->defs, id, &group->super.super);
 
-	group->super.parent = (RsvgDefsDrawableGroup *)ctx->current_defs_group;
+	group->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
 	if (group->super.parent != NULL)
-		rsvg_defs_drawable_group_pack(group->super.parent, 
+		rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)group->super.parent, 
 									  &group->super);
 	ctx->current_defs_group = group;
 }
@@ -538,9 +531,9 @@ rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id)
 		if (id != NULL)
 			rsvg_defs_set (ctx->defs, id, &path->super.super);
 
-		path->super.parent = (RsvgDefsDrawableGroup *)ctx->current_defs_group;
+		path->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
 		if (path->super.parent != NULL)
-			rsvg_defs_drawable_group_pack(path->super.parent, 
+			rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)path->super.parent, 
 										  &path->super);
 	}
 }
@@ -1240,9 +1233,9 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 									if (id != NULL)
 										rsvg_defs_set (ctx->defs, id, &use->super.super);
 									
-									use->super.parent = (RsvgDefsDrawableGroup *)ctx->current_defs_group;
+									use->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
 									if (use->super.parent != NULL)
-										rsvg_defs_drawable_group_pack(use->super.parent, 
+										rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)use->super.parent, 
 																	  &use->super);
 									
 									

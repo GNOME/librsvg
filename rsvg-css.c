@@ -340,7 +340,7 @@ rsvg_css_parse_color (const char *str)
 					{ "deepskyblue",          PACK_RGB (0,191,255) },
 					{ "dimgray",              PACK_RGB (105,105,105) },
 					{ "dimgrey",              PACK_RGB (105,105,105) },
-					{ "dogerblue",            PACK_RGB (30,144,255) },
+					{ "dodgerblue",           PACK_RGB (30,144,255) },
 					{ "firebrick",            PACK_RGB (178,34,34) },
 					{ "floralwhite" ,         PACK_RGB (255,255,240)},
 					{ "forestgreen",          PACK_RGB (34,139,34) },

@@ -25,6 +25,7 @@
 #include "rsvg-private.h"
 #include "rsvg-filter.h"
 #include "rsvg-styles.h"
+#include "rsvg-shapes.h"
 #include "rsvg-css.h"
 #include <libart_lgpl/art_rgba.h>
 
@@ -51,6 +52,7 @@ struct _RsvgFilterContext
 	GdkPixbuf *lastresult;
 	double affine[6];
 	double paffine[6];
+	RsvgHandle * ctx;
 };
 
 typedef struct _RsvgFilterPrimitive RsvgFilterPrimitive;
@@ -469,7 +471,8 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 	ctx->source = source;
 	ctx->bg = bg;
 	ctx->results = g_hash_table_new (g_str_hash, g_str_equal);
-	
+	ctx->ctx = context;	
+
 	g_object_ref (G_OBJECT (source));
 	ctx->lastresult = source;
 	
@@ -3752,29 +3755,78 @@ struct _RsvgFilterPrimitiveImage
       GDK_PIXBUF_MICRO >= (micro)))
 #endif
 
-static void
-rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self,
-									RsvgFilterContext * ctx)
+
+static GdkPixbuf *
+rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
+									   RsvgFilterContext * context)
 {
 	FPBox boundarys;
-	gint width, height;
+	RsvgHandle * ctx;
+	RsvgFilterPrimitiveImage *oself;
+	int i;
+	RsvgDefVal * parent;
+	GdkPixbuf *img, *save;
+	RsvgDefsDrawable *drawable;	
+
+	ctx = context->ctx;
+	oself = (RsvgFilterPrimitiveImage *) self;
+
+	if(!oself->href)
+		return NULL;
+
+	parent = rsvg_defs_lookup (ctx->defs, oself->href->str+1);
+	if (!parent)
+		return NULL;
+
+	drawable = (RsvgDefsDrawable*)parent;
+
+	boundarys = rsvg_filter_primitive_get_bounds (self, context);
+	
+	img = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, context->width, context->height);
+	
+	save = ctx->pixbuf;
+	ctx->pixbuf = img;
+
+	for (i = 0; i < 6; i++)
+		ctx->state[ctx->n_state - 1].affine[i] = context->paffine[i];
+
+	/* push the state stack */
+	if (ctx->n_state == ctx->n_state_max)
+		ctx->state = g_renew (RsvgState, ctx->state, 
+							  ctx->n_state_max <<= 1);
+	if (ctx->n_state)
+		rsvg_state_inherit (&ctx->state[ctx->n_state],
+							&ctx->state[ctx->n_state - 1]);
+	else
+		rsvg_state_init (ctx->state);
+	ctx->n_state++;
+	
+	rsvg_defs_drawable_draw (drawable, ctx);
+	
+	/* pop the state stack */
+	ctx->n_state--;
+	rsvg_state_finalize (&ctx->state[ctx->n_state]);
+		
+	ctx->pixbuf = save;
+	return img;
+}
+
+static GdkPixbuf *
+rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
+										RsvgFilterContext * ctx)
+{
+	FPBox boundarys;
 	
 	RsvgFilterPrimitiveImage *oself;
 	
-	GdkPixbuf *output, *in, *img;
+	GdkPixbuf *img;
 	
 	oself = (RsvgFilterPrimitiveImage *) self;
 
 	if(!oself->href)
-		return;
+		return NULL;
 
 	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
-	
-	in = rsvg_filter_get_in (self->in, ctx);
-	height = gdk_pixbuf_get_height (in);
-	width = gdk_pixbuf_get_width (in);
-	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 
 #if GDK_PIXBUF_CHECK_VERSION(2,3,2)
 	img = gdk_pixbuf_new_from_file_at_size(oself->href->str,
@@ -3796,16 +3848,49 @@ rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self,
 		}
 #endif
 
-	if(img)
+	return img;
+}
+
+static void
+rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self,
+									RsvgFilterContext * ctx)
+{
+	FPBox boundarys;
+	RsvgFilterPrimitiveImage *oself;
+	
+	GdkPixbuf *output, *img;
+	
+	oself = (RsvgFilterPrimitiveImage *) self;
+
+	if(!oself->href)
+		return;
+
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, ctx->width, ctx->height);
+
+	img = rsvg_filter_primitive_image_render_in (self, ctx);
+	if (img == NULL)
 		{
-			gdk_pixbuf_copy_area (img, 0, 0, gdk_pixbuf_get_width(img), gdk_pixbuf_get_height(img),
+			img = rsvg_filter_primitive_image_render_ext (self, ctx);
+			if (img)
+				{
+					gdk_pixbuf_copy_area (img, 0, 0, 
+										  boundarys.x2 - boundarys.x1, 
+										  boundarys.y2 - boundarys.y1,
+										  output, boundarys.x1, boundarys.y1);
+					g_object_unref (G_OBJECT (img));
+				}
+		}		
+	else
+		{
+			gdk_pixbuf_copy_area (img, boundarys.x1, boundarys.y1, boundarys.x2 - boundarys.x1, boundarys.y2 - boundarys.y1,
 								  output, boundarys.x1, boundarys.y1);
 			g_object_unref (G_OBJECT (img));
 		}
 
 	rsvg_filter_store_result (self->result, output, ctx);
 	
-	g_object_unref (G_OBJECT (in));
 	g_object_unref (G_OBJECT (output));
 }
 
@@ -4490,7 +4575,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 	gint x, y, temp;
 	gdouble z, surfaceScale;
 	gint rowstride, height, width;
-	gdouble factor, max;
+	gdouble factor, max, base;
 	vector3 lightcolour;
 	vector3 colour;
 	vector3 L;
@@ -4530,35 +4615,35 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				z = in_pixels[y * rowstride + x * 4 + 3] * surfaceScale;
-				L = get_light_direction(oself->source, x, y, z, ctx->paffine);
+				L = get_light_direction(oself->source, x, y, z, ctx->paffine);	
 				L.z += 1;
 				L = normalise(L);
 
 				lightcolour = get_light_colour(oself->source, colour, x, y, z, 
 											   ctx->paffine);
-				factor = dotproduct(get_surface_normal(in_pixels, boundarys, x, y, 
-													   1, 1, 1.0 / ctx->paffine[0], 1.0 / ctx->paffine[3], oself->surfaceScale, 
-													   rowstride), L);
+				base = dotproduct(get_surface_normal(in_pixels, boundarys, x, y, 
+													 1, 1, 1.0 /  ctx->paffine[0], 1.0 / ctx->paffine[3], 
+													 oself->surfaceScale, 
+													 rowstride), L);
+				
+				factor = pow(base, oself->specularExponent);
 
 				max = 0;
-				temp = oself->specularConstant * 
-					pow(factor, oself->specularExponent) * lightcolour.x * 255.0;		
+				temp = oself->specularConstant * factor* lightcolour.x * 255.0;		
 				if (temp < 0)
 					temp = 0;				
 				if (temp > 255)
 					temp = 255;
 				max = MAX(temp, max);
 				output_pixels[y * rowstride + x * 4    ] = temp;
-				temp = oself->specularConstant * 
-					pow(factor, oself->specularExponent) * lightcolour.y * 255.0;
+				temp = oself->specularConstant * factor * lightcolour.y * 255.0;
 				if (temp < 0)
 					temp = 0;				
 				if (temp > 255)
 					temp = 255;
 				max = MAX(temp, max);
 				output_pixels[y * rowstride + x * 4 + 1] = temp;
-				temp = oself->specularConstant * 
-					pow(factor, oself->specularExponent) * lightcolour.z * 255.0;
+				temp = oself->specularConstant * factor * lightcolour.z * 255.0;
 				if (temp < 0)
 					temp = 0;				
 				if (temp > 255)
