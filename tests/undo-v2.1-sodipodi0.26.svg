@@ -1,0 +1,51 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"
+[
+ <!ATTLIST svg
+  xmlns:xlink CDATA #FIXED "http://www.w3.org/1999/xlink">
+]>
+<!-- Created with Sodipodi ("http://www.sodipodi.com/") -->
+<svg
+   width="45.1555mm"
+   height="45.1555mm"
+   id="svg260"
+   sodipodi:version="0.26"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   sodipodi:docname="/mnt/windows/Themes/Sodipodi/undo-v2.1-sodipodi0.26.svg"
+   sodipodi:docbase="/mnt/windows/Themes/Sodipodi/">
+  <sodipodi:namedview
+     id="base" />
+  <defs
+     id="defs261">
+    <linearGradient
+       id="id0"
+       x1="159"
+       y1="84"
+       x2="7"
+       y2="-2">
+      <stop
+         offset="0.000000"
+         style="stop-color:#009240;stop-opacity:1;"
+         id="stop255" />
+      <stop
+         offset="1.000000"
+         style="stop-color:#b9db7d;stop-opacity:1;"
+         id="stop256" />
+    </linearGradient>
+    <linearGradient
+       x1="1.09451"
+       y1="0.929688"
+       x2="-0.081446"
+       y2="0.046875"
+       xlink:href="#id0"
+       id="linearGradient268" />
+  </defs>
+  <path
+     transform="matrix(1 0 0 1 0 0)"
+     style="fill:url(#linearGradient268);stroke:#037340;stroke-width:4;"
+     d="M 44 65 C 54 76 62 84 62 84 C 62 84 62 84 62 84 C 62 84 14 84 14 84 C 14 84 14 80 14 64 C 14 48 14 34 14 34 C 14 34 27 49 28 50 C 29 51 39 40 43 36 C 47 32 51 28 55 26 C 59 24 64 19 77 19 C 90 19 92 21 99 24 C 106 27 109 30 112 34 C 115 38 118 40 120 46 C 122 52 122 60 121 68 C 120 76 118 79 115 85 C 112 91 106 96 100 100 C 94 104 88 106 83 107 C 78 108 71 109 67 109 C 63 109 59 106 62 106 C 65 106 74 105 83 100 C 92 95 96 91 100 86 C 104 81 105 73 105 67 C 105 61 105 54 101 50 C 97 46 92 42 81 42 C 70 42 61 52 54 57 C 47 62 50 60 44 65 z"
+     id="path266" />
+</svg>

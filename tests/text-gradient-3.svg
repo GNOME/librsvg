@@ -1,0 +1,78 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"
+[
+ <!ATTLIST svg
+  xmlns:xlink CDATA #FIXED "http://www.w3.org/1999/xlink">
+]>
+<!-- Created with Sodipodi ("http://www.sodipodi.com/") -->
+<svg
+   width="45.1555mm"
+   height="45.1555mm"
+   id="svg260"
+   sodipodi:version="0.26"
+   sodipodi:docname="/mnt/windows/Themes/Sodipodi/text-gradient-3.svg"
+   sodipodi:docbase="/mnt/windows/Themes/Sodipodi/"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink">
+  <sodipodi:namedview
+     id="base" />
+  <defs
+     id="defs261">
+    <linearGradient
+       id="id0"
+       x1="159"
+       y1="84"
+       x2="7"
+       y2="-2">
+      <stop
+         offset="0.000000"
+         style="stop-color:#009240;stop-opacity:1;"
+         id="stop255" />
+      <stop
+         offset="1.000000"
+         style="stop-color:#b9db7d;stop-opacity:1;"
+         id="stop256" />
+    </linearGradient>
+    <linearGradient
+       x1="0.155172"
+       y1="-0.142973"
+       x2="0.748276"
+       y2="1.15946"
+       xlink:href="#id0"
+       id="linearGradient522" />
+  </defs>
+  <text
+     style="fill:black;stroke:none;font-family:helvetica;font-style:normal;font-weight:normal;font-size:12px;fill-opacity:1;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;"
+     x="5.566449"
+     y="15.719979"
+     id="text278"
+     transform="scale(1.63731,2.40117)">
+    <tspan
+       id="tspan279">
+Hello World!</tspan>
+  </text>
+  <text
+     style="fill:url(#linearGradient522);stroke:none;font-family:helvetica;font-style:normal;font-weight:normal;font-size:12px;fill-opacity:1;stroke-opacity:1;stroke-width:1pt;stroke-linejoin:miter;stroke-linecap:butt;"
+     x="5.315264"
+     y="29.372340"
+     id="text281"
+     transform="scale(1.63731,2.40117)">
+    <tspan
+       id="tspan282"
+       style="fill:url(#linearGradient522);">
+Hello World!</tspan>
+  </text>
+  <text
+     style="fill:url(#linearGradient522);stroke:#003500;font-family:helvetica;font-style:normal;font-weight:normal;font-size:12px;fill-opacity:1;stroke-opacity:1;stroke-width:0.189127;stroke-linejoin:miter;stroke-linecap:butt;"
+     x="5.315264"
+     y="41.984471"
+     id="text536"
+     transform="scale(1.63731,2.40117)">
+    <tspan
+       id="tspan537"
+       style="fill:url(#linearGradient522);stroke:#003500;stroke-opacity:1;stroke-width:0.189127;">
+Hello World!</tspan>
+  </text>
+</svg>
