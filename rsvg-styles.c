@@ -366,7 +366,7 @@ rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 		{
 			GString * style_name  = g_string_new (NULL);
 			GString * style_props = g_string_new (NULL);
-			GString * existing    = NULL;
+			const char * existing    = NULL;
 
 			/* advance to the style's name */
 			while (loc < buflen && g_ascii_isspace (buff[loc]))
@@ -382,13 +382,13 @@ rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 			while (loc < buflen && g_ascii_isspace (buff[loc]))
 				loc++;
 			
-			while (buff[loc] != '}')
+			while (loc < buflen && buff[loc] != '}')
 				{
 					/* suck in and append our property */
 					while (loc < buflen && buff[loc] != ';' && buff[loc] != '}' )
 						g_string_append_c (style_props, buff[loc++]);
 
-					if (buff[loc] == '}')
+					if (loc == buflen || buff[loc] == '}')
 						break;
 					else
 						{
@@ -396,15 +396,15 @@ rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 							
 							/* advance to the next property */
 							loc++;
-							while (g_ascii_isspace (buff[loc]) && loc < buflen)
+							while (loc < buflen && g_ascii_isspace (buff[loc]))
 								loc++;
 						}
 				}
 
 			/* push name/style pair into HT */
-			existing = g_hash_table_lookup (ctx->css_props, style_name->str);
+			existing = (const char *)g_hash_table_lookup (ctx->css_props, style_name->str);
 			if (existing != NULL)
-				g_string_append_len (style_props, existing->str, existing->len);
+				g_string_append_len (style_props, existing, strlen (existing));
 
 			/* will destroy the existing key and value for us */
 			g_hash_table_insert (ctx->css_props, style_name->str, style_props->str);
@@ -413,7 +413,7 @@ rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 			g_string_free (style_props, FALSE);
 			
 			loc++;
-			while (g_ascii_isspace (buff[loc]) && loc < buflen)
+			while (loc < buflen && g_ascii_isspace (buff[loc]))
 				loc++;
 		}
 }

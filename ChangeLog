@@ -1,4 +1,10 @@
-2003-01-30  Dom Lachowicz <cinamod@hotmail.com>
+2003-01-31  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-styles.c (parse_cssbuffer): Fix some overflows and such. All of
+	the W3 testcases now load, albeit many do so incorrectly.
+	/me hears a giant sucking sound made by CSS2
+	
+2003-01-31  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-file-util.c: Support SVGZ through the OLD API as well
 	
