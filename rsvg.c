@@ -819,17 +819,12 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 
   if (state->fill != NULL)
     {
-      ArtSVP *svp2;
-      ArtVpath *pert_vpath;
       ArtVpath *closed_vpath;
+      ArtSVP *svp2;
       ArtSvpWriter *swr;
 
       closed_vpath = rsvg_close_vpath (vpath);
-      
-      pert_vpath = art_vpath_perturb (closed_vpath);
-      
-      svp = art_svp_from_vpath (pert_vpath);
-      art_free (pert_vpath);
+      svp = art_svp_from_vpath (closed_vpath);
       g_free (closed_vpath);
       
       swr = art_svp_writer_rewind_new (ART_WIND_RULE_NONZERO);

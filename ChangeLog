@@ -1,3 +1,12 @@
+2002-07-01  Alexander Larsson  <alexl@redhat.com>
+
+	* configure.in:
+	Require libart 2.3.10 for bugfix
+
+	* rsvg.c (rsvg_render_bpath):
+	Back out michaels workaround, now that the real bug has been fixed.
+	The gorilla trashcan still works.
+
 2002-06-19  Alexander Larsson  <alla@lysator.liu.se>
 
 	* NEWS:
