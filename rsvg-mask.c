@@ -26,6 +26,7 @@
 #include "rsvg-mask.h"
 #include "rsvg-styles.h"
 #include "rsvg-art-draw.h"
+#include "rsvg-art-composite.h"
 #include "rsvg-css.h"
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_svp_ops.h>

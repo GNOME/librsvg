@@ -30,6 +30,7 @@
 #include "rsvg-image.h"
 #include "rsvg-mask.h"
 #include "rsvg-css.h"
+#include "rsvg-art-composite.h"
 
 #include <libart_lgpl/art_svp_ops.h>
 #include <libart_lgpl/art_affine.h>

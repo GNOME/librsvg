@@ -62,6 +62,8 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-cond.c		\
 	rsvg-art-draw.c		\
 	rsvg-art-draw.h		\
+	rsvg-art-composite.c	\
+	rsvg-art-composite.h	\
 	librsvg-enum-types.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic

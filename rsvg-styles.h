@@ -175,9 +175,6 @@ void rsvg_parse_style_attrs (RsvgHandle *ctx, RsvgState *state, const char * tag
 gdouble rsvg_viewport_percentage (gdouble width, gdouble height);
 gdouble rsvg_dpi_percentage (RsvgHandle * ctx);
 
-void rsvg_pop_discrete_layer(RsvgDrawingCtx *ctx);
-void rsvg_push_discrete_layer (RsvgDrawingCtx *ctx);
-gboolean rsvg_needs_discrete_layer(RsvgState *state);
 gboolean rsvg_parse_transform (double dst[6], const char *src);
 
 RsvgState * rsvg_state_parent (RsvgDrawingCtx *ctx);
