@@ -1,3 +1,8 @@
+2003-03-24  Dom Lachowicz <cinamod@hotmail.com>
+
+	* gimp-plugin/svg.c: Image size/resolution dialog, allow for 
+	non-interactive use, ...
+	
 2003-03-21  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.h: Document rsvg_size_func

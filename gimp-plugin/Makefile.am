@@ -1,6 +1,6 @@
 gimpdir = $(libdir)/gimp/1.3/plug-ins
 
-INCLUDES = \
+INCLUDES = $(GTK_CFLAGS)\
 	$(LIBRSVG_CFLAGS) \
 	$(LIBGIMP_CFLAGS) \
 	-I$(top_srcdir)
@@ -15,6 +15,7 @@ DEPS = $(top_builddir)/librsvg-2.la
 LDADDS =$(LIBGSF_LIBS)\
 	$(LIBCROCO_LIBS)\
 	$(LIBGIMP_LIBS)\
+	$(GTK_LIBS)\
 	$(top_builddir)/librsvg-2.la \
 	$(LIBRSVG_LIBS)
 

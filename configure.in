@@ -269,7 +269,7 @@ AC_ARG_WITH(gimp,[  --with-gimp  Build a gimp plugin],[
 	fi
 ])
 if test "x$test_gimp" = "xtrue"; then
-	PKG_CHECK_MODULES(LIBGIMP,[gimp-1.3 >= 1.3.10], test_gimp=true, test_gimp=false)
+	PKG_CHECK_MODULES(LIBGIMP,[gimp-1.3 >= 1.3.10 gimpui-1.3 >= 1.3.10], test_gimp=true, test_gimp=false)
 fi
 
 if test "x$test_gimp" = "xtrue"; then
