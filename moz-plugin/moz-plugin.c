@@ -143,7 +143,7 @@ plugin_fork (Plugin * plugin)
 		}
 	
 	/* HACK!! hardcode bg color to white for Uraeus' viewing pleasure */
-	argv[argc++] = "--bg-color";
+	argv[argc++] = "-b";
 	argv[argc++] = "white";
 
 	/* HACK: keep aspect ratio */
@@ -442,7 +442,9 @@ NP_GetValue (void *future, NPPVariable variable, void *value)
 char *
 NP_GetMIMEDescription (void)
 {
-	return ("image/svg+xml:svg:Scalable Vector Graphics");
+	/* unfortunately, a lot of win32 servers serving up Adobe content return image/svg-xml */
+	return ("image/svg+xml:svg:Scalable Vector Graphics;image/svg-xml:svg:Scalable Vector Graphics;"
+			"image/svg:svg:Scalable Vector Graphics");
 }
 
 NPError
