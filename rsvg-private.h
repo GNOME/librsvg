@@ -116,8 +116,6 @@ struct RsvgHandle {
 
 	gboolean finished;
 
-	int in_switch;
-
 	void * currentfilter;
 	void * currentsubfilter;
 

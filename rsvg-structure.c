@@ -586,3 +586,60 @@ rsvg_start_defs (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	  have the same effect as the spec but not be in its spirit.*/
 	rsvg_push_part_def_group (ctx, id, &state);
 }
+
+static void 
+_rsvg_defs_drawable_switch_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
+								 int dominate)
+{
+	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
+	guint i;
+
+	rsvg_state_reinherit_top(ctx, &self->state, dominate);
+
+	rsvg_push_discrete_layer (ctx);	
+
+	for (i = 0; i < group->children->len; i++)
+		{
+			RsvgDefsDrawable * drawable = g_ptr_array_index(group->children, i);
+
+			if (drawable->state.cond_true) {
+				rsvg_state_push(ctx);
+				rsvg_defs_drawable_draw (g_ptr_array_index(group->children, i), 
+										 ctx, 0);
+				rsvg_state_pop(ctx);
+
+				break; /* only render the 1st one */
+			}
+		}			
+
+	rsvg_pop_discrete_layer (ctx);
+}
+
+void
+rsvg_start_switch (RsvgHandle *ctx, RsvgPropertyBag *atts)
+{
+	RsvgState state;
+	RsvgDefsDrawable * group;
+	const char * klazz = NULL, * id = NULL, *value;
+
+	rsvg_state_init(&state);
+	
+	if (rsvg_property_bag_size (atts))
+		{
+			if ((value = rsvg_property_bag_lookup (atts, "class")))
+				klazz = value;
+			if ((value = rsvg_property_bag_lookup (atts, "id")))
+				id = value;
+
+			rsvg_parse_style_attrs (ctx, &state, "switch", klazz, id, atts);
+		}	
+
+	group = rsvg_push_def_group (ctx, id, &state);
+	group->draw = _rsvg_defs_drawable_switch_draw;
+}
+
+void
+rsvg_end_switch (RsvgHandle *ctx)
+{
+	rsvg_pop_def_group (ctx);
+}

@@ -42,8 +42,10 @@ void rsvg_start_symbol (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_defs (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_g (RsvgHandle *ctx, RsvgPropertyBag *atts);
+void rsvg_start_switch (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_end_g (RsvgHandle *ctx);
-void rsvg_end_svg(RsvgHandle *ctx);
+void rsvg_end_svg (RsvgHandle *ctx);
+void rsvg_end_switch (RsvgHandle *ctx);
 
 typedef struct _RsvgDefsDrawableGroup RsvgDefsDrawableGroup;
 typedef struct _RsvgDefsDrawableUse RsvgDefsDrawableUse;

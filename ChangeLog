@@ -1,3 +1,7 @@
+2005-03-12  Dom Lachowicz <cinamod@hotmail.com>
+
+	* *.c: Conditional processing inside of <switch> seems to work now
+	
 2005-03-10  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg.c, rsvg-structure.c: Merged rsvg_start_svg and rsvg_start_sub_svg into a single cohesive thing
