@@ -2115,15 +2115,18 @@ rsvg_handle_new (void)
  * @dpi: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the outgoing pixbuf. Common values are
- * 72, 90, and 300 DPI. If not specified, 90 is assumed
+ * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * reset the DPI to whatever the default value happens to be.
  */
 void
 rsvg_handle_set_dpi (RsvgHandle * handle, double dpi)
 {
   g_return_if_fail (handle != NULL);
-  g_return_if_fail (dpi > 0.);
 
-  handle->dpi = dpi;
+    if (dpi <= 0.)
+        handle->dpi = RSVG_DPI;
+    else
+        handle->dpi = dpi;
 }
 
 /**
