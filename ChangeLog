@@ -1,4 +1,8 @@
 2004-06-05  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-css.c: fixed css to break strings on the LAST colon rather than the fist one. This allows namespaces to work once more!!!
+	
+2004-06-05  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-filter, rsvg-styles.c: added adobe blending modes, still does not work because of namespace issues
 	* rsvg.c: got rid of the whole defs handler thing, it was unnecisarry. Now just use ctx->in_defs for everything.

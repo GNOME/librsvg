@@ -321,7 +321,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	if (rsvg_css_param_match (str, "color"))
 		{
 			RsvgState * parent_state = rsvg_state_parent (ctx);
-
+			
 			if (parent_state)
 				state->current_color = rsvg_css_parse_color (str + arg_off, parent_state->current_color);
 			else
@@ -335,7 +335,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "filter"))
 		state->filter = rsvg_filter_parse(ctx->defs, str + arg_off);
-	else if (rsvg_css_param_match (str, "adobe-blending-mode"))
+	else if (rsvg_css_param_match (str, "a:adobe-blending-mode"))
 		{
 			if (!strcmp (str + arg_off, "normal"))
 				state->adobe_blend = 0;
@@ -645,7 +645,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 void rsvg_parse_style_pair (RsvgHandle *ctx, RsvgState *state, 
 							const char *key, const char *val)
 {
-	gchar * str = g_strdup_printf ("%s:%s", key, val);
+	gchar * str = g_strdup_printf ("%s:%s", key, val);;
 	rsvg_parse_style_arg (ctx, state, str);
 	g_free (str);
 }
@@ -664,7 +664,7 @@ void
 rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state, 
 						RsvgPropertyBag *atts)
 {
-			rsvg_lookup_parse_style_pair (ctx, state, "adobe-blending-mode", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "a:adobe-blending-mode", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "color", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "display", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "enable-background", atts);

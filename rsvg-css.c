@@ -168,7 +168,7 @@ rsvg_css_param_match (const char *str, const char *param_name)
 {
 	int i;
 	
-	for (i = 0; str[i] != '\0' && str[i] != ':'; i++)
+	for (i = 0; str[i] != '\0' && param_name[i] != '\0'; i++)
 		if (param_name[i] != str[i])
 			return FALSE;
 	return str[i] == ':' && param_name[i] == '\0';
@@ -178,11 +178,20 @@ int
 rsvg_css_param_arg_offset (const char *str)
 {
 	int i;
-	
-	for (i = 0; str[i] != '\0' && str[i] != ':'; i++);
-	if (str[i] != '\0') i++;
-	for (; str[i] == ' '; i++);
-	return i;
+	int found;
+	found = -1;	
+	i = 0;
+	while (str[i] != '\0')
+		{
+			for (; str[i] != '\0' && str[i] != ':'; i++);
+			if (str[i] != '\0') i++;
+			for (; str[i] == ' '; i++);
+			if (str[i] != '\0')
+				found = i;
+		}
+	if (found == -1)
+		found = i;
+	return found;
 }
 
 static gint
