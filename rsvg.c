@@ -424,7 +424,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
   else if (rsvg_css_param_match (str, "stroke-dashoffset"))
     {
       state->dash.offset = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
-							     (gdouble)ctx->height, state->font_size, 0.);
+							     rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size, 0.);
       if (state->dash.offset < 0.)
 	state->dash.offset = 0.;
     }
@@ -432,7 +432,12 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
     {
       if(!strcmp(str + arg_off, "none"))
 	{
-	  state->dash.n_dash = 0; 
+            if (state->dash.n_dash != 0)
+            {
+                /* free any cloned dash data */
+                g_free (state->dash.dash);
+                state->dash.n_dash = 0; 
+            }
 	}
       else
 	{
@@ -461,7 +466,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		for (; i < state->dash.n_dash; i++)
 		  state->dash.dash[i] = g_ascii_strtod (dashes[i - n_dashes], NULL);
 
-	      g_strfreev(dashes) ;
+	      g_strfreev (dashes) ;
 	    }
 	}
     }
