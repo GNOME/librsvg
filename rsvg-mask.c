@@ -35,7 +35,7 @@ static void
 rsvg_mask_free (RsvgDefVal * self)
 {
 	RsvgMask *z = (RsvgMask *)self;
-	g_ptr_array_free(z->super.children, FALSE);
+	g_ptr_array_free(z->super.children, TRUE);
 	g_free (z);
 }
 
@@ -305,7 +305,7 @@ static void
 rsvg_clip_path_free (RsvgDefVal * self)
 {
 	RsvgClipPath *z = (RsvgClipPath *)self;
-	g_ptr_array_free(z->super.children, FALSE);
+	g_ptr_array_free(z->super.children, TRUE);
 	g_free (z);
 }
 

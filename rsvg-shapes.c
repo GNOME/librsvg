@@ -562,7 +562,7 @@ rsvg_defs_drawable_group_free (RsvgDefVal *self)
 {
 	RsvgDefsDrawableGroup *z = (RsvgDefsDrawableGroup *)self;
 	rsvg_state_finalize (&z->super.state);
-	g_ptr_array_free(z->children, FALSE);
+	g_ptr_array_free(z->children, TRUE);
 	g_free (z);
 }
 

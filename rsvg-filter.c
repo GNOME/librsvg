@@ -2068,7 +2068,7 @@ rsvg_filter_primitive_merge_free (RsvgFilterPrimitive * self)
 	
 	for (i = 0; i < mself->nodes->len; i++)
 		g_string_free (g_ptr_array_index (mself->nodes, i), TRUE);
-	g_ptr_array_free (mself->nodes, FALSE);
+	g_ptr_array_free (mself->nodes, TRUE);
 	g_free (mself);
 }
 
