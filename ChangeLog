@@ -1,3 +1,7 @@
+2004-02-29  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-filter.c: Added new filter: feTurbulence
+	
 2004-03-01  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-filter.c: Implemented bi-linear filtering for displacement
@@ -7,7 +11,6 @@
 2004-02-29  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-filter.c: Added new filter: feDisplacementMap
-
 	
 2004-02-28  Caleb Moore <c.moore@student.unsw.edu.au>
 

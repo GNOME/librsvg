@@ -66,7 +66,6 @@ rsvg_state_init (RsvgState *state)
 	state->text_dir     = PANGO_DIRECTION_LTR;
 	state->text_anchor  = TEXT_ANCHOR_START;
 	state->visible      = TRUE;
-
 	state->filter       = NULL;
 }
 

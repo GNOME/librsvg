@@ -101,6 +101,9 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 void
 rsvg_start_filter_primitive_displacement_map (RsvgHandle * ctx, const xmlChar ** atts);
 
+void
+rsvg_start_filter_primitive_turbulence (RsvgHandle * ctx, const xmlChar ** atts);
+
 G_END_DECLS
 
 #endif
