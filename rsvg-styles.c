@@ -985,6 +985,9 @@ rsvg_parse_transform (double dst[6], const char *src)
 			while (g_ascii_isspace (src[idx]))
 				idx++;
 			
+			if (src[idx] == '\0')
+				break;
+
 			/* parse keyword */
 			for (key_len = 0; key_len < sizeof (keyword); key_len++)
 				{
