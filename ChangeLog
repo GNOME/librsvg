@@ -1,3 +1,7 @@
+2004-01-29  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: bug #132569
+
 2004-01-15  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-css.c:
