@@ -1,3 +1,12 @@
+2002-02-28  Alexander Larsson  <alla@lysator.liu.se>
+
+	* rsvg.h: (rsvg_pixbuf_from_file_at_zoom_with_max): New function.
+	* rsvg.c: (RsvgSizeType, struct RsvgSizeCallbackData):
+	Use enum instead of booleans to store the type of size callback.
+	(rsvg_size_callback): Implement ZOOM_MAX, other changes due to the
+	usage of the RsvgSizeType enum.
+	(rsvg_pixbuf_from_file_at_zoom_with_max): Implement new function.
+
 === librsvg 1.1.4 ===
 
 2002-02-25  Darin Adler  <darin@bentspoon.com>
