@@ -774,6 +774,8 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_filter_primitive_composite(ctx, atts);
 	else if (!strcmp ((char *)name, "feConvolveMatrix"))
 		rsvg_start_filter_primitive_convolve_matrix (ctx, atts);
+	else if (!strcmp ((char *)name, "feDiffuseLighting"))
+		rsvg_start_filter_primitive_diffuse_lighting(ctx, atts);
 	else if (!strcmp ((char *)name, "feDisplacementMap"))
 		rsvg_start_filter_primitive_displacement_map(ctx, atts);
 	else if (!strcmp ((char *)name, "feFlood"))
@@ -784,14 +786,22 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_filter_primitive_image (ctx, atts);
 	else if (!strcmp ((char *)name, "feMerge"))
 		rsvg_start_filter_primitive_merge(ctx, atts);
-	else if (!strcmp ((char *)name, "feMergeNode"))
-		rsvg_start_filter_primitive_merge_node(ctx, atts);
 	else if (!strcmp ((char *)name, "feMorphology"))
 		rsvg_start_filter_primitive_erode(ctx, atts);
 	else if (!strcmp ((char *)name, "feOffset"))
 		rsvg_start_filter_primitive_offset(ctx, atts);
+	else if (!strcmp ((char *)name, "feSpecularLighting"))
+		rsvg_start_filter_primitive_specular_lighting(ctx, atts);
 	else if (!strcmp ((char *)name, "feTurbulence"))
 		rsvg_start_filter_primitive_turbulence(ctx, atts);
+	else if (!strcmp ((char *)name, "feDistantLight"))
+		rsvg_start_filter_primitive_light_source(ctx, atts, 'd');
+	else if (!strcmp ((char *)name, "feSpotLight"))
+		rsvg_start_filter_primitive_light_source(ctx, atts, 's');
+	else if (!strcmp ((char *)name, "fePointLight"))
+		rsvg_start_filter_primitive_light_source(ctx, atts, 'p');
+	else if (!strcmp ((char *)name, "feMergeNode"))
+		rsvg_start_filter_primitive_merge_node(ctx, atts);
 	else if (!strcmp ((char *)name, "feFuncR"))
 		rsvg_start_filter_primitive_component_transfer_function(ctx, atts, 'r');
 	else if (!strcmp ((char *)name, "feFuncG"))

@@ -3308,6 +3308,7 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self,
 	rsvg_filter_store_result (self->result, output, ctx);
 	
 	g_object_unref (G_OBJECT (in));
+	g_object_unref (G_OBJECT (in2));
 	g_object_unref (G_OBJECT (output));
 }
 
@@ -3954,3 +3955,753 @@ rsvg_start_filter_primitive_image (RsvgHandle * ctx, const xmlChar ** atts)
 	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
 					 &filter->super);
 }
+
+/*************************************************************/
+/*************************************************************/
+
+
+typedef struct _FactorAndMatrix FactorAndMatrix;
+
+struct _FactorAndMatrix
+{
+	gint matrix[9];
+	gdouble factor;
+};
+
+typedef struct _vector3 vector3;
+
+struct _vector3
+{
+	gdouble x;
+	gdouble y;
+	gdouble z;
+};
+
+static gdouble
+norm (vector3 A)
+{
+	return sqrt(A.x*A.x + A.y*A.y + A.z*A.z);
+}
+
+static gdouble
+dotproduct (vector3 A, vector3 B)
+{
+	return A.x*B.x + A.y*B.y + A.z*B.z;
+}
+
+static vector3
+normalise (vector3 A)
+{
+	double divisor;
+	divisor = norm(A);
+
+	A.x /= divisor;
+	A.y /= divisor;
+	A.z /= divisor;
+
+	return A;
+}
+
+static FactorAndMatrix
+get_light_normal_matrix_x (gint n)
+{
+	const static FactorAndMatrix matrix_list [] =
+		{
+			{
+				{0,  0,  0,
+				 0, -2,  2,
+				 0, -1,  1},
+				2.0/3.0
+			},
+			{
+				{0,  0,  0,
+				 -2,  0,  2,
+				 -1,  0,  1},
+				1.0/3.0
+			},
+			{
+				{0,  0,  0,
+				 -2,  2,  0,
+				 -1,  1,  0},
+				2.0/3.0
+			},
+			{
+				{0, -1,  1,
+				 0, -2,  2,
+				 0, -1,  1},
+				1.0/2.0
+			},
+			{
+				{-1,  0,  1,
+				 -2,  0,  2,
+				 -1,  0,  1},
+				1.0/4.0
+			},
+			{
+				{-1,  1,  0,
+				 -2,  2,  0,
+				 -1,  1,  0},
+				1.0/2.0
+			},
+			{
+				{0, -1,  1,
+				 0, -2,  2,
+				 0,  0,  0},
+				2.0/3.0
+			},
+			{
+				{-1,  0,  1,
+				 -2,  0,  2,
+				 0,  0,  0},
+				1.0/3.0
+			},
+			{
+				{-1,  1,  0,
+				 -2,  2,  0,
+				 0,  0,  0},
+				2.0/3.0
+			}
+		};
+
+	return matrix_list[n];
+}
+
+static FactorAndMatrix
+get_light_normal_matrix_y (gint n)
+{
+	const static FactorAndMatrix matrix_list [] =
+		{
+			{
+				{0,  0,  0,
+				 0, -2, -1,
+				 0,  2,  1},
+				2.0/3.0
+			},
+			{
+				{0,  0,  0,
+				 -1, -2, -1,
+				 1,  2,  1},
+				1.0/3.0
+			},
+			{
+				{0,  0,  0,
+				 -1, -2,  0,
+				 1,  2,  0},
+				2.0/3.0
+			},
+			{
+				
+				{0, -2, -1,
+				 0,  0,  0,
+				 0,  2,  1},
+				1.0/2.0
+			},
+			{
+				{-1, -2, -1,
+				 0,  0,  0,
+				 1,  2,  1},
+				1.0/4.0
+			},
+			{
+				{-1, -2,  0,
+				 0,  0,  0,
+				 1,  2,  0},
+				1.0/2.0
+			},
+			{
+				
+				{0, -2, -1,
+				 0,  2,  1,
+				 0,  0,  0},
+				2.0/3.0
+			},
+			{
+				{0, -2, -1,
+				 1,  2,  1,
+				 0,  0,  0},
+				1.0/3.0
+			},
+			{
+				{-1, -2,  0,
+				 1,  2,  0,
+				 0,  0,  0},
+				2.0/3.0
+				
+			}		
+		};
+
+	return matrix_list[n];
+}
+
+static vector3
+get_surface_normal (guchar * I, FPBox boundarys, gint x, gint y, 
+					gint dx, gint dy, gdouble surfaceScale, gint rowstride)
+{
+	gint mrow, mcol;
+	FactorAndMatrix fnmx, fnmy;
+	gint *Kx, *Ky;
+	gdouble factorx, factory;
+	gdouble Nx, Ny;
+	vector3 output;
+
+	if (x + 1 >= boundarys.x2)
+		mcol = 2;
+	else if (x - 1 < boundarys.x1)
+		mcol = 0;
+	else
+		mcol = 1;
+	if (y + 1 >= boundarys.y2)
+		mrow = 2;
+	else if (y - 1 < boundarys.y1)
+		mrow = 0;
+	else
+		mrow = 1;
+
+	fnmx = get_light_normal_matrix_x(mrow * 3 + mcol);
+	factorx = fnmx.factor / (gdouble)dx;
+	Kx = fnmx.matrix;
+
+	fnmy = get_light_normal_matrix_y(mrow * 3 + mcol);
+	factory = fnmy.factor / (gdouble)dy;
+	Ky = fnmy.matrix;	
+
+    Nx = -surfaceScale * factorx * (gdouble)
+		(Kx[0]*I[(x-dx) * 4 + 3 + (y-dy) * rowstride] + 
+		 Kx[1]*I[(x)    * 4 + 3 + (y-dy) * rowstride] + 
+		 Kx[2]*I[(x+dx) * 4 + 3 + (y-dx) * rowstride] +
+		 Kx[3]*I[(x-dx) * 4 + 3 + (y)    * rowstride] + 
+		 Kx[4]*I[(x)    * 4 + 3 + (y)    * rowstride] + 
+		 Kx[5]*I[(x+dx) * 4 + 3 + (y)    * rowstride] +
+		 Kx[6]*I[(x-dx) * 4 + 3 + (y+dy) * rowstride] + 
+		 Kx[7]*I[(x)    * 4 + 3 + (y+dy) * rowstride] + 
+		 Kx[8]*I[(x+dx) * 4 + 3 + (y+dy) * rowstride]) / 255.0;
+	
+    Ny = -surfaceScale * factory * (gdouble)
+		(Ky[0]*I[(x-dx) * 4 + 3 + (y-dy) * rowstride] + 
+		 Ky[1]*I[(x)    * 4 + 3 + (y-dy) * rowstride] + 
+		 Ky[2]*I[(x+dx) * 4 + 3 + (y-dx) * rowstride] +
+		 Ky[3]*I[(x-dx) * 4 + 3 + (y)    * rowstride] + 
+		 Ky[4]*I[(x)    * 4 + 3 + (y)    * rowstride] + 
+		 Ky[5]*I[(x+dx) * 4 + 3 + (y)    * rowstride] +
+		 Ky[6]*I[(x-dx) * 4 + 3 + (y+dy) * rowstride] + 
+		 Ky[7]*I[(x)    * 4 + 3 + (y+dy) * rowstride] + 
+		 Ky[8]*I[(x+dx) * 4 + 3 + (y+dy) * rowstride]) / 255.0;
+
+	output.x = Nx;
+	output.y = Ny;
+	output.z = 1;
+	output = normalise(output);
+	return output;
+}
+
+typedef enum {
+	DISTANTLIGHT, POINTLIGHT, SPOTLIGHT
+} lightType;
+
+typedef struct _lightSource lightSource;
+
+struct _lightSource
+{
+	lightType type;
+	gdouble x; /*doubles as azimuth*/
+	gdouble y; /*dounles as elevation*/
+	gdouble z;
+	gdouble pointsAtX;
+	gdouble pointsAtY;
+	gdouble pointsAtZ;
+	gdouble specularExponent;
+	gdouble limitingconeAngle;
+};
+
+static vector3
+get_light_direction (lightSource source, gdouble x, gdouble y, gdouble z)
+{
+	vector3 output;
+
+	switch (source.type)
+		{
+		case DISTANTLIGHT:
+			output.x = cos(source.x)*cos(source.y);
+			output.y = sin(source.x)*cos(source.y);
+			output.z = sin(source.y);
+			break;
+		case POINTLIGHT:
+		case SPOTLIGHT:
+			output.x = source.x - x;
+			output.y = source.y - y;
+			output.z = source.z - z;
+			output = normalise(output);
+			break;
+		}
+	return output;
+}
+
+static vector3
+get_light_colour(lightSource source, vector3 colour, 
+				 gdouble x, gdouble y, gdouble z)
+{
+	double base;
+	vector3 s;
+	vector3 output;
+
+	if (source.type != SPOTLIGHT)
+		return colour;
+
+	s.x = source.pointsAtX - source.x;
+	s.y = source.pointsAtY - source.y;
+	s.z = source.pointsAtZ - source.z;
+	s = normalise(s);
+
+	base = -dotproduct(get_light_direction (source, x, y, z), s);
+
+	if (base < 0)
+		{
+			output.x = 0;
+			output.y = 0;
+			output.z = 0;
+			return output;
+		}
+	
+	output.x = colour.x*pow(base, source.specularExponent);
+	output.y = colour.x*pow(base, source.specularExponent);
+	output.z = colour.x*pow(base, source.specularExponent);
+
+	return output;
+}
+
+
+void 
+rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
+										  const xmlChar ** atts, char type)
+{
+	lightSource * data;
+	gint i;
+
+	data = (lightSource *)ctx->currentsubfilter;
+
+	if (type == 's')
+		data->type = SPOTLIGHT;
+	else if (type == 'd')
+		data->type = DISTANTLIGHT;
+	else 
+		data->type = POINTLIGHT;
+
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				{
+					if (!strcmp ((char *) atts[i], "azimuth"))
+						{
+							data->x = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "elevation"))
+						{
+							data->y = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "x"))
+						{
+							data->x = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "y"))
+						{
+							data->y = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "z"))
+						{
+							data->z = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "pointsAtX"))
+						{
+							data->pointsAtX = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "pointsAtY"))
+						{
+							data->pointsAtY = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "pointsAtZ"))
+						{
+							data->pointsAtZ = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+				}
+		}
+}
+
+
+/*************************************************************/
+/*************************************************************/
+
+typedef struct _RsvgFilterPrimitiveDiffuseLighting RsvgFilterPrimitiveDiffuseLighting;
+
+struct _RsvgFilterPrimitiveDiffuseLighting
+{
+	RsvgFilterPrimitive super;
+	gdouble dx, dy;
+	double diffuseConstant;
+	double surfaceScale;
+	lightSource source;
+	guint32 lightingcolour;
+};
+
+static void
+rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
+											   RsvgFilterContext * ctx)
+{
+	gint x, y;
+	gdouble z;
+	gint rowstride, height, width;
+	gdouble factor;
+	vector3 lightcolour;
+	vector3 colour;
+
+	FPBox boundarys;
+	
+	guchar *in_pixels;
+	guchar *output_pixels;
+	
+	RsvgFilterPrimitiveDiffuseLighting *oself;
+	
+	GdkPixbuf *output;
+	GdkPixbuf *in;
+	
+	oself = (RsvgFilterPrimitiveDiffuseLighting *) self;
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	in = rsvg_filter_get_in (self->in, ctx);
+	in_pixels = gdk_pixbuf_get_pixels (in);
+	
+	height = gdk_pixbuf_get_height (in);
+	width = gdk_pixbuf_get_width (in);
+	
+	rowstride = gdk_pixbuf_get_rowstride (in);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	
+	output_pixels = gdk_pixbuf_get_pixels (output);
+	
+	colour.x = ((guchar *)(&oself->lightingcolour))[2] / 255.0;
+	colour.y = ((guchar *)(&oself->lightingcolour))[1] / 255.0;
+	colour.z = ((guchar *)(&oself->lightingcolour))[0] / 255.0;
+
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
+			{
+				z = oself->surfaceScale * in_pixels[y * rowstride + x * 4 + 3] / 255.0;
+				lightcolour = get_light_colour(oself->source, colour, x, y, z);
+				factor = dotproduct(get_surface_normal(in_pixels, boundarys, x, y, 
+													   oself->dx, oself->dy, oself->surfaceScale, 
+													   rowstride),
+									get_light_direction(oself->source, x, y, z));
+
+				output_pixels[y * rowstride + x * 4    ] = oself->diffuseConstant * factor * 
+					lightcolour.x * 255.0;
+				output_pixels[y * rowstride + x * 4 + 1] = oself->diffuseConstant * factor * 
+					lightcolour.y * 255.0;
+				output_pixels[y * rowstride + x * 4 + 2] = oself->diffuseConstant * factor * 
+					lightcolour.z * 255.0;
+				output_pixels[y * rowstride + x * 4 + 3] = 255;
+			}
+	
+	rsvg_filter_store_result (self->result, output, ctx);
+	
+	g_object_unref (G_OBJECT (in));
+	g_object_unref (G_OBJECT (output));
+}
+
+static void
+rsvg_filter_primitive_diffuse_lighting_free (RsvgFilterPrimitive * self)
+{
+	RsvgFilterPrimitiveDiffuseLighting *oself;
+	
+	oself = (RsvgFilterPrimitiveDiffuseLighting *) self;
+	g_string_free (self->result, TRUE);
+	g_string_free (self->in, TRUE);
+	g_free (oself);
+}
+
+void
+rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, const xmlChar ** atts)
+{
+	int i;
+	
+	double font_size;
+	RsvgFilterPrimitiveDiffuseLighting *filter;
+	
+	font_size = rsvg_state_current_font_size (ctx);
+	
+	filter = g_new (RsvgFilterPrimitiveDiffuseLighting, 1);
+	
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->surfaceScale = 1;
+	filter->diffuseConstant = 1;
+	filter->dx = 1;
+	filter->dy = 1;
+	
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				{
+					if (!strcmp ((char *) atts[i], "in"))
+						g_string_assign (filter->super.in, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "result"))
+						g_string_assign (filter->super.result, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "x"))
+						{
+							filter->super.x =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  1,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "y"))
+						{
+							filter->super.y =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  1,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "width"))
+						{
+							filter->super.width =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  1,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "height"))
+						{
+							filter->super.height =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  1,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "kernelUnitLength"))
+						rsvg_css_parse_number_optional_number ((char *) atts[i + 1],
+															   &filter->dx, &filter->dy);
+					else if (!strcmp ((char *) atts[i], "lighting-color"))
+						filter->lightingcolour = rsvg_css_parse_color ((char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "diffuseConstant"))
+						filter->diffuseConstant = 
+							g_ascii_strtod(atts[i + 1], NULL);
+					else if (!strcmp ((char *) atts[i], "surfaceScale"))
+						filter->surfaceScale = 
+							g_ascii_strtod(atts[i + 1], NULL);
+				}
+		}
+	
+	filter->super.render = &rsvg_filter_primitive_diffuse_lighting_render;
+	filter->super.free = &rsvg_filter_primitive_diffuse_lighting_free;
+	ctx->currentsubfilter = &filter->source;
+	
+	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
+					 &filter->super);
+}
+
+
+/*************************************************************/
+/*************************************************************/
+
+typedef struct _RsvgFilterPrimitiveSpecularLighting RsvgFilterPrimitiveSpecularLighting;
+
+struct _RsvgFilterPrimitiveSpecularLighting
+{
+	RsvgFilterPrimitive super;
+	double specularConstant;
+	double specularExponent;
+	double surfaceScale;
+	lightSource source;
+	guint32 lightingcolour;
+};
+
+static void
+rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
+											   RsvgFilterContext * ctx)
+{
+	gint x, y, temp;
+	gdouble z;
+	gint rowstride, height, width;
+	gdouble factor, max;
+	vector3 lightcolour;
+	vector3 colour;
+	vector3 L;
+
+	FPBox boundarys;
+	
+	guchar *in_pixels;
+	guchar *output_pixels;
+	
+	RsvgFilterPrimitiveSpecularLighting *oself;
+	
+	GdkPixbuf *output;
+	GdkPixbuf *in;
+	
+	oself = (RsvgFilterPrimitiveSpecularLighting *) self;
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	in = rsvg_filter_get_in (self->in, ctx);
+	in_pixels = gdk_pixbuf_get_pixels (in);
+	
+	height = gdk_pixbuf_get_height (in);
+	width = gdk_pixbuf_get_width (in);
+	
+	rowstride = gdk_pixbuf_get_rowstride (in);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	
+	output_pixels = gdk_pixbuf_get_pixels (output);
+	
+	colour.x = ((guchar *)(&oself->lightingcolour))[2] / 255.0;
+	colour.y = ((guchar *)(&oself->lightingcolour))[1] / 255.0;
+	colour.z = ((guchar *)(&oself->lightingcolour))[0] / 255.0;
+
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
+			{
+				z = oself->surfaceScale * in_pixels[y * rowstride + x * 4 + 3] / 255.0;
+				L = get_light_direction(oself->source, x, y, z);
+				L.z += 1;
+				L = normalise(L);
+
+				lightcolour = get_light_colour(oself->source, colour, x, y, z);
+				factor = dotproduct(get_surface_normal(in_pixels, boundarys, x, y, 
+													   1, 1, oself->surfaceScale, 
+													   rowstride), L);
+
+				max = 0;
+				temp = oself->specularConstant * 
+					pow(factor, oself->specularExponent) * lightcolour.x * 255.0;		
+				if (temp < 0)
+					temp = 0;				
+				if (temp > 255)
+					temp = 255;
+				max = MAX(temp, max);
+				output_pixels[y * rowstride + x * 4    ] = temp;
+				temp = oself->specularConstant * 
+					pow(factor, oself->specularExponent) * lightcolour.y * 255.0;
+				if (temp < 0)
+					temp = 0;				
+				if (temp > 255)
+					temp = 255;
+				max = MAX(temp, max);
+				output_pixels[y * rowstride + x * 4 + 1] = temp;
+				temp = oself->specularConstant * 
+					pow(factor, oself->specularExponent) * lightcolour.z * 255.0;
+				if (temp < 0)
+					temp = 0;				
+				if (temp > 255)
+					temp = 255;
+				max = MAX(temp, max);		
+				output_pixels[y * rowstride + x * 4 + 2] = temp;
+
+				output_pixels[y * rowstride + x * 4 + 3] = max;
+			}
+	
+	rsvg_filter_store_result (self->result, output, ctx);
+	
+	g_object_unref (G_OBJECT (in));
+	g_object_unref (G_OBJECT (output));
+}
+
+static void
+rsvg_filter_primitive_specular_lighting_free (RsvgFilterPrimitive * self)
+{
+	RsvgFilterPrimitiveSpecularLighting *oself;
+	
+	oself = (RsvgFilterPrimitiveSpecularLighting *) self;
+	g_string_free (self->result, TRUE);
+	g_string_free (self->in, TRUE);
+	g_free (oself);
+}
+
+void
+rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, const xmlChar ** atts)
+{
+	int i;
+	
+	double font_size;
+	RsvgFilterPrimitiveSpecularLighting *filter;
+	
+	font_size = rsvg_state_current_font_size (ctx);
+	
+	filter = g_new (RsvgFilterPrimitiveSpecularLighting, 1);
+	
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->surfaceScale = 1;
+	filter->specularConstant = 1;
+	filter->specularExponent = 1;
+	
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				{
+					if (!strcmp ((char *) atts[i], "in"))
+						g_string_assign (filter->super.in, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "result"))
+						g_string_assign (filter->super.result, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "x"))
+						{
+							filter->super.x =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  1,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "y"))
+						{
+							filter->super.y =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  1,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "width"))
+						{
+							filter->super.width =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  1,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "height"))
+						{
+							filter->super.height =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  1,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "lighting-color"))
+						filter->lightingcolour = rsvg_css_parse_color ((char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "specularConstant"))
+						filter->specularConstant = 
+							g_ascii_strtod(atts[i + 1], NULL);
+					else if (!strcmp ((char *) atts[i], "specularExponent"))
+						filter->specularExponent = 
+							g_ascii_strtod(atts[i + 1], NULL);
+					else if (!strcmp ((char *) atts[i], "surfaceScale"))
+						filter->surfaceScale = 
+							g_ascii_strtod(atts[i + 1], NULL);
+				}
+		}
+	
+	filter->super.render = &rsvg_filter_primitive_specular_lighting_render;
+	filter->super.free = &rsvg_filter_primitive_specular_lighting_free;
+	ctx->currentsubfilter = &filter->source;
+	
+	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
+					 &filter->super);
+}
+

@@ -107,6 +107,16 @@ rsvg_start_filter_primitive_turbulence (RsvgHandle * ctx, const xmlChar ** atts)
 void
 rsvg_start_filter_primitive_image (RsvgHandle * ctx, const xmlChar ** atts);
 
+void
+rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, const xmlChar ** atts);
+
+void 
+rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
+										  const xmlChar ** atts, char type);
+
+void
+rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, const xmlChar ** atts);
+
 G_END_DECLS
 
 #endif
