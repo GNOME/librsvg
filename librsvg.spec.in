@@ -20,10 +20,7 @@ BuildRoot:	/var/tmp/%{name}-%{ver}-root
 Docdir: 	%{prefix}/doc
 Requires:	glib >= @GLIB_REQUIRED@
 Requires:	gtk+ >= @GTK_REQUIRED@
-Requires:	imlib >= @IMLIB_REQUIRED@
 Requires:	libxml >= @LIBXML_REQUIRED@
-Requires:	gnome-libs >= @GNOME_LIBS_REQUIRED@
-Requires:	gnome-vfs >= @GNOME_VFS_REQUIRED@
 Requires:	gdk-pixbuf >= @GDK_PIXBUF_REQUIRED@
 Requires:	popt >= @POPT_REQUIRED@
 Requires:	freetype >= @FREETYPE_REQUIRED@

@@ -4,6 +4,7 @@ bin_SCRIPTS = \
 	librsvg-config
 
 EXTRA_DIST =\
+	COPYING.LIB \
 	librsvg.spec.in \
 	librsvg.m4 \
 	librsvgConf.sh.in \
