@@ -712,7 +712,7 @@ rsvg_css_parse_font_family (const char * str, const char * inherit)
 }
 
 gchar **
-rsvg_css_parse_list(const char * in_str)
+rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 {
 	char *ptr, *tok;
 	char *str;
@@ -727,6 +727,9 @@ rsvg_css_parse_list(const char * in_str)
 		n++;
 	}
 	g_free (str);
+
+	if(out_list_len)
+		*out_list_len = n;
 
 	if (string_list) {
 		GSList *slist;
