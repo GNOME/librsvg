@@ -1,3 +1,8 @@
+2003-09-19  Sven Neumann  <sven@gimp.org>
+
+	* rsvg-file-util.c: implemented missing GError handling for file
+	operations.
+
 2003-09-18  Sven Neumann  <sven@gimp.org>
 
 	* Makefile.am

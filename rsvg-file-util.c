@@ -30,6 +30,7 @@
 #include "rsvg-gz.h"
 #endif
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -124,7 +125,9 @@ rsvg_pixbuf_from_file_with_size_data_ex (RsvgHandle * handle,
 
 	if (!f)
 		{
-			/* FIXME: Set up error. */
+			g_set_error (error, G_FILE_ERROR,
+						 g_file_error_from_errno (errno),
+						 g_strerror (errno));
 			return NULL;
 		}
 	
@@ -154,13 +157,18 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
 
 	if (!f)
 		{
-			/* FIXME: Set up error. */
+			g_set_error (error, G_FILE_ERROR,
+						 g_file_error_from_errno (errno),
+						 g_strerror (errno));
 			return NULL;
 		}
 	
 	result = fread (chars, 1, SVG_BUFFER_SIZE, f);
 
 	if (result == 0) {
+		g_set_error (error, G_FILE_ERROR,
+					 g_file_error_from_errno (errno),
+					 g_strerror (errno));
 		fclose (f);
 		return NULL;
 	}
