@@ -226,9 +226,9 @@ gdk_pixbuf_get_interp_pixel(guchar * src, gdouble ox, gdouble oy, guchar ch, FPB
 	return (guchar)c;
 }
 
-static void
-alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
-		   gint srcheight, GdkPixbuf * dst, gint dstx, gint dsty)
+void
+rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
+				gint srcheight, GdkPixbuf * dst, gint dstx, gint dsty)
 {
 	gint rightx;
 	gint bottomy;
@@ -432,8 +432,8 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 
 	bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);	
 
-	alpha_blt (ctx->lastresult.result, bounds.x1, bounds.y1, bounds.x2 - bounds.x1,
-			   bounds.y2 - bounds.y1, output, bounds.x1, bounds.y1);
+	rsvg_alpha_blt (ctx->lastresult.result, bounds.x1, bounds.y1, bounds.x2 - bounds.x1,
+					bounds.y2 - bounds.y1, output, bounds.x1, bounds.y1);
 	context->bbox.x0 = bounds.x1;
 	context->bbox.y0 = bounds.y1;
 	context->bbox.x1 = bounds.x2;
@@ -2029,9 +2029,9 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self,
 	for (i = 0; i < mself->nodes->len; i++)
 		{
 			in = rsvg_filter_get_in (g_ptr_array_index (mself->nodes, i), ctx);
-			alpha_blt (in, boundarys.x1, boundarys.y1, boundarys.x2 - boundarys.x1,
-					   boundarys.y2 - boundarys.y1, output, boundarys.x1,
-					   boundarys.y1);
+			rsvg_alpha_blt (in, boundarys.x1, boundarys.y1, boundarys.x2 - boundarys.x1,
+							boundarys.y2 - boundarys.y1, output, boundarys.x1,
+							boundarys.y1);
 			g_object_unref (G_OBJECT (in));
 		}
 	

@@ -1,5 +1,9 @@
 2004-07-17  Caleb Moore <c.moore@student.unsw.edu.au>
 
+	* rsvg-shapes.c: rewrote some of the image code so it transforms the image correctly, pitty about loosing bilinear filtering, but we can get that back I suppose
+	
+2004-07-17  Caleb Moore <c.moore@student.unsw.edu.au>
+
 	* rsvg-shapes.c, rsvg-styles.c, rsvg-private.h: Made it remember how bit the vboxes of discrete layers are for alpha optimisations and better filter positioning
 
 2004-07-12  Dom Lachowicz <cinamod@hotmail.com>

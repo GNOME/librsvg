@@ -34,6 +34,7 @@
 #include "rsvg-bpath-util.h"
 #include "rsvg-path.h"
 #include "rsvg-defs.h"
+#include "rsvg-filter.h"
 
 #include <libart_lgpl/art_affine.h>
 #include <libart_lgpl/art_vpath_bpath.h>
@@ -1124,46 +1125,6 @@ rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	g_string_free (d, TRUE);
 }
 
-static void
-size_prepared_cb (GdkPixbufLoader *loader, 
-				  int              width,
-				  int              height,
-				  gpointer         data)
-{
-	struct {
-		int width;
-		int height;
-		gboolean keep_aspect_ratio;
-	} *info = data;
-	
-	if (info->keep_aspect_ratio) 
-		{
-			if (width < 0)
-				width = 512;
-			if (height < 0)
-				height = 512;
-			
-			if ((double)height * (double)info->width >
-				(double)width * (double)info->height) 
-				{
-					width = 0.5 + (double)width * (double)info->height / (double)height;
-					height = info->height;
-				} 
-			else 
-				{
-					height = 0.5 + (double)height * (double)info->width / (double)width;
-					width = info->width;
-				}
-		} 
-	else 
-		{
-			width = info->width;
-			height = info->height;
-		}
-	
-	gdk_pixbuf_loader_set_size (loader, width, height);
-}
-
 static const char s_UTF8_B64Alphabet[64] = {
 	0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
 	0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, /* A-Z */
@@ -1327,26 +1288,6 @@ static gboolean utf8_base64_decode(char ** binptr, size_t * binlen, const char *
 }
 
 static GdkPixbuf *
-rsvg_pixbuf_ensure_alpha_channel(GdkPixbuf * pixbuf)
-{
-	if (gdk_pixbuf_get_has_alpha(pixbuf))
-		return pixbuf;
-	else {
-#if 0
-		/* why doesn't this work properly?? */
-		GdkPixbuf *alpha;
-
-		alpha = gdk_pixbuf_add_alpha(pixbuf, FALSE, 255, 255, 255);
-		g_object_unref(pixbuf);
-
-		return alpha;
-#else
-		return pixbuf;
-#endif
-	}
-}
-
-static GdkPixbuf *
 rsvg_pixbuf_new_from_data_at_size (const char *data,
 								   int         width, 
 								   int         height,
@@ -1359,12 +1300,6 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	char * buffer, *bufptr;
 	size_t buffer_len, buffer_max_len, data_len;
 
-	struct {
-		gint width;
-		gint height;
-		gboolean keep_aspect_ratio;
-	} info;
-	
 	g_return_val_if_fail (data != NULL, NULL);
 	g_return_val_if_fail (width > 0 && height > 0, NULL);
 
@@ -1385,12 +1320,6 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	buffer_len = buffer_max_len - buffer_len;
 
 	loader = gdk_pixbuf_loader_new ();
-	
-	info.width = width;
-	info.height = height;
-	info.keep_aspect_ratio = keep_aspect_ratio;
-	
-	g_signal_connect (loader, "size-prepared", G_CALLBACK (size_prepared_cb), &info);
 
 	if (!gdk_pixbuf_loader_write (loader, buffer, buffer_len, error)) {
 		gdk_pixbuf_loader_close (loader, NULL);
@@ -1420,7 +1349,7 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	
 	g_free(buffer);
 	
-	return rsvg_pixbuf_ensure_alpha_channel(pixbuf);
+	return pixbuf;
 }
 
 static gchar *
@@ -1460,14 +1389,8 @@ rsvg_pixbuf_new_from_file_at_size (const char *filename,
 	guchar buffer [4096];
 	int length;
 	FILE *f;
-	struct {
-		gint width;
-		gint height;
-		gboolean keep_aspect_ratio;
-	} info;
-	
+
 	g_return_val_if_fail (filename != NULL, NULL);
-	g_return_val_if_fail (width > 0 && height > 0, NULL);
 	
 	path = rsvg_get_file_path (filename, base_uri);
 	f = fopen (path, "rb");
@@ -1483,12 +1406,6 @@ rsvg_pixbuf_new_from_file_at_size (const char *filename,
 	}
 	
 	loader = gdk_pixbuf_loader_new ();
-	
-	info.width = width;
-	info.height = height;
-	info.keep_aspect_ratio = keep_aspect_ratio;
-	
-	g_signal_connect (loader, "size-prepared", G_CALLBACK (size_prepared_cb), &info);
 	
 	while (!feof (f)) {
 		length = fread (buffer, 1, sizeof (buffer), f);
@@ -1508,8 +1425,8 @@ rsvg_pixbuf_new_from_file_at_size (const char *filename,
 		return NULL;
 	}
 	
-	pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
-	
+	pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);	
+
 	if (!pixbuf) {
 		g_object_unref (loader);
 		g_set_error (error,
@@ -1524,7 +1441,7 @@ rsvg_pixbuf_new_from_file_at_size (const char *filename,
 	
 	g_object_unref (loader);
 
-	return rsvg_pixbuf_ensure_alpha_channel(pixbuf);
+	return pixbuf;
 }
 
 #ifdef HAVE_GNOME_VFS
@@ -1546,11 +1463,6 @@ rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
 	GnomeVFSFileSize length;
 	GnomeVFSHandle *f = NULL;
 	GnomeVFSResult res;
-	struct {
-		gint width;
-		gint height;
-		gboolean keep_aspect_ratio;
-	} info;
 	
 	g_return_val_if_fail (filename != NULL, NULL);
 	g_return_val_if_fail (width > 0 && height > 0, NULL);
@@ -1582,12 +1494,6 @@ rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
 	}
 	
 	loader = gdk_pixbuf_loader_new ();
-	
-	info.width = width;
-	info.height = height;
-	info.keep_aspect_ratio = keep_aspect_ratio;
-	
-	g_signal_connect (loader, "size-prepared", G_CALLBACK (size_prepared_cb), &info);
 	
 	while (TRUE) {
 		res = gnome_vfs_read (f, buffer, sizeof (buffer), &length);
@@ -1626,7 +1532,7 @@ rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
 	
 	g_object_unref (loader);
 
-	return rsvg_pixbuf_ensure_alpha_channel(pixbuf);
+	return pixbuf;
 }
 
 #endif
@@ -1671,10 +1577,20 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	GdkPixbuf *img;
 	GError *err = NULL;
 	
-	guchar *rgb = NULL;
-	int dest_rowstride;
 	double tmp_affine[6];
 	RsvgState *state;
+	
+	double tmp_tmp_affine[6];
+	double inv_tmp_affine[6];
+	double raw_inv_tmp_affine[6];
+	GdkPixbuf * intermediate;
+	int intstride;
+	int basestride;	
+	int basex, basey;
+	double rawx, rawy;
+	guchar * intpix;
+	guchar * basepix;
+	int i, j, k, basebpp;
 
 	/* skip over defs entries for now */
 	if (ctx->in_defs) return;
@@ -1704,21 +1620,14 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			rsvg_parse_style_attrs (ctx, state, "image", klazz, id, atts);
 		}
 	
-	if (!href || x < 0. || y < 0. || w <= 0. || h <= 0.)
+	if (!href || w <= 0. || h <= 0.)
 		return;   
+
 	
 	/* figure out if image is visible or not */
 	if (!state->visible || !state->cond_true)
 		return;
-
-	w *= state->affine[0];
-	h *= state->affine[3];
-
 	img = rsvg_pixbuf_new_from_href (href, rsvg_handle_get_base_uri (ctx), w, h, (aspect_ratio != RSVG_ASPECT_RATIO_NONE), &err);
-	
-	/* w & h might've been adjusted by preserveAspectRatio */
-	w = gdk_pixbuf_get_width (img);
-	h = gdk_pixbuf_get_height (img);
 
 	if (!img)
 		{
@@ -1730,70 +1639,103 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			return;
 		}
 
-	has_alpha = gdk_pixbuf_get_has_alpha (img);
-	if(0 /* !has_alpha */)
+	if (aspect_ratio)
 		{
-			GdkPixbuf *tmp_pixbuf;
-			
-			tmp_pixbuf = gdk_pixbuf_add_alpha(img, FALSE, 0, 0, 0);
-			g_object_unref(img);
-			img = tmp_pixbuf;
-			has_alpha = TRUE;
+			if ((double)gdk_pixbuf_get_height (img) * (double)w >
+				(double)gdk_pixbuf_get_width (img) * (double)h) 
+				{
+					w = 0.5 + (double)gdk_pixbuf_get_width (img) * (double)h 
+						/ (double)gdk_pixbuf_get_height (img);
+				} 
+			else 
+				{
+					h = 0.5 + (double)gdk_pixbuf_get_height (img) * (double)w 
+						/ (double)gdk_pixbuf_get_width (img);
+				}
 		}
 
-	dest_rowstride = (int)(w * (has_alpha ? 4 : 3) + 3) & ~3;
-	rgb = g_new (guchar, h * dest_rowstride);
-	
-	/* we handle scaling above. we handle translation below. we don't handle rotation very well at all */
-	tmp_affine[0] = tmp_affine[3] = 1;
-	tmp_affine[4] = tmp_affine[5] = 0;
-	tmp_affine[1] = state->affine[1];
-	tmp_affine[2] = state->affine[2];
+	has_alpha = gdk_pixbuf_get_has_alpha (img);
 
-	if(has_alpha)
-		art_rgb_rgba_affine (rgb, 0, 0, w, h, dest_rowstride,
-							 gdk_pixbuf_get_pixels (img),
-							 w, h, gdk_pixbuf_get_rowstride (img),
-							 tmp_affine,
-							 ART_FILTER_NEAREST,
-							 NULL);
-	else
-		art_rgb_affine (rgb, 0, 0, w, h, dest_rowstride,
-						gdk_pixbuf_get_pixels (img),
-						w, h, gdk_pixbuf_get_rowstride (img),
-						tmp_affine,
-						ART_FILTER_NEAREST,
-						NULL);
-	
-	g_object_unref (G_OBJECT (img));
-	img = gdk_pixbuf_new_from_data (rgb, GDK_COLORSPACE_RGB, has_alpha, 8, w, h, dest_rowstride, NULL, NULL);
-	
-	if (!img)
+	for (i = 0; i < 6; i++)
+		tmp_affine[i] = state->affine[i];
+
+	/*translate to x and y*/
+	tmp_tmp_affine[0] = tmp_tmp_affine[3] = 1;
+	tmp_tmp_affine[1] = tmp_tmp_affine[2] = 0;
+	tmp_tmp_affine[4] = x;
+	tmp_tmp_affine[5] = y;
+
+	art_affine_multiply(tmp_affine, tmp_tmp_affine, tmp_affine);
+
+	art_affine_invert(raw_inv_tmp_affine, tmp_affine);
+
+	/*scale to w and h*/
+	tmp_tmp_affine[0] = (double)gdk_pixbuf_get_width (img) / (double)w;
+	tmp_tmp_affine[3] = (double)gdk_pixbuf_get_height (img) / (double)h;
+	tmp_tmp_affine[1] = tmp_tmp_affine[2] = tmp_tmp_affine[4] = tmp_tmp_affine[5] = 0;
+	art_affine_multiply(inv_tmp_affine, raw_inv_tmp_affine, tmp_tmp_affine);
+
+	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+								   gdk_pixbuf_get_width (ctx->pixbuf),
+								   gdk_pixbuf_get_height (ctx->pixbuf));
+
+
+	if (!intermediate)
 		{
-			g_free (rgb);
+			g_object_unref (G_OBJECT (img));
 			return;
 		}
 
+	basestride = gdk_pixbuf_get_rowstride (img);
+	intstride = gdk_pixbuf_get_rowstride (intermediate);
+	basepix = gdk_pixbuf_get_pixels (img);
+	intpix = gdk_pixbuf_get_pixels (intermediate);
+	basebpp = has_alpha ? 4 : 3;
+
+	/*apply the transformation*/
+	for (i = 0; i < gdk_pixbuf_get_width (intermediate); i++)
+		for (j = 0; j < gdk_pixbuf_get_height (intermediate); j++)		
+			{
+				basex = inv_tmp_affine[0] * i + inv_tmp_affine[2] * j + inv_tmp_affine[4];
+				basey = inv_tmp_affine[1] * i + inv_tmp_affine[3] * j + inv_tmp_affine[5];
+				rawx = raw_inv_tmp_affine[0] * i + raw_inv_tmp_affine[2] * j + raw_inv_tmp_affine[4];
+				rawy = raw_inv_tmp_affine[1] * i + raw_inv_tmp_affine[3] * j + raw_inv_tmp_affine[5];
+				if (basex < 0 || basey < 0 
+					|| basex >= gdk_pixbuf_get_width (img) 
+					|| basey >= gdk_pixbuf_get_height (img)
+					|| rawx < 0 || rawy < 0 || rawx >= w || rawy >= h)
+					{					
+						for (k = 0; k < 4; k++)
+							intpix[i * 4 + j * intstride + k] = 0;
+					}
+				else
+					{
+						for (k = 0; k < basebpp; k++)
+							intpix[i * 4 + j * intstride + k] = basepix[basebpp * basex + basey * basestride + k];
+						if (!has_alpha)
+							intpix[i * 4 + j * intstride + 3] = 255;	
+					}
+			}
+	g_object_unref (G_OBJECT (img));
+
 	rsvg_push_discrete_layer(ctx);
 
-	gdk_pixbuf_copy_area (img, 0, 0,
-						  gdk_pixbuf_get_width (img),
-						  gdk_pixbuf_get_height (img),
-						  ctx->pixbuf, 
-						  state->affine[4] + x, /* translate */
-						  state->affine[5] + y);
+	/*slap it down*/
+	rsvg_alpha_blt (intermediate, 0, 0,
+					gdk_pixbuf_get_width (intermediate),
+					gdk_pixbuf_get_height (intermediate),
+					ctx->pixbuf, 
+					0, 0);
 
 	rsvg_pop_discrete_layer(ctx);
 	
-	temprect.x0 = state->affine[4] + x;
-	temprect.y0 = state->affine[5] + y;
-	temprect.x1 = state->affine[4] + x + gdk_pixbuf_get_width (img);
-	temprect.y1 = state->affine[5] + y + gdk_pixbuf_get_height (img);
+	/*fix me, this is not the propper rectangle*/
+	temprect.x0 = 0;;
+	temprect.y0 = 0;;
+	temprect.x1 = gdk_pixbuf_get_width (intermediate);
+	temprect.y1 = gdk_pixbuf_get_height (intermediate);
 
 	art_irect_union(&ctx->bbox, &ctx->bbox, &temprect);
-
-	g_object_unref (G_OBJECT (img));
-	g_free (rgb);
 }
 
 void 
