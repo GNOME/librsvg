@@ -90,32 +90,27 @@ rsvg_filter_primitive_get_bounds(RsvgFilterPrimitive *self, RsvgFilterContext *c
 FPBox 
 rsvg_filter_primitive_get_bounds(RsvgFilterPrimitive *self, RsvgFilterContext *ctx){
 	FPBox output;
-	
-	output.x1 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
-	output.x2 = ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4];
-	output.y1 = ctx->affine[1] * ctx->filter->x + ctx->affine[5];
-	output.y2 = ctx->affine[1] * (ctx->filter->x + ctx->filter->width) + ctx->affine[5];
 
 	if (self->sizedefaults){
-		if (output.x1 < ctx->x)
 			output.x1 = ctx->x;
-		if (output.y1 < ctx->y)
 			output.y1 = ctx->y;
-		if (output.x2 < ctx->x + ctx->width)
 			output.x2 = ctx->x + ctx->width;
-		if (output.y2 < ctx->y + ctx->height)
 			output.y2 = ctx->y + ctx->height;
-	}
-	else {
-		if (output.x1 < ctx->paffine[0] * self->x + ctx->paffine[4])
+	} else {
 			output.x1 = ctx->paffine[0] * self->x + ctx->paffine[4];
-		if (output.x2 < ctx->paffine[0] * (self->x + self->width) + ctx->paffine[4])
+			output.y1 = ctx->paffine[3] * self->y + ctx->paffine[5];
 			output.x2 = ctx->paffine[0] * (self->x + self->width) + ctx->paffine[4];
-		if (output.y1 < ctx->paffine[1] * self->x + ctx->paffine[5])
-			output.y1 = ctx->paffine[1] * self->x + ctx->paffine[5];
-		if (output.y2 < ctx->paffine[1] * (self->x + self->width) + ctx->paffine[5])
-			output.y2 = ctx->paffine[1] * (self->x + self->width) + ctx->paffine[5];
-	}	
+			output.y2 = ctx->paffine[3] * (self->y + self->height) + ctx->paffine[5];
+	}
+
+	if (output.x1 < ctx->affine[0] * ctx->filter->x + ctx->affine[4])
+		output.x1 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
+	if (output.x2 > ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4])
+		output.x2 = ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4];
+	if (output.y1 < ctx->affine[3] * ctx->filter->y + ctx->affine[5])
+		output.y1 = ctx->affine[3] * ctx->filter->y + ctx->affine[5];
+	if (output.y2 > ctx->affine[3] * (ctx->filter->y + ctx->filter->height) + ctx->affine[5])
+		output.y2 = ctx->affine[3] * (ctx->filter->y + ctx->filter->height) + ctx->affine[5];
 
 	return output;
 }
@@ -257,7 +252,7 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext *ctx,
 	i = j = 0;
 
 	x = y = width = height = 0;
-	
+
 	/*First for object bounding box coordinates we need to know how much of the 
 	  source has been drawn on*/
 	
@@ -270,29 +265,22 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext *ctx,
 		for (j = 0; j < gdk_pixbuf_get_width(ctx->source); j++) {
 			currentindex = i * stride + j * 4;
 			if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0 ||
-				pixels[currentindex + 2] != 0 || pixels[currentindex + 3] != 0)
+				pixels[currentindex + 2] != 0 || pixels[currentindex + 3] != 0){
 				y = i;
+				break;
+			}
 		}
 		if (y != -1)
 			break;
 	}
 	
-	/*if there are no pixels, there is no bounding box so instead of making everything 
-	  segfault, lets just pretend we are using userSpaceOnUse*/
-	if (i == gdk_pixbuf_get_height(ctx->source)) {
-		ctx->filter->filterunits = userSpaceOnUse;
-		ctx->filter->primitiveunits = userSpaceOnUse;
-		rsvg_filter_fix_coordinate_system (ctx, state);
-		return;
-	}
 	
 	/*move in from the bottom to find the height*/
 	for (i = gdk_pixbuf_get_height(ctx->source) - 1; i >= 0; i--) {
 		for (j = 0; j < gdk_pixbuf_get_width(ctx->source); j++) {
 			currentindex = i * stride + j * 4;
 			if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0 ||
-				pixels[currentindex + 2] != 0 || pixels[currentindex + 3] != 0){
-				
+				pixels[currentindex + 2] != 0 || pixels[currentindex + 3] != 0){	
 				height = i - y;
 				break;
 			}
@@ -307,9 +295,11 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext *ctx,
 		for (i = y; i < (height + y); i++) {
 			currentindex = i * stride + j * 4;
 			if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0 ||
-					pixels[currentindex + 2] != 0 || pixels[currentindex + 3] != 0)
+				pixels[currentindex + 2] != 0 || pixels[currentindex + 3] != 0){
 				x = j;
+				break;
 			}
+		}
 		if (x != -1)
 			break;
 	}
@@ -319,9 +309,11 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext *ctx,
 		for (i = y; i < (height + y); i++) {
 			currentindex = i * stride + j * 4;
 			if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0 ||
-				pixels[currentindex + 2] != 0 || pixels[currentindex + 3] != 0)
+				pixels[currentindex + 2] != 0 || pixels[currentindex + 3] != 0){
 				width = j - x;
+				break;
 			}
+		}
 		if (width != -1)
 				break;
 	}
@@ -392,7 +384,7 @@ rsvg_filter_render (RsvgFilter *self, GdkPixbuf *source, GdkPixbuf *bg, RsvgHand
 
 	g_object_ref(G_OBJECT(source));
 	ctx->lastresult = source;
-
+	
 	rsvg_filter_fix_coordinate_system(ctx, rsvg_state_current (context));
 
 	for (i = 0; i < self->primitives->len; i++)
@@ -806,20 +798,25 @@ rsvg_start_filter_primitive_blend (RsvgHandle *ctx, const xmlChar **atts) {
 					else if (!strcmp ((char *)atts[i], "result"))
 						g_string_assign(filter->super.result, (char *)atts[i + 1]);
 
-					else if (!strcmp ((char *)atts[i], "x"))
+					else if (!strcmp ((char *)atts[i], "x")){
 						filter->super.x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
-					else if (!strcmp ((char *)atts[i], "y"))
+						filter->super.sizedefaults = 0;
+					}
+					else if (!strcmp ((char *)atts[i], "y")){
 						filter->super.y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
-					else if (!strcmp ((char *)atts[i], "width"))
+						filter->super.sizedefaults = 0;
+					}
+					else if (!strcmp ((char *)atts[i], "width")){
 						filter->super.width = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
-					else if (!strcmp ((char *)atts[i], "height"))
+						filter->super.sizedefaults = 0;					
+					}
+					else if (!strcmp ((char *)atts[i], "height")){
 						filter->super.height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
+						filter->super.sizedefaults = 0;
+					}			
 				}
 		}
-
+	
 	filter->super.render = &rsvg_filter_primitive_blend_render;
 	filter->super.free = &rsvg_filter_primitive_blend_free;
 
@@ -889,6 +886,9 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive *self, RsvgFil
 					for (j = 0; j < cself->orderx; j++){
 						sx = x - cself->targetx + j;
 						sy = y - cself->targety + i;
+						if (sx < boundarys.x1 || sx > boundarys.x2 || 
+							sy < boundarys.y1 || sy > boundarys.y2)
+							continue;
 						kx = cself->orderx - j - 1;
 						ky = cself->ordery - i - 1;
 						sval = in_pixels[4 * sx + sy * rowstride + ch];
@@ -918,7 +918,7 @@ rsvg_filter_primitive_convolve_matrix_free (RsvgFilterPrimitive * self){
 
 void 
 rsvg_start_filter_primitive_convolve_matrix (RsvgHandle *ctx, const xmlChar **atts) {
-	int i;
+	int i, j;
 	double font_size;
 	RsvgFilterPrimitiveConvolveMatrix * filter;
 
@@ -933,6 +933,11 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle *ctx, const xmlChar **at
 	filter->super.result = g_string_new("none");
 	filter->super.sizedefaults = 1;
 
+
+	filter->divisor = 0;
+	filter->targetx = 0;
+	filter->targety = 0;
+
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
@@ -943,18 +948,22 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle *ctx, const xmlChar **at
 					else if (!strcmp ((char *)atts[i], "result"))
 						g_string_assign(filter->super.result, (char *)atts[i + 1]);
 
-					else if (!strcmp ((char *)atts[i], "x"))
+					else if (!strcmp ((char *)atts[i], "x")){
 						filter->super.x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
-					else if (!strcmp ((char *)atts[i], "y"))
+						filter->super.sizedefaults = 0;
+					}
+					else if (!strcmp ((char *)atts[i], "y")){
 						filter->super.y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
-					else if (!strcmp ((char *)atts[i], "width"))
+						filter->super.sizedefaults = 0;
+					}
+					else if (!strcmp ((char *)atts[i], "width")){
 						filter->super.width = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
-					else if (!strcmp ((char *)atts[i], "height"))
+						filter->super.sizedefaults = 0;					
+					}
+					else if (!strcmp ((char *)atts[i], "height")){
 						filter->super.height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
+						filter->super.sizedefaults = 0;
+					}			
 					else if (!strcmp ((char *)atts[i], "targetX"))
 						filter->targetx = atoi((char *)atts[i + 1]);
 					else if (!strcmp ((char *)atts[i], "targetY"))
@@ -974,6 +983,15 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle *ctx, const xmlChar **at
 					*/
 				}
 		}
+
+	if (filter->divisor == 0){
+		for (j = 0; j < filter->orderx; j++)
+			for (i = 0; i < filter->ordery; i++)
+				filter->divisor += filter->KernelMatrix[j + i * filter->orderx];
+	}
+	if (filter->divisor == 0)
+		filter->divisor = 1;
+
 
 	filter->super.render = &rsvg_filter_primitive_convolve_matrix_render;
 	filter->super.free = &rsvg_filter_primitive_convolve_matrix_free;
@@ -1012,18 +1030,22 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle *ctx, const xmlChar **atts
 
 					else if (!strcmp ((char *)atts[i], "result"))
 						g_string_assign(filter->super.result, (char *)atts[i + 1]);
-
-					else if (!strcmp ((char *)atts[i], "x"))
+					else if (!strcmp ((char *)atts[i], "x")){
 						filter->super.x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
-					else if (!strcmp ((char *)atts[i], "y"))
+						filter->super.sizedefaults = 0;
+					}
+					else if (!strcmp ((char *)atts[i], "y")){
 						filter->super.y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
-					else if (!strcmp ((char *)atts[i], "width"))
+						filter->super.sizedefaults = 0;
+					}
+					else if (!strcmp ((char *)atts[i], "width")){
 						filter->super.width = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
-					else if (!strcmp ((char *)atts[i], "height"))
+						filter->super.sizedefaults = 0;					
+					}
+					else if (!strcmp ((char *)atts[i], "height")){
 						filter->super.height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
+						filter->super.sizedefaults = 0;
+					}			
 					
 					else if (!strcmp ((char *)atts[i], "stdDeviation"))
 						rsvg_css_parse_number_optional_number((char *)atts[i + 1], &sdx, &sdy);	

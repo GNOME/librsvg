@@ -34,7 +34,7 @@ G_BEGIN_DECLS
 typedef struct _RsvgFilter RsvgFilter;
 
 typedef enum {
-	userSpaceOnUse, objectBoundingBox
+	objectBoundingBox, userSpaceOnUse
 } RsvgFilterUnits;
 
 struct _RsvgFilter {
