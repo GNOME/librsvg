@@ -415,7 +415,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
     {
       state->stop_opacity = rsvg_css_parse_opacity (str + arg_off);
     }
-  else if (rsvg_css_param_match (str, "miter-limit"))
+  else if (rsvg_css_param_match (str, "stroke-miterlimit"))
     {
       state->miter_limit = g_ascii_strtod (str + arg_off, NULL);
     }
@@ -482,21 +482,21 @@ rsvg_is_style_arg(const char *str)
     {
       styles = g_hash_table_new (g_str_hash, g_str_equal);
       
-      g_hash_table_insert (styles, "opacity",           GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "fill",              GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "fill-opacity",      GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "miter-limit",       GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "font-family",       GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "font-size",         GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "opacity",           GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stop-color",        GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stop-opacity",      GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "stroke",            GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "stroke-dasharray",  GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "stroke-dashoffset", GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "stroke-width",      GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "stroke-linecap",    GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "stroke-opacity",    GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "stroke-linejoin",   GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "font-size",         GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "font-family",       GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "stop-color",        GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "stop-opacity",      GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke-miterlimit", GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke-opacity",    GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke-width",      GINT_TO_POINTER (TRUE));
     }
   
   /* this will default to 0 (FALSE) on a failed lookup */
@@ -1393,10 +1393,19 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	    {
 	      /* either a number [0,1] or a percentage */
 	      offset = rsvg_css_parse_normalized_length ((char *)atts[i + 1], z->ctx->dpi, 1., 0., 0.);
+
+	      if (offset < 0.)
+		offset = 0.;
+	      else if (offset > 1.)
+		offset = 1.;
+
 	      got_offset = TRUE;
 	    }
 	  else if (!strcmp ((char *)atts[i], "style"))
 	    rsvg_parse_style (z->ctx, &state, (char *)atts[i + 1]);
+	  else if (rsvg_is_style_arg ((char *)atts[i]))
+	    rsvg_parse_style_pair (z->ctx, &state,
+				   (char *)atts[i], (char *)atts[i + 1]);
 	}
     }
 
@@ -1459,8 +1468,11 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
   RsvgLinearGradient *grad;
   int i;
   char *id = NULL;
-  double x1 = 0, y1 = 0, x2 = 100, y2 = 0;
+  double x1 = 0., y1 = 0., x2 = 0., y2 = 0.;
   ArtGradientSpread spread = ART_GRADIENT_PAD;
+
+  /* 100% is the default */
+  x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 
   /* todo: only handles numeric coordinates in gradientUnits = userSpace */
   if (atts != NULL)
@@ -1523,7 +1535,13 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
   RsvgRadialGradient *grad;
   int i;
   char *id = NULL;
-  double cx = 50, cy = 50, r = 50, fx = 50, fy = 50;
+  double cx = 0., cy = 0., r = 0., fx = 0., fy = 0.;
+  gint got_fx = FALSE, got_fy = FALSE;
+
+  /* setup defaults */
+  cx = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+  cy = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+  r  = rsvg_css_parse_normalized_length ("50%", ctx->dpi, rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size, 0.);
 
   /* todo: only handles numeric coordinates in gradientUnits = userSpace */
   if (atts != NULL)
@@ -1540,12 +1558,21 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	    r = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, 
 						  rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), 
 						  state->font_size, 0.);
-	  else if (!strcmp ((char *)atts[i], "fx"))
+	  else if (!strcmp ((char *)atts[i], "fx")) {
 	    fx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
-	  else if (!strcmp ((char *)atts[i], "fy"))
+	    got_fx = TRUE;
+	  }
+	  else if (!strcmp ((char *)atts[i], "fy")) {
 	    fy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+	    got_fy = TRUE;
+	  }
 	}
     }
+
+  if (!got_fx)
+    fx = cx;
+  if (!got_fy)
+    fy = cy;
 
   grad = g_new (RsvgRadialGradient, 1);
   grad->super.type = RSVG_DEF_RADGRAD;

@@ -1,5 +1,9 @@
 2002-10-04  Dom Lachowicz <doml@appligent.com>
 
+	* rsvg.c (): fix bugs with gradient style handling, few other bugs left in radial gradient
+	
+2002-10-04  Dom Lachowicz <doml@appligent.com>
+
 	* test-rsvg.c (main): Implemented version, better help description
 	
 2002-10-04  Alexander Larsson  <alexl@redhat.com>
