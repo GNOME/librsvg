@@ -150,6 +150,9 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	double dx, dy, scale;
 	double affine[6];
 	int i;
+	float xchange, ychange, pointlen,unitlen;
+	float nx2, ny2;
+	float x0, y0;
 
 	agl = z->agl;
 	if (agl == NULL)
@@ -179,10 +182,6 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	}
 
 	art_affine_multiply(affine, rlg->affine, affine);
-
-	float xchange, ychange, pointlen,unitlen;
-	float nx2, ny2;
-	float x0, y0;
 
 	xchange = rlg->x2 - rlg->x1;
 	ychange = rlg->y2 - rlg->y1;
