@@ -1,5 +1,12 @@
 2002-01-04  Darin Adler  <darin@bentspoon.com>
 
+	* README:
+	* configure.in:
+	* librsvg.spec.in:
+	More tweaking. I just can't stop myself.
+
+2002-01-04  Darin Adler  <darin@bentspoon.com>
+
 	* configure.in: Bump required libart version to the one
 	with art_render_mask.
 

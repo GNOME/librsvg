@@ -18,14 +18,15 @@ Source: 	%{name}-%{ver}.tar.gz
 URL: 		http://nautilus.eazel.com/
 BuildRoot:	/var/tmp/%{name}-%{ver}-root
 Docdir: 	%{prefix}/doc
-Requires:	glib >= @GLIB_REQUIRED@
-Requires:	libxml >= @LIBXML_REQUIRED@
 Requires:	gdk-pixbuf >= @GDK_PIXBUF_REQUIRED@
+Requires:	glib >= @GLIB_REQUIRED@
+Requires:	libart >= @LIBART_REQUIRED@
+Requires:	libxml >= @LIBXML_REQUIRED@
+Requires:	pango >= @PANGOFT2_REQUIRED@
 Requires:	popt >= @POPT_REQUIRED@
-Requires:	pango >= @PANGO_REQUIRED@
 
 %description
-Eazel Extension Library
+A library that uses libart and pango to render svg files.
 
 %package devel
 Summary:	Libraries and include files for developing with librsvg.
@@ -35,14 +36,6 @@ Requires:	%name = %{PACKAGE_VERSION}
 %description devel
 This package provides the necessary development libraries and include
 files to allow you to develop with librsvg.
-
-%changelog
-* Tue Oct 10 2000 Robin Slomkowski <rslomkow@eazel.com>
-- removed obsoletes from sub packages and added mozilla and trilobite
-subpackages
-
-* Wed Apr 26 2000 Ramiro Estrugo <ramiro@eazel.com>
-- created this thing
 
 %prep
 %setup
