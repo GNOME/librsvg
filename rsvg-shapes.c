@@ -585,7 +585,7 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "rect", klazz, id, atts);
 	
 	/* incrementing y by 1 properly draws borders. this is a HACK */
-	y += 1.;
+	y += .01;
 	
 	/* emulate a rect using a path */
 
