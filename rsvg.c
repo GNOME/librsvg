@@ -1057,7 +1057,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 #endif
 
   if (ctx->pango_context == NULL)
-    ctx->pango_context = pango_ft2_get_context (72, 72); /* FIXME: dpi? */
+    ctx->pango_context = pango_ft2_get_context ((guint)RSVG_PIXELS_PER_INCH, (guint)RSVG_PIXELS_PER_INCH); /* FIXME: dpi? */
 
   has_alpha = gdk_pixbuf_get_has_alpha (pixbuf);
   
@@ -1077,7 +1077,10 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
   font = pango_font_description_copy (pango_context_get_font_description (ctx->pango_context));
   if (state->font_family)
     pango_font_description_set_family_static (font, state->font_family);
-  pango_font_description_set_size (font, state->font_size * PANGO_SCALE);
+
+  /* we need to resize the font by our X or Y scale (ideally could stretch in both directions...)
+     which, though? Y for now */
+  pango_font_description_set_size (font, state->font_size * PANGO_SCALE * state->affine[3]);
   pango_layout_set_font_description (layout, font);
   pango_font_description_free (font);
   
@@ -1599,7 +1602,10 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 
   if (x < 0. || y < 0. || w < 0. || h < 0. || rx < 0. || ry < 0.)
     return;
- 
+
+  /* incrementing y by 1 properly draws borders. this is a HACK */
+  y++;
+
   /* emulate a rect using a path */
   d = g_strdup_printf ("M %f %f "
 		       "H %f "

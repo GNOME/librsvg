@@ -1,5 +1,10 @@
 2002-09-17  Dom Lachowicz <doml@appligent.com>
 
+	* rsvg.c (rsvg_text_handler_characters): Handle scaling font by affine/viewbox
+	(rsvg_start_rect): Correct for bug in border drawing around a rect
+	
+2002-09-17  Dom Lachowicz <doml@appligent.com>
+
 	* rsvg.c (rsvg_start_svg): Parse viewbox as floats, not ints.
 	(rsvg_start_text): Handle x & y attributes. TODO: dx,dy
 	
