@@ -751,6 +751,20 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_radial_gradient (ctx, atts, "conicalGradient");
 	else if (!strcmp ((char *)name, "style"))
 		rsvg_start_style (ctx, atts);
+	else if (!strcmp ((char *)name, "path"))
+		rsvg_start_path (ctx, atts);
+	else if (!strcmp ((char *)name, "line"))
+		rsvg_start_line (ctx, atts);
+	else if (!strcmp ((char *)name, "rect"))
+		rsvg_start_rect (ctx, atts);
+	else if (!strcmp ((char *)name, "circle"))
+		rsvg_start_circle (ctx, atts);
+	else if (!strcmp ((char *)name, "ellipse"))
+		rsvg_start_ellipse (ctx, atts);
+	else if (!strcmp ((char *)name, "polygon"))
+		rsvg_start_polygon (ctx, atts);
+	else if (!strcmp ((char *)name, "polyline"))
+		rsvg_start_polyline (ctx, atts);
 }
 
 static void
@@ -818,12 +832,10 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 				rsvg_start_svg (ctx, atts);
 			else if (!strcmp ((char *)name, "g"))
 				rsvg_start_g (ctx, atts);
+			else if (!strcmp ((char *)name, "defs"))
+				rsvg_start_defs (ctx, atts);
 			else if (!strcmp ((char *)name, "path"))
 				rsvg_start_path (ctx, atts);
-			else if (!strcmp ((char *)name, "text"))
-				rsvg_start_text (ctx, atts);
-			else if (!strcmp ((char *)name, "image"))
-				rsvg_start_image (ctx, atts);
 			else if (!strcmp ((char *)name, "line"))
 				rsvg_start_line (ctx, atts);
 			else if (!strcmp ((char *)name, "rect"))
@@ -832,12 +844,16 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 				rsvg_start_circle (ctx, atts);
 			else if (!strcmp ((char *)name, "ellipse"))
 				rsvg_start_ellipse (ctx, atts);
-			else if (!strcmp ((char *)name, "defs"))
-				rsvg_start_defs (ctx, atts);
 			else if (!strcmp ((char *)name, "polygon"))
 				rsvg_start_polygon (ctx, atts);
 			else if (!strcmp ((char *)name, "polyline"))
 				rsvg_start_polyline (ctx, atts);
+			else if (!strcmp ((char *)name, "use"))
+				rsvg_start_use (ctx, atts);
+			else if (!strcmp ((char *)name, "text"))
+				rsvg_start_text (ctx, atts);
+			else if (!strcmp ((char *)name, "image"))
+				rsvg_start_image (ctx, atts);
 			
 			/* see conicalGradient discussion above */
 			else if (!strcmp ((char *)name, "linearGradient"))

@@ -27,9 +27,17 @@
 #define RSVG_SHAPES_H
 
 #include "rsvg.h"
+#include "rsvg-defs.h"
 #include <libxml/SAX.h>
 
 G_BEGIN_DECLS
+
+struct _RsvgDefsPath {
+ 	RsvgDefVal super;
+ 	char *d;
+};
+ 
+typedef struct _RsvgDefsPath RsvgDefsPath;
 
 void rsvg_render_path (RsvgHandle *ctx, const char *d);
 void rsvg_start_path (RsvgHandle *ctx, const xmlChar **atts);
@@ -40,6 +48,7 @@ void rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts);
 void rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts);
 void rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts);
 void rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts);
+void rsvg_start_use (RsvgHandle *ctx, const xmlChar **atts);
 
 G_END_DECLS
 

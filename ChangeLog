@@ -1,3 +1,13 @@
+2003-03-18  Dom Lachowicz <cinamod@hotmail.com> / Ross Alexander <ross.alexander@uk.neceur.com>
+
+	* configure.in: Bump version # to 2.3.0
+	* rsvg-shapes.h: Add RsvgDefsPath type, start_use()
+	* rsvg-shapes.c: Work needed to handle def paths, start_use()
+	* rsvg-defs.h: Add new defs type for paths
+	* rsvg.c: Handle use, defs paths
+	
+== gnome-2-2 branch, 2.2.5 released ==
+	
 2003-03-18  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Bump version # to 2.2.5

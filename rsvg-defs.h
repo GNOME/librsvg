@@ -42,7 +42,8 @@ typedef enum {
 	   but it's not clear that's the best way to go. */
 	RSVG_DEF_LINGRAD,
 	RSVG_DEF_RADGRAD,
-	RSVG_DEF_PATTERN
+	RSVG_DEF_PATTERN,
+	RSVG_DEF_PATH
 } RsvgDefType;
 
 struct _RsvgDefVal {
