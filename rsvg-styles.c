@@ -1439,7 +1439,7 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 	
 
 	if (state->filter == NULL && state->opacity == 0xFF && 
-		!state->backgroundnew && state->mask == NULL && !state->adobe_blend && ctx->in_defs > 0)
+		!state->backgroundnew && state->mask == NULL && !state->adobe_blend)
 		return;
 	
 	state->save_pixbuf = pixbuf;
@@ -1605,11 +1605,6 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 
 	intermediate = NULL;
 
-	if (state->filter == NULL && state->opacity == 0xFF && 
-		!state->backgroundnew && state->mask == NULL && !state->adobe_blend
-		&& ctx->in_defs > 0)
-		return;
-
 	operationsleft = 0;
 	
 	if (opacity != 0xFF)
@@ -1692,8 +1687,7 @@ rsvg_pop_discrete_layer(RsvgHandle *ctx)
 	state = rsvg_state_current(ctx);
 
 	if (state->filter == NULL && state->opacity == 0xFF && 
-		!state->backgroundnew && state->mask == NULL && !state->adobe_blend
-		&& ctx->in_defs > 0)
+		!state->backgroundnew && state->mask == NULL && !state->adobe_blend)
 		return;
 
 	tos = ctx->pixbuf;
