@@ -59,13 +59,13 @@ GdkPixbuf  *rsvg_handle_get_pixbuf        (RsvgHandle      *handle);
 void        rsvg_handle_free              (RsvgHandle      *handle);
 
 /* convenience API */
-GdkPixbuf  *rsvg_pixbuf_from_file         (gchar           *file_name,
+GdkPixbuf  *rsvg_pixbuf_from_file         (const gchar     *file_name,
  					   GError         **error);
-GdkPixbuf  *rsvg_pixbuf_from_file_at_zoom (gchar           *file_name,
+GdkPixbuf  *rsvg_pixbuf_from_file_at_zoom (const gchar     *file_name,
 					   double           x_zoom,
 					   double           y_zoom,
  					   GError         **error);
-GdkPixbuf  *rsvg_pixbuf_from_file_at_size (gchar           *file_name,
+GdkPixbuf  *rsvg_pixbuf_from_file_at_size (const gchar     *file_name,
 					   gint             width,
 					   gint             height,
 					   GError         **error);

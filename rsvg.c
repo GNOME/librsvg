@@ -1605,8 +1605,8 @@ rsvg_size_callback (gint     *width,
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  **/
 GdkPixbuf *
-rsvg_pixbuf_from_file (gchar   *file_name,
-		       GError **error)
+rsvg_pixbuf_from_file (const gchar *file_name,
+		       GError     **error)
 {
   return rsvg_pixbuf_from_file_at_size (file_name, -1, -1, error);
 }
@@ -1627,10 +1627,10 @@ rsvg_pixbuf_from_file (gchar   *file_name,
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  **/
 GdkPixbuf *
-rsvg_pixbuf_from_file_at_zoom (gchar   *file_name,
-			       double   x_zoom,
-			       double   y_zoom,
-			       GError **error)
+rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
+			       double       x_zoom,
+			       double       y_zoom,
+			       GError     **error)
 {
   FILE *f;
   char chars[10];
@@ -1681,10 +1681,10 @@ rsvg_pixbuf_from_file_at_zoom (gchar   *file_name,
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  **/
 GdkPixbuf *
-rsvg_pixbuf_from_file_at_size (gchar   *file_name,
-			       gint     width,
-			       gint     height,
-			       GError **error)
+rsvg_pixbuf_from_file_at_size (const gchar *file_name,
+			       gint         width,
+			       gint         height,
+			       GError     **error)
 {
   FILE *f;
   char chars[10];

@@ -1,5 +1,14 @@
 2001-09-24  Darin Adler  <darin@bentspoon.com>
 
+	* rsvg.h:
+	* rsvg.c: (rsvg_pixbuf_from_file), (rsvg_pixbuf_from_file_at_zoom),
+	(rsvg_pixbuf_from_file_at_size): Take const char *, not char *.
+
+	* test-rsvg.c: (main): Remove unneeded casts. Restore the error
+	message for the case when the parser doesn't parse anything.
+
+2001-09-24  Darin Adler  <darin@bentspoon.com>
+
 	* rsvg.c: (rsvg_entity_decl): Change so it can handle a NULL
 	for the content passed in. Happens at least if the .svg file
 	is empty and presumably in other cases.

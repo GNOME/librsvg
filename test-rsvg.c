@@ -33,7 +33,7 @@
 
 
 int
-main (int argc, char **argv)
+main (int argc, const char **argv)
 {
 	GdkPixbuf *pixbuf;
 	char *x_zoom_str = "1.0";
@@ -50,16 +50,20 @@ main (int argc, char **argv)
 
 	g_type_init ();
 
-	optCtx = poptGetContext ("test-rsvg", argc, (const char **)argv, optionsTable, 0);
+	optCtx = poptGetContext ("test-rsvg", argc, argv, optionsTable, 0);
 
 	c = poptGetNextOpt (optCtx);
 	args = poptGetArgs (optCtx);
 
-	pixbuf = rsvg_pixbuf_from_file_at_zoom ((char *)args[0],
+	pixbuf = rsvg_pixbuf_from_file_at_zoom (args[0],
 						atof (x_zoom_str),
 						atof (y_zoom_str),
 						NULL);
 	if (pixbuf)
 		gdk_pixbuf_save (pixbuf, args[1], "png", NULL, NULL);
+	else {
+		fprintf (stderr, "Error loading SVG file.\n");
+		return 1;
+	}
 	return 0;
 }
