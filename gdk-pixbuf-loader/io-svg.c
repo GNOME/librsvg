@@ -56,7 +56,8 @@ gdk_pixbuf__svg_image_begin_load (GdkPixbufModuleSizeFunc size_func,
 {
         SvgContext *context    = g_new0 (SvgContext, 1);
 
-        *error = NULL;
+        if (error)
+                *error = NULL;
 
 #if HAVE_SVGZ
         /* lazy create the handle on the first write */
@@ -83,7 +84,8 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
         SvgContext *context = (SvgContext *)data;
         gboolean result;
 
-        *error = NULL;
+        if (error)
+                *error = NULL;
 
 #if HAVE_SVGZ
         if (context->first_write == TRUE) {
@@ -114,7 +116,8 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 {
         SvgContext *context = (SvgContext *)data;  
 
-        *error = NULL;
+        if (error)
+                *error = NULL;
 
         rsvg_handle_close (context->handle, error);
 
