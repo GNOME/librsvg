@@ -1438,12 +1438,12 @@ fast_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sx,
 	kx = floor(sx * 3*sqrt(2*M_PI)/4 + 0.5);
 	ky = floor(sy * 3*sqrt(2*M_PI)/4 + 0.5);
 
-	intermediate1 = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-									gdk_pixbuf_get_width (in),
-									gdk_pixbuf_get_height (in));
-	intermediate2 = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-									gdk_pixbuf_get_width (in),
-									gdk_pixbuf_get_height (in));
+	intermediate1 = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
+											gdk_pixbuf_get_width (in),
+											gdk_pixbuf_get_height (in));
+	intermediate2 = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
+											gdk_pixbuf_get_width (in),
+											gdk_pixbuf_get_height (in));
 
 	box_blur (in, intermediate2, intermediate1, kx, 
 			  ky, boundarys);

@@ -1051,7 +1051,7 @@ get_next_out(gint * operationsleft, GdkPixbuf * in, GdkPixbuf * tos,
 				out = intermediate;
 			else
 				out = tos;
-			gdk_pixbuf_fill(out, 0);
+			gdk_pixbuf_fill(out, 0x00000000);
 		}	
 	(*operationsleft)--;
 	
