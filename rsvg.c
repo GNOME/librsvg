@@ -210,6 +210,7 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 													NULL);
 		}
 	ctx->nest_level = 1;
+	ctx->current_defs_group = NULL;
 }
 
 static void
@@ -879,7 +880,7 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	ctx->in_defs++;		
 
-	pattern->g = &(rsvg_push_def_group (ctx, "")->super);
+	pattern->g = &(rsvg_push_def_group (ctx, NULL)->super);
 }
 
 
@@ -1304,7 +1305,7 @@ rsvg_end_element (void *data, const xmlChar *name)
 			}
 			else if (!strcmp ((char *)name, "marker")){
 				rsvg_pop_def_group(ctx);
-				ctx->in_defs--;				
+				ctx->in_defs--;
 			}
 			else if (!strcmp ((char *)name, "switch"))
 				{

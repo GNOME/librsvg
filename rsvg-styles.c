@@ -35,6 +35,7 @@
 
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_affine.h>
+#include <libart_lgpl/art_svp_ops.h>
 
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
@@ -136,6 +137,7 @@ rsvg_state_init (RsvgState *state)
 	state->has_endMarker = FALSE;
 
 	state->clippath = NULL;
+	state->clip_path_loaded = FALSE;
 }
 
 void
@@ -242,26 +244,8 @@ rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 				dst->dash.dash[i] = src->dash.dash[i];
 		}
 	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
-	/*
-	if (src->clippath == NULL)
-		{
-			if (dst->clip_path_ref)
-				dst->clippath = rsvg_clip_path_render (dst->clip_path_ref, ctx);
-			else
-				dst->clippath = NULL;
-		}
-	else
-		{
-			if (dst->clip_path_ref)
-				{
-					ArtSVP *svp;
-					svp = rsvg_clip_path_render (dst->clip_path_ref, ctx);
-					dst->clippath = art_svp_intersection(src->clippath, svp);
-				}
-			else
-	*/
-				dst->clippath = src->clippath; /*this is bad!!! we should copy it somehow*/
-				/*}*/
+
+	dst->clippath = src->clippath;
 }
 
 void
@@ -340,7 +324,7 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 			g_free(dst->lang); 
 		dst->lang = g_strdup (src->lang);
 	}
-
+	
 	if (src->dash.n_dash > 0 && (!dst->has_dash || src->has_dash))
 		{
 			if(dst->has_dash)
@@ -351,25 +335,8 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 				dst->dash.dash[i] = src->dash.dash[i];
 		}
 	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
-	/*
-	if (src->clippath == NULL)
-		{
-			if (dst->clip_path_ref)
-				dst->clippath = rsvg_clip_path_render (dst->clip_path_ref, ctx);
-			else
-				dst->clippath = NULL;
-		}
-	else
-		{
-			if (dst->clip_path_ref)
-				{
-					ArtSVP *svp;
-					svp = rsvg_clip_path_render (dst->clip_path_ref, ctx);
-					dst->clippath = art_svp_intersection(src->clippath, svp);
-				}
-				else*/
-				dst->clippath = src->clippath; /*this is bad!!! we should copy it somehow*/
-				/*}*/
+
+	dst->clippath = src->clippath;
 }
 
 void
@@ -1432,11 +1399,8 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 
 	state = &ctx->state[ctx->n_state - 1];
 	pixbuf = ctx->pixbuf;
-	
-	/*probably a bad place for this, but at least it gets loaded before anything is actually drawn*/
-	if (state->clip_path_ref && !state->clippath)
-		state->clippath = rsvg_clip_path_render (state->clip_path_ref, ctx);
-	
+
+	rsvg_state_clip_path_assure(ctx);
 
 	if (state->filter == NULL && state->opacity == 0xFF && 
 		!state->backgroundnew && state->mask == NULL && !state->adobe_blend)
@@ -1767,4 +1731,31 @@ guint
 rsvg_property_bag_size (RsvgPropertyBag *bag)
 {
 	return g_hash_table_size (bag->props);
+}
+
+void 
+rsvg_state_clip_path_assure(RsvgHandle * ctx)
+{
+	ArtSVP * tmppath;
+	ArtSVP * tmppath2;
+	RsvgState * state;
+
+	state = rsvg_state_current(ctx);
+
+	if (state->clip_path_ref && !state->clip_path_loaded)
+		{
+			tmppath = rsvg_clip_path_render (state->clip_path_ref, ctx);
+			state->clip_path_loaded = TRUE;
+		}
+	else
+		return;
+
+	if (state->clippath)
+		{
+			tmppath2 = art_svp_intersect(tmppath, state->clippath);
+			art_free(tmppath);
+			state->clippath = tmppath2;
+		}
+	else
+		state->clippath = tmppath;
 }

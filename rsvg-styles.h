@@ -150,6 +150,7 @@ struct _RsvgState {
 	ArtIRect underbbox;
 
 	ArtSVP * clippath;
+	gboolean clip_path_loaded;
 };
 
 void rsvg_state_init (RsvgState *state);
@@ -181,6 +182,8 @@ gboolean rsvg_parse_transform (double dst[6], const char *src);
 RsvgState * rsvg_state_parent (RsvgHandle *ctx);
 RsvgState * rsvg_state_current (RsvgHandle *ctx);
 double rsvg_state_current_font_size (RsvgHandle *ctx);
+
+void rsvg_state_clip_path_assure(RsvgHandle * ctx);
 
 G_END_DECLS
 

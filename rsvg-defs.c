@@ -65,6 +65,8 @@ rsvg_defs_set (RsvgDefs *defs, const char *name, RsvgDefVal *val)
 {
 	if (name == NULL)
 		g_ptr_array_add(defs->unnamed, val);
+	else if (name[0] == '\0')
+		g_ptr_array_add(defs->unnamed, val);
 	else
 		g_hash_table_insert (defs->hash, g_strdup (name), val);
 }

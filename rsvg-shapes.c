@@ -171,6 +171,8 @@ rsvg_render_svp (RsvgHandle *ctx, ArtSVP *svp,
 	RsvgState *state;
 	int i;	
 
+	rsvg_state_clip_path_assure(ctx);
+
 	pixbuf = ctx->pixbuf;
 	if (pixbuf == NULL)
 		{
@@ -296,11 +298,6 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 		}
 	
 	state = rsvg_state_current (ctx);
-
-
-	/*probably a bad place for this, but at lest it gets loaded before anything is actually drawn*/
-	if (state->clip_path_ref && !state->clippath)
-		state->clippath = rsvg_clip_path_render (state->clip_path_ref, ctx);
 
 	/* todo: handle visibility stuff earlier for performance benefits 
 	 * handles all path based shapes. will handle text and images separately
@@ -570,6 +567,7 @@ static void
 rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
 							  int dominate)
 {
+
 	RsvgState *state = rsvg_state_current (ctx);
 	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
 	guint i;
@@ -747,9 +745,8 @@ rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawable *ch
 	g_ptr_array_add(z->children, child);
 }
 
-
-RsvgDefsDrawable * 
-rsvg_push_def_group (RsvgHandle *ctx, const char * id)
+static RsvgDefsDrawable * 
+rsvg_push_part_def_group (RsvgHandle *ctx, const char * id)
 {
 	RsvgDefsDrawableGroup *group;
 
@@ -765,11 +762,24 @@ rsvg_push_def_group (RsvgHandle *ctx, const char * id)
 	rsvg_defs_set (ctx->defs, id, &group->super.super);
 
 	group->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
-	if (group->super.parent != NULL)
-		rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)group->super.parent, 
-									  &group->super);
+
 	ctx->current_defs_group = group;
+
 	return &group->super;
+}
+
+RsvgDefsDrawable * 
+rsvg_push_def_group (RsvgHandle *ctx, const char * id)
+{
+	RsvgDefsDrawable * group;
+
+	group = rsvg_push_part_def_group (ctx, id);
+
+	if (group->parent != NULL)
+		rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)group->parent, 
+									  group);
+
+	return group;
 }
 
 void
@@ -781,6 +791,7 @@ rsvg_pop_def_group (RsvgHandle *ctx)
 	if (group == NULL)
 		return;
 	ctx->current_defs_group = group->super.parent;
+
 }
 
 void
@@ -2185,7 +2196,7 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	/* set up the defval stuff */
 	marker->super.type = RSVG_DEF_MARKER;
 
-	marker->contents = (RsvgDefsDrawable *)&(rsvg_push_def_group (ctx, "")->super);
+	marker->contents =	(RsvgDefsDrawable *)rsvg_push_part_def_group(ctx, NULL);
 
 	marker->super.free = rsvg_marker_free;
 
@@ -2250,6 +2261,7 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 		{
 			rsvg_state_current(ctx)->affine[i] = affine[i];
 		}
+
 
 	rsvg_defs_drawable_draw (self->contents, ctx, 2);
 	

@@ -252,6 +252,8 @@ rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				id = value;
 		}
 
+	mask->super.super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
+
 	ctx->current_defs_group = &mask->super;
 	
 	/* set up the defval stuff */
@@ -264,7 +266,7 @@ rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts)
 void 
 rsvg_end_mask (RsvgHandle *ctx)
 {
-	ctx->current_defs_group = NULL;
+	ctx->current_defs_group = ((RsvgDefsDrawable *)ctx->current_defs_group)->parent;
 }
 
 RsvgDefsDrawable *
@@ -367,6 +369,7 @@ rsvg_clip_path_render (RsvgClipPath * self, RsvgHandle *ctx)
 			ctx->n_state--;
 			rsvg_state_finalize (&ctx->state[ctx->n_state]);
 		}
+
 	return svpx;
 }
 
@@ -407,6 +410,8 @@ rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	rsvg_parse_style_pairs (ctx, rsvg_state_current(ctx), atts);
 
+	clip_path->super.super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
+
 	ctx->current_defs_group = &clip_path->super;
 	
 	/* set up the defval stuff */
@@ -418,7 +423,7 @@ rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
 void 
 rsvg_end_clip_path (RsvgHandle *ctx)
 {
-	ctx->current_defs_group = NULL;
+	ctx->current_defs_group = ((RsvgDefsDrawable *)ctx->current_defs_group)->parent;
 }
 
 RsvgDefsDrawable *
