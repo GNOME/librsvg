@@ -1142,7 +1142,6 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
     if (!g_ascii_isspace (ch[end - 1]))
       break;
   
-  /* 0 length string, just return */
   if (end - beg == 0)
     {
       /* TODO: be smarter with some "last was space" logic */
@@ -2297,13 +2296,11 @@ typedef enum {
 
 struct RsvgSizeCallbackData
 {
+  RsvgSizeType type;
   double x_zoom;
   double y_zoom;
   gint width;
   gint height;
-  RsvgSizeType type;
-  gboolean zoom_set;
-  gboolean max_size_set;
 };
 
 static void
