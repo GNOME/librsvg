@@ -257,7 +257,7 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	     to acquire our real destination size. we'll scale it against
 	     the viewBox's coordinates later */
 	  if (ctx->size_func)
-	    (* ctx->size_func) (&height, &height, ctx->user_data);
+	    (* ctx->size_func) (&width, &height, ctx->user_data);
 	}
       else
 	{

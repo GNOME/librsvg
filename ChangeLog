@@ -1,3 +1,9 @@
+2002-10-03  Dom Lachowicz <doml@appligent.com>
+
+	* rsvg.c (start_svg): Fix error that was hurting nautilus icon themes
+
+	* test-rsvg.c (main): fix segfaults, add width, height arguments, configurable output format
+	
 2002-10-03  Matthias Clasen <maclas@gmx.de>
 
 	* gdk-pixbuf-loader : RSVG can now be optionally a loadable module for GdkPixbuf, if you have a new enough version of GdkPixbuf
