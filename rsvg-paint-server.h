@@ -37,6 +37,7 @@ typedef struct _RsvgGradientStops RsvgGradientStops;
 typedef struct _RsvgLinearGradient RsvgLinearGradient;
 typedef struct _RsvgRadialGradient RsvgRadialGradient;
 typedef struct _RsvgPattern RsvgPattern;
+typedef struct _RsvgSolidColour RsvgSolidColour;
 
 typedef struct _RsvgPaintServer RsvgPaintServer;
 
@@ -102,14 +103,39 @@ struct _RsvgPattern {
 	unsigned int preserve_aspect_ratio;
 };
 
+struct _RsvgSolidColour {
+	gboolean currentcolour;	
+	guint32 rgb;
+};
+
+typedef struct _RsvgSolidColour RsvgPaintServerColour;
+typedef enum _RsvgPaintServerType RsvgPaintServerType;
+typedef union _RsvgPaintServerCore RsvgPaintServerCore;
+
+union _RsvgPaintServerCore {
+	RsvgLinearGradient *lingrad;
+	RsvgRadialGradient *radgrad;
+	RsvgSolidColour *colour;
+	RsvgPattern *pattern;
+};
+
+enum _RsvgPaintServerType {
+	RSVG_PAINT_SERVER_RAD_GRAD, 
+	RSVG_PAINT_SERVER_LIN_GRAD, 
+	RSVG_PAINT_SERVER_SOLID,
+	RSVG_PAINT_SERVER_PATTERN
+};
+
+struct _RsvgPaintServer {
+	int refcnt;
+	RsvgPaintServerType type;
+	RsvgPaintServerCore core;
+};
+
 /* Create a new paint server based on a specification string. */
 RsvgPaintServer *
 rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs *defs, const char *str,
 						 guint32 current_color);
-
-void
-rsvg_render_paint_server (ArtRender *ar, RsvgPaintServer *ps,
-						  const RsvgPSCtx *ctx);
 
 void
 rsvg_paint_server_ref (RsvgPaintServer *ps);

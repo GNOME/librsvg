@@ -1,3 +1,7 @@
+2005-02-25  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-paint-server.c: more de-artification of the core
+
 2005-02-23  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-image.c: Fix bug #168182

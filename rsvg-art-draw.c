@@ -37,7 +37,7 @@
 #include "rsvg-art-draw.h"
 #include "rsvg-art-composite.h"
 #include "rsvg-art-render.h"
-#include "rsvg-paint-server.h"
+#include "rsvg-art-paint-server.h"
 #include "rsvg-styles.h"
 #include "rsvg-bpath-util.h"
 #include "rsvg-path.h"
@@ -263,7 +263,7 @@ rsvg_render_svp (RsvgDrawingCtx *ctx, ArtSVP *svp,
 		gradctx.affine[i] = state->affine[i];
 	
 	gradctx.color = state->current_color;
-	rsvg_render_paint_server (render, ps, &gradctx);
+	rsvg_art_render_paint_server (render, ps, &gradctx);
 	art_render_invoke (render);
 
 	if (arender->clippath != NULL) /*we don't need svpx any more*/
