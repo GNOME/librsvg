@@ -350,3 +350,59 @@ rsvg_paint_server_unref (RsvgPaintServer *ps)
   if (--ps->refcnt == 0)
     ps->free (ps);
 }
+
+RsvgRadialGradient *
+rsvg_clone_radial_gradient (const RsvgRadialGradient *grad)
+{
+  RsvgRadialGradient * clone = NULL;
+  int i;
+
+  clone = g_new (RsvgRadialGradient, 1);
+  clone->super.type = grad->super.type;
+  clone->super.free = grad->super.free;
+
+  for (i = 0; i < 6; i++)
+    clone->affine[i] = grad->affine[i];
+  clone->cx = grad->cx;
+  clone->cy = grad->cy;
+  clone->r  = grad->r;
+  clone->fx = grad->fx;
+  clone->fy = grad->fy;
+
+  clone->stops = g_new (RsvgGradientStops, 1);
+  clone->stops->n_stop = grad->stops->n_stop;
+  clone->stops->stop = g_new (RsvgGradientStop, clone->stops->n_stop);
+
+  for (i = 0; i < grad->stops->n_stop; i++)
+    clone->stops->stop[i] = grad->stops->stop[i];
+
+  return clone;
+}
+
+RsvgLinearGradient *
+rsvg_clone_linear_gradient (const RsvgLinearGradient *grad)
+{
+  RsvgLinearGradient * clone = NULL;
+  int i;
+
+  clone = g_new (RsvgLinearGradient, 1);
+  clone->super.type = grad->super.type;
+  clone->super.free = grad->super.free;
+
+  for (i = 0; i < 6; i++)
+    clone->affine[i] = grad->affine[i];
+  clone->x1 = grad->x1;
+  clone->y1 = grad->y1;
+  clone->x2 = grad->x2;
+  clone->y2 = grad->y2;
+  clone->spread = grad->spread;
+
+  clone->stops = g_new (RsvgGradientStops, 1);
+  clone->stops->n_stop = grad->stops->n_stop;
+  clone->stops->stop = g_new (RsvgGradientStop, clone->stops->n_stop);
+
+  for (i = 0; i < grad->stops->n_stop; i++)
+    clone->stops->stop[i] = grad->stops->stop[i];
+
+  return clone;
+}

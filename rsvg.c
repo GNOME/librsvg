@@ -1282,11 +1282,14 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
     {
       /* TODO: be smarter with some "last was space" logic */
       end = 1; beg = 0;
+      string = g_strdup (" ");
     }
-
-  string = g_malloc (end - beg + 1);
-  memcpy (string, ch + beg, end - beg);
-  string[end - beg] = 0;
+  else
+    {
+      string = g_malloc (end - beg + 1);
+      memcpy (string, ch + beg, end - beg);
+      string[end - beg] = 0;
+    }
   
   if (ctx->pango_context == NULL)
     ctx->pango_context = pango_ft2_get_context ((guint)ctx->dpi, (guint)ctx->dpi);
@@ -1347,8 +1350,8 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 		   state->affine[5] + line_ink_rect.y + bitmap.rows,
 		   bitmap.buffer, bitmap.pitch);
   art_render_invoke (render);
-  g_free (bitmap.buffer);
 
+  g_free (bitmap.buffer);
   g_free (string);
 
   state->text_offset += line_ink_rect.width;
@@ -1512,6 +1515,7 @@ typedef struct _RsvgSaxHandlerGstops {
   RsvgSaxHandlerDefs *parent;
   RsvgHandle *ctx;
   RsvgGradientStops *stops;
+  const char * parent_tag;
 } RsvgSaxHandlerGstops;
 
 static void
@@ -1588,7 +1592,7 @@ rsvg_gradient_stop_handler_end (RsvgSaxHandler *self, const xmlChar *name)
   RsvgSaxHandlerGstops *z = (RsvgSaxHandlerGstops *)self;
   RsvgHandle *ctx = z->ctx;
 
-  if (!strcmp((char *)name, "stop"))
+  if (!strcmp((char *)name, z->parent_tag))
     {
       if (ctx->handler != NULL)
 	{
@@ -1599,7 +1603,25 @@ rsvg_gradient_stop_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 }
 
 static RsvgSaxHandler *
-rsvg_gradient_stop_handler_new (RsvgHandle *ctx, RsvgGradientStops **p_stops)
+rsvg_gradient_stop_handler_new_clone (RsvgHandle *ctx, RsvgGradientStops *stops, 
+				      const char * parent)
+{
+  RsvgSaxHandlerGstops *gstops = g_new0 (RsvgSaxHandlerGstops, 1);
+
+  gstops->super.free = rsvg_gradient_stop_handler_free;
+  gstops->super.start_element = rsvg_gradient_stop_handler_start;
+  gstops->super.end_element = rsvg_gradient_stop_handler_end;
+  gstops->ctx = ctx;
+  gstops->stops = stops;
+  gstops->parent_tag = parent;
+
+  gstops->parent = (RsvgSaxHandlerDefs*)ctx->handler;
+  return &gstops->super;
+}
+
+static RsvgSaxHandler *
+rsvg_gradient_stop_handler_new (RsvgHandle *ctx, RsvgGradientStops **p_stops,
+				const char * parent)
 {
   RsvgSaxHandlerGstops *gstops = g_new0 (RsvgSaxHandlerGstops, 1);
   RsvgGradientStops *stops = g_new (RsvgGradientStops, 1);
@@ -1609,6 +1631,7 @@ rsvg_gradient_stop_handler_new (RsvgHandle *ctx, RsvgGradientStops **p_stops)
   gstops->super.end_element = rsvg_gradient_stop_handler_end;
   gstops->ctx = ctx;
   gstops->stops = stops;
+  gstops->parent_tag = parent;
 
   stops->n_stop = 0;
   stops->stop = NULL;
@@ -1632,11 +1655,15 @@ static void
 rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 {
   RsvgState *state = &ctx->state[ctx->n_state - 1];
-  RsvgLinearGradient *grad;
+  RsvgLinearGradient *grad = NULL;
   int i;
   char *id = NULL;
   double x1 = 0., y1 = 0., x2 = 0., y2 = 0.;
   ArtGradientSpread spread = ART_GRADIENT_PAD;
+  const char * xlink_href = NULL;
+  gboolean got_x1, got_x2, got_y1, got_y2, got_spread, cloned;
+
+  got_x1 = got_x2 = got_y1 = got_y2 = got_spread = cloned = FALSE;
 
   /* 100% is the default */
   x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
@@ -1665,24 +1692,41 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	      else if (!strcmp ((char *)atts[i + 1], "repeat"))
 		spread = ART_GRADIENT_REPEAT;
 	    }
+	  else if (!strcmp ((char *)atts[i], "xlink:href"))
+	    xlink_href = (const char *)atts[i + 1];
+	}
+    }
+  
+  if (xlink_href != NULL)
+    {
+      RsvgLinearGradient * parent = (RsvgLinearGradient*)rsvg_defs_lookup (ctx->defs, xlink_href+1);
+      if (parent != NULL)
+	{
+	  cloned = TRUE;
+	  grad = rsvg_clone_linear_gradient (parent); 
+	  ctx->handler = rsvg_gradient_stop_handler_new_clone (ctx, grad->stops, "linearGradient");
 	}
     }
 
-  grad = g_new (RsvgLinearGradient, 1);
-  grad->super.type = RSVG_DEF_LINGRAD;
-  grad->super.free = rsvg_linear_gradient_free;
-
-  ctx->handler = rsvg_gradient_stop_handler_new (ctx, &grad->stops);
+  if (!cloned)
+    {
+      grad = g_new (RsvgLinearGradient, 1);
+      grad->super.type = RSVG_DEF_LINGRAD;
+      grad->super.free = rsvg_linear_gradient_free;
+      ctx->handler = rsvg_gradient_stop_handler_new (ctx, &grad->stops, "linearGradient");
+    }
 
   rsvg_defs_set (ctx->defs, id, &grad->super);
 
   for (i = 0; i < 6; i++)
     grad->affine[i] = state->affine[i];
-  grad->x1 = x1;
-  grad->y1 = y1;
-  grad->x2 = x2;
-  grad->y2 = y2;
-  grad->spread = spread;
+
+  /* state inherits parent/cloned information unless it's explicity gotten */
+  grad->x1 = (cloned && !got_x1) ? grad->x1 : x1;
+  grad->y1 = (cloned && !got_y1) ? grad->y1 : y1;
+  grad->x2 = (cloned && !got_x2) ? grad->x2 : x2;
+  grad->y2 = (cloned && !got_y2) ? grad->y1 : y2;
+  grad->spread = (cloned && !got_spread) ? grad->spread : spread;
 }
 
 static void
@@ -1699,11 +1743,14 @@ static void
 rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 {
   RsvgState *state = &ctx->state[ctx->n_state - 1];
-  RsvgRadialGradient *grad;
+  RsvgRadialGradient *grad = NULL;
   int i;
   char *id = NULL;
-  double cx = 0., cy = 0., r = 0., fx = 0., fy = 0.;
-  gint got_fx = FALSE, got_fy = FALSE;
+  double cx = 0., cy = 0., r = 0., fx = 0., fy = 0.;  
+  const char * xlink_href = NULL;
+  gboolean got_cx, got_cy, got_r, got_fx, got_fy, cloned;
+
+  got_cx = got_cy = got_r = got_fx = got_fy = cloned = FALSE;
 
   /* setup defaults */
   cx = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
@@ -1717,14 +1764,20 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	{
 	  if (!strcmp ((char *)atts[i], "id"))
 	    id = (char *)atts[i + 1];
-	  else if (!strcmp ((char *)atts[i], "cx"))
+	  else if (!strcmp ((char *)atts[i], "cx")) {
 	    cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
-	  else if (!strcmp ((char *)atts[i], "cy"))
+	    got_cx = TRUE;
+	  }
+	  else if (!strcmp ((char *)atts[i], "cy")) {
 	    cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
-	  else if (!strcmp ((char *)atts[i], "r"))
+	    got_cy = TRUE;
+	  }
+	  else if (!strcmp ((char *)atts[i], "r")) {
 	    r = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, 
 						  rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), 
 						  state->font_size, 0.);
+	    got_r = TRUE;
+	  }
 	  else if (!strcmp ((char *)atts[i], "fx")) {
 	    fx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	    got_fx = TRUE;
@@ -1733,29 +1786,45 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	    fy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
 	    got_fy = TRUE;
 	  }
+	  else if (!strcmp ((char *)atts[i], "xlink:href"))
+	    xlink_href = (const char *)atts[i + 1];
 	}
     }
 
-  if (!got_fx)
-    fx = cx;
-  if (!got_fy)
-    fy = cy;
+  if (xlink_href != NULL)
+    {
+      RsvgRadialGradient * parent = (RsvgRadialGradient*)rsvg_defs_lookup (ctx->defs, xlink_href+1);
+      if (parent != NULL)
+	{
+	  cloned = TRUE;
+	  grad = rsvg_clone_radial_gradient (parent); 
+	  ctx->handler = rsvg_gradient_stop_handler_new_clone (ctx, grad->stops, "radialGradient");
+	}
+    }
+  if (!cloned)
+    {
+      grad = g_new (RsvgRadialGradient, 1);
+      grad->super.type = RSVG_DEF_RADGRAD;
+      grad->super.free = rsvg_radial_gradient_free;
+      ctx->handler = rsvg_gradient_stop_handler_new (ctx, &grad->stops, "radialGradient");
 
-  grad = g_new (RsvgRadialGradient, 1);
-  grad->super.type = RSVG_DEF_RADGRAD;
-  grad->super.free = rsvg_radial_gradient_free;
-
-  ctx->handler = rsvg_gradient_stop_handler_new (ctx, &grad->stops);
+      if (!got_fx)
+	fx = cx;
+      if (!got_fy)
+	fy = cy;
+    }
 
   rsvg_defs_set (ctx->defs, id, &grad->super);
 
   for (i = 0; i < 6; i++)
     grad->affine[i] = state->affine[i];
-  grad->cx = cx;
-  grad->cy = cy;
-  grad->r = r;
-  grad->fx = fx;
-  grad->fy = fy;
+
+  /* state inherits parent/cloned information unless it's explicity gotten */
+  grad->cx = (cloned && !got_cx) ? grad->cx: cx;
+  grad->cy = (cloned && !got_cy) ? grad->cy: cy;
+  grad->r =  (cloned && !got_r) ? grad->r : r;
+  grad->fx = (cloned && !got_fx) ? grad->fx : fx;
+  grad->fy = (cloned && !got_fy) ? grad->fy : fy;
 }
 
 /* end gradients */
@@ -1861,6 +1930,15 @@ rsvg_defs_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 {
   RsvgSaxHandlerDefs *z = (RsvgSaxHandlerDefs *)self;
   RsvgHandle *ctx = z->ctx;
+
+  if (!strcmp((char *)name, "defs"))
+    {
+      if (ctx->handler != NULL)
+	{
+	  ctx->handler->free (ctx->handler);
+	  ctx->handler = NULL;
+	}
+    }
 
   /* pop the state stack */
   ctx->n_state--;

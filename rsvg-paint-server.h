@@ -69,3 +69,8 @@ rsvg_paint_server_ref (RsvgPaintServer *ps);
 void
 rsvg_paint_server_unref (RsvgPaintServer *ps);
 
+RsvgRadialGradient *
+rsvg_clone_radial_gradient (const RsvgRadialGradient *grad);
+
+RsvgLinearGradient *
+rsvg_clone_linear_gradient (const RsvgLinearGradient *grad);

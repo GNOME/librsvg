@@ -1,4 +1,4 @@
-SUBDIRS = gtk-engine gdk-pixbuf-loader
+SUBDIRS = . gtk-engine gdk-pixbuf-loader
 
 bin_PROGRAMS = rsvg
 

@@ -11,7 +11,7 @@ endif
 
 svg_loader_la_SOURCES = io-svg.c
 svg_loader_la_LDFLAGS = -avoid-version -module
-svg_loader_la_LIBADD = $(GDK_PIXBUF_LIBS) $(LIBRSVG_LIBS) -lrsvg-2
+svg_loader_la_LIBADD = $(GDK_PIXBUF_LIBS) $(LIBRSVG_LIBS) $(top_builddir)/librsvg-2.la
 
 loader_LTLIBRARIES = $(target_pixbuf_loader)
 

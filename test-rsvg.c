@@ -78,6 +78,7 @@ main (int argc, const char **argv)
 	if (n_args != 2)
 		{
 			poptPrintHelp (popt_context, stderr, 0);
+			poptFreeContext (popt_context);
 			return 1;
 		}
 
@@ -98,6 +99,8 @@ main (int argc, const char **argv)
 		/* assume the user wants to zoom the pixbuf, but cap the maximum size */
 		pixbuf = rsvg_pixbuf_from_file_at_zoom_with_max (args[0], x_zoom, y_zoom,
 														 width, height, NULL);
+
+	poptFreeContext (popt_context);
 
 	if (pixbuf) 
 		gdk_pixbuf_save (pixbuf, args[1], format, NULL, NULL);
