@@ -62,7 +62,8 @@ typedef struct {
 	ArtPathStrokeJoinType join;
 	
 	double         font_size;
-	char        *  font_family;
+	char         * font_family;
+	char         * lang;
 	PangoStyle     font_style;
 	PangoVariant   font_variant;
 	PangoWeight    font_weight;

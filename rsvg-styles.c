@@ -41,7 +41,7 @@ rsvg_viewport_percentage (gdouble width, gdouble height)
 void
 rsvg_state_init (RsvgState *state)
 {
-	memset (state, 0, sizeof (*state));
+	memset (state, 0, sizeof (RsvgState));
 	
 	art_affine_identity (state->affine);
 	
@@ -72,6 +72,7 @@ rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 	
 	*dst = *src;
 	dst->font_family = g_strdup (src->font_family);
+	dst->lang = g_strdup (src->lang);
 	rsvg_paint_server_ref (dst->fill);
 	rsvg_paint_server_ref (dst->stroke);
 	dst->save_pixbuf = NULL;
@@ -88,6 +89,7 @@ void
 rsvg_state_finalize (RsvgState *state)
 {
 	g_free (state->font_family);
+	g_free (state->lang);
 	rsvg_paint_server_unref (state->fill);
 	rsvg_paint_server_unref (state->stroke);
 	
@@ -178,6 +180,12 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			char * save = g_strdup (rsvg_css_parse_font_family (str + arg_off, parent_state->font_family));
 			g_free (state->font_family);
 			state->font_family = save;
+		}
+	else if (rsvg_css_param_match (str, "xml:lang"))
+		{
+			char * save = g_strdup (str + arg_off);
+			g_free (state->lang);
+			state->lang = save;
 		}
 	else if (rsvg_css_param_match (str, "font-style"))
 		{
@@ -322,6 +330,7 @@ rsvg_is_style_arg(const char *str)
 			g_hash_table_insert (styles, "text-decoration",   GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "visibility",        GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "writing-mode",      GINT_TO_POINTER (TRUE));
+			g_hash_table_insert (styles, "xml:lang",          GINT_TO_POINTER (TRUE));
 		}
 	
 	/* this will default to 0 (FALSE) on a failed lookup */
@@ -526,7 +535,6 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 }
 
 #else /* !HAVE_LIBCROCO */
-
 
 static void
 rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
