@@ -48,15 +48,15 @@ main (int argc, const char **argv)
 	char * format = NULL;
 
 	struct poptOption options_table[] = {
-		{ "dpi-x",   'd',  POPT_ARG_DOUBLE, &dpi_x,    0, "pixels per inch", "<float>"},
-		{ "dpi-y",   'p',  POPT_ARG_DOUBLE, &dpi_y,    0, "pixels per inch", "<float>"},
-		{ "x-zoom",  'x',  POPT_ARG_DOUBLE, &x_zoom,   0, "x zoom factor", "<float>" },
-		{ "y-zoom",  'y',  POPT_ARG_DOUBLE, &y_zoom,   0, "y zoom factor", "<float>" },
-		{ "width",   'w',  POPT_ARG_INT,    &width,    0, "width", "<int>" },
-		{ "height",  'h',  POPT_ARG_INT,    &height,   0, "height", "<int>" },
-		{ "quality", 'q',  POPT_ARG_INT,    &quality,  0, "JPEG quality", "<int>"},
-		{ "format",  'f',  POPT_ARG_STRING, &format,   0, "save format", "[png, jpeg]"},
-		{ "version", 'v',  POPT_ARG_NONE,   &bVersion, 0, "show version information", NULL },
+		{ "dpi-x",   'd',  POPT_ARG_DOUBLE, &dpi_x,    0, N_("pixels per inch"), N_("<float>") },
+		{ "dpi-y",   'p',  POPT_ARG_DOUBLE, &dpi_y,    0, N_("pixels per inch"), N_("<float>") },
+		{ "x-zoom",  'x',  POPT_ARG_DOUBLE, &x_zoom,   0, N_("x zoom factor"), N_("<float>") },
+		{ "y-zoom",  'y',  POPT_ARG_DOUBLE, &y_zoom,   0, N_("y zoom factor"), N_("<float>") },
+		{ "width",   'w',  POPT_ARG_INT,    &width,    0, N_("width"), N_("<int>") },
+		{ "height",  'h',  POPT_ARG_INT,    &height,   0, N_("height"), N_("<int>") },
+		{ "quality", 'q',  POPT_ARG_INT,    &quality,  0, N_("JPEG quality"), N_("<int>") },
+		{ "format",  'f',  POPT_ARG_STRING, &format,   0, N_("save format"), N_("[png, jpeg]") },
+		{ "version", 'v',  POPT_ARG_NONE,   &bVersion, 0, N_("show version information"), NULL },
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
@@ -66,7 +66,7 @@ main (int argc, const char **argv)
 	GdkPixbuf *pixbuf;
 
 	popt_context = poptGetContext ("rsvg", argc, argv, options_table, 0);
-	poptSetOtherOptionHelp(popt_context, "[OPTIONS...] file.svg file.png");
+	poptSetOtherOptionHelp(popt_context, _("[OPTIONS...] file.svg file.png"));
 
 	c = poptGetNextOpt (popt_context);
 	args = poptGetArgs (popt_context);

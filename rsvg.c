@@ -119,8 +119,9 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 					/* apply the sizing function on the *original* width and height
 					   to acquire our real destination size. we'll scale it against
 					   the viewBox's coordinates later */
-					if (ctx->size_func)
+					if (ctx->size_func) {
 						(* ctx->size_func) (&width, &height, ctx->user_data);
+					}
 				}
 			else
 				{
@@ -137,8 +138,9 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 					/* apply the sizing function to acquire our new width and height.
 					   we'll scale this against the old values later */
-					if (ctx->size_func)
+					if (ctx->size_func) {
 						(* ctx->size_func) (&new_width, &new_height, ctx->user_data);
+					}
 				}
 
 			/* set these here because % are relative to viewbox */
@@ -1394,11 +1396,13 @@ rsvg_entity_decl (void *data, const xmlChar *name, int type,
 static void
 rsvg_error_cb (void *data, const char *msg, ...)
 {
+#ifdef G_ENABLE_DEBUG
 	va_list args;
 	
 	va_start (args, msg);
 	vfprintf (stderr, msg, args);
 	va_end (args);
+#endif
 }
 
 /* TODO: this is indempotent, but not exactly threadsafe */

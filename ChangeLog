@@ -1,3 +1,8 @@
+2004-09-25  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.c Part of bug 153671
+	* *.c: Prepare for some gettext lovin'
+	
 2004-09-23  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-shapes.c, rsvg-paint-server.c: Made objectBoundingBox for pservers to be calculated in user coordinates instead of pixel coordinates, this allows for rotation and stuff.

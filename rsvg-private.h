@@ -48,6 +48,10 @@ typedef struct _RsvgFilter RsvgFilter;
 #define _(X) X
 #endif
 
+#ifndef N_
+#define N_(X) X
+#endif
+
 struct RsvgSaxHandler {
 	void (*free) (RsvgSaxHandler *self);
 	void (*start_element) (RsvgSaxHandler *self, const xmlChar *name, RsvgPropertyBag *atts);

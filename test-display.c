@@ -535,19 +535,19 @@ main (int argc, char **argv)
 	struct poptOption options_table[] = 
 		{
 #ifdef ENABLE_XEMBED
-			{ "xid",         'i',  POPT_ARG_INT,    &xid,         0, _("XWindow ID [for X11 embedding]"), _("<int>") },
+			{ "xid",         'i',  POPT_ARG_INT,    &xid,         0, N_("XWindow ID [for X11 embedding]"), N_("<int>") },
 #endif
-			{ "stdin",       's',  POPT_ARG_NONE,   &from_stdin,  0, _("Read from stdin instead of a file"), NULL },
-			{ "dpi-x",       'd',  POPT_ARG_DOUBLE, &dpi_x,       0, _("Set the # of Pixels Per Inch"), _("<float>") },
-			{ "dpi-y",       'p',  POPT_ARG_DOUBLE, &dpi_y,       0, _("Set the # of Pixels Per Inch"), _("<float>") },
-			{ "x-zoom",      'x',  POPT_ARG_DOUBLE, &x_zoom,      0, _("Set the x zoom factor"), _("<float>") },
-			{ "y-zoom",      'y',  POPT_ARG_DOUBLE, &y_zoom,      0, _("Set the y zoom factor"), _("<float>") },
-			{ "width",       'w',  POPT_ARG_INT,    &width,       0, _("Set the image's width"), _("<int>") },
-			{ "height",      'h',  POPT_ARG_INT,    &height,      0, _("Set the image's height"), _("<int>") },
-			{ "bg-color",    'b',  POPT_ARG_STRING, &bg_color,    0, _("Set the image background color (default: transparent)"), _("<string>") },
-			{ "base-uri",    'u',  POPT_ARG_STRING, &base_uri,    0, _("Set the base URI (default: none)"), _("<string>") },
-			{ "keep-aspect", 'k',  POPT_ARG_NONE,   &bKeepAspect, 0, _("Preserve the image's aspect ratio"), NULL },
-			{ "version",     'v',  POPT_ARG_NONE,   &bVersion,    0, _("Show version information"), NULL },
+			{ "stdin",       's',  POPT_ARG_NONE,   &from_stdin,  0, N_("Read from stdin instead of a file"), NULL },
+			{ "dpi-x",       'd',  POPT_ARG_DOUBLE, &dpi_x,       0, N_("Set the # of Pixels Per Inch"), N_("<float>") },
+			{ "dpi-y",       'p',  POPT_ARG_DOUBLE, &dpi_y,       0, N_("Set the # of Pixels Per Inch"), N_("<float>") },
+			{ "x-zoom",      'x',  POPT_ARG_DOUBLE, &x_zoom,      0, N_("Set the x zoom factor"), N_("<float>") },
+			{ "y-zoom",      'y',  POPT_ARG_DOUBLE, &y_zoom,      0, N_("Set the y zoom factor"), N_("<float>") },
+			{ "width",       'w',  POPT_ARG_INT,    &width,       0, N_("Set the image's width"), N_("<int>") },
+			{ "height",      'h',  POPT_ARG_INT,    &height,      0, N_("Set the image's height"), N_("<int>") },
+			{ "bg-color",    'b',  POPT_ARG_STRING, &bg_color,    0, N_("Set the image background color (default: transparent)"), N_("<string>") },
+			{ "base-uri",    'u',  POPT_ARG_STRING, &base_uri,    0, N_("Set the base URI (default: none)"), N_("<string>") },
+			{ "keep-aspect", 'k',  POPT_ARG_NONE,   &bKeepAspect, 0, N_("Preserve the image's aspect ratio"), NULL },
+			{ "version",     'v',  POPT_ARG_NONE,   &bVersion,    0, N_("Show version information"), NULL },
 			POPT_AUTOHELP
 			POPT_TABLEEND
 		};

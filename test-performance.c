@@ -47,7 +47,7 @@ main (int argc, const char **argv)
 	int bVersion = 0;
 
 	struct poptOption options_table[] = {
-		{ "dpi"   ,  'd',  POPT_ARG_DOUBLE, NULL, 0, "pixels per inch", "<float>"},
+		{ "dpi"   ,  'd',  POPT_ARG_DOUBLE, NULL, 0, "pixels per inch", "<float>" },
 		{ "x-zoom",  'x',  POPT_ARG_DOUBLE, NULL, 0, "x zoom factor", "<float>" },
 		{ "y-zoom",  'y',  POPT_ARG_DOUBLE, NULL, 0, "y zoom factor", "<float>" },
 		{ "width",   'w',  POPT_ARG_INT,    NULL, 0, "width", "<int>" },
