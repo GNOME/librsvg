@@ -1084,8 +1084,6 @@ rsvg_desc_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 					ctx->handler = NULL;
 				}
 		}
-	
-	rsvg_state_pop(ctx);
 }
 
 static void
@@ -1160,8 +1158,6 @@ rsvg_title_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 					ctx->handler = NULL;
 				}
 		}
-	
-	rsvg_state_pop(ctx);
 }
 
 static void
@@ -1253,8 +1249,6 @@ rsvg_metadata_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 		}
 	else
 		g_string_append_printf (ctx->metadata, "</%s>\n", name);
-	
-	rsvg_state_pop(ctx);
 }
 
 static void
