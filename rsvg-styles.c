@@ -924,7 +924,7 @@ rsvg_pixmap_destroy (guchar *pixels, gpointer data)
  * stack.
  **/
 void
-rsvg_push_opacity_group (RsvgHandle *ctx)
+rsvg_push_discrete_layer (RsvgHandle *ctx)
 {
 	RsvgState *state;
 	GdkPixbuf *pixbuf;
@@ -974,11 +974,10 @@ rsvg_push_opacity_group (RsvgHandle *ctx)
  * Pops a new transparency group from the stack, recompositing with the
  * next on stack.
  **/
-void
-rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity)
+static void
+rsvg_use_opacity (RsvgHandle *ctx, int opacity, 
+				  GdkPixbuf *tos, GdkPixbuf *nos)
 {
-	RsvgState *state = &ctx->state[ctx->n_state - 1];
-	GdkPixbuf *tos, *nos;
 	art_u8 *tos_pixels, *nos_pixels;
 	int width;
 	int height;
@@ -986,8 +985,6 @@ rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity)
 	int x, y;
 	int tmp;
 	
-	tos = ctx->pixbuf;
-	nos = state->save_pixbuf;
 	
 	if (tos == NULL || nos == NULL)
 		{
@@ -1027,9 +1024,6 @@ rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity)
 			tos_pixels += rowstride;
 			nos_pixels += rowstride;
 		}
-	
-	g_object_unref (tos);
-	ctx->pixbuf = nos;
 }
 
 /**
@@ -1042,52 +1036,72 @@ rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity)
  * It is a little bit of a hack to use this stacks for filters too, but it the
  * same principle in general
  **/
+
+static GdkPixbuf *
+get_next_out(gint * operationsleft, GdkPixbuf * in, GdkPixbuf * tos, 
+			 GdkPixbuf * nos, GdkPixbuf *intermediate)
+{
+	GdkPixbuf * out;
+
+	if (*operationsleft == 1)
+		out = nos;
+	else
+		{ 
+			if (in == tos)	
+				out = intermediate;
+			else
+				out = tos;
+			gdk_pixbuf_fill(out, 0);
+		}	
+	(*operationsleft)--;
+	
+	return out;
+}
+
 void
-rsvg_pop_opacity_group_as_filter (RsvgHandle *ctx, RsvgFilter *filter, 
-								  int opacity)
+rsvg_pop_discrete_layer(RsvgHandle *ctx, RsvgFilter *filter, 
+						int opacity)
 {
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
-	GdkPixbuf *tos, *nos;
+	GdkPixbuf *tos, *nos, *intermediate;
+
+	GdkPixbuf *in, *out;
+	
+	intermediate = NULL;
+
+	int operationsleft;
+	operationsleft = 0;
 
 	tos = ctx->pixbuf;
 	nos = state->save_pixbuf;
-
-	/*if there is an opacity value then we must deal with it before filtering*/
-	/*	
-if (opacity != 0xFF)
-		{
-			art_u8 *tos_pixels;
-			int width;
-			int height;
-			int rowstride;
-			int x, y;
-
-			width = gdk_pixbuf_get_width (tos);
-			height = gdk_pixbuf_get_height (tos);
-			rowstride = gdk_pixbuf_get_rowstride (tos);
-			
-			tos_pixels = gdk_pixbuf_get_pixels (tos);
-			
-			for (y = 0; y < height; y++)
-				{
-					for (x = 0; x < width; x++)
-						{
-							tos_pixels[4 * x + 3] = tos_pixels[4 * x + 3] * 
-								opacity / 255;
-						}
-					tos_pixels += rowstride;
-				}
-		}
 	
-	*/
+	if (opacity != 0xFF)
+		operationsleft++;
+	if (filter != NULL)
+		operationsleft++;
 
-	if (tos == NULL || nos == NULL)
+	if (operationsleft > 1)
+		intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+									   gdk_pixbuf_get_width (tos),
+									   gdk_pixbuf_get_height (tos));
+
+	in = tos;
+
+	if (opacity != 0xFF)
 		{
-			/* FIXME: What warning/GError here? */
-			return;
+			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
+			rsvg_use_opacity (ctx, opacity, in, out);
+			in = out;
 		}
-	
-	rsvg_filter_render (filter, tos, nos, ctx);
+	if (filter != NULL)
+		{
+			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
+			rsvg_filter_render (filter, in, out, ctx);
+			in = out;
+		}
+
+	if (intermediate != NULL)
+		g_object_unref (intermediate);
 
 	g_object_unref (tos);
 	ctx->pixbuf = nos;

@@ -244,11 +244,11 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	vpath = art_bez_path_to_vec (affine_bpath, 0.25);
 	art_free (affine_bpath);
 	
-	need_tmpbuf = (state->fill != NULL) && (state->stroke != NULL) &&
-		state->opacity != 0xff;
+	need_tmpbuf = ((state->fill != NULL) && (state->stroke != NULL) &&
+				   state->opacity != 0xff) || state->filter;
 	
-	if (need_tmpbuf || state->filter)
-		rsvg_push_opacity_group (ctx);
+	if (need_tmpbuf)
+		rsvg_push_discrete_layer (ctx);
 	
 	if (state->fill != NULL)
 		{
@@ -309,10 +309,8 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 			art_svp_free (svp);
 		}
 
-	if (state->filter)
-		rsvg_pop_opacity_group_as_filter (ctx, state->filter, state->opacity);
-	else if (need_tmpbuf)
-		rsvg_pop_opacity_group (ctx, state->opacity);	
+	if (need_tmpbuf)
+		rsvg_pop_discrete_layer (ctx, state->filter, state->opacity);	
 
 	art_free (vpath);
 }
@@ -1041,11 +1039,17 @@ rsvg_start_use (RsvgHandle *ctx, const xmlChar **atts)
 							art_affine_multiply (state->affine, affine, state->affine);
 
 							rsvg_parse_style_attrs (ctx, state, "use", klazz, id, atts);
-							if (state->opacity != 0xff)
-								rsvg_push_opacity_group (ctx);
+							  
+							if (state->opacity != 0xff || state->filter)
+								rsvg_push_discrete_layer (ctx);
 
 							/* always want to render inside of a <use/> */
 							rsvg_render_path (ctx, path->d);
+	  
+							if (state->opacity != 0xff || state->filter)
+								rsvg_pop_discrete_layer (ctx, state->filter, 
+														 state->opacity);
+
 							break;
 						}
 					default:

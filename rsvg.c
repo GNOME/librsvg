@@ -224,7 +224,7 @@ rsvg_start_g (RsvgHandle *ctx, const xmlChar **atts)
 	
 	rsvg_parse_style_attrs (ctx, state, "g", klazz, id, atts);
 	if (state->filter != NULL || state->opacity != 0xff)
-		rsvg_push_opacity_group (ctx);
+		rsvg_push_discrete_layer (ctx);
 }
 
 static void
@@ -232,10 +232,8 @@ rsvg_end_g (RsvgHandle *ctx)
 {
 	RsvgState *state = rsvg_state_current (ctx);
 	
-	if (state->filter != NULL) /* filters use opacity groups as well*/
-		rsvg_pop_opacity_group_as_filter (ctx, state->filter, state->opacity);
-	else if (state->opacity != 0xff)
-		rsvg_pop_opacity_group (ctx, state->opacity);
+	if (state->filter != NULL || state->opacity != 0xff)
+		rsvg_pop_discrete_layer (ctx, state->filter, state->opacity);
 }
 
 typedef struct _RsvgSaxHandlerDefs {

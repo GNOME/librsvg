@@ -1,3 +1,16 @@
+2004-02-19  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-styles.c, rsvg-styles.h: Changed "opacity groups" into 
+	"discrete layers" which are like opacity groups but handle filters
+	as well as opacity groups and will eventually handle masks. This fixes 
+	bugs relating to transperency and filters being used at the same time.
+
+	* rsvg-filter.c: fixed a couple of little bugs relating to gaussian 
+	blurs with a standard deviation less than 1 in an axis, it will now 
+	just ommit blurring in this axis, saving us time. Also disabled perfect
+	blurs because they are really quite silly most of the time, Dom was 
+	right.
+
 2004-02-17  Thomas Vander Stichele  <thomas at apestaart dot org>
 
 	* rsvg-gz.c: (rsvg_handle_gz_close_impl):
