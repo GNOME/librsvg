@@ -52,6 +52,8 @@ rsvg_defs_lookup (const RsvgDefs *defs, const char *name)
 void
 rsvg_defs_set (RsvgDefs *defs, const char *name, RsvgDefVal *val)
 {
+	g_return_if_fail(name);
+
 	g_hash_table_insert (defs->hash, g_strdup (name), val);
 }
 

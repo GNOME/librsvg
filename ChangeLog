@@ -1,3 +1,7 @@
+2003-12-09  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-defs.c (rsvg_defs_set): Bug 128690
+	
 2003-12-07  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Bump version number
