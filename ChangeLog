@@ -1,5 +1,9 @@
 2002-02-25  Darin Adler  <darin@bentspoon.com>
 
+	* NEWS: News for 1.1.4.
+
+2002-02-25  Darin Adler  <darin@bentspoon.com>
+
 	* .cvsignore: Ignore new test program binary.
 	* configure.in: Bump version.
 
@@ -35,8 +39,7 @@
 
 2002-02-16  Alexander Larsson  <alla@lysator.liu.se>
 
-	* test-71297.svg:
-	Add test case.
+	* test-71297.svg: Add test case.
 
 2002-02-12  Darin Adler  <darin@bentspoon.com>
 
