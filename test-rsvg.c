@@ -37,34 +37,41 @@ main (int argc, const char **argv)
 	poptContext popt_context;
 	double x_zoom = 1.0;
 	double y_zoom = 1.0;
-	gint width  = -1;
-	gint height = -1;
+	int width  = -1;
+	int height = -1;
+	int bVersion = 0;
 	char * format = "png";
 
 	struct poptOption options_table[] = {
-		{ "x-zoom", 'x', POPT_ARG_DOUBLE, &x_zoom, 0, NULL, "x zoom factor" },
-		{ "y-zoom", 'y', POPT_ARG_DOUBLE, &y_zoom, 0, NULL, "y zoom factor" },
-		{ "width",  'w', POPT_ARG_INT,    &width,  0, NULL, "width" },
-		{ "height", 'h', POPT_ARG_INT,    &height, 0, NULL, "height" },
-		{ "format", 'f', POPT_ARG_STRING, &format, 0, NULL, "save format [png, jpeg]" },
+		{ "x-zoom", 'x',  POPT_ARG_DOUBLE, &x_zoom,  0, "x zoom factor", "<float>" },
+		{ "y-zoom", 'y',  POPT_ARG_DOUBLE, &y_zoom,  0, "y zoom factor", "<float>" },
+		{ "width",  'w',  POPT_ARG_INT,    &width,   0, "width", "<int>" },
+		{ "height", 'h',  POPT_ARG_INT,    &height,  0, "height", "<int>" },
+		{ "format", 'f',  POPT_ARG_STRING, &format,  0, "save format", "[png, jpeg]"},
+		{ "version", 'v', POPT_ARG_NONE,   &bVersion, 0, "show version information", NULL },
 		POPT_AUTOHELP
-		{ NULL, 0, 0, NULL, 0, NULL, NULL }
+		POPT_TABLEEND
 	};
 	int c;
 	const char * const *args;
 	gint n_args = 0;
 	GdkPixbuf *pixbuf;
 
-	g_type_init ();
-
 	popt_context = poptGetContext ("rsvg", argc, argv, options_table, 0);
+	poptSetOtherOptionHelp(popt_context, "[OPTIONS...] file.svg file.png");
 
 	c = poptGetNextOpt (popt_context);
 	args = poptGetArgs (popt_context);
 
+	if (bVersion != 0)
+		{
+			printf ("rsvg version %s\n", VERSION);
+			return 0;
+		}
+
 	if (args)
 		{
-			while(args[n_args] != NULL)
+			while (args[n_args] != NULL)
 				n_args++;
 		}
 
@@ -78,6 +85,8 @@ main (int argc, const char **argv)
 		format = "jpeg";
 	else
 		format = "png";
+
+	g_type_init ();
 
 	/* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
 	if (width == -1 && height == -1)
