@@ -21,7 +21,10 @@
    Author: Raph Levien <raph@artofcode.com>
 */
 
-#include <stdio.h>
+#include <config.h>
+
+#include "rsvg.h"
+
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
@@ -47,8 +50,6 @@
 #include "art_render_svp.h"
 #include "art_render_mask.h"
 
-#include <gdk-pixbuf/gdk-pixbuf.h>
-
 #include <gnome-xml/SAX.h>
 #include <gnome-xml/xmlmemory.h>
 
@@ -58,7 +59,6 @@
 #include "rsvg-css.h"
 #include "rsvg-paint-server.h"
 #include "rsvg-ft.h"
-#include "rsvg.h"
 
 #define noVERBOSE
 

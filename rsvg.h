@@ -28,6 +28,9 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#include <stdio.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
 GdkPixbuf *
 rsvg_render_file (FILE *f, double zoom);
 
