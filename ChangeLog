@@ -1,10 +1,12 @@
 2003-09-21  Tor Lillqvist  <tml@iki.fi>
 
+	* librsvg-zip.in: New file.
+
 	* configure.in: Check for Win32, set OS_WIN32 automake
-	variable. Check for strtok_r.
+	variable. Check for strtok_r. Expand librsvg-zip.
 
 	* Makefile.am: Use -lm only on Unix. Add LIBGSF_LIBS and
-	LIBCROCO_LIBS to librsvg_2_la_LIBADD.
+	LIBCROCO_LIBS to librsvg_2_la_LIBADD. Distribute librsvg-zip.in.
 
 	* rsvg-css.c: Use G_PI instead of M_PI.
 	(strtok_r): Implement strtok_r here if not available. (Very

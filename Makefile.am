@@ -23,6 +23,7 @@ EXTRA_DIST =\
 	COPYING.LIB \
 	librsvg.spec.in \
 	librsvg-2.0.pc.in \
+	librsvg-zip.in \
 	rsvg-gz.c \
 	rsvg-gz.h \
 	$(man_MANS)
