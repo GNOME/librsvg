@@ -40,7 +40,8 @@
 void 
 rsvg_text_render_text (RsvgHandle *ctx,
 					   RsvgState  *state,
-					   const char *text);
+					   const char *text,
+					   const char *id);
 
 typedef struct _RsvgTextLayout RsvgTextLayout;
 
@@ -485,7 +486,8 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 void 
 rsvg_text_render_text (RsvgHandle *ctx,
 					   RsvgState  *state,
-					   const char *text)
+					   const char *text,
+					   const char *id)
 {
 	RsvgTextLayout *layout;
 	RenderCtx      *render;
@@ -493,8 +495,11 @@ rsvg_text_render_text (RsvgHandle *ctx,
 	layout = rsvg_text_layout_new (ctx, state, text);
 	render = rsvg_render_ctx_new ();
 	
-	rsvg_text_layout_render (layout, rsvg_text_render_vectors, render);
+	rsvg_text_layout_render (layout, rsvg_text_render_vectors, 
+							 (gpointer)render);
 	
+	rsvg_handle_path (ctx, render->path->str, id);
+
 	rsvg_render_ctx_free (render);
 	rsvg_text_layout_free (layout);
 }
