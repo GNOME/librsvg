@@ -73,6 +73,11 @@ typedef void (* RsvgTextRenderFunc) (PangoFont  *font,
 #define FT_LOAD_TARGET_MONO FT_LOAD_MONOCHROME
 #endif
 
+/* TODO: stuff these into the RsvgHandle object, expose API for manipulating them */
+#define ANTIALIAS_TEXT 1
+#define HINT_TEXT 1
+#define AUTO_HINT_TEXT 1
+
 static RenderCtx *
 rsvg_render_ctx_new (void)
 {
@@ -95,9 +100,13 @@ static void
 rsvg_text_ft2_subst_func (FcPattern *pattern,
                           gpointer   data)
 {
-	FcPatternAddBool (pattern, FC_HINTING, 0);
-	FcPatternAddBool (pattern, FC_ANTIALIAS, 1);
-	FcPatternAddBool (pattern, FC_AUTOHINT, 0);	
+	RsvgHandle *ctx = (RsvgHandle *)data;
+
+	(void)ctx;
+
+	FcPatternAddBool (pattern, FC_HINTING, HINT_TEXT);
+	FcPatternAddBool (pattern, FC_ANTIALIAS, ANTIALIAS_TEXT);
+	FcPatternAddBool (pattern, FC_AUTOHINT, AUTO_HINT_TEXT);	
 }
 
 static PangoContext *
@@ -199,7 +208,16 @@ rsvg_text_layout_render_flags (RsvgTextLayout *layout)
 {
 	gint flags;
 	
-	flags = FT_LOAD_NO_BITMAP | FT_LOAD_FORCE_AUTOHINT;
+	if (ANTIALIAS_TEXT)
+		flags = FT_LOAD_NO_BITMAP;
+	else
+		flags = FT_LOAD_TARGET_MONO;
+	
+	if (!HINT_TEXT)
+		flags |= FT_LOAD_NO_HINTING;
+	
+	if (AUTO_HINT_TEXT)
+		flags |= FT_LOAD_FORCE_AUTOHINT;	
 	
 	return flags;
 }
@@ -218,8 +236,8 @@ static void
 print266 (FT_Vector *pnt,
 		  gchar     *msg)
 {
-#if 0 /* def RSVG_TEXT_DEBUG */
-	g_print ("%s Point (%d,%d)\n",
+#ifdef RSVG_TEXT_DEBUG
+	fprintf (stderr, "%s Point (%d,%d)\n",
 			 msg, (gint)pnt->x,
 			 (gint)pnt->y);
 #endif
@@ -371,10 +389,10 @@ rsvg_text_layout_render_trafo (RsvgTextLayout *layout,
 		}
 	else 
 		{
-			trafo->xx = 1;
-			trafo->xy = 0;
-			trafo->yx = 0;
-			trafo->yy = 1;
+			trafo->xx = 1 * 65536.0;
+			trafo->xy = 0 * 65536.0;
+			trafo->yx = 0 * 65536.0;
+			trafo->yy = 1 * 65536.0;
 		}
 }
 
@@ -406,7 +424,7 @@ rsvg_text_layout_render_glyphs (RsvgTextLayout     *layout,
 					
 					FT_Vector_Transform (&pos, &trafo);
 
-					render_func (font, gi->glyph, flags, NULL /* &trafo */,
+					render_func (font, gi->glyph, flags, &trafo,
 								 pos.x, pos.y,
 								 render_data);
 				}
@@ -496,8 +514,8 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 	
 	rsvg_text_layout_get_offsets (layout, &x, &y);
 	
-	x *= -PANGO_SCALE;
-	y *= -PANGO_SCALE;
+	x *= PANGO_SCALE;
+	y *= PANGO_SCALE;
 	
 	iter = pango_layout_get_iter (layout->layout);
 	
@@ -542,7 +560,7 @@ rsvg_text_render_text (RsvgHandle *ctx,
 		g_string_append_c(render->path, 'Z');
 
 #ifdef RSVG_TEXT_DEBUG
-	fprintf(stdout, "%s\n", render->path->str);
+	fprintf(stderr, "%s\n", render->path->str);
 #endif
 
 	rsvg_handle_path (ctx, render->path->str, id);

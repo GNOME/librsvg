@@ -38,8 +38,6 @@
 
 #include "rsvg-shapes.h"
 
-#define NO_VECTOR_TEXT
-
 char *
 rsvg_make_valid_utf8 (const char *str)
 {
@@ -86,8 +84,6 @@ rsvg_text_handler_free (RsvgSaxHandler *self)
 {
 	g_free (self);
 }
-
-#ifdef NO_VECTOR_TEXT
 
 static void 
 rsvg_text_render_text_bitmap (RsvgHandle *ctx,
@@ -235,8 +231,6 @@ rsvg_text_render_text_bitmap (RsvgHandle *ctx,
 
 }
 
-#endif
-
 static void
 rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 {
@@ -283,11 +277,10 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 			string = tmp;
 		}
 
-#ifdef NO_VECTOR_TEXT
-	rsvg_text_render_text_bitmap (ctx, state, string, NULL);
-#else
-	rsvg_text_render_text (ctx, state, string, NULL);
-#endif
+	if(g_getenv("RSVG_TEXT_VECTORS"))
+		rsvg_text_render_text (ctx, state, string, NULL);
+	else
+		rsvg_text_render_text_bitmap (ctx, state, string, NULL);
 
 	g_free (string);
 }
