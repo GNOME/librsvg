@@ -1,3 +1,10 @@
+==== librsvg 1.0.1 ====
+
+2001-07-05  Darin Adler  <darin@bentspoon.com>
+
+	* configure.in: Bump version to 1.0.1
+	* NEWS: Tell about new features for 1.0.1
+
 2001-06-01  Darin Adler  <darin@bentspoon.com>
 
 	* Makefile.am:
