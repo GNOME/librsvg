@@ -30,6 +30,7 @@
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"
 #include <libxml/SAX.h>
+#include <libart_lgpl/art_svp.h>
 
 G_BEGIN_DECLS
 
@@ -55,6 +56,25 @@ rsvg_end_mask (RsvgHandle *ctx);
 
 RsvgDefsDrawable * 
 rsvg_mask_parse (const RsvgDefs * defs, const char *str);
+
+typedef struct _RsvgClipPath RsvgClipPath;
+
+struct _RsvgClipPath {
+	RsvgDefsDrawableGroup super;
+	RsvgCoordUnits units;
+};
+
+ArtSVP * 
+rsvg_clip_path_render (RsvgClipPath *s, RsvgHandle *ctx);
+
+void 
+rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts);
+
+void 
+rsvg_end_clip_path (RsvgHandle *ctx);
+
+RsvgDefsDrawable * 
+rsvg_clip_path_parse (const RsvgDefs * defs, const char *str);
 
 G_END_DECLS
 

@@ -210,6 +210,7 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 													NULL);
 		}
 	ctx->nest_level = 1;
+	ctx->current_defs_group = NULL;
 }
 
 static void
@@ -574,6 +575,10 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			grad->current_color = color;
 			grad->has_current_color = TRUE;
 		}
+	else
+		{
+			grad->has_current_color = FALSE;
+		}
 
 	/* gradient inherits parent/cloned information unless it's explicity gotten */
 	grad->obj_bbox = (cloned && !got_bbox) ? grad->obj_bbox : obj_bbox;
@@ -738,6 +743,10 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 			grad->current_color = color;
 			grad->has_current_color = TRUE;
 		}
+	else
+		{
+			grad->has_current_color = FALSE;
+		}
 
 	/* gradient inherits parent/cloned information unless it's explicity gotten */
 	grad->obj_bbox = (cloned && !got_bbox) ? grad->obj_bbox : obj_bbox;
@@ -871,7 +880,7 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	ctx->in_defs++;		
 
-	pattern->g = &(rsvg_push_def_group (ctx, "")->super);
+	pattern->g = &(rsvg_push_def_group (ctx, NULL)->super);
 }
 
 
@@ -1223,6 +1232,11 @@ rsvg_start_element (void *data, const xmlChar *name,
 					ctx->in_defs++;
 					rsvg_start_mask(ctx, bag);
 				}
+			else if (!strcmp ((char *)name, "clipPath"))
+				{
+					ctx->in_defs++;
+					rsvg_start_clip_path(ctx, bag);
+				}
 			else if (!strcmp ((char *)name, "marker"))
 				{
 					ctx->in_defs++;
@@ -1285,9 +1299,13 @@ rsvg_end_element (void *data, const xmlChar *name)
 				rsvg_end_mask(ctx);
 				ctx->in_defs--;				
 			}
+			else if (!strcmp ((char *)name, "clipPath")){
+				rsvg_end_clip_path(ctx);
+				ctx->in_defs--;				
+			}
 			else if (!strcmp ((char *)name, "marker")){
 				rsvg_pop_def_group(ctx);
-				ctx->in_defs--;				
+				ctx->in_defs--;
 			}
 			else if (!strcmp ((char *)name, "switch"))
 				{
@@ -1576,7 +1594,7 @@ rsvg_handle_init (RsvgHandle * handle)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the all future outgoing pixbufs. Common values are
- * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
  * reset the DPI to whatever the default value happens to be.
  *
  * Since: 2.8
@@ -1600,7 +1618,7 @@ rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y)
  * @dpi: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the all future outgoing pixbufs. Common values are
- * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
  * reset the DPI to whatever the default value happens to be.
  *
  * Since: 2.2
@@ -1619,7 +1637,7 @@ rsvg_set_default_dpi (double dpi)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the outgoing pixbuf. Common values are
- * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
  * reset the DPI to whatever the default value happens to be.
  *
  * Since: 2.8
@@ -1646,7 +1664,7 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
  * @dpi: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the outgoing pixbuf. Common values are
- * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
  * reset the DPI to whatever the default value happens to be.
  *
  * Since: 2.2

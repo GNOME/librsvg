@@ -57,6 +57,7 @@ struct _RsvgDefsDrawable {
 	RsvgState  state;
 	RsvgDefsDrawable * parent;
 	void (*draw) (RsvgDefsDrawable * self, RsvgHandle *ctx, int dominate);
+	ArtSVP * (*draw_as_svp) (RsvgDefsDrawable * self, RsvgHandle *ctx, int dominate);
 };
 
 struct _RsvgDefsDrawablePath {
@@ -102,6 +103,8 @@ rsvg_pixbuf_new_from_href (const char *href,
 
 void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
 							  int dominate);
+ArtSVP * rsvg_defs_drawable_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+										 int dominate);
 
 void
 rsvg_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate, 

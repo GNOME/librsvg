@@ -35,6 +35,7 @@
 
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_affine.h>
+#include <libart_lgpl/art_svp_ops.h>
 
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
@@ -83,6 +84,7 @@ rsvg_state_init (RsvgState *state)
 	state->join = ART_PATH_STROKE_JOIN_MITER;
 	state->stop_opacity = 0xff;
 	state->fill_rule = FILL_RULE_NONZERO;
+	state->clip_rule = FILL_RULE_NONZERO;
 	state->backgroundnew = FALSE;
 	state->save_pixbuf = NULL;
 
@@ -96,16 +98,18 @@ rsvg_state_init (RsvgState *state)
 	state->unicode_bidi = UNICODE_BIDI_NORMAL;
 	state->text_anchor  = TEXT_ANCHOR_START;
 	state->visible      = TRUE;
-	state->cond_true      = TRUE;
+	state->cond_true    = TRUE;
 	state->filter       = NULL;
-	state->startMarker = NULL;
+	state->clip_path_ref= NULL;
+	state->startMarker  = NULL;
 	state->middleMarker = NULL;
-	state->endMarker = NULL;
+	state->endMarker    = NULL;
 
 	state->has_current_color = FALSE;
 	state->has_fill_server = FALSE;
 	state->has_fill_opacity = FALSE;
 	state->has_fill_rule = FALSE;
+	state->has_clip_rule = FALSE;
 	state->has_stroke_server = FALSE;
 	state->has_stroke_opacity = FALSE;
 	state->has_stroke_width = FALSE;
@@ -131,6 +135,9 @@ rsvg_state_init (RsvgState *state)
 	state->has_startMarker = FALSE;
 	state->has_middleMarker = FALSE;
 	state->has_endMarker = FALSE;
+
+	state->clippath = NULL;
+	state->clip_path_loaded = FALSE;
 }
 
 void
@@ -170,6 +177,8 @@ rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 		dst->fill_opacity = src->fill_opacity;
 	if (!dst->has_fill_rule)
 		dst->fill_rule = src->fill_rule;
+	if (!dst->has_clip_rule)
+		dst->clip_rule = src->clip_rule;
 	if (!dst->has_stroke_server)
 		{
 			rsvg_paint_server_ref (src->stroke);
@@ -235,6 +244,8 @@ rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 				dst->dash.dash[i] = src->dash.dash[i];
 		}
 	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
+
+	dst->clippath = src->clippath;
 }
 
 void
@@ -254,6 +265,8 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 		dst->fill_opacity = src->fill_opacity;
 	if (!dst->has_fill_rule || src->has_fill_rule)
 		dst->fill_rule = src->fill_rule;
+	if (!dst->has_clip_rule || src->has_clip_rule)
+		dst->clip_rule = src->clip_rule;
 	if (!dst->has_stroke_server || src->has_stroke_server)
 		{
 			rsvg_paint_server_ref (src->stroke);
@@ -311,7 +324,7 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 			g_free(dst->lang); 
 		dst->lang = g_strdup (src->lang);
 	}
-
+	
 	if (src->dash.n_dash > 0 && (!dst->has_dash || src->has_dash))
 		{
 			if(dst->has_dash)
@@ -322,6 +335,8 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 				dst->dash.dash[i] = src->dash.dash[i];
 		}
 	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
+
+	dst->clippath = src->clippath;
 }
 
 void
@@ -401,6 +416,10 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "mask"))
 		state->mask = rsvg_mask_parse(ctx->defs, str + arg_off);
+	else if (rsvg_css_param_match (str, "clip-path"))
+		{
+			state->clip_path_ref = rsvg_clip_path_parse(ctx->defs, str + arg_off);
+		}
 	else if (rsvg_css_param_match (str, "enable-background"))
 		{
 			if (!strcmp (str + arg_off, "new"))
@@ -457,6 +476,16 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			else
 				state->has_fill_rule = FALSE;
 		}
+	else if (rsvg_css_param_match (str, "clip-rule"))
+		{
+			state->has_clip_rule = TRUE;
+			if (!strcmp (str + arg_off, "nonzero"))
+				state->clip_rule = FILL_RULE_NONZERO;
+			else if (!strcmp (str + arg_off, "evenodd"))
+				state->clip_rule = FILL_RULE_EVENODD;
+			else
+				state->has_clip_rule = FALSE;
+		}
 	else if (rsvg_css_param_match (str, "stroke"))
 		{
 			RsvgPaintServer * stroke = state->stroke;
@@ -487,7 +516,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			else if (!strcmp (str + arg_off, "square"))
 				state->cap = ART_PATH_STROKE_CAP_SQUARE;
 			else
-				g_warning ("unknown line cap style %s", str + arg_off);
+				g_warning (_("unknown line cap style %s\n"), str + arg_off);
 		}
 	else if (rsvg_css_param_match (str, "stroke-opacity"))
 		{
@@ -504,7 +533,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			else if (!strcmp (str + arg_off, "bevel"))
 				state->join = ART_PATH_STROKE_JOIN_BEVEL;
 			else
-				g_warning ("unknown line join style %s", str + arg_off);
+				g_warning (_("unknown line join style %s\n"), str + arg_off);
 		}
 	else if (rsvg_css_param_match (str, "font-size"))
 		{
@@ -748,6 +777,8 @@ rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state,
 						RsvgPropertyBag *atts)
 {
 	rsvg_lookup_parse_style_pair (ctx, state, "a:adobe-blending-mode", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "clip-path", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "clip-rule", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "color", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "direction", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "display", atts);
@@ -925,7 +956,7 @@ ccss_error (CRDocHandler *a_handler)
 {
 	/* yup, like i care about CSS parsing errors ;-)
 	   ignore, chug along */
-	g_warning ("CSS parsing error\n");
+	g_warning (_("CSS parsing error\n"));
 }
 
 static void
@@ -933,7 +964,7 @@ ccss_unrecoverable_error (CRDocHandler *a_handler)
 {
 	/* yup, like i care about CSS parsing errors ;-)
 	   ignore, chug along */
-	g_warning ("CSS unrecoverable error\n");
+	g_warning (_("CSS unrecoverable error\n"));
 }
 
 static void
@@ -978,7 +1009,7 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
     
 	if (status != CR_OK)
         {
-			g_warning (_("Error setting CSS SAC handler"));
+			g_warning (_("Error setting CSS SAC handler\n"));
 			cr_parser_destroy (parser);
 			return;
         }        
@@ -1368,11 +1399,13 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 
 	state = &ctx->state[ctx->n_state - 1];
 	pixbuf = ctx->pixbuf;
-	
+
+	rsvg_state_clip_path_assure(ctx);
+
 	if (state->filter == NULL && state->opacity == 0xFF && 
 		!state->backgroundnew && state->mask == NULL && !state->adobe_blend)
 		return;
-
+	
 	state->save_pixbuf = pixbuf;
 	state->underbbox = ctx->bbox;	
 	ctx->bbox.x0 = 0;
@@ -1388,7 +1421,7 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 
 	if (!gdk_pixbuf_get_has_alpha (pixbuf))
     {
-		g_warning (_("push/pop transparency group on non-alpha buffer nyi"));
+		g_warning (_("push/pop transparency group on non-alpha buffer nyi\n"));
 		return;
     }
 	
@@ -1430,7 +1463,7 @@ rsvg_use_opacity (RsvgHandle *ctx, int opacity,
 	
 	if (!gdk_pixbuf_get_has_alpha (nos))
 		{
-			g_warning (_("push/pop transparency group on non-alpha buffer nyi"));
+			g_warning (_("push/pop transparency group on non-alpha buffer nyi\n"));
 			return;
 		}
 	
@@ -1535,10 +1568,6 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 	gint adobe_blend = state->adobe_blend;
 
 	intermediate = NULL;
-
-	if (state->filter == NULL && state->opacity == 0xFF && 
-		!state->backgroundnew && state->mask == NULL && !state->adobe_blend)
-		return;
 
 	operationsleft = 0;
 	
@@ -1702,4 +1731,31 @@ guint
 rsvg_property_bag_size (RsvgPropertyBag *bag)
 {
 	return g_hash_table_size (bag->props);
+}
+
+void 
+rsvg_state_clip_path_assure(RsvgHandle * ctx)
+{
+	ArtSVP * tmppath;
+	ArtSVP * tmppath2;
+	RsvgState * state;
+
+	state = rsvg_state_current(ctx);
+
+	if (state->clip_path_ref && !state->clip_path_loaded)
+		{
+			tmppath = rsvg_clip_path_render (state->clip_path_ref, ctx);
+			state->clip_path_loaded = TRUE;
+		}
+	else
+		return;
+
+	if (state->clippath)
+		{
+			tmppath2 = art_svp_intersect(tmppath, state->clippath);
+			art_free(tmppath);
+			state->clippath = tmppath2;
+		}
+	else
+		state->clippath = tmppath;
 }

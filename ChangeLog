@@ -1,3 +1,9 @@
+2004-07-23  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-shapes.c, rsvg-mask.c: ClipPaths now partially working
+	* rsvg-shapes.c: now keep a copy of everything in defs.
+	* rsvg-styles.c: don't push discrete layers while in defs.
+	
 2004-07-21  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-shapes.c: Bilinear interpolation for images

@@ -1,11 +1,5 @@
 TODO:
 
- * Clipping paths
-
- * Fix image transforms
-
- * Fill patterns
-
  * Add GError support in the loader, rather then the g_warnings
    that we currently use.
 

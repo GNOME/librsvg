@@ -74,9 +74,12 @@ struct _RsvgState {
 	gboolean has_fill_opacity;
 	gint fill_rule;	
 	gboolean has_fill_rule;
+	gint clip_rule;	
+	gboolean has_clip_rule;
 
 	RsvgFilter *filter;
 	void *mask;
+	void *clip_path_ref;
 	gboolean backgroundnew;
 	gint adobe_blend;
 
@@ -145,6 +148,9 @@ struct _RsvgState {
 
 	GdkPixbuf *save_pixbuf;
 	ArtIRect underbbox;
+
+	ArtSVP * clippath;
+	gboolean clip_path_loaded;
 };
 
 void rsvg_state_init (RsvgState *state);
@@ -176,6 +182,8 @@ gboolean rsvg_parse_transform (double dst[6], const char *src);
 RsvgState * rsvg_state_parent (RsvgHandle *ctx);
 RsvgState * rsvg_state_current (RsvgHandle *ctx);
 double rsvg_state_current_font_size (RsvgHandle *ctx);
+
+void rsvg_state_clip_path_assure(RsvgHandle * ctx);
 
 G_END_DECLS
 

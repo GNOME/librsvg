@@ -376,13 +376,13 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state)
 }
 
 static void
-rsvg_filter_free_pair (gpointer key, gpointer value, gpointer user_data)
+rsvg_filter_free_pair (gpointer value)
 {
 	RsvgFilterPrimitiveOutput * output;
-	output = value;
+
+	output = (RsvgFilterPrimitiveOutput *)value;
 	g_object_unref (G_OBJECT (output->result));
 	g_free (output);
-	g_free ((gchar *) key);
 }
 
 /**
@@ -408,10 +408,12 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 	ctx->filter = self;
 	ctx->source = source;
 	ctx->bg = bg;
-	ctx->results = g_hash_table_new (g_str_hash, g_str_equal);
+	ctx->results = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, rsvg_filter_free_pair);
 	ctx->ctx = context;	
 
 	g_object_ref (G_OBJECT (source));
+
+	rsvg_filter_fix_coordinate_system (ctx, rsvg_state_current (context));
 
 	ctx->lastresult.result = source;
 	ctx->lastresult.Rused = 1;
@@ -420,15 +422,12 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 	ctx->lastresult.Aused = 1;
 	ctx->lastresult.bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);	
 
-	rsvg_filter_fix_coordinate_system (ctx, rsvg_state_current (context));
-
 	for (i = 0; i < self->primitives->len; i++)
 		{
 			current = g_ptr_array_index (self->primitives, i);
 			rsvg_filter_primitive_render (current, ctx);
 		}
 
-	g_hash_table_foreach (ctx->results, rsvg_filter_free_pair, NULL);
 	g_hash_table_destroy (ctx->results);
 
 	bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);	
@@ -782,31 +781,42 @@ static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, 
 {
 	guchar i;
 	gint x, y;
-	gint rowstride, height, width;
+	gint rowstride, rowstride2, rowstrideo, height, width;
 	guchar *in_pixels;
 	guchar *in2_pixels;
 	guchar *output_pixels;
 	height = gdk_pixbuf_get_height (in);
 	width = gdk_pixbuf_get_width (in);
 	rowstride = gdk_pixbuf_get_rowstride (in);
+	rowstride2 = gdk_pixbuf_get_rowstride (in2);
+	rowstrideo = gdk_pixbuf_get_rowstride (output);
 
 	output_pixels = gdk_pixbuf_get_pixels (output);
 	in_pixels = gdk_pixbuf_get_pixels (in);
 	in2_pixels = gdk_pixbuf_get_pixels (in2);
 
+	if (boundarys.x1 < 0)
+		boundarys.x1 = 0;
+	if (boundarys.y1 < 0)
+		boundarys.y2 = 0;
+	if (boundarys.x2 >= width)
+		boundarys.x2 = width;
+	if (boundarys.y2 >= height)
+		boundarys.y2 = height;
+		
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				double qr, cr, qa, qb, ca, cb, bca, bcb;
 				
 				qa = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
-				qb = (double) in2_pixels[4 * x + y * rowstride + 3] / 255.0;
+				qb = (double) in2_pixels[4 * x + y * rowstride2 + 3] / 255.0;
 				qr = 1 - (1 - qa) * (1 - qb);
 				cr = 0;
 				for (i = 0; i < 3; i++)
 					{
 						ca = (double) in_pixels[4 * x + y * rowstride + i] * qa / 255.0;
-						cb = (double) in2_pixels[4 * x + y * rowstride + i] * qb / 255.0;
+						cb = (double) in2_pixels[4 * x + y * rowstride2 + i] * qb / 255.0;
 						/*these are the ca and cb that are used in the non-standard blend functions*/
 						bcb = (1 - qa) * cb + ca;
 						bca = (1 - qb) * ca + cb;
@@ -869,10 +879,10 @@ static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, 
 							cr = 255;
 						if (cr < 0)
 							cr = 0;
-						output_pixels[4 * x + y * rowstride + i] = (guchar) cr;
+						output_pixels[4 * x + y * rowstrideo + i] = (guchar) cr;
 						
 					}
-				output_pixels[4 * x + y * rowstride + 3] = qr * 255.0;
+				output_pixels[4 * x + y * rowstrideo + 3] = qr * 255.0;
 			}
 
 }
@@ -2068,7 +2078,7 @@ rsvg_filter_primitive_merge_free (RsvgFilterPrimitive * self)
 	
 	for (i = 0; i < mself->nodes->len; i++)
 		g_string_free (g_ptr_array_index (mself->nodes, i), TRUE);
-	g_ptr_array_free (mself->nodes, FALSE);
+	g_ptr_array_free (mself->nodes, TRUE);
 	g_free (mself);
 }
 
@@ -4055,6 +4065,9 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 	img = rsvg_pixbuf_new_from_href(oself->href->str,
 									rsvg_handle_get_base_uri (oself->ctx), NULL);
 
+	if(!img)
+		return NULL;
+
 	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, boundarys.x2 - boundarys.x1, 
 								   boundarys.y2 - boundarys.y1);
 
@@ -4472,9 +4485,14 @@ struct _lightSource
 };
 
 static vector3
-get_light_direction (lightSource source, gdouble x, gdouble y, gdouble z, gdouble * affine)
+get_light_direction (lightSource source, gdouble x1, gdouble y1, gdouble z, gdouble * affine)
 {
 	vector3 output;
+
+	double x, y;
+
+	x = affine[0] * x1 + affine[2] * y1 + affine[4];
+	y = affine[1] * x1 + affine[3] * y1 + affine[5];
 
 	switch (source.type)
 		{
@@ -4485,9 +4503,9 @@ get_light_direction (lightSource source, gdouble x, gdouble y, gdouble z, gdoubl
 			break;
 		case POINTLIGHT:
 		case SPOTLIGHT:
-			output.x = source.x * affine[0] + affine[4] - x;
-			output.y = source.y * affine[3] + affine[5] - y;
-			output.z = source.z * sqrt(affine[0] * affine[3]) - z;
+			output.x = source.x - x;
+			output.y = source.y - y;
+			output.z = source.z - z;
 			output = normalise(output);
 			break;
 		}
@@ -4496,24 +4514,27 @@ get_light_direction (lightSource source, gdouble x, gdouble y, gdouble z, gdoubl
 
 static vector3
 get_light_colour(lightSource source, vector3 colour, 
-				 gdouble x, gdouble y, gdouble z, gdouble * affine)
+				 gdouble x1, gdouble y1, gdouble z, gdouble * affine)
 {
-	double base, angle;
+	double base, angle, x, y;
 	vector3 s;
 	vector3 L;
 	vector3 output;
 
 	if (source.type != SPOTLIGHT)
 		return colour;
+	
+	x = affine[0] * x1 + affine[2] * y1 + affine[4];
+	y = affine[1] * x1 + affine[3] * y1 + affine[5];
 
-	L.x = source.x * affine[0] + affine[4] - x;
-	L.y = source.y * affine[3] + affine[5] - y;
-	L.z = source.z * sqrt(affine[0] * affine[3]) - z;
+	L.x = source.x - x;
+	L.y = source.y - y;
+	L.z = source.z - z;
 	L = normalise(L);
 
-	s.x = (source.pointsAtX - source.x) * affine[0];
-	s.y = (source.pointsAtY - source.y) * affine[3];
-	s.z = (source.pointsAtZ - source.z) * sqrt(affine[0] * affine[3]);
+	s.x = source.pointsAtX - source.x;
+	s.y = source.pointsAtY - source.y;
+	s.z = source.pointsAtZ - source.z;
 	s = normalise(s);
 
 	base = -dotproduct(L, s);
@@ -4633,6 +4654,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 	gdouble factor, surfaceScale;
 	vector3 lightcolour, L, N;
 	vector3 colour;
+	gdouble iaffine[6];
 
 	FPBox boundarys;
 	
@@ -4663,8 +4685,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 	colour.y = ((guchar *)(&oself->lightingcolour))[1] / 255.0;
 	colour.z = ((guchar *)(&oself->lightingcolour))[0] / 255.0;
 
-	surfaceScale =  oself->surfaceScale / 255.0
-		* sqrt(ctx->paffine[0] * ctx->paffine[3]);
+	surfaceScale =  oself->surfaceScale / 255.0;
 
 	if (oself->dy < 0 || oself->dx < 0)
 		{
@@ -4681,16 +4702,18 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 			rawdy = oself->dy;
 		}
 
+	art_affine_invert(iaffine, ctx->paffine);
+
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				z = surfaceScale * (double)in_pixels[y * rowstride + x * 4 + 3];
-				L = get_light_direction(oself->source, x, y, z, ctx->paffine);
+				L = get_light_direction(oself->source, x, y, z, iaffine);
 				N = get_surface_normal(in_pixels, boundarys, x, y, 
 									   dx, dy, rawdx, rawdy, oself->surfaceScale, 
 									   rowstride);
 				lightcolour = get_light_colour(oself->source, colour, x, y, z,
-											   ctx->paffine);
+											   iaffine);
 				factor = dotproduct(N, L);
 
 				output_pixels[y * rowstride + x * 4    ] = MAX(0,MIN(255, oself->diffuseConstant * factor * 
@@ -4829,7 +4852,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 	vector3 lightcolour;
 	vector3 colour;
 	vector3 L;
-
+	gdouble iaffine[6];
 	FPBox boundarys;
 	
 	guchar *in_pixels;
@@ -4859,18 +4882,20 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 	colour.y = ((guchar *)(&oself->lightingcolour))[1] / 255.0;
 	colour.z = ((guchar *)(&oself->lightingcolour))[0] / 255.0;
 
-	surfaceScale = oself->surfaceScale * sqrt(ctx->paffine[0] * ctx->paffine[3]) / 255.0; 
+	surfaceScale = oself->surfaceScale / 255.0; 
+
+	art_affine_invert(iaffine, ctx->paffine);
 
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				z = in_pixels[y * rowstride + x * 4 + 3] * surfaceScale;
-				L = get_light_direction(oself->source, x, y, z, ctx->paffine);	
+				L = get_light_direction(oself->source, x, y, z, iaffine);	
 				L.z += 1;
 				L = normalise(L);
 
 				lightcolour = get_light_colour(oself->source, colour, x, y, z, 
-											   ctx->paffine);
+											   iaffine);
 				base = dotproduct(get_surface_normal(in_pixels, boundarys, x, y, 
 													 1, 1, 1.0 /  ctx->paffine[0], 1.0 / ctx->paffine[3], 
 													 oself->surfaceScale, 
