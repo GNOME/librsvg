@@ -711,6 +711,38 @@ rsvg_css_parse_font_family (const char * str, const char * inherit)
 		return str;
 }
 
+gchar **
+rsvg_css_parse_list(const char * in_str)
+{
+	char *ptr, *tok;
+	char *str;
+
+	guint n = 0;
+	GSList * string_list = NULL;
+	gchar ** string_array = NULL;
+
+	str = g_strdup (in_str);
+	while((tok = strtok_r (str, ", \t", &ptr)) != NULL) {
+		g_slist_append(string_list, g_strdup(tok));
+		n++;
+	}
+	g_free (str);
+
+	if (string_list) {
+		GSList *slist;
+
+		string_array = g_new(gchar *, n + 1);
+
+		string_array[n--] = NULL;
+		for (slist = string_list; slist; slist = slist->next)
+			string_array[n--] = (gchar *)slist->data;
+
+		g_slist_free (string_list);		
+	}
+
+	return string_array;
+}
+
 void 
 rsvg_css_parse_number_optional_number(const char * str, 
 									  double *x, double *y)
@@ -721,7 +753,7 @@ rsvg_css_parse_number_optional_number(const char * str,
 
   *x = g_ascii_strtod(str, &endptr);
 
-  if(endptr && endptr != '\0')
+  if(endptr && *endptr != '\0')
     while(g_ascii_isspace(*endptr) && *endptr)
       endptr++;
 
