@@ -10,9 +10,5 @@ INCLUDES=$(MOZILLA_CFLAGS) -DBINDIR=\"$(bindir)/\" $(GDK_X11_CFLAGS)
 
 libmozsvgdec_la_SOURCES = moz-plugin.c
 libmozsvgdec_la_LDFLAGS = -module -avoid-version 
-libmozsvgdec_la_LIBADD = $(LIBRSVG_LIBS) \
-	$(LIBGNOME_VFS_LIBS)		\
-	$(LIBGSF_LIBS) $(LIBCROCO_LIBS)	\
-	$(top_builddir)/librsvg-2.la
-
+libmozsvgdec_la_LIBADD = $(GLIB_LIBS)
 EXTRA_DIST=moz-plugin.c

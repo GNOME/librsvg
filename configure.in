@@ -79,6 +79,11 @@ AM_CONDITIONAL(OS_WIN32, test "$native_win32" = "yes")
 
 dnl ===========================================================================
 
+PKG_CHECK_MODULES(GLIB, \
+		glib-2.0 >= $GLIB_REQUIRED)
+AC_SUBST(GLIB_LIBS)
+AC_SUBST(GLIB_CFLAGS)	
+
 PKG_CHECK_MODULES(LIBRSVG, \
 	gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED \
 	glib-2.0 >= $GLIB_REQUIRED \
@@ -308,20 +313,30 @@ AM_CONDITIONAL(ENABLE_PIXBUF_LOADER, test x$enable_pixbuf_loader = xyes)
 ##################################################
 
 MOZILLA_CFLAGS=
-if test -z "$MOZILLA_CONFIG"; then
-  AC_PATH_PROG(MOZILLA_CONFIG, mozilla-config, no)
-fi
-if test "x$MOZILLA_CONFIG" != "xno"; then
-  _mozilla_include_dir=`mozilla-config --cflags|sed 's/-I\(.*\) .*/\1/'`
-  MOZILLA_CFLAGS="-I$_mozilla_include_dir/plugin -I$_mozilla_include_dir/java -I$_mozilla_include_dir/nspr"
-else
-  PKG_CHECK_MODULES(MOZILLA, mozilla-plugin, build_mozilla_plugin=yes, 
-					[AC_MSG_WARN([mozilla-config not found. Mozilla/Netscape plugin will not be built])])
-fi
 build_mozilla_plugin=no
-if test "x$MOZILLA_CFLAGS" != "x"; then
-   build_mozilla_plugin=yes
+
+test_mozilla_plugin=true
+AC_ARG_ENABLE(mozilla-plugin, [  --enable-mozilla-plugin  Build a Mozilla/Firefox SVG viewing plugin [default = auto]],
+			 test_mozilla_plugin="$enableval")
+
+if test "x$test_mozilla_plugin" != "xno"; then
+   if test -z "$MOZILLA_CONFIG"; then
+      AC_PATH_PROG(MOZILLA_CONFIG, mozilla-config, no)
+   fi
+
+   if test "x$MOZILLA_CONFIG" != "xno"; then
+      _mozilla_include_dir=`mozilla-config --cflags|sed 's/-I\(.*\) .*/\1/'`
+      MOZILLA_CFLAGS="-I$_mozilla_include_dir/plugin -I$_mozilla_include_dir/java -I$_mozilla_include_dir/nspr"
+   else
+	PKG_CHECK_MODULES(MOZILLA, mozilla-plugin, build_mozilla_plugin=yes, 
+			[AC_MSG_WARN([mozilla-config not found. Mozilla/Netscape plugin will not be built])])
+   fi
+
+   if test "x$MOZILLA_CFLAGS" != "x"; then
+      build_mozilla_plugin=yes
+   fi
 fi
+
 AM_CONDITIONAL(WITH_MOZILLA,[test "x$build_mozilla_plugin" = "xyes"])
 AC_SUBST(MOZILLA_CFLAGS)
 

@@ -1,3 +1,8 @@
+2005-03-09  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Bug #169720
+	* moz-plugin/Makefile.am: ditto
+	
 2005-03-03  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-art-composite.c: make clippaths work again
