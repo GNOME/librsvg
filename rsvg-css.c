@@ -389,7 +389,7 @@ rsvg_css_parse_color (const char *str)
 					{ "fuchsia",              PACK_RGB (255,0,255) },
 					{ "gainsboro",            PACK_RGB (220,220,220) },
 					{ "ghostwhite",           PACK_RGB (248,248,255) },
-					{ "gold",                 PACK_RGB (215,215,0) },
+					{ "gold",                 PACK_RGB (255,215,0) },
 					{ "goldenrod",            PACK_RGB (218,165,32) },
 					{ "gray",                 PACK_RGB (128,128,128) },
 					{ "grey",                 PACK_RGB (128,128,128) },
