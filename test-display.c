@@ -35,6 +35,262 @@
 
 #define ICON_NAME "svg-viewer.svg"
 
+typedef struct _ViewerCbInfo ViewerCbInfo;
+struct _ViewerCbInfo
+{
+	GtkWidget  * window;
+	GdkPixbuf  * pixbuf;
+	GByteArray * svg_bytes;
+};
+
+static void
+center_dialog (GtkWidget * child, GtkWidget * parent)
+{
+	GdkPixbuf * icon;
+
+	gtk_window_set_transient_for(GTK_WINDOW(child),
+								 GTK_WINDOW(parent));
+
+	icon = gtk_window_get_icon(GTK_WINDOW(parent));	
+
+	if (NULL != icon)
+		gtk_window_set_icon(GTK_WINDOW(child), icon);
+}
+
+#ifdef HAVE_GNOME_PRINT
+
+#include <libgnomeprint/gnome-print.h>
+#include <libgnomeprint/gnome-print-job.h>
+#include <libgnomeprintui/gnome-print-dialog.h>
+#include <libgnomeprintui/gnome-print-job-preview.h>
+
+static void 
+print_pixbuf (GObject * ignored, gpointer user_data)
+{
+	ViewerCbInfo * info = (ViewerCbInfo *)user_data;
+	GtkWidget *gpd;	
+	gint result;
+
+	gpd = gnome_print_dialog_new (gnome_print_job_new(gnome_print_config_default()), _("Print SVG"), 0);
+	center_dialog (gpd, info->window);
+			  
+	if ((result = gtk_dialog_run (GTK_DIALOG (gpd))) != GNOME_PRINT_DIALOG_RESPONSE_CANCEL) {
+		GnomePrintJob *gpm;
+		GnomePrintContext * gpc;
+		GdkPixbuf * image;
+
+		gint width, height, rowstride;
+		const guchar * pixels;
+
+		gdouble page_width, page_height;
+
+		gpm = gnome_print_job_new (gnome_print_dialog_get_config (GNOME_PRINT_DIALOG(gpd)));
+		gpc = gnome_print_job_get_context (gpm);
+
+		gnome_print_config_get_page_size (gnome_print_job_get_config (gpm), &page_width, &page_height);		
+		image = info->pixbuf;
+
+		width     = gdk_pixbuf_get_width (image);
+		height    = gdk_pixbuf_get_height (image);
+
+		if (width > page_width ||
+			height > page_height) {
+			/* TODO: scale this image to the page's dimensions, preserving the aspect ratio */
+			g_object_ref (G_OBJECT (image));
+		} else {
+			g_object_ref (G_OBJECT (image));
+		}
+
+		rowstride = gdk_pixbuf_get_rowstride (image);
+		pixels    = gdk_pixbuf_get_pixels (image);
+
+		gnome_print_beginpage(gpc, "1");
+		gnome_print_gsave (gpc);
+		gnome_print_translate (gpc, 0, page_height - height);
+		gnome_print_scale (gpc, width, height);
+		gnome_print_moveto (gpc, 0, 0);
+
+		gnome_print_rgbaimage (gpc, pixels, width, height, rowstride);
+
+		gnome_print_grestore (gpc);
+		gnome_print_showpage (gpc);
+		gnome_print_job_close (gpm);
+		
+		if(result == GNOME_PRINT_DIALOG_RESPONSE_PRINT)
+			gnome_print_job_print (gpm);
+		else
+			{
+				GtkWidget * preview;
+
+				preview = gnome_print_job_preview_new (gpm, _("SVG Preview"));
+				gtk_widget_show (GTK_WIDGET (preview));
+			}
+		
+		g_object_unref (G_OBJECT (gpm));
+		g_object_unref (G_OBJECT (image));
+	}
+
+	gtk_widget_destroy (gpd);
+}
+
+#endif
+
+static void 
+save_pixbuf (GObject * ignored, gpointer user_data)
+{
+	GtkWidget * filesel;
+	ViewerCbInfo * info = (ViewerCbInfo *)user_data;
+
+	filesel = gtk_file_selection_new (_("Save SVG as PNG"));
+	center_dialog (filesel, info->window);
+
+	if (gtk_dialog_run (GTK_DIALOG (filesel)) == GTK_RESPONSE_OK)
+	{
+		const char * filename;
+
+		filename = gtk_file_selection_get_filename (GTK_FILE_SELECTION (filesel));
+
+		if (filename) {
+			GError * err = NULL;
+
+			if (!gdk_pixbuf_save (info->pixbuf, filename, "png", &err, NULL)) {
+				if (err) {
+					GtkWidget * errmsg;
+
+					errmsg = gtk_message_dialog_new (GTK_WINDOW(filesel),
+													 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+													 GTK_MESSAGE_WARNING,
+													 GTK_BUTTONS_CLOSE,
+													 err->message);
+
+					gtk_dialog_run (GTK_DIALOG (errmsg));
+
+					g_error_free (err);
+				}
+			}
+		} else {
+					GtkWidget * errmsg;
+
+					errmsg = gtk_message_dialog_new (GTK_WINDOW(filesel),
+													 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+													 GTK_MESSAGE_WARNING,
+													 GTK_BUTTONS_CLOSE,
+													 _("No filename given"));
+
+					gtk_dialog_run (GTK_DIALOG (errmsg));
+		}
+	}
+	
+	gtk_widget_destroy (filesel);
+}
+
+#if 0
+
+static void 
+save_svg (GObject * ignored, gpointer user_data)
+{
+	GtkWidget * filesel;
+	ViewerCbInfo * info = (ViewerCbInfo *)user_data;
+
+	filesel = gtk_file_selection_new (_("Save SVG"));
+	center_dialog (filesel, info->window);
+
+	if (gtk_dialog_run (GTK_DIALOG (filesel)) == GTK_RESPONSE_OK)
+	{
+		const char * filename;
+
+		filename = gtk_file_selection_get_filename (GTK_FILE_SELECTION (filesel));
+
+		if (filename) {
+			GError * err = NULL;
+
+			/* TODO: save byte array to file */
+			if (0) {
+				if (err) {
+					GtkWidget * errmsg;
+
+					errmsg = gtk_message_dialog_new (GTK_WINDOW(filesel),
+													 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+													 GTK_MESSAGE_WARNING,
+													 GTK_BUTTONS_CLOSE,
+													 err->message);
+
+					gtk_dialog_run (GTK_DIALOG (errmsg));
+
+					g_error_free (err);
+				}
+			}
+		} else {
+					GtkWidget * errmsg;
+
+					errmsg = gtk_message_dialog_new (GTK_WINDOW(filesel),
+													 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+													 GTK_MESSAGE_WARNING,
+													 GTK_BUTTONS_CLOSE,
+													 _("No filename given"));
+
+					gtk_dialog_run (GTK_DIALOG (errmsg));
+		}
+	}
+	
+	gtk_widget_destroy (filesel);
+}
+
+#endif
+
+static void
+do_popup_menu (GObject * widget, GdkEventButton *event, gpointer user_data)
+{
+	GtkWidget * popup_menu;
+	GtkWidget * menu_item;
+	GtkWidget * stock;
+	
+	popup_menu = gtk_menu_new ();
+
+	menu_item = gtk_image_menu_item_new_with_label (_("Save as PNG"));
+	stock = gtk_image_new_from_stock (GTK_STOCK_SAVE_AS, GTK_ICON_SIZE_MENU);
+	gtk_widget_show (stock);
+	gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menu_item), stock);
+	g_signal_connect (menu_item, "activate",
+					  G_CALLBACK (save_pixbuf), user_data);
+	gtk_widget_show (menu_item);
+	gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
+
+#if 0
+	/* TODO: save the SVG itself */
+	menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_SAVE, NULL);
+	g_signal_connect (menu_item, "activate",
+					  G_CALLBACK (save_svg), user_data);
+	gtk_widget_show (menu_item);
+	gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
+#endif
+
+#ifdef HAVE_GNOME_PRINT
+	menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_PRINT, NULL);
+	g_signal_connect (menu_item, "activate",
+					  G_CALLBACK (print_pixbuf), user_data);
+	gtk_widget_show (menu_item);
+	gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
+#endif
+
+	gtk_menu_popup (GTK_MENU (popup_menu), NULL, NULL,
+					NULL, NULL, event->button, event->time);
+}
+
+static gint
+button_press_event (GObject        *widget,
+					GdkEventButton *event,
+					gpointer        user_data)
+{
+	if (event->button == 3 && event->type == GDK_BUTTON_PRESS)
+    {
+		do_popup_menu (widget, event, user_data);
+		return TRUE;
+    }
+
+	return FALSE;
+}
+
 static void
 quit_cb (GtkWidget *win, gpointer unused)
 {
@@ -42,18 +298,14 @@ quit_cb (GtkWidget *win, gpointer unused)
 	gtk_main_quit();
 }
 
-static void 
-win_embedded_cb (GtkPlug *plug, gpointer data)
-{
-}
-
-static void
+static int
 view_pixbuf (GdkPixbuf * pixbuf, int xid, const char * color)
 {
 	GtkWidget *win, *img;
 	gint width, height;
 	GdkColor bg_color;
 	char * window_icon;
+	ViewerCbInfo info;
 
 	/* create toplevel window and set its title */
 
@@ -62,11 +314,12 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid, const char * color)
 			GdkWindow *gdk_parent;
 
 			win = gtk_plug_new(0);
-			g_signal_connect(G_OBJECT(win), "embedded",
-							 G_CALLBACK(win_embedded_cb), NULL);
 
 			gdk_parent = gdk_window_foreign_new(xid);
-			gdk_window_get_geometry(gdk_parent, NULL, NULL, &width, &height, NULL);			
+			gdk_window_get_geometry(gdk_parent, NULL, NULL, &width, &height, NULL);
+
+			/* so that button presses get registered */
+			gtk_widget_add_events (win, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
 		}
 	else
 		{
@@ -119,6 +372,13 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid, const char * color)
 	gtk_window_set_default_icon_from_file (window_icon, NULL);
 	g_free (window_icon);
 
+	info.window = win;
+	info.pixbuf = pixbuf;
+	info.svg_bytes = NULL; /* TODO */
+
+	g_signal_connect (G_OBJECT (win), "button-press-event",
+					  G_CALLBACK(button_press_event), &info);
+	
 	gtk_widget_show_all (win);
 
 #ifdef ENABLE_XEMBED
@@ -130,6 +390,13 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid, const char * color)
 				   GDK_WINDOW_XID(win->window));
 	}
 #endif
+
+	/* run the gtk+ main loop */
+	gtk_main ();
+	
+	g_object_unref (G_OBJECT(pixbuf));
+	
+	return 0;
 }
 
 int 
@@ -241,12 +508,5 @@ main (int argc, char **argv)
 			return 1;
 		}
 	
-	view_pixbuf (pixbuf, xid, bg_color);
-	
-	/* run the gtk+ main loop */
-	gtk_main ();
-	
-	g_object_unref (G_OBJECT(pixbuf));
-	
-	return 0;
+	return view_pixbuf (pixbuf, xid, bg_color);   
 }

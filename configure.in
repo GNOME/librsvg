@@ -216,6 +216,20 @@ AC_SUBST(GTK_LIBS)
 AC_SUBST(GTK_VERSION)
 AM_CONDITIONAL(HAVE_GTK, test "x$have_gtk" = "xyes")
 
+have_gnome_print=no
+PKG_CHECK_MODULES(GNOME_PRINT, \
+		libgnomeprint-2.2 >= 2.2.0	\
+		libgnomeprintui-2.2 >= 2.2.0,	\ 
+		have_gnome_print=yes,		\
+		have_gnome_print=no)
+
+if test "x$have_gnome_print" = "xyes"; then
+   GNOME_PRINT_CFLAGS="$GNOME_PRINT_CFLAGS -DHAVE_GNOME_PRINT=1"
+fi
+
+AC_SUBST(GNOME_PRINT_CFLAGS)
+AC_SUBST(GNOME_PRINT_LIBS)
+
 have_gdk_x11=no
 PKG_CHECK_MODULES(GDK_X11, gdk-x11-2.0 >= 2.0.0, have_gdk_x11=yes, have_gdk_x11=no)
 AC_SUBST(GDK_X11_CFLAGS)

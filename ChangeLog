@@ -1,3 +1,8 @@
+2004-03-21  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Check for GnomePrint
+	* test-display.c: Save SVG to PNG, print SVG
+	
 === librsvg-2.7.1 ===
 
 2004-03-21  Dom Lachowicz <cinamod@hotmail.com>
