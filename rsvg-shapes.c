@@ -246,7 +246,6 @@ rsvg_render_filling (RsvgState *state, const ArtVpath *vpath)
 			
 			svp2 = art_svp_writer_rewind_reap (swr);
 			art_svp_free (svp);
-			art_svp_writer_rewind_reap (swr);
 
 			return svp2;
 }
