@@ -34,8 +34,6 @@
 #include "rsvg-mask.h"
 #include "rsvg-marker.h"
 
-#include <libart_lgpl/art_svp_ops.h>
-
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
 gdouble
@@ -65,8 +63,8 @@ rsvg_state_init (RsvgState *state)
 	state->stroke_opacity = 0xff;
 	state->stroke_width = 1;
 	state->miter_limit = 4;
-	state->cap = ART_PATH_STROKE_CAP_BUTT;
-	state->join = ART_PATH_STROKE_JOIN_MITER;
+	state->cap = RSVG_PATH_STROKE_CAP_BUTT;
+	state->join = RSVG_PATH_STROKE_JOIN_MITER;
 	state->stop_opacity = 0xff;
 	state->fill_rule = FILL_RULE_NONZERO;
 	state->clip_rule = FILL_RULE_NONZERO;
@@ -468,11 +466,11 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		{
 			state->has_cap = TRUE;
 			if (!strcmp (str + arg_off, "butt"))
-				state->cap = ART_PATH_STROKE_CAP_BUTT;
+				state->cap = RSVG_PATH_STROKE_CAP_BUTT;
 			else if (!strcmp (str + arg_off, "round"))
-				state->cap = ART_PATH_STROKE_CAP_ROUND;
+				state->cap = RSVG_PATH_STROKE_CAP_ROUND;
 			else if (!strcmp (str + arg_off, "square"))
-				state->cap = ART_PATH_STROKE_CAP_SQUARE;
+				state->cap = RSVG_PATH_STROKE_CAP_SQUARE;
 			else
 				g_warning (_("unknown line cap style %s\n"), str + arg_off);
 		}
@@ -485,11 +483,11 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		{
 			state->has_join = TRUE;
 			if (!strcmp (str + arg_off, "miter"))
-				state->join = ART_PATH_STROKE_JOIN_MITER;
+				state->join = RSVG_PATH_STROKE_JOIN_MITER;
 			else if (!strcmp (str + arg_off, "round"))
-				state->join = ART_PATH_STROKE_JOIN_ROUND;
+				state->join = RSVG_PATH_STROKE_JOIN_ROUND;
 			else if (!strcmp (str + arg_off, "bevel"))
-				state->join = ART_PATH_STROKE_JOIN_BEVEL;
+				state->join = RSVG_PATH_STROKE_JOIN_BEVEL;
 			else
 				g_warning (_("unknown line join style %s\n"), str + arg_off);
 		}

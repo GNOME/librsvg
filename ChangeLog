@@ -1,6 +1,7 @@
 2005-02-25  Dom Lachowicz <cinamod@hotmail.com>
 
 	* *: Get rid of deprecated stuff.
+	* *: Get rid of more libart data structures
 	* configure.in: Bump version number
 	
 2005-02-25  Caleb Moore <c.moore@student.unsw.edu.au>

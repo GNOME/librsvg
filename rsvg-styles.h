@@ -30,8 +30,6 @@
 #include "rsvg-paint-server.h"
 
 #include <libxml/SAX.h>
-#include <libart_lgpl/art_svp_vpath_stroke.h>
-#include <libart_lgpl/art_vpath_dash.h>
 #include <pango/pango.h>
 
 G_BEGIN_DECLS
@@ -62,6 +60,30 @@ typedef enum {
 	UNICODE_BIDI_OVERRIDE = 2	
 } UnicodeBidi;
 
+/* enums and data structures are ABI compatible with libart */
+
+typedef enum {
+  RSVG_PATH_STROKE_JOIN_MITER,
+  RSVG_PATH_STROKE_JOIN_ROUND,
+  RSVG_PATH_STROKE_JOIN_BEVEL
+} RsvgPathStrokeJoinType;
+
+typedef enum {
+  RSVG_PATH_STROKE_CAP_BUTT,
+  RSVG_PATH_STROKE_CAP_ROUND,
+  RSVG_PATH_STROKE_CAP_SQUARE
+} RsvgPathStrokeCapType;
+
+typedef struct _RsvgVpathDash RsvgVpathDash;
+
+struct _RsvgVpathDash {
+  double offset;
+  int n_dash;
+  double *dash;
+};
+
+/* end libart theft... */
+
 struct _RsvgState {
 	double affine[6];
 	double personal_affine[6];
@@ -91,9 +113,9 @@ struct _RsvgState {
 	double miter_limit;
 	gboolean has_miter_limit;
 	
-	ArtPathStrokeCapType cap;
+	RsvgPathStrokeCapType cap;
 	gboolean has_cap;
-	ArtPathStrokeJoinType join;
+	RsvgPathStrokeJoinType join;
 	gboolean has_join;
 	
 	double         font_size;
@@ -132,7 +154,7 @@ struct _RsvgState {
 	gboolean has_cond;
 	gboolean cond_true;
 
-	ArtVpathDash dash;
+	RsvgVpathDash dash;
 	gboolean has_dash;
 
 	guint32 current_color;

@@ -33,6 +33,8 @@
 #include <libart_lgpl/art_rgb_svp.h>
 #include <libart_lgpl/art_svp_intersect.h>
 #include <libart_lgpl/art_svp_ops.h>
+#include <libart_lgpl/art_svp_vpath_stroke.h>
+#include <libart_lgpl/art_vpath_dash.h>
 
 #include "rsvg-art-draw.h"
 #include "rsvg-art-composite.h"
@@ -309,7 +311,7 @@ rsvg_render_outline (RsvgState *state, ArtVpath *vpath)
 	/* if the path is dashed, stroke it */
 	if (state->dash.n_dash > 0) 
 		{
-			ArtVpath * dashed_vpath = art_vpath_dash (vpath, &state->dash);
+			ArtVpath * dashed_vpath = art_vpath_dash (vpath, (ArtVpathDash *)(&state->dash));
 			vpath = dashed_vpath;
 		}
 	
@@ -505,7 +507,7 @@ rsvg_art_render_path(RsvgDrawingCtx *ctx, const char *d)
 	bpath_def = rsvg_parse_path (d);
 	rsvg_bpath_def_art_finish (bpath_def);
 	
-	rsvg_render_bpath (ctx, bpath_def->bpath);
+	rsvg_render_bpath (ctx, (ArtBpath *)bpath_def->bpath);
 	
 	rsvg_render_markers(bpath_def, ctx);
 
@@ -522,7 +524,7 @@ rsvg_art_svp_render_path (RsvgDrawingCtx *ctx, const char *d)
 	bpath_def = rsvg_parse_path (d);
 	rsvg_bpath_def_art_finish (bpath_def);
 	
-	svp2 = 	rsvg_render_bpath_into_svp (ctx, bpath_def->bpath);
+	svp2 = 	rsvg_render_bpath_into_svp (ctx, (ArtBpath *)bpath_def->bpath);
 
 	if (render->outline != NULL)
 		{

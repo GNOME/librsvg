@@ -27,10 +27,10 @@
 #include "rsvg-styles.h"
 #include "rsvg-image.h"
 #include "rsvg-css.h"
-#include <libart_lgpl/art_rgba.h>
 #include <string.h>
 
 #include <math.h>
+
 #include <rsvg-art-render.h>
 #include <rsvg-art-composite.h>
 
