@@ -40,7 +40,7 @@
 #include "npapi.h"
 #include "npupp.h"
 
-#define DEBUG(x) /*printf x*/
+#define DEBUG(x) /* printf x */
 
 typedef struct
 {
@@ -62,70 +62,74 @@ static NPNetscapeFuncs mozilla_funcs;
 static void
 plugin_kill (Plugin * plugin)
 {
-	close (plugin->send_fd);
-	close (plugin->recv_fd);
+	if(plugin->send_fd > 0)
+		{
+			close (plugin->send_fd);
+			plugin->send_fd = 0;
+		}
 
-	kill (plugin->player_pid, SIGKILL);
-	waitpid (plugin->player_pid, NULL, 0);
+	if(plugin->recv_fd > 0)
+		{
+			close (plugin->recv_fd);
+			plugin->recv_fd = 0;
+		}
 
-	plugin->player_pid = 0;
+	if(plugin->player_pid > 0)
+		{
+			kill (plugin->player_pid, SIGKILL);
+			waitpid (plugin->player_pid, NULL, 0);
+			
+			plugin->player_pid = 0;
+		}
 }
 
 static void
 plugin_fork (Plugin * plugin)
 {
-	int fds[4];
+	char xid_str[20];
+	char width_str[20];
+	char height_str[20];
+	char *argv[20];
+	int argc = 0;
+	GError *err = NULL;
 	
 	DEBUG(("plugin fork\n"));
 
-	pipe (fds);
-	pipe (fds + 2);
+	sprintf (xid_str, "%ld", plugin->window);
+			
+	argv[argc++] = BINDIR "rsvg-view";
+	argv[argc++] = "-i"; /* xid */
+	argv[argc++] = xid_str;
 	
-	plugin->recv_fd = fds[0];
-	plugin->send_fd = fds[3];
-	
-	plugin->player_pid = fork ();
-	if (plugin->player_pid == 0)
+	if (plugin->width)
 		{
-			char xid_str[20];
-			char width_str[20];
-			char height_str[20];
-			char *argv[20];
-			int argc = 0;
-			
-			sprintf (xid_str, "%ld", plugin->window);
-			
-			/* child */
-			dup2 (fds[2], 0);
-			
-			argv[argc++] = "rsvg-view";
-			argv[argc++] = "-i"; /* xid */
-			argv[argc++] = xid_str;
-			
-			if (plugin->width)
-				{
-					sprintf (width_str, "%d", plugin->width);
-					argv[argc++] = "-w"; /* width */
-					argv[argc++] = width_str;
-				}
-			
-			if (plugin->height)
-				{
-					sprintf (height_str, "%d", plugin->height);
-					argv[argc++] = "-h"; /* height */
-					argv[argc++] = height_str;
-				}
-			
-			argv[argc++] = "-s";
-			argv[argc] = NULL;
-			
-			execvp ("rsvg-view", argv);
-			execv (BINDIR "rsvg-view", argv);
-			_exit (255);
+			sprintf (width_str, "%d", plugin->width);
+			argv[argc++] = "-w"; /* width */
+			argv[argc++] = width_str;
 		}
 	
-	close (fds[1]);
-	close (fds[2]);
+	if (plugin->height)
+		{
+			sprintf (height_str, "%d", plugin->height);
+			argv[argc++] = "-h"; /* height */
+			argv[argc++] = height_str;
+		}
+	
+	argv[argc++] = "-s";
+	argv[argc] = NULL;
+
+	if(!g_spawn_async_with_pipes(NULL, argv, NULL, G_SPAWN_DO_NOT_REAP_CHILD, 
+								 NULL, NULL, &plugin->player_pid,
+								 &plugin->send_fd, &plugin->recv_fd, NULL, &err))
+		{
+			DEBUG(("Spawn failed\n"));
+
+			if(err) 
+				{
+					fprintf(stderr, "%s\n", err->message);
+					g_error_free(err);
+				}
+		}
 }
 
 static void
@@ -135,19 +139,12 @@ plugin_redraw (Plugin * plugin)
 
 	if(plugin && plugin->bytes && plugin->bytes->len)
 		{
-#if 0
-			if(plugin->player_pid > 0)
-				plugin_kill (plugin);
-
-			plugin_fork (plugin);
-			write (plugin->send_fd, plugin->bytes->data, plugin->bytes->len);
-#else
 			if (plugin->player_pid == 0)
 				{
-					plugin_fork (plugin);			
-					write (plugin->send_fd, plugin->bytes->data, plugin->bytes->len);
+					plugin_fork (plugin);
+					if(plugin->player_pid > 0)
+						write (plugin->send_fd, plugin->bytes->data, plugin->bytes->len);
 				}
-#endif
 		}
 }
 
@@ -176,7 +173,7 @@ plugin_newp (NPMIMEType mime_type, NPP instance,
 	
 	for (i = 0; i < argc; i++)
 		{
-			/* DEBUG (("argv[%d] %s %s\n", i, argn[i], argv[i])); */
+			DEBUG (("argv[%d] %s %s\n", i, argn[i], argv[i]));
 			
 			if (strcmp (argn[i], "width") == 0)
 				plugin->width = strtol (argv[i], NULL, 0);
@@ -205,8 +202,7 @@ plugin_destroy (NPP instance, NPSavedData ** save)
 	if(plugin->bytes)
 		g_byte_array_free (plugin->bytes, TRUE);
 	
-	if(plugin->player_pid > 0)
-		plugin_kill (plugin);
+	plugin_kill (plugin);
 
 	mozilla_funcs.memfree (instance->pdata);
 	instance->pdata = NULL;
