@@ -403,14 +403,20 @@ ccss_end_selector (CRDocHandler *a_handler,
 {
 	CSSUserData * user_data;
 	CRSelector  * cur;
-	CRSimpleSel * simple_sel;
 
 	g_return_if_fail (a_handler);
 
 	user_data = (CSSUserData *)a_handler->app_data;
 
-	/* TODO: rewrite the various dump routines to return strings.
-	   rsvg_css_define_style (user_data->ctx, simple_sel->name->str, user_data->def->str); */
+	if (a_selector_list)
+		for (cur = a_selector_list; cur; cur = cur->next) {
+			/* TODO: rewrite the various dump routines to return strings
+			   char * style_name = cr_selector_to_string (cur);
+			   rsvg_css_define_style (user_data->ctx, style_name, user_data->def->str);
+			   g_free (style_name);
+			*/
+		}
+
 	g_string_free (user_data->def, TRUE);
 }
 
