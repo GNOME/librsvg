@@ -1,5 +1,3 @@
-*.la
-*.lo
 .deps
 .libs
 Makefile
@@ -21,6 +19,4 @@ ltconfig
 ltmain.sh
 stamp-h
 stamp-h.in
-test-ft
-test-ft-gtk
 test-rsvg
