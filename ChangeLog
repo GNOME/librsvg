@@ -1,8 +1,11 @@
+2003-02-06  Caleb Moore <c.moore@student.unsw.edu.au>
+	* rsvg-filter.c: made gassian blur use 3 box blurs (technically 6 motion blurs) when the geometric mean of the standard deviations of the filter is over two.
+	
 2003-02-05  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-filter.c: Made colormatrix a lot safer, added checking to make sure colvolvematrix doesn't segfault, fixed embarrasing little buglet in feOffset.
 	* rsvg-filter.c: fixed table in feComponantTransfer, I won't pretend to know how I did it. It truely is an aweful hack, but its the best we have and it seems to work as per the examples
-
+	
 2003-02-04  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-filter.c: Fix bug in pixbuf_get_alpha(), speed up pixbuf_new_cleared(),

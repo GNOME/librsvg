@@ -1143,51 +1143,35 @@ struct _RsvgFilterPrimitiveGaussianBlur
 };
 
 static void
-rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self,
-											RsvgFilterContext * ctx)
+true_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sdx, 
+		   gfloat sdy, FPBox boundarys)
 {
 	guchar ch;
 	gint x, y;
 	gint i, j;
 	gint rowstride, height, width;
-	FPBox boundarys;
 	
 	guchar *in_pixels;
 	guchar *output_pixels;
-	
-	RsvgFilterPrimitiveGaussianBlur *cself;
-	
-	GdkPixbuf *output;
-	GdkPixbuf *in;
-	
+
 	gint sx, sy, kx, ky, kw, kh;
 	guchar sval;
 	double kval, sum;
 	
-	double sdx, sdy;
 	double *KernelMatrix;
 	double divisor;
 	
 	gint tempresult;
-	
-	cself = (RsvgFilterPrimitiveGaussianBlur *) self;
-	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
-	
-	in = rsvg_filter_get_in (self->in, ctx);
+
+	kw = kh = 0;
+
 	in_pixels = gdk_pixbuf_get_pixels (in);
+	output_pixels = gdk_pixbuf_get_pixels (output);
 	
 	height = gdk_pixbuf_get_height (in);
 	width = gdk_pixbuf_get_width (in);
 	
 	rowstride = gdk_pixbuf_get_rowstride (in);
-	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
-	
-	/* scale the SD values */
-	sdx = cself->sdx * ctx->paffine[0];
-	sdy = cself->sdy * ctx->paffine[3];
-	
-	kw = kh = 0;
 	
 	/* find out the required x size for the kernel matrix */
 	
@@ -1203,7 +1187,7 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self,
 	
 	/* find out the required y size for the kernel matrix */
 	for (i = 1; i < 20; i++)
-    {
+		{
 		if (exp (-(i * i) / (2 * sdy * sdy)) / sqrt (2 * M_PI * sdy * sdy) <
 			0.0001)
 			{
@@ -1232,8 +1216,6 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self,
 	for (j = 0; j < kw; j++)
 		for (i = 0; i < kh; i++)
 			divisor += KernelMatrix[j + i * kw];
-		
-	output_pixels = gdk_pixbuf_get_pixels (output);
 	
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
@@ -1265,11 +1247,168 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self,
 					
 					output_pixels[4 * x + y * rowstride + ch] = tempresult;
 				}
+	g_free (KernelMatrix);
+}
+
+static void
+box_blur (GdkPixbuf *in, GdkPixbuf *output, gint kw, 
+		  gint kh, FPBox boundarys)
+{
+	guchar ch;
+	gint x, y;
+	gint rowstride, height, width;
+	
+	guchar *in_pixels;
+	guchar *output_pixels;
+
+	gint sum;
+	GdkPixbuf *intermediate;	
+
+	gint divisor;
+
+	
+	height = gdk_pixbuf_get_height (in);
+	width = gdk_pixbuf_get_width (in);
+
+	intermediate = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
+										   gdk_pixbuf_get_width (in),
+										   gdk_pixbuf_get_height (in));
+
+	in_pixels = gdk_pixbuf_get_pixels (in);
+	output_pixels = gdk_pixbuf_get_pixels (intermediate);
+	
+	rowstride = gdk_pixbuf_get_rowstride (in);
+	
+	for (ch = 0; ch < 4; ch++)
+		{
+			for (y = boundarys.y1; y < boundarys.y2; y++)
+				{
+					sum = 0;
+					divisor = 0;
+					for (x = boundarys.x1; x < boundarys.x2 + kw; x++)
+						{
+							if (x - kw >= boundarys.x1)
+								{
+									divisor--;
+									sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
+								}
+							if (x < boundarys.x2)
+								{
+									divisor++;
+									sum += in_pixels[4 * x + y * rowstride + ch];
+								}
+							if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x2)
+								{
+									output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
+								}
+						}
+				}
+		}
+
+
+	in_pixels = gdk_pixbuf_get_pixels (intermediate);
+	output_pixels = gdk_pixbuf_get_pixels (output);
+
+	for (ch = 0; ch < 4; ch++)
+		{
+			for (x = boundarys.x1; x < boundarys.x2; x++)
+				{
+					sum = 0;
+					divisor = 0;
+					
+					for (y = boundarys.y1; y < boundarys.y2 + kh; y++)
+						{
+							if (y - kh >= boundarys.y1)
+								{
+									divisor--;
+									sum -= in_pixels[4 * x 
+													 + (y - kh) * rowstride + ch];
+								}
+							if (y < boundarys.y2)
+								{
+									divisor++;
+									sum += in_pixels[4 * x 
+													 + y * rowstride + ch];
+								}
+							if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y2)
+								{
+									output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
+								}
+						}
+				}
+		}
+
+	g_object_unref (G_OBJECT (intermediate));
+}
+
+static void
+fast_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sx, 
+		   gfloat sy, FPBox boundarys)
+{
+	GdkPixbuf *intermediate1;
+	GdkPixbuf *intermediate2;
+	gint kx, ky;
+
+	kx = floor(sx * 3*sqrt(2*M_PI)/4 + 0.5);
+	ky = floor(sy * 3*sqrt(2*M_PI)/4 + 0.5);
+
+	intermediate1 = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
+										   gdk_pixbuf_get_width (in),
+										   gdk_pixbuf_get_height (in));
+	intermediate2 = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
+										   gdk_pixbuf_get_width (in),
+										   gdk_pixbuf_get_height (in));
+
+
+
+
+	box_blur (in, intermediate1, kx, 
+			  ky, boundarys);
+	box_blur (intermediate1, intermediate2, kx, 
+			  ky, boundarys);
+	box_blur (intermediate2, output, kx, 
+			  ky, boundarys);
+
+	g_object_unref (G_OBJECT (intermediate1));
+	g_object_unref (G_OBJECT (intermediate2));
+}
+
+static void
+rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self,
+											RsvgFilterContext * ctx)
+{
+	RsvgFilterPrimitiveGaussianBlur *cself;
+	
+	GdkPixbuf *output;
+	GdkPixbuf *in;
+	FPBox boundarys;
+	gfloat sdx, sdy;
+	
+	cself = (RsvgFilterPrimitiveGaussianBlur *) self;
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	in = rsvg_filter_get_in (self->in, ctx);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
+									 gdk_pixbuf_get_width (in),
+									 gdk_pixbuf_get_height (in));
+	
+	/* scale the SD values */
+	sdx = cself->sdx * ctx->paffine[0];
+	sdy = cself->sdy * ctx->paffine[3];
+	
+
+	if (sdx * sdy < 4)
+		true_blur (in, output, sdx, 
+				   sdy, boundarys);
+	else
+		fast_blur (in, output, sdx, 
+				   sdy, boundarys);
+
 	rsvg_filter_store_result (self->result, output, ctx);
 	
 	g_object_unref (G_OBJECT (in));
 	g_object_unref (G_OBJECT (output));
-	g_free (KernelMatrix);
 }
 
 static void
