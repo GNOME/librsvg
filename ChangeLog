@@ -1,3 +1,7 @@
+2003-12-10  Federico Mena Quintero  <federico@ximian.com>
+
+	* rsvg-defs.c: #include <glib/gmessages.h>
+
 2003-12-09  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-defs.c (rsvg_defs_set): Bug 128690

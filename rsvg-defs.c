@@ -28,6 +28,7 @@
 #include <glib/ghash.h>
 #include <glib/gmem.h>
 #include <glib/gstrfuncs.h>
+#include <glib/gmessages.h>
 
 struct _RsvgDefs {
 	GHashTable *hash;
