@@ -781,31 +781,42 @@ static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, 
 {
 	guchar i;
 	gint x, y;
-	gint rowstride, height, width;
+	gint rowstride, rowstride2, rowstrideo, height, width;
 	guchar *in_pixels;
 	guchar *in2_pixels;
 	guchar *output_pixels;
 	height = gdk_pixbuf_get_height (in);
 	width = gdk_pixbuf_get_width (in);
 	rowstride = gdk_pixbuf_get_rowstride (in);
+	rowstride2 = gdk_pixbuf_get_rowstride (in2);
+	rowstrideo = gdk_pixbuf_get_rowstride (output);
 
 	output_pixels = gdk_pixbuf_get_pixels (output);
 	in_pixels = gdk_pixbuf_get_pixels (in);
 	in2_pixels = gdk_pixbuf_get_pixels (in2);
 
+	if (boundarys.x1 < 0)
+		boundarys.x1 = 0;
+	if (boundarys.y1 < 0)
+		boundarys.y2 = 0;
+	if (boundarys.x2 >= width)
+		boundarys.x2 = width;
+	if (boundarys.y2 >= height)
+		boundarys.y2 = height;
+		
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				double qr, cr, qa, qb, ca, cb, bca, bcb;
 				
 				qa = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
-				qb = (double) in2_pixels[4 * x + y * rowstride + 3] / 255.0;
+				qb = (double) in2_pixels[4 * x + y * rowstride2 + 3] / 255.0;
 				qr = 1 - (1 - qa) * (1 - qb);
 				cr = 0;
 				for (i = 0; i < 3; i++)
 					{
 						ca = (double) in_pixels[4 * x + y * rowstride + i] * qa / 255.0;
-						cb = (double) in2_pixels[4 * x + y * rowstride + i] * qb / 255.0;
+						cb = (double) in2_pixels[4 * x + y * rowstride2 + i] * qb / 255.0;
 						/*these are the ca and cb that are used in the non-standard blend functions*/
 						bcb = (1 - qa) * cb + ca;
 						bca = (1 - qb) * ca + cb;
@@ -868,10 +879,10 @@ static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, 
 							cr = 255;
 						if (cr < 0)
 							cr = 0;
-						output_pixels[4 * x + y * rowstride + i] = (guchar) cr;
+						output_pixels[4 * x + y * rowstrideo + i] = (guchar) cr;
 						
 					}
-				output_pixels[4 * x + y * rowstride + 3] = qr * 255.0;
+				output_pixels[4 * x + y * rowstrideo + 3] = qr * 255.0;
 			}
 
 }
