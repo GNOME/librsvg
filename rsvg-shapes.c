@@ -1453,14 +1453,13 @@ static gboolean utf8_base64_decode(guchar ** binptr, size_t * binlen, const char
 	return decoded;
 }
 
-static GdkPixbuf *
-rsvg_pixbuf_new_from_data_at_size (const char *data,
-								   GError    **error)
+static GByteArray *
+rsvg_acquire_base64_resource (const char *data,
+							GError    **error)
 {
-	GdkPixbufLoader *loader;
-	GdkPixbuf       *pixbuf;
+	GByteArray * array;
 	
-	guchar * buffer, *bufptr;
+	guchar *bufptr;
 	size_t buffer_len, buffer_max_len, data_len;
 
 	g_return_val_if_fail (data != NULL, NULL);
@@ -1471,47 +1470,18 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	
 	buffer_max_len = ((data_len >> 2) + 1) * 3;
 	buffer_len = buffer_max_len;
-	buffer = g_new(guchar, buffer_max_len);
-	bufptr = buffer;
+
+	array = g_byte_array_sized_new (buffer_max_len);
+	bufptr = array->data;
 
 	if(!utf8_base64_decode(&bufptr, &buffer_len, data, data_len)) {
-		g_free(buffer);
+		g_byte_array_free (array, TRUE);
 		return NULL;
 	}
 
-	buffer_len = buffer_max_len - buffer_len;
-
-	loader = gdk_pixbuf_loader_new ();
-
-	if (!gdk_pixbuf_loader_write (loader, buffer, buffer_len, error)) {
-		gdk_pixbuf_loader_close (loader, NULL);
-		g_object_unref (loader);
-		g_free(buffer);
-		return NULL;
-	}
+	array->len = buffer_max_len - buffer_len;
 	
-	g_free(buffer);
-	if (!gdk_pixbuf_loader_close (loader, error)) {
-		g_object_unref (loader);
-		return NULL;
-	}
-	
-	pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
-	
-	if (!pixbuf) {
-		g_object_unref (loader);
-		g_set_error (error,
-					 GDK_PIXBUF_ERROR,
-					 GDK_PIXBUF_ERROR_FAILED,
-					 _("Failed to load image: reason not known, probably a corrupt image."));
-		return NULL;
-	}
-	
-	g_object_ref (pixbuf);
-	
-	g_object_unref (loader);
-	
-	return pixbuf;
+	return array;
 }
 
 gchar *
@@ -1536,13 +1506,12 @@ rsvg_get_file_path (const gchar * filename, const gchar *basedir)
 	return absolute_filename;
 }
 
-static GdkPixbuf *
-rsvg_pixbuf_new_from_file_at_size (const char *filename,
-								   const char *base_uri,
-								   GError    **error)
+static GByteArray *
+rsvg_acquire_file_resource (const char *filename,
+							const char *base_uri,
+							GError    **error)
 {
-	GdkPixbufLoader *loader;
-	GdkPixbuf       *pixbuf;
+	GByteArray *array;
 	gchar *path;
 
 	guchar buffer [4096];
@@ -1563,57 +1532,35 @@ rsvg_pixbuf_new_from_file_at_size (const char *filename,
 					 filename, g_strerror (errno));
 		return NULL;
 	}
-	
-	loader = gdk_pixbuf_loader_new ();
+
+	/* TODO: an optimization is to use the file's size */
+	array = g_byte_array_new ();
 	
 	while (!feof (f)) {
 		length = fread (buffer, 1, sizeof (buffer), f);
 		if (length > 0)
-			if (!gdk_pixbuf_loader_write (loader, buffer, length, error)) {
-				gdk_pixbuf_loader_close (loader, NULL);
+			if (g_byte_array_append (array, buffer, length) == NULL) {
 				fclose (f);
-				g_object_unref (loader);
+				g_byte_array_free (array, TRUE);
 				return NULL;
 			}
 	}
 	
 	fclose (f);
 	
-	if (!gdk_pixbuf_loader_close (loader, error)) {
-		g_object_unref (loader);
-		return NULL;
-	}
-	
-	pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);	
-
-	if (!pixbuf) {
-		g_object_unref (loader);
-		g_set_error (error,
-					 GDK_PIXBUF_ERROR,
-					 GDK_PIXBUF_ERROR_FAILED,
-					 _("Failed to load image '%s': reason not known, probably a corrupt image file"),
-					 filename);
-		return NULL;
-	}
-	
-	g_object_ref (pixbuf);
-	
-	g_object_unref (loader);
-
-	return pixbuf;
+	return array;
 }
 
 #ifdef HAVE_GNOME_VFS
 
 #include <libgnomevfs/gnome-vfs.h>
 
-static GdkPixbuf *
-rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
-								  const char *base_uri,
-								  GError    **error)
+static GByteArray *
+rsvg_acquire_vfs_resource (const char *filename,
+						   const char *base_uri,
+						   GError    **error)
 {
-	GdkPixbufLoader *loader;
-	GdkPixbuf       *pixbuf;
+	GByteArray *array;
 	
 	guchar buffer [4096];
 	GnomeVFSFileSize length;
@@ -1646,15 +1593,15 @@ rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
 		return NULL;
 	}
 	
-	loader = gdk_pixbuf_loader_new ();
+	/* TODO: an optimization is to use the file's size */
+	array = g_byte_array_new ();
 	
 	while (TRUE) {
 		res = gnome_vfs_read (f, buffer, sizeof (buffer), &length);
 		if (res == GNOME_VFS_OK && length > 0) {
-			if (!gdk_pixbuf_loader_write (loader, buffer, length, error)) {
-				gdk_pixbuf_loader_close (loader, NULL);
+			if (g_byte_array_append (array, buffer, length) == NULL) {
 				gnome_vfs_close (f);
-				g_object_unref (loader);
+				g_byte_array_free (array, TRUE);
 				return NULL;
 			}
 		} else {
@@ -1664,51 +1611,81 @@ rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
 	
 	gnome_vfs_close (f);
 	
-	if (!gdk_pixbuf_loader_close (loader, error)) {
-		g_object_unref (loader);
-		return NULL;
-	}
-	
-	pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
-	
-	if (!pixbuf) {
-		g_object_unref (loader);
-		g_set_error (error,
-					 GDK_PIXBUF_ERROR,
-					 GDK_PIXBUF_ERROR_FAILED,
-					 _("Failed to load image '%s': reason not known, probably a corrupt image file"),
-					 filename);
-		return NULL;
-	}
-	
-	g_object_ref (pixbuf);
-	
-	g_object_unref (loader);
-
-	return pixbuf;
+	return array;
 }
 
 #endif
 
+GByteArray *
+_rsvg_acquire_xlink_href_resource (const char *href,
+								   const char *base_uri,
+								   GError **err)
+{
+	GByteArray * arr = NULL;
+
+	if(!strncmp(href, "data:", 5))
+		arr = rsvg_acquire_base64_resource (href, err);
+	
+	if(!arr)
+		arr = rsvg_acquire_file_resource (href, base_uri, err);
+
+#ifdef HAVE_GNOME_VFS
+	if(!arr)
+		arr = rsvg_acquire_vfs_resource (href, base_uri, err);
+#endif
+
+	return arr;
+}
+
 GdkPixbuf *
 rsvg_pixbuf_new_from_href (const char *href,
 						   const char *base_uri,
-						   GError    **err)
+						   GError    **error)
 {
-	GdkPixbuf * img = NULL;
+	GByteArray * arr;
 
-	if(!strncmp(href, "data:", 5))
-		img = rsvg_pixbuf_new_from_data_at_size (href, err);
+	arr = _rsvg_acquire_xlink_href_resource (href, base_uri, error);
+	if (arr) {
+		GdkPixbufLoader *loader;
+		GdkPixbuf * pixbuf = NULL;
+		int res;
+
+		loader = gdk_pixbuf_loader_new ();
 	
-	if(!img)
-		img = rsvg_pixbuf_new_from_file_at_size (href, base_uri, err);
+		res = gdk_pixbuf_loader_write (loader, arr->data, arr->len, error);
+		g_byte_array_free (arr, TRUE);
 
-#ifdef HAVE_GNOME_VFS
-	if(!img)
-		img = rsvg_pixbuf_new_from_vfs_at_size (href, base_uri, err);
-#endif
+		if (!res) {
+			gdk_pixbuf_loader_close (loader, NULL);
+			g_object_unref (loader);
+			return NULL;
+		}
+		
+		if (!gdk_pixbuf_loader_close (loader, error)) {
+			g_object_unref (loader);
+			return NULL;
+		}
+	
+		pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
+	
+		if (!pixbuf) {
+			g_object_unref (loader);
+			g_set_error (error,
+						 GDK_PIXBUF_ERROR,
+						 GDK_PIXBUF_ERROR_FAILED,
+						 _("Failed to load image '%s': reason not known, probably a corrupt image file"),
+						 href);
+			return NULL;
+		}
+		
+		g_object_ref (pixbuf);
+		
+		g_object_unref (loader);
 
-	return img;
+		return pixbuf;
+	}
+
+	return NULL;
 }
 
 void
