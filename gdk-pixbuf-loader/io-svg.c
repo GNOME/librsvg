@@ -115,9 +115,9 @@ fill_info (GdkPixbufFormat *info)
 {
         static GdkPixbufModulePattern signature[] = {
                 { "<?xml", NULL, 50 },
-                { "<svg", NULL, 100},
-                { "<!DOCTYPE svg", NULL, 100},
-                { NULL, NULL, 0}
+                { "<svg", NULL, 100 },
+                { "<!DOCTYPE svg", NULL, 100 },
+                { NULL, NULL, 0 }
         };
         static gchar *mime_types[] = { 
                 "image/svg", 
