@@ -485,6 +485,9 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 	double caffine[6];
 	int i, j;
 
+	if (ctx->ctx == NULL)
+		return;
+
 	gdouble minx, miny, maxx, maxy, xcoord, ycoord, xoffset, yoffset;
 	
 	GdkPixbuf *save, *render;

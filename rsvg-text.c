@@ -209,6 +209,7 @@ rsvg_text_render_text_bitmap (RsvgHandle *ctx,
 	gradctx.y0 = line_ink_rect.y;
 	gradctx.x1 = line_ink_rect.x + logical_rect.width;
 	gradctx.y1 = line_ink_rect.y + logical_rect.height;
+	gradctx.ctx = ctx;
 	for (i = 0; i < 6; i++)
 		gradctx.affine[i] = state->affine[i];
 	
