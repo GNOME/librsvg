@@ -78,7 +78,6 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	art_u8 *pixels;
 	gint percent, em, ex;
 	RsvgState *state;
-	gboolean has_alpha = TRUE;
 	gint new_width, new_height;
 	double x_zoom = 1.;
 	double y_zoom = 1.;
@@ -182,7 +181,7 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 					g_warning ("rsvg_start_svg: width too large");
 					return;
 				}
-			rowstride = (new_width * (has_alpha ? 4 : 3) + 3) & ~3;
+			rowstride = (new_width * 4 + 3) & ~3;
 			if (rowstride > INT_MAX / new_height)
 				{
 					/* FIXME: GError here? */
@@ -199,10 +198,10 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 					g_warning ("rsvg_start_svg: dimensions too large");
 					return;
 				}
-			memset (pixels, has_alpha ? 0 : 255, rowstride * new_height);
+			memset (pixels, 0, rowstride * new_height);
 			ctx->pixbuf = gdk_pixbuf_new_from_data (pixels,
 													GDK_COLORSPACE_RGB,
-													has_alpha, 8,
+													TRUE, 8,
 													new_width, new_height,
 													rowstride,
 													rsvg_pixmap_destroy,
