@@ -13,10 +13,12 @@ Requires:         glib2 >= @GLIB_REQUIRED@
 Requires:         libart_lgpl >= @LIBART_REQUIRED@
 Requires:         libxml2 >= @LIBXML_REQUIRED@
 Requires:         pango >= @PANGOFT2_REQUIRED@
+Requires:	  libgsf >= 1.6.0
 BuildRequires:    glib2-devel >= @GLIB_REQUIRED@
 BuildRequires:    libart_lgpl-devel >= @LIBART_REQUIRED@
 BuildRequires:    libxml2-devel >= @LIBXML_REQUIRED@
 BuildRequires:    pango-devel >= @PANGOFT2_REQUIRED@
+BuildRequires:	  libgsf >= 1.6.0
 
 %description
 An SVG library based on libart.
