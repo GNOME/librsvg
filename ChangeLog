@@ -1,3 +1,7 @@
+2003-01-30  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.c (rsvg_start_svg): s/TRUE/FALSE to fix scaling vbox issue
+	
 2003-01-29  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-paint-server.[ch]: Handle objectBoundingBox units for linear gradients, radialGradients. Radial are untested and do not work properly.

@@ -84,7 +84,7 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	double y_zoom = 1.;
 	
 	double vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
-	gboolean has_vbox = TRUE;
+	gboolean has_vbox = FALSE;
 
 	if (atts != NULL)
 		{
@@ -135,8 +135,8 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 			
 			if (!has_vbox)
 				{
-					x_zoom = (width < 0 || new_width < 0) ? 1 : (double) new_width / width;
-					y_zoom = (height < 0 || new_height < 0) ? 1 : (double) new_height / height;
+					  x_zoom = (width < 0 || new_width < 0) ? 1 : (double) new_width / width;
+					  y_zoom = (height < 0 || new_height < 0) ? 1 : (double) new_height / height;
 				}
 			else
 				{
@@ -152,7 +152,7 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 					new_width  = (width == -1 ? new_width : width);
 					new_height = (height == -1 ? new_height : height);
 				}
-			
+
 			/* Scale size of target pixbuf */
 			state = &ctx->state[ctx->n_state - 1];
 			art_affine_scale (state->affine, x_zoom, y_zoom);
