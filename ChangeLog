@@ -1,5 +1,9 @@
 2003-12-07  Dom Lachowicz <cinamod@hotmail.com>
 
+	* configure.in: Bump version number
+	
+2003-12-07  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg.c:
 	* rsvg-paint-server.c: Fix userspace gradients (Caleb Moore)
 	

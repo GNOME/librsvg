@@ -1021,7 +1021,7 @@ rsvg_start_use (RsvgHandle *ctx, const xmlChar **atts)
 						got_width = TRUE;
 					}
 					else if (!strcmp ((char *)atts[i], "height")) {
-						height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);					
+						height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 						got_height = TRUE;
 					}
 					else if (!strcmp ((char *)atts[i], "class"))
