@@ -59,6 +59,7 @@ main (int argc, char **argv)
 						atof (x_zoom_str),
 						atof (y_zoom_str),
 						NULL);
-	gdk_pixbuf_save (pixbuf, args[1], "png", NULL, NULL);
+	if (pixbuf)
+		gdk_pixbuf_save (pixbuf, args[1], "png", NULL, NULL);
 	return 0;
 }

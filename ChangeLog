@@ -1,5 +1,15 @@
 2001-09-24  Darin Adler  <darin@bentspoon.com>
 
+	* rsvg.c: (rsvg_entity_decl): Change so it can handle a NULL
+	for the content passed in. Happens at least if the .svg file
+	is empty and presumably in other cases.
+	(rsvg_handle_free): Handle case where pixbuf is NULL.
+	* test-rsvg.c: (main): Don't write anything out if a NULL
+	pixbuf is returned. This can happen if the .svg file is
+	empty.
+
+2001-09-24  Darin Adler  <darin@bentspoon.com>
+
 	* librsvg-2.0.pc.in: Update to point to libart 2.
 
 2001-09-17  Darin Adler  <darin@bentspoon.com>
