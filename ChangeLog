@@ -1,3 +1,9 @@
+2001-07-24  Darin Adler  <darin@bentspoon.com>
+
+	* .cvsignore: Don't ignore files that aren't made any more.
+	* MAINTAINERS: Add myself.
+	* README.CVS: Removed unnecessary file.
+
 2001-07-13  Darin Adler  <darin@bentspoon.com>
 
 	* configure.in: Remove xml-i18n-tools invocation so we don't
