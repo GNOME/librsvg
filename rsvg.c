@@ -182,19 +182,33 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
   art_u8 *pixels;
   gint fixed;
   RsvgState *state;
-  gboolean has_alpha = 1;
+  gboolean has_alpha = TRUE;
   gint new_width, new_height;
-  double x_zoom;
-  double y_zoom;
+  double x_zoom = 1.;
+  double y_zoom = 1.;
+
+  int vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
+  gboolean has_vbox = TRUE;
 
   if (atts != NULL)
     {
       for (i = 0; atts[i] != NULL; i += 2)
 	{
+	  /* x & y should be ignored since we should always be the outermost SVG,
+	     at least for now */
 	  if (!strcmp ((char *)atts[i], "width"))
 	    width = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
-	  else if (!strcmp ((char *)atts[i], "height"))
+	  else if (!strcmp ((char *)atts[i], "height"))	    
 	    height = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	    yoffset = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);	  
+	  else if (!strcmp ((char *)atts[i], "viewBox"))
+	    {
+	      /* todo: viewbox can have whitespace and/or comma but we're only likely to see
+		 these 2 combinations */
+	      if (4 == sscanf ((char *)atts[i + 1], "%d %d %d %d", &vbox_x, &vbox_y, &vbox_w, &vbox_h) ||
+		  4 == sscanf ((char *)atts[i + 1], "%d , %d , %d , %d", &vbox_x, &vbox_y, &vbox_w, &vbox_h))
+		has_vbox = TRUE;
+	    }
 	}
 
 #ifdef VERBOSE
@@ -202,17 +216,34 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	       width, height);
 #endif
 
-      if (width == 0 || height == 0)
+      if (width <= 0 || height <= 0)
         {
           /* FIXME: GError here? */
           g_warning ("rsvg_start_svg: can't render 0-sized SVG");
           return;
         }
 
-      new_width = width;
-      new_height = height;
-      if (ctx->size_func)
-	(* ctx->size_func) (&new_width, &new_height, ctx->user_data);
+      if (has_vbox && vbox_w > 0 && vbox_h > 0)
+	{
+	  new_width  = vbox_w - vbox_x;
+	  new_height = vbox_h - vbox_y;
+
+	  /* apply the sizing function on the *original* width and height
+	     to acquire our real destination size. we'll scale it against
+	     the viewBox's coordinates later */
+	  if (ctx->size_func)
+	    (* ctx->size_func) (&height, &height, ctx->user_data);
+	}
+      else
+	{
+	  new_width = width;
+	  new_height = height;
+
+	  /* apply the sizing function to acquire our new width and height.
+	     we'll scale this against the old values later */
+	  if (ctx->size_func)
+	    (* ctx->size_func) (&new_width, &new_height, ctx->user_data);
+	}
 
       if (new_width == 0 || new_height == 0)
 	{
@@ -221,8 +252,20 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
           return;
 	}
 
-      x_zoom = (width < 0 || new_width < 0) ? 1 : (double) new_width / width;
-      y_zoom = (height < 0 || new_height < 0) ? 1 : (double) new_height / height;
+      if (!has_vbox)
+	{
+	  x_zoom = (width < 0 || new_width < 0) ? 1 : (double) new_width / width;
+	  y_zoom = (height < 0 || new_height < 0) ? 1 : (double) new_height / height;
+	}
+      else
+	{	  
+	  x_zoom = (width < 0 || new_width < 0) ? 1 : (double) width / new_width;
+	  y_zoom = (height < 0 || new_height < 0) ? 1 : (double) height / new_height;
+
+	  /* reset these so that we get a properly sized SVG and not a huge one */
+	  new_width  = width;
+	  new_height = height;
+	}
 
       /* Scale size of target pixbuf */
       state = &ctx->state[ctx->n_state - 1];
