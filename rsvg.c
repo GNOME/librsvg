@@ -789,6 +789,8 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_filter_primitive_erode(ctx, atts);
 	else if (!strcmp ((char *)name, "feComponentTransfer"))
 		rsvg_start_filter_primitive_component_transfer(ctx, atts);
+	else if (!strcmp ((char *)name, "feComposite"))
+		rsvg_start_filter_primitive_composite(ctx, atts);
 	else if (!strcmp ((char *)name, "feFuncR"))
 		rsvg_start_filter_primitive_component_transfer_function(ctx, atts, 'r');
 	else if (!strcmp ((char *)name, "feFuncG"))

@@ -91,6 +91,9 @@ void
 rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 								   const xmlChar ** atts);
 
+void
+rsvg_start_filter_primitive_composite (RsvgHandle * ctx, const xmlChar ** atts);
+
 G_END_DECLS
 
 #endif

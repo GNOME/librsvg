@@ -2676,3 +2676,269 @@ rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 					 &filter->super);
 }
 
+/*************************************************************/
+/*************************************************************/
+
+typedef enum
+{
+	COMPOSITE_MODE_OVER, COMPOSITE_MODE_IN, COMPOSITE_MODE_OUT, 
+	COMPOSITE_MODE_ATOP, COMPOSITE_MODE_XOR, COMPOSITE_MODE_ARITHMETIC
+}
+RsvgFilterPrimitiveCompositeMode;
+
+typedef struct _RsvgFilterPrimitiveComposite RsvgFilterPrimitiveComposite;
+struct _RsvgFilterPrimitiveComposite
+{
+	RsvgFilterPrimitive super;
+	RsvgFilterPrimitiveCompositeMode mode;
+	GString *in2;
+
+	gdouble k1, k2, k3, k4;
+};
+
+static void
+rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self,
+									RsvgFilterContext * ctx)
+{
+	guchar i;
+	gint x, y;
+	gint rowstride, height, width;
+	FPBox boundarys;
+	
+	guchar *in_pixels;
+	guchar *in2_pixels;
+	guchar *output_pixels;
+	
+	RsvgFilterPrimitiveComposite *bself;
+	
+	GdkPixbuf *output;
+	GdkPixbuf *in;
+	GdkPixbuf *in2;
+	
+	bself = (RsvgFilterPrimitiveComposite *) self;
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	in = rsvg_filter_get_in (self->in, ctx);
+	in_pixels = gdk_pixbuf_get_pixels (in);
+	in2 = rsvg_filter_get_in (bself->in2, ctx);
+	in2_pixels = gdk_pixbuf_get_pixels (in2);
+	
+	height = gdk_pixbuf_get_height (in);
+	width = gdk_pixbuf_get_width (in);
+	
+	rowstride = gdk_pixbuf_get_rowstride (in);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	output_pixels = gdk_pixbuf_get_pixels (output);
+	
+	if (bself->mode == COMPOSITE_MODE_ARITHMETIC)
+		{
+			for (y = boundarys.y1; y < boundarys.y2; y++)
+				for (x = boundarys.x1; x < boundarys.x2; x++)
+					for (i = 0; i < 4; i++)
+						{
+							gdouble ca, cb, cr;
+							ca = (double) in_pixels[4 * x + y * rowstride + i] / 255.0;
+							cb = (double) in2_pixels[4 * x + y * rowstride + i] / 255.0;
+							
+							cr = bself->k1*ca*cb + bself->k2*ca + bself->k3*cb + bself->k4;
+
+							if (cr > 1)
+								cr = 1;
+							if (cr < 0)
+								cr = 0;
+							output_pixels[4 * x + y * rowstride + i] = (guchar)(cr * 255.0);
+						}
+			
+			rsvg_filter_store_result (self->result, output, ctx);
+			
+			g_object_unref (G_OBJECT (in));
+			g_object_unref (G_OBJECT (in2));
+			g_object_unref (G_OBJECT (output));
+			return;
+		}
+
+	
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
+			{
+				double qr, cr, qa, qb, ca, cb, Fa, Fb;
+
+				qa = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
+				qb = (double) in2_pixels[4 * x + y * rowstride + 3] / 255.0;
+				cr = 0;
+				Fa = Fb = 0;
+				switch (bself->mode)
+					{
+					case COMPOSITE_MODE_OVER:
+						Fa = 1;
+						Fb = 1 - qa;
+						break;
+					case COMPOSITE_MODE_IN:
+						Fa = qb;
+						Fb = 0;
+						break;
+					case COMPOSITE_MODE_OUT:
+						Fa = 1 - qb;
+						Fb = 0;
+						break;
+					case COMPOSITE_MODE_ATOP:
+						Fa = qb;
+						Fb = 1 - qa;
+						break;
+					case COMPOSITE_MODE_XOR:
+						Fa = 1 - qb;
+						Fb = 1 - qa;
+						break;
+					case COMPOSITE_MODE_ARITHMETIC:
+						break;
+					}
+				
+				qr = Fa * qa + Fb * qb;
+
+				for (i = 0; i < 3; i++)
+					{
+						ca = (double) in_pixels[4 * x + y * rowstride + i] / 255.0 * qa;
+						cb = (double) in2_pixels[4 * x + y * rowstride + i] / 255.0 * qb;
+					
+						cr = (ca * Fa + cb * Fb) / qr;
+						if (cr > 1)
+							cr = 1;
+						if (cr < 0)
+							cr = 0;
+						output_pixels[4 * x + y * rowstride + i] = (guchar)(cr * 255.0);
+						
+					}
+				if (qr > 1)
+					qr = 1;
+				if (qr < 0)
+					qr = 0;
+				output_pixels[4 * x + y * rowstride + 3] = (guchar)(qr * 255.0);
+			}
+
+	rsvg_filter_store_result (self->result, output, ctx);
+	
+	g_object_unref (G_OBJECT (in));
+	g_object_unref (G_OBJECT (in2));
+	g_object_unref (G_OBJECT (output));
+}
+
+static void
+rsvg_filter_primitive_composite_free (RsvgFilterPrimitive * self)
+{
+	RsvgFilterPrimitiveComposite *bself;
+	
+	bself = (RsvgFilterPrimitiveComposite *) self;
+	g_string_free (self->result, TRUE);
+	g_string_free (self->in, TRUE);
+	g_string_free (bself->in2, TRUE);
+	g_free (bself);
+}
+
+void
+rsvg_start_filter_primitive_composite (RsvgHandle * ctx, const xmlChar ** atts)
+{
+	int i;
+	double font_size;
+	RsvgFilterPrimitiveComposite *filter;
+	
+	font_size = rsvg_state_current_font_size (ctx);
+
+	filter = g_new (RsvgFilterPrimitiveComposite, 1);
+	filter->mode = COMPOSITE_MODE_OVER;
+	filter->super.in = g_string_new ("none");
+	filter->in2 = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->k1 = 0;
+	filter->k2 = 0;
+	filter->k3 = 0;
+	filter->k4 = 0;
+	
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				{
+					if (!strcmp ((char *) atts[i], "operator")) 
+						{
+							if (!strcmp ((char *) atts[i + 1], "in"))
+								filter->mode = COMPOSITE_MODE_IN;
+							else if (!strcmp ((char *) atts[i + 1], "out"))
+								filter->mode = COMPOSITE_MODE_OUT;
+							else if (!strcmp ((char *) atts[i + 1], "atop"))
+								filter->mode = COMPOSITE_MODE_ATOP;
+							else if (!strcmp ((char *) atts[i + 1], "xor"))
+								filter->mode = COMPOSITE_MODE_XOR;
+							else if (!strcmp ((char *) atts[i + 1], 
+											  "arithmetic"))
+								filter->mode = COMPOSITE_MODE_ARITHMETIC;
+							else
+								filter->mode = COMPOSITE_MODE_OVER;
+						}
+					else if (!strcmp ((char *) atts[i], "in"))
+						g_string_assign (filter->super.in, (char *) atts[i + 1]);					
+					else if (!strcmp ((char *) atts[i], "in2"))
+						g_string_assign (filter->in2, (char *) atts[i + 1]);					
+					else if (!strcmp ((char *) atts[i], "result"))
+						g_string_assign (filter->super.result, (char *) atts[i + 1]);					
+					else if (!strcmp ((char *) atts[i], "x"))
+						{
+							filter->super.x =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "y"))
+						{
+							filter->super.y =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "width"))
+						{
+							filter->super.width =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "height"))
+						{
+							filter->super.height =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "k1"))
+						{
+							filter->k1 = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "k2"))
+						{
+							filter->k2 = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "k3"))
+						{
+							filter->k3 = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+					else if (!strcmp ((char *) atts[i], "k4"))
+						{
+							filter->k4 = g_ascii_strtod(atts[i + 1], NULL); 
+						}
+				}
+		}
+	
+	filter->super.render = &rsvg_filter_primitive_composite_render;
+	filter->super.free = &rsvg_filter_primitive_composite_free;
+	
+	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
+					 &filter->super);
+}
