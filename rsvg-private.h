@@ -60,7 +60,7 @@ struct RsvgHandle {
 	int n_state_max;
 	
 	RsvgDefs *defs;
-	gboolean in_defs;
+	guint in_defs;
 	void *current_defs_group;
 
 	GHashTable *css_props;

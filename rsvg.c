@@ -836,7 +836,7 @@ rsvg_defs_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 					ctx->handler->free (ctx->handler);
 					ctx->handler = NULL;
 				}
-			ctx->in_defs = FALSE;
+			ctx->in_defs--;
 		}
 
 	if (!strcmp ((char *)name, "g"))
@@ -862,7 +862,7 @@ rsvg_start_defs (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	handler->super.end_element   = rsvg_defs_handler_end;
 	handler->ctx = ctx;
 
-	ctx->in_defs = TRUE;	
+	ctx->in_defs++;	
 	ctx->handler = &handler->super;
 }
 
@@ -1085,7 +1085,7 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 				rsvg_start_desc (ctx, bag);
 			else if (!strcmp ((char *)name, "mask"))
 				{
-					ctx->in_defs = TRUE;
+					ctx->in_defs++;
 					rsvg_start_mask(ctx, bag);
 				}
 			
@@ -1127,11 +1127,11 @@ rsvg_end_element (void *data, const xmlChar *name)
 			if (!strcmp ((char *)name, "filter"))
 				rsvg_end_filter (ctx);
 			else if (!strcmp ((char *)name, "defs")) {
-				ctx->in_defs = FALSE;
+				ctx->in_defs--;
 			}
 			else if (!strcmp ((char *)name, "mask")){
 				rsvg_end_mask(ctx);
-				ctx->in_defs = FALSE;				
+				ctx->in_defs--;				
 			}
 			/* pop the state stack */
 			ctx->n_state--;

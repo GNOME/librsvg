@@ -165,6 +165,7 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 			z->agl = agl;
 		}
 
+
 	if (rlg->obj_bbox) {
 		affine[0] = ctx->x1 - ctx->x0;
 		affine[1] = 0.;		
@@ -172,13 +173,14 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 		affine[3] = ctx->y1 - ctx->y0;
 		affine[4] = ctx->x0;
 		affine[5] = ctx->y0;
+
 	} else {
 		for (i = 0; i < 6; i++)
 			affine[i] = ctx->affine[i];
 	}
 
 	art_affine_multiply(affine, rlg->affine, affine);
-	
+
 	/* compute [xy][12] in pixel space */
 	x1 = rlg->x1 * affine[0] + rlg->y1 * affine[2] + affine[4];
 	y1 = rlg->x1 * affine[1] + rlg->y1 * affine[3] + affine[5];
