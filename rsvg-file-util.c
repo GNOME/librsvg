@@ -36,6 +36,26 @@
 #include <stdlib.h>
 #include <math.h>
 
+#ifdef G_OS_UNIX
+#include <fcntl.h>
+#endif
+
+/* needed for the mozilla plugin */
+static void set_nonblocking(FILE * f)
+{
+#ifdef G_OS_UNIX
+	glong fcntl_flags = 0;
+
+#ifdef O_NONBLOCK
+    fcntl_flags |= O_NONBLOCK;
+#else
+    fcntl_flags |= O_NDELAY;
+#endif
+
+	(void)fcntl (fileno(f), F_SETFL, fcntl_flags);
+#endif
+}
+
 #define SVG_BUFFER_SIZE (1024 * 8)
 
 static void
@@ -118,7 +138,7 @@ rsvg_pixbuf_from_file_with_size_data_ex (RsvgHandle * handle,
 	
 	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
 
-	while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
+	while (!feof(f) && !ferror(f) && ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0))
 		rsvg_handle_write (handle, chars, result, error);
 	
 	rsvg_handle_close (handle, error);
@@ -138,6 +158,8 @@ rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
 	GdkPixbuf * retval;
 	guchar chars[SVG_BUFFER_SIZE];
 	int result;
+
+	set_nonblocking(f);
 
 	result = fread (chars, 1, SVG_BUFFER_SIZE, f);
 
@@ -162,7 +184,7 @@ rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
 
 	rsvg_handle_write (handle, chars, result, error);
 
-	while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
+	while (!feof(f) && !ferror(f) && ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0))
 		rsvg_handle_write (handle, chars, result, error);
 	
 	rsvg_handle_close (handle, error);

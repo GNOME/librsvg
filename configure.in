@@ -254,6 +254,26 @@ fi
 AM_CONDITIONAL(ENABLE_PIXBUF_LOADER, test x$enable_pixbuf_loader = xyes)
 
 ##################################################
+##################################################
+
+MOZILLA_CFLAGS=
+if test -z "$MOZILLA_CONFIG"; then
+  AC_PATH_PROG(MOZILLA_CONFIG, mozilla-config, no)
+fi
+if test "x$MOZILLA_CONFIG" != "xno"; then
+  _mozilla_include_dir=`mozilla-config --cflags|sed 's/-I\(.*\) .*/\1/'`
+  MOZILLA_CFLAGS="-I$_mozilla_include_dir/plugin -I$_mozilla_include_dir/java -I$_mozilla_include_dir/nspr"
+else
+  AC_MSG_WARN([mozilla-config not found. Mozilla/Netscape plugin will not be built])
+fi
+build_mozilla_plugin=no
+if test "x$MOZILLA_CFLAGS" != "x"; then
+   build_mozilla_plugin=yes
+fi
+AM_CONDITIONAL(WITH_MOZILLA,[test "x$build_mozilla_plugin" = "xyes"])
+AC_SUBST(MOZILLA_CFLAGS)
+
+##################################################
 # Checks for gtk-doc and docbook-tools
 ##################################################
 
@@ -322,6 +342,7 @@ gtk-engine/examples/Makefile
 gtk-engine/examples/bubble/Makefile
 gtk-engine/examples/bubble/gtk-2.0/Makefile
 gdk-pixbuf-loader/Makefile
+moz-plugin/Makefile
 ])
 
 dnl =============================================================================================
@@ -333,10 +354,10 @@ librsvg-$LIBRSVG_VERSION
 	
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
 	Build theme engine:             ${enable_gtk_theme}
+	Build Netscape plugin:          ${build_mozilla_plugin}
 	Handle svgz files:              ${test_gsf}
 	Use libcroco for css parsing:   ${test_croco}
 	Build documentation:            ${enable_gtk_doc}
 "
 
-AC_MSG_RESULT([$croco_warning
-]);
+AC_MSG_RESULT([$croco_warning]);

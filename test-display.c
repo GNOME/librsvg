@@ -69,9 +69,10 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid)
 			win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 			width = MIN(gdk_pixbuf_get_width (pixbuf), DEFAULT_WIDTH) + 20;
 			height = MIN(gdk_pixbuf_get_height (pixbuf), DEFAULT_HEIGHT) + 20;
+
+			gtk_window_set_title (GTK_WINDOW(win), "SVG Viewer");
 		}
 
-	gtk_window_set_title (GTK_WINDOW(win), "SVG Viewer");
 	gtk_window_set_default_size(GTK_WINDOW(win), width, height);
 
 	/* exit when 'X' is clicked */
@@ -85,6 +86,7 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid)
 	if(xid > 0)
 		{
 			gtk_container_add(GTK_CONTAINER(win), img);
+			fprintf(stderr, "added foo");
 		}
 	else
 		{
@@ -197,7 +199,7 @@ main (int argc, char **argv)
 			size_data.width = width;
 			size_data.height = height;
 		}
-
+	
 	if(from_stdin)
 		pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data (stdin, &size_data, NULL);
 	else

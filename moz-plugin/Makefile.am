@@ -1,4 +1,3 @@
-
 plugindir = $(libdir)/mozilla/plugins/
 
 if WITH_MOZILLA
@@ -7,10 +6,12 @@ else
 plugin_LTLIBRARIES = 
 endif
 
+INCLUDES+=$(MOZILLA_CFLAGS) -DBINDIR=\"$(bindir)\" $(GDK_X11_CFLAGS)
+
 libmozsvgdec_la_SOURCES = moz-plugin.c
-libmozsvgdec_la_CFLAGS = $(MOZILLA_CFLAGS) $(X_CFLAGS) -DBINDIR=\"$(bindir)\"
-libmozsvgdec_la_LDFLAGS = -module -avoid-version $(X_LIBS)
-libmozsvgdec_la_LIBADD = -lXt $(LIBRSVG_LIBS) \
+libmozsvgdec_la_LDFLAGS = -module -avoid-version 
+libmozsvgdec_la_LIBADD = $(LIBRSVG_LIBS) \
 	$(LIBGSF_LIBS) $(LIBCROCO_LIBS)\
 	$(top_builddir)/librsvg-2.la
 
+EXTRA_DIST=moz-plugin.c

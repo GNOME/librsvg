@@ -1,5 +1,9 @@
 2004-02-29  Dom Lachowicz <cinamod@hotmail.com>
 
+	* moz-plugin/moz-plugin.c: Make Netscape/Mozilla plugin kind-of work
+	
+2004-02-29  Dom Lachowicz <cinamod@hotmail.com>
+
 	* configure.in:
 	* Makefile.am:
 	* test-display.c: Build + install 'rsvg-view'
