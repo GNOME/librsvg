@@ -23,8 +23,9 @@
 2002-01-03  Darin Adler  <darin@bentspoon.com>
 
 	* rsvg.c: (rsvg_text_handler_characters):
-	Don't set font_family to NULL since pangoft2 doesn't
-	currnetly handle this properly.
+	Don't set font_family to NULL -- by not setting it, we
+	end up with the default font family. If we set it, we'd
+	get an error when rendering.
 
 2002-01-02  Darin Adler  <darin@bentspoon.com>
 
