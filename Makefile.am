@@ -18,7 +18,6 @@ libm = -lm
 endif
 
 headers = \
-	rsvg-gz.h		\
 	rsvg.h
 
 enum_sources = \
@@ -28,7 +27,6 @@ enum_sources = \
 lib_LTLIBRARIES = librsvg-2.la
 
 librsvg_2_la_SOURCES = 		\
-	rsvg-gz.c		\
 	rsvg-affine.c		\
 	librsvg-features.c 	\
 	rsvg-bpath-util.c 	\
@@ -126,8 +124,6 @@ EXTRA_DIST =				\
 	librsvg-2.0.pc.in 		\
 	librsvg-2.0-uninstalled.pc.in 	\
 	librsvg-zip.in 			\
-	rsvg-gz.c 			\
-	rsvg-gz.h 			\
 	$(man_MANS)			\
 	$(rsvg_view_SOURCES)
 
@@ -145,7 +141,6 @@ pkgconfig_DATA = librsvg-2.0.pc
 
 dist-hook: librsvg.spec
 	cp librsvg.spec $(distdir)
-
 
 librsvg-enum-types.h: s-enum-types-h
 	@true

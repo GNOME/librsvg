@@ -37,10 +37,10 @@ Core API
 
 </para>
 
-@dpi: 
-<!-- # Unused Parameters # -->
 @dpi_x: 
 @dpi_y: 
+<!-- # Unused Parameters # -->
+@dpi: 
 
 
 <!-- ##### FUNCTION rsvg_handle_new ##### -->
@@ -57,10 +57,10 @@ Core API
 </para>
 
 @handle: 
-@dpi: 
-<!-- # Unused Parameters # -->
 @dpi_x: 
 @dpi_y: 
+<!-- # Unused Parameters # -->
+@dpi: 
 
 
 <!-- ##### FUNCTION rsvg_handle_set_size_callback ##### -->

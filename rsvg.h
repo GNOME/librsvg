@@ -56,8 +56,8 @@ typedef void (* RsvgSizeFunc) (gint     *width,
 void        rsvg_init (void);
 void        rsvg_term (void);
 
-void        rsvg_set_default_dpi_x_y          (double dpi_x, double dpi_y);
-void        rsvg_handle_set_dpi_x_y           (RsvgHandle * handle, double dpi_x, double dpi_y);
+void        rsvg_set_default_dpi          (double dpi_x, double dpi_y);
+void        rsvg_handle_set_dpi           (RsvgHandle * handle, double dpi_x, double dpi_y);
 
 RsvgHandle *rsvg_handle_new               (void);
 void        rsvg_handle_set_size_callback (RsvgHandle      *handle,
@@ -107,37 +107,6 @@ GdkPixbuf  *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
 G_CONST_RETURN char *rsvg_handle_get_title         (RsvgHandle *handle);
 G_CONST_RETURN char *rsvg_handle_get_desc          (RsvgHandle *handle);
 G_CONST_RETURN char *rsvg_handle_get_metadata      (RsvgHandle *handle);
-
-#ifndef RSVG_DISABLE_DEPRECATED
-void        rsvg_set_default_dpi          (double dpi);
-void        rsvg_handle_set_dpi           (RsvgHandle * handle, double dpi);
-
-GdkPixbuf  * rsvg_pixbuf_from_file_at_size_ex (RsvgHandle * handle,
-											   const gchar  *file_name,
-											   gint          width,
-											   gint          height,
-											   GError      **error);
-GdkPixbuf  * rsvg_pixbuf_from_file_ex (RsvgHandle * handle,
-									   const gchar  *file_name,
-									   GError      **error);
-GdkPixbuf  * rsvg_pixbuf_from_file_at_zoom_ex (RsvgHandle * handle,
-											   const gchar  *file_name,
-											   double        x_zoom,
-											   double        y_zoom,
-											   GError      **error);
-GdkPixbuf  * rsvg_pixbuf_from_file_at_max_size_ex (RsvgHandle * handle,
-												   const gchar  *file_name,
-												   gint          max_width,
-												   gint          max_height,
-												   GError      **error);
-GdkPixbuf  * rsvg_pixbuf_from_file_at_zoom_with_max_ex (RsvgHandle * handle,
-														const gchar  *file_name,
-														double        x_zoom,
-														double        y_zoom,
-														gint          max_width,
-														gint          max_height,
-														GError      **error);
-#endif
 
 G_END_DECLS
 
