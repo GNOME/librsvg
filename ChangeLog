@@ -1,3 +1,7 @@
+2004-07-09  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-paint-server.c: Fix bug #145426
+	
 2004-06-30  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-css.h: Fix bug #145173

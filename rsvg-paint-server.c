@@ -227,8 +227,12 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	ychange = y2 - y1;
 	unitlen = sqrt(xchange*xchange + ychange*ychange);
 
-	x2 = x1 + ychange / unitlen * pointlen;
-	y2 = y1 - xchange / unitlen * pointlen;
+	if (unitlen == 0 || pointlen == 0) {
+		x2 = y2 = 0;
+	} else {
+		x2 = x1 + ychange / unitlen * pointlen;
+		y2 = y1 - xchange / unitlen * pointlen;
+	}
 
 	/* solve a, b, c so ax1 + by1 + c = 0 and ax2 + by2 + c = 1, maximum
 	   gradient is in x1,y1 to x2,y2 dir */
