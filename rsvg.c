@@ -512,7 +512,7 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			grad->x1 = (cloned && !got_x1) ? grad->x1 : x1;
 			grad->y1 = (cloned && !got_y1) ? grad->y1 : y1;
 			grad->x2 = (cloned && !got_x2) ? grad->x2 : x2;
-			grad->y2 = (cloned && !got_y2) ? grad->y1 : y2;
+			grad->y2 = (cloned && !got_y2) ? grad->y2 : y2;
 		}
 	else
 		{
