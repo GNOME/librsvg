@@ -1,3 +1,7 @@
+2004-08-13  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-styles.c: Fix memory leak in the new "state stack thingie".
+	
 2004-08-13  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* prettymuch-everywhere: Huge number of small bugfixes

@@ -1778,6 +1778,7 @@ rsvg_state_pop(RsvgHandle * ctx)
 	RsvgState * toremove = g_slist_nth_data(ctx->state, 0);
 	rsvg_state_finalize (toremove);
 	ctx->state = g_slist_remove(ctx->state, toremove);	
+	g_free(toremove);
 }
 
 void
