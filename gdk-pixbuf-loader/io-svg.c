@@ -46,6 +46,22 @@ typedef struct {
 G_MODULE_EXPORT void fill_vtable (GdkPixbufModule *module);
 G_MODULE_EXPORT void fill_info (GdkPixbufFormat *info);
 
+enum {
+        ERROR_WRITING = 1,
+        ERROR_DISPLAYING_IMAGE
+} RsvgLoaderErrorReasons;
+
+static void
+rsvg_propegate_error (GError ** err,
+                      const char * reason,
+                      gint code)
+{
+        if (err) {
+                *err = NULL;
+                g_set_error (err, rsvg_error_quark (), code, reason);
+        }
+}
+
 static gpointer
 gdk_pixbuf__svg_image_begin_load (GdkPixbufModuleSizeFunc size_func,
                                   GdkPixbufModulePreparedFunc prepared_func, 
@@ -74,7 +90,6 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
 				      GError **error)
 {
         SvgContext *context = (SvgContext *)data;
-        gboolean result;
 
         if (error)
                 *error = NULL;
@@ -94,20 +109,24 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
                 rsvg_handle_set_size_callback (context->handle, context->size_func, context->user_data, NULL);
         }
 
-        result = rsvg_handle_write (context->handle, buf, size, error);  
+        if (!rsvg_handle_write (context->handle, buf, size, error)) {
+                rsvg_propegate_error (error, "Error writing", ERROR_WRITING);
+                return FALSE;
+        }
 
         context->pixbuf = rsvg_handle_get_pixbuf (context->handle);
   
         if (context->pixbuf != NULL && context->prepared_func != NULL)
                 (* context->prepared_func) (context->pixbuf, NULL, context->user_data);        
   
-        return result;
+        return TRUE;
 }
 
 static gboolean
 gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 {
         SvgContext *context = (SvgContext *)data;  
+        gboolean result = TRUE;
 
         if (error)
                 *error = NULL;
@@ -127,9 +146,14 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
                                            gdk_pixbuf_get_width (context->pixbuf), 
                                            gdk_pixbuf_get_height (context->pixbuf), 
                                            context->user_data);
+        else if (!context->pixbuf) {
+                rsvg_propegate_error (error, "Error displaying image", ERROR_DISPLAYING_IMAGE);
+                result = FALSE;
+        }
 
         rsvg_handle_free (context->handle);
-        g_object_unref (context->pixbuf);
+        if (context->pixbuf)
+                g_object_unref (context->pixbuf);
         g_free (context);
 
         return TRUE;

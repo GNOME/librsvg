@@ -1,3 +1,7 @@
+2003-08-27  Dom Lachowicz <cinamod@hotmail.com>
+
+	* gdk-pixbuf-loader/io-svg.c: bug 120825
+	
 2003-06-20  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.c: Add support for <title> and <desc> elements
