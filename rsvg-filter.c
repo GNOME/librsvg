@@ -922,6 +922,7 @@ struct _RsvgFilterPrimitiveConvolveMatrix
 	double *KernelMatrix;
 	double divisor;
 	gint orderx, ordery;
+	double dx, dy;
 	double bias;
 	gint targetx, targety;
 	gboolean preservealpha;
@@ -948,7 +949,7 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 	
 	gint sx, sy, kx, ky;
 	guchar sval;
-	double kval, sum;
+	double kval, sum, dx, dy, targetx, targety;
 	
 	gint tempresult;
 	
@@ -961,6 +962,17 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 	height = gdk_pixbuf_get_height (in);
 	width = gdk_pixbuf_get_width (in);
 	
+	targetx = cself->targetx * ctx->paffine[0];
+	targety = cself->targety * ctx->paffine[3];
+
+	if (cself->dx != 0 || cself->dy != 0)
+		{
+			dx = cself->dx * ctx->paffine[0];
+			dy = cself->dy * ctx->paffine[3];
+		}
+	else
+		dx = dy = 1;
+
 	rowstride = gdk_pixbuf_get_rowstride (in);
 	
 	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
@@ -975,10 +987,8 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 						for (i = 0; i < cself->ordery; i++)
 							for (j = 0; j < cself->orderx; j++)
 								{
-									sx = x - cself->targetx + j;
-									sy = y - cself->targety + i;
-
-
+									sx = x - targetx + j * dx;
+									sy = y - targety + i * dy;
 									if (cself->edgemode == 0)
 										{
 											if (sx < boundarys.x1)
@@ -1000,6 +1010,8 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 													(boundarys.y2 - boundarys.y1);
 										}
 									else if (cself->edgemode == 2)
+										if (sx < boundarys.x1 || (sx >= boundarys.x2) || 
+											sy < boundarys.y1 || (sy >= boundarys.y2))
 										continue;
 
 									kx = cself->orderx - j - 1;
@@ -1009,6 +1021,7 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 									sum += (double) sval *kval;
 								}
 						tempresult = sum / cself->divisor + cself->bias;
+
 						if (tempresult > 255)
 							tempresult = 255;
 						if (tempresult < 0)
@@ -1058,8 +1071,11 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 	filter->super.sizedefaults = 1;	
 	
 	filter->divisor = 0;
+	filter->bias = 0;
 	filter->targetx = 0;
 	filter->targety = 0;
+	filter->dx = 0;
+	filter->dy = 0;
 	
 	filter->edgemode = 0;
 
@@ -1131,6 +1147,10 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 							filter->ordery = tempy;
 							
 						}
+						else if (!strcmp ((char *) atts[i], "kernelUnitLength"))
+							rsvg_css_parse_number_optional_number ((char *) atts[i + 1],
+																   &filter->dx, &filter->dy);
+							
 					else if (!strcmp ((char *) atts[i], "kernelMatrix"))
 						filter->KernelMatrix =
 							rsvg_css_parse_number_list ((char *) atts[i + 1], &listlen);

@@ -1,5 +1,5 @@
 2003-02-06  Caleb Moore <c.moore@student.unsw.edu.au>
-	* rsvg-filter.c: made gassian blur use 3 box blurs (technically 6 motion blurs) when the geometric mean of the standard deviations of the filter is over two.
+	* rsvg-filter.c: made gassian blur use 3 box blurs (technically 6 motion blurs) when the geometric mean of the standard deviations of the filter is over two. Misc enhancements in feConvolveMatrix
 	
 2003-02-05  Caleb Moore <c.moore@student.unsw.edu.au>
 	
