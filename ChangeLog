@@ -1,3 +1,8 @@
+2003-09-23  Sven Neumann  <sven@gimp.org>
+
+	* rsvg.c (rsvg_start_svg): respect viewBox offsets by applying an
+	appropriate translation.
+
 2003-09-21  Tor Lillqvist  <tml@iki.fi>
 
 	* librsvg-zip.in: New file.

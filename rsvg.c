@@ -82,7 +82,8 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	gint new_width, new_height;
 	double x_zoom = 1.;
 	double y_zoom = 1.;
-	
+	double affine[6];
+
 	double vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
 	gboolean has_vbox = FALSE;
 
@@ -94,11 +95,11 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 					   at least for now, but i'll include them here anyway */
 					if (!strcmp ((char *)atts[i], "width"))
 						width = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
-					else if (!strcmp ((char *)atts[i], "height"))	    
+					else if (!strcmp ((char *)atts[i], "height"))
 						height = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
-					else if (!strcmp ((char *)atts[i], "x"))	    
+					else if (!strcmp ((char *)atts[i], "x"))
 						x = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
-					else if (!strcmp ((char *)atts[i], "y"))	    
+					else if (!strcmp ((char *)atts[i], "y"))
 						y = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
 					else if (!strcmp ((char *)atts[i], "viewBox"))
 						{
@@ -106,12 +107,12 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 															&vbox_w, &vbox_h);
 						}
 				}
-			
+
 			if (has_vbox && vbox_w > 0. && vbox_h > 0.)
 				{
 					new_width  = (int)floor (vbox_w);
 					new_height = (int)floor (vbox_h);
-					
+
 					/* apply the sizing function on the *original* width and height
 					   to acquire our real destination size. we'll scale it against
 					   the viewBox's coordinates later */
@@ -122,17 +123,17 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 				{
 					new_width  = width;
 					new_height = height;
-					
+
 					/* apply the sizing function to acquire our new width and height.
 					   we'll scale this against the old values later */
 					if (ctx->size_func)
 						(* ctx->size_func) (&new_width, &new_height, ctx->user_data);
 				}
-			
+
 			/* set these here because % are relative to viewbox */
 			ctx->width = new_width;
 			ctx->height = new_height;
-			
+
 			if (!has_vbox)
 				{
 					  x_zoom = (width < 0 || new_width < 0) ? 1 : (double) new_width / width;
@@ -140,14 +141,9 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 				}
 			else
 				{
-#if 1
 					x_zoom = (width < 0 || new_width < 0) ? 1 : (double) width / new_width;
 					y_zoom = (height < 0 || new_height < 0) ? 1 : (double) height / new_height;
-#else
-					x_zoom = (width < 0 || new_width < 0) ? 1 : (double) new_width / width;
-					y_zoom = (height < 0 || new_height < 0) ? 1 : (double) new_height / height;	  
-#endif
-					
+
 					/* reset these so that we get a properly sized SVG and not a huge one */
 					new_width  = (width == -1 ? new_width : width);
 					new_height = (height == -1 ? new_height : height);
@@ -155,24 +151,25 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 
 			/* Scale size of target pixbuf */
 			state = rsvg_state_current (ctx);
-			art_affine_scale (state->affine, x_zoom, y_zoom);
-			
-#if 0
-			if (vbox_x != 0. || vbox_y != 0.)
+
+			art_affine_identity (state->affine);
+
+			if (has_vbox && (vbox_x != 0. || vbox_y != 0.))
 				{
-					double affine[6];
-					art_affine_translate (affine, vbox_x, vbox_y);
-					art_affine_multiply (state->affine, affine, state->affine);
+					art_affine_translate (affine, - vbox_x, - vbox_y);
+					art_affine_multiply (state->affine, state->affine, affine);
 				}
-#endif
-			
+
+			art_affine_scale (affine, x_zoom, y_zoom);
+			art_affine_multiply (state->affine, state->affine, affine);
+
 			if (new_width < 0 || new_height < 0)
 				{
 					g_warning ("rsvg_start_svg: width and height not specified in the SVG, nor supplied by the size callback");
 					if (new_width < 0) new_width = 500;
 					if (new_height < 0) new_height = 500;
 				}
-			
+
 			if (new_width >= INT_MAX / 4)
 				{
 					/* FIXME: GError here? */
@@ -186,9 +183,9 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 					g_warning ("rsvg_start_svg: width too large");
 					return;
 				}
-			
+
 			/* FIXME: Add GError here if size is too big. */
-			
+
 			pixels = g_try_malloc (rowstride * new_height);
 			if (pixels == NULL)
 				{
