@@ -157,7 +157,7 @@ case "$GLIB_VERSION" in
   	;;
 
 	*)
-		AC_ERROR(Nautilus needs glib version 1.2.x not $GLIB_VERSION)
+		AC_ERROR(librsvg needs glib version 1.2.x not $GLIB_VERSION)
 	;;
 esac
 
@@ -184,7 +184,7 @@ case "$GTK_VERSION" in
   	;;
 
 	*)
-		AC_ERROR(Nautilus needs gtk version 1.2.x not $GTK_VERSION)
+		AC_ERROR(librsvg needs gtk version 1.2.x not $GTK_VERSION)
 	;;
 esac
 
@@ -292,7 +292,7 @@ case "$XML_VERSION" in
   	;;
 
 	*)
-		AC_ERROR(Nautilus needs gnome-xml version 1.x not $XML_VERSION)
+		AC_ERROR(librsvg needs gnome-xml version 1.x not $XML_VERSION)
 	;;
 esac
 
@@ -320,7 +320,7 @@ case "$ART_VERSION" in
   	;;
 
 	*)
-		AC_ERROR(Nautilus needs libart version 2.2.x not $ART_VERSION)
+		AC_ERROR(librsvg needs libart version 2.2.x not $ART_VERSION)
 	;;
 esac
 
