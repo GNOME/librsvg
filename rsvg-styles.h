@@ -32,7 +32,7 @@
 #include <libxml/SAX.h>
 #include <libart_lgpl/art_svp_vpath_stroke.h>
 #include <libart_lgpl/art_vpath_dash.h>
-#include <pango/pangoft2.h>
+#include <pango/pango.h>
 
 G_BEGIN_DECLS
 

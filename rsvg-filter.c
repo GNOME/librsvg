@@ -28,6 +28,7 @@
 #include "rsvg-shapes.h"
 #include "rsvg-css.h"
 #include <libart_lgpl/art_rgba.h>
+#include <string.h>
 
 #include <math.h>
 

@@ -34,14 +34,13 @@
 #include <libart_lgpl/art_affine.h>
 #include <libart_lgpl/art_render_mask.h>
 
-#include <pango/pangoft2.h>
-
 #include "rsvg-shapes.h"
 
 #include <ft2build.h>
 #include FT_GLYPH_H
 #include FT_OUTLINE_H
 
+#include <pango/pangoft2.h>
 
 char *
 rsvg_make_valid_utf8 (const char *str)

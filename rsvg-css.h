@@ -26,7 +26,7 @@
 #define RSVG_CSS_H
 
 #include <glib/gtypes.h>
-#include <pango/pangoft2.h>
+#include <pango/pango.h>
 
 G_BEGIN_DECLS
 

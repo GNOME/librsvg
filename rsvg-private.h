@@ -30,7 +30,7 @@
 
 #include <libxml/SAX.h>
 #include <libxml/xmlmemory.h>
-#include <pango/pangoft2.h>
+#include <pango/pango.h>
 
 G_BEGIN_DECLS
 
