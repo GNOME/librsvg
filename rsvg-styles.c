@@ -840,7 +840,6 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
         {
 			g_warning (_("Error setting CSS SAC handler"));
 			cr_parser_destroy (parser);
-			cr_doc_handler_destroy (css_handler);
 			return;
         }        
 	
@@ -848,7 +847,6 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 	status = cr_parser_parse (parser);
 	
 	cr_parser_destroy (parser);
-	cr_doc_handler_destroy (css_handler);
 }
 
 #else /* !HAVE_LIBCROCO */
