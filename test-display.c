@@ -122,7 +122,7 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 			{
 				GtkWidget * preview;
 
-				preview = gnome_print_job_preview_new (gpm, _("SVG Preview"));
+				preview = gnome_print_job_preview_new (gpm, _("SVG Print Preview"));
 				gtk_widget_show (GTK_WIDGET (preview));
 			}
 		
