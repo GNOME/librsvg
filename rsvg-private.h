@@ -55,6 +55,7 @@ struct RsvgHandle {
 	int n_state_max;
 	
 	RsvgDefs *defs;
+	gboolean in_defs;
 	GHashTable *css_props;
 	
 	/* not a handler stack. each nested handler keeps

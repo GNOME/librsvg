@@ -267,6 +267,9 @@ rsvg_start_path (RsvgHandle *ctx, const xmlChar **atts)
 	char *d = NULL;
 	const char * klazz = NULL, * id = NULL;
 	
+	/* skip over defs entries for now */
+	if (ctx->in_defs) return;
+
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
@@ -323,6 +326,9 @@ rsvg_start_any_poly(RsvgHandle *ctx, const xmlChar **atts, gboolean is_polyline)
 	GString * g = NULL;
 	gchar ** pointlist = NULL;
 	const char * klazz = NULL, * id = NULL;
+
+	/* skip over defs entries for now */
+	if (ctx->in_defs) return;
 	
 	if (atts != NULL)
 		{
@@ -385,8 +391,13 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
 	double x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 	GString * d = NULL;
 	const char * klazz = NULL, * id = NULL;
-	RsvgState *state = &ctx->state[ctx->n_state - 1];
+	RsvgState *state;
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
+
+	/* skip over defs entries for now */
+	if (ctx->in_defs) return;
+
+	state = &ctx->state[ctx->n_state - 1];
 
 	if (atts != NULL)
 		{
@@ -431,9 +442,14 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	double x = -1, y = -1, w = -1, h = -1, rx = 0., ry = 0.;
 	GString * d = NULL;
 	const char * klazz = NULL, * id = NULL;
-	RsvgState *state = &ctx->state[ctx->n_state - 1];
+	RsvgState *state;
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 	gboolean got_rx = FALSE, got_ry = FALSE;
+
+	/* skip over defs entries for now */
+	if (ctx->in_defs) return;
+
+	state = &ctx->state[ctx->n_state - 1];
 
 	if (atts != NULL)
 		{
@@ -474,26 +490,6 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	y += 1.;
 	
 	/* emulate a rect using a path */
-	/*
-	d = g_strdup_printf ("M %f %f "
-						 "H %f "
-						 "A %f,%f %f,%f %f %f,%f "
-						 "V %f "
-						 "A %f,%f %f,%f %f %f,%f "
-						 "H %f "
-						 "A %f,%f %f,%f %f %f,%f "
-						 "V %f "
-						 "A %f,%f %f,%f %f %f,%f",
-						 x + rx, y,
-						 x + w - rx,
-						 rx, ry, 0., 0., 1., x + w, y + ry,
-						 y + h - ry,
-						 rx, ry, 0., 0., 1., x + w - rx, y + h,
-						 x + rx,
-						 rx, ry, 0., 0., 1., x, y + h - ry,
-						 y + ry,
-						 rx, ry, 0., 0., 1., x + rx, y);
-	*/
 
 	d = g_string_new ("M ");
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + rx));
@@ -583,8 +579,13 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 	double cx = 0, cy = 0, r = 0;
 	GString * d = NULL;
 	const char * klazz = NULL, * id = NULL;
-	RsvgState *state = &ctx->state[ctx->n_state - 1];
+	RsvgState *state;
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
+
+	/* skip over defs entries for now */
+	if (ctx->in_defs) return;
+
+	state = &ctx->state[ctx->n_state - 1];
 
 	if (atts != NULL)
 		{
@@ -611,20 +612,6 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 	rsvg_parse_style_attrs (ctx, "circle", klazz, id, atts);
 	
 	/* approximate a circle using 4 bezier curves */
-	/* 
-	d = g_strdup_printf ("M %f %f "
-						 "C %f %f %f %f %f %f "
-						 "C %f %f %f %f %f %f "
-						 "C %f %f %f %f %f %f "
-						 "C %f %f %f %f %f %f "
-						 "Z",
-						 cx + r, cy,
-						 cx + r, cy + r * RSVG_ARC_MAGIC, cx + r * RSVG_ARC_MAGIC, cy + r, cx, cy + r,
-						 cx - r * RSVG_ARC_MAGIC, cy + r, cx - r, cy + r * RSVG_ARC_MAGIC, cx - r, cy,
-						 cx - r, cy - r * RSVG_ARC_MAGIC, cx - r * RSVG_ARC_MAGIC, cy - r, cx, cy - r,
-						 cx + r * RSVG_ARC_MAGIC, cy - r, cx + r, cy - r * RSVG_ARC_MAGIC, cx + r, cy
-						 );
-	*/
 
 	d = g_string_new ("M ");
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx+r));
@@ -696,8 +683,13 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 	double cx = 0, cy = 0, rx = 0, ry = 0;
 	GString * d = NULL;
 	const char * klazz = NULL, * id = NULL;
-	RsvgState *state = &ctx->state[ctx->n_state - 1];
+	RsvgState *state;
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
+
+	/* skip over defs entries for now */
+	if (ctx->in_defs) return;
+
+	state = &ctx->state[ctx->n_state - 1];
 
 	if (atts != NULL)
 		{
@@ -724,20 +716,7 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 	rsvg_parse_style_attrs (ctx, "ellipse", klazz, id, atts);
 	
 	/* approximate an ellipse using 4 bezier curves */
-	/*
-	d = g_strdup_printf ("M %f %f "
-						 "C %f %f %f %f %f %f "
-						 "C %f %f %f %f %f %f "
-						 "C %f %f %f %f %f %f "
-						 "C %f %f %f %f %f %f "
-						 "Z",
-						 cx + rx, cy,
-						 cx + rx, cy - RSVG_ARC_MAGIC * ry, cx + RSVG_ARC_MAGIC * rx, cy - ry, cx, cy - ry,
-						 cx - RSVG_ARC_MAGIC * rx, cy - ry, cx - rx, cy - RSVG_ARC_MAGIC * ry, cx - rx, cy,
-						 cx - rx, cy + RSVG_ARC_MAGIC * ry, cx - RSVG_ARC_MAGIC * rx, cy + ry, cx, cy + ry,
-						 cx + RSVG_ARC_MAGIC * rx, cy + ry, cx + rx, cy + RSVG_ARC_MAGIC * ry, cx + rx, cy
-						 );
-	*/
+
 	d = g_string_new ("M ");
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + rx));
 	g_string_append_c (d, ' ');
@@ -820,7 +799,12 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
 	guchar *rgb = NULL;
 	int dest_rowstride;
 	double tmp_affine[6];
-	RsvgState *state = &ctx->state[ctx->n_state - 1];
+	RsvgState *state;
+
+	/* skip over defs entries for now */
+	if (ctx->in_defs) return;
+
+	state = &ctx->state[ctx->n_state - 1];
 	
 	if (atts != NULL)
 		{

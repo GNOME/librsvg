@@ -751,6 +751,7 @@ rsvg_defs_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 					ctx->handler->free (ctx->handler);
 					ctx->handler = NULL;
 				}
+			ctx->in_defs = FALSE;
 		}
 	
 	/* pop the state stack */
@@ -768,7 +769,8 @@ rsvg_start_defs (RsvgHandle *ctx, const xmlChar **atts)
 	handler->super.start_element = rsvg_defs_handler_start;
 	handler->super.end_element   = rsvg_defs_handler_end;
 	handler->ctx = ctx;
-	
+
+	ctx->in_defs = TRUE;	
 	ctx->handler = &handler->super;
 }
 
@@ -837,7 +839,7 @@ rsvg_end_element (void *data, const xmlChar *name)
 {
 	RsvgHandle *ctx = (RsvgHandle *)data;
 	
-	if (ctx->handler_nest > 0)
+	if (ctx->handler_nest > 0 && ctx->handler != NULL)
 		{
 			if (ctx->handler->end_element != NULL)
 				ctx->handler->end_element (ctx->handler, name);

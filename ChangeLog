@@ -1,5 +1,10 @@
 2003-01-31  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg.c, rsvg-shapes.c, rsvg-private.h: Some hacks to get around some
+	nasty invalid KDE SVGs Uraeus presented me with. No longer crash.
+	
+2003-01-31  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-styles.c (parse_cssbuffer): Fix some overflows and such. All of
 	the W3 testcases now load, albeit many do so incorrectly.
 	/me hears a giant sucking sound made by CSS2
