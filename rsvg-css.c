@@ -53,28 +53,28 @@ gboolean
 rsvg_css_parse_vbox (const char * vbox, double * x, double * y,
 					 double * w, double * h)
 {
-	gchar ** list;
+	gdouble * list;
 	guint list_len;
 
-	list = rsvg_css_parse_list(vbox, &list_len);
+	list = rsvg_css_parse_number_list(vbox, &list_len);
 
-	if(!list)
+	if(!(list && list_len))
 		return FALSE;
 	else if(list_len != 4) {
-		g_strfreev(list);
+		g_free(list);
 		return FALSE;
 	} 
 	else {
-		/* TODO: error checking */
-		*x = g_ascii_strtod(list[0], NULL);
-		*y = g_ascii_strtod(list[1], NULL);
-		*w = g_ascii_strtod(list[2], NULL);
-		*h = g_ascii_strtod(list[3], NULL);
+		*x = list[0];
+		*y = list[1];
+		*w = list[2];
+		*h = list[3];
 
-		g_strfreev(list);
+		g_free(list);
 		return TRUE;
 	}
 }
+
 
 /**
  * rsvg_css_parse_length: Parse CSS2 length to a pixel value.
@@ -340,7 +340,7 @@ rsvg_css_parse_color (const char *str)
 					{ "deepskyblue",          PACK_RGB (0,191,255) },
 					{ "dimgray",              PACK_RGB (105,105,105) },
 					{ "dimgrey",              PACK_RGB (105,105,105) },
-					{ "dogerblue",            PACK_RGB (30,144,255) },
+					{ "dodgerblue",           PACK_RGB (30,144,255) },
 					{ "firebrick",            PACK_RGB (178,34,34) },
 					{ "floralwhite" ,         PACK_RGB (255,255,240)},
 					{ "forestgreen",          PACK_RGB (34,139,34) },
@@ -669,7 +669,7 @@ rsvg_css_parse_font_family (const char * str, const char * inherit)
 		return str;
 }
 
-#if !defined(HAVE_STRTOK_R) /* && !GLIB_CHECK_VERSION(2, 3, 2) */
+#if !defined(HAVE_STRTOK_R) && !GLIB_CHECK_VERSION(2, 3, 2)
 
 static char *
 strtok_r(char *s, const char *delim, char **last)
@@ -717,7 +717,7 @@ rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 
 	/* this may fix bug #113538 */
 
-	string_array = g_strsplit_set(in_str, ", \t", -1);
+	string_array = g_strsplit_set(in_str, ", \t\n", -1);
 
 	for(n = 0; string_array[n] != NULL; n++)
 		;
@@ -765,6 +765,34 @@ rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 	return string_array;
 
 #endif
+}
+
+gdouble *
+rsvg_css_parse_number_list(const char * in_str, guint * out_list_len){
+	gchar ** string_array;
+	gdouble * output;
+	guint len, i;
+
+	if(out_list_len)
+		*out_list_len = 0;
+
+	string_array = rsvg_css_parse_list(in_str, &len);
+
+	if(!(string_array && len))
+		return NULL;
+
+	output = g_new(gdouble, len);
+
+	/* TODO: some error checking */
+	for (i = 0; i < len; i++)
+		output[i] = g_ascii_strtod(string_array[i], NULL);
+
+	g_strfreev(string_array);
+
+	if (out_list_len != NULL)
+		*out_list_len = len;
+
+	return output;
 }
 
 void 

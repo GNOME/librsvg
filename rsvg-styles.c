@@ -25,9 +25,11 @@
 #include <string.h>
 
 #include "rsvg.h"
+#include "rsvg-private.h"
+#include "rsvg-filter.h"
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
-#include "rsvg-private.h"
+#include "rsvg-shapes.h"
 
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_affine.h>
@@ -44,7 +46,8 @@ rsvg_state_init (RsvgState *state)
 	memset (state, 0, sizeof (RsvgState));
 	
 	art_affine_identity (state->affine);
-	
+	art_affine_identity (state->personal_affine);
+	state->mask = NULL;
 	state->opacity = 0xff;
 	state->fill = rsvg_paint_server_parse (NULL, "#000");
 	state->fill_opacity = 0xff;
@@ -55,7 +58,9 @@ rsvg_state_init (RsvgState *state)
 	state->join = ART_PATH_STROKE_JOIN_MITER;
 	state->stop_opacity = 0xff;
 	state->fill_rule = FILL_RULE_NONZERO;
-	
+	state->backgroundnew = FALSE;
+	state->save_pixbuf = NULL;
+
 	state->font_family  = g_strdup ("Times New Roman");
 	state->font_size    = 12.0;
 	state->font_style   = PANGO_STYLE_NORMAL;
@@ -65,6 +70,31 @@ rsvg_state_init (RsvgState *state)
 	state->text_dir     = PANGO_DIRECTION_LTR;
 	state->text_anchor  = TEXT_ANCHOR_START;
 	state->visible      = TRUE;
+	state->filter       = NULL;
+
+	state->has_fill_server = FALSE;
+	state->has_fill_opacity = FALSE;
+	state->has_fill_rule = FALSE;
+	state->has_stroke_server = FALSE;
+	state->has_stroke_opacity = FALSE;
+	state->has_stroke_width = FALSE;
+	state->has_miter_limit = FALSE;
+	state->has_cap = FALSE;
+	state->has_join = FALSE;
+	state->has_dash = FALSE;
+	state->has_visible = FALSE;
+	state->has_stop_color = FALSE;
+	state->has_stop_opacity = FALSE;
+	state->has_font_size = FALSE;
+	state->has_font_family = FALSE;
+	state->has_lang = FALSE;
+	state->has_font_style = FALSE;
+	state->has_font_variant = FALSE;
+	state->has_font_weight = FALSE;
+	state->has_font_stretch = FALSE;
+	state->has_font_decor = FALSE;
+	state->has_text_dir = FALSE;
+	state->has_text_anchor = FALSE;
 }
 
 void
@@ -78,7 +108,6 @@ rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 	rsvg_paint_server_ref (dst->fill);
 	rsvg_paint_server_ref (dst->stroke);
 	dst->save_pixbuf = NULL;
-	dst->opacity = 0xff;	
 
 	if (src->dash.n_dash > 0)
 		{
@@ -86,6 +115,149 @@ rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 			for (i = 0; i < src->dash.n_dash; i++)
 				dst->dash.dash[i] = src->dash.dash[i];
 		}
+}
+
+void
+rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
+{
+	gint i;
+	
+	if (!dst->has_fill_server)
+		{
+			rsvg_paint_server_unref (dst->fill);
+			dst->fill = src->fill;
+			rsvg_paint_server_ref (dst->fill);
+		} 
+	if (!dst->has_fill_opacity)
+		dst->fill_opacity = src->fill_opacity;
+	if (!dst->has_fill_rule)
+		dst->fill_rule = src->fill_rule;
+	if (!dst->has_stroke_server)
+		{
+			rsvg_paint_server_unref (dst->stroke);
+			dst->stroke = src->stroke;
+			rsvg_paint_server_ref (dst->stroke);
+		} 
+	if (!dst->has_stroke_opacity)
+		dst->stroke_opacity = src->stroke_opacity;
+	if (!dst->has_stroke_width)
+		dst->stroke_width = src->stroke_width;
+	if (!dst->has_miter_limit)
+		dst->miter_limit = src->miter_limit;
+	if (!dst->has_cap)
+		dst->cap = src->cap;
+	if (!dst->has_join)
+		dst->join = src->join;
+	if (!dst->has_stop_color)
+		dst->stop_color = src->stop_color;
+	if (!dst->has_stop_opacity)
+		dst->stop_opacity = src->stop_opacity;
+	if (!dst->has_visible)
+		dst->visible = src->visible;
+	if (!dst->has_font_size)
+		dst->font_size = src->font_size;
+	if (!dst->has_font_style)
+		dst->font_style = src->font_style;
+	if (!dst->has_font_variant)
+		dst->font_variant = src->font_variant;
+	if (!dst->has_font_weight)
+		dst->font_weight = src->font_weight;
+	if (!dst->has_font_stretch)
+		dst->font_stretch = src->font_stretch;
+	if (!dst->has_font_decor)
+		dst->font_decor = src->font_decor;
+	if (!dst->has_text_dir)
+		dst->text_dir = src->text_dir;
+	if (!dst->has_text_anchor)
+		dst->text_anchor = src->text_anchor;
+
+	if (!dst->has_font_family)
+		dst->font_family = g_strdup (src->font_family);
+	if (!dst->has_lang)
+		dst->lang = g_strdup (src->lang);
+
+	if (src->dash.n_dash > 0 && !dst->has_dash)
+		{
+			dst->dash.dash = g_new (gdouble, src->dash.n_dash);
+			for (i = 0; i < src->dash.n_dash; i++)
+				dst->dash.dash[i] = src->dash.dash[i];
+		}
+	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
+}
+
+void
+rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
+{
+	gint i;
+	
+	if (!dst->has_fill_server || src->has_fill_server)
+		{
+			rsvg_paint_server_unref (dst->fill);
+			dst->fill = src->fill;
+			rsvg_paint_server_ref (dst->fill);
+		} 
+	if (!dst->has_fill_opacity || src->has_fill_opacity)
+		dst->fill_opacity = src->fill_opacity;
+	if (!dst->has_fill_rule || src->has_fill_rule)
+		dst->fill_rule = src->fill_rule;
+	if (!dst->has_stroke_server || src->has_stroke_server)
+		{
+			rsvg_paint_server_unref (dst->stroke);
+			dst->stroke = src->stroke;
+			rsvg_paint_server_ref (dst->stroke);
+		} 
+	if (!dst->has_stroke_opacity || src->has_stroke_opacity)
+		dst->stroke_opacity = src->stroke_opacity;
+	if (!dst->has_stroke_width || src->has_stroke_width)
+		dst->stroke_width = src->stroke_width;
+	if (!dst->has_miter_limit || src->has_miter_limit)
+		dst->miter_limit = src->miter_limit;
+	if (!dst->has_cap || src->has_cap)
+		dst->cap = src->cap;
+	if (!dst->has_join || src->has_join)
+		dst->join = src->join;
+	if (!dst->has_stop_color || src->has_stop_color)
+		dst->stop_color = src->stop_color;
+	if (!dst->has_stop_opacity || src->has_stop_opacity)
+		dst->stop_opacity = src->stop_opacity;
+	if (!dst->has_visible || src->has_visible)
+		dst->visible = src->visible;
+	if (!dst->has_font_size || src->has_font_size)
+		dst->font_size = src->font_size;
+	if (!dst->has_font_style || src->has_font_style)
+		dst->font_style = src->font_style;
+	if (!dst->has_font_variant || src->has_font_variant)
+		dst->font_variant = src->font_variant;
+	if (!dst->has_font_weight || src->has_font_weight)
+		dst->font_weight = src->font_weight;
+	if (!dst->has_font_stretch || src->has_font_stretch)
+		dst->font_stretch = src->font_stretch;
+	if (!dst->has_font_decor || src->has_font_decor)
+		dst->font_decor = src->font_decor;
+	if (!dst->has_text_dir || src->has_text_dir)
+		dst->text_dir = src->text_dir;
+	if (!dst->has_text_anchor || src->has_text_anchor)
+		dst->text_anchor = src->text_anchor;
+
+	if (!dst->has_font_family || src->has_font_family)
+		dst->font_family = g_strdup (src->font_family);
+	if (!dst->has_lang || src->has_lang)
+		dst->lang = g_strdup (src->lang);
+
+	if (src->dash.n_dash > 0 && (!dst->has_dash || src->has_dash))
+		{
+			dst->dash.dash = g_new (gdouble, src->dash.n_dash);
+			for (i = 0; i < src->dash.n_dash; i++)
+				dst->dash.dash[i] = src->dash.dash[i];
+		}
+	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
+}
+
+void
+rsvg_state_inherit (RsvgState *dst, const RsvgState *src)
+{
+	rsvg_state_init(dst);
+	rsvg_state_reinherit(dst,src);
 }
 
 void
@@ -112,51 +284,73 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		{
 			state->opacity = rsvg_css_parse_opacity (str + arg_off);
 		}
+	else if (rsvg_css_param_match (str, "filter"))
+		state->filter = rsvg_filter_parse(ctx->defs, str + arg_off);
+	else if (rsvg_css_param_match (str, "mask"))
+		state->mask = rsvg_mask_parse(ctx->defs, str + arg_off);
+	else if (rsvg_css_param_match (str, "enable-background"))
+		{
+			if (!strcmp (str + arg_off, "new"))
+				state->backgroundnew = TRUE;
+			else
+				state->backgroundnew = FALSE;
+		}	
 	else if (rsvg_css_param_match (str, "display"))
 		{
+			state->has_visible = TRUE;
 			if (!strcmp (str + arg_off, "none"))
 				state->visible = FALSE;
 			else if (strcmp (str + arg_off, "inherit") != 0)
 				state->visible = TRUE;
-			/* else inherit */
+			else
+				state->has_visible = FALSE;
 		}
 	else if (rsvg_css_param_match (str, "visibility"))
 		{
+			state->has_visible = TRUE;
 			if (!strcmp (str + arg_off, "visable"))
 				state->visible = TRUE;
 			else if (strcmp (str + arg_off, "inherit") != 0)
 				state->visible = FALSE; /* collapse or hidden */
-			/* else inherit */
+			else
+				state->has_visible = FALSE;
 		}
 	else if (rsvg_css_param_match (str, "fill"))
 		{
 			rsvg_paint_server_unref (state->fill);
 			state->fill = rsvg_paint_server_parse (ctx->defs, str + arg_off);
+			state->has_fill_server = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "fill-opacity"))
 		{
 			state->fill_opacity = rsvg_css_parse_opacity (str + arg_off);
+			state->has_fill_opacity = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "fill-rule"))
 		{
+			state->has_fill_rule = TRUE;
 			if (!strcmp (str + arg_off, "nonzero"))
 				state->fill_rule = FILL_RULE_NONZERO;
 			else if (!strcmp (str + arg_off, "evenodd"))
 				state->fill_rule = FILL_RULE_EVENODD;
-			/*else inherit*/
+			else
+				state->has_fill_rule = FALSE;
 		}
 	else if (rsvg_css_param_match (str, "stroke"))
 		{
 			rsvg_paint_server_unref (state->stroke);
 			state->stroke = rsvg_paint_server_parse (ctx->defs, str + arg_off);
+			state->has_stroke_server = TRUE;		
 		}
 	else if (rsvg_css_param_match (str, "stroke-width"))
 		{
 			state->stroke_width = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
 																	(gdouble)ctx->height, state->font_size);
+			state->has_stroke_width = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "stroke-linecap"))
 		{
+			state->has_cap = TRUE;
 			if (!strcmp (str + arg_off, "butt"))
 				state->cap = ART_PATH_STROKE_CAP_BUTT;
 			else if (!strcmp (str + arg_off, "round"))
@@ -169,9 +363,11 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "stroke-opacity"))
 		{
 			state->stroke_opacity = rsvg_css_parse_opacity (str + arg_off);
+			state->has_stroke_opacity = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "stroke-linejoin"))
 		{
+			state->has_join = TRUE;
 			if (!strcmp (str + arg_off, "miter"))
 				state->join = ART_PATH_STROKE_JOIN_MITER;
 			else if (!strcmp (str + arg_off, "round"))
@@ -185,39 +381,49 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		{
 			state->font_size = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
 																 (gdouble)ctx->height, state->font_size);
+			state->has_font_size = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-family"))
 		{
 			char * save = g_strdup (rsvg_css_parse_font_family (str + arg_off, parent_state->font_family));
 			g_free (state->font_family);
 			state->font_family = save;
+			state->has_font_family = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "xml:lang"))
 		{
 			char * save = g_strdup (str + arg_off);
 			g_free (state->lang);
 			state->lang = save;
+			state->has_lang = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-style"))
 		{
 			state->font_style = rsvg_css_parse_font_style (str + arg_off, parent_state->font_style);
+			state->has_font_style = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-variant"))
 		{
 			state->font_variant = rsvg_css_parse_font_variant (str + arg_off, parent_state->font_variant);
+			state->has_font_variant = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-weight"))
 		{
 			state->font_weight = rsvg_css_parse_font_weight (str + arg_off, parent_state->font_weight);
+			state->has_font_weight = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-stretch"))
 		{
 			state->font_stretch = rsvg_css_parse_font_stretch (str + arg_off, parent_state->font_stretch);
+			state->has_font_stretch = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "text-decoration"))
 		{
 			if (!strcmp (str + arg_off, "inherit"))
-				state->font_decor = parent_state->font_decor;
+				{
+					state->has_font_decor = FALSE;
+					state->font_decor = parent_state->font_decor;
+				}
 			else 
 				{
 					if (strstr (str + arg_off, "underline"))
@@ -226,13 +432,18 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 						state->font_decor |= TEXT_OVERLINE;
 					if (strstr (str + arg_off, "strike") || strstr (str + arg_off, "line-through")) /* strike though or line-through */
 						state->font_decor |= TEXT_STRIKE;
+					state->has_font_decor = TRUE;
 				}
 		}
 	else if (rsvg_css_param_match (str, "writing-mode"))
 		{
+			state->has_text_dir = TRUE;
 			/* lr-tb | rl-tb | tb-rl | lr | rl | tb | inherit */
 			if (!strcmp (str + arg_off, "inherit"))
-				state->text_dir = parent_state->text_dir;
+				{
+					state->text_dir = parent_state->text_dir;
+					state->has_text_dir = FALSE;
+				}
 			else if (!strcmp (str + arg_off, "rl"))
 				state->text_dir = PANGO_DIRECTION_RTL;
 			else if (!strcmp (str + arg_off, "tb-rl") || 
@@ -242,11 +453,16 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 				state->text_dir = PANGO_DIRECTION_TTB_LTR;
 			else
 				state->text_dir = PANGO_DIRECTION_LTR;
+
 		}
 	else if (rsvg_css_param_match (str, "text-anchor"))
 		{
+			state->has_text_anchor = TRUE;
 			if (!strcmp (str + arg_off, "inherit"))
-				state->text_anchor = parent_state->text_anchor;
+				{
+					state->text_anchor = parent_state->text_anchor;
+					state->has_text_anchor = FALSE;
+				}
 			else 
 				{
 					if (strstr (str + arg_off, "start"))
@@ -259,18 +475,22 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "stop-color"))
 		{
+			state->has_stop_color = TRUE;
 			state->stop_color = rsvg_css_parse_color (str + arg_off);
 		}
 	else if (rsvg_css_param_match (str, "stop-opacity"))
 		{
+			state->has_stop_opacity = TRUE;
 			state->stop_opacity = rsvg_css_parse_opacity (str + arg_off);
 		}
 	else if (rsvg_css_param_match (str, "stroke-miterlimit"))
 		{
+			state->has_miter_limit = TRUE;
 			state->miter_limit = g_ascii_strtod (str + arg_off, NULL);
 		}
 	else if (rsvg_css_param_match (str, "stroke-dashoffset"))
 		{
+			state->has_dash = TRUE;
 			state->dash.offset = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
 																   rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size);
 			if (state->dash.offset < 0.)
@@ -278,6 +498,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "stroke-dasharray"))
 		{
+			state->has_dash = TRUE;
 			if(!strcmp(str + arg_off, "none"))
 				{
 					if (state->dash.n_dash != 0)
@@ -320,59 +541,57 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 }
 
-/* tell whether @str is a supported style argument 
-   whenever something gets added to parse_arg, please
-   remember to add it here too
-*/
-gboolean
-rsvg_is_style_arg(const char *str)
-{
-	static GHashTable *styles = NULL;
-	if (!styles)
-		{
-			styles = g_hash_table_new (g_str_hash, g_str_equal);
-			
-			g_hash_table_insert (styles, "display",           GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "fill",              GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "fill-opacity",      GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "fill-rule",         GINT_TO_POINTER 
-(TRUE));
-			g_hash_table_insert (styles, "font-family",       GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "font-size",         GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "font-stretch",      GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "font-style",        GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "font-variant",      GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "font-weight",       GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "opacity",           GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stop-color",        GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stop-opacity",      GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke",            GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-dasharray",  GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-dashoffset", GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-linecap",    GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-linejoin",   GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-miterlimit", GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-opacity",    GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "stroke-width",      GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "text-anchor",       GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "text-decoration",   GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "visibility",        GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "writing-mode",      GINT_TO_POINTER (TRUE));
-			g_hash_table_insert (styles, "xml:lang",          GINT_TO_POINTER (TRUE));
-		}
-	
-	/* this will default to 0 (FALSE) on a failed lookup */
-	return GPOINTER_TO_INT (g_hash_table_lookup (styles, str)); 
-}
-
-/* take a pair of the form (fill="#ff00ff") and parse it as a style */
-void
-rsvg_parse_style_pair (RsvgHandle *ctx, RsvgState *state, 
-					   const char *key, const char *val)
+void rsvg_parse_style_pair (RsvgHandle *ctx, RsvgState *state, 
+							const char *key, const char *val)
 {
 	gchar * str = g_strdup_printf ("%s:%s", key, val);
 	rsvg_parse_style_arg (ctx, state, str);
 	g_free (str);
+}
+
+static void rsvg_lookup_parse_style_pair(RsvgHandle *ctx, RsvgState *state, 
+										 const char *key, RsvgPropertyBag *atts)
+{
+	const char * value;
+
+	if((value = rsvg_property_bag_lookup (atts, key)) != NULL)
+		rsvg_parse_style_pair (ctx, state, key, value);
+}
+
+/* take a pair of the form (fill="#ff00ff") and parse it as a style */
+void
+rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state, 
+						RsvgPropertyBag *atts)
+{
+			rsvg_lookup_parse_style_pair (ctx, state, "display", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "enable-background", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "fill", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "fill-opacity", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "fill-rule", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "font-family", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "font-size", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "font-stretch", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "font-style", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "font-variant", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "font-weight", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "opacity", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "mask", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "filter", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stop-color", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stop-opacity", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-dasharray", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-dashoffset", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-linecap", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-linejoin", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-miterlimit", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-opacity", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "stroke-width", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "text-anchor", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "text-decoration", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "visibility", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "writing-mode", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "xml:lang", atts);
 }
 
 /* Split a CSS2 style into individual style arguments, setting attributes
@@ -776,7 +995,10 @@ rsvg_parse_transform_attr (RsvgHandle *ctx, RsvgState *state, const char *str)
 	double affine[6];
 	
 	if (rsvg_parse_transform (affine, str))
-		art_affine_multiply (state->affine, affine, state->affine);
+		{
+			art_affine_multiply (state->personal_affine, affine, state->personal_affine);
+			art_affine_multiply (state->affine, affine, state->affine);
+		}
 }
 
 static gboolean
@@ -810,7 +1032,7 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 						const char * tag,
 						const char * klazz,
 						const char * id,
-						const xmlChar **atts)
+						RsvgPropertyBag *atts)
 {
 	int i = 0, j = 0;
 	char * target = NULL;
@@ -889,17 +1111,16 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 				}
 		}
 
-	if (atts != NULL)
+	if (rsvg_property_bag_size(atts) > 0)
 		{
-			for (i = 0; atts[i] != NULL; i += 2)
-				{
-					if (!strcmp ((char *)atts[i], "style"))
-						rsvg_parse_style (ctx, state, (char *)atts[i + 1]);
-					else if (!strcmp ((char *)atts[i], "transform"))
-						rsvg_parse_transform_attr (ctx, state, (char *)atts[i + 1]);
-					else if (rsvg_is_style_arg ((char *)atts[i]))
-						rsvg_parse_style_pair (ctx, state, (char *)atts[i], (char *)atts[i + 1]);
-				}
+			const char * value;
+
+			if ((value = rsvg_property_bag_lookup (atts, "style")) != NULL)
+				rsvg_parse_style (ctx, state, value);
+			if ((value = rsvg_property_bag_lookup (atts, "transform")) != NULL)
+				rsvg_parse_transform_attr (ctx, state, value);
+
+			rsvg_parse_style_pairs (ctx, state, atts);
 		}
 }
 
@@ -918,16 +1139,20 @@ rsvg_pixmap_destroy (guchar *pixels, gpointer data)
  * stack.
  **/
 void
-rsvg_push_opacity_group (RsvgHandle *ctx)
+rsvg_push_discrete_layer (RsvgHandle *ctx)
 {
 	RsvgState *state;
 	GdkPixbuf *pixbuf;
 	art_u8 *pixels;
 	int width, height, rowstride;
-	
+
 	state = &ctx->state[ctx->n_state - 1];
 	pixbuf = ctx->pixbuf;
 	
+	if (state->filter == NULL && state->opacity == 0xFF && 
+		!state->backgroundnew && state->mask == NULL)
+		return;
+
 	state->save_pixbuf = pixbuf;
 	
 	if (pixbuf == NULL)
@@ -960,19 +1185,10 @@ rsvg_push_opacity_group (RsvgHandle *ctx)
 	ctx->pixbuf = pixbuf;
 }
 
-/**
- * rsvg_pop_opacity_group: End a transparency group.
- * @ctx: Context in which to push.
- * @opacity: Opacity for blending (0..255).
- *
- * Pops a new transparency group from the stack, recompositing with the
- * next on stack.
- **/
-void
-rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity)
+static void
+rsvg_use_opacity (RsvgHandle *ctx, int opacity, 
+				  GdkPixbuf *tos, GdkPixbuf *nos)
 {
-	RsvgState *state = &ctx->state[ctx->n_state - 1];
-	GdkPixbuf *tos, *nos;
 	art_u8 *tos_pixels, *nos_pixels;
 	int width;
 	int height;
@@ -980,8 +1196,6 @@ rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity)
 	int x, y;
 	int tmp;
 	
-	tos = ctx->pixbuf;
-	nos = state->save_pixbuf;
 	
 	if (tos == NULL || nos == NULL)
 		{
@@ -1021,6 +1235,279 @@ rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity)
 			tos_pixels += rowstride;
 			nos_pixels += rowstride;
 		}
+}
+
+static void
+rsvg_use_mask (RsvgHandle *ctx, RsvgDefsDrawable * maskref, 
+			   GdkPixbuf *tos, GdkPixbuf *nos)
+{
+	art_u8 *tos_pixels, *nos_pixels, *mask_pixels;
+	int width;
+	int height;
+	int rowstride;
+	int x, y;
+	
+	GdkPixbuf *save, *mask;
+	RsvgDefsDrawable *drawable;	
+
+	drawable = (RsvgDefsDrawable*)maskref;
+	
+	mask = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+						   gdk_pixbuf_get_width(tos), 
+						   gdk_pixbuf_get_height(tos));
+	
+	save = ctx->pixbuf;
+
+	if (ctx->n_state == ctx->n_state_max)
+		ctx->state = g_renew (RsvgState, ctx->state, 
+							  ctx->n_state_max <<= 1);
+	if (ctx->n_state)
+		rsvg_state_inherit (&ctx->state[ctx->n_state],
+							&ctx->state[ctx->n_state - 1]);
+	else
+		rsvg_state_init (ctx->state);
+	ctx->n_state++;
+	
+	ctx->pixbuf = mask;
+
+	rsvg_defs_drawable_draw (drawable, ctx, 0);
+	
+	/* pop the state stack */
+	ctx->n_state--;
+	rsvg_state_finalize (&ctx->state[ctx->n_state]);
+		
+	ctx->pixbuf = save;
+
+	if (tos == NULL || nos == NULL)
+		{
+			/* FIXME: What warning/GError here? */
+			return;
+		}
+	
+	if (!gdk_pixbuf_get_has_alpha (nos))
+		{
+			g_warning ("push/pop transparency group on non-alpha buffer nyi");
+			return;
+		}
+	
+	width = gdk_pixbuf_get_width (tos);
+	height = gdk_pixbuf_get_height (tos);
+	rowstride = gdk_pixbuf_get_rowstride (tos);
+	
+	tos_pixels = gdk_pixbuf_get_pixels (tos);
+	nos_pixels = gdk_pixbuf_get_pixels (nos);
+	mask_pixels = gdk_pixbuf_get_pixels (mask);
+	
+	for (y = 0; y < height; y++)
+		{
+			for (x = 0; x < width; x++)
+				{
+					guchar r, g, b, a, rm, gm, bm, am;
+					gdouble luminance;
+					a = tos_pixels[4 * x + 3];
+					if (a)
+						{
+							r = tos_pixels[4 * x];
+							g = tos_pixels[4 * x + 1];
+							b = tos_pixels[4 * x + 2];
+
+							rm = mask_pixels[4 * x];
+							gm = mask_pixels[4 * x + 1];
+							bm = mask_pixels[4 * x + 2];
+							am = mask_pixels[4 * x + 3];
+
+							luminance = ((gdouble)rm * 0.2125 + 
+										 (gdouble)gm * 0.7154 + 
+										 (gdouble)bm * 0.0721) / 255.;
+							a = (guchar)((gdouble)a * luminance
+										 * (gdouble)am / 255.);
+							art_rgba_run_alpha (nos_pixels + 4 * x, r, g, b, a, 1);
+						}
+				}
+			tos_pixels += rowstride;
+			nos_pixels += rowstride;
+			mask_pixels += rowstride;
+		}
+}
+
+RsvgDefsDrawable *
+rsvg_mask_parse (const RsvgDefs * defs, const char *str)
+{
+	if (!strncmp (str, "url(", 4))
+		{
+			const char *p = str + 4;
+			int ix;
+			char *name;
+			RsvgDefVal *val;
+			
+			while (g_ascii_isspace (*p))
+				p++;
+
+			if (*p == '#')
+				{
+					p++;
+					for (ix = 0; p[ix]; ix++)
+						if (p[ix] == ')')
+							break;
+
+					if (p[ix] == ')')
+						{
+							name = g_strndup (p, ix);
+							val = rsvg_defs_lookup (defs, name);
+							g_free (name);
+							
+							if (val && val->type == RSVG_DEF_PATH)
+								{
+									return (RsvgDefsDrawable *) val;
+								}
+						}
+				}
+		}
+	return NULL;
+}
+
+static GdkPixbuf *
+get_next_out(gint * operationsleft, GdkPixbuf * in, GdkPixbuf * tos, 
+			 GdkPixbuf * nos, GdkPixbuf *intermediate)
+{
+	GdkPixbuf * out;
+
+	if (*operationsleft == 1)
+		out = nos;
+	else
+		{ 
+			if (in == tos)	
+				out = intermediate;
+			else
+				out = tos;
+			gdk_pixbuf_fill(out, 0x00000000);
+		}	
+	(*operationsleft)--;
+	
+	return out;
+}
+
+static GdkPixbuf *
+rsvg_compile_bg(RsvgHandle *ctx, RsvgState *topstate)
+{
+	int i, foundstate;
+	GdkPixbuf *intermediate, *lastintermediate;
+	RsvgState *state, *lastvalid;
+	lastvalid = NULL;
+	foundstate = 0;	
+
+	lastintermediate = gdk_pixbuf_copy(topstate->save_pixbuf);
+			
+	for (i = ctx->n_state - 1; i >= 0; i--)
+		{
+			state = &ctx->state[i];
+			if (state == topstate)
+				{
+					foundstate = 1;
+				}
+			else if (!foundstate)
+				continue;
+			if (state->backgroundnew)
+				break;
+			if (state->save_pixbuf)
+				{
+					if (lastvalid)
+						{
+							intermediate = gdk_pixbuf_copy(state->save_pixbuf);
+							rsvg_use_opacity(ctx, 0xFF, lastintermediate, intermediate);
+							g_object_unref(lastintermediate);
+							lastintermediate = intermediate;
+						}
+					lastvalid = state;
+				}
+		}
+	return lastintermediate;
+}
+
+static void
+rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbuf *nos)
+{
+	RsvgFilter *filter = state->filter;
+	int opacity = state->opacity;
+	RsvgDefsDrawable * mask = state->mask;
+	GdkPixbuf *intermediate;
+	GdkPixbuf *in, *out, *insidebg;
+	int operationsleft;
+
+	intermediate = NULL;
+
+	if (state->filter == NULL && state->opacity == 0xFF && 
+		!state->backgroundnew && state->mask == NULL)
+		return;
+
+	operationsleft = 0;
+	
+	if (opacity != 0xFF)
+		operationsleft++;
+	if (filter != NULL)
+		operationsleft++;
+	if (mask != NULL)
+		operationsleft++;
+
+	if (operationsleft > 1)
+		intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+									   gdk_pixbuf_get_width (tos),
+									   gdk_pixbuf_get_height (tos));
+
+	in = tos;
+
+	if (operationsleft == 0)
+		{
+			rsvg_use_opacity (ctx, 0xFF, tos, nos);			
+		}
+
+	if (filter != NULL)
+		{
+			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
+			insidebg = rsvg_compile_bg(ctx, state);
+			rsvg_filter_render (filter, in, out, insidebg, ctx);
+			g_object_unref (insidebg);
+			in = out;
+		}
+	if (opacity != 0xFF)
+		{
+			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
+			rsvg_use_opacity (ctx, opacity, in, out);
+			in = out;
+		}
+	if (mask != NULL)
+		{
+			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
+			rsvg_use_mask (ctx, mask, in, out);
+			in = out;
+		}
+
+	if (intermediate != NULL)
+		g_object_unref (intermediate);
+
+}
+
+/**
+ * rsvg_pop_discrete_layer: End a transparency group.
+ * @ctx: Context in which to push.
+ *
+ * Pops a new transparency group from the stack, recompositing with the
+ * next on stack using a filter, transperency value, or a mask to do so
+ **/
+
+void
+rsvg_pop_discrete_layer(RsvgHandle *ctx)
+{
+	GdkPixbuf *tos, *nos;
+	RsvgState *state;
+
+	state = rsvg_state_current(ctx);
+
+	tos = ctx->pixbuf;
+	nos = state->save_pixbuf;
+	
+	if (nos != NULL)
+		rsvg_composite_layer(ctx, state, tos, nos);
 	
 	g_object_unref (tos);
 	ctx->pixbuf = nos;
@@ -1032,4 +1519,50 @@ rsvg_state_current (RsvgHandle *ctx)
 	if (ctx->n_state > 0)
 		return &ctx->state[ctx->n_state - 1];
 	return NULL;
+}
+
+double
+rsvg_state_current_font_size (RsvgHandle *ctx)
+{
+	if (ctx->n_state > 0)
+		return ctx->state[ctx->n_state - 1].font_size;
+	else
+		return 12.0;
+}
+
+RsvgPropertyBag *
+rsvg_property_bag_new (const xmlChar **atts)
+{
+	RsvgPropertyBag * bag;
+	int i;   
+
+	bag = g_new (RsvgPropertyBag, 1);
+	bag->props = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, NULL);
+
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				g_hash_table_insert (bag->props, (gpointer)atts[i], (gpointer)atts[i+1]);
+		}
+
+	return bag;
+}
+
+void
+rsvg_property_bag_free (RsvgPropertyBag *bag)
+{
+	g_hash_table_destroy (bag->props);
+	g_free (bag);
+}
+
+const char *
+rsvg_property_bag_lookup (RsvgPropertyBag *bag, const char * key)
+{
+	return (const char *)g_hash_table_lookup (bag->props, (gconstpointer)key);
+}
+
+guint
+rsvg_property_bag_size (RsvgPropertyBag *bag)
+{
+	return g_hash_table_size (bag->props);
 }

@@ -2,7 +2,7 @@
 /*
    moz-plugin.c: Mozilla plugin
 
-   Copyright (C) 2003 Dom Lachowicz <cinamod@hotmail.com>
+   Copyright (C) 2003-2004 Dom Lachowicz <cinamod@hotmail.com>
    Copyright (C) 2003 David Schleef <ds@schleef.org>
 
    This program is free software; you can redistribute it and/or
@@ -23,33 +23,130 @@
    Author: Dom Lachowicz <cinamod@hotmail.com>  
 */
 
+#include <config.h>
+
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include <config.h>
 
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
+
+#include <glib.h>
 
 #define XP_UNIX 1
 #define MOZ_X11 1
 #include "npapi.h"
 #include "npupp.h"
 
-#define DEBUG(x)
+#define DEBUG(x) /* printf x */
 
 typedef struct
 {
 	NPP instance;
-	Display *display;
 	Window window;
-	int x;
-	int y;
+
 	int width, height;
+
+	GByteArray * bytes;
+
+	int send_fd;
+	int player_pid;
 } Plugin;
 
 static NPNetscapeFuncs mozilla_funcs;
+
+static void
+plugin_kill (Plugin * plugin)
+{
+	if(plugin->send_fd > 0)
+		{
+			close (plugin->send_fd);
+			plugin->send_fd = -1;
+		}
+
+	if(plugin->player_pid > 0)
+		{
+			kill (plugin->player_pid, SIGKILL);
+			waitpid (plugin->player_pid, NULL, 0);
+			
+			plugin->player_pid = -1;
+		}
+}
+
+static void
+plugin_fork (Plugin * plugin)
+{
+	char xid_str[20];
+	char width_str[20];
+	char height_str[20];
+	char *argv[20];
+	int argc = 0;
+	GError *err = NULL;
+	
+	DEBUG(("plugin fork\n"));
+
+	sprintf (xid_str, "%ld", plugin->window);
+			
+	argv[argc++] = BINDIR "rsvg-view";
+	argv[argc++] = "-i"; /* xid */
+	argv[argc++] = xid_str;
+	
+	if (plugin->width)
+		{
+			sprintf (width_str, "%d", plugin->width);
+			argv[argc++] = "-w"; /* width */
+			argv[argc++] = width_str;
+		}
+	
+	if (plugin->height)
+		{
+			sprintf (height_str, "%d", plugin->height);
+			argv[argc++] = "-h"; /* height */
+			argv[argc++] = height_str;
+		}
+	
+	argv[argc++] = "-s";
+	argv[argc] = NULL;
+
+	if(!g_spawn_async_with_pipes(NULL, argv, NULL, G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_STDOUT_TO_DEV_NULL, 
+								 NULL, NULL, &plugin->player_pid,
+								 &plugin->send_fd, NULL, NULL, &err))
+		{
+			DEBUG(("Spawn failed\n"));
+
+			if(err) 
+				{
+					fprintf(stderr, "%s\n", err->message);
+					g_error_free(err);
+				}
+		}
+}
+
+static void
+plugin_redraw (Plugin * plugin)
+{
+	DEBUG(("plugin redraw\n"));
+
+	if(plugin && plugin->bytes && plugin->bytes->len)
+		{
+			if (plugin->player_pid <= 0)
+				{
+					plugin_fork (plugin);
+
+					if(plugin->player_pid > 0)
+						{
+							size_t nwritten = 0;
+							while(nwritten < plugin->bytes->len)
+								nwritten += write (plugin->send_fd, plugin->bytes->data + nwritten, plugin->bytes->len - nwritten);
+						
+							g_byte_array_free (plugin->bytes, TRUE);
+							plugin->bytes = 0;
+						}
+				}
+		}
+}
 
 static NPError
 plugin_newp (NPMIMEType mime_type, NPP instance,
@@ -59,14 +156,14 @@ plugin_newp (NPMIMEType mime_type, NPP instance,
 	Plugin *plugin;
 	int i;
 	
-	DEBUG ("plugin_newp");
-	
+	DEBUG (("plugin_newp\n"));
+  
 	if (instance == NULL)
 		return NPERR_INVALID_INSTANCE_ERROR;
 	
 	instance->pdata = mozilla_funcs.memalloc (sizeof (Plugin));
 	plugin = (Plugin *) instance->pdata;
-	
+
 	if (plugin == NULL)
 		return NPERR_OUT_OF_MEMORY_ERROR;
 	memset (plugin, 0, sizeof (Plugin));
@@ -76,18 +173,16 @@ plugin_newp (NPMIMEType mime_type, NPP instance,
 	
 	for (i = 0; i < argc; i++)
 		{
-			printf ("argv[%d] %s %s\n", i, argn[i], argv[i]);
+			DEBUG (("argv[%d] %s %s\n", i, argn[i], argv[i]));
+			
 			if (strcmp (argn[i], "width") == 0)
-				{
-					plugin->width = strtol (argv[i], NULL, 0);
-				}
+				plugin->width = strtol (argv[i], NULL, 0);
+
 			if (strcmp (argn[i], "height") == 0)
-				{
-					plugin->height = strtol (argv[i], NULL, 0);
-				}
-		}
-	
-	return NPERR_NO_ERROR;
+				plugin->height = strtol (argv[i], NULL, 0);
+		}   
+
+  return NPERR_NO_ERROR;
 }
 
 static NPError
@@ -95,17 +190,20 @@ plugin_destroy (NPP instance, NPSavedData ** save)
 {
 	Plugin *plugin;
 	
-	DEBUG ("plugin_destroy");
+	DEBUG (("plugin_destroy\n"));
 	
 	if (instance == NULL)
 		return NPERR_INVALID_INSTANCE_ERROR;
 	
 	plugin = (Plugin *) instance->pdata;
 	if (plugin == NULL)
-		{
-			return NPERR_NO_ERROR;
-		}
+		return NPERR_NO_ERROR;
+
+	if(plugin->bytes)
+		g_byte_array_free (plugin->bytes, TRUE);
 	
+	plugin_kill (plugin);
+
 	mozilla_funcs.memfree (instance->pdata);
 	instance->pdata = NULL;
 	
@@ -116,45 +214,45 @@ static NPError
 plugin_set_window (NPP instance, NPWindow * window)
 {
 	Plugin *plugin;
-
-	DEBUG ("plugin_set_window");
+	
+	DEBUG (("plugin_set_window\n"));
 	
 	if (instance == NULL)
 		return NPERR_INVALID_INSTANCE_ERROR;
-	
+
 	plugin = (Plugin *) instance->pdata;
 	if (plugin == NULL)
 		return NPERR_INVALID_INSTANCE_ERROR;
 	
 	if (plugin->window)
 		{
-			DEBUG ("existing window");
+			DEBUG (("existing window\n"));
+			
 			if (plugin->window == (Window) window->window)
 				{
-					DEBUG ("resize");
-					/* Resize event */
-					/* Not currently handled */
+					DEBUG (("resize\n"));
+					
+					plugin->width = window->width;
+					plugin->height = window->height;
+
+					plugin_redraw (plugin);
 				}
 			else
 				{
-					DEBUG ("change");
-					printf ("ack.  window changed!\n");
+					DEBUG (("change. ack.  window changed!\n"));
 				}
 		}
 	else
 		{
 			NPSetWindowCallbackStruct *ws_info;
 			
-			DEBUG ("about to fork");
+			DEBUG (("about to fork\n"));
 			
 			ws_info = window->ws_info;
 			plugin->window = (Window) window->window;
-			plugin->display = ws_info->display;
-			
-			plugin_fork (plugin);
 		}
 	
-	DEBUG ("leaving plugin_set_window");
+	DEBUG (("leaving plugin_set_window\n"));
 	
 	return NPERR_NO_ERROR;
 }
@@ -163,16 +261,47 @@ static NPError
 plugin_new_stream (NPP instance, NPMIMEType type,
 				   const char *window, NPStream ** stream_ptr)
 {
-	DEBUG ("plugin_new_stream");
+	Plugin *plugin;
+
+	DEBUG (("plugin_new_stream\n"));
+
+	if (instance == NULL)
+		return NPERR_INVALID_INSTANCE_ERROR;
 	
+	plugin = (Plugin *) instance->pdata;
+	if (plugin == NULL)
+		return NPERR_NO_ERROR;
+	
+	g_return_val_if_fail(plugin->bytes == NULL, NPERR_NO_ERROR);
+
+	plugin->bytes = g_byte_array_new();
+
 	return NPERR_NO_ERROR;
 }
 
 static NPError
 plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 {
-	DEBUG ("plugin_destroy_stream");
+	Plugin *plugin;
+
+	DEBUG (("plugin_destroy_stream\n"));
+
+	if (instance == NULL)
+		return NPERR_INVALID_INSTANCE_ERROR;
 	
+	plugin = (Plugin *) instance->pdata;
+	if (plugin == NULL)
+		return NPERR_NO_ERROR;
+	
+	/* trigger */
+	plugin_redraw (plugin);
+
+	if(plugin->send_fd > 0)
+		{
+			close (plugin->send_fd);
+			plugin->send_fd = -1;
+		}
+
 	return NPERR_NO_ERROR;
 }
 
@@ -181,9 +310,9 @@ plugin_write_ready (NPP instance, NPStream * stream)
 {
 	/* This is arbitrary */
 	
-	DEBUG ("plugin_write_ready");
+	DEBUG (("plugin_write_ready\n"));
 	
-	return 4096;
+	return (8*1024);
 }
 
 static int32
@@ -192,18 +321,21 @@ plugin_write (NPP instance, NPStream * stream, int32 offset,
 {
 	Plugin *plugin;
 	
-	DEBUG ("plugin_write");
+	DEBUG (("plugin_write\n"));
 	
 	if (instance == NULL)
 		return 0;
+
 	plugin = (Plugin *) instance->pdata;
 	
 	if (plugin == NULL)
 		return 0;
 	
-	/* TODO */
-	write (plugin->send_fd, buffer, len);
+	if (!plugin->bytes)
+		return 0;
 	
+	g_byte_array_append (plugin->bytes, buffer, len);
+
 	return len;
 }
 
@@ -212,7 +344,7 @@ plugin_stream_as_file (NPP instance, NPStream * stream, const char *fname)
 {
 	Plugin *plugin;
 	
-	DEBUG ("plugin_stream_as_file");
+	DEBUG (("plugin_stream_as_file\n"));
 	
 	if (instance == NULL)
 		return;
@@ -221,10 +353,12 @@ plugin_stream_as_file (NPP instance, NPStream * stream, const char *fname)
 	if (plugin == NULL)
 		return;
 	
-	printf ("plugin_stream_as_file\n");
+	DEBUG (("plugin_stream_as_file\n"));
 }
 
 /* exported functions */
+
+NPError NP_GetValue (void *future, NPPVariable variable, void *value);
 
 NPError
 NP_GetValue (void *future, NPPVariable variable, void *value)
@@ -250,19 +384,20 @@ NP_GetValue (void *future, NPPVariable variable, void *value)
 		default:
 			err = NPERR_GENERIC_ERROR;
 		}
-	return err;
+	
+  return err;
 }
 
 char *
 NP_GetMIMEDescription (void)
 {
-	return ("application/svg:svg:Scalable Vector Graphics");
+	return ("image/svg+xml:svg:Scalable Vector Graphics");
 }
 
 NPError
 NP_Initialize (NPNetscapeFuncs * moz_funcs, NPPluginFuncs * plugin_funcs)
 {
-	printf ("NP_Initialize\n");
+	DEBUG (("NP_Initialize\n"));
 	
 	if (moz_funcs == NULL || plugin_funcs == NULL)
 		return NPERR_INVALID_FUNCTABLE_ERROR;
@@ -273,7 +408,7 @@ NP_Initialize (NPNetscapeFuncs * moz_funcs, NPPluginFuncs * plugin_funcs)
 		return NPERR_INVALID_FUNCTABLE_ERROR;
 	if (plugin_funcs->size < sizeof (NPPluginFuncs))
 		return NPERR_INVALID_FUNCTABLE_ERROR;
-	
+
 	memcpy (&mozilla_funcs, moz_funcs, sizeof (NPNetscapeFuncs));
 	
 	plugin_funcs->version = (NP_VERSION_MAJOR << 8) + NP_VERSION_MINOR;

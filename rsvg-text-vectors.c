@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "rsvg-private.h"
+#include "rsvg-styles.h"
 #include "rsvg-text.h"
 #include "rsvg-shapes.h"
 #include "rsvg-css.h"
@@ -35,6 +36,8 @@
 #include <ft2build.h>
 #include FT_GLYPH_H
 #include FT_OUTLINE_H
+
+#define RSVG_TEXT_DEBUG
 
 typedef struct _RsvgTextLayout RsvgTextLayout;
 
@@ -202,76 +205,24 @@ rsvg_text_layout_render_flags (RsvgTextLayout *layout)
 }
 
 static void
-rsvg_text_layout_render_glyphs (RsvgTextLayout     *layout,
-								PangoFont          *font,
-								PangoGlyphString   *glyphs,
-								RsvgTextRenderFunc  render_func,
-								gint                x,
-								gint                y,
-								gpointer            render_data)
-{
-	PangoGlyphInfo *gi;
-	FT_Int32        flags;
-	FT_Vector       pos;
-	gint            i;
-	gint            x_position = 0;
-	
-	flags = rsvg_text_layout_render_flags (layout);
-	
-	for (i = 0, gi = glyphs->glyphs; i < glyphs->num_glyphs; i++, gi++)
-		{
-			if (gi->glyph)
-				{
-					pos.x = x + x_position + gi->geometry.x_offset;
-					pos.y = y + gi->geometry.y_offset;
-					
-					/* FT_Vector_Transform (&pos, &trafo); */
-
-					render_func (font, gi->glyph, flags, NULL /* &trafo */,
-								 pos.x, pos.y,
-								 render_data);
-				}
-			
-			x_position += glyphs->glyphs[i].geometry.width;
-		}
-}
-
-static void
-rsvg_text_layout_render_line (RsvgTextLayout     *layout,
-							  PangoLayoutLine    *line,
-							  RsvgTextRenderFunc  render_func,
-							  gint                x,
-							  gint                y,
-							  gpointer            render_data)
-{
-	PangoRectangle  rect;
-	GSList         *list;
-	gint            x_off = 0;
-	
-	for (list = line->runs; list; list = list->next)
-		{
-			PangoLayoutRun *run = list->data;
-			
-			pango_glyph_string_extents (run->glyphs, run->item->analysis.font,
-										NULL, &rect);
-			rsvg_text_layout_render_glyphs (layout,
-											run->item->analysis.font, run->glyphs,
-											render_func,
-											x + x_off, y,
-											render_data);
-			
-			x_off += rect.width;
-		}
-}
-
-static void
 rsvg_text_vector_coords (RenderCtx       *ctx,
 						 const FT_Vector *vector,
 						 gdouble         *x,
 						 gdouble         *y)
 {
-	*x = (gdouble)vector->x;
-	*y = (gdouble)vector->y;
+	*x = ctx->offset_x + (gdouble)vector->x / 64.;
+	*y = ctx->offset_y - (gdouble)vector->y / 64.;
+}
+
+static void
+print266 (FT_Vector *pnt,
+		  gchar     *msg)
+{
+#ifdef RSVG_TEXT_DEBUG
+	g_print ("%s Point (%d,%d)\n",
+			 msg, (gint)pnt->x,
+			 (gint)pnt->y);
+#endif
 }
 
 static gint
@@ -284,6 +235,8 @@ moveto (FT_Vector *to,
 	
 	ctx = (RenderCtx *)data;
 	
+	print266(to, "Moveto");
+
 	if (ctx->wrote)
 		g_string_append(ctx->path, "Z ");
 	else
@@ -310,6 +263,11 @@ lineto (FT_Vector *to,
 	
 	ctx = (RenderCtx *)data;
 	
+	if (!ctx->wrote)
+		return 0;
+
+	print266(to, "Lineto");
+
 	g_string_append_c(ctx->path, 'L');
 	
 	rsvg_text_vector_coords(ctx, to, &x, &y);
@@ -331,6 +289,12 @@ conicto (FT_Vector *ftcontrol,
 	gdouble x, y;
 	
 	ctx = (RenderCtx *)data;
+
+	if (!ctx->wrote)
+		return 0;
+
+	print266(ftcontrol, "Conicto Control");
+	print266(to, "Conicto");
 
 	g_string_append_c(ctx->path, 'Q');
 	
@@ -361,6 +325,13 @@ cubicto (FT_Vector *ftcontrol1,
 	
 	ctx = (RenderCtx *)data;
 	
+	if (!ctx->wrote)
+		return 0;
+
+	print266(ftcontrol1, "Cubicto Control1");
+	print266(ftcontrol2, "Cubicto Control2");
+	print266(to, "Cubicto");
+
 	g_string_append_c(ctx->path, 'C');
 	
 	rsvg_text_vector_coords(ctx, ftcontrol1, &x, &y);
@@ -382,6 +353,66 @@ cubicto (FT_Vector *ftcontrol1,
 	g_string_append_c(ctx->path, ' ');	
 
 	return 0;
+}
+
+static void
+rsvg_text_layout_render_trafo (RsvgTextLayout *layout,
+                               FT_Matrix      *trafo)
+{
+	RsvgState * state;
+
+	state = rsvg_state_current(layout->ctx);
+	if(state) 
+		{
+			trafo->xx = state->affine[0] * 65536.0;
+			trafo->xy = state->affine[1] * 65536.0;
+			trafo->yx = state->affine[2] * 65536.0;
+			trafo->yy = state->affine[3] * 65536.0;
+		}
+	else 
+		{
+			trafo->xx = 1;
+			trafo->xy = 0;
+			trafo->yx = 0;
+			trafo->yy = 1;
+		}
+}
+
+static void
+rsvg_text_layout_render_glyphs (RsvgTextLayout     *layout,
+								PangoFont          *font,
+								PangoGlyphString   *glyphs,
+								RsvgTextRenderFunc  render_func,
+								gint                x,
+								gint                y,
+								gpointer            render_data)
+{
+	PangoGlyphInfo *gi;
+	FT_Int32        flags;
+	FT_Matrix       trafo;
+	FT_Vector       pos;
+	gint            i;
+	gint            x_position = 0;
+	
+	flags = rsvg_text_layout_render_flags (layout);
+	rsvg_text_layout_render_trafo (layout, &trafo);
+
+	for (i = 0, gi = glyphs->glyphs; i < glyphs->num_glyphs; i++, gi++)
+		{
+			if (gi->glyph)
+				{
+					pos.x = x + x_position + gi->geometry.x_offset;
+					pos.y = y + gi->geometry.y_offset;
+					
+					FT_Vector_Transform (&pos, &trafo);
+
+					render_func (font, gi->glyph, flags, NULL /* &trafo */,
+								 pos.x, pos.y,
+								 render_data);
+				}
+			
+			x_position += glyphs->glyphs[i].geometry.width;
+		}
 }
 
 static void
@@ -425,6 +456,34 @@ rsvg_text_render_vectors (PangoFont     *font,
 		}
 	
 	FT_Done_Glyph (glyph);
+}
+
+static void
+rsvg_text_layout_render_line (RsvgTextLayout     *layout,
+							  PangoLayoutLine    *line,
+							  RsvgTextRenderFunc  render_func,
+							  gint                x,
+							  gint                y,
+							  gpointer            render_data)
+{
+	PangoRectangle  rect;
+	GSList         *list;
+	gint            x_off = 0;
+	
+	for (list = line->runs; list; list = list->next)
+		{
+			PangoLayoutRun *run = list->data;
+			
+			pango_glyph_string_extents (run->glyphs, run->item->analysis.font,
+										NULL, &rect);
+			rsvg_text_layout_render_glyphs (layout,
+											run->item->analysis.font, run->glyphs,
+											render_func,
+											x + x_off, y,
+											render_data);
+			
+			x_off += rect.width;
+		}
 }
 
 static void
@@ -482,9 +541,10 @@ rsvg_text_render_text (RsvgHandle *ctx,
 	if (render->wrote)
 		g_string_append_c(render->path, 'Z');
 
-	/* Only a debugging aid for now */
-	g_print("%s\n\n", render->path->str);
-	
+#ifdef RSVG_TEXT_DEBUG
+	fprintf(stdout, "%s\n", render->path->str);
+#endif
+
 	rsvg_handle_path (ctx, render->path->str, id);
 
 	rsvg_render_ctx_free (render);

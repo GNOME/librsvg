@@ -85,6 +85,9 @@ rsvg_css_parse_number_optional_number(const char * str,
 gchar ** 
 rsvg_css_parse_list(const char * in_str, guint * out_list_len);
 
+gdouble *
+rsvg_css_parse_number_list(const char * in_str, guint * out_list_len);
+
 G_END_DECLS
 
 #endif /* RSVG_CSS_H */

@@ -19,8 +19,8 @@ AC_SUBST(POPT_REQUIRED)
 dnl ===========================================================================
 
 LIBRSVG_MAJOR_VERSION=2
-LIBRSVG_MINOR_VERSION=6
-LIBRSVG_MICRO_VERSION=2
+LIBRSVG_MINOR_VERSION=7
+LIBRSVG_MICRO_VERSION=1
 AC_SUBST(LIBRSVG_MAJOR_VERSION)
 AC_SUBST(LIBRSVG_MINOR_VERSION)
 AC_SUBST(LIBRSVG_MICRO_VERSION)
@@ -203,23 +203,36 @@ else
         AC_MSG_RESULT(no)
 fi
 
+have_gtk=no
+PKG_CHECK_MODULES(GTK, gtk+-2.0 >= 1.3.12, have_gtk=yes,
+		       have_gtk=no)
+
+GTK_VERSION=
+if test "x$have_gtk" = "xyes"; then
+   GTK_VERSION=`$PKG_CONFIG --variable=gtk_binary_version gtk+-2.0`
+fi
+AC_SUBST(GTK_CFLAGS)
+AC_SUBST(GTK_LIBS)
+AC_SUBST(GTK_VERSION)
+AM_CONDITIONAL(HAVE_GTK, test "x$have_gtk" = "xyes")
+
+have_gdk_x11=no
+PKG_CHECK_MODULES(GDK_X11, gdk-x11-2.0 >= 2.0.0, have_gdk_x11=yes, have_gdk_x11=no)
+AC_SUBST(GDK_X11_CFLAGS)
+AC_SUBST(GDK_X11_LIBS)
+
+if test "x$have_gdk_x11" = "xyes"; then
+	AC_DEFINE(ENABLE_XEMBED, 1, [Is XEmbed available])
+fi
+
 AC_ARG_ENABLE(gtk-theme,
     [  --enable-gtk-theme  Enable a RSVG based GTK+ theme engine [default=auto]],,
     enable_gtk_theme=yes)
 
 if test "x$enable_gtk_theme" = "xyes"; then
-	GTK_VERSION=
-
-	PKG_CHECK_MODULES(GTK, gtk+-2.0 >= 1.3.12, enable_gtk_theme=yes,
-			       enable_gtk_theme=no)
-
-	if test "x$enable_gtk_theme" = "xyes"; then
-	   GTK_VERSION=`$PKG_CONFIG --variable=gtk_binary_version gtk+-2.0`
-	fi
-
-AC_SUBST(GTK_CFLAGS)
-AC_SUBST(GTK_LIBS)
-AC_SUBST(GTK_VERSION)
+   if test "x$have_gtk" = "xno"; then
+      enable_gtk_theme=no;
+   fi
 fi
 
 AM_CONDITIONAL(ENABLE_GTK_ENGINE, test "x$enable_gtk_theme" = "xyes")
@@ -239,6 +252,26 @@ if test "x$enable_pixbuf_loader" = xauto ; then
 fi
 
 AM_CONDITIONAL(ENABLE_PIXBUF_LOADER, test x$enable_pixbuf_loader = xyes)
+
+##################################################
+##################################################
+
+MOZILLA_CFLAGS=
+if test -z "$MOZILLA_CONFIG"; then
+  AC_PATH_PROG(MOZILLA_CONFIG, mozilla-config, no)
+fi
+if test "x$MOZILLA_CONFIG" != "xno"; then
+  _mozilla_include_dir=`mozilla-config --cflags|sed 's/-I\(.*\) .*/\1/'`
+  MOZILLA_CFLAGS="-I$_mozilla_include_dir/plugin -I$_mozilla_include_dir/java -I$_mozilla_include_dir/nspr"
+else
+  AC_MSG_WARN([mozilla-config not found. Mozilla/Netscape plugin will not be built])
+fi
+build_mozilla_plugin=no
+if test "x$MOZILLA_CFLAGS" != "x"; then
+   build_mozilla_plugin=yes
+fi
+AM_CONDITIONAL(WITH_MOZILLA,[test "x$build_mozilla_plugin" = "xyes"])
+AC_SUBST(MOZILLA_CFLAGS)
 
 ##################################################
 # Checks for gtk-doc and docbook-tools
@@ -310,6 +343,7 @@ gtk-engine/examples/Makefile
 gtk-engine/examples/bubble/Makefile
 gtk-engine/examples/bubble/gtk-2.0/Makefile
 gdk-pixbuf-loader/Makefile
+moz-plugin/Makefile
 ])
 
 dnl =============================================================================================
@@ -321,10 +355,10 @@ librsvg-$LIBRSVG_VERSION
 	
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
 	Build theme engine:             ${enable_gtk_theme}
+	Build Netscape plugin:          ${build_mozilla_plugin}
 	Handle svgz files:              ${test_gsf}
 	Use libcroco for css parsing:   ${test_croco}
 	Build documentation:            ${enable_gtk_doc}
 "
 
-AC_MSG_RESULT([$croco_warning
-]);
+AC_MSG_RESULT([$croco_warning]);

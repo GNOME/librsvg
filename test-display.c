@@ -1,7 +1,7 @@
 /* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*-
  * test-display: 
  *
- * Copyright (C) 2002 Dom Lachowicz
+ * Copyright (C) 2002-2004 Dom Lachowicz
  *
  * This program is released into the PUBLIC DOMAIN, and is meant to be a
  * useful example if how to draw a SVG image inside of a GtkWidget. This 
@@ -13,19 +13,25 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE
  *
  * Simple utility to view a SVG file inside of a GtkWindow
- *
- * To compile, basically:
- *   gcc `pkg-config --cflags --libs gtk+-2.0 librsvg-2.0` -lpopt -o svg-display test-display.c
  */
 
 #include "config.h"
 #include "rsvg.h"
+#include "rsvg-private.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <popt.h>
 
 #include <gtk/gtk.h>
+#include <gdk/gdk.h>
+
+#ifdef ENABLE_XEMBED
+#include <gdk/gdkx.h>
+#endif
+
+#define DEFAULT_WIDTH  240
+#define DEFAULT_HEIGHT 240
 
 static void
 quit_cb (GtkWidget *win, gpointer unused)
@@ -34,24 +40,73 @@ quit_cb (GtkWidget *win, gpointer unused)
 	gtk_main_quit();
 }
 
+static void 
+win_embedded_cb (GtkPlug *plug, gpointer data)
+{
+}
+
 static void
-view_pixbuf (GdkPixbuf * pixbuf)
+view_pixbuf (GdkPixbuf * pixbuf, int xid)
 {
 	GtkWidget *win, *img;
-	
+	gint width, height;
+
 	/* create toplevel window and set its title */
-	win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_title (GTK_WINDOW(win), "SVG Viewer");
-	
+
+	if(xid > 0)
+		{
+			GdkWindow *gdk_parent;
+
+			win = gtk_plug_new(0);
+			g_signal_connect(G_OBJECT(win), "embedded",
+							 G_CALLBACK(win_embedded_cb), NULL);
+
+			gdk_parent = gdk_window_foreign_new(xid);
+			gdk_window_get_geometry(gdk_parent, NULL, NULL, &width, &height, NULL);			
+		}
+	else
+		{
+			win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+			width = MIN(gdk_pixbuf_get_width (pixbuf), DEFAULT_WIDTH) + 20;
+			height = MIN(gdk_pixbuf_get_height (pixbuf), DEFAULT_HEIGHT) + 20;
+
+			gtk_window_set_title (GTK_WINDOW(win), "SVG Viewer");
+		}
+
+	gtk_window_set_default_size(GTK_WINDOW(win), width, height);
+
 	/* exit when 'X' is clicked */
 	g_signal_connect(G_OBJECT(win), "destroy", G_CALLBACK(quit_cb), NULL);
-	
+	g_signal_connect(G_OBJECT(win), "delete_event", G_CALLBACK(quit_cb), NULL);	
+
 	/* create a new image */
 	img = gtk_image_new_from_pixbuf (pixbuf);
-	
+
 	/* pack the window with the image */
-	gtk_container_add(GTK_CONTAINER(win), img);
+	if(xid > 0)
+		{
+			gtk_container_add(GTK_CONTAINER(win), img);
+		}
+	else
+		{
+			GtkWidget *scroll;
+
+			scroll = gtk_scrolled_window_new(NULL, NULL);
+			gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW(scroll), img);
+			gtk_container_add(GTK_CONTAINER(win), scroll);
+		}
+
 	gtk_widget_show_all (win);
+
+#ifdef ENABLE_XEMBED
+	if(xid > 0){
+		XReparentWindow(GDK_WINDOW_XDISPLAY(win->window),
+						GDK_WINDOW_XID(win->window),
+						xid, 0, 0);
+		XMapWindow(GDK_WINDOW_XDISPLAY(win->window),
+				   GDK_WINDOW_XID(win->window));
+	}
+#endif
 }
 
 int 
@@ -64,14 +119,23 @@ main (int argc, char **argv)
 	int width  = -1;
 	int height = -1;
 	int bVersion = 0;
-	
+
+	int xid = -1;
+	int from_stdin = 0;
+
+	struct RsvgSizeCallbackData size_data;
+
 	struct poptOption options_table[] = {
-		{ "dpi"   , 'd',  POPT_ARG_DOUBLE, &dpi,     0, "Pixels Per Inch", "<float>"},
-		{ "x-zoom", 'x',  POPT_ARG_DOUBLE, &x_zoom,  0, "x zoom factor", "<float>" },
-		{ "y-zoom", 'y',  POPT_ARG_DOUBLE, &y_zoom,  0, "y zoom factor", "<float>" },
-		{ "width",  'w',  POPT_ARG_INT,    &width,   0, "width", "<int>" },
-		{ "height", 'h',  POPT_ARG_INT,    &height,  0, "height", "<int>" },
-		{ "version", 'v', POPT_ARG_NONE,   &bVersion, 0, "show version information", NULL },
+#ifdef ENABLE_XEMBED
+		{ "xid",     'i',  POPT_ARG_INT,    &xid,        0, "XWindow ID [for X11 embedding]", "<int>" },
+#endif
+		{ "stdin",   's',  POPT_ARG_NONE,   &from_stdin, 0, "Use stdin", NULL },
+		{ "dpi",     'd',  POPT_ARG_DOUBLE, &dpi,        0, "Pixels Per Inch", "<float>" },
+		{ "x-zoom",  'x',  POPT_ARG_DOUBLE, &x_zoom,     0, "x zoom factor", "<float>" },
+		{ "y-zoom",  'y',  POPT_ARG_DOUBLE, &y_zoom,     0, "y zoom factor", "<float>" },
+		{ "width",   'w',  POPT_ARG_INT,    &width,      0, "width", "<int>" },
+		{ "height",  'h',  POPT_ARG_INT,    &height,     0, "height", "<int>" },
+		{ "version", 'v',  POPT_ARG_NONE,   &bVersion,   0, "show version information", NULL },
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
@@ -80,15 +144,15 @@ main (int argc, char **argv)
 	gint n_args = 0;
 	GdkPixbuf *pixbuf;
     
-	popt_context = poptGetContext ("svg-display", argc, (const char **)argv, options_table, 0);
-	poptSetOtherOptionHelp(popt_context, "[OPTIONS...] file.svg");
+	popt_context = poptGetContext ("rsvg-view", argc, (const char **)argv, options_table, 0);
+	poptSetOtherOptionHelp(popt_context, "[OPTIONS...] [file.svg]");
 	
 	c = poptGetNextOpt (popt_context);
 	args = poptGetArgs (popt_context);
 	
 	if (bVersion != 0)
 		{
-			printf ("svg-display version %s\n", VERSION);
+			printf ("rsvg-view version %s\n", VERSION);
 			return 0;
 		}
 	
@@ -98,7 +162,7 @@ main (int argc, char **argv)
 				n_args++;
 		}
   
-	if (n_args != 1)
+	if ((!from_stdin) && (n_args != 1))
 		{
 			poptPrintHelp (popt_context, stderr, 0);
 			poptFreeContext (popt_context);
@@ -113,24 +177,42 @@ main (int argc, char **argv)
 	
 	/* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
 	if (width == -1 && height == -1)
-		pixbuf = rsvg_pixbuf_from_file_at_zoom (args[0], x_zoom, y_zoom, NULL);
+		{
+			size_data.type = RSVG_SIZE_ZOOM;
+			size_data.x_zoom = x_zoom;
+			size_data.y_zoom = y_zoom;
+		}
 	/* if both are unspecified, assume user wants to resize pixbuf in at least 1 dimension */
 	else if (x_zoom == 1.0 && y_zoom == 1.0)
-		pixbuf = rsvg_pixbuf_from_file_at_size (args[0], width, height, NULL);
+		{
+			size_data.type = RSVG_SIZE_WH;
+			size_data.width = width;
+			size_data.height = height;
+		}
+	/* assume the user wants to zoom the pixbuf, but cap the maximum size */
 	else
-		/* assume the user wants to zoom the pixbuf, but cap the maximum size */
-		pixbuf = rsvg_pixbuf_from_file_at_zoom_with_max (args[0], x_zoom, y_zoom,
-														 width, height, NULL);
+		{
+			size_data.type = RSVG_SIZE_ZOOM_MAX;
+			size_data.x_zoom = x_zoom;
+			size_data.y_zoom = y_zoom;
+			size_data.width = width;
+			size_data.height = height;
+		}
 	
+	if(from_stdin)
+		pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data (stdin, &size_data, NULL);
+	else
+		pixbuf = rsvg_pixbuf_from_file_with_size_data (args[0], &size_data, NULL);
+
 	poptFreeContext (popt_context);
-	
+
 	if (!pixbuf)
 		{
 			fprintf (stderr, "Error displaying pixbuf!\n");
 			return 1;
 		}
 	
-	view_pixbuf (pixbuf);
+	view_pixbuf (pixbuf, xid);
 	
 	/* run the gtk+ main loop */
 	gtk_main ();

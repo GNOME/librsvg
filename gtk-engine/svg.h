@@ -129,14 +129,14 @@ typedef enum {
 
 struct _ThemePixbuf
 {
-  gchar     *filename;
-  GdkPixbuf *pixbuf;
-  gboolean   stretch;
-  gint       border_left;
-  gint       border_right;
-  gint       border_bottom;
-  gint       border_top;
-  guint      hints[3][3];
+  gchar      *filename;
+  GByteArray *svg_bytes;
+  gboolean    stretch;
+  gint        border_left;
+  gint        border_right;
+  gint        border_bottom;
+  gint        border_top;
+  guint       hints[3][3];
 };
 
 struct _ThemeMatchData
@@ -173,7 +173,7 @@ ThemePixbuf *theme_pixbuf_new          (void);
 void         theme_pixbuf_destroy      (ThemePixbuf  *theme_pb);
 void         theme_pixbuf_set_filename (ThemePixbuf  *theme_pb,
 					const char   *filename);
-GdkPixbuf *  theme_pixbuf_get_pixbuf   (ThemePixbuf  *theme_pb);
+GdkPixbuf *  theme_pixbuf_get_pixbuf   (ThemePixbuf  *theme_pb, gint width, gint height);
 void         theme_pixbuf_set_border   (ThemePixbuf  *theme_pb,
 					gint          left,
 					gint          right,

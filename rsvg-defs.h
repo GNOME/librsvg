@@ -32,9 +32,6 @@
 
 G_BEGIN_DECLS
 
-typedef struct _RsvgDefs RsvgDefs;
-typedef struct _RsvgDefVal RsvgDefVal;
-
 typedef enum {
 	/* todo: general question: should this be high level, ie a generic
 	   paint server, coupled with a paint server interface; or low level,
@@ -43,7 +40,8 @@ typedef enum {
 	RSVG_DEF_LINGRAD,
 	RSVG_DEF_RADGRAD,
 	RSVG_DEF_PATTERN,
-	RSVG_DEF_PATH
+	RSVG_DEF_PATH,
+	RSVG_DEF_FILTER
 } RsvgDefType;
 
 struct _RsvgDefVal {

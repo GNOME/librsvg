@@ -21,11 +21,13 @@
  * Carsten Haitzler <raster@rasterman.com>
  */
 
+#include <stdio.h>
 #include <string.h>
 
 #include "svg.h"
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <rsvg.h>
+#include <rsvg-gz.h>
 
 GCache *pixbuf_cache = NULL;
 
@@ -443,7 +445,7 @@ theme_pixbuf_new (void)
 {
   ThemePixbuf *result = g_new0 (ThemePixbuf, 1);
   result->filename = NULL;
-  result->pixbuf = NULL;
+  result->svg_bytes = NULL;
 
   result->stretch = TRUE;
   result->border_left = 0;
@@ -465,10 +467,10 @@ void
 theme_pixbuf_set_filename (ThemePixbuf *theme_pb,
 			   const char  *filename)
 {
-  if (theme_pb->pixbuf)
+  if (theme_pb->svg_bytes)
     {
-      g_cache_remove (pixbuf_cache, theme_pb->pixbuf);
-      theme_pb->pixbuf = NULL;
+      g_cache_remove (pixbuf_cache, theme_pb->svg_bytes);
+      theme_pb->svg_bytes = NULL;
     }
 
   if (theme_pb->filename)
@@ -546,11 +548,11 @@ compute_hint (GdkPixbuf *pixbuf,
 }
 
 static void
-theme_pixbuf_compute_hints (ThemePixbuf *theme_pb)
+theme_pixbuf_compute_hints (ThemePixbuf *theme_pb, GdkPixbuf *pixbuf)
 {
   int i, j;
-  gint width = gdk_pixbuf_get_width (theme_pb->pixbuf);
-  gint height = gdk_pixbuf_get_height (theme_pb->pixbuf);
+  gint width = gdk_pixbuf_get_width (pixbuf);
+  gint height = gdk_pixbuf_get_height (pixbuf);
 
   if (theme_pb->border_left + theme_pb->border_right > width ||
       theme_pb->border_top + theme_pb->border_bottom > height)
@@ -610,7 +612,7 @@ theme_pixbuf_compute_hints (ThemePixbuf *theme_pb)
 	      break;
 	    }
 
-	  theme_pb->hints[i][j] = compute_hint (theme_pb->pixbuf, x0, x1, y0, y1);
+	  theme_pb->hints[i][j] = compute_hint (pixbuf, x0, x1, y0, y1);
 	}
     }
   
@@ -627,9 +629,6 @@ theme_pixbuf_set_border (ThemePixbuf *theme_pb,
   theme_pb->border_right = right;
   theme_pb->border_top = top;
   theme_pb->border_bottom = bottom;
-
-  if (theme_pb->pixbuf)
-    theme_pixbuf_compute_hints (theme_pb);
 }
 
 void
@@ -637,46 +636,116 @@ theme_pixbuf_set_stretch (ThemePixbuf *theme_pb,
 			  gboolean     stretch)
 {
   theme_pb->stretch = stretch;
-
-  if (theme_pb->pixbuf)
-    theme_pixbuf_compute_hints (theme_pb);
 }
 
-static GdkPixbuf *
-pixbuf_cache_value_new (gchar *filename)
+static void
+svg_cache_value_free(gpointer foo)
 {
-  GError *err = NULL;
-    
-  GdkPixbuf *result = rsvg_pixbuf_from_file (filename, &err);
-  if (!result)
+  GByteArray * arr;
+
+  arr = (GByteArray *)foo;
+  if(arr != NULL)
+    g_byte_array_free(arr, TRUE);
+}
+
+#define SVG_BUFFER_SIZE (1024*8)
+
+static GByteArray *
+svg_cache_value_new (gchar *filename)
+{
+  GByteArray *result = NULL;
+  FILE *fp;
+
+  fp = fopen(filename, "rb");
+  if(fp)
     {
-      g_warning ("Rsvg theme: Cannot load SVG file %s: %s\n",
-		 filename, err->message);
-      g_error_free (err);
+      size_t nread;
+      char buf[SVG_BUFFER_SIZE];
+
+      result = g_byte_array_new();
+      while((nread = fread(buf, 1, sizeof(buf), fp)) > 0)
+	g_byte_array_append(result, buf, nread);
+
+      fclose(fp);
+    }
+  else
+    {
+      g_warning("Couldn't load theme part: %s\n", filename);
     }
 
   return result;
 }
 
-GdkPixbuf *
-theme_pixbuf_get_pixbuf (ThemePixbuf *theme_pb)
+struct SizeInfo
 {
-  if (!theme_pb->pixbuf)
+  gint width, height;
+};
+
+static void set_size_fn(gint *width, gint *height, gpointer foo)
+{
+  struct SizeInfo * info = (struct SizeInfo *)foo;
+
+  *width = info->width;
+  *height = info->height;
+}
+
+static GdkPixbuf *
+get_pixbuf(GByteArray * arr, gint width, gint height)
+{
+  RsvgHandle * handle;
+  GdkPixbuf * result;
+
+  if(!arr || !arr->len)
+    return NULL;
+
+#ifdef HAVE_SVGZ
+  if((arr->len >= 2) && (arr->data[0] == (guchar)0x1f) && (arr->data[1] == (guchar)0x8b))
+    handle = rsvg_handle_new_gz();
+  else
+#endif
+    handle = rsvg_handle_new();
+
+  if(width > 0 && height > 0)
+    {
+      struct SizeInfo info;
+
+      info.width = width;
+      info.height = height;
+      
+      rsvg_handle_set_size_callback(handle, set_size_fn, &info, NULL);
+    }
+
+  rsvg_handle_write(handle, arr->data, arr->len, NULL);
+  rsvg_handle_close(handle, NULL);
+  result = rsvg_handle_get_pixbuf(handle);
+
+  rsvg_handle_free(handle);
+
+  return result;
+}
+
+GdkPixbuf *
+theme_pixbuf_get_pixbuf (ThemePixbuf *theme_pb, gint width, gint height)
+{
+  GdkPixbuf *result = NULL;
+
+  if (!theme_pb->svg_bytes)
     {
       if (!pixbuf_cache)
-	pixbuf_cache = g_cache_new ((GCacheNewFunc)pixbuf_cache_value_new,
-				    (GCacheDestroyFunc)gdk_pixbuf_unref,
+	pixbuf_cache = g_cache_new ((GCacheNewFunc)svg_cache_value_new,
+				    (GCacheDestroyFunc)svg_cache_value_free,
 				    (GCacheDupFunc)g_strdup,
 				    (GCacheDestroyFunc)g_free,
 				    g_str_hash, g_direct_hash, g_str_equal);
       
-      theme_pb->pixbuf = g_cache_insert (pixbuf_cache, theme_pb->filename);
-
-      if (theme_pb->stretch)
-	theme_pixbuf_compute_hints (theme_pb);
+      theme_pb->svg_bytes = g_cache_insert (pixbuf_cache, theme_pb->filename);
     }
   
-  return theme_pb->pixbuf;
+  result = get_pixbuf(theme_pb->svg_bytes, width, height);
+  if(result)
+    theme_pixbuf_compute_hints(theme_pb, result);
+  
+  return result;
 }
 
 void
@@ -691,7 +760,7 @@ theme_pixbuf_render (ThemePixbuf  *theme_pb,
 		     gint          width,
 		     gint          height)
 {
-  GdkPixbuf *pixbuf = theme_pixbuf_get_pixbuf (theme_pb);
+  GdkPixbuf *pixbuf = theme_pixbuf_get_pixbuf (theme_pb, width, height);
   gint src_x[4], src_y[4], dest_x[4], dest_y[4];
   gint pixbuf_width = gdk_pixbuf_get_width (pixbuf);
   gint pixbuf_height = gdk_pixbuf_get_height (pixbuf);
@@ -804,4 +873,6 @@ theme_pixbuf_render (ThemePixbuf  *theme_pb,
 	  gdk_pixmap_unref (tmp_pixmap);
 	}
     }
+
+  g_object_unref(G_OBJECT(pixbuf));
 }

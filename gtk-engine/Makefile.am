@@ -30,3 +30,5 @@ libsvg_la_SOURCES = 		\
 
 libsvg_la_LDFLAGS =  -avoid-version -module $(no_undefined)
 libsvg_la_LIBADD = $(GTK_LIBS) $(LIBRSVG_LIBS) $(LIBCROCO_LIBS) $(top_builddir)/librsvg-2.la
+
+EXTRA_DIST = $(libsvg_la_SOURCES)
