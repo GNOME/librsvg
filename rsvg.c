@@ -1664,14 +1664,53 @@ rsvg_handle_new (void)
 	return handle;
 }
 
-void
-rsvg_drawing_ctx_init(DrawingCtx * handle)
+static DrawingCtx * 
+rsvg_new_drawing_ctx(RsvgHandle * handle)
 {
-	handle->state = NULL;
-	/* should this be G_ALLOC_ONLY? */
-	handle->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
+	art_u8 *pixels;
+	int rowstride, new_width, new_height;
+	DrawingCtx * draw;
+	draw = g_new(DrawingCtx, 1);	
 
-	rsvg_state_push(handle);
+	draw->state = NULL;
+	/* should this be G_ALLOC_ONLY? */
+	draw->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
+
+	draw->bbox.x0 = draw->bbox.y0 = draw->bbox.x1 = draw->bbox.y1 = 0;
+
+	new_width = handle->new_width;
+	new_height = handle->new_height;
+	rowstride = (new_width * 4 + 3) & ~3;
+	if (rowstride > INT_MAX / new_height)
+		{
+			/* FIXME: GError here? */
+			g_warning (_("rsvg_start_svg: width too large"));
+			return NULL;
+		}
+	pixels = g_try_malloc (rowstride * new_height);
+	if (pixels == NULL)
+		{
+			/* FIXME: GError here? */
+			g_warning (_("rsvg_start_svg: dimensions too large"));
+			return NULL;
+		}
+	memset (pixels, 0, rowstride * new_height);
+	draw->pixbuf = gdk_pixbuf_new_from_data (pixels,
+											 GDK_COLORSPACE_RGB,
+											 TRUE, 8,
+											 new_width, new_height,
+											 rowstride,
+											 rsvg_pixmap_destroy,
+											 NULL);
+	draw->defs = handle->defs;
+	draw->base_uri = g_strdup(handle->base_uri);
+	draw->dpi_x = handle->dpi_x;
+	draw->dpi_y = handle->dpi_y;
+	draw->pango_context = NULL;
+
+	rsvg_state_push(draw);
+
+	return draw;
 }
 
 void
@@ -1875,43 +1914,12 @@ rsvg_handle_close (RsvgHandle  *handle,
 GdkPixbuf *
 rsvg_handle_get_pixbuf (RsvgHandle *handle)
 {
-	g_return_val_if_fail (handle != NULL, NULL);
 	GdkPixbuf * output;
-	art_u8 *pixels;
-	int rowstride, new_width, new_height;
 	DrawingCtx * draw;
-	draw = g_new(DrawingCtx, 1);
-	rsvg_drawing_ctx_init(draw);
-	new_width = handle->new_width;
-	new_height = handle->new_height;
-	rowstride = (new_width * 4 + 3) & ~3;
-	if (rowstride > INT_MAX / new_height)
-		{
-			/* FIXME: GError here? */
-			g_warning (_("rsvg_start_svg: width too large"));
-			return NULL;
-		}
-	pixels = g_try_malloc (rowstride * new_height);
-	if (pixels == NULL)
-		{
-			/* FIXME: GError here? */
-			g_warning (_("rsvg_start_svg: dimensions too large"));
-			return NULL;
-		}
-	memset (pixels, 0, rowstride * new_height);
-	draw->pixbuf = gdk_pixbuf_new_from_data (pixels,
-											 GDK_COLORSPACE_RGB,
-											 TRUE, 8,
-											 new_width, new_height,
-											 rowstride,
-											 rsvg_pixmap_destroy,
-											 NULL);
-	draw->defs = handle->defs;
-	draw->base_uri = g_strdup(handle->base_uri);
-	draw->dpi_x = handle->dpi_x;
-	draw->dpi_y = handle->dpi_y;
-	draw->pango_context = NULL;
-	rsvg_defs_drawable_draw((RsvgDefsDrawable *)handle->treebase, draw, 2);
+	g_return_val_if_fail (handle != NULL, NULL);
+	draw = rsvg_new_drawing_ctx(handle);
+
+	rsvg_defs_drawable_draw((RsvgDefsDrawable *)handle->treebase, draw, 0);
 	output = draw->pixbuf;
 	rsvg_drawing_ctx_free(draw);
 	

@@ -1761,8 +1761,6 @@ rsvg_state_push(DrawingCtx * ctx)
 		rsvg_state_init(data);
 
 	ctx->state = g_slist_prepend(ctx->state, data);
-
-	printf("pushing\n");
 }
 
 void
@@ -1774,7 +1772,6 @@ rsvg_state_pop(DrawingCtx * ctx)
 	rsvg_state_finalize (dead_state);
 	ctx->state = g_slist_delete_link(ctx->state, link);
 	g_mem_chunk_free(ctx->state_allocator, dead_state);
-	printf("popping\n");
 }
 
 void

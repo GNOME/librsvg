@@ -928,7 +928,7 @@ rsvg_text_render_text (DrawingCtx *ctx,
 	RsvgTextLayout *layout;
 	RenderCtx      *render;
 	RsvgState      *state;
-	state = &tspan->state;
+	state = rsvg_state_current(ctx);
 
 	state->fill_rule = FILL_RULE_EVENODD;	
 	state->has_fill_rule = TRUE;
