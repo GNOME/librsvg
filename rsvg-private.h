@@ -32,12 +32,14 @@
 #include <libxml/xmlmemory.h>
 #include <pango/pango.h>
 #include <libart_lgpl/art_rect.h>
+#include <libart_lgpl/art_svp.h>
 #include <glib/gslist.h>
 
 G_BEGIN_DECLS
 
 typedef struct RsvgSaxHandler RsvgSaxHandler;
 typedef struct RsvgDrawingCtx RsvgDrawingCtx;
+typedef struct RsvgRender RsvgRender;
 typedef struct RsvgDimensionData RsvgDimensionData;
 typedef struct _RsvgPropertyBag RsvgPropertyBag;
 typedef struct _RsvgState RsvgState;
@@ -127,7 +129,7 @@ struct RsvgHandle {
 /*Contextual information for the drawing phase*/
 
 struct RsvgDrawingCtx {
-	GdkPixbuf *pixbuf;
+	RsvgRender *render;
 	ArtIRect bbox;
 	GSList * state;
 	GError **error;
@@ -137,6 +139,14 @@ struct RsvgDrawingCtx {
 	PangoContext *pango_context;
 	double dpi_x;
 	double dpi_y;
+};
+
+/*Abstract base class for context for our backends (one as yet)*/
+
+struct RsvgRender {
+	void (* render_path) (RsvgDrawingCtx *ctx, const char *d);
+	void (* pop_discrete_layer) (RsvgDrawingCtx *ctx);
+	void (* push_discrete_layer) (RsvgDrawingCtx *ctx);
 };
 
 struct RsvgDimensionData {
@@ -226,6 +236,11 @@ GByteArray *
 _rsvg_acquire_xlink_href_resource (const char *href,
 								   const char *base_uri,
 								   GError **err);
+
+void rsvg_pop_discrete_layer(RsvgDrawingCtx *ctx);
+void rsvg_push_discrete_layer (RsvgDrawingCtx *ctx);
+void rsvg_render_path (RsvgDrawingCtx *ctx, const char *d);
+
 G_END_DECLS
 
 #endif

@@ -27,6 +27,7 @@
 #include "rsvg-styles.h"
 #include "rsvg-art-draw.h"
 #include "rsvg-art-composite.h"
+#include "rsvg-art-render.h"
 #include "rsvg-css.h"
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_svp_ops.h>
@@ -58,15 +59,15 @@ rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgDrawingCtx
 	mask = _rsvg_pixbuf_new_cleared(GDK_COLORSPACE_RGB, 1, 8, 
 									gdk_pixbuf_get_width(tos), 
 									gdk_pixbuf_get_height(tos));
-	save = ctx->pixbuf;
 
-	ctx->pixbuf = mask;
+	save = ((RsvgArtRender *)ctx->render)->pixbuf;
+	((RsvgArtRender *)ctx->render)->pixbuf = mask;
 
 	rsvg_state_push(ctx);
 	rsvg_defs_drawable_draw (drawable, ctx, 0);
 	rsvg_state_pop(ctx);
 
-	ctx->pixbuf = save;
+	((RsvgArtRender *)ctx->render)->pixbuf = save;
 
 	if (tos == NULL || nos == NULL)
 		{
@@ -307,11 +308,21 @@ rsvg_clip_path_render (RsvgClipPath * self, RsvgDrawingCtx *ctx)
 
 	for (i = 0; i < group->children->len; i++)
 		{
+			RsvgArtSVPRender * asvpr;
+			RsvgRender * save;
 			rsvg_state_push(ctx);
 
-			svp = rsvg_defs_drawable_draw_as_svp (g_ptr_array_index(group->children, i), 
-												  ctx, 0);
-			
+			asvpr = rsvg_art_svp_render_new();
+			save = ctx->render;
+			ctx->render = (RsvgRender *)asvpr;
+
+			rsvg_defs_drawable_draw (g_ptr_array_index(group->children, i), 
+									 ctx, 0);
+
+			svp = asvpr->outline;
+			/*todo, free the render*/
+			ctx->render = save;
+
 			if (svp != NULL)
 				{
 					if (svpx != NULL)
@@ -446,7 +457,8 @@ rsvg_rect_clip_path(double x, double y, double w, double h, RsvgDrawingCtx * ctx
 
 	g_string_append (d, " Z");
 
-	output = rsvg_render_path_as_svp (ctx, d->str);
+	/* todo, reenable following code */
+	output = NULL; /* rsvg_render_path_as_svp (ctx, d->str);*/
 	g_string_free (d, TRUE);
 	return output;
 }

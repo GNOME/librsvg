@@ -32,7 +32,6 @@
 #include "rsvg-css.h"
 #include "rsvg-art-composite.h"
 
-#include <libart_lgpl/art_svp_ops.h>
 #include <libart_lgpl/art_affine.h>
 
 void 
@@ -68,14 +67,6 @@ rsvg_end_g (RsvgHandle *ctx)
 	rsvg_pop_def_group (ctx);
 }
 
-
-ArtSVP *
-rsvg_defs_drawable_draw_as_svp (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
-						 int dominate)
-{
-	return self->draw_as_svp(self, ctx, dominate);
-}
-
 static void 
 rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
 							  int dominate)
@@ -98,38 +89,6 @@ rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 		}			
 
 	rsvg_pop_discrete_layer (ctx);
-}
-
-static ArtSVP *
-rsvg_defs_drawable_group_draw_as_svp (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
-									  int dominate)
-{
-	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
-	guint i;
-	ArtSVP *svp1, *svp2, *svp3;
-	
-	svp1 = NULL;
-
-	rsvg_state_reinherit_top(ctx,  &self->state, dominate);
-
-	for (i = 0; i < group->children->len; i++)
-		{
-			rsvg_state_push(ctx);
-
-			svp2 = rsvg_defs_drawable_draw_as_svp (g_ptr_array_index(group->children, i), 
-												   ctx, 0);
-			if (svp1 != NULL)
-				{
-					svp3 = art_svp_union(svp2, svp1);
-					art_free(svp1);
-					svp1 = svp3;
-				}
-			else
-				svp1 = svp2;
-			
-			rsvg_state_pop(ctx);
-		}		
-	return svp1;
 }
 
 static void 
@@ -190,7 +149,6 @@ rsvg_push_part_def_group (RsvgHandle *ctx, const char * id,
 	group->super.super.type = RSVG_DEF_PATH;
 	group->super.super.free = rsvg_defs_drawable_group_free;
 	group->super.draw = rsvg_defs_drawable_group_draw;
-	group->super.draw_as_svp = rsvg_defs_drawable_group_draw_as_svp;
 
 	rsvg_defs_set (ctx->defs, id, &group->super.super);
 
@@ -261,7 +219,6 @@ static void
 rsvg_defs_drawable_use_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
 							  int dominate)
 {
-	RsvgState *state = rsvg_state_current (ctx);
 	RsvgDefsDrawableUse *use = (RsvgDefsDrawableUse*)self;
 	RsvgDefsDrawable * child;
 
@@ -269,38 +226,16 @@ rsvg_defs_drawable_use_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 
 	child = rsvg_defs_drawable_use_resolve(use, ctx, rsvg_state_current(ctx)->affine);
 
-	if (state->opacity != 0xff || rsvg_needs_discrete_layer(state))
-		rsvg_push_discrete_layer (ctx);
+	rsvg_push_discrete_layer (ctx);
+
 	rsvg_state_push(ctx);
 	
 	rsvg_defs_drawable_draw (child, ctx, 1);
 
-	rsvg_state_pop(ctx);	
-
-	if (state->opacity != 0xff || rsvg_needs_discrete_layer(state))
-		rsvg_pop_discrete_layer (ctx);
-}	
-
-static ArtSVP *
-rsvg_defs_drawable_use_draw_as_svp (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
-									int dominate)
-{
-	RsvgDefsDrawableUse *use = (RsvgDefsDrawableUse*)self;
-	ArtSVP * svp;
-	RsvgDefsDrawable * child;
-
-	child = rsvg_defs_drawable_use_resolve(use, ctx, rsvg_state_current(ctx)->affine);
-
-	rsvg_state_reinherit_top(ctx,  &self->state, dominate);
-
-	rsvg_state_push(ctx);
-	
-	svp = rsvg_defs_drawable_draw_as_svp (child, ctx, 1);
-
 	rsvg_state_pop(ctx);
-	
-	return svp;
-}			
+
+	rsvg_pop_discrete_layer (ctx);
+}	
 
 static void 
 rsvg_defs_drawable_use_free (RsvgDefVal *self)
@@ -440,7 +375,6 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	group->super.super.type = RSVG_DEF_PATH;
 	group->super.super.free = rsvg_defs_drawable_svg_free;
 	group->super.draw = rsvg_defs_drawable_svg_draw;
-	group->super.draw_as_svp = rsvg_defs_drawable_group_draw_as_svp;
 
 	rsvg_defs_set (ctx->defs, id, &group->super.super);
 
@@ -509,7 +443,6 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	use->super.super.type = RSVG_DEF_PATH;
 	use->super.super.free = rsvg_defs_drawable_use_free;
 	use->super.draw = rsvg_defs_drawable_use_draw;
-	use->super.draw_as_svp = rsvg_defs_drawable_use_draw_as_svp;
 	use->x = x;
 	use->y = y;
 	use->w = width;
@@ -620,7 +553,6 @@ rsvg_start_symbol(RsvgHandle *ctx, RsvgPropertyBag *atts)
 	group->super.super.type = RSVG_DEF_SYMBOL;
 	group->super.super.free = rsvg_defs_drawable_symbol_free;
 	group->super.draw = rsvg_defs_drawable_symbol_draw;
-	group->super.draw_as_svp = rsvg_defs_drawable_group_draw_as_svp;
 
 	rsvg_defs_set (ctx->defs, id, &group->super.super);
 

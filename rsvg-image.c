@@ -35,7 +35,9 @@
 #include <libart_lgpl/art_rgb_svp.h>
 #include "rsvg-css.h"
 #include "rsvg-mask.h"
+/*very art dependant at the moment*/
 #include "rsvg-art-composite.h"
+#include "rsvg-art-render.h"
 
 static const char s_UTF8_B64Alphabet[64] = {
 	0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
@@ -653,6 +655,8 @@ rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 	GdkPixbuf *intermediate;
 	double basex, basey;
 	ArtSVP * temppath;
+	/*this will have to change*/
+	GdkPixbuf * pixbuf = ((RsvgArtRender *)ctx->render)->pixbuf;
 
 	rsvg_state_reinherit_top(ctx, &self->state, dominate);
 
@@ -679,8 +683,8 @@ rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 	art_affine_multiply(tmp_affine, tmp_tmp_affine, tmp_affine);
 
 	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-								   gdk_pixbuf_get_width (ctx->pixbuf),
-								   gdk_pixbuf_get_height (ctx->pixbuf));
+								   gdk_pixbuf_get_width (pixbuf),
+								   gdk_pixbuf_get_height (pixbuf));
 
 	if (!intermediate)
 		{
@@ -701,7 +705,7 @@ rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 	rsvg_alpha_blt (intermediate, 0, 0,
 					gdk_pixbuf_get_width (intermediate),
 					gdk_pixbuf_get_height (intermediate),
-					ctx->pixbuf, 
+					pixbuf, 
 					0, 0);
 	
 	temprect.x0 = gdk_pixbuf_get_width (intermediate);

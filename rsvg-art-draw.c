@@ -37,6 +37,7 @@
 
 #include "rsvg-art-draw.h"
 #include "rsvg-art-composite.h"
+#include "rsvg-art-render.h"
 #include "rsvg-paint-server.h"
 #include "rsvg-styles.h"
 #include "rsvg-bpath-util.h"
@@ -217,7 +218,7 @@ rsvg_render_svp (RsvgDrawingCtx *ctx, ArtSVP *svp,
 
 	rsvg_state_clip_path_assure(ctx);
 
-	pixbuf = ctx->pixbuf;
+	pixbuf = ((RsvgArtRender *)ctx->render)->pixbuf;
 	if (pixbuf == NULL)
 		{
 			/* FIXME: What warning/GError here? */
@@ -274,25 +275,25 @@ rsvg_render_svp (RsvgDrawingCtx *ctx, ArtSVP *svp,
 static ArtSVP *
 rsvg_render_filling (RsvgState *state, const ArtVpath *vpath)
 {
-			ArtVpath *closed_vpath;
-			ArtSVP *svp2, *svp;
-			ArtSvpWriter *swr;
-			
-			closed_vpath = rsvg_close_vpath (vpath);
-			svp = art_svp_from_vpath (closed_vpath);
-			g_free (closed_vpath);
-			
-			if (state->fill_rule == FILL_RULE_EVENODD)
-				swr = art_svp_writer_rewind_new (ART_WIND_RULE_ODDEVEN);
-			else /* state->fill_rule == FILL_RULE_NONZERO */
-				swr = art_svp_writer_rewind_new (ART_WIND_RULE_NONZERO);
-
-			art_svp_intersector (svp, swr);
-			
-			svp2 = art_svp_writer_rewind_reap (swr);
-			art_svp_free (svp);
-
-			return svp2;
+	ArtVpath *closed_vpath;
+	ArtSVP *svp2, *svp;
+	ArtSvpWriter *swr;
+	
+	closed_vpath = rsvg_close_vpath (vpath);
+	svp = art_svp_from_vpath (closed_vpath);
+	g_free (closed_vpath);
+	
+	if (state->fill_rule == FILL_RULE_EVENODD)
+		swr = art_svp_writer_rewind_new (ART_WIND_RULE_ODDEVEN);
+	else /* state->fill_rule == FILL_RULE_NONZERO */
+		swr = art_svp_writer_rewind_new (ART_WIND_RULE_NONZERO);
+	
+	art_svp_intersector (svp, swr);
+	
+	svp2 = art_svp_writer_rewind_reap (swr);
+	art_svp_free (svp);
+	
+	return svp2;
 }
 
 static ArtSVP *
@@ -334,7 +335,7 @@ rsvg_render_bpath (RsvgDrawingCtx *ctx, const ArtBpath *bpath)
 	int opacity;
 	int tmp;
 
-	pixbuf = ctx->pixbuf;
+	pixbuf = ((RsvgArtRender *)ctx->render)->pixbuf;
 	if (pixbuf == NULL)
 		{
 			/* FIXME: What warning/GError here? */
@@ -356,7 +357,7 @@ rsvg_render_bpath (RsvgDrawingCtx *ctx, const ArtBpath *bpath)
 	art_free (affine_bpath);
 	
 	need_tmpbuf = ((state->fill != NULL) && (state->stroke != NULL) &&
-				   state->opacity != 0xff) || rsvg_needs_discrete_layer(state);
+				   state->opacity != 0xff) || rsvg_art_needs_discrete_layer(state);
 	
 	if (need_tmpbuf)
 		rsvg_push_discrete_layer (ctx);
@@ -499,7 +500,7 @@ rsvg_render_markers(RsvgBpathDef * bpath_def, RsvgDrawingCtx *ctx)
 }
 
 void
-rsvg_render_path(RsvgDrawingCtx *ctx, const char *d)
+rsvg_art_render_path(RsvgDrawingCtx *ctx, const char *d)
 {
 	RsvgBpathDef *bpath_def;
 	
@@ -513,17 +514,26 @@ rsvg_render_path(RsvgDrawingCtx *ctx, const char *d)
 	rsvg_bpath_def_free (bpath_def);
 }
 
-ArtSVP *
-rsvg_render_path_as_svp(RsvgDrawingCtx *ctx, const char *d)
+void
+rsvg_art_svp_render_path (RsvgDrawingCtx *ctx, const char *d)
 {
 	RsvgBpathDef *bpath_def;
-	ArtSVP * output;
-	
+	RsvgArtSVPRender *render = (RsvgArtSVPRender *)ctx->render;
+	ArtSVP *svp2, *svp3;
+
 	bpath_def = rsvg_parse_path (d);
 	rsvg_bpath_def_art_finish (bpath_def);
 	
-	output = rsvg_render_bpath_into_svp (ctx, bpath_def->bpath);
+	svp2 = 	rsvg_render_bpath_into_svp (ctx, bpath_def->bpath);
+
+	if (render->outline != NULL)
+		{
+			svp3 = art_svp_union(svp2, render->outline);
+			art_free(render->outline);
+			render->outline = svp3;
+		}
+	else
+		render->outline = svp2;
 
 	rsvg_bpath_def_free (bpath_def);
-	return output;
 }

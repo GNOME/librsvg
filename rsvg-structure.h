@@ -55,8 +55,6 @@ struct _RsvgDefsDrawable {
 	RsvgState  state;
 	RsvgDefsDrawable * parent;
 	void (*draw) (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, int dominate);
-	ArtSVP * (*draw_as_svp) (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
-				 int dominate);
 };
 
 
@@ -97,9 +95,6 @@ void rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self,
 
 void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
 			      int dominate);
-ArtSVP * rsvg_defs_drawable_draw_as_svp (RsvgDefsDrawable * self, 
-					 RsvgDrawingCtx *ctx, 
-					 int dominate);
 
 G_END_DECLS
 

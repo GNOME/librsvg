@@ -4,8 +4,8 @@
    libart backend
 
    Copyright (C) 2000 Eazel, Inc.
-   Copyright (C) 2002, 2003, 2004, 2005 Dom Lachowicz <cinamod@hotmail.com>
-   Copyright (C) 2003, 2004, 2005 Caleb Moore <c.moore@student.unsw.edu.au>
+   Copyright (C) 2002 - 2005 Dom Lachowicz <cinamod@hotmail.com>
+   Copyright (C) 2003 - 2005 Caleb Moore <c.moore@student.unsw.edu.au>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as
@@ -34,9 +34,9 @@
 
 G_BEGIN_DECLS
 
-void rsvg_pop_discrete_layer(RsvgDrawingCtx *ctx);
-void rsvg_push_discrete_layer (RsvgDrawingCtx *ctx);
-gboolean rsvg_needs_discrete_layer(RsvgState *state);
+void rsvg_art_pop_discrete_layer(RsvgDrawingCtx *ctx);
+void rsvg_art_push_discrete_layer (RsvgDrawingCtx *ctx);
+gboolean rsvg_art_needs_discrete_layer(RsvgState *state);
 
 void
 rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,

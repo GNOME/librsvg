@@ -46,6 +46,9 @@
 #include "rsvg-path.h"
 #include "rsvg-paint-server.h"
 
+#include "rsvg-art-render.h"
+#include "rsvg-art-draw.h"
+
 #ifdef HAVE_SVGZ
 #include <gsf/gsf-utils.h>
 #endif
@@ -1671,13 +1674,14 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 			return NULL;
 		}
 	memset (pixels, 0, rowstride * new_height);
-	draw->pixbuf = gdk_pixbuf_new_from_data (pixels,
-											 GDK_COLORSPACE_RGB,
-											 TRUE, 8,
-											 new_width, new_height,
-											 rowstride,
-											 rsvg_pixmap_destroy,
-											 NULL);
+	draw->render = (RsvgRender *) rsvg_art_render_new
+		(gdk_pixbuf_new_from_data (pixels,
+								   GDK_COLORSPACE_RGB,
+								   TRUE, 8,
+								   new_width, new_height,
+								   rowstride,
+								   rsvg_pixmap_destroy,
+								   NULL));
 	draw->defs = handle->defs;
 	draw->base_uri = g_strdup(handle->base_uri);
 	draw->dpi_x = handle->dpi_x;
@@ -1902,7 +1906,7 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 		return NULL;
 
 	rsvg_defs_drawable_draw((RsvgDefsDrawable *)handle->treebase, draw, 0);
-	output = draw->pixbuf;
+	output = ((RsvgArtRender *)draw->render)->pixbuf;
 	rsvg_drawing_ctx_free(draw);
 	
 	return output;
@@ -1961,4 +1965,17 @@ rsvg_term (void)
 #endif
 
 	xmlCleanupParser ();
+}
+
+void rsvg_pop_discrete_layer(RsvgDrawingCtx *ctx)
+{
+	ctx->render->pop_discrete_layer(ctx);
+}
+void rsvg_push_discrete_layer (RsvgDrawingCtx *ctx)
+{
+	ctx->render->push_discrete_layer(ctx);
+}
+void rsvg_render_path (RsvgDrawingCtx *ctx, const char *d)
+{
+	ctx->render->render_path(ctx, d);
 }

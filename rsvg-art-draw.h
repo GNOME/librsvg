@@ -31,8 +31,8 @@
 
 G_BEGIN_DECLS
 
-void rsvg_render_path (RsvgDrawingCtx *ctx, const char *d);
-ArtSVP * rsvg_render_path_as_svp(RsvgDrawingCtx *ctx, const char *d);
+void rsvg_art_render_path (RsvgDrawingCtx *ctx, const char *d);
+void rsvg_art_svp_render_path (RsvgDrawingCtx *ctx, const char *d);
 
 G_END_DECLS
 

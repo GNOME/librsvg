@@ -28,6 +28,7 @@
 #include "rsvg-paint-server.h"
 #include "rsvg-styles.h"
 #include "rsvg-image.h"
+#include "rsvg-art-render.h"
 
 #include <glib/gmem.h>
 #include <glib/gmessages.h>
@@ -519,6 +520,7 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 	RsvgPattern *pattern = z->pattern;
 	RsvgDefsDrawable *drawable = (RsvgDefsDrawable *)pattern->g;
 	RsvgDrawingCtx *hctx = ctx->ctx;
+	GdkPixbuf *pixbuf = ((RsvgArtRender *)hctx->render)->pixbuf; 
 	double affine[6];
 	double caffine[6];
 	int i, j;
@@ -601,17 +603,17 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 		xoffset = -minx;
 	if (miny < 0)
 		yoffset = -miny;
-	if (maxx > gdk_pixbuf_get_width(hctx->pixbuf))
+	if (maxx > gdk_pixbuf_get_width(pixbuf))
 		xoffset = -minx;
-	if (maxy > gdk_pixbuf_get_height(hctx->pixbuf))
+	if (maxy > gdk_pixbuf_get_height(pixbuf))
 		yoffset = -maxy;	
 
 	render = _rsvg_pixbuf_new_cleared(GDK_COLORSPACE_RGB, 1, 8, 
-									  gdk_pixbuf_get_width(hctx->pixbuf), 
-									  gdk_pixbuf_get_height(hctx->pixbuf));
-	save = hctx->pixbuf;
+									  gdk_pixbuf_get_width(pixbuf), 
+									  gdk_pixbuf_get_height(pixbuf));
+	save = pixbuf;
 
-	hctx->pixbuf = render;
+	((RsvgArtRender *)hctx->render)->pixbuf = render;
 
 	rsvg_state_push(ctx->ctx);
 	
@@ -632,7 +634,7 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 
 	rsvg_state_pop(ctx->ctx);
 
-  	hctx->pixbuf = save;
+  	((RsvgArtRender *)hctx->render)->pixbuf = save;
 
 	render_image_pattern (ar, gdk_pixbuf_get_pixels (render),
 						  pattern->x, pattern->y, 

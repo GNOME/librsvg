@@ -64,8 +64,6 @@
 #include "rsvg-image.h"
 #include "rsvg-art-draw.h"
 
-#include <libart_lgpl/art_svp_intersect.h>
-#include <libart_lgpl/art_svp_ops.h>
 #include <libart_lgpl/art_affine.h>
 
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
@@ -96,18 +94,6 @@ rsvg_defs_drawable_path_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 	
 }
 
-static ArtSVP *
-rsvg_defs_drawable_path_draw_as_svp (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx, 
-									 int dominate)
-{
-	RsvgDefsDrawablePath *path = (RsvgDefsDrawablePath*)self;
-
-	rsvg_state_reinherit_top(ctx,  &self->state, dominate);
-
-	return rsvg_render_path_as_svp (ctx, path->d);
-	
-}
-
 void
 rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id, RsvgState state)
 {
@@ -119,7 +105,6 @@ rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id, RsvgState st
 	path->super.super.type = RSVG_DEF_PATH;
 	path->super.super.free = rsvg_defs_drawable_path_free;
 	path->super.draw = rsvg_defs_drawable_path_draw;
-	path->super.draw_as_svp = rsvg_defs_drawable_path_draw_as_svp;
 	rsvg_defs_set (ctx->defs, id, &path->super.super);
 	
 	path->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;

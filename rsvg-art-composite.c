@@ -29,6 +29,7 @@
 #include <string.h>
 
 #include "rsvg-art-composite.h"
+#include "rsvg-art-render.h"
 #include "rsvg-styles.h"
 #include "rsvg-structure.h"
 #include "rsvg-filter.h"
@@ -43,15 +44,16 @@ rsvg_pixmap_destroy (gchar *pixels, gpointer data)
 }
 
 void
-rsvg_push_discrete_layer (RsvgDrawingCtx *ctx)
+rsvg_art_push_discrete_layer (RsvgDrawingCtx *ctx)
 {
 	RsvgState *state;
 	GdkPixbuf *pixbuf;
+	RsvgArtRender *render = (RsvgArtRender *)ctx->render;
 	art_u8 *pixels;
 	int width, height, rowstride;
 
 	state = rsvg_state_current(ctx);
-	pixbuf = ctx->pixbuf;
+	pixbuf = render->pixbuf;
 
 	rsvg_state_clip_path_assure(ctx);
 
@@ -93,7 +95,7 @@ rsvg_push_discrete_layer (RsvgDrawingCtx *ctx)
 									   rowstride,
 									   (GdkPixbufDestroyNotify)rsvg_pixmap_destroy,
 									   NULL);
-	ctx->pixbuf = pixbuf;
+	render->pixbuf = pixbuf;
 }
 
 static void
@@ -175,6 +177,7 @@ get_next_out(gint * operationsleft, GdkPixbuf * in, GdkPixbuf * tos,
 static GdkPixbuf *
 rsvg_compile_bg(RsvgDrawingCtx *ctx, RsvgState *topstate)
 {
+	RsvgArtRender *render = (RsvgArtRender *)ctx->render;
 	int i, foundstate;
 	GdkPixbuf *intermediate, *lastintermediate;
 	RsvgState *state, *lastvalid;
@@ -190,8 +193,8 @@ rsvg_compile_bg(RsvgDrawingCtx *ctx, RsvgState *topstate)
 
 	ctx->bbox.x0 = 0;
 	ctx->bbox.y0 = 0;
-	ctx->bbox.x1 = gdk_pixbuf_get_width(ctx->pixbuf);
-	ctx->bbox.y1 = gdk_pixbuf_get_height(ctx->pixbuf);
+	ctx->bbox.x1 = gdk_pixbuf_get_width(render->pixbuf);
+	ctx->bbox.y1 = gdk_pixbuf_get_height(render->pixbuf);
 
 	for (i = 0; (state = g_slist_nth_data(ctx->state, i)) != NULL; i++)
 		{
@@ -307,10 +310,11 @@ rsvg_composite_layer(RsvgDrawingCtx *ctx, RsvgState *state, GdkPixbuf *tos, GdkP
  **/
 
 void
-rsvg_pop_discrete_layer(RsvgDrawingCtx *ctx)
+rsvg_art_pop_discrete_layer(RsvgDrawingCtx *ctx)
 {
 	GdkPixbuf *tos, *nos;
 	RsvgState *state;
+	RsvgArtRender *render = (RsvgArtRender *)ctx->render;
 
 	state = rsvg_state_current(ctx);
 
@@ -318,19 +322,19 @@ rsvg_pop_discrete_layer(RsvgDrawingCtx *ctx)
 		!state->backgroundnew && state->mask == NULL && !state->adobe_blend)
 		return;
 
-	tos = ctx->pixbuf;
+	tos = render->pixbuf;
 	nos = state->save_pixbuf;
 	
 	if (nos != NULL)
 		rsvg_composite_layer(ctx, state, tos, nos);
 	
 	g_object_unref (tos);
-	ctx->pixbuf = nos;
+	render->pixbuf = nos;
 	art_irect_union(&ctx->bbox, &ctx->bbox, &state->underbbox);
 }
 
 gboolean
-rsvg_needs_discrete_layer(RsvgState *state)
+rsvg_art_needs_discrete_layer(RsvgState *state)
 {
 	return state->filter || state->mask || state->adobe_blend || state->backgroundnew;
 }

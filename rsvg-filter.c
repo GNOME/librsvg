@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include <math.h>
+#include <rsvg-art-render.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -3949,8 +3950,8 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
 	
 	img = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, context->width, context->height);
 	
-	save = ctx->pixbuf;
-	ctx->pixbuf = img;
+	save = ((RsvgArtRender *)ctx->render)->pixbuf;
+	((RsvgArtRender *)ctx->render)->pixbuf = img;
 
 	for (i = 0; i < 6; i++)
 		rsvg_state_current(ctx)->affine[i] = context->paffine[i];
@@ -3961,7 +3962,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
 	
 	rsvg_state_pop(ctx);
 		
-	ctx->pixbuf = save;
+	((RsvgArtRender *)ctx->render)->pixbuf = save;
 	return img;
 }
 
