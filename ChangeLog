@@ -1,3 +1,7 @@
+2005-01-18  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Bump version number
+	
 2005-01-13  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.c: bug 163886/163947, from John Spray <jcs116@york.ac.uk>
