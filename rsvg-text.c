@@ -36,7 +36,7 @@
 
 #include "rsvg-shapes.h"
 
-#define NO_VECTOR_TEXT
+/* #define NO_VECTOR_TEXT */
 
 char *
 make_valid_utf8 (const char *str)

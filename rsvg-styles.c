@@ -427,7 +427,7 @@ rsvg_css_define_style (RsvgHandle *ctx, const char * style_name, const char * st
 
 #ifdef HAVE_LIBCROCO
 
-#include <libcroco.h>
+#include <libcroco/libcroco.h>
 
 typedef struct _CSSUserData
 {
