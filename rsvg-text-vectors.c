@@ -37,6 +37,11 @@
 
 #include "rsvg-shapes.h"
 
+void 
+rsvg_text_render_text (RsvgHandle *ctx,
+					   RsvgState  *state,
+					   const char *text);
+
 typedef struct _RsvgTextLayout RsvgTextLayout;
 
 struct _RsvgTextLayout
@@ -69,26 +74,23 @@ typedef void (* RsvgTextRenderFunc) (PangoFont  *font,
 #define FT_LOAD_TARGET_MONO FT_LOAD_MONOCHROME
 #endif
 
-void
-rsvg_text_layout_render (RsvgTextLayout     *layout,
-						 RsvgTextRenderFunc  render_func,
-						 gpointer            render_data);
+static RenderCtx *
+rsvg_render_ctx_new (void)
+{
+	RenderCtx *ctx;
+	
+	ctx = g_new0 (RenderCtx, 1);
+	ctx->path = g_string_new (NULL);
+	
+	return ctx;
+}
 
-void
-rsvg_text_layout_free(RsvgTextLayout * layout);
-
-RsvgTextLayout *
-rsvg_text_layout_new (RsvgHandle *ctx,
-					  RsvgState *state,
-					  const char *text);
-
-void
-rsvg_text_render_vectors (PangoFont     *font,
-						  PangoGlyph     pango_glyph,
-						  FT_Int32       flags,
-						  gint           x,
-						  gint           y,
-						  RenderCtx     *context);
+static void
+rsvg_render_ctx_free(RenderCtx *ctx)
+{
+	g_string_free(ctx->path, TRUE);
+	g_free(ctx);
+}
 
 static void
 rsvg_text_ft2_subst_func (FcPattern *pattern,
@@ -101,7 +103,9 @@ rsvg_text_ft2_subst_func (FcPattern *pattern,
 	FcPatternAddBool (pattern, FC_AUTOHINT,  ctx->txt_autohint);
 	FcPatternAddBool (pattern, FC_ANTIALIAS, ctx->txt_antialias);
 #else
+	FcPatternAddBool (pattern, FC_HINTING, 0);
 	FcPatternAddBool (pattern, FC_ANTIALIAS, 1);
+	FcPatternAddBool (pattern, FC_AUTOHINT, 0);	
 #endif
 }
 
@@ -126,14 +130,14 @@ rsvg_text_get_pango_context (RsvgHandle *ctx)
 	return context;
 }
 
-void
+static void
 rsvg_text_layout_free(RsvgTextLayout * layout)
 {
 	g_object_unref(G_OBJECT(layout->layout));
 	g_free(layout);
 }
 
-RsvgTextLayout *
+static RsvgTextLayout *
 rsvg_text_layout_new (RsvgHandle *ctx,
 					  RsvgState *state,
 					  const char *text)
@@ -202,12 +206,12 @@ rsvg_text_layout_get_offsets (RsvgTextLayout *layout,
 static FT_Int32
 rsvg_text_layout_render_flags (RsvgTextLayout *layout)
 {
-	RsvgHandle *ctx;
 	gint flags;
 	
-	ctx = layout->ctx;
-	
 #if 0
+	RsvgHandle *ctx;
+	ctx = layout->ctx;
+
 	if (ctx->txt_antialias)
 		flags = FT_LOAD_NO_BITMAP;
 	else
@@ -286,15 +290,33 @@ rsvg_text_layout_render_line (RsvgTextLayout     *layout,
 		}
 }
 
+static void
+rsvg_text_vector_coords (RenderCtx       *ctx,
+						 const FT_Vector *vector,
+						 gdouble         *x,
+						 gdouble         *y)
+{
+	*x = ctx->offset_x + (gdouble)vector->x / 64.0;
+	*y = ctx->offset_y + (gdouble)vector->y / 64.0;
+}
+
 static gint
 moveto (FT_Vector *to,
 		gpointer   data)
 {
 	RenderCtx * ctx;
-
+	gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+	gdouble x, y;
+	
 	ctx = (RenderCtx *)data;
-
-	/* TODO */
+	
+	g_string_append(ctx->path, " m");
+	
+	rsvg_text_vector_coords(ctx, to, &x, &y);
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), x));
+	g_string_append_c(ctx->path, ',');
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), y));
+	
 	return 0;
 }
 
@@ -303,10 +325,18 @@ lineto (FT_Vector *to,
 		gpointer   data)
 {
 	RenderCtx * ctx;
-
+	gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+	gdouble x, y;
+	
 	ctx = (RenderCtx *)data;
-
-	/* TODO */
+	
+	g_string_append(ctx->path, " l");
+	
+	rsvg_text_vector_coords(ctx, to, &x, &y);
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), x));
+	g_string_append_c(ctx->path, ',');
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), y));
+	
 	return 0;
 }
 
@@ -316,10 +346,24 @@ conicto (FT_Vector *ftcontrol,
 		 gpointer   data)
 {
 	RenderCtx * ctx;
-
+	gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+	gdouble x, y;
+	
 	ctx = (RenderCtx *)data;
 
-	/* TODO */
+	g_string_append(ctx->path, " q");
+	
+	rsvg_text_vector_coords(ctx, ftcontrol, &x, &y);
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), x));
+	g_string_append_c(ctx->path, ',');
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), y));
+	
+	rsvg_text_vector_coords(ctx, to, &x, &y);
+	g_string_append_c(ctx->path, ' ');
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), x));
+	g_string_append_c(ctx->path, ',');
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), y));
+	
 	return 0;
 }
 
@@ -330,20 +374,40 @@ cubicto (FT_Vector *ftcontrol1,
 		 gpointer   data)
 {
 	RenderCtx * ctx;
-
+	gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+	gdouble x, y;
+	
 	ctx = (RenderCtx *)data;
-
-	/* TODO */
+	
+	g_string_append(ctx->path, " c");
+	
+	rsvg_text_vector_coords(ctx, ftcontrol1, &x, &y);
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), x));
+	g_string_append_c(ctx->path, ',');
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), y));
+	
+	rsvg_text_vector_coords(ctx, ftcontrol2, &x, &y);
+	g_string_append_c(ctx->path, ' ');
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), x));
+	g_string_append_c(ctx->path, ',');
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), y));
+	
+	rsvg_text_vector_coords(ctx, to, &x, &y);
+	g_string_append_c(ctx->path, ' ');
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), x));
+	g_string_append_c(ctx->path, ',');
+	g_string_append(ctx->path, g_ascii_dtostr(buf, sizeof(buf), y));
+	
 	return 0;
 }
 
-void
+static void
 rsvg_text_render_vectors (PangoFont     *font,
 						  PangoGlyph     pango_glyph,
 						  FT_Int32       flags,
 						  gint           x,
 						  gint           y,
-						  RenderCtx     *context)
+						  gpointer       ud)
 {
 	static const FT_Outline_Funcs outline_funcs =
 		{
@@ -357,6 +421,8 @@ rsvg_text_render_vectors (PangoFont     *font,
 	
 	FT_Face   face;
 	FT_Glyph  glyph;
+	
+	RenderCtx *context = (RenderCtx *)ud;
 	
 	face = pango_ft2_font_get_face (font);
 	
@@ -372,20 +438,20 @@ rsvg_text_render_vectors (PangoFont     *font,
 			context->offset_y = (gdouble) y / PANGO_SCALE;
 			
 			FT_Outline_Decompose (&outline_glyph->outline, &outline_funcs, context);
+			
+			g_string_append(context->path, " z");
 		}
 	
 	FT_Done_Glyph (glyph);
 }
 
-void
+static void
 rsvg_text_layout_render (RsvgTextLayout     *layout,
 						 RsvgTextRenderFunc  render_func,
 						 gpointer            render_data)
 {
 	PangoLayoutIter *iter;
 	gint             x, y;
-	
-	g_return_if_fail (render_func != NULL);
 	
 	rsvg_text_layout_get_offsets (layout, &x, &y);
 	
@@ -414,4 +480,21 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 	while (pango_layout_iter_next_line (iter));
 	
 	pango_layout_iter_free (iter);
+}
+
+void 
+rsvg_text_render_text (RsvgHandle *ctx,
+					   RsvgState  *state,
+					   const char *text)
+{
+	RsvgTextLayout *layout;
+	RenderCtx      *render;
+	
+	layout = rsvg_text_layout_new (ctx, state, text);
+	render = rsvg_render_ctx_new ();
+	
+	rsvg_text_layout_render (layout, rsvg_text_render_vectors, render);
+	
+	rsvg_render_ctx_free (render);
+	rsvg_text_layout_free (layout);
 }
