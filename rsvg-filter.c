@@ -533,9 +533,7 @@ rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
 RsvgFilter *
 rsvg_filter_parse (const RsvgDefs * defs, const char *str)
 {
-	if (!strcmp (str, "none"))
-		return NULL;	
-	else if (!strncmp (str, "url(", 4))
+	if (!strncmp (str, "url(", 4))
 		{
 			const char *p = str + 4;
 			int ix;
@@ -544,25 +542,26 @@ rsvg_filter_parse (const RsvgDefs * defs, const char *str)
 			
 			while (g_ascii_isspace (*p))
 				p++;
-			if (*p != '#')
-				return NULL;
-			p++;
-			for (ix = 0; p[ix]; ix++)
-				if (p[ix] == ')')
-					break;
-			if (p[ix] != ')')
-				return NULL;
-			name = g_strndup (p, ix);
-			val = rsvg_defs_lookup (defs, name);
-			g_free (name);
-			if (val == NULL)
-				return NULL;
-			
-			if (val->type == RSVG_DEF_FILTER)
-				return (RsvgFilter *) val;
-			return NULL;
-		}
 
+			if (*p == '#')
+				{
+					p++;
+					for (ix = 0; p[ix]; ix++)
+						if (p[ix] == ')')
+							break;
+
+					if (p[ix] == ')')
+						{
+							name = g_strndup (p, ix);
+							val = rsvg_defs_lookup (defs, name);
+							g_free (name);
+							
+							if (val && val->type == RSVG_DEF_FILTER)
+								return (RsvgFilter *) val;
+						}
+				}
+		}
+	
 	return NULL;
 }
 
@@ -630,11 +629,7 @@ rsvg_start_filter (RsvgHandle * ctx, const xmlChar ** atts)
 	RsvgFilter *filter;
 	double font_size;
 	
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
-	
+	font_size = rsvg_state_current_font_size (ctx);
 	filter = rsvg_new_filter ();
 	
 	if (atts != NULL)
@@ -643,10 +638,10 @@ rsvg_start_filter (RsvgHandle * ctx, const xmlChar ** atts)
 				{
 					if (!strcmp ((char *) atts[i], "filterUnits"))
 						{
-						if (!strcmp ((char *) atts[i], "userSpaceOnUse"))
-							filter->filterunits = userSpaceOnUse;
-						else
-							filter->filterunits = objectBoundingBox;
+							if (!strcmp ((char *) atts[i], "userSpaceOnUse"))
+								filter->filterunits = userSpaceOnUse;
+							else
+								filter->filterunits = objectBoundingBox;
 						}
 					else if (!strcmp ((char *) atts[i], "primitiveUnits"))
 						{
@@ -728,7 +723,7 @@ struct _RsvgFilterPrimitiveBlend
 
 static void
 rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
-				    RsvgFilterContext * ctx)
+									RsvgFilterContext * ctx)
 {
 	guchar i;
 	gint x, y;
@@ -829,14 +824,10 @@ rsvg_start_filter_primitive_blend (RsvgHandle * ctx, const xmlChar ** atts)
 	double font_size;
 	RsvgFilterPrimitiveBlend *filter;
 	
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
-	
+	font_size = rsvg_state_current_font_size (ctx);
+
 	filter = g_new (RsvgFilterPrimitiveBlend, 1);
 	filter->mode = normal;
-	
 	filter->super.in = g_string_new ("none");
 	filter->in2 = g_string_new ("none");
 	filter->super.result = g_string_new ("none");
@@ -1059,10 +1050,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 	double font_size;
 	RsvgFilterPrimitiveConvolveMatrix *filter;
 	
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
+	font_size = rsvg_state_current_font_size (ctx);
 	
 	filter = g_new (RsvgFilterPrimitiveConvolveMatrix, 1);
 	
@@ -1430,8 +1418,6 @@ fast_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sx,
 	intermediate2 = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
 									gdk_pixbuf_get_width (in),
 									gdk_pixbuf_get_height (in));
-	
-
 
 	box_blur (in, intermediate2, intermediate1, kx, 
 			  ky, boundarys);
@@ -1480,7 +1466,6 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self,
 				   sdy, boundarys);
 #endif
 
-
 	rsvg_filter_store_result (self->result, output, ctx);
 	
 	g_object_unref (G_OBJECT (in));
@@ -1507,10 +1492,7 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle * ctx,
 	double font_size;
 	RsvgFilterPrimitiveGaussianBlur *filter;
 
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
+	font_size = rsvg_state_current_font_size (ctx);
 	
 	filter = g_new (RsvgFilterPrimitiveGaussianBlur, 1);
 
@@ -1666,10 +1648,7 @@ rsvg_start_filter_primitive_offset (RsvgHandle * ctx, const xmlChar ** atts)
 	double font_size;
 	RsvgFilterPrimitiveOffset *filter;
 	
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
+	font_size = rsvg_state_current_font_size (ctx);
 	
 	filter = g_new (RsvgFilterPrimitiveOffset, 1);
 	
@@ -1810,11 +1789,8 @@ rsvg_start_filter_primitive_merge (RsvgHandle * ctx, const xmlChar ** atts)
 	double font_size;
 	RsvgFilterPrimitiveMerge *filter;
 	
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
-	
+	font_size = rsvg_state_current_font_size (ctx);
+
 	filter = g_new (RsvgFilterPrimitiveMerge, 1);
 	
 	filter->super.result = g_string_new ("none");
@@ -1993,10 +1969,7 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 	double font_size;
 	RsvgFilterPrimitiveColourMatrix *filter;
 	
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
+	font_size = rsvg_state_current_font_size (ctx);
 	
 	filter = g_new (RsvgFilterPrimitiveColourMatrix, 1);
 	
@@ -2360,10 +2333,7 @@ rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
 		double font_size;
 	RsvgFilterPrimitiveComponentTransfer *filter;
 	
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
+	font_size = rsvg_state_current_font_size (ctx);
 	
 	filter = g_new (RsvgFilterPrimitiveComponentTransfer, 1);
 	
@@ -2628,10 +2598,7 @@ rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 	double font_size;
 	RsvgFilterPrimitiveErode *filter;
 
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
+	font_size = rsvg_state_current_font_size (ctx);
 	
 	filter = g_new (RsvgFilterPrimitiveErode, 1);
 

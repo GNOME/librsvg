@@ -120,6 +120,7 @@ void rsvg_push_opacity_group (RsvgHandle *ctx);
 gboolean rsvg_parse_transform (double dst[6], const char *src);
 
 RsvgState * rsvg_state_current (RsvgHandle *ctx);
+double rsvg_state_current_font_size (RsvgHandle *ctx);
 
 G_END_DECLS
 

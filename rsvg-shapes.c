@@ -491,10 +491,7 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 	double font_size;
 
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
+	font_size = rsvg_state_current_font_size (ctx);
 
 	if (atts != NULL)
 		{
@@ -543,10 +540,7 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	gboolean got_rx = FALSE, got_ry = FALSE;
 	double font_size;
 
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
+	font_size = rsvg_state_current_font_size (ctx);
 
 	if (atts != NULL)
 		{
@@ -686,10 +680,7 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 	double font_size;
 	
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
+	font_size = rsvg_state_current_font_size (ctx);
 
 	if (atts != NULL)
 		{
@@ -790,10 +781,7 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 	double font_size;
 	
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
+	font_size = rsvg_state_current_font_size (ctx);
 
 	if (atts != NULL)
 		{

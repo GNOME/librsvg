@@ -1070,3 +1070,12 @@ rsvg_state_current (RsvgHandle *ctx)
 		return &ctx->state[ctx->n_state - 1];
 	return NULL;
 }
+
+double
+rsvg_state_current_font_size (RsvgHandle *ctx)
+{
+	if (ctx->n_state > 0)
+		return ctx->state[ctx->n_state - 1].font_size;
+	else
+		return 12.0;
+}
