@@ -734,7 +734,9 @@ strtok_r(char *s, const char *delim, char **last)
 gchar **
 rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 {
-#if GLIB_CHECK_VERSION(2, 3, 2)
+
+	/*the following code is defective because it creates blank entries when two splitting chars are next to each other*/
+#if 0//GLIB_CHECK_VERSION(2, 3, 2)
 
 	gchar ** string_array;
 	guint n;
@@ -752,7 +754,7 @@ rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 #else
 
 	char *ptr, *tok;
-	char *str;
+	char *str, *tmp;
 
 	guint n = 0;
 	GSList * string_list = NULL;
@@ -761,12 +763,20 @@ rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 	str = g_strdup (in_str);
     tok = strtok_r (str, ", \t", &ptr);
 	if (tok != NULL) {
-		string_list = g_slist_prepend(string_list, g_strdup(tok));
-		n++;
+		tmp = g_strdup(tok);
+		if (strcmp(tmp, " "))
+			{
+				string_list = g_slist_prepend(string_list, tmp);
+				n++;
+			}
 
 		while((tok = strtok_r (NULL, ", \t", &ptr)) != NULL) {
-			string_list = g_slist_prepend(string_list, g_strdup(tok));
-			n++;
+			tmp = g_strdup(tok);
+			if (strcmp(tmp, " "))
+				{
+					string_list = g_slist_prepend(string_list, tmp);
+					n++;
+				}
 		}
 	}
 	g_free (str);
@@ -810,7 +820,7 @@ rsvg_css_parse_number_list(const char * in_str, guint * out_list_len){
 	/* TODO: some error checking */
 	for (i = 0; i < len; i++)
 		output[i] = g_ascii_strtod(string_array[i], NULL);
-
+	
 	g_strfreev(string_array);
 
 	if (out_list_len != NULL)

@@ -195,6 +195,7 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 	gradctx.y0 = temprect.y0;
 	gradctx.x1 = temprect.x1;
 	gradctx.y1 = temprect.y1;
+	gradctx.ctx = ctx;
 
 	state = rsvg_state_current(ctx);
 	for (i = 0; i < 6; i++)
@@ -376,12 +377,28 @@ rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 	RsvgState *state = rsvg_state_current (ctx);
 	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
 	guint i;
+	double tempaffine[6];
+
+	for (i = 0; i < 6; i++)
+		{
+			 tempaffine[i] = ctx->state[ctx->n_state - 1].affine[i];
+		}	
 
 	/* combine state definitions */
 	rsvg_state_clone (state, &self->state);
 	if (ctx->n_state > 1)
 		{
-			if (dominate)
+			/*This is a special domination mode for patterns, the style
+			  is simply reinherited, wheras the transform is totally overridden*/
+			if (dominate == 2)
+				{
+					rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
+					for (i = 0; i < 6; i++)
+						{
+							state->affine[i] = tempaffine[i];
+						}	
+				}		
+			else if (dominate)
 				rsvg_state_dominate(state, &ctx->state[ctx->n_state - 2]);
 			else
 				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
@@ -401,7 +418,7 @@ rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 			else
 				rsvg_state_init (ctx->state);
 			ctx->n_state++;
-			
+
 			rsvg_defs_drawable_draw (g_ptr_array_index(group->children, i), 
 									 ctx, 0);
 	
@@ -471,12 +488,13 @@ rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawable *ch
 	g_ptr_array_add(z->children, child);
 }
 
-void
+
+RsvgDefsDrawable * 
 rsvg_push_def_group (RsvgHandle *ctx, const char * id)
 {
 	RsvgDefsDrawableGroup *group;
 	if (!ctx->in_defs)
-		return;	
+		return NULL;	
 
 	group = g_new (RsvgDefsDrawableGroup, 1);
 	group->children = g_ptr_array_new();
@@ -493,6 +511,7 @@ rsvg_push_def_group (RsvgHandle *ctx, const char * id)
 		rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)group->super.parent, 
 									  &group->super);
 	ctx->current_defs_group = group;
+	return &group->super;
 }
 
 void

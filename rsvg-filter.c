@@ -2158,7 +2158,7 @@ rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self,
 								sum += cself->KernelMatrix[ch * 5 + i] *
 									in_pixels[4 * x + y * rowstride + i];
 							}
-						sum += cself->KernelMatrix[ch * 5 + 4];
+						sum += cself->KernelMatrix[ch * 5 + 4] * 255;
 						
 						tempresult = sum;
 						if (tempresult > 255)

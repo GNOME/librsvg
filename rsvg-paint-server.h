@@ -36,6 +36,7 @@ typedef struct _RsvgGradientStop RsvgGradientStop;
 typedef struct _RsvgGradientStops RsvgGradientStops;
 typedef struct _RsvgLinearGradient RsvgLinearGradient;
 typedef struct _RsvgRadialGradient RsvgRadialGradient;
+typedef struct _RsvgPattern RsvgPattern;
 
 typedef struct _RsvgPaintServer RsvgPaintServer;
 
@@ -49,6 +50,7 @@ struct _RsvgPSCtx {
 
 	guint32 color;
 	double affine[6];
+	RsvgHandle *ctx;
 };
 
 struct _RsvgGradientStop {
@@ -87,6 +89,15 @@ struct _RsvgRadialGradient {
 	gboolean has_current_color;
 };
 
+struct _RsvgPattern {
+	RsvgDefVal super;
+	gboolean obj_cbbox;
+	gboolean obj_bbox;
+	double affine[6]; /* user space to actual at time of gradient def */
+	double x, y, width, height;
+	RsvgDefVal * g;
+};
+
 /* Create a new paint server based on a specification string. */
 RsvgPaintServer *
 rsvg_paint_server_parse (RsvgPaintServer * current, const RsvgDefs *defs, const char *str,
@@ -107,6 +118,9 @@ rsvg_clone_radial_gradient (const RsvgRadialGradient *grad, gboolean * shallow_c
 
 RsvgLinearGradient *
 rsvg_clone_linear_gradient (const RsvgLinearGradient *grad, gboolean * shallow_cloned);
+
+RsvgPattern *
+rsvg_clone_pattern (const RsvgPattern *pattern);
 
 G_END_DECLS
 

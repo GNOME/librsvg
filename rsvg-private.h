@@ -106,6 +106,7 @@ struct RsvgHandle {
 
 void rsvg_linear_gradient_free (RsvgDefVal *self);
 void rsvg_radial_gradient_free (RsvgDefVal *self);
+void rsvg_pattern_free (RsvgDefVal *self);
 
 /* "super"/parent calls */
 void rsvg_handle_init (RsvgHandle * handle);

@@ -26,11 +26,14 @@
 #include "rsvg-private.h"
 #include "rsvg-defs.h"
 #include "rsvg-paint-server.h"
+#include "rsvg-styles.h"
+#include "rsvg-shapes.h"
 
 #include <glib/gmem.h>
 #include <glib/gmessages.h>
 #include <glib/gstrfuncs.h>
 #include <libart_lgpl/art_affine.h>
+#include <libart_lgpl/art_render_mask.h>
 #include <string.h>
 #include <math.h>
 
@@ -39,6 +42,7 @@
 typedef struct _RsvgPaintServerSolid RsvgPaintServerSolid;
 typedef struct _RsvgPaintServerLinGrad RsvgPaintServerLinGrad;
 typedef struct _RsvgPaintServerRadGrad RsvgPaintServerRadGrad;
+typedef struct _RsvgPaintServerPattern RsvgPaintServerPattern;
 
 struct _RsvgPaintServer {
 	int refcnt;
@@ -61,6 +65,11 @@ struct _RsvgPaintServerRadGrad {
 	RsvgPaintServer super;
 	RsvgRadialGradient *gradient;
 	ArtGradientRadial *agr;
+};
+
+struct _RsvgPaintServerPattern {
+	RsvgPaintServer super;
+	RsvgPattern *pattern;
 };
 
 static void
@@ -337,6 +346,215 @@ rsvg_paint_server_rad_grad (RsvgRadialGradient *gradient)
 	return &result->super;
 }
 
+typedef struct {
+	ArtImageSource super;
+	gchar * pixels;
+	gint x, y, width, height;
+	gint realwidth, realheight; 
+	gint rowstride;
+	art_boolean init;
+} RsvgImageSourcePattern;
+
+static void
+render_image_pattern_done (ArtRenderCallback *self, ArtRender *render)
+{
+	RsvgImageSourcePattern *z;
+	z = (RsvgImageSourcePattern *) self;
+	g_free(z->pixels);
+	g_free(self);
+}
+
+#include <libart_lgpl/art_rgb.h>
+#include <libart_lgpl/art_render.h>
+
+static int goodmod(int one, int two)
+{
+	while (one < 0)
+		one += two;
+	return one % two;
+}
+
+static void
+render_image_pattern_render(ArtRenderCallback *self, ArtRender *render,
+				  art_u8 *dest, int y)
+{
+	RsvgImageSourcePattern *z = (RsvgImageSourcePattern *)self;
+	int i;	
+
+	int x0 = render->x0;
+	int x1 = render->x1;
+
+	int sx, sy;
+
+
+	for (i = 0; i < x1 - x0; i += 1)
+		{
+			sx = goodmod((i + x0 + z->x),z->width);
+			sy = goodmod((y + render->y0 + z->y),z->height);
+			if (sx < 0 || sx >= z->realwidth || sy < 0 || sy >= z->realheight)
+				{
+					render->image_buf[i * 4 + 3] = 0;
+					continue;
+				}
+			//printf("%i, %i -> %i, %i\n", i, y, sx, sy);
+			render->image_buf[i * 4] = z->pixels[sx * 4 + z->rowstride * sy];
+			render->image_buf[i * 4 + 1] = z->pixels[sx * 4 + z->rowstride * sy + 1];
+			render->image_buf[i * 4 + 2] = z->pixels[sx * 4 + z->rowstride * sy + 2];
+			render->image_buf[i * 4 + 3] = z->pixels[sx * 4 + z->rowstride * sy + 3];
+		}
+}
+
+static void
+render_image_pattern_negotiate (ArtImageSource *self, ArtRender *render,
+				  ArtImageSourceFlags *p_flags,
+				  int *p_buf_depth, ArtAlphaType *p_alpha)
+{
+	self->super.render = render_image_pattern_render;
+	*p_flags = 0;
+	*p_buf_depth = 8;
+	*p_alpha = ART_ALPHA_SEPARATE;
+}
+
+static void
+render_image_pattern (ArtRender *render, gchar * pixels, gint x, gint y, 
+					  gint width, gint height, gint realwidth, gint realheight, gint rowstride,
+					  double * affine)
+{	
+	RsvgImageSourcePattern *image_source;
+	int i;
+	
+	image_source = art_new (RsvgImageSourcePattern, 1);
+	image_source->super.super.render = NULL;
+	image_source->super.super.done = render_image_pattern_done;
+	image_source->super.negotiate = render_image_pattern_negotiate;
+	
+	image_source->pixels = g_new(gchar, rowstride * realheight);
+	
+	image_source->rowstride = rowstride;
+	image_source->width = width;
+	image_source->height = height;
+	image_source->realwidth = realwidth;
+	image_source->realheight = realheight;
+	image_source->x = x;
+	image_source->y = y;
+		
+	for (i = 0; i < rowstride * realheight; i++)
+		image_source->pixels[i] = pixels[i];  
+	
+	image_source->init = ART_FALSE;
+	
+	art_render_add_image_source (render, &image_source->super);
+}
+
+static void
+rsvg_paint_server_pattern_free (RsvgPaintServer *self)
+{
+	RsvgPaintServerPattern *z = (RsvgPaintServerPattern *)self;
+	g_free (z);
+}
+
+
+static void
+rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
+								   const RsvgPSCtx *ctx)
+{
+	RsvgPaintServerPattern *z = (RsvgPaintServerPattern *)self;
+	RsvgPattern *pattern = z->pattern;
+	RsvgDefsDrawable *drawable = (RsvgDefsDrawable *)pattern->g;
+	RsvgHandle *hctx = ctx->ctx;
+	double affine[6];
+	double caffine[6];
+	int i;
+	GdkPixbuf *save, *render;
+
+	if (pattern->obj_bbox) {
+		affine[0] = ctx->x1 - ctx->x0;
+		affine[1] = 0.;		
+		affine[2] = 0.;
+		affine[3] = ctx->y1 - ctx->y0;
+		affine[4] = ctx->x0;
+		affine[5] = ctx->y0;
+
+	} else {
+		for (i = 0; i < 6; i++)
+			affine[i] = ctx->affine[i];
+	}
+
+	if (pattern->obj_cbbox) {
+		caffine[0] = ctx->x1 - ctx->x0;
+		caffine[1] = 0.;		
+		caffine[2] = 0.;
+		caffine[3] = ctx->y1 - ctx->y0;
+		caffine[4] = ctx->x0;
+		caffine[5] = ctx->y0;
+
+	} else {
+		for (i = 0; i < 6; i++)
+			caffine[i] = ctx->affine[i];
+	}
+
+	art_affine_multiply(affine, pattern->affine, affine);
+
+	render = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+							 gdk_pixbuf_get_width(hctx->pixbuf), 
+							 gdk_pixbuf_get_height(hctx->pixbuf));
+
+	gdk_pixbuf_fill(render, 0x00000000);	
+	save = hctx->pixbuf;
+
+	hctx->pixbuf = render;
+
+	/* push the state stack */
+	if (hctx->n_state == hctx->n_state_max)
+		hctx->state = g_renew (RsvgState, hctx->state, 
+							   hctx->n_state_max <<= 1);
+	if (hctx->n_state)
+		rsvg_state_inherit (&hctx->state[hctx->n_state],
+							&hctx->state[hctx->n_state - 1]);
+	else
+				rsvg_state_init (hctx->state);
+	hctx->n_state++;
+
+	for (i = 0; i < 6; i++)
+		{
+			rsvg_state_current(hctx)->personal_affine[i] = caffine[i];
+			rsvg_state_current(hctx)->affine[i] = caffine[i];
+		}
+
+	rsvg_defs_drawable_draw (drawable, hctx, 2);
+
+	/* pop the state stack */
+	hctx->n_state--;
+	rsvg_state_finalize (&hctx->state[hctx->n_state]);
+
+  	hctx->pixbuf = save;
+
+
+
+	render_image_pattern (ar, gdk_pixbuf_get_pixels (render),
+						  pattern->x * affine[0] + affine[4], 
+						  pattern->y * affine[3] + affine[5], 
+						  pattern->width * affine[0], 
+						  pattern->height * affine[3], 
+						  gdk_pixbuf_get_width (render),
+						  gdk_pixbuf_get_height (render),
+						  gdk_pixbuf_get_rowstride (render), affine);
+}
+
+static RsvgPaintServer *
+rsvg_paint_server_pattern (RsvgPattern *pattern)
+{
+	RsvgPaintServerPattern *result = g_new (RsvgPaintServerPattern, 1);
+	
+	result->super.refcnt = 1;
+	result->super.free = rsvg_paint_server_pattern_free;
+	result->super.render = rsvg_paint_server_pattern_render;
+	
+	result->pattern = pattern;
+	
+	return &result->super;
+}
+
 /**
  * rsvg_paint_server_parse: Parse an SVG paint specification.
  * @defs: Defs for looking up gradients.
@@ -382,6 +600,8 @@ rsvg_paint_server_parse (RsvgPaintServer * current, const RsvgDefs *defs, const 
 					return rsvg_paint_server_lin_grad ((RsvgLinearGradient *)val);
 				case RSVG_DEF_RADGRAD:
 					return rsvg_paint_server_rad_grad ((RsvgRadialGradient *)val);
+				case RSVG_DEF_PATTERN:
+					return rsvg_paint_server_pattern ((RsvgPattern *)val);
 				default:
 					return NULL;
 				}
@@ -526,6 +746,26 @@ rsvg_clone_linear_gradient (const RsvgLinearGradient *grad, gboolean * shallow_c
 	} else {
 		*shallow_cloned = TRUE;
 	}
+
+	return clone;
+}
+
+RsvgPattern *
+rsvg_clone_pattern (const RsvgPattern *pattern)
+{
+	printf("cloneing pattern\n"); 
+	RsvgPattern * clone = NULL;
+	int i;
+	
+	clone = g_new0 (RsvgPattern, 1);
+	clone->super.type = RSVG_DEF_PATTERN;
+	clone->super.free = rsvg_pattern_free;
+	
+	clone->obj_bbox = pattern->obj_bbox;
+	clone->obj_cbbox = pattern->obj_cbbox;
+	for (i = 0; i < 6; i++)
+		clone->affine[i] = pattern->affine[i];
+	printf("cloned\n"); 
 
 	return clone;
 }

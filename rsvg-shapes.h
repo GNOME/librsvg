@@ -31,6 +31,8 @@
 
 G_BEGIN_DECLS
 
+typedef struct _RsvgDefsDrawable RsvgDefsDrawable;
+
 void rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id);
 void rsvg_render_path (RsvgHandle *ctx, const char *d);
 void rsvg_start_path (RsvgHandle *ctx, RsvgPropertyBag *atts);
@@ -43,10 +45,9 @@ void rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts);
 
-void rsvg_push_def_group (RsvgHandle *ctx, const char * id);
+RsvgDefsDrawable * rsvg_push_def_group (RsvgHandle *ctx, const char * id);
 void rsvg_pop_def_group (RsvgHandle *ctx);
 
-typedef struct _RsvgDefsDrawable RsvgDefsDrawable;
 typedef struct _RsvgDefsDrawablePath RsvgDefsDrawablePath;
 typedef struct _RsvgDefsDrawableGroup RsvgDefsDrawableGroup;
 typedef struct _RsvgDefsDrawableUse RsvgDefsDrawableUse;

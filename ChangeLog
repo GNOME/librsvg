@@ -1,13 +1,20 @@
+2004-06-08  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg.c, rsvg-paint-server.c: added pattern support
+	* rsvg-shapes.c: return the value of the new group created when pushing defs groups
+	* rsvg-css.c: fixed problem caused when there are multiple seperating charactors between two elements in a list
+	* rsvg-filter.c: fixed the constant term in colour matricies.
+	
 2004-06-06  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.c: Back out elementNs functions. They're not needed after all.
 	* test-display.c: Save the input SVG to a file. Better printing code - scales nicely, preserves aspect-ratio
 	
-2004-06-05  Caleb Moore <c.moore@student.unsw.edu.au>
+2004-06-07  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-css.c: fixed css to break strings on the LAST colon rather than the fist one. This allows namespaces to work once more!!!
 	
-2004-06-05  Caleb Moore <c.moore@student.unsw.edu.au>
+2004-06-06  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-filter, rsvg-styles.c: added adobe blending modes, still does not work because of namespace issues
 	* rsvg.c: got rid of the whole defs handler thing, it was unnecisarry. Now just use ctx->in_defs for everything.
