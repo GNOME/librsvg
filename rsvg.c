@@ -22,7 +22,6 @@
 */
 
 #include <config.h>
-
 #include "rsvg.h"
 
 #include <string.h>
@@ -937,7 +936,6 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
   memcpy (string, ch + beg, end - beg);
   string[end - beg] = 0;
 
-
 #ifdef VERBOSE
   fprintf (stderr, "text characters(%s, %d)\n", string, len);
 #endif
@@ -950,9 +948,9 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
    * for details.
    */
   fh = rsvg_ft_intern (ctx->ft_ctx,
-		       NAUTILUS_DATADIR "/fonts/urw/n019003l.pfb");
+		       EEL_DATADIR "/fonts/urw/n019003l.pfb");
   rsvg_ft_font_attach (ctx->ft_ctx, fh,
-		       NAUTILUS_DATADIR "/fonts/urw/n019003l.afm");
+		       EEL_DATADIR "/fonts/urw/n019003l.afm");
 
   state = &ctx->state[ctx->n_state - 1];
 
@@ -978,19 +976,25 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 				     state->font_size, state->font_size,
 				     state->affine, glyph_xy);
 
-      rsvg_render_paint_server (render, state->fill, NULL); /* todo: paint server ctx */
-      opacity = state->fill_opacity * state->opacity;
-      opacity = opacity + (opacity >> 7) + (opacity >> 14);
+      if (glyph == NULL)
+	{
+	}
+      else
+	{
+	  rsvg_render_paint_server (render, state->fill, NULL); /* todo: paint server ctx */
+	  opacity = state->fill_opacity * state->opacity;
+	  opacity = opacity + (opacity >> 7) + (opacity >> 14);
 #ifdef VERBOSE
-      fprintf (stderr, "opacity = %d\n", opacity);
+	  fprintf (stderr, "opacity = %d\n", opacity);
 #endif
-      art_render_mask_solid (render, opacity);
-      art_render_mask (render,
-		       glyph_xy[0], glyph_xy[1],
-		       glyph_xy[0] + glyph->width, glyph_xy[1] + glyph->height,
-		       glyph->buf, glyph->rowstride);
-      art_render_invoke (render);
-      rsvg_ft_glyph_unref (glyph);
+	  art_render_mask_solid (render, opacity);
+	  art_render_mask (render,
+			   glyph_xy[0], glyph_xy[1],
+			   glyph_xy[0] + glyph->width, glyph_xy[1] + glyph->height,
+			   glyph->buf, glyph->rowstride);
+	  art_render_invoke (render);
+	  rsvg_ft_glyph_unref (glyph);
+	}
     }
 
   g_free (string);

@@ -55,7 +55,7 @@ INCLUDES =\
 	$(GTK_CFLAGS) \
 	$(XML_CFLAGS) \
 	$(ART_CFLAGS) \
-	-DNAUTILUS_DATADIR="\"/gnome/share/nautilus/\""
+	-DEEL_DATADIR="\"$(datadir)/eel\""
 
 DEPS = $(top_builddir)/librsvg.la
 LDADDS = $(top_builddir)/librsvg.la \
@@ -83,7 +83,6 @@ test_rsvg_SOURCES=test-rsvg.c
 test_rsvg_LDFLAGS =
 test_rsvg_DEPENDENCIES = $(DEPS)
 test_rsvg_LDADD = $(LDADDS) -lm
-
 
 tests:	test-ft-gtk test-ft test-rsvg
 

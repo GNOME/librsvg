@@ -1,3 +1,11 @@
+2001-05-14  Darin Adler  <darin@eazel.com>
+
+	* Makefile.am:
+	* rsvg.c: (rsvg_text_handler_characters):
+	Change awful nasty Nautilus dependency into a slightly-less-awful
+	nasty Eel dependency. Also fix problem where not finding a font
+	would lead to a core dump instead of missing text.
+
 2001-05-04  Robin * Slomkowski  <rslomkow@rslomkow.org>
 
 	* configure.in: upped version to 1.0.0
