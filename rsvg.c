@@ -1226,6 +1226,10 @@ rsvg_start_element (void *data, const xmlChar *name,
 					ctx->in_defs++;
 					rsvg_start_marker (ctx, bag);
 				}
+			else if (!strcmp ((char *)name, "switch"))
+				{
+					ctx->in_switch++;
+				}
 			/* see conicalGradient discussion above */
 			else if (!strcmp ((char *)name, "linearGradient"))
 				rsvg_start_linear_gradient (ctx, bag);
@@ -1283,6 +1287,10 @@ rsvg_end_element (void *data, const xmlChar *name)
 				rsvg_pop_def_group(ctx);
 				ctx->in_defs--;				
 			}
+			else if (!strcmp ((char *)name, "switch"))
+				{
+					ctx->in_switch--;
+				}
 			else if (!strcmp ((char *)name, "pattern")) {
 				ctx->in_defs--;	
 				rsvg_pop_def_group(ctx);

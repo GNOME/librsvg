@@ -1,3 +1,9 @@
+2004-06-18  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.c: Beginnings of <switch> support
+	* rsvg-cond.c, rsvg-private.h, rsvg-shapes.c, rsvg-styles.c,
+	rsvg-styles.h: Ditto
+	
 2004-06-17  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-css.c (rsvg_css_parse_list): Fix memory leak

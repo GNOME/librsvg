@@ -127,6 +127,9 @@ struct _RsvgState {
 	gboolean visible;
 	gboolean has_visible;
 
+	gboolean has_cond;
+	gboolean cond_true;
+
 	ArtVpathDash dash;
 	gboolean has_dash;
 

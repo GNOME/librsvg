@@ -33,8 +33,6 @@
 #include <stdlib.h>
 #include <locale.h>
 
-gboolean rsvg_eval_switch_attributes (RsvgPropertyBag *atts);
-
 static const char * implemented_features [] = 
 	{
 		"http://www.w3.org/TRr/SVG11/feature#BasicText",
@@ -126,12 +124,11 @@ rsvg_cond_parse_required_extensions (const char * value)
 	return permitted;
 }
 
+/* http://www.w3.org/TR/SVG/struct.html#SystemLanguageAttribute */
 static gboolean
 rsvg_locale_compare (const char * a, const char * b)
 {
-	const char * hyphen;
-
-	/* http://www.w3.org/TR/SVG/struct.html#SystemLanguageAttribute */
+	const char * hyphen;	
 
 	/* check for an exact-ish match first */
 	if(!g_ascii_strncasecmp (a, b, strlen(b)))
@@ -193,23 +190,33 @@ rsvg_cond_parse_system_language (const char * value)
 /* returns TRUE if this element should be processed according to <switch> semantics
    http://www.w3.org/TR/SVG/struct.html#SwitchElement */
 gboolean 
-rsvg_eval_switch_attributes (RsvgPropertyBag *atts)
+rsvg_eval_switch_attributes (RsvgPropertyBag *atts, gboolean * p_has_cond)
 {
 	gboolean permitted = TRUE;
+	gboolean has_cond = FALSE;
 
 	if (atts && rsvg_property_bag_size (atts))
 		{
 			const char * value;
 
-			if ((value = rsvg_property_bag_lookup (atts, "requiredFeatures")))
+			if ((value = rsvg_property_bag_lookup (atts, "requiredFeatures"))) {
 				permitted = rsvg_cond_parse_required_features (value);
+				has_cond = TRUE;
+			}
 
-			if (permitted && (value = rsvg_property_bag_lookup (atts, "requiredExtensions")))
+			if (permitted && (value = rsvg_property_bag_lookup (atts, "requiredExtensions"))) {
 				permitted = rsvg_cond_parse_required_extensions (value);
+				has_cond = TRUE;
+			}
 
-			if (permitted && (value = rsvg_property_bag_lookup (atts, "systemLanguage")))
+			if (permitted && (value = rsvg_property_bag_lookup (atts, "systemLanguage"))) {
 				permitted = rsvg_cond_parse_system_language (value);
+				has_cond = TRUE;
+			}
 		}
+
+	if (p_has_cond)
+		*p_has_cond = has_cond;
 
 	return permitted;
 }

@@ -69,6 +69,8 @@ struct RsvgHandle {
 	guint nest_level;
 	void *current_defs_group;
 
+	guint in_switch;
+
 	GHashTable *css_props;
 	
 	/* not a handler stack. each nested handler keeps
@@ -172,6 +174,9 @@ rsvg_handle_get_base_uri (RsvgHandle *handle);
 
 void rsvg_handle_set_base_uri (RsvgHandle *handle,
 							   const char *base_uri);
+
+gboolean 
+rsvg_eval_switch_attributes (RsvgPropertyBag *atts, gboolean * p_has_cond);
 
 G_END_DECLS
 

@@ -38,8 +38,6 @@
 
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
-#define ENABLE_ADOBE_EXTENSIONS 1
-
 static guint32
 rsvg_state_current_color (RsvgState * cur_state, RsvgState * parent_state)
 {
@@ -92,6 +90,7 @@ rsvg_state_init (RsvgState *state)
 	state->unicode_bidi = UNICODE_BIDI_NORMAL;
 	state->text_anchor  = TEXT_ANCHOR_START;
 	state->visible      = TRUE;
+	state->cond_true      = TRUE;
 	state->filter       = NULL;
 	state->startMarker = NULL;
 	state->middleMarker = NULL;
@@ -109,6 +108,7 @@ rsvg_state_init (RsvgState *state)
 	state->has_join = FALSE;
 	state->has_dash = FALSE;
 	state->has_visible = FALSE;
+	state->has_cond = FALSE;
 	state->has_stop_color = FALSE;
 	state->has_stop_opacity = FALSE;
 	state->has_font_size = FALSE;
@@ -186,6 +186,8 @@ rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 		dst->stop_opacity = src->stop_opacity;
 	if (!dst->has_visible)
 		dst->visible = src->visible;
+	if (!dst->has_cond)
+		dst->cond_true = src->cond_true;
 	if (!dst->has_font_size)
 		dst->font_size = src->font_size;
 	if (!dst->has_font_style)
@@ -266,8 +268,8 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 		dst->stop_color = src->stop_color;				
 	if (!dst->has_stop_opacity || src->has_stop_opacity)
 		dst->stop_opacity = src->stop_opacity;
-	if (!dst->has_visible || src->has_visible)
-		dst->visible = src->visible;
+	if (!dst->has_cond || src->has_cond)
+		dst->cond_true = src->cond_true;
 	if (!dst->has_font_size || src->has_font_size)
 		dst->font_size = src->font_size;
 	if (!dst->has_font_style || src->has_font_style)
@@ -362,7 +364,6 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "filter"))
 		state->filter = rsvg_filter_parse(ctx->defs, str + arg_off);
-#if ENABLE_ADOBE_EXTENSIONS
 	else if (rsvg_css_param_match (str, "a:adobe-blending-mode"))
 		{
 			if (!strcmp (str + arg_off, "normal"))
@@ -392,7 +393,6 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			else
 				state->adobe_blend = 0;
 		}
-#endif
 	else if (rsvg_css_param_match (str, "mask"))
 		state->mask = rsvg_mask_parse(ctx->defs, str + arg_off);
 	else if (rsvg_css_param_match (str, "enable-background"))
@@ -741,44 +741,54 @@ void
 rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state, 
 						RsvgPropertyBag *atts)
 {
-#if ENABLE_ADOBE_EXTENSIONS
-			rsvg_lookup_parse_style_pair (ctx, state, "a:adobe-blending-mode", atts);
-#endif
-			rsvg_lookup_parse_style_pair (ctx, state, "color", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "direction", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "display", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "enable-background", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "fill", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "fill-opacity", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "fill-rule", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "filter", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "font-family", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "font-size", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "font-stretch", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "font-style", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "font-variant", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "font-weight", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "marker-end", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "mask", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "marker-mid", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "marker-start", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "opacity", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "stop-color", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "stop-opacity", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "stroke", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "stroke-dasharray", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "stroke-dashoffset", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "stroke-linecap", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "stroke-linejoin", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "stroke-miterlimit", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "stroke-opacity", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "stroke-width", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "text-anchor", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "text-decoration", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "unicode-bidi", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "visibility", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "writing-mode", atts);
-			rsvg_lookup_parse_style_pair (ctx, state, "xml:lang", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "a:adobe-blending-mode", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "color", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "direction", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "display", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "enable-background", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "fill", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "fill-opacity", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "fill-rule", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "filter", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "font-family", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "font-size", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "font-stretch", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "font-style", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "font-variant", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "font-weight", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "marker-end", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "mask", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "marker-mid", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "marker-start", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "opacity", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "stop-color", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "stop-opacity", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "stroke", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "stroke-dasharray", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "stroke-dashoffset", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "stroke-linecap", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "stroke-linejoin", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "stroke-miterlimit", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "stroke-opacity", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "stroke-width", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "text-anchor", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "text-decoration", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "unicode-bidi", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "visibility", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "writing-mode", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "xml:lang", atts);
+	
+	{
+		/* TODO: this conditional behavior isn't quite correct, and i'm not sure it should reside here */
+		gboolean cond_true, has_cond;
+
+		cond_true = rsvg_eval_switch_attributes (atts, &has_cond);
+
+		if (has_cond) {
+			state->cond_true = cond_true;
+			state->has_cond = TRUE;
+		}
+	}
 }
 
 /* Split a CSS2 style into individual style arguments, setting attributes

@@ -231,7 +231,7 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	/* todo: handle visibility stuff earlier for performance benefits 
 	 * handles all path based shapes. will handle text and images separately
 	 */
-	if (!state->visible)
+	if (!state->visible || !state->cond_true)
 		return;
 
 	affine_bpath = art_bpath_affine_transform (bpath,
@@ -1679,7 +1679,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		return;   
 	
 	/* figure out if image is visible or not */
-	if (!state->visible)
+	if (!state->visible || !state->cond_true)
 		return;
 
 	w *= state->affine[0];
