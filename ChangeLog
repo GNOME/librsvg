@@ -1,3 +1,8 @@
+2004-03-23  Dom Lachowicz <cinamod@hotmail.com>
+
+	* test-display.c: Use the current SVG as our application icon
+	instead of that W3C logo
+	
 2004-03-23  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-paint-server.c: fixed linear gradient transformations

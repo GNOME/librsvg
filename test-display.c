@@ -33,8 +33,6 @@
 #define DEFAULT_WIDTH  240
 #define DEFAULT_HEIGHT 240
 
-#define ICON_NAME "svg-viewer.svg"
-
 typedef struct _ViewerCbInfo ViewerCbInfo;
 struct _ViewerCbInfo
 {
@@ -44,17 +42,15 @@ struct _ViewerCbInfo
 };
 
 static void
-center_dialog (GtkWidget * child, GtkWidget * parent)
+rsvg_window_set_default_icon (GdkPixbuf *icon)
 {
-	GdkPixbuf * icon;
+  GList *list;
+  
+  g_return_if_fail (GDK_IS_PIXBUF (icon));
 
-	gtk_window_set_transient_for(GTK_WINDOW(child),
-								 GTK_WINDOW(parent));
-
-	icon = gtk_window_get_icon(GTK_WINDOW(parent));	
-
-	if (NULL != icon)
-		gtk_window_set_icon(GTK_WINDOW(child), icon);
+  list = g_list_prepend (NULL, icon);
+  gtk_window_set_default_icon_list (list);
+  g_list_free (list);
 }
 
 #ifdef HAVE_GNOME_PRINT
@@ -72,7 +68,7 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 	gint result;
 
 	gpd = gnome_print_dialog_new (gnome_print_job_new(gnome_print_config_default()), _("Print SVG"), 0);
-	center_dialog (gpd, info->window);
+	gtk_window_set_transient_for(GTK_WINDOW(gpd), GTK_WINDOW(info->window));
 			  
 	if ((result = gtk_dialog_run (GTK_DIALOG (gpd))) != GNOME_PRINT_DIALOG_RESPONSE_CANCEL) {
 		GnomePrintJob *gpm;
@@ -142,7 +138,7 @@ save_pixbuf (GObject * ignored, gpointer user_data)
 	ViewerCbInfo * info = (ViewerCbInfo *)user_data;
 
 	filesel = gtk_file_selection_new (_("Save SVG as PNG"));
-	center_dialog (filesel, info->window);
+	gtk_window_set_transient_for(GTK_WINDOW(filesel), GTK_WINDOW(info->window));
 
 	if (gtk_dialog_run (GTK_DIALOG (filesel)) == GTK_RESPONSE_OK)
 	{
@@ -193,7 +189,7 @@ save_svg (GObject * ignored, gpointer user_data)
 	ViewerCbInfo * info = (ViewerCbInfo *)user_data;
 
 	filesel = gtk_file_selection_new (_("Save SVG"));
-	center_dialog (filesel, info->window);
+	gtk_window_set_transient_for(GTK_WINDOW(filesel), GTK_WINDOW(info->window));
 
 	if (gtk_dialog_run (GTK_DIALOG (filesel)) == GTK_RESPONSE_OK)
 	{
@@ -304,7 +300,6 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid, const char * color)
 	GtkWidget *win, *img;
 	gint width, height;
 	GdkColor bg_color;
-	char * window_icon;
 	ViewerCbInfo info;
 
 	/* create toplevel window and set its title */
@@ -368,9 +363,7 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid, const char * color)
 				g_warning (_("Couldn't parse color '%s'"), color);
 		}
 
-	window_icon = g_build_filename (PIXMAPDIR, ICON_NAME, NULL);
-	gtk_window_set_default_icon_from_file (window_icon, NULL);
-	g_free (window_icon);
+	rsvg_window_set_default_icon (pixbuf);
 
 	info.window = win;
 	info.pixbuf = pixbuf;

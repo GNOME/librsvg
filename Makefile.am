@@ -65,8 +65,7 @@ INCLUDES =				\
 	$(GTK_CFLAGS)			\
 	$(GDK_X11_CFLAGS)		\
 	-DG_LOG_DOMAIN=\"librsvg\" 	\
-	-DDATADIR="\"$(datadir)\""	\
-	-DPIXMAPDIR=\""$(datadir)/pixmaps"\"
+	-DDATADIR="\"$(datadir)\""
 
 DEPS = $(top_builddir)/librsvg-2.la
 LDADDS =				\
