@@ -507,6 +507,7 @@ rsvg_defs_drawable_path_free (RsvgDefVal *self)
 {
 	RsvgDefsDrawablePath *z = (RsvgDefsDrawablePath *)self;
 	rsvg_state_finalize (&z->super.state);
+	g_free (z->d);
 	g_free (z);
 }
 

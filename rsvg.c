@@ -1585,7 +1585,7 @@ rsvg_handle_init (RsvgHandle * handle)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the all future outgoing pixbufs. Common values are
- * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
  * reset the DPI to whatever the default value happens to be.
  *
  * Since: 2.8
@@ -1609,7 +1609,7 @@ rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y)
  * @dpi: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the all future outgoing pixbufs. Common values are
- * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
  * reset the DPI to whatever the default value happens to be.
  *
  * Since: 2.2
@@ -1628,7 +1628,7 @@ rsvg_set_default_dpi (double dpi)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the outgoing pixbuf. Common values are
- * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
  * reset the DPI to whatever the default value happens to be.
  *
  * Since: 2.8
@@ -1655,7 +1655,7 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
  * @dpi: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the outgoing pixbuf. Common values are
- * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
  * reset the DPI to whatever the default value happens to be.
  *
  * Since: 2.2
