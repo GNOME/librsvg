@@ -1940,7 +1940,7 @@ struct ComponentTransferData
 	gdouble offset;
 };
 
-typedef guint8 (*ComponentTransferFunc) (guint8 C,
+typedef gdouble (*ComponentTransferFunc) (gdouble C,
 										 struct ComponentTransferData *
 										 user_data);
 
@@ -1962,7 +1962,7 @@ struct _RsvgFilterPrimitiveComponentTransfer
 };
 
 static gdouble
-get_component_transfer_table_value (guint8 C,
+get_component_transfer_table_value (gdouble C,
 									struct ComponentTransferData *user_data)
 {
 	guint k;
@@ -1972,22 +1972,22 @@ get_component_transfer_table_value (guint8 C,
 		{
 			N = user_data->tableValues[k];
 			
-			if (((k / N) <= C) && (C < (k + 1) / N))
+			if ((((gdouble)k / N) <= C) && (C < ((gdouble)k + 1) / N))
 				return k;
 		}
 	
 	return 0;
 }
 
-static guint8
-identity_component_transfer_func (guint8 C,
+static gdouble
+identity_component_transfer_func (gdouble C,
 				  struct ComponentTransferData *user_data)
 {
 	return C;
 }
 
-static guint8
-table_component_transfer_func (guint8 C,
+static gdouble
+table_component_transfer_func (gdouble C,
 							   struct ComponentTransferData *user_data)
 {
 	guint k;
@@ -2007,29 +2007,29 @@ table_component_transfer_func (guint8 C,
 																		   vk));
 }
 
-static guint8
-discrete_component_transfer_func (guint8 C,
+static gdouble
+discrete_component_transfer_func (gdouble C,
 								  struct ComponentTransferData *user_data)
 {
-	guint k;
+	gint k;
 	
 	if (!user_data->nbTableValues)
 		return C;
 	
 	k = get_component_transfer_table_value (C, user_data);
 	
-	return (guint8) user_data->tableValues[k];
+	return user_data->tableValues[k];
 }
 
-static guint8
-linear_component_transfer_func (guint8 C,
+static gdouble
+linear_component_transfer_func (gdouble C,
 								struct ComponentTransferData *user_data)
 {
 	return (user_data->slope * C) + user_data->intercept;
 }
 
-static guint8
-gamma_component_transfer_func (guint8 C,
+static gdouble
+gamma_component_transfer_func (gdouble C,
 							   struct ComponentTransferData *user_data)
 {
 	return user_data->amplitude * pow (C,
@@ -2042,6 +2042,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 												RsvgFilterContext * ctx)
 {
 	gint x, y;
+	gint temp;
 	gint rowstride, height, width;
 	FPBox boundarys;
 	
@@ -2070,14 +2071,33 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
-				output_pixels[y * rowstride + x * 4] =
-					cself->Rfunction(in_pixels[y * rowstride + x * 4], &cself->Rdata);
-				output_pixels[y * rowstride + x * 4 + 1] =
-					cself->Gfunction(in_pixels[y * rowstride + x * 4 + 1], &cself->Gdata);
-				output_pixels[y * rowstride + x * 4 + 2] =
-					cself->Bfunction(in_pixels[y * rowstride + x * 4 + 2], &cself->Bdata);
-				output_pixels[y * rowstride + x * 4 + 3] =
-					cself->Afunction(in_pixels[y * rowstride + x * 4 + 3], &cself->Adata);
+				temp = cself->Rfunction((double)in_pixels[y * rowstride + x * 4] / 255, &cself->Rdata) * 255;
+				if (temp > 255)
+					temp = 255;
+				if (temp < 0)
+					temp = 0;
+				output_pixels[y * rowstride + x * 4] = temp;
+		
+				temp = cself->Gfunction((double)in_pixels[y * rowstride + x * 4 + 1] / 255, &cself->Gdata) * 255;
+				if (temp > 255)
+					temp = 255;
+				if (temp < 0)
+					temp = 0;
+				output_pixels[y * rowstride + x * 4 + 1] = temp;
+
+				temp = cself->Bfunction((double)in_pixels[y * rowstride + x * 4 + 2] / 255, &cself->Bdata) * 255;
+				if (temp > 255)
+					temp = 255;
+				if (temp < 0)
+					temp = 0;				
+				output_pixels[y * rowstride + x * 4 + 2] = temp;
+
+				temp = cself->Afunction((double)in_pixels[y * rowstride + x * 4 + 3] / 255, &cself->Adata) * 255;
+				if (temp > 255)
+					temp = 255;
+				if (temp < 0)
+					temp = 0;
+				output_pixels[y * rowstride + x * 4 + 3] = temp;		
 			}
 	rsvg_filter_store_result (self->result, output, ctx);
 	
