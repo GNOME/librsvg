@@ -1535,6 +1535,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	const char * href = NULL;
 	const char * klazz = NULL, * id = NULL, *value;
 	gboolean has_alpha;
+	int aspect_ratio = RSVG_ASPECT_RATIO_NONE;
 
 	GdkPixbuf *img;
 	GError *err = NULL;
@@ -1566,6 +1567,8 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
+			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
+				aspect_ratio = rsvg_css_parse_aspect_ratio (value);
 
 			rsvg_parse_style_attrs (ctx, state, "image", klazz, id, atts);
 		}
@@ -1580,8 +1583,12 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	w *= state->affine[0];
 	h *= state->affine[3];
 
-	img = rsvg_pixbuf_new_from_href (href, w, h, FALSE, &err);
+	img = rsvg_pixbuf_new_from_href (href, w, h, (aspect_ratio != RSVG_ASPECT_RATIO_NONE), &err);
 	
+	/* w & h might've been adjusted by preserveAspectRatio */
+	w = gdk_pixbuf_get_width (img);
+	h = gdk_pixbuf_get_height (img);
+
 	if (!img)
 		{
 			if (err)
@@ -1593,7 +1600,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		}
 
 	has_alpha = gdk_pixbuf_get_has_alpha (img);
-	if(0 /* has_alpha */)
+	if(0 /* !has_alpha */)
 		{
 			GdkPixbuf *tmp_pixbuf;
 			

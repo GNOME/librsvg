@@ -1,3 +1,8 @@
+2004-06-10  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-css.c: Parse preserveAspectRatio
+	* rsvg-shapes.c: Honoe preserveAspectRatio to some extent
+	
 2004-06-10  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-filter.c: fixed overlay filter

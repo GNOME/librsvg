@@ -30,9 +30,22 @@
 
 G_BEGIN_DECLS
 
+#define RSVG_ASPECT_RATIO_NONE (0)
+#define RSVG_ASPECT_RATIO_XMIN_YMIN (1 << 0)
+#define RSVG_ASPECT_RATIO_XMID_YMIN (1 << 1)
+#define RSVG_ASPECT_RATIO_XMAX_YMIN (1 << 2)
+#define RSVG_ASPECT_RATIO_XMIN_YMID (1 << 3)
+#define RSVG_ASPECT_RATIO_XMID_YMID (1 << 4)
+#define RSVG_ASPECT_RATIO_XMAX_YMID (1 << 5)
+#define RSVG_ASPECT_RATIO_XMIN_YMAX (1 << 6)
+#define RSVG_ASPECT_RATIO_XMID_YMAX (1 << 7)
+#define RSVG_ASPECT_RATIO_XMAX_YMAX (1 << 8)
+
+int rsvg_css_parse_aspect_ratio(const char * str);
+
 double
 rsvg_css_parse_length (const char *str, gdouble pixels_per_inch, 
-		       gint *percent, gint *em, gint *ex);
+					   gint *percent, gint *em, gint *ex);
 
 double
 rsvg_css_parse_normalized_length(const char *str, gdouble pixels_per_inch,

@@ -848,3 +848,31 @@ rsvg_css_parse_number_optional_number(const char * str,
   else
     *y = *x;
 }
+
+int rsvg_css_parse_aspect_ratio(const char * str)
+{
+	int ratio = RSVG_ASPECT_RATIO_NONE;
+
+	/* TODO: better detection code, handle meet|slice */
+
+	if (strstr (str, "xMinYMin") != NULL)
+		ratio = RSVG_ASPECT_RATIO_XMIN_YMIN;
+	else if (strstr (str, "xMidYMin") != NULL)
+		ratio = RSVG_ASPECT_RATIO_XMID_YMIN;
+	else if (strstr (str, "xMaxYMin") != NULL)
+		ratio = RSVG_ASPECT_RATIO_XMAX_YMIN;
+	else if (strstr (str, "xMinYMid") != NULL)
+		ratio = RSVG_ASPECT_RATIO_XMIN_YMID;
+	else if (strstr (str, "xMidYMid") != NULL)
+		ratio = RSVG_ASPECT_RATIO_XMIN_YMID;
+	else if (strstr (str, "xMaxYMid") != NULL)
+		ratio = RSVG_ASPECT_RATIO_XMAX_YMID;
+	else if (strstr (str, "xMinYMax") != NULL)
+		ratio = RSVG_ASPECT_RATIO_XMIN_YMAX;
+	else if (strstr (str, "xMidYMax") != NULL)
+		ratio = RSVG_ASPECT_RATIO_XMID_YMAX;
+	else if (strstr (str, "xMaxYMax") != NULL)
+		ratio = RSVG_ASPECT_RATIO_XMAX_YMAX;
+
+	return ratio;
+}
