@@ -1,3 +1,12 @@
+2004-03-11  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-shapes.c, rsvg-styles.c: added state domination, ability for a
+	use's values to overwrite even explicitly set state variables in the
+	symbol.
+	* rsvg-shapes.c: Fixed image bitmap sizing, may need to give the whole 
+	system a good rewrite sometime to avoid having to use crappy libart 
+	rotation etc. and eventually make it easier to port to cairo.
+
 2004-03-10  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-shapes.c: exported drawable structures and functions 

@@ -127,6 +127,7 @@ void rsvg_state_init (RsvgState *state);
 void rsvg_state_clone (RsvgState *dst, const RsvgState *src);
 void rsvg_state_inherit (RsvgState *dst, const RsvgState *src);
 void rsvg_state_reinherit (RsvgState *dst, const RsvgState *src);
+void rsvg_state_dominate (RsvgState *dst, const RsvgState *src);
 void rsvg_state_finalize (RsvgState *state);
 
 void rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state, 

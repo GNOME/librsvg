@@ -52,10 +52,11 @@ struct _RsvgDefsDrawable {
  	RsvgDefVal super;
 	RsvgState  state;
 	RsvgDefsDrawable * parent;
-	void (*draw) (RsvgDefsDrawable * self, RsvgHandle *ctx);
+	void (*draw) (RsvgDefsDrawable * self, RsvgHandle *ctx, int dominate);
 };
 
-void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx);
+void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+							  int dominate);
 
 G_END_DECLS
 

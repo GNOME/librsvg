@@ -116,74 +116,87 @@ rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 		}
 }
 
-void
-rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
+static void
+rsvg_state_overwrite (RsvgState *dst, const RsvgState *src, 
+					  const RsvgState *strong)
 {
 	gint i;
 	
-	if (!dst->has_fill_server)
+	if (!strong->has_fill_server)
 		{
 			rsvg_paint_server_unref (dst->fill);
 			dst->fill = src->fill;
 			rsvg_paint_server_ref (dst->fill);
 		} 
-	if (!dst->has_fill_opacity)
+	if (!strong->has_fill_opacity)
 		dst->fill_opacity = src->fill_opacity;
-	if (!dst->has_fill_rule)
+	if (!strong->has_fill_rule)
 		dst->fill_rule = src->fill_rule;
-	if (!dst->has_stroke_server)
+	if (!strong->has_stroke_server)
 		{
 			rsvg_paint_server_unref (dst->stroke);
 			dst->stroke = src->stroke;
 			rsvg_paint_server_ref (dst->stroke);
 		} 
-	if (!dst->has_stroke_opacity)
+	if (!strong->has_stroke_opacity)
 		dst->stroke_opacity = src->stroke_opacity;
-	if (!dst->has_stroke_width)
+	if (!strong->has_stroke_width)
 		dst->stroke_width = src->stroke_width;
-	if (!dst->has_miter_limit)
+	if (!strong->has_miter_limit)
 		dst->miter_limit = src->miter_limit;
-	if (!dst->has_cap)
+	if (!strong->has_cap)
 		dst->cap = src->cap;
-	if (!dst->has_join)
+	if (!strong->has_join)
 		dst->join = src->join;
-	if (!dst->has_visible)
+	if (!strong->has_visible)
 		dst->cap = src->cap;
-	if (!dst->has_stop_color)
+	if (!strong->has_stop_color)
 		dst->join = src->join;
-	if (!dst->has_stop_opacity)
+	if (!strong->has_stop_opacity)
 		dst->stop_opacity = src->stop_opacity;
-	if (!dst->has_visible)
+	if (!strong->has_visible)
 		dst->visible = src->visible;
-	if (!dst->has_font_size)
+	if (!strong->has_font_size)
 		dst->font_size = src->font_size;
-	if (!dst->has_font_style)
+	if (!strong->has_font_style)
 		dst->font_style = src->font_style;
-	if (!dst->has_font_variant)
+	if (!strong->has_font_variant)
 		dst->font_variant = src->font_variant;
-	if (!dst->has_font_weight)
+	if (!strong->has_font_weight)
 		dst->font_weight = src->font_weight;
-	if (!dst->has_font_stretch)
+	if (!strong->has_font_stretch)
 		dst->font_stretch = src->font_stretch;
-	if (!dst->has_font_decor)
+	if (!strong->has_font_decor)
 		dst->font_decor = src->font_decor;
-	if (!dst->has_text_dir)
+	if (!strong->has_text_dir)
 		dst->text_dir = src->text_dir;
-	if (!dst->has_text_anchor)
+	if (!strong->has_text_anchor)
 		dst->text_anchor = src->text_anchor;
 
-	if (!dst->has_font_family)
+	if (!strong->has_font_family)
 		dst->font_family = g_strdup (src->font_family);
-	if (!dst->has_lang)
+	if (!strong->has_lang)
 		dst->lang = g_strdup (src->lang);
 
-	if (src->dash.n_dash > 0 && !dst->has_dash)
+	if (src->dash.n_dash > 0 && !strong->has_dash)
 		{
 			dst->dash.dash = g_new (gdouble, src->dash.n_dash);
 			for (i = 0; i < src->dash.n_dash; i++)
 				dst->dash.dash[i] = src->dash.dash[i];
 		}
 	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
+}
+
+void
+rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
+{
+	rsvg_state_overwrite(dst,src,dst);
+}
+
+void
+rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
+{
+	rsvg_state_overwrite(dst,src,src);	
 }
 
 void

@@ -3801,7 +3801,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
 		rsvg_state_init (ctx->state);
 	ctx->n_state++;
 	
-	rsvg_defs_drawable_draw (drawable, ctx);
+	rsvg_defs_drawable_draw (drawable, ctx, 0);
 	
 	/* pop the state stack */
 	ctx->n_state--;
