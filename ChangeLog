@@ -1,3 +1,7 @@
+2004-03-22  Christian Schaller <Uraeus@gnome.org>
+
+	* Use original SVG by Chris Lilley as rsvg-viwer logo
+
 2004-03-21  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Check for GnomePrint
