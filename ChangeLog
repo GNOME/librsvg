@@ -1,3 +1,7 @@
+2004-09-23  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-shapes.c, rsvg-paint-server.c: Made objectBoundingBox for pservers to be calculated in user coordinates instead of pixel coordinates, this allows for rotation and stuff.
+	
 2004-09-14  Dom Lachowicz <cinamod@hotmail.com>
 
 	* io-svg.c: Only emit prepared() once, add more mime-types and
@@ -7,7 +11,7 @@
 
 	* rsvg.[ch]: rsvg_init(), rsvg_term(). Cuts down on libxml2 memory leaks
 	* test-*.c: Use above fns
-	
+
 2004-08-31  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-text.c: made text not cause crashes

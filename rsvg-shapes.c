@@ -118,34 +118,52 @@ rsvg_close_vpath (const ArtVpath *src)
 }
 
 /* calculates how big an svp is */
-static ArtIRect
-rsvg_calculate_svp_bounds (const ArtSVP *svp)
+struct _RsvgFRect
 {
-	int i, j;	
-	int bigx, littlex, bigy, littley, assignedonce;
-	ArtIRect output;
+	double x0;
+	double y0;
+	double x1;
+	double y1;
+};
+typedef struct _RsvgFRect RsvgFRect;
 
+static RsvgFRect
+rsvg_calculate_svp_bounds (const ArtSVP *svp, double * useraffine)
+{
+	int i, j;
+	float x, y;
+	double affine[6];
+	float bigx, littlex, bigy, littley, assignedonce;
+	RsvgFRect output;
+
+	art_affine_invert(affine, useraffine);
 	bigx = littlex = bigy = littley = assignedonce = 0;	
 
 	for (i = 0; i < svp->n_segs; i++)
 		for (j = 0; j < svp->segs[i].n_points; j++)
 			{
+				x = svp->segs[i].points[j].x * affine[0] + 
+					svp->segs[i].points[j].y * affine[2] +
+					affine[4];
+				y = svp->segs[i].points[j].x * affine[1] + 
+					svp->segs[i].points[j].y * affine[3] +
+					affine[5];
 				if (!assignedonce)
 					{
-						bigx = svp->segs[i].points[j].x;
-						littlex = svp->segs[i].points[j].x;
-						bigy = svp->segs[i].points[j].y; 
-						littley = svp->segs[i].points[j].y;
+						bigx = x;
+						littlex = x;
+						bigy = y; 
+						littley = y;
 						assignedonce = 1;
 					}
-				if (svp->segs[i].points[j].x > bigx)
-					bigx = svp->segs[i].points[j].x;
-				if (svp->segs[i].points[j].x < littlex)
-					littlex = svp->segs[i].points[j].x;
-				if (svp->segs[i].points[j].y > bigy)
-					bigy = svp->segs[i].points[j].y; 
-				if (svp->segs[i].points[j].y < littley)
-					littley = svp->segs[i].points[j].y;
+				if (x > bigx)
+					bigx = x;
+				if (x < littlex)
+					littlex = x;
+				if (y > bigy)
+					bigy = y; 
+				if (y < littley)
+					littley = y;
 			}
 	output.x0 = littlex;
 	output.y0 = littley;
@@ -153,6 +171,37 @@ rsvg_calculate_svp_bounds (const ArtSVP *svp)
 	output.y1 = bigy;
 	return output;
 }
+
+static ArtIRect rsvg_frect_pixelspaceise(RsvgFRect input, double * affine)
+{
+	ArtIRect temprect;	
+	int i, j, basex, basey;
+	int assignedonce = 0;
+	float x, y;
+	
+	for (i = 0; i < 2; i++)
+		for (j = 0; j < 2; j++)
+			{
+				x = i ? input.x0 : input.x1;
+				y = j ? input.y0 : input.y1;
+				basex = affine[0] * x + affine[2] * y + affine[4];
+				basey = affine[1] * x + affine[3] * y + affine[5];
+				if (assignedonce)
+					{
+						temprect.x0 = MIN(basex, temprect.x0);
+						temprect.y0 = MIN(basey, temprect.y0);
+						temprect.x1 = MAX(basex, temprect.x1);
+						temprect.y1 = MAX(basey, temprect.y1);
+					}
+				else
+					{	
+						temprect.x1 = temprect.x0 = basex;
+						temprect.y1 = temprect.y0 = basey;
+						assignedonce = 1;
+					}
+			}
+	return temprect;
+} 
 
 /**
  * rsvg_render_svp: Render an SVP.
@@ -170,7 +219,8 @@ rsvg_render_svp (RsvgHandle *ctx, ArtSVP *svp,
 	GdkPixbuf *pixbuf;
 	ArtRender *render;
 	gboolean has_alpha;
-	ArtIRect temprect;
+	RsvgFRect temprect;
+	ArtIRect temptemprect;
 	RsvgPSCtx gradctx;
 	RsvgState *state;
 	int i;	
@@ -199,7 +249,7 @@ rsvg_render_svp (RsvgHandle *ctx, ArtSVP *svp,
 							 has_alpha ? ART_ALPHA_SEPARATE : ART_ALPHA_NONE,
 							 NULL);
 
-	temprect = rsvg_calculate_svp_bounds(svp);
+	temprect = rsvg_calculate_svp_bounds(svp, state->affine);
 	
 	if (state->clippath != NULL)
 		{
@@ -211,7 +261,8 @@ rsvg_render_svp (RsvgHandle *ctx, ArtSVP *svp,
 	art_render_svp (render, svp);
 	art_render_mask_solid (render, (opacity << 8) + opacity + (opacity >> 7));
 
-	art_irect_union(&ctx->bbox, &ctx->bbox, &temprect);
+	temptemprect = rsvg_frect_pixelspaceise(temprect, state->affine);
+	art_irect_union(&ctx->bbox, &ctx->bbox, &temptemprect);
 
 	gradctx.x0 = temprect.x0;
 	gradctx.y0 = temprect.y0;

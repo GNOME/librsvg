@@ -43,10 +43,10 @@ typedef struct _RsvgPaintServer RsvgPaintServer;
 typedef struct _RsvgPSCtx RsvgPSCtx;
 
 struct _RsvgPSCtx {
-	int x0;
-	int y0;
-	int x1;
-	int y1;
+	double x0;
+	double y0;
+	double x1;
+	double y1;
 
 	guint32 color;
 	double affine[6];

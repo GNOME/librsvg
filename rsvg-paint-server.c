@@ -195,7 +195,7 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 		affine[3] = ctx->y1 - ctx->y0;
 		affine[4] = ctx->x0;
 		affine[5] = ctx->y0;
-
+		art_affine_multiply(affine, affine, ctx->affine);
 	} else {
 		for (i = 0; i < 6; i++)
 			affine[i] = ctx->affine[i];
@@ -296,7 +296,7 @@ rsvg_paint_server_rad_grad_render (RsvgPaintServer *self, ArtRender *ar,
 		affine[3] = ctx->y1 - ctx->y0;
 		affine[4] = ctx->x0;
 		affine[5] = ctx->y0;
-
+		art_affine_multiply(affine, affine, ctx->affine);
 	} else {
 		for (i = 0; i < 6; i++)
 			affine[i] = ctx->affine[i];
@@ -531,7 +531,7 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 		affine[3] = ctx->y1 - ctx->y0;
 		affine[4] = ctx->x0;
 		affine[5] = ctx->y0;
-
+		art_affine_multiply(affine, affine, ctx->affine);
 	} else {
 		for (i = 0; i < 6; i++)
 			affine[i] = ctx->affine[i];
@@ -557,7 +557,7 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 		caffine[3] = h / pattern->vbh;
 		caffine[4] = x;
 		caffine[5] = y;
-		art_affine_multiply(caffine, caffine, affine);		
+		art_affine_multiply(caffine, caffine, affine);
 	}
 	else if (pattern->obj_cbbox) {
 		caffine[0] = ctx->x1 - ctx->x0;
@@ -566,7 +566,7 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 		caffine[3] = ctx->y1 - ctx->y0;
 		caffine[4] = ctx->x0;
 		caffine[5] = ctx->y0;
-
+		art_affine_multiply(caffine, caffine, ctx->affine);
 	} else {
 		for (i = 0; i < 6; i++)
 			caffine[i] = ctx->affine[i];
