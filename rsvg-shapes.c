@@ -207,8 +207,6 @@ rsvg_render_svp (RsvgHandle *ctx, ArtSVP *svp,
 	art_render_svp (render, svp);
 	art_render_mask_solid (render, (opacity << 8) + opacity + (opacity >> 7));
 
-
-
 	art_irect_union(&ctx->bbox, &ctx->bbox, &temprect);
 
 	gradctx.x0 = temprect.x0;
@@ -248,6 +246,8 @@ rsvg_render_filling (RsvgState *state, const ArtVpath *vpath)
 			
 			svp2 = art_svp_writer_rewind_reap (swr);
 			art_svp_free (svp);
+			art_svp_writer_rewind_reap (swr);
+
 			return svp2;
 }
 
