@@ -1,3 +1,9 @@
+2004-02-17  Thomas Vander Stichele  <thomas at apestaart dot org>
+
+	* rsvg-gz.c: (rsvg_handle_gz_close_impl):
+          catch read error from gsf_input_read
+          break from infinite loops that do not manage to write (#134653)
+
 2004-02-16  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Fix bug #134492

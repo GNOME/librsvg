@@ -56,16 +56,36 @@ rsvg_handle_gz_close_impl (RsvgHandle  *handle,
 	GsfInput * gzip;
 	const guchar * bytes;
 	gsize size;
+	gsize remaining;
 
 	bytes = gsf_output_memory_get_bytes (GSF_OUTPUT_MEMORY (me->mem));
 	size = gsf_output_size (me->mem);
 
 	gzip = GSF_INPUT (gsf_input_gzip_new (GSF_INPUT (gsf_input_memory_new (bytes, size, FALSE)), error));
-	while ((size = MIN (gsf_input_remaining (gzip), 1024)) > 0) {
+	remaining = gsf_input_remaining (gzip);
+	while ((size = MIN (remaining, 1024)) > 0) {
+		guint8 const *buf;
+
 		/* write to parent */
+		buf = gsf_input_read (gzip, size, NULL);
+                if (!buf)
+		{
+			/* an error occured, so bail */
+			g_warning ("rsvg_gz_handle_close_impl: gsf_input_read returned NULL");
+			break;
+		}
+
 		rsvg_handle_write_impl (&(me->super),
-								gsf_input_read (gzip, size, NULL),
+								buf,
 								size, error);
+		/* if we didn't manage to lower remaining number of bytes,
+                 * something is wrong, and we should avoid an endless loop */
+		if (remaining == gsf_input_remaining (gzip))
+		{
+			g_warning ("rsvg_gz_handle_close_impl: write_impl didn't lower the input_remaining count");
+			break;
+		}
+		remaining = gsf_input_remaining (gzip);
 	}
 	g_object_unref (G_OBJECT (gzip));
 
