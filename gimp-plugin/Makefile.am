@@ -2,7 +2,6 @@ gimpdir = $(libdir)/gimp/1.3/plug-ins
 
 INCLUDES = \
 	$(LIBRSVG_CFLAGS) \
-	$(GTK_CFLAGS) \
 	$(LIBGIMP_CFLAGS) \
 	-I$(top_srcdir)
 
