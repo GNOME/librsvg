@@ -1241,6 +1241,7 @@ rsvg_handle_free_impl (RsvgHandle *handle)
 
 /**
  * rsvg_handle_get_title:
+ * @handle: An #RsvgHandle
  *
  * Returns the SVG's title in UTF-8 or %NULL. You must make a copy
  * of this title if you wish to use it after #handle has been freed.
@@ -1256,6 +1257,7 @@ G_CONST_RETURN char *rsvg_handle_get_title (RsvgHandle *handle)
 
 /**
  * rsvg_handle_get_desc:
+ * @handle: An #RsvgHandle
  *
  * Returns the SVG's description in UTF-8 or %NULL. You must make a copy
  * of this description if you wish to use it after #handle has been freed.

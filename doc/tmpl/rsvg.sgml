@@ -99,6 +99,24 @@ Core API
 @Returns: 
 
 
+<!-- ##### FUNCTION rsvg_handle_get_title ##### -->
+<para>
+
+</para>
+
+@handle: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_get_desc ##### -->
+<para>
+
+</para>
+
+@handle: 
+@Returns: 
+
+
 <!-- ##### FUNCTION rsvg_handle_free ##### -->
 <para>
 

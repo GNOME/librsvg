@@ -28,7 +28,21 @@ HFILE_GLOB=$(top_srcdir)/*.h
 CFILE_GLOB=$(top_srcdir)/*.c
 
 # Header files to ignore when scanning
-IGNORE_HFILES=
+IGNORE_HFILES= \
+	config.h		\
+	librsvg-features.h	\
+	rsvg-bpath-util.h	\
+	rsvg-css.h		\
+	rsvg-defs.h		\
+	rsvg-paint-server.h	\
+	rsvg-path.h		\
+	rsvg-private.h		\
+	rsvg-shapes.h		\
+	rsvg-styles.h		\
+	rsvg-text.h		\
+	svg-rc-style.h		\
+	svg-style.h		\
+	svg.h
 
 # Images to copy into HTML directory
 HTML_IMAGES =

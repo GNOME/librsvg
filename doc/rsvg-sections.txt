@@ -10,6 +10,8 @@ rsvg_handle_set_size_callback
 rsvg_handle_write
 rsvg_handle_close
 rsvg_handle_get_pixbuf
+rsvg_handle_get_title
+rsvg_handle_get_desc
 rsvg_handle_free
 </SECTION>
 
