@@ -507,8 +507,8 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 		caffine[1] = 0.;		
 		caffine[2] = 0.;
 		caffine[3] = pattern->height / pattern->vbh;
-		caffine[4] = pattern->vbx * pattern->width / pattern->vbw + pattern->x;
-		caffine[5] = pattern->vby * pattern->height / pattern->vbh + pattern->y;
+		caffine[4] = - pattern->vbx * pattern->width / pattern->vbw;
+		caffine[5] = - pattern->vby * pattern->height / pattern->vbh;
 		art_affine_multiply(caffine, caffine, affine);		
 	}
 	else if (pattern->obj_cbbox) {
