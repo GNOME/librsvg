@@ -148,7 +148,7 @@ if test "x$test_croco" = "xtrue"; then
 else
 	AC_MSG_WARN([LibCroco support disabled, as requested (Use --with-croco to enable)])
         croco_warning="
-Building without libcroco support. Will experience sub-optimal CSS parsing."
+You are building without libcroco support. LibRSVG will not be able to handle embedded CSS, as is required per the CSS specification. If you are a library vendor or distributor, you are doing the world a disservice and should strongly consider shipping libcroco. Even KSVG needs libcroco now...."
 fi
 
 AC_SUBST(LIBCROCOPKG)
