@@ -2,7 +2,7 @@
 /* GdkPixbuf library - SVG image loader
  *
  * Copyright (C) 2002 Matthias Clasen
- * Copyright (C) 2002 Dom Lachowicz
+ * Copyright (C) 2002-2004 Dom Lachowicz
  *
  * Authors: Matthias Clasen <maclas@gmx.de>
  *          Dom Lachowicz <cinamod@hotmail.com>
@@ -37,6 +37,7 @@ typedef struct {
         GdkPixbufModuleSizeFunc     size_func;
 
         gboolean                    first_write;
+        gboolean                    emitted_prepared;
 
         gpointer                    user_data;
 } SvgContext;
@@ -73,6 +74,7 @@ gdk_pixbuf__svg_image_begin_load (GdkPixbufModuleSizeFunc size_func,
                 *error = NULL;
 
         context->first_write   = TRUE;
+        context->emitted_prepared = FALSE;
         context->size_func     = size_func;
 
         context->prepared_func = prepared_func;
@@ -80,6 +82,36 @@ gdk_pixbuf__svg_image_begin_load (GdkPixbufModuleSizeFunc size_func,
         context->user_data     = user_data;
 
         return context;
+}
+
+static void 
+emit_updated (SvgContext *context)
+{
+        if (context->pixbuf != NULL && context->updated_func != NULL)
+                (* context->updated_func) (context->pixbuf, 
+                                           0, 0, 
+                                           gdk_pixbuf_get_width (context->pixbuf), 
+                                           gdk_pixbuf_get_height (context->pixbuf), 
+                                           context->user_data);
+}
+
+static void
+emit_prepared (SvgContext *context)
+{
+        if (context->pixbuf != NULL && context->prepared_func != NULL && !context->emitted_prepared) {
+                (* context->prepared_func) (context->pixbuf, NULL, context->user_data);
+                context->emitted_prepared = TRUE;
+        }
+}
+
+static void 
+maybe_update (SvgContext *context)
+{
+        /* TODO: not sure whether we want to emit an "updated" signal every time someone
+         * TODO: writes to the loader. yes, the image might have changed some, but does that
+         * TODO: warrant emitting progressive drawing signals? */
+        if (FALSE)
+                emit_updated (context);
 }
 
 static gboolean
@@ -114,9 +146,9 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
 
         context->pixbuf = rsvg_handle_get_pixbuf (context->handle);
   
-        if (context->pixbuf != NULL && context->prepared_func != NULL)
-                (* context->prepared_func) (context->pixbuf, NULL, context->user_data);        
-  
+        emit_prepared (context);
+        maybe_update (context);
+
         return TRUE;
 }
 
@@ -131,19 +163,13 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 
         rsvg_handle_close (context->handle, error);
 
-        if (context->pixbuf == NULL) {
+        if (context->pixbuf == NULL) 
                 context->pixbuf = rsvg_handle_get_pixbuf (context->handle);
-    
-                if (context->pixbuf != NULL && context->prepared_func != NULL)
-                        (* context->prepared_func) (context->pixbuf, NULL, context->user_data);
-        }
 
-        if (context->pixbuf != NULL && context->updated_func != NULL)
-                (* context->updated_func) (context->pixbuf, 
-                                           0, 0, 
-                                           gdk_pixbuf_get_width (context->pixbuf), 
-                                           gdk_pixbuf_get_height (context->pixbuf), 
-                                           context->user_data);
+        if (context->pixbuf != NULL) {
+                emit_prepared (context);
+                emit_updated (context);
+        }
         else if (!context->pixbuf) {
                 rsvg_propegate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
                 result = FALSE;
@@ -174,14 +200,18 @@ fill_info (GdkPixbufFormat *info)
                 { "<!DOCTYPE svg", NULL, 100 },
                 { NULL, NULL, 0 }
         };
-        static gchar *mime_types[] = { 
-                "image/svg", 
+        static gchar *mime_types[] = { /* yes folks, i actually have run into all of these in the wild... */
                 "image/svg+xml",
+                "image/svg",
+                "image/svg-xml",
+                "image/vnd.adobe.svg+xml",
+                "text/xml-svg",
                 NULL 
         };
         static gchar *extensions[] = { 
                 "svg", 
                 "svgz",
+                "svg.gz",
                 NULL 
         };
         
