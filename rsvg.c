@@ -870,7 +870,6 @@ rsvg_end_element (void *data, const xmlChar *name)
 				rsvg_end_g (ctx);
 			else if (!strcmp ((char *)name, "defs")) {
 				ctx->in_defs = FALSE;
-				ctx->handler_nest--;
 			}
 			
 			/* pop the state stack */

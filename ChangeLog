@@ -2,6 +2,15 @@
 
 2003-02-01  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg.c (end_element): Fix regression
+	
+2003-02-01  Dom Lachowicz <cinamod@hotmail.com>
+
+	* docs/*: GtkDoc work. Please someone with better gtk-doc skills than
+	me make this work 100% properly!
+	
+2003-02-01  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg.c (end_element): Fix regression caused by in_defs bogosity
 	(start_linear_gradient): Proper handling of unspecified params
 	(start_radial_gradient): Ditto
