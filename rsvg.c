@@ -26,6 +26,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include <libart_lgpl/art_affine.h>
 #include <libart_lgpl/art_vpath_bpath.h>
@@ -51,6 +52,7 @@
 typedef struct _RsvgState RsvgState;
 typedef struct _RsvgSaxHandler RsvgSaxHandler;
 
+#define SVG_BUFFER_SIZE (1024 * 8)
 
 struct _RsvgState {
   double affine[6];
@@ -1375,6 +1377,19 @@ rsvg_entity_decl (void *data, const xmlChar *name, int type,
   g_hash_table_insert (entities, dupname, entity);
 }
 
+static void
+rsvg_error_cb (void *data, const char *msg, ...)
+{
+	va_list args;
+	
+	va_start (args, msg);
+#ifdef VERBOSE
+	fprintf (stderr, "fatal svg parse error: ");
+#endif
+	vfprintf (stderr, msg, args);
+	va_end (args);
+}
+
 static xmlSAXHandler rsvgSAXHandlerStruct = {
     NULL, /* internalSubset */
     NULL, /* isStandalone */
@@ -1398,12 +1413,10 @@ static xmlSAXHandler rsvgSAXHandlerStruct = {
     NULL, /* processingInstruction */
     NULL, /* comment */
     NULL, /* xmlParserWarning */
-    NULL, /* xmlParserError */
-    NULL, /* xmlParserError */
+    rsvg_error_cb, /* xmlParserError */
+    rsvg_error_cb, /* xmlParserFatalError */
     NULL, /* getParameterEntity */
 };
-
-static xmlSAXHandlerPtr rsvgSAXHandler = &rsvgSAXHandlerStruct;
 
 GQuark
 rsvg_error_quark (void)
@@ -1500,16 +1513,13 @@ rsvg_handle_write (RsvgHandle    *handle,
   handle->error = &real_error;
   if (handle->ctxt == NULL)
     {
-      handle->ctxt = xmlCreatePushParserCtxt (rsvgSAXHandler,
-					      handle,
-					      buf, count,
-					      "filename XXX");
+      handle->ctxt = xmlCreatePushParserCtxt (
+	      &rsvgSAXHandlerStruct, handle, NULL, 0, NULL);
       handle->ctxt->replaceEntities = TRUE;
     }
-  else
-    {
-      xmlParseChunk (handle->ctxt, buf, count, 0);
-    }
+
+  xmlParseChunk (handle->ctxt, buf, count, 0);
+
   handle->error = NULL;
   /* FIXME: Error handling not implemented. */
   /*  if (*real_error != NULL)
@@ -1535,11 +1545,11 @@ gboolean
 rsvg_handle_close (RsvgHandle  *handle,
 		   GError     **error)
 {
-  gchar chars[1];
+  gchar chars[1] = { '\0' };
   GError *real_error;
 
   handle->error = &real_error;
-  xmlParseChunk (handle->ctxt, chars, 0, 1);
+  xmlParseChunk (handle->ctxt, chars, 1, TRUE);
   xmlFreeParserCtxt (handle->ctxt);
   /* FIXME: Error handling not implemented. */
   /*
@@ -1651,7 +1661,6 @@ rsvg_pixbuf_from_file (const gchar *file_name,
   return rsvg_pixbuf_from_file_at_size (file_name, -1, -1, error);
 }
 
-
 /**
  * rsvg_pixbuf_from_file_at_zoom:
  * @file_name: A file name
@@ -1673,7 +1682,7 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
 			       GError     **error)
 {
   FILE *f;
-  char chars[10];
+  char chars[SVG_BUFFER_SIZE];
   gint result;
   GdkPixbuf *retval;
   RsvgHandle *handle;
@@ -1695,7 +1704,7 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
   data.y_zoom = y_zoom;
 
   rsvg_handle_set_size_callback (handle, rsvg_size_callback, &data, NULL);
-  while ((result = fread (chars, 1, 3, f)) > 0)
+  while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
     rsvg_handle_write (handle, chars, result, error);
   rsvg_handle_close (handle, error);
   
@@ -1728,7 +1737,7 @@ rsvg_pixbuf_from_file_at_size (const gchar *file_name,
 			       GError     **error)
 {
   FILE *f;
-  char chars[10];
+  char chars[SVG_BUFFER_SIZE];
   gint result;
   GdkPixbuf *retval;
   RsvgHandle *handle;
@@ -1746,7 +1755,7 @@ rsvg_pixbuf_from_file_at_size (const gchar *file_name,
   data.height = height;
 
   rsvg_handle_set_size_callback (handle, rsvg_size_callback, &data, NULL);
-  while ((result = fread (chars, 1, 3, f)) > 0)
+  while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
     rsvg_handle_write (handle, chars, result, error);
 
   rsvg_handle_close (handle, error);

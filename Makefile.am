@@ -1,4 +1,4 @@
-noinst_PROGRAMS = test-rsvg
+noinst_PROGRAMS = test-rsvg test-performance
 
 EXTRA_DIST =\
 	COPYING.LIB \
@@ -49,6 +49,11 @@ test_rsvg_SOURCES=test-rsvg.c
 test_rsvg_LDFLAGS =
 test_rsvg_DEPENDENCIES = $(DEPS)
 test_rsvg_LDADD = $(LDADDS) -lm
+
+test_performance_SOURCES=test-performance.c
+test_performance_LDFLAGS =
+test_performance_DEPENDENCIES = $(DEPS)
+test_performance_LDADD = $(LDADDS) -lm
 
 tests: test-rsvg
 

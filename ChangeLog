@@ -1,3 +1,19 @@
+2002-02-20  Michael Meeks  <michael@ximian.com>
+
+	* Makefile.am: add test-performance.c
+
+	* test-performance.c: impl.
+
+2002-02-17  Michael Meeks  <michael@ximian.com>
+
+	* rsvg.c (rsvg_handle_write): make sure we set
+	replaceEntities before we parse any of the buffer.
+	(rsvg_pixbuf_from_file_at_size),
+	(rsvg_pixbuf_from_file_at_zoom): read / parse
+	SVG_BUFFER_SIZE bytes at a time, not 3.
+	(rsvgSAXHandler): kill bogus module global.
+	(rsvg_error_cb): impl.
+
 2002-02-18  Gediminas Paulauskas <menesis@delfi.lt>
 
 	* configure.in: remove GNOME_COMMON_INIT, GNOME_PLATFORM_GNOME_2
