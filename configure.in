@@ -20,7 +20,7 @@ dnl ===========================================================================
 
 LIBRSVG_MAJOR_VERSION=1
 LIBRSVG_MINOR_VERSION=1
-LIBRSVG_MICRO_VERSION=1
+LIBRSVG_MICRO_VERSION=2
 AC_SUBST(LIBRSVG_MAJOR_VERSION)
 AC_SUBST(LIBRSVG_MINOR_VERSION)
 AC_SUBST(LIBRSVG_MICRO_VERSION)
@@ -65,7 +65,9 @@ AC_SUBST(LIBRSVG_CFLAGS)
 
 dnl ===========================================================================
 
-AC_CHECK_LIB(popt, poptParseArgvString, [POPT_LIBS="-lpopt"])
+AC_CHECK_LIB(popt, poptParseArgvString, [POPT_LIBS="-lpopt"],
+AC_MSG_ERROR([popt 1.5 or newer is required to build librsvg.
+You can download the latest version from ftp://ftp.rpm.org/pub/rpm/dist/rpm-4.0.x/]))
 AC_SUBST(POPT_LIBS)
 
 dnl ===========================================================================
