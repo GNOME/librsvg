@@ -768,8 +768,8 @@ ccss_property (CRDocHandler *a_handler, CRString *a_name,
 			   CRTerm *a_expr, gboolean a_important)
 {
 	CSSUserData * user_data;
-	char * expr = NULL, *name =NULL;
-	int len = 0 ;
+	char * expr = NULL, *name = NULL;
+	size_t len = 0 ;
 
 	g_return_if_fail (a_handler);
 
@@ -779,6 +779,7 @@ ccss_property (CRDocHandler *a_handler, CRString *a_name,
 		{
 			name = (char*) cr_string_peek_raw_str (a_name) ;
 			len = cr_string_peek_raw_str_len (a_name) ;
+
 			g_string_append_len (user_data->def, name, len);
 			g_string_append (user_data->def, ": ");
 			expr = cr_term_to_string (a_expr);
