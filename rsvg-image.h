@@ -48,9 +48,6 @@ void rsvg_preserve_aspect_ratio(unsigned int aspect_ratio, double width,
 				double height, double * w, double * h,
 				double * x, double * y);
 
-void
-rsvg_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate, 
-				  double * affine, double w, double h);
 
 gchar *
 rsvg_get_file_path (const gchar * filename, const gchar *basedir);

@@ -32,6 +32,7 @@ RsvgArtRender * rsvg_art_render_new(GdkPixbuf * pb)
 	output = g_new(RsvgArtRender, 1);
 
 	output->super.render_path          = rsvg_art_render_path;
+	output->super.render_image         = rsvg_art_render_image;
 	output->super.pop_discrete_layer   = rsvg_art_pop_discrete_layer;
 	output->super.push_discrete_layer  = rsvg_art_push_discrete_layer;
 
@@ -44,6 +45,12 @@ static void
 bogus(RsvgDrawingCtx *ctx)
 {
 }
+static void 
+image_bogus(RsvgDrawingCtx *ctx, GdkPixbuf *pb, 
+			double x, double y, double w, double h)
+{
+}
+
 
 RsvgArtSVPRender * rsvg_art_svp_render_new()
 {
@@ -51,6 +58,7 @@ RsvgArtSVPRender * rsvg_art_svp_render_new()
 	output = g_new(RsvgArtSVPRender, 1);
 
 	output->super.render_path          = rsvg_art_svp_render_path;
+	output->super.render_image         = image_bogus;
 	output->super.pop_discrete_layer   = bogus;
 	output->super.push_discrete_layer  = bogus;
 

@@ -1979,3 +1979,8 @@ void rsvg_render_path (RsvgDrawingCtx *ctx, const char *d)
 {
 	ctx->render->render_path(ctx, d);
 }
+void rsvg_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * pb, 
+						double x, double y, double w, double h)
+{
+	ctx->render->render_image(ctx, pb, x, y, w, h);
+}

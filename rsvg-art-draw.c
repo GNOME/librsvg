@@ -537,3 +537,66 @@ rsvg_art_svp_render_path (RsvgDrawingCtx *ctx, const char *d)
 
 	rsvg_bpath_def_free (bpath_def);
 }
+
+void rsvg_art_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * img, 
+							double x, double y, double w, double h)
+{
+	int i, j;
+	double tmp_affine[6];
+	double tmp_tmp_affine[6];
+	RsvgState *state = rsvg_state_current(ctx);
+	GdkPixbuf *intermediate;
+	double basex, basey;
+	ArtIRect temprect;
+	/*this will have to change*/
+	GdkPixbuf * pixbuf = ((RsvgArtRender *)ctx->render)->pixbuf;
+
+	for (i = 0; i < 6; i++)
+		tmp_affine[i] = state->affine[i];
+
+	/*translate to x and y*/
+	tmp_tmp_affine[0] = tmp_tmp_affine[3] = 1;
+	tmp_tmp_affine[1] = tmp_tmp_affine[2] = 0;
+	tmp_tmp_affine[4] = x;
+	tmp_tmp_affine[5] = y;
+
+	art_affine_multiply(tmp_affine, tmp_tmp_affine, tmp_affine);
+
+	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+								   gdk_pixbuf_get_width (pixbuf),
+								   gdk_pixbuf_get_height (pixbuf));
+
+	rsvg_art_affine_image(img, intermediate, tmp_affine, w, h);
+
+	if (state->clippath)
+		{
+			rsvg_art_clip_image(intermediate, state->clippath);
+		}
+
+	/*slap it down*/
+	rsvg_art_alpha_blt (intermediate, 0, 0,
+						gdk_pixbuf_get_width (intermediate),
+						gdk_pixbuf_get_height (intermediate),
+						pixbuf, 
+						0, 0);
+
+	temprect.x0 = gdk_pixbuf_get_width (intermediate);
+	temprect.y0 = gdk_pixbuf_get_height (intermediate);
+	temprect.x1 = 0;
+	temprect.y1 = 0;
+
+	for (i = 0; i < 2; i++)
+		for (j = 0; j < 2; j++)
+			{
+				basex = tmp_affine[0] * w * i + tmp_affine[2] * h * j + tmp_affine[4];
+				basey = tmp_affine[1] * w * i + tmp_affine[3] * h * j + tmp_affine[5];
+				temprect.x0 = MIN(basex, temprect.x0);
+				temprect.y0 = MIN(basey, temprect.y0);
+				temprect.x1 = MAX(basex, temprect.x1);
+				temprect.y1 = MAX(basey, temprect.y1);
+			}
+
+	art_irect_union(&ctx->bbox, &ctx->bbox, &temprect);
+
+	g_object_unref (G_OBJECT (intermediate));
+}

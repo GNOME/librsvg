@@ -33,13 +33,11 @@
 
 #include <math.h>
 #include <rsvg-art-render.h>
+#include <rsvg-art-composite.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif /*  M_PI  */
-
-/* probably poor form, but it saves us from whacking it in the header file */
-void rsvg_clip_image(GdkPixbuf *intermediate, ArtSVP *path); 
 
 #define PERFECTBLUR 0
 
@@ -341,9 +339,9 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 	bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);	
 
 	if (rsvg_state_current (context)->clippath)
-		rsvg_clip_image(ctx->lastresult.result, rsvg_state_current (context)->clippath);
+		rsvg_art_clip_image(ctx->lastresult.result, rsvg_state_current (context)->clippath);
 
-	rsvg_alpha_blt (ctx->lastresult.result, bounds.x1, bounds.y1, bounds.x2 - bounds.x1,
+	rsvg_art_alpha_blt (ctx->lastresult.result, bounds.x1, bounds.y1, bounds.x2 - bounds.x1,
 					bounds.y2 - bounds.y1, output, bounds.x1, bounds.y1);
 	context->bbox.x0 = bounds.x1;
 	context->bbox.y0 = bounds.y1;
@@ -1969,9 +1967,9 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self,
 	for (i = 0; i < mself->nodes->len; i++)
 		{
 			in = rsvg_filter_get_in (g_ptr_array_index (mself->nodes, i), ctx);
-			rsvg_alpha_blt (in, boundarys.x1, boundarys.y1, boundarys.x2 - boundarys.x1,
-							boundarys.y2 - boundarys.y1, output, boundarys.x1,
-							boundarys.y1);
+			rsvg_art_alpha_blt (in, boundarys.x1, boundarys.y1, boundarys.x2 - boundarys.x1,
+								boundarys.y2 - boundarys.y1, output, boundarys.x1,
+								boundarys.y1);
 			g_object_unref (G_OBJECT (in));
 		}
 	
@@ -3992,11 +3990,11 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, boundarys.x2 - boundarys.x1, 
 								   boundarys.y2 - boundarys.y1);
 
-	rsvg_affine_image(img, intermediate, 
-					  ctx->paffine, 
-					  (boundarys.x2 - boundarys.x1) / ctx->paffine[0], 
-					  (boundarys.y2 - boundarys.y1) / ctx->paffine[3]);
-
+	rsvg_art_affine_image(img, intermediate, 
+						  ctx->paffine, 
+						  (boundarys.x2 - boundarys.x1) / ctx->paffine[0], 
+						  (boundarys.y2 - boundarys.y1) / ctx->paffine[3]);
+	
 	if (!intermediate)
 		{
 			g_object_unref (G_OBJECT (img));

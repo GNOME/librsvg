@@ -145,6 +145,8 @@ struct RsvgDrawingCtx {
 
 struct RsvgRender {
 	void (* render_path) (RsvgDrawingCtx *ctx, const char *d);
+	void (* render_image) (RsvgDrawingCtx *ctx, GdkPixbuf * pixbuf,
+						   double x, double y, double w, double h);
 	void (* pop_discrete_layer) (RsvgDrawingCtx *ctx);
 	void (* push_discrete_layer) (RsvgDrawingCtx *ctx);
 };
@@ -240,6 +242,8 @@ _rsvg_acquire_xlink_href_resource (const char *href,
 void rsvg_pop_discrete_layer(RsvgDrawingCtx *ctx);
 void rsvg_push_discrete_layer (RsvgDrawingCtx *ctx);
 void rsvg_render_path (RsvgDrawingCtx *ctx, const char *d);
+void rsvg_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * pb, 
+						double x, double y, double w, double h);
 
 G_END_DECLS
 

@@ -120,10 +120,6 @@ void
 rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output,
 						RsvgDrawingCtx * ctx);
 
-void
-rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
-				gint srcheight, GdkPixbuf * dst, gint dstx, gint dsty);
-
 G_END_DECLS
 
 #endif

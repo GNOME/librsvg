@@ -27,6 +27,7 @@
             Caleb Moore <c.moore@student.unsw.edu.au>
 */
 #include <string.h>
+#include <math.h>
 
 #include "rsvg-art-composite.h"
 #include "rsvg-art-render.h"
@@ -36,6 +37,8 @@
 #include "rsvg-mask.h"
 
 #include <libart_lgpl/art_rgba.h>
+#include <libart_lgpl/art_affine.h>
+#include <libart_lgpl/art_rgb_svp.h>
 
 static void
 rsvg_pixmap_destroy (gchar *pixels, gpointer data)
@@ -340,8 +343,8 @@ rsvg_art_needs_discrete_layer(RsvgState *state)
 }
 
 void
-rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
-				gint srcheight, GdkPixbuf * dst, gint dstx, gint dsty)
+rsvg_art_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
+					gint srcheight, GdkPixbuf * dst, gint dstx, gint dsty)
 {
 	gint rightx;
 	gint bottomy;
@@ -432,5 +435,141 @@ rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
 						art_rgba_run_alpha (dst_pixels + 4 * dx +
 											dy * dstrowstride, r, g, b, a, 1);
 					}
+			}
+}
+
+void
+rsvg_art_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate, 
+					  double * affine, double w, double h)
+{
+	gdouble tmp_affine[6];
+	gdouble inv_affine[6];
+	gdouble raw_inv_affine[6];
+	gint intstride;
+	gint basestride;	
+	gint basex, basey;
+	gdouble fbasex, fbasey;
+	gdouble rawx, rawy;
+	guchar * intpix;
+	guchar * basepix;
+	gint i, j, k, basebpp, ii, jj;
+	gboolean has_alpha;
+	gdouble pixsum[4];
+	gboolean xrunnoff, yrunnoff;
+	gint iwidth, iheight;
+	gint width, height;
+
+	width = gdk_pixbuf_get_width (img);
+	height = gdk_pixbuf_get_height (img);
+	iwidth = gdk_pixbuf_get_width (intermediate);
+	iheight = gdk_pixbuf_get_height (intermediate);
+
+	has_alpha = gdk_pixbuf_get_has_alpha (img);
+
+	basestride = gdk_pixbuf_get_rowstride (img);
+	intstride = gdk_pixbuf_get_rowstride (intermediate);
+	basepix = gdk_pixbuf_get_pixels (img);
+	intpix = gdk_pixbuf_get_pixels (intermediate);
+	basebpp = has_alpha ? 4 : 3;
+
+	art_affine_invert(raw_inv_affine, affine);
+
+	/*scale to w and h*/
+	tmp_affine[0] = (double)w;
+	tmp_affine[3] = (double)h;
+	tmp_affine[1] = tmp_affine[2] = tmp_affine[4] = tmp_affine[5] = 0;
+	art_affine_multiply(tmp_affine, tmp_affine, affine);
+
+	art_affine_invert(inv_affine, tmp_affine);
+
+
+	/*apply the transformation*/
+	for (i = 0; i < iwidth; i++)
+		for (j = 0; j < iheight; j++)		
+			{
+				fbasex = (inv_affine[0] * (double)i + inv_affine[2] * (double)j + 
+						  inv_affine[4]) * (double)width;
+				fbasey = (inv_affine[1] * (double)i + inv_affine[3] * (double)j + 
+						  inv_affine[5]) * (double)height;
+				basex = floor(fbasex);
+				basey = floor(fbasey);
+				rawx = raw_inv_affine[0] * i + raw_inv_affine[2] * j + 
+					raw_inv_affine[4];
+				rawy = raw_inv_affine[1] * i + raw_inv_affine[3] * j + 
+					raw_inv_affine[5];
+				if (rawx < 0 || rawy < 0 || rawx >= w || 
+					rawy >= h || basex < 0 || basey < 0 
+					|| basex >= width || basey >= height)
+					{					
+						for (k = 0; k < 4; k++)
+							intpix[i * 4 + j * intstride + k] = 0;
+					}
+				else
+					{
+						if (basex < 0 || basex + 1 >= width)
+							xrunnoff = TRUE;
+						else
+							xrunnoff = FALSE;
+						if (basey < 0 || basey + 1 >= height)
+							yrunnoff = TRUE;
+						else
+							yrunnoff = FALSE;
+						for (k = 0; k < basebpp; k++)
+							pixsum[k] = 0;
+						for (ii = 0; ii < 2; ii++)
+							for (jj = 0; jj < 2; jj++)
+								{
+									if (basex + ii < 0 || basey + jj< 0 
+										|| basex + ii >= width || basey + jj >= height)
+										;
+									else
+										{
+											for (k = 0; k < basebpp; k++)
+												{
+													pixsum[k] += 
+														(double)basepix[basebpp * (basex + ii) + (basey + jj) * basestride + k] 
+														* (xrunnoff ? 1 : fabs(fbasex - (double)(basex + (1 - ii))))
+														* (yrunnoff ? 1 : fabs(fbasey - (double)(basey + (1 - jj))));
+												}
+										}
+								}
+						for (k = 0; k < basebpp; k++)
+							intpix[i * 4 + j * intstride + k] = pixsum[k];
+						if (!has_alpha)
+							intpix[i * 4 + j * intstride + 3] = 255;
+					}	
+
+			}
+}
+
+void
+rsvg_art_clip_image(GdkPixbuf *intermediate, ArtSVP *path)
+{
+	gint intstride;
+	gint basestride;	
+	guchar * intpix;
+	guchar * basepix;
+	gint i, j;
+	gint width, height;
+	GdkPixbuf * base;
+
+	width = gdk_pixbuf_get_width (intermediate);
+	height = gdk_pixbuf_get_height (intermediate);
+
+	intstride = gdk_pixbuf_get_rowstride (intermediate);
+	intpix = gdk_pixbuf_get_pixels (intermediate);
+
+	base = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 0, 8, 
+						   width, height);
+	basestride = gdk_pixbuf_get_rowstride (base);
+	basepix = gdk_pixbuf_get_pixels (base);
+	
+	art_rgb_svp_aa(path, 0, 0, width, height, 0xFFFFFF, 0x000000, basepix, basestride, NULL);
+
+	for (i = 0; i < width; i++)
+		for (j = 0; j < height; j++)		
+			{
+				intpix[i * 4 + j * intstride + 3] = intpix[i * 4 + j * intstride + 3] * 
+					basepix[i * 3 + j * basestride] / 255;
 			}
 }
