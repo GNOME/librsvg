@@ -1,5 +1,10 @@
 2003-01-13  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-shapes.c (start_rect): Handle rounded rects missing "ry" param 
+	properly
+	
+2003-01-13  Dom Lachowicz <cinamod@hotmail.com>
+
 	* *: Rework previous commit to use g_ascii_dtostr and g_ascii_strtod
 	
 2003-01-13  Dom Lachowicz <cinamod@hotmail.com>
