@@ -139,7 +139,7 @@ AC_ARG_WITH(croco,[  --with-croco  Use libcroco for CSS parsing],[
 	fi
 ])
 if test "x$test_croco" = "xtrue"; then
-	PKG_CHECK_MODULES(LIBCROCO,[libcroco >= 0.1.0], test_croco=true, test_croco=false)
+	PKG_CHECK_MODULES(LIBCROCO,[libcroco >= 0.4.0], test_croco=true, test_croco=false)
 fi
 
 if test "x$test_croco" = "xtrue"; then
