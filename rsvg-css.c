@@ -29,7 +29,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <locale.h>
 
 #define POINTS_PER_INCH (72.0)
 #define CM_PER_INCH (2.54)
@@ -57,9 +56,7 @@ rsvg_css_parse_length (const char *str, gdouble pixels_per_inch, gint *fixed)
    *  em, ex, px, pt, pc, cm, mm, in, and percentages. 
    */
 
-  char * old_locale = setlocale (LC_NUMERIC, "C");
   length = g_strtod (str, &p);
-  setlocale (LC_NUMERIC, old_locale);
   
   /* todo: error condition - figure out how to best represent it */
   if ((length == -HUGE_VAL || length == HUGE_VAL) && (ERANGE == errno))
