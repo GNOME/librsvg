@@ -122,6 +122,14 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 					new_width  = width;
 					new_height = height;
 
+					/* bogus hack */
+					if (new_width < 0 || new_height < 0)
+						{
+							g_warning ("rsvg_start_svg: width and height not specified in the SVG");
+							if (new_width < 0) new_width = 500;
+							if (new_height < 0) new_height = 500;
+						}
+
 					/* apply the sizing function to acquire our new width and height.
 					   we'll scale this against the old values later */
 					if (ctx->size_func)
