@@ -429,3 +429,55 @@ rsvg_clip_path_parse (const RsvgDefs * defs, const char *str)
 		}
 	return NULL;
 }
+
+ArtSVP *
+rsvg_rect_clip_path(double x, double y, double w, double h, RsvgHandle * ctx)
+{	
+	GString * d = NULL;
+	ArtSVP * output = NULL;
+	char buf [G_ASCII_DTOSTR_BUF_SIZE];
+
+	/* emulate a rect using a path */
+	d = g_string_new ("M ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y));
+
+	g_string_append (d, " H ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + w));
+
+	g_string_append (d, " V ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y+h));
+
+	g_string_append (d, " H ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x));
+
+	g_string_append (d, " V ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y));
+
+	g_string_append (d, " Z");
+
+	output = rsvg_render_path_as_svp (ctx, d->str);
+	g_string_free (d, TRUE);
+	return output;
+}
+
+ArtSVP *
+rsvg_clip_path_merge(ArtSVP * first, ArtSVP * second, char operation)
+{
+	ArtSVP * tmppath;
+	if (first != NULL && second != NULL)
+		{
+			if (operation == 'i')
+				tmppath = art_svp_intersect(first, second);
+			else
+				tmppath = art_svp_union(first, second);
+			art_free(first);
+			art_free(second);
+			return tmppath;
+		}
+	else if (first != NULL)
+		return first;
+	else
+		return second;
+}

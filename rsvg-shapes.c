@@ -469,7 +469,7 @@ rsvg_render_path(RsvgHandle *ctx, const char *d)
 	rsvg_bpath_def_free (bpath_def);
 }
 
-static ArtSVP *
+ArtSVP *
 rsvg_render_path_as_svp(RsvgHandle *ctx, const char *d)
 {
 	RsvgBpathDef *bpath_def;

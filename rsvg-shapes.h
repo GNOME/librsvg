@@ -35,6 +35,7 @@ typedef struct _RsvgDefsDrawable RsvgDefsDrawable;
 
 void rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id);
 void rsvg_render_path (RsvgHandle *ctx, const char *d);
+ArtSVP * rsvg_render_path_as_svp(RsvgHandle *ctx, const char *d);
 void rsvg_start_path (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_polygon (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_polyline (RsvgHandle *ctx, RsvgPropertyBag *atts);

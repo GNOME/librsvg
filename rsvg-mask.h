@@ -76,6 +76,12 @@ rsvg_end_clip_path (RsvgHandle *ctx);
 RsvgDefsDrawable * 
 rsvg_clip_path_parse (const RsvgDefs * defs, const char *str);
 
+ArtSVP *
+rsvg_rect_clip_path(double x, double y, double w, double h, RsvgHandle * ctx);
+
+ArtSVP *
+rsvg_clip_path_merge(ArtSVP * first, ArtSVP * second, char operation);
+
 G_END_DECLS
 
 #endif

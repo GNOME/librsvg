@@ -1749,12 +1749,14 @@ void
 rsvg_state_clip_path_assure(RsvgHandle * ctx)
 {
 	ArtSVP * tmppath;
-	ArtSVP * tmppath2;
 	RsvgState * state;
 
 	state = rsvg_state_current(ctx);
 
-	if (state->clip_path_ref && !state->clip_path_loaded)
+	if (state->clip_path_loaded)
+		return;
+
+	if (state->clip_path_ref)
 		{
 			rsvg_state_push(ctx);
 
@@ -1763,18 +1765,9 @@ rsvg_state_clip_path_assure(RsvgHandle * ctx)
 			rsvg_state_pop(ctx);
 
 			state->clip_path_loaded = TRUE;
+			state->clippath = rsvg_clip_path_merge(tmppath, 
+												   state->clippath, 'i');
 		}
-	else
-		return;
-
-	if (state->clippath != NULL && tmppath != NULL)
-		{
-			tmppath2 = art_svp_intersect(tmppath, state->clippath);
-			art_free(tmppath);
-			state->clippath = tmppath2;
-		}
-	else
-		state->clippath = tmppath;
 }
 
 void
