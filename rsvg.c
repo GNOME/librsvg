@@ -52,7 +52,7 @@
 #define SVG_BUFFER_SIZE (1024 * 8)
 
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
-#define RSVG_ARC_MAGIC ((double) 0.552284749)
+#define RSVG_ARC_MAGIC ((double) 0.5522847498)
 
 /*
  * Ideally this will be configurable
@@ -204,8 +204,8 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	    {
 	      /* todo: viewbox can have whitespace and/or comma but we're only likely to see
 		 these 2 combinations */
-	      if (4 == sscanf ((char *)atts[i + 1], "%lf %lf %lf %lf", &vbox_x, &vbox_y, &vbox_w, &vbox_h) ||
-		  4 == sscanf ((char *)atts[i + 1], "%lf , %lf , %lf , %lf", &vbox_x, &vbox_y, &vbox_w, &vbox_h))
+	      if (4 == sscanf ((char *)atts[i + 1], " %lf %lf %lf %lf ", &vbox_x, &vbox_y, &vbox_w, &vbox_h) ||
+		  4 == sscanf ((char *)atts[i + 1], " %lf , %lf , %lf , %lf ", &vbox_x, &vbox_y, &vbox_w, &vbox_h))
 		has_vbox = TRUE;
 	    }
 	}
@@ -1123,6 +1123,81 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 }
 
 static void
+rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
+{
+  int i, fixed;
+  double affine[6] ;
+  double x, y, dx, dy;
+  RsvgState *state;
+  x = y = dx = dy = 0.;
+
+  if (atts != NULL)
+    {
+      for (i = 0; atts[i] != NULL; i += 2)
+	{
+	  if (!strcmp ((char *)atts[i], "x"))
+	    x = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  if (!strcmp ((char *)atts[i], "y"))
+	    y = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  if (!strcmp ((char *)atts[i], "dx"))
+	    dx = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	  if (!strcmp ((char *)atts[i], "dy"))
+	    dy = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
+	}
+    }
+
+  state = &ctx->state[ctx->n_state - 1];
+
+  x += dx ;
+  y += dy ;
+
+  if (x >= 0 && y >= 0)
+    {
+      art_affine_translate (affine, x, y);
+      art_affine_multiply (state->affine, affine, state->affine);
+    }
+
+  /* todo: transform() is illegal here */
+  rsvg_parse_style_attrs (ctx, atts);
+
+#ifdef VERBOSE
+  fprintf (stderr, "begin tspan!\n");
+#endif
+}
+
+static void
+rsvg_text_handler_start (RsvgSaxHandler *self, const xmlChar *name,
+			 const xmlChar **atts)
+{
+  RsvgSaxHandlerText *z = (RsvgSaxHandlerText *)self;
+  RsvgHandle *ctx = z->ctx;
+
+  /* push the state stack */
+  if (ctx->n_state == ctx->n_state_max)
+    ctx->state = g_renew (RsvgState, ctx->state, ctx->n_state_max <<= 1);
+  if (ctx->n_state)
+    rsvg_state_clone (&ctx->state[ctx->n_state],
+		      &ctx->state[ctx->n_state - 1]);
+  else
+    rsvg_state_init (ctx->state);
+  ctx->n_state++;
+  
+  if (!strcmp ((char *)name, "tspan"))
+    rsvg_start_tspan (ctx, atts);
+}
+
+static void
+rsvg_text_handler_end (RsvgSaxHandler *self, const xmlChar *name)
+{
+  RsvgSaxHandlerText *z = (RsvgSaxHandlerText *)self;
+  RsvgHandle *ctx = z->ctx;
+
+  /* pop the state stack */
+  ctx->n_state--;
+  rsvg_state_finalize (&ctx->state[ctx->n_state]);
+}
+
+static void
 rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
 {
   int i, fixed;
@@ -1133,6 +1208,8 @@ rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
   RsvgSaxHandlerText *handler = g_new0 (RsvgSaxHandlerText, 1);
   handler->super.free = rsvg_text_handler_free;
   handler->super.characters = rsvg_text_handler_characters;
+  handler->super.start_element = rsvg_text_handler_start;
+  handler->super.end_element   = rsvg_text_handler_end;
   handler->ctx = ctx;
 
   x = y = dx = dy = 0.;
@@ -1153,6 +1230,9 @@ rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
     }
 
   state = &ctx->state[ctx->n_state - 1];
+
+  x += dx ;
+  y += dy ;
 
   if (x >= 0 && y >= 0)
     {
