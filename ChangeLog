@@ -1,3 +1,8 @@
+2001-10-19  Darin Adler  <darin@bentspoon.com>
+
+	* hack-macros/nautilus-macros.m4: Change comment so that we
+	won't fool automake into thinking it's a macro.
+
 2001-10-05  Darin Adler  <darin@bentspoon.com>
 
 	* NEWS: Oops. Forgot to give Ramiro credit.
