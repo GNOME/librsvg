@@ -198,6 +198,8 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 void
 fill_vtable (GdkPixbufModule *module)
 {
+        rsvg_init ();
+
         module->begin_load     = gdk_pixbuf__svg_image_begin_load;
         module->stop_load      = gdk_pixbuf__svg_image_stop_load;
         module->load_increment = gdk_pixbuf__svg_image_load_increment;
@@ -206,6 +208,11 @@ fill_vtable (GdkPixbufModule *module)
 /* this is present only in GTK+ 2.4 and later. we want librsvg to work with older versions too */
 #ifndef GDK_PIXBUF_FORMAT_SCALABLE
 #define GDK_PIXBUF_FORMAT_SCALABLE (1 << 1)
+#endif
+
+/* this is present only in GTK+ 2.6 and later. we want librsvg to work with older versions too */
+#ifndef GDK_PIXBUF_FORMAT_THREADSAFE
+#define GDK_PIXBUF_FORMAT_THREADSAFE (1 << 2)
 #endif
 
 void
@@ -237,5 +244,5 @@ fill_info (GdkPixbufFormat *info)
         info->description = _("Scalable Vector Graphics");
         info->mime_types  = mime_types;
         info->extensions  = extensions;
-        info->flags       = GDK_PIXBUF_FORMAT_SCALABLE;
+        info->flags       = GDK_PIXBUF_FORMAT_SCALABLE | GDK_PIXBUF_FORMAT_THREADSAFE;
 }
