@@ -1781,6 +1781,9 @@ rsvg_state_reinherit_top(DrawingCtx * ctx, RsvgState * state, int dominate)
 	gint i;
 	RsvgState * baseon;
 
+	if (dominate == 3)
+		return;
+
 	baseon = rsvg_state_parent(ctx);
 
 	for (i = 0; i < 6; i++)
@@ -1794,8 +1797,7 @@ rsvg_state_reinherit_top(DrawingCtx * ctx, RsvgState * state, int dominate)
 	if (baseon)
 		{
 			/*This is a special domination mode for patterns, the style
-			  is simply left as is, wheras the transform is totally overridden*/
-			if (dominate == 2)
+			  is simply left as is, wheras the transform is totally overridden*/			if (dominate == 2)
 				{
 					for (i = 0; i < 6; i++)
 						{

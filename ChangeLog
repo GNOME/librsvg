@@ -1,3 +1,7 @@
+2004-11-29  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-shapes.c: made markers work again and inherit from the context that they were specified in, not where they were invoked.
+	
 2004-11-18  Dom Lachowicz <cinamod@hotmail.com>
 
 	* test-display.c: rsvg-view now can optionally use the new GtkFileChooser instead of GtkFileSelection, depending on whether you have GTK 2.4 installed or not.

@@ -149,6 +149,9 @@ void rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawabl
 gchar *
 rsvg_get_file_path (const gchar * filename, const gchar *basedir);
 
+void
+rsvg_state_reassemble(RsvgDefsDrawable * self, RsvgState * state);
+
 G_END_DECLS
 
 #endif /* RSVG_SHAPES_H */

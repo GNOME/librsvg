@@ -159,32 +159,6 @@ rsvg_tspan_new()
 	return self;
 }
 
-static gdouble
-rsvg_tspan_dx(RsvgTspan * self)
-{
-	RsvgTspan * i;
-	gdouble total;
-
-	total = 0;
-	for (i = self; i->hasx == FALSE; i = i->parent)
-		total += i->dx;
-	total += i->dx;
-	return total;
-}
-
-static gdouble
-rsvg_tspan_dy(RsvgTspan * self)
-{
-	RsvgTspan * i;
-	gdouble total;
-
-	total = 0;
-	for (i = self; i->hasy == FALSE; i = i->parent)
-		total += i->dy;
-	total += i->dy;
-	return total;
-}
-
 static void
 rsvg_tchunk_remove_leading(RsvgTChunk * self);
 
@@ -457,6 +431,7 @@ rsvg_text_tspan_width (DrawingCtx *ctx,
 							currentindex = -1;
 							if (currentspan->hasx || currentspan->hasy)
 								return currentwidth;
+							currentwidth += currentspan->dx;
 						}
 				}
 			currentindex++;
@@ -501,6 +476,17 @@ rsvg_tspan_draw(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y, int d
 			*y = self->y;
 		}
 
+	if (rsvg_state_current(ctx)->text_dir == PANGO_DIRECTION_TTB_LTR || 
+		rsvg_state_current(ctx)->text_dir == PANGO_DIRECTION_TTB_RTL)
+		{
+			*y += self->dx;
+			*x += self->dy;
+		}
+	else
+		{
+			*x += self->dx;
+			*y += self->dy;
+		}
 	for (i = 0; i < self->contents->len; i++) {
 		rsvg_tchunk_draw (g_ptr_array_index(self->contents, i), ctx, self, x, y);
 	}
@@ -668,6 +654,7 @@ struct _RsvgTextLayout
 	TextAnchor anchor;
 	RsvgTspan    *span;
 	gdouble x, y;
+	gboolean orientation;
 };
 
 typedef struct _RenderCtx RenderCtx;
@@ -965,7 +952,7 @@ cubicto (FT_Vector *ftcontrol1,
 	return 0;
 }
 
-static void
+static gint
 rsvg_text_layout_render_glyphs (RsvgTextLayout     *layout,
 								PangoFont          *font,
 								PangoGlyphString   *glyphs,
@@ -993,9 +980,10 @@ rsvg_text_layout_render_glyphs (RsvgTextLayout     *layout,
 								 pos.x, pos.y,
 								 render_data);
 				}
-			
+		  
 			x_position += glyphs->glyphs[i].geometry.width;
 		}
+	return x_position;
 }
 
 static void
@@ -1058,13 +1046,12 @@ rsvg_text_layout_render_line (RsvgTextLayout     *layout,
 			
 			pango_glyph_string_extents (run->glyphs, run->item->analysis.font,
 										NULL, &rect);
-			rsvg_text_layout_render_glyphs (layout,
-											run->item->analysis.font, run->glyphs,
-											render_func,
-											x + x_off, y,
-											render_data);
+			x_off += rsvg_text_layout_render_glyphs (layout,
+													 run->item->analysis.font, run->glyphs,
+													 render_func,
+													 x + x_off, y,
+													 render_data);
 			
-			x_off += rect.width;
 		}
 }
 
@@ -1078,10 +1065,6 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 	gint             x, y;
 
 	rsvg_text_layout_get_offsets (layout, &offx, &offy);
-
-	offx += rsvg_tspan_dx(layout->span);
-	offy += rsvg_tspan_dy(layout->span);
-   
 
 	x = offx + layout->x;
 	y = offy + layout->y;
@@ -1136,6 +1119,8 @@ rsvg_text_render_text_as_string (DrawingCtx *ctx,
 	layout->span = tspan;
 	layout->x = *x;
 	layout->y = *y;
+	layout->orientation = rsvg_state_current(ctx)->text_dir == PANGO_DIRECTION_TTB_LTR || 
+		rsvg_state_current(ctx)->text_dir == PANGO_DIRECTION_TTB_RTL;
 	render = rsvg_render_ctx_new ();
 
 	rsvg_text_layout_render (layout, rsvg_text_render_vectors, 
@@ -1191,8 +1176,6 @@ rsvg_text_layout_width  (RsvgTextLayout *layout)
 	gint             offx, offy;
 
 	rsvg_text_layout_get_offsets (layout, &offx, &offy);
-
-	offx += rsvg_tspan_dx(layout->span);
 	
 	iter = pango_layout_get_iter (layout->layout);
 	

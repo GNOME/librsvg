@@ -1495,7 +1495,7 @@ static void
 box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw, 
 		  gint kh, FPBox boundarys, RsvgFilterPrimitiveOutput op)
 {
-	guchar ch;
+	gint ch;
 	gint x, y;
 	gint rowstride, height, width;
 	

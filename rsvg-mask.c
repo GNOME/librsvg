@@ -93,7 +93,7 @@ rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, DrawingCtx *ct
 				{
 					guchar r, g, b, rm, gm, bm, am;
 					guint a;
-					gdouble luminance;
+					guint luminance;
 					a = tos_pixels[4 * x + 3];
 					if (a)
 						{
@@ -106,12 +106,9 @@ rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, DrawingCtx *ct
 							bm = mask_pixels[4 * x + 2];
 							am = mask_pixels[4 * x + 3];
 
-							luminance = ((gdouble)rm * 0.2125 + 
-										 (gdouble)gm * 0.7154 + 
-										 (gdouble)bm * 0.0721) / 255.;
+							luminance = (rm * 2125 + gm * 7154 + bm * 0721) / 10000;
 
-							a = (guint)((gdouble)a * luminance
-										* (gdouble)am / 255.);
+							a = a * luminance / 255 * am / 255;
 
 							art_rgba_run_alpha (nos_pixels + 4 * x, r, g, b, a, 1);
 						}

@@ -2299,7 +2299,7 @@ rsvg_marker_free(RsvgDefVal* self)
 void 
 rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	const char *id = NULL, *value;
+	const char *klazz = NULL, *id = NULL, *value;
 	RsvgMarker *marker;
 	double font_size;
 	double x = 0., y = 0., w = 0., h = 0.;
@@ -2323,6 +2323,8 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
+			if ((value = rsvg_property_bag_lookup (atts, "class")))
+				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
 				{
 					got_vbox = rsvg_css_parse_vbox (value, &vbx, &vby,
@@ -2406,6 +2408,7 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	marker->contents =	(RsvgDefsDrawable *)rsvg_push_part_def_group(ctx, NULL, state);
 
+	rsvg_state_init (&marker->contents->state);
 	marker->super.free = rsvg_marker_free;
 
 	rsvg_defs_set (ctx->defs, id, &marker->super);
@@ -2469,9 +2472,12 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 	
 	art_affine_multiply(affine, affine, taffine);
 
+	/*don't inherit anything from the current context*/
+	rsvg_state_finalize(state);
+	rsvg_state_init(state);
+	rsvg_state_reassemble((RsvgDefsDrawable *)self->contents, state);
 
 	rsvg_state_push(ctx);
-
 	state = rsvg_state_current(ctx);
 	
 	for (i = 0; i < 6; i++)
@@ -2479,7 +2485,7 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 			state->affine[i] = affine[i];
 		}
 
-	rsvg_defs_drawable_draw (self->contents, ctx, 2);
+	rsvg_defs_drawable_draw (self->contents, ctx, 3);
 	
 	rsvg_state_pop(ctx);
 }
@@ -2497,22 +2503,18 @@ rsvg_marker_parse (const RsvgDefs * defs, const char *str)
 			while (g_ascii_isspace (*p))
 				p++;
 
-			if (*p == '#')
+			for (ix = 0; p[ix]; ix++)
+				if (p[ix] == ')')
+					break;
+			
+			if (p[ix] == ')')
 				{
-				  p++;
-					for (ix = 0; p[ix]; ix++)
-						if (p[ix] == ')')
-							break;
-
-					if (p[ix] == ')')
-						{
-							name = g_strndup (p, ix);
-							val = rsvg_defs_lookup (defs, name);
-							g_free (name);
-							
-							if (val && val->type == RSVG_DEF_MARKER)
-								return (RsvgDefVal *) val;
-						}
+					name = g_strndup (p, ix);
+					val = rsvg_defs_lookup (defs, name);
+					g_free (name);
+					
+					if (val && val->type == RSVG_DEF_MARKER)
+						return (RsvgDefVal *) val;
 				}
 		}
 	return NULL;
@@ -2661,4 +2663,20 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 									  &group->super);
 
 	ctx->nest_level++;
+}
+
+void
+rsvg_state_reassemble(RsvgDefsDrawable * self, RsvgState * state)
+{
+	RsvgState store;
+	if (self == NULL)
+		{
+			return;
+		}
+	rsvg_state_reassemble(self->parent, state);
+
+	rsvg_state_clone (&store, &self->state);
+	rsvg_state_reinherit(&store, state);
+	rsvg_state_finalize(state);
+	*state = store;
 }
