@@ -1,3 +1,8 @@
+2002-10-14  Alexander Larsson  <alexl@redhat.com>
+
+	* NEWS:
+	Add news items
+
 2002-10-10  Dom Lachowicz <doml@appligent.com>
 
 	* rsvg.c (rsvg_set_default_dpi): Rename function

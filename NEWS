@@ -1,3 +1,19 @@
+Version 2.1.1
+
+- Better ellipse rendering
+
+- New functions to set rendering DPI
+
+- Better handling of SVGs colors, gradients and images
+
+- support dashes
+
+- Includes a new gdk-pixbuf svg loader
+
+- Includes a new gimp svg loader
+
+- Now installs a binary that can rasterize svgs.
+
 Version 2.1.0
 
 - New comaintainer Dom Lachowicz
