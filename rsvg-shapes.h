@@ -80,7 +80,7 @@ struct _RsvgDefsDrawableGroup {
 struct _RsvgDefsDrawableSymbol {
  	RsvgDefsDrawableGroup super;
 	gint preserve_aspect_ratio;
-	int has_vbox;
+	gboolean overflow, has_vbox;
  	double x, y, width, height;
 };
 
@@ -91,6 +91,7 @@ struct _RsvgDefsDrawableUse {
 
 struct _RsvgDefsDrawableImage {
  	RsvgDefsDrawable super;
+	gboolean overflow;
 	gint preserve_aspect_ratio, x, y, w, h;
  	GdkPixbuf *img;
 };

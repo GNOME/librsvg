@@ -1843,12 +1843,20 @@ rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 	RsvgState *state = rsvg_state_current(ctx);
 	GdkPixbuf *intermediate;
 	double basex, basey;
+	ArtSVP * temppath;
 
 	rsvg_state_reinherit_top(ctx, &self->state, dominate);
 
 
 	for (i = 0; i < 6; i++)
 		tmp_affine[i] = state->affine[i];
+
+	if (!z->overflow && (aspect_ratio & RSVG_ASPECT_RATIO_SLICE)){
+		temppath = rsvg_rect_clip_path(x, y, w, h, ctx);
+		state->clip_path_loaded = TRUE;
+		state->clippath = rsvg_clip_path_merge(temppath,
+											   state->clippath, 'i');
+	}
 
 	rsvg_preserve_aspect_ratio(aspect_ratio, (double)gdk_pixbuf_get_width(img),
 							   (double)gdk_pixbuf_get_height(img), &w, &h,
@@ -1924,7 +1932,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	GError *err = NULL;
 	RsvgState *state;
 	RsvgDefsDrawableImage *image;
-
+	gboolean overflow = FALSE;
 	state = rsvg_state_current (ctx);
 	
 	if (rsvg_property_bag_size (atts))
@@ -1946,6 +1954,8 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				id = value;
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
 				aspect_ratio = rsvg_css_parse_aspect_ratio (value);
+			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
+				overflow = rsvg_css_parse_overflow(value);
 
 			rsvg_parse_style_attrs (ctx, state, "image", klazz, id, atts);
 		}
@@ -1976,6 +1986,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	image->y = y;
 	image->w = w;
 	image->h = h;
+	image->overflow = overflow;
 	rsvg_state_clone (&image->super.state, rsvg_state_current (ctx));
 	image->super.super.type = RSVG_DEF_PATH;
 	image->super.super.free = rsvg_defs_drawable_image_free;
@@ -2089,7 +2100,6 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 													 -symbol->y);
 								art_affine_multiply(use->super.state.affine, affine, use->super.state.affine);
 								art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);
-								printf("scaling for vbox\n");
 							}
 							else {
 								art_affine_translate(affine, x, y);
@@ -2124,6 +2134,48 @@ rsvg_defs_drawable_symbol_free (RsvgDefVal *self)
 	g_free (z);
 }
 
+static void
+rsvg_defs_drawable_symbol_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+							 int dominate)
+{
+	RsvgDefsDrawableSymbol * sself;
+	RsvgState *state;
+	ArtSVP * temppath = NULL;
+	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
+	guint i;
+	sself = (RsvgDefsDrawableSymbol *)self;
+
+	rsvg_state_reinherit_top(ctx, &self->state, dominate);
+
+	rsvg_push_discrete_layer (ctx);
+
+	state = rsvg_state_current (ctx);
+
+	if (!sself->overflow){
+		temppath = rsvg_rect_clip_path(sself->x,
+									   sself->y,
+									   sself->width,
+									   sself->height,
+									   ctx);
+		state->clip_path_loaded = TRUE;
+		state->clippath = rsvg_clip_path_merge(temppath,
+											   state->clippath, 'i');
+	}
+
+	for (i = 0; i < group->children->len; i++)
+		{
+			rsvg_state_push(ctx);
+
+			rsvg_defs_drawable_draw (g_ptr_array_index(group->children, i), 
+									 ctx, 0);
+	
+			rsvg_state_pop(ctx);
+		}			
+
+	rsvg_pop_discrete_layer (ctx);
+}
+
+
 void 
 rsvg_start_symbol(RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
@@ -2135,6 +2187,7 @@ rsvg_start_symbol(RsvgHandle *ctx, RsvgPropertyBag *atts)
 	symbol = g_new (RsvgDefsDrawableSymbol, 1);
 	group = &symbol->super;
 	symbol->has_vbox = 0;
+	symbol->overflow = 0;
 	symbol->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 
 	if (rsvg_property_bag_size(atts))
@@ -2153,18 +2206,19 @@ rsvg_start_symbol(RsvgHandle *ctx, RsvgPropertyBag *atts)
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
 				symbol->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);			
+			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
+				symbol->overflow = rsvg_css_parse_overflow(value);
+
 
 
 		}
 
 	rsvg_parse_style_attrs (ctx, state, "symbol", klazz, id, atts);
-
 	group->children = g_ptr_array_new();
 	rsvg_state_clone (&group->super.state, rsvg_state_current (ctx));
-
 	group->super.super.type = RSVG_DEF_SYMBOL;
 	group->super.super.free = rsvg_defs_drawable_symbol_free;
-	group->super.draw = rsvg_defs_drawable_group_draw;
+	group->super.draw = rsvg_defs_drawable_symbol_draw;
 	group->super.draw_as_svp = rsvg_defs_drawable_group_draw_as_svp;
 
 	rsvg_defs_set (ctx->defs, id, &group->super.super);

@@ -869,7 +869,7 @@ int rsvg_css_parse_aspect_ratio(const char * str)
 				else if (!strcmp (elems[i], "xMinYMid"))
 					ratio = RSVG_ASPECT_RATIO_XMIN_YMID;
 				else if (!strcmp (elems[i], "xMidYMid"))
-					ratio = RSVG_ASPECT_RATIO_XMIN_YMID;
+					ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 				else if (!strcmp (elems[i], "xMaxYMid"))
 					ratio = RSVG_ASPECT_RATIO_XMAX_YMID;
 				else if (!strcmp (elems[i], "xMinYMax"))
