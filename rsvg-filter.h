@@ -73,6 +73,12 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle *ctx, const xmlChar **atts
 void 
 rsvg_start_filter_primitive_offset (RsvgHandle *ctx, const xmlChar **atts);
 
+void 
+rsvg_start_filter_primitive_merge (RsvgHandle *ctx, const xmlChar **atts);
+
+void 
+rsvg_start_filter_primitive_merge_node (RsvgHandle *ctx, const xmlChar **atts);
+
 G_END_DECLS
 
 #endif

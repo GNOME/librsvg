@@ -1266,3 +1266,123 @@ rsvg_start_filter_primitive_offset (RsvgHandle *ctx, const xmlChar **atts) {
 
 	g_ptr_array_add(((RsvgFilter *)(ctx->currentfilter))->primitives, &filter->super);
 }
+
+typedef struct _RsvgFilterPrimitiveMerge RsvgFilterPrimitiveMerge;
+
+struct _RsvgFilterPrimitiveMerge {
+	RsvgFilterPrimitive super;
+	GPtrArray *nodes;
+};
+
+void 
+rsvg_filter_primitive_merge_free (RsvgFilterPrimitive * self);
+
+void 
+rsvg_filter_primitive_merge_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx);
+	
+void 
+rsvg_filter_primitive_merge_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx) {	
+	guint i;
+	FPBox boundarys;
+
+	RsvgFilterPrimitiveMerge *mself;
+
+	GdkPixbuf *output;
+	GdkPixbuf *in;
+
+	mself = (RsvgFilterPrimitiveMerge *) self;
+	boundarys = rsvg_filter_primitive_get_bounds(self, ctx);
+
+
+	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+							 ctx->width, ctx->height);
+	clear_pixbuf(output);
+
+	for (i = 0; i < mself->nodes->len; i++){
+		in = rsvg_filter_get_in(g_ptr_array_index(mself->nodes, i), ctx);
+		alpha_blt(in, boundarys.x1, boundarys.y1, boundarys.x2 - boundarys.x1, boundarys.y2 - boundarys.y1, output, boundarys.x1, boundarys.y1);
+		g_object_unref(G_OBJECT(in));
+	}
+		
+	rsvg_filter_store_result (self->result, output, ctx);
+	
+	g_object_unref(G_OBJECT(output));
+}
+
+
+void 
+rsvg_filter_primitive_merge_free (RsvgFilterPrimitive * self){
+	RsvgFilterPrimitiveMerge *mself;
+	mself = (RsvgFilterPrimitiveMerge *)self;
+	g_string_free(self->result, TRUE);
+	guint i;
+	for (i = 0; i < mself->nodes->len; i++)
+		g_string_free(g_ptr_array_index(mself->nodes, i), TRUE);
+	g_ptr_array_free(mself->nodes, FALSE);
+	g_free(mself);
+}
+
+void 
+rsvg_start_filter_primitive_merge (RsvgHandle *ctx, const xmlChar **atts) {
+	int i;
+
+	double font_size;
+	RsvgFilterPrimitiveMerge * filter;
+
+	if (ctx->n_state > 0)
+		font_size = rsvg_state_current (ctx)->font_size;
+	else
+		font_size = 12.0;
+
+	filter = g_new(RsvgFilterPrimitiveMerge, 1);
+
+	filter->super.result = g_string_new("none");
+	filter->super.sizedefaults = 1;
+	filter->nodes = g_ptr_array_new();
+
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				{
+					if (!strcmp ((char *)atts[i], "result"))
+						g_string_assign(filter->super.result, (char *)atts[i + 1]);
+					else if (!strcmp ((char *)atts[i], "x")){
+						filter->super.x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
+						filter->super.sizedefaults = 0;
+					}
+					else if (!strcmp ((char *)atts[i], "y")){
+						filter->super.y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
+						filter->super.sizedefaults = 0;
+					}
+					else if (!strcmp ((char *)atts[i], "width")){
+						filter->super.width = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
+						filter->super.sizedefaults = 0;					
+					}
+					else if (!strcmp ((char *)atts[i], "height")){
+						filter->super.height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
+						filter->super.sizedefaults = 0;
+					}	
+				}
+		}
+
+	filter->super.render = &rsvg_filter_primitive_merge_render;
+	filter->super.free = &rsvg_filter_primitive_merge_free;
+
+	g_ptr_array_add(((RsvgFilter *)(ctx->currentfilter))->primitives, &filter->super);
+	ctx->currentmergefilter = filter;
+}
+
+void 
+rsvg_start_filter_primitive_merge_node (RsvgHandle *ctx, const xmlChar **atts) {
+	int i;
+
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				{
+					if (!strcmp ((char *)atts[i], "in"))
+						g_ptr_array_add(((RsvgFilterPrimitiveMerge *)(ctx->currentmergefilter))->nodes, 
+										g_string_new((char *)atts[i + 1]));
+				}
+		}
+}

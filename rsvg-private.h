@@ -78,6 +78,7 @@ struct RsvgHandle {
 	GString * desc;
 
 	void * currentfilter;
+	void * currentmergefilter;
 
 	/* virtual fns */
 	gboolean (* write) (RsvgHandle    *handle,
