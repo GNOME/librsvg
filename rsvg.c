@@ -507,10 +507,20 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	/* gradient inherits parent/cloned information unless it's explicity gotten */
 	grad->obj_bbox = (cloned && !got_bbox) ? grad->obj_bbox : obj_bbox;
-	grad->x1 = (cloned && !got_x1) ? grad->x1 : x1;
-	grad->y1 = (cloned && !got_y1) ? grad->y1 : y1;
-	grad->x2 = (cloned && !got_x2) ? grad->x2 : x2;
-	grad->y2 = (cloned && !got_y2) ? grad->y1 : y2;
+	if (!shallow_cloned)
+		{
+			grad->x1 = (cloned && !got_x1) ? grad->x1 : x1;
+			grad->y1 = (cloned && !got_y1) ? grad->y1 : y1;
+			grad->x2 = (cloned && !got_x2) ? grad->x2 : x2;
+			grad->y2 = (cloned && !got_y2) ? grad->y1 : y2;
+		}
+	else
+		{
+			grad->x1 = x1;
+			grad->y1 = y1;
+			grad->x2 = x2;
+			grad->y2 = y2;
+		}
 	grad->spread = (cloned && !got_spread) ? grad->spread : spread;
 }
 
@@ -660,11 +670,22 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 
 	/* gradient inherits parent/cloned information unless it's explicity gotten */
 	grad->obj_bbox = (cloned && !got_bbox) ? grad->obj_bbox : obj_bbox;
-	grad->cx = (cloned && !got_cx) ? grad->cx : cx;
-	grad->cy = (cloned && !got_cy) ? grad->cy : cy;
-	grad->r =  (cloned && !got_r)  ? grad->r  : r;
-	grad->fx = (cloned && !got_fx) ? grad->fx : fx;
-	grad->fy = (cloned && !got_fy) ? grad->fy : fy;
+	if (!shallow_cloned)
+		{
+			grad->cx = (cloned && !got_cx) ? grad->cx : cx;
+			grad->cy = (cloned && !got_cy) ? grad->cy : cy;
+			grad->r =  (cloned && !got_r)  ? grad->r  : r;
+			grad->fx = (cloned && !got_fx) ? grad->fx : fx;
+			grad->fy = (cloned && !got_fy) ? grad->fy : fy;
+		}
+	else
+		{
+			grad->cx = cx;
+			grad->cy = cy;
+			grad->r = r;
+			grad->fx = fx;
+			grad->fy = fy;
+		}
 	grad->spread = (cloned && !got_spread) ? grad->spread : spread;
 }
 
