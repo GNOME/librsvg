@@ -71,6 +71,7 @@ typedef struct {
   RsvgPaintServer *stroke;
   gint stroke_opacity; /* 0..255 */
   double stroke_width;
+  double miter_limit;
 
   ArtPathStrokeCapType cap;
   ArtPathStrokeJoinType join;
@@ -125,7 +126,7 @@ struct RsvgHandle {
 static gdouble
 rsvg_viewport_percentage (gdouble width, gdouble height)
 {
-  return ((width * width) + (height * height)) / 1.414213562; /* sqrt(2) */
+  return ((width * width) + (height * height)) / M_SQRT2;
 }
 
 static void
@@ -140,6 +141,7 @@ rsvg_state_init (RsvgState *state)
   state->fill_opacity = 0xff;
   state->stroke_opacity = 0xff;
   state->stroke_width = 1;
+  state->miter_limit = 4;
   state->cap = ART_PATH_STROKE_CAP_BUTT;
   state->join = ART_PATH_STROKE_JOIN_MITER;
   state->stop_opacity = 0xff;
@@ -400,6 +402,23 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
     {
       state->stop_opacity = rsvg_css_parse_opacity (str + arg_off);
     }
+  else if (rsvg_css_param_match (str, "miter-limit"))
+    {
+      state->miter_limit = g_ascii_strtod (str + arg_off, NULL);
+    }
+  else if (rsvg_css_param_match (str, "stroke-dashoffset"))
+    {
+      /* TODO
+	 state->dash.offset = rsvg_css_parse_normlaized_length();
+      */
+    }
+  else if (rsvg_css_param_match (str, "stroke-dasharray"))
+    {
+      /* TODO
+	 if(!strcmp(str + arg_off, "none"))
+	 state->dash.n_dash = 0; return;
+      */
+    }
 }
 
 /* tell whether @str is a supported style argument 
@@ -414,18 +433,21 @@ rsvg_is_style_arg(const char *str)
     {
       styles = g_hash_table_new (g_str_hash, g_str_equal);
       
-      g_hash_table_insert (styles, "opacity",         GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "fill",            GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "fill-opacity",    GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "stroke",          GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "stroke-width",    GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "stroke-linecap",  GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "stroke-opacity",  GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "stroke-linejoin", GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "font-size",       GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "font-family",     GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "stop-color",      GINT_TO_POINTER (TRUE));
-      g_hash_table_insert (styles, "stop-opacity",    GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "opacity",           GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "fill",              GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "fill-opacity",      GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "miter-limit",       GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke",            GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke-dasharray",  GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke-dashoffset", GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke-width",      GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke-linecap",    GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke-opacity",    GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke-linejoin",   GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "font-size",         GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "font-family",       GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stop-color",        GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stop-opacity",      GINT_TO_POINTER (TRUE));
     }
   
   /* this will default to 0 (FALSE) on a failed lookup */
@@ -920,6 +942,15 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
   vpath = art_bez_path_to_vec (affine_bpath, 0.25);
   art_free (affine_bpath);
 
+  /* TODO: dash-stroke the path, if appropriate
+   * if (state->dash.n_dash > 0) 
+   *  {
+   *     ArtVpath * dashed_vpath = art_vpath_dash(vpath, state->dash);
+   *     art_free (vpath);
+   *     vpath = dashed_vpath;
+   *  }
+   */
+
   need_tmpbuf = (state->fill != NULL) && (state->stroke != NULL) &&
     state->opacity != 0xff;
 
@@ -962,7 +993,7 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	stroke_width = 0.25;
 
       svp = art_svp_vpath_stroke (vpath, state->join, state->cap,
-				  stroke_width, 4, 0.25);
+				  stroke_width, state->miter_limit, 0.25);
       opacity = state->stroke_opacity;
       if (!need_tmpbuf && state->opacity != 0xff)
 	{

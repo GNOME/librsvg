@@ -1,12 +1,22 @@
 
+ * stroke-dasharray and stroke-dashoffset. work on this is already started
+ 
+ * Clipping paths
+
+ * Masks
+
+ * Image effects/filters
+
+ * Fill patterns
+
  * Add actual GError support in the loader, rather then the g_warnings
    that we currently use.
 
-Post 2.0
+ * Allow affine's other than scaling.
+
+On the back burner:
 
  * Consider storing the paths so that the file can be rerendered
    multiple times without reparsing.
-
- * Allow affine's other than scaling.
 
  * Make error messages translatable (requires adding gettext).
