@@ -1,3 +1,8 @@
+2002-01-23  Darin Adler  <darin@bentspoon.com>
+
+	* NEWS: Update for 1.0.3.
+	* configure.in: Update version to 1.0.3.
+
 2002-01-03  Darin Adler  <darin@bentspoon.com>
 
 	* rsvg-paint-server.c: (rsvg_paint_server_lin_grad_render),

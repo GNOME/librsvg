@@ -1,3 +1,9 @@
+Version 1.0.3
+
+* Fix bug where empty gradients cause segfault (Darin)
+* Small build fix (Darin)
+
+
 Version 1.0.2
 
 * Fix bug where scaled text would be clipped (Darin)
