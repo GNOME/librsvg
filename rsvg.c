@@ -1397,17 +1397,26 @@ rsvg_error_cb (void *data, const char *msg, ...)
 	va_end (args);
 }
 
+/* TODO: this is indempotent, but not exactly threadsafe */
 static xmlSAXHandler rsvgSAXHandlerStruct;
+static gboolean rsvgSAXHandlerStructInited = FALSE;
 
 static void rsvg_SAX_handler_struct_init()
 {
-	rsvgSAXHandlerStruct.getEntity = rsvg_get_entity;
-    rsvgSAXHandlerStruct.entityDecl = rsvg_entity_decl;
-    rsvgSAXHandlerStruct.characters = rsvg_characters;
-    rsvgSAXHandlerStruct.error = rsvg_error_cb;
-	rsvgSAXHandlerStruct.cdataBlock = rsvg_characters;
-    rsvgSAXHandlerStruct.startElement = rsvg_start_element;
-    rsvgSAXHandlerStruct.endElement = rsvg_end_element;
+	if(!rsvgSAXHandlerStructInited) 
+		{
+			rsvgSAXHandlerStructInited = TRUE;
+
+			memset(&rsvgSAXHandlerStruct, 0, sizeof(rsvgSAXHandlerStruct));
+			
+			rsvgSAXHandlerStruct.getEntity = rsvg_get_entity;
+			rsvgSAXHandlerStruct.entityDecl = rsvg_entity_decl;
+			rsvgSAXHandlerStruct.characters = rsvg_characters;
+			rsvgSAXHandlerStruct.error = rsvg_error_cb;
+			rsvgSAXHandlerStruct.cdataBlock = rsvg_characters;
+			rsvgSAXHandlerStruct.startElement = rsvg_start_element;
+			rsvgSAXHandlerStruct.endElement = rsvg_end_element;
+		}
 }
 
 /**
