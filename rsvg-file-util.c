@@ -40,22 +40,6 @@
 #include <fcntl.h>
 #endif
 
-/* needed for the mozilla plugin */
-static void set_nonblocking(FILE * f)
-{
-#ifdef G_OS_UNIX
-	glong fcntl_flags = 0;
-
-#ifdef O_NONBLOCK
-    fcntl_flags |= O_NONBLOCK;
-#else
-    fcntl_flags |= O_NDELAY;
-#endif
-
-	(void)fcntl (fileno(f), F_SETFL, fcntl_flags);
-#endif
-}
-
 #define SVG_BUFFER_SIZE (1024 * 8)
 
 static void
@@ -158,8 +142,6 @@ rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
 	GdkPixbuf * retval;
 	guchar chars[SVG_BUFFER_SIZE];
 	int result;
-
-	set_nonblocking(f);
 
 	result = fread (chars, 1, SVG_BUFFER_SIZE, f);
 
