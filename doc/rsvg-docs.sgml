@@ -16,7 +16,7 @@
     <title>RSVG Reference Manual</title>
   </bookinfo>
 
-  <part id="gsf">
+  <part id="rsvg">
     <title>RSVG Overview</title>
     <partintro>
     <para>
@@ -25,42 +25,50 @@ License (GNU GPL), which allows for flexible licensing of client applications.
     </para>
     <para>
 RSVG depends on the following libraries:
+
 <variablelist>
 
 <varlistentry>
-<listitem><term>GLib</term><para>
+<term>GLib</term>
+<listitem><para>
 A general-purpose utility library, not specific to graphical user interfaces.
 GLib provides many useful data types, macros, type conversions,
 string utilities, file utilities, a main loop abstraction, and so on.
 </para></listitem>
+</varlistentry>
 
-<listitem><term>Pango</term><para>
+<varlistentry>
+<term>Pango</term>
+<listitem><para>
 A general-purpose text library. http://www.pango.org
 </para></listitem>
+</varlistentry>
 
-<listitem><term>GdkPixbuf</term><para>
+<varlistentry>
+<term>GdkPixbuf</term>
+<listitem><para>
 A general-purpose image library.
 </para></listitem>
-
 </varlistentry>
+
 </variablelist>
+
 </para>
 </partintro>
 
 <reference>
 <title>
-rsvg
+Using RSVG
 </title>
 &RSVG;
 </reference>
 
 <reference>
 <title>
-Handling Gzipped SVG
+Handling Gzipped SVGs (SVGZ)
 </title>
 &SVGZ;
 </reference>
-
 
 <reference>
 <title>

@@ -21,7 +21,7 @@ rsvg_handle_new_gz
 
 <SECTION>
 <FILE>rsvg-file-util</FILE>
-<TITLE>Utility/Convenience Functions</TITLE>
+<TITLE>Convenience Functions</TITLE>
 rsvg_pixbuf_from_file
 rsvg_pixbuf_from_file_at_zoom
 rsvg_pixbuf_from_file_at_size
