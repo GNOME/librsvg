@@ -1,5 +1,10 @@
 2002-01-04  Darin Adler  <darin@bentspoon.com>
 
+	* configure.in: Bump required libart version to the one
+	with art_render_mask.
+
+2002-01-04  Darin Adler  <darin@bentspoon.com>
+
 	* configure.in: Bump version, update dependencies.
 	* librsvg-2.0.pc.in: Update dependencies.
 
