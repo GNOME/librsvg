@@ -1,3 +1,7 @@
+2005-03-02  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-image.c: Bug #169051, from Ed Catmur <ed@catmur.co.uk>
+	
 2005-02-26  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-private.h: Move M_PI's definition here
