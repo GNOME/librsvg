@@ -1,3 +1,8 @@
+2004-05-14  Dom Lachowicz <cinamod@hotmail.com>
+
+	* autogen.sh: Support automake 1.8
+	* */Makefile.am: Add VFS libs
+	
 2004-05-09  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-text.c: Don't pollute the global namespace
