@@ -1,3 +1,7 @@
+2004-11-18  Dom Lachowicz <cinamod@hotmail.com>
+
+	* test-display.c: rsvg-view now can optionally use the new GtkFileChooser instead of GtkFileSelection, depending on whether you have GTK 2.4 installed or not.
+	
 2004-11-17  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-file-util.c: RSVG's convenience API should now be able to transparently handle remote files via gnome-vfs, if available.

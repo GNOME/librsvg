@@ -180,148 +180,180 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 
 #endif /* HAVE_GNOME_PRINT */
 
+#if GTK_CHECK_VERSION(2,4,0)
+
+static char *
+save_file (const char * title, GtkWidget * parent)
+{
+	GtkWidget *dialog;
+	char *filename = NULL;
+
+	dialog = gtk_file_chooser_dialog_new (title,
+										  GTK_WINDOW (parent),
+										  GTK_FILE_CHOOSER_ACTION_SAVE,
+										  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+										  GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+										  NULL);
+
+	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
+		{
+			
+			filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+		}
+	
+	gtk_widget_destroy (dialog);
+
+	return filename;
+}
+
+#else
+
+static char *
+save_file (const char * title, GtkWidget * parent)
+{
+	GtkWidget * filesel;
+	char * filename = NULL;
+			
+	filesel = gtk_file_selection_new (title);
+	gtk_window_set_transient_for(GTK_WINDOW(filesel), parent);
+	
+	if (gtk_dialog_run (GTK_DIALOG (filesel)) == GTK_RESPONSE_OK)
+		{			
+			filename = g_strdup (gtk_file_selection_get_filename (GTK_FILE_SELECTION (filesel)));
+		}
+
+	gtk_widget_destroy (dialog);
+
+	return filename;
+}
+
+#endif
+
 static void 
 save_pixbuf (GObject * ignored, gpointer user_data)
 {
-	GtkWidget * filesel;
 	ViewerCbInfo * info = (ViewerCbInfo *)user_data;
+	char * filename;
+
+	filename = save_file (_("Save SVG as PNG"), info->window);
 	
-	filesel = gtk_file_selection_new (_("Save SVG as PNG"));
-	gtk_window_set_transient_for(GTK_WINDOW(filesel), GTK_WINDOW(info->window));
-	
-	if (gtk_dialog_run (GTK_DIALOG (filesel)) == GTK_RESPONSE_OK)
+	if (filename) 
 		{
-			const char * filename;
+			GError * err = NULL;
 			
-			filename = gtk_file_selection_get_filename (GTK_FILE_SELECTION (filesel));
-			
-			if (filename) 
+			if (!gdk_pixbuf_save (info->pixbuf, filename, "png", &err, NULL)) 
 				{
-					GError * err = NULL;
-					
-					if (!gdk_pixbuf_save (info->pixbuf, filename, "png", &err, NULL)) 
+					if (err) 
 						{
-							if (err) 
-								{
-									GtkWidget * errmsg;
+							GtkWidget * errmsg;
+							
+							errmsg = gtk_message_dialog_new (GTK_WINDOW(info->window),
+															 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+															 GTK_MESSAGE_WARNING,
+															 GTK_BUTTONS_CLOSE,
+															 err->message);
 									
-									errmsg = gtk_message_dialog_new (GTK_WINDOW(filesel),
-																	 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-																	 GTK_MESSAGE_WARNING,
-																	 GTK_BUTTONS_CLOSE,
-																	 err->message);
-									gtk_window_set_transient_for(GTK_WINDOW(errmsg), GTK_WINDOW(info->window));
-									
-									gtk_dialog_run (GTK_DIALOG (errmsg));
-									
-									g_error_free (err);
-									gtk_widget_destroy (errmsg);
-								}
+							gtk_dialog_run (GTK_DIALOG (errmsg));
+							
+							g_error_free (err);
+							gtk_widget_destroy (errmsg);
 						}
-				} 
-			else 
-				{
-					GtkWidget * errmsg;
-					
-					errmsg = gtk_message_dialog_new (GTK_WINDOW(filesel),
-													 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-													 GTK_MESSAGE_WARNING,
-													 GTK_BUTTONS_CLOSE,
-													 _("No filename given"));
-					gtk_window_set_transient_for(GTK_WINDOW(errmsg), GTK_WINDOW(info->window));
-					
-					gtk_dialog_run (GTK_DIALOG (errmsg));
-					gtk_widget_destroy (errmsg);
 				}
-		}
-	
-	gtk_widget_destroy (filesel);
+
+			g_free (filename);
+		} 
+	else 
+		{
+			GtkWidget * errmsg;
+			
+			errmsg = gtk_message_dialog_new (GTK_WINDOW(info->window),
+											 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+											 GTK_MESSAGE_WARNING,
+											 GTK_BUTTONS_CLOSE,
+											 _("No filename given"));
+			gtk_window_set_transient_for(GTK_WINDOW(errmsg), GTK_WINDOW(info->window));
+					
+			gtk_dialog_run (GTK_DIALOG (errmsg));
+			gtk_widget_destroy (errmsg);
+		}	
 }
 
 static void 
 save_svg (GObject * ignored, gpointer user_data)
 {
-	GtkWidget * filesel;
 	ViewerCbInfo * info = (ViewerCbInfo *)user_data;
+	char * filename;
 	
-	filesel = gtk_file_selection_new (_("Save SVG"));
-	gtk_window_set_transient_for(GTK_WINDOW(filesel), GTK_WINDOW(info->window));
+	filename = save_file (_("Save SVG"), info->window);
 
-	if (gtk_dialog_run (GTK_DIALOG (filesel)) == GTK_RESPONSE_OK)
+	if (filename) 
 		{
-			const char * filename;
+			FILE * fp;
 			
-			filename = gtk_file_selection_get_filename (GTK_FILE_SELECTION (filesel));
-			
-			if (filename) 
-				{
-					FILE * fp;
-
-					fp = fopen(filename, "wb");
-					if (!fp) 
-						{
-							GtkWidget * errmsg;
-							
-							errmsg = gtk_message_dialog_new (GTK_WINDOW(filesel),
-															 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-															 GTK_MESSAGE_WARNING,
-															 GTK_BUTTONS_CLOSE,
-															 _("Couldn't save %s"),
-															 filename);
-							gtk_window_set_transient_for(GTK_WINDOW(errmsg), GTK_WINDOW(info->window));
-									
-							gtk_dialog_run (GTK_DIALOG (errmsg));
-							gtk_widget_destroy (errmsg);
-						}
-					else
-						{
-							size_t written = 0, remaining = info->svg_bytes->len;
-							const char * buffer = info->svg_bytes->data;
-
-							while (remaining > 0) {
-								written = fwrite (buffer + (info->svg_bytes->len - remaining), 1, 
-												  remaining, fp);
-								if ((written < remaining) && ferror (fp) != 0)
-									{
-										GtkWidget * errmsg;
-										
-										errmsg = gtk_message_dialog_new (GTK_WINDOW(filesel),
-																		 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-																		 GTK_MESSAGE_WARNING,
-																		 GTK_BUTTONS_CLOSE,
-																		 _("Couldn't save %s"),
-																		 filename);
-										gtk_window_set_transient_for(GTK_WINDOW(errmsg), GTK_WINDOW(info->window));
-										
-										gtk_dialog_run (GTK_DIALOG (errmsg));
-										gtk_widget_destroy (errmsg);
-
-										break;
-									}
-								
-								remaining -= written;
-							}
-
-							fclose(fp);
-						}
-				} 
-			else 
+			fp = fopen(filename, "wb");
+			if (!fp) 
 				{
 					GtkWidget * errmsg;
 					
-					errmsg = gtk_message_dialog_new (GTK_WINDOW(filesel),
+					errmsg = gtk_message_dialog_new (GTK_WINDOW(info->window),
 													 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 													 GTK_MESSAGE_WARNING,
 													 GTK_BUTTONS_CLOSE,
-													 _("No filename given"));
+													 _("Couldn't save %s"),
+													 filename);
 					gtk_window_set_transient_for(GTK_WINDOW(errmsg), GTK_WINDOW(info->window));
 					
 					gtk_dialog_run (GTK_DIALOG (errmsg));
 					gtk_widget_destroy (errmsg);
 				}
+			else
+				{
+					size_t written = 0, remaining = info->svg_bytes->len;
+					const char * buffer = info->svg_bytes->data;
+					
+					while (remaining > 0) {
+						written = fwrite (buffer + (info->svg_bytes->len - remaining), 1, 
+										  remaining, fp);
+						if ((written < remaining) && ferror (fp) != 0)
+							{
+								GtkWidget * errmsg;
+								
+								errmsg = gtk_message_dialog_new (GTK_WINDOW(info->window),
+																 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+																 GTK_MESSAGE_WARNING,
+																 GTK_BUTTONS_CLOSE,
+																 _("Couldn't save %s"),
+																 filename);
+								gtk_window_set_transient_for(GTK_WINDOW(errmsg), GTK_WINDOW(info->window));
+								
+								gtk_dialog_run (GTK_DIALOG (errmsg));
+								gtk_widget_destroy (errmsg);
+								
+								break;
+							}
+						
+						remaining -= written;
+					}
+
+					fclose(fp);
+				}
+
+			g_free (filename);
+		} 
+	else 
+		{
+			GtkWidget * errmsg;
+					
+			errmsg = gtk_message_dialog_new (GTK_WINDOW(info->window),
+											 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+											 GTK_MESSAGE_WARNING,
+											 GTK_BUTTONS_CLOSE,
+											 _("No filename given"));
+			gtk_window_set_transient_for(GTK_WINDOW(errmsg), GTK_WINDOW(info->window));
+			
+			gtk_dialog_run (GTK_DIALOG (errmsg));
+			gtk_widget_destroy (errmsg);
 		}
-	
-	gtk_widget_destroy (filesel);
 }
 
 static void
