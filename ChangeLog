@@ -1,5 +1,13 @@
 2001-04-02  Ramiro Estrugo  <ramiro@eazel.com>
 
+	* configure.in:
+	Add -lrsvg to LIBS.
+	
+	* librsvg.spec.in:
+	Fix the library name, "librsvg" not "rsvg."
+	
+2001-04-02  Ramiro Estrugo  <ramiro@eazel.com>
+
 	* .cvsignore:
 	* Makefile.am:
 	* configure.in:
