@@ -1,3 +1,7 @@
+2004-12-22  Dom Lachowicz <cinamod@hotmail.com>
+
+	* moz-plugin/moz-plugin.c: Fix bug #161823
+	
 2004-11-29  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-shapes.c: made markers work again and inherit from the context that they were specified in, not where they were invoked.

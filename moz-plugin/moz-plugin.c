@@ -26,9 +26,9 @@
 #include <config.h>
 
 #include <stdio.h>
-#include <stdint.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <signal.h>
 
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
@@ -216,7 +216,7 @@ plugin_redraw (Plugin * plugin)
 
 static NPError
 plugin_newp (NPMIMEType mime_type, NPP instance,
-			 uint16_t mode, int16_t argc, char *argn[], char *argv[],
+			 guint16 mode, gint16 argc, char *argn[], char *argv[],
 			 NPSavedData * saved)
 {
 	Plugin *plugin;
@@ -388,7 +388,7 @@ plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 	return res;
 }
 
-static int32
+static gint32
 plugin_write_ready (NPP instance, NPStream * stream)
 {
 	DEBUG (("plugin_write_ready\n"));
@@ -397,9 +397,9 @@ plugin_write_ready (NPP instance, NPStream * stream)
 	return (8*1024);
 }
 
-static int32
-plugin_write (NPP instance, NPStream * stream, int32 offset,
-			  int32 len, void *buffer)
+static gint32
+plugin_write (NPP instance, NPStream * stream, gint32 offset,
+			  gint32 len, void *buffer)
 {
 	Plugin *plugin;   
 
