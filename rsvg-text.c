@@ -172,7 +172,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 		ctx->pango_context = pango_ft2_get_context ((guint)ctx->dpi, (guint)ctx->dpi);   
 		
 	layout = pango_layout_new (ctx->pango_context);
-	pango_layout_set_text (layout, string, end - beg);
+	pango_layout_set_text (layout, string, -1);
 	font = pango_font_description_copy (pango_context_get_font_description (ctx->pango_context));
 
 	/* we need to resize the font by our X or Y scale (ideally could stretch in both directions...)
@@ -187,6 +187,9 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	pango_font_description_set_weight (font, state->font_weight);
 	pango_font_description_set_stretch (font, state->font_stretch);
   
+	pango_layout_set_alignment (layout, state->text_dir == PANGO_DIRECTION_LTR ? 
+								PANGO_ALIGN_LEFT : PANGO_ALIGN_RIGHT);
+
 	pango_layout_set_font_description (layout, font);
 	pango_font_description_free (font);
 	
@@ -198,11 +201,11 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	else
 		pango_layout_line_get_pixel_extents (line, &line_ink_rect, NULL);
 	
-	bitmap.rows = ink_rect.height;
-	bitmap.width = ink_rect.width;
-	bitmap.pitch = (bitmap.width + 3) & ~3;
-	bitmap.buffer = g_malloc0 (bitmap.rows * bitmap.pitch);
-	bitmap.num_grays = 0x100;
+	bitmap.rows       = ink_rect.height;
+	bitmap.width      = ink_rect.width;
+	bitmap.pitch      = bitmap.width;
+	bitmap.buffer     = g_malloc0 (bitmap.rows * bitmap.pitch);
+	bitmap.num_grays  = 256;
 	bitmap.pixel_mode = ft_pixel_mode_grays;
 	
 	pango_ft2_render_layout (&bitmap, layout, -ink_rect.x, -ink_rect.y);

@@ -61,8 +61,8 @@ rsvg_state_init (RsvgState *state)
 	state->font_variant = PANGO_VARIANT_NORMAL;
 	state->font_weight  = PANGO_WEIGHT_NORMAL;
 	state->font_stretch = PANGO_STRETCH_NORMAL;
-
-	state->visible = TRUE;
+	state->text_dir     = PANGO_DIRECTION_LTR;
+	state->visible      = TRUE;
 }
 
 void
@@ -197,17 +197,32 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "text-decoration"))
 		{
-			if (!strcmp (str, "inherit"))
+			if (!strcmp (str + arg_off, "inherit"))
 				state->font_decor = parent_state->font_decor;
 			else 
 				{
-					if (strstr (str, "underline"))
+					if (strstr (str + arg_off, "underline"))
 						state->font_decor |= TEXT_UNDERLINE;
-					if (strstr (str, "overline"))
+					if (strstr (str + arg_off, "overline"))
 						state->font_decor |= TEXT_OVERLINE;
-					if (strstr (str, "strike") || strstr (str, "line-through")) /* strike though or line-through */
+					if (strstr (str + arg_off, "strike") || strstr (str + arg_off, "line-through")) /* strike though or line-through */
 						state->font_decor |= TEXT_STRIKE;
 				}
+		}
+	else if (rsvg_css_param_match (str, "writing-mode"))
+		{
+			/* lr-tb | rl-tb | tb-rl | lr | rl | tb | inherit */
+			if (!strcmp (str + arg_off, "inherit"))
+				state->text_dir = parent_state->text_dir;
+			else if (!strcmp (str + arg_off, "rl"))
+				state->text_dir = PANGO_DIRECTION_RTL;
+			else if (!strcmp (str + arg_off, "tb-rl") || 
+					 !strcmp (str + arg_off, "rl-tb")) /* not sure of tb-rl vs. rl-tb */
+				state->text_dir = PANGO_DIRECTION_TTB_RTL;
+			else if (!strcmp (str + arg_off, "lr-tb"))
+				state->text_dir = PANGO_DIRECTION_TTB_LTR;
+			else
+				state->text_dir = PANGO_DIRECTION_LTR;
 		}
 	else if (rsvg_css_param_match (str, "stop-color"))
 		{
@@ -306,6 +321,7 @@ rsvg_is_style_arg(const char *str)
 			g_hash_table_insert (styles, "stroke-width",      GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "text-decoration",   GINT_TO_POINTER (TRUE));
 			g_hash_table_insert (styles, "visibility",        GINT_TO_POINTER (TRUE));
+			g_hash_table_insert (styles, "writing-mode",      GINT_TO_POINTER (TRUE));
 		}
 	
 	/* this will default to 0 (FALSE) on a failed lookup */

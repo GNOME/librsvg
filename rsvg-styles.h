@@ -68,7 +68,8 @@ typedef struct {
 	PangoWeight    font_weight;
 	PangoStretch   font_stretch;
 	TextDecoration font_decor;
-	
+	PangoDirection text_dir;	
+
 	guint text_offset;
 	
 	guint32 stop_color; /* rgb */
