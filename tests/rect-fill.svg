@@ -3,7 +3,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="292" height="455">
 <defs>
 </defs>
-<g transform="scale(1, -1) translate(0, -455">
+<g transform="scale(1, -1) translate(0, -455)">
 <path d=" M 97 450 L 97 318 L 287 318 L 287 450 L 97 450Z" fill="#6985d8" fill-opacity="1" fill-rule="nonzero" stroke="#0b2a5e" stroke-opacity="1" stroke-width="10" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" />
 </g>
 </svg>
