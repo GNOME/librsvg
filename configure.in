@@ -117,7 +117,7 @@ if test "$GCC" = "yes" -a "$set_more_warnings" != "no"; then
         -Wchar-subscripts -Wmissing-declarations -Wmissing-prototypes \
         -Wnested-externs -Wpointer-arith \
         -Wcast-align -Wsign-compare \
-        -Werror \
+	-Werror \
         $CFLAGS"
 
         for option in -Wsign-promo -Wno-sign-compare; do
@@ -229,6 +229,33 @@ AM_CONDITIONAL(ENABLE_GTK_DOC, test x$enable_gtk_doc = xyes)
 
 dnl ===========================================================================
 
+LIBGIMP_CFLAGS=""
+LIBGIMP_LIBS=""
+LIBGIMPPKG=""
+
+test_gimp=true
+AC_ARG_WITH(gimp,[  --with-gimp  Build a gimp plugin],[
+	if test "x$withval" = "xno"; then
+		test_gimp=false
+	fi
+])
+if test "x$test_gimp" = "xtrue"; then
+	PKG_CHECK_MODULES(LIBGIMP,[gimp-1.3 >= 1.3.10], test_gimp=true, test_gimp=false)
+fi
+
+if test "x$test_gimp" = "xtrue"; then
+	LIBGIMP_CFLAGS="$LIBGIMP_CFLAGS"
+	LIBGIMPPKG="gimp-1.3"
+else
+	AC_MSG_WARN([Gimp plugin disbled, as requested (Use --with-gimp to enable)])
+fi
+AM_CONDITIONAL(ENABLE_GIMP_PLUGIN,[test "$LIBGIMPPKG" != ""])
+
+AC_SUBST(LIBGIMP_CFLAGS)
+AC_SUBST(LIBGIMP_LIBS)
+
+dnl ===========================================================================
+
 AC_OUTPUT([
 librsvg.spec
 librsvg-features.h
@@ -240,4 +267,5 @@ gtk-engine/examples/Makefile
 gtk-engine/examples/bubble/Makefile
 gtk-engine/examples/bubble/gtk-2.0/Makefile
 gdk-pixbuf-loader/Makefile
+gimp-plugin/Makefile
 ])

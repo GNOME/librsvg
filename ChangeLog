@@ -1,3 +1,11 @@
+2003-03-17  Dom Lachowicz <cinamod@hotmail.com>
+
+	* Makefile.am: additions for GIMP support
+	* configure.in: ditto
+	* gimp-plugin/Makefile.am: ditto
+	* gimp-plugin/svg.c: ditto
+	* NEWS: update to mention GIMP plugin
+	
 2003-03-14  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-path.c (rsvg_path_arc): Fix NaN issue, bug 108380
