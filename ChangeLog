@@ -1,6 +1,12 @@
 2001-07-25  Ramiro Estrugo  <ramiro@fateware.com>
 
 	* .cvsignore:
+	Im a dumbass.  Revert the last stupid change i made to ignore
+	files that arent made no more.
+	
+2001-07-25  Ramiro Estrugo  <ramiro@fateware.com>
+
+	* .cvsignore:
 	Add generated files, even though im not 100% sure where they are
 	coming from.
 
