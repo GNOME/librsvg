@@ -19,7 +19,6 @@ URL: 		http://nautilus.eazel.com/
 BuildRoot:	/var/tmp/%{name}-%{ver}-root
 Docdir: 	%{prefix}/doc
 Requires:	glib >= @GLIB_REQUIRED@
-Requires:	gtk+ >= @GTK_REQUIRED@
 Requires:	libxml >= @LIBXML_REQUIRED@
 Requires:	gdk-pixbuf >= @GDK_PIXBUF_REQUIRED@
 Requires:	popt >= @POPT_REQUIRED@

@@ -1,6 +1,6 @@
 README for librsvg 1.1.
 
-This is librsvg 1.1 - the GNOME 2.0 platform development version
+This is librsvg 1.1 - the GNOME 2.0 platform development version of
 librsvg.
 
 If you are looking for the stable version to use with the GNOME
@@ -10,5 +10,3 @@ cvs co -r librsvg-1-0 librsvg
 
 If you have questions or comments about librsvg, please send 
 email to nautilus-list@lists.eazel.com
-
-

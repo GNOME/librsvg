@@ -1,5 +1,22 @@
 2002-01-03  Darin Adler  <darin@bentspoon.com>
 
+	* TODO:
+	* test-rsvg.c: (main):
+	Some cleanup on the test program.
+
+	* configure.in:
+	* librsvg.spec.in:
+	Remove gtk requirement and remove remnants of the old
+	freetype requirement. Also get rid of gmodule and gthread
+	since we only use glib itself.
+
+	* makefile-simple:
+	* subpixel-text-test:
+	Remove some no-longer-useful files (these were never
+	in the tarball anyway).
+
+2002-01-03  Darin Adler  <darin@bentspoon.com>
+
 	* rsvg.c: (rsvg_text_handler_characters):
 	Don't set font_family to NULL since pangoft2 doesn't
 	currnetly handle this properly.

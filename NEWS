@@ -1,4 +1,0 @@
-The 1.0.1 release fixes a bug that caused Nautilus to crash
-when certain malformed SVG files were present and another bug
-that made librsvg fail when it was not in the same prefix as
-Nautilus.

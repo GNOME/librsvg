@@ -1,12 +1,14 @@
 
  * Add actual GError support in the loader, rather then the g_warnings
-   now.
+   that we currently use.
 
- * Clean up test-rsvg
+ * Move the stray bits of libart back into libart_lgpl.
 
 Post 2.0
 
  * Consider storing the paths so that the file can be rerendered
-   multiple times without reparsing
+   multiple times without reparsing.
 
- * Allow affine's other than scaling
+ * Allow affine's other than scaling.
+
+ * Make error messages translatable (requires adding gettext).

@@ -22,8 +22,9 @@
    Author: Raph Levien <raph@artofcode.com>
 */
 
+#include "config.h"
 #include "rsvg.h"
-#include <gdk-pixbuf/gdk-pixbuf.h>
+
 #include <popt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,11 +32,10 @@
 int
 main (int argc, const char **argv)
 {
-	GdkPixbuf *pixbuf;
+	poptContext popt_context;
 	char *x_zoom_str = "1.0";
 	char *y_zoom_str = "1.0";
-	poptContext optCtx;
-	struct poptOption optionsTable[] = {
+	struct poptOption options_table[] = {
 		{ "x-zoom", 'x', POPT_ARG_STRING, &x_zoom_str, 0, NULL, "zoom factor" },
 		{ "y-zoom", 'y', POPT_ARG_STRING, &y_zoom_str, 0, NULL, "zoom factor" },
 		POPT_AUTOHELP
@@ -43,13 +43,14 @@ main (int argc, const char **argv)
 	};
 	char c;
 	const char * const *args;
+	GdkPixbuf *pixbuf;
 
 	g_type_init ();
 
-	optCtx = poptGetContext ("test-rsvg", argc, argv, optionsTable, 0);
+	popt_context = poptGetContext ("test-rsvg", argc, argv, options_table, 0);
 
-	c = poptGetNextOpt (optCtx);
-	args = poptGetArgs (optCtx);
+	c = poptGetNextOpt (popt_context);
+	args = poptGetArgs (popt_context);
 
 	pixbuf = rsvg_pixbuf_from_file_at_zoom (args[0],
 						atof (x_zoom_str),
