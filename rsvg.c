@@ -1,33 +1,33 @@
-/* 
+/*
    rsvg.c: SAX-based renderer for SVG files into a GdkPixbuf.
- 
+
    Copyright (C) 2000 Eazel, Inc.
-  
+
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation; either version 2 of the
    License, or (at your option) any later version.
-  
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    General Public License for more details.
-  
+
    You should have received a copy of the GNU General Public
    License along with this program; if not, write to the
    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.
-  
+
    Author: Raph Levien <raph@artofcode.com>
 */
 
 #include <config.h>
-#include "rsvg.h"
 
 #include <string.h>
 #include <math.h>
 
 #include <glib.h>
+#include "rsvg.h"
 
 #include <libart_lgpl/art_misc.h>
 #include <libart_lgpl/art_filterlevel.h>
@@ -59,29 +59,9 @@
 
 #define noVERBOSE
 
-typedef struct _RsvgCtx RsvgCtx;
 typedef struct _RsvgState RsvgState;
 typedef struct _RsvgSaxHandler RsvgSaxHandler;
 
-struct _RsvgCtx {
-  GdkPixbuf *pixbuf;
-
-  double zoom;
-
-  /* stack; there is a state for each element */
-  RsvgState *state;
-  int n_state;
-  int n_state_max;
-
-  RsvgDefs *defs;
-
-  RsvgSaxHandler *handler; /* should this be a handler stack? */
-  int handler_nest;
-
-  GHashTable *entities; /* g_malloc'd string -> xmlEntityPtr */
-
-  RsvgFTCtx *ft_ctx;
-};
 
 struct _RsvgState {
   double affine[6];
@@ -115,26 +95,30 @@ struct _RsvgSaxHandler {
   void (*characters) (RsvgSaxHandler *self, const xmlChar *ch, int len);
 };
 
-char *fonts_dir;
+struct RsvgHandle {
+  gchar *fonts_dir;
+  RsvgSizeFunc size_func;
+  gpointer user_data;
+  GDestroyNotify user_data_destroy;
+  GdkPixbuf *pixbuf;
 
-static RsvgCtx *
-rsvg_ctx_new (void)
-{
-  RsvgCtx *result;
+  /* stack; there is a state for each element */
+  RsvgState *state;
+  int n_state;
+  int n_state_max;
 
-  result = g_new (RsvgCtx, 1);
-  result->pixbuf = NULL;
-  result->zoom = 1.0;
-  result->n_state = 0;
-  result->n_state_max = 16;
-  result->state = g_new (RsvgState, result->n_state_max);
-  result->defs = rsvg_defs_new ();
-  result->handler = NULL;
-  result->handler_nest = 0;
-  result->entities = g_hash_table_new (g_str_hash, g_str_equal);
-  result->ft_ctx = NULL;
-  return result;
-}
+  RsvgDefs *defs;
+
+  RsvgSaxHandler *handler; /* should this be a handler stack? */
+  int handler_nest;
+
+  GHashTable *entities; /* g_malloc'd string -> xmlEntityPtr */
+
+  RsvgFTCtx *ft_ctx;
+  xmlParserCtxtPtr ctxt;
+  GError **error;
+};
+
 
 static void
 rsvg_state_init (RsvgState *state)
@@ -184,34 +168,8 @@ rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
   g_free (entval);
 }
 
-/* does not destroy the pixbuf */
 static void
-rsvg_ctx_free (RsvgCtx *ctx)
-{
-  int i;
-
-  if (ctx->ft_ctx != NULL)
-    rsvg_ft_ctx_done (ctx->ft_ctx);
-  rsvg_defs_free (ctx->defs);
-
-  for (i = 0; i < ctx->n_state; i++)
-    rsvg_state_finalize (&ctx->state[i]);
-  g_free (ctx->state);
-
-  g_hash_table_foreach (ctx->entities, rsvg_ctx_free_helper, NULL);
-  g_hash_table_destroy (ctx->entities);
-
-  g_free (ctx);
-}
-
-static void
-rsvg_pixmap_destroy (guchar *pixels, gpointer data)
-{
-  g_free (pixels);
-}
-
-static void
-rsvg_start_svg (RsvgCtx *ctx, const xmlChar **atts)
+rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 {
   int i;
   int width = -1, height = -1;
@@ -220,6 +178,9 @@ rsvg_start_svg (RsvgCtx *ctx, const xmlChar **atts)
   gint fixed;
   RsvgState *state;
   gboolean has_alpha = 1;
+  gint new_width, new_height;
+  gdouble x_zoom;
+  gdouble y_zoom;
 
   if (atts != NULL)
     {
@@ -235,36 +196,35 @@ rsvg_start_svg (RsvgCtx *ctx, const xmlChar **atts)
 	       width, height);
 #endif
 
-      if (width < 0 || height < 0)
-	{
-	  g_warning ("rsvg_start_svg: width and height attributes are not present in SVG\n");
-	  if (width < 0) width = 500;
-	  if (height < 0) height = 500;
-	}
+      new_width = width;
+      new_height = height;
+      if (ctx->size_func)
+	(* ctx->size_func) (&new_width, &new_height, ctx->user_data);
 
+      x_zoom = ((gdouble)new_width)/width;
+      y_zoom = ((gdouble)new_height)/height;
+
+      /* FIXME: Add GError here if size is wrong */
       /* Scale size of target pixbuf */
-      width = ceil (width * ctx->zoom);
-      height = ceil (height * ctx->zoom);
-
       state = &ctx->state[ctx->n_state - 1];
-      art_affine_scale (state->affine, ctx->zoom, ctx->zoom);
+      art_affine_scale (state->affine, x_zoom, y_zoom);
 
-      rowstride = (width * (has_alpha ? 4 : 3) + 3) & -4;
-      pixels = g_new (art_u8, rowstride * height);
-      memset (pixels, has_alpha ? 0 : 255, rowstride * height);
+      rowstride = (new_width * (has_alpha ? 4 : 3) + 3) & -4;
+      pixels = g_new (art_u8, rowstride * new_height);
+      memset (pixels, has_alpha ? 0 : 255, rowstride * new_height);
       ctx->pixbuf = gdk_pixbuf_new_from_data (pixels,
 					      GDK_COLORSPACE_RGB,
 					      has_alpha, 8,
-					      width, height,
+					      new_width, new_height,
 					      rowstride,
-					      rsvg_pixmap_destroy,
+					      NULL,
 					      NULL);
     }
 }
 
 /* Parse a CSS2 style argument, setting the SVG context attributes. */
 static void
-rsvg_parse_style_arg (RsvgCtx *ctx, RsvgState *state, const char *str)
+rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 {
   int arg_off;
 
@@ -289,7 +249,7 @@ rsvg_parse_style_arg (RsvgCtx *ctx, RsvgState *state, const char *str)
     }
   else if (rsvg_css_param_match (str, "stroke-width"))
     {
-      int fixed; 
+      int fixed;
       state->stroke_width = rsvg_css_parse_length (str + arg_off, &fixed);
     }
   else if (rsvg_css_param_match (str, "stroke-linecap"))
@@ -343,7 +303,7 @@ rsvg_parse_style_arg (RsvgCtx *ctx, RsvgState *state, const char *str)
    implementation will happen later.
 */
 static void
-rsvg_parse_style (RsvgCtx *ctx, RsvgState *state, const char *str)
+rsvg_parse_style (RsvgHandle *ctx, RsvgState *state, const char *str)
 {
   int start, end;
   char *arg;
@@ -502,7 +462,7 @@ rsvg_parse_transform (double dst[6], const char *src)
  * Parses the transform attribute in @str and applies it to @state.
  **/
 static void
-rsvg_parse_transform_attr (RsvgCtx *ctx, RsvgState *state, const char *str)
+rsvg_parse_transform_attr (RsvgHandle *ctx, RsvgState *state, const char *str)
 {
   double affine[6];
 
@@ -525,7 +485,7 @@ rsvg_parse_transform_attr (RsvgCtx *ctx, RsvgState *state, const char *str)
  * stack.
  **/
 static void
-rsvg_parse_style_attrs (RsvgCtx *ctx, const xmlChar **atts)
+rsvg_parse_style_attrs (RsvgHandle *ctx, const xmlChar **atts)
 {
   int i;
 
@@ -552,7 +512,7 @@ rsvg_parse_style_attrs (RsvgCtx *ctx, const xmlChar **atts)
  * stack.
  **/
 static void
-rsvg_push_opacity_group (RsvgCtx *ctx)
+rsvg_push_opacity_group (RsvgHandle *ctx)
 {
   RsvgState *state;
   GdkPixbuf *pixbuf;
@@ -583,7 +543,7 @@ rsvg_push_opacity_group (RsvgCtx *ctx)
 				     width,
 				     height,
 				     rowstride,
-				     rsvg_pixmap_destroy,
+				     NULL,
 				     NULL);
   ctx->pixbuf = pixbuf;
 }
@@ -597,7 +557,7 @@ rsvg_push_opacity_group (RsvgCtx *ctx)
  * next on stack.
  **/
 static void
-rsvg_pop_opacity_group (RsvgCtx *ctx, int opacity)
+rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity)
 {
   RsvgState *state = &ctx->state[ctx->n_state - 1];
   GdkPixbuf *tos, *nos;
@@ -649,7 +609,7 @@ rsvg_pop_opacity_group (RsvgCtx *ctx, int opacity)
 }
 
 static void
-rsvg_start_g (RsvgCtx *ctx, const xmlChar **atts)
+rsvg_start_g (RsvgHandle *ctx, const xmlChar **atts)
 {
   RsvgState *state = &ctx->state[ctx->n_state - 1];
 
@@ -660,7 +620,7 @@ rsvg_start_g (RsvgCtx *ctx, const xmlChar **atts)
 }
 
 static void
-rsvg_end_g (RsvgCtx *ctx)
+rsvg_end_g (RsvgHandle *ctx)
 {
   RsvgState *state = &ctx->state[ctx->n_state - 1];
 
@@ -740,7 +700,7 @@ rsvg_close_vpath (const ArtVpath *src)
  * Renders the SVP over the pixbuf in @ctx.
  **/
 static void
-rsvg_render_svp (RsvgCtx *ctx, const ArtSVP *svp,
+rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 		 RsvgPaintServer *ps, int opacity)
 {
   GdkPixbuf *pixbuf;
@@ -750,14 +710,14 @@ rsvg_render_svp (RsvgCtx *ctx, const ArtSVP *svp,
   pixbuf = ctx->pixbuf;
   /* if a pixbuf hasn't been allocated, the svg is probably misformed.  Exit
    * to avoid crashing.
-   */  
+   */
   if (pixbuf == NULL) {
   	return;
   }
-  
+
   has_alpha = gdk_pixbuf_get_has_alpha (pixbuf);
 
-  render = art_render_new (0, 0, 
+  render = art_render_new (0, 0,
 			   gdk_pixbuf_get_width (pixbuf),
 			   gdk_pixbuf_get_height (pixbuf),
 			   gdk_pixbuf_get_pixels (pixbuf),
@@ -775,7 +735,7 @@ rsvg_render_svp (RsvgCtx *ctx, const ArtSVP *svp,
 }
 
 static void
-rsvg_render_bpath (RsvgCtx *ctx, const ArtBpath *bpath)
+rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 {
   RsvgState *state;
   ArtBpath *affine_bpath;
@@ -790,7 +750,7 @@ rsvg_render_bpath (RsvgCtx *ctx, const ArtBpath *bpath)
   pixbuf = ctx->pixbuf;
   affine_bpath = art_bpath_affine_transform (bpath,
 					     state->affine);
-	
+
   vpath = art_bez_path_to_vec (affine_bpath, 0.25);
   art_free (affine_bpath);
 
@@ -806,7 +766,7 @@ rsvg_render_bpath (RsvgCtx *ctx, const ArtBpath *bpath)
       ArtVpath *perturbed_vpath;
       ArtSVP *tmp_svp;
       ArtWindRule art_wind;
-			
+
       closed_vpath = rsvg_close_vpath (vpath);
       perturbed_vpath = art_vpath_perturb (closed_vpath);
       g_free (closed_vpath);
@@ -856,7 +816,7 @@ rsvg_render_bpath (RsvgCtx *ctx, const ArtBpath *bpath)
 }
 
 static void
-rsvg_start_path (RsvgCtx *ctx, const xmlChar **atts)
+rsvg_start_path (RsvgHandle *ctx, const xmlChar **atts)
 {
   int i;
   char *d = NULL;
@@ -889,7 +849,7 @@ typedef struct _RsvgSaxHandlerText RsvgSaxHandlerText;
 
 struct _RsvgSaxHandlerText {
   RsvgSaxHandler super;
-  RsvgCtx *ctx;
+  RsvgHandle *ctx;
   double xpos;
   double ypos;
 };
@@ -904,7 +864,7 @@ static void
 rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 {
   RsvgSaxHandlerText *z = (RsvgSaxHandlerText *)self;
-  RsvgCtx *ctx = z->ctx;
+  RsvgHandle *ctx = z->ctx;
   char *string;
   int beg, end;
   RsvgFTFontHandle fh;
@@ -942,10 +902,10 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
    * like the Nautilus font mapping stuff in NautilusScalableFont. See
    * bug for details.
    */
-  if (fonts_dir == NULL) {
+  if (ctx->fonts_dir == NULL) {
     dir = DATADIR "/eel/fonts";
   } else {
-    dir = fonts_dir;
+    dir = ctx->fonts_dir;
   }
   path = g_strconcat (dir, "/urw/n019003l.pfb", NULL);
   fh = rsvg_ft_intern (ctx->ft_ctx, path);
@@ -961,7 +921,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
       pixbuf = ctx->pixbuf;
       has_alpha = gdk_pixbuf_get_has_alpha (pixbuf);
 
-      render = art_render_new (0, 0, 
+      render = art_render_new (0, 0,
 			       gdk_pixbuf_get_width (pixbuf),
 			       gdk_pixbuf_get_height (pixbuf),
 			       gdk_pixbuf_get_pixels (pixbuf),
@@ -972,7 +932,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 			       has_alpha ? ART_ALPHA_SEPARATE : ART_ALPHA_NONE,
 			       NULL);
 
-      glyph = rsvg_ft_render_string (ctx->ft_ctx, fh, 
+      glyph = rsvg_ft_render_string (ctx->ft_ctx, fh,
 				     string,
 				     strlen (string),
 				     state->font_size, state->font_size,
@@ -1003,7 +963,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 }
 
 static void
-rsvg_start_text (RsvgCtx *ctx, const xmlChar **atts)
+rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
 {
   RsvgSaxHandlerText *handler = g_new0 (RsvgSaxHandlerText, 1);
 
@@ -1025,7 +985,7 @@ rsvg_start_text (RsvgCtx *ctx, const xmlChar **atts)
 /* end text */
 
 static void
-rsvg_start_defs (RsvgCtx *ctx, const xmlChar **atts)
+rsvg_start_defs (RsvgHandle *ctx, const xmlChar **atts)
 {
   RsvgState *state = &ctx->state[ctx->n_state - 1];
 
@@ -1036,7 +996,7 @@ typedef struct _RsvgSaxHandlerGstops RsvgSaxHandlerGstops;
 
 struct _RsvgSaxHandlerGstops {
   RsvgSaxHandler super;
-  RsvgCtx *ctx;
+  RsvgHandle *ctx;
   RsvgGradientStops *stops;
 };
 
@@ -1105,7 +1065,7 @@ rsvg_gradient_stop_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 }
 
 static RsvgSaxHandler *
-rsvg_gradient_stop_handler_new (RsvgCtx *ctx, RsvgGradientStops **p_stops)
+rsvg_gradient_stop_handler_new (RsvgHandle *ctx, RsvgGradientStops **p_stops)
 {
   RsvgSaxHandlerGstops *gstops = g_new0 (RsvgSaxHandlerGstops, 1);
   RsvgGradientStops *stops = g_new (RsvgGradientStops, 1);
@@ -1134,7 +1094,7 @@ rsvg_linear_gradient_free (RsvgDefVal *self)
 }
 
 static void
-rsvg_start_linear_gradient (RsvgCtx *ctx, const xmlChar **atts)
+rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 {
   RsvgState *state = &ctx->state[ctx->n_state - 1];
   RsvgLinearGradient *grad;
@@ -1198,7 +1158,7 @@ rsvg_radial_gradient_free (RsvgDefVal *self)
 }
 
 static void
-rsvg_start_radial_gradient (RsvgCtx *ctx, const xmlChar **atts)
+rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 {
   RsvgState *state = &ctx->state[ctx->n_state - 1];
   RsvgRadialGradient *grad;
@@ -1246,7 +1206,7 @@ rsvg_start_radial_gradient (RsvgCtx *ctx, const xmlChar **atts)
 static void
 rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 {
-  RsvgCtx *ctx = (RsvgCtx *)data;
+  RsvgHandle *ctx = (RsvgHandle *)data;
 #ifdef VERBOSE
   int i;
 #endif
@@ -1300,7 +1260,7 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 static void
 rsvg_end_element (void *data, const xmlChar *name)
 {
-  RsvgCtx *ctx = (RsvgCtx *)data;
+  RsvgHandle *ctx = (RsvgHandle *)data;
 
   if (ctx->handler_nest > 0)
     {
@@ -1315,7 +1275,7 @@ rsvg_end_element (void *data, const xmlChar *name)
 	  ctx->handler->free (ctx->handler);
 	  ctx->handler = NULL;
 	}
-      
+
       if (!strcmp ((char *)name, "g"))
 	rsvg_end_g (ctx);
 
@@ -1332,7 +1292,7 @@ rsvg_end_element (void *data, const xmlChar *name)
 static void
 rsvg_characters (void *data, const xmlChar *ch, int len)
 {
-  RsvgCtx *ctx = (RsvgCtx *)data;
+  RsvgHandle *ctx = (RsvgHandle *)data;
 
   if (ctx->handler && ctx->handler->characters != NULL)
     ctx->handler->characters (ctx->handler, ch, len);
@@ -1341,7 +1301,7 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 static xmlEntityPtr
 rsvg_get_entity (void *data, const xmlChar *name)
 {
-  RsvgCtx *ctx = (RsvgCtx *)data;
+  RsvgHandle *ctx = (RsvgHandle *)data;
 
   return (xmlEntityPtr)g_hash_table_lookup (ctx->entities, name);
 }
@@ -1350,7 +1310,7 @@ static void
 rsvg_entity_decl (void *data, const xmlChar *name, int type,
 		  const xmlChar *publicId, const xmlChar *systemId, xmlChar *content)
 {
-  RsvgCtx *ctx = (RsvgCtx *)data;
+  RsvgHandle *ctx = (RsvgHandle *)data;
   GHashTable *entities = ctx->entities;
   xmlEntityPtr entity;
   char *dupname;
@@ -1398,75 +1358,364 @@ static xmlSAXHandler rsvgSAXHandlerStruct = {
 
 static xmlSAXHandlerPtr rsvgSAXHandler = &rsvgSAXHandlerStruct;
 
+GQuark
+rsvg_error_quark (void)
+{
+  static GQuark q = 0;
+  if (q == 0)
+    q = g_quark_from_static_string ("rsvg-error-quark");
+
+  return q;
+}
+
+/**
+ * rsvg_handle_new:
+ * @void:
+ *
+ * Returns a new rsvg handle.  Must be freed with @rsvg_handle_free.  This
+ * handle can be used for dynamically loading an image.  You need to feed it
+ * data using @rsvg_handle_write, then call @rsvg_handle_close when done.  No
+ * more than one image can be loaded with one handle.
+ *
+ * Return value: A new #RsvgHandle
+ **/
+RsvgHandle *
+rsvg_handle_new (void)
+{
+  RsvgHandle *handle;
+
+  handle = g_new0 (RsvgHandle, 1);
+  handle->n_state = 0;
+  handle->n_state_max = 16;
+  handle->state = g_new (RsvgState, handle->n_state_max);
+  handle->defs = rsvg_defs_new ();
+  handle->handler_nest = 0;
+  handle->entities = g_hash_table_new (g_str_hash, g_str_equal);
+
+  handle->ctxt = NULL;
+
+  return handle;
+}
+
+/**
+ * rsvg_handle_set_fonts_dir:
+ * @handle: An #RsvgHandle
+ * @fonts_dir: A search path for fonts, or %NULL
+ *
+ * Sets the search path for fonts.  This is a ':' seperated list of directories.
+ * If @fonts_dir is %NULL, then the default path is used.
+ **/
 void
-rsvg_set_fonts_dir (const char *new_fonts_dir)
+rsvg_handle_set_fonts_dir (RsvgHandle *handle,
+			   const char *fonts_dir)
 {
-  g_free (fonts_dir);
-  fonts_dir = g_strdup (new_fonts_dir);
+  g_return_if_fail (handle != NULL);
+
+  g_free (handle->fonts_dir);
+  if (fonts_dir)
+    handle->fonts_dir = g_strdup (fonts_dir);
+  else
+    handle->fonts_dir = NULL;
 }
 
-GdkPixbuf *
-rsvg_render_file (FILE *f, double zoom)
+/**
+ * rsvg_handle_set_size_callback:
+ * @handle: An #RsvgHandle
+ * @size_func: A sizing function, or %NULL
+ * @user_data: User data to pass to @size_func, or %NULL
+ * @user_data_destroy: Destroy function for @user_data, or %NULL
+ *
+ * Sets the sizing function for the @handle.  This function is called right
+ * after the size of the image has been loaded.  The size of the image is passed
+ * in to the function, which may then modify these values to set the real size
+ * of the generated pixbuf.  If the image has no associated size, then the size
+ * arguments are set to -1.
+ **/
+void
+rsvg_handle_set_size_callback (RsvgHandle     *handle,
+			       RsvgSizeFunc    size_func,
+			       gpointer        user_data,
+			       GDestroyNotify  user_data_destroy)
 {
-  int res;
-  char chars[10];
-  xmlParserCtxtPtr ctxt;
-  RsvgCtx *ctx;
-  GdkPixbuf *result;
+  g_return_if_fail (handle != NULL);
 
-  ctx = rsvg_ctx_new ();
-  ctx->zoom = zoom;
-  res = fread(chars, 1, 4, f);
-  if (res > 0) {
-    ctxt = xmlCreatePushParserCtxt(rsvgSAXHandler, ctx,
-				   chars, res, "filename XXX");
-    ctxt->replaceEntities = TRUE;
-    while ((res = fread(chars, 1, 3, f)) > 0) {
-      xmlParseChunk(ctxt, chars, res, 0);
+  if (handle->user_data_destroy)
+    (* handle->user_data_destroy) (handle->user_data);
+
+  handle->size_func = size_func;
+  handle->user_data = user_data;
+  handle->user_data_destroy = user_data_destroy;
+}
+
+/**
+ * rsvg_handle_write:
+ * @handle: An #RsvgHandle
+ * @buf: Pointer to svg data
+ * @count: length of the @buf buffer in bytes
+ * @error: return location for errors
+ *
+ * Loads the next @count bytes of the image.  This will return #TRUE if the data
+ * was loaded successful, and #FALSE if an error occurred.  In the latter case,
+ * the loader will be closed, and will not accept further writes. If FALSE is
+ * returned, @error will be set to an error from the #RSVG_ERROR domain.
+ *
+ * Return value: #TRUE if the write was successful, or #FALSE if there was an
+ * error.
+ **/
+gboolean
+rsvg_handle_write (RsvgHandle    *handle,
+		   const guchar  *buf,
+		   gsize          count,
+		   GError       **error)
+{
+  GError *real_error;
+  g_return_val_if_fail (handle != NULL, FALSE);
+
+  handle->error = &real_error;
+  if (handle->ctxt == NULL)
+    {
+      handle->ctxt = xmlCreatePushParserCtxt (rsvgSAXHandler,
+					      handle,
+					      buf, count,
+					      "filename XXX");
+      handle->ctxt->replaceEntities = TRUE;
     }
-    xmlParseChunk(ctxt, chars, 0, 1);
-    xmlFreeParserCtxt(ctxt);
-  }
-  result = ctx->pixbuf;
-  rsvg_ctx_free (ctx);
-  return result;
-}
-
-#ifdef RSVG_MAIN
-static void
-write_pixbuf (ArtPixBuf *pixbuf)
-{
-  int y;
-  printf ("P6\n%d %d\n255\n", pixbuf->width, pixbuf->height);
-  for (y = 0; y < pixbuf->height; y++)
-    fwrite (pixbuf->pixels + y * pixbuf->rowstride, 1, pixbuf->width * 3,
-	    stdout);
-}
-
-int
-main (int argc, char **argv)
-{
-  FILE *f;
-  ArtPixBuf *pixbuf;
-
-  if (argc == 1)
-    f = stdin;
   else
     {
-      f = fopen (argv[1], "r");
-      if (f == NULL)
-	{
-	  fprintf (stderr, "Error opening source file %s\n", argv[1]);
-	}
+      xmlParseChunk (handle->ctxt, buf, count, 0);
     }
-
-  pixbuf = rsvg_render_file (f);
-
-  if (f != stdin)
-    fclose (f);
-
-  write_pixbuf (pixbuf);
-
-  return 0;
+  handle->error = NULL;
+  /*  if (*real_error != NULL)
+    {
+      g_propagate_error (error, real_error);
+      return FALSE;
+      }*/
+  return TRUE;
 }
-#endif
+
+/**
+ * rsvg_handle_close:
+ * @handle: An #RsvgHandle
+ *
+ * Closes @handle, to indicate that loading the image is complete.  This will
+ * return #TRUE if the loader closed successfully.  Note that @handle isn't
+ * freed until @rsvg_handle_free is called.
+ *
+ * Return value: #TRUE if the loader closed successfully, or #FALSE if there was
+ * an error.
+ **/
+gboolean
+rsvg_handle_close (RsvgHandle  *handle,
+		   GError     **error)
+{
+  gchar chars[1];
+  GError *real_error;
+
+  handle->error = &real_error;
+  xmlParseChunk (handle->ctxt, chars, 0, 1);
+  xmlFreeParserCtxt (handle->ctxt);
+  /*
+  if (real_error != NULL)
+    {
+      g_propagate_error (error, real_error);
+      return FALSE;
+      }*/
+  return TRUE;
+}
+
+/**
+ * rsvg_handle_get_pixbuf:
+ * @handle: An #RsvgHandle
+ *
+ * Returns the pixbuf loaded by #handle.  The pixbuf returned will be reffed, so
+ * the caller of this function must assume that ref.  If insufficient data has
+ * been read to create the pixbuf, or an error occurred in loading, then %NULL
+ * will be returned.  Note that the pixbuf may not be complete until
+ * @rsvg_handle_close has been called.
+ *
+ * Return value: the pixbuf loaded by #handle, or %NULL.
+ **/
+GdkPixbuf *
+rsvg_handle_get_pixbuf (RsvgHandle *handle)
+{
+  g_return_val_if_fail (handle != NULL, NULL);
+
+  if (handle->pixbuf)
+    return g_object_ref (handle->pixbuf);
+
+  return NULL;
+}
+
+/**
+ * rsvg_handle_free:
+ * @handle: An #RsvgHandle
+ *
+ * Frees #handle.
+ **/
+void
+rsvg_handle_free (RsvgHandle *handle)
+{
+  int i;
+
+  if (handle->ft_ctx != NULL)
+    rsvg_ft_ctx_done (handle->ft_ctx);
+  rsvg_defs_free (handle->defs);
+
+  for (i = 0; i < handle->n_state; i++)
+    rsvg_state_finalize (&handle->state[i]);
+  g_free (handle->state);
+
+  g_hash_table_foreach (handle->entities, rsvg_ctx_free_helper, NULL);
+  g_hash_table_destroy (handle->entities);
+
+  if (handle->user_data_destroy)
+    (* handle->user_data_destroy) (handle->user_data);
+  g_object_unref (handle->pixbuf);
+  g_free (handle);
+}
+
+struct RsvgSizeCallbackData
+{
+  gdouble x_zoom;
+  gdouble y_zoom;
+  gint width;
+  gint height;
+  gboolean zoom_set;
+};
+
+static void
+rsvg_size_callback (gint     *width,
+		    gint     *height,
+		    gpointer  data)
+{
+  struct RsvgSizeCallbackData *real_data = (struct RsvgSizeCallbackData *)data;
+
+  if (real_data->zoom_set)
+    {
+      (* width) = real_data->x_zoom * (* width);
+      (* height) = real_data->y_zoom * (* height);
+    }
+  else
+    {
+      if (real_data->width != -1)
+	*width = real_data->width;
+      if (real_data->height != -1)
+	*height = real_data->height;
+    }
+}
+
+/**
+ * rsvg_pixbuf_from_file:
+ * @file_name: A file name
+ * @error: return location for errors
+ * 
+ * Loads a new #GdkPixbuf from @file_name and returns it.  The caller must
+ * assume the referrence to the reurned pixbuf. If an error occurred, @error is
+ * set and %NULL is returned.
+ * 
+ * Return value: A newly allocated #GdkPixbuf, or %NULL
+ **/
+GdkPixbuf *
+rsvg_pixbuf_from_file (gchar   *file_name,
+		       GError **error)
+{
+  return rsvg_pixbuf_from_file_at_size (file_name, -1, -1, error);
+}
+
+
+/**
+ * rsvg_pixbuf_from_file_at_zoom:
+ * @file_name: A file name
+ * @x_zoom: The horizontal zoom factor
+ * @y_zoom: The vertical zoom factor
+ * @error: return location for errors
+ * 
+ * Loads a new #GdkPixbuf from @file_name and returns it.  This pixbuf is scaled
+ * from the size indicated by the file by a factor of @x_zoom and @y_zoom.  The
+ * caller must assume the referrence to the reurned pixbuf. If an error
+ * occurred, @error is set and %NULL is returned.
+ * 
+ * Return value: A newly allocated #GdkPixbuf, or %NULL
+ **/
+GdkPixbuf *
+rsvg_pixbuf_from_file_at_zoom (gchar   *file_name,
+			       double   x_zoom,
+			       double   y_zoom,
+			       GError **error)
+{
+  FILE *f;
+  char chars[10];
+  gint result;
+  GdkPixbuf *retval;
+  RsvgHandle *handle;
+  struct RsvgSizeCallbackData data;
+
+  g_return_val_if_fail (file_name != NULL, NULL);
+  g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
+
+  f = fopen (file_name, "r");
+
+  handle = rsvg_handle_new ();
+  data.zoom_set = TRUE;
+  data.x_zoom = x_zoom;
+  data.y_zoom = y_zoom;
+
+  rsvg_handle_set_size_callback (handle, rsvg_size_callback, &data, NULL);
+  while ((result = fread (chars, 1, 3, f)) > 0)
+    rsvg_handle_write (handle, chars, result, error);
+
+  retval = rsvg_handle_get_pixbuf (handle);
+
+  fclose (f);
+  rsvg_handle_free (handle);
+  return retval;
+}
+
+/**
+ * rsvg_pixbuf_from_file_at_size:
+ * @file_name: A file name
+ * @width: The new width, or -1
+ * @height: The new height, or -1
+ * @error: return location for errors
+ * 
+ * Loads a new #GdkPixbuf from @file_name and returns it.  This pixbuf is scaled
+ * from the size indicated to the new size indicated by @width and @height.  If
+ * either of these are -1, then the default size of the image being loaded is
+ * used.  The caller must assume the referrence to the reurned pixbuf. If an
+ * error occurred, @error is set and %NULL is returned.
+ * 
+ * Return value: A newly allocated #GdkPixbuf, or %NULL
+ **/
+GdkPixbuf *
+rsvg_pixbuf_from_file_at_size (gchar   *file_name,
+			       gint     width,
+			       gint     height,
+			       GError **error)
+{
+  FILE *f;
+  char chars[10];
+  gint result;
+  GdkPixbuf *retval;
+  RsvgHandle *handle;
+  struct RsvgSizeCallbackData data;
+
+  f = fopen (file_name, "r");
+  handle = rsvg_handle_new ();
+  data.zoom_set = FALSE;
+  data.width = width;
+  data.height = height;
+
+  rsvg_handle_set_size_callback (handle, rsvg_size_callback, &data, NULL);
+  while ((result = fread (chars, 1, 3, f)) > 0)
+    rsvg_handle_write (handle, chars, result, error);
+
+  retval = rsvg_handle_get_pixbuf (handle);
+  gdk_pixbuf_ref (retval);
+
+  fclose (f);
+  rsvg_handle_free (handle);
+  return retval;
+}
+
+
+

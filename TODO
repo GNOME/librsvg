@@ -1,0 +1,12 @@
+
+ * Add actual GError support in the loader, rather then the g_warnings
+   now.
+
+ * Clean up test-rsvg
+
+Post 2.0
+
+ * Consider storing the paths so that the file can be rerendered
+   multiple times without reparsing
+
+ * Allow affine's other than scaling

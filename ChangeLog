@@ -1,3 +1,29 @@
+2001-09-10  Jonathan Blandford   <jrb@redhat.com>
+
+	* librsvg-features.c:
+	* rsvg.c: (rsvg_start_svg), (rsvg_parse_style_arg),
+	(rsvg_parse_style), (rsvg_parse_transform_attr),
+	(rsvg_parse_style_attrs), (rsvg_push_opacity_group),
+	(rsvg_pop_opacity_group), (rsvg_start_g), (rsvg_end_g),
+	(rsvg_render_svp), (rsvg_render_bpath), (rsvg_start_path),
+	(rsvg_text_handler_characters), (rsvg_start_text),
+	(rsvg_start_defs), (rsvg_gradient_stop_handler_new),
+	(rsvg_start_linear_gradient), (rsvg_start_radial_gradient),
+	(rsvg_start_element), (rsvg_end_element), (rsvg_characters),
+	(rsvg_get_entity), (rsvg_entity_decl), (rsvg_error_quark),
+	(rsvg_handle_new), (rsvg_handle_set_fonts_dir),
+	(rsvg_handle_set_size_callback), (rsvg_handle_write),
+	(rsvg_handle_close), (rsvg_handle_get_pixbuf), (rsvg_handle_free),
+	(rsvg_size_callback), (rsvg_pixbuf_from_file),
+	(rsvg_pixbuf_from_file_at_zoom), (rsvg_pixbuf_from_file_at_size):
+	* rsvg.h:
+	* TODO:
+	* test-rsvg.c: (main): Clean up API substantially.  Support
+	GError in API.  Remove FILE based API, and support pushing of data
+	similar to GdkPixbufLoader.  Support loading to a file size, and
+	to independent x/y zoom factors.  Robustify a little.  Add a
+	TODO.  Probably break eel a little.
+
 2001-08-31  Darin Adler  <darin@bentspoon.com>
 
 	* rsvg-paint-server.c: (rsvg_paint_server_parse):

@@ -24,19 +24,53 @@
 #ifndef RSVG_H
 #define RSVG_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
+G_BEGIN_DECLS
 
-#include <stdio.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
-void       rsvg_set_fonts_dir (const char *fonts_dir);
-GdkPixbuf *rsvg_render_file   (FILE       *f,
-			       double      zoom);
+typedef enum {
+	RSVG_ERROR_FAILED
+} RsvgError;
 
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
+#define RSVG_ERROR (rsvg_error_quark ())
+GQuark rsvg_error_quark (void) G_GNUC_CONST;
+
+typedef struct RsvgHandle RsvgHandle;
+
+typedef void (* RsvgSizeFunc) (gint     *width,
+			       gint     *height,
+			       gpointer  user_data);
+
+
+RsvgHandle *rsvg_handle_new               (void);
+void        rsvg_handle_set_fonts_dir     (RsvgHandle      *handle,
+					   const char      *fonts_dir);
+void        rsvg_handle_set_size_callback (RsvgHandle      *handle,
+					   RsvgSizeFunc     size_func,
+					   gpointer         user_data,
+					   GDestroyNotify   user_data_destroy);
+gboolean    rsvg_handle_write             (RsvgHandle      *handle,
+					   const guchar    *buf,
+					   gsize            count,
+					   GError         **error);
+gboolean    rsvg_handle_close             (RsvgHandle      *handle,
+					   GError         **error);
+GdkPixbuf  *rsvg_handle_get_pixbuf        (RsvgHandle      *handle);
+void        rsvg_handle_free              (RsvgHandle      *handle);
+
+/* convenience API */
+GdkPixbuf  *rsvg_pixbuf_from_file         (gchar           *file_name,
+ 					   GError         **error);
+GdkPixbuf  *rsvg_pixbuf_from_file_at_zoom (gchar           *file_name,
+					   double           x_zoom,
+					   double           y_zoom,
+ 					   GError         **error);
+GdkPixbuf  *rsvg_pixbuf_from_file_at_size (gchar           *file_name,
+					   gint             width,
+					   gint             height,
+					   GError         **error);
+
+
+G_END_DECLS
 
 #endif
