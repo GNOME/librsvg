@@ -901,7 +901,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
    * bug for details.
    */
   if (fonts_dir == NULL) {
-    dir = DATADIR "/eel/fonts";
+    dir = DATADIR "/eel-2/eel/fonts";
   } else {
     dir = fonts_dir;
   }

@@ -1,3 +1,13 @@
+2001-09-29  Darin Adler  <darin@bentspoon.com>
+
+	* rsvg-ft.c: (rsvg_ft_measure_or_render_string): Fix font metrics
+	to take affine matrix into account.
+	
+	* rsvg.c: (rsvg_text_handler_characters): Point to correct
+	directory for eel 2.
+	
+	* test-61223.svg: Test file for another bug.
+
 2001-09-25  Darin Adler  <darin@bentspoon.com>
 
 	* test-60544.svg: Another test file, from another bug.

@@ -841,17 +841,17 @@ rsvg_ft_measure_or_render_string (RsvgFTCtx *ctx,
 			  FT_FROMFLOAT(sx),
 			  FT_FROMFLOAT(sy),
 			  72, 72);
-	pixel_height = FT_TRUNC (FT_CEIL (font->face->size->metrics.ascender
-					  - font->face->size->metrics.descender));
-	pixel_baseline = FT_TRUNC (FT_CEIL (font->face->size->metrics.ascender));
+	pixel_height = FT_TOFLOAT (font->face->size->metrics.ascender
+				   - font->face->size->metrics.descender) * affine[3];
+	pixel_baseline = FT_TOFLOAT (font->face->size->metrics.ascender) * affine[3];
 
 	pixel_underline_position = ((font->face->ascender
 				     - font->face->underline_position
 				     - font->face->underline_thickness / 2) * sy
-				     / font->face->units_per_EM);
+				     / font->face->units_per_EM) * affine[3];
 
 	pixel_underline_thickness = (font->face->underline_thickness * sy
-				     / font->face->units_per_EM);
+				     / font->face->units_per_EM) * affine[3];
 	pixel_underline_thickness = MAX (1, pixel_underline_thickness);
 
 	bbox.x0 = bbox.x1 = 0;
@@ -982,9 +982,10 @@ rsvg_ft_measure_or_render_string (RsvgFTCtx *ctx,
 
 	/* Some callers of this function expect to get something with
 	 * non-zero width and height. So force the returned glyph to
-	 * be at least one pixel wide
+	 * be at least one pixel wide and tall.
 	 */
 	pixel_width = MAX (1, bbox.x1 - bbox.x0);
+	pixel_height = MAX (1, pixel_height);
 
 	dimensions[0] = pixel_width;
 	dimensions[1] = pixel_height;
@@ -1021,7 +1022,7 @@ rsvg_ft_measure_or_render_string (RsvgFTCtx *ctx,
 		rsvg_ft_glyph_composite (result, glyphs[i],
 					 glyph_xy[i * 2] - bbox.x0,
 					 glyph_xy[i * 2 + 1]
-					 + pixel_baseline - glyph_affine[5]);
+					 + pixel_baseline - affine[5]);
 		rsvg_ft_glyph_unref (glyphs[i]);
 	}
 

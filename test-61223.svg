@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="iso-8859-2" ?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20000303 Stylable//EN"   "http://www.w3.org/TR/2000/03/WD-SVG-20000303/DTD/svg-20000303-stylable.dtd">
+<svg  width="400pt" height="100pt" xml:space="preserve">
+
+<g id="textbox" style="fill:#FFFFFF; stroke:#000000;
+                                font-family: Helvetica; font-size:40pt">
+<text transform="matrix(1 0 0 1 100 70)">Hello world!</text>
+</g>
+</svg>
