@@ -1435,8 +1435,6 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	
 	g_object_unref (loader);
 	
-	g_free(buffer);
-	
 	return pixbuf;
 }
 
