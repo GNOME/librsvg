@@ -96,8 +96,8 @@ rsvg_bpath_def_moveto (RsvgBpathDef *bpd, double x, double y)
 	if (n_bpath > 0)
 		if (bpath[n_bpath - 1].code == ART_MOVETO_OPEN)
 			{
-				bpath[n_bpath].x3 = x;
-				bpath[n_bpath].y3 = y;
+				bpath[n_bpath - 1].x3 = x;
+				bpath[n_bpath - 1].y3 = y;
 				bpd->moveto_idx = n_bpath;
 				return;
 			}
