@@ -1737,3 +1737,89 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle *ctx, const xmlChar **atts
 
 	g_ptr_array_add(((RsvgFilter *)(ctx->currentfilter))->primitives, &filter->super);
 }
+
+#if 0
+
+struct ComponentTransferData
+{
+	gdouble * tableValues;
+	guint nbTableValues;
+
+	gdouble slope;
+	gdouble intercept;
+	gdouble amplitude;
+	gdouble exponent;
+	gdouble offset;
+};
+
+typedef guint8 (*ComponentTransferFunc) (guint8 C, struct ComponentTransferData * user_data);
+
+static gdouble
+get_component_transfer_table_value(guint8 C, struct ComponentTransferData * user_data)
+{
+	guint k;
+	gdouble N;
+
+	for(k = 0; k < user_data->nbTableValues; k++) {
+		N = user_data->tableValues[k];
+
+		if(((k/N) <= C) && (C < (k+1)/N))
+			return k;
+	}
+
+	return 0;
+}
+
+static guint8
+identity_component_transfer_func(guint8 C, struct ComponentTransferData * user_data)
+{
+	return C;
+}
+
+static guint8
+table_component_transfer_func(guint8 C, struct ComponentTransferData * user_data)
+{
+	guint k;
+	gdouble vk, vk1;
+
+	if(!user_data->nbTableValues)
+		return C;
+
+	k = get_component_transfer_table_value(C, user_data);
+
+	vk = user_data->tableValues[k];
+	vk1 = user_data->tableValues[k+1];
+
+	return (vk + (C - (k/user_data->nbTableValues)) * user_data->nbTableValues * (vk1 - vk));
+}
+
+static guint8
+discrete_component_transfer_func(guint8 C, struct ComponentTransferData * user_data)
+{
+	guint k;
+
+	if(!user_data->nbTableValues)
+		return C;
+
+	k = get_component_transfer_table_value(C, user_data);
+
+	return (guint8)user_data->tableValues[k];
+}
+
+static guint8
+linear_component_transfer_func(guint8 C, struct ComponentTransferData * user_data)
+{
+	return (user_data->slope * C) + user_data->intercept;
+}
+
+static guint8
+gamma_component_transfer_func(guint8 C, struct ComponentTransferData * user_data)
+{
+	return user_data->amplitude * pow(C, user_data->exponent) + user_data->offset;
+}
+
+void rsvg_start_filter_component_transfer (RsvgHandle *ctx, const xmlChar **atts);
+void rsvg_filter_primitive_component_transer_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx);
+void rsvg_filter_primitive_component_transfer_free (RsvgFilterPrimitive * self);
+
+#endif
