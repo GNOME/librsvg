@@ -1,3 +1,11 @@
+2002-10-06  Dom Lachowicz <doml@appligent.com>
+
+	* svg-rc-style.c (): Added const-ness to struct
+	* rsvg.c (rsvg_parse_cssbuffer, rsvg_style_handler_*): new functions
+	to implement CSS style parsing
+	(*): Implement CSS1/CSS2 style handling based on tagname (eg. "text") and on class (eg. "error")
+	(*): Implement proper handler nesting, cleanup a few memleaks
+	
 2002-10-05  Dom Lachowicz <doml@appligent.com>
 
 	* Move test images to tests subdirectory, add more tests

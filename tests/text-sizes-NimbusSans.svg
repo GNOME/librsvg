@@ -2,19 +2,29 @@
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
 <svg xmlns="http://www.w3.org/2000/svg" width="10cm" height="10cm">
 <defs>
+	<style type="text/css">
+		text.warning {stroke:green; fill:green}
+		text.error {stroke:red; fill:red}
+		text {stroke:blue; fill:blue}
+		.user_defined 
+			{
+				stroke:orange; 
+				fill:orange;
+			} 
+	</style>
 </defs>
 <g style="font-family:'Nimbus Sans l'; font-style:normal; font-weight:normal; fill:black ">
-<text x="10pt" y="10pt" style="font-size:12pt; ">
+<text x="10pt" y="10pt" class="warning" style="font-size:12pt; ">
 ABCDEFGHIJKLMNOPQRSTUVWXYZ</text>
 <text x="10pt" y="24pt" style="font-size:12pt; ">
 abcdefghijklmnopqrstuvwxyz 1234567890</text>
 
-<text x="10pt" y="46pt" style="font-size:11pt; ">
+<text x="10pt" y="46pt" class="error" style="font-size:11pt; ">
 ABCDEFGHIJKLMNOPQRSTUVWXYZ</text>
 <text x="10pt" y="58pt" style="font-size:11pt; ">
 abcdefghijklmnopqrstuvwxyz 1234567890</text>
 
-<text x="10pt" y="80pt" style="font-size:10pt; ">
+<text x="10pt" y="80pt" class="user_defined" style="font-size:10pt; ">
 ABCDEFGHIJKLMNOPQRSTUVWXYZ</text>
 <text x="10pt" y="91pt" style="font-size:10pt; ">
 abcdefghijklmnopqrstuvwxyz 1234567890</text>

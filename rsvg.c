@@ -116,8 +116,12 @@ struct RsvgHandle {
   int n_state_max;
 
   RsvgDefs *defs;
+  GHashTable *css_props;
 
-  RsvgSaxHandler *handler; /* should this be a handler stack? */
+  /* not a handler stack. each nested handler keeps
+   * track of its parent
+   */
+  RsvgSaxHandler *handler;
   int handler_nest;
 
   GHashTable *entities; /* g_malloc'd string -> xmlEntityPtr */
@@ -542,6 +546,65 @@ rsvg_parse_style (RsvgHandle *ctx, RsvgState *state, const char *str)
     }
 }
 
+/*
+ * Extremely poor man's CSS parser. Not robust. Not compliant.
+ * Should work well enough for our needs ;-)
+ */
+static void
+rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
+{
+  size_t loc = 0;
+  
+  while (loc < buflen)
+    {
+      GString * style_name = g_string_new (NULL);
+      GString * style_props = g_string_new (NULL);
+
+      /* advance to the style's name */
+      while (loc < buflen && g_ascii_isspace (buff[loc]))
+	loc++;
+
+      while (loc < buflen && !g_ascii_isspace (buff[loc]))
+	g_string_append_c (style_name, buff[loc++]);
+
+      /* advance to the first { that defines the style's properties */
+      while (loc < buflen && buff[loc++] != '{' )
+	;
+
+      while (loc < buflen && g_ascii_isspace (buff[loc]))
+	loc++;
+
+      while (buff[loc] != '}')
+	{
+	  /* suck in and append our property */
+	  while (loc < buflen && buff[loc] != ';' && buff[loc] != '}' )
+	    g_string_append_c (style_props, buff[loc++]);
+
+	  if (buff[loc] == '}')
+	    break;
+	  else
+	    {
+	      g_string_append_c (style_props, ';');
+	      
+	      /* advance to the next property */
+	      loc++;
+	      while (g_ascii_isspace (buff[loc]) && loc < buflen)
+		loc++;
+	    }
+	}
+
+      /* push name/style pair into HT */
+      g_hash_table_insert (ctx->css_props, style_name->str, style_props->str);
+      
+      g_string_free (style_name, FALSE);
+      g_string_free (style_props, FALSE);
+
+      loc++;
+      while (g_ascii_isspace (buff[loc]) && loc < buflen)
+	loc++;
+    }
+}
+
 /* Parse an SVG transform string into an affine matrix. Reference: SVG
    working draft dated 1999-07-06, section 8.5. Return TRUE on
    success. */
@@ -695,18 +758,71 @@ rsvg_parse_transform_attr (RsvgHandle *ctx, RsvgState *state, const char *str)
     }
 }
 
+static gboolean
+rsvg_lookup_apply_css_style (RsvgHandle *ctx, const char * target)
+{
+  const char * value = (const char *)g_hash_table_lookup (ctx->css_props, target);
+
+  if (value != NULL)
+    {
+      rsvg_parse_style (ctx, &ctx->state[ctx->n_state - 1],
+			value);
+      return TRUE;
+    }
+  return FALSE;
+}
+
 /**
  * rsvg_parse_style_attrs: Parse style attribute.
  * @ctx: Rsvg context.
+ * @tag: The SVG tag we're processing (eg: circle, ellipse), optionally %NULL
+ * @klazz: The space delimited class list, optionally %NULL
  * @atts: Attributes in SAX style.
  *
  * Parses style and transform attributes and modifies state at top of
  * stack.
  **/
 static void
-rsvg_parse_style_attrs (RsvgHandle *ctx, const xmlChar **atts)
+rsvg_parse_style_attrs (RsvgHandle *ctx, 
+			const char * tag,
+			const char * klazz,
+			const xmlChar **atts)
 {
-  int i;
+  int i = 0, j = 0;
+  char * target = NULL;
+  gboolean found = FALSE;
+  GString * klazz_list = NULL;
+
+  if (tag != NULL && klazz != NULL)
+    {
+      target = g_strdup_printf ("%s.%s", tag, klazz);
+      found = rsvg_lookup_apply_css_style (ctx, target);
+      g_free (target);
+    }
+  
+  if (found == FALSE)
+    {
+      if (tag != NULL)
+	rsvg_lookup_apply_css_style (ctx, tag);
+
+      if (klazz != NULL)
+	{
+	  i = strlen (klazz);
+	  while (j < i)
+	    {
+	      klazz_list = g_string_new (".");
+
+	      while (j < i && g_ascii_isspace(klazz[j]))
+		j++;
+
+	      while (j < i && !g_ascii_isspace(klazz[j]))
+		g_string_append_c (klazz_list, klazz[j++]);
+
+	      rsvg_lookup_apply_css_style (ctx, klazz_list->str);
+	      g_string_free (klazz_list, TRUE);
+	    }
+	}
+    }
 
   if (atts != NULL)
     {
@@ -846,9 +962,19 @@ static void
 rsvg_start_g (RsvgHandle *ctx, const xmlChar **atts)
 {
   RsvgState *state = &ctx->state[ctx->n_state - 1];
+  const char * klazz = NULL;
+  int i;
 
-  rsvg_parse_style_attrs (ctx, atts);
+  if (atts != NULL)
+    {
+      for (i = 0; atts[i] != NULL; i += 2)
+	{
+	  if (!strcmp ((char *)atts[i], "class"))
+	    klazz = (const char *)atts[i + 1];
+	}
+    }
 
+  rsvg_parse_style_attrs (ctx, "g", klazz, atts);
   if (state->opacity != 0xff)
     rsvg_push_opacity_group (ctx);
 }
@@ -1061,42 +1187,50 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 }
 
 static void
+rsvg_render_path(RsvgHandle *ctx, const char *d)
+{
+  RsvgBpathDef *bpath_def;
+  
+  bpath_def = rsvg_parse_path (d);
+  rsvg_bpath_def_art_finish (bpath_def);
+  
+  rsvg_render_bpath (ctx, bpath_def->bpath);
+  
+  rsvg_bpath_def_free (bpath_def);
+}
+
+static void
 rsvg_start_path (RsvgHandle *ctx, const xmlChar **atts)
 {
   int i;
   char *d = NULL;
+  const char * klazz = NULL;
 
-  rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
     {
       for (i = 0; atts[i] != NULL; i += 2)
 	{
 	  if (!strcmp ((char *)atts[i], "d"))
 	    d = (char *)atts[i + 1];
+	  else if (!strcmp ((char *)atts[i], "class"))
+	    klazz = (char *)atts[i + 1];
 	}
     }
 
-  if (d != NULL)
-    {
-      RsvgBpathDef *bpath_def;
+  if (d == NULL)
+    return;
 
-      bpath_def = rsvg_parse_path (d);
-      rsvg_bpath_def_art_finish (bpath_def);
-
-      rsvg_render_bpath (ctx, bpath_def->bpath);
-
-      rsvg_bpath_def_free (bpath_def);
-    }
+  rsvg_parse_style_attrs (ctx, "path", klazz, atts);
+  rsvg_render_path (ctx, d);
 }
 
 /* begin text - this should likely get split into its own .c file */
 
-typedef struct _RsvgSaxHandlerText RsvgSaxHandlerText;
-
-struct _RsvgSaxHandlerText {
+typedef struct _RsvgSaxHandlerText {
   RsvgSaxHandler super;
+  RsvgSaxHandler *parent;
   RsvgHandle *ctx;
-};
+} RsvgSaxHandlerText;
 
 static void
 rsvg_text_handler_free (RsvgSaxHandler *self)
@@ -1228,6 +1362,7 @@ rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
   double x, y, dx, dy;
   RsvgState *state;
   x = y = dx = dy = 0.;
+  const char * klazz = NULL;
 
   state = &ctx->state[ctx->n_state - 1];
 
@@ -1237,26 +1372,27 @@ rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
 	{
 	  if (!strcmp ((char *)atts[i], "x"))
 	    x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
-	  if (!strcmp ((char *)atts[i], "y"))
+	  else if (!strcmp ((char *)atts[i], "y"))
 	    y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
-	  if (!strcmp ((char *)atts[i], "dx"))
+	  else if (!strcmp ((char *)atts[i], "dx"))
 	    dx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
-	  if (!strcmp ((char *)atts[i], "dy"))
+	  else if (!strcmp ((char *)atts[i], "dy"))
 	    dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+	  else if (!strcmp ((char *)atts[i], "class"))
+	    klazz = (const char *)atts[i + 1];
 	}
     }
-
+  
+  /* todo: transform() is illegal here */
   x += dx ;
   y += dy ;
-
+  
   if (x > 0 && y > 0)
     {
       art_affine_translate (affine, x, y);
       art_affine_multiply (state->affine, affine, state->affine);
     }
-
-  /* todo: transform() is illegal here */
-  rsvg_parse_style_attrs (ctx, atts);
+  rsvg_parse_style_attrs (ctx, "tspan", klazz, atts);
 }
 
 static void
@@ -1276,6 +1412,7 @@ rsvg_text_handler_start (RsvgSaxHandler *self, const xmlChar *name,
     rsvg_state_init (ctx->state);
   ctx->n_state++;
   
+  /* this should be the only thing starting inside of text */
   if (!strcmp ((char *)name, "tspan"))
     rsvg_start_tspan (ctx, atts);
 }
@@ -1293,6 +1430,14 @@ rsvg_text_handler_end (RsvgSaxHandler *self, const xmlChar *name)
       RsvgState *text  = &ctx->state[ctx->n_state - 2];
       text->text_offset += (tspan->text_offset - text->text_offset);
     }
+  else if (!strcmp ((char *)name, "text"))
+    {
+      if (ctx->handler != NULL)
+	{
+	  ctx->handler->free (ctx->handler);
+	  ctx->handler = z->parent;
+	}
+    } 
 
   /* pop the state stack */
   ctx->n_state--;
@@ -1305,6 +1450,7 @@ rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
   int i;
   double affine[6] ;
   double x, y, dx, dy;
+  const char * klazz = NULL;
   RsvgState *state;
 
   RsvgSaxHandlerText *handler = g_new0 (RsvgSaxHandlerText, 1);
@@ -1324,42 +1470,49 @@ rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
 	{
 	  if (!strcmp ((char *)atts[i], "x"))
 	    x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
-	  if (!strcmp ((char *)atts[i], "y"))
+	  else if (!strcmp ((char *)atts[i], "y"))
 	    y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
-	  if (!strcmp ((char *)atts[i], "dx"))
+	  else if (!strcmp ((char *)atts[i], "dx"))
 	    dx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
-	  if (!strcmp ((char *)atts[i], "dy"))
+	  else if (!strcmp ((char *)atts[i], "dy"))
 	    dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+	  else if (!strcmp ((char *)atts[i], "class"))
+	    klazz = (const char *)atts[i + 1];
 	}
     }
 
   x += dx ;
   y += dy ;
-
+  
   art_affine_translate (affine, x, y);
   art_affine_multiply (state->affine, affine, state->affine);
+  
+  rsvg_parse_style_attrs (ctx, "text", klazz, atts);
 
-  rsvg_parse_style_attrs (ctx, atts);
+  handler->parent = ctx->handler;
   ctx->handler = &handler->super;
 }
 
 /* end text */
 
-static void
-rsvg_start_defs (RsvgHandle *ctx, const xmlChar **atts)
-{
-  RsvgState *state = &ctx->state[ctx->n_state - 1];
-
-  state->in_defs = TRUE;
-}
-
-typedef struct _RsvgSaxHandlerGstops RsvgSaxHandlerGstops;
-
-struct _RsvgSaxHandlerGstops {
+typedef struct _RsvgSaxHandlerDefs {
   RsvgSaxHandler super;
   RsvgHandle *ctx;
+} RsvgSaxHandlerDefs;
+
+typedef struct _RsvgSaxHandlerStyle {
+  RsvgSaxHandler super;
+  RsvgSaxHandlerDefs *parent;
+  RsvgHandle *ctx;
+  GString *style;
+} RsvgSaxHandlerStyle;
+
+typedef struct _RsvgSaxHandlerGstops {
+  RsvgSaxHandler super;
+  RsvgSaxHandlerDefs *parent;
+  RsvgHandle *ctx;
   RsvgGradientStops *stops;
-};
+} RsvgSaxHandlerGstops;
 
 static void
 rsvg_gradient_stop_handler_free (RsvgSaxHandler *self)
@@ -1432,6 +1585,17 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 static void
 rsvg_gradient_stop_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 {
+  RsvgSaxHandlerGstops *z = (RsvgSaxHandlerGstops *)self;
+  RsvgHandle *ctx = z->ctx;
+
+  if (!strcmp((char *)name, "stop"))
+    {
+      if (ctx->handler != NULL)
+	{
+	  ctx->handler->free (ctx->handler);
+	  ctx->handler = &z->parent->super;
+	}
+    }
 }
 
 static RsvgSaxHandler *
@@ -1449,6 +1613,7 @@ rsvg_gradient_stop_handler_new (RsvgHandle *ctx, RsvgGradientStops **p_stops)
   stops->n_stop = 0;
   stops->stop = NULL;
 
+  gstops->parent = (RsvgSaxHandlerDefs*)ctx->handler;
   *p_stops = stops;
   return &gstops->super;
 }
@@ -1593,6 +1758,134 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
   grad->fy = fy;
 }
 
+/* end gradients */
+
+static void
+rsvg_style_handler_free (RsvgSaxHandler *self)
+{
+  RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *)self;
+  RsvgHandle *ctx = z->ctx;
+
+  rsvg_parse_cssbuffer (ctx, z->style->str, z->style->len);
+
+  g_string_free (z->style, TRUE);
+  g_free (z);
+}
+
+static void
+rsvg_style_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
+{
+  RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *)self;
+  g_string_append_len (z->style, (const char *)ch, len);
+}
+
+static void
+rsvg_style_handler_start (RsvgSaxHandler *self, const xmlChar *name,
+			  const xmlChar **atts)
+{
+}
+
+static void
+rsvg_style_handler_end (RsvgSaxHandler *self, const xmlChar *name)
+{
+  RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *)self;
+  RsvgHandle *ctx = z->ctx;
+  
+  if (!strcmp ((char *)name, "style"))
+  {
+    if (ctx->handler != NULL)
+      {
+	ctx->handler->free (ctx->handler);
+	ctx->handler = &z->parent->super;
+      }
+  }
+}
+
+static void
+rsvg_start_style (RsvgHandle *ctx, const xmlChar **atts)
+{
+  RsvgSaxHandlerStyle *handler = g_new0 (RsvgSaxHandlerStyle, 1);
+
+  handler->super.free = rsvg_style_handler_free;
+  handler->super.characters = rsvg_style_handler_characters;
+  handler->super.start_element = rsvg_style_handler_start;
+  handler->super.end_element   = rsvg_style_handler_end;
+  handler->ctx = ctx;
+
+  handler->style = g_string_new (NULL);
+
+  handler->parent = (RsvgSaxHandlerDefs*)ctx->handler;
+  ctx->handler = &handler->super;
+}
+
+/* */
+
+static void
+rsvg_defs_handler_free (RsvgSaxHandler *self)
+{
+  g_free (self);
+}
+
+static void
+rsvg_defs_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
+{
+}
+
+static void
+rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
+			 const xmlChar **atts)
+{
+  RsvgSaxHandlerDefs *z = (RsvgSaxHandlerDefs *)self;
+  RsvgHandle *ctx = z->ctx;
+
+  /* push the state stack */
+  if (ctx->n_state == ctx->n_state_max)
+    ctx->state = g_renew (RsvgState, ctx->state, ctx->n_state_max <<= 1);
+  if (ctx->n_state)
+    rsvg_state_clone (&ctx->state[ctx->n_state],
+		      &ctx->state[ctx->n_state - 1]);
+  else
+    rsvg_state_init (ctx->state);
+  ctx->n_state++;
+  
+  if (!strcmp ((char *)name, "linearGradient"))
+    rsvg_start_linear_gradient (ctx, atts);
+  else if (!strcmp ((char *)name, "radialGradient"))
+    rsvg_start_radial_gradient (ctx, atts);
+  else if (!strcmp ((char *)name, "style"))
+    rsvg_start_style (ctx, atts);
+}
+
+static void
+rsvg_defs_handler_end (RsvgSaxHandler *self, const xmlChar *name)
+{
+  RsvgSaxHandlerDefs *z = (RsvgSaxHandlerDefs *)self;
+  RsvgHandle *ctx = z->ctx;
+
+  /* pop the state stack */
+  ctx->n_state--;
+  rsvg_state_finalize (&ctx->state[ctx->n_state]);
+}
+
+static void
+rsvg_start_defs (RsvgHandle *ctx, const xmlChar **atts)
+{
+  RsvgSaxHandlerDefs *handler = g_new0 (RsvgSaxHandlerDefs, 1);
+
+  RsvgState *state = &ctx->state[ctx->n_state - 1];
+  state->in_defs = TRUE;
+
+  handler->super.free = rsvg_defs_handler_free;
+  handler->super.characters = rsvg_defs_handler_characters;
+  handler->super.start_element = rsvg_defs_handler_start;
+  handler->super.end_element   = rsvg_defs_handler_end;
+  handler->ctx = ctx;
+
+  ctx->handler = &handler->super;
+}
+
+/* end defs */
+
 static GString *
 rsvg_make_poly_point_list(const char * points)
 {
@@ -1628,9 +1921,8 @@ rsvg_start_any_poly(RsvgHandle *ctx, const xmlChar **atts, gboolean is_polyline)
   const char * verts = (const char *)NULL;
   GString * g = NULL;
   gchar ** pointlist = NULL;
-  xmlChar *path_atts[3];
+  const char * klazz = NULL;
 
-  rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
     {
       for (i = 0; atts[i] != NULL; i += 2)
@@ -1638,11 +1930,15 @@ rsvg_start_any_poly(RsvgHandle *ctx, const xmlChar **atts, gboolean is_polyline)
 	  /* support for svg < 1.0 which used verts */
 	  if (!strcmp ((char *)atts[i], "verts") || !strcmp ((char *)atts[i], "points"))
 	    verts = (const char *)atts[i + 1];
+	  else if (!strcmp ((char *)atts[i], "class"))
+	    klazz = (const char *)atts[i + 1];
 	}
     }
 
   if (!verts)
     return;
+
+  rsvg_parse_style_attrs (ctx, (is_polyline ? "polyline" : "polygon"), klazz, atts);
 
   /* todo: make the following more memory and CPU friendly */
   g = rsvg_make_poly_point_list (verts);
@@ -1661,11 +1957,7 @@ rsvg_start_any_poly(RsvgHandle *ctx, const xmlChar **atts, gboolean is_polyline)
       if (!is_polyline)
 	g_string_append (d, "Z");
 
-      path_atts[0] = (xmlChar*)"d";
-      path_atts[1] = (xmlChar*)d->str;
-      path_atts[2] = (xmlChar*)NULL;
-      rsvg_start_path (ctx, (const xmlChar **)path_atts);
-
+      rsvg_render_path (ctx, d->str);
       g_string_free (d, TRUE);
       g_strfreev(pointlist);
     }
@@ -1693,6 +1985,7 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
   int i;
   double x = 0., y = 0., w = -1., h = -1.;
   const char * href = NULL;
+  const char * klazz = NULL;
 
   GdkPixbuf *img;
   GError *err = NULL;
@@ -1703,7 +1996,6 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
   double tmp_affine[6];
   RsvgState *state = &ctx->state[ctx->n_state - 1];
 
-  rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
     {
       for (i = 0; atts[i] != NULL; i += 2)
@@ -1719,12 +2011,16 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
 	  /* path is used by some older adobe illustrator versions */
 	  else if (!strcmp ((char *)atts[i], "path") || !strcmp((char *)atts[i], "xlink:href"))
 	    href = (const char *)atts[i + 1];
+	  else if (!strcmp ((char *)atts[i], "class"))
+	    klazz = (const char *)atts[i + 1];
 	}
     }
 
   if (!href || x < 0. || y < 0. || w <= 0. || h <= 0.)
     return;
   
+  rsvg_parse_style_attrs (ctx, "image", klazz, atts);
+
   img = gdk_pixbuf_new_from_file (href, &err);
   
   if (!img)
@@ -1791,10 +2087,9 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
   int i;
   double x1 = 0, y1 = 0, x2 = 0, y2 = 0;
   char * d = NULL;
-  xmlChar *path_atts[3];
+  const char * klazz = NULL;
   RsvgState *state = &ctx->state[ctx->n_state - 1];
 
-  rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
     {
       for (i = 0; atts[i] != NULL; i += 2)
@@ -1807,17 +2102,16 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
 	    x2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "y2"))
 	    y2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+	  else if (!strcmp ((char *)atts[i], "class"))
+	    klazz = (const char *)atts[i + 1];
 	}      
     }
+  rsvg_parse_style_attrs (ctx, "line", klazz, atts);
 
   /* emulate a line using a path */
   d = g_strdup_printf ("M %f %f L %f %f", x1, y1, x2, y2);
 
-  path_atts[0] = (xmlChar*)"d";
-  path_atts[1] = (xmlChar*)d;
-  path_atts[2] = (xmlChar*)NULL;
-  rsvg_start_path (ctx, (const xmlChar **)path_atts);
-
+  rsvg_render_path (ctx, d);
   g_free (d);
 }
 
@@ -1827,10 +2121,9 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
   int i;
   double x = -1, y = -1, w = -1, h = -1, rx = 0, ry = 0;
   char * d = NULL;
-  xmlChar *path_atts[3];
+  const char * klazz = NULL;
   RsvgState *state = &ctx->state[ctx->n_state - 1];
   
-  rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
     {
       for (i = 0; atts[i] != NULL; i += 2)
@@ -1847,11 +2140,15 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	    rx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "ry"))
 	    ry = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+	  else if (!strcmp ((char *)atts[i], "class"))
+	    klazz = (const char *)atts[i + 1];
 	}
     }
 
   if (x < 0. || y < 0. || w < 0. || h < 0. || rx < 0. || ry < 0.)
     return;
+
+  rsvg_parse_style_attrs (ctx, "rect", klazz, atts);
 
   /* incrementing y by 1 properly draws borders. this is a HACK */
   y++;
@@ -1876,11 +2173,7 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 		       y + ry,
 		       rx, ry, 0., 0., 1., x + rx, y);
 
-  path_atts[0] = (xmlChar*)"d";
-  path_atts[1] = (xmlChar*)d;
-  path_atts[2] = (xmlChar*)NULL;
-  rsvg_start_path (ctx, (const xmlChar **)path_atts);
-  
+  rsvg_render_path (ctx, d);
   g_free (d);
 }
 
@@ -1890,10 +2183,9 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
   int i;
   double cx = 0, cy = 0, r = 0;
   char * d = NULL;
-  xmlChar *path_atts[3];
+  const char * klazz = NULL;
   RsvgState *state = &ctx->state[ctx->n_state - 1];
   
-  rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
     {
       for (i = 0; atts[i] != NULL; i += 2)
@@ -1906,13 +2198,17 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 	    r = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, 
 						  rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), 
 						  state->font_size, 0.);
+	  else if (!strcmp ((char *)atts[i], "class"))
+	    klazz = (const char *)atts[i + 1];
 	}
     }
 
   if (cx < 0. || cy < 0. || r <= 0.)
     return;
 
-  /* approximate a circle using 4 bezier paths */
+  rsvg_parse_style_attrs (ctx, "circle", klazz, atts);
+
+  /* approximate a circle using 4 bezier curves */
   d = g_strdup_printf ("M %f %f "
 		       "C %f %f %f %f %f %f "
 		       "C %f %f %f %f %f %f "
@@ -1926,11 +2222,7 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 		       cx + r * RSVG_ARC_MAGIC, cy - r, cx + r, cy - r * RSVG_ARC_MAGIC, cx + r, cy
 		       );
 
-  path_atts[0] = (xmlChar*)"d";
-  path_atts[1] = (xmlChar*)d;
-  path_atts[2] = (xmlChar*)NULL;
-  rsvg_start_path (ctx, (const xmlChar **)path_atts);
-  
+  rsvg_render_path (ctx, d);
   g_free (d);
 }
 
@@ -1940,10 +2232,9 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
   int i;
   double cx = 0, cy = 0, rx = 0, ry = 0;
   char * d = NULL;
-  xmlChar *path_atts[3];
+  const char * klazz = NULL;
   RsvgState *state = &ctx->state[ctx->n_state - 1];
 
-  rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
     {
       for (i = 0; atts[i] != NULL; i += 2)
@@ -1956,13 +2247,17 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 	    rx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
 	  else if (!strcmp ((char *)atts[i], "ry"))
 	    ry = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+	  else if (!strcmp ((char *)atts[i], "class"))
+	    klazz = (const char *)atts[i + 1];
 	}
     }
 
   if (cx < 0. || cy < 0. || rx <= 0. || ry <= 0.)
     return;
 
-  /* approximate an ellipse using 4 bezier paths */
+  rsvg_parse_style_attrs (ctx, "ellipse", klazz, atts);
+
+  /* approximate an ellipse using 4 bezier curves */
   d = g_strdup_printf ("M %f %f "
 		       "C %f %f %f %f %f %f "
 		       "C %f %f %f %f %f %f "
@@ -1976,11 +2271,7 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 		       cx + RSVG_ARC_MAGIC * rx, cy + ry, cx + rx, cy + RSVG_ARC_MAGIC * ry, cx + rx, cy
 		       );
 
-  path_atts[0] = (xmlChar*)"d";
-  path_atts[1] = (xmlChar*)d;
-  path_atts[2] = (xmlChar*)NULL;
-  rsvg_start_path (ctx, (const xmlChar **)path_atts);
-  
+  rsvg_render_path (ctx, d);
   g_free (d);
 
   return;
@@ -2033,10 +2324,6 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 	rsvg_start_polygon (ctx, atts);
       else if (!strcmp ((char *)name, "polyline"))
 	rsvg_start_polyline (ctx, atts);
-      else if (!strcmp ((char *)name, "linearGradient"))
-	rsvg_start_linear_gradient (ctx, atts);
-      else if (!strcmp ((char *)name, "radialGradient"))
-	rsvg_start_radial_gradient (ctx, atts);
     }
 }
 
@@ -2181,6 +2468,9 @@ rsvg_handle_new (void)
   handle->handler_nest = 0;
   handle->entities = g_hash_table_new (g_str_hash, g_str_equal);
   handle->dpi = RSVG_DPI;
+
+  handle->css_props = g_hash_table_new_full (g_str_hash, g_str_equal,
+					     g_free, g_free);
 
   handle->ctxt = NULL;
 
@@ -2360,6 +2650,8 @@ rsvg_handle_free (RsvgHandle *handle)
 
   g_hash_table_foreach (handle->entities, rsvg_ctx_free_helper, NULL);
   g_hash_table_destroy (handle->entities);
+
+  g_hash_table_destroy (handle->css_props);
 
   if (handle->user_data_destroy)
     (* handle->user_data_destroy) (handle->user_data);

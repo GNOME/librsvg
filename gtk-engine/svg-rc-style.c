@@ -37,7 +37,7 @@ static GtkStyle *rsvg_rc_style_create_style (GtkRcStyle         *rc_style);
 
 static void theme_image_unref (ThemeImage *data);
 
-static struct
+static const struct
   {
     gchar              *name;
     guint               token;
