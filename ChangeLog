@@ -1,5 +1,12 @@
 2001-07-25  Ramiro Estrugo  <ramiro@fateware.com>
 
+	* Makefile.am:
+	* librsvg.m4:
+	Retire this thing which is no longer relevant in the GNOME2
+	universe.
+	
+2001-07-25  Ramiro Estrugo  <ramiro@fateware.com>
+
 	* .cvsignore:
 	Im a dumbass.  Revert the last stupid change i made to ignore
 	files that arent made no more.

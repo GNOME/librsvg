@@ -3,7 +3,6 @@ noinst_PROGRAMS = test-ft-gtk test-ft test-rsvg
 EXTRA_DIST =\
 	COPYING.LIB \
 	librsvg.spec.in \
-	librsvg.m4 \
 	librsvg-2.0.pc.in
 
 lib_LTLIBRARIES = librsvg-2.la
@@ -84,9 +83,6 @@ test_rsvg_DEPENDENCIES = $(DEPS)
 test_rsvg_LDADD = $(LDADDS) -lm
 
 tests:	test-ft-gtk test-ft test-rsvg
-
-m4datadir = $(datadir)/aclocal
-m4data_DATA = librsvg.m4
 
 ## Put `exec' in the name because this should be installed by
 ## `install-exec', not `install-data'.
