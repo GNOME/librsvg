@@ -105,6 +105,33 @@ gboolean rsvg_handle_close_impl (RsvgHandle  *handle,
 								 GError     **error);
 void rsvg_handle_free_impl (RsvgHandle *handle);
 
+typedef enum {
+	RSVG_SIZE_ZOOM,
+	RSVG_SIZE_WH,
+	RSVG_SIZE_WH_MAX,
+	RSVG_SIZE_ZOOM_MAX
+} RsvgSizeType;
+
+struct RsvgSizeCallbackData
+{
+	RsvgSizeType type;
+	double x_zoom;
+	double y_zoom;
+	gint width;
+	gint height;
+};
+
+/* private */
+GdkPixbuf *
+rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
+									  struct RsvgSizeCallbackData * data,
+									  GError ** error);
+/* private */
+GdkPixbuf *
+rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
+										   struct RsvgSizeCallbackData * data,
+										   GError ** error);
+
 G_END_DECLS
 
 #endif

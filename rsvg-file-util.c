@@ -25,6 +25,7 @@
 
 #include "config.h"
 #include "rsvg.h"
+#include "rsvg-private.h"
 
 #if HAVE_SVGZ
 #include "rsvg-gz.h"
@@ -36,22 +37,6 @@
 #include <math.h>
 
 #define SVG_BUFFER_SIZE (1024 * 8)
-
-typedef enum {
-	RSVG_SIZE_ZOOM,
-	RSVG_SIZE_WH,
-	RSVG_SIZE_WH_MAX,
-	RSVG_SIZE_ZOOM_MAX
-} RsvgSizeType;
-
-struct RsvgSizeCallbackData
-{
-	RsvgSizeType type;
-	double x_zoom;
-	double y_zoom;
-	gint width;
-	gint height;
-};
 
 static void
 rsvg_size_callback (int *width,
@@ -143,16 +128,57 @@ rsvg_pixbuf_from_file_with_size_data_ex (RsvgHandle * handle,
 	return retval;
 }
 
-static GdkPixbuf *
+/* private */
+GdkPixbuf *
+rsvg_pixbuf_from_stdio_file_with_size_data(FILE * f,
+										   struct RsvgSizeCallbackData * data,
+										   GError ** error)
+{
+	RsvgHandle * handle;
+	GdkPixbuf * retval;
+	guchar chars[SVG_BUFFER_SIZE];
+	int result;
+
+	result = fread (chars, 1, SVG_BUFFER_SIZE, f);
+
+	if (result == 0) {
+		g_set_error (error, G_FILE_ERROR,
+					 g_file_error_from_errno (errno),
+					 g_strerror (errno));
+		return NULL;
+	}
+
+#if HAVE_SVGZ
+	/* test for GZ marker */
+	if ((result >= 2) && (chars[0] == (guchar)0x1f) && (chars[1] == (guchar)0x8b))
+		handle = rsvg_handle_new_gz ();
+	else
+		handle = rsvg_handle_new ();
+#else
+	handle = rsvg_handle_new ();
+#endif
+
+	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
+
+	rsvg_handle_write (handle, chars, result, error);
+
+	while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
+		rsvg_handle_write (handle, chars, result, error);
+	
+	rsvg_handle_close (handle, error);
+	retval = rsvg_handle_get_pixbuf (handle);
+	rsvg_handle_free (handle);
+
+	return retval;
+}
+
+/* private */
+GdkPixbuf *
 rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
 									  struct RsvgSizeCallbackData * data,
 									  GError ** error)
 {
-#if HAVE_SVGZ
-	RsvgHandle * handle;
-	guchar chars[SVG_BUFFER_SIZE];
-	GdkPixbuf *retval;
-	gint result;
+	GdkPixbuf * pixbuf;
 	FILE *f = fopen (file_name, "rb");
 
 	if (!f)
@@ -163,40 +189,11 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
 			return NULL;
 		}
 	
-	result = fread (chars, 1, SVG_BUFFER_SIZE, f);
+	pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data(f, data, error);
 
-	if (result == 0) {
-		g_set_error (error, G_FILE_ERROR,
-					 g_file_error_from_errno (errno),
-					 g_strerror (errno));
-		fclose (f);
-		return NULL;
-	}
+	fclose(f);
 
-	/* test for GZ marker */
-	if ((result >= 2) && (chars[0] == (guchar)0x1f) && (chars[1] == (guchar)0x8b))
-		handle = rsvg_handle_new_gz ();
-	else
-		handle = rsvg_handle_new ();
-
-	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
-	rsvg_handle_write (handle, chars, result, error);
-
-	while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
-		rsvg_handle_write (handle, chars, result, error);
-	
-	rsvg_handle_close (handle, error);
-	retval = rsvg_handle_get_pixbuf (handle);
-	
-	fclose (f);	
-	rsvg_handle_free (handle);
-	return retval;
-#else
-	RsvgHandle * handle = rsvg_handle_new ();
-	GdkPixbuf * retval = rsvg_pixbuf_from_file_with_size_data_ex (handle, file_name, data, error);
-	rsvg_handle_free (handle);
-	return retval;
-#endif
+	return pixbuf;
 }
 
 

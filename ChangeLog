@@ -1,5 +1,13 @@
 2004-02-29  Dom Lachowicz <cinamod@hotmail.com>
 
+	* configure.in:
+	* Makefile.am:
+	* test-display.c: Build + install 'rsvg-view'
+	* rsvg-file-util.c:
+	* rsvg-private.h: Export some things that I need in order to build rsvg-view
+	
+2004-02-29  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-filter.c: Added new filter: feImage
 	
 2004-02-29  Dom Lachowicz <cinamod@hotmail.com>
