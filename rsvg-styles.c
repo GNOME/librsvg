@@ -437,7 +437,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "visibility"))
 		{
 			state->has_visible = TRUE;
-			if (!strcmp (str + arg_off, "visable"))
+			if (!strcmp (str + arg_off, "visible"))
 				state->visible = TRUE;
 			else if (strcmp (str + arg_off, "inherit") != 0)
 				state->visible = FALSE; /* collapse or hidden */

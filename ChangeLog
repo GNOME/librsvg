@@ -1,3 +1,7 @@
+2005-2-9  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-styles.c: fixed spelling mistake in visibility property causing bug 166673
+	
 2005-2-7  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-styles.c: made a consistent framework for combining states
