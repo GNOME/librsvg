@@ -163,7 +163,7 @@ AC_ARG_ENABLE(pixbuf-loader,
     enable_pixbuf_loader="$enableval", enable_pixbuf_loader=auto)
 
 if test "x$enable_pixbuf_loader" = xauto ; then
-    if test x$QUERYLOADERS = xtrue ; then 
+    if test x$QUERYLOADERS != x ; then 
         enable_pixbuf_loader=yes
     else
         enable_pixbuf_loader=no
