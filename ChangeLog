@@ -1,8 +1,8 @@
 2003-02-03  Dom Lachowicz <cinamod@hotmail.com>
 
-	* rsvg-filter.c: Start implementing ComponentTransfer filter
-	Indent, make code ansi-compliant
-	* rsvg-css.c: Tweak VBOX parsing, free unused string array properly
+	* rsvg-filter.[ch]: Start implementing ComponentTransfer filter
+	Indent, make code ansi-compliant.
+	* rsvg-css.[ch]: Tweak VBOX parsing, free unused string array properly
 	
 2003-02-01  Caleb Moore <c.moore@student.unsw.edu.au>
 
