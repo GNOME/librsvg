@@ -299,10 +299,8 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 					
 					got_offset = TRUE;
 				}
-			if ((value = rsvg_property_bag_lookup (atts, "style")))
-				rsvg_parse_style (z->ctx, &state, value);
-			
-			rsvg_parse_style_pairs (z->ctx, &state, atts);
+
+			rsvg_parse_style (z->ctx, &state, value);
 		}
 	
 	rsvg_state_finalize (&state);
