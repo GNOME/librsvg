@@ -43,6 +43,9 @@ void rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts);
 
+void rsvg_push_def_group (RsvgHandle *ctx, const char * id);
+void rsvg_pop_def_group (RsvgHandle *ctx);
+
 G_END_DECLS
 
 #endif /* RSVG_SHAPES_H */

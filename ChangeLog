@@ -1,3 +1,8 @@
+2004-03-09  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-shapes.c: made groups "use"able
+	* rsvg-styles.c: changed inheritance mechanism
+
 2004-03-07  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.c: Do something for clahey (bug 105316)

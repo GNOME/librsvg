@@ -45,6 +45,7 @@ rsvg_state_init (RsvgState *state)
 	memset (state, 0, sizeof (RsvgState));
 	
 	art_affine_identity (state->affine);
+	art_affine_identity (state->personal_affine);
 	
 	state->opacity = 0xff;
 	state->fill = rsvg_paint_server_parse (NULL, "#000");
@@ -68,6 +69,30 @@ rsvg_state_init (RsvgState *state)
 	state->text_anchor  = TEXT_ANCHOR_START;
 	state->visible      = TRUE;
 	state->filter       = NULL;
+
+	state->has_fill_server = FALSE;
+	state->has_fill_opacity = FALSE;
+	state->has_fill_rule = FALSE;
+	state->has_stroke_server = FALSE;
+	state->has_stroke_opacity = FALSE;
+	state->has_stroke_width = FALSE;
+	state->has_miter_limit = FALSE;
+	state->has_cap = FALSE;
+	state->has_join = FALSE;
+	state->has_dash = FALSE;
+	state->has_visible = FALSE;
+	state->has_stop_color = FALSE;
+	state->has_stop_opacity = FALSE;
+	state->has_font_size = FALSE;
+	state->has_font_family = FALSE;
+	state->has_lang = FALSE;
+	state->has_font_style = FALSE;
+	state->has_font_variant = FALSE;
+	state->has_font_weight = FALSE;
+	state->has_font_stretch = FALSE;
+	state->has_font_decor = FALSE;
+	state->has_text_dir = FALSE;
+	state->has_text_anchor = FALSE;
 }
 
 void
@@ -82,17 +107,89 @@ rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 	rsvg_paint_server_ref (dst->stroke);
 	dst->save_pixbuf = NULL;
 
-	/*ok, I don't think this is where these lines go*/	
-	dst->opacity = 0xff;
-	dst->filter = NULL;
-	dst->backgroundnew = FALSE;
-
 	if (src->dash.n_dash > 0)
 		{
 			dst->dash.dash = g_new (gdouble, src->dash.n_dash);
 			for (i = 0; i < src->dash.n_dash; i++)
 				dst->dash.dash[i] = src->dash.dash[i];
 		}
+}
+
+void
+rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
+{
+	gint i;
+	
+	if (!dst->has_fill_server)
+		{
+			rsvg_paint_server_unref (dst->fill);
+			dst->fill = src->fill;
+			rsvg_paint_server_ref (dst->fill);
+		} 
+	if (!dst->has_fill_opacity)
+		dst->fill_opacity = src->fill_opacity;
+	if (!dst->has_fill_rule)
+		dst->fill_rule = src->fill_rule;
+	if (!dst->has_stroke_server)
+		{
+			rsvg_paint_server_unref (dst->stroke);
+			dst->stroke = src->stroke;
+			rsvg_paint_server_ref (dst->stroke);
+		} 
+	if (!dst->has_stroke_opacity)
+		dst->stroke_opacity = src->stroke_opacity;
+	if (!dst->has_stroke_width)
+		dst->stroke_width = src->stroke_width;
+	if (!dst->has_miter_limit)
+		dst->miter_limit = src->miter_limit;
+	if (!dst->has_cap)
+		dst->cap = src->cap;
+	if (!dst->has_join)
+		dst->join = src->join;
+	if (!dst->has_visible)
+		dst->cap = src->cap;
+	if (!dst->has_stop_color)
+		dst->join = src->join;
+	if (!dst->has_stop_opacity)
+		dst->stop_opacity = src->stop_opacity;
+	if (!dst->has_visible)
+		dst->visible = src->visible;
+	if (!dst->has_font_size)
+		dst->font_size = src->font_size;
+	if (!dst->has_font_style)
+		dst->font_style = src->font_style;
+	if (!dst->has_font_variant)
+		dst->font_variant = src->font_variant;
+	if (!dst->has_font_weight)
+		dst->font_weight = src->font_weight;
+	if (!dst->has_font_stretch)
+		dst->font_stretch = src->font_stretch;
+	if (!dst->has_font_decor)
+		dst->font_decor = src->font_decor;
+	if (!dst->has_text_dir)
+		dst->text_dir = src->text_dir;
+	if (!dst->has_text_anchor)
+		dst->text_anchor = src->text_anchor;
+
+	if (!dst->has_font_family)
+		dst->font_family = g_strdup (src->font_family);
+	if (!dst->has_lang)
+		dst->lang = g_strdup (src->lang);
+
+	if (src->dash.n_dash > 0 && !dst->has_dash)
+		{
+			dst->dash.dash = g_new (gdouble, src->dash.n_dash);
+			for (i = 0; i < src->dash.n_dash; i++)
+				dst->dash.dash[i] = src->dash.dash[i];
+		}
+	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
+}
+
+void
+rsvg_state_inherit (RsvgState *dst, const RsvgState *src)
+{
+	rsvg_state_init(dst);
+	rsvg_state_reinherit(dst,src);
 }
 
 void
@@ -127,53 +224,63 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 				state->backgroundnew = TRUE;
 			else
 				state->backgroundnew = FALSE;
-			/* else inherit */
 		}	
 	else if (rsvg_css_param_match (str, "display"))
 		{
+			state->has_visible = TRUE;
 			if (!strcmp (str + arg_off, "none"))
 				state->visible = FALSE;
 			else if (strcmp (str + arg_off, "inherit") != 0)
 				state->visible = TRUE;
-			/* else inherit */
+			else
+				state->has_visible = FALSE;
 		}
 	else if (rsvg_css_param_match (str, "visibility"))
 		{
+			state->has_visible = TRUE;
 			if (!strcmp (str + arg_off, "visable"))
 				state->visible = TRUE;
 			else if (strcmp (str + arg_off, "inherit") != 0)
 				state->visible = FALSE; /* collapse or hidden */
-			/* else inherit */
+			else
+				state->has_visible = FALSE;
 		}
 	else if (rsvg_css_param_match (str, "fill"))
 		{
 			rsvg_paint_server_unref (state->fill);
 			state->fill = rsvg_paint_server_parse (ctx->defs, str + arg_off);
+			state->has_fill_server = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "fill-opacity"))
 		{
 			state->fill_opacity = rsvg_css_parse_opacity (str + arg_off);
+			state->has_fill_opacity = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "fill-rule"))
 		{
+			state->has_fill_rule = TRUE;
 			if (!strcmp (str + arg_off, "nonzero"))
 				state->fill_rule = FILL_RULE_NONZERO;
 			else if (!strcmp (str + arg_off, "evenodd"))
 				state->fill_rule = FILL_RULE_EVENODD;
-			/*else inherit*/
+			else
+				state->has_fill_rule = FALSE;
 		}
 	else if (rsvg_css_param_match (str, "stroke"))
 		{
 			rsvg_paint_server_unref (state->stroke);
 			state->stroke = rsvg_paint_server_parse (ctx->defs, str + arg_off);
+			state->has_stroke_server = TRUE;		
 		}
 	else if (rsvg_css_param_match (str, "stroke-width"))
 		{
 			state->stroke_width = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
 																	(gdouble)ctx->height, state->font_size);
+			state->has_stroke_width = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "stroke-linecap"))
 		{
+			state->has_cap = TRUE;
 			if (!strcmp (str + arg_off, "butt"))
 				state->cap = ART_PATH_STROKE_CAP_BUTT;
 			else if (!strcmp (str + arg_off, "round"))
@@ -186,9 +293,11 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "stroke-opacity"))
 		{
 			state->stroke_opacity = rsvg_css_parse_opacity (str + arg_off);
+			state->has_stroke_opacity = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "stroke-linejoin"))
 		{
+			state->has_join = TRUE;
 			if (!strcmp (str + arg_off, "miter"))
 				state->join = ART_PATH_STROKE_JOIN_MITER;
 			else if (!strcmp (str + arg_off, "round"))
@@ -202,39 +311,49 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		{
 			state->font_size = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
 																 (gdouble)ctx->height, state->font_size);
+			state->has_font_size = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-family"))
 		{
 			char * save = g_strdup (rsvg_css_parse_font_family (str + arg_off, parent_state->font_family));
 			g_free (state->font_family);
 			state->font_family = save;
+			state->has_font_family = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "xml:lang"))
 		{
 			char * save = g_strdup (str + arg_off);
 			g_free (state->lang);
 			state->lang = save;
+			state->has_lang = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-style"))
 		{
 			state->font_style = rsvg_css_parse_font_style (str + arg_off, parent_state->font_style);
+			state->has_font_style = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-variant"))
 		{
 			state->font_variant = rsvg_css_parse_font_variant (str + arg_off, parent_state->font_variant);
+			state->has_font_variant = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-weight"))
 		{
 			state->font_weight = rsvg_css_parse_font_weight (str + arg_off, parent_state->font_weight);
+			state->has_font_weight = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-stretch"))
 		{
 			state->font_stretch = rsvg_css_parse_font_stretch (str + arg_off, parent_state->font_stretch);
+			state->has_font_stretch = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "text-decoration"))
 		{
 			if (!strcmp (str + arg_off, "inherit"))
-				state->font_decor = parent_state->font_decor;
+				{
+					state->has_font_decor = FALSE;
+					state->font_decor = parent_state->font_decor;
+				}
 			else 
 				{
 					if (strstr (str + arg_off, "underline"))
@@ -243,13 +362,18 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 						state->font_decor |= TEXT_OVERLINE;
 					if (strstr (str + arg_off, "strike") || strstr (str + arg_off, "line-through")) /* strike though or line-through */
 						state->font_decor |= TEXT_STRIKE;
+					state->has_font_decor = TRUE;
 				}
 		}
 	else if (rsvg_css_param_match (str, "writing-mode"))
 		{
+			state->has_text_dir = TRUE;
 			/* lr-tb | rl-tb | tb-rl | lr | rl | tb | inherit */
 			if (!strcmp (str + arg_off, "inherit"))
-				state->text_dir = parent_state->text_dir;
+				{
+					state->text_dir = parent_state->text_dir;
+					state->has_text_dir = FALSE;
+				}
 			else if (!strcmp (str + arg_off, "rl"))
 				state->text_dir = PANGO_DIRECTION_RTL;
 			else if (!strcmp (str + arg_off, "tb-rl") || 
@@ -259,11 +383,16 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 				state->text_dir = PANGO_DIRECTION_TTB_LTR;
 			else
 				state->text_dir = PANGO_DIRECTION_LTR;
+
 		}
 	else if (rsvg_css_param_match (str, "text-anchor"))
 		{
+			state->has_text_anchor = TRUE;
 			if (!strcmp (str + arg_off, "inherit"))
-				state->text_anchor = parent_state->text_anchor;
+				{
+					state->text_anchor = parent_state->text_anchor;
+					state->has_text_anchor = FALSE;
+				}
 			else 
 				{
 					if (strstr (str + arg_off, "start"))
@@ -276,18 +405,22 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "stop-color"))
 		{
+			state->has_stop_color = TRUE;
 			state->stop_color = rsvg_css_parse_color (str + arg_off);
 		}
 	else if (rsvg_css_param_match (str, "stop-opacity"))
 		{
+			state->has_stop_opacity = TRUE;
 			state->stop_opacity = rsvg_css_parse_opacity (str + arg_off);
 		}
 	else if (rsvg_css_param_match (str, "stroke-miterlimit"))
 		{
+			state->has_miter_limit = TRUE;
 			state->miter_limit = g_ascii_strtod (str + arg_off, NULL);
 		}
 	else if (rsvg_css_param_match (str, "stroke-dashoffset"))
 		{
+			state->has_dash = TRUE;
 			state->dash.offset = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
 																   rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size);
 			if (state->dash.offset < 0.)
@@ -295,6 +428,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "stroke-dasharray"))
 		{
+			state->has_dash = TRUE;
 			if(!strcmp(str + arg_off, "none"))
 				{
 					if (state->dash.n_dash != 0)
@@ -790,7 +924,10 @@ rsvg_parse_transform_attr (RsvgHandle *ctx, RsvgState *state, const char *str)
 	double affine[6];
 	
 	if (rsvg_parse_transform (affine, str))
-		art_affine_multiply (state->affine, affine, state->affine);
+		{
+			art_affine_multiply (state->affine, affine, state->affine);
+			art_affine_multiply (state->personal_affine, affine, state->personal_affine);
+		}
 }
 
 static gboolean
@@ -1161,6 +1298,7 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 
 	if (intermediate != NULL)
 		g_object_unref (intermediate);
+
 }
 
 void

@@ -58,49 +58,75 @@ enum {
 
 struct _RsvgState {
 	double affine[6];
+	double personal_affine[6];
 	
 	gint opacity; /* 0..255 */
 	
 	RsvgPaintServer *fill;
+	gboolean has_fill_server;
 	gint fill_opacity; /* 0..255 */
-	
+	gboolean has_fill_opacity;
 	gint fill_rule;	
+	gboolean has_fill_rule;
+
 	RsvgFilter *filter;
 	gboolean backgroundnew;
 
 	RsvgPaintServer *stroke;
+	gboolean has_stroke_server;
 	gint stroke_opacity; /* 0..255 */
+	gboolean has_stroke_opacity;
 	double stroke_width;
+	gboolean has_stroke_width;
 	double miter_limit;
+	gboolean has_miter_limit;
 	
 	ArtPathStrokeCapType cap;
+	gboolean has_cap;
 	ArtPathStrokeJoinType join;
+	gboolean has_join;
 	
 	double         font_size;
+	gboolean has_font_size;
 	char         * font_family;
+	gboolean has_font_family;
 	char         * lang;
+	gboolean has_lang;
 	PangoStyle     font_style;
+	gboolean has_font_style;
 	PangoVariant   font_variant;
+	gboolean has_font_variant;
 	PangoWeight    font_weight;
+	gboolean has_font_weight;
 	PangoStretch   font_stretch;
+	gboolean has_font_stretch;
 	TextDecoration font_decor;
+	gboolean has_font_decor;
 	PangoDirection text_dir;
-	TextAnchor     text_anchor;	
+	gboolean has_text_dir;
+	TextAnchor     text_anchor;
+	gboolean has_text_anchor;	
 
 	guint text_offset;
 	
 	guint32 stop_color; /* rgb */
+	gboolean has_stop_color;
 	gint stop_opacity;  /* 0..255 */
+	gboolean has_stop_opacity;
 	
 	gboolean visible;
+	gboolean has_visible;
 
 	ArtVpathDash dash;
+	gboolean has_dash;
 	
 	GdkPixbuf *save_pixbuf;
 };
 
 void rsvg_state_init (RsvgState *state);
 void rsvg_state_clone (RsvgState *dst, const RsvgState *src);
+void rsvg_state_inherit (RsvgState *dst, const RsvgState *src);
+void rsvg_state_reinherit (RsvgState *dst, const RsvgState *src);
 void rsvg_state_finalize (RsvgState *state);
 
 void rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state, 

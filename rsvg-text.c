@@ -230,7 +230,7 @@ rsvg_text_render_text_bitmap (RsvgHandle *ctx,
 
 	state->text_offset += line_ink_rect.width;
 
-	rsvg_pop_discrete_layer(ctx);
+	/*rsvg_pop_discrete_layer(ctx);*/
 
 }
 

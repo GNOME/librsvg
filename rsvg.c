@@ -217,14 +217,18 @@ rsvg_start_g (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 			rsvg_parse_style_attrs (ctx, state, "g", klazz, id, atts);
 		}	
-
-	rsvg_push_discrete_layer (ctx);
+  
+	rsvg_push_def_group (ctx, id);
+	if (!ctx->in_defs)	
+		rsvg_push_discrete_layer (ctx);
 }
 
 static void
 rsvg_end_g (RsvgHandle *ctx)
 {
-	rsvg_pop_discrete_layer (ctx);
+	rsvg_pop_def_group (ctx);
+	if (!ctx->in_defs)
+		rsvg_pop_discrete_layer (ctx);
 }
 
 typedef struct _RsvgSaxHandlerDefs {
@@ -768,8 +772,10 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	if (ctx->n_state == ctx->n_state_max)
 		ctx->state = g_renew (RsvgState, ctx->state, ctx->n_state_max <<= 1);
 	if (ctx->n_state)
-		rsvg_state_clone (&ctx->state[ctx->n_state],
-						  &ctx->state[ctx->n_state - 1]);
+		{
+			rsvg_state_inherit (&ctx->state[ctx->n_state],
+								&ctx->state[ctx->n_state - 1]);
+		}
 	else
 		rsvg_state_init (ctx->state);
 	ctx->n_state++;
@@ -788,6 +794,10 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_radial_gradient (ctx, atts, "conicalGradient");
 	else if (!strcmp ((char *)name, "style"))
 		rsvg_start_style (ctx, atts);
+	else if (!strcmp ((char *)name, "g"))
+		rsvg_start_g (ctx, atts);
+	else if (!strcmp ((char *)name, "use"))
+		rsvg_start_use (ctx, atts);
 	else if (!strcmp ((char *)name, "path"))
 		rsvg_start_path (ctx, atts);
 	else if (!strcmp ((char *)name, "line"))
@@ -821,6 +831,11 @@ rsvg_defs_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 				}
 			ctx->in_defs = FALSE;
 		}
+
+	if (!strcmp ((char *)name, "g"))
+		rsvg_end_g (ctx);
+	if (!strcmp ((char *)name, "filter"))
+		rsvg_end_filter (ctx);
 	
 	/* pop the state stack */
 	ctx->n_state--;
@@ -1019,8 +1034,10 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 			if (ctx->n_state == ctx->n_state_max)
 				ctx->state = g_renew (RsvgState, ctx->state, ctx->n_state_max <<= 1);
 			if (ctx->n_state)
-				rsvg_state_clone (&ctx->state[ctx->n_state],
-								  &ctx->state[ctx->n_state - 1]);
+				{
+					rsvg_state_inherit (&ctx->state[ctx->n_state],
+										&ctx->state[ctx->n_state - 1]);
+				}			
 			else
 				rsvg_state_init (ctx->state);
 			ctx->n_state++;
@@ -1364,7 +1381,7 @@ rsvg_handle_init (RsvgHandle * handle)
 											   g_free, g_free);
 	
 	handle->ctxt = NULL;
-
+	handle->current_defs_group = NULL;
 	handle->title = g_string_new (NULL);
 	handle->desc = g_string_new (NULL);
 }

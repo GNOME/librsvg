@@ -45,13 +45,34 @@
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
 
-struct _RsvgDefsPath {
+typedef struct _RsvgDefsDrawablePath RsvgDefsDrawablePath;
+typedef struct _RsvgDefsDrawableGroup RsvgDefsDrawableGroup;
+typedef struct _RsvgDefsDrawableUse RsvgDefsDrawableUse;
+typedef struct _RsvgDefsDrawable RsvgDefsDrawable;
+
+struct _RsvgDefsDrawable {
  	RsvgDefVal super;
 	RsvgState  state;
+	RsvgDefsDrawableGroup * parent;
+	void (*draw) (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+				  gboolean done);
+};
+
+struct _RsvgDefsDrawablePath {
+ 	RsvgDefsDrawable super;
  	char       *d;
 };
- 
-typedef struct _RsvgDefsPath RsvgDefsPath;
+
+struct _RsvgDefsDrawableGroup {
+ 	RsvgDefsDrawable super;
+ 	GPtrArray *children;
+};
+
+struct _RsvgDefsDrawableUse {
+ 	RsvgDefsDrawable super;
+	gdouble x, y;
+ 	RsvgDefsDrawable *child;
+};
 
 /**
  * rsvg_close_vpath: Close a vector path.
@@ -181,7 +202,7 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 		}
 	
 	has_alpha = gdk_pixbuf_get_has_alpha (pixbuf);
-	
+
 	render = art_render_new (0, 0,
 							 gdk_pixbuf_get_width (pixbuf),
 							 gdk_pixbuf_get_height (pixbuf),
@@ -192,7 +213,7 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 							 gdk_pixbuf_get_bits_per_sample (pixbuf),
 							 has_alpha ? ART_ALPHA_SEPARATE : ART_ALPHA_NONE,
 							 NULL);
-	
+
 	art_render_svp (render, svp);
 	art_render_mask_solid (render, (opacity << 8) + opacity + (opacity >> 7));
 
@@ -206,7 +227,6 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 	state = rsvg_state_current(ctx);
 	for (i = 0; i < 6; i++)
 		gradctx.affine[i] = state->affine[i];
-
 	rsvg_render_paint_server (render, ps, &gradctx);
 	art_render_invoke (render);
 }
@@ -329,11 +349,188 @@ rsvg_render_path(RsvgHandle *ctx, const char *d)
 }
 
 static void 
-rsvg_defs_path_free (RsvgDefVal *self)
+rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+						 gboolean done)
 {
-	RsvgDefsPath *z = (RsvgDefsPath *)self;
-	rsvg_state_finalize (&z->state);
+	self->draw(self, ctx, done);
+}
+
+static void 
+rsvg_defs_drawable_path_free (RsvgDefVal *self)
+{
+	RsvgDefsDrawablePath *z = (RsvgDefsDrawablePath *)self;
+	rsvg_state_finalize (&z->super.state);
 	g_free (z);
+}
+
+static void 
+rsvg_defs_drawable_path_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+							  gboolean done)
+{
+	RsvgState *state = rsvg_state_current (ctx);
+	RsvgDefsDrawablePath *path = (RsvgDefsDrawablePath*)self;
+
+	/* combine state definitions */
+	if (!done)
+		{
+			rsvg_state_clone (state, &self->state);
+			if (ctx->n_state > 1)
+				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
+		}
+	
+	if (state->opacity != 0xff || state->filter)
+		rsvg_push_discrete_layer (ctx);
+	
+	/* always want to render inside of a <use/> */
+	rsvg_render_path (ctx, path->d);
+	
+	if (state->opacity != 0xff || state->filter)
+		rsvg_pop_discrete_layer (ctx);
+}
+
+static void 
+rsvg_defs_drawable_group_free (RsvgDefVal *self)
+{
+	RsvgDefsDrawableGroup *z = (RsvgDefsDrawableGroup *)self;
+	rsvg_state_finalize (&z->super.state);
+	g_ptr_array_free(z->children, FALSE);
+	g_free (z);
+}
+
+static void 
+rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+							   gboolean done)
+{
+	RsvgState *state = rsvg_state_current (ctx);
+	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
+	guint i;
+
+	/* combine state definitions */
+	if (!done)
+		{
+			rsvg_state_clone (state, &self->state);
+			if (ctx->n_state > 1)
+				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
+		}
+
+	if (state->opacity != 0xff || state->filter)
+		rsvg_push_discrete_layer (ctx);
+
+	for (i = 0; i < group->children->len; i++)
+		{
+			/* push the state stack */
+			if (ctx->n_state == ctx->n_state_max)
+				ctx->state = g_renew (RsvgState, ctx->state, 
+									  ctx->n_state_max <<= 1);
+			if (ctx->n_state)
+				rsvg_state_inherit (&ctx->state[ctx->n_state],
+									&ctx->state[ctx->n_state - 1]);
+			else
+				rsvg_state_init (ctx->state);
+			ctx->n_state++;
+			
+			rsvg_defs_drawable_draw (g_ptr_array_index(group->children, i), ctx, 0);
+	
+			/* pop the state stack */
+			ctx->n_state--;
+			rsvg_state_finalize (&ctx->state[ctx->n_state]);
+		}			
+
+	if (state->opacity != 0xff || state->filter)
+		rsvg_pop_discrete_layer (ctx);
+	
+}
+
+static void 
+rsvg_defs_drawable_use_free (RsvgDefVal *self)
+{
+	RsvgDefsDrawableUse *z = (RsvgDefsDrawableUse *)self;
+	rsvg_state_finalize (&z->super.state);
+	g_free (z);
+}
+
+static void 
+rsvg_defs_drawable_use_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+							   gboolean done)
+{
+	RsvgState *state = rsvg_state_current (ctx);
+	RsvgDefsDrawableUse *use = (RsvgDefsDrawableUse*)self;
+
+	/* combine state definitions */
+	if (!done)
+		{
+			rsvg_state_clone (state, &self->state);
+			if (ctx->n_state > 1)
+				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
+		}
+
+	if (state->opacity != 0xff || state->filter)
+		rsvg_push_discrete_layer (ctx);
+
+
+	/* push the state stack */
+	if (ctx->n_state == ctx->n_state_max)
+		ctx->state = g_renew (RsvgState, ctx->state, 
+							  ctx->n_state_max <<= 1);
+	if (ctx->n_state)
+		rsvg_state_inherit (&ctx->state[ctx->n_state],
+							&ctx->state[ctx->n_state - 1]);
+	else
+		rsvg_state_init (ctx->state);
+	ctx->n_state++;
+	
+	rsvg_defs_drawable_draw (use->child, ctx, 0);
+	
+	/* pop the state stack */
+	ctx->n_state--;
+	rsvg_state_finalize (&ctx->state[ctx->n_state]);
+
+	if (state->opacity != 0xff || state->filter)
+		rsvg_pop_discrete_layer (ctx);
+}			
+
+static void 
+rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawable *child)
+{
+	RsvgDefsDrawableGroup *z = (RsvgDefsDrawableGroup *)self;
+	g_ptr_array_add(z->children, child);
+}
+
+void
+rsvg_push_def_group (RsvgHandle *ctx, const char * id)
+{
+	RsvgDefsDrawableGroup *group;
+	if (!ctx->in_defs)
+		return;	
+
+	group = g_new (RsvgDefsDrawableGroup, 1);
+	group->children = g_ptr_array_new();
+	rsvg_state_clone (&group->super.state, rsvg_state_current (ctx));
+
+	group->super.super.type = RSVG_DEF_PATH;
+	group->super.super.free = rsvg_defs_drawable_group_free;
+	group->super.draw = rsvg_defs_drawable_group_draw;
+
+	if (id != NULL)
+		rsvg_defs_set (ctx->defs, id, &group->super.super);
+
+	group->super.parent = (RsvgDefsDrawableGroup *)ctx->current_defs_group;
+	if (group->super.parent != NULL)
+		rsvg_defs_drawable_group_pack(group->super.parent, 
+									  &group->super);
+	ctx->current_defs_group = group;
+}
+
+void
+rsvg_pop_def_group (RsvgHandle *ctx)
+{
+	RsvgDefsDrawableGroup * group;
+	if (!ctx->in_defs)
+		return;
+	group = (RsvgDefsDrawableGroup *)ctx->current_defs_group;
+	if (group == NULL)
+		return;
+	ctx->current_defs_group = group->super.parent;
 }
 
 void
@@ -342,18 +539,21 @@ rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id)
 	if (!ctx->in_defs)
 		rsvg_render_path (ctx, d);
 	else {
-		RsvgDefsPath *path;
+		RsvgDefsDrawablePath *path;
 
-		if (id == NULL) 
-			return;
-
-		path = g_new (RsvgDefsPath, 1);
+		path = g_new (RsvgDefsDrawablePath, 1);
 		path->d = g_strdup(d);
-		rsvg_state_clone (&path->state, rsvg_state_current (ctx));
-		path->super.type = RSVG_DEF_PATH;
-		path->super.free = rsvg_defs_path_free;
-		
-		rsvg_defs_set (ctx->defs, id, &path->super);
+		rsvg_state_clone (&path->super.state, rsvg_state_current (ctx));
+		path->super.super.type = RSVG_DEF_PATH;
+		path->super.super.free = rsvg_defs_drawable_path_free;
+		path->super.draw = rsvg_defs_drawable_path_draw;
+		if (id != NULL)
+			rsvg_defs_set (ctx->defs, id, &path->super.super);
+
+		path->super.parent = (RsvgDefsDrawableGroup *)ctx->current_defs_group;
+		if (path->super.parent != NULL)
+			rsvg_defs_drawable_group_pack(path->super.parent, 
+										  &path->super);
 	}
 }
 
@@ -963,8 +1163,8 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	RsvgState *state = rsvg_state_current (ctx);
 	const char * klazz = NULL, *id = NULL, *xlink_href = NULL, *value;
 	double x = 0, y = 0, width = 0, height = 0;	
-	double affine[6];
 	gboolean got_width = FALSE, got_height = FALSE;
+	double affine[6];
 
 	if (rsvg_property_bag_size(atts))
 		{
@@ -992,7 +1192,7 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (got_width || got_height)
 		if (width <= 0. || height <= 0.)
 			return;
-	
+
 	if (xlink_href != NULL)
 		{
 			RsvgDefVal * parent = rsvg_defs_lookup (ctx->defs, xlink_href+1);
@@ -1001,28 +1201,47 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 					{
 					case RSVG_DEF_PATH:
 						{
-							RsvgDefsPath *path = (RsvgDefsPath*)parent;
+							RsvgDefsDrawable *drawable = (RsvgDefsDrawable*)parent;
+							if (!ctx->in_defs)
+								{
+									/* combine state definitions */
+									rsvg_state_clone (state, &drawable->state);
+									
+									art_affine_translate (affine, x, y);
+									rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
+									art_affine_multiply (state->affine, state->affine, affine);
+									art_affine_multiply (state->personal_affine, state->personal_affine, affine);
+									rsvg_parse_style_attrs (ctx, state, "use", klazz, id, atts);
+									rsvg_defs_drawable_draw(drawable, ctx, 1);
+								}
+							
+							else
+								{
+									RsvgDefsDrawableUse * use;
+									use = g_new (RsvgDefsDrawableUse, 1);
+									use->child = drawable;
+									rsvg_parse_style_attrs (ctx, state, "use", klazz, id, atts);
+									rsvg_state_clone (&use->super.state, state);
+									use->super.super.type = RSVG_DEF_PATH;
+									use->super.super.free = rsvg_defs_drawable_use_free;
+									use->super.draw = rsvg_defs_drawable_use_draw;
+									use->x = x;
+									use->y = y;
 
-							/* combine state definitions */
-							rsvg_state_clone (state, &path->state);
-							art_affine_translate (affine, x, y);
-							art_affine_multiply (state->affine, affine, state->affine);
+									if (id != NULL)
+										rsvg_defs_set (ctx->defs, id, &use->super.super);
 
-							rsvg_parse_style_attrs (ctx, state, "use", klazz, id, atts);
-							  
-							if (state->opacity != 0xff || state->filter)
-								rsvg_push_discrete_layer (ctx);
-
-							/* always want to render inside of a <use/> */
-							rsvg_render_path (ctx, path->d);
-	  
-							if (state->opacity != 0xff || state->filter)
-								rsvg_pop_discrete_layer (ctx);
-
+									use->super.parent = (RsvgDefsDrawableGroup *)ctx->current_defs_group;
+									if (use->super.parent != NULL)
+										rsvg_defs_drawable_group_pack(use->super.parent, 
+																	  &use->super);
+								}
+							
 							break;
 						}
 					default:
-						g_warning ("Unhandled defs entry/type %s %d\n", id, parent->type);
+						g_warning ("Unhandled defs entry/type %s %d\n", id, 
+								   parent->type);
 						return;
 					}
 		}

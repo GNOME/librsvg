@@ -61,6 +61,8 @@ struct RsvgHandle {
 	
 	RsvgDefs *defs;
 	gboolean in_defs;
+	void *current_defs_group;
+
 	GHashTable *css_props;
 	
 	/* not a handler stack. each nested handler keeps
