@@ -58,6 +58,12 @@ rsvg_viewport_percentage (gdouble width, gdouble height)
 	return sqrt(width * height);
 }
 
+gdouble
+rsvg_dpi_percentage (RsvgHandle * ctx)
+{
+	return sqrt(ctx->dpi_x * ctx->dpi_y);
+}
+
 void
 rsvg_state_init (RsvgState *state)
 {
@@ -467,7 +473,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "stroke-width"))
 		{
-			state->stroke_width = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
+			state->stroke_width = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi_x, 
 																	(gdouble)ctx->height, state->font_size);
 			state->has_stroke_width = TRUE;
 		}
@@ -502,7 +508,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "font-size"))
 		{
-			state->font_size =  rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
+			state->font_size =  rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi_y, 
 																  (gdouble)ctx->height, state->font_size);
 			state->has_font_size = TRUE;
 		}
@@ -669,7 +675,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "stroke-dashoffset"))
 		{
 			state->has_dash = TRUE;
-			state->dash.offset = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
+			state->dash.offset = rsvg_css_parse_normalized_length (str + arg_off, rsvg_dpi_percentage (ctx), 
 																   rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size);
 			if (state->dash.offset < 0.)
 				state->dash.offset = 0.;

@@ -260,18 +260,18 @@ rsvg_start_tspan (RsvgSaxHandlerText *self, RsvgPropertyBag *atts)
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
 				{
-					tspan->x = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, state->font_size);
+					tspan->x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
 					tspan->hasx = TRUE;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
 				{
-					tspan->y = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, state->font_size);
+					tspan->y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
 					tspan->hasy = TRUE;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "dx")))
-				tspan->dx = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, state->font_size);
+				tspan->dx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "dy")))
-				tspan->dy = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, state->font_size);
+				tspan->dy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -354,13 +354,13 @@ rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, state->font_size);
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, state->font_size);
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "dx")))
-				dx = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, state->font_size);
+				dx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "dy")))
-				dy = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, state->font_size);
+				dy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -466,7 +466,7 @@ rsvg_text_get_pango_context (RsvgHandle *ctx)
 	
 	fontmap = PANGO_FT2_FONT_MAP (pango_ft2_font_map_new ());
 	
-	pango_ft2_font_map_set_resolution (fontmap, ctx->dpi, ctx->dpi);
+	pango_ft2_font_map_set_resolution (fontmap, ctx->dpi_x, ctx->dpi_y);
 	
 	pango_ft2_font_map_set_default_substitute (fontmap,
 											   rsvg_text_ft2_subst_func,
@@ -518,7 +518,7 @@ rsvg_text_layout_new (RsvgHandle *ctx,
 	pango_font_description_set_variant (font_desc, state->font_variant);
 	pango_font_description_set_weight (font_desc, state->font_weight);
 	pango_font_description_set_stretch (font_desc, state->font_stretch); 
-	pango_font_description_set_size (font_desc, state->font_size * PANGO_SCALE / ctx->dpi * 72); 
+	pango_font_description_set_size (font_desc, state->font_size * PANGO_SCALE / ctx->dpi_y * 72); 
 	pango_layout_set_font_description (layout->layout, font_desc);
 	pango_font_description_free (font_desc);
 	

@@ -743,25 +743,25 @@ rsvg_start_filter (RsvgHandle * ctx, RsvgPropertyBag * atts)
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
 				filter->x =
 					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi,
+													  ctx->dpi_x,
 													  1,
 													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
 				filter->y =
 					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi,
+													  ctx->dpi_y,
 													  1,
 													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
 				filter->width =
 					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi,
+													  ctx->dpi_x,
 													  1,
 													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
 				filter->height =
 					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi,
+													  ctx->dpi_y,
 													  1,
 													  font_size);					
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -1044,7 +1044,7 @@ rsvg_start_filter_primitive_blend (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -1053,7 +1053,7 @@ rsvg_start_filter_primitive_blend (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -1062,7 +1062,7 @@ rsvg_start_filter_primitive_blend (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -1071,7 +1071,7 @@ rsvg_start_filter_primitive_blend (RsvgHandle * ctx, RsvgPropertyBag * atts)
 			{
 				filter->super.height =
 					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi,
+													  ctx->dpi_y,
 													  1,
 													  font_size);
 				filter->super.sizedefaults = 0;
@@ -1261,7 +1261,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -1270,7 +1270,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -1279,7 +1279,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -1288,7 +1288,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-																  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -1815,7 +1815,7 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle * ctx,
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -1824,7 +1824,7 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle * ctx,
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -1833,7 +1833,7 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle * ctx,
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -1842,7 +1842,7 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle * ctx,
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -1975,7 +1975,7 @@ rsvg_start_filter_primitive_offset (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -1984,7 +1984,7 @@ rsvg_start_filter_primitive_offset (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -1993,7 +1993,7 @@ rsvg_start_filter_primitive_offset (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2002,7 +2002,7 @@ rsvg_start_filter_primitive_offset (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2010,13 +2010,13 @@ rsvg_start_filter_primitive_offset (RsvgHandle * ctx, RsvgPropertyBag * atts)
 			if ((value = rsvg_property_bag_lookup (atts, "dx")))
 				filter->dx =
 					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi,
+													  ctx->dpi_x,
 													  1,
 													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "dy")))
 				filter->dy =
 					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi,
+													  ctx->dpi_y,
 															  1,
 													  font_size);
 		}
@@ -2108,7 +2108,7 @@ rsvg_start_filter_primitive_merge (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2117,7 +2117,7 @@ rsvg_start_filter_primitive_merge (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2126,7 +2126,7 @@ rsvg_start_filter_primitive_merge (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2135,7 +2135,7 @@ rsvg_start_filter_primitive_merge (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2290,7 +2290,7 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2299,7 +2299,7 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2308,7 +2308,7 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2317,7 +2317,7 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2659,7 +2659,7 @@ rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2668,7 +2668,7 @@ rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2677,7 +2677,7 @@ rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2686,7 +2686,7 @@ rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2917,7 +2917,7 @@ rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2926,7 +2926,7 @@ rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2935,7 +2935,7 @@ rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -2944,7 +2944,7 @@ rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3184,7 +3184,7 @@ rsvg_start_filter_primitive_composite (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3193,7 +3193,7 @@ rsvg_start_filter_primitive_composite (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3202,7 +3202,7 @@ rsvg_start_filter_primitive_composite (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3211,7 +3211,7 @@ rsvg_start_filter_primitive_composite (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3343,7 +3343,7 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3352,7 +3352,7 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3361,7 +3361,7 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3370,7 +3370,7 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3554,7 +3554,7 @@ rsvg_start_filter_primitive_displacement_map (RsvgHandle * ctx, RsvgPropertyBag 
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3563,7 +3563,7 @@ rsvg_start_filter_primitive_displacement_map (RsvgHandle * ctx, RsvgPropertyBag 
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3572,7 +3572,7 @@ rsvg_start_filter_primitive_displacement_map (RsvgHandle * ctx, RsvgPropertyBag 
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3581,7 +3581,7 @@ rsvg_start_filter_primitive_displacement_map (RsvgHandle * ctx, RsvgPropertyBag 
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3930,7 +3930,7 @@ rsvg_start_filter_primitive_turbulence (RsvgHandle * ctx, RsvgPropertyBag * atts
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3939,7 +3939,7 @@ rsvg_start_filter_primitive_turbulence (RsvgHandle * ctx, RsvgPropertyBag * atts
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3948,7 +3948,7 @@ rsvg_start_filter_primitive_turbulence (RsvgHandle * ctx, RsvgPropertyBag * atts
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -3957,7 +3957,7 @@ rsvg_start_filter_primitive_turbulence (RsvgHandle * ctx, RsvgPropertyBag * atts
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -4166,7 +4166,7 @@ rsvg_start_filter_primitive_image (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -4175,7 +4175,7 @@ rsvg_start_filter_primitive_image (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -4184,7 +4184,7 @@ rsvg_start_filter_primitive_image (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -4193,9 +4193,9 @@ rsvg_start_filter_primitive_image (RsvgHandle * ctx, RsvgPropertyBag * atts)
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
-																  font_size);
+														  font_size);
 					filter->super.sizedefaults = 0;
 				}
 		}
@@ -4553,32 +4553,32 @@ rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
 				{
-					data->x = rsvg_css_parse_normalized_length(value, ctx->dpi,
+					data->x = rsvg_css_parse_normalized_length(value, ctx->dpi_x,
 															   1, font_size); 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
 				{
-					data->y = rsvg_css_parse_normalized_length(value, ctx->dpi,
+					data->y = rsvg_css_parse_normalized_length(value, ctx->dpi_y,
 															   1, font_size); 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "z")))
 				{
-					data->z = rsvg_css_parse_normalized_length(value, ctx->dpi,
-																	   1, font_size); 
+					data->z = rsvg_css_parse_normalized_length(value, rsvg_dpi_percentage (ctx),
+															   1, font_size); 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "pointsAtX")))
 				{
-					data->pointsAtX = rsvg_css_parse_normalized_length(value, ctx->dpi,
+					data->pointsAtX = rsvg_css_parse_normalized_length(value, ctx->dpi_x,
 																	   1, font_size); 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "pointsAtY")))
 				{
-					data->pointsAtY = rsvg_css_parse_normalized_length(value, ctx->dpi,
+					data->pointsAtY = rsvg_css_parse_normalized_length(value, ctx->dpi_y,
 																	   1, font_size); 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "pointsAtZ")))
 				{
-					data->pointsAtZ = rsvg_css_parse_normalized_length(value, ctx->dpi,
+					data->pointsAtZ = rsvg_css_parse_normalized_length(value, rsvg_dpi_percentage (ctx),
 																	   1, font_size);  
 				}
 		}
@@ -4726,7 +4726,7 @@ rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, RsvgPropertyBag 
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -4735,7 +4735,7 @@ rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, RsvgPropertyBag 
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -4744,7 +4744,7 @@ rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, RsvgPropertyBag 
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -4753,7 +4753,7 @@ rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, RsvgPropertyBag 
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -4926,7 +4926,7 @@ rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, RsvgPropertyBag
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -4935,7 +4935,7 @@ rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, RsvgPropertyBag
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -4944,7 +4944,7 @@ rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, RsvgPropertyBag
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -4953,7 +4953,7 @@ rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, RsvgPropertyBag
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -5084,7 +5084,7 @@ rsvg_start_filter_primitive_tile (RsvgHandle * ctx,
 				{
 					filter->super.x =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -5093,7 +5093,7 @@ rsvg_start_filter_primitive_tile (RsvgHandle * ctx,
 				{
 					filter->super.y =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -5102,7 +5102,7 @@ rsvg_start_filter_primitive_tile (RsvgHandle * ctx,
 				{
 					filter->super.width =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_x,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;
@@ -5111,7 +5111,7 @@ rsvg_start_filter_primitive_tile (RsvgHandle * ctx,
 				{
 					filter->super.height =
 						rsvg_css_parse_normalized_length (value,
-														  ctx->dpi,
+														  ctx->dpi_y,
 														  1,
 														  font_size);
 					filter->super.sizedefaults = 0;

@@ -759,13 +759,13 @@ rsvg_start_line (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x1")))
-				x1 = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, font_size);
+				x1 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y1")))
-				y1 = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, font_size);
+				y1 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "x2")))
-				x2 = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, font_size);
+				x2 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y2")))
-				y2 = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, font_size);
+				y2 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -805,19 +805,19 @@ rsvg_start_rect (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, font_size);
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, font_size);
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				w = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, font_size);
+				w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				h = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, font_size);
+				h = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "rx"))) {
-				rx = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, font_size);
+				rx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 				got_rx = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "ry"))) {
-				ry = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, font_size);
+				ry = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 				got_ry = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
@@ -942,11 +942,11 @@ rsvg_start_circle (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "cx")))
-				cx = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, font_size);
+				cx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "cy")))
-				cy = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, font_size);
+				cy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "r")))
-				r = rsvg_css_parse_normalized_length (value, ctx->dpi, 
+				r = rsvg_css_parse_normalized_length (value, rsvg_dpi_percentage (ctx), 
 													  rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), 
 													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
@@ -1039,13 +1039,13 @@ rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "cx")))
-				cx = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, font_size);
+				cx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "cy")))
-				cy = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, font_size);
+				cy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "rx")))
-				rx = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, font_size);
+				rx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "ry")))
-				ry = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, font_size);
+				ry = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -1682,13 +1682,13 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, state->font_size);
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, state->font_size);
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				w = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, state->font_size);
+				w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				h = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, state->font_size);
+				h = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
 			/* path is used by some older adobe illustrator versions */
 			if ((value = rsvg_property_bag_lookup (atts, "path")) || (value = rsvg_property_bag_lookup (atts, "xlink:href")))
 				href = value;
@@ -1799,15 +1799,15 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (rsvg_property_bag_size(atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->width, state->font_size);
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, state->font_size);
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "width"))) {
-				width = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, state->font_size);
+				width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->height, state->font_size);
 				got_width = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "height"))) {
-				height = rsvg_css_parse_normalized_length (value, ctx->dpi, (gdouble)ctx->height, state->font_size);
+				height = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
 				got_height = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
@@ -1907,19 +1907,19 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 													&vbw, &vbh);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "refX"))) {
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, font_size);
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, font_size);
 				got_x = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "refY"))) {
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, font_size);
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, font_size);
 				got_y = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "markerWidth"))) {
-				w = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, font_size);
+				w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, font_size);
 				got_width = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "markerHeight"))) {
-				h = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, font_size);
+				h = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, font_size);
 				got_height = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "orient"))) {

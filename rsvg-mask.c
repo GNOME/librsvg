@@ -226,25 +226,25 @@ rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
 				mask->x =
 					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi,
+													  ctx->dpi_x,
 													  1,
 													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
 				mask->y =
 					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi,
+													  ctx->dpi_y,
 													  1,
 													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
 				mask->width =
 					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi,
+													  ctx->dpi_x,
 													  1,
 													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
 				mask->height =
 					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi,
+													  ctx->dpi_y,
 													  1,
 													  font_size);					
 			if ((value = rsvg_property_bag_lookup (atts, "id")))

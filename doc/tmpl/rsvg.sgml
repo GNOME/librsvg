@@ -37,6 +37,9 @@ Core API
 
 </para>
 
+@dpi_x: 
+@dpi_y: 
+<!-- # Unused Parameters # -->
 @dpi: 
 
 
@@ -54,6 +57,9 @@ Core API
 </para>
 
 @handle: 
+@dpi_x: 
+@dpi_y: 
+<!-- # Unused Parameters # -->
 @dpi: 
 
 

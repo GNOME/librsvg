@@ -37,7 +37,8 @@ main (int argc, const char **argv)
 	poptContext popt_context;
 	double x_zoom = 1.0;
 	double y_zoom = 1.0;
-	double dpi = -1.0;
+	double dpi_x = -1.0;
+	double dpi_y = -1.0;
 	int width  = -1;
 	int height = -1;
 	int bVersion = 0;
@@ -46,14 +47,15 @@ main (int argc, const char **argv)
 	char * format = "png";
 
 	struct poptOption options_table[] = {
-		{ "dpi"   ,  'd',  POPT_ARG_DOUBLE, NULL,      0, "pixels per inch", "<float>"},
-		{ "x-zoom",  'x',  POPT_ARG_DOUBLE, NULL,   0, "x zoom factor", "<float>" },
-		{ "y-zoom",  'y',  POPT_ARG_DOUBLE, NULL,   0, "y zoom factor", "<float>" },
-		{ "width",   'w',  POPT_ARG_INT,    NULL,    0, "width", "<int>" },
-		{ "height",  'h',  POPT_ARG_INT,    NULL,   0, "height", "<int>" },
-		{ "quality", 'q',  POPT_ARG_INT,    NULL,  0, "JPEG quality", "<int>"},
-		{ "format",  'f',  POPT_ARG_STRING, NULL,   0, "save format", "[png, jpeg]"},
-		{ "version", 'v',  POPT_ARG_NONE,   NULL, 0, "show version information", NULL },
+		{ "dpi-x",   'd',  POPT_ARG_DOUBLE, &dpi_x,    0, "pixels per inch", "<float>"},
+		{ "dpi-y",   'p',  POPT_ARG_DOUBLE, &dpi_y,    0, "pixels per inch", "<float>"},
+		{ "x-zoom",  'x',  POPT_ARG_DOUBLE, &x_zoom,   0, "x zoom factor", "<float>" },
+		{ "y-zoom",  'y',  POPT_ARG_DOUBLE, &y_zoom,   0, "y zoom factor", "<float>" },
+		{ "width",   'w',  POPT_ARG_INT,    &width,    0, "width", "<int>" },
+		{ "height",  'h',  POPT_ARG_INT,    &height,   0, "height", "<int>" },
+		{ "quality", 'q',  POPT_ARG_INT,    &quality,  0, "JPEG quality", "<int>"},
+		{ "format",  'f',  POPT_ARG_STRING, &format,   0, "save format", "[png, jpeg]"},
+		{ "version", 'v',  POPT_ARG_NONE,   &bVersion, 0, "show version information", NULL },
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
@@ -61,15 +63,6 @@ main (int argc, const char **argv)
 	const char * const *args;
 	gint n_args = 0;
 	GdkPixbuf *pixbuf;
-
-	options_table[0].arg = &dpi;
-	options_table[1].arg = &x_zoom;
-	options_table[2].arg = &y_zoom;
-	options_table[3].arg = &width;
-	options_table[4].arg = &height;
-	options_table[5].arg = &quality;
-	options_table[6].arg = &format;
-	options_table[7].arg = &bVersion;
 
 	popt_context = poptGetContext ("rsvg", argc, argv, options_table, 0);
 	poptSetOtherOptionHelp(popt_context, "[OPTIONS...] file.svg file.png");
@@ -101,8 +94,7 @@ main (int argc, const char **argv)
 
 	g_type_init ();
 
-	if (dpi > 0.)
-		rsvg_set_default_dpi (dpi);
+	rsvg_set_default_dpi (dpi_x, dpi_y);
 
 	/* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
 	if (width == -1 && height == -1)

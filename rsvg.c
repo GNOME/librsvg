@@ -47,8 +47,10 @@
 /*
  * This is configurable at runtime
  */
-#define RSVG_DEFAULT_DPI 90.0
-static double internal_dpi = RSVG_DEFAULT_DPI;
+#define RSVG_DEFAULT_DPI_X 90.0
+#define RSVG_DEFAULT_DPI_Y 90.0
+static double internal_dpi_x = RSVG_DEFAULT_DPI_X;
+static double internal_dpi_y = RSVG_DEFAULT_DPI_Y;
 
 static void
 rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
@@ -97,13 +99,13 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 													&vbox_w, &vbox_h);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				width = rsvg_css_parse_normalized_length (value, ctx->dpi, vbox_w, 1);
+				width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, vbox_w, 1);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				height = rsvg_css_parse_normalized_length (value, ctx->dpi, vbox_h, 1);
+				height = rsvg_css_parse_normalized_length (value, ctx->dpi_y, vbox_h, 1);
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi, vbox_w, 1);
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, vbox_w, 1);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi, vbox_h, 1);
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, vbox_h, 1);
 	
 			if (has_vbox && vbox_w > 0. && vbox_h > 0.)
 				{
@@ -231,13 +233,13 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 													&vbox_w, &vbox_h);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				width = rsvg_css_parse_normalized_length (value, ctx->dpi, ctx->width, 1);
+				width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, ctx->width, 1);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				height = rsvg_css_parse_normalized_length (value, ctx->dpi, ctx->height, 1);
+				height = rsvg_css_parse_normalized_length (value, ctx->dpi_y, ctx->height, 1);
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi, ctx->width, 1);
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, ctx->width, 1);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi, ctx->height, 1);
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, ctx->height, 1);
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 
@@ -357,7 +359,7 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 			if ((value = rsvg_property_bag_lookup (atts, "offset")))
 				{
 					/* either a number [0,1] or a percentage */
-					offset = rsvg_css_parse_normalized_length (value, z->ctx->dpi, 1., 0.);
+					offset = rsvg_css_parse_normalized_length (value, rsvg_dpi_percentage (z->ctx), 1., 0.);
 					
 					if (offset < 0.)
 						offset = 0.;
@@ -484,19 +486,19 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 			if ((value = rsvg_property_bag_lookup (atts, "x1"))) {
-				x1 = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, state->font_size);
+				x1 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state->font_size);
 				got_x1 = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "y1"))) {
-				y1 = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, state->font_size);
+				y1 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state->font_size);
 				got_y1 = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "x2"))) {
-				x2 = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, state->font_size);
+				x2 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state->font_size);
 				got_x2 = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "y2"))) {
-				y2 = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, state->font_size);
+				y2 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state->font_size);
 				got_y2 = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "spreadMethod")))
@@ -537,7 +539,7 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		if (obj_bbox)
 			x2 = 1.0;
 		else
-			x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi, (gdouble)ctx->width, state->font_size);
+			x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi_x, (gdouble)ctx->width, state->font_size);
 	}
 
 	if (xlink_href != NULL)
@@ -626,24 +628,24 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 			if ((value = rsvg_property_bag_lookup (atts, "cx"))) {
-				cx = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, state->font_size);
+				cx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state->font_size);
 				got_cx = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "cy"))) {
-				cy = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, state->font_size);
+				cy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state->font_size);
 				got_cy = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "r"))) {
-				r = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, 
+				r = rsvg_css_parse_normalized_length (value, rsvg_dpi_percentage (ctx), 1, 
 													  state->font_size);
 				got_r = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "fx"))) {
-				fx = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, state->font_size);
+				fx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state->font_size);
 				got_fx = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "fy"))) {
-				fy = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, state->font_size);
+				fy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state->font_size);
 				got_fy = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
@@ -702,19 +704,19 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 		if (obj_bbox)
 			cx = 0.5;
 		else
-			cx = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->width, state->font_size);
+			cx = rsvg_css_parse_normalized_length ("50%", ctx->dpi_x, (gdouble)ctx->width, state->font_size);
 	}
 	if (!got_cy) {
 		if (obj_bbox)
 			cy = 0.5;
 		else
-			cy = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->height, state->font_size);
+			cy = rsvg_css_parse_normalized_length ("50%", ctx->dpi_y, (gdouble)ctx->height, state->font_size);
 	}
 	if (!got_r) {
 		if (obj_bbox)
 			r = 0.5;
 		else
-			r  = rsvg_css_parse_normalized_length ("50%", ctx->dpi, rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size);
+			r  = rsvg_css_parse_normalized_length ("50%", rsvg_dpi_percentage (ctx), rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size);
 	}
 	if (!got_fx) {
 		fx = cx;
@@ -793,19 +795,19 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 													&vbw, &vbh);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "x"))) {
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, state->font_size);
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state->font_size);
 				got_x = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "y"))) {
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, state->font_size);
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state->font_size);
 				got_y = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "width"))) {
-				width = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, state->font_size);
+				width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state->font_size);
 				got_width = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "height"))) {
-				height = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, state->font_size);
+				height = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state->font_size);
 				got_height = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
@@ -1555,7 +1557,8 @@ rsvg_handle_init (RsvgHandle * handle)
 	handle->defs = rsvg_defs_new ();
 	handle->handler_nest = 0;
 	handle->entities = g_hash_table_new (g_str_hash, g_str_equal);
-	handle->dpi = internal_dpi;
+	handle->dpi_x = internal_dpi_x;
+	handle->dpi_y = internal_dpi_y;
 	
 	handle->css_props = g_hash_table_new_full (g_str_hash, g_str_equal,
 											   g_free, g_free);
@@ -1569,7 +1572,8 @@ rsvg_handle_init (RsvgHandle * handle)
 
 /**
  * rsvg_set_default_dpi
- * @dpi: Dots Per Inch (aka Pixels Per Inch)
+ * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
+ * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the all future outgoing pixbufs. Common values are
  * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
@@ -1578,18 +1582,24 @@ rsvg_handle_init (RsvgHandle * handle)
  * Since: 2.2
  */
 void
-rsvg_set_default_dpi (double dpi)
+rsvg_set_default_dpi (double dpi_x, double dpi_y)
 {
-	if (dpi <= 0.)
-		internal_dpi = RSVG_DEFAULT_DPI;
+	if (dpi_x <= 0.)
+		internal_dpi_x = RSVG_DEFAULT_DPI_X;
 	else
-		internal_dpi = dpi;
+		internal_dpi_x = dpi_x;
+
+	if (dpi_y <= 0.)
+		internal_dpi_y = RSVG_DEFAULT_DPI_Y;
+	else
+		internal_dpi_y = dpi_y;
 }
 
 /**
  * rsvg_handle_set_dpi
  * @handle: An #RsvgHandle
- * @dpi: Dots Per Inch (aka Pixels Per Inch)
+ * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
+ * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the outgoing pixbuf. Common values are
  * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
@@ -1598,14 +1608,19 @@ rsvg_set_default_dpi (double dpi)
  * Since: 2.2
  */
 void
-rsvg_handle_set_dpi (RsvgHandle * handle, double dpi)
+rsvg_handle_set_dpi (RsvgHandle * handle, double dpi_x, double dpi_y)
 {
 	g_return_if_fail (handle != NULL);
 	
-    if (dpi <= 0.)
-        handle->dpi = internal_dpi;
+    if (dpi_x <= 0.)
+        handle->dpi_x = internal_dpi_x;
     else
-        handle->dpi = dpi;
+        handle->dpi_x = dpi_x;
+	
+	if (dpi_y <= 0.)
+        handle->dpi_y = internal_dpi_y;
+    else
+        handle->dpi_y = dpi_y;
 }
 
 /**

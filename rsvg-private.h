@@ -87,7 +87,8 @@ struct RsvgHandle {
 	
 	int width;
 	int height;
-	double dpi;
+	double dpi_x;
+	double dpi_y;
 	
 	GString * title;
 	GString * desc;

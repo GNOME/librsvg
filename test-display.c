@@ -461,7 +461,8 @@ main (int argc, char **argv)
 	poptContext popt_context;
 	double x_zoom = 1.0;
 	double y_zoom = 1.0;
-	double dpi = -1.0;
+	double dpi_x = -1.0;
+	double dpi_y = -1.0;
 	int width  = -1;
 	int height = -1;
 	int bVersion = 0;
@@ -481,7 +482,8 @@ main (int argc, char **argv)
 			{ "xid",         'i',  POPT_ARG_INT,    &xid,         0, _("XWindow ID [for X11 embedding]"), _("<int>") },
 #endif
 			{ "stdin",       's',  POPT_ARG_NONE,   &from_stdin,  0, _("Read from stdin instead of a file"), NULL },
-			{ "dpi",         'd',  POPT_ARG_DOUBLE, &dpi,         0, _("Set the # of Pixels Per Inch"), _("<float>") },
+			{ "dpi-x",       'd',  POPT_ARG_DOUBLE, &dpi_x,       0, _("Set the # of Pixels Per Inch"), _("<float>") },
+			{ "dpi-y",       'p',  POPT_ARG_DOUBLE, &dpi_y,       0, _("Set the # of Pixels Per Inch"), _("<float>") },
 			{ "x-zoom",      'x',  POPT_ARG_DOUBLE, &x_zoom,      0, _("Set the x zoom factor"), _("<float>") },
 			{ "y-zoom",      'y',  POPT_ARG_DOUBLE, &y_zoom,      0, _("Set the y zoom factor"), _("<float>") },
 			{ "width",       'w',  POPT_ARG_INT,    &width,       0, _("Set the image's width"), _("<int>") },
@@ -531,8 +533,7 @@ main (int argc, char **argv)
 	/* initialize gtk+ */
 	gtk_init (&argc, &argv) ;
 
-	if (dpi > 0.)
-		rsvg_set_default_dpi (dpi);
+	rsvg_set_default_dpi (dpi_x, dpi_y);
 	
 	/* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
 	if (width == -1 && height == -1)
