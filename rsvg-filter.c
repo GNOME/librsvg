@@ -29,171 +29,169 @@
 
 #include <math.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif /*  M_PI  */
+
+/*************************************************************/
+/*************************************************************/
+
 typedef struct _RsvgFilterContext RsvgFilterContext;
 
-struct _RsvgFilterContext {
-	gint width, height;
-	RsvgFilter *filter;
-	GHashTable *results;
-	GdkPixbuf *source;
-	GdkPixbuf *bg;
-	GdkPixbuf *lastresult;
-	double affine[6];
-	double paffine[6];
+struct _RsvgFilterContext
+{
+  gint width, height;
+  RsvgFilter *filter;
+  GHashTable *results;
+  GdkPixbuf *source;
+  GdkPixbuf *bg;
+  GdkPixbuf *lastresult;
+  double affine[6];
+  double paffine[6];
 };
 
 typedef struct _RsvgFilterPrimitive RsvgFilterPrimitive;
-typedef struct _RsvgFilterPrimitiveBlend RsvgFilterPrimitiveBlend;
 
-struct _RsvgFilterPrimitive {
-	double x, y, width, height; 
-	GString *in;
-	GString *result;  
-	gboolean sizedefaults;
+struct _RsvgFilterPrimitive
+{
+  double x, y, width, height;
+  GString *in;
+  GString *result;
+  gboolean sizedefaults;
 
-	void (*free) (RsvgFilterPrimitive *self);
-	void (*render) (RsvgFilterPrimitive *self, RsvgFilterContext * ctx);
+  void (*free) (RsvgFilterPrimitive * self);
+  void (*render) (RsvgFilterPrimitive * self, RsvgFilterContext * ctx);
 };
 
-GdkPixbuf *
-rsvg_filter_get_in (GString *name, RsvgFilterContext *ctx);
-
-void 
-rsvg_filter_primitive_free(RsvgFilterPrimitive *self);
-
-void 
-rsvg_filter_primitive_render(RsvgFilterPrimitive *self, 
-							 RsvgFilterContext * ctx);
-
-GdkPixbuf *
-rsvg_filter_get_in (GString *name, RsvgFilterContext *ctx);
-
-void 
-rsvg_filter_primitive_render(RsvgFilterPrimitive *self, 
-							 RsvgFilterContext * ctx){
-	self->render(self, ctx);
-}
-
-void 
-rsvg_filter_primitive_free(RsvgFilterPrimitive *self){
-	self->free(self);
-}
-
-typedef struct {
+typedef struct
+{
 	gint x1, y1, x2, y2;
 } FPBox;
 
-FPBox 
-rsvg_filter_primitive_get_bounds(RsvgFilterPrimitive *self, RsvgFilterContext *ctx);
+/*************************************************************/
+/*************************************************************/
 
-FPBox 
-rsvg_filter_primitive_get_bounds(RsvgFilterPrimitive *self, RsvgFilterContext *ctx){
-	FPBox output;
-
-	if (self->sizedefaults){
-		output.x1 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
-		output.y1 = ctx->affine[3] * ctx->filter->y + ctx->affine[5];
-		output.x2 = ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4];
-		output.y2 = ctx->affine[3] * (ctx->filter->y + ctx->filter->height) + ctx->affine[5];
-		
-		if (output.x1 < 0)
-			output.x1 = 0;
-		if (output.x2 >= ctx->width)
-			output.x2 = ctx->width-1;
-		if (output.y1 < 0)
-			output.y1 = 0;
-		if (output.y2 >= ctx->height)
-			output.y2 = ctx->height-1;
-		
-		return output;
-	}
-	output.x1 = ctx->paffine[0] * self->x + ctx->paffine[4];
-	output.y1 = ctx->paffine[3] * self->y + ctx->paffine[5];
-	output.x2 = ctx->paffine[0] * (self->x + self->width) + ctx->paffine[4];
-	output.y2 = ctx->paffine[3] * (self->y + self->height) + ctx->paffine[5];
-	
-
-	if (output.x1 < ctx->affine[0] * ctx->filter->x + ctx->affine[4])
-		output.x1 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
-	if (output.x2 > ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4])
-		output.x2 = ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4];
-	if (output.y1 < ctx->affine[3] * ctx->filter->y + ctx->affine[5])
-		output.y1 = ctx->affine[3] * ctx->filter->y + ctx->affine[5];
-	if (output.y2 > ctx->affine[3] * (ctx->filter->y + ctx->filter->height) + ctx->affine[5])
-		output.y2 = ctx->affine[3] * (ctx->filter->y + ctx->filter->height) + ctx->affine[5];
-
-	if (output.x1 < 0)
-		output.x1 = 0;
-	if (output.x2 >= ctx->width)
-		output.x2 = ctx->width-1;
-	if (output.y1 < 0)
-		output.y1 = 0;
-	if (output.y2 >= ctx->height)
-		output.y2 = ctx->height-1;
-
-	return output;
+static void
+rsvg_filter_primitive_render (RsvgFilterPrimitive * self,
+			      RsvgFilterContext * ctx)
+{
+	self->render (self, ctx);
 }
 
-void
-rsvg_filter_fix_coordinate_system (RsvgFilterContext *ctx, 
-								   RsvgState *state);
+static void
+rsvg_filter_primitive_free (RsvgFilterPrimitive * self)
+{
+	self->free (self);
+}
 
-void
-rsvg_filter_free_pair(gpointer key, gpointer value, gpointer user_data);
+static FPBox
+rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self,
+				  RsvgFilterContext * ctx)
+{
+  FPBox output;
 
+  if (self->sizedefaults)
+	  {
+		  output.x1 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
+		  output.y1 = ctx->affine[3] * ctx->filter->y + ctx->affine[5];
+		  output.x2 =
+			  ctx->affine[0] * (ctx->filter->x + ctx->filter->width) +
+			  ctx->affine[4];
+		  output.y2 =
+			  ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
+			  ctx->affine[5];
+		  
+		  if (output.x1 < 0)
+			  output.x1 = 0;
+		  if (output.x2 >= ctx->width)
+			  output.x2 = ctx->width - 1;
+		  if (output.y1 < 0)
+			  output.y1 = 0;
+		  if (output.y2 >= ctx->height)
+			  output.y2 = ctx->height - 1;
+		  
+		  return output;
+	  }
+  
+  output.x1 = ctx->paffine[0] * self->x + ctx->paffine[4];
+  output.y1 = ctx->paffine[3] * self->y + ctx->paffine[5];
+  output.x2 = ctx->paffine[0] * (self->x + self->width) + ctx->paffine[4];
+  output.y2 = ctx->paffine[3] * (self->y + self->height) + ctx->paffine[5];
+  
+  if (output.x1 < ctx->affine[0] * ctx->filter->x + ctx->affine[4])
+	  output.x1 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
+  if (output.x2 >
+      ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4])
+	  output.x2 =
+		  ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4];
+  if (output.y1 < ctx->affine[3] * ctx->filter->y + ctx->affine[5])
+	  output.y1 = ctx->affine[3] * ctx->filter->y + ctx->affine[5];
+  if (output.y2 > ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
+      ctx->affine[5])
+	  output.y2 = ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
+		  ctx->affine[5];
+  
+  if (output.x1 < 0)
+	  output.x1 = 0;
+  if (output.x2 >= ctx->width)
+	  output.x2 = ctx->width - 1;
+  if (output.y1 < 0)
+	  output.y1 = 0;
+  if (output.y2 >= ctx->height)
+	  output.y2 = ctx->height - 1;
+  
+  return output;
+}
 
-void 
-rsvg_filter_store_result (GString *name, GdkPixbuf *result, RsvgFilterContext *ctx);
+static GdkPixbuf *
+gdk_pixbuf_new_cleared (GdkColorspace colorspace, gboolean has_alpha, int bits_per_sample,
+						int width, int height)
+{
+	GdkPixbuf *pb;
 
-RsvgFilter *
-rsvg_new_filter (void);
-
-void
-alpha_blt(GdkPixbuf *src, gint srcx, gint srcy, gint srcwidth, 
-		  gint srcheight, GdkPixbuf *dst, gint dstx, gint dsty);
-
-void
-clear_pixbuf(GdkPixbuf *pb);
-
-void
-clear_pixbuf(GdkPixbuf *pb){
 	gint i;
-	guchar * data;
-	data = gdk_pixbuf_get_pixels(pb);
+	guchar *data;
 
-	for (i=0; i<gdk_pixbuf_get_width(pb)*gdk_pixbuf_get_height(pb)*4;i++)
-		{
-			data[i] = 0;
-		}
+	pb = gdk_pixbuf_new (colorspace, has_alpha, bits_per_sample, width, height);
+
+	data = gdk_pixbuf_get_pixels (pb);
+	
+	for (i = 0; i < width * height * 4; i++)
+		data[i] = 0;
+
+	return pb;
 }
 
-void
-alpha_blt(GdkPixbuf *src, gint srcx, gint srcy, gint srcwidth, 
-		  gint srcheight, GdkPixbuf *dst, gint dstx, gint dsty)
+static void
+alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
+		   gint srcheight, GdkPixbuf * dst, gint dstx, gint dsty)
 {
 	gint rightx;
 	gint bottomy;
 	gint dstwidth;
 	gint dstheight;
-
+	
 	gint srcoffsetx;
 	gint srcoffsety;
 	gint dstoffsetx;
 	gint dstoffsety;
-
+	
+	gint x, y, srcrowstride, dstrowstride, sx, sy, dx, dy;
+	guchar *src_pixels, *dst_pixels;
+	
 	dstheight = srcheight;
 	dstwidth = srcwidth;
-
+	
 	rightx = srcx + srcwidth;
 	bottomy = srcy + srcheight;
-
+	
 	if (rightx > gdk_pixbuf_get_width (src))
 		rightx = gdk_pixbuf_get_width (src);
 	if (bottomy > gdk_pixbuf_get_height (src))
 		bottomy = gdk_pixbuf_get_height (src);
 	srcwidth = rightx - srcx;
 	srcheight = bottomy - srcy;
-
+	
 	rightx = dstx + dstwidth;
 	bottomy = dsty + dstheight;
 	if (rightx > gdk_pixbuf_get_width (dst))
@@ -202,178 +200,193 @@ alpha_blt(GdkPixbuf *src, gint srcx, gint srcy, gint srcwidth,
 		bottomy = gdk_pixbuf_get_height (dst);
 	dstwidth = rightx - dstx;
 	dstheight = bottomy - dsty;
-
+	
 	if (dstwidth < srcwidth)
 		srcwidth = dstwidth;
 	if (dstheight < srcheight)
 		srcheight = dstheight;
-
+	
 	if (srcx < 0)
 		srcoffsetx = 0 - srcx;
-	else 
+	else
 		srcoffsetx = 0;
 	if (srcy < 0)
 		srcoffsety = 0 - srcy;
-	else 
+	else
 		srcoffsety = 0;
 	if (dstx < 0)
 		dstoffsetx = 0 - dstx;
-	else 
+	else
 		dstoffsetx = 0;
 	if (dsty < 0)
 		dstoffsety = 0 - dsty;
-	else 
+	else
 		dstoffsety = 0;
-
+	
 	if (dstoffsetx > srcoffsetx)
 		srcoffsetx = dstoffsetx;
 	if (dstoffsety > srcoffsety)
 		srcoffsety = dstoffsety;
-
-	gint x, y, srcrowstride, dstrowstride, sx, sy, dx, dy;
-	guchar *src_pixels, *dst_pixels;
-
-	srcrowstride = gdk_pixbuf_get_rowstride(src);	
-	dstrowstride = gdk_pixbuf_get_rowstride(dst);
-
+	
+	srcrowstride = gdk_pixbuf_get_rowstride (src);
+	dstrowstride = gdk_pixbuf_get_rowstride (dst);
+	
 	src_pixels = gdk_pixbuf_get_pixels (src);
 	dst_pixels = gdk_pixbuf_get_pixels (dst);
-
+	
 	for (y = srcoffsety; y < srcheight; y++)
 		for (x = srcoffsetx; x < srcwidth; x++)
 			{
+				guchar r, g, b, a;
+
 				sx = x + srcx;
 				sy = y + srcy;
 				dx = x + dstx;
 				dy = y + dsty;
-				guchar r, g, b, a;
-				a = src_pixels[4 * sx + sy * srcrowstride +  3];
+				a = src_pixels[4 * sx + sy * srcrowstride + 3];
 				if (a)
 					{
 						r = src_pixels[4 * sx + sy * srcrowstride];
 						g = src_pixels[4 * sx + 1 + sy * srcrowstride];
 						b = src_pixels[4 * sx + 2 + sy * srcrowstride];
-						art_rgba_run_alpha (dst_pixels + 4 * dx + 
-											dy * dstrowstride, 
-											r, g, b, a, 1);
+						art_rgba_run_alpha (dst_pixels + 4 * dx +
+											dy * dstrowstride, r, g, b, a, 1);
 					}
 			}
 }
 
-void
-rsvg_filter_fix_coordinate_system (RsvgFilterContext *ctx, 
-								   RsvgState *state){
+static void
+rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state)
+{
 	int i, j;
 	int x, y, height, width;
-	guchar *pixels; 
+	guchar *pixels;
 	int stride;
 	int currentindex;
-
+	
 	i = j = 0;
-
+	
 	x = y = width = height = 0;
-
-	/*First for object bounding box coordinates we need to know how much of the 
-	  source has been drawn on*/
-	pixels = gdk_pixbuf_get_pixels(ctx->source);
-	stride = gdk_pixbuf_get_rowstride(ctx->source);
+	
+	/* First for object bounding box coordinates we need to know how much of the 
+	   source has been drawn on */
+	pixels = gdk_pixbuf_get_pixels (ctx->source);
+	stride = gdk_pixbuf_get_rowstride (ctx->source);
 	x = y = height = width = -1;
-		
-	/*move in from the top to find the y value*/
-	for (i = 0; i < gdk_pixbuf_get_height(ctx->source); i++) {
-		for (j = 0; j < gdk_pixbuf_get_width(ctx->source); j++) {
-			currentindex = i * stride + j * 4;
-			if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0 ||
-				pixels[currentindex + 2] != 0 || pixels[currentindex + 3] != 0){
-				y = i;
+	
+	/* move in from the top to find the y value */
+	for (i = 0; i < gdk_pixbuf_get_height (ctx->source); i++)
+		{
+			for (j = 0; j < gdk_pixbuf_get_width (ctx->source); j++)
+				{
+					currentindex = i * stride + j * 4;
+					if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0
+						|| pixels[currentindex + 2] != 0
+						|| pixels[currentindex + 3] != 0)
+						{
+							y = i;
+							break;
+						}
+				}
+			if (y != -1)
 				break;
-			}
 		}
-		if (y != -1)
-			break;
-	}
 	
 	
-	/*move in from the bottom to find the height*/
-	for (i = gdk_pixbuf_get_height(ctx->source) - 1; i >= 0; i--) {
-		for (j = 0; j < gdk_pixbuf_get_width(ctx->source); j++) {
-			currentindex = i * stride + j * 4;
-			if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0 ||
-				pixels[currentindex + 2] != 0 || pixels[currentindex + 3] != 0){	
-				height = i - y;
+	/* move in from the bottom to find the height */
+	for (i = gdk_pixbuf_get_height (ctx->source) - 1; i >= 0; i--)
+		{
+			for (j = 0; j < gdk_pixbuf_get_width (ctx->source); j++)
+				{
+					currentindex = i * stride + j * 4;
+					if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0
+						|| pixels[currentindex + 2] != 0
+						|| pixels[currentindex + 3] != 0)
+						{
+							height = i - y;
+							break;
+						}
+					
+				}
+			if (height != -1)
 				break;
-			}
-			
 		}
-		if (height != -1)
-			break;
-	}
 	
-		/*move in from the left to find the x value*/
-	for (j = 0; j < gdk_pixbuf_get_width(ctx->source); j++) {
-		for (i = y; i < (height + y); i++) {
-			currentindex = i * stride + j * 4;
-			if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0 ||
-				pixels[currentindex + 2] != 0 || pixels[currentindex + 3] != 0){
-				x = j;
+	/* move in from the left to find the x value */
+	for (j = 0; j < gdk_pixbuf_get_width (ctx->source); j++)
+		{
+			for (i = y; i < (height + y); i++)
+				{
+					currentindex = i * stride + j * 4;
+					if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0
+						|| pixels[currentindex + 2] != 0
+						|| pixels[currentindex + 3] != 0)
+						{
+							x = j;
+							break;
+						}
+				}
+			if (x != -1)
 				break;
-			}
 		}
-		if (x != -1)
-			break;
-	}
 	
-	/*move in from the right side to find the width*/
-	for (j = gdk_pixbuf_get_width(ctx->source) - 1; j >= 0; j--) {
-		for (i = y; i < (height + y); i++) {
-			currentindex = i * stride + j * 4;
-			if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0 ||
-				pixels[currentindex + 2] != 0 || pixels[currentindex + 3] != 0){
-				width = j - x;
+	/* move in from the right side to find the width */
+	for (j = gdk_pixbuf_get_width (ctx->source) - 1; j >= 0; j--)
+		{
+			for (i = y; i < (height + y); i++)
+				{
+					currentindex = i * stride + j * 4;
+					if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0
+						|| pixels[currentindex + 2] != 0
+						|| pixels[currentindex + 3] != 0)
+						{
+							width = j - x;
+							break;
+						}
+				}
+			if (width != -1)
 				break;
-			}
 		}
-		if (width != -1)
-				break;
-	}
 	
-	ctx->width = gdk_pixbuf_get_width(ctx->source);
-	ctx->height = gdk_pixbuf_get_height(ctx->source);	
-
-	if (ctx->filter->filterunits == userSpaceOnUse){
-		for (i = 0; i < 6; i++)
-			ctx->affine[i] = state->affine[i];
-	} 
-	else {
-		ctx->affine[0] = width;
-		ctx->affine[1] = 0.;		
-		ctx->affine[2] = 0.;
-		ctx->affine[3] = height;
-		ctx->affine[4] = x;
-		ctx->affine[5] = y;
-	}
-
-	if (ctx->filter->primitiveunits == userSpaceOnUse){
-		for (i = 0; i < 6; i++)
-			ctx->paffine[i] = state->affine[i];
-	} 
-	else {
-		ctx->paffine[0] = width;
-		ctx->paffine[1] = 0.;		
-		ctx->paffine[2] = 0.;
-		ctx->paffine[3] = height;
-		ctx->paffine[4] = x;
-		ctx->paffine[5] = y;
-	}
+	ctx->width = gdk_pixbuf_get_width (ctx->source);
+	ctx->height = gdk_pixbuf_get_height (ctx->source);
 	
-	return;
+	if (ctx->filter->filterunits == userSpaceOnUse)
+		{
+			for (i = 0; i < 6; i++)
+				ctx->affine[i] = state->affine[i];
+		}
+	else
+		{
+			ctx->affine[0] = width;
+			ctx->affine[1] = 0.;
+			ctx->affine[2] = 0.;
+			ctx->affine[3] = height;
+			ctx->affine[4] = x;
+			ctx->affine[5] = y;
+		}
+	
+	if (ctx->filter->primitiveunits == userSpaceOnUse)
+		{
+			for (i = 0; i < 6; i++)
+				ctx->paffine[i] = state->affine[i];
+		}
+	else
+		{
+			ctx->paffine[0] = width;
+			ctx->paffine[1] = 0.;
+			ctx->paffine[2] = 0.;
+			ctx->paffine[3] = height;
+			ctx->paffine[4] = x;
+			ctx->paffine[5] = y;
+		}
 }
 
-void
-rsvg_filter_free_pair(gpointer key, gpointer value, gpointer user_data)
+static void
+rsvg_filter_free_pair (gpointer key, gpointer value, gpointer user_data)
 {
-	g_object_unref(G_OBJECT(value));
-	g_free((gchar *)key);
+	g_object_unref (G_OBJECT (value));
+	g_free ((gchar *) key);
 }
 
 /**
@@ -386,34 +399,36 @@ rsvg_filter_free_pair(gpointer key, gpointer value, gpointer user_data)
  * This function will create a context for itself, set up the coordinate systems
  * execute all its little primatives and then clean up its own mess
  **/
-
-void 
-rsvg_filter_render (RsvgFilter *self, GdkPixbuf *source, GdkPixbuf *bg, RsvgHandle *context){
+void
+rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * bg,
+					RsvgHandle * context)
+{
 	RsvgFilterContext *ctx;
-	RsvgFilterPrimitive *current;	
+	RsvgFilterPrimitive *current;
 	guint i;
-
-	ctx = g_new(RsvgFilterContext, 1);
+	
+	ctx = g_new (RsvgFilterContext, 1);
 	ctx->filter = self;
 	ctx->source = source;
 	ctx->bg = bg;
-	ctx->results = g_hash_table_new(g_str_hash, g_str_equal);
-
-	g_object_ref(G_OBJECT(source));
+	ctx->results = g_hash_table_new (g_str_hash, g_str_equal);
+	
+	g_object_ref (G_OBJECT (source));
 	ctx->lastresult = source;
 	
-	rsvg_filter_fix_coordinate_system(ctx, rsvg_state_current (context));
-
+	rsvg_filter_fix_coordinate_system (ctx, rsvg_state_current (context));
+	
 	for (i = 0; i < self->primitives->len; i++)
 		{
-			current = g_ptr_array_index(self->primitives, i);
-			rsvg_filter_primitive_render(current, ctx);
+			current = g_ptr_array_index (self->primitives, i);
+			rsvg_filter_primitive_render (current, ctx);
 		}
 	g_hash_table_foreach (ctx->results, rsvg_filter_free_pair, NULL);
 	g_hash_table_destroy (ctx->results);
-
-	alpha_blt(ctx->lastresult, 0, 0, gdk_pixbuf_get_width(source), gdk_pixbuf_get_height(source), bg, 0, 0);
-	g_object_unref(G_OBJECT(ctx->lastresult));
+	
+	alpha_blt (ctx->lastresult, 0, 0, gdk_pixbuf_get_width (source),
+			   gdk_pixbuf_get_height (source), bg, 0, 0);
+	g_object_unref (G_OBJECT (ctx->lastresult));
 }
 
 /**
@@ -425,44 +440,45 @@ rsvg_filter_render (RsvgFilter *self, GdkPixbuf *source, GdkPixbuf *bg, RsvgHand
  * Puts the new result into the hash for easy finding later, also
  * Stores it as the last result
  **/
-
-void 
-rsvg_filter_store_result (GString *name, GdkPixbuf *result, RsvgFilterContext *ctx){
-	g_object_unref(G_OBJECT(ctx->lastresult)); 
-
-	if (strcmp(name->str, "")){
-		g_object_ref(G_OBJECT(result)); /*increments the references for the table*/
-		g_hash_table_insert (ctx->results, g_strdup(name->str), result);
-	}
-
-	g_object_ref(G_OBJECT(result)); /*increments the references for the last result*/
+static void
+rsvg_filter_store_result (GString * name, GdkPixbuf * result,
+						  RsvgFilterContext * ctx)
+{
+	g_object_unref (G_OBJECT (ctx->lastresult));
+	
+	if (strcmp (name->str, ""))
+		{
+			g_object_ref (G_OBJECT (result));	/* increments the references for the table */
+			g_hash_table_insert (ctx->results, g_strdup (name->str), result);
+		}
+	
+	g_object_ref (G_OBJECT (result));	/* increments the references for the last result */
 	ctx->lastresult = result;
 }
 
-GdkPixbuf *
-pixbuf_get_alpha(GdkPixbuf *pb);
+static GdkPixbuf *
+pixbuf_get_alpha (GdkPixbuf * pb)
+{
+  gint i, j;
+  guchar *data;
+  guchar *pbdata;
+  GdkPixbuf *output;
+  
+  output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8,
+						   gdk_pixbuf_get_width (pb),
+						   gdk_pixbuf_get_height (pb));
+  
+  data = gdk_pixbuf_get_pixels (output);
+  pbdata = gdk_pixbuf_get_pixels (pb);
+  
+  for (i = 0; i < gdk_pixbuf_get_width (pb) * gdk_pixbuf_get_width (pb); i++)
+	  {
+		  for (j = 0; j < 3; j++)
+			  data[i * 4 + j] = 0;
+		  data[i * 4 + 3] = pbdata[i * 4 + 3];
+	  }
 
-GdkPixbuf *
-pixbuf_get_alpha(GdkPixbuf *pb){
-	gint i,j;
-	guchar * data;
-	guchar * pbdata;
-	GdkPixbuf *output;
-
-	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-							 gdk_pixbuf_get_width(pb), 
-							 gdk_pixbuf_get_height(pb));
-
-	data = gdk_pixbuf_get_pixels(output);
-	pbdata = gdk_pixbuf_get_pixels(pb);
-	
-	for (i=0; i<gdk_pixbuf_get_width(pb)*gdk_pixbuf_get_width(pb);i++){
-		for (j=0; j< 3;j++)
-			data[i*4 + j] = 0;
-		data[i*4 + 3] = pbdata[i*4 + 3];
-	}
-	
-	return output;
+  return output;
 }
 
 /**
@@ -473,37 +489,38 @@ pixbuf_get_alpha(GdkPixbuf *pb){
  * Returns a pointer to the result that the name refers to, a special
  * Pixbuf if the name is a special keyword or NULL if nothing was found
  **/
-
-GdkPixbuf *
-rsvg_filter_get_in (GString *name, RsvgFilterContext *ctx){
+static GdkPixbuf *
+rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
+{
 	GdkPixbuf *output;
-	if (!strcmp(name->str, "SourceGraphic"))
+
+	if (!strcmp (name->str, "SourceGraphic"))
 		{
-			g_object_ref(G_OBJECT(ctx->source));			
+			g_object_ref (G_OBJECT (ctx->source));
 			return ctx->source;
 		}
-	if (!strcmp(name->str, "BackgroundImage"))
+	if (!strcmp (name->str, "BackgroundImage"))
 		{
-			g_object_ref(G_OBJECT(ctx->bg));
+			g_object_ref (G_OBJECT (ctx->bg));
 			return ctx->bg;
 		}
-	if (!strcmp(name->str, "") || !strcmp(name->str, "none"))
+	if (!strcmp (name->str, "") || !strcmp (name->str, "none"))
 		{
-			g_object_ref(G_OBJECT(ctx->lastresult));
+			g_object_ref (G_OBJECT (ctx->lastresult));
 			return ctx->lastresult;
 		}
-	if (!strcmp(name->str, "SourceAlpha"))
-		return pixbuf_get_alpha(ctx->source);
-	if (!strcmp(name->str, "BackgroundAlpha"))
-		return pixbuf_get_alpha(ctx->bg);
-
+	if (!strcmp (name->str, "SourceAlpha"))
+		return pixbuf_get_alpha (ctx->source);
+	if (!strcmp (name->str, "BackgroundAlpha"))
+		return pixbuf_get_alpha (ctx->bg);
+	
 	output = g_hash_table_lookup (ctx->results, name->str);
-	g_object_ref(G_OBJECT(output));
+	g_object_ref (G_OBJECT (output));
+	
+	if (output != NULL)
+			return output;
 
-	if (output != NULL){
-		return output;
-	}
-	g_object_ref(G_OBJECT(ctx->lastresult));
+	g_object_ref (G_OBJECT (ctx->lastresult));
 	return ctx->lastresult;
 }
 
@@ -515,12 +532,12 @@ rsvg_filter_get_in (GString *name, RsvgFilterContext *ctx){
  * Returns a pointer to the filter that the name refers to, or NULL
  * if none was found
  **/
-
 RsvgFilter *
-rsvg_filter_parse (const RsvgDefs *defs, const char *str)
+rsvg_filter_parse (const RsvgDefs * defs, const char *str)
 {
 	if (!strcmp (str, "none"))
 		return NULL;
+	
 	if (!strncmp (str, "url(", 4))
 		{
 			const char *p = str + 4;
@@ -528,12 +545,14 @@ rsvg_filter_parse (const RsvgDefs *defs, const char *str)
 			char *name;
 			RsvgDefVal *val;
 			
-			while (g_ascii_isspace (*p)) p++;
+			while (g_ascii_isspace (*p))
+				p++;
 			if (*p != '#')
 				return NULL;
 			p++;
 			for (ix = 0; p[ix]; ix++)
-				if (p[ix] == ')') break;
+				if (p[ix] == ')')
+					break;
 			if (p[ix] != ')')
 				return NULL;
 			name = g_strndup (p, ix);
@@ -541,32 +560,33 @@ rsvg_filter_parse (const RsvgDefs *defs, const char *str)
 			g_free (name);
 			if (val == NULL)
 				return NULL;
-	 
+			
 			if (val->type == RSVG_DEF_FILTER)
-				return (RsvgFilter *)val;
+				return (RsvgFilter *) val;
 			return NULL;
 		}
 	return NULL;
 }
-
 
 /**
  * rsvg_new_filter: Creates a black filter
  *
  * Creates a blank filter and assigns default values to everything
  **/
+static RsvgFilter *
+rsvg_new_filter (void)
+{
+	RsvgFilter *filter;
 
-RsvgFilter *
-rsvg_new_filter (void) {
-	RsvgFilter * filter;
-	filter = g_new(RsvgFilter, 1);
+	filter = g_new (RsvgFilter, 1);
 	filter->filterunits = objectBoundingBox;
 	filter->primitiveunits = userSpaceOnUse;
 	filter->x = -0.1;
 	filter->y = -0.1;
 	filter->width = 1.2;
 	filter->height = 1.2;
-	filter->primitives = g_ptr_array_new();
+	filter->primitives = g_ptr_array_new ();
+
 	return filter;
 }
 
@@ -577,18 +597,20 @@ rsvg_new_filter (void) {
  * Frees a filter and all primatives associated with this filter, this is 
  * to be set as its free function to be used with rsvg defs
  **/
+static void
+rsvg_filter_free (RsvgDefVal * dself)
+{
+  RsvgFilterPrimitive *current;
+  RsvgFilter *self;
+  guint i;
 
-void 
-rsvg_filter_free (RsvgDefVal *dself) {
-	RsvgFilter * self;
-	self = (RsvgFilter *) dself;
-	guint i;
-	RsvgFilterPrimitive *current;
-	for (i = 0; i < self->primitives->len; i++)
-		{
-			current = g_ptr_array_index(self->primitives, i);
-			rsvg_filter_primitive_free(current);
-		}
+  self = (RsvgFilter *) dself;
+  
+  for (i = 0; i < self->primitives->len; i++)
+	  {
+		  current = g_ptr_array_index (self->primitives, i);
+		  rsvg_filter_primitive_free (current);
+	  }
 }
 
 /**
@@ -601,63 +623,79 @@ rsvg_filter_free (RsvgDefVal *dself) {
  * newly created filter so that all subsiquent primatives are
  * added to this filter until the filter is ended
  **/
-
-void 
-rsvg_start_filter (RsvgHandle *ctx, const xmlChar **atts) {
+void
+rsvg_start_filter (RsvgHandle * ctx, const xmlChar ** atts)
+{
 	int i;
-	const char * klazz = NULL; 
-	char * id = NULL;
+	const char *klazz = NULL;
+	char *id = NULL;
 	RsvgFilter *filter;
 	double font_size;
-
+	
 	if (ctx->n_state > 0)
 		font_size = rsvg_state_current (ctx)->font_size;
 	else
 		font_size = 12.0;
-
-	filter = rsvg_new_filter();
-
+	
+	filter = rsvg_new_filter ();
+	
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
-					if (!strcmp ((char *)atts[i], "filterUnits"))
-						if (!strcmp ((char *)atts[i], "userSpaceOnUse"))
+					if (!strcmp ((char *) atts[i], "filterUnits"))
+						if (!strcmp ((char *) atts[i], "userSpaceOnUse"))
 							filter->filterunits = userSpaceOnUse;
 						else
 							filter->filterunits = objectBoundingBox;
-
-					else if (!strcmp ((char *)atts[i], "primitiveUnits"))
-						if (!strcmp ((char *)atts[i], "objectBoundingBox"))
+					
+					else if (!strcmp ((char *) atts[i], "primitiveUnits"))
+						if (!strcmp ((char *) atts[i], "objectBoundingBox"))
 							filter->primitiveunits = objectBoundingBox;
 						else
 							filter->primitiveunits = userSpaceOnUse;
-
-					else if (!strcmp ((char *)atts[i], "x"))
-						filter->x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
-					else if (!strcmp ((char *)atts[i], "y"))
-						filter->y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
-					else if (!strcmp ((char *)atts[i], "width"))
-						filter->width = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
-					else if (!strcmp ((char *)atts[i], "height"))
-						filter->height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-
-					else if (!strcmp ((char *)atts[i], "filterRes"))
+					
+					else if (!strcmp ((char *) atts[i], "x"))
+						filter->x =
+							rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+															  ctx->dpi,
+															  (gdouble) ctx->width,
+															  font_size);
+					
+					else if (!strcmp ((char *) atts[i], "y"))
+						filter->y =
+							rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+															  ctx->dpi,
+															  (gdouble) ctx->width,
+															  font_size);
+					
+					else if (!strcmp ((char *) atts[i], "width"))
+						filter->width =
+							rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+															  ctx->dpi,
+															  (gdouble) ctx->width,
+															  font_size);
+					
+					else if (!strcmp ((char *) atts[i], "height"))
+						filter->height =
+							rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+															  ctx->dpi,
+															  (gdouble) ctx->width,
+															  font_size);
+					
+					else if (!strcmp ((char *) atts[i], "filterRes"))
 						;
-					else if (!strcmp ((char *)atts[i], "xlink::href"))
+					else if (!strcmp ((char *) atts[i], "xlink::href"))
 						;
-					else if (!strcmp ((char *)atts[i], "class"))
-						klazz = (char *)atts[i + 1];
-					else if (!strcmp ((char *)atts[i], "id"))
-						id = (char *)atts[i + 1];
+					else if (!strcmp ((char *) atts[i], "class"))
+						klazz = (char *) atts[i + 1];
+					else if (!strcmp ((char *) atts[i], "id"))
+						id = (char *) atts[i + 1];
 				}
 		}
 	ctx->currentfilter = filter;
-
-	/*set up the defval stuff*/
+	
+	/* set up the defval stuff */
 	filter->super.type = RSVG_DEF_FILTER;
 	filter->super.free = &rsvg_filter_free;
 	rsvg_defs_set (ctx->defs, id, &filter->super);
@@ -669,192 +707,219 @@ rsvg_start_filter (RsvgHandle *ctx, const xmlChar **atts) {
  *
  * Ends the current filter block by setting the currentfilter ot null
  **/
-
-void 
-rsvg_end_filter (RsvgHandle *ctx) {
+void
+rsvg_end_filter (RsvgHandle * ctx)
+{
 	ctx->currentfilter = NULL;
 }
 
-typedef enum {
-	normal, multiply, screen, darken, lighten
-} RsvgFilterPrimitiveBlendMode;
+/*************************************************************/
+/*************************************************************/
 
-struct _RsvgFilterPrimitiveBlend {
-	RsvgFilterPrimitive super;
-	RsvgFilterPrimitiveBlendMode mode;
-	GString *in2;
+typedef enum
+{
+  normal, multiply, screen, darken, lighten
+}
+RsvgFilterPrimitiveBlendMode;
+
+typedef struct _RsvgFilterPrimitiveBlend RsvgFilterPrimitiveBlend;
+struct _RsvgFilterPrimitiveBlend
+{
+  RsvgFilterPrimitive super;
+  RsvgFilterPrimitiveBlendMode mode;
+  GString *in2;
 };
 
-void rsvg_start_filter_primitive_blend (RsvgHandle *ctx, const xmlChar **atts);
-void rsvg_filter_primitive_blend_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx);
-void rsvg_filter_primitive_blend_free (RsvgFilterPrimitive * self);
-
-void 
-rsvg_filter_primitive_blend_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx) {
+static void
+rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
+				    RsvgFilterContext * ctx)
+{
 	guchar i;
-	gint x,y;
+	gint x, y;
 	gint rowstride, height, width;
 	FPBox boundarys;
-
+	
 	guchar *in_pixels;
 	guchar *in2_pixels;
 	guchar *output_pixels;
-
+	
 	RsvgFilterPrimitiveBlend *bself;
-
+	
 	GdkPixbuf *output;
 	GdkPixbuf *in;
 	GdkPixbuf *in2;
-
+	
 	bself = (RsvgFilterPrimitiveBlend *) self;
-	boundarys = rsvg_filter_primitive_get_bounds(self, ctx);
-
-	in = rsvg_filter_get_in(self->in, ctx);
-	in_pixels = gdk_pixbuf_get_pixels(in);	
-	in2 = rsvg_filter_get_in(bself->in2, ctx);
-	in2_pixels = gdk_pixbuf_get_pixels(in2);
-
-	height = gdk_pixbuf_get_height(in);
-	width = gdk_pixbuf_get_width(in);
-
-	rowstride = gdk_pixbuf_get_rowstride(in);
-
-	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-							 width, height);
-
-	clear_pixbuf(output);
-
-	output_pixels = gdk_pixbuf_get_pixels(output);
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	in = rsvg_filter_get_in (self->in, ctx);
+	in_pixels = gdk_pixbuf_get_pixels (in);
+	in2 = rsvg_filter_get_in (bself->in2, ctx);
+	in2_pixels = gdk_pixbuf_get_pixels (in2);
+	
+	height = gdk_pixbuf_get_height (in);
+	width = gdk_pixbuf_get_width (in);
+	
+	rowstride = gdk_pixbuf_get_rowstride (in);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	output_pixels = gdk_pixbuf_get_pixels (output);
 	
 	for (y = boundarys.y1; y < boundarys.y2; y++)
-		for (x = boundarys.x1; x < boundarys.x2 ; x++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				double qr, cr, qa, qb, ca, cb;
-				qa = (double)in_pixels[4 * x + y * rowstride +  3] / 255.0;
-				qb = (double)in2_pixels[4 * x + y * rowstride +  3] / 255.0;
+
+				qa = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
+				qb = (double) in2_pixels[4 * x + y * rowstride + 3] / 255.0;
 				qr = 1 - (1 - qa) * (1 - qb);
 				cr = 0;
 				for (i = 0; i < 3; i++)
 					{
-						ca = (double)in_pixels[4 * x + y * rowstride +  i] * qa / 255.0;
-						cb = (double)in2_pixels[4 * x + y * rowstride +  i] * qb / 255.0;
-						switch (bself->mode){
-						case normal:
-							cr = (1 - qa) * cb + ca;
-							break;
-						case multiply:
-							cr = (1 - qa) * cb + (1 - qb) * ca + ca * cb;
-							break;
-						case screen:
-							cr = cb + ca - ca * cb;
-							break;
-						case darken:
-							cr = MIN ((1 - qa) * cb + ca, (1 - qb) * ca + cb);
-							break;
-						case lighten: 	
-							cr = MAX ((1 - qa) * cb + ca, (1 - qb) * ca + cb);
-							break;
-						}
+						ca = (double) in_pixels[4 * x + y * rowstride + i] * qa / 255.0;
+						cb = (double) in2_pixels[4 * x + y * rowstride + i] * qb / 255.0;
+						switch (bself->mode)
+							{
+							case normal:
+								cr = (1 - qa) * cb + ca;
+								break;
+							case multiply:
+								cr = (1 - qa) * cb + (1 - qb) * ca + ca * cb;
+								break;
+							case screen:
+								cr = cb + ca - ca * cb;
+								break;
+							case darken:
+								cr = MIN ((1 - qa) * cb + ca, (1 - qb) * ca + cb);
+								break;
+							case lighten:
+								cr = MAX ((1 - qa) * cb + ca, (1 - qb) * ca + cb);
+								break;
+							}
 						cr *= 255.0 / qr;
 						if (cr > 255)
 							cr = 255;
 						if (cr < 0)
 							cr = 0;
-						output_pixels[4 * x + y * rowstride + i] = (guchar)cr;
+						output_pixels[4 * x + y * rowstride + i] = (guchar) cr;
 						
 					}
 				output_pixels[4 * x + y * rowstride + 3] = qr * 255.0;
 			}
+
 	rsvg_filter_store_result (self->result, output, ctx);
 	
-	g_object_unref(G_OBJECT(in));
-	g_object_unref(G_OBJECT(in2));
-	g_object_unref(G_OBJECT(output));
+	g_object_unref (G_OBJECT (in));
+	g_object_unref (G_OBJECT (in2));
+	g_object_unref (G_OBJECT (output));
 }
 
-void 
-rsvg_filter_primitive_blend_free (RsvgFilterPrimitive * self){
+static void
+rsvg_filter_primitive_blend_free (RsvgFilterPrimitive * self)
+{
 	RsvgFilterPrimitiveBlend *bself;
-	bself = (RsvgFilterPrimitiveBlend *)self;
-	g_string_free(self->result, TRUE);
-	g_string_free(self->in, TRUE);
-	g_string_free(bself->in2, TRUE);	
-	g_free(bself);
+	
+	bself = (RsvgFilterPrimitiveBlend *) self;
+	g_string_free (self->result, TRUE);
+	g_string_free (self->in, TRUE);
+	g_string_free (bself->in2, TRUE);
+	g_free (bself);
 }
 
-void 
-rsvg_start_filter_primitive_blend (RsvgHandle *ctx, const xmlChar **atts) {
+void
+rsvg_start_filter_primitive_blend (RsvgHandle * ctx, const xmlChar ** atts)
+{
 	int i;
 	double font_size;
-	RsvgFilterPrimitiveBlend * filter;
-
+	RsvgFilterPrimitiveBlend *filter;
+	
 	if (ctx->n_state > 0)
 		font_size = rsvg_state_current (ctx)->font_size;
 	else
 		font_size = 12.0;
-
-	filter = g_new(RsvgFilterPrimitiveBlend, 1);
+	
+	filter = g_new (RsvgFilterPrimitiveBlend, 1);
 	filter->mode = normal;
-
-	filter->super.in = g_string_new("none");
-	filter->in2 = g_string_new("none");
-	filter->super.result = g_string_new("none");
+	
+	filter->super.in = g_string_new ("none");
+	filter->in2 = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
 	filter->super.sizedefaults = 1;
-
+	
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
-					if (!strcmp ((char *)atts[i], "mode"))
-						if (!strcmp ((char *)atts[i + 1], "multiply"))
+					if (!strcmp ((char *) atts[i], "mode"))
+						if (!strcmp ((char *) atts[i + 1], "multiply"))
 							filter->mode = multiply;
-						else if (!strcmp ((char *)atts[i + 1], "screen"))
+						else if (!strcmp ((char *) atts[i + 1], "screen"))
 							filter->mode = screen;
-						else if (!strcmp ((char *)atts[i + 1], "darken"))
+						else if (!strcmp ((char *) atts[i + 1], "darken"))
 							filter->mode = darken;
-						else if (!strcmp ((char *)atts[i + 1], "lighten"))
+						else if (!strcmp ((char *) atts[i + 1], "lighten"))
 							filter->mode = lighten;
-						else 
-							filter->mode = normal;
-					
-					else if (!strcmp ((char *)atts[i], "in"))
-						g_string_assign(filter->super.in, (char *)atts[i + 1]);
-
-					else if (!strcmp ((char *)atts[i], "in2"))
-						g_string_assign(filter->in2, (char *)atts[i + 1]);
-
-					else if (!strcmp ((char *)atts[i], "result"))
-						g_string_assign(filter->super.result, (char *)atts[i + 1]);
-
-					else if (!strcmp ((char *)atts[i], "x")){
-						filter->super.x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}
-					else if (!strcmp ((char *)atts[i], "y")){
-						filter->super.y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}
-					else if (!strcmp ((char *)atts[i], "width")){
-						filter->super.width = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;					
-					}
-					else if (!strcmp ((char *)atts[i], "height")){
-						filter->super.height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}			
+						else
+							filter->mode = normal;					
+					else if (!strcmp ((char *) atts[i], "in"))
+						g_string_assign (filter->super.in, (char *) atts[i + 1]);					
+					else if (!strcmp ((char *) atts[i], "in2"))
+						g_string_assign (filter->in2, (char *) atts[i + 1]);					
+					else if (!strcmp ((char *) atts[i], "result"))
+						g_string_assign (filter->super.result, (char *) atts[i + 1]);					
+					else if (!strcmp ((char *) atts[i], "x"))
+						{
+							filter->super.x =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "y"))
+						{
+							filter->super.y =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "width"))
+						{
+							filter->super.width =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "height"))
+						{
+							filter->super.height =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
 				}
 		}
 	
 	filter->super.render = &rsvg_filter_primitive_blend_render;
 	filter->super.free = &rsvg_filter_primitive_blend_free;
-
-	g_ptr_array_add(((RsvgFilter *)(ctx->currentfilter))->primitives, &filter->super);
+	
+	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
+					 &filter->super);
 }
 
+/*************************************************************/
+/*************************************************************/
 
 typedef struct _RsvgFilterPrimitiveConvolveMatrix RsvgFilterPrimitiveConvolveMatrix;
 
-struct _RsvgFilterPrimitiveConvolveMatrix {
+struct _RsvgFilterPrimitiveConvolveMatrix
+{
 	RsvgFilterPrimitive super;
 	double *KernelMatrix;
 	double divisor;
@@ -864,642 +929,762 @@ struct _RsvgFilterPrimitiveConvolveMatrix {
 	gboolean preservealpha;
 };
 
-void rsvg_start_filter_convolve_matrix (RsvgHandle *ctx, const xmlChar **atts);
-void rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx);
-void rsvg_filter_primitive_convolve_matrix_free (RsvgFilterPrimitive * self);
-
-void 
-rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx) {
+static void
+rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
+											  RsvgFilterContext * ctx)
+{
 	guchar ch;
-	gint x,y;
+	gint x, y;
 	gint i, j;
 	gint rowstride, height, width;
 	FPBox boundarys;
-
+	
 	guchar *in_pixels;
 	guchar *output_pixels;
-
+	
 	RsvgFilterPrimitiveConvolveMatrix *cself;
-
+	
 	GdkPixbuf *output;
 	GdkPixbuf *in;
-
+	
 	gint sx, sy, kx, ky;
 	guchar sval;
 	double kval, sum;
-
-	cself = (RsvgFilterPrimitiveConvolveMatrix *) self;
-	boundarys = rsvg_filter_primitive_get_bounds(self, ctx);
-
-	in = rsvg_filter_get_in(self->in, ctx);
-	in_pixels = gdk_pixbuf_get_pixels(in);	
-
-	height = gdk_pixbuf_get_height(in);
-	width = gdk_pixbuf_get_width(in);
-
-	rowstride = gdk_pixbuf_get_rowstride(in);
-
-	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-							 width, height);
-
-	clear_pixbuf(output);
-
-	output_pixels = gdk_pixbuf_get_pixels(output);
 	
 	gint tempresult;
-
+	
+	cself = (RsvgFilterPrimitiveConvolveMatrix *) self;
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	in = rsvg_filter_get_in (self->in, ctx);
+	in_pixels = gdk_pixbuf_get_pixels (in);
+	
+	height = gdk_pixbuf_get_height (in);
+	width = gdk_pixbuf_get_width (in);
+	
+	rowstride = gdk_pixbuf_get_rowstride (in);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	output_pixels = gdk_pixbuf_get_pixels (output);
+	
 	for (y = boundarys.y1; y < boundarys.y2; y++)
-		for (x = boundarys.x1; x < boundarys.x2 ; x++){
-			for (ch = 0; ch < 3 + !cself->preservealpha; ch++){
-				sum = 0;
-				for (i = 0; i < cself->ordery; i++)
-					for (j = 0; j < cself->orderx; j++){
-						sx = x - cself->targetx + j;
-						sy = y - cself->targety + i;
-						if (sx < boundarys.x1 || sx > boundarys.x2 || 
-							sy < boundarys.y1 || sy > boundarys.y2)
-							continue;
-						kx = cself->orderx - j - 1;
-						ky = cself->ordery - i - 1;
-						sval = in_pixels[4 * sx + sy * rowstride + ch];
-						kval = cself->KernelMatrix[kx + ky * cself->orderx];
-						sum += (double)sval * kval;
-					}
-				tempresult =  sum / cself->divisor + cself->bias; 
-				if (tempresult > 255)
-					tempresult = 255;
-				if (tempresult < 0)
-					tempresult = 0;
-		
-				output_pixels[4 * x + y * rowstride + ch] = tempresult;
-			}
+    for (x = boundarys.x1; x < boundarys.x2; x++)
+		{
+			for (ch = 0; ch < 3 + !cself->preservealpha; ch++)
+				{
+					sum = 0;
+					for (i = 0; i < cself->ordery; i++)
+						for (j = 0; j < cself->orderx; j++)
+		{
+			sx = x - cself->targetx + j;
+			sy = y - cself->targety + i;
+			if (sx < boundarys.x1 || sx > boundarys.x2 ||
+				sy < boundarys.y1 || sy > boundarys.y2)
+				continue;
+			kx = cself->orderx - j - 1;
+			ky = cself->ordery - i - 1;
+			sval = in_pixels[4 * sx + sy * rowstride + ch];
+			kval = cself->KernelMatrix[kx + ky * cself->orderx];
+			sum += (double) sval *kval;
+		}
+					tempresult = sum / cself->divisor + cself->bias;
+					if (tempresult > 255)
+						tempresult = 255;
+					if (tempresult < 0)
+						tempresult = 0;
+					
+					output_pixels[4 * x + y * rowstride + ch] = tempresult;
+				}
 			if (cself->preservealpha)
-				output_pixels[4 * x + y * rowstride + 3] = 
+				output_pixels[4 * x + y * rowstride + 3] =
 					in_pixels[4 * x + y * rowstride + 3];
 		}
 	rsvg_filter_store_result (self->result, output, ctx);
 	
-	g_object_unref(G_OBJECT(in));
-	g_object_unref(G_OBJECT(output));
+	g_object_unref (G_OBJECT (in));
+	g_object_unref (G_OBJECT (output));
 }
 
-void 
-rsvg_filter_primitive_convolve_matrix_free (RsvgFilterPrimitive * self){
+static void
+rsvg_filter_primitive_convolve_matrix_free (RsvgFilterPrimitive * self)
+{
 	RsvgFilterPrimitiveConvolveMatrix *cself;
-	cself = (RsvgFilterPrimitiveConvolveMatrix *)self;
-	g_string_free(self->result, TRUE);
-	g_string_free(self->in, TRUE);	
-	g_free(cself->KernelMatrix);
-	g_free(cself);
+
+	cself = (RsvgFilterPrimitiveConvolveMatrix *) self;
+	g_string_free (self->result, TRUE);
+	g_string_free (self->in, TRUE);
+	g_free (cself->KernelMatrix);
+	g_free (cself);
 }
 
-typedef struct _RsvgFilterPrimitiveGaussianBlur RsvgFilterPrimitiveGaussianBlur;
+void
+rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
+											 const xmlChar ** atts)
+{
+	int i, j;
+	double font_size;
+	RsvgFilterPrimitiveConvolveMatrix *filter;
+	
+	if (ctx->n_state > 0)
+		font_size = rsvg_state_current (ctx)->font_size;
+	else
+		font_size = 12.0;
+	
+	filter = g_new (RsvgFilterPrimitiveConvolveMatrix, 1);
+	
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;	
+	
+	filter->divisor = 0;
+	filter->targetx = 0;
+	filter->targety = 0;
+	
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				{
+					if (!strcmp ((char *) atts[i], "in"))
+						g_string_assign (filter->super.in, (char *) atts[i + 1]);
+					
+					else if (!strcmp ((char *) atts[i], "result"))
+						g_string_assign (filter->super.result, (char *) atts[i + 1]);
+					
+					else if (!strcmp ((char *) atts[i], "x"))
+						{
+							filter->super.x =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "y"))
+						{
+							filter->super.y =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "width"))
+						{
+							filter->super.width =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "height"))
+						{
+							filter->super.height =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "targetX"))
+						filter->targetx = atoi ((char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "targetY"))
+						filter->targety = atoi ((char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "bias"))
+						filter->bias = atof ((char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "preserveAlpha"))
+						if (!strcmp ((char *) atts[i + 1], "true"))
+							filter->preservealpha = TRUE;
+						else
+							filter->preservealpha = FALSE;
+					else if (!strcmp ((char *) atts[i], "divisor"))
+						filter->divisor = atof ((char *) atts[i + 1]);
+					
+					else if (!strcmp ((char *) atts[i], "order"))
+						{
+							double tempx, tempy;
+							rsvg_css_parse_number_optional_number ((char *) atts[i + 1],
+																   &tempx, &tempy);
+							filter->orderx = tempx;
+							filter->ordery = tempy;
+							
+							/* double *KernelMatrix;
+							 */
+						}
+					else if (!strcmp ((char *) atts[i], "kernelMatrix"))
+						filter->KernelMatrix =
+							rsvg_css_parse_number_list ((char *) atts[i + 1], NULL);
+				}
+			
+		}
+	if (filter->divisor == 0)
+		{
+			for (j = 0; j < filter->orderx; j++)
+				for (i = 0; i < filter->ordery; i++)
+					filter->divisor += filter->KernelMatrix[j + i * filter->orderx];
+		}
+	if (filter->divisor == 0)
+		filter->divisor = 1;
+		
+	filter->super.render = &rsvg_filter_primitive_convolve_matrix_render;
+	filter->super.free = &rsvg_filter_primitive_convolve_matrix_free;
+	
+	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
+					 &filter->super);
+}
 
-struct _RsvgFilterPrimitiveGaussianBlur {
+/*************************************************************/
+/*************************************************************/
+
+typedef struct _RsvgFilterPrimitiveGaussianBlur
+RsvgFilterPrimitiveGaussianBlur;
+
+struct _RsvgFilterPrimitiveGaussianBlur
+{
 	RsvgFilterPrimitive super;
 	double sdx, sdy;
 };
 
-void 
-rsvg_start_filter_primitive_convolve_matrix (RsvgHandle *ctx, const xmlChar **atts) {
-	int i, j;
-	double font_size;
-	RsvgFilterPrimitiveConvolveMatrix * filter;
-
-	if (ctx->n_state > 0)
-		font_size = rsvg_state_current (ctx)->font_size;
-	else
-		font_size = 12.0;
-
-	filter = g_new(RsvgFilterPrimitiveConvolveMatrix, 1);
-
-	filter->super.in = g_string_new("none");
-	filter->super.result = g_string_new("none");
-	filter->super.sizedefaults = 1;
-
-
-	filter->divisor = 0;
-	filter->targetx = 0;
-	filter->targety = 0;
-
-	if (atts != NULL)
-		{
-			for (i = 0; atts[i] != NULL; i += 2)
-				{
-					if (!strcmp ((char *)atts[i], "in"))
-						g_string_assign(filter->super.in, (char *)atts[i + 1]);
-
-					else if (!strcmp ((char *)atts[i], "result"))
-						g_string_assign(filter->super.result, (char *)atts[i + 1]);
-
-					else if (!strcmp ((char *)atts[i], "x")){
-						filter->super.x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}
-					else if (!strcmp ((char *)atts[i], "y")){
-						filter->super.y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}
-					else if (!strcmp ((char *)atts[i], "width")){
-						filter->super.width = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;					
-					}
-					else if (!strcmp ((char *)atts[i], "height")){
-						filter->super.height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}			
-					else if (!strcmp ((char *)atts[i], "targetX"))
-						filter->targetx = atoi((char *)atts[i + 1]);
-					else if (!strcmp ((char *)atts[i], "targetY"))
-						filter->targety = atoi((char *)atts[i + 1]);
-					else if (!strcmp ((char *)atts[i], "bias"))
-						filter->bias = atof((char *)atts[i + 1]);
-					else if (!strcmp ((char *)atts[i], "preserveAlpha"))
-						if (!strcmp ((char *)atts[i + 1], "true"))
-							filter->preservealpha = TRUE;
-						else
-							filter->preservealpha = FALSE;
-					else if (!strcmp ((char *)atts[i], "divisor"))
-						filter->divisor = atof((char *)atts[i + 1]);
-
-					else if (!strcmp ((char *)atts[i], "order")){
-						double tempx, tempy;
-						rsvg_css_parse_number_optional_number((char *)atts[i + 1], &tempx, &tempy);
-						filter->orderx = tempx;
-						filter->ordery = tempy;
-						
-						/*double *KernelMatrix;
-						 */
-					}
-					else if (!strcmp ((char *)atts[i], "kernelMatrix"))
-						filter->KernelMatrix = rsvg_css_parse_number_list((char *)atts[i + 1], NULL);
-				}
-			
-		}
-	if (filter->divisor == 0){
-		for (j = 0; j < filter->orderx; j++)
-			for (i = 0; i < filter->ordery; i++)
-				filter->divisor += filter->KernelMatrix[j + i * filter->orderx];
-	}
-	if (filter->divisor == 0)
-		filter->divisor = 1;
+static void
+rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self,
+											RsvgFilterContext * ctx)
+{
+	guchar ch;
+	gint x, y;
+	gint i, j;
+	gint rowstride, height, width;
+	FPBox boundarys;
 	
-
-	filter->super.render = &rsvg_filter_primitive_convolve_matrix_render;
-	filter->super.free = &rsvg_filter_primitive_convolve_matrix_free;
-
-	g_ptr_array_add(((RsvgFilter *)(ctx->currentfilter))->primitives, &filter->super);
+	guchar *in_pixels;
+	guchar *output_pixels;
+	
+	RsvgFilterPrimitiveGaussianBlur *cself;
+	
+	GdkPixbuf *output;
+	GdkPixbuf *in;
+	
+	gint sx, sy, kx, ky, kw, kh;
+	guchar sval;
+	double kval, sum;
+	
+	double sdx, sdy;
+	double *KernelMatrix;
+	double divisor;
+	
+	gint tempresult;
+	
+	cself = (RsvgFilterPrimitiveGaussianBlur *) self;
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	in = rsvg_filter_get_in (self->in, ctx);
+	in_pixels = gdk_pixbuf_get_pixels (in);
+	
+	height = gdk_pixbuf_get_height (in);
+	width = gdk_pixbuf_get_width (in);
+	
+	rowstride = gdk_pixbuf_get_rowstride (in);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	
+	/* scale the SD values */
+	sdx = cself->sdx * ctx->paffine[0];
+	sdy = cself->sdy * ctx->paffine[3];
+	
+	kw = kh = 0;
+	
+	/* find out the required x size for the kernel matrix */
+	
+	for (i = 1; i < 20; i++)
+		{
+			if (exp (-(i * i) / (2 * sdx * sdx)) / sqrt (2 * M_PI * sdx * sdx) <
+				0.0001)
+				{
+					kw = 2 * (i - 1);
+					break;
+				}
+		}
+	
+	/* find out the required y size for the kernel matrix */
+	for (i = 1; i < 20; i++)
+    {
+		if (exp (-(i * i) / (2 * sdy * sdy)) / sqrt (2 * M_PI * sdy * sdy) <
+			0.0001)
+			{
+				kh = 2 * (i - 1);
+				break;
+			}
+    }
+	
+	KernelMatrix = g_new (double, kw * kh);
+	
+	/* create the kernel matrix */
+	for (i = 0; i < kh; i++)
+		{
+			for (j = 0; j < kw; j++)
+				{
+					KernelMatrix[j + i * kw] =
+						(exp (-((j - kw / 2) * (j - kw / 2)) / (2 * sdx * sdx)) /
+						 sqrt (2 * M_PI * sdx * sdx)) *
+						(exp (-((i - kh / 2) * (i - kh / 2)) / (2 * sdy * sdy)) /
+						 sqrt (2 * M_PI * sdy * sdy));
+				}
+		}
+	
+	/* find out the total of the values of the matrix */
+	divisor = 0;
+	for (j = 0; j < kw; j++)
+		for (i = 0; i < kh; i++)
+			divisor += KernelMatrix[j + i * kw];
+		
+	output_pixels = gdk_pixbuf_get_pixels (output);
+	
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
+			for (ch = 0; ch < 4; ch++)
+				{
+					sum = 0;
+					for (i = 0; i < kh; i++)
+						for (j = 0; j < kw; j++)
+							{
+								sx = x + j;
+								sy = y + i;
+								if (sx < boundarys.x1 || sx > boundarys.x2 ||
+									sy < boundarys.y1 || sy > boundarys.y2)
+									continue;
+								kx = kw - j - 1;
+								ky = kh - i - 1;
+								sval = in_pixels[4 * sx + sy * rowstride + ch];
+								kval = KernelMatrix[kx + ky * kw];
+								sum += (double) sval *kval;
+							}
+					tempresult = sum / divisor;
+					if (tempresult > 255)
+						tempresult = 255;
+					if (tempresult < 0)
+						tempresult = 0;
+					
+					output_pixels[4 * x + y * rowstride + ch] = tempresult;
+				}
+	rsvg_filter_store_result (self->result, output, ctx);
+	
+	g_object_unref (G_OBJECT (in));
+	g_object_unref (G_OBJECT (output));
+	g_free (KernelMatrix);
 }
 
-void 
-rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx);
+static void
+rsvg_filter_primitive_gaussian_blur_free (RsvgFilterPrimitive * self)
+{
+	RsvgFilterPrimitiveGaussianBlur *cself;
+	
+	cself = (RsvgFilterPrimitiveGaussianBlur *) self;
+	g_string_free (self->result, TRUE);
+	g_string_free (self->in, TRUE);
+	g_free (cself);
+}
 
-void 
-rsvg_filter_primitive_gaussian_blur_free (RsvgFilterPrimitive *self);
-
-void 
-rsvg_start_filter_primitive_gaussian_blur (RsvgHandle *ctx, const xmlChar **atts) {
+void
+rsvg_start_filter_primitive_gaussian_blur (RsvgHandle * ctx,
+										   const xmlChar ** atts)
+{
 	int i;
-
+	
 	double font_size;
-	RsvgFilterPrimitiveGaussianBlur * filter;
+	RsvgFilterPrimitiveGaussianBlur *filter;
 
 	if (ctx->n_state > 0)
 		font_size = rsvg_state_current (ctx)->font_size;
 	else
 		font_size = 12.0;
+	
+	filter = g_new (RsvgFilterPrimitiveGaussianBlur, 1);
 
-	filter = g_new(RsvgFilterPrimitiveGaussianBlur, 1);
-
-	filter->super.in = g_string_new("none");
-	filter->super.result = g_string_new("none");
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
 	filter->super.sizedefaults = 1;
 	filter->sdx = 0;
 	filter->sdy = 0;
-
+	
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
-					if (!strcmp ((char *)atts[i], "in"))
-						g_string_assign(filter->super.in, (char *)atts[i + 1]);
-
-					else if (!strcmp ((char *)atts[i], "result"))
-						g_string_assign(filter->super.result, (char *)atts[i + 1]);
-					else if (!strcmp ((char *)atts[i], "x")){
-						filter->super.x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}
-					else if (!strcmp ((char *)atts[i], "y")){
-						filter->super.y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}
-					else if (!strcmp ((char *)atts[i], "width")){
-						filter->super.width = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;					
-					}
-					else if (!strcmp ((char *)atts[i], "height")){
-						filter->super.height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}			
-					else if (!strcmp ((char *)atts[i], "stdDeviation"))
-						rsvg_css_parse_number_optional_number((char *)atts[i + 1], &filter->sdx, &filter->sdy);	
+					if (!strcmp ((char *) atts[i], "in"))
+						g_string_assign (filter->super.in, (char *) atts[i + 1]);
+					
+					else if (!strcmp ((char *) atts[i], "result"))
+						g_string_assign (filter->super.result, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "x"))
+						{
+							filter->super.x =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "y"))
+						{
+							filter->super.y =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "width"))
+						{
+							filter->super.width =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "height"))
+						{
+							filter->super.height =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "stdDeviation"))
+						rsvg_css_parse_number_optional_number ((char *) atts[i + 1],
+															   &filter->sdx,
+															   &filter->sdy);
 				}
 		}
 
 	filter->super.render = &rsvg_filter_primitive_gaussian_blur_render;
 	filter->super.free = &rsvg_filter_primitive_gaussian_blur_free;
-
-	g_ptr_array_add(((RsvgFilter *)(ctx->currentfilter))->primitives, &filter->super);
-}
-
-void 
-rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx) {
-	guchar ch;
-	gint x,y;
-	gint i, j;
-	gint rowstride, height, width;
-	FPBox boundarys;
-
-	guchar *in_pixels;
-	guchar *output_pixels;
-
-	RsvgFilterPrimitiveGaussianBlur *cself;
-
-	GdkPixbuf *output;
-	GdkPixbuf *in;
-
-	gint sx, sy, kx, ky, kw, kh;
-	guchar sval;
-	double kval, sum;
-
-	cself = (RsvgFilterPrimitiveGaussianBlur *) self;
-	boundarys = rsvg_filter_primitive_get_bounds(self, ctx);
-
-	in = rsvg_filter_get_in(self->in, ctx);
-	in_pixels = gdk_pixbuf_get_pixels(in);	
-
-	height = gdk_pixbuf_get_height(in);
-	width = gdk_pixbuf_get_width(in);
-
-	rowstride = gdk_pixbuf_get_rowstride(in);
-
-	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-							 width, height);
-	clear_pixbuf(output);
-
-	double sdx, sdy;
-
-	/*scale the SD values*/
-	sdx = cself->sdx * ctx->paffine[0];
-	sdy = cself->sdy * ctx->paffine[3];
-
-	double pi = 3.141592653589793238;
-
-	kw = kh = 0;
-
-	/*find out the required x size for the kernel matrix*/
-
-	for (i = 1; i < 20; i++){
-		if (exp(-(i*i)/(2*sdx*sdx))/sqrt(2*pi*sdx*sdx) < 0.0001){
-			kw = 2 * (i - 1);
-			break;
-		}
-	}
-
-	/*find out the required y size for the kernel matrix*/
-	for (i = 1; i < 20; i++){
-		if (exp(-(i*i)/(2*sdy*sdy))/sqrt(2*pi*sdy*sdy) < 0.0001){
-			kh = 2 * (i - 1);
-			break;
-		}
-	}
-
-	double *KernelMatrix;
-	KernelMatrix = g_new(double, kw * kh);
-
-	/*create the kernel matrix*/
-	for (i = 0; i < kh; i++){
-		for (j = 0; j < kw; j++){
-			KernelMatrix[j + i * kw] = 
-				(exp(-((j-kw/2)*(j-kw/2))/(2*sdx*sdx))/sqrt(2*pi*sdx*sdx))*
-				(exp(-((i-kh/2)*(i-kh/2))/(2*sdy*sdy))/sqrt(2*pi*sdy*sdy));
-		}
-	}
-
-	/*find out the total of the values of the matrix*/
-	double divisor;
-	divisor = 0;
-	for (j = 0; j < kw; j++)
-		for (i = 0; i < kh; i++)
-			divisor += KernelMatrix[j + i * kw];
-
-
-	output_pixels = gdk_pixbuf_get_pixels(output);
 	
-	gint tempresult;
-
-	for (y = boundarys.y1; y < boundarys.y2; y++)
-		for (x = boundarys.x1; x < boundarys.x2 ; x++)
-			for (ch = 0; ch < 4; ch++){
-				sum = 0;
-				for (i = 0; i < kh; i++)
-					for (j = 0; j < kw; j++){
-						sx = x + j;
-						sy = y + i;
-						if (sx < boundarys.x1 || sx > boundarys.x2 || 
-							sy < boundarys.y1 || sy > boundarys.y2)
-							continue;
-						kx = kw - j - 1;
-						ky = kh - i - 1;
-						sval = in_pixels[4 * sx + sy * rowstride + ch];
-						kval = KernelMatrix[kx + ky * kw];
-						sum += (double)sval * kval;
-					}
-				tempresult =  sum / divisor; 
-				if (tempresult > 255)
-					tempresult = 255;
-				if (tempresult < 0)
-					tempresult = 0;
-				
-				output_pixels[4 * x + y * rowstride + ch] = tempresult;
-			}
-	rsvg_filter_store_result (self->result, output, ctx);
-	
-	g_object_unref(G_OBJECT(in));
-	g_object_unref(G_OBJECT(output));
-	g_free(KernelMatrix);
+	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
+					 &filter->super);
 }
 
-void 
-rsvg_filter_primitive_gaussian_blur_free (RsvgFilterPrimitive * self){
-	RsvgFilterPrimitiveGaussianBlur *cself;
-	cself = (RsvgFilterPrimitiveGaussianBlur *)self;
-	g_string_free(self->result, TRUE);
-	g_string_free(self->in, TRUE);	
-	g_free(cself);
-}
+/*************************************************************/
+/*************************************************************/
 
 typedef struct _RsvgFilterPrimitiveOffset RsvgFilterPrimitiveOffset;
 
-struct _RsvgFilterPrimitiveOffset {
+struct _RsvgFilterPrimitiveOffset
+{
 	RsvgFilterPrimitive super;
 	gint dx, dy;
 };
 
-void 
-rsvg_filter_primitive_offset_free (RsvgFilterPrimitive * self);
-
-void 
-rsvg_filter_primitive_offset_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx);
-	
-void 
-rsvg_filter_primitive_offset_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx) {
+static void
+rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self,
+									 RsvgFilterContext * ctx)
+{
 	guchar ch;
-	gint x,y;
+	gint x, y;
 	gint rowstride, height, width;
 	FPBox boundarys;
-
+	
 	guchar *in_pixels;
 	guchar *output_pixels;
-
+	
 	RsvgFilterPrimitiveOffset *oself;
-
+	
 	GdkPixbuf *output;
 	GdkPixbuf *in;
-
-	oself = (RsvgFilterPrimitiveOffset *) self;
-	boundarys = rsvg_filter_primitive_get_bounds(self, ctx);
-
-	in = rsvg_filter_get_in(self->in, ctx);
-	in_pixels = gdk_pixbuf_get_pixels(in);	
-
-	height = gdk_pixbuf_get_height(in);
-	width = gdk_pixbuf_get_width(in);
-
-	rowstride = gdk_pixbuf_get_rowstride(in);
-
-	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-							 width, height);
-
-	clear_pixbuf(output);
-
-	output_pixels = gdk_pixbuf_get_pixels(output);
-
+	
 	int ox, oy;
-
+	
+	oself = (RsvgFilterPrimitiveOffset *) self;
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	in = rsvg_filter_get_in (self->in, ctx);
+	in_pixels = gdk_pixbuf_get_pixels (in);
+	
+	height = gdk_pixbuf_get_height (in);
+	width = gdk_pixbuf_get_width (in);
+	
+	rowstride = gdk_pixbuf_get_rowstride (in);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	
+	output_pixels = gdk_pixbuf_get_pixels (output);
+	
 	ox = ctx->paffine[0] * oself->dx;
 	oy = ctx->paffine[3] * oself->dy;
-
+	
 	for (y = boundarys.y1; y < boundarys.y2; y++)
-		for (x = boundarys.x1; x < boundarys.x2 ; x++){
-			if (x - ox< boundarys.x1 || y - oy >= boundarys.x2)
-				continue;
-			if (y - oy < boundarys.y1 || y - oy >= boundarys.y2)
-				continue;
-			for (ch = 0; ch < 4; ch++){
-				output_pixels[y * rowstride + x * 4 + ch] =
-					in_pixels[(y - oy) * rowstride + (x - ox) * 4 + ch];
+		for (x = boundarys.x1; x < boundarys.x2; x++)
+			{
+				if (x - ox < boundarys.x1 || y - oy >= boundarys.x2)
+					continue;
+				if (y - oy < boundarys.y1 || y - oy >= boundarys.y2)
+					continue;
+				for (ch = 0; ch < 4; ch++)
+					{
+						output_pixels[y * rowstride + x * 4 + ch] =
+							in_pixels[(y - oy) * rowstride + (x - ox) * 4 + ch];
+					}
 			}
-		}
 	rsvg_filter_store_result (self->result, output, ctx);
 	
-	g_object_unref(G_OBJECT(in));
-	g_object_unref(G_OBJECT(output));
+	g_object_unref (G_OBJECT (in));
+	g_object_unref (G_OBJECT (output));
 }
 
-
-void 
-rsvg_filter_primitive_offset_free (RsvgFilterPrimitive * self){
+static void
+rsvg_filter_primitive_offset_free (RsvgFilterPrimitive * self)
+{
 	RsvgFilterPrimitiveOffset *oself;
-	oself = (RsvgFilterPrimitiveOffset *)self;
-	g_string_free(self->result, TRUE);
-	g_string_free(self->in, TRUE);	
-	g_free(oself);
+	
+	oself = (RsvgFilterPrimitiveOffset *) self;
+	g_string_free (self->result, TRUE);
+	g_string_free (self->in, TRUE);
+	g_free (oself);
 }
 
-void 
-rsvg_start_filter_primitive_offset (RsvgHandle *ctx, const xmlChar **atts) {
+void
+rsvg_start_filter_primitive_offset (RsvgHandle * ctx, const xmlChar ** atts)
+{
 	int i;
-
+	
 	double font_size;
-	RsvgFilterPrimitiveOffset * filter;
-
+	RsvgFilterPrimitiveOffset *filter;
+	
 	if (ctx->n_state > 0)
 		font_size = rsvg_state_current (ctx)->font_size;
 	else
 		font_size = 12.0;
-
-	filter = g_new(RsvgFilterPrimitiveOffset, 1);
-
-	filter->super.in = g_string_new("none");
-	filter->super.result = g_string_new("none");
+	
+	filter = g_new (RsvgFilterPrimitiveOffset, 1);
+	
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
 	filter->super.sizedefaults = 1;
 	filter->dy = 0;
 	filter->dx = 0;
-
+	
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
-					if (!strcmp ((char *)atts[i], "in"))
-						g_string_assign(filter->super.in, (char *)atts[i + 1]);
-
-					else if (!strcmp ((char *)atts[i], "result"))
-						g_string_assign(filter->super.result, (char *)atts[i + 1]);
-					else if (!strcmp ((char *)atts[i], "x")){
-						filter->super.x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}
-					else if (!strcmp ((char *)atts[i], "y")){
-						filter->super.y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}
-					else if (!strcmp ((char *)atts[i], "width")){
-						filter->super.width = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;					
-					}
-					else if (!strcmp ((char *)atts[i], "height")){
-						filter->super.height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}	
-					else if (!strcmp ((char *)atts[i], "dx"))
-						filter->dx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-					else if (!strcmp ((char *)atts[i], "dy"))
-						filter->dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
+					if (!strcmp ((char *) atts[i], "in"))
+						g_string_assign (filter->super.in, (char *) atts[i + 1]);
+					
+					else if (!strcmp ((char *) atts[i], "result"))
+						g_string_assign (filter->super.result, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "x"))
+						{
+							filter->super.x =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "y"))
+						{
+							filter->super.y =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "width"))
+						{
+							filter->super.width =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "height"))
+						{
+							filter->super.height =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "dx"))
+						filter->dx =
+							rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+															  ctx->dpi,
+															  (gdouble) ctx->width,
+															  font_size);
+					else if (!strcmp ((char *) atts[i], "dy"))
+						filter->dy =
+							rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+															  ctx->dpi,
+															  (gdouble) ctx->width,
+															  font_size);
 				}
 		}
-
+	
 	filter->super.render = &rsvg_filter_primitive_offset_render;
 	filter->super.free = &rsvg_filter_primitive_offset_free;
-
-	g_ptr_array_add(((RsvgFilter *)(ctx->currentfilter))->primitives, &filter->super);
+	
+	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
+					 &filter->super);
 }
+
+/*************************************************************/
+/*************************************************************/
 
 typedef struct _RsvgFilterPrimitiveMerge RsvgFilterPrimitiveMerge;
 
-struct _RsvgFilterPrimitiveMerge {
+struct _RsvgFilterPrimitiveMerge
+{
 	RsvgFilterPrimitive super;
 	GPtrArray *nodes;
 };
 
-void 
-rsvg_filter_primitive_merge_free (RsvgFilterPrimitive * self);
-
-void 
-rsvg_filter_primitive_merge_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx);
-	
-void 
-rsvg_filter_primitive_merge_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx) {	
+static void
+rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self,
+									RsvgFilterContext * ctx)
+{
 	guint i;
 	FPBox boundarys;
-
+	
 	RsvgFilterPrimitiveMerge *mself;
-
+	
 	GdkPixbuf *output;
 	GdkPixbuf *in;
-
+	
 	mself = (RsvgFilterPrimitiveMerge *) self;
-	boundarys = rsvg_filter_primitive_get_bounds(self, ctx);
-
-
-	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-							 ctx->width, ctx->height);
-	clear_pixbuf(output);
-
-	for (i = 0; i < mself->nodes->len; i++){
-		in = rsvg_filter_get_in(g_ptr_array_index(mself->nodes, i), ctx);
-		alpha_blt(in, boundarys.x1, boundarys.y1, boundarys.x2 - boundarys.x1, boundarys.y2 - boundarys.y1, output, boundarys.x1, boundarys.y1);
-		g_object_unref(G_OBJECT(in));
-	}
-		
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, ctx->width, ctx->height);
+	
+	for (i = 0; i < mself->nodes->len; i++)
+		{
+			in = rsvg_filter_get_in (g_ptr_array_index (mself->nodes, i), ctx);
+			alpha_blt (in, boundarys.x1, boundarys.y1, boundarys.x2 - boundarys.x1,
+					   boundarys.y2 - boundarys.y1, output, boundarys.x1,
+					   boundarys.y1);
+			g_object_unref (G_OBJECT (in));
+		}
+	
 	rsvg_filter_store_result (self->result, output, ctx);
 	
-	g_object_unref(G_OBJECT(output));
+	g_object_unref (G_OBJECT (output));
 }
 
-
-void 
-rsvg_filter_primitive_merge_free (RsvgFilterPrimitive * self){
+static void
+rsvg_filter_primitive_merge_free (RsvgFilterPrimitive * self)
+{
 	RsvgFilterPrimitiveMerge *mself;
-	mself = (RsvgFilterPrimitiveMerge *)self;
-	g_string_free(self->result, TRUE);
 	guint i;
+	
+	mself = (RsvgFilterPrimitiveMerge *) self;
+	g_string_free (self->result, TRUE);
+	
 	for (i = 0; i < mself->nodes->len; i++)
-		g_string_free(g_ptr_array_index(mself->nodes, i), TRUE);
-	g_ptr_array_free(mself->nodes, FALSE);
-	g_free(mself);
+		g_string_free (g_ptr_array_index (mself->nodes, i), TRUE);
+	g_ptr_array_free (mself->nodes, FALSE);
+	g_free (mself);
 }
 
-void 
-rsvg_start_filter_primitive_merge (RsvgHandle *ctx, const xmlChar **atts) {
+void
+rsvg_start_filter_primitive_merge (RsvgHandle * ctx, const xmlChar ** atts)
+{
 	int i;
-
+	
 	double font_size;
-	RsvgFilterPrimitiveMerge * filter;
-
+	RsvgFilterPrimitiveMerge *filter;
+	
 	if (ctx->n_state > 0)
 		font_size = rsvg_state_current (ctx)->font_size;
 	else
 		font_size = 12.0;
-
-	filter = g_new(RsvgFilterPrimitiveMerge, 1);
-
-	filter->super.result = g_string_new("none");
+	
+	filter = g_new (RsvgFilterPrimitiveMerge, 1);
+	
+	filter->super.result = g_string_new ("none");
 	filter->super.sizedefaults = 1;
-	filter->nodes = g_ptr_array_new();
+	filter->nodes = g_ptr_array_new ();
 
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
-					if (!strcmp ((char *)atts[i], "result"))
-						g_string_assign(filter->super.result, (char *)atts[i + 1]);
-					else if (!strcmp ((char *)atts[i], "x")){
-						filter->super.x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}
-					else if (!strcmp ((char *)atts[i], "y")){
-						filter->super.y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}
-					else if (!strcmp ((char *)atts[i], "width")){
-						filter->super.width = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;					
-					}
-					else if (!strcmp ((char *)atts[i], "height")){
-						filter->super.height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}	
+					if (!strcmp ((char *) atts[i], "result"))
+						g_string_assign (filter->super.result, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "x"))
+						{
+							filter->super.x =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "y"))
+						{
+							filter->super.y =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "width"))
+						{
+							filter->super.width =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "height"))
+						{
+							filter->super.height =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
 				}
 		}
-
+	
 	filter->super.render = &rsvg_filter_primitive_merge_render;
 	filter->super.free = &rsvg_filter_primitive_merge_free;
-
-	g_ptr_array_add(((RsvgFilter *)(ctx->currentfilter))->primitives, &filter->super);
+	
+	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
+					 &filter->super);
 	ctx->currentmergefilter = filter;
 }
 
-void 
-rsvg_start_filter_primitive_merge_node (RsvgHandle *ctx, const xmlChar **atts) {
+void
+rsvg_start_filter_primitive_merge_node (RsvgHandle * ctx,
+										const xmlChar ** atts)
+{
 	int i;
-
+	
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
-					if (!strcmp ((char *)atts[i], "in"))
-						g_ptr_array_add(((RsvgFilterPrimitiveMerge *)(ctx->currentmergefilter))->nodes, 
-										g_string_new((char *)atts[i + 1]));
+					if (!strcmp ((char *) atts[i], "in"))
+						g_ptr_array_add (((RsvgFilterPrimitiveMerge *) (ctx->
+																		currentmergefilter))->
+										 nodes, g_string_new ((char *) atts[i + 1]));
 				}
 		}
 }
 
+/*************************************************************/
+/*************************************************************/
 
-typedef struct _RsvgFilterPrimitiveColourMatrix RsvgFilterPrimitiveColourMatrix;
+typedef struct _RsvgFilterPrimitiveColourMatrix
+RsvgFilterPrimitiveColourMatrix;
 
-struct _RsvgFilterPrimitiveColourMatrix {
+struct _RsvgFilterPrimitiveColourMatrix
+{
 	RsvgFilterPrimitive super;
 	double *KernelMatrix;
 	double divisor;
@@ -1509,242 +1694,233 @@ struct _RsvgFilterPrimitiveColourMatrix {
 	gboolean preservealpha;
 };
 
-void rsvg_start_filter_colour_matrix (RsvgHandle *ctx, const xmlChar **atts);
-void rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx);
-void rsvg_filter_primitive_colour_matrix_free (RsvgFilterPrimitive * self);
-
-void 
-rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx) {
+static void
+rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self,
+											RsvgFilterContext * ctx)
+{
 	guchar ch;
-	gint x,y;
+	gint x, y;
 	gint i;
 	gint rowstride, height, width;
 	FPBox boundarys;
-
+	
 	guchar *in_pixels;
 	guchar *output_pixels;
-
+	
 	RsvgFilterPrimitiveColourMatrix *cself;
-
+	
 	GdkPixbuf *output;
 	GdkPixbuf *in;
-
+	
 	double sum;
-
-	cself = (RsvgFilterPrimitiveColourMatrix *) self;
-	boundarys = rsvg_filter_primitive_get_bounds(self, ctx);
-
-	in = rsvg_filter_get_in(self->in, ctx);
-	in_pixels = gdk_pixbuf_get_pixels(in);	
-
-	height = gdk_pixbuf_get_height(in);
-	width = gdk_pixbuf_get_width(in);
-
-	rowstride = gdk_pixbuf_get_rowstride(in);
-
-	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-							 width, height);
-
-
-	clear_pixbuf(output);
-
-	output_pixels = gdk_pixbuf_get_pixels(output);
 	
 	gint tempresult;
 
+	cself = (RsvgFilterPrimitiveColourMatrix *) self;
+	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+	
+	in = rsvg_filter_get_in (self->in, ctx);
+	in_pixels = gdk_pixbuf_get_pixels (in);
+	
+	height = gdk_pixbuf_get_height (in);
+	width = gdk_pixbuf_get_width (in);
+	
+	rowstride = gdk_pixbuf_get_rowstride (in);
+	
+	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);	
+	output_pixels = gdk_pixbuf_get_pixels (output);   
+	
 	for (y = boundarys.y1; y < boundarys.y2; y++)
-		for (x = boundarys.x1; x < boundarys.x2 ; x++){
-			for (ch = 0; ch < 4; ch++){
-				sum = 0;
-				for (i = 0; i < 4; i++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
+			{
+				for (ch = 0; ch < 4; ch++)
 					{
-					sum += cself->KernelMatrix[ch * 5 + i] * 
-						in_pixels[4 * x + y * rowstride + i];
+						sum = 0;
+						for (i = 0; i < 4; i++)
+							{
+								sum += cself->KernelMatrix[ch * 5 + i] *
+									in_pixels[4 * x + y * rowstride + i];
+							}
+						sum += cself->KernelMatrix[ch * 5 + 4];
+						
+						tempresult = sum;
+						if (tempresult > 255)
+							tempresult = 255;
+						if (tempresult < 0)
+							tempresult = 0;
+						output_pixels[4 * x + y * rowstride + ch] = tempresult;
 					}
-				sum += cself->KernelMatrix[ch * 5 + 4];			
-
-				tempresult =  sum; 
-				if (tempresult > 255)
-					tempresult = 255;
-				if (tempresult < 0)
-					tempresult = 0;	
-				output_pixels[4 * x + y * rowstride + ch] = tempresult;
 			}
-		}
 	rsvg_filter_store_result (self->result, output, ctx);
 	
-	g_object_unref(G_OBJECT(in));
-	g_object_unref(G_OBJECT(output));
+	g_object_unref (G_OBJECT (in));
+	g_object_unref (G_OBJECT (output));
 }
 
-void 
-rsvg_filter_primitive_colour_matrix_free (RsvgFilterPrimitive * self){
+static void
+rsvg_filter_primitive_colour_matrix_free (RsvgFilterPrimitive * self)
+{
 	RsvgFilterPrimitiveColourMatrix *cself;
-	cself = (RsvgFilterPrimitiveColourMatrix *)self;
-	g_string_free(self->result, TRUE);
-	g_string_free(self->in, TRUE);	
-	g_free(cself->KernelMatrix);
-	g_free(cself);
+
+	cself = (RsvgFilterPrimitiveColourMatrix *) self;
+	g_string_free (self->result, TRUE);
+	g_string_free (self->in, TRUE);
+	g_free (cself->KernelMatrix);
+	g_free (cself);
 }
 
-
-void 
-rsvg_start_filter_primitive_colour_matrix (RsvgHandle *ctx, const xmlChar **atts) {
+void
+rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
+										   const xmlChar ** atts)
+{
 	int i;
 	int type;
 	double font_size;
-	RsvgFilterPrimitiveColourMatrix * filter;
-
+	RsvgFilterPrimitiveColourMatrix *filter;
+	
 	if (ctx->n_state > 0)
 		font_size = rsvg_state_current (ctx)->font_size;
 	else
 		font_size = 12.0;
-
-	filter = g_new(RsvgFilterPrimitiveColourMatrix, 1);
-
-	filter->super.in = g_string_new("none");
-	filter->super.result = g_string_new("none");
+	
+	filter = g_new (RsvgFilterPrimitiveColourMatrix, 1);
+	
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
 	filter->super.sizedefaults = 1;
-
+	
 	type = 0;
-
+	
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
-					if (!strcmp ((char *)atts[i], "in"))
-						g_string_assign(filter->super.in, (char *)atts[i + 1]);
-
-					else if (!strcmp ((char *)atts[i], "result"))
-						g_string_assign(filter->super.result, (char *)atts[i + 1]);
-
-					else if (!strcmp ((char *)atts[i], "x")){
-						filter->super.x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}
-					else if (!strcmp ((char *)atts[i], "y")){
-						filter->super.y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					}
-					else if (!strcmp ((char *)atts[i], "width")){
-						filter->super.width = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;					
-					}
-					else if (!strcmp ((char *)atts[i], "height")){
-						filter->super.height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
-						filter->super.sizedefaults = 0;
-					} 	
-					else if (!strcmp ((char *)atts[i], "values"))
-						filter->KernelMatrix = rsvg_css_parse_number_list((char *)atts[i + 1], NULL);
-					else if(!strcmp ((char *)atts[i], "type")){
-						if(!strcmp ((char *)atts[i + 1], "matrix"))
-							type = 0;
-						else if (!strcmp ((char *)atts[i+1], "saturate"))
-							type = 1;
-						else if (!strcmp ((char *)atts[i+1], "hueRotate"))
-							type = 2;
-						else if (!strcmp ((char *)atts[i+1], "luminanceToAlpha"))
-							type = 3;
-						else
-							type = 0;
-					}
-				}
-			
+					if (!strcmp ((char *) atts[i], "in"))
+						g_string_assign (filter->super.in, (char *) atts[i + 1]);					
+					else if (!strcmp ((char *) atts[i], "result"))
+						g_string_assign (filter->super.result, (char *) atts[i + 1]);
+					else if (!strcmp ((char *) atts[i], "x"))
+						{
+							filter->super.x =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "y"))
+						{
+							filter->super.y =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "width"))
+						{
+							filter->super.width =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "height"))
+						{
+							filter->super.height =
+								rsvg_css_parse_normalized_length ((char *) atts[i + 1],
+																  ctx->dpi,
+																  (gdouble) ctx->width,
+																  font_size);
+							filter->super.sizedefaults = 0;
+						}
+					else if (!strcmp ((char *) atts[i], "values"))
+						filter->KernelMatrix =
+							rsvg_css_parse_number_list ((char *) atts[i + 1], NULL);
+					else if (!strcmp ((char *) atts[i], "type"))
+						{
+							if (!strcmp ((char *) atts[i + 1], "matrix"))
+								type = 0;
+							else if (!strcmp ((char *) atts[i + 1], "saturate"))
+								type = 1;
+							else if (!strcmp ((char *) atts[i + 1], "hueRotate"))
+								type = 2;
+							else if (!strcmp ((char *) atts[i + 1], "luminanceToAlpha"))
+								type = 3;
+							else
+								type = 0;
+						}
+				}			
 		}
-	
-	if (type == 1){
-		float s;
-		s = filter->KernelMatrix[0];
-		g_free(filter->KernelMatrix);
-		filter->KernelMatrix = g_new(double, 20);
-		filter->KernelMatrix[0] = 0.213 + 0.787 * s;
-		filter->KernelMatrix[1] = 0.715 - 0.715 * s;
-		filter->KernelMatrix[2] = 0.072 - 0.072 * s;
-		filter->KernelMatrix[3] = 0;
-		filter->KernelMatrix[4] = 0;
-		filter->KernelMatrix[5] = 0.213 - 0.213 * s;
-		filter->KernelMatrix[6] = 0.715 + 0.285 * s;
-		filter->KernelMatrix[7] = 0.072 - 0.072 * s;
-		filter->KernelMatrix[8] = 0;
-		filter->KernelMatrix[9] = 0;
-		filter->KernelMatrix[10] = 0.213 - 0.213 * s;
-		filter->KernelMatrix[11] = 0.715 - 0.715 * s;
-		filter->KernelMatrix[12] = 0.072 + 0.928 * s;
-		filter->KernelMatrix[13] = 0;
-		filter->KernelMatrix[14] = 0;
-		filter->KernelMatrix[15] = 0;
-		filter->KernelMatrix[16] = 0;
-		filter->KernelMatrix[17] = 0;
-		filter->KernelMatrix[18] = 1;
-		filter->KernelMatrix[19] = 0;
-	}
-	if (type == 2){
-		double cosval, sinval;
-		cosval = cos(filter->KernelMatrix[0]);
-		sinval = sin(filter->KernelMatrix[0]);
-		g_free(filter->KernelMatrix);
-		filter->KernelMatrix = g_new(double, 20);
 
-		filter->KernelMatrix[0] = 0.213+cosval*0.787+sinval*-0.213;
-		filter->KernelMatrix[1] = 0.715+cosval*-0.715+sinval*-0.715;
-		filter->KernelMatrix[2] = 0.072+cosval*-0.072+sinval*0.928;
-		filter->KernelMatrix[3] = 0;
-		filter->KernelMatrix[4] = 0;
-		filter->KernelMatrix[5] = 0.213+cosval*-0.213+sinval*0.143;
-		filter->KernelMatrix[6] = 0.715+cosval*0.285+sinval*0.140;
-		filter->KernelMatrix[7] = 0.072+cosval*-0.072+sinval*-0.283;
-		filter->KernelMatrix[8] = 0;
-		filter->KernelMatrix[9] = 0;
-		filter->KernelMatrix[10] = 0.213+cosval*-0.213+sinval*-0.787;
-		filter->KernelMatrix[11] = 0.715+cosval*-0.715+sinval*0.715;
-		filter->KernelMatrix[12] = 0.072+cosval*0.928+sinval*0.072;
-		filter->KernelMatrix[13] = 0;
-		filter->KernelMatrix[14] = 0;
-		filter->KernelMatrix[15] = 0;
-		filter->KernelMatrix[16] = 0;
-		filter->KernelMatrix[17] = 0;
-		filter->KernelMatrix[18] = 1;
-		filter->KernelMatrix[19] = 0;
-	}	
-	if (type == 3){
-		if (filter->KernelMatrix != NULL)
-			g_free(filter->KernelMatrix);
-		filter->KernelMatrix = g_new(double, 20);
-		filter->KernelMatrix[0] = 0;
-		filter->KernelMatrix[1] = 0;
-		filter->KernelMatrix[2] = 0;
-		filter->KernelMatrix[3] = 0;
-		filter->KernelMatrix[4] = 0;
-		filter->KernelMatrix[5] = 0;
-		filter->KernelMatrix[6] = 0;
-		filter->KernelMatrix[7] = 0;
-		filter->KernelMatrix[8] = 0;
-		filter->KernelMatrix[9] = 0;
-		filter->KernelMatrix[10] = 0;
-		filter->KernelMatrix[11] = 0;
-		filter->KernelMatrix[12] = 0;
-		filter->KernelMatrix[13] = 0;
-		filter->KernelMatrix[14] = 0;
-		filter->KernelMatrix[15] = 0.2125;
-		filter->KernelMatrix[16] = 0.7154;
-		filter->KernelMatrix[17] = 0.0721;
-		filter->KernelMatrix[18] = 0;
-		filter->KernelMatrix[19] = 0;
-	}
+	if (type == 1)
+		{
+			float s;
+
+			s = filter->KernelMatrix[0];
+			g_free (filter->KernelMatrix);
+
+			filter->KernelMatrix = g_new0 (double, 20);
+
+			filter->KernelMatrix[0] = 0.213 + 0.787 * s;
+			filter->KernelMatrix[1] = 0.715 - 0.715 * s;
+			filter->KernelMatrix[2] = 0.072 - 0.072 * s;
+			filter->KernelMatrix[5] = 0.213 - 0.213 * s;
+			filter->KernelMatrix[6] = 0.715 + 0.285 * s;
+			filter->KernelMatrix[7] = 0.072 - 0.072 * s;
+			filter->KernelMatrix[10] = 0.213 - 0.213 * s;
+			filter->KernelMatrix[11] = 0.715 - 0.715 * s;
+			filter->KernelMatrix[12] = 0.072 + 0.928 * s;
+			filter->KernelMatrix[18] = 1;
+		}
+	if (type == 2)
+		{
+			double cosval, sinval;
+
+			cosval = cos (filter->KernelMatrix[0]);
+			sinval = sin (filter->KernelMatrix[0]);
+
+			g_free (filter->KernelMatrix);
+			filter->KernelMatrix = g_new0 (double, 20);
+			
+			filter->KernelMatrix[0] = 0.213 + cosval * 0.787 + sinval * -0.213;
+			filter->KernelMatrix[1] = 0.715 + cosval * -0.715 + sinval * -0.715;
+			filter->KernelMatrix[2] = 0.072 + cosval * -0.072 + sinval * 0.928;
+			filter->KernelMatrix[5] = 0.213 + cosval * -0.213 + sinval * 0.143;
+			filter->KernelMatrix[6] = 0.715 + cosval * 0.285 + sinval * 0.140;
+			filter->KernelMatrix[7] = 0.072 + cosval * -0.072 + sinval * -0.283;
+			filter->KernelMatrix[10] = 0.213 + cosval * -0.213 + sinval * -0.787;
+			filter->KernelMatrix[11] = 0.715 + cosval * -0.715 + sinval * 0.715;
+			filter->KernelMatrix[12] = 0.072 + cosval * 0.928 + sinval * 0.072;
+			filter->KernelMatrix[18] = 1;
+		}
+	if (type == 3)
+		{
+			if (filter->KernelMatrix != NULL)
+				g_free (filter->KernelMatrix);
+
+			filter->KernelMatrix = g_new0 (double, 20);
+
+			filter->KernelMatrix[15] = 0.2125;
+			filter->KernelMatrix[16] = 0.7154;
+			filter->KernelMatrix[17] = 0.0721;
+		}
 
 	filter->super.render = &rsvg_filter_primitive_colour_matrix_render;
 	filter->super.free = &rsvg_filter_primitive_colour_matrix_free;
-
-	g_ptr_array_add(((RsvgFilter *)(ctx->currentfilter))->primitives, &filter->super);
+	
+	g_ptr_array_add (((RsvgFilter *) (ctx->currentfilter))->primitives,
+					 &filter->super);
 }
 
 #if 0
 
 struct ComponentTransferData
 {
-	gdouble * tableValues;
+	gdouble *tableValues;
 	guint nbTableValues;
-
+	
 	gdouble slope;
 	gdouble intercept;
 	gdouble amplitude;
@@ -1752,74 +1928,91 @@ struct ComponentTransferData
 	gdouble offset;
 };
 
-typedef guint8 (*ComponentTransferFunc) (guint8 C, struct ComponentTransferData * user_data);
+typedef guint8 (*ComponentTransferFunc) (guint8 C,
+										 struct ComponentTransferData *
+										 user_data);
 
 static gdouble
-get_component_transfer_table_value(guint8 C, struct ComponentTransferData * user_data)
+get_component_transfer_table_value (guint8 C,
+									struct ComponentTransferData *user_data)
 {
 	guint k;
 	gdouble N;
-
-	for(k = 0; k < user_data->nbTableValues; k++) {
-		N = user_data->tableValues[k];
-
-		if(((k/N) <= C) && (C < (k+1)/N))
-			return k;
-	}
-
+	
+	for (k = 0; k < user_data->nbTableValues; k++)
+		{
+			N = user_data->tableValues[k];
+			
+			if (((k / N) <= C) && (C < (k + 1) / N))
+				return k;
+    }
+	
 	return 0;
 }
 
 static guint8
-identity_component_transfer_func(guint8 C, struct ComponentTransferData * user_data)
+identity_component_transfer_func (guint8 C,
+				  struct ComponentTransferData *user_data)
 {
 	return C;
 }
 
 static guint8
-table_component_transfer_func(guint8 C, struct ComponentTransferData * user_data)
+table_component_transfer_func (guint8 C,
+							   struct ComponentTransferData *user_data)
 {
 	guint k;
 	gdouble vk, vk1;
-
-	if(!user_data->nbTableValues)
+	
+	if (!user_data->nbTableValues)
 		return C;
-
-	k = get_component_transfer_table_value(C, user_data);
-
+	
+	k = get_component_transfer_table_value (C, user_data);
+	
 	vk = user_data->tableValues[k];
-	vk1 = user_data->tableValues[k+1];
-
-	return (vk + (C - (k/user_data->nbTableValues)) * user_data->nbTableValues * (vk1 - vk));
+	vk1 = user_data->tableValues[k + 1];
+	
+	return (vk +
+			(C -
+			 (k / user_data->nbTableValues)) * user_data->nbTableValues * (vk1 -
+																		   vk));
 }
 
 static guint8
-discrete_component_transfer_func(guint8 C, struct ComponentTransferData * user_data)
+discrete_component_transfer_func (guint8 C,
+								  struct ComponentTransferData *user_data)
 {
 	guint k;
-
-	if(!user_data->nbTableValues)
+	
+	if (!user_data->nbTableValues)
 		return C;
-
-	k = get_component_transfer_table_value(C, user_data);
-
-	return (guint8)user_data->tableValues[k];
+	
+	k = get_component_transfer_table_value (C, user_data);
+	
+  return (guint8) user_data->tableValues[k];
 }
 
 static guint8
-linear_component_transfer_func(guint8 C, struct ComponentTransferData * user_data)
+linear_component_transfer_func (guint8 C,
+								struct ComponentTransferData *user_data)
 {
 	return (user_data->slope * C) + user_data->intercept;
 }
 
 static guint8
-gamma_component_transfer_func(guint8 C, struct ComponentTransferData * user_data)
+gamma_component_transfer_func (guint8 C,
+							   struct ComponentTransferData *user_data)
 {
-	return user_data->amplitude * pow(C, user_data->exponent) + user_data->offset;
+	return user_data->amplitude * pow (C,
+									   user_data->exponent) + user_data->offset;
 }
 
-void rsvg_start_filter_component_transfer (RsvgHandle *ctx, const xmlChar **atts);
-void rsvg_filter_primitive_component_transer_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx);
-void rsvg_filter_primitive_component_transfer_free (RsvgFilterPrimitive * self);
+void rsvg_start_filter_component_transfer (RsvgHandle * ctx,
+										   const xmlChar ** atts);
+void rsvg_filter_primitive_component_transer_render (RsvgFilterPrimitive *
+													 self,
+													 RsvgFilterContext * ctx);
+void rsvg_filter_primitive_component_transfer_free (RsvgFilterPrimitive *
+													self);
 
 #endif

@@ -1,4 +1,10 @@
-2003-2-1  Caleb Moore <c.moore@student.unsw.edu.au>
+2003-02-03  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-filter.c: Start implementing ComponentTransfer filter
+	Indent, make code ansi-compliant
+	* rsvg-css.c: Tweak VBOX parsing, free unused string array properly
+	
+2003-02-01  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-syles.c: implemented filter groups using the same code as the opacity grops
 	* rsvg-private.h: added a current filter pointer for loading primitives in context
@@ -8,6 +14,7 @@
 	* rsvg-text.c: added the ability for text to use a filter if it needs to
 	* rsvg-filter.c: added new file
 	* rsvg-filter.h: added new file
+	
 2004-01-29  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: bug #132569

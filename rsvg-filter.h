@@ -47,22 +47,19 @@ struct _RsvgFilter {
 };
 
 void 
-rsvg_filter_free (RsvgDefVal *dself);
-
-void 
 rsvg_filter_render (RsvgFilter *self, GdkPixbuf *source, GdkPixbuf *bg, RsvgHandle *context);
 
 void 
 rsvg_start_filter (RsvgHandle *ctx, const xmlChar **atts);
 
 void 
-rsvg_start_filter_primitive_blend (RsvgHandle *ctx, const xmlChar **atts);
-
-void 
 rsvg_end_filter (RsvgHandle *ctx);
 
 RsvgFilter *
 rsvg_filter_parse (const RsvgDefs *defs, const char *str);
+
+void 
+rsvg_start_filter_primitive_blend (RsvgHandle *ctx, const xmlChar **atts);
 
 void 
 rsvg_start_filter_primitive_convolve_matrix (RsvgHandle *ctx, const xmlChar **atts);

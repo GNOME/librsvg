@@ -53,25 +53,24 @@ gboolean
 rsvg_css_parse_vbox (const char * vbox, double * x, double * y,
 					 double * w, double * h)
 {
-	gchar ** list;
+	gdouble * list;
 	guint list_len;
 
-	list = rsvg_css_parse_list(vbox, &list_len);
+	list = rsvg_css_parse_number_list(vbox, &list_len);
 
-	if(!list)
+	if(!(list && list_len))
 		return FALSE;
 	else if(list_len != 4) {
-		g_strfreev(list);
+		g_free(list);
 		return FALSE;
 	} 
 	else {
-		/* TODO: error checking */
-		*x = g_ascii_strtod(list[0], NULL);
-		*y = g_ascii_strtod(list[1], NULL);
-		*w = g_ascii_strtod(list[2], NULL);
-		*h = g_ascii_strtod(list[3], NULL);
+		*x = list[0];
+		*y = list[1];
+		*w = list[2];
+		*h = list[3];
 
-		g_strfreev(list);
+		g_free(list);
 		return TRUE;
 	}
 }
@@ -768,22 +767,31 @@ rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 #endif
 }
 
-double *
+gdouble *
 rsvg_css_parse_number_list(const char * in_str, guint * out_list_len){
 	gchar ** string_array;
-	double * output;
-	guint len;
+	gdouble * output;
+	guint len, i;
+
+	if(out_list_len)
+		*out_list_len = 0;
 
 	string_array = rsvg_css_parse_list(in_str, &len);
 
-	output = g_new(double, len);
-	guint i;
-	for (i = 0; i < len; i++){
+	if(!(string_array && len))
+		return NULL;
+
+	output = g_new(gdouble, len);
+
+	/* TODO: some error checking */
+	for (i = 0; i < len; i++)
 		output[i] = g_ascii_strtod(string_array[i], NULL);
-		g_free(string_array[i]);
-	}
+
+	g_strfreev(string_array);
+
 	if (out_list_len != NULL)
 		*out_list_len = len;
+
 	return output;
 }
 
