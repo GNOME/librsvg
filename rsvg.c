@@ -200,7 +200,6 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	    width = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	  else if (!strcmp ((char *)atts[i], "height"))	    
 	    height = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
-	    yoffset = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);	  
 	  else if (!strcmp ((char *)atts[i], "viewBox"))
 	    {
 	      /* todo: viewbox can have whitespace and/or comma but we're only likely to see
