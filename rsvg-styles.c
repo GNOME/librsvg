@@ -50,7 +50,7 @@ rsvg_state_init (RsvgState *state)
 	art_affine_identity (state->personal_affine);
 	state->mask = NULL;
 	state->opacity = 0xff;
-	state->fill = rsvg_paint_server_parse (NULL, "#000");
+	state->fill = rsvg_paint_server_parse (NULL, NULL, "#000");
 	state->fill_opacity = 0xff;
 	state->stroke_opacity = 0xff;
 	state->stroke_width = 1;
@@ -331,9 +331,12 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "fill"))
 		{
-			rsvg_paint_server_unref (state->fill);
-			state->fill = rsvg_paint_server_parse (ctx->defs, str + arg_off);
+			RsvgPaintServer * fill = state->fill;
+
+			state->fill = rsvg_paint_server_parse (parent_state->fill, ctx->defs, str + arg_off);
 			state->has_fill_server = TRUE;
+
+			rsvg_paint_server_unref (fill);
 		}
 	else if (rsvg_css_param_match (str, "fill-opacity"))
 		{
@@ -352,9 +355,12 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "stroke"))
 		{
-			rsvg_paint_server_unref (state->stroke);
-			state->stroke = rsvg_paint_server_parse (ctx->defs, str + arg_off);
+			RsvgPaintServer * stroke = state->stroke;
+
+			state->stroke = rsvg_paint_server_parse (parent_state->stroke, ctx->defs, str + arg_off);
 			state->has_stroke_server = TRUE;		
+
+			rsvg_paint_server_unref (stroke);
 		}
 	else if (rsvg_css_param_match (str, "stroke-width"))
 		{
@@ -490,7 +496,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "stop-color"))
 		{
 			state->has_stop_color = TRUE;
-			state->stop_color = rsvg_css_parse_color (str + arg_off);
+			state->stop_color = rsvg_css_parse_color (str + arg_off, parent_state->stop_color);
 		}
 	else if (rsvg_css_param_match (str, "stop-opacity"))
 		{

@@ -1,5 +1,9 @@
 2004-03-20  Dom Lachowicz <cinamod@hotmail.com>
 
+	* *: Set up framework for the "currentColor" and "inherit" colors
+	
+2004-03-20  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-css.c: Fix rgb percent handling for 
 	http://www.w3.org/Graphics/SVG/Test/20030813/htmlframe/full-color-prop-02-f.html
 	

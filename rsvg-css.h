@@ -45,7 +45,7 @@ int
 rsvg_css_param_arg_offset (const char *str);
 
 guint32
-rsvg_css_parse_color (const char *str);
+rsvg_css_parse_color (const char *str, guint32 inherit);
 
 guint
 rsvg_css_parse_opacity (const char *str);

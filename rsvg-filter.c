@@ -3126,7 +3126,7 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "flood-color")))
 				{
-							filter->colour = rsvg_css_parse_color (value);						
+							filter->colour = rsvg_css_parse_color (value, 0);						
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "flood-opacity")))
 				{
@@ -4529,7 +4529,7 @@ rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, RsvgPropertyBag 
 				rsvg_css_parse_number_optional_number (value,
 													   &filter->dx, &filter->dy);
 			if ((value = rsvg_property_bag_lookup (atts, "lighting-color")))
-				filter->lightingcolour = rsvg_css_parse_color (value);
+				filter->lightingcolour = rsvg_css_parse_color (value, 0);
 			if ((value = rsvg_property_bag_lookup (atts, "diffuseConstant")))
 				filter->diffuseConstant = 
 					g_ascii_strtod(value, NULL);
@@ -4726,7 +4726,7 @@ rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, RsvgPropertyBag
 					filter->super.sizedefaults = 0;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "lighting-color")))
-				filter->lightingcolour = rsvg_css_parse_color (value);
+				filter->lightingcolour = rsvg_css_parse_color (value, 0);
 			if ((value = rsvg_property_bag_lookup (atts, "specularConstant")))
 				filter->specularConstant = 
 					g_ascii_strtod(value, NULL);

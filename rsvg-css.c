@@ -230,7 +230,7 @@ rsvg_css_color_compare (const void * a, const void * b)
  * Parse a CSS2 color specifier, return RGB value
  */
 guint32
-rsvg_css_parse_color (const char *str)
+rsvg_css_parse_color (const char *str, guint32 inherit)
 {
 	gint val = 0;
 	
@@ -305,7 +305,9 @@ rsvg_css_parse_color (const char *str)
 			
 			val = PACK_RGB (r,g,b);
 		}
-	else
+	else if (!strcmp (str, "inherit"))
+		val = inherit;
+	else 
 		{
 			const static ColorPair color_list [] =
 				{
