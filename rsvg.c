@@ -1772,8 +1772,6 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
   char * d = NULL;
   xmlChar *path_atts[3];
 
-  double r1x, r1y, r2x, r2y, r3x, r3y, r4x, r4y;
-  
   rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
     {
@@ -1795,27 +1793,18 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
   if (cx < 0. || cy < 0. || rx <= 0. || ry <= 0.)
     return;
 
-  r1x = cx - rx ;
-  r1y = cy ;
-  r2x = cx + rx ; 
-  r2y = cy ;
-  r3x = cx ;
-  r3y = cy + ry ;
-  r4x = cx ;
-  r4y = cy - ry ;
-
-  /* approximate an ellipse using 4 bezier paths: todo: this is buggy */
+  /* approximate an ellipse using 4 bezier paths */
   d = g_strdup_printf ("M %f %f "
 		       "C %f %f %f %f %f %f "
 		       "C %f %f %f %f %f %f "
 		       "C %f %f %f %f %f %f "
 		       "C %f %f %f %f %f %f "
 		       "Z",
-		       r2x, r2y,
-		       r2x, ( r2y + r4y ) / 2., ( r2x + r4x ) / 2., r4y, r4x, r4y,
-		       ( r4x + r1x ) / 2., r4y, r1x, ( r1y + r4y ) / 2., r1x, r1y,
-		       r1x, ( r1y + r3y ) / 2., ( r1x + r3x ) / 2., r3y, r3x, r3y,
-		       ( r3x + r2x ) / 2., r3y, r2x, ( r3y + r2y ) / 2., r2x, r2y
+		       cx + rx, cy,
+		       cx + rx, cy - RSVG_ARC_MAGIC * ry, cx + RSVG_ARC_MAGIC * rx, cy - ry, cx, cy - ry,
+		       cx - RSVG_ARC_MAGIC * rx, cy - ry, cx - rx, cy - RSVG_ARC_MAGIC * ry, cx - rx, cy,
+		       cx - rx, cy + RSVG_ARC_MAGIC * ry, cx - RSVG_ARC_MAGIC * rx, cy + ry, cx, cy + ry,
+		       cx + RSVG_ARC_MAGIC * rx, cy + ry, cx + rx, cy + RSVG_ARC_MAGIC * ry, cx + rx, cy
 		       );
 
   path_atts[0] = (xmlChar*)"d";
