@@ -39,6 +39,7 @@
 
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
+/*
 static guint32
 rsvg_state_current_color (RsvgState * cur_state, RsvgState * parent_state)
 {
@@ -52,6 +53,7 @@ rsvg_state_current_color (RsvgState * cur_state, RsvgState * parent_state)
 	
 	return 0;
 }
+*/
 
 gdouble
 rsvg_viewport_percentage (gdouble width, gdouble height)
@@ -364,22 +366,13 @@ rsvg_state_finalize (RsvgState *state)
 static void
 rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 {
-	RsvgState * parent_state;
 	int arg_off;
 	
-	parent_state = rsvg_state_parent (ctx);
 	arg_off = rsvg_css_param_arg_offset (str);
 
 	if (rsvg_css_param_match (str, "color"))
 		{
-			RsvgState * parent_state = rsvg_state_parent (ctx);
-			
-			if (parent_state)
-				state->current_color = rsvg_css_parse_color (str + arg_off, parent_state->current_color);
-			else
-				state->current_color = rsvg_css_parse_color (str + arg_off, 0);
-
-			state->has_current_color = TRUE;
+				state->current_color = rsvg_css_parse_color (str + arg_off, &state->has_current_color);
 		}
 	else if (rsvg_css_param_match (str, "opacity"))
 		{
@@ -452,15 +445,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "fill"))
 		{
 			RsvgPaintServer * fill = state->fill;
-			guint32 current_color = rsvg_state_current_color (state, parent_state);
-
-			if (parent_state)
-				state->fill = rsvg_paint_server_parse (parent_state->fill, ctx->defs, str + arg_off, current_color);
-			else
-				state->fill = rsvg_paint_server_parse (NULL, ctx->defs, str + arg_off, current_color);
-
-			state->has_fill_server = TRUE;
-
+			state->fill = rsvg_paint_server_parse (&state->has_fill_server, ctx->defs, str + arg_off, 0);
 			rsvg_paint_server_unref (fill);
 		}
 	else if (rsvg_css_param_match (str, "fill-opacity"))
@@ -491,14 +476,8 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "stroke"))
 		{
 			RsvgPaintServer * stroke = state->stroke;
-			guint32 current_color = rsvg_state_current_color (state, parent_state);
 
-			if (parent_state)
-				state->stroke = rsvg_paint_server_parse (parent_state->stroke, ctx->defs, str + arg_off, current_color);
-			else
-				state->stroke = rsvg_paint_server_parse (NULL, ctx->defs, str + arg_off, current_color);
-
-			state->has_stroke_server = TRUE;		
+			state->stroke = rsvg_paint_server_parse (&state->has_stroke_server, ctx->defs, str + arg_off, 0);
 
 			rsvg_paint_server_unref (stroke);
 		}
@@ -542,14 +521,18 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			state->font_size =  rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi_y, 
 																  (gdouble)ctx->height, state->font_size);
 			state->has_font_size = TRUE;
+			if (ctx != NULL)
+				{
+					((RsvgDimentionData *)g_slist_nth(ctx->dimentions, 
+													  0)->data)->em 
+						= state->font_size;
+				}
 		}
 	else if (rsvg_css_param_match (str, "font-family"))
 		{
-			char * save = g_strdup (rsvg_css_parse_font_family (str + arg_off, 
-																(parent_state ? parent_state->font_family : RSVG_DEFAULT_FONT)));
+			char * save = g_strdup (rsvg_css_parse_font_family (str + arg_off, &state->has_font_family));
 			g_free (state->font_family);
 			state->font_family = save;
-			state->has_font_family = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "xml:lang"))
 		{
@@ -560,34 +543,26 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "font-style"))
 		{
-			state->font_style = rsvg_css_parse_font_style (str + arg_off, 
-														   (parent_state ? parent_state->font_style : PANGO_STYLE_NORMAL));
-			state->has_font_style = TRUE;
+			state->font_style = rsvg_css_parse_font_style (str + arg_off, &state->has_font_style);
 		}
 	else if (rsvg_css_param_match (str, "font-variant"))
 		{
-			state->font_variant = rsvg_css_parse_font_variant (str + arg_off, 
-															   (parent_state ? parent_state->font_variant : PANGO_VARIANT_NORMAL));
-			state->has_font_variant = TRUE;
+			state->font_variant = rsvg_css_parse_font_variant (str + arg_off, &state->has_font_variant);
 		}
 	else if (rsvg_css_param_match (str, "font-weight"))
 		{
-			state->font_weight = rsvg_css_parse_font_weight (str + arg_off, 
-															 (parent_state ? parent_state->font_weight : PANGO_WEIGHT_NORMAL));
-			state->has_font_weight = TRUE;
+			state->font_weight = rsvg_css_parse_font_weight (str + arg_off, &state->has_font_weight);
 		}
 	else if (rsvg_css_param_match (str, "font-stretch"))
 		{
-			state->font_stretch = rsvg_css_parse_font_stretch (str + arg_off, 
-															   (parent_state ? parent_state->font_stretch : PANGO_STRETCH_NORMAL));
-			state->has_font_stretch = TRUE;
+			state->font_stretch = rsvg_css_parse_font_stretch (str + arg_off, &state->has_font_stretch);
 		}
 	else if (rsvg_css_param_match (str, "text-decoration"))
 		{
 			if (!strcmp (str + arg_off, "inherit"))
 				{
 					state->has_font_decor = FALSE;
-					state->font_decor = (parent_state ? parent_state->font_decor : TEXT_NORMAL);
+					state->font_decor = TEXT_NORMAL;
 				}
 			else 
 				{
@@ -605,7 +580,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			state->has_text_dir = TRUE;
 			if (!strcmp (str + arg_off, "inherit"))
 				{
-					state->text_dir = (parent_state ? parent_state->text_dir : PANGO_DIRECTION_LTR);
+					state->text_dir = PANGO_DIRECTION_LTR;
 					state->has_text_dir = FALSE;
 				}
 			else if (!strcmp (str + arg_off, "rtl"))
@@ -618,7 +593,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			state->has_unicode_bidi = TRUE;
 			if (!strcmp (str + arg_off, "inherit"))
 				{
-					state->unicode_bidi = (parent_state ? parent_state->unicode_bidi : PANGO_DIRECTION_LTR);
+					state->unicode_bidi = PANGO_DIRECTION_LTR;
 					state->has_unicode_bidi = FALSE;
 				}
 			else if (!strcmp (str + arg_off, "embed"))
@@ -634,7 +609,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 
 			state->has_text_dir = TRUE;
 			if (!strcmp (str + arg_off, "inherit")) {
-				state->text_dir = parent_state->text_dir;
+				state->text_dir = PANGO_DIRECTION_LTR;
 				state->has_text_dir = FALSE;
 			}
 			else if (!strcmp (str + arg_off, "lr-tb") ||
@@ -653,7 +628,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			state->has_text_anchor = TRUE;
 			if (!strcmp (str + arg_off, "inherit"))
 				{
-					state->text_anchor = (parent_state ? parent_state->text_anchor : TEXT_ANCHOR_START);
+					state->text_anchor = TEXT_ANCHOR_START;
 					state->has_text_anchor = FALSE;
 				}
 			else 
@@ -668,11 +643,9 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "stop-color"))
 		{
-			guint32 current_color = rsvg_state_current_color (state, parent_state);
 			if (strcmp(str + arg_off, "inherit"))
 				{
-					state->has_stop_color = TRUE;
-					state->stop_color = rsvg_css_parse_color (str + arg_off, current_color);
+					state->stop_color = rsvg_css_parse_color (str + arg_off, &state->has_stop_color);
 				}
 		}
 	else if (rsvg_css_param_match (str, "stop-opacity"))
@@ -1255,14 +1228,13 @@ rsvg_parse_transform_attr (RsvgHandle *ctx, RsvgState *state, const char *str)
 }
 
 static gboolean
-rsvg_lookup_apply_css_style (RsvgHandle *ctx, const char * target)
+rsvg_lookup_apply_css_style (RsvgHandle *ctx, const char * target, RsvgState *state)
 {
 	const char * value = (const char *)g_hash_table_lookup (ctx->css_props, target);
 	
 	if (value != NULL)
 		{
-			rsvg_parse_style (ctx, rsvg_state_current(ctx),
-							  value);
+			rsvg_parse_style (ctx, state, value);
 			return TRUE;
 		}
 	return FALSE;
@@ -1304,25 +1276,25 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 	 */
 
 	/* * */
-	rsvg_lookup_apply_css_style (ctx, "*");
+	rsvg_lookup_apply_css_style (ctx, "*", state);
 
 	/* #id */
 	if (id != NULL)
 		{
 			target = g_strdup_printf ("#%s", id);
-			rsvg_lookup_apply_css_style (ctx, target);
+			rsvg_lookup_apply_css_style (ctx, target, state);
 			g_free (target);
 		}
 
 	/* tag */
 	if (tag != NULL)
-		rsvg_lookup_apply_css_style (ctx, tag);
+		rsvg_lookup_apply_css_style (ctx, tag, state);
 
 	/* tag#id */
 	if (tag != NULL && id != NULL)
 		{
 			target = g_strdup_printf ("%s#%s", tag, id);
-			rsvg_lookup_apply_css_style (ctx, target);
+			rsvg_lookup_apply_css_style (ctx, target, state);
 			g_free (target);
 		}
 	
@@ -1344,7 +1316,7 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 					if (tag != NULL && klazz_list->len != 1)
 						{
 							target = g_strdup_printf ("%s%s", tag, klazz_list->str);
-							found = found || rsvg_lookup_apply_css_style (ctx, target);
+							found = found || rsvg_lookup_apply_css_style (ctx, target, state);
 							g_free (target);
 						}
 					
@@ -1352,13 +1324,13 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 					if (tag != NULL && klazz_list->len != 1 && id != NULL)
 						{
 							target = g_strdup_printf ("%s%s#%s", tag, klazz_list->str, id);
-							found = found || rsvg_lookup_apply_css_style (ctx, target);
+							found = found || rsvg_lookup_apply_css_style (ctx, target, state);
 							g_free (target);
 						}
 					
 					/* didn't find anything more specific, just apply the class style */
 					if (!found) {
-						found = found || rsvg_lookup_apply_css_style (ctx, klazz_list->str);
+						found = found || rsvg_lookup_apply_css_style (ctx, klazz_list->str, state);
 					}
 					g_string_free (klazz_list, TRUE);
 				}
@@ -1392,7 +1364,7 @@ rsvg_pixmap_destroy (gchar *pixels, gpointer data)
  * stack.
  **/
 void
-rsvg_push_discrete_layer (RsvgHandle *ctx)
+rsvg_push_discrete_layer (DrawingCtx *ctx)
 {
 	RsvgState *state;
 	GdkPixbuf *pixbuf;
@@ -1446,7 +1418,7 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 }
 
 static void
-rsvg_use_opacity (RsvgHandle *ctx, int opacity, 
+rsvg_use_opacity (DrawingCtx *ctx, int opacity, 
 				  GdkPixbuf *tos, GdkPixbuf *nos)
 {
 	art_u8 *tos_pixels, *nos_pixels;
@@ -1522,7 +1494,7 @@ get_next_out(gint * operationsleft, GdkPixbuf * in, GdkPixbuf * tos,
 }
 
 static GdkPixbuf *
-rsvg_compile_bg(RsvgHandle *ctx, RsvgState *topstate)
+rsvg_compile_bg(DrawingCtx *ctx, RsvgState *topstate)
 {
 	int i, foundstate;
 	GdkPixbuf *intermediate, *lastintermediate;
@@ -1539,8 +1511,8 @@ rsvg_compile_bg(RsvgHandle *ctx, RsvgState *topstate)
 
 	ctx->bbox.x0 = 0;
 	ctx->bbox.y0 = 0;
-	ctx->bbox.x1 = ctx->width;
-	ctx->bbox.y1 = ctx->height;
+	ctx->bbox.x1 = gdk_pixbuf_get_width(ctx->pixbuf);
+	ctx->bbox.y1 = gdk_pixbuf_get_height(ctx->pixbuf);
 
 	for (i = 0; (state = g_slist_nth_data(ctx->state, i)) != NULL; i++)
 		{
@@ -1570,7 +1542,7 @@ rsvg_compile_bg(RsvgHandle *ctx, RsvgState *topstate)
 }
 
 static void
-rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbuf *nos)
+rsvg_composite_layer(DrawingCtx *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbuf *nos)
 {
 	RsvgFilter *filter = state->filter;
 	int opacity = state->opacity;
@@ -1656,7 +1628,7 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
  **/
 
 void
-rsvg_pop_discrete_layer(RsvgHandle *ctx)
+rsvg_pop_discrete_layer(DrawingCtx *ctx)
 {
 	GdkPixbuf *tos, *nos;
 	RsvgState *state;
@@ -1685,24 +1657,25 @@ rsvg_needs_discrete_layer(RsvgState *state)
 }
 
 RsvgState * 
-rsvg_state_current (RsvgHandle *ctx)
+rsvg_state_current (DrawingCtx *ctx)
 {
 	return g_slist_nth_data(ctx->state, 0);
 }
 
 RsvgState *
-rsvg_state_parent (RsvgHandle *ctx)
+rsvg_state_parent (DrawingCtx *ctx)
 {
 	return g_slist_nth_data(ctx->state, 1);
 }
 
+/*aweful naming of this function, needs to be fixed later*/
+
 double
 rsvg_state_current_font_size (RsvgHandle *ctx)
 {
-	if (rsvg_state_current(ctx) != NULL)
-		return rsvg_state_current(ctx)->font_size;
-	else
+	if (ctx->dimentions == NULL)
 		return 12.0;
+	return ((RsvgDimentionData *)g_slist_nth(ctx->dimentions, 0)->data)->em;
 }
 
 RsvgPropertyBag *
@@ -1749,7 +1722,7 @@ rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPropertyBagEnumFunc func
 }
 
 void 
-rsvg_state_clip_path_assure(RsvgHandle * ctx)
+rsvg_state_clip_path_assure(DrawingCtx * ctx)
 {
 	ArtSVP * tmppath;
 	RsvgState * state;
@@ -1774,7 +1747,7 @@ rsvg_state_clip_path_assure(RsvgHandle * ctx)
 }
 
 void
-rsvg_state_push(RsvgHandle * ctx)
+rsvg_state_push(DrawingCtx * ctx)
 {
 	RsvgState * data;
 	RsvgState * baseon;
@@ -1791,7 +1764,7 @@ rsvg_state_push(RsvgHandle * ctx)
 }
 
 void
-rsvg_state_pop(RsvgHandle * ctx)
+rsvg_state_pop(DrawingCtx * ctx)
 {
 	GSList * link = g_slist_nth(ctx->state, 0);
 	RsvgState * dead_state = (RsvgState *)link->data;
@@ -1802,7 +1775,7 @@ rsvg_state_pop(RsvgHandle * ctx)
 }
 
 void
-rsvg_state_reinherit_top(RsvgHandle * ctx, RsvgState * state, int dominate)
+rsvg_state_reinherit_top(DrawingCtx * ctx, RsvgState * state, int dominate)
 {
 	double tempaffine[6];
 	gint i;

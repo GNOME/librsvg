@@ -59,7 +59,7 @@ int
 rsvg_css_param_arg_offset (const char *str);
 
 guint32
-rsvg_css_parse_color (const char *str, guint32 inherit);
+rsvg_css_parse_color (const char *str, gboolean * inherit);
 
 guint
 rsvg_css_parse_opacity (const char *str);
@@ -74,19 +74,19 @@ double
 rsvg_css_parse_time (const char * str);
 
 PangoStyle
-rsvg_css_parse_font_style (const char * str, PangoStyle inherit);
+rsvg_css_parse_font_style (const char * str, gboolean * inherit);
 
 PangoVariant
-rsvg_css_parse_font_variant (const char * str, PangoVariant inherit);
+rsvg_css_parse_font_variant (const char * str, gboolean * inherit);
 
 PangoWeight
-rsvg_css_parse_font_weight (const char * str, PangoWeight inherit);
+rsvg_css_parse_font_weight (const char * str, gboolean * inherit);
 
 PangoStretch
-rsvg_css_parse_font_stretch (const char * str, PangoStretch inherit);
+rsvg_css_parse_font_stretch (const char * str, gboolean * inherit);
 
 const char *
-rsvg_css_parse_font_family (const char * str, const char * inherit);
+rsvg_css_parse_font_family (const char * str, gboolean * inherit);
 
 gboolean
 rsvg_css_parse_vbox (const char * vbox, double * x, double * y,

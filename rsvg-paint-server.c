@@ -52,6 +52,7 @@ struct _RsvgPaintServer {
 
 struct _RsvgPaintServerSolid {
 	RsvgPaintServer super;
+	gboolean currentcolour;
 	guint32 rgb;
 };
 
@@ -84,6 +85,8 @@ rsvg_paint_server_solid_render (RsvgPaintServer *self, ArtRender *ar,
 {
 	RsvgPaintServerSolid *z = (RsvgPaintServerSolid *)self;
 	guint32 rgb = z->rgb;
+	if (z->currentcolour)
+		rgb = rsvg_state_current(ctx->ctx)->current_color;
 	ArtPixMaxDepth color[3];
 	
 	color[0] = ART_PIX_MAX_FROM_8 (rgb >> 16);
@@ -103,6 +106,21 @@ rsvg_paint_server_solid (guint32 rgb)
 	result->super.render = rsvg_paint_server_solid_render;
 	
 	result->rgb = rgb;
+	result->currentcolour = FALSE;
+	
+	return &result->super;
+}
+
+static RsvgPaintServer *
+rsvg_paint_server_solid_current_colour ()
+{
+	RsvgPaintServerSolid *result = g_new (RsvgPaintServerSolid, 1);
+	
+	result->super.refcnt = 1;
+	result->super.free = rsvg_paint_server_solid_free;
+	result->super.render = rsvg_paint_server_solid_render;
+	
+	result->currentcolour = TRUE;
 	
 	return &result->super;
 }
@@ -482,7 +500,7 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 	RsvgPaintServerPattern *z = (RsvgPaintServerPattern *)self;
 	RsvgPattern *pattern = z->pattern;
 	RsvgDefsDrawable *drawable = (RsvgDefsDrawable *)pattern->g;
-	RsvgHandle *hctx = ctx->ctx;
+	DrawingCtx *hctx = ctx->ctx;
 	double affine[6];
 	double caffine[6];
 	int i, j;
@@ -634,11 +652,12 @@ rsvg_paint_server_pattern (RsvgPattern *pattern)
  * Return value: The newly created paint server, or NULL on error.
  **/
 RsvgPaintServer *
-rsvg_paint_server_parse (RsvgPaintServer * current, const RsvgDefs *defs, const char *str,
+rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs *defs, const char *str,
 						 guint32 current_color)
 {
 	guint32 rgb;
-	
+	if (inherit != NULL)
+		*inherit = 1;
 	if (!strcmp (str, "none"))
 		return NULL;
 
@@ -674,20 +693,23 @@ rsvg_paint_server_parse (RsvgPaintServer * current, const RsvgDefs *defs, const 
 					return NULL;
 				}
 		}
-	else if (current && !strcmp (str, "inherit"))
+	else if (!strcmp (str, "inherit"))
 		{
-			rsvg_paint_server_ref (current);
-			return current;
+			if (inherit != NULL)
+				*inherit = 0;
+			return NULL;
+		}
+	else if (!strcmp (str, "currentColor"))
+		{	
+			RsvgPaintServer * ps;			
+			ps = rsvg_paint_server_solid_current_colour (0);
+			return ps;
 		}
 	else
-	  {
-		  if (!strcmp (str, "currentColor"))
-			  rgb = current_color;
-		  else
-			  rgb = rsvg_css_parse_color (str, 0);
-
-		  return rsvg_paint_server_solid (rgb);
-	  }
+		{
+			rgb = rsvg_css_parse_color (str, 0);
+			return rsvg_paint_server_solid (rgb);
+		}
 }
 
 /**

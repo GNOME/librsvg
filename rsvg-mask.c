@@ -41,7 +41,7 @@ rsvg_mask_free (RsvgDefVal * self)
 }
 
 void 
-rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgHandle *ctx)
+rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, DrawingCtx *ctx)
 {
 	art_u8 *tos_pixels, *nos_pixels, *mask_pixels;
 	int width;
@@ -124,7 +124,7 @@ rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgHandle *ct
 }
 
 static void 
-rsvg_defs_drawable_mask_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+rsvg_defs_drawable_mask_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 							  int dominate)
 {
 	RsvgState *state = rsvg_state_current (ctx);
@@ -225,13 +225,12 @@ rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		}
 
 
-	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "mask", klazz, id, atts);
+	rsvg_state_init(&mask->super.super.state);
+	rsvg_parse_style_attrs (ctx, &mask->super.super.state, "mask", klazz, id, atts);
 
 	mask->super.super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
 
 	ctx->current_defs_group = &mask->super;
-
-	rsvg_state_clone (&mask->super.super.state, rsvg_state_current (ctx));
 	
 	/* set up the defval stuff */
 	mask->super.super.super.type = RSVG_DEF_MASK;
@@ -291,7 +290,7 @@ rsvg_clip_path_free (RsvgDefVal * self)
 }
 
 ArtSVP *
-rsvg_clip_path_render (RsvgClipPath * self, RsvgHandle *ctx)
+rsvg_clip_path_render (RsvgClipPath * self, DrawingCtx *ctx)
 {
 	RsvgState *state = rsvg_state_current (ctx);
 	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
@@ -376,9 +375,9 @@ rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				klazz = value;
 		}
 
-	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "clipPath", klazz, id, atts);
+	rsvg_state_init (&clip_path->super.super.state);
 
-	rsvg_state_clone (&clip_path->super.super.state, rsvg_state_current (ctx));
+	rsvg_parse_style_attrs (ctx, &clip_path->super.super.state, "clipPath", klazz, id, atts);
 
 	clip_path->super.super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
 
@@ -431,7 +430,7 @@ rsvg_clip_path_parse (const RsvgDefs * defs, const char *str)
 }
 
 ArtSVP *
-rsvg_rect_clip_path(double x, double y, double w, double h, RsvgHandle * ctx)
+rsvg_rect_clip_path(double x, double y, double w, double h, DrawingCtx * ctx)
 {	
 	GString * d = NULL;
 	ArtSVP * output = NULL;

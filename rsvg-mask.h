@@ -46,7 +46,7 @@ struct _RsvgMask {
 };
 
 void 
-rsvg_mask_render (RsvgMask *self, GdkPixbuf *source, GdkPixbuf *output, RsvgHandle *ctx);
+rsvg_mask_render (RsvgMask *self, GdkPixbuf *source, GdkPixbuf *output, DrawingCtx *ctx);
 
 void 
 rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts);
@@ -65,7 +65,7 @@ struct _RsvgClipPath {
 };
 
 ArtSVP * 
-rsvg_clip_path_render (RsvgClipPath *s, RsvgHandle *ctx);
+rsvg_clip_path_render (RsvgClipPath *s, DrawingCtx *ctx);
 
 void 
 rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts);
@@ -77,7 +77,7 @@ RsvgDefsDrawable *
 rsvg_clip_path_parse (const RsvgDefs * defs, const char *str);
 
 ArtSVP *
-rsvg_rect_clip_path(double x, double y, double w, double h, RsvgHandle * ctx);
+rsvg_rect_clip_path(double x, double y, double w, double h, DrawingCtx * ctx);
 
 ArtSVP *
 rsvg_clip_path_merge(ArtSVP * first, ArtSVP * second, char operation);

@@ -191,7 +191,7 @@ rsvg_text_handler_free (RsvgSaxHandler *self)
 	g_free (self);
 }
 
-static void 
+void 
 rsvg_text_render_text (RsvgSaxHandlerText *ctx,
 					   RsvgState  *state,
 					   const char *text,
@@ -200,19 +200,8 @@ rsvg_text_render_text (RsvgSaxHandlerText *ctx,
 static void
 rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 {
-	RsvgSaxHandlerText *z = (RsvgSaxHandlerText *)self;
-	RsvgHandle *ctx = z->ctx;
 	char *string, *tmp;
 	int beg, end;
-	RsvgState *state;
-	
-	state = rsvg_state_current (ctx);
-	if (state->fill == NULL && state->font_size <= 0)
-		return;
-
-	/* not quite up to spec, but good enough */
-	if (!state->visible)
-		return;
 	
 	/* Copy ch into string, chopping off leading and trailing whitespace */
 	for (beg = 0; beg < len; beg++)
@@ -243,47 +232,46 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 			string = tmp;
 		}
 
-	rsvg_text_render_text (z, state, string, z->id->str);
-
 	g_free (string);
 }
 
 static void
 rsvg_start_tspan (RsvgSaxHandlerText *self, RsvgPropertyBag *atts)
 {
-	RsvgState *state;
+	RsvgState state;
 	RsvgHandle *ctx;
 	RsvgSaxHandlerText *z;
 	RsvgTspan * tspan;
 	const char * klazz = NULL, * id = NULL, *value;
-
+	double font_size;
 	tspan = rsvg_tspan_new();
 	z = (RsvgSaxHandlerText *)self;
 	ctx = z->ctx;
-	state = rsvg_state_current (ctx);
+	rsvg_state_init(&state);
+	font_size = rsvg_state_current_font_size(ctx);
 
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
 				{
-					tspan->x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
+					tspan->x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 					tspan->hasx = TRUE;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
 				{
-					tspan->y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
+					tspan->y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 					tspan->hasy = TRUE;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "dx")))
-				tspan->dx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
+				tspan->dx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "dy")))
-				tspan->dy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
+				tspan->dy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 
-			rsvg_parse_style_attrs (ctx, state, "tspan", klazz, id, atts);
+			rsvg_parse_style_attrs (ctx, &state, "tspan", klazz, id, atts);
 		}
 	
 	tspan->parent = z->innerspan;
@@ -294,12 +282,6 @@ static void
 rsvg_text_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 						 RsvgPropertyBag *atts)
 {
-	
-	RsvgSaxHandlerText *z = (RsvgSaxHandlerText *)self;
-	RsvgHandle *ctx = z->ctx;
-
-	rsvg_state_push(ctx);
-  
 	/*this should be the only thing starting inside of text*/ 
 	if (!strcmp ((char *)name, "tspan"))
 		rsvg_start_tspan ((RsvgSaxHandlerText *)self, atts);
@@ -318,7 +300,6 @@ rsvg_text_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 			child = z->innerspan;
 			z->innerspan = child->parent;
 			rsvg_tspan_free(child);
-			rsvg_state_pop(ctx);
 		}
 	
 		else if (!strcmp ((char *)name, "text"))
@@ -349,7 +330,7 @@ rsvg_defs_drawable_text_free (RsvgDefVal *self)
 }
 
 static void 
-rsvg_defs_drawable_text_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+rsvg_defs_drawable_text_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 							  int dominate)
 {
 	RsvgDefsDrawableText *text = (RsvgDefsDrawableText*)self;
@@ -366,7 +347,7 @@ rsvg_defs_drawable_text_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 }
 
 static ArtSVP *
-rsvg_defs_drawable_text_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+rsvg_defs_drawable_text_draw_as_svp (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 									 int dominate)
 {
 	RsvgDefsDrawableText *text = (RsvgDefsDrawableText*)self;
@@ -389,9 +370,9 @@ rsvg_defs_drawable_text_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx,
 void
 rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	double x, y, dx, dy;
+	double x, y, dx, dy, font_size;
 	const char * klazz = NULL, * id = NULL, *value;
-	RsvgState *state;
+	RsvgState state;
 	RsvgDefsDrawableText *text;
 	RsvgSaxHandlerText *handler = g_new0 (RsvgSaxHandlerText, 1);
 
@@ -400,33 +381,33 @@ rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	handler->super.start_element = rsvg_text_handler_start;
 	handler->super.end_element   = rsvg_text_handler_end;
 	handler->ctx = ctx;
-	
+	font_size = rsvg_state_current_font_size(ctx);
 	x = y = dx = dy = 0.;
 	
-	state = rsvg_state_current (ctx);
+	rsvg_state_init(&state);
 	
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "dx")))
-				dx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
+				dx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "dy")))
-				dy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
+				dy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 
-			rsvg_parse_style_attrs (ctx, state, "text", klazz, id, atts);
+			rsvg_parse_style_attrs (ctx, &state, "text", klazz, id, atts);
 		}
 	
 	text = g_new (RsvgDefsDrawableText, 1);
 	text->chunks = g_ptr_array_new();
 	text->styles = g_ptr_array_new();
-	rsvg_state_clone (&text->super.state, rsvg_state_current (ctx));
+	text->super.state = state;
 	text->super.super.type = RSVG_DEF_PATH;
 	text->super.super.free = rsvg_defs_drawable_text_free;
 	text->super.draw = rsvg_defs_drawable_text_draw;
@@ -932,14 +913,15 @@ rsvg_text_add_chunk(RsvgDefsDrawableText *text, const char *d, RsvgHandle *ctx)
 	RsvgState * toinsert = g_new(RsvgState, 1);
 	char *cd = g_strdup(d);
 
+	/*
 	rsvg_state_clone(toinsert, rsvg_state_current(ctx));
-	
+	*/
 	g_ptr_array_add(text->chunks, cd);
 	g_ptr_array_add(text->styles, toinsert);
 
 }
 
-static void 
+void 
 rsvg_text_render_text (RsvgSaxHandlerText *self,
 					   RsvgState  *state,
 					   const char *text,

@@ -213,7 +213,7 @@ static ArtIRect rsvg_frect_pixelspaceise(RsvgFRect input, double * affine)
  * Renders the SVP over the pixbuf in @ctx.
  **/
 static void
-rsvg_render_svp (RsvgHandle *ctx, ArtSVP *svp,
+rsvg_render_svp (DrawingCtx *ctx, ArtSVP *svp,
 				 RsvgPaintServer *ps, int opacity)
 {
 	GdkPixbuf *pixbuf;
@@ -333,7 +333,7 @@ rsvg_render_outline (RsvgState *state, ArtVpath *vpath)
 }
 
 static void
-rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
+rsvg_render_bpath (DrawingCtx *ctx, const ArtBpath *bpath)
 {
 	RsvgState *state;
 	ArtBpath *affine_bpath;
@@ -405,7 +405,7 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 }
 
 static ArtSVP *
-rsvg_render_bpath_into_svp (RsvgHandle *ctx, const ArtBpath *bpath)
+rsvg_render_bpath_into_svp (DrawingCtx *ctx, const ArtBpath *bpath)
 {
 	RsvgState *state;
 	ArtBpath *affine_bpath;
@@ -428,7 +428,7 @@ rsvg_render_bpath_into_svp (RsvgHandle *ctx, const ArtBpath *bpath)
 }
 
 static void
-rsvg_render_markers(RsvgBpathDef * bpath_def, RsvgHandle *ctx)
+rsvg_render_markers(RsvgBpathDef * bpath_def, DrawingCtx *ctx)
 {
 	int i;
 
@@ -510,7 +510,7 @@ rsvg_render_markers(RsvgBpathDef * bpath_def, RsvgHandle *ctx)
 }
 
 void
-rsvg_render_path(RsvgHandle *ctx, const char *d)
+rsvg_render_path(DrawingCtx *ctx, const char *d)
 {
 	RsvgBpathDef *bpath_def;
 	
@@ -525,7 +525,7 @@ rsvg_render_path(RsvgHandle *ctx, const char *d)
 }
 
 ArtSVP *
-rsvg_render_path_as_svp(RsvgHandle *ctx, const char *d)
+rsvg_render_path_as_svp(DrawingCtx *ctx, const char *d)
 {
 	RsvgBpathDef *bpath_def;
 	ArtSVP * output;
@@ -540,14 +540,14 @@ rsvg_render_path_as_svp(RsvgHandle *ctx, const char *d)
 }
 
 void 
-rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
+rsvg_defs_drawable_draw (RsvgDefsDrawable * self, DrawingCtx *ctx,
 						 int dominate)
 {
 	self->draw(self, ctx, dominate);
 }
 
 ArtSVP *
-rsvg_defs_drawable_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx,
+rsvg_defs_drawable_draw_as_svp (RsvgDefsDrawable * self, DrawingCtx *ctx,
 						 int dominate)
 {
 	return self->draw_as_svp(self, ctx, dominate);
@@ -563,7 +563,7 @@ rsvg_defs_drawable_path_free (RsvgDefVal *self)
 }
 
 static void 
-rsvg_defs_drawable_path_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+rsvg_defs_drawable_path_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 							  int dominate)
 {
 	RsvgDefsDrawablePath *path = (RsvgDefsDrawablePath*)self;
@@ -575,7 +575,7 @@ rsvg_defs_drawable_path_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 }
 
 static ArtSVP *
-rsvg_defs_drawable_path_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+rsvg_defs_drawable_path_draw_as_svp (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 									 int dominate)
 {
 	RsvgDefsDrawablePath *path = (RsvgDefsDrawablePath*)self;
@@ -596,7 +596,7 @@ rsvg_defs_drawable_group_free (RsvgDefVal *self)
 }
 
 static void 
-rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 							  int dominate)
 {
 	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
@@ -620,7 +620,7 @@ rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 }
 
 static ArtSVP *
-rsvg_defs_drawable_group_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+rsvg_defs_drawable_group_draw_as_svp (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 									  int dominate)
 {
 	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
@@ -658,7 +658,7 @@ rsvg_defs_drawable_use_free (RsvgDefVal *self)
 }
 
 static void 
-rsvg_defs_drawable_use_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+rsvg_defs_drawable_use_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 							  int dominate)
 {
 	RsvgState *state = rsvg_state_current (ctx);
@@ -681,7 +681,7 @@ rsvg_defs_drawable_use_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 }	
 
 static ArtSVP *
-rsvg_defs_drawable_use_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+rsvg_defs_drawable_use_draw_as_svp (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 									int dominate)
 {
 	RsvgDefsDrawableUse *use = (RsvgDefsDrawableUse*)self;
@@ -707,13 +707,14 @@ rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawable *ch
 }
 
 RsvgDefsDrawable * 
-rsvg_push_part_def_group (RsvgHandle *ctx, const char * id)
+rsvg_push_part_def_group (RsvgHandle *ctx, const char * id, 
+						  RsvgState tempstate)
 {
 	RsvgDefsDrawableGroup *group;
 
 	group = g_new (RsvgDefsDrawableGroup, 1);
 	group->children = g_ptr_array_new();
-	rsvg_state_clone (&group->super.state, rsvg_state_current (ctx));
+	group->super.state = tempstate;
 
 	group->super.super.type = RSVG_DEF_PATH;
 	group->super.super.free = rsvg_defs_drawable_group_free;
@@ -730,11 +731,12 @@ rsvg_push_part_def_group (RsvgHandle *ctx, const char * id)
 }
 
 RsvgDefsDrawable * 
-rsvg_push_def_group (RsvgHandle *ctx, const char * id)
+rsvg_push_def_group (RsvgHandle *ctx, const char * id, 
+					 RsvgState state)
 {
 	RsvgDefsDrawable * group;
 
-	group = rsvg_push_part_def_group (ctx, id);
+	group = rsvg_push_part_def_group (ctx, id, state);
 
 	if (group->parent != NULL)
 		rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)group->parent, 
@@ -756,13 +758,13 @@ rsvg_pop_def_group (RsvgHandle *ctx)
 }
 
 void
-rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id)
+rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id, RsvgState state)
 {
 	RsvgDefsDrawablePath *path;
 	
 	path = g_new (RsvgDefsDrawablePath, 1);
 	path->d = g_strdup(d);
-	rsvg_state_clone (&path->super.state, rsvg_state_current (ctx));
+	path->super.state = state;
 	path->super.super.type = RSVG_DEF_PATH;
 	path->super.super.free = rsvg_defs_drawable_path_free;
 	path->super.draw = rsvg_defs_drawable_path_draw;
@@ -779,6 +781,9 @@ void
 rsvg_start_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	const char * klazz = NULL, * id = NULL, *value, *d = NULL;
+	RsvgState state;
+	rsvg_state_init(&state);
+
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -789,13 +794,13 @@ rsvg_start_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 
-			rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "path", klazz, id, atts);
+			rsvg_parse_style_attrs (ctx, &state, "path", klazz, id, atts);
 		}
 	
 	if (d == NULL)
 		return;
 	
-	rsvg_handle_path (ctx, d, id);
+	rsvg_handle_path (ctx, d, id, state);
 }
 
 static GString *
@@ -834,6 +839,8 @@ rsvg_start_any_poly(RsvgHandle *ctx, RsvgPropertyBag *atts, gboolean is_polyline
 	gchar ** pointlist = NULL;
 	const char * klazz = NULL, * id = NULL, *value;
 	gsize pointlist_len = 0;
+	RsvgState state;
+	rsvg_state_init(&state);
 
 	if (rsvg_property_bag_size (atts))
 		{
@@ -845,7 +852,7 @@ rsvg_start_any_poly(RsvgHandle *ctx, RsvgPropertyBag *atts, gboolean is_polyline
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 
-			rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), (is_polyline ? "polyline" : "polygon"), klazz, id, atts);
+			rsvg_parse_style_attrs (ctx, &state, (is_polyline ? "polyline" : "polygon"), klazz, id, atts);
 		}
 	
 	if (!verts)
@@ -875,7 +882,7 @@ rsvg_start_any_poly(RsvgHandle *ctx, RsvgPropertyBag *atts, gboolean is_polyline
 			if (!is_polyline)
 				g_string_append (d, "Z");
 			
-			rsvg_handle_path (ctx, d->str, id);
+			rsvg_handle_path (ctx, d->str, id, state);
 			g_string_free (d, TRUE);
 		}
 	
@@ -903,6 +910,8 @@ rsvg_start_line (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	const char * klazz = NULL, * id = NULL, *value;
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 	double font_size;
+	RsvgState state;
+	rsvg_state_init(&state);
 
 	font_size = rsvg_state_current_font_size (ctx);
 
@@ -921,7 +930,7 @@ rsvg_start_line (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 
-			rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "line", klazz, id, atts);
+			rsvg_parse_style_attrs (ctx, &state, "line", klazz, id, atts);
 		}
 	
 	/* emulate a line using a path */
@@ -936,7 +945,7 @@ rsvg_start_line (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	g_string_append_c (d, ' ');
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y2));    
 
-	rsvg_handle_path (ctx, d->str, id);
+	rsvg_handle_path (ctx, d->str, id, state);
 	g_string_free (d, TRUE);
 }
 
@@ -949,6 +958,8 @@ rsvg_start_rect (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 	gboolean got_rx = FALSE, got_ry = FALSE;
 	double font_size;
+	RsvgState state;
+	rsvg_state_init(&state);
 
 	font_size = rsvg_state_current_font_size (ctx);
 
@@ -975,7 +986,7 @@ rsvg_start_rect (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 
-			rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "rect", klazz, id, atts);
+			rsvg_parse_style_attrs (ctx, &state, "rect", klazz, id, atts);
 		}
 
 	if (got_rx && !got_ry)
@@ -1074,7 +1085,7 @@ rsvg_start_rect (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	g_string_append (d, " Z");
 
-	rsvg_handle_path (ctx, d->str, id);
+	rsvg_handle_path (ctx, d->str, id, state);
 	g_string_free (d, TRUE);
 }
 
@@ -1086,7 +1097,9 @@ rsvg_start_circle (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	const char * klazz = NULL, * id = NULL, *value;
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 	double font_size;
-	
+	RsvgState state;
+	rsvg_state_init(&state);	
+
 	font_size = rsvg_state_current_font_size (ctx);
 
 	if (rsvg_property_bag_size (atts))
@@ -1104,7 +1117,7 @@ rsvg_start_circle (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 
-			rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "circle", klazz, id, atts);
+			rsvg_parse_style_attrs (ctx, &state, "circle", klazz, id, atts);
 		}
 	
 	if (r <= 0.)
@@ -1171,7 +1184,7 @@ rsvg_start_circle (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	g_string_append (d, " Z");
 
-	rsvg_handle_path (ctx, d->str, id);
+	rsvg_handle_path (ctx, d->str, id, state);
 	g_string_free (d, TRUE);
 }
 
@@ -1183,7 +1196,9 @@ rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	const char * klazz = NULL, * id = NULL, *value;
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 	double font_size;
-	
+	RsvgState state;
+	rsvg_state_init(&state);	
+
 	font_size = rsvg_state_current_font_size (ctx);
 
 	if (rsvg_property_bag_size (atts))
@@ -1201,7 +1216,7 @@ rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 						id = value;
 
-			rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "ellipse", klazz, id, atts);
+			rsvg_parse_style_attrs (ctx, &state, "ellipse", klazz, id, atts);
 		}
 	
 	if (rx <= 0. || ry <= 0.)
@@ -1268,7 +1283,7 @@ rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	g_string_append (d, " Z");
 
-	rsvg_handle_path (ctx, d->str, id);
+	rsvg_handle_path (ctx, d->str, id, state);
 	g_string_free (d, TRUE);
 }
 
@@ -1891,7 +1906,7 @@ rsvg_defs_drawable_image_free (RsvgDefVal * self)
 }
 
 static void 
-rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 							   int dominate)
 {
 	RsvgDefsDrawableImage *z = (RsvgDefsDrawableImage *)self;
@@ -1982,27 +1997,28 @@ rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 void
 rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	double x = 0., y = 0., w = -1., h = -1.;
+	double x = 0., y = 0., w = -1., h = -1., font_size;
 	const char * href = NULL;
 	const char * klazz = NULL, * id = NULL, *value;
 	int aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	GdkPixbuf *img;
 	GError *err = NULL;
-	RsvgState *state;
+	RsvgState state;
 	RsvgDefsDrawableImage *image;
 	gboolean overflow = FALSE;
-	state = rsvg_state_current (ctx);
+	rsvg_state_init(&state);
+	font_size = rsvg_state_current_font_size(ctx);
 	
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
+				w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				h = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
+				h = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			/* path is used by some older adobe illustrator versions */
 			if ((value = rsvg_property_bag_lookup (atts, "path")) || (value = rsvg_property_bag_lookup (atts, "xlink:href")))
 				href = value;
@@ -2015,15 +2031,11 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
 				overflow = rsvg_css_parse_overflow(value);
 
-			rsvg_parse_style_attrs (ctx, state, "image", klazz, id, atts);
+			rsvg_parse_style_attrs (ctx, &state, "image", klazz, id, atts);
 		}
 	
 	if (!href || w <= 0. || h <= 0.)
 		return;   	
-
-	/* figure out if image is visible or not */
-	if (!state->visible || !state->cond_true)
-		return;
 
 	/*hmm, passing the error thingie into the next thing makes it screw up when using vfs*/
 	img = rsvg_pixbuf_new_from_href (href, rsvg_handle_get_base_uri (ctx), NULL); 
@@ -2046,7 +2058,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	image->w = w;
 	image->h = h;
 	image->overflow = overflow;
-	rsvg_state_clone (&image->super.state, rsvg_state_current (ctx));
+	image->super.state = state;
 	image->super.super.type = RSVG_DEF_PATH;
 	image->super.super.free = rsvg_defs_drawable_image_free;
 	image->super.draw = rsvg_defs_drawable_image_draw;
@@ -2062,24 +2074,26 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 void 
 rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	RsvgState *state = rsvg_state_current (ctx);
 	const char * klazz = NULL, *id = NULL, *xlink_href = NULL, *value;
-	double x = 0, y = 0, width = 0, height = 0;	
+	double x = 0, y = 0, width = 0, height = 0, font_size;	
 	gboolean got_width = FALSE, got_height = FALSE;
 	double affine[6];
+	RsvgState state;
+	rsvg_state_init(&state);
+	font_size = rsvg_state_current_font_size(ctx);
 
 	if (rsvg_property_bag_size(atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, state->font_size);
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "width"))) {
-				width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->height, state->font_size);
+				width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->height, font_size);
 				got_width = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "height"))) {
-				height = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, state->font_size);
+				height = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 				got_height = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
@@ -2090,7 +2104,7 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				xlink_href = value;
 		}
 	
-	rsvg_parse_style_attrs (ctx, state, "use", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, &state, "use", klazz, id, atts);
 
 	/* < 0 is an error, 0 disables rendering. TODO: handle positive values correctly */
 	if (got_width || got_height)
@@ -2109,7 +2123,7 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 							RsvgDefsDrawableUse * use;
 							use = g_new (RsvgDefsDrawableUse, 1);
 							use->child = drawable;
-							rsvg_state_clone (&use->super.state, state);
+							use->super.state = state;
 							use->super.super.type = RSVG_DEF_PATH;
 							use->super.super.free = rsvg_defs_drawable_use_free;
 							use->super.draw = rsvg_defs_drawable_use_draw;
@@ -2136,7 +2150,7 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 							RsvgDefsDrawableUse * use;
 							use = g_new (RsvgDefsDrawableUse, 1);
 							use->child = drawable;
-							rsvg_state_clone (&use->super.state, state);
+							use->super.state = state;
 							use->super.super.type = RSVG_DEF_PATH;
 							use->super.super.free = rsvg_defs_drawable_use_free;
 							use->super.draw = rsvg_defs_drawable_use_draw;
@@ -2194,7 +2208,7 @@ rsvg_defs_drawable_symbol_free (RsvgDefVal *self)
 }
 
 static void
-rsvg_defs_drawable_symbol_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+rsvg_defs_drawable_symbol_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 							 int dominate)
 {
 	RsvgDefsDrawableSymbol * sself;
@@ -2240,9 +2254,10 @@ rsvg_start_symbol(RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	RsvgDefsDrawableSymbol *symbol;
 	RsvgDefsDrawableGroup *group;
-	RsvgState *state = rsvg_state_current (ctx);
+	RsvgState state;
 	const char * klazz = NULL, *id = NULL, *value;
 
+	rsvg_state_init(&state);
 	symbol = g_new (RsvgDefsDrawableSymbol, 1);
 	group = &symbol->super;
 	symbol->has_vbox = 0;
@@ -2262,6 +2277,11 @@ rsvg_start_symbol(RsvgHandle *ctx, RsvgPropertyBag *atts)
 															&symbol->y,
 															&symbol->width, 
 															&symbol->height);
+					if (symbol->has_vbox)
+						{
+							ctx->width = symbol->width;
+							ctx->height = symbol->height;
+						}
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
 				symbol->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);			
@@ -2269,9 +2289,9 @@ rsvg_start_symbol(RsvgHandle *ctx, RsvgPropertyBag *atts)
 				symbol->overflow = rsvg_css_parse_overflow(value);
 		}
 
-	rsvg_parse_style_attrs (ctx, state, "symbol", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, &state, "symbol", klazz, id, atts);
 	group->children = g_ptr_array_new();
-	rsvg_state_clone (&group->super.state, rsvg_state_current (ctx));
+	group->super.state = state;
 	group->super.super.type = RSVG_DEF_SYMBOL;
 	group->super.super.free = rsvg_defs_drawable_symbol_free;
 	group->super.draw = rsvg_defs_drawable_symbol_draw;
@@ -2301,12 +2321,15 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	double x = 0., y = 0., w = 0., h = 0.;
 	double vbx = 0., vby = 0., vbw = 1., vbh = 1.;
 	gboolean obj_bbox = TRUE;
+	RsvgState state;
 	gboolean got_x, got_y, got_bbox, got_vbox, got_width, got_height;
-	got_x = got_y = got_bbox = got_vbox = got_width = got_height = FALSE;
-	
+	got_x = got_y = got_bbox = got_vbox = got_width = got_height = FALSE;	
+
 	font_size = rsvg_state_current_font_size (ctx);
 	marker = g_new (RsvgMarker, 1);
 		
+	rsvg_state_init(&state);
+
 	marker->orient = 0;
 	marker->orientAuto = FALSE;
 	marker->overflow = FALSE;
@@ -2388,6 +2411,8 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			marker->vbw = vbw;
 			marker->vbh = vbh;
 			marker->vbox = TRUE;
+			ctx->width = vbw;
+			ctx->height = vbh;
 		}
 	else
 		marker->vbox = FALSE;
@@ -2395,7 +2420,7 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	/* set up the defval stuff */
 	marker->super.type = RSVG_DEF_MARKER;
 
-	marker->contents =	(RsvgDefsDrawable *)rsvg_push_part_def_group(ctx, NULL);
+	marker->contents =	(RsvgDefsDrawable *)rsvg_push_part_def_group(ctx, NULL, state);
 
 	marker->super.free = rsvg_marker_free;
 
@@ -2403,7 +2428,7 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 }
 
 void 
-rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdouble linewidth, RsvgHandle *ctx)
+rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdouble linewidth, DrawingCtx *ctx)
 {
 	gdouble affine[6];
 	gdouble taffine[6];
@@ -2510,7 +2535,7 @@ rsvg_marker_parse (const RsvgDefs * defs, const char *str)
 }
 
 static void
-rsvg_defs_drawable_svg_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+rsvg_defs_drawable_svg_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 							 int dominate)
 {
 	RsvgDefsDrawableSvg * sself;
@@ -2566,12 +2591,13 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	int width = -1, height = -1, x = -1, y = -1, i;
 	double affine[6];
 	const char * id, *value;
-	RsvgState * state;
 	double vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
 	gboolean has_vbox = FALSE, overflow = 0;
 	id = NULL;
 	RsvgDefsDrawableSvg * svg;
 	RsvgDefsDrawableGroup * group;
+	RsvgState state;
+	rsvg_state_init(&state);
 
 	if (rsvg_property_bag_size (atts))
 		{
@@ -2593,7 +2619,7 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
 				overflow = rsvg_css_parse_overflow(value);
 		}
-	state = rsvg_state_current(ctx);
+
 	if (has_vbox)
 		{
 			affine[0] = width / vbox_w;
@@ -2603,9 +2629,11 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			affine[4] = x - vbox_x * width / vbox_w;
 			affine[5] = y - vbox_y * height / vbox_h;
 			for (i = 0; i < 6; i++)
-				rsvg_state_current(ctx)->personal_affine[i] = affine[i];
-			art_affine_multiply(state->affine, affine, 
-								state->affine);	
+				state.personal_affine[i] = affine[i];
+			art_affine_multiply(state.affine, affine, 
+								state.affine);
+			ctx->width = vbox_w;
+			ctx->height = vbox_h;
 		}
 	else
 		{
@@ -2616,9 +2644,9 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			affine[4] = x;
 			affine[5] = y;
 			for (i = 0; i < 6; i++)
-				rsvg_state_current(ctx)->personal_affine[i] = affine[i];
-			art_affine_multiply(state->affine, affine, 
-								state->affine);
+				state.personal_affine[i] = affine[i];
+			art_affine_multiply(state.affine, affine, 
+								state.affine);
 		}
 
 	svg = g_new (RsvgDefsDrawableSvg, 1);
@@ -2631,7 +2659,7 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	svg->overflow = overflow;
 
 	group->children = g_ptr_array_new();
-	rsvg_state_clone (&group->super.state, rsvg_state_current (ctx));
+	group->super.state = state;
 
 	group->super.super.type = RSVG_DEF_PATH;
 	group->super.super.free = rsvg_defs_drawable_svg_free;

@@ -50,7 +50,7 @@ struct _RsvgPSCtx {
 
 	guint32 color;
 	double affine[6];
-	RsvgHandle *ctx;
+	DrawingCtx *ctx;
 };
 
 struct _RsvgGradientStop {
@@ -104,7 +104,7 @@ struct _RsvgPattern {
 
 /* Create a new paint server based on a specification string. */
 RsvgPaintServer *
-rsvg_paint_server_parse (RsvgPaintServer * current, const RsvgDefs *defs, const char *str,
+rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs *defs, const char *str,
 						 guint32 current_color);
 
 void

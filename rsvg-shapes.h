@@ -33,9 +33,9 @@ G_BEGIN_DECLS
 
 typedef struct _RsvgDefsDrawable RsvgDefsDrawable;
 
-void rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id);
-void rsvg_render_path (RsvgHandle *ctx, const char *d);
-ArtSVP * rsvg_render_path_as_svp(RsvgHandle *ctx, const char *d);
+void rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id, RsvgState);
+void rsvg_render_path (DrawingCtx *ctx, const char *d);
+ArtSVP * rsvg_render_path_as_svp(DrawingCtx *ctx, const char *d);
 void rsvg_start_path (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_polygon (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_polyline (RsvgHandle *ctx, RsvgPropertyBag *atts);
@@ -48,8 +48,8 @@ void rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_symbol (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts);
 
-RsvgDefsDrawable * rsvg_push_def_group (RsvgHandle *ctx, const char * id);
-RsvgDefsDrawable * rsvg_push_part_def_group (RsvgHandle *ctx, const char * id);
+RsvgDefsDrawable * rsvg_push_def_group (RsvgHandle *ctx, const char * id, RsvgState);
+RsvgDefsDrawable * rsvg_push_part_def_group (RsvgHandle *ctx, const char * id, RsvgState);
 void rsvg_pop_def_group (RsvgHandle *ctx);
 
 typedef struct _RsvgDefsDrawablePath RsvgDefsDrawablePath;
@@ -63,8 +63,8 @@ struct _RsvgDefsDrawable {
  	RsvgDefVal super;
 	RsvgState  state;
 	RsvgDefsDrawable * parent;
-	void (*draw) (RsvgDefsDrawable * self, RsvgHandle *ctx, int dominate);
-	ArtSVP * (*draw_as_svp) (RsvgDefsDrawable * self, RsvgHandle *ctx, int dominate);
+	void (*draw) (RsvgDefsDrawable * self, DrawingCtx *ctx, int dominate);
+	ArtSVP * (*draw_as_svp) (RsvgDefsDrawable * self, DrawingCtx *ctx, int dominate);
 };
 
 struct _RsvgDefsDrawablePath {
@@ -121,7 +121,7 @@ void
 rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts);
 
 void 
-rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdouble linewidth, RsvgHandle *ctx);
+rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdouble linewidth, DrawingCtx *ctx);
 
 RsvgDefVal *
 rsvg_marker_parse (const RsvgDefs * defs, const char *str);
@@ -131,9 +131,9 @@ rsvg_pixbuf_new_from_href (const char *href,
 						   const char *base_uri,
 						   GError    **err);
 
-void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 							  int dominate);
-ArtSVP * rsvg_defs_drawable_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+ArtSVP * rsvg_defs_drawable_draw_as_svp (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 										 int dominate);
 
 void rsvg_preserve_aspect_ratio(unsigned int aspect_ratio, double width, 

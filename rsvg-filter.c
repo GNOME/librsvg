@@ -74,7 +74,7 @@ struct _RsvgFilterContext
 	RsvgFilterPrimitiveOutput lastresult;
 	double affine[6];
 	double paffine[6];
-	RsvgHandle * ctx;
+	DrawingCtx * ctx;
 };
 
 typedef struct _RsvgFilterPrimitive RsvgFilterPrimitive;
@@ -400,7 +400,7 @@ rsvg_filter_free_pair (gpointer value)
  **/
 void
 rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output, 
-					GdkPixbuf * bg, RsvgHandle * context)
+					GdkPixbuf * bg, DrawingCtx * context)
 {
 	RsvgFilterContext *ctx;
 	RsvgFilterPrimitive *current;
@@ -745,7 +745,6 @@ rsvg_start_filter (RsvgHandle * ctx, RsvgPropertyBag * atts)
 		}
 
 	ctx->currentfilter = filter;
-	
 	/* set up the defval stuff */
 	filter->super.type = RSVG_DEF_FILTER;
 	filter->super.free = &rsvg_filter_free;
@@ -923,7 +922,7 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
 	g_object_unref (G_OBJECT (output));
 }
 
-void rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output, RsvgHandle * ctx)
+void rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output, DrawingCtx * ctx)
 {
 	FPBox boundarys;
 	RsvgFilterPrimitiveBlendMode mode;
@@ -4027,7 +4026,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
 									   RsvgFilterContext * context)
 {
 	FPBox boundarys;
-	RsvgHandle * ctx;
+	DrawingCtx * ctx;
 	RsvgFilterPrimitiveImage *oself;
 	int i;
 	RsvgDefVal * parent;

@@ -37,6 +37,8 @@
 G_BEGIN_DECLS
 
 typedef struct RsvgSaxHandler RsvgSaxHandler;
+typedef struct DrawingCtx DrawingCtx;
+typedef struct RsvgDimentionData RsvgDimentionData;
 typedef struct _RsvgPropertyBag RsvgPropertyBag;
 typedef struct _RsvgState RsvgState;
 typedef struct _RsvgDefs RsvgDefs;
@@ -63,19 +65,18 @@ struct RsvgHandle {
 	RsvgSizeFunc size_func;
 	gpointer user_data;
 	GDestroyNotify user_data_destroy;
-	GdkPixbuf *pixbuf;
 	ArtIRect bbox;
 
 	/* stack; there is a state for each element */
-
-	GSList * state;
 	
 	RsvgDefs *defs;
 	guint nest_level;
 	void *current_defs_group;
+	/* this is the root level of the displayable tree, essentially what the
+	   file is converted into at the end */
+	void *treebase;
 
 	guint in_switch;
-
 	GHashTable *css_props;
 	
 	/* not a handler stack. each nested handler keeps
@@ -92,8 +93,12 @@ struct RsvgHandle {
 	
 	int width;
 	int height;
+	int new_width;
+	int new_height;
 	double dpi_x;
 	double dpi_y;
+
+	GSList * dimentions;
 	
 	GString * title;
 	GString * desc;
@@ -103,8 +108,6 @@ struct RsvgHandle {
 
 	void * currentfilter;
 	void * currentsubfilter;
-
-	GMemChunk * state_allocator;
 
 	/* virtual fns */
 	gboolean (* write) (RsvgHandle    *handle,
@@ -116,6 +119,23 @@ struct RsvgHandle {
 						GError     **error);
 
 	void (* free) (RsvgHandle * handle);
+};
+
+
+struct DrawingCtx {
+	GdkPixbuf *pixbuf;
+	ArtIRect bbox;
+	GSList * state;
+	GError **error;
+	RsvgDefs *defs;
+	gchar * base_uri;
+	GMemChunk * state_allocator;
+};
+
+struct RsvgDimentionData {
+	int width;
+	int height;
+	gdouble em, ex;
 };
 
 void rsvg_linear_gradient_free (RsvgDefVal *self);

@@ -57,6 +57,12 @@ static double internal_dpi_x = RSVG_DEFAULT_DPI_X;
 static double internal_dpi_y = RSVG_DEFAULT_DPI_Y;
 
 static void
+rsvg_drawing_ctx_free (DrawingCtx *handle);
+
+void
+rsvg_drawing_ctx_init(DrawingCtx * handle);
+
+static void
 rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
 {
 	xmlEntityPtr entval = (xmlEntityPtr)value;
@@ -81,9 +87,7 @@ static void
 rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	int width = -1, height = -1, x = -1, y = -1, i;
-	int rowstride;
-	art_u8 *pixels;
-	RsvgState *state = rsvg_state_current (ctx);
+	RsvgState state;
 	gint new_width, new_height;
 	double x_zoom = 1.;
 	double y_zoom = 1.;
@@ -92,6 +96,8 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	double vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
 	gboolean has_vbox = FALSE;
+
+	rsvg_state_init(&state);
 
 	if (rsvg_property_bag_size (atts))
 		{
@@ -164,16 +170,16 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 			/* Scale size of target pixbuf */
 
-			art_affine_identity (state->affine);
+			art_affine_identity (state.affine);
 
 			if (has_vbox && (vbox_x != 0. || vbox_y != 0.))
 				{
 					art_affine_translate (affine, - vbox_x, - vbox_y);
-					art_affine_multiply (state->affine, state->affine, affine);
+					art_affine_multiply (state.affine, state.affine, affine);
 				}
 
 			art_affine_scale (affine, x_zoom, y_zoom);
-			art_affine_multiply (state->affine, state->affine, affine);
+			art_affine_multiply (state.affine, state.affine, affine);
 
 			if (new_width <= 0 || new_height <= 0)
 				{
@@ -188,56 +194,34 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 					g_warning (_("rsvg_start_svg: width too large"));
 					return;
 				}
-			rowstride = (new_width * 4 + 3) & ~3;
-			if (rowstride > INT_MAX / new_height)
-				{
-					/* FIXME: GError here? */
-					g_warning (_("rsvg_start_svg: width too large"));
-					return;
-				}
 
 			/* FIXME: Add GError here if size is too big. */
-
-			pixels = g_try_malloc (rowstride * new_height);
-			if (pixels == NULL)
-				{
-					/* FIXME: GError here? */
-					g_warning (_("rsvg_start_svg: dimensions too large"));
-					return;
-				}
-			memset (pixels, 0, rowstride * new_height);
-			ctx->pixbuf = gdk_pixbuf_new_from_data (pixels,
-													GDK_COLORSPACE_RGB,
-													TRUE, 8,
-													new_width, new_height,
-													rowstride,
-													rsvg_pixmap_destroy,
-													NULL);
 		}
 
+	ctx->new_width = new_width;
+	ctx->new_height = new_height;
+
 	for (i = 0; i < 6; i++)
-		state->personal_affine[i] = state->affine[i];
+		state.personal_affine[i] = state.affine[i];
 	ctx->nest_level = 1;
 	ctx->current_defs_group = NULL;
-	rsvg_push_def_group(ctx, NULL);
+	ctx->treebase = rsvg_push_def_group(ctx, NULL, state);
 }
 
 static void
 rsvg_end_sub_svg(RsvgHandle *ctx)
 {
-	if (ctx->nest_level-- > 1)
-		rsvg_pop_def_group (ctx);
-	else
-		rsvg_defs_drawable_draw((RsvgDefsDrawable *)ctx->current_defs_group, 
-								ctx, 2);
+	ctx->nest_level--;
+	rsvg_pop_def_group (ctx);
 }
 
 static void
 rsvg_start_g (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	RsvgState *state = rsvg_state_current (ctx);
+	RsvgState state;
 	const char * klazz = NULL, * id = NULL, *value;
-	
+	rsvg_state_init(&state);
+
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
@@ -245,10 +229,10 @@ rsvg_start_g (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 
-			rsvg_parse_style_attrs (ctx, state, "g", klazz, id, atts);
+			rsvg_parse_style_attrs (ctx, &state, "g", klazz, id, atts);
 		}	
   
-	rsvg_push_def_group (ctx, id);
+	rsvg_push_def_group (ctx, id, state);
 }
 
 static void
@@ -260,9 +244,10 @@ rsvg_end_g (RsvgHandle *ctx)
 static void
 rsvg_start_defs (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	RsvgState *state = rsvg_state_current (ctx);
+	RsvgState state;
 	const char * klazz = NULL, * id = NULL, *value;
-	
+	rsvg_state_init(&state);	
+
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
@@ -270,12 +255,12 @@ rsvg_start_defs (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 
-			rsvg_parse_style_attrs (ctx, state, "defs", klazz, id, atts);
+			rsvg_parse_style_attrs (ctx, &state, "defs", klazz, id, atts);
 		}	
   
 	/*I don't know if I am proud or discusted by this hack. It seems to 
 	  have the same effect as the spec but not be in its spirit.*/
-	rsvg_push_part_def_group (ctx, id);
+	rsvg_push_part_def_group (ctx, id, state);
 }
 
 typedef struct _RsvgSaxHandlerDefs {
@@ -325,7 +310,7 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	if (strcmp ((char *)name, "stop"))
 		return;
 	
-	rsvg_state_clone(&state ,rsvg_state_current(z->ctx));
+	rsvg_state_init(&state);
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -439,7 +424,7 @@ rsvg_linear_gradient_free (RsvgDefVal *self)
 static void
 rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	RsvgState *state = rsvg_state_current (ctx);
+	RsvgState state;
 	RsvgLinearGradient *grad = NULL;
 	const char *id = NULL, *value;
 	double x1 = 0., y1 = 0., x2 = 0., y2 = 0.;
@@ -452,6 +437,8 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	gboolean got_color = FALSE;
 	int i;
 
+	rsvg_state_init(&state);
+
 	got_x1 = got_x2 = got_y1 = got_y2 = got_spread = got_transform = got_bbox = cloned = shallow_cloned = FALSE;
 		
 	if (rsvg_property_bag_size (atts))
@@ -459,19 +446,19 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 			if ((value = rsvg_property_bag_lookup (atts, "x1"))) {
-				x1 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state->font_size);
+				x1 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state.font_size);
 				got_x1 = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "y1"))) {
-				y1 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state->font_size);
+				y1 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state.font_size);
 				got_y1 = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "x2"))) {
-				x2 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state->font_size);
+				x2 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state.font_size);
 				got_x2 = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "y2"))) {
-				y2 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state->font_size);
+				y2 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state.font_size);
 				got_y2 = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "spreadMethod")))
@@ -504,7 +491,7 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				got_bbox = TRUE;
 
 			}
-			rsvg_parse_style_pairs (ctx, state, atts);
+			rsvg_parse_style_pairs (ctx, &state, atts);
 		}
 	
 	/* set up 100% as the default if not gotten */
@@ -512,7 +499,7 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		if (obj_bbox)
 			x2 = 1.0;
 		else
-			x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi_x, (gdouble)ctx->width, state->font_size);
+			x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi_x, (gdouble)ctx->width, state.font_size);
 	}
 
 	if (xlink_href != NULL)
@@ -585,7 +572,7 @@ rsvg_radial_gradient_free (RsvgDefVal *self)
 static void
 rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char * tag) /* tag for conicalGradient */
 {
-	RsvgState *state = rsvg_state_current (ctx);
+	RsvgState state;
 	RsvgRadialGradient *grad = NULL;
 	const char *id = NULL;
 	double cx = 0., cy = 0., r = 0., fx = 0., fy = 0.;  
@@ -598,6 +585,8 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 	double affine[6];
 	int i;
 
+	rsvg_state_init(&state);
+
 	got_cx = got_cy = got_r = got_fx = got_fy = got_spread = got_transform = got_bbox = cloned = shallow_cloned = FALSE;
 	
 	if (rsvg_property_bag_size (atts))
@@ -605,24 +594,24 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
 			if ((value = rsvg_property_bag_lookup (atts, "cx"))) {
-				cx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state->font_size);
+				cx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state.font_size);
 				got_cx = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "cy"))) {
-				cy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state->font_size);
+				cy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state.font_size);
 				got_cy = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "r"))) {
 				r = rsvg_css_parse_normalized_length (value, rsvg_dpi_percentage (ctx), 1, 
-													  state->font_size);
+													  state.font_size);
 				got_r = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "fx"))) {
-				fx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state->font_size);
+				fx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state.font_size);
 				got_fx = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "fy"))) {
-				fy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state->font_size);
+				fy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state.font_size);
 				got_fy = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
@@ -655,7 +644,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 					obj_bbox = FALSE;
 				got_bbox = TRUE;
 			}
-			rsvg_parse_style_pairs (ctx, state, atts);
+			rsvg_parse_style_pairs (ctx, &state, atts);
 		}
 	
 	if (xlink_href != NULL)
@@ -681,19 +670,19 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 		if (obj_bbox)
 			cx = 0.5;
 		else
-			cx = rsvg_css_parse_normalized_length ("50%", ctx->dpi_x, (gdouble)ctx->width, state->font_size);
+			cx = rsvg_css_parse_normalized_length ("50%", ctx->dpi_x, (gdouble)ctx->width, state.font_size);
 	}
 	if (!got_cy) {
 		if (obj_bbox)
 			cy = 0.5;
 		else
-			cy = rsvg_css_parse_normalized_length ("50%", ctx->dpi_y, (gdouble)ctx->height, state->font_size);
+			cy = rsvg_css_parse_normalized_length ("50%", ctx->dpi_y, (gdouble)ctx->height, state.font_size);
 	}
 	if (!got_r) {
 		if (obj_bbox)
 			r = 0.5;
 		else
-			r  = rsvg_css_parse_normalized_length ("50%", rsvg_dpi_percentage (ctx), rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size);
+			r  = rsvg_css_parse_normalized_length ("50%", rsvg_dpi_percentage (ctx), rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state.font_size);
 	}
 	if (!got_fx) {
 		fx = cx;
@@ -752,7 +741,7 @@ rsvg_pattern_free (RsvgDefVal *self)
 static void
 rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	RsvgState *state = rsvg_state_current (ctx);
+	RsvgState state;
 	RsvgPattern *pattern = NULL;
 	const char *id = NULL, *value;
 	double x = 0., y = 0., width = 0., height = 0.;
@@ -764,6 +753,8 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	double affine[6];
 	int i;
 	guint aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
+
+	rsvg_state_init(&state);
 
 	got_x = got_y = got_width = got_height = got_transform = got_bbox = got_cbbox = cloned = got_vbox = got_aspect_ratio = FALSE;
 		
@@ -777,19 +768,19 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 													&vbw, &vbh);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "x"))) {
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state->font_size);
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state.font_size);
 				got_x = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "y"))) {
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state->font_size);
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state.font_size);
 				got_y = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "width"))) {
-				width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state->font_size);
+				width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state.font_size);
 				got_width = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "height"))) {
-				height = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state->font_size);
+				height = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state.font_size);
 				got_height = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
@@ -860,7 +851,7 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	pattern->vbh = (cloned && !got_vbox) ? pattern->vbh : vbh;
 	pattern->vbox = (cloned && !got_vbox) ? pattern->vbox : got_vbox;
 
-	pattern->g = &(rsvg_push_part_def_group (ctx, NULL)->super);
+	pattern->g = &(rsvg_push_part_def_group (ctx, NULL, state)->super);
 }
 
 
@@ -1228,6 +1219,13 @@ rsvg_start_element (void *data, const xmlChar *name,
 	RsvgHandle *ctx = (RsvgHandle *)data;
 
 	RsvgPropertyBag * bag;
+  
+	RsvgDimentionData * newdimention;
+	newdimention = g_new(RsvgDimentionData, 1);
+	newdimention->width = ctx->width;
+	newdimention->height = ctx->height;
+	newdimention->em = rsvg_state_current_font_size(ctx);
+	ctx->dimentions = g_slist_prepend(ctx->dimentions, newdimention);
 
 	bag = rsvg_property_bag_new(atts);
 
@@ -1239,8 +1237,6 @@ rsvg_start_element (void *data, const xmlChar *name,
 		}
 	else
 		{
-			rsvg_state_push(ctx);
-			
 			if (!strcmp ((char *)name, "svg"))
 				{
 					if (!ctx->nest_level)
@@ -1311,6 +1307,13 @@ rsvg_end_element (void *data, const xmlChar *name)
 {
 	RsvgHandle *ctx = (RsvgHandle *)data;
 	
+	GSList * link = g_slist_nth(ctx->dimentions, 0);
+	RsvgDimentionData * dead_dimention = (RsvgDimentionData *)link->data;
+	ctx->width = dead_dimention->width;
+	ctx->height = dead_dimention->height;
+	g_free (dead_dimention);
+	ctx->dimentions = g_slist_delete_link(ctx->dimentions, link);
+
 	if (ctx->handler_nest > 0 && ctx->handler != NULL)
 		{
 			if (ctx->handler->end_element != NULL)
@@ -1347,8 +1350,6 @@ rsvg_end_element (void *data, const xmlChar *name)
 				}
 			else if (!strcmp ((char *)name, "pattern"))
 				rsvg_pop_def_group(ctx);
-
-			rsvg_state_pop(ctx);
 		}
 }
 
@@ -1534,9 +1535,25 @@ rsvg_handle_close_impl (RsvgHandle  *handle,
 static void
 rsvg_state_free_func(gpointer data, gpointer user_data)
 {
-	RsvgHandle * ctx = (RsvgHandle *)user_data;
+	DrawingCtx * ctx = (DrawingCtx *)user_data;
 	rsvg_state_finalize((RsvgState *)data);
 	g_mem_chunk_free(ctx->state_allocator, data);
+}
+
+static void
+rsvg_drawing_ctx_free (DrawingCtx *handle)
+{
+	rsvg_defs_free (handle->defs);
+	
+	g_slist_foreach(handle->state, rsvg_state_free_func, (gpointer)handle);
+	g_slist_free (handle->state);
+
+	if (handle->base_uri)
+		g_free (handle->base_uri);
+
+	g_mem_chunk_destroy(handle->state_allocator);
+
+	g_free (handle);
 }
 
 void
@@ -1544,10 +1561,6 @@ rsvg_handle_free_impl (RsvgHandle *handle)
 {
 	if (handle->pango_context != NULL)
 		g_object_unref (handle->pango_context);
-	rsvg_defs_free (handle->defs);
-	
-	g_slist_foreach(handle->state, rsvg_state_free_func, (gpointer)handle);
-	g_slist_free (handle->state);
 	
 	g_hash_table_foreach (handle->entities, rsvg_ctx_free_helper, NULL);
 	g_hash_table_destroy (handle->entities);
@@ -1556,20 +1569,15 @@ rsvg_handle_free_impl (RsvgHandle *handle)
 	
 	if (handle->user_data_destroy)
 		(* handle->user_data_destroy) (handle->user_data);
-	if (handle->pixbuf)
-		g_object_unref (handle->pixbuf);
 
 	if (handle->title)
 		g_string_free (handle->title, TRUE);
 	if (handle->desc)
-	    	g_string_free (handle->desc, TRUE);
+		g_string_free (handle->desc, TRUE);
 	if (handle->metadata)
 		g_string_free (handle->metadata, TRUE);
-
 	if (handle->base_uri)
 		g_free (handle->base_uri);
-
-	g_mem_chunk_destroy(handle->state_allocator);
 
 	g_free (handle);
 }
@@ -1657,9 +1665,18 @@ rsvg_handle_new (void)
 }
 
 void
-rsvg_handle_init (RsvgHandle * handle)
+rsvg_drawing_ctx_init(DrawingCtx * handle)
 {
 	handle->state = NULL;
+	/* should this be G_ALLOC_ONLY? */
+	handle->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
+
+	rsvg_state_push(handle);
+}
+
+void
+rsvg_handle_init (RsvgHandle * handle)
+{
 	handle->defs = rsvg_defs_new ();
 	handle->handler_nest = 0;
 	handle->entities = g_hash_table_new (g_str_hash, g_str_equal);
@@ -1672,11 +1689,9 @@ rsvg_handle_init (RsvgHandle * handle)
 	
 	handle->ctxt = NULL;
 	handle->current_defs_group = NULL;
+	handle->treebase = NULL;
 
-	/* should this be G_ALLOC_ONLY? */
-	handle->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
-
-	rsvg_state_push(handle);
+	handle->dimentions = NULL;
 }
 
 /**
@@ -1861,11 +1876,43 @@ GdkPixbuf *
 rsvg_handle_get_pixbuf (RsvgHandle *handle)
 {
 	g_return_val_if_fail (handle != NULL, NULL);
+	GdkPixbuf * output;
+	art_u8 *pixels;
+	int rowstride, new_width, new_height;
+	DrawingCtx * draw;
+	draw = g_new(DrawingCtx, 1);
+	rsvg_drawing_ctx_init(draw);
+	new_width = handle->new_width;
+	new_height = handle->new_height;
+	rowstride = (new_width * 4 + 3) & ~3;
+	if (rowstride > INT_MAX / new_height)
+		{
+			/* FIXME: GError here? */
+			g_warning (_("rsvg_start_svg: width too large"));
+			return NULL;
+		}
+	pixels = g_try_malloc (rowstride * new_height);
+	if (pixels == NULL)
+		{
+			/* FIXME: GError here? */
+			g_warning (_("rsvg_start_svg: dimensions too large"));
+			return NULL;
+		}
+	memset (pixels, 0, rowstride * new_height);
+	draw->pixbuf = gdk_pixbuf_new_from_data (pixels,
+											 GDK_COLORSPACE_RGB,
+											 TRUE, 8,
+											 new_width, new_height,
+											 rowstride,
+											 rsvg_pixmap_destroy,
+											 NULL);
+	draw->defs = handle->defs;
+	draw->base_uri = g_strdup(handle->base_uri);
+	rsvg_defs_drawable_draw((RsvgDefsDrawable *)handle->treebase, draw, 2);
+	output = draw->pixbuf;
+	rsvg_drawing_ctx_free(draw);
 	
-	if (handle->pixbuf)
-		return g_object_ref (handle->pixbuf);
-
-	return NULL;
+	return output;
 }
 
 /**
