@@ -1,7 +1,7 @@
 dnl NAUTILUS_PATH_FREETYPE2([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]]])
 dnl Test for FreeType2, and define FREETYPE2_CFLAGS and FREETYPE2_LIBS
 dnl
-dnl Shamelessly cut-n-pasted from AM_PATH_LIBART
+dnl Shamelessly cut-n-pasted from libart.
 dnl
 AC_DEFUN(NAUTILUS_PATH_FREETYPE2,
 [dnl 
