@@ -498,6 +498,7 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
     
 	if (status != CR_OK)
         {
+			g_warning ("Error setting CSS SAC handler\n");
 			cr_parser_destroy (parser);			
 			return;
         }        
@@ -833,8 +834,9 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
 						}
 					
 					/* didn't find anything more specific, just apply the class style */
-					if (!found)
-						rsvg_lookup_apply_css_style (ctx, klazz_list->str);
+					if (!found) {
+						found = found || rsvg_lookup_apply_css_style (ctx, klazz_list->str);
+					}
 					g_string_free (klazz_list, TRUE);
 				}
 		}

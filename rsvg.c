@@ -854,6 +854,8 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 				rsvg_start_text (ctx, atts);
 			else if (!strcmp ((char *)name, "image"))
 				rsvg_start_image (ctx, atts);
+			else if (!strcmp ((char *)name, "style"))
+				rsvg_start_style (ctx, atts);
 			
 			/* see conicalGradient discussion above */
 			else if (!strcmp ((char *)name, "linearGradient"))

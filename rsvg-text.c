@@ -146,7 +146,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	
 	for (end = len; end > beg; end--)
 		if (!g_ascii_isspace (ch[end - 1]))
-      break;
+			break;
 	
 	if (end - beg == 0)
 		{
@@ -169,21 +169,8 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 		}
 	
 	if (ctx->pango_context == NULL)
-		ctx->pango_context = pango_ft2_get_context ((guint)ctx->dpi, (guint)ctx->dpi);
-	
-	has_alpha = gdk_pixbuf_get_has_alpha (pixbuf);
-	
-	render = art_render_new (0, 0,
-							 gdk_pixbuf_get_width (pixbuf),
-							 gdk_pixbuf_get_height (pixbuf),
-							 gdk_pixbuf_get_pixels (pixbuf),
-							 gdk_pixbuf_get_rowstride (pixbuf),
-							 gdk_pixbuf_get_n_channels (pixbuf) -
-							 (has_alpha ? 1 : 0),
-							 gdk_pixbuf_get_bits_per_sample (pixbuf),
-							 has_alpha ? ART_ALPHA_SEPARATE : ART_ALPHA_NONE,
-							 NULL);
-	
+		ctx->pango_context = pango_ft2_get_context ((guint)ctx->dpi, (guint)ctx->dpi);   
+		
 	layout = pango_layout_new (ctx->pango_context);
 	pango_layout_set_text (layout, string, end - beg);
 	font = pango_font_description_copy (pango_context_get_font_description (ctx->pango_context));
@@ -219,8 +206,19 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	bitmap.pixel_mode = ft_pixel_mode_grays;
 	
 	pango_ft2_render_layout (&bitmap, layout, -ink_rect.x, -ink_rect.y);
-	
 	g_object_unref (layout);
+
+	has_alpha = gdk_pixbuf_get_has_alpha (pixbuf);
+	render = art_render_new (0, 0,
+							 gdk_pixbuf_get_width (pixbuf),
+							 gdk_pixbuf_get_height (pixbuf),
+							 gdk_pixbuf_get_pixels (pixbuf),
+							 gdk_pixbuf_get_rowstride (pixbuf),
+							 gdk_pixbuf_get_n_channels (pixbuf) -
+							 (has_alpha ? 1 : 0),
+							 gdk_pixbuf_get_bits_per_sample (pixbuf),
+							 has_alpha ? ART_ALPHA_SEPARATE : ART_ALPHA_NONE,
+							 NULL);
 	
 	rsvg_render_paint_server (render, state->fill, NULL); /* todo: paint server ctx */
 	opacity = state->fill_opacity * state->opacity;
@@ -260,37 +258,37 @@ rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
 	const char * klazz = NULL, * id = NULL;
 	x = y = dx = dy = 0.;
 	
-  state = &ctx->state[ctx->n_state - 1];
-  
-  if (atts != NULL)
-	  {
-		  for (i = 0; atts[i] != NULL; i += 2)
-			  {
-				  if (!strcmp ((char *)atts[i], "x"))
-					  x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
-				  else if (!strcmp ((char *)atts[i], "y"))
-					  y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
-				  else if (!strcmp ((char *)atts[i], "dx"))
-					  dx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
-				  else if (!strcmp ((char *)atts[i], "dy"))
-					  dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
-				  else if (!strcmp ((char *)atts[i], "class"))
-					  klazz = (const char *)atts[i + 1];
-				  else if (!strcmp ((char *)atts[i], "id"))
-					  id = (const char *)atts[i + 1];
-			  }
-	  }
-  
-  /* todo: transform() is illegal here */
-  x += dx ;
-  y += dy ;
-  
-  if (x > 0 && y > 0)
-	  {
-		  art_affine_translate (affine, x, y);
-		  art_affine_multiply (state->affine, affine, state->affine);
-	  }
-  rsvg_parse_style_attrs (ctx, "tspan", klazz, id, atts);
+	state = &ctx->state[ctx->n_state - 1];
+	
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				{
+					if (!strcmp ((char *)atts[i], "x"))
+						x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
+					else if (!strcmp ((char *)atts[i], "y"))
+						y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
+					else if (!strcmp ((char *)atts[i], "dx"))
+						dx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
+					else if (!strcmp ((char *)atts[i], "dy"))
+						dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
+					else if (!strcmp ((char *)atts[i], "class"))
+						klazz = (const char *)atts[i + 1];
+					else if (!strcmp ((char *)atts[i], "id"))
+						id = (const char *)atts[i + 1];
+				}
+		}
+	
+	/* todo: transform() is illegal here */
+	x += dx ;
+	y += dy ;
+	
+	if (x > 0 && y > 0)
+		{
+			art_affine_translate (affine, x, y);
+			art_affine_multiply (state->affine, affine, state->affine);
+		}
+	rsvg_parse_style_attrs (ctx, "tspan", klazz, id, atts);
 }
 
 static void
