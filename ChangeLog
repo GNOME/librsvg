@@ -1,4 +1,34 @@
-2005-2-12  Caleb Moore <c.moore@student.unsw.edu.au>	
+2005-2-17  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-paint-server.c: modified to allow patterns to be rendered on a 
+	pixbuf of the exact nessisary size. Not Cairo based I know, but it
+	needed to be done.
+	
+2005-2-16  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-image.c: moved much of it's functionality to rsvg-art-draw.c 
+	and rsvg-art-composite.c
+	* rsvg-private.h: gave RsvgRender the ability to abstract the drawing
+	of images
+	* rsvg.c: created rsvg_render_image function
+	
+2005-2-15  Caleb Moore <c.moore@student.unsw.edu.au>	
+
+	* rsvg-private.h: created RsvgRender structure.
+	* rsvg.c: created functions to draw and composite that call apon the 
+	render structure.
+	* rsvg-art-render.c: created new file to create render structure using
+	libart based routines, created a render structure for creating outlines
+	for use as clip paths.
+	* everywhere: distroyed rsvg_*_draw_as_svp functions
+	* rsvg-clip-path.c: modified to use the new RsvgArtSvpRender structure.
+	* rsvg-private.h: moved the drawing pixbuf out of RsvgDrawingCtx
+	
+2005-2-13  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-syles.c: chopped some into rsvg-art-composite.c
+	
+2005-2-12  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-shapes.c chopped up into rsvg-structure.c, rsvg-marker.c, rsvg-art-draw.c, rsvg-image.c, for maintainability
 	* rsvg-private.h et. al.: Renamed DrawingCtx to RsvgDrawingCtx

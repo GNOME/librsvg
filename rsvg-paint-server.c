@@ -599,18 +599,12 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 					maxy = ycoord;
 			}
 
-	if (minx < 0)
-		xoffset = -minx;
-	if (miny < 0)
-		yoffset = -miny;
-	if (maxx > gdk_pixbuf_get_width(pixbuf))
-		xoffset = -minx;
-	if (maxy > gdk_pixbuf_get_height(pixbuf))
-		yoffset = -maxy;	
+	xoffset = -minx;
+	yoffset = -miny;
 
 	render = _rsvg_pixbuf_new_cleared(GDK_COLORSPACE_RGB, 1, 8, 
-									  gdk_pixbuf_get_width(pixbuf), 
-									  gdk_pixbuf_get_height(pixbuf));
+									  maxx - minx, maxy - miny);
+	
 	save = pixbuf;
 
 	((RsvgArtRender *)hctx->render)->pixbuf = render;
