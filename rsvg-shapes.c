@@ -767,8 +767,6 @@ RsvgDefsDrawable *
 rsvg_push_def_group (RsvgHandle *ctx, const char * id)
 {
 	RsvgDefsDrawableGroup *group;
-	if (!ctx->in_defs)
-		return NULL;	
 
 	group = g_new (RsvgDefsDrawableGroup, 1);
 	group->children = g_ptr_array_new();
@@ -793,8 +791,7 @@ void
 rsvg_pop_def_group (RsvgHandle *ctx)
 {
 	RsvgDefsDrawableGroup * group;
-	if (!ctx->in_defs)
-		return;
+
 	group = (RsvgDefsDrawableGroup *)ctx->current_defs_group;
 	if (group == NULL)
 		return;
@@ -806,24 +803,23 @@ rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id)
 {
 	if (!ctx->in_defs)
 		rsvg_render_path (ctx, d);
-	else {
+
 	   
-		RsvgDefsDrawablePath *path;
-
-		path = g_new (RsvgDefsDrawablePath, 1);
-		path->d = g_strdup(d);
-		rsvg_state_clone (&path->super.state, rsvg_state_current (ctx));
-		path->super.super.type = RSVG_DEF_PATH;
-		path->super.super.free = rsvg_defs_drawable_path_free;
-		path->super.draw = rsvg_defs_drawable_path_draw;
-		path->super.draw_as_svp = rsvg_defs_drawable_path_draw_as_svp;
-		rsvg_defs_set (ctx->defs, id, &path->super.super);
-
-		path->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
-		if (path->super.parent != NULL)
-			rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)path->super.parent, 
-										  &path->super);
-	}
+	RsvgDefsDrawablePath *path;
+	
+	path = g_new (RsvgDefsDrawablePath, 1);
+	path->d = g_strdup(d);
+	rsvg_state_clone (&path->super.state, rsvg_state_current (ctx));
+	path->super.super.type = RSVG_DEF_PATH;
+	path->super.super.free = rsvg_defs_drawable_path_free;
+	path->super.draw = rsvg_defs_drawable_path_draw;
+	path->super.draw_as_svp = rsvg_defs_drawable_path_draw_as_svp;
+	rsvg_defs_set (ctx->defs, id, &path->super.super);
+	
+	path->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
+	if (path->super.parent != NULL)
+		rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)path->super.parent, 
+									  &path->super);
 }
 
 void
