@@ -1613,7 +1613,8 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	/* figure out if image is visible or not */
 	if (!state->visible || !state->cond_true)
 		return;
-	img = rsvg_pixbuf_new_from_href (href, rsvg_handle_get_base_uri (ctx), &err);
+	/*hmm, passing the error thingie into the next thing makes it screw up when using vfs*/
+	img = rsvg_pixbuf_new_from_href (href, rsvg_handle_get_base_uri (ctx), NULL); 
 
 	if (!img)
 		{

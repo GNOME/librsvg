@@ -4453,7 +4453,7 @@ get_surface_normal (guchar * I, FPBox boundarys, gint x, gint y,
 	factory = fnmy.factor / rawdy;
 	Ky = fnmy.matrix;	
 
-    Nx = -surfaceScale * factorx * (gdouble)
+    Nx = -surfaceScale * factorx * ((gdouble)
 		(Kx[0]*gdk_pixbuf_get_interp_pixel(I,x-dx,y-dy, 3, boundarys, rowstride) +
 		 Kx[1]*gdk_pixbuf_get_interp_pixel(I,x   ,y-dy, 3, boundarys, rowstride) + 
 		 Kx[2]*gdk_pixbuf_get_interp_pixel(I,x+dx,y-dy, 3, boundarys, rowstride) + 
@@ -4462,9 +4462,9 @@ get_surface_normal (guchar * I, FPBox boundarys, gint x, gint y,
 		 Kx[5]*gdk_pixbuf_get_interp_pixel(I,x+dx,y   , 3, boundarys, rowstride) + 
 		 Kx[6]*gdk_pixbuf_get_interp_pixel(I,x-dx,y+dy, 3, boundarys, rowstride) + 
 		 Kx[7]*gdk_pixbuf_get_interp_pixel(I,x   ,y+dy, 3, boundarys, rowstride) + 
-		 Kx[8]*gdk_pixbuf_get_interp_pixel(I,x+dx,y+dy, 3, boundarys, rowstride)) / 255.0;
+		 Kx[8]*gdk_pixbuf_get_interp_pixel(I,x+dx,y+dy, 3, boundarys, rowstride))) / 255.0;
 	
-    Ny = -surfaceScale * factory * (gdouble)
+    Ny = -surfaceScale * factory * ((gdouble)
 		(Ky[0]*gdk_pixbuf_get_interp_pixel(I,x-dx,y-dy, 3, boundarys, rowstride) +
 		 Ky[1]*gdk_pixbuf_get_interp_pixel(I,x   ,y-dy, 3, boundarys, rowstride) + 
 		 Ky[2]*gdk_pixbuf_get_interp_pixel(I,x+dx,y-dy, 3, boundarys, rowstride) + 
@@ -4473,7 +4473,7 @@ get_surface_normal (guchar * I, FPBox boundarys, gint x, gint y,
 		 Ky[5]*gdk_pixbuf_get_interp_pixel(I,x+dx,y   , 3, boundarys, rowstride) + 
 		 Ky[6]*gdk_pixbuf_get_interp_pixel(I,x-dx,y+dy, 3, boundarys, rowstride) + 
 		 Ky[7]*gdk_pixbuf_get_interp_pixel(I,x   ,y+dy, 3, boundarys, rowstride) + 
-		 Ky[8]*gdk_pixbuf_get_interp_pixel(I,x+dx,y+dy, 3, boundarys, rowstride)) / 255.0;
+		 Ky[8]*gdk_pixbuf_get_interp_pixel(I,x+dx,y+dy, 3, boundarys, rowstride))) / 255.0;
 
 	output.x = Nx;
 	output.y = Ny;
@@ -4529,21 +4529,29 @@ static vector3
 get_light_colour(lightSource source, vector3 colour, 
 				 gdouble x, gdouble y, gdouble z, gdouble * affine)
 {
-	double base;
+	double base, angle;
 	vector3 s;
+	vector3 L;
 	vector3 output;
 
 	if (source.type != SPOTLIGHT)
 		return colour;
 
-	s.x = source.pointsAtX * affine[0] + affine[4] - source.x;
-	s.y = source.pointsAtY * affine[3] + affine[5] - source.y;
-	s.z = source.pointsAtZ * sqrt(affine[0] * affine[3]) - source.z;
+	L.x = source.x * affine[0] + affine[4] - x;
+	L.y = source.y * affine[3] + affine[5] - y;
+	L.z = source.z * sqrt(affine[0] * affine[3]) - z;
+	L = normalise(L);
+
+	s.x = (source.pointsAtX - source.x) * affine[0];
+	s.y = (source.pointsAtY - source.y) * affine[3];
+	s.z = (source.pointsAtZ - source.z) * sqrt(affine[0] * affine[3]);
 	s = normalise(s);
 
-	base = -dotproduct(get_light_direction (source, x, y, z, affine), s);
+	base = -dotproduct(L, s);
 
-	if (base < 0)
+	angle = acos(base) * 180.0 / M_PI;
+
+	if (base < 0 || angle > source.limitingconeAngle)
 		{
 			output.x = 0;
 			output.y = 0;
@@ -4552,8 +4560,8 @@ get_light_colour(lightSource source, vector3 colour,
 		}
 	
 	output.x = colour.x*pow(base, source.specularExponent);
-	output.y = colour.x*pow(base, source.specularExponent);
-	output.z = colour.x*pow(base, source.specularExponent);
+	output.y = colour.y*pow(base, source.specularExponent);
+	output.z = colour.z*pow(base, source.specularExponent);
 
 	return output;
 }
@@ -4569,6 +4577,7 @@ rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
 	font_size = rsvg_state_current_font_size (ctx);
 
 	data = (lightSource *)ctx->currentsubfilter;
+	data->specularExponent = 1;
 
 	if (type == 's')
 		data->type = SPOTLIGHT;
@@ -4576,6 +4585,8 @@ rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
 		data->type = DISTANTLIGHT;
 	else 
 		data->type = POINTLIGHT;
+
+	data->limitingconeAngle = 180;
 
 	if (rsvg_property_bag_size (atts))
 		{
@@ -4586,6 +4597,10 @@ rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
 			if ((value = rsvg_property_bag_lookup (atts, "elevation")))
 				{
 					data->y = rsvg_css_parse_angle(value) / 180.0 * M_PI;
+				}
+			if ((value = rsvg_property_bag_lookup (atts, "limitingConeAngle")))
+				{
+					data->limitingconeAngle = rsvg_css_parse_angle(value);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
 				{
@@ -4615,8 +4630,10 @@ rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
 			if ((value = rsvg_property_bag_lookup (atts, "pointsAtZ")))
 				{
 					data->pointsAtZ = rsvg_css_parse_normalized_length(value, rsvg_dpi_percentage (ctx),
-																	   1, font_size);  
-				}
+																	   1, font_size);
+				}  
+			if ((value = rsvg_property_bag_lookup (atts, "specularExponent")))
+				data->specularExponent = g_ascii_strtod(value, NULL);
 		}
 }
 
@@ -4751,6 +4768,7 @@ rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, RsvgPropertyBag 
 	filter->diffuseConstant = 1;
 	filter->dx = 1;
 	filter->dy = 1;
+	filter->lightingcolour = 0xFFFFFFFF;
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -4951,6 +4969,7 @@ rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, RsvgPropertyBag
 	filter->surfaceScale = 1;
 	filter->specularConstant = 1;
 	filter->specularExponent = 1;
+	filter->lightingcolour = 0xFFFFFFFF;
 	
 	if (rsvg_property_bag_size (atts))
 		{

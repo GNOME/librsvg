@@ -1,3 +1,8 @@
+2004-07-19  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-filter.c: made lighting work much better
+	* rsvg-shapes.c: quit passing the gerror pointer to the image loader. It works better now with VFS now, I have no idea why though
+
 2004-07-18  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-filter.c: made feImage work better, now it transforms it better.
