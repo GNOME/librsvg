@@ -1,6 +1,7 @@
 2005-2-9  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-paint-server.c: fixed jimmac's gradient problem
+	* rsvg-filter.c: fixed Uraeus' reversion
 
 2005-2-9  Caleb Moore <c.moore@student.unsw.edu.au>
 

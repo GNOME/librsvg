@@ -4035,7 +4035,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
 	if(!oself->href)
 		return NULL;
 
-	parent = rsvg_defs_lookup (ctx->defs, oself->href->str+1);
+	parent = rsvg_defs_lookup (ctx->defs, oself->href->str);
 	if (!parent)
 		return NULL;
 
