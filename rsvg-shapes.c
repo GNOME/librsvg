@@ -643,6 +643,8 @@ rsvg_defs_drawable_group_draw_as_svp (RsvgDefsDrawable * self, DrawingCtx *ctx,
 					art_free(svp1);
 					svp1 = svp3;
 				}
+			else
+				svp1 = svp2;
 			
 			rsvg_state_pop(ctx);
 		}		

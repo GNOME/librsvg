@@ -34,6 +34,7 @@
 #include "rsvg-mask.h"
 
 #include <libart_lgpl/art_affine.h>
+#include <libart_lgpl/art_svp_ops.h>
 #include <libart_lgpl/art_render_mask.h>
 
 #include "rsvg-shapes.h"
@@ -343,6 +344,13 @@ rsvg_text_render_text (DrawingCtx *ctx,
 					   gdouble *x,
 					   gdouble *y);
 
+ArtSVP *
+rsvg_text_render_text_as_svp (DrawingCtx *ctx,
+							  RsvgTspan  *tspan,
+							  const char *text,
+							  gdouble *x,
+							  gdouble *y);
+
 static gdouble
 rsvg_text_width  (DrawingCtx *ctx,
 				  RsvgTspan  *tspan,
@@ -425,6 +433,67 @@ rsvg_tspan_draw(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y, int d
 	}
 }
 
+static ArtSVP *
+rsvg_tspan_draw_as_svp(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y, int dominate);
+
+static ArtSVP *
+rsvg_tchunk_draw_as_svp(RsvgTChunk * self, DrawingCtx *ctx, RsvgTspan *span, gdouble *x, gdouble *y)
+{
+	if (self->string)
+		return rsvg_text_render_text_as_svp (ctx, span, self->string->str, x, y);
+	if (self->span)
+		{
+			ArtSVP * output;
+			rsvg_state_push(ctx);
+			output = rsvg_tspan_draw_as_svp (self->span, ctx, x, y, 0);
+			rsvg_state_pop(ctx);
+			return output;
+		}
+	return NULL;
+}
+
+/*todo: remove unnesicary code duplication*/
+
+static ArtSVP *
+rsvg_tspan_draw_as_svp(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y, int dominate)
+{
+	unsigned int i;
+	ArtSVP *svp1, *svp2, *svp3;
+	svp1 = NULL;
+
+	rsvg_state_reinherit_top(ctx, &self->state, dominate);
+	if (self->hasx || self->hasy)
+		{
+			switch (rsvg_state_current(ctx)->text_anchor)
+				{
+				case TEXT_ANCHOR_START:
+					*x = self->x;		
+					break;
+				case TEXT_ANCHOR_MIDDLE:
+					*x = self->x - rsvg_text_tspan_width (ctx, self) / 2;
+					break;
+				case TEXT_ANCHOR_END:
+					*x = self->x - rsvg_text_tspan_width (ctx, self);
+					break;
+				}
+			*y = self->y;
+		}
+
+	for (i = 0; i < self->contents->len; i++) {
+		svp2 = rsvg_tchunk_draw_as_svp (g_ptr_array_index(self->contents, i), ctx, self, x, y);
+		if (svp1 != NULL)
+			{
+				svp3 = art_svp_union(svp2, svp1);
+				art_free(svp1);
+				svp1 = svp3;
+			}
+		else
+			svp1 = svp2;
+	}
+	return svp1;
+}
+
+
 static void 
 rsvg_defs_drawable_text_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 							  int dominate)
@@ -433,6 +502,16 @@ rsvg_defs_drawable_text_draw (RsvgDefsDrawable * self, DrawingCtx *ctx,
 	RsvgDefsDrawableText *text = (RsvgDefsDrawableText*)self;
 
 	rsvg_tspan_draw(text->chunk, ctx, &x, &y, dominate);
+}
+
+static ArtSVP *
+rsvg_defs_drawable_text_draw_as_svp (RsvgDefsDrawable * self, DrawingCtx *ctx, 
+									 int dominate)
+{
+	gdouble x, y;
+	RsvgDefsDrawableText *text = (RsvgDefsDrawableText*)self;
+
+	return rsvg_tspan_draw_as_svp(text->chunk, ctx, &x, &y, dominate);
 }
 
 void
@@ -477,6 +556,7 @@ rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	text->super.super.type = RSVG_DEF_PATH;
 	text->super.super.free = rsvg_defs_drawable_text_free;
 	text->super.draw = rsvg_defs_drawable_text_draw;
+	text->super.draw_as_svp = rsvg_defs_drawable_text_draw_as_svp;
 	rsvg_defs_set (ctx->defs, id, &text->super.super);
 	
 	text->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
@@ -963,16 +1043,17 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 
 }
 
-void 
-rsvg_text_render_text (DrawingCtx *ctx,
-					   RsvgTspan  *tspan,
-					   const char *text,
-					   gdouble *x,
-					   gdouble *y)
+static GString * 
+rsvg_text_render_text_as_string (DrawingCtx *ctx,
+								 RsvgTspan  *tspan,
+								 const char *text,
+								 gdouble *x,
+								 gdouble *y)
 {
 	RsvgTextLayout *layout;
 	RenderCtx      *render;
 	RsvgState      *state;
+	GString        *output;
 	state = rsvg_state_current(ctx);
 
 	state->fill_rule = FILL_RULE_EVENODD;	
@@ -996,9 +1077,38 @@ rsvg_text_render_text (DrawingCtx *ctx,
 	*x = layout->x;
 	*y = layout->y;
 
-	rsvg_render_path (ctx, render->path->str);
+	output = g_string_new(render->path->str);
 	rsvg_render_ctx_free (render);
 	rsvg_text_layout_free (layout);
+	return output;
+}
+
+void
+rsvg_text_render_text (DrawingCtx *ctx,
+					   RsvgTspan  *tspan,
+					   const char *text,
+					   gdouble *x,
+					   gdouble *y)
+{
+	GString * render;
+	render = rsvg_text_render_text_as_string (ctx,tspan,text,x,y);
+	rsvg_render_path (ctx, render->str);
+	g_string_free(render, TRUE);
+}
+
+ArtSVP *
+rsvg_text_render_text_as_svp (DrawingCtx *ctx,
+							  RsvgTspan  *tspan,
+							  const char *text,
+							  gdouble *x,
+							  gdouble *y)
+{
+	GString * render;
+	ArtSVP * output;
+	render = rsvg_text_render_text_as_string (ctx,tspan,text,x,y);
+	output = rsvg_render_path_as_svp (ctx, render->str);
+	g_string_free(render, TRUE);
+	return output;
 }
 
 static gdouble
