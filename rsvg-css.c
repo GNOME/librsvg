@@ -162,12 +162,27 @@ rsvg_css_clip_rgb (gint rgb)
   return rgb;
 }
 
+typedef struct
+{
+  const char * name;
+  guint rgb;
+} ColorPair;
+
+/* compare function for bsearch */
+static int
+rsvg_css_color_compare (const void * a, const void * b)
+{
+  const char * needle = (const char *)a;
+  const ColorPair * haystack = (const ColorPair *)b;
+
+  return g_ascii_strcasecmp (needle, haystack->name);
+}
+
 /* Parse a CSS2 color, returning rgb */
 guint32
 rsvg_css_parse_color (const char *str)
 {
   gint val = 0;
-  static GHashTable *colors = NULL;
 
   /* todo: better failure detection */
 
@@ -201,8 +216,9 @@ rsvg_css_parse_color (const char *str)
 #ifdef VERBOSE
       printf ("val = %x\n", val);
 #endif
-    } 
-  else if (strstr (str, "rgb") != 0)
+    }
+  /* i want to use g_str_has_prefix but it isn't in my gstrfuncs.h?? */
+  else if (strstr (str, "rgb") != NULL)
     {
       gint r, g, b;
       r = g = b = 0;
@@ -236,37 +252,36 @@ rsvg_css_parse_color (const char *str)
     }
   else
     {
-      GString * string, * tmp;
-      if (!colors)
+      const static ColorPair color_list [] =
 	{
-	  colors = g_hash_table_new (g_str_hash, g_str_equal);
-	  
-	  g_hash_table_insert (colors, "black",    GINT_TO_POINTER (0x000000));
-	  g_hash_table_insert (colors, "silver",   GINT_TO_POINTER (0xc0c0c0));
-	  g_hash_table_insert (colors, "gray",     GINT_TO_POINTER (0x808080));
-	  g_hash_table_insert (colors, "white",    GINT_TO_POINTER (0xFFFFFF));
-	  g_hash_table_insert (colors, "maroon",   GINT_TO_POINTER (0x800000));
-	  g_hash_table_insert (colors, "red",      GINT_TO_POINTER (0xFF0000));
-	  g_hash_table_insert (colors, "purple",   GINT_TO_POINTER (0x800080));
-	  g_hash_table_insert (colors, "fuchsia",  GINT_TO_POINTER (0xFF00FF));
-	  g_hash_table_insert (colors, "green",    GINT_TO_POINTER (0x008000));
-	  g_hash_table_insert (colors, "lime",     GINT_TO_POINTER (0x00FF00));
-	  g_hash_table_insert (colors, "olive",    GINT_TO_POINTER (0x808000));
-	  g_hash_table_insert (colors, "yellow",   GINT_TO_POINTER (0xFFFF00));
-	  g_hash_table_insert (colors, "navy",     GINT_TO_POINTER (0x000080));
-	  g_hash_table_insert (colors, "blue",     GINT_TO_POINTER (0x0000FF));
-	  g_hash_table_insert (colors, "teal",     GINT_TO_POINTER (0x008080));
-	  g_hash_table_insert (colors, "aqua",     GINT_TO_POINTER (0x00FFFF));
-	}
+	  {"aqua",    0x00FFFF},
+	  {"black",   0x000000},
+	  {"blue",    0x0000FF},
+	  {"fuchsia", 0xFF00FF},
+	  {"gray",    0x808080},
+	  {"green",   0x008000},
+	  {"lime",    0x00FF00},
+	  {"maroon",  0x800000},
+	  {"navy",    0x000080},
+	  {"olive",   0x808000},
+	  {"purple",  0x800080},
+	  {"red",     0xFF0000},
+	  {"silver",  0xC0C0C0},
+	  {"teal",    0x008080},
+	  {"white",   0xFFFFFF},
+	  {"yellow",  0xFFFF00}
+	};
 
-      tmp = g_string_new (str);
-      string = g_string_ascii_down (tmp);
+      ColorPair * result = bsearch (str, color_list, 
+				    sizeof (color_list)/sizeof (color_list[0]),
+				    sizeof (ColorPair),
+				    rsvg_css_color_compare);
 
-      /* this will default to black on a failed lookup */
-      val = GPOINTER_TO_INT (g_hash_table_lookup (colors, string->str)); 
-
-      g_string_free (tmp, TRUE);
-      g_string_free (string, TRUE);
+      /* default to black on failed lookup */
+      if (result == NULL)
+	val = 0;
+      else
+	val = result->rgb;
     }
 
   return val;

@@ -1,3 +1,8 @@
+2002-09-18  Dom Lachowicz <doml@appligent.com>
+
+	* rsvg-css.c (rsvg_color_parse) : use bsearch instead of GHashTable. Potentially faster, 
+	you don't leak GHashTable, no need to alloc and free 2 GStrings, and it *actually works here*
+
 2002-09-17  Dom Lachowicz <doml@appligent.com>
 
 	* rsvg.c (rsvg_text_handler_characters): Handle scaling font by affine/viewbox
