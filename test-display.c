@@ -33,6 +33,11 @@
 #define DEFAULT_WIDTH  240
 #define DEFAULT_HEIGHT 240
 
+/* prepare for gettext */
+#ifndef _
+#define _(X) X
+#endif
+
 static void
 quit_cb (GtkWidget *win, gpointer unused)
 {
@@ -71,7 +76,7 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid, const char * color)
 			width = MIN(gdk_pixbuf_get_width (pixbuf), DEFAULT_WIDTH) + 20;
 			height = MIN(gdk_pixbuf_get_height (pixbuf), DEFAULT_HEIGHT) + 20;
 
-			gtk_window_set_title (GTK_WINDOW(win), "SVG Viewer");
+			gtk_window_set_title (GTK_WINDOW(win), _("SVG Viewer"));
 		}
 
 	gtk_window_set_default_size(GTK_WINDOW(win), width, height);
@@ -106,10 +111,10 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid, const char * color)
 					if (gdk_colormap_alloc_color (gtk_widget_get_colormap(parent_widget), &bg_color, FALSE, TRUE))
 						gtk_widget_modify_bg (parent_widget, GTK_STATE_NORMAL, &bg_color);
 					else
-						g_warning ("Couldn't allocate color '%s'", color);
+						g_warning (_("Couldn't allocate color '%s'"), color);
 				}
 			else
-				g_warning ("Couldn't parse color '%s'", color);
+				g_warning (_("Couldn't parse color '%s'"), color);
 		}
 
 	gtk_widget_show_all (win);
@@ -144,16 +149,16 @@ main (int argc, char **argv)
 
 	struct poptOption options_table[] = {
 #ifdef ENABLE_XEMBED
-		{ "xid",      'i',  POPT_ARG_INT,    &xid,        0, "XWindow ID [for X11 embedding]", "<int>" },
+		{ "xid",      'i',  POPT_ARG_INT,    &xid,        0, _("XWindow ID [for X11 embedding]"), _("<int>") },
 #endif
-		{ "stdin",    's',  POPT_ARG_NONE,   &from_stdin, 0, "Use stdin", NULL },
-		{ "dpi",      'd',  POPT_ARG_DOUBLE, &dpi,        0, "Pixels Per Inch", "<float>" },
-		{ "x-zoom",   'x',  POPT_ARG_DOUBLE, &x_zoom,     0, "x zoom factor", "<float>" },
-		{ "y-zoom",   'y',  POPT_ARG_DOUBLE, &y_zoom,     0, "y zoom factor", "<float>" },
-		{ "width",    'w',  POPT_ARG_INT,    &width,      0, "width", "<int>" },
-		{ "height",   'h',  POPT_ARG_INT,    &height,     0, "height", "<int>" },
-		{ "bg-color", 'b',  POPT_ARG_STRING, &bg_color,   0, "color", "<string>" },
-		{ "version",  'v',  POPT_ARG_NONE,   &bVersion,   0, "show version information", NULL },
+		{ "stdin",    's',  POPT_ARG_NONE,   &from_stdin, 0, _("Read from stdin instead of a file"), NULL },
+		{ "dpi",      'd',  POPT_ARG_DOUBLE, &dpi,        0, _("Set the # of Pixels Per Inch"), _("<float>") },
+		{ "x-zoom",   'x',  POPT_ARG_DOUBLE, &x_zoom,     0, _("Set the x zoom factor"), _("<float>") },
+		{ "y-zoom",   'y',  POPT_ARG_DOUBLE, &y_zoom,     0, _("Set the y zoom factor"), _("<float>") },
+		{ "width",    'w',  POPT_ARG_INT,    &width,      0, _("Set the image's width"), _("<int>") },
+		{ "height",   'h',  POPT_ARG_INT,    &height,     0, _("Set the image's height"), _("<int>") },
+		{ "bg-color", 'b',  POPT_ARG_STRING, &bg_color,   0, _("Set the image background color (default: transparent)"), _("<string>") },
+		{ "version",  'v',  POPT_ARG_NONE,   &bVersion,   0, _("Show version information"), NULL },
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
@@ -163,14 +168,14 @@ main (int argc, char **argv)
 	GdkPixbuf *pixbuf;
     
 	popt_context = poptGetContext ("rsvg-view", argc, (const char **)argv, options_table, 0);
-	poptSetOtherOptionHelp(popt_context, "[OPTIONS...] [file.svg]");
+	poptSetOtherOptionHelp(popt_context, _("[OPTIONS...] [file.svg]"));
 	
 	c = poptGetNextOpt (popt_context);
 	args = poptGetArgs (popt_context);
 	
 	if (bVersion != 0)
 		{
-			g_message ("rsvg-view version %s\n", VERSION);
+			g_message (_("rsvg-view version %s\n"), VERSION);
 			return 0;
 		}
 	
@@ -226,7 +231,7 @@ main (int argc, char **argv)
 
 	if (!pixbuf)
 		{
-			g_critical ("Error displaying pixbuf!\n");
+			g_critical (_("Error displaying pixbuf!\n"));
 			return 1;
 		}
 	
