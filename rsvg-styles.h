@@ -185,6 +185,11 @@ double rsvg_state_current_font_size (RsvgHandle *ctx);
 
 void rsvg_state_clip_path_assure(RsvgHandle * ctx);
 
+void rsvg_state_pop(RsvgHandle * ctx);
+void rsvg_state_push(RsvgHandle * ctx);
+
+void rsvg_state_reinherit_top(RsvgHandle * ctx, RsvgState * state, int dominate);
+
 G_END_DECLS
 
 #endif /* RSVG_STYLES_H */

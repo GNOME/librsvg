@@ -32,6 +32,7 @@
 #include <libxml/xmlmemory.h>
 #include <pango/pango.h>
 #include <libart_lgpl/art_rect.h>
+#include <glib/gslist.h>
 
 G_BEGIN_DECLS
 
@@ -62,9 +63,8 @@ struct RsvgHandle {
 	ArtIRect bbox;
 
 	/* stack; there is a state for each element */
-	RsvgState *state;
-	int n_state;
-	int n_state_max;
+
+	GSList * state;
 	
 	RsvgDefs *defs;
 	guint in_defs;
@@ -99,6 +99,8 @@ struct RsvgHandle {
 
 	void * currentfilter;
 	void * currentsubfilter;
+
+	GMemChunk * state_allocator;
 
 	/* virtual fns */
 	gboolean (* write) (RsvgHandle    *handle,
@@ -180,6 +182,10 @@ void rsvg_handle_set_base_uri (RsvgHandle *handle,
 
 gboolean 
 rsvg_eval_switch_attributes (RsvgPropertyBag *atts, gboolean * p_has_cond);
+
+GdkPixbuf *
+_rsvg_pixbuf_new_cleared (GdkColorspace colorspace, gboolean has_alpha, int bits_per_sample,
+						  int width, int height);
 
 G_END_DECLS
 

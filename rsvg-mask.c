@@ -36,6 +36,7 @@ rsvg_mask_free (RsvgDefVal * self)
 {
 	RsvgMask *z = (RsvgMask *)self;
 	g_ptr_array_free(z->super.children, TRUE);
+	rsvg_state_finalize (&z->super.super.state);
 	g_free (z);
 }
 
@@ -53,34 +54,16 @@ rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgHandle *ct
 
 	drawable = (RsvgDefsDrawable*)self;
 	
-	mask = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-			       gdk_pixbuf_get_width(tos), 
-			       gdk_pixbuf_get_height(tos));
-
-	gdk_pixbuf_fill(mask, 0x00000000);	
+	mask = _rsvg_pixbuf_new_cleared(GDK_COLORSPACE_RGB, 1, 8, 
+									gdk_pixbuf_get_width(tos), 
+									gdk_pixbuf_get_height(tos));
 	save = ctx->pixbuf;
 
 	ctx->pixbuf = mask;
 
-
-/* push the state stack */
-	if (ctx->n_state == ctx->n_state_max)
-		ctx->state = g_renew (RsvgState, ctx->state, 
-							  ctx->n_state_max <<= 1);
-	if (ctx->n_state)
-		rsvg_state_inherit (&ctx->state[ctx->n_state],
-									&ctx->state[ctx->n_state - 1]);
-	else
-				rsvg_state_init (ctx->state);
-	ctx->n_state++;
-	
+	rsvg_state_push(ctx);
 	rsvg_defs_drawable_draw (drawable, ctx, 0);
-	
-	/* pop the state stack */
-	ctx->n_state--;
-	rsvg_state_finalize (&ctx->state[ctx->n_state]);
-
-	
+	rsvg_state_pop(ctx);
 
 	ctx->pixbuf = save;
 
@@ -92,7 +75,7 @@ rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgHandle *ct
 	
 	if (!gdk_pixbuf_get_has_alpha (nos))
 		{
-			g_warning ("push/pop transparency group on non-alpha buffer nyi");
+			g_warning (_("push/pop transparency group on non-alpha buffer nyi"));
 			return;
 		}
 	
@@ -148,32 +131,19 @@ rsvg_defs_drawable_mask_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
 	guint i;
 
-	/* combine state definitions */
-	if (ctx->n_state > 1)
-		rsvg_state_dominate(state, &ctx->state[ctx->n_state - 2]);
+	rsvg_state_reinherit_top(ctx, &self->state, 0);
 
 	if (state->opacity != 0xff || state->filter)
 		rsvg_push_discrete_layer (ctx);
 
 	for (i = 0; i < group->children->len; i++)
 		{
-			/* push the state stack */
-			if (ctx->n_state == ctx->n_state_max)
-				ctx->state = g_renew (RsvgState, ctx->state, 
-									  ctx->n_state_max <<= 1);
-			if (ctx->n_state)
-				rsvg_state_inherit (&ctx->state[ctx->n_state],
-									&ctx->state[ctx->n_state - 1]);
-			else
-				rsvg_state_init (ctx->state);
-			ctx->n_state++;
+			rsvg_state_push(ctx);
 
 			rsvg_defs_drawable_draw (g_ptr_array_index(group->children, i), 
 									 ctx, 0);
 	
-			/* pop the state stack */
-			ctx->n_state--;
-			rsvg_state_finalize (&ctx->state[ctx->n_state]);
+			rsvg_state_pop(ctx);
 		}			
 
 	if (state->opacity != 0xff || state->filter)
@@ -201,7 +171,7 @@ rsvg_new_mask (void)
 void 
 rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	const char *id = NULL, *value;
+	const char *id = NULL, *klazz = NULL, *value;
 	RsvgMask *mask;
 	double font_size;
 	
@@ -250,16 +220,24 @@ rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts)
 													  font_size);					
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
+			if ((value = rsvg_property_bag_lookup (atts, "class")))
+				klazz = value;
 		}
+
+
+	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "mask", klazz, id, atts);
 
 	mask->super.super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
 
 	ctx->current_defs_group = &mask->super;
+
+	rsvg_state_clone (&mask->super.super.state, rsvg_state_current (ctx));
 	
 	/* set up the defval stuff */
 	mask->super.super.super.type = RSVG_DEF_MASK;
 	mask->super.super.super.free = &rsvg_mask_free;
 	mask->super.super.draw = &rsvg_defs_drawable_mask_draw;
+
 	rsvg_defs_set (ctx->defs, id, &mask->super.super.super);
 }
 
@@ -308,6 +286,7 @@ rsvg_clip_path_free (RsvgDefVal * self)
 {
 	RsvgClipPath *z = (RsvgClipPath *)self;
 	g_ptr_array_free(z->super.children, TRUE);
+	rsvg_state_finalize (&z->super.super.state);
 	g_free (z);
 }
 
@@ -320,10 +299,8 @@ rsvg_clip_path_render (RsvgClipPath * self, RsvgHandle *ctx)
 
 	ArtSVP *svp, *svpx;
 	svpx = NULL;
-
-	/* combine state definitions */
-	if (ctx->n_state > 1)
-		rsvg_state_dominate(state, &ctx->state[ctx->n_state - 2]);
+	
+	rsvg_state_reinherit_top(ctx, &self->super.super.state, 0);
 
 	if (self->units == objectBoundingBox)
 		{
@@ -337,16 +314,7 @@ rsvg_clip_path_render (RsvgClipPath * self, RsvgHandle *ctx)
 
 	for (i = 0; i < group->children->len; i++)
 		{
-			/* push the state stack */
-			if (ctx->n_state == ctx->n_state_max)
-				ctx->state = g_renew (RsvgState, ctx->state, 
-									  ctx->n_state_max <<= 1);
-			if (ctx->n_state)
-				rsvg_state_inherit (&ctx->state[ctx->n_state],
-									&ctx->state[ctx->n_state - 1]);
-			else
-				rsvg_state_init (ctx->state);
-			ctx->n_state++;
+			rsvg_state_push(ctx);
 
 			svp = rsvg_defs_drawable_draw_as_svp (g_ptr_array_index(group->children, i), 
 												  ctx, 0);
@@ -365,9 +333,7 @@ rsvg_clip_path_render (RsvgClipPath * self, RsvgHandle *ctx)
 						svpx = svp;
 				}
 
-			/* pop the state stack */
-			ctx->n_state--;
-			rsvg_state_finalize (&ctx->state[ctx->n_state]);
+			rsvg_state_pop(ctx);
 		}
 
 	return svpx;
@@ -388,7 +354,7 @@ rsvg_new_clip_path (void)
 void 
 rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	const char *id = NULL, *value = NULL;
+	const char *id = NULL, *klazz = NULL, *value = NULL;
 	RsvgClipPath *clip_path;
 	double font_size;
 	
@@ -406,9 +372,13 @@ rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				}				
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
+			if ((value = rsvg_property_bag_lookup (atts, "class")))
+				klazz = value;
 		}
 
-	rsvg_parse_style_pairs (ctx, rsvg_state_current(ctx), atts);
+	rsvg_parse_style_attrs (ctx, rsvg_state_current (ctx), "clipPath", klazz, id, atts);
+
+	rsvg_state_clone (&clip_path->super.super.state, rsvg_state_current (ctx));
 
 	clip_path->super.super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
 

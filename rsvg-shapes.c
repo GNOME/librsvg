@@ -512,21 +512,10 @@ static void
 rsvg_defs_drawable_path_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
 							  int dominate)
 {
-	RsvgState *state = rsvg_state_current (ctx);
 	RsvgDefsDrawablePath *path = (RsvgDefsDrawablePath*)self;
 
-	/* combine state definitions */
+	rsvg_state_reinherit_top(ctx, &self->state, dominate);
 
-	rsvg_state_clone (state, &self->state);
-	if (ctx->n_state > 1)
-		{
-			if (dominate)
-				rsvg_state_dominate(state, &ctx->state[ctx->n_state - 2]);
-			else
-				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
-		}
-
-	/* always want to render inside of a <use/> */
 	rsvg_render_path (ctx, path->d);
 	
 }
@@ -535,21 +524,10 @@ static ArtSVP *
 rsvg_defs_drawable_path_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx, 
 									 int dominate)
 {
-	RsvgState *state = rsvg_state_current (ctx);
 	RsvgDefsDrawablePath *path = (RsvgDefsDrawablePath*)self;
 
-	/* combine state definitions */
+	rsvg_state_reinherit_top(ctx,  &self->state, dominate);
 
-	rsvg_state_clone (state, &self->state);
-	if (ctx->n_state > 1)
-		{
-			if (dominate)
-				rsvg_state_dominate(state, &ctx->state[ctx->n_state - 2]);
-			else
-				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
-		}
-
-	/* always want to render inside of a <use/> */
 	return rsvg_render_path_as_svp (ctx, path->d);
 	
 }
@@ -567,57 +545,21 @@ static void
 rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
 							  int dominate)
 {
-
-	RsvgState *state = rsvg_state_current (ctx);
 	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
 	guint i;
-	double tempaffine[6];
 
-	for (i = 0; i < 6; i++)
-		{
-			 tempaffine[i] = ctx->state[ctx->n_state - 1].affine[i];
-		}	
-
-	/* combine state definitions */
-	rsvg_state_clone (state, &self->state);
-	if (ctx->n_state > 1)
-		{
-			/*This is a special domination mode for patterns, the style
-			  is simply reinherited, wheras the transform is totally overridden*/
-			if (dominate == 2)
-				{
-					for (i = 0; i < 6; i++)
-						{
-							state->affine[i] = tempaffine[i];
-						}	
-				}		
-			else if (dominate)
-				rsvg_state_dominate(state, &ctx->state[ctx->n_state - 2]);
-			else
-				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
-		}
+	rsvg_state_reinherit_top(ctx, &self->state, dominate);
 
 	rsvg_push_discrete_layer (ctx);
 
 	for (i = 0; i < group->children->len; i++)
 		{
-			/* push the state stack */
-			if (ctx->n_state == ctx->n_state_max)
-				ctx->state = g_renew (RsvgState, ctx->state, 
-									  ctx->n_state_max <<= 1);
-			if (ctx->n_state)
-				rsvg_state_inherit (&ctx->state[ctx->n_state],
-									&ctx->state[ctx->n_state - 1]);
-			else
-				rsvg_state_init (ctx->state);
-			ctx->n_state++;
+			rsvg_state_push(ctx);
 
 			rsvg_defs_drawable_draw (g_ptr_array_index(group->children, i), 
 									 ctx, 0);
 	
-			/* pop the state stack */
-			ctx->n_state--;
-			rsvg_state_finalize (&ctx->state[ctx->n_state]);
+			rsvg_state_pop(ctx);
 		}			
 
 	rsvg_pop_discrete_layer (ctx);
@@ -627,49 +569,17 @@ static ArtSVP *
 rsvg_defs_drawable_group_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx, 
 									  int dominate)
 {
-	RsvgState *state = rsvg_state_current (ctx);
 	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
 	guint i;
-	double tempaffine[6];
 	ArtSVP *svp1, *svp2, *svp3;
 	
 	svp1 = NULL;
-	for (i = 0; i < 6; i++)
-		{
-			 tempaffine[i] = ctx->state[ctx->n_state - 1].affine[i];
-		}	
 
-	/* combine state definitions */
-	rsvg_state_clone (state, &self->state);
-	if (ctx->n_state > 1)
-		{
-			/*This is a special domination mode for patterns, the style
-			  is simply reinherited, wheras the transform is totally overridden*/
-			if (dominate == 2)
-				{
-					for (i = 0; i < 6; i++)
-						{
-							state->affine[i] = tempaffine[i];
-						}	
-				}		
-			else if (dominate)
-				rsvg_state_dominate(state, &ctx->state[ctx->n_state - 2]);
-			else
-				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
-		}
+	rsvg_state_reinherit_top(ctx,  &self->state, dominate);
 
 	for (i = 0; i < group->children->len; i++)
 		{
-			/* push the state stack */
-			if (ctx->n_state == ctx->n_state_max)
-				ctx->state = g_renew (RsvgState, ctx->state, 
-									  ctx->n_state_max <<= 1);
-			if (ctx->n_state)
-				rsvg_state_inherit (&ctx->state[ctx->n_state],
-									&ctx->state[ctx->n_state - 1]);
-			else
-				rsvg_state_init (ctx->state);
-			ctx->n_state++;
+			rsvg_state_push(ctx);
 
 			svp2 = rsvg_defs_drawable_draw_as_svp (g_ptr_array_index(group->children, i), 
 												   ctx, 0);
@@ -679,10 +589,8 @@ rsvg_defs_drawable_group_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx,
 					art_free(svp1);
 					svp1 = svp3;
 				}
-	
-			/* pop the state stack */
-			ctx->n_state--;
-			rsvg_state_finalize (&ctx->state[ctx->n_state]);
+			
+			rsvg_state_pop(ctx);
 		}		
 	return svp1;
 }
@@ -702,45 +610,45 @@ rsvg_defs_drawable_use_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 	RsvgState *state = rsvg_state_current (ctx);
 	RsvgDefsDrawableUse *use = (RsvgDefsDrawableUse*)self;
 
-	/* combine state definitions */
-	
-	rsvg_state_clone (state, &self->state);
-	if (ctx->n_state > 1)
-		{
-			if (dominate)
-				rsvg_state_dominate(state, &ctx->state[ctx->n_state - 2]);
-			else
-				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
-		}	
-	
+	rsvg_state_reinherit_top(ctx,  &self->state, dominate);
+
 	if (state->opacity != 0xff || rsvg_needs_discrete_layer(state))
 		rsvg_push_discrete_layer (ctx);
 
 
-	/* push the state stack */
-	if (ctx->n_state == ctx->n_state_max)
-		ctx->state = g_renew (RsvgState, ctx->state, 
-							  ctx->n_state_max <<= 1);
-	if (ctx->n_state)
-		rsvg_state_inherit (&ctx->state[ctx->n_state],
-							&ctx->state[ctx->n_state - 1]);
-	else
-		rsvg_state_init (ctx->state);
-	ctx->n_state++;
+	rsvg_state_push(ctx);
 	
 	rsvg_defs_drawable_draw (use->child, ctx, 1);
-	
-	/* pop the state stack */
-	ctx->n_state--;
-	rsvg_state_finalize (&ctx->state[ctx->n_state]);
+
+	rsvg_state_pop(ctx);	
 
 	if (state->opacity != 0xff || rsvg_needs_discrete_layer(state))
 		rsvg_pop_discrete_layer (ctx);
+}	
+
+static ArtSVP *
+rsvg_defs_drawable_use_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+									int dominate)
+{
+	RsvgDefsDrawableUse *use = (RsvgDefsDrawableUse*)self;
+	ArtSVP * svp;
+
+	rsvg_state_reinherit_top(ctx,  &self->state, dominate);
+
+	rsvg_state_push(ctx);
+	
+	svp = rsvg_defs_drawable_draw_as_svp (use->child, ctx, 1);
+
+	rsvg_state_pop(ctx);
+	
+	return svp;
 }			
 
 static void 
 rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawable *child)
 {
+	if (self == NULL)
+		return;
 	RsvgDefsDrawableGroup *z = (RsvgDefsDrawableGroup *)self;
 	g_ptr_array_add(z->children, child);
 }
@@ -1832,7 +1740,9 @@ rsvg_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate,
 			}
 }
 
-static void
+void rsvg_clip_image(GdkPixbuf *intermediate, ArtSVP *path);
+
+void
 rsvg_clip_image(GdkPixbuf *intermediate, ArtSVP *path)
 {
 	gint intstride;
@@ -2038,6 +1948,8 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				xlink_href = value;
 		}
 	
+	rsvg_parse_style_attrs (ctx, state, "use", klazz, id, atts);
+
 	/* < 0 is an error, 0 disables rendering. TODO: handle positive values correctly */
 	if (got_width || got_height)
 		if (width <= 0. || height <= 0.)
@@ -2055,33 +1967,25 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 							RsvgDefsDrawableUse * use;
 							use = g_new (RsvgDefsDrawableUse, 1);
 							use->child = drawable;
-							rsvg_parse_style_attrs (ctx, state, "use", klazz, id, atts);
 							rsvg_state_clone (&use->super.state, state);
 							use->super.super.type = RSVG_DEF_PATH;
 							use->super.super.free = rsvg_defs_drawable_use_free;
 							use->super.draw = rsvg_defs_drawable_use_draw;
+							use->super.draw_as_svp = rsvg_defs_drawable_use_draw_as_svp;
 							art_affine_translate(affine, x, y);
 							art_affine_multiply(use->super.state.affine, affine, use->super.state.affine);
-							art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);
+							art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);			
+							
+							rsvg_defs_set (ctx->defs, id, &use->super.super);
+							
+							use->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
+							if (use->super.parent != NULL)
+								rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)use->super.parent, 
+															  &use->super);
 							
 							if (!ctx->in_defs)
-								{
-									rsvg_defs_drawable_draw (&use->super, ctx, 1);
-									use->super.super.free(&use->super.super);
-									break;
-								}							
-							else
-								{
-									rsvg_defs_set (ctx->defs, id, &use->super.super);
-									
-									use->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
-									if (use->super.parent != NULL)
-										rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)use->super.parent, 
-																	  &use->super);
-									
-									
-									break;
-								}
+								rsvg_defs_drawable_draw (&use->super, ctx, 0);
+							break;
 						}
 					default:
 						g_warning (_("Unhandled defs entry/type %s %d\n"), id, 
@@ -2246,16 +2150,7 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 	
 	art_affine_multiply(affine, affine, taffine);
 
-	/* push the state stack */
-	if (ctx->n_state == ctx->n_state_max)
-		ctx->state = g_renew (RsvgState, ctx->state, 
-							  ctx->n_state_max <<= 1);
-	if (ctx->n_state)
-		rsvg_state_inherit (&ctx->state[ctx->n_state],
-									&ctx->state[ctx->n_state - 1]);
-	else
-				rsvg_state_init (ctx->state);
-	ctx->n_state++;
+	rsvg_state_push(ctx);
 	
 	for (i = 0; i < 6; i++)
 		{
@@ -2265,9 +2160,7 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 
 	rsvg_defs_drawable_draw (self->contents, ctx, 2);
 	
-	/* pop the state stack */
-	ctx->n_state--;
-	rsvg_state_finalize (&ctx->state[ctx->n_state]);
+	rsvg_state_pop(ctx);
 }
 
 RsvgDefVal *

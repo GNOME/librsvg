@@ -37,6 +37,9 @@
 #define M_PI 3.14159265358979323846
 #endif /*  M_PI  */
 
+/* probably poor form, but it saves us from whacking it in the header file */
+void rsvg_clip_image(GdkPixbuf *intermediate, ArtSVP *path); 
+
 #define PERFECTBLUR 0
 
 /*************************************************************/
@@ -169,9 +172,9 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self,
 	return output;
 }
 
-static GdkPixbuf *
-gdk_pixbuf_new_cleared (GdkColorspace colorspace, gboolean has_alpha, int bits_per_sample,
-						int width, int height)
+GdkPixbuf *
+_rsvg_pixbuf_new_cleared (GdkColorspace colorspace, gboolean has_alpha, int bits_per_sample,
+						  int width, int height)
 {
 	GdkPixbuf *pb;
 	guchar *data;
@@ -432,6 +435,9 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 
 	bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);	
 
+	if (rsvg_state_current (context)->clippath)
+		rsvg_clip_image(ctx->lastresult.result, rsvg_state_current (context)->clippath);
+
 	rsvg_alpha_blt (ctx->lastresult.result, bounds.x1, bounds.y1, bounds.x2 - bounds.x1,
 					bounds.y2 - bounds.y1, output, bounds.x1, bounds.y1);
 	context->bbox.x0 = bounds.x1;
@@ -501,9 +507,9 @@ pixbuf_get_alpha (GdkPixbuf * pb)
 
 	pbsize = gdk_pixbuf_get_width (pb) * gdk_pixbuf_get_height (pb);
 
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8,
-									 gdk_pixbuf_get_width (pb),
-									 gdk_pixbuf_get_height (pb));
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8,
+									   gdk_pixbuf_get_width (pb),
+									   gdk_pixbuf_get_height (pb));
 	
 	data = gdk_pixbuf_get_pixels (output);
 	pbdata = gdk_pixbuf_get_pixels (pb);
@@ -906,7 +912,7 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
 	in = rsvg_filter_get_in (self->in, ctx);
 	in2 = rsvg_filter_get_in (bself->in2, ctx);
 	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, gdk_pixbuf_get_width (in), gdk_pixbuf_get_height (in));
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, gdk_pixbuf_get_width (in), gdk_pixbuf_get_height (in));
 	
 	rsvg_filter_blend(bself->mode, in, in2, output, boundarys);
 
@@ -1130,7 +1136,7 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 
 	rowstride = gdk_pixbuf_get_rowstride (in);
 	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	output_pixels = gdk_pixbuf_get_pixels (output);
 	
 	for (y = boundarys.y1; y < boundarys.y2; y++)
@@ -1513,6 +1519,12 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 	
 	rowstride = gdk_pixbuf_get_rowstride (in);
 
+	if (kw > boundarys.x2 - boundarys.x1)
+		kw = boundarys.x2 - boundarys.x1;
+
+	if (kh > boundarys.y2 - boundarys.y1)
+		kh = boundarys.y2 - boundarys.y1;
+
 
 	if (kw >= 1)	
 		{
@@ -1709,10 +1721,10 @@ fast_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sx,
 	kx = floor(sx * 3*sqrt(2*M_PI)/4 + 0.5);
 	ky = floor(sy * 3*sqrt(2*M_PI)/4 + 0.5);
 
-	intermediate1 = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
+	intermediate1 = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
 											gdk_pixbuf_get_width (in),
 											gdk_pixbuf_get_height (in));
-	intermediate2 = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
+	intermediate2 = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
 											gdk_pixbuf_get_width (in),
 											gdk_pixbuf_get_height (in));
 
@@ -1745,7 +1757,7 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self,
 	op = rsvg_filter_get_result (self->in, ctx);
 	in = op.result;
 	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
 									 gdk_pixbuf_get_width (in),
 									 gdk_pixbuf_get_height (in));
 	
@@ -1899,7 +1911,7 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self,
 	
 	rowstride = gdk_pixbuf_get_rowstride (in);
 	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	
 	output_pixels = gdk_pixbuf_get_pixels (output);
 	
@@ -2051,7 +2063,7 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self,
 	mself = (RsvgFilterPrimitiveMerge *) self;
 	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, ctx->width, ctx->height);
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, ctx->width, ctx->height);
 	
 	for (i = 0; i < mself->nodes->len; i++)
 		{
@@ -2152,14 +2164,26 @@ rsvg_start_filter_primitive_merge_node (RsvgHandle * ctx,
 										RsvgPropertyBag * atts)
 {
 	const char *value;
+	int needdefault = 1;
+	if (!(ctx && ctx->currentsubfilter))
+		return;
+
 	if (rsvg_property_bag_size (atts))
 		{
 			/* see bug 145149 - sodipodi generates bad SVG... */
-			if (ctx && ctx->currentsubfilter && (value = rsvg_property_bag_lookup (atts, "in")))
-				g_ptr_array_add (((RsvgFilterPrimitiveMerge *) (ctx->
-																currentsubfilter))->
-								 nodes, g_string_new (value));
+			if ((value = rsvg_property_bag_lookup (atts, "in")))
+				{
+					needdefault = 0;
+					g_ptr_array_add (((RsvgFilterPrimitiveMerge *) 
+									  (ctx->currentsubfilter))->
+									 nodes, g_string_new (value));
+				}
 		}
+	
+	if (needdefault)
+		g_ptr_array_add (((RsvgFilterPrimitiveMerge *) 
+						  (ctx->currentsubfilter))->
+						 nodes, g_string_new ("none"));
 }
 
 /*************************************************************/
@@ -2212,7 +2236,7 @@ rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self,
 	
 	rowstride = gdk_pixbuf_get_rowstride (in);
 	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);	
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);	
 	output_pixels = gdk_pixbuf_get_pixels (output);   
 	
 	for (y = boundarys.y1; y < boundarys.y2; y++)
@@ -2561,7 +2585,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 	
 	rowstride = gdk_pixbuf_get_rowstride (in);
 	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	
 	output_pixels = gdk_pixbuf_get_pixels (output);
 
@@ -2830,7 +2854,7 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self,
 	kx = cself->rx * ctx->paffine[0];
 	ky = cself->ry * ctx->paffine[3];
 
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 
 	output_pixels = gdk_pixbuf_get_pixels (output);
 	
@@ -3020,7 +3044,7 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self,
 	
 	rowstride = gdk_pixbuf_get_rowstride (in);
 	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	output_pixels = gdk_pixbuf_get_pixels (output);
 
 	if (bself->mode == COMPOSITE_MODE_ARITHMETIC)
@@ -3274,7 +3298,7 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self,
 	
 	height = ctx->height;
 	width = ctx->width;
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	rowstride = gdk_pixbuf_get_rowstride (output);
 	
 	output_pixels = gdk_pixbuf_get_pixels (output);
@@ -3438,7 +3462,7 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self,
 	
 	rowstride = gdk_pixbuf_get_rowstride (in);
 	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	
 	output_pixels = gdk_pixbuf_get_pixels (output);
 	
@@ -3849,7 +3873,7 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self,
 	tileWidth = (boundarys.x2 - boundarys.x1);
 	tileHeight = (boundarys.y2 - boundarys.y1);
 
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	output_pixels = gdk_pixbuf_get_pixels (output);
 
 	for (y = 0; y < tileHeight; y++)
@@ -4016,30 +4040,19 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
 
 	boundarys = rsvg_filter_primitive_get_bounds (self, context);
 	
-	img = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, context->width, context->height);
+	img = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, context->width, context->height);
 	
 	save = ctx->pixbuf;
 	ctx->pixbuf = img;
 
 	for (i = 0; i < 6; i++)
-		ctx->state[ctx->n_state - 1].affine[i] = context->paffine[i];
+		rsvg_state_current(ctx)->affine[i] = context->paffine[i];
 
-	/* push the state stack */
-	if (ctx->n_state == ctx->n_state_max)
-		ctx->state = g_renew (RsvgState, ctx->state, 
-							  ctx->n_state_max <<= 1);
-	if (ctx->n_state)
-		rsvg_state_inherit (&ctx->state[ctx->n_state],
-							&ctx->state[ctx->n_state - 1]);
-	else
-		rsvg_state_init (ctx->state);
-	ctx->n_state++;
+	rsvg_state_push(ctx);
 	
 	rsvg_defs_drawable_draw (drawable, ctx, 0);
 	
-	/* pop the state stack */
-	ctx->n_state--;
-	rsvg_state_finalize (&ctx->state[ctx->n_state]);
+	rsvg_state_pop(ctx);
 		
 	ctx->pixbuf = save;
 	return img;
@@ -4104,7 +4117,7 @@ rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self,
 
 	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, ctx->width, ctx->height);
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, ctx->width, ctx->height);
 
 	img = rsvg_filter_primitive_image_render_in (self, ctx);
 	if (img == NULL)
@@ -4677,7 +4690,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 	
 	rowstride = gdk_pixbuf_get_rowstride (in);
 	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	
 	output_pixels = gdk_pixbuf_get_pixels (output);
 	
@@ -4874,7 +4887,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 	
 	rowstride = gdk_pixbuf_get_rowstride (in);
 	
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	
 	output_pixels = gdk_pixbuf_get_pixels (output);
 	
@@ -5075,7 +5088,7 @@ rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self,
 
 	in_pixels = gdk_pixbuf_get_pixels (in);
 
-	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, ctx->width, ctx->height);
+	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, ctx->width, ctx->height);
 	rowstride = gdk_pixbuf_get_rowstride (output);
 	
 	output_pixels = gdk_pixbuf_get_pixels (output);
