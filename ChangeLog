@@ -1,6 +1,10 @@
 2003-02-02  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-shapes.c (rect): Handle missing RX when RY is specified (http://www.w3.org/TR/SVG11/shapes.html#RectElement)
+
+	* configure.in: Bump version number, libgsf update from aldug
+
+	* librsvg.spec.in: Fixes by Christian Schaller
 	
 === librsvg 2.2.2 ===
 
