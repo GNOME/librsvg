@@ -57,7 +57,7 @@ main (int argc, const char **argv)
 
 	g_type_init ();
 
-	popt_context = poptGetContext ("test-rsvg", argc, argv, options_table, 0);
+	popt_context = poptGetContext ("rsvg", argc, argv, options_table, 0);
 
 	c = poptGetNextOpt (popt_context);
 	args = poptGetArgs (popt_context);
