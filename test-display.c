@@ -325,6 +325,18 @@ save_svg (GObject * ignored, gpointer user_data)
 }
 
 static void
+copy_svg_location(GObject * ignored, gpointer user_data)
+{
+	ViewerCbInfo * info = (ViewerCbInfo *)user_data;
+	GtkClipboard * clipboard = NULL;
+
+	if (info->base_uri) {
+		clipboard = gtk_clipboard_get (GDK_SELECTION_CLIPBOARD);
+		gtk_clipboard_set_text (clipboard, info->base_uri, -1);
+	}
+}
+
+static void
 create_popup_menu (ViewerCbInfo * info)
 {
 	GtkWidget * popup_menu;
@@ -333,6 +345,19 @@ create_popup_menu (ViewerCbInfo * info)
 
 	popup_menu = gtk_menu_new ();
 	gtk_menu_set_accel_group (GTK_MENU (popup_menu), info->accel_group);
+
+	if (info->base_uri)
+	{
+		menu_item = gtk_image_menu_item_new_with_label (_("Copy SVG location"));
+		stock = gtk_image_new_from_stock (GTK_STOCK_COPY, GTK_ICON_SIZE_MENU);
+		gtk_widget_show (stock);
+		gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menu_item), stock);
+		g_signal_connect (menu_item, "activate",
+						  G_CALLBACK (copy_svg_location), info);
+		gtk_widget_show (menu_item);
+		gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
+		gtk_widget_add_accelerator(menu_item, "activate", info->accel_group, GDK_C, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	}
 
 	menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_SAVE, NULL);
 	g_signal_connect (menu_item, "activate",
@@ -534,7 +559,6 @@ main (int argc, char **argv)
 	info.svg_bytes = NULL;
 	info.window = NULL;
 	info.popup_menu = NULL;
-	info.base_uri = base_uri;
 
 	popt_context = poptGetContext ("rsvg-view", argc, (const char **)argv, options_table, 0);
 	poptSetOtherOptionHelp (popt_context, _("[OPTIONS...] [file.svg]"));
@@ -607,6 +631,7 @@ main (int argc, char **argv)
 			return 1;
 		}
 
+	info.base_uri = base_uri;
 	info.svg_bytes = g_byte_array_new ();
 
 	for (;;)
