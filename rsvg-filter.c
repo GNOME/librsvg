@@ -1017,7 +1017,7 @@ void
 rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 											 const xmlChar ** atts)
 {
-	int i, j;
+	int i, j, listlen;
 	double font_size;
 	RsvgFilterPrimitiveConvolveMatrix *filter;
 	
@@ -1103,12 +1103,10 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 							filter->orderx = tempx;
 							filter->ordery = tempy;
 							
-							/* double *KernelMatrix;
-							 */
 						}
 					else if (!strcmp ((char *) atts[i], "kernelMatrix"))
 						filter->KernelMatrix =
-							rsvg_css_parse_number_list ((char *) atts[i + 1], NULL);
+							rsvg_css_parse_number_list ((char *) atts[i + 1], &listlen);
 				}			
 		}
 
@@ -1122,6 +1120,9 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 	if (filter->divisor == 0)
 		filter->divisor = 1;
 		
+	if (listlen < filter->orderx * filter->ordery)
+		filter->orderx = filter->ordery = 0;
+
 	filter->super.render = &rsvg_filter_primitive_convolve_matrix_render;
 	filter->super.free = &rsvg_filter_primitive_convolve_matrix_free;
 	
@@ -1413,10 +1414,11 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self,
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
-				if (x - ox < boundarys.x1 || y - oy >= boundarys.x2)
+				if (x - ox < boundarys.x1 || x - ox >= boundarys.x2)
 					continue;
 				if (y - oy < boundarys.y1 || y - oy >= boundarys.y2)
 					continue;
+		
 				for (ch = 0; ch < 4; ch++)
 					{
 						output_pixels[y * rowstride + x * 4 + ch] =
@@ -1772,8 +1774,7 @@ void
 rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 										   const xmlChar ** atts)
 {
-	int i;
-	int type;
+	gint i, type, listlen;
 	double font_size;
 	RsvgFilterPrimitiveColourMatrix *filter;
 	
@@ -1836,7 +1837,7 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 						}
 					else if (!strcmp ((char *) atts[i], "values"))
 						filter->KernelMatrix =
-							rsvg_css_parse_number_list ((char *) atts[i + 1], NULL);
+							rsvg_css_parse_number_list ((char *) atts[i + 1], &listlen);
 					else if (!strcmp ((char *) atts[i], "type"))
 						{
 							if (!strcmp ((char *) atts[i + 1], "matrix"))
@@ -1853,13 +1854,25 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 				}			
 		}
 
-	if (type == 1)
+	if (type == 0)
+		{
+			if (listlen != 20)
+				{
+					if (filter->KernelMatrix != NULL)
+						g_free (filter->KernelMatrix);
+					filter->KernelMatrix = g_new0 (double, 20);
+				}
+		}
+	else if (type == 1)
 		{
 			float s;
-
-			s = filter->KernelMatrix[0];
-			g_free (filter->KernelMatrix);
-
+			if (listlen != 0)
+				{
+					s = filter->KernelMatrix[0];
+					g_free (filter->KernelMatrix);
+				}
+			else
+				s = 1;
 			filter->KernelMatrix = g_new0 (double, 20);
 
 			filter->KernelMatrix[0] = 0.213 + 0.787 * s;
@@ -1875,12 +1888,19 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 		}
 	else if (type == 2)
 		{
-			double cosval, sinval;
+			double cosval, sinval, arg;
 
-			cosval = cos (filter->KernelMatrix[0]);
-			sinval = sin (filter->KernelMatrix[0]);
+			if (listlen != 0)
+				{
+					arg = filter->KernelMatrix[0];
+					g_free (filter->KernelMatrix);
+				}
+			else
+				arg = 0;
 
-			g_free (filter->KernelMatrix);
+			cosval = cos (arg);
+			sinval = sin (arg);
+
 			filter->KernelMatrix = g_new0 (double, 20);
 			
 			filter->KernelMatrix[0] = 0.213 + cosval * 0.787 + sinval * -0.213;
@@ -1953,22 +1973,19 @@ struct _RsvgFilterPrimitiveComponentTransfer
 	struct ComponentTransferData Adata;
 };
 
-static gdouble
+static gint
 get_component_transfer_table_value (gdouble C,
 									struct ComponentTransferData *user_data)
 {
-	guint k;
 	gdouble N;
-	
-	for (k = 0; k < user_data->nbTableValues; k++)
-		{
-			N = user_data->tableValues[k];
-			
-			if ((((gdouble)k / N) <= C) && (C < ((gdouble)k + 1) / N))
-				return k;
-		}
-	
-	return 0;
+	gint k;
+	N = user_data->nbTableValues;	
+
+	k = floor(C * N);
+	k -= 1;
+	if (k < 0)
+		k = 0;
+	return k;
 }
 
 static gdouble
@@ -1984,19 +2001,22 @@ table_component_transfer_func (gdouble C,
 {
 	guint k;
 	gdouble vk, vk1;
+	gfloat distancefromlast;
 	
 	if (!user_data->nbTableValues)
 		return C;
 	
 	k = get_component_transfer_table_value (C, user_data);
-	
+
+	if (k == user_data->nbTableValues - 1)
+		return user_data->tableValues[k - 1];
+
 	vk = user_data->tableValues[k];
 	vk1 = user_data->tableValues[k + 1];
 	
-	return (vk +
-			(C -
-			 (k / user_data->nbTableValues)) * user_data->nbTableValues * (vk1 -
-																		   vk));
+	distancefromlast = (C - ((double)k + 1) / (double)user_data->nbTableValues) * (double)user_data->nbTableValues; 
+
+	return (vk + distancefromlast * (vk1 - vk));
 }
 
 static gdouble
@@ -2063,28 +2083,28 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
-				temp = cself->Rfunction((double)in_pixels[y * rowstride + x * 4] / 255, &cself->Rdata) * 255;
+				temp = cself->Rfunction((double)in_pixels[y * rowstride + x * 4] / 255.0, &cself->Rdata) * 255.0;
 				if (temp > 255)
 					temp = 255;
 				else if (temp < 0)
 					temp = 0;
 				output_pixels[y * rowstride + x * 4] = temp;
 		
-				temp = cself->Gfunction((double)in_pixels[y * rowstride + x * 4 + 1] / 255, &cself->Gdata) * 255;
+				temp = cself->Gfunction((double)in_pixels[y * rowstride + x * 4 + 1] / 255.0, &cself->Gdata) * 255.0;
 				if (temp > 255)
 					temp = 255;
 				else if (temp < 0)
 					temp = 0;
 				output_pixels[y * rowstride + x * 4 + 1] = temp;
 
-				temp = cself->Bfunction((double)in_pixels[y * rowstride + x * 4 + 2] / 255, &cself->Bdata) * 255;
+				temp = cself->Bfunction((double)in_pixels[y * rowstride + x * 4 + 2] / 255.0, &cself->Bdata) * 255.0;
 				if (temp > 255)
 					temp = 255;
 				else if (temp < 0)
 					temp = 0;				
 				output_pixels[y * rowstride + x * 4 + 2] = temp;
 
-				temp = cself->Afunction((double)in_pixels[y * rowstride + x * 4 + 3] / 255, &cself->Adata) * 255;
+				temp = cself->Afunction((double)in_pixels[y * rowstride + x * 4 + 3] / 255.0, &cself->Adata) * 255.0;
 				if (temp > 255)
 					temp = 255;
 				else if (temp < 0)
