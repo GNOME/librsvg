@@ -820,7 +820,7 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	gboolean got_x, got_y, got_width, got_height, got_transform, got_bbox, got_cbbox, cloned, got_vbox, got_aspect_ratio;
 	double affine[6];
 	int i;
-	guint aspect_ratio;
+	guint aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 
 	got_x = got_y = got_width = got_height = got_transform = got_bbox = got_cbbox = cloned = got_vbox = got_aspect_ratio = FALSE;
 		
