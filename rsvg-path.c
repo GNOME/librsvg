@@ -194,15 +194,6 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx *ctx, gboolean final)
 {
   double x1, y1, x2, y2, x3, y3;
 
-#ifdef VERBOSE
-  int i;
-
-  g_print ("parse_path %c:", ctx->cmd);
-  for (i = 0; i < ctx->param; i++)
-    g_print (" %f", ctx->params[i]);
-  g_print (final ? ".\n" : "\n");
-#endif
-
   switch (ctx->cmd)
     {
     case 'm':
@@ -210,12 +201,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx *ctx, gboolean final)
       if (ctx->param == 2 || final)
 	{
 	  rsvg_parse_path_default_xy (ctx, 2);
-#ifdef VERBOSE
-	  g_print ("'m' moveto %g,%g\n",
-		   ctx->params[0], ctx->params[1]);
-#endif
 	  rsvg_bpath_def_moveto (ctx->bpath,
-					 ctx->params[0], ctx->params[1]);
+				 ctx->params[0], ctx->params[1]);
 	  ctx->cpx = ctx->rpx = ctx->params[0];
 	  ctx->cpy = ctx->rpy = ctx->params[1];
 	  ctx->param = 0;
@@ -226,12 +213,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx *ctx, gboolean final)
       if (ctx->param == 2 || final)
 	{
 	  rsvg_parse_path_default_xy (ctx, 2);
-#ifdef VERBOSE
-	  g_print ("'l' lineto %g,%g\n",
-		   ctx->params[0], ctx->params[1]);
-#endif
 	  rsvg_bpath_def_lineto (ctx->bpath,
-					 ctx->params[0], ctx->params[1]);
+				 ctx->params[0], ctx->params[1]);
 	  ctx->cpx = ctx->rpx = ctx->params[0];
 	  ctx->cpy = ctx->rpy = ctx->params[1];
 	  ctx->param = 0;
@@ -248,12 +231,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx *ctx, gboolean final)
 	  y2 = ctx->params[3];
 	  x3 = ctx->params[4];
 	  y3 = ctx->params[5];
-#ifdef VERBOSE
-	  g_print ("'c' curveto %g,%g %g,%g, %g,%g\n",
-		   x1, y1, x2, y2, x3, y3);
-#endif
 	  rsvg_bpath_def_curveto (ctx->bpath,
-					  x1, y1, x2, y2, x3, y3);
+				  x1, y1, x2, y2, x3, y3);
 	  ctx->rpx = x2;
 	  ctx->rpy = y2;
 	  ctx->cpx = x3;
@@ -272,12 +251,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx *ctx, gboolean final)
 	  y2 = ctx->params[1];
 	  x3 = ctx->params[2];
 	  y3 = ctx->params[3];
-#ifdef VERBOSE
-	  g_print ("'s' curveto %g,%g %g,%g, %g,%g\n",
-		   x1, y1, x2, y2, x3, y3);
-#endif
 	  rsvg_bpath_def_curveto (ctx->bpath,
-					  x1, y1, x2, y2, x3, y3);
+				  x1, y1, x2, y2, x3, y3);
 	  ctx->rpx = x2;
 	  ctx->rpy = y2;
 	  ctx->cpx = x3;
@@ -289,12 +264,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx *ctx, gboolean final)
       /* horizontal lineto */
       if (ctx->param == 1)
 	{
-#ifdef VERBOSE
-	  g_print ("'h' lineto %g,%g\n",
-		   ctx->params[0], ctx->cpy);
-#endif
 	  rsvg_bpath_def_lineto (ctx->bpath,
-					 ctx->params[0], ctx->cpy);
+				 ctx->params[0], ctx->cpy);
 	  ctx->cpx = ctx->rpx = ctx->params[0];
 	  ctx->param = 0;
 	}
@@ -303,12 +274,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx *ctx, gboolean final)
       /* vertical lineto */
       if (ctx->param == 1)
 	{
-#ifdef VERBOSE
-	  g_print ("'v' lineto %g,%g\n",
-		   ctx->cpx, ctx->params[0]);
-#endif
 	  rsvg_bpath_def_lineto (ctx->bpath,
-					 ctx->cpx, ctx->params[0]);
+				 ctx->cpx, ctx->params[0]);
 	  ctx->cpy = ctx->rpy = ctx->params[0];
 	  ctx->param = 0;
 	}
@@ -329,12 +296,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx *ctx, gboolean final)
 	  y3 = ctx->params[3];
 	  x2 = (x3 + 2 * ctx->params[0]) * (1.0 / 3.0);
 	  y2 = (y3 + 2 * ctx->params[1]) * (1.0 / 3.0);
-#ifdef VERBOSE
-	  g_print ("'q' curveto %g,%g %g,%g, %g,%g\n",
-		   x1, y1, x2, y2, x3, y3);
-#endif
 	  rsvg_bpath_def_curveto (ctx->bpath,
-					  x1, y1, x2, y2, x3, y3);
+				  x1, y1, x2, y2, x3, y3);
 	  ctx->rpx = x2;
 	  ctx->rpy = y2;
 	  ctx->cpx = x3;
@@ -357,12 +320,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx *ctx, gboolean final)
 	  y3 = ctx->params[1];
 	  x2 = (x3 + 2 * xc) * (1.0 / 3.0);
 	  y2 = (y3 + 2 * yc) * (1.0 / 3.0);
-#ifdef VERBOSE
-	  g_print ("'t' curveto %g,%g %g,%g, %g,%g\n",
-		   x1, y1, x2, y2, x3, y3);
-#endif
 	  rsvg_bpath_def_curveto (ctx->bpath,
-					  x1, y1, x2, y2, x3, y3);
+				  x1, y1, x2, y2, x3, y3);
 	  ctx->rpx = xc;
 	  ctx->rpy = yc;
 	  ctx->cpx = x3;
@@ -381,12 +340,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx *ctx, gboolean final)
 	      y3 = ctx->params[3];
 	      x2 = (x3 + 2 * ctx->params[0]) * (1.0 / 3.0);
 	      y2 = (y3 + 2 * ctx->params[1]) * (1.0 / 3.0);
-#ifdef VERBOSE
-	      g_print ("'t' curveto %g,%g %g,%g, %g,%g\n",
-		       x1, y1, x2, y2, x3, y3);
-#endif
 	      rsvg_bpath_def_curveto (ctx->bpath,
-					      x1, y1, x2, y2, x3, y3);
+				      x1, y1, x2, y2, x3, y3);
 	      ctx->rpx = x2;
 	      ctx->rpy = y2;
 	      ctx->cpx = x3;
@@ -395,12 +350,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx *ctx, gboolean final)
 	  else
 	    {
 	      rsvg_parse_path_default_xy (ctx, 2);
-#ifdef VERBOSE
-	      g_print ("'t' lineto %g,%g\n",
-		       ctx->params[0], ctx->params[1]);
-#endif
 	      rsvg_bpath_def_lineto (ctx->bpath,
-					     ctx->params[0], ctx->params[1]);
+				     ctx->params[0], ctx->params[1]);
 	      ctx->cpx = ctx->rpx = ctx->params[0];
 	      ctx->cpy = ctx->rpy = ctx->params[1];
 	    }
@@ -564,9 +515,6 @@ rsvg_parse_path_data (RSVGParsePathCtx *ctx, const char *data)
 	{
 	  if (ctx->param)
 	    rsvg_parse_path_do_cmd (ctx, TRUE);
-#ifdef VERBOSE
-	  g_print ("'z' closepath\n");
-#endif
 	  rsvg_bpath_def_closepath (ctx->bpath);
 	}
       else if (c >= 'A' && c <= 'Z' && c != 'E')

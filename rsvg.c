@@ -44,12 +44,14 @@
 
 #include <pango/pangoft2.h>
 
+#if ENABLE_GNOME_VFS
+#include <libgnomevfs/gnome-vfs.h>
+#endif
+
 #include "rsvg-bpath-util.h"
 #include "rsvg-path.h"
 #include "rsvg-css.h"
 #include "rsvg-paint-server.h"
-
-#define noVERBOSE
 
 #define SVG_BUFFER_SIZE (1024 * 8)
 
@@ -79,6 +81,7 @@ typedef struct {
 
   double font_size;
   char *font_family;
+  guint text_offset;
 
   guint32 stop_color; /* rgb */
   gint stop_opacity; /* 0..255 */
@@ -237,11 +240,6 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 		has_vbox = TRUE;
 	    }
 	}
-
-#ifdef VERBOSE
-      fprintf (stdout, "rsvg_start_svg: width = %d, height = %d\n",
-	       width, height);
-#endif
 
       if (width <= 0 || height <= 0)
         {
@@ -1139,21 +1137,24 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
   for (beg = 0; beg < len; beg++)
     if (!g_ascii_isspace (ch[beg]))
       break;
-
+  
   for (end = len; end > beg; end--)
     if (!g_ascii_isspace (ch[end - 1]))
       break;
+  
+  /* 0 length string, just return */
+  if (end - beg == 0)
+    {
+      /* TODO: be smarter with some "last was space" logic */
+      end = 1; beg = 0;
+    }
 
   string = g_malloc (end - beg + 1);
   memcpy (string, ch + beg, end - beg);
   string[end - beg] = 0;
-
-#ifdef VERBOSE
-  fprintf (stderr, "text characters(%s, %d)\n", string, len);
-#endif
-
+  
   if (ctx->pango_context == NULL)
-    ctx->pango_context = pango_ft2_get_context ((guint)ctx->dpi, (guint)ctx->dpi); /* FIXME: dpi? */
+    ctx->pango_context = pango_ft2_get_context ((guint)ctx->dpi, (guint)ctx->dpi);
 
   has_alpha = gdk_pixbuf_get_has_alpha (pixbuf);
   
@@ -1169,7 +1170,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 			   NULL);
   
   layout = pango_layout_new (ctx->pango_context);
-  pango_layout_set_text (layout, string, -1);
+  pango_layout_set_text (layout, string, end - beg);
   font = pango_font_description_copy (pango_context_get_font_description (ctx->pango_context));
   if (state->font_family)
     pango_font_description_set_family_static (font, state->font_family);
@@ -1202,20 +1203,20 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
   rsvg_render_paint_server (render, state->fill, NULL); /* todo: paint server ctx */
   opacity = state->fill_opacity * state->opacity;
   opacity = opacity + (opacity >> 7) + (opacity >> 14);
-#ifdef VERBOSE
-  fprintf (stderr, "opacity = %d\n", opacity);
-#endif
+
   art_render_mask_solid (render, opacity);
   art_render_mask (render,
-		   state->affine[4] + line_ink_rect.x,
+		   state->affine[4] + line_ink_rect.x + state->text_offset,
 		   state->affine[5] + line_ink_rect.y,
-		   state->affine[4] + line_ink_rect.x + bitmap.width,
+		   state->affine[4] + line_ink_rect.x + bitmap.width + state->text_offset,
 		   state->affine[5] + line_ink_rect.y + bitmap.rows,
 		   bitmap.buffer, bitmap.pitch);
   art_render_invoke (render);
   g_free (bitmap.buffer);
 
   g_free (string);
+
+  state->text_offset += line_ink_rect.width;
 }
 
 static void
@@ -1247,7 +1248,7 @@ rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
   x += dx ;
   y += dy ;
 
-  if (x >= 0 && y >= 0)
+  if (x > 0 && y > 0)
     {
       art_affine_translate (affine, x, y);
       art_affine_multiply (state->affine, affine, state->affine);
@@ -1255,10 +1256,6 @@ rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
 
   /* todo: transform() is illegal here */
   rsvg_parse_style_attrs (ctx, atts);
-
-#ifdef VERBOSE
-  fprintf (stderr, "begin tspan!\n");
-#endif
 }
 
 static void
@@ -1287,6 +1284,14 @@ rsvg_text_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 {
   RsvgSaxHandlerText *z = (RsvgSaxHandlerText *)self;
   RsvgHandle *ctx = z->ctx;
+
+  if (!strcmp ((char *)name, "tspan"))
+    {
+      /* advance the text offset */
+      RsvgState *tspan = &ctx->state[ctx->n_state - 1];
+      RsvgState *text  = &ctx->state[ctx->n_state - 2];
+      text->text_offset += (tspan->text_offset - text->text_offset);
+    }
 
   /* pop the state stack */
   ctx->n_state--;
@@ -1335,9 +1340,6 @@ rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
 
   rsvg_parse_style_attrs (ctx, atts);
   ctx->handler = &handler->super;
-#ifdef VERBOSE
-  fprintf (stderr, "begin text!\n");
-#endif
 }
 
 /* end text */
@@ -1694,7 +1696,7 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
   has_alpha = gdk_pixbuf_get_has_alpha (img);
 
   /* composite our source image onto our context's pixbuf 
-     todo: handle current transform affine
+     todo: handle current transform affine: state->affine[4], state->affine[5]
   */
   gdk_pixbuf_composite (img, pixbuf,
 			x, y, w, h,
@@ -1911,20 +1913,6 @@ static void
 rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 {
   RsvgHandle *ctx = (RsvgHandle *)data;
-#ifdef VERBOSE
-  int i;
-#endif
-
-#ifdef VERBOSE
-  fprintf (stdout, "SAX.startElement(%s", (char *) name);
-  if (atts != NULL) {
-    for (i = 0;(atts[i] != NULL);i++) {
-      fprintf (stdout, ", %s='", atts[i++]);
-      fprintf (stdout, "%s'", atts[i]);
-    }
-  }
-  fprintf (stdout, ")\n");
-#endif
 
   if (ctx->handler)
     {
@@ -2000,10 +1988,6 @@ rsvg_end_element (void *data, const xmlChar *name)
       /* pop the state stack */
       ctx->n_state--;
       rsvg_state_finalize (&ctx->state[ctx->n_state]);
-
-#ifdef VERBOSE
-      fprintf (stdout, "SAX.endElement(%s)\n", (char *) name);
-#endif
     }
 }
 
@@ -2054,9 +2038,6 @@ rsvg_error_cb (void *data, const char *msg, ...)
 	va_list args;
 	
 	va_start (args, msg);
-#ifdef VERBOSE
-	fprintf (stderr, "fatal svg parse error: ");
-#endif
 	vfprintf (stderr, msg, args);
 	va_end (args);
 }
@@ -2386,6 +2367,58 @@ rsvg_size_callback (int *width,
   g_assert_not_reached ();
 }
 
+static GdkPixbuf *
+rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
+				      struct RsvgSizeCallbackData * data,
+				      GError ** error)
+{
+  char chars[SVG_BUFFER_SIZE];
+  gint result;
+  GdkPixbuf *retval;
+  RsvgHandle *handle;
+
+#if ENABLE_GNOME_VFS
+  GnomeVFSHandle * f = NULL;
+  if (GNOME_VFS_OK != gnome_vfs_open (&handle, file_name, GNOME_VFS_OPEN_READ))
+    {
+      /* FIXME: Set up error. */
+      return NULL;
+    }
+#else
+  FILE *f = fopen (file_name, "r");
+  if (!f)
+    {
+      /* FIXME: Set up error. */
+      return NULL;
+    }
+#endif
+
+  handle = rsvg_handle_new ();
+
+  rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
+
+#if ENABLE_GNOME_VFS
+  while (GNOME_VFS_OK == gnome_vfs_read (f,chars, SVG_BUFFER_SIZE, &result))
+    rsvg_handle_write (handle, chars, result, error);
+#else
+  while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
+    rsvg_handle_write (handle, chars, result, error);
+#endif
+
+  rsvg_handle_close (handle, error);
+  retval = rsvg_handle_get_pixbuf (handle);
+
+#if ENABLE_GNOME_VFS
+  gnome_vfs_close (f);
+#else
+  fclose (f);
+#endif
+
+  rsvg_handle_free (handle);
+
+  return retval;
+}
+
 /**
  * rsvg_pixbuf_from_file:
  * @file_name: A file name
@@ -2424,38 +2457,16 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
 			       double       y_zoom,
 			       GError     **error)
 {
-  FILE *f;
-  char chars[SVG_BUFFER_SIZE];
-  gint result;
-  GdkPixbuf *retval;
-  RsvgHandle *handle;
   struct RsvgSizeCallbackData data;
 
   g_return_val_if_fail (file_name != NULL, NULL);
   g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
 
-  f = fopen (file_name, "r");
-  if (!f)
-    {
-      /* FIXME: Set up error. */
-      return NULL;
-    }
-
-  handle = rsvg_handle_new ();
   data.type = RSVG_SIZE_ZOOM;
   data.x_zoom = x_zoom;
   data.y_zoom = y_zoom;
 
-  rsvg_handle_set_size_callback (handle, rsvg_size_callback, &data, NULL);
-  while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
-    rsvg_handle_write (handle, chars, result, error);
-  rsvg_handle_close (handle, error);
-  
-  retval = rsvg_handle_get_pixbuf (handle);
-
-  fclose (f);
-  rsvg_handle_free (handle);
-  return retval;
+  return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
 
 /**
@@ -2483,40 +2494,18 @@ rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
 					gint          max_height,
 					GError      **error)
 {
-  FILE *f;
-  char chars[SVG_BUFFER_SIZE];
-  gint result;
-  GdkPixbuf *retval;
-  RsvgHandle *handle;
   struct RsvgSizeCallbackData data;
 
   g_return_val_if_fail (file_name != NULL, NULL);
   g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
 
-  f = fopen (file_name, "r");
-  if (!f)
-    {
-      /* FIXME: Set up error. */
-      return NULL;
-    }
-
-  handle = rsvg_handle_new ();
   data.type = RSVG_SIZE_ZOOM_MAX;
   data.x_zoom = x_zoom;
   data.y_zoom = y_zoom;
   data.width = max_width;
   data.height = max_height;
 
-  rsvg_handle_set_size_callback (handle, rsvg_size_callback, &data, NULL);
-  while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
-    rsvg_handle_write (handle, chars, result, error);
-  rsvg_handle_close (handle, error);
-  
-  retval = rsvg_handle_get_pixbuf (handle);
-
-  fclose (f);
-  rsvg_handle_free (handle);
-  return retval;
+  return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
 
 /**
@@ -2540,35 +2529,13 @@ rsvg_pixbuf_from_file_at_size (const gchar *file_name,
 			       gint         height,
 			       GError     **error)
 {
-  FILE *f;
-  char chars[SVG_BUFFER_SIZE];
-  gint result;
-  GdkPixbuf *retval;
-  RsvgHandle *handle;
   struct RsvgSizeCallbackData data;
 
-  f = fopen (file_name, "r");
-  if (!f)
-    {
-      /* FIXME: Set up error. */
-      return NULL;
-    }
-  handle = rsvg_handle_new ();
   data.type = RSVG_SIZE_WH;
   data.width = width;
   data.height = height;
 
-  rsvg_handle_set_size_callback (handle, rsvg_size_callback, &data, NULL);
-  while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
-    rsvg_handle_write (handle, chars, result, error);
-
-  rsvg_handle_close (handle, error);
-  
-  retval = rsvg_handle_get_pixbuf (handle);
-
-  fclose (f);
-  rsvg_handle_free (handle);
-  return retval;
+  return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
 
 /**
@@ -2591,33 +2558,11 @@ rsvg_pixbuf_from_file_at_max_size (const gchar     *file_name,
 				   gint             max_height,
 				   GError         **error)
 {
-  FILE *f;
-  char chars[SVG_BUFFER_SIZE];
-  gint result;
-  GdkPixbuf *retval;
-  RsvgHandle *handle;
   struct RsvgSizeCallbackData data;
 
-  f = fopen (file_name, "r");
-  if (!f)
-    {
-      /* FIXME: Set up error. */
-      return NULL;
-    }
-  handle = rsvg_handle_new ();
   data.type = RSVG_SIZE_WH_MAX;
   data.width = max_width;
   data.height = max_height;
 
-  rsvg_handle_set_size_callback (handle, rsvg_size_callback, &data, NULL);
-  while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
-    rsvg_handle_write (handle, chars, result, error);
-
-  rsvg_handle_close (handle, error);
-  
-  retval = rsvg_handle_get_pixbuf (handle);
-
-  fclose (f);
-  rsvg_handle_free (handle);
-  return retval;
+  return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }

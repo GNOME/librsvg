@@ -1,4 +1,13 @@
-2002-10-01  Dom Lachowicz <doml@appligent.com>
+2002-10-02  Dom Lachowicz <doml@appligent.com>
+
+	* rsvg-path.c (*): Remove VERBOSE statements
+	* rsvg.c (*): Remove VERBOSE statements
+	(rsvg_pixbuf_from_file_with_size_data): New FN for parsing through SVG files. Optionally Gnome-VFS aware (no configure joo-joo yet)
+	(rsvg_pixbuf_from_file_*): use above function
+	(rsvg_text_handler_characters): fix segfault, handle <tspan> to a large degree
+	(rsvg_text_handler_end): ditto
+	
+2002-10-02  Dom Lachowicz <doml@appligent.com>
 
 	* rsvg.c (rsvg_parse_style_args): handle dashoffset and dasharray
 	(state_finalize): support dashes
