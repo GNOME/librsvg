@@ -3810,16 +3810,10 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 
 	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
-	if(!strncmp(oself->href->str, "data:", 5))
-		return rsvg_pixbuf_new_from_data_at_size(oself->href->str,
-												 boundarys.x2 - boundarys.x1,											
-												 boundarys.y2 - boundarys.y1,
-												 FALSE, NULL);
-	else
-		return rsvg_pixbuf_new_from_file_at_size(oself->href->str,
-												 boundarys.x2 - boundarys.x1,											
-												 boundarys.y2 - boundarys.y1,
-												 FALSE, NULL);
+	return rsvg_pixbuf_new_from_href(oself->href->str,
+									 boundarys.x2 - boundarys.x1,											
+									 boundarys.y2 - boundarys.y1,
+									 FALSE, NULL);
 }
 
 static void

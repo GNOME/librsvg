@@ -1,3 +1,8 @@
+2004-04-18  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in
+	* rsvg-shapes.c: Enable loading remote images
+	
 2004-04-18  Dodji Seketeli  <dodji@gnome.org>
 
 	* configure.in: use libcroco 0.6.0

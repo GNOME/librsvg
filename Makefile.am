@@ -57,6 +57,7 @@ librsvginc_HEADERS = 	\
 	librsvg-features.h
 
 INCLUDES =				\
+	$(LIBGNOME_VFS_CFLAGS)		\
 	$(LIBGSF_CFLAGS)		\
 	$(LIBCROCO_CFLAGS)		\
 	-I$(top_srcdir) 		\
@@ -69,6 +70,7 @@ INCLUDES =				\
 
 DEPS = $(top_builddir)/librsvg-2.la
 LDADDS =				\
+	$(LIBGNOME_VFS_LIBS)		\
 	$(LIBGSF_LIBS)			\
 	$(LIBCROCO_LIBS)		\
 	$(top_builddir)/librsvg-2.la 	\

@@ -46,7 +46,6 @@
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
 
-
 /**
  * rsvg_close_vpath: Close a vector path.
  * @src: Source vector path.
@@ -1242,7 +1241,7 @@ rsvg_pixbuf_ensure_alpha_channel(GdkPixbuf * pixbuf)
 	}
 }
 
-GdkPixbuf *
+static GdkPixbuf *
 rsvg_pixbuf_new_from_data_at_size (const char *data,
 								   int         width, 
 								   int         height,
@@ -1319,7 +1318,7 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	return rsvg_pixbuf_ensure_alpha_channel(pixbuf);
 }
 
-GdkPixbuf *
+static GdkPixbuf *
 rsvg_pixbuf_new_from_file_at_size (const char *filename,
 								   int         width, 
 								   int         height,
@@ -1396,6 +1395,117 @@ rsvg_pixbuf_new_from_file_at_size (const char *filename,
 	return rsvg_pixbuf_ensure_alpha_channel(pixbuf);
 }
 
+#ifdef HAVE_GNOME_VFS
+
+#include <libgnomevfs/gnome-vfs.h>
+
+static GdkPixbuf *
+rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
+								  int         width, 
+								  int         height,
+								  gboolean    keep_aspect_ratio,
+								  GError    **error)
+{
+	GdkPixbufLoader *loader;
+	GdkPixbuf       *pixbuf;
+	
+	guchar buffer [4096];
+	GnomeVFSFileSize length;
+	GnomeVFSHandle *f = NULL;
+	GnomeVFSResult res;
+	struct {
+		gint width;
+		gint height;
+		gboolean keep_aspect_ratio;
+	} info;
+	
+	g_return_val_if_fail (filename != NULL, NULL);
+	g_return_val_if_fail (width > 0 && height > 0, NULL);
+	
+	if (!gnome_vfs_initialized())
+		gnome_vfs_init();
+
+	res = gnome_vfs_open (&f, filename, GNOME_VFS_OPEN_READ);
+
+	if (res != GNOME_VFS_OK) {
+		g_set_error (error, rsvg_error_quark (), (gint) res,
+					 gnome_vfs_result_to_string (res));
+		return NULL;
+	}
+	
+	loader = gdk_pixbuf_loader_new ();
+	
+	info.width = width;
+	info.height = height;
+	info.keep_aspect_ratio = keep_aspect_ratio;
+	
+	g_signal_connect (loader, "size-prepared", G_CALLBACK (size_prepared_cb), &info);
+	
+	while (TRUE) {
+		res = gnome_vfs_read (f, buffer, sizeof (buffer), &length);
+		if (res == GNOME_VFS_OK && length > 0) {
+			if (!gdk_pixbuf_loader_write (loader, buffer, length, error)) {
+				gdk_pixbuf_loader_close (loader, NULL);
+				gnome_vfs_close (f);
+				g_object_unref (loader);
+				return NULL;
+			}
+		} else {
+			break;
+		}
+	}
+	
+	gnome_vfs_close (f);
+	
+	if (!gdk_pixbuf_loader_close (loader, error)) {
+		g_object_unref (loader);
+		return NULL;
+	}
+	
+	pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
+	
+	if (!pixbuf) {
+		g_object_unref (loader);
+		g_set_error (error,
+					 GDK_PIXBUF_ERROR,
+					 GDK_PIXBUF_ERROR_FAILED,
+					 _("Failed to load image '%s': reason not known, probably a corrupt image file"),
+					 filename);
+		return NULL;
+	}
+	
+	g_object_ref (pixbuf);
+	
+	g_object_unref (loader);
+
+	return rsvg_pixbuf_ensure_alpha_channel(pixbuf);
+}
+
+#endif
+
+GdkPixbuf *
+rsvg_pixbuf_new_from_href (const char *href,
+						   int         w, 
+						   int         h,
+						   gboolean    keep_aspect_ratio,
+						   GError    **err)
+{
+	GdkPixbuf * img = NULL;
+
+	if(!strncmp(href, "data:", 5))
+		img = rsvg_pixbuf_new_from_data_at_size (href, w, h, keep_aspect_ratio, err);
+	
+	if(!img)
+		img = rsvg_pixbuf_new_from_file_at_size (href, w, h, keep_aspect_ratio, err);
+
+#ifdef HAVE_GNOME_VFS
+	if(!img)
+		img = rsvg_pixbuf_new_from_vfs_at_size (href, w, h, keep_aspect_ratio, err);
+#endif
+
+	return img;
+}
+
 /* TODO 1: issue with affining alpha images - this is gdkpixbuf's fault...
  * TODO 2: issue with rotating images - do we want to rotate the whole
  *         canvas 2x to get this right, only to have #1 bite us?
@@ -1452,10 +1562,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	w *= state->affine[0];
 	h *= state->affine[3];
 
-	if(!strncmp(href, "data:", 5))
-		img = rsvg_pixbuf_new_from_data_at_size (href, w, h, FALSE, &err);
-	else
-		img = rsvg_pixbuf_new_from_file_at_size (href, w, h, FALSE, &err);
+	img = rsvg_pixbuf_new_from_href (href, w, h, FALSE, &err);
 	
 	if (!img)
 		{

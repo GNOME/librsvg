@@ -126,6 +126,33 @@ AC_SUBST(LIBGSF_LIBS)
 
 dnl ===========================================================================
 
+LIBGNOME_VFS_CFLAGS=""
+LIBGNOME_VFS_LIBS=""
+
+LIBGNOME_VFS_PKG=""
+test_gnome_vfs=true
+AC_ARG_WITH(svgz,[  --with-gnome-vfs  Use Gnome VFS for reading remote files],[
+	if test "x$withval" = "xno"; then
+		test_gnome_vfs=false
+	fi
+])
+if test "x$test_gnome_vfs" = "xtrue"; then
+	PKG_CHECK_MODULES(LIBGNOME_VFS,[gnome-vfs-2.0 >= 1.9.16], test_gnome_vfs=true, test_gnome_vfs=false)
+fi
+
+if test "x$test_gnome_vfs" = "xtrue"; then
+	LIBGNOME_VFS_CFLAGS="$LIBGNOME_VFS_CFLAGS -DHAVE_GNOME_VFS=1"
+	LIBGNOME_VFS_PKG="gnome-vfs-2.0"
+else
+	AC_MSG_WARN([Gnome VFS support disabled, as request (Use --with-gnome-vfs to enable)])
+fi
+AM_CONDITIONAL(WITH_LIBGNOME_VFS,[test "$LIBGNOME_VFS_PKG" != ""])
+
+AC_SUBST(LIBGNOME_VFSPKG)
+
+AC_SUBST(LIBGNOME_VFS_CFLAGS)
+AC_SUBST(LIBGNOME_VFS_LIBS)
+
 dnl ===========================================================================
 
 LIBCROCO_CFLAGS=""
@@ -372,6 +399,7 @@ librsvg-$LIBRSVG_VERSION
 	Build theme engine:             ${enable_gtk_theme}
 	Build Netscape plugin:          ${build_mozilla_plugin}
 	Handle svgz files:              ${test_gsf}
+	Use Gnome VFS:                  ${test_gnome_vfs}
 	Use libcroco for css parsing:   ${test_croco}
 	Build documentation:            ${enable_gtk_doc}
 "
