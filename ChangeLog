@@ -1,3 +1,8 @@
+2004-08-22  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-shapes.c: made <image>s <use>able
+	* rsvg.c, rsvg-shapes.c: I've been talking about it for a while now, but I finally got the courage to do it: librsvg now fully passes the contents of the file before it renders a single pixel. 
+
 2004-08-21  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* prettymuch-everywhere: made the majority compile with -ansi -pedantic

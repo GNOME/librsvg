@@ -46,11 +46,13 @@ void rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts);
 void rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts);
 
 RsvgDefsDrawable * rsvg_push_def_group (RsvgHandle *ctx, const char * id);
+RsvgDefsDrawable * rsvg_push_part_def_group (RsvgHandle *ctx, const char * id);
 void rsvg_pop_def_group (RsvgHandle *ctx);
 
 typedef struct _RsvgDefsDrawablePath RsvgDefsDrawablePath;
 typedef struct _RsvgDefsDrawableGroup RsvgDefsDrawableGroup;
 typedef struct _RsvgDefsDrawableUse RsvgDefsDrawableUse;
+typedef struct _RsvgDefsDrawableImage RsvgDefsDrawableImage;
 
 struct _RsvgDefsDrawable {
  	RsvgDefVal super;
@@ -73,6 +75,12 @@ struct _RsvgDefsDrawableGroup {
 struct _RsvgDefsDrawableUse {
  	RsvgDefsDrawable super;
  	RsvgDefsDrawable *child;
+};
+
+struct _RsvgDefsDrawableImage {
+ 	RsvgDefsDrawable super;
+	gint preserve_aspect_ratio, x, y, w, h;
+ 	GdkPixbuf *img;
 };
 
 typedef struct _RsvgMarker RsvgMarker;

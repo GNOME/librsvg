@@ -76,10 +76,10 @@ rsvg_pixmap_destroy (guchar *pixels, gpointer data)
 static void
 rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	int width = -1, height = -1, x = -1, y = -1;
+	int width = -1, height = -1, x = -1, y = -1, i;
 	int rowstride;
 	art_u8 *pixels;
-	RsvgState *state;
+	RsvgState *state = rsvg_state_current (ctx);
 	gint new_width, new_height;
 	double x_zoom = 1.;
 	double y_zoom = 1.;
@@ -157,7 +157,6 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				}
 
 			/* Scale size of target pixbuf */
-			state = rsvg_state_current (ctx);
 
 			art_affine_identity (state->affine);
 
@@ -209,17 +208,21 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 													rsvg_pixmap_destroy,
 													NULL);
 		}
+
+	for (i = 0; i < 6; i++)
+		state->personal_affine[i] = state->affine[i];
 	ctx->nest_level = 1;
 	ctx->current_defs_group = NULL;
+	rsvg_push_def_group(ctx, NULL);
 }
 
 static void
 rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	int width = -1, height = -1, x = -1, y = -1;
+	int width = -1, height = -1, x = -1, y = -1, i;
 	double affine[6];
 	const char * id, *value;
-
+	RsvgState * state;
 	double vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
 	gboolean has_vbox = FALSE;
 	id = NULL;
@@ -245,6 +248,7 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				id = value;
 
 		}
+	state = rsvg_state_current(ctx);
 	if (has_vbox)
 		{
 			affine[0] = width / vbox_w;
@@ -253,8 +257,10 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			affine[3] = height / vbox_h;
 			affine[4] = x - vbox_x * width / vbox_w;
 			affine[5] = y - vbox_y * height / vbox_h;
-			art_affine_multiply(rsvg_state_current(ctx)->affine, affine, 
-								rsvg_state_current(ctx)->affine);	
+			for (i = 0; i < 6; i++)
+				rsvg_state_current(ctx)->personal_affine[i] = affine[i];
+			art_affine_multiply(state->affine, affine, 
+								state->affine);	
 		}
 	else
 		{
@@ -264,8 +270,10 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			affine[3] = 1;
 			affine[4] = x;
 			affine[5] = y;
-			art_affine_multiply(rsvg_state_current(ctx)->affine, affine, 
-								rsvg_state_current(ctx)->affine);				
+			for (i = 0; i < 6; i++)
+				rsvg_state_current(ctx)->personal_affine[i] = affine[i];
+			art_affine_multiply(state->affine, affine, 
+								state->affine);
 		}
 	rsvg_push_def_group (ctx, id);
 	ctx->nest_level++;
@@ -276,6 +284,9 @@ rsvg_end_sub_svg(RsvgHandle *ctx)
 {
 	if (ctx->nest_level-- > 1)
 		rsvg_pop_def_group (ctx);
+	else
+		rsvg_defs_drawable_draw((RsvgDefsDrawable *)ctx->current_defs_group, 
+								ctx, 2);
 }
 
 static void
@@ -295,16 +306,33 @@ rsvg_start_g (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		}	
   
 	rsvg_push_def_group (ctx, id);
-	if (!ctx->in_defs)	
-		rsvg_push_discrete_layer (ctx);
 }
 
 static void
 rsvg_end_g (RsvgHandle *ctx)
 {
 	rsvg_pop_def_group (ctx);
-	if (!ctx->in_defs)
-		rsvg_pop_discrete_layer (ctx);
+}
+
+static void
+rsvg_start_defs (RsvgHandle *ctx, RsvgPropertyBag *atts)
+{
+	RsvgState *state = rsvg_state_current (ctx);
+	const char * klazz = NULL, * id = NULL, *value;
+	
+	if (rsvg_property_bag_size (atts))
+		{
+			if ((value = rsvg_property_bag_lookup (atts, "class")))
+				klazz = value;
+			if ((value = rsvg_property_bag_lookup (atts, "id")))
+				id = value;
+
+			rsvg_parse_style_attrs (ctx, state, "defs", klazz, id, atts);
+		}	
+  
+	/*I don't know if I am proud or discusted by this hack. It seems to 
+	  have the same effect as the spec but not be in its spirit.*/
+	rsvg_push_part_def_group (ctx, id);
 }
 
 typedef struct _RsvgSaxHandlerDefs {
@@ -878,9 +906,7 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	pattern->vbh = (cloned && !got_vbox) ? pattern->vbh : vbh;
 	pattern->vbox = (cloned && !got_vbox) ? pattern->vbox : got_vbox;
 
-	ctx->in_defs++;		
-
-	pattern->g = &(rsvg_push_def_group (ctx, NULL)->super);
+	pattern->g = &(rsvg_push_part_def_group (ctx, NULL)->super);
 }
 
 
@@ -1181,12 +1207,9 @@ rsvg_start_element (void *data, const xmlChar *name,
 			else if (!strcmp ((char *)name, "g"))
 				rsvg_start_g (ctx, bag);
 			else if (!strcmp ((char *)name, "symbol"))
-				{
-					ctx->in_defs++;
-					rsvg_start_g (ctx, bag);
-				}
+				rsvg_start_g (ctx, bag);
 			else if (!strcmp ((char *)name, "defs"))
-				ctx->in_defs++;	
+				rsvg_start_defs(ctx, bag);	
 			else if (!strcmp ((char *)name, "path"))
 				rsvg_start_path (ctx, bag);
 			else if (!strcmp ((char *)name, "line"))
@@ -1214,24 +1237,13 @@ rsvg_start_element (void *data, const xmlChar *name,
 			else if (!strcmp ((char *)name, "desc"))
 				rsvg_start_desc (ctx, bag);
 			else if (!strcmp ((char *)name, "mask"))
-				{
-					ctx->in_defs++;
-					rsvg_start_mask(ctx, bag);
-				}
+				rsvg_start_mask(ctx, bag);
 			else if (!strcmp ((char *)name, "clipPath"))
-				{
-					ctx->in_defs++;
-					rsvg_start_clip_path(ctx, bag);
-				}
+				rsvg_start_clip_path(ctx, bag);
 			else if (!strcmp ((char *)name, "marker"))
-				{
-					ctx->in_defs++;
-					rsvg_start_marker (ctx, bag);
-				}
+				rsvg_start_marker (ctx, bag);
 			else if (!strcmp ((char *)name, "switch"))
-				{
-					ctx->in_switch++;
-				}
+				ctx->in_switch++;
 			/* see conicalGradient discussion above */
 			else if (!strcmp ((char *)name, "linearGradient"))
 				rsvg_start_linear_gradient (ctx, bag);
@@ -1272,35 +1284,23 @@ rsvg_end_element (void *data, const xmlChar *name)
 			else if (!strcmp ((char *)name, "svg"))
 				rsvg_end_sub_svg (ctx);
 			else if (!strcmp ((char *)name, "symbol"))
-				{
-					ctx->in_defs--;
-					rsvg_end_g (ctx);
-				}
+				rsvg_end_g (ctx);
 			else if (!strcmp ((char *)name, "filter"))
 				rsvg_end_filter (ctx);
-			else if (!strcmp ((char *)name, "defs")) {
-				ctx->in_defs--;	
-			}
-			else if (!strcmp ((char *)name, "mask")){
+			else if (!strcmp ((char *)name, "defs"))
+				rsvg_end_g (ctx);	
+			else if (!strcmp ((char *)name, "mask"))
 				rsvg_end_mask(ctx);
-				ctx->in_defs--;				
-			}
-			else if (!strcmp ((char *)name, "clipPath")){
+			else if (!strcmp ((char *)name, "clipPath"))
 				rsvg_end_clip_path(ctx);
-				ctx->in_defs--;				
-			}
-			else if (!strcmp ((char *)name, "marker")){
+			else if (!strcmp ((char *)name, "marker"))
 				rsvg_pop_def_group(ctx);
-				ctx->in_defs--;
-			}
 			else if (!strcmp ((char *)name, "switch"))
 				{
 					ctx->in_switch--;
 				}
-			else if (!strcmp ((char *)name, "pattern")) {
-				ctx->in_defs--;	
+			else if (!strcmp ((char *)name, "pattern"))
 				rsvg_pop_def_group(ctx);
-			}
 
 			rsvg_state_pop(ctx);
 		}

@@ -652,7 +652,7 @@ rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawable *ch
 	g_ptr_array_add(z->children, child);
 }
 
-static RsvgDefsDrawable * 
+RsvgDefsDrawable * 
 rsvg_push_part_def_group (RsvgHandle *ctx, const char * id)
 {
 	RsvgDefsDrawableGroup *group;
@@ -705,8 +705,6 @@ void
 rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id)
 {
 	RsvgDefsDrawablePath *path;
-	if (!ctx->in_defs)
-		rsvg_render_path (ctx, d);
 	
 	path = g_new (RsvgDefsDrawablePath, 1);
 	path->d = g_strdup(d);
@@ -1773,6 +1771,110 @@ rsvg_clip_image(GdkPixbuf *intermediate, ArtSVP *path)
 			}
 }
 
+static void 
+rsvg_defs_drawable_image_free (RsvgDefVal * self)
+{
+	RsvgDefsDrawableImage *z = (RsvgDefsDrawableImage *)self;
+	rsvg_state_finalize (&z->super.state);
+	g_object_unref (G_OBJECT (z->img)); 
+	g_free (z);	
+}
+
+static void 
+rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+							   int dominate)
+{
+	RsvgDefsDrawableImage *z = (RsvgDefsDrawableImage *)self;
+	double x = z->x, y = z->y, w = z->w, h = z->h;
+	int aspect_ratio = z->preserve_aspect_ratio;
+	ArtIRect temprect;
+	GdkPixbuf *img = z->img;
+	int i, j;
+	double tmp_affine[6];
+	double tmp_tmp_affine[6];
+	RsvgState *state = rsvg_state_current(ctx);
+	GdkPixbuf *intermediate;
+	double basex, basey;
+
+	rsvg_state_reinherit_top(ctx, &self->state, dominate);
+
+	if (aspect_ratio)
+		{
+			if ((double)gdk_pixbuf_get_height (img) * (double)w >
+				(double)gdk_pixbuf_get_width (img) * (double)h) 
+				{
+					w = 0.5 + (double)gdk_pixbuf_get_width (img) * (double)h 
+						/ (double)gdk_pixbuf_get_height (img);
+				} 
+			else 
+				{
+					h = 0.5 + (double)gdk_pixbuf_get_height (img) * (double)w 
+						/ (double)gdk_pixbuf_get_width (img);
+				}
+		}
+
+	for (i = 0; i < 6; i++)
+		tmp_affine[i] = state->affine[i];
+
+	/*translate to x and y*/
+	tmp_tmp_affine[0] = tmp_tmp_affine[3] = 1;
+	tmp_tmp_affine[1] = tmp_tmp_affine[2] = 0;
+	tmp_tmp_affine[4] = x;
+	tmp_tmp_affine[5] = y;
+
+	art_affine_multiply(tmp_affine, tmp_tmp_affine, tmp_affine);
+
+
+	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+								   gdk_pixbuf_get_width (ctx->pixbuf),
+								   gdk_pixbuf_get_height (ctx->pixbuf));
+
+
+	if (!intermediate)
+		{
+			g_object_unref (G_OBJECT (img));
+			return;
+		}
+
+	rsvg_affine_image(img, intermediate, tmp_affine, w, h);
+
+	rsvg_push_discrete_layer(ctx);
+
+	if (state->clippath)
+		{
+			rsvg_clip_image(intermediate, state->clippath);
+		}
+
+	/*slap it down*/
+	rsvg_alpha_blt (intermediate, 0, 0,
+					gdk_pixbuf_get_width (intermediate),
+					gdk_pixbuf_get_height (intermediate),
+					ctx->pixbuf, 
+					0, 0);
+	
+	temprect.x0 = gdk_pixbuf_get_width (intermediate);
+	temprect.y0 = gdk_pixbuf_get_height (intermediate);
+	temprect.x1 = 0;
+	temprect.y1 = 0;
+
+	for (i = 0; i < 2; i++)
+		for (j = 0; j < 2; j++)
+			{
+				basex = tmp_affine[0] * w * i + tmp_affine[2] * h * j + tmp_affine[4];
+				basey = tmp_affine[1] * w * i + tmp_affine[3] * h * j + tmp_affine[5];
+				temprect.x0 = MIN(basex, temprect.x0);
+				temprect.y0 = MIN(basey, temprect.y0);
+				temprect.x1 = MAX(basex, temprect.x1);
+				temprect.y1 = MAX(basey, temprect.y1);
+			}
+
+
+	art_irect_union(&ctx->bbox, &ctx->bbox, &temprect);
+	rsvg_pop_discrete_layer(ctx);
+
+	g_object_unref (G_OBJECT (intermediate));
+}
+
 void
 rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
@@ -1780,18 +1882,10 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	const char * href = NULL;
 	const char * klazz = NULL, * id = NULL, *value;
 	int aspect_ratio = RSVG_ASPECT_RATIO_NONE;
-	ArtIRect temprect;
 	GdkPixbuf *img;
 	GError *err = NULL;
-	int i, j;
-	double tmp_affine[6];
-	double tmp_tmp_affine[6];
 	RsvgState *state;
-	GdkPixbuf *intermediate;
-	double basex, basey;
-
-	/* skip over defs entries for now */
-	if (ctx->in_defs) return;
+	RsvgDefsDrawableImage *image;
 
 	state = rsvg_state_current (ctx);
 	
@@ -1836,84 +1930,25 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				}
 			return;
 		}
-
-	if (aspect_ratio)
-		{
-			if ((double)gdk_pixbuf_get_height (img) * (double)w >
-				(double)gdk_pixbuf_get_width (img) * (double)h) 
-				{
-					w = 0.5 + (double)gdk_pixbuf_get_width (img) * (double)h 
-						/ (double)gdk_pixbuf_get_height (img);
-				} 
-			else 
-				{
-					h = 0.5 + (double)gdk_pixbuf_get_height (img) * (double)w 
-						/ (double)gdk_pixbuf_get_width (img);
-				}
-		}
-
-	for (i = 0; i < 6; i++)
-		tmp_affine[i] = state->affine[i];
-
-	/*translate to x and y*/
-	tmp_tmp_affine[0] = tmp_tmp_affine[3] = 1;
-	tmp_tmp_affine[1] = tmp_tmp_affine[2] = 0;
-	tmp_tmp_affine[4] = x;
-	tmp_tmp_affine[5] = y;
-
-	art_affine_multiply(tmp_affine, tmp_tmp_affine, tmp_affine);
-
-
-	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-								   gdk_pixbuf_get_width (ctx->pixbuf),
-								   gdk_pixbuf_get_height (ctx->pixbuf));
-
-
-	if (!intermediate)
-		{
-			g_object_unref (G_OBJECT (img));
-			return;
-		}
-
-	rsvg_affine_image(img, intermediate, tmp_affine, w, h);
-
-	g_object_unref (G_OBJECT (img));
-
-	rsvg_push_discrete_layer(ctx);
-
-	if (state->clippath)
-		{
-			rsvg_clip_image(intermediate, state->clippath);
-		}
-
-	/*slap it down*/
-	rsvg_alpha_blt (intermediate, 0, 0,
-					gdk_pixbuf_get_width (intermediate),
-					gdk_pixbuf_get_height (intermediate),
-					ctx->pixbuf, 
-					0, 0);
 	
-	temprect.x0 = gdk_pixbuf_get_width (intermediate);
-	temprect.y0 = gdk_pixbuf_get_height (intermediate);
-	temprect.x1 = 0;
-	temprect.y1 = 0;
+	image = g_new (RsvgDefsDrawableImage, 1);
+	image->img = img;
+	image->preserve_aspect_ratio = aspect_ratio;
+	image->x = x;
+	image->y = y;
+	image->w = w;
+	image->h = h;
+	rsvg_state_clone (&image->super.state, rsvg_state_current (ctx));
+	image->super.super.type = RSVG_DEF_PATH;
+	image->super.super.free = rsvg_defs_drawable_image_free;
+	image->super.draw = rsvg_defs_drawable_image_draw;
+	rsvg_defs_set (ctx->defs, id, &image->super.super);
+	
+	image->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
+	if (image->super.parent != NULL)
+		rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)image->super.parent, 
+									  &image->super);
 
-	for (i = 0; i < 2; i++)
-		for (j = 0; j < 2; j++)
-			{
-				basex = tmp_affine[0] * w * i + tmp_affine[2] * h * j + tmp_affine[4];
-				basey = tmp_affine[1] * w * i + tmp_affine[3] * h * j + tmp_affine[5];
-				temprect.x0 = MIN(basex, temprect.x0);
-				temprect.y0 = MIN(basey, temprect.y0);
-				temprect.x1 = MAX(basex, temprect.x1);
-				temprect.y1 = MAX(basey, temprect.y1);
-			}
-
-
-	art_irect_union(&ctx->bbox, &ctx->bbox, &temprect);
-	rsvg_pop_discrete_layer(ctx);
-
-	g_object_unref (G_OBJECT (intermediate));
 }
 
 void 
@@ -1982,8 +2017,6 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 								rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)use->super.parent, 
 															  &use->super);
 							
-							if (!ctx->in_defs)
-								rsvg_defs_drawable_draw (&use->super, ctx, 0);
 							break;
 						}
 					default:
