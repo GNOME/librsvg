@@ -1193,8 +1193,13 @@ rsvg_handle_close_impl (RsvgHandle  *handle,
 	
 	if (handle->ctxt != NULL)
 		{
+			xmlDocPtr xmlDoc;
+
+			xmlDoc = handle->ctxt->myDoc;
+
 			xmlParseChunk (handle->ctxt, "", 0, TRUE);
 			xmlFreeParserCtxt (handle->ctxt);
+			xmlFreeDoc(xmlDoc);
 		}
   
 	/* FIXME: Error handling not implemented. */
