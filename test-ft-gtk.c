@@ -327,7 +327,7 @@ static TestCtx *new_test_window (const char *fn, const char *afn,
 	gtk_container_add (GTK_CONTAINER (topwin), vbox);
 
 	drawingarea = gtk_drawing_area_new ();
-	gtk_widget_set_usize (drawingarea, width, height);
+	gtk_widget_set_size_request (drawingarea, width, height);
 	gtk_box_pack_start (GTK_BOX (vbox), drawingarea, TRUE, TRUE, 0);
 
 	ctx->ctx = rsvg_ft_ctx_new ();

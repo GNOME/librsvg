@@ -1,3 +1,9 @@
+2001-08-13  Darin Adler  <darin@bentspoon.com>
+
+	* test-ft-gtk.c: (new_test_window): Use the new
+	gtk_widget_set_size_request instead of the deprecated
+	gtk_widget_set_usize.
+
 2001-08-08  Darin Adler  <darin@bentspoon.com>
 
 	* acinclude.m4: Move code for finding freetype here instead
