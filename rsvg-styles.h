@@ -115,7 +115,7 @@ void rsvg_parse_style_attrs (RsvgHandle *ctx, RsvgState *state, const char * tag
 
 gdouble rsvg_viewport_percentage (gdouble width, gdouble height);
 void rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity);
-void rsvg_pop_opacity_group_as_filter (RsvgHandle *ctx, RsvgFilter *filter);
+void rsvg_pop_opacity_group_as_filter (RsvgHandle *ctx, RsvgFilter *filter, int opacity);
 void rsvg_push_opacity_group (RsvgHandle *ctx);
 gboolean rsvg_parse_transform (double dst[6], const char *src);
 

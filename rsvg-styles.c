@@ -1043,14 +1043,44 @@ rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity)
  * same principle in general
  **/
 void
-rsvg_pop_opacity_group_as_filter (RsvgHandle *ctx, RsvgFilter *filter)
+rsvg_pop_opacity_group_as_filter (RsvgHandle *ctx, RsvgFilter *filter, 
+								  int opacity)
 {
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
 	GdkPixbuf *tos, *nos;
 
 	tos = ctx->pixbuf;
 	nos = state->save_pixbuf;
+
+	/*if there is an opacity value then we must deal with it before filtering*/
+	/*	
+if (opacity != 0xFF)
+		{
+			art_u8 *tos_pixels;
+			int width;
+			int height;
+			int rowstride;
+			int x, y;
+
+			width = gdk_pixbuf_get_width (tos);
+			height = gdk_pixbuf_get_height (tos);
+			rowstride = gdk_pixbuf_get_rowstride (tos);
+			
+			tos_pixels = gdk_pixbuf_get_pixels (tos);
+			
+			for (y = 0; y < height; y++)
+				{
+					for (x = 0; x < width; x++)
+						{
+							tos_pixels[4 * x + 3] = tos_pixels[4 * x + 3] * 
+								opacity / 255;
+						}
+					tos_pixels += rowstride;
+				}
+		}
 	
+	*/
+
 	if (tos == NULL || nos == NULL)
 		{
 			/* FIXME: What warning/GError here? */

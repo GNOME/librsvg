@@ -230,7 +230,7 @@ rsvg_text_render_text_bitmap (RsvgHandle *ctx,
 	state->text_offset += line_ink_rect.width;
 
 	if (state->filter)
-		rsvg_pop_opacity_group_as_filter(ctx, state->filter);
+		rsvg_pop_opacity_group_as_filter(ctx, state->filter, 0xFF);
 
 }
 

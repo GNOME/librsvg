@@ -33,7 +33,7 @@
 #define M_PI 3.14159265358979323846
 #endif /*  M_PI  */
 
-#define PERFECTBLUR 4
+#define PERFECTBLUR 0
 
 /*************************************************************/
 /*************************************************************/
@@ -274,79 +274,84 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state)
 	stride = gdk_pixbuf_get_rowstride (ctx->source);
 	x = y = height = width = -1;
 	
-	/* move in from the top to find the y value */
-	for (i = 0; i < gdk_pixbuf_get_height (ctx->source); i++)
+
+	if (ctx->filter->filterunits == objectBoundingBox || 
+		ctx->filter->primitiveunits != objectBoundingBox)
 		{
+			/* move in from the top to find the y value */
+			for (i = 0; i < gdk_pixbuf_get_height (ctx->source); i++)
+				{
+					for (j = 0; j < gdk_pixbuf_get_width (ctx->source); j++)
+						{
+							currentindex = i * stride + j * 4;
+							if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0
+								|| pixels[currentindex + 2] != 0
+								|| pixels[currentindex + 3] != 0)
+								{
+									y = i;
+									break;
+								}
+						}
+					if (y != -1)
+						break;
+				}
+			
+			/* move in from the bottom to find the height */
+			for (i = gdk_pixbuf_get_height (ctx->source) - 1; i >= 0; i--)
+				{
+					for (j = 0; j < gdk_pixbuf_get_width (ctx->source); j++)
+						{
+							currentindex = i * stride + j * 4;
+							if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0
+								|| pixels[currentindex + 2] != 0
+								|| pixels[currentindex + 3] != 0)
+								{
+									height = i - y;
+									break;
+								}
+							
+						}
+					if (height != -1)
+						break;
+				}
+			
+			/* move in from the left to find the x value */
 			for (j = 0; j < gdk_pixbuf_get_width (ctx->source); j++)
 				{
-					currentindex = i * stride + j * 4;
-					if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0
-						|| pixels[currentindex + 2] != 0
-						|| pixels[currentindex + 3] != 0)
+					for (i = y; i < (height + y); i++)
 						{
-							y = i;
-							break;
+							currentindex = i * stride + j * 4;
+							if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0
+								|| pixels[currentindex + 2] != 0
+								|| pixels[currentindex + 3] != 0)
+								{
+									x = j;
+									break;
+								}
 						}
+					if (x != -1)
+						break;
 				}
-			if (y != -1)
-				break;
-		}
-		
-	/* move in from the bottom to find the height */
-	for (i = gdk_pixbuf_get_height (ctx->source) - 1; i >= 0; i--)
-		{
-			for (j = 0; j < gdk_pixbuf_get_width (ctx->source); j++)
+			
+			/* move in from the right side to find the width */
+			for (j = gdk_pixbuf_get_width (ctx->source) - 1; j >= 0; j--)
 				{
-					currentindex = i * stride + j * 4;
-					if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0
-						|| pixels[currentindex + 2] != 0
-						|| pixels[currentindex + 3] != 0)
+					for (i = y; i < (height + y); i++)
 						{
-							height = i - y;
-							break;
+							currentindex = i * stride + j * 4;
+							if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0
+								|| pixels[currentindex + 2] != 0
+								|| pixels[currentindex + 3] != 0)
+								{
+									width = j - x;
+									break;
+								}
 						}
-					
+					if (width != -1)
+						break;
 				}
-			if (height != -1)
-				break;
-		}
-	
-	/* move in from the left to find the x value */
-	for (j = 0; j < gdk_pixbuf_get_width (ctx->source); j++)
-		{
-			for (i = y; i < (height + y); i++)
-				{
-					currentindex = i * stride + j * 4;
-					if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0
-						|| pixels[currentindex + 2] != 0
-						|| pixels[currentindex + 3] != 0)
-						{
-							x = j;
-							break;
-						}
-				}
-			if (x != -1)
-				break;
-		}
-	
-	/* move in from the right side to find the width */
-	for (j = gdk_pixbuf_get_width (ctx->source) - 1; j >= 0; j--)
-		{
-			for (i = y; i < (height + y); i++)
-				{
-					currentindex = i * stride + j * 4;
-					if (pixels[currentindex + 0] != 0 || pixels[currentindex + 1] != 0
-						|| pixels[currentindex + 2] != 0
-						|| pixels[currentindex + 3] != 0)
-						{
-							width = j - x;
-							break;
-						}
-				}
-			if (width != -1)
-				break;
-		}
-	
+		}			
+
 	ctx->width = gdk_pixbuf_get_width (ctx->source);
 	ctx->height = gdk_pixbuf_get_height (ctx->source);
 	
@@ -1230,6 +1235,9 @@ true_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sdx,
 					break;
 				}
 		}
+	if (i < 1)
+		i = 1;
+
 	kw = 2 * (i - 1);
 
 	/* find out the required y size for the kernel matrix */
@@ -1242,6 +1250,9 @@ true_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sdx,
 			}
     }
 	
+	if (i < 1)
+		i = 1;
+
 	kh = 2 * (i - 1);
 
 	KernelMatrix = g_new (double, kw * kh);
@@ -1328,77 +1339,92 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 	output_pixels = gdk_pixbuf_get_pixels (intermediate);
 	
 	rowstride = gdk_pixbuf_get_rowstride (in);
-	
-	for (ch = 0; ch < 4; ch++)
+
+
+	if (kw >= 1)	
 		{
-			for (y = boundarys.y1; y < boundarys.y2; y++)
+			for (ch = 0; ch < 4; ch++)
 				{
-					sum = 0;
-					divisor = 0;
-					for (x = boundarys.x1; x < boundarys.x1 + kw; x++)
+					for (y = boundarys.y1; y < boundarys.y2; y++)
 						{
-							divisor++;
-							sum += in_pixels[4 * x + y * rowstride + ch];
-							if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x2)
+							sum = 0;
+							divisor = 0;
+							for (x = boundarys.x1; x < boundarys.x1 + kw; x++)
 								{
+									divisor++;
+									sum += in_pixels[4 * x + y * rowstride + ch];
+									if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x2)
+										{
+											output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
+										}
+								}
+							for (x = boundarys.x1 + kw; x < boundarys.x2; x++)
+								{
+									sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
+									sum += in_pixels[4 * x + y * rowstride + ch];
 									output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
 								}
-						}
-					for (x = boundarys.x1 + kw; x < boundarys.x2; x++)
-						{
-							sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
-							sum += in_pixels[4 * x + y * rowstride + ch];
-							output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
-						}
-					for (x = boundarys.x2; x < boundarys.x2 + kw; x++)
-						{
-							divisor--;
-							sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
-							if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x2)
+							for (x = boundarys.x2; x < boundarys.x2 + kw; x++)
 								{
-									output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
+									divisor--;
+									sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
+									if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x2)
+										{
+											output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
+										}
 								}
 						}
 				}
 		}
-
-
+	else
+		intermediate = in;
+	
 	in_pixels = gdk_pixbuf_get_pixels (intermediate);
 	output_pixels = gdk_pixbuf_get_pixels (output);
 
-	for (ch = 0; ch < 4; ch++)
+	if (kh >= 1)
 		{
-			for (x = boundarys.x1; x < boundarys.x2; x++)
+			for (ch = 0; ch < 4; ch++)
 				{
-					sum = 0;
-					divisor = 0;
-					
-					for (y = boundarys.y1; y < boundarys.y1 + kh; y++)
+					for (x = boundarys.x1; x < boundarys.x2; x++)
 						{
-							divisor++;
-							sum += in_pixels[4 * x + y * rowstride + ch];
-							if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y2)
+							sum = 0;
+							divisor = 0;
+							
+							for (y = boundarys.y1; y < boundarys.y1 + kh; y++)
 								{
+									divisor++;
+									sum += in_pixels[4 * x + y * rowstride + ch];
+									if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y2)
+										{
+											output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
+										}
+								}
+							for (y = boundarys.y1 + kh; y < boundarys.y2; y++)
+								{
+									sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
+									sum += in_pixels[4 * x + y * rowstride + ch];
 									output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
 								}
-						}
-					for (y = boundarys.y1 + kh; y < boundarys.y2; y++)
-						{
-							sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
-							sum += in_pixels[4 * x + y * rowstride + ch];
-							output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
-						}
-					for (y = boundarys.y2; y < boundarys.y2 + kh; y++)
-						{
-							divisor--;
-							sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
-							if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y2)
+							for (y = boundarys.y2; y < boundarys.y2 + kh; y++)
 								{
-									output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
+									divisor--;
+									sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
+									if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y2)
+										{
+											output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
+										}
 								}
 						}
 				}
+			
 		}
+	else
+		{
+			gdk_pixbuf_copy_area(intermediate, 0,0, width, height, 
+								 output, 0, 0);
+		}
+
 }
 
 static void

@@ -247,10 +247,7 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	need_tmpbuf = (state->fill != NULL) && (state->stroke != NULL) &&
 		state->opacity != 0xff;
 	
-	if (need_tmpbuf)
-		rsvg_push_opacity_group (ctx);
-
-	if (state->filter)
+	if (need_tmpbuf || state->filter)
 		rsvg_push_opacity_group (ctx);
 	
 	if (state->fill != NULL)
@@ -311,13 +308,12 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 			rsvg_render_svp (ctx, svp, state->stroke, opacity);
 			art_svp_free (svp);
 		}
-	
-	if (need_tmpbuf)
-		rsvg_pop_opacity_group (ctx, state->opacity);
 
 	if (state->filter)
-		rsvg_pop_opacity_group_as_filter (ctx, state->filter);
-	
+		rsvg_pop_opacity_group_as_filter (ctx, state->filter, state->opacity);
+	else if (need_tmpbuf)
+		rsvg_pop_opacity_group (ctx, state->opacity);	
+
 	art_free (vpath);
 }
 
