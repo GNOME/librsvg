@@ -1229,6 +1229,42 @@ rsvg_start_path (RsvgHandle *ctx, const xmlChar **atts)
 
 /* begin text - this should likely get split into its own .c file */
 
+static char *
+make_valid_utf8 (const char *str)
+{
+  GString *string;
+  const char *remainder, *invalid;
+  int remaining_bytes, valid_bytes;
+  
+  string = NULL;
+  remainder = str;
+  remaining_bytes = strlen (str);
+  
+  while (remaining_bytes != 0)
+    {
+      if (g_utf8_validate (remainder, remaining_bytes, &invalid))
+	break;
+      valid_bytes = invalid - remainder;
+      
+      if (string == NULL) 
+	string = g_string_sized_new (remaining_bytes);
+      
+      g_string_append_len (string, remainder, valid_bytes);
+      g_string_append_c (string, '?');
+
+      remaining_bytes -= valid_bytes + 1;
+      remainder = invalid + 1;
+    }
+
+  if (string == NULL) 
+    return g_strdup (str);
+  
+  g_string_append (string, remainder);
+	
+  return g_string_free (string, FALSE);
+}
+
+
 typedef struct _RsvgSaxHandlerText {
   RsvgSaxHandler super;
   RsvgSaxHandler *parent;
@@ -1246,7 +1282,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 {
   RsvgSaxHandlerText *z = (RsvgSaxHandlerText *)self;
   RsvgHandle *ctx = z->ctx;
-  char *string;
+  char *string, *tmp;
   int beg, end;
   RsvgState *state;
   ArtRender *render;
@@ -1292,6 +1328,13 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
       string = g_malloc (end - beg + 1);
       memcpy (string, ch + beg, end - beg);
       string[end - beg] = 0;
+    }
+
+  if (!g_utf8_validate (string, -1, NULL))
+    {
+      tmp = make_valid_utf8 (string);
+      g_free (string);
+      string = tmp;
     }
   
   if (ctx->pango_context == NULL)

@@ -1,3 +1,9 @@
+2002-11-05  Alexander Larsson  <alexl@redhat.com>
+
+	* rsvg.c (rsvg_text_handler_characters, make_valid_utf8):
+	Don't crash if there is invalid utf8 in the file, or if
+	encoding is not specified.
+
 === librsvg 2.1.1 ===
 
 2002-10-22 Christian Schaller <Uraeus@linuxrising.org>
