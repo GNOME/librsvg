@@ -1510,7 +1510,10 @@ rsvg_handle_free_impl (RsvgHandle *handle)
  */
 G_CONST_RETURN char *rsvg_handle_get_title (RsvgHandle *handle)
 {
-	return handle->title->str;
+	if (handle->title)
+		return handle->title->str;
+	else
+		return NULL;
 }
 
 /**
@@ -1526,7 +1529,10 @@ G_CONST_RETURN char *rsvg_handle_get_title (RsvgHandle *handle)
  */
 G_CONST_RETURN char *rsvg_handle_get_desc (RsvgHandle *handle)
 {
-	return handle->desc->str;
+	if (handle->desc)
+		return handle->desc->str;
+	else
+		return NULL;
 }
 
 /**
