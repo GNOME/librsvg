@@ -1,3 +1,10 @@
+2003-03-18  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Updates for optional libcroco support
+	* Makefile.am: ditto
+	* librsvg-2.0.pc.in: ditto
+	* rsvg-styles.c: ditto
+
 2003-03-18  Dom Lachowicz <cinamod@hotmail.com> / Ross Alexander <ross.alexander@uk.neceur.com>
 
 	* configure.in: Bump version # to 2.3.0

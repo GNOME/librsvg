@@ -97,6 +97,35 @@ AC_SUBST(LIBGSF_LIBS)
 
 dnl ===========================================================================
 
+dnl ===========================================================================
+
+LIBCROCO_CFLAGS=""
+LIBCROCO_LIBS=""
+LIBCROCOPKG=""
+
+test_croco=true
+AC_ARG_WITH(croco,[  --with-croco  Use libcroco for CSS parsing],[
+	if test "x$withval" = "xno"; then
+		test_croco=false
+	fi
+])
+if test "x$test_croco" = "xtrue"; then
+	PKG_CHECK_MODULES(LIBCROCO,[libcroco >= 0.1.0], test_croco=true, test_croco=false)
+fi
+
+if test "x$test_croco" = "xtrue"; then
+	LIBCROCO_CFLAGS="$LIBCROCO_CFLAGS -DHAVE_LIBCROCO=1"
+	LIBCROCOPKG="libgsf-1"
+else
+	AC_MSG_WARN([LibCroco support disabled, as requested (Use --with-croco to enable)])
+fi
+
+AC_SUBST(LIBCROCOPKG)
+AC_SUBST(LIBCROCO_CFLAGS)
+AC_SUBST(LIBCROCO_LIBS)
+
+dnl ===========================================================================
+
 dnl Turn on the additional warnings last, so -Werror doesn't affect other tests.
 
 AC_ARG_ENABLE(more-warnings,

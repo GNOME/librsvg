@@ -352,22 +352,162 @@ rsvg_parse_style (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 }
 
-/*
- * Extremely poor man's CSS parser. Not robust. Not compliant.
- * Should work well enough for our needs ;-)
- * See also: http://www.w3.org/TR/REC-CSS2/syndata.html
- * I should use that sometime in order to make a complaint parser
- */
-void
-rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
+static void
+rsvg_css_define_style (RsvgHandle *ctx, const char * style_name, const char * style_def)
 {
+	GString * str = g_string_new (style_def);
+	char * existing = NULL;
+
+	/* push name/style pair into HT */
+	existing = (char *)g_hash_table_lookup (ctx->css_props, style_name);
+	if (existing != NULL)
+		g_string_append_len (str, existing, strlen (existing));
+	
+	/* will destroy the existing key and value for us */
+	g_hash_table_insert (ctx->css_props, (gpointer)g_strdup (style_name), (gpointer)str->str);
+	g_string_free (str, FALSE);
+}
+
+#ifdef HAVE_LIBCROCO
+
+#include <libcroco.h>
+
+typedef struct _CSSUserData
+{
+	RsvgHandle *ctx;
+	GString    *def;
+} CSSUserData;
+
+static void
+css_user_data_init (CSSUserData *user_data, RsvgHandle * ctx)
+{
+	user_data->ctx = ctx;
+	user_data->def = NULL;
+}
+
+static void
+ccss_start_selector (CRDocHandler *a_handler,
+					 CRSelector *a_selector_list)
+{
+	CSSUserData * user_data;
+
+	g_return_if_fail (a_handler);
+
+	user_data = (CSSUserData *)a_handler->app_data;
+	user_data->def = g_string_new (NULL);
+}
+
+static void
+ccss_end_selector (CRDocHandler *a_handler,
+				   CRSelector *a_selector_list)
+{
+	CSSUserData * user_data;
+	CRSelector  * list;
+
+	g_return_if_fail (a_handler);
+
+	user_data = (CSSUserData *)a_handler->app_data;
+
+	if (a_selector_list)
+        {
+			for (list = a_selector_list; list != NULL; list = list->next) {			
+				/* iterate through the selector list, insert style into map - strdup it! */
+				rsvg_css_define_style (user_data->ctx, list->simple_sel->name->str, user_data->def->str);
+			}
+		}
+
+	g_string_free (user_data->def, TRUE);
+}
+
+static void
+ccss_property (CRDocHandler *a_handler, GString *a_name, CRTerm *a_expr)
+{
+	CSSUserData * user_data;
+	char * expr = NULL;
+
+	g_return_if_fail (a_handler);
+
+	user_data = (CSSUserData *)a_handler->app_data;
+
+	if (a_name && a_name->str)
+        {
+			if (a_expr)
+                {
+					expr = cr_term_to_string (a_expr);
+					g_string_append_len (user_data->def, expr, strlen (expr));
+					g_free (expr);
+                }
+        }
+}
+
+static void
+init_sac_handler (CRDocHandler *a_handler)
+{
+	a_handler->start_document        = NULL;
+	a_handler->end_document          = NULL;
+	a_handler->import_style          = NULL;
+	a_handler->namespace_declaration = NULL;
+	a_handler->comment               = NULL;
+	a_handler->start_selector        = ccss_start_selector;
+	a_handler->end_selector          = ccss_end_selector;
+	a_handler->property              = ccss_property;
+	a_handler->start_font_face       = NULL;
+	a_handler->end_font_face         = NULL;
+	a_handler->start_media           = NULL;
+	a_handler->end_media             = NULL;
+	a_handler->start_page            = NULL;
+	a_handler->end_page              = NULL;
+	a_handler->ignorable_at_rule     = NULL;
+}
+
+static void
+rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
+{
+	enum CRStatus status = CR_OK;
+	CRParser *parser = NULL;
+	CRDocHandler * css_handler = NULL;
+	CSSUserData user_data;
+
+	css_handler = cr_doc_handler_new ();
+	init_sac_handler (css_handler);
+
+	css_user_data_init (&user_data, ctx);
+	css_handler->app_data = &user_data;
+
+	/* TODO: fix libcroco to take in const strings */
+	parser = cr_parser_new_from_buf ((char *)buff, (long)buflen, CR_UTF_8, FALSE);	
+	status = cr_parser_set_sac_handler (parser, css_handler);
+    
+	if (status != CR_OK)
+        {
+			cr_parser_destroy (parser);
+			return;
+        }        
+	
+	status = cr_parser_set_use_core_grammar (parser, FALSE);
+	status = cr_parser_parse (parser);
+	
+	cr_parser_destroy (parser);       
+}
+
+#else /* !HAVE_LIBCROCO */
+
+/* #warning Building without libcroco support. Will experience sub-optimal CSS parsing. */
+
+static void
+rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
+{
+	/*
+	 * Extremely poor man's CSS parser. Not robust. Not compliant.
+	 * See also: http://www.w3.org/TR/REC-CSS2/syndata.html
+	 */
+
 	size_t loc = 0;
 	
 	while (loc < buflen)
 		{
 			GString * style_name  = g_string_new (NULL);
 			GString * style_props = g_string_new (NULL);
-			const char * existing    = NULL;
 
 			/* advance to the style's name */
 			while (loc < buflen && g_ascii_isspace (buff[loc]))
@@ -402,21 +542,23 @@ rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 						}
 				}
 
-			/* push name/style pair into HT */
-			existing = (const char *)g_hash_table_lookup (ctx->css_props, style_name->str);
-			if (existing != NULL)
-				g_string_append_len (style_props, existing, strlen (existing));
-
-			/* will destroy the existing key and value for us */
-			g_hash_table_insert (ctx->css_props, style_name->str, style_props->str);
-
-			g_string_free (style_name, FALSE);
-			g_string_free (style_props, FALSE);
+			rsvg_css_define_style (ctx, style_name->str, style_props->str);
+			g_string_free (style_name, TRUE);
+			g_string_free (style_props, TRUE);
 			
 			loc++;
 			while (loc < buflen && g_ascii_isspace (buff[loc]))
 				loc++;
 		}
+}
+
+#endif /* HAVE_LIBCROCO */
+
+void
+rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
+{
+	/* delegate off to the builtin or libcroco implementation */
+	rsvg_real_parse_cssbuffer (ctx, buff, buflen);
 }
 
 /* Parse an SVG transform string into an affine matrix. Reference: SVG
