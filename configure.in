@@ -221,14 +221,6 @@ dnl = End tests for libxml
 dnl ====================================
 
 
-dnl AM_PROG_XML_I18N_TOOLS
-
-dnl GNOME_INIT
-
-dnl GNOME_COMPILE_WARNINGS
-dnl GNOME_X_CHECKS
-dnl GNOME_XML_CHECK
-
 LIBRSVG_LIBDIR='-L${libdir}'
 LIBRSVG_INCLUDEDIR='-I${includedir} ${FREETYPE2_CFLAGS}'
 LIBRSVG_LIBS='-lrsvg -lart_lgpl ${FREETYPE2_LIBS}'

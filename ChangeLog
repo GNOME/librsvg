@@ -1,3 +1,16 @@
+2001-07-21  Darin Adler  <darin@bentspoon.com>
+
+	* rsvg-ft.c: (rsvg_ft_measure_or_render_string):
+	Fix bug where we would render past the end of the passed-in
+	string if there are any multi-byte sequences in the string.
+
+	* autogen.sh: Remove xml-i18n-toolize.
+
+	* configure.in: Remove some commented-out stuff that could
+	confuse scripts that grep through this file.
+
+	* .cvsignore: Remove some files that should not be generated.
+
 ==== librsvg 1.0.1 ====
 
 2001-07-05  Darin Adler  <darin@bentspoon.com>

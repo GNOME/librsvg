@@ -37,11 +37,6 @@ DIE=0
 	DIE=1
 }
 
-(xml-i18n-toolize --version) < /dev/null > /dev/null 2>&1 || {
-	echo
-	echo "You must have xml-i18n-tools installed to compile $PROJECT."
-}
-
 if test "$DIE" -eq 1; then
 	exit 1
 fi
@@ -59,15 +54,6 @@ fi
 case $CC in
 *lcc | *lcc\ *) am_opt=--include-deps;;
 esac
-
-echo "Running gettextize...  Ignore non-fatal messages."
-# Hmm, we specify --force here, since otherwise things don't
-# get added reliably, but we don't want to overwrite intl
-# while making dist.
-echo "no" | gettextize --copy --force
-
-echo "Running xml-i18n-toolize"
-xml-i18n-toolize --copy --force --automake
 
 echo "Running libtoolize"
 libtoolize --copy --force

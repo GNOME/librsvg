@@ -821,6 +821,7 @@ rsvg_ft_measure_or_render_string (RsvgFTCtx *ctx,
 	int pixel_underline_position, pixel_underline_thickness;
 	int wclength;
 	wchar_t *wcstr;
+	char *mbstr;
 
 	g_return_val_if_fail (ctx != NULL, NULL);
 	g_return_val_if_fail (str != NULL, NULL);
@@ -867,9 +868,13 @@ rsvg_ft_measure_or_render_string (RsvgFTCtx *ctx,
 	init_y = affine[5];
 	n_glyphs = 0;
 
-	/* Alloc max length of wide char */
-	wcstr = g_new0 (wchar_t, length);
-	wclength = mbstowcs (wcstr, str, length);
+	/* Since mbstowcs takes a NUL-terminated string, we must
+	 * convert str into one before calling it.
+	 */
+	wcstr = g_new (wchar_t, length);
+	mbstr = g_strndup (str, length);
+	wclength = mbstowcs (wcstr, mbstr, length);
+	g_free (mbstr);
 
 	/* mbstowcs fallback.  0 means not found any wide chars.
 	 * -1 means an invalid sequence was found.  In either of 
