@@ -53,31 +53,27 @@ gboolean
 rsvg_css_parse_vbox (const char * vbox, double * x, double * y,
 					 double * w, double * h)
 {
-	/* TODO: make me cleaner and more efficient */
-	char *ptr, *tok;
-	char *str = g_strdup (vbox);
-	gboolean has_vbox = FALSE;
-	
-	tok = strtok_r (str, ", \t", &ptr);
-	if (tok != NULL) {
-		*x = g_ascii_strtod (tok, NULL);
-		tok = strtok_r (NULL, ", \t", &ptr);
-		if (tok != NULL) {
-			*y = g_ascii_strtod (tok, NULL);
-			tok = strtok_r (NULL, ", \t", &ptr);
-			if (tok != NULL) {
-				*w = g_ascii_strtod (tok, NULL);
-				tok = strtok_r (NULL, ", \t", &ptr);
-				if (tok != NULL) {
-					*h = g_ascii_strtod (tok, NULL);
-					has_vbox = TRUE;
-				}
-			}
-		}
+	gchar ** list;
+	guint list_len;
+
+	list = rsvg_css_parse_list(vbox, &list_len);
+
+	if(!list)
+		return FALSE;
+	else if(list_len != 4) {
+		g_strfreev(list);
+		return FALSE;
+	} 
+	else {
+		/* TODO: error checking */
+		*x = g_ascii_strtod(list[0], NULL);
+		*y = g_ascii_strtod(list[1], NULL);
+		*w = g_ascii_strtod(list[2], NULL);
+		*h = g_ascii_strtod(list[3], NULL);
+
+		g_strfreev(list);
+		return TRUE;
 	}
-	g_free (str);
-	
-	return has_vbox;
 }
 
 
@@ -746,7 +742,7 @@ rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 		n++;
 
 		while((tok = strtok_r (NULL, ", \t", &ptr)) != NULL) {
-			string_list = g_slist_append(string_list, g_strdup(tok));
+			string_list = g_slist_prepend(string_list, g_strdup(tok));
 			n++;
 		}
 	}
