@@ -1,3 +1,7 @@
+2003-04-02  Frederic Crozat  <fcrozat@mandrakesoft.com>
+
+	* configure.in: use correct name for libcroco in .pc file
+
 2003-03-25  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-styles.c: Support text directions (bidi)
