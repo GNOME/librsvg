@@ -1,3 +1,7 @@
+2004-09-29  Dom Lachowicz <cinamod@hotmail.com>
+
+	* moz-plugin/moz-plugin.c: Fix bug #154083
+	
 2004-09-26  Dom Lachowicz <cinamod@hotmail.com>
 
 	* gdk-pixbuf-loader/io-svg.c: Sanity checks
