@@ -1,3 +1,7 @@
+2004-08-28  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-css.c: Something closer to correct for ex-height
+	
 2004-08-28  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-shapes.c: added an optional clippath around svg elements

@@ -158,7 +158,7 @@ rsvg_css_parse_normalized_length(const char *str, gdouble pixels_per_inch,
 	else if (em)
 		return length * font_size;
 	else if (ex)
-		return length * font_size * 2.0; /* stolen from imagemagick */
+		return (length * font_size) / 2.;
 	else
 		return length;
 }
