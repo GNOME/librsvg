@@ -1,0 +1,33 @@
+The code in this directory is a GTK+ theme engine based on librsvg and 
+the gdk-pixbuf theme engine. 
+
+Over time, this engine will look less like the gdk-pixbuf engine and 
+really show off the power of librsvg and the concept of using SVG as a
+toolkit theming library.
+
+The config files are meant to be compatible with the gdk-pixbuf theme
+engine, with the notable exception that the images must be SVG graphics
+and not raster graphics (i.e. PNG, JPEG, ...)
+
+Dom Lachowicz <cinamod@hotmail.com>
+September 24, 2002
+
+--------------------------------------------------------------------------
+
+The code in this directory is a GTK+ theme engine based on the earlier
+pixmap theme engine.
+
+The config files are meant to be compatible, but instead of rendering
+using Imlib, it renders using GdkPixbuf.  This makes the memory
+management much more understandable, and also allows us to use
+GdkPixbuf's high quality scaling.
+
+Most of the code was reworked/rewritten in the process to make it more
+understandable and maintainable.
+
+There are lots of bugs here, a considersable number of bugs. But it's
+cleaned up a great deal from the older pixmap engine. Please don't
+make it uglier again.
+
+Owen Taylor <otaylor@redhat.com>
+6 February 2000

@@ -2,6 +2,7 @@
    rsvg.c: SAX-based renderer for SVG files into a GdkPixbuf.
 
    Copyright (C) 2000 Eazel, Inc.
+   Copyright (C) 2002 Dom Lachowicz <cinamod@hotmail.com>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as
@@ -2523,5 +2524,3 @@ rsvg_pixbuf_from_file_at_max_size (const gchar     *file_name,
   rsvg_handle_free (handle);
   return retval;
 }
-
-
