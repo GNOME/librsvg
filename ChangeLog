@@ -1,6 +1,10 @@
 === librsvg 2.2.2 ===
 
-2003-02-0   Dom Lachowicz <cinamod@hotmail.com>
+2003-02-01  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Make GTK+ and the theme engine optional, by Rodney Dawes (dobey)
+	
+2003-02-01  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-paint-server.c: Fix evil devide by 0 bug that killed us on
 	some Krystal SVGs
