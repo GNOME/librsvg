@@ -408,11 +408,7 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	double affine[6];
 
 	got_x1 = got_x2 = got_y1 = got_y2 = got_spread = got_transform = got_bbox = cloned = shallow_cloned = FALSE;
-	
-	/* 100% is the default */
-	x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi, (gdouble)ctx->width, state->font_size);
-	
-	/* todo: only handles numeric coordinates in gradientUnits = userSpace */
+		
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
@@ -455,12 +451,20 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 					else if (!strcmp ((char *)atts[i], "gradientTransform"))
 						got_transform = rsvg_parse_transform (affine, (const char *)atts[i + 1]);
 					else if (!strcmp ((char *)atts[i], "gradientUnits")) {
-						obj_bbox = (strcmp ((char *)atts[i+1], "objectBoundingBox") == 0);
+						obj_bbox = (strcmp ((char *)atts[i+1], "userSpaceOnUse") != 0);
 						got_bbox = TRUE;
 					}
 				}
 		}
-	
+
+	/* set up 100% as the default if not gotten */
+	if (!got_x2) {
+		if (obj_bbox)
+			x2 = 1.0;
+		else
+			x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi, (gdouble)ctx->width, state->font_size);
+	}
+
 	if (xlink_href != NULL)
 		{
 			RsvgLinearGradient * parent = (RsvgLinearGradient*)rsvg_defs_lookup (ctx->defs, xlink_href+1);
@@ -524,12 +528,6 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts, const char * 
 	
 	got_cx = got_cy = got_r = got_fx = got_fy = got_spread = got_transform = got_bbox = cloned = shallow_cloned = FALSE;
 	
-	/* setup defaults */
-	cx = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->width, state->font_size);
-	cy = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->height, state->font_size);
-	r  = rsvg_css_parse_normalized_length ("50%", ctx->dpi, rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size);
-	
-	/* todo: only handles numeric coordinates in gradientUnits = userSpace */
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
@@ -579,7 +577,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts, const char * 
 							}
 						}
 					else if (!strcmp ((char *)atts[i], "gradientUnits")) {
-						obj_bbox = (strcmp ((char *)atts[i+1], "objectBoundingBox") == 0);
+						obj_bbox = (strcmp ((char *)atts[i+1], "userSpaceOnUse") != 0);
 						got_bbox = TRUE;
 					}
 				}
@@ -603,15 +601,30 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts, const char * 
 			ctx->handler = rsvg_gradient_stop_handler_new (ctx, &grad->stops, tag);		   
 		}
 
-	if (!cloned || shallow_cloned) {
-		if (!got_fx) {
-			fx = cx;
-			got_fx = TRUE;
-		}
-		if (!got_fy) {
-			fy = cy;
-			got_fy = TRUE;
-		}
+	/* setup defaults */
+	if (!got_cx) {
+		if (obj_bbox)
+			cx = 0.5;
+		else
+			cx = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->width, state->font_size);
+	}
+	if (!got_cy) {
+		if (obj_bbox)
+			cy = 0.5;
+		else
+			cy = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->height, state->font_size);
+	}
+	if (!got_r) {
+		if (obj_bbox)
+			r = 0.5;
+		else
+			r  = rsvg_css_parse_normalized_length ("50%", ctx->dpi, rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size);
+	}
+	if (!got_fx) {
+		fx = cx;
+	}
+	if (!got_fy) {
+		fy = cy;
 	}
 	
 	rsvg_defs_set (ctx->defs, id, &grad->super);
@@ -855,6 +868,10 @@ rsvg_end_element (void *data, const xmlChar *name)
 
 			if (!strcmp ((char *)name, "g"))
 				rsvg_end_g (ctx);
+			else if (!strcmp ((char *)name, "defs")) {
+				ctx->in_defs = FALSE;
+				ctx->handler_nest--;
+			}
 			
 			/* pop the state stack */
 			ctx->n_state--;

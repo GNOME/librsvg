@@ -1,4 +1,10 @@
 === librsvg 2.2.2 ===
+
+2003-02-01  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.c (end_element): Fix regression caused by in_defs bogosity
+	(start_linear_gradient): Proper handling of unspecified params
+	(start_radial_gradient): Ditto
 	
 2003-01-31  Dom Lachowicz <cinamod@hotmail.com>
 
