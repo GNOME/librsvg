@@ -58,7 +58,8 @@ rsvg_state_init (RsvgState *state)
 	state->stop_opacity = 0xff;
 	state->fill_rule = FILL_RULE_NONZERO;
 	state->backgroundnew = FALSE;
-	
+	state->save_pixbuf = NULL;
+
 	state->font_family  = g_strdup ("Times New Roman");
 	state->font_size    = 12.0;
 	state->font_style   = PANGO_STYLE_NORMAL;
@@ -925,8 +926,8 @@ rsvg_parse_transform_attr (RsvgHandle *ctx, RsvgState *state, const char *str)
 	
 	if (rsvg_parse_transform (affine, str))
 		{
-			art_affine_multiply (state->affine, affine, state->affine);
 			art_affine_multiply (state->personal_affine, affine, state->personal_affine);
+			art_affine_multiply (state->affine, affine, state->affine);
 		}
 }
 

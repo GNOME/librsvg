@@ -1,5 +1,9 @@
 2004-03-09  Caleb Moore <c.moore@student.unsw.edu.au>
 
+	* rsvg-shapes.c: HUUUUGE fixes to use
+
+2004-03-09  Caleb Moore <c.moore@student.unsw.edu.au>
+
 	* rsvg-shapes.c: made groups "use"able
 	* rsvg-styles.c: changed inheritance mechanism
 
