@@ -337,6 +337,7 @@ Makefile
 librsvg-2.0.pc
 librsvg-2.0-uninstalled.pc
 librsvg-zip
+data/Makefile
 doc/Makefile
 gtk-engine/Makefile
 gtk-engine/examples/Makefile

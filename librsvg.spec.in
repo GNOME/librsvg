@@ -106,6 +106,7 @@ gdk-pixbuf-query-loaders > %{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
 %{_libdir}/gtk-2.0/2.4.0/engines/*
 %{_libdir}/gtk-2.0/2.4.0/loaders/*
 %{_libdir}/mozilla/plugins/*
+%{_datadir}/pixmaps/*
 # %{_datadir}/themes/bubble/gtk-2.0/*
 # %{_datadir}/themes/bubble/README
 

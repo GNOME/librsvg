@@ -1,4 +1,4 @@
-SUBDIRS = . gtk-engine gdk-pixbuf-loader moz-plugin doc
+SUBDIRS = . gtk-engine gdk-pixbuf-loader moz-plugin doc data
 
 if HAVE_GTK
 target_rsvg_view = rsvg-view
@@ -65,7 +65,8 @@ INCLUDES =				\
 	$(GTK_CFLAGS)			\
 	$(GDK_X11_CFLAGS)		\
 	-DG_LOG_DOMAIN=\"librsvg\" 	\
-	-DDATADIR="\"$(datadir)\""
+	-DDATADIR="\"$(datadir)\""	\
+	-DPIXMAPDIR=\""$(datadir)/pixmaps"\"
 
 DEPS = $(top_builddir)/librsvg-2.la
 LDADDS =				\
