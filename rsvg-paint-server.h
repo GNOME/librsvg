@@ -95,7 +95,8 @@ struct _RsvgRadialGradient {
 
 /* Create a new paint server based on a specification string. */
 RsvgPaintServer *
-rsvg_paint_server_parse (RsvgPaintServer * current, const RsvgDefs *defs, const char *str);
+rsvg_paint_server_parse (RsvgPaintServer * current, const RsvgDefs *defs, const char *str,
+						 guint32 current_color);
 
 void
 rsvg_render_paint_server (ArtRender *ar, RsvgPaintServer *ps,

@@ -307,7 +307,8 @@ rsvg_paint_server_rad_grad (RsvgRadialGradient *gradient)
  * Return value: The newly created paint server, or NULL on error.
  **/
 RsvgPaintServer *
-rsvg_paint_server_parse (RsvgPaintServer * current, const RsvgDefs *defs, const char *str)
+rsvg_paint_server_parse (RsvgPaintServer * current, const RsvgDefs *defs, const char *str,
+						 guint32 current_color)
 {
 	guint32 rgb;
 	
@@ -344,14 +345,18 @@ rsvg_paint_server_parse (RsvgPaintServer * current, const RsvgDefs *defs, const 
 					return NULL;
 				}
 		}
-	else if (current && (!strcmp (str, "currentColor") || !strcmp (str, "inherit")))
+	else if (current && !strcmp (str, "inherit"))
 		{
 			rsvg_paint_server_ref (current);
 			return current;
 		}
 	else
 	  {
-		  rgb = rsvg_css_parse_color (str, 0);
+		  if (!strcmp (str, "currentColor"))
+			  rgb = current_color;
+		  else
+			  rgb = rsvg_css_parse_color (str, 0);
+
 		  return rsvg_paint_server_solid (rgb);
 	  }
 }

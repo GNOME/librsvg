@@ -1,6 +1,7 @@
 2004-03-20  Dom Lachowicz <cinamod@hotmail.com>
 
-	* *: Set up framework for the "currentColor" and "inherit" colors
+	* *: "currentColor" and "inherit" colors mostly work. Caveat: they
+	don't work for filters and gradients. TODO
 	
 2004-03-20  Dom Lachowicz <cinamod@hotmail.com>
 

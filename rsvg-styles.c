@@ -35,6 +35,8 @@
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_affine.h>
 
+#define RSVG_DEFAULT_FONT "Times New Roman"
+
 gdouble
 rsvg_viewport_percentage (gdouble width, gdouble height)
 {
@@ -50,7 +52,7 @@ rsvg_state_init (RsvgState *state)
 	art_affine_identity (state->personal_affine);
 	state->mask = NULL;
 	state->opacity = 0xff;
-	state->fill = rsvg_paint_server_parse (NULL, NULL, "#000");
+	state->fill = rsvg_paint_server_parse (NULL, NULL, "#000", 0);
 	state->fill_opacity = 0xff;
 	state->stroke_opacity = 0xff;
 	state->stroke_width = 1;
@@ -62,7 +64,7 @@ rsvg_state_init (RsvgState *state)
 	state->backgroundnew = FALSE;
 	state->save_pixbuf = NULL;
 
-	state->font_family  = g_strdup ("Times New Roman");
+	state->font_family  = g_strdup (RSVG_DEFAULT_FONT);
 	state->font_size    = 12.0;
 	state->font_style   = PANGO_STYLE_NORMAL;
 	state->font_variant = PANGO_VARIANT_NORMAL;
@@ -290,9 +292,10 @@ rsvg_state_finalize (RsvgState *state)
 static void
 rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 {
-	RsvgState * parent_state = state; /* TODO: temporary hack */
+	RsvgState * parent_state;
 	int arg_off;
 	
+	parent_state = rsvg_state_parent (ctx);
 	arg_off = rsvg_css_param_arg_offset (str);
 	if (rsvg_css_param_match (str, "opacity"))
 		{
@@ -333,7 +336,11 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		{
 			RsvgPaintServer * fill = state->fill;
 
-			state->fill = rsvg_paint_server_parse (parent_state->fill, ctx->defs, str + arg_off);
+			if (parent_state)
+				state->fill = rsvg_paint_server_parse (parent_state->fill, ctx->defs, str + arg_off, parent_state->current_color);
+			else
+				state->fill = rsvg_paint_server_parse (NULL, ctx->defs, str + arg_off, 0);
+
 			state->has_fill_server = TRUE;
 
 			rsvg_paint_server_unref (fill);
@@ -357,7 +364,11 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		{
 			RsvgPaintServer * stroke = state->stroke;
 
-			state->stroke = rsvg_paint_server_parse (parent_state->stroke, ctx->defs, str + arg_off);
+			if (parent_state)
+				state->stroke = rsvg_paint_server_parse (parent_state->stroke, ctx->defs, str + arg_off, parent_state->current_color);
+			else
+				state->stroke = rsvg_paint_server_parse (NULL, ctx->defs, str + arg_off, 0);
+
 			state->has_stroke_server = TRUE;		
 
 			rsvg_paint_server_unref (stroke);
@@ -405,7 +416,8 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "font-family"))
 		{
-			char * save = g_strdup (rsvg_css_parse_font_family (str + arg_off, parent_state->font_family));
+			char * save = g_strdup (rsvg_css_parse_font_family (str + arg_off, 
+																(parent_state ? parent_state->font_family : RSVG_DEFAULT_FONT)));
 			g_free (state->font_family);
 			state->font_family = save;
 			state->has_font_family = TRUE;
@@ -419,22 +431,26 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "font-style"))
 		{
-			state->font_style = rsvg_css_parse_font_style (str + arg_off, parent_state->font_style);
+			state->font_style = rsvg_css_parse_font_style (str + arg_off, 
+														   (parent_state ? parent_state->font_style : PANGO_STYLE_NORMAL));
 			state->has_font_style = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-variant"))
 		{
-			state->font_variant = rsvg_css_parse_font_variant (str + arg_off, parent_state->font_variant);
+			state->font_variant = rsvg_css_parse_font_variant (str + arg_off, 
+															   (parent_state ? parent_state->font_variant : PANGO_VARIANT_NORMAL));
 			state->has_font_variant = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-weight"))
 		{
-			state->font_weight = rsvg_css_parse_font_weight (str + arg_off, parent_state->font_weight);
+			state->font_weight = rsvg_css_parse_font_weight (str + arg_off, 
+															 (parent_state ? parent_state->font_weight : PANGO_WEIGHT_NORMAL));
 			state->has_font_weight = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-stretch"))
 		{
-			state->font_stretch = rsvg_css_parse_font_stretch (str + arg_off, parent_state->font_stretch);
+			state->font_stretch = rsvg_css_parse_font_stretch (str + arg_off, 
+															   (parent_state ? parent_state->font_stretch : PANGO_STRETCH_NORMAL));
 			state->has_font_stretch = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "text-decoration"))
@@ -442,7 +458,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			if (!strcmp (str + arg_off, "inherit"))
 				{
 					state->has_font_decor = FALSE;
-					state->font_decor = parent_state->font_decor;
+					state->font_decor = (parent_state ? parent_state->font_decor : TEXT_NORMAL);
 				}
 			else 
 				{
@@ -461,7 +477,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			/* lr-tb | rl-tb | tb-rl | lr | rl | tb | inherit */
 			if (!strcmp (str + arg_off, "inherit"))
 				{
-					state->text_dir = parent_state->text_dir;
+					state->text_dir = (parent_state ? parent_state->text_dir : PANGO_DIRECTION_LTR);
 					state->has_text_dir = FALSE;
 				}
 			else if (!strcmp (str + arg_off, "rl"))
@@ -480,7 +496,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			state->has_text_anchor = TRUE;
 			if (!strcmp (str + arg_off, "inherit"))
 				{
-					state->text_anchor = parent_state->text_anchor;
+					state->text_anchor = (parent_state ? parent_state->text_anchor : TEXT_ANCHOR_START);
 					state->has_text_anchor = FALSE;
 				}
 			else 
@@ -496,7 +512,8 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "stop-color"))
 		{
 			state->has_stop_color = TRUE;
-			state->stop_color = rsvg_css_parse_color (str + arg_off, parent_state->stop_color);
+			state->stop_color = rsvg_css_parse_color (str + arg_off, 
+													  (parent_state ? parent_state->current_color : 0));
 		}
 	else if (rsvg_css_param_match (str, "stop-opacity"))
 		{
@@ -559,6 +576,15 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 						}
 				}
 		}
+	else if (rsvg_css_param_match (str, "color"))
+		{
+			RsvgState * parent_state = rsvg_state_parent (ctx);
+
+			if (parent_state)
+				state->current_color = rsvg_css_parse_color (str + arg_off, parent_state->current_color);
+			else
+				state->current_color = rsvg_css_parse_color (str + arg_off, 0);
+		}
 }
 
 void rsvg_parse_style_pair (RsvgHandle *ctx, RsvgState *state, 
@@ -583,6 +609,7 @@ void
 rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state, 
 						RsvgPropertyBag *atts)
 {
+			rsvg_lookup_parse_style_pair (ctx, state, "color", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "display", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "enable-background", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "fill", atts);
@@ -1415,6 +1442,14 @@ rsvg_state_current (RsvgHandle *ctx)
 {
 	if (ctx->n_state > 0)
 		return &ctx->state[ctx->n_state - 1];
+	return NULL;
+}
+
+RsvgState *
+rsvg_state_parent (RsvgHandle *ctx)
+{
+	if (ctx->n_state > 1)
+		return &ctx->state[ctx->n_state - 2];
 	return NULL;
 }
 

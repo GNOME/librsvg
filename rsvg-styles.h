@@ -120,6 +120,8 @@ struct _RsvgState {
 
 	ArtVpathDash dash;
 	gboolean has_dash;
+
+	guint32 current_color;
 	
 	GdkPixbuf *save_pixbuf;
 };
@@ -148,6 +150,7 @@ rsvg_pop_discrete_layer(RsvgHandle *ctx);
 void rsvg_push_discrete_layer (RsvgHandle *ctx);
 gboolean rsvg_parse_transform (double dst[6], const char *src);
 
+RsvgState * rsvg_state_parent (RsvgHandle *ctx);
 RsvgState * rsvg_state_current (RsvgHandle *ctx);
 double rsvg_state_current_font_size (RsvgHandle *ctx);
 
