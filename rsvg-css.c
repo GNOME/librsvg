@@ -738,7 +738,7 @@ rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 	str = g_strdup (in_str);
     tok = strtok_r (str, ", \t", &ptr);
 	if (tok != NULL) {
-		string_list = g_slist_append(string_list, g_strdup(tok));
+		string_list = g_slist_prepend(string_list, g_strdup(tok));
 		n++;
 
 		while((tok = strtok_r (NULL, ", \t", &ptr)) != NULL) {
