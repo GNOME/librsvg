@@ -183,6 +183,10 @@ void rsvg_handle_set_base_uri (RsvgHandle *handle,
 gboolean 
 rsvg_eval_switch_attributes (RsvgPropertyBag *atts, gboolean * p_has_cond);
 
+GdkPixbuf *
+_rsvg_pixbuf_new_cleared (GdkColorspace colorspace, gboolean has_alpha, int bits_per_sample,
+						  int width, int height);
+
 G_END_DECLS
 
 #endif

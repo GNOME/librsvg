@@ -54,21 +54,16 @@ rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgHandle *ct
 
 	drawable = (RsvgDefsDrawable*)self;
 	
-	mask = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-			       gdk_pixbuf_get_width(tos), 
-			       gdk_pixbuf_get_height(tos));
-
-	gdk_pixbuf_fill(mask, 0x00000000);	
+	mask = _rsvg_pixbuf_new_cleared(GDK_COLORSPACE_RGB, 1, 8, 
+									gdk_pixbuf_get_width(tos), 
+									gdk_pixbuf_get_height(tos));
 	save = ctx->pixbuf;
 
 	ctx->pixbuf = mask;
 
 	rsvg_state_push(ctx);
-	
 	rsvg_defs_drawable_draw (drawable, ctx, 0);
-	
 	rsvg_state_pop(ctx);
-	
 
 	ctx->pixbuf = save;
 
@@ -80,7 +75,7 @@ rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgHandle *ct
 	
 	if (!gdk_pixbuf_get_has_alpha (nos))
 		{
-			g_warning ("push/pop transparency group on non-alpha buffer nyi");
+			g_warning (_("push/pop transparency group on non-alpha buffer nyi"));
 			return;
 		}
 	
