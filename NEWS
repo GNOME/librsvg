@@ -3,6 +3,7 @@ Version 2.2.2
 - Handle SVGZ files (Gzipped SVG)
 - Handle objectBoundingBox coordinates on gradients
 - API extensions
+- Various bugfixes and crash fixes
 
 Version 2.2.1
 
