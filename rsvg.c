@@ -197,22 +197,40 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
       if (ctx->size_func)
 	(* ctx->size_func) (&new_width, &new_height, ctx->user_data);
 
-      x_zoom = ((gdouble)new_width)/width;
-      y_zoom = ((gdouble)new_height)/height;
+      x_zoom = (width < 0 || new_width < 0) ? 1 : (double) new_width / width;
+      y_zoom = (height < 0 || new_height < 0) ? 1 : (double) new_height / height;
 
-      /* FIXME: Add GError here if size is wrong */
       /* Scale size of target pixbuf */
       state = &ctx->state[ctx->n_state - 1];
       art_affine_scale (state->affine, x_zoom, y_zoom);
 
+      if (new_width < 0 || new_height < 0)
+        {
+          g_warning ("rsvg_start_svg: no width and height attributes in SVG, nor supplied by size_func");
+          if (new_width < 0) new_width = 500;
+          if (new_height < 0) new_height = 500;
+        }
+
       if (new_width >= INT_MAX / 4)
-	return;
+        {
+          /* FIXME: What warning, GError here? */
+	  return;
+        }
       rowstride = (new_width * (has_alpha ? 4 : 3) + 3) & ~3;
       if (rowstride > INT_MAX / new_height)
-	return;
+        {
+          /* FIXME: What warning, GError here? */
+	  return;
+        }
+
+      /* FIXME: Add GError here if size is too big. */
+
       pixels = g_try_malloc (rowstride * new_height);
       if (pixels == NULL)
-	return;
+        {
+          /* FIXME: What warning, GError here? */
+	  return;
+        }
       memset (pixels, has_alpha ? 0 : 255, rowstride * new_height);
       ctx->pixbuf = gdk_pixbuf_new_from_data (pixels,
 					      GDK_COLORSPACE_RGB,
@@ -525,13 +543,19 @@ rsvg_push_opacity_group (RsvgHandle *ctx)
   state = &ctx->state[ctx->n_state - 1];
   pixbuf = ctx->pixbuf;
 
+  state->save_pixbuf = pixbuf;
+
+  if (pixbuf == NULL)
+    {
+      /* FIXME: What warning/GError here? */
+      return;
+    }
+
   if (!gdk_pixbuf_get_has_alpha (pixbuf))
     {
       g_warning ("push/pop transparency group on non-alpha buffer nyi");
       return;
     }
-
-  state->save_pixbuf = pixbuf;
 
   width = gdk_pixbuf_get_width (pixbuf);
   height = gdk_pixbuf_get_height (pixbuf);
@@ -573,6 +597,12 @@ rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity)
 
   tos = ctx->pixbuf;
   nos = state->save_pixbuf;
+
+  if (tos == NULL || nos == NULL)
+    {
+      /* FIXME: What warning/GError here? */
+      return;
+    }
 
   if (!gdk_pixbuf_get_has_alpha (nos))
     {
@@ -711,12 +741,11 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
   gboolean has_alpha;
 
   pixbuf = ctx->pixbuf;
-  /* if a pixbuf hasn't been allocated, the svg is probably misformed.  Exit
-   * to avoid crashing.
-   */
-  if (pixbuf == NULL) {
-  	return;
-  }
+  if (pixbuf == NULL)
+    {
+      /* FIXME: What warning/GError here? */
+      return;
+    }
 
   has_alpha = gdk_pixbuf_get_has_alpha (pixbuf);
 
@@ -749,8 +778,14 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
   int opacity;
   int tmp;
 
-  state = &ctx->state[ctx->n_state - 1];
   pixbuf = ctx->pixbuf;
+  if (pixbuf == NULL)
+    {
+      /* FIXME: What warning/GError here? */
+      return;
+    }
+
+  state = &ctx->state[ctx->n_state - 1];
   affine_bpath = art_bpath_affine_transform (bpath,
 					     state->affine);
 
@@ -879,6 +914,19 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
   PangoRectangle ink_rect, line_ink_rect;
   FT_Bitmap bitmap;
 
+  state = &ctx->state[ctx->n_state - 1];
+  if (state->fill == NULL && state->font_size <= 0)
+    {
+      return;
+    }
+
+  pixbuf = ctx->pixbuf;
+  if (pixbuf == NULL)
+    {
+      /* FIXME: What warning/GError here? */
+      return;
+    }
+
   /* Copy ch into string, chopping off leading and trailing whitespace */
   for (beg = 0; beg < len; beg++)
     if (!g_ascii_isspace (ch[beg]))
@@ -899,68 +947,62 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
   if (ctx->pango_context == NULL)
     ctx->pango_context = pango_ft2_get_context (72, 72); /* FIXME: dpi? */
 
-  state = &ctx->state[ctx->n_state - 1];
-
-  if (state->fill != NULL && state->font_size > 0)
-    {
-      pixbuf = ctx->pixbuf;
-      has_alpha = gdk_pixbuf_get_has_alpha (pixbuf);
-
-      render = art_render_new (0, 0,
-			       gdk_pixbuf_get_width (pixbuf),
-			       gdk_pixbuf_get_height (pixbuf),
-			       gdk_pixbuf_get_pixels (pixbuf),
-			       gdk_pixbuf_get_rowstride (pixbuf),
-			       gdk_pixbuf_get_n_channels (pixbuf) -
-			       (has_alpha ? 1 : 0),
-			       gdk_pixbuf_get_bits_per_sample (pixbuf),
-			       has_alpha ? ART_ALPHA_SEPARATE : ART_ALPHA_NONE,
-			       NULL);
-
-      layout = pango_layout_new (ctx->pango_context);
-      pango_layout_set_text (layout, string, -1);
-      font = pango_font_description_copy (pango_context_get_font_description (ctx->pango_context));
-      if (state->font_family)
-	pango_font_description_set_family_static (font, state->font_family);
-      pango_font_description_set_size (font, state->font_size * PANGO_SCALE);
-      pango_layout_set_font_description (layout, font);
-      pango_font_description_free (font);
-
-      pango_layout_get_pixel_extents (layout, &ink_rect, NULL);
-
-      line = pango_layout_get_line (layout, 0);
-      if (line == NULL)
-	line_ink_rect = ink_rect; /* nothing to draw anyway */
-      else
-	pango_layout_line_get_pixel_extents (line, &line_ink_rect, NULL);
-      
-      bitmap.rows = ink_rect.height;
-      bitmap.width = ink_rect.width;
-      bitmap.pitch = (bitmap.width + 3) & ~3;
-      bitmap.buffer = g_malloc0 (bitmap.rows * bitmap.pitch);
-      bitmap.num_grays = 0x100;
-      bitmap.pixel_mode = ft_pixel_mode_grays;
-
-      pango_ft2_render_layout (&bitmap, layout, -ink_rect.x, -ink_rect.y);
-
-      g_object_unref (layout);
-
-      rsvg_render_paint_server (render, state->fill, NULL); /* todo: paint server ctx */
-      opacity = state->fill_opacity * state->opacity;
-      opacity = opacity + (opacity >> 7) + (opacity >> 14);
+  has_alpha = gdk_pixbuf_get_has_alpha (pixbuf);
+  
+  render = art_render_new (0, 0,
+			   gdk_pixbuf_get_width (pixbuf),
+			   gdk_pixbuf_get_height (pixbuf),
+			   gdk_pixbuf_get_pixels (pixbuf),
+			   gdk_pixbuf_get_rowstride (pixbuf),
+			   gdk_pixbuf_get_n_channels (pixbuf) -
+			   (has_alpha ? 1 : 0),
+			   gdk_pixbuf_get_bits_per_sample (pixbuf),
+			   has_alpha ? ART_ALPHA_SEPARATE : ART_ALPHA_NONE,
+			   NULL);
+  
+  layout = pango_layout_new (ctx->pango_context);
+  pango_layout_set_text (layout, string, -1);
+  font = pango_font_description_copy (pango_context_get_font_description (ctx->pango_context));
+  if (state->font_family)
+    pango_font_description_set_family_static (font, state->font_family);
+  pango_font_description_set_size (font, state->font_size * PANGO_SCALE);
+  pango_layout_set_font_description (layout, font);
+  pango_font_description_free (font);
+  
+  pango_layout_get_pixel_extents (layout, &ink_rect, NULL);
+  
+  line = pango_layout_get_line (layout, 0);
+  if (line == NULL)
+    line_ink_rect = ink_rect; /* nothing to draw anyway */
+  else
+    pango_layout_line_get_pixel_extents (line, &line_ink_rect, NULL);
+  
+  bitmap.rows = ink_rect.height;
+  bitmap.width = ink_rect.width;
+  bitmap.pitch = (bitmap.width + 3) & ~3;
+  bitmap.buffer = g_malloc0 (bitmap.rows * bitmap.pitch);
+  bitmap.num_grays = 0x100;
+  bitmap.pixel_mode = ft_pixel_mode_grays;
+  
+  pango_ft2_render_layout (&bitmap, layout, -ink_rect.x, -ink_rect.y);
+  
+  g_object_unref (layout);
+  
+  rsvg_render_paint_server (render, state->fill, NULL); /* todo: paint server ctx */
+  opacity = state->fill_opacity * state->opacity;
+  opacity = opacity + (opacity >> 7) + (opacity >> 14);
 #ifdef VERBOSE
-      fprintf (stderr, "opacity = %d\n", opacity);
+  fprintf (stderr, "opacity = %d\n", opacity);
 #endif
-      art_render_mask_solid (render, opacity);
-      art_render_mask (render,
-		       state->affine[4] + line_ink_rect.x,
-		       state->affine[5] + line_ink_rect.y,
-		       state->affine[4] + line_ink_rect.x + bitmap.width,
-		       state->affine[5] + line_ink_rect.y + bitmap.rows,
-		       bitmap.buffer, bitmap.pitch);
-      art_render_invoke (render);
-      g_free (bitmap.buffer);
-    }
+  art_render_mask_solid (render, opacity);
+  art_render_mask (render,
+		   state->affine[4] + line_ink_rect.x,
+		   state->affine[5] + line_ink_rect.y,
+		   state->affine[4] + line_ink_rect.x + bitmap.width,
+		   state->affine[5] + line_ink_rect.y + bitmap.rows,
+		   bitmap.buffer, bitmap.pitch);
+  art_render_invoke (render);
+  g_free (bitmap.buffer);
 
   g_free (string);
 }

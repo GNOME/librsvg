@@ -1,0 +1,87 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG August 1999//EN"
+"http://www.w3.org/Graphics/SVG/SVG-19990812.dtd">
+<svg
+   sodipodi:docname="/home/michael/conferences/guadec-2001/../orb-picture"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/Graphics/SVG/SVG-19991203.dtd"
+   id="svg1"
+   sodipodi:docbase="/home/michael/conferences/guadec-2001/../"
+   style="fill:#000000;fill-opacity:50%;stroke:none">  <sodipodi:namedview
+     id="base">
+  </sodipodi:namedview>
+  <ellipse
+     ry="77.855031"
+     rx="104.246567"
+     cy="229.606364"
+     cx="159.079436"
+     transform="matrix(0.782466 0 0 0.809165 35.3873 -9.61774)"
+     id="ellipse3"
+     style="fill:#020202; stroke:#000000; stroke-linecap:butt; stroke-linejoin:miter; stroke-width:4px; stroke-opacity:100%; fill-opacity:0%; ">
+  </ellipse>
+  <ellipse
+     ry="77.855031"
+     rx="104.246567"
+     cy="229.606364"
+     cx="159.079436"
+     transform="matrix(0.782466 0 0 0.809165 245.477 -6.48986)"
+     id="ellipse5"
+     style="fill:#020202; stroke:#000000; stroke-linecap:butt; stroke-linejoin:miter; stroke-width:4px; stroke-opacity:100%; fill-opacity:0%; ">
+  </ellipse>
+  <path
+     transform="matrix(1.36109 0 0 1.6496 -166.822 -352.987)"
+     d="M 399.911 326.31 C 399.911 361.085 363.368 389.308 318.341 389.308 C 273.315 389.308 236.772 361.085 236.772 326.31 C 236.772 291.535 273.315 263.313 318.341 263.313 C 363.368 263.313 399.911 291.535 399.911 326.31 z "
+     id="path21"
+     style="fill:#020202; stroke:#000000; stroke-linecap:butt; stroke-linejoin:miter; stroke-width:4px; stroke-opacity:100%; fill-opacity:0%; ">
+  </path>
+  <text
+     y="189.025304"
+     x="97.450312"
+     transform="matrix(1.68758 0 0 1.79607 -69.4041 -138.707)"
+     id="text22"
+     style="fill:#020001; stroke:#000000; font-size:12px; font-weight:normal; font-style:normal; stroke-linecap:butt; font-family:helvetica; stroke-linejoin:miter; stroke-width:2px; stroke-opacity:100%; fill-opacity:100%; ">ORB</text>
+  <text
+     y="189.025304"
+     x="97.450312"
+     transform="matrix(1.68758 0 0 1.79607 135.994 -138.707)"
+     id="text23"
+     style="fill:#020202; stroke:#000000; font-size:12px; font-weight:normal; font-style:normal; stroke-linecap:butt; font-family:helvetica; stroke-linejoin:miter; stroke-width:2px; stroke-opacity:100%; fill-opacity:90%; ">ORB</text>
+  <text
+     y="309.448906"
+     x="228.300199"
+     transform="matrix(1.02461 0 0 0.952869 72.0487 1.13505)"
+     id="text24"
+     style="fill:#000000; stroke:none; font-size:12.000000; font-weight:bold; font-style:normal; stroke-linecap:butt; font-family:New Century Schoolbook; stroke-linejoin:miter; stroke-width:1px; stroke-opacity:100%; fill-opacity:100%; ">IIOP
+</text>
+  <text
+     y="338.121192"
+     x="172.519570"
+     transform="matrix(1 0 0 1 -91.23 -80.2824)"
+     id="text26"
+     style="fill:#000000; stroke:#000000; font-size:12px; font-weight:normal; font-style:normal; stroke-linecap:butt; font-family:helvetica; stroke-linejoin:miter; stroke-width:0.5px; stroke-opacity:100%; fill-opacity:100%; ">STUB</text>
+  <text
+     y="361.580335"
+     x="275.218485"
+     transform="matrix(1 0 0 1 94.8792 -91.23)"
+     id="text27"
+     style="fill:#000000; stroke:#000000; font-size:12px; font-weight:normal; font-style:normal; stroke-linecap:butt; font-family:helvetica; stroke-linejoin:miter; stroke-width:0.5px; stroke-opacity:100%; fill-opacity:100%; ">SKELETON</text>
+  <text
+     y="376.698449"
+     x="176.168770"
+     transform="matrix(1 0 0 1 206.961 -77.1545)"
+     id="text28"
+     style="fill:#000000; stroke:#000000; font-size:12px; font-weight:normal; font-style:normal; stroke-linecap:butt; font-family:helvetica; stroke-linejoin:miter; stroke-width:0.5px; stroke-opacity:100%; fill-opacity:100%; ">IMPL (SERVER)</text>
+  <text
+     y="380.868964"
+     x="440.996430"
+     transform="matrix(1 0 0 1 -377.432 -84.453)"
+     id="text30"
+     style="fill:#000000; stroke:#000000; font-size:12px; font-weight:normal; font-style:normal; stroke-linecap:butt; font-family:helvetica; stroke-linejoin:miter; stroke-width:0.5px; stroke-opacity:100%; fill-opacity:100%; ">CLIENT</text>
+  <text
+     y="345.419592"
+     x="170.955627"
+     transform="matrix(1 0 0 1 74.5479 -203.313)"
+     id="text32"
+     style="fill:#000000; stroke:#000000; font-size:12px; font-weight:normal; stroke-linecap:butt; font-style:normal; stroke-linejoin:miter; font-family:helvetica; stroke-width:0.5px; stroke-opacity:100%; fill-opacity:100%; ">SHLIB</text>
+
+</svg>

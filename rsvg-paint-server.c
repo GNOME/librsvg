@@ -25,6 +25,7 @@
 #include "rsvg-paint-server.h"
 
 #include <glib/gmem.h>
+#include <glib/gmessages.h>
 #include <glib/gstrfuncs.h>
 #include <libart_lgpl/art_affine.h>
 #include <string.h>
@@ -320,6 +321,7 @@ void
 rsvg_render_paint_server (ArtRender *ar, RsvgPaintServer *ps,
 			  const RsvgPSCtx *ctx)
 {
+  g_return_if_fail (ar != NULL);
   if (ps != NULL)
     ps->render (ps, ar, ctx);
 }
