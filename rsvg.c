@@ -44,6 +44,10 @@
 #include "rsvg-path.h"
 #include "rsvg-paint-server.h"
 
+#ifdef HAVE_SVGZ
+#include <gsf/gsf-utils.h>
+#endif
+
 /*
  * This is configurable at runtime
  */
@@ -1883,6 +1887,11 @@ void
 rsvg_init (void)
 {
 	g_type_init ();
+
+#ifdef HAVE_SVGZ
+	gsf_init ();
+#endif
+
 	xmlInitParser ();
 }
 
@@ -1895,5 +1904,9 @@ rsvg_init (void)
 void
 rsvg_term (void)
 {
+#ifdef HAVE_SVGZ
+	gsf_shutdown ();
+#endif
+
 	xmlCleanupParser ();
 }
