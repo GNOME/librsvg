@@ -97,7 +97,7 @@ struct RsvgHandle {
 	double dpi_x;
 	double dpi_y;
 
-	GSList * dimentions;
+	GSList * dimensions;
 	
 	GString * title;
 	GString * desc;

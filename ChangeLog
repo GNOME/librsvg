@@ -1,3 +1,7 @@
+2005-2-10  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg.c, rsvg-styles.c, rsvg-private.h: Applied patch by "makingnonsense" fixing spelling
+	
 2005-2-9  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Bump version number

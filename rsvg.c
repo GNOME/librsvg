@@ -1225,7 +1225,7 @@ rsvg_start_element (void *data, const xmlChar *name,
 	newdimention->width = ctx->width;
 	newdimention->height = ctx->height;
 	newdimention->em = rsvg_state_current_font_size(ctx);
-	ctx->dimentions = g_slist_prepend(ctx->dimentions, newdimention);
+	ctx->dimensions = g_slist_prepend(ctx->dimensions, newdimention);
 
 	bag = rsvg_property_bag_new(atts);
 
@@ -1309,12 +1309,12 @@ rsvg_end_element (void *data, const xmlChar *name)
 {
 	RsvgHandle *ctx = (RsvgHandle *)data;
 	
-	GSList * link = g_slist_nth(ctx->dimentions, 0);
+	GSList * link = g_slist_nth(ctx->dimensions, 0);
 	RsvgDimentionData * dead_dimention = (RsvgDimentionData *)link->data;
 	ctx->width = dead_dimention->width;
 	ctx->height = dead_dimention->height;
 	g_free (dead_dimention);
-	ctx->dimentions = g_slist_delete_link(ctx->dimentions, link);
+	ctx->dimensions = g_slist_delete_link(ctx->dimensions, link);
 
 	if (ctx->handler_nest > 0 && ctx->handler != NULL)
 		{
@@ -1759,7 +1759,7 @@ rsvg_handle_init (RsvgHandle * handle)
 	handle->current_defs_group = NULL;
 	handle->treebase = NULL;
 
-	handle->dimentions = NULL;
+	handle->dimensions = NULL;
 }
 
 /**

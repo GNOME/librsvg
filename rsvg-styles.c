@@ -525,7 +525,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			state->has_font_size = TRUE;
 			if (ctx != NULL)
 				{
-					((RsvgDimentionData *)g_slist_nth(ctx->dimentions, 
+					((RsvgDimentionData *)g_slist_nth(ctx->dimensions, 
 													  0)->data)->em 
 						= state->font_size;
 				}
@@ -1675,9 +1675,9 @@ rsvg_state_parent (DrawingCtx *ctx)
 double
 rsvg_state_current_font_size (RsvgHandle *ctx)
 {
-	if (ctx->dimentions == NULL)
+	if (ctx->dimensions == NULL)
 		return 12.0;
-	return ((RsvgDimentionData *)g_slist_nth(ctx->dimentions, 0)->data)->em;
+	return ((RsvgDimentionData *)g_slist_nth(ctx->dimensions, 0)->data)->em;
 }
 
 RsvgPropertyBag *
