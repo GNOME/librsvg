@@ -112,12 +112,12 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self,
 
 			if (output.x1 < 0)
 				output.x1 = 0;
-			if (output.x2 >= ctx->width)
-				output.x2 = ctx->width - 1;
+			if (output.x2 > ctx->width)
+				output.x2 = ctx->width;
 			if (output.y1 < 0)
 				output.y1 = 0;
-			if (output.y2 >= ctx->height)
-				output.y2 = ctx->height - 1;		
+			if (output.y2 > ctx->height)
+				output.y2 = ctx->height;		
 
 			return output;
 		}
@@ -142,12 +142,12 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self,
 	
 	if (output.x1 < 0)
 		output.x1 = 0;
-	if (output.x2 >= ctx->width)
-		output.x2 = ctx->width - 1;
+	if (output.x2 > ctx->width)
+		output.x2 = ctx->width;
 	if (output.y1 < 0)
 		output.y1 = 0;
-	if (output.y2 >= ctx->height)
-		output.y2 = ctx->height - 1;
+	if (output.y2 > ctx->height)
+		output.y2 = ctx->height;
 	
 	return output;
 }
@@ -4135,18 +4135,14 @@ get_light_normal_matrix_y (gint n)
 
 static vector3
 get_surface_normal (guchar * I, FPBox boundarys, gint x, gint y, 
-					gdouble realdx, gdouble realdy, gdouble surfaceScale, gint rowstride)
+					gdouble dx, gdouble dy, gdouble rawdx, gdouble rawdy, gdouble surfaceScale, gint rowstride)
 {
 	gint mrow, mcol;
 	FactorAndMatrix fnmx, fnmy;
 	gint *Kx, *Ky;
 	gdouble factorx, factory;
 	gdouble Nx, Ny;
-	gint dx, dy;
 	vector3 output;
-
-	dx = (gint)realdx;
-	dy = (gint)realdy;
 
 	if (x + dx >= boundarys.x2)
 		mcol = 2;
@@ -4163,34 +4159,34 @@ get_surface_normal (guchar * I, FPBox boundarys, gint x, gint y,
 		mrow = 1;
 
 	fnmx = get_light_normal_matrix_x(mrow * 3 + mcol);
-	factorx = fnmx.factor / realdx;
+	factorx = fnmx.factor / rawdx;
 	Kx = fnmx.matrix;
 
 	fnmy = get_light_normal_matrix_y(mrow * 3 + mcol);
-	factory = fnmy.factor / realdy;
+	factory = fnmy.factor / rawdy;
 	Ky = fnmy.matrix;	
 
     Nx = -surfaceScale * factorx * (gdouble)
-		(Kx[0]*I[(x-dx) * 4 + 3 + (y-dy) * rowstride] + 
-		 Kx[1]*I[(x)    * 4 + 3 + (y-dy) * rowstride] + 
-		 Kx[2]*I[(x+dx) * 4 + 3 + (y-dy) * rowstride] +
-		 Kx[3]*I[(x-dx) * 4 + 3 + (y)    * rowstride] + 
-		 Kx[4]*I[(x)    * 4 + 3 + (y)    * rowstride] + 
-		 Kx[5]*I[(x+dx) * 4 + 3 + (y)    * rowstride] +
-		 Kx[6]*I[(x-dx) * 4 + 3 + (y+dy) * rowstride] + 
-		 Kx[7]*I[(x)    * 4 + 3 + (y+dy) * rowstride] + 
-		 Kx[8]*I[(x+dx) * 4 + 3 + (y+dy) * rowstride]) / 255.0;
+		(Kx[0]*gdk_pixbuf_get_interp_pixel(I,x-dx,y-dy, 3, boundarys, rowstride) +
+		 Kx[1]*gdk_pixbuf_get_interp_pixel(I,x   ,y-dy, 3, boundarys, rowstride) + 
+		 Kx[2]*gdk_pixbuf_get_interp_pixel(I,x+dx,y-dy, 3, boundarys, rowstride) + 
+		 Kx[3]*gdk_pixbuf_get_interp_pixel(I,x-dx,y   , 3, boundarys, rowstride) + 
+		 Kx[4]*gdk_pixbuf_get_interp_pixel(I,x   ,y   , 3, boundarys, rowstride) + 
+		 Kx[5]*gdk_pixbuf_get_interp_pixel(I,x+dx,y   , 3, boundarys, rowstride) + 
+		 Kx[6]*gdk_pixbuf_get_interp_pixel(I,x-dx,y+dy, 3, boundarys, rowstride) + 
+		 Kx[7]*gdk_pixbuf_get_interp_pixel(I,x   ,y+dy, 3, boundarys, rowstride) + 
+		 Kx[8]*gdk_pixbuf_get_interp_pixel(I,x+dx,y+dy, 3, boundarys, rowstride)) / 255.0;
 	
     Ny = -surfaceScale * factory * (gdouble)
-		(Ky[0]*I[(x-dx) * 4 + 3 + (y-dy) * rowstride] + 
-		 Ky[1]*I[(x)    * 4 + 3 + (y-dy) * rowstride] + 
-		 Ky[2]*I[(x+dx) * 4 + 3 + (y-dy) * rowstride] +
-		 Ky[3]*I[(x-dx) * 4 + 3 + (y)    * rowstride] + 
-		 Ky[4]*I[(x)    * 4 + 3 + (y)    * rowstride] + 
-		 Ky[5]*I[(x+dx) * 4 + 3 + (y)    * rowstride] +
-		 Ky[6]*I[(x-dx) * 4 + 3 + (y+dy) * rowstride] + 
-		 Ky[7]*I[(x)    * 4 + 3 + (y+dy) * rowstride] + 
-		 Ky[8]*I[(x+dx) * 4 + 3 + (y+dy) * rowstride]) / 255.0;
+		(Ky[0]*gdk_pixbuf_get_interp_pixel(I,x-dx,y-dy, 3, boundarys, rowstride) +
+		 Ky[1]*gdk_pixbuf_get_interp_pixel(I,x   ,y-dy, 3, boundarys, rowstride) + 
+		 Ky[2]*gdk_pixbuf_get_interp_pixel(I,x+dx,y-dy, 3, boundarys, rowstride) + 
+		 Ky[3]*gdk_pixbuf_get_interp_pixel(I,x-dx,y   , 3, boundarys, rowstride) + 
+		 Ky[4]*gdk_pixbuf_get_interp_pixel(I,x   ,y   , 3, boundarys, rowstride) + 
+		 Ky[5]*gdk_pixbuf_get_interp_pixel(I,x+dx,y   , 3, boundarys, rowstride) + 
+		 Ky[6]*gdk_pixbuf_get_interp_pixel(I,x-dx,y+dy, 3, boundarys, rowstride) + 
+		 Ky[7]*gdk_pixbuf_get_interp_pixel(I,x   ,y+dy, 3, boundarys, rowstride) + 
+		 Ky[8]*gdk_pixbuf_get_interp_pixel(I,x+dx,y+dy, 3, boundarys, rowstride)) / 255.0;
 
 	output.x = Nx;
 	output.y = Ny;
@@ -4233,9 +4229,9 @@ get_light_direction (lightSource source, gdouble x, gdouble y, gdouble z, gdoubl
 			break;
 		case POINTLIGHT:
 		case SPOTLIGHT:
-			output.x = source.x * affine[0] + affine[5] - x;
-			output.y = source.y * affine[3] + affine[6] - y;
-			output.z = source.z - z;
+			output.x = source.x * affine[0] + affine[4] - x;
+			output.y = source.y * affine[3] + affine[5] - y;
+			output.z = source.z * sqrt(affine[0] * affine[3]) - z;
 			output = normalise(output);
 			break;
 		}
@@ -4253,9 +4249,9 @@ get_light_colour(lightSource source, vector3 colour,
 	if (source.type != SPOTLIGHT)
 		return colour;
 
-	s.x = source.pointsAtX * affine[0] + affine[5] - source.x;
-	s.y = source.pointsAtY * affine[3] + affine[6] - source.y;
-	s.z = source.pointsAtZ - source.z;
+	s.x = source.pointsAtX * affine[0] + affine[4] - source.x;
+	s.y = source.pointsAtY * affine[3] + affine[5] - source.y;
+	s.z = source.pointsAtZ * sqrt(affine[0] * affine[3]) - source.z;
 	s = normalise(s);
 
 	base = -dotproduct(get_light_direction (source, x, y, z, affine), s);
@@ -4283,6 +4279,9 @@ rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
 	lightSource * data;
 	gint i;
 
+	double font_size;
+	font_size = rsvg_state_current_font_size (ctx);
+
 	data = (lightSource *)ctx->currentsubfilter;
 
 	if (type == 's')
@@ -4298,35 +4297,41 @@ rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
 				{
 					if (!strcmp ((char *) atts[i], "azimuth"))
 						{
-							data->x = g_ascii_strtod(atts[i + 1], NULL); 
+							data->x = rsvg_css_parse_angle(atts[i + 1]); 
 						}
 					else if (!strcmp ((char *) atts[i], "elevation"))
 						{
-							data->y = g_ascii_strtod(atts[i + 1], NULL); 
+							data->y = rsvg_css_parse_angle(atts[i + 1]);
 						}
 					else if (!strcmp ((char *) atts[i], "x"))
 						{
-							data->x = g_ascii_strtod(atts[i + 1], NULL); 
+							data->x = rsvg_css_parse_normalized_length(atts[i + 1], ctx->dpi,
+																	   1, font_size); 
 						}
 					else if (!strcmp ((char *) atts[i], "y"))
 						{
-							data->y = g_ascii_strtod(atts[i + 1], NULL); 
+							data->y = rsvg_css_parse_normalized_length(atts[i + 1], ctx->dpi,
+																	   1, font_size); 
 						}
 					else if (!strcmp ((char *) atts[i], "z"))
 						{
-							data->z = g_ascii_strtod(atts[i + 1], NULL); 
+							data->z = rsvg_css_parse_normalized_length(atts[i + 1], ctx->dpi,
+																	   1, font_size); 
 						}
 					else if (!strcmp ((char *) atts[i], "pointsAtX"))
 						{
-							data->pointsAtX = g_ascii_strtod(atts[i + 1], NULL); 
+							data->pointsAtX = rsvg_css_parse_normalized_length(atts[i + 1], ctx->dpi,
+																			   1, font_size); 
 						}
 					else if (!strcmp ((char *) atts[i], "pointsAtY"))
 						{
-							data->pointsAtY = g_ascii_strtod(atts[i + 1], NULL); 
+							data->pointsAtY = rsvg_css_parse_normalized_length(atts[i + 1], ctx->dpi,
+																			   1, font_size); 
 						}
 					else if (!strcmp ((char *) atts[i], "pointsAtZ"))
 						{
-							data->pointsAtZ = g_ascii_strtod(atts[i + 1], NULL); 
+							data->pointsAtZ = rsvg_css_parse_normalized_length(atts[i + 1], ctx->dpi,
+																			   1, font_size);  
 						}
 				}
 		}
@@ -4353,10 +4358,10 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 											   RsvgFilterContext * ctx)
 {
 	gint x, y;
-	float dy, dx;
+	float dy, dx, rawdy, rawdx;
 	gdouble z;
 	gint rowstride, height, width;
-	gdouble factor;
+	gdouble factor, surfaceScale;
 	vector3 lightcolour, L, N;
 	vector3 colour;
 
@@ -4389,29 +4394,35 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 	colour.y = ((guchar *)(&oself->lightingcolour))[1] / 255.0;
 	colour.z = ((guchar *)(&oself->lightingcolour))[0] / 255.0;
 
+	surfaceScale =  oself->surfaceScale / 255.0
+		* sqrt(ctx->paffine[0] * ctx->paffine[3]);
+
 	if (oself->dy < 0 || oself->dx < 0)
 		{
 			dx = 1;
 			dy = 1;
+			rawdx = 1;
+			rawdy = 1;
 		}
 	else 
 		{
 			dx = oself->dx * ctx->paffine[0];
 			dy = oself->dy * ctx->paffine[3];
+			rawdx = oself->dx;
+			rawdy = oself->dy;
 		}
 
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
-				z = oself->surfaceScale * in_pixels[y * rowstride + x * 4 + 3] / 255.0;
+				z = surfaceScale * (double)in_pixels[y * rowstride + x * 4 + 3];
 				L = get_light_direction(oself->source, x, y, z, ctx->paffine);
 				N = get_surface_normal(in_pixels, boundarys, x, y, 
-									   dx, dy, oself->surfaceScale, 
+									   dx, dy, rawdx, rawdy, oself->surfaceScale, 
 									   rowstride);
 				lightcolour = get_light_colour(oself->source, colour, x, y, z,
 											   ctx->paffine);
 				factor = dotproduct(N, L);
-
 
 				output_pixels[y * rowstride + x * 4    ] = MAX(0,MIN(255, oself->diffuseConstant * factor * 
 					lightcolour.x * 255.0));
@@ -4456,8 +4467,8 @@ rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, const xmlChar **
 	filter->super.sizedefaults = 1;
 	filter->surfaceScale = 1;
 	filter->diffuseConstant = 1;
-	filter->dx = -1;
-	filter->dy = -1;
+	filter->dx = 1;
+	filter->dy = 1;
 	
 	if (atts != NULL)
 		{
@@ -4546,7 +4557,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 											   RsvgFilterContext * ctx)
 {
 	gint x, y, temp;
-	gdouble z;
+	gdouble z, surfaceScale;
 	gint rowstride, height, width;
 	gdouble factor, max;
 	vector3 lightcolour;
@@ -4582,10 +4593,12 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 	colour.y = ((guchar *)(&oself->lightingcolour))[1] / 255.0;
 	colour.z = ((guchar *)(&oself->lightingcolour))[0] / 255.0;
 
+	surfaceScale = oself->surfaceScale * sqrt(ctx->paffine[0] * ctx->paffine[3]) / 255.0; 
+
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
-				z = oself->surfaceScale * in_pixels[y * rowstride + x * 4 + 3] / 255.0;
+				z = in_pixels[y * rowstride + x * 4 + 3] * surfaceScale;
 				L = get_light_direction(oself->source, x, y, z, ctx->paffine);
 				L.z += 1;
 				L = normalise(L);
@@ -4593,7 +4606,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 				lightcolour = get_light_colour(oself->source, colour, x, y, z, 
 											   ctx->paffine);
 				factor = dotproduct(get_surface_normal(in_pixels, boundarys, x, y, 
-													   1, 1, oself->surfaceScale, 
+													   1, 1, 1.0 / ctx->paffine[0], 1.0 / ctx->paffine[3], oself->surfaceScale, 
 													   rowstride), L);
 
 				max = 0;
