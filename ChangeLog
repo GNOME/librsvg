@@ -1,3 +1,9 @@
+2005-03-10  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg.c, rsvg-structure.c: Merged rsvg_start_svg and rsvg_start_sub_svg into a single cohesive thing
+	* rsvg-private.c: removed new_width and new_height. Now on-screen dimentions are not in the handle at all, they are loaded from the callback when the pixbuf is aquired.
+	* rsvg.c, rsvg-paint-server.c: moved paint server stuff to where you'd expect to find it.
+
 2005-03-09  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Bug #169720

@@ -30,6 +30,8 @@
 #include "rsvg-image.h"
 #include "rsvg-css.h"
 
+#include <stdio.h>
+
 void 
 rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 						 int dominate)
@@ -255,19 +257,42 @@ rsvg_defs_drawable_svg_draw (RsvgDefsDrawable * self, RsvgDrawingCtx *ctx,
 {
 	RsvgDefsDrawableSvg * sself;
 	RsvgState *state;
+	gdouble affine[6];
 	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
 	guint i;
 	sself = (RsvgDefsDrawableSvg *)self;
 
+	rsvg_state_reinherit_top(ctx, &self->state, dominate);
+
 	rsvg_push_discrete_layer (ctx);
 
-	rsvg_add_clipping_rect(ctx, sself->x, sself->y, sself->w, sself->h);
-
-	rsvg_state_reinherit_top(ctx, &self->state, dominate);
+	if (!sself->overflow)
+		rsvg_add_clipping_rect(ctx, sself->x, sself->y, sself->w, sself->h);
 
 	state = rsvg_state_current (ctx);
 
-	if (!sself->overflow)
+	if (sself->has_vbox)
+		{
+			affine[0] = sself->w / sself->vbw;
+			affine[1] = 0;
+			affine[2] = 0;
+			affine[3] = sself->h / sself->vbh;
+			affine[4] = sself->x - sself->vbx * sself->w / sself->vbw;
+			affine[5] = sself->y - sself->vby * sself->h / sself->vbh;
+			_rsvg_affine_multiply(state->affine, affine, 
+								  state->affine);
+		}
+	else
+		{
+			affine[0] = 1;
+			affine[1] = 0;
+			affine[2] = 0;
+			affine[3] = 1;
+			affine[4] = sself->x;
+			affine[5] = sself->y;
+			_rsvg_affine_multiply(state->affine, affine, 
+								  state->affine);
+		}
 
 	for (i = 0; i < group->children->len; i++)
 		{
@@ -292,10 +317,9 @@ rsvg_defs_drawable_svg_free (RsvgDefVal *self)
 }
 
 void
-rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
+rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	int width = -1, height = -1, x = -1, y = -1, i;
-	double affine[6];
+	int width = -1, height = -1, x = 0, y = 0;
 	const char * id, *value;
 	double vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
 	gboolean has_vbox = FALSE, overflow = 0;
@@ -311,6 +335,9 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				{
 					has_vbox = rsvg_css_parse_vbox (value, &vbox_x, &vbox_y,
 													&vbox_w, &vbox_h);
+					/*we need to set width and height so we can use percentages for the size*/
+					ctx->width = vbox_w;
+					ctx->height = vbox_h;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
 				width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, ctx->width, 1);
@@ -326,35 +353,6 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				overflow = rsvg_css_parse_overflow(value);
 		}
 
-	if (has_vbox)
-		{
-			affine[0] = width / vbox_w;
-			affine[1] = 0;
-			affine[2] = 0;
-			affine[3] = height / vbox_h;
-			affine[4] = x - vbox_x * width / vbox_w;
-			affine[5] = y - vbox_y * height / vbox_h;
-			for (i = 0; i < 6; i++)
-				state.personal_affine[i] = affine[i];
-			_rsvg_affine_multiply(state.affine, affine, 
-								state.affine);
-			ctx->width = vbox_w;
-			ctx->height = vbox_h;
-		}
-	else
-		{
-			affine[0] = 1;
-			affine[1] = 0;
-			affine[2] = 0;
-			affine[3] = 1;
-			affine[4] = x;
-			affine[5] = y;
-			for (i = 0; i < 6; i++)
-				state.personal_affine[i] = affine[i];
-			_rsvg_affine_multiply(state.affine, affine, 
-								state.affine);
-		}
-
 	svg = g_new (RsvgDefsDrawableSvg, 1);
 	group = &svg->super;
 	svg->has_vbox = has_vbox;
@@ -362,7 +360,21 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	svg->x = x; svg->y = y; svg->w = width; svg->h = height;
 	svg->vbx = vbox_x; svg->vby = vbox_y; svg->vbw = vbox_w; svg->vbh = vbox_h;
-	svg->overflow = overflow;
+	if (ctx->nest_level)
+		svg->overflow = overflow;
+	else
+		svg->overflow = 1;
+	
+	if (has_vbox)
+		{
+			ctx->width = vbox_w;
+			ctx->height = vbox_h;
+		}
+	else
+		{	
+			ctx->width = width;
+			ctx->height = height;
+		}
 
 	group->children = g_ptr_array_new();
 	group->super.state = state;
@@ -381,11 +393,13 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)group->super.parent, 
 									  &group->super);
 
+	if (!ctx->nest_level)
+		ctx->treebase = group;
 	ctx->nest_level++;
 }
 
 void
-rsvg_end_sub_svg(RsvgHandle *ctx)
+rsvg_end_svg(RsvgHandle *ctx)
 {
 	ctx->nest_level--;
 	rsvg_pop_def_group (ctx);

@@ -152,6 +152,15 @@ rsvg_clone_linear_gradient (const RsvgLinearGradient *grad, gboolean * shallow_c
 RsvgPattern *
 rsvg_clone_pattern (const RsvgPattern *pattern);
 
+void
+rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts);
+
+void
+rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char * tag);
+
+void
+rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts);
+
 G_END_DECLS
 
 #endif

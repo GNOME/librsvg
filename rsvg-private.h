@@ -104,8 +104,6 @@ struct RsvgHandle {
 	
 	int width;
 	int height;
-	int new_width;
-	int new_height;
 	double dpi_x;
 	double dpi_y;
 
@@ -160,10 +158,6 @@ struct RsvgDimensionData {
 	int height;
 	gdouble em, ex;
 };
-
-void rsvg_linear_gradient_free (RsvgDefVal *self);
-void rsvg_radial_gradient_free (RsvgDefVal *self);
-void rsvg_pattern_free (RsvgDefVal *self);
 
 typedef enum {
 	RSVG_SIZE_ZOOM,

@@ -46,9 +46,13 @@ High Priority (absolutely must be done before our next major release - GNOME 3.0
 		* Whitespace issues
 		* "International" issues - bi-directional, top->bottom, etc.
 		* Text along paths
+		* Remove pango compeletly since it isn't thread safe nor does it support SVG text very well.
+		* Create interface to allow text to be drawn by cairo directly if available
 	* Fonts
 		* CSS-defined fonts (do we want to support this?)
 		* SVG fonts (do we want to support this?)
+
+ * Interfaces for rescaling and transforming by external applications
 
 Lower Priority:
 
@@ -62,3 +66,9 @@ Lower Priority:
  * Improved Gimp plugin (choose 1 of "A" or "B". "A" would be easier, but perhaps less compelling. Jimmac and Tigert would be estatic if we could do either.)
 	* A) Store layer names, composite layers onto the Gimp itself
 	* B) Implement a Gimp-based RsvgRender that drew SVGs in terms of Gimp's path, gradient, pattern, etc. APIs
+
+* DOM interface, possibly javascript bindings.
+
+* Animation, should be easier if DOM is done right.
+
+* Interfaces for drawing parts of the image.

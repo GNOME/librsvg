@@ -83,131 +83,6 @@ rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
 	g_free (entval);
 }
 
-static void
-rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
-{
-	int width = -1, height = -1, x = -1, y = -1, i;
-	RsvgState state;
-	gint new_width, new_height;
-	double x_zoom = 1.;
-	double y_zoom = 1.;
-	double affine[6];
-	const char * value;
-
-	double vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
-	gboolean has_vbox = FALSE;
-
-	rsvg_state_init(&state);
-
-	if (rsvg_property_bag_size (atts))
-		{
-			/* x & y should be ignored since we should always be the outermost SVG,
-			   at least for now, but i'll include them here anyway */
-			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
-				{
-					has_vbox = rsvg_css_parse_vbox (value, &vbox_x, &vbox_y,
-													&vbox_w, &vbox_h);
-				}
-			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, vbox_w, 1);
-			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				height = rsvg_css_parse_normalized_length (value, ctx->dpi_y, vbox_h, 1);
-			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, vbox_w, 1);
-			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, vbox_h, 1);
-	
-			if (has_vbox && vbox_w > 0. && vbox_h > 0.)
-				{
-					new_width  = (int)floor (vbox_w);
-					new_height = (int)floor (vbox_h);
-					
-					/* apply the sizing function on the *original* width and height
-					   to acquire our real destination size. we'll scale it against
-					   the viewBox's coordinates later */
-					if (ctx->size_func) {
-						(* ctx->size_func) (&width, &height, ctx->user_data);
-					}
-				}
-			else
-				{
-					new_width  = width;
-					new_height = height;
-
-					/* bogus hack */
-					if (new_width <= 0 || new_height <= 0)
-						{
-							g_warning (_("rsvg_start_svg: width and height not specified in the SVG"));
-							if (new_width <= 0) {width = new_width = 512;}
-							if (new_height <= 0) {height = new_height = 512;}
-						}
-
-					/* apply the sizing function to acquire our new width and height.
-					   we'll scale this against the old values later */
-					if (ctx->size_func) {
-						(* ctx->size_func) (&new_width, &new_height, ctx->user_data);
-					}
-				}
-
-			/* set these here because % are relative to viewbox */
-			ctx->width = new_width;
-			ctx->height = new_height;
-
-			if (!has_vbox)
-				{
-					  x_zoom = (width < 0 || new_width < 0) ? 1 : (double) new_width / width;
-					  y_zoom = (height < 0 || new_height < 0) ? 1 : (double) new_height / height;
-				}
-			else
-				{
-					x_zoom = (width < 0 || new_width < 0) ? 1 : (double) width / new_width;
-					y_zoom = (height < 0 || new_height < 0) ? 1 : (double) height / new_height;
-
-					/* reset these so that we get a properly sized SVG and not a huge one */
-					new_width  = (width == -1 ? new_width : width);
-					new_height = (height == -1 ? new_height : height);
-				}
-
-			/* Scale size of target pixbuf */
-
-			_rsvg_affine_identity (state.affine);
-
-			if (has_vbox && (vbox_x != 0. || vbox_y != 0.))
-				{
-					_rsvg_affine_translate (affine, - vbox_x, - vbox_y);
-					_rsvg_affine_multiply (state.affine, state.affine, affine);
-				}
-
-			_rsvg_affine_scale (affine, x_zoom, y_zoom);
-			_rsvg_affine_multiply (state.affine, state.affine, affine);
-
-			if (new_width <= 0 || new_height <= 0)
-				{
-					g_warning (_("rsvg_start_svg: width and height not specified in the SVG, nor supplied by the size callback"));
-					if (new_width <= 0) new_width = 512;
-					if (new_height <= 0) new_height = 512;
-				}
-
-			if (new_width >= INT_MAX / 4)
-				{
-					/* FIXME: GError here? */
-					g_warning (_("rsvg_start_svg: width too large"));
-					return;
-				}
-
-			/* FIXME: Add GError here if size is too big. */
-		}
-
-	ctx->new_width = new_width;
-	ctx->new_height = new_height;
-
-	for (i = 0; i < 6; i++)
-		state.personal_affine[i] = state.affine[i];
-	ctx->nest_level = 1;
-	ctx->current_defs_group = NULL;
-	ctx->treebase = rsvg_push_def_group(ctx, NULL, state);
-}
-
 typedef struct _RsvgSaxHandlerDefs {
 	RsvgSaxHandler super;
 	RsvgHandle *ctx;
@@ -220,587 +95,10 @@ typedef struct _RsvgSaxHandlerStyle {
 	GString *style;
 } RsvgSaxHandlerStyle;
 
-typedef struct _RsvgSaxHandlerGstops {
-	RsvgSaxHandler super;
-	RsvgSaxHandlerDefs *parent;
-	RsvgHandle *ctx;
-	RsvgGradientStops *stops;
-	const char * parent_tag;
-} RsvgSaxHandlerGstops;
-
 /* hide this fact from the general public */
 typedef RsvgSaxHandlerDefs RsvgSaxHandlerTitle;
 typedef RsvgSaxHandlerDefs RsvgSaxHandlerDesc;
 typedef RsvgSaxHandlerDefs RsvgSaxHandlerMetadata;
-
-static void
-rsvg_gradient_stop_handler_free (RsvgSaxHandler *self)
-{
-	g_free (self);
-}
-
-static void
-rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
-								  RsvgPropertyBag *atts)
-{
-	RsvgSaxHandlerGstops *z = (RsvgSaxHandlerGstops *)self;
-	RsvgGradientStops *stops = z->stops;
-	double offset = 0;
-	gboolean got_offset = FALSE;
-	RsvgState state;
-	int n_stop;
-	gboolean is_current_color = FALSE;
-	const char *value;
-	
-	if (strcmp ((char *)name, "stop"))
-		return;
-	
-	rsvg_state_init(&state);
-	
-	if (rsvg_property_bag_size (atts))
-		{
-			if ((value = rsvg_property_bag_lookup (atts, "offset")))
-				{
-					/* either a number [0,1] or a percentage */
-					offset = rsvg_css_parse_normalized_length (value, rsvg_dpi_percentage (z->ctx), 1., 0.);
-					
-					if (offset < 0.)
-						offset = 0.;
-					else if (offset > 1.)
-						offset = 1.;
-					
-					got_offset = TRUE;
-				}
-			if ((value = rsvg_property_bag_lookup (atts, "style")))
-				rsvg_parse_style (z->ctx, &state, value);
-			
-			if ((value = rsvg_property_bag_lookup (atts, "stop-color")))
-				if (!strcmp(value, "currentColor"))
-					is_current_color = TRUE;
-			rsvg_parse_style_pairs (z->ctx, &state, atts);
-		}
-	
-	rsvg_state_finalize(&state);
-	
-	if (!got_offset)
-		{
-			g_warning (_("gradient stop must specify offset\n"));
-			return;
-		}
-	
-	n_stop = stops->n_stop++;
-	if (n_stop == 0)
-		stops->stop = g_new (RsvgGradientStop, 1);
-	else if (!(n_stop & (n_stop - 1)))
-		/* double the allocation if size is a power of two */
-		stops->stop = g_renew (RsvgGradientStop, stops->stop, n_stop << 1);
-	stops->stop[n_stop].offset = offset;
-	stops->stop[n_stop].is_current_color = is_current_color;
-	stops->stop[n_stop].rgba = (state.stop_color << 8) | state.stop_opacity;
-}
-
-static void
-rsvg_gradient_stop_handler_end (RsvgSaxHandler *self, const xmlChar *name)
-{
-	RsvgSaxHandlerGstops *z = (RsvgSaxHandlerGstops *)self;
-	RsvgHandle *ctx = z->ctx;
-	RsvgSaxHandler *prev = &z->parent->super;
-	
-	if (!strcmp((char *)name, z->parent_tag))
-		{
-			if (ctx->handler != NULL)
-				{
-					ctx->handler->free (ctx->handler);
-					ctx->handler = prev;
-				}
-		}
-}
-
-static RsvgSaxHandler *
-rsvg_gradient_stop_handler_new_clone (RsvgHandle *ctx, RsvgGradientStops *stops, 
-									  const char * parent)
-{
-	RsvgSaxHandlerGstops *gstops = g_new0 (RsvgSaxHandlerGstops, 1);
-	
-	gstops->super.free = rsvg_gradient_stop_handler_free;
-	gstops->super.start_element = rsvg_gradient_stop_handler_start;
-	gstops->super.end_element = rsvg_gradient_stop_handler_end;
-	gstops->ctx = ctx;
-	gstops->stops = stops;
-	gstops->parent_tag = parent;
-	
-	gstops->parent = (RsvgSaxHandlerDefs*)ctx->handler;
-	return &gstops->super;
-}
-
-static RsvgSaxHandler *
-rsvg_gradient_stop_handler_new (RsvgHandle *ctx, RsvgGradientStops **p_stops,
-								const char * parent)
-{
-	RsvgSaxHandlerGstops *gstops = g_new0 (RsvgSaxHandlerGstops, 1);
-	RsvgGradientStops *stops = g_new (RsvgGradientStops, 1);
-	
-	gstops->super.free = rsvg_gradient_stop_handler_free;
-	gstops->super.start_element = rsvg_gradient_stop_handler_start;
-	gstops->super.end_element = rsvg_gradient_stop_handler_end;
-	gstops->ctx = ctx;
-	gstops->stops = stops;
-	gstops->parent_tag = parent;
-	
-	stops->n_stop = 0;
-	stops->stop = NULL;
-	
-	gstops->parent = (RsvgSaxHandlerDefs*)ctx->handler;
-	*p_stops = stops;
-	return &gstops->super;
-}
-
-/* exported to the paint server via rsvg-private.h */
-void
-rsvg_linear_gradient_free (RsvgDefVal *self)
-{
-	RsvgLinearGradient *z = (RsvgLinearGradient *)self;
-	
-	g_free (z->stops->stop);
-	g_free (z->stops);
-	g_free (self);
-}
-
-static void
-rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
-{
-	RsvgState state;
-	RsvgLinearGradient *grad = NULL;
-	const char *id = NULL, *value;
-	double x1 = 0., y1 = 0., x2 = 0., y2 = 0.;
-	ArtGradientSpread spread = ART_GRADIENT_PAD;
-	const char * xlink_href = NULL;
-	gboolean obj_bbox = TRUE;
-	gboolean got_x1, got_x2, got_y1, got_y2, got_spread, got_transform, got_bbox, cloned, shallow_cloned;
-	double affine[6];
-	guint32 color = 0;
-	gboolean got_color = FALSE;
-	int i;
-
-	rsvg_state_init(&state);
-
-	got_x1 = got_x2 = got_y1 = got_y2 = got_spread = got_transform = got_bbox = cloned = shallow_cloned = FALSE;
-		
-	if (rsvg_property_bag_size (atts))
-		{
-			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				id = value;
-			if ((value = rsvg_property_bag_lookup (atts, "x1"))) {
-				x1 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state.font_size);
-				got_x1 = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "y1"))) {
-				y1 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state.font_size);
-				got_y1 = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "x2"))) {
-				x2 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state.font_size);
-				got_x2 = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "y2"))) {
-				y2 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state.font_size);
-				got_y2 = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "spreadMethod")))
-				{
-					if (!strcmp (value, "pad")) {
-						spread = ART_GRADIENT_PAD;
-						got_spread = TRUE;
-					}
-					else if (!strcmp (value, "reflect")) {
-						spread = ART_GRADIENT_REFLECT;
-						got_spread = TRUE;
-					}
-					else if (!strcmp (value, "repeat")) {
-						spread = ART_GRADIENT_REPEAT;
-						got_spread = TRUE;
-					}
-				}
-			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
-				xlink_href = value;
-			if ((value = rsvg_property_bag_lookup (atts, "gradientTransform")))
-				got_transform = rsvg_parse_transform (affine, value);
-			if ((value = rsvg_property_bag_lookup (atts, "color")))
-				{
-					got_color = TRUE;
-					color = rsvg_css_parse_color (value, 0);
-				}
-			if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
-				if (!strcmp (value, "userSpaceOnUse"))
-					obj_bbox = FALSE;
-				got_bbox = TRUE;
-
-			}
-			rsvg_parse_style_pairs (ctx, &state, atts);
-		}
-	
-	/* set up 100% as the default if not gotten */
-	if (!got_x2) {
-		if (obj_bbox)
-			x2 = 1.0;
-		else
-			x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi_x, (gdouble)ctx->width, state.font_size);
-	}
-
-	if (xlink_href != NULL)
-		{
-			RsvgLinearGradient * parent = (RsvgLinearGradient*)rsvg_defs_lookup (ctx->defs, xlink_href);
-			if (parent != NULL)
-				{
-					cloned = TRUE;
-					grad = rsvg_clone_linear_gradient (parent, &shallow_cloned); 
-					ctx->handler = rsvg_gradient_stop_handler_new_clone (ctx, grad->stops, "linearGradient");
-				}
-		}
-	
-	if (!cloned)
-		{
-			grad = g_new (RsvgLinearGradient, 1);
-			grad->super.type = RSVG_DEF_LINGRAD;
-			grad->super.free = rsvg_linear_gradient_free;
-			ctx->handler = rsvg_gradient_stop_handler_new (ctx, &grad->stops, "linearGradient");
-		}
-	
-	rsvg_defs_set (ctx->defs, id, &grad->super);
-	
-	if (got_transform)
-		for (i = 0; i < 6; i++)
-			grad->affine[i] = affine[i];
-	else
-		_rsvg_affine_identity(grad->affine);
-
-	if (got_color)
-		{
-			grad->current_color = color;
-			grad->has_current_color = TRUE;
-		}
-	else
-		{
-			grad->has_current_color = FALSE;
-		}
-
-	/* gradient inherits parent/cloned information unless it's explicity gotten */
-	grad->obj_bbox = (cloned && !got_bbox) ? grad->obj_bbox : obj_bbox;
-	if (!shallow_cloned)
-		{
-			grad->x1 = (cloned && !got_x1) ? grad->x1 : x1;
-			grad->y1 = (cloned && !got_y1) ? grad->y1 : y1;
-			grad->x2 = (cloned && !got_x2) ? grad->x2 : x2;
-			grad->y2 = (cloned && !got_y2) ? grad->y2 : y2;
-		}
-	else
-		{
-			grad->x1 = x1;
-			grad->y1 = y1;
-			grad->x2 = x2;
-			grad->y2 = y2;
-		}
-	grad->spread = (cloned && !got_spread) ? grad->spread : spread;
-}
-
-/* exported to the paint server via rsvg-private.h */
-void
-rsvg_radial_gradient_free (RsvgDefVal *self)
-{
-	RsvgRadialGradient *z = (RsvgRadialGradient *)self;
-	
-	g_free (z->stops->stop);
-	g_free (z->stops);
-	g_free (self);
-}
-
-static void
-rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char * tag) /* tag for conicalGradient */
-{
-	RsvgState state;
-	RsvgRadialGradient *grad = NULL;
-	const char *id = NULL;
-	double cx = 0., cy = 0., r = 0., fx = 0., fy = 0.;  
-	const char * xlink_href = NULL, *value;
-	ArtGradientSpread spread = ART_GRADIENT_PAD;
-	gboolean obj_bbox = TRUE;
-	gboolean got_cx, got_cy, got_r, got_fx, got_fy, got_spread, got_transform, got_bbox, cloned, shallow_cloned;
-	guint32 color = 0;
-	gboolean got_color = FALSE;
-	double affine[6];
-	int i;
-
-	rsvg_state_init(&state);
-
-	got_cx = got_cy = got_r = got_fx = got_fy = got_spread = got_transform = got_bbox = cloned = shallow_cloned = FALSE;
-	
-	if (rsvg_property_bag_size (atts))
-		{
-			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				id = value;
-			if ((value = rsvg_property_bag_lookup (atts, "cx"))) {
-				cx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state.font_size);
-				got_cx = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "cy"))) {
-				cy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state.font_size);
-				got_cy = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "r"))) {
-				r = rsvg_css_parse_normalized_length (value, rsvg_dpi_percentage (ctx), 1, 
-													  state.font_size);
-				got_r = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "fx"))) {
-				fx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state.font_size);
-				got_fx = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "fy"))) {
-				fy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state.font_size);
-				got_fy = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
-				xlink_href = value;
-			if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
-				got_transform = rsvg_parse_transform (affine, value);
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "color")))
-				{
-					got_color = TRUE;
-					color = rsvg_css_parse_color (value, 0);
-				}
-			if ((value = rsvg_property_bag_lookup (atts, "spreadMethod")))
-				{
-					if (!strcmp (value, "pad")) {
-						spread = ART_GRADIENT_PAD;
-						got_spread = TRUE;
-					}
-					else if (!strcmp (value, "reflect")) {
-						spread = ART_GRADIENT_REFLECT;
-						got_spread = TRUE;
-					}
-					else if (!strcmp (value, "repeat")) {
-						spread = ART_GRADIENT_REPEAT;
-						got_spread = TRUE;
-					}
-				}
-			if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
-				if (!strcmp (value, "userSpaceOnUse"))
-					obj_bbox = FALSE;
-				got_bbox = TRUE;
-			}
-			rsvg_parse_style_pairs (ctx, &state, atts);
-		}
-	
-	if (xlink_href != NULL)
-		{
-			RsvgRadialGradient * parent = (RsvgRadialGradient*)rsvg_defs_lookup (ctx->defs, xlink_href);
-			if (parent != NULL)
-				{
-					cloned = TRUE;
-					grad = rsvg_clone_radial_gradient (parent, &shallow_cloned); 
-					ctx->handler = rsvg_gradient_stop_handler_new_clone (ctx, grad->stops, tag);
-				}
-    }
-	if (!cloned)
-		{
-			grad = g_new (RsvgRadialGradient, 1);
-			grad->super.type = RSVG_DEF_RADGRAD;
-			grad->super.free = rsvg_radial_gradient_free;
-			ctx->handler = rsvg_gradient_stop_handler_new (ctx, &grad->stops, tag);		   
-		}
-
-	/* setup defaults */
-	if (!got_cx) {
-		if (obj_bbox)
-			cx = 0.5;
-		else
-			cx = rsvg_css_parse_normalized_length ("50%", ctx->dpi_x, (gdouble)ctx->width, state.font_size);
-	}
-	if (!got_cy) {
-		if (obj_bbox)
-			cy = 0.5;
-		else
-			cy = rsvg_css_parse_normalized_length ("50%", ctx->dpi_y, (gdouble)ctx->height, state.font_size);
-	}
-	if (!got_r) {
-		if (obj_bbox)
-			r = 0.5;
-		else
-			r  = rsvg_css_parse_normalized_length ("50%", rsvg_dpi_percentage (ctx), rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state.font_size);
-	}
-	if (!got_fx) {
-		fx = cx;
-	}
-	if (!got_fy) {
-		fy = cy;
-	}
-	
-	rsvg_defs_set (ctx->defs, id, &grad->super);
-
-	if (got_transform)
-		for (i = 0; i < 6; i++)
-			grad->affine[i] = affine[i];
-	else
-		_rsvg_affine_identity(grad->affine);
-	
-	if (got_color)
-		{
-			grad->current_color = color;
-			grad->has_current_color = TRUE;
-		}
-	else
-		{
-			grad->has_current_color = FALSE;
-		}
-
-	/* gradient inherits parent/cloned information unless it's explicity gotten */
-	grad->obj_bbox = (cloned && !got_bbox) ? grad->obj_bbox : obj_bbox;
-	if (!shallow_cloned)
-		{
-			grad->cx = (cloned && !got_cx) ? grad->cx : cx;
-			grad->cy = (cloned && !got_cy) ? grad->cy : cy;
-			grad->r =  (cloned && !got_r)  ? grad->r  : r;
-			grad->fx = (cloned && !got_fx) ? grad->fx : fx;
-			grad->fy = (cloned && !got_fy) ? grad->fy : fy;
-		}
-	else
-		{
-			grad->cx = cx;
-			grad->cy = cy;
-			grad->r = r;
-			grad->fx = fx;
-			grad->fy = fy;
-		}
-	grad->spread = (cloned && !got_spread) ? grad->spread : spread;
-}
-
-void
-rsvg_pattern_free (RsvgDefVal *self)
-{
-	RsvgPattern *z = (RsvgPattern *)self;
-	
-	g_free (z);
-}
-
-static void
-rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
-{
-	RsvgState state;
-	RsvgPattern *pattern = NULL;
-	const char *id = NULL, *value;
-	double x = 0., y = 0., width = 0., height = 0.;
-	double vbx = 0., vby = 0., vbw = 1., vbh = 1.;
-	const char * xlink_href = NULL;
-	gboolean obj_bbox = TRUE;
-	gboolean obj_cbbox = FALSE;
-	gboolean got_x, got_y, got_width, got_height, got_transform, got_bbox, got_cbbox, cloned, got_vbox, got_aspect_ratio;
-	double affine[6];
-	int i;
-	guint aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-
-	rsvg_state_init(&state);
-
-	got_x = got_y = got_width = got_height = got_transform = got_bbox = got_cbbox = cloned = got_vbox = got_aspect_ratio = FALSE;
-		
-	if (rsvg_property_bag_size (atts))
-		{
-			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				id = value;
-			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
-				{
-					got_vbox = rsvg_css_parse_vbox (value, &vbx, &vby,
-													&vbw, &vbh);
-				}
-			if ((value = rsvg_property_bag_lookup (atts, "x"))) {
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state.font_size);
-				got_x = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "y"))) {
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state.font_size);
-				got_y = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "width"))) {
-				width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, state.font_size);
-				got_width = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "height"))) {
-				height = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, state.font_size);
-				got_height = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
-				xlink_href = value;
-			if ((value = rsvg_property_bag_lookup (atts, "patternTransform")))
-				got_transform = rsvg_parse_transform (affine, value);
-			if ((value = rsvg_property_bag_lookup (atts, "patternUnits"))) {
-				if (!strcmp (value, "userSpaceOnUse"))
-					obj_bbox = FALSE;
-				else
-					obj_bbox = TRUE;
-				got_bbox = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "patternContentUnits"))) {
-				if (!strcmp (value, "userSpaceOnUse"))
-					obj_cbbox = FALSE;
-				else
-					obj_cbbox = TRUE;					
-				got_cbbox = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
-				aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-
-
-		}
-
-	if (xlink_href != NULL)
-		{
-			RsvgPattern * parent = (RsvgPattern*)rsvg_defs_lookup (ctx->defs, xlink_href);
-			if (parent != NULL)
-				{
-					cloned = TRUE;
-					pattern = rsvg_clone_pattern (parent);
-				}
-		}
-	
-	if (!cloned)
-		{
-			pattern = g_new (RsvgPattern, 1);
-			pattern->super.type = RSVG_DEF_PATTERN;
-			pattern->super.free = rsvg_pattern_free;
-			pattern->gfallback = NULL;
-		}
-	
-	rsvg_defs_set (ctx->defs, id, &pattern->super);
-	
-	if (got_transform)
-		for (i = 0; i < 6; i++)
-			pattern->affine[i] = affine[i];
-	else
-		_rsvg_affine_identity(pattern->affine);
-
-	if (got_aspect_ratio)
-		pattern->preserve_aspect_ratio = aspect_ratio;
-	else
-		pattern->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-
-	/* gradient inherits parent/cloned information unless it's explicity gotten */
-	pattern->obj_bbox = (cloned && !got_bbox) ? pattern->obj_bbox : obj_bbox;
-	pattern->obj_cbbox = (cloned && !got_cbbox) ? pattern->obj_cbbox : obj_cbbox;
-	pattern->x = (cloned && !got_x) ? pattern->x : x;
-	pattern->y = (cloned && !got_y) ? pattern->y : y;
-	pattern->width = (cloned && !got_width) ? pattern->width : width;
-	pattern->height = (cloned && !got_height) ? pattern->height : height;
-	pattern->vbx = (cloned && !got_vbox) ? pattern->vbx : vbx;
-	pattern->vby = (cloned && !got_vbox) ? pattern->vby : vby;
-	pattern->vbw = (cloned && !got_vbox) ? pattern->vbw : vbw;
-	pattern->vbh = (cloned && !got_vbox) ? pattern->vbh : vbh;
-	pattern->vbox = (cloned && !got_vbox) ? pattern->vbox : got_vbox;
-
-	pattern->g = &(rsvg_push_part_def_group (ctx, NULL, state)->super);
-}
-
-
-/* end gradients */
 
 static void
 rsvg_style_handler_free (RsvgSaxHandler *self)
@@ -1183,12 +481,7 @@ rsvg_start_element (void *data, const xmlChar *name,
 	else
 		{
 			if (!strcmp ((char *)name, "svg"))
-				{
-					if (!ctx->nest_level)
-						rsvg_start_svg (ctx, bag);
-					else
-						rsvg_start_sub_svg (ctx, bag);
-				}
+				rsvg_start_svg (ctx, bag);
 			else if (!strcmp ((char *)name, "g"))
 				rsvg_start_g (ctx, bag);
 			else if (!strcmp ((char *)name, "a")) /*treat anchors as groups for now*/
@@ -1280,7 +573,7 @@ rsvg_end_element (void *data, const xmlChar *name)
 			else if (!strcmp ((char *)name, "a")) /*treat anchors as groups for now*/
 				rsvg_end_g (ctx);
 			else if (!strcmp ((char *)name, "svg"))
-				rsvg_end_sub_svg (ctx);
+				rsvg_end_svg (ctx);
 			else if (!strcmp ((char *)name, "symbol"))
 				rsvg_end_g (ctx);
 			else if (!strcmp ((char *)name, "filter"))
@@ -1651,10 +944,58 @@ rsvg_handle_new (void)
 	return handle;
 }
 
+static RsvgDimensionData
+rsvg_get_dimentions(RsvgHandle * handle)
+{
+	RsvgDimensionData output;
+	RsvgDefsDrawableSvg * sself;
+	sself = (RsvgDefsDrawableSvg *)handle->treebase;
+	
+	output.em = sself->w;
+	output.ex = sself->h;
+
+	if (sself->has_vbox && sself->vbw > 0. && sself->vbh > 0.)
+		{
+			output.width  = (int)floor (sself->vbw);
+			output.height = (int)floor (sself->vbh);
+			
+			/* apply the sizing function on the *original* width and height
+			   to acquire our real destination size. we'll scale it against
+			   the viewBox's coordinates later */
+			if (handle->size_func) {
+				(* handle->size_func) (&output.width, &output.height, handle->user_data);
+			}
+		}
+	else
+		{
+			output.width  = sself->w;
+			output.height = sself->h;
+
+			/* bogus hack */
+			if (output.width <= 0 || output.height <= 0)
+				{
+					g_warning (_("rsvg_start_svg: width and height not specified in the SVG"));
+					if (output.width <= 0) {output.width = 512;}
+					if (output.height <= 0) {output.height = 512;}
+				}
+			
+			/* apply the sizing function to acquire our new width and height.
+			   we'll scale this against the old values later */
+			if (handle->size_func) {
+				(* handle->size_func) (&output.width, &output.height, handle->user_data);
+			}
+		}
+	
+	return output;
+}
+
 static RsvgDrawingCtx * 
 rsvg_new_drawing_ctx(RsvgHandle * handle)
 {
+	RsvgDimensionData data;
 	RsvgDrawingCtx * draw;
+	RsvgState * state;
+	double affine[6];
 	draw = g_new(RsvgDrawingCtx, 1);	
 
 	draw->state = NULL;
@@ -1662,7 +1003,8 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 	/* should this be G_ALLOC_ONLY? */
 	draw->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
 
-	draw->render = (RsvgRender *) rsvg_art_render_new (handle->new_width, handle->new_height);
+	data = rsvg_get_dimentions(handle);
+	draw->render = (RsvgRender *) rsvg_art_render_new (data.width, data.height);
 
 	draw->defs = handle->defs;
 	draw->base_uri = g_strdup(handle->base_uri);
@@ -1672,6 +1014,16 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 
 	rsvg_state_push(draw);
 
+	state = rsvg_state_current(draw);
+	affine[0] = data.width / data.em;
+	affine[1] = 0;
+	affine[2] = 0;
+	affine[3] = data.height / data.ex;
+	affine[4] = 0;
+	affine[5] = 0;
+	_rsvg_affine_multiply(state->affine, affine, 
+						  state->affine);
+	
 	return draw;
 }
 
@@ -1890,8 +1242,9 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 	draw = rsvg_new_drawing_ctx(handle);
 	if (!draw)
 		return NULL;
-
+	rsvg_state_push(draw);
 	rsvg_defs_drawable_draw((RsvgDefsDrawable *)handle->treebase, draw, 0);
+	rsvg_state_pop(draw);
 	output = ((RsvgArtRender *)draw->render)->pixbuf;
 	rsvg_drawing_ctx_free(draw);
 	
