@@ -1,3 +1,12 @@
+2003-01-02 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.c (*): Support font-style, font-variant, font-weight, 
+	font-stretch, font-family, including the "inherit" option
+	* rsvg-css.c (*): ditto, CSS functions for parsing time, frequency, 
+	degrees/radians/grades	
+
+	* NEWS: added above news items
+	
 === librsvg 2.1.2 ===
 
 2002-11-25  Alexander Larsson  <alexl@redhat.com>

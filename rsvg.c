@@ -60,6 +60,9 @@
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
 
+/* Our default font */
+#define DEFAULT_FONT "Times Roman"
+
 /*
  * This is configurable at runtime
  */
@@ -82,8 +85,13 @@ typedef struct {
   ArtPathStrokeCapType cap;
   ArtPathStrokeJoinType join;
 
-  double font_size;
-  char *font_family;
+  double       font_size;
+  char        *font_family;
+  PangoStyle   font_style;
+  PangoVariant font_variant;
+  PangoWeight  font_weight;
+  PangoStretch font_stretch;
+
   guint text_offset;
 
   guint32 stop_color; /* rgb */
@@ -156,6 +164,13 @@ rsvg_state_init (RsvgState *state)
   state->cap = ART_PATH_STROKE_CAP_BUTT;
   state->join = ART_PATH_STROKE_JOIN_MITER;
   state->stop_opacity = 0xff;
+
+  state->font_family  = g_strdup (DEFAULT_FONT);
+  state->font_size    = 12.0;
+  state->font_style   = PANGO_STYLE_NORMAL;
+  state->font_variant = PANGO_VARIANT_NORMAL;
+  state->font_weight  = PANGO_WEIGHT_NORMAL;
+  state->font_stretch = PANGO_STRETCH_NORMAL;
 }
 
 static void
@@ -413,8 +428,25 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
     }
   else if (rsvg_css_param_match (str, "font-family"))
     {
+      char * save = g_strdup (rsvg_css_parse_font_family (str + arg_off, state->font_family));
       g_free (state->font_family);
-      state->font_family = g_strdup (str + arg_off);
+      state->font_family = save;
+    }
+  else if (rsvg_css_param_match (str, "font-style"))
+    {
+      state->font_style = rsvg_css_parse_font_style (str + arg_off, state->font_style);
+    }
+  else if (rsvg_css_param_match (str, "font-variant"))
+    {
+      state->font_variant = rsvg_css_parse_font_variant (str + arg_off, state->font_variant);
+    }
+  else if (rsvg_css_param_match (str, "font-weight"))
+    {
+      state->font_weight = rsvg_css_parse_font_weight (str + arg_off, state->font_weight);
+    }
+  else if (rsvg_css_param_match (str, "font-stretch"))
+    {
+      state->font_stretch = rsvg_css_parse_font_stretch (str + arg_off, state->font_stretch);
     }
   else if (rsvg_css_param_match (str, "stop-color"))
     {
@@ -495,6 +527,10 @@ rsvg_is_style_arg(const char *str)
       g_hash_table_insert (styles, "fill-opacity",      GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "font-family",       GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "font-size",         GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "font-stretch",      GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "font-style",        GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "font-variant",      GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "font-weight",       GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "opacity",           GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "stop-color",        GINT_TO_POINTER (TRUE));
       g_hash_table_insert (styles, "stop-opacity",      GINT_TO_POINTER (TRUE));
@@ -1356,12 +1392,19 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
   layout = pango_layout_new (ctx->pango_context);
   pango_layout_set_text (layout, string, end - beg);
   font = pango_font_description_copy (pango_context_get_font_description (ctx->pango_context));
-  if (state->font_family)
-    pango_font_description_set_family_static (font, state->font_family);
 
   /* we need to resize the font by our X or Y scale (ideally could stretch in both directions...)
      which, though? Y for now */
   pango_font_description_set_size (font, state->font_size * PANGO_SCALE * state->affine[3]);
+
+  if (state->font_family)
+    pango_font_description_set_family_static (font, state->font_family);
+
+  pango_font_description_set_style (font, state->font_style);
+  pango_font_description_set_variant (font, state->font_variant);
+  pango_font_description_set_weight (font, state->font_weight);
+  pango_font_description_set_stretch (font, state->font_stretch);
+
   pango_layout_set_font_description (layout, font);
   pango_font_description_free (font);
   

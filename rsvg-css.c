@@ -31,6 +31,10 @@
 #include <errno.h>
 #include <stdio.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif  /*  M_PI  */
+
 #define POINTS_PER_INCH (72.0)
 #define CM_PER_INCH     (2.54)
 #define MM_PER_INCH     (25.4)
@@ -65,9 +69,7 @@ rsvg_css_parse_length (const char *str, gdouble pixels_per_inch,
   
   /* todo: error condition - figure out how to best represent it */
   if ((length == -HUGE_VAL || length == HUGE_VAL) && (ERANGE == errno))
-    {
-      return 0.0;
-    }
+    return 0.0;
 
   /* test for either pixels or no unit, which is assumed to be pixels */
   if (p && (strcmp(p, "px") != 0))
@@ -157,7 +159,7 @@ rsvg_css_clip_rgb_percent (gint in_percent)
   else if (in_percent <= 0)
     return 0;
 
-  return (gint)floor(255. * (double)in_percent / 100.);
+  return (gint)floor(255. * (double)in_percent / 100. + 0.5);
 }
 
 static gint
@@ -438,5 +440,200 @@ rsvg_css_parse_opacity (const char *str)
   if (end_ptr && end_ptr[0] == '%')
     opacity *= 0.01;
 
-  return (guint)floor (opacity * 255 + 0.5);
+  return (guint)floor (opacity * 255. + 0.5);
+}
+
+/*
+  <angle>: An angle value is a <number>  optionally followed immediately with 
+  an angle unit identifier. Angle unit identifiers are:
+
+    * deg: degrees
+    * grad: grads
+    * rad: radians
+
+    For properties defined in [CSS2], an angle unit identifier must be provided.
+    For SVG-specific attributes and properties, the angle unit identifier is 
+    optional. If not provided, the angle value is assumed to be in degrees.
+*/
+double
+rsvg_css_parse_angle (const char * str)
+{
+  double degrees;
+  char *end_ptr;
+
+  degrees = g_ascii_strtod (str, &end_ptr);
+
+  /* todo: error condition - figure out how to best represent it */
+  if ((degrees == -HUGE_VAL || degrees == HUGE_VAL) && (ERANGE == errno))
+    return 0.0;
+
+  if (end_ptr)
+    {
+      if (!strcmp(end_ptr, "rad"))
+	return degrees * 180. / M_PI;
+      else if (!strcmp(end_ptr, "grad"))
+	return degrees * 360. / 400.;
+    }
+
+  return degrees;
+}
+
+/*
+  <frequency>: Frequency values are used with aural properties. The normative 
+  definition of frequency values can be found in [CSS2-AURAL]. A frequency 
+  value is a <number> immediately followed by a frequency unit identifier. 
+  Frequency unit identifiers are:
+
+    * Hz: Hertz
+    * kHz: kilo Hertz
+
+    Frequency values may not be negative.
+*/
+double
+rsvg_css_parse_frequency (const char * str)
+{
+  double hz;
+  char *end_ptr;
+
+  hz = g_ascii_strtod (str, &end_ptr);
+
+  /* todo: error condition - figure out how to best represent it */
+  if ((hz == -HUGE_VAL || hz == HUGE_VAL) && (ERANGE == errno))
+    return 0.0;
+
+  if (end_ptr && !strcmp(end_ptr, "kHz"))
+    return hz * 1000.;
+
+  return hz;
+}
+
+/*
+  <time>: A time value is a <number> immediately followed by a time unit 
+  identifier. Time unit identifiers are:
+  
+  * ms: milliseconds
+  * s: seconds
+  
+  Time values are used in CSS properties and may not be negative.
+*/
+double
+rsvg_css_parse_time (const char * str)
+{
+  double ms;
+  char *end_ptr;
+
+  ms = g_ascii_strtod (str, &end_ptr);
+
+  /* todo: error condition - figure out how to best represent it */
+  if ((ms == -HUGE_VAL || ms == HUGE_VAL) && (ERANGE == errno))
+    return 0.0;
+
+  if (end_ptr && !strcmp(end_ptr, "s"))
+    return ms * 1000.;
+
+  return ms;
+}
+
+PangoStyle
+rsvg_css_parse_font_style (const char * str, PangoStyle inherit)
+{
+  if (str)
+    {
+      if (!strcmp(str, "oblique"))
+	return PANGO_STYLE_OBLIQUE;
+      if (!strcmp(str, "italic"))
+	return PANGO_STYLE_ITALIC;
+      else if (!strcmp(str, "inherit"))
+	return inherit;
+    }
+  return PANGO_STYLE_NORMAL;
+}
+
+PangoVariant
+rsvg_css_parse_font_variant (const char * str, PangoVariant inherit)
+{
+  if (str)
+    {
+      if (!strcmp(str, "small-caps"))
+	return PANGO_VARIANT_SMALL_CAPS;
+      else if (!strcmp(str, "inherit"))
+	return inherit;
+    }
+  return PANGO_VARIANT_NORMAL;
+}
+
+PangoWeight
+rsvg_css_parse_font_weight (const char * str, PangoWeight inherit)
+{
+  if (str)
+    {
+      if (!strcmp (str, "lighter"))
+	return PANGO_WEIGHT_LIGHT;
+      else if (!strcmp (str, "bold"))
+	return PANGO_WEIGHT_BOLD;
+      else if (!strcmp (str, "bolder"))
+	return PANGO_WEIGHT_ULTRABOLD;
+      else if (!strcmp (str, "100"))
+	return (PangoWeight)100;
+      else if (!strcmp (str, "200"))
+	return (PangoWeight)200;
+      else if (!strcmp (str, "300"))
+	return (PangoWeight)300;
+      else if (!strcmp (str, "400"))
+	return (PangoWeight)400;
+      else if (!strcmp (str, "500"))
+	return (PangoWeight)500;
+      else if (!strcmp (str, "600"))
+	return (PangoWeight)600;
+      else if (!strcmp (str, "700"))
+	return (PangoWeight)700;
+      else if (!strcmp (str, "800"))
+	return (PangoWeight)800;
+      else if (!strcmp (str, "900"))
+	return (PangoWeight)900;
+      else if (!strcmp(str, "inherit"))
+	return inherit;
+    }
+
+ return PANGO_WEIGHT_NORMAL; 
+}
+
+PangoStretch
+rsvg_css_parse_font_stretch (const char * str, PangoStretch inherit)
+{
+  if (str)
+    {
+      /* TODO: wider | narrower */
+      if (!strcmp (str, "ultra-condensed"))
+	return PANGO_STRETCH_ULTRA_CONDENSED;
+      else if (!strcmp (str, "extra-condensed"))
+	return PANGO_STRETCH_EXTRA_CONDENSED;
+      else if (!strcmp (str, "condensed"))
+	return PANGO_STRETCH_CONDENSED;
+      else if (!strcmp (str, "semi-condensed"))
+	return PANGO_STRETCH_SEMI_CONDENSED;
+      else if (!strcmp (str, "semi-expanded"))
+	return PANGO_STRETCH_SEMI_EXPANDED;
+      else if (!strcmp (str, "expanded"))
+	return PANGO_STRETCH_EXPANDED;
+      else if (!strcmp (str, "extra-expanded"))
+	return PANGO_STRETCH_EXTRA_EXPANDED;
+      else if (!strcmp (str, "ultra-expanded"))
+	return PANGO_STRETCH_ULTRA_EXPANDED;
+      else if (!strcmp(str, "inherit"))
+	return inherit;
+    }
+  return PANGO_STRETCH_NORMAL;
+}
+
+const char *
+rsvg_css_parse_font_family (const char * str, const char * inherit)
+{
+  if (!str)
+    return NULL;
+
+  if (!strcmp (str, "inherit"))
+    return inherit;
+  else
+    return str;
 }
