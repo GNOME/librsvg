@@ -8,7 +8,7 @@ endif
 
 bin_PROGRAMS = rsvg $(target_rsvg_view)
 
-noinst_PROGRAMS = test-performance #test-display
+noinst_PROGRAMS = test-performance
 
 man_MANS = rsvg.1
 
