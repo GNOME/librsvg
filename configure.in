@@ -283,7 +283,7 @@ AC_CHECK_PROG(DB2HTML, db2html, true, false)
 AM_CONDITIONAL(HAVE_DOCBOOK, $DB2HTML)
 
 dnl Make people enable the gtk-doc stuff explicitely.
-AC_ARG_ENABLE(gtk-doc, [  --enable-gtk-doc        use gtk-doc to build documentation [default=no]], enable_gtk_doc="$enableval", enable_gtk_doc=no)
+AC_ARG_ENABLE(gtk-doc, [  --enable-gtk-doc        use gtk-doc to build documentation [default=yes]], enable_gtk_doc="$enableval", enable_gtk_doc=yes)
 
 if test x$enable_gtk_doc = xyes ; then
   if test x$GTKDOC != xtrue ; then
