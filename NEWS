@@ -1,0 +1,17 @@
+Version 1.1.1
+
+- Ported to Gnome 2 (Ramiro, Darin)
+- Ported to Pango instead of using FreeType directly (Darin)
+- Replace FILE-based API with data pushing API (Jonathan)
+
+- Use pkgconfig rather than config scripts or .m4 files (Ramiro)
+- Use stuff from libart rather than having our own copies (Darin)
+- Move art_render_mask into libart (Darin)
+- Use locale-independent functions for parsing the XML files,
+  not <ctype.h>, which is locale dependent (Darin)
+- Other misc. API cleanups (Jonathan).
+- Fix NULL-dereference bugs in gradient code (Darin)
+- Fix handling of empty .svg files (Darin)
+- Measures strings propertly taking affine into account (Darin)
+- Fix empty struct portability problem (Darin)
+- Other build fixes (Owen, Jacob, Anders)
