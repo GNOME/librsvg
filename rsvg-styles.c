@@ -591,6 +591,7 @@ void
 rsvg_parse_style_attrs (RsvgHandle *ctx, 
 						const char * tag,
 						const char * klazz,
+						const char * id,
 						const xmlChar **atts)
 {
 	int i = 0, j = 0;
@@ -600,6 +601,15 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
 	
 	/* handle the all-encompassing "star" entry first, ignoring found-ness */
 	rsvg_lookup_apply_css_style (ctx, "*");
+
+	if (id != NULL)
+		{
+			target = g_strdup_printf ("#%s", id);
+			rsvg_lookup_apply_css_style (ctx, target);
+			g_free (target);
+		}
+
+	/* todo: see if klazz or tag should accumulate onto tag.klazz */
 
 	if (tag != NULL && klazz != NULL)
 		{

@@ -260,7 +260,7 @@ rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
 	double affine[6] ;
 	double x, y, dx, dy;
 	RsvgState *state;
-	const char * klazz = NULL;
+	const char * klazz = NULL, * id = NULL;
 	x = y = dx = dy = 0.;
 	
   state = &ctx->state[ctx->n_state - 1];
@@ -279,6 +279,8 @@ rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
 					  dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 				  else if (!strcmp ((char *)atts[i], "class"))
 					  klazz = (const char *)atts[i + 1];
+				  else if (!strcmp ((char *)atts[i], "id"))
+					  id = (const char *)atts[i + 1];
 			  }
 	  }
   
@@ -291,7 +293,7 @@ rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
 		  art_affine_translate (affine, x, y);
 		  art_affine_multiply (state->affine, affine, state->affine);
 	  }
-  rsvg_parse_style_attrs (ctx, "tspan", klazz, atts);
+  rsvg_parse_style_attrs (ctx, "tspan", klazz, id, atts);
 }
 
 static void
@@ -349,7 +351,7 @@ rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
 	int i;
 	double affine[6] ;
 	double x, y, dx, dy;
-	const char * klazz = NULL;
+	const char * klazz = NULL, * id = NULL;
 	RsvgState *state;
 	
 	RsvgSaxHandlerText *handler = g_new0 (RsvgSaxHandlerText, 1);
@@ -377,6 +379,8 @@ rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
 						dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
+					else if (!strcmp ((char *)atts[i], "id"))
+						id = (const char *)atts[i + 1];
 				}
 		}
 
@@ -386,7 +390,7 @@ rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
 	art_affine_translate (affine, x, y);
 	art_affine_multiply (state->affine, affine, state->affine);
 	
-	rsvg_parse_style_attrs (ctx, "text", klazz, atts);
+	rsvg_parse_style_attrs (ctx, "text", klazz, id, atts);
 	
 	handler->parent = ctx->handler;
 	ctx->handler = &handler->super;

@@ -91,7 +91,8 @@ void rsvg_parse_style_pair (RsvgHandle *ctx, RsvgState *state,
 void rsvg_parse_style (RsvgHandle *ctx, RsvgState *state, const char *str);
 void rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen);
 void rsvg_parse_style_attrs (RsvgHandle *ctx, const char * tag,
-							 const char * klazz, const xmlChar **atts);
+							 const char * klazz, const char * id,
+							 const xmlChar **atts);
 
 gdouble rsvg_viewport_percentage (gdouble width, gdouble height);
 

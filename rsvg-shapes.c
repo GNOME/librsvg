@@ -265,7 +265,7 @@ rsvg_start_path (RsvgHandle *ctx, const xmlChar **atts)
 {
 	int i;
 	char *d = NULL;
-	const char * klazz = NULL;
+	const char * klazz = NULL, * id = NULL;
 	
 	if (atts != NULL)
 		{
@@ -275,13 +275,15 @@ rsvg_start_path (RsvgHandle *ctx, const xmlChar **atts)
 						d = (char *)atts[i + 1];
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (char *)atts[i + 1];
+					else if (!strcmp ((char *)atts[i], "id"))
+						id = (const char *)atts[i + 1];
 				}
 		}
 	
 	if (d == NULL)
 		return;
 	
-	rsvg_parse_style_attrs (ctx, "path", klazz, atts);
+	rsvg_parse_style_attrs (ctx, "path", klazz, id, atts);
 	rsvg_render_path (ctx, d);
 }
 
@@ -313,14 +315,14 @@ rsvg_make_poly_point_list(const char * points)
 static void
 rsvg_start_any_poly(RsvgHandle *ctx, const xmlChar **atts, gboolean is_polyline)
 {
-	/* the only difference i'm making between polygon and polyline is
+	/* the only difference between polygon and polyline is
 	   that a polyline closes the path */
 	
 	int i;
 	const char * verts = (const char *)NULL;
 	GString * g = NULL;
 	gchar ** pointlist = NULL;
-	const char * klazz = NULL;
+	const char * klazz = NULL, * id = NULL;
 	
 	if (atts != NULL)
 		{
@@ -331,13 +333,15 @@ rsvg_start_any_poly(RsvgHandle *ctx, const xmlChar **atts, gboolean is_polyline)
 						verts = (const char *)atts[i + 1];
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
+					else if (!strcmp ((char *)atts[i], "id"))
+						id = (const char *)atts[i + 1];
 				}
 		}
 	
 	if (!verts)
 		return;
 	
-	rsvg_parse_style_attrs (ctx, (is_polyline ? "polyline" : "polygon"), klazz, atts);
+	rsvg_parse_style_attrs (ctx, (is_polyline ? "polyline" : "polygon"), klazz, id, atts);
 	
 	/* todo: make the following more memory and CPU friendly */
 	g = rsvg_make_poly_point_list (verts);
@@ -380,7 +384,7 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
 	int i;
 	double x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 	GString * d = NULL;
-	const char * klazz = NULL;
+	const char * klazz = NULL, * id = NULL;
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 
@@ -398,9 +402,11 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
 						y2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
+					else if (!strcmp ((char *)atts[i], "id"))
+						id = (const char *)atts[i + 1];
 				}      
 		}
-	rsvg_parse_style_attrs (ctx, "line", klazz, atts);
+	rsvg_parse_style_attrs (ctx, "line", klazz, id, atts);
 	
 	/* emulate a line using a path */
 	/* ("M %f %f L %f %f", x1, y1, x2, y2) */
@@ -424,7 +430,7 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	int i;
 	double x = -1, y = -1, w = -1, h = -1, rx = 0., ry = 0.;
 	GString * d = NULL;
-	const char * klazz = NULL;
+	const char * klazz = NULL, * id = NULL;
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 	gboolean got_rx = FALSE, got_ry = FALSE;
@@ -451,6 +457,8 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 					}
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
+					else if (!strcmp ((char *)atts[i], "id"))
+						id = (const char *)atts[i + 1];
 				}
 		}
 
@@ -460,7 +468,7 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 	if (x < 0. || y < 0. || w < 0. || h < 0. || rx < 0. || ry < 0.)
 		return;
 	
-	rsvg_parse_style_attrs (ctx, "rect", klazz, atts);
+	rsvg_parse_style_attrs (ctx, "rect", klazz, id, atts);
 	
 	/* incrementing y by 1 properly draws borders. this is a HACK */
 	y += 1.;
@@ -574,7 +582,7 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 	int i;
 	double cx = 0, cy = 0, r = 0;
 	GString * d = NULL;
-	const char * klazz = NULL;
+	const char * klazz = NULL, * id = NULL;
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 
@@ -592,13 +600,15 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 															  state->font_size);
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
+					else if (!strcmp ((char *)atts[i], "id"))
+						id = (const char *)atts[i + 1];
 				}
 		}
 	
 	if (cx < 0. || cy < 0. || r <= 0.)
 		return;
 	
-	rsvg_parse_style_attrs (ctx, "circle", klazz, atts);
+	rsvg_parse_style_attrs (ctx, "circle", klazz, id, atts);
 	
 	/* approximate a circle using 4 bezier curves */
 	/* 
@@ -685,7 +695,7 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 	int i;
 	double cx = 0, cy = 0, rx = 0, ry = 0;
 	GString * d = NULL;
-	const char * klazz = NULL;
+	const char * klazz = NULL, * id = NULL;
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 
@@ -703,13 +713,15 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 						ry = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
+					else if (!strcmp ((char *)atts[i], "id"))
+						id = (const char *)atts[i + 1];
 				}
 		}
 	
 	if (cx < 0. || cy < 0. || rx <= 0. || ry <= 0.)
 		return;
 	
-	rsvg_parse_style_attrs (ctx, "ellipse", klazz, atts);
+	rsvg_parse_style_attrs (ctx, "ellipse", klazz, id, atts);
 	
 	/* approximate an ellipse using 4 bezier curves */
 	/*
@@ -799,7 +811,7 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
 	int i;
 	double x = 0., y = 0., w = -1., h = -1.;
 	const char * href = NULL;
-	const char * klazz = NULL;
+	const char * klazz = NULL, * id = NULL;
 	
 	GdkPixbuf *img;
 	GError *err = NULL;
@@ -827,13 +839,15 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
 						href = (const char *)atts[i + 1];
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
+					else if (!strcmp ((char *)atts[i], "id"))
+						id = (const char *)atts[i + 1];
 				}
 		}
 	
 	if (!href || x < 0. || y < 0. || w <= 0. || h <= 0.)
 		return;
 	
-	rsvg_parse_style_attrs (ctx, "image", klazz, atts);
+	rsvg_parse_style_attrs (ctx, "image", klazz, id, atts);
 	
 	/* figure out if image is visible or not */
 	if (!state->visible)

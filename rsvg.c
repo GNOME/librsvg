@@ -211,7 +211,7 @@ static void
 rsvg_start_g (RsvgHandle *ctx, const xmlChar **atts)
 {
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
-	const char * klazz = NULL;
+	const char * klazz = NULL, * id = NULL;
 	int i;
 	
 	if (atts != NULL)
@@ -220,10 +220,12 @@ rsvg_start_g (RsvgHandle *ctx, const xmlChar **atts)
 				{
 					if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
+					else if (!strcmp ((char *)atts[i], "id"))
+						id = (const char *)atts[i + 1];
 				}
 		}
 	
-	rsvg_parse_style_attrs (ctx, "g", klazz, atts);
+	rsvg_parse_style_attrs (ctx, "g", klazz, id, atts);
 	if (state->opacity != 0xff)
 		rsvg_push_opacity_group (ctx);
 }
