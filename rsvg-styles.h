@@ -66,6 +66,11 @@ struct _RsvgState {
 	double affine[6];
 	double personal_affine[6];
 	
+	RsvgFilter *filter;
+	void *mask;
+	void *clip_path_ref;
+	gboolean backgroundnew;
+	guint8 adobe_blend; /* 0..11 */
 	guint8 opacity; /* 0..255 */
 	
 	RsvgPaintServer *fill;
@@ -76,12 +81,6 @@ struct _RsvgState {
 	gboolean has_fill_rule;
 	gint clip_rule;	
 	gboolean has_clip_rule;
-
-	RsvgFilter *filter;
-	void *mask;
-	void *clip_path_ref;
-	gboolean backgroundnew;
-	guint8 adobe_blend; /* 0..11 */
 
 	RsvgPaintServer *stroke;
 	gboolean has_stroke_server;
@@ -159,6 +158,7 @@ void rsvg_state_clone (RsvgState *dst, const RsvgState *src);
 void rsvg_state_inherit (RsvgState *dst, const RsvgState *src);
 void rsvg_state_reinherit (RsvgState *dst, const RsvgState *src);
 void rsvg_state_dominate (RsvgState *dst, const RsvgState *src);
+void rsvg_state_override (RsvgState *dst, const RsvgState *src);
 void rsvg_state_finalize (RsvgState *state);
 
 void rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state, 

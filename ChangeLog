@@ -1,3 +1,9 @@
+2005-2-7  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-styles.c: made a consistant framework for combining states
+	* rsvg-shapes.c: subtle rewrite of <use> to allow things to be instanced before they are actually specified.
+	* rsvg.c: treat <a> tag like <g> tag for now
+
 2005-01-28  Dom Lachowicz <cinamod@hotmail.com>
 
 	* moz-plugin/moz-plugin.c: Code cleanup, work toward getting the plugin

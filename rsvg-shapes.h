@@ -86,7 +86,8 @@ struct _RsvgDefsDrawableSymbol {
 
 struct _RsvgDefsDrawableUse {
  	RsvgDefsDrawable super;
- 	RsvgDefsDrawable *child;
+ 	GString * href;
+	gint x, y, w, h;
 };
 
 struct _RsvgDefsDrawableImage {

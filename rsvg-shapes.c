@@ -659,22 +659,79 @@ rsvg_defs_drawable_use_free (RsvgDefVal *self)
 	g_free (z);
 }
 
+static RsvgDefsDrawable *
+rsvg_defs_drawable_use_resolve(RsvgDefsDrawableUse * self, DrawingCtx *ctx, double * affine_out)
+{
+	double affine[6];
+	double x, y, width, height;
+	x = self->x;
+	y = self->y;
+	width = self->w;
+	height = self->h;
+
+	RsvgDefVal * parent = rsvg_defs_lookup (ctx->defs, self->href->str);
+	if (parent != NULL)
+		switch(parent->type)
+			{
+			case RSVG_DEF_PATH:
+				{
+					
+					art_affine_translate(affine, x, y);
+					art_affine_multiply(affine_out, affine, affine_out);	
+					return (RsvgDefsDrawable *)parent;
+				}
+			case RSVG_DEF_SYMBOL:
+				{
+					RsvgDefsDrawable *drawable = 
+						(RsvgDefsDrawable*)parent;
+					RsvgDefsDrawableSymbol *symbol = 
+						(RsvgDefsDrawableSymbol*)parent;
+					
+					if (symbol->has_vbox){
+						rsvg_preserve_aspect_ratio
+							(symbol->preserve_aspect_ratio, 
+							 symbol->width, symbol->height, 
+							 &width, &height, &x, &y);
+						art_affine_translate(affine, x, y);
+						art_affine_multiply(affine_out, affine, affine_out);	
+						
+						art_affine_scale(affine, width / symbol->width,
+										 height / symbol->height);
+						art_affine_multiply(affine_out, affine, affine_out);
+						art_affine_translate(affine, -symbol->x, 
+											 -symbol->y);
+						art_affine_multiply(affine_out, affine, affine_out);
+					}
+					else {
+						art_affine_translate(affine, x, y);
+						art_affine_multiply(affine_out, affine, affine_out);	
+					}
+					
+					return drawable;
+				}
+			default:
+				break;
+			}
+	return NULL;
+}
+
 static void 
 rsvg_defs_drawable_use_draw (RsvgDefsDrawable * self, DrawingCtx *ctx, 
 							  int dominate)
 {
 	RsvgState *state = rsvg_state_current (ctx);
 	RsvgDefsDrawableUse *use = (RsvgDefsDrawableUse*)self;
+	RsvgDefsDrawable * child;
 
 	rsvg_state_reinherit_top(ctx,  &self->state, dominate);
 
+	child = rsvg_defs_drawable_use_resolve(use, ctx, rsvg_state_current(ctx)->affine);
+
 	if (state->opacity != 0xff || rsvg_needs_discrete_layer(state))
 		rsvg_push_discrete_layer (ctx);
-
-
 	rsvg_state_push(ctx);
 	
-	rsvg_defs_drawable_draw (use->child, ctx, 1);
+	rsvg_defs_drawable_draw (child, ctx, 1);
 
 	rsvg_state_pop(ctx);	
 
@@ -688,12 +745,15 @@ rsvg_defs_drawable_use_draw_as_svp (RsvgDefsDrawable * self, DrawingCtx *ctx,
 {
 	RsvgDefsDrawableUse *use = (RsvgDefsDrawableUse*)self;
 	ArtSVP * svp;
+	RsvgDefsDrawable * child;
+
+	child = rsvg_defs_drawable_use_resolve(use, ctx, rsvg_state_current(ctx)->affine);
 
 	rsvg_state_reinherit_top(ctx,  &self->state, dominate);
 
 	rsvg_state_push(ctx);
 	
-	svp = rsvg_defs_drawable_draw_as_svp (use->child, ctx, 1);
+	svp = rsvg_defs_drawable_draw_as_svp (child, ctx, 1);
 
 	rsvg_state_pop(ctx);
 	
@@ -2061,7 +2121,6 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	const char * klazz = NULL, *id = NULL, *xlink_href = NULL, *value;
 	double x = 0, y = 0, width = 0, height = 0, font_size;	
 	gboolean got_width = FALSE, got_height = FALSE;
-	double affine[6];
 	RsvgState state;
 	rsvg_state_init(&state);
 	font_size = rsvg_state_current_font_size(ctx);
@@ -2087,7 +2146,9 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
 				xlink_href = value;
 		}
-	
+	if (!xlink_href)
+		return;
+
 	rsvg_parse_style_attrs (ctx, &state, "use", klazz, id, atts);
 
 	/* < 0 is an error, 0 disables rendering. TODO: handle positive values correctly */
@@ -2095,91 +2156,24 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		if (width <= 0. || height <= 0.)
 			return;
 	
-	if (xlink_href != NULL)
-		{
-			RsvgDefVal * parent = rsvg_defs_lookup (ctx->defs, xlink_href);
-			if (parent != NULL)
-				switch(parent->type)
-					{
-					case RSVG_DEF_PATH:
-						{
-							RsvgDefsDrawable *drawable = (RsvgDefsDrawable*)parent;
-							RsvgDefsDrawableUse * use;
-							use = g_new (RsvgDefsDrawableUse, 1);
-							use->child = drawable;
-							use->super.state = state;
-							use->super.super.type = RSVG_DEF_PATH;
-							use->super.super.free = rsvg_defs_drawable_use_free;
-							use->super.draw = rsvg_defs_drawable_use_draw;
-							use->super.draw_as_svp = rsvg_defs_drawable_use_draw_as_svp;
-							art_affine_translate(affine, x, y);
-							art_affine_multiply(use->super.state.affine, affine, use->super.state.affine);
-							art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);			
-							
-							rsvg_defs_set (ctx->defs, id, &use->super.super);
-							
-							use->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
-							if (use->super.parent != NULL)
-								rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)use->super.parent, 
-															  &use->super);
-							
-							break;
-						}
-					case RSVG_DEF_SYMBOL:
-						{
-							RsvgDefsDrawable *drawable = 
-								(RsvgDefsDrawable*)parent;
-							RsvgDefsDrawableSymbol *symbol = 
-								(RsvgDefsDrawableSymbol*)parent;
-							RsvgDefsDrawableUse * use;
-							use = g_new (RsvgDefsDrawableUse, 1);
-							use->child = drawable;
-							use->super.state = state;
-							use->super.super.type = RSVG_DEF_PATH;
-							use->super.super.free = rsvg_defs_drawable_use_free;
-							use->super.draw = rsvg_defs_drawable_use_draw;
-							use->super.draw_as_svp = rsvg_defs_drawable_use_draw_as_svp;		
-							
-							if (symbol->has_vbox){
-								rsvg_preserve_aspect_ratio
-									(symbol->preserve_aspect_ratio, 
-									 symbol->width, symbol->height, 
-									 &width, &height, &x, &y);
-								art_affine_translate(affine, x, y);
-								art_affine_multiply(use->super.state.affine, affine, use->super.state.affine);
-								art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);	
-								
-								art_affine_scale(affine, width / symbol->width,
-												 height / symbol->height);
-								art_affine_multiply(use->super.state.affine, affine, use->super.state.affine);
-								art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);
-								art_affine_translate(affine, -symbol->x, 
-													 -symbol->y);
-								art_affine_multiply(use->super.state.affine, affine, use->super.state.affine);
-								art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);
-							}
-							else {
-								art_affine_translate(affine, x, y);
-								art_affine_multiply(use->super.state.affine, affine, use->super.state.affine);
-								art_affine_multiply(use->super.state.personal_affine, affine, use->super.state.personal_affine);	
-							}
-								
-
-							rsvg_defs_set (ctx->defs, id, &use->super.super);
-							
-							use->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
-							if (use->super.parent != NULL)
-								rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)use->super.parent, 
-															  &use->super);
-							
-							break;
-						}
-					default:
-						g_warning (_("Unhandled defs entry/type %s %d\n"), id, 
-								   parent->type);
-						return;
-					}
-		}
+	RsvgDefsDrawableUse * use;
+	use = g_new (RsvgDefsDrawableUse, 1);
+	use->super.state = state;
+	use->super.super.type = RSVG_DEF_PATH;
+	use->super.super.free = rsvg_defs_drawable_use_free;
+	use->super.draw = rsvg_defs_drawable_use_draw;
+	use->super.draw_as_svp = rsvg_defs_drawable_use_draw_as_svp;
+	use->x = x;
+	use->y = y;
+	use->w = width;
+	use->h = height;
+	use->href = g_string_new(xlink_href);
+	rsvg_defs_set (ctx->defs, id, &use->super.super);
+	
+	use->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
+	if (use->super.parent != NULL)
+		rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)use->super.parent, 
+									  &use->super);
 }
 
 static void 

@@ -142,6 +142,8 @@ rsvg_state_init (RsvgState *state)
 	state->clip_path_loaded = FALSE;
 }
 
+typedef int (*InheritanceFunction) (int dst, int src);
+
 void
 rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 {
@@ -162,173 +164,95 @@ rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 		}
 }
 
-void
-rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
+/*
+  This function is where all inheritance takes place. It is given a 
+  base and a modifier state, as well as a function to determine
+  how the base is modified and a flag as to whether things that can
+  not be inherited are copied streight over, or ignored.
+*/
+
+static void
+rsvg_state_inherit_run (RsvgState *dst, const RsvgState *src, 
+						const InheritanceFunction function, 
+						const gboolean inherituninheritables)
 {
 	gint i;
 	
-	if (!dst->has_current_color)
+	if (function(dst->has_current_color, src->has_current_color))
 		dst->current_color = src->current_color;
-	if (!dst->has_fill_server)
+	if (function(dst->has_fill_server, src->has_fill_server))
 		{
 			rsvg_paint_server_ref (src->fill);
-			rsvg_paint_server_unref (dst->fill);
+			if (dst->fill)
+				rsvg_paint_server_unref (dst->fill);
 			dst->fill = src->fill;
 		} 
-	if (!dst->has_fill_opacity)
+	if (function(dst->has_fill_opacity, src->has_fill_opacity))
 		dst->fill_opacity = src->fill_opacity;
-	if (!dst->has_fill_rule)
+	if (function(dst->has_fill_rule, src->has_fill_rule))
 		dst->fill_rule = src->fill_rule;
-	if (!dst->has_clip_rule)
+	if (function(dst->has_clip_rule, src->has_clip_rule))
 		dst->clip_rule = src->clip_rule;
-	if (!dst->has_stroke_server)
+	if (function(dst->has_stroke_server, src->has_stroke_server))
 		{
 			rsvg_paint_server_ref (src->stroke);
-			rsvg_paint_server_unref (dst->stroke);
+			if (dst->stroke)
+				rsvg_paint_server_unref (dst->stroke);
 			dst->stroke = src->stroke;
 		} 
-	if (!dst->has_stroke_opacity)
+	if (function(dst->has_stroke_opacity, src->has_stroke_opacity))
 		dst->stroke_opacity = src->stroke_opacity;
-	if (!dst->has_stroke_width)
+	if (function(dst->has_stroke_width, src->has_stroke_width))
 		dst->stroke_width = src->stroke_width;
-	if (!dst->has_miter_limit)
+	if (function(dst->has_miter_limit, src->has_miter_limit))
 		dst->miter_limit = src->miter_limit;
-	if (!dst->has_cap)
+	if (function(dst->has_cap, src->has_cap))
 		dst->cap = src->cap;
-	if (!dst->has_join)
+	if (function(dst->has_join, src->has_join))
 		dst->join = src->join;
-	if (!dst->has_stop_color)
-		dst->stop_color = src->stop_color;
-	if (!dst->has_stop_opacity)
-		dst->stop_opacity = src->stop_opacity;
-	if (!dst->has_visible)
-		dst->visible = src->visible;
-	if (!dst->has_cond)
-		dst->cond_true = src->cond_true;
-	if (!dst->has_font_size)
-		dst->font_size = src->font_size;
-	if (!dst->has_font_style)
-		dst->font_style = src->font_style;
-	if (!dst->has_font_variant)
-		dst->font_variant = src->font_variant;
-	if (!dst->has_font_weight)
-		dst->font_weight = src->font_weight;
-	if (!dst->has_font_stretch)
-		dst->font_stretch = src->font_stretch;
-	if (!dst->has_font_decor)
-		dst->font_decor = src->font_decor;
-	if (!dst->has_text_dir)
-		dst->text_dir = src->text_dir;
-	if (!dst->has_unicode_bidi)
-		dst->unicode_bidi = src->unicode_bidi;
-	if (!dst->has_text_anchor)
-		dst->text_anchor = src->text_anchor;
-	if (!dst->has_startMarker)
-		dst->startMarker = src->startMarker;
-	if (!dst->has_middleMarker)
-		dst->middleMarker = src->middleMarker;
-	if (!dst->has_endMarker)
-		dst->endMarker = src->endMarker;
-
-	if (!dst->has_font_family) {
-		g_free(dst->font_family); /* font_family is always set to something */
-		dst->font_family = g_strdup (src->font_family);
-	}
-
-	if (!dst->has_lang) {
-		dst->lang = g_strdup (src->lang);
-	}
-
-	if (src->dash.n_dash > 0 && !dst->has_dash)
-		{
-			dst->dash.dash = g_new (gdouble, src->dash.n_dash);
-			for (i = 0; i < src->dash.n_dash; i++)
-				dst->dash.dash[i] = src->dash.dash[i];
-		}
-	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
-
-	if (src->clippath != NULL)
-		dst->clippath = src->clippath;
-}
-
-void
-rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
-{
-	gint i;
-	
-	if (!dst->has_current_color || src->has_current_color)
-		dst->current_color = src->current_color;
-	if (!dst->has_fill_server || src->has_fill_server)
-		{
-			rsvg_paint_server_ref (src->fill);
-			rsvg_paint_server_unref (dst->fill);
-			dst->fill = src->fill;
-		} 
-	if (!dst->has_fill_opacity || src->has_fill_opacity)
-		dst->fill_opacity = src->fill_opacity;
-	if (!dst->has_fill_rule || src->has_fill_rule)
-		dst->fill_rule = src->fill_rule;
-	if (!dst->has_clip_rule || src->has_clip_rule)
-		dst->clip_rule = src->clip_rule;
-	if (!dst->has_stroke_server || src->has_stroke_server)
-		{
-			rsvg_paint_server_ref (src->stroke);
-			rsvg_paint_server_unref (dst->stroke);
-			dst->stroke = src->stroke;
-		} 
-	if (!dst->has_stroke_opacity || src->has_stroke_opacity)
-		dst->stroke_opacity = src->stroke_opacity;
-	if (!dst->has_stroke_width || src->has_stroke_width)
-		dst->stroke_width = src->stroke_width;
-	if (!dst->has_miter_limit || src->has_miter_limit)
-		dst->miter_limit = src->miter_limit;
-	if (!dst->has_cap || src->has_cap)
-		dst->cap = src->cap;
-	if (!dst->has_join || src->has_join)
-		dst->join = src->join;
-	if (!dst->has_stop_color || src->has_stop_color)
+	if (function(dst->has_stop_color, src->has_stop_color))
 		dst->stop_color = src->stop_color;				
-	if (!dst->has_stop_opacity || src->has_stop_opacity)
+	if (function(dst->has_stop_opacity, src->has_stop_opacity))
 		dst->stop_opacity = src->stop_opacity;
-	if (!dst->has_cond || src->has_cond)
+	if (function(dst->has_cond, src->has_cond))
 		dst->cond_true = src->cond_true;
-	if (!dst->has_font_size || src->has_font_size)
+	if (function(dst->has_font_size, src->has_font_size))
 		dst->font_size = src->font_size;
-	if (!dst->has_font_style || src->has_font_style)
+	if (function(dst->has_font_style, src->has_font_style))
 		dst->font_style = src->font_style;
-	if (!dst->has_font_variant || src->has_font_variant)
+	if (function(dst->has_font_variant, src->has_font_variant))
 		dst->font_variant = src->font_variant;
-	if (!dst->has_font_weight || src->has_font_weight)
+	if (function(dst->has_font_weight, src->has_font_weight))
 		dst->font_weight = src->font_weight;
-	if (!dst->has_font_stretch || src->has_font_stretch)
+	if (function(dst->has_font_stretch, src->has_font_stretch))
 		dst->font_stretch = src->font_stretch;
-	if (!dst->has_font_decor || src->has_font_decor)
+	if (function(dst->has_font_decor, src->has_font_decor))
 		dst->font_decor = src->font_decor;
-	if (!dst->has_text_dir || src->has_text_dir)
+	if (function(dst->has_text_dir, src->has_text_dir))
 		dst->text_dir = src->text_dir;
-	if (!dst->has_unicode_bidi || src->has_unicode_bidi)
+	if (function(dst->has_unicode_bidi, src->has_unicode_bidi))
 		dst->unicode_bidi = src->unicode_bidi;
-	if (!dst->has_text_anchor || src->has_text_anchor)
+	if (function(dst->has_text_anchor, src->has_text_anchor))
 		dst->text_anchor = src->text_anchor;
-	if (!dst->has_startMarker || !src->has_startMarker)
+	if (function(dst->has_startMarker, !src->has_startMarker))
 		dst->startMarker = src->startMarker;
-	if (!dst->has_middleMarker || !src->middleMarker)
+	if (function(dst->has_middleMarker, !src->middleMarker))
 		dst->middleMarker = src->middleMarker;
-	if (!dst->has_endMarker || !src->endMarker)
+	if (function(dst->has_endMarker, !src->endMarker))
 		dst->endMarker = src->endMarker;
 
-	if (!dst->has_font_family || src->has_font_family) {
+	if (function(dst->has_font_family, src->has_font_family)) {
 		g_free(dst->font_family); /* font_family is always set to something */
 		dst->font_family = g_strdup (src->font_family);
 	}
 
-	if (!dst->has_lang || src->has_lang) {
+	if (function(dst->has_lang, src->has_lang)) {
 		if(dst->has_lang)
 			g_free(dst->lang); 
 		dst->lang = g_strdup (src->lang);
 	}
 	
-	if (src->dash.n_dash > 0 && (!dst->has_dash || src->has_dash))
+	if (src->dash.n_dash > 0 && (function(dst->has_dash, src->has_dash)))
 		{
 			if(dst->has_dash)
 				g_free(dst->dash.dash);
@@ -336,18 +260,96 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 			dst->dash.dash = g_new (gdouble, src->dash.n_dash);
 			for (i = 0; i < src->dash.n_dash; i++)
 				dst->dash.dash[i] = src->dash.dash[i];
-		}
-	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
+		} 
 
 	if (src->clippath != NULL)
 		dst->clippath = src->clippath;
+
+	if (inherituninheritables)
+		{
+			dst->clip_path_ref = src->clip_path_ref;
+			dst->mask = src->mask;
+			dst->backgroundnew = src->backgroundnew;
+			dst->adobe_blend = src->adobe_blend;
+			dst->opacity = src->opacity;
+			dst->filter = src->filter;
+		}
+}
+
+/*
+  reinherit is given dst which is the top of the state stack
+  and src which is the layer before in the state stack from
+  which it should be inherited from 
+*/
+
+static int
+reinheritfunction (int dst, int src)
+{
+	if (!dst)
+		return 1;
+	return 0;
+}
+
+void
+rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
+{
+	rsvg_state_inherit_run(dst, src, reinheritfunction, 0);
+}
+
+/*
+  dominate is given dst which is the top of the state stack
+  and src which is the layer before in the state stack from
+  which it should be inherited from, however if anything is
+  directly specified in src (the second last layer) it will
+  override anything on the top layer, this is for overrides
+  in use tags 
+*/
+
+static int
+dominatefunction (int dst, int src)
+{
+	if (!dst || src)
+		return 1;
+	return 0;
+}
+
+void
+rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
+{
+	rsvg_state_inherit_run(dst, src, dominatefunction, 0);
+}
+
+/* copy everything inheritable from the src to the dst */
+
+static int
+clonefunction (int dst, int src)
+{
+		return 1;
+}
+
+void
+rsvg_state_override (RsvgState *dst, const RsvgState *src)
+{
+	rsvg_state_inherit_run(dst, src, clonefunction, 0);
+}
+
+/*
+  put something new on the inheritance stack, dst is the top of the stack, 
+  src is the state to be integrated, this is essentially the opposite of
+  reinherit, because it is being given stuff to be integrated on the top, 
+  rather than the context underneath.
+*/
+
+static int
+inheritfunction (int dst, int src)
+{
+	return src;
 }
 
 void
 rsvg_state_inherit (RsvgState *dst, const RsvgState *src)
 {
-	rsvg_state_init(dst);
-	rsvg_state_reinherit(dst,src);
+	rsvg_state_inherit_run(dst, src, inheritfunction, 1);
 }
 
 void
@@ -1756,7 +1758,13 @@ rsvg_state_push(DrawingCtx * ctx)
 	data = g_chunk_new(RsvgState, ctx->state_allocator);
 
 	if (baseon)
-		rsvg_state_inherit(data, baseon);
+		{
+			int i;
+			rsvg_state_init(data);
+			rsvg_state_reinherit(data, baseon);
+			for (i = 0; i < 6; i++)
+				data->affine[i] = baseon->affine[i];
+		}
 	else
 		rsvg_state_init(data);
 
@@ -1774,39 +1782,56 @@ rsvg_state_pop(DrawingCtx * ctx)
 	g_mem_chunk_free(ctx->state_allocator, dead_state);
 }
 
+/*
+  A function for modifying the top of the state stack depending on a 
+  flag given. If that flag is 0, style and transform will inherit 
+  normally. If that flag is 1, style will inherit normally with the
+  exception that any value explicity set on the second last level
+  will have a higher precedence than values set on the last level.
+  If the flag equals two then the style will be overridden totally
+  however the transform will be left as is. This is because of 
+  patterns which are not based on the context of their use and are 
+  rather based wholly on their own loading context. Other things
+  may want to have this totally disabled, and a value of three will
+  achieve this.
+*/
+
 void
 rsvg_state_reinherit_top(DrawingCtx * ctx, RsvgState * state, int dominate)
 {
-	double tempaffine[6];
-	gint i;
-	RsvgState * baseon;
-
 	if (dominate == 3)
 		return;
 
-	baseon = rsvg_state_parent(ctx);
-
-	for (i = 0; i < 6; i++)
+	/*This is a special domination mode for patterns, the transform
+	  is simply left as is, wheras the style is totally overridden*/			
+	if (dominate == 2)
 		{
-			 tempaffine[i] = rsvg_state_current(ctx)->affine[i];
-		}	
-
-	/* combine state definitions */
-	rsvg_state_clone (rsvg_state_current(ctx), state);
-
-	if (baseon)
+			rsvg_state_override(rsvg_state_current(ctx), state);
+		}		
+	else if (dominate)
 		{
-			/*This is a special domination mode for patterns, the style
-			  is simply left as is, wheras the transform is totally overridden*/			if (dominate == 2)
+			RsvgState * parent;
+			rsvg_state_clone(rsvg_state_current(ctx), state);
+		
+			parent = rsvg_state_parent(ctx);
+			if (parent)
 				{
-					for (i = 0; i < 6; i++)
-						{
-							rsvg_state_current(ctx)->affine[i] = tempaffine[i];
-						}	
-				}		
-			else if (dominate)
-				rsvg_state_dominate(rsvg_state_current(ctx), baseon);
-			else
-				rsvg_state_reinherit(rsvg_state_current(ctx), baseon);
+					rsvg_state_dominate(rsvg_state_current(ctx), rsvg_state_parent(ctx));
+					art_affine_multiply (rsvg_state_current(ctx)->affine, rsvg_state_current(ctx)->affine,
+										 rsvg_state_parent(ctx)->affine);
+				}
+		}
+	else
+		{
+			RsvgState * parent;
+			rsvg_state_clone(rsvg_state_current(ctx), state);
+			
+			parent = rsvg_state_parent(ctx);
+			if (parent)
+				{
+					rsvg_state_reinherit(rsvg_state_current(ctx), rsvg_state_parent(ctx));
+					art_affine_multiply (rsvg_state_current(ctx)->affine, rsvg_state_current(ctx)->affine,
+										 rsvg_state_parent(ctx)->affine);
+				}
 		}
 }

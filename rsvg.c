@@ -1246,6 +1246,8 @@ rsvg_start_element (void *data, const xmlChar *name,
 				}
 			else if (!strcmp ((char *)name, "g"))
 				rsvg_start_g (ctx, bag);
+			else if (!strcmp ((char *)name, "a")) /*treat anchors as groups for now*/
+				rsvg_start_g (ctx, bag);
 			else if (!strcmp ((char *)name, "symbol"))
 				rsvg_start_symbol (ctx, bag);
 			else if (!strcmp ((char *)name, "defs"))
@@ -1329,6 +1331,8 @@ rsvg_end_element (void *data, const xmlChar *name)
 				}
 
 			if (!strcmp ((char *)name, "g"))
+				rsvg_end_g (ctx);
+			else if (!strcmp ((char *)name, "a")) /*treat anchors as groups for now*/
 				rsvg_end_g (ctx);
 			else if (!strcmp ((char *)name, "svg"))
 				rsvg_end_sub_svg (ctx);
