@@ -95,8 +95,6 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 				{
 					struct RsvgSizeCallbackData size_data;
 
-					g_message("Scaling the image: (%d %d) => (%g %g)\n", width, height, page_width, page_height);
-
 					/* scale down the image to the page's size, while preserving the aspect ratio */
 
 					if ((double)height * (double)page_width >
