@@ -833,6 +833,7 @@ rsvg_start_any_poly(RsvgHandle *ctx, RsvgPropertyBag *atts, gboolean is_polyline
 	GString * g = NULL;
 	gchar ** pointlist = NULL;
 	const char * klazz = NULL, * id = NULL, *value;
+	gsize pointlist_len = 0;
 
 	if (rsvg_property_bag_size (atts))
 		{
@@ -855,10 +856,16 @@ rsvg_start_any_poly(RsvgHandle *ctx, RsvgPropertyBag *atts, gboolean is_polyline
 	pointlist = g_strsplit (g->str, " ", -1);
 	g_string_free (g, TRUE);
 
-	/* represent as a "moveto, lineto*, close" path */  
 	if (pointlist)
 		{
-			int i;
+			while(pointlist[pointlist_len] != NULL)
+				pointlist_len++;
+		}
+
+	/* represent as a "moveto, lineto*, close" path */  
+	if (pointlist_len >= 2)
+		{
+			gsize i;
 			GString * d = g_string_sized_new (strlen(verts));
 			g_string_append_printf (d, "M %s %s ", pointlist[0], pointlist[1] );
 			
@@ -868,10 +875,12 @@ rsvg_start_any_poly(RsvgHandle *ctx, RsvgPropertyBag *atts, gboolean is_polyline
 			if (!is_polyline)
 				g_string_append (d, "Z");
 			
-			g_strfreev(pointlist);
 			rsvg_handle_path (ctx, d->str, id);
 			g_string_free (d, TRUE);
 		}
+	
+	if (pointlist)
+		g_strfreev(pointlist);
 }
 
 void
@@ -1595,9 +1604,7 @@ rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
 	GnomeVFSResult res;
 	
 	g_return_val_if_fail (filename != NULL, NULL);
-	
-	if (!gnome_vfs_initialized())
-		gnome_vfs_init();
+	g_return_val_if_fail (gnome_vfs_initialized (), NULL);
 
 	res = gnome_vfs_open (&f, filename, GNOME_VFS_OPEN_READ);
 
@@ -1923,7 +1930,6 @@ rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 	tmp_tmp_affine[5] = y;
 
 	art_affine_multiply(tmp_affine, tmp_tmp_affine, tmp_affine);
-
 
 	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
 								   gdk_pixbuf_get_width (ctx->pixbuf),

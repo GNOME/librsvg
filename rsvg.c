@@ -1881,6 +1881,10 @@ rsvg_handle_free (RsvgHandle *handle)
 		(*handle->free) (handle);
 }
 
+#ifdef HAVE_GNOME_VFS
+#include <libgnomevfs/gnome-vfs.h>
+#endif
+
 /**
  * rsvg_init:
  *
@@ -1897,6 +1901,10 @@ rsvg_init (void)
 #endif
 
 	xmlInitParser ();
+
+#ifdef HAVE_GNOME_VFS
+	gnome_vfs_init();
+#endif
 }
 
 /**

@@ -1,4 +1,9 @@
-2004-09-29  Dom Lachowicz <cinamod@hotmail.com>
+2004-10-14  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.c: Push gnome_vfs_init() up to rsvg_init()
+	* rsvg-shapes.c: ditto, bug #155433
+	
+2004-09-29  Dom Lachowicz <cinamod@hotmail.com>	
 
 	* moz-plugin/moz-plugin.c: Fix bug #154083
 	

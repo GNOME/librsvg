@@ -92,10 +92,8 @@ rsvg_cond_parse_required_features (const char * value)
 	return permitted;
 }
 
-static const char * implemented_extensions [] = 
-	{
-	};
-static const guint nb_implemented_extensions = G_N_ELEMENTS(implemented_features);
+static const char ** implemented_extensions = NULL;
+static const guint nb_implemented_extensions = G_N_ELEMENTS(implemented_extensions);
 
 /* http://www.w3.org/TR/SVG/struct.html#SystemLanguageAttribute */
 static gboolean 
