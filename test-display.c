@@ -42,6 +42,7 @@ struct _ViewerCbInfo
 	GdkPixbuf  * pixbuf;
 	GByteArray * svg_bytes;
 	GtkAccelGroup * accel_group;
+	char * base_uri;
 };
 
 static void
@@ -115,7 +116,7 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 					size_data.height = height;
 					size_data.keep_aspect_ratio = FALSE;
 
-					image = rsvg_pixbuf_from_data_with_size_data (info->svg_bytes->data, info->svg_bytes->len, &size_data, NULL);
+					image = rsvg_pixbuf_from_data_with_size_data (info->svg_bytes->data, info->svg_bytes->len, &size_data, info->base_uri, NULL);
 				} 
 			else 
 				g_object_ref (G_OBJECT (image));
@@ -464,6 +465,7 @@ main (int argc, char **argv)
 	int height = -1;
 	int bVersion = 0;
 	char * bg_color = NULL;
+	char * base_uri = NULL;
 	int bKeepAspect = 0;
 
 	int xid = -1;
@@ -484,6 +486,7 @@ main (int argc, char **argv)
 			{ "width",       'w',  POPT_ARG_INT,    &width,       0, _("Set the image's width"), _("<int>") },
 			{ "height",      'h',  POPT_ARG_INT,    &height,      0, _("Set the image's height"), _("<int>") },
 			{ "bg-color",    'b',  POPT_ARG_STRING, &bg_color,    0, _("Set the image background color (default: transparent)"), _("<string>") },
+			{ "base-uri",    'u',  POPT_ARG_STRING, &base_uri,    0, _("Set the base URI (default: none)"), _("<string>") },
 			{ "keep-aspect", 'k',  POPT_ARG_NONE,   &bKeepAspect, 0, _("Preserve the image's aspect ratio"), NULL },
 			{ "version",     'v',  POPT_ARG_NONE,   &bVersion,    0, _("Show version information"), NULL },
 			POPT_AUTOHELP
@@ -497,6 +500,7 @@ main (int argc, char **argv)
 	info.svg_bytes = NULL;
 	info.window = NULL;
 	info.popup_menu = NULL;
+	info.base_uri = base_uri;
 
 	popt_context = poptGetContext ("rsvg-view", argc, (const char **)argv, options_table, 0);
 	poptSetOtherOptionHelp (popt_context, _("[OPTIONS...] [file.svg]"));
@@ -557,8 +561,10 @@ main (int argc, char **argv)
 	
 	if(from_stdin)
 		in = stdin;
-	else
+	else {
 		in = fopen (args[0], "rb");
+		/* base_uri = args[0]; */
+	}
 
 	if(!in)
 		{
@@ -598,7 +604,7 @@ main (int argc, char **argv)
 
 	poptFreeContext (popt_context);
 
-	info.pixbuf = rsvg_pixbuf_from_data_with_size_data (info.svg_bytes->data, info.svg_bytes->len, &size_data, &err);
+	info.pixbuf = rsvg_pixbuf_from_data_with_size_data (info.svg_bytes->data, info.svg_bytes->len, &size_data, base_uri, &err);
 
 	if (!info.pixbuf)
 		{

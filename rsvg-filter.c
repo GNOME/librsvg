@@ -3987,6 +3987,7 @@ typedef struct _RsvgFilterPrimitiveImage RsvgFilterPrimitiveImage;
 struct _RsvgFilterPrimitiveImage
 {
 	RsvgFilterPrimitive super;
+	RsvgHandle *ctx;
 	GString *href;
 };
 
@@ -4060,6 +4061,7 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
 	return rsvg_pixbuf_new_from_href(oself->href->str,
+									 rsvg_handle_get_base_uri (oself->ctx),
 									 boundarys.x2 - boundarys.x1,											
 									 boundarys.y2 - boundarys.y1,
 									 FALSE, NULL);
@@ -4145,6 +4147,7 @@ rsvg_start_filter_primitive_image (RsvgHandle * ctx, RsvgPropertyBag * atts)
 	filter->super.in = g_string_new ("none");
 	filter->super.result = g_string_new ("none");
 	filter->super.sizedefaults = 1;
+	filter->ctx = ctx;
 	
 	if (rsvg_property_bag_size (atts))
 		{

@@ -54,6 +54,8 @@ typedef struct
 
 	int send_fd;
 	int player_pid;
+
+	char *base_url;
 } Plugin;
 
 static NPNetscapeFuncs mozilla_funcs;
@@ -84,7 +86,7 @@ plugin_fork (Plugin * plugin)
 	char height_str[G_ASCII_DTOSTR_BUF_SIZE];
 	char window_width_str[G_ASCII_DTOSTR_BUF_SIZE];
 	char window_height_str[G_ASCII_DTOSTR_BUF_SIZE];
-	char *argv[20];
+	char *argv[32];
 	int argc = 0;
 	GError *err = NULL;
 	
@@ -145,6 +147,11 @@ plugin_fork (Plugin * plugin)
 	/* HACK!! hardcode bg color to white for Uraeus' viewing pleasure */
 	argv[argc++] = "-b";
 	argv[argc++] = "white";
+
+	if (plugin->base_url) {
+		argv[argc++] = "-u";
+		argv[argc++] = plugin->base_url;
+	}
 
 	/* HACK: keep aspect ratio */
 	if (plugin->sizes_in_percentages) {
@@ -213,6 +220,8 @@ plugin_newp (NPMIMEType mime_type, NPP instance,
 		return NPERR_OUT_OF_MEMORY_ERROR;
 	memset (plugin, 0, sizeof (Plugin));
 	
+	/* TODO: get the current URI, if possible */
+
 	/* mode is NP_EMBED, NP_FULL, or NP_BACKGROUND (see npapi.h) */
 	plugin->instance = instance;
 	
@@ -254,6 +263,9 @@ plugin_destroy (NPP instance, NPSavedData ** save)
 		g_byte_array_free (plugin->bytes, TRUE);
 	
 	plugin_kill (plugin);
+
+	if (plugin->base_url)
+		mozilla_funcs.memfree (plugin->base_url);
 
 	mozilla_funcs.memfree (instance->pdata);
 	instance->pdata = NULL;
@@ -321,7 +333,7 @@ plugin_new_stream (NPP instance, NPMIMEType type,
 	
 	plugin = (Plugin *) instance->pdata;
 	if (plugin == NULL)
-		return NPERR_NO_ERROR;
+		return NPERR_NO_ERROR;	
 	
 	g_return_val_if_fail(plugin->bytes == NULL, NPERR_NO_ERROR);
 
@@ -334,6 +346,7 @@ static NPError
 plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 {
 	Plugin *plugin;
+	size_t url_len;
 
 	DEBUG (("plugin_destroy_stream\n"));
 
@@ -344,6 +357,11 @@ plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 	if (plugin == NULL)
 		return NPERR_NO_ERROR;
 	
+	url_len = strlen(stream->url);
+	plugin->base_url = mozilla_funcs.memalloc (url_len + 1);
+	strcpy(plugin->base_url, stream->url);
+	plugin->base_url[url_len] = '\0';
+
 	/* trigger */
 	plugin_redraw (plugin);
 
@@ -370,8 +388,8 @@ static int32
 plugin_write (NPP instance, NPStream * stream, int32 offset,
 			  int32 len, void *buffer)
 {
-	Plugin *plugin;
-	
+	Plugin *plugin;   
+
 	DEBUG (("plugin_write\n"));
 	
 	if (instance == NULL)

@@ -1419,6 +1419,7 @@ rsvg_pixbuf_new_from_file_at_size (const char *filename,
 
 static GdkPixbuf *
 rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
+								  const char *base_uri,
 								  int         width, 
 								  int         height,
 								  gboolean    keep_aspect_ratio,
@@ -1444,6 +1445,21 @@ rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
 		gnome_vfs_init();
 
 	res = gnome_vfs_open (&f, filename, GNOME_VFS_OPEN_READ);
+
+	if (res != GNOME_VFS_OK) {
+		if (base_uri) {
+			GnomeVFSURI * base = gnome_vfs_uri_new (base_uri);
+			if (base) {
+				GnomeVFSURI * uri = gnome_vfs_uri_resolve_relative (base, filename);
+				if (uri) {
+					res = gnome_vfs_open_uri (&f, uri, GNOME_VFS_OPEN_READ);
+					gnome_vfs_uri_unref (uri);
+				}
+
+				gnome_vfs_uri_unref (base);
+			}
+		}
+	}
 
 	if (res != GNOME_VFS_OK) {
 		g_set_error (error, rsvg_error_quark (), (gint) res,
@@ -1503,6 +1519,7 @@ rsvg_pixbuf_new_from_vfs_at_size (const char *filename,
 
 GdkPixbuf *
 rsvg_pixbuf_new_from_href (const char *href,
+						   const char *base_uri,
 						   int         w, 
 						   int         h,
 						   gboolean    keep_aspect_ratio,
@@ -1518,7 +1535,7 @@ rsvg_pixbuf_new_from_href (const char *href,
 
 #ifdef HAVE_GNOME_VFS
 	if(!img)
-		img = rsvg_pixbuf_new_from_vfs_at_size (href, w, h, keep_aspect_ratio, err);
+		img = rsvg_pixbuf_new_from_vfs_at_size (href, base_uri, w, h, keep_aspect_ratio, err);
 #endif
 
 	return img;
@@ -1583,7 +1600,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	w *= state->affine[0];
 	h *= state->affine[3];
 
-	img = rsvg_pixbuf_new_from_href (href, w, h, (aspect_ratio != RSVG_ASPECT_RATIO_NONE), &err);
+	img = rsvg_pixbuf_new_from_href (href, rsvg_handle_get_base_uri (ctx), w, h, (aspect_ratio != RSVG_ASPECT_RATIO_NONE), &err);
 	
 	/* w & h might've been adjusted by preserveAspectRatio */
 	w = gdk_pixbuf_get_width (img);

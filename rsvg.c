@@ -1350,6 +1350,21 @@ static void rsvg_SAX_handler_struct_init()
     rsvgSAXHandlerStruct.endElement = rsvg_end_element;
 }
 
+void rsvg_handle_set_base_uri (RsvgHandle *handle,
+							   const char *base_uri)
+{
+	if (base_uri) {
+		if (handle->base_uri)
+			g_free (handle->base_uri);
+		handle->base_uri = g_strdup (base_uri);
+	}
+}
+
+G_CONST_RETURN char *rsvg_handle_get_base_uri (RsvgHandle *handle)
+{
+	return handle->base_uri;
+}
+
 /**
  * rsvg_error_quark
  *
@@ -1451,6 +1466,9 @@ rsvg_handle_free_impl (RsvgHandle *handle)
 		g_string_free (handle->title, TRUE);
 	if (handle->desc)
 	    	g_string_free (handle->desc, TRUE);
+
+	if (handle->base_uri)
+		g_free (handle->base_uri);
 
 	g_free (handle);
 }

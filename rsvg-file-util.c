@@ -150,6 +150,7 @@ GdkPixbuf *
 rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 									  size_t len,
 									  struct RsvgSizeCallbackData * data,
+									  const char * base_uri,
 									  GError ** error)
 {
 	RsvgHandle * handle;
@@ -159,7 +160,7 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 	if ((len >= 2) && (buff[0] == (guchar)0x1f) && (buff[1] == (guchar)0x8b))
 		handle = rsvg_handle_new_gz ();
 	else
-		handle = rsvg_handle_new ();
+		handle = rsvg_handle_new ();	
 
 	if (!handle) {
 		g_set_error (error, rsvg_error_quark (), 0,
@@ -168,6 +169,7 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 	}
 
 	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
+	rsvg_handle_set_base_uri (handle, base_uri);
 
 	rsvg_handle_write (handle, buff, len, error);
 

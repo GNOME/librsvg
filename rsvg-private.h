@@ -89,6 +89,8 @@ struct RsvgHandle {
 	
 	GString * title;
 	GString * desc;
+	
+	gchar * base_uri;
 
 	void * currentfilter;
 	void * currentsubfilter;
@@ -152,7 +154,7 @@ rsvg_property_bag_new (const xmlChar **atts);
 void
 rsvg_property_bag_free (RsvgPropertyBag *bag);
 
-const char *
+G_CONST_RETURN char *
 rsvg_property_bag_lookup (RsvgPropertyBag *bag, const char * key);
 
 guint
@@ -162,7 +164,14 @@ GdkPixbuf *
 rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 									  size_t len,
 									  struct RsvgSizeCallbackData * data,
+									  const char * base_uri,
 									  GError ** error);
+
+G_CONST_RETURN char *
+rsvg_handle_get_base_uri (RsvgHandle *handle);
+
+void rsvg_handle_set_base_uri (RsvgHandle *handle,
+							   const char *base_uri);
 
 G_END_DECLS
 

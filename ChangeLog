@@ -1,7 +1,12 @@
 2004-06-10  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-css.c: Parse preserveAspectRatio
-	* rsvg-shapes.c: Honoe preserveAspectRatio to some extent
+	* rsvg-shapes.c: Honor preserveAspectRatio to some extent, 
+	honor base URIs
+	* rsvg-filter.c: Honor base URIs
+	* moz-plugin/moz-plugin.c: Grab the SVG's URI
+	* rsvg.[ch]: Place to hang the SVG's base URI
+	* test-display.c: Accept the SVG's base URI as a param
 	
 2004-06-10  Caleb Moore <c.moore@student.unsw.edu.au>
 	

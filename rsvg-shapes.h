@@ -76,6 +76,7 @@ struct _RsvgDefsDrawableUse {
 
 GdkPixbuf *
 rsvg_pixbuf_new_from_href (const char *href,
+						   const char *base_uri,
 						   int         w, 
 						   int         h,
 						   gboolean    keep_aspect_ratio,
