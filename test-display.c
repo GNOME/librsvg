@@ -144,7 +144,7 @@ main (int argc, char **argv)
 	gint n_args = 0;
 	GdkPixbuf *pixbuf;
     
-	popt_context = poptGetContext ("svg-display", argc, (const char **)argv, options_table, 0);
+	popt_context = poptGetContext ("rsvg-view", argc, (const char **)argv, options_table, 0);
 	poptSetOtherOptionHelp(popt_context, "[OPTIONS...] [file.svg]");
 	
 	c = poptGetNextOpt (popt_context);
@@ -152,7 +152,7 @@ main (int argc, char **argv)
 	
 	if (bVersion != 0)
 		{
-			printf ("svg-display version %s\n", VERSION);
+			printf ("rsvg-view version %s\n", VERSION);
 			return 0;
 		}
 	
