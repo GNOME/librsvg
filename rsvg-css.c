@@ -39,44 +39,6 @@
 #define MM_PER_INCH     (25.4)
 #define PICA_PER_INCH   (6.0)
 
-#ifndef HAVE_STRTOK_R
-
-static char *
-strtok_r(char *s, const char *delim, char **last)
-{
-	char *p;
-
-	if (s == NULL)
-		s = *last;
-
-	if (s == NULL)
-		return NULL;
-
-	while (*s && strchr (delim, *s))
-		s++;
-
-	if (*s == '\0') {
-		*last = NULL;
-		return NULL;
-	}
-
-	p = s;
-	while (*p && !strchr (delim, *p))
-		p++;
-
-	if (*p == '\0')
-		*last = NULL;
-	else {
-		*p = '\0';
-		p++;
-		*last = p;
-	}
-	
-	return s;
-}
-
-#endif /* !HAVE_STRTOK_R */
-
 /**
  * rsvg_css_parse_vbox
  * @vbox: The CSS viewBox
@@ -707,9 +669,64 @@ rsvg_css_parse_font_family (const char * str, const char * inherit)
 		return str;
 }
 
+#if !defined(HAVE_STRTOK_R) && !GLIB_CHECK_VERSION(2, 3, 2)
+
+static char *
+strtok_r(char *s, const char *delim, char **last)
+{
+	char *p;
+
+	if (s == NULL)
+		s = *last;
+
+	if (s == NULL)
+		return NULL;
+
+	while (*s && strchr (delim, *s))
+		s++;
+
+	if (*s == '\0') {
+		*last = NULL;
+		return NULL;
+	}
+
+	p = s;
+	while (*p && !strchr (delim, *p))
+		p++;
+
+	if (*p == '\0')
+		*last = NULL;
+	else {
+		*p = '\0';
+		p++;
+		*last = p;
+	}
+	
+	return s;
+}
+
+#endif /* !HAVE_STRTOK_R */
+
 gchar **
 rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 {
+#if GLIB_CHECK_VERSION(2, 3, 2)
+
+	gchar ** string_array, ** ptr;
+	guint n;
+
+	/* this may fix bug #113538 */
+
+	string_array = g_strsplit_set(in_str, ", \t", -1);
+
+	for(n = 0, ptr == string_array; *ptr; n++, ptr++)
+		;
+
+	*out_list_len = 0;
+	return string_array;
+
+#else
+
 	char *ptr, *tok;
 	char *str;
 
@@ -746,6 +763,8 @@ rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 	}
 
 	return string_array;
+
+#endif
 }
 
 void 
