@@ -43,7 +43,6 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-styles.c		\
 	rsvg-styles.h		\
 	rsvg-text.c		\
-	rsvg-text-vectors.c 	\
 	rsvg-text.h		\
 	rsvg.c
 
