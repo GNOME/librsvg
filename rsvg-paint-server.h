@@ -71,15 +71,16 @@ struct _RsvgLinearGradient {
   RsvgDefVal super;
   double affine[6]; /* user space to actual at time of gradient def */
   RsvgGradientStops *stops;
+  ArtGradientSpread spread;
   double x1, y1;
   double x2, y2;
-  ArtGradientSpread spread;
 };
 
 struct _RsvgRadialGradient {
   RsvgDefVal super;
   double affine[6]; /* user space to actual at time of gradient def */
   RsvgGradientStops *stops;
+  ArtGradientSpread spread;
   double cx, cy;
   double r;
   double fx, fy;

@@ -403,9 +403,10 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	double x1 = 0., y1 = 0., x2 = 0., y2 = 0.;
 	ArtGradientSpread spread = ART_GRADIENT_PAD;
 	const char * xlink_href = NULL;
-	gboolean got_x1, got_x2, got_y1, got_y2, got_spread, cloned, shallow_cloned;
-	
-	got_x1 = got_x2 = got_y1 = got_y2 = got_spread = cloned = shallow_cloned = FALSE;
+	gboolean got_x1, got_x2, got_y1, got_y2, got_spread, got_transform, cloned, shallow_cloned;
+	double affine[6];
+
+	got_x1 = got_x2 = got_y1 = got_y2 = got_spread = got_transform = cloned = shallow_cloned = FALSE;
 	
 	/* 100% is the default */
 	x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi, (gdouble)ctx->width, state->font_size);
@@ -450,6 +451,9 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 						}
 					else if (!strcmp ((char *)atts[i], "xlink:href"))
 						xlink_href = (const char *)atts[i + 1];
+					else if (!strcmp ((char *)atts[i], "gradientTransform")) {
+						got_transform = rsvg_parse_transform (affine, (const char *)atts[i + 1]);
+					}
 				}
 		}
 	
@@ -476,6 +480,9 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	
 	for (i = 0; i < 6; i++)
 		grad->affine[i] = state->affine[i];
+
+	if (got_transform)
+		art_affine_multiply (grad->affine, affine, grad->affine);
 	
 	/* state inherits parent/cloned information unless it's explicity gotten */
 	grad->x1 = (cloned && !got_x1) ? grad->x1 : x1;
@@ -497,7 +504,7 @@ rsvg_radial_gradient_free (RsvgDefVal *self)
 }
 
 static void
-rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
+rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts, const char * tag) /* tag for conicalGradient */
 {
 	RsvgState *state = &ctx->state[ctx->n_state - 1];
 	RsvgRadialGradient *grad = NULL;
@@ -505,9 +512,11 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	const char *id = NULL;
 	double cx = 0., cy = 0., r = 0., fx = 0., fy = 0.;  
 	const char * xlink_href = NULL;
-	gboolean got_cx, got_cy, got_r, got_fx, got_fy, cloned, shallow_cloned;
+	ArtGradientSpread spread = ART_GRADIENT_PAD;
+	gboolean got_cx, got_cy, got_r, got_fx, got_fy, got_spread, got_transform, cloned, shallow_cloned;
+	double affine[6];
 	
-	got_cx = got_cy = got_r = got_fx = got_fy = cloned = shallow_cloned = FALSE;
+	got_cx = got_cy = got_r = got_fx = got_fy = got_spread = got_transform = cloned = shallow_cloned = FALSE;
 	
 	/* setup defaults */
 	cx = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->width, state->font_size);
@@ -545,6 +554,24 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 					}
 					else if (!strcmp ((char *)atts[i], "xlink:href"))
 						xlink_href = (const char *)atts[i + 1];
+					else if (!strcmp ((char *)atts[i], "gradientTransform")) {
+						got_transform = rsvg_parse_transform (affine, (const char *)atts[i + 1]);
+					}
+					else if (!strcmp ((char *)atts[i], "spreadMethod"))
+						{
+							if (!strcmp ((char *)atts[i + 1], "pad")) {
+								spread = ART_GRADIENT_PAD;
+								got_spread = TRUE;
+							}
+							else if (!strcmp ((char *)atts[i + 1], "reflect")) {
+								spread = ART_GRADIENT_REFLECT;
+								got_spread = TRUE;
+							}
+							else if (!strcmp ((char *)atts[i + 1], "repeat")) {
+								spread = ART_GRADIENT_REPEAT;
+								got_spread = TRUE;
+							}
+						}
 				}
 		}
 	
@@ -555,7 +582,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 				{
 					cloned = TRUE;
 					grad = rsvg_clone_radial_gradient (parent, &shallow_cloned); 
-					ctx->handler = rsvg_gradient_stop_handler_new_clone (ctx, grad->stops, "radialGradient");
+					ctx->handler = rsvg_gradient_stop_handler_new_clone (ctx, grad->stops, tag);
 				}
     }
 	if (!cloned)
@@ -563,7 +590,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 			grad = g_new (RsvgRadialGradient, 1);
 			grad->super.type = RSVG_DEF_RADGRAD;
 			grad->super.free = rsvg_radial_gradient_free;
-			ctx->handler = rsvg_gradient_stop_handler_new (ctx, &grad->stops, "radialGradient");		   
+			ctx->handler = rsvg_gradient_stop_handler_new (ctx, &grad->stops, tag);		   
 		}
 
 	if (!cloned || shallow_cloned) {
@@ -581,6 +608,9 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	
 	for (i = 0; i < 6; i++)
 		grad->affine[i] = state->affine[i];
+
+	if (got_transform)
+		art_affine_multiply (grad->affine, affine, grad->affine);
 	
 	/* state inherits parent/cloned information unless it's explicity gotten */
 	grad->cx = (cloned && !got_cx) ? grad->cx : cx;
@@ -588,6 +618,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	grad->r =  (cloned && !got_r)  ? grad->r  : r;
 	grad->fx = (cloned && !got_fx) ? grad->fx : fx;
 	grad->fy = (cloned && !got_fy) ? grad->fy : fy;
+	grad->spread = (cloned && !got_spread) ? grad->spread : spread;
 }
 
 /* end gradients */
@@ -679,11 +710,19 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	else
 		rsvg_state_init (ctx->state);
 	ctx->n_state++;
-	
+
+	/**
+	 * conicalGradient isn't in the SVG spec and I'm not sure exactly what it does. libart definitely
+	 * has no analogue. But it does seem similar enough to a radialGradient that i'd rather get the
+	 * onscreen representation of the colour wrong than not have any colour displayed whatsoever
+	 */
+
 	if (!strcmp ((char *)name, "linearGradient"))
 		rsvg_start_linear_gradient (ctx, atts);
 	else if (!strcmp ((char *)name, "radialGradient"))
-		rsvg_start_radial_gradient (ctx, atts);
+		rsvg_start_radial_gradient (ctx, atts, "radialGradient");
+	else if (!strcmp((char *)name, "conicalGradient"))
+		rsvg_start_radial_gradient (ctx, atts, "conicalGradient");
 	else if (!strcmp ((char *)name, "style"))
 		rsvg_start_style (ctx, atts);
 }
@@ -772,11 +811,13 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 			else if (!strcmp ((char *)name, "polyline"))
 				rsvg_start_polyline (ctx, atts);
 			
-			/* */
+			/* see conicalGradient discussion above */
 			else if (!strcmp ((char *)name, "linearGradient"))
 				rsvg_start_linear_gradient (ctx, atts);
 			else if (!strcmp ((char *)name, "radialGradient"))
-				rsvg_start_radial_gradient (ctx, atts);
+				rsvg_start_radial_gradient (ctx, atts, "radialGradient");
+			else if (!strcmp ((char *)name, "conicalGradient"))
+				rsvg_start_radial_gradient (ctx, atts, "conicalGradient");
     }
 }
 

@@ -152,7 +152,6 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 		{
 			if (rlg->stops->n_stop == 0)
 				{
-					/* g_warning ("gradient with no stops -- should be rejected by parser"); */
 					return;
 				}
 			agl = g_new (ArtGradientLinear, 1);
@@ -221,7 +220,6 @@ rsvg_paint_server_rad_grad_render (RsvgPaintServer *self, ArtRender *ar,
 		{
 			if (rrg->stops->n_stop == 0)
 				{
-					/* g_warning ("gradient with no stops -- should be rejected by parser"); */
 					return;
 				}
 			agr = g_new (ArtGradientRadial, 1);
@@ -237,6 +235,8 @@ rsvg_paint_server_rad_grad_render (RsvgPaintServer *self, ArtRender *ar,
 	art_affine_multiply (aff1, aff1, rrg->affine);
 	art_affine_invert (agr->affine, aff1);
 	
+	/* TODO: libart doesn't support spreads on radial gradients */
+
 	agr->fx = (rrg->fx - rrg->cx) / rrg->r;
 	agr->fy = (rrg->fy - rrg->cy) / rrg->r;
 	
@@ -377,6 +377,8 @@ rsvg_clone_radial_gradient (const RsvgRadialGradient *grad, gboolean * shallow_c
 		clone->stops = NULL;
 	}
 
+	clone->spread = grad->spread;
+
 	/* EVIL EVIL - sodipodi can base LinearGradients on
 	   RadialGradients, and vice-versa. it is legal, though:
 	   http://www.w3.org/TR/SVG11/pservers.html#LinearGradients
@@ -420,6 +422,8 @@ rsvg_clone_linear_gradient (const RsvgLinearGradient *grad, gboolean * shallow_c
 		clone->stops = NULL;
 	}
 
+	clone->spread = grad->spread;
+
 	/* EVIL EVIL - sodipodi can base LinearGradients on
 	   RadialGradients, and vice-versa. it is legal, though:
 	   http://www.w3.org/TR/SVG11/pservers.html#LinearGradients
@@ -429,7 +433,6 @@ rsvg_clone_linear_gradient (const RsvgLinearGradient *grad, gboolean * shallow_c
 		clone->y1 = grad->y1;
 		clone->x2 = grad->x2;
 		clone->y2 = grad->y2;
-		clone->spread = grad->spread;
 
 		*shallow_cloned = FALSE;
 	} else {

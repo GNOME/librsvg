@@ -98,6 +98,7 @@ gdouble rsvg_viewport_percentage (gdouble width, gdouble height);
 
 void rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity);
 void rsvg_push_opacity_group (RsvgHandle *ctx);
+gboolean rsvg_parse_transform (double dst[6], const char *src);
 
 G_END_DECLS
 

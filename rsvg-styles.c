@@ -413,7 +413,7 @@ rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 /* Parse an SVG transform string into an affine matrix. Reference: SVG
    working draft dated 1999-07-06, section 8.5. Return TRUE on
    success. */
-static gboolean
+gboolean
 rsvg_parse_transform (double dst[6], const char *src)
 {
 	int idx;
