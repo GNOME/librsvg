@@ -23,30 +23,36 @@
    Author: Dom Lachowicz <cinamod@hotmail.com>  
 */
 
+#include <config.h>
+
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include <config.h>
 
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
+
+#include <glib.h>
 
 #define XP_UNIX 1
 #define MOZ_X11 1
 #include "npapi.h"
 #include "npupp.h"
 
-#define DEBUG(x)
+#define DEBUG(x) /*printf x*/
 
 typedef struct
 {
 	NPP instance;
 	Display *display;
 	Window window;
-	int x;
-	int y;
-	int width, height;
+
+	int x, y, width, height;
+	int is_gz;
+
+	GByteArray * bytes;
+
 	int recv_fd, send_fd;
 	int player_pid;
 } Plugin;
@@ -54,10 +60,24 @@ typedef struct
 static NPNetscapeFuncs mozilla_funcs;
 
 static void
+plugin_kill (Plugin * plugin)
+{
+	close (plugin->send_fd);
+	close (plugin->recv_fd);
+
+	kill (plugin->player_pid, SIGKILL);
+	waitpid (plugin->player_pid, NULL, 0);
+
+	plugin->player_pid = 0;
+}
+
+static void
 plugin_fork (Plugin * plugin)
 {
 	int fds[4];
 	
+	DEBUG(("plugin fork\n"));
+
 	pipe (fds);
 	pipe (fds + 2);
 	
@@ -108,6 +128,29 @@ plugin_fork (Plugin * plugin)
 	close (fds[2]);
 }
 
+static void
+plugin_redraw (Plugin * plugin)
+{
+	DEBUG(("plugin redraw\n"));
+
+	if(plugin && plugin->bytes && plugin->bytes->len)
+		{
+#if 0
+			if(plugin->player_pid > 0)
+				plugin_kill (plugin);
+
+			plugin_fork (plugin);
+			write (plugin->send_fd, plugin->bytes->data, plugin->bytes->len);
+#else
+			if (plugin->player_pid == 0)
+				{
+					plugin_fork (plugin);			
+					write (plugin->send_fd, plugin->bytes->data, plugin->bytes->len);
+				}
+#endif
+		}
+}
+
 static NPError
 plugin_newp (NPMIMEType mime_type, NPP instance,
 			 uint16_t mode, int16_t argc, char *argn[], char *argv[],
@@ -123,7 +166,7 @@ plugin_newp (NPMIMEType mime_type, NPP instance,
 	
 	instance->pdata = mozilla_funcs.memalloc (sizeof (Plugin));
 	plugin = (Plugin *) instance->pdata;
-	
+
 	if (plugin == NULL)
 		return NPERR_OUT_OF_MEMORY_ERROR;
 	memset (plugin, 0, sizeof (Plugin));
@@ -140,8 +183,8 @@ plugin_newp (NPMIMEType mime_type, NPP instance,
 
 			if (strcmp (argn[i], "height") == 0)
 				plugin->height = strtol (argv[i], NULL, 0);
-		}
-	
+		}   
+
   return NPERR_NO_ERROR;
 }
 
@@ -159,12 +202,12 @@ plugin_destroy (NPP instance, NPSavedData ** save)
 	if (plugin == NULL)
 		return NPERR_NO_ERROR;
 
-	close (plugin->send_fd);
-	close (plugin->recv_fd);
-
-	kill (plugin->player_pid, SIGKILL);
-	waitpid (plugin->player_pid, NULL, 0);
+	if(plugin->bytes)
+		g_byte_array_free (plugin->bytes, TRUE);
 	
+	if(plugin->player_pid > 0)
+		plugin_kill (plugin);
+
 	mozilla_funcs.memfree (instance->pdata);
 	instance->pdata = NULL;
 	
@@ -192,8 +235,13 @@ plugin_set_window (NPP instance, NPWindow * window)
 			if (plugin->window == (Window) window->window)
 				{
 					DEBUG (("resize\n"));
-					/* Resize event */
-					/* Not currently handled */
+					
+					plugin->width = window->width;
+					plugin->height = window->height;
+					plugin->x = window->x;
+					plugin->y = window->y;
+
+					plugin_redraw (plugin);
 				}
 			else
 				{
@@ -209,8 +257,6 @@ plugin_set_window (NPP instance, NPWindow * window)
 			ws_info = window->ws_info;
 			plugin->window = (Window) window->window;
 			plugin->display = ws_info->display;
-			
-			plugin_fork (plugin);
 		}
 	
 	DEBUG (("leaving plugin_set_window\n"));
@@ -222,8 +268,19 @@ static NPError
 plugin_new_stream (NPP instance, NPMIMEType type,
 				   const char *window, NPStream ** stream_ptr)
 {
+	Plugin *plugin;
+
 	DEBUG (("plugin_new_stream\n"));
+
+	if (instance == NULL)
+		return NPERR_INVALID_INSTANCE_ERROR;
 	
+	plugin = (Plugin *) instance->pdata;
+	if (plugin == NULL)
+		return NPERR_NO_ERROR;
+	
+	plugin->bytes = g_byte_array_new();
+
 	return NPERR_NO_ERROR;
 }
 
@@ -241,6 +298,11 @@ plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 	if (plugin == NULL)
 		return NPERR_NO_ERROR;
 	
+	plugin->is_gz = (plugin->bytes->len > 2 && (plugin->bytes->data[0] == (guchar)0x1f) && (plugin->bytes->data[1] == (guchar)0x8b));
+
+	/* trigger */
+	plugin_redraw (plugin);
+
 	return NPERR_NO_ERROR;
 }
 
@@ -270,10 +332,10 @@ plugin_write (NPP instance, NPStream * stream, int32 offset,
 	if (plugin == NULL)
 		return 0;
 	
-	if (!plugin->player_pid)
+	if (!plugin->bytes)
 		return 0;
 	
-	write (plugin->send_fd, buffer, len);
+	g_byte_array_append (plugin->bytes, buffer, len);
 
 	return len;
 }
