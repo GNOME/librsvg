@@ -133,10 +133,17 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
                 else
                         context->handle = rsvg_handle_new ();
 
-                if (!context->handle)
+                if (!context->handle) {
+                        rsvg_propegate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
                         return FALSE;
+                }
 
                 rsvg_handle_set_size_callback (context->handle, context->size_func, context->user_data, NULL);
+        }
+
+        if (!context->handle) {
+                rsvg_propegate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
+                return FALSE;
         }
 
         if (!rsvg_handle_write (context->handle, buf, size, error)) {
@@ -160,6 +167,11 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 
         if (error)
                 *error = NULL;
+
+        if (!context->handle) {
+                rsvg_propegate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
+                return FALSE;
+        }
 
         rsvg_handle_close (context->handle, error);
 

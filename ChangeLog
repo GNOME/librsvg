@@ -1,3 +1,7 @@
+2004-09-26  Dom Lachowicz <cinamod@hotmail.com>
+
+	* gdk-pixbuf-loader/io-svg.c: Sanity checks
+	
 2004-09-25  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.c Part of bug 153671
