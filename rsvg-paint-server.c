@@ -596,6 +596,8 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 						  gdk_pixbuf_get_height (render),
 						  gdk_pixbuf_get_rowstride (render), 
 						  xoffset, yoffset, affine);
+
+	g_object_unref(G_OBJECT(render));
 }
 
 static RsvgPaintServer *

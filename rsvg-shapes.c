@@ -1409,9 +1409,11 @@ rsvg_pixbuf_new_from_data_at_size (const char *data,
 	if (!gdk_pixbuf_loader_write (loader, buffer, buffer_len, error)) {
 		gdk_pixbuf_loader_close (loader, NULL);
 		g_object_unref (loader);
+		g_free(buffer);
 		return NULL;
 	}
 	
+	g_free(buffer);
 	if (!gdk_pixbuf_loader_close (loader, error)) {
 		g_object_unref (loader);
 		return NULL;
