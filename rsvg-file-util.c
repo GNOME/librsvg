@@ -112,11 +112,6 @@ rsvg_size_callback (int *width,
 					*width = in_width * ((double)*height / (double)in_height);
 				}
 		}
-
-#if 0	
-	fprintf (stderr, "In: (%d, %d) | Out: (%d, %d)\n", in_width, in_height,
-			 *width, *height);
-#endif
 }
 
 static GdkPixbuf *
@@ -180,8 +175,7 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 	retval = rsvg_handle_get_pixbuf (handle);
 	rsvg_handle_free (handle);
 
-	return retval;
-	
+	return retval;	
 }
 
 static GdkPixbuf *

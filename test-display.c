@@ -25,6 +25,7 @@
 
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
+#include <gdk/gdkkeysyms.h>
 
 #ifdef ENABLE_XEMBED
 #include <gdk/gdkx.h>
@@ -37,19 +38,19 @@ typedef struct _ViewerCbInfo ViewerCbInfo;
 struct _ViewerCbInfo
 {
 	GtkWidget  * window;
+	GtkWidget  * popup_menu;
 	GdkPixbuf  * pixbuf;
 	GByteArray * svg_bytes;
+	GtkAccelGroup * accel_group;
 };
 
 static void
-rsvg_window_set_default_icon (GdkPixbuf *icon)
+rsvg_window_set_default_icon (GtkWindow * window, GdkPixbuf *icon)
 {
   GList *list;
   
-  g_return_if_fail (GDK_IS_PIXBUF (icon));
-  
   list = g_list_prepend (NULL, icon);
-  gtk_window_set_default_icon_list (list);
+  gtk_window_set_icon_list (window, list);
   g_list_free (list);
 }
 
@@ -112,6 +113,7 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 					size_data.type = RSVG_SIZE_WH;
 					size_data.width = width;
 					size_data.height = height;
+					size_data.keep_aspect_ratio = FALSE;
 
 					image = rsvg_pixbuf_from_data_with_size_data (info->svg_bytes->data, info->svg_bytes->len, &size_data, NULL);
 				} 
@@ -140,6 +142,7 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 					GtkWidget * preview;
 					
 					preview = gnome_print_job_preview_new (gpm, _("SVG Print Preview"));
+					gtk_window_set_transient_for(GTK_WINDOW(preview), GTK_WINDOW(info->window));
 					gtk_widget_show (GTK_WIDGET (preview));
 				}
 			
@@ -182,6 +185,7 @@ save_pixbuf (GObject * ignored, gpointer user_data)
 																	 GTK_MESSAGE_WARNING,
 																	 GTK_BUTTONS_CLOSE,
 																	 err->message);
+									gtk_window_set_transient_for(GTK_WINDOW(errmsg), GTK_WINDOW(info->window));
 									
 									gtk_dialog_run (GTK_DIALOG (errmsg));
 									
@@ -199,6 +203,7 @@ save_pixbuf (GObject * ignored, gpointer user_data)
 													 GTK_MESSAGE_WARNING,
 													 GTK_BUTTONS_CLOSE,
 													 _("No filename given"));
+					gtk_window_set_transient_for(GTK_WINDOW(errmsg), GTK_WINDOW(info->window));
 					
 					gtk_dialog_run (GTK_DIALOG (errmsg));
 					gtk_widget_destroy (errmsg);
@@ -238,6 +243,7 @@ save_svg (GObject * ignored, gpointer user_data)
 															 GTK_BUTTONS_CLOSE,
 															 _("Couldn't save %s"),
 															 filename);
+							gtk_window_set_transient_for(GTK_WINDOW(errmsg), GTK_WINDOW(info->window));
 									
 							gtk_dialog_run (GTK_DIALOG (errmsg));
 							gtk_widget_destroy (errmsg);
@@ -260,6 +266,7 @@ save_svg (GObject * ignored, gpointer user_data)
 																		 GTK_BUTTONS_CLOSE,
 																		 _("Couldn't save %s"),
 																		 filename);
+										gtk_window_set_transient_for(GTK_WINDOW(errmsg), GTK_WINDOW(info->window));
 										
 										gtk_dialog_run (GTK_DIALOG (errmsg));
 										gtk_widget_destroy (errmsg);
@@ -282,6 +289,7 @@ save_svg (GObject * ignored, gpointer user_data)
 													 GTK_MESSAGE_WARNING,
 													 GTK_BUTTONS_CLOSE,
 													 _("No filename given"));
+					gtk_window_set_transient_for(GTK_WINDOW(errmsg), GTK_WINDOW(info->window));
 					
 					gtk_dialog_run (GTK_DIALOG (errmsg));
 					gtk_widget_destroy (errmsg);
@@ -292,39 +300,42 @@ save_svg (GObject * ignored, gpointer user_data)
 }
 
 static void
-do_popup_menu (GObject * widget, GdkEventButton *event, gpointer user_data)
+create_popup_menu (ViewerCbInfo * info)
 {
 	GtkWidget * popup_menu;
 	GtkWidget * menu_item;
 	GtkWidget * stock;
 
 	popup_menu = gtk_menu_new ();
+	gtk_menu_set_accel_group (GTK_MENU (popup_menu), info->accel_group);
 
 	menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_SAVE, NULL);
 	g_signal_connect (menu_item, "activate",
-					  G_CALLBACK (save_svg), user_data);
+					  G_CALLBACK (save_svg), info);
 	gtk_widget_show (menu_item);
 	gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
+	gtk_widget_add_accelerator(menu_item, "activate", info->accel_group, GDK_S, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 
 	menu_item = gtk_image_menu_item_new_with_label (_("Save as PNG"));
 	stock = gtk_image_new_from_stock (GTK_STOCK_SAVE_AS, GTK_ICON_SIZE_MENU);
 	gtk_widget_show (stock);
 	gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menu_item), stock);
 	g_signal_connect (menu_item, "activate",
-					  G_CALLBACK (save_pixbuf), user_data);
+					  G_CALLBACK (save_pixbuf), info);
 	gtk_widget_show (menu_item);
 	gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
+	gtk_widget_add_accelerator(menu_item, "activate", info->accel_group, GDK_S, GDK_CONTROL_MASK | GDK_SHIFT_MASK, GTK_ACCEL_VISIBLE);
 
 #ifdef HAVE_GNOME_PRINT
 	menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_PRINT, NULL);
 	g_signal_connect (menu_item, "activate",
-					  G_CALLBACK (print_pixbuf), user_data);
+					  G_CALLBACK (print_pixbuf), info);
 	gtk_widget_show (menu_item);
 	gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
+	gtk_widget_add_accelerator(menu_item, "activate", info->accel_group, GDK_P, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 #endif
 
-	gtk_menu_popup (GTK_MENU (popup_menu), NULL, NULL,
-					NULL, NULL, event->button, event->time);
+	info->popup_menu = popup_menu;
 }
 
 static gint
@@ -334,7 +345,10 @@ button_press_event (GObject        *widget,
 {
 	if (event->button == 3 && event->type == GDK_BUTTON_PRESS)
 		{
-			do_popup_menu (widget, event, user_data);
+			ViewerCbInfo * info = (ViewerCbInfo *)user_data;
+
+			gtk_menu_popup (GTK_MENU (info->popup_menu), NULL, NULL,
+							NULL, NULL, event->button, event->time);
 			return TRUE;
 		}
 	
@@ -376,6 +390,7 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 			height = MIN(gdk_pixbuf_get_height (info->pixbuf), DEFAULT_HEIGHT) + 20;
 
 			gtk_window_set_title (GTK_WINDOW(win), _("SVG Viewer"));
+			rsvg_window_set_default_icon (GTK_WINDOW(win), info->pixbuf);
 		}
 
 	gtk_window_set_default_size(GTK_WINDOW(win), width, height);
@@ -414,9 +429,10 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 				g_warning (_("Couldn't parse color '%s'"), color);
 		}
 
-	rsvg_window_set_default_icon (info->pixbuf);
+	create_popup_menu (info);
 
 	info->window = win;
+	gtk_window_add_accel_group (GTK_WINDOW (win), info->accel_group);
 
 	g_signal_connect (G_OBJECT (win), "button-press-event",
 					  G_CALLBACK (button_press_event), info);
@@ -480,6 +496,7 @@ main (int argc, char **argv)
 	info.pixbuf = NULL;
 	info.svg_bytes = NULL;
 	info.window = NULL;
+	info.popup_menu = NULL;
 
 	popt_context = poptGetContext ("rsvg-view", argc, (const char **)argv, options_table, 0);
 	poptSetOtherOptionHelp (popt_context, _("[OPTIONS...] [file.svg]"));
@@ -595,8 +612,10 @@ main (int argc, char **argv)
 
 			return 1;
 		}
-	
-	view_pixbuf (&info, xid, bg_color);   
+
+	info.accel_group = gtk_accel_group_new ();
+
+	view_pixbuf (&info, xid, bg_color);
 
 	/* run the gtk+ main loop */
 	gtk_main ();	
