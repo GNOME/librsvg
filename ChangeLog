@@ -15,7 +15,8 @@
 	* configure.in: Update for autoconf 2.52. Sadly, the version is
 	now repeated twice, but I don't see how to avoid this.
 	
-	* librsvg-features.h.in:
+	* librsvg-features.h.in: Use @PACKAGE_VERSION@ instead of
+	@LIBRSVG_VERSION@.
 
 	* art_render_mask.c:
 	* rsvg-ft.c:
