@@ -48,7 +48,7 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-cond.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
-librsvg_2_la_LIBADD = $(LIBRSVG_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBGNOME_VFS_LIBS)
+librsvg_2_la_LIBADD = $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS)
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = 	\
@@ -73,9 +73,9 @@ LDADDS =				\
 	$(LIBGNOME_VFS_LIBS)		\
 	$(LIBGSF_LIBS)			\
 	$(LIBCROCO_LIBS)		\
-	$(top_builddir)/librsvg-2.la 	\
 	$(LIBRSVG_LIBS) 		\
-	$(POPT_LIBS)
+	$(POPT_LIBS)			\
+	$(top_builddir)/librsvg-2.la 	
 
 rsvg_SOURCES=test-rsvg.c
 rsvg_LDFLAGS =
@@ -92,7 +92,7 @@ rsvg_view_SOURCES = 		\
 rsvg_view_LDFLAGS =
 rsvg_view_DEPENDENCIES = $(DEPS)
 rsvg_view_CFLAGS= $(GNOME_PRINT_CFLAGS)
-rsvg_view_LDADD = $(LDADDS) $(GNOME_PRINT_LIBS) $(GTK_LIBS) $(GDK_X11_LIBS) $(libm)
+rsvg_view_LDADD = $(GNOME_PRINT_LIBS) $(GTK_LIBS) $(GDK_X11_LIBS) $(libm) $(LDADDS)
 
 EXTRA_DIST =				\
 	COPYING.LIB 			\

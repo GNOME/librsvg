@@ -1,3 +1,7 @@
+2004-10-15  Dom Lachowicz <cinamod@hotmail.com>
+
+	* Makefile.am: bug 155530, ckelso@heliosphere.org (Chris Kelso)
+	
 2004-10-14  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.c: Push gnome_vfs_init() up to rsvg_init()
