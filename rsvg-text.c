@@ -187,7 +187,7 @@ rsvg_text_handler_free (RsvgSaxHandler *self)
 	g_free (self);
 }
 
-void 
+static void 
 rsvg_text_render_text (RsvgSaxHandlerText *ctx,
 					   RsvgState  *state,
 					   const char *text,
@@ -846,7 +846,7 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 
 }
 
-void 
+static void 
 rsvg_text_render_text (RsvgSaxHandlerText *self,
 					   RsvgState  *state,
 					   const char *text,
