@@ -741,7 +741,6 @@ rsvg_start_rect (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	y += .01;
 	
 	/* emulate a rect using a path */
-
 	d = g_string_new ("M ");
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + rx));
 	g_string_append_c (d, ' ');
@@ -800,6 +799,24 @@ rsvg_start_rect (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x));
 	g_string_append_c (d, ' ');
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y + h - ry));
+
+	g_string_append (d, " V ");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y+ry));
+
+	g_string_append (d, " A");
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ry));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
+	g_string_append_c (d, ' ');	
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 1.));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x+rx));
+	g_string_append_c (d, ' ');
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y));
 
 	g_string_append (d, " Z");
 
