@@ -433,6 +433,8 @@ rsvg_clip_path_parse (const RsvgDefs * defs, const char *str)
 ArtSVP *
 rsvg_rect_clip_path(double x, double y, double w, double h, RsvgDrawingCtx * ctx)
 {	
+	RsvgArtSVPRender * asvpr;
+	RsvgRender * save;
 	GString * d = NULL;
 	ArtSVP * output = NULL;
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
@@ -457,8 +459,18 @@ rsvg_rect_clip_path(double x, double y, double w, double h, RsvgDrawingCtx * ctx
 
 	g_string_append (d, " Z");
 
-	/* todo, reenable following code */
-	output = NULL; /* rsvg_render_path_as_svp (ctx, d->str);*/
+	asvpr = rsvg_art_svp_render_new();
+
+	save = ctx->render;
+	ctx->render = (RsvgRender *)asvpr;
+
+	asvpr->super.render_path(ctx, d->str);
+
+	ctx->render = save;
+
+	output = asvpr->outline;
+	/* todo, free the render */
+
 	g_string_free (d, TRUE);
 	return output;
 }
