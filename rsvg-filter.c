@@ -953,6 +953,13 @@ rsvg_filter_primitive_convolve_matrix_free (RsvgFilterPrimitive * self){
 	g_free(cself);
 }
 
+typedef struct _RsvgFilterPrimitiveGaussianBlur RsvgFilterPrimitiveGaussianBlur;
+
+struct _RsvgFilterPrimitiveGaussianBlur {
+	RsvgFilterPrimitive super;
+	double sdx, sdy;
+};
+
 void 
 rsvg_start_filter_primitive_convolve_matrix (RsvgHandle *ctx, const xmlChar **atts) {
 	int i, j;
@@ -1045,26 +1052,30 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle *ctx, const xmlChar **at
 }
 
 void 
+rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx);
+
+void 
+rsvg_filter_primitive_gaussian_blur_free (RsvgFilterPrimitive *self);
+
+void 
 rsvg_start_filter_primitive_gaussian_blur (RsvgHandle *ctx, const xmlChar **atts) {
-	int i, j;
-	double sdx;
-	double sdy;
+	int i;
 
 	double font_size;
-	RsvgFilterPrimitiveConvolveMatrix * filter;
+	RsvgFilterPrimitiveGaussianBlur * filter;
 
 	if (ctx->n_state > 0)
 		font_size = rsvg_state_current (ctx)->font_size;
 	else
 		font_size = 12.0;
 
-	filter = g_new(RsvgFilterPrimitiveConvolveMatrix, 1);
+	filter = g_new(RsvgFilterPrimitiveGaussianBlur, 1);
 
 	filter->super.in = g_string_new("none");
 	filter->super.result = g_string_new("none");
 	filter->super.sizedefaults = 1;
-
-	sdx = 0;
+	filter->sdx = 0;
+	filter->sdy = 0;
 
 	if (atts != NULL)
 		{
@@ -1092,43 +1103,143 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle *ctx, const xmlChar **atts
 						filter->super.sizedefaults = 0;
 					}			
 					else if (!strcmp ((char *)atts[i], "stdDeviation"))
-						rsvg_css_parse_number_optional_number((char *)atts[i + 1], &sdx, &sdy);	
+						rsvg_css_parse_number_optional_number((char *)atts[i + 1], &filter->sdx, &filter->sdy);	
 				}
 		}
 
-	gint kw;
-	gint kh;
-	kw = 5;
-	kh = 5;
-	filter->KernelMatrix = g_new(double, kw * kh * 4);
+	filter->super.render = &rsvg_filter_primitive_gaussian_blur_render;
+	filter->super.free = &rsvg_filter_primitive_gaussian_blur_free;
 
-	filter->orderx = kw * 2;
-	filter->ordery = kh * 2;
+	g_ptr_array_add(((RsvgFilter *)(ctx->currentfilter))->primitives, &filter->super);
+}
+
+void 
+rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx) {
+	guchar ch;
+	gint x,y;
+	gint i, j;
+	gint rowstride, height, width;
+	FPBox boundarys;
+
+	guchar *in_pixels;
+	guchar *output_pixels;
+
+	RsvgFilterPrimitiveGaussianBlur *cself;
+
+	GdkPixbuf *output;
+	GdkPixbuf *in;
+
+	gint sx, sy, kx, ky, kw, kh;
+	guchar sval;
+	double kval, sum;
+
+	cself = (RsvgFilterPrimitiveGaussianBlur *) self;
+	boundarys = rsvg_filter_primitive_get_bounds(self, ctx);
+
+	in = rsvg_filter_get_in(self->in, ctx);
+	in_pixels = gdk_pixbuf_get_pixels(in);	
+
+	height = gdk_pixbuf_get_height(in);
+	width = gdk_pixbuf_get_width(in);
+
+	rowstride = gdk_pixbuf_get_rowstride(in);
+
+	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+							 width, height);
+	clear_pixbuf(output);
+
+	double sdx, sdy;
+
+	/*scale the SD values*/
+	sdx = cself->sdx * ctx->paffine[0];
+	sdy = cself->sdy * ctx->paffine[3];
 
 	double pi = 3.141592653589793238;
 
+	kw = kh = 0;
 
-	for (i = 0; i < 2 * kh; i++){
-		for (j = 0; j < 2 * kw; j++){
-			filter->KernelMatrix[j + i * kw * 2] = 
-				(exp(-((j-kw)*(j-kw))/(2*sdx*sdx))/sqrt(2*pi*sdx*sdx))*
-				(exp(-((i-kh)*(i-kh))/(2*sdy*sdy))/sqrt(2*pi*sdy*sdy));
+	/*find out the required x size for the kernel matrix*/
+
+	for (i = 1; i < 20; i++){
+		if (exp(-(i*i)/(2*sdx*sdx))/sqrt(2*pi*sdx*sdx) < 0.0001){
+			kw = 2 * (i - 1);
+			break;
 		}
 	}
 
+	/*find out the required y size for the kernel matrix*/
+	for (i = 1; i < 20; i++){
+		if (exp(-(i*i)/(2*sdy*sdy))/sqrt(2*pi*sdy*sdy) < 0.0001){
+			kh = 2 * (i - 1);
+			break;
+		}
+	}
 
-	filter->divisor = 0;
-	for (j = 0; j < 2 * kw; j++)
-		for (i = 0; i < 2 * kh; i++)
-			filter->divisor += filter->KernelMatrix[j + i * kw * 2];
+	printf("%i, %i\n", kw, kh);
 
-	filter->preservealpha = FALSE;
-	filter->bias = 0;
+	double *KernelMatrix;
+	KernelMatrix = g_new(double, kw * kh);
 
-	filter->super.render = &rsvg_filter_primitive_convolve_matrix_render;
-	filter->super.free = &rsvg_filter_primitive_convolve_matrix_free;
+	/*create the kernel matrix*/
+	for (i = 0; i < kh; i++){
+		for (j = 0; j < kw; j++){
+			KernelMatrix[j + i * kw] = 
+				(exp(-((j-kw/2)*(j-kw/2))/(2*sdx*sdx))/sqrt(2*pi*sdx*sdx))*
+				(exp(-((i-kh/2)*(i-kh/2))/(2*sdy*sdy))/sqrt(2*pi*sdy*sdy));
+		}
+	}
 
-	g_ptr_array_add(((RsvgFilter *)(ctx->currentfilter))->primitives, &filter->super);
+	/*find out the total of the values of the matrix*/
+	double divisor;
+	divisor = 0;
+	for (j = 0; j < kw; j++)
+		for (i = 0; i < kh; i++)
+			divisor += KernelMatrix[j + i * kw];
+
+
+	output_pixels = gdk_pixbuf_get_pixels(output);
+	
+	gint tempresult;
+
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2 ; x++)
+			for (ch = 0; ch < 4; ch++){
+				sum = 0;
+				for (i = 0; i < kh; i++)
+					for (j = 0; j < kw; j++){
+						sx = x + j;
+						sy = y + i;
+						if (sx < boundarys.x1 || sx > boundarys.x2 || 
+							sy < boundarys.y1 || sy > boundarys.y2)
+							continue;
+						kx = kw - j - 1;
+						ky = kh - i - 1;
+						sval = in_pixels[4 * sx + sy * rowstride + ch];
+						kval = KernelMatrix[kx + ky * kw];
+						sum += (double)sval * kval;
+					}
+				tempresult =  sum / divisor; 
+				if (tempresult > 255)
+					tempresult = 255;
+				if (tempresult < 0)
+					tempresult = 0;
+				
+				output_pixels[4 * x + y * rowstride + ch] = tempresult;
+			}
+	rsvg_filter_store_result (self->result, output, ctx);
+	
+	g_object_unref(G_OBJECT(in));
+	g_object_unref(G_OBJECT(output));
+	g_free(KernelMatrix);
+}
+
+void 
+rsvg_filter_primitive_gaussian_blur_free (RsvgFilterPrimitive * self){
+	RsvgFilterPrimitiveGaussianBlur *cself;
+	cself = (RsvgFilterPrimitiveGaussianBlur *)self;
+	g_string_free(self->result, TRUE);
+	g_string_free(self->in, TRUE);	
+	g_free(cself);
 }
 
 typedef struct _RsvgFilterPrimitiveOffset RsvgFilterPrimitiveOffset;
