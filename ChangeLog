@@ -1,3 +1,8 @@
+2003-04-07  Dom Lachowicz <cinamod@hotmail.com>
+
+	* gtk-engine/Makefile.am: let load when building with croco
+	* gdk-pixbuf-loader/Makefile.am: ditto
+	
 2003-04-03  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Fixes so that we link and build a DLL on Cygwin. 
