@@ -93,8 +93,10 @@ struct _RsvgPattern {
 	RsvgDefVal super;
 	gboolean obj_cbbox;
 	gboolean obj_bbox;
+	gboolean vbox;
 	double affine[6]; /* user space to actual at time of gradient def */
 	double x, y, width, height;
+	double vbx, vby, vbh, vbw;
 	RsvgDefVal * g;
 	RsvgDefVal * gfallback;
 };

@@ -392,7 +392,6 @@ rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 			  is simply reinherited, wheras the transform is totally overridden*/
 			if (dominate == 2)
 				{
-					rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
 					for (i = 0; i < 6; i++)
 						{
 							state->affine[i] = tempaffine[i];

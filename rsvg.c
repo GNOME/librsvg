@@ -707,19 +707,25 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	RsvgPattern *pattern = NULL;
 	const char *id = NULL, *value;
 	double x = 0., y = 0., width = 0., height = 0.;
+	double vbx = 0., vby = 0., vbw = 1., vbh = 1.;
 	const char * xlink_href = NULL;
 	gboolean obj_bbox = TRUE;
 	gboolean obj_cbbox = FALSE;
-	gboolean got_x, got_y, got_width, got_height, got_transform, got_bbox, got_cbbox, cloned;
+	gboolean got_x, got_y, got_width, got_height, got_transform, got_bbox, got_cbbox, cloned, got_vbox;
 	double affine[6];
 	int i;
 
-	got_x = got_y = got_width = got_height = got_transform = got_bbox = got_cbbox = cloned = FALSE;
+	got_x = got_y = got_width = got_height = got_transform = got_bbox = got_cbbox = cloned = got_vbox = FALSE;
 		
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				id = value;
+			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
+				{
+					got_vbox = rsvg_css_parse_vbox (value, &vbx, &vby,
+													&vbw, &vbh);
+				}
 			if ((value = rsvg_property_bag_lookup (atts, "x"))) {
 				x = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, state->font_size);
 				got_x = TRUE;
@@ -755,15 +761,6 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				got_cbbox = TRUE;
 			}
 		}
-	
-	/* set up 100% as the default if not gotten */
-	
-	if (!got_width) {
-		if (obj_bbox)
-			width = 1.0;
-		else
-			width = rsvg_css_parse_normalized_length ("100%", ctx->dpi, (gdouble)ctx->width, state->font_size);
-	}
 
 	if (xlink_href != NULL)
 		{
@@ -798,6 +795,11 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	pattern->y = (cloned && !got_y) ? pattern->y : y;
 	pattern->width = (cloned && !got_width) ? pattern->width : width;
 	pattern->height = (cloned && !got_height) ? pattern->height : height;
+	pattern->vbx = (cloned && !got_vbox) ? pattern->vbx : vbx;
+	pattern->vby = (cloned && !got_vbox) ? pattern->vby : vby;
+	pattern->vbw = (cloned && !got_vbox) ? pattern->vbw : vbw;
+	pattern->vbh = (cloned && !got_vbox) ? pattern->vbh : vbh;
+	pattern->vbox = (cloned && !got_vbox) ? pattern->vbox : got_vbox;
 
 	ctx->in_defs++;		
 

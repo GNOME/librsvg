@@ -349,10 +349,12 @@ rsvg_paint_server_rad_grad (RsvgRadialGradient *gradient)
 typedef struct {
 	ArtImageSource super;
 	gchar * pixels;
-	gint x, y, width, height;
+	gdouble x, y, width, height, xoffset, yoffset;
 	gint realwidth, realheight; 
 	gint rowstride;
 	art_boolean init;
+	gdouble affine[6];
+	gdouble invaffine[6];
 } RsvgImageSourcePattern;
 
 static void
@@ -367,13 +369,6 @@ render_image_pattern_done (ArtRenderCallback *self, ArtRender *render)
 #include <libart_lgpl/art_rgb.h>
 #include <libart_lgpl/art_render.h>
 
-static int goodmod(int one, int two)
-{
-	while (one < 0)
-		one += two;
-	return one % two;
-}
-
 static void
 render_image_pattern_render(ArtRenderCallback *self, ArtRender *render,
 				  art_u8 *dest, int y)
@@ -386,17 +381,34 @@ render_image_pattern_render(ArtRenderCallback *self, ArtRender *render,
 
 	int sx, sy;
 
+	double px, py, gx, gy, gnx, gny, tx, ty;
 
-	for (i = 0; i < x1 - x0; i += 1)
+	tx = -z->x * z->affine[0] + -z->y * z->affine[2] + z->affine[4];
+	ty = -z->x * z->affine[1] + -z->y * z->affine[3] + z->affine[5];
+
+	for (i = 0; i < x1 - x0; i++)
 		{
-			sx = goodmod((i + x0 + z->x),z->width);
-			sy = goodmod((y + render->y0 + z->y),z->height);
+			px = i;
+			py = y;// + (z->y * z->affine[3] + z->affine[5]);
+			
+			gx = px * z->invaffine[0] + py * z->invaffine[2] + z->invaffine[4] - z->x;
+			gy = px * z->invaffine[1] + py * z->invaffine[3] + z->invaffine[5] - z->y;
+
+			gnx = floor (gx / z->width);
+			gny = floor (gy / z->height);
+	
+			sx = px - gnx * z->width * z->affine[0] - gny * z->height * z->affine[2] - z->affine[4]
+				+ z->xoffset + tx;
+			sy = py - gnx * z->width * z->affine[1] - gny * z->height * z->affine[3] - z->affine[5]
+				+ z->yoffset + ty;
+
+			/*printf("(%i, %i)->(%i, %i)\n", i, y, sx, sy);*/
+
 			if (sx < 0 || sx >= z->realwidth || sy < 0 || sy >= z->realheight)
 				{
 					render->image_buf[i * 4 + 3] = 0;
 					continue;
 				}
-			//printf("%i, %i -> %i, %i\n", i, y, sx, sy);
 			render->image_buf[i * 4] = z->pixels[sx * 4 + z->rowstride * sy];
 			render->image_buf[i * 4 + 1] = z->pixels[sx * 4 + z->rowstride * sy + 1];
 			render->image_buf[i * 4 + 2] = z->pixels[sx * 4 + z->rowstride * sy + 2];
@@ -416,9 +428,9 @@ render_image_pattern_negotiate (ArtImageSource *self, ArtRender *render,
 }
 
 static void
-render_image_pattern (ArtRender *render, gchar * pixels, gint x, gint y, 
-					  gint width, gint height, gint realwidth, gint realheight, gint rowstride,
-					  double * affine)
+render_image_pattern (ArtRender *render, gchar * pixels, gdouble x, gdouble y, 
+					  gdouble width, gdouble height, gint realwidth, gint realheight, gint rowstride,
+					  gdouble xoffset, gdouble yoffset, double * affine)
 {	
 	RsvgImageSourcePattern *image_source;
 	int i;
@@ -437,10 +449,17 @@ render_image_pattern (ArtRender *render, gchar * pixels, gint x, gint y,
 	image_source->realheight = realheight;
 	image_source->x = x;
 	image_source->y = y;
+	image_source->xoffset = xoffset;
+	image_source->yoffset = yoffset;
 		
 	for (i = 0; i < rowstride * realheight; i++)
 		image_source->pixels[i] = pixels[i];  
 	
+	for (i = 0; i < 6; i++)
+		image_source->affine[i] = affine[i];  
+
+	art_affine_invert(image_source->invaffine, affine);
+
 	image_source->init = ART_FALSE;
 	
 	art_render_add_image_source (render, &image_source->super);
@@ -464,7 +483,10 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 	RsvgHandle *hctx = ctx->ctx;
 	double affine[6];
 	double caffine[6];
-	int i;
+	int i, j;
+
+	gdouble minx, miny, maxx, maxy, xcoord, ycoord, xoffset, yoffset;
+	
 	GdkPixbuf *save, *render;
 
 	if (pattern->obj_bbox) {
@@ -480,7 +502,16 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 			affine[i] = ctx->affine[i];
 	}
 
-	if (pattern->obj_cbbox) {
+	if (pattern->vbox) {
+		caffine[0] = pattern->width / pattern->vbw;
+		caffine[1] = 0.;		
+		caffine[2] = 0.;
+		caffine[3] = pattern->height / pattern->vbh;
+		caffine[4] = pattern->vbx * pattern->width / pattern->vbw + pattern->x;
+		caffine[5] = pattern->vby * pattern->height / pattern->vbh + pattern->y;
+		art_affine_multiply(caffine, caffine, affine);		
+	}
+	else if (pattern->obj_cbbox) {
 		caffine[0] = ctx->x1 - ctx->x0;
 		caffine[1] = 0.;		
 		caffine[2] = 0.;
@@ -493,8 +524,35 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 			caffine[i] = ctx->affine[i];
 	}
 
-	art_affine_multiply(affine, pattern->affine, affine);
-	art_affine_multiply(caffine, pattern->affine, caffine);
+	art_affine_multiply(affine, affine, pattern->affine);
+	art_affine_multiply(caffine, caffine, pattern->affine);
+
+	/*check if everything is going to be within the boundaries of the rendering surface*/
+	maxx = maxy = minx = miny = xoffset = yoffset = 0;
+
+	for (i = 0; i < 2; i++)
+		for (j = 0; j < 2; j++)
+			{
+				xcoord = affine[0] * pattern->width * i + affine[2] * pattern->height * j + affine[4];
+				ycoord = affine[1] * pattern->width * i + affine[3] * pattern->height * j + affine[5];
+				if (xcoord < minx)
+					minx = xcoord;
+				if (xcoord > maxx)
+					maxx = xcoord;
+				if (ycoord < miny)
+					miny = ycoord;
+				if (ycoord > maxy)
+					maxy = ycoord;
+			}
+
+	if (minx < 0)
+		xoffset = -minx;
+	if (miny < 0)
+		yoffset = -miny;
+	if (maxx > gdk_pixbuf_get_width(hctx->pixbuf))
+		xoffset = -minx;
+	if (maxy > gdk_pixbuf_get_height(hctx->pixbuf))
+		yoffset = -maxy;	
 
 	render = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
 							 gdk_pixbuf_get_width(hctx->pixbuf), 
@@ -509,12 +567,11 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 	if (hctx->n_state == hctx->n_state_max)
 		hctx->state = g_renew (RsvgState, hctx->state, 
 							   hctx->n_state_max <<= 1);
-	if (hctx->n_state)
-		rsvg_state_inherit (&hctx->state[hctx->n_state],
-							&hctx->state[hctx->n_state - 1]);
-	else
-				rsvg_state_init (hctx->state);
+	rsvg_state_init (&hctx->state[hctx->n_state]);
 	hctx->n_state++;
+	
+	caffine[4] += xoffset;
+	caffine[5] += yoffset;
 
 	for (i = 0; i < 6; i++)
 		{
@@ -535,13 +592,12 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
   	hctx->pixbuf = save;
 
 	render_image_pattern (ar, gdk_pixbuf_get_pixels (render),
-						  pattern->x * affine[0] + affine[4], 
-						  pattern->y * affine[3] + affine[5], 
-						  pattern->width * affine[0], 
-						  pattern->height * affine[3], 
+						  pattern->x, pattern->y, 
+						  pattern->width, pattern->height, 
 						  gdk_pixbuf_get_width (render),
 						  gdk_pixbuf_get_height (render),
-						  gdk_pixbuf_get_rowstride (render), affine);
+						  gdk_pixbuf_get_rowstride (render), 
+						  xoffset, yoffset, affine);
 }
 
 static RsvgPaintServer *
@@ -765,6 +821,7 @@ rsvg_clone_pattern (const RsvgPattern *pattern)
 	
 	clone->obj_bbox = pattern->obj_bbox;
 	clone->obj_cbbox = pattern->obj_cbbox;
+	clone->vbox = pattern->vbox;
 	for (i = 0; i < 6; i++)
 		clone->affine[i] = pattern->affine[i];
 
@@ -773,6 +830,15 @@ rsvg_clone_pattern (const RsvgPattern *pattern)
 		clone->gfallback = pattern->g;
 	else
 		clone->gfallback = pattern->gfallback;		
+
+	clone->x = pattern->x;
+	clone->y = pattern->y;
+	clone->width = pattern->width;
+	clone->height = pattern->height;
+	clone->vbx = pattern->vbx;
+	clone->vby = pattern->vby;
+	clone->vbw = pattern->vbw;	
+	clone->vbh = pattern->vbh;
 
 	return clone;
 }
