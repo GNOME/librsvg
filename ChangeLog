@@ -1,3 +1,7 @@
+2001-05-04  Robin * Slomkowski  <rslomkow@rslomkow.org>
+
+	* configure.in: upped version to 1.0.0
+
 2001-05-02  Ramiro Estrugo  <ramiro@eazel.com>
 
 	* configure.in:
