@@ -34,6 +34,9 @@ typedef struct {
         gpointer                    user_data;
 } SvgContext;
 
+G_MODULE_EXPORT void fill_vtable (GdkPixbufModule *module);
+G_MODULE_EXPORT void fill_info (GdkPixbufFormat *info);
+
 static gpointer
 gdk_pixbuf__svg_image_begin_load (GdkPixbufModuleSizeFunc size_func,
                                   GdkPixbufModulePreparedFunc prepared_func, 
@@ -102,7 +105,7 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
         return TRUE;
 }
 
-G_MODULE_EXPORT void
+void
 fill_vtable (GdkPixbufModule *module)
 {
         module->begin_load = gdk_pixbuf__svg_image_begin_load;
@@ -110,7 +113,7 @@ fill_vtable (GdkPixbufModule *module)
         module->load_increment = gdk_pixbuf__svg_image_load_increment;
 }
 
-G_MODULE_EXPORT void
+void
 fill_info (GdkPixbufFormat *info)
 {
         static GdkPixbufModulePattern signature[] = {
