@@ -1,4 +1,11 @@
-2004-02-19  Caleb Moore <c.moore@student.unsw.edu.au>
+2004-02-28  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-styles.c: made filters render before opacity is taken care of, 
+	this seems like the official way it is done
+	* rsvg-filter.c: fixed a few problem with coordinate units and 
+	dimentions
+	
+2004-02-27  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-styles.c: implemented the "enable-background" style value.
 	This allows backgrounds to be used by filters even when they are

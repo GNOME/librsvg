@@ -109,7 +109,7 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self,
 			output.y2 =
 				ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
 				ctx->affine[5];
-			
+
 			if (output.x1 < 0)
 				output.x1 = 0;
 			if (output.x2 >= ctx->width)
@@ -117,8 +117,8 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self,
 			if (output.y1 < 0)
 				output.y1 = 0;
 			if (output.y2 >= ctx->height)
-				output.y2 = ctx->height - 1;
-			
+				output.y2 = ctx->height - 1;		
+
 			return output;
 		}
 	
@@ -648,20 +648,21 @@ rsvg_start_filter (RsvgHandle * ctx, const xmlChar ** atts)
 	font_size = rsvg_state_current_font_size (ctx);
 	filter = rsvg_new_filter ();
 	
+
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
 					if (!strcmp ((char *) atts[i], "filterUnits"))
 						{
-							if (!strcmp ((char *) atts[i], "userSpaceOnUse"))
+							if (!strcmp ((char *) atts[i + 1], "userSpaceOnUse"))
 								filter->filterunits = userSpaceOnUse;
 							else
 								filter->filterunits = objectBoundingBox;
 						}
 					else if (!strcmp ((char *) atts[i], "primitiveUnits"))
 						{
-							if (!strcmp ((char *) atts[i], "objectBoundingBox"))
+							if (!strcmp ((char *) atts[i + 1], "objectBoundingBox"))
 								filter->primitiveunits = objectBoundingBox;
 							else
 								filter->primitiveunits = userSpaceOnUse;

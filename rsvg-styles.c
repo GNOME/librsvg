@@ -1148,18 +1148,18 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 			rsvg_use_opacity (ctx, 0xFF, tos, nos);			
 		}
 
-	if (opacity != 0xFF)
-		{
-			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
-			rsvg_use_opacity (ctx, opacity, in, out);
-			in = out;
-		}
 	if (filter != NULL)
 		{
 			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
 			insidebg = rsvg_compile_bg(ctx, state);
 			rsvg_filter_render (filter, in, out, insidebg, ctx);
 			g_object_unref (insidebg);
+			in = out;
+		}
+	if (opacity != 0xFF)
+		{
+			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
+			rsvg_use_opacity (ctx, opacity, in, out);
 			in = out;
 		}
 
