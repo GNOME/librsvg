@@ -1,4 +1,4 @@
-2005-2-10  Caleb Moore <c.moore@student.unsw.edu.au>
+2005-2-10  Alexander McCormmach <alexander at tunicate dot org>
 
 	* rsvg.c, rsvg-styles.c, rsvg-private.h: Applied patch by "makingnonsense" fixing spelling
 	
