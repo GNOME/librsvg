@@ -28,6 +28,7 @@
 #include "rsvg-shapes.h"
 #include "rsvg-css.h"
 #include <libart_lgpl/art_rgba.h>
+#include <libart_lgpl/art_svp_ops.h>
 #include <string.h>
 
 static void 
@@ -293,6 +294,159 @@ rsvg_mask_parse (const RsvgDefs * defs, const char *str)
 							g_free (name);
 							
 							if (val && val->type == RSVG_DEF_MASK)
+									return (RsvgDefsDrawable *) val;
+						}
+				}
+		}
+	return NULL;
+}
+
+static void 
+rsvg_clip_path_free (RsvgDefVal * self)
+{
+	RsvgClipPath *z = (RsvgClipPath *)self;
+	g_ptr_array_free(z->super.children, FALSE);
+	g_free (z);
+}
+
+ArtSVP *
+rsvg_clip_path_render (RsvgClipPath * self, RsvgHandle *ctx)
+{
+	RsvgState *state = rsvg_state_current (ctx);
+	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
+	guint i;
+
+	ArtSVP *svp, *svpx;
+	svpx = NULL;
+
+	/* combine state definitions */
+	if (ctx->n_state > 1)
+		rsvg_state_dominate(state, &ctx->state[ctx->n_state - 2]);
+
+	if (self->units == objectBoundingBox)
+		{
+			state->affine[0] = ctx->bbox.x1 - ctx->bbox.x0;
+			state->affine[1] = 0;
+			state->affine[2] = 0;
+			state->affine[3] = ctx->bbox.y1 - ctx->bbox.y0;
+			state->affine[4] = ctx->bbox.x0;
+			state->affine[5] = ctx->bbox.y0;
+		}
+
+	for (i = 0; i < group->children->len; i++)
+		{
+			/* push the state stack */
+			if (ctx->n_state == ctx->n_state_max)
+				ctx->state = g_renew (RsvgState, ctx->state, 
+									  ctx->n_state_max <<= 1);
+			if (ctx->n_state)
+				rsvg_state_inherit (&ctx->state[ctx->n_state],
+									&ctx->state[ctx->n_state - 1]);
+			else
+				rsvg_state_init (ctx->state);
+			ctx->n_state++;
+
+			svp = rsvg_defs_drawable_draw_as_svp (g_ptr_array_index(group->children, i), 
+												  ctx, 0);
+			
+			if (svp != NULL)
+				{
+					if (svpx != NULL)
+						{
+							ArtSVP * svpn;
+							svpn = art_svp_union(svpx, svp);
+							art_free(svpx);
+							art_free(svp);
+							svpx = svpn;
+						}
+					else
+						svpx = svp;
+				}
+
+			/* pop the state stack */
+			ctx->n_state--;
+			rsvg_state_finalize (&ctx->state[ctx->n_state]);
+		}
+	return svpx;
+}
+
+
+static RsvgClipPath *
+rsvg_new_clip_path (void)
+{
+	RsvgClipPath *clip_path;
+	
+	clip_path = g_new (RsvgClipPath, 1);
+	clip_path->super.children = g_ptr_array_new ();
+	clip_path->units = userSpaceOnUse;
+	return clip_path;
+}
+
+void 
+rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
+{
+	const char *id = NULL, *value = NULL;
+	RsvgClipPath *clip_path;
+	double font_size;
+	
+	font_size = rsvg_state_current_font_size (ctx);
+	clip_path = rsvg_new_clip_path ();
+	
+	if (rsvg_property_bag_size (atts))
+		{
+			if ((value = rsvg_property_bag_lookup (atts, "clipPathUnits")))
+				{
+					if (!strcmp (value, "objectBoundingBox"))
+						clip_path->units = objectBoundingBox;
+					else
+						clip_path->units = userSpaceOnUse;		
+				}				
+			if ((value = rsvg_property_bag_lookup (atts, "id")))
+				id = value;
+		}
+
+
+	ctx->current_defs_group = &clip_path->super;
+	
+	/* set up the defval stuff */
+	clip_path->super.super.super.type = RSVG_DEF_CLIP_PATH;
+	clip_path->super.super.super.free = &rsvg_clip_path_free;
+	rsvg_defs_set (ctx->defs, id, &clip_path->super.super.super);
+}
+
+void 
+rsvg_end_clip_path (RsvgHandle *ctx)
+{
+	ctx->current_defs_group = NULL;
+}
+
+RsvgDefsDrawable *
+rsvg_clip_path_parse (const RsvgDefs * defs, const char *str)
+{
+	if (!strncmp (str, "url(", 4))
+		{
+			const char *p = str + 4;
+			int ix;
+			char *name;
+			RsvgDefVal *val;
+			
+			while (g_ascii_isspace (*p))
+				p++;
+
+			if (*p == '#')
+				{
+				  p++;
+					for (ix = 0; p[ix]; ix++)
+						if (p[ix] == ')')
+							break;
+
+					if (p[ix] == ')')
+						{
+							name = g_strndup (p, ix);
+							val = rsvg_defs_lookup (defs, name);
+							g_free (name);
+							
+							if (val && val->type == RSVG_DEF_CLIP_PATH)
 									return (RsvgDefsDrawable *) val;
 						}
 				}

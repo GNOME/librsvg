@@ -1223,6 +1223,11 @@ rsvg_start_element (void *data, const xmlChar *name,
 					ctx->in_defs++;
 					rsvg_start_mask(ctx, bag);
 				}
+			else if (!strcmp ((char *)name, "clipPath"))
+				{
+					ctx->in_defs++;
+					rsvg_start_clip_path(ctx, bag);
+				}
 			else if (!strcmp ((char *)name, "marker"))
 				{
 					ctx->in_defs++;
@@ -1283,6 +1288,10 @@ rsvg_end_element (void *data, const xmlChar *name)
 			}
 			else if (!strcmp ((char *)name, "mask")){
 				rsvg_end_mask(ctx);
+				ctx->in_defs--;				
+			}
+			else if (!strcmp ((char *)name, "clipPath")){
+				rsvg_end_clip_path(ctx);
 				ctx->in_defs--;				
 			}
 			else if (!strcmp ((char *)name, "marker")){

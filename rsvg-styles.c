@@ -83,6 +83,7 @@ rsvg_state_init (RsvgState *state)
 	state->join = ART_PATH_STROKE_JOIN_MITER;
 	state->stop_opacity = 0xff;
 	state->fill_rule = FILL_RULE_NONZERO;
+	state->clip_rule = FILL_RULE_NONZERO;
 	state->backgroundnew = FALSE;
 	state->save_pixbuf = NULL;
 
@@ -96,16 +97,18 @@ rsvg_state_init (RsvgState *state)
 	state->unicode_bidi = UNICODE_BIDI_NORMAL;
 	state->text_anchor  = TEXT_ANCHOR_START;
 	state->visible      = TRUE;
-	state->cond_true      = TRUE;
+	state->cond_true    = TRUE;
 	state->filter       = NULL;
-	state->startMarker = NULL;
+	state->clip_path_ref= NULL;
+	state->startMarker  = NULL;
 	state->middleMarker = NULL;
-	state->endMarker = NULL;
+	state->endMarker    = NULL;
 
 	state->has_current_color = FALSE;
 	state->has_fill_server = FALSE;
 	state->has_fill_opacity = FALSE;
 	state->has_fill_rule = FALSE;
+	state->has_clip_rule = FALSE;
 	state->has_stroke_server = FALSE;
 	state->has_stroke_opacity = FALSE;
 	state->has_stroke_width = FALSE;
@@ -131,6 +134,8 @@ rsvg_state_init (RsvgState *state)
 	state->has_startMarker = FALSE;
 	state->has_middleMarker = FALSE;
 	state->has_endMarker = FALSE;
+
+	state->clippath = NULL;
 }
 
 void
@@ -170,6 +175,8 @@ rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 		dst->fill_opacity = src->fill_opacity;
 	if (!dst->has_fill_rule)
 		dst->fill_rule = src->fill_rule;
+	if (!dst->has_clip_rule)
+		dst->clip_rule = src->clip_rule;
 	if (!dst->has_stroke_server)
 		{
 			rsvg_paint_server_ref (src->stroke);
@@ -235,6 +242,26 @@ rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 				dst->dash.dash[i] = src->dash.dash[i];
 		}
 	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
+	/*
+	if (src->clippath == NULL)
+		{
+			if (dst->clip_path_ref)
+				dst->clippath = rsvg_clip_path_render (dst->clip_path_ref, ctx);
+			else
+				dst->clippath = NULL;
+		}
+	else
+		{
+			if (dst->clip_path_ref)
+				{
+					ArtSVP *svp;
+					svp = rsvg_clip_path_render (dst->clip_path_ref, ctx);
+					dst->clippath = art_svp_intersection(src->clippath, svp);
+				}
+			else
+	*/
+				dst->clippath = src->clippath; /*this is bad!!! we should copy it somehow*/
+				/*}*/
 }
 
 void
@@ -254,6 +281,8 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 		dst->fill_opacity = src->fill_opacity;
 	if (!dst->has_fill_rule || src->has_fill_rule)
 		dst->fill_rule = src->fill_rule;
+	if (!dst->has_clip_rule || src->has_clip_rule)
+		dst->clip_rule = src->clip_rule;
 	if (!dst->has_stroke_server || src->has_stroke_server)
 		{
 			rsvg_paint_server_ref (src->stroke);
@@ -322,6 +351,25 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 				dst->dash.dash[i] = src->dash.dash[i];
 		}
 	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
+	/*
+	if (src->clippath == NULL)
+		{
+			if (dst->clip_path_ref)
+				dst->clippath = rsvg_clip_path_render (dst->clip_path_ref, ctx);
+			else
+				dst->clippath = NULL;
+		}
+	else
+		{
+			if (dst->clip_path_ref)
+				{
+					ArtSVP *svp;
+					svp = rsvg_clip_path_render (dst->clip_path_ref, ctx);
+					dst->clippath = art_svp_intersection(src->clippath, svp);
+				}
+				else*/
+				dst->clippath = src->clippath; /*this is bad!!! we should copy it somehow*/
+				/*}*/
 }
 
 void
@@ -401,6 +449,11 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "mask"))
 		state->mask = rsvg_mask_parse(ctx->defs, str + arg_off);
+	else if (rsvg_css_param_match (str, "clip-path"))
+		{
+			state->clip_path_ref = rsvg_clip_path_parse(ctx->defs, str + arg_off);
+			state->clippath = rsvg_clip_path_render (state->clip_path_ref, ctx);
+		}
 	else if (rsvg_css_param_match (str, "enable-background"))
 		{
 			if (!strcmp (str + arg_off, "new"))
@@ -456,6 +509,16 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 				state->fill_rule = FILL_RULE_EVENODD;
 			else
 				state->has_fill_rule = FALSE;
+		}
+	else if (rsvg_css_param_match (str, "clip-rule"))
+		{
+			state->has_clip_rule = TRUE;
+			if (!strcmp (str + arg_off, "nonzero"))
+				state->clip_rule = FILL_RULE_NONZERO;
+			else if (!strcmp (str + arg_off, "evenodd"))
+				state->clip_rule = FILL_RULE_EVENODD;
+			else
+				state->has_clip_rule = FALSE;
 		}
 	else if (rsvg_css_param_match (str, "stroke"))
 		{
@@ -748,6 +811,8 @@ rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state,
 						RsvgPropertyBag *atts)
 {
 	rsvg_lookup_parse_style_pair (ctx, state, "a:adobe-blending-mode", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "clip-path", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "clip-rule", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "color", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "direction", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "display", atts);

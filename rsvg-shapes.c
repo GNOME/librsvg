@@ -41,9 +41,11 @@
 #include <libart_lgpl/art_render_svp.h>
 #include <libart_lgpl/art_svp_vpath.h>
 #include <libart_lgpl/art_svp_intersect.h>
+#include <libart_lgpl/art_svp_ops.h>
 #include <libart_lgpl/art_svp_vpath.h>
 #include <libart_lgpl/art_rgb_affine.h>
 #include <libart_lgpl/art_rgb_rgba_affine.h>
+#include <libart_lgpl/art_rgb_svp.h>
 
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
@@ -157,7 +159,7 @@ rsvg_calculate_svp_bounds (const ArtSVP *svp)
  * Renders the SVP over the pixbuf in @ctx.
  **/
 static void
-rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
+rsvg_render_svp (RsvgHandle *ctx, ArtSVP *svp,
 				 RsvgPaintServer *ps, int opacity)
 {
 	GdkPixbuf *pixbuf;
@@ -175,6 +177,8 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 			return;
 		}
 	
+	state = rsvg_state_current(ctx);
+
 	has_alpha = gdk_pixbuf_get_has_alpha (pixbuf);
 
 	render = art_render_new (0, 0,
@@ -188,10 +192,19 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 							 has_alpha ? ART_ALPHA_SEPARATE : ART_ALPHA_NONE,
 							 NULL);
 
+	temprect = rsvg_calculate_svp_bounds(svp);
+	
+	if (state->clippath != NULL)
+		{
+			ArtSVP * svpx;
+			svpx = art_svp_intersect(svp, state->clippath);
+			svp = svpx;
+		}
+	
 	art_render_svp (render, svp);
 	art_render_mask_solid (render, (opacity << 8) + opacity + (opacity >> 7));
 
-	temprect = rsvg_calculate_svp_bounds(svp);
+
 
 	art_irect_union(&ctx->bbox, &ctx->bbox, &temprect);
 
@@ -201,13 +214,65 @@ rsvg_render_svp (RsvgHandle *ctx, const ArtSVP *svp,
 	gradctx.y1 = temprect.y1;
 	gradctx.ctx = ctx;
 
-	state = rsvg_state_current(ctx);
 	for (i = 0; i < 6; i++)
 		gradctx.affine[i] = state->affine[i];
 	
 	gradctx.color = state->current_color;
 	rsvg_render_paint_server (render, ps, &gradctx);
 	art_render_invoke (render);
+
+	if (state->clippath != NULL) /*we don't need svpx any more*/
+		art_free(svp);
+}
+
+static ArtSVP *
+rsvg_render_filling (RsvgState *state, const ArtVpath *vpath)
+{
+			ArtVpath *closed_vpath;
+			ArtSVP *svp2, *svp;
+			ArtSvpWriter *swr;
+			
+			closed_vpath = rsvg_close_vpath (vpath);
+			svp = art_svp_from_vpath (closed_vpath);
+			g_free (closed_vpath);
+			
+			if (state->fill_rule == FILL_RULE_EVENODD)
+				swr = art_svp_writer_rewind_new (ART_WIND_RULE_ODDEVEN);
+			else /* state->fill_rule == FILL_RULE_NONZERO */
+				swr = art_svp_writer_rewind_new (ART_WIND_RULE_NONZERO);
+
+			art_svp_intersector (svp, swr);
+			
+			svp2 = art_svp_writer_rewind_reap (swr);
+			art_svp_free (svp);
+			return svp2;
+}
+
+static ArtSVP *
+rsvg_render_outline (RsvgState *state, ArtVpath *vpath)
+{
+	ArtSVP * output;
+
+	/* todo: libart doesn't yet implement anamorphic scaling of strokes */
+	double stroke_width = state->stroke_width *
+		art_affine_expansion (state->affine);
+
+	if (stroke_width < 0.25)
+		stroke_width = 0.25;
+	
+	/* if the path is dashed, stroke it */
+	if (state->dash.n_dash > 0) 
+		{
+			ArtVpath * dashed_vpath = art_vpath_dash (vpath, &state->dash);
+			vpath = dashed_vpath;
+		}
+	
+	output = art_svp_vpath_stroke (vpath, state->join, state->cap,
+								   stroke_width, state->miter_limit, 0.25);
+
+	if (state->dash.n_dash > 0) 
+		art_free (vpath);
+	return output;
 }
 
 static void
@@ -251,59 +316,27 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	
 	if (state->fill != NULL)
 		{
-			ArtVpath *closed_vpath;
-			ArtSVP *svp2;
-			ArtSvpWriter *swr;
-			
-			closed_vpath = rsvg_close_vpath (vpath);
-			svp = art_svp_from_vpath (closed_vpath);
-			g_free (closed_vpath);
-			
-			if (state->fill_rule == FILL_RULE_EVENODD)
-				swr = art_svp_writer_rewind_new (ART_WIND_RULE_ODDEVEN);
-			else /* state->fill_rule == FILL_RULE_NONZERO */
-				swr = art_svp_writer_rewind_new (ART_WIND_RULE_NONZERO);
 
-			art_svp_intersector (svp, swr);
-			
-			svp2 = art_svp_writer_rewind_reap (swr);
-			art_svp_free (svp);
-			
 			opacity = state->fill_opacity;
 			if (!need_tmpbuf && state->opacity != 0xff)
 				{
 					tmp = opacity * state->opacity + 0x80;
 					opacity = (tmp + (tmp >> 8)) >> 8;
 				}
-			rsvg_render_svp (ctx, svp2, state->fill, opacity);
-			art_svp_free (svp2);
+			svp = rsvg_render_filling(state, vpath);
+			rsvg_render_svp (ctx, svp, state->fill, opacity);
+			art_svp_free (svp);
 		}
 	
 	if (state->stroke != NULL)
 		{
-			/* todo: libart doesn't yet implement anamorphic scaling of strokes */
-			double stroke_width = state->stroke_width *
-				art_affine_expansion (state->affine);
-			
-			if (stroke_width < 0.25)
-				stroke_width = 0.25;
-			
-			/* if the path is dashed, stroke it */
-			if (state->dash.n_dash > 0) 
-				{
-					ArtVpath * dashed_vpath = art_vpath_dash (vpath, &state->dash);
-					art_free (vpath);
-					vpath = dashed_vpath;
-				}
-			
-			svp = art_svp_vpath_stroke (vpath, state->join, state->cap,
-										stroke_width, state->miter_limit, 0.25);
 			opacity = state->stroke_opacity;
 			if (!need_tmpbuf && state->opacity != 0xff)
 				{
 					tmp = opacity * state->opacity + 0x80;
 					opacity = (tmp + (tmp >> 8)) >> 8;
 				}
+			svp = rsvg_render_outline(state, vpath);
 			rsvg_render_svp (ctx, svp, state->stroke, opacity);
 			art_svp_free (svp);
 		}
@@ -312,6 +345,51 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 		rsvg_pop_discrete_layer (ctx);	
 	
 	art_free (vpath);
+}
+
+static ArtSVP *
+rsvg_render_bpath_into_svp (RsvgHandle *ctx, const ArtBpath *bpath)
+{
+	RsvgState *state;
+	ArtBpath *affine_bpath;
+	ArtVpath *vpath;
+	ArtSVP *svpi;
+	ArtSVP *svpo;
+	ArtSVP *svpx;
+	
+	state = rsvg_state_current (ctx);
+
+	affine_bpath = art_bpath_affine_transform (bpath,
+											   state->affine);
+	svpi = svpo = svpx = NULL;	
+
+	vpath = art_bez_path_to_vec (affine_bpath, 0.25);
+	art_free (affine_bpath);
+	state->fill_rule = state->clip_rule;
+	if (state->fill != NULL)
+		{
+			svpi = rsvg_render_filling(state, vpath);
+			svpx = svpi;
+		}
+	
+	if (state->stroke != NULL)
+		{
+			svpo = rsvg_render_outline(state, vpath);
+			if (svpx != NULL)
+				{
+					svpx = art_svp_union(svpi, svpo);
+					art_free(svpi);
+					art_free(svpo);
+				}
+			else
+				{
+					svpx = svpo;
+				}
+				
+		}
+	
+	art_free (vpath);
+	return svpx;
 }
 
 static void
@@ -411,11 +489,33 @@ rsvg_render_path(RsvgHandle *ctx, const char *d)
 	rsvg_bpath_def_free (bpath_def);
 }
 
+static ArtSVP *
+rsvg_render_path_as_svp(RsvgHandle *ctx, const char *d)
+{
+	RsvgBpathDef *bpath_def;
+	ArtSVP * output;
+	
+	bpath_def = rsvg_parse_path (d);
+	rsvg_bpath_def_art_finish (bpath_def);
+	
+	output = rsvg_render_bpath_into_svp (ctx, bpath_def->bpath);
+
+	rsvg_bpath_def_free (bpath_def);
+	return output;
+}
+
 void 
 rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 						 int dominate)
 {
 	self->draw(self, ctx, dominate);
+}
+
+ArtSVP *
+rsvg_defs_drawable_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx,
+						 int dominate)
+{
+	return self->draw_as_svp(self, ctx, dominate);
 }
 
 static void 
@@ -446,6 +546,29 @@ rsvg_defs_drawable_path_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 
 	/* always want to render inside of a <use/> */
 	rsvg_render_path (ctx, path->d);
+	
+}
+
+static ArtSVP *
+rsvg_defs_drawable_path_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+									 int dominate)
+{
+	RsvgState *state = rsvg_state_current (ctx);
+	RsvgDefsDrawablePath *path = (RsvgDefsDrawablePath*)self;
+
+	/* combine state definitions */
+
+	rsvg_state_clone (state, &self->state);
+	if (ctx->n_state > 1)
+		{
+			if (dominate)
+				rsvg_state_dominate(state, &ctx->state[ctx->n_state - 2]);
+			else
+				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
+		}
+
+	/* always want to render inside of a <use/> */
+	return rsvg_render_path_as_svp (ctx, path->d);
 	
 }
 
@@ -515,6 +638,70 @@ rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 		}			
 
 	rsvg_pop_discrete_layer (ctx);
+}
+
+static ArtSVP *
+rsvg_defs_drawable_group_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx, 
+									  int dominate)
+{
+	RsvgState *state = rsvg_state_current (ctx);
+	RsvgDefsDrawableGroup *group = (RsvgDefsDrawableGroup*)self;
+	guint i;
+	double tempaffine[6];
+	ArtSVP *svp1, *svp2, *svp3;
+	
+	svp1 = NULL;
+	for (i = 0; i < 6; i++)
+		{
+			 tempaffine[i] = ctx->state[ctx->n_state - 1].affine[i];
+		}	
+
+	/* combine state definitions */
+	rsvg_state_clone (state, &self->state);
+	if (ctx->n_state > 1)
+		{
+			/*This is a special domination mode for patterns, the style
+			  is simply reinherited, wheras the transform is totally overridden*/
+			if (dominate == 2)
+				{
+					for (i = 0; i < 6; i++)
+						{
+							state->affine[i] = tempaffine[i];
+						}	
+				}		
+			else if (dominate)
+				rsvg_state_dominate(state, &ctx->state[ctx->n_state - 2]);
+			else
+				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
+		}
+
+	for (i = 0; i < group->children->len; i++)
+		{
+			/* push the state stack */
+			if (ctx->n_state == ctx->n_state_max)
+				ctx->state = g_renew (RsvgState, ctx->state, 
+									  ctx->n_state_max <<= 1);
+			if (ctx->n_state)
+				rsvg_state_inherit (&ctx->state[ctx->n_state],
+									&ctx->state[ctx->n_state - 1]);
+			else
+				rsvg_state_init (ctx->state);
+			ctx->n_state++;
+
+			svp2 = rsvg_defs_drawable_draw_as_svp (g_ptr_array_index(group->children, i), 
+												   ctx, 0);
+			if (svp1 != NULL)
+				{
+					svp3 = art_svp_union(svp2, svp1);
+					art_free(svp1);
+					svp1 = svp3;
+				}
+	
+			/* pop the state stack */
+			ctx->n_state--;
+			rsvg_state_finalize (&ctx->state[ctx->n_state]);
+		}		
+	return svp1;
 }
 
 static void 
@@ -590,6 +777,7 @@ rsvg_push_def_group (RsvgHandle *ctx, const char * id)
 	group->super.super.type = RSVG_DEF_PATH;
 	group->super.super.free = rsvg_defs_drawable_group_free;
 	group->super.draw = rsvg_defs_drawable_group_draw;
+	group->super.draw_as_svp = rsvg_defs_drawable_group_draw_as_svp;
 
 	rsvg_defs_set (ctx->defs, id, &group->super.super);
 
@@ -628,6 +816,7 @@ rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id)
 		path->super.super.type = RSVG_DEF_PATH;
 		path->super.super.free = rsvg_defs_drawable_path_free;
 		path->super.draw = rsvg_defs_drawable_path_draw;
+		path->super.draw_as_svp = rsvg_defs_drawable_path_draw_as_svp;
 		rsvg_defs_set (ctx->defs, id, &path->super.super);
 
 		path->super.parent = (RsvgDefsDrawable *)ctx->current_defs_group;
@@ -1648,6 +1837,38 @@ rsvg_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate,
 			}
 }
 
+static void
+rsvg_clip_image(GdkPixbuf *intermediate, ArtSVP *path)
+{
+	gint intstride;
+	gint basestride;	
+	guchar * intpix;
+	guchar * basepix;
+	gint i, j;
+	gint width, height;
+	GdkPixbuf * base;
+
+	width = gdk_pixbuf_get_width (intermediate);
+	height = gdk_pixbuf_get_height (intermediate);
+
+	intstride = gdk_pixbuf_get_rowstride (intermediate);
+	intpix = gdk_pixbuf_get_pixels (intermediate);
+
+	base = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 0, 8, 
+						   width, height);
+	basestride = gdk_pixbuf_get_rowstride (base);
+	basepix = gdk_pixbuf_get_pixels (base);
+	
+	art_rgb_svp_aa(path, 0, 0, width, height, 0xFFFFFF, 0x000000, basepix, basestride, NULL);
+
+	for (i = 0; i < width; i++)
+		for (j = 0; j < height; j++)		
+			{
+				intpix[i * 4 + j * intstride + 3] = intpix[i * 4 + j * intstride + 3] * 
+					basepix[i * 3 + j * basestride] / 255;
+			}
+}
+
 void
 rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
@@ -1751,12 +1972,16 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			return;
 		}
 
-
 	rsvg_affine_image(img, intermediate, tmp_affine, w, h);
 
 	g_object_unref (G_OBJECT (img));
 
 	rsvg_push_discrete_layer(ctx);
+
+	if (state->clippath)
+		{
+			rsvg_clip_image(intermediate, state->clippath);
+		}
 
 	/*slap it down*/
 	rsvg_alpha_blt (intermediate, 0, 0,
