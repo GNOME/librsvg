@@ -441,6 +441,22 @@ ccss_property (CRDocHandler *a_handler, GString *a_name, CRTerm *a_expr)
 }
 
 static void
+ccss_error (CRDocHandler *a_handler)
+{
+	/* yup, like i care about CSS parsing errors ;-)
+	   ignore, chug along */
+	g_warning ("CSS parsing error\n");
+}
+
+static void
+ccss_unrecoverable_error (CRDocHandler *a_handler)
+{
+	/* yup, like i care about CSS parsing errors ;-)
+	   ignore, chug along */
+	g_warning ("CSS unrecoverable error\n");
+}
+
+static void
 init_sac_handler (CRDocHandler *a_handler)
 {
 	a_handler->start_document        = NULL;
@@ -458,6 +474,8 @@ init_sac_handler (CRDocHandler *a_handler)
 	a_handler->start_page            = NULL;
 	a_handler->end_page              = NULL;
 	a_handler->ignorable_at_rule     = NULL;
+	a_handler->error                 = ccss_error;
+	a_handler->unrecoverable_error   = ccss_unrecoverable_error;
 }
 
 static void

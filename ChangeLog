@@ -1,3 +1,9 @@
+2003-03-21  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.h: Document rsvg_size_func
+	* rsvg-styles.c: Whine/complain on invalid CSS documents, but chug
+	along anyway
+	
 2003-03-19  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Re-enable libcroco support, make it the default

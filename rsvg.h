@@ -39,7 +39,11 @@ GQuark rsvg_error_quark (void) G_GNUC_CONST;
 typedef struct RsvgHandle RsvgHandle;
 
 /**
- * RsvgSizeFunc ()
+ * RsvgSizeFunc ():
+ * @width: Pointer to where to set/store the width
+ * @height: Pointer to where to set/store the height
+ * @user_data: User data pointer
+ *
  * Function to let a user of the library specify the SVG's dimensions
  * @width: the ouput width the SVG should be
  * @height: the output height the SVG should be
