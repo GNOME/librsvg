@@ -78,6 +78,9 @@ gboolean
 rsvg_css_parse_vbox (const char * vbox, double * x, double * y,
 					 double * w, double * h);
 
+void rsvg_css_parse_number_optional_number(const char * str, 
+										   double *x, double *y);
+
 G_END_DECLS
 
 #endif /* RSVG_CSS_H */

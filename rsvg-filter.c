@@ -984,8 +984,8 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle *ctx, const xmlChar **at
 void 
 rsvg_start_filter_primitive_gaussian_blur (RsvgHandle *ctx, const xmlChar **atts) {
 	int i, j;
-	int sdx;
-	int sdy;
+	double sdx;
+	double sdy;
 
 	double font_size;
 	RsvgFilterPrimitiveConvolveMatrix * filter;
@@ -1026,10 +1026,9 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle *ctx, const xmlChar **atts
 						filter->super.height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
 					
 					else if (!strcmp ((char *)atts[i], "stdDeviation"))
-						sdx = atoi((char *)atts[i + 1]);	
+						rsvg_css_parse_number_optional_number((char *)atts[i + 1], &sdx, &sdy);	
 				}
 		}
-	sdy = sdx;
 
 	gint kw;
 	gint kh;
