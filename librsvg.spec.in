@@ -7,6 +7,7 @@ Release:          2
 License:          LGPL
 Group:            System Environment/Libraries
 Source:           librsvg-%{version}.tar.gz
+URL:		  http://librsvg.sourceforge.net/
 BuildRoot:        %{_tmppath}/%{name}-%{version}-root
 BuildRequires:    pkgconfig >= 0.8
 Requires:         glib2 >= @GLIB_REQUIRED@
