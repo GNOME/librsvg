@@ -234,9 +234,9 @@ AUTOHEADER=`echo $AUTOCONF | sed s/autoconf/autoheader/`
 
 case $REQUIRED_AUTOMAKE_VERSION in
     1.4*) automake_progs="automake-1.4" ;;
-    1.5*) automake_progs="automake-1.7 automake-1.6 automake-1.5" ;;
-    1.6*) automake_progs="automake-1.7 automake-1.6" ;;
-    1.7*) automake_progs="automake-1.7" ;;
+    1.5*) automake_progs="automake-1.8 automake-1.7 automake-1.6 automake-1.5" ;;
+    1.6*) automake_progs="automake-1.8 automake-1.7 automake-1.6" ;;
+    1.7*) automake_progs="automake-1.8 automake-1.7" ;;
     1.8*) automake_progs="automake-1.8" ;;
 esac
 version_check automake AUTOMAKE "$automake_progs" $REQUIRED_AUTOMAKE_VERSION \
