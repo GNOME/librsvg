@@ -105,6 +105,9 @@ rsvg_text_render_text_bitmap (RsvgHandle *ctx,
 	RsvgPSCtx gradctx;
 	int i;
 
+	if (state->filter)
+		rsvg_push_opacity_group(ctx);
+
 	pixbuf = ctx->pixbuf;
 	if (pixbuf == NULL)
     {
@@ -225,6 +228,10 @@ rsvg_text_render_text_bitmap (RsvgHandle *ctx,
 	g_free (bitmap.buffer);
 
 	state->text_offset += line_ink_rect.width;
+
+	if (state->filter)
+		rsvg_pop_opacity_group_as_filter(ctx, state->filter);
+
 }
 
 #endif
@@ -333,7 +340,7 @@ rsvg_text_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 {
 	RsvgSaxHandlerText *z = (RsvgSaxHandlerText *)self;
 	RsvgHandle *ctx = z->ctx;
-	
+
 	/* push the state stack */
 	if (ctx->n_state == ctx->n_state_max)
 		ctx->state = g_renew (RsvgState, ctx->state, ctx->n_state_max <<= 1);
@@ -354,7 +361,7 @@ rsvg_text_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 {
 	RsvgSaxHandlerText *z = (RsvgSaxHandlerText *)self;
 	RsvgHandle *ctx = z->ctx;
-	
+
 	if (!strcmp ((char *)name, "tspan"))
 		{
 			/* advance the text offset */

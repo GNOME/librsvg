@@ -771,6 +771,10 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_polyline (ctx, atts);
 	else if (!strcmp ((char *)name, "filter"))
 		rsvg_start_filter (ctx, atts);
+	else if (!strcmp ((char *)name, "feBlend"))
+		rsvg_start_filter_primitive_blend (ctx, atts);
+	else if (!strcmp ((char *)name, "feGaussianBlur"))
+		rsvg_start_filter_primitive_gaussian_blur (ctx, atts);
 }
 
 static void
