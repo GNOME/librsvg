@@ -100,3 +100,7 @@ fi
 
 %defattr(0444, bin, bin)
 %{_includedir}/librsvg-1/librsvg/*.h
+%{_datadir}/aclocal/librsvg.m4
+%{_libdir}/pkgconfig/librsvg-1.0.pc
+
+

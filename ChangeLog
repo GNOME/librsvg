@@ -1,5 +1,11 @@
 2001-07-25  Ramiro Estrugo  <ramiro@fateware.com>
 
+	* librsvg.spec.in:
+	Add missing pkg-config file.
+	Add missing m4 file.
+
+2001-07-25  Ramiro Estrugo  <ramiro@fateware.com>
+
 	* Makefile.am:
 	* configure.in:
 	* librsvg-1.0.pc.in:
