@@ -1463,8 +1463,9 @@ rsvg_handle_close_impl (RsvgHandle  *handle,
 static void
 rsvg_state_free_func(gpointer data, gpointer user_data)
 {
+	RsvgHandle * ctx = (RsvgHandle *)user_data;
 	rsvg_state_finalize((RsvgState *)data);
-	g_free((RsvgState *)data);
+	g_mem_chunk_free(ctx->state_allocator, data);
 }
 
 void
@@ -1474,7 +1475,7 @@ rsvg_handle_free_impl (RsvgHandle *handle)
 		g_object_unref (handle->pango_context);
 	rsvg_defs_free (handle->defs);
 	
-	g_slist_foreach(handle->state, rsvg_state_free_func, NULL);
+	g_slist_foreach(handle->state, rsvg_state_free_func, (gpointer)handle);
 	g_slist_free (handle->state);
 	
 	g_hash_table_foreach (handle->entities, rsvg_ctx_free_helper, NULL);
@@ -1494,6 +1495,8 @@ rsvg_handle_free_impl (RsvgHandle *handle)
 
 	if (handle->base_uri)
 		g_free (handle->base_uri);
+
+	g_mem_chunk_destroy(handle->state_allocator);
 
 	g_free (handle);
 }
@@ -1573,6 +1576,9 @@ rsvg_handle_init (RsvgHandle * handle)
 	handle->current_defs_group = NULL;
 	handle->title = g_string_new (NULL);
 	handle->desc = g_string_new (NULL);
+
+	/* should this be G_ALLOC_ONLY? */
+	handle->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
 
 	rsvg_state_push(handle);
 }

@@ -100,6 +100,8 @@ struct RsvgHandle {
 	void * currentfilter;
 	void * currentsubfilter;
 
+	GMemChunk * state_allocator;
+
 	/* virtual fns */
 	gboolean (* write) (RsvgHandle    *handle,
 						const guchar  *buf,

@@ -1,6 +1,7 @@
 2004-08-13  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-styles.c: Fix memory leak in the new "state stack thingie".
+	* rsvg.c: Use a GMemChunk to (marginally) speed up state allocation
 	
 2004-08-13  Caleb Moore <c.moore@student.unsw.edu.au>
 

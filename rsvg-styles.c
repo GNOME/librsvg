@@ -1763,12 +1763,16 @@ void
 rsvg_state_push(RsvgHandle * ctx)
 {
 	RsvgState * data;
-	RsvgState * baseon = g_slist_nth_data(ctx->state, 0);
-	data = g_new(RsvgState, 1);
+	RsvgState * baseon;
+
+	baseon = (RsvgState *)g_slist_nth_data(ctx->state, 0);
+	data = g_chunk_new(RsvgState, ctx->state_allocator);
+
 	if (baseon)
 		rsvg_state_inherit(data, baseon);
 	else
 		rsvg_state_init(data);
+
 	ctx->state = g_slist_prepend(ctx->state, data);
 }
 
@@ -1778,7 +1782,7 @@ rsvg_state_pop(RsvgHandle * ctx)
 	RsvgState * toremove = g_slist_nth_data(ctx->state, 0);
 	rsvg_state_finalize (toremove);
 	ctx->state = g_slist_remove(ctx->state, toremove);	
-	g_free(toremove);
+	g_mem_chunk_free(ctx->state_allocator, toremove);
 }
 
 void
