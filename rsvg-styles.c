@@ -1518,6 +1518,10 @@ rsvg_pop_discrete_layer(RsvgHandle *ctx)
 
 	state = rsvg_state_current(ctx);
 
+	if (state->filter == NULL && state->opacity == 0xFF && 
+		!state->backgroundnew && state->mask == NULL)
+		return;
+
 	tos = ctx->pixbuf;
 	nos = state->save_pixbuf;
 	
