@@ -456,6 +456,7 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 	img_width = gdk_pixbuf_get_width (info->pixbuf);
 	img_height = gdk_pixbuf_get_height (info->pixbuf);
 
+#ifdef ENABLE_XEMBED
 	if(xid > 0)
 		{
 			GdkWindow *gdk_parent;
@@ -469,6 +470,7 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 			gtk_widget_add_events (win, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
 		}
 	else
+#endif
 		{
 			win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
