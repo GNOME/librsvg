@@ -1,0 +1,54 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"
+[
+ <!ATTLIST svg
+  xmlns:xlink CDATA #FIXED "http://www.w3.org/1999/xlink">
+]>
+<!-- Created with Sodipodi ("http://www.sodipodi.com/") -->
+<svg
+   width="45.1555mm"
+   height="45.1555mm"
+   id="svg260"
+   sodipodi:version="0.26"
+   sodipodi:docname="/mnt/windows/Themes/Sodipodi/text-gradient-3.svg"
+   sodipodi:docbase="/mnt/windows/Themes/Sodipodi/"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink">
+  <sodipodi:namedview
+     id="base" />
+  <defs>
+  </defs>
+  <g style="fill:white;stroke:black;font-family:helvetica;font-style:normal;font-weight:normal;font-size:20pt;fill-opacity:1;stroke-opacity:1;stroke-linejoin:miter;stroke-linecap:butt;">
+     
+  <text
+     style="fill:white;stroke-width:0.3pt;"
+     x="5.0"
+     y="25.0"
+     id="text278">
+    <tspan
+       id="tspan279">
+Hello World!</tspan>
+  </text>
+  <text
+     style="fill:white;stroke:black;fill-opacity:1;stroke-opacity:1;stroke-width:0.5pt;"
+     x="5.0"
+     y="50.0"
+     id="text281">
+    <tspan
+       id="tspan282">
+Hello World!</tspan>
+  </text>
+  <text
+      style="fill:white;stroke:#003500;stroke-opacity:1;stroke-width:0.189127;"
+     x="5.0"
+     y="75.0"
+     id="text536">
+    <tspan
+       id="tspan537">
+Hello World!</tspan>
+  </text>
+  </g>
+</svg>
+
