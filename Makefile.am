@@ -25,6 +25,7 @@ EXTRA_DIST =				\
 	librsvg-2.0.pc.in 		\
 	librsvg-2.0-uninstalled.pc.in 	\
 	librsvg-zip.in 			\
+	rsvg-text-vectors.c		\
 	rsvg-gz.c 			\
 	rsvg-gz.h 			\
 	$(man_MANS)
@@ -53,8 +54,6 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-text.c		\
 	rsvg-text.h		\
 	rsvg.c
-
-EXTRA_DIST=librsvg_text_vectors.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
 librsvg_2_la_LIBADD = $(LIBRSVG_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS)
