@@ -1251,7 +1251,7 @@ true_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sdx,
 }
 
 static void
-box_blur (GdkPixbuf *in, GdkPixbuf *output, gint kw, 
+box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw, 
 		  gint kh, FPBox boundarys)
 {
 	guchar ch;
@@ -1261,18 +1261,13 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, gint kw,
 	guchar *in_pixels;
 	guchar *output_pixels;
 
-	gint sum;
-	GdkPixbuf *intermediate;	
+	gint sum;	
 
 	gint divisor;
 
 	
 	height = gdk_pixbuf_get_height (in);
 	width = gdk_pixbuf_get_width (in);
-
-	intermediate = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
-										   gdk_pixbuf_get_width (in),
-										   gdk_pixbuf_get_height (in));
 
 	in_pixels = gdk_pixbuf_get_pixels (in);
 	output_pixels = gdk_pixbuf_get_pixels (intermediate);
@@ -1285,18 +1280,25 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, gint kw,
 				{
 					sum = 0;
 					divisor = 0;
-					for (x = boundarys.x1; x < boundarys.x2 + kw; x++)
+					for (x = boundarys.x1; x < boundarys.x1 + kw; x++)
 						{
-							if (x - kw >= boundarys.x1)
+							divisor++;
+							sum += in_pixels[4 * x + y * rowstride + ch];
+							if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x2)
 								{
-									divisor--;
-									sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
+									output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
 								}
-							if (x < boundarys.x2)
-								{
-									divisor++;
-									sum += in_pixels[4 * x + y * rowstride + ch];
-								}
+						}
+					for (x = boundarys.x1 + kw; x < boundarys.x2; x++)
+						{
+							sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
+							sum += in_pixels[4 * x + y * rowstride + ch];
+							output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
+						}
+					for (x = boundarys.x2; x < boundarys.x2 + kw; x++)
+						{
+							divisor--;
+							sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
 							if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x2)
 								{
 									output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
@@ -1316,20 +1318,25 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, gint kw,
 					sum = 0;
 					divisor = 0;
 					
-					for (y = boundarys.y1; y < boundarys.y2 + kh; y++)
+					for (y = boundarys.y1; y < boundarys.y1 + kh; y++)
 						{
-							if (y - kh >= boundarys.y1)
+							divisor++;
+							sum += in_pixels[4 * x + y * rowstride + ch];
+							if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y2)
 								{
-									divisor--;
-									sum -= in_pixels[4 * x 
-													 + (y - kh) * rowstride + ch];
+									output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
 								}
-							if (y < boundarys.y2)
-								{
-									divisor++;
-									sum += in_pixels[4 * x 
-													 + y * rowstride + ch];
-								}
+						}
+					for (y = boundarys.y1 + kh; y < boundarys.y2; y++)
+						{
+							sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
+							sum += in_pixels[4 * x + y * rowstride + ch];
+							output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
+						}
+					for (y = boundarys.y2; y < boundarys.y2 + kh; y++)
+						{
+							divisor--;
+							sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
 							if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y2)
 								{
 									output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
@@ -1337,8 +1344,6 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, gint kw,
 						}
 				}
 		}
-
-	g_object_unref (G_OBJECT (intermediate));
 }
 
 static void
@@ -1352,21 +1357,21 @@ fast_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sx,
 	kx = floor(sx * 3*sqrt(2*M_PI)/4 + 0.5);
 	ky = floor(sy * 3*sqrt(2*M_PI)/4 + 0.5);
 
-	intermediate1 = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
-										   gdk_pixbuf_get_width (in),
-										   gdk_pixbuf_get_height (in));
-	intermediate2 = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
-										   gdk_pixbuf_get_width (in),
-										   gdk_pixbuf_get_height (in));
+	intermediate1 = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+									gdk_pixbuf_get_width (in),
+									gdk_pixbuf_get_height (in));
+	intermediate2 = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+									gdk_pixbuf_get_width (in),
+									gdk_pixbuf_get_height (in));
+	
 
 
 
-
-	box_blur (in, intermediate1, kx, 
+	box_blur (in, intermediate2, intermediate1, kx, 
 			  ky, boundarys);
-	box_blur (intermediate1, intermediate2, kx, 
+	box_blur (intermediate2, intermediate2, intermediate1, kx, 
 			  ky, boundarys);
-	box_blur (intermediate2, output, kx, 
+	box_blur (intermediate2, output, intermediate1, kx, 
 			  ky, boundarys);
 
 	g_object_unref (G_OBJECT (intermediate1));
@@ -1397,8 +1402,7 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self,
 	sdx = cself->sdx * ctx->paffine[0];
 	sdy = cself->sdy * ctx->paffine[3];
 	
-
-	if (sdx * sdy < 4)
+	if (sdx * sdy <= 4)
 		true_blur (in, output, sdx, 
 				   sdy, boundarys);
 	else
