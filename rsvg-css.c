@@ -39,8 +39,8 @@
 #define MM_PER_INCH     (25.4)
 #define PICA_PER_INCH   (6.0)
 
-#define SETINHERIT {if (inherit != NULL) *inherit = 1;}
-#define UNSETINHERIT {if (inherit != NULL) *inherit = 0;}
+#define SETINHERIT() G_STMT_START {if (inherit != NULL) *inherit = TRUE;} G_STMT_END
+#define UNSETINHERIT() G_STMT_START {if (inherit != NULL) *inherit = FALSE;} G_STMT_END
 
 /**
  * rsvg_css_parse_vbox
@@ -245,7 +245,9 @@ guint32
 rsvg_css_parse_color (const char *str, gboolean * inherit)
 {
 	gint val = 0;
-	SETINHERIT
+
+	SETINHERIT ();
+
 	if (str[0] == '#')
 		{
 			int i;
@@ -318,7 +320,7 @@ rsvg_css_parse_color (const char *str, gboolean * inherit)
 			val = PACK_RGB (r,g,b);
 		}
 	else if (!strcmp (str, "inherit"))
-		UNSETINHERIT
+		UNSETINHERIT ();
 	else 
 		{
 			const static ColorPair color_list [] =
@@ -597,7 +599,8 @@ rsvg_css_parse_time (const char * str)
 PangoStyle
 rsvg_css_parse_font_style (const char * str, gboolean * inherit)
 {
-	SETINHERIT
+	SETINHERIT ();
+
 	if (str)
 		{
 			if (!strcmp(str, "oblique"))
@@ -606,7 +609,7 @@ rsvg_css_parse_font_style (const char * str, gboolean * inherit)
 				return PANGO_STYLE_ITALIC;
 			else if (!strcmp(str, "inherit"))
 				{
-					UNSETINHERIT
+					UNSETINHERIT ();
 					return PANGO_STYLE_NORMAL;
 				}
 		}
@@ -616,14 +619,15 @@ rsvg_css_parse_font_style (const char * str, gboolean * inherit)
 PangoVariant
 rsvg_css_parse_font_variant (const char * str, gboolean * inherit)
 {
-	SETINHERIT
+	SETINHERIT ();
+
 	if (str)
     {
 		if (!strcmp(str, "small-caps"))
 			return PANGO_VARIANT_SMALL_CAPS;
 		else if (!strcmp(str, "inherit"))
 			{
-				UNSETINHERIT
+				UNSETINHERIT ();
 				return PANGO_VARIANT_NORMAL;
 			}
     }
@@ -633,7 +637,7 @@ rsvg_css_parse_font_variant (const char * str, gboolean * inherit)
 PangoWeight
 rsvg_css_parse_font_weight (const char * str, gboolean * inherit)
 {
-	SETINHERIT
+	SETINHERIT ();
 	if (str)
 		{
 			if (!strcmp (str, "lighter"))
@@ -662,7 +666,7 @@ rsvg_css_parse_font_weight (const char * str, gboolean * inherit)
 				return (PangoWeight)900;
 			else if (!strcmp(str, "inherit"))
 				{
-					UNSETINHERIT
+					UNSETINHERIT ();
 					return PANGO_WEIGHT_NORMAL;
 				}
 		}
@@ -673,7 +677,8 @@ rsvg_css_parse_font_weight (const char * str, gboolean * inherit)
 PangoStretch
 rsvg_css_parse_font_stretch (const char * str, gboolean * inherit)
 {
-	SETINHERIT
+	SETINHERIT ();
+
 	if (str)
 		{
 			if (!strcmp (str, "ultra-condensed"))
@@ -704,12 +709,13 @@ rsvg_css_parse_font_stretch (const char * str, gboolean * inherit)
 const char *
 rsvg_css_parse_font_family (const char * str, gboolean * inherit)
 {
-	SETINHERIT
+	SETINHERIT ();
+
 	if (!str)
 		return NULL;	
 	else if (!strcmp (str, "inherit"))
 		{
-			UNSETINHERIT
+			UNSETINHERIT ();
 			return NULL;
 		}
 	else
