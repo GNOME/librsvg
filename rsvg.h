@@ -83,6 +83,34 @@ GdkPixbuf  *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
 													gint          max_height,
 													GError      **error);
 
+/* "New" convenience API (2.2.2+) */
+
+GdkPixbuf  * rsvg_pixbuf_from_file_at_size_ex (RsvgHandle * handle,
+											   const gchar  *file_name,
+											   gint          width,
+											   gint          height,
+											   GError      **error);
+GdkPixbuf  * rsvg_pixbuf_from_file_ex (RsvgHandle * handle,
+									   const gchar  *file_name,
+									   GError      **error);
+GdkPixbuf  * rsvg_pixbuf_from_file_at_zoom_ex (RsvgHandle * handle,
+											   const gchar  *file_name,
+											   double        x_zoom,
+											   double        y_zoom,
+											   GError      **error);
+GdkPixbuf  * rsvg_pixbuf_from_file_at_max_size_ex (RsvgHandle * handle,
+												   const gchar  *file_name,
+												   gint          max_width,
+												   gint          max_height,
+												   GError      **error);
+GdkPixbuf  * rsvg_pixbuf_from_file_at_zoom_with_max_ex (RsvgHandle * handle,
+														const gchar  *file_name,
+														double        x_zoom,
+														double        y_zoom,
+														gint          max_width,
+														gint          max_height,
+														GError      **error);
+
 G_END_DECLS
 
 #endif /* RSVG_H */

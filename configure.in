@@ -20,7 +20,7 @@ dnl ===========================================================================
 
 LIBRSVG_MAJOR_VERSION=2
 LIBRSVG_MINOR_VERSION=2
-LIBRSVG_MICRO_VERSION=1
+LIBRSVG_MICRO_VERSION=2
 AC_SUBST(LIBRSVG_MAJOR_VERSION)
 AC_SUBST(LIBRSVG_MINOR_VERSION)
 AC_SUBST(LIBRSVG_MICRO_VERSION)
@@ -81,6 +81,29 @@ AC_CHECK_LIB(popt, poptParseArgvString, [POPT_LIBS="-lpopt"],
 AC_MSG_ERROR([popt 1.5 or newer is required to build librsvg.
 You can download the latest version from ftp://ftp.rpm.org/pub/rpm/dist/rpm-4.0.x/]))
 AC_SUBST(POPT_LIBS)
+
+dnl ===========================================================================
+
+LIBGSFPKG=""
+
+LIBGSF_CFLAGS=""
+LIBGSF_LIBS=""
+
+AC_ARG_WITH(libgsf,[  --with-libgsf  Use libgsf for run-time decompression],[
+	if test "x$withval" != "xno"; then
+		LIBGSFPKG="libgsf-1"
+	fi
+])
+if test "$LIBGSFPKG" != ""; then
+	PKG_CHECK_MODULES(LIBGSF,[libgsf-1 >= 0.5])
+	LIBGSF_CFLAGS="$LIBGSF_CFLAGS -DHAVE_LIBGSF=1"
+fi
+AM_CONDITIONAL(WITH_LIBGSF,[test "$LIBGSFPKG" != ""])
+
+AC_SUBST(LIBGSFPKG)
+
+AC_SUBST(LIBGSF_CFLAGS)
+AC_SUBST(LIBGSF_LIBS)
 
 dnl ===========================================================================
 

@@ -1,5 +1,13 @@
 2003-01-30  Dom Lachowicz <cinamod@hotmail.com>
 
+	* configure.in, Makefile.am, librsvg-2.0.pc.in: Work by FJF and myself
+	to conditionally build and install the libgsf-based GZip handle.
+	Bump version number. Perhaps should branch as well.
+	* rsvg-file-util.c: Export the new hidden _ex API calls
+	* rsvg.h: Ditto
+	
+2003-01-30  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-file-util.c (*): Made '_ex' versions of all "convenience" 
 	functions that take a RsvgHandle as an argument. This will allow the 
 	caller to pass in a handle with DPI specified, or a handle capable of 

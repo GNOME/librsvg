@@ -6,15 +6,25 @@ noinst_PROGRAMS = test-performance test-display
 
 man_MANS = rsvg.1
 
+if WITH_LIBGSF
+GSFHEADERS = rsvg-gz.h
+GSFSOURCES = rsvg-gz.c
+else
+GSFHEADERS = 
+GSFSOURCES = 
+endif
+
 EXTRA_DIST =\
 	COPYING.LIB \
 	librsvg.spec.in \
 	librsvg-2.0.pc.in \
+	rsvg-gz.c \
+	rsvg-gz.h \
 	$(man_MANS)
 
 lib_LTLIBRARIES = librsvg-2.la
 
-librsvg_2_la_SOURCES = \
+librsvg_2_la_SOURCES = $(GSFSOURCES) \
 	librsvg-features.c \
 	rsvg-bpath-util.c \
 	rsvg-bpath-util.h \
@@ -39,11 +49,11 @@ librsvg_2_la_SOURCES = \
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
-librsvginc_HEADERS = \
+librsvginc_HEADERS = $(GSFHEADERS) \
 	rsvg.h \
 	librsvg-features.h
 
-INCLUDES =\
+INCLUDES =$(LIBGSF_CFLAGS)\
 	-I$(top_srcdir) \
 	-I$(top_builddir) \
 	$(LIBRSVG_CFLAGS) \
@@ -57,7 +67,8 @@ INCLUDES =\
 	-DDATADIR="\"$(datadir)\""
 
 DEPS = $(top_builddir)/librsvg-2.la
-LDADDS = $(top_builddir)/librsvg-2.la \
+LDADDS =$(LIBGSF_LIBS)\
+	$(top_builddir)/librsvg-2.la \
 	$(LIBRSVG_LIBS) \
 	$(POPT_LIBS)
 

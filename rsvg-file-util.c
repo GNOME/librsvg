@@ -153,7 +153,7 @@ rsvg_pixbuf_from_file_with_size_data (RsvgHandle * handle,
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  **/
-static GdkPixbuf  *
+GdkPixbuf  *
 rsvg_pixbuf_from_file_at_size_ex (RsvgHandle * handle,
 								  const gchar  *file_name,
 								  gint          width,
@@ -182,7 +182,7 @@ rsvg_pixbuf_from_file_at_size_ex (RsvgHandle * handle,
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  **/
-static GdkPixbuf  *
+GdkPixbuf  *
 rsvg_pixbuf_from_file_ex (RsvgHandle * handle,
 						  const gchar  *file_name,
 						  GError      **error)
@@ -206,7 +206,7 @@ rsvg_pixbuf_from_file_ex (RsvgHandle * handle,
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  **/
-static GdkPixbuf  *
+GdkPixbuf  *
 rsvg_pixbuf_from_file_at_zoom_ex (RsvgHandle * handle,
 								  const gchar  *file_name,
 								  double        x_zoom,
@@ -241,7 +241,7 @@ rsvg_pixbuf_from_file_at_zoom_ex (RsvgHandle * handle,
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  **/
-static GdkPixbuf  *
+GdkPixbuf  *
 rsvg_pixbuf_from_file_at_max_size_ex (RsvgHandle * handle,
 									  const gchar  *file_name,
 									  gint          max_width,
@@ -276,7 +276,7 @@ rsvg_pixbuf_from_file_at_max_size_ex (RsvgHandle * handle,
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  **/
-static GdkPixbuf  *
+GdkPixbuf  *
 rsvg_pixbuf_from_file_at_zoom_with_max_ex (RsvgHandle * handle,
 										   const gchar  *file_name,
 										   double        x_zoom,
