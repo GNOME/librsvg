@@ -284,3 +284,83 @@ rsvg_marker_parse (const RsvgDefs * defs, const char *str)
 	return NULL;
 }
 
+void
+rsvg_render_markers(const RsvgBpathDef * bpath_def, RsvgDrawingCtx *ctx)
+{
+	int i;
+
+	double x, y;
+	double lastx, lasty;
+	double nextx, nexty;	
+	double linewidth;
+
+	RsvgState * state;
+	RsvgMarker * startmarker;
+	RsvgMarker * middlemarker;
+	RsvgMarker * endmarker;
+
+	state = rsvg_state_current(ctx);
+	
+	linewidth = state->stroke_width;
+	startmarker = (RsvgMarker *)state->startMarker;
+	middlemarker = (RsvgMarker *)state->middleMarker;
+	endmarker = (RsvgMarker *)state->endMarker;
+
+	if (!startmarker && !middlemarker && !endmarker)
+		return;
+
+	x = 0;
+	y = 0;
+	nextx = state->affine[0] * bpath_def->bpath[0].x3 + 
+		state->affine[2] * bpath_def->bpath[0].y3 + state->affine[4];
+	nexty = state->affine[1] * bpath_def->bpath[0].x3 + 
+		state->affine[3] * bpath_def->bpath[0].y3 + state->affine[5];
+
+	for (i = 0; i < bpath_def->n_bpath - 1; i++)
+		{
+			lastx = x;
+			lasty = y;
+			x = nextx;
+			y = nexty;
+			nextx = state->affine[0] * bpath_def->bpath[i + 1].x3 + 
+				state->affine[2] * bpath_def->bpath[i + 1].y3 + state->affine[4];
+			nexty = state->affine[1] * bpath_def->bpath[i + 1].x3 + 
+				state->affine[3] * bpath_def->bpath[i + 1].y3 + state->affine[5];
+			
+			if(bpath_def->bpath[i + 1].code == RSVG_MOVETO || 
+					bpath_def->bpath[i + 1].code == RSVG_MOVETO_OPEN || 
+					bpath_def->bpath[i + 1].code == RSVG_END)
+				{
+					if (endmarker)
+						rsvg_marker_render (endmarker, x, y, atan2(y - lasty, x - lastx), linewidth, ctx);
+				}
+			else if (bpath_def->bpath[i].code == RSVG_MOVETO || bpath_def->bpath[i].code == RSVG_MOVETO_OPEN)
+				{		
+					if (startmarker)
+						rsvg_marker_render (startmarker, x, y, atan2(nexty - y, nextx - x), linewidth, ctx);
+				}
+			else
+				{			
+					if (middlemarker)
+						{
+							double xdifin, ydifin, xdifout, ydifout, intot, outtot, angle;
+							
+							xdifin = x - lastx;
+							ydifin = y - lasty;
+							xdifout = nextx - x;
+							ydifout = nexty - y;
+							
+							intot = sqrt(xdifin * xdifin + ydifin * ydifin);
+							outtot = sqrt(xdifout * xdifout + ydifout * ydifout);
+							
+							xdifin /= intot;
+							ydifin /= intot;
+							xdifout /= outtot;
+							ydifout /= outtot;
+							
+							angle = atan2((ydifin + ydifout) / 2, (xdifin + xdifout) / 2);
+							rsvg_marker_render (middlemarker, x, y, angle, linewidth, ctx);
+						}
+				}
+		}
+}

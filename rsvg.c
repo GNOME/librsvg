@@ -1979,6 +1979,7 @@ rsvg_render_path (RsvgDrawingCtx *ctx, const char *d)
 	rsvg_bpath_def_art_finish (bpath_def);
 
 	ctx->render->render_path(ctx, bpath_def);
+	rsvg_render_markers(bpath_def, ctx);
 
 	rsvg_bpath_def_free (bpath_def);
 }

@@ -50,6 +50,8 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 RsvgDefVal *
 rsvg_marker_parse (const RsvgDefs * defs, const char *str);
 
+void
+rsvg_render_markers(const RsvgBpathDef * bpath_def, RsvgDrawingCtx *ctx);
 
 G_END_DECLS
 

@@ -1,6 +1,10 @@
 2005-03-03  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-art-composite.c: make clippaths work again
+	* rsvg-art-draw.c, rsvg-marker.c: moved marker rendering away from the 
+	backend
+	* rsvg-art-composite.c: simplified background composition into 
+	something a little more readable
 
 2005-03-02  Dom Lachowicz <cinamod@hotmail.com>
 

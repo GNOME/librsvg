@@ -54,6 +54,7 @@ struct _RsvgArtDiscreteLayer
 	RsvgState * state;
 	ArtSVP * clippath_save;
 	gboolean clippath_loaded;
+	gboolean backgroundnew;
 };
 
 void
@@ -79,7 +80,8 @@ rsvg_art_push_discrete_layer (RsvgDrawingCtx *ctx)
 		{
 			layer->save_pixbuf = pixbuf;
 			layer->underbbox = render->bbox;
-			
+			layer->backgroundnew = state->backgroundnew;
+
 			render->bbox.x0 = 0;
 			render->bbox.x1 = 0;
 			render->bbox.y0 = 0;
@@ -208,20 +210,15 @@ get_next_out(gint * operationsleft, GdkPixbuf * in, GdkPixbuf * tos,
 }
 
 static GdkPixbuf *
-rsvg_compile_bg(RsvgDrawingCtx *ctx, RsvgState *topstate)
+rsvg_compile_bg(RsvgDrawingCtx *ctx)
 {
-	int i, foundstate;
+	int i;
 	GdkPixbuf *intermediate, *lastintermediate;
-	RsvgArtDiscreteLayer *state, *lastvalid;
+	RsvgArtDiscreteLayer *state;
 	ArtIRect save;
 	RsvgArtRender *render = (RsvgArtRender *)ctx->render;
 
-	foundstate = 0;	
-
-	lastvalid = render->layers->data;
-	lastintermediate = gdk_pixbuf_copy(lastvalid->save_pixbuf);
-
-	lastvalid = NULL;
+	lastintermediate = gdk_pixbuf_copy(((RsvgArtDiscreteLayer *)render->layers->data)->save_pixbuf);
 			
 	save = render->bbox;
 
@@ -232,24 +229,14 @@ rsvg_compile_bg(RsvgDrawingCtx *ctx, RsvgState *topstate)
 
 	for (i = 0; (state = g_slist_nth_data(render->layers, i)) != NULL; i++)
 		{
-			if (state->state == topstate)
-				{
-					foundstate = 1;
-				}
-			else if (!foundstate)
-				continue;
-			if (state->state->backgroundnew)
+			if (state->backgroundnew)
 				break;
 			if (state->save_pixbuf)
 				{
-					if (lastvalid)
-						{
-							intermediate = gdk_pixbuf_copy(state->save_pixbuf);
-							rsvg_use_opacity(ctx, 0xFF, lastintermediate, intermediate);
-							g_object_unref(lastintermediate);
-							lastintermediate = intermediate;
-						}
-					lastvalid = state;
+					intermediate = gdk_pixbuf_copy(state->save_pixbuf);
+					rsvg_use_opacity(ctx, 0xFF, lastintermediate, intermediate);
+					g_object_unref(lastintermediate);
+					lastintermediate = intermediate;
 				}
 		}
 
@@ -295,7 +282,7 @@ rsvg_composite_layer(RsvgDrawingCtx *ctx, RsvgState *state, GdkPixbuf *tos, GdkP
 
 	if (filter != NULL || adobe_blend)
 		{
-			insidebg = rsvg_compile_bg(ctx, state);
+			insidebg = rsvg_compile_bg(ctx);
 		}
 	else
 		insidebg = NULL;
