@@ -1,5 +1,10 @@
 2002-01-02  Darin Adler  <darin@bentspoon.com>
 
+	* librsvg-2.0.pc.in: Remove spurious 2.0 from pango
+	package name.
+
+2002-01-02  Darin Adler  <darin@bentspoon.com>
+
 	* Makefile.am:
 	* configure.in:
 	* librsvg-2.0.pc.in:
