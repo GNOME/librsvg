@@ -1,3 +1,7 @@
+2003-01-07 Dom Lachowicz <cinamod@hotmail.com>
+
+	* test-rsvg.c : Unref pixbuf, free memory leak. Thanks valgrind.
+	
 2003-01-03 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.c (): Start handling text-decoration style

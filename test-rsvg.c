@@ -113,6 +113,8 @@ main (int argc, const char **argv)
 		return 1;
 	}
 
+	g_object_unref (G_OBJECT (pixbuf));
+
 	poptFreeContext (popt_context);
 	return 0;
 }
