@@ -17,6 +17,14 @@ else
 libm = -lm
 endif
 
+headers = \
+	rsvg-gz.h	\
+	rsvg.h
+
+enum_sources = \
+	librsvg-enum-types.h	\
+	librsvg-enum-types.c
+
 lib_LTLIBRARIES = librsvg-2.la
 
 librsvg_2_la_SOURCES = 		\
@@ -45,16 +53,17 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-text.c		\
 	rsvg-text.h		\
 	rsvg.c			\
-	rsvg-cond.c
+	rsvg-cond.c		\
+	librsvg-enum-types.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
 librsvg_2_la_LIBADD = $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS)
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = 	\
-	rsvg-gz.h	\
-	rsvg.h 		\
-	librsvg-features.h
+	$(headers)	\
+	librsvg-features.h \
+	librsvg-enum-types.h
 
 INCLUDES =				\
 	$(LIBGNOME_VFS_CFLAGS)		\
@@ -105,6 +114,10 @@ EXTRA_DIST =				\
 	$(man_MANS)			\
 	$(rsvg_view_SOURCES)
 
+CLEANFILES = \
+	$(enum_sources) \
+	s-enum-types-h s-enum-types-c
+
 tests: rsvg
 
 ## Put `exec' in the name because this should be installed by
@@ -115,3 +128,33 @@ pkgconfig_DATA = librsvg-2.0.pc
 
 dist-hook: librsvg.spec
 	cp librsvg.spec $(distdir)
+
+
+librsvg-enum-types.h: s-enum-types-h
+	@true
+
+s-enum-types-h: $(headers) Makefile
+	( cd $(srcdir) && glib-mkenums \
+			--fhead "#ifndef __LIBRSVG_ENUM_TYPES_H__\n#define __LIBRSVG_ENUM_TYPES_H__\n\n#include <glib-object.h>\n\nG_BEGIN_DECLS\n" \
+			--fprod "/* enumerations from \"@filename@\" */\n" \
+			--vhead "GType @enum_name@_get_type (void);\n#define RSVG_TYPE_@ENUMSHORT@ (@enum_name@_get_type())\n" 	\
+			--ftail "G_END_DECLS\n\n#endif /* __LIBRSVG_ENUM_TYPES_H__ */" \
+		$(headers) ) > tmp-librsvg-enum-types.h \
+	&& (cmp -s tmp-librsvg-enum-types.h librsvg-enum-types.h || cp tmp-librsvg-enum-types.h librsvg-enum-types.h ) \
+	&& rm -f tmp-librsvg-enum-types.h	\
+	&& echo timestamp > $(@F)
+
+librsvg-enum-types.c: s-enum-types-c librsvg-enum-types.h
+	@true
+
+s-enum-types-c: $(headers) Makefile
+	( cd $(srcdir) && glib-mkenums \
+			--fhead "#include \"librsvg-enum-types.h\"\n#include \"rsvg.h\"" \
+			--fprod "\n/* enumerations from \"@filename@\" */" \
+			--vhead "GType\n@enum_name@_get_type (void)\n{\n  static GType etype = 0;\n  if (etype == 0) {\n    static const G@Type@Value values[] = {" 	\
+			--vprod "      { @VALUENAME@, \"@VALUENAME@\", \"@valuenick@\" }," \
+			--vtail "      { 0, NULL, NULL }\n    };\n    etype = g_@type@_register_static (\"@EnumName@\", values);\n  }\n  return etype;\n}\n" \
+		$(headers) ) > tmp-librsvg-enum-types.c \
+	&& (cmp -s tmp-librsvg-enum-types.c librsvg-enum-types.c || cp tmp-librsvg-enum-types.c librsvg-enum-types.c ) \
+	&& rm -f tmp-librsvg-enum-types.c \
+	&& echo timestamp > $(@F)

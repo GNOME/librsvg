@@ -1,6 +1,7 @@
 2004-12-22  Dom Lachowicz <cinamod@hotmail.com>
 
 	* moz-plugin/moz-plugin.c: Fix bug #161823
+	* Makefile.am: bug #158897, from <kou@cozmixng.org>
 	
 2004-11-29  Caleb Moore <c.moore@student.unsw.edu.au>
 
