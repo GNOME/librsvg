@@ -1,3 +1,7 @@
+2003-11-25  Caleb Moore <calebmm@tpg.com.au>
+
+	* rsvg-styles.c: Fix opacity inheritance. Fixes a few bugs
+	
 2003-11-25  Dom Lachowicz <cinamod@hotmail.com>
 
 	* moz-plugin/*: Start of work on a RSVG Mozilla/Netscape plugin. 
