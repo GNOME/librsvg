@@ -926,7 +926,8 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
       layout = pango_layout_new (ctx->pango_context);
       pango_layout_set_text (layout, string, -1);
       font = pango_font_description_copy (pango_context_get_font_description (ctx->pango_context));
-      pango_font_description_set_family_static (font, state->font_family);
+      if (state->font_family)
+	pango_font_description_set_family_static (font, state->font_family);
       pango_font_description_set_size (font, state->font_size * PANGO_SCALE);
       pango_layout_set_font_description (layout, font);
       pango_font_description_free (font);

@@ -1,3 +1,9 @@
+2002-01-03  Darin Adler  <darin@bentspoon.com>
+
+	* rsvg.c: (rsvg_text_handler_characters):
+	Don't set font_family to NULL since pangoft2 doesn't
+	currnetly handle this properly.
+
 2002-01-02  Darin Adler  <darin@bentspoon.com>
 
 	* librsvg-2.0.pc.in: Remove spurious 2.0 from pango
