@@ -2,7 +2,7 @@ SUBDIRS = . gtk-engine gdk-pixbuf-loader doc gimp-plugin
 
 bin_PROGRAMS = rsvg
 
-noinst_PROGRAMS = test-performance test-display
+noinst_PROGRAMS = test-performance #test-display
 
 man_MANS = rsvg.1
 
@@ -89,10 +89,10 @@ test_performance_LDFLAGS =
 test_performance_DEPENDENCIES = $(DEPS)
 test_performance_LDADD = $(LDADDS) -lm
 
-test_display_SOURCES=test-display.c
-test_display_LDFLAGS =
-test_display_DEPENDENCIES = $(DEPS)
-test_display_LDADD = $(LDADDS) $(GTK_LIBS) -lm
+#test_display_SOURCES=test-display.c
+#test_display_LDFLAGS =
+#test_display_DEPENDENCIES = $(DEPS)
+#test_display_LDADD = $(LDADDS) $(GTK_LIBS) -lm
 
 tests: rsvg
 
