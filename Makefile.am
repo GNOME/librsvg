@@ -75,12 +75,6 @@ INCLUDES =				\
 	-DG_LOG_DOMAIN=\"librsvg\" 	\
 	-DDATADIR="\"$(datadir)\""
 
-#	-DG_DISABLE_DEPRECATED 		\
-#	-DPANGO_DISABLE_DEPRECATED 	\
-#	-DGDK_DISABLE_DEPRECATED 	\
-#	-DGDK_PIXBUF_DISABLE_DEPRECATED	\
-#	-DGTK_DISABLE_DEPRECATED 	\
-
 DEPS = $(top_builddir)/librsvg-2.la
 LDADDS =				\
 	$(LIBGSF_LIBS)			\
