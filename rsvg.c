@@ -1361,8 +1361,8 @@ rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
   double affine[6] ;
   double x, y, dx, dy;
   RsvgState *state;
-  x = y = dx = dy = 0.;
   const char * klazz = NULL;
+  x = y = dx = dy = 0.;
 
   state = &ctx->state[ctx->n_state - 1];
 
