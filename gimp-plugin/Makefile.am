@@ -13,6 +13,7 @@ endif
 
 DEPS = $(top_builddir)/librsvg-2.la
 LDADDS =$(LIBGSF_LIBS)\
+	$(LIBCROCO_LIBS)\
 	$(LIBGIMP_LIBS)\
 	$(top_builddir)/librsvg-2.la \
 	$(LIBRSVG_LIBS)

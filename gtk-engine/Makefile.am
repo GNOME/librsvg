@@ -1,6 +1,6 @@
 DIST_SUBDIRS= examples
 
-INCLUDES = $(GTK_CFLAGS) $(LIBRSVG_CFLAGS) -I$(top_srcdir)
+INCLUDES = $(GTK_CFLAGS) $(LIBGSF_CFLAGS) $(LIBCROCO_CFLAGS) $(LIBRSVG_CFLAGS) -I$(top_srcdir)
 
 enginedir = $(libdir)/gtk-2.0/$(GTK_VERSION)/engines
 themedir = $(datadir)/themes
@@ -25,4 +25,4 @@ libsvg_la_SOURCES = 		\
 	svg.h
 
 libsvg_la_LDFLAGS =  -avoid-version -module
-libsvg_la_LIBADD = $(GTK_LIBS) $(LIBRSVG_LIBS)
+libsvg_la_LIBADD = $(GTK_LIBS) $(LIBRSVG_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS)

@@ -4,6 +4,7 @@ loaderdir = $(libdir)/gtk-2.0/$(GTK_VERSION)/loaders
 INCLUDES = \
 	$(LIBRSVG_CFLAGS) \
 	$(LIBGSF_CFLAGS) \
+	$(LIBCROCO_CFLAGS)\
 	-DGDK_PIXBUF_ENABLE_BACKEND \
 	-I$(top_srcdir)
 

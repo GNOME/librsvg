@@ -402,20 +402,15 @@ ccss_end_selector (CRDocHandler *a_handler,
 				   CRSelector *a_selector_list)
 {
 	CSSUserData * user_data;
-	CRSelector  * list;
+	CRSelector  * cur;
+	CRSimpleSel * simple_sel;
 
 	g_return_if_fail (a_handler);
 
 	user_data = (CSSUserData *)a_handler->app_data;
 
-	if (a_selector_list)
-        {
-			for (list = a_selector_list; list != NULL; list = list->next) {			
-				/* iterate through the selector list, insert style into map - strdup it! */
-				rsvg_css_define_style (user_data->ctx, list->simple_sel->name->str, user_data->def->str);
-			}
-		}
-
+	/* TODO: rewrite the various dump routines to return strings.
+	   rsvg_css_define_style (user_data->ctx, simple_sel->name->str, user_data->def->str); */
 	g_string_free (user_data->def, TRUE);
 }
 
@@ -429,14 +424,14 @@ ccss_property (CRDocHandler *a_handler, GString *a_name, CRTerm *a_expr)
 
 	user_data = (CSSUserData *)a_handler->app_data;
 
-	if (a_name && a_name->str)
-        {
-			if (a_expr)
-                {
-					expr = cr_term_to_string (a_expr);
-					g_string_append_len (user_data->def, expr, strlen (expr));
-					g_free (expr);
-                }
+	if (a_name && a_name->str && a_expr)
+		{
+			g_string_append_len (user_data->def, a_name->str, a_name->len);
+			g_string_append (user_data->def, ": ");
+			expr = cr_term_to_string (a_expr);
+			g_string_append_len (user_data->def, expr, strlen (expr));
+			g_free (expr);
+			g_string_append (user_data->def, "; ");
         }
 }
 
@@ -475,19 +470,19 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 	css_handler->app_data = &user_data;
 
 	/* TODO: fix libcroco to take in const strings */
-	parser = cr_parser_new_from_buf ((char *)buff, (long)buflen, CR_UTF_8, FALSE);	
+	parser = cr_parser_new_from_buf ((guchar *)buff, (gulong)buflen, CR_UTF_8, FALSE);	
 	status = cr_parser_set_sac_handler (parser, css_handler);
     
 	if (status != CR_OK)
         {
-			cr_parser_destroy (parser);
+			cr_parser_destroy (parser);			
 			return;
         }        
 	
 	status = cr_parser_set_use_core_grammar (parser, FALSE);
 	status = cr_parser_parse (parser);
 	
-	cr_parser_destroy (parser);       
+	cr_parser_destroy (parser);
 }
 
 #else /* !HAVE_LIBCROCO */
