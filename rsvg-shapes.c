@@ -481,6 +481,8 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 
 	if (got_rx && !got_ry)
 		ry = rx;
+	else if (got_ry && !got_rx)
+		rx = ry;
 	
 	if (x < 0. || y < 0. || w < 0. || h < 0. || rx < 0. || ry < 0.)
 		return;

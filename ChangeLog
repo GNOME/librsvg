@@ -1,3 +1,7 @@
+2003-02-02  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-shapes.c (rect): Handle missing RX when RY is specified (http://www.w3.org/TR/SVG11/shapes.html#RectElement)
+	
 === librsvg 2.2.2 ===
 
 2003-02-01  Dom Lachowicz <cinamod@hotmail.com>
