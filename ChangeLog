@@ -1,4 +1,9 @@
-2005-03-12  Dom Lachowicz <cinamod@hotmail.com>
+2005-03-13  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-art-paint-server.c: Bug 170164
+	* rsvg-structure.c: Ditto
+	
+2005-03-12  Dom Lachowicz <cinamod@hotmail.com>	
 
 	* *.c: Conditional processing inside of <switch> seems to work now
 	

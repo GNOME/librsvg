@@ -27,7 +27,6 @@
 #define RSVG_PAINT_SERVER_H
 
 #include <glib/gtypes.h>
-#include <libart_lgpl/art_render_gradient.h>
 #include "rsvg-defs.h"
 
 G_BEGIN_DECLS
@@ -42,6 +41,12 @@ typedef struct _RsvgSolidColour RsvgSolidColour;
 typedef struct _RsvgPaintServer RsvgPaintServer;
 
 typedef struct _RsvgPSCtx RsvgPSCtx;
+
+typedef enum {
+  RSVG_GRADIENT_PAD,
+  RSVG_GRADIENT_REFLECT,
+  RSVG_GRADIENT_REPEAT
+} RsvgGradientSpread;
 
 struct _RsvgPSCtx {
 	double x0;
@@ -70,7 +75,7 @@ struct _RsvgLinearGradient {
 	gboolean obj_bbox;
 	double affine[6]; /* user space to actual at time of gradient def */
 	RsvgGradientStops *stops;
-	ArtGradientSpread spread;
+	RsvgGradientSpread spread;
 	double x1, y1;
 	double x2, y2;
 	guint32 current_color;
@@ -82,7 +87,7 @@ struct _RsvgRadialGradient {
 	gboolean obj_bbox;
 	double affine[6]; /* user space to actual at time of gradient def */
 	RsvgGradientStops *stops;
-	ArtGradientSpread spread;
+	RsvgGradientSpread spread;
 	double cx, cy;
 	double r;
 	double fx, fy;

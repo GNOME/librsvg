@@ -325,10 +325,11 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	const char * id, *value;
 	double vbox_x = 0, vbox_y = 0, vbox_w = 0, vbox_h = 0;
 	gboolean has_vbox = FALSE, overflow = 0;
-	id = NULL;
 	RsvgDefsDrawableSvg * svg;
 	RsvgDefsDrawableGroup * group;
 	RsvgState state;
+
+	id = NULL;
 	rsvg_state_init(&state);
 
 	if (rsvg_property_bag_size (atts))

@@ -469,7 +469,7 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	RsvgLinearGradient *grad = NULL;
 	const char *id = NULL, *value;
 	double x1 = 0., y1 = 0., x2 = 0., y2 = 0.;
-	ArtGradientSpread spread = ART_GRADIENT_PAD;
+	RsvgGradientSpread spread = RSVG_GRADIENT_PAD;
 	const char * xlink_href = NULL;
 	gboolean obj_bbox = TRUE;
 	gboolean got_x1, got_x2, got_y1, got_y2, got_spread, got_transform, got_bbox, cloned, shallow_cloned;
@@ -505,15 +505,15 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "spreadMethod")))
 				{
 					if (!strcmp (value, "pad")) {
-						spread = ART_GRADIENT_PAD;
+						spread = RSVG_GRADIENT_PAD;
 						got_spread = TRUE;
 					}
 					else if (!strcmp (value, "reflect")) {
-						spread = ART_GRADIENT_REFLECT;
+						spread = RSVG_GRADIENT_REFLECT;
 						got_spread = TRUE;
 					}
 					else if (!strcmp (value, "repeat")) {
-						spread = ART_GRADIENT_REPEAT;
+						spread = RSVG_GRADIENT_REPEAT;
 						got_spread = TRUE;
 					}
 				}
@@ -618,7 +618,7 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 	const char *id = NULL;
 	double cx = 0., cy = 0., r = 0., fx = 0., fy = 0.;  
 	const char * xlink_href = NULL, *value;
-	ArtGradientSpread spread = ART_GRADIENT_PAD;
+	RsvgGradientSpread spread = RSVG_GRADIENT_PAD;
 	gboolean obj_bbox = TRUE;
 	gboolean got_cx, got_cy, got_r, got_fx, got_fy, got_spread, got_transform, got_bbox, cloned, shallow_cloned;
 	guint32 color = 0;
@@ -668,15 +668,15 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char *
 			if ((value = rsvg_property_bag_lookup (atts, "spreadMethod")))
 				{
 					if (!strcmp (value, "pad")) {
-						spread = ART_GRADIENT_PAD;
+						spread = RSVG_GRADIENT_PAD;
 						got_spread = TRUE;
 					}
 					else if (!strcmp (value, "reflect")) {
-						spread = ART_GRADIENT_REFLECT;
+						spread = RSVG_GRADIENT_REFLECT;
 						got_spread = TRUE;
 					}
 					else if (!strcmp (value, "repeat")) {
-						spread = ART_GRADIENT_REPEAT;
+						spread = RSVG_GRADIENT_REPEAT;
 						got_spread = TRUE;
 					}
 				}
