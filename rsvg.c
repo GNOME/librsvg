@@ -1369,11 +1369,13 @@ rsvg_start_polyline (RsvgHandle *ctx, const xmlChar **atts)
 }
 
 static void
-rsvg_start_img (RsvgHandle *ctx, const xmlChar **atts)
+rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
 {
   int i;
-  double x = -1, y = -1, w = -1, h = -1;
-  const char * path = (const char *)NULL;
+  double x = 0, y = 0, w = 0, h = 0;
+  const char * href = (const char *)NULL;
+  GdkPixbuf *pixbuf, *img;
+  gboolean has_alpha;
 
   rsvg_parse_style_attrs (ctx, atts);
   if (atts != NULL)
@@ -1390,15 +1392,32 @@ rsvg_start_img (RsvgHandle *ctx, const xmlChar **atts)
 	    w = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	  else if (!strcmp ((char *)atts[i], "height"))
 	    h = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
-	  else if (!strcmp ((char *)atts[i], "path"))
-	    path = (const char *)atts[i + 1];
+	  /* path is used in svg 1, xlink:href in 1.1 */
+	  else if (!strcmp ((char *)atts[i], "path") || !strcmp((char *)atts[i], "xlink:href"))
+	    href = (const char *)atts[i + 1];
 	}
     }
 
-  if (!path || x < 0. || y < 0. || w < 0. || h < 0.)
+  if (!href || x < 0. || y < 0. || w <= 0. || h <= 0.)
     return;
+  
+  img = gdk_pixbuf_new_from_file (href, NULL);
+  
+  if (!img)
+    return;
+  
+  pixbuf = ctx->pixbuf;
+  has_alpha = gdk_pixbuf_get_has_alpha (img);
 
-  return;
+  /* composite our source image onto our context's pixbuf */
+  gdk_pixbuf_composite (img, pixbuf,
+			x, y, w, h,
+			(double)x, (double)y, 
+			(double)w / (double)gdk_pixbuf_get_width (img),
+			(double)h / (double)gdk_pixbuf_get_height (img),
+			GDK_INTERP_BILINEAR, has_alpha ? 255 : 0);
+  
+  g_object_unref (G_OBJECT (img));
 }
 
 static void
@@ -1657,8 +1676,8 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 	rsvg_start_path (ctx, atts);
       else if (!strcmp ((char *)name, "text"))
 	rsvg_start_text (ctx, atts);
-      else if (!strcmp ((char *)name, "img"))
-	rsvg_start_img (ctx, atts);
+      else if (!strcmp ((char *)name, "image"))
+	rsvg_start_image (ctx, atts);
       else if (!strcmp ((char *)name, "line"))
 	rsvg_start_line (ctx, atts);
       else if (!strcmp ((char *)name, "rect"))

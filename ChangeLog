@@ -1,11 +1,15 @@
 2002-09-14  Dom Lachowicz <doml@appligent.com>
 
+	* rsvg.c (rsvg_start_image): draw raster images 
+
+2002-09-14  Dom Lachowicz <doml@appligent.com>
+
 	* rsvg.c (rsvg_start_element): Support for more tags
 	(rsvg_start_ellipse): draw ellipses (buggy - ellipses are off-center)
 	(rsvg_start_circle): draw circles
 	(rsvg_start_rect): draw rectangles
 	(rsvg_start_line): draw lines
-	(rsvg_start_img): eventually will draw images (todo)
+	(rsvg_start_image): eventually will draw images (todo)
 	(rsvg_start_polyline): draw polylines
 	(rsvg_start_polygon): draw polygons
 	(rsvg_start_any_poly): helper fn for polyline|polygon
