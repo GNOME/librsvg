@@ -2,8 +2,6 @@
  * Add actual GError support in the loader, rather then the g_warnings
    that we currently use.
 
- * Move the stray bits of libart back into libart_lgpl.
-
 Post 2.0
 
  * Consider storing the paths so that the file can be rerendered
