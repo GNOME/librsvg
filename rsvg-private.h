@@ -32,6 +32,7 @@
 #include <libxml/xmlmemory.h>
 #include <pango/pango.h>
 #include <libart_lgpl/art_rect.h>
+#include <glib/gslist.h>
 
 G_BEGIN_DECLS
 
@@ -62,9 +63,8 @@ struct RsvgHandle {
 	ArtIRect bbox;
 
 	/* stack; there is a state for each element */
-	RsvgState *state;
-	int n_state;
-	int n_state_max;
+
+	GSList * state;
 	
 	RsvgDefs *defs;
 	guint in_defs;

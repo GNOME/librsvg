@@ -37,6 +37,9 @@
 #define M_PI 3.14159265358979323846
 #endif /*  M_PI  */
 
+/* probably poor form, but it saves us from whacking it in the header file */
+void rsvg_clip_image(GdkPixbuf *intermediate, ArtSVP *path); 
+
 #define PERFECTBLUR 0
 
 /*************************************************************/
@@ -431,6 +434,9 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 	g_hash_table_destroy (ctx->results);
 
 	bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);	
+
+	if (rsvg_state_current (context)->clippath)
+		rsvg_clip_image(ctx->lastresult.result, rsvg_state_current (context)->clippath);
 
 	rsvg_alpha_blt (ctx->lastresult.result, bounds.x1, bounds.y1, bounds.x2 - bounds.x1,
 					bounds.y2 - bounds.y1, output, bounds.x1, bounds.y1);
@@ -1513,6 +1519,12 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 	
 	rowstride = gdk_pixbuf_get_rowstride (in);
 
+	if (kw > boundarys.x2 - boundarys.x1)
+		kw = boundarys.x2 - boundarys.x1;
+
+	if (kh > boundarys.y2 - boundarys.y1)
+		kh = boundarys.y2 - boundarys.y1;
+
 
 	if (kw >= 1)	
 		{
@@ -2152,14 +2164,26 @@ rsvg_start_filter_primitive_merge_node (RsvgHandle * ctx,
 										RsvgPropertyBag * atts)
 {
 	const char *value;
+	int needdefault = 1;
+	if (!(ctx && ctx->currentsubfilter))
+		return;
+
 	if (rsvg_property_bag_size (atts))
 		{
 			/* see bug 145149 - sodipodi generates bad SVG... */
-			if (ctx && ctx->currentsubfilter && (value = rsvg_property_bag_lookup (atts, "in")))
-				g_ptr_array_add (((RsvgFilterPrimitiveMerge *) (ctx->
-																currentsubfilter))->
-								 nodes, g_string_new (value));
+			if ((value = rsvg_property_bag_lookup (atts, "in")))
+				{
+					needdefault = 0;
+					g_ptr_array_add (((RsvgFilterPrimitiveMerge *) 
+									  (ctx->currentsubfilter))->
+									 nodes, g_string_new (value));
+				}
 		}
+	
+	if (needdefault)
+		g_ptr_array_add (((RsvgFilterPrimitiveMerge *) 
+						  (ctx->currentsubfilter))->
+						 nodes, g_string_new ("none"));
 }
 
 /*************************************************************/
@@ -4022,24 +4046,13 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
 	ctx->pixbuf = img;
 
 	for (i = 0; i < 6; i++)
-		ctx->state[ctx->n_state - 1].affine[i] = context->paffine[i];
+		rsvg_state_current(ctx)->affine[i] = context->paffine[i];
 
-	/* push the state stack */
-	if (ctx->n_state == ctx->n_state_max)
-		ctx->state = g_renew (RsvgState, ctx->state, 
-							  ctx->n_state_max <<= 1);
-	if (ctx->n_state)
-		rsvg_state_inherit (&ctx->state[ctx->n_state],
-							&ctx->state[ctx->n_state - 1]);
-	else
-		rsvg_state_init (ctx->state);
-	ctx->n_state++;
+	rsvg_state_push(ctx);
 	
 	rsvg_defs_drawable_draw (drawable, ctx, 0);
 	
-	/* pop the state stack */
-	ctx->n_state--;
-	rsvg_state_finalize (&ctx->state[ctx->n_state]);
+	rsvg_state_pop(ctx);
 		
 	ctx->pixbuf = save;
 	return img;

@@ -570,12 +570,7 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 
 	hctx->pixbuf = render;
 
-	/* push the state stack */
-	if (hctx->n_state == hctx->n_state_max)
-		hctx->state = g_renew (RsvgState, hctx->state, 
-							   hctx->n_state_max <<= 1);
-	rsvg_state_init (&hctx->state[hctx->n_state]);
-	hctx->n_state++;
+	rsvg_state_push(ctx->ctx);
 	
 	caffine[4] += xoffset;
 	caffine[5] += yoffset;
@@ -592,9 +587,7 @@ rsvg_paint_server_pattern_render (RsvgPaintServer *self, ArtRender *ar,
 	else
 		rsvg_defs_drawable_draw ((RsvgDefsDrawable *)pattern->gfallback, hctx, 2);		
 
-	/* pop the state stack */
-	hctx->n_state--;
-	rsvg_state_finalize (&hctx->state[hctx->n_state]);
+	rsvg_state_pop(ctx->ctx);
 
   	hctx->pixbuf = save;
 

@@ -293,15 +293,7 @@ rsvg_text_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	RsvgSaxHandlerText *z = (RsvgSaxHandlerText *)self;
 	RsvgHandle *ctx = z->ctx;
 
-	/* push the state stack */
-	if (ctx->n_state == ctx->n_state_max)
-		ctx->state = g_renew (RsvgState, ctx->state, ctx->n_state_max <<= 1);
-	if (ctx->n_state)
-		rsvg_state_clone (&ctx->state[ctx->n_state],
-						  &ctx->state[ctx->n_state - 1]);
-	else
-		rsvg_state_init (ctx->state);
-	ctx->n_state++;
+	rsvg_state_push(ctx);
   
 	/* this should be the only thing starting inside of text */
 	if (!strcmp ((char *)name, "tspan"))
@@ -330,9 +322,7 @@ rsvg_text_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 				}
 		} 
 	
-	/* pop the state stack */
-	ctx->n_state--;
-	rsvg_state_finalize (&ctx->state[ctx->n_state]);
+	rsvg_state_pop(ctx);
 }
 
 void

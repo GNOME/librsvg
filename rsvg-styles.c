@@ -335,7 +335,6 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 				dst->dash.dash[i] = src->dash.dash[i];
 		}
 	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
-
 	dst->clippath = src->clippath;
 }
 
@@ -1259,7 +1258,7 @@ rsvg_lookup_apply_css_style (RsvgHandle *ctx, const char * target)
 	
 	if (value != NULL)
 		{
-			rsvg_parse_style (ctx, &ctx->state[ctx->n_state - 1],
+			rsvg_parse_style (ctx, rsvg_state_current(ctx),
 							  value);
 			return TRUE;
 		}
@@ -1397,7 +1396,7 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 	art_u8 *pixels;
 	int width, height, rowstride;
 
-	state = &ctx->state[ctx->n_state - 1];
+	state = rsvg_state_current(ctx);
 	pixbuf = ctx->pixbuf;
 
 	rsvg_state_clip_path_assure(ctx);
@@ -1530,9 +1529,8 @@ rsvg_compile_bg(RsvgHandle *ctx, RsvgState *topstate)
 
 	lastintermediate = gdk_pixbuf_copy(topstate->save_pixbuf);
 			
-	for (i = ctx->n_state - 1; i >= 0; i--)
+	for (i = 0; (state = g_slist_nth_data(ctx->state, i)) != NULL; i++)
 		{
-			state = &ctx->state[i];
 			if (state == topstate)
 				{
 					foundstate = 1;
@@ -1674,24 +1672,20 @@ rsvg_needs_discrete_layer(RsvgState *state)
 RsvgState * 
 rsvg_state_current (RsvgHandle *ctx)
 {
-	if (ctx->n_state > 0)
-		return &ctx->state[ctx->n_state - 1];
-	return NULL;
+	return g_slist_nth_data(ctx->state, 0);
 }
 
 RsvgState *
 rsvg_state_parent (RsvgHandle *ctx)
 {
-	if (ctx->n_state > 1)
-		return &ctx->state[ctx->n_state - 2];
-	return NULL;
+	return g_slist_nth_data(ctx->state, 1);
 }
 
 double
 rsvg_state_current_font_size (RsvgHandle *ctx)
 {
-	if (ctx->n_state > 0)
-		return ctx->state[ctx->n_state - 1].font_size;
+	if (rsvg_state_current(ctx) != NULL)
+		return rsvg_state_current(ctx)->font_size;
 	else
 		return 12.0;
 }
@@ -1744,13 +1738,18 @@ rsvg_state_clip_path_assure(RsvgHandle * ctx)
 
 	if (state->clip_path_ref && !state->clip_path_loaded)
 		{
+			rsvg_state_push(ctx);
+
 			tmppath = rsvg_clip_path_render (state->clip_path_ref, ctx);
+
+			rsvg_state_pop(ctx);
+
 			state->clip_path_loaded = TRUE;
 		}
 	else
 		return;
 
-	if (state->clippath)
+	if (state->clippath != NULL && tmppath != NULL)
 		{
 			tmppath2 = art_svp_intersect(tmppath, state->clippath);
 			art_free(tmppath);
@@ -1758,4 +1757,60 @@ rsvg_state_clip_path_assure(RsvgHandle * ctx)
 		}
 	else
 		state->clippath = tmppath;
+}
+
+void
+rsvg_state_push(RsvgHandle * ctx)
+{
+	RsvgState * data;
+	RsvgState * baseon = g_slist_nth_data(ctx->state, 0);
+	data = g_new(RsvgState, 1);
+	if (baseon)
+		rsvg_state_inherit(data, baseon);
+	else
+		rsvg_state_init(data);
+	ctx->state = g_slist_prepend(ctx->state, data);
+}
+
+void
+rsvg_state_pop(RsvgHandle * ctx)
+{
+	RsvgState * toremove = g_slist_nth_data(ctx->state, 0);
+	rsvg_state_finalize (toremove);
+	ctx->state = g_slist_remove(ctx->state, toremove);	
+}
+
+void
+rsvg_state_reinherit_top(RsvgHandle * ctx, RsvgState * state, int dominate)
+{
+	double tempaffine[6];
+	gint i;
+	RsvgState * baseon;
+
+	baseon = rsvg_state_parent(ctx);
+
+	for (i = 0; i < 6; i++)
+		{
+			 tempaffine[i] = rsvg_state_current(ctx)->affine[i];
+		}	
+
+	/* combine state definitions */
+	rsvg_state_clone (rsvg_state_current(ctx), state);
+
+	if (baseon)
+		{
+			/*This is a special domination mode for patterns, the style
+			  is simply left as is, wheras the transform is totally overridden*/
+			if (dominate == 2)
+				{
+					for (i = 0; i < 6; i++)
+						{
+							rsvg_state_current(ctx)->affine[i] = tempaffine[i];
+						}	
+				}		
+			else if (dominate)
+				rsvg_state_dominate(rsvg_state_current(ctx), baseon);
+			else
+				rsvg_state_reinherit(rsvg_state_current(ctx), baseon);
+		}
 }
