@@ -84,7 +84,7 @@ version_check() {
     for checkprog in $checkprogs; do
 	echo -n "  testing $checkprog... "
 	if $checkprog --version < /dev/null > /dev/null 2>&1; then
-	    actual_version=`$checkprog --version | head -1 | \
+	    actual_version=`$checkprog --version | head -n 1 | \
                                sed 's/^.*[ 	]\([0-9.]*[a-z]*\).*$/\1/'`
 	    if compare_versions $min_version $actual_version; then
 		echo "found."
