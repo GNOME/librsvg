@@ -1270,6 +1270,8 @@ rsvg_use_mask (RsvgHandle *ctx, RsvgDefsDrawable * maskref,
 	mask = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
 						   gdk_pixbuf_get_width(tos), 
 						   gdk_pixbuf_get_height(tos));
+
+	gdk_pixbuf_fill(mask, 0x00000000);
 	
 	save = ctx->pixbuf;
 

@@ -2783,67 +2783,98 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self,
 	
 	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	output_pixels = gdk_pixbuf_get_pixels (output);
-	
-	for (y = boundarys.y1; y < boundarys.y2; y++)
-		for (x = boundarys.x1; x < boundarys.x2; x++)
-			{
-				double qr, cr, qa, qb, ca, cb, Fa, Fb, Fab, Fo;
 
-				qa = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
-				qb = (double) in2_pixels[4 * x + y * rowstride + 3] / 255.0;
-				cr = 0;
-				Fa = Fb = Fab = Fo = 0;
-				switch (bself->mode)
-					{
-					case COMPOSITE_MODE_OVER:
-						Fa = 1;
-						Fb = 1 - qa;
-						break;
-					case COMPOSITE_MODE_IN:
-						Fa = qb;
-						Fb = 0;
-						break;
-					case COMPOSITE_MODE_OUT:
-						Fa = 1 - qb;
-						Fb = 0;
-						break;
-					case COMPOSITE_MODE_ATOP:
-						Fa = qb;
-						Fb = 1 - qa;
-						break;
-					case COMPOSITE_MODE_XOR:
-						Fa = 1 - qb;
-						Fb = 1 - qa;
-						break;
-					case COMPOSITE_MODE_ARITHMETIC:
-						Fab = bself->k1;
-						Fa = bself->k2;
-						Fb = bself->k3;
-						Fo = bself->k4;
-					}
-				
-				qr = Fa * qa + Fb * qb + Fab * qa * qb;
-
-				for (i = 0; i < 3; i++)
-					{
-						ca = (double) in_pixels[4 * x + y * rowstride + i] / 255.0 * qa;
-						cb = (double) in2_pixels[4 * x + y * rowstride + i] / 255.0 * qb;
+	if (bself->mode == COMPOSITE_MODE_ARITHMETIC)
+		for (y = boundarys.y1; y < boundarys.y2; y++)
+			for (x = boundarys.x1; x < boundarys.x2; x++)
+				{
+					double qr, cr, qa, qb, ca, cb;
 					
-						cr = (ca * Fa + cb * Fb + ca * cb * Fab + Fo) / qr;
-						if (cr > 1)
-							cr = 1;
-						if (cr < 0)
-							cr = 0;
-						output_pixels[4 * x + y * rowstride + i] = (guchar)(cr * 255.0);
-						
-					}
-				if (qr > 1)
+					qa = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
+					qb = (double) in2_pixels[4 * x + y * rowstride + 3] / 255.0;
+					cr = 0;
+					
+					qr = bself->k2 * qa + bself->k3 * qb + bself->k1 * qa * qb;
+					
+					for (i = 0; i < 3; i++)
+						{
+							ca = (double) in_pixels[4 * x + y * rowstride + i] / 255.0;
+							cb = (double) in2_pixels[4 * x + y * rowstride + i] / 255.0;
+							
+							cr = (ca * bself->k2 + cb * bself->k3 + 
+								  ca * cb * bself->k1 + bself->k4);
+							if (cr > 1)
+								cr = 1;
+							if (cr < 0)
+								cr = 0;
+							output_pixels[4 * x + y * rowstride + i] = (guchar)(cr * 255.0);
+							
+						}
+					if (qr > 1)
 					qr = 1;
-				if (qr < 0)
+					if (qr < 0)
 					qr = 0;
-				output_pixels[4 * x + y * rowstride + 3] = (guchar)(qr * 255.0);
-			}
+					output_pixels[4 * x + y * rowstride + 3] = (guchar)(qr * 255.0);
+				}
+	
+	else
+		for (y = boundarys.y1; y < boundarys.y2; y++)
+			for (x = boundarys.x1; x < boundarys.x2; x++)
+				{
+					double qr, cr, qa, qb, ca, cb, Fa, Fb, Fab, Fo;
+					
+					qa = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
+					qb = (double) in2_pixels[4 * x + y * rowstride + 3] / 255.0;
+					cr = 0;
+					Fa = Fb = Fab = Fo = 0;
+					switch (bself->mode)
+						{
+						case COMPOSITE_MODE_OVER:
+							Fa = 1;
+							Fb = 1 - qa;
+							break;
+						case COMPOSITE_MODE_IN:
+							Fa = qb;
+							Fb = 0;
+							break;
+						case COMPOSITE_MODE_OUT:
+							Fa = 1 - qb;
+							Fb = 0;
+							break;
+						case COMPOSITE_MODE_ATOP:
+							Fa = qb;
+							Fb = 1 - qa;
+							break;
+						case COMPOSITE_MODE_XOR:
+							Fa = 1 - qb;
+							Fb = 1 - qa;
+							break;
+						default:
+							break;
+						}
+				
+					qr = Fa * qa + Fb * qb + Fab * qa * qb;
 
+					for (i = 0; i < 3; i++)
+						{
+							ca = (double) in_pixels[4 * x + y * rowstride + i] / 255.0 * qa;
+							cb = (double) in2_pixels[4 * x + y * rowstride + i] / 255.0 * qb;
+							
+							cr = (ca * Fa + cb * Fb + ca * cb * Fab + Fo) / qr;
+							if (cr > 1)
+								cr = 1;
+							if (cr < 0)
+							cr = 0;
+							output_pixels[4 * x + y * rowstride + i] = (guchar)(cr * 255.0);
+							
+						}
+					if (qr > 1)
+						qr = 1;
+					if (qr < 0)
+						qr = 0;
+					output_pixels[4 * x + y * rowstride + 3] = (guchar)(qr * 255.0);
+				}
+	
 	rsvg_filter_store_result (self->result, output, ctx);
 	
 	g_object_unref (G_OBJECT (in));
