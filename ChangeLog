@@ -1,3 +1,7 @@
+2004-04-30  Dom Lachowicz <cinamod@hotmail.com>
+
+	* librsvg-2.0.pc.in: Remove bogus dependencies
+	
 2004-04-18  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in
