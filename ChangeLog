@@ -1,5 +1,9 @@
 2002-10-14  Alexander Larsson  <alexl@redhat.com>
 
+	* gdk-pixbuf-loader/Makefile.am (INCLUDES): 
+	* gdk-pixbuf-loader/io-svg.c:
+	Fix includes with srcdir != builddir
+
 	* NEWS:
 	Add news items
 

@@ -1,7 +1,7 @@
 
 loaderdir = $(libdir)/gtk-2.0/$(GTK_VERSION)/loaders
 
-INCLUDES = @LIBRSVG_CFLAGS@ @GDK_PIXBUF_CFLAGS@ -DGDK_PIXBUF_ENABLE_BACKEND
+INCLUDES = @LIBRSVG_CFLAGS@ @GDK_PIXBUF_CFLAGS@ -DGDK_PIXBUF_ENABLE_BACKEND -I$(top_srcdir)
 
 if ENABLE_PIXBUF_LOADER
 target_pixbuf_loader = svg_loader.la 

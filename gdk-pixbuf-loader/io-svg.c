@@ -22,9 +22,9 @@
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "rsvg.h"
-#include "gdk-pixbuf/gdk-pixbuf.h"
-#include "gdk-pixbuf/gdk-pixbuf-io.h"
+#include <rsvg.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
+#include <gdk-pixbuf/gdk-pixbuf-io.h>
 
 #define BUFFER_SIZE (1024 * 8)
 
