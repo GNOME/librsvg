@@ -267,8 +267,8 @@ rsvg_css_parse_color (const char *str)
 			
 			if (strstr (str, "%") != 0)
 				{
-					gint i;
-					char * tok, * ptr, * str2;
+					gint i, nb_toks;
+					char ** toks;
 
 					/* assume rgb (9%, 100%, 23%) */
 					for(i = 0; str[i] != '('; i++)
@@ -276,22 +276,18 @@ rsvg_css_parse_color (const char *str)
 
 					i++;
 
-					str2 = (char *)(str + i);
+					toks = rsvg_css_parse_list(str + i, &nb_toks);
 
-					tok = strtok_r (str2, ",", &ptr);
-					if (tok != NULL) 
+					if (toks)
 						{
-							r = rsvg_css_clip_rgb_percent (g_ascii_strtod (tok, NULL));
-							
-							tok = strtok_r (NULL, ",", &ptr);
-							if (tok != NULL)
+							if (nb_toks == 3)
 								{
-									g = rsvg_css_clip_rgb_percent (g_ascii_strtod (tok, NULL));
-
-									tok = strtok_r (NULL, ",", &ptr);
-									if (tok != NULL)
-										b = rsvg_css_clip_rgb_percent (g_ascii_strtod (tok, NULL));
+									r = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[0], NULL));
+									g = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[1], NULL));
+									b = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[2], NULL));
 								}
+
+							g_strfreev (toks);
 						}
 				}
 			else
@@ -686,7 +682,7 @@ rsvg_css_parse_font_family (const char * str, const char * inherit)
 		return str;
 }
 
-#if !defined(HAVE_STRTOK_R)
+#if !defined(HAVE_STRTOK_R) && !GLIB_CHECK_VERSION(2, 3, 2)
 
 static char *
 strtok_r(char *s, const char *delim, char **last)
