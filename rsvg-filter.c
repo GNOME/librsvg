@@ -1203,6 +1203,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 	int i, j, listlen;
 	double font_size;
 	const char *value;
+	gboolean has_target_x, has_target_y;
 	RsvgFilterPrimitiveConvolveMatrix *filter;
 	
 	font_size = rsvg_state_current_font_size (ctx);
@@ -1215,8 +1216,8 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 	
 	filter->divisor = 0;
 	filter->bias = 0;
-	filter->targetx = 0;
-	filter->targety = 0;
+	has_target_x = 0;
+	has_target_y = 0;
 	filter->dx = 0;
 	filter->dy = 0;
 	filter->preservealpha = FALSE;	
@@ -1265,9 +1266,15 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 					filter->super.sizedefaults = 0;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "targetX")))
-				filter->targetx = atoi (value);
+				{
+					has_target_x = 1;
+					filter->targetx = atoi (value);
+				}
 			if ((value = rsvg_property_bag_lookup (atts, "targetY")))
-				filter->targety = atoi (value);
+				{
+					has_target_y = 1;
+					filter->targety = atoi (value);
+				}
 			if ((value = rsvg_property_bag_lookup (atts, "bias")))
 				filter->bias = atof (value);
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAlpha")))
@@ -1303,7 +1310,7 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 					else if (!strcmp (value, "none"))
 						filter->edgemode = 2;
 					else
-								filter->edgemode = 0;
+						filter->edgemode = 0;
 				}
 		}
 
@@ -1319,6 +1326,15 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 		
 	if (listlen < filter->orderx * filter->ordery)
 		filter->orderx = filter->ordery = 0;
+
+	if (!has_target_x)
+		{
+			filter->targetx = floor(filter->orderx / 2);
+		}
+	if (!has_target_y)
+		{
+			filter->targety = floor(filter->ordery / 2);
+		}
 
 	filter->super.render = &rsvg_filter_primitive_convolve_matrix_render;
 	filter->super.free = &rsvg_filter_primitive_convolve_matrix_free;
