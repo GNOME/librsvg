@@ -1,3 +1,11 @@
+2003-09-18  Sven Neumann  <sven@gimp.org>
+
+	* Makefile.am
+	* configure.in
+	* gimp-plugin/Makefile.am
+	* gimp-plugin/svg.c: removed GIMP plug-in; it now lives in the
+	GIMP source tree. Thanks a lot for the nice work you've done!
+
 2003-09-12  Sven Neumann  <sven@gimp.org>
 
 	* configure.in

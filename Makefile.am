@@ -1,4 +1,4 @@
-SUBDIRS = . gtk-engine gdk-pixbuf-loader doc gimp-plugin
+SUBDIRS = . gtk-engine gdk-pixbuf-loader doc
 
 bin_PROGRAMS = rsvg
 
