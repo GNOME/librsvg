@@ -2784,55 +2784,15 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self,
 	output = gdk_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	output_pixels = gdk_pixbuf_get_pixels (output);
 	
-	if (bself->mode == COMPOSITE_MODE_ARITHMETIC)
-		{
-			for (y = boundarys.y1; y < boundarys.y2; y++)
-				for (x = boundarys.x1; x < boundarys.x2; x++)
-					{
-						gdouble ca, cb, cr;
-						for (i = 0; i < 3; i++)
-							{
-								ca = (double) in_pixels[4 * x + y * rowstride + i] / 255.0;
-								cb = (double) in2_pixels[4 * x + y * rowstride + i] / 255.0;
-							
-								cr = bself->k1*ca*cb + bself->k2*ca + bself->k3*cb + bself->k4;
-
-								if (cr > 1)
-									cr = 1;
-								if (cr < 0)
-									cr = 0;
-								output_pixels[4 * x + y * rowstride + i] = (guchar)(cr * 255.0);
-							}
-
-						ca = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
-						cb = (double) in2_pixels[4 * x + y * rowstride + 3] / 255.0;
-						
-						cr = bself->k2*ca + bself->k3*cb;
-						
-						if (cr > 1)
-							cr = 1;
-						if (cr < 0)
-							cr = 0;
-						output_pixels[4 * x + y * rowstride + 3] = (guchar)(cr * 255.0);
-					}
-			rsvg_filter_store_result (self->result, output, ctx);
-			
-			g_object_unref (G_OBJECT (in));
-			g_object_unref (G_OBJECT (in2));
-			g_object_unref (G_OBJECT (output));
-			return;
-		}
-
-	
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
-				double qr, cr, qa, qb, ca, cb, Fa, Fb;
+				double qr, cr, qa, qb, ca, cb, Fa, Fb, Fab, Fo;
 
 				qa = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
 				qb = (double) in2_pixels[4 * x + y * rowstride + 3] / 255.0;
 				cr = 0;
-				Fa = Fb = 0;
+				Fa = Fb = Fab = Fo = 0;
 				switch (bself->mode)
 					{
 					case COMPOSITE_MODE_OVER:
@@ -2856,17 +2816,20 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self,
 						Fb = 1 - qa;
 						break;
 					case COMPOSITE_MODE_ARITHMETIC:
-						break;
+						Fab = bself->k1;
+						Fa = bself->k2;
+						Fb = bself->k3;
+						Fo = bself->k4;
 					}
 				
-				qr = Fa * qa + Fb * qb;
+				qr = Fa * qa + Fb * qb + Fab * qa * qb;
 
 				for (i = 0; i < 3; i++)
 					{
 						ca = (double) in_pixels[4 * x + y * rowstride + i] / 255.0 * qa;
 						cb = (double) in2_pixels[4 * x + y * rowstride + i] / 255.0 * qb;
 					
-						cr = (ca * Fa + cb * Fb) / qr;
+						cr = (ca * Fa + cb * Fb + ca * cb * Fab + Fo) / qr;
 						if (cr > 1)
 							cr = 1;
 						if (cr < 0)

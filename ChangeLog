@@ -5,7 +5,12 @@
 	symbol.
 	* rsvg-shapes.c: Fixed image bitmap sizing, may need to give the whole 
 	system a good rewrite sometime to avoid having to use crappy libart 
-	rotation etc. and eventually make it easier to port to cairo.
+	rotation etc. and eventually make it easier to port to cairo, added
+	ability to use filters with images.
+	* rsvg-filter.c: Fixed arithmetic compositition.
+	* rsvg-text.c: fixed little filter bug I opened up a few days ago
+	* rsvg-defs.c: fixed memory leak that means unnamed defs are never 
+	freed.
 
 2004-03-10  Caleb Moore <c.moore@student.unsw.edu.au>
 
