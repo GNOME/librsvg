@@ -1,5 +1,16 @@
 2003-01-13  Alexander Larsson  <alexl@redhat.com>
 
+	* Makefile.am:
+	Added rsvg-private.h
+
+	* NEWS: 
+	* configure.in:
+	2.1.5
+
+=== librsvg 2.1.4 ===
+	
+2003-01-13  Alexander Larsson  <alexl@redhat.com>
+
 	* NEWS: 
 	* configure.in:
 	Update to 2.1.4

@@ -1,3 +1,7 @@
+Version 2.1.5
+
+- Missed files in tarball added. 
+
 Version 2.1.4
 
 - Fixed memory leak

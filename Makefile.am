@@ -23,6 +23,7 @@ librsvg_2_la_SOURCES = \
 	rsvg-paint-server.h \
 	rsvg-path.c \
 	rsvg-path.h \
+	rsvg-private.h \
 	rsvg-file-util.c \
 	rsvg-shapes.c	\
 	rsvg-shapes.h	\
