@@ -1,3 +1,8 @@
+2001-09-29  Darin Adler  <darin@bentspoon.com>
+
+	* rsvg-ft.c: (rsvg_ft_measure_or_render_string): Fix font metrics
+	to take affine matrix into account.
+
 2001-09-24  Darin Adler  <darin@bentspoon.com>
 
         * rsvg.c: (rsvg_entity_decl): Change so it can handle a NULL
