@@ -92,6 +92,9 @@ rsvg_state_init (RsvgState *state)
 	state->text_anchor  = TEXT_ANCHOR_START;
 	state->visible      = TRUE;
 	state->filter       = NULL;
+	state->startMarker = NULL;
+	state->middleMarker = NULL;
+	state->endMarker = NULL;
 
 	state->has_current_color = FALSE;
 	state->has_fill_server = FALSE;
@@ -117,6 +120,9 @@ rsvg_state_init (RsvgState *state)
 	state->has_font_decor = FALSE;
 	state->has_text_dir = FALSE;
 	state->has_text_anchor = FALSE;
+	state->has_startMarker = FALSE;
+	state->has_middleMarker = FALSE;
+	state->has_endMarker = FALSE;
 }
 
 void
@@ -194,6 +200,12 @@ rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 		dst->text_dir = src->text_dir;
 	if (!dst->has_text_anchor)
 		dst->text_anchor = src->text_anchor;
+	if (!dst->has_startMarker)
+		dst->startMarker = src->startMarker;
+	if (!dst->has_middleMarker)
+		dst->middleMarker = src->middleMarker;
+	if (!dst->has_endMarker)
+		dst->endMarker = src->endMarker;
 
 	if (!dst->has_font_family) {
 		g_free(dst->font_family); /* font_family is always set to something */
@@ -268,6 +280,12 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 		dst->text_dir = src->text_dir;
 	if (!dst->has_text_anchor || src->has_text_anchor)
 		dst->text_anchor = src->text_anchor;
+	if (!dst->has_startMarker || !src->has_startMarker)
+		dst->startMarker = src->startMarker;
+	if (!dst->has_middleMarker || !src->middleMarker)
+		dst->middleMarker = src->middleMarker;
+	if (!dst->has_endMarker || !src->endMarker)
+		dst->endMarker = src->endMarker;
 
 	if (!dst->has_font_family || src->has_font_family) {
 		g_free(dst->font_family); /* font_family is always set to something */
@@ -594,6 +612,21 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 					state->stop_opacity = rsvg_css_parse_opacity (str + arg_off);
 				}
 		}
+	else if (rsvg_css_param_match (str, "marker-start"))
+		{
+			state->startMarker = rsvg_marker_parse(ctx->defs, str + arg_off);
+			state->has_startMarker = TRUE;
+		}
+	else if (rsvg_css_param_match (str, "marker-mid"))
+		{
+			state->middleMarker = rsvg_marker_parse(ctx->defs, str + arg_off);
+			state->has_middleMarker = TRUE;
+		}
+	else if (rsvg_css_param_match (str, "marker-end"))
+		{
+			state->endMarker = rsvg_marker_parse(ctx->defs, str + arg_off);
+			state->has_endMarker = TRUE;
+		}
 	else if (rsvg_css_param_match (str, "stroke-miterlimit"))
 		{
 			state->has_miter_limit = TRUE;
@@ -707,6 +740,9 @@ rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state,
 			rsvg_lookup_parse_style_pair (ctx, state, "visibility", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "writing-mode", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "xml:lang", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "marker-start", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "marker-mid", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "marker-end", atts);
 }
 
 /* Split a CSS2 style into individual style arguments, setting attributes

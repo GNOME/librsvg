@@ -25,6 +25,7 @@
 #include <string.h>
 #include <math.h>
 #include <errno.h>
+#include <stdio.h>
 
 #include "rsvg-private.h"
 #include "rsvg-styles.h"
@@ -310,6 +311,83 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	art_free (vpath);
 }
 
+static void
+rsvg_render_markers(RsvgBpathDef * bpath_def, RsvgHandle *ctx)
+{
+	int i;
+
+	double x, y;
+	double lastx, lasty;
+	double nextx, nexty;	
+    double linewidth;
+
+	RsvgState * state;
+	RsvgMarker * startmarker;
+	RsvgMarker * middlemarker;
+	RsvgMarker * endmarker;
+
+	state = rsvg_state_current(ctx);
+	
+	linewidth = state->stroke_width;
+	startmarker = (RsvgMarker *)state->startMarker;
+	middlemarker = (RsvgMarker *)state->middleMarker;
+	endmarker = (RsvgMarker *)state->endMarker;
+	x = 0;
+	y = 0;
+	nextx = state->affine[0] * bpath_def->bpath[0].x3 + 
+		state->affine[2] * bpath_def->bpath[0].y3 + state->affine[4];
+	nexty = state->affine[1] * bpath_def->bpath[0].x3 + 
+		state->affine[3] * bpath_def->bpath[0].y3 + state->affine[5];
+
+	for (i = 0; i < bpath_def->n_bpath - 1; i++)
+		{
+			lastx = x;
+			lasty = y;
+			x = nextx;
+			y = nexty;
+			nextx = state->affine[0] * bpath_def->bpath[i + 1].x3 + 
+				state->affine[2] * bpath_def->bpath[i + 1].y3 + state->affine[4];
+			nexty = state->affine[1] * bpath_def->bpath[i + 1].x3 + 
+				state->affine[3] * bpath_def->bpath[i + 1].y3 + state->affine[5];
+
+			
+			if(bpath_def->bpath[i + 1].code == ART_MOVETO || 
+					bpath_def->bpath[i + 1].code == ART_MOVETO_OPEN || 
+					bpath_def->bpath[i + 1].code == ART_END)
+				{
+					if (endmarker)
+						rsvg_marker_render (endmarker, x, y, atan2(y - lasty, x - lastx), linewidth, ctx);
+				}
+			else if (bpath_def->bpath[i].code == ART_MOVETO || bpath_def->bpath[i].code == ART_MOVETO_OPEN)
+				{		
+					if (startmarker)
+						rsvg_marker_render (startmarker, x, y, atan2(nexty - y, nextx - x), linewidth, ctx);
+				}
+			else
+				{			
+					double xdifin, ydifin, xdifout, ydifout, intot, outtot, angle;
+					
+					xdifin = x - lastx;
+					ydifin = y - lasty;
+					xdifout = nextx - x;
+					ydifout = nexty - y;
+
+					intot = sqrt(xdifin * xdifin + ydifin * ydifin);
+					outtot = sqrt(xdifout * xdifout + ydifout * ydifout);
+
+					xdifin /= intot;
+					ydifin /= intot;
+					xdifout /= outtot;
+					ydifout /= outtot;
+
+					angle = atan2((ydifin + ydifout) / 2, (xdifin + xdifout) / 2);
+
+					if (middlemarker)
+						rsvg_marker_render (middlemarker, x, y, angle, linewidth, ctx);
+				}
+		}
+}
+
 void
 rsvg_render_path(RsvgHandle *ctx, const char *d)
 {
@@ -320,6 +398,8 @@ rsvg_render_path(RsvgHandle *ctx, const char *d)
 	
 	rsvg_render_bpath (ctx, bpath_def->bpath);
 	
+	rsvg_render_markers(bpath_def, ctx);
+
 	rsvg_bpath_def_free (bpath_def);
 }
 
@@ -1757,4 +1837,216 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 						return;
 					}
 		}
+}
+
+static void
+rsvg_marker_free(RsvgDefVal* self)
+{
+	RsvgMarker *marker;
+	marker = (RsvgMarker *)self;
+	g_free(self);
+}
+
+void 
+rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
+{
+	const char *id = NULL, *value;
+	RsvgMarker *marker;
+	double font_size;
+	double x = 0., y = 0., w = 0., h = 0.;
+	double vbx = 0., vby = 0., vbw = 1., vbh = 1.;
+	gboolean obj_bbox = TRUE;
+	gboolean got_x, got_y, got_bbox, got_vbox, got_width, got_height;
+	got_x = got_y = got_bbox = got_vbox = got_width = got_height = FALSE;
+	
+	font_size = rsvg_state_current_font_size (ctx);
+	marker = g_new (RsvgMarker, 1);
+		
+	marker->orient = 0;
+	marker->orientAuto = FALSE;
+	
+	if (rsvg_property_bag_size (atts))
+		{
+			if ((value = rsvg_property_bag_lookup (atts, "id")))
+				id = value;
+			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
+				{
+					got_vbox = rsvg_css_parse_vbox (value, &vbx, &vby,
+													&vbw, &vbh);
+				}
+			if ((value = rsvg_property_bag_lookup (atts, "refX"))) {
+				x = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, font_size);
+				got_x = TRUE;
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "refY"))) {
+				y = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, font_size);
+				got_y = TRUE;
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "markerWidth"))) {
+				w = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, font_size);
+				got_width = TRUE;
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "markerHeight"))) {
+				h = rsvg_css_parse_normalized_length (value, ctx->dpi, 1, font_size);
+				got_height = TRUE;
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "orient"))) {
+				if (!strcmp (value, "auto"))
+					marker->orientAuto = TRUE;
+				else
+					marker->orient = rsvg_css_parse_angle(value);
+			}
+			if ((value = rsvg_property_bag_lookup (atts, "markerUnits"))) {
+				if (!strcmp (value, "userSpaceOnUse"))
+					obj_bbox = FALSE;
+				else
+					obj_bbox = TRUE;					
+				got_bbox = TRUE;
+			}	
+		}
+	
+	if (got_x)
+		marker->refX = x;
+	else
+		marker->refX = 0;
+
+	if (got_y)
+		marker->refY = y;
+	else
+		marker->refY = 0;
+
+	if (got_width)
+		marker->width = w;
+	else
+		marker->width = 1;
+
+	if (got_height)
+		marker->height = h;
+	else
+		marker->height = 1;
+
+	if (got_bbox)
+		marker->bbox = obj_bbox;
+	else
+		marker->bbox = TRUE;
+
+	if (got_vbox)
+		{
+			marker->vbx = vbx;
+			marker->vby = vby;
+			marker->vbw = vbw;
+			marker->vbh = vbh;
+			marker->vbox = TRUE;
+		}
+	else
+		marker->vbox = FALSE;
+	
+	/* set up the defval stuff */
+	marker->super.type = RSVG_DEF_MARKER;
+
+	marker->contents = (RsvgDefsDrawable *)&(rsvg_push_def_group (ctx, "")->super);
+
+	marker->super.free = rsvg_marker_free;
+
+	rsvg_defs_set (ctx->defs, id, &marker->super);
+}
+
+void 
+rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdouble linewidth, RsvgHandle *ctx)
+{
+	gdouble affine[6];
+	gdouble taffine[6];
+	int i;
+	gdouble rotation;
+
+	if (self->bbox) {
+		art_affine_scale(affine,linewidth * rsvg_state_current(ctx)->affine[0], 
+						 linewidth * rsvg_state_current(ctx)->affine[3]);
+	} else {
+		for (i = 0; i < 6; i++)
+			affine[i] = rsvg_state_current(ctx)->affine[i];
+	}	
+
+	if (self->vbox) {
+		taffine[0] = self->width / self->vbw;
+		taffine[1] = 0.;		
+		taffine[2] = 0.;
+		taffine[3] = self->height / self->vbh;
+		taffine[4] = - self->vbx / self->vbw;
+		taffine[5] = - self->vby / self->vbh;
+		art_affine_multiply(affine, taffine, affine);		
+	}
+
+	art_affine_translate(taffine, -self->refX, -self->refY);
+
+	art_affine_multiply(affine, taffine, affine);
+
+	if (self->orientAuto)
+		rotation = orient * 180 / 3.14159265358979323;
+	else
+		rotation = self->orient;
+
+	art_affine_rotate(taffine, rotation);
+	
+	art_affine_multiply(affine, affine, taffine);
+
+	art_affine_translate(taffine, x, y);
+	
+	art_affine_multiply(affine, affine, taffine);
+
+	/* push the state stack */
+	if (ctx->n_state == ctx->n_state_max)
+		ctx->state = g_renew (RsvgState, ctx->state, 
+							  ctx->n_state_max <<= 1);
+	if (ctx->n_state)
+		rsvg_state_inherit (&ctx->state[ctx->n_state],
+									&ctx->state[ctx->n_state - 1]);
+	else
+				rsvg_state_init (ctx->state);
+	ctx->n_state++;
+	
+	for (i = 0; i < 6; i++)
+		{
+			rsvg_state_current(ctx)->affine[i] = affine[i];
+		}
+
+	rsvg_defs_drawable_draw (self->contents, ctx, 2);
+	
+	/* pop the state stack */
+	ctx->n_state--;
+	rsvg_state_finalize (&ctx->state[ctx->n_state]);
+}
+
+RsvgDefVal *
+rsvg_marker_parse (const RsvgDefs * defs, const char *str)
+{
+	if (!strncmp (str, "url(", 4))
+		{
+			const char *p = str + 4;
+			int ix;
+			char *name;
+			RsvgDefVal *val;
+			
+			while (g_ascii_isspace (*p))
+				p++;
+
+			if (*p == '#')
+				{
+				  p++;
+					for (ix = 0; p[ix]; ix++)
+						if (p[ix] == ')')
+							break;
+
+					if (p[ix] == ')')
+						{
+							name = g_strndup (p, ix);
+							val = rsvg_defs_lookup (defs, name);
+							g_free (name);
+							
+							if (val && val->type == RSVG_DEF_MARKER)
+								return (RsvgDefVal *) val;
+						}
+				}
+		}
+	return NULL;
 }

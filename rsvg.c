@@ -1221,7 +1221,11 @@ rsvg_start_element (void *data, const xmlChar *name,
 					ctx->in_defs++;
 					rsvg_start_mask(ctx, bag);
 				}
-			
+			else if (!strcmp ((char *)name, "marker"))
+				{
+					ctx->in_defs++;
+					rsvg_start_marker (ctx, bag);
+				}
 			/* see conicalGradient discussion above */
 			else if (!strcmp ((char *)name, "linearGradient"))
 				rsvg_start_linear_gradient (ctx, bag);
@@ -1273,6 +1277,10 @@ rsvg_end_element (void *data, const xmlChar *name)
 			}
 			else if (!strcmp ((char *)name, "mask")){
 				rsvg_end_mask(ctx);
+				ctx->in_defs--;				
+			}
+			else if (!strcmp ((char *)name, "marker")){
+				rsvg_pop_def_group(ctx);
 				ctx->in_defs--;				
 			}
 			else if (!strcmp ((char *)name, "pattern")) {

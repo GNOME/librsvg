@@ -74,6 +74,27 @@ struct _RsvgDefsDrawableUse {
  	RsvgDefsDrawable *child;
 };
 
+typedef struct _RsvgMarker RsvgMarker;
+
+struct _RsvgMarker {
+	RsvgDefVal super;
+ 	RsvgDefsDrawable * contents;
+	gboolean bbox;
+	double refX, refY, orient;
+	double vbx, vby, vbw, vbh, width, height;
+	gboolean vbox;
+	gboolean orientAuto;
+};
+
+void 
+rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts);
+
+void 
+rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdouble linewidth, RsvgHandle *ctx);
+
+RsvgDefVal *
+rsvg_marker_parse (const RsvgDefs * defs, const char *str);
+
 GdkPixbuf *
 rsvg_pixbuf_new_from_href (const char *href,
 						   const char *base_uri,

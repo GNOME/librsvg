@@ -1,3 +1,7 @@
+2004-06-13  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-shapes.c: Implemented markers for streight lines
+	
 2004-06-10  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-css.c: Parse preserveAspectRatio

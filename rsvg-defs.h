@@ -42,7 +42,8 @@ typedef enum {
 	RSVG_DEF_PATTERN,
 	RSVG_DEF_PATH,
 	RSVG_DEF_FILTER,
-	RSVG_DEF_MASK
+	RSVG_DEF_MASK,
+	RSVG_DEF_MARKER
 } RsvgDefType;
 
 struct _RsvgDefVal {
