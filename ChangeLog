@@ -1,3 +1,7 @@
+2002-04-18  Ramiro Estrugo  <ramiro@fateware.com>
+
+	* MAINTAINERS: Removed myself from list.
+
 2002-03-13  Gregory Leblanc  <gleblanc@linuxweasel.com>
 
 	* librsvg.spec.in: rather big rework, from Chris Chabot
