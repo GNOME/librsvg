@@ -1,3 +1,8 @@
+2002-10-01  jacob berkman  <jacob@ximian.com>
+
+	* rsvg-css.c (rsvg_css_parse_normalized_length): fix to build with
+	a C compiler
+
 2002-10-01  Dom Lachowicz <doml@appligent.com>
 
 	* rsvg.c (gradient_stop): Handle % gradient stop offsets
