@@ -345,6 +345,46 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
     }
 }
 
+/* tell whether @str is a supported style argument 
+   whenever something gets added to parse_arg, please
+   remember to add it here too
+*/
+static gboolean
+rsvg_is_style_arg(const char *str)
+{
+  static GHashTable *styles = NULL;
+  if (!styles)
+    {
+      styles = g_hash_table_new (g_str_hash, g_str_equal);
+      
+      g_hash_table_insert (styles, "opacity",         GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "fill",            GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "fill-opacity",    GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke",          GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke-width",    GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke-linecap",  GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke-opacity",  GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stroke-linejoin", GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "font-size",       GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "font-family",     GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stop-color",      GINT_TO_POINTER (TRUE));
+      g_hash_table_insert (styles, "stop-opacity",    GINT_TO_POINTER (TRUE));
+    }
+  
+  /* this will default to 0 (FALSE) on a failed lookup */
+  return GPOINTER_TO_INT (g_hash_table_lookup (styles, str)); 
+}
+
+/* take a pair of the form (fill="#ff00ff") and parse it as a style */
+static void
+rsvg_parse_style_pair (RsvgHandle *ctx, RsvgState *state, 
+		       const char *key, const char *val)
+{
+  gchar * str = g_strdup_printf ("%s:%s", key, val);
+  rsvg_parse_style_arg (ctx, state, str);
+  g_free (str);
+}
+
 /* Split a CSS2 style into individual style arguments, setting attributes
    in the SVG context.
 
@@ -548,6 +588,9 @@ rsvg_parse_style_attrs (RsvgHandle *ctx, const xmlChar **atts)
 	  else if (!strcmp ((char *)atts[i], "transform"))
 	    rsvg_parse_transform_attr (ctx, &ctx->state[ctx->n_state - 1],
 				       (char *)atts[i + 1]);
+	  else if (rsvg_is_style_arg ((char *)atts[i]))
+	    rsvg_parse_style_pair (ctx, &ctx->state[ctx->n_state - 1],
+				   (char *)atts[i], (char *)atts[i + 1]);
 	}
     }
 }
@@ -1392,7 +1435,7 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
 	    w = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
 	  else if (!strcmp ((char *)atts[i], "height"))
 	    h = rsvg_css_parse_length ((char *)atts[i + 1], RSVG_PIXELS_PER_INCH, &fixed);
-	  /* path is used in svg 1, xlink:href in 1.1 */
+	  /* path is used by some older adobe illustrator versions */
 	  else if (!strcmp ((char *)atts[i], "path") || !strcmp((char *)atts[i], "xlink:href"))
 	    href = (const char *)atts[i + 1];
 	}
@@ -1409,7 +1452,9 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
   pixbuf = ctx->pixbuf;
   has_alpha = gdk_pixbuf_get_has_alpha (img);
 
-  /* composite our source image onto our context's pixbuf */
+  /* composite our source image onto our context's pixbuf 
+     todo: handle current transform affine
+  */
   gdk_pixbuf_composite (img, pixbuf,
 			x, y, w, h,
 			(double)x, (double)y, 
