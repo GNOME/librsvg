@@ -41,7 +41,7 @@
 #define NO_VECTOR_TEXT
 
 char *
-make_valid_utf8 (const char *str)
+rsvg_make_valid_utf8 (const char *str)
 {
 	GString *string;
 	const char *remainder, *invalid;
@@ -277,7 +277,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	
 	if (!g_utf8_validate (string, -1, NULL))
 		{
-			tmp = make_valid_utf8 (string);
+			tmp = rsvg_make_valid_utf8 (string);
 			g_free (string);
 			string = tmp;
 		}

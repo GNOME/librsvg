@@ -1,3 +1,9 @@
+2004-05-09  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-text.c: Don't pollute the global namespace
+	* rsvg-text.h: Ditto
+	* rsvg.c: Ditto
+	
 2004-04-30  Dom Lachowicz <cinamod@hotmail.com>
 
 	* librsvg-2.0.pc.in: Remove bogus dependencies

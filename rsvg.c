@@ -937,7 +937,7 @@ rsvg_desc_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	string = g_strndup (ch, len);
 	if (!g_utf8_validate (string, -1, NULL))
 		{
-			utf8 = make_valid_utf8 (string);
+			utf8 = rsvg_make_valid_utf8 (string);
 			g_free (string);
 			string = utf8;
 		}
@@ -1014,7 +1014,7 @@ rsvg_title_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	string = g_strndup (ch, len);
 	if (!g_utf8_validate (string, -1, NULL))
 		{
-			utf8 = make_valid_utf8 (string);
+			utf8 = rsvg_make_valid_utf8 (string);
 			g_free (string);
 			string = utf8;
 		}
