@@ -1,3 +1,9 @@
+2003-01-13  Alexander Larsson  <alexl@redhat.com>
+
+	* NEWS: 
+	* configure.in:
+	Update to 2.1.4
+
 2003-01-08 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-styles.c: Handle display and visibility styles to some extent
@@ -11,6 +17,8 @@
 2003-01-07 Dom Lachowicz <cinamod@hotmail.com>
 
 	* test-rsvg.c : Unref pixbuf, free memory leak. Thanks valgrind.
+	
+=== librsvg 2.1.3 ===
 	
 2003-01-03 Dom Lachowicz <cinamod@hotmail.com>
 
