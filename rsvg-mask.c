@@ -60,7 +60,24 @@ rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgHandle *ct
 
 	ctx->pixbuf = mask;
 
+
+/* push the state stack */
+	if (ctx->n_state == ctx->n_state_max)
+		ctx->state = g_renew (RsvgState, ctx->state, 
+							  ctx->n_state_max <<= 1);
+	if (ctx->n_state)
+		rsvg_state_inherit (&ctx->state[ctx->n_state],
+									&ctx->state[ctx->n_state - 1]);
+	else
+				rsvg_state_init (ctx->state);
+	ctx->n_state++;
+	
 	rsvg_defs_drawable_draw (drawable, ctx, 0);
+	
+	/* pop the state stack */
+	ctx->n_state--;
+	rsvg_state_finalize (&ctx->state[ctx->n_state]);
+
 	
 
 	ctx->pixbuf = save;
@@ -89,7 +106,8 @@ rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgHandle *ct
 		{
 			for (x = 0; x < width; x++)
 				{
-					guchar r, g, b, a, rm, gm, bm, am;
+					guchar r, g, b, rm, gm, bm, am;
+					guint a;
 					gdouble luminance;
 					a = tos_pixels[4 * x + 3];
 					if (a)
@@ -106,12 +124,11 @@ rsvg_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgHandle *ct
 							luminance = ((gdouble)rm * 0.2125 + 
 										 (gdouble)gm * 0.7154 + 
 										 (gdouble)bm * 0.0721) / 255.;
-							a = (guchar)((gdouble)a * luminance
-										 * (gdouble)am / 255.);
+
+							a = (guint)((gdouble)a * luminance
+										* (gdouble)am / 255.);
 
 							art_rgba_run_alpha (nos_pixels + 4 * x, r, g, b, a, 1);
-							if (*(nos_pixels + 4 * x + 3))
-								printf("%i\n", *(nos_pixels + 4 * x + 3));
 						}
 				}
 			tos_pixels += rowstride;
@@ -148,7 +165,7 @@ rsvg_defs_drawable_mask_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 			else
 				rsvg_state_init (ctx->state);
 			ctx->n_state++;
-			
+
 			rsvg_defs_drawable_draw (g_ptr_array_index(group->children, i), 
 									 ctx, 0);
 	

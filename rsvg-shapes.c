@@ -353,14 +353,10 @@ rsvg_defs_drawable_path_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 			else
 				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
 		}
-	if (state->opacity != 0xff || state->filter)
-		rsvg_push_discrete_layer (ctx);
-	
+
 	/* always want to render inside of a <use/> */
 	rsvg_render_path (ctx, path->d);
 	
-	if (state->opacity != 0xff || state->filter)
-		rsvg_pop_discrete_layer (ctx);
 }
 
 static void 
@@ -390,8 +386,7 @@ rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 				rsvg_state_reinherit(state, &ctx->state[ctx->n_state - 2]);
 		}
 
-	if (state->opacity != 0xff || state->filter)
-		rsvg_push_discrete_layer (ctx);
+	rsvg_push_discrete_layer (ctx);
 
 	for (i = 0; i < group->children->len; i++)
 		{
@@ -414,9 +409,7 @@ rsvg_defs_drawable_group_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 			rsvg_state_finalize (&ctx->state[ctx->n_state]);
 		}			
 
-	if (state->opacity != 0xff || state->filter)
-		rsvg_pop_discrete_layer (ctx);
-	
+	rsvg_pop_discrete_layer (ctx);
 }
 
 static void 
