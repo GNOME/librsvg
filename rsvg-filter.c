@@ -33,6 +33,8 @@
 #define M_PI 3.14159265358979323846
 #endif /*  M_PI  */
 
+#define PERFECTBLUR 4
+
 /*************************************************************/
 /*************************************************************/
 
@@ -923,6 +925,7 @@ struct _RsvgFilterPrimitiveConvolveMatrix
 	double bias;
 	gint targetx, targety;
 	gboolean preservealpha;
+	gint edgemode;
 };
 
 static void
@@ -974,9 +977,31 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 								{
 									sx = x - cself->targetx + j;
 									sy = y - cself->targety + i;
-									if (sx < boundarys.x1 || sx > boundarys.x2 ||
-										sy < boundarys.y1 || sy > boundarys.y2)
+
+
+									if (cself->edgemode == 0)
+										{
+											if (sx < boundarys.x1)
+												sx = boundarys.x1;
+											if (sx >= boundarys.x2)
+												sx = boundarys.x2 - 1;
+											if (sy < boundarys.y1)
+												sy = boundarys.y1;
+											if (sy >= boundarys.y2)
+												sy = boundarys.y2 - 1;
+										}
+									else if (cself->edgemode == 1)
+										{
+											if (sx < boundarys.x1 || (sx >= boundarys.x2))
+												sx = boundarys.x1 + (sx - boundarys.x1) %
+													(boundarys.x2 - boundarys.x1);
+											if (sy < boundarys.y1 || (sy >= boundarys.y2))
+												sy = boundarys.y1 + (sy - boundarys.y1) %
+													(boundarys.y2 - boundarys.y1);
+										}
+									else if (cself->edgemode == 2)
 										continue;
+
 									kx = cself->orderx - j - 1;
 									ky = cself->ordery - i - 1;
 									sval = in_pixels[4 * sx + sy * rowstride + ch];
@@ -1036,6 +1061,8 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 	filter->targetx = 0;
 	filter->targety = 0;
 	
+	filter->edgemode = 0;
+
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
@@ -1107,6 +1134,16 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 					else if (!strcmp ((char *) atts[i], "kernelMatrix"))
 						filter->KernelMatrix =
 							rsvg_css_parse_number_list ((char *) atts[i + 1], &listlen);
+
+					if (!strcmp ((char *) atts[i], "edgeMode")) 
+						{
+							if (!strcmp ((char *) atts[i + 1], "wrap"))
+								filter->edgemode = 1;
+							else if (!strcmp ((char *) atts[i + 1], "none"))
+								filter->edgemode = 2;
+							else
+								filter->edgemode = 0;
+						}
 				}			
 		}
 
@@ -1142,6 +1179,8 @@ struct _RsvgFilterPrimitiveGaussianBlur
 	double sdx, sdy;
 };
 
+
+#if PERFECTBLUR != 0
 static void
 true_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sdx, 
 		   gfloat sdy, FPBox boundarys)
@@ -1180,22 +1219,23 @@ true_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sdx,
 			if (exp (-(i * i) / (2 * sdx * sdx)) / sqrt (2 * M_PI * sdx * sdx) <
 				0.0001)
 				{
-					kw = 2 * (i - 1);
 					break;
 				}
 		}
-	
+	kw = 2 * (i - 1);
+
 	/* find out the required y size for the kernel matrix */
 	for (i = 1; i < 20; i++)
 		{
 		if (exp (-(i * i) / (2 * sdy * sdy)) / sqrt (2 * M_PI * sdy * sdy) <
 			0.0001)
 			{
-				kh = 2 * (i - 1);
 				break;
 			}
     }
 	
+	kh = 2 * (i - 1);
+
 	KernelMatrix = g_new (double, kw * kh);
 	
 	/* create the kernel matrix */
@@ -1225,18 +1265,23 @@ true_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sdx,
 					for (i = 0; i < kh; i++)
 						for (j = 0; j < kw; j++)
 							{
-								sx = x + j;
-								sy = y + i;
+								sx = x + j - kw / 2;
+								sy = y + i - kh / 2;
 
-								if (sx < boundarys.x1 || sx > boundarys.x2 ||
-									sy < boundarys.y1 || sy > boundarys.y2)
-									continue;
+								if (sx < boundarys.x1)
+									sx = boundarys.x1;
+								if (sx >= boundarys.x2)
+									sx = boundarys.x2 - 1;
+								if (sy < boundarys.y1)
+									sy = boundarys.y1;
+								if (sy >= boundarys.y2)
+									sy = boundarys.y2 - 1;
 
 								kx = kw - j - 1;
 								ky = kh - i - 1;
 								sval = in_pixels[4 * sx + sy * rowstride + ch];
 								kval = KernelMatrix[kx + ky * kw];
-								sum += (double) sval *kval;
+								sum += (double) sval * kval;
 							}
 
 					tempresult = sum / divisor;
@@ -1249,6 +1294,8 @@ true_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sdx,
 				}
 	g_free (KernelMatrix);
 }
+
+#endif
 
 static void
 box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw, 
@@ -1366,7 +1413,6 @@ fast_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sx,
 	
 
 
-
 	box_blur (in, intermediate2, intermediate1, kx, 
 			  ky, boundarys);
 	box_blur (intermediate2, intermediate2, intermediate1, kx, 
@@ -1402,12 +1448,18 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self,
 	sdx = cself->sdx * ctx->paffine[0];
 	sdy = cself->sdy * ctx->paffine[3];
 	
-	if (sdx * sdy <= 4)
+#if PERFECTBLUR != 0
+	if (sdx * sdy <= PERFECTBLUR)
 		true_blur (in, output, sdx, 
 				   sdy, boundarys);
 	else
 		fast_blur (in, output, sdx, 
 				   sdy, boundarys);
+#else
+	fast_blur (in, output, sdx, 
+				   sdy, boundarys);
+#endif
+
 
 	rsvg_filter_store_result (self->result, output, ctx);
 	
