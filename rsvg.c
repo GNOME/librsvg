@@ -783,6 +783,8 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_filter_primitive_merge(ctx, atts);
 	else if (!strcmp ((char *)name, "feMergeNode"))
 		rsvg_start_filter_primitive_merge_node(ctx, atts);
+	else if (!strcmp ((char *)name, "feColorMatrix"))
+		rsvg_start_filter_primitive_colour_matrix(ctx, atts);
 }
 
 static void

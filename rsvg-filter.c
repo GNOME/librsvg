@@ -161,10 +161,10 @@ clear_pixbuf(GdkPixbuf *pb){
 	guchar * data;
 	data = gdk_pixbuf_get_pixels(pb);
 
-	for (i=0; i<gdk_pixbuf_get_width(pb)*gdk_pixbuf_get_width(pb)*4;i++)
-		data[i] = 0;
-
-
+	for (i=0; i<gdk_pixbuf_get_width(pb)*gdk_pixbuf_get_height(pb)*4;i++)
+		{
+			data[i] = 0;
+		}
 }
 
 void
@@ -1494,4 +1494,246 @@ rsvg_start_filter_primitive_merge_node (RsvgHandle *ctx, const xmlChar **atts) {
 										g_string_new((char *)atts[i + 1]));
 				}
 		}
+}
+
+
+typedef struct _RsvgFilterPrimitiveColourMatrix RsvgFilterPrimitiveColourMatrix;
+
+struct _RsvgFilterPrimitiveColourMatrix {
+	RsvgFilterPrimitive super;
+	double *KernelMatrix;
+	double divisor;
+	gint orderx, ordery;
+	double bias;
+	gint targetx, targety;
+	gboolean preservealpha;
+};
+
+void rsvg_start_filter_colour_matrix (RsvgHandle *ctx, const xmlChar **atts);
+void rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx);
+void rsvg_filter_primitive_colour_matrix_free (RsvgFilterPrimitive * self);
+
+void 
+rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx) {
+	guchar ch;
+	gint x,y;
+	gint i;
+	gint rowstride, height, width;
+	FPBox boundarys;
+
+	guchar *in_pixels;
+	guchar *output_pixels;
+
+	RsvgFilterPrimitiveColourMatrix *cself;
+
+	GdkPixbuf *output;
+	GdkPixbuf *in;
+
+	double sum;
+
+	cself = (RsvgFilterPrimitiveColourMatrix *) self;
+	boundarys = rsvg_filter_primitive_get_bounds(self, ctx);
+
+	in = rsvg_filter_get_in(self->in, ctx);
+	in_pixels = gdk_pixbuf_get_pixels(in);	
+
+	height = gdk_pixbuf_get_height(in);
+	width = gdk_pixbuf_get_width(in);
+
+	rowstride = gdk_pixbuf_get_rowstride(in);
+
+	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+							 width, height);
+
+
+	clear_pixbuf(output);
+
+	output_pixels = gdk_pixbuf_get_pixels(output);
+	
+	gint tempresult;
+
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2 ; x++){
+			for (ch = 0; ch < 4; ch++){
+				sum = 0;
+				for (i = 0; i < 4; i++)
+					{
+					sum += cself->KernelMatrix[ch * 5 + i] * 
+						in_pixels[4 * x + y * rowstride + i];
+					}
+				sum += cself->KernelMatrix[ch * 5 + 4];			
+
+				tempresult =  sum; 
+				if (tempresult > 255)
+					tempresult = 255;
+				if (tempresult < 0)
+					tempresult = 0;	
+				output_pixels[4 * x + y * rowstride + ch] = tempresult;
+			}
+		}
+	rsvg_filter_store_result (self->result, output, ctx);
+	
+	g_object_unref(G_OBJECT(in));
+	g_object_unref(G_OBJECT(output));
+}
+
+void 
+rsvg_filter_primitive_colour_matrix_free (RsvgFilterPrimitive * self){
+	RsvgFilterPrimitiveColourMatrix *cself;
+	cself = (RsvgFilterPrimitiveColourMatrix *)self;
+	g_string_free(self->result, TRUE);
+	g_string_free(self->in, TRUE);	
+	g_free(cself->KernelMatrix);
+	g_free(cself);
+}
+
+
+void 
+rsvg_start_filter_primitive_colour_matrix (RsvgHandle *ctx, const xmlChar **atts) {
+	int i;
+	int type;
+	double font_size;
+	RsvgFilterPrimitiveColourMatrix * filter;
+
+	if (ctx->n_state > 0)
+		font_size = rsvg_state_current (ctx)->font_size;
+	else
+		font_size = 12.0;
+
+	filter = g_new(RsvgFilterPrimitiveColourMatrix, 1);
+
+	filter->super.in = g_string_new("none");
+	filter->super.result = g_string_new("none");
+	filter->super.sizedefaults = 1;
+
+	type = 0;
+
+	if (atts != NULL)
+		{
+			for (i = 0; atts[i] != NULL; i += 2)
+				{
+					if (!strcmp ((char *)atts[i], "in"))
+						g_string_assign(filter->super.in, (char *)atts[i + 1]);
+
+					else if (!strcmp ((char *)atts[i], "result"))
+						g_string_assign(filter->super.result, (char *)atts[i + 1]);
+
+					else if (!strcmp ((char *)atts[i], "x")){
+						filter->super.x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
+						filter->super.sizedefaults = 0;
+					}
+					else if (!strcmp ((char *)atts[i], "y")){
+						filter->super.y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
+						filter->super.sizedefaults = 0;
+					}
+					else if (!strcmp ((char *)atts[i], "width")){
+						filter->super.width = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
+						filter->super.sizedefaults = 0;					
+					}
+					else if (!strcmp ((char *)atts[i], "height")){
+						filter->super.height = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, font_size);
+						filter->super.sizedefaults = 0;
+					} 	
+					else if (!strcmp ((char *)atts[i], "values"))
+						filter->KernelMatrix = rsvg_css_parse_number_list((char *)atts[i + 1], NULL);
+					else if(!strcmp ((char *)atts[i], "type")){
+						if(!strcmp ((char *)atts[i + 1], "matrix"))
+							type = 0;
+						else if (!strcmp ((char *)atts[i+1], "saturate"))
+							type = 1;
+						else if (!strcmp ((char *)atts[i+1], "hueRotate"))
+							type = 2;
+						else if (!strcmp ((char *)atts[i+1], "luminanceToAlpha"))
+							type = 3;
+						else
+							type = 0;
+					}
+				}
+			
+		}
+	
+	if (type == 1){
+		float s;
+		s = filter->KernelMatrix[0];
+		g_free(filter->KernelMatrix);
+		filter->KernelMatrix = g_new(double, 20);
+		filter->KernelMatrix[0] = 0.213 + 0.787 * s;
+		filter->KernelMatrix[1] = 0.715 - 0.715 * s;
+		filter->KernelMatrix[2] = 0.072 - 0.072 * s;
+		filter->KernelMatrix[3] = 0;
+		filter->KernelMatrix[4] = 0;
+		filter->KernelMatrix[5] = 0.213 - 0.213 * s;
+		filter->KernelMatrix[6] = 0.715 + 0.285 * s;
+		filter->KernelMatrix[7] = 0.072 - 0.072 * s;
+		filter->KernelMatrix[8] = 0;
+		filter->KernelMatrix[9] = 0;
+		filter->KernelMatrix[10] = 0.213 - 0.213 * s;
+		filter->KernelMatrix[11] = 0.715 - 0.715 * s;
+		filter->KernelMatrix[12] = 0.072 + 0.928 * s;
+		filter->KernelMatrix[13] = 0;
+		filter->KernelMatrix[14] = 0;
+		filter->KernelMatrix[15] = 0;
+		filter->KernelMatrix[16] = 0;
+		filter->KernelMatrix[17] = 0;
+		filter->KernelMatrix[18] = 1;
+		filter->KernelMatrix[19] = 0;
+	}
+	if (type == 2){
+		double cosval, sinval;
+		cosval = cos(filter->KernelMatrix[0]);
+		sinval = sin(filter->KernelMatrix[0]);
+		g_free(filter->KernelMatrix);
+		filter->KernelMatrix = g_new(double, 20);
+
+		filter->KernelMatrix[0] = 0.213+cosval*0.787+sinval*-0.213;
+		filter->KernelMatrix[1] = 0.715+cosval*-0.715+sinval*-0.715;
+		filter->KernelMatrix[2] = 0.072+cosval*-0.072+sinval*0.928;
+		filter->KernelMatrix[3] = 0;
+		filter->KernelMatrix[4] = 0;
+		filter->KernelMatrix[5] = 0.213+cosval*-0.213+sinval*0.143;
+		filter->KernelMatrix[6] = 0.715+cosval*0.285+sinval*0.140;
+		filter->KernelMatrix[7] = 0.072+cosval*-0.072+sinval*-0.283;
+		filter->KernelMatrix[8] = 0;
+		filter->KernelMatrix[9] = 0;
+		filter->KernelMatrix[10] = 0.213+cosval*-0.213+sinval*-0.787;
+		filter->KernelMatrix[11] = 0.715+cosval*-0.715+sinval*0.715;
+		filter->KernelMatrix[12] = 0.072+cosval*0.928+sinval*0.072;
+		filter->KernelMatrix[13] = 0;
+		filter->KernelMatrix[14] = 0;
+		filter->KernelMatrix[15] = 0;
+		filter->KernelMatrix[16] = 0;
+		filter->KernelMatrix[17] = 0;
+		filter->KernelMatrix[18] = 1;
+		filter->KernelMatrix[19] = 0;
+	}	
+	if (type == 3){
+		if (filter->KernelMatrix != NULL)
+			g_free(filter->KernelMatrix);
+		filter->KernelMatrix = g_new(double, 20);
+		filter->KernelMatrix[0] = 0;
+		filter->KernelMatrix[1] = 0;
+		filter->KernelMatrix[2] = 0;
+		filter->KernelMatrix[3] = 0;
+		filter->KernelMatrix[4] = 0;
+		filter->KernelMatrix[5] = 0;
+		filter->KernelMatrix[6] = 0;
+		filter->KernelMatrix[7] = 0;
+		filter->KernelMatrix[8] = 0;
+		filter->KernelMatrix[9] = 0;
+		filter->KernelMatrix[10] = 0;
+		filter->KernelMatrix[11] = 0;
+		filter->KernelMatrix[12] = 0;
+		filter->KernelMatrix[13] = 0;
+		filter->KernelMatrix[14] = 0;
+		filter->KernelMatrix[15] = 0.2125;
+		filter->KernelMatrix[16] = 0.7154;
+		filter->KernelMatrix[17] = 0.0721;
+		filter->KernelMatrix[18] = 0;
+		filter->KernelMatrix[19] = 0;
+	}
+
+	filter->super.render = &rsvg_filter_primitive_colour_matrix_render;
+	filter->super.free = &rsvg_filter_primitive_colour_matrix_free;
+
+	g_ptr_array_add(((RsvgFilter *)(ctx->currentfilter))->primitives, &filter->super);
 }
