@@ -98,3 +98,4 @@ fi
 
 %defattr(0444, bin, bin)
 %{_includedir}/librsvg-2/librsvg/*.h
+%{_libdir}/pkgconfig/librsvg-2.0.pc

@@ -1,5 +1,10 @@
 2001-07-25  Ramiro Estrugo  <ramiro@fateware.com>
 
+	* librsvg.spec.in:
+	Add missing pkg-config file.
+	
+2001-07-25  Ramiro Estrugo  <ramiro@fateware.com>
+
 	* Makefile.am:
 	* librsvg.m4:
 	Retire this thing which is no longer relevant in the GNOME2
