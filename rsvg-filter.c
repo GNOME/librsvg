@@ -376,13 +376,13 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state)
 }
 
 static void
-rsvg_filter_free_pair (gpointer key, gpointer value, gpointer user_data)
+rsvg_filter_free_pair (gpointer value)
 {
 	RsvgFilterPrimitiveOutput * output;
-	output = value;
+
+	output = (RsvgFilterPrimitiveOutput *)value;
 	g_object_unref (G_OBJECT (output->result));
 	g_free (output);
-	g_free ((gchar *) key);
 }
 
 /**
@@ -408,7 +408,7 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 	ctx->filter = self;
 	ctx->source = source;
 	ctx->bg = bg;
-	ctx->results = g_hash_table_new (g_str_hash, g_str_equal);
+	ctx->results = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, rsvg_filter_free_pair);
 	ctx->ctx = context;	
 
 	g_object_ref (G_OBJECT (source));
@@ -428,7 +428,6 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 			rsvg_filter_primitive_render (current, ctx);
 		}
 
-	g_hash_table_foreach (ctx->results, rsvg_filter_free_pair, NULL);
 	g_hash_table_destroy (ctx->results);
 
 	bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);	

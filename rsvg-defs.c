@@ -36,12 +36,19 @@ struct _RsvgDefs {
 	GPtrArray *unnamed;
 };
 
+static void
+rsvg_defs_free_value (gpointer value)
+{
+	RsvgDefVal *def_val = (RsvgDefVal *)value;
+	def_val->free (def_val);
+}
+
 RsvgDefs *
 rsvg_defs_new (void)
 {
 	RsvgDefs *result = g_new (RsvgDefs, 1);
 	
-	result->hash = g_hash_table_new (g_str_hash, g_str_equal);
+	result->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, rsvg_defs_free_value);
 	result->unnamed = g_ptr_array_new ();
 	
 	return result;
@@ -62,23 +69,16 @@ rsvg_defs_set (RsvgDefs *defs, const char *name, RsvgDefVal *val)
 		g_hash_table_insert (defs->hash, g_strdup (name), val);
 }
 
-static void
-rsvg_defs_free_each (gpointer key, gpointer value, gpointer user_data)
-{
-	RsvgDefVal *def_val = (RsvgDefVal *)value;
-	g_free (key);
-	def_val->free (def_val);
-}
-
 void
 rsvg_defs_free (RsvgDefs *defs)
 {
 	guint i;
-	g_hash_table_foreach (defs->hash, rsvg_defs_free_each, NULL);
+
 	g_hash_table_destroy (defs->hash);
+
 	for (i = 0; i < defs->unnamed->len; i++)
 		((RsvgDefVal *)g_ptr_array_index(defs->unnamed, i))->free(g_ptr_array_index(defs->unnamed, i));
-
 	g_ptr_array_free(defs->unnamed, TRUE);
+
 	g_free (defs);
 }
