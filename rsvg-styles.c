@@ -496,8 +496,8 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "font-size"))
 		{
-			state->font_size = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
-																 (gdouble)ctx->height, state->font_size);
+			state->font_size =  rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
+																  (gdouble)ctx->height, state->font_size);
 			state->has_font_size = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-family"))

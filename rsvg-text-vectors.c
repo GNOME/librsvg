@@ -75,9 +75,9 @@ typedef void (* RsvgTextRenderFunc) (PangoFont  *font,
 #endif
 
 /* TODO: stuff these into the RsvgHandle object, expose API for manipulating them */
-#define ANTIALIAS_TEXT 1
-#define HINT_TEXT 1
-#define AUTO_HINT_TEXT 1
+#define ANTIALIAS_TEXT 0
+#define HINT_TEXT 0
+#define AUTO_HINT_TEXT 0
 
 static RenderCtx *
 rsvg_render_ctx_new (void)
@@ -168,7 +168,7 @@ rsvg_text_layout_new (RsvgHandle *ctx,
 	pango_font_description_set_variant (font_desc, state->font_variant);
 	pango_font_description_set_weight (font_desc, state->font_weight);
 	pango_font_description_set_stretch (font_desc, state->font_stretch); 
-	pango_font_description_set_size (font_desc, state->font_size * PANGO_SCALE); 
+	pango_font_description_set_size (font_desc, state->font_size * PANGO_SCALE / ctx->dpi * 72); 
 	pango_layout_set_font_description (layout->layout, font_desc);
 	pango_font_description_free (font_desc);
 	
@@ -230,8 +230,8 @@ rsvg_text_vector_coords (RenderCtx       *ctx,
 						 gdouble         *x,
 						 gdouble         *y)
 {
-	*x = ctx->offset_x + (long)vector->x / 64;
-	*y = ctx->offset_y - (long)vector->y / 64;
+	*x = ctx->offset_x + (double)vector->x / 64.;
+	*y = ctx->offset_y - (double)vector->y / 64.;
 }
 
 static void
