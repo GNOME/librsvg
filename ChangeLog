@@ -1,3 +1,13 @@
+2001-09-15  Darin Adler  <darin@bentspoon.com>
+
+	* rsvg-paint-server.c: (rsvg_paint_server_lin_grad_free),
+	(rsvg_paint_server_rad_grad_free): Fix some NULL dereferences.
+
+	* rsvg.c: (rsvg_handle_write), (rsvg_handle_close): Add FIXME
+	to places that have half-hearted attempt at handling GError.
+	(rsvg_pixbuf_from_file_at_zoom), (rsvg_pixbuf_from_file_at_size):
+	Handle case where fopen fails (but not the GError part).
+
 2001-09-10  Jonathan Blandford   <jrb@redhat.com>
 
 	* librsvg-features.c:

@@ -1485,6 +1485,7 @@ rsvg_handle_write (RsvgHandle    *handle,
       xmlParseChunk (handle->ctxt, buf, count, 0);
     }
   handle->error = NULL;
+  /* FIXME: Error handling not implemented. */
   /*  if (*real_error != NULL)
     {
       g_propagate_error (error, real_error);
@@ -1514,6 +1515,7 @@ rsvg_handle_close (RsvgHandle  *handle,
   handle->error = &real_error;
   xmlParseChunk (handle->ctxt, chars, 0, 1);
   xmlFreeParserCtxt (handle->ctxt);
+  /* FIXME: Error handling not implemented. */
   /*
   if (real_error != NULL)
     {
@@ -1654,6 +1656,11 @@ rsvg_pixbuf_from_file_at_zoom (gchar   *file_name,
   g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
 
   f = fopen (file_name, "r");
+  if (!f)
+    {
+      /* FIXME: Set up error. */
+      return NULL;
+    }
 
   handle = rsvg_handle_new ();
   data.zoom_set = TRUE;
@@ -1700,6 +1707,11 @@ rsvg_pixbuf_from_file_at_size (gchar   *file_name,
   struct RsvgSizeCallbackData data;
 
   f = fopen (file_name, "r");
+  if (!f)
+    {
+      /* FIXME: Set up error. */
+      return NULL;
+    }
   handle = rsvg_handle_new ();
   data.zoom_set = FALSE;
   data.width = width;
@@ -1716,6 +1728,4 @@ rsvg_pixbuf_from_file_at_size (gchar   *file_name,
   rsvg_handle_free (handle);
   return retval;
 }
-
-
 

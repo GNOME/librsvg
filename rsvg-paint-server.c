@@ -103,7 +103,8 @@ rsvg_paint_server_lin_grad_free (RsvgPaintServer *self)
 {
   RsvgPaintServerLinGrad *z = (RsvgPaintServerLinGrad *)self;
 
-  g_free (z->agl->stops);
+  if (z->agl)
+    g_free (z->agl->stops);
   g_free (z->agl);
   g_free (self);
 }
@@ -198,7 +199,8 @@ rsvg_paint_server_rad_grad_free (RsvgPaintServer *self)
 {
   RsvgPaintServerRadGrad *z = (RsvgPaintServerRadGrad *)self;
 
-  g_free (z->agr->stops);
+  if (z->agr)
+    g_free (z->agr->stops);
   g_free (z->agr);
   g_free (self);
 }
