@@ -1,3 +1,24 @@
+2002-01-02  Darin Adler  <darin@bentspoon.com>
+
+	* Makefile.am:
+	* configure.in:
+	* librsvg-2.0.pc.in:
+	* librsvg.spec.in:
+	* rsvg-ft.c: Remove.
+	* rsvg-ft.h: Remove.
+	* rsvg.h:
+	* test-ft-gtk.c: Remove.
+	* test-ft.c: Remove.
+	* test-rsvg.c:
+	Remove direct FreeType dependency and also remove
+	dependency on libpng. No more rsvg_set_fonts_dir
+	or rsvg-ft.h header.
+
+	* rsvg.c: (rsvg_state_clone), (rsvg_state_finalize),
+	(rsvg_parse_style_arg), (rsvg_pop_opacity_group),
+	(rsvg_text_handler_characters), (rsvg_handle_free):
+	Port from direct FreeType use to Pango.
+
 2001-12-06  Darin Adler  <darin@bentspoon.com>
 
 	* rsvg-paint-server.h: Add a dummy member since empty structs

@@ -23,8 +23,7 @@ Requires:	gtk+ >= @GTK_REQUIRED@
 Requires:	libxml >= @LIBXML_REQUIRED@
 Requires:	gdk-pixbuf >= @GDK_PIXBUF_REQUIRED@
 Requires:	popt >= @POPT_REQUIRED@
-Requires:	freetype >= @FREETYPE_REQUIRED@
-Requires:	libpng
+Requires:	pango >= @PANGO_REQUIRED@
 
 %description
 Eazel Extension Library

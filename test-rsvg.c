@@ -22,15 +22,11 @@
    Author: Raph Levien <raph@artofcode.com>
 */
 
+#include "rsvg.h"
+#include <gdk-pixbuf/gdk-pixbuf.h>
+#include <popt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <png.h>
-#include <popt.h>
-
-#include <gdk-pixbuf/gdk-pixbuf.h>
-
-#include "rsvg.h"
-
 
 int
 main (int argc, const char **argv)

@@ -48,12 +48,13 @@
 #include <libxml/SAX.h>
 #include <libxml/xmlmemory.h>
 
+#include <pango/pangoft2.h>
+
 #include "rsvg-bpath-util.h"
 #include "rsvg-defs.h"
 #include "rsvg-path.h"
 #include "rsvg-css.h"
 #include "rsvg-paint-server.h"
-#include "rsvg-ft.h"
 
 #define noVERBOSE
 
@@ -77,6 +78,7 @@ struct _RsvgState {
   ArtPathStrokeJoinType join;
 
   double font_size;
+  char *font_family;
 
   guint32 stop_color; /* rgb */
   gint stop_opacity; /* 0..255 */
@@ -111,12 +113,10 @@ struct RsvgHandle {
 
   GHashTable *entities; /* g_malloc'd string -> xmlEntityPtr */
 
-  RsvgFTCtx *ft_ctx;
+  PangoContext *pango_context;
   xmlParserCtxtPtr ctxt;
   GError **error;
 };
-
-char *fonts_dir;
 
 static void
 rsvg_state_init (RsvgState *state)
@@ -139,6 +139,7 @@ static void
 rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 {
   *dst = *src;
+  dst->font_family = g_strdup (src->font_family);
   rsvg_paint_server_ref (dst->fill);
   rsvg_paint_server_ref (dst->stroke);
   dst->save_pixbuf = NULL;
@@ -147,6 +148,7 @@ rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 static void
 rsvg_state_finalize (RsvgState *state)
 {
+  g_free (state->font_family);
   rsvg_paint_server_unref (state->fill);
   rsvg_paint_server_unref (state->stroke);
 }
@@ -288,7 +290,8 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
     }
   else if (rsvg_css_param_match (str, "font-family"))
     {
-      /* state->font_family = g_strdup (str + arg_off); */
+      g_free (state->font_family);
+      state->font_family = g_strdup (str + arg_off);
     }
   else if (rsvg_css_param_match (str, "stop-color"))
     {
@@ -608,7 +611,7 @@ rsvg_pop_opacity_group (RsvgHandle *ctx, int opacity)
       nos_pixels += rowstride;
     }
 
-  gdk_pixbuf_unref (tos);
+  g_object_unref (tos);
   ctx->pixbuf = nos;
 }
 
@@ -871,16 +874,16 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
   RsvgHandle *ctx = z->ctx;
   char *string;
   int beg, end;
-  RsvgFTFontHandle fh;
-  RsvgFTGlyph *glyph;
-  int glyph_xy[2];
   RsvgState *state;
   ArtRender *render;
   GdkPixbuf *pixbuf;
   gboolean has_alpha;
   int opacity;
-  const char *dir;
-  char *path;
+  PangoLayout *layout;
+  PangoFontDescription *font;
+  PangoLayoutLine *line;
+  PangoRectangle ink_rect, line_ink_rect;
+  FT_Bitmap bitmap;
 
   /* Copy ch into string, chopping off leading and trailing whitespace */
   for (beg = 0; beg < len; beg++)
@@ -899,24 +902,8 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
   fprintf (stderr, "text characters(%s, %d)\n", string, len);
 #endif
 
-  if (ctx->ft_ctx == NULL)
-    ctx->ft_ctx = rsvg_ft_ctx_new ();
-
-  /* FIXME bugzilla.eazel.com 3904: We need to make rsvg use something
-   * like the Nautilus font mapping stuff in NautilusScalableFont. See
-   * bug for details.
-   */
-  if (fonts_dir == NULL) {
-    dir = DATADIR "/eel-2/eel/fonts";
-  } else {
-    dir = fonts_dir;
-  }
-  path = g_strconcat (dir, "/urw/n019003l.pfb", NULL);
-  fh = rsvg_ft_intern (ctx->ft_ctx, path);
-  g_free (path);
-  path = g_strconcat (dir, "/urw/n019003l.afm", NULL);
-  rsvg_ft_font_attach (ctx->ft_ctx, fh, path);
-  g_free (path);
+  if (ctx->pango_context == NULL)
+    ctx->pango_context = pango_ft2_get_context (72, 72); /* FIXME: dpi? */
 
   state = &ctx->state[ctx->n_state - 1];
 
@@ -936,31 +923,48 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 			       has_alpha ? ART_ALPHA_SEPARATE : ART_ALPHA_NONE,
 			       NULL);
 
-      glyph = rsvg_ft_render_string (ctx->ft_ctx, fh,
-				     string,
-				     strlen (string),
-				     state->font_size, state->font_size,
-				     state->affine, glyph_xy);
+      layout = pango_layout_new (ctx->pango_context);
+      pango_layout_set_text (layout, string, -1);
+      font = pango_font_description_copy (pango_context_get_font_description (ctx->pango_context));
+      pango_font_description_set_family_static (font, state->font_family);
+      pango_font_description_set_size (font, state->font_size * PANGO_SCALE);
+      pango_layout_set_font_description (layout, font);
+      pango_font_description_free (font);
 
-      if (glyph == NULL)
-	{
-	}
+      pango_layout_get_pixel_extents (layout, &ink_rect, NULL);
+
+      line = pango_layout_get_line (layout, 0);
+      if (line == NULL)
+	line_ink_rect = ink_rect; /* nothing to draw anyway */
       else
-	{
-	  rsvg_render_paint_server (render, state->fill, NULL); /* todo: paint server ctx */
-	  opacity = state->fill_opacity * state->opacity;
-	  opacity = opacity + (opacity >> 7) + (opacity >> 14);
+	pango_layout_line_get_pixel_extents (line, &line_ink_rect, NULL);
+      
+      bitmap.rows = ink_rect.height;
+      bitmap.width = ink_rect.width;
+      bitmap.pitch = (bitmap.width + 3) & ~3;
+      bitmap.buffer = g_malloc0 (bitmap.rows * bitmap.pitch);
+      bitmap.num_grays = 0x100;
+      bitmap.pixel_mode = ft_pixel_mode_grays;
+
+      pango_ft2_render_layout (&bitmap, layout, -ink_rect.x, -ink_rect.y);
+
+      g_object_unref (layout);
+
+      rsvg_render_paint_server (render, state->fill, NULL); /* todo: paint server ctx */
+      opacity = state->fill_opacity * state->opacity;
+      opacity = opacity + (opacity >> 7) + (opacity >> 14);
 #ifdef VERBOSE
-	  fprintf (stderr, "opacity = %d\n", opacity);
+      fprintf (stderr, "opacity = %d\n", opacity);
 #endif
-	  art_render_mask_solid (render, opacity);
-	  art_render_mask (render,
-			   glyph_xy[0], glyph_xy[1],
-			   glyph_xy[0] + glyph->width, glyph_xy[1] + glyph->height,
-			   glyph->buf, glyph->rowstride);
-	  art_render_invoke (render);
-	  rsvg_ft_glyph_unref (glyph);
-	}
+      art_render_mask_solid (render, opacity);
+      art_render_mask (render,
+		       state->affine[4] + line_ink_rect.x,
+		       state->affine[5] + line_ink_rect.y,
+		       state->affine[4] + line_ink_rect.x + bitmap.width,
+		       state->affine[5] + line_ink_rect.y + bitmap.rows,
+		       bitmap.buffer, bitmap.pitch);
+      art_render_invoke (render);
+      g_free (bitmap.buffer);
     }
 
   g_free (string);
@@ -1403,13 +1407,6 @@ rsvg_handle_new (void)
   return handle;
 }
 
-void
-rsvg_set_fonts_dir (const char *new_fonts_dir)
-{
-  g_free (fonts_dir);
-  fonts_dir = g_strdup (new_fonts_dir);
-}
-
 /**
  * rsvg_handle_set_size_callback:
  * @handle: An #RsvgHandle
@@ -1551,8 +1548,8 @@ rsvg_handle_free (RsvgHandle *handle)
 {
   int i;
 
-  if (handle->ft_ctx != NULL)
-    rsvg_ft_ctx_done (handle->ft_ctx);
+  if (handle->pango_context != NULL)
+    g_object_unref (handle->pango_context);
   rsvg_defs_free (handle->defs);
 
   for (i = 0; i < handle->n_state; i++)
@@ -1605,7 +1602,7 @@ rsvg_size_callback (gint     *width,
  * @error: return location for errors
  * 
  * Loads a new #GdkPixbuf from @file_name and returns it.  The caller must
- * assume the referrence to the reurned pixbuf. If an error occurred, @error is
+ * assume the reference to the reurned pixbuf. If an error occurred, @error is
  * set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
@@ -1627,7 +1624,7 @@ rsvg_pixbuf_from_file (const gchar *file_name,
  * 
  * Loads a new #GdkPixbuf from @file_name and returns it.  This pixbuf is scaled
  * from the size indicated by the file by a factor of @x_zoom and @y_zoom.  The
- * caller must assume the referrence to the reurned pixbuf. If an error
+ * caller must assume the reference to the reurned pixbuf. If an error
  * occurred, @error is set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
@@ -1681,7 +1678,7 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
  * Loads a new #GdkPixbuf from @file_name and returns it.  This pixbuf is scaled
  * from the size indicated to the new size indicated by @width and @height.  If
  * either of these are -1, then the default size of the image being loaded is
- * used.  The caller must assume the referrence to the reurned pixbuf. If an
+ * used.  The caller must assume the reference to the reurned pixbuf. If an
  * error occurred, @error is set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
@@ -1715,7 +1712,6 @@ rsvg_pixbuf_from_file_at_size (const gchar *file_name,
     rsvg_handle_write (handle, chars, result, error);
 
   retval = rsvg_handle_get_pixbuf (handle);
-  gdk_pixbuf_ref (retval);
 
   fclose (f);
   rsvg_handle_free (handle);

@@ -5,6 +5,8 @@ AC_CONFIG_SRCDIR(rsvg.h)
 AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
 
+dnl ===========================================================================
+
 LIBRSVG_MAJOR_VERSION=1
 LIBRSVG_MINOR_VERSION=1
 LIBRSVG_MICRO_VERSION=0
@@ -14,6 +16,8 @@ AC_SUBST(LIBRSVG_MICRO_VERSION)
 
 VERSION_INFO=`expr $LIBRSVG_MAJOR_VERSION + $LIBRSVG_MINOR_VERSION`:$LIBRSVG_MICRO_VERSION:$LIBRSVG_MINOR_VERSION
 AC_SUBST(VERSION_INFO)
+
+dnl ===========================================================================
 
 GNOME_COMMON_INIT
 
@@ -26,9 +30,13 @@ AC_PROG_AWK
 AM_PROG_LIBTOOL
 AC_STDC_HEADERS
 
+AC_C_BIGENDIAN
+
 GNOME_REQUIRE_PKGCONFIG
 
 GNOME_PLATFORM_GNOME_2(yes)
+
+dnl ===========================================================================
 
 GLIB_REQUIRED=1.3.1
 XML_REQUIRED=2.2.8
@@ -38,6 +46,7 @@ GDK_PIXBUF_REQUIRED=1.3.7
 FREETYPE_REQUIRED=2.0.1
 FREETYPE_LIBRARY_REQUIRED=6.1.0
 POPT_REQUIRED=1.5
+PANGO_REQUIRED=0.22
 
 AC_SUBST(GLIB_REQUIRED)
 AC_SUBST(XML_REQUIRED)
@@ -46,76 +55,20 @@ AC_SUBST(GTK_REQUIRED)
 AC_SUBST(GDK_PIXBUF_REQUIRED)
 AC_SUBST(FREETYPE_REQUIRED)
 AC_SUBST(POPT_REQUIRED)
+AC_SUBST(PANGO_REQUIRED)
 
-PKG_CHECK_MODULES(MODULES, glib-2.0 >= $GLIB_REQUIRED gmodule-2.0 >= $GLIB_REQUIRED gthread-2.0 >= $GLIB_REQUIRED gtk+-2.0 >= $GTK_REQUIRED gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED libxml-2.0 >= $XML_REQUIRED libart-2.0 >= $ART_REQUIRED)
-AC_SUBST(MODULES_LIBS)
-AC_SUBST(MODULES_CFLAGS)
+dnl ===========================================================================
 
-dnl ====================================
-dnl = Begin tests for popt
-dnl ====================================
+PKG_CHECK_MODULES(LIBRSVG, glib-2.0 >= $GLIB_REQUIRED gmodule-2.0 >= $GLIB_REQUIRED gthread-2.0 >= $GLIB_REQUIRED gtk+-2.0 >= $GTK_REQUIRED gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED libxml-2.0 >= $XML_REQUIRED libart-2.0 >= $ART_REQUIRED pango >= $PANGO_REQUIRED pangoft2 >= $PANGO_REQUIRED)
+AC_SUBST(LIBRSVG_LIBS)
+AC_SUBST(LIBRSVG_CFLAGS)
+
+dnl ===========================================================================
+
 AC_CHECK_LIB(popt, poptParseArgvString, [POPT_LIBS="-lpopt"])
 AC_SUBST(POPT_LIBS)
-dnl ====================================
-dnl = End tests for popt
-dnl ====================================
 
-dnl ====================================
-dnl = Begin tests for libpng
-dnl ====================================
-  if test -z "$LIBPNG"; then
-    AC_CHECK_LIB(png, png_read_info,
-      [AC_CHECK_HEADER(png.h,
-        png_ok=yes,
-        png_ok=no)],
-      AC_MSG_ERROR(*** (PNG library not found) ***), -lz -lm)
-    if test "$png_ok" = yes; then
-      AC_MSG_CHECKING([for png_structp in png.h])
-      AC_TRY_COMPILE([#include <png.h>],
-        [png_structp pp; png_infop info; png_colorp cmap; png_create_read_struct;],
-        png_ok=yes,
-        png_ok=no)
-      AC_MSG_RESULT($png_ok)
-      if test "$png_ok" = yes; then
-        PNG='png'; LIBPNG='-lpng -lz'
-      else
-        AC_MSG_WARN(*** PNG loader will not be built (PNG library is too old) ***)
-      fi
-    else
-     AC_MSG_WARN(*** PNG loader will not be built (PNG header file not found) ***)
-    fi
-  fi
-
-AC_SUBST(LIBPNG)
-dnl =======================
-dnl = End tests for libpng
-dnl =======================
-
-dnl =======================
-dnl = begin tests for FreeType2
-dnl =======================
-NAUTILUS_PATH_FREETYPE2($FREETYPE_LIBRARY_REQUIRED,,
-AC_MSG_ERROR([
-*** FreeType2 $FREETYPE_REQUIRED or better is required. You can obtain a
-*** packaged version of FreeType2 over here:
-*** http://developer.eazel.com/eazel-hacking/updates/freetype2
-*** source versions are available from ftp://ftp.freetype.org]))
-
-AC_SUBST(FREETYPE2_CFLAGS)
-AC_SUBST(FREETYPE2_LIBS)
-dnl =======================
-dnl = End tests for FreeType2
-dnl =======================
-
-LIBRSVG_LIBDIR='-L${libdir}'
-LIBRSVG_INCLUDEDIR='-I${includedir} ${FREETYPE2_CFLAGS}'
-LIBRSVG_LIBS='-lrsvg -lart_lgpl ${FREETYPE2_LIBS}'
-
-AC_SUBST(LIBRSVG_LIBDIR)
-AC_SUBST(LIBRSVG_INCLUDEDIR)
-AC_SUBST(LIBRSVG_LIBS)
-
-AC_C_BIGENDIAN
+dnl ===========================================================================
 
 dnl Turn on the additional warnings last, so -Werror doesn't affect other tests.
 
@@ -158,6 +111,8 @@ if test "$GCC" = "yes" -a "$set_more_warnings" != "no"; then
 else
         AC_MSG_RESULT(no)
 fi
+
+dnl ===========================================================================
 
 AC_OUTPUT([
 librsvg.spec

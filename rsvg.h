@@ -42,8 +42,6 @@ typedef void (* RsvgSizeFunc) (gint     *width,
 			       gpointer  user_data);
 
 
-void        rsvg_set_fonts_dir            (const char      *fonts_dir);
-
 RsvgHandle *rsvg_handle_new               (void);
 void        rsvg_handle_set_size_callback (RsvgHandle      *handle,
 					   RsvgSizeFunc     size_func,
