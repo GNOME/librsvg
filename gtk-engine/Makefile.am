@@ -1,4 +1,4 @@
-DIST_SUBDIRS=
+DIST_SUBDIRS= examples
 
 INCLUDES = $(GTK_CFLAGS) $(LIBRSVG_CFLAGS) -I$(top_srcdir)
 
@@ -7,7 +7,7 @@ themedir = $(datadir)/themes
 
 if ENABLE_GTK_ENGINE
 target_rsvg_engine = libsvg.la
-SUBDIRS = examples
+SUBDIRS =
 else
 target_rsvg_engine =
 SUBDIRS =
