@@ -3861,7 +3861,7 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self,
 	FPBox boundarys;
 	guchar *output_pixels;
 	GdkPixbuf *output;
-
+	gdouble affine[6];
 	GdkPixbuf *in;
 	
 	in = rsvg_filter_get_in (self->in, ctx);
@@ -3878,14 +3878,18 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self,
 	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	output_pixels = gdk_pixbuf_get_pixels (output);
 
+	art_affine_invert(affine, ctx->paffine);
+
 	for (y = 0; y < tileHeight; y++)
 		{
 			for (x = 0; x < tileWidth; x++)
 				{
 					gint i;
 					double point[2];
-					point[0] = x+boundarys.x1;
-					point[1] = y+boundarys.y1;
+					point[0] = affine[0] * (x+boundarys.x1) +
+						affine[2] * (y+boundarys.y1) + affine[4];
+					point[1] = affine[1] * (x+boundarys.x1) +
+						affine[3] * (y+boundarys.y1) + affine[5];
 					
 					for (i = 0; i < 4; i++)
 						{

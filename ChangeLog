@@ -1,3 +1,7 @@
+2004-08-31  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-text.c: made text not cause crashes
+
 2004-08-30  Dom Lachowicz <cinamod@hotmail.com>
 
 	* test-display.c: Ability to copy the current SVG's URI or file path

@@ -245,7 +245,8 @@ rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 		}
 	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
 
-	dst->clippath = src->clippath;
+	if (src->clippath != NULL)
+		dst->clippath = src->clippath;
 }
 
 void
@@ -335,7 +336,9 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 				dst->dash.dash[i] = src->dash.dash[i];
 		}
 	art_affine_multiply (dst->affine, dst->personal_affine, src->affine); 
-	dst->clippath = src->clippath;
+
+	if (src->clippath != NULL)
+		dst->clippath = src->clippath;
 }
 
 void

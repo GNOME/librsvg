@@ -27,11 +27,20 @@
 #define RSVG_TEXT_H
 
 #include "rsvg.h"
+#include "rsvg-shapes.h"
 
 G_BEGIN_DECLS
 
 void rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts);
 char * rsvg_make_valid_utf8 (const char *str);
+
+typedef struct _RsvgDefsDrawableText RsvgDefsDrawableText;
+
+struct _RsvgDefsDrawableText {
+	RsvgDefsDrawable super;
+	GPtrArray * chunks;
+	GPtrArray * styles;
+};
 
 G_END_DECLS
 

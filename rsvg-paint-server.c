@@ -370,21 +370,27 @@ render_image_pattern_done (ArtRenderCallback *self, ArtRender *render)
 	g_free(self);
 }
 
-#include <libart_lgpl/art_rgb.h>
+#include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_render.h>
+
+/*the commented out regions in the next bit allow overflow*/
 
 static void
 render_image_pattern_render(ArtRenderCallback *self, ArtRender *render,
 				  art_u8 *dest, int y)
 {
 	RsvgImageSourcePattern *z = (RsvgImageSourcePattern *)self;
-	int i;	
-
+	int i;
 	int x0 = render->x0;
 	int x1 = render->x1;
 
 	int sx, sy;
-
+	/*
+	guchar pix[4];
+	guchar newpix[4];
+	int j;
+	double  gbnx, gbny;
+	*/
 	double px, py, gx, gy, gnx, gny, tx, ty;
 
 	tx = -z->x * z->affine[0] + -z->y * z->affine[2] + z->affine[4];
@@ -397,7 +403,33 @@ render_image_pattern_render(ArtRenderCallback *self, ArtRender *render,
 			
 			gx = px * z->invaffine[0] + py * z->invaffine[2] + z->invaffine[4] - z->x;
 			gy = px * z->invaffine[1] + py * z->invaffine[3] + z->invaffine[5] - z->y;
-
+			/*	
+			  gbnx = floor (gx / z->width);
+			  gbny = floor (gy / z->height);
+			  
+			  pix[0] = pix[1] = pix[2] = pix[3] = 0;
+			  
+			  for (gny = gbny - 3; gny < gbny + 3; gny++) {
+			  for (gnx = gbnx - 3; gnx < gbnx + 3; gnx++) {
+			  sx = px - gnx * z->width * z->affine[0] - gny * z->height * z->affine[2] - z->affine[4]
+			  + z->xoffset + tx;
+			  sy = py - gnx * z->width * z->affine[1] - gny * z->height * z->affine[3] - z->affine[5]
+			  + z->yoffset + ty;
+			  
+			  if (sx < 0 || sx >= z->realwidth || sy < 0 || sy >= z->realheight)
+			  continue;
+			  newpix[0] = z->pixels[sx * 4 + z->rowstride * sy];
+			  newpix[1] = z->pixels[sx * 4 + z->rowstride * sy + 1];
+			  newpix[2] = z->pixels[sx * 4 + z->rowstride * sy + 2];
+			  newpix[3] = z->pixels[sx * 4 + z->rowstride * sy + 3];
+			  art_rgba_run_alpha (pix, newpix[0], newpix[1], 
+			  newpix[2], newpix[3], 1);
+			  }
+			  }
+			  for (j = 0; j < 4; j++)
+			  render->image_buf[i * 4 + j] = newpix[j];
+			  */
+			
 			gnx = floor (gx / z->width);
 			gny = floor (gy / z->height);
 	
@@ -405,16 +437,16 @@ render_image_pattern_render(ArtRenderCallback *self, ArtRender *render,
 				+ z->xoffset + tx;
 			sy = py - gnx * z->width * z->affine[1] - gny * z->height * z->affine[3] - z->affine[5]
 				+ z->yoffset + ty;
-
-			if (sx < 0 || sx >= z->realwidth || sy < 0 || sy >= z->realheight)
-				{
-					render->image_buf[i * 4 + 3] = 0;
-					continue;
-				}
-			render->image_buf[i * 4] = z->pixels[sx * 4 + z->rowstride * sy];
+			
+			if (sx < 0 || sx >= z->realwidth || sy < 0 || sy >= z->realheight){
+				render->image_buf[i * 4 + 3] = 0;
+				continue;
+			}
+			render->image_buf[i * 4 + 0] = z->pixels[sx * 4 + z->rowstride * sy];
 			render->image_buf[i * 4 + 1] = z->pixels[sx * 4 + z->rowstride * sy + 1];
 			render->image_buf[i * 4 + 2] = z->pixels[sx * 4 + z->rowstride * sy + 2];
 			render->image_buf[i * 4 + 3] = z->pixels[sx * 4 + z->rowstride * sy + 3];
+			
 		}
 }
 

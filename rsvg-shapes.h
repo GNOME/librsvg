@@ -114,8 +114,7 @@ struct _RsvgMarker {
 	double refX, refY, orient;
 	double vbx, vby, vbw, vbh, width, height;
 	gint preserve_aspect_ratio;
-	gboolean vbox;
-	gboolean orientAuto;
+	gboolean vbox, orientAuto, overflow;
 };
 
 void 
@@ -144,6 +143,8 @@ void rsvg_preserve_aspect_ratio(unsigned int aspect_ratio, double width,
 void
 rsvg_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate, 
 				  double * affine, double w, double h);
+
+void rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawable *child);
 
 G_END_DECLS
 

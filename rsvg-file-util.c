@@ -134,6 +134,7 @@ rsvg_pixbuf_from_file_with_size_data_ex (RsvgHandle * handle,
 		}
 
 	rsvg_handle_set_base_uri (handle, file_name);
+
 	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
 
 	while (!feof(f) && !ferror(f) && ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0))
@@ -171,7 +172,6 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 
 	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
 	rsvg_handle_set_base_uri (handle, base_uri);
-
 	rsvg_handle_write (handle, buff, len, error);
 
 	rsvg_handle_close (handle, error);

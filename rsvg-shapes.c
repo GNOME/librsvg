@@ -643,13 +643,12 @@ rsvg_defs_drawable_use_draw_as_svp (RsvgDefsDrawable * self, RsvgHandle *ctx,
 	return svp;
 }			
 
-static void 
+void 
 rsvg_defs_drawable_group_pack (RsvgDefsDrawableGroup *self, RsvgDefsDrawable *child)
 {
-	RsvgDefsDrawableGroup *z = (RsvgDefsDrawableGroup *)self;
 	if (self == NULL)
 		return;
-	g_ptr_array_add(z->children, child);
+	g_ptr_array_add(self->children, child);
 }
 
 RsvgDefsDrawable * 
@@ -2253,6 +2252,7 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		
 	marker->orient = 0;
 	marker->orientAuto = FALSE;
+	marker->overflow = FALSE;
 	marker->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	
 	if (rsvg_property_bag_size (atts))
@@ -2295,7 +2295,8 @@ rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			}	
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
 				marker->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-
+			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
+				marker->overflow = rsvg_css_parse_overflow(value);
 		}
 	
 	if (got_x)
@@ -2351,16 +2352,18 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 	gdouble taffine[6];
 	int i;
 	gdouble rotation;
+	RsvgState * state = rsvg_state_current(ctx);
 
 	if (self->bbox) {
-		art_affine_scale(affine,linewidth * rsvg_state_current(ctx)->affine[0], 
-						 linewidth * rsvg_state_current(ctx)->affine[3]);
+		art_affine_scale(affine,linewidth * state->affine[0], 
+						 linewidth * state->affine[3]);
 	} else {
 		for (i = 0; i < 6; i++)
-			affine[i] = rsvg_state_current(ctx)->affine[i];
+			affine[i] = state->affine[i];
 	}	
 
 	if (self->vbox) {
+
 		double w, h, x, y;
 		w = self->width;
 		h = self->height;
@@ -2400,13 +2403,15 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 	
 	art_affine_multiply(affine, affine, taffine);
 
+
 	rsvg_state_push(ctx);
+
+	state = rsvg_state_current(ctx);
 	
 	for (i = 0; i < 6; i++)
 		{
-			rsvg_state_current(ctx)->affine[i] = affine[i];
+			state->affine[i] = affine[i];
 		}
-
 
 	rsvg_defs_drawable_draw (self->contents, ctx, 2);
 	
