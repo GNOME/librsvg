@@ -1,5 +1,7 @@
 TODO:
 
+ * Handle SVGZ in the gdk-pixbuf-loader code somehow
+
  * Handle percentages correctly for gradients in objectBoundingBox space
 
  * Clipping paths
