@@ -7,7 +7,7 @@ DIE=0
 srcdir=`dirname $0`
 test -z "$srcdir" && srcdir=.
 
-PROJECT=LibRsvg_LGPL
+PROJECT=librsvg
 
 (autoconf --version) < /dev/null > /dev/null 2>&1 || {
 	echo
