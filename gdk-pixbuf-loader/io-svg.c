@@ -129,6 +129,11 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
         if (error)
                 *error = NULL;
 
+        if (!context->handle) {
+                rsvg_propegate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
+                return FALSE;
+        }
+
         rsvg_handle_close (context->handle, error);
 
         if (context->pixbuf == NULL) {

@@ -1,3 +1,7 @@
+2004-12-04  Dom Lachowicz <cinamod@hotmail.com>
+
+	* gdk-pixbuf-loader/io-svg.c: Fix bug #160433
+
 2004-08-13  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-styles.c: Fix memory leak in the new "state stack thingie".
