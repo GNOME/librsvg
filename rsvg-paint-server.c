@@ -181,12 +181,34 @@ rsvg_paint_server_lin_grad_render (RsvgPaintServer *self, ArtRender *ar,
 
 	art_affine_multiply(affine, rlg->affine, affine);
 
+	float xchange, ychange, pointlen,unitlen;
+	float nx2, ny2;
+	float x0, y0;
+
+	xchange = rlg->x2 - rlg->x1;
+	ychange = rlg->y2 - rlg->y1;
+
+	nx2 = rlg->x1 - ychange;
+	ny2 = rlg->y1 + xchange;
+
 	/* compute [xy][12] in pixel space */
 	x1 = rlg->x1 * affine[0] + rlg->y1 * affine[2] + affine[4];
 	y1 = rlg->x1 * affine[1] + rlg->y1 * affine[3] + affine[5];
-	x2 = rlg->x2 * affine[0] + rlg->y2 * affine[2] + affine[4];
-	y2 = rlg->x2 * affine[1] + rlg->y2 * affine[3] + affine[5];
-	
+	x0 = rlg->x2 * affine[0] + rlg->y2 * affine[2] + affine[4];
+	y0 = rlg->x2 * affine[1] + rlg->y2 * affine[3] + affine[5];
+	x2 = nx2 * affine[0] + ny2 * affine[2] + affine[4];
+	y2 = nx2 * affine[1] + ny2 * affine[3] + affine[5];
+
+	pointlen = abs((x2 - x1)*(y1 - y0)  - (x1 - x0)*(y2 - y1)) / 
+		sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+
+	xchange = x2 - x1;
+	ychange = y2 - y1;
+	unitlen = sqrt(xchange*xchange + ychange*ychange);
+
+	x2 = x1 + ychange / unitlen * pointlen;
+	y2 = y1 - xchange / unitlen * pointlen;
+
 	/* solve a, b, c so ax1 + by1 + c = 0 and ax2 + by2 + c = 1, maximum
 	   gradient is in x1,y1 to x2,y2 dir */
 	dx = x2 - x1;

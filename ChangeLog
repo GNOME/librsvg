@@ -1,3 +1,7 @@
+2004-03-23  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-paint-server.c: fixed linear gradient transformations
+	
 2004-03-22  Christian Schaller <Uraeus@gnome.org>
 
 	* Use original SVG by Chris Lilley as rsvg-viwer logo
@@ -6,8 +10,6 @@
 
 	* configure.in: Check for GnomePrint
 	* test-display.c: Save SVG to PNG, print SVG
-	
-=== librsvg-2.7.1 ===
 
 2004-03-21  Dom Lachowicz <cinamod@hotmail.com>
 
@@ -20,7 +22,7 @@
 	* moz-plugin.c: Better handling of sizes
 	* rsvg-file-util.c: Aspect-ratio preservation
 	
-2004-03-31  Christian Schaller <Uraeus@gnome.org>
+2004-03-21  Christian Schaller <Uraeus@gnome.org>
 
 	* Add appicon for rsvg-viewer
 
@@ -39,6 +41,11 @@
 
 	* *: "currentColor" and "inherit" colors mostly work. Caveat: they
 	don't work for filters and gradients. TODO
+
+2004-03-21  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-bpath-util.c: made a little hack to allow courners to look right
+	* rsvg-path.c: allowed relitive coordinates to be used directly after z's
 	
 2004-03-20  Dom Lachowicz <cinamod@hotmail.com>
 

@@ -804,6 +804,11 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_style (ctx, atts);
 	else if (!strcmp ((char *)name, "g"))
 		rsvg_start_g (ctx, atts);
+	else if (!strcmp ((char *)name, "symbol"))
+		{
+			ctx->in_defs++;
+			rsvg_start_g (ctx, atts);
+		}
 	else if (!strcmp ((char *)name, "use"))
 		rsvg_start_use (ctx, atts);
 	else if (!strcmp ((char *)name, "path"))
@@ -843,7 +848,12 @@ rsvg_defs_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 
 	if (!strcmp ((char *)name, "g"))
 		rsvg_end_g (ctx);
-	if (!strcmp ((char *)name, "filter"))
+	else if (!strcmp ((char *)name, "symbol"))
+		{
+			ctx->in_defs--;
+			rsvg_end_g (ctx);
+		}
+	else if (!strcmp ((char *)name, "filter"))
 		rsvg_end_filter (ctx);
 	else if (!strcmp ((char *)name, "mask"))
 		rsvg_end_mask(ctx);
@@ -1057,6 +1067,11 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 				rsvg_start_svg (ctx, bag);
 			else if (!strcmp ((char *)name, "g"))
 				rsvg_start_g (ctx, bag);
+			else if (!strcmp ((char *)name, "symbol"))
+				{
+					ctx->in_defs++;
+					rsvg_start_g (ctx, bag);
+				}
 			else if (!strcmp ((char *)name, "defs"))
 				rsvg_start_defs (ctx, bag);
 			else if (!strcmp ((char *)name, "path"))
@@ -1126,7 +1141,12 @@ rsvg_end_element (void *data, const xmlChar *name)
 
 			if (!strcmp ((char *)name, "g"))
 				rsvg_end_g (ctx);
-			if (!strcmp ((char *)name, "filter"))
+			else if (!strcmp ((char *)name, "symbol"))
+				{
+					ctx->in_defs--;
+					rsvg_end_g (ctx);
+				}
+			else if (!strcmp ((char *)name, "filter"))
 				rsvg_end_filter (ctx);
 			else if (!strcmp ((char *)name, "defs")) {
 				ctx->in_defs--;	
