@@ -2,8 +2,10 @@
 /* GdkPixbuf library - SVG image loader
  *
  * Copyright (C) 2002 Matthias Clasen
+ * Copyright (C) 2002 Dom Lachowicz
  *
  * Authors: Matthias Clasen <maclas@gmx.de>
+ *          Dom Lachowicz <cinamod@hotmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,10 +21,8 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include <config.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <rsvg.h>
+#include <stdlib.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gdk-pixbuf/gdk-pixbuf-io.h>
 
@@ -44,17 +44,17 @@ gdk_pixbuf__svg_image_begin_load (GdkPixbufModuleSizeFunc size_func,
                                   gpointer user_data,
                                   GError **error)
 {
-        SvgContext *context = g_new0 (SvgContext, 1);
+        SvgContext *context    = g_new0 (SvgContext, 1);
 
-        context->handle = rsvg_handle_new ();
-        rsvg_handle_set_size_callback (context->handle, size_func, user_data, NULL);
+        context->handle        = rsvg_handle_new ();
         context->prepared_func = prepared_func;
-        context->updated_func = updated_func;
-        context->user_data = user_data;
+        context->updated_func  = updated_func;
+        context->user_data     = user_data;
+
+        rsvg_handle_set_size_callback (context->handle, size_func, user_data, NULL);
 
         return context;
 }
-
 
 static gboolean
 gdk_pixbuf__svg_image_load_increment (gpointer data,
@@ -62,41 +62,36 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
 				      GError **error)
 {
         SvgContext *context = (SvgContext *)data;
-        gboolean result;
-  
-        result = rsvg_handle_write (context->handle, buf, size, error);
-  
+        gboolean result     = rsvg_handle_write (context->handle, buf, size, error);  
+
         context->pixbuf = rsvg_handle_get_pixbuf (context->handle);
   
-        if (context->pixbuf != NULL && context->prepared_func != NULL) {
-                (* context->prepared_func) (context->pixbuf, NULL, context->user_data);
-        }
+        if (context->pixbuf != NULL && context->prepared_func != NULL)
+                (* context->prepared_func) (context->pixbuf, NULL, context->user_data);        
   
         return result;
 }
-
 
 static gboolean
 gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 {
         SvgContext *context = (SvgContext *)data;  
+
         rsvg_handle_close (context->handle, error);
 
         if (context->pixbuf == NULL) {
                 context->pixbuf = rsvg_handle_get_pixbuf (context->handle);
     
-                if (context->pixbuf != NULL && context->prepared_func != NULL) {
+                if (context->pixbuf != NULL && context->prepared_func != NULL)
                         (* context->prepared_func) (context->pixbuf, NULL, context->user_data);
-                }
         }
 
-        if (context->pixbuf != NULL && context->updated_func != NULL) {
+        if (context->pixbuf != NULL && context->updated_func != NULL)
                 (* context->updated_func) (context->pixbuf, 
                                            0, 0, 
                                            gdk_pixbuf_get_width (context->pixbuf), 
                                            gdk_pixbuf_get_height (context->pixbuf), 
                                            context->user_data);
-        }
 
         rsvg_handle_free (context->handle);
         g_object_unref (context->pixbuf);
@@ -108,8 +103,8 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 void
 fill_vtable (GdkPixbufModule *module)
 {
-        module->begin_load = gdk_pixbuf__svg_image_begin_load;
-        module->stop_load = gdk_pixbuf__svg_image_stop_load;
+        module->begin_load     = gdk_pixbuf__svg_image_begin_load;
+        module->stop_load      = gdk_pixbuf__svg_image_stop_load;
         module->load_increment = gdk_pixbuf__svg_image_load_increment;
 }
 
@@ -132,10 +127,10 @@ fill_info (GdkPixbufFormat *info)
                 NULL 
         };
         
-        info->name = "svg";
-        info->signature = signature;
+        info->name        = "svg";
+        info->signature   = signature;
         info->description = "Scalable Vector Graphics";
-        info->mime_types = mime_types;
-        info->extensions = extensions;
-        info->flags = 0;
+        info->mime_types  = mime_types;
+        info->extensions  = extensions;
+        info->flags       = 0;
 }
