@@ -95,9 +95,14 @@ AC_ARG_WITH(svgz,[  --with-svgz  Use libgsf for run-time decompression],[
 	fi
 ])
 if test "x$test_gsf" = "xtrue"; then
-	PKG_CHECK_MODULES(LIBGSF,[libgsf-1 >= 0.5])
+	PKG_CHECK_MODULES(LIBGSF,[libgsf-1 >= 0.5], test_gsf=true, test_gsf=false)
+fi
+
+if test "x$test_gsf" = "xtrue"; then
 	LIBGSF_CFLAGS="$LIBGSF_CFLAGS -DHAVE_SVGZ=1"
 	LIBGSFPKG="libgsf-1"
+else
+	AC_MSG_WARN([SVGZ support disabled, as requested (Use --with-svgz to enable)])
 fi
 AM_CONDITIONAL(WITH_LIBGSF,[test "$LIBGSFPKG" != ""])
 
