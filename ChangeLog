@@ -1,6 +1,10 @@
+2004-10-20  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-defs.c: fixed memleak opened yesterday
+	
 2004-10-19  Caleb Moore <c.moore@student.unsw.edu.au>
 
-	* rsvg-defs.c: stopped passing the hash table a destroy function since giving it a function to destroy document structure because of a name conflict is just BEGGING for a segfault.
+	* rsvg-defs.c: stopped passing the hash table a destroy function
 	
 2004-10-15  Dom Lachowicz <cinamod@hotmail.com>
 
