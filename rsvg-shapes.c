@@ -1373,6 +1373,8 @@ static gboolean utf8_base64_decode(char ** binptr, size_t * binlen, const char *
 			decoded = FALSE;
 			break;
 		}
+
+	g_free(ucs4_str);
 	return decoded;
 }
 
