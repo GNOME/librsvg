@@ -1,5 +1,11 @@
 2001-08-22  Darin Adler  <darin@bentspoon.com>
 
+	* configure.in: Require newer libart.
+	* rsvg.c: (rsvg_render_bpath): Get rid of bug workaround for
+	old libart.
+
+2001-08-22  Darin Adler  <darin@bentspoon.com>
+
 	* Makefile.am: Remove things that are duplicates of stuff
 	already moved into libart. Only install public headers.
 

@@ -775,13 +775,6 @@ rsvg_render_svp (RsvgCtx *ctx, const ArtSVP *svp,
   art_render_invoke (render);
 }
 
-/* art_affine_expansion is missing the fabs call */
-static double
-rsvg_affine_expansion (const double src[6])
-{
-  return sqrt (fabs (src[0] * src[3] - src[1] * src[2]));
-}
-
 static void
 rsvg_render_bpath (RsvgCtx *ctx, const ArtBpath *bpath)
 {
@@ -840,7 +833,7 @@ rsvg_render_bpath (RsvgCtx *ctx, const ArtBpath *bpath)
     {
       /* todo: libart doesn't yet implement anamorphic scaling of strokes */
       double stroke_width = state->stroke_width *
-	rsvg_affine_expansion (state->affine);
+	art_affine_expansion (state->affine);
 
       if (stroke_width < 0.25)
 	stroke_width = 0.25;
