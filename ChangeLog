@@ -1,3 +1,7 @@
+2004-05-28  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-css.c: fixed typos in css colour definitions
+
 2004-05-15  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg.c: fixed a bug causing defaults to be messed up when a radial gradient is based on a linear gradient and vice versa
