@@ -4055,6 +4055,9 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 	img = rsvg_pixbuf_new_from_href(oself->href->str,
 									rsvg_handle_get_base_uri (oself->ctx), NULL);
 
+	if(!img)
+		return NULL;
+
 	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, boundarys.x2 - boundarys.x1, 
 								   boundarys.y2 - boundarys.y1);
 
