@@ -1457,13 +1457,13 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 											output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
 										}
 								}
-							for (y = boundarys.y1 + kh; y < boundarys.y2; y++)
+							for (; y < boundarys.y2; y++)
 								{
 									sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
 									sum += in_pixels[4 * x + y * rowstride + ch];
 									output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
 								}
-							for (y = boundarys.y2; y < boundarys.y2 + kh; y++)
+							for (; y < boundarys.y2 + kh; y++)
 								{
 									divisor--;
 									sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
@@ -4144,15 +4144,16 @@ get_surface_normal (guchar * I, FPBox boundarys, gint x, gint y,
 	gdouble Nx, Ny;
 	vector3 output;
 
-	if (x + 1 >= boundarys.x2)
+	if (x + dx >= boundarys.x2)
 		mcol = 2;
-	else if (x - 1 < boundarys.x1)
+	else if (x - dx < boundarys.x1)
 		mcol = 0;
 	else
 		mcol = 1;
-	if (y + 1 >= boundarys.y2)
+
+	if (y + dy >= boundarys.y2)
 		mrow = 2;
-	else if (y - 1 < boundarys.y1)
+	else if (y - dy < boundarys.y1)
 		mrow = 0;
 	else
 		mrow = 1;
@@ -4168,7 +4169,7 @@ get_surface_normal (guchar * I, FPBox boundarys, gint x, gint y,
     Nx = -surfaceScale * factorx * (gdouble)
 		(Kx[0]*I[(x-dx) * 4 + 3 + (y-dy) * rowstride] + 
 		 Kx[1]*I[(x)    * 4 + 3 + (y-dy) * rowstride] + 
-		 Kx[2]*I[(x+dx) * 4 + 3 + (y-dx) * rowstride] +
+		 Kx[2]*I[(x+dx) * 4 + 3 + (y-dy) * rowstride] +
 		 Kx[3]*I[(x-dx) * 4 + 3 + (y)    * rowstride] + 
 		 Kx[4]*I[(x)    * 4 + 3 + (y)    * rowstride] + 
 		 Kx[5]*I[(x+dx) * 4 + 3 + (y)    * rowstride] +
@@ -4179,7 +4180,7 @@ get_surface_normal (guchar * I, FPBox boundarys, gint x, gint y,
     Ny = -surfaceScale * factory * (gdouble)
 		(Ky[0]*I[(x-dx) * 4 + 3 + (y-dy) * rowstride] + 
 		 Ky[1]*I[(x)    * 4 + 3 + (y-dy) * rowstride] + 
-		 Ky[2]*I[(x+dx) * 4 + 3 + (y-dx) * rowstride] +
+		 Ky[2]*I[(x+dx) * 4 + 3 + (y-dy) * rowstride] +
 		 Ky[3]*I[(x-dx) * 4 + 3 + (y)    * rowstride] + 
 		 Ky[4]*I[(x)    * 4 + 3 + (y)    * rowstride] + 
 		 Ky[5]*I[(x+dx) * 4 + 3 + (y)    * rowstride] +
@@ -4347,6 +4348,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 											   RsvgFilterContext * ctx)
 {
 	gint x, y;
+	float dy, dx;
 	gdouble z;
 	gint rowstride, height, width;
 	gdouble factor;
@@ -4382,22 +4384,33 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 	colour.y = ((guchar *)(&oself->lightingcolour))[1] / 255.0;
 	colour.z = ((guchar *)(&oself->lightingcolour))[0] / 255.0;
 
+	if (oself->dy < 0 || oself->dx < 0)
+		{
+			dx = 1;
+			dy = 1;
+		}
+	else 
+		{
+			dx = oself->dx * ctx->paffine[0];
+			dy = oself->dy * ctx->paffine[3];
+		}
+
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				z = oself->surfaceScale * in_pixels[y * rowstride + x * 4 + 3] / 255.0;
 				lightcolour = get_light_colour(oself->source, colour, x, y, z);
 				factor = dotproduct(get_surface_normal(in_pixels, boundarys, x, y, 
-													   oself->dx, oself->dy, oself->surfaceScale, 
+													   dx, dy, oself->surfaceScale, 
 													   rowstride),
 									get_light_direction(oself->source, x, y, z));
 
-				output_pixels[y * rowstride + x * 4    ] = oself->diffuseConstant * factor * 
-					lightcolour.x * 255.0;
-				output_pixels[y * rowstride + x * 4 + 1] = oself->diffuseConstant * factor * 
-					lightcolour.y * 255.0;
-				output_pixels[y * rowstride + x * 4 + 2] = oself->diffuseConstant * factor * 
-					lightcolour.z * 255.0;
+				output_pixels[y * rowstride + x * 4    ] = MAX(0,MIN(255, oself->diffuseConstant * factor * 
+					lightcolour.x * 255.0));
+				output_pixels[y * rowstride + x * 4 + 1] = MAX(0,MIN(255, oself->diffuseConstant * factor * 
+					lightcolour.y * 255.0));
+				output_pixels[y * rowstride + x * 4 + 2] = MAX(0,MIN(255, oself->diffuseConstant * factor * 
+					lightcolour.z * 255.0));
 				output_pixels[y * rowstride + x * 4 + 3] = 255;
 			}
 	
@@ -4435,8 +4448,8 @@ rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, const xmlChar **
 	filter->super.sizedefaults = 1;
 	filter->surfaceScale = 1;
 	filter->diffuseConstant = 1;
-	filter->dx = 1;
-	filter->dy = 1;
+	filter->dx = -1;
+	filter->dy = -1;
 	
 	if (atts != NULL)
 		{
