@@ -1,5 +1,10 @@
 2004-03-02  Caleb Moore <c.moore@student.unsw.edu.au>
 
+	* rsvg-filter.c: Fixed feDiffuseLighting and feSpecular lighting for small
+	kernel length
+	
+2004-03-02  Caleb Moore <c.moore@student.unsw.edu.au>
+
 	* rsvg-filter.c: Added new filters: feDiffuseLighting and feSpecular lighting
 	
 2004-02-29  Dom Lachowicz <cinamod@hotmail.com>
