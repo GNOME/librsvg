@@ -35,8 +35,6 @@ dnl ===========================================================================
 AM_INIT_AUTOMAKE(librsvg, $LIBRSVG_VERSION)
 AM_CONFIG_HEADER(config.h)
 
-GNOME_COMMON_INIT
-
 AM_MAINTAINER_MODE
 
 AC_ISC_POSIX
@@ -49,8 +47,6 @@ AC_STDC_HEADERS
 AC_C_BIGENDIAN
 
 GNOME_REQUIRE_PKGCONFIG
-
-GNOME_PLATFORM_GNOME_2(yes)
 
 dnl ===========================================================================
 

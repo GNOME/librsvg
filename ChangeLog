@@ -1,3 +1,7 @@
+2002-02-18  Gediminas Paulauskas <menesis@delfi.lt>
+
+	* configure.in: remove GNOME_COMMON_INIT, GNOME_PLATFORM_GNOME_2
+
 2002-02-16  Alexander Larsson  <alla@lysator.liu.se>
 
 	* test-71297.svg:
