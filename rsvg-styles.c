@@ -748,9 +748,9 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 							/* if an odd number of dashes is found, it gets repeated */
 							if (!is_even)
 								for (; i < state->dash.n_dash; i++)
-									state->dash.dash[i] = g_ascii_strtod (dashes[i - n_dashes], NULL);
+									state->dash.dash[i] = state->dash.dash[i - n_dashes];
 							
-							g_strfreev (dashes) ;
+							g_strfreev (dashes);
 						}
 				}
 		}
@@ -759,7 +759,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 void rsvg_parse_style_pair (RsvgHandle *ctx, RsvgState *state, 
 							const char *key, const char *val)
 {
-	gchar * str = g_strdup_printf ("%s:%s", key, val);;
+	gchar * str = g_strdup_printf ("%s:%s", key, val);
 	rsvg_parse_style_arg (ctx, state, str);
 	g_free (str);
 }

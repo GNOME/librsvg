@@ -693,7 +693,7 @@ rsvg_css_parse_font_family (const char * str, const char * inherit)
 		return str;
 }
 
-#if !defined(HAVE_STRTOK_R) /* && !GLIB_CHECK_VERSION(2, 3, 2) */
+#if !defined(HAVE_STRTOK_R)
 
 static char *
 strtok_r(char *s, const char *delim, char **last)
@@ -734,24 +734,6 @@ strtok_r(char *s, const char *delim, char **last)
 gchar **
 rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 {
-	/* the following code is defective because it creates blank entries when two splitting chars are next to each other*/
-#if 0 /* GLIB_CHECK_VERSION(2, 3, 2) */
-
-	gchar ** string_array;
-	guint n;
-
-	/* this may fix bug #113538 */
-
-	string_array = g_strsplit_set(in_str, ", \t\n", -1);
-
-	for(n = 0; string_array[n] != NULL; n++)
-		;
-
-	*out_list_len = n;
-	return string_array;
-
-#else
-
 	char *ptr, *tok;
 	char *str;
 
@@ -794,8 +776,6 @@ rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 	}
 
 	return string_array;
-
-#endif
 }
 
 gdouble *
@@ -846,7 +826,8 @@ rsvg_css_parse_number_optional_number(const char * str,
     *y = *x;
 }
 
-int rsvg_css_parse_aspect_ratio(const char * str)
+int 
+rsvg_css_parse_aspect_ratio (const char * str)
 {
 	char ** elems;
 	guint nb_elems;
@@ -888,13 +869,10 @@ int rsvg_css_parse_aspect_ratio(const char * str)
 	return ratio;
 }
 
-gboolean rsvg_css_parse_overflow(const char * str)
+gboolean 
+rsvg_css_parse_overflow(const char * str)
 {
-	if (!strcmp(str, "hidden"))
-		return 0;
-	if (!strcmp(str, "scroll"))
-		return 0;
 	if (!strcmp(str, "visible"))
 		return 1;
-	return 0;
+	return 0; /* hidden, scroll */
 }

@@ -51,6 +51,10 @@
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif  /*  M_PI  */
+
 /**
  * rsvg_close_vpath: Close a vector path.
  * @src: Source vector path.
@@ -1802,6 +1806,7 @@ rsvg_preserve_aspect_ratio(unsigned int aspect_ratio, double width,
 				*x -= (neww - *w) / 2;
 			else
 				*x -= neww - *w;			
+
 			if (aspect_ratio & RSVG_ASPECT_RATIO_XMIN_YMIN ||
 				aspect_ratio & RSVG_ASPECT_RATIO_XMID_YMIN ||
 				aspect_ratio & RSVG_ASPECT_RATIO_XMAX_YMIN)
@@ -1846,7 +1851,6 @@ rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 
 	rsvg_state_reinherit_top(ctx, &self->state, dominate);
 
-
 	for (i = 0; i < 6; i++)
 		tmp_affine[i] = state->affine[i];
 
@@ -1873,7 +1877,6 @@ rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
 								   gdk_pixbuf_get_width (ctx->pixbuf),
 								   gdk_pixbuf_get_height (ctx->pixbuf));
-
 
 	if (!intermediate)
 		{
@@ -1912,7 +1915,6 @@ rsvg_defs_drawable_image_draw (RsvgDefsDrawable * self, RsvgHandle *ctx,
 				temprect.x1 = MAX(basex, temprect.x1);
 				temprect.y1 = MAX(basey, temprect.y1);
 			}
-
 
 	art_irect_union(&ctx->bbox, &ctx->bbox, &temprect);
 	rsvg_pop_discrete_layer(ctx);
@@ -1965,6 +1967,7 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	/* figure out if image is visible or not */
 	if (!state->visible || !state->cond_true)
 		return;
+
 	/*hmm, passing the error thingie into the next thing makes it screw up when using vfs*/
 	img = rsvg_pixbuf_new_from_href (href, rsvg_handle_get_base_uri (ctx), NULL); 
 
@@ -2207,9 +2210,6 @@ rsvg_start_symbol(RsvgHandle *ctx, RsvgPropertyBag *atts)
 				symbol->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);			
 			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
 				symbol->overflow = rsvg_css_parse_overflow(value);
-
-
-
 		}
 
 	rsvg_parse_style_attrs (ctx, state, "symbol", klazz, id, atts);
@@ -2391,7 +2391,7 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 	art_affine_multiply(affine, taffine, affine);
 
 	if (self->orientAuto)
-		rotation = orient * 180 / 3.14159265358979323;
+		rotation = orient * 180. / M_PI;
 	else
 		rotation = self->orient;
 
@@ -2518,8 +2518,6 @@ rsvg_start_sub_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	if (rsvg_property_bag_size (atts))
 		{
-			/* x & y should be ignored since we should always be the outermost SVG,
-			   at least for now, but i'll include them here anyway */
 			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
 				{
 					has_vbox = rsvg_css_parse_vbox (value, &vbox_x, &vbox_y,
