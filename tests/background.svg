@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- Generator: Adobe Illustrator 9.0, SVG Export Plug-In  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20000303 Stylable//EN"   "http://www.w3.org/TR/2000/03/WD-SVG-20000303/DTD/svg-20000303-stylable.dtd" [
+	<!ENTITY st0 "fill:url(#aigrd1);stroke:none;">
+	<!ENTITY st1 "fill:url(#aigrd3);stroke:none;">
+	<!ENTITY st2 "fill:url(#aigrd2);stroke:none;">
+	<!ENTITY st3 "fill-rule:nonzero;clip-rule:nonzero;fill:#2A569D;stroke:#000000;stroke-miterlimit:4;">
+	<!ENTITY st4 "stroke:none;">
+]>
+<svg  width="508.104pt" height="383.717pt" viewBox="0 0 508.104 383.717" xml:space="preserve">
+	<g id="Layer_x0020_1" style="&st3;">
+		<g id="middle">
+			<linearGradient id="aigrd1" gradientUnits="userSpaceOnUse" x1="237.2617" y1="24.7095" x2="237.2617" y2="371.207">
+				<stop  offset="0" style="stop-color:#4E77B9"/>
+				<stop  offset="1" style="stop-color:#6E8CBE"/>
+			</linearGradient>
+			<path style="&st0;" d="M59.227,357.212c27.481,9.066,56.985,13.994,87.696,13.994c148.221,0,268.375-114.698,268.375-256.189c0-31.789-6.073-62.221-17.16-90.308C249.869,104.206,131.168,219.909,59.227,357.212z"/>
+		</g>
+		<linearGradient id="aigrd2" gradientUnits="userSpaceOnUse" x1="277.0767" y1="0" x2="277.0766" y2="383.7178">
+			<stop  offset="0" style="stop-color:#335EA2"/>
+			<stop  offset="1" style="stop-color:#6D8BBD"/>
+		</linearGradient>
+		<path id="lower_x0020_right" style="&st2;" d="M447.704,0c-16.859,7.792-33.389,16.037-49.566,24.709c11.087,28.087,17.16,58.52,17.16,90.308c0,141.491-120.154,256.189-268.375,256.189c-30.71,0-60.214-4.928-87.696-13.994
+			c-4.584,8.749-8.979,17.585-13.178,26.505h462.056V0h-60.4z"/>
+		<g id="upper_x0020_left">
+			<linearGradient id="aigrd3" gradientUnits="userSpaceOnUse" x1="199.0684" y1="0" x2="199.0683" y2="357.2129">
+				<stop  offset="0" style="stop-color:#436FB6"/>
+				<stop  offset="1" style="stop-color:#305CA3"/>
+			</linearGradient>
+			<path style="&st1;" d="M398.137,24.709C394.798,16.252,391.011,8.005,386.791,0H0v329.44c18.309,11.454,38.174,20.827,59.227,27.772c71.942-137.304,190.642-253.007,338.911-332.503z"/>
+		</g>
+		<g id="bottom_x0020_small">
+			<path style="&st4;" d="M0,329.44v54.277h46.048c4.2-8.92,8.594-17.756,13.178-26.505C38.174,350.267,18.309,340.894,0,329.44z"/>
+		</g>
+		<g id="top_x0020_small">
+			<path style="&st4;" d="M447.704,0h-60.913c4.221,8.005,8.008,16.252,11.347,24.709C414.315,16.037,430.844,7.792,447.704,0z"/>
+		</g>
+	</g>
+</svg>
