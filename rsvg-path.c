@@ -524,6 +524,9 @@ rsvg_parse_path_data (RSVGParsePathCtx *ctx, const char *data)
 	  if (ctx->param)
 	    rsvg_parse_path_do_cmd (ctx, TRUE);
 	  rsvg_bpath_def_closepath (ctx->bpath);
+
+	  ctx->cpx = ctx->rpx = ctx->bpath->bpath[ctx->bpath->n_bpath - 1].x3;
+	  ctx->cpy = ctx->rpy = ctx->bpath->bpath[ctx->bpath->n_bpath - 1].y3;
 	}
       else if (c >= 'A' && c <= 'Z' && c != 'E')
 	{

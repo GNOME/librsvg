@@ -81,6 +81,9 @@ rsvg_bpath_def_free (RsvgBpathDef *bpd)
 	g_free (bpd);
 }
 
+
+#include <stdio.h>
+
 void
 rsvg_bpath_def_moveto (RsvgBpathDef *bpd, double x, double y)
 {
@@ -93,6 +96,7 @@ rsvg_bpath_def_moveto (RsvgBpathDef *bpd, double x, double y)
 	   creating a new one */
 	bpath = bpd->bpath;
 	n_bpath = bpd->n_bpath;
+
 	if (n_bpath > 0)
 		if (bpath[n_bpath - 1].code == ART_MOVETO_OPEN)
 			{
@@ -111,7 +115,7 @@ rsvg_bpath_def_moveto (RsvgBpathDef *bpd, double x, double y)
 	bpath[n_bpath].code = ART_MOVETO_OPEN;
 	bpath[n_bpath].x3 = x;
 	bpath[n_bpath].y3 = y;
-	bpd->moveto_idx = n_bpath;
+	bpd->moveto_idx = n_bpath;	
 }
 
 void
@@ -197,7 +201,6 @@ rsvg_bpath_def_closepath (RsvgBpathDef *bpd)
 								   bpath[bpd->moveto_idx].y3);
 			bpath = bpd->bpath;
 		}
-
 	rsvg_bpath_def_replicate (bpd, bpd->moveto_idx);
 	bpath[bpd->moveto_idx].code = ART_MOVETO;
 	bpd->moveto_idx = -1;
