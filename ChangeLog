@@ -1,3 +1,7 @@
+2004-07-21  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-shapes.c: Bilinear interpolation for images
+
 2004-07-19  Dom Lachowicz <cinamod@hotmail.com>
 
 	* test-display.c: better scroll policy, especially when used as a plugin

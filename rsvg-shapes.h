@@ -103,6 +103,9 @@ rsvg_pixbuf_new_from_href (const char *href,
 void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
 							  int dominate);
 
+void
+rsvg_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate, 
+				  double * affine, double w, double h);
 
 G_END_DECLS
 

@@ -1548,31 +1548,122 @@ rsvg_pixbuf_new_from_href (const char *href,
 }
 
 void
+rsvg_affine_image(GdkPixbuf *img, GdkPixbuf *intermediate, 
+				  double * affine, double w, double h)
+{
+	gdouble tmp_affine[6];
+	gdouble inv_affine[6];
+	gdouble raw_inv_affine[6];
+	gint intstride;
+	gint basestride;	
+	gint basex, basey;
+	gdouble fbasex, fbasey;
+	gdouble rawx, rawy;
+	guchar * intpix;
+	guchar * basepix;
+	gint i, j, k, basebpp, ii, jj;
+	gboolean has_alpha;
+	gdouble pixsum[4];
+	gboolean xrunnoff, yrunnoff;
+	gint iwidth, iheight;
+	gint width, height;
+
+	width = gdk_pixbuf_get_width (img);
+	height = gdk_pixbuf_get_height (img);
+	iwidth = gdk_pixbuf_get_width (intermediate);
+	iheight = gdk_pixbuf_get_height (intermediate);
+
+	has_alpha = gdk_pixbuf_get_has_alpha (img);
+
+	basestride = gdk_pixbuf_get_rowstride (img);
+	intstride = gdk_pixbuf_get_rowstride (intermediate);
+	basepix = gdk_pixbuf_get_pixels (img);
+	intpix = gdk_pixbuf_get_pixels (intermediate);
+	basebpp = has_alpha ? 4 : 3;
+
+	art_affine_invert(raw_inv_affine, affine);
+
+	/*scale to w and h*/
+	tmp_affine[0] = (double)width / (double)w;
+	tmp_affine[3] = (double)height / (double)h;
+	tmp_affine[1] = tmp_affine[2] = tmp_affine[4] = tmp_affine[5] = 0;
+	art_affine_multiply(inv_affine, raw_inv_affine, tmp_affine);
+
+	/*apply the transformation*/
+	for (i = 0; i < iwidth; i++)
+		for (j = 0; j < iheight; j++)		
+			{
+				fbasex = inv_affine[0] * (double)i + inv_affine[2] * (double)j + 
+					inv_affine[4];
+				fbasey = inv_affine[1] * (double)i + inv_affine[3] * (double)j + 
+					inv_affine[5];
+				basex = floor(fbasex);
+				basey = floor(fbasey);
+				rawx = raw_inv_affine[0] * i + raw_inv_affine[2] * j + 
+					raw_inv_affine[4];
+				rawy = raw_inv_affine[1] * i + raw_inv_affine[3] * j + 
+					raw_inv_affine[5];
+				if (rawx < 0 || rawy < 0 || rawx >= w || 
+					rawy >= h || basex < 0 || basey < 0 
+					|| basex >= width || basey >= height)
+					{					
+						for (k = 0; k < 4; k++)
+							intpix[i * 4 + j * intstride + k] = 0;
+					}
+				else
+					{
+						if (basex < 0 || basex + 1 >= width)
+							xrunnoff = TRUE;
+						else
+							xrunnoff = FALSE;
+						if (basey < 0 || basey + 1 >= height)
+							yrunnoff = TRUE;
+						else
+							yrunnoff = FALSE;
+						for (k = 0; k < basebpp; k++)
+							pixsum[k] = 0;
+						for (ii = 0; ii < 2; ii++)
+							for (jj = 0; jj < 2; jj++)
+								{
+									if (basex + ii < 0 || basey + jj< 0 
+										|| basex + ii >= width || basey + jj >= height)
+										;
+									else
+										{
+											for (k = 0; k < basebpp; k++)
+												{
+													pixsum[k] += 
+														(double)basepix[basebpp * (basex + ii) + (basey + jj) * basestride + k] 
+														* (xrunnoff ? 1 : fabs(fbasex - (double)(basex + (1 - ii))))
+														* (yrunnoff ? 1 : fabs(fbasey - (double)(basey + (1 - jj))));
+												}
+										}
+								}
+						for (k = 0; k < basebpp; k++)
+							intpix[i * 4 + j * intstride + k] = pixsum[k];
+						if (!has_alpha)
+							intpix[i * 4 + j * intstride + 3] = 255;
+					}	
+
+			}
+}
+
+void
 rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	double x = 0., y = 0., w = -1., h = -1.;
 	const char * href = NULL;
 	const char * klazz = NULL, * id = NULL, *value;
-	gboolean has_alpha;
 	int aspect_ratio = RSVG_ASPECT_RATIO_NONE;
 	ArtIRect temprect;
 	GdkPixbuf *img;
 	GError *err = NULL;
-	
+	int i, j;
 	double tmp_affine[6];
-	RsvgState *state;
-	
 	double tmp_tmp_affine[6];
-	double inv_tmp_affine[6];
-	double raw_inv_tmp_affine[6];
-	GdkPixbuf * intermediate;
-	int intstride;
-	int basestride;	
-	int basex, basey;
-	double rawx, rawy;
-	guchar * intpix;
-	guchar * basepix;
-	int i, j, k, basebpp;
+	RsvgState *state;
+	GdkPixbuf *intermediate;
+	double basex, basey;
 
 	/* skip over defs entries for now */
 	if (ctx->in_defs) return;
@@ -1637,8 +1728,6 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				}
 		}
 
-	has_alpha = gdk_pixbuf_get_has_alpha (img);
-
 	for (i = 0; i < 6; i++)
 		tmp_affine[i] = state->affine[i];
 
@@ -1650,13 +1739,6 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	art_affine_multiply(tmp_affine, tmp_tmp_affine, tmp_affine);
 
-	art_affine_invert(raw_inv_tmp_affine, tmp_affine);
-
-	/*scale to w and h*/
-	tmp_tmp_affine[0] = (double)gdk_pixbuf_get_width (img) / (double)w;
-	tmp_tmp_affine[3] = (double)gdk_pixbuf_get_height (img) / (double)h;
-	tmp_tmp_affine[1] = tmp_tmp_affine[2] = tmp_tmp_affine[4] = tmp_tmp_affine[5] = 0;
-	art_affine_multiply(inv_tmp_affine, raw_inv_tmp_affine, tmp_tmp_affine);
 
 	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
 								   gdk_pixbuf_get_width (ctx->pixbuf),
@@ -1669,36 +1751,9 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			return;
 		}
 
-	basestride = gdk_pixbuf_get_rowstride (img);
-	intstride = gdk_pixbuf_get_rowstride (intermediate);
-	basepix = gdk_pixbuf_get_pixels (img);
-	intpix = gdk_pixbuf_get_pixels (intermediate);
-	basebpp = has_alpha ? 4 : 3;
 
-	/*apply the transformation*/
-	for (i = 0; i < gdk_pixbuf_get_width (intermediate); i++)
-		for (j = 0; j < gdk_pixbuf_get_height (intermediate); j++)		
-			{
-				basex = inv_tmp_affine[0] * i + inv_tmp_affine[2] * j + inv_tmp_affine[4];
-				basey = inv_tmp_affine[1] * i + inv_tmp_affine[3] * j + inv_tmp_affine[5];
-				rawx = raw_inv_tmp_affine[0] * i + raw_inv_tmp_affine[2] * j + raw_inv_tmp_affine[4];
-				rawy = raw_inv_tmp_affine[1] * i + raw_inv_tmp_affine[3] * j + raw_inv_tmp_affine[5];
-				if (basex < 0 || basey < 0 
-					|| basex >= gdk_pixbuf_get_width (img) 
-					|| basey >= gdk_pixbuf_get_height (img)
-					|| rawx < 0 || rawy < 0 || rawx >= w || rawy >= h)
-					{					
-						for (k = 0; k < 4; k++)
-							intpix[i * 4 + j * intstride + k] = 0;
-					}
-				else
-					{
-						for (k = 0; k < basebpp; k++)
-							intpix[i * 4 + j * intstride + k] = basepix[basebpp * basex + basey * basestride + k];
-						if (!has_alpha)
-							intpix[i * 4 + j * intstride + 3] = 255;	
-					}
-			}
+	rsvg_affine_image(img, intermediate, tmp_affine, w, h);
+
 	g_object_unref (G_OBJECT (img));
 
 	rsvg_push_discrete_layer(ctx);
