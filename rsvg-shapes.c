@@ -47,26 +47,6 @@
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
 
 
-typedef struct _RsvgDefsDrawablePath RsvgDefsDrawablePath;
-typedef struct _RsvgDefsDrawableGroup RsvgDefsDrawableGroup;
-typedef struct _RsvgDefsDrawableUse RsvgDefsDrawableUse;
-
-struct _RsvgDefsDrawablePath {
- 	RsvgDefsDrawable super;
- 	char       *d;
-};
-
-struct _RsvgDefsDrawableGroup {
- 	RsvgDefsDrawable super;
- 	GPtrArray *children;
-};
-
-struct _RsvgDefsDrawableUse {
- 	RsvgDefsDrawable super;
- 	RsvgDefsDrawable *child;
-};
-
-
 /**
  * rsvg_close_vpath: Close a vector path.
  * @src: Source vector path.
@@ -258,7 +238,7 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	art_free (affine_bpath);
 	
 	need_tmpbuf = ((state->fill != NULL) && (state->stroke != NULL) &&
-				   state->opacity != 0xff) || state->filter;
+				   state->opacity != 0xff) || state->filter || state->mask;
 	
 	if (need_tmpbuf)
 		rsvg_push_discrete_layer (ctx);

@@ -47,6 +47,9 @@ void rsvg_push_def_group (RsvgHandle *ctx, const char * id);
 void rsvg_pop_def_group (RsvgHandle *ctx);
 
 typedef struct _RsvgDefsDrawable RsvgDefsDrawable;
+typedef struct _RsvgDefsDrawablePath RsvgDefsDrawablePath;
+typedef struct _RsvgDefsDrawableGroup RsvgDefsDrawableGroup;
+typedef struct _RsvgDefsDrawableUse RsvgDefsDrawableUse;
 
 struct _RsvgDefsDrawable {
  	RsvgDefVal super;
@@ -55,8 +58,21 @@ struct _RsvgDefsDrawable {
 	void (*draw) (RsvgDefsDrawable * self, RsvgHandle *ctx, int dominate);
 };
 
+struct _RsvgDefsDrawablePath {
+ 	RsvgDefsDrawable super;
+ 	char       *d;
+};
 
-RsvgDefsDrawable * rsvg_mask_parse (const RsvgDefs * defs, const char *str);
+struct _RsvgDefsDrawableGroup {
+ 	RsvgDefsDrawable super;
+ 	GPtrArray *children;
+};
+
+struct _RsvgDefsDrawableUse {
+ 	RsvgDefsDrawable super;
+ 	RsvgDefsDrawable *child;
+};
+
 void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
 							  int dominate);
 

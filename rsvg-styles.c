@@ -30,6 +30,7 @@
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"
+#include "rsvg-mask.h"
 
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_affine.h>
@@ -1252,137 +1253,6 @@ rsvg_use_opacity (RsvgHandle *ctx, int opacity,
 		}
 }
 
-static void
-rsvg_use_mask (RsvgHandle *ctx, RsvgDefsDrawable * maskref, 
-			   GdkPixbuf *tos, GdkPixbuf *nos)
-{
-	art_u8 *tos_pixels, *nos_pixels, *mask_pixels;
-	int width;
-	int height;
-	int rowstride;
-	int x, y;
-	
-	GdkPixbuf *save, *mask;
-	RsvgDefsDrawable *drawable;	
-
-	drawable = (RsvgDefsDrawable*)maskref;
-	
-	mask = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
-						   gdk_pixbuf_get_width(tos), 
-						   gdk_pixbuf_get_height(tos));
-
-	gdk_pixbuf_fill(mask, 0x00000000);
-	
-	save = ctx->pixbuf;
-
-	if (ctx->n_state == ctx->n_state_max)
-		ctx->state = g_renew (RsvgState, ctx->state, 
-							  ctx->n_state_max <<= 1);
-	if (ctx->n_state)
-		rsvg_state_inherit (&ctx->state[ctx->n_state],
-							&ctx->state[ctx->n_state - 1]);
-	else
-		rsvg_state_init (ctx->state);
-	ctx->n_state++;
-	
-	ctx->pixbuf = mask;
-
-	rsvg_defs_drawable_draw (drawable, ctx, 0);
-	
-	/* pop the state stack */
-	ctx->n_state--;
-	rsvg_state_finalize (&ctx->state[ctx->n_state]);
-		
-	ctx->pixbuf = save;
-
-	if (tos == NULL || nos == NULL)
-		{
-			/* FIXME: What warning/GError here? */
-			return;
-		}
-	
-	if (!gdk_pixbuf_get_has_alpha (nos))
-		{
-			g_warning ("push/pop transparency group on non-alpha buffer nyi");
-			return;
-		}
-	
-	width = gdk_pixbuf_get_width (tos);
-	height = gdk_pixbuf_get_height (tos);
-	rowstride = gdk_pixbuf_get_rowstride (tos);
-	
-	tos_pixels = gdk_pixbuf_get_pixels (tos);
-	nos_pixels = gdk_pixbuf_get_pixels (nos);
-	mask_pixels = gdk_pixbuf_get_pixels (mask);
-	
-	for (y = 0; y < height; y++)
-		{
-			for (x = 0; x < width; x++)
-				{
-					guchar r, g, b, a, rm, gm, bm, am;
-					gdouble luminance;
-					a = tos_pixels[4 * x + 3];
-					if (a)
-						{
-							r = tos_pixels[4 * x];
-							g = tos_pixels[4 * x + 1];
-							b = tos_pixels[4 * x + 2];
-
-							rm = mask_pixels[4 * x];
-							gm = mask_pixels[4 * x + 1];
-							bm = mask_pixels[4 * x + 2];
-							am = mask_pixels[4 * x + 3];
-
-							luminance = ((gdouble)rm * 0.2125 + 
-										 (gdouble)gm * 0.7154 + 
-										 (gdouble)bm * 0.0721) / 255.;
-							a = (guchar)((gdouble)a * luminance
-										 * (gdouble)am / 255.);
-							art_rgba_run_alpha (nos_pixels + 4 * x, r, g, b, a, 1);
-						}
-				}
-			tos_pixels += rowstride;
-			nos_pixels += rowstride;
-			mask_pixels += rowstride;
-		}
-}
-
-RsvgDefsDrawable *
-rsvg_mask_parse (const RsvgDefs * defs, const char *str)
-{
-	if (!strncmp (str, "url(", 4))
-		{
-			const char *p = str + 4;
-			int ix;
-			char *name;
-			RsvgDefVal *val;
-			
-			while (g_ascii_isspace (*p))
-				p++;
-
-			if (*p == '#')
-				{
-					p++;
-					for (ix = 0; p[ix]; ix++)
-						if (p[ix] == ')')
-							break;
-
-					if (p[ix] == ')')
-						{
-							name = g_strndup (p, ix);
-							val = rsvg_defs_lookup (defs, name);
-							g_free (name);
-							
-							if (val && val->type == RSVG_DEF_PATH)
-								{
-									return (RsvgDefsDrawable *) val;
-								}
-						}
-				}
-		}
-	return NULL;
-}
-
 static GdkPixbuf *
 get_next_out(gint * operationsleft, GdkPixbuf * in, GdkPixbuf * tos, 
 			 GdkPixbuf * nos, GdkPixbuf *intermediate)
@@ -1495,7 +1365,7 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 	if (mask != NULL)
 		{
 			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
-			rsvg_use_mask (ctx, mask, in, out);
+			rsvg_mask_render ((RsvgMask *)mask, in, out, ctx);
 			in = out;
 		}
 

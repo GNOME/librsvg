@@ -44,6 +44,8 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-file-util.c 	\
 	rsvg-filter.c		\
 	rsvg-filter.h		\
+	rsvg-mask.c		\
+	rsvg-mask.h		\
 	rsvg-shapes.c		\
 	rsvg-shapes.h		\
 	rsvg-styles.c		\

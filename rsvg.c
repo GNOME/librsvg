@@ -32,6 +32,7 @@
 #include "rsvg-shapes.h"
 #include "rsvg-text.h"
 #include "rsvg-filter.h"
+#include "rsvg-mask.h"
 
 #include <math.h>
 #include <string.h>
@@ -818,7 +819,8 @@ rsvg_defs_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 		rsvg_start_polygon (ctx, atts);
 	else if (!strcmp ((char *)name, "polyline"))
 		rsvg_start_polyline (ctx, atts);
-	
+	else if (!strcmp ((char *)name, "mask"))
+		rsvg_start_mask(ctx, atts);	
 	rsvg_filter_handler_start (ctx, name, atts);
 }
 
@@ -842,6 +844,8 @@ rsvg_defs_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 		rsvg_end_g (ctx);
 	if (!strcmp ((char *)name, "filter"))
 		rsvg_end_filter (ctx);
+	else if (!strcmp ((char *)name, "mask"))
+		rsvg_end_mask(ctx);
 	
 	/* pop the state stack */
 	ctx->n_state--;
@@ -1080,6 +1084,11 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 				rsvg_start_title (ctx, bag);
 			else if (!strcmp ((char *)name, "desc"))
 				rsvg_start_desc (ctx, bag);
+			else if (!strcmp ((char *)name, "mask"))
+				{
+					ctx->in_defs = TRUE;
+					rsvg_start_mask(ctx, bag);
+				}
 			
 			/* see conicalGradient discussion above */
 			else if (!strcmp ((char *)name, "linearGradient"))
@@ -1121,7 +1130,10 @@ rsvg_end_element (void *data, const xmlChar *name)
 			else if (!strcmp ((char *)name, "defs")) {
 				ctx->in_defs = FALSE;
 			}
-			
+			else if (!strcmp ((char *)name, "mask")){
+				rsvg_end_mask(ctx);
+				ctx->in_defs = FALSE;				
+			}
 			/* pop the state stack */
 			ctx->n_state--;
 			rsvg_state_finalize (&ctx->state[ctx->n_state]);

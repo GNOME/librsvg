@@ -119,6 +119,10 @@ typedef enum {
 	RSVG_SIZE_ZOOM_MAX
 } RsvgSizeType;
 
+typedef enum {
+	objectBoundingBox, userSpaceOnUse
+} RsvgCoordUnits;
+
 struct RsvgSizeCallbackData
 {
 	RsvgSizeType type;
