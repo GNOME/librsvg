@@ -70,7 +70,7 @@ rsvg_handle_gz_close_impl (RsvgHandle  *handle,
 
 		/* write to parent */
 		buf = gsf_input_read (gzip, size, NULL);
-                if (!buf)
+		if (!buf)
 		{
 			/* an error occured, so bail */
 			g_warning ("rsvg_gz_handle_close_impl: gsf_input_read returned NULL");
@@ -82,7 +82,7 @@ rsvg_handle_gz_close_impl (RsvgHandle  *handle,
 								size, error);
 		/* if we didn't manage to lower remaining number of bytes,
                  * something is wrong, and we should avoid an endless loop */
-		if (remaining == gsf_input_remaining (gzip))
+		if (remaining == ((gsize) gsf_input_remaining (gzip)))
 		{
 			g_warning ("rsvg_gz_handle_close_impl: write_impl didn't lower the input_remaining count");
 			break;
