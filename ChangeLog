@@ -1,5 +1,10 @@
 2003-01-13  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg.1 : New man page, gets installed
+	* configure.in : Post release version number bump -> 2.1.6
+	
+2003-01-13  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-shapes.c (start_rect): Handle rounded rects missing "ry" param 
 	properly
 	
