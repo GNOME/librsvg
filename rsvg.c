@@ -958,7 +958,8 @@ static xmlSAXHandler rsvgSAXHandlerStruct = {
     rsvg_error_cb, /* xmlParserFatalError */
     NULL, /* getParameterEntity */
     rsvg_characters, /* cdataCallback */
-    NULL /* */
+    NULL /* externalSubset */
+	/* initialized */
 };
 
 /**
@@ -1010,14 +1011,13 @@ gboolean
 rsvg_handle_close_impl (RsvgHandle  *handle,
 						GError     **error)
 {
-	gchar chars[1] = { '\0' };
 	GError *real_error;
 	
 	handle->error = &real_error;
 	
 	if (handle->ctxt != NULL)
 		{
-			xmlParseChunk (handle->ctxt, chars, 1, TRUE);
+			xmlParseChunk (handle->ctxt, "", 0, TRUE);
 			xmlFreeParserCtxt (handle->ctxt);
 		}
   

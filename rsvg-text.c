@@ -239,15 +239,12 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	g_free (string);
 	
 #if ENABLE_TEXT_DECOR
-	if (state->font_decor & TEXT_OVERLINE) {
+	if (state->font_decor & TEXT_OVERLINE)
 		rsvg_draw_hline (ctx, 0, line_ink_rect.width, line_ink_rect.y - line_ink_rect.height);
-  }
-	if (state->font_decor & TEXT_UNDERLINE) {
+	if (state->font_decor & TEXT_UNDERLINE)
 		rsvg_draw_hline (ctx, 0, line_ink_rect.width, line_ink_rect.y);
-	}
-	if (state->font_decor & TEXT_STRIKE) {
+	if (state->font_decor & TEXT_STRIKE)
 		rsvg_draw_hline (ctx, 0, ink_rect.width, line_ink_rect.y - (line_ink_rect.height/2));
-	}
 #endif
 	
 	state->text_offset += line_ink_rect.width;
@@ -315,7 +312,7 @@ rsvg_text_handler_start (RsvgSaxHandler *self, const xmlChar *name,
   
 	/* this should be the only thing starting inside of text */
 	if (!strcmp ((char *)name, "tspan"))
-    rsvg_start_tspan (ctx, atts);
+		rsvg_start_tspan (ctx, atts);
 }
 
 static void

@@ -1,3 +1,7 @@
+2003-02-26  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.c (close_impl): Fix bug 106399
+	
 2003-02-03  Dom Lachowicz <cinamod@hotmail.com>
 
 	* gdk-pixbuf-loader/io-svg.c (*): Updates for GTK 2.2.1
