@@ -240,7 +240,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 
 	z = (RsvgSaxHandlerText *)self;	
 
-	string = g_malloc (len + 1);
+	string = g_try_malloc (len + 1);
 
 	for (i = 0; i < len; i++)
 		{
@@ -253,7 +253,7 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 
 	if (1 /*todo replace with something about xml:space*/)
 		{
-			tmp = g_malloc (len + 1);
+			tmp = g_try_malloc (len + 1);
 			j = 0;
 			for (i = 0; i < len; i++)
 				{
@@ -622,7 +622,6 @@ rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (text->super.parent != NULL)
 		rsvg_defs_drawable_group_pack((RsvgDefsDrawableGroup *)text->super.parent, 
 									  &text->super);
-
 
 	handler->id = g_string_new(id);
 
@@ -1095,8 +1094,6 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 		}
 
 	pango_layout_iter_free (iter);
-
-
 }
 
 static GString * 
@@ -1129,9 +1126,6 @@ rsvg_text_render_text_as_string (DrawingCtx *ctx,
 	if (render->wrote)
 		g_string_append_c(render->path, 'Z');
 
-#ifdef RSVG_TEXT_DEBUG
-	fprintf(stderr, "%s\n", render->path->str);
-#endif
 	*x = layout->x;
 	*y = layout->y;
 
@@ -1191,8 +1185,8 @@ rsvg_text_layout_width  (RsvgTextLayout *layout)
 			pango_layout_iter_free (iter);
 			return rect.width / PANGO_SCALE + offx;
 		}
-	return 0;
 
+	return 0;
 }
 
 static gdouble
@@ -1201,19 +1195,16 @@ rsvg_text_width       (DrawingCtx *ctx,
 					   const char *text)
 {
 	RsvgTextLayout *layout;
-	RenderCtx      *render;
 	RsvgState      *state;
 	gdouble output;
+
 	state = rsvg_state_current(ctx);
 
 	layout = rsvg_text_layout_new (ctx, state, text);
 	layout->span = tspan;
 
-	render = rsvg_render_ctx_new ();
-
 	output = rsvg_text_layout_width (layout);
-
-	rsvg_render_ctx_free (render);
 	rsvg_text_layout_free (layout);
+
 	return output;
 }
