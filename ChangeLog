@@ -1,4 +1,8 @@
-2004-01-11  Dom Lachowicz <cinamod@hotmail.com>
+2005-01-13  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.c: bug 163886/163947, from John Spray <jcs116@york.ac.uk>
+
+2005-01-11  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Install gtk docs in a standard place that devhelp knows about. From Stephane LOEUILLET <LeRoutier@leroutier.net>
 	

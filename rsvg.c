@@ -1706,7 +1706,7 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 	new_width = handle->new_width;
 	new_height = handle->new_height;
 	rowstride = (new_width * 4 + 3) & ~3;
-	if (rowstride > INT_MAX / new_height)
+	if (new_height <= 0 || rowstride > INT_MAX / new_height)
 		{
 			/* FIXME: GError here? */
 			g_warning (_("rsvg_start_svg: width too large"));
@@ -1947,6 +1947,8 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 		return NULL;
 
 	draw = rsvg_new_drawing_ctx(handle);
+	if (!draw)
+		return NULL;
 
 	rsvg_defs_drawable_draw((RsvgDefsDrawable *)handle->treebase, draw, 0);
 	output = draw->pixbuf;
