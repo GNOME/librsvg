@@ -1,3 +1,7 @@
+2003-01-23  Dom Lachowicz <cinamod@hotmail.com>
+
+	* test-rsvg.c : Support a JPEG quality argument [1-100]
+	
 2003-01-21  Alexander Larsson  <alexl@redhat.com>
 
 	* Makefile.am:

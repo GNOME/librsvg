@@ -41,16 +41,19 @@ main (int argc, const char **argv)
 	int width  = -1;
 	int height = -1;
 	int bVersion = 0;
+	int quality = 100;
+	char * quality_str = NULL;
 	char * format = "png";
 
 	struct poptOption options_table[] = {
-		{ "dpi"   , 'd',  POPT_ARG_DOUBLE, &dpi,     0, "Pixels Per Inch", "<float>"},
-		{ "x-zoom", 'x',  POPT_ARG_DOUBLE, &x_zoom,  0, "x zoom factor", "<float>" },
-		{ "y-zoom", 'y',  POPT_ARG_DOUBLE, &y_zoom,  0, "y zoom factor", "<float>" },
-		{ "width",  'w',  POPT_ARG_INT,    &width,   0, "width", "<int>" },
-		{ "height", 'h',  POPT_ARG_INT,    &height,  0, "height", "<int>" },
-		{ "format", 'f',  POPT_ARG_STRING, &format,  0, "save format", "[png, jpeg]"},
-		{ "version", 'v', POPT_ARG_NONE,   &bVersion, 0, "show version information", NULL },
+		{ "dpi"   ,  'd',  POPT_ARG_DOUBLE, &dpi,      0, "pixels per inch", "<float>"},
+		{ "x-zoom",  'x',  POPT_ARG_DOUBLE, &x_zoom,   0, "x zoom factor", "<float>" },
+		{ "y-zoom",  'y',  POPT_ARG_DOUBLE, &y_zoom,   0, "y zoom factor", "<float>" },
+		{ "width",   'w',  POPT_ARG_INT,    &width,    0, "width", "<int>" },
+		{ "height",  'h',  POPT_ARG_INT,    &height,   0, "height", "<int>" },
+		{ "quality", 'q',  POPT_ARG_INT,    &quality,  0, "JPEG quality", "<int>"},
+		{ "format",  'f',  POPT_ARG_STRING, &format,   0, "save format", "[png, jpeg]"},
+		{ "version", 'v',  POPT_ARG_NONE,   &bVersion, 0, "show version information", NULL },
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
@@ -72,10 +75,8 @@ main (int argc, const char **argv)
 		}
 
 	if (args)
-		{
-			while (args[n_args] != NULL)
-				n_args++;
-		}
+		while (args[n_args] != NULL)
+			n_args++;
 
 	if (n_args != 2)
 		{
@@ -106,7 +107,13 @@ main (int argc, const char **argv)
 														 width, height, NULL);
 
 	if (pixbuf)
-		gdk_pixbuf_save (pixbuf, args[1], format, NULL, NULL);
+		if (strcmp (format, "jpeg") != 0 || (quality < 1 || quality > 100)) /* is a png or is an invalid quality */
+			gdk_pixbuf_save (pixbuf, args[1], format, NULL, NULL);
+		else {
+			quality_str = g_strdup_printf ("%d", quality);
+			gdk_pixbuf_save (pixbuf, args[1], format, NULL, "quality", quality_str, NULL);
+			g_free (quality_str);
+		}
 	else {
 		poptFreeContext (popt_context);
 		g_warning ("Error loading SVG file.\n");
