@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <stdarg.h>
 
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
@@ -40,7 +41,24 @@
 #include "npapi.h"
 #include "npupp.h"
 
-#define DEBUG(x) /* printf x */
+#define DEBUG(x) _svg_plugin_debug x
+
+static void 
+_svg_plugin_debug(const char * fmt, ...)
+{
+#if 0
+	FILE * err;
+	va_list ap;
+
+	err = fopen("/tmp/moz.svg", "ab");
+
+	va_start(ap, fmt);
+	vfprintf(err, fmt, ap);
+	va_end(ap);
+
+	fclose(err);
+#endif
+}
 
 typedef struct
 {
@@ -53,15 +71,15 @@ typedef struct
 	GByteArray * bytes;
 
 	int send_fd;
-	int player_pid;
+	int pid;
 
 	char *base_url;
-} Plugin;
+} SvgPlugin;
 
 static NPNetscapeFuncs mozilla_funcs;
 
 static void
-plugin_kill (Plugin * plugin)
+svg_plugin_kill (SvgPlugin * plugin)
 {
 	DEBUG(("plugin_kill\n"));
 
@@ -71,17 +89,17 @@ plugin_kill (Plugin * plugin)
 			plugin->send_fd = -1;
 		}
 
-	if(plugin->player_pid > 0)
+	if(plugin->pid > 0)
 		{
-			kill (plugin->player_pid, SIGKILL);
-			waitpid (plugin->player_pid, NULL, 0);
+			kill (plugin->pid, SIGKILL);
+			waitpid (plugin->pid, NULL, 0);
 			
-			plugin->player_pid = -1;
+			plugin->pid = -1;
 		}
 }
 
 static NPError
-plugin_fork (Plugin * plugin)
+svg_plugin_fork (SvgPlugin * plugin, int * plugin_pid, int * plugin_send_fd)
 {
 	char xid_str[20];
 	char width_str[G_ASCII_DTOSTR_BUF_SIZE];
@@ -165,8 +183,8 @@ plugin_fork (Plugin * plugin)
 	argv[argc] = NULL;
 
 	if(!g_spawn_async_with_pipes(NULL, argv, NULL, G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_STDOUT_TO_DEV_NULL, 
-								 NULL, NULL, &plugin->player_pid,
-								 &plugin->send_fd, NULL, NULL, &err))
+								 NULL, NULL, plugin_pid,
+								 plugin_send_fd, NULL, NULL, &err))
 		{
 			DEBUG(("Spawn failed\n"));
 
@@ -183,7 +201,7 @@ plugin_fork (Plugin * plugin)
 }
 
 static NPError
-plugin_redraw (Plugin * plugin)
+svg_plugin_redraw (SvgPlugin * plugin)
 {
 	NPError res = NPERR_NO_ERROR;
 
@@ -191,17 +209,14 @@ plugin_redraw (Plugin * plugin)
 
 	if(plugin && plugin->bytes && plugin->bytes->len)
 		{
-			if (plugin->player_pid <= 0)
+			if (plugin->pid <= 0)
 				{
-					if ((res = plugin_fork (plugin)) == NPERR_NO_ERROR) {
-						if(plugin->player_pid > 0)
+					if ((res = svg_plugin_fork (plugin, &plugin->pid, &plugin->send_fd)) == NPERR_NO_ERROR) {
+						if(plugin->pid > 0)
 							{
 								size_t nwritten = 0;
 								while(nwritten < plugin->bytes->len)
 									nwritten += write (plugin->send_fd, plugin->bytes->data + nwritten, plugin->bytes->len - nwritten);
-								
-								g_byte_array_free (plugin->bytes, TRUE);
-								plugin->bytes = 0;
 							}
 						else
 							{
@@ -215,11 +230,11 @@ plugin_redraw (Plugin * plugin)
 }
 
 static NPError
-plugin_newp (NPMIMEType mime_type, NPP instance,
-			 guint16 mode, gint16 argc, char *argn[], char *argv[],
-			 NPSavedData * saved)
+svg_plugin_newp (NPMIMEType mime_type, NPP instance,
+				 guint16 mode, gint16 argc, char *argn[], char *argv[],
+				 NPSavedData * saved)
 {
-	Plugin *plugin;
+	SvgPlugin *plugin;
 	int i;
 	
 	DEBUG (("plugin_newp\n"));
@@ -227,12 +242,12 @@ plugin_newp (NPMIMEType mime_type, NPP instance,
 	if (instance == NULL)
 		return NPERR_INVALID_INSTANCE_ERROR;
 	
-	instance->pdata = mozilla_funcs.memalloc (sizeof (Plugin));
-	plugin = (Plugin *) instance->pdata;
+	instance->pdata = mozilla_funcs.memalloc (sizeof (SvgPlugin));
+	plugin = (SvgPlugin *) instance->pdata;
 
 	if (plugin == NULL)
 		return NPERR_OUT_OF_MEMORY_ERROR;
-	memset (plugin, 0, sizeof (Plugin));
+	memset (plugin, 0, sizeof (SvgPlugin));
 	
 	/* mode is NP_EMBED, NP_FULL, or NP_BACKGROUND (see npapi.h) */
 	plugin->instance = instance;
@@ -258,23 +273,23 @@ plugin_newp (NPMIMEType mime_type, NPP instance,
 }
 
 static NPError
-plugin_destroy (NPP instance, NPSavedData ** save)
+svg_plugin_destroy (NPP instance, NPSavedData ** save)
 {
-	Plugin *plugin;
+	SvgPlugin *plugin;
 	
 	DEBUG (("plugin_destroy\n"));
 	
 	if (instance == NULL)
 		return NPERR_INVALID_INSTANCE_ERROR;
 	
-	plugin = (Plugin *) instance->pdata;
+	plugin = (SvgPlugin *) instance->pdata;
 	if (plugin == NULL)
 		return NPERR_NO_ERROR;
 
 	if(plugin->bytes)
 		g_byte_array_free (plugin->bytes, TRUE);
 	
-	plugin_kill (plugin);
+	svg_plugin_kill (plugin);
 
 	if (plugin->base_url)
 		mozilla_funcs.memfree (plugin->base_url);
@@ -286,9 +301,9 @@ plugin_destroy (NPP instance, NPSavedData ** save)
 }
 
 static NPError
-plugin_set_window (NPP instance, NPWindow * window)
+svg_plugin_set_window (NPP instance, NPWindow * window)
 {
-	Plugin *plugin;
+	SvgPlugin *plugin;
 	NPError res = NPERR_NO_ERROR;
 	
 	DEBUG (("plugin_set_window\n"));
@@ -296,22 +311,22 @@ plugin_set_window (NPP instance, NPWindow * window)
 	if (instance == NULL)
 		return NPERR_INVALID_INSTANCE_ERROR;
 
-	plugin = (Plugin *) instance->pdata;
+	plugin = (SvgPlugin *) instance->pdata;
 	if (plugin == NULL)
 		return NPERR_INVALID_INSTANCE_ERROR;
 	
 	if (plugin->window)
 		{
-			DEBUG (("existing window\n"));
-			
 			if (plugin->window == (Window) window->window)
 				{
-					DEBUG (("resize\n"));
+					DEBUG (("window resized\n"));
 
+#if 0
 					plugin->window_width = window->width;
 					plugin->window_height = window->height;
 
-					res = plugin_redraw (plugin);
+					res = svg_plugin_redraw (plugin);
+#endif
 				}
 			else
 				{
@@ -322,29 +337,25 @@ plugin_set_window (NPP instance, NPWindow * window)
 		{
 			NPSetWindowCallbackStruct *ws_info;
 			
-			DEBUG (("about to fork\n"));
-			
 			ws_info = window->ws_info;
 			plugin->window = (Window) window->window;
 		}
-	
-	DEBUG (("leaving plugin_set_window\n"));
 	
 	return res;
 }
 
 static NPError
-plugin_new_stream (NPP instance, NPMIMEType type,
-				   const char *window, NPStream ** stream_ptr)
+svg_plugin_new_stream (NPP instance, NPMIMEType type,
+					   const char *window, NPStream ** stream_ptr)
 {
-	Plugin *plugin;
+	SvgPlugin *plugin;
 
 	DEBUG (("plugin_new_stream\n"));
 
 	if (instance == NULL)
 		return NPERR_INVALID_INSTANCE_ERROR;
 	
-	plugin = (Plugin *) instance->pdata;
+	plugin = (SvgPlugin *) instance->pdata;
 	if (plugin == NULL)
 		return NPERR_NO_ERROR;	
 	
@@ -356,9 +367,9 @@ plugin_new_stream (NPP instance, NPMIMEType type,
 }
 
 static NPError
-plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
+svg_plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 {
-	Plugin *plugin;
+	SvgPlugin *plugin;
 	NPError res = NPERR_NO_ERROR;
 	size_t url_len;
 
@@ -367,7 +378,7 @@ plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 	if (instance == NULL)
 		return NPERR_INVALID_INSTANCE_ERROR;
 	
-	plugin = (Plugin *) instance->pdata;
+	plugin = (SvgPlugin *) instance->pdata;
 	if (plugin == NULL)
 		return NPERR_NO_ERROR;
 	
@@ -377,7 +388,7 @@ plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 	plugin->base_url[url_len] = '\0';
 
 	/* trigger */
-	res = plugin_redraw (plugin);
+	res = svg_plugin_redraw (plugin);
 
 	if(plugin->send_fd > 0)
 		{
@@ -389,7 +400,7 @@ plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 }
 
 static gint32
-plugin_write_ready (NPP instance, NPStream * stream)
+svg_plugin_write_ready (NPP instance, NPStream * stream)
 {
 	DEBUG (("plugin_write_ready\n"));
 	
@@ -397,18 +408,69 @@ plugin_write_ready (NPP instance, NPStream * stream)
 	return (8*1024);
 }
 
+static void
+svg_plugin_print (NPP instance, NPPrint * platformPrint)
+{
+	SvgPlugin *plugin;
+
+	DEBUG (("plugin_print\n"));
+	
+	if (instance == NULL)
+		return;
+
+	plugin = (SvgPlugin *) instance->pdata;
+	
+	if (plugin == NULL)
+		return;
+
+	if (NP_EMBED == platformPrint->mode) {
+		NPPrintCallbackStruct *printer = (NPPrintCallbackStruct *)platformPrint->print.embedPrint.platformPrint;
+
+		if (0) {
+			gchar * temp_filename;
+			FILE * fp;
+			int fd;
+			
+			temp_filename = g_build_filename (g_get_tmp_dir(), ".mozilla-svg-print-XXXXXX", NULL);
+			fd = g_mkstemp (temp_filename);
+			close (fd);
+
+			/* todo: get rsvg-view to print the file */
+
+			if ((fp = fopen (temp_filename, "rb")) != NULL) {
+				gchar buf [8*1024];
+				gint nread;
+
+				while ((nread = fread (buf, 1, sizeof (buf), fp)) > 0) {
+					gint nwritten = 0;
+
+					do {
+						nwritten += fwrite (buf + nwritten, 1, (nread - nwritten), printer->fp);
+					} while (nwritten != nread);
+				}
+				
+				fclose (fp);
+			}
+
+			remove (temp_filename);
+
+			g_free (temp_filename);
+		}
+	}
+}
+
 static gint32
-plugin_write (NPP instance, NPStream * stream, gint32 offset,
+svg_plugin_write (NPP instance, NPStream * stream, gint32 offset,
 			  gint32 len, void *buffer)
 {
-	Plugin *plugin;   
+	SvgPlugin *plugin;
 
 	DEBUG (("plugin_write\n"));
 	
 	if (instance == NULL)
 		return 0;
 
-	plugin = (Plugin *) instance->pdata;
+	plugin = (SvgPlugin *) instance->pdata;
 	
 	if (plugin == NULL)
 		return 0;
@@ -422,15 +484,15 @@ plugin_write (NPP instance, NPStream * stream, gint32 offset,
 }
 
 static void
-plugin_stream_as_file (NPP instance, NPStream * stream, const char *fname)
+svg_plugin_stream_as_file (NPP instance, NPStream * stream, const char *fname)
 {
-	Plugin *plugin;
+	SvgPlugin *plugin;
 	
 	DEBUG (("plugin_stream_as_file\n"));
 	
 	if (instance == NULL)
 		return;
-	plugin = (Plugin *) instance->pdata;
+	plugin = (SvgPlugin *) instance->pdata;
 	
 	if (plugin == NULL)
 		return;
@@ -498,16 +560,17 @@ NP_Initialize (NPNetscapeFuncs * moz_funcs, NPPluginFuncs * plugin_funcs)
 	
 	plugin_funcs->version = (NP_VERSION_MAJOR << 8) + NP_VERSION_MINOR;
 	plugin_funcs->size = sizeof (NPPluginFuncs);
-	plugin_funcs->newp = NewNPP_NewProc (plugin_newp);
-	plugin_funcs->destroy = NewNPP_DestroyProc (plugin_destroy);
-	plugin_funcs->setwindow = NewNPP_SetWindowProc (plugin_set_window);
-	plugin_funcs->newstream = NewNPP_NewStreamProc (plugin_new_stream);
+	plugin_funcs->newp = NewNPP_NewProc (svg_plugin_newp);
+	plugin_funcs->destroy = NewNPP_DestroyProc (svg_plugin_destroy);
+	plugin_funcs->setwindow = NewNPP_SetWindowProc (svg_plugin_set_window);
+	plugin_funcs->newstream = NewNPP_NewStreamProc (svg_plugin_new_stream);
 	plugin_funcs->destroystream =
-		NewNPP_DestroyStreamProc (plugin_destroy_stream);
-	plugin_funcs->writeready = NewNPP_WriteReadyProc (plugin_write_ready);
-	plugin_funcs->asfile = NewNPP_StreamAsFileProc (plugin_stream_as_file);
-	plugin_funcs->write = NewNPP_WriteProc (plugin_write);
-	
+		NewNPP_DestroyStreamProc (svg_plugin_destroy_stream);
+	plugin_funcs->writeready = NewNPP_WriteReadyProc (svg_plugin_write_ready);
+	plugin_funcs->asfile = NewNPP_StreamAsFileProc (svg_plugin_stream_as_file);
+	plugin_funcs->write = NewNPP_WriteProc (svg_plugin_write);
+	plugin_funcs->print = NewNPP_PrintProc (svg_plugin_print);
+
 	return NPERR_NO_ERROR;
 }
 
