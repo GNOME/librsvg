@@ -1,5 +1,9 @@
 2004-03-07  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg.c: Do something for clahey (bug 105316)
+	
+2004-03-07  Dom Lachowicz <cinamod@hotmail.com>
+
 	* gtk-engine/*.[ch]: Theme engine now renders SVGs at their display
 	size, thus cutting down on a lot of nasty raster scaling
 	
