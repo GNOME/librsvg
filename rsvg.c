@@ -333,13 +333,14 @@ rsvg_gradient_stop_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 {
 	RsvgSaxHandlerGstops *z = (RsvgSaxHandlerGstops *)self;
 	RsvgHandle *ctx = z->ctx;
+	RsvgSaxHandler *prev = &z->parent->super;
 	
 	if (!strcmp((char *)name, z->parent_tag))
 		{
 			if (ctx->handler != NULL)
 				{
 					ctx->handler->free (ctx->handler);
-					ctx->handler = &z->parent->super;
+					ctx->handler = prev;
 				}
 		}
 }
@@ -681,13 +682,14 @@ rsvg_style_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 {
 	RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *)self;
 	RsvgHandle *ctx = z->ctx;
+	RsvgSaxHandler *prev = &z->parent->super;
 	
 	if (!strcmp ((char *)name, "style"))
 		{
 			if (ctx->handler != NULL)
 				{
 					ctx->handler->free (ctx->handler);
-					ctx->handler = &z->parent->super;
+					ctx->handler = prev;
 				}
 		}
 }

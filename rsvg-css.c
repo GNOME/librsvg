@@ -327,7 +327,7 @@ rsvg_css_parse_color (const char *str)
 					{ "darkblue",             PACK_RGB (0,0,139) },
 					{ "darkcyan",             PACK_RGB (0,139,139) },
 					{ "darkgoldenrod",        PACK_RGB (184,132,11) },
-					{ "darkgray",             PACK_RGB (169,169,168) },
+					{ "darkgray",             PACK_RGB (169,169,169) },
 					{ "darkgreen",            PACK_RGB (0,100,0) },
 					{ "darkgrey",             PACK_RGB (169,169,169) },
 					{ "darkkhaki",            PACK_RGB (189,183,107) },
