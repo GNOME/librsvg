@@ -1,3 +1,9 @@
+2002-10-10  Dom Lachowicz <doml@appligent.com>
+
+	* rsvg.c (rsvg_set_default_dpi): Rename function
+	* test-rsvg.c: Support --dpi argument
+	* test-display.c: Support --dpi argument
+	
 2002-10-09  Dom Lachowicz <doml@appligent.com>
 
 	* rsvg.c (rsvg_start_svg): Fix for zoom calculations

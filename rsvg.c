@@ -213,7 +213,7 @@ static void
 rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 {
   int i;
-  int width = -1, height = -1;
+  int width = -1, height = -1, x = -1, y = -1;
   int rowstride;
   art_u8 *pixels;
   gint percent, em, ex;
@@ -231,11 +231,15 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
       for (i = 0; atts[i] != NULL; i += 2)
 	{
 	  /* x & y should be ignored since we should always be the outermost SVG,
-	     at least for now */
+	     at least for now, but i'll include them here anyway */
 	  if (!strcmp ((char *)atts[i], "width"))
 	    width = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
 	  else if (!strcmp ((char *)atts[i], "height"))	    
 	    height = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
+	  else if (!strcmp ((char *)atts[i], "x"))	    
+	    x = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
+	  else if (!strcmp ((char *)atts[i], "y"))	    
+	    y = rsvg_css_parse_length ((char *)atts[i + 1], ctx->dpi, &percent, &em, &ex);
 	  else if (!strcmp ((char *)atts[i], "viewBox"))
 	    {
 	      /* todo: viewbox can have whitespace and/or comma but we're only likely to see
@@ -248,8 +252,8 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 
       if (has_vbox && vbox_w > 0. && vbox_h > 0.)
 	{
-	  new_width  = (int)floor (vbox_w - vbox_x);
-	  new_height = (int)floor (vbox_h - vbox_y);
+	  new_width  = (int)floor (vbox_w);
+	  new_height = (int)floor (vbox_h);
 
 	  /* apply the sizing function on the *original* width and height
 	     to acquire our real destination size. we'll scale it against
@@ -2560,7 +2564,7 @@ rsvg_handle_new (void)
 }
 
 /**
- * rsvg_set_dpi
+ * rsvg_set_default_dpi
  * @dpi: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the all future outgoing pixbufs. Common values are
@@ -2568,7 +2572,7 @@ rsvg_handle_new (void)
  * reset the DPI to whatever the default value happens to be.
  */
 void
-rsvg_set_dpi (double dpi)
+rsvg_set_default_dpi (double dpi)
 {
   if (dpi <= 0.)
     internal_dpi = RSVG_DEFAULT_DPI;

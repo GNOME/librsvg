@@ -42,7 +42,7 @@ typedef void (* RsvgSizeFunc) (gint     *width,
 			       gpointer  user_data);
 
 
-void        rsvg_set_dpi                  (double dpi);
+void        rsvg_set_default_dpi          (double dpi);
 
 RsvgHandle *rsvg_handle_new               (void);
 void        rsvg_handle_set_dpi           (RsvgHandle * handle, double dpi);

@@ -37,12 +37,14 @@ main (int argc, const char **argv)
 	poptContext popt_context;
 	double x_zoom = 1.0;
 	double y_zoom = 1.0;
+	double dpi = -1.0;
 	int width  = -1;
 	int height = -1;
 	int bVersion = 0;
 	char * format = "png";
 
 	struct poptOption options_table[] = {
+		{ "dpi"   , 'd',  POPT_ARG_DOUBLE, &dpi,     0, "Pixels Per Inch", "<float>"},
 		{ "x-zoom", 'x',  POPT_ARG_DOUBLE, &x_zoom,  0, "x zoom factor", "<float>" },
 		{ "y-zoom", 'y',  POPT_ARG_DOUBLE, &y_zoom,  0, "y zoom factor", "<float>" },
 		{ "width",  'w',  POPT_ARG_INT,    &width,   0, "width", "<int>" },
@@ -88,6 +90,9 @@ main (int argc, const char **argv)
 		format = "png";
 
 	g_type_init ();
+
+	if (dpi > 0.)
+		rsvg_set_default_dpi (dpi);
 
 	/* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
 	if (width == -1 && height == -1)
