@@ -1,3 +1,7 @@
+2004-07-19  Dom Lachowicz <cinamod@hotmail.com>
+
+	* test-display.c: better scroll policy, especially when used as a plugin
+	
 2004-07-18  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Bump version number (2.7.4)

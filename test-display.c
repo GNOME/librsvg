@@ -367,11 +367,14 @@ quit_cb (GtkWidget *win, gpointer unused)
 static void
 view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 {
-	GtkWidget *win, *img;
-	gint width, height;
+	GtkWidget *win, *img, *scroll;
+	gint img_width, img_height, win_width, win_height;
 	GdkColor bg_color;
 
 	/* create toplevel window and set its title */
+
+	img_width = gdk_pixbuf_get_width (info->pixbuf);
+	img_height = gdk_pixbuf_get_height (info->pixbuf);
 
 	if(xid > 0)
 		{
@@ -380,22 +383,22 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 			win = gtk_plug_new(0);
 
 			gdk_parent = gdk_window_foreign_new(xid);
-			gdk_window_get_geometry(gdk_parent, NULL, NULL, &width, &height, NULL);
+			gdk_window_get_geometry(gdk_parent, NULL, NULL, &win_width, &win_height, NULL);
 
-			/* so that button presses get registered */
+			/* so that button and key presses get registered */
 			gtk_widget_add_events (win, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
 		}
 	else
 		{
 			win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-			width = MIN(gdk_pixbuf_get_width (info->pixbuf), DEFAULT_WIDTH) + 20;
-			height = MIN(gdk_pixbuf_get_height (info->pixbuf), DEFAULT_HEIGHT) + 20;
+
+			win_width = DEFAULT_WIDTH;
+			win_height = DEFAULT_HEIGHT;
 
 			gtk_window_set_title (GTK_WINDOW(win), _("SVG Viewer"));
-			rsvg_window_set_default_icon (GTK_WINDOW(win), info->pixbuf);
 		}
 
-	gtk_window_set_default_size(GTK_WINDOW(win), width, height);
+	rsvg_window_set_default_icon (GTK_WINDOW(win), info->pixbuf);
 
 	/* exit when 'X' is clicked */
 	g_signal_connect(G_OBJECT(win), "destroy", G_CALLBACK(quit_cb), NULL);
@@ -405,16 +408,21 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 	img = gtk_image_new_from_pixbuf (info->pixbuf);
 
 	/* pack the window with the image */
-	if(xid > 0)
-		gtk_container_add(GTK_CONTAINER(win), img);
-	else
-		{
-			GtkWidget *scroll;
+	if ((xid > 0 && (img_width > win_width || img_height > win_height))
+		|| (xid <= 0)) {
+		gtk_window_set_default_size(GTK_WINDOW(win), MIN(img_width, win_width),
+									MIN(img_height, win_height));
 
-			scroll = gtk_scrolled_window_new(NULL, NULL);
-			gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW(scroll), img);
-			gtk_container_add(GTK_CONTAINER(win), scroll);
-		}
+		scroll = gtk_scrolled_window_new(NULL, NULL);
+		gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW(scroll),
+										GTK_POLICY_AUTOMATIC,
+										GTK_POLICY_AUTOMATIC);
+		gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW(scroll), img);
+		gtk_container_add(GTK_CONTAINER(win), scroll);
+	} else {
+		gtk_container_add(GTK_CONTAINER(win), img);
+		gtk_window_set_default_size(GTK_WINDOW(win), img_width, img_height);
+	}
 
 	if (color && strcmp (color, "none") != 0)
 		{
