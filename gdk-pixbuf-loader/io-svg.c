@@ -32,15 +32,16 @@
 
 typedef struct {
         RsvgHandle                 *handle;
-
-#if HAVE_SVGZ
-        gboolean                    first_write;
-#endif
-
         GdkPixbuf                  *pixbuf;
         GdkPixbufModuleUpdatedFunc  updated_func;
         GdkPixbufModulePreparedFunc prepared_func;
         gpointer                    user_data;
+
+#if HAVE_SVGZ
+        GdkPixbufModuleSizeFunc     size_func;
+        gboolean                    first_write;
+#endif
+
 } SvgContext;
 
 G_MODULE_EXPORT void fill_vtable (GdkPixbufModule *module);
@@ -55,19 +56,21 @@ gdk_pixbuf__svg_image_begin_load (GdkPixbufModuleSizeFunc size_func,
 {
         SvgContext *context    = g_new0 (SvgContext, 1);
 
+        *error = NULL;
+
 #if HAVE_SVGZ
         /* lazy create the handle on the first write */
         context->handle        = NULL;
         context->first_write   = TRUE;
+        context->size_func     = size_func;
 #else
         context->handle        = rsvg_handle_new ();
+        rsvg_handle_set_size_callback (context->handle, size_func, user_data, NULL);
 #endif
 
         context->prepared_func = prepared_func;
         context->updated_func  = updated_func;
         context->user_data     = user_data;
-
-        rsvg_handle_set_size_callback (context->handle, size_func, user_data, NULL);
 
         return context;
 }
@@ -80,6 +83,8 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
         SvgContext *context = (SvgContext *)data;
         gboolean result;
 
+        *error = NULL;
+
 #if HAVE_SVGZ
         if (context->first_write == TRUE) {
                 context->first_write = FALSE;
@@ -89,6 +94,8 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
                         context->handle = rsvg_handle_new_gz ();
                 else
                         context->handle = rsvg_handle_new ();
+
+                rsvg_handle_set_size_callback (context->handle, context->size_func, context->user_data, NULL);
         }
 #endif
 
@@ -106,6 +113,8 @@ static gboolean
 gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 {
         SvgContext *context = (SvgContext *)data;  
+
+        *error = NULL;
 
         rsvg_handle_close (context->handle, error);
 

@@ -1,3 +1,7 @@
+2003-02-03  Dom Lachowicz <cinamod@hotmail.com>
+
+	* gdk-pixbuf-loader/io-svg.c (*): Updates for GTK 2.2.1
+	
 2003-02-02  Dom Lachowicz <cinamod@hotmail.com>
 
 	* tests/butterfly.svg
