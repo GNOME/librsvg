@@ -1,6 +1,6 @@
 /* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /*
-   rsvg-private.h: Handle SVG styles
+   rsvg-private.h: Internals of RSVG
 
    Copyright (C) 2000 Eazel, Inc.
    Copyright (C) 2002 Dom Lachowicz <cinamod@hotmail.com>
