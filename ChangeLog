@@ -1,3 +1,7 @@
+2004-03-18  Dom Lachowicz <cinamod@hotmail.com>
+
+	* *: Memory leak fixes
+	
 2004-03-17  Dom Lachowicz <cinamod@hotmail.com>
 
 	* *: re-merge rsvg-filters branch back into HEAD

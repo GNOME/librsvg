@@ -124,9 +124,9 @@ rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 	
 	if (!dst->has_fill_server)
 		{
+			rsvg_paint_server_ref (src->fill);
 			rsvg_paint_server_unref (dst->fill);
 			dst->fill = src->fill;
-			rsvg_paint_server_ref (dst->fill);
 		} 
 	if (!dst->has_fill_opacity)
 		dst->fill_opacity = src->fill_opacity;
@@ -134,9 +134,9 @@ rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 		dst->fill_rule = src->fill_rule;
 	if (!dst->has_stroke_server)
 		{
+			rsvg_paint_server_ref (src->stroke);
 			rsvg_paint_server_unref (dst->stroke);
 			dst->stroke = src->stroke;
-			rsvg_paint_server_ref (dst->stroke);
 		} 
 	if (!dst->has_stroke_opacity)
 		dst->stroke_opacity = src->stroke_opacity;
@@ -171,10 +171,14 @@ rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 	if (!dst->has_text_anchor)
 		dst->text_anchor = src->text_anchor;
 
-	if (!dst->has_font_family)
+	if (!dst->has_font_family) {
+		g_free(dst->font_family); /* font_family is always set to something */
 		dst->font_family = g_strdup (src->font_family);
-	if (!dst->has_lang)
+	}
+
+	if (!dst->has_lang) {
 		dst->lang = g_strdup (src->lang);
+	}
 
 	if (src->dash.n_dash > 0 && !dst->has_dash)
 		{
@@ -192,9 +196,9 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 	
 	if (!dst->has_fill_server || src->has_fill_server)
 		{
+			rsvg_paint_server_ref (src->fill);
 			rsvg_paint_server_unref (dst->fill);
 			dst->fill = src->fill;
-			rsvg_paint_server_ref (dst->fill);
 		} 
 	if (!dst->has_fill_opacity || src->has_fill_opacity)
 		dst->fill_opacity = src->fill_opacity;
@@ -202,9 +206,9 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 		dst->fill_rule = src->fill_rule;
 	if (!dst->has_stroke_server || src->has_stroke_server)
 		{
+			rsvg_paint_server_ref (src->stroke);
 			rsvg_paint_server_unref (dst->stroke);
 			dst->stroke = src->stroke;
-			rsvg_paint_server_ref (dst->stroke);
 		} 
 	if (!dst->has_stroke_opacity || src->has_stroke_opacity)
 		dst->stroke_opacity = src->stroke_opacity;
@@ -239,13 +243,22 @@ rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 	if (!dst->has_text_anchor || src->has_text_anchor)
 		dst->text_anchor = src->text_anchor;
 
-	if (!dst->has_font_family || src->has_font_family)
+	if (!dst->has_font_family || src->has_font_family) {
+		g_free(dst->font_family); /* font_family is always set to something */
 		dst->font_family = g_strdup (src->font_family);
-	if (!dst->has_lang || src->has_lang)
+	}
+
+	if (!dst->has_lang || src->has_lang) {
+		if(dst->has_lang)
+			g_free(dst->lang); 
 		dst->lang = g_strdup (src->lang);
+	}
 
 	if (src->dash.n_dash > 0 && (!dst->has_dash || src->has_dash))
 		{
+			if(dst->has_dash)
+				g_free(dst->dash.dash);
+
 			dst->dash.dash = g_new (gdouble, src->dash.n_dash);
 			for (i = 0; i < src->dash.n_dash; i++)
 				dst->dash.dash[i] = src->dash.dash[i];
@@ -772,7 +785,8 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 	if (status != CR_OK)
         {
 			g_warning ("Error setting CSS SAC handler\n");
-			cr_parser_destroy (parser);			
+			cr_parser_destroy (parser);
+			cr_doc_handler_destroy (css_handler);
 			return;
         }        
 	
@@ -780,6 +794,7 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 	status = cr_parser_parse (parser);
 	
 	cr_parser_destroy (parser);
+	cr_doc_handler_destroy (css_handler);
 }
 
 #else /* !HAVE_LIBCROCO */
