@@ -88,6 +88,7 @@ struct _RsvgTspan {
 	gboolean hasx, hasy;
 	gdouble dx, dy;
 	RsvgTspan * parent;
+	gint parentindex;
 	GPtrArray * contents;
 	RsvgState state;
 };
@@ -151,6 +152,8 @@ rsvg_tspan_new()
 	self->dy = 0;
 	self->hasx = FALSE;
 	self->hasy = FALSE;
+	self->parent = NULL;
+	self->parentindex = 0;
 	self->contents = g_ptr_array_new();
 	return self;
 }
@@ -211,14 +214,8 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 
 	z = (RsvgSaxHandlerText *)self;	
 
-	/* Copy ch into string, chopping off leading and trailing whitespace */
-	for (beg = 0; beg < len; beg++)
-		if (!g_ascii_isspace (ch[beg]))
-			break;
-	
-	for (end = len; end > beg; end--)
-		if (!g_ascii_isspace (ch[end - 1]))
-			break;
+	beg = 0;
+	end = len;
 	
 	if (end - beg == 0)
 		{
@@ -289,6 +286,7 @@ rsvg_start_tspan (RsvgSaxHandlerText *self, RsvgPropertyBag *atts)
 
 	tchunk = rsvg_tchunk_new_span(tspan);
 
+	tspan->parentindex = z->innerspan->contents->len;
 	tspan->parent = z->innerspan;
 	tspan->state = state;
 	g_ptr_array_add (z->innerspan->contents, tchunk);
@@ -345,6 +343,45 @@ rsvg_text_render_text (DrawingCtx *ctx,
 					   gdouble *x,
 					   gdouble *y);
 
+static gdouble
+rsvg_text_width  (DrawingCtx *ctx,
+				  RsvgTspan  *tspan,
+				  const char *text);
+
+static gdouble
+rsvg_text_tspan_width (DrawingCtx *ctx,
+					   RsvgTspan  *tspan)
+{
+	RsvgTspan  *currentspan = tspan;
+	gdouble currentwidth = 0;
+	guint currentindex = 0;
+	while (1)
+		{
+			if (currentindex >= currentspan->contents->len)
+				{
+					currentindex = currentspan->parentindex;
+					currentspan = currentspan->parent;
+					if (currentspan == NULL)
+						return currentwidth;
+				}
+			else
+				{
+					RsvgTChunk * currentchunk = 
+						g_ptr_array_index(currentspan->contents, currentindex);
+					if (currentchunk->string)
+						currentwidth += rsvg_text_width (ctx, currentspan, currentchunk->string->str);
+					else
+						{
+							currentspan = currentchunk->span;
+							currentindex = -1;
+							if (currentspan->hasx || currentspan->hasy)
+								return currentwidth;
+						}
+				}
+			currentindex++;
+		}
+}
+
 static void
 rsvg_tspan_draw(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y, int dominate);
 
@@ -368,7 +405,18 @@ rsvg_tspan_draw(RsvgTspan * self, DrawingCtx *ctx, gdouble *x, gdouble *y, int d
 	rsvg_state_reinherit_top(ctx, &self->state, dominate);
 	if (self->hasx || self->hasy)
 		{
-			*x = self->x;
+			switch (rsvg_state_current(ctx)->text_anchor)
+				{
+				case TEXT_ANCHOR_START:
+					*x = self->x;		
+					break;
+				case TEXT_ANCHOR_MIDDLE:
+					*x = self->x - rsvg_text_tspan_width (ctx, self) / 2;
+					break;
+				case TEXT_ANCHOR_END:
+					*x = self->x - rsvg_text_tspan_width (ctx, self);
+					break;
+				}
 			*y = self->y;
 		}
 
@@ -875,9 +923,6 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 	PangoLayoutIter *iter;
 	gint             offx, offy;
 	gint             x, y;
-	gdouble          xshift;
-
-	xshift = 0;
 
 	rsvg_text_layout_get_offsets (layout, &offx, &offy);
 
@@ -893,7 +938,7 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 	
 	iter = pango_layout_get_iter (layout->layout);
 	
-	do
+	if (iter)
 		{
 			PangoRectangle   rect;
 			PangoLayoutLine *line;
@@ -909,13 +954,13 @@ rsvg_text_layout_render (RsvgTextLayout     *layout,
 										  x + rect.x,
 										  y + baseline,
 										  render_data);
-			xshift += rect.width;
+
+			layout->x += rect.width / PANGO_SCALE + offx;
 		}
-	while (pango_layout_iter_next_line (iter));
-	
+
 	pango_layout_iter_free (iter);
 
-	layout->x += xshift;
+
 }
 
 void 
@@ -954,4 +999,55 @@ rsvg_text_render_text (DrawingCtx *ctx,
 	rsvg_render_path (ctx, render->path->str);
 	rsvg_render_ctx_free (render);
 	rsvg_text_layout_free (layout);
+}
+
+static gdouble
+rsvg_text_layout_width  (RsvgTextLayout *layout)
+{
+	PangoLayoutIter *iter;
+	gint             offx, offy;
+
+	rsvg_text_layout_get_offsets (layout, &offx, &offy);
+
+	offx += rsvg_tspan_dx(layout->span);
+	
+	iter = pango_layout_get_iter (layout->layout);
+	
+	if (iter)
+		{
+			PangoRectangle   rect;
+			PangoLayoutLine *line;
+			
+			line = pango_layout_iter_get_line (iter);
+			
+			pango_layout_iter_get_line_extents (iter, NULL, &rect);
+
+			pango_layout_iter_free (iter);
+			return rect.width / PANGO_SCALE + offx;
+		}
+	return 0;
+
+}
+
+static gdouble
+rsvg_text_width       (DrawingCtx *ctx,
+					   RsvgTspan  *tspan,
+					   const char *text)
+{
+	RsvgTextLayout *layout;
+	RenderCtx      *render;
+	RsvgState      *state;
+	gdouble output;
+	state = rsvg_state_current(ctx);
+
+	layout = rsvg_text_layout_new (ctx, state, text);
+	layout->span = tspan;
+
+	render = rsvg_render_ctx_new ();
+
+	output = rsvg_text_layout_width (layout);
+
+	rsvg_render_ctx_free (render);
+	rsvg_text_layout_free (layout);
+	return output;
 }
