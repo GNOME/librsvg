@@ -1,9 +1,10 @@
+TODO:
 
- * stroke-dasharray and stroke-dashoffset. work on this is already started
- 
  * Clipping paths
 
  * Masks
+
+ * Fixing image transforms
 
  * Image effects/filters
 
@@ -12,7 +13,7 @@
  * Add actual GError support in the loader, rather then the g_warnings
    that we currently use.
 
- * Allow affine's other than scaling.
+ * Allow affine's other than scaling (we do this already, da?)
 
 On the back burner:
 

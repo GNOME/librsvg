@@ -1,6 +1,16 @@
 2002-10-01  Dom Lachowicz <doml@appligent.com>
 
+	* rsvg.c (rsvg_parse_style_args): handle dashoffset and dasharray
+	(state_finalize): support dashes
+	(state_clone): ditto
+	(render_bpath): ditto
+	
+	* TODO: update to reflect work done
+	
+2002-10-01  Dom Lachowicz <doml@appligent.com>
+
 	* TODO: update
+
 	* rsvg.c (): lay some framework for stroke-dash parameters
 	
 2002-10-01  jacob berkman  <jacob@ximian.com>

@@ -31,6 +31,7 @@
 
 #include <libart_lgpl/art_affine.h>
 #include <libart_lgpl/art_vpath_bpath.h>
+#include <libart_lgpl/art_vpath_dash.h>
 #include <libart_lgpl/art_svp_vpath_stroke.h>
 #include <libart_lgpl/art_svp_vpath.h>
 #include <libart_lgpl/art_svp_intersect.h>
@@ -81,6 +82,8 @@ typedef struct {
 
   guint32 stop_color; /* rgb */
   gint stop_opacity; /* 0..255 */
+
+  ArtVpathDash dash;
 
   gboolean in_defs;
 
@@ -150,11 +153,20 @@ rsvg_state_init (RsvgState *state)
 static void
 rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 {
+  gint i;
+
   *dst = *src;
   dst->font_family = g_strdup (src->font_family);
   rsvg_paint_server_ref (dst->fill);
   rsvg_paint_server_ref (dst->stroke);
   dst->save_pixbuf = NULL;
+
+  if (src->dash.n_dash > 0)
+    {
+      dst->dash.dash = g_new (gdouble, src->dash.n_dash);
+      for (i = 0; i < src->dash.n_dash; i++)
+	dst->dash.dash[i] = src->dash.dash[i];
+    }
 }
 
 static void
@@ -163,6 +175,9 @@ rsvg_state_finalize (RsvgState *state)
   g_free (state->font_family);
   rsvg_paint_server_unref (state->fill);
   rsvg_paint_server_unref (state->stroke);
+
+  if (state->dash.n_dash != 0)
+    g_free (state->dash.dash);
 }
 
 static void
@@ -408,16 +423,47 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
     }
   else if (rsvg_css_param_match (str, "stroke-dashoffset"))
     {
-      /* TODO
-	 state->dash.offset = rsvg_css_parse_normlaized_length();
-      */
+      state->dash.offset = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
+							     (gdouble)ctx->height, state->font_size, 0.);
+      if (state->dash.offset < 0.)
+	state->dash.offset = 0.;
     }
   else if (rsvg_css_param_match (str, "stroke-dasharray"))
     {
-      /* TODO
-	 if(!strcmp(str + arg_off, "none"))
-	 state->dash.n_dash = 0; return;
-      */
+      if(!strcmp(str + arg_off, "none"))
+	{
+	  state->dash.n_dash = 0; 
+	}
+      else
+	{
+	  gchar ** dashes = g_strsplit (str + arg_off, ",", -1);
+	  if (NULL != dashes)
+	    {
+	      gint n_dashes, i;
+	      gboolean is_even = FALSE ;
+
+	      /* count the #dashes */
+	      for (n_dashes = 0; dashes[n_dashes] != NULL; n_dashes++)
+		;
+
+	      is_even = (n_dashes % 2 == 0);
+	      state->dash.n_dash = (is_even ? n_dashes : n_dashes * 2);
+	      state->dash.dash = g_new (double, state->dash.n_dash);
+
+	      /* TODO: handle negative value == error case */
+
+	      /* the even and base case */
+	      for (i = 0; i < n_dashes; i++)
+		state->dash.dash[i] = g_ascii_strtod (dashes[i], NULL);
+
+	      /* if an odd number of dashes is found, it gets repeated */
+	      if (!is_even)
+		for (; i < state->dash.n_dash; i++)
+		  state->dash.dash[i] = g_ascii_strtod (dashes[i - n_dashes], NULL);
+
+	      g_strfreev(dashes) ;
+	    }
+	}
     }
 }
 
@@ -942,15 +988,6 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
   vpath = art_bez_path_to_vec (affine_bpath, 0.25);
   art_free (affine_bpath);
 
-  /* TODO: dash-stroke the path, if appropriate
-   * if (state->dash.n_dash > 0) 
-   *  {
-   *     ArtVpath * dashed_vpath = art_vpath_dash(vpath, state->dash);
-   *     art_free (vpath);
-   *     vpath = dashed_vpath;
-   *  }
-   */
-
   need_tmpbuf = (state->fill != NULL) && (state->stroke != NULL) &&
     state->opacity != 0xff;
 
@@ -991,6 +1028,14 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 
       if (stroke_width < 0.25)
 	stroke_width = 0.25;
+
+      /* if the path is dashed, stroke it */
+      if (state->dash.n_dash > 0) 
+	{
+	  ArtVpath * dashed_vpath = art_vpath_dash (vpath, &state->dash);
+	  art_free (vpath);
+	  vpath = dashed_vpath;
+	}
 
       svp = art_svp_vpath_stroke (vpath, state->join, state->cap,
 				  stroke_width, state->miter_limit, 0.25);
