@@ -46,10 +46,11 @@ win_embedded_cb (GtkPlug *plug, gpointer data)
 }
 
 static void
-view_pixbuf (GdkPixbuf * pixbuf, int xid)
+view_pixbuf (GdkPixbuf * pixbuf, int xid, const char * color)
 {
 	GtkWidget *win, *img;
 	gint width, height;
+	GdkColor bg_color;
 
 	/* create toplevel window and set its title */
 
@@ -96,6 +97,21 @@ view_pixbuf (GdkPixbuf * pixbuf, int xid)
 			gtk_container_add(GTK_CONTAINER(win), scroll);
 		}
 
+	if (color && strcmp (color, "none") != 0)
+		{
+			if (gdk_color_parse (color, &bg_color))
+				{
+					GtkWidget * parent_widget = gtk_widget_get_parent(img);
+
+					if (gdk_colormap_alloc_color (gtk_widget_get_colormap(parent_widget), &bg_color, FALSE, TRUE))
+						gtk_widget_modify_bg (parent_widget, GTK_STATE_NORMAL, &bg_color);
+					else
+						g_warning ("Couldn't allocate color '%s'", color);
+				}
+			else
+				g_warning ("Couldn't parse color '%s'", color);
+		}
+
 	gtk_widget_show_all (win);
 
 #ifdef ENABLE_XEMBED
@@ -119,6 +135,7 @@ main (int argc, char **argv)
 	int width  = -1;
 	int height = -1;
 	int bVersion = 0;
+	char * bg_color = NULL;
 
 	int xid = -1;
 	int from_stdin = 0;
@@ -127,15 +144,16 @@ main (int argc, char **argv)
 
 	struct poptOption options_table[] = {
 #ifdef ENABLE_XEMBED
-		{ "xid",     'i',  POPT_ARG_INT,    &xid,        0, "XWindow ID [for X11 embedding]", "<int>" },
+		{ "xid",      'i',  POPT_ARG_INT,    &xid,        0, "XWindow ID [for X11 embedding]", "<int>" },
 #endif
-		{ "stdin",   's',  POPT_ARG_NONE,   &from_stdin, 0, "Use stdin", NULL },
-		{ "dpi",     'd',  POPT_ARG_DOUBLE, &dpi,        0, "Pixels Per Inch", "<float>" },
-		{ "x-zoom",  'x',  POPT_ARG_DOUBLE, &x_zoom,     0, "x zoom factor", "<float>" },
-		{ "y-zoom",  'y',  POPT_ARG_DOUBLE, &y_zoom,     0, "y zoom factor", "<float>" },
-		{ "width",   'w',  POPT_ARG_INT,    &width,      0, "width", "<int>" },
-		{ "height",  'h',  POPT_ARG_INT,    &height,     0, "height", "<int>" },
-		{ "version", 'v',  POPT_ARG_NONE,   &bVersion,   0, "show version information", NULL },
+		{ "stdin",    's',  POPT_ARG_NONE,   &from_stdin, 0, "Use stdin", NULL },
+		{ "dpi",      'd',  POPT_ARG_DOUBLE, &dpi,        0, "Pixels Per Inch", "<float>" },
+		{ "x-zoom",   'x',  POPT_ARG_DOUBLE, &x_zoom,     0, "x zoom factor", "<float>" },
+		{ "y-zoom",   'y',  POPT_ARG_DOUBLE, &y_zoom,     0, "y zoom factor", "<float>" },
+		{ "width",    'w',  POPT_ARG_INT,    &width,      0, "width", "<int>" },
+		{ "height",   'h',  POPT_ARG_INT,    &height,     0, "height", "<int>" },
+		{ "bg-color", 'b',  POPT_ARG_STRING, &bg_color,   0, "color", "<string>" },
+		{ "version",  'v',  POPT_ARG_NONE,   &bVersion,   0, "show version information", NULL },
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
@@ -212,7 +230,7 @@ main (int argc, char **argv)
 			return 1;
 		}
 	
-	view_pixbuf (pixbuf, xid);
+	view_pixbuf (pixbuf, xid, bg_color);
 	
 	/* run the gtk+ main loop */
 	gtk_main ();

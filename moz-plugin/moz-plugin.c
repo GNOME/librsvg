@@ -107,6 +107,10 @@ plugin_fork (Plugin * plugin)
 			argv[argc++] = height_str;
 		}
 	
+	/* HACK!! hardcode bg color to white for Uraeus' viewing pleasure */
+	argv[argc++] = "--bg-color";
+	argv[argc++] = "white";
+
 	argv[argc++] = "-s";
 	argv[argc] = NULL;
 

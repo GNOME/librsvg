@@ -1,5 +1,10 @@
 2004-03-20  Dom Lachowicz <cinamod@hotmail.com>
 
+	* test-display.c, moz-plugin.c: Allow rsvg-view to set a bgcolor other
+	than transparent. Make moz plugin set that color to be "white"
+	
+2004-03-20  Dom Lachowicz <cinamod@hotmail.com>
+
 	* *: "currentColor" and "inherit" colors mostly work. Caveat: they
 	don't work for filters and gradients. TODO
 	
