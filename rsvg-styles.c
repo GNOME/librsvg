@@ -32,9 +32,6 @@
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_affine.h>
 
-/* Our default font */
-#define DEFAULT_FONT "Times Roman"
-
 gdouble
 rsvg_viewport_percentage (gdouble width, gdouble height)
 {
@@ -58,7 +55,7 @@ rsvg_state_init (RsvgState *state)
 	state->join = ART_PATH_STROKE_JOIN_MITER;
 	state->stop_opacity = 0xff;
 	
-	state->font_family  = g_strdup (DEFAULT_FONT);
+	state->font_family  = g_strdup ("Times Roman");
 	state->font_size    = 12.0;
 	state->font_style   = PANGO_STYLE_NORMAL;
 	state->font_variant = PANGO_VARIANT_NORMAL;
@@ -751,9 +748,21 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
 	gboolean found = FALSE;
 	GString * klazz_list = NULL;
 	
-	/* handle the all-encompassing "star" entry first, ignoring found-ness */
+	/* Try to properly support all of the following, including inheritance:
+	 * *
+	 * #id
+	 * tag
+	 * tag#id
+	 * tag.class
+	 * tag.class#id
+	 *
+	 * TODO: test that this reasonably works and conforms to the SVG/CSS spec
+	 */
+
+	/* * */
 	rsvg_lookup_apply_css_style (ctx, "*");
 
+	/* #id */
 	if (id != NULL)
 		{
 			target = g_strdup_printf ("#%s", id);
@@ -761,39 +770,55 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
 			g_free (target);
 		}
 
-	/* todo: see if klazz or tag should accumulate onto tag.klazz */
+	/* tag */
+	if (tag != NULL)
+		rsvg_lookup_apply_css_style (ctx, tag);
 
-	if (tag != NULL && klazz != NULL)
+	/* tag#id */
+	if (tag != NULL && id != NULL)
 		{
-			target = g_strdup_printf ("%s.%s", tag, klazz);
-			found = rsvg_lookup_apply_css_style (ctx, target);
+			target = g_strdup_printf ("%s#%s", tag, id);
+			rsvg_lookup_apply_css_style (ctx, target);
 			g_free (target);
 		}
 	
-	if (found == FALSE)
+	if (klazz != NULL)
 		{
-			if (tag != NULL)
-				rsvg_lookup_apply_css_style (ctx, tag);
-			
-			if (klazz != NULL)
+			i = strlen (klazz);
+			while (j < i)
 				{
-					i = strlen (klazz);
-					while (j < i)
+					found = FALSE;
+					klazz_list = g_string_new (".");
+					
+					while (j < i && g_ascii_isspace(klazz[j]))
+						j++;
+					
+					while (j < i && !g_ascii_isspace(klazz[j]))
+						g_string_append_c (klazz_list, klazz[j++]);
+					
+					/* tag.class */
+					if (tag != NULL && klazz_list->len != 1)
 						{
-							klazz_list = g_string_new (".");
-							
-							while (j < i && g_ascii_isspace(klazz[j]))
-								j++;
-							
-							while (j < i && !g_ascii_isspace(klazz[j]))
-								g_string_append_c (klazz_list, klazz[j++]);
-							
-							rsvg_lookup_apply_css_style (ctx, klazz_list->str);
-							g_string_free (klazz_list, TRUE);
+							target = g_strdup_printf ("%s%s", tag, klazz_list->str);
+							found = found || rsvg_lookup_apply_css_style (ctx, target);
+							g_free (target);
 						}
+					
+					/* tag.class#id */
+					if (tag != NULL && klazz_list->len != 1 && id != NULL)
+						{
+							target = g_strdup_printf ("%s%s#%s", tag, klazz_list->str, id);
+							found = found || rsvg_lookup_apply_css_style (ctx, target);
+							g_free (target);
+						}
+					
+					/* didn't find anything more specific, just apply the class style */
+					if (!found)
+						rsvg_lookup_apply_css_style (ctx, klazz_list->str);
+					g_string_free (klazz_list, TRUE);
 				}
 		}
-	
+
 	if (atts != NULL)
 		{
 			for (i = 0; atts[i] != NULL; i += 2)
