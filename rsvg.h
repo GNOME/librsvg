@@ -71,7 +71,7 @@ gboolean    rsvg_handle_close             (RsvgHandle      *handle,
 GdkPixbuf  *rsvg_handle_get_pixbuf        (RsvgHandle      *handle);
 void        rsvg_handle_free              (RsvgHandle      *handle);
 
-/* convenience API */
+/* Convenience API */
 
 GdkPixbuf  *rsvg_pixbuf_from_file                  (const gchar  *file_name,
 													GError      **error);
@@ -94,7 +94,12 @@ GdkPixbuf  *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
 													gint          max_height,
 													GError      **error);
 
-/* "New" convenience API (2.2.2+) */
+/* Accessibility API */
+
+G_CONST_RETURN char *rsvg_handle_get_title         (RsvgHandle *handle);
+G_CONST_RETURN char *rsvg_handle_get_desc          (RsvgHandle *handle);
+
+/* Extended Convenience API */
 
 GdkPixbuf  * rsvg_pixbuf_from_file_at_size_ex (RsvgHandle * handle,
 											   const gchar  *file_name,

@@ -59,7 +59,7 @@ rsvg_draw_hline (RsvgHandle *ctx, double x, double w, double y)
 
 #endif
 
-static char *
+char *
 make_valid_utf8 (const char *str)
 {
 	GString *string;

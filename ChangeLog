@@ -1,3 +1,7 @@
+2003-06-20  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.c: Add support for <title> and <desc> elements
+	
 2003-04-08  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: enable librsvg to be built w/o gtk+

@@ -74,6 +74,9 @@ struct RsvgHandle {
 	int height;
 	double dpi;
 	
+	GString * title;
+	GString * desc;
+
 	/* virtual fns */
 	gboolean (* write) (RsvgHandle    *handle,
 						const guchar  *buf,

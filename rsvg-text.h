@@ -32,6 +32,7 @@ G_BEGIN_DECLS
 
 void rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts);
 void rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts);
+char * make_valid_utf8 (const char *str);
 
 G_END_DECLS
 

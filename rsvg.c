@@ -259,6 +259,10 @@ typedef struct _RsvgSaxHandlerGstops {
 	const char * parent_tag;
 } RsvgSaxHandlerGstops;
 
+/* hide this fact from the general public */
+typedef RsvgSaxHandlerDefs RsvgSaxHandlerTitle;
+typedef RsvgSaxHandlerDefs RsvgSaxHandlerDesc;
+
 static void
 rsvg_gradient_stop_handler_free (RsvgSaxHandler *self)
 {
@@ -278,10 +282,7 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	int n_stop;
 	
 	if (strcmp ((char *)name, "stop"))
-		{
-			g_warning ("unexpected <%s> element in gradient\n", name);
-			return;
-		}
+		return;
 	
 	rsvg_state_init (&state);
 	
@@ -487,13 +488,15 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	
 	rsvg_defs_set (ctx->defs, id, &grad->super);
 	
+#if 0
 	for (i = 0; i < 6; i++)
 		grad->affine[i] = state->affine[i];
+#endif
 
 	if (got_transform)
 		art_affine_multiply (grad->affine, affine, grad->affine);
 	
-	/* state inherits parent/cloned information unless it's explicity gotten */
+	/* gradient inherits parent/cloned information unless it's explicity gotten */
 	grad->obj_bbox = (cloned && !got_bbox) ? grad->obj_bbox : obj_bbox;
 	grad->x1 = (cloned && !got_x1) ? grad->x1 : x1;
 	grad->y1 = (cloned && !got_y1) ? grad->y1 : y1;
@@ -630,14 +633,16 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts, const char * 
 	}
 	
 	rsvg_defs_set (ctx->defs, id, &grad->super);
-	
+
+#if 0	
 	for (i = 0; i < 6; i++)
 		grad->affine[i] = state->affine[i];
+#endif
 
 	if (got_transform)
 		art_affine_multiply (grad->affine, affine, grad->affine);
 	
-	/* state inherits parent/cloned information unless it's explicity gotten */
+	/* gradient inherits parent/cloned information unless it's explicity gotten */
 	grad->obj_bbox = (cloned && !got_bbox) ? grad->obj_bbox : obj_bbox;
 	grad->cx = (cloned && !got_cx) ? grad->cx : cx;
 	grad->cy = (cloned && !got_cy) ? grad->cy : cy;
@@ -707,7 +712,7 @@ rsvg_start_style (RsvgHandle *ctx, const xmlChar **atts)
 	ctx->handler = &handler->super;
 }
 
-/* */
+/* start defs */
 
 static void
 rsvg_defs_handler_free (RsvgSaxHandler *self)
@@ -805,6 +810,160 @@ rsvg_start_defs (RsvgHandle *ctx, const xmlChar **atts)
 
 /* end defs */
 
+/* start desc */
+
+static void
+rsvg_desc_handler_free (RsvgSaxHandler *self)
+{
+	g_free (self);
+}
+
+static void
+rsvg_desc_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
+{
+	RsvgSaxHandlerDesc *z = (RsvgSaxHandlerDesc *)self;
+	RsvgHandle *ctx = z->ctx;
+
+	char * string = NULL;
+	char * utf8 = NULL;
+
+	/* This isn't quite the correct behavior - in theory, any graphics
+	   element may contain a title or desc element */
+
+	if (!ch || !len)
+		return;
+
+	string = g_strndup (ch, len);
+	if (!g_utf8_validate (string, -1, NULL))
+		{
+			utf8 = make_valid_utf8 (string);
+			g_free (string);
+			string = utf8;
+		}
+
+	g_string_append (ctx->desc, string);
+	g_free (string);
+}
+
+static void
+rsvg_desc_handler_start (RsvgSaxHandler *self, const xmlChar *name,
+						 const xmlChar **atts)
+{
+}
+
+static void
+rsvg_desc_handler_end (RsvgSaxHandler *self, const xmlChar *name)
+{
+	RsvgSaxHandlerDesc *z = (RsvgSaxHandlerDesc *)self;
+	RsvgHandle *ctx = z->ctx;
+	
+	if (!strcmp((char *)name, "desc"))
+		{
+			if (ctx->handler != NULL)
+				{
+					ctx->handler->free (ctx->handler);
+					ctx->handler = NULL;
+				}
+		}
+	
+	/* pop the state stack */
+	ctx->n_state--;
+	rsvg_state_finalize (&ctx->state[ctx->n_state]);
+}
+
+static void
+rsvg_start_desc (RsvgHandle *ctx, const xmlChar **atts)
+{
+	RsvgSaxHandlerDesc *handler = g_new0 (RsvgSaxHandlerDesc, 1);
+	
+	handler->super.free = rsvg_desc_handler_free;
+	handler->super.characters = rsvg_desc_handler_characters;
+	handler->super.start_element = rsvg_desc_handler_start;
+	handler->super.end_element   = rsvg_desc_handler_end;
+	handler->ctx = ctx;
+
+	ctx->handler = &handler->super;
+}
+
+/* end desc */
+
+/* start title */
+
+static void
+rsvg_title_handler_free (RsvgSaxHandler *self)
+{
+	g_free (self);
+}
+
+static void
+rsvg_title_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
+{
+	RsvgSaxHandlerDesc *z = (RsvgSaxHandlerDesc *)self;
+	RsvgHandle *ctx = z->ctx;
+
+	char * string = NULL;
+	char * utf8 = NULL;
+
+	/* This isn't quite the correct behavior - in theory, any graphics
+	   element may contain a title or desc element */
+
+	if (!ch || !len)
+		return;
+
+	string = g_strndup (ch, len);
+	if (!g_utf8_validate (string, -1, NULL))
+		{
+			utf8 = make_valid_utf8 (string);
+			g_free (string);
+			string = utf8;
+		}
+
+	g_string_append (ctx->title, string);
+	g_free (string);
+}
+
+static void
+rsvg_title_handler_start (RsvgSaxHandler *self, const xmlChar *name,
+						 const xmlChar **atts)
+{
+}
+
+static void
+rsvg_title_handler_end (RsvgSaxHandler *self, const xmlChar *name)
+{
+	RsvgSaxHandlerTitle *z = (RsvgSaxHandlerTitle *)self;
+	RsvgHandle *ctx = z->ctx;
+	
+	if (!strcmp((char *)name, "title"))
+		{
+			if (ctx->handler != NULL)
+				{
+					ctx->handler->free (ctx->handler);
+					ctx->handler = NULL;
+				}
+		}
+	
+	/* pop the state stack */
+	ctx->n_state--;
+	rsvg_state_finalize (&ctx->state[ctx->n_state]);
+}
+
+static void
+rsvg_start_title (RsvgHandle *ctx, const xmlChar **atts)
+{
+	RsvgSaxHandlerTitle *handler = g_new0 (RsvgSaxHandlerTitle, 1);
+	
+	handler->super.free = rsvg_title_handler_free;
+	handler->super.characters = rsvg_title_handler_characters;
+	handler->super.start_element = rsvg_title_handler_start;
+	handler->super.end_element   = rsvg_title_handler_end;
+	handler->ctx = ctx;
+
+	ctx->handler = &handler->super;
+}
+
+/* end title */
+
 static void
 rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 {
@@ -856,6 +1015,10 @@ rsvg_start_element (void *data, const xmlChar *name, const xmlChar **atts)
 				rsvg_start_image (ctx, atts);
 			else if (!strcmp ((char *)name, "style"))
 				rsvg_start_style (ctx, atts);
+			else if (!strcmp ((char *)name, "title"))
+				rsvg_start_title (ctx, atts);
+			else if (!strcmp ((char *)name, "desc"))
+				rsvg_start_desc (ctx, atts);
 			
 			/* see conicalGradient discussion above */
 			else if (!strcmp ((char *)name, "linearGradient"))
@@ -1071,7 +1234,41 @@ rsvg_handle_free_impl (RsvgHandle *handle)
 		(* handle->user_data_destroy) (handle->user_data);
 	if (handle->pixbuf)
 		g_object_unref (handle->pixbuf);
+
+	g_string_free (handle->title, TRUE);
+	g_string_free (handle->desc, TRUE);
+
 	g_free (handle);
+}
+
+/**
+ * rsvg_handle_get_title:
+ *
+ * Returns the SVG's title in UTF-8 or %NULL. You must make a copy
+ * of this title if you wish to use it after #handle has been freed.
+ *
+ * Returns: The SVG's title
+ *
+ * Since: 2.4
+ */
+G_CONST_RETURN char *rsvg_handle_get_title (RsvgHandle *handle)
+{
+	return handle->title->str;
+}
+
+/**
+ * rsvg_handle_get_desc:
+ *
+ * Returns the SVG's description in UTF-8 or %NULL. You must make a copy
+ * of this description if you wish to use it after #handle has been freed.
+ *
+ * Returns: The SVG's description
+ *
+ * Since: 2.4
+ */
+G_CONST_RETURN char *rsvg_handle_get_desc (RsvgHandle *handle)
+{
+	return handle->desc->str;
 }
 
 /**
@@ -1114,6 +1311,9 @@ rsvg_handle_init (RsvgHandle * handle)
 											   g_free, g_free);
 	
 	handle->ctxt = NULL;
+
+	handle->title = g_string_new (NULL);
+	handle->desc = g_string_new (NULL);
 }
 
 /**
@@ -1123,6 +1323,8 @@ rsvg_handle_init (RsvgHandle * handle)
  * Sets the DPI for the all future outgoing pixbufs. Common values are
  * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
  * reset the DPI to whatever the default value happens to be.
+ *
+ * Since: 2.2
  */
 void
 rsvg_set_default_dpi (double dpi)
@@ -1141,6 +1343,8 @@ rsvg_set_default_dpi (double dpi)
  * Sets the DPI for the outgoing pixbuf. Common values are
  * 72, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
  * reset the DPI to whatever the default value happens to be.
+ *
+ * Since: 2.2
  */
 void
 rsvg_handle_set_dpi (RsvgHandle * handle, double dpi)

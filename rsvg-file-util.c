@@ -208,7 +208,9 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
  * by this call and must be freed by the caller.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- **/
+ *
+ * Since: 2.4
+ */
 GdkPixbuf  *
 rsvg_pixbuf_from_file_at_size_ex (RsvgHandle * handle,
 								  const gchar  *file_name,
@@ -237,7 +239,9 @@ rsvg_pixbuf_from_file_at_size_ex (RsvgHandle * handle,
  * freed by the caller.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- **/
+ *
+ * Since: 2.4
+ */
 GdkPixbuf  *
 rsvg_pixbuf_from_file_ex (RsvgHandle * handle,
 						  const gchar  *file_name,
@@ -261,7 +265,9 @@ rsvg_pixbuf_from_file_ex (RsvgHandle * handle,
  * call and must be freed by the caller.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- **/
+ *
+ * Since: 2.4
+ */
 GdkPixbuf  *
 rsvg_pixbuf_from_file_at_zoom_ex (RsvgHandle * handle,
 								  const gchar  *file_name,
@@ -296,7 +302,9 @@ rsvg_pixbuf_from_file_at_zoom_ex (RsvgHandle * handle,
  * must be freed by the caller.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- **/
+ *
+ * Since: 2.4
+ */
 GdkPixbuf  *
 rsvg_pixbuf_from_file_at_max_size_ex (RsvgHandle * handle,
 									  const gchar  *file_name,
@@ -331,7 +339,9 @@ rsvg_pixbuf_from_file_at_max_size_ex (RsvgHandle * handle,
  * Returned handle is closed by this call and must be freed by the caller.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- **/
+ *
+ * Since: 2.4
+ */
 GdkPixbuf  *
 rsvg_pixbuf_from_file_at_zoom_with_max_ex (RsvgHandle * handle,
 										   const gchar  *file_name,

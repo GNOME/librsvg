@@ -33,15 +33,14 @@
 typedef struct {
         RsvgHandle                 *handle;
         GdkPixbuf                  *pixbuf;
+
         GdkPixbufModuleUpdatedFunc  updated_func;
         GdkPixbufModulePreparedFunc prepared_func;
-        gpointer                    user_data;
-
-#if HAVE_SVGZ
         GdkPixbufModuleSizeFunc     size_func;
-        gboolean                    first_write;
-#endif
 
+        gboolean                    first_write;
+
+        gpointer                    user_data;
 } SvgContext;
 
 G_MODULE_EXPORT void fill_vtable (GdkPixbufModule *module);
@@ -59,15 +58,8 @@ gdk_pixbuf__svg_image_begin_load (GdkPixbufModuleSizeFunc size_func,
         if (error)
                 *error = NULL;
 
-#if HAVE_SVGZ
-        /* lazy create the handle on the first write */
-        context->handle        = NULL;
         context->first_write   = TRUE;
         context->size_func     = size_func;
-#else
-        context->handle        = rsvg_handle_new ();
-        rsvg_handle_set_size_callback (context->handle, size_func, user_data, NULL);
-#endif
 
         context->prepared_func = prepared_func;
         context->updated_func  = updated_func;
@@ -87,19 +79,20 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
         if (error)
                 *error = NULL;
 
-#if HAVE_SVGZ
         if (context->first_write == TRUE) {
                 context->first_write = FALSE;
 
+
+#ifdef HAVE_SVGZ
                 /* lazy create a SVGZ or SVG loader */
                 if ((size >= 2) && (buf[0] == (guchar)0x1f) && (buf[1] == (guchar)0x8b))
                         context->handle = rsvg_handle_new_gz ();
                 else
+#endif
                         context->handle = rsvg_handle_new ();
 
                 rsvg_handle_set_size_callback (context->handle, context->size_func, context->user_data, NULL);
         }
-#endif
 
         result = rsvg_handle_write (context->handle, buf, size, error);  
 
