@@ -1,5 +1,13 @@
 2003-01-30  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-file-util.c (*): Made '_ex' versions of all "convenience" 
+	functions that take a RsvgHandle as an argument. This will allow the 
+	caller to pass in a handle with DPI specified, or a handle capable of 
+	handling gzipped files. Made all existing convenience functions call
+	their _ex cousins. TODO: make the _ex functions part of the public API.
+	
+2003-01-30  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-paint-server.c (radial, linear): Handle objBbox coordinate space properly. Thanks Lauris for the tip!
 	
 2003-01-30  Dom Lachowicz <cinamod@hotmail.com>
