@@ -959,7 +959,7 @@ rsvg_start_use (RsvgHandle *ctx, const xmlChar **atts)
 	art_affine_translate (affine, x, y);
 	art_affine_multiply (state->affine, affine, state->affine);
 	
-	rsvg_parse_style_attrs (ctx, "g", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, "use", klazz, id, atts);
 	if (state->opacity != 0xff)
 		rsvg_push_opacity_group (ctx);
 	
