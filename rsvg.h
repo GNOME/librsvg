@@ -109,6 +109,7 @@ GdkPixbuf  *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
 
 G_CONST_RETURN char *rsvg_handle_get_title         (RsvgHandle *handle);
 G_CONST_RETURN char *rsvg_handle_get_desc          (RsvgHandle *handle);
+G_CONST_RETURN char *rsvg_handle_get_metadata      (RsvgHandle *handle);
 
 /* Extended Convenience API */
 

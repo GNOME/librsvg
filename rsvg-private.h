@@ -93,6 +93,7 @@ struct RsvgHandle {
 	
 	GString * title;
 	GString * desc;
+	GString * metadata;
 	
 	gchar * base_uri;
 
@@ -154,6 +155,10 @@ struct _RsvgPropertyBag
 	GHashTable * props;
 };
 
+typedef void (*RsvgPropertyBagEnumFunc) (const char * key,
+										 const char * value,
+										 gpointer user_data);
+
 RsvgPropertyBag *
 rsvg_property_bag_new (const xmlChar **atts);
 
@@ -165,6 +170,9 @@ rsvg_property_bag_lookup (RsvgPropertyBag *bag, const char * key);
 
 guint
 rsvg_property_bag_size (RsvgPropertyBag *bag);
+
+void 
+rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPropertyBagEnumFunc func, gpointer user_data);
 
 GdkPixbuf *
 rsvg_pixbuf_from_data_with_size_data (const guchar * buff,

@@ -358,6 +358,7 @@ typedef struct _RsvgSaxHandlerGstops {
 /* hide this fact from the general public */
 typedef RsvgSaxHandlerDefs RsvgSaxHandlerTitle;
 typedef RsvgSaxHandlerDefs RsvgSaxHandlerDesc;
+typedef RsvgSaxHandlerDefs RsvgSaxHandlerMetadata;
 
 static void
 rsvg_gradient_stop_handler_free (RsvgSaxHandler *self)
@@ -1098,6 +1099,7 @@ rsvg_start_desc (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	handler->super.end_element   = rsvg_desc_handler_end;
 	handler->ctx = ctx;
 
+	ctx->desc = g_string_new (NULL);
 	ctx->handler = &handler->super;
 }
 
@@ -1173,10 +1175,105 @@ rsvg_start_title (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	handler->super.end_element   = rsvg_title_handler_end;
 	handler->ctx = ctx;
 
+	ctx->title = g_string_new (NULL);
 	ctx->handler = &handler->super;
 }
 
 /* end title */
+
+/* start metadata */
+
+static void
+rsvg_metadata_handler_free (RsvgSaxHandler *self)
+{
+	g_free (self);
+}
+
+static void
+rsvg_metadata_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
+{
+	RsvgSaxHandlerDesc *z = (RsvgSaxHandlerDesc *)self;
+	RsvgHandle *ctx = z->ctx;
+
+	char * string = NULL;
+	char * utf8 = NULL;
+
+	/* This isn't quite the correct behavior - in theory, any graphics
+	   element may contain a metadata or desc element */
+
+	if (!ch || !len)
+		return;
+
+	string = g_strndup (ch, len);
+	if (!g_utf8_validate (string, -1, NULL))
+		{
+			utf8 = rsvg_make_valid_utf8 (string);
+			g_free (string);
+			string = utf8;
+		}
+
+	g_string_append (ctx->metadata, string);
+	g_free (string);
+}
+
+static void
+rsvg_metadata_props_enumerate (const char * key,
+							   const char * value,
+							   gpointer user_data)
+{
+	GString * metadata = (GString *)user_data;
+	g_string_append_printf (metadata, "%s=\"%s\" ", key, value);
+}
+
+static void
+rsvg_metadata_handler_start (RsvgSaxHandler *self, const xmlChar *name,
+							 RsvgPropertyBag *atts)
+{
+	RsvgSaxHandlerMetadata *z = (RsvgSaxHandlerMetadata *)self;
+	RsvgHandle *ctx = z->ctx;
+
+	g_string_append_printf (ctx->metadata, "<%s ", name);
+	rsvg_property_bag_enumerate (atts, rsvg_metadata_props_enumerate, ctx->metadata);
+	g_string_append (ctx->metadata, ">\n");
+}
+
+static void
+rsvg_metadata_handler_end (RsvgSaxHandler *self, const xmlChar *name)
+{
+	RsvgSaxHandlerMetadata *z = (RsvgSaxHandlerMetadata *)self;
+	RsvgHandle *ctx = z->ctx;
+	
+	if (!strcmp((char *)name, "metadata"))
+		{
+			if (ctx->handler != NULL)
+				{
+					ctx->handler->free (ctx->handler);
+					ctx->handler = NULL;
+				}
+		}
+	else
+		g_string_append_printf (ctx->metadata, "</%s>\n", name);
+	
+	rsvg_state_pop(ctx);
+}
+
+static void
+rsvg_start_metadata (RsvgHandle *ctx, RsvgPropertyBag *atts)
+{
+	RsvgSaxHandlerMetadata *handler = g_new0 (RsvgSaxHandlerMetadata, 1);
+	
+	handler->super.free = rsvg_metadata_handler_free;
+	handler->super.characters = rsvg_metadata_handler_characters;
+	handler->super.start_element = rsvg_metadata_handler_start;
+	handler->super.end_element   = rsvg_metadata_handler_end;
+	handler->ctx = ctx;
+
+	ctx->metadata = g_string_new (NULL);
+	ctx->handler = &handler->super;
+}
+
+/* end metadata */
+
 static void
 rsvg_start_element (void *data, const xmlChar *name,
 					const xmlChar ** atts)
@@ -1236,6 +1333,8 @@ rsvg_start_element (void *data, const xmlChar *name,
 				rsvg_start_title (ctx, bag);
 			else if (!strcmp ((char *)name, "desc"))
 				rsvg_start_desc (ctx, bag);
+			else if (!strcmp ((char *)name, "metadata"))
+				rsvg_start_metadata (ctx, bag);
 			else if (!strcmp ((char *)name, "mask"))
 				rsvg_start_mask(ctx, bag);
 			else if (!strcmp ((char *)name, "clipPath"))
@@ -1365,7 +1464,6 @@ static void rsvg_SAX_handler_struct_init()
     rsvgSAXHandlerStruct.entityDecl = rsvg_entity_decl;
     rsvgSAXHandlerStruct.characters = rsvg_characters;
     rsvgSAXHandlerStruct.error = rsvg_error_cb;
-	rsvgSAXHandlerStruct.error = rsvg_error_cb;
 	rsvgSAXHandlerStruct.cdataBlock = rsvg_characters;
     rsvgSAXHandlerStruct.startElement = rsvg_start_element;
     rsvgSAXHandlerStruct.endElement = rsvg_end_element;
@@ -1507,6 +1605,8 @@ rsvg_handle_free_impl (RsvgHandle *handle)
 		g_string_free (handle->title, TRUE);
 	if (handle->desc)
 	    	g_string_free (handle->desc, TRUE);
+	if (handle->metadata)
+		g_string_free (handle->metadata, TRUE);
 
 	if (handle->base_uri)
 		g_free (handle->base_uri);
@@ -1514,6 +1614,22 @@ rsvg_handle_free_impl (RsvgHandle *handle)
 	g_mem_chunk_destroy(handle->state_allocator);
 
 	g_free (handle);
+}
+
+/**
+ * rsvg_handle_get_metadata:
+ * @handle: An #RsvgHandle
+ *
+ * Returns the SVG's metadata in UTF-8 or %NULL. You must make a copy
+ * of this metadata if you wish to use it after #handle has been freed.
+ *
+ * Returns: The SVG's title
+ *
+ * Since: 2.9
+ */
+G_CONST_RETURN char *rsvg_handle_get_metadata (RsvgHandle *handle)
+{
+	return handle->metadata->str;
 }
 
 /**
@@ -1589,8 +1705,6 @@ rsvg_handle_init (RsvgHandle * handle)
 	
 	handle->ctxt = NULL;
 	handle->current_defs_group = NULL;
-	handle->title = g_string_new (NULL);
-	handle->desc = g_string_new (NULL);
 
 	/* should this be G_ALLOC_ONLY? */
 	handle->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);

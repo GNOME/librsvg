@@ -1,3 +1,7 @@
+2004-08-22  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.c, rsvg.h, rsvg-private.h: Return metadata to caller if requested
+	
 2004-08-22  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-shapes.c: made <image>s <use>able
