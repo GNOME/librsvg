@@ -1,3 +1,11 @@
+2002-10-03  Matthias Clasen <maclas@gmx.de>
+
+	* gdk-pixbuf-loader : RSVG can now be optionally a loadable module for GdkPixbuf, if you have a new enough version of GdkPixbuf
+	
+2002-10-03  Dom Lachowicz <doml@appligent.com>
+
+	* rsvg.c (set_dpi): minor update to reset the DPI if necessary
+	
 2002-10-02  Dom Lachowicz <doml@appligent.com>
 
 	* rsvg-path.c (*): Remove VERBOSE statements

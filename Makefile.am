@@ -1,4 +1,4 @@
-SUBDIRS = gtk-engine
+SUBDIRS = gtk-engine gdk-pixbuf-loader
 
 noinst_PROGRAMS = test-rsvg test-performance
 

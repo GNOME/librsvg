@@ -71,6 +71,12 @@ AC_SUBST(GTK_VERSION)
 
 dnl ===========================================================================
 
+PKG_CHECK_MODULES(GDK_PIXBUF, gdk-pixbuf-2.0,,)
+AC_SUBST(GDK_PIXBUF_CFLAGS)
+AC_SUBST(GDK_PIXBUF_LIBS)
+			      
+dnl ===========================================================================
+
 AC_CHECK_LIB(popt, poptParseArgvString, [POPT_LIBS="-lpopt"],
 AC_MSG_ERROR([popt 1.5 or newer is required to build librsvg.
 You can download the latest version from ftp://ftp.rpm.org/pub/rpm/dist/rpm-4.0.x/]))
@@ -130,6 +136,22 @@ fi
 
 AM_CONDITIONAL(ENABLE_GTK_ENGINE, test x$enable_gtk_theme = xyes)
 
+AC_PATH_PROG(QUERYLOADERS, gdk-pixbuf-query-loaders, false)
+
+AC_ARG_ENABLE(pixbuf-loader,
+    [  --enable-pixbuf-loader  Enable a RSVG based GdkPixbuf loader [default=auto]],
+    enable_pixbuf_loader="$enableval", enable_pixbuf_loader=auto)
+
+if test x$enable_pixbuf_loader = xauto ; then
+    if test x$QUERYLOADERS = xfalse ; then 
+        enable_pixbuf_loader=no
+    else
+        enable_pixbuf_loader=yes
+    fi
+fi
+
+AM_CONDITIONAL(ENABLE_PIXBUF_LOADER, test x$enable_pixbuf_loader = xyes)
+
 dnl ===========================================================================
 
 AC_OUTPUT([
@@ -141,4 +163,5 @@ gtk-engine/Makefile
 gtk-engine/examples/Makefile
 gtk-engine/examples/bubble/Makefile
 gtk-engine/examples/bubble/gtk-2.0/Makefile
+gdk-pixbuf-loader/Makefile
 ])
