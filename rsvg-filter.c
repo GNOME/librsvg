@@ -139,6 +139,20 @@ alpha_blt(GdkPixbuf *src, gint srcx, gint srcy, gint srcwidth,
 		  gint srcheight, GdkPixbuf *dst, gint dstx, gint dsty);
 
 void
+clear_pixbuf(GdkPixbuf *pb);
+
+void
+clear_pixbuf(GdkPixbuf *pb)
+{
+	gint i;
+	guchar * data;
+	data = gdk_pixbuf_get_pixels(pb);
+
+	for (i=0; i<gdk_pixbuf_get_width(pb)*gdk_pixbuf_get_width(pb)*4;i++)
+		data[i] = 0;
+}
+
+void
 alpha_blt(GdkPixbuf *src, gint srcx, gint srcy, gint srcwidth, 
 		  gint srcheight, GdkPixbuf *dst, gint dstx, gint dsty)
 {
@@ -688,6 +702,8 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive *self, RsvgFilterContext
 	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
 							 width, height);
 
+	clear_pixbuf(output);
+
 	output_pixels = gdk_pixbuf_get_pixels(output);
 	
 	for (y = boundarys.y1; y < boundarys.y2; y++)
@@ -860,6 +876,8 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive *self, RsvgFil
 
 	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
 							 width, height);
+
+	clear_pixbuf(output);
 
 	output_pixels = gdk_pixbuf_get_pixels(output);
 	
