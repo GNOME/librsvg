@@ -32,9 +32,9 @@
 #include <libart_lgpl/art_affine.h>
 #include <libart_lgpl/art_render_mask.h>
 
-#if ENABLE_TEXT_DECOR
-
 #include "rsvg-shapes.h"
+
+#if 0
 
 static void 
 rsvg_draw_hline (RsvgHandle *ctx, double x, double w, double y)
@@ -57,7 +57,7 @@ rsvg_draw_hline (RsvgHandle *ctx, double x, double w, double y)
 	g_string_free (d, TRUE);
 }
 
-#endif /* ENABLE_TEXT_DECOR */
+#endif
 
 static char *
 make_valid_utf8 (const char *str)
@@ -186,8 +186,8 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	pango_font_description_set_variant (font, state->font_variant);
 	pango_font_description_set_weight (font, state->font_weight);
 	pango_font_description_set_stretch (font, state->font_stretch);
-  
-	pango_layout_set_alignment (layout, state->text_dir == PANGO_DIRECTION_LTR ? 
+	pango_layout_set_alignment (layout, (state->text_dir == PANGO_DIRECTION_LTR || 
+										 state->text_dir == PANGO_DIRECTION_TTB_LTR) ? 
 								PANGO_ALIGN_LEFT : PANGO_ALIGN_RIGHT);
 
 	pango_layout_set_font_description (layout, font);
@@ -238,14 +238,15 @@ rsvg_text_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	
 	g_free (bitmap.buffer);
 	g_free (string);
-	
-#if ENABLE_TEXT_DECOR
+
+#if 0	
+	/* TODO: store the various line widths for these */
 	if (state->font_decor & TEXT_OVERLINE)
-		rsvg_draw_hline (ctx, 0, line_ink_rect.width, line_ink_rect.y - line_ink_rect.height);
+		rsvg_draw_hline (ctx, state->text_offset, line_ink_rect.width, -line_ink_rect.y + line_ink_rect.height);
 	if (state->font_decor & TEXT_UNDERLINE)
-		rsvg_draw_hline (ctx, 0, line_ink_rect.width, line_ink_rect.y);
+		rsvg_draw_hline (ctx, state->text_offset, line_ink_rect.width, -line_ink_rect.y);
 	if (state->font_decor & TEXT_STRIKE)
-		rsvg_draw_hline (ctx, 0, ink_rect.width, line_ink_rect.y - (line_ink_rect.height/2));
+		rsvg_draw_hline (ctx, state->text_offset, ink_rect.width, -line_ink_rect.y - (line_ink_rect.height/2));
 #endif
 	
 	state->text_offset += line_ink_rect.width;

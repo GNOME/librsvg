@@ -1,5 +1,10 @@
 2003-03-25  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-styles.c: Support text directions (bidi)
+	* rsvg-text.c: Ditto
+	
+2003-03-25  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-shapes.c: Support style information inside of defs paths
 	
 2003-03-25  Dom Lachowicz <cinamod@hotmail.com>
