@@ -45,15 +45,13 @@
 typedef struct
 {
 	NPP instance;
-	Display *display;
 	Window window;
 
-	int x, y, width, height;
-	int is_gz;
+	int width, height;
 
 	GByteArray * bytes;
 
-	int recv_fd, send_fd;
+	int send_fd;
 	int player_pid;
 } Plugin;
 
@@ -65,13 +63,7 @@ plugin_kill (Plugin * plugin)
 	if(plugin->send_fd > 0)
 		{
 			close (plugin->send_fd);
-			plugin->send_fd = 0;
-		}
-
-	if(plugin->recv_fd > 0)
-		{
-			close (plugin->recv_fd);
-			plugin->recv_fd = 0;
+			plugin->send_fd = -1;
 		}
 
 	if(plugin->player_pid > 0)
@@ -79,7 +71,7 @@ plugin_kill (Plugin * plugin)
 			kill (plugin->player_pid, SIGKILL);
 			waitpid (plugin->player_pid, NULL, 0);
 			
-			plugin->player_pid = 0;
+			plugin->player_pid = -1;
 		}
 }
 
@@ -118,9 +110,9 @@ plugin_fork (Plugin * plugin)
 	argv[argc++] = "-s";
 	argv[argc] = NULL;
 
-	if(!g_spawn_async_with_pipes(NULL, argv, NULL, G_SPAWN_DO_NOT_REAP_CHILD, 
+	if(!g_spawn_async_with_pipes(NULL, argv, NULL, G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_STDOUT_TO_DEV_NULL, 
 								 NULL, NULL, &plugin->player_pid,
-								 &plugin->send_fd, &plugin->recv_fd, NULL, &err))
+								 &plugin->send_fd, NULL, NULL, &err))
 		{
 			DEBUG(("Spawn failed\n"));
 
@@ -139,11 +131,19 @@ plugin_redraw (Plugin * plugin)
 
 	if(plugin && plugin->bytes && plugin->bytes->len)
 		{
-			if (plugin->player_pid == 0)
+			if (plugin->player_pid <= 0)
 				{
 					plugin_fork (plugin);
+
 					if(plugin->player_pid > 0)
-						write (plugin->send_fd, plugin->bytes->data, plugin->bytes->len);
+						{
+							size_t nwritten = 0;
+							while(nwritten < plugin->bytes->len)
+								nwritten += write (plugin->send_fd, plugin->bytes->data + nwritten, plugin->bytes->len - nwritten);
+						
+							g_byte_array_free (plugin->bytes, TRUE);
+							plugin->bytes = 0;
+						}
 				}
 		}
 }
@@ -234,8 +234,6 @@ plugin_set_window (NPP instance, NPWindow * window)
 					
 					plugin->width = window->width;
 					plugin->height = window->height;
-					plugin->x = window->x;
-					plugin->y = window->y;
 
 					plugin_redraw (plugin);
 				}
@@ -252,7 +250,6 @@ plugin_set_window (NPP instance, NPWindow * window)
 			
 			ws_info = window->ws_info;
 			plugin->window = (Window) window->window;
-			plugin->display = ws_info->display;
 		}
 	
 	DEBUG (("leaving plugin_set_window\n"));
@@ -275,6 +272,8 @@ plugin_new_stream (NPP instance, NPMIMEType type,
 	if (plugin == NULL)
 		return NPERR_NO_ERROR;
 	
+	g_return_val_if_fail(plugin->bytes == NULL, NPERR_NO_ERROR);
+
 	plugin->bytes = g_byte_array_new();
 
 	return NPERR_NO_ERROR;
@@ -294,10 +293,14 @@ plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 	if (plugin == NULL)
 		return NPERR_NO_ERROR;
 	
-	plugin->is_gz = (plugin->bytes->len > 2 && (plugin->bytes->data[0] == (guchar)0x1f) && (plugin->bytes->data[1] == (guchar)0x8b));
-
 	/* trigger */
 	plugin_redraw (plugin);
+
+	if(plugin->send_fd > 0)
+		{
+			close (plugin->send_fd);
+			plugin->send_fd = -1;
+		}
 
 	return NPERR_NO_ERROR;
 }
