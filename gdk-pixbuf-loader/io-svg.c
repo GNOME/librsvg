@@ -63,7 +63,7 @@ rsvg_propegate_error (GError ** err,
 
 static gpointer
 gdk_pixbuf__svg_image_begin_load (GdkPixbufModuleSizeFunc size_func,
-                                  GdkPixbufModulePreparedFunc prepared_func, 
+                                  GdkPixbufModulePreparedFunc prepared_func,
                                   GdkPixbufModuleUpdatedFunc  updated_func,
                                   gpointer user_data,
                                   GError **error)
@@ -84,14 +84,14 @@ gdk_pixbuf__svg_image_begin_load (GdkPixbufModuleSizeFunc size_func,
         return context;
 }
 
-static void 
+static void
 emit_updated (SvgContext *context)
 {
         if (context->pixbuf != NULL && context->updated_func != NULL)
-                (* context->updated_func) (context->pixbuf, 
-                                           0, 0, 
-                                           gdk_pixbuf_get_width (context->pixbuf), 
-                                           gdk_pixbuf_get_height (context->pixbuf), 
+                (* context->updated_func) (context->pixbuf,
+                                           0, 0,
+                                           gdk_pixbuf_get_width (context->pixbuf),
+                                           gdk_pixbuf_get_height (context->pixbuf),
                                            context->user_data);
 }
 
@@ -104,7 +104,7 @@ emit_prepared (SvgContext *context)
         }
 }
 
-static void 
+static void
 maybe_update (SvgContext *context)
 {
         /* TODO: not sure whether we want to emit an "updated" signal every time someone
@@ -145,7 +145,7 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
         }
 
         context->pixbuf = rsvg_handle_get_pixbuf (context->handle);
-  
+
         emit_prepared (context);
         maybe_update (context);
 
@@ -155,7 +155,7 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
 static gboolean
 gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 {
-        SvgContext *context = (SvgContext *)data;  
+        SvgContext *context = (SvgContext *)data;
         gboolean result = TRUE;
 
         if (error)
@@ -163,7 +163,7 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 
         rsvg_handle_close (context->handle, error);
 
-        if (context->pixbuf == NULL) 
+        if (context->pixbuf == NULL)
                 context->pixbuf = rsvg_handle_get_pixbuf (context->handle);
 
         if (context->pixbuf != NULL) {
@@ -191,6 +191,11 @@ fill_vtable (GdkPixbufModule *module)
         module->load_increment = gdk_pixbuf__svg_image_load_increment;
 }
 
+/* this is present only in GTK+ 2.4 and later. we want librsvg to work with older versions too */
+#ifndef GDK_PIXBUF_FORMAT_SCALABLE
+#define GDK_PIXBUF_FORMAT_SCALABLE (1 << 1)
+#endif
+
 void
 fill_info (GdkPixbufFormat *info)
 {
@@ -206,19 +211,19 @@ fill_info (GdkPixbufFormat *info)
                 "image/svg-xml",
                 "image/vnd.adobe.svg+xml",
                 "text/xml-svg",
-                NULL 
+                NULL
         };
-        static gchar *extensions[] = { 
-                "svg", 
+        static gchar *extensions[] = {
+                "svg",
                 "svgz",
                 "svg.gz",
-                NULL 
+                NULL
         };
-        
+
         info->name        = "svg";
         info->signature   = signature;
         info->description = _("Scalable Vector Graphics");
         info->mime_types  = mime_types;
         info->extensions  = extensions;
-        info->flags       = 0;
+        info->flags       = GDK_PIXBUF_FORMAT_SCALABLE;
 }
