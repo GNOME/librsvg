@@ -1,3 +1,9 @@
+2003-09-11  Sven Neumann  <sven@gimp.org>
+
+	* gimp-plugin/svg.c: Sprinkled the code with const qualifiers.
+	Fixed transfer of pixel data from pixbuf to pixel region. The
+	old code was wrong for pixbufs with rowstride != width * bpp.
+
 == librsvg 2.4.0 ==
 
 2003-09-08  Alexander Larsson  <alexl@redhat.com>
