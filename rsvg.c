@@ -247,13 +247,6 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	    }
 	}
 
-      if (width <= 0 || height <= 0)
-        {
-          /* FIXME: GError here? */
-          g_warning ("rsvg_start_svg: can't render 0-sized SVG");
-          return;
-        }
-
       if (has_vbox && vbox_w > 0. && vbox_h > 0.)
 	{
 	  new_width  = (int)floor (vbox_w - vbox_x);
@@ -276,7 +269,7 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	    (* ctx->size_func) (&new_width, &new_height, ctx->user_data);
 	}
 
-      if (new_width == 0 || new_height == 0)
+      if (new_width <= 0 || new_height <= 0)
 	{
           /* FIXME: GError here? */
           g_warning ("rsvg_start_svg: can't render 0-sized SVG");
@@ -298,8 +291,8 @@ rsvg_start_svg (RsvgHandle *ctx, const xmlChar **atts)
 	  y_zoom = (height < 0 || new_height < 0) ? 1 : (double) height / new_height;
 
 	  /* reset these so that we get a properly sized SVG and not a huge one */
-	  new_width  = width;
-	  new_height = height;
+	  new_width  = (width == -1 ? new_width : width);
+	  new_height = (height == -1 ? new_height : height);
 	}
 
       /* Scale size of target pixbuf */
@@ -2802,8 +2795,6 @@ rsvg_size_callback (int *width,
     return;
 
   case RSVG_SIZE_WH:
-    if (*width < 0 || *height < 0)
-      return;
 
     if (real_data->width != -1)
       *width = real_data->width;

@@ -1,5 +1,10 @@
 2002-10-07  Dom Lachowicz <doml@appligent.com>
 
+	* rsvg.c (rsvg_start_svg): Handle case where size isn't supplied by 
+	svg, but is by a callback
+	
+2002-10-07  Dom Lachowicz <doml@appligent.com>
+
 	* gimp-plugin/svg.c (): New file, gimp SVG plugin loader
 	
 2002-10-07  Dom Lachowicz <doml@appligent.com>
