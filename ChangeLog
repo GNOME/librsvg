@@ -1,4 +1,10 @@
 2004-06-08  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg.c, rsvg-styles.c: made stop colours inheritable
+	* rsvg-filter.c: made gaussian blurring better looking by weighting by alpha
+	* rsvg-pattern.c: made patterns able to link to others
+
+2004-06-08  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg.c, rsvg-paint-server.c: added pattern support
 	* rsvg-shapes.c: return the value of the new group created when pushing defs groups

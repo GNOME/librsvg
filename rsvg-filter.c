@@ -1538,26 +1538,59 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 							divisor = 0;
 							for (x = boundarys.x1; x < boundarys.x1 + kw; x++)
 								{
-									divisor++;
-									sum += in_pixels[4 * x + y * rowstride + ch];
+									if (ch != 3)
+										{
+											divisor += in_pixels[4 * x + y * rowstride + 3];
+											sum += in_pixels[4 * x + y * rowstride + ch] * in_pixels[4 * x + y * rowstride + 3];
+										}
+									else
+										{
+											divisor++;
+											sum += in_pixels[4 * x + y * rowstride + ch];
+										}
+
 									if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x2)
 										{
-											output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
+											if (divisor > 0)
+												output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
 										}
 								}
 							for (x = boundarys.x1 + kw; x < boundarys.x2; x++)
 								{
-									sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
-									sum += in_pixels[4 * x + y * rowstride + ch];
-									output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
+									if (ch != 3)
+										{
+											divisor += in_pixels[4 * x + y * rowstride + 3];
+											divisor -= in_pixels[4 * (x - kw) + y * rowstride + 3];
+											sum -= in_pixels[4 * (x - kw) + y * rowstride + ch] * 
+												in_pixels[4 * (x - kw) + y * rowstride + 3];
+											sum += in_pixels[4 * x + y * rowstride + ch] * 
+												in_pixels[4 * x + y * rowstride + 3];
+										}
+									else
+										{
+											sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
+											sum += in_pixels[4 * x + y * rowstride + ch];
+										}
+									if (divisor > 0)
+										output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
 								}
 							for (x = boundarys.x2; x < boundarys.x2 + kw; x++)
 								{
-									divisor--;
-									sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
+									if (ch != 3)
+										{
+											divisor -= in_pixels[4 * (x - kw) + y * rowstride + 3];
+											sum -= in_pixels[4 * (x - kw) + y * rowstride + ch]* 
+												in_pixels[4 * (x - kw) + y * rowstride + 3];
+										}									
+									else
+										{
+											divisor--;
+											sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
+										}
 									if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x2)
 										{
-											output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
+											if (divisor > 0)
+												output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
 										}
 								}
 						}
@@ -1597,26 +1630,59 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 							
 							for (y = boundarys.y1; y < boundarys.y1 + kh; y++)
 								{
-									divisor++;
-									sum += in_pixels[4 * x + y * rowstride + ch];
+									if (ch != 3)
+										{
+											divisor += in_pixels[4 * x + y * rowstride + 3];
+											sum += in_pixels[4 * x + y * rowstride + ch] *
+												in_pixels[4 * x + y * rowstride + 3];
+										}
+									else
+										{
+											divisor++;
+											sum += in_pixels[4 * x + y * rowstride + ch];
+										}
 									if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y2)
 										{
-											output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
+											if (divisor > 0)
+												output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
 										}
 								}
 							for (; y < boundarys.y2; y++)
 								{
-									sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
-									sum += in_pixels[4 * x + y * rowstride + ch];
-									output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
+									if (ch != 3)
+										{
+											divisor += in_pixels[4 * x + y * rowstride + 3];
+											divisor -= in_pixels[4 * x + (y - kh) * rowstride + 3];
+											sum -= in_pixels[4 * x + (y - kh) * rowstride + ch] *
+												in_pixels[4 * x + (y - kh) * rowstride + 3];
+											sum += in_pixels[4 * x + y * rowstride + ch] *
+												in_pixels[4 * x + y * rowstride + 3];
+										}
+									else
+										{
+											sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
+											sum += in_pixels[4 * x + y * rowstride + ch];
+										}											
+									if (divisor > 0)
+										output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
 								}
 							for (; y < boundarys.y2 + kh; y++)
 								{
-									divisor--;
-									sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
+									if (ch != 3)
+										{								
+											divisor -= in_pixels[4 * x + (y - kh) * rowstride + 3];
+											sum -= in_pixels[4 * x + (y - kh) * rowstride + ch] *
+												in_pixels[4 * x + (y - kh) * rowstride + 3];
+										}
+									else
+										{
+											divisor--;
+											sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
+										}
 									if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y2)
 										{
-											output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
+											if (divisor > 0)
+												output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
 										}
 								}
 						}
