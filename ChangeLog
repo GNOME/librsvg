@@ -1,5 +1,12 @@
 2002-09-13  Dom Lachowicz <doml@appligent.com>
 
+	* rsvg-css.c(rsvg_css_parse_color): Optimize RGB value determination from rgb() spec
+	(rsvg_css_normalize_rgb_percent): Floor returned value
+	(rsvg_css_parse_opacity): Check for null, use g_strtod
+	(rsvg_css_parse_fontsize): ditto
+	
+2002-09-13  Dom Lachowicz <doml@appligent.com>
+
 	* rsvg-css.c (rsvg_css_parse_color): Handle rgb(r,g,b) and rgb(r%,g%,b%) color specifications
 	(rsvg_css_normalize_rgb): new function used in parse_color
 	(rsvg_css_normalize_rgb_percent): ditto

@@ -139,7 +139,7 @@ rsvg_css_param_arg_offset (const char *str)
 }
 
 static gint
-rsvg_css_normalize_rgb_percent (gint in_percent)
+rsvg_css_clip_rgb_percent (gint in_percent)
 {
   /* spec says to clip these values */
   if (in_percent > 100)
@@ -147,11 +147,11 @@ rsvg_css_normalize_rgb_percent (gint in_percent)
   else if (in_percent <= 0)
     return 0;
 
-  return (gint)(25500.0 / (double)in_percent);
+  return (gint)floor(25500.0 / (double)in_percent);
 }
 
 static gint
-rsvg_css_normalize_rgb (gint rgb)
+rsvg_css_clip_rgb (gint rgb)
 {
   /* spec says to clip these values */
   if (rgb > 255)
@@ -212,9 +212,9 @@ rsvg_css_parse_color (const char *str)
 	  /* assume "rgb (r%, g%, b%)" */
 	  if (3 == sscanf (str, " rgb ( %d %% , %d %% , %d %% ) ", &r, &g, &b))
 	    {
-	      r = rsvg_css_normalize_rgb_percent (r);
-	      g = rsvg_css_normalize_rgb_percent (g);
-	      b = rsvg_css_normalize_rgb_percent (b);
+	      r = rsvg_css_clip_rgb_percent (r);
+	      g = rsvg_css_clip_rgb_percent (g);
+	      b = rsvg_css_clip_rgb_percent (b);
 	    }
 	  else
 	      r = g = b = 0;
@@ -224,15 +224,15 @@ rsvg_css_parse_color (const char *str)
 	  /* assume "rgb (r, g, b)" */
 	  if (3 == sscanf (str, " rgb ( %d , %d , %d ) ", &r, &g, &b))
 	    {
-	      r = rsvg_css_normalize_rgb (r);
-	      g = rsvg_css_normalize_rgb (g);
-	      b = rsvg_css_normalize_rgb (b);
+	      r = rsvg_css_clip_rgb (r);
+	      g = rsvg_css_clip_rgb (g);
+	      b = rsvg_css_clip_rgb (b);
 	    }
 	  else
 	    r = g = b = 0;
 	}
 
-      val =  (((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF));
+      val =  ((r << 16) | (g << 8) | (b));
     }
   else
     {
@@ -278,9 +278,9 @@ rsvg_css_parse_opacity (const char *str)
   char *end_ptr;
   double opacity;
 
-  opacity = strtod (str, &end_ptr);
+  opacity = g_strtod (str, &end_ptr);
 
-  if (end_ptr[0] == '%')
+  if (end_ptr && end_ptr[0] == '%')
     opacity *= 0.01;
 
   return floor (opacity * 255 + 0.5);
@@ -296,7 +296,7 @@ rsvg_css_parse_fontsize (const char *str)
   /* todo: should this call rsvg_css_parse_length and then modify the return value? */
   size = g_strtod (str, &end_ptr);
 
-  if (end_ptr[0] == '%')
+  if (end_ptr && end_ptr[0] == '%')
     size = (36 * size * 0.01); /* todo: egregious hack */
 
   return size;
