@@ -1,5 +1,10 @@
 2002-01-03  Darin Adler  <darin@bentspoon.com>
 
+	* acinclude.m4: Remove.
+	We don't need the NAUTILUS_FREETYPE2 macro any more.
+
+2002-01-03  Darin Adler  <darin@bentspoon.com>
+
 	* TODO:
 	* test-rsvg.c: (main):
 	Some cleanup on the test program.
