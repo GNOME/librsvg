@@ -30,14 +30,12 @@
 
 typedef struct {
         RsvgHandle                 *handle;
-        GdkPixbuf                  *pixbuf;
 
         GdkPixbufModuleUpdatedFunc  updated_func;
         GdkPixbufModulePreparedFunc prepared_func;
         GdkPixbufModuleSizeFunc     size_func;
 
         gboolean                    first_write;
-        gboolean                    emitted_prepared;
 
         gpointer                    user_data;
 } SvgContext;
@@ -74,7 +72,6 @@ gdk_pixbuf__svg_image_begin_load (GdkPixbufModuleSizeFunc size_func,
                 *error = NULL;
 
         context->first_write   = TRUE;
-        context->emitted_prepared = FALSE;
         context->size_func     = size_func;
 
         context->prepared_func = prepared_func;
@@ -85,33 +82,21 @@ gdk_pixbuf__svg_image_begin_load (GdkPixbufModuleSizeFunc size_func,
 }
 
 static void
-emit_updated (SvgContext *context)
+emit_updated (SvgContext *context, GdkPixbuf *pixbuf)
 {
-        if (context->pixbuf != NULL && context->updated_func != NULL)
-                (* context->updated_func) (context->pixbuf,
+        if (context->updated_func != NULL)
+                (* context->updated_func) (pixbuf,
                                            0, 0,
-                                           gdk_pixbuf_get_width (context->pixbuf),
-                                           gdk_pixbuf_get_height (context->pixbuf),
+                                           gdk_pixbuf_get_width (pixbuf),
+                                           gdk_pixbuf_get_height (pixbuf),
                                            context->user_data);
 }
 
 static void
-emit_prepared (SvgContext *context)
+emit_prepared (SvgContext *context, GdkPixbuf *pixbuf)
 {
-        if (context->pixbuf != NULL && context->prepared_func != NULL && !context->emitted_prepared) {
-                (* context->prepared_func) (context->pixbuf, NULL, context->user_data);
-                context->emitted_prepared = TRUE;
-        }
-}
-
-static void
-maybe_update (SvgContext *context)
-{
-        /* TODO: not sure whether we want to emit an "updated" signal every time someone
-         * TODO: writes to the loader. yes, the image might have changed some, but does that
-         * TODO: warrant emitting progressive drawing signals? */
-        if (FALSE)
-                emit_updated (context);
+        if (context->prepared_func != NULL)
+                (* context->prepared_func) (pixbuf, NULL, context->user_data);
 }
 
 static gboolean
@@ -151,11 +136,6 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
                 return FALSE;
         }
 
-        /*       context->pixbuf = rsvg_handle_get_pixbuf (context->handle);*/
-
-        emit_prepared (context);
-        maybe_update (context);
-
         return TRUE;
 }
 
@@ -163,6 +143,7 @@ static gboolean
 gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 {
         SvgContext *context = (SvgContext *)data;
+        GdkPixbuf *pixbuf;
         gboolean result = TRUE;
 
         if (error)
@@ -175,21 +156,19 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 
         rsvg_handle_close (context->handle, error);
 
-        if (context->pixbuf == NULL)
-                context->pixbuf = rsvg_handle_get_pixbuf (context->handle);
+        pixbuf = rsvg_handle_get_pixbuf (context->handle);
 
-        if (context->pixbuf != NULL) {
-                emit_prepared (context);
-                emit_updated (context);
+        if (pixbuf != NULL) {
+                emit_prepared (context, pixbuf);
+                emit_updated (context, pixbuf);
+                g_object_unref (pixbuf);
         }
-        else if (!context->pixbuf) {
+        else {
                 rsvg_propegate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
                 result = FALSE;
         }
 
         rsvg_handle_free (context->handle);
-        if (context->pixbuf)
-                g_object_unref (context->pixbuf);
         g_free (context);
 
         return TRUE;
@@ -198,7 +177,7 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 void
 fill_vtable (GdkPixbufModule *module)
 {
-        /*todo: call this to make sure the gnome-vfs et. al. are initialized */
+        /*todo: call this somewhere to make sure the gnome-vfs et. al. are initialized */
         /*rsvg_init ();*/
 
         module->begin_load     = gdk_pixbuf__svg_image_begin_load;
@@ -211,7 +190,8 @@ fill_vtable (GdkPixbufModule *module)
 #define GDK_PIXBUF_FORMAT_SCALABLE (1 << 1)
 #endif
 
-/* this is present only in GTK+ 2.6 and later. we want librsvg to work with older versions too */
+/* this is present only in GTK+ 2.6 and later. we want librsvg to work with older versions too. 
+   we can't define this flag yet because Pango isn't threadsafe. */
 #ifndef GDK_PIXBUF_FORMAT_THREADSAFE
 #define GDK_PIXBUF_FORMAT_THREADSAFE (1 << 2)
 #endif
