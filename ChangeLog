@@ -1,4 +1,8 @@
-2005-2-9  Caleb Moore <c.moore@student.unsw.edu.au>
+2005-2-9  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Bump version number
+	
+2005-2-9  Caleb Moore <c.moore@student.unsw.edu.au>	
 
 	* rsvg-paint-server.c: fixed jimmac's gradient problem
 	* rsvg-filter.c: fixed Uraeus' reversion
