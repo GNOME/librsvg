@@ -1,7 +1,7 @@
 == librsvg 2.6.5 ==
 
 	* configure.in: Bump version
-	* *.pc.in: Remove libcroco && libgsf deps
+	* *.pc.in: Remove bogus dependencies
 	* rsvg-styles.c: Make #140797 less poignant
 	
 == librsvg 2.6.4 ==	
