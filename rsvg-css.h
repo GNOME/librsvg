@@ -18,6 +18,3 @@ rsvg_css_parse_color (const char *str);
 
 guint
 rsvg_css_parse_opacity (const char *str);
-
-double
-rsvg_css_parse_fontsize (const char *str);

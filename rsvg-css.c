@@ -300,19 +300,3 @@ rsvg_css_parse_opacity (const char *str)
 
   return floor (opacity * 255 + 0.5);
 }
-
-double
-rsvg_css_parse_fontsize (const char *str)
-{
-  char *end_ptr;
-  double size;
-
-  /* todo: handle absolute-size and relative-size tags and proper units */
-  /* todo: should this call rsvg_css_parse_length and then modify the return value? */
-  size = g_ascii_strtod (str, &end_ptr);
-
-  if (end_ptr && end_ptr[0] == '%')
-    size = (36 * size * 0.01); /* todo: egregious hack */
-
-  return size;
-}
