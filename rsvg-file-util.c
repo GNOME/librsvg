@@ -30,10 +30,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-#if ENABLE_GNOME_VFS
-#include <libgnomevfs/gnome-vfs.h>
-#endif
-
 #define SVG_BUFFER_SIZE (1024 * 8)
 
 typedef enum {
@@ -117,47 +113,28 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
 									  GError ** error)
 {
 	char chars[SVG_BUFFER_SIZE];
-	gint result;
 	GdkPixbuf *retval;
 	RsvgHandle *handle;
-	
-#if ENABLE_GNOME_VFS
-	GnomeVFSHandle * f = NULL;
-	if (GNOME_VFS_OK != gnome_vfs_open (&handle, file_name, GNOME_VFS_OPEN_READ))
-		{
-			/* FIXME: Set up error. */
-			return NULL;
-		}
-#else
+	gint result;
 	FILE *f = fopen (file_name, "r");
+
 	if (!f)
 		{
 			/* FIXME: Set up error. */
 			return NULL;
 		}
-#endif
 	
 	handle = rsvg_handle_new ();
 	
 	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
 
-#if ENABLE_GNOME_VFS
-	while (GNOME_VFS_OK == gnome_vfs_read (f,chars, SVG_BUFFER_SIZE, &result))
-		rsvg_handle_write (handle, chars, result, error);
-#else
 	while ((result = fread (chars, 1, SVG_BUFFER_SIZE, f)) > 0)
 		rsvg_handle_write (handle, chars, result, error);
-#endif
 	
 	rsvg_handle_close (handle, error);
 	retval = rsvg_handle_get_pixbuf (handle);
 	
-#if ENABLE_GNOME_VFS
-	gnome_vfs_close (f);
-#else
 	fclose (f);
-#endif
-	
 	rsvg_handle_free (handle);
 	
 	return retval;

@@ -60,14 +60,13 @@ rsvg_handle_gz_close_impl (RsvgHandle  *handle,
 	bytes = gsf_output_memory_get_bytes (GSF_OUTPUT_MEMORY (me->mem));
 	size = gsf_output_size (me->mem);
 
-	gzip = GSF_INPUT (gsf_input_gzip_new (GSF_INPUT (gsf_input_memory_new (bytes, size, FALSE), error)));
+	gzip = GSF_INPUT (gsf_input_gzip_new (GSF_INPUT (gsf_input_memory_new (bytes, size, FALSE)), error));
 	while ((size = MIN (gsf_input_remaining (gzip), 1024)) > 0) {
 		/* write to parent */
 		rsvg_handle_write_impl (&(me->super),
 								gsf_input_read (gzip, size, NULL),
 								size, error);
 	}
-	gsf_input_close (gzip);
 	g_object_unref (G_OBJECT (gzip));
 
 	/* close parent */
