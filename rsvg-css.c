@@ -719,10 +719,10 @@ rsvg_css_parse_list(const char * in_str, guint * out_list_len)
 
 	string_array = g_strsplit_set(in_str, ", \t", -1);
 
-	for(n = 0, ptr == string_array; *ptr; n++, ptr++)
+	for(n = 0, ptr = string_array; ptr != NULL; n++, ptr++)
 		;
 
-	*out_list_len = 0;
+	*out_list_len = n;
 	return string_array;
 
 #else
