@@ -1,0 +1,6 @@
+#
+# Configuration file for using the LIBRSVG library in GNOME applications
+#
+LIBRSVG_LIBDIR="@LIBRSVG_LIBDIR@"
+LIBRSVG_LIBS="@LIBRSVG_LIBS@"
+LIBRSVG_INCLUDEDIR="@LIBRSVG_INCLUDEDIR@"
