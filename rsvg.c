@@ -31,7 +31,7 @@
 #include <libart_lgpl/art_vpath_bpath.h>
 #include <libart_lgpl/art_svp_vpath_stroke.h>
 #include <libart_lgpl/art_svp_vpath.h>
-#include <libart_lgpl/art_svp_wind.h>
+#include <libart_lgpl/art_svp_intersect.h>
 #include <libart_lgpl/art_render_mask.h>
 #include <libart_lgpl/art_render_svp.h>
 #include <libart_lgpl/art_rgba.h>
@@ -760,20 +760,18 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
   if (state->fill != NULL)
     {
       ArtVpath *closed_vpath;
-      ArtVpath *perturbed_vpath;
-      ArtSVP *tmp_svp;
-      ArtWindRule art_wind;
+      ArtSVP *svp2;
+      ArtSvpWriter *swr;
 
       closed_vpath = rsvg_close_vpath (vpath);
-      perturbed_vpath = art_vpath_perturb (closed_vpath);
+      svp = art_svp_from_vpath (closed_vpath);
       g_free (closed_vpath);
-      svp = art_svp_from_vpath (perturbed_vpath);
-      art_free (perturbed_vpath);
-      tmp_svp = art_svp_uncross (svp);
+      
+      swr = art_svp_writer_rewind_new (ART_WIND_RULE_NONZERO);
+      art_svp_intersector (svp, swr);
+
+      svp2 = art_svp_writer_rewind_reap (swr);
       art_svp_free (svp);
-      art_wind = ART_WIND_RULE_NONZERO; /* todo - get from state */
-      svp = art_svp_rewind_uncrossed (tmp_svp, art_wind);
-      art_svp_free (tmp_svp);
 
       opacity = state->fill_opacity;
       if (!need_tmpbuf && state->opacity != 0xff)
@@ -781,8 +779,8 @@ rsvg_render_bpath (RsvgHandle *ctx, const ArtBpath *bpath)
 	  tmp = opacity * state->opacity + 0x80;
 	  opacity = (tmp + (tmp >> 8)) >> 8;
 	}
-      rsvg_render_svp (ctx, svp, state->fill, opacity);
-      art_svp_free (svp);
+      rsvg_render_svp (ctx, svp2, state->fill, opacity);
+      art_svp_free (svp2);
     }
 
   if (state->stroke != NULL)
