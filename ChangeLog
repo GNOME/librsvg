@@ -1,5 +1,9 @@
 2004-03-16  Caleb Moore <c.moore@student.unsw.edu.au>
 
+	* rsvg-styles.c: Implemented masks.
+	
+2004-03-16  Caleb Moore <c.moore@student.unsw.edu.au>
+
 	* rsvg-bpath-util.c: Applied double move fix contributed by ross 
 	alexander.
 

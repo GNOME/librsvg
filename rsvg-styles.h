@@ -70,6 +70,7 @@ struct _RsvgState {
 	gboolean has_fill_rule;
 
 	RsvgFilter *filter;
+	void *mask;
 	gboolean backgroundnew;
 
 	RsvgPaintServer *stroke;

@@ -29,6 +29,7 @@
 #include "rsvg-filter.h"
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
+#include "rsvg-shapes.h"
 
 #include <libart_lgpl/art_rgba.h>
 #include <libart_lgpl/art_affine.h>
@@ -46,7 +47,7 @@ rsvg_state_init (RsvgState *state)
 	
 	art_affine_identity (state->affine);
 	art_affine_identity (state->personal_affine);
-	
+	state->mask = NULL;
 	state->opacity = 0xff;
 	state->fill = rsvg_paint_server_parse (NULL, "#000");
 	state->fill_opacity = 0xff;
@@ -285,6 +286,8 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "filter"))
 		state->filter = rsvg_filter_parse(ctx->defs, str + arg_off);
+	else if (rsvg_css_param_match (str, "mask"))
+		state->mask = rsvg_mask_parse(ctx->defs, str + arg_off);
 	else if (rsvg_css_param_match (str, "enable-background"))
 		{
 			if (!strcmp (str + arg_off, "new"))
@@ -572,6 +575,7 @@ rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state,
 			rsvg_lookup_parse_style_pair (ctx, state, "font-variant", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "font-weight", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "opacity", atts);
+			rsvg_lookup_parse_style_pair (ctx, state, "mask", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "filter", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "stop-color", atts);
 			rsvg_lookup_parse_style_pair (ctx, state, "stop-opacity", atts);
@@ -1146,7 +1150,7 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 	pixbuf = ctx->pixbuf;
 	
 	if (state->filter == NULL && state->opacity == 0xFF && 
-		!state->backgroundnew)
+		!state->backgroundnew && state->mask == NULL)
 		return;
 
 	state->save_pixbuf = pixbuf;
@@ -1181,14 +1185,6 @@ rsvg_push_discrete_layer (RsvgHandle *ctx)
 	ctx->pixbuf = pixbuf;
 }
 
-/**
- * rsvg_pop_opacity_group: End a transparency group.
- * @ctx: Context in which to push.
- * @opacity: Opacity for blending (0..255).
- *
- * Pops a new transparency group from the stack, recompositing with the
- * next on stack.
- **/
 static void
 rsvg_use_opacity (RsvgHandle *ctx, int opacity, 
 				  GdkPixbuf *tos, GdkPixbuf *nos)
@@ -1241,16 +1237,134 @@ rsvg_use_opacity (RsvgHandle *ctx, int opacity,
 		}
 }
 
-/**
- * rsvg_pop_opacity_group_as_filter: End a transparency group using a filter.
- * @ctx: Context in which to push.
- * @filter: A pointer to the filter to be used.
- *
- * Pops a new transparency group from the stack, recompositing with the
- * next on stack using a filter to do so.
- * It is a little bit of a hack to use this stacks for filters too, but it the
- * same principle in general
- **/
+static void
+rsvg_use_mask (RsvgHandle *ctx, RsvgDefsDrawable * maskref, 
+			   GdkPixbuf *tos, GdkPixbuf *nos)
+{
+	art_u8 *tos_pixels, *nos_pixels, *mask_pixels;
+	int width;
+	int height;
+	int rowstride;
+	int x, y;
+	
+	GdkPixbuf *save, *mask;
+	RsvgDefsDrawable *drawable;	
+
+	drawable = (RsvgDefsDrawable*)maskref;
+	
+	mask = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, 
+						   gdk_pixbuf_get_width(tos), 
+						   gdk_pixbuf_get_height(tos));
+	
+	save = ctx->pixbuf;
+
+	if (ctx->n_state == ctx->n_state_max)
+		ctx->state = g_renew (RsvgState, ctx->state, 
+							  ctx->n_state_max <<= 1);
+	if (ctx->n_state)
+		rsvg_state_inherit (&ctx->state[ctx->n_state],
+							&ctx->state[ctx->n_state - 1]);
+	else
+		rsvg_state_init (ctx->state);
+	ctx->n_state++;
+	
+	ctx->pixbuf = mask;
+
+	rsvg_defs_drawable_draw (drawable, ctx, 0);
+	
+	/* pop the state stack */
+	ctx->n_state--;
+	rsvg_state_finalize (&ctx->state[ctx->n_state]);
+		
+	ctx->pixbuf = save;
+
+	if (tos == NULL || nos == NULL)
+		{
+			/* FIXME: What warning/GError here? */
+			return;
+		}
+	
+	if (!gdk_pixbuf_get_has_alpha (nos))
+		{
+			g_warning ("push/pop transparency group on non-alpha buffer nyi");
+			return;
+		}
+	
+	width = gdk_pixbuf_get_width (tos);
+	height = gdk_pixbuf_get_height (tos);
+	rowstride = gdk_pixbuf_get_rowstride (tos);
+	
+	tos_pixels = gdk_pixbuf_get_pixels (tos);
+	nos_pixels = gdk_pixbuf_get_pixels (nos);
+	mask_pixels = gdk_pixbuf_get_pixels (mask);
+	
+	for (y = 0; y < height; y++)
+		{
+			for (x = 0; x < width; x++)
+				{
+					guchar r, g, b, a, rm, gm, bm, am;
+					gdouble luminance;
+					a = tos_pixels[4 * x + 3];
+					if (a)
+						{
+							r = tos_pixels[4 * x];
+							g = tos_pixels[4 * x + 1];
+							b = tos_pixels[4 * x + 2];
+
+							rm = mask_pixels[4 * x];
+							gm = mask_pixels[4 * x + 1];
+							bm = mask_pixels[4 * x + 2];
+							am = mask_pixels[4 * x + 3];
+
+							luminance = ((gdouble)rm * 0.2125 + 
+										 (gdouble)gm * 0.7154 + 
+										 (gdouble)bm * 0.0721) / 255.;
+							a = (guchar)((gdouble)a * luminance
+										 * (gdouble)am / 255.);
+							art_rgba_run_alpha (nos_pixels + 4 * x, r, g, b, a, 1);
+						}
+				}
+			tos_pixels += rowstride;
+			nos_pixels += rowstride;
+			mask_pixels += rowstride;
+		}
+}
+
+RsvgDefsDrawable *
+rsvg_mask_parse (const RsvgDefs * defs, const char *str)
+{
+	if (!strncmp (str, "url(", 4))
+		{
+			const char *p = str + 4;
+			int ix;
+			char *name;
+			RsvgDefVal *val;
+			
+			while (g_ascii_isspace (*p))
+				p++;
+
+			if (*p == '#')
+				{
+					p++;
+					for (ix = 0; p[ix]; ix++)
+						if (p[ix] == ')')
+							break;
+
+					if (p[ix] == ')')
+						{
+							name = g_strndup (p, ix);
+							val = rsvg_defs_lookup (defs, name);
+							g_free (name);
+							
+							if (val && val->type == RSVG_DEF_PATH)
+								{
+									return (RsvgDefsDrawable *) val;
+								}
+						}
+				}
+		}
+	return NULL;
+}
 
 static GdkPixbuf *
 get_next_out(gint * operationsleft, GdkPixbuf * in, GdkPixbuf * tos, 
@@ -1272,10 +1386,6 @@ get_next_out(gint * operationsleft, GdkPixbuf * in, GdkPixbuf * tos,
 	
 	return out;
 }
-
-static void
-rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, 
-					 GdkPixbuf *nos);
 
 static GdkPixbuf *
 rsvg_compile_bg(RsvgHandle *ctx, RsvgState *topstate)
@@ -1319,6 +1429,7 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 {
 	RsvgFilter *filter = state->filter;
 	int opacity = state->opacity;
+	RsvgDefsDrawable * mask = state->mask;
 	GdkPixbuf *intermediate;
 	GdkPixbuf *in, *out, *insidebg;
 	int operationsleft;
@@ -1326,7 +1437,7 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 	intermediate = NULL;
 
 	if (state->filter == NULL && state->opacity == 0xFF && 
-		!state->backgroundnew)
+		!state->backgroundnew && state->mask == NULL)
 		return;
 
 	operationsleft = 0;
@@ -1334,6 +1445,8 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 	if (opacity != 0xFF)
 		operationsleft++;
 	if (filter != NULL)
+		operationsleft++;
+	if (mask != NULL)
 		operationsleft++;
 
 	if (operationsleft > 1)
@@ -1362,11 +1475,25 @@ rsvg_composite_layer(RsvgHandle *ctx, RsvgState *state, GdkPixbuf *tos, GdkPixbu
 			rsvg_use_opacity (ctx, opacity, in, out);
 			in = out;
 		}
+	if (mask != NULL)
+		{
+			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
+			rsvg_use_mask (ctx, mask, in, out);
+			in = out;
+		}
 
 	if (intermediate != NULL)
 		g_object_unref (intermediate);
 
 }
+
+/**
+ * rsvg_pop_discrete_layer: End a transparency group.
+ * @ctx: Context in which to push.
+ *
+ * Pops a new transparency group from the stack, recompositing with the
+ * next on stack using a filter, transperency value, or a mask to do so
+ **/
 
 void
 rsvg_pop_discrete_layer(RsvgHandle *ctx)
@@ -1376,15 +1503,11 @@ rsvg_pop_discrete_layer(RsvgHandle *ctx)
 
 	state = rsvg_state_current(ctx);
 
-	if (state->filter == NULL && 
-		state->opacity == 0xFF && 
-		!state->backgroundnew)
-		return;
-
 	tos = ctx->pixbuf;
 	nos = state->save_pixbuf;
 	
-	rsvg_composite_layer(ctx, state, tos, nos);
+	if (nos != NULL)
+		rsvg_composite_layer(ctx, state, tos, nos);
 	
 	g_object_unref (tos);
 	ctx->pixbuf = nos;

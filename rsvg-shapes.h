@@ -55,6 +55,8 @@ struct _RsvgDefsDrawable {
 	void (*draw) (RsvgDefsDrawable * self, RsvgHandle *ctx, int dominate);
 };
 
+
+RsvgDefsDrawable * rsvg_mask_parse (const RsvgDefs * defs, const char *str);
 void rsvg_defs_drawable_draw (RsvgDefsDrawable * self, RsvgHandle *ctx, 
 							  int dominate);
 
