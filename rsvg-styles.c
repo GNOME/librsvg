@@ -142,7 +142,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "stroke-width"))
 		{
 			state->stroke_width = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
-																	(gdouble)ctx->height, state->font_size, 0.);
+																	(gdouble)ctx->height, state->font_size);
 		}
 	else if (rsvg_css_param_match (str, "stroke-linecap"))
 		{
@@ -173,7 +173,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "font-size"))
 		{
 			state->font_size = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
-																 (gdouble)ctx->height, state->font_size, 0.);
+																 (gdouble)ctx->height, state->font_size);
 		}
 	else if (rsvg_css_param_match (str, "font-family"))
 		{
@@ -226,7 +226,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "stroke-dashoffset"))
 		{
 			state->dash.offset = rsvg_css_parse_normalized_length (str + arg_off, ctx->dpi, 
-																   rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size, 0.);
+																   rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size);
 			if (state->dash.offset < 0.)
 				state->dash.offset = 0.;
 		}

@@ -389,13 +389,13 @@ rsvg_start_line (RsvgHandle *ctx, const xmlChar **atts)
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
 					if (!strcmp ((char *)atts[i], "x1"))
-						x1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						x1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "y1"))
-						y1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						y1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					if (!strcmp ((char *)atts[i], "x2"))
-						x2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						x2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "y2"))
-						y2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						y2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
 				}      
@@ -434,19 +434,19 @@ rsvg_start_rect (RsvgHandle *ctx, const xmlChar **atts)
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
 					if (!strcmp ((char *)atts[i], "x"))
-						x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "y"))
-						y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "width"))
-						w = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						w = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "height"))
-						h = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						h = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "rx")) {
-						rx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						rx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 						got_rx = TRUE;
 					}
 					else if (!strcmp ((char *)atts[i], "ry")) {
-						ry = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						ry = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 						got_ry = TRUE;
 					}
 					else if (!strcmp ((char *)atts[i], "class"))
@@ -583,13 +583,13 @@ rsvg_start_circle (RsvgHandle *ctx, const xmlChar **atts)
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
 					if (!strcmp ((char *)atts[i], "cx"))
-						cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "cy"))
-						cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "r"))
 						r = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, 
 															  rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), 
-															  state->font_size, 0.);
+															  state->font_size);
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
 				}
@@ -694,13 +694,13 @@ rsvg_start_ellipse (RsvgHandle *ctx, const xmlChar **atts)
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
 					if (!strcmp ((char *)atts[i], "cx"))
-						cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "cy"))
-						cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "rx"))
-						rx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						rx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "ry"))
-						ry = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						ry = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
 				}
@@ -815,13 +815,13 @@ rsvg_start_image (RsvgHandle *ctx, const xmlChar **atts)
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
 					if (!strcmp ((char *)atts[i], "x"))
-						x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "y"))
-						y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "width"))
-						w = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						w = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "height"))
-						h = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						h = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					/* path is used by some older adobe illustrator versions */
 					else if (!strcmp ((char *)atts[i], "path") || !strcmp((char *)atts[i], "xlink:href"))
 						href = (const char *)atts[i + 1];

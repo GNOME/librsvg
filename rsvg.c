@@ -290,7 +290,7 @@ rsvg_gradient_stop_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 					if (!strcmp ((char *)atts[i], "offset"))
 						{
 							/* either a number [0,1] or a percentage */
-							offset = rsvg_css_parse_normalized_length ((char *)atts[i + 1], z->ctx->dpi, 1., 0., 0.);
+							offset = rsvg_css_parse_normalized_length ((char *)atts[i + 1], z->ctx->dpi, 1., 0.);
 							
 							if (offset < 0.)
 								offset = 0.;
@@ -405,7 +405,7 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	got_x1 = got_x2 = got_y1 = got_y2 = got_spread = cloned = FALSE;
 	
 	/* 100% is the default */
-	x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+	x2 = rsvg_css_parse_normalized_length ("100%", ctx->dpi, (gdouble)ctx->width, state->font_size);
 	
 	/* todo: only handles numeric coordinates in gradientUnits = userSpace */
 	if (atts != NULL)
@@ -415,13 +415,13 @@ rsvg_start_linear_gradient (RsvgHandle *ctx, const xmlChar **atts)
 					if (!strcmp ((char *)atts[i], "id"))
 						id = (char *)atts[i + 1];
 					else if (!strcmp ((char *)atts[i], "x1"))
-						x1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						x1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "y1"))
-						y1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						y1 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "x2"))
-						x2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						x2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "y2"))
-						y2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						y2 = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "spreadMethod"))
 						{
 							if (!strcmp ((char *)atts[i + 1], "pad"))
@@ -492,9 +492,9 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 	got_cx = got_cy = got_r = got_fx = got_fy = cloned = FALSE;
 	
 	/* setup defaults */
-	cx = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
-	cy = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
-	r  = rsvg_css_parse_normalized_length ("50%", ctx->dpi, rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size, 0.);
+	cx = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->width, state->font_size);
+	cy = rsvg_css_parse_normalized_length ("50%", ctx->dpi, (gdouble)ctx->height, state->font_size);
+	r  = rsvg_css_parse_normalized_length ("50%", ctx->dpi, rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), state->font_size);
 	
 	/* todo: only handles numeric coordinates in gradientUnits = userSpace */
 	if (atts != NULL)
@@ -504,25 +504,25 @@ rsvg_start_radial_gradient (RsvgHandle *ctx, const xmlChar **atts)
 					if (!strcmp ((char *)atts[i], "id"))
 						id = (char *)atts[i + 1];
 					else if (!strcmp ((char *)atts[i], "cx")) {
-						cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						cx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 						got_cx = TRUE;
 					}
 					else if (!strcmp ((char *)atts[i], "cy")) {
-						cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						cy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 						got_cy = TRUE;
 					}
 					else if (!strcmp ((char *)atts[i], "r")) {
 						r = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, 
 															  rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), 
-															  state->font_size, 0.);
+															  state->font_size);
 						got_r = TRUE;
 					}
 					else if (!strcmp ((char *)atts[i], "fx")) {
-						fx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						fx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 						got_fx = TRUE;
 					}
 					else if (!strcmp ((char *)atts[i], "fy")) {
-						fy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						fy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 						got_fy = TRUE;
 					}
 					else if (!strcmp ((char *)atts[i], "xlink:href"))

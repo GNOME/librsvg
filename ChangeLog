@@ -1,5 +1,10 @@
 2003-01-14  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-XXX.c (*): Rework css_parse_normalized_length to "properly" 
+	handle "ex" units (i.e. handle them how ImageMagick handles them)
+	
+2003-01-14  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-styles.c (rsvg_parse_style_attrs): Also honor the "*" style
 	
 2003-01-13  Dom Lachowicz <cinamod@hotmail.com>

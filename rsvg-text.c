@@ -270,13 +270,13 @@ rsvg_start_tspan (RsvgHandle *ctx, const xmlChar **atts)
 		  for (i = 0; atts[i] != NULL; i += 2)
 			  {
 				  if (!strcmp ((char *)atts[i], "x"))
-					  x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+					  x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 				  else if (!strcmp ((char *)atts[i], "y"))
-					  y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+					  y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 				  else if (!strcmp ((char *)atts[i], "dx"))
-					  dx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+					  dx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 				  else if (!strcmp ((char *)atts[i], "dy"))
-					  dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+					  dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 				  else if (!strcmp ((char *)atts[i], "class"))
 					  klazz = (const char *)atts[i + 1];
 			  }
@@ -368,13 +368,13 @@ rsvg_start_text (RsvgHandle *ctx, const xmlChar **atts)
 			for (i = 0; atts[i] != NULL; i += 2)
 				{
 					if (!strcmp ((char *)atts[i], "x"))
-						x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						x = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "y"))
-						y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						y = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "dx"))
-						dx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size, 0.);
+						dx = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->width, state->font_size);
 					else if (!strcmp ((char *)atts[i], "dy"))
-						dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size, 0.);
+						dy = rsvg_css_parse_normalized_length ((char *)atts[i + 1], ctx->dpi, (gdouble)ctx->height, state->font_size);
 					else if (!strcmp ((char *)atts[i], "class"))
 						klazz = (const char *)atts[i + 1];
 				}

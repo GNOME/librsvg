@@ -152,8 +152,7 @@ rsvg_css_parse_length (const char *str, gdouble pixels_per_inch,
  */
 double
 rsvg_css_parse_normalized_length(const char *str, gdouble pixels_per_inch,
-								 gdouble width_or_height, gdouble font_size,
-								 gdouble x_height)
+								 gdouble width_or_height, gdouble font_size)
 {
 	double length;
 	gint percent, em, ex;
@@ -165,7 +164,7 @@ rsvg_css_parse_normalized_length(const char *str, gdouble pixels_per_inch,
 	else if (em)
 		return length * font_size;
 	else if (ex)
-		return length * x_height;
+		return length * font_size * 2.0; /* stolen from imagemagick */
 	else
 		return length;
 }
