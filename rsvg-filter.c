@@ -40,27 +40,27 @@ typedef struct _RsvgFilterContext RsvgFilterContext;
 
 struct _RsvgFilterContext
 {
-  gint width, height;
-  RsvgFilter *filter;
-  GHashTable *results;
-  GdkPixbuf *source;
-  GdkPixbuf *bg;
-  GdkPixbuf *lastresult;
-  double affine[6];
-  double paffine[6];
+	gint width, height;
+	RsvgFilter *filter;
+	GHashTable *results;
+	GdkPixbuf *source;
+	GdkPixbuf *bg;
+	GdkPixbuf *lastresult;
+	double affine[6];
+	double paffine[6];
 };
 
 typedef struct _RsvgFilterPrimitive RsvgFilterPrimitive;
 
 struct _RsvgFilterPrimitive
 {
-  double x, y, width, height;
-  GString *in;
-  GString *result;
-  gboolean sizedefaults;
-
-  void (*free) (RsvgFilterPrimitive * self);
-  void (*render) (RsvgFilterPrimitive * self, RsvgFilterContext * ctx);
+	double x, y, width, height;
+	GString *in;
+	GString *result;
+	gboolean sizedefaults;
+	
+	void (*free) (RsvgFilterPrimitive * self);
+	void (*render) (RsvgFilterPrimitive * self, RsvgFilterContext * ctx);
 };
 
 typedef struct
@@ -88,59 +88,59 @@ static FPBox
 rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self,
 				  RsvgFilterContext * ctx)
 {
-  FPBox output;
-
-  if (self->sizedefaults)
-	  {
-		  output.x1 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
-		  output.y1 = ctx->affine[3] * ctx->filter->y + ctx->affine[5];
-		  output.x2 =
-			  ctx->affine[0] * (ctx->filter->x + ctx->filter->width) +
-			  ctx->affine[4];
-		  output.y2 =
-			  ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
-			  ctx->affine[5];
-		  
-		  if (output.x1 < 0)
-			  output.x1 = 0;
-		  if (output.x2 >= ctx->width)
-			  output.x2 = ctx->width - 1;
-		  if (output.y1 < 0)
-			  output.y1 = 0;
-		  if (output.y2 >= ctx->height)
-			  output.y2 = ctx->height - 1;
-		  
-		  return output;
-	  }
-  
-  output.x1 = ctx->paffine[0] * self->x + ctx->paffine[4];
-  output.y1 = ctx->paffine[3] * self->y + ctx->paffine[5];
-  output.x2 = ctx->paffine[0] * (self->x + self->width) + ctx->paffine[4];
-  output.y2 = ctx->paffine[3] * (self->y + self->height) + ctx->paffine[5];
-  
-  if (output.x1 < ctx->affine[0] * ctx->filter->x + ctx->affine[4])
-	  output.x1 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
-  if (output.x2 >
-      ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4])
-	  output.x2 =
-		  ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4];
-  if (output.y1 < ctx->affine[3] * ctx->filter->y + ctx->affine[5])
-	  output.y1 = ctx->affine[3] * ctx->filter->y + ctx->affine[5];
-  if (output.y2 > ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
-      ctx->affine[5])
-	  output.y2 = ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
-		  ctx->affine[5];
-  
-  if (output.x1 < 0)
-	  output.x1 = 0;
-  if (output.x2 >= ctx->width)
-	  output.x2 = ctx->width - 1;
-  if (output.y1 < 0)
-	  output.y1 = 0;
-  if (output.y2 >= ctx->height)
-	  output.y2 = ctx->height - 1;
-  
-  return output;
+	FPBox output;
+	
+	if (self->sizedefaults)
+		{
+			output.x1 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
+			output.y1 = ctx->affine[3] * ctx->filter->y + ctx->affine[5];
+			output.x2 =
+				ctx->affine[0] * (ctx->filter->x + ctx->filter->width) +
+				ctx->affine[4];
+			output.y2 =
+				ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
+				ctx->affine[5];
+			
+			if (output.x1 < 0)
+				output.x1 = 0;
+			if (output.x2 >= ctx->width)
+				output.x2 = ctx->width - 1;
+			if (output.y1 < 0)
+				output.y1 = 0;
+			if (output.y2 >= ctx->height)
+				output.y2 = ctx->height - 1;
+			
+			return output;
+		}
+	
+	output.x1 = ctx->paffine[0] * self->x + ctx->paffine[4];
+	output.y1 = ctx->paffine[3] * self->y + ctx->paffine[5];
+	output.x2 = ctx->paffine[0] * (self->x + self->width) + ctx->paffine[4];
+	output.y2 = ctx->paffine[3] * (self->y + self->height) + ctx->paffine[5];
+	
+	if (output.x1 < ctx->affine[0] * ctx->filter->x + ctx->affine[4])
+		output.x1 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
+	if (output.x2 >
+		ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4])
+		output.x2 =
+			ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4];
+	if (output.y1 < ctx->affine[3] * ctx->filter->y + ctx->affine[5])
+		output.y1 = ctx->affine[3] * ctx->filter->y + ctx->affine[5];
+	if (output.y2 > ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
+		ctx->affine[5])
+		output.y2 = ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
+			ctx->affine[5];
+	
+	if (output.x1 < 0)
+		output.x1 = 0;
+	if (output.x2 >= ctx->width)
+		output.x2 = ctx->width - 1;
+	if (output.y1 < 0)
+		output.y1 = 0;
+	if (output.y2 >= ctx->height)
+		output.y2 = ctx->height - 1;
+	
+	return output;
 }
 
 static GdkPixbuf *
@@ -459,26 +459,26 @@ rsvg_filter_store_result (GString * name, GdkPixbuf * result,
 static GdkPixbuf *
 pixbuf_get_alpha (GdkPixbuf * pb)
 {
-  gint i, j;
-  guchar *data;
-  guchar *pbdata;
-  GdkPixbuf *output;
-  
-  output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8,
-						   gdk_pixbuf_get_width (pb),
-						   gdk_pixbuf_get_height (pb));
-  
-  data = gdk_pixbuf_get_pixels (output);
-  pbdata = gdk_pixbuf_get_pixels (pb);
-  
-  for (i = 0; i < gdk_pixbuf_get_width (pb) * gdk_pixbuf_get_width (pb); i++)
-	  {
-		  for (j = 0; j < 3; j++)
-			  data[i * 4 + j] = 0;
-		  data[i * 4 + 3] = pbdata[i * 4 + 3];
-	  }
-
-  return output;
+	gint i, j;
+	guchar *data;
+	guchar *pbdata;
+	GdkPixbuf *output;
+	
+	output = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8,
+							 gdk_pixbuf_get_width (pb),
+							 gdk_pixbuf_get_height (pb));
+	
+	data = gdk_pixbuf_get_pixels (output);
+	pbdata = gdk_pixbuf_get_pixels (pb);
+	
+	for (i = 0; i < gdk_pixbuf_get_width (pb) * gdk_pixbuf_get_width (pb); i++)
+		{
+			for (j = 0; j < 3; j++)
+				data[i * 4 + j] = 0;
+			data[i * 4 + 3] = pbdata[i * 4 + 3];
+		}
+	
+	return output;
 }
 
 /**
@@ -600,17 +600,17 @@ rsvg_new_filter (void)
 static void
 rsvg_filter_free (RsvgDefVal * dself)
 {
-  RsvgFilterPrimitive *current;
-  RsvgFilter *self;
-  guint i;
-
-  self = (RsvgFilter *) dself;
-  
-  for (i = 0; i < self->primitives->len; i++)
-	  {
-		  current = g_ptr_array_index (self->primitives, i);
+	RsvgFilterPrimitive *current;
+	RsvgFilter *self;
+	guint i;
+	
+	self = (RsvgFilter *) dself;
+	
+	for (i = 0; i < self->primitives->len; i++)
+		{
+			current = g_ptr_array_index (self->primitives, i);
 		  rsvg_filter_primitive_free (current);
-	  }
+		}
 }
 
 /**
@@ -725,9 +725,9 @@ RsvgFilterPrimitiveBlendMode;
 typedef struct _RsvgFilterPrimitiveBlend RsvgFilterPrimitiveBlend;
 struct _RsvgFilterPrimitiveBlend
 {
-  RsvgFilterPrimitive super;
-  RsvgFilterPrimitiveBlendMode mode;
-  GString *in2;
+	RsvgFilterPrimitive super;
+	RsvgFilterPrimitiveBlendMode mode;
+	GString *in2;
 };
 
 static void
