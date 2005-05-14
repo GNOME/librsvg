@@ -39,7 +39,7 @@ rsvg_mask_free (RsvgNode * self)
 }
 
 static void 
-rsvg_node_drawable_mask_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
+rsvg_node_mask_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							  int dominate)
 {
 	RsvgNodeGroup *group = (RsvgNodeGroup*)self;
@@ -53,7 +53,7 @@ rsvg_node_drawable_mask_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 		{
 			rsvg_state_push(ctx);
 
-			rsvg_node_drawable_draw (g_ptr_array_index(group->children, i), 
+			rsvg_node_draw (g_ptr_array_index(group->children, i), 
 									 ctx, 0);
 	
 			rsvg_state_pop(ctx);
@@ -77,7 +77,10 @@ rsvg_new_mask (void)
 	mask->height = 1;
 	mask->super.super.state = g_new(RsvgState, 1);
 	mask->super.children = g_ptr_array_new ();
-
+	mask->super.super.type = RSVG_NODE_MASK;
+	mask->super.super.free = rsvg_mask_free;
+	mask->super.super.draw = rsvg_node_mask_draw;
+	mask->super.super.add_child = rsvg_node_group_add_child;
 	return mask;
 }
 
@@ -141,14 +144,9 @@ rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	rsvg_state_init(mask->super.super.state);
 	rsvg_parse_style_attrs (ctx, mask->super.super.state, "mask", klazz, id, atts);
 
-	mask->super.super.parent = (RsvgNode *)ctx->current_defs_group;
+	mask->super.super.parent = (RsvgNode *)ctx->currentnode;
 
-	ctx->current_defs_group = &mask->super;
-	
-	/* set up the defval stuff */
-	mask->super.super.type = RSVG_NODE_MASK;
-	mask->super.super.free = &rsvg_mask_free;
-	mask->super.super.draw = &rsvg_node_drawable_mask_draw;
+	ctx->currentnode = &mask->super.super;
 
 	rsvg_defs_set (ctx->defs, id, &mask->super.super);
 }
@@ -156,7 +154,7 @@ rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts)
 void 
 rsvg_end_mask (RsvgHandle *ctx)
 {
-	ctx->current_defs_group = ((RsvgNode *)ctx->current_defs_group)->parent;
+	ctx->currentnode = ((RsvgNode *)ctx->currentnode)->parent;
 }
 
 RsvgNode *
@@ -208,6 +206,9 @@ rsvg_new_clip_path (void)
 	clip_path->super.children = g_ptr_array_new ();
 	clip_path->units = userSpaceOnUse;
 	clip_path->super.super.state = g_new(RsvgState, 1);
+	clip_path->super.super.type = RSVG_NODE_CLIP_PATH;
+	clip_path->super.super.free = rsvg_clip_path_free;
+	clip_path->super.super.add_child = rsvg_node_group_add_child;
 	return clip_path;
 }
 
@@ -240,20 +241,18 @@ rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 	rsvg_parse_style_attrs (ctx, clip_path->super.super.state, "clipPath", klazz, id, atts);
 
-	clip_path->super.super.parent = (RsvgNode *)ctx->current_defs_group;
+	clip_path->super.super.parent = (RsvgNode *)ctx->currentnode;
 
-	ctx->current_defs_group = &clip_path->super;
+	ctx->currentnode = &clip_path->super.super;
 	
 	/* set up the defval stuff */
-	clip_path->super.super.type = RSVG_NODE_CLIP_PATH;
-	clip_path->super.super.free = &rsvg_clip_path_free;
 	rsvg_defs_set (ctx->defs, id, &clip_path->super.super);
 }
 
 void 
 rsvg_end_clip_path (RsvgHandle *ctx)
 {
-	ctx->current_defs_group = ((RsvgNode *)ctx->current_defs_group)->parent;
+	ctx->currentnode = ((RsvgNode *)ctx->currentnode)->parent;
 }
 
 RsvgNode *

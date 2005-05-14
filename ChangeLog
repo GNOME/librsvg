@@ -1,3 +1,7 @@
+2005-05-15  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* everwhere: misc movement towards a DOM interface
+	
 2005-03-16  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* everywhere: we no longer have RsvgDef* we have RsvgNode*

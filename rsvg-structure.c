@@ -3,8 +3,8 @@
    rsvg-structure.c: Rsvg's structual elements
 
    Copyright (C) 2000 Eazel, Inc.
-   Copyright (C) 2002, 2003, 2004, 2005 Dom Lachowicz <cinamod@hotmail.com>
-   Copyright (C) 2003, 2004, 2005 Caleb Moore <c.moore@student.unsw.edu.au>
+   Copyright (C) 2002 - 2005 Dom Lachowicz <cinamod@hotmail.com>
+   Copyright (C) 2003 - 2005 Caleb Moore <c.moore@student.unsw.edu.au>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as
@@ -33,7 +33,7 @@
 #include <stdio.h>
 
 void 
-rsvg_node_drawable_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
+rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 						 int dominate)
 {
 	RsvgState *state;
@@ -73,7 +73,7 @@ rsvg_end_g (RsvgHandle *ctx)
 }
 
 static void 
-rsvg_node_drawable_group_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
+rsvg_node_group_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							  int dominate)
 {
 	RsvgNodeGroup *group = (RsvgNodeGroup*)self;
@@ -86,7 +86,7 @@ rsvg_node_drawable_group_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	for (i = 0; i < group->children->len; i++)
 		{
 			rsvg_state_push(ctx);
-			rsvg_node_drawable_draw (g_ptr_array_index(group->children, i), 
+			rsvg_node_draw (g_ptr_array_index(group->children, i), 
 									 ctx, 0);
 			rsvg_state_pop(ctx);
 		}			
@@ -95,7 +95,7 @@ rsvg_node_drawable_group_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 }
 
 static void 
-rsvg_node_drawable_group_free (RsvgNode *self)
+rsvg_node_group_free (RsvgNode *self)
 {
 	RsvgNodeGroup *z = (RsvgNodeGroup *)self;
 	rsvg_state_finalize (z->super.state);
@@ -104,19 +104,70 @@ rsvg_node_drawable_group_free (RsvgNode *self)
 	g_free (z);
 }
 
+/* exported for group derived things... hopefully group derived things 
+   shouldn't be used for much longer */
+
+void 
+rsvg_node_group_add_child (RsvgNode *overself, RsvgNode *child)
+{
+	RsvgNodeGroup *self = (RsvgNodeGroup *)overself;
+	if (self == NULL)
+		return;
+	g_ptr_array_add(self->children, child);
+}
+
 RsvgNode * 
 rsvg_push_def_group (RsvgHandle *ctx, const char * id, 
 					 RsvgState *state)
 {
-	RsvgNode * group;
+	RsvgNodeGroup *group;
 
-	group = rsvg_push_part_def_group (ctx, id, state);
+	group = g_new (RsvgNodeGroup, 1);
+	group->children = g_ptr_array_new();
+	group->super.state = g_new(RsvgState, 1);
+	*group->super.state = *state;
 
-	if (group->parent != NULL)
-		rsvg_node_drawable_group_pack((RsvgNodeGroup *)group->parent, 
-									  group);
+	group->super.type = RSVG_NODE_PATH;
+	group->super.free = rsvg_node_group_free;
+	group->super.add_child = rsvg_node_group_add_child;
+	group->super.draw = rsvg_node_group_draw;
 
-	return group;
+	rsvg_defs_set (ctx->defs, id, &group->super);
+
+	group->super.parent = (RsvgNode *)ctx->currentnode;
+
+	ctx->currentnode = &group->super;
+
+	if (group->super.parent != NULL)
+		rsvg_node_group_pack(group->super.parent, 
+							 &group->super);
+
+	return &group->super;
+}
+
+RsvgNode * 
+rsvg_push_part_def_group (RsvgHandle *ctx, const char * id, 
+						  RsvgState *state)
+{
+	RsvgNodeGroup *group;
+
+	group = g_new (RsvgNodeGroup, 1);
+	group->children = g_ptr_array_new();
+	group->super.state = g_new(RsvgState, 1);
+	*group->super.state = *state;
+
+	group->super.type = RSVG_NODE_PATH;
+	group->super.free = rsvg_node_group_free;
+	group->super.draw = rsvg_node_group_draw;
+	group->super.add_child = rsvg_node_group_add_child;
+
+	rsvg_defs_set (ctx->defs, id, &group->super);
+
+	group->super.parent = (RsvgNode *)ctx->currentnode;
+
+	ctx->currentnode = &group->super;
+
+	return &group->super;
 }
 
 void
@@ -124,48 +175,22 @@ rsvg_pop_def_group (RsvgHandle *ctx)
 {
 	RsvgNodeGroup * group;
 
-	group = (RsvgNodeGroup *)ctx->current_defs_group;
+	group = (RsvgNodeGroup *)ctx->currentnode;
 	if (group == NULL)
 		return;
-	ctx->current_defs_group = group->super.parent;
+	ctx->currentnode = group->super.parent;
 
 }
 
 void 
-rsvg_node_drawable_group_pack (RsvgNodeGroup *self, RsvgNode *child)
+rsvg_node_group_pack (RsvgNode *self, RsvgNode *child)
 {
-	if (self == NULL)
-		return;
-	g_ptr_array_add(self->children, child);
-}
-
-/* warning: takes ownership of @tempstate */
-RsvgNode * 
-rsvg_push_part_def_group (RsvgHandle *ctx, const char * id, 
-						  RsvgState * tempstate)
-{
-	RsvgNodeGroup *group;
-
-	group = g_new (RsvgNodeGroup, 1);
-	group->children = g_ptr_array_new();
-	group->super.state = g_new(RsvgState, 1);
-	*group->super.state = *tempstate;
-
-	group->super.type = RSVG_NODE_PATH;
-	group->super.free = rsvg_node_drawable_group_free;
-	group->super.draw = rsvg_node_drawable_group_draw;
-
-	rsvg_defs_set (ctx->defs, id, &group->super);
-
-	group->super.parent = (RsvgNode *)ctx->current_defs_group;
-
-	ctx->current_defs_group = group;
-
-	return &group->super;
+	self->add_child(self, child);
+	child->parent = self;
 }
 
 static RsvgNode *
-rsvg_node_drawable_use_resolve(RsvgNodeUse * self, RsvgDrawingCtx *ctx, double * affine_out)
+rsvg_node_use_resolve(RsvgNodeUse * self, RsvgDrawingCtx *ctx, double * affine_out)
 {
 	double affine[6];
 	double x, y, width, height;
@@ -222,7 +247,7 @@ rsvg_node_drawable_use_resolve(RsvgNodeUse * self, RsvgDrawingCtx *ctx, double *
 }
 
 static void 
-rsvg_node_drawable_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
+rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							  int dominate)
 {
 	RsvgNodeUse *use = (RsvgNodeUse*)self;
@@ -230,7 +255,7 @@ rsvg_node_drawable_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 
 	rsvg_state_reinherit_top(ctx,  self->state, dominate);
 
-	child = rsvg_node_drawable_use_resolve(use, ctx, rsvg_state_current(ctx)->affine);
+	child = rsvg_node_use_resolve(use, ctx, rsvg_state_current(ctx)->affine);
 
 	/* If it can find nothing to draw... draw nothing */
 	if (!use->link)
@@ -240,7 +265,7 @@ rsvg_node_drawable_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 
 	rsvg_state_push(ctx);
 	
-	rsvg_node_drawable_draw (child, ctx, 1);
+	rsvg_node_draw (child, ctx, 1);
 
 	rsvg_state_pop(ctx);
 
@@ -248,7 +273,7 @@ rsvg_node_drawable_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 }	
 
 static void 
-rsvg_node_drawable_use_free (RsvgNode *self)
+rsvg_node_use_free (RsvgNode *self)
 {
 	RsvgNodeUse *z = (RsvgNodeUse *)self;
 	rsvg_state_finalize (z->super.state);
@@ -257,7 +282,7 @@ rsvg_node_drawable_use_free (RsvgNode *self)
 }
 
 static void
-rsvg_node_drawable_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
+rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							 int dominate)
 {
 	RsvgNodeSvg * sself;
@@ -303,7 +328,7 @@ rsvg_node_drawable_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 		{
 			rsvg_state_push(ctx);
 
-			rsvg_node_drawable_draw (g_ptr_array_index(group->children, i), 
+			rsvg_node_draw (g_ptr_array_index(group->children, i), 
 									 ctx, 0);
 	
 			rsvg_state_pop(ctx);
@@ -313,7 +338,7 @@ rsvg_node_drawable_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 }
 
 static void 
-rsvg_node_drawable_svg_free (RsvgNode *self)
+rsvg_node_svg_free (RsvgNode *self)
 {
 	RsvgNodeGroup *z = (RsvgNodeGroup *)self;
 	rsvg_state_finalize (z->super.state);
@@ -388,18 +413,18 @@ rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	*group->super.state = state;
 
 	group->super.type = RSVG_NODE_PATH;
-	group->super.free = rsvg_node_drawable_svg_free;
-	group->super.draw = rsvg_node_drawable_svg_draw;
+	group->super.free = rsvg_node_svg_free;
+	group->super.draw = rsvg_node_svg_draw;
+	group->super.add_child = rsvg_node_group_add_child;
 
 	rsvg_defs_set (ctx->defs, id, &group->super);
 
-	group->super.parent = (RsvgNode *)ctx->current_defs_group;
+	group->super.parent = (RsvgNode *)ctx->currentnode;
 
-	ctx->current_defs_group = group;
+	ctx->currentnode = &group->super;
 
 	if (group->super.parent != NULL)
-		rsvg_node_drawable_group_pack((RsvgNodeGroup *)group->super.parent, 
-									  &group->super);
+		rsvg_node_group_pack(group->super.parent, &group->super);
 
 	if (!ctx->nest_level)
 		ctx->treebase = group;
@@ -459,8 +484,8 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	use->super.state = g_new(RsvgState, 1);
 	*use->super.state = state;
 	use->super.type = RSVG_NODE_PATH;
-	use->super.free = rsvg_node_drawable_use_free;
-	use->super.draw = rsvg_node_drawable_use_draw;
+	use->super.free = rsvg_node_use_free;
+	use->super.draw = rsvg_node_use_draw;
 	use->x = x;
 	use->y = y;
 	use->w = width;
@@ -469,14 +494,13 @@ rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	rsvg_defs_add_resolver (ctx->defs, &use->link, xlink_href);
 	rsvg_defs_set (ctx->defs, id, &use->super);
 	
-	use->super.parent = (RsvgNode *)ctx->current_defs_group;
+	use->super.parent = (RsvgNode *)ctx->currentnode;
 	if (use->super.parent != NULL)
-		rsvg_node_drawable_group_pack((RsvgNodeGroup *)use->super.parent, 
-									  &use->super);
+		rsvg_node_group_pack(use->super.parent, &use->super);
 }
 
 static void 
-rsvg_node_drawable_symbol_free (RsvgNode *self)
+rsvg_node_symbol_free (RsvgNode *self)
 {
 	RsvgNodeGroup *z = (RsvgNodeGroup *)self;
 	rsvg_state_finalize (z->super.state);
@@ -486,7 +510,7 @@ rsvg_node_drawable_symbol_free (RsvgNode *self)
 }
 
 static void
-rsvg_node_drawable_symbol_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
+rsvg_node_symbol_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							 int dominate)
 {
 	RsvgNodeSymbol * sself;
@@ -509,7 +533,7 @@ rsvg_node_drawable_symbol_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 		{
 			rsvg_state_push(ctx);
 
-			rsvg_node_drawable_draw (g_ptr_array_index(group->children, i), 
+			rsvg_node_draw (g_ptr_array_index(group->children, i), 
 									 ctx, 0);
 	
 			rsvg_state_pop(ctx);
@@ -564,14 +588,15 @@ rsvg_start_symbol(RsvgHandle *ctx, RsvgPropertyBag *atts)
 	group->super.state = g_new(RsvgState, 1);
 	*group->super.state = state;
 	group->super.type = RSVG_NODE_SYMBOL;
-	group->super.free = rsvg_node_drawable_symbol_free;
-	group->super.draw = rsvg_node_drawable_symbol_draw;
+	group->super.free = rsvg_node_symbol_free;
+	group->super.draw = rsvg_node_symbol_draw;
+	group->super.add_child = rsvg_node_group_add_child;
 
 	rsvg_defs_set (ctx->defs, id, &group->super);
 
-	group->super.parent = (RsvgNode *)ctx->current_defs_group;
+	group->super.parent = (RsvgNode *)ctx->currentnode;
 
-	ctx->current_defs_group = group;
+	ctx->currentnode = &group->super;
 }
 
 void
@@ -597,7 +622,7 @@ rsvg_start_defs (RsvgHandle *ctx, RsvgPropertyBag *atts)
 }
 
 static void 
-_rsvg_node_drawable_switch_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
+_rsvg_node_switch_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 								 int dominate)
 {
 	RsvgNodeGroup *group = (RsvgNodeGroup*)self;
@@ -613,7 +638,7 @@ _rsvg_node_drawable_switch_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 
 			if (drawable->state->cond_true) {
 				rsvg_state_push(ctx);
-				rsvg_node_drawable_draw (g_ptr_array_index(group->children, i), 
+				rsvg_node_draw (g_ptr_array_index(group->children, i), 
 										 ctx, 0);
 				rsvg_state_pop(ctx);
 
@@ -644,7 +669,7 @@ rsvg_start_switch (RsvgHandle *ctx, RsvgPropertyBag *atts)
 		}	
 
 	group = rsvg_push_def_group (ctx, id, &state);
-	group->draw = _rsvg_node_drawable_switch_draw;
+	group->draw = _rsvg_node_switch_draw;
 }
 
 void

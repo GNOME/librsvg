@@ -164,40 +164,41 @@ static void
 rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 						   RsvgPropertyBag *atts)
 {
+	RsvgNode * newnode = NULL;
 	if (!strcmp ((char *)name, "filter"))
-		rsvg_start_filter (ctx, atts);
+		newnode = rsvg_start_filter(ctx, atts);
 	else if (!strcmp ((char *)name, "feBlend"))
-		rsvg_start_filter_primitive_blend (ctx, atts);
+		newnode = rsvg_start_filter_primitive_blend (ctx, atts);
 	else if (!strcmp ((char *)name, "feColorMatrix"))
-		rsvg_start_filter_primitive_colour_matrix(ctx, atts);
+		newnode = rsvg_start_filter_primitive_colour_matrix(ctx, atts);
 	else if (!strcmp ((char *)name, "feComponentTransfer"))
-		rsvg_start_filter_primitive_component_transfer(ctx, atts);
+		newnode = rsvg_start_filter_primitive_component_transfer(ctx, atts);
 	else if (!strcmp ((char *)name, "feComposite"))
-		rsvg_start_filter_primitive_composite(ctx, atts);
+		newnode = rsvg_start_filter_primitive_composite(ctx, atts);
 	else if (!strcmp ((char *)name, "feConvolveMatrix"))
-		rsvg_start_filter_primitive_convolve_matrix (ctx, atts);
+		newnode = rsvg_start_filter_primitive_convolve_matrix (ctx, atts);
 	else if (!strcmp ((char *)name, "feDiffuseLighting"))
-		rsvg_start_filter_primitive_diffuse_lighting(ctx, atts);
+		newnode = rsvg_start_filter_primitive_diffuse_lighting(ctx, atts);
 	else if (!strcmp ((char *)name, "feDisplacementMap"))
-		rsvg_start_filter_primitive_displacement_map(ctx, atts);
+		newnode = rsvg_start_filter_primitive_displacement_map(ctx, atts);
 	else if (!strcmp ((char *)name, "feFlood"))
-		rsvg_start_filter_primitive_flood(ctx, atts);
+		newnode = rsvg_start_filter_primitive_flood(ctx, atts);
 	else if (!strcmp ((char *)name, "feGaussianBlur"))
-		rsvg_start_filter_primitive_gaussian_blur (ctx, atts);
+		newnode = rsvg_start_filter_primitive_gaussian_blur (ctx, atts);
 	else if (!strcmp ((char *)name, "feImage"))
-		rsvg_start_filter_primitive_image (ctx, atts);
+		newnode = rsvg_start_filter_primitive_image (ctx, atts);
 	else if (!strcmp ((char *)name, "feMerge"))
-		rsvg_start_filter_primitive_merge(ctx, atts);
+		newnode = rsvg_start_filter_primitive_merge(ctx, atts);
 	else if (!strcmp ((char *)name, "feMorphology"))
-		rsvg_start_filter_primitive_erode(ctx, atts);
+		newnode = rsvg_start_filter_primitive_erode(ctx, atts);
 	else if (!strcmp ((char *)name, "feOffset"))
-		rsvg_start_filter_primitive_offset(ctx, atts);
+		newnode = rsvg_start_filter_primitive_offset(ctx, atts);
 	else if (!strcmp ((char *)name, "feSpecularLighting"))
-		rsvg_start_filter_primitive_specular_lighting(ctx, atts);
+		newnode = rsvg_start_filter_primitive_specular_lighting(ctx, atts);
 	else if (!strcmp ((char *)name, "feTile"))
-		rsvg_start_filter_primitive_tile(ctx, atts);
+		newnode = rsvg_start_filter_primitive_tile(ctx, atts);
 	else if (!strcmp ((char *)name, "feTurbulence"))
-		rsvg_start_filter_primitive_turbulence(ctx, atts);
+		newnode = rsvg_start_filter_primitive_turbulence(ctx, atts);
 	else if (!strcmp ((char *)name, "feDistantLight"))
 		rsvg_start_filter_primitive_light_source(ctx, atts, 'd');
 	else if (!strcmp ((char *)name, "feSpotLight"))
@@ -214,6 +215,13 @@ rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 		rsvg_start_filter_primitive_component_transfer_function(ctx, atts, 'b');
 	else if (!strcmp ((char *)name, "feFuncA"))
 		rsvg_start_filter_primitive_component_transfer_function(ctx, atts, 'a');
+	if (newnode)
+		{
+			rsvg_defs_register_memory(ctx->defs, newnode);
+			if (ctx->currentnode)
+				rsvg_node_group_pack(ctx->currentnode, newnode);
+			ctx->currentnode = newnode;
+		}
 }
 
 /* start desc */
@@ -590,6 +598,15 @@ rsvg_end_element (void *data, const xmlChar *name)
 				rsvg_end_switch (ctx); /* treat switches as groups for now */
 			else if (!strcmp ((char *)name, "pattern"))
 				rsvg_pop_def_group(ctx);
+			else if (!strncmp ((char *)name, "fe", 2))
+				{
+					if (strncmp ((char *)name, "feFunc", 6) && 
+						strcmp ((char *)name, "feMergeNode") &&
+						strcmp ((char *)name, "feDistantLight") &&
+						strcmp ((char *)name, "feSpotLight") &&
+						strcmp ((char *)name, "fePointLight"))
+						rsvg_end_filter(ctx);
+				}
 		}
 }
 
@@ -932,7 +949,7 @@ rsvg_handle_new (void)
 	rsvg_SAX_handler_struct_init();
 	
 	handle->ctxt = NULL;
-	handle->current_defs_group = NULL;
+	handle->currentnode = NULL;
 	handle->treebase = NULL;
 
 	handle->dimensions = NULL;
@@ -1241,7 +1258,7 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 	if (!draw)
 		return NULL;
 	rsvg_state_push(draw);
-	rsvg_node_drawable_draw((RsvgNode *)handle->treebase, draw, 0);
+	rsvg_node_draw((RsvgNode *)handle->treebase, draw, 0);
 	rsvg_state_pop(draw);
 	output = ((RsvgArtRender *)draw->render)->pixbuf;
 	rsvg_drawing_ctx_free(draw);

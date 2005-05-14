@@ -54,6 +54,12 @@ rsvg_defs_add_resolver(RsvgDefs *defs, RsvgNode ** tochange,
 void
 rsvg_defs_resolve_all(RsvgDefs *defs);
 
+void
+rsvg_defs_register_name (RsvgDefs *defs, const char *name, RsvgNode *val);
+
+void
+rsvg_defs_register_memory (RsvgDefs *defs, RsvgNode *val);
+
 G_END_DECLS
 
 #endif

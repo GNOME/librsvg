@@ -491,7 +491,7 @@ rsvg_preserve_aspect_ratio(unsigned int aspect_ratio, double width,
 }
 
 static void 
-rsvg_node_drawable_image_free (RsvgNode * self)
+rsvg_node_image_free (RsvgNode * self)
 {
 	RsvgNodeImage *z = (RsvgNodeImage *)self;
 	rsvg_state_finalize (z->super.state);
@@ -501,7 +501,7 @@ rsvg_node_drawable_image_free (RsvgNode * self)
 }
 
 static void 
-rsvg_node_drawable_image_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
+rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							   int dominate)
 {
 	RsvgNodeImage *z = (RsvgNodeImage *)self;
@@ -593,13 +593,12 @@ rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	image->overflow = overflow;
 	image->super.state = state;
 	image->super.type = RSVG_NODE_PATH;
-	image->super.free = rsvg_node_drawable_image_free;
-	image->super.draw = rsvg_node_drawable_image_draw;
+	image->super.free = rsvg_node_image_free;
+	image->super.draw = rsvg_node_image_draw;
 	rsvg_defs_set (ctx->defs, id, &image->super);
 	
-	image->super.parent = (RsvgNode *)ctx->current_defs_group;
+	image->super.parent = (RsvgNode *)ctx->currentnode;
 	if (image->super.parent != NULL)
-		rsvg_node_drawable_group_pack((RsvgNodeGroup *)image->super.parent, 
-									  &image->super);
+		rsvg_node_group_pack(image->super.parent, &image->super);
 
 }

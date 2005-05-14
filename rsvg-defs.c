@@ -56,7 +56,7 @@ rsvg_defs_new (void)
 	RsvgDefs *result = g_new (RsvgDefs, 1);
 	
 	result->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-	result->externs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+	result->externs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify)rsvg_handle_free);
 	result->unnamed = g_ptr_array_new ();
 	result->base_uri = NULL;
 	result->toresolve = NULL;
@@ -150,7 +150,19 @@ rsvg_defs_set (RsvgDefs *defs, const char *name, RsvgNode *val)
 	else if (name[0] == '\0')
 		;
 	else
-		g_hash_table_insert (defs->hash, g_strdup (name), val);
+		rsvg_defs_register_name(defs, name, val);
+	rsvg_defs_register_memory(defs, val);
+}
+
+void
+rsvg_defs_register_name (RsvgDefs *defs, const char *name, RsvgNode *val)
+{
+	g_hash_table_insert (defs->hash, g_strdup (name), val);
+}
+
+void
+rsvg_defs_register_memory (RsvgDefs *defs, RsvgNode *val)
+{
 	g_ptr_array_add(defs->unnamed, val);
 }
 
@@ -164,6 +176,8 @@ rsvg_defs_free (RsvgDefs *defs)
 	for (i = 0; i < defs->unnamed->len; i++)
 		((RsvgNode *)g_ptr_array_index(defs->unnamed, i))->free(g_ptr_array_index(defs->unnamed, i));
 	g_ptr_array_free(defs->unnamed, TRUE);
+
+	g_hash_table_destroy (defs->externs);
 
 	g_free (defs);
 }

@@ -83,7 +83,7 @@ struct RsvgHandle {
 	
 	RsvgDefs *defs;
 	guint nest_level;
-	void *current_defs_group;
+	RsvgNode *currentnode;
 	/* this is the root level of the displayable tree, essentially what the
 	   file is converted into at the end */
 	void *treebase;
@@ -115,9 +115,6 @@ struct RsvgHandle {
 	gchar * base_uri;
 
 	gboolean finished;
-
-	void * currentfilter;
-	void * currentsubfilter;
 
 	gboolean first_write;
 	gboolean is_gzipped;
@@ -191,6 +188,7 @@ typedef enum {
 	RSVG_NODE_PATTERN,
 	RSVG_NODE_PATH,
 	RSVG_NODE_FILTER,
+	RSVG_NODE_FILTER_PRIMITIVE,
 	RSVG_NODE_MASK,
 	RSVG_NODE_MARKER,
 	RSVG_NODE_SYMBOL,
@@ -200,8 +198,9 @@ typedef enum {
 struct _RsvgNode {
 	RsvgNodeType type;
 	RsvgState * state;
-	void (*free) (RsvgNode *self);
 	RsvgNode * parent;
+	void (*add_child) (RsvgNode *self, RsvgNode *child);
+	void (*free) (RsvgNode *self);
 	void (*draw) (RsvgNode * self, RsvgDrawingCtx *ctx, int dominate);
 };
 

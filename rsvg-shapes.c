@@ -39,7 +39,7 @@
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
 
 static void 
-rsvg_node_drawable_path_free (RsvgNode *self)
+rsvg_node_ath_free (RsvgNode *self)
 {
 	RsvgNodePath *z = (RsvgNodePath *)self;
 	rsvg_state_finalize (z->super.state);
@@ -49,15 +49,14 @@ rsvg_node_drawable_path_free (RsvgNode *self)
 }
 
 static void 
-rsvg_node_drawable_path_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
+rsvg_node_ath_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							  int dominate)
 {
 	RsvgNodePath *path = (RsvgNodePath*)self;
 
 	rsvg_state_reinherit_top(ctx, self->state, dominate);
 
-	rsvg_render_path (ctx, path->d);
-	
+	rsvg_render_path (ctx, path->d);	
 }
 
 void
@@ -70,14 +69,14 @@ rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id, RsvgState st
 	path->super.state = g_new(RsvgState, 1);
 	*path->super.state = state;
 	path->super.type = RSVG_NODE_PATH;
-	path->super.free = rsvg_node_drawable_path_free;
-	path->super.draw = rsvg_node_drawable_path_draw;
+	path->super.free = rsvg_node_ath_free;
+	path->super.draw = rsvg_node_ath_draw;
 	rsvg_defs_set (ctx->defs, id, &path->super);
 	
-	path->super.parent = (RsvgNode *)ctx->current_defs_group;
+	path->super.parent = (RsvgNode *)ctx->currentnode;
 	if (path->super.parent != NULL)
-		rsvg_node_drawable_group_pack((RsvgNodeGroup *)path->super.parent, 
-									  &path->super);
+		rsvg_node_group_pack(path->super.parent, 
+							 &path->super);
 }
 
 void

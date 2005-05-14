@@ -370,7 +370,7 @@ rsvg_text_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 }
 
 static void 
-rsvg_node_drawable_text_free (RsvgNode *self)
+rsvg_node_text_free (RsvgNode *self)
 {
 	RsvgNodeText *z = (RsvgNodeText *)self;
 	rsvg_tspan_free (z->chunk);
@@ -479,7 +479,7 @@ rsvg_tspan_draw(RsvgTspan * self, RsvgDrawingCtx *ctx, gdouble *x, gdouble *y, i
 }
 
 static void 
-rsvg_node_drawable_text_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
+rsvg_node_text_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							  int dominate)
 {
 	gdouble x, y;
@@ -528,14 +528,13 @@ rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	text = g_new (RsvgNodeText, 1);
 
 	text->super.type = RSVG_NODE_PATH;
-	text->super.free = rsvg_node_drawable_text_free;
-	text->super.draw = rsvg_node_drawable_text_draw;
+	text->super.free = rsvg_node_text_free;
+	text->super.draw = rsvg_node_text_draw;
 	rsvg_defs_set (ctx->defs, id, &text->super);
 	
-	text->super.parent = (RsvgNode *)ctx->current_defs_group;
+	text->super.parent = (RsvgNode *)ctx->currentnode;
 	if (text->super.parent != NULL)
-		rsvg_node_drawable_group_pack((RsvgNodeGroup *)text->super.parent, 
-									  &text->super);
+		rsvg_node_group_pack(text->super.parent, &text->super);
 
 	handler->id = g_string_new(id);
 

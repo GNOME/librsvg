@@ -489,9 +489,9 @@ rsvg_art_paint_server_pattern_render (RsvgPattern *pattern, ArtRender *ar,
 
 	if (((RsvgNodeGroup *)drawable)->children->len ||
 		pattern->gfallback == NULL)
-		rsvg_node_drawable_draw (drawable, hctx, 2);
+		rsvg_node_draw (drawable, hctx, 2);
 	else
-		rsvg_node_drawable_draw ((RsvgNode *)pattern->gfallback, hctx, 2);		
+		rsvg_node_draw ((RsvgNode *)pattern->gfallback, hctx, 2);		
 
 	rsvg_state_pop(ctx->ctx);
 

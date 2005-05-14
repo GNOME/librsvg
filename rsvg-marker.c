@@ -248,7 +248,7 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 			state->affine[i] = affine[i];
 		}
 
-	rsvg_node_drawable_draw (self->contents, ctx, 3);
+	rsvg_node_draw (self->contents, ctx, 3);
 	
 	rsvg_state_pop(ctx);
 }

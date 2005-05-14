@@ -133,7 +133,7 @@ rsvg_art_clip_path_render (RsvgClipPath * self, RsvgDrawingCtx *ctx)
 
 	for (i = 0; i < group->children->len; i++)
 		{
-			rsvg_node_drawable_draw (g_ptr_array_index(group->children, i), 
+			rsvg_node_draw (g_ptr_array_index(group->children, i), 
 									 ctx, 0);
 		}
 
@@ -166,7 +166,7 @@ rsvg_art_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgDrawin
 	((RsvgArtRender *)ctx->render)->pixbuf = mask;
 
 	rsvg_state_push(ctx);
-	rsvg_node_drawable_draw (drawable, ctx, 0);
+	rsvg_node_draw (drawable, ctx, 0);
 	rsvg_state_pop(ctx);
 
 	((RsvgArtRender *)ctx->render)->pixbuf = save;
