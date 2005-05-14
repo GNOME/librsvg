@@ -161,7 +161,7 @@ rsvg_tspan_remove_leading(RsvgTspan * self)
 	if (!self)
 		return;
 	if (!self->contents->len == 0)
-		return
+		return;
 	rsvg_tchunk_remove_leading(g_ptr_array_index(self->contents, 0));
 }
 
@@ -176,20 +176,6 @@ rsvg_tchunk_remove_leading(RsvgTChunk * self)
 }
 
 static void
-rsvg_tchunk_remove_trailing(RsvgTChunk * self);
-
-static void
-rsvg_tspan_remove_trailing(RsvgTspan * self)
-{
-	if (!self)
-		return;
-	if (!self->contents->len == 0)
-		return
-	rsvg_tchunk_remove_trailing(g_ptr_array_index(self->contents, 
-												  self->contents->len - 1));
-}
-
-static void
 rsvg_tchunk_remove_trailing(RsvgTChunk * self)
 {
 	if (self->string)
@@ -197,6 +183,17 @@ rsvg_tchunk_remove_trailing(RsvgTChunk * self)
 			g_string_erase(self->string, self->string->len - 1, 1);
 	if (self->span)
 		rsvg_tspan_remove_trailing(self->span);
+}
+
+static void
+rsvg_tspan_remove_trailing(RsvgTspan * self)
+{
+	if (!self)
+		return;
+	if (!self->contents->len == 0)
+		return;
+	rsvg_tchunk_remove_trailing(g_ptr_array_index(self->contents, 
+												  self->contents->len - 1));
 }
 
 typedef struct _RsvgSaxHandlerText {

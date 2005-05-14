@@ -1,6 +1,7 @@
 2005-05-14  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-filter.c: Bug 302905
+	* rsvg-text.c: Bug 170164
 	
 2005-05-15  Caleb Moore <c.moore@student.unsw.edu.au>
 
