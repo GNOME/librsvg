@@ -176,6 +176,9 @@ rsvg_tchunk_remove_leading(RsvgTChunk * self)
 }
 
 static void
+rsvg_tspan_remove_trailing(RsvgTspan * self);
+
+static void
 rsvg_tchunk_remove_trailing(RsvgTChunk * self)
 {
 	if (self->string)
