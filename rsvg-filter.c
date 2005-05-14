@@ -22,6 +22,8 @@
    Author: Caleb Moore <c.moore@student.unsw.edu.au>
 */
 
+#include "config.h"
+
 #include "rsvg-private.h"
 #include "rsvg-filter.h"
 #include "rsvg-styles.h"

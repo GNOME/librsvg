@@ -1,3 +1,7 @@
+2005-05-14  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-filter.c: Bug 302905
+	
 2005-05-15  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* everwhere: misc movement towards a DOM interface
