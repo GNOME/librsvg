@@ -550,49 +550,15 @@ rsvg_filter_free (RsvgNode * dself)
 	g_ptr_array_free(self->primitives, FALSE);
 }
 
-/**
- * rsvg_new_filter: Creates a black filter
- *
- * Creates a blank filter and assigns default values to everything
- **/
-static RsvgFilter *
-rsvg_new_filter (void)
-{
-	RsvgFilter *filter;
-
-	filter = g_new (RsvgFilter, 1);
-	filter->filterunits = objectBoundingBox;
-	filter->primitiveunits = userSpaceOnUse;
-	filter->x = -0.1;
-	filter->y = -0.1;
-	filter->width = 1.2;
-	filter->height = 1.2;
-	filter->primitives = g_ptr_array_new ();
-	filter->super.type = RSVG_NODE_FILTER;
-	filter->super.free = rsvg_filter_free;
-	filter->super.add_child = rsvg_filter_add_child;
-	return filter;
-}
-
-/**
- * rsvg_start_filter: Create a filter from xml arguments.
- * @ctx: the current rsvg handle
- * @atts: the xml attributes that set the filter's properties
- *
- * Creates a new filter and sets it as a def
- * Also sets the context's current filter pointer to point to the
- * newly created filter so that all subsiquent primatives are
- * added to this filter until the filter is ended
- **/
-RsvgNode *
-rsvg_start_filter (RsvgHandle * ctx, RsvgPropertyBag * atts)
+static void
+rsvg_filter_set_args (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	const char *value;
 	RsvgFilter *filter;
 	double font_size;
 	
 	font_size = rsvg_state_current_font_size (ctx);
-	filter = rsvg_new_filter ();
+	filter = (RsvgFilter *)self;
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -637,7 +603,31 @@ rsvg_start_filter (RsvgHandle * ctx, RsvgPropertyBag * atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, &filter->super);
 		}
-	return (RsvgNode *)filter;
+}
+
+/**
+ * rsvg_new_filter: Creates a black filter
+ *
+ * Creates a blank filter and assigns default values to everything
+ **/
+RsvgNode *
+rsvg_new_filter (void)
+{
+	RsvgFilter *filter;
+
+	filter = g_new (RsvgFilter, 1);
+	filter->filterunits = objectBoundingBox;
+	filter->primitiveunits = userSpaceOnUse;
+	filter->x = -0.1;
+	filter->y = -0.1;
+	filter->width = 1.2;
+	filter->height = 1.2;
+	filter->primitives = g_ptr_array_new ();
+	filter->super.type = RSVG_NODE_FILTER;
+	filter->super.free = rsvg_filter_free;
+	filter->super.add_child = rsvg_filter_add_child;
+	filter->super.set_atts = rsvg_filter_set_args;
+	return &filter->super;
 }
 
 /**
@@ -877,8 +867,8 @@ rsvg_filter_primitive_blend_free (RsvgNode * self)
 	g_free (bself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_blend (RsvgHandle * ctx, RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_blend_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	const char *id = NULL, *value;
 	double font_size;
@@ -886,12 +876,7 @@ rsvg_start_filter_primitive_blend (RsvgHandle * ctx, RsvgPropertyBag * atts)
 	
 	font_size = rsvg_state_current_font_size (ctx);
 
-	filter = g_new (RsvgFilterPrimitiveBlend, 1);
-	filter->mode = normal;
-	filter->super.in = g_string_new ("none");
-	filter->in2 = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
+	filter = (RsvgFilterPrimitiveBlend *)node;
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -953,10 +938,22 @@ rsvg_start_filter_primitive_blend (RsvgHandle * ctx, RsvgPropertyBag * atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, id, &filter->super.super);
 		}
-	
+}
+
+RsvgNode *
+rsvg_new_filter_primitive_blend (void)
+{
+	RsvgFilterPrimitiveBlend *filter;
+	filter = g_new (RsvgFilterPrimitiveBlend, 1);
+	filter->mode = normal;
+	filter->super.in = g_string_new ("none");
+	filter->in2 = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
 	filter->super.render = &rsvg_filter_primitive_blend_render;
 	filter->super.super.free = &rsvg_filter_primitive_blend_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_blend_set_atts;
 	return (RsvgNode *)filter;
 }
 
@@ -1100,9 +1097,10 @@ rsvg_filter_primitive_convolve_matrix_free (RsvgNode * self)
 	g_free (cself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
-											 RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode * self,
+												RsvgHandle * ctx,
+												RsvgPropertyBag * atts)
 {
 	gint i, j;
 	guint listlen;
@@ -1112,21 +1110,9 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 	RsvgFilterPrimitiveConvolveMatrix *filter;
 	
 	font_size = rsvg_state_current_font_size (ctx);
-	
-	filter = g_new (RsvgFilterPrimitiveConvolveMatrix, 1);
-	
-	filter->super.in = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;	
-	
-	filter->divisor = 0;
-	filter->bias = 0;
+	filter = (RsvgFilterPrimitiveConvolveMatrix*)self;
 	has_target_x = 0;
 	has_target_y = 0;
-	filter->dx = 0;
-	filter->dy = 0;
-	filter->preservealpha = FALSE;	
-	filter->edgemode = 0;
 
 	if (rsvg_property_bag_size (atts))
 		{
@@ -1242,10 +1228,26 @@ rsvg_start_filter_primitive_convolve_matrix (RsvgHandle * ctx,
 		{
 			filter->targety = floor(filter->ordery / 2);
 		}
+}
 
+RsvgNode *
+rsvg_new_filter_primitive_convolve_matrix(void)
+{
+	RsvgFilterPrimitiveConvolveMatrix *filter;
+	filter = g_new (RsvgFilterPrimitiveConvolveMatrix, 1);	
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;		
+	filter->divisor = 0;
+	filter->bias = 0;
+	filter->dx = 0;
+	filter->dy = 0;
+	filter->preservealpha = FALSE;	
+	filter->edgemode = 0;
 	filter->super.render = &rsvg_filter_primitive_convolve_matrix_render;
 	filter->super.super.free = &rsvg_filter_primitive_convolve_matrix_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_convolve_matrix_set_atts;
 	return (RsvgNode *)filter;
 }
 
@@ -1553,9 +1555,10 @@ rsvg_filter_primitive_gaussian_blur_free (RsvgNode * self)
 	g_free (cself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_gaussian_blur (RsvgHandle * ctx,
-										   RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_gaussian_blur_set_atts (RsvgNode * self,
+											  RsvgHandle * ctx,
+											  RsvgPropertyBag * atts)
 {
 	const char *id = NULL, *value;
 	double font_size;
@@ -1563,13 +1566,7 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle * ctx,
 
 	font_size = rsvg_state_current_font_size (ctx);
 	
-	filter = g_new (RsvgFilterPrimitiveGaussianBlur, 1);
-
-	filter->super.in = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-	filter->sdx = 0;
-	filter->sdy = 0;
+	filter = (RsvgFilterPrimitiveGaussianBlur *)self;
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -1620,10 +1617,22 @@ rsvg_start_filter_primitive_gaussian_blur (RsvgHandle * ctx,
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, id, &filter->super.super);
 		}
+}
 
+RsvgNode *
+rsvg_new_filter_primitive_gaussian_blur(void)
+{
+	RsvgFilterPrimitiveGaussianBlur *filter;
+	filter = g_new (RsvgFilterPrimitiveGaussianBlur, 1);
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->sdx = 0;
+	filter->sdy = 0;
 	filter->super.render = &rsvg_filter_primitive_gaussian_blur_render;
 	filter->super.super.free = &rsvg_filter_primitive_gaussian_blur_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_gaussian_blur_set_atts;
 	return (RsvgNode *)filter;
 }
 
@@ -1715,8 +1724,8 @@ rsvg_filter_primitive_offset_free (RsvgNode * self)
 	g_free (oself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_offset (RsvgHandle * ctx, RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_offset_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	const char *id = NULL, *value;
 	double font_size;
@@ -1724,13 +1733,7 @@ rsvg_start_filter_primitive_offset (RsvgHandle * ctx, RsvgPropertyBag * atts)
 	
 	font_size = rsvg_state_current_font_size (ctx);
 	
-	filter = g_new (RsvgFilterPrimitiveOffset, 1);
-	
-	filter->super.in = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-	filter->dy = 0;
-	filter->dx = 0;
+	filter = (RsvgFilterPrimitiveOffset *)self;
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -1789,10 +1792,22 @@ rsvg_start_filter_primitive_offset (RsvgHandle * ctx, RsvgPropertyBag * atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, id, &filter->super.super);
 		}
+}
 
+RsvgNode *
+rsvg_new_filter_primitive_offset (void)
+{
+	RsvgFilterPrimitiveOffset *filter;
+	filter = g_new (RsvgFilterPrimitiveOffset, 1);	
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->dy = 0;
+	filter->dx = 0;
 	filter->super.render = &rsvg_filter_primitive_offset_render;
 	filter->super.super.free = &rsvg_filter_primitive_offset_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_offset_set_atts;
 	return (RsvgNode *)filter;
 }
 
@@ -1853,8 +1868,8 @@ rsvg_filter_primitive_merge_free (RsvgNode * self)
 	g_free (mself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_merge (RsvgHandle * ctx, RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_merge_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	const char *id = NULL, *value;
 	double font_size;
@@ -1862,11 +1877,7 @@ rsvg_start_filter_primitive_merge (RsvgHandle * ctx, RsvgPropertyBag * atts)
 	
 	font_size = rsvg_state_current_font_size (ctx);
 
-	filter = g_new (RsvgFilterPrimitiveMerge, 1);
-	
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-	filter->nodes = g_ptr_array_new ();
+	filter = (RsvgFilterPrimitiveMerge *)self;
 
 	if (rsvg_property_bag_size (atts))
 		{
@@ -1911,10 +1922,20 @@ rsvg_start_filter_primitive_merge (RsvgHandle * ctx, RsvgPropertyBag * atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, id, &filter->super.super);
 		}
-	
+}
+
+RsvgNode *
+rsvg_new_filter_primitive_merge (void)
+{
+	RsvgFilterPrimitiveMerge *filter;
+	filter = g_new (RsvgFilterPrimitiveMerge, 1);	
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->nodes = g_ptr_array_new ();
 	filter->super.render = &rsvg_filter_primitive_merge_render;
 	filter->super.super.free = &rsvg_filter_primitive_merge_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_merge_set_atts;
 	return (RsvgNode *)filter;
 }
 
@@ -2039,9 +2060,8 @@ rsvg_filter_primitive_colour_matrix_free (RsvgNode * self)
 	g_free (cself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
-										   RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_colour_matrix_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	gint type;
 	guint listlen;
@@ -2051,14 +2071,8 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 	
 	font_size = rsvg_state_current_font_size (ctx);
 	
-	filter = g_new (RsvgFilterPrimitiveColourMatrix, 1);
+	filter = (RsvgFilterPrimitiveColourMatrix *)self;
 	
-	filter->super.in = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-	
-	filter->KernelMatrix = NULL;
-
 	type = 0;
 	
 	if (rsvg_property_bag_size (atts))
@@ -2200,12 +2214,24 @@ rsvg_start_filter_primitive_colour_matrix (RsvgHandle * ctx,
 		{
 			g_assert_not_reached();
 		}
+}
 
+RsvgNode *
+rsvg_new_filter_primitive_colour_matrix (void)
+{
+	RsvgFilterPrimitiveColourMatrix *filter;
+	filter = g_new (RsvgFilterPrimitiveColourMatrix, 1);	
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;	
+	filter->KernelMatrix = NULL;
 	filter->super.render = &rsvg_filter_primitive_colour_matrix_render;
 	filter->super.super.free = &rsvg_filter_primitive_colour_matrix_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_colour_matrix_set_atts;
 	return (RsvgNode *)filter;
 }
+
 
 /*************************************************************/
 /*************************************************************/
@@ -2405,30 +2431,15 @@ rsvg_filter_primitive_component_transfer_free (RsvgNode * self)
 	g_free (cself);
 }
 
-
-RsvgNode *
-rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
-												RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_component_transfer_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	double font_size;
 	const char *value;
 	RsvgFilterPrimitiveComponentTransfer *filter;
 	
 	font_size = rsvg_state_current_font_size (ctx);
-	
-	filter = g_new (RsvgFilterPrimitiveComponentTransfer, 1);
-	
-	filter->super.result = g_string_new ("none");
-	filter->super.in = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-	filter->Rfunction = identity_component_transfer_func;
-	filter->Gfunction = identity_component_transfer_func;
-	filter->Bfunction = identity_component_transfer_func;
-	filter->Afunction = identity_component_transfer_func;
-	filter->Rdata.nbTableValues = 0;
-	filter->Gdata.nbTableValues = 0;
-	filter->Bdata.nbTableValues = 0;
-	filter->Adata.nbTableValues = 0;
+	filter = (RsvgFilterPrimitiveComponentTransfer *)self;
 
 	if (rsvg_property_bag_size (atts))
 		{
@@ -2475,10 +2486,29 @@ rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
+}
 
+RsvgNode *
+rsvg_new_filter_primitive_component_transfer (void)
+{
+	RsvgFilterPrimitiveComponentTransfer *filter;
+
+	filter = g_new (RsvgFilterPrimitiveComponentTransfer, 1);
+	filter->super.result = g_string_new ("none");
+	filter->super.in = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->Rfunction = identity_component_transfer_func;
+	filter->Gfunction = identity_component_transfer_func;
+	filter->Bfunction = identity_component_transfer_func;
+	filter->Afunction = identity_component_transfer_func;
+	filter->Rdata.nbTableValues = 0;
+	filter->Gdata.nbTableValues = 0;
+	filter->Bdata.nbTableValues = 0;
+	filter->Adata.nbTableValues = 0;
 	filter->super.render = &rsvg_filter_primitive_component_transfer_render;
 	filter->super.super.free = &rsvg_filter_primitive_component_transfer_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_component_transfer_set_atts;
 	return (RsvgNode *)filter;
 }
 
@@ -2667,9 +2697,8 @@ rsvg_filter_primitive_erode_free (RsvgNode * self)
 	g_free (cself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
-								   RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_erode_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	const char *value;	
 
@@ -2678,14 +2707,7 @@ rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 
 	font_size = rsvg_state_current_font_size (ctx);
 	
-	filter = g_new (RsvgFilterPrimitiveErode, 1);
-
-	filter->super.in = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-	filter->rx = 0;
-	filter->ry = 0;
-	filter->mode = 0;
+	filter = (RsvgFilterPrimitiveErode *)self;
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -2745,10 +2767,23 @@ rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
+}
 
+RsvgNode *
+rsvg_new_filter_primitive_erode (void)
+{
+	RsvgFilterPrimitiveErode *filter;
+	filter = g_new (RsvgFilterPrimitiveErode, 1);
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->rx = 0;
+	filter->ry = 0;
+	filter->mode = 0;
 	filter->super.render = &rsvg_filter_primitive_erode_render;
 	filter->super.super.free = &rsvg_filter_primitive_erode_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_erode_set_atts;
 	return (RsvgNode *)filter;
 }
 
@@ -2917,8 +2952,8 @@ rsvg_filter_primitive_composite_free (RsvgNode * self)
 	g_free (cself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_composite (RsvgHandle * ctx, RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_composite_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	double font_size;
 	const char *value;
@@ -2926,16 +2961,7 @@ rsvg_start_filter_primitive_composite (RsvgHandle * ctx, RsvgPropertyBag * atts)
 	
 	font_size = rsvg_state_current_font_size (ctx);
 
-	filter = g_new (RsvgFilterPrimitiveComposite, 1);
-	filter->mode = COMPOSITE_MODE_OVER;
-	filter->super.in = g_string_new ("none");
-	filter->in2 = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-	filter->k1 = 0;
-	filter->k2 = 0;
-	filter->k3 = 0;
-	filter->k4 = 0;
+	filter = (RsvgFilterPrimitiveComposite *)self;
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -3016,13 +3042,28 @@ rsvg_start_filter_primitive_composite (RsvgHandle * ctx, RsvgPropertyBag * atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
-	
+}
+
+RsvgNode *
+rsvg_new_filter_primitive_composite (void)
+{
+	RsvgFilterPrimitiveComposite *filter;
+	filter = g_new (RsvgFilterPrimitiveComposite, 1);
+	filter->mode = COMPOSITE_MODE_OVER;
+	filter->super.in = g_string_new ("none");
+	filter->in2 = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->k1 = 0;
+	filter->k2 = 0;
+	filter->k3 = 0;
+	filter->k4 = 0;
 	filter->super.render = &rsvg_filter_primitive_composite_render;
 	filter->super.super.free = &rsvg_filter_primitive_composite_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_composite_set_atts;
 	return (RsvgNode *)filter;
 }
-
 
 /*************************************************************/
 /*************************************************************/
@@ -3098,9 +3139,8 @@ rsvg_filter_primitive_flood_free (RsvgNode * self)
 	g_free (cself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
-								   RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_flood_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	const char *value;
 	double font_size;
@@ -3108,15 +3148,8 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 
 	font_size = rsvg_state_current_font_size (ctx);
 	
-	filter = g_new (RsvgFilterPrimitiveFlood, 1);
+	filter = (RsvgFilterPrimitiveFlood *)self;
 
-	filter->super.in = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-
-	filter->opacity = 255;
-	filter->colour = 0;
-	
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "result")))
@@ -3168,10 +3201,22 @@ rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
+}
 
+RsvgNode *
+rsvg_new_filter_primitive_flood (void)
+{
+	RsvgFilterPrimitiveFlood *filter;	
+	filter = g_new (RsvgFilterPrimitiveFlood, 1);
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->opacity = 255;
+	filter->colour = 0;
 	filter->super.render = &rsvg_filter_primitive_flood_render;
 	filter->super.super.free = &rsvg_filter_primitive_flood_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_flood_set_atts;
 	return (RsvgNode *)filter;
 }
 
@@ -3306,8 +3351,8 @@ rsvg_filter_primitive_displacement_map_free (RsvgNode * self)
 	g_free (dself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_displacement_map (RsvgHandle * ctx, RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_displacement_map_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	const char *value;
 	double font_size;
@@ -3315,15 +3360,7 @@ rsvg_start_filter_primitive_displacement_map (RsvgHandle * ctx, RsvgPropertyBag 
 	
 	font_size = rsvg_state_current_font_size (ctx);
 	
-	filter = g_new (RsvgFilterPrimitiveDisplacementMap, 1);
-	
-	filter->super.in = g_string_new ("none");
-	filter->in2 = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-	filter->xChannelSelector = ' ';
-	filter->yChannelSelector = ' ';
-	filter->scale = 0;
+	filter = (RsvgFilterPrimitiveDisplacementMap *)self;
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -3378,10 +3415,24 @@ rsvg_start_filter_primitive_displacement_map (RsvgHandle * ctx, RsvgPropertyBag 
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
-	
+}
+
+RsvgNode *
+rsvg_new_filter_primitive_displacement_map ()
+{
+	RsvgFilterPrimitiveDisplacementMap *filter;	
+	filter = g_new (RsvgFilterPrimitiveDisplacementMap, 1);	
+	filter->super.in = g_string_new ("none");
+	filter->in2 = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->xChannelSelector = ' ';
+	filter->yChannelSelector = ' ';
+	filter->scale = 0;
 	filter->super.render = &rsvg_filter_primitive_displacement_map_render;
 	filter->super.super.free = &rsvg_filter_primitive_displacement_map_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_displacement_map_set_atts;
 	return (RsvgNode *)filter;
 }
 
@@ -3687,8 +3738,8 @@ rsvg_filter_primitive_turbulence_free (RsvgNode * self)
 	g_free (tself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_turbulence (RsvgHandle * ctx, RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_turbulence_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	const char *value;
 	double font_size;
@@ -3696,19 +3747,7 @@ rsvg_start_filter_primitive_turbulence (RsvgHandle * ctx, RsvgPropertyBag * atts
 	
 	font_size = rsvg_state_current_font_size (ctx);
 	
-	filter = g_new (RsvgFilterPrimitiveTurbulence, 1);
-	
-	filter->super.in = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-	filter->fBaseFreqX = 0;
-	filter->fBaseFreqY = 0;
-	filter->nNumOctaves = 1;
-	filter->seed = 0;
-	filter->bDoStitching = 0;
-	filter->bFractalSum = 0;
-
-	feTurbulence_init(filter);
+	filter = (RsvgFilterPrimitiveTurbulence *)self;
 
 	if (rsvg_property_bag_size (atts))
 		{
@@ -3765,12 +3804,30 @@ rsvg_start_filter_primitive_turbulence (RsvgHandle * ctx, RsvgPropertyBag * atts
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
-	
+}
+
+RsvgNode *
+rsvg_new_filter_primitive_turbulence (void)
+{
+	RsvgFilterPrimitiveTurbulence *filter;
+	filter = g_new (RsvgFilterPrimitiveTurbulence, 1);	
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->fBaseFreqX = 0;
+	filter->fBaseFreqY = 0;
+	filter->nNumOctaves = 1;
+	filter->seed = 0;
+	filter->bDoStitching = 0;
+	filter->bFractalSum = 0;
+	feTurbulence_init(filter);
 	filter->super.render = &rsvg_filter_primitive_turbulence_render;
 	filter->super.super.free = &rsvg_filter_primitive_turbulence_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_turbulence_set_atts;
 	return (RsvgNode *)filter;
 }
+
 
 /*************************************************************/
 /*************************************************************/
@@ -3937,8 +3994,8 @@ rsvg_filter_primitive_image_free (RsvgNode * self)
 	g_free (oself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_image (RsvgHandle * ctx, RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	const char *value;
 	double font_size;
@@ -3946,13 +4003,9 @@ rsvg_start_filter_primitive_image (RsvgHandle * ctx, RsvgPropertyBag * atts)
 	
 	font_size = rsvg_state_current_font_size (ctx);
 	
-	filter = g_new (RsvgFilterPrimitiveImage, 1);
-	
-	filter->super.in = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-	filter->ctx = ctx;
-	
+	filter = (RsvgFilterPrimitiveImage*)self;
+	filter->ctx = ctx;	
+
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "in")))
@@ -4003,10 +4056,20 @@ rsvg_start_filter_primitive_image (RsvgHandle * ctx, RsvgPropertyBag * atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
-	
+}
+
+RsvgNode *
+rsvg_new_filter_primitive_image (void)
+{
+	RsvgFilterPrimitiveImage *filter;
+	filter = g_new (RsvgFilterPrimitiveImage, 1);
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
 	filter->super.render = &rsvg_filter_primitive_image_render;
 	filter->super.super.free = &rsvg_filter_primitive_image_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_image_set_atts;
 	return (RsvgNode *)filter;
 }
 
@@ -4527,8 +4590,8 @@ rsvg_filter_primitive_diffuse_lighting_free (RsvgNode * self)
 	g_free (oself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	const char *value;
 	double font_size;
@@ -4536,16 +4599,8 @@ rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, RsvgPropertyBag 
 	
 	font_size = rsvg_state_current_font_size (ctx);
 	
-	filter = g_new (RsvgFilterPrimitiveDiffuseLighting, 1);
+	filter = (RsvgFilterPrimitiveDiffuseLighting *)self;
 	
-	filter->super.in = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-	filter->surfaceScale = 1;
-	filter->diffuseConstant = 1;
-	filter->dx = 1;
-	filter->dy = 1;
-	filter->lightingcolour = 0xFFFFFFFF;
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -4603,13 +4658,27 @@ rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, RsvgPropertyBag 
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
+}
 
+RsvgNode *
+rsvg_new_filter_primitive_diffuse_lighting (void)
+{
+	RsvgFilterPrimitiveDiffuseLighting *filter;
+	filter = g_new (RsvgFilterPrimitiveDiffuseLighting, 1);
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->surfaceScale = 1;
+	filter->diffuseConstant = 1;
+	filter->dx = 1;
+	filter->dy = 1;
+	filter->lightingcolour = 0xFFFFFFFF;
 	filter->super.render = &rsvg_filter_primitive_diffuse_lighting_render;
 	filter->super.super.free = &rsvg_filter_primitive_diffuse_lighting_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_diffuse_lighting_set_atts;
 	return (RsvgNode *)filter;
 }
-
 
 /*************************************************************/
 /*************************************************************/
@@ -4731,8 +4800,8 @@ rsvg_filter_primitive_specular_lighting_free (RsvgNode * self)
 	g_free (oself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	const char *value;
 	double font_size;
@@ -4740,15 +4809,7 @@ rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, RsvgPropertyBag
 	
 	font_size = rsvg_state_current_font_size (ctx);
 	
-	filter = g_new (RsvgFilterPrimitiveSpecularLighting, 1);
-	
-	filter->super.in = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-	filter->surfaceScale = 1;
-	filter->specularConstant = 1;
-	filter->specularExponent = 1;
-	filter->lightingcolour = 0xFFFFFFFF;
+	filter = (RsvgFilterPrimitiveSpecularLighting *)self;
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -4806,10 +4867,25 @@ rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, RsvgPropertyBag
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
-	
+}
+
+
+RsvgNode *
+rsvg_new_filter_primitive_specular_lighting (void)
+{
+	RsvgFilterPrimitiveSpecularLighting *filter;
+	filter = g_new (RsvgFilterPrimitiveSpecularLighting, 1);	
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
+	filter->surfaceScale = 1;
+	filter->specularConstant = 1;
+	filter->specularExponent = 1;
+	filter->lightingcolour = 0xFFFFFFFF;
 	filter->super.render = &rsvg_filter_primitive_specular_lighting_render;
 	filter->super.super.free = &rsvg_filter_primitive_specular_lighting_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_specular_lighting_set_atts;
 	return (RsvgNode *)filter;
 }
 
@@ -4892,9 +4968,8 @@ rsvg_filter_primitive_tile_free (RsvgNode * self)
 	g_free (cself);
 }
 
-RsvgNode *
-rsvg_start_filter_primitive_tile (RsvgHandle * ctx,
-								   RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_tile_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
 	const char *value;
 	double font_size;
@@ -4902,12 +4977,8 @@ rsvg_start_filter_primitive_tile (RsvgHandle * ctx,
 
 	font_size = rsvg_state_current_font_size (ctx);
 	
-	filter = g_new (RsvgFilterPrimitiveTile, 1);
+	filter = (RsvgFilterPrimitiveTile*)self;
 
-	filter->super.in = g_string_new ("none");
-	filter->super.result = g_string_new ("none");
-	filter->super.sizedefaults = 1;
-	
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "in")))
@@ -4953,9 +5024,19 @@ rsvg_start_filter_primitive_tile (RsvgHandle * ctx,
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
+}
 
+RsvgNode *
+rsvg_new_filter_primitive_tile (void)
+{
+	RsvgFilterPrimitiveTile *filter;
+	filter = g_new (RsvgFilterPrimitiveTile, 1);
+	filter->super.in = g_string_new ("none");
+	filter->super.result = g_string_new ("none");
+	filter->super.sizedefaults = 1;
 	filter->super.render = &rsvg_filter_primitive_tile_render;
 	filter->super.super.free = &rsvg_filter_primitive_tile_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.super.set_atts = rsvg_filter_primitive_tile_set_atts;
 	return (RsvgNode *)filter;
 }

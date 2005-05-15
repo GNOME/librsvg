@@ -202,6 +202,7 @@ struct _RsvgNode {
 	void (*add_child) (RsvgNode *self, RsvgNode *child);
 	void (*free) (RsvgNode *self);
 	void (*draw) (RsvgNode * self, RsvgDrawingCtx *ctx, int dominate);
+	void (*set_atts) (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag*);
 };
 
 typedef void (*RsvgPropertyBagEnumFunc) (const char * key,
@@ -302,6 +303,9 @@ _rsvg_affine_rectilinear (const double src[6]);
 /* Determine whether two affine transformations are equal within grid allignment */
 int
 _rsvg_affine_equal (double matrix1[6], double matrix2[6]);
+
+void
+rsvg_node_set_atts(RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts);
 
 G_END_DECLS
 

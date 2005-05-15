@@ -46,7 +46,7 @@ void
 rsvg_filter_render (RsvgFilter *self, GdkPixbuf *source, GdkPixbuf *output, GdkPixbuf *bg, RsvgDrawingCtx *context);
 
 RsvgNode *
-rsvg_start_filter (RsvgHandle *ctx, RsvgPropertyBag *atts);
+rsvg_new_filter (void);
 
 void 
 rsvg_end_filter (RsvgHandle *ctx);
@@ -55,66 +55,63 @@ RsvgFilter *
 rsvg_filter_parse (const RsvgDefs *defs, const char *str);
 
 RsvgNode * 
-rsvg_start_filter_primitive_blend (RsvgHandle *ctx, RsvgPropertyBag *atts);
+rsvg_new_filter_primitive_blend (void);
 
 RsvgNode * 
-rsvg_start_filter_primitive_convolve_matrix (RsvgHandle *ctx, RsvgPropertyBag *atts);
+rsvg_new_filter_primitive_convolve_matrix (void);
 
 RsvgNode * 
-rsvg_start_filter_primitive_gaussian_blur (RsvgHandle *ctx, RsvgPropertyBag *atts);
+rsvg_new_filter_primitive_gaussian_blur (void);
 
 RsvgNode * 
-rsvg_start_filter_primitive_offset (RsvgHandle *ctx, RsvgPropertyBag *atts);
+rsvg_new_filter_primitive_offset (void);
 
 RsvgNode * 
-rsvg_start_filter_primitive_merge (RsvgHandle *ctx, RsvgPropertyBag *atts);
+rsvg_new_filter_primitive_merge (void);
 
 void
 rsvg_start_filter_primitive_merge_node (RsvgHandle *ctx, RsvgPropertyBag *atts);
 
 RsvgNode *
-rsvg_start_filter_primitive_colour_matrix (RsvgHandle *ctx, RsvgPropertyBag *atts);
+rsvg_new_filter_primitive_colour_matrix (void);
 
 RsvgNode *
-rsvg_start_filter_primitive_component_transfer (RsvgHandle * ctx,
-												RsvgPropertyBag * atts);
+rsvg_new_filter_primitive_component_transfer (void);
 
 void
 rsvg_start_filter_primitive_component_transfer_function (RsvgHandle * ctx,
 														 RsvgPropertyBag * atts, char channel);
 
 RsvgNode *
-rsvg_start_filter_primitive_erode (RsvgHandle * ctx,
-								   RsvgPropertyBag * atts);
+rsvg_new_filter_primitive_erode (void);
 
 RsvgNode *
-rsvg_start_filter_primitive_composite (RsvgHandle * ctx, RsvgPropertyBag * atts);
+rsvg_new_filter_primitive_composite (void);
 
 RsvgNode *
-rsvg_start_filter_primitive_flood (RsvgHandle * ctx,
-								   RsvgPropertyBag * atts);
+rsvg_new_filter_primitive_flood (void);
 
 RsvgNode *
-rsvg_start_filter_primitive_displacement_map (RsvgHandle * ctx, RsvgPropertyBag * atts);
+rsvg_new_filter_primitive_displacement_map (void);
 
 RsvgNode *
-rsvg_start_filter_primitive_turbulence (RsvgHandle * ctx, RsvgPropertyBag * atts);
+rsvg_new_filter_primitive_turbulence (void);
 
 RsvgNode *
-rsvg_start_filter_primitive_image (RsvgHandle * ctx, RsvgPropertyBag * atts);
+rsvg_new_filter_primitive_image (void);
 
 RsvgNode *
-rsvg_start_filter_primitive_diffuse_lighting (RsvgHandle * ctx, RsvgPropertyBag * atts);
+rsvg_new_filter_primitive_diffuse_lighting (void);
 
 void
 rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
 										  RsvgPropertyBag * atts, char type);
 
 RsvgNode *
-rsvg_start_filter_primitive_specular_lighting (RsvgHandle * ctx, RsvgPropertyBag * atts);
+rsvg_new_filter_primitive_specular_lighting (void);
 
 RsvgNode *
-rsvg_start_filter_primitive_tile (RsvgHandle * ctx, RsvgPropertyBag * atts);
+rsvg_new_filter_primitive_tile (void);
 
 void
 rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output,

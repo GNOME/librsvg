@@ -32,20 +32,19 @@ static void
 rsvg_mask_free (RsvgNode * self)
 {
 	RsvgMask *z = (RsvgMask *)self;
-	g_ptr_array_free(z->super.children, TRUE);
-	rsvg_state_finalize (z->super.super.state);
-	g_free(z->super.super.state);
+	g_ptr_array_free(z->children, TRUE);
+	rsvg_state_finalize (z->super.state);
+	g_free(z->super.state);
 	g_free (z);
 }
 
-static void 
-rsvg_node_mask_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
-							  int dominate)
+void 
+rsvg_node_mask_draw (RsvgMask *group, RsvgDrawingCtx *ctx, 
+					 int dominate)
 {
-	RsvgNodeGroup *group = (RsvgNodeGroup*)self;
 	guint i;
 
-	rsvg_state_reinherit_top(ctx, self->state, 0);
+	rsvg_state_reinherit_top(ctx, group->super.state, 0);
 
 	rsvg_push_discrete_layer (ctx);
 
@@ -53,8 +52,7 @@ rsvg_node_mask_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 		{
 			rsvg_state_push(ctx);
 
-			rsvg_node_draw (g_ptr_array_index(group->children, i), 
-									 ctx, 0);
+			rsvg_node_draw (g_ptr_array_index(group->children, i), ctx, 0);
 	
 			rsvg_state_pop(ctx);
 		}			
@@ -62,37 +60,15 @@ rsvg_node_mask_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	rsvg_pop_discrete_layer (ctx);
 }
 
-
-static RsvgMask *
-rsvg_new_mask (void)
-{
-	RsvgMask *mask;
-	
-	mask = g_new (RsvgMask, 1);
-	mask->maskunits = objectBoundingBox;
-	mask->contentunits = userSpaceOnUse;
-	mask->x = 0;
-	mask->y = 0;
-	mask->width = 1;
-	mask->height = 1;
-	mask->super.super.state = g_new(RsvgState, 1);
-	mask->super.children = g_ptr_array_new ();
-	mask->super.super.type = RSVG_NODE_MASK;
-	mask->super.super.free = rsvg_mask_free;
-	mask->super.super.draw = rsvg_node_mask_draw;
-	mask->super.super.add_child = rsvg_node_group_add_child;
-	return mask;
-}
-
-void 
-rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts)
+static void 
+rsvg_mask_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	const char *id = NULL, *klazz = NULL, *value;
 	RsvgMask *mask;
 	double font_size;
 	
 	font_size = rsvg_state_current_font_size (ctx);
-	mask = rsvg_new_mask ();
+	mask = (RsvgMask *)self;
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -133,22 +109,55 @@ rsvg_start_mask (RsvgHandle *ctx, RsvgPropertyBag *atts)
 					rsvg_css_parse_normalized_length (value,
 													  ctx->dpi_y,
 													  1,
-													  font_size);					
+													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				id = value;
+				{
+					id = value;
+					rsvg_defs_register_name(ctx->defs, id, &mask->super);
+				}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 		}
 
+	rsvg_parse_style_attrs (ctx, mask->super.state, "mask", klazz, id, atts);
+}
 
-	rsvg_state_init(mask->super.super.state);
-	rsvg_parse_style_attrs (ctx, mask->super.super.state, "mask", klazz, id, atts);
+static void 
+rsvg_mask_add_child (RsvgNode *overself, RsvgNode *child)
+{
+	RsvgMask *self = (RsvgMask *)overself;
+	if (self == NULL)
+		return;
+	g_ptr_array_add(self->children, child);
+}
 
-	mask->super.super.parent = (RsvgNode *)ctx->currentnode;
+static void
+rsvg_draw_nothing (RsvgNode * self, RsvgDrawingCtx *ctx, 
+				   int dominate)
+{
+}
 
-	ctx->currentnode = &mask->super.super;
-
-	rsvg_defs_set (ctx->defs, id, &mask->super.super);
+RsvgNode *
+rsvg_new_mask (void)
+{
+	RsvgMask *mask;
+	
+	mask = g_new (RsvgMask, 1);
+	mask->maskunits = objectBoundingBox;
+	mask->contentunits = userSpaceOnUse;
+	mask->x = 0;
+	mask->y = 0;
+	mask->width = 1;
+	mask->height = 1;
+	mask->super.state = g_new(RsvgState, 1);
+	rsvg_state_init(mask->super.state);
+	mask->children = g_ptr_array_new ();
+	mask->super.type = RSVG_NODE_MASK;
+	mask->super.free = rsvg_mask_free;
+	mask->super.draw = rsvg_draw_nothing;
+	mask->super.add_child = rsvg_mask_add_child;
+	mask->super.set_atts = rsvg_mask_set_atts;
+	return &mask->super;
 }
 
 void 
@@ -191,36 +200,21 @@ static void
 rsvg_clip_path_free (RsvgNode * self)
 {
 	RsvgClipPath *z = (RsvgClipPath *)self;
-	g_ptr_array_free(z->super.children, TRUE);
-	rsvg_state_finalize (z->super.super.state);
-	g_free(z->super.super.state);
+	g_ptr_array_free(z->children, TRUE);
+	rsvg_state_finalize (z->super.state);
+	g_free(z->super.state);
 	g_free (z);
 }
 
-static RsvgClipPath *
-rsvg_new_clip_path (void)
-{
-	RsvgClipPath *clip_path;
-	
-	clip_path = g_new (RsvgClipPath, 1);
-	clip_path->super.children = g_ptr_array_new ();
-	clip_path->units = userSpaceOnUse;
-	clip_path->super.super.state = g_new(RsvgState, 1);
-	clip_path->super.super.type = RSVG_NODE_CLIP_PATH;
-	clip_path->super.super.free = rsvg_clip_path_free;
-	clip_path->super.super.add_child = rsvg_node_group_add_child;
-	return clip_path;
-}
-
-void 
-rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
+static void 
+rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	const char *id = NULL, *klazz = NULL, *value = NULL;
 	RsvgClipPath *clip_path;
 	double font_size;
 	
 	font_size = rsvg_state_current_font_size (ctx);
-	clip_path = rsvg_new_clip_path ();
+	clip_path = (RsvgClipPath *)self;
 	
 	if (rsvg_property_bag_size (atts))
 		{
@@ -232,21 +226,43 @@ rsvg_start_clip_path (RsvgHandle *ctx, RsvgPropertyBag *atts)
 						clip_path->units = userSpaceOnUse;		
 				}				
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				id = value;
+				{
+					id = value;
+					rsvg_defs_register_name(ctx->defs, id, &clip_path->super);
+				}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 		}
 
-	rsvg_state_init (clip_path->super.super.state);
+	rsvg_state_init (clip_path->super.state);
 
-	rsvg_parse_style_attrs (ctx, clip_path->super.super.state, "clipPath", klazz, id, atts);
+	rsvg_parse_style_attrs (ctx, clip_path->super.state, "clipPath", klazz, id, atts);
+}
 
-	clip_path->super.super.parent = (RsvgNode *)ctx->currentnode;
+static void 
+rsvg_clip_path_add_child (RsvgNode *overself, RsvgNode *child)
+{
+	RsvgClipPath *self = (RsvgClipPath *)overself;
+	if (self == NULL)
+		return;
+	g_ptr_array_add(self->children, child);
+}
 
-	ctx->currentnode = &clip_path->super.super;
+RsvgNode *
+rsvg_new_clip_path (void)
+{
+	RsvgClipPath *clip_path;
 	
-	/* set up the defval stuff */
-	rsvg_defs_set (ctx->defs, id, &clip_path->super.super);
+	clip_path = g_new (RsvgClipPath, 1);
+	clip_path->children = g_ptr_array_new ();
+	clip_path->units = userSpaceOnUse;
+	clip_path->super.state = g_new(RsvgState, 1);
+	clip_path->super.type = RSVG_NODE_CLIP_PATH;
+	clip_path->super.free = rsvg_clip_path_free;
+	clip_path->super.add_child = rsvg_clip_path_add_child;
+	clip_path->super.draw = rsvg_draw_nothing;
+	clip_path->super.set_atts = rsvg_clip_path_set_atts;
+	return &clip_path->super;
 }
 
 void 

@@ -1,3 +1,7 @@
+2005-05-16  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-filter.c, rsvg-structure.c, rsvg-mask.c, rsvg.c: more DOM stuff. Now orthodox nodes are created, then attributes are assigned then are packed onto the top of the tree. I have moved all conforming node creation bits to rsvg-filter-handler-start so I remember what's left to convert. Probably opened a few bugs, you know how it is. Theoretically, it is now possible to implement external DOM interfaces to create new nodes and add nodes to other nodes. Attributes can be edited as much as the user wants for many elements now.
+	
 2005-05-14  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-filter.c: Bug 302905

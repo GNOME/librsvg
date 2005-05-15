@@ -35,12 +35,12 @@
 
 G_BEGIN_DECLS
 
-void rsvg_start_use (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_symbol (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_svg (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_defs (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_g (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_switch (RsvgHandle *ctx, RsvgPropertyBag *atts);
+RsvgNode * rsvg_new_use (void);
+RsvgNode * rsvg_new_symbol (void);
+RsvgNode * rsvg_new_svg (void);
+RsvgNode * rsvg_new_defs (void);
+RsvgNode * rsvg_new_group (void);
+RsvgNode * rsvg_new_switch (void);
 void rsvg_end_g (RsvgHandle *ctx);
 void rsvg_end_svg (RsvgHandle *ctx);
 void rsvg_end_switch (RsvgHandle *ctx);
@@ -56,7 +56,8 @@ struct _RsvgNodeGroup {
 };
 
 struct _RsvgNodeSymbol {
- 	RsvgNodeGroup super;
+ 	RsvgNode super;
+ 	GPtrArray *children;
 	gint preserve_aspect_ratio;
 	gboolean overflow, has_vbox;
  	double x, y, width, height;
@@ -69,16 +70,15 @@ struct _RsvgNodeUse {
 };
 
 struct _RsvgNodeSvg {
- 	RsvgNodeGroup super;
+ 	RsvgNode super;
 	gint preserve_aspect_ratio;
 	gdouble x, y, w, h;
 	gdouble vbx, vby, vbw, vbh;
 	gboolean overflow, has_vbox;
  	GdkPixbuf *img;
+ 	GPtrArray *children;
 };
 
-RsvgNode * 
-rsvg_push_def_group (RsvgHandle *ctx, const char * id, RsvgState *);
 RsvgNode * 
 rsvg_push_part_def_group (RsvgHandle *ctx, const char * id, RsvgState *state);
 void rsvg_pop_def_group (RsvgHandle *ctx);
