@@ -304,11 +304,11 @@ rsvg_clone_pattern (const RsvgPattern *pattern)
 	for (i = 0; i < 6; i++)
 		clone->affine[i] = pattern->affine[i];
 
-	if (((RsvgNodeGroup *)pattern->g)->children->len ||
-		pattern->gfallback == NULL)
-		clone->gfallback = pattern->g;
+	if (pattern->super.children->len ||
+		pattern->fallback == NULL)
+		clone->fallback = (RsvgNode *)pattern;
 	else
-		clone->gfallback = pattern->gfallback;		
+		clone->fallback = (RsvgNode *)pattern->fallback;		
 
 	clone->x = pattern->x;
 	clone->y = pattern->y;
@@ -863,7 +863,7 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 			pattern = g_new (RsvgPattern, 1);
 			pattern->super.type = RSVG_NODE_PATTERN;
 			pattern->super.free = rsvg_pattern_free;
-			pattern->gfallback = NULL;
+			pattern->fallback = NULL;
 		}
 	
 	rsvg_defs_set (ctx->defs, id, &pattern->super);
@@ -891,7 +891,12 @@ rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	pattern->vbw = (cloned && !got_vbox) ? pattern->vbw : vbw;
 	pattern->vbh = (cloned && !got_vbox) ? pattern->vbh : vbh;
 	pattern->vbox = (cloned && !got_vbox) ? pattern->vbox : got_vbox;
-
-	pattern->g = (rsvg_push_part_def_group (ctx, NULL, &state));
+	pattern->super.add_child = rsvg_node_add_child;
+	pattern->super.draw = _rsvg_node_draw_nothing;
+	pattern->super.state = g_new(RsvgState, 1);
+	rsvg_state_init(pattern->super.state);
+	pattern->super.children = g_ptr_array_new();
+	rsvg_node_group_pack(ctx->currentnode, &pattern->super);
+	ctx->currentnode = &pattern->super;
 }
 

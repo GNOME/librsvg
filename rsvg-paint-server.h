@@ -103,8 +103,7 @@ struct _RsvgPattern {
 	double affine[6]; /* user space to actual at time of gradient def */
 	double x, y, width, height;
 	double vbx, vby, vbh, vbw;
-	RsvgNode * g;
-	RsvgNode * gfallback;
+	RsvgNode * fallback;
 	unsigned int preserve_aspect_ratio;
 };
 

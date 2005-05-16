@@ -385,7 +385,7 @@ static void
 rsvg_art_paint_server_pattern_render (RsvgPattern *pattern, ArtRender *ar,
 									  const RsvgPSCtx *ctx)
 {
-	RsvgNode *drawable = (RsvgNode *)pattern->g;
+	RsvgNode *drawable = (RsvgNode *)pattern;
 	RsvgDrawingCtx *hctx = ctx->ctx;
 	GdkPixbuf *pixbuf = ((RsvgArtRender *)hctx->render)->pixbuf; 
 	double affine[6];
@@ -487,11 +487,11 @@ rsvg_art_paint_server_pattern_render (RsvgPattern *pattern, ArtRender *ar,
 			rsvg_state_current(hctx)->affine[i] = caffine[i];
 		}
 
-	if (((RsvgNodeGroup *)drawable)->children->len ||
-		pattern->gfallback == NULL)
-		rsvg_node_draw (drawable, hctx, 2);
+	if (drawable->children->len ||
+		pattern->fallback == NULL)
+		_rsvg_node_draw_children (drawable, hctx, 2);
 	else
-		rsvg_node_draw ((RsvgNode *)pattern->gfallback, hctx, 2);		
+		_rsvg_node_draw_children (pattern->fallback, hctx, 2);		
 
 	rsvg_state_pop(ctx->ctx);
 

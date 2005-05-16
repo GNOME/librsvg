@@ -52,12 +52,10 @@ typedef struct _RsvgNodeSvg RsvgNodeSvg;
 
 struct _RsvgNodeGroup {
  	RsvgNode super;
- 	GPtrArray *children;
 };
 
 struct _RsvgNodeSymbol {
  	RsvgNode super;
- 	GPtrArray *children;
 	gint preserve_aspect_ratio;
 	gboolean overflow, has_vbox;
  	double x, y, width, height;
@@ -76,17 +74,22 @@ struct _RsvgNodeSvg {
 	gdouble vbx, vby, vbw, vbh;
 	gboolean overflow, has_vbox;
  	GdkPixbuf *img;
- 	GPtrArray *children;
 };
 
 RsvgNode * 
 rsvg_push_part_def_group (RsvgHandle *ctx, const char * id, RsvgState *state);
 void rsvg_pop_def_group (RsvgHandle *ctx);
 void rsvg_node_group_pack (RsvgNode *self, RsvgNode *child);
-void rsvg_node_group_add_child (RsvgNode *overself, RsvgNode *child);
+void rsvg_node_add_child (RsvgNode *overself, RsvgNode *child);
 
 void rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 			      int dominate);
+void _rsvg_node_draw_nothing (RsvgNode * self, RsvgDrawingCtx *ctx, 
+							  int dominate);
+void _rsvg_node_draw_children (RsvgNode * self, RsvgDrawingCtx *ctx, 
+							   int dominate);
+void rsvg_node_free (RsvgNode *self);
+
 
 G_END_DECLS
 

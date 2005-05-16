@@ -525,79 +525,78 @@ rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	rsvg_pop_discrete_layer(ctx);
 }
 
-void
-rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts)
+static void
+rsvg_node_image_set_atts (RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	double x = 0., y = 0., w = -1., h = -1., font_size;
-	const char * href = NULL;
+	double font_size;
 	const char * klazz = NULL, * id = NULL, *value;
-	int aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	GdkPixbuf *img;
 	GError *err = NULL;
-	RsvgState * state;
-	RsvgNodeImage *image;
-	gboolean overflow = FALSE;
-	state = g_new(RsvgState, 1);
-	rsvg_state_init(state);
+	RsvgNodeImage *image = (RsvgNodeImage *)self;
+
 	font_size = rsvg_state_current_font_size(ctx);
 	
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				image->x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				image->y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				image->w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				h = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				image->h = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
 			/* path is used by some older adobe illustrator versions */
 			if ((value = rsvg_property_bag_lookup (atts, "path")) || (value = rsvg_property_bag_lookup (atts, "xlink:href")))
-				href = value;
+				{
+					img = rsvg_pixbuf_new_from_href (value, 
+													 rsvg_handle_get_base_uri (ctx), 
+													 NULL); 
+					
+					if (!img)
+						{
+							if (err)
+								{
+									g_warning (_("Couldn't load image: %s\n"), err->message);
+									g_error_free (err);
+								}
+							return;
+						}
+					image->img = img;
+				}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				id = value;
-			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
-				aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
-				overflow = rsvg_css_parse_overflow(value);
-
-			rsvg_parse_style_attrs (ctx, state, "image", klazz, id, atts);
-		}
-	
-	if (!href || w <= 0. || h <= 0.)
-		return;   	
-
-	/*hmm, passing the error thingie into the next thing makes it screw up when using vfs*/
-	img = rsvg_pixbuf_new_from_href (href, rsvg_handle_get_base_uri (ctx), NULL); 
-
-	if (!img)
-		{
-			if (err)
 				{
-					g_warning (_("Couldn't load image: %s\n"), err->message);
-					g_error_free (err);
+					id = value;
+					rsvg_defs_register_name (ctx->defs, id, &image->super);
 				}
-			return;
-		}
-	
+			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
+				image->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
+			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
+				image->overflow = rsvg_css_parse_overflow(value);
+
+			rsvg_parse_style_attrs (ctx, image->super.state, "image", klazz, id, atts);
+		}	
+}
+
+RsvgNode *
+rsvg_new_image (void)
+{
+	RsvgNodeImage *image;
 	image = g_new (RsvgNodeImage, 1);
-	image->img = img;
-	image->preserve_aspect_ratio = aspect_ratio;
-	image->x = x;
-	image->y = y;
-	image->w = w;
-	image->h = h;
-	image->overflow = overflow;
-	image->super.state = state;
+	image->img = NULL;
+	image->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
+	image->x = 0;
+	image->y = 0;
+	image->w = -1;
+	image->h = -1;
+	image->overflow = FALSE;
+	image->super.state = g_new(RsvgState, 1);
+	rsvg_state_init(image->super.state);
 	image->super.type = RSVG_NODE_PATH;
 	image->super.free = rsvg_node_image_free;
 	image->super.draw = rsvg_node_image_draw;
-	rsvg_defs_set (ctx->defs, id, &image->super);
-	
-	image->super.parent = (RsvgNode *)ctx->currentnode;
-	if (image->super.parent != NULL)
-		rsvg_node_group_pack(image->super.parent, &image->super);
-
+	image->super.set_atts = rsvg_node_image_set_atts;
+	return &image->super;
 }

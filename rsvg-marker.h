@@ -33,7 +33,6 @@ typedef struct _RsvgMarker RsvgMarker;
 
 struct _RsvgMarker {
 	RsvgNode super;
- 	RsvgNode * contents;
 	gboolean bbox;
 	double refX, refY, orient;
 	double vbx, vby, vbw, vbh, width, height;
@@ -41,8 +40,8 @@ struct _RsvgMarker {
 	gboolean vbox, orientAuto, overflow;
 };
 
-void 
-rsvg_start_marker (RsvgHandle *ctx, RsvgPropertyBag *atts);
+RsvgNode *
+rsvg_new_marker (void);
 
 void 
 rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdouble linewidth, RsvgDrawingCtx *ctx);

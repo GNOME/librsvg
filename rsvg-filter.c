@@ -321,9 +321,9 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output,
 	ctx->lastresult.Aused = 1;
 	ctx->lastresult.bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);	
 
-	for (i = 0; i < self->primitives->len; i++)
+	for (i = 0; i < self->super.children->len; i++)
 		{
-			current = g_ptr_array_index (self->primitives, i);
+			current = g_ptr_array_index (self->super.children, i);
 			rsvg_filter_primitive_render (current, ctx);
 		}
 
@@ -527,29 +527,6 @@ rsvg_filter_parse (const RsvgDefs * defs, const char *str)
 	return NULL;
 }
 
-static void 
-rsvg_filter_add_child (RsvgNode *overself, RsvgNode *child)
-{
-	RsvgFilter *self = (RsvgFilter *)overself;
-	g_ptr_array_add (self->primitives,  child);
-}
-
-/**
- * rsvg_filter_free: Free a filter.
- * @dself: The defval to be freed 
- *
- * Frees a filter and all primatives associated with this filter, this is 
- * to be set as its free function to be used with rsvg defs
- **/
-static void
-rsvg_filter_free (RsvgNode * dself)
-{
-	RsvgFilter *self;
-	
-	self = (RsvgFilter *) dself;
-	g_ptr_array_free(self->primitives, FALSE);
-}
-
 static void
 rsvg_filter_set_args (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
@@ -605,6 +582,13 @@ rsvg_filter_set_args (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 		}
 }
 
+static void 
+rsvg_filter_free (RsvgNode *self)
+{
+	g_ptr_array_free(self->children, TRUE);
+	g_free (self);
+}
+
 /**
  * rsvg_new_filter: Creates a black filter
  *
@@ -622,10 +606,11 @@ rsvg_new_filter (void)
 	filter->y = -0.1;
 	filter->width = 1.2;
 	filter->height = 1.2;
-	filter->primitives = g_ptr_array_new ();
+	filter->super.children = g_ptr_array_new ();
 	filter->super.type = RSVG_NODE_FILTER;
 	filter->super.free = rsvg_filter_free;
-	filter->super.add_child = rsvg_filter_add_child;
+	filter->super.draw = _rsvg_node_draw_nothing;
+	filter->super.add_child = rsvg_node_add_child;
 	filter->super.set_atts = rsvg_filter_set_args;
 	return &filter->super;
 }
@@ -1819,7 +1804,6 @@ typedef struct _RsvgFilterPrimitiveMerge RsvgFilterPrimitiveMerge;
 struct _RsvgFilterPrimitiveMerge
 {
 	RsvgFilterPrimitive super;
-	GPtrArray *nodes;
 };
 
 static void
@@ -1839,9 +1823,9 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self,
 	
 	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, ctx->width, ctx->height);
 	
-	for (i = 0; i < mself->nodes->len; i++)
+	for (i = 0; i < mself->super.super.children->len; i++)
 		{
-			in = rsvg_filter_get_in (g_ptr_array_index (mself->nodes, i), ctx);
+			in = rsvg_filter_get_in (g_ptr_array_index (mself->super.super.children, i), ctx);
 			rsvg_art_alpha_blt (in, boundarys.x1, boundarys.y1, boundarys.x2 - boundarys.x1,
 								boundarys.y2 - boundarys.y1, output, boundarys.x1,
 								boundarys.y1);
@@ -1857,14 +1841,11 @@ static void
 rsvg_filter_primitive_merge_free (RsvgNode * self)
 {
 	RsvgFilterPrimitiveMerge *mself;
-	guint i;
 	
 	mself = (RsvgFilterPrimitiveMerge *) self;
 	g_string_free (mself->super.result, TRUE);
 	
-	for (i = 0; i < mself->nodes->len; i++)
-		g_string_free (g_ptr_array_index (mself->nodes, i), TRUE);
-	g_ptr_array_free (mself->nodes, TRUE);
+	g_ptr_array_free (mself->super.super.children, TRUE);
 	g_free (mself);
 }
 
@@ -1931,39 +1912,48 @@ rsvg_new_filter_primitive_merge (void)
 	filter = g_new (RsvgFilterPrimitiveMerge, 1);	
 	filter->super.result = g_string_new ("none");
 	filter->super.sizedefaults = 1;
-	filter->nodes = g_ptr_array_new ();
 	filter->super.render = &rsvg_filter_primitive_merge_render;
 	filter->super.super.free = &rsvg_filter_primitive_merge_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
 	filter->super.super.set_atts = rsvg_filter_primitive_merge_set_atts;
+	filter->super.super.children = g_ptr_array_new();
+	filter->super.super.add_child = rsvg_node_add_child;
 	return (RsvgNode *)filter;
 }
 
-void
-rsvg_start_filter_primitive_merge_node (RsvgHandle * ctx,
-										RsvgPropertyBag * atts)
+static void
+rsvg_filter_primitive_merge_node_set_atts (RsvgNode * self,
+										   RsvgHandle * ctx,
+										   RsvgPropertyBag * atts)
 {
-	const char *value;
-	int needdefault = 1;
-	if (!(ctx && ctx->currentnode))
-		return;
-
+	const char * value;
 	if (rsvg_property_bag_size (atts))
 		{
 			/* see bug 145149 - sodipodi generates bad SVG... */
 			if ((value = rsvg_property_bag_lookup (atts, "in")))
-				{
-					needdefault = 0;
-					g_ptr_array_add (((RsvgFilterPrimitiveMerge *) 
-									  (ctx->currentnode))->
-									 nodes, g_string_new (value));
-				}
+				g_string_assign (((RsvgFilterPrimitive *)self)->in, value);
 		}
-	
-	if (needdefault)
-		g_ptr_array_add (((RsvgFilterPrimitiveMerge *) 
-						  (ctx->currentnode))->
-						 nodes, g_string_new ("none"));
+}
+
+static void
+rsvg_filter_primitive_merge_node_free (RsvgNode * self)
+{
+	RsvgFilterPrimitive *mself;
+	mself = (RsvgFilterPrimitive *) self;
+	g_string_free (mself->in, TRUE);
+	g_free (mself);
+}
+
+RsvgNode *
+rsvg_new_filter_primitive_merge_node (void)
+{
+	RsvgFilterPrimitive *filter;
+	filter = g_new (RsvgFilterPrimitive, 1);	
+	filter->in = g_string_new ("none");
+	filter->super.free = rsvg_filter_primitive_merge_node_free;
+	filter->super.set_atts = rsvg_filter_primitive_merge_node_set_atts;
+	filter->super.type = RSVG_NODE_FILTER_PRIMITIVE_MERGE_NODE;
+	return &filter->super;
 }
 
 /*************************************************************/
@@ -4317,10 +4307,11 @@ typedef enum {
 	DISTANTLIGHT, POINTLIGHT, SPOTLIGHT
 } lightType;
 
-typedef struct _lightSource lightSource;
+typedef struct _RsvgNodeLightSource RsvgNodeLightSource;
 
-struct _lightSource
+struct _RsvgNodeLightSource
 {
+	RsvgNode super;
 	lightType type;
 	gdouble x; /*doubles as azimuth*/
 	gdouble y; /*dounles as elevation*/
@@ -4333,7 +4324,7 @@ struct _lightSource
 };
 
 static vector3
-get_light_direction (lightSource source, gdouble x1, gdouble y1, gdouble z, gdouble * affine)
+get_light_direction (RsvgNodeLightSource * source, gdouble x1, gdouble y1, gdouble z, gdouble * affine)
 {
 	vector3 output;
 
@@ -4342,18 +4333,18 @@ get_light_direction (lightSource source, gdouble x1, gdouble y1, gdouble z, gdou
 	x = affine[0] * x1 + affine[2] * y1 + affine[4];
 	y = affine[1] * x1 + affine[3] * y1 + affine[5];
 
-	switch (source.type)
+	switch (source->type)
 		{
 		case DISTANTLIGHT:
-			output.x = cos(source.x)*cos(source.y);
-			output.y = sin(source.x)*cos(source.y);
-			output.z = sin(source.y);
+			output.x = cos(source->x)*cos(source->y);
+			output.y = sin(source->x)*cos(source->y);
+			output.z = sin(source->y);
 			break;
 		case POINTLIGHT:
 		case SPOTLIGHT:
-			output.x = source.x - x;
-			output.y = source.y - y;
-			output.z = source.z - z;
+			output.x = source->x - x;
+			output.y = source->y - y;
+			output.z = source->z - z;
 			output = normalise(output);
 			break;
 		}
@@ -4361,7 +4352,7 @@ get_light_direction (lightSource source, gdouble x1, gdouble y1, gdouble z, gdou
 }
 
 static vector3
-get_light_colour(lightSource source, vector3 colour, 
+get_light_colour(RsvgNodeLightSource * source, vector3 colour, 
 				 gdouble x1, gdouble y1, gdouble z, gdouble * affine)
 {
 	double base, angle, x, y;
@@ -4369,27 +4360,27 @@ get_light_colour(lightSource source, vector3 colour,
 	vector3 L;
 	vector3 output;
 
-	if (source.type != SPOTLIGHT)
+	if (source->type != SPOTLIGHT)
 		return colour;
 	
 	x = affine[0] * x1 + affine[2] * y1 + affine[4];
 	y = affine[1] * x1 + affine[3] * y1 + affine[5];
 
-	L.x = source.x - x;
-	L.y = source.y - y;
-	L.z = source.z - z;
+	L.x = source->x - x;
+	L.y = source->y - y;
+	L.z = source->z - z;
 	L = normalise(L);
 
-	s.x = source.pointsAtX - source.x;
-	s.y = source.pointsAtY - source.y;
-	s.z = source.pointsAtZ - source.z;
+	s.x = source->pointsAtX - source->x;
+	s.y = source->pointsAtY - source->y;
+	s.z = source->pointsAtZ - source->z;
 	s = normalise(s);
 
 	base = -dotproduct(L, s);
 
 	angle = acos(base) * 180.0 / M_PI;
 
-	if (base < 0 || angle > source.limitingconeAngle)
+	if (base < 0 || angle > source->limitingconeAngle)
 		{
 			output.x = 0;
 			output.y = 0;
@@ -4397,34 +4388,25 @@ get_light_colour(lightSource source, vector3 colour,
 			return output;
 		}
 	
-	output.x = colour.x*pow(base, source.specularExponent);
-	output.y = colour.y*pow(base, source.specularExponent);
-	output.z = colour.z*pow(base, source.specularExponent);
+	output.x = colour.x*pow(base, source->specularExponent);
+	output.y = colour.y*pow(base, source->specularExponent);
+	output.z = colour.z*pow(base, source->specularExponent);
 
 	return output;
 }
 
 
-void 
-rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
-										  RsvgPropertyBag * atts, char type)
+static void 
+rsvg_filter_primitive_light_source_set_atts (RsvgNode * self,
+											 RsvgHandle * ctx,
+											 RsvgPropertyBag * atts)
 {
-	lightSource * data;
+	RsvgNodeLightSource * data;
 	const char *value;
 	double font_size;
 	font_size = rsvg_state_current_font_size (ctx);
 
-	data = (lightSource *)ctx->currentnode;
-	data->specularExponent = 1;
-
-	if (type == 's')
-		data->type = SPOTLIGHT;
-	else if (type == 'd')
-		data->type = DISTANTLIGHT;
-	else 
-		data->type = POINTLIGHT;
-
-	data->limitingconeAngle = 180;
+	data = (RsvgNodeLightSource *)self;
 
 	if (rsvg_property_bag_size (atts))
 		{
@@ -4475,6 +4457,29 @@ rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
 		}
 }
 
+static void
+rsvg_filter_primitive_light_source_free(RsvgNode * tofree)
+{
+	g_free(tofree);
+}
+
+RsvgNode *
+rsvg_new_filter_primitive_light_source(char type)
+{
+	RsvgNodeLightSource * data;
+	data = g_new(RsvgNodeLightSource, 1);
+	data->super.free = rsvg_filter_primitive_light_source_free;
+	data->super.set_atts = rsvg_filter_primitive_light_source_set_atts;
+	data->specularExponent = 1;
+	if (type == 's')
+		data->type = SPOTLIGHT;
+	else if (type == 'd')
+		data->type = DISTANTLIGHT;
+	else 
+		data->type = POINTLIGHT;
+	data->limitingconeAngle = 180;
+	return &data->super;
+}
 
 /*************************************************************/
 /*************************************************************/
@@ -4487,7 +4492,6 @@ struct _RsvgFilterPrimitiveDiffuseLighting
 	gdouble dx, dy;
 	double diffuseConstant;
 	double surfaceScale;
-	lightSource source;
 	guint32 lightingcolour;
 };
 
@@ -4503,7 +4507,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 	vector3 lightcolour, L, N;
 	vector3 colour;
 	gdouble iaffine[6];
-
+	RsvgNodeLightSource * source = NULL;
 	FPBox boundarys;
 	
 	guchar *in_pixels;
@@ -4513,7 +4517,18 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 	
 	GdkPixbuf *output;
 	GdkPixbuf *in;
-	
+	unsigned int i;	
+
+	for (i = 0; i < self->super.children->len; i++)
+		{
+			RsvgNode * temp;
+			temp = g_ptr_array_index(self->super.children, i);
+			if (temp->type == RSVG_NODE_FILTER_PRIMITIVE_MERGE_NODE)
+				source = (RsvgNodeLightSource *)temp;
+		}
+	if (source == NULL)
+		return;
+
 	oself = (RsvgFilterPrimitiveDiffuseLighting *) self;
 	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 	
@@ -4556,11 +4571,11 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				z = surfaceScale * (double)in_pixels[y * rowstride + x * 4 + 3];
-				L = get_light_direction(oself->source, x, y, z, iaffine);
+				L = get_light_direction(source, x, y, z, iaffine);
 				N = get_surface_normal(in_pixels, boundarys, x, y, 
 									   dx, dy, rawdx, rawdy, oself->surfaceScale, 
 									   rowstride);
-				lightcolour = get_light_colour(oself->source, colour, x, y, z,
+				lightcolour = get_light_colour(source, colour, x, y, z,
 											   iaffine);
 				factor = dotproduct(N, L);
 
@@ -4677,6 +4692,8 @@ rsvg_new_filter_primitive_diffuse_lighting (void)
 	filter->super.super.free = &rsvg_filter_primitive_diffuse_lighting_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
 	filter->super.super.set_atts = rsvg_filter_primitive_diffuse_lighting_set_atts;
+	filter->super.super.children = g_ptr_array_new();
+	filter->super.super.add_child = rsvg_node_add_child;
 	return (RsvgNode *)filter;
 }
 
@@ -4691,7 +4708,6 @@ struct _RsvgFilterPrimitiveSpecularLighting
 	double specularConstant;
 	double specularExponent;
 	double surfaceScale;
-	lightSource source;
 	guint32 lightingcolour;
 };
 
@@ -4708,7 +4724,8 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 	vector3 L;
 	gdouble iaffine[6];
 	FPBox boundarys;
-	
+	RsvgNodeLightSource *source = NULL;	
+
 	guchar *in_pixels;
 	guchar *output_pixels;
 	
@@ -4716,6 +4733,18 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 	
 	GdkPixbuf *output;
 	GdkPixbuf *in;
+
+	unsigned int i;	
+
+	for (i = 0; i < self->super.children->len; i++)
+		{
+			RsvgNode * temp;
+			temp = g_ptr_array_index(self->super.children, i);
+			if (temp->type == RSVG_NODE_FILTER_PRIMITIVE_MERGE_NODE)
+				source = (RsvgNodeLightSource *)temp;
+		}
+	if (source == NULL)
+		return;
 	
 	oself = (RsvgFilterPrimitiveSpecularLighting *) self;
 	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
@@ -4744,11 +4773,11 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				z = in_pixels[y * rowstride + x * 4 + 3] * surfaceScale;
-				L = get_light_direction(oself->source, x, y, z, iaffine);	
+				L = get_light_direction(source, x, y, z, iaffine);	
 				L.z += 1;
 				L = normalise(L);
 
-				lightcolour = get_light_colour(oself->source, colour, x, y, z, 
+				lightcolour = get_light_colour(source, colour, x, y, z, 
 											   iaffine);
 				base = dotproduct(get_surface_normal(in_pixels, boundarys, x, y, 
 													 1, 1, 1.0 /  ctx->paffine[0], 1.0 / ctx->paffine[3], 
@@ -4886,6 +4915,8 @@ rsvg_new_filter_primitive_specular_lighting (void)
 	filter->super.super.free = &rsvg_filter_primitive_specular_lighting_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
 	filter->super.super.set_atts = rsvg_filter_primitive_specular_lighting_set_atts;
+	filter->super.super.children = g_ptr_array_new();
+	filter->super.super.add_child = rsvg_node_add_child;
 	return (RsvgNode *)filter;
 }
 

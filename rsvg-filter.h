@@ -36,7 +36,6 @@ typedef RsvgCoordUnits RsvgFilterUnits;
 struct _RsvgFilter {
 	RsvgNode super;
 	int refcnt;
-	GPtrArray * primitives;
 	double x, y, width, height; 
 	RsvgFilterUnits filterunits;
 	RsvgFilterUnits primitiveunits;
@@ -69,8 +68,8 @@ rsvg_new_filter_primitive_offset (void);
 RsvgNode * 
 rsvg_new_filter_primitive_merge (void);
 
-void
-rsvg_start_filter_primitive_merge_node (RsvgHandle *ctx, RsvgPropertyBag *atts);
+RsvgNode * 
+rsvg_new_filter_primitive_merge_node (void);
 
 RsvgNode *
 rsvg_new_filter_primitive_colour_matrix (void);
@@ -103,9 +102,8 @@ rsvg_new_filter_primitive_image (void);
 RsvgNode *
 rsvg_new_filter_primitive_diffuse_lighting (void);
 
-void
-rsvg_start_filter_primitive_light_source (RsvgHandle * ctx,
-										  RsvgPropertyBag * atts, char type);
+RsvgNode *
+rsvg_new_filter_primitive_light_source (char type);
 
 RsvgNode *
 rsvg_new_filter_primitive_specular_lighting (void);

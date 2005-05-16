@@ -189,6 +189,7 @@ typedef enum {
 	RSVG_NODE_PATH,
 	RSVG_NODE_FILTER,
 	RSVG_NODE_FILTER_PRIMITIVE,
+	RSVG_NODE_FILTER_PRIMITIVE_MERGE_NODE,
 	RSVG_NODE_MASK,
 	RSVG_NODE_MARKER,
 	RSVG_NODE_SYMBOL,
@@ -199,6 +200,7 @@ struct _RsvgNode {
 	RsvgNodeType type;
 	RsvgState * state;
 	RsvgNode * parent;
+ 	GPtrArray *children;
 	void (*add_child) (RsvgNode *self, RsvgNode *child);
 	void (*free) (RsvgNode *self);
 	void (*draw) (RsvgNode * self, RsvgDrawingCtx *ctx, int dominate);

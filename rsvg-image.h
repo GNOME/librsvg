@@ -33,7 +33,8 @@
 
 G_BEGIN_DECLS
 
-void rsvg_start_image (RsvgHandle *ctx, RsvgPropertyBag *atts);
+RsvgNode *
+rsvg_new_image (void);
 
 typedef struct _RsvgNodeImage RsvgNodeImage;
 
