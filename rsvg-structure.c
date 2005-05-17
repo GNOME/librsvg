@@ -110,12 +110,6 @@ rsvg_node_group_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *att
 		}	
 }
 
-void
-rsvg_end_g (RsvgHandle *ctx)
-{
-	rsvg_pop_def_group (ctx);
-}
-
 RsvgNode *
 rsvg_new_group (void)
 {
@@ -186,13 +180,6 @@ rsvg_node_use_resolve(RsvgNodeUse * self, RsvgDrawingCtx *ctx, double * affine_o
 	if (parent != NULL)
 		switch(parent->type)
 			{
-			case RSVG_NODE_PATH:
-				{
-					
-					_rsvg_affine_translate(affine, x, y);
-					_rsvg_affine_multiply(affine_out, affine, affine_out);	
-					return (RsvgNode *)parent;
-				}
 			case RSVG_NODE_SYMBOL:
 				{
 					RsvgNode *drawable = 
@@ -223,7 +210,11 @@ rsvg_node_use_resolve(RsvgNodeUse * self, RsvgDrawingCtx *ctx, double * affine_o
 					return drawable;
 				}
 			default:
-				break;
+				{
+					_rsvg_affine_translate(affine, x, y);
+					_rsvg_affine_multiply(affine_out, affine, affine_out);	
+					return (RsvgNode *)parent;
+				}
 			}
 	return NULL;
 }
@@ -234,9 +225,6 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 {
 	RsvgNodeUse *use = (RsvgNodeUse*)self;
 	RsvgNode * child;
-
-	if (use->w <= 0 || use->h <= 0)
-		return;
 
 	rsvg_state_reinherit_top(ctx,  self->state, dominate);
 
@@ -389,13 +377,6 @@ rsvg_new_svg (void)
 	svg->super.set_atts = rsvg_node_svg_set_atts;
 	svg->overflow = FALSE;
 	return &svg->super;
-}
-
-void
-rsvg_end_svg(RsvgHandle *ctx)
-{
-	ctx->nest_level--;
-	rsvg_pop_def_group (ctx);
 }
 
 static void 
@@ -600,10 +581,4 @@ rsvg_new_switch (void)
 	group->super.draw = _rsvg_node_switch_draw;
 	group->super.set_atts = rsvg_node_group_set_atts;
 	return &group->super;
-}
-
-void
-rsvg_end_switch (RsvgHandle *ctx)
-{
-	rsvg_pop_def_group (ctx);
 }

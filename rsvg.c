@@ -578,36 +578,26 @@ rsvg_end_element (void *data, const xmlChar *name)
 					ctx->handler = NULL;
 				}
 
-			if (!strcmp ((char *)name, "g"))
-				rsvg_end_g (ctx);
-			else if (!strcmp ((char *)name, "a")) /*treat anchors as groups for now*/
-				rsvg_end_g (ctx);
-			else if (!strcmp ((char *)name, "svg"))
-				rsvg_end_svg (ctx);
-			else if (!strcmp ((char *)name, "symbol"))
-				rsvg_end_g (ctx);
-			else if (!strcmp ((char *)name, "use"))
-				rsvg_end_g (ctx);
-			else if (!strcmp ((char *)name, "filter"))
-				rsvg_end_filter (ctx);
-			else if (!strcmp ((char *)name, "defs"))
-				rsvg_end_g (ctx);	
-			else if (!strcmp ((char *)name, "mask"))
-				rsvg_end_mask(ctx);
-			else if (!strcmp ((char *)name, "clipPath"))
-				rsvg_end_clip_path(ctx);
-			else if (!strcmp ((char *)name, "marker"))
-				rsvg_end_filter(ctx);
-			else if (!strcmp ((char *)name, "switch"))
-				rsvg_end_filter (ctx); /* treat switches as groups for now */
-			else if (!strcmp ((char *)name, "pattern"))
-				rsvg_pop_def_group(ctx);
-			else if (!strcmp ((char *)name, "image") ||
-					 !strcmp ((char *)name, "use"))
-				rsvg_end_filter(ctx);
+			if (!strcmp ((char *)name, "image") ||
+				!strcmp ((char *)name, "use") ||
+				!strcmp ((char *)name, "switch") ||
+				!strcmp ((char *)name, "marker") ||
+				!strcmp ((char *)name, "clipPath") ||
+				!strcmp ((char *)name, "mask") ||
+				!strcmp ((char *)name, "defs") ||
+				!strcmp ((char *)name, "filter") ||
+				!strcmp ((char *)name, "symbol") ||
+				!strcmp ((char *)name, "svg") ||
+				!strcmp ((char *)name, "a") ||
+				!strcmp ((char *)name, "g") ||
+				!strcmp ((char *)name, "pattern"))
+				{
+					printf ("ended %s\n", (char *)name);
+					rsvg_pop_def_group(ctx);
+				}
 			else if (!strncmp ((char *)name, "fe", 2) &&
 					 strncmp ((char *)name, "feFunc", 6))
-				rsvg_end_filter(ctx);
+				rsvg_pop_def_group(ctx);
 			
 		}
 }

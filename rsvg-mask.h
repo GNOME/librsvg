@@ -47,9 +47,6 @@ struct _RsvgMask {
 RsvgNode *  
 rsvg_new_mask (void);
 
-void 
-rsvg_end_mask (RsvgHandle *ctx);
-
 RsvgNode * 
 rsvg_mask_parse (const RsvgDefs * defs, const char *str);
 
@@ -62,9 +59,6 @@ struct _RsvgClipPath {
 
 RsvgNode * 
 rsvg_new_clip_path (void);
-
-void 
-rsvg_end_clip_path (RsvgHandle *ctx);
 
 RsvgNode * 
 rsvg_clip_path_parse (const RsvgDefs * defs, const char *str);

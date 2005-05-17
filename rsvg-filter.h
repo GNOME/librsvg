@@ -47,9 +47,6 @@ rsvg_filter_render (RsvgFilter *self, GdkPixbuf *source, GdkPixbuf *output, GdkP
 RsvgNode *
 rsvg_new_filter (void);
 
-void 
-rsvg_end_filter (RsvgHandle *ctx);
-
 RsvgFilter *
 rsvg_filter_parse (const RsvgDefs *defs, const char *str);
 

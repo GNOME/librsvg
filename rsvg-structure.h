@@ -41,9 +41,6 @@ RsvgNode * rsvg_new_svg (void);
 RsvgNode * rsvg_new_defs (void);
 RsvgNode * rsvg_new_group (void);
 RsvgNode * rsvg_new_switch (void);
-void rsvg_end_g (RsvgHandle *ctx);
-void rsvg_end_svg (RsvgHandle *ctx);
-void rsvg_end_switch (RsvgHandle *ctx);
 
 typedef struct _RsvgNodeGroup RsvgNodeGroup;
 typedef struct _RsvgNodeUse RsvgNodeUse;

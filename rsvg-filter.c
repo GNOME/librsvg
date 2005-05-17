@@ -615,18 +615,6 @@ rsvg_new_filter (void)
 	return &filter->super;
 }
 
-/**
- * rsvg_end_filter: Create a filter from xml arguments.
- * @ctx: the current rsvg handle
- *
- * Ends the current filter block by setting the currentfilter ot null
- **/
-void
-rsvg_end_filter (RsvgHandle * ctx)
-{
-	ctx->currentnode = ctx->currentnode->parent;
-}
-
 /*************************************************************/
 /*************************************************************/
 

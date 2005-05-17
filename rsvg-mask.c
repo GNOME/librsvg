@@ -113,12 +113,6 @@ rsvg_new_mask (void)
 	return &mask->super;
 }
 
-void 
-rsvg_end_mask (RsvgHandle *ctx)
-{
-	ctx->currentnode = ((RsvgNode *)ctx->currentnode)->parent;
-}
-
 RsvgNode *
 rsvg_mask_parse (const RsvgDefs * defs, const char *str)
 {
@@ -197,12 +191,6 @@ rsvg_new_clip_path (void)
 	clip_path->super.draw = _rsvg_node_draw_nothing;
 	clip_path->super.set_atts = rsvg_clip_path_set_atts;
 	return &clip_path->super;
-}
-
-void 
-rsvg_end_clip_path (RsvgHandle *ctx)
-{
-	ctx->currentnode = ((RsvgNode *)ctx->currentnode)->parent;
 }
 
 RsvgNode *
