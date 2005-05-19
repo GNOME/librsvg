@@ -1,3 +1,7 @@
+2005-05-20  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg_paint_server.c, rsvg_art_paint_server.c, rsvg.c: converted to use the new create->manipulate->use system.
+
 2005-05-17  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg_structure.c: Fixed a problem with <use> not working.

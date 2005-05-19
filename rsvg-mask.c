@@ -108,7 +108,6 @@ rsvg_new_mask (void)
 	mask->super.type = RSVG_NODE_MASK;
 	mask->super.free = rsvg_node_free;
 	mask->super.draw = _rsvg_node_draw_nothing;
-	mask->super.add_child = rsvg_node_add_child;
 	mask->super.set_atts = rsvg_mask_set_atts;
 	return &mask->super;
 }
@@ -187,7 +186,6 @@ rsvg_new_clip_path (void)
 	clip_path->super.state = g_new(RsvgState, 1);
 	clip_path->super.type = RSVG_NODE_CLIP_PATH;
 	clip_path->super.free = rsvg_node_free;
-	clip_path->super.add_child = rsvg_node_add_child;
 	clip_path->super.draw = _rsvg_node_draw_nothing;
 	clip_path->super.set_atts = rsvg_clip_path_set_atts;
 	return &clip_path->super;

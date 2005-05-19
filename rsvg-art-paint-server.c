@@ -41,26 +41,28 @@
 #include <math.h>
 
 static ArtGradientStop *
-rsvg_paint_art_stops_from_rsvg (RsvgGradientStops *rstops, 
+rsvg_paint_art_stops_from_rsvg (GPtrArray *rstops, 
 								guint32 current_color)
 {
 	ArtGradientStop *stops;
-	int n_stop = rstops->n_stop;
+	int n_stop = rstops->len;
 	int i;
 	
 	stops = g_new (ArtGradientStop, n_stop);
 	for (i = 0; i < n_stop; i++)
 		{
+			RsvgGradientStop * stop;
 			guint32 rgba;
 			guint32 r, g, b, a;
 			
-			stops[i].offset = rstops->stop[i].offset;
-			if (!rstops->stop[i].is_current_color)
-				rgba = rstops->stop[i].rgba;
+			stop = (RsvgGradientStop *)g_ptr_array_index(rstops, i);
+			stops[i].offset = stop->offset;
+			if (!stop->is_current_color)
+				rgba = stop->rgba;
 			else
 				rgba = current_color << 8;
 			/* convert from separated to premultiplied alpha */
-			a = rstops->stop[i].rgba & 0xff;
+			a = stop->rgba & 0xff;
 			r = (rgba >> 24) * a + 0x80;
 			r = (r + (r >> 8)) >> 8;
 			g = ((rgba >> 16) & 0xff) * a + 0x80;
@@ -97,6 +99,7 @@ rsvg_art_paint_server_lin_grad_render (RsvgLinearGradient *rlg, ArtRender *ar,
 									   const RsvgPSCtx *ctx)
 {
 	ArtGradientLinear *agl;
+	RsvgLinearGradient statgrad = *rlg;
 	double x1, y1, x2, y2;
 	double dx, dy, scale;
 	double affine[6];
@@ -107,18 +110,21 @@ rsvg_art_paint_server_lin_grad_render (RsvgLinearGradient *rlg, ArtRender *ar,
 	double px, py, pxt, pyt;
 	double x2t, y2t;
 
+	rlg = &statgrad;
+	rsvg_linear_gradient_fix_fallback(rlg);
+
 	if (rlg->has_current_color)
 		current_color = rlg->current_color;
 	else
 		current_color = ctx->color;
-	if (rlg->stops->n_stop == 0)
+	if (rlg->super.children->len == 0)
 		{
 			return;
 		}
 
 	agl = g_new (ArtGradientLinear, 1);
-	agl->n_stops = rlg->stops->n_stop;
-	agl->stops = rsvg_paint_art_stops_from_rsvg (rlg->stops, current_color);
+	agl->n_stops = rlg->super.children->len;
+	agl->stops = rsvg_paint_art_stops_from_rsvg (rlg->super.children, current_color);
 	
 	if (rlg->obj_bbox) {
 		affine[0] = ctx->x1 - ctx->x0;
@@ -217,10 +223,13 @@ static void
 rsvg_art_paint_server_rad_grad_render (RsvgRadialGradient *rrg, ArtRender *ar,
 									   const RsvgPSCtx *ctx)
 {
+	RsvgRadialGradient statgrad = *rrg;
 	ArtGradientRadial *agr;
 	double aff1[6], aff2[6], affine[6];
 	guint32 current_color;
 	int i;
+	rrg = &statgrad;
+	rsvg_radial_gradient_fix_fallback(rrg);
 
 	if (rrg->obj_bbox) {
 		affine[0] = ctx->x1 - ctx->x0;
@@ -241,13 +250,13 @@ rsvg_art_paint_server_rad_grad_render (RsvgRadialGradient *rrg, ArtRender *ar,
 		current_color = rrg->current_color;
 	else
 		current_color = ctx->color;
-	if (rrg->stops->n_stop == 0)
+	if (rrg->super.children->len == 0)
 		{
 			return;
 		}
 	agr = g_new (ArtGradientRadial, 1);
-	agr->n_stops = rrg->stops->n_stop;
-	agr->stops = rsvg_paint_art_stops_from_rsvg (rrg->stops, current_color);
+	agr->n_stops = rrg->super.children->len;
+	agr->stops = rsvg_paint_art_stops_from_rsvg (rrg->super.children, current_color);
 	
 	_rsvg_affine_scale (aff1, rrg->r, rrg->r);
 	_rsvg_affine_translate (aff2, rrg->cx, rrg->cy);
@@ -385,7 +394,8 @@ static void
 rsvg_art_paint_server_pattern_render (RsvgPattern *pattern, ArtRender *ar,
 									  const RsvgPSCtx *ctx)
 {
-	RsvgNode *drawable = (RsvgNode *)pattern;
+	RsvgPattern statpat = *pattern;
+	RsvgNode *drawable = (RsvgNode *)&statpat;
 	RsvgDrawingCtx *hctx = ctx->ctx;
 	GdkPixbuf *pixbuf = ((RsvgArtRender *)hctx->render)->pixbuf; 
 	double affine[6];
@@ -393,6 +403,9 @@ rsvg_art_paint_server_pattern_render (RsvgPattern *pattern, ArtRender *ar,
 	int i, j;
 	gdouble minx, miny, maxx, maxy, xcoord, ycoord, xoffset, yoffset;
 	GdkPixbuf *save, *render;
+
+	pattern = &statpat;
+	rsvg_pattern_fix_fallback(pattern);
 
 	if (ctx->ctx == NULL)
 		return;
@@ -471,7 +484,7 @@ rsvg_art_paint_server_pattern_render (RsvgPattern *pattern, ArtRender *ar,
 
 	render = _rsvg_pixbuf_new_cleared(GDK_COLORSPACE_RGB, 1, 8, 
 									  maxx - minx, maxy - miny);
-	
+
 	save = pixbuf;
 
 	((RsvgArtRender *)hctx->render)->pixbuf = render;
@@ -487,11 +500,7 @@ rsvg_art_paint_server_pattern_render (RsvgPattern *pattern, ArtRender *ar,
 			rsvg_state_current(hctx)->affine[i] = caffine[i];
 		}
 
-	if (drawable->children->len ||
-		pattern->fallback == NULL)
-		_rsvg_node_draw_children (drawable, hctx, 2);
-	else
-		_rsvg_node_draw_children (pattern->fallback, hctx, 2);		
+	_rsvg_node_draw_children (drawable, hctx, 2);
 
 	rsvg_state_pop(ctx->ctx);
 

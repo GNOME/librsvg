@@ -112,7 +112,6 @@ rsvg_new_marker (void)
 	marker->super.children = g_ptr_array_new();
 	marker->super.free = rsvg_node_free;
 	marker->super.draw = _rsvg_node_draw_nothing;
-	marker->super.add_child = rsvg_node_add_child;
 	marker->super.set_atts = rsvg_node_marker_set_atts;
 	return &marker->super;
 }

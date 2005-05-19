@@ -77,12 +77,6 @@ _rsvg_node_draw_nothing (RsvgNode * self, RsvgDrawingCtx *ctx,
 }
 
 void 
-rsvg_node_add_child (RsvgNode *self, RsvgNode *child)
-{
-	g_ptr_array_add(self->children, child);
-}
-
-void 
 rsvg_node_free (RsvgNode *self)
 {
 	rsvg_state_finalize (self->state);
@@ -120,34 +114,8 @@ rsvg_new_group (void)
 	rsvg_state_init(group->super.state);
 	group->super.type = RSVG_NODE_PATH;
 	group->super.free = rsvg_node_free;
-	group->super.add_child = rsvg_node_add_child;
 	group->super.draw = _rsvg_node_draw_children;
 	group->super.set_atts = rsvg_node_group_set_atts;
-	return &group->super;
-}
-
-RsvgNode * 
-rsvg_push_part_def_group (RsvgHandle *ctx, const char * id, 
-						  RsvgState *state)
-{
-	RsvgNodeGroup *group;
-
-	group = g_new (RsvgNodeGroup, 1);
-	group->super.children = g_ptr_array_new();
-	group->super.state = g_new(RsvgState, 1);
-	*group->super.state = *state;
-
-	group->super.type = RSVG_NODE_PATH;
-	group->super.free = rsvg_node_free;
-	group->super.draw = _rsvg_node_draw_children;
-	group->super.add_child = rsvg_node_add_child;
-
-	rsvg_defs_set (ctx->defs, id, &group->super);
-
-	group->super.parent = (RsvgNode *)ctx->currentnode;
-
-	ctx->currentnode = &group->super;
-
 	return &group->super;
 }
 
@@ -161,7 +129,7 @@ rsvg_pop_def_group (RsvgHandle *ctx)
 void 
 rsvg_node_group_pack (RsvgNode *self, RsvgNode *child)
 {
-	self->add_child(self, child);
+	g_ptr_array_add(self->children, child);
 	child->parent = self;
 }
 
@@ -373,7 +341,6 @@ rsvg_new_svg (void)
 	svg->super.type = RSVG_NODE_PATH;
 	svg->super.free = rsvg_node_free;
 	svg->super.draw = rsvg_node_svg_draw;
-	svg->super.add_child = rsvg_node_add_child;
 	svg->super.set_atts = rsvg_node_svg_set_atts;
 	svg->overflow = FALSE;
 	return &svg->super;
@@ -384,7 +351,6 @@ rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	const char *value = NULL, *klazz = NULL, *id = NULL;
 	double font_size;	
-	gboolean got_width = FALSE, got_height = FALSE;
 	font_size = rsvg_state_current_font_size(ctx);
 	RsvgNodeUse * use;
 
@@ -395,14 +361,10 @@ rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 				use->x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
 				use->y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
-			if ((value = rsvg_property_bag_lookup (atts, "width"))) {
+			if ((value = rsvg_property_bag_lookup (atts, "width")))
 				use->w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->height, font_size);
-				got_width = TRUE;
-			}
-			if ((value = rsvg_property_bag_lookup (atts, "height"))) {
+			if ((value = rsvg_property_bag_lookup (atts, "height")))
 				use->h = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
-				got_height = TRUE;
-			}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -519,7 +481,6 @@ rsvg_new_symbol(void)
 	symbol->super.type = RSVG_NODE_SYMBOL;
 	symbol->super.free = rsvg_node_free;
 	symbol->super.draw = rsvg_node_symbol_draw;
-	symbol->super.add_child = rsvg_node_add_child;
 	symbol->super.set_atts = rsvg_node_symbol_set_atts;
 	return &symbol->super;
 }
@@ -534,7 +495,6 @@ rsvg_new_defs ()
 	rsvg_state_init(group->super.state);
 	group->super.type = RSVG_NODE_PATH;
 	group->super.free = rsvg_node_free;
-	group->super.add_child = rsvg_node_add_child;
 	group->super.draw = _rsvg_node_draw_nothing;
 	group->super.set_atts = rsvg_node_group_set_atts;
 	return &group->super;
@@ -577,7 +537,6 @@ rsvg_new_switch (void)
 	rsvg_state_init(group->super.state);
 	group->super.type = RSVG_NODE_PATH;
 	group->super.free = rsvg_node_free;
-	group->super.add_child = rsvg_node_add_child;
 	group->super.draw = _rsvg_node_switch_draw;
 	group->super.set_atts = rsvg_node_group_set_atts;
 	return &group->super;

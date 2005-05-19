@@ -60,39 +60,50 @@ struct _RsvgPSCtx {
 };
 
 struct _RsvgGradientStop {
+	RsvgNode super;
 	double offset;
 	gboolean is_current_color;
 	guint32 rgba;
-};
-
-struct _RsvgGradientStops {
-	int n_stop;
-	RsvgGradientStop *stop;
 };
 
 struct _RsvgLinearGradient {
 	RsvgNode super;
 	gboolean obj_bbox;
 	double affine[6]; /* user space to actual at time of gradient def */
-	RsvgGradientStops *stops;
 	RsvgGradientSpread spread;
 	double x1, y1;
 	double x2, y2;
 	guint32 current_color;
 	gboolean has_current_color;
+	int hasx1 : 1;
+	int hasy1 : 1;
+	int hasx2 : 1;
+	int hasy2 : 1;
+	int hastransform : 1;
+	int hasbbox : 1;
+	int hasspread : 1;
+	RsvgNode * fallback;
 };
 
 struct _RsvgRadialGradient {
 	RsvgNode super;
 	gboolean obj_bbox;
 	double affine[6]; /* user space to actual at time of gradient def */
-	RsvgGradientStops *stops;
 	RsvgGradientSpread spread;
 	double cx, cy;
 	double r;
 	double fx, fy;
 	guint32 current_color;
 	gboolean has_current_color;
+	int hascx : 1;
+	int hascy : 1;
+	int hasfx : 1;
+	int hasfy : 1;
+	int hasr : 1;
+	int hasspread : 1;
+	int hastransform : 1;
+	int hasbbox : 1;
+	RsvgNode * fallback;
 };
 
 struct _RsvgPattern {
@@ -103,8 +114,17 @@ struct _RsvgPattern {
 	double affine[6]; /* user space to actual at time of gradient def */
 	double x, y, width, height;
 	double vbx, vby, vbh, vbw;
-	RsvgNode * fallback;
 	unsigned int preserve_aspect_ratio;
+	int hasx : 1;
+	int hasy : 1;
+	int haswidth : 1;
+	int hasheight : 1;
+	int hasvbox : 1;
+	int hasaspect : 1;
+	int hastransform : 1;
+	int hascbox : 1;
+	int hasbbox : 1;
+	RsvgPattern * fallback;
 };
 
 struct _RsvgSolidColour {
@@ -153,17 +173,26 @@ rsvg_clone_radial_gradient (const RsvgRadialGradient *grad, gboolean * shallow_c
 RsvgLinearGradient *
 rsvg_clone_linear_gradient (const RsvgLinearGradient *grad, gboolean * shallow_cloned);
 
-RsvgPattern *
-rsvg_clone_pattern (const RsvgPattern *pattern);
+RsvgNode *
+rsvg_new_linear_gradient (void);
+
+RsvgNode *
+rsvg_new_radial_gradient (void);
+
+RsvgNode *
+rsvg_new_stop(void);
+
+RsvgNode *
+rsvg_new_pattern (void);
 
 void
-rsvg_start_linear_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts);
+rsvg_pattern_fix_fallback(RsvgPattern * pattern);
 
 void
-rsvg_start_radial_gradient (RsvgHandle *ctx, RsvgPropertyBag *atts, const char * tag);
+rsvg_linear_gradient_fix_fallback(RsvgLinearGradient * grad);
 
 void
-rsvg_start_pattern (RsvgHandle *ctx, RsvgPropertyBag *atts);
+rsvg_radial_gradient_fix_fallback(RsvgRadialGradient * grad);
 
 G_END_DECLS
 

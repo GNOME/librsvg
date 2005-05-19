@@ -229,6 +229,16 @@ rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 		newnode = rsvg_new_filter_primitive_light_source('s');
 	else if (!strcmp ((char *)name, "fePointLight"))
 		newnode = rsvg_new_filter_primitive_light_source('p');
+	else if (!strcmp ((char *)name, "stop"))
+		newnode = rsvg_new_stop ();
+	else if (!strcmp ((char *)name, "pattern"))
+		newnode = rsvg_new_pattern ();
+	else if (!strcmp ((char *)name, "linearGradient"))
+		newnode = rsvg_new_linear_gradient ();
+	else if (!strcmp ((char *)name, "radialGradient"))
+		newnode = rsvg_new_radial_gradient ();
+	else if (!strcmp ((char *)name, "conicalGradient"))
+		newnode = rsvg_new_radial_gradient ();
 	if (newnode)
 		{
 			rsvg_node_set_atts(newnode, ctx, atts);
@@ -529,15 +539,6 @@ rsvg_start_element (void *data, const xmlChar *name,
 				rsvg_start_desc (ctx, bag);
 			else if (!strcmp ((char *)name, "metadata"))
 				rsvg_start_metadata (ctx, bag);
-			/* see conicalGradient discussion above */
-			else if (!strcmp ((char *)name, "linearGradient"))
-				rsvg_start_linear_gradient (ctx, bag);
-			else if (!strcmp ((char *)name, "radialGradient"))
-				rsvg_start_radial_gradient (ctx, bag, "radialGradient");
-			else if (!strcmp ((char *)name, "conicalGradient"))
-				rsvg_start_radial_gradient (ctx, bag, "conicalGradient");
-			else if (!strcmp ((char *)name, "pattern"))
-				rsvg_start_pattern (ctx, bag);
 			else if (!strcmp ((char *)name, "feFuncR"))
 				rsvg_start_filter_primitive_component_transfer_function(ctx, bag, 'r');
 			else if (!strcmp ((char *)name, "feFuncG"))
@@ -590,7 +591,11 @@ rsvg_end_element (void *data, const xmlChar *name)
 				!strcmp ((char *)name, "svg") ||
 				!strcmp ((char *)name, "a") ||
 				!strcmp ((char *)name, "g") ||
-				!strcmp ((char *)name, "pattern"))
+				!strcmp ((char *)name, "pattern") ||
+				!strcmp ((char *)name, "linearGradient") ||
+				!strcmp ((char *)name, "radialGradient") ||
+				!strcmp ((char *)name, "conicalGradient") ||
+				!strcmp ((char *)name, "stop"))
 				{
 					printf ("ended %s\n", (char *)name);
 					rsvg_pop_def_group(ctx);

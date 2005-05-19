@@ -73,11 +73,8 @@ struct _RsvgNodeSvg {
  	GdkPixbuf *img;
 };
 
-RsvgNode * 
-rsvg_push_part_def_group (RsvgHandle *ctx, const char * id, RsvgState *state);
 void rsvg_pop_def_group (RsvgHandle *ctx);
 void rsvg_node_group_pack (RsvgNode *self, RsvgNode *child);
-void rsvg_node_add_child (RsvgNode *overself, RsvgNode *child);
 
 void rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 			      int dominate);

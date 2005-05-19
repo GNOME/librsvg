@@ -201,7 +201,6 @@ struct _RsvgNode {
 	RsvgState * state;
 	RsvgNode * parent;
  	GPtrArray *children;
-	void (*add_child) (RsvgNode *self, RsvgNode *child);
 	void (*free) (RsvgNode *self);
 	void (*draw) (RsvgNode * self, RsvgDrawingCtx *ctx, int dominate);
 	void (*set_atts) (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag*);
