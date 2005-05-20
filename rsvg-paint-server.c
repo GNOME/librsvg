@@ -301,7 +301,7 @@ rsvg_linear_gradient_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag
 					grad->hasspread = TRUE;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
-				grad->fallback = rsvg_defs_lookup(ctx->defs, value);
+				rsvg_defs_add_resolver (ctx->defs, &grad->fallback, value);
 			if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))){
 				rsvg_parse_transform (grad->affine, value);
 				grad->hastransform = TRUE;
@@ -374,7 +374,7 @@ rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag
 				grad->hasfy = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
-				grad->fallback = rsvg_defs_lookup(ctx->defs, value);
+				rsvg_defs_add_resolver (ctx->defs, &grad->fallback, value);	
 			if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))){
 				rsvg_parse_transform (grad->affine, value);
 				grad->hastransform = TRUE;
@@ -461,7 +461,7 @@ rsvg_pattern_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 				pattern->hasheight = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
-				pattern->fallback = (RsvgPattern *)rsvg_defs_lookup(ctx->defs, value);
+				rsvg_defs_add_resolver (ctx->defs, (RsvgNode **)&pattern->fallback, value);
 			if ((value = rsvg_property_bag_lookup (atts, "patternTransform"))){
 				rsvg_parse_transform (pattern->affine, value);
 				pattern->hastransform = TRUE;

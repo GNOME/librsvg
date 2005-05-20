@@ -597,7 +597,6 @@ rsvg_end_element (void *data, const xmlChar *name)
 				!strcmp ((char *)name, "conicalGradient") ||
 				!strcmp ((char *)name, "stop"))
 				{
-					printf ("ended %s\n", (char *)name);
 					rsvg_pop_def_group(ctx);
 				}
 			else if (!strncmp ((char *)name, "fe", 2) &&

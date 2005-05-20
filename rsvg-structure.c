@@ -240,7 +240,10 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 		rsvg_add_clipping_rect(ctx, sself->x, sself->y, sself->w, sself->h);
 
 	state = rsvg_state_current (ctx);
-
+	if (!sself->hasw)
+		sself->w = sself->vbw;
+	if (!sself->hash)
+		sself->h = sself->vbh;	
 	if (sself->has_vbox)
 		{
 			affine[0] = sself->w / sself->vbw;
@@ -303,12 +306,14 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
 				{
 					svg->w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, ctx->width, 1);
+					svg->hasw = TRUE;
 					if (!svg->has_vbox)
 						ctx->width = svg->w; 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
 				{
 					svg->h = rsvg_css_parse_normalized_length (value, ctx->dpi_y, ctx->height, 1);
+					svg->hash = TRUE;
 					if (!svg->has_vbox)
 						ctx->height = svg->h;
 				}
@@ -334,6 +339,7 @@ rsvg_new_svg (void)
 	svg->has_vbox = FALSE;
 	svg->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	svg->x = 0; svg->y = 0; svg->w = -1; svg->h = -1;
+	svg->hasw = svg->hash = FALSE;
 	svg->vbx = 0; svg->vby = 0; svg->vbw = 0; svg->vbh = 0;
 	svg->super.children = g_ptr_array_new();
 	svg->super.state = g_new(RsvgState, 1);
