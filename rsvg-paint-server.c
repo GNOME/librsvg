@@ -311,7 +311,7 @@ rsvg_linear_gradient_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag
 			if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
 				if (!strcmp (value, "userSpaceOnUse"))
 					grad->obj_bbox = FALSE;
-				else
+				else if (!strcmp (value, "objectBoundingBox"))
 					grad->obj_bbox = TRUE;
 				grad->hasbbox = TRUE;
 			}
@@ -356,10 +356,14 @@ rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag
 			if ((value = rsvg_property_bag_lookup (atts, "cx"))){
 				grad->cx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, font_size);	
 				grad->hascx = TRUE;
+				if (!grad->hasfx)
+					grad->fx = grad->cx;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "cy"))){
 				grad->cy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, font_size);	
 				grad->hascy = TRUE;
+				if (!grad->hasfy)
+					grad->fy = grad->cy;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "r"))){
 				grad->r = rsvg_css_parse_normalized_length (value, rsvg_dpi_percentage (ctx), 1, font_size);	
@@ -394,7 +398,7 @@ rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag
 			if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
 				if (!strcmp (value, "userSpaceOnUse"))
 					grad->obj_bbox = FALSE;
-				else
+				else if (!strcmp (value, "objectBoundingBox"))
 					grad->obj_bbox = TRUE;
 				grad->hasbbox = TRUE;
 			}
@@ -469,14 +473,14 @@ rsvg_pattern_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "patternUnits"))) {
 				if (!strcmp (value, "userSpaceOnUse"))
 					pattern->obj_bbox = FALSE;
-				else
+				else if (!strcmp (value, "objectBoundingBox"))
 					pattern->obj_bbox = TRUE;
 				pattern->hasbbox = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "patternContentUnits"))) {
 				if (!strcmp (value, "userSpaceOnUse"))
 					pattern->obj_cbbox = FALSE;
-				else
+				else if (!strcmp (value, "objectBoundingBox"))
 					pattern->obj_cbbox = TRUE;	
 				pattern->hascbox = TRUE;
 			}

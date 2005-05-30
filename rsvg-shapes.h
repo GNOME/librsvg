@@ -33,14 +33,13 @@
 
 G_BEGIN_DECLS
 
-void rsvg_handle_path (RsvgHandle *ctx, const char * d, const char * id, RsvgState);
-void rsvg_start_path (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_polygon (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_polyline (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_line (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_rect (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_circle (RsvgHandle *ctx, RsvgPropertyBag *atts);
-void rsvg_start_ellipse (RsvgHandle *ctx, RsvgPropertyBag *atts);
+RsvgNode * rsvg_new_path (void);
+RsvgNode * rsvg_new_polygon (void);
+RsvgNode * rsvg_new_polyline (void);
+RsvgNode * rsvg_new_line (void);
+RsvgNode * rsvg_new_rect (void);
+RsvgNode * rsvg_new_circle (void);
+RsvgNode * rsvg_new_ellipse (void);
 
 
 typedef struct _RsvgNodePath RsvgNodePath;

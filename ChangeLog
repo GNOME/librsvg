@@ -1,10 +1,15 @@
+2005-05-30  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-shapes.c: converted all shapes to be manipulatable
+	* rsvg-filter.c: made transfer functions more similar to everything else
+	
 2005-05-20  Caleb Moore <c.moore@student.unsw.edu.au>
 	
-	* rsvg_paint_server.c, rsvg_art_paint_server.c, rsvg.c: converted to use the new create->manipulate->use system.
+	* rsvg-paint-server.c, rsvg-art-paint-server.c, rsvg.c: converted to use the new create->manipulate->use system.
 
 2005-05-17  Caleb Moore <c.moore@student.unsw.edu.au>
 
-	* rsvg_structure.c: Fixed a problem with <use> not working.
+	* rsvg-structure.c: Fixed a problem with <use> not working.
 
 2005-05-17  Caleb Moore <c.moore@student.unsw.edu.au>
 

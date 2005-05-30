@@ -164,8 +164,56 @@ static void
 rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 						   RsvgPropertyBag *atts)
 {
+
+	/*replace this stuff with a hash for fast reading!*/
 	RsvgNode * newnode = NULL;
-	if (!strcmp ((char *)name, "filter"))
+	if (!strcmp ((char *)name, "g"))
+		newnode = rsvg_new_group ();
+	else if (!strcmp ((char *)name, "a")) /*treat anchors as groups for now*/
+		newnode = rsvg_new_group ();
+	else if (!strcmp ((char *)name, "switch"))
+		newnode = rsvg_new_switch ();
+	else if (!strcmp ((char *)name, "defs"))
+		newnode = rsvg_new_defs ();	
+	else if (!strcmp ((char *)name, "use"))
+		newnode = rsvg_new_use ();
+	else if (!strcmp ((char *)name, "path"))
+		newnode = rsvg_new_path ();
+	else if (!strcmp ((char *)name, "line"))
+		newnode = rsvg_new_line ();
+	else if (!strcmp ((char *)name, "rect"))
+		newnode = rsvg_new_rect ();
+	else if (!strcmp ((char *)name, "ellipse"))
+		newnode = rsvg_new_ellipse ();
+	else if (!strcmp ((char *)name, "circle"))
+		newnode = rsvg_new_circle ();
+	else if (!strcmp ((char *)name, "polygon"))
+		newnode = rsvg_new_polygon ();
+	else if (!strcmp ((char *)name, "polyline"))
+		newnode = rsvg_new_polyline ();
+	else if (!strcmp ((char *)name, "symbol"))
+		newnode = rsvg_new_symbol ();
+	else if (!strcmp ((char *)name, "svg"))
+		newnode = rsvg_new_svg ();
+	else if (!strcmp ((char *)name, "mask"))
+		newnode = rsvg_new_mask();
+	else if (!strcmp ((char *)name, "clipPath"))
+		newnode = rsvg_new_clip_path();
+	else if (!strcmp ((char *)name, "image"))
+		newnode = rsvg_new_image ();
+	else if (!strcmp ((char *)name, "marker"))
+		newnode = rsvg_new_marker ();
+	else if (!strcmp ((char *)name, "stop"))
+		newnode = rsvg_new_stop ();
+	else if (!strcmp ((char *)name, "pattern"))
+		newnode = rsvg_new_pattern ();
+	else if (!strcmp ((char *)name, "linearGradient"))
+		newnode = rsvg_new_linear_gradient ();
+	else if (!strcmp ((char *)name, "radialGradient"))
+		newnode = rsvg_new_radial_gradient ();
+	else if (!strcmp ((char *)name, "conicalGradient"))
+		newnode = rsvg_new_radial_gradient ();
+	else if (!strcmp ((char *)name, "filter"))
 		newnode = rsvg_new_filter();
 	else if (!strcmp ((char *)name, "feBlend"))
 		newnode = rsvg_new_filter_primitive_blend ();
@@ -201,44 +249,20 @@ rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 		newnode = rsvg_new_filter_primitive_turbulence();
 	else if (!strcmp ((char *)name, "feMergeNode"))
 		newnode = rsvg_new_filter_primitive_merge_node();
-	else if (!strcmp ((char *)name, "g"))
-		newnode = rsvg_new_group ();
-	else if (!strcmp ((char *)name, "a")) /*treat anchors as groups for now*/
-		newnode = rsvg_new_group ();
-	else if (!strcmp ((char *)name, "switch"))
-		newnode = rsvg_new_switch ();
-	else if (!strcmp ((char *)name, "defs"))
-		newnode = rsvg_new_defs ();	
-	else if (!strcmp ((char *)name, "use"))
-		newnode = rsvg_new_use ();
-	else if (!strcmp ((char *)name, "symbol"))
-		newnode = rsvg_new_symbol ();
-	else if (!strcmp ((char *)name, "svg"))
-		newnode = rsvg_new_svg ();
-	else if (!strcmp ((char *)name, "mask"))
-		newnode = rsvg_new_mask();
-	else if (!strcmp ((char *)name, "clipPath"))
-		newnode = rsvg_new_clip_path();
-	else if (!strcmp ((char *)name, "image"))
-		newnode = rsvg_new_image ();
-	else if (!strcmp ((char *)name, "marker"))
-		newnode = rsvg_new_marker ();
+	else if (!strcmp ((char *)name, "feFuncR"))
+		newnode = rsvg_new_node_component_transfer_function('r');
+	else if (!strcmp ((char *)name, "feFuncG"))
+		newnode = rsvg_new_node_component_transfer_function('g');
+	else if (!strcmp ((char *)name, "feFuncB"))
+		newnode = rsvg_new_node_component_transfer_function('b');
+	else if (!strcmp ((char *)name, "feFuncA"))
+		newnode = rsvg_new_node_component_transfer_function('a');
 	else if (!strcmp ((char *)name, "feDistantLight"))
 		newnode = rsvg_new_filter_primitive_light_source('d');
 	else if (!strcmp ((char *)name, "feSpotLight"))
 		newnode = rsvg_new_filter_primitive_light_source('s');
 	else if (!strcmp ((char *)name, "fePointLight"))
 		newnode = rsvg_new_filter_primitive_light_source('p');
-	else if (!strcmp ((char *)name, "stop"))
-		newnode = rsvg_new_stop ();
-	else if (!strcmp ((char *)name, "pattern"))
-		newnode = rsvg_new_pattern ();
-	else if (!strcmp ((char *)name, "linearGradient"))
-		newnode = rsvg_new_linear_gradient ();
-	else if (!strcmp ((char *)name, "radialGradient"))
-		newnode = rsvg_new_radial_gradient ();
-	else if (!strcmp ((char *)name, "conicalGradient"))
-		newnode = rsvg_new_radial_gradient ();
 	if (newnode)
 		{
 			rsvg_node_set_atts(newnode, ctx, atts);
@@ -515,21 +539,7 @@ rsvg_start_element (void *data, const xmlChar *name,
 		}
 	else
 		{
-			if (!strcmp ((char *)name, "path"))
-				rsvg_start_path (ctx, bag);
-			else if (!strcmp ((char *)name, "line"))
-				rsvg_start_line (ctx, bag);
-			else if (!strcmp ((char *)name, "rect"))
-				rsvg_start_rect (ctx, bag);
-			else if (!strcmp ((char *)name, "circle"))
-				rsvg_start_circle (ctx, bag);
-			else if (!strcmp ((char *)name, "ellipse"))
-				rsvg_start_ellipse (ctx, bag);
-			else if (!strcmp ((char *)name, "polygon"))
-				rsvg_start_polygon (ctx, bag);
-			else if (!strcmp ((char *)name, "polyline"))
-				rsvg_start_polyline (ctx, bag);
-			else if (!strcmp ((char *)name, "text"))
+			if (!strcmp ((char *)name, "text"))
 				rsvg_start_text (ctx, bag);
 			else if (!strcmp ((char *)name, "style"))
 				rsvg_start_style (ctx, bag);
@@ -539,14 +549,6 @@ rsvg_start_element (void *data, const xmlChar *name,
 				rsvg_start_desc (ctx, bag);
 			else if (!strcmp ((char *)name, "metadata"))
 				rsvg_start_metadata (ctx, bag);
-			else if (!strcmp ((char *)name, "feFuncR"))
-				rsvg_start_filter_primitive_component_transfer_function(ctx, bag, 'r');
-			else if (!strcmp ((char *)name, "feFuncG"))
-				rsvg_start_filter_primitive_component_transfer_function(ctx, bag, 'g');
-			else if (!strcmp ((char *)name, "feFuncB"))
-				rsvg_start_filter_primitive_component_transfer_function(ctx, bag, 'b');
-			else if (!strcmp ((char *)name, "feFuncA"))
-				rsvg_start_filter_primitive_component_transfer_function(ctx, bag, 'a');
 			rsvg_filter_handler_start (ctx, name, bag);
     }
 
@@ -590,18 +592,24 @@ rsvg_end_element (void *data, const xmlChar *name)
 				!strcmp ((char *)name, "symbol") ||
 				!strcmp ((char *)name, "svg") ||
 				!strcmp ((char *)name, "a") ||
+				!strcmp ((char *)name, "line") ||
+				!strcmp ((char *)name, "rect") ||
+				!strcmp ((char *)name, "circle") ||
+				!strcmp ((char *)name, "ellipse") ||
+				!strcmp ((char *)name, "polyline") ||
+				!strcmp ((char *)name, "polygon") ||
+				!strcmp ((char *)name, "path") ||
 				!strcmp ((char *)name, "g") ||
 				!strcmp ((char *)name, "pattern") ||
 				!strcmp ((char *)name, "linearGradient") ||
 				!strcmp ((char *)name, "radialGradient") ||
 				!strcmp ((char *)name, "conicalGradient") ||
-				!strcmp ((char *)name, "stop"))
+				!strcmp ((char *)name, "stop") ||
+				!strncmp ((char *)name, "fe", 2))
 				{
+					/*when type enums are working right we should test if the end is the same as the current node*/
 					rsvg_pop_def_group(ctx);
 				}
-			else if (!strncmp ((char *)name, "fe", 2) &&
-					 strncmp ((char *)name, "feFunc", 6))
-				rsvg_pop_def_group(ctx);
 			
 		}
 }

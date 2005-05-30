@@ -74,9 +74,8 @@ rsvg_new_filter_primitive_colour_matrix (void);
 RsvgNode *
 rsvg_new_filter_primitive_component_transfer (void);
 
-void
-rsvg_start_filter_primitive_component_transfer_function (RsvgHandle * ctx,
-														 RsvgPropertyBag * atts, char channel);
+RsvgNode *
+rsvg_new_node_component_transfer_function (char channel);
 
 RsvgNode *
 rsvg_new_filter_primitive_erode (void);

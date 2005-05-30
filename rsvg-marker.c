@@ -81,13 +81,14 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *at
 			if ((value = rsvg_property_bag_lookup (atts, "markerUnits"))) {
 				if (!strcmp (value, "userSpaceOnUse"))
 					marker->bbox = FALSE;
-				else
-					marker->bbox = TRUE;					
-			}	
+				if (!strcmp (value, "objectBoundingBox"))
+					marker->bbox = TRUE;	
+			}
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
 				marker->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
 			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
 				marker->overflow = rsvg_css_parse_overflow(value);
+			rsvg_parse_style_attrs (ctx, self->state, "marker", klazz, id, atts);
 		}
 }
 
@@ -114,23 +115,6 @@ rsvg_new_marker (void)
 	marker->super.draw = _rsvg_node_draw_nothing;
 	marker->super.set_atts = rsvg_node_marker_set_atts;
 	return &marker->super;
-}
-
-
-static void
-rsvg_state_reassemble(RsvgNode * self, RsvgState * state)
-{
-	RsvgState store;
-	if (self == NULL)
-		{
-			return;
-		}
-	rsvg_state_reassemble(self->parent, state);
-
-	rsvg_state_clone (&store, self->state);
-	rsvg_state_reinherit(&store, state);
-	rsvg_state_finalize(state);
-	*state = store;
 }
 
 void 

@@ -80,8 +80,10 @@ void
 rsvg_node_free (RsvgNode *self)
 {
 	rsvg_state_finalize (self->state);
-	g_free(self->state);
-	g_ptr_array_free(self->children, TRUE);
+	if (self->state != NULL)
+		g_free(self->state);
+	if (self->children != NULL)
+		g_ptr_array_free(self->children, TRUE);
 	g_free (self);
 }
 
@@ -442,14 +444,17 @@ rsvg_node_symbol_set_atts(RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts
 {
 	RsvgNodeSymbol *symbol = (RsvgNodeSymbol *)self;
 
-	const char * klazz = NULL, *id = NULL, *value;
+	const char * klazz = NULL, *value, *id = NULL;
 
 	if (rsvg_property_bag_size(atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				id = value;
+				{
+					id = value;
+					rsvg_defs_register_name (ctx->defs, value, &symbol->super);
+				}
 			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
 				{
 					symbol->has_vbox = rsvg_css_parse_vbox (value, 

@@ -2212,11 +2212,22 @@ rsvg_new_filter_primitive_colour_matrix (void)
 /*************************************************************/
 /*************************************************************/
 
-struct ComponentTransferData
+typedef struct _RsvgNodeComponentTransferFunc RsvgNodeComponentTransferFunc;
+
+typedef gdouble (*ComponentTransferFunc) (gdouble C,
+										  RsvgNodeComponentTransferFunc*
+										  user_data);
+
+typedef struct _RsvgFilterPrimitiveComponentTransfer
+RsvgFilterPrimitiveComponentTransfer;
+
+struct _RsvgNodeComponentTransferFunc
 {
+	RsvgNode super;
+	ComponentTransferFunc function;
+	gchar channel;
 	gdouble *tableValues;
 	guint nbTableValues;
-	
 	gdouble slope;
 	gdouble intercept;
 	gdouble amplitude;
@@ -2224,30 +2235,13 @@ struct ComponentTransferData
 	gdouble offset;
 };
 
-typedef gdouble (*ComponentTransferFunc) (gdouble C,
-										 struct ComponentTransferData *
-										 user_data);
-
-typedef struct _RsvgFilterPrimitiveComponentTransfer
-RsvgFilterPrimitiveComponentTransfer;
-
-
 struct _RsvgFilterPrimitiveComponentTransfer
 {
 	RsvgFilterPrimitive super;
-	ComponentTransferFunc Rfunction;
-	struct ComponentTransferData Rdata;
-	ComponentTransferFunc Gfunction;
-	struct ComponentTransferData Gdata;
-	ComponentTransferFunc Bfunction;
-	struct ComponentTransferData Bdata;
-	ComponentTransferFunc Afunction;
-	struct ComponentTransferData Adata;
 };
 
 static gint
-get_component_transfer_table_value (gdouble C,
-									struct ComponentTransferData *user_data)
+get_component_transfer_table_value (gdouble C, RsvgNodeComponentTransferFunc *user_data)
 {
 	gdouble N;
 	gint k;
@@ -2261,15 +2255,13 @@ get_component_transfer_table_value (gdouble C,
 }
 
 static gdouble
-identity_component_transfer_func (gdouble C,
-								  struct ComponentTransferData *user_data)
+identity_component_transfer_func (gdouble C, RsvgNodeComponentTransferFunc *user_data)
 {
 	return C;
 }
 
 static gdouble
-table_component_transfer_func (gdouble C,
-							   struct ComponentTransferData *user_data)
+table_component_transfer_func (gdouble C, RsvgNodeComponentTransferFunc *user_data)
 {
 	guint k;
 	gdouble vk, vk1;
@@ -2292,8 +2284,7 @@ table_component_transfer_func (gdouble C,
 }
 
 static gdouble
-discrete_component_transfer_func (gdouble C,
-								  struct ComponentTransferData *user_data)
+discrete_component_transfer_func (gdouble C, RsvgNodeComponentTransferFunc *user_data)
 {
 	gint k;
 	
@@ -2306,15 +2297,13 @@ discrete_component_transfer_func (gdouble C,
 }
 
 static gdouble
-linear_component_transfer_func (gdouble C,
-								struct ComponentTransferData *user_data)
+linear_component_transfer_func (gdouble C, RsvgNodeComponentTransferFunc *user_data)
 {
 	return (user_data->slope * C) + user_data->intercept;
 }
 
 static gdouble
-gamma_component_transfer_func (gdouble C,
-							   struct ComponentTransferData *user_data)
+gamma_component_transfer_func (gdouble C, RsvgNodeComponentTransferFunc *user_data)
 {
 	return user_data->amplitude * pow (C,
 									   user_data->exponent) + user_data->offset;
@@ -2325,10 +2314,13 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 												self,
 												RsvgFilterContext * ctx)
 {
-	gint x, y;
+	gint x, y, c;
+	guint i;
 	gint temp;
 	gint rowstride, height, width;
 	FPBox boundarys;
+	RsvgNodeComponentTransferFunc * channels[4];
+	ComponentTransferFunc functions[4];
 	
 	guchar *in_pixels;
 	guchar *output_pixels;
@@ -2340,6 +2332,26 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 	cself = (RsvgFilterPrimitiveComponentTransfer *) self;
 	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 	
+	for (c = 0; c < 4; c++)
+		{
+			char channel = "rgba"[c];
+			for (i = 0; i < self->super.children->len; i++)
+				{
+					RsvgNodeComponentTransferFunc * temp;
+					temp = (RsvgNodeComponentTransferFunc *)
+						g_ptr_array_index(self->super.children, i);
+					if (temp->channel == channel)
+						{
+							functions[c] = temp->function;
+							channels[c] = temp;
+							break;
+						}
+				}
+			if (i == self->super.children->len)
+				functions[c] = identity_component_transfer_func;
+			
+		}
+
 	in = rsvg_filter_get_in (self->in, ctx);
 	in_pixels = gdk_pixbuf_get_pixels (in);
 	
@@ -2354,57 +2366,19 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 
 	for (y = boundarys.y1; y < boundarys.y2; y++)
 		for (x = boundarys.x1; x < boundarys.x2; x++)
-			{
-				temp = cself->Rfunction((double)in_pixels[y * rowstride + x * 4] / 255.0, &cself->Rdata) * 255.0;
-				if (temp > 255)
-					temp = 255;
-				else if (temp < 0)
-					temp = 0;
-				output_pixels[y * rowstride + x * 4] = temp;
-		
-				temp = cself->Gfunction((double)in_pixels[y * rowstride + x * 4 + 1] / 255.0, &cself->Gdata) * 255.0;
-				if (temp > 255)
-					temp = 255;
-				else if (temp < 0)
-					temp = 0;
-				output_pixels[y * rowstride + x * 4 + 1] = temp;
-
-				temp = cself->Bfunction((double)in_pixels[y * rowstride + x * 4 + 2] / 255.0, &cself->Bdata) * 255.0;
-				if (temp > 255)
-					temp = 255;
-				else if (temp < 0)
-					temp = 0;				
-				output_pixels[y * rowstride + x * 4 + 2] = temp;
-
-				temp = cself->Afunction((double)in_pixels[y * rowstride + x * 4 + 3] / 255.0, &cself->Adata) * 255.0;
-				if (temp > 255)
-					temp = 255;
-				else if (temp < 0)
-					temp = 0;
-				output_pixels[y * rowstride + x * 4 + 3] = temp;		
-			}
+			for (c = 0; c < 4; c++)
+				{
+					temp = functions[c]((double)in_pixels[y * rowstride + x * 4 + c] / 255.0, channels[c]) * 255.0;
+					if (temp > 255)
+						temp = 255;
+					else if (temp < 0)
+						temp = 0;
+					output_pixels[y * rowstride + x * 4 + c] = temp;		
+				}
 	rsvg_filter_store_result (self->result, output, ctx);
 	
 	g_object_unref (G_OBJECT (in));
 	g_object_unref (G_OBJECT (output));
-}
-
-static void 
-rsvg_filter_primitive_component_transfer_free (RsvgNode * self)
-{
-	RsvgFilterPrimitiveComponentTransfer *cself;
-
-	cself = (RsvgFilterPrimitiveComponentTransfer *) self;
-	g_string_free (cself->super.result, TRUE);
-	if (cself->Rdata.nbTableValues)
-		g_free (cself->Rdata.tableValues);
-	if (cself->Gdata.nbTableValues)
-		g_free (cself->Gdata.tableValues);
-	if (cself->Bdata.nbTableValues)
-		g_free (cself->Bdata.tableValues);
-	if (cself->Adata.nbTableValues)
-		g_free (cself->Adata.tableValues);
-	g_free (cself);
 }
 
 static void
@@ -2473,72 +2447,37 @@ rsvg_new_filter_primitive_component_transfer (void)
 	filter->super.result = g_string_new ("none");
 	filter->super.in = g_string_new ("none");
 	filter->super.sizedefaults = 1;
-	filter->Rfunction = identity_component_transfer_func;
-	filter->Gfunction = identity_component_transfer_func;
-	filter->Bfunction = identity_component_transfer_func;
-	filter->Afunction = identity_component_transfer_func;
-	filter->Rdata.nbTableValues = 0;
-	filter->Gdata.nbTableValues = 0;
-	filter->Bdata.nbTableValues = 0;
-	filter->Adata.nbTableValues = 0;
 	filter->super.render = &rsvg_filter_primitive_component_transfer_render;
-	filter->super.super.free = &rsvg_filter_primitive_component_transfer_free;
+	filter->super.super.free = &rsvg_filter_free;
 	filter->super.super.type = RSVG_NODE_FILTER_PRIMITIVE;
 	filter->super.super.set_atts = rsvg_filter_primitive_component_transfer_set_atts;
+
+	filter->super.super.children = g_ptr_array_new ();
 	return (RsvgNode *)filter;
 }
 
-void 
-rsvg_start_filter_primitive_component_transfer_function (RsvgHandle * ctx,
-														 RsvgPropertyBag * atts, char channel)
+static void 
+rsvg_node_component_transfer_function_set_atts (RsvgNode * self,
+												RsvgHandle * ctx,
+												RsvgPropertyBag * atts)
 {
 	const char *value;
-
-	ComponentTransferFunc * function;
-	struct ComponentTransferData * data;
-	
-	function = NULL;
-	data = NULL;
-
-	if (channel == 'r')
-		{
-			function = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentnode))->Rfunction;
-			data = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentnode))->Rdata;
-		}
-	else if (channel == 'g')
-		{
-			function = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentnode))->Gfunction;
-			data = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentnode))->Gdata;
-		}
-	else if (channel == 'b')
-		{
-			function = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentnode))->Bfunction;
-			data = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentnode))->Bdata;
-		}
-	else if (channel == 'a')
-		{
-			function = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentnode))->Afunction;
-			data = &((RsvgFilterPrimitiveComponentTransfer *)(ctx->currentnode))->Adata;
-		}
-	else
-		{
-			g_assert_not_reached();
-		}
+	RsvgNodeComponentTransferFunc * data = (RsvgNodeComponentTransferFunc *)self;
 
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "type")))
 				{
 					if (!strcmp (value, "identity"))
-						*function = identity_component_transfer_func;
+						data->function = identity_component_transfer_func;
 					else if (!strcmp (value, "table"))
-						*function = table_component_transfer_func;
+						data->function = table_component_transfer_func;
 					else if (!strcmp (value, "discrete"))
-						*function = discrete_component_transfer_func;
+						data->function = discrete_component_transfer_func;
 					else if (!strcmp (value, "linear"))
-						*function = linear_component_transfer_func;
+						data->function = linear_component_transfer_func;
 					else if (!strcmp (value, "gamma"))
-						*function = gamma_component_transfer_func;
+						data->function = gamma_component_transfer_func;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "tableValues")))
 				{
@@ -2569,6 +2508,30 @@ rsvg_start_filter_primitive_component_transfer_function (RsvgHandle * ctx,
 		}
 }
 
+static void
+rsvg_component_transfer_function_free(RsvgNode * self)
+	 
+{
+	RsvgNodeComponentTransferFunc *filter = (RsvgNodeComponentTransferFunc *)self;
+	if (filter->nbTableValues)
+		g_free(filter->tableValues);
+	g_free(self);
+}
+
+RsvgNode *
+rsvg_new_node_component_transfer_function (char channel)
+{
+	RsvgNodeComponentTransferFunc *filter;
+
+	filter = g_new (RsvgNodeComponentTransferFunc, 1);
+	filter->super.free = rsvg_component_transfer_function_free;
+	filter->super.type = RSVG_NODE_FILTER_PRIMITIVE;
+	filter->super.set_atts = rsvg_node_component_transfer_function_set_atts;
+	filter->channel = channel;
+	filter->function = identity_component_transfer_func;
+	filter->nbTableValues = 0;
+	return (RsvgNode *)filter;
+}
 
 /*************************************************************/
 /*************************************************************/
@@ -4457,6 +4420,7 @@ rsvg_new_filter_primitive_light_source(char type)
 	data->super.free = rsvg_filter_primitive_light_source_free;
 	data->super.set_atts = rsvg_filter_primitive_light_source_set_atts;
 	data->specularExponent = 1;
+	data->super.type = RSVG_NODE_FILTER_PRIMITIVE_MERGE_NODE;
 	if (type == 's')
 		data->type = SPOTLIGHT;
 	else if (type == 'd')
