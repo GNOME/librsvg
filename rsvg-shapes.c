@@ -105,35 +105,10 @@ rsvg_new_path (void)
 	return &path->super;
 }
 
-static GString *
-rsvg_make_poly_point_list(const char * points)
-{
-	guint idx = 0, size = strlen(points);
-	GString * str = g_string_sized_new (size);
-	
-	while (idx < size) 
-		{
-			/* scan for first point */
-			while (!g_ascii_isdigit (points[idx]) && (points[idx] != '.') 
-				   && (points[idx] != '-') && (idx < size))
-				idx++;
-			
-			/* now build up the point list (everything until next letter!) */
-			if (idx < size && points[idx] == '-')
-				g_string_append_c (str, points[idx++]); /* handle leading '-' */
-			while ((g_ascii_isdigit (points[idx]) || (points[idx] == '.')) && (idx < size)) 
-				g_string_append_c (str, points[idx++]);
-			
-			g_string_append_c (str, ' ');
-		}
-	
-	return str;
-}
-
 struct _RsvgNodePoly
 {
 	RsvgNode super;
-	double * pointlist;
+	gdouble * pointlist;
 	gboolean is_polyline;
 	guint pointlist_len;	
 };
@@ -152,34 +127,7 @@ _rsvg_node_poly_set_atts(RsvgNode * self, RsvgHandle *ctx,
 			/* support for svg < 1.0 which used verts */
 			if ((value = rsvg_property_bag_lookup (atts, "verts")) || (value = rsvg_property_bag_lookup (atts, "points")))
 				{
-					guint i;
-					GString * g = NULL;
-					gsize pointlist_len = 0;
-					gchar ** pointlist = NULL;
-
-					if (poly->pointlist)
-						g_free(poly->pointlist);
-
-					g = rsvg_make_poly_point_list (value);
-					pointlist = g_strsplit (g->str, " ", -1);
-					g_string_free (g, TRUE);
-					
-					if (pointlist)
-						{
-							while(pointlist[pointlist_len] != NULL)
-								pointlist_len++;
-						}
-					if (pointlist_len > 0)
-						pointlist_len--;
-
-					poly->pointlist = g_new(double, pointlist_len);
-					poly->pointlist_len = pointlist_len;			
-
-					for (i = 0; i < pointlist_len; i++)
-						poly->pointlist[i] = atof(pointlist[i]);
-
-					if (pointlist)
-						g_strfreev(pointlist);
+					poly->pointlist = rsvg_css_parse_number_list(value, &poly->pointlist_len);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;

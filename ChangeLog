@@ -1,3 +1,7 @@
+2005-06-01  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-shapes.c: fixed problems with polylines by using the generic list parser
+
 2005-05-30  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-shapes.c: converted all shapes to be manipulatable
