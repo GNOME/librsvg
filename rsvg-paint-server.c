@@ -554,7 +554,7 @@ rsvg_linear_gradient_fix_fallback(RsvgLinearGradient * grad)
 				}
 				if (!grad->hasspread && fallback->hasspread){
 					grad->hasspread = TRUE;
-					grad->obj_bbox = fallback->obj_bbox;
+					grad->spread = fallback->spread;
 				}
 				if (!grad->hasbbox && fallback->hasbbox){
 					grad->hasbbox = TRUE;
@@ -574,7 +574,7 @@ rsvg_linear_gradient_fix_fallback(RsvgLinearGradient * grad)
 				}
 				if (!grad->hasspread && fallback->hasspread){
 					grad->hasspread = TRUE;
-					grad->obj_bbox = fallback->obj_bbox;
+					grad->spread = fallback->spread;
 				}
 				if (!grad->hasbbox && fallback->hasbbox){
 					grad->hasbbox = TRUE;
@@ -625,7 +625,7 @@ rsvg_radial_gradient_fix_fallback(RsvgRadialGradient * grad)
 				}
 				if (!grad->hasspread && fallback->hasspread){
 					grad->hasspread = TRUE;
-					grad->obj_bbox = fallback->obj_bbox;
+					grad->spread = fallback->spread;
 				}
 				if (!grad->hasbbox && fallback->hasbbox){
 					grad->hasbbox = TRUE;
@@ -645,7 +645,7 @@ rsvg_radial_gradient_fix_fallback(RsvgRadialGradient * grad)
 				}
 				if (!grad->hasspread && fallback->hasspread){
 					grad->hasspread = TRUE;
-					grad->obj_bbox = fallback->obj_bbox;
+					grad->spread = fallback->spread;
 				}
 				if (!grad->hasbbox && fallback->hasbbox){
 					grad->hasbbox = TRUE;
@@ -683,6 +683,11 @@ rsvg_pattern_fix_fallback(RsvgPattern * pattern)
 				pattern->hasheight = TRUE;
 				pattern->height = fallback->height;
 			}
+			if (!pattern->hastransform && fallback->hastransform){
+					pattern->hastransform = TRUE;
+					for (i = 0; i < 6; i++)
+						pattern->affine[i] = fallback->affine[i];
+				}
 			if (!pattern->hasvbox && fallback->hasvbox){
 				pattern->hasvbox = TRUE;
 				pattern->vbx = fallback->vbx;
@@ -694,11 +699,6 @@ rsvg_pattern_fix_fallback(RsvgPattern * pattern)
 			if (!pattern->hasaspect && fallback->hasaspect){
 				pattern->hasaspect = TRUE;
 				pattern->preserve_aspect_ratio = fallback->preserve_aspect_ratio;
-			}
-			if (!pattern->hastransform && fallback->hastransform){
-				pattern->hastransform = TRUE;
-				for (i = 0; i < 6; i++)
-					pattern->affine[i] = fallback->affine[i];
 			}
 			if (!pattern->hasbbox && fallback->hasbbox){
 				pattern->hasbbox = TRUE;

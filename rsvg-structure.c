@@ -238,9 +238,11 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 
 	rsvg_push_discrete_layer (ctx);
 
-	if (!sself->overflow)
-		rsvg_add_clipping_rect(ctx, sself->x, sself->y, sself->w, sself->h);
-
+	if (!sself->overflow && self->parent)
+		{
+			printf("adding rect\n");
+			rsvg_add_clipping_rect(ctx, sself->x, sself->y, sself->w, sself->h);
+		}
 	state = rsvg_state_current (ctx);
 	if (!sself->hasw)
 		sself->w = sself->vbw;

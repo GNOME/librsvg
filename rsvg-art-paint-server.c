@@ -125,7 +125,8 @@ rsvg_art_paint_server_lin_grad_render (RsvgLinearGradient *rlg, ArtRender *ar,
 	agl = g_new (ArtGradientLinear, 1);
 	agl->n_stops = rlg->super.children->len;
 	agl->stops = rsvg_paint_art_stops_from_rsvg (rlg->super.children, current_color);
-	
+   
+
 	if (rlg->obj_bbox) {
 		affine[0] = ctx->x1 - ctx->x0;
 		affine[1] = 0.;		
@@ -134,10 +135,9 @@ rsvg_art_paint_server_lin_grad_render (RsvgLinearGradient *rlg, ArtRender *ar,
 		affine[4] = ctx->x0;
 		affine[5] = ctx->y0;
 		_rsvg_affine_multiply(affine, affine, ctx->affine);
-	} else {
+	} else
 		for (i = 0; i < 6; i++)
 			affine[i] = ctx->affine[i];
-	}
 
 	_rsvg_affine_multiply(affine, rlg->affine, affine);
 
@@ -177,7 +177,7 @@ rsvg_art_paint_server_lin_grad_render (RsvgLinearGradient *rlg, ArtRender *ar,
 	pxt = px * affine[0] + py * affine[2] + affine[4];
 	pyt = px * affine[1] + py * affine[3] + affine[5];
 
-	pointlen = abs((pxt - cxt)*(cyt - y2t)  - (cxt - x2t)*(pyt - cyt)) / 
+	pointlen = fabs((pxt - cxt)*(cyt - y2t)  - (cxt - x2t)*(pyt - cyt)) / 
 		sqrt((pxt - cxt) * (pxt - cxt) + (pyt - cyt) * (pyt - cyt));
 
 	xchange = pxt - cxt;

@@ -270,7 +270,10 @@ rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 			if (ctx->currentnode)
 				rsvg_node_group_pack(ctx->currentnode, newnode);
 			else
-				ctx->treebase = newnode;
+				{
+					newnode->parent = NULL;
+					ctx->treebase = newnode;
+				}
 			ctx->currentnode = newnode;
 		}
 }

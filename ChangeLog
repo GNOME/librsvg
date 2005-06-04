@@ -1,3 +1,8 @@
+2005-06-04  Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-art-paint-server.c: fixed a tiny little hard to find  bug that's
+	been making small gradients screw up for ages. 
+
 2005-06-01  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-shapes.c: fixed problems with polylines by using the generic list parser
