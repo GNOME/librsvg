@@ -2,6 +2,7 @@ AC_INIT(rsvg.h)
 
 dnl ===========================================================================
 
+FONTCONFIG_REQUIRED=1.0.1	dnl Same as in Pango, ???
 GDK_PIXBUF_REQUIRED=1.3.7
 GLIB_REQUIRED=2.0.0
 LIBART_REQUIRED=2.3.10
@@ -84,12 +85,30 @@ PKG_CHECK_MODULES(GLIB, \
 AC_SUBST(GLIB_LIBS)
 AC_SUBST(GLIB_CFLAGS)	
 
+FREETYPE_LIBS=
+FREETYPE_CFLAGS=
+AC_PATH_PROG(FREETYPE_CONFIG, freetype-config, no)
+if test "x$FREETYPE_CONFIG" != "xno" ; then
+  FREETYPE_CFLAGS=`$FREETYPE_CONFIG --cflags`
+  FREETYPE_LIBS=`$FREETYPE_CONFIG --libs`
+
+  librsvg_save_ldflags=$LDFLAGS
+  LDFLAGS="$LDFLAGS $FREETYPE_LIBS"
+  AC_CHECK_LIB(freetype, FT_Get_Next_Char, have_freetype=true, :)
+  LDFLAGS=$librsvg_save_ldflags
+else
+  AC_MSG_ERROR([freetype is required to build librsvg])
+fi
+AC_SUBST(FREETYPE_LIBS)
+AC_SUBST(FREETYPE_CFLAGS)
+
 PKG_CHECK_MODULES(LIBRSVG, \
 	gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED \
 	glib-2.0 >= $GLIB_REQUIRED \
 	libart-2.0 >= $LIBART_REQUIRED \
 	libxml-2.0 >= $LIBXML_REQUIRED \
-	pangoft2 >= $PANGOFT2_REQUIRED)
+	pangoft2 >= $PANGOFT2_REQUIRED \
+	fontconfig >= $FONTCONFIG_REQUIRED)
 AC_SUBST(LIBRSVG_LIBS)
 AC_SUBST(LIBRSVG_CFLAGS)
 
@@ -215,22 +234,6 @@ if test "$GCC" = "yes" -a "$set_more_warnings" != "no"; then
         -Wcast-align -Wsign-compare \
 	-Werror \
         $CFLAGS"
-
-        for option in -Wsign-promo; do
-                SAVE_CFLAGS="$CFLAGS"
-                CFLAGS="$option $CFLAGS"
-                AC_MSG_CHECKING([whether gcc understands $option])
-                AC_TRY_COMPILE([], [],
-                        has_option=yes,
-                        has_option=no,)
-                if test $has_option = no; then
-			CFLAGS="$SAVE_CFLAGS"
-                fi
-                AC_MSG_RESULT($has_option)
-                unset has_option
-                unset SAVE_CFLAGS
-        done
-        unset option
 else
         AC_MSG_RESULT(no)
 fi

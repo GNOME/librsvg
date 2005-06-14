@@ -1,3 +1,18 @@
+2005-06-14  Tor Lillqvist  <tml@novell.com>
+
+	* configure.in: Get CFLAGS and LIBS also for fontconfig and
+	freetype. Don't use -Wsign-promo, gcc 3.4 says that's only for C++
+	and Objective-C.
+
+	* Makefile.am (INCLUDES): Use LIBRSVG_DATADIR instead of just
+	DATADIR as that clashes with some Windows header that gets dragged
+	in into some compilations. (Not that any of the source files refer
+	to DATADIR.)
+	(librsvg_2_la_LIBADD): Link with freetype libs.
+
+	* librsvg-zip.in: Distribute also rsvg-view.exe and rsvg.exe. Get
+	the engine and loader DLLs from correct places.
+
 2005-06-04  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-art-paint-server.c: fixed a tiny little hard to find  bug that's

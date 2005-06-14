@@ -72,7 +72,7 @@ librsvg_2_la_SOURCES = 		\
 	librsvg-enum-types.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
-librsvg_2_la_LIBADD = $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS)
+librsvg_2_la_LIBADD = $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS)
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = 	\
@@ -90,7 +90,7 @@ INCLUDES =				\
 	$(GTK_CFLAGS)			\
 	$(GDK_X11_CFLAGS)		\
 	-DG_LOG_DOMAIN=\"librsvg\" 	\
-	-DDATADIR="\"$(datadir)\""
+	-DLIBRSVG_DATADIR="\"$(datadir)\""
 
 DEPS = $(top_builddir)/librsvg-2.la
 LDADDS =				\

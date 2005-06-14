@@ -23,6 +23,8 @@ EOF
 
 rm $DEVZIP
 zip -r $DEVZIP -@ <<EOF
+bin/rsvg.exe
+bin/rsvg-view.exe
 include/librsvg-2
 lib/librsvg-2.dll.a
 lib/pkgconfig/librsvg-2.0.pc
@@ -30,10 +32,10 @@ EOF
 
 rm $ENGINEZIP
 zip $ENGINEZIP -@ <<EOF
-lib/gtk-2.0/2.2.0/engines/libsvg.dll
+lib/gtk-2.0/2.4.0/engines/libsvg.dll
 EOF
 
 rm $LOADERZIP
 zip $LOADERZIP -@ <<EOF
-lib/gtk-2.0/2.2.0/loaders/svg_loader.dll
+lib/gtk-2.0/2.4.0/loaders/svg_loader.dll
 EOF
