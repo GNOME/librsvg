@@ -832,6 +832,7 @@ rsvg_state_free_func(gpointer data, gpointer user_data)
 static void
 rsvg_drawing_ctx_free (RsvgDrawingCtx *handle)
 {
+	rsvg_render_free (handle->render);
 	rsvg_defs_free (handle->defs);
 	
 	g_slist_foreach(handle->state, rsvg_state_free_func, (gpointer)handle);
@@ -973,40 +974,28 @@ rsvg_get_dimentions(RsvgHandle * handle)
 	RsvgNodeSvg * sself;
 	sself = (RsvgNodeSvg *)handle->treebase;
 	
-	output.em = sself->w;
-	output.ex = sself->h;
 
-	if (sself->has_vbox && sself->vbw > 0. && sself->vbh > 0.)
-		{
-			output.width  = (int)floor (sself->vbw);
-			output.height = (int)floor (sself->vbh);
-			
-			/* apply the sizing function on the *original* width and height
-			   to acquire our real destination size. we'll scale it against
-			   the viewBox's coordinates later */
-			if (handle->size_func) {
-				(* handle->size_func) (&output.width, &output.height, handle->user_data);
-			}
-		}
-	else
+	if (sself->hasw && sself->hash)
 		{
 			output.width  = sself->w;
 			output.height = sself->h;
-
-			/* bogus hack */
-			if (output.width <= 0 || output.height <= 0)
-				{
-					g_warning (_("rsvg_start_svg: width and height not specified in the SVG"));
-					if (output.width <= 0) {output.width = 512;}
-					if (output.height <= 0) {output.height = 512;}
-				}
-			
-			/* apply the sizing function to acquire our new width and height.
-			   we'll scale this against the old values later */
-			if (handle->size_func) {
-				(* handle->size_func) (&output.width, &output.height, handle->user_data);
-			}
 		}
+	else if (sself->has_vbox && sself->vbw > 0. && sself->vbh > 0.)
+		{
+			output.width  = (int)floor (sself->vbw);
+			output.height = (int)floor (sself->vbh);
+		}
+	else
+		{
+			output.width = 512;
+			output.height = 512;
+		}
+	output.em = output.width;
+	output.ex = output.height;
+
+	if (handle->size_func) {
+		(* handle->size_func) (&output.width, &output.height, handle->user_data);
+	}
 	
 	return output;
 }
@@ -1043,6 +1032,7 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 	affine[3] = data.height / data.ex;
 	affine[4] = 0;
 	affine[5] = 0;
+
 	_rsvg_affine_multiply(state->affine, affine, 
 						  state->affine);
 	

@@ -1,3 +1,8 @@
+2005-06-16  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg.c: Make sure the size of the graphic is determined by the width and height or the viewbox or defaults, in order.
+	* rsvg.c, rsvg-styles.c: applied patch by Ryan Lortie as given in bug #306494
+
 2005-06-14  Tor Lillqvist  <tml@novell.com>
 
 	* configure.in: Get CFLAGS and LIBS also for fontconfig and

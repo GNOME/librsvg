@@ -240,15 +240,11 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 
 	if (!sself->overflow && self->parent)
 		{
-			printf("adding rect\n");
 			rsvg_add_clipping_rect(ctx, sself->x, sself->y, sself->w, sself->h);
 		}
 	state = rsvg_state_current (ctx);
-	if (!sself->hasw)
-		sself->w = sself->vbw;
-	if (!sself->hash)
-		sself->h = sself->vbh;	
-	if (sself->has_vbox)
+
+	if (sself->has_vbox && sself->hasw && sself->hash)
 		{
 			affine[0] = sself->w / sself->vbw;
 			affine[1] = 0;

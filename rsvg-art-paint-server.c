@@ -94,6 +94,11 @@ rsvg_art_paint_server_solid_render (RsvgSolidColour *z, ArtRender *ar,
 	art_render_image_solid (ar, color);
 }
 
+/* This is a fudge factor, we add this to the linear gradient going 
+   to libart because libart is retarded */
+
+#define FUDGE 0.00000001
+
 static void
 rsvg_art_paint_server_lin_grad_render (RsvgLinearGradient *rlg, ArtRender *ar,
 									   const RsvgPSCtx *ctx)
@@ -207,10 +212,10 @@ rsvg_art_paint_server_lin_grad_render (RsvgLinearGradient *rlg, ArtRender *ar,
 		scale = 100000000.;
 	else
 		scale = 1.0 / (dx * dx + dy * dy);
-	agl->a = dx * scale;
-	agl->b = dy * scale;
-	agl->c = -(x1 * agl->a + y1 * agl->b);
-	
+	agl->a = dx * scale + FUDGE;
+	agl->b = dy * scale + FUDGE;
+	agl->c = -(x1 * agl->a + y1 * agl->b) + FUDGE;
+
 	agl->spread = rlg->spread;
 
 	art_render_gradient_linear (ar, agl, ART_FILTER_NEAREST);

@@ -126,6 +126,8 @@ rsvg_state_clone (RsvgState *dst, const RsvgState *src)
 {
 	gint i;
 	
+	rsvg_state_finalize (dst);
+
 	*dst = *src;
 	dst->font_family = g_strdup (src->font_family);
 	dst->lang = g_strdup (src->lang);
