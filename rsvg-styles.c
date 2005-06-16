@@ -680,6 +680,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 						{
 							gint n_dashes, i;
 							gboolean is_even = FALSE ;
+							gdouble total = 0;
 							
 							/* count the #dashes */
 							for (n_dashes = 0; dashes[n_dashes] != NULL; n_dashes++)
@@ -693,14 +694,23 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 							
 							/* the even and base case */
 							for (i = 0; i < n_dashes; i++)
-								state->dash.dash[i] = g_ascii_strtod (dashes[i], NULL);
-							
+								{
+									state->dash.dash[i] = g_ascii_strtod (dashes[i], NULL);
+									total += state->dash.dash[i];
+								}
 							/* if an odd number of dashes is found, it gets repeated */
 							if (!is_even)
 								for (; i < state->dash.n_dash; i++)
 									state->dash.dash[i] = state->dash.dash[i - n_dashes];
 							
 							g_strfreev (dashes);
+							/* If the dashes add up to 0, then it should 
+							   be ignored*/
+							if (total == 0)
+								{
+									g_free (state->dash.dash);
+									state->dash.n_dash = 0; 
+								}
 						}
 				}
 		}
