@@ -4289,8 +4289,7 @@ get_light_direction (RsvgNodeLightSource * source, gdouble x1, gdouble y1, gdoub
 			output.y = sin(source->x)*cos(source->y);
 			output.z = sin(source->y);
 			break;
-		case POINTLIGHT:
-		case SPOTLIGHT:
+		default:
 			output.x = source->x - x;
 			output.y = source->y - y;
 			output.z = source->z - z;
