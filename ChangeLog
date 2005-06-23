@@ -1,3 +1,7 @@
+2005-06-23  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg.c: changed position of defs freeing, fixes bug #171281
+
 2005-06-17  Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-styles.c: bug #273989

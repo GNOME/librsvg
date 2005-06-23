@@ -833,7 +833,6 @@ static void
 rsvg_drawing_ctx_free (RsvgDrawingCtx *handle)
 {
 	rsvg_render_free (handle->render);
-	rsvg_defs_free (handle->defs);
 	
 	g_slist_foreach(handle->state, rsvg_state_free_func, (gpointer)handle);
 	g_slist_free (handle->state);
@@ -854,7 +853,7 @@ rsvg_handle_free_impl (RsvgHandle *handle)
 {
 	g_hash_table_foreach (handle->entities, rsvg_ctx_free_helper, NULL);
 	g_hash_table_destroy (handle->entities);
-	
+	rsvg_defs_free (handle->defs);
 	g_hash_table_destroy (handle->css_props);
 	
 	if (handle->user_data_destroy)
