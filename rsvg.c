@@ -267,14 +267,16 @@ rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 		{
 			rsvg_node_set_atts(newnode, ctx, atts);
 			rsvg_defs_register_memory(ctx->defs, newnode);
-			if (ctx->currentnode)
+			if (ctx->currentnode) {
 				rsvg_node_group_pack(ctx->currentnode, newnode);
-			else
+				ctx->currentnode = newnode;
+			}
+			else if (!strcmp ((char *)name, "svg"))
 				{
 					newnode->parent = NULL;
 					ctx->treebase = newnode;
+					ctx->currentnode = newnode;
 				}
-			ctx->currentnode = newnode;
 		}
 }
 
@@ -967,12 +969,16 @@ rsvg_handle_new (void)
 }
 
 static RsvgDimensionData
-rsvg_get_dimentions(RsvgHandle * handle)
+rsvg_get_dimensions(RsvgHandle * handle)
 {
 	RsvgDimensionData output;
 	RsvgNodeSvg * sself;
-	sself = (RsvgNodeSvg *)handle->treebase;
-	
+
+	sself = (RsvgNodeSvg *)handle->treebase;	
+	if(!sself) {
+		memset(&output, 0, sizeof(output));
+		return output;
+	}
 
 	if (sself->hasw && sself->hash)
 		{
@@ -1006,15 +1012,21 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 	RsvgDrawingCtx * draw;
 	RsvgState * state;
 	double affine[6];
+
+	data = rsvg_get_dimensions(handle);
+	if(data.width == 0 || data.height == 0)
+		return NULL;
+
+	draw->render = (RsvgRender *) rsvg_art_render_new (data.width, data.height);
+	if(!draw->render)
+		return NULL;
+
 	draw = g_new(RsvgDrawingCtx, 1);	
 
 	draw->state = NULL;
 
 	/* should this be G_ALLOC_ONLY? */
 	draw->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
-
-	data = rsvg_get_dimentions(handle);
-	draw->render = (RsvgRender *) rsvg_art_render_new (data.width, data.height);
 
 	draw->defs = handle->defs;
 	draw->base_uri = g_strdup(handle->base_uri);
