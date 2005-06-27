@@ -1,4 +1,4 @@
-2005-06-24  Caleb Moore <c.moore@student.unsw.edu.au>
+2005-06-24  Dom Lachowicz <cinamod@hotmail.com>
 
 	* *.c: Some sanity checking all over the place; fixes bug #308810
 	

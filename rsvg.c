@@ -1017,11 +1017,11 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 	if(data.width == 0 || data.height == 0)
 		return NULL;
 
+	draw = g_new(RsvgDrawingCtx, 1);
+
 	draw->render = (RsvgRender *) rsvg_art_render_new (data.width, data.height);
 	if(!draw->render)
-		return NULL;
-
-	draw = g_new(RsvgDrawingCtx, 1);	
+		return NULL;	
 
 	draw->state = NULL;
 
