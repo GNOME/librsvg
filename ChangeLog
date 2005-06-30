@@ -1,3 +1,7 @@
+2005-06-30  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-image.c: Bug 309220, from joss@debian.org
+
 2005-06-24  Dom Lachowicz <cinamod@hotmail.com>
 
 	* *.c: Some sanity checking all over the place; fixes bug #308810

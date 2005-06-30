@@ -380,11 +380,6 @@ _rsvg_acquire_xlink_href_resource (const char *href,
 #ifdef HAVE_GNOME_VFS
 	if(!arr)
 		arr = rsvg_acquire_vfs_resource (href, base_uri, err);
-#else
-
-	if(!arr)
-		arr = rsvg_acquire_file_resource (href, base_uri, err);
-
 #endif
 
 	return arr;
