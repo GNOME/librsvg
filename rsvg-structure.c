@@ -140,12 +140,12 @@ rsvg_node_use_resolve(RsvgNodeUse * self, RsvgDrawingCtx *ctx, double * affine_o
 {
 	double affine[6];
 	double x, y, width, height;
+	RsvgNode * parent = self->link;
+
 	x = self->x;
 	y = self->y;
 	width = self->w;
 	height = self->h;
-
-	RsvgNode * parent = self->link;
 
 	if (parent != NULL)
 		switch(parent->type)
