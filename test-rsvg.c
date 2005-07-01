@@ -102,7 +102,14 @@ main (int argc, const char **argv)
 		pixbuf = rsvg_pixbuf_from_file_at_zoom (args[0], x_zoom, y_zoom, NULL);
 	/* if both are unspecified, assume user wants to resize pixbuf in at least 1 dimension */
 	else if (x_zoom == 1.0 && y_zoom == 1.0)
-		pixbuf = rsvg_pixbuf_from_file_at_size (args[0], width, height, NULL);
+		{
+			/* if one parameter is unspecified, assume user
+			 * wants to keep the aspect ratio */
+			if (width == -1 || height == -1)
+				pixbuf = rsvg_pixbuf_from_file_at_max_size (args[0], width, height, NULL);
+			else
+				pixbuf = rsvg_pixbuf_from_file_at_size (args[0], width, height, NULL);
+		}
 	else
 		/* assume the user wants to zoom the pixbuf, but cap the maximum size */
 		pixbuf = rsvg_pixbuf_from_file_at_zoom_with_max (args[0], x_zoom, y_zoom,

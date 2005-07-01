@@ -80,7 +80,12 @@ rsvg_size_callback (int *width,
 		
 		zoomx = (double) real_data->width / *width;
 		zoomy = (double) real_data->height / *height;
-		zoom = MIN (zoomx, zoomy);
+		if (zoomx < 0)
+			zoom = zoomy;
+		else if (zoomy < 0)
+			zoom = zoomx;
+		else
+			zoom = MIN (zoomx, zoomy);
 		
 		*width = floor (zoom * *width + 0.5);
 		*height = floor (zoom * *height + 0.5);
