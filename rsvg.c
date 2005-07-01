@@ -697,20 +697,20 @@ static void rsvg_SAX_handler_struct_init()
 gchar *
 rsvg_get_base_uri_from_filename(const gchar * file_name)
 {
+	gchar *curdir;
+	gchar *reldir;
 	gchar *base_uri;
-	int i, last;
 
-	last = 0;
-	for (i = 0; file_name[i] != '\0'; i++)
-		if (file_name[i] == G_DIR_SEPARATOR)
-			last = i;
+	reldir = g_path_get_dirname (file_name);
 
-	base_uri = g_new(gchar, i + 2);
-  
-	for (i = 0; i <= last; i++)
-		base_uri[i] = file_name[i];
+	if (g_path_is_absolute (file_name))
+		return reldir;
+	
+	curdir = g_get_current_dir();
+	base_uri = g_build_filename (curdir, reldir, NULL);
+	g_free (curdir);
+	g_free (reldir);
 
-	base_uri[i] = '\0';
 	return base_uri;
 }
 

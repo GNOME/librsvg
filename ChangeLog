@@ -3,6 +3,7 @@
 	* rsvg-image.c: Bug 309220, from joss@debian.org
 	* rsvg-file-util.c: Bug 309233 from joss@debian.org
 	* test-rsvg.c: Ditto
+	* rsvg.c: Bug 309234 from joss@debian.org
 	
 2005-06-24  Dom Lachowicz <cinamod@hotmail.com>
 
