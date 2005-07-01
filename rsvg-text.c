@@ -156,11 +156,14 @@ static void
 rsvg_tchunk_remove_leading(RsvgTChunk * self);
 
 static void
+rsvg_tspan_remove_trailing(RsvgTspan * self);
+
+static void
 rsvg_tspan_remove_leading(RsvgTspan * self)
 {
 	if (!self)
 		return;
-	if (!self->contents->len == 0)
+	if (self->contents->len == 0)
 		return;
 	rsvg_tchunk_remove_leading(g_ptr_array_index(self->contents, 0));
 }
@@ -168,15 +171,14 @@ rsvg_tspan_remove_leading(RsvgTspan * self)
 static void
 rsvg_tchunk_remove_leading(RsvgTChunk * self)
 {
+	if (!self)
+		return;
 	if (self->string)
 		if (self->string->str[0] == ' ')
 			g_string_erase(self->string, 0, 1);
 	if (self->span)
 		rsvg_tspan_remove_leading(self->span);
 }
-
-static void
-rsvg_tspan_remove_trailing(RsvgTspan * self);
 
 static void
 rsvg_tchunk_remove_trailing(RsvgTChunk * self)
@@ -193,7 +195,7 @@ rsvg_tspan_remove_trailing(RsvgTspan * self)
 {
 	if (!self)
 		return;
-	if (!self->contents->len == 0)
+	if (self->contents->len == 0)
 		return;
 	rsvg_tchunk_remove_trailing(g_ptr_array_index(self->contents, 
 												  self->contents->len - 1));
@@ -216,8 +218,10 @@ rsvg_text_handler_free (RsvgSaxHandler *self)
 	z = (RsvgSaxHandlerText *)self;
 
 	/*maybe this isn't the best place for this*/
-	rsvg_tspan_remove_leading(z->tspan);
-	rsvg_tspan_remove_trailing(z->tspan);
+	if(z->tspan != NULL) {
+		rsvg_tspan_remove_leading(z->tspan);
+		rsvg_tspan_remove_trailing(z->tspan);
+	}
 
 	g_string_free(z->id, TRUE);
 	g_free (self);

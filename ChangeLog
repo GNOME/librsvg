@@ -5,6 +5,7 @@
 	* test-rsvg.c: Ditto
 	* rsvg.c: Bug 309234 from joss@debian.org
 	* rsvg-structure.c: Bug 308472, from Behdad
+	* rsvg-text.c: Bug 303086
 	
 2005-06-24  Dom Lachowicz <cinamod@hotmail.com>
 
