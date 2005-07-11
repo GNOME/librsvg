@@ -271,12 +271,11 @@ rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 				rsvg_node_group_pack(ctx->currentnode, newnode);
 				ctx->currentnode = newnode;
 			}
-			else if (!strcmp ((char *)name, "svg"))
-				{
-					newnode->parent = NULL;
-					ctx->treebase = newnode;
-					ctx->currentnode = newnode;
-				}
+			else if (!strcmp ((char *)name, "svg")) {
+				newnode->parent = NULL;
+				ctx->treebase = newnode;
+				ctx->currentnode = newnode;
+			}
 		}
 }
 
@@ -618,7 +617,19 @@ rsvg_end_element (void *data, const xmlChar *name)
 			
 		}
 }
+/*
+static void
+_rsvg_dont_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts)
+{
+}
 
+static void _rsvg_node_chars_free(RsvgNode * node)
+{
+	RsvgNodeChars * self = (RsvgNodeChars *)node;
+	g_string_free(self->contents, TRUE);
+	g_free(node);
+}
+*/
 static void
 rsvg_characters (void *data, const xmlChar *ch, int len)
 {
@@ -626,6 +637,37 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 	
 	if (ctx->handler && ctx->handler->characters != NULL)
 		ctx->handler->characters (ctx->handler, ch, len);
+	/*
+
+	char * utf8 = NULL;
+	RsvgNodeChars * self;
+	GString * string;
+
+	if (!ch || !len)
+		return;
+
+	string = g_string_new_len (ch, len);
+	if (!g_utf8_validate (string->str, -1, NULL))
+		{
+			utf8 = rsvg_make_valid_utf8 (string->str);
+			g_string_free (string, TRUE);
+			string = g_string_new (ch);
+		}
+
+	self = g_new(RsvgNodeChars, 1);
+	self->contents = string;
+
+	self->super.type = RSVG_NODE_CHARS;
+	self->super.free = _rsvg_node_chars_free;
+	self->super.draw = _rsvg_node_draw_nothing;
+	self->super.set_atts = _rsvg_dont_set_atts;
+
+	rsvg_defs_register_memory(ctx->defs, (RsvgNode *)self);
+	if (ctx->currentnode) {
+		rsvg_node_group_pack(ctx->currentnode, (RsvgNode *)self);
+		ctx->currentnode = (RsvgNode *)self;
+	}
+	*/
 }
 
 static xmlEntityPtr

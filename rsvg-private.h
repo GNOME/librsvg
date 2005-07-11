@@ -46,6 +46,7 @@ typedef struct _RsvgState RsvgState;
 typedef struct _RsvgDefs RsvgDefs;
 typedef struct _RsvgNode RsvgNode;
 typedef struct _RsvgFilter RsvgFilter;
+typedef struct _RsvgNodeChars RsvgNodeChars;
 
 /* prepare for gettext */
 #ifndef _
@@ -193,7 +194,8 @@ typedef enum {
 	RSVG_NODE_MASK,
 	RSVG_NODE_MARKER,
 	RSVG_NODE_SYMBOL,
-	RSVG_NODE_CLIP_PATH
+	RSVG_NODE_CLIP_PATH,
+	RSVG_NODE_CHARS
 } RsvgNodeType;
 
 struct _RsvgNode {
@@ -204,6 +206,11 @@ struct _RsvgNode {
 	void (*free) (RsvgNode *self);
 	void (*draw) (RsvgNode * self, RsvgDrawingCtx *ctx, int dominate);
 	void (*set_atts) (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag*);
+};
+
+struct _RsvgNodeChars {
+	RsvgNode super;
+	GString * contents;
 };
 
 typedef void (*RsvgPropertyBagEnumFunc) (const char * key,

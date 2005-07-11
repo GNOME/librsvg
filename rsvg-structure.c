@@ -140,53 +140,40 @@ rsvg_node_use_resolve(RsvgNodeUse * self, RsvgDrawingCtx *ctx, double * affine_o
 {
 	double affine[6];
 	double x, y, width, height;
-	RsvgNode * parent = self->link;
+	RsvgNode * base = self->link;
 
 	x = self->x;
 	y = self->y;
 	width = self->w;
 	height = self->h;
 
-	if (parent != NULL)
-		switch(parent->type)
+	if (base != NULL)
+		if (base->type == RSVG_NODE_SYMBOL)
 			{
-			case RSVG_NODE_SYMBOL:
-				{
-					RsvgNode *drawable = 
-						(RsvgNode*)parent;
-					RsvgNodeSymbol *symbol = 
-						(RsvgNodeSymbol*)parent;
-					
-					if (symbol->has_vbox){
-						rsvg_preserve_aspect_ratio
-							(symbol->preserve_aspect_ratio, 
-							 symbol->width, symbol->height, 
-							 &width, &height, &x, &y);
-						_rsvg_affine_translate(affine, x, y);
-						_rsvg_affine_multiply(affine_out, affine, affine_out);	
-						
-						_rsvg_affine_scale(affine, width / symbol->width,
-										 height / symbol->height);
-						_rsvg_affine_multiply(affine_out, affine, affine_out);
-						_rsvg_affine_translate(affine, -symbol->x, 
-											 -symbol->y);
-						_rsvg_affine_multiply(affine_out, affine, affine_out);
-					}
-					else {
-						_rsvg_affine_translate(affine, x, y);
-						_rsvg_affine_multiply(affine_out, affine, affine_out);	
-					}
-					
-					return drawable;
-				}
-			default:
-				{
+				RsvgNodeSymbol *symbol = 
+					(RsvgNodeSymbol*)base;
+				
+				if (symbol->has_vbox){
+					rsvg_preserve_aspect_ratio
+						(symbol->preserve_aspect_ratio, 
+						 symbol->width, symbol->height, 
+						 &width, &height, &x, &y);
 					_rsvg_affine_translate(affine, x, y);
 					_rsvg_affine_multiply(affine_out, affine, affine_out);	
-					return (RsvgNode *)parent;
+					
+					_rsvg_affine_scale(affine, width / symbol->width,
+									   height / symbol->height);
+					_rsvg_affine_multiply(affine_out, affine, affine_out);
+					_rsvg_affine_translate(affine, -symbol->x, 
+										   -symbol->y);
+					_rsvg_affine_multiply(affine_out, affine, affine_out);
+					
+					return base;
 				}
 			}
-	return NULL;
+	_rsvg_affine_translate(affine, x, y);
+	_rsvg_affine_multiply(affine_out, affine, affine_out);	
+	return (RsvgNode *)base;   
 }
 
 static void 
@@ -208,7 +195,10 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 
 	rsvg_state_push(ctx);
 	
-	rsvg_node_draw (child, ctx, 1);
+	if (child->type != RSVG_NODE_SYMBOL)
+		rsvg_node_draw (child, ctx, 1);
+	else
+		_rsvg_node_draw_children(child, ctx, 1);
 
 	rsvg_state_pop(ctx);
 
@@ -404,39 +394,6 @@ rsvg_new_use ()
 	return (RsvgNode *)use;
 }
 
-static void
-rsvg_node_symbol_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
-							 int dominate)
-{
-	RsvgNodeSymbol * sself;
-	RsvgState *state;
-	guint i;
-	sself = (RsvgNodeSymbol *)self;
-
-	rsvg_state_reinherit_top(ctx, self->state, dominate);
-
-	rsvg_push_discrete_layer (ctx);
-
-	state = rsvg_state_current (ctx);
-
-	if (!sself->overflow){
-		rsvg_add_clipping_rect(ctx, sself->x, sself->y, sself->width, sself->height);
-	}
-
-	for (i = 0; i < self->children->len; i++)
-		{
-			rsvg_state_push(ctx);
-
-			rsvg_node_draw (g_ptr_array_index(self->children, i), 
-									 ctx, 0);
-	
-			rsvg_state_pop(ctx);
-		}			
-
-	rsvg_pop_discrete_layer (ctx);
-}
-
-
 static void 
 rsvg_node_symbol_set_atts(RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
@@ -489,7 +446,7 @@ rsvg_new_symbol(void)
 	rsvg_state_init(symbol->super.state);	
 	symbol->super.type = RSVG_NODE_SYMBOL;
 	symbol->super.free = rsvg_node_free;
-	symbol->super.draw = rsvg_node_symbol_draw;
+	symbol->super.draw = _rsvg_node_draw_nothing;
 	symbol->super.set_atts = rsvg_node_symbol_set_atts;
 	return &symbol->super;
 }
