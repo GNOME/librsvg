@@ -80,12 +80,10 @@ void rsvg_node_group_pack (RsvgNode *self, RsvgNode *child);
 
 void rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 			      int dominate);
-void _rsvg_node_draw_nothing (RsvgNode * self, RsvgDrawingCtx *ctx, 
-							  int dominate);
 void _rsvg_node_draw_children (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							   int dominate);
-void rsvg_node_free (RsvgNode *self);
-
+void _rsvg_node_free (RsvgNode *self);
+void _rsvg_node_init(RsvgNode *self);
 
 G_END_DECLS
 

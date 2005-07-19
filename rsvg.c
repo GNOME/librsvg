@@ -617,28 +617,24 @@ rsvg_end_element (void *data, const xmlChar *name)
 			
 		}
 }
-/*
-static void
-_rsvg_dont_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts)
-{
-}
 
 static void _rsvg_node_chars_free(RsvgNode * node)
 {
 	RsvgNodeChars * self = (RsvgNodeChars *)node;
 	g_string_free(self->contents, TRUE);
-	g_free(node);
+	_rsvg_node_free(node);
 }
-*/
+
 static void
 rsvg_characters (void *data, const xmlChar *ch, int len)
 {
 	RsvgHandle *ctx = (RsvgHandle *)data;
 	
 	if (ctx->handler && ctx->handler->characters != NULL)
-		ctx->handler->characters (ctx->handler, ch, len);
-	/*
-
+		{
+			ctx->handler->characters (ctx->handler, ch, len);
+			return;
+		}
 	char * utf8 = NULL;
 	RsvgNodeChars * self;
 	GString * string;
@@ -655,19 +651,15 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 		}
 
 	self = g_new(RsvgNodeChars, 1);
+	_rsvg_node_init(&self->super);
 	self->contents = string;
 
 	self->super.type = RSVG_NODE_CHARS;
 	self->super.free = _rsvg_node_chars_free;
-	self->super.draw = _rsvg_node_draw_nothing;
-	self->super.set_atts = _rsvg_dont_set_atts;
 
 	rsvg_defs_register_memory(ctx->defs, (RsvgNode *)self);
-	if (ctx->currentnode) {
+	if (ctx->currentnode)
 		rsvg_node_group_pack(ctx->currentnode, (RsvgNode *)self);
-		ctx->currentnode = (RsvgNode *)self;
-	}
-	*/
 }
 
 static xmlEntityPtr

@@ -37,13 +37,6 @@
 
 #include "rsvg-css.h"
 
-static void 
-rsvg_pserver_free (RsvgNode *self)
-{
-	g_ptr_array_free(self->children, TRUE);
-	g_free (self);
-}
-
 static RsvgPaintServer *
 rsvg_paint_server_solid (guint32 rgb)
 {
@@ -242,21 +235,16 @@ rsvg_stop_set_atts (RsvgNode *self, RsvgHandle *ctx,
 	rsvg_state_finalize(&state);
 }
 
-static void
-rsvg_stop_free(RsvgNode * self)
-{
-	g_free(self);
-}
-
 RsvgNode *
 rsvg_new_stop (void)
 {
 	RsvgGradientStop * stop = g_new(RsvgGradientStop, 1);
-	stop->super.free = rsvg_stop_free;
+	_rsvg_node_init(&stop->super);
 	stop->super.set_atts = rsvg_stop_set_atts;
 	stop->offset = 0;
 	stop->rgba = 0;
 	stop->is_current_color = 0;
+	stop->super.type = RSVG_NODE_STOP;
 	return &stop->super;
 }
 
@@ -324,8 +312,8 @@ rsvg_new_linear_gradient (void)
 {
 	RsvgLinearGradient *grad = NULL;
 	grad = g_new (RsvgLinearGradient, 1);
+	_rsvg_node_init(&grad->super);
 	grad->super.type = RSVG_NODE_LINGRAD;
-	grad->super.free = rsvg_pserver_free;
 	_rsvg_affine_identity(grad->affine);
 	grad->has_current_color = FALSE;
 	grad->x1 = 0;
@@ -335,9 +323,7 @@ rsvg_new_linear_gradient (void)
 	grad->fallback = NULL;
 	grad->obj_bbox = TRUE;
 	grad->spread = RSVG_GRADIENT_PAD;
-	grad->super.children = g_ptr_array_new();
 	grad->super.set_atts = rsvg_linear_gradient_set_atts;
-	grad->super.draw = _rsvg_node_draw_nothing;
 	grad->hasx1 = grad->hasy1 = grad->hasx2 = grad->hasy2 = grad->hasbbox = grad->hasspread = grad->hastransform = FALSE;
 	return &grad->super;
 }
@@ -410,8 +396,8 @@ rsvg_new_radial_gradient (void)
 {
 
 	RsvgRadialGradient * grad = g_new (RsvgRadialGradient, 1);
+	_rsvg_node_init(&grad->super);
 	grad->super.type = RSVG_NODE_RADGRAD;
-	grad->super.free = rsvg_pserver_free;
 	_rsvg_affine_identity(grad->affine);
 	grad->has_current_color = FALSE;
 	grad->obj_bbox = TRUE;
@@ -422,10 +408,8 @@ rsvg_new_radial_gradient (void)
 	grad->r = 0.5;
 	grad->fx = 0.5;
 	grad->fy = 0.5;
-	grad->super.children = g_ptr_array_new();
 	grad->super.set_atts = rsvg_radial_gradient_set_atts;
 	grad->hascx = grad->hascy = grad->hasfx = grad->hasfy = grad->hasr = grad->hasbbox = grad->hasspread = grad->hastransform = FALSE;
-	grad->super.draw = _rsvg_node_draw_nothing;
 	return &grad->super;
 }
 
@@ -496,6 +480,7 @@ RsvgNode *
 rsvg_new_pattern (void)
 {
 	RsvgPattern *pattern = g_new (RsvgPattern, 1);
+	_rsvg_node_init(&pattern->super);
 	pattern->obj_bbox = TRUE;
 	pattern->obj_cbbox = FALSE;
 	pattern->x = 0;
@@ -510,11 +495,6 @@ rsvg_new_pattern (void)
 	pattern->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	pattern->vbox = FALSE;
 	_rsvg_affine_identity(pattern->affine);
-	pattern->super.draw = _rsvg_node_draw_nothing;
-	pattern->super.state = g_new(RsvgState, 1);
-	rsvg_state_init(pattern->super.state);
-	pattern->super.children = g_ptr_array_new();
-	pattern->super.free = rsvg_pserver_free;
 	pattern->super.set_atts = rsvg_pattern_set_atts;
 	pattern->super.type = RSVG_NODE_PATTERN;
 	pattern->hasx = pattern->hasy = pattern->haswidth = pattern->hasheight = pattern->hasvbox = pattern->hasbbox = pattern->hascbox = pattern->hasaspect = pattern->hastransform = pattern->hasaspect = FALSE; 

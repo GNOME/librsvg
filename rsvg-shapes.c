@@ -93,10 +93,8 @@ rsvg_new_path (void)
 {
 	RsvgNodePath *path;	
 	path = g_new (RsvgNodePath, 1);
+	_rsvg_node_init(&path->super);
 	path->d = NULL;
-	path->super.state = g_new(RsvgState, 1);
-	rsvg_state_init(path->super.state);
-	path->super.children = NULL;
 	path->super.type = RSVG_NODE_PATH;
 	path->super.free = rsvg_node_path_free;
 	path->super.draw = rsvg_node_path_draw;
@@ -184,9 +182,7 @@ rsvg_new_any_poly(gboolean is_polyline)
 {
 	RsvgNodePoly *poly;
 	poly = g_new (RsvgNodePoly, 1);
-	poly->super.children = NULL;
-	poly->super.state = g_new(RsvgState, 1);
-	rsvg_state_init(poly->super.state);
+	_rsvg_node_init(&poly->super);
 	poly->super.type = RSVG_NODE_PATH;
 	poly->super.free = _rsvg_node_poly_free;
 	poly->super.draw = _rsvg_node_poly_draw;
@@ -281,11 +277,8 @@ rsvg_new_line (void)
 {
 	RsvgNodeLine *line;
 	line = g_new (RsvgNodeLine, 1);
-	line->super.children = NULL;
-	line->super.state = g_new(RsvgState, 1);
-	rsvg_state_init(line->super.state);
+	_rsvg_node_init(&line->super);
 	line->super.type = RSVG_NODE_PATH;
-	line->super.free = rsvg_node_free;
 	line->super.draw = _rsvg_node_line_draw;
 	line->super.set_atts = _rsvg_node_line_set_atts;
 	line->x1 = line->x2 = line->y1 = line->y2 = 0;
@@ -453,11 +446,8 @@ rsvg_new_rect (void)
 {
 	RsvgNodeRect *rect;
 	rect = g_new (RsvgNodeRect, 1);
-	rect->super.children = NULL;
-	rect->super.state = g_new(RsvgState, 1);
-	rsvg_state_init(rect->super.state);
+	_rsvg_node_init(&rect->super);
 	rect->super.type = RSVG_NODE_PATH;
-	rect->super.free = rsvg_node_free;
 	rect->super.draw = _rsvg_node_rect_draw;
 	rect->super.set_atts = _rsvg_node_rect_set_atts;
 	rect->x = rect->y = rect->w = rect->h = rect->rx = rect->ry = 0;
@@ -587,11 +577,8 @@ rsvg_new_circle (void)
 {
 	RsvgNodeCircle *circle;
 	circle = g_new (RsvgNodeCircle, 1);
-	circle->super.children = NULL;
-	circle->super.state = g_new(RsvgState, 1);
-	rsvg_state_init(circle->super.state);
+	_rsvg_node_init(&circle->super);
 	circle->super.type = RSVG_NODE_PATH;
-	circle->super.free = rsvg_node_free;
 	circle->super.draw = _rsvg_node_circle_draw;
 	circle->super.set_atts = _rsvg_node_circle_set_atts;
 	circle->cx = circle->cy = circle->r = 0;
@@ -718,11 +705,8 @@ rsvg_new_ellipse (void)
 {
 	RsvgNodeEllipse *ellipse;
 	ellipse = g_new (RsvgNodeEllipse, 1);
-	ellipse->super.children = NULL;
-	ellipse->super.state = g_new(RsvgState, 1);
-	rsvg_state_init(ellipse->super.state);
+	_rsvg_node_init(&ellipse->super);
 	ellipse->super.type = RSVG_NODE_PATH;
-	ellipse->super.free = rsvg_node_free;
 	ellipse->super.draw = _rsvg_node_ellipse_draw;
 	ellipse->super.set_atts = _rsvg_node_ellipse_set_atts;
 	ellipse->cx = ellipse->cy = ellipse->rx = ellipse->ry = 0;

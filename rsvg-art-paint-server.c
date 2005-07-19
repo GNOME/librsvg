@@ -41,22 +41,34 @@
 #include <math.h>
 
 static ArtGradientStop *
-rsvg_paint_art_stops_from_rsvg (GPtrArray *rstops, 
+rsvg_paint_art_stops_from_rsvg (GPtrArray *rstops, guint32 * nstops,
 								guint32 current_color)
 {
 	ArtGradientStop *stops;
-	int n_stop = rstops->len;
-	int i;
+	unsigned int n_stop = rstops->len;
+	unsigned int i, j;
 	
-	stops = g_new (ArtGradientStop, n_stop);
+	j = 0;
+	for (i = 0; i < n_stop; i++)
+		if (((RsvgNode *)g_ptr_array_index(rstops, i))->type == RSVG_NODE_STOP)
+			j++;
+	*nstops = j;
+	stops = g_new (ArtGradientStop, j);
+
+	j = 0;
+
 	for (i = 0; i < n_stop; i++)
 		{
 			RsvgGradientStop * stop;
+			RsvgNode * temp;
 			guint32 rgba;
 			guint32 r, g, b, a;
-			
-			stop = (RsvgGradientStop *)g_ptr_array_index(rstops, i);
-			stops[i].offset = stop->offset;
+
+			temp = (RsvgNode *)g_ptr_array_index(rstops, i);
+			if (temp->type != RSVG_NODE_STOP)
+				continue;
+			stop = (RsvgGradientStop *)temp;
+			stops[j].offset = stop->offset;
 			if (!stop->is_current_color)
 				rgba = stop->rgba;
 			else
@@ -69,10 +81,11 @@ rsvg_paint_art_stops_from_rsvg (GPtrArray *rstops,
 			g = (g + (g >> 8)) >> 8;
 			b = ((rgba >> 8) & 0xff) * a + 0x80;
 			b = (b + (b >> 8)) >> 8;
-			stops[i].color[0] = ART_PIX_MAX_FROM_8(r);
-			stops[i].color[1] = ART_PIX_MAX_FROM_8(g);
-			stops[i].color[2] = ART_PIX_MAX_FROM_8(b);
-			stops[i].color[3] = ART_PIX_MAX_FROM_8(a);
+			stops[j].color[0] = ART_PIX_MAX_FROM_8(r);
+			stops[j].color[1] = ART_PIX_MAX_FROM_8(g);
+			stops[j].color[2] = ART_PIX_MAX_FROM_8(b);
+			stops[j].color[3] = ART_PIX_MAX_FROM_8(a);
+			j++;
 		}
 	return stops;
 }
@@ -128,8 +141,8 @@ rsvg_art_paint_server_lin_grad_render (RsvgLinearGradient *rlg, ArtRender *ar,
 		}
 
 	agl = g_new (ArtGradientLinear, 1);
-	agl->n_stops = rlg->super.children->len;
-	agl->stops = rsvg_paint_art_stops_from_rsvg (rlg->super.children, current_color);
+	agl->stops = rsvg_paint_art_stops_from_rsvg (rlg->super.children, 
+												 &agl->n_stops, current_color);
    
 
 	if (rlg->obj_bbox) {
@@ -260,8 +273,8 @@ rsvg_art_paint_server_rad_grad_render (RsvgRadialGradient *rrg, ArtRender *ar,
 			return;
 		}
 	agr = g_new (ArtGradientRadial, 1);
-	agr->n_stops = rrg->super.children->len;
-	agr->stops = rsvg_paint_art_stops_from_rsvg (rrg->super.children, current_color);
+	agr->stops = rsvg_paint_art_stops_from_rsvg (rrg->super.children, 
+												 &agr->n_stops, current_color);
 	
 	_rsvg_affine_scale (aff1, rrg->r, rrg->r);
 	_rsvg_affine_translate (aff2, rrg->cx, rrg->cy);

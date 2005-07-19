@@ -97,8 +97,7 @@ rsvg_new_marker (void)
 {
 	RsvgMarker *marker;
 	marker = g_new (RsvgMarker, 1);
-	marker->super.state = g_new(RsvgState, 1);
-	rsvg_state_init(marker->super.state);
+	_rsvg_node_init(&marker->super);
 	marker->orient = 0;
 	marker->orientAuto = FALSE;
 	marker->overflow = FALSE;
@@ -110,9 +109,6 @@ rsvg_new_marker (void)
 	marker->bbox = TRUE;
 	marker->vbox = FALSE;
 	marker->super.type = RSVG_NODE_MARKER;
-	marker->super.children = g_ptr_array_new();
-	marker->super.free = rsvg_node_free;
-	marker->super.draw = _rsvg_node_draw_nothing;
 	marker->super.set_atts = rsvg_node_marker_set_atts;
 	return &marker->super;
 }
