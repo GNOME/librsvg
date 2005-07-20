@@ -1,3 +1,7 @@
+2005-07-21  Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-art-mask.c: fixed clip paths having their transform applied twice
+	
 2005-07-20  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-marker.c: made markers work again. Took me 3 minutes at most... it's funny how some things that are procratinated about turn out to be easy.

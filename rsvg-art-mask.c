@@ -1,6 +1,6 @@
 /* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /* 
-   rsvg-filter.c: Provides filters
+   rsvg-art-mask.c: Provides masks for the libart backend
  
    Copyright (C) 2004 Caleb Moore
   
@@ -65,17 +65,19 @@ rsvg_art_rect_clip_path(double x, double y, double w, double h, RsvgDrawingCtx *
 	asvpr = rsvg_art_svp_render_new();
 
 	save = ctx->render;
+
 	ctx->render = (RsvgRender *)asvpr;
 
 	rsvg_render_path (ctx, d->str);
 
 	ctx->render = save;
-
+	
 	output = asvpr->outline;
 
 	rsvg_render_free((RsvgRender *)asvpr);
 
 	g_string_free (d, TRUE);
+
 	return output;
 }
 
@@ -105,42 +107,21 @@ rsvg_art_clip_path_merge(ArtSVP * first, ArtSVP * second, int save, char operati
 ArtSVP *
 rsvg_art_clip_path_render (RsvgClipPath * self, RsvgDrawingCtx *ctx)
 {
-	RsvgState *state = rsvg_state_current (ctx);
-	RsvgClipPath *group = (RsvgClipPath*)self;
-	guint i;
-
-	ArtSVP *svp;
+	ArtSVP *svp = NULL;
 	RsvgArtSVPRender * asvpr;
 	RsvgRender * save;	
-
-	rsvg_state_reinherit_top(ctx, self->super.state, 0);
-
-	if (self->units == objectBoundingBox)
-		{
-			state->affine[0] = ((RsvgArtRender *)ctx->render)->bbox.x1 
-				- ((RsvgArtRender *)ctx->render)->bbox.x0;
-			state->affine[1] = 0;
-			state->affine[2] = 0;
-			state->affine[3] = ((RsvgArtRender *)ctx->render)->bbox.y1 - 
-				((RsvgArtRender *)ctx->render)->bbox.y0;
-			state->affine[4] = ((RsvgArtRender *)ctx->render)->bbox.x0;
-			state->affine[5] = ((RsvgArtRender *)ctx->render)->bbox.y0;
-		}
-
+	
 	asvpr = rsvg_art_svp_render_new();
 	save = ctx->render;
 	ctx->render = (RsvgRender *)asvpr;
-
-	for (i = 0; i < group->super.children->len; i++)
-		{
-			rsvg_node_draw (g_ptr_array_index(group->super.children, i), 
-									 ctx, 0);
-		}
-
+	
+	rsvg_state_push(ctx);
+	_rsvg_node_draw_children ((RsvgNode *)self, ctx, 0);
+	rsvg_state_pop(ctx);
+	
 	svp = asvpr->outline;
 	rsvg_render_free(ctx->render);
 	ctx->render = save;
-
 	return svp;
 }
 
