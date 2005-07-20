@@ -195,8 +195,10 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 					 symbol->width, symbol->height, 
 					 &width, &height, &x, &y);
 				
+				/*
 				if (!symbol->overflow)
 					rsvg_add_clipping_rect (ctx, x, y, width, height);
+				*/
 
 				_rsvg_affine_translate(affine, x, y);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
