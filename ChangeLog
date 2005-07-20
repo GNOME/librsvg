@@ -1,5 +1,9 @@
 2005-07-20  Caleb Moore <c.moore@student.unsw.edu.au>
 
+	* rsvg-marker.c: made markers work again. Took me 3 minutes at most... it's funny how some things that are procratinated about turn out to be easy.
+
+2005-07-20  Caleb Moore <c.moore@student.unsw.edu.au>
+
 	* rsvg.c: created a text node that isn't being used yet but is proving very useful for type checking
 	* rsvg-structure.c: created a default node initialiser function and destructor function, now everything has a style and children whether it needs to or not, adding to the memory footprint but increasing stability
 	* rsvg-filter.c: makeing objects safe for when their children are of the wrong type
