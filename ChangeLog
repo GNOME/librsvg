@@ -1,3 +1,7 @@
+2005-07-21 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* Makefile.am, configure.in, rsvg.c, rsvg-base.c: further split the library into librsvg-2.so, librsvg-2-base.so and librsvg-2-libart.so. Make libart an optional dependancy.
+
 2005-07-20  Dom Lachowicz <cinamod@hotmail.com>
 
 	* */Makefile.am: Update things so that we build a librsvg-2.so and 

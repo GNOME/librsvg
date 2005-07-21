@@ -105,7 +105,6 @@ AC_SUBST(FREETYPE_CFLAGS)
 PKG_CHECK_MODULES(LIBRSVG, \
 	gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED \
 	glib-2.0 >= $GLIB_REQUIRED \
-	libart-2.0 >= $LIBART_REQUIRED \
 	libxml-2.0 >= $LIBXML_REQUIRED \
 	pangoft2 >= $PANGOFT2_REQUIRED \
 	fontconfig >= $FONTCONFIG_REQUIRED)
@@ -118,6 +117,33 @@ AC_CHECK_LIB(popt, poptParseArgvString, [POPT_LIBS="-lpopt"],
 AC_MSG_ERROR([popt 1.5 or newer is required to build librsvg.
 You can download the latest version from ftp://ftp.rpm.org/pub/rpm/dist/rpm-4.0.x/]))
 AC_SUBST(POPT_LIBS)
+
+dnl ===========================================================================
+
+LIBART_CFLAGS=""
+LIBART_LIBS=""
+
+test_art=true
+AC_ARG_WITH(art,[  --with-art  Build the libart backend],[
+	if test "x$withval" = "xno"; then
+		test_art=false
+	fi
+])
+if test "x$test_art" = "xtrue"; then
+	PKG_CHECK_MODULES(LIBART, libart-2.0 >= $LIBART_REQUIRED, test_art=true, test_art=false)
+fi
+
+if test "x$test_art" = "xtrue"; then
+	LIBART_CFLAGS="$LIBART_CFLAGS"
+else
+	AC_MSG_WARN([libart backend disabled, as requested (Use --with-art to enable)])
+	art_warning="
+	You are building without the libart backend. At this point in time librsvg will not do very much without it, for example it won't draw anything. You are strongly advised to install it if you actually want to use librsvg for more than an ornamental file in your lib directory"
+fi
+
+AC_SUBST(LIBART_CFLAGS)
+AC_SUBST(LIBART_LIBS)
+AM_CONDITIONAL(HAVE_ART, test "x$test_art" = "xtrue")
 
 dnl ===========================================================================
 
@@ -452,3 +478,4 @@ librsvg-$LIBRSVG_VERSION
 
 AC_MSG_RESULT([$croco_warning]);
 AC_MSG_RESULT([$gsf_warning]);
+AC_MSG_RESULT([$art_warning]);

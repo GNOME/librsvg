@@ -316,6 +316,12 @@ _rsvg_affine_equal (double matrix1[6], double matrix2[6]);
 void
 rsvg_node_set_atts(RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts);
 
+RsvgDimensionData
+rsvg_get_dimensions(RsvgHandle * handle);
+
+void
+rsvg_drawing_ctx_free (RsvgDrawingCtx *handle);
+
 G_END_DECLS
 
 #endif

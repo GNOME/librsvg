@@ -33,8 +33,10 @@
 
 #include <math.h>
 
-#include <rsvg-art-render.h>
-#include <rsvg-art-composite.h>
+#include "rsvg-art-render.h"
+#include "rsvg-art-composite.h"
+#include <libart_lgpl/art_rgba.h>
+#include <libart_lgpl/art_rgb_svp.h>
 
 #define PERFECTBLUR 0
 
@@ -225,14 +227,7 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state)
 {
 	int x, y, height, width;
 	int i;
-	guchar *pixels;
-	int stride;
 	ArtIRect bbox = ((RsvgArtRender *)ctx->ctx->render)->bbox;
-
-	/* First for object bounding box coordinates we need to know how much of the 
-	   source has been drawn on */
-	pixels = gdk_pixbuf_get_pixels (ctx->source);
-	stride = gdk_pixbuf_get_rowstride (ctx->source);
 
 	x = bbox.x0;
 	y = bbox.y0;
