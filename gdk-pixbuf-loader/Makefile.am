@@ -23,7 +23,8 @@ svg_loader_la_LDFLAGS = -avoid-version -module $(no_undefined)
 svg_loader_la_LIBADD = $(LIBRSVG_LIBS) 	\
 	$(LIBGNOME_VFS_LIBS)		\
 	$(LIBGSF_LIBS) $(LIBCROCO_LIBS)	\
-	$(top_builddir)/librsvg-2.la
+	$(top_builddir)/librsvg-2.la	\
+	$(top_builddir)/librsvg-2-libart.la
 
 loader_LTLIBRARIES = $(target_pixbuf_loader)
 

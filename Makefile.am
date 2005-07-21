@@ -24,7 +24,7 @@ enum_sources = \
 	librsvg-enum-types.h	\
 	librsvg-enum-types.c
 
-lib_LTLIBRARIES = librsvg-2.la
+lib_LTLIBRARIES = librsvg-2.la librsvg-2-libart.la
 
 librsvg_2_la_SOURCES = 		\
 	rsvg-affine.c		\
@@ -59,6 +59,12 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-text.h		\
 	rsvg.c			\
 	rsvg-cond.c		\
+	librsvg-enum-types.c
+
+librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
+librsvg_2_la_LIBADD = $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS)
+
+librsvg_2_libart_la_SOURCES =	\
 	rsvg-art-composite.c	\
 	rsvg-art-composite.h	\
 	rsvg-art-draw.c		\
@@ -68,11 +74,10 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-art-paint-server.c	\
 	rsvg-art-paint-server.h	\
 	rsvg-art-render.c	\
-	rsvg-art-render.h	\
-	librsvg-enum-types.c
+	rsvg-art-render.h
 
-librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
-librsvg_2_la_LIBADD = $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS)
+librsvg_2_libart_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
+librsvg_2_libart_la_LIBADD = librsvg-2.la $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS)
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = 	\
@@ -92,14 +97,15 @@ INCLUDES =				\
 	-DG_LOG_DOMAIN=\"librsvg\" 	\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""
 
-DEPS = $(top_builddir)/librsvg-2.la
+DEPS = $(top_builddir)/librsvg-2.la $(top_builddir)/librsvg-2-libart.la
 LDADDS =				\
 	$(LIBGNOME_VFS_LIBS)		\
 	$(LIBGSF_LIBS)			\
 	$(LIBCROCO_LIBS)		\
 	$(LIBRSVG_LIBS) 		\
 	$(POPT_LIBS)			\
-	$(top_builddir)/librsvg-2.la 	
+	$(top_builddir)/librsvg-2.la 	\
+	$(top_builddir)/librsvg-2-libart.la
 
 rsvg_SOURCES=test-rsvg.c
 rsvg_LDFLAGS =

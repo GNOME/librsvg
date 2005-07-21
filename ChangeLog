@@ -1,3 +1,8 @@
+2005-07-20  Dom Lachowicz <cinamod@hotmail.com>
+
+	* */Makefile.am: Update things so that we build a librsvg-2.so and 
+	librsvg-2-libart.so
+	
 2005-07-21  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-art-mask.c: fixed clip paths having their transform applied twice
