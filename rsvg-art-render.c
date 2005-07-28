@@ -77,6 +77,7 @@ rsvg_art_render_new(int new_width, int new_height)
 	output->super.pop_discrete_layer   = rsvg_art_pop_discrete_layer;
 	output->super.push_discrete_layer  = rsvg_art_push_discrete_layer;
 	output->super.add_clipping_rect    = rsvg_art_add_clipping_rect;
+	output->super.get_image_of_node    = rsvg_art_get_image_of_node;
 
 	output->pixbuf = gdk_pixbuf_new_from_data (pixels,
 											   GDK_COLORSPACE_RGB,

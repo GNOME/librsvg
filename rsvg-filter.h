@@ -41,8 +41,8 @@ struct _RsvgFilter {
 	RsvgFilterUnits primitiveunits;
 };
 
-void 
-rsvg_filter_render (RsvgFilter *self, GdkPixbuf *source, GdkPixbuf *output, GdkPixbuf *bg, RsvgDrawingCtx *context);
+GdkPixbuf *
+rsvg_filter_render (RsvgFilter *self, GdkPixbuf *source, GdkPixbuf *bg, RsvgDrawingCtx *context, RsvgIRect * dimentions);
 
 RsvgNode *
 rsvg_new_filter (void);
@@ -108,8 +108,16 @@ RsvgNode *
 rsvg_new_filter_primitive_tile (void);
 
 void
-rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output,
+rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg,
+						GdkPixbuf *output, RsvgIRect boundarys,
 						RsvgDrawingCtx * ctx);
+
+void rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, 
+					 gint srcwidth, gint srcheight, 
+					 GdkPixbuf * dst, gint dstx, gint dsty);
+
+void rsvg_art_affine_image(const GdkPixbuf *img, GdkPixbuf *intermediate, 
+						   double * affine, double w, double h);
 
 G_END_DECLS
 

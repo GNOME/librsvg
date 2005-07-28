@@ -508,7 +508,7 @@ rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 
 	rsvg_push_discrete_layer(ctx);
 
-	if (!z->overflow && (aspect_ratio & RSVG_ASPECT_RATIO_SLICE)){
+	if (!rsvg_state_current(ctx)->overflow && (aspect_ratio & RSVG_ASPECT_RATIO_SLICE)){
 		rsvg_add_clipping_rect(ctx, x, y, w, h);
 	}
 
@@ -569,8 +569,6 @@ rsvg_node_image_set_atts (RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
 				image->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
-				image->overflow = rsvg_css_parse_overflow(value);
 
 			rsvg_parse_style_attrs (ctx, image->super.state, "image", klazz, id, atts);
 		}	
@@ -587,7 +585,6 @@ rsvg_new_image (void)
 	image->y = 0;
 	image->w = -1;
 	image->h = -1;
-	image->overflow = FALSE;
 	image->super.state = g_new(RsvgState, 1);
 	rsvg_state_init(image->super.state);
 	image->super.type = RSVG_NODE_PATH;

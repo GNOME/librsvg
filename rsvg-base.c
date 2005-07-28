@@ -207,7 +207,6 @@ rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 		newnode = rsvg_new_radial_gradient ();
 	else if (!strcmp ((char *)name, "conicalGradient"))
 		newnode = rsvg_new_radial_gradient ();
-	/*
 	else if (!strcmp ((char *)name, "filter"))
 		newnode = rsvg_new_filter();
 	else if (!strcmp ((char *)name, "feBlend"))
@@ -258,7 +257,6 @@ rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 		newnode = rsvg_new_filter_primitive_light_source('s');
 	else if (!strcmp ((char *)name, "fePointLight"))
 		newnode = rsvg_new_filter_primitive_light_source('p');
-	*/
 	if (newnode)
 		{
 			rsvg_node_set_atts(newnode, ctx, atts);
@@ -1328,6 +1326,12 @@ void
 rsvg_add_clipping_rect (RsvgDrawingCtx *ctx, double x, double y, double w, double h)
 {
 	ctx->render->add_clipping_rect(ctx, x, y, w, h);
+}
+
+void * rsvg_get_image_of_node(RsvgDrawingCtx *ctx, RsvgNode * drawable,
+							  double w, double h)
+{
+	return ctx->render->get_image_of_node(ctx, drawable, w, h);
 }
 
 void 

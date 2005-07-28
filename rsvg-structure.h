@@ -54,7 +54,7 @@ struct _RsvgNodeGroup {
 struct _RsvgNodeSymbol {
  	RsvgNode super;
 	gint preserve_aspect_ratio;
-	gboolean overflow, has_vbox;
+	gboolean has_vbox;
  	double x, y, width, height;
 };
 
@@ -71,7 +71,7 @@ struct _RsvgNodeSvg {
 	int hasw :1;
 	int hash :1;
 	gdouble vbx, vby, vbw, vbh;
-	gboolean overflow, has_vbox;
+	gboolean has_vbox;
  	GdkPixbuf *img;
 };
 

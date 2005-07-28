@@ -39,13 +39,10 @@ void rsvg_art_pop_discrete_layer(RsvgDrawingCtx *ctx);
 void rsvg_art_push_discrete_layer (RsvgDrawingCtx *ctx);
 gboolean rsvg_art_needs_discrete_layer(RsvgState *state);
 
-void rsvg_art_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, 
-						 gint srcwidth, gint srcheight, 
-						 GdkPixbuf * dst, gint dstx, gint dsty);
 void rsvg_art_clip_image (GdkPixbuf *intermediate, ArtSVP *path);
-void rsvg_art_affine_image(const GdkPixbuf *img, GdkPixbuf *intermediate, 
-						   double * affine, double w, double h);
 void rsvg_art_add_clipping_rect(RsvgDrawingCtx *ctx, double x, double y, double w, double h);
+void * rsvg_art_get_image_of_node(RsvgDrawingCtx *ctx, RsvgNode * drawable, double w, double h);
+
 G_END_DECLS
 
 #endif

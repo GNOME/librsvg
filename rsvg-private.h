@@ -47,6 +47,7 @@ typedef struct _RsvgDefs RsvgDefs;
 typedef struct _RsvgNode RsvgNode;
 typedef struct _RsvgFilter RsvgFilter;
 typedef struct _RsvgNodeChars RsvgNodeChars;
+typedef struct _RsvgIRect RsvgIRect;
 
 /* prepare for gettext */
 #ifndef _
@@ -148,12 +149,18 @@ struct RsvgRender {
 	void (* push_discrete_layer) (RsvgDrawingCtx *ctx);
 	void (* add_clipping_rect) (RsvgDrawingCtx *ctx,
 								double x, double y, double w, double h);
+	void * (* get_image_of_node) (RsvgDrawingCtx *ctx, RsvgNode * drawable,
+								  double w, double h);
 };
 
 struct RsvgDimensionData {
 	int width;
 	int height;
 	gdouble em, ex;
+};
+
+struct _RsvgIRect {
+	int x0, y0, x1, y1;
 };
 
 typedef enum {
@@ -263,6 +270,8 @@ void rsvg_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * pb,
 void rsvg_render_free (RsvgRender * render);
 void rsvg_add_clipping_rect (RsvgDrawingCtx *ctx, double x, double y, 
 							 double w, double h);
+void * rsvg_get_image_of_node(RsvgDrawingCtx *ctx, RsvgNode * drawable,
+							  double w, double h);
 
 
 void

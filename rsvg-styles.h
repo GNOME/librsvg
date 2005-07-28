@@ -104,6 +104,9 @@ struct _RsvgState {
 	gint clip_rule;	
 	gboolean has_clip_rule;
 
+	gboolean overflow;
+	gboolean has_overflow;
+
 	RsvgPaintServer *stroke;
 	gboolean has_stroke_server;
 	guint8 stroke_opacity; /* 0..255 */

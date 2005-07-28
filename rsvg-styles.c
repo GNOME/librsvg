@@ -68,7 +68,8 @@ rsvg_state_init (RsvgState *state)
 	state->stop_opacity = 0xff;
 	state->fill_rule = FILL_RULE_NONZERO;
 	state->clip_rule = FILL_RULE_NONZERO;
-	state->backgroundnew = FALSE;
+	state->backgroundnew = FALSE;	
+	state->overflow = FALSE;
 
 	state->font_family  = g_strdup (RSVG_DEFAULT_FONT);
 	state->font_size    = 12.0;
@@ -117,6 +118,7 @@ rsvg_state_init (RsvgState *state)
 	state->has_startMarker = FALSE;
 	state->has_middleMarker = FALSE;
 	state->has_endMarker = FALSE;
+	state->has_overflow = FALSE;
 }
 
 typedef int (*InheritanceFunction) (int dst, int src);
@@ -171,6 +173,8 @@ rsvg_state_inherit_run (RsvgState *dst, const RsvgState *src,
 		dst->fill_rule = src->fill_rule;
 	if (function(dst->has_clip_rule, src->has_clip_rule))
 		dst->clip_rule = src->clip_rule;
+	if (function(dst->overflow, src->overflow))
+		dst->overflow = src->overflow;
 	if (function(dst->has_stroke_server, src->has_stroke_server))
 		{
 			rsvg_paint_server_ref (src->stroke);
@@ -391,6 +395,13 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "clip-path"))
 		{
 			state->clip_path_ref = rsvg_clip_path_parse(ctx->defs, str + arg_off);
+		}
+	else if (rsvg_css_param_match (str, "overflow"))
+		{
+			if (strcmp(str + arg_off, "inherit"))
+				{
+					state->overflow = rsvg_css_parse_overflow (str + arg_off, &state->has_overflow);
+				}
 		}
 	else if (rsvg_css_param_match (str, "enable-background"))
 		{
@@ -760,6 +771,7 @@ rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state,
 	rsvg_lookup_parse_style_pair (ctx, state, "marker-mid", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "marker-start", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "opacity", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "overflow", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "stop-color", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "stop-opacity", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "stroke", atts);

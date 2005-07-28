@@ -47,6 +47,8 @@ librsvg_2_base_la_SOURCES = 		\
 	rsvg-path.h 		\
 	rsvg-private.h 		\
 	rsvg-file-util.c 	\
+	rsvg-filter.c		\
+	rsvg-filter.h		\
 	rsvg-marker.c		\
 	rsvg-marker.h		\
 	rsvg-mask.c		\
@@ -76,9 +78,7 @@ librsvg_2_libart_la_SOURCES =	\
 	rsvg-art-paint-server.c	\
 	rsvg-art-paint-server.h	\
 	rsvg-art-render.c	\
-	rsvg-art-render.h	\
-	rsvg-filter.c		\
-	rsvg-filter.h
+	rsvg-art-render.h
 
 librsvg_2_libart_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
 librsvg_2_libart_la_LIBADD = librsvg-2-base.la $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS) $(LIBART_LIBS)

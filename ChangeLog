@@ -1,3 +1,10 @@
+2005-07-29 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-filter.c, et_al: Made filters work again.
+	* rsvg-private.c: made a new function for render thingies to implement,
+	something that will get a node as a pixbuf.
+	* rsvg-styles.c: made overflow into a propper CSS property
+
 2005-07-21 Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* Makefile.am, configure.in, rsvg.c, rsvg-base.c: further split the library into librsvg-2.so, librsvg-2-base.so and librsvg-2-libart.so. Make libart an optional dependancy.

@@ -195,9 +195,6 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 					(symbol->preserve_aspect_ratio, 
 					 symbol->width, symbol->height, 
 					 &width, &height, &x, &y);
-				
-				if (!symbol->overflow)
-					rsvg_add_clipping_rect (ctx, x, y, width, height);
 
 				_rsvg_affine_translate(affine, x, y);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
@@ -208,6 +205,10 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 									   -symbol->y);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
 
+				if (!state->overflow || 
+					(!state->has_overflow && child->state->overflow))
+					rsvg_add_clipping_rect (ctx, symbol->x, symbol->y,
+											symbol->width, symbol->height);
 			} else {
 				_rsvg_affine_translate(affine, use->x, use->y);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
@@ -244,11 +245,12 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 
 	rsvg_push_discrete_layer (ctx);
 
-	if (!sself->overflow && self->parent)
+	state = rsvg_state_current (ctx);
+
+	if (!state->overflow && self->parent)
 		{
 			rsvg_add_clipping_rect(ctx, sself->x, sself->y, sself->w, sself->h);
 		}
-	state = rsvg_state_current (ctx);
 
 	if (sself->has_vbox && sself->hasw && sself->hash)
 		{
@@ -332,8 +334,6 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 					id = value;
 					rsvg_defs_register_name (ctx->defs, value, &svg->super);
 				}
-			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
-				svg->overflow = rsvg_css_parse_overflow(value);
 		}
 }
 
@@ -351,7 +351,6 @@ rsvg_new_svg (void)
 	svg->super.type = RSVG_NODE_PATH;
 	svg->super.draw = rsvg_node_svg_draw;
 	svg->super.set_atts = rsvg_node_svg_set_atts;
-	svg->overflow = FALSE;
 	return &svg->super;
 }
 
@@ -437,8 +436,6 @@ rsvg_node_symbol_set_atts(RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
 				symbol->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);			
-			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
-				symbol->overflow = rsvg_css_parse_overflow(value);
 		}
 
 	rsvg_parse_style_attrs (ctx, self->state, "symbol", klazz, id, atts);
@@ -452,7 +449,6 @@ rsvg_new_symbol(void)
 	symbol = g_new (RsvgNodeSymbol, 1);
 	_rsvg_node_init(&symbol->super);
 	symbol->has_vbox = 0;
-	symbol->overflow = 0;
 	symbol->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	symbol->super.type = RSVG_NODE_SYMBOL;
 	symbol->super.draw = _rsvg_node_draw_nothing;

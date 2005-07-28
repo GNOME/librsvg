@@ -37,7 +37,7 @@ struct _RsvgMarker {
 	double refX, refY, orient;
 	double vbx, vby, vbw, vbh, width, height;
 	gint preserve_aspect_ratio;
-	gboolean vbox, orientAuto, overflow;
+	gboolean vbox, orientAuto;
 };
 
 RsvgNode *

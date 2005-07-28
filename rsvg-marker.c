@@ -86,8 +86,6 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *at
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
 				marker->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-			if ((value = rsvg_property_bag_lookup (atts, "overflow")))
-				marker->overflow = rsvg_css_parse_overflow(value);
 			rsvg_parse_style_attrs (ctx, self->state, "marker", klazz, id, atts);
 		}
 }
@@ -100,7 +98,6 @@ rsvg_new_marker (void)
 	_rsvg_node_init(&marker->super);
 	marker->orient = 0;
 	marker->orientAuto = FALSE;
-	marker->overflow = FALSE;
 	marker->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	marker->refX = 0;
 	marker->refY = 0;

@@ -50,7 +50,7 @@ typedef struct _RsvgArtDiscreteLayer RsvgArtDiscreteLayer;
 struct _RsvgArtDiscreteLayer
 {
 	GdkPixbuf *save_pixbuf;
-	ArtIRect underbbox;
+	RsvgIRect underbbox;
 	RsvgState * state;
 	ArtSVP * clippath_save;
 	gboolean clippath_loaded;
@@ -215,7 +215,7 @@ rsvg_compile_bg(RsvgDrawingCtx *ctx)
 	int i;
 	GdkPixbuf *intermediate, *lastintermediate;
 	RsvgArtDiscreteLayer *state;
-	ArtIRect save;
+	RsvgIRect save;
 	RsvgArtRender *render = (RsvgArtRender *)ctx->render;
 
 	lastintermediate = gdk_pixbuf_copy(((RsvgArtDiscreteLayer *)render->layers->data)->save_pixbuf);
@@ -254,6 +254,7 @@ rsvg_composite_layer(RsvgDrawingCtx *ctx, RsvgState *state, GdkPixbuf *tos, GdkP
 	GdkPixbuf *in, *out, *insidebg;
 	int operationsleft;
 	gint adobe_blend = state->adobe_blend;
+	RsvgArtRender * render = (RsvgArtRender *)ctx->render;
 
 	intermediate = NULL;
 
@@ -289,8 +290,17 @@ rsvg_composite_layer(RsvgDrawingCtx *ctx, RsvgState *state, GdkPixbuf *tos, GdkP
 
 	if (filter != NULL)
 		{
+			GdkPixbuf * temp;
 			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
-			rsvg_filter_render (filter, in, out, insidebg, ctx);
+			temp = rsvg_filter_render (filter, in, insidebg, ctx, 
+									   (RsvgIRect *)&render->bbox);
+			if (render->clippath)
+				rsvg_art_clip_image(temp, render->clippath);
+			rsvg_alpha_blt (temp, render->bbox.x0, render->bbox.y0, 
+							render->bbox.x1 - render->bbox.x0,
+							render->bbox.y1 - render->bbox.y0,
+							out, render->bbox.x0, render->bbox.y0);
+			g_object_unref (G_OBJECT (temp));
 			in = out;
 		}
 	if (opacity != 0xFF)
@@ -308,7 +318,8 @@ rsvg_composite_layer(RsvgDrawingCtx *ctx, RsvgState *state, GdkPixbuf *tos, GdkP
 	if (adobe_blend)
 		{
 			out = get_next_out(&operationsleft, in, tos, nos, intermediate);
-			rsvg_filter_adobe_blend (adobe_blend, in, insidebg, out, ctx);
+			rsvg_filter_adobe_blend (adobe_blend, in, insidebg, out, 
+									 render->bbox, ctx);
 			in = out;
 		}
 
@@ -354,7 +365,9 @@ rsvg_art_pop_discrete_layer(RsvgDrawingCtx *ctx)
 			
 			g_object_unref (tos);
 			render->pixbuf = nos;
-			art_irect_union(&render->bbox, &render->bbox, &layer->underbbox);
+			art_irect_union((ArtIRect*)&render->bbox, 
+							(ArtIRect*)&render->bbox, 
+							(ArtIRect*)&layer->underbbox);
 		}
 	if (layer->clippath_loaded)
 		{
@@ -369,206 +382,6 @@ gboolean
 rsvg_art_needs_discrete_layer(RsvgState *state)
 {
 	return state->filter || state->mask || state->adobe_blend || state->backgroundnew || state->clip_path_ref;
-}
-
-void
-rsvg_art_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
-					gint srcheight, GdkPixbuf * dst, gint dstx, gint dsty)
-{
-	gint rightx;
-	gint bottomy;
-	gint dstwidth;
-	gint dstheight;
-	
-	gint srcoffsetx;
-	gint srcoffsety;
-	gint dstoffsetx;
-	gint dstoffsety;
-	
-	gint x, y, srcrowstride, dstrowstride, sx, sy, dx, dy;
-	guchar *src_pixels, *dst_pixels;
-	
-	dstheight = srcheight;
-	dstwidth = srcwidth;
-	
-	rightx = srcx + srcwidth;
-	bottomy = srcy + srcheight;
-	
-	if (rightx > gdk_pixbuf_get_width (src))
-		rightx = gdk_pixbuf_get_width (src);
-	if (bottomy > gdk_pixbuf_get_height (src))
-		bottomy = gdk_pixbuf_get_height (src);
-	srcwidth = rightx - srcx;
-	srcheight = bottomy - srcy;
-	
-	rightx = dstx + dstwidth;
-	bottomy = dsty + dstheight;
-	if (rightx > gdk_pixbuf_get_width (dst))
-		rightx = gdk_pixbuf_get_width (dst);
-	if (bottomy > gdk_pixbuf_get_height (dst))
-		bottomy = gdk_pixbuf_get_height (dst);
-	dstwidth = rightx - dstx;
-	dstheight = bottomy - dsty;
-	
-	if (dstwidth < srcwidth)
-		srcwidth = dstwidth;
-	if (dstheight < srcheight)
-		srcheight = dstheight;
-	
-	if (srcx < 0)
-		srcoffsetx = 0 - srcx;
-	else
-		srcoffsetx = 0;
-
-	if (srcy < 0)
-		srcoffsety = 0 - srcy;
-	else
-		srcoffsety = 0;
-
-	if (dstx < 0)
-		dstoffsetx = 0 - dstx;
-	else
-		dstoffsetx = 0;
-
-	if (dsty < 0)
-		dstoffsety = 0 - dsty;
-	else
-		dstoffsety = 0;
-	
-	if (dstoffsetx > srcoffsetx)
-		srcoffsetx = dstoffsetx;
-	if (dstoffsety > srcoffsety)
-		srcoffsety = dstoffsety;
-	
-	srcrowstride = gdk_pixbuf_get_rowstride (src);
-	dstrowstride = gdk_pixbuf_get_rowstride (dst);
-	
-	src_pixels = gdk_pixbuf_get_pixels (src);
-	dst_pixels = gdk_pixbuf_get_pixels (dst);
-	
-	for (y = srcoffsety; y < srcheight; y++)
-		for (x = srcoffsetx; x < srcwidth; x++)
-			{
-				guchar r, g, b, a;
-
-				sx = x + srcx;
-				sy = y + srcy;
-				dx = x + dstx;
-				dy = y + dsty;
-				a = src_pixels[4 * sx + sy * srcrowstride + 3];
-				if (a)
-					{
-						r = src_pixels[4 * sx + sy * srcrowstride];
-						g = src_pixels[4 * sx + 1 + sy * srcrowstride];
-						b = src_pixels[4 * sx + 2 + sy * srcrowstride];
-						art_rgba_run_alpha (dst_pixels + 4 * dx +
-											dy * dstrowstride, r, g, b, a, 1);
-					}
-			}
-}
-
-void
-rsvg_art_affine_image(const GdkPixbuf *img, GdkPixbuf *intermediate, 
-					  double * affine, double w, double h)
-{
-	gdouble tmp_affine[6];
-	gdouble inv_affine[6];
-	gdouble raw_inv_affine[6];
-	gint intstride;
-	gint basestride;	
-	gint basex, basey;
-	gdouble fbasex, fbasey;
-	gdouble rawx, rawy;
-	guchar * intpix;
-	guchar * basepix;
-	gint i, j, k, basebpp, ii, jj;
-	gboolean has_alpha;
-	gdouble pixsum[4];
-	gboolean xrunnoff, yrunnoff;
-	gint iwidth, iheight;
-	gint width, height;
-
-	width = gdk_pixbuf_get_width (img);
-	height = gdk_pixbuf_get_height (img);
-	iwidth = gdk_pixbuf_get_width (intermediate);
-	iheight = gdk_pixbuf_get_height (intermediate);
-
-	has_alpha = gdk_pixbuf_get_has_alpha (img);
-
-	basestride = gdk_pixbuf_get_rowstride (img);
-	intstride = gdk_pixbuf_get_rowstride (intermediate);
-	basepix = gdk_pixbuf_get_pixels (img);
-	intpix = gdk_pixbuf_get_pixels (intermediate);
-	basebpp = has_alpha ? 4 : 3;
-
-	_rsvg_affine_invert(raw_inv_affine, affine);
-
-	/*scale to w and h*/
-	tmp_affine[0] = (double)w;
-	tmp_affine[3] = (double)h;
-	tmp_affine[1] = tmp_affine[2] = tmp_affine[4] = tmp_affine[5] = 0;
-	_rsvg_affine_multiply(tmp_affine, tmp_affine, affine);
-
-	_rsvg_affine_invert(inv_affine, tmp_affine);
-
-
-	/*apply the transformation*/
-	for (i = 0; i < iwidth; i++)
-		for (j = 0; j < iheight; j++)		
-			{
-				fbasex = (inv_affine[0] * (double)i + inv_affine[2] * (double)j + 
-						  inv_affine[4]) * (double)width;
-				fbasey = (inv_affine[1] * (double)i + inv_affine[3] * (double)j + 
-						  inv_affine[5]) * (double)height;
-				basex = floor(fbasex);
-				basey = floor(fbasey);
-				rawx = raw_inv_affine[0] * i + raw_inv_affine[2] * j + 
-					raw_inv_affine[4];
-				rawy = raw_inv_affine[1] * i + raw_inv_affine[3] * j + 
-					raw_inv_affine[5];
-				if (rawx < 0 || rawy < 0 || rawx >= w || 
-					rawy >= h || basex < 0 || basey < 0 
-					|| basex >= width || basey >= height)
-					{					
-						for (k = 0; k < 4; k++)
-							intpix[i * 4 + j * intstride + k] = 0;
-					}
-				else
-					{
-						if (basex < 0 || basex + 1 >= width)
-							xrunnoff = TRUE;
-						else
-							xrunnoff = FALSE;
-						if (basey < 0 || basey + 1 >= height)
-							yrunnoff = TRUE;
-						else
-							yrunnoff = FALSE;
-						for (k = 0; k < basebpp; k++)
-							pixsum[k] = 0;
-						for (ii = 0; ii < 2; ii++)
-							for (jj = 0; jj < 2; jj++)
-								{
-									if (basex + ii < 0 || basey + jj< 0 
-										|| basex + ii >= width || basey + jj >= height)
-										;
-									else
-										{
-											for (k = 0; k < basebpp; k++)
-												{
-													pixsum[k] += 
-														(double)basepix[basebpp * (basex + ii) + (basey + jj) * basestride + k] 
-														* (xrunnoff ? 1 : fabs(fbasex - (double)(basex + (1 - ii))))
-														* (yrunnoff ? 1 : fabs(fbasey - (double)(basey + (1 - jj))));
-												}
-										}
-								}
-						for (k = 0; k < basebpp; k++)
-							intpix[i * 4 + j * intstride + k] = pixsum[k];
-						if (!has_alpha)
-							intpix[i * 4 + j * intstride + 3] = 255;
-					}	
-
-			}
 }
 
 void
@@ -616,4 +429,28 @@ rsvg_art_add_clipping_rect(RsvgDrawingCtx *ctx, double x, double y, double w, do
 		data->clippath_loaded = TRUE;
 	else
 		data->clippath_loaded = FALSE;	
+}
+
+void * 
+rsvg_art_get_image_of_node(RsvgDrawingCtx *ctx, RsvgNode * drawable,
+						   double w, double h)
+{
+	GdkPixbuf *img, *save;
+
+
+	img = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, w, h);
+	
+	save = ((RsvgArtRender *)ctx->render)->pixbuf;
+	((RsvgArtRender *)ctx->render)->pixbuf = img;
+
+
+	rsvg_state_push(ctx);
+	
+	rsvg_node_draw (drawable, ctx, 0);
+	
+	rsvg_state_pop(ctx);
+		
+	((RsvgArtRender *)ctx->render)->pixbuf = save;
+	
+	return img;
 }
