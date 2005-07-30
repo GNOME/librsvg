@@ -621,12 +621,14 @@ rsvg_end_element (void *data, const xmlChar *name)
 		}
 }
 
+#if 0
 static void _rsvg_node_chars_free(RsvgNode * node)
 {
 	RsvgNodeChars * self = (RsvgNodeChars *)node;
 	g_string_free(self->contents, TRUE);
 	_rsvg_node_free(node);
 }
+#endif
 
 static void
 rsvg_characters (void *data, const xmlChar *ch, int len)
@@ -638,6 +640,8 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 			ctx->handler->characters (ctx->handler, ch, len);
 			return;
 		}
+
+#if 0
 	char * utf8 = NULL;
 	RsvgNodeChars * self;
 	GString * string;
@@ -663,6 +667,7 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 	rsvg_defs_register_memory(ctx->defs, (RsvgNode *)self);
 	if (ctx->currentnode)
 		rsvg_node_group_pack(ctx->currentnode, (RsvgNode *)self);
+#endif
 }
 
 static xmlEntityPtr

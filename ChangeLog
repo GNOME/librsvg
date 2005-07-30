@@ -1,3 +1,9 @@
+2005-07-30 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-base.c: Comment out some of Caleb's text work for now. It seems
+	that this breaks <switch>, and that text works fine without it at the
+	moment. We'll look at this again later.
+	
 2005-07-30 Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-base.c: ignore namespaces completely, easier than fixing the problem and works pretty well. Should backport to 2.12 so we don't have people complaining about images they can't render.
