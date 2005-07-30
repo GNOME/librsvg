@@ -191,12 +191,25 @@ fill_vtable (GdkPixbufModule *module)
 #define GDK_PIXBUF_FORMAT_THREADSAFE (1 << 2)
 #endif
 
+#ifndef GDK_PIXBUF_CHECK_VERSION
+#define GDK_PIXBUF_CHECK_VERSION(major,minor,micro)    \
+    (GDK_PIXBUF_MAJOR > (major) || \
+     (GDK_PIXBUF_MAJOR == (major) && GDK_PIXBUF_MINOR > (minor)) || \
+     (GDK_PIXBUF_MAJOR == (major) && GDK_PIXBUF_MINOR == (minor) && \
+      GDK_PIXBUF_MICRO >= (micro)))
+#endif
+
 void
 fill_info (GdkPixbufFormat *info)
 {
-        static GdkPixbufModulePattern signature[] = {
+        static GdkPixbufModulePattern signature_old[] = {
                 { "<svg", NULL, 100 },
                 { "<!DOCTYPE svg", NULL, 100 },
+                { NULL, NULL, 0 }
+        };
+        static GdkPixbufModulePattern signature_new[] = {
+                { " <svg", "*    ", 100 },
+                { " <!DOCTYPE svg", "*             ", 100 },
                 { NULL, NULL, 0 }
         };
         static gchar *mime_types[] = { /* yes folks, i actually have run into all of these in the wild... */
@@ -215,7 +228,11 @@ fill_info (GdkPixbufFormat *info)
         };
 
         info->name        = "svg";
-        info->signature   = signature;
+        if (GDK_PIXBUF_CHECK_VERSION (2, 7, 4)) {
+                info->signature = signature_new;
+        } else {
+                info->signature = signature_old;
+        }
         info->description = _("Scalable Vector Graphics");
         info->mime_types  = mime_types;
         info->extensions  = extensions;

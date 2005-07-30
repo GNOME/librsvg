@@ -1,3 +1,8 @@
+2005-07-22  William Jon McCann  <mccann@jhu.edu>
+
+	* gdk-pixbuf-loader/io-svg.c (fill_info): Use new unanchored
+	pattern mask if available.  Fixes #311277.
+
 2005-07-29 Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-filter.c, et_al: Made filters work again.
