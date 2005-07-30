@@ -1,7 +1,13 @@
+2005-07-30 Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-base.c: ignore namespaces completely, easier than fixing the problem and works pretty well. Should backport to 2.12 so we don't have people complaining about images they can't render.
+
+
 2005-07-22  William Jon McCann  <mccann@jhu.edu>
 
 	* gdk-pixbuf-loader/io-svg.c (fill_info): Use new unanchored
 	pattern mask if available.  Fixes #311277.
+
 
 2005-07-29 Caleb Moore <c.moore@student.unsw.edu.au>
 

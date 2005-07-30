@@ -537,6 +537,11 @@ rsvg_start_element (void *data, const xmlChar *name,
 		}
 	else
 		{
+			const xmlChar * tempname;
+			for (tempname = name; *tempname != '\0'; tempname++)
+				if (*tempname == ':')
+					name = tempname + 1;
+			
 			if (!strcmp ((char *)name, "text"))
 				rsvg_start_text (ctx, bag);
 			else if (!strcmp ((char *)name, "style"))
@@ -573,6 +578,10 @@ rsvg_end_element (void *data, const xmlChar *name)
 		}
 	else
 		{
+			const xmlChar * tempname;
+			for (tempname = name; *tempname != '\0'; tempname++)
+				if (*tempname == ':')
+					name = tempname + 1;
 			if (ctx->handler != NULL)
 				{
 					ctx->handler->free (ctx->handler);
