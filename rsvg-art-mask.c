@@ -152,12 +152,14 @@ rsvg_art_mask_render (RsvgMask *self, GdkPixbuf *tos, GdkPixbuf *nos, RsvgDrawin
 	if (tos == NULL || nos == NULL)
 		{
 			/* FIXME: What warning/GError here? */
+			g_object_unref (G_OBJECT (mask));
 			return;
 		}
 	
 	if (!gdk_pixbuf_get_has_alpha (nos))
 		{
 			g_warning (_("push/pop transparency group on non-alpha buffer nyi"));
+			g_object_unref (G_OBJECT (mask));
 			return;
 		}
 	
