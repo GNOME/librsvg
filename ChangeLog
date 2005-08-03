@@ -1,3 +1,9 @@
+2005-08-02  Carl Worth  <cworth@cworth.org>
+
+	* .cvsignore:
+	* doc/.cvsignore:
+	* moz-plugin/.cvsignore: Add several generated files.
+
 2005-07-30 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-base.c: Comment out some of Caleb's text work for now. It seems

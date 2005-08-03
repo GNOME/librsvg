@@ -11,13 +11,19 @@ config.status
 config.sub
 configure
 librsvg-2.0.pc
+librsvg-2.0-uninstalled.pc
 librsvg-features.h
 librsvg.spec
+librsvg-enum-types.c
+librsvg-enum-types.h
 libtool
 ltconfig
 ltmain.sh
+s-enum-types-c
+s-enum-types-h
 stamp-h
 stamp-h.in
+stamp-h1
 rsvg
 test-performance
 test-rsvg
@@ -28,3 +34,4 @@ missing
 mkinstalldirs
 
 librsvg-zip
+
