@@ -1,3 +1,16 @@
+2005-08-03  Carl Worth  <cworth@cworth.org>
+
+	* rsvg-cairo-draw.c: (_pattern_add_rsvg_color_stops),
+	(_set_source_rsvg_linear_gradient),
+	(_set_source_rsvg_radial_gradient),
+	(_set_source_rsvg_solid_colour), (_set_source_rsvg_pattern),
+	(_set_source_rvsg_paint_server), (rsvg_cairo_render_path): Add
+	some very preliminary code to render paths with cairo. There's
+	code here to do solid colors as well as linear and radial
+	gradients, (but no patterns yet). We don't yet have interfaces on
+	top that allow any of this to be tested so it's guaranteed to be
+	broken, (and likely is in many ways).
+
 2005-08-02  Carl Worth  <cworth@cworth.org>
 
 	* rsvg-base.c: (rsvg_desc_handler_characters),
