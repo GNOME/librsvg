@@ -1,5 +1,22 @@
 2005-08-02  Carl Worth  <cworth@cworth.org>
 
+	* rsvg-base.c: (rsvg_desc_handler_characters),
+	(rsvg_title_handler_characters),
+	(rsvg_metadata_handler_characters), (rsvg_characters),
+
+	(rsvg_entity_decl), (rsvg_handle_write_impl): Add casts to quiet
+	gcc4's complaints about "pointer targets differ in
+	signedness". Not types were changed here, only casts added. The
+	type disagreement is with glib, string.h, and libxml2 as follows:
+
+		g_strndup((char*)ch, len)
+		strlen((char*name)
+		entity->name = (xmlChar*)dupname
+		entity->SystemID = (xmlChar*)g_strdup ((char*)systemId)
+		etc.
+
+2005-08-02  Carl Worth  <cworth@cworth.org>
+
 	* .cvsignore:
 	* doc/.cvsignore:
 	* moz-plugin/.cvsignore: Add several generated files.
