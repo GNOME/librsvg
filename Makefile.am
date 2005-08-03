@@ -73,6 +73,7 @@ librsvg_2_base_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-d
 librsvg_2_base_la_LIBADD = $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS)
 
 librsvg_2_libart_la_SOURCES =	\
+	rsvg-art-file-util.c	\
 	rsvg-art-composite.c	\
 	rsvg-art-composite.h	\
 	rsvg-art-draw.c		\

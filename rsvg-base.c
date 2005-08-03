@@ -1011,7 +1011,7 @@ rsvg_handle_new (void)
 }
 
 RsvgDimensionData
-rsvg_get_dimensions(RsvgHandle * handle)
+rsvg_handle_get_dimensions(RsvgHandle * handle)
 {
 	RsvgDimensionData output;
 	RsvgNodeSvg * sself;

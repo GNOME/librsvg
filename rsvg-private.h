@@ -40,7 +40,6 @@ G_BEGIN_DECLS
 typedef struct RsvgSaxHandler RsvgSaxHandler;
 typedef struct RsvgDrawingCtx RsvgDrawingCtx;
 typedef struct RsvgRender RsvgRender;
-typedef struct RsvgDimensionData RsvgDimensionData;
 typedef struct _RsvgPropertyBag RsvgPropertyBag;
 typedef struct _RsvgState RsvgState;
 typedef struct _RsvgDefs RsvgDefs;
@@ -151,12 +150,6 @@ struct RsvgRender {
 								double x, double y, double w, double h);
 	void * (* get_image_of_node) (RsvgDrawingCtx *ctx, RsvgNode * drawable,
 								  double w, double h);
-};
-
-struct RsvgDimensionData {
-	int width;
-	int height;
-	gdouble em, ex;
 };
 
 struct _RsvgIRect {
@@ -324,9 +317,6 @@ _rsvg_affine_equal (double matrix1[6], double matrix2[6]);
 
 void
 rsvg_node_set_atts(RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts);
-
-RsvgDimensionData
-rsvg_get_dimensions(RsvgHandle * handle);
 
 void
 rsvg_drawing_ctx_free (RsvgDrawingCtx *handle);

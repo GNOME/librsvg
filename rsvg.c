@@ -63,7 +63,7 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 	RsvgState * state;
 	double affine[6];
 
-	data = rsvg_get_dimensions(handle);
+	data = rsvg_handle_get_dimensions(handle);
 	if(data.width == 0 || data.height == 0)
 		return NULL;
 

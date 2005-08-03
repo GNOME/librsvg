@@ -42,7 +42,7 @@ _pattern_add_rsvg_color_stops (cairo_pattern_t *pattern,
 							   guint32          current_color_rgb,
 							   guint8           opacity)
 {
-	int i;
+	gsize i;
 	RsvgGradientStop *stop;
 	RsvgNode *node;
 	guint32 rgba;
@@ -135,7 +135,7 @@ _set_source_rsvg_pattern (cairo_t     *cr,
 }
 
 static void
-_set_source_rvsg_paint_server (cairo_t         *cr,
+_set_source_rsvg_paint_server (cairo_t         *cr,
 							   guint32          current_color_rgb,
 							   RsvgPaintServer *ps,
 							   guint8           opacity)
@@ -224,10 +224,10 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 	}
 
 	if (state->stroke != NULL) {
-		_set_source_paint_server (cr,
-								  state->current_color,
-								  state->stroke,
-								  state->stroke_opacity);
+		_set_source_rsvg_paint_server (cr,
+									   state->current_color,
+									   state->stroke,
+									   state->stroke_opacity);
 
 		cairo_stroke (cr);
 	}

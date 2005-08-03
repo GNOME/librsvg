@@ -1,3 +1,10 @@
+2005-08-03  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-file-util.c: Create 2 generic functions for loading handles from data
+	* rsvg-art-file-util.c: Move the old rsvg-file-util.c to here
+	* rsvg.c: Export rsvg_handle_get_dimensions()
+	* rsvg-cairo.c: Make this compile
+	
 2005-08-03  Carl Worth  <cworth@cworth.org>
 
 	* rsvg-cairo-draw.c: (_set_rsvg_affine), (rsvg_cairo_render_path):

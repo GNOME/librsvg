@@ -38,6 +38,13 @@ GQuark rsvg_error_quark (void) G_GNUC_CONST;
 
 typedef struct RsvgHandle RsvgHandle;
 
+typedef struct RsvgDimensionData RsvgDimensionData;
+struct RsvgDimensionData {
+	int width;
+	int height;
+	gdouble em, ex;
+};
+
 /**
  * RsvgSizeFunc ():
  * @width: Pointer to where to set/store the width
@@ -78,6 +85,15 @@ rsvg_handle_get_base_uri (RsvgHandle *handle);
 void rsvg_handle_set_base_uri (RsvgHandle *handle,
 							   const char *base_uri);
 
+
+RsvgHandle * rsvg_handle_new_from_data (const guint8 *data,
+										gsize data_len,
+										GError **error);
+RsvgHandle * rsvg_handle_new_from_file (const gchar *file_name,
+										GError **error);
+
+RsvgDimensionData
+rsvg_handle_get_dimensions(RsvgHandle * handle);
 
 /* Convenience API */
 
