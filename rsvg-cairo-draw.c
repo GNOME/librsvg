@@ -158,6 +158,18 @@ _set_source_rvsg_paint_server (cairo_t         *cr,
 	}
 }
 
+static void
+_set_rsvg_affine (cairo_t *cr, const double affine[6])
+{
+	cairo_matrix_t matrix;
+
+	cairo_matrix_init (&matrix,
+					   affine[0], affine[1],
+					   affine[2], affine[3],
+					   affine[4], affine[5]);
+	cairo_set_matrix (cr, &matrix);
+}
+
 void
 rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 {
@@ -168,6 +180,8 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 	int i;
 
 	cairo_save (cr);
+
+	_set_rsvg_affine (cr, state->affine);
 
 	for (i=0; i < bpath_def->n_bpath; i++) {
 		bpath = &bpath_def->bpath[i];

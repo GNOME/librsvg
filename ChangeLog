@@ -1,5 +1,11 @@
 2005-08-03  Carl Worth  <cworth@cworth.org>
 
+	* rsvg-cairo-draw.c: (_set_rsvg_affine), (rsvg_cairo_render_path):
+	Set cairo's CTM based on state->affine so that paths are properly
+	transformed.
+
+2005-08-03  Carl Worth  <cworth@cworth.org>
+
 	* rsvg-cairo-draw.c: (_pattern_add_rsvg_color_stops),
 	(_set_source_rsvg_linear_gradient),
 	(_set_source_rsvg_radial_gradient),
