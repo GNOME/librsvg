@@ -1,3 +1,21 @@
+2005-08-03  Carl Worth  <cworth@cworth.org>
+
+	* test-display.c: (print_pixbuf), (save_svg), (main):
+	* gdk-pixbuf-loader/io-svg.c: (fill_info):
+	* gtk-engine/svg-render.c: (svg_cache_value_new):
+	* rsvg-art-paint-server.c: (rsvg_art_paint_server_lin_grad_render),
+	(rsvg_art_paint_server_rad_grad_render):
+	Add more casts to quiet the gcc4 warnings. Some of these are
+	particularly annoying and show the dangers of API functions that
+	use unsigned char* for character strings. We now have casts for
+	string literals (yuck!). In a few places I was able to change the
+	type of a buffer from char[] to unsigned char[] to avoid a cast.
+
+	* doc/rsvg-sections.txt: Add all the unused declarations to this
+	file in order to silence the compile-time warning. Most everything
+	is added in a new Private subsection. Also add new rsvg-cairo
+	block.
+
 2005-08-03  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-cairo-draw.c: Implement rsvg_cairo_get_image_of_node(). Untested, probably needs discrete layers to work first.

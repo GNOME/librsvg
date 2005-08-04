@@ -659,7 +659,7 @@ svg_cache_value_new (gchar *filename)
   if(fp)
     {
       size_t nread;
-      char buf[SVG_BUFFER_SIZE];
+      unsigned char buf[SVG_BUFFER_SIZE];
 
       result = g_byte_array_new();
       while((nread = fread(buf, 1, sizeof(buf), fp)) > 0)

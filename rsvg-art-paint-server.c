@@ -142,7 +142,7 @@ rsvg_art_paint_server_lin_grad_render (RsvgLinearGradient *rlg, ArtRender *ar,
 
 	agl = g_new (ArtGradientLinear, 1);
 	agl->stops = rsvg_paint_art_stops_from_rsvg (rlg->super.children, 
-												 &agl->n_stops, current_color);
+												 (guint32*)&agl->n_stops, current_color);
    
 
 	if (rlg->obj_bbox) {
@@ -274,7 +274,7 @@ rsvg_art_paint_server_rad_grad_render (RsvgRadialGradient *rrg, ArtRender *ar,
 		}
 	agr = g_new (ArtGradientRadial, 1);
 	agr->stops = rsvg_paint_art_stops_from_rsvg (rrg->super.children, 
-												 &agr->n_stops, current_color);
+												 (guint32*)&agr->n_stops, current_color);
 	
 	_rsvg_affine_scale (aff1, rrg->r, rrg->r);
 	_rsvg_affine_translate (aff2, rrg->cx, rrg->cy);
