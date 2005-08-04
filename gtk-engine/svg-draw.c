@@ -192,7 +192,7 @@ draw_gap_image(GtkStyle       *style,
   if (image)
     {
       gint thickness;
-      GdkRectangle r1, r2, r3;
+      GdkRectangle r1 = {0,0,0,0}, r2 = {0,0,0,0}, r3 = {0,0,0,0};
       GdkPixbuf *pixbuf = NULL;
       guint components = COMPONENT_ALL;
 

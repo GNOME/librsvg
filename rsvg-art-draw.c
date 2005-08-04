@@ -167,7 +167,7 @@ rsvg_calculate_svp_bounds (const ArtSVP *svp, double * useraffine)
 
 static ArtIRect rsvg_frect_pixelspaceise(RsvgFRect input, double * affine)
 {
-	ArtIRect temprect;	
+	ArtIRect temprect = {0, 0, 0, 0};
 	int i, j, basex, basey;
 	int assignedonce = 0;
 	float x, y;
