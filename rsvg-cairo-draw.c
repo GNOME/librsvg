@@ -191,7 +191,7 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 			cairo_close_path (cr);
 			/* fall-through */
 		case RSVG_MOVETO_OPEN:
-			cairo_move_to (cr, bpath->x1, bpath->y1);
+			cairo_move_to (cr, bpath->x3, bpath->y3);
 			break;
 		case RSVG_CURVETO:
 			cairo_curve_to (cr,
@@ -200,7 +200,7 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 							bpath->x3, bpath->y3);
 			break;
 		case RSVG_LINETO:
-			cairo_line_to (cr, bpath->x1, bpath->y1);
+			cairo_line_to (cr, bpath->x3, bpath->y3);
 			break;
 		case RSVG_END:
 			break;

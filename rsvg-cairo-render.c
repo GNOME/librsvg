@@ -29,6 +29,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "rsvg-cairo.h"
 #include "rsvg-cairo-draw.h"
 #include "rsvg-cairo-render.h"
 #include "rsvg-styles.h"
@@ -108,7 +109,7 @@ rsvg_cairo_new_drawing_ctx (cairo_t *cr, RsvgHandle *handle)
 }
 
 void
-rsvg_cairo_render_rsvg_handle (cairo_t *cr, RsvgHandle *handle)
+rsvg_cairo_render (cairo_t *cr, RsvgHandle *handle)
 {
 	RsvgDrawingCtx * draw;
 	g_return_if_fail (handle != NULL);

@@ -1,3 +1,23 @@
+2005-08-04  Carl Worth  <cworth@cworth.org>
+
+	* .cvsignore: Ignore rsvg-cairo and rsvg-view.
+	
+	* Makefile.am: Add new rsvg-cairo program.
+	
+	* rsvg-cairo-draw.c: (rsvg_cairo_render_path): Fix MOVETO and
+	LINETO to pull the right coordinates out of the path structure so
+	they don't always draw to (0,0).
+	
+	* rsvg-cairo.h:
+
+	* rsvg-cairo-render.c: (rsvg_cairo_render): New header file,
+	(intended to be public) which adds a single function for rendering
+	with cairo:
+
+		void rsvg_cairo_render (cairo_t *cr, RsvgHandle *handle);
+	
+	* rsvg-cairo.c: (main): Add new test program rsvg-cairo.
+
 2005-08-03  Carl Worth  <cworth@cworth.org>
 
 	* test-display.c: (print_pixbuf), (save_svg), (main):

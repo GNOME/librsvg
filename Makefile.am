@@ -18,6 +18,7 @@ endif
 
 if HAVE_CAIRO
 lib_LTLIBRARIES += librsvg-2-cairo.la
+bin_PROGRAMS += rsvg-cairo
 endif
 
 man_MANS = rsvg.1
@@ -88,6 +89,7 @@ librsvg_2_libart_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export
 librsvg_2_libart_la_LIBADD = librsvg-2-base.la $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS) $(LIBART_LIBS)
 
 librsvg_2_cairo_la_SOURCES =	\
+	rsvg-cairo.h		\
 	rsvg-cairo-draw.c	\
 	rsvg-cairo-draw.h	\
 	rsvg-cairo-render.c	\
@@ -135,6 +137,10 @@ rsvg_SOURCES=test-rsvg.c
 rsvg_LDFLAGS =
 rsvg_DEPENDENCIES = $(DEPS)
 rsvg_LDADD = $(LDADDS) $(libm)
+
+rsvg_cairo_SOURCES=rsvg-cairo.c
+rsvg_cairo_LDFLAGS =
+rsvg_cairo_LDADD = $(librsvg_2_cairo_la_LIBADD) $(top_builddir)/librsvg-2-cairo.la
 
 test_performance_SOURCES=test-performance.c
 test_performance_LDFLAGS =

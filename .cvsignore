@@ -25,6 +25,8 @@ stamp-h
 stamp-h.in
 stamp-h1
 rsvg
+rsvg-cairo
+rsvg-view
 test-performance
 test-rsvg
 
