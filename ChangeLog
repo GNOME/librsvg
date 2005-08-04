@@ -1,9 +1,14 @@
+2005-08-03  Carl Worth  <cworth@cworth.org>
+
+	* rsvg-cairo-draw.h, rsvg-cairo-render.h, rsvg-cairo-render.c: 
+	Fill in some missing pieces. Paths now render nicely.
+	
 2005-08-03  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-file-util.c: Create 2 generic functions for loading handles from data
 	* rsvg-art-file-util.c: Move the old rsvg-file-util.c to here
 	* rsvg.c: Export rsvg_handle_get_dimensions()
-	* rsvg-cairo.c: Make this compile
+	* rsvg-cairo.c: Make this compile	
 	
 2005-08-03  Carl Worth  <cworth@cworth.org>
 

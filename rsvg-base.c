@@ -1010,41 +1010,39 @@ rsvg_handle_new (void)
 	return handle;
 }
 
-RsvgDimensionData
-rsvg_handle_get_dimensions(RsvgHandle * handle)
+void
+rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
 {
-	RsvgDimensionData output;
 	RsvgNodeSvg * sself;
 
 	sself = (RsvgNodeSvg *)handle->treebase;	
 	if(!sself) {
-		memset(&output, 0, sizeof(output));
-		return output;
+		memset(output, 0, sizeof(RsvgDimensionData));
+		return;
 	}
 
 	if (sself->hasw && sself->hash)
 		{
-			output.width  = sself->w;
-			output.height = sself->h;
+			output->width  = sself->w;
+			output->height = sself->h;
 		}
 	else if (sself->has_vbox && sself->vbw > 0. && sself->vbh > 0.)
 		{
-			output.width  = (int)floor (sself->vbw);
-			output.height = (int)floor (sself->vbh);
+			output->width  = (int)floor (sself->vbw);
+			output->height = (int)floor (sself->vbh);
 		}
 	else
 		{
-			output.width = 512;
-			output.height = 512;
+			output->width = 512;
+			output->height = 512;
 		}
-	output.em = output.width;
-	output.ex = output.height;
+
+	output->em = output->width;
+	output->ex = output->height;
 
 	if (handle->size_func) {
-		(* handle->size_func) (&output.width, &output.height, handle->user_data);
-	}
-	
-	return output;
+		(* handle->size_func) (&output->width, &output->height, handle->user_data);
+	}	
 }
 
 /** 

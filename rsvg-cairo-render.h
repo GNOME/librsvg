@@ -41,6 +41,7 @@ struct RsvgCairoRender {
 };
 
 RsvgCairoRender * rsvg_cairo_render_new(cairo_t * cr);
+void rsvg_cairo_render_rsvg_handle (cairo_t *cr, RsvgHandle *handle);
 
 G_END_DECLS
 

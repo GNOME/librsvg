@@ -54,7 +54,6 @@
 #include "rsvg-art-render.h"
 #include "rsvg-art-draw.h"
 
-
 static RsvgDrawingCtx * 
 rsvg_new_drawing_ctx(RsvgHandle * handle)
 {
@@ -63,7 +62,7 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 	RsvgState * state;
 	double affine[6];
 
-	data = rsvg_handle_get_dimensions(handle);
+	rsvg_handle_get_dimensions(handle, &data);
 	if(data.width == 0 || data.height == 0)
 		return NULL;
 
