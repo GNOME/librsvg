@@ -259,3 +259,37 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * img,
 
     cairo_restore (render->cr);
 }
+
+void
+rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
+{
+	/* XXX: NYI */
+}
+
+void
+rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx *ctx)
+{
+	/* XXX: NYI */
+}
+
+void 
+rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
+							  double x, double y,
+							  double w, double h)
+{
+	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
+	cairo_t *cr = render->cr;
+
+	cairo_rectangle (cr, x, y, w, h);
+	cairo_clip (cr);
+}
+
+void * 
+rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
+							  RsvgNode       *drawable,
+							  double          width,
+							  double          height)
+{
+	/* XXX: NYI */
+	return NULL;
+}
