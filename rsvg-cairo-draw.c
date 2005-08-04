@@ -239,6 +239,8 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * img, 
 							  double x, double y, double w, double h)
 {
+	/* XXX: Untested */
+
 	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
 	RsvgState *state = rsvg_state_current(ctx);
 	cairo_surface_t * surface;
@@ -265,12 +267,43 @@ void
 rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
 {
 	/* XXX: NYI */
+
+#if 0
+
+	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
+	cairo_surface_t *surface;
+	cairo_t *child_cr;
+	
+	surface = cairo_surface_create_similar (render->surface,
+											CAIRO_CONTENT_COLOR_ALPHA,
+											width, height);
+	child_cr = cairo_create (surface);
+	cairo_surface_destroy (surface);
+	
+	render->cr_stack = g_list_prepend(render->cr_stack, render->cr);	
+	render->cr = child_cr;   
+
+#endif
 }
 
 void
 rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx *ctx)
 {
 	/* XXX: NYI */
+
+#if 0
+	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
+	cairo_t *child_cr = render->cr;
+
+	render->cr = (cairo_t *)render->cr_stack->data;
+	render->cr_stack = g_list_remove_link (render->cr_stack, render->cr_stack);
+
+	cairo_set_source_surface (render->cr,
+							  cairo_get_target (child_cr),
+							  0, 0);
+	cairo_paint (render->cr);
+	cairo_destroy (child_cr);
+#endif
 }
 
 void 
@@ -299,6 +332,8 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 							  double          width,
 							  double          height)
 {
+	/* XXX: Untested */
+
 	GdkPixbuf *img = NULL;
 	cairo_surface_t * surface;
 	cairo_t * cr;

@@ -1,6 +1,8 @@
 2005-08-03  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-cairo-draw.c: Implement rsvg_cairo_get_image_of_node(). Untested, probably needs discrete layers to work first.
+	(rsvg_cairo_push_discrete_layer): Mostly implement this function, hidden behind an #ifdef for now
+	(rsvg_cairo_pop_discrete_layer): Implement, comment out until push_discrete_layer() works.
 	
 2005-08-03  Carl Worth  <cworth@cworth.org>
 

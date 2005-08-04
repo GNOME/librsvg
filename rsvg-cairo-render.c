@@ -47,7 +47,7 @@ rsvg_cairo_render_free (RsvgRender * self)
 RsvgCairoRender * 
 rsvg_cairo_render_new(cairo_t * cr)
 {
-	RsvgCairoRender * cairo_render = g_new(RsvgCairoRender, 1);
+	RsvgCairoRender * cairo_render = g_new0(RsvgCairoRender, 1);
 
 	cairo_render->super.free                 = rsvg_cairo_render_free;
 	cairo_render->super.render_image         = rsvg_cairo_render_image;

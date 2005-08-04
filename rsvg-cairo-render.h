@@ -38,6 +38,8 @@ struct RsvgCairoRender {
 	RsvgRender super;
 	cairo_surface_t *surface;
 	cairo_t *cr;
+
+	GList *cr_stack;
 };
 
 RsvgCairoRender * rsvg_cairo_render_new(cairo_t * cr);
