@@ -33,6 +33,7 @@
 #include "rsvg-bpath-util.h"
 #include "rsvg-path.h"
 #include "rsvg-filter.h"
+#include "rsvg-structure.h"
 
 #include <math.h>
 
@@ -284,12 +285,55 @@ rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
 	cairo_clip (cr);
 }
 
+static cairo_status_t png_write_func(void * closure,
+									 const unsigned char *data,
+									 unsigned int	   length)
+{
+	g_byte_array_append ((GByteArray *)closure, data, length);
+	return CAIRO_STATUS_SUCCESS;
+}
+
 void * 
 rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 							  RsvgNode       *drawable,
 							  double          width,
 							  double          height)
 {
-	/* XXX: NYI */
-	return NULL;
+	GdkPixbuf *img = NULL;
+	cairo_surface_t * surface;
+	cairo_t * cr;
+	GByteArray *png_bytes;
+
+	RsvgCairoRender *save_render = (RsvgCairoRender *)ctx->render;
+	RsvgCairoRender *render;
+
+	surface = cairo_surface_create_similar(save_render->surface,
+										   CAIRO_CONTENT_COLOR_ALPHA,
+										   width, height);
+	cr = cairo_create (surface);
+	cairo_surface_destroy (surface);
+
+	render = rsvg_cairo_render_new(cr);
+	ctx->render = (RsvgRender *)render;
+
+	rsvg_state_push(ctx);	
+	rsvg_node_draw (drawable, ctx, 0);	
+	rsvg_state_pop(ctx);
+	
+	png_bytes = g_byte_array_new();
+	if(CAIRO_STATUS_SUCCESS == cairo_surface_write_to_png_stream (surface,
+																  png_write_func,
+																  png_bytes)) {
+		GdkPixbufLoader* img_loader = gdk_pixbuf_loader_new ();
+		gdk_pixbuf_loader_write (img_loader, png_bytes->data, png_bytes->len, NULL);
+		gdk_pixbuf_loader_close (img_loader, NULL);
+		img = gdk_pixbuf_loader_get_pixbuf (img_loader);
+		g_object_unref (G_OBJECT (img_loader));
+	}
+	g_byte_array_free(png_bytes, TRUE);
+
+	cairo_destroy (cr);
+	ctx->render = (RsvgRender *)save_render;
+	
+	return img;
 }

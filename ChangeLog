@@ -1,3 +1,7 @@
+2005-08-03  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-cairo-draw.c: Implement rsvg_cairo_get_image_of_node(). Untested, probably needs discrete layers to work first.
+	
 2005-08-03  Carl Worth  <cworth@cworth.org>
 
 	* rsvg-cairo-draw.h, rsvg-cairo-render.h, rsvg-cairo-render.c: 
