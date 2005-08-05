@@ -45,7 +45,6 @@ main (int argc, const char **argv)
 	int width  = -1;
 	int height = -1;
 	int bVersion = 0;
-	int quality = 100;
 
 	struct poptOption options_table[] = {
 		{ "dpi-x",   'd',  POPT_ARG_DOUBLE, &dpi_x,    0, N_("pixels per inch"), N_("<float>") },
@@ -54,7 +53,6 @@ main (int argc, const char **argv)
 		{ "y-zoom",  'y',  POPT_ARG_DOUBLE, &y_zoom,   0, N_("y zoom factor"), N_("<float>") },
 		{ "width",   'w',  POPT_ARG_INT,    &width,    0, N_("width"), N_("<int>") },
 		{ "height",  'h',  POPT_ARG_INT,    &height,   0, N_("height"), N_("<int>") },
-		{ "quality", 'q',  POPT_ARG_INT,    &quality,  0, N_("JPEG quality"), N_("<int>") },
 		{ "version", 'v',  POPT_ARG_NONE,   &bVersion, 0, N_("show version information"), NULL },
 		POPT_AUTOHELP
 		POPT_TABLEEND
