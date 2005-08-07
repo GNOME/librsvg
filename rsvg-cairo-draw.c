@@ -184,6 +184,12 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 
 	_set_rsvg_affine (cr, state->affine);
 
+	cairo_set_line_width (cr, state->stroke_width);
+	cairo_set_miter_limit (cr, state->miter_limit);
+	cairo_set_line_cap (cr, (cairo_line_cap_t)state->cap);
+	cairo_set_line_join (cr, (cairo_line_join_t)state->join);
+	cairo_set_dash (cr, state->dash.dash, state->dash.n_dash, state->dash.offset);
+
 	for (i=0; i < bpath_def->n_bpath; i++) {
 		bpath = &bpath_def->bpath[i];
 		switch (bpath->code) {
@@ -210,7 +216,7 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 	if (state->fill != NULL) {
 		if (state->fill_rule == FILL_RULE_EVENODD)
 			cairo_set_fill_rule (cr, CAIRO_FILL_RULE_EVEN_ODD);
-		else /* state->fill_rule == FILL_RULE_NONZERO */
+		else /* state->fill_rule == FILL_RULE_NONZERO */                                       
 			cairo_set_fill_rule (cr, CAIRO_FILL_RULE_WINDING);
 
 		_set_source_rsvg_paint_server (cr,
