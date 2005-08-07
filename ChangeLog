@@ -1,10 +1,15 @@
 2005-08-07  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-cairo-draw.c (rsvg_cairo_render_path): Implement line join, cap, width, dash, miter limit
-	(rsvg_cairo_render_image): Drawing images now largely works
-	(rsvg_cairo_push_discrete_layer): Largely implement
-	(rsvg_cairo_pop_discrete_layer): Largely implement
+	(rsvg_cairo_render_image): Drawing images now works
+	(rsvg_cairo_push_discrete_layer): Largely implemented
+	(rsvg_cairo_pop_discrete_layer): Largely implemented
 	(_set_source_rsvg_radial_gradient): Make this work for the few tests I have
+
+	* rsvg.c (rsvg_handle_get_pixbuf): Implement this in terms of libart, cairo, or nothing depending on what's enabled at configure time.
+	Defaults to libart, simply because the cairo backend is currently immature. This will change in due time...
+	* configure.in: Do the hackery necessary to determine what backend to use in rsvg_handle_get_pixbuf()
+	* Makefile.am: Ditto; make sure that librsvg-2.la is always installed (though it may not always work...)
 	
 2005-08-04  Carl Worth  <cworth@cworth.org>
 

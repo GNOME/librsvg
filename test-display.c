@@ -56,7 +56,7 @@ rsvg_window_set_default_icon (GtkWindow * window, GdkPixbuf *src)
   width = gdk_pixbuf_get_width(src);
   height = gdk_pixbuf_get_height(src);
 
-  if(width > 128 || height > 128) {
+  if(0 /*width > 128 || height > 128*/) {
 	  /* sending images greater than 128x128 has this nasty tendency to 
 		 cause broken pipe errors X11 Servers */
 	  if(width > height) {

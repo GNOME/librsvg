@@ -3,7 +3,7 @@
    rsvg.c: SAX-based renderer for SVG files into a GdkPixbuf.
 
    Copyright (C) 2000 Eazel, Inc.
-   Copyright (C) 2002 Dom Lachowicz <cinamod@hotmail.com>
+   Copyright (C) 2002-2005 Dom Lachowicz <cinamod@hotmail.com>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as
@@ -25,13 +25,6 @@
 
 #include "config.h"
 
-#ifdef HAVE_SVGZ
-#include <gsf/gsf-input-gzip.h>
-#include <gsf/gsf-input-memory.h>
-#include <gsf/gsf-output-memory.h>
-#include <gsf/gsf-utils.h>
-#endif
-
 #include "rsvg.h"
 #include "rsvg-private.h"
 #include "rsvg-css.h"
@@ -46,6 +39,8 @@
 #include <math.h>
 #include <string.h>
 #include <stdarg.h>
+
+#if defined(WITH_LIBART_BACKEND)
 
 #include "rsvg-bpath-util.h"
 #include "rsvg-path.h"
@@ -100,6 +95,89 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 	return draw;
 }
 
+static GdkPixbuf * _rsvg_handle_get_pixbuf (RsvgHandle *handle)
+{
+	GdkPixbuf * output = NULL;
+	RsvgDrawingCtx * draw;
+
+	draw = rsvg_new_drawing_ctx(handle);
+	if (!draw)
+		return NULL;
+	rsvg_state_push(draw);
+	rsvg_node_draw((RsvgNode *)handle->treebase, draw, 0);
+	rsvg_state_pop(draw);
+	output = ((RsvgArtRender *)draw->render)->pixbuf;
+	rsvg_drawing_ctx_free(draw);
+	
+	return output;
+}
+
+#elif defined(WITH_CAIRO_BACKEND)
+
+#include "rsvg-cairo.h"
+
+static cairo_status_t png_write_func(void * closure,
+									 const unsigned char *data,
+									 unsigned int	   length)
+{
+	g_byte_array_append ((GByteArray *)closure, data, length);
+	return CAIRO_STATUS_SUCCESS;
+}
+
+static GdkPixbuf * _rsvg_handle_get_pixbuf (RsvgHandle *handle)
+{
+	RsvgDimensionData dimensions;
+	GdkPixbuf *output = NULL;
+	GByteArray *png_bytes;
+	cairo_surface_t *surface;
+	cairo_t *cr;
+
+	/* XXX: see rsvg-cairo-draw.c(create_image_from_node): this is inefficient and can be made a lot faster */
+
+	rsvg_handle_get_dimensions (handle, &dimensions);
+
+	surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+										  dimensions.width, dimensions.height);
+	cr = cairo_create (surface);
+
+	rsvg_cairo_render (cr, handle);
+
+	png_bytes = g_byte_array_new();
+	if(CAIRO_STATUS_SUCCESS == cairo_surface_write_to_png_stream (surface,
+																  png_write_func,
+																  png_bytes)) {
+		GdkPixbufLoader* img_loader = gdk_pixbuf_loader_new ();
+		gdk_pixbuf_loader_write (img_loader, png_bytes->data, png_bytes->len, NULL);
+		gdk_pixbuf_loader_close (img_loader, NULL);
+		output = gdk_pixbuf_loader_get_pixbuf (img_loader);
+		/* ref before closing the loader */
+		if (output)
+			g_object_ref (G_OBJECT(output));
+		g_object_unref (G_OBJECT (img_loader));
+	}
+	g_byte_array_free(png_bytes, TRUE);
+
+	cairo_destroy (cr);
+	cairo_surface_destroy (surface);
+
+	return output;
+}
+
+#else
+
+#ifdef __GNUC__
+#warning "No backend defined. Needs either Cairo or Libart in order to work."
+#endif
+
+static GdkPixbuf * _rsvg_handle_get_pixbuf (RsvgHandle *handle)
+{
+	g_warning ("No backend defined. Needs either Cairo or Libart in order to work.");
+	return NULL;
+}
+
+
+#endif
+
 /**
  * rsvg_handle_get_pixbuf:
  * @handle: An #RsvgHandle
@@ -115,22 +193,10 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 GdkPixbuf *
 rsvg_handle_get_pixbuf (RsvgHandle *handle)
 {
-	GdkPixbuf * output = NULL;
-	RsvgDrawingCtx * draw;
 	g_return_val_if_fail (handle != NULL, NULL);
 
 	if (!handle->finished)
 		return NULL;
 
-	draw = rsvg_new_drawing_ctx(handle);
-	if (!draw)
-		return NULL;
-	rsvg_state_push(draw);
-	rsvg_node_draw((RsvgNode *)handle->treebase, draw, 0);
-	rsvg_state_pop(draw);
-	output = ((RsvgArtRender *)draw->render)->pixbuf;
-	rsvg_drawing_ctx_free(draw);
-	
-	return output;
+	return _rsvg_handle_get_pixbuf (handle);
 }
-

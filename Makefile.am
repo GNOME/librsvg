@@ -11,7 +11,7 @@ noinst_PROGRAMS =
 
 if HAVE_ART
 SUBDIRS += gtk-engine gdk-pixbuf-loader moz-plugin
-lib_LTLIBRARIES += librsvg-2-libart.la librsvg-2.la
+lib_LTLIBRARIES += librsvg-2-libart.la
 bin_PROGRAMS += rsvg $(target_rsvg_view)
 noinst_PROGRAMS += test-performance
 endif
@@ -20,6 +20,8 @@ if HAVE_CAIRO
 lib_LTLIBRARIES += librsvg-2-cairo.la
 bin_PROGRAMS += rsvg-cairo
 endif
+
+lib_LTLIBRARIES += librsvg-2.la
 
 man_MANS = rsvg.1
 
@@ -51,7 +53,7 @@ librsvg_2_base_la_SOURCES = 		\
 	rsvg-path.c 		\
 	rsvg-path.h 		\
 	rsvg-private.h 		\
-	rsvg-file-util.c 	\
+	rsvg-base-file-util.c 	\
 	rsvg-filter.c		\
 	rsvg-filter.h		\
 	rsvg-marker.c		\
@@ -74,7 +76,6 @@ librsvg_2_base_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-d
 librsvg_2_base_la_LIBADD = $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS)
 
 librsvg_2_libart_la_SOURCES =	\
-	rsvg-art-file-util.c	\
 	rsvg-art-composite.c	\
 	rsvg-art-composite.h	\
 	rsvg-art-draw.c		\
@@ -98,10 +99,11 @@ librsvg_2_cairo_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-
 librsvg_2_cairo_la_LIBADD = librsvg-2-base.la $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS) $(CAIRO_LIBS)
 
 librsvg_2_la_SOURCES =	\
-	rsvg.c
+	rsvg.c		\
+	rsvg-file-util.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
-librsvg_2_la_LIBADD = librsvg-2-base.la librsvg-2-libart.la $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS) $(LIBART_LIBS)
+librsvg_2_la_LIBADD = librsvg-2-base.la librsvg-2-libart.la $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS) $(LIBRSVG_2_BACKEND_LIBADD)
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = 	\
@@ -121,7 +123,8 @@ INCLUDES =				\
 	-DG_LOG_DOMAIN=\"librsvg\" 	\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""\
 	$(LIBART_CFLAGS)		\
-	$(CAIRO_CFLAGS)
+	$(CAIRO_CFLAGS)			\
+	$(LIBRSVG_2_BACKEND_CFLAGS)
 
 DEPS = $(top_builddir)/librsvg-2.la $(top_builddir)/librsvg-2-libart.la
 LDADDS =				\

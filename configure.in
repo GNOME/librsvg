@@ -470,6 +470,24 @@ GLIB_LC_MESSAGES
 
 dnl ===========================================================================
 
+LIBRSVG_2_BACKEND_LIBADD=
+LIBRSVG_2_BACKEND_CFLAGS=
+build_librsvg_2_la=no
+if test x$test_art = xtrue; then
+   build_librsvg_2_la=yes
+   LIBRSVG_2_BACKEND_LIBADD=librsvg-2-libart.la
+   LIBRSVG_2_BACKEND_CFLAGS=-DWITH_LIBART_BACKEND
+elif test x$test_cairo = xtrue; then
+   build_librsvg_2_la=yes
+   LIBRSVG_2_BACKEND_LIBADD=librsvg-2-cairo.la
+   LIBRSVG_2_BACKEND_CFLAGS=-DWITH_CAIRO_BACKEND
+fi
+
+AC_SUBST(LIBRSVG_2_BACKEND_LIBADD)
+AC_SUBST(LIBRSVG_2_BACKEND_CFLAGS)
+
+dnl ===========================================================================
+
 AC_OUTPUT([
 librsvg.spec
 librsvg-features.h

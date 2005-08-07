@@ -259,10 +259,9 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 	static const cairo_user_data_key_t key;
 	int j;
 
-	/* XXX: This is not quite right... w & h aren't respected, but everything else seems to work ok */
-
     cairo_save (render->cr);
 	_set_rsvg_affine (render->cr, state->affine);
+    cairo_scale (render->cr, w / width, h / height);
 
 	if (n_channels == 3)
 		format = CAIRO_FORMAT_RGB24;
@@ -402,7 +401,9 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 							  double          width,
 							  double          height)
 {
-	/* XXX: Untested, horribly ineffecient... */
+	/* XXX: Untested, horribly ineffecient, but probably works...
+	   Ideally we'll want to create_image_surface_for_data() and then translate
+	   ARGB32 into RGBA */
 
 	GdkPixbuf *img = NULL;
 	cairo_surface_t * surface;
@@ -412,9 +413,7 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 	RsvgCairoRender *save_render = (RsvgCairoRender *)ctx->render;
 	RsvgCairoRender *render;
 
-	surface = cairo_surface_create_similar(cairo_get_target (save_render->cr),
-										   CAIRO_CONTENT_COLOR_ALPHA,
-										   width, height);
+	surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
 	cr = cairo_create (surface);
 	cairo_surface_destroy (surface);
 
@@ -433,6 +432,9 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 		gdk_pixbuf_loader_write (img_loader, png_bytes->data, png_bytes->len, NULL);
 		gdk_pixbuf_loader_close (img_loader, NULL);
 		img = gdk_pixbuf_loader_get_pixbuf (img_loader);
+		/* ref before closing the loader */
+		if (img)
+			g_object_ref (G_OBJECT(img));
 		g_object_unref (G_OBJECT (img_loader));
 	}
 	g_byte_array_free(png_bytes, TRUE);
