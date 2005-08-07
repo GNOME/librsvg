@@ -1340,7 +1340,7 @@ rsvg_add_clipping_rect (RsvgDrawingCtx *ctx, double x, double y, double w, doubl
 	ctx->render->add_clipping_rect(ctx, x, y, w, h);
 }
 
-void * rsvg_get_image_of_node(RsvgDrawingCtx *ctx, RsvgNode * drawable,
+GdkPixbuf * rsvg_get_image_of_node(RsvgDrawingCtx *ctx, RsvgNode * drawable,
 							  double w, double h)
 {
 	return ctx->render->get_image_of_node(ctx, drawable, w, h);

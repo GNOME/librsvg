@@ -41,7 +41,7 @@ gboolean rsvg_art_needs_discrete_layer(RsvgState *state);
 
 void rsvg_art_clip_image (GdkPixbuf *intermediate, ArtSVP *path);
 void rsvg_art_add_clipping_rect(RsvgDrawingCtx *ctx, double x, double y, double w, double h);
-void * rsvg_art_get_image_of_node(RsvgDrawingCtx *ctx, RsvgNode * drawable, double w, double h);
+GdkPixbuf * rsvg_art_get_image_of_node(RsvgDrawingCtx *ctx, RsvgNode * drawable, double w, double h);
 
 G_END_DECLS
 

@@ -242,30 +242,100 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 	cairo_restore (cr);
 }
 
-void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * img, 
-							  double x, double y, double w, double h)
+void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf, 
+							  double pixbuf_x, double pixbuf_y, double w, double h)
 {
-	/* XXX: Untested */
-
 	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
 	RsvgState *state = rsvg_state_current(ctx);
-	cairo_surface_t * surface;
-	unsigned char * data = gdk_pixbuf_get_pixels(img);
+	
+	gint width = gdk_pixbuf_get_width (pixbuf);
+	gint height = gdk_pixbuf_get_height (pixbuf);
+	guchar *gdk_pixels = gdk_pixbuf_get_pixels (pixbuf);
+	int gdk_rowstride = gdk_pixbuf_get_rowstride (pixbuf);
+	int n_channels = gdk_pixbuf_get_n_channels (pixbuf);
+	guchar *cairo_pixels;
+	cairo_format_t format;
+	cairo_surface_t *surface;
+	static const cairo_user_data_key_t key;
+	int j;
+
+	/* XXX: This is not quite right... w & h aren't respected, but everything else seems to work ok */
 
     cairo_save (render->cr);
+	_set_rsvg_affine (render->cr, state->affine);
 
-    surface = cairo_image_surface_create_for_data (data, CAIRO_FORMAT_RGB24,
-												   w, h, w * 4);
-    cairo_translate (render->cr, x, y);
-
-    cairo_set_source_surface (render->cr, surface, 0, 0);
-    if (state->opacity != 1.0)
-		cairo_paint_with_alpha (render->cr, state->opacity);
-    else
-		cairo_paint (render->cr);
-    
-    cairo_surface_destroy (surface);
-
+	if (n_channels == 3)
+		format = CAIRO_FORMAT_RGB24;
+	else
+		format = CAIRO_FORMAT_ARGB32;
+	
+	cairo_pixels = g_malloc (4 * width * height);
+	surface = cairo_image_surface_create_for_data ((unsigned char *)cairo_pixels,
+												   format,
+												   width, height, 4 * width);
+	cairo_surface_set_user_data (surface, &key,
+								 cairo_pixels, (cairo_destroy_func_t)g_free);
+	
+	for (j = height; j; j--)
+		{
+			guchar *p = gdk_pixels;
+			guchar *q = cairo_pixels;
+			
+			if (n_channels == 3)
+				{
+					guchar *end = p + 3 * width;
+					
+					while (p < end)
+						{
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+							q[0] = p[2];
+							q[1] = p[1];
+							q[2] = p[0];
+#else	  
+							q[1] = p[0];
+							q[2] = p[1];
+							q[3] = p[2];
+#endif
+							p += 3;
+							q += 4;
+						}
+				}
+			else
+				{
+					guchar *end = p + 4 * width;
+					guint t1,t2,t3;
+					
+#define MULT(d,c,a,t) G_STMT_START { t = c * a; d = ((t >> 8) + t) >> 8; } G_STMT_END
+					
+					while (p < end)
+						{
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+							MULT(q[0], p[2], p[3], t1);
+							MULT(q[1], p[1], p[3], t2);
+							MULT(q[2], p[0], p[3], t3);
+							q[3] = p[3];
+#else	  
+							q[0] = p[3];
+							MULT(q[1], p[0], p[3], t1);
+							MULT(q[2], p[1], p[3], t2);
+							MULT(q[3], p[2], p[3], t3);
+#endif
+							
+							p += 4;
+							q += 4;
+						}
+					
+#undef MULT
+				}
+			
+			gdk_pixels += gdk_rowstride;
+			cairo_pixels += 4 * width;
+		}
+	
+	cairo_set_source_surface (render->cr, surface, pixbuf_x, pixbuf_y);
+	cairo_paint (render->cr);
+	cairo_surface_destroy (surface);
+	
     cairo_restore (render->cr);
 }
 
@@ -332,7 +402,7 @@ static cairo_status_t png_write_func(void * closure,
 	return CAIRO_STATUS_SUCCESS;
 }
 
-void * 
+GdkPixbuf * 
 rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 							  RsvgNode       *drawable,
 							  double          width,

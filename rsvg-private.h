@@ -148,8 +148,8 @@ struct RsvgRender {
 	void (* push_discrete_layer) (RsvgDrawingCtx *ctx);
 	void (* add_clipping_rect) (RsvgDrawingCtx *ctx,
 								double x, double y, double w, double h);
-	void * (* get_image_of_node) (RsvgDrawingCtx *ctx, RsvgNode * drawable,
-								  double w, double h);
+	GdkPixbuf * (* get_image_of_node) (RsvgDrawingCtx *ctx, RsvgNode * drawable,
+									   double w, double h);
 };
 
 struct _RsvgIRect {
@@ -263,8 +263,8 @@ void rsvg_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * pb,
 void rsvg_render_free (RsvgRender * render);
 void rsvg_add_clipping_rect (RsvgDrawingCtx *ctx, double x, double y, 
 							 double w, double h);
-void * rsvg_get_image_of_node(RsvgDrawingCtx *ctx, RsvgNode * drawable,
-							  double w, double h);
+GdkPixbuf * rsvg_get_image_of_node(RsvgDrawingCtx *ctx, RsvgNode * drawable,
+								   double w, double h);
 
 
 void

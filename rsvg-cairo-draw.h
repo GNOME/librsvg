@@ -51,7 +51,7 @@ rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
 							  double x, double y,
 							  double width, double height);
 
-void * 
+GdkPixbuf * 
 rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 							  RsvgNode       *drawable,
 							  double          width,

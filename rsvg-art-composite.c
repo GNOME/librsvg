@@ -431,7 +431,7 @@ rsvg_art_add_clipping_rect(RsvgDrawingCtx *ctx, double x, double y, double w, do
 		data->clippath_loaded = FALSE;	
 }
 
-void * 
+GdkPixbuf * 
 rsvg_art_get_image_of_node(RsvgDrawingCtx *ctx, RsvgNode * drawable,
 						   double w, double h)
 {

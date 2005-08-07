@@ -1,6 +1,7 @@
 2005-08-07  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-cairo-draw.c (rsvg_cairo_render_path): Implement line join, cap, width, dash, miter limit
+	* rsvg-cairo-draw.c (rsvg_cairo_render_image): Drawing images now largely works
 	
 2005-08-04  Carl Worth  <cworth@cworth.org>
 
