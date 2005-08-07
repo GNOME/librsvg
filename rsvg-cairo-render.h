@@ -36,13 +36,14 @@ typedef struct RsvgCairoRender RsvgCairoRender;
 
 struct RsvgCairoRender {
 	RsvgRender super;
-	cairo_surface_t *surface;
 	cairo_t *cr;
+	double width;
+	double height;
 
 	GList *cr_stack;
 };
 
-RsvgCairoRender * rsvg_cairo_render_new(cairo_t * cr);
+RsvgCairoRender * rsvg_cairo_render_new(cairo_t * cr, double width, double height);
 void rsvg_cairo_render_rsvg_handle (cairo_t *cr, RsvgHandle *handle);
 
 G_END_DECLS

@@ -46,7 +46,7 @@ rsvg_cairo_render_free (RsvgRender * self)
 }
 
 RsvgCairoRender * 
-rsvg_cairo_render_new(cairo_t * cr)
+rsvg_cairo_render_new(cairo_t * cr, double width, double height)
 {
 	RsvgCairoRender * cairo_render = g_new0(RsvgCairoRender, 1);
 
@@ -57,6 +57,8 @@ rsvg_cairo_render_new(cairo_t * cr)
 	cairo_render->super.push_discrete_layer  = rsvg_cairo_push_discrete_layer;
 	cairo_render->super.add_clipping_rect    = rsvg_cairo_add_clipping_rect;
 	cairo_render->super.get_image_of_node    = rsvg_cairo_get_image_of_node;
+	cairo_render->width = width;
+	cairo_render->height = height;
 	cairo_render->cr = cr;
 
 	return cairo_render;
@@ -76,7 +78,7 @@ rsvg_cairo_new_drawing_ctx (cairo_t *cr, RsvgHandle *handle)
 
 	draw = g_new(RsvgDrawingCtx, 1);
 
-	draw->render = (RsvgRender *) rsvg_cairo_render_new (cr);
+	draw->render = (RsvgRender *) rsvg_cairo_render_new (cr, data.width, data.height);
 
 	if(!draw->render)
 		return NULL;	

@@ -342,32 +342,27 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 void
 rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
 {
-	/* XXX: NYI */
-
-#if 0
+	/* XXX: Untested, probably needs help wrt filters */
 
 	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
 	cairo_surface_t *surface;
 	cairo_t *child_cr;
 	
-	surface = cairo_surface_create_similar (render->surface,
+	surface = cairo_surface_create_similar (cairo_get_target (render->cr),
 											CAIRO_CONTENT_COLOR_ALPHA,
-											width, height);
+											render->width, render->height);
 	child_cr = cairo_create (surface);
 	cairo_surface_destroy (surface);
 	
 	render->cr_stack = g_list_prepend(render->cr_stack, render->cr);	
 	render->cr = child_cr;   
-
-#endif
 }
 
 void
 rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx *ctx)
 {
-	/* XXX: NYI */
+	/* XXX: Untested, probably needs help wrt filters */
 
-#if 0
 	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
 	cairo_t *child_cr = render->cr;
 
@@ -379,7 +374,6 @@ rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx *ctx)
 							  0, 0);
 	cairo_paint (render->cr);
 	cairo_destroy (child_cr);
-#endif
 }
 
 void 
@@ -408,7 +402,7 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 							  double          width,
 							  double          height)
 {
-	/* XXX: Untested */
+	/* XXX: Untested, horribly ineffecient... */
 
 	GdkPixbuf *img = NULL;
 	cairo_surface_t * surface;
@@ -418,13 +412,13 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 	RsvgCairoRender *save_render = (RsvgCairoRender *)ctx->render;
 	RsvgCairoRender *render;
 
-	surface = cairo_surface_create_similar(save_render->surface,
+	surface = cairo_surface_create_similar(cairo_get_target (save_render->cr),
 										   CAIRO_CONTENT_COLOR_ALPHA,
 										   width, height);
 	cr = cairo_create (surface);
 	cairo_surface_destroy (surface);
 
-	render = rsvg_cairo_render_new(cr);
+	render = rsvg_cairo_render_new(cr, width, height);
 	ctx->render = (RsvgRender *)render;
 
 	rsvg_state_push(ctx);	
