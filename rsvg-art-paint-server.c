@@ -122,7 +122,6 @@ rsvg_art_paint_server_lin_grad_render (RsvgLinearGradient *rlg, ArtRender *ar,
 	double dx, dy, scale;
 	double affine[6];
 	guint32 current_color;
-	int i;
 	double xchange, ychange, pointlen,unitlen;
 	double cx, cy, cxt, cyt;
 	double px, py, pxt, pyt;
@@ -153,11 +152,11 @@ rsvg_art_paint_server_lin_grad_render (RsvgLinearGradient *rlg, ArtRender *ar,
 		affine[4] = ctx->x0;
 		affine[5] = ctx->y0;
 		_rsvg_affine_multiply(affine, affine, ctx->affine);
+		_rsvg_affine_multiply(affine, rlg->affine, affine);
 	} else
-		for (i = 0; i < 6; i++)
-			affine[i] = ctx->affine[i];
+		_rsvg_affine_multiply(affine, rlg->affine, ctx->affine);
 
-	_rsvg_affine_multiply(affine, rlg->affine, affine);
+
 
 	/*
 	in case I am hit by a bus, here is how the following code works:
@@ -245,7 +244,6 @@ rsvg_art_paint_server_rad_grad_render (RsvgRadialGradient *rrg, ArtRender *ar,
 	ArtGradientRadial *agr;
 	double aff1[6], aff2[6], affine[6];
 	guint32 current_color;
-	int i;
 	rrg = &statgrad;
 	rsvg_radial_gradient_fix_fallback(rrg);
 
@@ -257,12 +255,9 @@ rsvg_art_paint_server_rad_grad_render (RsvgRadialGradient *rrg, ArtRender *ar,
 		affine[4] = ctx->x0;
 		affine[5] = ctx->y0;
 		_rsvg_affine_multiply(affine, affine, ctx->affine);
-	} else {
-		for (i = 0; i < 6; i++)
-			affine[i] = ctx->affine[i];
-	}
-
-	_rsvg_affine_multiply(affine, rrg->affine, affine);
+		_rsvg_affine_multiply(affine, rrg->affine, affine);
+	} else
+		_rsvg_affine_multiply(affine, rrg->affine, ctx->affine);
 
 	if (rrg->has_current_color)
 		current_color = rrg->current_color;

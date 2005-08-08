@@ -61,7 +61,7 @@ _pattern_add_rsvg_color_stops (cairo_pattern_t *pattern,
 										   ((rgba >> 24) & 0xff) / 255.0,
 										   ((rgba >> 16) & 0xff) / 255.0,
 										   ((rgba >>  8) & 0xff) / 255.0,
-										   (((rgba >>  0) & 0xff) * opacity)/255.0);
+										   (((rgba >>  0) & 0xff) * opacity)/255.0/255.0);
 	}
 }
 
