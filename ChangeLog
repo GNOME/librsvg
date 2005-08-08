@@ -1,3 +1,7 @@
+2005-08-09 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-cairo-draw.c: Made inheritance work with pservers. Tried to get transforms on pservers working.
+	
 2005-08-07  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-cairo-draw.c (rsvg_cairo_render_path): Implement line join, cap, width, dash, miter limit

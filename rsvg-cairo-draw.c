@@ -72,6 +72,11 @@ _set_source_rsvg_linear_gradient (cairo_t            *cr,
 								  guint8              opacity)
 {
 	cairo_pattern_t *pattern;
+	cairo_matrix_t matrix;
+	RsvgLinearGradient statlinear;
+	statlinear = *linear;
+	linear = &statlinear;
+	rsvg_linear_gradient_fix_fallback(linear);
 
 	if (linear->has_current_color)
 		current_color_rgb = linear->current_color;
@@ -79,9 +84,14 @@ _set_source_rsvg_linear_gradient (cairo_t            *cr,
 	pattern = cairo_pattern_create_linear (linear->x1, linear->y1,
 										   linear->x2, linear->y2);
 
+	cairo_matrix_init (&matrix,
+					   linear->affine[0], linear->affine[1],
+					   linear->affine[2], linear->affine[3],
+					   linear->affine[4], linear->affine[5]);
+	cairo_pattern_set_matrix (pattern, &matrix);
+
 	_pattern_add_rsvg_color_stops (pattern, linear->super.children,
 								   current_color_rgb, opacity);
-
 
 	cairo_set_source (cr, pattern);
 	cairo_pattern_destroy (pattern);
@@ -94,6 +104,11 @@ _set_source_rsvg_radial_gradient (cairo_t            *cr,
 								  guint8              opacity)
 {
 	cairo_pattern_t *pattern;
+	cairo_matrix_t matrix;
+	RsvgRadialGradient statradial;
+	statradial = *radial;
+	radial = &statradial;
+	rsvg_radial_gradient_fix_fallback(radial);
 
 	if (radial->has_current_color)
 		current_color_rgb = radial->current_color;
@@ -101,6 +116,12 @@ _set_source_rsvg_radial_gradient (cairo_t            *cr,
 	/* XXX: This seems to work ok... */
 	pattern = cairo_pattern_create_radial (radial->cx, radial->cy, 0.0,
 										   radial->fx, radial->fy, radial->r);
+
+	cairo_matrix_init (&matrix,
+					   radial->affine[0], radial->affine[1],
+					   radial->affine[2], radial->affine[3],
+					   radial->affine[4], radial->affine[5]);
+	cairo_pattern_set_matrix (pattern, &matrix);
 
 	_pattern_add_rsvg_color_stops (pattern, radial->super.children,
 								   current_color_rgb, opacity);
