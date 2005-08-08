@@ -1,3 +1,9 @@
+2005-08-08  Carl Worth  <cworth@cworth.org>
+
+	* rsvg-cairo-draw.c: (_set_source_rsvg_linear_gradient),
+	(_set_source_rsvg_radial_gradient): Invert matrix since cairo's
+	pattern matrix is from user space to pattern space.
+
 2005-08-09 Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-cairo-draw.c: Made inheritance work with pservers. Tried to get transforms on pservers working.

@@ -88,6 +88,7 @@ _set_source_rsvg_linear_gradient (cairo_t            *cr,
 					   linear->affine[0], linear->affine[1],
 					   linear->affine[2], linear->affine[3],
 					   linear->affine[4], linear->affine[5]);
+	cairo_matrix_invert (&matrix);
 	cairo_pattern_set_matrix (pattern, &matrix);
 
 	_pattern_add_rsvg_color_stops (pattern, linear->super.children,
@@ -121,6 +122,7 @@ _set_source_rsvg_radial_gradient (cairo_t            *cr,
 					   radial->affine[0], radial->affine[1],
 					   radial->affine[2], radial->affine[3],
 					   radial->affine[4], radial->affine[5]);
+	cairo_matrix_invert (&matrix);
 	cairo_pattern_set_matrix (pattern, &matrix);
 
 	_pattern_add_rsvg_color_stops (pattern, radial->super.children,
