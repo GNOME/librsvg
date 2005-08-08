@@ -36,6 +36,7 @@
 #include "rsvg-structure.h"
 
 #include <math.h>
+#include <string.h>
 
 static void
 _pattern_add_rsvg_color_stops (cairo_pattern_t *pattern,
@@ -410,12 +411,10 @@ rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
 	cairo_clip (cr);
 }
 
-static cairo_status_t png_write_func(void * closure,
-									 const unsigned char *data,
-									 unsigned int	   length)
+static void
+rsvg_pixmap_destroy (gchar *pixels, gpointer data)
 {
-	g_byte_array_append ((GByteArray *)closure, data, length);
-	return CAIRO_STATUS_SUCCESS;
+  g_free (pixels);
 }
 
 GdkPixbuf * 
@@ -424,19 +423,23 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 							  double          width,
 							  double          height)
 {
-	/* XXX: Untested, horribly ineffecient, but probably works...
-	   Ideally we'll want to create_image_surface_for_data() and then translate
-	   ARGB32 into RGBA */
+	/* XXX: untested, should work */
 
 	GdkPixbuf *img = NULL;
 	cairo_surface_t * surface;
 	cairo_t * cr;
-	GByteArray *png_bytes;
+	guint8 *pixels;
+	int row, rowstride;
 
 	RsvgCairoRender *save_render = (RsvgCairoRender *)ctx->render;
 	RsvgCairoRender *render;
 
-	surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
+	rowstride = width * 4;
+	pixels = g_new(guint8, width * height * 4);
+	surface = cairo_image_surface_create_for_data (pixels,
+												   CAIRO_FORMAT_ARGB32,
+												   width, height,
+												   rowstride);
 	cr = cairo_create (surface);
 	cairo_surface_destroy (surface);
 
@@ -446,21 +449,39 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 	rsvg_state_push(ctx);	
 	rsvg_node_draw (drawable, ctx, 0);	
 	rsvg_state_pop(ctx);
-	
-	png_bytes = g_byte_array_new();
-	if(CAIRO_STATUS_SUCCESS == cairo_surface_write_to_png_stream (surface,
-																  png_write_func,
-																  png_bytes)) {
-		GdkPixbufLoader* img_loader = gdk_pixbuf_loader_new ();
-		gdk_pixbuf_loader_write (img_loader, png_bytes->data, png_bytes->len, NULL);
-		gdk_pixbuf_loader_close (img_loader, NULL);
-		img = gdk_pixbuf_loader_get_pixbuf (img_loader);
-		/* ref before closing the loader */
-		if (img)
-			g_object_ref (G_OBJECT(img));
-		g_object_unref (G_OBJECT (img_loader));
+
+	/* un-premultiply data */
+	for(row = 0; row < height; row++) {
+		guint8 *row_data = (pixels + (row * rowstride));
+		int i;
+
+		for(i = 0; i < rowstride; i += 4) {
+			guint8 *b = &row_data[i];
+			guint32 pixel;
+			guint8 alpha;
+
+			memcpy(&pixel, b, sizeof(guint32));
+			alpha = (pixel & 0xff000000) >> 24;
+			if(alpha == 0) {
+				b[0] = b[1] = b[2] = b[3] = 0;
+			} else {
+				b[0] = (((pixel & 0xff0000) >> 16) * 255 + alpha / 2) / alpha;
+				b[1] = (((pixel & 0x00ff00) >>  8) * 255 + alpha / 2) / alpha;
+				b[2] = (((pixel & 0x0000ff) >>  0) * 255 + alpha / 2) / alpha;
+				b[3] = alpha;
+			}
+		}
 	}
-	g_byte_array_free(png_bytes, TRUE);
+
+	img = gdk_pixbuf_new_from_data (pixels,
+									GDK_COLORSPACE_RGB,
+									TRUE,
+									8,
+									width,
+									height,
+									rowstride,
+									(GdkPixbufDestroyNotify)rsvg_pixmap_destroy,
+									NULL);
 
 	cairo_destroy (cr);
 	ctx->render = (RsvgRender *)save_render;

@@ -116,46 +116,65 @@ static GdkPixbuf * _rsvg_handle_get_pixbuf (RsvgHandle *handle)
 
 #include "rsvg-cairo.h"
 
-static cairo_status_t png_write_func(void * closure,
-									 const unsigned char *data,
-									 unsigned int	   length)
+static void
+rsvg_pixmap_destroy (gchar *pixels, gpointer data)
 {
-	g_byte_array_append ((GByteArray *)closure, data, length);
-	return CAIRO_STATUS_SUCCESS;
+  g_free (pixels);
 }
 
 static GdkPixbuf * _rsvg_handle_get_pixbuf (RsvgHandle *handle)
 {
 	RsvgDimensionData dimensions;
 	GdkPixbuf *output = NULL;
-	GByteArray *png_bytes;
+	guint8 *pixels;
 	cairo_surface_t *surface;
 	cairo_t *cr;
-
-	/* XXX: see rsvg-cairo-draw.c(create_image_from_node): this is inefficient and can be made a lot faster */
+	int row, rowstride;
 
 	rsvg_handle_get_dimensions (handle, &dimensions);
+	rowstride = dimensions.width * 4;
 
-	surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-										  dimensions.width, dimensions.height);
+	pixels = g_new(guint8, dimensions.width * dimensions.height * 4);
+	surface = cairo_image_surface_create_for_data (pixels,
+												   CAIRO_FORMAT_ARGB32,
+												   dimensions.width, dimensions.height,
+												   rowstride);
 	cr = cairo_create (surface);
 
 	rsvg_cairo_render (cr, handle);
 
-	png_bytes = g_byte_array_new();
-	if(CAIRO_STATUS_SUCCESS == cairo_surface_write_to_png_stream (surface,
-																  png_write_func,
-																  png_bytes)) {
-		GdkPixbufLoader* img_loader = gdk_pixbuf_loader_new ();
-		gdk_pixbuf_loader_write (img_loader, png_bytes->data, png_bytes->len, NULL);
-		gdk_pixbuf_loader_close (img_loader, NULL);
-		output = gdk_pixbuf_loader_get_pixbuf (img_loader);
-		/* ref before closing the loader */
-		if (output)
-			g_object_ref (G_OBJECT(output));
-		g_object_unref (G_OBJECT (img_loader));
+	/* un-premultiply data */
+	for(row = 0; row < dimensions.height; row++) {
+		guint8 *row_data = (pixels + (row * rowstride));
+		int i;
+
+		for(i = 0; i < rowstride; i += 4) {
+			guint8 *b = &row_data[i];
+			guint32 pixel;
+			guint8 alpha;
+
+			memcpy(&pixel, b, sizeof(guint32));
+			alpha = (pixel & 0xff000000) >> 24;
+			if(alpha == 0) {
+				b[0] = b[1] = b[2] = b[3] = 0;
+			} else {
+				b[0] = (((pixel & 0xff0000) >> 16) * 255 + alpha / 2) / alpha;
+				b[1] = (((pixel & 0x00ff00) >>  8) * 255 + alpha / 2) / alpha;
+				b[2] = (((pixel & 0x0000ff) >>  0) * 255 + alpha / 2) / alpha;
+				b[3] = alpha;
+			}
+		}
 	}
-	g_byte_array_free(png_bytes, TRUE);
+
+	output = gdk_pixbuf_new_from_data (pixels,
+									   GDK_COLORSPACE_RGB,
+									   TRUE,
+									   8,
+									   dimensions.width,
+									   dimensions.height,
+									   rowstride,
+									   (GdkPixbufDestroyNotify)rsvg_pixmap_destroy,
+									   NULL);
 
 	cairo_destroy (cr);
 	cairo_surface_destroy (surface);
