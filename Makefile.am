@@ -12,8 +12,6 @@ noinst_PROGRAMS =
 if HAVE_ART
 SUBDIRS += gtk-engine gdk-pixbuf-loader moz-plugin
 lib_LTLIBRARIES += librsvg-2-libart.la
-bin_PROGRAMS += rsvg $(target_rsvg_view)
-noinst_PROGRAMS += test-performance
 endif
 
 if HAVE_CAIRO
@@ -21,7 +19,11 @@ lib_LTLIBRARIES += librsvg-2-cairo.la
 bin_PROGRAMS += rsvg-cairo
 endif
 
+if BUILD_COMPAT
 lib_LTLIBRARIES += librsvg-2.la
+bin_PROGRAMS += rsvg $(target_rsvg_view)
+noinst_PROGRAMS += test-performance
+endif
 
 man_MANS = rsvg.1
 
@@ -126,15 +128,14 @@ INCLUDES =				\
 	$(CAIRO_CFLAGS)			\
 	$(LIBRSVG_2_BACKEND_CFLAGS)
 
-DEPS = $(top_builddir)/librsvg-2.la $(top_builddir)/librsvg-2-libart.la
+DEPS = $(top_builddir)/librsvg-2.la
 LDADDS =				\
 	$(LIBGNOME_VFS_LIBS)		\
 	$(LIBGSF_LIBS)			\
 	$(LIBCROCO_LIBS)		\
 	$(LIBRSVG_LIBS) 		\
 	$(POPT_LIBS)			\
-	$(top_builddir)/librsvg-2.la 	\
-	$(top_builddir)/librsvg-2-libart.la
+	$(top_builddir)/librsvg-2.la
 
 rsvg_SOURCES=test-rsvg.c
 rsvg_LDFLAGS =

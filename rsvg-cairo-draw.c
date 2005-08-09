@@ -370,15 +370,20 @@ rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
 	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
 	cairo_surface_t *surface;
 	cairo_t *child_cr;
-	
+	RsvgState *state;
+	state = rsvg_state_current(ctx);	
+
+	if (state->opacity == 0xFF)
+		return;
+
 	surface = cairo_surface_create_similar (cairo_get_target (render->cr),
 											CAIRO_CONTENT_COLOR_ALPHA,
 											render->width, render->height);
 	child_cr = cairo_create (surface);
 	cairo_surface_destroy (surface);
 	
-	render->cr_stack = g_list_prepend(render->cr_stack, render->cr);	
-	render->cr = child_cr;   
+	render->cr_stack = g_list_prepend(render->cr_stack, render->cr);
+	render->cr = child_cr;
 }
 
 void
@@ -388,6 +393,11 @@ rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx *ctx)
 
 	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
 	cairo_t *child_cr = render->cr;
+	RsvgState *state;
+	state = rsvg_state_current(ctx);
+
+	if (state->opacity == 0xFF)
+		return;
 
 	render->cr = (cairo_t *)render->cr_stack->data;
 	render->cr_stack = g_list_remove_link (render->cr_stack, render->cr_stack);

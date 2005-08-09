@@ -1,3 +1,7 @@
+2005-08-10 Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* Makefile.am, configure.in: Made compatibility librarys build only if there is a backend compiled. Made programs not require libart to build.
+
 2005-08-08  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.c (_rsvg_handle_get_pixbuf): Un-premultiply ARGB->RGBA instead of going through a PNG stream first
