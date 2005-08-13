@@ -381,11 +381,13 @@ svg_plugin_destroy_stream (NPP instance, NPStream * stream, NPError reason)
 	plugin = (SvgPlugin *) instance->pdata;
 	if (plugin == NULL)
 		return NPERR_NO_ERROR;
-	
-	url_len = strlen(stream->url);
-	plugin->base_url = mozilla_funcs.memalloc (url_len + 1);
-	strcpy(plugin->base_url, stream->url);
-	plugin->base_url[url_len] = '\0';
+
+	if (stream->url) {
+		url_len = strlen(stream->url);
+		plugin->base_url = mozilla_funcs.memalloc (url_len + 1);
+		strcpy(plugin->base_url, stream->url);
+		plugin->base_url[url_len] = '\0';
+	}
 
 	/* trigger */
 	res = svg_plugin_redraw (plugin);
