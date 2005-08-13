@@ -345,8 +345,8 @@ svg_plugin_set_window (NPP instance, NPWindow * window)
 }
 
 static NPError
-svg_plugin_new_stream (NPP instance, NPMIMEType type,
-					   const char *window, NPStream ** stream_ptr)
+svg_plugin_new_stream (NPP instance, NPMIMEType type, NPStream *stream,
+		      NPBool seekable, uint16 *stype)
 {
 	SvgPlugin *plugin;
 
@@ -362,6 +362,8 @@ svg_plugin_new_stream (NPP instance, NPMIMEType type,
 	g_return_val_if_fail(plugin->bytes == NULL, NPERR_NO_ERROR);
 
 	plugin->bytes = g_byte_array_new();
+	
+	*stype = NP_NORMAL;
 
 	return NPERR_NO_ERROR;
 }
