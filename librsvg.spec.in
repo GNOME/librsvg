@@ -98,11 +98,11 @@ gdk-pixbuf-query-loaders > %{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
 %{_libdir}/*.*
 %{_includedir}/librsvg-2/librsvg/*.h
 %{_libdir}/pkgconfig/librsvg-2.0.pc
-%{_datadir}/doc/librsvg/html/*
+%{_datadir}/gtk-doc/html/rsvg/*
 
 %files -n librsvg2-gtk
 %defattr(-, root, root)
-%{_bindir}/rsvg-view
+%{_bindir}/rsvg*
 %{_libdir}/gtk-2.0/2.4.0/engines/*
 %{_libdir}/gtk-2.0/2.4.0/loaders/*
 %{_libdir}/mozilla/plugins/*
