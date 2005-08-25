@@ -906,14 +906,9 @@ rsvg_css_parse_aspect_ratio (const char * str)
 }
 
 gboolean 
-rsvg_css_parse_overflow(const char * str, gboolean * inherit)
+rsvg_css_parse_overflow(const char * str)
 {
-	SETINHERIT ();
-	if (!strcmp(str, "visible") || !strcmp(str, "auto"))
+	if (!strcmp(str, "visible"))
 		return 1;
-	if (!strcmp(str, "hidden") || !strcmp(str, "scroll"))
-		return 0;
-	UNSETINHERIT ();
-	return 0;
+	return 0; /* hidden, scroll */
 }
-

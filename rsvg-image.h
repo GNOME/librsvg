@@ -40,6 +40,7 @@ typedef struct _RsvgNodeImage RsvgNodeImage;
 
 struct _RsvgNodeImage {
  	RsvgNode super;
+	gboolean overflow;
 	gint preserve_aspect_ratio, x, y, w, h;
  	GdkPixbuf *img;
 };

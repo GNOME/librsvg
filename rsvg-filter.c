@@ -33,17 +33,25 @@
 
 #include <math.h>
 
+#include <rsvg-art-render.h>
+#include <rsvg-art-composite.h>
+
 #define PERFECTBLUR 0
 
 /*************************************************************/
 /*************************************************************/
+
+typedef struct
+{
+	gint x1, y1, x2, y2;
+} FPBox;
 
 typedef struct _RsvgFilterPrimitiveOutput RsvgFilterPrimitiveOutput;
 
 struct _RsvgFilterPrimitiveOutput
 {
 	GdkPixbuf *result;
-	RsvgIRect bounds;
+	FPBox bounds;
 	gboolean Rused;
 	gboolean Gused;
 	gboolean Bused;
@@ -88,11 +96,11 @@ rsvg_filter_primitive_render (RsvgFilterPrimitive * self,
 	self->render (self, ctx);
 }
 
-static RsvgIRect
+static FPBox
 rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self,
 				  RsvgFilterContext * ctx)
 {
-	RsvgIRect output;
+	FPBox output;
 	int skip;
 	skip = 0;	
 
@@ -103,53 +111,53 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self,
 
 	if (skip)
 		{
-			output.x0 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
-			output.y0 = ctx->affine[3] * ctx->filter->y + ctx->affine[5];
-			output.x1 =
+			output.x1 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
+			output.y1 = ctx->affine[3] * ctx->filter->y + ctx->affine[5];
+			output.x2 =
 				ctx->affine[0] * (ctx->filter->x + ctx->filter->width) +
 				ctx->affine[4];
-			output.y1 =
+			output.y2 =
 				ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
 				ctx->affine[5];
 
-			if (output.x0 < 0)
-				output.x0 = 0;
-			if (output.x1 > ctx->width)
-				output.x1 = ctx->width;
-			if (output.y0 < 0)
-				output.y0 = 0;
-			if (output.y1 > ctx->height)
-				output.y1 = ctx->height;		
+			if (output.x1 < 0)
+				output.x1 = 0;
+			if (output.x2 > ctx->width)
+				output.x2 = ctx->width;
+			if (output.y1 < 0)
+				output.y1 = 0;
+			if (output.y2 > ctx->height)
+				output.y2 = ctx->height;		
 
 			return output;
 		}
 	
-	output.x0 = ctx->paffine[0] * self->x + ctx->paffine[4];
-	output.y0 = ctx->paffine[3] * self->y + ctx->paffine[5];
-	output.x1 = ctx->paffine[0] * (self->x + self->width) + ctx->paffine[4];
-	output.y1 = ctx->paffine[3] * (self->y + self->height) + ctx->paffine[5];
+	output.x1 = ctx->paffine[0] * self->x + ctx->paffine[4];
+	output.y1 = ctx->paffine[3] * self->y + ctx->paffine[5];
+	output.x2 = ctx->paffine[0] * (self->x + self->width) + ctx->paffine[4];
+	output.y2 = ctx->paffine[3] * (self->y + self->height) + ctx->paffine[5];
 	
-	if (output.x0 < ctx->affine[0] * ctx->filter->x + ctx->affine[4])
-		output.x0 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
-	if (output.x1 >
+	if (output.x1 < ctx->affine[0] * ctx->filter->x + ctx->affine[4])
+		output.x1 = ctx->affine[0] * ctx->filter->x + ctx->affine[4];
+	if (output.x2 >
 		ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4])
-		output.x1 =
+		output.x2 =
 			ctx->affine[0] * (ctx->filter->x + ctx->filter->width) + ctx->affine[4];
-	if (output.y0 < ctx->affine[3] * ctx->filter->y + ctx->affine[5])
-		output.y0 = ctx->affine[3] * ctx->filter->y + ctx->affine[5];
-	if (output.y1 > ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
+	if (output.y1 < ctx->affine[3] * ctx->filter->y + ctx->affine[5])
+		output.y1 = ctx->affine[3] * ctx->filter->y + ctx->affine[5];
+	if (output.y2 > ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
 		ctx->affine[5])
-		output.y1 = ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
+		output.y2 = ctx->affine[3] * (ctx->filter->y + ctx->filter->height) +
 			ctx->affine[5];
 	
-	if (output.x0 < 0)
-		output.x0 = 0;
-	if (output.x1 > ctx->width)
-		output.x1 = ctx->width;
-	if (output.y0 < 0)
-		output.y0 = 0;
-	if (output.y1 > ctx->height)
-		output.y1 = ctx->height;
+	if (output.x1 < 0)
+		output.x1 = 0;
+	if (output.x2 > ctx->width)
+		output.x2 = ctx->width;
+	if (output.y1 < 0)
+		output.y1 = 0;
+	if (output.y2 > ctx->height)
+		output.y2 = ctx->height;
 	
 	return output;
 }
@@ -169,7 +177,7 @@ _rsvg_pixbuf_new_cleared (GdkColorspace colorspace, gboolean has_alpha, int bits
 }
 
 static guchar
-gdk_pixbuf_get_interp_pixel(guchar * src, gdouble ox, gdouble oy, guchar ch, RsvgIRect boundarys, guint rowstride)
+gdk_pixbuf_get_interp_pixel(guchar * src, gdouble ox, gdouble oy, guchar ch, FPBox boundarys, guint rowstride)
 {
 	double xmod, ymod;
 	double dist1, dist2, dist3, dist4;
@@ -183,26 +191,26 @@ gdk_pixbuf_get_interp_pixel(guchar * src, gdouble ox, gdouble oy, guchar ch, Rsv
 	dist3 = (xmod) * (ymod);
 	dist4 = (1 - xmod) * (ymod);
 
-	if (floor(ox) <= boundarys.x0 || floor(ox) >= boundarys.x1 || 
-		floor(oy) <= boundarys.y0 || floor(oy) >= boundarys.y1)
+	if (floor(ox) <= boundarys.x1 || floor(ox) >= boundarys.x2 || 
+		floor(oy) <= boundarys.y1 || floor(oy) >= boundarys.y2)
 		c1 = 0;
 	else
 		c1 = src[(guint)floor(oy) * rowstride + (guint)floor(ox) * 4 + ch];
 
-	if (ceil(ox) <= boundarys.x0 || ceil(ox) >= boundarys.x1 || 
-		floor(oy) <= boundarys.y0 || floor(oy) >= boundarys.y1)
+	if (ceil(ox) <= boundarys.x1 || ceil(ox) >= boundarys.x2 || 
+		floor(oy) <= boundarys.y1 || floor(oy) >= boundarys.y2)
 		c2 = 0;
 	else
 		c2 = src[(guint)floor(oy) * rowstride + (guint)ceil(ox) * 4 + ch];
 
-	if (ceil(ox) <= boundarys.x0 || ceil(ox) >= boundarys.x1 || 
-		ceil(oy) <= boundarys.y0 || ceil(oy) >= boundarys.y1)
+	if (ceil(ox) <= boundarys.x1 || ceil(ox) >= boundarys.x2 || 
+		ceil(oy) <= boundarys.y1 || ceil(oy) >= boundarys.y2)
 		c3 = 0;
 	else
 		c3 = src[(guint)ceil(oy) * rowstride + (guint)ceil(ox) * 4 + ch];
 	
-	if (floor(ox) <= boundarys.x0 || floor(ox) >= boundarys.x1 || 
-		ceil(oy) <= boundarys.y0 || ceil(oy) >= boundarys.y1)
+	if (floor(ox) <= boundarys.x1 || floor(ox) >= boundarys.x2 || 
+		ceil(oy) <= boundarys.y1 || ceil(oy) >= boundarys.y2)
 		c4 = 0;
 	else
 		c4 = src[(guint)ceil(oy) * rowstride + (guint)floor(ox) * 4 + ch];
@@ -213,11 +221,18 @@ gdk_pixbuf_get_interp_pixel(guchar * src, gdouble ox, gdouble oy, guchar ch, Rsv
 }
 
 static void
-rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state,
-								   RsvgIRect bbox)
+rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state)
 {
 	int x, y, height, width;
 	int i;
+	guchar *pixels;
+	int stride;
+	ArtIRect bbox = ((RsvgArtRender *)ctx->ctx->render)->bbox;
+
+	/* First for object bounding box coordinates we need to know how much of the 
+	   source has been drawn on */
+	pixels = gdk_pixbuf_get_pixels (ctx->source);
+	stride = gdk_pixbuf_get_rowstride (ctx->source);
 
 	x = bbox.x0;
 	y = bbox.y0;
@@ -258,212 +273,6 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state,
 		}
 }
 
-void
-rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
-				gint srcheight, GdkPixbuf * dst, gint dstx, gint dsty)
-{
-	gint rightx;
-	gint bottomy;
-	gint dstwidth;
-	gint dstheight;
-	
-	gint srcoffsetx;
-	gint srcoffsety;
-	gint dstoffsetx;
-	gint dstoffsety;
-	
-	gint x, y, srcrowstride, dstrowstride, sx, sy, dx, dy;
-	guchar *src_pixels, *dst_pixels;
-	
-	dstheight = srcheight;
-	dstwidth = srcwidth;
-	
-	rightx = srcx + srcwidth;
-	bottomy = srcy + srcheight;
-	
-	if (rightx > gdk_pixbuf_get_width (src))
-		rightx = gdk_pixbuf_get_width (src);
-	if (bottomy > gdk_pixbuf_get_height (src))
-		bottomy = gdk_pixbuf_get_height (src);
-	srcwidth = rightx - srcx;
-	srcheight = bottomy - srcy;
-	
-	rightx = dstx + dstwidth;
-	bottomy = dsty + dstheight;
-	if (rightx > gdk_pixbuf_get_width (dst))
-		rightx = gdk_pixbuf_get_width (dst);
-	if (bottomy > gdk_pixbuf_get_height (dst))
-		bottomy = gdk_pixbuf_get_height (dst);
-	dstwidth = rightx - dstx;
-	dstheight = bottomy - dsty;
-	
-	if (dstwidth < srcwidth)
-		srcwidth = dstwidth;
-	if (dstheight < srcheight)
-		srcheight = dstheight;
-	
-	if (srcx < 0)
-		srcoffsetx = 0 - srcx;
-	else
-		srcoffsetx = 0;
-
-	if (srcy < 0)
-		srcoffsety = 0 - srcy;
-	else
-		srcoffsety = 0;
-
-	if (dstx < 0)
-		dstoffsetx = 0 - dstx;
-	else
-		dstoffsetx = 0;
-
-	if (dsty < 0)
-		dstoffsety = 0 - dsty;
-	else
-		dstoffsety = 0;
-	
-	if (dstoffsetx > srcoffsetx)
-		srcoffsetx = dstoffsetx;
-	if (dstoffsety > srcoffsety)
-		srcoffsety = dstoffsety;
-	
-	srcrowstride = gdk_pixbuf_get_rowstride (src);
-	dstrowstride = gdk_pixbuf_get_rowstride (dst);
-	
-	src_pixels = gdk_pixbuf_get_pixels (src);
-	dst_pixels = gdk_pixbuf_get_pixels (dst);
-	
-	for (y = srcoffsety; y < srcheight; y++)
-		for (x = srcoffsetx; x < srcwidth; x++)
-			{
-				guint a, c, ad, cd, ar, cr, i;
-
-				sx = x + srcx;
-				sy = y + srcy;
-				dx = x + dstx;
-				dy = y + dsty;
-				a = src_pixels[4 * sx + sy * srcrowstride + 3];
-
-				if (a)
-					{
-						ad = dst_pixels[4 * dx + dy * dstrowstride + 3];
-						ar = a + ad * (255 - a) / 255;
-						for (i = 0; i < 3; i++)
-							{
-								c = src_pixels[4 * sx + sy * srcrowstride + i] * a / 255;
-								cd = dst_pixels[4 * dx + dy * dstrowstride + i] * ar / 255;
-								cr = (c * 255 + cd * (255 - a)) / ar;
-								dst_pixels[4 * dx + dy * dstrowstride + i] = cr;
-							}
-						dst_pixels[4 * dx + dy * dstrowstride + 3] = ar;
-					}
-			}
-}
-
-void
-rsvg_art_affine_image(const GdkPixbuf *img, GdkPixbuf *intermediate, 
-					  double * affine, double w, double h)
-{
-	gdouble tmp_affine[6];
-	gdouble inv_affine[6];
-	gdouble raw_inv_affine[6];
-	gint intstride;
-	gint basestride;	
-	gint basex, basey;
-	gdouble fbasex, fbasey;
-	gdouble rawx, rawy;
-	guchar * intpix;
-	guchar * basepix;
-	gint i, j, k, basebpp, ii, jj;
-	gboolean has_alpha;
-	gdouble pixsum[4];
-	gboolean xrunnoff, yrunnoff;
-	gint iwidth, iheight;
-	gint width, height;
-
-	width = gdk_pixbuf_get_width (img);
-	height = gdk_pixbuf_get_height (img);
-	iwidth = gdk_pixbuf_get_width (intermediate);
-	iheight = gdk_pixbuf_get_height (intermediate);
-
-	has_alpha = gdk_pixbuf_get_has_alpha (img);
-
-	basestride = gdk_pixbuf_get_rowstride (img);
-	intstride = gdk_pixbuf_get_rowstride (intermediate);
-	basepix = gdk_pixbuf_get_pixels (img);
-	intpix = gdk_pixbuf_get_pixels (intermediate);
-	basebpp = has_alpha ? 4 : 3;
-
-	_rsvg_affine_invert(raw_inv_affine, affine);
-
-	/*scale to w and h*/
-	tmp_affine[0] = (double)w;
-	tmp_affine[3] = (double)h;
-	tmp_affine[1] = tmp_affine[2] = tmp_affine[4] = tmp_affine[5] = 0;
-	_rsvg_affine_multiply(tmp_affine, tmp_affine, affine);
-
-	_rsvg_affine_invert(inv_affine, tmp_affine);
-
-
-	/*apply the transformation*/
-	for (i = 0; i < iwidth; i++)
-		for (j = 0; j < iheight; j++)		
-			{
-				fbasex = (inv_affine[0] * (double)i + inv_affine[2] * (double)j + 
-						  inv_affine[4]) * (double)width;
-				fbasey = (inv_affine[1] * (double)i + inv_affine[3] * (double)j + 
-						  inv_affine[5]) * (double)height;
-				basex = floor(fbasex);
-				basey = floor(fbasey);
-				rawx = raw_inv_affine[0] * i + raw_inv_affine[2] * j + 
-					raw_inv_affine[4];
-				rawy = raw_inv_affine[1] * i + raw_inv_affine[3] * j + 
-					raw_inv_affine[5];
-				if (rawx < 0 || rawy < 0 || rawx >= w || 
-					rawy >= h || basex < 0 || basey < 0 
-					|| basex >= width || basey >= height)
-					{					
-						for (k = 0; k < 4; k++)
-							intpix[i * 4 + j * intstride + k] = 0;
-					}
-				else
-					{
-						if (basex < 0 || basex + 1 >= width)
-							xrunnoff = TRUE;
-						else
-							xrunnoff = FALSE;
-						if (basey < 0 || basey + 1 >= height)
-							yrunnoff = TRUE;
-						else
-							yrunnoff = FALSE;
-						for (k = 0; k < basebpp; k++)
-							pixsum[k] = 0;
-						for (ii = 0; ii < 2; ii++)
-							for (jj = 0; jj < 2; jj++)
-								{
-									if (basex + ii < 0 || basey + jj< 0 
-										|| basex + ii >= width || basey + jj >= height)
-										;
-									else
-										{
-											for (k = 0; k < basebpp; k++)
-												{
-													pixsum[k] += 
-														(double)basepix[basebpp * (basex + ii) + (basey + jj) * basestride + k] 
-														* (xrunnoff ? 1 : fabs(fbasex - (double)(basex + (1 - ii))))
-														* (yrunnoff ? 1 : fabs(fbasey - (double)(basey + (1 - jj))));
-												}
-										}
-								}
-						for (k = 0; k < basebpp; k++)
-							intpix[i * 4 + j * intstride + k] = pixsum[k];
-						if (!has_alpha)
-							intpix[i * 4 + j * intstride + 3] = 255;
-					}	
-
-			}
-}
-
 static void
 rsvg_filter_free_pair (gpointer value)
 {
@@ -484,16 +293,16 @@ rsvg_filter_free_pair (gpointer value)
  * This function will create a context for itself, set up the coordinate systems
  * execute all its little primatives and then clean up its own mess
  **/
-GdkPixbuf *
-rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
-					GdkPixbuf * bg, RsvgDrawingCtx * context, 
-					RsvgIRect * bounds)
+void
+rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source, GdkPixbuf * output, 
+					GdkPixbuf * bg, RsvgDrawingCtx * context)
 {
 	RsvgFilterContext *ctx;
+	RsvgArtRender * render = ((RsvgArtRender *)context->render);
 	RsvgFilterPrimitive *current;
 	guint i;
-	GdkPixbuf * out;	
-
+	FPBox bounds;
+	
 	ctx = g_new (RsvgFilterContext, 1);
 	ctx->filter = self;
 	ctx->source = source;
@@ -503,8 +312,7 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
 
 	g_object_ref (G_OBJECT (source));
 
-	rsvg_filter_fix_coordinate_system (ctx, rsvg_state_current (context), 
-									   *bounds);
+	rsvg_filter_fix_coordinate_system (ctx, rsvg_state_current (context));
 
 	ctx->lastresult.result = source;
 	ctx->lastresult.Rused = 1;
@@ -520,15 +328,21 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
 				rsvg_filter_primitive_render (current, ctx);
 		}
 
-	out = ctx->lastresult.result;
-	g_object_ref (G_OBJECT (out));
-	*bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);	
-
 	g_hash_table_destroy (ctx->results);
 
-	g_free(ctx);
+	bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);	
 
-	return out;
+	if (render->clippath)
+		rsvg_art_clip_image(ctx->lastresult.result, render->clippath);
+
+	rsvg_art_alpha_blt (ctx->lastresult.result, bounds.x1, bounds.y1, bounds.x2 - bounds.x1,
+					bounds.y2 - bounds.y1, output, bounds.x1, bounds.y1);
+	render->bbox.x0 = bounds.x1;
+	render->bbox.y0 = bounds.y1;
+	render->bbox.x1 = bounds.x2;
+	render->bbox.y1 = bounds.y2;
+	g_object_unref (G_OBJECT (ctx->lastresult.result));
+	g_free(ctx);
 }
 
 /**
@@ -570,10 +384,10 @@ rsvg_filter_store_result(GString * name, GdkPixbuf * result,
 	output.Gused = 1;
 	output.Bused = 1;
 	output.Aused = 1;
-	output.bounds.x0 = 0;
-	output.bounds.y0 = 0;
-	output.bounds.x1 = ctx->width;
-	output.bounds.y1 = ctx->height;
+	output.bounds.x1 = 0;
+	output.bounds.y1 = 0;
+	output.bounds.x2 = ctx->width;
+	output.bounds.y2 = ctx->height;
 	output.result = result;
 
 	rsvg_filter_store_output(name, output, ctx);
@@ -631,7 +445,7 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
 			output.Rused = output.Gused = output.Bused = output.Aused = 1;
 			return output;
 		}
-	else if (!strcmp (name->str, "") || !strcmp (name->str, "none") || !name)
+	else if (!strcmp (name->str, "") || !strcmp (name->str, "none"))
 		{
 			g_object_ref (G_OBJECT (ctx->lastresult.result));
 			output = ctx->lastresult;
@@ -812,7 +626,7 @@ struct _RsvgFilterPrimitiveBlend
 	GString *in2;
 };
 
-static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, GdkPixbuf *in2, GdkPixbuf *output, RsvgIRect boundarys)
+static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, GdkPixbuf *in2, GdkPixbuf *output, FPBox boundarys)
 {
 	guchar i;
 	gint x, y;
@@ -830,17 +644,17 @@ static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, 
 	in_pixels = gdk_pixbuf_get_pixels (in);
 	in2_pixels = gdk_pixbuf_get_pixels (in2);
 
-	if (boundarys.x0 < 0)
-		boundarys.x0 = 0;
-	if (boundarys.y0 < 0)
-		boundarys.y1 = 0;
-	if (boundarys.x1 >= width)
-		boundarys.x1 = width;
-	if (boundarys.y1 >= height)
-		boundarys.y1 = height;
+	if (boundarys.x1 < 0)
+		boundarys.x1 = 0;
+	if (boundarys.y1 < 0)
+		boundarys.y2 = 0;
+	if (boundarys.x2 >= width)
+		boundarys.x2 = width;
+	if (boundarys.y2 >= height)
+		boundarys.y2 = height;
 		
-	for (y = boundarys.y0; y < boundarys.y1; y++)
-		for (x = boundarys.x0; x < boundarys.x1; x++)
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				double qr, cr, qa, qb, ca, cb, bca, bcb;
 				
@@ -926,7 +740,7 @@ static void
 rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
 									RsvgFilterContext * ctx)
 {
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	
 	RsvgFilterPrimitiveBlend *upself;
 	
@@ -951,9 +765,16 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
 	g_object_unref (G_OBJECT (output));
 }
 
-void rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output, RsvgIRect boundarys, RsvgDrawingCtx * ctx)
+void rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output, RsvgDrawingCtx * ctx)
 {
+	FPBox boundarys;
 	RsvgFilterPrimitiveBlendMode mode;
+
+	boundarys.x1 = ((RsvgArtRender *)ctx->render)->bbox.x0;
+	boundarys.y1 = ((RsvgArtRender *)ctx->render)->bbox.y0;
+	boundarys.x2 = ((RsvgArtRender *)ctx->render)->bbox.x1;
+	boundarys.y2 = ((RsvgArtRender *)ctx->render)->bbox.y1;
+
 	mode = normal;
 
 	switch(modenum)
@@ -1127,7 +948,7 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 	gint x, y;
 	gint i, j;
 	gint rowstride, height, width;
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	
 	guchar *in_pixels;
 	guchar *output_pixels;
@@ -1168,8 +989,8 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	output_pixels = gdk_pixbuf_get_pixels (output);
 	
-	for (y = boundarys.y0; y < boundarys.y1; y++)
-		for (x = boundarys.x0; x < boundarys.x1; x++)
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				for (ch = 0; ch < 3 + !upself->preservealpha; ch++)
 					{
@@ -1181,27 +1002,27 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 									sy = y - targety + i * dy;
 									if (upself->edgemode == 0)
 										{
-											if (sx < boundarys.x0)
-												sx = boundarys.x0;
-											if (sx >= boundarys.x1)
-												sx = boundarys.x1 - 1;
-											if (sy < boundarys.y0)
-												sy = boundarys.y0;
-											if (sy >= boundarys.y1)
-												sy = boundarys.y1 - 1;
+											if (sx < boundarys.x1)
+												sx = boundarys.x1;
+											if (sx >= boundarys.x2)
+												sx = boundarys.x2 - 1;
+											if (sy < boundarys.y1)
+												sy = boundarys.y1;
+											if (sy >= boundarys.y2)
+												sy = boundarys.y2 - 1;
 										}
 									else if (upself->edgemode == 1)
 										{
-											if (sx < boundarys.x0 || (sx >= boundarys.x1))
-												sx = boundarys.x0 + (sx - boundarys.x0) %
-													(boundarys.x1 - boundarys.x0);
-											if (sy < boundarys.y0 || (sy >= boundarys.y1))
-												sy = boundarys.y0 + (sy - boundarys.y0) %
-													(boundarys.y1 - boundarys.y0);
+											if (sx < boundarys.x1 || (sx >= boundarys.x2))
+												sx = boundarys.x1 + (sx - boundarys.x1) %
+													(boundarys.x2 - boundarys.x1);
+											if (sy < boundarys.y1 || (sy >= boundarys.y2))
+												sy = boundarys.y1 + (sy - boundarys.y1) %
+													(boundarys.y2 - boundarys.y1);
 										}
 									else if (upself->edgemode == 2)
-										if (sx < boundarys.x0 || (sx >= boundarys.x1) || 
-											sy < boundarys.y0 || (sy >= boundarys.y1))
+										if (sx < boundarys.x1 || (sx >= boundarys.x2) || 
+											sy < boundarys.y1 || (sy >= boundarys.y2))
 										continue;
 
 									kx = upself->orderx - j - 1;
@@ -1410,7 +1231,7 @@ struct _RsvgFilterPrimitiveGaussianBlur
 
 static void
 box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw, 
-		  gint kh, RsvgIRect boundarys, RsvgFilterPrimitiveOutput op)
+		  gint kh, FPBox boundarys, RsvgFilterPrimitiveOutput op)
 {
 	gint ch;
 	gint x, y;
@@ -1432,11 +1253,11 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 	
 	rowstride = gdk_pixbuf_get_rowstride (in);
 
-	if (kw > boundarys.x1 - boundarys.x0)
-		kw = boundarys.x1 - boundarys.x0;
+	if (kw > boundarys.x2 - boundarys.x1)
+		kw = boundarys.x2 - boundarys.x1;
 
-	if (kh > boundarys.y1 - boundarys.y0)
-		kh = boundarys.y1 - boundarys.y0;
+	if (kh > boundarys.y2 - boundarys.y1)
+		kh = boundarys.y2 - boundarys.y1;
 
 
 	if (kw >= 1)	
@@ -1458,11 +1279,11 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 							if (!op.Aused)
 								continue;
 						}
-					for (y = boundarys.y0; y < boundarys.y1; y++)
+					for (y = boundarys.y1; y < boundarys.y2; y++)
 						{
 							sum = 0;
 							divisor = 0;
-							for (x = boundarys.x0; x < boundarys.x0 + kw; x++)
+							for (x = boundarys.x1; x < boundarys.x1 + kw; x++)
 								{
 									if (ch != 3)
 										{
@@ -1475,13 +1296,13 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 											sum += in_pixels[4 * x + y * rowstride + ch];
 										}
 
-									if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x1)
+									if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x2)
 										{
 											if (divisor > 0)
 												output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
 										}
 								}
-							for (x = boundarys.x0 + kw; x < boundarys.x1; x++)
+							for (x = boundarys.x1 + kw; x < boundarys.x2; x++)
 								{
 									if (ch != 3)
 										{
@@ -1500,7 +1321,7 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 									if (divisor > 0)
 										output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
 								}
-							for (x = boundarys.x1; x < boundarys.x1 + kw; x++)
+							for (x = boundarys.x2; x < boundarys.x2 + kw; x++)
 								{
 									if (ch != 3)
 										{
@@ -1513,7 +1334,7 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 											divisor--;
 											sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
 										}
-									if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x1)
+									if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x2)
 										{
 											if (divisor > 0)
 												output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
@@ -1549,12 +1370,12 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 						}
 				
 
-					for (x = boundarys.x0; x < boundarys.x1; x++)
+					for (x = boundarys.x1; x < boundarys.x2; x++)
 						{
 							sum = 0;
 							divisor = 0;
 							
-							for (y = boundarys.y0; y < boundarys.y0 + kh; y++)
+							for (y = boundarys.y1; y < boundarys.y1 + kh; y++)
 								{
 									if (ch != 3)
 										{
@@ -1567,13 +1388,13 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 											divisor++;
 											sum += in_pixels[4 * x + y * rowstride + ch];
 										}
-									if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y1)
+									if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y2)
 										{
 											if (divisor > 0)
 												output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
 										}
 								}
-							for (; y < boundarys.y1; y++)
+							for (; y < boundarys.y2; y++)
 								{
 									if (ch != 3)
 										{
@@ -1592,7 +1413,7 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 									if (divisor > 0)
 										output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
 								}
-							for (; y < boundarys.y1 + kh; y++)
+							for (; y < boundarys.y2 + kh; y++)
 								{
 									if (ch != 3)
 										{								
@@ -1605,7 +1426,7 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 											divisor--;
 											sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
 										}
-									if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y1)
+									if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y2)
 										{
 											if (divisor > 0)
 												output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
@@ -1625,7 +1446,7 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 
 static void
 fast_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sx, 
-		   gfloat sy, RsvgIRect boundarys, RsvgFilterPrimitiveOutput op)
+		   gfloat sy, FPBox boundarys, RsvgFilterPrimitiveOutput op)
 {
 	GdkPixbuf *intermediate1;
 	GdkPixbuf *intermediate2;
@@ -1660,7 +1481,7 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self,
 	
 	GdkPixbuf *output;
 	GdkPixbuf *in;
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	gfloat sdx, sdy;
 	RsvgFilterPrimitiveOutput op;
 	
@@ -1800,7 +1621,7 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self,
 	guchar ch;
 	gint x, y;
 	gint rowstride, height, width;
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	
 	guchar *in_pixels;
 	guchar *output_pixels;
@@ -1831,12 +1652,12 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self,
 	ox = ctx->paffine[0] * upself->dx + ctx->paffine[2] * upself->dy;
 	oy = ctx->paffine[1] * upself->dx + ctx->paffine[3] * upself->dy;
 	
-	for (y = boundarys.y0; y < boundarys.y1; y++)
-		for (x = boundarys.x0; x < boundarys.x1; x++)
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
-				if (x - ox < boundarys.x0 || x - ox >= boundarys.x1)
+				if (x - ox < boundarys.x1 || x - ox >= boundarys.x2)
 					continue;
-				if (y - oy < boundarys.y0 || y - oy >= boundarys.y1)
+				if (y - oy < boundarys.y1 || y - oy >= boundarys.y2)
 					continue;
 		
 				for (ch = 0; ch < 4; ch++)
@@ -1973,7 +1794,7 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self,
 									RsvgFilterContext * ctx)
 {
 	guint i;
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	
 	RsvgFilterPrimitiveMerge *upself;
 	
@@ -1992,9 +1813,9 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self,
 			if (mn->super.type != RSVG_NODE_FILTER_PRIMITIVE_MERGE_NODE)
 				continue;
 			in = rsvg_filter_get_in (mn->in, ctx);
-			rsvg_alpha_blt (in, boundarys.x0, boundarys.y0, boundarys.x1 - boundarys.x0,
-							boundarys.y1 - boundarys.y0, output, boundarys.x0,
-							boundarys.y0);
+			rsvg_art_alpha_blt (in, boundarys.x1, boundarys.y1, boundarys.x2 - boundarys.x1,
+								boundarys.y2 - boundarys.y1, output, boundarys.x1,
+								boundarys.y1);
 			g_object_unref (G_OBJECT (in));
 		}
 	
@@ -2147,7 +1968,7 @@ rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self,
 	gint x, y;
 	gint i;
 	gint rowstride, height, width;
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	
 	guchar *in_pixels;
 	guchar *output_pixels;
@@ -2175,8 +1996,8 @@ rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self,
 	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);	
 	output_pixels = gdk_pixbuf_get_pixels (output);   
 	
-	for (y = boundarys.y0; y < boundarys.y1; y++)
-		for (x = boundarys.x0; x < boundarys.x1; x++)
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				for (ch = 0; ch < 4; ch++)
 					{
@@ -2499,7 +2320,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 	guint i;
 	gint temp;
 	gint rowstride, height, width;
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	RsvgNodeComponentTransferFunc * channels[4];
 	ComponentTransferFunc functions[4];
 	
@@ -2545,8 +2366,8 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 	
 	output_pixels = gdk_pixbuf_get_pixels (output);
 
-	for (y = boundarys.y0; y < boundarys.y1; y++)
-		for (x = boundarys.x0; x < boundarys.x1; x++)
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
 			for (c = 0; c < 4; c++)
 				{
 					temp = functions[c]((double)in_pixels[y * rowstride + x * 4 + c] / 255.0, channels[c]) * 255.0;
@@ -2736,7 +2557,7 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self,
 	gint x, y;
 	gint i, j;
 	gint rowstride, height, width;
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	
 	guchar *in_pixels;
 	guchar *output_pixels;
@@ -2768,8 +2589,8 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self,
 
 	output_pixels = gdk_pixbuf_get_pixels (output);
 	
-	for (y = boundarys.y0; y < boundarys.y1; y++)
-		for (x = boundarys.x0; x < boundarys.x1; x++)
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
 			for (ch = 0; ch < 4; ch++)
 				{
 					if (upself->mode == 0)
@@ -2936,7 +2757,7 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self,
 	guchar i;
 	gint x, y;
 	gint rowstride, height, width;
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	
 	guchar *in_pixels;
 	guchar *in2_pixels;
@@ -2965,8 +2786,8 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self,
 	output_pixels = gdk_pixbuf_get_pixels (output);
 
 	if (upself->mode == COMPOSITE_MODE_ARITHMETIC)
-		for (y = boundarys.y0; y < boundarys.y1; y++)
-			for (x = boundarys.x0; x < boundarys.x1; x++)
+		for (y = boundarys.y1; y < boundarys.y2; y++)
+			for (x = boundarys.x1; x < boundarys.x2; x++)
 				{
 					double qr, cr, qa, qb, ca, cb;
 					
@@ -2998,8 +2819,8 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self,
 				}
 	
 	else
-		for (y = boundarys.y0; y < boundarys.y1; y++)
-			for (x = boundarys.x0; x < boundarys.x1; x++)
+		for (y = boundarys.y1; y < boundarys.y2; y++)
+			for (x = boundarys.x1; x < boundarys.x2; x++)
 				{
 					double qr, cr, qa, qb, ca, cb, Fa, Fb, Fab, Fo;
 					
@@ -3208,7 +3029,7 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self,
 	guchar i;
 	gint x, y;
 	gint rowstride, height, width;
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	
 	guchar *output_pixels;
 	
@@ -3228,8 +3049,8 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self,
 	
 	output_pixels = gdk_pixbuf_get_pixels (output);
 
-	for (y = boundarys.y0; y < boundarys.y1; y++)
-		for (x = boundarys.x0; x < boundarys.x1; x++)
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				for (i = 0; i < 3; i++)
 					{
@@ -3365,7 +3186,7 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self,
 	guchar ch, xch, ych;
 	gint x, y;
 	gint rowstride, height, width;
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	
 	guchar *in_pixels;
 	guchar *in2_pixels;
@@ -3433,8 +3254,8 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self,
 			ych = 4;
 		};
 
-	for (y = boundarys.y0; y < boundarys.y1; y++)
-		for (x = boundarys.x0; x < boundarys.x1; x++)
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				if (xch != 4)
 					ox = x + upself->scale * ctx->paffine[0] * 
@@ -3795,7 +3616,7 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self,
 {
 	RsvgFilterPrimitiveTurbulence *upself;
 	gint x, y, tileWidth, tileHeight, rowstride, width, height;
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	guchar *output_pixels;
 	GdkPixbuf *output;
 	gdouble affine[6];
@@ -3809,8 +3630,8 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self,
 	upself = (RsvgFilterPrimitiveTurbulence *) self;
 	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 	
-	tileWidth = (boundarys.x1 - boundarys.x0);
-	tileHeight = (boundarys.y1 - boundarys.y0);
+	tileWidth = (boundarys.x2 - boundarys.x1);
+	tileHeight = (boundarys.y2 - boundarys.y1);
 
 	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 	output_pixels = gdk_pixbuf_get_pixels (output);
@@ -3823,10 +3644,10 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self,
 				{
 					gint i;
 					double point[2];
-					point[0] = affine[0] * (x+boundarys.x0) +
-						affine[2] * (y+boundarys.y0) + affine[4];
-					point[1] = affine[1] * (x+boundarys.x0) +
-						affine[3] * (y+boundarys.y0) + affine[5];
+					point[0] = affine[0] * (x+boundarys.x1) +
+						affine[2] * (y+boundarys.y1) + affine[4];
+					point[1] = affine[1] * (x+boundarys.x1) +
+						affine[3] * (y+boundarys.y1) + affine[5];
 					
 					for (i = 0; i < 4; i++)
 						{
@@ -3841,7 +3662,7 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self,
 
 							cr = CLAMP(cr, 0., 255.);
 
-							output_pixels[(4 * (x+boundarys.x0)) + ((y+boundarys.y0) * rowstride) + i] = (guchar)(cr);
+							output_pixels[(4 * (x+boundarys.x1)) + ((y+boundarys.y1) * rowstride) + i] = (guchar)(cr);
 						}
 				}
 		}
@@ -3971,33 +3792,51 @@ static GdkPixbuf *
 rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self,
 									   RsvgFilterContext * context)
 {
+	FPBox boundarys;
 	RsvgDrawingCtx * ctx;
 	RsvgFilterPrimitiveImage *upself;
 	int i;
-	RsvgNode * drawable;
+	RsvgNode * parent;
+	GdkPixbuf *img, *save;
+	RsvgNode *drawable;	
 
 	ctx = context->ctx;
-
 	upself = (RsvgFilterPrimitiveImage *) self;
 
 	if(!upself->href)
 		return NULL;
 
-	drawable = rsvg_defs_lookup (ctx->defs, upself->href->str);
-	if (!drawable)
+	parent = rsvg_defs_lookup (ctx->defs, upself->href->str);
+	if (!parent)
 		return NULL;
+
+	drawable = (RsvgNode*)parent;
+
+	boundarys = rsvg_filter_primitive_get_bounds (self, context);
+	
+	img = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, context->width, context->height);
+	
+	save = ((RsvgArtRender *)ctx->render)->pixbuf;
+	((RsvgArtRender *)ctx->render)->pixbuf = img;
 
 	for (i = 0; i < 6; i++)
 		rsvg_state_current(ctx)->affine[i] = context->paffine[i];
+
+	rsvg_state_push(ctx);
 	
-	return rsvg_get_image_of_node(ctx, drawable, context->width, context->height);
+	rsvg_node_draw (drawable, ctx, 0);
+	
+	rsvg_state_pop(ctx);
+		
+	((RsvgArtRender *)ctx->render)->pixbuf = save;
+	return img;
 }
 
 static GdkPixbuf *
 rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 										RsvgFilterContext * ctx)
 {
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	RsvgFilterPrimitiveImage *upself;
 	GdkPixbuf * img;
 
@@ -4012,18 +3851,17 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 
 	img = rsvg_pixbuf_new_from_href(upself->href->str,
 									rsvg_handle_get_base_uri (upself->ctx), NULL);
-	
+
 	if(!img)
 		return NULL;
 
-	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, boundarys.x1 - boundarys.x0, 
-								   boundarys.y1 - boundarys.y0);
+	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, boundarys.x2 - boundarys.x1, 
+								   boundarys.y2 - boundarys.y1);
 
-	
 	rsvg_art_affine_image(img, intermediate, 
 						  ctx->paffine, 
-						  (boundarys.x1 - boundarys.x0) / ctx->paffine[0], 
-						  (boundarys.y1 - boundarys.y0) / ctx->paffine[3]);
+						  (boundarys.x2 - boundarys.x1) / ctx->paffine[0], 
+						  (boundarys.y2 - boundarys.y1) / ctx->paffine[3]);
 	
 	if (!intermediate)
 		{
@@ -4041,7 +3879,7 @@ static void
 rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self,
 									RsvgFilterContext * ctx)
 {
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	RsvgFilterPrimitiveImage *upself;
 	RsvgFilterPrimitiveOutput op;
 	
@@ -4063,16 +3901,16 @@ rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self,
 			if (img)
 				{
 					gdk_pixbuf_copy_area (img, 0, 0, 
-										  boundarys.x1 - boundarys.x0, 
-										  boundarys.y1 - boundarys.y0,
-										  output, boundarys.x0, boundarys.y0);
+										  boundarys.x2 - boundarys.x1, 
+										  boundarys.y2 - boundarys.y1,
+										  output, boundarys.x1, boundarys.y1);
 					g_object_unref (G_OBJECT (img));
 				}
 		}		
 	else
 		{
-			gdk_pixbuf_copy_area (img, boundarys.x0, boundarys.y0, boundarys.x1 - boundarys.x0, boundarys.y1 - boundarys.y0,
-								  output, boundarys.x0, boundarys.y0);
+			gdk_pixbuf_copy_area (img, boundarys.x1, boundarys.y1, boundarys.x2 - boundarys.x1, boundarys.y2 - boundarys.y1,
+								  output, boundarys.x1, boundarys.y1);
 			g_object_unref (G_OBJECT (img));
 		}
 
@@ -4361,7 +4199,7 @@ get_light_normal_matrix_y (gint n)
 }
 
 static vector3
-get_surface_normal (guchar * I, RsvgIRect boundarys, gint x, gint y, 
+get_surface_normal (guchar * I, FPBox boundarys, gint x, gint y, 
 					gdouble dx, gdouble dy, gdouble rawdx, gdouble rawdy, gdouble surfaceScale, gint rowstride)
 {
 	gint mrow, mcol;
@@ -4371,16 +4209,16 @@ get_surface_normal (guchar * I, RsvgIRect boundarys, gint x, gint y,
 	gdouble Nx, Ny;
 	vector3 output;
 
-	if (x + dx >= boundarys.x1 - 1)
+	if (x + dx >= boundarys.x2 - 1)
 		mcol = 2;
-	else if (x - dx < boundarys.x0 + 1)
+	else if (x - dx < boundarys.x1 + 1)
 		mcol = 0;
 	else
 		mcol = 1;
 
-	if (y + dy >= boundarys.y1 - 1)
+	if (y + dy >= boundarys.y2 - 1)
 		mrow = 2;
-	else if (y - dy < boundarys.y0 + 1)
+	else if (y - dy < boundarys.y1 + 1)
 		mrow = 0;
 	else
 		mrow = 1;
@@ -4629,7 +4467,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 	vector3 colour;
 	gdouble iaffine[6];
 	RsvgNodeLightSource * source = NULL;
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	
 	guchar *in_pixels;
 	guchar *output_pixels;
@@ -4688,8 +4526,8 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 
 	_rsvg_affine_invert(iaffine, ctx->paffine);
 
-	for (y = boundarys.y0; y < boundarys.y1; y++)
-		for (x = boundarys.x0; x < boundarys.x1; x++)
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				z = surfaceScale * (double)in_pixels[y * rowstride + x * 4 + 3];
 				L = get_light_direction(source, x, y, z, iaffine);
@@ -4844,7 +4682,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 	vector3 colour;
 	vector3 L;
 	gdouble iaffine[6];
-	RsvgIRect boundarys;
+	FPBox boundarys;
 	RsvgNodeLightSource *source = NULL;	
 
 	guchar *in_pixels;
@@ -4890,8 +4728,8 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 
 	_rsvg_affine_invert(iaffine, ctx->paffine);
 
-	for (y = boundarys.y0; y < boundarys.y1; y++)
-		for (x = boundarys.x0; x < boundarys.x1; x++)
+	for (y = boundarys.y1; y < boundarys.y2; y++)
+		for (x = boundarys.x1; x < boundarys.x2; x++)
 			{
 				z = in_pixels[y * rowstride + x * 4 + 3] * surfaceScale;
 				L = get_light_direction(source, x, y, z, iaffine);	
@@ -5066,7 +4904,7 @@ rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self,
 {
 	guchar i;
 	gint x, y, rowstride;
-	RsvgIRect boundarys, oboundarys;
+	FPBox boundarys, oboundarys;
 
 	RsvgFilterPrimitiveOutput input;
 
@@ -5093,15 +4931,15 @@ rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self,
 	
 	output_pixels = gdk_pixbuf_get_pixels (output);
 
-	for (y = oboundarys.y0; y < oboundarys.y1; y++)
-		for (x = oboundarys.x0; x < oboundarys.x1; x++)
+	for (y = oboundarys.y1; y < oboundarys.y2; y++)
+		for (x = oboundarys.x1; x < oboundarys.x2; x++)
 			for (i = 0; i < 4; i++)
 				{
 					output_pixels[4 * x + y * rowstride + i] = 
-						in_pixels[(mod((x - boundarys.x0), (boundarys.x1 - boundarys.x0)) + 
-								   boundarys.x0) * 4 + 
-								  (mod((y - boundarys.y0), (boundarys.y1 - boundarys.y0)) + 
-								   boundarys.y0) * rowstride + i];
+						in_pixels[(mod((x - boundarys.x1), (boundarys.x2 - boundarys.x1)) + 
+								   boundarys.x1) * 4 + 
+								  (mod((y - boundarys.y1), (boundarys.y2 - boundarys.y1)) + 
+								   boundarys.y1) * rowstride + i];
 				}
 	
 	rsvg_filter_store_result (self->result, output, ctx);

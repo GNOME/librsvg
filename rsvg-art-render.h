@@ -38,7 +38,7 @@ struct RsvgArtRender {
 	RsvgRender super;
 	GdkPixbuf *pixbuf;
 	GSList * layers;
-	RsvgIRect bbox;
+	ArtIRect bbox;
 	ArtSVP * clippath;
 };
 

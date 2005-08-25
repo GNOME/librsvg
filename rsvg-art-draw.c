@@ -44,7 +44,6 @@
 #include "rsvg-styles.h"
 #include "rsvg-bpath-util.h"
 #include "rsvg-path.h"
-#include "rsvg-filter.h"
 
 #include <math.h>
 
@@ -254,8 +253,7 @@ rsvg_render_svp (RsvgDrawingCtx *ctx, ArtSVP *svp,
 	art_render_mask_solid (render, (opacity << 8) + opacity + (opacity >> 7));
 
 	temptemprect = rsvg_frect_pixelspaceise(temprect, state->affine);
-	art_irect_union((ArtIRect*)&arender->bbox, 
-					(ArtIRect*)&arender->bbox, (ArtIRect*)&temptemprect);
+	art_irect_union(&arender->bbox, &arender->bbox, &temptemprect);
 
 	gradctx.x0 = temprect.x0;
 	gradctx.y0 = temprect.y0;
@@ -468,11 +466,11 @@ void rsvg_art_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * img,
 		}
 
 	/*slap it down*/
-	rsvg_alpha_blt (intermediate, 0, 0,
-					gdk_pixbuf_get_width (intermediate),
-					gdk_pixbuf_get_height (intermediate),
-					pixbuf, 
-					0, 0);
+	rsvg_art_alpha_blt (intermediate, 0, 0,
+						gdk_pixbuf_get_width (intermediate),
+						gdk_pixbuf_get_height (intermediate),
+						pixbuf, 
+						0, 0);
 
 	temprect.x0 = gdk_pixbuf_get_width (intermediate);
 	temprect.y0 = gdk_pixbuf_get_height (intermediate);
@@ -490,8 +488,7 @@ void rsvg_art_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * img,
 				temprect.y1 = MAX(basey, temprect.y1);
 			}
 
-	art_irect_union((ArtIRect*)&arender->bbox, 
-					(ArtIRect*)&arender->bbox, (ArtIRect*)&temprect);
+	art_irect_union(&arender->bbox, &arender->bbox, &temprect);
 
 	g_object_unref (G_OBJECT (intermediate));
 }

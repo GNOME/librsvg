@@ -2,7 +2,6 @@ Makefile
 Makefile.in
 html
 sgml
-xml
 rsvg-decl-list.txt
 rsvg-decl.txt
 rsvg-undocumented.txt
