@@ -1,0 +1,24 @@
+librsvg 2.11 aka Paul Drain can suck my wang
+
+This release of librsvg is the result of 6 months of development. Caleb Moore 
+spent a lot of time reorganizing the code to enable adding DOM support to librsvg. 
+This code reorganisation had a lot of other positive side effects too, like improved 
+stability and consitency, and last but not least improved rendering speed.
+
+There is also a great host of rendering fixes by Caleb to things like gradient positioning, 
+patterns, namespaces, inheritance, marker rendering and text rendering. Also 
+in this release is better clip paths handling and handling of out of order 
+references and other file references.
+
+Dom Lachowhich have worked on full support for conditionals and made vfs support 
+work better in addition to merging patches and bugfixing.
+ 
+In addition to this we have a host of smaller changes including:
+1. rsvg cannot handle a relative path (309234) - Josselin Mouette
+2. librsvg tries to open files twice (309220) - Josselin Mouette
+3. rsvg behavior keeps aspec ratio when only width or height (309233) Josseling Mouette
+4. C89 compiler fix (308472) - Behdad Esfahbod
+5. 303086, 302905, 170164, 304045, 171281, 273989, 308810, 309885 - Caleb Moore and Dom Lachowich
+6. crasher bug fix  (169051) - Ed Catmur
+7.  Windows port - Tor Lillquist
+8. leak fixes (306494) - Ryan Lortie
