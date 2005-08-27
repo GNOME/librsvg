@@ -3,6 +3,8 @@
 	* rsvg.[ch]: Unbreak dpi API. See bug 314628
 	* test-rsvg.c: Ditto
 	* test-display.c: Ditto
+	* gdk-pixbuf-loader/io-svg.c: Backport for the GdkPixbufLoader module
+	API changes, sot hat it does better pattern recognition.
 
 2005-08-25  Caleb Moore <c.moore@student.unsw.edu.au>
 

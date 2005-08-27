@@ -1062,7 +1062,7 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 }
 
 /** 
- * rsvg_set_default_dpi
+ * rsvg_set_default_dpi_x_y
  * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
@@ -1073,7 +1073,7 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
  * Since: 2.8
  */
 void
-rsvg_set_default_dpi (double dpi_x, double dpi_y)
+rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y)
 {
 	if (dpi_x <= 0.)
 		internal_dpi_x = RSVG_DEFAULT_DPI_X;
@@ -1086,8 +1086,23 @@ rsvg_set_default_dpi (double dpi_x, double dpi_y)
 		internal_dpi_y = dpi_y;
 }
 
+/** 
+ * rsvg_set_default_dpi
+ * @dpi: Dots Per Inch (aka Pixels Per Inch)
+ *
+ * Sets the DPI for the all future outgoing pixbufs. Common values are
+ * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * reset the DPI to whatever the default value happens to be.
+ *
+ */
+void
+rsvg_set_default_dpi (double dpi)
+{
+	rsvg_set_default_dpi_x_y (dpi, dpi);
+}
+
 /**
- * rsvg_handle_set_dpi
+ * rsvg_handle_set_dpi_x_y
  * @handle: An #RsvgHandle
  * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
@@ -1099,7 +1114,7 @@ rsvg_set_default_dpi (double dpi_x, double dpi_y)
  * Since: 2.8
  */
 void
-rsvg_handle_set_dpi (RsvgHandle * handle, double dpi_x, double dpi_y)
+rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
 {
 	g_return_if_fail (handle != NULL);
 	
@@ -1112,6 +1127,21 @@ rsvg_handle_set_dpi (RsvgHandle * handle, double dpi_x, double dpi_y)
         handle->dpi_y = internal_dpi_y;
     else
         handle->dpi_y = dpi_y;
+}
+
+/**
+ * rsvg_handle_set_dpi
+ * @handle: An #RsvgHandle
+ * @dpi: Dots Per Inch (aka Pixels Per Inch)
+ *
+ * Sets the DPI for the outgoing pixbuf. Common values are
+ * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * reset the DPI to whatever the default value happens to be.
+ */
+void
+rsvg_handle_set_dpi (RsvgHandle * handle, double dpi)
+{
+	rsvg_handle_set_dpi_x_y (handle, dpi, dpi);
 }
 
 /**
