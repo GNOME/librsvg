@@ -1,3 +1,9 @@
+2005-08-26  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.[ch]: Unbreak dpi API. See bug 314628
+	* test-rsvg.c: Ditto
+	* test-display.c: Ditto
+
 2005-08-25  Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg.c: disabled char nodes. Chopped off namespaces.
