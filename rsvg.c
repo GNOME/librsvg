@@ -302,7 +302,7 @@ rsvg_desc_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	if (!ch || !len)
 		return;
 
-	string = g_strndup (ch, len);
+	string = g_strndup ((char *)ch, len);
 	if (!g_utf8_validate (string, -1, NULL))
 		{
 			utf8 = rsvg_make_valid_utf8 (string);
@@ -376,7 +376,7 @@ rsvg_title_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 	if (!ch || !len)
 		return;
 
-	string = g_strndup (ch, len);
+	string = g_strndup ((char *)ch, len);
 	if (!g_utf8_validate (string, -1, NULL))
 		{
 			utf8 = rsvg_make_valid_utf8 (string);
@@ -450,7 +450,7 @@ rsvg_metadata_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int l
 	if (!ch || !len)
 		return;
 
-	string = g_strndup (ch, len);
+	string = g_strndup ((char *)ch, len);
 	if (!g_utf8_validate (string, -1, NULL))
 		{
 			utf8 = rsvg_make_valid_utf8 (string);
@@ -658,15 +658,15 @@ rsvg_entity_decl (void *data, const xmlChar *name, int type,
 
 	entity = g_new0 (xmlEntity, 1);
 	entity->type = type;
-	entity->length = strlen (name);
-	dupname = g_strdup (name);
+	entity->length = strlen ((char *)name);
+	dupname = g_strdup ((char *)name);
 	entity->name = dupname;
 	entity->ExternalID = g_strdup (publicId);
 	entity->SystemID = g_strdup (systemId);
 	if (content)
 		{
-			entity->content = xmlMemStrdup (content);
-			entity->length = strlen (content);
+			entity->content = xmlMemStrdup ((char *)content);
+			entity->length = strlen ((char *)content);
 		}
 	g_hash_table_insert (entities, dupname, entity);
 }
@@ -789,7 +789,7 @@ rsvg_handle_write_impl (RsvgHandle    *handle,
 			handle->ctxt->replaceEntities = TRUE;
 		}
 	
-	xmlParseChunk (handle->ctxt, buf, count, 0);
+	xmlParseChunk (handle->ctxt, (const char *)buf, count, 0);
 	
 	handle->error = NULL;
 	/* FIXME: Error handling not implemented. */

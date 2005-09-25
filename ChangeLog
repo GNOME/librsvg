@@ -1,5 +1,12 @@
 2005-09-25  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg.c: Bug 309660 - signedness issues
+	* configure.in: 2.12.2
+	
+2005-09-25  Dom Lachowicz <cinamod@hotmail.com>
+
+	* 2.12.1
+	
 	* rsvg-structure.c:
 	* rsvg-shapes.c: Bug 371148 - C89 fixes
 
@@ -17,7 +24,6 @@
 
 2005-09-16  Dom Lachowicz <cinamod@hotmail.com>
 
-	* 2.12.1
 	* gdk-pixbuf-loader/io-svg.c: Scan the first 1024 chars for <svg. 100
 	Wasn't sufficient for a lot of icon themes.
 
