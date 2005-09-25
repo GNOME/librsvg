@@ -73,18 +73,19 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.4.0/loaders/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/mozilla/plugins/libmozsvgdec.la
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
-
+mkdir -p $RPM_BUILD_DIR/librsvg-%{version}
+touch $RPM_BUILD_DIR/librsvg-%{version}/debugfiles.list
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %post -n librsvg2-gtk
 /sbin/ldconfig
 mkdir -p %{_sysconfdir}/gtk-2.0
-gdk-pixbuf-query-loaders > %{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
+gdk-pixbuf-query-loaders-32 > %{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
 
 %postun -n librsvg2-gtk
 /sbin/ldconfig
-gdk-pixbuf-query-loaders > %{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
+gdk-pixbuf-query-loaders-32 > %{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
 
 %files
 %defattr(-, root, root)
@@ -98,11 +99,11 @@ gdk-pixbuf-query-loaders > %{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
 %{_libdir}/*.*
 %{_includedir}/librsvg-2/librsvg/*.h
 %{_libdir}/pkgconfig/librsvg-2.0.pc
-%{_datadir}/doc/librsvg/html/*
+%{_datadir}/gtk-doc/html/rsvg/*
 
 %files -n librsvg2-gtk
 %defattr(-, root, root)
-%{_bindir}/rsvg-view
+%{_bindir}/rsvg*
 %{_libdir}/gtk-2.0/2.4.0/engines/*
 %{_libdir}/gtk-2.0/2.4.0/loaders/*
 %{_libdir}/mozilla/plugins/*

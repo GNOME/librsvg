@@ -7,6 +7,8 @@
 	* gtk-engine/Makefile.am: Bug 316803 - Win32 mingw build fixes
 
 	* moz-plugin/Makefile.am: Bug 316588 - add glib cflags to INCLUDES
+
+	* librsvg.spec.in: Backport from HEAD branch
 	
 2005-09-22  Rodney Dawes  <dobey@novell.com>
 
