@@ -1,3 +1,8 @@
+2005-09-25  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-structure.c:
+	* rsvg-shapes.c: Bug 371148 - C89 fixes
+	
 2005-09-22  Rodney Dawes  <dobey@novell.com>
 
 	* configure.in: GNOME_REQUIRE_PKGCONFIG doesn't exist, so remove it
