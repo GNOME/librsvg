@@ -50,8 +50,6 @@ AC_STDC_HEADERS
 
 AC_C_BIGENDIAN
 
-GNOME_REQUIRE_PKGCONFIG
-
 dnl ===========================================================================
 
 #AC_CANONICAL_HOST

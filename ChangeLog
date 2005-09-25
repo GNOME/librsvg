@@ -1,3 +1,21 @@
+2005-09-25  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-structure.c:
+	* rsvg-shapes.c: Bug 371148 - C89 fixes
+
+	* gdk-pixbuf-loader/Makefile.am
+	* gtk-engine/Makefile.am: Bug 316803 - Win32 mingw build fixes
+	
+2005-09-22  Rodney Dawes  <dobey@novell.com>
+
+	* configure.in: GNOME_REQUIRE_PKGCONFIG doesn't exist, so remove it
+	so that we don't get a weird warning when running configure
+
+2005-09-16  Dom Lachowicz <cinamod@hotmail.com>
+
+	* gdk-pixbuf-loader/io-svg.c: Scan the first 1024 chars for <svg. 100
+	Wasn't sufficient for a lot of icon themes.
+	
 2005-08-10 Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* Makefile.am, configure.in: Made compatibility librarys build only if there is a backend compiled. Made programs not require libart to build.

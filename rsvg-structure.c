@@ -359,8 +359,9 @@ rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	const char *value = NULL, *klazz = NULL, *id = NULL;
 	double font_size;	
-	font_size = rsvg_state_current_font_size(ctx);
 	RsvgNodeUse * use;
+
+	font_size = rsvg_state_current_font_size(ctx);
 
 	use = (RsvgNodeUse *)self;
 	if (rsvg_property_bag_size(atts))
