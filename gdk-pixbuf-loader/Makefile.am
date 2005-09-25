@@ -20,10 +20,11 @@ endif
 
 svg_loader_la_SOURCES = io-svg.c
 svg_loader_la_LDFLAGS = -avoid-version -module $(no_undefined)
-svg_loader_la_LIBADD = $(LIBRSVG_LIBS) 	\
+svg_loader_la_LIBADD = \
+	$(top_builddir)/librsvg-2.la	\
+	$(LIBRSVG_LIBS) 	\
 	$(LIBGNOME_VFS_LIBS)		\
-	$(LIBGSF_LIBS) $(LIBCROCO_LIBS)	\
-	$(top_builddir)/librsvg-2.la
+	$(LIBGSF_LIBS) $(LIBCROCO_LIBS)
 
 loader_LTLIBRARIES = $(target_pixbuf_loader)
 

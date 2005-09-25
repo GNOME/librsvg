@@ -2,6 +2,9 @@
 
 	* rsvg-structure.c:
 	* rsvg-shapes.c: Bug 371148 - C89 fixes
+
+	* gdk-pixbuf-loader/Makefile.am
+	* gtk-engine/Makefile.am: Bug 316803 - Win32 mingw build fixes
 	
 2005-09-22  Rodney Dawes  <dobey@novell.com>
 
