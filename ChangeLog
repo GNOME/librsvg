@@ -1,6 +1,7 @@
 2005-09-29  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-filter.c: Fix bug #317549
+	* configure.in: 2.12.3
 	
 2005-09-25  Dom Lachowicz <cinamod@hotmail.com>
 
