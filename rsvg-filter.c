@@ -1013,7 +1013,7 @@ rsvg_filter_primitive_blend_free (RsvgNode * self)
 static void
 rsvg_filter_primitive_blend_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-	const char *id = NULL, *value;
+	const char *value;
 	double font_size;
 	RsvgFilterPrimitiveBlend *filter;
 	
@@ -1079,7 +1079,7 @@ rsvg_filter_primitive_blend_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPro
 				filter->super.sizedefaults = 0;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				rsvg_defs_register_name (ctx->defs, id, &filter->super.super);
+				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
 }
 
@@ -1249,7 +1249,7 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode * self,
 	gint i, j;
 	guint listlen;
 	double font_size;
-	const char *id = NULL, *value;
+	const char *value;
 	gboolean has_target_x, has_target_y;
 	RsvgFilterPrimitiveConvolveMatrix *filter;
 	
@@ -1348,7 +1348,7 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode * self,
 						filter->edgemode = 0;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				rsvg_defs_register_name (ctx->defs, id, &filter->super.super);
+				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
 
 	if (filter->divisor == 0)
@@ -1705,7 +1705,7 @@ rsvg_filter_primitive_gaussian_blur_set_atts (RsvgNode * self,
 											  RsvgHandle * ctx,
 											  RsvgPropertyBag * atts)
 {
-	const char *id = NULL, *value;
+	const char *value;
 	double font_size;
 	RsvgFilterPrimitiveGaussianBlur *filter;
 
@@ -1760,7 +1760,7 @@ rsvg_filter_primitive_gaussian_blur_set_atts (RsvgNode * self,
 													   &filter->sdx,
 													   &filter->sdy);
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				rsvg_defs_register_name (ctx->defs, id, &filter->super.super);
+				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
 }
 
@@ -1873,7 +1873,7 @@ rsvg_filter_primitive_offset_free (RsvgNode * self)
 static void
 rsvg_filter_primitive_offset_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-	const char *id = NULL, *value;
+	const char *value;
 	double font_size;
 	RsvgFilterPrimitiveOffset *filter;
 	
@@ -1936,7 +1936,7 @@ rsvg_filter_primitive_offset_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPr
 															  1,
 													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				rsvg_defs_register_name (ctx->defs, id, &filter->super.super);
+				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
 }
 
@@ -2017,7 +2017,7 @@ rsvg_filter_primitive_merge_free (RsvgNode * self)
 static void
 rsvg_filter_primitive_merge_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-	const char *id = NULL, *value;
+	const char *value;
 	double font_size;
 	RsvgFilterPrimitiveMerge *filter;
 	
@@ -2066,7 +2066,7 @@ rsvg_filter_primitive_merge_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
 					filter->super.sizedefaults = 0;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				rsvg_defs_register_name (ctx->defs, id, &filter->super.super);
+				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}
 }
 
@@ -2222,7 +2222,7 @@ rsvg_filter_primitive_colour_matrix_set_atts (RsvgNode * self, RsvgHandle * ctx,
 	gint type;
 	guint listlen;
 	double font_size;
-	const char *id = NULL, *value;
+	const char *value;
 	RsvgFilterPrimitiveColourMatrix *filter;
 	
 	font_size = rsvg_state_current_font_size (ctx);
@@ -2292,7 +2292,7 @@ rsvg_filter_primitive_colour_matrix_set_atts (RsvgNode * self, RsvgHandle * ctx,
 						type = 0;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				rsvg_defs_register_name (ctx->defs, id, &filter->super.super);
+				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
 		}			
 
 	if (type == 0)
