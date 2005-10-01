@@ -21,7 +21,7 @@ dnl ===========================================================================
 
 LIBRSVG_MAJOR_VERSION=2
 LIBRSVG_MINOR_VERSION=12
-LIBRSVG_MICRO_VERSION=3
+LIBRSVG_MICRO_VERSION=4
 AC_SUBST(LIBRSVG_MAJOR_VERSION)
 AC_SUBST(LIBRSVG_MINOR_VERSION)
 AC_SUBST(LIBRSVG_MICRO_VERSION)
@@ -325,8 +325,12 @@ if test "x$test_mozilla_plugin" != "xno"; then
       AC_PATH_PROG(MOZILLA_CONFIG, mozilla-config, no)
    fi
 
+   if test "x$MOZILLA_CONFIG" = "xno"; then
+      AC_PATH_PROG(MOZILLA_CONFIG, firefox-config, no)
+   fi
+
    if test "x$MOZILLA_CONFIG" != "xno"; then
-      _mozilla_include_dir=`mozilla-config --cflags|sed 's/-I\(.*\) .*/\1/'`
+      _mozilla_include_dir=`$MOZILLA_CONFIG --cflags|sed 's/-I\(.*\) .*/\1/'`
       MOZILLA_CFLAGS="-I$_mozilla_include_dir/plugin -I$_mozilla_include_dir/java -I$_mozilla_include_dir/nspr"
    else
 	PKG_CHECK_MODULES(MOZILLA, mozilla-plugin, build_mozilla_plugin=yes, 
