@@ -205,11 +205,13 @@ fill_info (GdkPixbufFormat *info)
         static GdkPixbufModulePattern signature_old[] = {
                 { (unsigned char*) "<svg", NULL, 100 },
                 { (unsigned char*) "<!DOCTYPE svg", NULL, 100 },
+                { (unsigned char*) "<?xml", NULL, 1 },
                 { NULL, NULL, 0 }
         };
         static GdkPixbufModulePattern signature_new[] = {
                 { (unsigned char*) " <svg", (unsigned char*) "*    ", 100 },
                 { (unsigned char*) " <!DOCTYPE svg", (unsigned char*) "*             ", 100 },
+                { (unsigned char*) "<?xml", NULL, 1 },
                 { NULL, NULL, 0 }
         };
         static gchar *mime_types[] = { /* yes folks, i actually have run into all of these in the wild... */

@@ -1,7 +1,13 @@
 2005-10-01  Dom Lachowicz <cinamod@hotmail.com>
 
-	* configure.in: bug 314593, support firefox-config
 	* configure.in: 2.12.4
+	* gdk-pixbuf-loader/io-svg.c: Because bug 308021 was fixed, and bug 317225 still
+	exists (although possibly not within librsvg itself), I've re-enabled a match for
+	"<?xml", with a priority of "1".
+	
+2005-10-01  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: bug 314593, support firefox-config
 	
 2005-09-29  Dom Lachowicz <cinamod@hotmail.com>
 
