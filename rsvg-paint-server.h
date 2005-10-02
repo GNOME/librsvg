@@ -62,7 +62,6 @@ struct _RsvgPSCtx {
 struct _RsvgGradientStop {
 	RsvgNode super;
 	double offset;
-	gboolean is_current_color;
 	guint32 rgba;
 };
 

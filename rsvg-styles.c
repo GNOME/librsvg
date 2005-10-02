@@ -216,11 +216,11 @@ rsvg_state_inherit_run (RsvgState *dst, const RsvgState *src,
 		dst->unicode_bidi = src->unicode_bidi;
 	if (function(dst->has_text_anchor, src->has_text_anchor))
 		dst->text_anchor = src->text_anchor;
-	if (function(dst->has_startMarker, !src->has_startMarker))
+	if (function(dst->has_startMarker, src->has_startMarker))
 		dst->startMarker = src->startMarker;
-	if (function(dst->has_middleMarker, !src->middleMarker))
+	if (function(dst->has_middleMarker, src->has_middleMarker))
 		dst->middleMarker = src->middleMarker;
-	if (function(dst->has_endMarker, !src->endMarker))
+	if (function(dst->has_endMarker, src->has_endMarker))
 		dst->endMarker = src->endMarker;
 
 	if (function(dst->has_font_family, src->has_font_family)) {
@@ -1499,4 +1499,14 @@ rsvg_state_reinherit_top(RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
 										 rsvg_state_parent(ctx)->affine);
 				}
 		}
+}
+
+void
+rsvg_state_reconstruct(RsvgState * state, 
+					   RsvgNode * current)
+{
+	if (current == NULL)
+		return;
+	rsvg_state_reconstruct(state, current->parent);
+	rsvg_state_inherit(state, current->state);
 }

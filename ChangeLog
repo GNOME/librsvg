@@ -1,3 +1,10 @@
+2005-08-10 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-styles.c: made a new function called rsvg_state_reconstruct that can make a style inherit from a node's ancestors rather than the drawing context.
+	* rsvg-paint-server.c: Made stop colour inheritance and currentColor usage work.
+	* rsvg-art-paint-server.c, rsvg-cairo-draw.c: removed redundant code in colour inheritance.
+	* rsvg-marker.c: use the new reconstruction function
+
 2005-10-01  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: bug 314593, support firefox-config

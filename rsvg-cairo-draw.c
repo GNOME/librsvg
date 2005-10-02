@@ -54,10 +54,7 @@ _pattern_add_rsvg_color_stops (cairo_pattern_t *pattern,
 		if (node->type != RSVG_NODE_STOP)
 			continue;
 		stop = (RsvgGradientStop*) node;
-		if (stop->is_current_color)
-			rgba = current_color_rgb << 8;
-		else
-			rgba = stop->rgba;
+		rgba = stop->rgba;
 		cairo_pattern_add_color_stop_rgba (pattern, stop->offset,
 										   ((rgba >> 24) & 0xff) / 255.0,
 										   ((rgba >> 16) & 0xff) / 255.0,

@@ -205,6 +205,8 @@ void rsvg_state_push(RsvgDrawingCtx * ctx);
 
 void rsvg_state_reinherit_top(RsvgDrawingCtx * ctx, RsvgState * state, int dominate);
 
+void rsvg_state_reconstruct(RsvgState * state, RsvgNode * current);
+
 G_END_DECLS
 
 #endif /* RSVG_STYLES_H */
