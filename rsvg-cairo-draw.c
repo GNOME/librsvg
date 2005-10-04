@@ -39,7 +39,7 @@
 #include <string.h>
 
 typedef struct {
-	int x, y, w, h;
+	gdouble x, y, w, h;
 } RsvgCairoBbox;
 
 static void
@@ -222,7 +222,8 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 	cairo_t *cr = render->cr;
 	RsvgBpath *bpath;
 	int i;
-	int xmin = 0, ymin = 0, xmax = 0, ymax = 0, virgin = 1;
+	gdouble xmin = 0, ymin = 0, xmax = 0, ymax = 0;
+	int virgin = 1;
 	RsvgCairoBbox bbox;
 
 	cairo_save (cr);
