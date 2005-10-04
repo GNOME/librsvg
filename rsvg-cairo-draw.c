@@ -152,9 +152,12 @@ _set_source_rsvg_radial_gradient (cairo_t            *cr,
 static void
 _set_source_rsvg_solid_colour (cairo_t         *cr,
 							   RsvgSolidColour *colour,
-							   guint8           opacity)
+							   guint8           opacity,
+							   guint32          current_colour)
 {
 	guint32 rgb = colour->rgb;
+	if (colour->currentcolour)
+		rgb = current_colour;
 	double r = ((rgb >> 16) & 0xff) / 255.0;
 	double g = ((rgb >>  8) & 0xff) / 255.0;
 	double b = ((rgb >>  0) & 0xff) / 255.0;
@@ -180,7 +183,8 @@ _set_source_rsvg_paint_server (cairo_t         *cr,
 							   guint32          current_color_rgb,
 							   RsvgPaintServer *ps,
 							   guint8           opacity,
-							   RsvgCairoBbox bbox)
+							   RsvgCairoBbox    bbox,
+							   guint32          current_colour)
 {
 	switch (ps->type) {
 	case RSVG_PAINT_SERVER_LIN_GRAD:
@@ -194,7 +198,8 @@ _set_source_rsvg_paint_server (cairo_t         *cr,
 										  bbox);
 		break;
 	case RSVG_PAINT_SERVER_SOLID:
-		_set_source_rsvg_solid_colour (cr, ps->core.colour, opacity);
+		_set_source_rsvg_solid_colour (cr, ps->core.colour, opacity, 
+									   current_colour);
 		break;
 	case RSVG_PAINT_SERVER_PATTERN:
 		_set_source_rsvg_pattern (cr, ps->core.pattern, opacity);
@@ -286,7 +291,8 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 									   state->current_color,
 									   state->fill,
 									   state->fill_opacity,
-									   bbox);
+									   bbox,
+									   rsvg_state_current(ctx)->current_color);
 
 		if (state->stroke != NULL)
 			cairo_fill_preserve (cr);
@@ -299,7 +305,8 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 									   state->current_color,
 									   state->stroke,
 									   state->stroke_opacity,
-									   bbox);
+									   bbox,
+									   rsvg_state_current(ctx)->current_color);
 
 		cairo_stroke (cr);
 	}
