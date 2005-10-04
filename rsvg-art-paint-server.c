@@ -45,19 +45,20 @@ rsvg_paint_art_stops_from_rsvg (RsvgDrawingCtx * ctx, GPtrArray *rstops,
 								guint32 * nstops)
 {
 	ArtGradientStop *stops;
-	unsigned int n_stop = rstops->len;
+	unsigned int len = rstops->len;
 	unsigned int i, j;
 	
 	j = 0;
-	for (i = 0; i < n_stop; i++)
+	for (i = 0; i < len; i++)
 		if (((RsvgNode *)g_ptr_array_index(rstops, i))->type == RSVG_NODE_STOP)
 			j++;
+
 	*nstops = j;
 	stops = g_new (ArtGradientStop, j);
 
 	j = 0;
 
-	for (i = 0; i < n_stop; i++)
+	for (i = 0; i < len; i++)
 		{
 			RsvgGradientStop * stop;
 			RsvgNode * temp;
@@ -126,15 +127,18 @@ rsvg_art_paint_server_lin_grad_render (RsvgLinearGradient *rlg, ArtRender *ar,
 	rlg = &statgrad;
 	rsvg_linear_gradient_fix_fallback(rlg);
 
-	if (rlg->super.children->len == 0)
-		{
-			return;
-		}
 
 	agl = g_new (ArtGradientLinear, 1);
 	agl->stops = rsvg_paint_art_stops_from_rsvg (ctx->ctx, 
 												 rlg->super.children, 
 												 (guint32*)&agl->n_stops);
+
+	if (agl->n_stops == 0)
+		{
+			g_free (agl->stops);
+			g_free (agl);
+			return;
+		}
    
 
 	if (rlg->obj_bbox) {
@@ -251,14 +255,16 @@ rsvg_art_paint_server_rad_grad_render (RsvgRadialGradient *rrg, ArtRender *ar,
 	} else
 		_rsvg_affine_multiply(affine, rrg->affine, ctx->affine);
 
-	if (rrg->super.children->len == 0)
-		{
-			return;
-		}
 	agr = g_new (ArtGradientRadial, 1);
 	agr->stops = rsvg_paint_art_stops_from_rsvg (ctx->ctx, rrg->super.children,
 												 (guint32*)&agr->n_stops);
 	
+	if (agr->n_stops == 0)
+		{
+			g_free (agr->stops);
+			g_free (agr);
+			return;
+		}
 	_rsvg_affine_scale (aff1, rrg->r, rrg->r);
 	_rsvg_affine_translate (aff2, rrg->cx, rrg->cy);
 	_rsvg_affine_multiply (aff1, aff1, aff2);
