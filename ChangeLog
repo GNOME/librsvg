@@ -1,8 +1,12 @@
-2005-08-10 Caleb Moore <c.moore@student.unsw.edu.au>
+2005-10-04  Dom Lachowicz <cinamod@hotmail.com>
+	
+	* rsvg-shapes.c: Fix problems in non-C locales. Bug #317615
+	
+2005-10-03 Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-paint-server.c, rsvg-art-paint-server.c: Fix bug #317871
 
-2005-08-10 Caleb Moore <c.moore@student.unsw.edu.au>
+2005-10-03 Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-styles.c: made a new function called rsvg_state_reconstruct that can make a style inherit from a node's ancestors rather than the drawing context.
 	* rsvg-paint-server.c: Made stop colour inheritance and currentColor usage work.
