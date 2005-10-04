@@ -238,11 +238,17 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 
 	for (i=0; i < bpath_def->n_bpath; i++) {
 		bpath = &bpath_def->bpath[i];
-		if (bpath->x3 < xmin || virgin) xmin = bpath->x3;
-		if (bpath->x3 > xmax || virgin) xmax = bpath->x3;
-		if (bpath->y3 < ymin || virgin) ymin = bpath->y3;
-		if (bpath->y3 > ymax || virgin) ymax = bpath->y3;
-		virgin = 0;
+
+		if (bpath->code == RSVG_MOVETO || 
+			bpath->code == RSVG_MOVETO_OPEN || 
+			bpath->code == RSVG_CURVETO ||
+			bpath->code == RSVG_LINETO){
+			if (bpath->x3 < xmin || virgin) xmin = bpath->x3;
+			if (bpath->x3 > xmax || virgin) xmax = bpath->x3;
+			if (bpath->y3 < ymin || virgin) ymin = bpath->y3;
+			if (bpath->y3 > ymax || virgin) ymax = bpath->y3;
+			virgin = 0;
+		}
 
 		switch (bpath->code) {
 		case RSVG_MOVETO:
