@@ -196,6 +196,7 @@ static ArtIRect rsvg_frect_pixelspaceise(RsvgFRect input, double * affine)
 	return temprect;
 } 
 
+
 /**
  * rsvg_render_svp: Render an SVP.
  * @ctx: Context in which to render.
@@ -326,7 +327,18 @@ rsvg_render_outline (RsvgState *state, ArtVpath *vpath)
 }
 
 static void
-rsvg_render_bpath (RsvgDrawingCtx *ctx, const ArtBpath *bpath)
+rsvg_art_close_up_bpath(ArtBpath *bpath)
+{
+	while (bpath->code != ART_END)
+		{
+			if (bpath->code == ART_MOVETO)
+				bpath->code = ART_LINETO;
+			bpath = bpath + 1;
+		}
+}
+
+static void
+rsvg_render_bpath (RsvgDrawingCtx *ctx, ArtBpath *bpath)
 {
 	RsvgState *state;
 	ArtBpath *affine_bpath;
@@ -336,6 +348,8 @@ rsvg_render_bpath (RsvgDrawingCtx *ctx, const ArtBpath *bpath)
 	gboolean need_tmpbuf;
 	int opacity;
 	int tmp;
+
+	rsvg_art_close_up_bpath(bpath);
 
 	pixbuf = ((RsvgArtRender *)ctx->render)->pixbuf;
 	if (pixbuf == NULL)

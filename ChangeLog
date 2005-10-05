@@ -1,3 +1,7 @@
+2005-10-4 Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* most-cairo-related-places: added lots of stuff to do with gradients, objectBoundBox positioning and spreading. Made currentColor work with cairo. Made courners look great in cairo but crap in libart... I just can't win.
+
 2005-10-04  Dom Lachowicz <cinamod@hotmail.com>
 	
 	* rsvg-shapes.c: Fix problems in non-C locales. Bug #317615

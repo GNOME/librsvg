@@ -179,28 +179,16 @@ void
 rsvg_bpath_def_closepath (RsvgBpathDef *bpd)
 {
 	RsvgBpath *bpath;
-	int n_bpath;
 	
 	g_return_if_fail (bpd != NULL);
 	g_return_if_fail (bpd->moveto_idx >= 0);
 	g_return_if_fail (bpd->n_bpath > 0);
 
-	bpath = bpd->bpath;
-	n_bpath = bpd->n_bpath;
-	
-	/* Add closing vector if we need it. */
-	if (bpath[n_bpath - 1].x3 != bpath[bpd->moveto_idx].x3 ||
-		bpath[n_bpath - 1].y3 != bpath[bpd->moveto_idx].y3)
-		{
-			rsvg_bpath_def_lineto (bpd, bpath[bpd->moveto_idx].x3,
-								   bpath[bpd->moveto_idx].y3);
-		}
-
 	rsvg_bpath_def_replicate (bpd, bpd->moveto_idx);
 	bpath = bpd->bpath;
 
-	bpath[bpd->moveto_idx].code = RSVG_MOVETO;
-	bpd->moveto_idx = -1;
+	bpath[bpd->n_bpath - 1].code = RSVG_MOVETO;
+	bpd->moveto_idx = bpd->n_bpath - 1;
 }
 
 void
