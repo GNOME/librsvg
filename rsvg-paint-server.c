@@ -501,6 +501,17 @@ rsvg_new_pattern (void)
 	return &pattern->super;
 }
 
+static int hasstop(GPtrArray *lookin)
+{
+	unsigned int i;
+	for (i = 0; i < lookin->len; i++)
+		{
+			if (((RsvgNode *)g_ptr_array_index(lookin, i))->type == RSVG_NODE_STOP)
+				return 1;
+		}
+	return 0;
+}
+
 void
 rsvg_linear_gradient_fix_fallback(RsvgLinearGradient * grad)
 {
@@ -540,7 +551,7 @@ rsvg_linear_gradient_fix_fallback(RsvgLinearGradient * grad)
 					grad->hasbbox = TRUE;
 					grad->obj_bbox = fallback->obj_bbox;
 				}
-				if (!grad->super.children->len && fallback->super.children->len){
+				if (!hasstop(grad->super.children) && hasstop(fallback->super.children)){
 					grad->super.children = fallback->super.children;
 				}
 				ufallback = fallback->fallback; 
@@ -560,7 +571,7 @@ rsvg_linear_gradient_fix_fallback(RsvgLinearGradient * grad)
 					grad->hasbbox = TRUE;
 					grad->obj_bbox = fallback->obj_bbox;
 				}
-				if (!grad->super.children->len && fallback->super.children->len){
+				if (!hasstop(grad->super.children) && hasstop(fallback->super.children)){
 					grad->super.children = fallback->super.children;
 				}
 				ufallback = fallback->fallback; 
@@ -611,7 +622,7 @@ rsvg_radial_gradient_fix_fallback(RsvgRadialGradient * grad)
 					grad->hasbbox = TRUE;
 					grad->obj_bbox = fallback->obj_bbox;
 				}
-				if (!grad->super.children->len && fallback->super.children->len){
+				if (!hasstop(grad->super.children) && hasstop(fallback->super.children)){
 					grad->super.children = fallback->super.children;
 				}
 				ufallback = fallback->fallback; 
@@ -631,7 +642,7 @@ rsvg_radial_gradient_fix_fallback(RsvgRadialGradient * grad)
 					grad->hasbbox = TRUE;
 					grad->obj_bbox = fallback->obj_bbox;
 				}
-				if (!grad->super.children->len && fallback->super.children->len){
+				if (!hasstop(grad->super.children) && hasstop(fallback->super.children)){
 					grad->super.children = fallback->super.children;
 				}
 				ufallback = fallback->fallback; 

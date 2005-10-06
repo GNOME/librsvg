@@ -1,3 +1,9 @@
+2005-10-06  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-paint-server.c: Backport Caleb's patch to 317871, fixing a crash
+	inside of libart for some gradients.
+	* rsvg-art-paint-server.c: Ditto
+
 2005-10-04  Dom Lachowicz <cinamod@hotmail.com>
 	
 	* rsvg-shapes.c: Fix problems in non-C locales. Bug #317615
