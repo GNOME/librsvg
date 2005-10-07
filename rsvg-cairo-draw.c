@@ -366,8 +366,6 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 	if (pixbuf == NULL)
 		return;
 
-	rsvg_cairo_push_discrete_layer (ctx);
-
     cairo_save (render->cr);
 	_set_rsvg_affine (render->cr, state->affine);
     cairo_scale (render->cr, w / width, h / height);
@@ -442,13 +440,15 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 			cairo_pixels += 4 * width;
 		}
 
+	rsvg_cairo_push_discrete_layer (ctx);
+
 	cairo_set_source_surface (render->cr, surface, pixbuf_x, pixbuf_y);
 	cairo_paint (render->cr);
 	cairo_surface_destroy (surface);
 
-    cairo_restore (render->cr);
-
 	rsvg_cairo_pop_discrete_layer (ctx);
+
+    cairo_restore (render->cr);
 }
 
 void
@@ -462,9 +462,11 @@ rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
 	RsvgState *state;
 	state = rsvg_state_current(ctx);	
 
-	if (state->opacity == 0xFF)
+	if (state->opacity == 0xFF){
+		cairo_save(render->cr); /* only for the clipping stuff 
+								 seems like a bad idea, I dunno*/
 		return;
-
+	}
 	surface = cairo_surface_create_similar (cairo_get_target (render->cr),
 											CAIRO_CONTENT_COLOR_ALPHA,
 											render->width, render->height);
@@ -473,6 +475,7 @@ rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
 	
 	render->cr_stack = g_list_prepend(render->cr_stack, render->cr);
 	render->cr = child_cr;
+	cairo_save(render->cr);
 }
 
 void
@@ -484,6 +487,8 @@ rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx *ctx)
 	cairo_t *child_cr = render->cr;
 	RsvgState *state;
 	state = rsvg_state_current(ctx);
+
+	cairo_restore(render->cr); /* only for the clipping stuff */
 
 	if (state->opacity == 0xFF)
 		return;
