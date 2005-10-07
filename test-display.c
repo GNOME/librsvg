@@ -28,12 +28,28 @@
 #include <gdk/gdk.h>
 #include <gdk/gdkkeysyms.h>
 
+#ifdef HAVE_BASENAME
+#include <libgen.h>
+#endif
+
 #ifdef ENABLE_XEMBED
 #include <gdk/gdkx.h>
 #endif /* ENABLE_XEMBED */
 
 #define DEFAULT_WIDTH  240
 #define DEFAULT_HEIGHT 240
+
+static char * _rsvg_basename(const char * file)
+{
+#ifdef HAVE_BASENAME
+	if(file && *file) {
+		char * file_dup = g_strdup(file);
+		return basename(file_dup);
+	}
+#endif
+
+	return NULL;
+}
 
 typedef struct _ViewerCbInfo ViewerCbInfo;
 struct _ViewerCbInfo
@@ -56,7 +72,7 @@ rsvg_window_set_default_icon (GtkWindow * window, GdkPixbuf *src)
   width = gdk_pixbuf_get_width(src);
   height = gdk_pixbuf_get_height(src);
 
-  if(0 /*width > 128 || height > 128*/) {
+  if(width > 128 || height > 128) {
 	  /* sending images greater than 128x128 has this nasty tendency to 
 		 cause broken pipe errors X11 Servers */
 	  if(width > height) {
@@ -93,7 +109,7 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 	GtkWidget *gpd;	
 	gint result;
 
-	gpd = gnome_print_dialog_new (gnome_print_job_new (gnome_print_config_default ()), (guchar*)_("Print SVG"), 0);
+	gpd = gnome_print_dialog_new (gnome_print_job_new (gnome_print_config_default ()), _("Print SVG"), 0);
 	gtk_window_set_transient_for(GTK_WINDOW (gpd), GTK_WINDOW (info->window));
 			  
 	if ((result = gtk_dialog_run (GTK_DIALOG (gpd))) != GNOME_PRINT_DIALOG_RESPONSE_CANCEL) 
@@ -148,7 +164,7 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 			rowstride = gdk_pixbuf_get_rowstride (image);
 			pixels    = gdk_pixbuf_get_pixels (image);
 			
-			gnome_print_beginpage(gpc, (guchar*)"1");
+			gnome_print_beginpage(gpc, "1");
 			gnome_print_gsave (gpc);
 			gnome_print_translate (gpc, 0, page_height - height);
 			gnome_print_scale (gpc, width, height);
@@ -166,7 +182,7 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 				{
 					GtkWidget * preview;
 					
-					preview = gnome_print_job_preview_new (gpm, (guchar*)_("SVG Print Preview"));
+					preview = gnome_print_job_preview_new (gpm, _("SVG Print Preview"));
 					gtk_window_set_transient_for(GTK_WINDOW(preview), GTK_WINDOW(info->window));
 					gtk_widget_show (GTK_WIDGET (preview));
 				}
@@ -183,11 +199,15 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 #if GTK_CHECK_VERSION(2,4,0)
 
 static char *
-save_file (const char * title, GtkWidget * parent)
+save_file (const char * title, 
+		   const char * suggested_filename,
+		   GtkWidget * parent,
+		   int *success)
 {
 	GtkWidget *dialog;
 	char *filename = NULL;
 
+	*success = 0;
 	dialog = gtk_file_chooser_dialog_new (title,
 										  GTK_WINDOW (parent),
 										  GTK_FILE_CHOOSER_ACTION_SAVE,
@@ -195,10 +215,14 @@ save_file (const char * title, GtkWidget * parent)
 										  GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
 										  NULL);
 
+	if(suggested_filename && *suggested_filename) {
+		gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER (dialog), suggested_filename);
+	}
+
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
-		{
-			
+		{			
 			filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+			*success = 1;
 		}
 	
 	gtk_widget_destroy (dialog);
@@ -209,17 +233,28 @@ save_file (const char * title, GtkWidget * parent)
 #else
 
 static char *
-save_file (const char * title, GtkWidget * parent)
+save_file (const char * title, 
+		   const char * suggested_filename,
+		   GtkWidget * parent,
+		   int *success)
 {
 	GtkWidget * filesel;
 	char * filename = NULL;
-			
+	
+	*success = 0;
 	filesel = gtk_file_selection_new (title);
 	gtk_window_set_transient_for(GTK_WINDOW(filesel), parent);
+
+	if(suggested_filename && *suggested_filename) {
+		char * utf8_suggestion = g_filename_from_utf8(suggested_filename);
+		gtk_file_selection_set_filename(GTK_FILE_SELECTION (filesel), utf8_suggestion);
+		g_free(utf8_suggestion);
+	}
 	
 	if (gtk_dialog_run (GTK_DIALOG (filesel)) == GTK_RESPONSE_OK)
 		{			
 			filename = g_strdup (gtk_file_selection_get_filename (GTK_FILE_SELECTION (filesel)));
+			*success = 1;
 		}
 
 	gtk_widget_destroy (dialog);
@@ -233,10 +268,19 @@ static void
 save_pixbuf (GObject * ignored, gpointer user_data)
 {
 	ViewerCbInfo * info = (ViewerCbInfo *)user_data;
-	char * filename;
+	char * filename, *base_name, *filename_suggestion;
+	int success = 0;
 
-	filename = save_file (_("Save SVG as PNG"), info->window);
-	
+	base_name = _rsvg_basename(info->base_uri);
+	if(base_name)
+		filename_suggestion = g_strdup_printf("%s.png", base_name);
+	else
+		filename_suggestion = NULL;
+
+	filename = save_file (_("Save SVG as PNG"), filename_suggestion, info->window, &success);
+	g_free(base_name);
+	g_free(filename_suggestion);
+
 	if (filename) 
 		{
 			GError * err = NULL;
@@ -262,7 +306,7 @@ save_pixbuf (GObject * ignored, gpointer user_data)
 
 			g_free (filename);
 		} 
-	else 
+	else if(success)
 		{
 			GtkWidget * errmsg;
 			
@@ -282,9 +326,12 @@ static void
 save_svg (GObject * ignored, gpointer user_data)
 {
 	ViewerCbInfo * info = (ViewerCbInfo *)user_data;
-	char * filename;
-	
-	filename = save_file (_("Save SVG"), info->window);
+	char * filename, *base_name;
+	int success = 0;
+
+	base_name = _rsvg_basename(info->base_uri);
+	filename = save_file (_("Save SVG"), base_name, info->window, &success);
+	g_free(base_name);
 
 	if (filename) 
 		{
@@ -310,7 +357,7 @@ save_svg (GObject * ignored, gpointer user_data)
 			else
 				{
 					size_t written = 0, remaining = info->svg_bytes->len;
-					const unsigned char * buffer = info->svg_bytes->data;
+					const char * buffer = info->svg_bytes->data;
 					
 					while (remaining > 0) {
 						written = fwrite (buffer + (info->svg_bytes->len - remaining), 1, 
@@ -341,7 +388,7 @@ save_svg (GObject * ignored, gpointer user_data)
 
 			g_free (filename);
 		} 
-	else 
+	else if(success)
 		{
 			GtkWidget * errmsg;
 					
@@ -623,7 +670,7 @@ main (int argc, char **argv)
 	gtk_init (&argc, &argv) ;
 	rsvg_init ();
 
-	rsvg_set_default_dpi (dpi_x, dpi_y);
+	rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 	
 	/* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
 	if (width == -1 && height == -1)
@@ -661,7 +708,7 @@ main (int argc, char **argv)
 
 		for (;;)
 			{
-				unsigned char buf[1024 * 8];
+				char buf[1024 * 8];
 				size_t nread = fread (buf, 1, sizeof(buf), stdin);
 			
 				if (nread > 0)
