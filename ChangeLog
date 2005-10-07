@@ -1,5 +1,9 @@
 2005-10-06  Dom Lachowicz <cinamod@hotmail.com>
 
+	* autogen.sh: Let librsvg build out of srcdir. Bug #158331
+	
+2005-10-06  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-paint-server.c: Backport Caleb's patch to 317871, fixing a crash
 	inside of libart for some gradients.
 	* rsvg-art-paint-server.c: Ditto
