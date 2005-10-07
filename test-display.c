@@ -28,6 +28,10 @@
 #include <gdk/gdk.h>
 #include <gdk/gdkkeysyms.h>
 
+#ifdef HAVE_BASENAME
+#include <libgen.h>
+#endif
+
 #ifdef ENABLE_XEMBED
 #include <gdk/gdkx.h>
 #endif /* ENABLE_XEMBED */
@@ -35,28 +39,17 @@
 #define DEFAULT_WIDTH  240
 #define DEFAULT_HEIGHT 240
 
-#ifdef HAVE_BASENAME
-
-#include <libgen.h>
-
 static char * _rsvg_basename(const char * file)
 {
+#ifdef HAVE_BASENAME
 	if(file && *file) {
 		char * file_dup = g_strdup(file);
 		return basename(file_dup);
 	}
-
-	return NULL;
-}
-
-#else
-
-static char * _rsvg_basename(const char * file)
-{
-	return NULL;
-}
-
 #endif
+
+	return NULL;
+}
 
 typedef struct _ViewerCbInfo ViewerCbInfo;
 struct _ViewerCbInfo
@@ -279,7 +272,11 @@ save_pixbuf (GObject * ignored, gpointer user_data)
 	int success = 0;
 
 	base_name = _rsvg_basename(info->base_uri);
-	filename_suggestion = g_strdup_printf("%s.png", base_name);
+	if(base_name)
+		filename_suggestion = g_strdup_printf("%s.png", base_name);
+	else
+		filename_suggestion = NULL;
+
 	filename = save_file (_("Save SVG as PNG"), filename_suggestion, info->window, &success);
 	g_free(base_name);
 	g_free(filename_suggestion);
