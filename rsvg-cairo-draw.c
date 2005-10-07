@@ -234,12 +234,20 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 {
 	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
 	RsvgState *state = rsvg_state_current (ctx);
-	cairo_t *cr = render->cr;
+	cairo_t *cr;
 	RsvgBpath *bpath;
 	int i;
 	gdouble xmin = 0, ymin = 0, xmax = 0, ymax = 0;
-	int virgin = 1;
+	int virgin = 1, need_tmpbuf = 0;
 	RsvgCairoBbox bbox;
+
+	need_tmpbuf = (state->fill != NULL) && (state->stroke != NULL) &&
+		state->opacity != 0xff;
+
+	if (need_tmpbuf)
+		rsvg_cairo_push_discrete_layer (ctx);
+
+	cr = render->cr;
 
 	cairo_save (cr);
 
@@ -292,15 +300,21 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 	bbox.h = ymax - ymin;
 
 	if (state->fill != NULL) {
+		int opacity;
 		if (state->fill_rule == FILL_RULE_EVENODD)
 			cairo_set_fill_rule (cr, CAIRO_FILL_RULE_EVEN_ODD);
 		else /* state->fill_rule == FILL_RULE_NONZERO */
 			cairo_set_fill_rule (cr, CAIRO_FILL_RULE_WINDING);
 
+		if (!need_tmpbuf)
+			opacity = (state->fill_opacity * state->opacity) / 255;
+		else
+			opacity = state->fill_opacity;
+
 		_set_source_rsvg_paint_server (cr,
 									   state->current_color,
 									   state->fill,
-									   state->fill_opacity,
+									   opacity,
 									   bbox,
 									   rsvg_state_current(ctx)->current_color);
 
@@ -311,17 +325,25 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 	}
 
 	if (state->stroke != NULL) {
+		int opacity;
+		if (!need_tmpbuf)
+			opacity = (state->stroke_opacity * state->opacity) / 255;
+		else
+			opacity = state->stroke_opacity;
+
 		_set_source_rsvg_paint_server (cr,
 									   state->current_color,
 									   state->stroke,
-									   state->stroke_opacity,
+									   opacity,
 									   bbox,
 									   rsvg_state_current(ctx)->current_color);
 
 		cairo_stroke (cr);
 	}
-			
 	cairo_restore (cr);
+
+	if (need_tmpbuf)
+		rsvg_cairo_pop_discrete_layer (ctx);
 }
 
 void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf, 
@@ -340,6 +362,8 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 	cairo_surface_t *surface;
 	static const cairo_user_data_key_t key;
 	int j;
+
+	rsvg_cairo_push_discrete_layer (ctx);
 
     cairo_save (render->cr);
 	_set_rsvg_affine (render->cr, state->affine);
@@ -412,12 +436,14 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 			gdk_pixels += gdk_rowstride;
 			cairo_pixels += 4 * width;
 		}
-	
+
 	cairo_set_source_surface (render->cr, surface, pixbuf_x, pixbuf_y);
 	cairo_paint (render->cr);
 	cairo_surface_destroy (surface);
-	
+
     cairo_restore (render->cr);
+
+	rsvg_cairo_pop_discrete_layer (ctx);
 }
 
 void
@@ -463,7 +489,7 @@ rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx *ctx)
 	cairo_set_source_surface (render->cr,
 							  cairo_get_target (child_cr),
 							  0, 0);
-	cairo_paint (render->cr);
+	cairo_paint_with_alpha (render->cr, (double)state->opacity / 255.0);
 	cairo_destroy (child_cr);
 }
 

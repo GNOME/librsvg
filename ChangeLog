@@ -1,3 +1,8 @@
+2005-10-07 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-cairo-draw.c: made opacity work
+	* test-display.c: changed set_default_dpi_x_y to set_default_dpi
+	
 2005-10-06  Dom Lachowicz <cinamod@hotmail.com>
 
 	* autogen.sh: Let librsvg build out of srcdir. Bug #158331
@@ -6,7 +11,7 @@
 	* rsvg-structure.c: Related to bug #318025, don't set has_width or has_height unless they are > 0.
 	* rsvg.c: Bug #168567, mega hack to make multiImage sort-of work.
 	
-2005-10-4 Caleb Moore <c.moore@student.unsw.edu.au>
+2005-10-04 Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* most-cairo-related-places: added lots of stuff to do with gradients, objectBoundBox positioning and spreading. Made currentColor work with cairo. Made courners look great in cairo but crap in libart... I just can't win.
 
