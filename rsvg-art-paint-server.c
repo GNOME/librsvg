@@ -191,7 +191,7 @@ rsvg_art_paint_server_lin_grad_render (RsvgLinearGradient *rlg, ArtRender *ar,
 	pxt = px * affine[0] + py * affine[2] + affine[4];
 	pyt = px * affine[1] + py * affine[3] + affine[5];
 
-	pointlen = fabs((pxt - cxt)*(cyt - y2t)  - (cxt - x2t)*(pyt - cyt)) / 
+	pointlen = ((pxt - cxt)*(cyt - y2t)  - (cxt - x2t)*(pyt - cyt)) / 
 		sqrt((pxt - cxt) * (pxt - cxt) + (pyt - cyt) * (pyt - cyt));
 
 	xchange = pxt - cxt;
