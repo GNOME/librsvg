@@ -3,6 +3,7 @@
 	* autogen.sh: Let librsvg build out of srcdir. Bug #158331
 	* test-display.c: Populate save dialogs with the SVG's name. Bug #318010.
 	* configure.in: Ditto
+	* rsvg-structure.c: Related to bug #318025, don't set has_width or has_height unless they are > 0.
 	
 2005-10-4 Caleb Moore <c.moore@student.unsw.edu.au>
 	
