@@ -1,3 +1,7 @@
+2005-10-07  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.c: Hopefully get rid of "static" when rendering using the cairo backend
+	
 2005-10-07 Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-cairo-draw.c: made opacity work
