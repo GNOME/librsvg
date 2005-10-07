@@ -363,11 +363,16 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 	static const cairo_user_data_key_t key;
 	int j;
 
+	if (pixbuf == NULL)
+		return;
+
 	rsvg_cairo_push_discrete_layer (ctx);
 
     cairo_save (render->cr);
 	_set_rsvg_affine (render->cr, state->affine);
     cairo_scale (render->cr, w / width, h / height);
+	pixbuf_x *= width / w;
+	pixbuf_y *= height / h;
 
 	if (n_channels == 3)
 		format = CAIRO_FORMAT_RGB24;

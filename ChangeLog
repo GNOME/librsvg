@@ -2,6 +2,7 @@
 
 	* rsvg-cairo-draw.c: made opacity work
 	* test-display.c: changed set_default_dpi_x_y to set_default_dpi
+	* rsvg-cairo-draw.c: put image in the right spot
 	
 2005-10-06  Dom Lachowicz <cinamod@hotmail.com>
 
