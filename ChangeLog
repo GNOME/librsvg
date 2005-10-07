@@ -5,6 +5,7 @@
 	* configure.in: Ditto
 	* rsvg-structure.c: Related to bug #318025, don't set has_width or has_height unless they are > 0.
 	* rsvg.c: Bug #168567, mega hack to make multiImage sort-of work.
+	* configure.in: 2.12.6
 	
 2005-10-06  Dom Lachowicz <cinamod@hotmail.com>
 
