@@ -312,14 +312,14 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
 				{
 					svg->w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, ctx->width, 1);
-					svg->hasw = TRUE;
+					svg->hasw = (svg->w > 0);
 					if (!svg->has_vbox)
 						ctx->width = svg->w; 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
 				{
 					svg->h = rsvg_css_parse_normalized_length (value, ctx->dpi_y, ctx->height, 1);
-					svg->hash = TRUE;
+					svg->hash = (svg->h > 0);
 					if (!svg->has_vbox)
 						ctx->height = svg->h;
 				}
