@@ -263,6 +263,15 @@ rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 		newnode = rsvg_new_filter_primitive_light_source('s');
 	else if (!strcmp ((char *)name, "fePointLight"))
 		newnode = rsvg_new_filter_primitive_light_source('p');
+
+	/* hack to make multiImage sort-of work */
+	else if (!strcmp ((char *)name, "multiImage"))
+		newnode = rsvg_new_switch();
+	else if (!strcmp ((char *)name, "subImageRef"))
+		newnode = rsvg_new_image();
+	else if (!strcmp ((char *)name, "subImage"))
+		newnode = rsvg_new_group();
+
 	if (newnode)
 		{
 			rsvg_node_set_atts(newnode, ctx, atts);
