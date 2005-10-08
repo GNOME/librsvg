@@ -1,9 +1,9 @@
 /* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /*
-   rsvg-shapes.c: Draw shapes with libart
+   rsvg-shapes.c: Draw shapes with cairo
 
-   Copyright (C) 2000 Eazel, Inc.
-   Copyright (C) 2002 Dom Lachowicz <cinamod@hotmail.com>
+   Copyright (C) 2005 Dom Lachowicz <cinamod@hotmail.com>
+   Copyright (C) 2005 Caleb Moore <c.moore@student.unsw.edu.au>
    Copyright (C) 2005 Red Hat, Inc.
 
    This program is free software; you can redistribute it and/or
@@ -21,14 +21,14 @@
    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.
 
-   Authors: Raph Levien <raph@artofcode.com>, 
-            Dom Lachowicz <cinamod@hotmail.com>, 
+   Authors: Dom Lachowicz <cinamod@hotmail.com>, 
             Caleb Moore <c.moore@student.unsw.edu.au>
             Carl Worth <cworth@cworth.org>
 */
 
 #include "rsvg-cairo-draw.h"
 #include "rsvg-cairo-render.h"
+#include "rsvg-cairo-clip.h"
 #include "rsvg-styles.h"
 #include "rsvg-bpath-util.h"
 #include "rsvg-path.h"
@@ -241,8 +241,8 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 	int virgin = 1, need_tmpbuf = 0;
 	RsvgCairoBbox bbox;
 
-	need_tmpbuf = (state->fill != NULL) && (state->stroke != NULL) &&
-		state->opacity != 0xff;
+	need_tmpbuf = ((state->fill != NULL) && (state->stroke != NULL) &&
+				   state->opacity != 0xff) || state->clip_path_ref;
 
 	if (need_tmpbuf)
 		rsvg_cairo_push_discrete_layer (ctx);
@@ -465,6 +465,8 @@ rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
 	if (state->opacity == 0xFF){
 		cairo_save(render->cr); /* only for the clipping stuff 
 								 seems like a bad idea, I dunno*/
+		if (state->clip_path_ref)
+			rsvg_cairo_clip(ctx, state->clip_path_ref);
 		return;
 	}
 	surface = cairo_surface_create_similar (cairo_get_target (render->cr),
@@ -476,6 +478,8 @@ rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
 	render->cr_stack = g_list_prepend(render->cr_stack, render->cr);
 	render->cr = child_cr;
 	cairo_save(render->cr);
+	if (state->clip_path_ref)
+		rsvg_cairo_clip(ctx, state->clip_path_ref);
 }
 
 void

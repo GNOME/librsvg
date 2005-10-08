@@ -1,5 +1,9 @@
 2005-10-08 Caleb Moore <c.moore@student.unsw.edu.au>
 	
+	* rsvg-cairo-clip.c/.h: new files. Added clipping in cairo backend.
+
+2005-10-08 Caleb Moore <c.moore@student.unsw.edu.au>
+	
 	* rsvg-art-paint-server.c: stopped strangely transformed gradients from getting flipped.
 
 2005-10-07  Dom Lachowicz <cinamod@hotmail.com>

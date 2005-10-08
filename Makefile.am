@@ -96,7 +96,9 @@ librsvg_2_cairo_la_SOURCES =	\
 	rsvg-cairo-draw.c	\
 	rsvg-cairo-draw.h	\
 	rsvg-cairo-render.c	\
-	rsvg-cairo-render.h
+	rsvg-cairo-render.h	\
+	rsvg-cairo-clip.h	\
+	rsvg-cairo-clip.c
 librsvg_2_cairo_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
 librsvg_2_cairo_la_LIBADD = librsvg-2-base.la $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS) $(CAIRO_LIBS)
 

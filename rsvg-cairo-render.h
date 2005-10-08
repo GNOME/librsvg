@@ -32,9 +32,9 @@
 
 G_BEGIN_DECLS
 
-typedef struct RsvgCairoRender RsvgCairoRender;
+typedef struct _RsvgCairoRender RsvgCairoRender;
 
-struct RsvgCairoRender {
+struct _RsvgCairoRender {
 	RsvgRender super;
 	cairo_t *cr;
 	double width;
