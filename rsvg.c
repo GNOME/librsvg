@@ -654,23 +654,26 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 #warning "libxml version less than 2.6.22. XML entities won't work"
 #endif
 
-#ifdef RSVG_ENABLE_ENTITIES
-
 static xmlEntityPtr
 rsvg_get_entity (void *data, const xmlChar *name)
 {
+#ifdef RSVG_ENABLE_ENTITIES
 	RsvgHandle *ctx = (RsvgHandle *)data;
 	xmlEntityPtr entity;
 
 	entity = g_hash_table_lookup (ctx->entities, name);
 
 	return entity;
+#else
+	return NULL;
+#endif
 }
 
 static void
 rsvg_entity_decl (void *data, const xmlChar *name, int type,
 				  const xmlChar *publicId, const xmlChar *systemId, xmlChar *content)
 {
+#ifdef RSVG_ENABLE_ENTITIES
 	RsvgHandle *ctx = (RsvgHandle *)data;
 	GHashTable *entities = ctx->entities;
 	xmlEntityPtr entity;
@@ -689,14 +692,13 @@ rsvg_entity_decl (void *data, const xmlChar *name, int type,
 			entity->length = strlen ((char *)content);
 		}
 	g_hash_table_insert (entities, dupname, entity);
-}
-
 #endif
+}
 
 static void
 rsvg_error_cb (void *data, const char *msg, ...)
 {
-#if 1 /*def G_ENABLE_DEBUG*/
+#ifdef G_ENABLE_DEBUG
 	va_list args;
 	
 	va_start (args, msg);
@@ -717,11 +719,8 @@ static void rsvg_SAX_handler_struct_init()
 
 			memset(&rsvgSAXHandlerStruct, 0, sizeof(rsvgSAXHandlerStruct));
 
-#ifdef RSVG_ENABLE_ENTITIES			
 			rsvgSAXHandlerStruct.getEntity = rsvg_get_entity;
 			rsvgSAXHandlerStruct.entityDecl = rsvg_entity_decl;
-#endif
-
 			rsvgSAXHandlerStruct.characters = rsvg_characters;
 			rsvgSAXHandlerStruct.error = rsvg_error_cb;
 			rsvgSAXHandlerStruct.cdataBlock = rsvg_characters;
