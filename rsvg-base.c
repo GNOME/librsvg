@@ -679,36 +679,57 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 #endif
 }
 
+#if LIBXML_VERSION >= 20622
+#define RSVG_ENABLE_ENTITIES
+#elif defined(__GNUC__)
+#warning "libxml version less than 2.6.22. XML entities won't work"
+#endif
+
+#if LIBXML_VERSION >= 20622
+#define RSVG_ENABLE_ENTITIES
+#elif defined(__GNUC__)
+#warning "libxml version less than 2.6.22. XML entities won't work"
+#endif
+
 static xmlEntityPtr
 rsvg_get_entity (void *data, const xmlChar *name)
 {
+#ifdef RSVG_ENABLE_ENTITIES
 	RsvgHandle *ctx = (RsvgHandle *)data;
-	
-	return (xmlEntityPtr)g_hash_table_lookup (ctx->entities, name);
+	xmlEntityPtr entity;
+
+	entity = g_hash_table_lookup (ctx->entities, name);
+
+	return entity;
+#else
+	return NULL;
+#endif
 }
 
 static void
 rsvg_entity_decl (void *data, const xmlChar *name, int type,
 				  const xmlChar *publicId, const xmlChar *systemId, xmlChar *content)
 {
+#ifdef RSVG_ENABLE_ENTITIES
 	RsvgHandle *ctx = (RsvgHandle *)data;
 	GHashTable *entities = ctx->entities;
 	xmlEntityPtr entity;
 	char *dupname;
 
 	entity = g_new0 (xmlEntity, 1);
-	entity->type = type;
-	entity->length = strlen ((char*)name);
-	dupname = g_strdup ((char*)name);
-	entity->name = (xmlChar*)dupname;
-	entity->ExternalID = (xmlChar*)g_strdup ((char*)publicId);
-	entity->SystemID = (xmlChar*)g_strdup ((char*)systemId);
+	entity->type = XML_ENTITY_DECL;
+	dupname = g_strdup ((char *)name);
+	entity->name = dupname;
+	entity->ExternalID = g_strdup (publicId);
+	entity->SystemID = g_strdup (systemId);
+	entity->etype = type;
 	if (content)
 		{
-			entity->content = (xmlChar*)xmlMemStrdup ((char*)content);
-			entity->length = strlen ((char*)content);
+			entity->content = xmlMemStrdup ((char *)content);
+			entity->length = strlen ((char *)content);
 		}
 	g_hash_table_insert (entities, dupname, entity);
+#endif
 }
 
 static void
@@ -734,7 +755,7 @@ static void rsvg_SAX_handler_struct_init()
 			rsvgSAXHandlerStructInited = TRUE;
 
 			memset(&rsvgSAXHandlerStruct, 0, sizeof(rsvgSAXHandlerStruct));
-			
+
 			rsvgSAXHandlerStruct.getEntity = rsvg_get_entity;
 			rsvgSAXHandlerStruct.entityDecl = rsvg_entity_decl;
 			rsvgSAXHandlerStruct.characters = rsvg_characters;
