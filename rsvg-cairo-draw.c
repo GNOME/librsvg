@@ -241,6 +241,9 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 	int virgin = 1, need_tmpbuf = 0;
 	RsvgCairoBbox bbox;
 
+	if (state->fill == NULL && state->stroke == NULL)
+		return;
+
 	need_tmpbuf = ((state->fill != NULL) && (state->stroke != NULL) &&
 				   state->opacity != 0xff) || state->clip_path_ref;
 
@@ -543,7 +546,7 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 	RsvgCairoRender *render;
 
 	rowstride = width * 4;
-	pixels = g_new(guint8, width * height * 4);
+	pixels = g_new0(guint8, width * height * 4);
 	surface = cairo_image_surface_create_for_data (pixels,
 												   CAIRO_FORMAT_ARGB32,
 												   width, height,
@@ -593,6 +596,6 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 
 	cairo_destroy (cr);
 	ctx->render = (RsvgRender *)save_render;
-	
+
 	return img;
 }

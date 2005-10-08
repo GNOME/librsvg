@@ -1,7 +1,9 @@
 2005-10-08 Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-cairo-clip.c/.h: new files. Added clipping in cairo backend.
+	* rsvg-cairo-draw.c: stopped paths from being drawn and not stroked or filled (root of the "grey box" problem)
 
+	
 2005-10-08 Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-art-paint-server.c: stopped strangely transformed gradients from getting flipped.
