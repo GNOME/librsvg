@@ -65,7 +65,7 @@ static const guint nb_implemented_extensions = 0;
 static int 
 rsvg_feature_compare(const void *a, const void *b)
 {
-	return strcmp((const char *)a, (const char *)b);
+	return strcmp((const char *)a, *(const char **)b);
 }
 
 /* http://www.w3.org/TR/SVG/struct.html#RequiredFeaturesAttribute */

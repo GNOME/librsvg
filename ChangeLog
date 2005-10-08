@@ -1,3 +1,7 @@
+2005-10-08  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-cond.c: Fix up <switch> conditional comparisons
+	
 2005-10-08 Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-cairo-clip.c/.h: new files. Added clipping in cairo backend.
