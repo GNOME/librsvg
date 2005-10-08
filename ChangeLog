@@ -1,10 +1,11 @@
 2005-10-08  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: 2.12.7
+	* rsvg-cond.c: Fix up <switch> conditional comparisons
 
 2005-10-08 Caleb Moore <c.moore@student.unsw.edu.au>
 	
-	* rsvg-art-paint-server.c: stopped strangely transformed gradients from getting flipped. Bug #318097/166673
+	* rsvg-art-paint-server.c: stopped strangely transformed gradients from getting flipped. Bug #318097/#166673
 	
 2005-10-06  Dom Lachowicz <cinamod@hotmail.com>
 
