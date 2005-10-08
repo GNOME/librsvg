@@ -517,9 +517,15 @@ rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
 {
 	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
 	cairo_t *cr = render->cr;
+	cairo_matrix_t save;
+
+	cairo_get_matrix (cr, &save);
+	_set_rsvg_affine (cr, rsvg_state_current(ctx)->affine);
 
 	cairo_rectangle (cr, x, y, w, h);
 	cairo_clip (cr);
+
+	cairo_set_matrix (cr, &save);
 }
 
 static void
