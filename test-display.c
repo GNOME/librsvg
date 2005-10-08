@@ -109,7 +109,7 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 	GtkWidget *gpd;	
 	gint result;
 
-	gpd = gnome_print_dialog_new (gnome_print_job_new (gnome_print_config_default ()), _("Print SVG"), 0);
+	gpd = gnome_print_dialog_new (gnome_print_job_new (gnome_print_config_default ()), (unsigned char *)_("Print SVG"), 0);
 	gtk_window_set_transient_for(GTK_WINDOW (gpd), GTK_WINDOW (info->window));
 			  
 	if ((result = gtk_dialog_run (GTK_DIALOG (gpd))) != GNOME_PRINT_DIALOG_RESPONSE_CANCEL) 
@@ -164,7 +164,7 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 			rowstride = gdk_pixbuf_get_rowstride (image);
 			pixels    = gdk_pixbuf_get_pixels (image);
 			
-			gnome_print_beginpage(gpc, "1");
+			gnome_print_beginpage(gpc, (unsigned char *)"1");
 			gnome_print_gsave (gpc);
 			gnome_print_translate (gpc, 0, page_height - height);
 			gnome_print_scale (gpc, width, height);
@@ -182,7 +182,7 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 				{
 					GtkWidget * preview;
 					
-					preview = gnome_print_job_preview_new (gpm, _("SVG Print Preview"));
+					preview = gnome_print_job_preview_new (gpm, (unsigned char *)_("SVG Print Preview"));
 					gtk_window_set_transient_for(GTK_WINDOW(preview), GTK_WINDOW(info->window));
 					gtk_widget_show (GTK_WIDGET (preview));
 				}
@@ -357,7 +357,7 @@ save_svg (GObject * ignored, gpointer user_data)
 			else
 				{
 					size_t written = 0, remaining = info->svg_bytes->len;
-					const char * buffer = info->svg_bytes->data;
+					const unsigned char * buffer = info->svg_bytes->data;
 					
 					while (remaining > 0) {
 						written = fwrite (buffer + (info->svg_bytes->len - remaining), 1, 
@@ -708,7 +708,7 @@ main (int argc, char **argv)
 
 		for (;;)
 			{
-				char buf[1024 * 8];
+				unsigned char buf[1024 * 8];
 				size_t nread = fread (buf, 1, sizeof(buf), stdin);
 			
 				if (nread > 0)
