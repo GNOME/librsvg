@@ -1,5 +1,10 @@
 2005-10-08  Carl Worth  <cworth@cworth.org>
 
+	* Makefile.am: Add apparently missing POPT_LIBS flags to
+	librsvg_2_cairo_la_LIBADD.
+
+2005-10-08  Carl Worth  <cworth@cworth.org>
+
 	* rsvg-base.c: (rsvg_entity_decl): Add some more casts to let gcc4
 	compile once again without errors.
 

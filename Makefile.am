@@ -100,7 +100,7 @@ librsvg_2_cairo_la_SOURCES =	\
 	rsvg-cairo-clip.h	\
 	rsvg-cairo-clip.c
 librsvg_2_cairo_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
-librsvg_2_cairo_la_LIBADD = librsvg-2-base.la $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS) $(CAIRO_LIBS)
+librsvg_2_cairo_la_LIBADD = librsvg-2-base.la $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS) $(POPT_LIBS) $(CAIRO_LIBS)
 
 librsvg_2_la_SOURCES =	\
 	rsvg.c		\
