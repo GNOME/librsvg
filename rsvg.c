@@ -648,10 +648,10 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 		}
 }
 
-#if LIBXML_VERSION >= 20622
+#if LIBXML_VERSION >= 20621
 #define RSVG_ENABLE_ENTITIES
 #elif defined(__GNUC__)
-#warning "libxml version less than 2.6.22. XML entities won't work"
+#warning "libxml version less than 2.6.21. XML entities won't work"
 #endif
 
 static xmlEntityPtr
