@@ -180,22 +180,56 @@ _set_source_rsvg_solid_colour (cairo_t         *cr,
 }
 
 static void
-_set_source_rsvg_pattern (cairo_t     *cr,
-						  RsvgPattern *pattern,
-						  guint8       opacity)
+_set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
+						  RsvgPattern    *rsvg_pattern,
+						  guint8          opacity,
+						  RsvgCairoBbox   bbox)
 {
-	/* XXX: NYI */
-	cairo_set_source_rgb (cr, 0.0, 1.0, 1.0);
+	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
+	/* XXX: I'm curious, why do we need to copy the pattern? (CDW) */
+	RsvgPattern local_pattern = *rsvg_pattern;
+	RsvgNode *node = (RsvgNode *)&local_pattern;
+	cairo_t *cr_render, *cr_pattern;
+	cairo_pattern_t *pattern;
+	cairo_surface_t *surface;
+
+	cr_render = render->cr;
+
+	/* XXX: This is bogus. We really need to look at the pattern's
+	 * patternUnits attribute before we can figure out how to
+	 * interpret x,y,width,height here. Or did rsvg already do this
+	 * for us up above perhaps??? */
+	surface = cairo_surface_create_similar(cairo_get_target (cr_render),
+										   CAIRO_CONTENT_COLOR_ALPHA,
+										   rsvg_pattern->width,
+										   rsvg_pattern->height);
+	cr_pattern = cairo_create(surface);
+
+	render->cr = cr_pattern;
+	_rsvg_node_draw_children (node, ctx, 2);
+	render->cr = cr_render;
+
+	pattern = cairo_pattern_create_for_surface (surface);
+	cairo_pattern_set_extend (pattern, CAIRO_EXTEND_REPEAT);
+
+	cairo_set_source (cr_render, pattern);
+
+	cairo_pattern_destroy (pattern);
+	cairo_destroy (cr_pattern);
+	cairo_surface_destroy (surface);
 }
 
 static void
-_set_source_rsvg_paint_server (cairo_t         *cr,
+_set_source_rsvg_paint_server (RsvgDrawingCtx  *ctx,
 							   guint32          current_color_rgb,
 							   RsvgPaintServer *ps,
 							   guint8           opacity,
 							   RsvgCairoBbox    bbox,
 							   guint32          current_colour)
 {
+	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
+	cairo_t *cr = render->cr;
+
 	switch (ps->type) {
 	case RSVG_PAINT_SERVER_LIN_GRAD:
 		_set_source_rsvg_linear_gradient (cr, ps->core.lingrad,
@@ -212,7 +246,8 @@ _set_source_rsvg_paint_server (cairo_t         *cr,
 									   current_colour);
 		break;
 	case RSVG_PAINT_SERVER_PATTERN:
-		_set_source_rsvg_pattern (cr, ps->core.pattern, opacity);
+		_set_source_rsvg_pattern (ctx, ps->core.pattern, opacity,
+								  bbox);
 		break;
 	}
 }
@@ -314,7 +349,7 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 		else
 			opacity = state->fill_opacity;
 
-		_set_source_rsvg_paint_server (cr,
+		_set_source_rsvg_paint_server (ctx,
 									   state->current_color,
 									   state->fill,
 									   opacity,
@@ -334,7 +369,7 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 		else
 			opacity = state->stroke_opacity;
 
-		_set_source_rsvg_paint_server (cr,
+		_set_source_rsvg_paint_server (ctx,
 									   state->current_color,
 									   state->stroke,
 									   opacity,

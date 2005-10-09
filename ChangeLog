@@ -1,5 +1,16 @@
 2005-10-08  Carl Worth  <cworth@cworth.org>
 
+	* rsvg-cairo-draw.c: (_set_source_rsvg_pattern): Add preliminary
+	support for patterns to rsvg-cairo, (doesn't do transformed
+	patterns yet).
+
+	* rsvg-cairo-draw.c:
+	(_set_source_rsvg_paint_server), (rsvg_cairo_render_path): Pass
+	the RsvgDrawingCtx down do the sub-functions since the pattern
+	drawing code needs it in order to call _rsvg_node_draw_children.
+
+2005-10-08  Carl Worth  <cworth@cworth.org>
+
 	* Makefile.am: Add apparently missing POPT_LIBS flags to
 	librsvg_2_cairo_la_LIBADD.
 
