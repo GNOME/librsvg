@@ -714,18 +714,18 @@ rsvg_entity_decl (void *data, const xmlChar *name, int type,
 	RsvgHandle *ctx = (RsvgHandle *)data;
 	GHashTable *entities = ctx->entities;
 	xmlEntityPtr entity;
-	char *dupname;
+	xmlChar *dupname;
 
 	entity = g_new0 (xmlEntity, 1);
 	entity->type = XML_ENTITY_DECL;
-	dupname = g_strdup ((char *)name);
+	dupname = (xmlChar *) g_strdup ((char *)name);
 	entity->name = dupname;
-	entity->ExternalID = g_strdup (publicId);
-	entity->SystemID = g_strdup (systemId);
+	entity->ExternalID = (xmlChar *) g_strdup ((char *)publicId);
+	entity->SystemID = (xmlChar *) g_strdup ((char *)systemId);
 	entity->etype = type;
 	if (content)
 		{
-			entity->content = xmlMemStrdup ((char *)content);
+			entity->content = (xmlChar *) xmlMemStrdup ((char *)content);
 			entity->length = strlen ((char *)content);
 		}
 	g_hash_table_insert (entities, dupname, entity);

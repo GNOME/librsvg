@@ -1,3 +1,8 @@
+2005-10-08  Carl Worth  <cworth@cworth.org>
+
+	* rsvg-base.c: (rsvg_entity_decl): Add some more casts to let gcc4
+	compile once again without errors.
+
 2005-10-08  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-cond.c: Fix up <switch> conditional comparisons
