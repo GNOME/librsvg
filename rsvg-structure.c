@@ -254,12 +254,16 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 
 	if (sself->has_vbox && sself->hasw && sself->hash)
 		{
-			affine[0] = sself->w / sself->vbw;
+			double x = sself->x, y = sself->y, w = sself->w, h = sself->h;
+			rsvg_preserve_aspect_ratio(sself->preserve_aspect_ratio,
+									   sself->vbw, sself->vbh, 
+									   &w, &h, &x, &y);
+			affine[0] = w / sself->vbw;
 			affine[1] = 0;
 			affine[2] = 0;
-			affine[3] = sself->h / sself->vbh;
-			affine[4] = sself->x - sself->vbx * sself->w / sself->vbw;
-			affine[5] = sself->y - sself->vby * sself->h / sself->vbh;
+			affine[3] = h / sself->vbh;
+			affine[4] = x - sself->vbx * w / sself->vbw;
+			affine[5] = y - sself->vby * h / sself->vbh;
 			_rsvg_affine_multiply(state->affine, affine, 
 								  state->affine);
 		}
@@ -311,6 +315,8 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 							ctx->height = svg->vbh;
 						}
 				}
+			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
+				svg->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);			
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
 				{
 					svg->w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, ctx->width, 1);

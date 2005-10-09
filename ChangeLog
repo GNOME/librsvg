@@ -1,3 +1,7 @@
+2005-10-09 Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-structure.c: added preservation of aspect ratio to SVG elements
+
 2005-10-08  Carl Worth  <cworth@cworth.org>
 
 	* rsvg-cairo-draw.c: (_set_source_rsvg_pattern): Add preliminary
