@@ -248,15 +248,15 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 								   rsvg_pattern->vbw, rsvg_pattern->vbh, 
 								   &w, &h, &x, &y);
 
-		x += rsvg_pattern->vbx * w / rsvg_pattern->vbw;
-		y += rsvg_pattern->vby * h / rsvg_pattern->vbh;
+		x -= rsvg_pattern->vbx * w / rsvg_pattern->vbw;
+		y -= rsvg_pattern->vby * h / rsvg_pattern->vbh;
 
 		caffine[0] = w / rsvg_pattern->vbw;
 		caffine[1] = 0.;		
 		caffine[2] = 0.;
 		caffine[3] = h / rsvg_pattern->vbh;
-		caffine[4] = -x;		
-		caffine[5] = -y;
+		caffine[4] = x;		
+		caffine[5] = y;
 	}
 	else if (rsvg_pattern->obj_cbbox) {
 		/* If coords are in terms of the bounding box, use them */

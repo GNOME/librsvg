@@ -1,3 +1,7 @@
+2005-10-11 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-text.c: made text not crash rsvg when used with the new switch system. I can't believe I havn't got around to rewriting the text system yet.
+
 2005-10-10 Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-cairo-draw.c: patterns now transform correctly, passes all pattern tests

@@ -378,6 +378,7 @@ rsvg_node_text_free (RsvgNode *self)
 {
 	RsvgNodeText *z = (RsvgNodeText *)self;
 	rsvg_tspan_free (z->chunk);
+	g_free(self->state);
 	g_free (z);
 }
 
@@ -534,6 +535,8 @@ rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	text->super.type = RSVG_NODE_PATH;
 	text->super.free = rsvg_node_text_free;
 	text->super.draw = rsvg_node_text_draw;
+	text->super.state = g_new(RsvgState, 1);
+	*text->super.state = state;
 	rsvg_defs_set (ctx->defs, id, &text->super);
 	
 	text->super.parent = (RsvgNode *)ctx->currentnode;
