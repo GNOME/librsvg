@@ -192,7 +192,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 	cairo_surface_t *surface;
 	cairo_matrix_t matrix;
 	int i;
-	double affine[6], caffine[6], invcaffine[6], width, height;
+	double affine[6], caffine[6], width, height;
 
 	rsvg_pattern = &local_pattern;
 	rsvg_pattern_fix_fallback(rsvg_pattern);
@@ -214,10 +214,10 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 
 	/* Create the pattern coordinate system */
 	if (rsvg_pattern->obj_bbox) {
-		affine[0] = bbox.w;
+		affine[0] = 1;
 		affine[1] = 0.;		
 		affine[2] = 0.;
-		affine[3] = bbox.h;
+		affine[3] = 1;
 		/* subtract the pattern origin */
 		affine[4] = bbox.x - rsvg_pattern->x * bbox.w;
 		affine[5] = bbox.y - rsvg_pattern->y * bbox.h;
@@ -239,14 +239,21 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 		double w, h, x, y;
 		w = rsvg_pattern->width;
 		h = rsvg_pattern->height;
+		x = 0;
+		y = 0;
 		rsvg_preserve_aspect_ratio(rsvg_pattern->preserve_aspect_ratio,
 								   rsvg_pattern->vbw, rsvg_pattern->vbh, 
 								   &w, &h, &x, &y);
+
+		x -= rsvg_pattern->vbx * w / rsvg_pattern->vbw;
+		y -= rsvg_pattern->vby * h / rsvg_pattern->vbh;
 
 		caffine[0] = w / rsvg_pattern->vbw;
 		caffine[1] = 0.;		
 		caffine[2] = 0.;
 		caffine[3] = h / rsvg_pattern->vbh;
+		caffine[4] = x;		
+		caffine[5] = y;
 	}
 	else if (rsvg_pattern->obj_cbbox) {
 		/* If coords are in terms of the bounding box, use them */
@@ -254,16 +261,17 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 		caffine[1] = 0.;		
 		caffine[2] = 0.;
 		caffine[3] = bbox.h;
+		caffine[4] = 0;		
+		caffine[5] = 0;
 	} else {
 		/* Otherwise default to an identity matrix */
 		caffine[0] = 1;
 		caffine[1] = 0.;		
 		caffine[2] = 0.;
 		caffine[3] = 1;
+		caffine[4] = 0;		
+		caffine[5] = 0;
 	}
-	/* Never translate, we want our origin to be that of the new surface */
-	caffine[4] = 0;		
-	caffine[5] = 0;
 
 	/* Draw to another surface */
 	render->cr = cr_pattern;
@@ -283,10 +291,6 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 	/* Set the render to draw where it used to */
 	render->cr = cr_render;
 
-	/* We don't want to be applying transformations twice */
-	_rsvg_affine_invert(invcaffine, caffine);
-	_rsvg_affine_multiply(affine, invcaffine, affine);
-	
 	pattern = cairo_pattern_create_for_surface (surface);
 	cairo_pattern_set_extend (pattern, CAIRO_EXTEND_REPEAT);
 
