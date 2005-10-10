@@ -130,9 +130,8 @@ _set_source_rsvg_radial_gradient (cairo_t            *cr,
 	if (radial->has_current_color)
 		current_color_rgb = radial->current_color;
 
-	/* XXX: This seems to work ok... */
-	pattern = cairo_pattern_create_radial (radial->cx, radial->cy, 0.0,
-										   radial->fx, radial->fy, radial->r);
+	pattern = cairo_pattern_create_radial (radial->fx, radial->fy, 0.0,
+										   radial->cx, radial->cy, radial->r);
 
 	cairo_matrix_init (&matrix,
 					   radial->affine[0], radial->affine[1],

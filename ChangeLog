@@ -1,6 +1,7 @@
 2005-10-10 Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-cairo-draw.c: patterns now transform correctly, passes all pattern tests
+	* rsvg-cairo-draw.c: fx and fy were confused with cx and cy in the radial gradient section
 	
 2005-10-09 Caleb Moore <c.moore@student.unsw.edu.au>
 	
