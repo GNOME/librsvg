@@ -502,10 +502,8 @@ rsvg_art_paint_server_pattern_render (RsvgPattern *pattern, ArtRender *ar,
 	caffine[5] += yoffset;
 
 	for (i = 0; i < 6; i++)
-		{
-			rsvg_state_current(hctx)->personal_affine[i] = caffine[i];
+		rsvg_state_current(hctx)->personal_affine[i] =
 			rsvg_state_current(hctx)->affine[i] = caffine[i];
-		}
 
 	_rsvg_node_draw_children (drawable, hctx, 2);
 

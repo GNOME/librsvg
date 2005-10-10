@@ -1,3 +1,7 @@
+2005-10-10 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-cairo-draw.c: patterns now transform correctly, passes all pattern tests
+	
 2005-10-09 Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-structure.c: added preservation of aspect ratio to SVG elements

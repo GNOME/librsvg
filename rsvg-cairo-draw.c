@@ -34,6 +34,7 @@
 #include "rsvg-path.h"
 #include "rsvg-filter.h"
 #include "rsvg-structure.h"
+#include "rsvg-image.h"
 
 #include <math.h>
 #include <string.h>
@@ -186,31 +187,118 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 						  RsvgCairoBbox   bbox)
 {
 	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
-	/* XXX: I'm curious, why do we need to copy the pattern? (CDW) */
 	RsvgPattern local_pattern = *rsvg_pattern;
-	RsvgNode *node = (RsvgNode *)&local_pattern;
 	cairo_t *cr_render, *cr_pattern;
 	cairo_pattern_t *pattern;
 	cairo_surface_t *surface;
+	cairo_matrix_t matrix;
+	int i;
+	double affine[6], caffine[6], invcaffine[6], width, height;
 
+	rsvg_pattern = &local_pattern;
+	rsvg_pattern_fix_fallback(rsvg_pattern);
 	cr_render = render->cr;
 
-	/* XXX: This is bogus. We really need to look at the pattern's
-	 * patternUnits attribute before we can figure out how to
-	 * interpret x,y,width,height here. Or did rsvg already do this
-	 * for us up above perhaps??? */
+	/* Work out the size of the rectangle so it takes into account the object bounding box */
+	if (rsvg_pattern->obj_bbox){
+		width = rsvg_pattern->width * bbox.w;
+		height = rsvg_pattern->height * bbox.h;
+	} else {
+		width = rsvg_pattern->width;
+		height = rsvg_pattern->height;
+	}
+
 	surface = cairo_surface_create_similar(cairo_get_target (cr_render),
 										   CAIRO_CONTENT_COLOR_ALPHA,
-										   rsvg_pattern->width,
-										   rsvg_pattern->height);
+										   width, height);
 	cr_pattern = cairo_create(surface);
 
+	/* Create the pattern coordinate system */
+	if (rsvg_pattern->obj_bbox) {
+		affine[0] = bbox.w;
+		affine[1] = 0.;		
+		affine[2] = 0.;
+		affine[3] = bbox.h;
+		/* subtract the pattern origin */
+		affine[4] = bbox.x - rsvg_pattern->x * bbox.w;
+		affine[5] = bbox.y - rsvg_pattern->y * bbox.h;
+	} else {
+		affine[0] = 1;
+		affine[1] = 0.;		
+		affine[2] = 0.;
+		affine[3] = 1;
+		/* subtract the pattern origin */
+		affine[4] = -rsvg_pattern->x;
+		affine[5] = -rsvg_pattern->y;
+	}
+	/* Apply the pattern transform */
+	_rsvg_affine_multiply(affine, affine, rsvg_pattern->affine);
+
+	/* Create the pattern contents coordinate system */
+	if (rsvg_pattern->vbox) {
+		/* If there is a vbox, use that */
+		double w, h, x, y;
+		w = rsvg_pattern->width;
+		h = rsvg_pattern->height;
+		rsvg_preserve_aspect_ratio(rsvg_pattern->preserve_aspect_ratio,
+								   rsvg_pattern->vbw, rsvg_pattern->vbh, 
+								   &w, &h, &x, &y);
+
+		caffine[0] = w / rsvg_pattern->vbw;
+		caffine[1] = 0.;		
+		caffine[2] = 0.;
+		caffine[3] = h / rsvg_pattern->vbh;
+	}
+	else if (rsvg_pattern->obj_cbbox) {
+		/* If coords are in terms of the bounding box, use them */
+		caffine[0] = bbox.w;
+		caffine[1] = 0.;		
+		caffine[2] = 0.;
+		caffine[3] = bbox.h;
+	} else {
+		/* Otherwise default to an identity matrix */
+		caffine[0] = 1;
+		caffine[1] = 0.;		
+		caffine[2] = 0.;
+		caffine[3] = 1;
+	}
+	/* Never translate, we want our origin to be that of the new surface */
+	caffine[4] = 0;		
+	caffine[5] = 0;
+
+	/* Draw to another surface */
 	render->cr = cr_pattern;
-	_rsvg_node_draw_children (node, ctx, 2);
+	
+	/* Set up transformations to be determined by the contents units */
+	rsvg_state_push(ctx);
+	for (i = 0; i < 6; i++)
+		rsvg_state_current(ctx)->personal_affine[i] =
+			rsvg_state_current(ctx)->affine[i] = caffine[i];
+
+	/* Draw everything */
+	_rsvg_node_draw_children ((RsvgNode *)rsvg_pattern, ctx, 2);
+
+	/* Return to the original coordinate system */
+	rsvg_state_pop(ctx);
+
+	/* Set the render to draw where it used to */
 	render->cr = cr_render;
 
+	/* We don't want to be applying transformations twice */
+	_rsvg_affine_invert(invcaffine, caffine);
+	_rsvg_affine_multiply(affine, invcaffine, affine);
+	
 	pattern = cairo_pattern_create_for_surface (surface);
 	cairo_pattern_set_extend (pattern, CAIRO_EXTEND_REPEAT);
+
+	cairo_matrix_init (&matrix,
+					   affine[0], affine[1],
+					   affine[2], affine[3],
+					   affine[4], affine[5]);
+
+
+	cairo_matrix_invert (&matrix);
+	cairo_pattern_set_matrix (pattern, &matrix);
 
 	cairo_set_source (cr_render, pattern);
 
