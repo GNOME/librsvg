@@ -192,24 +192,27 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 	cairo_surface_t *surface;
 	cairo_matrix_t matrix;
 	int i;
-	double affine[6], caffine[6], width, height;
+	double affine[6], caffine[6], wscale, hscale;
 
 	rsvg_pattern = &local_pattern;
 	rsvg_pattern_fix_fallback(rsvg_pattern);
 	cr_render = render->cr;
 
 	/* Work out the size of the rectangle so it takes into account the object bounding box */
+
+	
 	if (rsvg_pattern->obj_bbox){
-		width = rsvg_pattern->width * bbox.w;
-		height = rsvg_pattern->height * bbox.h;
+		wscale = bbox.w;
+		hscale = bbox.h;
 	} else {
-		width = rsvg_pattern->width;
-		height = rsvg_pattern->height;
+		wscale = 1.0;
+		hscale = 1.0;
 	}
 
 	surface = cairo_surface_create_similar(cairo_get_target (cr_render),
 										   CAIRO_CONTENT_COLOR_ALPHA,
-										   width, height);
+										   rsvg_pattern->width * wscale, 
+										   rsvg_pattern->height * hscale);
 	cr_pattern = cairo_create(surface);
 
 	/* Create the pattern coordinate system */
@@ -219,16 +222,16 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 		affine[2] = 0.;
 		affine[3] = 1;
 		/* subtract the pattern origin */
-		affine[4] = bbox.x - rsvg_pattern->x * bbox.w;
-		affine[5] = bbox.y - rsvg_pattern->y * bbox.h;
+		affine[4] = bbox.x + rsvg_pattern->x * bbox.w;
+		affine[5] = bbox.y + rsvg_pattern->y * bbox.h;
 	} else {
 		affine[0] = 1;
 		affine[1] = 0.;		
 		affine[2] = 0.;
 		affine[3] = 1;
 		/* subtract the pattern origin */
-		affine[4] = -rsvg_pattern->x;
-		affine[5] = -rsvg_pattern->y;
+		affine[4] = rsvg_pattern->x;
+		affine[5] = rsvg_pattern->y;
 	}
 	/* Apply the pattern transform */
 	_rsvg_affine_multiply(affine, affine, rsvg_pattern->affine);
@@ -237,23 +240,23 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 	if (rsvg_pattern->vbox) {
 		/* If there is a vbox, use that */
 		double w, h, x, y;
-		w = rsvg_pattern->width;
-		h = rsvg_pattern->height;
+		w = rsvg_pattern->width * wscale;
+		h = rsvg_pattern->height * hscale;
 		x = 0;
 		y = 0;
 		rsvg_preserve_aspect_ratio(rsvg_pattern->preserve_aspect_ratio,
 								   rsvg_pattern->vbw, rsvg_pattern->vbh, 
 								   &w, &h, &x, &y);
 
-		x -= rsvg_pattern->vbx * w / rsvg_pattern->vbw;
-		y -= rsvg_pattern->vby * h / rsvg_pattern->vbh;
+		x += rsvg_pattern->vbx * w / rsvg_pattern->vbw;
+		y += rsvg_pattern->vby * h / rsvg_pattern->vbh;
 
 		caffine[0] = w / rsvg_pattern->vbw;
 		caffine[1] = 0.;		
 		caffine[2] = 0.;
 		caffine[3] = h / rsvg_pattern->vbh;
-		caffine[4] = x;		
-		caffine[5] = y;
+		caffine[4] = -x;		
+		caffine[5] = -y;
 	}
 	else if (rsvg_pattern->obj_cbbox) {
 		/* If coords are in terms of the bounding box, use them */
@@ -302,6 +305,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 
 	cairo_matrix_invert (&matrix);
 	cairo_pattern_set_matrix (pattern, &matrix);
+	cairo_pattern_set_filter(pattern, CAIRO_FILTER_BEST);
 
 	cairo_set_source (cr_render, pattern);
 
