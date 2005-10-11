@@ -375,7 +375,8 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 		return;
 
 	need_tmpbuf = ((state->fill != NULL) && (state->stroke != NULL) &&
-				   state->opacity != 0xff) || state->clip_path_ref;
+				   state->opacity != 0xff) || state->clip_path_ref 
+		|| state->mask;
 
 	if (need_tmpbuf)
 		rsvg_cairo_push_discrete_layer (ctx);
@@ -584,8 +585,70 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
     cairo_restore (render->cr);
 }
 
-void
-rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
+static cairo_surface_t *
+rsvg_cairo_generate_mask(RsvgMask * self, RsvgDrawingCtx *ctx)
+{
+	cairo_surface_t *surface, *mask;
+	cairo_t *mask_cr, *save_cr;
+	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
+	RsvgState *state = rsvg_state_current(ctx);
+	guint8 * pixels, *mpixels;
+	guint32 width = render->width, height = render->height; 
+	guint32 rowstride = width * 4, row, i;
+
+	pixels = g_new0(guint8, height * rowstride);
+	surface = cairo_image_surface_create_for_data (pixels,
+												   CAIRO_FORMAT_ARGB32,
+												   width, height,
+												   rowstride);
+	/* Originally this was CAIRO_FORMAT_A8, but for some reason it wouldnt
+	   work as a mask over the CAIRO_FORMAT_ARGB32. Is this a bug in cairo?*/
+	mpixels = g_new(guint8, rowstride * height);
+	mask = cairo_image_surface_create_for_data (mpixels,
+												CAIRO_FORMAT_ARGB32,
+												width, height,
+												rowstride);
+
+	mask_cr = cairo_create (surface);
+	cairo_surface_destroy (surface);
+	save_cr = render->cr;
+	render->cr = mask_cr;
+
+	rsvg_state_push(ctx);
+	_rsvg_node_draw_children ((RsvgNode *)self, ctx, 0);
+	rsvg_state_pop(ctx);
+
+	render->cr = save_cr;
+	
+	for(row = 0; row < height; row++) {
+		guint8 *row_data = (pixels + (row * rowstride));
+		guint8 *out_data = (mpixels + (row * rowstride));
+		for(i = 0; i < width; i++) {
+			guint32 *pixel = (guint32 *)row_data + i;
+			guint32 *out = (guint32 *)out_data + i;
+			*out = ((((*pixel & 0x00ff0000) >> 16) * 13817 +
+					 ((*pixel & 0x0000ff00) >>  8) * 46518 +
+					 ((*pixel & 0x000000ff)      ) * 4688) * 
+					state->opacity);
+		}
+	}
+	
+
+	cairo_destroy (mask_cr);
+	return mask;
+}
+
+static void
+rsvg_cairo_push_early_clips(RsvgDrawingCtx *ctx)
+{
+	cairo_save(((RsvgCairoRender *)ctx->render)->cr);
+	if (rsvg_state_current(ctx)->clip_path_ref)
+		rsvg_cairo_clip(ctx, rsvg_state_current(ctx)->clip_path_ref);
+
+}
+
+static void
+rsvg_cairo_push_render_stack (RsvgDrawingCtx *ctx)
 {
 	/* XXX: Untested, probably needs help wrt filters */
 
@@ -595,11 +658,7 @@ rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
 	RsvgState *state;
 	state = rsvg_state_current(ctx);	
 
-	if (state->opacity == 0xFF){
-		cairo_save(render->cr); /* only for the clipping stuff 
-								 seems like a bad idea, I dunno*/
-		if (state->clip_path_ref)
-			rsvg_cairo_clip(ctx, state->clip_path_ref);
+	if (state->opacity == 0xFF && !state->mask){
 		return;
 	}
 	surface = cairo_surface_create_similar (cairo_get_target (render->cr),
@@ -610,13 +669,17 @@ rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
 	
 	render->cr_stack = g_list_prepend(render->cr_stack, render->cr);
 	render->cr = child_cr;
-	cairo_save(render->cr);
-	if (state->clip_path_ref)
-		rsvg_cairo_clip(ctx, state->clip_path_ref);
 }
 
 void
-rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx *ctx)
+rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
+{
+	rsvg_cairo_push_render_stack(ctx);
+	rsvg_cairo_push_early_clips(ctx);
+}
+
+static void
+rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 {
 	/* XXX: Untested, probably needs help wrt filters */
 
@@ -625,9 +688,7 @@ rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx *ctx)
 	RsvgState *state;
 	state = rsvg_state_current(ctx);
 
-	cairo_restore(render->cr); /* only for the clipping stuff */
-
-	if (state->opacity == 0xFF)
+	if (state->opacity == 0xFF && !state->mask)
 		return;
 
 	render->cr = (cairo_t *)render->cr_stack->data;
@@ -636,8 +697,26 @@ rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx *ctx)
 	cairo_set_source_surface (render->cr,
 							  cairo_get_target (child_cr),
 							  0, 0);
-	cairo_paint_with_alpha (render->cr, (double)state->opacity / 255.0);
+
+	if (state->mask)
+		{
+			cairo_surface_t * mask = 
+				rsvg_cairo_generate_mask(state->mask, ctx);
+			cairo_mask_surface (render->cr, mask, 0,0);
+			cairo_surface_destroy(mask);
+		}
+	else if (state->opacity != 0xFF)
+		cairo_paint_with_alpha (render->cr, (double)state->opacity / 255.0);
+	else
+		cairo_paint (render->cr);	
 	cairo_destroy (child_cr);
+}
+
+void
+rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx *ctx)
+{
+	cairo_restore(((RsvgCairoRender *)ctx->render)->cr);
+	rsvg_cairo_pop_render_stack(ctx);
 }
 
 void 
