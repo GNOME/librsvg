@@ -589,11 +589,11 @@ static cairo_surface_t *
 rsvg_cairo_generate_mask(RsvgMask * self, RsvgDrawingCtx *ctx, 
 						 RsvgCairoBbox * bbox)
 {
-	cairo_surface_t *surface, *mask;
+	cairo_surface_t *surface;
 	cairo_t *mask_cr, *save_cr;
 	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
 	RsvgState *state = rsvg_state_current(ctx);
-	guint8 * pixels, *mpixels;
+	guint8 * pixels;
 	guint32 width = render->width, height = render->height; 
 	guint32 rowstride = width * 4, row, i;
 	double affinesave[6];
@@ -603,16 +603,8 @@ rsvg_cairo_generate_mask(RsvgMask * self, RsvgDrawingCtx *ctx,
 												   CAIRO_FORMAT_ARGB32,
 												   width, height,
 												   rowstride);
-	/* Originally this was CAIRO_FORMAT_A8, but for some reason it wouldnt
-	   work as a mask over the CAIRO_FORMAT_ARGB32. Is this a bug in cairo?*/
-	mpixels = g_new(guint8, rowstride * height);
-	mask = cairo_image_surface_create_for_data (mpixels,
-												CAIRO_FORMAT_ARGB32,
-												width, height,
-												rowstride);
 
 	mask_cr = cairo_create (surface);
-	cairo_surface_destroy (surface);
 	save_cr = render->cr;
 	render->cr = mask_cr;
 
@@ -656,20 +648,18 @@ rsvg_cairo_generate_mask(RsvgMask * self, RsvgDrawingCtx *ctx,
 	
 	for(row = 0; row < height; row++) {
 		guint8 *row_data = (pixels + (row * rowstride));
-		guint8 *out_data = (mpixels + (row * rowstride));
 		for(i = 0; i < width; i++) {
 			guint32 *pixel = (guint32 *)row_data + i;
-			guint32 *out = (guint32 *)out_data + i;
-			*out = ((((*pixel & 0x00ff0000) >> 16) * 13817 +
-					 ((*pixel & 0x0000ff00) >>  8) * 46518 +
-					 ((*pixel & 0x000000ff)      ) * 4688) * 
-					state->opacity);
+			*pixel = ((((*pixel & 0x00ff0000) >> 16) * 13817 +
+					   ((*pixel & 0x0000ff00) >>  8) * 46518 +
+					   ((*pixel & 0x000000ff)      ) * 4688) * 
+					  state->opacity);
 		}
 	}
 	
 
 	cairo_destroy (mask_cr);
-	return mask;
+	return surface;
 }
 
 static void
