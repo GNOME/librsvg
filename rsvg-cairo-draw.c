@@ -188,7 +188,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 	cairo_surface_t *surface;
 	cairo_matrix_t matrix;
 	int i;
-	double affine[6], caffine[6], wscale, hscale;
+	double affine[6], caffine[6], bbwscale, bbhscale, scwscale, schscale;
 
 	rsvg_pattern = &local_pattern;
 	rsvg_pattern_fix_fallback(rsvg_pattern);
@@ -198,33 +198,43 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 
 	
 	if (rsvg_pattern->obj_bbox){
-		wscale = bbox.w;
-		hscale = bbox.h;
+		bbwscale = bbox.w;
+		bbhscale = bbox.h;
 	} else {
-		wscale = 1.0;
-		hscale = 1.0;
+		bbwscale = 1.0;
+		bbhscale = 1.0;
 	}
+
+	_rsvg_affine_multiply(affine, rsvg_pattern->affine, 
+						  rsvg_state_current(ctx)->affine);
+
+	scwscale = sqrt(affine[0] * affine[0] + affine[2] * affine[2]);
+	schscale = sqrt(affine[1] * affine[1] + affine[3] * affine[3]);
+
+	scwscale = (double)((int)(rsvg_pattern->width * bbwscale *
+							  scwscale)) / (rsvg_pattern->width * bbwscale);
+	schscale = (double)((int)(rsvg_pattern->height * bbhscale *
+							  schscale)) / (rsvg_pattern->height * bbhscale);
 
 	surface = cairo_surface_create_similar(cairo_get_target (cr_render),
 										   CAIRO_CONTENT_COLOR_ALPHA,
-										   rsvg_pattern->width * wscale, 
-										   rsvg_pattern->height * hscale);
+										   rsvg_pattern->width * bbwscale *
+										   scwscale, 
+										   rsvg_pattern->height * bbhscale *
+										   schscale);
 	cr_pattern = cairo_create(surface);
 
+	
+	affine[0] = 1;
+	affine[1] = 0.;		
+	affine[2] = 0.;
+	affine[3] = 1;
 	/* Create the pattern coordinate system */
 	if (rsvg_pattern->obj_bbox) {
-		affine[0] = 1;
-		affine[1] = 0.;		
-		affine[2] = 0.;
-		affine[3] = 1;
 		/* subtract the pattern origin */
 		affine[4] = bbox.x + rsvg_pattern->x * bbox.w;
 		affine[5] = bbox.y + rsvg_pattern->y * bbox.h;
 	} else {
-		affine[0] = 1;
-		affine[1] = 0.;		
-		affine[2] = 0.;
-		affine[3] = 1;
 		/* subtract the pattern origin */
 		affine[4] = rsvg_pattern->x;
 		affine[5] = rsvg_pattern->y;
@@ -236,8 +246,8 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 	if (rsvg_pattern->vbox) {
 		/* If there is a vbox, use that */
 		double w, h, x, y;
-		w = rsvg_pattern->width * wscale;
-		h = rsvg_pattern->height * hscale;
+		w = rsvg_pattern->width * bbwscale;
+		h = rsvg_pattern->height * bbhscale;
 		x = 0;
 		y = 0;
 		rsvg_preserve_aspect_ratio(rsvg_pattern->preserve_aspect_ratio,
@@ -271,6 +281,15 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 		caffine[4] = 0;		
 		caffine[5] = 0;
 	}
+	
+	if (TRUE/*scwscale != 1.0 || schscale != 1.0*/)
+		{
+			double scalematrix[6];
+			_rsvg_affine_scale(scalematrix, scwscale, schscale);
+			_rsvg_affine_multiply(caffine, caffine, scalematrix);
+			_rsvg_affine_scale(scalematrix, 1. / scwscale, 1. / schscale);
+			_rsvg_affine_multiply(affine, scalematrix, affine);
+		}
 
 	/* Draw to another surface */
 	render->cr = cr_pattern;

@@ -1,4 +1,9 @@
-2005-10-11 Caleb Moore <c.moore@student.unsw.edu.au>
+2005-10-13 Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-cairo-draw.c: made masks more efficient by not needing two textures, made patterns crisper and hopefully faster by scaling ahead of time. Still does not do full pre-transformation.
+	* rsvg-cairo-clip.c: made clip-rule work properly
+
+2005-10-12 Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-cairo-draw.c, rsvg-cairo-render.c, rsvg-cairo-render.h, rsvg-cairo-clip.h: made clip paths and masks able to use objectBoundingBox coordinates
 	
