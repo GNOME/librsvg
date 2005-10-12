@@ -282,7 +282,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 		caffine[5] = 0;
 	}
 	
-	if (TRUE/*scwscale != 1.0 || schscale != 1.0*/)
+	if (scwscale != 1.0 || schscale != 1.0)
 		{
 			double scalematrix[6];
 			_rsvg_affine_scale(scalematrix, scwscale, schscale);
@@ -515,6 +515,7 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 	cairo_surface_t *surface;
 	static const cairo_user_data_key_t key;
 	int j;
+	RsvgCairoBbox bbox;
 
 	if (pixbuf == NULL)
 		return;
@@ -602,6 +603,15 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 	rsvg_cairo_pop_discrete_layer (ctx);
 
     cairo_restore (render->cr);
+
+	rsvg_cairo_bbox_init(&bbox, state->affine);
+	bbox.x = pixbuf_x;
+	bbox.y = pixbuf_y;
+	bbox.w = w;
+	bbox.h = h;
+	bbox.virgin = 0;
+
+	rsvg_cairo_bbox_insert(&render->bbox, &bbox);
 }
 
 static cairo_surface_t *
