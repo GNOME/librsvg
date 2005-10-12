@@ -33,7 +33,7 @@ rsvg_mask_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	const char *id = NULL, *klazz = NULL, *value;
 	RsvgMask *mask;
-	double font_size;
+	double font_size, xscale = 1., yscale = 1.;
 	
 	font_size = rsvg_state_current_font_size (ctx);
 	mask = (RsvgMask *)self;
@@ -42,8 +42,11 @@ rsvg_mask_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "maskUnits")))
 				{
-					if (!strcmp (value, "userSpaceOnUse"))
+					if (!strcmp (value, "userSpaceOnUse")){
 						mask->maskunits = userSpaceOnUse;
+						xscale = (gdouble)ctx->width;
+						yscale = (gdouble)ctx->height;
+					}
 					else
 						mask->maskunits = objectBoundingBox;
 				}
@@ -58,25 +61,25 @@ rsvg_mask_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 				mask->x =
 					rsvg_css_parse_normalized_length (value,
 													  ctx->dpi_x,
-													  1,
+													  xscale,
 													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
 				mask->y =
 					rsvg_css_parse_normalized_length (value,
 													  ctx->dpi_y,
-													  1,
+													  yscale,
 													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
 				mask->width =
 					rsvg_css_parse_normalized_length (value,
 													  ctx->dpi_x,
-													  1,
+													  xscale,
 													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
 				mask->height =
 					rsvg_css_parse_normalized_length (value,
 													  ctx->dpi_y,
-													  1,
+													  yscale,
 													  font_size);
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{

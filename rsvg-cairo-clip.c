@@ -144,15 +144,39 @@ rsvg_cairo_clip_render_new(cairo_t * cr)
 }
 
 void 
-rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgClipPath *clip)
+rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgClipPath *clip, RsvgCairoBbox *bbox)
 {
 	RsvgCairoRender * save = (RsvgCairoRender *)ctx->render;
-	
+	double affinesave[6];
+	int i;
 	ctx->render = rsvg_cairo_clip_render_new(save->cr);
 	
+	/* Horribly dirty hack to have the bbox premultiplied to everything */
+	if (clip->units == objectBoundingBox)
+		{
+			double bbtransform[6];
+			bbtransform[0] = bbox->w;
+			bbtransform[1] = 0.;
+			bbtransform[2] = 0.;
+			bbtransform[3] = bbox->h;
+			bbtransform[4] = bbox->x;
+			bbtransform[5] = bbox->y;
+			for (i = 0; i < 6; i++)
+				affinesave[i] = clip->super.state->affine[i];
+			_rsvg_affine_multiply(clip->super.state->affine,
+								  bbtransform, 
+								  clip->super.state->affine);
+		}
+
 	rsvg_state_push(ctx);
 	_rsvg_node_draw_children ((RsvgNode *)clip, ctx, 0);
 	rsvg_state_pop(ctx);
+
+	if (clip->units == objectBoundingBox)
+		for (i = 0; i < 6; i++)
+			clip->super.state->affine[i] = affinesave[i];
+
+
 	if (rsvg_state_current (ctx)->fill_rule == FILL_RULE_EVENODD)
 		cairo_set_fill_rule (save->cr, CAIRO_FILL_RULE_EVEN_ODD);
 	else /* state->fill_rule == FILL_RULE_NONZERO */

@@ -32,6 +32,12 @@
 
 G_BEGIN_DECLS
 
+typedef struct {
+	gdouble x, y, w, h;
+	gboolean virgin;
+	double affine[6];
+} RsvgCairoBbox;
+
 typedef struct _RsvgCairoRender RsvgCairoRender;
 
 struct _RsvgCairoRender {
@@ -41,10 +47,17 @@ struct _RsvgCairoRender {
 	double height;
 
 	GList *cr_stack;
+
+	RsvgCairoBbox bbox;
+	GList *bb_stack;
 };
 
 RsvgCairoRender * rsvg_cairo_render_new(cairo_t * cr, double width, double height);
 void rsvg_cairo_render_rsvg_handle (cairo_t *cr, RsvgHandle *handle);
+
+void rsvg_cairo_bbox_init(RsvgCairoBbox * self, double * affine);
+
+void rsvg_cairo_bbox_insert(RsvgCairoBbox * dst, RsvgCairoBbox * src);
 
 G_END_DECLS
 

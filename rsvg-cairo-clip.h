@@ -28,12 +28,14 @@
 #define RSVG_CAIRO_CLIP_H
 
 #include "rsvg-mask.h"
+#include "rsvg-cairo-render.h"
 #include <cairo.h>
 
 G_BEGIN_DECLS
 
 void 
-rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgClipPath *clip);
+rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgClipPath *clip, 
+				 RsvgCairoBbox *bbox);
 
 G_END_DECLS
 
