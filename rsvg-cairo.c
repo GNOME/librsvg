@@ -2,9 +2,8 @@
 
    rsvg-cairo.c: Command line utility for exercising rsvg with cairo.
  
-   Copyright (C) 2000 Eazel, Inc.
-   Copyright (C) 2002 Dom Lachowicz
-   Copyright (C) 2005 Carl Worth.
+   Copyright (C) 2005 Caleb Moore
+
   
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as
@@ -21,8 +20,7 @@
    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.
   
-   Authors: Raph Levien <raph@artofcode.com>
-            Carl Worth <cworth@cworth.org>
+   Authors: Caleb Moore <c.moore@student.unsw.edu.au>
 */
 
 #include "config.h"

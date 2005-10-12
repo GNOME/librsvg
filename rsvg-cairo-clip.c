@@ -71,6 +71,11 @@ rsvg_cairo_clip_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 
 	_set_rsvg_affine (cr, state->affine);
 
+	if (rsvg_state_current(ctx)->clip_rule == FILL_RULE_EVENODD)
+		cairo_set_fill_rule (((RsvgCairoRender *)ctx->render)->cr, CAIRO_FILL_RULE_EVEN_ODD);
+	else /* state->fill_rule == FILL_RULE_NONZERO */
+		cairo_set_fill_rule (((RsvgCairoRender *)ctx->render)->cr, CAIRO_FILL_RULE_WINDING);
+
 	for (i=0; i < bpath_def->n_bpath; i++) {
 		bpath = &bpath_def->bpath[i];
 
@@ -176,11 +181,7 @@ rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgClipPath *clip, RsvgCairoBbox *bbox)
 		for (i = 0; i < 6; i++)
 			clip->super.state->affine[i] = affinesave[i];
 
-
-	if (rsvg_state_current (ctx)->fill_rule == FILL_RULE_EVENODD)
-		cairo_set_fill_rule (save->cr, CAIRO_FILL_RULE_EVEN_ODD);
-	else /* state->fill_rule == FILL_RULE_NONZERO */
-		cairo_set_fill_rule (save->cr, CAIRO_FILL_RULE_WINDING);
+	g_free(ctx->render);
 	cairo_clip(save->cr);
 	ctx->render = &save->super;
 }
