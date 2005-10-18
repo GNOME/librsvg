@@ -57,6 +57,9 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 							  double          width,
 							  double          height);
 
+void rsvg_cairo_to_pixbuf(guint8 *pixels, int rowstride, int height);
+void rsvg_pixbuf_to_cairo(guint8 *pixels, int rowstride, int height);
+
 G_END_DECLS
 
 #endif /*RSVG_CAIRO_DRAW_H*/

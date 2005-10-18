@@ -50,6 +50,7 @@ struct _RsvgCairoRender {
 
 	RsvgCairoBbox bbox;
 	GList *bb_stack;
+	GList *pixbuf_stack;
 };
 
 RsvgCairoRender * rsvg_cairo_render_new(cairo_t * cr, double width, double height);

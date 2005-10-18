@@ -115,6 +115,7 @@ static GdkPixbuf * _rsvg_handle_get_pixbuf (RsvgHandle *handle)
 #elif defined(WITH_CAIRO_BACKEND)
 
 #include "rsvg-cairo.h"
+#include "rsvg-cairo-draw.h"
 
 static void
 rsvg_pixmap_destroy (gchar *pixels, gpointer data)
@@ -129,7 +130,7 @@ static GdkPixbuf * _rsvg_handle_get_pixbuf (RsvgHandle *handle)
 	guint8 *pixels;
 	cairo_surface_t *surface;
 	cairo_t *cr;
-	int row, rowstride;
+	int rowstride;
 
 	rsvg_handle_get_dimensions (handle, &dimensions);
 	rowstride = dimensions.width * 4;
@@ -145,28 +146,7 @@ static GdkPixbuf * _rsvg_handle_get_pixbuf (RsvgHandle *handle)
 
 	rsvg_cairo_render (cr, handle);
 
-	/* un-premultiply data */
-	for(row = 0; row < dimensions.height; row++) {
-		guint8 *row_data = (pixels + (row * rowstride));
-		int i;
-
-		for(i = 0; i < rowstride; i += 4) {
-			guint8 *b = &row_data[i];
-			guint32 pixel;
-			guint8 alpha;
-
-			memcpy(&pixel, b, sizeof(guint32));
-			alpha = (pixel & 0xff000000) >> 24;
-			if(alpha == 0) {
-				b[0] = b[1] = b[2] = b[3] = 0;
-			} else {
-				b[0] = (((pixel & 0xff0000) >> 16) * 255 + alpha / 2) / alpha;
-				b[1] = (((pixel & 0x00ff00) >>  8) * 255 + alpha / 2) / alpha;
-				b[2] = (((pixel & 0x0000ff) >>  0) * 255 + alpha / 2) / alpha;
-				b[3] = alpha;
-			}
-		}
-	}
+	rsvg_cairo_to_pixbuf(pixels, rowstride, dimensions.height);
 
 	output = gdk_pixbuf_new_from_data (pixels,
 									   GDK_COLORSPACE_RGB,

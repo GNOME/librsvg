@@ -1,3 +1,8 @@
+2005-10-19 Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-cairo-draw.c: series of hacks to make filters work
+
+
 2005-10-16 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-cairo-draw.c: No need to new0() image data, it just wastes CPU
