@@ -3148,7 +3148,7 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self,
 				for (i = 0; i < 3; i++)
 					{
 						output_pixels[4 * x + y * rowstride + i] = ((char *)
-							(&upself->colour))[2 - i] * upself->opacity / 255;
+							(&upself->colour))[2 - i];
 					}
 				output_pixels[4 * x + y * rowstride + 3] = upself->opacity;
 			}
