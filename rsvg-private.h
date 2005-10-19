@@ -156,6 +156,12 @@ struct _RsvgIRect {
 	int x0, y0, x1, y1;
 };
 
+typedef struct {
+	gdouble x, y, w, h;
+	gboolean virgin;
+	double affine[6];
+} RsvgBbox;
+
 typedef enum {
 	RSVG_SIZE_ZOOM,
 	RSVG_SIZE_WH,
@@ -320,6 +326,10 @@ rsvg_node_set_atts(RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts);
 
 void
 rsvg_drawing_ctx_free (RsvgDrawingCtx *handle);
+
+void rsvg_bbox_init(RsvgBbox * self, double * affine);
+void rsvg_bbox_insert(RsvgBbox * dst, RsvgBbox * src);
+void rsvg_bbox_clip(RsvgBbox * dst, RsvgBbox * src);
 
 G_END_DECLS
 

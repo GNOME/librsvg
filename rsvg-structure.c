@@ -162,9 +162,6 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 
 	rsvg_state_reinherit_top(ctx,  self->state, dominate);
 
-	rsvg_push_discrete_layer (ctx);
-
-
 	child = use->link;
 
 	/* If it can find nothing to draw... draw nothing */
@@ -176,9 +173,11 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 			_rsvg_affine_translate(affine, use->x, use->y);
 			_rsvg_affine_multiply(state->affine, affine, state->affine);
 
+			rsvg_push_discrete_layer (ctx);
 			rsvg_state_push(ctx);	
 			rsvg_node_draw (child, ctx, 1);
 			rsvg_state_pop(ctx);
+			rsvg_pop_discrete_layer (ctx);
 		}
 	else
 		{
@@ -214,12 +213,13 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
 			}
 
+			rsvg_push_discrete_layer (ctx);
 			rsvg_state_push(ctx);
 			_rsvg_node_draw_children(child, ctx, 1);
 			rsvg_state_pop(ctx);
-
+			rsvg_pop_discrete_layer (ctx);
 		}
-	rsvg_pop_discrete_layer (ctx);
+
 }	
 
 static void 
@@ -242,8 +242,6 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	sself = (RsvgNodeSvg *)self;
 
 	rsvg_state_reinherit_top(ctx, self->state, dominate);
-
-	rsvg_push_discrete_layer (ctx);
 
 	state = rsvg_state_current (ctx);
 
@@ -279,13 +277,13 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 								  state->affine);
 		}
 
+	rsvg_push_discrete_layer (ctx);
+
 	for (i = 0; i < self->children->len; i++)
 		{
 			rsvg_state_push(ctx);
-
 			rsvg_node_draw (g_ptr_array_index(self->children, i), 
 									 ctx, 0);
-	
 			rsvg_state_pop(ctx);
 		}			
 

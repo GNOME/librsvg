@@ -35,7 +35,7 @@ G_BEGIN_DECLS
 
 void 
 rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgClipPath *clip, 
-				 RsvgCairoBbox *bbox);
+				 RsvgBbox *bbox);
 
 G_END_DECLS
 

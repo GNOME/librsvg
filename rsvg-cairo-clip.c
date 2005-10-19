@@ -149,7 +149,7 @@ rsvg_cairo_clip_render_new(cairo_t * cr)
 }
 
 void 
-rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgClipPath *clip, RsvgCairoBbox *bbox)
+rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgClipPath *clip, RsvgBbox *bbox)
 {
 	RsvgCairoRender * save = (RsvgCairoRender *)ctx->render;
 	double affinesave[6];

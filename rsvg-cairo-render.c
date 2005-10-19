@@ -109,7 +109,7 @@ rsvg_cairo_new_drawing_ctx (cairo_t *cr, RsvgHandle *handle)
 	_rsvg_affine_multiply(state->affine, affine, 
 						  state->affine);
 	
-	rsvg_cairo_bbox_init(&((RsvgCairoRender *)draw->render)->bbox,
+	rsvg_bbox_init(&((RsvgCairoRender *)draw->render)->bbox,
 						 state->affine);
 
 	return draw;
@@ -132,55 +132,4 @@ rsvg_cairo_render (cairo_t *cr, RsvgHandle *handle)
 	rsvg_node_draw((RsvgNode *)handle->treebase, draw, 0);
 	rsvg_state_pop(draw);
 	rsvg_drawing_ctx_free(draw);
-}
-
-void rsvg_cairo_bbox_init(RsvgCairoBbox * self, double * affine)
-{
-	int i;
-	self->virgin = 1;
-	for (i = 0; i < 6; i++)
-		self->affine[i] = affine[i];
-}
-
-void rsvg_cairo_bbox_insert(RsvgCairoBbox * dst, RsvgCairoBbox * src)
-{
-	double affine[6];
-	double xmin = dst->x, ymin = dst->y;
-	double xmax = dst->x + dst->w, ymax = dst->y + dst->h;
-	int i;
-
-	if (src->virgin)
-		return;
-	_rsvg_affine_invert(affine, dst->affine);
-	_rsvg_affine_multiply(affine, src->affine, affine);
-
-	for (i = 0; i < 4; i++)
-		{
-			double rx, ry, x, y;
-			rx = src->x + src->w * (double)(i % 2);
-			ry = src->y + src->h * (double)(i / 2);
-			x = affine[0] * rx + affine[2] * ry + affine[4];
-			y = affine[1] * rx + affine[3] * ry + affine[5];
-			if (dst->virgin)
-				{
-					xmin = xmax = x;
-					ymin = ymax = y;
-					dst->virgin = 0;
-				}
-			else
-				{
-					if (x < xmin)
-						xmin = x;
-					if (x > xmax)
-						xmax = x;
-					if (y < ymin)
-						ymin = y;
-					if (y > ymax)
-						ymax = y;
-				}
-		}
-	dst->x = xmin;
-	dst->y = ymin;
-	dst->w = xmax - xmin;
-	dst->h = ymax - ymin;
 }

@@ -1,8 +1,9 @@
 2005-10-19 Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-cairo-draw.c: series of hacks to make filters work
-
-
+	* rsvg-filter.c: use the new bbox system used in rsvg-cairo for filters
+	* rsvg-base.c: moved RsvgCairoBbox to RsvgBbox
+	
 2005-10-16 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-cairo-draw.c: No need to new0() image data, it just wastes CPU

@@ -1381,3 +1381,108 @@ rsvg_render_free (RsvgRender * render)
 {
 	render->free (render);
 }
+
+void rsvg_bbox_init(RsvgBbox * self, double * affine)
+{
+	int i;
+	self->virgin = 1;
+	for (i = 0; i < 6; i++)
+		self->affine[i] = affine[i];
+}
+
+void rsvg_bbox_insert(RsvgBbox * dst, RsvgBbox * src)
+{
+	double affine[6];
+	double xmin = dst->x, ymin = dst->y;
+	double xmax = dst->x + dst->w, ymax = dst->y + dst->h;
+	int i;
+
+	if (src->virgin)
+		return;
+	_rsvg_affine_invert(affine, dst->affine);
+	_rsvg_affine_multiply(affine, src->affine, affine);
+
+	for (i = 0; i < 4; i++)
+		{
+			double rx, ry, x, y;
+			rx = src->x + src->w * (double)(i % 2);
+			ry = src->y + src->h * (double)(i / 2);
+			x = affine[0] * rx + affine[2] * ry + affine[4];
+			y = affine[1] * rx + affine[3] * ry + affine[5];
+			if (dst->virgin)
+				{
+					xmin = xmax = x;
+					ymin = ymax = y;
+					dst->virgin = 0;
+				}
+			else
+				{
+					if (x < xmin)
+						xmin = x;
+					if (x > xmax)
+						xmax = x;
+					if (y < ymin)
+						ymin = y;
+					if (y > ymax)
+						ymax = y;
+				}
+		}
+	dst->x = xmin;
+	dst->y = ymin;
+	dst->w = xmax - xmin;
+	dst->h = ymax - ymin;
+}
+
+void rsvg_bbox_clip(RsvgBbox * dst, RsvgBbox * src)
+{
+	double affine[6];
+	double xmin = dst->x + dst->w, ymin = dst->y + dst->h;
+	double xmax = dst->x, ymax = dst->y;
+	int i;
+
+	if (src->virgin)
+		return;
+	_rsvg_affine_invert(affine, dst->affine);
+	_rsvg_affine_multiply(affine, src->affine, affine);
+
+	for (i = 0; i < 4; i++)
+		{
+			double rx, ry, x, y;
+			rx = src->x + src->w * (double)(i % 2);
+			ry = src->y + src->h * (double)(i / 2);
+			x = affine[0] * rx + affine[2] * ry + affine[4];
+			y = affine[1] * rx + affine[3] * ry + affine[5];
+			if (dst->virgin)
+				{
+					xmin = xmax = x;
+					ymin = ymax = y;
+					dst->virgin = 0;
+				}
+			else
+				{
+					if (x < xmin)
+						xmin = x;
+					if (x > xmax)
+						xmax = x;
+					if (y < ymin)
+						ymin = y;
+					if (y > ymax)
+						ymax = y;
+				}
+		}
+
+	if (xmin < dst->x)
+		xmin = dst->x;
+	if (ymin < dst->y)
+		ymin = dst->y;
+	if (xmax > dst->x + dst->w)
+		xmax = dst->x + dst->w;
+	if (ymax > dst->y + dst->h)
+		ymax = dst->y + dst->h;
+
+	dst->x = xmin;
+	dst->w = xmax - xmin;
+	dst->y = ymin;
+	dst->h = ymax - ymin;
+}
+

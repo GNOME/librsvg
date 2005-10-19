@@ -42,7 +42,7 @@ struct _RsvgFilter {
 };
 
 GdkPixbuf *
-rsvg_filter_render (RsvgFilter *self, GdkPixbuf *source, GdkPixbuf *bg, RsvgDrawingCtx *context, RsvgIRect * dimentions);
+rsvg_filter_render (RsvgFilter *self, GdkPixbuf *source, GdkPixbuf *bg, RsvgDrawingCtx *context, RsvgBbox * dimentions);
 
 RsvgNode *
 rsvg_new_filter (void);
