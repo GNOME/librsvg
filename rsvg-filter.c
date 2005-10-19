@@ -2038,12 +2038,7 @@ RsvgFilterPrimitiveColourMatrix;
 struct _RsvgFilterPrimitiveColourMatrix
 {
 	RsvgFilterPrimitive super;
-	double *KernelMatrix;
-	double divisor;
-	gint orderx, ordery;
-	double bias;
-	gint targetx, targety;
-	gboolean preservealpha;
+	gint *KernelMatrix;
 };
 
 static void
@@ -2091,9 +2086,9 @@ rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self,
 						for (i = 0; i < 4; i++)
 							{
 								sum += upself->KernelMatrix[ch * 5 + i] *
-									in_pixels[4 * x + y * rowstride + i];
+									in_pixels[4 * x + y * rowstride + i] / 255;
 							}
-						sum += upself->KernelMatrix[ch * 5 + 4] * 255;
+						sum += upself->KernelMatrix[ch * 5 + 4];
 						
 						tempresult = sum;
 						if (tempresult > 255)
@@ -2182,8 +2177,12 @@ rsvg_filter_primitive_colour_matrix_set_atts (RsvgNode * self, RsvgHandle * ctx,
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "values")))
 				{
-					filter->KernelMatrix =
-						rsvg_css_parse_number_list (value, &listlen);
+					unsigned int i;
+					double * temp = rsvg_css_parse_number_list (value, &listlen);
+					filter->KernelMatrix = g_new(int, listlen);
+					for (i = 0; i < listlen; i++)
+						filter->KernelMatrix[i] = temp[i] * 255.;
+					g_free(temp);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "type")))
 				{
@@ -2208,7 +2207,7 @@ rsvg_filter_primitive_colour_matrix_set_atts (RsvgNode * self, RsvgHandle * ctx,
 				{
 					if (filter->KernelMatrix != NULL)
 						g_free (filter->KernelMatrix);
-					filter->KernelMatrix = g_new0 (double, 20);
+					filter->KernelMatrix = g_new0 (int, 20);
 				}
 		}
 	else if (type == 1)
@@ -2220,19 +2219,19 @@ rsvg_filter_primitive_colour_matrix_set_atts (RsvgNode * self, RsvgHandle * ctx,
 					g_free (filter->KernelMatrix);
 				}
 			else
-				s = 1;
-			filter->KernelMatrix = g_new0 (double, 20);
+				s = 255;
+			filter->KernelMatrix = g_new0 (int, 20);
 
-			filter->KernelMatrix[0] = 0.213 + 0.787 * s;
-			filter->KernelMatrix[1] = 0.715 - 0.715 * s;
-			filter->KernelMatrix[2] = 0.072 - 0.072 * s;
-			filter->KernelMatrix[5] = 0.213 - 0.213 * s;
-			filter->KernelMatrix[6] = 0.715 + 0.285 * s;
-			filter->KernelMatrix[7] = 0.072 - 0.072 * s;
-			filter->KernelMatrix[10] = 0.213 - 0.213 * s;
-			filter->KernelMatrix[11] = 0.715 - 0.715 * s;
-			filter->KernelMatrix[12] = 0.072 + 0.928 * s;
-			filter->KernelMatrix[18] = 1;
+			filter->KernelMatrix[0] = 0.213 * 255. + 0.787 * s;
+			filter->KernelMatrix[1] = 0.715 * 255. - 0.715 * s;
+			filter->KernelMatrix[2] = 0.072 * 255. - 0.072 * s;
+			filter->KernelMatrix[5] = 0.213 * 255. - 0.213 * s;
+			filter->KernelMatrix[6] = 0.715 * 255. + 0.285 * s;
+			filter->KernelMatrix[7] = 0.072 * 255. - 0.072 * s;
+			filter->KernelMatrix[10] = 0.213 * 255. - 0.213 * s;
+			filter->KernelMatrix[11] = 0.715 * 255. - 0.715 * s;
+			filter->KernelMatrix[12] = 0.072 * 255. + 0.928 * s;
+			filter->KernelMatrix[18] = 255;
 		}
 	else if (type == 2)
 		{
@@ -2240,7 +2239,7 @@ rsvg_filter_primitive_colour_matrix_set_atts (RsvgNode * self, RsvgHandle * ctx,
 
 			if (listlen != 0)
 				{
-					arg = filter->KernelMatrix[0];
+					arg = (double)filter->KernelMatrix[0] / 255.;
 					g_free (filter->KernelMatrix);
 				}
 			else
@@ -2249,29 +2248,29 @@ rsvg_filter_primitive_colour_matrix_set_atts (RsvgNode * self, RsvgHandle * ctx,
 			cosval = cos (arg);
 			sinval = sin (arg);
 
-			filter->KernelMatrix = g_new0 (double, 20);
+			filter->KernelMatrix = g_new0 (int, 20);
 			
-			filter->KernelMatrix[0] = 0.213 + cosval * 0.787 + sinval * -0.213;
-			filter->KernelMatrix[1] = 0.715 + cosval * -0.715 + sinval * -0.715;
-			filter->KernelMatrix[2] = 0.072 + cosval * -0.072 + sinval * 0.928;
-			filter->KernelMatrix[5] = 0.213 + cosval * -0.213 + sinval * 0.143;
-			filter->KernelMatrix[6] = 0.715 + cosval * 0.285 + sinval * 0.140;
-			filter->KernelMatrix[7] = 0.072 + cosval * -0.072 + sinval * -0.283;
-			filter->KernelMatrix[10] = 0.213 + cosval * -0.213 + sinval * -0.787;
-			filter->KernelMatrix[11] = 0.715 + cosval * -0.715 + sinval * 0.715;
-			filter->KernelMatrix[12] = 0.072 + cosval * 0.928 + sinval * 0.072;
-			filter->KernelMatrix[18] = 1;
+			filter->KernelMatrix[0] = (0.213 + cosval * 0.787 + sinval * -0.213) * 255.;
+			filter->KernelMatrix[1] = (0.715 + cosval * -0.715 + sinval * -0.715) * 255.;
+			filter->KernelMatrix[2] = (0.072 + cosval * -0.072 + sinval * 0.928) * 255.;
+			filter->KernelMatrix[5] = (0.213 + cosval * -0.213 + sinval * 0.143) * 255.;
+			filter->KernelMatrix[6] = (0.715 + cosval * 0.285 + sinval * 0.140) * 255.;
+			filter->KernelMatrix[7] = (0.072 + cosval * -0.072 + sinval * -0.283) * 255.;
+			filter->KernelMatrix[10] = (0.213 + cosval * -0.213 + sinval * -0.787) * 255.;
+			filter->KernelMatrix[11] = (0.715 + cosval * -0.715 + sinval * 0.715) * 255.;
+			filter->KernelMatrix[12] = (0.072 + cosval * 0.928 + sinval * 0.072) * 255.;
+			filter->KernelMatrix[18] = 255;
 		}
 	else if (type == 3)
 		{
 			if (filter->KernelMatrix != NULL)
 				g_free (filter->KernelMatrix);
 
-			filter->KernelMatrix = g_new0 (double, 20);
+			filter->KernelMatrix = g_new0 (int, 20);
 
-			filter->KernelMatrix[15] = 0.2125;
-			filter->KernelMatrix[16] = 0.7154;
-			filter->KernelMatrix[17] = 0.0721;
+			filter->KernelMatrix[15] = 0.2125 * 255.;
+			filter->KernelMatrix[16] = 0.7154 * 255.;
+			filter->KernelMatrix[17] = 0.0721 * 255.;
 		}
 	else 
 		{
@@ -2302,9 +2301,9 @@ rsvg_new_filter_primitive_colour_matrix (void)
 
 typedef struct _RsvgNodeComponentTransferFunc RsvgNodeComponentTransferFunc;
 
-typedef gdouble (*ComponentTransferFunc) (gdouble C,
-										  RsvgNodeComponentTransferFunc*
-										  user_data);
+typedef gint (*ComponentTransferFunc) (gint C,
+									   RsvgNodeComponentTransferFunc*
+									   user_data);
 
 typedef struct _RsvgFilterPrimitiveComponentTransfer
 RsvgFilterPrimitiveComponentTransfer;
@@ -2314,13 +2313,13 @@ struct _RsvgNodeComponentTransferFunc
 	RsvgNode super;
 	ComponentTransferFunc function;
 	gchar channel;
-	gdouble *tableValues;
+	gint *tableValues;
 	guint nbTableValues;
-	gdouble slope;
-	gdouble intercept;
-	gdouble amplitude;
-	gdouble exponent;
-	gdouble offset;
+	gint slope;
+	gint intercept;
+	gint amplitude;
+	gint exponent;
+	gint offset;
 };
 
 struct _RsvgFilterPrimitiveComponentTransfer
@@ -2329,72 +2328,61 @@ struct _RsvgFilterPrimitiveComponentTransfer
 };
 
 static gint
-get_component_transfer_table_value (gdouble C, RsvgNodeComponentTransferFunc *user_data)
-{
-	gdouble N;
-	gint k;
-	N = user_data->nbTableValues;	
-
-	k = floor(C * N);
-	k -= 1;
-	if (k < 0)
-		k = 0;
-	return k;
-}
-
-static gdouble
-identity_component_transfer_func (gdouble C, RsvgNodeComponentTransferFunc *user_data)
+identity_component_transfer_func (gint C, RsvgNodeComponentTransferFunc *user_data)
 {
 	return C;
 }
 
-static gdouble
-table_component_transfer_func (gdouble C, RsvgNodeComponentTransferFunc *user_data)
+static gint
+table_component_transfer_func (gint C, RsvgNodeComponentTransferFunc *user_data)
 {
 	guint k;
-	gdouble vk, vk1;
-	gfloat distancefromlast;
+	gint vk, vk1, distancefromlast;
 	
 	if (!user_data->nbTableValues)
 		return C;
 	
-	k = get_component_transfer_table_value (C, user_data);
-
-	if (k == user_data->nbTableValues - 1)
-		return user_data->tableValues[k - 1];
+	k = (C * (user_data->nbTableValues - 1)) / 255;
 
 	vk = user_data->tableValues[k];
 	vk1 = user_data->tableValues[k + 1];
 	
-	distancefromlast = (C - ((double)k + 1) / (double)user_data->nbTableValues) * (double)user_data->nbTableValues; 
+	distancefromlast = (C * (user_data->nbTableValues - 1)) - k * 255; 
 
-	return (vk + distancefromlast * (vk1 - vk));
+	return vk + distancefromlast * (vk1 - vk) / 255;
 }
 
-static gdouble
-discrete_component_transfer_func (gdouble C, RsvgNodeComponentTransferFunc *user_data)
+static gint
+discrete_component_transfer_func (gint C, RsvgNodeComponentTransferFunc *user_data)
 {
 	gint k;
 	
 	if (!user_data->nbTableValues)
 		return C;
 	
-	k = get_component_transfer_table_value (C, user_data);
+	k = (C * user_data->nbTableValues) / 255;
 	
 	return user_data->tableValues[k];
 }
 
-static gdouble
-linear_component_transfer_func (gdouble C, RsvgNodeComponentTransferFunc *user_data)
+static gint
+linear_component_transfer_func (gint C, RsvgNodeComponentTransferFunc *user_data)
 {
-	return (user_data->slope * C) + user_data->intercept;
+	return (user_data->slope * C) / 255 + user_data->intercept;
 }
 
-static gdouble
-gamma_component_transfer_func (gdouble C, RsvgNodeComponentTransferFunc *user_data)
+static gint fixpow(gint base, gint exp)
 {
-	return user_data->amplitude * pow (C,
-									   user_data->exponent) + user_data->offset;
+	int out = 255;
+	for (; exp > 0; exp--)
+		out = out * base / 255;
+	return out;
+}
+
+static gint
+gamma_component_transfer_func (gint C, RsvgNodeComponentTransferFunc *user_data)
+{
+	return user_data->amplitude * fixpow (C,user_data->exponent) / 255 + user_data->offset;
 }
 
 static void 
@@ -2409,6 +2397,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 	RsvgIRect boundarys;
 	RsvgNodeComponentTransferFunc * channels[4];
 	ComponentTransferFunc functions[4];
+	guchar *inpix, outpix[4];
 	
 	guchar *in_pixels;
 	guchar *output_pixels;
@@ -2454,15 +2443,32 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 
 	for (y = boundarys.y0; y < boundarys.y1; y++)
 		for (x = boundarys.x0; x < boundarys.x1; x++)
-			for (c = 0; c < 4; c++)
-				{
-					temp = functions[c]((double)in_pixels[y * rowstride + x * 4 + c] / 255.0, channels[c]) * 255.0;
-					if (temp > 255)
-						temp = 255;
-					else if (temp < 0)
-						temp = 0;
-					output_pixels[y * rowstride + x * 4 + c] = temp;		
-				}
+			{
+				inpix = in_pixels + (y * rowstride + x * 4);
+				for (c = 0; c < 4; c++)
+					{
+						int inval;
+						if (c != 3)
+							{
+								if (inpix[3] == 0)
+									inval = 0;
+								else
+									inval = inpix[c] * 255 / inpix[3];
+							}
+						else
+							inval = inpix[c];
+
+						temp = functions[c](inval, channels[c]);
+						if (temp > 255)
+							temp = 255;
+						else if (temp < 0)
+							temp = 0;
+						outpix[c] = temp;		
+					}
+				for (c = 0; c < 3; c++)
+					output_pixels[y * rowstride + x * 4 + c] = outpix[c] * outpix[3] / 255;
+				output_pixels[y * rowstride + x * 4 + 3] = outpix[3];
+			}
 	rsvg_filter_store_result (self->result, output, ctx);
 	
 	g_object_unref (G_OBJECT (in));
@@ -2569,21 +2575,25 @@ rsvg_node_component_transfer_function_set_atts (RsvgNode * self,
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "tableValues")))
 				{
-					data->tableValues = 
-						rsvg_css_parse_number_list (value, 
-													&data->nbTableValues);
+					unsigned int i;
+					double * temp =	rsvg_css_parse_number_list (value, 
+																&data->nbTableValues);
+					data->tableValues = g_new(gint, data->nbTableValues);
+					for (i = 0; i < data->nbTableValues; i++)
+						data->tableValues[i] = temp[i] * 255.;
+					g_free(temp);	
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "slope")))
 				{
-					data->slope = g_ascii_strtod(value, NULL); 
+					data->slope = g_ascii_strtod(value, NULL) * 255.; 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "intercept")))
 				{
-					data->intercept = g_ascii_strtod(value, NULL); 
+					data->intercept = g_ascii_strtod(value, NULL) * 255.; 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "amplitude")))
 				{
-					data->amplitude = g_ascii_strtod(value, NULL); 
+					data->amplitude = g_ascii_strtod(value, NULL) * 255.; 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "exponent")))
 				{
@@ -2591,7 +2601,7 @@ rsvg_node_component_transfer_function_set_atts (RsvgNode * self,
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "offset")))
 				{
-					data->offset = g_ascii_strtod(value, NULL); 
+					data->offset = g_ascii_strtod(value, NULL) * 255.; 
 				}
 		}
 }
@@ -2875,33 +2885,34 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self,
 		for (y = boundarys.y0; y < boundarys.y1; y++)
 			for (x = boundarys.x0; x < boundarys.x1; x++)
 				{
-					
-					for (i = 0; i < 3; i++)
-						{
-							int ca, cb, cr;
-							ca = in_pixels[4 * x + y * rowstride + i];
-							cb = in2_pixels[4 * x + y * rowstride + i];
-							
-							cr = (ca * cb * upself->k1 / 255 + ca * upself->k2 + 
-								  cb * upself->k3 +upself->k4) / 255;
-							if (cr > 255)
-								cr = 255;
-							if (cr < 0)
-								cr = 0;
-							output_pixels[4 * x + y * rowstride + i] = cr;
-							
-						}
 					int qr, qa, qb;
 					
 					qa = in_pixels[4 * x + y * rowstride + 3];
 					qb = in2_pixels[4 * x + y * rowstride + 3];
 					qr = (upself->k1 * qa * qb / 255 + 
 						  upself->k2 * qa + upself->k3 * qb) / 255;
+
 					if (qr > 255)
 					qr = 255;
 					if (qr < 0)
 					qr = 0;
 					output_pixels[4 * x + y * rowstride + 3] = qr;
+					if (qr)
+						for (i = 0; i < 3; i++)
+							{
+								int ca, cb, cr;
+								ca = in_pixels[4 * x + y * rowstride + i];
+								cb = in2_pixels[4 * x + y * rowstride + i];
+								
+								cr = (ca * cb * upself->k1 / 255 + ca * upself->k2 + 
+								  cb * upself->k3 + upself->k4 * qr) / 255;
+								if (cr > qr)
+									cr = qr;
+								if (cr < 0)
+									cr = 0;
+								output_pixels[4 * x + y * rowstride + i] = cr;
+								
+							}
 				}
 	
 	else
@@ -2940,7 +2951,11 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self,
 							break;
 						}
 				
-					qr = (Fa * qa + Fb * qb + Fab * qa * qb) / 255;
+					qr = (Fa * qa + Fb * qb) / 255;
+					if (qr > 255)
+						qr = 255;
+					if (qr < 0)
+						qr = 0;
 
 					for (i = 0; i < 3; i++)
 						{
@@ -2948,17 +2963,13 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self,
 							cb = in2_pixels[4 * x + y * rowstride + i];
 							
 							cr = (ca * Fa + cb * Fb + ca * cb * Fab + Fo) / 255;
-							if (cr > 255)
-								cr = 255;
+							if (cr > qr)
+								cr = qr;
 							if (cr < 0)
 							cr = 0;
 							output_pixels[4 * x + y * rowstride + i] = cr;
 							
 						}
-					if (qr > 255)
-						qr = 255;
-					if (qr < 0)
-						qr = 0;
 					output_pixels[4 * x + y * rowstride + 3] = qr;
 				}
 	
@@ -3729,11 +3740,14 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self,
 				{
 					gint i;
 					double point[2];
+					guchar * pixel;
 					point[0] = affine[0] * (x+boundarys.x0) +
 						affine[2] * (y+boundarys.y0) + affine[4];
 					point[1] = affine[1] * (x+boundarys.x0) +
 						affine[3] * (y+boundarys.y0) + affine[5];
 					
+					pixel = output_pixels + 4 * (x+boundarys.x0) + (y+boundarys.y0) * rowstride;
+																  
 					for (i = 0; i < 4; i++)
 						{
 							double cr;
@@ -3747,8 +3761,11 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self,
 
 							cr = CLAMP(cr, 0., 255.);
 
-							output_pixels[(4 * (x+boundarys.x0)) + ((y+boundarys.y0) * rowstride) + i] = (guchar)(cr);
+							pixel[i] = (guchar)cr;
 						}
+					for (i = 0; i < 3; i++)
+						pixel[i] = pixel[i] * pixel[3] / 255;
+
 				}
 		}
 
@@ -4742,12 +4759,11 @@ static void
 rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 											   RsvgFilterContext * ctx)
 {
-	gint x, y, temp;
+	gint x, y;
 	gdouble z, surfaceScale;
 	gint rowstride, height, width;
 	gdouble factor, max, base;
-	vector3 lightcolour;
-	vector3 colour;
+	vector3 lightcolour, colour;
 	vector3 L;
 	gdouble iaffine[6];
 	RsvgIRect boundarys;
@@ -4811,32 +4827,27 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 													 upself->surfaceScale, 
 													 rowstride), L);
 				
-				factor = pow(base, upself->specularExponent);
+				factor = upself->specularConstant * pow(base, upself->specularExponent) * 255;
 
 				max = 0;
-				temp = upself->specularConstant * factor* lightcolour.x * 255.0;		
-				if (temp < 0)
-					temp = 0;				
-				if (temp > 255)
-					temp = 255;
-				max = MAX(temp, max);
-				output_pixels[y * rowstride + x * 4    ] = temp;
-				temp = upself->specularConstant * factor * lightcolour.y * 255.0;
-				if (temp < 0)
-					temp = 0;				
-				if (temp > 255)
-					temp = 255;
-				max = MAX(temp, max);
-				output_pixels[y * rowstride + x * 4 + 1] = temp;
-				temp = upself->specularConstant * factor * lightcolour.z * 255.0;
-				if (temp < 0)
-					temp = 0;				
-				if (temp > 255)
-					temp = 255;
-				max = MAX(temp, max);		
-				output_pixels[y * rowstride + x * 4 + 2] = temp;
+				if (max < lightcolour.x)
+					max = lightcolour.x;
+				if (max < lightcolour.y)
+					max = lightcolour.y;
+				if (max < lightcolour.z)
+					max = lightcolour.z;		   
 
+				max *= factor;
+				if (max > 255)
+					max = 255;
+				if (max < 0)
+					max = 0;
+
+				output_pixels[y * rowstride + x * 4    ] = lightcolour.x * max;
+				output_pixels[y * rowstride + x * 4 + 1] = lightcolour.y * max;
+				output_pixels[y * rowstride + x * 4 + 2] = lightcolour.z * max;
 				output_pixels[y * rowstride + x * 4 + 3] = max;
+
 			}
 	
 	rsvg_filter_store_result (self->result, output, ctx);

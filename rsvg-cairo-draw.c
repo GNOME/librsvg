@@ -772,8 +772,8 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx *ctx)
 void
 rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
 {
-	rsvg_cairo_push_render_stack(ctx);
 	rsvg_cairo_push_early_clips(ctx);
+	rsvg_cairo_push_render_stack(ctx);
 }
 
 static GdkPixbuf *
@@ -800,12 +800,12 @@ rsvg_compile_bg(RsvgDrawingCtx *ctx)
 	cr = cairo_create (surface);
 	cairo_surface_destroy (surface);
 
-	for (i = g_list_last(render->cr_stack); i != render->cr_stack; i = g_list_previous(i))
+	for (i = g_list_last(render->cr_stack); i != NULL; i = g_list_previous(i))
 		{
-			cairo_surface_t * draw;
+			cairo_t * draw;
 			draw = i->data;
-			cairo_set_source_surface (cr, draw, 0, 0);
-			cairo_paint (cr);			
+			cairo_set_source_surface (cr, cairo_get_target(draw), 0, 0);
+			cairo_paint (cr);
 		}
 
 	cairo_destroy(cr);
@@ -871,11 +871,8 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 							  0, 0);
 
 	if (lateclip)
-		{
-			cairo_save(render->cr);
-			rsvg_cairo_clip(ctx, rsvg_state_current(ctx)->clip_path_ref, 
-							&render->bbox);
-		}
+		rsvg_cairo_clip(ctx, rsvg_state_current(ctx)->clip_path_ref, 
+						&render->bbox);
 	if (state->mask)
 		{
 			cairo_surface_t * mask = 
@@ -897,8 +894,6 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 
 	g_free(render->bb_stack->data);
 	render->bb_stack = g_list_remove_link (render->bb_stack, render->bb_stack);
-	if (lateclip)
-		cairo_restore(render->cr);
 
 	if (state->filter)
 		{
@@ -910,8 +905,8 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 void
 rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx *ctx)
 {
-	cairo_restore(((RsvgCairoRender *)ctx->render)->cr);
 	rsvg_cairo_pop_render_stack(ctx);
+	cairo_restore(((RsvgCairoRender *)ctx->render)->cr);
 }
 
 void 
