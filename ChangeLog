@@ -1,3 +1,8 @@
+2005-10-20 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-filter.c: many filters now using pre-multiplied alpha correctly
+	* rsvg-cairo-draw.c: handles bounding boxes around images correctly
+	
 2005-10-19 Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-cairo-draw.c: series of hacks to make filters work

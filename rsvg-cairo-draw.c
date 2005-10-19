@@ -529,6 +529,15 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 	if (pixbuf == NULL)
 		return;
 
+	rsvg_bbox_init(&bbox, state->affine);
+	bbox.x = pixbuf_x;
+	bbox.y = pixbuf_y;
+	bbox.w = w;
+	bbox.h = h;
+	bbox.virgin = 0;
+
+	rsvg_cairo_push_discrete_layer (ctx);
+
     cairo_save (render->cr);
 	_set_rsvg_affine (render->cr, state->affine);
     cairo_scale (render->cr, w / width, h / height);
@@ -603,24 +612,14 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 			cairo_pixels += 4 * width;
 		}
 
-	rsvg_cairo_push_discrete_layer (ctx);
-
 	cairo_set_source_surface (render->cr, surface, pixbuf_x, pixbuf_y);
 	cairo_paint (render->cr);
 	cairo_surface_destroy (surface);
 
-	rsvg_cairo_pop_discrete_layer (ctx);
+	rsvg_bbox_insert(&render->bbox, &bbox);
 
     cairo_restore (render->cr);
-
-	rsvg_bbox_init(&bbox, state->affine);
-	bbox.x = pixbuf_x;
-	bbox.y = pixbuf_y;
-	bbox.w = w;
-	bbox.h = h;
-	bbox.virgin = 0;
-
-	rsvg_bbox_insert(&render->bbox, &bbox);
+	rsvg_cairo_pop_discrete_layer (ctx);
 }
 
 static cairo_surface_t *

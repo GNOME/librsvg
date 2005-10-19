@@ -1184,6 +1184,10 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 				if (upself->preservealpha)
 					output_pixels[4 * x + y * rowstride + 3] =
 						in_pixels[4 * x + y * rowstride + 3];
+				for (ch = 0; ch < 3; ch++)
+					output_pixels[4 * x + y * rowstride + ch] =
+						output_pixels[4 * x + y * rowstride + ch] *
+						output_pixels[4 * x + y * rowstride + 3] / 255;
 			}
 	rsvg_filter_store_result (self->result, output, ctx);
 	
