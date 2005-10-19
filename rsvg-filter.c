@@ -201,14 +201,6 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state,
 	width = bbox.w;
 	height = bbox.h;
 
-	printf("%f %f %f %f %f %f\n", bbox.affine[0], bbox.affine[1], bbox.affine[2], 
-		   bbox.affine[3], bbox.affine[4], bbox.affine[5]);
-
-	printf("%f %f %f %f %f %f\n", 
-		   state->affine[0], state->affine[1], state->affine[2], 
-		   state->affine[3], state->affine[4], state->affine[5]);
-
-
 	ctx->width = gdk_pixbuf_get_width(ctx->source);
 	ctx->height = gdk_pixbuf_get_height(ctx->source);
 
@@ -318,14 +310,14 @@ rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
 					{
 						ad = dst_pixels[4 * dx + dy * dstrowstride + 3];
 						ar = a + ad * (255 - a) / 255;
+						dst_pixels[4 * dx + dy * dstrowstride + 3] = ar;
 						for (i = 0; i < 3; i++)
 							{
-								c = src_pixels[4 * sx + sy * srcrowstride + i] * a / 255;
-								cd = dst_pixels[4 * dx + dy * dstrowstride + i] * ar / 255;
-								cr = (c * 255 + cd * (255 - a)) / ar;
+								c = src_pixels[4 * sx + sy * srcrowstride + i];
+								cd = dst_pixels[4 * dx + dy * dstrowstride + i];
+								cr = c + cd * (255 - a) / 255;
 								dst_pixels[4 * dx + dy * dstrowstride + i] = cr;
 							}
-						dst_pixels[4 * dx + dy * dstrowstride + 3] = ar;
 					}
 			}
 }
@@ -2841,7 +2833,7 @@ struct _RsvgFilterPrimitiveComposite
 	RsvgFilterPrimitiveCompositeMode mode;
 	GString *in2;
 
-	gdouble k1, k2, k3, k4;
+	int k1, k2, k3, k4;
 };
 
 static void
@@ -2886,87 +2878,88 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self,
 					
 					for (i = 0; i < 3; i++)
 						{
-							double ca, cb, cr;
-							ca = (double) in_pixels[4 * x + y * rowstride + i];
-							cb = (double) in2_pixels[4 * x + y * rowstride + i];
+							int ca, cb, cr;
+							ca = in_pixels[4 * x + y * rowstride + i];
+							cb = in2_pixels[4 * x + y * rowstride + i];
 							
-							cr = (ca * upself->k2 + cb * upself->k3 + 
-								  ca * cb * upself->k1 + upself->k4);
-							if (cr > 1)
-								cr = 1;
+							cr = (ca * cb * upself->k1 / 255 + ca * upself->k2 + 
+								  cb * upself->k3 +upself->k4) / 255;
+							if (cr > 255)
+								cr = 255;
 							if (cr < 0)
 								cr = 0;
-							output_pixels[4 * x + y * rowstride + i] = (guchar)(cr * 255.0);
+							output_pixels[4 * x + y * rowstride + i] = cr;
 							
 						}
-					double qr, qa, qb;
+					int qr, qa, qb;
 					
-					qa = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
-					qb = (double) in2_pixels[4 * x + y * rowstride + 3] / 255.0;
-					qr = upself->k2 * qa + upself->k3 * qb + upself->k1 * qa * qb;
-					if (qr > 1)
-					qr = 1;
+					qa = in_pixels[4 * x + y * rowstride + 3];
+					qb = in2_pixels[4 * x + y * rowstride + 3];
+					qr = (upself->k1 * qa * qb / 255 + 
+						  upself->k2 * qa + upself->k3 * qb) / 255;
+					if (qr > 255)
+					qr = 255;
 					if (qr < 0)
 					qr = 0;
-					output_pixels[4 * x + y * rowstride + 3] = (guchar)(qr * 255.0);
+					output_pixels[4 * x + y * rowstride + 3] = qr;
 				}
 	
 	else
 		for (y = boundarys.y0; y < boundarys.y1; y++)
 			for (x = boundarys.x0; x < boundarys.x1; x++)
 				{
-					double qr, cr, qa, qb, ca, cb, Fa, Fb, Fab, Fo;
+					int qr, cr, qa, qb, ca, cb, Fa, Fb, Fab, Fo;
 					
-					qa = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
-					qb = (double) in2_pixels[4 * x + y * rowstride + 3] / 255.0;
+					qa = in_pixels[4 * x + y * rowstride + 3];
+					qb = in2_pixels[4 * x + y * rowstride + 3];
 					cr = 0;
 					Fa = Fb = Fab = Fo = 0;
 					switch (upself->mode)
 						{
 						case COMPOSITE_MODE_OVER:
-							Fa = 1;
-							Fb = 1 - qa;
+							Fa = 255;
+							Fb = 255 - qa;
 							break;
 						case COMPOSITE_MODE_IN:
 							Fa = qb;
 							Fb = 0;
 							break;
 						case COMPOSITE_MODE_OUT:
-							Fa = 1 - qb;
+							Fa = 255 - qb;
 							Fb = 0;
 							break;
 						case COMPOSITE_MODE_ATOP:
 							Fa = qb;
-							Fb = 1 - qa;
+							Fb = 255 - qa;
 							break;
 						case COMPOSITE_MODE_XOR:
-							Fa = 1 - qb;
-							Fb = 1 - qa;
+							Fa = 255 - qb;
+							Fb = 255 - qa;
 							break;
 						default:
 							break;
 						}
 				
-					qr = Fa * qa + Fb * qb + Fab * qa * qb;
+					qr = (Fa * qa + Fb * qb + Fab * qa * qb) / 255;
 
 					for (i = 0; i < 3; i++)
 						{
-							ca = (double) in_pixels[4 * x + y * rowstride + i];
-							cb = (double) in2_pixels[4 * x + y * rowstride + i];
+							ca = in_pixels[4 * x + y * rowstride + i];
+							cb = in2_pixels[4 * x + y * rowstride + i];
 							
-							cr = (ca * Fa + cb * Fb + ca * cb * Fab + Fo);
-							if (cr > 1)
-								cr = 1;
+							cr = (ca * Fa + cb * Fb + ca * cb * Fab + Fo) / 255;
+							if (cr > 255)
+								cr = 255;
 							if (cr < 0)
 							cr = 0;
-							output_pixels[4 * x + y * rowstride + i] = (guchar)(cr * 255.0);
+							output_pixels[4 * x + y * rowstride + i] = cr;
 							
 						}
-					if (qr > 1)
-						qr = 1;
+					if (qr > 255)
+						qr = 255;
 					if (qr < 0)
 						qr = 0;
-					output_pixels[4 * x + y * rowstride + 3] = (guchar)(qr * 255.0);
+					output_pixels[4 * x + y * rowstride + 3] = qr;
 				}
 	
 	rsvg_filter_store_result (self->result, output, ctx);
@@ -3061,19 +3054,19 @@ rsvg_filter_primitive_composite_set_atts (RsvgNode * self, RsvgHandle * ctx, Rsv
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "k1")))
 				{
-					filter->k1 = g_ascii_strtod(value, NULL); 
+					filter->k1 = g_ascii_strtod(value, NULL) * 255.; 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "k2")))
 				{
-					filter->k2 = g_ascii_strtod(value, NULL); 
+					filter->k2 = g_ascii_strtod(value, NULL) * 255.; 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "k3")))
 				{
-					filter->k3 = g_ascii_strtod(value, NULL); 
+					filter->k3 = g_ascii_strtod(value, NULL) * 255.; 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "k4")))
 				{
-					filter->k4 = g_ascii_strtod(value, NULL); 
+					filter->k4 = g_ascii_strtod(value, NULL) * 255.; 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, &filter->super.super);
@@ -3129,7 +3122,7 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self,
 	RsvgFilterPrimitiveFlood *upself;
 	
 	GdkPixbuf *output;
-	
+	char pixcolour[4];	
 	RsvgFilterPrimitiveOutput out;
 
 	upself = (RsvgFilterPrimitiveFlood *) self;
@@ -3142,16 +3135,15 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self,
 	
 	output_pixels = gdk_pixbuf_get_pixels (output);
 
+	for (i = 0; i < 3; i++)
+		pixcolour[i] = (int)(((unsigned char *)
+							  (&upself->colour))[2 - i]) * upself->opacity / 255;
+	pixcolour[3] = upself->opacity;
+
 	for (y = boundarys.y0; y < boundarys.y1; y++)
 		for (x = boundarys.x0; x < boundarys.x1; x++)
-			{
-				for (i = 0; i < 3; i++)
-					{
-						output_pixels[4 * x + y * rowstride + i] = ((char *)
-							(&upself->colour))[2 - i];
-					}
-				output_pixels[4 * x + y * rowstride + 3] = upself->opacity;
-			}
+			for (i = 0; i < 4; i++)
+				output_pixels[4 * x + y * rowstride + i] = pixcolour[i];
 
 	out.result = output;
 	out.Rused = 1;

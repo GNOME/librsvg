@@ -776,6 +776,42 @@ rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
 	rsvg_cairo_push_early_clips(ctx);
 }
 
+static GdkPixbuf *
+rsvg_compile_bg(RsvgDrawingCtx *ctx)
+{
+	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
+	cairo_t * cr;
+	cairo_surface_t * surface;
+	GList *i;
+	char * pixels = g_new(guint8, render->width * render->height * 4);
+	int rowstride = render->width * 4;
+
+	GdkPixbuf * output = gdk_pixbuf_new_from_data(pixels,
+												  GDK_COLORSPACE_RGB, TRUE, 8, 
+												  render->width, render->height,
+												  rowstride, (GdkPixbufDestroyNotify)rsvg_pixmap_destroy, NULL);
+
+	surface = cairo_image_surface_create_for_data (pixels,
+												   CAIRO_FORMAT_ARGB32,
+												   render->width, 
+												   render->height,
+												   rowstride);	
+
+	cr = cairo_create (surface);
+	cairo_surface_destroy (surface);
+
+	for (i = g_list_last(render->cr_stack); i != render->cr_stack; i = g_list_previous(i))
+		{
+			cairo_surface_t * draw;
+			draw = i->data;
+			cairo_set_source_surface (cr, draw, 0, 0);
+			cairo_paint (cr);			
+		}
+
+	cairo_destroy(cr);
+	return output;
+}
+
 static void
 rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 {
@@ -795,12 +831,10 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 	if (state->opacity == 0xFF && !state->filter && !state->mask && !lateclip)
 		return;
 
-	render->cr = (cairo_t *)render->cr_stack->data;
-	render->cr_stack = g_list_remove_link (render->cr_stack, render->cr_stack);
-
 	if (state->filter)
 		{
 			GdkPixbuf * pixbuf = render->pixbuf_stack->data;
+			GdkPixbuf * bg = rsvg_compile_bg(ctx);
 
 			render->pixbuf_stack = g_list_remove_link (render->pixbuf_stack,
 													   render->pixbuf_stack);
@@ -809,9 +843,13 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 			rsvg_cairo_to_pixbuf_noaa(gdk_pixbuf_get_pixels(pixbuf),
 									  gdk_pixbuf_get_rowstride(pixbuf),
 									  gdk_pixbuf_get_height(pixbuf));
-			output = rsvg_filter_render (state->filter, pixbuf, pixbuf, 
+			rsvg_cairo_to_pixbuf_noaa(gdk_pixbuf_get_pixels(bg),
+									  gdk_pixbuf_get_rowstride(bg),
+									  gdk_pixbuf_get_height(bg));
+			output = rsvg_filter_render (state->filter, pixbuf, bg, 
 										 ctx, &render->bbox);
 			gdk_pixbuf_unref(pixbuf);
+			gdk_pixbuf_unref(bg);
 			rsvg_pixbuf_to_cairo_noaa(gdk_pixbuf_get_pixels(output),
 									  gdk_pixbuf_get_rowstride(output),
 									  gdk_pixbuf_get_height(output));
@@ -821,14 +859,17 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 														   gdk_pixbuf_get_width(output), 
 														   gdk_pixbuf_get_height(output),
 														   gdk_pixbuf_get_rowstride(output));
-			cairo_set_source_surface (render->cr,
-									  surface,
-									  0, 0);
 		}
 	else
-		cairo_set_source_surface (render->cr,
-								  cairo_get_target (child_cr),
-								  0, 0);
+		surface = cairo_get_target (child_cr);
+
+	render->cr = (cairo_t *)render->cr_stack->data;
+	render->cr_stack = g_list_remove_link (render->cr_stack, render->cr_stack);
+
+	cairo_set_source_surface (render->cr,
+							  surface,
+							  0, 0);
+
 	if (lateclip)
 		{
 			cairo_save(render->cr);
@@ -917,8 +958,6 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 	cr = cairo_create (surface);
 	cairo_surface_destroy (surface);
 
-	rsvg_cairo_to_pixbuf_noaa(pixels, rowstride, height);
-
 	render = rsvg_cairo_render_new(cr, width, height);
 	ctx->render = (RsvgRender *)render;
 
@@ -937,6 +976,8 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 									NULL);
 
 	cairo_destroy (cr);
+
+	rsvg_cairo_to_pixbuf_noaa(pixels, rowstride, height);
 	ctx->render = (RsvgRender *)save_render;
 
 	return img;
