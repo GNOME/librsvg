@@ -206,14 +206,15 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 
 				if (!state->overflow || 
 					(!state->has_overflow && child->state->overflow))
+					rsvg_push_discrete_layer (ctx);
 					rsvg_add_clipping_rect (ctx, symbol->x, symbol->y,
 											symbol->width, symbol->height);
 			} else {
 				_rsvg_affine_translate(affine, use->x, use->y);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
+				rsvg_push_discrete_layer (ctx);
 			}
 
-			rsvg_push_discrete_layer (ctx);
 			rsvg_state_push(ctx);
 			_rsvg_node_draw_children(child, ctx, 1);
 			rsvg_state_pop(ctx);
@@ -245,11 +246,6 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 
 	state = rsvg_state_current (ctx);
 
-	if (!state->overflow && self->parent)
-		{
-			rsvg_add_clipping_rect(ctx, sself->x, sself->y, sself->w, sself->h);
-		}
-
 	if (sself->has_vbox && sself->hasw && sself->hash)
 		{
 			double x = sself->x, y = sself->y, w = sself->w, h = sself->h;
@@ -278,6 +274,14 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 		}
 
 	rsvg_push_discrete_layer (ctx);
+
+	if (!state->overflow && self->parent)
+		{
+			if (sself->has_vbox)
+				rsvg_add_clipping_rect(ctx, 0, 0, sself->vbw, sself->vbh);
+			else
+				rsvg_add_clipping_rect(ctx, 0, 0, sself->w, sself->h);
+		}
 
 	for (i = 0; i < self->children->len; i++)
 		{
