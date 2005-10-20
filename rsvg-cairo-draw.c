@@ -639,7 +639,7 @@ rsvg_cairo_generate_mask(RsvgMask * self, RsvgDrawingCtx *ctx,
 	guint32 rowstride = width * 4, row, i;
 	double affinesave[6];
 
-	pixels = g_new(guint8, height * rowstride);
+	pixels = g_new0(guint8, height * rowstride);
 	surface = cairo_image_surface_create_for_data (pixels,
 												   CAIRO_FORMAT_ARGB32,
 												   width, height,
@@ -786,7 +786,7 @@ rsvg_compile_bg(RsvgDrawingCtx *ctx)
 	cairo_t * cr;
 	cairo_surface_t * surface;
 	GList *i;
-	char * pixels = g_new(guint8, render->width * render->height * 4);
+	char * pixels = g_new0(guint8, render->width * render->height * 4);
 	int rowstride = render->width * 4;
 
 	GdkPixbuf * output = gdk_pixbuf_new_from_data(pixels,
