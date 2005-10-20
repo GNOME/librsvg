@@ -123,10 +123,11 @@ dnl ===========================================================================
 LIBART_CFLAGS=""
 LIBART_LIBS=""
 
-test_art=true
+# disable the libart backend until it compiles
+test_art=false
 AC_ARG_WITH(art,[  --with-art  Build the libart backend],[
-	if test "x$withval" = "xno"; then
-		test_art=false
+	if test "x$withval" = "xyes"; then
+		test_art=true
 	fi
 ])
 if test "x$test_art" = "xtrue"; then
@@ -137,9 +138,7 @@ if test "x$test_art" = "xtrue"; then
 	LIBART_CFLAGS="$LIBART_CFLAGS"
 	build_compat="true"
 else
-	AC_MSG_WARN([libart backend disabled, as requested (Use --with-art to enable)])
-	art_warning="
-	You are building without the libart backend. At this point in time librsvg will not do very much without it, for example it won't draw anything. You are strongly advised to install it if you actually want to use librsvg for more than an ornamental file in your lib directory"
+	AC_MSG_WARN([libart backend disabled (Use --with-art to enable)])
 fi
 
 AC_SUBST(LIBART_CFLAGS)
@@ -165,7 +164,7 @@ if test "x$test_cairo" = "xtrue"; then
 	LIBCAIRO_CFLAGS="$LIBCAIRO_CFLAGS"
 	build_compat="true"
 else
-	AC_MSG_WARN([cairo backend disabled, as requested (Use --with-cairo to enable)])
+	AC_MSG_WARN([cairo backend disabled (Use --with-cairo to enable)])
 fi
 
 AC_SUBST(LIBCAIRO_CFLAGS)
@@ -473,19 +472,17 @@ dnl ===========================================================================
 LIBRSVG_2_BACKEND_LIBADD=
 LIBRSVG_2_BACKEND_CFLAGS=
 build_librsvg_2_la=no
-if test x$test_art = xtrue; then
-   build_librsvg_2_la=yes
-   LIBRSVG_2_BACKEND_LIBADD=librsvg-2-libart.la
-   LIBRSVG_2_BACKEND_CFLAGS=-DWITH_LIBART_BACKEND
-elif test x$test_cairo = xtrue; then
+if test x$test_cairo = xtrue; then
    build_librsvg_2_la=yes
    LIBRSVG_2_BACKEND_LIBADD=librsvg-2-cairo.la
-   LIBRSVG_2_BACKEND_CFLAGS=-DWITH_CAIRO_BACKEND
+   AC_DEFINE(WITH_CAIRO_BACKEND, 1, "Build the cairo backend")
+elif test x$test_art = xtrue; then
+   build_librsvg_2_la=yes
+   LIBRSVG_2_BACKEND_LIBADD=librsvg-2-libart.la
+   AC_DEFINE(WITH_LIBART_BACKEND, 1, "Build the libart backend")
 fi
 
 AC_SUBST(LIBRSVG_2_BACKEND_LIBADD)
-AC_SUBST(LIBRSVG_2_BACKEND_CFLAGS)
-
 AM_CONDITIONAL(BUILD_COMPAT, test x$build_compat = xtrue)
 
 dnl ===========================================================================
@@ -531,12 +528,4 @@ fi
 
 if test "x$gsf_warning" != "x"; then
    AC_MSG_RESULT([$gsf_warning]);
-fi
-
-if test "x$art_warning" != "x"; then
-   AC_MSG_RESULT([$art_warning]);
-fi
-
-if test "x$cairo_warning" != "x"; then
-   AC_MSG_RESULT([$cairo_warning]);
 fi

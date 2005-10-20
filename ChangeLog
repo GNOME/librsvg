@@ -1,3 +1,8 @@
+2005-10-20 Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Prioritize the cairo backend over the libart one; disable the libart backend until it builds again
+	* Makefile.am: Ditto
+	
 2005-10-20 Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-filter.c: filters now using pre-multiplied alpha and have changable byte ordering

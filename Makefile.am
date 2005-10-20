@@ -127,8 +127,7 @@ INCLUDES =				\
 	-DG_LOG_DOMAIN=\"librsvg\" 	\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""\
 	$(LIBART_CFLAGS)		\
-	$(CAIRO_CFLAGS)			\
-	$(LIBRSVG_2_BACKEND_CFLAGS)
+	$(CAIRO_CFLAGS)
 
 DEPS = $(top_builddir)/librsvg-2.la
 LDADDS =				\
