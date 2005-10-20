@@ -783,7 +783,8 @@ rsvg_compile_bg(RsvgDrawingCtx *ctx)
 	cairo_t * cr;
 	cairo_surface_t * surface;
 	GList *i;
-	char * pixels = g_new0(guint8, render->width * render->height * 4);
+	unsigned char * pixels = 
+		g_new0(guint8, render->width * render->height * 4);
 	int rowstride = render->width * 4;
 
 	GdkPixbuf * output = gdk_pixbuf_new_from_data(pixels,
