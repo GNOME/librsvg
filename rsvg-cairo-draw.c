@@ -537,8 +537,6 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 	bbox.h = h;
 	bbox.virgin = 0;
 
-	rsvg_cairo_push_discrete_layer (ctx);
-
     cairo_save (render->cr);
 	_set_rsvg_affine (render->cr, state->affine);
     cairo_scale (render->cr, w / width, h / height);
@@ -620,7 +618,6 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 	rsvg_bbox_insert(&render->bbox, &bbox);
 
     cairo_restore (render->cr);
-	rsvg_cairo_pop_discrete_layer (ctx);
 }
 
 static cairo_surface_t *
