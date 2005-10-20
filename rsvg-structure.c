@@ -238,13 +238,16 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 {
 	RsvgNodeSvg * sself;
 	RsvgState *state;
-	gdouble affine[6];
+	gdouble affine[6], affine_old[6], affine_new[6];
 	guint i;
 	sself = (RsvgNodeSvg *)self;
 
 	rsvg_state_reinherit_top(ctx, self->state, dominate);
 
 	state = rsvg_state_current (ctx);
+
+	for (i = 0; i < 6; i++)
+		affine_old[i] = state->affine[i];
 
 	if (sself->has_vbox && sself->hasw && sself->hash)
 		{
@@ -272,15 +275,20 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 			_rsvg_affine_multiply(state->affine, affine, 
 								  state->affine);
 		}
+	for (i = 0; i < 6; i++)
+		affine_new[i] = state->affine[i];
 
 	rsvg_push_discrete_layer (ctx);
 
+	/* Bounding box addition must be AFTER the discrete layer push, 
+	   which must be AFTER the transformation happens. */
 	if (!state->overflow && self->parent)
 		{
-			if (sself->has_vbox)
-				rsvg_add_clipping_rect(ctx, 0, 0, sself->vbw, sself->vbh);
-			else
-				rsvg_add_clipping_rect(ctx, 0, 0, sself->w, sself->h);
+			for (i = 0; i < 6; i++)
+				state->affine[i] = affine_old[i];
+			rsvg_add_clipping_rect(ctx, sself->x, sself->y, sself->w, sself->h);
+			for (i = 0; i < 6; i++)
+				state->affine[i] = affine_new[i];
 		}
 
 	for (i = 0; i < self->children->len; i++)
