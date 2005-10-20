@@ -61,6 +61,7 @@ struct _RsvgFilterContext
 	RsvgFilterPrimitiveOutput lastresult;
 	double affine[6];
 	double paffine[6];
+	int channelmap[4];
 	RsvgDrawingCtx * ctx;
 };
 
@@ -449,7 +450,7 @@ rsvg_filter_free_pair (gpointer value)
 GdkPixbuf *
 rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
 					GdkPixbuf * bg, RsvgDrawingCtx * context, 
-					RsvgBbox * bounds)
+					RsvgBbox * bounds, char * channelmap)
 {
 	RsvgFilterContext *ctx;
 	RsvgFilterPrimitive *current;
@@ -475,6 +476,9 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
 	ctx->lastresult.Bused = 1;
 	ctx->lastresult.Aused = 1;
 	ctx->lastresult.bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);	
+
+	for (i = 0; i < 4; i++)
+		ctx->channelmap[i] = channelmap[i] - '0';
 
 	for (i = 0; i < self->super.children->len; i++)
 		{
@@ -542,7 +546,7 @@ rsvg_filter_store_result(GString * name, GdkPixbuf * result,
 }
 
 static GdkPixbuf *
-pixbuf_get_alpha (GdkPixbuf * pb)
+pixbuf_get_alpha (GdkPixbuf * pb, RsvgFilterContext * ctx)
 {
 	guchar *data;
 	guchar *pbdata;
@@ -560,7 +564,7 @@ pixbuf_get_alpha (GdkPixbuf * pb)
 	pbdata = gdk_pixbuf_get_pixels (pb);
 	
 	for (i = 0; i < pbsize; i++)
-		data[i * 4 + 3] = pbdata[i * 4 + 3];
+		data[i * 4 + ctx->channelmap[3]] = pbdata[i * 4 + ctx->channelmap[3]];
 	
 	return output;
 }
@@ -603,14 +607,14 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
 		{
 			output.Rused = output.Gused = output.Bused = 0;
 			output.Aused = 1;
-		    output.result = pixbuf_get_alpha (ctx->source);
+		    output.result = pixbuf_get_alpha (ctx->source, ctx);
 			return output;
 		}
 	else if (!strcmp (name->str, "BackgroundAlpha"))
 		{
 			output.Rused = output.Gused = output.Bused = 0;
 			output.Aused = 1;
-			output.result = pixbuf_get_alpha (ctx->bg);
+			output.result = pixbuf_get_alpha (ctx->bg, ctx);
 			return output;
 		}	
 
@@ -774,7 +778,7 @@ struct _RsvgFilterPrimitiveBlend
 	GString *in2;
 };
 
-static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, GdkPixbuf *in2, GdkPixbuf *output, RsvgIRect boundarys)
+static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, GdkPixbuf *in2, GdkPixbuf *output, RsvgIRect boundarys, int * channelmap)
 {
 	guchar i;
 	gint x, y;
@@ -805,13 +809,15 @@ static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, 
 		for (x = boundarys.x0; x < boundarys.x1; x++)
 			{
 				double qr, cr, qa, qb, ca, cb, bca, bcb;
-				
-				qa = (double) in_pixels[4 * x + y * rowstride + 3] / 255.0;
-				qb = (double) in2_pixels[4 * x + y * rowstride2 + 3] / 255.0;
+				int ch;				
+
+				qa = (double) in_pixels[4 * x + y * rowstride + channelmap[3]] / 255.0;
+				qb = (double) in2_pixels[4 * x + y * rowstride2 + channelmap[3]] / 255.0;
 				qr = 1 - (1 - qa) * (1 - qb);
 				cr = 0;
-				for (i = 0; i < 3; i++)
+				for (ch = 0; ch < 3; ch++)
 					{
+						i = channelmap[ch];
 						ca = (double) in_pixels[4 * x + y * rowstride + i] / 255.0;
 						cb = (double) in2_pixels[4 * x + y * rowstride2 + i] / 255.0;
 						/*these are the ca and cb that are used in the non-standard blend functions*/
@@ -879,7 +885,7 @@ static void rsvg_filter_blend(RsvgFilterPrimitiveBlendMode mode, GdkPixbuf *in, 
 						output_pixels[4 * x + y * rowstrideo + i] = (guchar) cr;
 						
 					}
-				output_pixels[4 * x + y * rowstrideo + 3] = qr * 255.0;
+				output_pixels[4 * x + y * rowstrideo + channelmap[3]] = qr * 255.0;
 			}
 }
 
@@ -904,7 +910,7 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
 	
 	output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, gdk_pixbuf_get_width (in), gdk_pixbuf_get_height (in));
 	
-	rsvg_filter_blend(upself->mode, in, in2, output, boundarys);
+	rsvg_filter_blend(upself->mode, in, in2, output, boundarys, ctx->channelmap);
 
 	rsvg_filter_store_result (self->result, output, ctx);
 	
@@ -915,6 +921,7 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self,
 
 void rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixbuf *output, RsvgIRect boundarys, RsvgDrawingCtx * ctx)
 {
+	int standardmap[4] = {0, 1, 2, 3};
 	RsvgFilterPrimitiveBlendMode mode;
 	mode = normal;
 
@@ -958,7 +965,7 @@ void rsvg_filter_adobe_blend(gint modenum, GdkPixbuf *in, GdkPixbuf *bg, GdkPixb
 			break;
 		}
 
-	rsvg_filter_blend(mode, in, bg, output, boundarys);
+	rsvg_filter_blend(mode, in, bg, output, boundarys, standardmap);
 }
 
 static void
@@ -1102,6 +1109,7 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 	gint sx, sy, kx, ky;
 	guchar sval;
 	double kval, sum, dx, dy, targetx, targety;
+	int umch;
 	
 	gint tempresult;
 	
@@ -1133,8 +1141,9 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 	for (y = boundarys.y0; y < boundarys.y1; y++)
 		for (x = boundarys.x0; x < boundarys.x1; x++)
 			{
-				for (ch = 0; ch < 3 + !upself->preservealpha; ch++)
+				for (umch = 0; umch < 3 + !upself->preservealpha; umch++)
 					{
+						ch = ctx->channelmap[umch];
 						sum = 0;
 						for (i = 0; i < upself->ordery; i++)
 							for (j = 0; j < upself->orderx; j++)
@@ -1190,12 +1199,15 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 						output_pixels[4 * x + y * rowstride + ch] = tempresult;
 					}
 				if (upself->preservealpha)
-					output_pixels[4 * x + y * rowstride + 3] =
-						in_pixels[4 * x + y * rowstride + 3];
-				for (ch = 0; ch < 3; ch++)
-					output_pixels[4 * x + y * rowstride + ch] =
-						output_pixels[4 * x + y * rowstride + ch] *
-						output_pixels[4 * x + y * rowstride + 3] / 255;
+					output_pixels[4 * x + y * rowstride + ctx->channelmap[3]] =
+						in_pixels[4 * x + y * rowstride + ctx->channelmap[3]];
+				for (umch = 0; umch < 3; umch++)
+					{
+						ch = ctx->channelmap[umch];
+						output_pixels[4 * x + y * rowstride + ch] =
+							output_pixels[4 * x + y * rowstride + ch] *
+							output_pixels[4 * x + y * rowstride + ctx->channelmap[3]] / 255;
+					}
 			}
 	rsvg_filter_store_result (self->result, output, ctx);
 	
@@ -2071,9 +2083,7 @@ rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self,
 	GdkPixbuf *output;
 	GdkPixbuf *in;
 	
-	double sum;
-	
-	gint tempresult;
+	int sum;
 
 	upself = (RsvgFilterPrimitiveColourMatrix *) self;
 	boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
@@ -2092,22 +2102,51 @@ rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self,
 	for (y = boundarys.y0; y < boundarys.y1; y++)
 		for (x = boundarys.x0; x < boundarys.x1; x++)
 			{
-				for (ch = 0; ch < 4; ch++)
-					{
-						sum = 0;
-						for (i = 0; i < 4; i++)
-							{
-								sum += upself->KernelMatrix[ch * 5 + i] *
-									in_pixels[4 * x + y * rowstride + i] / 255;
+				int umch;
+				int alpha = in_pixels[4 * x + y * rowstride + ctx->channelmap[3]];
+				if (!alpha)
+					for (umch = 0; umch < 4; umch++)
+						{
+							sum = upself->KernelMatrix[umch * 5 + 4];
+							if (sum > 255)
+								sum = 255;
+							if (sum < 0)
+								sum = 0;
+							output_pixels[4 * x + y * rowstride + ctx->channelmap[umch]] = sum;
+						}
+				else
+					for (umch = 0; umch < 4; umch++)
+						{
+							int umi;
+							ch = ctx->channelmap[umch];
+							sum = 0;
+							for (umi = 0; umi < 4; umi++)
+								{
+									i = ctx->channelmap[umi];
+									if (umi != 3)
+										sum += upself->KernelMatrix[umch * 5 + umi] *
+											in_pixels[4 * x + y * rowstride + i] / alpha;
+									else
+										sum += upself->KernelMatrix[umch * 5 + umi] *
+											in_pixels[4 * x + y * rowstride + i] / 255;	
 							}
-						sum += upself->KernelMatrix[ch * 5 + 4];
-						
-						tempresult = sum;
-						if (tempresult > 255)
-							tempresult = 255;
-						if (tempresult < 0)
-							tempresult = 0;
-						output_pixels[4 * x + y * rowstride + ch] = tempresult;
+							sum += upself->KernelMatrix[umch * 5 + 4];
+							
+			
+
+							if (sum > 255)
+								sum = 255;
+							if (sum < 0)
+								sum = 0;
+							
+							output_pixels[4 * x + y * rowstride + ch] = sum;
+						}
+				for (umch = 0; umch < 3; umch++)
+					{
+						ch = ctx->channelmap[umch];
+						output_pixels[4 * x + y * rowstride + ch] = 
+							output_pixels[4 * x + y * rowstride + ch] *
+							output_pixels[4 * x + y * rowstride + ctx->channelmap[3]] / 255;
 					}
 			}
 
@@ -2413,7 +2452,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 	RsvgNodeComponentTransferFunc * channels[4];
 	ComponentTransferFunc functions[4];
 	guchar *inpix, outpix[4];
-	
+	gint achan = ctx->channelmap[3];
 	guchar *in_pixels;
 	guchar *output_pixels;
 	
@@ -2434,8 +2473,8 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 						g_ptr_array_index(self->super.children, i);
 					if (temp->channel == channel)
 						{
-							functions[c] = temp->function;
-							channels[c] = temp;
+							functions[ctx->channelmap[c]] = temp->function;
+							channels[ctx->channelmap[c]] = temp;
 							break;
 						}
 				}
@@ -2463,12 +2502,12 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 				for (c = 0; c < 4; c++)
 					{
 						int inval;
-						if (c != 3)
+						if (c != achan)
 							{
-								if (inpix[3] == 0)
+								if (inpix[achan] == 0)
 									inval = 0;
 								else
-									inval = inpix[c] * 255 / inpix[3];
+									inval = inpix[c] * 255 / inpix[achan];
 							}
 						else
 							inval = inpix[c];
@@ -2481,8 +2520,9 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 						outpix[c] = temp;		
 					}
 				for (c = 0; c < 3; c++)
-					output_pixels[y * rowstride + x * 4 + c] = outpix[c] * outpix[3] / 255;
-				output_pixels[y * rowstride + x * 4 + 3] = outpix[3];
+					output_pixels[y * rowstride + x * 4 + ctx->channelmap[c]] = 
+						outpix[ctx->channelmap[c]] * outpix[achan] / 255;
+				output_pixels[y * rowstride + x * 4 + achan] = outpix[achan];
 			}
 	rsvg_filter_store_result (self->result, output, ctx);
 	
@@ -3169,7 +3209,7 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self,
 	for (y = boundarys.y0; y < boundarys.y1; y++)
 		for (x = boundarys.x0; x < boundarys.x1; x++)
 			for (i = 0; i < 4; i++)
-				output_pixels[4 * x + y * rowstride + i] = pixcolour[i];
+				output_pixels[4 * x + y * rowstride + ctx->channelmap[i]] = pixcolour[i];
 
 	out.result = output;
 	out.Rused = 1;
@@ -3365,6 +3405,8 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self,
 			ych = 4;
 		};
 
+	xch = ctx->channelmap[xch];
+	ych = ctx->channelmap[ych];
 	for (y = boundarys.y0; y < boundarys.y1; y++)
 		for (x = boundarys.x0; x < boundarys.x1; x++)
 			{
@@ -3776,10 +3818,11 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self,
 
 							cr = CLAMP(cr, 0., 255.);
 
-							pixel[i] = (guchar)cr;
+							pixel[ctx->channelmap[i]] = (guchar)cr;
 						}
 					for (i = 0; i < 3; i++)
-						pixel[i] = pixel[i] * pixel[3] / 255;
+						pixel[ctx->channelmap[i]] = 
+							pixel[ctx->channelmap[i]] * pixel[ctx->channelmap[3]] / 255;
 
 				}
 		}
@@ -3938,8 +3981,9 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 	RsvgIRect boundarys;
 	RsvgFilterPrimitiveImage *upself;
 	GdkPixbuf * img;
-
+	int i;
 	GdkPixbuf * intermediate;
+	unsigned char * pixels;
 
 	upself = (RsvgFilterPrimitiveImage *) self;
 
@@ -3954,10 +3998,11 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 	if(!img)
 		return NULL;
 
+
 	intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, boundarys.x1 - boundarys.x0, 
 								   boundarys.y1 - boundarys.y0);
 
-	
+
 	rsvg_art_affine_image(img, intermediate, 
 						  ctx->paffine, 
 						  (boundarys.x1 - boundarys.x0) / ctx->paffine[0], 
@@ -3971,6 +4016,30 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 
 
 	g_object_unref (G_OBJECT (img));
+
+	int channelmap[4];
+	int length = gdk_pixbuf_get_height(intermediate) * gdk_pixbuf_get_rowstride(intermediate);
+	for (i = 0; i < 4; i++)
+		channelmap[i] = ctx->channelmap[i];
+	pixels = gdk_pixbuf_get_pixels(intermediate);
+	for (i = 0; i < length; i += 4)
+		{
+			unsigned char alpha;
+			unsigned char pixel[4];
+			int ch;
+			alpha = pixels[i + 3];
+
+			pixel[channelmap[3]] = alpha;
+			if (alpha)
+				for (ch = 0; ch < 3; ch++)
+					pixel[channelmap[ch]] = pixels[i + ch] * alpha / 255;
+			else
+				for (ch = 0; ch < 3; ch++)
+					pixel[channelmap[ch]] = 0;
+			for (ch = 0; ch < 4; ch++)
+				pixels[i + ch] = pixel[ch];
+		}
+
 	return intermediate;
 
 }
@@ -4300,7 +4369,7 @@ get_light_normal_matrix_y (gint n)
 
 static vector3
 get_surface_normal (guchar * I, RsvgIRect boundarys, gint x, gint y, 
-					gdouble dx, gdouble dy, gdouble rawdx, gdouble rawdy, gdouble surfaceScale, gint rowstride)
+					gdouble dx, gdouble dy, gdouble rawdx, gdouble rawdy, gdouble surfaceScale, gint rowstride, int chan)
 {
 	gint mrow, mcol;
 	FactorAndMatrix fnmx, fnmy;
@@ -4332,26 +4401,26 @@ get_surface_normal (guchar * I, RsvgIRect boundarys, gint x, gint y,
 	Ky = fnmy.matrix;	
 
     Nx = -surfaceScale * factorx * ((gdouble)
-		(Kx[0]*gdk_pixbuf_get_interp_pixel(I,x-dx,y-dy, 3, boundarys, rowstride) +
-		 Kx[1]*gdk_pixbuf_get_interp_pixel(I,x   ,y-dy, 3, boundarys, rowstride) + 
-		 Kx[2]*gdk_pixbuf_get_interp_pixel(I,x+dx,y-dy, 3, boundarys, rowstride) + 
-		 Kx[3]*gdk_pixbuf_get_interp_pixel(I,x-dx,y   , 3, boundarys, rowstride) + 
-		 Kx[4]*gdk_pixbuf_get_interp_pixel(I,x   ,y   , 3, boundarys, rowstride) + 
-		 Kx[5]*gdk_pixbuf_get_interp_pixel(I,x+dx,y   , 3, boundarys, rowstride) + 
-		 Kx[6]*gdk_pixbuf_get_interp_pixel(I,x-dx,y+dy, 3, boundarys, rowstride) + 
-		 Kx[7]*gdk_pixbuf_get_interp_pixel(I,x   ,y+dy, 3, boundarys, rowstride) + 
-		 Kx[8]*gdk_pixbuf_get_interp_pixel(I,x+dx,y+dy, 3, boundarys, rowstride))) / 255.0;
+		(Kx[0]*gdk_pixbuf_get_interp_pixel(I,x-dx,y-dy, chan, boundarys, rowstride) +
+		 Kx[1]*gdk_pixbuf_get_interp_pixel(I,x   ,y-dy, chan, boundarys, rowstride) + 
+		 Kx[2]*gdk_pixbuf_get_interp_pixel(I,x+dx,y-dy, chan, boundarys, rowstride) + 
+		 Kx[3]*gdk_pixbuf_get_interp_pixel(I,x-dx,y   , chan, boundarys, rowstride) + 
+		 Kx[4]*gdk_pixbuf_get_interp_pixel(I,x   ,y   , chan, boundarys, rowstride) + 
+		 Kx[5]*gdk_pixbuf_get_interp_pixel(I,x+dx,y   , chan, boundarys, rowstride) + 
+		 Kx[6]*gdk_pixbuf_get_interp_pixel(I,x-dx,y+dy, chan, boundarys, rowstride) + 
+		 Kx[7]*gdk_pixbuf_get_interp_pixel(I,x   ,y+dy, chan, boundarys, rowstride) + 
+		 Kx[8]*gdk_pixbuf_get_interp_pixel(I,x+dx,y+dy, chan, boundarys, rowstride))) / 255.0;
 	
     Ny = -surfaceScale * factory * ((gdouble)
-		(Ky[0]*gdk_pixbuf_get_interp_pixel(I,x-dx,y-dy, 3, boundarys, rowstride) +
-		 Ky[1]*gdk_pixbuf_get_interp_pixel(I,x   ,y-dy, 3, boundarys, rowstride) + 
-		 Ky[2]*gdk_pixbuf_get_interp_pixel(I,x+dx,y-dy, 3, boundarys, rowstride) + 
-		 Ky[3]*gdk_pixbuf_get_interp_pixel(I,x-dx,y   , 3, boundarys, rowstride) + 
-		 Ky[4]*gdk_pixbuf_get_interp_pixel(I,x   ,y   , 3, boundarys, rowstride) + 
-		 Ky[5]*gdk_pixbuf_get_interp_pixel(I,x+dx,y   , 3, boundarys, rowstride) + 
-		 Ky[6]*gdk_pixbuf_get_interp_pixel(I,x-dx,y+dy, 3, boundarys, rowstride) + 
-		 Ky[7]*gdk_pixbuf_get_interp_pixel(I,x   ,y+dy, 3, boundarys, rowstride) + 
-		 Ky[8]*gdk_pixbuf_get_interp_pixel(I,x+dx,y+dy, 3, boundarys, rowstride))) / 255.0;
+		(Ky[0]*gdk_pixbuf_get_interp_pixel(I,x-dx,y-dy, chan, boundarys, rowstride) +
+		 Ky[1]*gdk_pixbuf_get_interp_pixel(I,x   ,y-dy, chan, boundarys, rowstride) + 
+		 Ky[2]*gdk_pixbuf_get_interp_pixel(I,x+dx,y-dy, chan, boundarys, rowstride) + 
+		 Ky[3]*gdk_pixbuf_get_interp_pixel(I,x-dx,y   , chan, boundarys, rowstride) + 
+		 Ky[4]*gdk_pixbuf_get_interp_pixel(I,x   ,y   , chan, boundarys, rowstride) + 
+		 Ky[5]*gdk_pixbuf_get_interp_pixel(I,x+dx,y   , chan, boundarys, rowstride) + 
+		 Ky[6]*gdk_pixbuf_get_interp_pixel(I,x-dx,y+dy, chan, boundarys, rowstride) + 
+		 Ky[7]*gdk_pixbuf_get_interp_pixel(I,x   ,y+dy, chan, boundarys, rowstride) + 
+		 Ky[8]*gdk_pixbuf_get_interp_pixel(I,x+dx,y+dy, chan, boundarys, rowstride))) / 255.0;
 
 	output.x = Nx;
 	output.y = Ny;
@@ -4629,22 +4698,22 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self,
 	for (y = boundarys.y0; y < boundarys.y1; y++)
 		for (x = boundarys.x0; x < boundarys.x1; x++)
 			{
-				z = surfaceScale * (double)in_pixels[y * rowstride + x * 4 + 3];
+				z = surfaceScale * (double)in_pixels[y * rowstride + x * 4 + ctx->channelmap[3]];
 				L = get_light_direction(source, x, y, z, iaffine);
 				N = get_surface_normal(in_pixels, boundarys, x, y, 
 									   dx, dy, rawdx, rawdy, upself->surfaceScale, 
-									   rowstride);
+									   rowstride, ctx->channelmap[3]);
 				lightcolour = get_light_colour(source, colour, x, y, z,
 											   iaffine);
 				factor = dotproduct(N, L);
 
-				output_pixels[y * rowstride + x * 4    ] = MAX(0,MIN(255, upself->diffuseConstant * factor * 
+				output_pixels[y * rowstride + x * 4 + ctx->channelmap[0]] = MAX(0,MIN(255, upself->diffuseConstant * factor * 
 					lightcolour.x * 255.0));
-				output_pixels[y * rowstride + x * 4 + 1] = MAX(0,MIN(255, upself->diffuseConstant * factor * 
+				output_pixels[y * rowstride + x * 4 + ctx->channelmap[1]] = MAX(0,MIN(255, upself->diffuseConstant * factor * 
 					lightcolour.y * 255.0));
-				output_pixels[y * rowstride + x * 4 + 2] = MAX(0,MIN(255, upself->diffuseConstant * factor * 
+				output_pixels[y * rowstride + x * 4 + ctx->channelmap[2]] = MAX(0,MIN(255, upself->diffuseConstant * factor * 
 					lightcolour.z * 255.0));
-				output_pixels[y * rowstride + x * 4 + 3] = 255;
+				output_pixels[y * rowstride + x * 4 + ctx->channelmap[3]] = 255;
 			}
 	
 	rsvg_filter_store_result (self->result, output, ctx);
@@ -4840,7 +4909,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 				base = dotproduct(get_surface_normal(in_pixels, boundarys, x, y, 
 													 1, 1, 1.0 /  ctx->paffine[0], 1.0 / ctx->paffine[3], 
 													 upself->surfaceScale, 
-													 rowstride), L);
+													 rowstride, ctx->channelmap[3]), L);
 				
 				factor = upself->specularConstant * pow(base, upself->specularExponent) * 255;
 
@@ -4858,10 +4927,10 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self,
 				if (max < 0)
 					max = 0;
 
-				output_pixels[y * rowstride + x * 4    ] = lightcolour.x * max;
-				output_pixels[y * rowstride + x * 4 + 1] = lightcolour.y * max;
-				output_pixels[y * rowstride + x * 4 + 2] = lightcolour.z * max;
-				output_pixels[y * rowstride + x * 4 + 3] = max;
+				output_pixels[y * rowstride + x * 4 + ctx->channelmap[0]] = lightcolour.x * max;
+				output_pixels[y * rowstride + x * 4 + ctx->channelmap[1]] = lightcolour.y * max;
+				output_pixels[y * rowstride + x * 4 + ctx->channelmap[2]] = lightcolour.z * max;
+				output_pixels[y * rowstride + x * 4 + ctx->channelmap[3]] = max;
 
 			}
 	

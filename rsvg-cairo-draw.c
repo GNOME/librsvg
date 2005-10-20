@@ -39,9 +39,6 @@
 #include <math.h>
 #include <string.h>
 
-void rsvg_cairo_to_pixbuf_noaa(guint8 *pixels, int rowstride, int height);
-void rsvg_pixbuf_to_cairo_noaa(guint8 *pixels, int rowstride, int height);
-
 static void
 rsvg_pixmap_destroy (gchar *pixels, gpointer data)
 {
@@ -843,19 +840,10 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 													   render->pixbuf_stack);
 
 
-			rsvg_cairo_to_pixbuf_noaa(gdk_pixbuf_get_pixels(pixbuf),
-									  gdk_pixbuf_get_rowstride(pixbuf),
-									  gdk_pixbuf_get_height(pixbuf));
-			rsvg_cairo_to_pixbuf_noaa(gdk_pixbuf_get_pixels(bg),
-									  gdk_pixbuf_get_rowstride(bg),
-									  gdk_pixbuf_get_height(bg));
 			output = rsvg_filter_render (state->filter, pixbuf, bg, 
-										 ctx, &render->bbox);
+										 ctx, &render->bbox, "2103");
 			gdk_pixbuf_unref(pixbuf);
 			gdk_pixbuf_unref(bg);
-			rsvg_pixbuf_to_cairo_noaa(gdk_pixbuf_get_pixels(output),
-									  gdk_pixbuf_get_rowstride(output),
-									  gdk_pixbuf_get_height(output));
 
 			surface = cairo_image_surface_create_for_data (gdk_pixbuf_get_pixels(output),
 														   CAIRO_FORMAT_ARGB32,
@@ -975,7 +963,6 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 
 	cairo_destroy (cr);
 
-	rsvg_cairo_to_pixbuf_noaa(pixels, rowstride, height);
 	ctx->render = (RsvgRender *)save_render;
 
 	return img;
@@ -1030,59 +1017,6 @@ void rsvg_pixbuf_to_cairo(guint8 *pixels, int rowstride, int height)
 					(int)pixel[0] * alpha / 255 << 16 |
 					(int)pixel[1] * alpha / 255 << 8 |
 					(int)pixel[2] * alpha / 255;
-		}
-	}
-}
-
-void rsvg_cairo_to_pixbuf_noaa(guint8 *pixels, int rowstride, int height)
-{
-	int row;
-	/* un-premultiply data */
-	for(row = 0; row < height; row++) {
-		guint8 *row_data = (pixels + (row * rowstride));
-		int i;
-
-		for(i = 0; i < rowstride; i += 4) {
-			guint8 *b = &row_data[i];
-			guint32 pixel;
-			guint8 alpha;
-
-			memcpy(&pixel, b, sizeof(guint32));
-			alpha = (pixel & 0xff000000) >> 24;
-			if(alpha == 0) {
-				b[0] = b[1] = b[2] = b[3] = 0;
-			} else {
-				b[0] = (pixel & 0xff0000) >> 16;
-				b[1] = (pixel & 0x00ff00) >>  8;
-				b[2] = (pixel & 0x0000ff) >>  0;
-				b[3] = alpha;
-			}
-		}
-	}
-}
-
-void rsvg_pixbuf_to_cairo_noaa(guint8 *pixels, int rowstride, int height)
-{
-	int row;
-	/* un-premultiply data */
-	for(row = 0; row < height; row++) {
-		guint8 *row_data = (pixels + (row * rowstride));
-		int i;
-
-		for(i = 0; i < rowstride; i += 4) {
-			guint32 *b = (guint32 *)&row_data[i];
-			guint8 pixel[4];
-			int alpha;
-
-			memcpy(&pixel, b, sizeof(guint32));
-			alpha = pixel[3];
-			if(alpha == 0)
-				*b = 0;
-			else
-				*b = alpha << 24 | 
-					(int)pixel[0] << 16 |
-					(int)pixel[1] << 8 |
-					(int)pixel[2];
 		}
 	}
 }
