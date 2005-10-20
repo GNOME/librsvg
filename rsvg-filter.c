@@ -488,7 +488,6 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
 		}
 
 	out = ctx->lastresult.result;
-	g_object_ref (G_OBJECT (out));	
 
 	g_hash_table_destroy (ctx->results);
 

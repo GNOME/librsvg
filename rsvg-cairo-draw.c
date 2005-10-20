@@ -787,7 +787,9 @@ rsvg_compile_bg(RsvgDrawingCtx *ctx)
 	GdkPixbuf * output = gdk_pixbuf_new_from_data(pixels,
 												  GDK_COLORSPACE_RGB, TRUE, 8, 
 												  render->width, render->height,
-												  rowstride, (GdkPixbufDestroyNotify)rsvg_pixmap_destroy, NULL);
+												  rowstride, 
+												  (GdkPixbufDestroyNotify)rsvg_pixmap_destroy, 
+												  NULL);
 
 	surface = cairo_image_surface_create_for_data (pixels,
 												   CAIRO_FORMAT_ARGB32,
@@ -840,8 +842,8 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 
 			output = rsvg_filter_render (state->filter, pixbuf, bg, 
 										 ctx, &render->bbox, "2103");
-			gdk_pixbuf_unref(pixbuf);
-			gdk_pixbuf_unref(bg);
+			g_object_unref (G_OBJECT (pixbuf));
+			g_object_unref (G_OBJECT (bg));
 
 			surface = cairo_image_surface_create_for_data (gdk_pixbuf_get_pixels(output),
 														   CAIRO_FORMAT_ARGB32,
@@ -886,7 +888,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 
 	if (state->filter)
 		{
-			gdk_pixbuf_unref(output);
+			g_object_unref (G_OBJECT (output));
 			cairo_surface_destroy(surface);
 		}
 }
@@ -961,6 +963,7 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 
 	cairo_destroy (cr);
 
+	rsvg_render_free(ctx->render);
 	ctx->render = (RsvgRender *)save_render;
 
 	return img;
