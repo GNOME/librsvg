@@ -391,8 +391,7 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 	cairo_t *cr;
 	RsvgBpath *bpath;
 	int i;
-	gdouble xmin = 0, ymin = 0, xmax = 0, ymax = 0;
-	int virgin = 1, need_tmpbuf = 0;
+	int need_tmpbuf = 0;
 	RsvgBbox bbox;
 
 	if (state->fill == NULL && state->stroke == NULL)
@@ -420,17 +419,6 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 	for (i=0; i < bpath_def->n_bpath; i++) {
 		bpath = &bpath_def->bpath[i];
 
-		if (bpath->code == RSVG_MOVETO || 
-			bpath->code == RSVG_MOVETO_OPEN || 
-			bpath->code == RSVG_CURVETO ||
-			bpath->code == RSVG_LINETO){
-			if (bpath->x3 < xmin || virgin) xmin = bpath->x3;
-			if (bpath->x3 > xmax || virgin) xmax = bpath->x3;
-			if (bpath->y3 < ymin || virgin) ymin = bpath->y3;
-			if (bpath->y3 > ymax || virgin) ymax = bpath->y3;
-			virgin = 0;
-		}
-
 		switch (bpath->code) {
 		case RSVG_MOVETO:
 			cairo_close_path (cr);
@@ -453,11 +441,27 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 	}
 
 	rsvg_bbox_init(&bbox, state->affine);
-	bbox.x = xmin;
-	bbox.y = ymin;
-	bbox.w = xmax - xmin;
-	bbox.h = ymax - ymin;
-	bbox.virgin = 0;
+
+	if (state->fill != NULL)
+		{
+			RsvgBbox fb;
+			rsvg_bbox_init(&fb, state->affine);
+			cairo_fill_extents(cr, &fb.x, &fb.y, &fb.w, &fb.h);
+			fb.w -= fb.x;
+			fb.h -= fb.y;
+			fb.virgin = 0;
+			rsvg_bbox_insert(&bbox, &fb);
+		}
+	if (state->stroke != NULL)
+		{
+			RsvgBbox sb;
+			rsvg_bbox_init(&sb, state->affine);
+			cairo_stroke_extents(cr, &sb.x, &sb.y, &sb.w, &sb.h);
+			sb.w -= sb.x;
+			sb.h -= sb.y;
+			sb.virgin = 0;
+			rsvg_bbox_insert(&bbox, &sb);
+		}
 
 	rsvg_bbox_insert(&render->bbox, &bbox);
 

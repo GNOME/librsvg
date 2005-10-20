@@ -1139,6 +1139,7 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 						for (i = 0; i < upself->ordery; i++)
 							for (j = 0; j < upself->orderx; j++)
 								{
+									int alpha;
 									sx = x - targetx + j * dx;
 									sy = y - targety + i * dy;
 									if (upself->edgemode == 0)
@@ -1168,7 +1169,14 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self,
 
 									kx = upself->orderx - j - 1;
 									ky = upself->ordery - i - 1;
-									sval = in_pixels[4 * sx + sy * rowstride + ch];
+									alpha = in_pixels[4 * sx + sy * rowstride + 3];
+									if (ch == 3)
+										sval = alpha;
+									else if (alpha)
+										sval = in_pixels[4 * sx + sy * rowstride + ch] * 255 / 
+											alpha;
+									else
+										sval = 0;
 									kval = upself->KernelMatrix[kx + ky * upself->orderx];
 									sum += (double) sval *kval;
 								}
@@ -2322,7 +2330,7 @@ struct _RsvgNodeComponentTransferFunc
 	gint slope;
 	gint intercept;
 	gint amplitude;
-	gint exponent;
+	gdouble exponent;
 	gint offset;
 };
 
@@ -2386,7 +2394,10 @@ static gint fixpow(gint base, gint exp)
 static gint
 gamma_component_transfer_func (gint C, RsvgNodeComponentTransferFunc *user_data)
 {
-	return user_data->amplitude * fixpow (C,user_data->exponent) / 255 + user_data->offset;
+	if (floor(user_data->exponent) == user_data->exponent)
+		return user_data->amplitude * fixpow (C,user_data->exponent) / 255 + user_data->offset;
+	else
+		return (double)user_data->amplitude * pow ((double)C / 255.,user_data->exponent) + user_data->offset;
 }
 
 static void 
