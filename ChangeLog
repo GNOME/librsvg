@@ -1,3 +1,7 @@
+2005-10-21 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-cond.c: More robust way of getting your language
+	
 2005-10-22 Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* a_lot_of_places: implemented a system of late normalizations of lengths. Now used in masks and svgs

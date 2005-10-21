@@ -134,13 +134,21 @@ rsvg_cond_parse_system_language (const char * value)
 		permitted = FALSE;
 
 #if defined(G_OS_WIN32)
-		locale = g_win32_getlocale ();
-#elif defined(HAVE_LC_MESSAGES)
-		locale = g_strdup (setlocale (LC_MESSAGES, NULL));
-#else
-		/* catch-all */
-		locale = g_strdup (setlocale (LC_ALL, NULL));
+		if(!locale)
+			locale = g_win32_getlocale ();
 #endif
+
+#if defined(HAVE_LC_MESSAGES)
+		if(!locale)
+			locale = g_strdup (setlocale (LC_MESSAGES, NULL));
+#endif
+
+		if(!locale)
+			locale = g_strdup (setlocale (LC_ALL, NULL));
+
+		/* catch-all */
+		if(!locale)
+			locale = g_strdup (g_getenv ("LANG"));
 
 		if (locale)
 			{				
