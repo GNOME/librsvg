@@ -195,6 +195,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 	cairo_matrix_t matrix;
 	int i;
 	double affine[6], caffine[6], bbwscale, bbhscale, scwscale, schscale;
+	int pw, ph;
 
 	rsvg_pattern = &local_pattern;
 	rsvg_pattern_fix_fallback(rsvg_pattern);
@@ -217,17 +218,15 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 	scwscale = sqrt(affine[0] * affine[0] + affine[2] * affine[2]);
 	schscale = sqrt(affine[1] * affine[1] + affine[3] * affine[3]);
 
-	scwscale = (double)((int)(rsvg_pattern->width * bbwscale *
-							  scwscale)) / (rsvg_pattern->width * bbwscale);
-	schscale = (double)((int)(rsvg_pattern->height * bbhscale *
-							  schscale)) / (rsvg_pattern->height * bbhscale);
+	pw = rsvg_pattern->width * bbwscale * scwscale;
+	ph = rsvg_pattern->height * bbhscale * schscale;
+
+	scwscale = (double)pw / (double)(rsvg_pattern->width * bbwscale);
+	schscale = (double)ph / (double)(rsvg_pattern->height * bbhscale);
 
 	surface = cairo_surface_create_similar(cairo_get_target (cr_render),
 										   CAIRO_CONTENT_COLOR_ALPHA,
-										   rsvg_pattern->width * bbwscale *
-										   scwscale, 
-										   rsvg_pattern->height * bbhscale *
-										   schscale);
+										   pw, ph);
 	cr_pattern = cairo_create(surface);
 
 	
