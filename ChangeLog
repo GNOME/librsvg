@@ -2,6 +2,7 @@
 
 	* configure.in: Prioritize the cairo backend over the libart one; disable the libart backend until it builds again
 	* Makefile.am: Ditto
+	* rsvg-cairo-draw.c (rsvg_cairo_generate_mask): Fix major memleak generating a mask surface
 	
 2005-10-20 Caleb Moore <c.moore@student.unsw.edu.au>
 

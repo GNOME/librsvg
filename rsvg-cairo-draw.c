@@ -620,8 +620,9 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
     cairo_restore (render->cr);
 }
 
-static cairo_surface_t *
-rsvg_cairo_generate_mask(RsvgMask * self, RsvgDrawingCtx *ctx, 
+static void
+rsvg_cairo_generate_mask(cairo_t *cr,
+						 RsvgMask * self, RsvgDrawingCtx *ctx, 
 						 RsvgBbox * bbox)
 {
 	cairo_surface_t *surface;
@@ -693,7 +694,10 @@ rsvg_cairo_generate_mask(RsvgMask * self, RsvgDrawingCtx *ctx,
 	}
 
 	cairo_destroy (mask_cr);
-	return surface;
+
+	cairo_mask_surface (cr, surface, 0,0);
+	cairo_surface_destroy(surface);
+	g_free(pixels);
 }
 
 static void
@@ -866,10 +870,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 						&render->bbox);
 	if (state->mask)
 		{
-			cairo_surface_t * mask = 
-				rsvg_cairo_generate_mask(state->mask, ctx, &render->bbox);
-			cairo_mask_surface (render->cr, mask, 0,0);
-			cairo_surface_destroy(mask);
+			rsvg_cairo_generate_mask(render->cr, state->mask, ctx, &render->bbox);
 		}
 	else if (state->opacity != 0xFF)
 		cairo_paint_with_alpha (render->cr, (double)state->opacity / 255.0);
