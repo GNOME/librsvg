@@ -4582,19 +4582,13 @@ rsvg_filter_primitive_light_source_set_atts (RsvgNode * self,
 		}
 }
 
-static void
-rsvg_filter_primitive_light_source_free(RsvgNode * tofree)
-{
-	g_free(tofree);
-}
-
 RsvgNode *
 rsvg_new_filter_primitive_light_source(char type)
 {
 	RsvgNodeLightSource * data;
 	data = g_new(RsvgNodeLightSource, 1);
 	_rsvg_node_init(&data->super);
-	data->super.free = rsvg_filter_primitive_light_source_free;
+	data->super.free = _rsvg_node_free;
 	data->super.set_atts = rsvg_filter_primitive_light_source_set_atts;
 	data->specularExponent = 1;
 	data->super.type = RSVG_NODE_FILTER_PRIMITIVE_MERGE_NODE;

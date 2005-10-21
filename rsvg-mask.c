@@ -184,6 +184,7 @@ rsvg_new_clip_path (void)
 	clip_path->units = userSpaceOnUse;
 	clip_path->super.type = RSVG_NODE_CLIP_PATH;
 	clip_path->super.set_atts = rsvg_clip_path_set_atts;
+	clip_path->super.free = _rsvg_node_free;
 	return &clip_path->super;
 }
 
