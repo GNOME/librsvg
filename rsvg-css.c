@@ -25,6 +25,8 @@
 
 #include "config.h"
 #include "rsvg-css.h"
+#include "rsvg-private.h"
+#include "rsvg-styles.h"
 
 #include <glib.h>
 #include <stdio.h>
@@ -90,7 +92,7 @@ rsvg_css_parse_vbox (const char * vbox, double * x, double * y,
  * Returns: returns the length.
  **/
 double
-rsvg_css_parse_length (const char *str, gdouble pixels_per_inch, 
+rsvg_css_parse_length (const char *str, gint *in, 
 					   gint *percent, gint *em, gint *ex)
 {
 	double length = 0.0;
@@ -114,15 +116,27 @@ rsvg_css_parse_length (const char *str, gdouble pixels_per_inch,
 	if (p && (strcmp(p, "px") != 0))
 		{
 			if (!strcmp(p, "pt"))
-				length *= (pixels_per_inch / POINTS_PER_INCH);
+				{
+					length /= POINTS_PER_INCH;
+					*in = TRUE;
+				}
 			else if (!strcmp(p, "in"))
-				length *= pixels_per_inch;
+				*in = TRUE;
 			else if (!strcmp(p, "cm"))
-				length *= (pixels_per_inch / CM_PER_INCH);
+				{
+					length /= CM_PER_INCH;
+					*in = TRUE;
+				}
 			else if (!strcmp(p, "mm"))
-				length *= (pixels_per_inch / MM_PER_INCH);
+				{
+					length /= MM_PER_INCH;
+					*in = TRUE;
+				}
 			else if (!strcmp(p, "pc"))
-				length *= (pixels_per_inch / PICA_PER_INCH);
+				{
+					length /= PICA_PER_INCH;
+					*in = TRUE;				
+				}
 			else if (!strcmp(p, "em"))
 				*em = TRUE;
 			else if (!strcmp(p, "ex"))
@@ -135,6 +149,72 @@ rsvg_css_parse_length (const char *str, gdouble pixels_per_inch,
 		}
 	
 	return length;
+}
+
+RsvgLength
+_rsvg_css_parse_length_struct(const char *str)
+{
+	RsvgLength out;
+	gint percent, em, ex, in;
+	percent = em = ex = in = FALSE;
+	
+	out.length = rsvg_css_parse_length (str, &in, &percent, &em, &ex);
+	if (percent)
+		out.factor = 'p';
+	else if (em)
+		out.factor = 'm';
+	else if (ex)
+		out.factor = 'x';
+	else if (in)
+		out.factor = 'i';
+	else
+		out.factor = '\0';
+	return out;
+}
+
+double
+_rsvg_css_normalize_length_struct(const RsvgLength * in, RsvgDrawingCtx * ctx, 
+								  char dir)
+{
+	if (in->factor == '\0')
+		return in->length;
+	else if (in->factor == 'p')
+		{
+			if (dir == 'h')
+				return in->length * ctx->vb.w;
+			if (dir == 'v')
+				return in->length * ctx->vb.h;
+		}
+	else if (in->factor == 'm')
+		return in->length * rsvg_state_current(ctx)->font_size;
+	else if (in->factor == 'x')
+		return in->length * rsvg_state_current(ctx)->font_size / 2.;
+	else if (in->factor == 'i')
+		{
+			if (dir == 'h')
+				return in->length * ctx->dpi_x;
+			if (dir == 'v')
+				return in->length * ctx->dpi_y;
+		}
+	return 0;
+}
+
+double
+_rsvg_css_hand_normalize_length_struct(const RsvgLength * in, gdouble pixels_per_inch,
+									   gdouble width_or_height, gdouble font_size)
+{
+	if (in->factor == '\0')
+		return in->length;
+	else if (in->factor == 'p')
+		return in->length * width_or_height;
+	else if (in->factor == 'm')
+		return in->length * font_size;
+	else if (in->factor == 'x')
+		return in->length * font_size / 2.;
+	else if (in->factor == 'i')
+		return in->length * pixels_per_inch;
+
+	return 0;
 }
 
 /**
@@ -152,16 +232,18 @@ rsvg_css_parse_normalized_length(const char *str, gdouble pixels_per_inch,
 								 gdouble width_or_height, gdouble font_size)
 {
 	double length;
-	gint percent, em, ex;
-	percent = em = ex = FALSE;
+	gint percent, em, ex, in;
+	percent = em = ex = in = FALSE;
 	
-	length = rsvg_css_parse_length (str, pixels_per_inch, &percent, &em, &ex);
+	length = rsvg_css_parse_length (str, &in, &percent, &em, &ex);
 	if (percent)
 		return length * width_or_height;
 	else if (em)
 		return length * font_size;
 	else if (ex)
 		return (length * font_size) / 2.;
+	else if (in)
+		return length * pixels_per_inch;
 	else
 		return length;
 }

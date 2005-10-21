@@ -77,6 +77,9 @@ rsvg_new_drawing_ctx(RsvgHandle * handle)
 	draw->base_uri = g_strdup(handle->base_uri);
 	draw->dpi_x = handle->dpi_x;
 	draw->dpi_y = handle->dpi_y;
+	draw->vb.w = data.w;
+	draw->vb.h = data.h;
+	draw->vb_stack = NULL;
 	draw->pango_context = NULL;
 
 	rsvg_state_push(draw);

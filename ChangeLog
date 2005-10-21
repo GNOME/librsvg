@@ -1,3 +1,8 @@
+2005-10-22 Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* a_lot_of_places: implemented a system of late normalizations of lengths. Now used in masks and svgs
+	* rsvg-base.c: find out the size of the contents of an SVG if there is nothing else to go on.
+
 2005-10-20 Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Prioritize the cairo backend over the libart one; disable the libart backend until it builds again

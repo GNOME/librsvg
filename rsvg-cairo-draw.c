@@ -633,7 +633,19 @@ rsvg_cairo_generate_mask(cairo_t *cr,
 	guint32 width = render->width, height = render->height; 
 	guint32 rowstride = width * 4, row, i;
 	double affinesave[6];
+	double sx, sy, sw, sh;
 
+	if (self->maskunits == objectBoundingBox)
+		_rsvg_push_view_box(ctx, 1, 1);
+
+	sx = _rsvg_css_normalize_length_struct(&self->x, ctx, 'h');
+	sy = _rsvg_css_normalize_length_struct(&self->y, ctx, 'v');
+	sw = _rsvg_css_normalize_length_struct(&self->width, ctx, 'h');
+	sh = _rsvg_css_normalize_length_struct(&self->height, ctx, 'v');
+				
+	if (self->maskunits == objectBoundingBox)
+		_rsvg_pop_view_box(ctx);
+						  
 	pixels = g_new0(guint8, height * rowstride);
 	surface = cairo_image_surface_create_for_data (pixels,
 												   CAIRO_FORMAT_ARGB32,
@@ -646,13 +658,12 @@ rsvg_cairo_generate_mask(cairo_t *cr,
 
 	if (self->maskunits == objectBoundingBox)
 		rsvg_cairo_add_clipping_rect (ctx, 
-									  self->x * bbox->w + bbox->x, 
-									  self->y * bbox->h + bbox->y,
-									  self->width * bbox->w, 
-									  self->height * bbox->h);
+									  sx * bbox->w + bbox->x, 
+									  sy * bbox->h + bbox->y,
+									  sw * bbox->w, 
+									  sh * bbox->h);
 	else 
-		rsvg_cairo_add_clipping_rect (ctx, self->x, self->y,
-									  self->width, self->height);
+		rsvg_cairo_add_clipping_rect (ctx, sx, sy, sw, sh);
 
 	/* Horribly dirty hack to have the bbox premultiplied to everything */
 	if (self->contentunits == objectBoundingBox)
@@ -669,6 +680,7 @@ rsvg_cairo_generate_mask(cairo_t *cr,
 			_rsvg_affine_multiply(self->super.state->affine,
 								  bbtransform, 
 								  self->super.state->affine);
+			_rsvg_push_view_box(ctx, 1, 1);
 		}
 
 	rsvg_state_push(ctx);
@@ -676,9 +688,11 @@ rsvg_cairo_generate_mask(cairo_t *cr,
 	rsvg_state_pop(ctx);
 
 	if (self->contentunits == objectBoundingBox)
-		for (i = 0; i < 6; i++)
-			self->super.state->affine[i] = affinesave[i];
-
+		{
+			_rsvg_pop_view_box(ctx);
+			for (i = 0; i < 6; i++)
+				self->super.state->affine[i] = affinesave[i];
+		}
 
 	render->cr = save_cr;
 	

@@ -65,7 +65,6 @@ typedef struct _RsvgIRect RsvgIRect;
 #  endif /* G_PI */
 #endif /*  M_PI  */
 
-
 struct RsvgSaxHandler {
 	void (*free) (RsvgSaxHandler *self);
 	void (*start_element) (RsvgSaxHandler *self, const xmlChar *name, RsvgPropertyBag *atts);
@@ -122,6 +121,10 @@ struct RsvgHandle {
 	void * gzipped_data; /* really a GsfOutput */
 };
 
+typedef struct{
+	double w, h;
+} RsvgViewBox; 
+
 /*Contextual information for the drawing phase*/
 
 struct RsvgDrawingCtx {
@@ -132,8 +135,9 @@ struct RsvgDrawingCtx {
 	gchar * base_uri;
 	GMemChunk * state_allocator;
 	PangoContext *pango_context;
-	double dpi_x;
-	double dpi_y;
+	double dpi_x, dpi_y;
+	RsvgViewBox vb;
+	GSList * vb_stack;
 };
 
 /*Abstract base class for context for our backends (one as yet)*/
@@ -151,6 +155,12 @@ struct RsvgRender {
 	GdkPixbuf * (* get_image_of_node) (RsvgDrawingCtx *ctx, RsvgNode * drawable,
 									   double w, double h);
 };
+
+
+typedef struct{
+	double length;
+	char factor;
+} RsvgLength;
 
 struct _RsvgIRect {
 	int x0, y0, x1, y1;
@@ -330,6 +340,19 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx *handle);
 void rsvg_bbox_init(RsvgBbox * self, double * affine);
 void rsvg_bbox_insert(RsvgBbox * dst, RsvgBbox * src);
 void rsvg_bbox_clip(RsvgBbox * dst, RsvgBbox * src);
+
+double
+_rsvg_css_normalize_length_struct(const RsvgLength * in, RsvgDrawingCtx * ctx, 
+								  char dir);
+double
+_rsvg_css_hand_normalize_length_struct(const RsvgLength * in, gdouble pixels_per_inch,
+									   gdouble width_or_height, gdouble font_size);
+
+RsvgLength
+_rsvg_css_parse_length_struct(const char *str);
+
+void _rsvg_push_view_box(RsvgDrawingCtx *ctx, double w, double h);
+void _rsvg_pop_view_box(RsvgDrawingCtx *ctx);
 
 G_END_DECLS
 

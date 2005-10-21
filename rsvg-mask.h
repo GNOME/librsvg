@@ -27,6 +27,7 @@
 
 #include "rsvg.h"
 #include "rsvg-defs.h"
+#include "rsvg-css.h"
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"
 #include <libxml/SAX.h>
@@ -39,7 +40,7 @@ typedef struct _RsvgMask RsvgMask;
 
 struct _RsvgMask {
 	RsvgNode super;
-	double x, y, width, height; 
+	RsvgLength x, y, width, height; 
 	RsvgMaskUnits maskunits;
 	RsvgMaskUnits contentunits;
 };

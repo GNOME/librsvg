@@ -45,7 +45,7 @@ G_BEGIN_DECLS
 int rsvg_css_parse_aspect_ratio(const char * str);
 
 double
-rsvg_css_parse_length (const char *str, gdouble pixels_per_inch, 
+rsvg_css_parse_length (const char *str, gint *in, 
 					   gint *percent, gint *em, gint *ex);
 
 double
@@ -104,6 +104,7 @@ rsvg_css_parse_number_list(const char * in_str, guint * out_list_len);
 
 gboolean 
 rsvg_css_parse_overflow(const char * str, gboolean * inherit);
+
 
 G_END_DECLS
 

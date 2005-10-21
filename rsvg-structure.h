@@ -67,7 +67,7 @@ struct _RsvgNodeUse {
 struct _RsvgNodeSvg {
  	RsvgNode super;
 	gint preserve_aspect_ratio;
-	gdouble x, y, w, h;
+	RsvgLength x, y, w, h;
 	int hasw :1;
 	int hash :1;
 	gdouble vbx, vby, vbw, vbh;

@@ -1040,6 +1040,133 @@ rsvg_handle_new (void)
 	return handle;
 }
 
+typedef struct {
+	RsvgRender super;
+	RsvgBbox bbox;
+} RsvgBboxRender;
+
+static void
+rsvg_bbox_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
+{
+	RsvgState *state = rsvg_state_current (ctx);
+	RsvgBpath *bpath;
+	RsvgBboxRender *render = (RsvgBboxRender *)ctx->render;
+	RsvgBbox bbox;
+	int i;
+
+	rsvg_bbox_init(&bbox, state->affine);
+	bbox.w = bbox.h = bbox.virgin = 0;
+
+	for (i=0; i < bpath_def->n_bpath; i++) {
+		bpath = &bpath_def->bpath[i];
+
+		switch (bpath->code) {
+		case RSVG_MOVETO:
+		case RSVG_MOVETO_OPEN:
+		case RSVG_CURVETO:
+		case RSVG_LINETO:
+			bbox.x = bpath->x3;
+			bbox.y = bpath->y3;
+			rsvg_bbox_insert(&render->bbox, &bbox);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+static void rsvg_bbox_render_image (RsvgDrawingCtx *ctx, 
+										  const GdkPixbuf * pixbuf, 
+										  double pixbuf_x, double pixbuf_y, 
+										  double w, double h)
+{
+	RsvgState *state = rsvg_state_current (ctx);
+	RsvgBboxRender *render = (RsvgBboxRender *)ctx->render;
+	RsvgBbox bbox;
+
+	rsvg_bbox_init(&bbox, state->affine);
+	bbox.x = pixbuf_x;
+	bbox.y = pixbuf_y;
+	bbox.w = w;
+	bbox.h = h;
+	bbox.virgin = 0;
+
+	rsvg_bbox_insert(&render->bbox, &bbox);	
+}
+
+
+static void
+rsvg_bbox_render_free (RsvgRender * self)
+{
+	g_free (self);
+}
+
+static void
+rsvg_bbox_push_discrete_layer (RsvgDrawingCtx *ctx) {}
+
+static void
+rsvg_bbox_pop_discrete_layer (RsvgDrawingCtx *ctx) {}
+
+static void 
+rsvg_bbox_add_clipping_rect (RsvgDrawingCtx *ctx,
+								   double x, double y,
+								   double w, double h){}
+
+static RsvgBboxRender * 
+rsvg_bbox_render_new()
+{
+	RsvgBboxRender * render = g_new0(RsvgBboxRender, 1);
+	double affine[6];
+
+	render->super.free                 = rsvg_bbox_render_free;
+	render->super.render_image         = rsvg_bbox_render_image;
+	render->super.render_path          = rsvg_bbox_render_path;
+	render->super.pop_discrete_layer   = 
+		rsvg_bbox_pop_discrete_layer;
+	render->super.push_discrete_layer  = 
+		rsvg_bbox_push_discrete_layer;
+	render->super.add_clipping_rect    = 
+		rsvg_bbox_add_clipping_rect;
+	render->super.get_image_of_node    = NULL;
+	_rsvg_affine_identity(affine);
+	rsvg_bbox_init(&render->bbox, affine);
+
+	return render;
+}
+
+static RsvgBbox
+_rsvg_find_bbox (RsvgHandle *handle)
+{
+	RsvgDrawingCtx * ctx = g_new(RsvgDrawingCtx, 1);
+	RsvgBbox output;
+	RsvgBboxRender * render = rsvg_bbox_render_new();
+	ctx->render = (RsvgRender *)render;
+	
+	ctx->state = NULL;
+
+	ctx->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
+
+	ctx->defs = handle->defs;
+	ctx->base_uri = g_strdup(handle->base_uri);
+	ctx->dpi_x = handle->dpi_x;
+	ctx->dpi_y = handle->dpi_y;
+	ctx->vb.w = 512;
+	ctx->vb.h = 512;
+	ctx->pango_context = NULL;
+
+	rsvg_state_push(ctx);
+	_rsvg_affine_identity(rsvg_state_current(ctx)->affine);
+
+	rsvg_state_push(ctx);
+	_rsvg_node_draw_children ((RsvgNode *)handle->treebase, ctx, 0);
+	rsvg_state_pop(ctx);
+
+	output = render->bbox;
+	rsvg_render_free(ctx->render);
+	g_free(ctx);
+	return output;
+}
+
 void
 rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
 {
@@ -1053,8 +1180,21 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
 
 	if (sself->hasw && sself->hash)
 		{
-			output->width  = sself->w;
-			output->height = sself->h;
+			RsvgBbox bbox;
+			if (sself->w.factor == 'p' || sself->h.factor == 'p')
+				{
+					if (sself->has_vbox && sself->vbw > 0. && sself->vbh > 0.)
+						{
+							bbox.w = sself->vbw;
+							bbox.h = sself->vbh;
+						}
+					else
+						bbox = _rsvg_find_bbox(handle);
+				}
+			output->width  = _rsvg_css_hand_normalize_length_struct(&sself->w, handle->dpi_x, 
+																	bbox.w, 12);
+			output->height = _rsvg_css_hand_normalize_length_struct(&sself->h, handle->dpi_y, 
+																	bbox.h, 12);
 		}
 	else if (sself->has_vbox && sself->vbw > 0. && sself->vbh > 0.)
 		{
@@ -1063,8 +1203,10 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
 		}
 	else
 		{
-			output->width = 512;
-			output->height = 512;
+			RsvgBbox bbox;
+			bbox = _rsvg_find_bbox(handle);
+			output->width  = bbox.w;
+			output->height = bbox.h;
 		}
 
 	output->em = output->width;
@@ -1486,3 +1628,18 @@ void rsvg_bbox_clip(RsvgBbox * dst, RsvgBbox * src)
 	dst->h = ymax - ymin;
 }
 
+void _rsvg_push_view_box(RsvgDrawingCtx *ctx, double w, double h)
+{
+	RsvgViewBox * vb = g_new(RsvgViewBox, 1);
+	*vb = ctx->vb;
+	ctx->vb_stack = g_slist_prepend(ctx->vb_stack, vb);
+	ctx->vb.w = w;
+	ctx->vb.h = h;
+}
+
+void _rsvg_pop_view_box(RsvgDrawingCtx *ctx)
+{
+	ctx->vb = *((RsvgViewBox *)ctx->vb_stack->data);
+	g_free(ctx->vb_stack->data);
+	ctx->vb_stack = g_slist_remove_link(ctx->vb_stack, ctx->vb_stack);
+}

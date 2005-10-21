@@ -33,20 +33,14 @@ rsvg_mask_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	const char *id = NULL, *klazz = NULL, *value;
 	RsvgMask *mask;
-	double font_size, xscale = 1., yscale = 1.;
-	
-	font_size = rsvg_state_current_font_size (ctx);
 	mask = (RsvgMask *)self;
 	
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "maskUnits")))
 				{
-					if (!strcmp (value, "userSpaceOnUse")){
+					if (!strcmp (value, "userSpaceOnUse"))
 						mask->maskunits = userSpaceOnUse;
-						xscale = (gdouble)ctx->width;
-						yscale = (gdouble)ctx->height;
-					}
 					else
 						mask->maskunits = objectBoundingBox;
 				}
@@ -58,29 +52,13 @@ rsvg_mask_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 						mask->contentunits = userSpaceOnUse;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				mask->x =
-					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi_x,
-													  xscale,
-													  font_size);
+				mask->x = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				mask->y =
-					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi_y,
-													  yscale,
-													  font_size);
+				mask->y = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				mask->width =
-					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi_x,
-													  xscale,
-													  font_size);
+				mask->width = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				mask->height =
-					rsvg_css_parse_normalized_length (value,
-													  ctx->dpi_y,
-													  yscale,
-													  font_size);
+				mask->height = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
@@ -102,10 +80,10 @@ rsvg_new_mask (void)
 	_rsvg_node_init(&mask->super);
 	mask->maskunits = objectBoundingBox;
 	mask->contentunits = userSpaceOnUse;
-	mask->x = 0;
-	mask->y = 0;
-	mask->width = 1;
-	mask->height = 1;
+	mask->x = _rsvg_css_parse_length_struct ("0");
+	mask->y = _rsvg_css_parse_length_struct ("0");
+	mask->width = _rsvg_css_parse_length_struct ("1");
+	mask->height = _rsvg_css_parse_length_struct ("1");
 	mask->super.type = RSVG_NODE_MASK;
 	mask->super.set_atts = rsvg_mask_set_atts;
 	return &mask->super;

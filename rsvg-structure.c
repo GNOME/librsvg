@@ -204,11 +204,12 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 									   -symbol->y);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
 
+				_rsvg_push_view_box(ctx, symbol->width, symbol->height);
+				rsvg_push_discrete_layer (ctx);
 				if (!state->overflow || 
 					(!state->has_overflow && child->state->overflow))
-					rsvg_push_discrete_layer (ctx);
-					rsvg_add_clipping_rect (ctx, symbol->x, symbol->y,
-											symbol->width, symbol->height);
+				rsvg_add_clipping_rect (ctx, symbol->x, symbol->y,
+										symbol->width, symbol->height);
 			} else {
 				_rsvg_affine_translate(affine, use->x, use->y);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
@@ -219,6 +220,8 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 			_rsvg_node_draw_children(child, ctx, 1);
 			rsvg_state_pop(ctx);
 			rsvg_pop_discrete_layer (ctx);
+			if (symbol->has_vbox)
+				_rsvg_pop_view_box(ctx);
 		}
 
 }	
@@ -240,7 +243,13 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	RsvgState *state;
 	gdouble affine[6], affine_old[6], affine_new[6];
 	guint i;
+	double nx, ny, nw, nh;
 	sself = (RsvgNodeSvg *)self;
+
+	nx = _rsvg_css_normalize_length_struct(&sself->x, ctx, 'h');
+	ny = _rsvg_css_normalize_length_struct(&sself->y, ctx, 'v');
+	nw = _rsvg_css_normalize_length_struct(&sself->w, ctx, 'h');
+	nh = _rsvg_css_normalize_length_struct(&sself->h, ctx, 'v');
 
 	rsvg_state_reinherit_top(ctx, self->state, dominate);
 
@@ -251,7 +260,7 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 
 	if (sself->has_vbox && sself->hasw && sself->hash)
 		{
-			double x = sself->x, y = sself->y, w = sself->w, h = sself->h;
+			double x = nx, y = ny, w = nw, h = nh;
 			rsvg_preserve_aspect_ratio(sself->preserve_aspect_ratio,
 									   sself->vbw, sself->vbh, 
 									   &w, &h, &x, &y);
@@ -263,6 +272,7 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 			affine[5] = y - sself->vby * h / sself->vbh;
 			_rsvg_affine_multiply(state->affine, affine, 
 								  state->affine);
+			_rsvg_push_view_box(ctx, sself->vbw, sself->vbh);
 		}
 	else
 		{
@@ -270,10 +280,11 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 			affine[1] = 0;
 			affine[2] = 0;
 			affine[3] = 1;
-			affine[4] = sself->x;
-			affine[5] = sself->y;
+			affine[4] = nx;
+			affine[5] = ny;
 			_rsvg_affine_multiply(state->affine, affine, 
 								  state->affine);
+			_rsvg_push_view_box(ctx, nw, nh);
 		}
 	for (i = 0; i < 6; i++)
 		affine_new[i] = state->affine[i];
@@ -286,7 +297,7 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 		{
 			for (i = 0; i < 6; i++)
 				state->affine[i] = affine_old[i];
-			rsvg_add_clipping_rect(ctx, sself->x, sself->y, sself->w, sself->h);
+			rsvg_add_clipping_rect(ctx, nx, ny, nw, nh);
 			for (i = 0; i < 6; i++)
 				state->affine[i] = affine_new[i];
 		}
@@ -300,6 +311,7 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 		}			
 
 	rsvg_pop_discrete_layer (ctx);
+	_rsvg_pop_view_box(ctx);
 }
 
 static void
@@ -329,22 +341,22 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 				svg->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);			
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
 				{
-					svg->w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, ctx->width, 1);
-					svg->hasw = (svg->w > 0);
+					svg->w = _rsvg_css_parse_length_struct (value);
+					svg->hasw = svg->w.length > 0;
 					if (!svg->has_vbox)
-						ctx->width = svg->w; 
+						ctx->width = svg->w.length; 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
 				{
-					svg->h = rsvg_css_parse_normalized_length (value, ctx->dpi_y, ctx->height, 1);
-					svg->hash = (svg->h > 0);
+					svg->h = _rsvg_css_parse_length_struct (value);
+					svg->hash = svg->h.length > 0;
 					if (!svg->has_vbox)
-						ctx->height = svg->h;
+						ctx->height = svg->h.length;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				svg->x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, ctx->width, 1);
+				svg->x = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				svg->y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, ctx->height, 1);
+				svg->y = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
@@ -361,7 +373,10 @@ rsvg_new_svg (void)
 	_rsvg_node_init(&svg->super);
 	svg->has_vbox = FALSE;
 	svg->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-	svg->x = 0; svg->y = 0; svg->w = -1; svg->h = -1;
+	svg->x = _rsvg_css_parse_length_struct ("0"); 
+	svg->y = _rsvg_css_parse_length_struct ("0"); 
+	svg->w = _rsvg_css_parse_length_struct ("0");
+	svg->h = _rsvg_css_parse_length_struct ("0");
 	svg->hasw = svg->hash = FALSE;
 	svg->vbx = 0; svg->vby = 0; svg->vbw = 0; svg->vbh = 0;
 	svg->super.type = RSVG_NODE_PATH;
