@@ -1196,9 +1196,9 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
 						bbox = _rsvg_find_bbox(handle);
 				}
 			output->width  = _rsvg_css_hand_normalize_length_struct(&sself->w, handle->dpi_x, 
-																	bbox.w + bbox.x, 12);
+																	bbox.w + bbox.x * 2, 12);
 			output->height = _rsvg_css_hand_normalize_length_struct(&sself->h, handle->dpi_y, 
-																	bbox.h + bbox.y, 12);
+																	bbox.h + bbox.y * 2, 12);
 		}
 	else if (sself->has_vbox && sself->vbw > 0. && sself->vbh > 0.)
 		{
@@ -1209,8 +1209,8 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
 		{
 			RsvgBbox bbox;
 			bbox = _rsvg_find_bbox(handle);
-			output->width  = bbox.w + bbox.x;
-			output->height = bbox.h + bbox.y;
+			output->width  = bbox.w + bbox.x * 2;
+			output->height = bbox.h + bbox.y * 2;
 		}
 
 	output->em = output->width;
