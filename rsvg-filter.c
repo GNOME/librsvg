@@ -1394,7 +1394,7 @@ struct _RsvgFilterPrimitiveGaussianBlur
 };
 
 static void
-box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw, 
+box_blur (GdkPixbuf *in, GdkPixbuf *output, guchar *intermediate, gint kw, 
 		  gint kh, RsvgIRect boundarys, RsvgFilterPrimitiveOutput op)
 {
 	gint ch;
@@ -1411,7 +1411,7 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 	width = gdk_pixbuf_get_width (in);
 
 	in_pixels = gdk_pixbuf_get_pixels (in);
-	output_pixels = gdk_pixbuf_get_pixels (intermediate);
+	output_pixels = gdk_pixbuf_get_pixels (output);
 	
 	rowstride = gdk_pixbuf_get_rowstride (in);
 
@@ -1446,33 +1446,29 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 							sum = 0;
 							for (x = boundarys.x0; x < boundarys.x0 + kw; x++)
 								{
-									sum += in_pixels[4 * x + y * rowstride + ch];
+									sum += (intermediate[x % kw] = in_pixels[4 * x + y * rowstride + ch]);
 
 									if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x1)
 										output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / kw;
 								}
 							for (x = boundarys.x0 + kw; x < boundarys.x1; x++)
 								{
-									sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
-									sum += in_pixels[4 * x + y * rowstride + ch];
+									sum -= intermediate[x % kw];
+									sum += (intermediate[x % kw] = in_pixels[4 * x + y * rowstride + ch]);
 									output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / kw;
 								}
 							for (x = boundarys.x1; x < boundarys.x1 + kw; x++)
 								{
-									sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
+									sum -= intermediate[x % kw];
 
 									if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x1)
 										output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / kw;
 								}
 						}
 				}
+			in_pixels = output_pixels;
 		}
-	else
-		intermediate = in;
 	
-	in_pixels = gdk_pixbuf_get_pixels (intermediate);
-	output_pixels = gdk_pixbuf_get_pixels (output);
-
 	if (kh >= 1)
 		{
 			for (ch = 0; ch < 4; ch++)
@@ -1500,63 +1496,52 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 							
 							for (y = boundarys.y0; y < boundarys.y0 + kh; y++)
 								{
-									sum += in_pixels[4 * x + y * rowstride + ch];
+									sum += (intermediate[y % kh] = in_pixels[4 * x + y * rowstride + ch]);
    
 									if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y1)
 										output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / kh;
 								}
 							for (; y < boundarys.y1; y++)
 								{
-									sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
-									sum += in_pixels[4 * x + y * rowstride + ch];
+									sum -= intermediate[y % kh];
+									sum += (intermediate[y % kh] = in_pixels[4 * x + y * rowstride + ch]);
 									output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / kh;
 								}
 							for (; y < boundarys.y1 + kh; y++)
 								{						
-									sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
+									sum -= intermediate[y % kh];
 	
 									if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y1)
 										output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / kh;
 								}
 						}
 				}
-			
 		}
-	else
-		{
-			gdk_pixbuf_copy_area(intermediate, 0,0, width, height, 
-								 output, 0, 0);
-		}
-
 }
 
 static void
 fast_blur (GdkPixbuf *in, GdkPixbuf *output, gfloat sx, 
 		   gfloat sy, RsvgIRect boundarys, RsvgFilterPrimitiveOutput op)
 {
-	GdkPixbuf *intermediate1;
-	GdkPixbuf *intermediate2;
 	gint kx, ky;
+	guchar * intermediate;
 
 	kx = floor(sx * 3*sqrt(2*M_PI)/4 + 0.5);
 	ky = floor(sy * 3*sqrt(2*M_PI)/4 + 0.5);
 
-	intermediate1 = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
-											gdk_pixbuf_get_width (in),
-											gdk_pixbuf_get_height (in));
-	intermediate2 = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, 
-											gdk_pixbuf_get_width (in),
-											gdk_pixbuf_get_height (in));
+	if (kx < 1 && ky < 1)
+		return;
 
-	box_blur (in, intermediate2, intermediate1, kx, 
+	intermediate = g_new(guchar, MAX(kx, ky));
+
+	box_blur (in, output, intermediate, kx, 
 			  ky, boundarys, op);
-	box_blur (intermediate2, intermediate2, intermediate1, kx, 
+	box_blur (output, output, intermediate, kx, 
 			  ky, boundarys, op);
-	box_blur (intermediate2, output, intermediate1, kx, 
+	box_blur (output, output, intermediate, kx, 
 			  ky, boundarys, op);
 
-	g_object_unref (G_OBJECT (intermediate1));
-	g_object_unref (G_OBJECT (intermediate2));
+	g_free (intermediate);
 }
 
 static void
