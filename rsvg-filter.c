@@ -1406,8 +1406,6 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 
 	gint sum;	
 
-	gint divisor;
-
 	
 	height = gdk_pixbuf_get_height (in);
 	width = gdk_pixbuf_get_width (in);
@@ -1446,35 +1444,25 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 					for (y = boundarys.y0; y < boundarys.y1; y++)
 						{
 							sum = 0;
-							divisor = 0;
 							for (x = boundarys.x0; x < boundarys.x0 + kw; x++)
 								{
-									divisor++;
 									sum += in_pixels[4 * x + y * rowstride + ch];
 
 									if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x1)
-										{
-											if (divisor > 0)
-												output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
-										}
+										output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / kw;
 								}
 							for (x = boundarys.x0 + kw; x < boundarys.x1; x++)
 								{
 									sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
 									sum += in_pixels[4 * x + y * rowstride + ch];
-									if (divisor > 0)
-										output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
+									output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / kw;
 								}
 							for (x = boundarys.x1; x < boundarys.x1 + kw; x++)
 								{
-									divisor--;
 									sum -= in_pixels[4 * (x - kw) + y * rowstride + ch];
 
 									if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x1)
-										{
-											if (divisor > 0)
-												output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / divisor;
-										}
+										output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / kw;
 								}
 						}
 				}
@@ -1509,37 +1497,26 @@ box_blur (GdkPixbuf *in, GdkPixbuf *output, GdkPixbuf *intermediate, gint kw,
 					for (x = boundarys.x0; x < boundarys.x1; x++)
 						{
 							sum = 0;
-							divisor = 0;
 							
 							for (y = boundarys.y0; y < boundarys.y0 + kh; y++)
 								{
-									divisor++;
 									sum += in_pixels[4 * x + y * rowstride + ch];
    
 									if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y1)
-										{
-											if (divisor > 0)
-												output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
-										}
+										output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / kh;
 								}
 							for (; y < boundarys.y1; y++)
 								{
 									sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
 									sum += in_pixels[4 * x + y * rowstride + ch];
-									
-									if (divisor > 0)
-										output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
+									output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / kh;
 								}
 							for (; y < boundarys.y1 + kh; y++)
 								{						
-									divisor--;
 									sum -= in_pixels[4 * x + (y - kh) * rowstride + ch];
 	
 									if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y1)
-										{
-											if (divisor > 0)
-												output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / divisor;
-										}
+										output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / kh;
 								}
 						}
 				}
