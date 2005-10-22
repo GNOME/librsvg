@@ -70,6 +70,8 @@ rsvg_state_init (RsvgState *state)
 	state->clip_rule = FILL_RULE_NONZERO;
 	state->backgroundnew = FALSE;	
 	state->overflow = FALSE;
+	state->flood_color = 0;
+	state->flood_opacity = 255;
 
 	state->font_family  = g_strdup (RSVG_DEFAULT_FONT);
 	state->font_size    = _rsvg_css_parse_length_struct("12.0");
@@ -89,6 +91,8 @@ rsvg_state_init (RsvgState *state)
 	state->endMarker    = NULL;
 
 	state->has_current_color = FALSE;
+	state->has_flood_color = FALSE;
+	state->has_flood_opacity = FALSE;
 	state->has_fill_server = FALSE;
 	state->has_fill_opacity = FALSE;
 	state->has_fill_rule = FALSE;
@@ -160,6 +164,10 @@ rsvg_state_inherit_run (RsvgState *dst, const RsvgState *src,
 	
 	if (function(dst->has_current_color, src->has_current_color))
 		dst->current_color = src->current_color;
+	if (function(dst->has_flood_color, src->has_flood_color))
+		dst->flood_color = src->flood_color;
+	if (function(dst->has_flood_opacity, src->has_flood_opacity))
+		dst->flood_opacity = src->flood_opacity;
 	if (function(dst->has_fill_server, src->has_fill_server))
 		{
 			rsvg_paint_server_ref (src->fill);
@@ -352,12 +360,15 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	arg_off = rsvg_css_param_arg_offset (str);
 
 	if (rsvg_css_param_match (str, "color"))
-		{
-				state->current_color = rsvg_css_parse_color (str + arg_off, &state->has_current_color);
-		}
+		state->current_color = rsvg_css_parse_color (str + arg_off, &state->has_current_color);
 	else if (rsvg_css_param_match (str, "opacity"))
+		state->opacity = rsvg_css_parse_opacity (str + arg_off);
+	else if (rsvg_css_param_match (str, "flood-color"))
+		state->flood_color = rsvg_css_parse_color (str + arg_off, &state->has_flood_color);
+	else if (rsvg_css_param_match (str, "flood-opacity"))
 		{
-			state->opacity = rsvg_css_parse_opacity (str + arg_off);
+			state->flood_opacity = rsvg_css_parse_opacity (str + arg_off);
+			state->has_flood_opacity = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "filter"))
 		state->filter = rsvg_filter_parse(ctx->defs, str + arg_off);
@@ -758,6 +769,8 @@ rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state,
 	rsvg_lookup_parse_style_pair (ctx, state, "fill-rule", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "filter", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "font-family", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "flood-colour", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "flood-opacity", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "font-size", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "font-stretch", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "font-style", atts);

@@ -163,6 +163,12 @@ struct _RsvgState {
 	guint32 current_color;
 	gboolean has_current_color;
 
+	guint32 flood_color;
+	gboolean has_flood_color;
+
+	guchar flood_opacity;
+	gboolean has_flood_opacity;
+
 	RsvgNode * startMarker;
 	RsvgNode * middleMarker;
 	RsvgNode * endMarker;	
