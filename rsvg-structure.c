@@ -159,6 +159,11 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	RsvgNode * child;
 	RsvgState * state;
 	double affine[6];
+	double x, y, w, h;
+	x = _rsvg_css_normalize_length_struct(&use->x, ctx, 'h');
+	y = _rsvg_css_normalize_length_struct(&use->y, ctx, 'v');
+	w = _rsvg_css_normalize_length_struct(&use->w, ctx, 'h');
+	h = _rsvg_css_normalize_length_struct(&use->h, ctx, 'v');
 
 	rsvg_state_reinherit_top(ctx,  self->state, dominate);
 
@@ -170,7 +175,7 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	state = rsvg_state_current(ctx);	
 	if (child->type != RSVG_NODE_SYMBOL)
 		{
-			_rsvg_affine_translate(affine, use->x, use->y);
+			_rsvg_affine_translate(affine, x, y);
 			_rsvg_affine_multiply(state->affine, affine, state->affine);
 
 			rsvg_push_discrete_layer (ctx);
@@ -183,35 +188,30 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 		{
 			RsvgNodeSymbol *symbol = 
 				(RsvgNodeSymbol*)child;
-			double x, y, width, height;
-			x = use->x;
-			y = use->y;
-			width = use->w;
-			height = use->h;
 			
 			if (symbol->has_vbox){
 				rsvg_preserve_aspect_ratio
 					(symbol->preserve_aspect_ratio, 
-					 symbol->width, symbol->height, 
-					 &width, &height, &x, &y);
+					 symbol->vbw, symbol->vbh, 
+					 &w, &h, &x, &y);
 
 				_rsvg_affine_translate(affine, x, y);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
-				_rsvg_affine_scale(affine, width / symbol->width,
-								   height / symbol->height);
+				_rsvg_affine_scale(affine, w / symbol->vbw,
+								   h / symbol->vbh);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
-				_rsvg_affine_translate(affine, -symbol->x, 
-									   -symbol->y);
+				_rsvg_affine_translate(affine, -symbol->vbx, 
+									   -symbol->vby);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
 
-				_rsvg_push_view_box(ctx, symbol->width, symbol->height);
+				_rsvg_push_view_box(ctx, symbol->vbw, symbol->vbh);
 				rsvg_push_discrete_layer (ctx);
 				if (!state->overflow || 
 					(!state->has_overflow && child->state->overflow))
-				rsvg_add_clipping_rect (ctx, symbol->x, symbol->y,
-										symbol->width, symbol->height);
+				rsvg_add_clipping_rect (ctx, symbol->vbx, symbol->vby,
+										symbol->vbw, symbol->vbh);
 			} else {
-				_rsvg_affine_translate(affine, use->x, use->y);
+				_rsvg_affine_translate(affine, x, y);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
 				rsvg_push_discrete_layer (ctx);
 			}
@@ -389,22 +389,19 @@ static void
 rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	const char *value = NULL, *klazz = NULL, *id = NULL;
-	double font_size;	
 	RsvgNodeUse * use;
-
-	font_size = rsvg_state_current_font_size(ctx);
 
 	use = (RsvgNodeUse *)self;
 	if (rsvg_property_bag_size(atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				use->x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				use->x = _rsvg_css_parse_length_struct(value);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				use->y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				use->y = _rsvg_css_parse_length_struct(value);
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				use->w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->height, font_size);
+				use->w = _rsvg_css_parse_length_struct(value);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				use->h = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				use->h = _rsvg_css_parse_length_struct(value);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -429,10 +426,10 @@ rsvg_new_use ()
 	use->super.free = rsvg_node_use_free;
 	use->super.draw = rsvg_node_use_draw;
 	use->super.set_atts = rsvg_node_use_set_atts;
-	use->x = 0;
-	use->y = 0;
-	use->w = 0;
-	use->h = 0;
+	use->x = _rsvg_css_parse_length_struct("0");
+	use->y = _rsvg_css_parse_length_struct("0");
+	use->w = _rsvg_css_parse_length_struct("0");
+	use->h = _rsvg_css_parse_length_struct("0");
 	use->link = NULL;
 	return (RsvgNode *)use;
 }
@@ -456,14 +453,14 @@ rsvg_node_symbol_set_atts(RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts
 			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
 				{
 					symbol->has_vbox = rsvg_css_parse_vbox (value, 
-															&symbol->x, 
-															&symbol->y,
-															&symbol->width, 
-															&symbol->height);
+															&symbol->vbx, 
+															&symbol->vby,
+															&symbol->vbw, 
+															&symbol->vbh);
 					if (symbol->has_vbox)
 						{
-							ctx->width = symbol->width;
-							ctx->height = symbol->height;
+							ctx->width = symbol->vbw;
+							ctx->height = symbol->vbh;
 						}
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))

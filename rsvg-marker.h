@@ -34,8 +34,8 @@ typedef struct _RsvgMarker RsvgMarker;
 struct _RsvgMarker {
 	RsvgNode super;
 	gboolean bbox;
-	double refX, refY, orient;
-	double vbx, vby, vbw, vbh, width, height;
+	RsvgLength refX, refY, width, height;
+	double vbx, vby, vbw, vbh, orient;
 	gint preserve_aspect_ratio;
 	gboolean vbox, orientAuto;
 };

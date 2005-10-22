@@ -78,9 +78,8 @@ typedef struct _RsvgTspan RsvgTspan;
 typedef struct _RsvgTChunk RsvgTChunk;
 
 struct _RsvgTspan {
-	gdouble x, y;
+	RsvgLength x, y, dx, dy;
 	gboolean hasx, hasy;
-	gdouble dx, dy;
 	RsvgTspan * parent;
 	gint parentindex;
 	GPtrArray * contents;
@@ -142,8 +141,7 @@ rsvg_tspan_new()
 {
 	RsvgTspan * self;
 	self = g_new(RsvgTspan, 1);
-	self->dx = 0;
-	self->dy = 0;
+	self->dx = self->dy = _rsvg_css_parse_length_struct("0");
 	self->hasx = FALSE;
 	self->hasy = FALSE;
 	self->parent = NULL;
@@ -310,18 +308,18 @@ rsvg_start_tspan (RsvgSaxHandlerText *self, RsvgPropertyBag *atts)
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
 				{
-					tspan->x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+					tspan->x = _rsvg_css_parse_length_struct (value);
 					tspan->hasx = TRUE;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
 				{
-					tspan->y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+					tspan->y = _rsvg_css_parse_length_struct (value);
 					tspan->hasy = TRUE;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "dx")))
-				tspan->dx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				tspan->dx = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "dy")))
-				tspan->dy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				tspan->dy = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -422,7 +420,7 @@ rsvg_text_tspan_width (RsvgDrawingCtx *ctx,
 							currentindex = -1;
 							if (currentspan->hasx || currentspan->hasy)
 								return currentwidth;
-							currentwidth += currentspan->dx;
+							currentwidth += _rsvg_css_normalize_length_struct(&currentspan->dx, ctx, 'h');
 						}
 				}
 			currentindex++;
@@ -450,33 +448,34 @@ rsvg_tspan_draw(RsvgTspan * self, RsvgDrawingCtx *ctx, gdouble *x, gdouble *y, i
 {
 	unsigned int i;
 	rsvg_state_reinherit_top(ctx, &self->state, dominate);
+	double sx = _rsvg_css_normalize_length_struct(&self->x, ctx, 'h');
 	if (self->hasx || self->hasy)
 		{
 			switch (rsvg_state_current(ctx)->text_anchor)
 				{
 				case TEXT_ANCHOR_START:
-					*x = self->x;		
+					*x = sx;		
 					break;
 				case TEXT_ANCHOR_MIDDLE:
-					*x = self->x - rsvg_text_tspan_width (ctx, self) / 2;
+					*x = sx - rsvg_text_tspan_width (ctx, self) / 2;
 					break;
 				case TEXT_ANCHOR_END:
-					*x = self->x - rsvg_text_tspan_width (ctx, self);
+					*x = sx - rsvg_text_tspan_width (ctx, self);
 					break;
 				}
-			*y = self->y;
+			*y = _rsvg_css_normalize_length_struct(&self->y, ctx, 'v');
 		}
 
 	if (rsvg_state_current(ctx)->text_dir == PANGO_DIRECTION_TTB_LTR || 
 		rsvg_state_current(ctx)->text_dir == PANGO_DIRECTION_TTB_RTL)
 		{
-			*y += self->dx;
-			*x += self->dy;
+			*y += _rsvg_css_normalize_length_struct(&self->dx, ctx, 'h');
+			*x += _rsvg_css_normalize_length_struct(&self->dy, ctx, 'v');
 		}
 	else
 		{
-			*x += self->dx;
-			*y += self->dy;
+			*x += _rsvg_css_normalize_length_struct(&self->dx, ctx, 'h');
+			*y += _rsvg_css_normalize_length_struct(&self->dy, ctx, 'v');
 		}
 	for (i = 0; i < self->contents->len; i++) {
 		rsvg_tchunk_draw (g_ptr_array_index(self->contents, i), ctx, self, x, y);
@@ -496,7 +495,7 @@ rsvg_node_text_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 void
 rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	double x, y, dx, dy, font_size;
+	RsvgLength x, y, dx, dy;
 	const char * klazz = NULL, * id = NULL, *value;
 	RsvgState state;
 	RsvgNodeText *text;
@@ -507,21 +506,20 @@ rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	handler->super.start_element = rsvg_text_handler_start;
 	handler->super.end_element   = rsvg_text_handler_end;
 	handler->ctx = ctx;
-	font_size = rsvg_state_current_font_size(ctx);
-	x = y = dx = dy = 0.;
+	x = y = dx = dy = _rsvg_css_parse_length_struct ("0");
 	
 	rsvg_state_init(&state);
 	
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				x = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				y = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "dx")))
-				dx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				dx = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "dy")))
-				dy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				dy = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -693,7 +691,7 @@ rsvg_text_layout_new (RsvgDrawingCtx *ctx,
 	pango_font_description_set_variant (font_desc, state->font_variant);
 	pango_font_description_set_weight (font_desc, state->font_weight);
 	pango_font_description_set_stretch (font_desc, state->font_stretch); 
-	pango_font_description_set_size (font_desc, state->font_size * PANGO_SCALE / ctx->dpi_y * 72); 
+	pango_font_description_set_size (font_desc, _rsvg_css_normalize_length_struct(&state->font_size, ctx, 'v') * PANGO_SCALE / ctx->dpi_y * 72); 
 	pango_layout_set_font_description (layout->layout, font_desc);
 	pango_font_description_free (font_desc);
 	

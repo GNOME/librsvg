@@ -222,7 +222,7 @@ rsvg_new_polyline (void)
 struct _RsvgNodeLine
 {
 	RsvgNode super;
-	double x1, x2, y1, y2;
+	RsvgLength x1, x2, y1, y2;
 };
 
 typedef struct _RsvgNodeLine RsvgNodeLine;
@@ -231,22 +231,18 @@ static void
 _rsvg_node_line_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	const char * klazz = NULL, *id = NULL, *value;
-	double font_size;
 	RsvgNodeLine * line = (RsvgNodeLine *) self;
-
-	font_size = rsvg_state_current_font_size (ctx);
-	
 
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x1")))
-				line->x1 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				line->x1 = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "y1")))
-				line->y1 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				line->y1 = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "x2")))
-				line->x2 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				line->x2 = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "y2")))
-				line->y2 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				line->y2 = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -271,13 +267,17 @@ _rsvg_node_line_draw(RsvgNode * overself, RsvgDrawingCtx *ctx,
 	/* ("M %f %f L %f %f", x1, y1, x2, y2) */
 	d = g_string_new ("M ");   
 
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), self->x1));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 
+										_rsvg_css_normalize_length_struct(&self->x1,ctx,'h')));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), self->y1));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 
+										_rsvg_css_normalize_length_struct(&self->y1,ctx,'v')));
 	g_string_append (d, " L ");	
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), self->x2));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 
+										_rsvg_css_normalize_length_struct(&self->x2,ctx,'h')));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), self->y2));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 
+										_rsvg_css_normalize_length_struct(&self->y2,ctx,'v')));
 
 	rsvg_state_reinherit_top(ctx, overself->state, dominate);
 	rsvg_render_path (ctx, d->str);
@@ -294,14 +294,14 @@ rsvg_new_line (void)
 	line->super.type = RSVG_NODE_PATH;
 	line->super.draw = _rsvg_node_line_draw;
 	line->super.set_atts = _rsvg_node_line_set_atts;
-	line->x1 = line->x2 = line->y1 = line->y2 = 0;
+	line->x1 = line->x2 = line->y1 = line->y2 = _rsvg_css_parse_length_struct("0");
 	return &line->super;
 }
 
 struct _RsvgNodeRect
 {
 	RsvgNode super;
-	double x, y, w, h, rx, ry;
+	RsvgLength x, y, w, h, rx, ry;
 	gboolean got_rx, got_ry;
 };
 
@@ -311,27 +311,24 @@ static void
 _rsvg_node_rect_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	const char * klazz = NULL, * id = NULL, *value;
-	double font_size;
 	RsvgNodeRect * rect = (RsvgNodeRect *)self;
-
-	font_size = rsvg_state_current_font_size (ctx);
 
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				rect->x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				rect->x = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				rect->y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size) + 0.01;
+				rect->y = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				rect->w = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				rect->w = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				rect->h = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				rect->h = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "rx"))) {
-				rect->rx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				rect->rx = _rsvg_css_parse_length_struct (value);
 				rect->got_rx = TRUE;	
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "ry"))) {
-				rect->ry = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				rect->ry = _rsvg_css_parse_length_struct (value);
 				rect->got_ry = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
@@ -350,33 +347,40 @@ static void
 _rsvg_node_rect_draw(RsvgNode * self, RsvgDrawingCtx *ctx, 
 					 int dominate)
 {
-	double rx, ry;	
+	double x, y, w, h, rx, ry;	
 	GString * d = NULL;
 	RsvgNodeRect * rect = (RsvgNodeRect *)self;
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
 
-	if (rect->got_rx)
-		rx = rect->rx;		
-	else
-		rx = rect->ry;
-	if (rect->got_ry)
-		ry = rect->ry;		
-	else
-		ry = rect->rx;
+	x = _rsvg_css_normalize_length_struct(&rect->x, ctx, 'h');
+	y = _rsvg_css_normalize_length_struct(&rect->y, ctx, 'v');
+	w = _rsvg_css_normalize_length_struct(&rect->w, ctx, 'h');
+	h = _rsvg_css_normalize_length_struct(&rect->h, ctx, 'v');
+	rx = _rsvg_css_normalize_length_struct(&rect->rx, ctx, 'h');
+	ry = _rsvg_css_normalize_length_struct(&rect->ry, ctx, 'v');
 
-	if (rx > fabs(rect->w / 2.))
-		rx = fabs(rect->w / 2.);
-	if (ry > fabs(rect->h / 2.))
-		ry = fabs(rect->h / 2.);
+	if (rect->got_rx)
+		rx = rx;		
+	else
+		rx = ry;
+	if (rect->got_ry)
+		ry = ry;		
+	else
+		ry = rx;
+
+	if (rx > fabs(w / 2.))
+		rx = fabs(w / 2.);
+	if (ry > fabs(h / 2.))
+		ry = fabs(h / 2.);
 
 	/* emulate a rect using a path */
 	d = g_string_new ("M ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->x + rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->y));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y));
 
 	g_string_append (d, " H ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->x + rect->w - rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + w - rx));
 
 	g_string_append (d, " A");
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rx));
@@ -389,12 +393,12 @@ _rsvg_node_rect_draw(RsvgNode * self, RsvgDrawingCtx *ctx,
 	g_string_append_c (d, ' ');
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 1.));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->x+rect->w));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x+w));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->y+ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y+ry));
 
 	g_string_append (d, " V ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->y+rect->h-ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y+h-ry));
 
 	g_string_append (d, " A");
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rx));
@@ -407,12 +411,12 @@ _rsvg_node_rect_draw(RsvgNode * self, RsvgDrawingCtx *ctx,
 	g_string_append_c (d, ' ');
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 1.));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->x + rect->w - rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + w - rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->y + rect->h));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y + h));
 
 	g_string_append (d, " H ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->x + rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + rx));
 
 	g_string_append (d, " A");
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rx));
@@ -425,12 +429,12 @@ _rsvg_node_rect_draw(RsvgNode * self, RsvgDrawingCtx *ctx,
 	g_string_append_c (d, ' ');	
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 1.));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->x));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->y +rect-> h - ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y + h - ry));
 
 	g_string_append (d, " V ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->y+ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y+ry));
 
 	g_string_append (d, " A");
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rx));
@@ -443,9 +447,9 @@ _rsvg_node_rect_draw(RsvgNode * self, RsvgDrawingCtx *ctx,
 	g_string_append_c (d, ' ');
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 1.));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->x+rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x+rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rect->y));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y));
 
 	g_string_append (d, " Z");
 
@@ -463,7 +467,8 @@ rsvg_new_rect (void)
 	rect->super.type = RSVG_NODE_PATH;
 	rect->super.draw = _rsvg_node_rect_draw;
 	rect->super.set_atts = _rsvg_node_rect_set_atts;
-	rect->x = rect->y = rect->w = rect->h = rect->rx = rect->ry = 0;
+	rect->x = rect->y = rect->w = rect->h = rect->rx = rect->ry = 
+		_rsvg_css_parse_length_struct("0");
 	rect->got_rx = rect->got_ry = FALSE;
 	return &rect->super;
 }
@@ -471,7 +476,7 @@ rsvg_new_rect (void)
 struct _RsvgNodeCircle
 {
 	RsvgNode super;
-	double cx, cy, r;
+	RsvgLength cx, cy, r;
 };
 
 typedef struct _RsvgNodeCircle RsvgNodeCircle;
@@ -480,21 +485,16 @@ static void
 _rsvg_node_circle_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	const char * klazz = NULL, * id = NULL, *value;
-	double font_size;
 	RsvgNodeCircle * circle = (RsvgNodeCircle *)self;
-
-	font_size = rsvg_state_current_font_size (ctx);
 
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "cx")))
-				circle->cx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				circle->cx = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "cy")))
-				circle->cy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				circle->cy = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "r")))
-				circle->r = rsvg_css_parse_normalized_length (value, rsvg_dpi_percentage (ctx), 
-															  rsvg_viewport_percentage((gdouble)ctx->width, (gdouble)ctx->height), 
-															  font_size);
+				circle->r = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -514,68 +514,73 @@ _rsvg_node_circle_draw(RsvgNode * self, RsvgDrawingCtx *ctx,
 	GString * d = NULL;
 	RsvgNodeCircle * circle = (RsvgNodeCircle *)self;
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
+	double cx, cy, r;
 
-	if (circle->r <= 0)
+	cx = _rsvg_css_normalize_length_struct(&circle->cx, ctx, 'h');
+	cy = _rsvg_css_normalize_length_struct(&circle->cy, ctx, 'v');
+	r = _rsvg_css_normalize_length_struct(&circle->r, ctx, 'o');
+
+	if (r <= 0)
 		return;
 	
 	/* approximate a circle using 4 bezier curves */
 
 	d = g_string_new ("M ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cx+circle->r));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx+r));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cy));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
 
 	g_string_append (d, " C ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cx+circle->r));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx+r));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cy + circle->r * RSVG_ARC_MAGIC));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r * RSVG_ARC_MAGIC));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cx + circle->r * RSVG_ARC_MAGIC));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r * RSVG_ARC_MAGIC));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cy + circle->r));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cy + circle->r));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r));
 
 	g_string_append (d, " C ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cx - circle->r * RSVG_ARC_MAGIC));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r * RSVG_ARC_MAGIC));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cy + circle->r));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cx - circle->r));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cy + circle->r * RSVG_ARC_MAGIC));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r * RSVG_ARC_MAGIC));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cx - circle->r));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cy));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
 
 	g_string_append (d, " C ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle-> cx - circle->r));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf),  cx - r));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cy - circle->r * RSVG_ARC_MAGIC));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r * RSVG_ARC_MAGIC));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cx - circle->r * RSVG_ARC_MAGIC));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r * RSVG_ARC_MAGIC));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cy - circle->r));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cy - circle->r));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r));
 
 	g_string_append (d, " C ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cx + circle->r * RSVG_ARC_MAGIC));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r * RSVG_ARC_MAGIC));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cy - circle->r));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cx + circle->r));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cy - circle->r * RSVG_ARC_MAGIC));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r * RSVG_ARC_MAGIC));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cx + circle->r));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), circle->cy));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
 
 	g_string_append (d, " Z");
 
@@ -594,14 +599,14 @@ rsvg_new_circle (void)
 	circle->super.type = RSVG_NODE_PATH;
 	circle->super.draw = _rsvg_node_circle_draw;
 	circle->super.set_atts = _rsvg_node_circle_set_atts;
-	circle->cx = circle->cy = circle->r = 0;
+	circle->cx = circle->cy = circle->r = _rsvg_css_parse_length_struct("0");
 	return &circle->super;
 }
 
 struct _RsvgNodeEllipse
 {
 	RsvgNode super;
-	double cx, cy, rx, ry;
+	RsvgLength cx, cy, rx, ry;
 };
 
 typedef struct _RsvgNodeEllipse RsvgNodeEllipse;
@@ -610,21 +615,18 @@ static void
 _rsvg_node_ellipse_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	const char * klazz = NULL, * id = NULL, *value;
-	double font_size;
 	RsvgNodeEllipse * ellipse = (RsvgNodeEllipse *)self;
-
-	font_size = rsvg_state_current_font_size (ctx);
 
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "cx")))
-				ellipse->cx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				ellipse->cx = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "cy")))
-				ellipse->cy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				ellipse->cy = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "rx")))
-				ellipse->rx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, (gdouble)ctx->width, font_size);
+				ellipse->rx = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "ry")))
-				ellipse->ry = rsvg_css_parse_normalized_length (value, ctx->dpi_y, (gdouble)ctx->height, font_size);
+				ellipse->ry = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -644,67 +646,73 @@ _rsvg_node_ellipse_draw(RsvgNode * self, RsvgDrawingCtx *ctx,
 	RsvgNodeEllipse * ellipse = (RsvgNodeEllipse *)self;
 	GString * d = NULL;
 	char buf [G_ASCII_DTOSTR_BUF_SIZE];
+	double cx, cy, rx, ry;
+
+	cx = _rsvg_css_normalize_length_struct(&ellipse->cx, ctx, 'h');
+	cy = _rsvg_css_normalize_length_struct(&ellipse->cy, ctx, 'v');
+	rx = _rsvg_css_normalize_length_struct(&ellipse->rx, ctx, 'h');
+	ry = _rsvg_css_normalize_length_struct(&ellipse->ry, ctx, 'v');
 	
-	if (ellipse->rx <= 0 || ellipse->ry <= 0)
+	if (rx <= 0 || ry <= 0)
 		return;
 	/* approximate an ellipse using 4 bezier curves */
 
 	d = g_string_new ("M ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cx + ellipse->rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cy));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
 
 	g_string_append (d, " C ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cx + ellipse->rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cy - RSVG_ARC_MAGIC * ellipse->ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - RSVG_ARC_MAGIC * ry));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cx + RSVG_ARC_MAGIC * ellipse->rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + RSVG_ARC_MAGIC * rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cy - ellipse->ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - ry));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cy - ellipse->ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - ry));
 
 	g_string_append (d, " C ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cx - RSVG_ARC_MAGIC * ellipse->rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - RSVG_ARC_MAGIC * rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cy - ellipse->ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - ry));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cx - ellipse->rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cy - RSVG_ARC_MAGIC * ellipse->ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - RSVG_ARC_MAGIC * ry));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cx - ellipse->rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cy));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
 
 	g_string_append (d, " C ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cx - ellipse->rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cy + RSVG_ARC_MAGIC * ellipse->ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + RSVG_ARC_MAGIC * ry));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cx - RSVG_ARC_MAGIC * ellipse->rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - RSVG_ARC_MAGIC * rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cy + ellipse->ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + ry));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cy + ellipse->ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + ry));
 
 	g_string_append (d, " C ");
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cx + RSVG_ARC_MAGIC * ellipse->rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + RSVG_ARC_MAGIC * rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cy + ellipse->ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + ry));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cx + ellipse->rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cy + RSVG_ARC_MAGIC * ellipse->ry));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + RSVG_ARC_MAGIC * ry));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cx + ellipse->rx));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + rx));
 	g_string_append_c (d, ' ');
-	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ellipse->cy));
+	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
 
 	g_string_append (d, " Z");
 	
@@ -722,6 +730,6 @@ rsvg_new_ellipse (void)
 	ellipse->super.type = RSVG_NODE_PATH;
 	ellipse->super.draw = _rsvg_node_ellipse_draw;
 	ellipse->super.set_atts = _rsvg_node_ellipse_set_atts;
-	ellipse->cx = ellipse->cy = ellipse->rx = ellipse->ry = 0;
+	ellipse->cx = ellipse->cy = ellipse->rx = ellipse->ry = _rsvg_css_parse_length_struct ("0");
 	return &ellipse->super;
 }

@@ -48,17 +48,6 @@ typedef enum {
   RSVG_GRADIENT_REPEAT
 } RsvgGradientSpread;
 
-struct _RsvgPSCtx {
-	double x0;
-	double y0;
-	double x1;
-	double y1;
-
-	guint32 color;
-	double affine[6];
-	RsvgDrawingCtx *ctx;
-};
-
 struct _RsvgGradientStop {
 	RsvgNode super;
 	double offset;
@@ -70,8 +59,7 @@ struct _RsvgLinearGradient {
 	gboolean obj_bbox;
 	double affine[6]; /* user space to actual at time of gradient def */
 	RsvgGradientSpread spread;
-	double x1, y1;
-	double x2, y2;
+	RsvgLength x1, y1, x2, y2;
 	guint32 current_color;
 	gboolean has_current_color;
 	int hasx1 : 1;
@@ -89,9 +77,7 @@ struct _RsvgRadialGradient {
 	gboolean obj_bbox;
 	double affine[6]; /* user space to actual at time of gradient def */
 	RsvgGradientSpread spread;
-	double cx, cy;
-	double r;
-	double fx, fy;
+	RsvgLength cx, cy, r, fx, fy;
 	guint32 current_color;
 	gboolean has_current_color;
 	int hascx : 1;
@@ -111,8 +97,8 @@ struct _RsvgPattern {
 	gboolean obj_bbox;
 	gboolean vbox;
 	double affine[6]; /* user space to actual at time of gradient def */
-	double x, y, width, height;
-	double vbx, vby, vbh, vbw;
+	RsvgLength x, y, width, height;
+	gdouble vbx, vby, vbh, vbw;
 	unsigned int preserve_aspect_ratio;
 	int hasx : 1;
 	int hasy : 1;

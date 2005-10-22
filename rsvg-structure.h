@@ -55,13 +55,13 @@ struct _RsvgNodeSymbol {
  	RsvgNode super;
 	gint preserve_aspect_ratio;
 	gboolean has_vbox;
- 	double x, y, width, height;
+ 	gdouble vbx, vby, vbw, vbh;
 };
 
 struct _RsvgNodeUse {
  	RsvgNode super;
 	RsvgNode * link;
-	gint x, y, w, h;
+	RsvgLength x, y, w, h;
 };
 
 struct _RsvgNodeSvg {

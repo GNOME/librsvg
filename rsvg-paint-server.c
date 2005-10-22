@@ -214,7 +214,8 @@ rsvg_stop_set_atts (RsvgNode *self, RsvgHandle *ctx,
 			if ((value = rsvg_property_bag_lookup (atts, "offset")))
 				{
 					/* either a number [0,1] or a percentage */
-					offset = rsvg_css_parse_normalized_length (value, rsvg_dpi_percentage (ctx), 1., 0.);
+					RsvgLength length = _rsvg_css_parse_length_struct (value);
+					offset = _rsvg_css_hand_normalize_length_struct(&length, rsvg_dpi_percentage (ctx), 1., 0.);
 					
 					if (offset < 0.)
 						offset = 0.;
@@ -258,26 +259,25 @@ rsvg_linear_gradient_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag
 {
 	RsvgLinearGradient *grad = (RsvgLinearGradient *)self;
 	const char *value;
-	double font_size = rsvg_state_current_font_size(ctx);
 		
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, self);
 			if ((value = rsvg_property_bag_lookup (atts, "x1"))){
-				grad->x1 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, font_size);
+				grad->x1 = _rsvg_css_parse_length_struct (value);
 				grad->hasx1 = TRUE;
 			}				
 			if ((value = rsvg_property_bag_lookup (atts, "y1"))){
-				grad->y1 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, font_size);
+				grad->y1 = _rsvg_css_parse_length_struct (value);
 				grad->hasy1 = TRUE;
 			}				
 			if ((value = rsvg_property_bag_lookup (atts, "x2"))){
-				grad->x2 = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, font_size);
+				grad->x2 = _rsvg_css_parse_length_struct (value);
 				grad->hasx2 = TRUE;
 			}	
 			if ((value = rsvg_property_bag_lookup (atts, "y2"))){
-				grad->y2 = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, font_size);
+				grad->y2 = _rsvg_css_parse_length_struct (value);
 				grad->hasy2 = TRUE;
 			}	
 		if ((value = rsvg_property_bag_lookup (atts, "spreadMethod")))
@@ -323,10 +323,8 @@ rsvg_new_linear_gradient (void)
 	grad->super.type = RSVG_NODE_LINGRAD;
 	_rsvg_affine_identity(grad->affine);
 	grad->has_current_color = FALSE;
-	grad->x1 = 0;
-	grad->y1 = 0;
-	grad->x2 = 1.0;
-	grad->y2 = 0;
+	grad->x1 = grad->y1 = grad->y2 = _rsvg_css_parse_length_struct ("0");
+	grad->x2 = _rsvg_css_parse_length_struct ("1");
 	grad->fallback = NULL;
 	grad->obj_bbox = TRUE;
 	grad->spread = RSVG_GRADIENT_PAD;
@@ -340,34 +338,33 @@ rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag
 {
 	RsvgRadialGradient *grad = (RsvgRadialGradient *) self;
 	const char *value;
-	double font_size = rsvg_state_current_font_size(ctx);
 	
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, self);
 			if ((value = rsvg_property_bag_lookup (atts, "cx"))){
-				grad->cx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, font_size);	
+				grad->cx = _rsvg_css_parse_length_struct (value);
 				grad->hascx = TRUE;
 				if (!grad->hasfx)
 					grad->fx = grad->cx;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "cy"))){
-				grad->cy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, font_size);	
+				grad->cy = _rsvg_css_parse_length_struct (value);	
 				grad->hascy = TRUE;
 				if (!grad->hasfy)
 					grad->fy = grad->cy;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "r"))){
-				grad->r = rsvg_css_parse_normalized_length (value, rsvg_dpi_percentage (ctx), 1, font_size);	
+				grad->r = _rsvg_css_parse_length_struct (value);	
 				grad->hasr = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "fx"))){
-				grad->fx = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, font_size);	
+				grad->fx = _rsvg_css_parse_length_struct (value);	
 				grad->hasfx = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "fy"))){
-				grad->fy = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, font_size);
+				grad->fy = _rsvg_css_parse_length_struct (value);
 				grad->hasfy = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
@@ -412,11 +409,7 @@ rsvg_new_radial_gradient (void)
 	grad->obj_bbox = TRUE;
 	grad->spread = RSVG_GRADIENT_PAD;
 	grad->fallback = NULL;
-	grad->cx = 0.5;
-	grad->cy = 0.5;
-	grad->r = 0.5;
-	grad->fx = 0.5;
-	grad->fy = 0.5;
+	grad->cx = grad->cy = grad->r = grad->fx = grad->fy = _rsvg_css_parse_length_struct("0.5");
 	grad->super.set_atts = rsvg_radial_gradient_set_atts;
 	grad->hascx = grad->hascy = grad->hasfx = grad->hasfy = grad->hasr = grad->hasbbox = grad->hasspread = grad->hastransform = FALSE;
 	return &grad->super;
@@ -427,7 +420,6 @@ rsvg_pattern_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	RsvgPattern *pattern = (RsvgPattern *)self;
 	const char  *value;
-	double font_size = rsvg_state_current_font_size(ctx);
 
 	if (rsvg_property_bag_size (atts))
 		{
@@ -442,19 +434,19 @@ rsvg_pattern_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 				pattern->hasvbox = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "x"))){
-				pattern->x = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, font_size);
+				pattern->x = _rsvg_css_parse_length_struct (value);
 				pattern->hasx = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "y"))){
-				pattern->y = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, font_size);
+				pattern->y = _rsvg_css_parse_length_struct (value);
 				pattern->hasy = TRUE;			
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "width"))){
-				pattern->width = rsvg_css_parse_normalized_length (value, ctx->dpi_x, 1, font_size);
+				pattern->width = _rsvg_css_parse_length_struct (value);
 				pattern->haswidth = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "height"))){
-				pattern->height = rsvg_css_parse_normalized_length (value, ctx->dpi_y, 1, font_size);
+				pattern->height = _rsvg_css_parse_length_struct (value);
 				pattern->hasheight = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
@@ -492,10 +484,8 @@ rsvg_new_pattern (void)
 	_rsvg_node_init(&pattern->super);
 	pattern->obj_bbox = TRUE;
 	pattern->obj_cbbox = FALSE;
-	pattern->x = 0;
-	pattern->y = 0;
-	pattern->width = 0;
-	pattern->height = 0;
+	pattern->x = pattern->y = pattern->width = pattern->height = 
+		_rsvg_css_parse_length_struct("0");
 	pattern->vbx = 0;
 	pattern->vby = 0;
 	pattern->vbw = 1;

@@ -48,10 +48,6 @@ double
 rsvg_css_parse_length (const char *str, gint *in, 
 					   gint *percent, gint *em, gint *ex);
 
-double
-rsvg_css_parse_normalized_length(const char *str, gdouble pixels_per_inch,
-								 gdouble width_or_height, gdouble font_size);
-
 gboolean
 rsvg_css_param_match (const char *str, const char *param_name);
 

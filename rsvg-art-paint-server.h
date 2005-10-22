@@ -31,6 +31,18 @@
 
 G_BEGIN_DECLS
 
+
+struct _RsvgPSCtx {
+	double x0;
+	double y0;
+	double x1;
+	double y1;
+
+	guint32 color;
+	double affine[6];
+	RsvgDrawingCtx *ctx;
+};
+
 void
 rsvg_art_render_paint_server (ArtRender *ar, RsvgPaintServer *ps,
 							  const RsvgPSCtx *ctx);

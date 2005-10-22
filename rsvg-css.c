@@ -184,17 +184,26 @@ _rsvg_css_normalize_length_struct(const RsvgLength * in, RsvgDrawingCtx * ctx,
 				return in->length * ctx->vb.w;
 			if (dir == 'v')
 				return in->length * ctx->vb.h;
+			if (dir == 'o')
+				return in->length * rsvg_viewport_percentage(ctx->vb.w, ctx->vb.h);
 		}
-	else if (in->factor == 'm')
-		return in->length * rsvg_state_current(ctx)->font_size;
-	else if (in->factor == 'x')
-		return in->length * rsvg_state_current(ctx)->font_size / 2.;
+	else if (in->factor == 'm' || in->factor == 'x')
+		{
+			double font = _rsvg_css_hand_normalize_length_struct(&rsvg_state_current(ctx)->font_size,
+																 ctx->dpi_y, ctx->vb.h, 1);	
+			if (in->factor == 'm')
+				return in->length * font;
+			else
+				return in->length * font / 2.;
+		}
 	else if (in->factor == 'i')
 		{
 			if (dir == 'h')
 				return in->length * ctx->dpi_x;
 			if (dir == 'v')
 				return in->length * ctx->dpi_y;
+			if (dir == 'o')
+				return in->length * rsvg_viewport_percentage(ctx->dpi_x, ctx->dpi_y);
 		}
 	return 0;
 }
@@ -215,37 +224,6 @@ _rsvg_css_hand_normalize_length_struct(const RsvgLength * in, gdouble pixels_per
 		return in->length * pixels_per_inch;
 
 	return 0;
-}
-
-/**
- * rsvg_css_parse_normalized_length: Parse CSS2 length to a pixel value.
- * @str: Original string.
- * @pixels_per_inch: Pixels per inch
- * @normalize_to: Bounding box's width or height, as appropriate, or 0
- *
- * Parses a CSS2 length into a pixel value.
- *
- * Returns: returns the length.
- */
-double
-rsvg_css_parse_normalized_length(const char *str, gdouble pixels_per_inch,
-								 gdouble width_or_height, gdouble font_size)
-{
-	double length;
-	gint percent, em, ex, in;
-	percent = em = ex = in = FALSE;
-	
-	length = rsvg_css_parse_length (str, &in, &percent, &em, &ex);
-	if (percent)
-		return length * width_or_height;
-	else if (em)
-		return length * font_size;
-	else if (ex)
-		return (length * font_size) / 2.;
-	else if (in)
-		return length * pixels_per_inch;
-	else
-		return length;
 }
 
 gboolean
