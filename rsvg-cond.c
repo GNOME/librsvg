@@ -1,8 +1,8 @@
 /* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /*
-   rsvg.c: SAX-based renderer for SVG files into a GdkPixbuf.
+   rsvg-cond.c: Handle SVG conditionals
 
-   Copyright (C) 2004 Dom Lachowicz <cinamod@hotmail.com>
+   Copyright (C) 2004-2005 Dom Lachowicz <cinamod@hotmail.com>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as

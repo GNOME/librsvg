@@ -56,11 +56,45 @@ struct _ViewerCbInfo
 {
 	GtkWidget  * window;
 	GtkWidget  * popup_menu;
+	GtkWidget  * image; /* the image widget */
+
 	GdkPixbuf  * pixbuf;
 	GByteArray * svg_bytes;
 	GtkAccelGroup * accel_group;
 	char * base_uri;
 };
+
+static void
+zoom_image(ViewerCbInfo * info, gint width, gint height)
+{
+	struct RsvgSizeCallbackData size_data;
+	GdkPixbuf * save_pixbuf = info->pixbuf;
+
+	size_data.type = RSVG_SIZE_WH;
+	size_data.width = width;
+	size_data.height = height;
+	size_data.keep_aspect_ratio = FALSE;
+
+	info->pixbuf = rsvg_pixbuf_from_data_with_size_data (info->svg_bytes->data, info->svg_bytes->len, &size_data, info->base_uri, NULL);
+	gtk_image_set_from_pixbuf(GTK_IMAGE(info->image), info->pixbuf);
+
+	if(save_pixbuf)
+		g_object_unref(G_OBJECT(save_pixbuf));
+}
+
+static void
+zoom_in(GObject * ignored, ViewerCbInfo * info)
+{
+	if(!info->pixbuf) return;
+	zoom_image(info, gdk_pixbuf_get_width(info->pixbuf) * 1.25, gdk_pixbuf_get_height(info->pixbuf) * 1.25);
+}
+
+static void
+zoom_out(GObject * ignored, ViewerCbInfo * info)
+{
+	if(!info->pixbuf) return;
+	zoom_image(info, gdk_pixbuf_get_width(info->pixbuf) / 1.25, gdk_pixbuf_get_height(info->pixbuf) / 1.25);
+}
 
 static void
 rsvg_window_set_default_icon (GtkWindow * window, GdkPixbuf *src)
@@ -465,6 +499,20 @@ create_popup_menu (ViewerCbInfo * info)
 	gtk_widget_add_accelerator(menu_item, "activate", info->accel_group, GDK_P, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 #endif
 
+	menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_ZOOM_IN, NULL);
+	g_signal_connect (menu_item, "activate",
+					  G_CALLBACK (zoom_in), info);
+	gtk_widget_show (menu_item);
+	gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
+	gtk_widget_add_accelerator(menu_item, "activate", info->accel_group, GDK_plus, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+
+	menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_ZOOM_OUT, NULL);
+	g_signal_connect (menu_item, "activate",
+					  G_CALLBACK (zoom_out), info);
+	gtk_widget_show (menu_item);
+	gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
+	gtk_widget_add_accelerator(menu_item, "activate", info->accel_group, GDK_minus, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+
 	info->popup_menu = popup_menu;
 }
 
@@ -495,7 +543,7 @@ quit_cb (GtkWidget *win, gpointer unused)
 static void
 view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 {
-	GtkWidget *win, *img, *scroll;
+	GtkWidget *win, *scroll;
 	gint img_width, img_height, win_width, win_height;
 	GdkColor bg_color;
 
@@ -535,7 +583,7 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 	g_signal_connect(G_OBJECT(win), "delete_event", G_CALLBACK(quit_cb), NULL);	
 
 	/* create a new image */
-	img = gtk_image_new_from_pixbuf (info->pixbuf);
+	info->image = gtk_image_new_from_pixbuf (info->pixbuf);
 
 	/* pack the window with the image */
 	if ((xid > 0 && (img_width > win_width || img_height > win_height))
@@ -547,10 +595,10 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 		gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW(scroll),
 										GTK_POLICY_AUTOMATIC,
 										GTK_POLICY_AUTOMATIC);
-		gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW(scroll), img);
+		gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW(scroll), info->image);
 		gtk_container_add(GTK_CONTAINER(win), scroll);
 	} else {
-		gtk_container_add(GTK_CONTAINER(win), img);
+		gtk_container_add(GTK_CONTAINER(win), info->image);
 		gtk_window_set_default_size(GTK_WINDOW(win), img_width, img_height);
 	}
 
@@ -558,7 +606,7 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 		{
 			if (gdk_color_parse (color, &bg_color))
 				{
-					GtkWidget * parent_widget = gtk_widget_get_parent(img);
+					GtkWidget * parent_widget = gtk_widget_get_parent(info->image);
 
 					if (gdk_colormap_alloc_color (gtk_widget_get_colormap(parent_widget), &bg_color, FALSE, TRUE))
 						gtk_widget_modify_bg (parent_widget, GTK_STATE_NORMAL, &bg_color);

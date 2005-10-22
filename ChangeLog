@@ -1,3 +1,7 @@
+2005-10-22 Dom Lachowicz <cinamod@hotmail.com>
+
+	* test-display.c: Implement image zooming. Todo: rewrite this to use Cairo.
+	
 2005-10-21 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-cond.c: More robust way of getting your language
