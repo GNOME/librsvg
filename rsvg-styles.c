@@ -768,9 +768,9 @@ rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state,
 	rsvg_lookup_parse_style_pair (ctx, state, "fill-opacity", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "fill-rule", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "filter", atts);
-	rsvg_lookup_parse_style_pair (ctx, state, "font-family", atts);
-	rsvg_lookup_parse_style_pair (ctx, state, "flood-colour", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "flood-color", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "flood-opacity", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "font-family", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "font-size", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "font-stretch", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "font-style", atts);
