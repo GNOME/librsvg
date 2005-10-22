@@ -124,9 +124,7 @@ rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts
 {
 	const char *id = NULL, *klazz = NULL, *value = NULL;
 	RsvgClipPath *clip_path;
-	double font_size;
-	
-	font_size = rsvg_state_current_font_size (ctx);
+
 	clip_path = (RsvgClipPath *)self;
 	
 	if (rsvg_property_bag_size (atts))

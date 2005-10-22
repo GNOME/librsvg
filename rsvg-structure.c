@@ -325,33 +325,22 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
-				{
-					svg->has_vbox = rsvg_css_parse_vbox (value, 
-														 &svg->vbx, 
-														 &svg->vby,
-														 &svg->vbw, 
-														 &svg->vbh);
-					if (svg->has_vbox)
-						{
-							ctx->width = svg->vbw;
-							ctx->height = svg->vbh;
-						}
-				}
+				svg->has_vbox = rsvg_css_parse_vbox (value, &svg->vbx, 
+													 &svg->vby,
+													 &svg->vbw, 
+													 &svg->vbh);
+			
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
 				svg->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);			
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
 				{
 					svg->w = _rsvg_css_parse_length_struct (value);
 					svg->hasw = svg->w.length > 0;
-					if (!svg->has_vbox)
-						ctx->width = svg->w.length; 
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
 				{
 					svg->h = _rsvg_css_parse_length_struct (value);
 					svg->hash = svg->h.length > 0;
-					if (!svg->has_vbox)
-						ctx->height = svg->h.length;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
 				svg->x = _rsvg_css_parse_length_struct (value);
@@ -451,20 +440,14 @@ rsvg_node_symbol_set_atts(RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts
 					rsvg_defs_register_name (ctx->defs, value, &symbol->super);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
-				{
-					symbol->has_vbox = rsvg_css_parse_vbox (value, 
-															&symbol->vbx, 
-															&symbol->vby,
-															&symbol->vbw, 
-															&symbol->vbh);
-					if (symbol->has_vbox)
-						{
-							ctx->width = symbol->vbw;
-							ctx->height = symbol->vbh;
-						}
-				}
+				symbol->has_vbox = rsvg_css_parse_vbox (value, 
+														&symbol->vbx, 
+														&symbol->vby,
+														&symbol->vbw, 
+														&symbol->vbh);
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
-				symbol->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);			
+				symbol->preserve_aspect_ratio = 
+					rsvg_css_parse_aspect_ratio (value);			
 		}
 
 	rsvg_parse_style_attrs (ctx, self->state, "symbol", klazz, id, atts);

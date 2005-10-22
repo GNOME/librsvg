@@ -44,10 +44,6 @@ G_BEGIN_DECLS
 
 int rsvg_css_parse_aspect_ratio(const char * str);
 
-double
-rsvg_css_parse_length (const char *str, gint *in, 
-					   gint *percent, gint *em, gint *ex);
-
 gboolean
 rsvg_css_param_match (const char *str, const char *param_name);
 

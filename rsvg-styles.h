@@ -204,7 +204,6 @@ gboolean rsvg_parse_transform (double dst[6], const char *src);
 
 RsvgState * rsvg_state_parent (RsvgDrawingCtx *ctx);
 RsvgState * rsvg_state_current (RsvgDrawingCtx *ctx);
-double rsvg_state_current_font_size (RsvgHandle *ctx);
 
 void rsvg_state_pop(RsvgDrawingCtx * ctx);
 void rsvg_state_push(RsvgDrawingCtx * ctx);

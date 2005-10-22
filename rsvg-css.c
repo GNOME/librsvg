@@ -81,19 +81,9 @@ rsvg_css_parse_vbox (const char * vbox, double * x, double * y,
 }
 
 
-/**
- * rsvg_css_parse_length: Parse CSS2 length to a pixel value.
- * @str: Original string.
- * @pixels_per_inch: Pixels per inch
- * @fixed: Where to store boolean value of whether length is fixed.
- *
- * Parses a CSS2 length into a pixel value.
- *
- * Returns: returns the length.
- **/
-double
-rsvg_css_parse_length (const char *str, gint *in, 
-					   gint *percent, gint *em, gint *ex)
+static double
+rsvg_css_parse_raw_length (const char *str, gint *in, 
+						   gint *percent, gint *em, gint *ex)
 {
 	double length = 0.0;
 	char *p = NULL;
@@ -158,7 +148,7 @@ _rsvg_css_parse_length_struct(const char *str)
 	gint percent, em, ex, in;
 	percent = em = ex = in = FALSE;
 	
-	out.length = rsvg_css_parse_length (str, &in, &percent, &em, &ex);
+	out.length = rsvg_css_parse_raw_length (str, &in, &percent, &em, &ex);
 	if (percent)
 		out.factor = 'p';
 	else if (em)

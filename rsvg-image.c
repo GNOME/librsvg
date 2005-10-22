@@ -527,13 +527,10 @@ rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 static void
 rsvg_node_image_set_atts (RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	double font_size;
 	const char * klazz = NULL, * id = NULL, *value;
 	GdkPixbuf *img;
 	GError *err = NULL;
 	RsvgNodeImage *image = (RsvgNodeImage *)self;
-
-	font_size = rsvg_state_current_font_size(ctx);
 	
 	if (rsvg_property_bag_size (atts))
 		{

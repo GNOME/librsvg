@@ -41,8 +41,6 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *at
 {
 	const char *klazz = NULL, *id = NULL, *value;
 	RsvgMarker *marker;
-	double font_size;
-	font_size = rsvg_state_current_font_size (ctx);
 	marker = (RsvgMarker *)self;
 	
 	if (rsvg_property_bag_size (atts))
@@ -55,15 +53,8 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *at
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
-				{
-					marker->vbox = rsvg_css_parse_vbox (value, &marker->vbx, &marker->vby,
-														&marker->vbw, &marker->vbh);
-					if (marker->vbox)
-						{						
-							ctx->width = marker->vbw;
-							ctx->height = marker->vbh;
-						}
-				}
+				marker->vbox = rsvg_css_parse_vbox (value, &marker->vbx, &marker->vby,
+													&marker->vbw, &marker->vbh);
 			if ((value = rsvg_property_bag_lookup (atts, "refX")))
 				marker->refX = _rsvg_css_parse_length_struct (value);
 			if ((value = rsvg_property_bag_lookup (atts, "refY")))

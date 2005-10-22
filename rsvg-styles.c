@@ -518,12 +518,6 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		{
 			state->font_size =  _rsvg_css_parse_length_struct (str + arg_off);
 			state->has_font_size = TRUE;
-			if (ctx != NULL)
-				{
-					((RsvgDimensionData *)g_slist_nth(ctx->dimensions, 
-													  0)->data)->em 
-						= state->font_size.length;
-				}
 		}
 	else if (rsvg_css_param_match (str, "font-family"))
 		{
@@ -1368,16 +1362,6 @@ RsvgState *
 rsvg_state_parent (RsvgDrawingCtx *ctx)
 {
 	return g_slist_nth_data(ctx->state, 1);
-}
-
-/*aweful naming of this function, needs to be fixed later*/
-
-double
-rsvg_state_current_font_size (RsvgHandle *ctx)
-{
-	if (ctx->dimensions == NULL)
-		return 12.0;
-	return ((RsvgDimensionData *)g_slist_nth(ctx->dimensions, 0)->data)->em;
 }
 
 RsvgPropertyBag *

@@ -297,11 +297,9 @@ rsvg_start_tspan (RsvgSaxHandlerText *self, RsvgPropertyBag *atts)
 	RsvgTspan * tspan;
 	RsvgTChunk * tchunk;
 	const char * klazz = NULL, * id = NULL, *value;
-	double font_size;
 	tspan = rsvg_tspan_new();
 	z = (RsvgSaxHandlerText *)self;
 	ctx = z->ctx;
-	font_size = rsvg_state_current_font_size(ctx);
 	rsvg_state_init(&state);
 
 	if (rsvg_property_bag_size (atts))

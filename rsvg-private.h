@@ -101,12 +101,8 @@ struct RsvgHandle {
 	xmlParserCtxtPtr ctxt;
 	GError **error;
 	
-	int width;
-	int height;
 	double dpi_x;
 	double dpi_y;
-
-	GSList * dimensions;
 	
 	GString * title;
 	GString * desc;
