@@ -1,5 +1,10 @@
 2005-10-22 Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-cond.c (rsvg_cond_parse_system_language): setlocale(LC_ALL) 
+	may return "C". Evaluate $LANG first, equate "C" with "en".
+	
+2005-10-22 Dom Lachowicz <cinamod@hotmail.com>
+
 	* gtk-engine/svg-render.c: Cache RsvgHandles rather than GByteArrays
 	containing SVG data. Preparation for move to cairo-only theme engine.
 	

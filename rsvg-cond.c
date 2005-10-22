@@ -144,11 +144,16 @@ rsvg_cond_parse_system_language (const char * value)
 #endif
 
 		if(!locale)
-			locale = g_strdup (setlocale (LC_ALL, NULL));
+			locale = g_strdup (g_getenv ("LANG"));
 
 		/* catch-all */
-		if(!locale)
-			locale = g_strdup (g_getenv ("LANG"));
+		if(!locale) {
+			locale = g_strdup (setlocale (LC_ALL, NULL));
+			if(locale && strcmp(locale, "C") == 0) {
+				g_free(locale);
+				locale = g_strdup("en");
+			}
+		}
 
 		if (locale)
 			{				
