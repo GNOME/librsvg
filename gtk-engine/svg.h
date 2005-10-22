@@ -23,6 +23,7 @@
 
 #include <gtk/gtk.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
+#include <rsvg.h>
 
 /* internals */
 
@@ -130,7 +131,7 @@ typedef enum {
 struct _ThemePixbuf
 {
   gchar      *filename;
-  GByteArray *svg_bytes;
+  RsvgHandle *handle;
   gboolean    stretch;
   gint        border_left;
   gint        border_right;

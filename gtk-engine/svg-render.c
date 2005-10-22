@@ -25,10 +25,8 @@
 #include <string.h>
 
 #include "svg.h"
-#include <gdk-pixbuf/gdk-pixbuf.h>
-#include <rsvg.h>
 
-GCache *pixbuf_cache = NULL;
+static GCache *pixbuf_cache = NULL;
 
 static GdkPixbuf *
 bilinear_gradient (GdkPixbuf    *src,
@@ -444,7 +442,7 @@ theme_pixbuf_new (void)
 {
   ThemePixbuf *result = g_new0 (ThemePixbuf, 1);
   result->filename = NULL;
-  result->svg_bytes = NULL;
+  result->handle = NULL;
 
   result->stretch = TRUE;
   result->border_left = 0;
@@ -466,10 +464,10 @@ void
 theme_pixbuf_set_filename (ThemePixbuf *theme_pb,
 			   const char  *filename)
 {
-  if (theme_pb->svg_bytes)
+  if (theme_pb->handle)
     {
-      g_cache_remove (pixbuf_cache, theme_pb->svg_bytes);
-      theme_pb->svg_bytes = NULL;
+      g_cache_remove (pixbuf_cache, theme_pb->handle);
+      theme_pb->handle = NULL;
     }
 
   if (theme_pb->filename)
@@ -640,19 +638,19 @@ theme_pixbuf_set_stretch (ThemePixbuf *theme_pb,
 static void
 svg_cache_value_free(gpointer foo)
 {
-  GByteArray * arr;
+  RsvgHandle * handle;
 
-  arr = (GByteArray *)foo;
-  if(arr != NULL)
-    g_byte_array_free(arr, TRUE);
+  handle = (RsvgHandle *)foo;
+  if(handle != NULL)
+    rsvg_handle_free(handle);
 }
 
 #define SVG_BUFFER_SIZE (1024*8)
 
-static GByteArray *
+static RsvgHandle *
 svg_cache_value_new (gchar *filename)
 {
-  GByteArray *result = NULL;
+  RsvgHandle *result = NULL;
   FILE *fp;
 
   fp = fopen(filename, "rb");
@@ -661,11 +659,12 @@ svg_cache_value_new (gchar *filename)
       size_t nread;
       unsigned char buf[SVG_BUFFER_SIZE];
 
-      result = g_byte_array_new();
+      result = rsvg_handle_new();
       while((nread = fread(buf, 1, sizeof(buf), fp)) > 0)
-	g_byte_array_append(result, buf, nread);
+	rsvg_handle_write(result, buf, nread, NULL);
 
       fclose(fp);
+      rsvg_handle_close(result, NULL);
     }
   else
     {
@@ -689,17 +688,11 @@ static void set_size_fn(gint *width, gint *height, gpointer foo)
 }
 
 static GdkPixbuf *
-get_pixbuf(GByteArray * arr, gint width, gint height)
+get_pixbuf(RsvgHandle * handle, gint width, gint height)
 {
-  RsvgHandle * handle;
   GdkPixbuf * result;
 
-  if(!arr || !arr->len)
-    return NULL;
-
-  handle = rsvg_handle_new();
-
-  if (!handle)
+  if(!handle)
     return NULL;
 
   if(width > 0 && height > 0)
@@ -712,11 +705,7 @@ get_pixbuf(GByteArray * arr, gint width, gint height)
       rsvg_handle_set_size_callback(handle, set_size_fn, &info, NULL);
     }
 
-  rsvg_handle_write(handle, arr->data, arr->len, NULL);
-  rsvg_handle_close(handle, NULL);
   result = rsvg_handle_get_pixbuf(handle);
-
-  rsvg_handle_free(handle);
 
   return result;
 }
@@ -726,7 +715,7 @@ theme_pixbuf_get_pixbuf (ThemePixbuf *theme_pb, gint width, gint height)
 {
   GdkPixbuf *result = NULL;
 
-  if (!theme_pb->svg_bytes)
+  if (!theme_pb->handle)
     {
       if (!pixbuf_cache)
 	pixbuf_cache = g_cache_new ((GCacheNewFunc)svg_cache_value_new,
@@ -735,10 +724,10 @@ theme_pixbuf_get_pixbuf (ThemePixbuf *theme_pb, gint width, gint height)
 				    (GCacheDestroyFunc)g_free,
 				    g_str_hash, g_direct_hash, g_str_equal);
       
-      theme_pb->svg_bytes = g_cache_insert (pixbuf_cache, theme_pb->filename);
+      theme_pb->handle = g_cache_insert (pixbuf_cache, theme_pb->filename);
     }
   
-  result = get_pixbuf(theme_pb->svg_bytes, width, height);
+  result = get_pixbuf(theme_pb->handle, width, height);
   if(result)
     theme_pixbuf_compute_hints(theme_pb, result);
   
