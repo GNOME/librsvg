@@ -22,7 +22,6 @@ svg_loader_la_SOURCES = io-svg.c
 svg_loader_la_LDFLAGS = -avoid-version -module $(no_undefined)
 svg_loader_la_LIBADD = \
 	$(top_builddir)/librsvg-2.la	\
-	$(top_builddir)/librsvg-2-libart.la \
 	$(LIBRSVG_LIBS) 	\
 	$(LIBGNOME_VFS_LIBS)		\
 	$(LIBGSF_LIBS) $(LIBCROCO_LIBS)

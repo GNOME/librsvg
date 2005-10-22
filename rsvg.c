@@ -40,83 +40,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-#if defined(WITH_LIBART_BACKEND)
-
-#include "rsvg-bpath-util.h"
-#include "rsvg-path.h"
-#include "rsvg-paint-server.h"
-
-#include "rsvg-art-render.h"
-#include "rsvg-art-draw.h"
-
-static RsvgDrawingCtx * 
-rsvg_new_drawing_ctx(RsvgHandle * handle)
-{
-	RsvgDimensionData data;
-	RsvgDrawingCtx * draw;
-	RsvgState * state;
-	double affine[6];
-
-	rsvg_handle_get_dimensions(handle, &data);
-	if(data.width == 0 || data.height == 0)
-		return NULL;
-
-	draw = g_new(RsvgDrawingCtx, 1);
-
-	draw->render = (RsvgRender *) rsvg_art_render_new (data.width, data.height);
-
-	if(!draw->render)
-		return NULL;	
-
-	draw->state = NULL;
-
-	/* should this be G_ALLOC_ONLY? */
-	draw->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
-
-	draw->defs = handle->defs;
-	draw->base_uri = g_strdup(handle->base_uri);
-	draw->dpi_x = handle->dpi_x;
-	draw->dpi_y = handle->dpi_y;
-	draw->vb.w = data.w;
-	draw->vb.h = data.h;
-	draw->vb_stack = NULL;
-	draw->pango_context = NULL;
-
-	rsvg_state_push(draw);
-
-	state = rsvg_state_current(draw);
-	affine[0] = data.width / data.em;
-	affine[1] = 0;
-	affine[2] = 0;
-	affine[3] = data.height / data.ex;
-	affine[4] = 0;
-	affine[5] = 0;
-
-	_rsvg_affine_multiply(state->affine, affine, 
-						  state->affine);
-	
-	return draw;
-}
-
-static GdkPixbuf * _rsvg_handle_get_pixbuf (RsvgHandle *handle)
-{
-	GdkPixbuf * output = NULL;
-	RsvgDrawingCtx * draw;
-
-	draw = rsvg_new_drawing_ctx(handle);
-	if (!draw)
-		return NULL;
-	rsvg_state_push(draw);
-	rsvg_node_draw((RsvgNode *)handle->treebase, draw, 0);
-	rsvg_state_pop(draw);
-	output = ((RsvgArtRender *)draw->render)->pixbuf;
-	rsvg_drawing_ctx_free(draw);
-	
-	return output;
-}
-
-#elif defined(WITH_CAIRO_BACKEND)
-
 #include "rsvg-cairo.h"
 #include "rsvg-cairo-draw.h"
 
@@ -126,7 +49,20 @@ rsvg_pixmap_destroy (gchar *pixels, gpointer data)
   g_free (pixels);
 }
 
-static GdkPixbuf * _rsvg_handle_get_pixbuf (RsvgHandle *handle)
+/**
+ * rsvg_handle_get_pixbuf:
+ * @handle: An #RsvgHandle
+ *
+ * Returns the pixbuf loaded by #handle.  The pixbuf returned will be reffed, so
+ * the caller of this function must assume that ref.  If insufficient data has
+ * been read to create the pixbuf, or an error occurred in loading, then %NULL
+ * will be returned.  Note that the pixbuf may not be complete until
+ * @rsvg_handle_close has been called.
+ *
+ * Returns: the pixbuf loaded by #handle, or %NULL.
+ **/
+GdkPixbuf *
+rsvg_handle_get_pixbuf (RsvgHandle *handle)
 {
 	RsvgDimensionData dimensions;
 	GdkPixbuf *output = NULL;
@@ -134,6 +70,11 @@ static GdkPixbuf * _rsvg_handle_get_pixbuf (RsvgHandle *handle)
 	cairo_surface_t *surface;
 	cairo_t *cr;
 	int rowstride;
+
+	g_return_val_if_fail (handle != NULL, NULL);
+
+	if (!handle->finished)
+		return NULL;
 
 	rsvg_handle_get_dimensions (handle, &dimensions);
 	rowstride = dimensions.width * 4;
@@ -165,42 +106,4 @@ static GdkPixbuf * _rsvg_handle_get_pixbuf (RsvgHandle *handle)
 	cairo_surface_destroy (surface);
 
 	return output;
-}
-
-#else
-
-#ifdef __GNUC__
-#warning "No backend defined. Needs either Cairo or Libart in order to work."
-#endif
-
-static GdkPixbuf * _rsvg_handle_get_pixbuf (RsvgHandle *handle)
-{
-	g_warning ("No backend defined. Needs either Cairo or Libart in order to work.");
-	return NULL;
-}
-
-
-#endif
-
-/**
- * rsvg_handle_get_pixbuf:
- * @handle: An #RsvgHandle
- *
- * Returns the pixbuf loaded by #handle.  The pixbuf returned will be reffed, so
- * the caller of this function must assume that ref.  If insufficient data has
- * been read to create the pixbuf, or an error occurred in loading, then %NULL
- * will be returned.  Note that the pixbuf may not be complete until
- * @rsvg_handle_close has been called.
- *
- * Returns: the pixbuf loaded by #handle, or %NULL.
- **/
-GdkPixbuf *
-rsvg_handle_get_pixbuf (RsvgHandle *handle)
-{
-	g_return_val_if_fail (handle != NULL, NULL);
-
-	if (!handle->finished)
-		return NULL;
-
-	return _rsvg_handle_get_pixbuf (handle);
 }

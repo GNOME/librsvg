@@ -5,15 +5,13 @@ dnl ===========================================================================
 FONTCONFIG_REQUIRED=1.0.1	dnl Same as in Pango, ???
 GDK_PIXBUF_REQUIRED=1.3.7
 GLIB_REQUIRED=2.0.0
-LIBART_REQUIRED=2.3.10
 LIBXML_REQUIRED=2.4.7
-CAIRO_REQUIRED=0.6.0
+CAIRO_REQUIRED=1.0.2
 PANGOFT2_REQUIRED=1.2.0
 POPT_REQUIRED=1.5
 
 AC_SUBST(GDK_PIXBUF_REQUIRED)
 AC_SUBST(GLIB_REQUIRED)
-AC_SUBST(LIBART_REQUIRED)
 AC_SUBST(CAIRO_REQUIRED)
 AC_SUBST(LIBXML_REQUIRED)
 AC_SUBST(PANGOFT2_REQUIRED)
@@ -23,7 +21,7 @@ dnl ===========================================================================
 
 LIBRSVG_MAJOR_VERSION=2
 LIBRSVG_MINOR_VERSION=13
-LIBRSVG_MICRO_VERSION=0
+LIBRSVG_MICRO_VERSION=1
 AC_SUBST(LIBRSVG_MAJOR_VERSION)
 AC_SUBST(LIBRSVG_MINOR_VERSION)
 AC_SUBST(LIBRSVG_MICRO_VERSION)
@@ -107,6 +105,7 @@ PKG_CHECK_MODULES(LIBRSVG, \
 	glib-2.0 >= $GLIB_REQUIRED \
 	libxml-2.0 >= $LIBXML_REQUIRED \
 	pangoft2 >= $PANGOFT2_REQUIRED \
+	cairo >= $CAIRO_REQUIRED \
 	fontconfig >= $FONTCONFIG_REQUIRED)
 AC_SUBST(LIBRSVG_LIBS)
 AC_SUBST(LIBRSVG_CFLAGS)
@@ -117,59 +116,6 @@ AC_CHECK_LIB(popt, poptParseArgvString, [POPT_LIBS="-lpopt"],
 AC_MSG_ERROR([popt 1.5 or newer is required to build librsvg.
 You can download the latest version from ftp://ftp.rpm.org/pub/rpm/dist/rpm-4.0.x/]))
 AC_SUBST(POPT_LIBS)
-
-dnl ===========================================================================
-
-LIBART_CFLAGS=""
-LIBART_LIBS=""
-
-# disable the libart backend until it compiles
-test_art=false
-AC_ARG_WITH(art,[  --with-art  Build the libart backend],[
-	if test "x$withval" = "xyes"; then
-		test_art=true
-	fi
-])
-if test "x$test_art" = "xtrue"; then
-	PKG_CHECK_MODULES(LIBART, libart-2.0 >= $LIBART_REQUIRED, test_art=true, test_art=false)
-fi
-
-if test "x$test_art" = "xtrue"; then
-	LIBART_CFLAGS="$LIBART_CFLAGS"
-	build_compat="true"
-else
-	AC_MSG_WARN([libart backend disabled (Use --with-art to enable)])
-fi
-
-AC_SUBST(LIBART_CFLAGS)
-AC_SUBST(LIBART_LIBS)
-AM_CONDITIONAL(HAVE_ART, test "x$test_art" = "xtrue")
-
-dnl ===========================================================================
-
-LIBCAIRO_CFLAGS=""
-LIBCAIRO_LIBS=""
-
-test_cairo=true
-AC_ARG_WITH(cairo,[  --with-cairo  Build the cairo backend],[
-	if test "x$withval" = "xno"; then
-		test_cairo=false
-	fi
-])
-if test "x$test_cairo" = "xtrue"; then
-	PKG_CHECK_MODULES(CAIRO, cairo >= $CAIRO_REQUIRED, test_cairo=true, test_cairo=false)
-fi
-
-if test "x$test_cairo" = "xtrue"; then
-	LIBCAIRO_CFLAGS="$LIBCAIRO_CFLAGS"
-	build_compat="true"
-else
-	AC_MSG_WARN([cairo backend disabled (Use --with-cairo to enable)])
-fi
-
-AC_SUBST(LIBCAIRO_CFLAGS)
-AC_SUBST(LIBCAIRO_LIBS)
-AM_CONDITIONAL(HAVE_CAIRO, test "x$test_cairo" = "xtrue")
 
 dnl ===========================================================================
 
@@ -469,24 +415,6 @@ GLIB_LC_MESSAGES
 
 dnl ===========================================================================
 
-LIBRSVG_2_BACKEND_LIBADD=
-LIBRSVG_2_BACKEND_CFLAGS=
-build_librsvg_2_la=no
-if test x$test_cairo = xtrue; then
-   build_librsvg_2_la=yes
-   LIBRSVG_2_BACKEND_LIBADD=librsvg-2-cairo.la
-   AC_DEFINE(WITH_CAIRO_BACKEND, 1, "Build the cairo backend")
-elif test x$test_art = xtrue; then
-   build_librsvg_2_la=yes
-   LIBRSVG_2_BACKEND_LIBADD=librsvg-2-libart.la
-   AC_DEFINE(WITH_LIBART_BACKEND, 1, "Build the libart backend")
-fi
-
-AC_SUBST(LIBRSVG_2_BACKEND_LIBADD)
-AM_CONDITIONAL(BUILD_COMPAT, test x$build_compat = xtrue)
-
-dnl ===========================================================================
-
 AC_OUTPUT([
 librsvg.spec
 librsvg-features.h
@@ -518,8 +446,6 @@ librsvg-$LIBRSVG_VERSION
 	Use Gnome VFS:                  ${test_gnome_vfs}
 	Use libcroco for css parsing:   ${test_croco}
 	Build documentation:            ${enable_gtk_doc}
-	Build libart backend:		${test_art}
-	Build cairo backend:		${test_cairo}
 "
 
 if test "x$croco_warning" != "x"; then

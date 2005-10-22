@@ -1,5 +1,14 @@
 2005-10-22 Dom Lachowicz <cinamod@hotmail.com>
 
+	* configure.in: Rip out libart backend; require the cairo backend, and require cairo >= 1.0.2
+	* Makefile.am: re-enable the gtk-engine and gdk-pixbuf-loader. Ditto, library re-org
+	* librsvg-2.0.pc.in: Ditto
+	* librsvg.spec.in: Ditto
+	* rsvg.c: Ditto
+	* gtk-engine/Makefile.am: Ditto
+	
+2005-10-22 Dom Lachowicz <cinamod@hotmail.com>
+
 	* test-display.c: Implement image zooming. Todo: rewrite this to use Cairo.
 	
 2005-10-21 Dom Lachowicz <cinamod@hotmail.com>

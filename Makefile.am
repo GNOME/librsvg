@@ -4,26 +4,10 @@ else
 target_rsvg_view =
 endif
 
-SUBDIRS = . doc data
-lib_LTLIBRARIES = librsvg-2-base.la
-bin_PROGRAMS =
-noinst_PROGRAMS =
-
-if HAVE_ART
-SUBDIRS += gtk-engine gdk-pixbuf-loader moz-plugin
-lib_LTLIBRARIES += librsvg-2-libart.la
-endif
-
-if HAVE_CAIRO
-lib_LTLIBRARIES += librsvg-2-cairo.la
-bin_PROGRAMS += rsvg-cairo
-endif
-
-if BUILD_COMPAT
-lib_LTLIBRARIES += librsvg-2.la
-bin_PROGRAMS += rsvg $(target_rsvg_view)
-noinst_PROGRAMS += test-performance
-endif
+SUBDIRS = . gdk-pixbuf-loader gtk-engine data doc
+lib_LTLIBRARIES = librsvg-2.la
+bin_PROGRAMS = rsvg $(target_rsvg_view)
+noinst_PROGRAMS = test-performance
 
 man_MANS = rsvg.1
 
@@ -33,13 +17,14 @@ libm = -lm
 endif
 
 headers = \
-	rsvg.h
+	rsvg.h	\
+	rsvg-cairo.h
 
 enum_sources = \
 	librsvg-enum-types.h	\
 	librsvg-enum-types.c
 
-librsvg_2_base_la_SOURCES = 		\
+librsvg_2_la_SOURCES = 		\
 	rsvg-affine.c		\
 	librsvg-features.c 	\
 	rsvg-bpath-util.c 	\
@@ -72,42 +57,18 @@ librsvg_2_base_la_SOURCES = 		\
 	rsvg-text.h		\
 	rsvg-cond.c		\
 	rsvg-base.c		\
-	librsvg-enum-types.c
-
-librsvg_2_base_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
-librsvg_2_base_la_LIBADD = $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS)
-
-librsvg_2_libart_la_SOURCES =	\
-	rsvg-art-composite.c	\
-	rsvg-art-composite.h	\
-	rsvg-art-draw.c		\
-	rsvg-art-draw.h		\
-	rsvg-art-mask.c		\
-	rsvg-art-mask.h		\
-	rsvg-art-paint-server.c	\
-	rsvg-art-paint-server.h	\
-	rsvg-art-render.c	\
-	rsvg-art-render.h
-librsvg_2_libart_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
-librsvg_2_libart_la_LIBADD = librsvg-2-base.la $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS) $(LIBART_LIBS)
-
-librsvg_2_cairo_la_SOURCES =	\
-	rsvg-cairo.h		\
+	librsvg-enum-types.c	\
 	rsvg-cairo-draw.c	\
 	rsvg-cairo-draw.h	\
 	rsvg-cairo-render.c	\
 	rsvg-cairo-render.h	\
 	rsvg-cairo-clip.h	\
-	rsvg-cairo-clip.c
-librsvg_2_cairo_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
-librsvg_2_cairo_la_LIBADD = librsvg-2-base.la $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS) $(POPT_LIBS) $(CAIRO_LIBS)
-
-librsvg_2_la_SOURCES =	\
-	rsvg.c		\
+	rsvg-cairo-clip.c	\
+	rsvg.c			\
 	rsvg-file-util.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined -export-dynamic
-librsvg_2_la_LIBADD = librsvg-2-base.la $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS) $(LIBRSVG_2_BACKEND_LIBADD)
+librsvg_2_la_LIBADD = $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS)
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = 	\
@@ -125,9 +86,7 @@ INCLUDES =				\
 	$(GTK_CFLAGS)			\
 	$(GDK_X11_CFLAGS)		\
 	-DG_LOG_DOMAIN=\"librsvg\" 	\
-	-DLIBRSVG_DATADIR="\"$(datadir)\""\
-	$(LIBART_CFLAGS)		\
-	$(CAIRO_CFLAGS)
+	-DLIBRSVG_DATADIR="\"$(datadir)\""
 
 DEPS = $(top_builddir)/librsvg-2.la
 LDADDS =				\
@@ -142,10 +101,6 @@ rsvg_SOURCES=test-rsvg.c
 rsvg_LDFLAGS =
 rsvg_DEPENDENCIES = $(DEPS)
 rsvg_LDADD = $(LDADDS) $(libm)
-
-rsvg_cairo_SOURCES=rsvg-cairo.c
-rsvg_cairo_LDFLAGS =
-rsvg_cairo_LDADD = $(librsvg_2_cairo_la_LIBADD) $(top_builddir)/librsvg-2-cairo.la
 
 test_performance_SOURCES=test-performance.c
 test_performance_LDFLAGS =

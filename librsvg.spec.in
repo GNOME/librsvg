@@ -1,7 +1,7 @@
 %define __libtoolize :
 %define __spec_install_post /usr/lib/rpm/brp-compress
 Name:             librsvg2
-Summary:          An SVG library based on libart.
+Summary:          An SVG library based on cairo.
 Version:          @VERSION@
 Release:          2
 License:          LGPL
@@ -11,18 +11,18 @@ URL:		  http://librsvg.sourceforge.net/
 BuildRoot:        %{_tmppath}/%{name}-%{version}-root
 BuildRequires:    pkgconfig >= 0.8
 Requires:         glib2 >= @GLIB_REQUIRED@
-Requires:         libart_lgpl >= @LIBART_REQUIRED@
+Requires:         cairo >= @CAIRO_REQUIRED@
 Requires:         libxml2 >= @LIBXML_REQUIRED@
 Requires:         pango >= @PANGOFT2_REQUIRED@
 Requires:	  libgsf >= 1.6.0
 BuildRequires:    glib2-devel >= @GLIB_REQUIRED@
-BuildRequires:    libart_lgpl-devel >= @LIBART_REQUIRED@
+BuildRequires:    cairo-devel >= @CAIRO_REQUIRED@
 BuildRequires:    libxml2-devel >= @LIBXML_REQUIRED@
 BuildRequires:    pango-devel >= @PANGOFT2_REQUIRED@
 BuildRequires:	  libgsf >= 1.6.0
 
 %description
-An SVG library based on libart.
+An SVG library based on cairo.
 
 
 %package devel
@@ -32,8 +32,8 @@ Requires:         %{name} = %{version}
 Requires:         pkgconfig >= 0.8
 Requires:         glib2 >= @GLIB_REQUIRED@
 Requires:         glib2-devel >= @GLIB_REQUIRED@
-Requires:         libart_lgpl >= @LIBART_REQUIRED@
-Requires:         libart_lgpl-devel >= @LIBART_REQUIRED@
+Requires:         cairo >= @CAIRO_REQUIRED@
+Requires:         cairo-devel >= @CAIRO_REQUIRED@
 Requires:         libxml2 >= @LIBXML_REQUIRED@
 Requires:         libxml2-devel >= @LIBXML_REQUIRED@
 Requires:         pango >= @PANGOFT2_REQUIRED@
