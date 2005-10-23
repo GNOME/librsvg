@@ -142,7 +142,7 @@ rsvg_css_parse_raw_length (const char *str, gint *in,
 }
 
 RsvgLength
-_rsvg_css_parse_length_struct(const char *str)
+_rsvg_css_parse_length(const char *str)
 {
 	RsvgLength out;
 	gint percent, em, ex, in;
@@ -163,7 +163,7 @@ _rsvg_css_parse_length_struct(const char *str)
 }
 
 double
-_rsvg_css_normalize_length_struct(const RsvgLength * in, RsvgDrawingCtx * ctx, 
+_rsvg_css_normalize_length(const RsvgLength * in, RsvgDrawingCtx * ctx, 
 								  char dir)
 {
 	if (in->factor == '\0')
@@ -179,7 +179,7 @@ _rsvg_css_normalize_length_struct(const RsvgLength * in, RsvgDrawingCtx * ctx,
 		}
 	else if (in->factor == 'm' || in->factor == 'x')
 		{
-			double font = _rsvg_css_hand_normalize_length_struct(&rsvg_state_current(ctx)->font_size,
+			double font = _rsvg_css_hand_normalize_length(&rsvg_state_current(ctx)->font_size,
 																 ctx->dpi_y, ctx->vb.h, 1);	
 			if (in->factor == 'm')
 				return in->length * font;
@@ -199,7 +199,7 @@ _rsvg_css_normalize_length_struct(const RsvgLength * in, RsvgDrawingCtx * ctx,
 }
 
 double
-_rsvg_css_hand_normalize_length_struct(const RsvgLength * in, gdouble pixels_per_inch,
+_rsvg_css_hand_normalize_length(const RsvgLength * in, gdouble pixels_per_inch,
 									   gdouble width_or_height, gdouble font_size)
 {
 	if (in->factor == '\0')

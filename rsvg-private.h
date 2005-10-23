@@ -208,7 +208,9 @@ typedef enum {
 	RSVG_NODE_SYMBOL,
 	RSVG_NODE_CLIP_PATH,
 	RSVG_NODE_STOP,
-	RSVG_NODE_CHARS
+	RSVG_NODE_CHARS,
+	RSVG_NODE_TSPAN,
+	RSVG_NODE_TREF
 } RsvgNodeType;
 
 struct _RsvgNode {
@@ -338,14 +340,14 @@ void rsvg_bbox_insert(RsvgBbox * dst, RsvgBbox * src);
 void rsvg_bbox_clip(RsvgBbox * dst, RsvgBbox * src);
 
 double
-_rsvg_css_normalize_length_struct(const RsvgLength * in, RsvgDrawingCtx * ctx, 
+_rsvg_css_normalize_length(const RsvgLength * in, RsvgDrawingCtx * ctx, 
 								  char dir);
 double
-_rsvg_css_hand_normalize_length_struct(const RsvgLength * in, gdouble pixels_per_inch,
+_rsvg_css_hand_normalize_length(const RsvgLength * in, gdouble pixels_per_inch,
 									   gdouble width_or_height, gdouble font_size);
 
 RsvgLength
-_rsvg_css_parse_length_struct(const char *str);
+_rsvg_css_parse_length(const char *str);
 
 void _rsvg_push_view_box(RsvgDrawingCtx *ctx, double w, double h);
 void _rsvg_pop_view_box(RsvgDrawingCtx *ctx);

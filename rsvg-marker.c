@@ -56,13 +56,13 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *at
 				marker->vbox = rsvg_css_parse_vbox (value, &marker->vbx, &marker->vby,
 													&marker->vbw, &marker->vbh);
 			if ((value = rsvg_property_bag_lookup (atts, "refX")))
-				marker->refX = _rsvg_css_parse_length_struct (value);
+				marker->refX = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "refY")))
-				marker->refY = _rsvg_css_parse_length_struct (value);
+				marker->refY = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "markerWidth")))
-				marker->width = _rsvg_css_parse_length_struct (value);
+				marker->width = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "markerHeight")))
-				marker->height = _rsvg_css_parse_length_struct (value);
+				marker->height = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "orient"))) {
 				if (!strcmp (value, "auto"))
 					marker->orientAuto = TRUE;
@@ -90,8 +90,8 @@ rsvg_new_marker (void)
 	marker->orient = 0;
 	marker->orientAuto = FALSE;
 	marker->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-	marker->refX = marker->refY = _rsvg_css_parse_length_struct ("0");
-	marker->width = marker->height = _rsvg_css_parse_length_struct ("1");
+	marker->refX = marker->refY = _rsvg_css_parse_length ("0");
+	marker->width = marker->height = _rsvg_css_parse_length ("1");
 	marker->bbox = TRUE;
 	marker->vbox = FALSE;
 	marker->super.type = RSVG_NODE_MARKER;
@@ -126,8 +126,8 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 	if (self->vbox) {
 		
 		double w, h, x, y;
-		w = _rsvg_css_normalize_length_struct(&self->width, ctx, 'h');
-		h = _rsvg_css_normalize_length_struct(&self->height, ctx, 'v');
+		w = _rsvg_css_normalize_length(&self->width, ctx, 'h');
+		h = _rsvg_css_normalize_length(&self->height, ctx, 'v');
 		x = 0;
 		y = 0;
 
@@ -148,8 +148,8 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 		_rsvg_push_view_box(ctx, self->vbw, self->vbh);
 	}
 	_rsvg_affine_translate(taffine, 
-						   -_rsvg_css_normalize_length_struct(&self->refX, ctx, 'h'), 
-						   -_rsvg_css_normalize_length_struct(&self->refY, ctx, 'v'));
+						   -_rsvg_css_normalize_length(&self->refX, ctx, 'h'), 
+						   -_rsvg_css_normalize_length(&self->refY, ctx, 'v'));
 	_rsvg_affine_multiply(affine, taffine, affine);
 
 
@@ -172,8 +172,8 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 		rsvg_add_clipping_rect(ctx, self->vbx, self->vby, self->vbw, self->vbh);
 	else
 		rsvg_add_clipping_rect(ctx, 0, 0, 
-							   _rsvg_css_normalize_length_struct(&self->width, ctx, 'h'), 
-							   _rsvg_css_normalize_length_struct(&self->height, ctx, 'v'));
+							   _rsvg_css_normalize_length(&self->width, ctx, 'h'), 
+							   _rsvg_css_normalize_length(&self->height, ctx, 'v'));
 
 	for (i = 0; i < self->super.children->len; i++)
 		{
@@ -238,7 +238,7 @@ rsvg_render_markers(const RsvgBpathDef * bpath_def, RsvgDrawingCtx *ctx)
 
 	state = rsvg_state_current(ctx);
 	
-	linewidth = _rsvg_css_normalize_length_struct(&state->stroke_width, ctx, 'o');
+	linewidth = _rsvg_css_normalize_length(&state->stroke_width, ctx, 'o');
 	startmarker = (RsvgMarker *)state->startMarker;
 	middlemarker = (RsvgMarker *)state->middleMarker;
 	endmarker = (RsvgMarker *)state->endMarker;

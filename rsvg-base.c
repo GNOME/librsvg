@@ -265,7 +265,12 @@ rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 		newnode = rsvg_new_image();
 	else if (!strcmp ((char *)name, "subImage"))
 		newnode = rsvg_new_group();
-
+	else if (!strcmp ((char *)name, "text"))
+		newnode = rsvg_new_text();
+	else if (!strcmp ((char *)name, "tspan"))
+		newnode = rsvg_new_tspan();
+	else if (!strcmp ((char *)name, "tref"))
+		newnode = rsvg_new_tref();
 	if (newnode)
 		{
 			rsvg_node_set_atts(newnode, ctx, atts);
@@ -544,9 +549,7 @@ rsvg_start_element (void *data, const xmlChar *name,
 				if (*tempname == ':')
 					name = tempname + 1;
 			
-			if (!strcmp ((char *)name, "text"))
-				rsvg_start_text (ctx, bag);
-			else if (!strcmp ((char *)name, "style"))
+			if (!strcmp ((char *)name, "style"))
 				rsvg_start_style (ctx, bag);
 			else if (!strcmp ((char *)name, "title"))
 				rsvg_start_title (ctx, bag);
@@ -603,6 +606,9 @@ rsvg_end_element (void *data, const xmlChar *name)
 				!strcmp ((char *)name, "path") ||
 				!strcmp ((char *)name, "g") ||
 				!strcmp ((char *)name, "pattern") ||
+				!strcmp ((char *)name, "text") ||
+				!strcmp ((char *)name, "tspan") ||
+				!strcmp ((char *)name, "tref") ||
 				!strcmp ((char *)name, "linearGradient") ||
 				!strcmp ((char *)name, "radialGradient") ||
 				!strcmp ((char *)name, "conicalGradient") ||
@@ -616,14 +622,12 @@ rsvg_end_element (void *data, const xmlChar *name)
 		}
 }
 
-#if 0
 static void _rsvg_node_chars_free(RsvgNode * node)
 {
 	RsvgNodeChars * self = (RsvgNodeChars *)node;
 	g_string_free(self->contents, TRUE);
 	_rsvg_node_free(node);
 }
-#endif
 
 static void
 rsvg_characters (void *data, const xmlChar *ch, int len)
@@ -636,7 +640,6 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 			return;
 		}
 
-#if 0
 	char * utf8 = NULL;
 	RsvgNodeChars * self;
 	GString * string;
@@ -662,7 +665,6 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 	rsvg_defs_register_memory(ctx->defs, (RsvgNode *)self);
 	if (ctx->currentnode)
 		rsvg_node_group_pack(ctx->currentnode, (RsvgNode *)self);
-#endif
 }
 
 #if LIBXML_VERSION >= 20621
@@ -1180,9 +1182,9 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
 					else
 						bbox = _rsvg_find_bbox(handle);
 				}
-			output->width  = _rsvg_css_hand_normalize_length_struct(&sself->w, handle->dpi_x, 
+			output->width  = _rsvg_css_hand_normalize_length(&sself->w, handle->dpi_x, 
 																	bbox.w + bbox.x * 2, 12);
-			output->height = _rsvg_css_hand_normalize_length_struct(&sself->h, handle->dpi_y, 
+			output->height = _rsvg_css_hand_normalize_length(&sself->h, handle->dpi_y, 
 																	bbox.h + bbox.y * 2, 12);
 		}
 	else if (sself->has_vbox && sself->vbw > 0. && sself->vbh > 0.)

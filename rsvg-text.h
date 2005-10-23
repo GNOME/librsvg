@@ -31,15 +31,10 @@
 
 G_BEGIN_DECLS
 
-void rsvg_start_text (RsvgHandle *ctx, RsvgPropertyBag *atts);
+RsvgNode * rsvg_new_text (void);
+RsvgNode * rsvg_new_tspan (void);
+RsvgNode * rsvg_new_tref (void);
 char * rsvg_make_valid_utf8 (const char *str);
-
-typedef struct _RsvgNodeText RsvgNodeText;
-
-struct _RsvgNodeText {
-	RsvgNode super;
-	void * chunk;
-};
 
 G_END_DECLS
 

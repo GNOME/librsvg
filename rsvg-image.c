@@ -502,10 +502,10 @@ rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	RsvgNodeImage *z = (RsvgNodeImage *)self;
 	unsigned int aspect_ratio = z->preserve_aspect_ratio;
 	GdkPixbuf *img = z->img;
-	gdouble x = _rsvg_css_normalize_length_struct(&z->x, ctx, 'h');
-	gdouble y = _rsvg_css_normalize_length_struct(&z->y, ctx, 'v');
-	gdouble w = _rsvg_css_normalize_length_struct(&z->w, ctx, 'h');
-	gdouble h = _rsvg_css_normalize_length_struct(&z->h, ctx, 'v');
+	gdouble x = _rsvg_css_normalize_length(&z->x, ctx, 'h');
+	gdouble y = _rsvg_css_normalize_length(&z->y, ctx, 'v');
+	gdouble w = _rsvg_css_normalize_length(&z->w, ctx, 'h');
+	gdouble h = _rsvg_css_normalize_length(&z->h, ctx, 'v');
 
 	rsvg_state_reinherit_top(ctx, z->super.state, dominate);
 
@@ -535,13 +535,13 @@ rsvg_node_image_set_atts (RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				image->x = _rsvg_css_parse_length_struct(value);
+				image->x = _rsvg_css_parse_length(value);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				image->y = _rsvg_css_parse_length_struct(value);
+				image->y = _rsvg_css_parse_length(value);
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				image->w = _rsvg_css_parse_length_struct(value);
+				image->w = _rsvg_css_parse_length(value);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				image->h = _rsvg_css_parse_length_struct(value);
+				image->h = _rsvg_css_parse_length(value);
 			/* path is used by some older adobe illustrator versions */
 			if ((value = rsvg_property_bag_lookup (atts, "path")) || (value = rsvg_property_bag_lookup (atts, "xlink:href")))
 				{
@@ -581,7 +581,7 @@ rsvg_new_image (void)
 	image = g_new (RsvgNodeImage, 1);
 	image->img = NULL;
 	image->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-	image->x = image->y = image->w = image->h = _rsvg_css_parse_length_struct("0");
+	image->x = image->y = image->w = image->h = _rsvg_css_parse_length("0");
 	image->super.state = g_new(RsvgState, 1);
 	rsvg_state_init(image->super.state);
 	image->super.type = RSVG_NODE_PATH;

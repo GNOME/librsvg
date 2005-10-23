@@ -160,10 +160,10 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	RsvgState * state;
 	double affine[6];
 	double x, y, w, h;
-	x = _rsvg_css_normalize_length_struct(&use->x, ctx, 'h');
-	y = _rsvg_css_normalize_length_struct(&use->y, ctx, 'v');
-	w = _rsvg_css_normalize_length_struct(&use->w, ctx, 'h');
-	h = _rsvg_css_normalize_length_struct(&use->h, ctx, 'v');
+	x = _rsvg_css_normalize_length(&use->x, ctx, 'h');
+	y = _rsvg_css_normalize_length(&use->y, ctx, 'v');
+	w = _rsvg_css_normalize_length(&use->w, ctx, 'h');
+	h = _rsvg_css_normalize_length(&use->h, ctx, 'v');
 
 	rsvg_state_reinherit_top(ctx,  self->state, dominate);
 
@@ -246,10 +246,10 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	double nx, ny, nw, nh;
 	sself = (RsvgNodeSvg *)self;
 
-	nx = _rsvg_css_normalize_length_struct(&sself->x, ctx, 'h');
-	ny = _rsvg_css_normalize_length_struct(&sself->y, ctx, 'v');
-	nw = _rsvg_css_normalize_length_struct(&sself->w, ctx, 'h');
-	nh = _rsvg_css_normalize_length_struct(&sself->h, ctx, 'v');
+	nx = _rsvg_css_normalize_length(&sself->x, ctx, 'h');
+	ny = _rsvg_css_normalize_length(&sself->y, ctx, 'v');
+	nw = _rsvg_css_normalize_length(&sself->w, ctx, 'h');
+	nh = _rsvg_css_normalize_length(&sself->h, ctx, 'v');
 
 	rsvg_state_reinherit_top(ctx, self->state, dominate);
 
@@ -334,18 +334,18 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 				svg->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);			
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
 				{
-					svg->w = _rsvg_css_parse_length_struct (value);
+					svg->w = _rsvg_css_parse_length (value);
 					svg->hasw = svg->w.length > 0;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
 				{
-					svg->h = _rsvg_css_parse_length_struct (value);
+					svg->h = _rsvg_css_parse_length (value);
 					svg->hash = svg->h.length > 0;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				svg->x = _rsvg_css_parse_length_struct (value);
+				svg->x = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				svg->y = _rsvg_css_parse_length_struct (value);
+				svg->y = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
@@ -362,10 +362,10 @@ rsvg_new_svg (void)
 	_rsvg_node_init(&svg->super);
 	svg->has_vbox = FALSE;
 	svg->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-	svg->x = _rsvg_css_parse_length_struct ("0"); 
-	svg->y = _rsvg_css_parse_length_struct ("0"); 
-	svg->w = _rsvg_css_parse_length_struct ("0");
-	svg->h = _rsvg_css_parse_length_struct ("0");
+	svg->x = _rsvg_css_parse_length ("0"); 
+	svg->y = _rsvg_css_parse_length ("0"); 
+	svg->w = _rsvg_css_parse_length ("0");
+	svg->h = _rsvg_css_parse_length ("0");
 	svg->hasw = svg->hash = FALSE;
 	svg->vbx = 0; svg->vby = 0; svg->vbw = 0; svg->vbh = 0;
 	svg->super.type = RSVG_NODE_PATH;
@@ -384,13 +384,13 @@ rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (rsvg_property_bag_size(atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				use->x = _rsvg_css_parse_length_struct(value);
+				use->x = _rsvg_css_parse_length(value);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				use->y = _rsvg_css_parse_length_struct(value);
+				use->y = _rsvg_css_parse_length(value);
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				use->w = _rsvg_css_parse_length_struct(value);
+				use->w = _rsvg_css_parse_length(value);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				use->h = _rsvg_css_parse_length_struct(value);
+				use->h = _rsvg_css_parse_length(value);
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -415,10 +415,10 @@ rsvg_new_use ()
 	use->super.free = rsvg_node_use_free;
 	use->super.draw = rsvg_node_use_draw;
 	use->super.set_atts = rsvg_node_use_set_atts;
-	use->x = _rsvg_css_parse_length_struct("0");
-	use->y = _rsvg_css_parse_length_struct("0");
-	use->w = _rsvg_css_parse_length_struct("0");
-	use->h = _rsvg_css_parse_length_struct("0");
+	use->x = _rsvg_css_parse_length("0");
+	use->y = _rsvg_css_parse_length("0");
+	use->w = _rsvg_css_parse_length("0");
+	use->h = _rsvg_css_parse_length("0");
 	use->link = NULL;
 	return (RsvgNode *)use;
 }

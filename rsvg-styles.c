@@ -61,7 +61,7 @@ rsvg_state_init (RsvgState *state)
 	state->fill = rsvg_paint_server_parse (NULL, NULL, "#000", 0);
 	state->fill_opacity = 0xff;
 	state->stroke_opacity = 0xff;
-	state->stroke_width = _rsvg_css_parse_length_struct("1");
+	state->stroke_width = _rsvg_css_parse_length("1");
 	state->miter_limit = 4;
 	state->cap = RSVG_PATH_STROKE_CAP_BUTT;
 	state->join = RSVG_PATH_STROKE_JOIN_MITER;
@@ -74,7 +74,7 @@ rsvg_state_init (RsvgState *state)
 	state->flood_opacity = 255;
 
 	state->font_family  = g_strdup (RSVG_DEFAULT_FONT);
-	state->font_size    = _rsvg_css_parse_length_struct("12.0");
+	state->font_size    = _rsvg_css_parse_length("12.0");
 	state->font_style   = PANGO_STYLE_NORMAL;
 	state->font_variant = PANGO_VARIANT_NORMAL;
 	state->font_weight  = PANGO_WEIGHT_NORMAL;
@@ -482,7 +482,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "stroke-width"))
 		{
-			state->stroke_width = _rsvg_css_parse_length_struct (str + arg_off);
+			state->stroke_width = _rsvg_css_parse_length (str + arg_off);
 			state->has_stroke_width = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "stroke-linecap"))
@@ -516,7 +516,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "font-size"))
 		{
-			state->font_size =  _rsvg_css_parse_length_struct (str + arg_off);
+			state->font_size =  _rsvg_css_parse_length (str + arg_off);
 			state->has_font_size = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "font-family"))
@@ -670,7 +670,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "stroke-dashoffset"))
 		{
 			state->has_dash = TRUE;
-			state->dash.offset = _rsvg_css_parse_length_struct (str + arg_off);
+			state->dash.offset = _rsvg_css_parse_length (str + arg_off);
 			if (state->dash.offset.length < 0.)
 				state->dash.offset.length = 0.;
 		}

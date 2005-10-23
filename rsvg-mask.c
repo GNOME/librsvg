@@ -52,13 +52,13 @@ rsvg_mask_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 						mask->contentunits = userSpaceOnUse;
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				mask->x = _rsvg_css_parse_length_struct (value);
+				mask->x = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				mask->y = _rsvg_css_parse_length_struct (value);
+				mask->y = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				mask->width = _rsvg_css_parse_length_struct (value);
+				mask->width = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				mask->height = _rsvg_css_parse_length_struct (value);
+				mask->height = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
@@ -80,10 +80,10 @@ rsvg_new_mask (void)
 	_rsvg_node_init(&mask->super);
 	mask->maskunits = objectBoundingBox;
 	mask->contentunits = userSpaceOnUse;
-	mask->x = _rsvg_css_parse_length_struct ("0");
-	mask->y = _rsvg_css_parse_length_struct ("0");
-	mask->width = _rsvg_css_parse_length_struct ("1");
-	mask->height = _rsvg_css_parse_length_struct ("1");
+	mask->x = _rsvg_css_parse_length ("0");
+	mask->y = _rsvg_css_parse_length ("0");
+	mask->width = _rsvg_css_parse_length ("1");
+	mask->height = _rsvg_css_parse_length ("1");
 	mask->super.type = RSVG_NODE_MASK;
 	mask->super.set_atts = rsvg_mask_set_atts;
 	return &mask->super;
