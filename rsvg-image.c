@@ -491,7 +491,8 @@ rsvg_node_image_free (RsvgNode * self)
 	RsvgNodeImage *z = (RsvgNodeImage *)self;
 	rsvg_state_finalize (z->super.state);
 	g_free(z->super.state);
-	g_object_unref (G_OBJECT (z->img)); 
+	if (z->img)
+		g_object_unref (G_OBJECT (z->img)); 
 	g_free (z);	
 }
 
@@ -502,6 +503,8 @@ rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	RsvgNodeImage *z = (RsvgNodeImage *)self;
 	unsigned int aspect_ratio = z->preserve_aspect_ratio;
 	GdkPixbuf *img = z->img;
+	if (img == NULL)
+		return;
 	gdouble x = _rsvg_css_normalize_length(&z->x, ctx, 'h');
 	gdouble y = _rsvg_css_normalize_length(&z->y, ctx, 'v');
 	gdouble w = _rsvg_css_normalize_length(&z->w, ctx, 'h');
@@ -528,8 +531,6 @@ static void
 rsvg_node_image_set_atts (RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
 	const char * klazz = NULL, * id = NULL, *value;
-	GdkPixbuf *img;
-	GError *err = NULL;
 	RsvgNodeImage *image = (RsvgNodeImage *)self;
 	
 	if (rsvg_property_bag_size (atts))
@@ -545,20 +546,12 @@ rsvg_node_image_set_atts (RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts
 			/* path is used by some older adobe illustrator versions */
 			if ((value = rsvg_property_bag_lookup (atts, "path")) || (value = rsvg_property_bag_lookup (atts, "xlink:href")))
 				{
-					img = rsvg_pixbuf_new_from_href (value, 
-													 rsvg_handle_get_base_uri (ctx), 
-													 NULL); 
+					image->img = rsvg_pixbuf_new_from_href (value, 
+															rsvg_handle_get_base_uri (ctx), 
+															NULL); 
 					
-					if (!img)
-						{
-							if (err)
-								{
-									g_warning (_("Couldn't load image: %s\n"), err->message);
-									g_error_free (err);
-								}
-							return;
-						}
-					image->img = img;
+					if (!image->img)
+						g_warning (_("Couldn't load image: %s\n"), value);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
