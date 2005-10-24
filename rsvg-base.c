@@ -273,7 +273,7 @@ rsvg_standard_element_start (RsvgHandle *ctx, const xmlChar *name,
 		newnode = rsvg_new_tref();
 	if (newnode)
 		{
-			newnode->type = g_string_new(name);
+			newnode->type = g_string_new((char *)name);
 			rsvg_node_set_atts(newnode, ctx, atts);
 			rsvg_defs_register_memory(ctx->defs, newnode);
 			if (ctx->currentnode) {
