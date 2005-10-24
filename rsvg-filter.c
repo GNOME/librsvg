@@ -1762,7 +1762,7 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self,
 		{
 			RsvgFilterPrimitive * mn;
 			mn = g_ptr_array_index (upself->super.super.children, i);
-			if (!strcmp(mn->super.type->str, "feMergeNode"))
+			if (strcmp(mn->super.type->str, "feMergeNode"))
 				continue;
 			in = rsvg_filter_get_in (mn->in, ctx);
 			rsvg_alpha_blt (in, boundarys.x0, boundarys.y0, boundarys.x1 - boundarys.x0,
