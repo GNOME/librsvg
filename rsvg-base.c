@@ -155,8 +155,8 @@ rsvg_start_style (RsvgHandle *ctx, RsvgPropertyBag *atts)
 
 
 static void
-rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
-						   RsvgPropertyBag *atts)
+rsvg_standard_element_start (RsvgHandle *ctx, const xmlChar *name,
+							 RsvgPropertyBag *atts)
 {
 
 	/*replace this stuff with a hash for fast reading!*/
@@ -273,6 +273,7 @@ rsvg_filter_handler_start (RsvgHandle *ctx, const xmlChar *name,
 		newnode = rsvg_new_tref();
 	if (newnode)
 		{
+			newnode->type = g_string_new(name);
 			rsvg_node_set_atts(newnode, ctx, atts);
 			rsvg_defs_register_memory(ctx->defs, newnode);
 			if (ctx->currentnode) {
@@ -557,7 +558,7 @@ rsvg_start_element (void *data, const xmlChar *name,
 				rsvg_start_desc (ctx, bag);
 			else if (!strcmp ((char *)name, "metadata"))
 				rsvg_start_metadata (ctx, bag);
-			rsvg_filter_handler_start (ctx, name, bag);
+			rsvg_standard_element_start (ctx, name, bag);
     }
 
 	rsvg_property_bag_free(bag);
@@ -586,38 +587,8 @@ rsvg_end_element (void *data, const xmlChar *name)
 					ctx->handler = NULL;
 				}
 
-			if (!strcmp ((char *)name, "image") ||
-				!strcmp ((char *)name, "use") ||
-				!strcmp ((char *)name, "switch") ||
-				!strcmp ((char *)name, "marker") ||
-				!strcmp ((char *)name, "clipPath") ||
-				!strcmp ((char *)name, "mask") ||
-				!strcmp ((char *)name, "defs") ||
-				!strcmp ((char *)name, "filter") ||
-				!strcmp ((char *)name, "symbol") ||
-				!strcmp ((char *)name, "svg") ||
-				!strcmp ((char *)name, "a") ||
-				!strcmp ((char *)name, "line") ||
-				!strcmp ((char *)name, "rect") ||
-				!strcmp ((char *)name, "circle") ||
-				!strcmp ((char *)name, "ellipse") ||
-				!strcmp ((char *)name, "polyline") ||
-				!strcmp ((char *)name, "polygon") ||
-				!strcmp ((char *)name, "path") ||
-				!strcmp ((char *)name, "g") ||
-				!strcmp ((char *)name, "pattern") ||
-				!strcmp ((char *)name, "text") ||
-				!strcmp ((char *)name, "tspan") ||
-				!strcmp ((char *)name, "tref") ||
-				!strcmp ((char *)name, "linearGradient") ||
-				!strcmp ((char *)name, "radialGradient") ||
-				!strcmp ((char *)name, "conicalGradient") ||
-				!strcmp ((char *)name, "stop") ||
-				!strncmp ((char *)name, "fe", 2))
-				{
-					/*when type enums are working right we should test if the end is the same as the current node*/
-					rsvg_pop_def_group(ctx);
-				}
+			if (!strcmp ((char *)name, ctx->currentnode->type->str))
+				rsvg_pop_def_group(ctx);
 			
 		}
 }
@@ -659,8 +630,9 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 	_rsvg_node_init(&self->super);
 	self->contents = string;
 
-	self->super.type = RSVG_NODE_CHARS;
+	self->super.type = g_string_new("RSVG_NODE_CHARS");
 	self->super.free = _rsvg_node_chars_free;
+	self->super.state->cond_true = FALSE;
 
 	rsvg_defs_register_memory(ctx->defs, (RsvgNode *)self);
 	if (ctx->currentnode)
@@ -1158,48 +1130,32 @@ void
 rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
 {
 	RsvgNodeSvg * sself;
+	RsvgBbox bbox;
 
 	sself = (RsvgNodeSvg *)handle->treebase;	
 	if(!sself) {
 		memset(output, 0, sizeof(RsvgDimensionData));
 		return;
 	}
-
-	if (sself->hasw && sself->hash)
+	
+	bbox.x = bbox.y = 0;
+	bbox.w = bbox.h = 1;
+	
+	if (sself->w.factor == 'p' || sself->h.factor == 'p')
 		{
-			RsvgBbox bbox;
-			
-			bbox.x = bbox.y = 0;
-			bbox.w = bbox.h = 1;
-
-			if (sself->w.factor == 'p' || sself->h.factor == 'p')
+			if (sself->has_vbox && sself->vbw > 0. && sself->vbh > 0.)
 				{
-					if (sself->has_vbox && sself->vbw > 0. && sself->vbh > 0.)
-						{
-							bbox.w = sself->vbw;
-							bbox.h = sself->vbh;
-						}
-					else
-						bbox = _rsvg_find_bbox(handle);
+					bbox.w = sself->vbw;
+					bbox.h = sself->vbh;
 				}
-			output->width  = _rsvg_css_hand_normalize_length(&sself->w, handle->dpi_x, 
+			else
+				bbox = _rsvg_find_bbox(handle);
+		}
+	output->width  = _rsvg_css_hand_normalize_length(&sself->w, handle->dpi_x, 
 																	bbox.w + bbox.x * 2, 12);
-			output->height = _rsvg_css_hand_normalize_length(&sself->h, handle->dpi_y, 
-																	bbox.h + bbox.y * 2, 12);
-		}
-	else if (sself->has_vbox && sself->vbw > 0. && sself->vbh > 0.)
-		{
-			output->width  = (int)floor (sself->vbw);
-			output->height = (int)floor (sself->vbh);
-		}
-	else
-		{
-			RsvgBbox bbox;
-			bbox = _rsvg_find_bbox(handle);
-			output->width  = bbox.w + bbox.x * 2;
-			output->height = bbox.h + bbox.y * 2;
-		}
-
+	output->height = _rsvg_css_hand_normalize_length(&sself->h, handle->dpi_y, 
+													 bbox.h + bbox.y * 2, 12);
+	
 	output->em = output->width;
 	output->ex = output->height;
 

@@ -94,7 +94,6 @@ rsvg_new_marker (void)
 	marker->width = marker->height = _rsvg_css_parse_length ("1");
 	marker->bbox = TRUE;
 	marker->vbox = FALSE;
-	marker->super.type = RSVG_NODE_MARKER;
 	marker->super.set_atts = rsvg_node_marker_set_atts;
 	return &marker->super;
 }
@@ -214,7 +213,8 @@ rsvg_marker_parse (const RsvgDefs * defs, const char *str)
 					val = rsvg_defs_lookup (defs, name);
 					g_free (name);
 					
-					if (val && val->type == RSVG_NODE_MARKER)
+					if (val)
+						if (!strcmp(val->type->str, "marker"))
 						return (RsvgNode *) val;
 				}
 		}

@@ -29,6 +29,7 @@
 #include "rsvg-structure.h"
 #include "rsvg-image.h"
 #include "rsvg-css.h"
+#include "string.h"
 
 #include <stdio.h>
 
@@ -87,10 +88,10 @@ _rsvg_node_init(RsvgNode *self)
 	self->children = g_ptr_array_new();
 	self->state = g_new(RsvgState, 1);
 	rsvg_state_init(self->state);
-	self->type = RSVG_NODE_PATH;
 	self->free = _rsvg_node_free;
 	self->draw = _rsvg_node_draw_nothing;
 	self->set_atts = _rsvg_node_dont_set_atts;
+	self->type = NULL;
 }
 
 void 
@@ -103,6 +104,8 @@ _rsvg_node_free (RsvgNode *self)
 		}
 	if (self->children != NULL)
 		g_ptr_array_free(self->children, TRUE);
+	if (self->type != NULL)
+		g_string_free(self->type, TRUE);
 	g_free (self);
 }
 
@@ -131,7 +134,6 @@ rsvg_new_group (void)
 	RsvgNodeGroup *group;
 	group = g_new (RsvgNodeGroup, 1);
 	_rsvg_node_init(&group->super);
-	group->super.type = RSVG_NODE_PATH;
 	group->super.draw = _rsvg_node_draw_children;
 	group->super.set_atts = rsvg_node_group_set_atts;
 	return &group->super;
@@ -173,7 +175,7 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	if (!use->link)
 		return;
 	state = rsvg_state_current(ctx);	
-	if (child->type != RSVG_NODE_SYMBOL)
+	if (strcmp(child->type->str, "symbol"))
 		{
 			_rsvg_affine_translate(affine, x, y);
 			_rsvg_affine_multiply(state->affine, affine, state->affine);
@@ -224,15 +226,6 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 				_rsvg_pop_view_box(ctx);
 		}
 
-}	
-
-static void 
-rsvg_node_use_free (RsvgNode *self)
-{
-	RsvgNodeUse *z = (RsvgNodeUse *)self;
-	rsvg_state_finalize (z->super.state);
-	g_free (z->super.state);
-	g_free (z);
 }
 
 static void
@@ -258,7 +251,7 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	for (i = 0; i < 6; i++)
 		affine_old[i] = state->affine[i];
 
-	if (sself->has_vbox && sself->hasw && sself->hash)
+	if (sself->has_vbox)
 		{
 			double x = nx, y = ny, w = nw, h = nh;
 			rsvg_preserve_aspect_ratio(sself->preserve_aspect_ratio,
@@ -333,15 +326,9 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
 				svg->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);			
 			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				{
-					svg->w = _rsvg_css_parse_length (value);
-					svg->hasw = svg->w.length > 0;
-				}
+				svg->w = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				{
-					svg->h = _rsvg_css_parse_length (value);
-					svg->hash = svg->h.length > 0;
-				}
+				svg->h = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "x")))
 				svg->x = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
@@ -364,11 +351,9 @@ rsvg_new_svg (void)
 	svg->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	svg->x = _rsvg_css_parse_length ("0"); 
 	svg->y = _rsvg_css_parse_length ("0"); 
-	svg->w = _rsvg_css_parse_length ("0");
-	svg->h = _rsvg_css_parse_length ("0");
-	svg->hasw = svg->hash = FALSE;
+	svg->w = _rsvg_css_parse_length ("100%");
+	svg->h = _rsvg_css_parse_length ("100%");
 	svg->vbx = 0; svg->vby = 0; svg->vbw = 0; svg->vbh = 0;
-	svg->super.type = RSVG_NODE_PATH;
 	svg->super.draw = rsvg_node_svg_draw;
 	svg->super.set_atts = rsvg_node_svg_set_atts;
 	return &svg->super;
@@ -411,8 +396,6 @@ rsvg_new_use ()
 	RsvgNodeUse * use;
 	use = g_new (RsvgNodeUse, 1);
 	_rsvg_node_init(&use->super);
-	use->super.type = RSVG_NODE_PATH;
-	use->super.free = rsvg_node_use_free;
 	use->super.draw = rsvg_node_use_draw;
 	use->super.set_atts = rsvg_node_use_set_atts;
 	use->x = _rsvg_css_parse_length("0");
@@ -462,7 +445,6 @@ rsvg_new_symbol(void)
 	_rsvg_node_init(&symbol->super);
 	symbol->has_vbox = 0;
 	symbol->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-	symbol->super.type = RSVG_NODE_SYMBOL;
 	symbol->super.draw = _rsvg_node_draw_nothing;
 	symbol->super.set_atts = rsvg_node_symbol_set_atts;
 	return &symbol->super;
@@ -474,7 +456,6 @@ rsvg_new_defs ()
 	RsvgNodeGroup *group;
 	group = g_new (RsvgNodeGroup, 1);
 	_rsvg_node_init(&group->super);
-	group->super.type = RSVG_NODE_PATH;
 	group->super.draw = _rsvg_node_draw_nothing;
 	group->super.set_atts = rsvg_node_group_set_atts;
 	return &group->super;
@@ -513,7 +494,6 @@ rsvg_new_switch (void)
 	RsvgNodeGroup *group;
 	group = g_new (RsvgNodeGroup, 1);
 	_rsvg_node_init(&group->super);
-	group->super.type = RSVG_NODE_PATH;
 	group->super.draw = _rsvg_node_switch_draw;
 	group->super.set_atts = rsvg_node_group_set_atts;
 	return &group->super;

@@ -84,7 +84,6 @@ rsvg_new_mask (void)
 	mask->y = _rsvg_css_parse_length ("0");
 	mask->width = _rsvg_css_parse_length ("1");
 	mask->height = _rsvg_css_parse_length ("1");
-	mask->super.type = RSVG_NODE_MASK;
 	mask->super.set_atts = rsvg_mask_set_atts;
 	return &mask->super;
 }
@@ -112,8 +111,9 @@ rsvg_mask_parse (const RsvgDefs * defs, const char *str)
 					val = rsvg_defs_lookup (defs, name);
 					g_free (name);
 					
-					if (val && val->type == RSVG_NODE_MASK)
-						return (RsvgNode *) val;
+					if (val)
+						if (!strcmp (val->type->str, "mask"))
+							return (RsvgNode *) val;
 				}
 		}
 	return NULL;
@@ -158,7 +158,6 @@ rsvg_new_clip_path (void)
 	clip_path = g_new (RsvgClipPath, 1);
 	_rsvg_node_init(&clip_path->super);
 	clip_path->units = userSpaceOnUse;
-	clip_path->super.type = RSVG_NODE_CLIP_PATH;
 	clip_path->super.set_atts = rsvg_clip_path_set_atts;
 	clip_path->super.free = _rsvg_node_free;
 	return &clip_path->super;
@@ -187,8 +186,9 @@ rsvg_clip_path_parse (const RsvgDefs * defs, const char *str)
 					val = rsvg_defs_lookup (defs, name);
 					g_free (name);
 					
-					if (val && val->type == RSVG_NODE_CLIP_PATH)
-						return (RsvgNode *) val;
+					if (val)
+						if (!strcmp (val->type->str, "clipPath"))
+							return (RsvgNode *) val;
 				}
 		}
 	return NULL;

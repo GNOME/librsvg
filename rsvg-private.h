@@ -86,7 +86,7 @@ struct RsvgHandle {
 	RsvgNode *currentnode;
 	/* this is the root level of the displayable tree, essentially what the
 	   file is converted into at the end */
-	void *treebase;
+	RsvgNode *treebase;
 
 	GHashTable *css_props;
 	
@@ -195,28 +195,10 @@ struct _RsvgPropertyBag
 	GHashTable * props;
 };
 
-typedef enum {
-	RSVG_NODE_LINGRAD,
-	RSVG_NODE_RADGRAD,
-	RSVG_NODE_PATTERN,
-	RSVG_NODE_PATH,
-	RSVG_NODE_FILTER,
-	RSVG_NODE_FILTER_PRIMITIVE,
-	RSVG_NODE_FILTER_PRIMITIVE_MERGE_NODE,
-	RSVG_NODE_MASK,
-	RSVG_NODE_MARKER,
-	RSVG_NODE_SYMBOL,
-	RSVG_NODE_CLIP_PATH,
-	RSVG_NODE_STOP,
-	RSVG_NODE_CHARS,
-	RSVG_NODE_TSPAN,
-	RSVG_NODE_TREF
-} RsvgNodeType;
-
 struct _RsvgNode {
-	RsvgNodeType type;
 	RsvgState * state;
 	RsvgNode * parent;
+	GString * type;
  	GPtrArray *children;
 	void (*free) (RsvgNode *self);
 	void (*draw) (RsvgNode * self, RsvgDrawingCtx *ctx, int dominate);

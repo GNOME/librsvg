@@ -1,5 +1,10 @@
 2005-10-23 Caleb Moore <c.moore@student.unsw.edu.au>
 	
+	* everywhere: use strings for RTTI, not sure about the speed hit, but allows us a lot more flexiblity
+	* rsvg-base.c: hack char structs so that switch ignores them.
+
+2005-10-23 Caleb Moore <c.moore@student.unsw.edu.au>
+	
 	* rsvg-private.h: removed obsolete percentage resolution structures
 	* rsvg-base.c: char structs are back
 	* rsvg-text.c: rewrite, now supports DOM stuff and trefs

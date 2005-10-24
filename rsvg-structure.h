@@ -68,8 +68,6 @@ struct _RsvgNodeSvg {
  	RsvgNode super;
 	gint preserve_aspect_ratio;
 	RsvgLength x, y, w, h;
-	int hasw :1;
-	int hash :1;
 	gdouble vbx, vby, vbw, vbh;
 	gboolean has_vbox;
  	GdkPixbuf *img;

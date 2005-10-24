@@ -577,7 +577,6 @@ rsvg_new_image (void)
 	image->x = image->y = image->w = image->h = _rsvg_css_parse_length("0");
 	image->super.state = g_new(RsvgState, 1);
 	rsvg_state_init(image->super.state);
-	image->super.type = RSVG_NODE_PATH;
 	image->super.free = rsvg_node_image_free;
 	image->super.draw = rsvg_node_image_draw;
 	image->super.set_atts = rsvg_node_image_set_atts;
