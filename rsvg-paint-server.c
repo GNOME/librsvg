@@ -420,11 +420,7 @@ rsvg_pattern_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				rsvg_defs_register_name (ctx->defs, value, self);
 			if ((value = rsvg_property_bag_lookup (atts, "viewBox"))){
-				pattern->vbox = rsvg_css_parse_vbox (value, 
-													 &pattern->vbx, 
-													 &pattern->vby,
-													 &pattern->vbw, 
-													 &pattern->vbh);
+				pattern->vbox = rsvg_css_parse_vbox (value);
 				pattern->hasvbox = TRUE;
 			}
 			if ((value = rsvg_property_bag_lookup (atts, "x"))){
@@ -480,16 +476,12 @@ rsvg_new_pattern (void)
 	pattern->obj_cbbox = FALSE;
 	pattern->x = pattern->y = pattern->width = pattern->height = 
 		_rsvg_css_parse_length("0");
-	pattern->vbx = 0;
-	pattern->vby = 0;
-	pattern->vbw = 1;
-	pattern->vbh = 1;
 	pattern->fallback = NULL;
 	pattern->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-	pattern->vbox = FALSE;
+	pattern->vbox.active = FALSE;
 	_rsvg_affine_identity(pattern->affine);
 	pattern->super.set_atts = rsvg_pattern_set_atts;
-	pattern->hasx = pattern->hasy = pattern->haswidth = pattern->hasheight = pattern->hasvbox = pattern->hasbbox = pattern->hascbox = pattern->hasaspect = pattern->hastransform = pattern->hasaspect = FALSE; 
+	pattern->hasx = pattern->hasy = pattern->haswidth = pattern->hasheight = pattern->hasbbox = pattern->hascbox = pattern->hasvbox = pattern->hasaspect = pattern->hastransform = pattern->hasaspect = FALSE; 
 	return &pattern->super;
 }
 
@@ -672,11 +664,6 @@ rsvg_pattern_fix_fallback(RsvgPattern * pattern)
 						pattern->affine[i] = fallback->affine[i];
 				}
 			if (!pattern->hasvbox && fallback->hasvbox){
-				pattern->hasvbox = TRUE;
-				pattern->vbx = fallback->vbx;
-				pattern->vby = fallback->vby;
-				pattern->vbw = fallback->vbw;
-				pattern->vbh = fallback->vbh;
 				pattern->vbox = fallback->vbox;
 			}
 			if (!pattern->hasaspect && fallback->hasaspect){

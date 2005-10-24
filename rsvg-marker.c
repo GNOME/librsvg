@@ -53,8 +53,7 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *at
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
-				marker->vbox = rsvg_css_parse_vbox (value, &marker->vbx, &marker->vby,
-													&marker->vbw, &marker->vbh);
+				marker->vbox = rsvg_css_parse_vbox (value);
 			if ((value = rsvg_property_bag_lookup (atts, "refX")))
 				marker->refX = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "refY")))
@@ -93,7 +92,7 @@ rsvg_new_marker (void)
 	marker->refX = marker->refY = _rsvg_css_parse_length ("0");
 	marker->width = marker->height = _rsvg_css_parse_length ("1");
 	marker->bbox = TRUE;
-	marker->vbox = FALSE;
+	marker->vbox.active = FALSE;
 	marker->super.set_atts = rsvg_node_marker_set_atts;
 	return &marker->super;
 }
@@ -122,7 +121,7 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 		_rsvg_affine_multiply(affine, taffine, affine);
 	}
 
-	if (self->vbox) {
+	if (self->vbox.active) {
 		
 		double w, h, x, y;
 		w = _rsvg_css_normalize_length(&self->width, ctx, 'h');
@@ -131,20 +130,20 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 		y = 0;
 
 		rsvg_preserve_aspect_ratio(self->preserve_aspect_ratio,
-								   self->vbw, self->vbh, 
+								   self->vbox.w, self->vbox.h, 
 								   &w, &h, &x, &y);		
 
-		x = -self->vbx * w / self->vbw;
-		y = -self->vby * h / self->vbh;
+		x = -self->vbox.x * w / self->vbox.w;
+		y = -self->vbox.y * h / self->vbox.h;
 
-		taffine[0] = w / self->vbw;
+		taffine[0] = w / self->vbox.w;
 		taffine[1] = 0.;
 		taffine[2] = 0.;
-		taffine[3] = h / self->vbh;
+		taffine[3] = h / self->vbox.h;
 		taffine[4] = x;
 		taffine[5] = y;
 		_rsvg_affine_multiply(affine, taffine, affine);
-		_rsvg_push_view_box(ctx, self->vbw, self->vbh);
+		_rsvg_push_view_box(ctx, self->vbox.w, self->vbox.h);
 	}
 	_rsvg_affine_translate(taffine, 
 						   -_rsvg_css_normalize_length(&self->refX, ctx, 'h'), 
@@ -167,8 +166,8 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 
 	state = rsvg_state_current(ctx);
 
-	if (self->vbox)
-		rsvg_add_clipping_rect(ctx, self->vbx, self->vby, self->vbw, self->vbh);
+	if (self->vbox.active)
+		rsvg_add_clipping_rect(ctx, self->vbox.x, self->vbox.y, self->vbox.w, self->vbox.h);
 	else
 		rsvg_add_clipping_rect(ctx, 0, 0, 
 							   _rsvg_css_normalize_length(&self->width, ctx, 'h'), 
@@ -186,7 +185,7 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 	rsvg_pop_discrete_layer(ctx);
 	
 	rsvg_state_pop(ctx);
-	if (self->vbox)
+	if (self->vbox.active)
 		_rsvg_pop_view_box(ctx);
 }
 

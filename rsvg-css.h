@@ -27,6 +27,7 @@
 
 #include <glib/gtypes.h>
 #include <pango/pango.h>
+#include "rsvg-private.h"
 
 G_BEGIN_DECLS
 
@@ -80,9 +81,8 @@ rsvg_css_parse_font_stretch (const char * str, gboolean * inherit);
 const char *
 rsvg_css_parse_font_family (const char * str, gboolean * inherit);
 
-gboolean
-rsvg_css_parse_vbox (const char * vbox, double * x, double * y,
-					 double * w, double * h);
+RsvgViewBox
+rsvg_css_parse_vbox (const char * vbox);
 
 void 
 rsvg_css_parse_number_optional_number(const char * str, 

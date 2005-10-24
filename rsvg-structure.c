@@ -191,27 +191,27 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 			RsvgNodeSymbol *symbol = 
 				(RsvgNodeSymbol*)child;
 			
-			if (symbol->has_vbox){
+			if (symbol->vbox.active){
 				rsvg_preserve_aspect_ratio
 					(symbol->preserve_aspect_ratio, 
-					 symbol->vbw, symbol->vbh, 
+					 symbol->vbox.w, symbol->vbox.h, 
 					 &w, &h, &x, &y);
 
 				_rsvg_affine_translate(affine, x, y);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
-				_rsvg_affine_scale(affine, w / symbol->vbw,
-								   h / symbol->vbh);
+				_rsvg_affine_scale(affine, w / symbol->vbox.w,
+								   h / symbol->vbox.h);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
-				_rsvg_affine_translate(affine, -symbol->vbx, 
-									   -symbol->vby);
+				_rsvg_affine_translate(affine, -symbol->vbox.x, 
+									   -symbol->vbox.y);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
 
-				_rsvg_push_view_box(ctx, symbol->vbw, symbol->vbh);
+				_rsvg_push_view_box(ctx, symbol->vbox.w, symbol->vbox.h);
 				rsvg_push_discrete_layer (ctx);
 				if (!state->overflow || 
 					(!state->has_overflow && child->state->overflow))
-				rsvg_add_clipping_rect (ctx, symbol->vbx, symbol->vby,
-										symbol->vbw, symbol->vbh);
+				rsvg_add_clipping_rect (ctx, symbol->vbox.x, symbol->vbox.y,
+										symbol->vbox.w, symbol->vbox.h);
 			} else {
 				_rsvg_affine_translate(affine, x, y);
 				_rsvg_affine_multiply(state->affine, affine, state->affine);
@@ -222,7 +222,7 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 			_rsvg_node_draw_children(child, ctx, 1);
 			rsvg_state_pop(ctx);
 			rsvg_pop_discrete_layer (ctx);
-			if (symbol->has_vbox)
+			if (symbol->vbox.active)
 				_rsvg_pop_view_box(ctx);
 		}
 
@@ -251,21 +251,21 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	for (i = 0; i < 6; i++)
 		affine_old[i] = state->affine[i];
 
-	if (sself->has_vbox)
+	if (sself->vbox.active)
 		{
 			double x = nx, y = ny, w = nw, h = nh;
 			rsvg_preserve_aspect_ratio(sself->preserve_aspect_ratio,
-									   sself->vbw, sself->vbh, 
+									   sself->vbox.w, sself->vbox.h, 
 									   &w, &h, &x, &y);
-			affine[0] = w / sself->vbw;
+			affine[0] = w / sself->vbox.w;
 			affine[1] = 0;
 			affine[2] = 0;
-			affine[3] = h / sself->vbh;
-			affine[4] = x - sself->vbx * w / sself->vbw;
-			affine[5] = y - sself->vby * h / sself->vbh;
+			affine[3] = h / sself->vbox.h;
+			affine[4] = x - sself->vbox.x * w / sself->vbox.w;
+			affine[5] = y - sself->vbox.y * h / sself->vbox.h;
 			_rsvg_affine_multiply(state->affine, affine, 
 								  state->affine);
-			_rsvg_push_view_box(ctx, sself->vbw, sself->vbh);
+			_rsvg_push_view_box(ctx, sself->vbox.w, sself->vbox.h);
 		}
 	else
 		{
@@ -318,10 +318,7 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
-				svg->has_vbox = rsvg_css_parse_vbox (value, &svg->vbx, 
-													 &svg->vby,
-													 &svg->vbw, 
-													 &svg->vbh);
+				svg->vbox = rsvg_css_parse_vbox (value);
 			
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
 				svg->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);			
@@ -347,13 +344,12 @@ rsvg_new_svg (void)
 	RsvgNodeSvg * svg;
 	svg = g_new (RsvgNodeSvg, 1);
 	_rsvg_node_init(&svg->super);
-	svg->has_vbox = FALSE;
+	svg->vbox.active = FALSE;
 	svg->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	svg->x = _rsvg_css_parse_length ("0"); 
 	svg->y = _rsvg_css_parse_length ("0"); 
 	svg->w = _rsvg_css_parse_length ("100%");
 	svg->h = _rsvg_css_parse_length ("100%");
-	svg->vbx = 0; svg->vby = 0; svg->vbw = 0; svg->vbh = 0;
 	svg->super.draw = rsvg_node_svg_draw;
 	svg->super.set_atts = rsvg_node_svg_set_atts;
 	return &svg->super;
@@ -423,11 +419,7 @@ rsvg_node_symbol_set_atts(RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts
 					rsvg_defs_register_name (ctx->defs, value, &symbol->super);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
-				symbol->has_vbox = rsvg_css_parse_vbox (value, 
-														&symbol->vbx, 
-														&symbol->vby,
-														&symbol->vbw, 
-														&symbol->vbh);
+				symbol->vbox = rsvg_css_parse_vbox (value);
 			if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
 				symbol->preserve_aspect_ratio = 
 					rsvg_css_parse_aspect_ratio (value);			
@@ -443,7 +435,7 @@ rsvg_new_symbol(void)
 	RsvgNodeSymbol * symbol;
 	symbol = g_new (RsvgNodeSymbol, 1);
 	_rsvg_node_init(&symbol->super);
-	symbol->has_vbox = 0;
+	symbol->vbox.active = FALSE;
 	symbol->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	symbol->super.draw = _rsvg_node_draw_nothing;
 	symbol->super.set_atts = rsvg_node_symbol_set_atts;

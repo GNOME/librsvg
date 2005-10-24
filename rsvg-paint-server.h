@@ -95,16 +95,15 @@ struct _RsvgPattern {
 	RsvgNode super;
 	gboolean obj_cbbox;
 	gboolean obj_bbox;
-	gboolean vbox;
 	double affine[6]; /* user space to actual at time of gradient def */
 	RsvgLength x, y, width, height;
-	gdouble vbx, vby, vbh, vbw;
+	RsvgViewBox vbox;
 	unsigned int preserve_aspect_ratio;
 	int hasx : 1;
 	int hasy : 1;
+	int hasvbox : 1;
 	int haswidth : 1;
 	int hasheight : 1;
-	int hasvbox : 1;
 	int hasaspect : 1;
 	int hascbox : 1;
 	int hasbbox : 1;

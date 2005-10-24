@@ -52,31 +52,33 @@
  * @w: The Width output
  * @h: The Height output
  *
- * Returns: Success or failure
+ * Returns: 
  */
-gboolean
-rsvg_css_parse_vbox (const char * vbox, double * x, double * y,
-					 double * w, double * h)
+RsvgViewBox
+rsvg_css_parse_vbox (const char * vbox)
 {
+	RsvgViewBox vb;
 	gdouble * list;
 	guint list_len;
+	vb.active = FALSE;
 
 	list = rsvg_css_parse_number_list(vbox, &list_len);
 
 	if(!(list && list_len))
-		return FALSE;
+		return vb;
 	else if(list_len != 4) {
 		g_free(list);
-		return FALSE;
+		return vb;
 	} 
 	else {
-		*x = list[0];
-		*y = list[1];
-		*w = list[2];
-		*h = list[3];
+		vb.x = list[0];
+		vb.y = list[1];
+		vb.w = list[2];
+		vb.h = list[3];
+		vb.active = TRUE;
 
 		g_free(list);
-		return TRUE;
+		return vb;
 	}
 }
 

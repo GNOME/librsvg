@@ -118,7 +118,8 @@ struct RsvgHandle {
 };
 
 typedef struct{
-	double w, h;
+	gboolean active;
+	double x, y, w, h;
 } RsvgViewBox; 
 
 /*Contextual information for the drawing phase*/

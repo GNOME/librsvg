@@ -279,7 +279,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 	_rsvg_affine_multiply(affine, affine, rsvg_pattern->affine);
 
 	/* Create the pattern contents coordinate system */
-	if (rsvg_pattern->vbox) {
+	if (rsvg_pattern->vbox.active) {
 		/* If there is a vbox, use that */
 		double w, h, x, y;
 		w = patternw * bbwscale;
@@ -287,19 +287,19 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 		x = 0;
 		y = 0;
 		rsvg_preserve_aspect_ratio(rsvg_pattern->preserve_aspect_ratio,
-								   rsvg_pattern->vbw, rsvg_pattern->vbh, 
+								   rsvg_pattern->vbox.w, rsvg_pattern->vbox.h, 
 								   &w, &h, &x, &y);
 
-		x -= rsvg_pattern->vbx * w / rsvg_pattern->vbw;
-		y -= rsvg_pattern->vby * h / rsvg_pattern->vbh;
+		x -= rsvg_pattern->vbox.x * w / rsvg_pattern->vbox.w;
+		y -= rsvg_pattern->vbox.y * h / rsvg_pattern->vbox.h;
 
-		caffine[0] = w / rsvg_pattern->vbw;
+		caffine[0] = w / rsvg_pattern->vbox.w;
 		caffine[1] = 0.;		
 		caffine[2] = 0.;
-		caffine[3] = h / rsvg_pattern->vbh;
+		caffine[3] = h / rsvg_pattern->vbox.h;
 		caffine[4] = x;		
 		caffine[5] = y;
-		_rsvg_push_view_box(ctx, rsvg_pattern->vbw, rsvg_pattern->vbh);
+		_rsvg_push_view_box(ctx, rsvg_pattern->vbox.w, rsvg_pattern->vbox.h);
 	}
 	else if (rsvg_pattern->obj_cbbox) {
 		/* If coords are in terms of the bounding box, use them */
@@ -365,7 +365,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 	cairo_pattern_destroy (pattern);
 	cairo_destroy (cr_pattern);
 	cairo_surface_destroy (surface);
-	if (rsvg_pattern->obj_cbbox || rsvg_pattern->vbox)
+	if (rsvg_pattern->obj_cbbox || rsvg_pattern->vbox.active)
 		_rsvg_pop_view_box(ctx);
 }
 
@@ -549,6 +549,7 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 	
 	gint width = gdk_pixbuf_get_width (pixbuf);
 	gint height = gdk_pixbuf_get_height (pixbuf);
+	double dwidth = width, dheight = height;
 	guchar *gdk_pixels = gdk_pixbuf_get_pixels (pixbuf);
 	int gdk_rowstride = gdk_pixbuf_get_rowstride (pixbuf);
 	int n_channels = gdk_pixbuf_get_n_channels (pixbuf);
@@ -571,9 +572,9 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 
     cairo_save (render->cr);
 	_set_rsvg_affine (render->cr, state->affine);
-    cairo_scale (render->cr, w / width, h / height);
-	pixbuf_x *= width / w;
-	pixbuf_y *= height / h;
+    cairo_scale (render->cr, w / dwidth, h / dheight);
+	pixbuf_x *= dwidth / w;
+	pixbuf_y *= dheight / h;
 
 	if (n_channels == 3)
 		format = CAIRO_FORMAT_RGB24;

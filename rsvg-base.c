@@ -1143,10 +1143,10 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
 	
 	if (sself->w.factor == 'p' || sself->h.factor == 'p')
 		{
-			if (sself->has_vbox && sself->vbw > 0. && sself->vbh > 0.)
+			if (sself->vbox.active && sself->vbox.w > 0. && sself->vbox.h > 0.)
 				{
-					bbox.w = sself->vbw;
-					bbox.h = sself->vbh;
+					bbox.w = sself->vbox.w;
+					bbox.h = sself->vbox.h;
 				}
 			else
 				bbox = _rsvg_find_bbox(handle);
