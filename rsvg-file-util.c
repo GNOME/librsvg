@@ -186,16 +186,15 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
 									  GError ** error)
 {
 	GdkPixbuf * pixbuf;
-	gchar * base_uri;
 	GByteArray *f;
-
-	base_uri = rsvg_get_base_uri_from_filename(file_name);
-	f = _rsvg_acquire_xlink_href_resource (file_name, base_uri, error);
+	GString * base_uri = g_string_new(file_name);
+	
+	f = _rsvg_acquire_xlink_href_resource (file_name, base_uri->str, error);
 
 	if (f)
 		{
 			pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data(f, data, 
-																base_uri, error);
+																base_uri->str, error);
 			g_byte_array_free (f, TRUE);
 		} 
 	else 
@@ -203,7 +202,7 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
 			pixbuf = NULL;
 		}	
 	
-	g_free(base_uri);
+	g_string_free(base_uri, TRUE);
 
 	return pixbuf;
 }
