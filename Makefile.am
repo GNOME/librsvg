@@ -1,4 +1,4 @@
-SUBDIRS = . gtk-engine gdk-pixbuf-loader moz-plugin doc data
+SUBDIRS = . gtk-engine gdk-pixbuf-loader moz-plugin data doc
 
 if HAVE_GTK
 target_rsvg_view = rsvg-view
