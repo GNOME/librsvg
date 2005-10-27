@@ -59,7 +59,7 @@ rsvg_css_parse_vbox (const char * vbox, double * x, double * y,
 	gdouble * list;
 	guint list_len;
 
-	vb.x = vb.y = 0; vb.w = vb.h = 0;
+	*x = *y = *w = *h = 0;
 
 	list = rsvg_css_parse_number_list(vbox, &list_len);
 
