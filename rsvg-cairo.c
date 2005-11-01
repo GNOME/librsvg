@@ -91,7 +91,7 @@ main (int argc, const char **argv)
 
 	rsvg_init ();
 
-	rsvg_set_default_dpi (dpi_x, dpi_y);
+	rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 
 	rsvg = rsvg_handle_new_from_file (args[0], NULL);
 	rsvg_handle_get_dimensions (rsvg, &dimensions);

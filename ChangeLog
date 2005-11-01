@@ -1,3 +1,11 @@
+2005-10-31 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg.h: Revert API changes to make the Gimp folk happier
+	* rsvg-base.c: Reflect that change elsewhere
+	* test-display.c: Ditto
+	* test-rsvg.c: Ditto
+	* rsvg-cairo.c: Ditto
+	
 2005-10-25 Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: 2.13.2
