@@ -1,3 +1,8 @@
+2005-11-04 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-art-*.[ch]: Remove these files, as they've been replaced by Cairo. 
+	Libart is dead. Long live libart!
+	
 2005-10-31 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.h: Revert API changes to make the Gimp folk happier
