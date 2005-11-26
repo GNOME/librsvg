@@ -123,7 +123,8 @@ void
 rsvg_cairo_render_sub (cairo_t *cr, RsvgHandle *handle, const char * id)
 {
 	RsvgDrawingCtx * draw;
-	RsvgNode * drawsub;
+	RsvgNode * drawsub = NULL;
+
 	g_return_if_fail (handle != NULL);
 
 	if (!handle->finished)

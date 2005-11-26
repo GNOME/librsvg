@@ -3,6 +3,7 @@
 	* configure.in: Bump version number
 	* *.c: C89 build fixes from jensgr@gmx.net (Jens Granseuer) - bug 322489
 	* rsvg-cairo-render.c, rsvg.c, rsvg.h: Make mods to Caleb's latest work. Prefer to expose a Cairo API that can render an element by id, and then go from there.
+	* rsvg.c: No need to g_new0() data since we'll be overwriting it anyway
 	
 2005-11-26 Caleb Moore <c.moore@student.unsw.edu.au>
 

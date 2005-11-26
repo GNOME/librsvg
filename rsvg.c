@@ -67,7 +67,7 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char * id)
 	rsvg_handle_get_dimensions (handle, &dimensions);
 	rowstride = dimensions.width * 4;
 
-	pixels = g_new0(guint8, dimensions.width * dimensions.height * 4);
+	pixels = g_new(guint8, dimensions.width * dimensions.height * 4);
 
 	surface = cairo_image_surface_create_for_data (pixels,
 												   CAIRO_FORMAT_ARGB32,
@@ -76,10 +76,7 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char * id)
 
 	cr = cairo_create (surface);
 
-	if (id == NULL)
-		rsvg_cairo_render (cr, handle);
-	else
-		rsvg_cairo_render_sub (cr, handle, id);
+	rsvg_cairo_render_sub (cr, handle, id);
 	rsvg_cairo_to_pixbuf(pixels, rowstride, dimensions.height);
 
 	output = gdk_pixbuf_new_from_data (pixels,
