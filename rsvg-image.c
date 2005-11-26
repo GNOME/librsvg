@@ -503,12 +503,15 @@ rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	RsvgNodeImage *z = (RsvgNodeImage *)self;
 	unsigned int aspect_ratio = z->preserve_aspect_ratio;
 	GdkPixbuf *img = z->img;
+	gdouble x, y, w, h;
+
 	if (img == NULL)
 		return;
-	gdouble x = _rsvg_css_normalize_length(&z->x, ctx, 'h');
-	gdouble y = _rsvg_css_normalize_length(&z->y, ctx, 'v');
-	gdouble w = _rsvg_css_normalize_length(&z->w, ctx, 'h');
-	gdouble h = _rsvg_css_normalize_length(&z->h, ctx, 'v');
+
+	x = _rsvg_css_normalize_length(&z->x, ctx, 'h');
+	y = _rsvg_css_normalize_length(&z->y, ctx, 'v');
+	w = _rsvg_css_normalize_length(&z->w, ctx, 'h');
+	h = _rsvg_css_normalize_length(&z->h, ctx, 'v');
 
 	rsvg_state_reinherit_top(ctx, z->super.state, dominate);
 

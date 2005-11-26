@@ -186,11 +186,14 @@ _set_source_rsvg_solid_colour (RsvgDrawingCtx *ctx,
 {
 	cairo_t *cr = ((RsvgCairoRender *)ctx->render)->cr;
 	guint32 rgb = colour->rgb;
+	double r, g, b;
+
 	if (colour->currentcolour)
 		rgb = current_colour;
-	double r = ((rgb >> 16) & 0xff) / 255.0;
-	double g = ((rgb >>  8) & 0xff) / 255.0;
-	double b = ((rgb >>  0) & 0xff) / 255.0;
+
+	r = ((rgb >> 16) & 0xff) / 255.0;
+	g = ((rgb >>  8) & 0xff) / 255.0;
+	b = ((rgb >>  0) & 0xff) / 255.0;
 
 	if (opacity == 0xff)
 		cairo_set_source_rgb (cr, r, g, b);
@@ -868,11 +871,10 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 {
 	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
 	cairo_t *child_cr = render->cr;
-	RsvgState *state;
-	state = rsvg_state_current(ctx);
 	gboolean lateclip = FALSE;
 	GdkPixbuf * output = NULL;
 	cairo_surface_t *surface = NULL;
+	RsvgState *state = rsvg_state_current(ctx);
 
 	if (rsvg_state_current(ctx)->clip_path_ref)
 		if (((RsvgClipPath *)rsvg_state_current(ctx)->clip_path_ref)->units ==

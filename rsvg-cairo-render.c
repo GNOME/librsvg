@@ -120,12 +120,10 @@ rsvg_cairo_new_drawing_ctx (cairo_t *cr, RsvgHandle *handle)
 }
 
 void
-rsvg_cairo_render_sub(cairo_t *cr, RsvgHandle *handle, RsvgNode *drawsub);
-
-void
-rsvg_cairo_render_sub (cairo_t *cr, RsvgHandle *handle, RsvgNode * drawsub)
+rsvg_cairo_render_sub (cairo_t *cr, RsvgHandle *handle, const char * id)
 {
 	RsvgDrawingCtx * draw;
+	RsvgNode * drawsub;
 	g_return_if_fail (handle != NULL);
 
 	if (!handle->finished)
@@ -134,6 +132,9 @@ rsvg_cairo_render_sub (cairo_t *cr, RsvgHandle *handle, RsvgNode * drawsub)
 	draw = rsvg_cairo_new_drawing_ctx (cr, handle);
 	if (!draw)
 		return;
+
+	if(id && *id)
+		drawsub = rsvg_defs_lookup (handle->defs, id);
 
 	while (drawsub != NULL){
 		draw->drawsub_stack = g_slist_prepend(draw->drawsub_stack, drawsub);

@@ -203,6 +203,7 @@ rsvg_stop_set_atts (RsvgNode *self, RsvgHandle *ctx,
 	gboolean is_current_color = FALSE;
 	const char *value;
 	RsvgGradientStop * stop;
+	RsvgState state;
 
 	stop = (RsvgGradientStop *)self;
 
@@ -230,7 +231,6 @@ rsvg_stop_set_atts (RsvgNode *self, RsvgHandle *ctx,
 			rsvg_parse_style_pairs (ctx, self->state, atts);
 		}
 	self->parent = ctx->currentnode;
-	RsvgState state;
 	rsvg_state_init(&state);
 	rsvg_state_reconstruct(&state, self);
 	if (is_current_color)

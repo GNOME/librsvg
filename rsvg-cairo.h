@@ -31,5 +31,8 @@
 void
 rsvg_cairo_render (cairo_t *cr, RsvgHandle *handle);
 
+void
+rsvg_cairo_render_sub(cairo_t *cr, RsvgHandle *handle, const char * id);
+
 #endif
 

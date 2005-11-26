@@ -43,9 +43,6 @@
 #include "rsvg-cairo.h"
 #include "rsvg-cairo-draw.h"
 
-void
-rsvg_cairo_render_sub(cairo_t *cr, RsvgHandle *handle, RsvgNode *drawsub);
-
 static void
 rsvg_pixmap_destroy (gchar *pixels, gpointer data)
 {
@@ -53,7 +50,7 @@ rsvg_pixmap_destroy (gchar *pixels, gpointer data)
 }
 
 GdkPixbuf *
-rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, char * id)
+rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char * id)
 {
 	RsvgDimensionData dimensions;
 	GdkPixbuf *output = NULL;
@@ -82,8 +79,7 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, char * id)
 	if (id == NULL)
 		rsvg_cairo_render (cr, handle);
 	else
-		rsvg_cairo_render_sub (cr, handle, 
-							   rsvg_defs_lookup (handle->defs, id));
+		rsvg_cairo_render_sub (cr, handle, id);
 	rsvg_cairo_to_pixbuf(pixels, rowstride, dimensions.height);
 
 	output = gdk_pixbuf_new_from_data (pixels,

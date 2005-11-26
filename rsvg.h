@@ -62,7 +62,7 @@ gboolean    rsvg_handle_write             (RsvgHandle      *handle,
 gboolean    rsvg_handle_close             (RsvgHandle      *handle,
 										   GError         **error);
 GdkPixbuf  *rsvg_handle_get_pixbuf        (RsvgHandle      *handle);
-GdkPixbuf  *rsvg_handle_get_pixbuf_sub    (RsvgHandle *handle, char * id);
+GdkPixbuf  *rsvg_handle_get_pixbuf_sub    (RsvgHandle *handle, const char * id);
 void        rsvg_handle_free              (RsvgHandle      *handle);
 
 G_CONST_RETURN char *
@@ -103,15 +103,6 @@ void        rsvg_handle_set_size_callback (RsvgHandle      *handle,
 										   gpointer         user_data,
 										   GDestroyNotify   user_data_destroy);
 
-#ifndef RSVG_DISABLE_DEPRECATED
-
-/*
- * TODO: decide whether we want to either:
- * 1) Keep these around, and just implement it in terms of libart or cairo, whichever one we have around
- * 2) Get rid of these completely
- * 3) Push these into librsvg-libart solely
- */
-
 /* Convenience API */
 
 GdkPixbuf  *rsvg_pixbuf_from_file                  (const gchar  *file_name,
@@ -134,8 +125,6 @@ GdkPixbuf  *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
 													gint          max_width,
 													gint          max_height,
 													GError      **error);
-#endif /* RSVG_DISABLE_DEPRECATED */
-
 G_END_DECLS
 
 #endif /* RSVG_H */

@@ -3541,6 +3541,8 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 	int i;
 	GdkPixbuf * intermediate;
 	unsigned char * pixels;
+	int channelmap[4];
+	int length;
 
 	upself = (RsvgFilterPrimitiveImage *) self;
 
@@ -3574,8 +3576,7 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self,
 
 	g_object_unref (G_OBJECT (img));
 
-	int channelmap[4];
-	int length = gdk_pixbuf_get_height(intermediate) * gdk_pixbuf_get_rowstride(intermediate);
+	length = gdk_pixbuf_get_height(intermediate) * gdk_pixbuf_get_rowstride(intermediate);
 	for (i = 0; i < 4; i++)
 		channelmap[i] = ctx->channelmap[i];
 	pixels = gdk_pixbuf_get_pixels(intermediate);

@@ -1,3 +1,9 @@
+2005-11-26 Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Bump version number
+	* *.c: C89 build fixes from jensgr@gmx.net (Jens Granseuer) - bug 322489
+	* rsvg-cairo-render.c, rsvg.c, rsvg.h: Make mods to Caleb's latest work. Prefer to expose a Cairo API that can render an element by id, and then go from there.
+	
 2005-11-26 Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-cairo-render.c, rsvg.c, rsvg.h: made that partial rendering api that I promised Rahga ages ago. Havn't tested yet.

@@ -601,16 +601,15 @@ static void
 rsvg_characters (void *data, const xmlChar *ch, int len)
 {
 	RsvgHandle *ctx = (RsvgHandle *)data;
+	char * utf8 = NULL;
+	RsvgNodeChars * self;
+	GString * string;
 	
 	if (ctx->handler && ctx->handler->characters != NULL)
 		{
 			ctx->handler->characters (ctx->handler, ch, len);
 			return;
 		}
-
-	char * utf8 = NULL;
-	RsvgNodeChars * self;
-	GString * string;
 
 	if (!ch || !len)
 		return;
