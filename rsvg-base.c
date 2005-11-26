@@ -59,9 +59,6 @@
 static double internal_dpi_x = RSVG_DEFAULT_DPI_X;
 static double internal_dpi_y = RSVG_DEFAULT_DPI_Y;
 
-void
-rsvg_drawing_ctx_init(RsvgDrawingCtx * handle);
-
 static void
 rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
 {

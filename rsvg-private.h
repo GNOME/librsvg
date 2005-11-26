@@ -135,6 +135,7 @@ struct RsvgDrawingCtx {
 	double dpi_x, dpi_y;
 	RsvgViewBox vb;
 	GSList * vb_stack;
+	GSList * drawsub_stack;
 };
 
 /*Abstract base class for context for our backends (one as yet)*/

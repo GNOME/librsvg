@@ -62,6 +62,7 @@ gboolean    rsvg_handle_write             (RsvgHandle      *handle,
 gboolean    rsvg_handle_close             (RsvgHandle      *handle,
 										   GError         **error);
 GdkPixbuf  *rsvg_handle_get_pixbuf        (RsvgHandle      *handle);
+GdkPixbuf  *rsvg_handle_get_pixbuf_sub    (RsvgHandle *handle, char * id);
 void        rsvg_handle_free              (RsvgHandle      *handle);
 
 G_CONST_RETURN char *

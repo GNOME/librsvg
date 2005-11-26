@@ -38,13 +38,21 @@ rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 						 int dominate)
 {
 	RsvgState *state;
+	GSList * stacksave;
 
 	state = self->state;
 
+	stacksave = ctx->drawsub_stack;
+	if (stacksave){
+		if (stacksave->data != self)
+			return;
+		ctx->drawsub_stack = stacksave->next;
+	}
 	if (0 /*!state->visible*/)
 		return;
 
 	self->draw(self, ctx, dominate);
+	ctx->drawsub_stack = stacksave;
 }
 
 /* generic function for drawing all of the children of a particular node */ 

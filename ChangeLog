@@ -1,3 +1,7 @@
+2005-11-26 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-cairo-render.c, rsvg.c, rsvg.h: made that partial rendering api that I promised Rahga ages ago. Havn't tested yet.
+	
 2005-11-25 Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: 2.13.3

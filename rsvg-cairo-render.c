@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <glib/gslist.h>
 #include <math.h>
 #include <string.h>
 
@@ -97,6 +98,7 @@ rsvg_cairo_new_drawing_ctx (cairo_t *cr, RsvgHandle *handle)
 	draw->vb.w = data.em;
 	draw->vb.h = data.ex;
 	draw->pango_context = NULL;
+	draw->drawsub_stack = NULL;
 
 	rsvg_state_push(draw);
 
@@ -118,7 +120,10 @@ rsvg_cairo_new_drawing_ctx (cairo_t *cr, RsvgHandle *handle)
 }
 
 void
-rsvg_cairo_render (cairo_t *cr, RsvgHandle *handle)
+rsvg_cairo_render_sub(cairo_t *cr, RsvgHandle *handle, RsvgNode *drawsub);
+
+void
+rsvg_cairo_render_sub (cairo_t *cr, RsvgHandle *handle, RsvgNode * drawsub)
 {
 	RsvgDrawingCtx * draw;
 	g_return_if_fail (handle != NULL);
@@ -130,8 +135,19 @@ rsvg_cairo_render (cairo_t *cr, RsvgHandle *handle)
 	if (!draw)
 		return;
 
+	while (drawsub != NULL){
+		draw->drawsub_stack = g_slist_prepend(draw->drawsub_stack, drawsub);
+		drawsub = drawsub->parent;
+	}
+
 	rsvg_state_push(draw);
 	rsvg_node_draw((RsvgNode *)handle->treebase, draw, 0);
 	rsvg_state_pop(draw);
 	rsvg_drawing_ctx_free(draw);
+}
+
+void
+rsvg_cairo_render (cairo_t *cr, RsvgHandle *handle)
+{
+	rsvg_cairo_render_sub(cr, handle, NULL);	
 }

@@ -611,6 +611,8 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
 {
 	RsvgFilterPrimitiveOutput output;
 	RsvgFilterPrimitiveOutput * outputpointer;
+	output.bounds.x0 = output.bounds.x1 = 
+		output.bounds.y0 = output.bounds.y1 = 0;
 
 	if (!strcmp (name->str, "SourceGraphic"))
 		{

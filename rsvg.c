@@ -43,26 +43,17 @@
 #include "rsvg-cairo.h"
 #include "rsvg-cairo-draw.h"
 
+void
+rsvg_cairo_render_sub(cairo_t *cr, RsvgHandle *handle, RsvgNode *drawsub);
+
 static void
 rsvg_pixmap_destroy (gchar *pixels, gpointer data)
 {
   g_free (pixels);
 }
 
-/**
- * rsvg_handle_get_pixbuf:
- * @handle: An #RsvgHandle
- *
- * Returns the pixbuf loaded by #handle.  The pixbuf returned will be reffed, so
- * the caller of this function must assume that ref.  If insufficient data has
- * been read to create the pixbuf, or an error occurred in loading, then %NULL
- * will be returned.  Note that the pixbuf may not be complete until
- * @rsvg_handle_close has been called.
- *
- * Returns: the pixbuf loaded by #handle, or %NULL.
- **/
 GdkPixbuf *
-rsvg_handle_get_pixbuf (RsvgHandle *handle)
+rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, char * id)
 {
 	RsvgDimensionData dimensions;
 	GdkPixbuf *output = NULL;
@@ -88,8 +79,11 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 
 	cr = cairo_create (surface);
 
-	rsvg_cairo_render (cr, handle);
-
+	if (id == NULL)
+		rsvg_cairo_render (cr, handle);
+	else
+		rsvg_cairo_render_sub (cr, handle, 
+							   rsvg_defs_lookup (handle->defs, id));
 	rsvg_cairo_to_pixbuf(pixels, rowstride, dimensions.height);
 
 	output = gdk_pixbuf_new_from_data (pixels,
@@ -106,4 +100,23 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 	cairo_surface_destroy (surface);
 
 	return output;
+}
+
+
+/**
+ * rsvg_handle_get_pixbuf:
+ * @handle: An #RsvgHandle
+ *
+ * Returns the pixbuf loaded by #handle.  The pixbuf returned will be reffed, so
+ * the caller of this function must assume that ref.  If insufficient data has
+ * been read to create the pixbuf, or an error occurred in loading, then %NULL
+ * will be returned.  Note that the pixbuf may not be complete until
+ * @rsvg_handle_close has been called.
+ *
+ * Returns: the pixbuf loaded by #handle, or %NULL.
+ **/
+GdkPixbuf *
+rsvg_handle_get_pixbuf (RsvgHandle *handle)
+{
+	return rsvg_handle_get_pixbuf_sub (handle, NULL);
 }
