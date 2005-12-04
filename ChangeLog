@@ -1,3 +1,7 @@
+2005-12-04 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-defs.c: Plug a small mem leak found by Paolo Borelli (bug #322918)
+
 2005-11-26 Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Bump version number

@@ -189,7 +189,7 @@ rsvg_defs_add_resolver(RsvgDefs *defs, RsvgNode ** tochange,
 	RsvgResolutionPending * data;
 	data = g_new(RsvgResolutionPending, 1);
 	data->tochange = tochange;
-	data->name = g_string_new(name);
+	data->name = g_strdup(name);
 	defs->toresolve	= g_slist_prepend(defs->toresolve, data);
 }
 
@@ -200,7 +200,8 @@ rsvg_defs_resolve_all(RsvgDefs *defs)
 		{	
 			RsvgResolutionPending * data;
 			data = defs->toresolve->data;
-			*(data->tochange) = rsvg_defs_lookup (defs, data->name->str);
+			*(data->tochange) = rsvg_defs_lookup (defs, data->name);
+			g_free(data->name);
 			g_free(data);
 			defs->toresolve = g_slist_delete_link(defs->toresolve,
 												  defs->toresolve);
