@@ -47,7 +47,7 @@ typedef struct _RsvgResolutionPending RsvgResolutionPending;
 struct _RsvgResolutionPending
 {
 	RsvgNode ** tochange;
-	GString * name;
+	char * name;
 };
 
 RsvgDefs *

@@ -553,8 +553,11 @@ rsvg_node_image_set_atts (RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts
 															rsvg_handle_get_base_uri (ctx), 
 															NULL); 
 					
-					if (!image->img)
+					if (!image->img) {
+#ifdef G_ENABLE_DEBUG
 						g_warning (_("Couldn't load image: %s\n"), value);
+#endif
+					}
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
