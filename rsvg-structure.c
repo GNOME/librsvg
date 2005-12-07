@@ -103,7 +103,7 @@ _rsvg_node_init(RsvgNode *self)
 }
 
 void 
-_rsvg_node_free (RsvgNode *self)
+_rsvg_node_finalize (RsvgNode *self)
 {
 	if (self->state != NULL)
 		{
@@ -114,6 +114,13 @@ _rsvg_node_free (RsvgNode *self)
 		g_ptr_array_free(self->children, TRUE);
 	if (self->type != NULL)
 		g_string_free(self->type, TRUE);
+
+}
+
+void 
+_rsvg_node_free (RsvgNode *self)
+{
+	_rsvg_node_finalize (self);
 	g_free (self);
 }
 

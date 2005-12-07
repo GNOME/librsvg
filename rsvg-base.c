@@ -1111,8 +1111,6 @@ _rsvg_find_bbox (RsvgHandle *handle)
 
 	rsvg_state_push(ctx);
 	_rsvg_affine_identity(rsvg_state_current(ctx)->affine);
-
-	rsvg_state_push(ctx);
 	_rsvg_node_draw_children ((RsvgNode *)handle->treebase, ctx, 0);
 	rsvg_state_pop(ctx);
 
@@ -1617,5 +1615,5 @@ void _rsvg_pop_view_box(RsvgDrawingCtx *ctx)
 {
 	ctx->vb = *((RsvgViewBox *)ctx->vb_stack->data);
 	g_free(ctx->vb_stack->data);
-	ctx->vb_stack = g_slist_remove_link(ctx->vb_stack, ctx->vb_stack);
+	ctx->vb_stack = g_slist_delete_link(ctx->vb_stack, ctx->vb_stack);
 }

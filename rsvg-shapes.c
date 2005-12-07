@@ -42,10 +42,9 @@ static void
 rsvg_node_path_free (RsvgNode *self)
 {
 	RsvgNodePath *z = (RsvgNodePath *)self;
-	rsvg_state_finalize (z->super.state);
-	g_free(z->super.state);
 	if (z->d)
 		g_free (z->d);
+	_rsvg_node_finalize (&z->super);
 	g_free (z);
 }
 
@@ -181,10 +180,9 @@ static void
 _rsvg_node_poly_free (RsvgNode *self)
 {
 	RsvgNodePoly *z = (RsvgNodePoly *)self;
-	rsvg_state_finalize (z->super.state);
-	g_free(z->super.state);
 	if (z->pointlist)
 		g_free (z->pointlist);
+	_rsvg_node_finalize (&z->super);
 	g_free (z);
 }
 

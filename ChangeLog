@@ -1,3 +1,12 @@
+2005-12-07 Ray Strode <rstrode@redhat.com>
+
+	* rsvg-base.c: remove the push call that's more probably wrong and 
+	clean up leaked viewbox list node (bug 323436)
+	* rsvg-shapes.c: call finalize cleanup function of node parent class in 
+	path_node and poly_node free functions (bug 323435)
+	* rsvg-structure.c: Ditto
+	* rsvg-structure.h: Ditto
+	
 2005-12-04 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-defs.c: Plug a small mem leak found by Paolo Borelli (bug #322918)

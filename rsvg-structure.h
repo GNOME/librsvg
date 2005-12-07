@@ -78,6 +78,7 @@ void rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 			      int dominate);
 void _rsvg_node_draw_children (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							   int dominate);
+void _rsvg_node_finalize (RsvgNode *self);
 void _rsvg_node_free (RsvgNode *self);
 void _rsvg_node_init(RsvgNode *self);
 
