@@ -368,6 +368,11 @@ _rsvg_node_rect_draw(RsvgNode * self, RsvgDrawingCtx *ctx,
 	if (ry > fabs(h / 2.))
 		ry = fabs(h / 2.);
 
+	if (rx == 0)
+		ry = 0;
+	else if (ry == 0)
+		rx = 0;
+
 	/* emulate a rect using a path */
 	d = g_string_new ("M ");
 	g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + rx));
