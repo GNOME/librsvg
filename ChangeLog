@@ -1,7 +1,13 @@
+2005-12-10 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-cairo.c: Remove
+	* rsvg-convert.c: New utility called 'rsvg-convert'. Can convert a SVG to a PS, PDF, or PNG. Can accept
+	SVG input from STDIN and output to STDOUT. Has a lot more flexibility and functionality than the old 'rsvg'
+	program.
+	
 2005-12-09 Caleb Moore <c.moore@student.unsw.edu.au>
 	
-	* rsvg-shapes.c: don't attempt to round courners at all in a rect unless dx > 0 && dy > 0
-	
+	* rsvg-shapes.c: don't attempt to round courners at all in a rect unless dx > 0 && dy > 0	
 
 2005-12-07 Ray Strode <rstrode@redhat.com>
 

@@ -191,6 +191,9 @@ struct RsvgSizeCallbackData
 
 	gboolean keep_aspect_ratio;
 };
+void _rsvg_size_callback (int *width,
+						  int *height,
+						  gpointer  data);
 
 struct _RsvgPropertyBag
 {

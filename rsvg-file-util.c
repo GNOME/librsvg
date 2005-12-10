@@ -34,10 +34,10 @@
 
 #define SVG_BUFFER_SIZE (1024 * 8)
 
-static void
-rsvg_size_callback (int *width,
-					int *height,
-					gpointer  data)
+void
+_rsvg_size_callback (int *width,
+					 int *height,
+					 gpointer  data)
 {
 	struct RsvgSizeCallbackData *real_data = (struct RsvgSizeCallbackData *) data;
 	double zoomx, zoomy, zoom;   
@@ -137,7 +137,7 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 		return NULL;
 	}
 
-	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
+	rsvg_handle_set_size_callback (handle, _rsvg_size_callback, data, NULL);
 
 	rsvg_handle_set_base_uri (handle, base_uri);
 
@@ -167,7 +167,7 @@ rsvg_pixbuf_from_stdio_file_with_size_data(GByteArray *f,
 		return NULL;
 	}
 
-	rsvg_handle_set_size_callback (handle, rsvg_size_callback, data, NULL);
+	rsvg_handle_set_size_callback (handle, _rsvg_size_callback, data, NULL);
 
 	rsvg_handle_set_base_uri(handle, base_uri);
 
