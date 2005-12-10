@@ -44,6 +44,10 @@
 #include <cairo-pdf.h>
 #endif
 
+#ifdef CAIRO_HAS_SVG_SURFACE
+#include <cairo-svg.h>
+#endif
+
 static RsvgHandle * 
 rsvg_handle_new_from_stdio_file (FILE * f,
 								 GError **error)
@@ -127,7 +131,7 @@ main (int argc, const char **argv)
 		{ "zoom",    'z',  POPT_ARG_DOUBLE, &zoom,     0, N_("zoom factor [optional; defaults to 1.0]"), N_("<float>") },
 		{ "width",   'w',  POPT_ARG_INT,    &width,    0, N_("width [optional; defaults to the SVG's width]"), N_("<int>") },
 		{ "height",  'h',  POPT_ARG_INT,    &height,   0, N_("height [optional; defaults to the SVG's height]"), N_("<int>") },		
-		{ "format",  'f',  POPT_ARG_STRING, &format,   0, N_("save format [optional; defaults to 'png']"), N_("[png, pdf, ps]") },
+		{ "format",  'f',  POPT_ARG_STRING, &format,   0, N_("save format [optional; defaults to 'png']"), N_("[png, pdf, ps, svg]") },
 		{ "output",  'o',  POPT_ARG_STRING, &output,   0, N_("output filename [optional; defaults to stdout]"), NULL },
 		{ "keep-aspect-ratio", 'a', POPT_ARG_NONE, &keep_aspect_ratio, 0, N_("whether to preserve the aspect ratio [optional; defaults to FALSE]"), NULL },
 		{ "version", 'v',  POPT_ARG_NONE,   &bVersion, 0, N_("show version information"), NULL },
@@ -257,6 +261,11 @@ main (int argc, const char **argv)
 					else if (!strcmp (format, "ps"))
 						surface = cairo_ps_surface_create_for_stream (rsvg_cairo_write_func, output_file, 
 																	  dimensions.width, dimensions.height);
+#endif
+#ifdef CAIRO_HAS_SVG_SURFACE
+					else if (!strcmp (format, "svg"))
+						surface = cairo_svg_surface_create_for_stream (rsvg_cairo_write_func, output_file, 
+																	   dimensions.width, dimensions.height);
 #endif
 					else 
 						{
