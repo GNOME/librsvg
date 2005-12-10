@@ -6,7 +6,7 @@ endif
 
 SUBDIRS = . moz-plugin gdk-pixbuf-loader gtk-engine data #doc
 lib_LTLIBRARIES = librsvg-2.la
-bin_PROGRAMS = rsvg $(target_rsvg_view) rsvg-convert
+bin_PROGRAMS = rsvg-convert $(target_rsvg_view)
 noinst_PROGRAMS = test-performance
 
 man_MANS = rsvg.1
@@ -97,12 +97,10 @@ LDADDS =				\
 	$(POPT_LIBS)			\
 	$(top_builddir)/librsvg-2.la
 
-rsvg_SOURCES=test-rsvg.c
-rsvg_LDFLAGS =
-rsvg_DEPENDENCIES = $(DEPS)
-rsvg_LDADD = $(LDADDS) $(libm)
+rsvgdir=$(bindir)
+rsvg_DATA=rsvg
 
-rsvg_convert_SOURCES=rsvg-cairo.c
+rsvg_convert_SOURCES=rsvg-convert.c
 rsvg_convert_LDFLAGS =
 rsvg_convert_DEPENDENCIES = $(DEPS)
 rsvg_convert_LDADD = $(LDADDS) $(libm)
@@ -125,6 +123,7 @@ EXTRA_DIST =				\
 	librsvg-2.0.pc.in 		\
 	librsvg-2.0-uninstalled.pc.in 	\
 	librsvg-zip.in 			\
+	rsvg.in				\
 	$(man_MANS)			\
 	$(rsvg_view_SOURCES)
 

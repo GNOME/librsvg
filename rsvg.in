@@ -1,0 +1,69 @@
+#!/usr/bin/env python
+
+#
+# This python script subsumes the old 'rsvg' C-based command-line program.
+# It should be considered deprecated in favor of 'rsvg-convert'.
+#
+
+import getopt, sys, os
+
+def usage():
+    print >> sys.stdout, """Usage: rsvg [-v?] [-d|--dpi-x <float>] [-p|--dpi-y <float>]
+        [-x|--x-zoom <float>] [-y|--y-zoom <float>] [-w|--width <int>]
+        [-h|--height <int>] [-q|--quality <int>] [-f|--format [png, jpeg]]
+        [-v|--version] [-?|--help] [--usage] [OPTIONS...] file.svg file.png"""
+
+def help():
+    print >> sys.stdout, """Usage: rsvg [OPTIONS...] file.svg file.png
+  -d, --dpi-x=<float>          pixels per inch
+  -p, --dpi-y=<float>          pixels per inch
+  -x, --x-zoom=<float>         x zoom factor
+  -y, --y-zoom=<float>         y zoom factor
+  -w, --width=<int>            width
+  -h, --height=<int>           height
+  -q, --quality=<int>          JPEG quality
+  -f, --format=[png, jpeg]     save format
+  -v, --version                show version information
+
+Help options:
+  -?, --help                   Show this help message
+  --usage                      Display brief usage message
+""",
+
+def main():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "d:p:x:y:w:h:q:f:v?", ["dpi-x=", "dpi-y=", "x-zoom=", "y-zoom=", "width=", "height=", "quality=", "format=", "version", "usage"])
+    except getopt.GetoptError:
+        help()
+        sys.exit(1)
+
+    command_str = ""
+    
+    for o, a in opts:
+        if o in ("-v", "--version"):
+            print "rsvg version %s" % ("@VERSION@")
+            sys.exit(0)
+        elif o in ("--usage"):
+            usage()
+            sys.exit(0)
+        elif o in ("-h", "--help"):
+            help()
+            sys.exit(0)
+        elif (o in ("-f", "--format")):
+            if a in ("jpg", "jpeg"):
+                print >> sys.stderr, "The JPEG output format is no longer supported"
+                sys.exit(1)
+        elif (o in ("-q", "--quality")):
+            print "The --quality option is no longer supported"
+            sys.exit(1)
+        else:
+            command_str += " " + o + " " + a
+
+    if len(args) != 2:
+        help()
+        sys.exit(1)
+
+    return os.system("%s %s -o %s %s" % (os.path.join("@prefix@", "bin", "rsvg-convert"), command_str, args[1], args[0]))
+
+if __name__ == "__main__":
+    main()

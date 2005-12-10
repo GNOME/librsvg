@@ -419,6 +419,7 @@ AC_OUTPUT([
 librsvg.spec
 librsvg-features.h
 Makefile
+rsvg
 librsvg-2.0.pc
 librsvg-2.0-uninstalled.pc
 librsvg-zip

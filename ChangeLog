@@ -4,6 +4,8 @@
 	* rsvg-convert.c: New utility called 'rsvg-convert'. Can convert a SVG to a PS, PDF, or PNG. Can accept
 	SVG input from STDIN and output to STDOUT. Has a lot more flexibility and functionality than the old 'rsvg'
 	program.
+	* test-rsvg.c: Remove
+	* rsvg.in: Reimplement 'rsvg' command-line utility in terms of the newer rsvg-convert
 	
 2005-12-09 Caleb Moore <c.moore@student.unsw.edu.au>
 	
