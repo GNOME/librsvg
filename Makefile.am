@@ -131,8 +131,6 @@ CLEANFILES = \
 	$(enum_sources) \
 	s-enum-types-h s-enum-types-c
 
-tests: rsvg
-
 ## Put `exec' in the name because this should be installed by
 ## `install-exec', not `install-data'.
 
