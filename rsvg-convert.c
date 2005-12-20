@@ -143,8 +143,8 @@ main (int argc, const char **argv)
 	const char * const *args;
 	gint n_args = 0;
 	RsvgHandle *rsvg;
-	cairo_surface_t *surface;
-	cairo_t *cr;
+	cairo_surface_t *surface = NULL;
+	cairo_t *cr = NULL;
 	RsvgDimensionData dimensions;
 	FILE * output_file = stdout;
 

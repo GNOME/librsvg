@@ -326,8 +326,7 @@ if test "x$test_mozilla_plugin" != "xno"; then
    fi
 
    if test "x$MOZILLA_CONFIG" != "xno"; then
-      _mozilla_include_dir=`$MOZILLA_CONFIG --cflags|sed 's/-I\(.*\) .*/\1/'`
-      MOZILLA_CFLAGS="-I$_mozilla_include_dir/plugin -I$_mozilla_include_dir/java -I$_mozilla_include_dir/nspr"
+      MOZILLA_CFLAGS=`$MOZILLA_CONFIG --cflags plugin java`
    else
 	PKG_CHECK_MODULES(MOZILLA, mozilla-plugin, build_mozilla_plugin=yes, 
 			[AC_MSG_WARN([mozilla-config not found. Mozilla/Netscape plugin will not be built])])
