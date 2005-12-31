@@ -25,7 +25,7 @@
 #ifndef RSVG_CAIRO_H
 #define RSVG_CAIRO_H
 
-#include <rsvg.h>
+#include <librsvg/rsvg.h>
 #include <cairo.h>
 
 void

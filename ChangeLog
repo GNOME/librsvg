@@ -1,3 +1,7 @@
+2005-12-31 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-cairo.h: Bug 325357 - compile fails when rsvg-cairo.h is #included. (Callum McKenzie)
+	
 2005-12-20 Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Mozilla-config fixes so that it works with more config scripts
