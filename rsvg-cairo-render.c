@@ -30,6 +30,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "rsvg.h"
 #include "rsvg-cairo.h"
 #include "rsvg-cairo-draw.h"
 #include "rsvg-cairo-render.h"

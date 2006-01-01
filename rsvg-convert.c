@@ -33,6 +33,7 @@
 #include <string.h>
 #include <popt.h>
 
+#include "rsvg.h"
 #include "rsvg-cairo.h"
 #include "rsvg-private.h"
 
