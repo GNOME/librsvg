@@ -1,3 +1,7 @@
+2006-01-12 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-cairo-draw.c: bug #326485, also some code cleanups
+
 2006-01-10 Dom Lachowicz <cinamod@hotmail.com>
 
 	* Public functions: added g_return_XXX() sneeze-guards

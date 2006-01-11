@@ -222,6 +222,8 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 	rsvg_pattern = &local_pattern;
 	rsvg_pattern_fix_fallback(rsvg_pattern);
 	cr_render = render->cr;
+	_rsvg_affine_identity(affine);
+	_rsvg_affine_identity(caffine);
 
 	if (rsvg_pattern->obj_bbox)
 		_rsvg_push_view_box(ctx, 1., 1.);
@@ -263,11 +265,6 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 										   pw, ph);
 	cr_pattern = cairo_create(surface);
 
-	
-	affine[0] = 1;
-	affine[1] = 0.;		
-	affine[2] = 0.;
-	affine[3] = 1;
 	/* Create the pattern coordinate system */
 	if (rsvg_pattern->obj_bbox) {
 		/* subtract the pattern origin */
@@ -297,8 +294,6 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 		y -= rsvg_pattern->vbox.y * h / rsvg_pattern->vbox.h;
 
 		caffine[0] = w / rsvg_pattern->vbox.w;
-		caffine[1] = 0.;		
-		caffine[2] = 0.;
 		caffine[3] = h / rsvg_pattern->vbox.h;
 		caffine[4] = x;		
 		caffine[5] = y;
@@ -307,20 +302,8 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 	else if (rsvg_pattern->obj_cbbox) {
 		/* If coords are in terms of the bounding box, use them */
 		caffine[0] = bbox.w;
-		caffine[1] = 0.;		
-		caffine[2] = 0.;
 		caffine[3] = bbox.h;
-		caffine[4] = 0;		
-		caffine[5] = 0;
 		_rsvg_push_view_box(ctx, 1., 1.);
-	} else {
-		/* Otherwise default to an identity matrix */
-		caffine[0] = 1;
-		caffine[1] = 0.;		
-		caffine[2] = 0.;
-		caffine[3] = 1;
-		caffine[4] = 0;		
-		caffine[5] = 0;
 	}
 	
 	if (scwscale != 1.0 || schscale != 1.0)
@@ -411,7 +394,7 @@ _set_rsvg_affine (cairo_t *cr, const double affine[6])
 					   affine[0], affine[1],
 					   affine[2], affine[3],
 					   affine[4], affine[5]);
-	cairo_set_matrix (cr, &matrix);
+	cairo_transform (cr, &matrix);
 }
 
 void
