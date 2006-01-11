@@ -371,6 +371,9 @@ _rsvg_acquire_xlink_href_resource (const char *href,
 {
 	GByteArray * arr = NULL;
 
+	if(!(href && *href))
+		return NULL;
+
 	if(!strncmp(href, "data:", 5))
 		arr = rsvg_acquire_base64_resource (href, err);
 	

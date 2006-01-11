@@ -102,20 +102,19 @@ rsvg_cairo_new_drawing_ctx (cairo_t *cr, RsvgHandle *handle)
 	draw->drawsub_stack = NULL;
 
 	rsvg_state_push(draw);
-
 	state = rsvg_state_current(draw);
+
 	affine[0] = data.width / data.em;
 	affine[1] = 0;
 	affine[2] = 0;
 	affine[3] = data.height / data.ex;
 	affine[4] = 0;
 	affine[5] = 0;
-
 	_rsvg_affine_multiply(state->affine, affine, 
 						  state->affine);
-	
+
 	rsvg_bbox_init(&((RsvgCairoRender *)draw->render)->bbox,
-						 state->affine);
+				   state->affine);
 
 	return draw;
 }

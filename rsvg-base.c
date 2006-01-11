@@ -753,6 +753,8 @@ rsvg_get_base_uri_from_filename(const gchar * file_name)
 void rsvg_handle_set_base_uri (RsvgHandle *handle,
 							   const char *base_uri)
 {
+	g_return_if_fail(handle);
+
 	if (base_uri) {
 		if (handle->base_uri)
 			g_free (handle->base_uri);
@@ -770,6 +772,7 @@ void rsvg_handle_set_base_uri (RsvgHandle *handle,
  */
 G_CONST_RETURN char *rsvg_handle_get_base_uri (RsvgHandle *handle)
 {
+	g_return_val_if_fail(handle, NULL);
 	return handle->base_uri;
 }
 
@@ -914,6 +917,8 @@ rsvg_handle_free_impl (RsvgHandle *handle)
  */
 G_CONST_RETURN char *rsvg_handle_get_metadata (RsvgHandle *handle)
 {
+	g_return_val_if_fail(handle, NULL);
+
 	if (handle->metadata)
 		return handle->metadata->str;
 	else
@@ -933,6 +938,8 @@ G_CONST_RETURN char *rsvg_handle_get_metadata (RsvgHandle *handle)
  */
 G_CONST_RETURN char *rsvg_handle_get_title (RsvgHandle *handle)
 {
+	g_return_val_if_fail(handle, NULL);
+
 	if (handle->title)
 		return handle->title->str;
 	else
@@ -952,6 +959,8 @@ G_CONST_RETURN char *rsvg_handle_get_title (RsvgHandle *handle)
  */
 G_CONST_RETURN char *rsvg_handle_get_desc (RsvgHandle *handle)
 {
+	g_return_val_if_fail(handle, NULL);
+
 	if (handle->desc)
 		return handle->desc->str;
 	else
@@ -1126,6 +1135,10 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
 	RsvgNodeSvg * sself;
 	RsvgBbox bbox;
 
+	g_return_if_fail(output);
+	memset(output, 0, sizeof(RsvgDimensionData));
+	g_return_if_fail(handle);
+
 	sself = (RsvgNodeSvg *)handle->treebase;	
 	if(!sself) {
 		memset(output, 0, sizeof(RsvgDimensionData));
@@ -1294,6 +1307,8 @@ rsvg_handle_write (RsvgHandle    *handle,
 				   gsize          count,
 				   GError       **error)
 {
+	g_return_val_if_fail(handle, FALSE);
+
 	if (handle->first_write) {
 		handle->first_write = FALSE;
 
@@ -1335,6 +1350,8 @@ gboolean
 rsvg_handle_close (RsvgHandle  *handle,
 				   GError     **error)
 {
+	g_return_val_if_fail(handle, FALSE);
+
 #if HAVE_SVGZ
 	if (handle->is_gzipped) {
 		GsfInput * gzip;
@@ -1390,6 +1407,8 @@ rsvg_handle_close (RsvgHandle  *handle,
 void
 rsvg_handle_free (RsvgHandle *handle)
 {
+	g_return_if_fail(handle);
+
 #if HAVE_SVGZ
 	if (handle->is_gzipped)
 		g_object_unref (G_OBJECT (handle->gzipped_data));
