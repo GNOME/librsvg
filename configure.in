@@ -83,30 +83,14 @@ PKG_CHECK_MODULES(GLIB, \
 AC_SUBST(GLIB_LIBS)
 AC_SUBST(GLIB_CFLAGS)	
 
-FREETYPE_LIBS=
-FREETYPE_CFLAGS=
-AC_PATH_PROG(FREETYPE_CONFIG, freetype-config, no)
-if test "x$FREETYPE_CONFIG" != "xno" ; then
-  FREETYPE_CFLAGS=`$FREETYPE_CONFIG --cflags`
-  FREETYPE_LIBS=`$FREETYPE_CONFIG --libs`
-
-  librsvg_save_ldflags=$LDFLAGS
-  LDFLAGS="$LDFLAGS $FREETYPE_LIBS"
-  AC_CHECK_LIB(freetype, FT_Get_Next_Char, have_freetype=true, :)
-  LDFLAGS=$librsvg_save_ldflags
-else
-  AC_MSG_ERROR([freetype is required to build librsvg])
-fi
-AC_SUBST(FREETYPE_LIBS)
-AC_SUBST(FREETYPE_CFLAGS)
-
 PKG_CHECK_MODULES(LIBRSVG, \
 	gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED \
 	glib-2.0 >= $GLIB_REQUIRED \
 	libxml-2.0 >= $LIBXML_REQUIRED \
 	pangoft2 >= $PANGOFT2_REQUIRED \
 	cairo >= $CAIRO_REQUIRED \
-	fontconfig >= $FONTCONFIG_REQUIRED)
+	fontconfig >= $FONTCONFIG_REQUIRED
+	freetype2)
 AC_SUBST(LIBRSVG_LIBS)
 AC_SUBST(LIBRSVG_CFLAGS)
 
