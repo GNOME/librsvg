@@ -86,7 +86,6 @@ rsvg_handle_new_from_stdio_file (FILE * f,
 	return handle;
 }
 
-
 static void
 rsvg_cairo_size_callback (int *width,
 						  int *height,

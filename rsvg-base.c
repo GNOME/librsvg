@@ -641,12 +641,6 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 #warning "libxml version less than 2.6.22. XML entities won't work"
 #endif
 
-#if LIBXML_VERSION >= 20621
-#define RSVG_ENABLE_ENTITIES
-#elif defined(__GNUC__)
-#warning "libxml version less than 2.6.22. XML entities won't work"
-#endif
-
 static xmlEntityPtr
 rsvg_get_entity (void *data, const xmlChar *name)
 {
@@ -818,7 +812,7 @@ rsvg_handle_write_impl (RsvgHandle    *handle,
 		g_propagate_error (error, real_error);
 		return FALSE;
 		}*/
-  return TRUE;
+	return TRUE;
 }
 
 static gboolean
@@ -1004,6 +998,22 @@ rsvg_handle_new (void)
 	return handle;
 }
 
+/**
+ * rsvg_handle_new_gz:
+ * DEPRECATED; only here for API/ABI compatibility. Please use rsvg_handle_new() instead.
+ *
+ * Returns: A new #RsvgHandle capable of loading gzipped SVG data, or %NULL if that is not possible
+ */
+RsvgHandle *
+rsvg_handle_new_gz (void)
+{
+#ifdef HAVE_SVGZ
+	return rsvg_handle_new ();
+#else
+	return NULL;
+#endif
+}
+
 typedef struct {
 	RsvgRender super;
 	RsvgBbox bbox;
@@ -1129,6 +1139,13 @@ _rsvg_find_bbox (RsvgHandle *handle)
 	return output;
 }
 
+/**
+ * rsvg_handle_get_dimensions:
+ * @handle: A RsvgHandle
+ * @output: A place to store the SVG's size
+ *
+ * Get the SVG's size
+ */
 void
 rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
 {

@@ -119,6 +119,17 @@ rsvg_cairo_new_drawing_ctx (cairo_t *cr, RsvgHandle *handle)
 	return draw;
 }
 
+/**
+ * rsvg_cairo_render_sub:
+ *
+ * @cr: A Cairo renderer
+ * @handle: A RsvgHandle
+ * @id: An element's id within the SVG, or %NULL to render the whole SVG
+ *
+ * Draws a subset of a SVG to a Cairo surface
+ *
+ * Since: 2.14
+ */
 void
 rsvg_cairo_render_sub (cairo_t *cr, RsvgHandle *handle, const char * id)
 {
@@ -148,6 +159,16 @@ rsvg_cairo_render_sub (cairo_t *cr, RsvgHandle *handle, const char * id)
 	rsvg_drawing_ctx_free(draw);
 }
 
+/**
+ * rsvg_cairo_render:
+ *
+ * @cr: A Cairo renderer
+ * @handle: A RsvgHandle
+ *
+ * Draws a SVG to a Cairo surface
+ *
+ * Since: 2.14
+ */
 void
 rsvg_cairo_render (cairo_t *cr, RsvgHandle *handle)
 {

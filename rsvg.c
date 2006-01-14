@@ -49,6 +49,19 @@ rsvg_pixmap_destroy (gchar *pixels, gpointer data)
   g_free (pixels);
 }
 
+/**
+ * rsvg_handle_get_pixbuf_sub:
+ * @handle: An #RsvgHandle
+ * @id: The id of an element inside the SVG, or %NULL to render the whole SVG
+ *
+ * Returns the pixbuf loaded by #handle.  The pixbuf returned will be reffed, so
+ * the caller of this function must assume that ref.  If insufficient data has
+ * been read to create the pixbuf, or an error occurred in loading, then %NULL
+ * will be returned.  Note that the pixbuf may not be complete until
+ * @rsvg_handle_close has been called.
+ *
+ * Returns: the pixbuf loaded by #handle, or %NULL.
+ **/
 GdkPixbuf *
 rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char * id)
 {
@@ -94,7 +107,6 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char * id)
 
 	return output;
 }
-
 
 /**
  * rsvg_handle_get_pixbuf:

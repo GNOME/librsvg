@@ -27,31 +27,59 @@
 #include "rsvg.h"
 #include "rsvg-private.h"
 
+/**
+ * rsvg_handle_new_from_data:
+ * @data: The SVG data
+ * @data_len: The length of #data, in bytes
+ * @error: return location for errors
+ *
+ * Loads the SVG specified by #data.
+ *
+ * Returns: A RsvgHandle or %NULL if an error occurs.
+ * Since: 2.14
+ */
 RsvgHandle * rsvg_handle_new_from_data (const guint8 *data,
 										gsize data_len,
 										GError **error)
 {
-	RsvgHandle * handle = rsvg_handle_new ();
+	RsvgHandle * handle;
 
-	if(!handle) {
-	} 
-	else if(!rsvg_handle_write (handle, data, data_len, error)) {
-		rsvg_handle_free(handle);
-		handle = NULL;
-	} else {
-		rsvg_handle_close(handle, error);
+	g_return_val_if_fail(data != NULL, NULL);
+	g_return_val_if_fail(data_len != NULL, NULL);
+
+	handle = rsvg_handle_new ();
+
+	if(handle) {
+		if(!rsvg_handle_write (handle, data, data_len, error)) {
+			rsvg_handle_free(handle);
+			handle = NULL;
+		} else {
+			rsvg_handle_close(handle, error);
+		}
 	}
 
 	return handle;
 }
 
+/**
+ * rsvg_handle_new_from_file:
+ * @file_name: The file name to load. If built with gnome-vfs, can be a URI.
+ * @error: return location for errors
+ *
+ * Loads the SVG specified by #file_name.
+ *
+ * Returns: A RsvgHandle or %NULL if an error occurs.
+ * Since: 2.14
+ */
 RsvgHandle * rsvg_handle_new_from_file (const gchar *file_name,
 										GError **error)
 {
 	gchar * base_uri;
 	GByteArray *f;
-	RsvgHandle * handle;
+	RsvgHandle * handle = NULL;
 	
+	g_return_val_if_fail(file_name != NULL, NULL);
+
 	base_uri = rsvg_get_base_uri_from_filename(file_name);
 	f = _rsvg_acquire_xlink_href_resource (file_name, base_uri, error);
 
@@ -62,10 +90,6 @@ RsvgHandle * rsvg_handle_new_from_file (const gchar *file_name,
 				rsvg_handle_set_base_uri (handle, base_uri);
 			g_byte_array_free (f, TRUE);
 		} 
-	else 
-		{
-			handle = NULL;
-		}	
 	
 	g_free(base_uri);
 
