@@ -1,3 +1,11 @@
+2006-01-16 Rob Staudinger <robert.staudinger@gmail.com>
+
+	* test-display.c: Bug 327177 - add Zoom toolbar
+
+2006-01-16 Dom Lachowicz <cinamod@hotmail.com>
+	
+	* TODO: update to reflect work done and future goals
+	
 2006-01-12 Dom Lachowicz <cinamod@hotmail.com>
 
 	* TODO: updated our roadmap

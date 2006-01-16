@@ -540,17 +540,60 @@ quit_cb (GtkWidget *win, gpointer unused)
 	gtk_main_quit();
 }
 
+static void 
+populate_window (GtkWidget * win, ViewerCbInfo * info, int xid, gint win_width, gint win_height)
+{
+	GtkWidget *vbox;
+	GtkWidget *toolbar;
+	GtkWidget *scroll;
+	GtkToolItem *toolitem;
+	gint img_width, img_height;
+	
+	vbox = gtk_vbox_new (FALSE, 0);
+	gtk_container_add (GTK_CONTAINER (win), vbox);
+
+	toolbar = gtk_toolbar_new ();
+	gtk_box_pack_start (GTK_BOX (vbox), toolbar, FALSE, FALSE, 0);
+
+	toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_IN);
+	gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 0);
+	g_signal_connect (G_OBJECT (toolitem), "clicked", G_CALLBACK (zoom_in), info);
+
+	toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_OUT);
+	gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 1);
+	g_signal_connect (G_OBJECT (toolitem), "clicked", G_CALLBACK (zoom_out), info);
+
+	/* create a new image */
+	info->image = gtk_image_new_from_pixbuf (info->pixbuf);
+
+	/* pack the window with the image */
+	img_width = gdk_pixbuf_get_width (info->pixbuf);
+	img_height = gdk_pixbuf_get_height (info->pixbuf);
+	if ((xid > 0 && (img_width > win_width || img_height > win_height))
+		|| (xid <= 0)) {
+		gtk_window_set_default_size(GTK_WINDOW(win), MIN(img_width, win_width),
+									MIN(img_height, win_height));
+
+		scroll = gtk_scrolled_window_new(NULL, NULL);
+		gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW(scroll),
+										GTK_POLICY_AUTOMATIC,
+										GTK_POLICY_AUTOMATIC);
+		gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW(scroll), info->image);
+		gtk_box_pack_start (GTK_BOX(vbox), scroll, TRUE, TRUE, 0);
+	} else {
+		gtk_box_pack_start (GTK_BOX(vbox), info->image, TRUE, TRUE, 0);
+		gtk_window_set_default_size(GTK_WINDOW(win), img_width, img_height);
+	}
+}
+
 static void
 view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 {
-	GtkWidget *win, *scroll;
-	gint img_width, img_height, win_width, win_height;
+	GtkWidget *win;
 	GdkColor bg_color;
+	gint win_width, win_height;
 
 	/* create toplevel window and set its title */
-
-	img_width = gdk_pixbuf_get_width (info->pixbuf);
-	img_height = gdk_pixbuf_get_height (info->pixbuf);
 
 #ifdef ENABLE_XEMBED
 	if(xid > 0)
@@ -576,31 +619,13 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char * color)
 			gtk_window_set_title (GTK_WINDOW(win), _("SVG Viewer"));
 		}
 
+	populate_window (win, info, xid, win_width, win_height);
+
 	rsvg_window_set_default_icon (GTK_WINDOW(win), info->pixbuf);
 
 	/* exit when 'X' is clicked */
 	g_signal_connect(G_OBJECT(win), "destroy", G_CALLBACK(quit_cb), NULL);
 	g_signal_connect(G_OBJECT(win), "delete_event", G_CALLBACK(quit_cb), NULL);	
-
-	/* create a new image */
-	info->image = gtk_image_new_from_pixbuf (info->pixbuf);
-
-	/* pack the window with the image */
-	if ((xid > 0 && (img_width > win_width || img_height > win_height))
-		|| (xid <= 0)) {
-		gtk_window_set_default_size(GTK_WINDOW(win), MIN(img_width, win_width),
-									MIN(img_height, win_height));
-
-		scroll = gtk_scrolled_window_new(NULL, NULL);
-		gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW(scroll),
-										GTK_POLICY_AUTOMATIC,
-										GTK_POLICY_AUTOMATIC);
-		gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW(scroll), info->image);
-		gtk_container_add(GTK_CONTAINER(win), scroll);
-	} else {
-		gtk_container_add(GTK_CONTAINER(win), info->image);
-		gtk_window_set_default_size(GTK_WINDOW(win), img_width, img_height);
-	}
 
 	if (color && strcmp (color, "none") != 0)
 		{

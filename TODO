@@ -12,13 +12,6 @@ Higher priority:
 		* Ideally would use Cairo->PS for this
 			* In a pinch, embedding a PNG inside of a PS snippet would also work
 
- * Improvements to the rsvg-view application
-	* Add zooming
-	* Add panning
-
- * Improvements to the rsvg application
-	* Support input from stdin
-
  * Areas in need of improvement:
 	* multiImage
 	* Text
@@ -31,15 +24,19 @@ Higher priority:
 		* CSS-defined fonts (do we want to support this?)
 		* SVG fonts (do we want to support this?)
 
- * Interfaces for rescaling and transforming by external applications
+ * Improved GError support in the loader and error propegation, rather then the g_warnings that we currently use.
+	 * Make error messages translatable (requires adding gettext).
 
 Lower Priority:
 
+ * Improvements to the rsvg-view application
+	* Add panning
+	* Add menus
+	* Set a better size hint
+	* Use cairo
+
  * Any SVG 1.2 features that we want to sneak in. SVG 1.2 conformance is not a priority. Top candidates include:
 	* <pageSet>
-
- * Improved GError support in the loader and error propegation, rather then the g_warnings that we currently use.
-	 * Make error messages translatable (requires adding gettext).
 
  * Improved Gimp plugin (choose 1 of "A" or "B". "A" would be easier, but perhaps less compelling. Jimmac and Tigert would be estatic if we could do either.)
 	* A) Store layer names, composite layers onto the Gimp itself
