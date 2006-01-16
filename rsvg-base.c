@@ -998,6 +998,8 @@ rsvg_handle_new (void)
 	return handle;
 }
 
+RsvgHandle * rsvg_handle_new_gz (void);
+
 /**
  * rsvg_handle_new_gz:
  * DEPRECATED; only here for API/ABI compatibility. Please use rsvg_handle_new() instead.

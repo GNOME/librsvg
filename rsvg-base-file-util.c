@@ -45,7 +45,7 @@ RsvgHandle * rsvg_handle_new_from_data (const guint8 *data,
 	RsvgHandle * handle;
 
 	g_return_val_if_fail(data != NULL, NULL);
-	g_return_val_if_fail(data_len != NULL, NULL);
+	g_return_val_if_fail(data_len != 0, NULL);
 
 	handle = rsvg_handle_new ();
 
