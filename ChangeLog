@@ -1,3 +1,9 @@
+2006-01-17 Rob Staudinger <robert.staudinger@gmail.com>
+
+	* configure.in: re-enable gtk-doc build
+	* Makefile.am: dist and cvs add gtk-doc.make
+	* doc/Makefile.am: include gtk-doc.make instead of copying the targets
+
 2006-01-16 Rob Staudinger <robert.staudinger@gmail.com>
 
 	* test-display.c: Bug 327177 - add Zoom toolbar

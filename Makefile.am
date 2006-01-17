@@ -4,7 +4,11 @@ else
 target_rsvg_view =
 endif
 
-SUBDIRS = . moz-plugin gdk-pixbuf-loader gtk-engine data #doc
+SUBDIRS = . moz-plugin gdk-pixbuf-loader gtk-engine data
+if ENABLE_GTK_DOC
+SUBDIRS += doc
+endif
+
 lib_LTLIBRARIES = librsvg-2.la
 bin_PROGRAMS = rsvg-convert $(target_rsvg_view)
 noinst_PROGRAMS = test-performance
@@ -126,7 +130,8 @@ EXTRA_DIST =				\
 	rsvg.in				\
 	librsvg.def			\
 	$(man_MANS)			\
-	$(rsvg_view_SOURCES)
+	$(rsvg_view_SOURCES)		\
+	gtk-doc.make
 
 CLEANFILES = \
 	$(enum_sources) \
