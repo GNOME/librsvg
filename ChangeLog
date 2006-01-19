@@ -1,3 +1,7 @@
+2006-01-19 Rob Staudinger <robert.staudinger@gmail.com>
+
+	* add gtk-doc.make for doc build
+
 2006-01-17 Rob Staudinger <robert.staudinger@gmail.com>
 
 	* configure.in: re-enable gtk-doc build
