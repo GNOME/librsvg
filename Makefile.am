@@ -122,6 +122,10 @@ rsvg_view_CFLAGS= $(GNOME_PRINT_CFLAGS)
 rsvg_view_LDADD = $(GNOME_PRINT_LIBS) $(GTK_LIBS) $(GDK_X11_LIBS) $(libm) $(LDADDS)
 
 EXTRA_DIST =				\
+	MAINTAINERS			\
+	AUTHORS				\
+	NEWS				\
+	TODO				\
 	COPYING.LIB 			\
 	librsvg.spec.in 		\
 	librsvg-2.0.pc.in 		\
