@@ -2,6 +2,7 @@ Makefile
 Makefile.in
 aclocal.m4
 autom4te.cache
+compile
 config.cache
 config.guess
 config.h
@@ -10,15 +11,23 @@ config.log
 config.status
 config.sub
 configure
+depcomp
 librsvg-2.0.pc
+librsvg-2.0-uninstalled.pc
+librsvg-enum-types.h
+librsvg-enum-types.c
 librsvg-features.h
 librsvg.spec
 libtool
 ltconfig
 ltmain.sh
+s-enum-types-c
+s-enum-types-h
 stamp-h
 stamp-h.in
+stamp-h1
 rsvg
+rsvg-view
 test-performance
 test-rsvg
 
