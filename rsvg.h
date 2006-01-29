@@ -29,6 +29,9 @@
 
 G_BEGIN_DECLS
 
+/**
+ * An enumeration representing possible error domains
+ */
 typedef enum {
 	RSVG_ERROR_FAILED
 } RsvgError;
@@ -36,9 +39,16 @@ typedef enum {
 #define RSVG_ERROR (rsvg_error_quark ())
 GQuark rsvg_error_quark (void) G_GNUC_CONST;
 
+/**
+ * The RsvgHandle is an object representing the parsed form of a SVG
+ */
 typedef struct RsvgHandle RsvgHandle;
 
 typedef struct RsvgDimensionData RsvgDimensionData;
+
+/**
+ * RsvgDimensionData
+ */
 struct RsvgDimensionData {
 	int width;
 	int height;

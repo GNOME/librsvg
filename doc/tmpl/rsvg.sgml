@@ -14,6 +14,16 @@ Core API
 
 </para>
 
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### ENUM RsvgError ##### -->
+<para>
+
+</para>
+
+@RSVG_ERROR_FAILED: 
+
 <!-- ##### FUNCTION rsvg_error_quark ##### -->
 <para>
 
@@ -22,14 +32,18 @@ Core API
 @Returns: 
 
 
-<!-- ##### USER_FUNCTION RsvgSizeFunc ##### -->
+<!-- ##### FUNCTION rsvg_init ##### -->
 <para>
 
 </para>
 
-@width: 
-@height: 
-@user_data: 
+
+
+<!-- ##### FUNCTION rsvg_term ##### -->
+<para>
+
+</para>
+
 
 
 <!-- ##### FUNCTION rsvg_set_default_dpi ##### -->
@@ -37,10 +51,19 @@ Core API
 
 </para>
 
+@dpi: 
+<!-- # Unused Parameters # -->
 @dpi_x: 
 @dpi_y: 
-<!-- # Unused Parameters # -->
-@dpi: 
+
+
+<!-- ##### FUNCTION rsvg_set_default_dpi_x_y ##### -->
+<para>
+
+</para>
+
+@dpi_x: 
+@dpi_y: 
 
 
 <!-- ##### FUNCTION rsvg_handle_new ##### -->
@@ -51,7 +74,27 @@ Core API
 @Returns: 
 
 
+<!-- ##### FUNCTION rsvg_handle_free ##### -->
+<para>
+
+</para>
+
+@handle: 
+
+
 <!-- ##### FUNCTION rsvg_handle_set_dpi ##### -->
+<para>
+
+</para>
+
+@handle: 
+@dpi: 
+<!-- # Unused Parameters # -->
+@dpi_x: 
+@dpi_y: 
+
+
+<!-- ##### FUNCTION rsvg_handle_set_dpi_x_y ##### -->
 <para>
 
 </para>
@@ -59,19 +102,6 @@ Core API
 @handle: 
 @dpi_x: 
 @dpi_y: 
-<!-- # Unused Parameters # -->
-@dpi: 
-
-
-<!-- ##### FUNCTION rsvg_handle_set_size_callback ##### -->
-<para>
-
-</para>
-
-@handle: 
-@size_func: 
-@user_data: 
-@user_data_destroy: 
 
 
 <!-- ##### FUNCTION rsvg_handle_write ##### -->
@@ -96,6 +126,27 @@ Core API
 @Returns: 
 
 
+<!-- ##### USER_FUNCTION RsvgSizeFunc ##### -->
+<para>
+
+</para>
+
+@width: 
+@height: 
+@user_data: 
+
+
+<!-- ##### FUNCTION rsvg_handle_set_size_callback ##### -->
+<para>
+
+</para>
+
+@handle: 
+@size_func: 
+@user_data: 
+@user_data_destroy: 
+
+
 <!-- ##### FUNCTION rsvg_handle_get_pixbuf ##### -->
 <para>
 
@@ -103,6 +154,34 @@ Core API
 
 @handle: 
 @Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_get_pixbuf_sub ##### -->
+<para>
+
+</para>
+
+@handle: 
+@id: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_get_base_uri ##### -->
+<para>
+
+</para>
+
+@handle: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_set_base_uri ##### -->
+<para>
+
+</para>
+
+@handle: 
+@base_uri: 
 
 
 <!-- ##### FUNCTION rsvg_handle_get_title ##### -->
@@ -123,11 +202,12 @@ Core API
 @Returns: 
 
 
-<!-- ##### FUNCTION rsvg_handle_free ##### -->
+<!-- ##### FUNCTION rsvg_handle_get_dimensions ##### -->
 <para>
 
 </para>
 
 @handle: 
+@dimension_data: 
 
 

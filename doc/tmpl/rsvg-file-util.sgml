@@ -14,6 +14,30 @@ Utility/Convenience Functions
 
 </para>
 
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### FUNCTION rsvg_handle_new_from_data ##### -->
+<para>
+
+</para>
+
+@data: 
+@data_len: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_new_from_file ##### -->
+<para>
+
+</para>
+
+@file_name: 
+@error: 
+@Returns: 
+
+
 <!-- ##### FUNCTION rsvg_pixbuf_from_file ##### -->
 <para>
 

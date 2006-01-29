@@ -1,3 +1,33 @@
+<!-- ##### SECTION ./tmpl/rsvg-gz.sgml:Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/rsvg-gz.sgml:See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/rsvg-gz.sgml:Short_Description ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/rsvg-gz.sgml:Stability_Level ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/rsvg-gz.sgml:Title ##### -->
+Creating a SVGZ reader
+
+
+<!-- ##### MACRO RSVG_ERROR ##### -->
+<para>
+
+</para>
+
+
 <!-- ##### FUNCTION rsvg_handle_new_gz ##### -->
 <para>
 

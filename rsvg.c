@@ -61,6 +61,8 @@ rsvg_pixmap_destroy (gchar *pixels, gpointer data)
  * @rsvg_handle_close has been called.
  *
  * Returns: the pixbuf loaded by #handle, or %NULL.
+ *
+ * Since: 2.14
  **/
 GdkPixbuf *
 rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char * id)

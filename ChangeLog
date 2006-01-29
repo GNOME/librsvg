@@ -1,3 +1,7 @@
+2006-01-28 Dom Lachowicz <cinamod@hotmail.com>
+
+	* Update documentation. Should be near 100% symbol coverage.
+	
 2006-01-19 Rob Staudinger <robert.staudinger@gmail.com>
 
 	* add gtk-doc.make for doc build

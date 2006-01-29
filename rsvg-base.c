@@ -737,10 +737,11 @@ rsvg_get_base_uri_from_filename(const gchar * file_name)
 }
 
 /**
- * Set the base URI for this SVG
- *
+ * rsvg_handle_set_base_uri
  * @handle: A #RsvgHandle
- * @base_uri: 
+ * @base_uri: The base uri
+ *
+ * Set the base URI for this SVG
  *
  * Since: 2.9 (really present in 2.8 as well)
  */
@@ -758,8 +759,10 @@ void rsvg_handle_set_base_uri (RsvgHandle *handle,
 }
 
 /**
- * Gets the base uri for this RsvgHandle.
+ * rsvg_handle_get_base_uri:
  * @handle: A #RsvgHandle
+ *
+ * Gets the base uri for this #RsvgHandle.
  *
  * Returns: the base uri, possibly null
  * Since: 2.9 (really present in 2.8 as well)
@@ -998,24 +1001,6 @@ rsvg_handle_new (void)
 	return handle;
 }
 
-RsvgHandle * rsvg_handle_new_gz (void);
-
-/**
- * rsvg_handle_new_gz:
- * DEPRECATED; only here for API/ABI compatibility. Please use rsvg_handle_new() instead.
- *
- * Returns: A new #RsvgHandle capable of loading gzipped SVG data, or %NULL if that is not possible
- */
-RsvgHandle *
-rsvg_handle_new_gz (void)
-{
-#ifdef HAVE_SVGZ
-	return rsvg_handle_new ();
-#else
-	return NULL;
-#endif
-}
-
 typedef struct {
 	RsvgRender super;
 	RsvgBbox bbox;
@@ -1142,14 +1127,16 @@ _rsvg_find_bbox (RsvgHandle *handle)
 }
 
 /**
- * rsvg_handle_get_dimensions:
- * @handle: A RsvgHandle
- * @output: A place to store the SVG's size
+ * rsvg_handle_get_dimensions
+ * @handle: A #RsvgHandle
+ * @dimension_data: A place to store the SVG's size
  *
- * Get the SVG's size
+ * Get the SVG's size. Do not call from within the size_func callback, because an infinite loop will occur.
+ *
+ * Since: 2.14
  */
 void
-rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
+rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * dimension_data)
 {
 	RsvgNodeSvg * sself;
 	RsvgBbox bbox;
@@ -1159,10 +1146,8 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
 	g_return_if_fail(handle);
 
 	sself = (RsvgNodeSvg *)handle->treebase;	
-	if(!sself) {
-		memset(output, 0, sizeof(RsvgDimensionData));
+	if(!sself)
 		return;
-	}
 	
 	bbox.x = bbox.y = 0;
 	bbox.w = bbox.h = 1;
@@ -1185,9 +1170,8 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * output)
 	output->em = output->width;
 	output->ex = output->height;
 
-	if (handle->size_func) {
+	if (handle->size_func)
 		(* handle->size_func) (&output->width, &output->height, handle->user_data);
-	}	
 }
 
 /** 
@@ -1249,13 +1233,13 @@ rsvg_handle_set_dpi (RsvgHandle * handle, double dpi)
 }
 
 /**
- * rsvg_handle_set_dpi
+ * rsvg_handle_set_dpi_x_y
  * @handle: An #RsvgHandle
  * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the outgoing pixbuf. Common values are
- * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi_x or #dpi_y will 
  * reset the DPI to whatever the default value happens to be.
  *
  * Since: 2.8

@@ -5,7 +5,7 @@
 <!ENTITY hash "#">
 <!ENTITY % local.notation.class "| PNG">
 <!ENTITY RSVG SYSTEM "xml/rsvg.xml">
-<!ENTITY SVGZ SYSTEM "xml/rsvg-gz.xml">
+<!ENTITY Cairo SYSTEM "xml/rsvg-cairo.xml">
 <!ENTITY Utilities SYSTEM "xml/rsvg-file-util.xml">
 <!ENTITY ObjectIndex SYSTEM "xml/object_index.sgml">
 <!ENTITY TreeIndex SYSTEM "xml/tree_index.sgml">
@@ -40,7 +40,7 @@ string utilities, file utilities, a main loop abstraction, and so on.
 <varlistentry>
 <term>Pango</term>
 <listitem><para>
-A general-purpose text library. http://www.pango.org
+A general-purpose text library. http://www.pango.org/
 </para></listitem>
 </varlistentry>
 
@@ -51,32 +51,38 @@ A general-purpose image library.
 </para></listitem>
 </varlistentry>
 
+<varlistentry>
+<term>Cairo</term>
+<listitem><para>
+Cairo is a 2D graphics library with support for multiple output devices. Cairo is designed to produce consistent output on all output media while taking advantage of display hardware acceleration when available. http://www.cairographics.org/
+</para></listitem>
+</varlistentry>
+
 </variablelist>
 
 </para>
 </partintro>
+</part>
 
-<reference>
+<part>
 <title>
 Using RSVG
 </title>
 &RSVG;
-</reference>
+</part>
 
-<reference>
+<part>
 <title>
-Handling Gzipped SVGs (SVGZ)
+Using RSVG with Cairo
 </title>
-&SVGZ;
-</reference>
+&Cairo;
+</part>
 
-<reference>
+<part>
 <title>
 Utility and Convenience Functions
 </title>
 &Utilities;
-</reference>
-
 </part>
 
 <index>

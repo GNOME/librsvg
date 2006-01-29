@@ -181,7 +181,7 @@ main (int argc, const char **argv)
 		}
 	else if (n_args > 1 && (!format || !strcmp (format, "png"))) 
 		{
-			g_print (_("Multiple SVG files are only allowed for PDF and PS output.\n"));
+			g_print (_("Multiple SVG files are only allowed for PDF, PS and SVG output.\n"));
 			exit (1);
 		}
 
@@ -254,17 +254,17 @@ main (int argc, const char **argv)
 															  dimensions.width, dimensions.height);
 #ifdef CAIRO_HAS_PDF_SURFACE
 					else if (!strcmp (format, "pdf"))
-						surface = cairo_pdf_surface_create_for_stream (rsvg_cairo_write_func, output_file, 
+						surface = cairo_pdf_surface_create_for_stream (rsvg_cairo_write_func, output_file,
 																	   dimensions.width, dimensions.height);
 #endif
 #ifdef CAIRO_HAS_PS_SURFACE
 					else if (!strcmp (format, "ps"))
-						surface = cairo_ps_surface_create_for_stream (rsvg_cairo_write_func, output_file, 
+						surface = cairo_ps_surface_create_for_stream (rsvg_cairo_write_func, output_file,
 																	  dimensions.width, dimensions.height);
 #endif
 #ifdef CAIRO_HAS_SVG_SURFACE
 					else if (!strcmp (format, "svg"))
-						surface = cairo_svg_surface_create_for_stream (rsvg_cairo_write_func, output_file, 
+						surface = cairo_svg_surface_create_for_stream (rsvg_cairo_write_func, output_file,
 																	   dimensions.width, dimensions.height);
 #endif
 					else 
