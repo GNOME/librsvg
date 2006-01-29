@@ -1141,8 +1141,8 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * dimension_da
 	RsvgNodeSvg * sself;
 	RsvgBbox bbox;
 
-	g_return_if_fail(output);
-	memset(output, 0, sizeof(RsvgDimensionData));
+	g_return_if_fail(dimension_data);
+	memset(dimension_data, 0, sizeof(RsvgDimensionData));
 	g_return_if_fail(handle);
 
 	sself = (RsvgNodeSvg *)handle->treebase;	
@@ -1162,16 +1162,16 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * dimension_da
 			else
 				bbox = _rsvg_find_bbox(handle);
 		}
-	output->width  = _rsvg_css_hand_normalize_length(&sself->w, handle->dpi_x, 
+	dimension_data->width  = _rsvg_css_hand_normalize_length(&sself->w, handle->dpi_x, 
 																	bbox.w + bbox.x * 2, 12);
-	output->height = _rsvg_css_hand_normalize_length(&sself->h, handle->dpi_y, 
+	dimension_data->height = _rsvg_css_hand_normalize_length(&sself->h, handle->dpi_y, 
 													 bbox.h + bbox.y * 2, 12);
 	
-	output->em = output->width;
-	output->ex = output->height;
+	dimension_data->em = dimension_data->width;
+	dimension_data->ex = dimension_data->height;
 
 	if (handle->size_func)
-		(* handle->size_func) (&output->width, &output->height, handle->user_data);
+		(* handle->size_func) (&dimension_data->width, &dimension_data->height, handle->user_data);
 }
 
 /** 
