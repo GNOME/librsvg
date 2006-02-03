@@ -1,4 +1,8 @@
 2006-02-03 Caleb Moore <c.moore@student.unsw.edu.au>
+	
+	* rsvg-cairo-draw.c: fixed a nasty pattern regression I made a month ago when I was cleaning up the code.
+
+2006-02-03 Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-structure.c: bug #329636
 

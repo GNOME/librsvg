@@ -216,7 +216,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 	cairo_matrix_t matrix;
 	int i;
 	double affine[6], caffine[6], bbwscale, bbhscale, scwscale, schscale;
-	double patternw, patternh, patternx, patterny;
+	double taffine[6], patternw, patternh, patternx, patterny;
 	int pw, ph;
 
 	rsvg_pattern = &local_pattern;
@@ -248,11 +248,11 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 		bbhscale = 1.0;
 	}
 
-	_rsvg_affine_multiply(affine, rsvg_pattern->affine, 
+	_rsvg_affine_multiply(taffine, rsvg_pattern->affine, 
 						  rsvg_state_current(ctx)->affine);
 
-	scwscale = sqrt(affine[0] * affine[0] + affine[2] * affine[2]);
-	schscale = sqrt(affine[1] * affine[1] + affine[3] * affine[3]);
+	scwscale = sqrt(taffine[0] * taffine[0] + taffine[2] * taffine[2]);
+	schscale = sqrt(taffine[1] * taffine[1] + taffine[3] * taffine[3]);
 
 	pw = patternw * bbwscale * scwscale;
 	ph = patternh * bbhscale * schscale;
@@ -326,7 +326,6 @@ _set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
 
 	/* Draw everything */
 	_rsvg_node_draw_children ((RsvgNode *)rsvg_pattern, ctx, 2);
-
 	/* Return to the original coordinate system */
 	rsvg_state_pop(ctx);
 
