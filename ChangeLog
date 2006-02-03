@@ -1,3 +1,7 @@
+2006-02-03 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-structure.c: bug #329636
+
 2006-01-28 Dom Lachowicz <cinamod@hotmail.com>
 
 	* Update documentation. Should be near 100% symbol coverage.

@@ -1101,6 +1101,7 @@ _rsvg_find_bbox (RsvgHandle *handle)
 	RsvgDrawingCtx * ctx = g_new(RsvgDrawingCtx, 1);
 	RsvgBbox output;
 	RsvgBboxRender * render = rsvg_bbox_render_new();
+	ctx->drawsub_stack = NULL;
 	ctx->render = (RsvgRender *)render;
 	
 	ctx->state = NULL;
