@@ -135,7 +135,7 @@ void        rsvg_handle_free              (RsvgHandle      *handle);
  * @height: the output height the SVG should be
  * @user_data: user data
  *
- * Deprecated: Set up a cairo matrix and use rsvg_cairo_render() instead.
+ * Deprecated: Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
  */
 typedef void (* RsvgSizeFunc) (gint     *width,
 							   gint     *height,
