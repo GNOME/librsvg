@@ -145,7 +145,7 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 
 	rsvg_handle_close (handle, error);
 	retval = rsvg_handle_get_pixbuf (handle);
-	rsvg_handle_free (handle);
+	g_object_unref (G_OBJECT(handle));
 
 	return retval;	
 }
@@ -175,7 +175,7 @@ rsvg_pixbuf_from_stdio_file_with_size_data(GByteArray *f,
 
 	rsvg_handle_close (handle, error);
 	retval = rsvg_handle_get_pixbuf (handle);
-	rsvg_handle_free (handle);
+	g_object_unref (G_OBJECT(handle));
 
 	return retval;
 }

@@ -67,13 +67,13 @@ rsvg_handle_new_from_stdio_file (FILE * f,
 				{
 					if (!rsvg_handle_write (handle, buffer, length, error))
 						{
-							rsvg_handle_free (handle);
+							g_object_unref (G_OBJECT(handle));
 							return NULL;
 						}
 				}
 			else if (ferror (f)) 
 				{
-					rsvg_handle_free (handle);
+					g_object_unref (G_OBJECT(handle));
 					return NULL;
 				}
 		}
@@ -283,7 +283,7 @@ main (int argc, const char **argv)
 			else
 				cairo_show_page (cr);
 
-			rsvg_handle_free (rsvg);
+			g_object_unref (G_OBJECT(rsvg));
 		}
 	
 	cairo_destroy (cr);

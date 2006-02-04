@@ -243,6 +243,19 @@ rsvg_handle_get_type (void)
 }
 
 /**
+ * rsvg_handle_free:
+ * @handle: An #RsvgHandle
+ *
+ * Frees #handle.
+ * Deprecated: Use g_object_unref() instead.
+ **/
+void
+rsvg_handle_free (RsvgHandle *handle)
+{
+	g_object_unref (G_OBJECT (handle));
+}
+
+/**
  * rsvg_handle_new:
  *
  * Returns a new rsvg handle.  Must be freed with @rsvg_handle_free.  This

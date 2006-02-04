@@ -642,7 +642,7 @@ svg_cache_value_free(gpointer foo)
 
   handle = (RsvgHandle *)foo;
   if(handle != NULL)
-    rsvg_handle_free(handle);
+    g_object_unref(G_OBJECT(handle));
 }
 
 #define SVG_BUFFER_SIZE (1024*8)

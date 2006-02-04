@@ -56,7 +56,7 @@ rsvg_defs_new (void)
 	RsvgDefs *result = g_new (RsvgDefs, 1);
 	
 	result->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-	result->externs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify)rsvg_handle_free);
+	result->externs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify)g_object_unref);
 	result->unnamed = g_ptr_array_new ();
 	result->base_uri = NULL;
 	result->toresolve = NULL;

@@ -1329,21 +1329,6 @@ rsvg_handle_close (RsvgHandle  *handle,
 	return rsvg_handle_close_impl (handle, error);
 }
 
-/**
- * rsvg_handle_free:
- * @handle: An #RsvgHandle
- *
- * Frees #handle.
- * Deprecated: Use g_object_unref() instead.
- **/
-void
-rsvg_handle_free (RsvgHandle *handle)
-{
-	g_return_if_fail(handle);
-
-	g_object_unref (G_OBJECT (handle));
-}
-
 #ifdef HAVE_GNOME_VFS
 #include <libgnomevfs/gnome-vfs.h>
 #endif
