@@ -29,8 +29,8 @@ rsvg_handle_get_dimensions
 <SECTION>
 <FILE>rsvg-cairo</FILE>
 <TITLE>Cairo</TITLE>
-rsvg_cairo_render
-rsvg_cairo_render_sub
+rsvg_handle_render_cairo
+rsvg_handle_render_cairo_sub
 </SECTION>
 
 <SECTION>

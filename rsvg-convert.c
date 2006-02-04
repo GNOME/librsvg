@@ -276,7 +276,7 @@ main (int argc, const char **argv)
 					cr = cairo_create (surface);
 				}
 
-			rsvg_cairo_render (cr, rsvg);
+			rsvg_handle_render_cairo (rsvg, cr);
 
 			if (!format || !strcmp (format, "png"))
 				cairo_surface_write_to_png_stream (surface, rsvg_cairo_write_func, output_file);

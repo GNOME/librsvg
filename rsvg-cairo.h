@@ -28,10 +28,10 @@
 #include <cairo.h>
 
 void
-rsvg_cairo_render (cairo_t *cr, RsvgHandle *handle);
+rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr);
 
 void
-rsvg_cairo_render_sub(cairo_t *cr, RsvgHandle *handle, const char * id);
+rsvg_handle_render_cairo_sub(RsvgHandle *handle, cairo_t *cr, const char * id);
 
 #endif
 

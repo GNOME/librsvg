@@ -26,8 +26,8 @@ EXPORTS
 	rsvg_pixbuf_from_file_at_size
 	rsvg_pixbuf_from_file_at_max_size
 	rsvg_pixbuf_from_file_at_zoom_with_max
-	rsvg_cairo_render
-	rsvg_cairo_render_sub
+	rsvg_handle_render_cairo
+	rsvg_handle_render_cairo_sub
 	rsvg_handle_get_type
 	_rsvg_size_callback
 	_rsvg_acquire_xlink_href_resource

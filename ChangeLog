@@ -1,5 +1,11 @@
 2006-02-04 Dom Lachowicz <cinamod@hotmail.com>
 
+	* *.c: Rename rsvg_cairo_render to rsvg_handle_render_cairo, for
+	better GObject consistency
+	* configure.in: 2.13.91
+	
+2006-02-04 Dom Lachowicz <cinamod@hotmail.com>
+
 	* doc/*: Update documentation. I'm pretty happy with how things look
 	and are arranged now.
 	* *.c: Don't use newly deprecated functions

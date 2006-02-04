@@ -217,7 +217,7 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
  * set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_cairo_render() instead.
+ * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf *
 rsvg_pixbuf_from_file (const gchar *file_name,
@@ -239,7 +239,7 @@ rsvg_pixbuf_from_file (const gchar *file_name,
  * occurred, @error is set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_cairo_render() instead.
+ * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf *
 rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
@@ -276,7 +276,7 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
  * returned pixbuf. If an error occurred, @error is set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_cairo_render() instead.
+ * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf  *
 rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
@@ -315,7 +315,7 @@ rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
  * error occurred, @error is set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_cairo_render() instead.
+ * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf *
 rsvg_pixbuf_from_file_at_size (const gchar *file_name,
@@ -346,7 +346,7 @@ rsvg_pixbuf_from_file_at_size (const gchar *file_name,
  * @error is set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_cairo_render() instead.
+ * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf  *
 rsvg_pixbuf_from_file_at_max_size (const gchar     *file_name,

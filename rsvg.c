@@ -91,7 +91,7 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char * id)
 
 	cr = cairo_create (surface);
 
-	rsvg_cairo_render_sub (cr, handle, id);
+	rsvg_handle_render_cairo_sub (handle, cr, id);
 	rsvg_cairo_to_pixbuf(pixels, rowstride, dimensions.height);
 
 	output = gdk_pixbuf_new_from_data (pixels,

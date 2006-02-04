@@ -22,6 +22,23 @@
 Creating a SVGZ reader
 
 
+<!-- ##### FUNCTION rsvg_cairo_render ##### -->
+<para>
+
+</para>
+
+@cr: 
+@handle: 
+
+<!-- ##### FUNCTION rsvg_cairo_render_sub ##### -->
+<para>
+
+</para>
+
+@cr: 
+@handle: 
+@id: 
+
 <!-- ##### FUNCTION rsvg_handle_new_gz ##### -->
 <para>
 

@@ -1199,7 +1199,7 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
  * of the generated pixbuf.  If the image has no associated size, then the size
  * arguments are set to -1.
  *
- * Deprecated: Set up a cairo matrix and use rsvg_cairo_render() instead.
+ * Deprecated: Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
  **/
 void
 rsvg_handle_set_size_callback (RsvgHandle     *handle,
