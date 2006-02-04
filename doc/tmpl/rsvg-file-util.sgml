@@ -2,11 +2,13 @@
 Utility/Convenience Functions
 
 <!-- ##### SECTION Short_Description ##### -->
-
+<para>
+How to render SVGs into GdkPixbufs, for easy use in GTK+ applications
+</para>
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>
-
+GdkPixbuf is a library for image loading and manipulation. It is part of the cross-platform GTK+ widget toolkit.
 </para>
 
 <!-- ##### SECTION See_Also ##### -->
@@ -17,24 +19,22 @@ Utility/Convenience Functions
 <!-- ##### SECTION Stability_Level ##### -->
 
 
-<!-- ##### FUNCTION rsvg_handle_new_from_data ##### -->
+<!-- ##### FUNCTION rsvg_handle_get_pixbuf ##### -->
 <para>
 
 </para>
 
-@data: 
-@data_len: 
-@error: 
+@handle: 
 @Returns: 
 
 
-<!-- ##### FUNCTION rsvg_handle_new_from_file ##### -->
+<!-- ##### FUNCTION rsvg_handle_get_pixbuf_sub ##### -->
 <para>
 
 </para>
 
-@file_name: 
-@error: 
+@handle: 
+@id: 
 @Returns: 
 
 

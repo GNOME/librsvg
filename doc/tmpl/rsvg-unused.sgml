@@ -22,12 +22,6 @@
 Creating a SVGZ reader
 
 
-<!-- ##### MACRO RSVG_ERROR ##### -->
-<para>
-
-</para>
-
-
 <!-- ##### FUNCTION rsvg_handle_new_gz ##### -->
 <para>
 

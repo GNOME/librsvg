@@ -2,6 +2,7 @@
 <FILE>rsvg</FILE>
 <TITLE>Core API</TITLE>
 RsvgError
+RSVG_ERROR
 rsvg_error_quark
 rsvg_init
 rsvg_term
@@ -13,10 +14,11 @@ rsvg_handle_set_dpi
 rsvg_handle_set_dpi_x_y
 rsvg_handle_write
 rsvg_handle_close
+rsvg_handle_new_from_data
+rsvg_handle_new_from_file
+RsvgDimensionData
 RsvgSizeFunc
 rsvg_handle_set_size_callback
-rsvg_handle_get_pixbuf
-rsvg_handle_get_pixbuf_sub
 rsvg_handle_get_base_uri
 rsvg_handle_set_base_uri
 rsvg_handle_get_title
@@ -26,16 +28,16 @@ rsvg_handle_get_dimensions
 
 <SECTION>
 <FILE>rsvg-cairo</FILE>
-<TITLE>Rendering SVG files with cairo</TITLE>
+<TITLE>Cairo</TITLE>
 rsvg_cairo_render
 rsvg_cairo_render_sub
 </SECTION>
 
 <SECTION>
 <FILE>rsvg-file-util</FILE>
-<TITLE>Convenience Functions</TITLE>
-rsvg_handle_new_from_data
-rsvg_handle_new_from_file
+<TITLE>GdkPixbuf</TITLE>
+rsvg_handle_get_pixbuf
+rsvg_handle_get_pixbuf_sub
 rsvg_pixbuf_from_file
 rsvg_pixbuf_from_file_at_zoom
 rsvg_pixbuf_from_file_at_size

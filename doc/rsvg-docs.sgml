@@ -6,7 +6,7 @@
 <!ENTITY % local.notation.class "| PNG">
 <!ENTITY RSVG SYSTEM "xml/rsvg.xml">
 <!ENTITY Cairo SYSTEM "xml/rsvg-cairo.xml">
-<!ENTITY Utilities SYSTEM "xml/rsvg-file-util.xml">
+<!ENTITY GdkPixbuf SYSTEM "xml/rsvg-file-util.xml">
 <!ENTITY ObjectIndex SYSTEM "xml/object_index.sgml">
 <!ENTITY TreeIndex SYSTEM "xml/tree_index.sgml">
 ]>
@@ -80,9 +80,9 @@ Using RSVG with Cairo
 
 <part>
 <title>
-Utility and Convenience Functions
+Using RSVG with GdkPixbuf
 </title>
-&Utilities;
+&GdkPixbuf;
 </part>
 
 <index>

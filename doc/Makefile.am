@@ -15,7 +15,7 @@ DOC_SOURCE_DIR=..
 SCANGOBJ_OPTIONS=--type-init-func="g_type_init ()" 
 
 # Extra options to supply to gtkdoc-scan
-SCAN_OPTIONS=
+SCAN_OPTIONS=--deprecated-guards=RSVG_DISABLE_DEPRECATED
 
 # Extra options to supply to gtkdoc-mkdb
 MKDB_OPTIONS = --sgml-mode --output-format=xml --ignore-files=trio

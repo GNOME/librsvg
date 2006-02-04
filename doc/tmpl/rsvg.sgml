@@ -2,11 +2,16 @@
 Core API
 
 <!-- ##### SECTION Short_Description ##### -->
-
+<para>
+Create and manipulate SVG objects
+</para>
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>
-
+librsvg is a component used within software applications to enable support for SVG-format scalable graphics. In contrast to raster formats, scalable vector graphics provide users and artists a way to create, view, and provide imagery that is not limited to the pixel or dot density that an output device is capable of.
+</para>
+<para>
+ Many software developers use the librsvg library to render SVG graphics. It is lightweight and portable.
 </para>
 
 <!-- ##### SECTION See_Also ##### -->
@@ -23,6 +28,13 @@ Core API
 </para>
 
 @RSVG_ERROR_FAILED: 
+
+<!-- ##### MACRO RSVG_ERROR ##### -->
+<para>
+
+</para>
+
+
 
 <!-- ##### FUNCTION rsvg_error_quark ##### -->
 <para>
@@ -52,9 +64,6 @@ Core API
 </para>
 
 @dpi: 
-<!-- # Unused Parameters # -->
-@dpi_x: 
-@dpi_y: 
 
 
 <!-- ##### FUNCTION rsvg_set_default_dpi_x_y ##### -->
@@ -89,9 +98,6 @@ Core API
 
 @handle: 
 @dpi: 
-<!-- # Unused Parameters # -->
-@dpi_x: 
-@dpi_y: 
 
 
 <!-- ##### FUNCTION rsvg_handle_set_dpi_x_y ##### -->
@@ -126,6 +132,37 @@ Core API
 @Returns: 
 
 
+<!-- ##### FUNCTION rsvg_handle_new_from_data ##### -->
+<para>
+
+</para>
+
+@data: 
+@data_len: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_new_from_file ##### -->
+<para>
+
+</para>
+
+@file_name: 
+@error: 
+@Returns: 
+
+
+<!-- ##### STRUCT RsvgDimensionData ##### -->
+<para>
+
+</para>
+
+@width: 
+@height: 
+@em: 
+@ex: 
+
 <!-- ##### USER_FUNCTION RsvgSizeFunc ##### -->
 <para>
 
@@ -145,25 +182,6 @@ Core API
 @size_func: 
 @user_data: 
 @user_data_destroy: 
-
-
-<!-- ##### FUNCTION rsvg_handle_get_pixbuf ##### -->
-<para>
-
-</para>
-
-@handle: 
-@Returns: 
-
-
-<!-- ##### FUNCTION rsvg_handle_get_pixbuf_sub ##### -->
-<para>
-
-</para>
-
-@handle: 
-@id: 
-@Returns: 
 
 
 <!-- ##### FUNCTION rsvg_handle_get_base_uri ##### -->

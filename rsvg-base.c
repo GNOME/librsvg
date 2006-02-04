@@ -56,23 +56,8 @@
  */
 #define RSVG_DEFAULT_DPI_X 90.0
 #define RSVG_DEFAULT_DPI_Y 90.0
-static double internal_dpi_x = RSVG_DEFAULT_DPI_X;
-static double internal_dpi_y = RSVG_DEFAULT_DPI_Y;
-
-static void
-rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
-{
-	xmlEntityPtr entval = (xmlEntityPtr)value;
-	
-	/* key == entval->name, so it's implicitly freed below */
-	
-	g_free ((char *) entval->name);
-	g_free ((char *) entval->ExternalID);
-	g_free ((char *) entval->SystemID);
-	xmlFree (entval->content);
-	xmlFree (entval->orig);
-	g_free (entval);
-}
+double rsvg_internal_dpi_x = RSVG_DEFAULT_DPI_X;
+double rsvg_internal_dpi_y = RSVG_DEFAULT_DPI_Y;
 
 typedef struct _RsvgSaxHandlerDefs {
 	RsvgSaxHandler super;
@@ -698,7 +683,7 @@ rsvg_error_cb (void *data, const char *msg, ...)
 static xmlSAXHandler rsvgSAXHandlerStruct;
 static gboolean rsvgSAXHandlerStructInited = FALSE;
 
-static void rsvg_SAX_handler_struct_init()
+void rsvg_SAX_handler_struct_init (void)
 {
 	if(!rsvgSAXHandlerStructInited) 
 		{
@@ -878,29 +863,6 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx *handle)
 	g_free (handle);
 }
 
-static void
-rsvg_handle_free_impl (RsvgHandle *handle)
-{
-	g_hash_table_foreach (handle->entities, rsvg_ctx_free_helper, NULL);
-	g_hash_table_destroy (handle->entities);
-	rsvg_defs_free (handle->defs);
-	g_hash_table_destroy (handle->css_props);
-	
-	if (handle->user_data_destroy)
-		(* handle->user_data_destroy) (handle->user_data);
-
-	if (handle->title)
-		g_string_free (handle->title, TRUE);
-	if (handle->desc)
-		g_string_free (handle->desc, TRUE);
-	if (handle->metadata)
-		g_string_free (handle->metadata, TRUE);
-	if (handle->base_uri)
-		g_free (handle->base_uri);
-
-	g_free (handle);
-}
-
 /**
  * rsvg_handle_get_metadata:
  * @handle: An #RsvgHandle
@@ -962,43 +924,6 @@ G_CONST_RETURN char *rsvg_handle_get_desc (RsvgHandle *handle)
 		return handle->desc->str;
 	else
 		return NULL;
-}
-
-/**
- * rsvg_handle_new:
- *
- * Returns a new rsvg handle.  Must be freed with @rsvg_handle_free.  This
- * handle can be used for dynamically loading an image.  You need to feed it
- * data using @rsvg_handle_write, then call @rsvg_handle_close when done.  No
- * more than one image can be loaded with one handle.
- *
- * Returns: A new #RsvgHandle
- **/
-RsvgHandle *
-rsvg_handle_new (void)
-{
-	RsvgHandle *handle;
-	
-	handle = g_new0 (RsvgHandle, 1);
-
-	handle->defs = rsvg_defs_new ();
-	handle->handler_nest = 0;
-	handle->entities = g_hash_table_new (g_str_hash, g_str_equal);
-	handle->dpi_x = internal_dpi_x;
-	handle->dpi_y = internal_dpi_y;
-	
-	handle->css_props = g_hash_table_new_full (g_str_hash, g_str_equal,
-											   g_free, g_free);
-	rsvg_SAX_handler_struct_init();
-	
-	handle->ctxt = NULL;
-	handle->currentnode = NULL;
-	handle->treebase = NULL;
-
-	handle->finished = 0;
-	handle->first_write = TRUE;
-
-	return handle;
 }
 
 typedef struct {
@@ -1206,14 +1131,14 @@ void
 rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y)
 {
 	if (dpi_x <= 0.)
-		internal_dpi_x = RSVG_DEFAULT_DPI_X;
+		rsvg_internal_dpi_x = RSVG_DEFAULT_DPI_X;
 	else
-		internal_dpi_x = dpi_x;
+		rsvg_internal_dpi_x = dpi_x;
 
 	if (dpi_y <= 0.)
-		internal_dpi_y = RSVG_DEFAULT_DPI_Y;
+		rsvg_internal_dpi_y = RSVG_DEFAULT_DPI_Y;
 	else
-		internal_dpi_y = dpi_y;
+		rsvg_internal_dpi_y = dpi_y;
 }
 
 /**
@@ -1251,12 +1176,12 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
 	g_return_if_fail (handle != NULL);
 	
     if (dpi_x <= 0.)
-        handle->dpi_x = internal_dpi_x;
+        handle->dpi_x = rsvg_internal_dpi_x;
     else
         handle->dpi_x = dpi_x;
 	
 	if (dpi_y <= 0.)
-        handle->dpi_y = internal_dpi_y;
+        handle->dpi_y = rsvg_internal_dpi_y;
     else
         handle->dpi_y = dpi_y;
 }
@@ -1273,6 +1198,8 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
  * in to the function, which may then modify these values to set the real size
  * of the generated pixbuf.  If the image has no associated size, then the size
  * arguments are set to -1.
+ *
+ * Deprecated: Set up a cairo matrix and use rsvg_cairo_render() instead.
  **/
 void
 rsvg_handle_set_size_callback (RsvgHandle     *handle,
@@ -1407,18 +1334,14 @@ rsvg_handle_close (RsvgHandle  *handle,
  * @handle: An #RsvgHandle
  *
  * Frees #handle.
+ * Deprecated: Use g_object_unref() instead.
  **/
 void
 rsvg_handle_free (RsvgHandle *handle)
 {
 	g_return_if_fail(handle);
 
-#if HAVE_SVGZ
-	if (handle->is_gzipped)
-		g_object_unref (G_OBJECT (handle->gzipped_data));
-#endif
-
-	rsvg_handle_free_impl (handle);
+	g_object_unref (G_OBJECT (handle));
 }
 
 #ifdef HAVE_GNOME_VFS

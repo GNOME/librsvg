@@ -33,6 +33,7 @@
 #include <libxml/xmlmemory.h>
 #include <pango/pango.h>
 #include <glib/gslist.h>
+#include <glib-object.h>
 #include <math.h>
 
 G_BEGIN_DECLS
@@ -72,9 +73,16 @@ struct RsvgSaxHandler {
 	void (*characters) (RsvgSaxHandler *self, const xmlChar *ch, int len);
 };
 
+struct RsvgHandleClass {
+	GObjectClass parent;
+};
+
 /* Contextual information for the parsing phase*/
 
 struct RsvgHandle {
+	GObject parent;
+	gboolean is_disposed;
+
 	RsvgSizeFunc size_func;
 	gpointer user_data;
 	GDestroyNotify user_data_destroy;
@@ -338,6 +346,8 @@ _rsvg_css_parse_length(const char *str);
 
 void _rsvg_push_view_box(RsvgDrawingCtx *ctx, double w, double h);
 void _rsvg_pop_view_box(RsvgDrawingCtx *ctx);
+
+void rsvg_SAX_handler_struct_init (void);
 
 G_END_DECLS
 

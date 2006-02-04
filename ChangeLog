@@ -1,3 +1,13 @@
+2006-02-04 Dom Lachowicz <cinamod@hotmail.com>
+
+	* doc/*: Update documentation. I'm pretty happy with how things look
+	and are arranged now.
+
+2006-02-04 Robert Staudinger <robert.staudinger@gmail.com>
+
+	* rsvg-gobject.c: RsvgHandle now derives from GObject. This doesn't
+	break API/ABI.
+	
 2006-02-03 Caleb Moore <c.moore@student.unsw.edu.au>
 	
 	* rsvg-cairo-draw.c: fixed a nasty pattern regression I made a month ago when I was cleaning up the code.
