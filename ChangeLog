@@ -2,6 +2,8 @@
 
 	* doc/*: Update documentation. I'm pretty happy with how things look
 	and are arranged now.
+	* *.c: Don't use newly deprecated functions
+	* configure.in: 2.13.90
 
 2006-02-04 Robert Staudinger <robert.staudinger@gmail.com>
 
