@@ -1,3 +1,7 @@
+2006-02-04 Rob Staudinger <robert.staudinger@gmail.com>
+
+	* rsvg-gobject.c: add props "width", "height" (read only)
+
 2006-02-04 Dom Lachowicz <cinamod@hotmail.com>
 
 	* *.c: Rename rsvg_cairo_render to rsvg_handle_render_cairo, for
@@ -11,7 +15,7 @@
 	* *.c: Don't use newly deprecated functions
 	* configure.in: 2.13.90
 
-2006-02-04 Robert Staudinger <robert.staudinger@gmail.com>
+2006-02-04 Rob Staudinger <robert.staudinger@gmail.com>
 
 	* rsvg-gobject.c: RsvgHandle now derives from GObject. This doesn't
 	break API/ABI.
