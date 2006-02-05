@@ -601,8 +601,8 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 				{
 					guchar *end = p + 4 * width;
 					guint t1,t2,t3;
-					
-#define MULT(d,c,a,t) G_STMT_START { t = c * a; d = ((t >> 8) + t) >> 8; } G_STMT_END
+
+#define MULT(d,c,a,t) G_STMT_START { t = c * a; d = t / 0xFF; } G_STMT_END
 					
 					while (p < end)
 						{
