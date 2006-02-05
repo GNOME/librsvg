@@ -1,3 +1,9 @@
+2006-02-05 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-base-file-util.c: Bug #330008 - prevent crashes and other bad behavior by checking 
+	return values. Inspired by work done by Daniel Drake (dsd@gentoo.org)
+	* rsvg-base.c, rsvg-convert.c, rsvg-defs.c, rsvg-file-util.c, rsvg.c, test-display.c: Ditto
+	
 2006-02-05 Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg.in, configure.in: committed two patches from Daniel Drake in regards to our python rsvg script.

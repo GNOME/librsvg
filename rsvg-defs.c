@@ -88,12 +88,12 @@ rsvg_defs_load_extern(const RsvgDefs *defs, const char *name)
 		rsvg_handle_set_base_uri (handle, base_uri);
 		g_free(base_uri);
 		
-		rsvg_handle_write (handle, chars->data, chars->len, NULL);
-		g_byte_array_free (chars, TRUE);
-		
-		rsvg_handle_close (handle, NULL);
-		
-		g_hash_table_insert (defs->externs, g_strdup (name), handle);
+		if(rsvg_handle_write (handle, chars->data, chars->len, NULL) &&
+		   rsvg_handle_close (handle, NULL)) {
+			g_hash_table_insert (defs->externs, g_strdup (name), handle);
+		}
+
+		g_byte_array_free (chars, TRUE);	   
 	}
 
 	g_free(filename);

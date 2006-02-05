@@ -54,7 +54,10 @@ RsvgHandle * rsvg_handle_new_from_data (const guint8 *data,
 			g_object_unref(G_OBJECT(handle));
 			handle = NULL;
 		} else {
-			rsvg_handle_close(handle, error);
+			if(!rsvg_handle_close(handle, error)) {
+				g_object_unref (G_OBJECT(handle));
+				handle = NULL;
+			}
 		}
 	}
 

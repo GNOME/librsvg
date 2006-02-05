@@ -78,7 +78,11 @@ rsvg_handle_new_from_stdio_file (FILE * f,
 				}
 		}
 
-	rsvg_handle_close (handle, error);
+	if(!rsvg_handle_close (handle, error)) {
+		g_object_unref(G_OBJECT(handle));
+		return NULL;
+	}
+
 	base_uri = g_get_current_dir ();
 	rsvg_handle_set_base_uri (handle, base_uri);
 	g_free (base_uri);

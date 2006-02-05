@@ -822,11 +822,11 @@ main (int argc, char **argv)
 
 	if (!info.pixbuf)
 		{
-			g_critical (_("Error displaying pixbuf!\n"));
+			g_print (_("Error displaying pixbuf!\n"));
 
 			if (err)
 				{
-					g_critical (err->message);
+					g_print ("%s\n", err->message);
 					g_error_free (err);
 				}
 

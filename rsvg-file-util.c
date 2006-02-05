@@ -138,12 +138,18 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 	}
 
 	rsvg_handle_set_size_callback (handle, _rsvg_size_callback, data, NULL);
-
 	rsvg_handle_set_base_uri (handle, base_uri);
 
-	rsvg_handle_write (handle, buff, len, error);
+	if (!rsvg_handle_write (handle, buff, len, error)) {
+		g_object_unref(G_OBJECT(handle));
+		return NULL;
+	}
 
-	rsvg_handle_close (handle, error);
+	if(!rsvg_handle_close (handle, error)) {
+		g_object_unref(G_OBJECT(handle));
+		return NULL;
+	}
+
 	retval = rsvg_handle_get_pixbuf (handle);
 	g_object_unref (G_OBJECT(handle));
 
@@ -168,12 +174,18 @@ rsvg_pixbuf_from_stdio_file_with_size_data(GByteArray *f,
 	}
 
 	rsvg_handle_set_size_callback (handle, _rsvg_size_callback, data, NULL);
-
 	rsvg_handle_set_base_uri(handle, base_uri);
 
-	rsvg_handle_write (handle, f->data, f->len, error);
+	if (!rsvg_handle_write (handle, f->data, f->len, error)) {
+		g_object_unref (G_OBJECT(handle));
+		return NULL;
+	}
 
-	rsvg_handle_close (handle, error);
+	if (!rsvg_handle_close (handle, error)) {
+		g_object_unref(G_OBJECT(handle));
+		return NULL;
+	}
+
 	retval = rsvg_handle_get_pixbuf (handle);
 	g_object_unref (G_OBJECT(handle));
 

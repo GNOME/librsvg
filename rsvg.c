@@ -80,6 +80,9 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char * id)
 		return NULL;
 
 	rsvg_handle_get_dimensions (handle, &dimensions);
+	if(!(dimensions.width && dimensions.height))
+		return NULL;
+
 	rowstride = dimensions.width * 4;
 
 	pixels = g_new0(guint8, dimensions.width * dimensions.height * 4);

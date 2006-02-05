@@ -781,8 +781,9 @@ rsvg_handle_write_impl (RsvgHandle    *handle,
 						gsize          count,
 						GError       **error)
 {
-	GError *real_error;
+	GError *real_error = NULL;
 	g_return_val_if_fail (handle != NULL, FALSE);
+	int result;
 	
 	handle->error = &real_error;
 	if (handle->ctxt == NULL)
@@ -791,15 +792,21 @@ rsvg_handle_write_impl (RsvgHandle    *handle,
 			handle->ctxt->replaceEntities = TRUE;
 		}
 	
-	xmlParseChunk (handle->ctxt, (char*)buf, count, 0);
-	
-	handle->error = NULL;
-	/* FIXME: Error handling not implemented. */
-	/*  if (*real_error != NULL)
-		{
-		g_propagate_error (error, real_error);
+	result = xmlParseChunk (handle->ctxt, (char*)buf, count, 0);
+	if (result != 0) {
+		g_set_error (error, rsvg_error_quark (), 0,
+					 _("Error parsing XML data"));
 		return FALSE;
-		}*/
+	}
+
+	handle->error = NULL;
+
+	if (real_error != NULL)
+		{
+			g_propagate_error (error, real_error);
+			return FALSE;
+		}
+
 	return TRUE;
 }
 
@@ -807,31 +814,37 @@ static gboolean
 rsvg_handle_close_impl (RsvgHandle  *handle,
 						GError     **error)
 {
-	GError *real_error;
+	GError *real_error = NULL;
 	
 	handle->error = &real_error;
 	
 	if (handle->ctxt != NULL)
 		{
 			xmlDocPtr xmlDoc;
+			int result;
 
 			xmlDoc = handle->ctxt->myDoc;
 
-			xmlParseChunk (handle->ctxt, "", 0, TRUE);
+			result = xmlParseChunk (handle->ctxt, "", 0, TRUE);
 			xmlFreeParserCtxt (handle->ctxt);
 			xmlFreeDoc(xmlDoc);
+
+			if (result != 0) {
+				g_set_error (error, rsvg_error_quark (), 0,
+							 _("Error parsing XML data"));
+				return FALSE;
+			}
 		}
   
-	/* FIXME: Error handling not implemented. */
-	/*
-	  if (real_error != NULL)
-	  {
-      g_propagate_error (error, real_error);
-      return FALSE;
-      }*/
 	rsvg_defs_resolve_all(handle->defs);
-
 	handle->finished = TRUE;
+	handle->error = NULL;
+
+	if (real_error != NULL)
+		{
+			g_propagate_error (error, real_error);
+			return FALSE;
+		}
 
 	return TRUE;
 }
