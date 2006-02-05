@@ -1,12 +1,16 @@
 2006-02-05 Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-cairo-render.c: Bug #323114; work-around for a nasty cairo bug
+	wrt pixel dirt
+	* rsvg.c: Ditto
+
+2006-02-05 Dom Lachowicz <cinamod@hotmail.com>
+	
 	* rsvg-base-file-util.c: Bug #330008 - prevent crashes and other bad behavior by checking 
 	return values. Inspired by work done by Daniel Drake (dsd@gentoo.org)
 	* rsvg-base.c, rsvg-convert.c, rsvg-defs.c, rsvg-file-util.c, rsvg.c, test-display.c: Ditto
 	* test-display.c: Don't show zoom buttons in the Mozilla plugin
 	* rsvg-cairo-draw.c: Bug #330022; code computes wrong pixel values with color = 0xFF and alpha - 0xff. From Emmanuel Pacaud.
-	* rsvg-cairo-draw.c: Bug #323114; work-around for a nasty cairo bug wrt
-	pixel dirt
 	
 2006-02-05 Caleb Moore <c.moore@student.unsw.edu.au>
 
