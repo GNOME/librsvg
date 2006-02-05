@@ -552,7 +552,7 @@ populate_window (GtkWidget * win, ViewerCbInfo * info, int xid, gint win_width, 
 	vbox = gtk_vbox_new (FALSE, 0);
 	gtk_container_add (GTK_CONTAINER (win), vbox);
 
-	if(xid > 0) {
+	if(xid <= 0) {
 		toolbar = gtk_toolbar_new ();
 		gtk_box_pack_start (GTK_BOX (vbox), toolbar, FALSE, FALSE, 0);
 		
