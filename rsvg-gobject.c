@@ -30,6 +30,8 @@ enum {
 	PROP_BASE_URI,
 	PROP_WIDTH,
 	PROP_HEIGHT,
+	PROP_EM,
+	PROP_EX,
 	PROP_TITLE, 
 	PROP_DESC,
 	PROP_METADATA,
@@ -164,6 +166,14 @@ get_property (GObject    *instance,
 		rsvg_handle_get_dimensions (self, &dim);
 		g_value_set_int (value, dim.height);
 		break;
+	case PROP_EM:
+		rsvg_handle_get_dimensions (self, &dim);
+		g_value_set_double (value, dim.em);
+		break;
+	case PROP_EX:
+		rsvg_handle_get_dimensions (self, &dim);
+		g_value_set_double (value, dim.ex);
+		break;
 	case PROP_TITLE:
 		g_value_set_string (value, rsvg_handle_get_title (self));
 		break;
@@ -213,15 +223,27 @@ class_init (RsvgHandleClass *klass)
 			(GParamFlags)(G_PARAM_READWRITE | G_PARAM_CONSTRUCT)));
 
 	g_object_class_install_property (gobject_class,
-		PROP_DPI_Y,
-		g_param_spec_double ("width", _("Image width"),
+		PROP_WIDTH,
+		g_param_spec_int ("width", _("Image width"),
 			_("Image width"), 0, G_MAXINT, 0,
 			(GParamFlags)(G_PARAM_READABLE)));
 
 	g_object_class_install_property (gobject_class,
-		PROP_DPI_Y,
-		g_param_spec_double ("height", _("Image height"),
+		PROP_HEIGHT,
+		g_param_spec_int ("height", _("Image height"),
 			_("Image height"), 0, G_MAXINT, 0,
+			(GParamFlags)(G_PARAM_READABLE)));
+
+	g_object_class_install_property (gobject_class,
+		PROP_EM,
+		g_param_spec_double ("em", _("em"),
+			_("em"), 0, G_MAXDOUBLE, 0,
+			(GParamFlags)(G_PARAM_READABLE)));
+
+	g_object_class_install_property (gobject_class,
+		PROP_EX,
+		g_param_spec_double ("ex", _("ex"),
+			_("ex"), 0, G_MAXDOUBLE, 0,
 			(GParamFlags)(G_PARAM_READABLE)));
 
 	g_object_class_install_property (gobject_class,

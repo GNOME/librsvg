@@ -1,6 +1,6 @@
 2006-02-04 Rob Staudinger <robert.staudinger@gmail.com>
 
-	* rsvg-gobject.c: add props "width", "height" (read only)
+	* rsvg-gobject.c: add props "width", "height", "em", "ex" (all read only)
 	* rsvg.h: fix doc after cairo rendering renaming
 
 2006-02-04 Dom Lachowicz <cinamod@hotmail.com>
