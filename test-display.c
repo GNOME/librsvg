@@ -552,16 +552,18 @@ populate_window (GtkWidget * win, ViewerCbInfo * info, int xid, gint win_width, 
 	vbox = gtk_vbox_new (FALSE, 0);
 	gtk_container_add (GTK_CONTAINER (win), vbox);
 
-	toolbar = gtk_toolbar_new ();
-	gtk_box_pack_start (GTK_BOX (vbox), toolbar, FALSE, FALSE, 0);
-
-	toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_IN);
-	gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 0);
-	g_signal_connect (G_OBJECT (toolitem), "clicked", G_CALLBACK (zoom_in), info);
-
-	toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_OUT);
-	gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 1);
-	g_signal_connect (G_OBJECT (toolitem), "clicked", G_CALLBACK (zoom_out), info);
+	if(xid > 0) {
+		toolbar = gtk_toolbar_new ();
+		gtk_box_pack_start (GTK_BOX (vbox), toolbar, FALSE, FALSE, 0);
+		
+		toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_IN);
+		gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 0);
+		g_signal_connect (G_OBJECT (toolitem), "clicked", G_CALLBACK (zoom_in), info);
+		
+		toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_OUT);
+		gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 1);
+		g_signal_connect (G_OBJECT (toolitem), "clicked", G_CALLBACK (zoom_out), info);
+	}
 
 	/* create a new image */
 	info->image = gtk_image_new_from_pixbuf (info->pixbuf);

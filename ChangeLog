@@ -3,6 +3,7 @@
 	* rsvg-base-file-util.c: Bug #330008 - prevent crashes and other bad behavior by checking 
 	return values. Inspired by work done by Daniel Drake (dsd@gentoo.org)
 	* rsvg-base.c, rsvg-convert.c, rsvg-defs.c, rsvg-file-util.c, rsvg.c, test-display.c: Ditto
+	* test-display.c: Don't show zoom buttons in the Mozilla plugin
 	
 2006-02-05 Caleb Moore <c.moore@student.unsw.edu.au>
 
