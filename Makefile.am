@@ -102,8 +102,7 @@ LDADDS =				\
 	$(POPT_LIBS)			\
 	$(top_builddir)/librsvg-2.la
 
-rsvgdir=$(bindir)
-rsvg_DATA=rsvg
+bin_SCRIPTS=rsvg
 
 rsvg_convert_SOURCES=rsvg-convert.c
 rsvg_convert_LDFLAGS =

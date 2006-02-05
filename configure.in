@@ -389,6 +389,7 @@ Makefile
 librsvg-2.0.pc
 librsvg-2.0-uninstalled.pc
 librsvg-zip
+rsvg
 data/Makefile
 gtk-engine/Makefile
 gtk-engine/examples/Makefile
@@ -398,8 +399,6 @@ gdk-pixbuf-loader/Makefile
 moz-plugin/Makefile
 doc/Makefile
 ])
-
-AC_CONFIG_FILES([rsvg], [chmod +x rsvg])
 
 AC_OUTPUT
 
