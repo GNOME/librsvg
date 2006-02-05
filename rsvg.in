@@ -46,7 +46,7 @@ def main():
         elif o in ("--usage"):
             usage()
             sys.exit(0)
-        elif o in ("-h", "--help"):
+        elif o in ("-?", "--help"):
             help()
             sys.exit(0)
         elif (o in ("-f", "--format")):

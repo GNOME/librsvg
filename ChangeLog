@@ -1,3 +1,7 @@
+2006-02-05 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg.in, configure.in: committed two patches from Daniel Drake in regards to our python rsvg script.
+
 2006-02-04 Rob Staudinger <robert.staudinger@gmail.com>
 
 	* rsvg-gobject.c: add props "width", "height", "em", "ex" (all read only)

@@ -382,11 +382,10 @@ GLIB_LC_MESSAGES
 
 dnl ===========================================================================
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
 librsvg.spec
 librsvg-features.h
 Makefile
-rsvg
 librsvg-2.0.pc
 librsvg-2.0-uninstalled.pc
 librsvg-zip
@@ -400,6 +399,9 @@ moz-plugin/Makefile
 doc/Makefile
 ])
 
+AC_CONFIG_FILES([rsvg], [chmod +x rsvg])
+
+AC_OUTPUT
 
 dnl =============================================================================================
 echo "
