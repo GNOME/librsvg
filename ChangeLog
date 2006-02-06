@@ -1,3 +1,8 @@
+2006-02-06 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-base.c: Fix C89 conformance (bug 330151), from Jens Granseuer.
+	* configure.in: bump version #
+	
 2006-02-05 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg.h: Export RsvgHandle and RsvgHandleClass to the outside world so you can subclass them

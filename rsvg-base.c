@@ -782,8 +782,9 @@ rsvg_handle_write_impl (RsvgHandle    *handle,
 						GError       **error)
 {
 	GError *real_error = NULL;
-	g_return_val_if_fail (handle != NULL, FALSE);
 	int result;
+
+	g_return_val_if_fail (handle != NULL, FALSE);
 	
 	handle->priv->error = &real_error;
 	if (handle->priv->ctxt == NULL)
