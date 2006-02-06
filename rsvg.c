@@ -76,7 +76,7 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char * id)
 
 	g_return_val_if_fail (handle != NULL, NULL);
 
-	if (!handle->finished)
+	if (!handle->priv->finished)
 		return NULL;
 
 	rsvg_handle_get_dimensions (handle, &dimensions);

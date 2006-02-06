@@ -48,7 +48,7 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *at
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
-					rsvg_defs_register_name (ctx->defs, id, &marker->super);
+					rsvg_defs_register_name (ctx->priv->defs, id, &marker->super);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;

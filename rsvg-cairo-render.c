@@ -98,10 +98,10 @@ rsvg_cairo_new_drawing_ctx (cairo_t *cr, RsvgHandle *handle)
 	/* should this be G_ALLOC_ONLY? */
 	draw->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
 
-	draw->defs = handle->defs;
-	draw->base_uri = g_strdup(handle->base_uri);
-	draw->dpi_x = handle->dpi_x;
-	draw->dpi_y = handle->dpi_y;
+	draw->defs = handle->priv->defs;
+	draw->base_uri = g_strdup(handle->priv->base_uri);
+	draw->dpi_x = handle->priv->dpi_x;
+	draw->dpi_y = handle->priv->dpi_y;
 	draw->vb.w = data.em;
 	draw->vb.h = data.ex;
 	draw->pango_context = NULL;
@@ -143,7 +143,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const char * id)
 
 	g_return_if_fail (handle != NULL);
 
-	if (!handle->finished)
+	if (!handle->priv->finished)
 		return;
 
 	draw = rsvg_cairo_new_drawing_ctx (cr, handle);
@@ -151,7 +151,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const char * id)
 		return;
 
 	if(id && *id)
-		drawsub = rsvg_defs_lookup (handle->defs, id);
+		drawsub = rsvg_defs_lookup (handle->priv->defs, id);
 
 	while (drawsub != NULL){
 		draw->drawsub_stack = g_slist_prepend(draw->drawsub_stack, drawsub);
@@ -159,7 +159,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const char * id)
 	}
 
 	rsvg_state_push(draw);
-	rsvg_node_draw((RsvgNode *)handle->treebase, draw, 0);
+	rsvg_node_draw((RsvgNode *)handle->priv->treebase, draw, 0);
 	rsvg_state_pop(draw);
 	rsvg_drawing_ctx_free(draw);
 }

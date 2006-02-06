@@ -110,10 +110,10 @@ rsvg_style_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 	
 	if (!strcmp ((char *)name, "style"))
 		{
-			if (ctx->handler != NULL)
+			if (ctx->priv->handler != NULL)
 				{
-					ctx->handler->free (ctx->handler);
-					ctx->handler = prev;
+					ctx->priv->handler->free (ctx->priv->handler);
+					ctx->priv->handler = prev;
 				}
 		}
 }
@@ -131,8 +131,8 @@ rsvg_start_style (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	
 	handler->style = g_string_new (NULL);
 	
-	handler->parent = (RsvgSaxHandlerDefs*)ctx->handler;
-	ctx->handler = &handler->super;
+	handler->parent = (RsvgSaxHandlerDefs*)ctx->priv->handler;
+	ctx->priv->handler = &handler->super;
 }
 
 
@@ -257,15 +257,15 @@ rsvg_standard_element_start (RsvgHandle *ctx, const xmlChar *name,
 		{
 			newnode->type = g_string_new((char *)name);
 			rsvg_node_set_atts(newnode, ctx, atts);
-			rsvg_defs_register_memory(ctx->defs, newnode);
-			if (ctx->currentnode) {
-				rsvg_node_group_pack(ctx->currentnode, newnode);
-				ctx->currentnode = newnode;
+			rsvg_defs_register_memory(ctx->priv->defs, newnode);
+			if (ctx->priv->currentnode) {
+				rsvg_node_group_pack(ctx->priv->currentnode, newnode);
+				ctx->priv->currentnode = newnode;
 			}
 			else if (!strcmp ((char *)name, "svg")) {
 				newnode->parent = NULL;
-				ctx->treebase = newnode;
-				ctx->currentnode = newnode;
+				ctx->priv->treebase = newnode;
+				ctx->priv->currentnode = newnode;
 			}
 		}
 }
@@ -301,7 +301,7 @@ rsvg_desc_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 			string = utf8;
 		}
 
-	g_string_append (ctx->desc, string);
+	g_string_append (ctx->priv->desc, string);
 	g_free (string);
 }
 
@@ -319,10 +319,10 @@ rsvg_desc_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 	
 	if (!strcmp((char *)name, "desc"))
 		{
-			if (ctx->handler != NULL)
+			if (ctx->priv->handler != NULL)
 				{
-					ctx->handler->free (ctx->handler);
-					ctx->handler = NULL;
+					ctx->priv->handler->free (ctx->priv->handler);
+					ctx->priv->handler = NULL;
 				}
 		}
 }
@@ -338,8 +338,8 @@ rsvg_start_desc (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	handler->super.end_element   = rsvg_desc_handler_end;
 	handler->ctx = ctx;
 
-	ctx->desc = g_string_new (NULL);
-	ctx->handler = &handler->super;
+	ctx->priv->desc = g_string_new (NULL);
+	ctx->priv->handler = &handler->super;
 }
 
 /* end desc */
@@ -375,7 +375,7 @@ rsvg_title_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int len)
 			string = utf8;
 		}
 
-	g_string_append (ctx->title, string);
+	g_string_append (ctx->priv->title, string);
 	g_free (string);
 }
 
@@ -393,10 +393,10 @@ rsvg_title_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 	
 	if (!strcmp((char *)name, "title"))
 		{
-			if (ctx->handler != NULL)
+			if (ctx->priv->handler != NULL)
 				{
-					ctx->handler->free (ctx->handler);
-					ctx->handler = NULL;
+					ctx->priv->handler->free (ctx->priv->handler);
+					ctx->priv->handler = NULL;
 				}
 		}
 }
@@ -412,8 +412,8 @@ rsvg_start_title (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	handler->super.end_element   = rsvg_title_handler_end;
 	handler->ctx = ctx;
 
-	ctx->title = g_string_new (NULL);
-	ctx->handler = &handler->super;
+	ctx->priv->title = g_string_new (NULL);
+	ctx->priv->handler = &handler->super;
 }
 
 /* end title */
@@ -449,7 +449,7 @@ rsvg_metadata_handler_characters (RsvgSaxHandler *self, const xmlChar *ch, int l
 			string = utf8;
 		}
 
-	g_string_append (ctx->metadata, string);
+	g_string_append (ctx->priv->metadata, string);
 	g_free (string);
 }
 
@@ -469,9 +469,9 @@ rsvg_metadata_handler_start (RsvgSaxHandler *self, const xmlChar *name,
 	RsvgSaxHandlerMetadata *z = (RsvgSaxHandlerMetadata *)self;
 	RsvgHandle *ctx = z->ctx;
 
-	g_string_append_printf (ctx->metadata, "<%s ", name);
-	rsvg_property_bag_enumerate (atts, rsvg_metadata_props_enumerate, ctx->metadata);
-	g_string_append (ctx->metadata, ">\n");
+	g_string_append_printf (ctx->priv->metadata, "<%s ", name);
+	rsvg_property_bag_enumerate (atts, rsvg_metadata_props_enumerate, ctx->priv->metadata);
+	g_string_append (ctx->priv->metadata, ">\n");
 }
 
 static void
@@ -482,14 +482,14 @@ rsvg_metadata_handler_end (RsvgSaxHandler *self, const xmlChar *name)
 	
 	if (!strcmp((char *)name, "metadata"))
 		{
-			if (ctx->handler != NULL)
+			if (ctx->priv->handler != NULL)
 				{
-					ctx->handler->free (ctx->handler);
-					ctx->handler = NULL;
+					ctx->priv->handler->free (ctx->priv->handler);
+					ctx->priv->handler = NULL;
 				}
 		}
 	else
-		g_string_append_printf (ctx->metadata, "</%s>\n", name);
+		g_string_append_printf (ctx->priv->metadata, "</%s>\n", name);
 }
 
 static void
@@ -503,8 +503,8 @@ rsvg_start_metadata (RsvgHandle *ctx, RsvgPropertyBag *atts)
 	handler->super.end_element   = rsvg_metadata_handler_end;
 	handler->ctx = ctx;
 
-	ctx->metadata = g_string_new (NULL);
-	ctx->handler = &handler->super;
+	ctx->priv->metadata = g_string_new (NULL);
+	ctx->priv->handler = &handler->super;
 }
 
 /* end metadata */
@@ -519,11 +519,11 @@ rsvg_start_element (void *data, const xmlChar *name,
 
 	bag = rsvg_property_bag_new(atts);
 
-	if (ctx->handler)
+	if (ctx->priv->handler)
 		{
-			ctx->handler_nest++;
-			if (ctx->handler->start_element != NULL)
-				ctx->handler->start_element (ctx->handler, name, bag);
+			ctx->priv->handler_nest++;
+			if (ctx->priv->handler->start_element != NULL)
+				ctx->priv->handler->start_element (ctx->priv->handler, name, bag);
 		}
 	else
 		{
@@ -551,11 +551,11 @@ rsvg_end_element (void *data, const xmlChar *name)
 {
 	RsvgHandle *ctx = (RsvgHandle *)data;
 
-	if (ctx->handler_nest > 0 && ctx->handler != NULL)
+	if (ctx->priv->handler_nest > 0 && ctx->priv->handler != NULL)
 		{
-			if (ctx->handler->end_element != NULL)
-				ctx->handler->end_element (ctx->handler, name);
-			ctx->handler_nest--;
+			if (ctx->priv->handler->end_element != NULL)
+				ctx->priv->handler->end_element (ctx->priv->handler, name);
+			ctx->priv->handler_nest--;
 		}
 	else
 		{
@@ -563,13 +563,13 @@ rsvg_end_element (void *data, const xmlChar *name)
 			for (tempname = name; *tempname != '\0'; tempname++)
 				if (*tempname == ':')
 					name = tempname + 1;
-			if (ctx->handler != NULL)
+			if (ctx->priv->handler != NULL)
 				{
-					ctx->handler->free (ctx->handler);
-					ctx->handler = NULL;
+					ctx->priv->handler->free (ctx->priv->handler);
+					ctx->priv->handler = NULL;
 				}
 
-			if (!strcmp ((char *)name, ctx->currentnode->type->str))
+			if (!strcmp ((char *)name, ctx->priv->currentnode->type->str))
 				rsvg_pop_def_group(ctx);
 			
 		}
@@ -590,9 +590,9 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 	RsvgNodeChars * self;
 	GString * string;
 	
-	if (ctx->handler && ctx->handler->characters != NULL)
+	if (ctx->priv->handler && ctx->priv->handler->characters != NULL)
 		{
-			ctx->handler->characters (ctx->handler, ch, len);
+			ctx->priv->handler->characters (ctx->priv->handler, ch, len);
 			return;
 		}
 
@@ -615,9 +615,9 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 	self->super.free = _rsvg_node_chars_free;
 	self->super.state->cond_true = FALSE;
 
-	rsvg_defs_register_memory(ctx->defs, (RsvgNode *)self);
-	if (ctx->currentnode)
-		rsvg_node_group_pack(ctx->currentnode, (RsvgNode *)self);
+	rsvg_defs_register_memory(ctx->priv->defs, (RsvgNode *)self);
+	if (ctx->priv->currentnode)
+		rsvg_node_group_pack(ctx->priv->currentnode, (RsvgNode *)self);
 }
 
 #if LIBXML_VERSION >= 20621
@@ -633,7 +633,7 @@ rsvg_get_entity (void *data, const xmlChar *name)
 	RsvgHandle *ctx = (RsvgHandle *)data;
 	xmlEntityPtr entity;
 
-	entity = g_hash_table_lookup (ctx->entities, name);
+	entity = g_hash_table_lookup (ctx->priv->entities, name);
 
 	return entity;
 #else
@@ -647,7 +647,7 @@ rsvg_entity_decl (void *data, const xmlChar *name, int type,
 {
 #ifdef RSVG_ENABLE_ENTITIES
 	RsvgHandle *ctx = (RsvgHandle *)data;
-	GHashTable *entities = ctx->entities;
+	GHashTable *entities = ctx->priv->entities;
 	xmlEntityPtr entity;
 	xmlChar *dupname;
 
@@ -736,10 +736,10 @@ void rsvg_handle_set_base_uri (RsvgHandle *handle,
 	g_return_if_fail(handle);
 
 	if (base_uri) {
-		if (handle->base_uri)
-			g_free (handle->base_uri);
-		handle->base_uri = g_strdup (base_uri);
-		rsvg_defs_set_base_uri(handle->defs, handle->base_uri);
+		if (handle->priv->base_uri)
+			g_free (handle->priv->base_uri);
+		handle->priv->base_uri = g_strdup (base_uri);
+		rsvg_defs_set_base_uri(handle->priv->defs, handle->priv->base_uri);
 	}
 }
 
@@ -755,7 +755,7 @@ void rsvg_handle_set_base_uri (RsvgHandle *handle,
 G_CONST_RETURN char *rsvg_handle_get_base_uri (RsvgHandle *handle)
 {
 	g_return_val_if_fail(handle, NULL);
-	return handle->base_uri;
+	return handle->priv->base_uri;
 }
 
 /**
@@ -785,21 +785,21 @@ rsvg_handle_write_impl (RsvgHandle    *handle,
 	g_return_val_if_fail (handle != NULL, FALSE);
 	int result;
 	
-	handle->error = &real_error;
-	if (handle->ctxt == NULL)
+	handle->priv->error = &real_error;
+	if (handle->priv->ctxt == NULL)
 		{
-			handle->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0, NULL);
-			handle->ctxt->replaceEntities = TRUE;
+			handle->priv->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0, NULL);
+			handle->priv->ctxt->replaceEntities = TRUE;
 		}
 	
-	result = xmlParseChunk (handle->ctxt, (char*)buf, count, 0);
+	result = xmlParseChunk (handle->priv->ctxt, (char*)buf, count, 0);
 	if (result != 0) {
 		g_set_error (error, rsvg_error_quark (), 0,
 					 _("Error parsing XML data"));
 		return FALSE;
 	}
 
-	handle->error = NULL;
+	handle->priv->error = NULL;
 
 	if (real_error != NULL)
 		{
@@ -816,17 +816,17 @@ rsvg_handle_close_impl (RsvgHandle  *handle,
 {
 	GError *real_error = NULL;
 	
-	handle->error = &real_error;
+	handle->priv->error = &real_error;
 	
-	if (handle->ctxt != NULL)
+	if (handle->priv->ctxt != NULL)
 		{
 			xmlDocPtr xmlDoc;
 			int result;
 
-			xmlDoc = handle->ctxt->myDoc;
+			xmlDoc = handle->priv->ctxt->myDoc;
 
-			result = xmlParseChunk (handle->ctxt, "", 0, TRUE);
-			xmlFreeParserCtxt (handle->ctxt);
+			result = xmlParseChunk (handle->priv->ctxt, "", 0, TRUE);
+			xmlFreeParserCtxt (handle->priv->ctxt);
 			xmlFreeDoc(xmlDoc);
 
 			if (result != 0) {
@@ -836,9 +836,9 @@ rsvg_handle_close_impl (RsvgHandle  *handle,
 			}
 		}
   
-	rsvg_defs_resolve_all(handle->defs);
-	handle->finished = TRUE;
-	handle->error = NULL;
+	rsvg_defs_resolve_all(handle->priv->defs);
+	handle->priv->finished = TRUE;
+	handle->priv->error = NULL;
 
 	if (real_error != NULL)
 		{
@@ -891,8 +891,8 @@ G_CONST_RETURN char *rsvg_handle_get_metadata (RsvgHandle *handle)
 {
 	g_return_val_if_fail(handle, NULL);
 
-	if (handle->metadata)
-		return handle->metadata->str;
+	if (handle->priv->metadata)
+		return handle->priv->metadata->str;
 	else
 		return NULL;
 }
@@ -912,8 +912,8 @@ G_CONST_RETURN char *rsvg_handle_get_title (RsvgHandle *handle)
 {
 	g_return_val_if_fail(handle, NULL);
 
-	if (handle->title)
-		return handle->title->str;
+	if (handle->priv->title)
+		return handle->priv->title->str;
 	else
 		return NULL;
 }
@@ -933,8 +933,8 @@ G_CONST_RETURN char *rsvg_handle_get_desc (RsvgHandle *handle)
 {
 	g_return_val_if_fail(handle, NULL);
 
-	if (handle->desc)
-		return handle->desc->str;
+	if (handle->priv->desc)
+		return handle->priv->desc->str;
 	else
 		return NULL;
 }
@@ -1046,17 +1046,17 @@ _rsvg_find_bbox (RsvgHandle *handle)
 
 	ctx->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
 
-	ctx->defs = handle->defs;
-	ctx->base_uri = g_strdup(handle->base_uri);
-	ctx->dpi_x = handle->dpi_x;
-	ctx->dpi_y = handle->dpi_y;
+	ctx->defs = handle->priv->defs;
+	ctx->base_uri = g_strdup(handle->priv->base_uri);
+	ctx->dpi_x = handle->priv->dpi_x;
+	ctx->dpi_y = handle->priv->dpi_y;
 	ctx->vb.w = 512;
 	ctx->vb.h = 512;
 	ctx->pango_context = NULL;
 
 	rsvg_state_push(ctx);
 	_rsvg_affine_identity(rsvg_state_current(ctx)->affine);
-	_rsvg_node_draw_children ((RsvgNode *)handle->treebase, ctx, 0);
+	_rsvg_node_draw_children ((RsvgNode *)handle->priv->treebase, ctx, 0);
 	rsvg_state_pop(ctx);
 
 	output = render->bbox;
@@ -1084,7 +1084,7 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * dimension_da
 	memset(dimension_data, 0, sizeof(RsvgDimensionData));
 	g_return_if_fail(handle);
 
-	sself = (RsvgNodeSvg *)handle->treebase;	
+	sself = (RsvgNodeSvg *)handle->priv->treebase;	
 	if(!sself)
 		return;
 	
@@ -1101,16 +1101,16 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * dimension_da
 			else
 				bbox = _rsvg_find_bbox(handle);
 		}
-	dimension_data->width  = _rsvg_css_hand_normalize_length(&sself->w, handle->dpi_x, 
+	dimension_data->width  = _rsvg_css_hand_normalize_length(&sself->w, handle->priv->dpi_x, 
 																	bbox.w + bbox.x * 2, 12);
-	dimension_data->height = _rsvg_css_hand_normalize_length(&sself->h, handle->dpi_y, 
+	dimension_data->height = _rsvg_css_hand_normalize_length(&sself->h, handle->priv->dpi_y, 
 													 bbox.h + bbox.y * 2, 12);
 	
 	dimension_data->em = dimension_data->width;
 	dimension_data->ex = dimension_data->height;
 
-	if (handle->size_func)
-		(* handle->size_func) (&dimension_data->width, &dimension_data->height, handle->user_data);
+	if (handle->priv->size_func)
+		(* handle->priv->size_func) (&dimension_data->width, &dimension_data->height, handle->priv->user_data);
 }
 
 /** 
@@ -1189,14 +1189,14 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
 	g_return_if_fail (handle != NULL);
 	
     if (dpi_x <= 0.)
-        handle->dpi_x = rsvg_internal_dpi_x;
+        handle->priv->dpi_x = rsvg_internal_dpi_x;
     else
-        handle->dpi_x = dpi_x;
+        handle->priv->dpi_x = dpi_x;
 	
 	if (dpi_y <= 0.)
-        handle->dpi_y = rsvg_internal_dpi_y;
+        handle->priv->dpi_y = rsvg_internal_dpi_y;
     else
-        handle->dpi_y = dpi_y;
+        handle->priv->dpi_y = dpi_y;
 }
 
 /**
@@ -1222,12 +1222,12 @@ rsvg_handle_set_size_callback (RsvgHandle     *handle,
 {
 	g_return_if_fail (handle != NULL);
 	
-	if (handle->user_data_destroy)
-		(* handle->user_data_destroy) (handle->user_data);
+	if (handle->priv->user_data_destroy)
+		(* handle->priv->user_data_destroy) (handle->priv->user_data);
 	
-	handle->size_func = size_func;
-	handle->user_data = user_data;
-	handle->user_data_destroy = user_data_destroy;
+	handle->priv->size_func = size_func;
+	handle->priv->user_data = user_data;
+	handle->priv->user_data_destroy = user_data_destroy;
 }
 
 /**
@@ -1253,23 +1253,23 @@ rsvg_handle_write (RsvgHandle    *handle,
 {
 	g_return_val_if_fail(handle, FALSE);
 
-	if (handle->first_write) {
-		handle->first_write = FALSE;
+	if (handle->priv->first_write) {
+		handle->priv->first_write = FALSE;
 
 		/* test for GZ marker. todo: store the first 2 bytes in the odd circumstance that someone calls
 		 * write() in 1 byte increments */
 		if ((count >= 2) && (buf[0] == (guchar)0x1f) && (buf[1] == (guchar)0x8b)) {
-			handle->is_gzipped = TRUE;
+			handle->priv->is_gzipped = TRUE;
 
 #ifdef HAVE_SVGZ
-			handle->gzipped_data = GSF_OUTPUT (gsf_output_memory_new ());
+			handle->priv->gzipped_data = GSF_OUTPUT (gsf_output_memory_new ());
 #endif
 		}
 	}
 
-	if (handle->is_gzipped) {
+	if (handle->priv->is_gzipped) {
 #ifdef HAVE_SVGZ
-		return gsf_output_write (handle->gzipped_data, count, buf);
+		return gsf_output_write (handle->priv->gzipped_data, count, buf);
 #else
 		return FALSE;
 #endif
@@ -1297,14 +1297,14 @@ rsvg_handle_close (RsvgHandle  *handle,
 	g_return_val_if_fail(handle, FALSE);
 
 #if HAVE_SVGZ
-	if (handle->is_gzipped) {
+	if (handle->priv->is_gzipped) {
 		GsfInput * gzip;
 		const guchar * bytes;
 		gsize size;
 		gsize remaining;
 		
-		bytes = gsf_output_memory_get_bytes (GSF_OUTPUT_MEMORY (handle->gzipped_data));
-		size = gsf_output_size (handle->gzipped_data);
+		bytes = gsf_output_memory_get_bytes (GSF_OUTPUT_MEMORY (handle->priv->gzipped_data));
+		size = gsf_output_size (handle->priv->gzipped_data);
 
 		gzip = GSF_INPUT (gsf_input_gzip_new (GSF_INPUT (gsf_input_memory_new (bytes, size, FALSE)), error));
 		remaining = gsf_input_remaining (gzip);
@@ -1335,7 +1335,7 @@ rsvg_handle_close (RsvgHandle  *handle,
 		g_object_unref (G_OBJECT (gzip));
 		
 		/* close parent */
-		gsf_output_close (handle->gzipped_data);
+		gsf_output_close (handle->priv->gzipped_data);
 	}
 #endif
 

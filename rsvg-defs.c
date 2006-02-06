@@ -113,7 +113,7 @@ rsvg_defs_extern_lookup (const RsvgDefs *defs, const char *filename, const char 
 		}
 
 	if (file != NULL)
-		return (RsvgNode *)g_hash_table_lookup (file->defs->hash, name);
+		return (RsvgNode *)g_hash_table_lookup (file->priv->defs->hash, name);
 	else
 		return NULL;
 }

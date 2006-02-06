@@ -1,5 +1,10 @@
 2006-02-05 Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg.h: Export RsvgHandle and RsvgHandleClass to the outside world so you can subclass them
+	* *.c: Changes necessary for ^^^
+	
+2006-02-05 Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-cairo-render.c: Bug #323114; work-around for a nasty cairo bug
 	wrt pixel dirt
 	* rsvg.c: Ditto

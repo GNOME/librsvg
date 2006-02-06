@@ -73,14 +73,7 @@ struct RsvgSaxHandler {
 	void (*characters) (RsvgSaxHandler *self, const xmlChar *ch, int len);
 };
 
-struct RsvgHandleClass {
-	GObjectClass parent;
-};
-
-/* Contextual information for the parsing phase*/
-
-struct RsvgHandle {
-	GObject parent;
+struct RsvgHandlePrivate {
 	gboolean is_disposed;
 
 	RsvgSizeFunc size_func;

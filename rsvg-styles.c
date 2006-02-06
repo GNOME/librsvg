@@ -45,7 +45,7 @@ rsvg_viewport_percentage (gdouble width, gdouble height)
 gdouble
 rsvg_dpi_percentage (RsvgHandle * ctx)
 {
-	return sqrt(ctx->dpi_x * ctx->dpi_y);
+	return sqrt(ctx->priv->dpi_x * ctx->priv->dpi_y);
 }
 
 void
@@ -371,7 +371,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 			state->has_flood_opacity = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "filter"))
-		state->filter = rsvg_filter_parse(ctx->defs, str + arg_off);
+		state->filter = rsvg_filter_parse(ctx->priv->defs, str + arg_off);
 	else if (rsvg_css_param_match (str, "a:adobe-blending-mode"))
 		{
 			if (!strcmp (str + arg_off, "normal"))
@@ -402,10 +402,10 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 				state->adobe_blend = 0;
 		}
 	else if (rsvg_css_param_match (str, "mask"))
-		state->mask = rsvg_mask_parse(ctx->defs, str + arg_off);
+		state->mask = rsvg_mask_parse(ctx->priv->defs, str + arg_off);
 	else if (rsvg_css_param_match (str, "clip-path"))
 		{
-			state->clip_path_ref = rsvg_clip_path_parse(ctx->defs, str + arg_off);
+			state->clip_path_ref = rsvg_clip_path_parse(ctx->priv->defs, str + arg_off);
 		}
 	else if (rsvg_css_param_match (str, "overflow"))
 		{
@@ -444,7 +444,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "fill"))
 		{
 			RsvgPaintServer * fill = state->fill;
-			state->fill = rsvg_paint_server_parse (&state->has_fill_server, ctx->defs, str + arg_off, 0);
+			state->fill = rsvg_paint_server_parse (&state->has_fill_server, ctx->priv->defs, str + arg_off, 0);
 			rsvg_paint_server_unref (fill);
 		}
 	else if (rsvg_css_param_match (str, "fill-opacity"))
@@ -476,7 +476,7 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		{
 			RsvgPaintServer * stroke = state->stroke;
 
-			state->stroke = rsvg_paint_server_parse (&state->has_stroke_server, ctx->defs, str + arg_off, 0);
+			state->stroke = rsvg_paint_server_parse (&state->has_stroke_server, ctx->priv->defs, str + arg_off, 0);
 
 			rsvg_paint_server_unref (stroke);
 		}
@@ -649,17 +649,17 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 		}
 	else if (rsvg_css_param_match (str, "marker-start"))
 		{
-			state->startMarker = rsvg_marker_parse(ctx->defs, str + arg_off);
+			state->startMarker = rsvg_marker_parse(ctx->priv->defs, str + arg_off);
 			state->has_startMarker = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "marker-mid"))
 		{
-			state->middleMarker = rsvg_marker_parse(ctx->defs, str + arg_off);
+			state->middleMarker = rsvg_marker_parse(ctx->priv->defs, str + arg_off);
 			state->has_middleMarker = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "marker-end"))
 		{
-			state->endMarker = rsvg_marker_parse(ctx->defs, str + arg_off);
+			state->endMarker = rsvg_marker_parse(ctx->priv->defs, str + arg_off);
 			state->has_endMarker = TRUE;
 		}
 	else if (rsvg_css_param_match (str, "stroke-miterlimit"))
@@ -840,12 +840,12 @@ rsvg_css_define_style (RsvgHandle *ctx, const gchar * style_name, const char * s
 	char * existing = NULL;
 
 	/* push name/style pair into HT */
-	existing = (char *)g_hash_table_lookup (ctx->css_props, style_name);
+	existing = (char *)g_hash_table_lookup (ctx->priv->css_props, style_name);
 	if (existing != NULL)
 		g_string_append_len (str, existing, strlen (existing));
 	
 	/* will destroy the existing key and value for us */
-	g_hash_table_insert (ctx->css_props, (gpointer)g_strdup ((gchar *)style_name), (gpointer)str->str);
+	g_hash_table_insert (ctx->priv->css_props, (gpointer)g_strdup ((gchar *)style_name), (gpointer)str->str);
 	g_string_free (str, FALSE);
 }
 
@@ -1233,7 +1233,7 @@ rsvg_parse_transform_attr (RsvgHandle *ctx, RsvgState *state, const char *str)
 static gboolean
 rsvg_lookup_apply_css_style (RsvgHandle *ctx, const char * target, RsvgState *state)
 {
-	const char * value = (const char *)g_hash_table_lookup (ctx->css_props, target);
+	const char * value = (const char *)g_hash_table_lookup (ctx->priv->css_props, target);
 	
 	if (value != NULL)
 		{

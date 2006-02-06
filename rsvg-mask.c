@@ -62,7 +62,7 @@ rsvg_mask_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
-					rsvg_defs_register_name(ctx->defs, id, &mask->super);
+					rsvg_defs_register_name(ctx->priv->defs, id, &mask->super);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;
@@ -139,7 +139,7 @@ rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
-					rsvg_defs_register_name(ctx->defs, id, &clip_path->super);
+					rsvg_defs_register_name(ctx->priv->defs, id, &clip_path->super);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "class")))
 				klazz = value;

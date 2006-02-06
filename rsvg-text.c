@@ -144,7 +144,7 @@ _rsvg_node_text_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *att
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
-					rsvg_defs_register_name (ctx->defs, value, self);
+					rsvg_defs_register_name (ctx->priv->defs, value, self);
 				}
 
 			rsvg_parse_style_attrs (ctx, self->state, "text", klazz, id, atts);
@@ -338,7 +338,7 @@ _rsvg_node_tspan_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *at
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
-					rsvg_defs_register_name (ctx->defs, value, self);
+					rsvg_defs_register_name (ctx->priv->defs, value, self);
 				}
 
 			rsvg_parse_style_attrs (ctx, self->state, "tspan", klazz, id, atts);
@@ -383,9 +383,9 @@ _rsvg_node_tref_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *att
 	if (rsvg_property_bag_size (atts))
 		{
 			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
-				rsvg_defs_add_resolver (ctx->defs, &text->link, value);
+				rsvg_defs_add_resolver (ctx->priv->defs, &text->link, value);
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				rsvg_defs_register_name (ctx->defs, value, self);
+				rsvg_defs_register_name (ctx->priv->defs, value, self);
 		}	
 }
 

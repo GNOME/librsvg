@@ -54,9 +54,24 @@ GQuark rsvg_error_quark (void) G_GNUC_CONST;
 /**
  * The RsvgHandle is an object representing the parsed form of a SVG
  */
-typedef struct RsvgHandle RsvgHandle;
-typedef struct RsvgHandleClass RsvgHandleClass;
+typedef struct _RsvgHandle RsvgHandle;
+typedef struct RsvgHandlePrivate RsvgHandlePrivate;
+typedef struct _RsvgHandleClass RsvgHandleClass;
 typedef struct _RsvgDimensionData RsvgDimensionData;
+
+struct _RsvgHandleClass {
+	GObjectClass parent;
+
+	gpointer _abi_padding[15];
+};
+
+struct _RsvgHandle {
+	GObject parent;
+
+	RsvgHandlePrivate *priv;
+
+	gpointer _abi_padding[15];
+};
 
 /* RsvgDimensionData
  */

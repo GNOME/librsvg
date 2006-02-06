@@ -136,7 +136,7 @@ rsvg_node_group_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *att
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
-					rsvg_defs_register_name (ctx->defs, value, self);
+					rsvg_defs_register_name (ctx->priv->defs, value, self);
 				}
 
 			rsvg_parse_style_attrs (ctx, self->state, "g", klazz, id, atts);
@@ -157,8 +157,8 @@ rsvg_new_group (void)
 void
 rsvg_pop_def_group (RsvgHandle *ctx)
 {
-	if (ctx->currentnode != NULL)
-		ctx->currentnode = ctx->currentnode->parent;
+	if (ctx->priv->currentnode != NULL)
+		ctx->priv->currentnode = ctx->priv->currentnode->parent;
 }
 
 void 
@@ -348,7 +348,7 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
-					rsvg_defs_register_name (ctx->defs, value, &svg->super);
+					rsvg_defs_register_name (ctx->priv->defs, value, &svg->super);
 				}
 		}
 }
@@ -392,10 +392,10 @@ rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
-					rsvg_defs_register_name (ctx->defs, value, &use->super);
+					rsvg_defs_register_name (ctx->priv->defs, value, &use->super);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
-				rsvg_defs_add_resolver (ctx->defs, &use->link, value);
+				rsvg_defs_add_resolver (ctx->priv->defs, &use->link, value);
 			rsvg_parse_style_attrs (ctx, self->state, "use", klazz, id, atts);
 		}
 	
@@ -431,7 +431,7 @@ rsvg_node_symbol_set_atts(RsvgNode *self, RsvgHandle *ctx, RsvgPropertyBag *atts
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
-					rsvg_defs_register_name (ctx->defs, value, &symbol->super);
+					rsvg_defs_register_name (ctx->priv->defs, value, &symbol->super);
 				}
 			if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
 				symbol->vbox = rsvg_css_parse_vbox (value);

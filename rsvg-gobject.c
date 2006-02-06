@@ -46,24 +46,25 @@ static GObjectClass *rsvg_parent_class = NULL;
 static void
 instance_init (RsvgHandle *self)
 {
-	self->defs = rsvg_defs_new ();
-	self->handler_nest = 0;
-	self->entities = g_hash_table_new (g_str_hash, g_str_equal);
-	self->dpi_x = rsvg_internal_dpi_x;
-	self->dpi_y = rsvg_internal_dpi_y;
+	self->priv = g_new0(RsvgHandlePrivate, 1);
+	self->priv->defs = rsvg_defs_new ();
+	self->priv->handler_nest = 0;
+	self->priv->entities = g_hash_table_new (g_str_hash, g_str_equal);
+	self->priv->dpi_x = rsvg_internal_dpi_x;
+	self->priv->dpi_y = rsvg_internal_dpi_y;
 	
-	self->css_props = g_hash_table_new_full (g_str_hash, g_str_equal,
+	self->priv->css_props = g_hash_table_new_full (g_str_hash, g_str_equal,
 											   g_free, g_free);
 	rsvg_SAX_handler_struct_init ();
 	
-	self->ctxt = NULL;
-	self->currentnode = NULL;
-	self->treebase = NULL;
+	self->priv->ctxt = NULL;
+	self->priv->currentnode = NULL;
+	self->priv->treebase = NULL;
 
-	self->finished = 0;
-	self->first_write = TRUE;
+	self->priv->finished = 0;
+	self->priv->first_write = TRUE;
 
-	self->is_disposed = FALSE;
+	self->priv->is_disposed = FALSE;
 }
 
 static void
@@ -86,32 +87,31 @@ instance_dispose (GObject *instance)
 {
 	RsvgHandle *self = (RsvgHandle*) instance;
 
-	if (self->is_disposed)
-		return;
-
-	self->is_disposed = TRUE;
+	self->priv->is_disposed = TRUE;
 
 #if HAVE_SVGZ
-	if (self->is_gzipped)
-		g_object_unref (G_OBJECT (self->gzipped_data));
+	if (self->priv->is_gzipped)
+		g_object_unref (G_OBJECT (self->priv->gzipped_data));
 #endif
 
-	g_hash_table_foreach (self->entities, rsvg_ctx_free_helper, NULL);
-	g_hash_table_destroy (self->entities);
-	rsvg_defs_free (self->defs);
-	g_hash_table_destroy (self->css_props);
+	g_hash_table_foreach (self->priv->entities, rsvg_ctx_free_helper, NULL);
+	g_hash_table_destroy (self->priv->entities);
+	rsvg_defs_free (self->priv->defs);
+	g_hash_table_destroy (self->priv->css_props);
 	
-	if (self->user_data_destroy)
-		(* self->user_data_destroy) (self->user_data);
+	if (self->priv->user_data_destroy)
+		(* self->priv->user_data_destroy) (self->priv->user_data);
 
-	if (self->title)
-		g_string_free (self->title, TRUE);
-	if (self->desc)
-		g_string_free (self->desc, TRUE);
-	if (self->metadata)
-		g_string_free (self->metadata, TRUE);
-	if (self->base_uri)
-		g_free (self->base_uri);
+	if (self->priv->title)
+		g_string_free (self->priv->title, TRUE);
+	if (self->priv->desc)
+		g_string_free (self->priv->desc, TRUE);
+	if (self->priv->metadata)
+		g_string_free (self->priv->metadata, TRUE);
+	if (self->priv->base_uri)
+		g_free (self->priv->base_uri);
+
+	g_free(self->priv);
 
 	rsvg_parent_class->dispose (G_OBJECT (self));
 }
@@ -126,10 +126,10 @@ set_property (GObject      *instance,
 
 	switch (prop_id) {
 	case PROP_DPI_X:
-		rsvg_handle_set_dpi_x_y (self, g_value_get_double (value), self->dpi_y);
+		rsvg_handle_set_dpi_x_y (self, g_value_get_double (value), self->priv->dpi_y);
 		break;
 	case PROP_DPI_Y:
-		rsvg_handle_set_dpi_x_y (self, self->dpi_x, g_value_get_double (value));
+		rsvg_handle_set_dpi_x_y (self, self->priv->dpi_x, g_value_get_double (value));
 		break;
 	case PROP_BASE_URI:
 		rsvg_handle_set_base_uri (self, g_value_get_string (value));
@@ -150,10 +150,10 @@ get_property (GObject    *instance,
 
 	switch (prop_id) {
 	case PROP_DPI_X:
-		g_value_set_double (value, self->dpi_x);
+		g_value_set_double (value, self->priv->dpi_x);
 		break;
 	case PROP_DPI_Y:
-		g_value_set_double (value, self->dpi_y);
+		g_value_set_double (value, self->priv->dpi_y);
 		break;
 	case PROP_BASE_URI:
 		g_value_set_string (value, rsvg_handle_get_base_uri (self));
