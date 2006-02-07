@@ -66,11 +66,6 @@ rsvg_cairo_render_new(cairo_t * cr, double width, double height)
 	cairo_render->bb_stack = NULL;
 	cairo_render->pixbuf_stack = NULL;
 
-	cairo_save(cr);
-	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
-	cairo_paint(cr);
-	cairo_restore(cr);
-
 	return cairo_render;
 }
 

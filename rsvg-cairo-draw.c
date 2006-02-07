@@ -968,7 +968,7 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx *ctx,
 	RsvgCairoRender *render;
 
 	rowstride = width * 4;
-	pixels = g_new(guint8, width * height * 4);
+	pixels = g_new0(guint8, width * height * 4);
 	surface = cairo_image_surface_create_for_data (pixels,
 												   CAIRO_FORMAT_ARGB32,
 												   width, height,

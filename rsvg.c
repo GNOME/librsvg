@@ -85,7 +85,7 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char * id)
 
 	rowstride = dimensions.width * 4;
 
-	pixels = g_new(guint8, dimensions.width * dimensions.height * 4);
+	pixels = g_new0(guint8, dimensions.width * dimensions.height * 4);
 
 	surface = cairo_image_surface_create_for_data (pixels,
 												   CAIRO_FORMAT_ARGB32,
