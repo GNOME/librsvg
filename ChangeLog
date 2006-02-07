@@ -1,3 +1,7 @@
+2006-02-07 Rob Staudinger <robert.staudinger@gmail.com>
+
+	* rsvg-text.c: fix #168223.
+
 2006-02-06 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-base.c: Fix C89 conformance (bug 330151), from Jens Granseuer.
