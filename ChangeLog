@@ -1,3 +1,7 @@
+2006-02-10 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-cairo.h: Add G_BEGIN/END_DECLS for C++ protection - bug 330722
+	
 2006-02-07 Rob Staudinger <robert.staudinger@gmail.com>
 
 	* rsvg-text.c: fix #168223.
