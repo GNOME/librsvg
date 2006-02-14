@@ -1,3 +1,7 @@
+2006-02-15 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-text.c: made text push and pop discrete layers as appropriate - bug #331116
+
 2006-02-10 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-cairo.h: Add G_BEGIN/END_DECLS for C++ protection - bug 330722
