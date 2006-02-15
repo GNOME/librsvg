@@ -564,7 +564,7 @@ rsvg_text_layout_get_offsets (RsvgTextLayout *layout,
 	}
 	
 	*x = MIN (ink.x, logical.x);
-	*y = MAX (ink.y, logical.y);
+	*y = MIN (ink.y, logical.y);
 }
 
 static FT_Int32

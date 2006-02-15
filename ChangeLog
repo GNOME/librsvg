@@ -1,3 +1,7 @@
+2006-02-15 Rob Staudinger <robert.staudinger@gmail.com>
+
+	* rsvg-text.c: revert fix #168223, it causes side-effects.
+
 2006-02-15 Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-text.c: made text push and pop discrete layers as appropriate - bug #331116
