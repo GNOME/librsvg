@@ -769,7 +769,7 @@ rsvg_new_filter (void)
 	filter->height = _rsvg_css_parse_length("120%");
 	filter->super.children = g_ptr_array_new ();
 	filter->super.set_atts = rsvg_filter_set_args;
-	return &filter->super;
+	return (RsvgNode *)filter;
 }
 
 /*************************************************************/
@@ -1853,6 +1853,13 @@ rsvg_filter_primitive_merge_node_free (RsvgNode * self)
 	_rsvg_node_free(self);
 }
 
+static void
+rsvg_filter_primitive_merge_node_render (RsvgFilterPrimitive * self,
+										 RsvgFilterContext * ctx)
+{
+	/* todo */
+}
+
 RsvgNode *
 rsvg_new_filter_primitive_merge_node (void)
 {
@@ -1861,8 +1868,9 @@ rsvg_new_filter_primitive_merge_node (void)
 	_rsvg_node_init(&filter->super);
 	filter->in = g_string_new ("none");
 	filter->super.free = rsvg_filter_primitive_merge_node_free;
+	filter->render = &rsvg_filter_primitive_merge_node_render;
 	filter->super.set_atts = rsvg_filter_primitive_merge_node_set_atts;
-	return &filter->super;
+	return (RsvgNode *)filter;
 }
 
 /*************************************************************/
