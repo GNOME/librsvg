@@ -1,3 +1,7 @@
+2006-02-28 Caleb Moore <c.moore@student.unsw.edu.au>
+
+	* rsvg-structure.c: Make <svg> elements parse style (bug 332700)
+	
 2006-02-27 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-text.c: Fix C89 compile error, from Jens Granseuer (bug 332714)

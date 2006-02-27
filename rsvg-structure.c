@@ -325,10 +325,8 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 static void
 rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 {
-	const char * id, *value;
+	const char * id = NULL, *klazz = NULL, *value;
 	RsvgNodeSvg * svg = (RsvgNodeSvg *)self;
-
-	id = NULL;
 
 	if (rsvg_property_bag_size (atts))
 		{
@@ -345,11 +343,14 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
 				svg->x = _rsvg_css_parse_length (value);
 			if ((value = rsvg_property_bag_lookup (atts, "y")))
 				svg->y = _rsvg_css_parse_length (value);
+			if ((value = rsvg_property_bag_lookup (atts, "class")))
+				klazz = value;
 			if ((value = rsvg_property_bag_lookup (atts, "id")))
 				{
 					id = value;
 					rsvg_defs_register_name (ctx->priv->defs, value, &svg->super);
 				}
+			rsvg_parse_style_attrs (ctx, self->state, "svg", klazz, id, atts);
 		}
 }
 
