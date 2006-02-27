@@ -1,4 +1,8 @@
-2006-02-26 Dom Lachowicz <cinamod@hotmail.com>
+2006-02-27 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-text.c: Fix C89 compile error, from Jens Granseuer (bug 332714)
+	
+2006-02-26 Dom Lachowicz <cinamod@hotmail.com>	
 
 	* rsvg-styles.c (rsvg_state_inherit_run): Fix inheritence of dash arrays (bug 332699)
 	

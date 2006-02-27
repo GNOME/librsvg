@@ -170,8 +170,9 @@ static void
 _rsvg_node_text_type_children(RsvgNode * self, RsvgDrawingCtx *ctx, 
 							  gdouble * x, gdouble * y, gboolean * lastwasspace)
 {
-	rsvg_push_discrete_layer(ctx);
 	guint i;
+
+	rsvg_push_discrete_layer(ctx);
 	for (i = 0; i < self->children->len; i++)
 		{
 			RsvgNode * node = g_ptr_array_index(self->children, i);
