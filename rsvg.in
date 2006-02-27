@@ -30,6 +30,10 @@ Help options:
   --usage                      Display brief usage message
 """,
 
+def shellEscape(param):
+    """Escape a string parameter for the shell."""
+    return "'" + param.replace("'", "'\\''") + "'"
+
 def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], "d:p:x:y:w:h:q:f:v?", ["dpi-x=", "dpi-y=", "x-zoom=", "y-zoom=", "width=", "height=", "quality=", "format=", "version", "usage"])
@@ -57,13 +61,13 @@ def main():
             print "The --quality option is no longer supported"
             sys.exit(1)
         else:
-            command_str += " " + o + " " + a
+            command_str += " " + shellEscape(o) + " " + shellEscape(a)
 
     if len(args) != 2:
         help()
         sys.exit(1)
 
-    return os.system("%s %s -o %s %s" % (os.path.join("@prefix@", "bin", "rsvg-convert"), command_str, args[1], args[0]))
+    return os.system("%s %s -o %s %s" % (shellEscape(os.path.join("@prefix@", "bin", "rsvg-convert")), command_str, shellEscape(args[1]), shellEscape(args[0])))
 
 if __name__ == "__main__":
     main()

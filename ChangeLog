@@ -5,6 +5,7 @@
 2006-02-27 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-text.c: Fix C89 compile error, from Jens Granseuer (bug 332714)
+	* rsvg.in: Bug 332798 - rsvg wrapper script doesn't escape shell metacharacters
 	
 2006-02-26 Dom Lachowicz <cinamod@hotmail.com>	
 
