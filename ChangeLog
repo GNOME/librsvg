@@ -1,3 +1,7 @@
+2006-02-26 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-styles.c (rsvg_state_inherit_run): Fix inheritence of dash arrays (bug 332699)
+	
 2006-02-25 Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: 2.14.0

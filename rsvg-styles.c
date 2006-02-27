@@ -248,6 +248,7 @@ rsvg_state_inherit_run (RsvgState *dst, const RsvgState *src,
 				g_free(dst->dash.dash);
 
 			dst->dash.dash = g_new (gdouble, src->dash.n_dash);
+			dst->dash.n_dash = src->dash.n_dash;
 			for (i = 0; i < src->dash.n_dash; i++)
 				dst->dash.dash[i] = src->dash.dash[i];
 		} 
