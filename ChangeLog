@@ -1,3 +1,7 @@
+2006-02-28 Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: 2.14.1
+	
 2006-02-28 Caleb Moore <c.moore@student.unsw.edu.au>
 
 	* rsvg-structure.c: Make <svg> elements parse style (bug 332700)
