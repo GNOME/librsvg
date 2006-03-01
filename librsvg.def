@@ -1,4 +1,3 @@
-EXPORTS
 	rsvg_error_quark
 	rsvg_init
 	rsvg_term
