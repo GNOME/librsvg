@@ -160,7 +160,7 @@ main (int argc, const char **argv)
 
 	if (bVersion != 0)
 		{
-		    g_print (_("rsvg-cairo version %s\n"), VERSION);
+		    printf (_("rsvg-cairo version %s\n"), VERSION);
 			return 0;
 		}
 
@@ -169,7 +169,7 @@ main (int argc, const char **argv)
 			output_file = fopen (output, "wb");
 			if (!output_file)
 				{
-					g_print (_("Error saving to file %s\n"), output);
+					fprintf (stderr, _("Error saving to file %s\n"), output);
 					exit (1);
 				}
 		}
@@ -185,7 +185,7 @@ main (int argc, const char **argv)
 		}
 	else if (n_args > 1 && (!format || !strcmp (format, "png"))) 
 		{
-			g_print (_("Multiple SVG files are only allowed for PDF, PS and SVG output.\n"));
+			fprintf (stderr, _("Multiple SVG files are only allowed for PDF, PS and SVG output.\n"));
 			exit (1);
 		}
 
@@ -273,7 +273,7 @@ main (int argc, const char **argv)
 #endif
 					else 
 						{
-							g_error ("Unknown output format.");
+							fprintf (stderr, _("Unknown output format."));
 							exit (1);
 						}
 

@@ -1,3 +1,8 @@
+2006-03-16 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-convert.c: rsvg-convert 'crashes' because it calls g_error()
+	on an error condition, instead of fprintf(stderr, ...) (#334813)
+	
 ==== GNOME 2.14 release ====
 	
 2006-03-11 Dom Lachowicz <cinamod@hotmail.com>
