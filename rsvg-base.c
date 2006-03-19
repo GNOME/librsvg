@@ -569,7 +569,7 @@ rsvg_end_element (void *data, const xmlChar *name)
 					ctx->priv->handler = NULL;
 				}
 
-			if (!strcmp ((char *)name, ctx->priv->currentnode->type->str))
+			if (ctx->priv->currentnode && !strcmp ((char *)name, ctx->priv->currentnode->type->str))
 				rsvg_pop_def_group(ctx);
 			
 		}
