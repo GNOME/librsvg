@@ -1,6 +1,7 @@
 2006-03-19 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-base.c: Fix a crash exposed by bug 335107
+	* rsvg-convert: Prevent warnings/crash after getting a null RsvgHandle back
 	
 2006-03-16 Dom Lachowicz <cinamod@hotmail.com>
 

@@ -202,6 +202,11 @@ main (int argc, const char **argv)
 			else
 				rsvg = rsvg_handle_new_from_file (args[i], NULL);
 			
+			if(!rsvg) {
+				fprintf (stderr, _("Error reading SVG.\n"));
+				exit (1);
+			}
+
 			if (base_uri)
 				rsvg_handle_set_base_uri (rsvg, base_uri);
 
