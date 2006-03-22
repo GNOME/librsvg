@@ -27,6 +27,23 @@
 #include "rsvg.h"
 #include "rsvg-private.h"
 
+static gboolean
+rsvg_handle_fill_with_data (RsvgHandle * handle,
+							const guint8 *data,
+							gsize data_len,
+							GError **error)
+{
+	g_return_val_if_fail(data != NULL, FALSE);
+	g_return_val_if_fail(data_len != 0, FALSE);
+
+	if(!rsvg_handle_write (handle, data, data_len, error))
+		return FALSE;
+	if(!rsvg_handle_close(handle, error))
+		return FALSE;
+
+	return TRUE;
+}
+
 /**
  * rsvg_handle_new_from_data:
  * @data: The SVG data
@@ -44,20 +61,12 @@ RsvgHandle * rsvg_handle_new_from_data (const guint8 *data,
 {
 	RsvgHandle * handle;
 
-	g_return_val_if_fail(data != NULL, NULL);
-	g_return_val_if_fail(data_len != 0, NULL);
-
 	handle = rsvg_handle_new ();
 
 	if(handle) {
-		if(!rsvg_handle_write (handle, data, data_len, error)) {
+		if (!rsvg_handle_fill_with_data (handle, data, data_len, error)) {
 			g_object_unref(G_OBJECT(handle));
 			handle = NULL;
-		} else {
-			if(!rsvg_handle_close(handle, error)) {
-				g_object_unref (G_OBJECT(handle));
-				handle = NULL;
-			}
 		}
 	}
 
@@ -88,9 +97,14 @@ RsvgHandle * rsvg_handle_new_from_file (const gchar *file_name,
 
 	if (f)
 		{
-			handle = rsvg_handle_new_from_data (f->data, f->len, error);
-			if (handle)
+			handle = rsvg_handle_new ();
+			if (handle) {
 				rsvg_handle_set_base_uri (handle, base_uri);
+				if(!rsvg_handle_fill_with_data (handle, f->data, f->len, error)) {
+					g_object_unref (G_OBJECT (handle));
+					handle = NULL;
+				}
+			}
 			g_byte_array_free (f, TRUE);
 		} 
 	

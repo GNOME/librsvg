@@ -1,3 +1,8 @@
+2006-03-22 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-base-file-util.c: rsvg_handle_set_base_uri() in rsvg_handle_new_from_file()
+	  is too late (#335450)
+	
 2006-03-19 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-base.c: Fix a crash exposed by bug 335107

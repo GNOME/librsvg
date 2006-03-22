@@ -726,9 +726,10 @@ rsvg_get_base_uri_from_filename(const gchar * file_name)
  * @handle: A #RsvgHandle
  * @base_uri: The base uri
  *
- * Set the base URI for this SVG
+ * Set the base URI for this SVG. This can only be called before rsvg_handle_write()
+ * has been called.
  *
- * Since: 2.9 (really present in 2.8 as well)
+ * Since: 2.9
  */
 void rsvg_handle_set_base_uri (RsvgHandle *handle,
 							   const char *base_uri)
