@@ -28,17 +28,17 @@
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <popt.h>
 
 #include "rsvg.h"
+#include "rsvg-private.h"
 
 int
-main (int argc, const char **argv)
+main (int argc, char **argv)
 {
 	int         i, count = 10;
 	GTimer     *timer;
 
-	poptContext popt_context;
+	GOptionContext *g_option_context;
 	double x_zoom = 1.0;
 	double y_zoom = 1.0;
 	double dpi = -1.0;
@@ -46,35 +46,30 @@ main (int argc, const char **argv)
 	int height = -1;
 	int bVersion = 0;
 
-	struct poptOption options_table[] = {
-		{ "dpi"   ,  'd',  POPT_ARG_DOUBLE, NULL, 0, "pixels per inch", "<float>" },
-		{ "x-zoom",  'x',  POPT_ARG_DOUBLE, NULL, 0, "x zoom factor", "<float>" },
-		{ "y-zoom",  'y',  POPT_ARG_DOUBLE, NULL, 0, "y zoom factor", "<float>" },
-		{ "width",   'w',  POPT_ARG_INT,    NULL, 0, "width", "<int>" },
-		{ "height",  'h',  POPT_ARG_INT,    NULL, 0, "height", "<int>" },
-		{ "count",   'c',  POPT_ARG_INT,    NULL, 0, "number of times to render the SVG", "<int>" },
-		{ "version", 'v',  POPT_ARG_NONE,   NULL, 0, "show version information", NULL },
-		POPT_AUTOHELP
-		POPT_TABLEEND
-	};
-	int c;
-	const char * const *args;
+	char **args;
 	gint n_args = 0;
 	GdkPixbuf *pixbuf;
 
-	options_table[0].arg = &dpi;
-	options_table[1].arg = &x_zoom;
-	options_table[2].arg = &y_zoom;
-	options_table[3].arg = &width;
-	options_table[4].arg = &height;
-	options_table[5].arg = &count;
-	options_table[6].arg = &bVersion;
+	GOptionEntry options_table[] = {
+		{ "dpi"   ,  'd',  0, G_OPTION_ARG_DOUBLE, &dpi,      "pixels per inch", "<float>" },
+		{ "x-zoom",  'x',  0, G_OPTION_ARG_DOUBLE, &x_zoom,   "x zoom factor", "<float>" },
+		{ "y-zoom",  'y',  0, G_OPTION_ARG_DOUBLE, &y_zoom,   "y zoom factor", "<float>" },
+		{ "width",   'w',  0, G_OPTION_ARG_INT,    &width,    "width", "<int>" },
+		{ "height",  'h',  0, G_OPTION_ARG_INT,    &height,   "height", "<int>" },
+		{ "count",   'c',  0, G_OPTION_ARG_INT,    &count,    "number of times to render the SVG", "<int>" },
+		{ "version", 'v',  0, G_OPTION_ARG_NONE,   &bVersion, "show version information", NULL },
+		{ G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL,  N_("[FILE...]") },
+		{ NULL }
+	};
 
-	popt_context = poptGetContext ("test-performance", argc, argv, options_table, 0);
-	poptSetOtherOptionHelp(popt_context, "[OPTIONS...] file.svg");
+	g_option_context = g_option_context_new (_("- SVG Performance Test"));
+	g_option_context_add_main_entries (g_option_context, options_table, NULL);
+	g_option_context_set_help_enabled (g_option_context, TRUE);
+	if(!g_option_context_parse (g_option_context, &argc, &argv, NULL)) {
+		exit(1);
+	}
 
-	c = poptGetNextOpt (popt_context);
-	args = poptGetArgs (popt_context);
+	g_option_context_free (g_option_context);
 
 	if (bVersion != 0)
 		{
@@ -88,8 +83,7 @@ main (int argc, const char **argv)
 
 	if (n_args != 1)
 		{
-			poptPrintHelp (popt_context, stderr, 0);
-			poptFreeContext (popt_context);
+			g_print (_("Must specify a SVG file\n"));
 			return 1;
 		}
 

@@ -99,7 +99,6 @@ LDADDS =				\
 	$(LIBGSF_LIBS)			\
 	$(LIBCROCO_LIBS)		\
 	$(LIBRSVG_LIBS) 		\
-	$(POPT_LIBS)			\
 	$(top_builddir)/librsvg-2.la
 
 bin_SCRIPTS=rsvg

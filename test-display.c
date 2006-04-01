@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <popt.h>
 
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
@@ -670,7 +669,7 @@ int
 main (int argc, char **argv)
 {
 	GError * err = NULL;
-	poptContext popt_context;
+	GOptionContext *g_option_context;
 	double x_zoom = 1.0;
 	double y_zoom = 1.0;
 	double dpi_x = -1.0;
@@ -688,39 +687,43 @@ main (int argc, char **argv)
 
 	struct RsvgSizeCallbackData size_data;
 
-	struct poptOption options_table[] = 
+	char **args;
+	gint n_args = 0;
+
+	GOptionEntry options_table[] = 
 		{
 #ifdef ENABLE_XEMBED
-			{ "xid",         'i',  POPT_ARG_INT,    &xid,         0, N_("XWindow ID [for X11 embedding]"), N_("<int>") },
+			{ "xid",         'i',  0, G_OPTION_ARG_INT,    &xid,         N_("XWindow ID [for X11 embedding]"), N_("<int>") },
 #endif
-			{ "stdin",       's',  POPT_ARG_NONE,   &from_stdin,  0, N_("Read from stdin instead of a file"), NULL },
-			{ "dpi-x",       'd',  POPT_ARG_DOUBLE, &dpi_x,       0, N_("Set the # of Pixels Per Inch"), N_("<float>") },
-			{ "dpi-y",       'p',  POPT_ARG_DOUBLE, &dpi_y,       0, N_("Set the # of Pixels Per Inch"), N_("<float>") },
-			{ "x-zoom",      'x',  POPT_ARG_DOUBLE, &x_zoom,      0, N_("Set the x zoom factor"), N_("<float>") },
-			{ "y-zoom",      'y',  POPT_ARG_DOUBLE, &y_zoom,      0, N_("Set the y zoom factor"), N_("<float>") },
-			{ "width",       'w',  POPT_ARG_INT,    &width,       0, N_("Set the image's width"), N_("<int>") },
-			{ "height",      'h',  POPT_ARG_INT,    &height,      0, N_("Set the image's height"), N_("<int>") },
-			{ "bg-color",    'b',  POPT_ARG_STRING, &bg_color,    0, N_("Set the image background color (default: transparent)"), N_("<string>") },
-			{ "base-uri",    'u',  POPT_ARG_STRING, &base_uri,    0, N_("Set the base URI (default: none)"), N_("<string>") },
-			{ "keep-aspect", 'k',  POPT_ARG_NONE,   &bKeepAspect, 0, N_("Preserve the image's aspect ratio"), NULL },
-			{ "version",     'v',  POPT_ARG_NONE,   &bVersion,    0, N_("Show version information"), NULL },
-			POPT_AUTOHELP
-			POPT_TABLEEND
+			{ "stdin",       's',  0, G_OPTION_ARG_NONE,   &from_stdin,  N_("Read from stdin instead of a file"), NULL },
+			{ "dpi-x",       'd',  0, G_OPTION_ARG_DOUBLE, &dpi_x,       N_("Set the # of Pixels Per Inch"), N_("<float>") },
+			{ "dpi-y",       'p',  0, G_OPTION_ARG_DOUBLE, &dpi_y,       N_("Set the # of Pixels Per Inch"), N_("<float>") },
+			{ "x-zoom",      'x',  0, G_OPTION_ARG_DOUBLE, &x_zoom,      N_("Set the x zoom factor"), N_("<float>") },
+			{ "y-zoom",      'y',  0, G_OPTION_ARG_DOUBLE, &y_zoom,      N_("Set the y zoom factor"), N_("<float>") },
+			{ "width",       'w',  0, G_OPTION_ARG_INT,    &width,       N_("Set the image's width"), N_("<int>") },
+			{ "height",      'h',  0, G_OPTION_ARG_INT,    &height,      N_("Set the image's height"), N_("<int>") },
+			{ "bg-color",    'b',  0, G_OPTION_ARG_STRING, &bg_color,    N_("Set the image background color (default: transparent)"), N_("<string>") },
+			{ "base-uri",    'u',  0, G_OPTION_ARG_STRING, &base_uri,    N_("Set the base URI (default: none)"), N_("<string>") },
+			{ "keep-aspect", 'k',  0, G_OPTION_ARG_NONE,   &bKeepAspect, N_("Preserve the image's aspect ratio"), NULL },
+			{ "version",     'v',  0, G_OPTION_ARG_NONE,   &bVersion,    N_("Show version information"), NULL },
+			{ G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL,  N_("[FILE...]") },
+			{ NULL }
 		};
-	int c;
-	const char * const *args;
-	gint n_args = 0;
     
 	info.pixbuf = NULL;
 	info.svg_bytes = NULL;
 	info.window = NULL;
 	info.popup_menu = NULL;
 
-	popt_context = poptGetContext ("rsvg-view", argc, (const char **)argv, options_table, 0);
-	poptSetOtherOptionHelp (popt_context, _("[OPTIONS...] [file.svg]"));
-	
-	c = poptGetNextOpt (popt_context);
-	args = poptGetArgs (popt_context);
+	g_option_context = g_option_context_new ("- SVG Viewer");
+	g_option_context_add_main_entries (g_option_context, options_table, NULL);
+	g_option_context_add_group (g_option_context, gtk_get_option_group (TRUE));
+	g_option_context_set_help_enabled (g_option_context, TRUE);
+	if(!g_option_context_parse (g_option_context, &argc, &argv, NULL)) {
+		exit(1);
+	}
+
+	g_option_context_free (g_option_context);
 	
 	if (bVersion != 0)
 		{
@@ -736,13 +739,11 @@ main (int argc, char **argv)
   
 	if ((!from_stdin) && (n_args != 1))
 		{
-			poptPrintHelp (popt_context, stderr, 0);
-			poptFreeContext (popt_context);
+			g_print (_("No files specified, and not using --stdin\n"));
 			return 1;
 		}
 	
-	/* initialize gtk+ */
-	gtk_init (&argc, &argv) ;
+	/* initialize gtk+ and rsvg */
 	rsvg_init ();
 
 	rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
@@ -793,9 +794,8 @@ main (int argc, char **argv)
 				{
 					if (ferror (stdin))
 						{
-							g_critical (_("Error reading\n"));
+							g_print (_("Error reading\n"));
 							g_byte_array_free (info.svg_bytes, TRUE);
-							poptFreeContext (popt_context);
 							fclose(stdin);
 							
 							return 1;
@@ -810,15 +810,11 @@ main (int argc, char **argv)
 
 	if(!info.svg_bytes || !info.svg_bytes->len)
 		{
-			g_critical (_("Couldn't open %s\n"), args[0]);
-			poptFreeContext (popt_context);
-
+			g_print (_("Couldn't open %s\n"), args[0]);
 			return 1;
 		}
 
 	info.base_uri = base_uri;
-
-	poptFreeContext (popt_context);
 
 	info.pixbuf = rsvg_pixbuf_from_data_with_size_data (info.svg_bytes->data, info.svg_bytes->len, &size_data, base_uri, &err);
 

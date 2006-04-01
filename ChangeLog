@@ -1,3 +1,11 @@
+2006-04-01 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-convert.c: Ditch popt in favor of GOption (#336090)
+	* rsvg-convert.c: Ditto
+	* test-display.c: Ditto
+	* test-performance.c: Ditto
+	* configure.in: Ditto, bump version number (2.15.0)
+	
 2006-03-22 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-base-file-util.c: rsvg_handle_set_base_uri() in rsvg_handle_new_from_file()

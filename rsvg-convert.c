@@ -31,7 +31,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <popt.h>
 
 #include "rsvg.h"
 #include "rsvg-cairo.h"
@@ -110,9 +109,9 @@ rsvg_cairo_write_func (void *closure,
 }
 
 int
-main (int argc, const char **argv)
+main (int argc, char **argv)
 {
-	poptContext popt_context;
+	GOptionContext *g_option_context;
 	double x_zoom = 1.0;
 	double y_zoom = 1.0;
 	double zoom = 1.0;
@@ -127,24 +126,8 @@ main (int argc, const char **argv)
 	char * base_uri = NULL;
 	gboolean using_stdin = FALSE;
 
-	struct poptOption options_table[] = {
-		{ "dpi-x",   'd',  POPT_ARG_DOUBLE, &dpi_x,    0, N_("pixels per inch [optional; defaults to 90dpi]"), N_("<float>") },
-		{ "dpi-y",   'p',  POPT_ARG_DOUBLE, &dpi_y,    0, N_("pixels per inch [optional; defaults to 90dpi]"), N_("<float>") },
-		{ "x-zoom",  'x',  POPT_ARG_DOUBLE, &x_zoom,   0, N_("x zoom factor [optional; defaults to 1.0]"), N_("<float>") },
-		{ "y-zoom",  'y',  POPT_ARG_DOUBLE, &y_zoom,   0, N_("y zoom factor [optional; defaults to 1.0]"), N_("<float>") },
-		{ "zoom",    'z',  POPT_ARG_DOUBLE, &zoom,     0, N_("zoom factor [optional; defaults to 1.0]"), N_("<float>") },
-		{ "width",   'w',  POPT_ARG_INT,    &width,    0, N_("width [optional; defaults to the SVG's width]"), N_("<int>") },
-		{ "height",  'h',  POPT_ARG_INT,    &height,   0, N_("height [optional; defaults to the SVG's height]"), N_("<int>") },		
-		{ "format",  'f',  POPT_ARG_STRING, &format,   0, N_("save format [optional; defaults to 'png']"), N_("[png, pdf, ps, svg]") },
-		{ "output",  'o',  POPT_ARG_STRING, &output,   0, N_("output filename [optional; defaults to stdout]"), NULL },
-		{ "keep-aspect-ratio", 'a', POPT_ARG_NONE, &keep_aspect_ratio, 0, N_("whether to preserve the aspect ratio [optional; defaults to FALSE]"), NULL },
-		{ "version", 'v',  POPT_ARG_NONE,   &bVersion, 0, N_("show version information"), NULL },
-		{ "base-uri", 'b', POPT_ARG_STRING, &base_uri, 0, N_("base uri"), NULL },
-		POPT_AUTOHELP
-		POPT_TABLEEND
-	};
-	int c, i;
-	const char * const *args;
+	int i;
+	char **args;
 	gint n_args = 0;
 	RsvgHandle *rsvg;
 	cairo_surface_t *surface = NULL;
@@ -152,15 +135,35 @@ main (int argc, const char **argv)
 	RsvgDimensionData dimensions;
 	FILE * output_file = stdout;
 
-	popt_context = poptGetContext ("rsvg-cairo", argc, argv, options_table, 0);
-	poptSetOtherOptionHelp (popt_context, _("[OPTIONS...]"));
+	GOptionEntry options_table[] = {
+		{ "dpi-x",   'd',  0, G_OPTION_ARG_DOUBLE, &dpi_x,    N_("pixels per inch [optional; defaults to 90dpi]"), N_("<float>") },
+		{ "dpi-y",   'p',  0, G_OPTION_ARG_DOUBLE, &dpi_y,    N_("pixels per inch [optional; defaults to 90dpi]"), N_("<float>") },
+		{ "x-zoom",  'x',  0, G_OPTION_ARG_DOUBLE, &x_zoom,   N_("x zoom factor [optional; defaults to 1.0]"), N_("<float>") },
+		{ "y-zoom",  'y',  0, G_OPTION_ARG_DOUBLE, &y_zoom,   N_("y zoom factor [optional; defaults to 1.0]"), N_("<float>") },
+		{ "zoom",    'z',  0, G_OPTION_ARG_DOUBLE, &zoom,     N_("zoom factor [optional; defaults to 1.0]"), N_("<float>") },
+		{ "width",   'w',  0, G_OPTION_ARG_INT,    &width,    N_("width [optional; defaults to the SVG's width]"), N_("<int>") },
+		{ "height",  'h',  0, G_OPTION_ARG_INT,    &height,   N_("height [optional; defaults to the SVG's height]"), N_("<int>") },		
+		{ "format",  'f',  0, G_OPTION_ARG_STRING, &format,   N_("save format [optional; defaults to 'png']"), N_("[png, pdf, ps, svg]") },
+		{ "output",  'o',  0, G_OPTION_ARG_STRING, &output,   N_("output filename [optional; defaults to stdout]"), NULL },
+		{ "keep-aspect-ratio", 'a', 0, G_OPTION_ARG_NONE, &keep_aspect_ratio, N_("whether to preserve the aspect ratio [optional; defaults to FALSE]"), NULL },
+		{ "version", 'v',  0, G_OPTION_ARG_NONE,   &bVersion, N_("show version information"), NULL },
+		{ "base-uri", 'b', 0, G_OPTION_ARG_STRING, &base_uri, N_("base uri"), NULL },
+		{ G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL,  N_("[FILE...]") },
+		{ NULL }
+	};
 
-	c = poptGetNextOpt (popt_context);
-	args = poptGetArgs (popt_context);
+	g_option_context = g_option_context_new (_("- SVG Converter"));
+	g_option_context_add_main_entries (g_option_context, options_table, NULL);
+	g_option_context_set_help_enabled (g_option_context, TRUE);
+	if(!g_option_context_parse (g_option_context, &argc, &argv, NULL)) {
+		exit(1);
+	}
+
+	g_option_context_free (g_option_context);
 
 	if (bVersion != 0)
 		{
-		    printf (_("rsvg-cairo version %s\n"), VERSION);
+		    printf (_("rsvg-convert version %s\n"), VERSION);
 			return 0;
 		}
 
@@ -308,7 +311,6 @@ main (int argc, const char **argv)
 
 	fclose (output_file);
 
-	poptFreeContext (popt_context);
 	rsvg_term();
 
 	return 0;
