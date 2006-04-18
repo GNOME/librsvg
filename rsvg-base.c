@@ -1287,7 +1287,7 @@ rsvg_handle_write (RsvgHandle    *handle,
  *
  * Closes @handle, to indicate that loading the image is complete.  This will
  * return #TRUE if the loader closed successfully.  Note that @handle isn't
- * freed until @rsvg_handle_free is called.
+ * freed until @g_object_unref is called.
  *
  * Returns: #TRUE if the loader closed successfully, or #FALSE if there was
  * an error.

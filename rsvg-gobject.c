@@ -303,7 +303,7 @@ rsvg_handle_free (RsvgHandle *handle)
 /**
  * rsvg_handle_new:
  *
- * Returns a new rsvg handle.  Must be freed with @rsvg_handle_free.  This
+ * Returns a new rsvg handle.  Must be freed with @g_object_unref.  This
  * handle can be used for dynamically loading an image.  You need to feed it
  * data using @rsvg_handle_write, then call @rsvg_handle_close when done.
  * Afterwords, you can render it using Cairo or get a GdkPixbuf from it. When
