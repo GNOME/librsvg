@@ -48,6 +48,16 @@
 #include <cairo-svg.h>
 #endif
 
+static void 
+display_error(GError *err)
+{
+	if (err)
+		{
+			g_print ("%s", err->message);
+			g_error_free (err);
+		}
+}
+
 static RsvgHandle * 
 rsvg_handle_new_from_stdio_file (FILE * f,
 								 GError **error)
@@ -125,6 +135,7 @@ main (int argc, char **argv)
 	int keep_aspect_ratio = FALSE;
 	char * base_uri = NULL;
 	gboolean using_stdin = FALSE;
+	GError *error = NULL;
 
 	int i;
 	char **args;
@@ -155,7 +166,8 @@ main (int argc, char **argv)
 	g_option_context = g_option_context_new (_("- SVG Converter"));
 	g_option_context_add_main_entries (g_option_context, options_table, NULL);
 	g_option_context_set_help_enabled (g_option_context, TRUE);
-	if(!g_option_context_parse (g_option_context, &argc, &argv, NULL)) {
+	if(!g_option_context_parse (g_option_context, &argc, &argv, &error)) {
+		display_error (error);
 		exit(1);
 	}
 
@@ -172,7 +184,7 @@ main (int argc, char **argv)
 			output_file = fopen (output, "wb");
 			if (!output_file)
 				{
-					fprintf (stderr, _("Error saving to file %s\n"), output);
+					fprintf (stderr, _("Error saving to file: %s\n"), output);
 					exit (1);
 				}
 		}
@@ -186,9 +198,9 @@ main (int argc, char **argv)
 			n_args = 1;
 			using_stdin = TRUE;
 		}
-	else if (n_args > 1 && (!format || !strcmp (format, "png"))) 
+	else if (n_args > 1 && (!format || !(!strcmp (format, "ps") || !strcmp (format, "pdf")))) 
 		{
-			fprintf (stderr, _("Multiple SVG files are only allowed for PDF, PS and SVG output.\n"));
+			fprintf (stderr, _("Multiple SVG files are only allowed for PDF and PS output.\n"));
 			exit (1);
 		}
 
@@ -201,12 +213,14 @@ main (int argc, char **argv)
 	for(i = 0; i < n_args; i++) 
 		{
 			if (using_stdin)
-				rsvg = rsvg_handle_new_from_stdio_file (stdin, NULL);
+				rsvg = rsvg_handle_new_from_stdio_file (stdin, &error);
 			else
-				rsvg = rsvg_handle_new_from_file (args[i], NULL);
+				rsvg = rsvg_handle_new_from_file (args[i], &error);
 			
 			if(!rsvg) {
-				fprintf (stderr, _("Error reading SVG.\n"));
+				fprintf (stderr, _("Error reading SVG:"));
+				display_error (error);
+				fprintf (stderr, "\n");
 				exit (1);
 			}
 

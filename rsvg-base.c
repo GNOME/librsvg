@@ -785,7 +785,7 @@ rsvg_handle_write_impl (RsvgHandle    *handle,
 	GError *real_error = NULL;
 	int result;
 
-	g_return_val_if_fail (handle != NULL, FALSE);
+	rsvg_return_val_if_fail (handle != NULL, FALSE, error);
 	
 	handle->priv->error = &real_error;
 	if (handle->priv->ctxt == NULL)
@@ -1082,9 +1082,10 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * dimension_da
 	RsvgNodeSvg * sself;
 	RsvgBbox bbox;
 
-	g_return_if_fail(dimension_data);
-	memset(dimension_data, 0, sizeof(RsvgDimensionData));
 	g_return_if_fail(handle);
+	g_return_if_fail(dimension_data);
+
+	memset(dimension_data, 0, sizeof(RsvgDimensionData));
 
 	sself = (RsvgNodeSvg *)handle->priv->treebase;	
 	if(!sself)
@@ -1253,7 +1254,7 @@ rsvg_handle_write (RsvgHandle    *handle,
 				   gsize          count,
 				   GError       **error)
 {
-	g_return_val_if_fail(handle, FALSE);
+	rsvg_return_val_if_fail(handle, FALSE, error);
 
 	if (handle->priv->first_write) {
 		handle->priv->first_write = FALSE;
@@ -1296,7 +1297,7 @@ gboolean
 rsvg_handle_close (RsvgHandle  *handle,
 				   GError     **error)
 {
-	g_return_val_if_fail(handle, FALSE);
+	rsvg_return_val_if_fail(handle, FALSE, error);
 
 #if HAVE_SVGZ
 	if (handle->priv->is_gzipped) {
@@ -1562,4 +1563,16 @@ void _rsvg_pop_view_box(RsvgDrawingCtx *ctx)
 	ctx->vb = *((RsvgViewBox *)ctx->vb_stack->data);
 	g_free(ctx->vb_stack->data);
 	ctx->vb_stack = g_slist_delete_link(ctx->vb_stack, ctx->vb_stack);
+}
+
+void rsvg_return_if_fail_warning (const char *pretty_function,
+								  const char *expression,
+								  GError **error)
+{
+	g_set_error (error,
+				 RSVG_ERROR,
+				 0,
+				 _("%s: assertion `%s' failed"),
+				 pretty_function,
+				 expression);
 }
