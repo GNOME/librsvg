@@ -49,6 +49,16 @@
 #include <cairo-svg.h>
 #endif
 
+static void 
+display_error(GError *err)
+{
+	if (err)
+		{
+			g_print ("%s", err->message);
+			g_error_free (err);
+		}
+}
+
 static RsvgHandle * 
 rsvg_handle_new_from_stdio_file (FILE * f,
 								 GError **error)
@@ -126,6 +136,7 @@ main (int argc, const char **argv)
 	int keep_aspect_ratio = FALSE;
 	char * base_uri = NULL;
 	gboolean using_stdin = FALSE;
+	GError *error = NULL;
 
 	struct poptOption options_table[] = {
 		{ "dpi-x",   'd',  POPT_ARG_DOUBLE, &dpi_x,    0, N_("pixels per inch [optional; defaults to 90dpi]"), N_("<float>") },
@@ -169,7 +180,7 @@ main (int argc, const char **argv)
 			output_file = fopen (output, "wb");
 			if (!output_file)
 				{
-					fprintf (stderr, _("Error saving to file %s\n"), output);
+					fprintf (stderr, _("Error saving to file: %s\n"), output);
 					exit (1);
 				}
 		}
@@ -183,9 +194,9 @@ main (int argc, const char **argv)
 			n_args = 1;
 			using_stdin = TRUE;
 		}
-	else if (n_args > 1 && (!format || !strcmp (format, "png"))) 
+	else if (n_args > 1 && (!format || !(!strcmp (format, "ps") || !strcmp (format, "pdf")))) 
 		{
-			fprintf (stderr, _("Multiple SVG files are only allowed for PDF, PS and SVG output.\n"));
+			fprintf (stderr, _("Multiple SVG files are only allowed for PDF and PS output.\n"));
 			exit (1);
 		}
 
@@ -198,12 +209,14 @@ main (int argc, const char **argv)
 	for(i = 0; i < n_args; i++) 
 		{
 			if (using_stdin)
-				rsvg = rsvg_handle_new_from_stdio_file (stdin, NULL);
+				rsvg = rsvg_handle_new_from_stdio_file (stdin, &error);
 			else
-				rsvg = rsvg_handle_new_from_file (args[i], NULL);
+				rsvg = rsvg_handle_new_from_file (args[i], &error);
 			
 			if(!rsvg) {
-				fprintf (stderr, _("Error reading SVG.\n"));
+				fprintf (stderr, _("Error reading SVG:"));
+				display_error (error);
+				fprintf (stderr, "\n");
 				exit (1);
 			}
 

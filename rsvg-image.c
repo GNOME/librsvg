@@ -205,7 +205,7 @@ rsvg_acquire_base64_resource (const char *data,
 	guchar *bufptr;
 	size_t buffer_len, buffer_max_len, data_len;
 
-	g_return_val_if_fail (data != NULL, NULL);
+	rsvg_return_val_if_fail (data != NULL, NULL, error);
 
 	while (*data) if (*data++ == ',') break;
 
@@ -261,7 +261,7 @@ rsvg_acquire_file_resource (const char *filename,
 	int length;
 	FILE *f;
 
-	g_return_val_if_fail (filename != NULL, NULL);
+	rsvg_return_val_if_fail (filename != NULL, NULL, error);
 	
 	path = rsvg_get_file_path (filename, base_uri);
 	f = fopen (path, "rb");
@@ -315,8 +315,8 @@ rsvg_acquire_vfs_resource (const char *filename,
 	GnomeVFSHandle *f = NULL;
 	GnomeVFSResult res;
 	
-	g_return_val_if_fail (filename != NULL, NULL);
-	g_return_val_if_fail (gnome_vfs_initialized (), NULL);
+	rsvg_return_val_if_fail (filename != NULL, NULL, error);
+	rsvg_return_val_if_fail (gnome_vfs_initialized (), NULL, error);
 
 	res = gnome_vfs_open (&f, filename, GNOME_VFS_OPEN_READ);
 

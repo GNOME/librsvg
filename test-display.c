@@ -824,13 +824,15 @@ main (int argc, char **argv)
 
 	if (!info.pixbuf)
 		{
-			g_print (_("Error displaying pixbuf!\n"));
+			g_print (_("Error displaying image: "));
 
 			if (err)
 				{
-					g_print ("%s\n", err->message);
+					g_print ("%s", err->message);
 					g_error_free (err);
 				}
+
+			g_print ("\n");
 
 			return 1;
 		}

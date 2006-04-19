@@ -33,8 +33,8 @@ rsvg_handle_fill_with_data (RsvgHandle * handle,
 							gsize data_len,
 							GError **error)
 {
-	g_return_val_if_fail(data != NULL, FALSE);
-	g_return_val_if_fail(data_len != 0, FALSE);
+	rsvg_return_val_if_fail(data != NULL, FALSE, error);
+	rsvg_return_val_if_fail(data_len != 0, FALSE, error);
 
 	if(!rsvg_handle_write (handle, data, data_len, error))
 		return FALSE;
@@ -90,7 +90,7 @@ RsvgHandle * rsvg_handle_new_from_file (const gchar *file_name,
 	GByteArray *f;
 	RsvgHandle * handle = NULL;
 	
-	g_return_val_if_fail(file_name != NULL, NULL);
+	rsvg_return_val_if_fail(file_name != NULL, NULL, error);
 
 	base_uri = rsvg_get_base_uri_from_filename(file_name);
 	f = _rsvg_acquire_xlink_href_resource (file_name, base_uri, error);

@@ -1,3 +1,21 @@
+2006-04-19 Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Bump version number
+	
+2006-04-19 Dom Lachowicz <cinamod@hotmail.com>
+
+	* *.[ch]: Use rsvg_return_if_fail where appropriate, to make life
+	easier for language bindings and to report errors more consistently
+	(bug #338881)
+	
+2006-04-17 Sebastian Rittau <srittau@jroger.in-berlin.de>
+
+	* Update API documentation to match deprecated symbol list
+
+2006-04-01 Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: 2.14.3
+	
 2006-03-22 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-base-file-util.c: rsvg_handle_set_base_uri() in rsvg_handle_new_from_file()
