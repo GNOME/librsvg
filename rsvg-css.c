@@ -275,7 +275,7 @@ rsvg_css_clip_rgb (gint rgb)
 
 typedef struct
 {
-	const char * name;
+	const char * const name;
 	guint rgb;
 } ColorPair;
 
@@ -377,7 +377,7 @@ rsvg_css_parse_color (const char *str, gboolean * inherit)
 		UNSETINHERIT ();
 	else 
 		{
-			const static ColorPair color_list [] =
+			static const ColorPair color_list [] =
 				{
 					{ "aliceblue",            PACK_RGB (240,248,255) },
 					{ "antiquewhite",         PACK_RGB (250,235,215) },
