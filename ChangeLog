@@ -1,3 +1,7 @@
+2006-04-24 Dom Lachowicz <cinamod@hotmail.com>
+
+	* librsvg.def: Export rsvg_error_get_type() (#339641)
+	
 2006-04-19 Dom Lachowicz <cinamod@hotmail.com>
 
 	* *.[ch]: Use rsvg_return_if_fail where appropriate, to make life
