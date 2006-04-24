@@ -1,5 +1,5 @@
 	rsvg_error_quark
-	librsvg_error_get_type
+	rsvg_error_get_type
 	rsvg_init
 	rsvg_term
 	rsvg_set_default_dpi
