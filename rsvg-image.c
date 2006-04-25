@@ -581,6 +581,7 @@ rsvg_new_image (void)
 {
 	RsvgNodeImage *image;
 	image = g_new (RsvgNodeImage, 1);
+	_rsvg_node_init(&image->super);
 	image->img = NULL;
 	image->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
 	image->x = image->y = image->w = image->h = _rsvg_css_parse_length("0");

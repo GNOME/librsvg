@@ -1,3 +1,7 @@
+2006-04-25 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-image.c: Initialize node->super, to avoid a crash (#339637)
+	
 2006-04-24 Dom Lachowicz <cinamod@hotmail.com>
 
 	* librsvg.def: Export rsvg_error_get_type() (#339641)
