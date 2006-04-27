@@ -679,6 +679,43 @@ rsvg_error_cb (void *data, const char *msg, ...)
 #endif
 }
 
+static void
+rsvg_processing_instruction (void *ctx,
+							 const xmlChar *target,
+							 const xmlChar *data)
+{
+#if 0
+	/* http://www.w3.org/TR/xml-stylesheet/ */
+	RsvgHandle *handle = (RsvgHandle *)ctx;
+
+	if(!strcmp(target, "xml-stylesheet")) {
+		RsvgPropertyBag * atts = tokenize(data); /* todo: implement this function as best we can */
+		if(atts) {
+			const char * value;
+
+			value = rsvg_property_bag_lookup (atts, "alternate");
+			if (!value || (strcmp(value, "no") != 0)) {
+				value = rsvg_property_bag_lookup (atts, "type");
+				if (value && strcmp(value, "text/css") == 0) {
+					value = rsvg_property_bag_lookup (atts, "href");
+					if (value) {
+						GByteArray *style;
+					
+						style = _rsvg_acquire_xlink_href_resource (value, rsvg_handle_get_base_uri (handle), NULL);
+						if (style) {
+							rsvg_parse_cssbuffer (handle, style->data, style->len);
+							g_byte_array_free (style, TRUE);
+						}
+					}
+				}
+			}
+
+			rsvg_property_bag_free (atts);
+		}
+	}
+#endif
+}
+
 /* TODO: this is indempotent, but not exactly threadsafe */
 static xmlSAXHandler rsvgSAXHandlerStruct;
 static gboolean rsvgSAXHandlerStructInited = FALSE;
@@ -698,6 +735,7 @@ void rsvg_SAX_handler_struct_init (void)
 			rsvgSAXHandlerStruct.cdataBlock = rsvg_characters;
 			rsvgSAXHandlerStruct.startElement = rsvg_start_element;
 			rsvgSAXHandlerStruct.endElement = rsvg_end_element;
+			rsvgSAXHandlerStruct.processingInstruction = rsvg_processing_instruction;
 		}
 }
 

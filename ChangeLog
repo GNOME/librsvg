@@ -1,4 +1,9 @@
-2006-04-25 Dom Lachowicz <cinamod@hotmail.com>
+2006-04-27 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-base.c (rsvg_processing_instruction): Stub out how to handle
+	the <?xml-stylesheet?> processing instruction
+	
+2006-04-25 Dom Lachowicz <cinamod@hotmail.com>	
 
 	* rsvg-image.c: Initialize node->super, to avoid a crash (#339637)
 	
