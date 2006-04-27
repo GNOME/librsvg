@@ -97,6 +97,8 @@ rsvg_css_parse_number_list(const char * in_str, guint * out_list_len);
 gboolean 
 rsvg_css_parse_overflow(const char * str, gboolean * inherit);
 
+char ** 
+rsvg_css_parse_xml_attribute_string(const char * attribute_string);
 
 G_END_DECLS
 

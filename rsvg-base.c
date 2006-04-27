@@ -684,12 +684,16 @@ rsvg_processing_instruction (void *ctx,
 							 const xmlChar *target,
 							 const xmlChar *data)
 {
-#if 0
 	/* http://www.w3.org/TR/xml-stylesheet/ */
 	RsvgHandle *handle = (RsvgHandle *)ctx;
 
 	if(!strcmp(target, "xml-stylesheet")) {
-		RsvgPropertyBag * atts = tokenize(data); /* todo: implement this function as best we can */
+		RsvgPropertyBag * atts;
+		char ** xml_atts;
+
+		xml_atts = rsvg_css_parse_xml_attribute_string(data);
+		atts = rsvg_property_bag_new ((const xmlChar **)xml_atts);
+
 		if(atts) {
 			const char * value;
 
@@ -710,10 +714,10 @@ rsvg_processing_instruction (void *ctx,
 				}
 			}
 
+			g_strfreev (xml_atts);
 			rsvg_property_bag_free (atts);
 		}
 	}
-#endif
 }
 
 /* TODO: this is indempotent, but not exactly threadsafe */

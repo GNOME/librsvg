@@ -971,3 +971,328 @@ rsvg_css_parse_overflow(const char * str, gboolean * inherit)
 	return 0;
 }
 
+/***********************************************************************/
+/***********************************************************************/
+
+/* 
+   Code largely based on xmltok_impl.c from Expat
+
+   Copyright (c) 1998, 1999, 2000 Thai Open Source Software Center Ltd
+   and Clark Cooper
+   Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006 Expat maintainers.
+   
+   Permission is hereby granted, free of charge, to any person obtaining
+   a copy of this software and associated documentation files (the
+   "Software"), to deal in the Software without restriction, including
+   without limitation the rights to use, copy, modify, merge, publish,
+   distribute, sublicense, and/or sell copies of the Software, and to
+   permit persons to whom the Software is furnished to do so, subject to
+   the following conditions:
+   
+   The above copyright notice and this permission notice shall be included
+   in all copies or substantial portions of the Software.
+   
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+  const char *name;
+  const char *valuePtr;
+  const char *valueEnd;
+  char normalized;
+} ATTRIBUTE;
+
+#define PTRCALL
+#define PTRFASTCALL
+#define PREFIX(x) x
+typedef void ENCODING;
+
+#define BYTE_TO_ASCII(enc, p) (*(p))
+
+/* minimum bytes per character */
+#define MINBPC(enc) 1
+
+#define BYTE_TYPE(enc, p) utf8_byte_type_table[(int)(*(p))]
+
+#define ASCII_SPACE 0x20
+
+enum {
+  BT_NONXML,
+  BT_MALFORM,
+  BT_LT,
+  BT_AMP,
+  BT_RSQB,
+  BT_LEAD2,
+  BT_LEAD3,
+  BT_LEAD4,
+  BT_TRAIL,
+  BT_CR,
+  BT_LF,
+  BT_GT,
+  BT_QUOT,
+  BT_APOS,
+  BT_EQUALS,
+  BT_QUEST,
+  BT_EXCL,
+  BT_SOL,
+  BT_SEMI,
+  BT_NUM,
+  BT_LSQB,
+  BT_S,
+  BT_NMSTRT,
+  BT_COLON,
+  BT_HEX,
+  BT_DIGIT,
+  BT_NAME,
+  BT_MINUS,
+  BT_OTHER, /* known not to be a name or name start character */
+  BT_NONASCII, /* might be a name or name start character */
+  BT_PERCNT,
+  BT_LPAR,
+  BT_RPAR,
+  BT_AST,
+  BT_PLUS,
+  BT_COMMA,
+  BT_VERBAR
+};
+
+static const char utf8_byte_type_table [] = {
+	/* 0x00 */ BT_NONXML, BT_NONXML, BT_NONXML, BT_NONXML,
+	/* 0x04 */ BT_NONXML, BT_NONXML, BT_NONXML, BT_NONXML,
+	/* 0x08 */ BT_NONXML, BT_S, BT_LF, BT_NONXML,
+	/* 0x0C */ BT_NONXML, BT_CR, BT_NONXML, BT_NONXML,
+	/* 0x10 */ BT_NONXML, BT_NONXML, BT_NONXML, BT_NONXML,
+	/* 0x14 */ BT_NONXML, BT_NONXML, BT_NONXML, BT_NONXML,
+	/* 0x18 */ BT_NONXML, BT_NONXML, BT_NONXML, BT_NONXML,
+	/* 0x1C */ BT_NONXML, BT_NONXML, BT_NONXML, BT_NONXML,
+	/* 0x20 */ BT_S, BT_EXCL, BT_QUOT, BT_NUM,
+	/* 0x24 */ BT_OTHER, BT_PERCNT, BT_AMP, BT_APOS,
+	/* 0x28 */ BT_LPAR, BT_RPAR, BT_AST, BT_PLUS,
+	/* 0x2C */ BT_COMMA, BT_MINUS, BT_NAME, BT_SOL,
+	/* 0x30 */ BT_DIGIT, BT_DIGIT, BT_DIGIT, BT_DIGIT,
+	/* 0x34 */ BT_DIGIT, BT_DIGIT, BT_DIGIT, BT_DIGIT,
+	/* 0x38 */ BT_DIGIT, BT_DIGIT, BT_COLON, BT_SEMI,
+	/* 0x3C */ BT_LT, BT_EQUALS, BT_GT, BT_QUEST,
+	/* 0x40 */ BT_OTHER, BT_HEX, BT_HEX, BT_HEX,
+	/* 0x44 */ BT_HEX, BT_HEX, BT_HEX, BT_NMSTRT,
+	/* 0x48 */ BT_NMSTRT, BT_NMSTRT, BT_NMSTRT, BT_NMSTRT,
+	/* 0x4C */ BT_NMSTRT, BT_NMSTRT, BT_NMSTRT, BT_NMSTRT,
+	/* 0x50 */ BT_NMSTRT, BT_NMSTRT, BT_NMSTRT, BT_NMSTRT,
+	/* 0x54 */ BT_NMSTRT, BT_NMSTRT, BT_NMSTRT, BT_NMSTRT,
+	/* 0x58 */ BT_NMSTRT, BT_NMSTRT, BT_NMSTRT, BT_LSQB,
+	/* 0x5C */ BT_OTHER, BT_RSQB, BT_OTHER, BT_NMSTRT,
+	/* 0x60 */ BT_OTHER, BT_HEX, BT_HEX, BT_HEX,
+	/* 0x64 */ BT_HEX, BT_HEX, BT_HEX, BT_NMSTRT,
+	/* 0x68 */ BT_NMSTRT, BT_NMSTRT, BT_NMSTRT, BT_NMSTRT,
+	/* 0x6C */ BT_NMSTRT, BT_NMSTRT, BT_NMSTRT, BT_NMSTRT,
+	/* 0x70 */ BT_NMSTRT, BT_NMSTRT, BT_NMSTRT, BT_NMSTRT,
+	/* 0x74 */ BT_NMSTRT, BT_NMSTRT, BT_NMSTRT, BT_NMSTRT,
+	/* 0x78 */ BT_NMSTRT, BT_NMSTRT, BT_NMSTRT, BT_OTHER,
+	/* 0x7C */ BT_VERBAR, BT_OTHER, BT_OTHER, BT_OTHER,
+	/* 0x80 */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0x84 */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0x88 */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0x8C */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0x90 */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0x94 */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0x98 */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0x9C */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0xA0 */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0xA4 */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0xA8 */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0xAC */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0xB0 */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0xB4 */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0xB8 */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0xBC */ BT_TRAIL, BT_TRAIL, BT_TRAIL, BT_TRAIL,
+	/* 0xC0 */ BT_LEAD2, BT_LEAD2, BT_LEAD2, BT_LEAD2,
+	/* 0xC4 */ BT_LEAD2, BT_LEAD2, BT_LEAD2, BT_LEAD2,
+	/* 0xC8 */ BT_LEAD2, BT_LEAD2, BT_LEAD2, BT_LEAD2,
+	/* 0xCC */ BT_LEAD2, BT_LEAD2, BT_LEAD2, BT_LEAD2,
+	/* 0xD0 */ BT_LEAD2, BT_LEAD2, BT_LEAD2, BT_LEAD2,
+	/* 0xD4 */ BT_LEAD2, BT_LEAD2, BT_LEAD2, BT_LEAD2,
+	/* 0xD8 */ BT_LEAD2, BT_LEAD2, BT_LEAD2, BT_LEAD2,
+	/* 0xDC */ BT_LEAD2, BT_LEAD2, BT_LEAD2, BT_LEAD2,
+	/* 0xE0 */ BT_LEAD3, BT_LEAD3, BT_LEAD3, BT_LEAD3,
+	/* 0xE4 */ BT_LEAD3, BT_LEAD3, BT_LEAD3, BT_LEAD3,
+	/* 0xE8 */ BT_LEAD3, BT_LEAD3, BT_LEAD3, BT_LEAD3,
+	/* 0xEC */ BT_LEAD3, BT_LEAD3, BT_LEAD3, BT_LEAD3,
+	/* 0xF0 */ BT_LEAD4, BT_LEAD4, BT_LEAD4, BT_LEAD4,
+	/* 0xF4 */ BT_LEAD4, BT_NONXML, BT_NONXML, BT_NONXML,
+	/* 0xF8 */ BT_NONXML, BT_NONXML, BT_NONXML, BT_NONXML,
+	/* 0xFC */ BT_NONXML, BT_NONXML, BT_MALFORM, BT_MALFORM
+};
+
+/* This must only be called for a well-formed start-tag or empty
+   element tag.  Returns the number of attributes.  Pointers to the
+   first attsMax attributes are stored in atts.
+*/
+
+static int PTRCALL
+PREFIX(getAtts)(const ENCODING *enc, const char *ptr,
+                int attsMax, ATTRIBUTE *atts)
+{
+  enum { other, inName, inValue } state = inName;
+  int nAtts = 0;
+  int open = 0; /* defined when state == inValue;
+                   initialization just to shut up compilers */
+
+  for (ptr += MINBPC(enc);; ptr += MINBPC(enc)) {
+    switch (BYTE_TYPE(enc, ptr)) {
+
+#define START_NAME \
+      if (state == other) { \
+        if (nAtts < attsMax) { \
+          atts[nAtts].name = ptr; \
+          atts[nAtts].normalized = 1; \
+        } \
+        state = inName; \
+      }
+
+#define LEAD_CASE(n) \
+    case BT_LEAD ## n: START_NAME ptr += (n - MINBPC(enc)); break;
+    LEAD_CASE(2) LEAD_CASE(3) LEAD_CASE(4)
+#undef LEAD_CASE
+
+    case BT_NONASCII:
+    case BT_NMSTRT:
+    case BT_HEX:
+      START_NAME
+      break;
+#undef START_NAME
+    case BT_QUOT:
+      if (state != inValue) {
+        if (nAtts < attsMax)
+          atts[nAtts].valuePtr = ptr + MINBPC(enc);
+        state = inValue;
+        open = BT_QUOT;
+      }
+      else if (open == BT_QUOT) {
+        state = other;
+        if (nAtts < attsMax)
+          atts[nAtts].valueEnd = ptr;
+        nAtts++;
+      }
+      break;
+    case BT_APOS:
+      if (state != inValue) {
+        if (nAtts < attsMax)
+          atts[nAtts].valuePtr = ptr + MINBPC(enc);
+        state = inValue;
+        open = BT_APOS;
+      }
+      else if (open == BT_APOS) {
+        state = other;
+        if (nAtts < attsMax)
+          atts[nAtts].valueEnd = ptr;
+        nAtts++;
+      }
+      break;
+    case BT_AMP:
+      if (nAtts < attsMax)
+        atts[nAtts].normalized = 0;
+      break;
+    case BT_S:
+      if (state == inName)
+        state = other;
+      else if (state == inValue
+               && nAtts < attsMax
+               && atts[nAtts].normalized
+               && (ptr == atts[nAtts].valuePtr
+                   || BYTE_TO_ASCII(enc, ptr) != ASCII_SPACE
+                   || BYTE_TO_ASCII(enc, ptr + MINBPC(enc)) == ASCII_SPACE
+                   || BYTE_TYPE(enc, ptr + MINBPC(enc)) == open))
+        atts[nAtts].normalized = 0;
+      break;
+    case BT_CR: case BT_LF:
+      /* This case ensures that the first attribute name is counted
+         Apart from that we could just change state on the quote. */
+      if (state == inName)
+        state = other;
+      else if (state == inValue && nAtts < attsMax)
+        atts[nAtts].normalized = 0;
+      break;
+    case BT_GT:
+    case BT_SOL:
+      if (state != inValue)
+        return nAtts;
+      break;
+    default:
+      break;
+    }
+  }
+  /* not reached */
+}
+
+static int PTRFASTCALL
+PREFIX(nameLength)(const ENCODING *enc, const char *ptr)
+{
+  const char *start = ptr;
+  for (;;) {
+    switch (BYTE_TYPE(enc, ptr)) {
+#define LEAD_CASE(n) \
+    case BT_LEAD ## n: ptr += n; break;
+    LEAD_CASE(2) LEAD_CASE(3) LEAD_CASE(4)
+#undef LEAD_CASE
+    case BT_NONASCII:
+    case BT_NMSTRT:
+#ifdef XML_NS
+    case BT_COLON:
+#endif
+    case BT_HEX:
+    case BT_DIGIT:
+    case BT_NAME:
+    case BT_MINUS:
+      ptr += MINBPC(enc);
+      break;
+    default:
+      return (int)(ptr - start);
+    }
+  }
+}
+
+char ** 
+rsvg_css_parse_xml_attribute_string(const char * attribute_string)
+{
+	int i, nb_atts;
+	ATTRIBUTE *attributes;
+	int attrSize = 16;
+	ENCODING * enc = NULL;
+	char ** atts;
+	char * _attribute_string;
+
+	_attribute_string = g_strdup_printf("<tag %s />\n", attribute_string);
+	attributes = g_new(ATTRIBUTE, attrSize);
+
+	nb_atts = getAtts(enc, _attribute_string, attrSize, attributes);
+	if(nb_atts > attrSize) {
+		attrSize = nb_atts;
+		g_free(attributes);
+		
+		attributes = g_new (ATTRIBUTE, attrSize);
+		nb_atts = getAtts(enc, _attribute_string, attrSize, attributes);
+	}
+
+	atts = g_new0(char *, ((2 * nb_atts) + 1));
+	for(i = 0; i < nb_atts; i++) {
+	  atts[(2 * i)] = g_strdup(attributes[i].name);
+	  atts[(2 * i)][nameLength(enc, attributes[i].name)] = '\0';
+	  atts[(2 * i) + 1] = g_strdup(attributes[i].valuePtr);
+	  atts[(2 * i) + 1][attributes[i].valueEnd - attributes[i].valuePtr] = '\0';
+	}
+
+	g_free(attributes);
+	g_free(_attribute_string);
+
+	return atts;
+}
