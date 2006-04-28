@@ -946,12 +946,19 @@ ccss_unrecoverable_error (CRDocHandler *a_handler)
 	g_warning (_("CSS unrecoverable error\n"));
 }
 
+static void 
+ccss_import_style (CRDocHandler *a_this,
+				   GList *a_media_list,
+				   CRString *a_uri,
+				   CRString *a_uri_default_ns,
+				   CRParsingLocation *a_location);
+
 static void
 init_sac_handler (CRDocHandler *a_handler)
 {
 	a_handler->start_document        = NULL;
 	a_handler->end_document          = NULL;
-	a_handler->import_style          = NULL;
+	a_handler->import_style          = ccss_import_style;
 	a_handler->namespace_declaration = NULL;
 	a_handler->comment               = NULL;
 	a_handler->start_selector        = ccss_start_selector;
@@ -997,6 +1004,28 @@ rsvg_real_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen)
 	status = cr_parser_parse (parser);
 	
 	cr_parser_destroy (parser);
+}
+
+static void 
+ccss_import_style (CRDocHandler *a_this,
+				   GList *a_media_list,
+				   CRString *a_uri,
+				   CRString *a_uri_default_ns,
+				   CRParsingLocation *a_location)
+{
+	if (a_uri) {
+		GByteArray * stylesheet_data;
+		CSSUserData * user_data;
+
+		user_data = (CSSUserData *)a_this->app_data;
+
+		stylesheet_data = _rsvg_acquire_xlink_href_resource((gchar*) cr_string_peek_raw_str (a_uri), 
+															rsvg_handle_get_base_uri(user_data->ctx), NULL);
+		if (stylesheet_data) {
+			rsvg_real_parse_cssbuffer (user_data->ctx, stylesheet_data->data, stylesheet_data->len);
+			g_byte_array_free (stylesheet_data, TRUE);
+		}
+	}
 }
 
 #else /* !HAVE_LIBCROCO */
