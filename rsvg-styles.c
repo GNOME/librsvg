@@ -1022,7 +1022,7 @@ ccss_import_style (CRDocHandler *a_this,
 		stylesheet_data = _rsvg_acquire_xlink_href_resource((gchar*) cr_string_peek_raw_str (a_uri), 
 															rsvg_handle_get_base_uri(user_data->ctx), NULL);
 		if (stylesheet_data) {
-			rsvg_real_parse_cssbuffer (user_data->ctx, stylesheet_data->data, stylesheet_data->len);
+			rsvg_real_parse_cssbuffer (user_data->ctx, (const char *)stylesheet_data->data, (size_t)stylesheet_data->len);
 			g_byte_array_free (stylesheet_data, TRUE);
 		}
 	}
