@@ -1,5 +1,11 @@
 2006-04-27 Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-base.c: Handle system, public, and unparsed entity declarations
+	better. Probably not 100% conformant, but probably better than not
+	doing it at all.
+	
+2006-04-27 Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-css.c (rsvg_css_parse_xml_attribute_string): Code borrowed from Expat.
 	Takes a XML attribute+value string and turns it into attribute+value pairs.
 	* rsvg-base.c (rsvg_processing_instruction): Implement <?xml-stylesheet?>
