@@ -1,3 +1,7 @@
+2006-04-29 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-paint-server.c: Fix a "type-punned pointer" issue found by Thomas VS
+	
 2006-04-25 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-image.c: Initialize node->super, to avoid a crash (#339637)
