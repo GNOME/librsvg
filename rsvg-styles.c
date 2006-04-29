@@ -1395,7 +1395,7 @@ rsvg_state_parent (RsvgDrawingCtx *ctx)
 }
 
 RsvgPropertyBag *
-rsvg_property_bag_new (const xmlChar **atts)
+rsvg_property_bag_new (const char **atts)
 {
 	RsvgPropertyBag * bag;
 	int i;   

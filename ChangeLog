@@ -1,6 +1,7 @@
 2006-04-29 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-paint-server.c: Fix a "type-punned pointer" issue found by Thomas VS
+	* rsvg-base.c: xmlChar vs. char (#340114)
 	
 2006-04-27 Dom Lachowicz <cinamod@hotmail.com>
 
