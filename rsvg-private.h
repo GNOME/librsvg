@@ -68,9 +68,9 @@ typedef struct _RsvgIRect RsvgIRect;
 
 struct RsvgSaxHandler {
 	void (*free) (RsvgSaxHandler *self);
-	void (*start_element) (RsvgSaxHandler *self, const xmlChar *name, RsvgPropertyBag *atts);
-	void (*end_element) (RsvgSaxHandler *self, const xmlChar *name);
-	void (*characters) (RsvgSaxHandler *self, const xmlChar *ch, int len);
+	void (*start_element) (RsvgSaxHandler *self, const char *name, RsvgPropertyBag *atts);
+	void (*end_element) (RsvgSaxHandler *self, const char *name);
+	void (*characters) (RsvgSaxHandler *self, const char *ch, int len);
 };
 
 struct RsvgHandlePrivate {
@@ -221,7 +221,7 @@ typedef void (*RsvgPropertyBagEnumFunc) (const char * key,
 										 gpointer user_data);
 
 RsvgPropertyBag *
-rsvg_property_bag_new (const xmlChar **atts);
+rsvg_property_bag_new (const char **atts);
 
 void
 rsvg_property_bag_free (RsvgPropertyBag *bag);
