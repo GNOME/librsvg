@@ -55,7 +55,6 @@ instance_init (RsvgHandle *self)
 	
 	self->priv->css_props = g_hash_table_new_full (g_str_hash, g_str_equal,
 											   g_free, g_free);
-	rsvg_SAX_handler_struct_init ();
 	
 	self->priv->ctxt = NULL;
 	self->priv->currentnode = NULL;
@@ -263,6 +262,8 @@ class_init (RsvgHandleClass *klass)
 		g_param_spec_string ("metadata", _("Metadata"),
 			_("SVG file metadata"), NULL, 
 			(GParamFlags)(G_PARAM_READABLE)));
+
+	rsvg_SAX_handler_struct_init ();
 }
 
 GType

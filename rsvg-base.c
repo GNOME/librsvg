@@ -675,7 +675,6 @@ rsvg_error_cb (void *data, const char *msg, ...)
 #endif
 }
 
-/* TODO: this is indempotent, but not exactly threadsafe */
 static xmlSAXHandler rsvgSAXHandlerStruct;
 static gboolean rsvgSAXHandlerStructInited = FALSE;
 
