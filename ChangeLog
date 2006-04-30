@@ -1,3 +1,10 @@
+2006-04-30 Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-base.c: Implement the XInclude spec to some large-ish degree. Currently
+	doesn't support the "xpointer" bit.
+	* rsvg-gobject.c: Only initialize the SAX handler once (on class init)
+	rather than at object-init
+	
 2006-04-29 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-paint-server.c: Fix a "type-punned pointer" issue found by Thomas VS
