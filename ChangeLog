@@ -1,3 +1,8 @@
+2006-05-02 Dom Lachowicz <cinamod@hotmail.com>
+
+        * rsvg.c: Use g_try_malloc0 so that the app doesn't abort() if we
+        can't malloc the requested # of pixels. Part of bug 340440.
+	
 2006-04-30 Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-gobject.c: Only initialize the SAX handler once (on class init)
