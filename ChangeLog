@@ -1,3 +1,8 @@
+2006-05-03  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Require cairo 1.1.2 or better
+	* rsvg-convert.c: Remove code made unecessary by cairo 1.1.2
+	
 2006-05-03  Paolo Borelli  <pborelli@katamail.com>
 
 	* rsvg-filter.c:

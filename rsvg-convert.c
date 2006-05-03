@@ -302,14 +302,6 @@ main (int argc, char **argv)
 					cr = cairo_create (surface);
 				}
 
-			/* cairo deficiency - need to clear the pixels to full-alpha */
-			if(!format || !strcmp(format, "png")) {
-				cairo_save(cr);
-				cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
-				cairo_paint(cr);
-				cairo_restore(cr);
-			}
-
 			rsvg_handle_render_cairo (rsvg, cr);
 
 			if (!format || !strcmp (format, "png"))
