@@ -61,7 +61,10 @@ rsvg_make_valid_utf8 (const char *str, int len)
 	string = NULL;
 	remainder = str;
 
-	remaining_bytes = len < 0 ? strlen (str) : len;
+	if (len < 0)
+		remaining_bytes = strlen (str);
+	else
+		remaining_bytes = len;
 
 	while (remaining_bytes != 0)
 		{
