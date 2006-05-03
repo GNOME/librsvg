@@ -1,3 +1,9 @@
+2006-05-03  Paolo Borelli  <pborelli@katamail.com>
+
+	* rsvg-text.[ch]: pass the lenght to rsvg_make_valid_utf8.
+	* rsvg-base.c: avoid some strdups and avoid a leak in the !utf8
+	case of rsvg_characters(). Bug 340471.
+
 2006-05-02 Dom Lachowicz <cinamod@hotmail.com>
 
         * rsvg.c: Use g_try_malloc0 so that the app doesn't abort() if we
