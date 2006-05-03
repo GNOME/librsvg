@@ -192,30 +192,17 @@ rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdou
 RsvgNode *
 rsvg_marker_parse (const RsvgDefs * defs, const char *str)
 {
-	if (!strncmp (str, "url(", 4))
-		{
-			const char *p = str + 4;
-			int ix;
-			char *name;
-			RsvgNode *val;
-			
-			while (g_ascii_isspace (*p))
-				p++;
+	char *name;
 
-			for (ix = 0; p[ix]; ix++)
-				if (p[ix] == ')')
-					break;
-			
-			if (p[ix] == ')')
-				{
-					name = g_strndup (p, ix);
-					val = rsvg_defs_lookup (defs, name);
-					g_free (name);
-					
-					if (val)
-						if (!strcmp(val->type->str, "marker"))
-						return (RsvgNode *) val;
-				}
+	name = rsvg_get_url_string (str);
+	if (name)
+		{
+			RsvgNode *val;
+			val = rsvg_defs_lookup (defs, name);
+			g_free (name);
+
+			if (val && (!strcmp (val->type->str, "marker")))
+				return val;
 		}
 	return NULL;
 }

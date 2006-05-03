@@ -115,27 +115,20 @@ RsvgPaintServer *
 rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs *defs, const char *str,
 						 guint32 current_color)
 {
+	char *name;
 	guint32 rgb;
 	if (inherit != NULL)
 		*inherit = 1;
 	if (!strcmp (str, "none"))
 		return NULL;
 
-	if (!strncmp (str, "url(", 4))
+	name = rsvg_get_url_string (str);
+	if (name)
 		{
-			const char *p = str + 4;
-			int ix;
-			char *name;
 			RsvgNode *val;
-			
-			while (g_ascii_isspace (*p)) p++;
-			for (ix = 0; p[ix]; ix++)
-				if (p[ix] == ')') break;
-			if (p[ix] != ')')
-				return NULL;
-			name = g_strndup (p, ix);
 			val = rsvg_defs_lookup (defs, name);
 			g_free (name);
+
 			if (val == NULL)
 				return NULL;
 			if (!strcmp(val->type->str, "linearGradient"))

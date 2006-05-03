@@ -683,32 +683,18 @@ rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
 RsvgFilter *
 rsvg_filter_parse (const RsvgDefs * defs, const char *str)
 {
-	if (!strncmp (str, "url(", 4))
-		{
-			const char *p = str + 4;
-			int ix;
-			char *name;
-			RsvgNode *val;
-			
-			while (g_ascii_isspace (*p))
-				p++;
+	char *name;
 
-			for (ix = 0; p[ix]; ix++)
-				if (p[ix] == ')')
-					break;
-			
-			if (p[ix] == ')')
-				{
-					name = g_strndup (p, ix);
-					val = rsvg_defs_lookup (defs, name);
-					g_free (name);
-					
-					if (val)
-						if (!strcmp(val->type->str, "filter"))
-						return (RsvgFilter *) val;
-				}
+	name = rsvg_get_url_string (str);
+	if (name)
+		{
+			RsvgNode *val;
+			val = rsvg_defs_lookup (defs, name);
+			g_free (name);
+
+			if (val && (!strcmp (val->type->str, "filter")))
+				return (RsvgFilter *) val;
 		}
-	
 	return NULL;
 }
 

@@ -88,33 +88,56 @@ rsvg_new_mask (void)
 	return &mask->super;
 }
 
-RsvgNode *
-rsvg_mask_parse (const RsvgDefs * defs, const char *str)
+char *
+rsvg_get_url_string (const char *str)
 {
 	if (!strncmp (str, "url(", 4))
 		{
 			const char *p = str + 4;
 			int ix;
-			char *name;
-			RsvgNode *val;
 			
 			while (g_ascii_isspace (*p))
 				p++;
 
 			for (ix = 0; p[ix]; ix++)
 				if (p[ix] == ')')
-					break;
-			
-			if (p[ix] == ')')
-				{
-					name = g_strndup (p, ix);
-					val = rsvg_defs_lookup (defs, name);
-					g_free (name);
-					
-					if (val)
-						if (!strcmp (val->type->str, "mask"))
-							return (RsvgNode *) val;
-				}
+					return g_strndup (p, ix);
+		}
+	return NULL;
+}
+
+RsvgNode *
+rsvg_mask_parse (const RsvgDefs * defs, const char *str)
+{
+	char *name;
+
+	name = rsvg_get_url_string (str);
+	if (name)
+		{
+			RsvgNode *val;
+			val = rsvg_defs_lookup (defs, name);
+			g_free (name);
+
+			if (val && (!strcmp (val->type->str, "mask")))
+				return val;
+		}
+	return NULL;
+}
+
+RsvgNode *
+rsvg_clip_path_parse (const RsvgDefs * defs, const char *str)
+{
+	char *name;
+
+	name = rsvg_get_url_string (str);
+	if (name)
+		{
+			RsvgNode *val;
+			val = rsvg_defs_lookup (defs, name);
+			g_free (name);
+
+			if (val && (!strcmp (val->type->str, "clipPath")))
+				return val;
 		}
 	return NULL;
 }
@@ -161,35 +184,4 @@ rsvg_new_clip_path (void)
 	clip_path->super.set_atts = rsvg_clip_path_set_atts;
 	clip_path->super.free = _rsvg_node_free;
 	return &clip_path->super;
-}
-
-RsvgNode *
-rsvg_clip_path_parse (const RsvgDefs * defs, const char *str)
-{
-	if (!strncmp (str, "url(", 4))
-		{
-			const char *p = str + 4;
-			int ix;
-			char *name;
-			RsvgNode *val;
-			
-			while (g_ascii_isspace (*p))
-				p++;
-
-			for (ix = 0; p[ix]; ix++)
-				if (p[ix] == ')')
-					break;
-			
-			if (p[ix] == ')')
-				{
-					name = g_strndup (p, ix);
-					val = rsvg_defs_lookup (defs, name);
-					g_free (name);
-					
-					if (val)
-						if (!strcmp (val->type->str, "clipPath"))
-							return (RsvgNode *) val;
-				}
-		}
-	return NULL;
 }

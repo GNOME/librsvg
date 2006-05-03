@@ -342,6 +342,8 @@ void _rsvg_pop_view_box(RsvgDrawingCtx *ctx);
 
 void rsvg_SAX_handler_struct_init (void);
 
+char *rsvg_get_url_string (const char *str);
+
 void rsvg_return_if_fail_warning (const char *pretty_function,
 								  const char *expression,
 								  GError **error);
