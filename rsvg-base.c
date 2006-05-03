@@ -287,25 +287,23 @@ rsvg_desc_handler_characters (RsvgSaxHandler *self, const char *ch, int len)
 	RsvgSaxHandlerDesc *z = (RsvgSaxHandlerDesc *)self;
 	RsvgHandle *ctx = z->ctx;
 
-	char * string = NULL;
-	char * utf8 = NULL;
-
 	/* This isn't quite the correct behavior - in theory, any graphics
 	   element may contain a title or desc element */
 
 	if (!ch || !len)
 		return;
 
-	string = g_strndup ((char*)ch, len);
-	if (!g_utf8_validate (string, -1, NULL))
+	if (!g_utf8_validate ((char *)ch, len, NULL))
 		{
-			utf8 = rsvg_make_valid_utf8 (string);
-			g_free (string);
-			string = utf8;
+			char *utf8;
+			utf8 = rsvg_make_valid_utf8 ((char *)ch, len);
+			g_string_append (ctx->priv->desc, utf8);
+			g_free (utf8);
 		}
-
-	g_string_append (ctx->priv->desc, string);
-	g_free (string);
+	else
+		{
+			g_string_append_len (ctx->priv->desc, (char *)ch, len);
+		}
 }
 
 static void
@@ -361,25 +359,23 @@ rsvg_title_handler_characters (RsvgSaxHandler *self, const char *ch, int len)
 	RsvgSaxHandlerTitle *z = (RsvgSaxHandlerTitle *)self;
 	RsvgHandle *ctx = z->ctx;
 
-	char * string = NULL;
-	char * utf8 = NULL;
-
 	/* This isn't quite the correct behavior - in theory, any graphics
 	   element may contain a title or desc element */
 
 	if (!ch || !len)
 		return;
 
-	string = g_strndup ((char*)ch, len);
-	if (!g_utf8_validate (string, -1, NULL))
+	if (!g_utf8_validate ((char*) ch, len, NULL))
 		{
-			utf8 = rsvg_make_valid_utf8 (string);
-			g_free (string);
-			string = utf8;
+			char *utf8;
+			utf8 = rsvg_make_valid_utf8 ((char *)ch, len);
+			g_string_append (ctx->priv->title, utf8);
+			g_free (utf8);
 		}
-
-	g_string_append (ctx->priv->title, string);
-	g_free (string);
+	else
+		{
+			g_string_append_len (ctx->priv->title, (char *)ch, len);
+		}
 }
 
 static void
@@ -435,25 +431,23 @@ rsvg_metadata_handler_characters (RsvgSaxHandler *self, const char *ch, int len)
 	RsvgSaxHandlerDesc *z = (RsvgSaxHandlerDesc *)self;
 	RsvgHandle *ctx = z->ctx;
 
-	char * string = NULL;
-	char * utf8 = NULL;
-
 	/* This isn't quite the correct behavior - in theory, any graphics
 	   element may contain a metadata or desc element */
 
 	if (!ch || !len)
 		return;
 
-	string = g_strndup ((char*)ch, len);
-	if (!g_utf8_validate (string, -1, NULL))
+	if (!g_utf8_validate ((char *)ch, len, NULL))
 		{
-			utf8 = rsvg_make_valid_utf8 (string);
-			g_free (string);
-			string = utf8;
+			char *utf8;
+			utf8 = rsvg_make_valid_utf8 ((char *)ch, len);
+			g_string_append (ctx->priv->metadata, utf8);
+			g_free (utf8);
 		}
-
-	g_string_append (ctx->priv->metadata, string);
-	g_free (string);
+	else
+		{
+			g_string_append_len (ctx->priv->metadata, (char *)ch, len);
+		}
 }
 
 static void
@@ -730,24 +724,25 @@ static void _rsvg_node_chars_free(RsvgNode * node)
 static void
 rsvg_characters_impl (RsvgHandle *ctx, const xmlChar * ch, int len)
 {
-	char * utf8 = NULL;
 	RsvgNodeChars * self;
-	GString * string;
 
 	if (!ch || !len)
 		return;
 
-	string = g_string_new_len ((const char*)ch, len);
-	if (!g_utf8_validate (string->str, -1, NULL))
-		{
-			utf8 = rsvg_make_valid_utf8 (string->str);
-			g_string_free (string, TRUE);
-			string = g_string_new ((const char*)ch);
-		}
-
 	self = g_new(RsvgNodeChars, 1);
 	_rsvg_node_init(&self->super);
-	self->contents = string;
+
+	if (!g_utf8_validate ((char *)ch, len, NULL))
+		{
+			char * utf8;
+			utf8 = rsvg_make_valid_utf8 ((char *)ch, len);
+			self->contents = g_string_new (utf8);
+			g_free (utf8);
+		}
+	else
+		{
+			self->contents = g_string_new_len ((char *)ch, len);
+		}
 
 	self->super.type = g_string_new("RSVG_NODE_CHARS");
 	self->super.free = _rsvg_node_chars_free;

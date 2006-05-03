@@ -52,7 +52,7 @@ struct _RsvgNodeTref {
 	RsvgNode * link;
 };
 char *
-rsvg_make_valid_utf8 (const char *str)
+rsvg_make_valid_utf8 (const char *str, int len)
 {
 	GString *string;
 	const char *remainder, *invalid;
@@ -60,8 +60,9 @@ rsvg_make_valid_utf8 (const char *str)
 	
 	string = NULL;
 	remainder = str;
-	remaining_bytes = strlen (str);
-	
+
+	remaining_bytes = len < 0 ? strlen (str) : len;
+
 	while (remaining_bytes != 0)
 		{
 			if (g_utf8_validate (remainder, remaining_bytes, &invalid))
@@ -79,8 +80,8 @@ rsvg_make_valid_utf8 (const char *str)
 		}
 	
 	if (string == NULL) 
-		return g_strdup (str);
-	
+		return len < 0 ? g_strndup (str, len) : g_strdup (str);
+
 	g_string_append (string, remainder);
 	
 	return g_string_free (string, FALSE);
