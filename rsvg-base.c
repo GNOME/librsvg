@@ -577,7 +577,6 @@ rsvg_characters (void *data, const xmlChar *ch, int len)
 {
 	RsvgHandle *ctx = (RsvgHandle *)data;
 	RsvgNodeChars * self;
-	GString * string;
 	
 	if (ctx->priv->handler && ctx->priv->handler->characters != NULL)
 		{
