@@ -1322,10 +1322,11 @@ rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData * dimension_da
 			else
 				bbox = _rsvg_find_bbox(handle);
 		}
-	dimension_data->width  = _rsvg_css_hand_normalize_length(&sself->w, handle->priv->dpi_x, 
-																	bbox.w + bbox.x * 2, 12);
-	dimension_data->height = _rsvg_css_hand_normalize_length(&sself->h, handle->priv->dpi_y, 
-													 bbox.h + bbox.y * 2, 12);
+	
+	dimension_data->width  = (int) (_rsvg_css_hand_normalize_length(&sself->w, handle->priv->dpi_x, 
+																	bbox.w + bbox.x * 2, 12) + 0.5);
+	dimension_data->height = (int) (_rsvg_css_hand_normalize_length(&sself->h, handle->priv->dpi_y, 
+													 bbox.h + bbox.y * 2, 12) + 0.5);
 	
 	dimension_data->em = dimension_data->width;
 	dimension_data->ex = dimension_data->height;
