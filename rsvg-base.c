@@ -603,10 +603,10 @@ rsvg_start_xinclude (RsvgHandle *ctx, RsvgPropertyBag *atts)
 				
 				encoding = rsvg_property_bag_lookup (atts, "encoding");
 				if (encoding) {
-					text_data = g_convert (data->data, data->len, "utf-8", encoding, NULL, &text_data_len, NULL);
+					text_data = g_convert ((const char *)data->data, data->len, "utf-8", encoding, NULL, &text_data_len, NULL);
 					text_data_needs_free = TRUE;
 				} else {
-					text_data = data->data;
+					text_data = (char *)data->data;
 					text_data_len = data->len;
 				}
 				
@@ -818,7 +818,7 @@ rsvg_entity_decl (void *data, const xmlChar *name, int type,
 			if (data) {
 				entity->SystemID = (xmlChar *) g_strdup ((const char *)systemId);
 				entity->ExternalID = (xmlChar *) g_strdup ((const char *)publicId);
-				entity->content = (xmlChar *) xmlMemStrdup (data->data);
+				entity->content = (xmlChar *) xmlMemStrdup ((const char *)data->data);
 				entity->length = data->len;
 
 				/* fool libxml2 into supporting SYSTEM and PUBLIC entities */
@@ -883,7 +883,7 @@ rsvg_processing_instruction (void *ctx,
 					
 						style = _rsvg_acquire_xlink_href_resource (value, rsvg_handle_get_base_uri (handle), NULL);
 						if (style) {
-							rsvg_parse_cssbuffer (handle, style->data, style->len);
+							rsvg_parse_cssbuffer (handle, (char *)style->data, style->len);
 							g_byte_array_free (style, TRUE);
 						}
 					}
