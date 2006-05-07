@@ -199,9 +199,23 @@ fill_vtable (GdkPixbufModule *module)
       GDK_PIXBUF_MICRO >= (micro)))
 #endif
 
+
 void
 fill_info (GdkPixbufFormat *info)
 {
+/* see http://bugzilla.gnome.org/show_bug.cgi?id=329850 */
+#if GDK_PIXBUF_CHECK_VERSION(2,9,0)
+        static GdkPixbufModulePattern signature_old[] = {
+                {  "<svg", NULL, 100 },
+                {  "<!DOCTYPE svg", NULL, 100 },
+                { NULL, NULL, 0 }
+        };
+        static GdkPixbufModulePattern signature_new[] = {
+                {  " <svg",  "*    ", 100 },
+                {  " <!DOCTYPE svg",  "*             ", 100 },
+                { NULL, NULL, 0 }
+        };
+#else
         static GdkPixbufModulePattern signature_old[] = {
                 { (unsigned char*) "<svg", NULL, 100 },
                 { (unsigned char*) "<!DOCTYPE svg", NULL, 100 },
@@ -212,6 +226,8 @@ fill_info (GdkPixbufFormat *info)
                 { (unsigned char*) " <!DOCTYPE svg", (unsigned char*) "*             ", 100 },
                 { NULL, NULL, 0 }
         };
+#endif
+
         static gchar *mime_types[] = { /* yes folks, i actually have run into all of these in the wild... */
                 "image/svg+xml",
                 "image/svg",

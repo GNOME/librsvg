@@ -1,3 +1,7 @@
+2006-05-07  Dom Lachowicz <cinamod@hotmail.com>
+
+	* gdk-pixbuf-loader/io-svg.c: Fix build on GTK+ >= 2.9. (329850)
+	
 2006-05-03  Emmanuel Pacaud
 
 	* rsvg-base.c: Fix rounding error in rsvg_pixbuf_from_file() (340664)
