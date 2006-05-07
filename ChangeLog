@@ -1,3 +1,7 @@
+2006-05-07  Dom Lachowicz <cinamod@hotmail.com>
+
+	* gdk-pixbuf-loader/io-svg.c: Fix build on GTK+ >= 2.9. (329850)
+	
 2006-05-04  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-base.c: Fix some cast warnings (340666)
