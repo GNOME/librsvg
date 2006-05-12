@@ -3960,7 +3960,7 @@ struct _RsvgNodeLightSource
 {
 	RsvgNode super;
 	lightType type;
-	gdouble azimuth;;
+	gdouble azimuth;
 	gdouble elevation;
 	RsvgLength x, y, z, pointsAtX, pointsAtY, pointsAtZ;
 	gdouble specularExponent;
