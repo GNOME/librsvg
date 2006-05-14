@@ -326,33 +326,14 @@ AC_ARG_WITH(html-dir,
 HTML_DIR="$with_html_dir"
 AC_SUBST(HTML_DIR)
 
-dnl enable/disable documentation building
-AC_ARG_ENABLE(gtk-doc,
-  AC_HELP_STRING([--enable-gtk-doc],
-                 [use gtk-doc to build documentation [default=no]]),,
-  enable_gtk_doc=yes)
-
-have_gtk_doc=no
-if test x$enable_gtk_doc = xyes; then
-  if test -z "$PKG_CONFIG"; then
-    AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
-  fi
-  if test "$PKG_CONFIG" != "no" && $PKG_CONFIG --exists gtk-doc; then
-    have_gtk_doc=yes
-  fi
-
-  if test "$have_gtk_doc" != yes; then
-    enable_gtk_doc=no
-  fi
-fi
-
-AM_CONDITIONAL(ENABLE_GTK_DOC, test x$enable_gtk_doc = xyes)
-AM_CONDITIONAL(GTK_DOC_USE_LIBTOOL, test -n "$LIBTOOL")
-
-
-AC_CHECK_PROG(DB2HTML, db2html, true, false)
-AM_CONDITIONAL(HAVE_DOCBOOK, $DB2HTML)
-
+##################################################
+# Checks for gtk-doc and docbook-tools
+##################################################
+enable_gtk_doc=true
+# I would have liked to conditionalize this, but 
+# that appears to break other things http://bugzilla.gnome.org/show_bug.cgi?id=156399
+GTK_DOC_CHECK([1.0])
+AM_CONDITIONAL(ENABLE_GTK_DOC, $enable_gtk_doc)
 
 dnl ===========================================================================
 

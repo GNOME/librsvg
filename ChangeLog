@@ -1,3 +1,10 @@
+2006-05-14  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: New better way to invoke gtk-doc (see 341421)
+	* Makefile.am: Ditto
+	* doc/Makefile.am: Ditto
+	* gtk-doc.make: Removed. Auto-generated
+	
 2006-05-07  Dom Lachowicz <cinamod@hotmail.com>
 
 	* gdk-pixbuf-loader/io-svg.c: Fix build on GTK+ >= 2.9. (329850)

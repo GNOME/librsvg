@@ -4,10 +4,7 @@ else
 target_rsvg_view =
 endif
 
-SUBDIRS = . moz-plugin gdk-pixbuf-loader gtk-engine data
-if ENABLE_GTK_DOC
-SUBDIRS += doc
-endif
+SUBDIRS = . moz-plugin gdk-pixbuf-loader gtk-engine data doc
 
 lib_LTLIBRARIES = librsvg-2.la
 bin_PROGRAMS = rsvg-convert $(target_rsvg_view)
@@ -139,6 +136,8 @@ EXTRA_DIST =				\
 CLEANFILES = \
 	$(enum_sources) \
 	s-enum-types-h s-enum-types-c
+
+DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
 
 ## Put `exec' in the name because this should be installed by
 ## `install-exec', not `install-data'.
