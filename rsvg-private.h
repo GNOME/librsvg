@@ -349,7 +349,7 @@ void rsvg_return_if_fail_warning (const char *pretty_function,
 #define rsvg_return_if_fail(expr, error)		G_STMT_START{			\
      if G_LIKELY(expr) { } else       					\
        {								\
-	 rsvg_return_if_fail_warning (__PRETTY_FUNCTION__,		        \
+	 rsvg_return_if_fail_warning (G_GNUC_PRETTY_FUNCTION,		        \
 		                   #expr, error);				\
 	 return;							\
        };				}G_STMT_END
@@ -357,7 +357,7 @@ void rsvg_return_if_fail_warning (const char *pretty_function,
 #define rsvg_return_val_if_fail(expr,val,error)	G_STMT_START{			\
      if G_LIKELY(expr) { } else						\
        {								\
-	 rsvg_return_if_fail_warning (__PRETTY_FUNCTION__,		        \
+	 rsvg_return_if_fail_warning (G_GNUC_PRETTY_FUNCTION,		        \
 		                   #expr, error);				\
 	 return (val);							\
        };				}G_STMT_END

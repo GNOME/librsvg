@@ -1,3 +1,8 @@
+2006-06-28  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-private.h: Use G_GNUC_PRETTY_FUNCTION so as to not depend on
+	GCC extensions (3461163)
+	
 2006-05-07  Dom Lachowicz <cinamod@hotmail.com>
 
 	* gdk-pixbuf-loader/io-svg.c: Fix build on GTK+ >= 2.9. (329850)
