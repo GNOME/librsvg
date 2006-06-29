@@ -1,4 +1,4 @@
-plugindir = $(libdir)/mozilla/plugins/
+plugindir = $(libdir)/mozilla/plugins
 
 if WITH_MOZILLA
 plugin_LTLIBRARIES = libmozsvgdec.la
