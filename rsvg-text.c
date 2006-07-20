@@ -595,7 +595,7 @@ rsvg_text_vector_coords (RenderCtx       *ctx,
 }
 
 static gint
-moveto (FT_Vector *to,
+moveto (const FT_Vector *to,
 		gpointer   data)
 {
 	RenderCtx * ctx;
@@ -621,7 +621,7 @@ moveto (FT_Vector *to,
 }
 
 static gint
-lineto (FT_Vector *to,
+lineto (const FT_Vector *to,
 		gpointer   data)
 {
 	RenderCtx * ctx;
@@ -645,8 +645,8 @@ lineto (FT_Vector *to,
 }
 
 static gint
-conicto (FT_Vector *ftcontrol,
-		 FT_Vector *to,
+conicto (const FT_Vector *ftcontrol,
+		 const FT_Vector *to,
 		 gpointer   data)
 {
 	RenderCtx * ctx;
@@ -676,9 +676,9 @@ conicto (FT_Vector *ftcontrol,
 }
 
 static gint
-cubicto (FT_Vector *ftcontrol1,
-		 FT_Vector *ftcontrol2,
-		 FT_Vector *to,
+cubicto (const FT_Vector *ftcontrol1,
+		 const FT_Vector *ftcontrol2,
+		 const FT_Vector *to,
 		 gpointer   data)
 {
 	RenderCtx * ctx;
@@ -757,10 +757,10 @@ rsvg_text_render_vectors (PangoFont     *font,
 {
 	static const FT_Outline_Funcs outline_funcs =
 		{
-			moveto,
-			lineto,
-			conicto,
-			cubicto,
+			(FT_Outline_MoveToFunc)moveto,
+			(FT_Outline_LineToFunc)lineto,
+			(FT_Outline_ConicToFunc)conicto,
+			(FT_Outline_CubicToFunc)cubicto,
 			0,
 			0
 		};

@@ -1,3 +1,10 @@
+2006-07-20  Dom Lachowicz <cinamod@hotmail.com>
+
+	* rsvg-text.c: Fix build breakage caused by newer freetype versions
+	(https://sourceforge.net/project/shownotes.php?release_id=416463&group_id=3157). 
+	For some reason, they thought that breaking API compatability
+	in such a low-level, widely-used library was ok.
+	
 2006-06-28  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-private.h: Use G_GNUC_PRETTY_FUNCTION so as to not depend on
