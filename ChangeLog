@@ -1,3 +1,11 @@
+2006-07-22  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Bug 348329 make gnome-print dependency optional
+	
+2006-07-22  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: Require cairo-png
+	
 2006-07-20  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-text.c: Fix build breakage caused by newer freetype versions
