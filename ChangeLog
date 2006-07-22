@@ -3,6 +3,8 @@
 	* configure.in: Bug 348329 make gnome-print dependency optional
 	* rsvg-text.c: Don't leak PangoFt2 fonts (bug 344235). This is a
 	work-around for Pango bug 143542.
+	* rsvg.c: Document _render_sub better (bug 346964)
+	* rsvg-cairo-render.c: Ditto
 	
 2006-07-22  Dom Lachowicz <cinamod@hotmail.com>
 

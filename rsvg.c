@@ -52,7 +52,9 @@ rsvg_pixmap_destroy (gchar *pixels, gpointer data)
 /**
  * rsvg_handle_get_pixbuf_sub:
  * @handle: An #RsvgHandle
- * @id: The id of an element inside the SVG, or %NULL to render the whole SVG
+ * @id: The id of an element inside the SVG, or %NULL to render the whole SVG. For
+ * example, if you have a layer called "layer1" that you wish to render, pass 
+ * "##layer1" as the id.
  *
  * Returns the pixbuf loaded by #handle.  The pixbuf returned will be reffed, so
  * the caller of this function must assume that ref.  If insufficient data has

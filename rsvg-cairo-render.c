@@ -124,7 +124,9 @@ rsvg_cairo_new_drawing_ctx (cairo_t *cr, RsvgHandle *handle)
  * rsvg_handle_render_cairo_sub
  * @handle: A RsvgHandle
  * @cr: A Cairo renderer
- * @id: An element's id within the SVG, or %NULL to render the whole SVG
+ * @id: An element's id within the SVG, or %NULL to render the whole SVG. For
+ * example, if you have a layer called "layer1" that you wish to render, pass 
+ * "##layer1" as the id.
  *
  * Draws a subset of a SVG to a Cairo surface
  *
