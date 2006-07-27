@@ -1,3 +1,7 @@
+2006-07-27  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: 2.15.90
+	
 2006-07-22  Dom Lachowicz <cinamod@hotmail.com>
 
 	* configure.in: Bug 348329 make gnome-print dependency optional
