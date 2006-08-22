@@ -144,6 +144,10 @@ struct RsvgDrawingCtx {
 struct RsvgRender {
 	void (* free) (RsvgRender * self);
 
+	PangoContext * (* create_pango_context) (RsvgDrawingCtx *ctx);
+	void (* render_pango_layout) (RsvgDrawingCtx *ctx,
+								  PangoLayout *layout,
+								  double x, double y);
 	void (* render_path) (RsvgDrawingCtx *ctx, const RsvgBpathDef * path);
 	void (* render_image) (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 						   double x, double y, double w, double h);

@@ -31,6 +31,14 @@
 
 G_BEGIN_DECLS
 
+PangoContext *
+rsvg_cairo_create_pango_context (RsvgDrawingCtx *ctx);
+
+void
+rsvg_cairo_render_pango_layout (RsvgDrawingCtx *ctx,
+								PangoLayout *layout,
+								double x, double y);
+
 void
 rsvg_cairo_render_path (RsvgDrawingCtx *ctx,
 						const RsvgBpathDef * path);

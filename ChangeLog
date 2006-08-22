@@ -1,5 +1,12 @@
 2006-08-22  Dom Lachowicz <cinamod@hotmail.com>
 
+	* Bug 344116: Committed patch from Kouhei Sutou <kou@cozmixng.org>
+	that makes librsvg use Pango-Cairo instead of PangoFT2+rendering
+	text as a path. This patch is disabled for now, as it crashes on
+	at least 5 known SVGs (see bug 344116)
+	
+2006-08-22  Dom Lachowicz <cinamod@hotmail.com>
+
 	* rsvg-base.c (rsvg_handle_write_impl): Have libxml2 replace entities 
 	for us. This fixes a bug where style definitions don't get properly
 	expanded, but causes a (2.15.x-only feature) regression when importing

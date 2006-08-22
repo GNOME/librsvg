@@ -39,6 +39,8 @@
 #include <math.h>
 #include <string.h>
 
+#include <pango/pangocairo.h>
+
 static void
 rsvg_pixmap_destroy (gchar *pixels, gpointer data)
 {
@@ -394,6 +396,77 @@ _set_rsvg_affine (cairo_t *cr, const double affine[6])
 					   affine[2], affine[3],
 					   affine[4], affine[5]);
 	cairo_transform (cr, &matrix);
+}
+
+PangoContext *
+rsvg_cairo_create_pango_context (RsvgDrawingCtx *ctx)
+{
+	PangoFontMap *fontmap;
+	PangoContext *context;
+
+	fontmap = pango_cairo_font_map_get_default ();
+	context = pango_cairo_font_map_create_context (PANGO_CAIRO_FONT_MAP (fontmap));
+	pango_cairo_context_set_resolution (context, ctx->dpi_y);
+	return context;
+}
+
+void
+rsvg_cairo_render_pango_layout (RsvgDrawingCtx *ctx,
+								PangoLayout *layout,
+								double x, double y)
+{
+	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
+	RsvgState *state = rsvg_state_current(ctx);
+	PangoRectangle logical;
+	RsvgBbox bbox;
+
+	cairo_save (render->cr);
+	_set_rsvg_affine (render->cr, state->affine);
+	cairo_set_line_width (render->cr,
+						  _rsvg_css_normalize_length(&state->stroke_width,
+													 ctx, 'h'));
+
+	pango_cairo_update_layout (render->cr, layout);
+
+	pango_layout_get_pixel_extents(layout, NULL, &logical);
+
+	rsvg_bbox_init(&bbox, state->affine);
+	bbox.x = x;
+	bbox.y = y;
+	bbox.w = logical.width;
+	bbox.h = logical.height;
+	bbox.virgin = 0;
+
+	cairo_translate (render->cr, x, y);
+
+	rsvg_bbox_insert(&render->bbox, &bbox);
+
+	if (state->fill)
+		{
+			_set_source_rsvg_paint_server (ctx,
+										   state->current_color,
+										   state->fill,
+										   state->fill_opacity,
+										   bbox,
+										   rsvg_state_current(ctx)->current_color);
+
+			pango_cairo_show_layout (render->cr, layout);
+		}
+
+	if (state->stroke)
+		{
+			pango_cairo_layout_path (render->cr, layout);
+
+			_set_source_rsvg_paint_server (ctx,
+										   state->current_color,
+										   state->stroke,
+										   state->stroke_opacity,
+										   bbox,
+										   rsvg_state_current(ctx)->current_color);
+			cairo_stroke (render->cr);
+		}
+
+	cairo_restore (render->cr);
 }
 
 void

@@ -515,30 +515,24 @@ rsvg_text_layout_free(RsvgTextLayout * layout)
 	g_free(layout);
 }
 
-static RsvgTextLayout *
-rsvg_text_layout_new (RsvgDrawingCtx *ctx,
-					  RsvgState *state,
-					  const char *text)
+static PangoLayout *
+rsvg_text_create_layout (RsvgDrawingCtx *ctx,
+						 RsvgState *state,
+						 const char *text,
+						 PangoContext *context)
 {
-	RsvgTextLayout * layout;
 	PangoFontDescription *font_desc;
+	PangoLayout *layout;
 
-	if (ctx->pango_context == NULL)
-		ctx->pango_context = rsvg_text_get_pango_context (ctx);
-	
 	if (state->lang)
-		pango_context_set_language (ctx->pango_context,
+		pango_context_set_language (context,
 									pango_language_from_string (state->lang));
 	
 	if (state->unicode_bidi == UNICODE_BIDI_OVERRIDE ||
 		state->unicode_bidi == UNICODE_BIDI_EMBED)
-		pango_context_set_base_dir (ctx->pango_context, state->text_dir);
+		pango_context_set_base_dir (context, state->text_dir);
 	
-	layout = g_new0 (RsvgTextLayout, 1);
-	layout->layout = pango_layout_new (ctx->pango_context);
-	layout->ctx = ctx;
-	
-	font_desc = pango_font_description_copy (pango_context_get_font_description (ctx->pango_context));
+	font_desc = pango_font_description_copy (pango_context_get_font_description (context));
 	
 	if (state->font_family)
 		pango_font_description_set_family_static (font_desc, state->font_family);
@@ -548,17 +542,39 @@ rsvg_text_layout_new (RsvgDrawingCtx *ctx,
 	pango_font_description_set_weight (font_desc, state->font_weight);
 	pango_font_description_set_stretch (font_desc, state->font_stretch); 
 	pango_font_description_set_size (font_desc, _rsvg_css_normalize_length(&state->font_size, ctx, 'v') * PANGO_SCALE / ctx->dpi_y * 72); 
-	pango_layout_set_font_description (layout->layout, font_desc);
+
+	layout = pango_layout_new (context);
+	pango_layout_set_font_description (layout, font_desc);
 	pango_font_description_free (font_desc);
 	
 	if (text)
-		pango_layout_set_text (layout->layout, text, -1);
+		pango_layout_set_text (layout, text, -1);
 	else
-		pango_layout_set_text (layout->layout, NULL, 0);
-	
-	pango_layout_set_alignment (layout->layout, (state->text_dir == PANGO_DIRECTION_LTR || 
-												 state->text_dir == PANGO_DIRECTION_TTB_LTR) ? 
+		pango_layout_set_text (layout, NULL, 0);
+
+	pango_layout_set_alignment (layout, (state->text_dir == PANGO_DIRECTION_LTR || 
+										 state->text_dir == PANGO_DIRECTION_TTB_LTR) ? 
 								PANGO_ALIGN_LEFT : PANGO_ALIGN_RIGHT);
+
+	return layout;
+}
+
+
+static RsvgTextLayout *
+rsvg_text_layout_new (RsvgDrawingCtx *ctx,
+					  RsvgState *state,
+					  const char *text)
+{
+	RsvgTextLayout * layout;
+
+	if (ctx->pango_context == NULL)
+		ctx->pango_context = rsvg_text_get_pango_context (ctx);
+	
+	layout = g_new0 (RsvgTextLayout, 1);
+	
+	layout->layout = rsvg_text_create_layout (ctx, state, text,
+											  ctx->pango_context);
+	layout->ctx = ctx;
 	
 	layout->anchor = state->text_anchor;
 
@@ -913,10 +929,31 @@ rsvg_text_render_text (RsvgDrawingCtx *ctx,
 					   gdouble *x,
 					   gdouble *y)
 {
-	GString * render;
-	render = rsvg_text_render_text_as_string (ctx,text,x,y);
-	rsvg_render_path (ctx, render->str);
-	g_string_free(render, TRUE);
+	if (0 && ctx->render->create_pango_context && ctx->render->render_pango_layout)
+		{
+			PangoContext *context;
+			PangoLayout *layout;
+			PangoLayoutIter *iter;
+			RsvgState *state;
+			gint w, h, baseline;
+
+			state = rsvg_state_current(ctx);
+			context = ctx->render->create_pango_context (ctx);
+			layout = rsvg_text_create_layout (ctx, state, text, context);
+			pango_layout_get_pixel_size (layout, &w, &h);
+			iter = pango_layout_get_iter (layout);
+			baseline = pango_layout_iter_get_baseline (iter) / PANGO_SCALE;
+			pango_layout_iter_free (iter);
+			ctx->render->render_pango_layout (ctx, layout, *x, *y - baseline);
+			*x += w;
+		}
+	else
+		{
+			GString * render;
+			render = rsvg_text_render_text_as_string (ctx,text,x,y);
+			rsvg_render_path (ctx, render->str);
+			g_string_free(render, TRUE);
+		}
 }
 
 static gdouble
