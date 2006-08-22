@@ -795,9 +795,10 @@ rsvg_entity_decl (void *data, const xmlChar *name, int type,
 	xmlEntityPtr entity;
 	xmlChar *dupname;
 
-	entity = g_new0 (xmlEntity, 1);
+	entity = xmlMalloc (sizeof(xmlEntity));
+	memset(entity, 0, sizeof(xmlEntity));
 	entity->type = XML_ENTITY_DECL;
-	dupname = (xmlChar *) g_strdup ((const char *)name);
+	dupname = (xmlChar *) xmlMemStrdup ((const char *)name);
 	entity->name = dupname;	
 	
 	entity->etype = type;
@@ -816,8 +817,8 @@ rsvg_entity_decl (void *data, const xmlChar *name, int type,
 				data = _rsvg_acquire_xlink_href_resource ((const char *)publicId, rsvg_handle_get_base_uri (ctx), NULL);
 
 			if (data) {
-				entity->SystemID = (xmlChar *) g_strdup ((const char *)systemId);
-				entity->ExternalID = (xmlChar *) g_strdup ((const char *)publicId);
+				entity->SystemID = (xmlChar *) xmlMemStrdup ((const char *)systemId);
+				entity->ExternalID = (xmlChar *) xmlMemStrdup ((const char *)publicId);
 				entity->content = (xmlChar *) xmlMemStrdup ((const char *)data->data);
 				entity->length = data->len;
 
@@ -1009,7 +1010,11 @@ rsvg_handle_write_impl (RsvgHandle    *handle,
 		{
 			handle->priv->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0, 
 														  rsvg_handle_get_base_uri (handle));
-			/* handle->priv->ctxt->replaceEntities = TRUE; */
+
+			/* if false, external entities work, but internal ones don't. if true, internal entities
+			   work, but external ones don't. favor internal entities, in order to not cause a
+			   regression */
+			handle->priv->ctxt->replaceEntities = TRUE;
 		}
 	
 	result = xmlParseChunk (handle->priv->ctxt, (char*)buf, count, 0);
