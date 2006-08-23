@@ -929,7 +929,7 @@ rsvg_text_render_text (RsvgDrawingCtx *ctx,
 					   gdouble *x,
 					   gdouble *y)
 {
-	if (0 && ctx->render->create_pango_context && ctx->render->render_pango_layout)
+	if (ctx->render->create_pango_context && ctx->render->render_pango_layout)
 		{
 			PangoContext *context;
 			PangoLayout *layout;

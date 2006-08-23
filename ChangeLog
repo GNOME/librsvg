@@ -1,5 +1,10 @@
 2006-08-23  Dom Lachowicz <cinamod@hotmail.com>
 
+	* rsvg-text.c: Bug 344116. The 5 crashes I mentioned before aren't 
+	reproducible. I'm enabling this code, and watching out for regressions.
+	
+2006-08-23  Dom Lachowicz <cinamod@hotmail.com>
+
 	* configure.in: Hopefully fix --disable-gtk-doc (341421)
 	* doc/Makefile.am: Ditto
 	
