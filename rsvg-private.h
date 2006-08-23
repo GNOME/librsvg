@@ -36,6 +36,10 @@
 #include <glib-object.h>
 #include <math.h>
 
+#if defined(HAVE_FLOAT_H)
+# include <float.h>
+#endif
+
 G_BEGIN_DECLS
 
 typedef struct RsvgSaxHandler RsvgSaxHandler;
@@ -65,6 +69,50 @@ typedef struct _RsvgIRect RsvgIRect;
 #    define M_PI 3.14159265358979323846
 #  endif /* G_PI */
 #endif /*  M_PI  */
+
+#ifndef DBL_EPSILON
+/* 1e-7 is a conservative value.  it's less than 2^(1-24) which is
+ * the epsilon value for a 32-bit float.  The regular value for this
+ * with 64-bit doubles is 2^(1-53) or approximately 1e-16.
+ */
+# define DBL_EPSILON 1e-7
+#endif
+
+/* RSVG_ONE_MINUS_EPSILON:
+ *
+ * DBL_EPSILON is the difference between 1 and the least value greater
+ * than 1 that is representable in the given floating-point type.  Then
+ * 1.0+DBL_EPSILON looks like:
+ *
+ *         1.00000000000...0000000001 * 2**0
+ *
+ * while 1.0-DBL_EPSILON looks like:
+ *
+ *         0.11111111111...1111111111 * 2**0
+ *
+ * and so represented as:
+ *
+ *         1.1111111111...11111111110 * 2**-1
+ *
+ * so, in fact, 1.0-(DBL_EPSILON*.5) works too, but I don't think it
+ * really matters.  So, I'll go with the simple 1.0-DBL_EPSILON here.
+ *
+ * The following python session shows these observations:
+ *
+ *         >>> 1.0 + 2**(1-53)
+ *         1.0000000000000002
+ *         >>> 1.0 + 2**(1-54)
+ *         1.0
+ *         >>> 1.0 - 2**(1-53)
+ *         0.99999999999999978
+ *         >>> 1.0 - 2**(1-54)
+ *         0.99999999999999989
+ *         >>> 1.0 - 2**(1-53)*.5
+ *         0.99999999999999989
+ *         >>> 1.0 - 2**(1-55)
+ *         1.0
+ */
+#define RSVG_ONE_MINUS_EPSILON (1.0 - DBL_EPSILON)
 
 struct RsvgSaxHandler {
 	void (*free) (RsvgSaxHandler *self);

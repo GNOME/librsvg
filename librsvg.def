@@ -1,34 +1,34 @@
-	rsvg_error_quark
-	rsvg_error_get_type
-	rsvg_init
-	rsvg_term
-	rsvg_set_default_dpi
-	rsvg_set_default_dpi_x_y
-	rsvg_handle_set_dpi
-	rsvg_handle_set_dpi_x_y
-	rsvg_handle_new
-	rsvg_handle_write
-	rsvg_handle_close
-	rsvg_handle_get_pixbuf
-	rsvg_handle_get_pixbuf_sub
-	rsvg_handle_free
-	rsvg_handle_get_base_uri
-	rsvg_handle_set_base_uri
-	rsvg_handle_get_dimensions
-	rsvg_handle_get_title
-	rsvg_handle_get_desc
-	rsvg_handle_get_metadata
-	rsvg_handle_new_from_data
-	rsvg_handle_new_from_file
-	rsvg_handle_set_size_callback
-	rsvg_pixbuf_from_file
-	rsvg_pixbuf_from_file_at_zoom
-	rsvg_pixbuf_from_file_at_size
-	rsvg_pixbuf_from_file_at_max_size
-	rsvg_pixbuf_from_file_at_zoom_with_max
-	rsvg_handle_render_cairo
-	rsvg_handle_render_cairo_sub
-	rsvg_handle_get_type
-	_rsvg_size_callback
-	_rsvg_acquire_xlink_href_resource
-	rsvg_pixbuf_from_data_with_size_data
+rsvg_error_quark
+rsvg_error_get_type
+rsvg_init
+rsvg_term
+rsvg_set_default_dpi
+rsvg_set_default_dpi_x_y
+rsvg_handle_set_dpi
+rsvg_handle_set_dpi_x_y
+rsvg_handle_new
+rsvg_handle_write
+rsvg_handle_close
+rsvg_handle_get_pixbuf
+rsvg_handle_get_pixbuf_sub
+rsvg_handle_free
+rsvg_handle_get_base_uri
+rsvg_handle_set_base_uri
+rsvg_handle_get_dimensions
+rsvg_handle_get_title
+rsvg_handle_get_desc
+rsvg_handle_get_metadata
+rsvg_handle_new_from_data
+rsvg_handle_new_from_file
+rsvg_handle_set_size_callback
+rsvg_pixbuf_from_file
+rsvg_pixbuf_from_file_at_zoom
+rsvg_pixbuf_from_file_at_size
+rsvg_pixbuf_from_file_at_max_size
+rsvg_pixbuf_from_file_at_zoom_with_max
+rsvg_handle_render_cairo
+rsvg_handle_render_cairo_sub
+rsvg_handle_get_type
+_rsvg_size_callback
+_rsvg_acquire_xlink_href_resource
+rsvg_pixbuf_from_data_with_size_data
