@@ -1,5 +1,10 @@
 2006-08-23  Dom Lachowicz <cinamod@hotmail.com>
 
+	* configure.in: Hopefully fix --disable-gtk-doc (341421)
+	* doc/Makefile.am: Ditto
+	
+2006-08-23  Dom Lachowicz <cinamod@hotmail.com>
+
 	* librsvg.def: Make export symbols work on OSX (bug 352512)
 	* rsvg-private.h: Some preparation work for color normalization
 	

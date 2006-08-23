@@ -59,7 +59,7 @@ GTKDOC_CFLAGS = -I$(top_srcdir) $(LIBRSVG_CFLAGS)
 
 GTKDOC_LIBS = $(top_builddir)/librsvg-2.la $(LIBRSVG_LIBS)
 
-if ENABLE_GTK_DOC
+if GTK_DOC_INSTALLED
 include $(top_srcdir)/gtk-doc.make
 CLEANFILES += rsvg-scan.*
 .PHONY : dist-hook-local

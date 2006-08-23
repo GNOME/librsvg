@@ -328,22 +328,12 @@ AC_SUBST(MOZILLA_CFLAGS)
 ##################################################
 # Checks for gtk-doc and docbook-tools
 ##################################################
-
-dnl for overriding the documentation installation directory
-AC_ARG_WITH(html-dir,
-  AC_HELP_STRING([--with-html-dir=PATH], [path to installed docs]),,
-  [with_html_dir='${datadir}/gtk-doc/html'])
-HTML_DIR="$with_html_dir"
-AC_SUBST(HTML_DIR)
-
-##################################################
-# Checks for gtk-doc and docbook-tools
-##################################################
-enable_gtk_doc=true
+gtk_doc_installed=true
+#ifdef([GTK_DOC_CHECK],[GTK_DOC_CHECK([1.0])],[gtk_doc_installed=false])
 # I would have liked to conditionalize this, but 
 # that appears to break other things http://bugzilla.gnome.org/show_bug.cgi?id=156399
 GTK_DOC_CHECK([1.0])
-AM_CONDITIONAL(ENABLE_GTK_DOC, $enable_gtk_doc)
+AM_CONDITIONAL(GTK_DOC_INSTALLED, $gtk_doc_installed)
 
 dnl ===========================================================================
 
@@ -398,7 +388,7 @@ librsvg-$LIBRSVG_VERSION
 	Use Gnome VFS:                  ${test_gnome_vfs}
 	Enable printing:		${have_gnome_print}
 	Use libcroco for css parsing:   ${test_croco}
-	Build documentation:            ${enable_gtk_doc}
+	Build documentation:            ${gtk_doc_installed}
 "
 
 if test "x$croco_warning" != "x"; then
