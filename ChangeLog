@@ -1,3 +1,7 @@
+2006-08-31  Dom Lachowicz <cinamod@hotmail.com>
+
+	* configure.in: 2.16.0
+	
 2006-08-23  Dom Lachowicz <cinamod@hotmail.com>
 
 	* rsvg-text.c: Bug 344116. The 5 crashes I mentioned before aren't 

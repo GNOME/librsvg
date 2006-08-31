@@ -19,8 +19,8 @@ AC_SUBST(PANGOFT2_REQUIRED)
 dnl ===========================================================================
 
 LIBRSVG_MAJOR_VERSION=2
-LIBRSVG_MINOR_VERSION=15
-LIBRSVG_MICRO_VERSION=90
+LIBRSVG_MINOR_VERSION=16
+LIBRSVG_MICRO_VERSION=0
 AC_SUBST(LIBRSVG_MAJOR_VERSION)
 AC_SUBST(LIBRSVG_MINOR_VERSION)
 AC_SUBST(LIBRSVG_MICRO_VERSION)
@@ -388,7 +388,6 @@ librsvg-$LIBRSVG_VERSION
 	Use Gnome VFS:                  ${test_gnome_vfs}
 	Enable printing:		${have_gnome_print}
 	Use libcroco for css parsing:   ${test_croco}
-	Build documentation:            ${gtk_doc_installed}
 "
 
 if test "x$croco_warning" != "x"; then

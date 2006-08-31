@@ -137,8 +137,6 @@ CLEANFILES = \
 	$(enum_sources) \
 	s-enum-types-h s-enum-types-c
 
-DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
-
 ## Put `exec' in the name because this should be installed by
 ## `install-exec', not `install-data'.
 
@@ -176,3 +174,5 @@ s-enum-types-c: $(headers) Makefile
 	&& (cmp -s tmp-librsvg-enum-types.c librsvg-enum-types.c || cp tmp-librsvg-enum-types.c librsvg-enum-types.c ) \
 	&& rm -f tmp-librsvg-enum-types.c \
 	&& echo timestamp > $(@F)
+
+DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
