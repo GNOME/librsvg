@@ -307,7 +307,7 @@ AC_ARG_ENABLE(mozilla-plugin, [  --enable-mozilla-plugin  Build a Mozilla/Firefo
 
 if test "x$test_mozilla_plugin" != "xno"; then
    if test -z "$MOZILLA_CONFIG"; then
-      AC_PATH_PROGS(MOZILLA_CONFIG, mozilla-config firefox-config, no)
+      AC_PATH_PROGS(MOZILLA_CONFIG, mozilla-config firefox-config xulrunner-config, no)
    fi
 
    if test "x$MOZILLA_CONFIG" != "xno"; then
