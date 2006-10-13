@@ -227,7 +227,7 @@ main (int argc, char **argv)
 			if (base_uri)
 				rsvg_handle_set_base_uri (rsvg, base_uri);
 
-			/* in the case of multi-page output, all subsequent SVS are scaled to the first's size */
+			/* in the case of multi-page output, all subsequent SVGs are scaled to the first's size */
 			rsvg_handle_set_size_callback (rsvg, rsvg_cairo_size_callback, &dimensions, NULL);			
 
 			if (i == 0) 
