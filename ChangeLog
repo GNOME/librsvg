@@ -1,3 +1,8 @@
+2006-11-02  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-base.c: Use g_quark_from_string() because librsvg might be used
+	in a plugin that gets unloaded
+	
 2006-10-13  Kouhei Sutou <kou@cozmixng.org>
 
 	* rsvg-cairo-clip.c: Fix bug with scaling + clipping reported on

@@ -987,11 +987,9 @@ G_CONST_RETURN char *rsvg_handle_get_base_uri (RsvgHandle *handle)
 GQuark
 rsvg_error_quark (void)
 {
-	static GQuark q = 0;
-	if (q == 0)
-		q = g_quark_from_static_string ("rsvg-error-quark");
-	
-	return q;
+	/* don't use from_static_string(), since librsvg might be used in a module
+	   that's ultimately unloaded */
+	return g_quark_from_string ("rsvg-error-quark");
 }
 
 static gboolean
