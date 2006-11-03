@@ -1,6 +1,11 @@
 2006-11-02  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* configure.in: 2.16.1
+
+2006-11-02  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-structure.c: Bug 361267 - SVGs with duplicate IDs cause Nautilus/eog to
+	crash. Basically, a <use> used itself, causing infinite drawing recursion.
 	
 2006-11-02  Dom Lachowicz <domlachowicz@gmail.com>
 

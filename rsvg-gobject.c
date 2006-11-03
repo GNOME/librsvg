@@ -280,7 +280,7 @@ static const GTypeInfo rsvg_type_info = {
 
 static GType rsvg_type = 0;
 
-/* HACK to get around bugs 357406 and 362217 */
+/* HACK to get around bugs 357406 and 362217. private API for now. */
 GType
 _rsvg_register_types(GTypeModule *module)
 {

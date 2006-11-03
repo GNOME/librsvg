@@ -168,6 +168,33 @@ rsvg_node_group_pack (RsvgNode *self, RsvgNode *child)
 	child->parent = self;
 }
 
+static gboolean
+rsvg_node_is_ancestor (RsvgNode * potential_ancestor,
+					   RsvgNode * potential_descendant)
+{
+	if(!potential_ancestor)
+		return FALSE;
+	else if(potential_descendant == potential_ancestor)
+		return TRUE;
+	else if(potential_ancestor->children) {
+		GPtrArray *children;
+		guint i, len;
+
+		children = potential_ancestor->children;
+		len = children->len;
+
+		for(i = 0; i < len; i++) {
+			RsvgNode * child;
+
+			child = (RsvgNode *)g_ptr_array_index (children, i);
+			if(rsvg_node_is_ancestor (child, potential_descendant))
+				return TRUE;
+		}
+	}
+		
+	return FALSE;
+}
+
 static void 
 rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
 							  int dominate)
@@ -187,8 +214,11 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx *ctx,
 	child = use->link;
 
 	/* If it can find nothing to draw... draw nothing */
-	if (!use->link)
+	if (!child)
 		return;
+	else if(rsvg_node_is_ancestor (child, self)) /* or, if we're <use>'ing ourself */
+		return;
+
 	state = rsvg_state_current(ctx);	
 	if (strcmp(child->type->str, "symbol"))
 		{
