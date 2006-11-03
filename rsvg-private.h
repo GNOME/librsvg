@@ -114,6 +114,8 @@ typedef struct _RsvgIRect RsvgIRect;
  */
 #define RSVG_ONE_MINUS_EPSILON (1.0 - DBL_EPSILON)
 
+GType _rsvg_register_types(GTypeModule *module);
+
 struct RsvgSaxHandler {
 	void (*free) (RsvgSaxHandler *self);
 	void (*start_element) (RsvgSaxHandler *self, const char *name, RsvgPropertyBag *atts);

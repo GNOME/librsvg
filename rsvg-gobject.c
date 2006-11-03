@@ -266,26 +266,39 @@ class_init (RsvgHandleClass *klass)
 	rsvg_SAX_handler_struct_init ();
 }
 
+static const GTypeInfo rsvg_type_info = {
+	sizeof (RsvgHandleClass),
+	NULL,           /* base_init */
+	NULL,           /* base_finalize */
+	(GClassInitFunc) class_init,
+	NULL,           /* class_finalize */
+	NULL,           /* class_data */
+	sizeof (RsvgHandle),
+	0,              /* n_preallocs */
+	(GInstanceInitFunc) instance_init,
+};
+
+static GType rsvg_type = 0;
+
+/* HACK to get around bugs 357406 and 362217 */
+GType
+_rsvg_register_types(GTypeModule *module)
+{
+	rsvg_type = g_type_module_register_type (module,
+											 G_TYPE_OBJECT,
+											 "RsvgHandle",
+											 &rsvg_type_info, 
+											 (GTypeFlags)0);
+	return rsvg_type;
+}
+
 GType
 rsvg_handle_get_type (void)
 {
-	static GType type = 0;
-	if (!type) {
-		static const GTypeInfo info = {
-			sizeof (RsvgHandleClass),
-			NULL,           /* base_init */
-			NULL,           /* base_finalize */
-			(GClassInitFunc) class_init,
-			NULL,           /* class_finalize */
-			NULL,           /* class_data */
-			sizeof (RsvgHandle),
-			0,              /* n_preallocs */
-			(GInstanceInitFunc) instance_init,
-		};
-
-		type = g_type_register_static (G_TYPE_OBJECT, "RsvgHandle", &info, (GTypeFlags)0);
+	if (!rsvg_type) {
+		rsvg_type = g_type_register_static (G_TYPE_OBJECT, "RsvgHandle", &rsvg_type_info, (GTypeFlags)0);
 	}
-	return type;
+	return rsvg_type;
 }
 
 /**
