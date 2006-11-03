@@ -172,26 +172,17 @@ static gboolean
 rsvg_node_is_ancestor (RsvgNode * potential_ancestor,
 					   RsvgNode * potential_descendant)
 {
-	if(!potential_ancestor)
-		return FALSE;
-	else if(potential_descendant == potential_ancestor)
-		return TRUE;
-	else if(potential_ancestor->children) {
-		GPtrArray *children;
-		guint i, len;
-
-		children = potential_ancestor->children;
-		len = children->len;
-
-		for(i = 0; i < len; i++) {
-			RsvgNode * child;
-
-			child = (RsvgNode *)g_ptr_array_index (children, i);
-			if(rsvg_node_is_ancestor (child, potential_descendant))
-				return TRUE;
-		}
+	/* work our way up the family tree */
+	while(TRUE) {
+		if (potential_ancestor == potential_descendant)
+			return TRUE;
+		else if (potential_descendant->parent == NULL)
+			return FALSE;
+		else
+			potential_descendant = potential_descendant->parent;
 	}
-		
+
+	g_assert_not_reached ();
 	return FALSE;
 }
 
