@@ -1,5 +1,9 @@
 2006-11-02  Dom Lachowicz <domlachowicz@gmail.com>
 
+	* configure.in: 2.16.1
+	
+2006-11-02  Dom Lachowicz <domlachowicz@gmail.com>
+
 	* rsvg-gobject.c: Introduce PRIVATE API to get around bugs 357406 and 362217.
 	IMHO, gobject's type registration and quark/error system is fundamentally 
 	broken with respect to (un)loadable modules such as GTK+ theme engines. This 
