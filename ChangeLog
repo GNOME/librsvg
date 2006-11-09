@@ -1,3 +1,10 @@
+2006-11-09  Tor Lillqvist  <tml@novell.com>
+
+	* librsvg-zip.in: DLLs are always in "bin" nowadays, no need to
+	ponder that in the script. Use pkg-config to find out
+	gtk_binary_version to use it in the pathnames to the engine and
+	loader DLLs.
+
 2006-11-02  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* configure.in: 2.16.1

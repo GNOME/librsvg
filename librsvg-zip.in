@@ -14,11 +14,8 @@ DLLNAME=librsvg-2-@LIBRSVG_MAJOR_VERSION@.dll
 cd @prefix@
 rm $ZIP
 
-DLLDIR=lib
-[ -f bin/$DLLNAME ] && DLLDIR=bin
-
 zip $ZIP -@ <<EOF
-$DLLDIR/$DLLNAME
+bin/$DLLNAME
 EOF
 
 rm $DEVZIP
@@ -30,12 +27,10 @@ lib/librsvg-2.dll.a
 lib/pkgconfig/librsvg-2.0.pc
 EOF
 
+gtk_binary_version=`$PKG_CONFIG --variable=gtk_binary_version gtk+-2.0`
+
 rm $ENGINEZIP
-zip $ENGINEZIP -@ <<EOF
-lib/gtk-2.0/2.4.0/engines/libsvg.dll
-EOF
+zip $ENGINEZIP lib/gtk-2.0/${gtk_binary_version}/engines/libsvg.dll
 
 rm $LOADERZIP
-zip $LOADERZIP -@ <<EOF
-lib/gtk-2.0/2.4.0/loaders/svg_loader.dll
-EOF
+zip $LOADERZIP lib/gtk-2.0/${gtk_binary_version}/loaders/svg_loader.dll
