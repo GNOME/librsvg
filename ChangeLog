@@ -1,3 +1,7 @@
+2006-11-10  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-css.c: Handle absolute font sizes [ xx-small | x-small | small | medium | large | x-large | xx-large ]
+	
 2006-11-09  Tor Lillqvist  <tml@novell.com>
 
 	* librsvg-zip.in: DLLs are always in "bin" nowadays, no need to

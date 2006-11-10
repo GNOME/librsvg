@@ -84,10 +84,17 @@ rsvg_css_parse_vbox (const char * vbox)
 	}
 }
 
+typedef enum _RelativeSize
+	{
+		RELATIVE_SIZE_NORMAL,
+		RELATIVE_SIZE_SMALLER,
+		RELATIVE_SIZE_LARGER
+	} RelativeSize;
 
 static double
 rsvg_css_parse_raw_length (const char *str, gint *in, 
-						   gint *percent, gint *em, gint *ex)
+						   gint *percent, gint *em, gint *ex,
+						   RelativeSize *relative_size)
 {
 	double length = 0.0;
 	char *p = NULL;
@@ -99,15 +106,17 @@ rsvg_css_parse_raw_length (const char *str, gint *in,
 	*percent = FALSE;
 	*em      = FALSE;
 	*ex      = FALSE;
-	
+	*relative_size = RELATIVE_SIZE_NORMAL;
+
 	length = g_ascii_strtod (str, &p);
 	
-	/* todo: error condition - figure out how to best represent it */
-	if ((length == -HUGE_VAL || length == HUGE_VAL) && (ERANGE == errno))
+	if ((length == -HUGE_VAL || length == HUGE_VAL) && (ERANGE == errno)) {
+		/* todo: error condition - figure out how to best represent it */
 		return 0.0;
-	
+	}
+
 	/* test for either pixels or no unit, which is assumed to be pixels */
-	if (p && (strcmp(p, "px") != 0))
+	if (p && *p && (strcmp(p, "px") != 0))
 		{
 			if (!strcmp(p, "pt"))
 				{
@@ -140,6 +149,36 @@ rsvg_css_parse_raw_length (const char *str, gint *in,
 					*percent = TRUE;
 					length *= 0.01;
 				}
+			else {
+				double pow_factor = 0.0;
+				
+				if(!g_ascii_strcasecmp(p, "larger")) {
+					*relative_size = RELATIVE_SIZE_LARGER;
+					return 0.0;
+				} else if(!g_ascii_strcasecmp(p, "smaller")) {
+					*relative_size = RELATIVE_SIZE_SMALLER;
+					return 0.0;
+				} else if(!g_ascii_strcasecmp(p, "xx-small")) {
+					pow_factor = -3.0;
+				} else if(!g_ascii_strcasecmp(p, "x-small")) {
+					pow_factor = -2.0;
+				} else if(!g_ascii_strcasecmp(p, "small")) {
+					pow_factor = -1.0;
+				} else if(!g_ascii_strcasecmp(p, "medium")) {
+					pow_factor = 0.0;
+				} else if(!g_ascii_strcasecmp(p, "large")) {
+					pow_factor = 1.0;
+				} else if(!g_ascii_strcasecmp(p, "x-large")) {
+					pow_factor = 2.0;
+				} else if(!g_ascii_strcasecmp(p, "xx-large")) {
+					pow_factor = 3.0;	
+				} else {
+					return 0.0;
+				}
+
+				length = 12.0 * pow(1.2, pow_factor) / POINTS_PER_INCH;
+				*in = TRUE;
+			}
 		}
 	
 	return length;
@@ -150,9 +189,10 @@ _rsvg_css_parse_length(const char *str)
 {
 	RsvgLength out;
 	gint percent, em, ex, in;
+	RelativeSize relative_size = RELATIVE_SIZE_NORMAL;
 	percent = em = ex = in = FALSE;
 	
-	out.length = rsvg_css_parse_raw_length (str, &in, &percent, &em, &ex);
+	out.length = rsvg_css_parse_raw_length (str, &in, &percent, &em, &ex, &relative_size);
 	if (percent)
 		out.factor = 'p';
 	else if (em)
@@ -161,6 +201,10 @@ _rsvg_css_parse_length(const char *str)
 		out.factor = 'x';
 	else if (in)
 		out.factor = 'i';
+	else if (relative_size == RELATIVE_SIZE_LARGER)
+		out.factor = 'l';
+	else if (relative_size == RELATIVE_SIZE_SMALLER)
+		out.factor = 's';
 	else
 		out.factor = '\0';
 	return out;
@@ -199,6 +243,15 @@ _rsvg_css_normalize_length(const RsvgLength * in, RsvgDrawingCtx * ctx,
 			if (dir == 'o')
 				return in->length * rsvg_viewport_percentage(ctx->dpi_x, ctx->dpi_y);
 		}
+	else if (in->factor == 'l')
+		{
+			/* todo: "larger" */
+		}
+	else if (in->factor == 's')
+		{
+			/* todo: "smaller" */
+		}
+
 	return 0;
 }
 
