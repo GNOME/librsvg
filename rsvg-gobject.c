@@ -266,7 +266,7 @@ class_init (RsvgHandleClass *klass)
 	rsvg_SAX_handler_struct_init ();
 }
 
-static const GTypeInfo rsvg_type_info = {
+const GTypeInfo rsvg_type_info = {
 	sizeof (RsvgHandleClass),
 	NULL,           /* base_init */
 	NULL,           /* base_finalize */

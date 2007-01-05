@@ -1,3 +1,9 @@
+2007-01-05  Christian Persch  <chpe@svn.gnome.org>
+
+	* gtk-engine/svg-draw.c: (rsvg_style_register_type):
+	* gtk-engine/svg-rc-style.c: (rsvg_rc_style_register_type):
+	* rsvg-gobject.c: Bug #393297: no need to make GTypeInfo static.
+
 2006-11-10  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* rsvg-css.c: Handle absolute font sizes [ xx-small | x-small | small | medium | large | x-large | xx-large ]

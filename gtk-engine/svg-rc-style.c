@@ -122,7 +122,7 @@ GType rsvg_type_rc_style = 0;
 void
 rsvg_rc_style_register_type (GTypeModule *module)
 {
-  static const GTypeInfo object_info =
+  const GTypeInfo object_info =
   {
     sizeof (RsvgRcStyleClass),
     (GBaseInitFunc) NULL,
