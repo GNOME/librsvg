@@ -39,54 +39,51 @@
 typedef struct RsvgCairoClipRender RsvgCairoClipRender;
 
 struct RsvgCairoClipRender {
-	RsvgRender super;
-	cairo_t *cr;
+    RsvgRender super;
+    cairo_t *cr;
 };
 
 static void
-rsvg_cairo_clip_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
+rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
 {
-	RsvgCairoClipRender *render = (RsvgCairoClipRender *)ctx->render;
-	cairo_t *cr;
-	RsvgBpath *bpath;
-	int i;
+    RsvgCairoClipRender *render = (RsvgCairoClipRender *) ctx->render;
+    cairo_t *cr;
+    RsvgBpath *bpath;
+    int i;
 
-	cr = render->cr;
+    cr = render->cr;
 
-	if (rsvg_state_current(ctx)->clip_rule == FILL_RULE_EVENODD)
-		cairo_set_fill_rule (((RsvgCairoRender *)ctx->render)->cr, CAIRO_FILL_RULE_EVEN_ODD);
-	else /* state->fill_rule == FILL_RULE_NONZERO */
-		cairo_set_fill_rule (((RsvgCairoRender *)ctx->render)->cr, CAIRO_FILL_RULE_WINDING);
+    if (rsvg_state_current (ctx)->clip_rule == FILL_RULE_EVENODD)
+        cairo_set_fill_rule (((RsvgCairoRender *) ctx->render)->cr, CAIRO_FILL_RULE_EVEN_ODD);
+    else                        /* state->fill_rule == FILL_RULE_NONZERO */
+        cairo_set_fill_rule (((RsvgCairoRender *) ctx->render)->cr, CAIRO_FILL_RULE_WINDING);
 
-	for (i=0; i < bpath_def->n_bpath; i++) {
-		bpath = &bpath_def->bpath[i];
+    for (i = 0; i < bpath_def->n_bpath; i++) {
+        bpath = &bpath_def->bpath[i];
 
-		switch (bpath->code) {
-		case RSVG_MOVETO:
-			cairo_close_path (cr);
-			/* fall-through */
-		case RSVG_MOVETO_OPEN:
-			cairo_move_to (cr, bpath->x3, bpath->y3);
-			break;
-		case RSVG_CURVETO:
-			cairo_curve_to (cr,
-							bpath->x1, bpath->y1,
-							bpath->x2, bpath->y2,
-							bpath->x3, bpath->y3);
-			break;
-		case RSVG_LINETO:
-			cairo_line_to (cr, bpath->x3, bpath->y3);
-			break;
-		case RSVG_END:
-			break;
-		}
-	}
+        switch (bpath->code) {
+        case RSVG_MOVETO:
+            cairo_close_path (cr);
+            /* fall-through */
+        case RSVG_MOVETO_OPEN:
+            cairo_move_to (cr, bpath->x3, bpath->y3);
+            break;
+        case RSVG_CURVETO:
+            cairo_curve_to (cr, bpath->x1, bpath->y1, bpath->x2, bpath->y2, bpath->x3, bpath->y3);
+            break;
+        case RSVG_LINETO:
+            cairo_line_to (cr, bpath->x3, bpath->y3);
+            break;
+        case RSVG_END:
+            break;
+        }
+    }
 }
 
-static void rsvg_cairo_clip_render_image (RsvgDrawingCtx *ctx, 
-										  const GdkPixbuf * pixbuf, 
-										  double pixbuf_x, double pixbuf_y, 
-										  double w, double h)
+static void
+rsvg_cairo_clip_render_image (RsvgDrawingCtx * ctx,
+                              const GdkPixbuf * pixbuf,
+                              double pixbuf_x, double pixbuf_y, double w, double h)
 {
 }
 
@@ -94,75 +91,73 @@ static void rsvg_cairo_clip_render_image (RsvgDrawingCtx *ctx,
 static void
 rsvg_cairo_clip_render_free (RsvgRender * self)
 {
-	RsvgCairoClipRender * me = (RsvgCairoClipRender *)self;
-	g_free (me);
+    RsvgCairoClipRender *me = (RsvgCairoClipRender *) self;
+    g_free (me);
 }
 
 static void
-rsvg_cairo_clip_push_discrete_layer (RsvgDrawingCtx *ctx) {}
-
-static void
-rsvg_cairo_clip_pop_discrete_layer (RsvgDrawingCtx *ctx) {}
-
-static void 
-rsvg_cairo_clip_add_clipping_rect (RsvgDrawingCtx *ctx,
-								   double x, double y,
-								   double w, double h){}
-
-static RsvgRender * 
-rsvg_cairo_clip_render_new(cairo_t * cr)
+rsvg_cairo_clip_push_discrete_layer (RsvgDrawingCtx * ctx)
 {
-	RsvgCairoClipRender * cairo_render = g_new0(RsvgCairoClipRender, 1);
-
-	cairo_render->super.free                 = rsvg_cairo_clip_render_free;
-	cairo_render->super.render_image         = rsvg_cairo_clip_render_image;
-	cairo_render->super.render_path          = rsvg_cairo_clip_render_path;
-	cairo_render->super.pop_discrete_layer   = 
-		rsvg_cairo_clip_pop_discrete_layer;
-	cairo_render->super.push_discrete_layer  = 
-		rsvg_cairo_clip_push_discrete_layer;
-	cairo_render->super.add_clipping_rect    = 
-		rsvg_cairo_clip_add_clipping_rect;
-	cairo_render->super.get_image_of_node    = NULL;
-	cairo_render->cr = cr;
-
-	return &cairo_render->super;
 }
 
-void 
-rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgClipPath *clip, RsvgBbox *bbox)
+static void
+rsvg_cairo_clip_pop_discrete_layer (RsvgDrawingCtx * ctx)
 {
-	RsvgCairoRender * save = (RsvgCairoRender *)ctx->render;
-	double affinesave[6];
-	int i;
-	ctx->render = rsvg_cairo_clip_render_new(save->cr);
-	
-	/* Horribly dirty hack to have the bbox premultiplied to everything */
-	if (clip->units == objectBoundingBox)
-		{
-			double bbtransform[6];
-			bbtransform[0] = bbox->w;
-			bbtransform[1] = 0.;
-			bbtransform[2] = 0.;
-			bbtransform[3] = bbox->h;
-			bbtransform[4] = bbox->x;
-			bbtransform[5] = bbox->y;
-			for (i = 0; i < 6; i++)
-				affinesave[i] = clip->super.state->affine[i];
-			_rsvg_affine_multiply(clip->super.state->affine,
-								  bbtransform, 
-								  clip->super.state->affine);
-		}
+}
 
-	rsvg_state_push(ctx);
-	_rsvg_node_draw_children ((RsvgNode *)clip, ctx, 0);
-	rsvg_state_pop(ctx);
+static void
+rsvg_cairo_clip_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w, double h)
+{
+}
 
-	if (clip->units == objectBoundingBox)
-		for (i = 0; i < 6; i++)
-			clip->super.state->affine[i] = affinesave[i];
+static RsvgRender *
+rsvg_cairo_clip_render_new (cairo_t * cr)
+{
+    RsvgCairoClipRender *cairo_render = g_new0 (RsvgCairoClipRender, 1);
 
-	g_free(ctx->render);
-	cairo_clip(save->cr);
-	ctx->render = &save->super;
+    cairo_render->super.free = rsvg_cairo_clip_render_free;
+    cairo_render->super.render_image = rsvg_cairo_clip_render_image;
+    cairo_render->super.render_path = rsvg_cairo_clip_render_path;
+    cairo_render->super.pop_discrete_layer = rsvg_cairo_clip_pop_discrete_layer;
+    cairo_render->super.push_discrete_layer = rsvg_cairo_clip_push_discrete_layer;
+    cairo_render->super.add_clipping_rect = rsvg_cairo_clip_add_clipping_rect;
+    cairo_render->super.get_image_of_node = NULL;
+    cairo_render->cr = cr;
+
+    return &cairo_render->super;
+}
+
+void
+rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox)
+{
+    RsvgCairoRender *save = (RsvgCairoRender *) ctx->render;
+    double affinesave[6];
+    int i;
+    ctx->render = rsvg_cairo_clip_render_new (save->cr);
+
+    /* Horribly dirty hack to have the bbox premultiplied to everything */
+    if (clip->units == objectBoundingBox) {
+        double bbtransform[6];
+        bbtransform[0] = bbox->w;
+        bbtransform[1] = 0.;
+        bbtransform[2] = 0.;
+        bbtransform[3] = bbox->h;
+        bbtransform[4] = bbox->x;
+        bbtransform[5] = bbox->y;
+        for (i = 0; i < 6; i++)
+            affinesave[i] = clip->super.state->affine[i];
+        _rsvg_affine_multiply (clip->super.state->affine, bbtransform, clip->super.state->affine);
+    }
+
+    rsvg_state_push (ctx);
+    _rsvg_node_draw_children ((RsvgNode *) clip, ctx, 0);
+    rsvg_state_pop (ctx);
+
+    if (clip->units == objectBoundingBox)
+        for (i = 0; i < 6; i++)
+            clip->super.state->affine[i] = affinesave[i];
+
+    g_free (ctx->render);
+    cairo_clip (save->cr);
+    ctx->render = &save->super;
 }

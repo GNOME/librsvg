@@ -28,28 +28,28 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 G_BEGIN_DECLS
-
 #define RSVG_TYPE_HANDLE                  (rsvg_handle_get_type ())
 #define RSVG_HANDLE(obj)                  (G_TYPE_CHECK_INSTANCE_CAST ((obj), RSVG_TYPE_HANDLE, RsvgHandle))
 #define RSVG_HANDLE_CLASS(klass)          (G_TYPE_CHECK_CLASS_CAST ((klass), RSVG_TYPE_HANDLE, RsvgHandleClass))
 #define RSVG_IS_HANDLE(obj)               (G_TYPE_CHECK_INSTANCE_TYPE ((obj), RSVG_TYPE_HANDLE))
 #define RSVG_IS_HANDLE_CLASS(klass)       (G_TYPE_CHECK_CLASS_TYPE ((klass), RSVG_TYPE_HANDLE))
 #define RSVG_HANDLE_GET_CLASS(obj)        (G_TYPE_INSTANCE_GET_CLASS ((obj), RSVG_TYPE_HANDLE, RsvgHandleClass))
-
-GType rsvg_handle_get_type (void);
+    GType rsvg_handle_get_type (void);
 
 /**
  * An enumeration representing possible error domains
  */
 typedef enum {
-	RSVG_ERROR_FAILED
+    RSVG_ERROR_FAILED
 } RsvgError;
 
 /**
  * 
  */
 #define RSVG_ERROR (rsvg_error_quark ())
-GQuark rsvg_error_quark (void) G_GNUC_CONST;
+GQuark
+rsvg_error_quark (void)
+    G_GNUC_CONST;
 
 /**
  * The RsvgHandle is an object representing the parsed form of a SVG
@@ -60,84 +60,95 @@ typedef struct _RsvgHandleClass RsvgHandleClass;
 typedef struct _RsvgDimensionData RsvgDimensionData;
 
 struct _RsvgHandleClass {
-	GObjectClass parent;
+    GObjectClass parent;
 
-	gpointer _abi_padding[15];
+    gpointer _abi_padding[15];
 };
 
 struct _RsvgHandle {
-	GObject parent;
+    GObject parent;
 
-	RsvgHandlePrivate *priv;
+    RsvgHandlePrivate *priv;
 
-	gpointer _abi_padding[15];
+    gpointer _abi_padding[15];
 };
 
 /* RsvgDimensionData
  */
 struct _RsvgDimensionData {
-	/**
+        /**
 	 * SVG's width, in pixels
 	 */
-	int width;
+    int width;
 
-	/**
+        /**
 	 * SVG's height, in pixels
 	 */
-	int height;
+    int height;
 
-	/**
+        /**
 	 * em
 	 */
-	gdouble em;
+    gdouble em;
 
-	/**
+        /**
 	 * ex
 	 */
-	gdouble ex;
+    gdouble ex;
 };
 
-void        rsvg_init (void);
-void        rsvg_term (void);
+void
+rsvg_init (void);
+void
+rsvg_term (void);
 
-void        rsvg_set_default_dpi          (double dpi);
-void        rsvg_set_default_dpi_x_y          (double dpi_x, double dpi_y);
+void
+rsvg_set_default_dpi (double dpi);
+void
+rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y);
 
-void        rsvg_handle_set_dpi           (RsvgHandle * handle, double dpi);
-void        rsvg_handle_set_dpi_x_y           (RsvgHandle * handle, double dpi_x, double dpi_y);
+void
+rsvg_handle_set_dpi (RsvgHandle * handle, double dpi);
+void
+rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y);
 
-RsvgHandle *rsvg_handle_new               (void);
-gboolean    rsvg_handle_write             (RsvgHandle      *handle,
-										   const guchar    *buf,
-										   gsize            count,
-										   GError         **error);
-gboolean    rsvg_handle_close             (RsvgHandle      *handle,
-										   GError         **error);
-GdkPixbuf  *rsvg_handle_get_pixbuf        (RsvgHandle      *handle);
-GdkPixbuf  *rsvg_handle_get_pixbuf_sub    (RsvgHandle *handle, const char * id);
+RsvgHandle *
+rsvg_handle_new (void);
+gboolean
+rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError ** error);
+gboolean
+rsvg_handle_close (RsvgHandle * handle, GError ** error);
+GdkPixbuf *
+rsvg_handle_get_pixbuf (RsvgHandle * handle);
+GdkPixbuf *
+rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id);
 
 G_CONST_RETURN char *
-rsvg_handle_get_base_uri (RsvgHandle *handle);
-void rsvg_handle_set_base_uri (RsvgHandle *handle,
-							   const char *base_uri);
+rsvg_handle_get_base_uri (RsvgHandle * handle);
+void
+rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri);
 
-void rsvg_handle_get_dimensions(RsvgHandle * handle, RsvgDimensionData *dimension_data);
+void
+rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_data);
 
 /* Accessibility API */
 
-G_CONST_RETURN char *rsvg_handle_get_title         (RsvgHandle *handle);
-G_CONST_RETURN char *rsvg_handle_get_desc          (RsvgHandle *handle);
-G_CONST_RETURN char *rsvg_handle_get_metadata      (RsvgHandle *handle);
+G_CONST_RETURN char *
+rsvg_handle_get_title (RsvgHandle * handle);
+G_CONST_RETURN char *
+rsvg_handle_get_desc (RsvgHandle * handle);
+G_CONST_RETURN char *
+rsvg_handle_get_metadata (RsvgHandle * handle);
 
-RsvgHandle * rsvg_handle_new_from_data (const guint8 *data,
-										gsize data_len,
-										GError **error);
-RsvgHandle * rsvg_handle_new_from_file (const gchar *file_name,
-										GError **error);
+RsvgHandle *
+rsvg_handle_new_from_data (const guint8 * data, gsize data_len, GError ** error);
+RsvgHandle *
+rsvg_handle_new_from_file (const gchar * file_name, GError ** error);
 
 #ifndef RSVG_DISABLE_DEPRECATED
 
-void        rsvg_handle_free              (RsvgHandle      *handle);
+void
+rsvg_handle_free (RsvgHandle * handle);
 
 /**
  * RsvgSizeFunc ():
@@ -152,39 +163,31 @@ void        rsvg_handle_free              (RsvgHandle      *handle);
  *
  * Deprecated: Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
  */
-typedef void (* RsvgSizeFunc) (gint     *width,
-							   gint     *height,
-							   gpointer  user_data);
-void        rsvg_handle_set_size_callback (RsvgHandle      *handle,
-										   RsvgSizeFunc     size_func,
-										   gpointer         user_data,
-										   GDestroyNotify   user_data_destroy);
+typedef void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
+void
+rsvg_handle_set_size_callback (RsvgHandle * handle,
+                               RsvgSizeFunc size_func,
+                               gpointer user_data, GDestroyNotify user_data_destroy);
 
 /* GdkPixbuf convenience API */
 
-GdkPixbuf  *rsvg_pixbuf_from_file                  (const gchar  *file_name,
-													GError      **error);
-GdkPixbuf  *rsvg_pixbuf_from_file_at_zoom          (const gchar  *file_name,
-													double        x_zoom,
-													double        y_zoom,
-													GError      **error);
-GdkPixbuf  *rsvg_pixbuf_from_file_at_size          (const gchar  *file_name,
-													gint          width,
-													gint          height,
-													GError      **error);
-GdkPixbuf  *rsvg_pixbuf_from_file_at_max_size      (const gchar  *file_name,
-													gint          max_width,
-													gint          max_height,
-													GError      **error);
-GdkPixbuf  *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
-													double        x_zoom,
-													double        y_zoom,
-													gint          max_width,
-													gint          max_height,
-													GError      **error);
+GdkPixbuf *
+rsvg_pixbuf_from_file (const gchar * file_name, GError ** error);
+GdkPixbuf *
+rsvg_pixbuf_from_file_at_zoom (const gchar * file_name,
+                               double x_zoom, double y_zoom, GError ** error);
+GdkPixbuf *
+rsvg_pixbuf_from_file_at_size (const gchar * file_name, gint width, gint height, GError ** error);
+GdkPixbuf *
+rsvg_pixbuf_from_file_at_max_size (const gchar * file_name,
+                                   gint max_width, gint max_height, GError ** error);
+GdkPixbuf *
+rsvg_pixbuf_from_file_at_zoom_with_max (const gchar * file_name,
+                                        double x_zoom,
+                                        double y_zoom,
+                                        gint max_width, gint max_height, GError ** error);
 
-#endif /* RSVG_DISABLE_DEPRECATED */
+#endif                          /* RSVG_DISABLE_DEPRECATED */
 
 G_END_DECLS
-
-#endif /* RSVG_H */
+#endif                          /* RSVG_H */

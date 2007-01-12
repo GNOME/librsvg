@@ -40,9 +40,7 @@
 # include <float.h>
 #endif
 
-G_BEGIN_DECLS
-
-typedef struct RsvgSaxHandler RsvgSaxHandler;
+G_BEGIN_DECLS typedef struct RsvgSaxHandler RsvgSaxHandler;
 typedef struct RsvgDrawingCtx RsvgDrawingCtx;
 typedef struct RsvgRender RsvgRender;
 typedef struct _RsvgPropertyBag RsvgPropertyBag;
@@ -67,8 +65,8 @@ typedef struct _RsvgIRect RsvgIRect;
 #    define M_PI G_PI
 #  else
 #    define M_PI 3.14159265358979323846
-#  endif /* G_PI */
-#endif /*  M_PI  */
+#  endif                        /* G_PI */
+#endif                          /*  M_PI  */
 
 #ifndef DBL_EPSILON
 /* 1e-7 is a conservative value.  it's less than 2^(1-24) which is
@@ -114,293 +112,266 @@ typedef struct _RsvgIRect RsvgIRect;
  */
 #define RSVG_ONE_MINUS_EPSILON (1.0 - DBL_EPSILON)
 
-GType _rsvg_register_types(GTypeModule *module);
+GType _rsvg_register_types (GTypeModule * module);
 
 struct RsvgSaxHandler {
-	void (*free) (RsvgSaxHandler *self);
-	void (*start_element) (RsvgSaxHandler *self, const char *name, RsvgPropertyBag *atts);
-	void (*end_element) (RsvgSaxHandler *self, const char *name);
-	void (*characters) (RsvgSaxHandler *self, const char *ch, int len);
+    void (*free) (RsvgSaxHandler * self);
+    void (*start_element) (RsvgSaxHandler * self, const char *name, RsvgPropertyBag * atts);
+    void (*end_element) (RsvgSaxHandler * self, const char *name);
+    void (*characters) (RsvgSaxHandler * self, const char *ch, int len);
 };
 
 struct RsvgHandlePrivate {
-	gboolean is_disposed;
+    gboolean is_disposed;
 
-	RsvgSizeFunc size_func;
-	gpointer user_data;
-	GDestroyNotify user_data_destroy;
+    RsvgSizeFunc size_func;
+    gpointer user_data;
+    GDestroyNotify user_data_destroy;
 
-	/* stack; there is a state for each element */
-	
-	RsvgDefs *defs;
-	guint nest_level;
-	RsvgNode *currentnode;
-	/* this is the root level of the displayable tree, essentially what the
-	   file is converted into at the end */
-	RsvgNode *treebase;
+    /* stack; there is a state for each element */
 
-	GHashTable *css_props;
-	
-	/* not a handler stack. each nested handler keeps
-	 * track of its parent
-	 */
-	RsvgSaxHandler *handler;
-	int handler_nest;
-	
-	GHashTable *entities; /* g_malloc'd string -> xmlEntityPtr */
-	
-	xmlParserCtxtPtr ctxt;
-	GError **error;
-	
-	double dpi_x;
-	double dpi_y;
-	
-	GString * title;
-	GString * desc;
-	GString * metadata;
-	
-	gchar * base_uri;
+    RsvgDefs *defs;
+    guint nest_level;
+    RsvgNode *currentnode;
+    /* this is the root level of the displayable tree, essentially what the
+       file is converted into at the end */
+    RsvgNode *treebase;
 
-	gboolean finished;
+    GHashTable *css_props;
 
-	gboolean first_write;
-	gboolean is_gzipped;
-	void * gzipped_data; /* really a GsfOutput */
+    /* not a handler stack. each nested handler keeps
+     * track of its parent
+     */
+    RsvgSaxHandler *handler;
+    int handler_nest;
+
+    GHashTable *entities;       /* g_malloc'd string -> xmlEntityPtr */
+
+    xmlParserCtxtPtr ctxt;
+    GError **error;
+
+    double dpi_x;
+    double dpi_y;
+
+    GString *title;
+    GString *desc;
+    GString *metadata;
+
+    gchar *base_uri;
+
+    gboolean finished;
+
+    gboolean first_write;
+    gboolean is_gzipped;
+    void *gzipped_data;         /* really a GsfOutput */
 };
 
-typedef struct{
-	gboolean active;
-	double x, y, w, h;
-} RsvgViewBox; 
+typedef struct {
+    gboolean active;
+    double x, y, w, h;
+} RsvgViewBox;
 
 /*Contextual information for the drawing phase*/
 
 struct RsvgDrawingCtx {
-	RsvgRender *render;
-	GSList * state;
-	GError **error;
-	RsvgDefs *defs;
-	gchar * base_uri;
-	GMemChunk * state_allocator;
-	PangoContext *pango_context;
-	double dpi_x, dpi_y;
-	RsvgViewBox vb;
-	GSList * vb_stack;
-	GSList * drawsub_stack;
+    RsvgRender *render;
+    GSList *state;
+    GError **error;
+    RsvgDefs *defs;
+    gchar *base_uri;
+    GMemChunk *state_allocator;
+    PangoContext *pango_context;
+    double dpi_x, dpi_y;
+    RsvgViewBox vb;
+    GSList *vb_stack;
+    GSList *drawsub_stack;
 };
 
 /*Abstract base class for context for our backends (one as yet)*/
 
 struct RsvgRender {
-	void (* free) (RsvgRender * self);
+    void (*free) (RsvgRender * self);
 
-	PangoContext * (* create_pango_context) (RsvgDrawingCtx *ctx);
-	void (* render_pango_layout) (RsvgDrawingCtx *ctx,
-								  PangoLayout *layout,
-								  double x, double y);
-	void (* render_path) (RsvgDrawingCtx *ctx, const RsvgBpathDef * path);
-	void (* render_image) (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
-						   double x, double y, double w, double h);
-	void (* pop_discrete_layer) (RsvgDrawingCtx *ctx);
-	void (* push_discrete_layer) (RsvgDrawingCtx *ctx);
-	void (* add_clipping_rect) (RsvgDrawingCtx *ctx,
-								double x, double y, double w, double h);
-	GdkPixbuf * (* get_image_of_node) (RsvgDrawingCtx *ctx, RsvgNode * drawable,
-									   double w, double h);
+    PangoContext *(*create_pango_context) (RsvgDrawingCtx * ctx);
+    void (*render_pango_layout) (RsvgDrawingCtx * ctx, PangoLayout * layout, double x, double y);
+    void (*render_path) (RsvgDrawingCtx * ctx, const RsvgBpathDef * path);
+    void (*render_image) (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
+                          double x, double y, double w, double h);
+    void (*pop_discrete_layer) (RsvgDrawingCtx * ctx);
+    void (*push_discrete_layer) (RsvgDrawingCtx * ctx);
+    void (*add_clipping_rect) (RsvgDrawingCtx * ctx, double x, double y, double w, double h);
+    GdkPixbuf *(*get_image_of_node) (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
 };
 
 
-typedef struct{
-	double length;
-	char factor;
+typedef struct {
+    double length;
+    char factor;
 } RsvgLength;
 
 struct _RsvgIRect {
-	int x0, y0, x1, y1;
+    int x0, y0, x1, y1;
 };
 
 typedef struct {
-	gdouble x, y, w, h;
-	gboolean virgin;
-	double affine[6];
+    gdouble x, y, w, h;
+    gboolean virgin;
+    double affine[6];
 } RsvgBbox;
 
 typedef enum {
-	RSVG_SIZE_ZOOM,
-	RSVG_SIZE_WH,
-	RSVG_SIZE_WH_MAX,
-	RSVG_SIZE_ZOOM_MAX
+    RSVG_SIZE_ZOOM,
+    RSVG_SIZE_WH,
+    RSVG_SIZE_WH_MAX,
+    RSVG_SIZE_ZOOM_MAX
 } RsvgSizeType;
 
 typedef enum {
-	objectBoundingBox, userSpaceOnUse
+    objectBoundingBox, userSpaceOnUse
 } RsvgCoordUnits;
 
-struct RsvgSizeCallbackData
-{
-	RsvgSizeType type;
-	double x_zoom;
-	double y_zoom;
-	gint width;
-	gint height;
+struct RsvgSizeCallbackData {
+    RsvgSizeType type;
+    double x_zoom;
+    double y_zoom;
+    gint width;
+    gint height;
 
-	gboolean keep_aspect_ratio;
+    gboolean keep_aspect_ratio;
 };
-void _rsvg_size_callback (int *width,
-						  int *height,
-						  gpointer  data);
+void _rsvg_size_callback (int *width, int *height, gpointer data);
 
-struct _RsvgPropertyBag
-{
-	GHashTable * props;
+struct _RsvgPropertyBag {
+    GHashTable *props;
 };
 
 struct _RsvgNode {
-	RsvgState * state;
-	RsvgNode * parent;
-	GString * type;
- 	GPtrArray *children;
-	void (*free) (RsvgNode *self);
-	void (*draw) (RsvgNode * self, RsvgDrawingCtx *ctx, int dominate);
-	void (*set_atts) (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag*);
+    RsvgState *state;
+    RsvgNode *parent;
+    GString *type;
+    GPtrArray *children;
+    void (*free) (RsvgNode * self);
+    void (*draw) (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
+    void (*set_atts) (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *);
 };
 
 struct _RsvgNodeChars {
-	RsvgNode super;
-	GString * contents;
+    RsvgNode super;
+    GString *contents;
 };
 
-typedef void (*RsvgPropertyBagEnumFunc) (const char * key,
-										 const char * value,
-										 gpointer user_data);
+typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
 
-RsvgPropertyBag *
-rsvg_property_bag_new (const char **atts);
+RsvgPropertyBag *rsvg_property_bag_new (const char **atts);
 
 void
-rsvg_property_bag_free (RsvgPropertyBag *bag);
+ rsvg_property_bag_free (RsvgPropertyBag * bag);
 
-G_CONST_RETURN char *
-rsvg_property_bag_lookup (RsvgPropertyBag *bag, const char * key);
+G_CONST_RETURN char *rsvg_property_bag_lookup (RsvgPropertyBag * bag, const char *key);
 
-guint
-rsvg_property_bag_size (RsvgPropertyBag *bag);
+guint rsvg_property_bag_size (RsvgPropertyBag * bag);
 
-void 
-rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPropertyBagEnumFunc func, gpointer user_data);
+void
+ rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPropertyBagEnumFunc func, gpointer user_data);
 
-GdkPixbuf *
-rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
-									  size_t len,
-									  struct RsvgSizeCallbackData * data,
-									  const char * base_uri,
-									  GError ** error);
+GdkPixbuf *rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
+                                                 size_t len,
+                                                 struct RsvgSizeCallbackData *data,
+                                                 const char *base_uri, GError ** error);
 
-gboolean 
-rsvg_eval_switch_attributes (RsvgPropertyBag *atts, gboolean * p_has_cond);
+gboolean rsvg_eval_switch_attributes (RsvgPropertyBag * atts, gboolean * p_has_cond);
 
-GdkPixbuf *
-_rsvg_pixbuf_new_cleared (GdkColorspace colorspace, gboolean has_alpha, int bits_per_sample,
-						  int width, int height);
+GdkPixbuf *_rsvg_pixbuf_new_cleared (GdkColorspace colorspace, gboolean has_alpha,
+                                     int bits_per_sample, int width, int height);
 
-gchar *
-rsvg_get_base_uri_from_filename(const gchar * file_name);
+gchar *rsvg_get_base_uri_from_filename (const gchar * file_name);
 
-GByteArray *
-_rsvg_acquire_xlink_href_resource (const char *href,
-								   const char *base_uri,
-								   GError **err);
+GByteArray *_rsvg_acquire_xlink_href_resource (const char *href,
+                                               const char *base_uri, GError ** err);
 
-void rsvg_pop_discrete_layer(RsvgDrawingCtx *ctx);
-void rsvg_push_discrete_layer (RsvgDrawingCtx *ctx);
-void rsvg_render_path (RsvgDrawingCtx *ctx, const char *d);
-void rsvg_render_image (RsvgDrawingCtx *ctx, GdkPixbuf * pb, 
-						double x, double y, double w, double h);
+void rsvg_pop_discrete_layer (RsvgDrawingCtx * ctx);
+void rsvg_push_discrete_layer (RsvgDrawingCtx * ctx);
+void rsvg_render_path (RsvgDrawingCtx * ctx, const char *d);
+void rsvg_render_image (RsvgDrawingCtx * ctx, GdkPixbuf * pb,
+                        double x, double y, double w, double h);
 void rsvg_render_free (RsvgRender * render);
-void rsvg_add_clipping_rect (RsvgDrawingCtx *ctx, double x, double y, 
-							 double w, double h);
-GdkPixbuf * rsvg_get_image_of_node(RsvgDrawingCtx *ctx, RsvgNode * drawable,
-								   double w, double h);
+void rsvg_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w, double h);
+GdkPixbuf *rsvg_get_image_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
 
 
 void
-_rsvg_affine_invert (double dst_affine[6], const double src_affine[6]);
+ _rsvg_affine_invert (double dst_affine[6], const double src_affine[6]);
 
 /* flip the matrix, FALSE, FALSE is a simple copy operation, and
    TRUE, TRUE equals a rotation by 180 degrees */
 void
-_rsvg_affine_flip (double dst_affine[6], const double src_affine[6],
-                 int horz, int vert);
+ _rsvg_affine_flip (double dst_affine[6], const double src_affine[6], int horz, int vert);
 
 void
-_rsvg_affine_multiply (double dst[6],
-		     const double src1[6], const double src2[6]);
+ _rsvg_affine_multiply (double dst[6], const double src1[6], const double src2[6]);
 
 /* set up the identity matrix */
 void
-_rsvg_affine_identity (double dst[6]);
+ _rsvg_affine_identity (double dst[6]);
 
 /* set up a scaling matrix */
 void
-_rsvg_affine_scale (double dst[6], double sx, double sy);
+ _rsvg_affine_scale (double dst[6], double sx, double sy);
 
 /* set up a rotation matrix; theta is given in degrees */
 void
-_rsvg_affine_rotate (double dst[6], double theta);
+ _rsvg_affine_rotate (double dst[6], double theta);
 
 /* set up a shearing matrix; theta is given in degrees */
 void
-_rsvg_affine_shear (double dst[6], double theta);
+ _rsvg_affine_shear (double dst[6], double theta);
 
 /* set up a translation matrix */
 void
-_rsvg_affine_translate (double dst[6], double tx, double ty);
+ _rsvg_affine_translate (double dst[6], double tx, double ty);
 
 
 /* find the affine's "expansion factor", i.e. the scale amount */
 double
-_rsvg_affine_expansion (const double src[6]);
+ _rsvg_affine_expansion (const double src[6]);
 
 /* Determine whether the affine transformation is rectilinear,
    i.e. whether a rectangle aligned to the grid is transformed into
    another rectangle aligned to the grid. */
 int
-_rsvg_affine_rectilinear (const double src[6]);
+ _rsvg_affine_rectilinear (const double src[6]);
 
 /* Determine whether two affine transformations are equal within grid allignment */
 int
-_rsvg_affine_equal (double matrix1[6], double matrix2[6]);
+ _rsvg_affine_equal (double matrix1[6], double matrix2[6]);
 
 void
-rsvg_node_set_atts(RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts);
+ rsvg_node_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts);
 
 void
-rsvg_drawing_ctx_free (RsvgDrawingCtx *handle);
+ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle);
 
-void rsvg_bbox_init(RsvgBbox * self, double * affine);
-void rsvg_bbox_insert(RsvgBbox * dst, RsvgBbox * src);
-void rsvg_bbox_clip(RsvgBbox * dst, RsvgBbox * src);
+void rsvg_bbox_init (RsvgBbox * self, double *affine);
+void rsvg_bbox_insert (RsvgBbox * dst, RsvgBbox * src);
+void rsvg_bbox_clip (RsvgBbox * dst, RsvgBbox * src);
 
 double
-_rsvg_css_normalize_length(const RsvgLength * in, RsvgDrawingCtx * ctx, 
-								  char dir);
+ _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, char dir);
 double
-_rsvg_css_hand_normalize_length(const RsvgLength * in, gdouble pixels_per_inch,
-									   gdouble width_or_height, gdouble font_size);
+ _rsvg_css_hand_normalize_length (const RsvgLength * in, gdouble pixels_per_inch,
+                                  gdouble width_or_height, gdouble font_size);
 
-RsvgLength
-_rsvg_css_parse_length(const char *str);
+RsvgLength _rsvg_css_parse_length (const char *str);
 
-void _rsvg_push_view_box(RsvgDrawingCtx *ctx, double w, double h);
-void _rsvg_pop_view_box(RsvgDrawingCtx *ctx);
+void _rsvg_push_view_box (RsvgDrawingCtx * ctx, double w, double h);
+void _rsvg_pop_view_box (RsvgDrawingCtx * ctx);
 
 void rsvg_SAX_handler_struct_init (void);
 
 char *rsvg_get_url_string (const char *str);
 
 void rsvg_return_if_fail_warning (const char *pretty_function,
-								  const char *expression,
-								  GError **error);
+                                  const char *expression, GError ** error);
 
 #define rsvg_return_if_fail(expr, error)		G_STMT_START{			\
      if G_LIKELY(expr) { } else       					\
@@ -419,5 +390,4 @@ void rsvg_return_if_fail_warning (const char *pretty_function,
        };				}G_STMT_END
 
 G_END_DECLS
-
 #endif

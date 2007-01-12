@@ -32,32 +32,30 @@
 #include <libxml/SAX.h>
 #include <pango/pango.h>
 
-G_BEGIN_DECLS
-
-typedef int TextDecoration;
+G_BEGIN_DECLS typedef int TextDecoration;
 
 enum {
-	TEXT_NORMAL    = 0x00,
-	TEXT_OVERLINE  = 0x01,
-	TEXT_UNDERLINE = 0x02,
-	TEXT_STRIKE    = 0x04
+    TEXT_NORMAL = 0x00,
+    TEXT_OVERLINE = 0x01,
+    TEXT_UNDERLINE = 0x02,
+    TEXT_STRIKE = 0x04
 };
 
 typedef enum {
-	TEXT_ANCHOR_START,
-	TEXT_ANCHOR_MIDDLE,
-	TEXT_ANCHOR_END
+    TEXT_ANCHOR_START,
+    TEXT_ANCHOR_MIDDLE,
+    TEXT_ANCHOR_END
 } TextAnchor;
 
 enum {
-	FILL_RULE_EVENODD = 0,
-	FILL_RULE_NONZERO = 1
+    FILL_RULE_EVENODD = 0,
+    FILL_RULE_NONZERO = 1
 };
 
 typedef enum {
-	UNICODE_BIDI_NORMAL = 0,
-	UNICODE_BIDI_EMBED = 1,
-	UNICODE_BIDI_OVERRIDE = 2	
+    UNICODE_BIDI_NORMAL = 0,
+    UNICODE_BIDI_EMBED = 1,
+    UNICODE_BIDI_OVERRIDE = 2
 } UnicodeBidi;
 
 typedef enum {
@@ -83,157 +81,153 @@ typedef enum {
 /* enums and data structures are ABI compatible with libart */
 
 typedef enum {
-  RSVG_PATH_STROKE_JOIN_MITER,
-  RSVG_PATH_STROKE_JOIN_ROUND,
-  RSVG_PATH_STROKE_JOIN_BEVEL
+    RSVG_PATH_STROKE_JOIN_MITER,
+    RSVG_PATH_STROKE_JOIN_ROUND,
+    RSVG_PATH_STROKE_JOIN_BEVEL
 } RsvgPathStrokeJoinType;
 
 typedef enum {
-  RSVG_PATH_STROKE_CAP_BUTT,
-  RSVG_PATH_STROKE_CAP_ROUND,
-  RSVG_PATH_STROKE_CAP_SQUARE
+    RSVG_PATH_STROKE_CAP_BUTT,
+    RSVG_PATH_STROKE_CAP_ROUND,
+    RSVG_PATH_STROKE_CAP_SQUARE
 } RsvgPathStrokeCapType;
 
 typedef struct _RsvgVpathDash RsvgVpathDash;
 
 struct _RsvgVpathDash {
-  RsvgLength offset;
-  int n_dash;
-  double *dash;
+    RsvgLength offset;
+    int n_dash;
+    double *dash;
 };
 
 /* end libart theft... */
 
 struct _RsvgState {
-	double affine[6];
-	double personal_affine[6];
-	
-	RsvgFilter *filter;
-	void *mask;
-	void *clip_path_ref;
-	guint8 adobe_blend; /* 0..11 */
-	guint8 opacity; /* 0..255 */
-	
-	RsvgPaintServer *fill;
-	gboolean has_fill_server;
-	guint8 fill_opacity; /* 0..255 */
-	gboolean has_fill_opacity;
-	gint fill_rule;	
-	gboolean has_fill_rule;
-	gint clip_rule;	
-	gboolean has_clip_rule;
+    double affine[6];
+    double personal_affine[6];
 
-	gboolean overflow;
-	gboolean has_overflow;
+    RsvgFilter *filter;
+    void *mask;
+    void *clip_path_ref;
+    guint8 adobe_blend;         /* 0..11 */
+    guint8 opacity;             /* 0..255 */
 
-	RsvgPaintServer *stroke;
-	gboolean has_stroke_server;
-	guint8 stroke_opacity; /* 0..255 */
-	gboolean has_stroke_opacity;
-	RsvgLength stroke_width;
-	gboolean has_stroke_width;
-	double miter_limit;
-	gboolean has_miter_limit;
-	
-	RsvgPathStrokeCapType cap;
-	gboolean has_cap;
-	RsvgPathStrokeJoinType join;
-	gboolean has_join;
-	
-	RsvgLength   font_size;
-	gboolean has_font_size;
-	char         * font_family;
-	gboolean has_font_family;
-	char         * lang;
-	gboolean has_lang;
-	PangoStyle     font_style;
-	gboolean has_font_style;
-	PangoVariant   font_variant;
-	gboolean has_font_variant;
-	PangoWeight    font_weight;
-	gboolean has_font_weight;
-	PangoStretch   font_stretch;
-	gboolean has_font_stretch;
-	TextDecoration font_decor;
-	gboolean has_font_decor;
-	PangoDirection text_dir;
-	gboolean has_text_dir;
-	UnicodeBidi unicode_bidi;
-	gboolean has_unicode_bidi;
-	TextAnchor     text_anchor;
-	gboolean has_text_anchor;	
+    RsvgPaintServer *fill;
+    gboolean has_fill_server;
+    guint8 fill_opacity;        /* 0..255 */
+    gboolean has_fill_opacity;
+    gint fill_rule;
+    gboolean has_fill_rule;
+    gint clip_rule;
+    gboolean has_clip_rule;
 
-	guint text_offset;
-	
-	guint32 stop_color; /* rgb */
-	gboolean has_stop_color;
-	gint stop_opacity;  /* 0..255 */
-	gboolean has_stop_opacity;
-	
-	gboolean visible;
-	gboolean has_visible;
+    gboolean overflow;
+    gboolean has_overflow;
 
-	gboolean has_cond;
-	gboolean cond_true;
+    RsvgPaintServer *stroke;
+    gboolean has_stroke_server;
+    guint8 stroke_opacity;      /* 0..255 */
+    gboolean has_stroke_opacity;
+    RsvgLength stroke_width;
+    gboolean has_stroke_width;
+    double miter_limit;
+    gboolean has_miter_limit;
 
-	RsvgVpathDash dash;
-	gboolean has_dash;
+    RsvgPathStrokeCapType cap;
+    gboolean has_cap;
+    RsvgPathStrokeJoinType join;
+    gboolean has_join;
 
-	guint32 current_color;
-	gboolean has_current_color;
+    RsvgLength font_size;
+    gboolean has_font_size;
+    char *font_family;
+    gboolean has_font_family;
+    char *lang;
+    gboolean has_lang;
+    PangoStyle font_style;
+    gboolean has_font_style;
+    PangoVariant font_variant;
+    gboolean has_font_variant;
+    PangoWeight font_weight;
+    gboolean has_font_weight;
+    PangoStretch font_stretch;
+    gboolean has_font_stretch;
+    TextDecoration font_decor;
+    gboolean has_font_decor;
+    PangoDirection text_dir;
+    gboolean has_text_dir;
+    UnicodeBidi unicode_bidi;
+    gboolean has_unicode_bidi;
+    TextAnchor text_anchor;
+    gboolean has_text_anchor;
 
-	guint32 flood_color;
-	gboolean has_flood_color;
+    guint text_offset;
 
-	guchar flood_opacity;
-	gboolean has_flood_opacity;
+    guint32 stop_color;         /* rgb */
+    gboolean has_stop_color;
+    gint stop_opacity;          /* 0..255 */
+    gboolean has_stop_opacity;
 
-	RsvgNode * startMarker;
-	RsvgNode * middleMarker;
-	RsvgNode * endMarker;	
-	gboolean has_startMarker;
-	gboolean has_middleMarker;
-	gboolean has_endMarker;	
+    gboolean visible;
+    gboolean has_visible;
 
-	RsvgCompOpType comp_op;
-	RsvgEnableBackgroundType enable_background;
+    gboolean has_cond;
+    gboolean cond_true;
+
+    RsvgVpathDash dash;
+    gboolean has_dash;
+
+    guint32 current_color;
+    gboolean has_current_color;
+
+    guint32 flood_color;
+    gboolean has_flood_color;
+
+    guchar flood_opacity;
+    gboolean has_flood_opacity;
+
+    RsvgNode *startMarker;
+    RsvgNode *middleMarker;
+    RsvgNode *endMarker;
+    gboolean has_startMarker;
+    gboolean has_middleMarker;
+    gboolean has_endMarker;
+
+    RsvgCompOpType comp_op;
+    RsvgEnableBackgroundType enable_background;
 };
 
-RsvgState * rsvg_state_new ();
-void rsvg_state_init (RsvgState *state);
-void rsvg_state_clone (RsvgState *dst, const RsvgState *src);
-void rsvg_state_inherit (RsvgState *dst, const RsvgState *src);
-void rsvg_state_reinherit (RsvgState *dst, const RsvgState *src);
-void rsvg_state_dominate (RsvgState *dst, const RsvgState *src);
-void rsvg_state_override (RsvgState *dst, const RsvgState *src);
-void rsvg_state_finalize (RsvgState *state);
+RsvgState *rsvg_state_new ();
+void rsvg_state_init (RsvgState * state);
+void rsvg_state_clone (RsvgState * dst, const RsvgState * src);
+void rsvg_state_inherit (RsvgState * dst, const RsvgState * src);
+void rsvg_state_reinherit (RsvgState * dst, const RsvgState * src);
+void rsvg_state_dominate (RsvgState * dst, const RsvgState * src);
+void rsvg_state_override (RsvgState * dst, const RsvgState * src);
+void rsvg_state_finalize (RsvgState * state);
 
-void rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state, 
-							 RsvgPropertyBag *atts);
-void rsvg_parse_style_pair (RsvgHandle *ctx, RsvgState *state, 
-							const char *key, const char *val);
-void rsvg_parse_style (RsvgHandle *ctx, RsvgState *state, const char *str);
-void rsvg_parse_cssbuffer (RsvgHandle *ctx, const char * buff, size_t buflen);
+void rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * atts);
+void rsvg_parse_style_pair (RsvgHandle * ctx, RsvgState * state, const char *key, const char *val);
+void rsvg_parse_style (RsvgHandle * ctx, RsvgState * state, const char *str);
+void rsvg_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen);
 
-void rsvg_parse_style_attrs (RsvgHandle *ctx, RsvgState *state, const char * tag,
-							 const char * klazz, const char * id,
-							 RsvgPropertyBag *atts);
+void rsvg_parse_style_attrs (RsvgHandle * ctx, RsvgState * state, const char *tag,
+                             const char *klazz, const char *id, RsvgPropertyBag * atts);
 
 gdouble rsvg_viewport_percentage (gdouble width, gdouble height);
 gdouble rsvg_dpi_percentage (RsvgHandle * ctx);
 
 gboolean rsvg_parse_transform (double dst[6], const char *src);
 
-RsvgState * rsvg_state_parent (RsvgDrawingCtx *ctx);
-RsvgState * rsvg_state_current (RsvgDrawingCtx *ctx);
+RsvgState *rsvg_state_parent (RsvgDrawingCtx * ctx);
+RsvgState *rsvg_state_current (RsvgDrawingCtx * ctx);
 
-void rsvg_state_pop(RsvgDrawingCtx * ctx);
-void rsvg_state_push(RsvgDrawingCtx * ctx);
+void rsvg_state_pop (RsvgDrawingCtx * ctx);
+void rsvg_state_push (RsvgDrawingCtx * ctx);
 
-void rsvg_state_reinherit_top(RsvgDrawingCtx * ctx, RsvgState * state, int dominate);
+void rsvg_state_reinherit_top (RsvgDrawingCtx * ctx, RsvgState * state, int dominate);
 
-void rsvg_state_reconstruct(RsvgState * state, RsvgNode * current);
+void rsvg_state_reconstruct (RsvgState * state, RsvgNode * current);
 
 G_END_DECLS
-
-#endif /* RSVG_STYLES_H */
+#endif                          /* RSVG_STYLES_H */

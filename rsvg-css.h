@@ -30,7 +30,6 @@
 #include "rsvg-private.h"
 
 G_BEGIN_DECLS
-
 #define RSVG_ASPECT_RATIO_NONE (0)
 #define RSVG_ASPECT_RATIO_XMIN_YMIN (1 << 0)
 #define RSVG_ASPECT_RATIO_XMID_YMIN (1 << 1)
@@ -42,64 +41,48 @@ G_BEGIN_DECLS
 #define RSVG_ASPECT_RATIO_XMID_YMAX (1 << 7)
 #define RSVG_ASPECT_RATIO_XMAX_YMAX (1 << 8)
 #define RSVG_ASPECT_RATIO_SLICE (1 << 31)
+int rsvg_css_parse_aspect_ratio (const char *str);
 
-int rsvg_css_parse_aspect_ratio(const char * str);
-
-gboolean
-rsvg_css_param_match (const char *str, const char *param_name);
+gboolean rsvg_css_param_match (const char *str, const char *param_name);
 
 int
-rsvg_css_param_arg_offset (const char *str);
+ rsvg_css_param_arg_offset (const char *str);
 
-guint32
-rsvg_css_parse_color (const char *str, gboolean * inherit);
+guint32 rsvg_css_parse_color (const char *str, gboolean * inherit);
 
-guint
-rsvg_css_parse_opacity (const char *str);
+guint rsvg_css_parse_opacity (const char *str);
 
 double
-rsvg_css_parse_angle (const char * str);
+ rsvg_css_parse_angle (const char *str);
 
 double
-rsvg_css_parse_frequency (const char * str);
+ rsvg_css_parse_frequency (const char *str);
 
 double
-rsvg_css_parse_time (const char * str);
+ rsvg_css_parse_time (const char *str);
 
-PangoStyle
-rsvg_css_parse_font_style (const char * str, gboolean * inherit);
+PangoStyle rsvg_css_parse_font_style (const char *str, gboolean * inherit);
 
-PangoVariant
-rsvg_css_parse_font_variant (const char * str, gboolean * inherit);
+PangoVariant rsvg_css_parse_font_variant (const char *str, gboolean * inherit);
 
-PangoWeight
-rsvg_css_parse_font_weight (const char * str, gboolean * inherit);
+PangoWeight rsvg_css_parse_font_weight (const char *str, gboolean * inherit);
 
-PangoStretch
-rsvg_css_parse_font_stretch (const char * str, gboolean * inherit);
+PangoStretch rsvg_css_parse_font_stretch (const char *str, gboolean * inherit);
 
-const char *
-rsvg_css_parse_font_family (const char * str, gboolean * inherit);
+const char *rsvg_css_parse_font_family (const char *str, gboolean * inherit);
 
-RsvgViewBox
-rsvg_css_parse_vbox (const char * vbox);
+RsvgViewBox rsvg_css_parse_vbox (const char *vbox);
 
-void 
-rsvg_css_parse_number_optional_number(const char * str, 
-									  double *x, double *y);
+void
+ rsvg_css_parse_number_optional_number (const char *str, double *x, double *y);
 
-gchar ** 
-rsvg_css_parse_list(const char * in_str, guint * out_list_len);
+gchar **rsvg_css_parse_list (const char *in_str, guint * out_list_len);
 
-gdouble *
-rsvg_css_parse_number_list(const char * in_str, guint * out_list_len);
+gdouble *rsvg_css_parse_number_list (const char *in_str, guint * out_list_len);
 
-gboolean 
-rsvg_css_parse_overflow(const char * str, gboolean * inherit);
+gboolean rsvg_css_parse_overflow (const char *str, gboolean * inherit);
 
-char ** 
-rsvg_css_parse_xml_attribute_string(const char * attribute_string);
+char **rsvg_css_parse_xml_attribute_string (const char *attribute_string);
 
 G_END_DECLS
-
-#endif /* RSVG_CSS_H */
+#endif                          /* RSVG_CSS_H */

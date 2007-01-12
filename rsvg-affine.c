@@ -40,15 +40,15 @@
 void
 _rsvg_affine_invert (double dst[6], const double src[6])
 {
-  double r_det;
+    double r_det;
 
-  r_det = 1.0 / (src[0] * src[3] - src[1] * src[2]);
-  dst[0] = src[3] * r_det;
-  dst[1] = -src[1] * r_det;
-  dst[2] = -src[2] * r_det;
-  dst[3] = src[0] * r_det;
-  dst[4] = -src[4] * dst[0] - src[5] * dst[2];
-  dst[5] = -src[4] * dst[1] - src[5] * dst[3];
+    r_det = 1.0 / (src[0] * src[3] - src[1] * src[2]);
+    dst[0] = src[3] * r_det;
+    dst[1] = -src[1] * r_det;
+    dst[2] = -src[2] * r_det;
+    dst[3] = src[0] * r_det;
+    dst[4] = -src[4] * dst[0] - src[5] * dst[2];
+    dst[5] = -src[4] * dst[1] - src[5] * dst[3];
 }
 
 /**
@@ -66,12 +66,12 @@ _rsvg_affine_invert (double dst[6], const double src[6])
 void
 _rsvg_affine_flip (double dst_affine[6], const double src_affine[6], int horz, int vert)
 {
-  dst_affine[0] = horz ? - src_affine[0] : src_affine[0];
-  dst_affine[1] = horz ? - src_affine[1] : src_affine[1];
-  dst_affine[2] = vert ? - src_affine[2] : src_affine[2];
-  dst_affine[3] = vert ? - src_affine[3] : src_affine[3];
-  dst_affine[4] = horz ? - src_affine[4] : src_affine[4];
-  dst_affine[5] = vert ? - src_affine[5] : src_affine[5];
+    dst_affine[0] = horz ? -src_affine[0] : src_affine[0];
+    dst_affine[1] = horz ? -src_affine[1] : src_affine[1];
+    dst_affine[2] = vert ? -src_affine[2] : src_affine[2];
+    dst_affine[3] = vert ? -src_affine[3] : src_affine[3];
+    dst_affine[4] = horz ? -src_affine[4] : src_affine[4];
+    dst_affine[5] = vert ? -src_affine[5] : src_affine[5];
 }
 
 #define EPSILON 1e-6
@@ -92,20 +92,20 @@ _rsvg_affine_flip (double dst_affine[6], const double src_affine[6], int horz, i
 void
 _rsvg_affine_multiply (double dst[6], const double src1[6], const double src2[6])
 {
-  double d0, d1, d2, d3, d4, d5;
+    double d0, d1, d2, d3, d4, d5;
 
-  d0 = src1[0] * src2[0] + src1[1] * src2[2];
-  d1 = src1[0] * src2[1] + src1[1] * src2[3];
-  d2 = src1[2] * src2[0] + src1[3] * src2[2];
-  d3 = src1[2] * src2[1] + src1[3] * src2[3];
-  d4 = src1[4] * src2[0] + src1[5] * src2[2] + src2[4];
-  d5 = src1[4] * src2[1] + src1[5] * src2[3] + src2[5];
-  dst[0] = d0;
-  dst[1] = d1;
-  dst[2] = d2;
-  dst[3] = d3;
-  dst[4] = d4;
-  dst[5] = d5;
+    d0 = src1[0] * src2[0] + src1[1] * src2[2];
+    d1 = src1[0] * src2[1] + src1[1] * src2[3];
+    d2 = src1[2] * src2[0] + src1[3] * src2[2];
+    d3 = src1[2] * src2[1] + src1[3] * src2[3];
+    d4 = src1[4] * src2[0] + src1[5] * src2[2] + src2[4];
+    d5 = src1[4] * src2[1] + src1[5] * src2[3] + src2[5];
+    dst[0] = d0;
+    dst[1] = d1;
+    dst[2] = d2;
+    dst[3] = d3;
+    dst[4] = d4;
+    dst[5] = d5;
 }
 
 /**
@@ -117,12 +117,12 @@ _rsvg_affine_multiply (double dst[6], const double src1[6], const double src2[6]
 void
 _rsvg_affine_identity (double dst[6])
 {
-  dst[0] = 1;
-  dst[1] = 0;
-  dst[2] = 0;
-  dst[3] = 1;
-  dst[4] = 0;
-  dst[5] = 0;
+    dst[0] = 1;
+    dst[1] = 0;
+    dst[2] = 0;
+    dst[3] = 1;
+    dst[4] = 0;
+    dst[5] = 0;
 }
 
 
@@ -137,12 +137,12 @@ _rsvg_affine_identity (double dst[6])
 void
 _rsvg_affine_scale (double dst[6], double sx, double sy)
 {
-  dst[0] = sx;
-  dst[1] = 0;
-  dst[2] = 0;
-  dst[3] = sy;
-  dst[4] = 0;
-  dst[5] = 0;
+    dst[0] = sx;
+    dst[1] = 0;
+    dst[2] = 0;
+    dst[3] = sy;
+    dst[4] = 0;
+    dst[5] = 0;
 }
 
 /**
@@ -159,16 +159,16 @@ _rsvg_affine_scale (double dst[6], double sx, double sy)
 void
 _rsvg_affine_rotate (double dst[6], double theta)
 {
-  double s, c;
+    double s, c;
 
-  s = sin (theta * M_PI / 180.0);
-  c = cos (theta * M_PI / 180.0);
-  dst[0] = c;
-  dst[1] = s;
-  dst[2] = -s;
-  dst[3] = c;
-  dst[4] = 0;
-  dst[5] = 0;
+    s = sin (theta * M_PI / 180.0);
+    c = cos (theta * M_PI / 180.0);
+    dst[0] = c;
+    dst[1] = s;
+    dst[2] = -s;
+    dst[3] = c;
+    dst[4] = 0;
+    dst[5] = 0;
 }
 
 /**
@@ -183,15 +183,15 @@ _rsvg_affine_rotate (double dst[6], double theta)
 void
 _rsvg_affine_shear (double dst[6], double theta)
 {
-  double t;
+    double t;
 
-  t = tan (theta * M_PI / 180.0);
-  dst[0] = 1;
-  dst[1] = 0;
-  dst[2] = t;
-  dst[3] = 1;
-  dst[4] = 0;
-  dst[5] = 0;
+    t = tan (theta * M_PI / 180.0);
+    dst[0] = 1;
+    dst[1] = 0;
+    dst[2] = t;
+    dst[3] = 1;
+    dst[4] = 0;
+    dst[5] = 0;
 }
 
 /**
@@ -205,12 +205,12 @@ _rsvg_affine_shear (double dst[6], double theta)
 void
 _rsvg_affine_translate (double dst[6], double tx, double ty)
 {
-  dst[0] = 1;
-  dst[1] = 0;
-  dst[2] = 0;
-  dst[3] = 1;
-  dst[4] = tx;
-  dst[5] = ty;
+    dst[0] = 1;
+    dst[1] = 0;
+    dst[2] = 0;
+    dst[3] = 1;
+    dst[4] = tx;
+    dst[5] = ty;
 }
 
 /**
@@ -227,7 +227,7 @@ _rsvg_affine_translate (double dst[6], double tx, double ty)
 double
 _rsvg_affine_expansion (const double src[6])
 {
-  return sqrt (fabs (src[0] * src[3] - src[1] * src[2]));
+    return sqrt (fabs (src[0] * src[3] - src[1] * src[2]));
 }
 
 /**
@@ -243,8 +243,8 @@ _rsvg_affine_expansion (const double src[6])
 int
 _rsvg_affine_rectilinear (const double src[6])
 {
-  return ((fabs (src[1]) < EPSILON && fabs (src[2]) < EPSILON) ||
-	  (fabs (src[0]) < EPSILON && fabs (src[3]) < EPSILON));
+    return ((fabs (src[1]) < EPSILON && fabs (src[2]) < EPSILON) ||
+            (fabs (src[0]) < EPSILON && fabs (src[3]) < EPSILON));
 }
 
 /**
@@ -260,10 +260,9 @@ _rsvg_affine_rectilinear (const double src[6])
 int
 _rsvg_affine_equal (double matrix1[6], double matrix2[6])
 {
-  return (fabs (matrix1[0] - matrix2[0]) < EPSILON &&
-	  fabs (matrix1[1] - matrix2[1]) < EPSILON &&
-	  fabs (matrix1[2] - matrix2[2]) < EPSILON &&
-	  fabs (matrix1[3] - matrix2[3]) < EPSILON &&
-	  fabs (matrix1[4] - matrix2[4]) < EPSILON &&
-	  fabs (matrix1[5] - matrix2[5]) < EPSILON);
+    return (fabs (matrix1[0] - matrix2[0]) < EPSILON &&
+            fabs (matrix1[1] - matrix2[1]) < EPSILON &&
+            fabs (matrix1[2] - matrix2[2]) < EPSILON &&
+            fabs (matrix1[3] - matrix2[3]) < EPSILON &&
+            fabs (matrix1[4] - matrix2[4]) < EPSILON && fabs (matrix1[5] - matrix2[5]) < EPSILON);
 }

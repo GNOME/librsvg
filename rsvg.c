@@ -44,9 +44,9 @@
 #include "rsvg-cairo-draw.h"
 
 static void
-rsvg_pixmap_destroy (gchar *pixels, gpointer data)
+rsvg_pixmap_destroy (gchar * pixels, gpointer data)
 {
-  g_free (pixels);
+    g_free (pixels);
 }
 
 /**
@@ -67,54 +67,52 @@ rsvg_pixmap_destroy (gchar *pixels, gpointer data)
  * Since: 2.14
  **/
 GdkPixbuf *
-rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char * id)
+rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
 {
-	RsvgDimensionData dimensions;
-	GdkPixbuf *output = NULL;
-	guint8 *pixels;
-	cairo_surface_t *surface;
-	cairo_t *cr;
-	int rowstride;
+    RsvgDimensionData dimensions;
+    GdkPixbuf *output = NULL;
+    guint8 *pixels;
+    cairo_surface_t *surface;
+    cairo_t *cr;
+    int rowstride;
 
-	g_return_val_if_fail (handle != NULL, NULL);
+    g_return_val_if_fail (handle != NULL, NULL);
 
-	if (!handle->priv->finished)
-		return NULL;
+    if (!handle->priv->finished)
+        return NULL;
 
-	rsvg_handle_get_dimensions (handle, &dimensions);
-	if(!(dimensions.width && dimensions.height))
-		return NULL;
+    rsvg_handle_get_dimensions (handle, &dimensions);
+    if (!(dimensions.width && dimensions.height))
+        return NULL;
 
-	rowstride = dimensions.width * 4;
+    rowstride = dimensions.width * 4;
 
-	pixels = g_try_malloc0(dimensions.width * dimensions.height * 4);
-	if(!pixels)
-		return NULL;
+    pixels = g_try_malloc0 (dimensions.width * dimensions.height * 4);
+    if (!pixels)
+        return NULL;
 
-	surface = cairo_image_surface_create_for_data (pixels,
-												   CAIRO_FORMAT_ARGB32,
-												   dimensions.width, dimensions.height,
-												   rowstride);
+    surface = cairo_image_surface_create_for_data (pixels,
+                                                   CAIRO_FORMAT_ARGB32,
+                                                   dimensions.width, dimensions.height, rowstride);
 
-	cr = cairo_create (surface);
+    cr = cairo_create (surface);
 
-	rsvg_handle_render_cairo_sub (handle, cr, id);
-	rsvg_cairo_to_pixbuf(pixels, rowstride, dimensions.height);
+    rsvg_handle_render_cairo_sub (handle, cr, id);
+    rsvg_cairo_to_pixbuf (pixels, rowstride, dimensions.height);
 
-	output = gdk_pixbuf_new_from_data (pixels,
-									   GDK_COLORSPACE_RGB,
-									   TRUE,
-									   8,
-									   dimensions.width,
-									   dimensions.height,
-									   rowstride,
-									   (GdkPixbufDestroyNotify)rsvg_pixmap_destroy,
-									   NULL);
+    output = gdk_pixbuf_new_from_data (pixels,
+                                       GDK_COLORSPACE_RGB,
+                                       TRUE,
+                                       8,
+                                       dimensions.width,
+                                       dimensions.height,
+                                       rowstride,
+                                       (GdkPixbufDestroyNotify) rsvg_pixmap_destroy, NULL);
 
-	cairo_destroy (cr);
-	cairo_surface_destroy (surface);
+    cairo_destroy (cr);
+    cairo_surface_destroy (surface);
 
-	return output;
+    return output;
 }
 
 /**
@@ -130,7 +128,7 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char * id)
  * Returns: the pixbuf loaded by #handle, or %NULL.
  **/
 GdkPixbuf *
-rsvg_handle_get_pixbuf (RsvgHandle *handle)
+rsvg_handle_get_pixbuf (RsvgHandle * handle)
 {
-	return rsvg_handle_get_pixbuf_sub (handle, NULL);
+    return rsvg_handle_get_pixbuf_sub (handle, NULL);
 }

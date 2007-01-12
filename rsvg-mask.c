@@ -28,160 +28,150 @@
 #include "rsvg-css.h"
 #include <string.h>
 
-static void 
-rsvg_mask_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
+static void
+rsvg_mask_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-	const char *id = NULL, *klazz = NULL, *value;
-	RsvgMask *mask;
-	mask = (RsvgMask *)self;
-	
-	if (rsvg_property_bag_size (atts))
-		{
-			if ((value = rsvg_property_bag_lookup (atts, "maskUnits")))
-				{
-					if (!strcmp (value, "userSpaceOnUse"))
-						mask->maskunits = userSpaceOnUse;
-					else
-						mask->maskunits = objectBoundingBox;
-				}
-			if ((value = rsvg_property_bag_lookup (atts, "maskContentUnits")))
-				{
-					if (!strcmp (value, "objectBoundingBox"))
-						mask->contentunits = objectBoundingBox;
-					else
-						mask->contentunits = userSpaceOnUse;
-				}
-			if ((value = rsvg_property_bag_lookup (atts, "x")))
-				mask->x = _rsvg_css_parse_length (value);
-			if ((value = rsvg_property_bag_lookup (atts, "y")))
-				mask->y = _rsvg_css_parse_length (value);
-			if ((value = rsvg_property_bag_lookup (atts, "width")))
-				mask->width = _rsvg_css_parse_length (value);
-			if ((value = rsvg_property_bag_lookup (atts, "height")))
-				mask->height = _rsvg_css_parse_length (value);
-			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				{
-					id = value;
-					rsvg_defs_register_name(ctx->priv->defs, id, &mask->super);
-				}
-			if ((value = rsvg_property_bag_lookup (atts, "class")))
-				klazz = value;
-		}
+    const char *id = NULL, *klazz = NULL, *value;
+    RsvgMask *mask;
+    mask = (RsvgMask *) self;
 
-	rsvg_parse_style_attrs (ctx, mask->super.state, "mask", klazz, id, atts);
+    if (rsvg_property_bag_size (atts)) {
+        if ((value = rsvg_property_bag_lookup (atts, "maskUnits"))) {
+            if (!strcmp (value, "userSpaceOnUse"))
+                mask->maskunits = userSpaceOnUse;
+            else
+                mask->maskunits = objectBoundingBox;
+        }
+        if ((value = rsvg_property_bag_lookup (atts, "maskContentUnits"))) {
+            if (!strcmp (value, "objectBoundingBox"))
+                mask->contentunits = objectBoundingBox;
+            else
+                mask->contentunits = userSpaceOnUse;
+        }
+        if ((value = rsvg_property_bag_lookup (atts, "x")))
+            mask->x = _rsvg_css_parse_length (value);
+        if ((value = rsvg_property_bag_lookup (atts, "y")))
+            mask->y = _rsvg_css_parse_length (value);
+        if ((value = rsvg_property_bag_lookup (atts, "width")))
+            mask->width = _rsvg_css_parse_length (value);
+        if ((value = rsvg_property_bag_lookup (atts, "height")))
+            mask->height = _rsvg_css_parse_length (value);
+        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
+            id = value;
+            rsvg_defs_register_name (ctx->priv->defs, id, &mask->super);
+        }
+        if ((value = rsvg_property_bag_lookup (atts, "class")))
+            klazz = value;
+    }
+
+    rsvg_parse_style_attrs (ctx, mask->super.state, "mask", klazz, id, atts);
 }
 
 RsvgNode *
 rsvg_new_mask (void)
 {
-	RsvgMask *mask;
-	
-	mask = g_new (RsvgMask, 1);
-	_rsvg_node_init(&mask->super);
-	mask->maskunits = objectBoundingBox;
-	mask->contentunits = userSpaceOnUse;
-	mask->x = _rsvg_css_parse_length ("0");
-	mask->y = _rsvg_css_parse_length ("0");
-	mask->width = _rsvg_css_parse_length ("1");
-	mask->height = _rsvg_css_parse_length ("1");
-	mask->super.set_atts = rsvg_mask_set_atts;
-	return &mask->super;
+    RsvgMask *mask;
+
+    mask = g_new (RsvgMask, 1);
+    _rsvg_node_init (&mask->super);
+    mask->maskunits = objectBoundingBox;
+    mask->contentunits = userSpaceOnUse;
+    mask->x = _rsvg_css_parse_length ("0");
+    mask->y = _rsvg_css_parse_length ("0");
+    mask->width = _rsvg_css_parse_length ("1");
+    mask->height = _rsvg_css_parse_length ("1");
+    mask->super.set_atts = rsvg_mask_set_atts;
+    return &mask->super;
 }
 
 char *
 rsvg_get_url_string (const char *str)
 {
-	if (!strncmp (str, "url(", 4))
-		{
-			const char *p = str + 4;
-			int ix;
-			
-			while (g_ascii_isspace (*p))
-				p++;
+    if (!strncmp (str, "url(", 4)) {
+        const char *p = str + 4;
+        int ix;
 
-			for (ix = 0; p[ix]; ix++)
-				if (p[ix] == ')')
-					return g_strndup (p, ix);
-		}
-	return NULL;
+        while (g_ascii_isspace (*p))
+            p++;
+
+        for (ix = 0; p[ix]; ix++)
+            if (p[ix] == ')')
+                return g_strndup (p, ix);
+    }
+    return NULL;
 }
 
 RsvgNode *
 rsvg_mask_parse (const RsvgDefs * defs, const char *str)
 {
-	char *name;
+    char *name;
 
-	name = rsvg_get_url_string (str);
-	if (name)
-		{
-			RsvgNode *val;
-			val = rsvg_defs_lookup (defs, name);
-			g_free (name);
+    name = rsvg_get_url_string (str);
+    if (name) {
+        RsvgNode *val;
+        val = rsvg_defs_lookup (defs, name);
+        g_free (name);
 
-			if (val && (!strcmp (val->type->str, "mask")))
-				return val;
-		}
-	return NULL;
+        if (val && (!strcmp (val->type->str, "mask")))
+            return val;
+    }
+    return NULL;
 }
 
 RsvgNode *
 rsvg_clip_path_parse (const RsvgDefs * defs, const char *str)
 {
-	char *name;
+    char *name;
 
-	name = rsvg_get_url_string (str);
-	if (name)
-		{
-			RsvgNode *val;
-			val = rsvg_defs_lookup (defs, name);
-			g_free (name);
+    name = rsvg_get_url_string (str);
+    if (name) {
+        RsvgNode *val;
+        val = rsvg_defs_lookup (defs, name);
+        g_free (name);
 
-			if (val && (!strcmp (val->type->str, "clipPath")))
-				return val;
-		}
-	return NULL;
+        if (val && (!strcmp (val->type->str, "clipPath")))
+            return val;
+    }
+    return NULL;
 }
 
-static void 
-rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle *ctx, RsvgPropertyBag *atts)
+static void
+rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-	const char *id = NULL, *klazz = NULL, *value = NULL;
-	RsvgClipPath *clip_path;
+    const char *id = NULL, *klazz = NULL, *value = NULL;
+    RsvgClipPath *clip_path;
 
-	clip_path = (RsvgClipPath *)self;
-	
-	if (rsvg_property_bag_size (atts))
-		{
-			if ((value = rsvg_property_bag_lookup (atts, "clipPathUnits")))
-				{
-					if (!strcmp (value, "objectBoundingBox"))
-						clip_path->units = objectBoundingBox;
-					else
-						clip_path->units = userSpaceOnUse;		
-				}				
-			if ((value = rsvg_property_bag_lookup (atts, "id")))
-				{
-					id = value;
-					rsvg_defs_register_name(ctx->priv->defs, id, &clip_path->super);
-				}
-			if ((value = rsvg_property_bag_lookup (atts, "class")))
-				klazz = value;
-		}
+    clip_path = (RsvgClipPath *) self;
 
-	rsvg_state_init (clip_path->super.state);
+    if (rsvg_property_bag_size (atts)) {
+        if ((value = rsvg_property_bag_lookup (atts, "clipPathUnits"))) {
+            if (!strcmp (value, "objectBoundingBox"))
+                clip_path->units = objectBoundingBox;
+            else
+                clip_path->units = userSpaceOnUse;
+        }
+        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
+            id = value;
+            rsvg_defs_register_name (ctx->priv->defs, id, &clip_path->super);
+        }
+        if ((value = rsvg_property_bag_lookup (atts, "class")))
+            klazz = value;
+    }
 
-	rsvg_parse_style_attrs (ctx, clip_path->super.state, "clipPath", klazz, id, atts);
+    rsvg_state_init (clip_path->super.state);
+
+    rsvg_parse_style_attrs (ctx, clip_path->super.state, "clipPath", klazz, id, atts);
 }
 
 RsvgNode *
 rsvg_new_clip_path (void)
 {
-	RsvgClipPath *clip_path;
-	
-	clip_path = g_new (RsvgClipPath, 1);
-	_rsvg_node_init(&clip_path->super);
-	clip_path->units = userSpaceOnUse;
-	clip_path->super.set_atts = rsvg_clip_path_set_atts;
-	clip_path->super.free = _rsvg_node_free;
-	return &clip_path->super;
+    RsvgClipPath *clip_path;
+
+    clip_path = g_new (RsvgClipPath, 1);
+    _rsvg_node_init (&clip_path->super);
+    clip_path->units = userSpaceOnUse;
+    clip_path->super.set_atts = rsvg_clip_path_set_atts;
+    clip_path->super.free = _rsvg_node_free;
+    return &clip_path->super;
 }

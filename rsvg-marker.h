@@ -27,32 +27,27 @@
 
 #include "rsvg-structure.h"
 
-G_BEGIN_DECLS
-
-typedef struct _RsvgMarker RsvgMarker;
+G_BEGIN_DECLS typedef struct _RsvgMarker RsvgMarker;
 
 struct _RsvgMarker {
-	RsvgNode super;
-	gboolean bbox;
-	RsvgLength refX, refY, width, height;
-	double orient;
-	gint preserve_aspect_ratio;
-	gboolean orientAuto;
-	RsvgViewBox vbox;
+    RsvgNode super;
+    gboolean bbox;
+    RsvgLength refX, refY, width, height;
+    double orient;
+    gint preserve_aspect_ratio;
+    gboolean orientAuto;
+    RsvgViewBox vbox;
 };
 
-RsvgNode *
-rsvg_new_marker (void);
-
-void 
-rsvg_marker_render (RsvgMarker *self, gdouble x, gdouble y, gdouble orient, gdouble linewidth, RsvgDrawingCtx *ctx);
-
-RsvgNode *
-rsvg_marker_parse (const RsvgDefs * defs, const char *str);
+RsvgNode *rsvg_new_marker (void);
 
 void
-rsvg_render_markers(const RsvgBpathDef * bpath_def, RsvgDrawingCtx *ctx);
+ rsvg_marker_render (RsvgMarker * self, gdouble x, gdouble y, gdouble orient, gdouble linewidth, RsvgDrawingCtx * ctx);
+
+RsvgNode *rsvg_marker_parse (const RsvgDefs * defs, const char *str);
+
+void
+ rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx);
 
 G_END_DECLS
-
-#endif /* RSVG_MARKER_H */
+#endif                          /* RSVG_MARKER_H */

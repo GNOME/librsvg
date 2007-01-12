@@ -33,14 +33,12 @@
 #include "rsvg-defs.h"
 #include "rsvg-styles.h"
 
-G_BEGIN_DECLS
-
-RsvgNode * rsvg_new_use (void);
-RsvgNode * rsvg_new_symbol (void);
-RsvgNode * rsvg_new_svg (void);
-RsvgNode * rsvg_new_defs (void);
-RsvgNode * rsvg_new_group (void);
-RsvgNode * rsvg_new_switch (void);
+G_BEGIN_DECLS RsvgNode * rsvg_new_use (void);
+RsvgNode *rsvg_new_symbol (void);
+RsvgNode *rsvg_new_svg (void);
+RsvgNode *rsvg_new_defs (void);
+RsvgNode *rsvg_new_group (void);
+RsvgNode *rsvg_new_switch (void);
 
 typedef struct _RsvgNodeGroup RsvgNodeGroup;
 typedef struct _RsvgNodeUse RsvgNodeUse;
@@ -48,40 +46,37 @@ typedef struct _RsvgNodeSymbol RsvgNodeSymbol;
 typedef struct _RsvgNodeSvg RsvgNodeSvg;
 
 struct _RsvgNodeGroup {
- 	RsvgNode super;
+    RsvgNode super;
 };
 
 struct _RsvgNodeSymbol {
- 	RsvgNode super;
-	gint preserve_aspect_ratio;
-	RsvgViewBox vbox;
+    RsvgNode super;
+    gint preserve_aspect_ratio;
+    RsvgViewBox vbox;
 };
 
 struct _RsvgNodeUse {
- 	RsvgNode super;
-	RsvgNode * link;
-	RsvgLength x, y, w, h;
+    RsvgNode super;
+    RsvgNode *link;
+    RsvgLength x, y, w, h;
 };
 
 struct _RsvgNodeSvg {
- 	RsvgNode super;
-	gint preserve_aspect_ratio;
-	RsvgLength x, y, w, h;
-	RsvgViewBox vbox;
- 	GdkPixbuf *img;
+    RsvgNode super;
+    gint preserve_aspect_ratio;
+    RsvgLength x, y, w, h;
+    RsvgViewBox vbox;
+    GdkPixbuf *img;
 };
 
-void rsvg_pop_def_group (RsvgHandle *ctx);
-void rsvg_node_group_pack (RsvgNode *self, RsvgNode *child);
+void rsvg_pop_def_group (RsvgHandle * ctx);
+void rsvg_node_group_pack (RsvgNode * self, RsvgNode * child);
 
-void rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx *ctx, 
-			      int dominate);
-void _rsvg_node_draw_children (RsvgNode * self, RsvgDrawingCtx *ctx, 
-							   int dominate);
-void _rsvg_node_finalize (RsvgNode *self);
-void _rsvg_node_free (RsvgNode *self);
-void _rsvg_node_init(RsvgNode *self);
+void rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
+void _rsvg_node_draw_children (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
+void _rsvg_node_finalize (RsvgNode * self);
+void _rsvg_node_free (RsvgNode * self);
+void _rsvg_node_init (RsvgNode * self);
 
 G_END_DECLS
-
-#endif /* RSVG_STRUCTURE_H */
+#endif                          /* RSVG_STRUCTURE_H */

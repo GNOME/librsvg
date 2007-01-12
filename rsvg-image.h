@@ -31,33 +31,24 @@
 
 #include "rsvg-structure.h"
 
-G_BEGIN_DECLS
-
-RsvgNode *
-rsvg_new_image (void);
+G_BEGIN_DECLS RsvgNode * rsvg_new_image (void);
 
 typedef struct _RsvgNodeImage RsvgNodeImage;
 
 struct _RsvgNodeImage {
- 	RsvgNode super;
-	gint preserve_aspect_ratio;
-	RsvgLength x, y, w, h;
- 	GdkPixbuf *img;
+    RsvgNode super;
+    gint preserve_aspect_ratio;
+    RsvgLength x, y, w, h;
+    GdkPixbuf *img;
 };
 
-void rsvg_preserve_aspect_ratio(unsigned int aspect_ratio, double width, 
-				double height, double * w, double * h,
-				double * x, double * y);
+void rsvg_preserve_aspect_ratio (unsigned int aspect_ratio, double width,
+                                 double height, double *w, double *h, double *x, double *y);
 
 
-gchar *
-rsvg_get_file_path (const gchar * filename, const gchar *basedir);
+gchar *rsvg_get_file_path (const gchar * filename, const gchar * basedir);
 
-GdkPixbuf *
-rsvg_pixbuf_new_from_href (const char *href,
-						   const char *base_uri,
-						   GError    **error);
+GdkPixbuf *rsvg_pixbuf_new_from_href (const char *href, const char *base_uri, GError ** error);
 
 G_END_DECLS
-
-#endif /* RSVG_IMAGE_H */
+#endif                          /* RSVG_IMAGE_H */

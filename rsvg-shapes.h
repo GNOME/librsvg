@@ -31,24 +31,21 @@
 
 #include "rsvg-structure.h"
 
-G_BEGIN_DECLS
-
-RsvgNode * rsvg_new_path (void);
-RsvgNode * rsvg_new_polygon (void);
-RsvgNode * rsvg_new_polyline (void);
-RsvgNode * rsvg_new_line (void);
-RsvgNode * rsvg_new_rect (void);
-RsvgNode * rsvg_new_circle (void);
-RsvgNode * rsvg_new_ellipse (void);
+G_BEGIN_DECLS RsvgNode * rsvg_new_path (void);
+RsvgNode *rsvg_new_polygon (void);
+RsvgNode *rsvg_new_polyline (void);
+RsvgNode *rsvg_new_line (void);
+RsvgNode *rsvg_new_rect (void);
+RsvgNode *rsvg_new_circle (void);
+RsvgNode *rsvg_new_ellipse (void);
 
 
 typedef struct _RsvgNodePath RsvgNodePath;
 
 struct _RsvgNodePath {
- 	RsvgNode super;
- 	char       *d;
+    RsvgNode super;
+    char *d;
 };
 
 G_END_DECLS
-
-#endif /* RSVG_SHAPES_H */
+#endif                          /* RSVG_SHAPES_H */

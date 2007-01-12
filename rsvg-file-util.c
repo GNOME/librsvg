@@ -35,188 +35,172 @@
 #define SVG_BUFFER_SIZE (1024 * 8)
 
 void
-_rsvg_size_callback (int *width,
-					 int *height,
-					 gpointer  data)
+_rsvg_size_callback (int *width, int *height, gpointer data)
 {
-	struct RsvgSizeCallbackData *real_data = (struct RsvgSizeCallbackData *) data;
-	double zoomx, zoomy, zoom;   
+    struct RsvgSizeCallbackData *real_data = (struct RsvgSizeCallbackData *) data;
+    double zoomx, zoomy, zoom;
 
-	int in_width, in_height;
+    int in_width, in_height;
 
-	in_width = *width;
-	in_height = *height;
+    in_width = *width;
+    in_height = *height;
 
-	switch (real_data->type) {
-	case RSVG_SIZE_ZOOM:
-		if (*width < 0 || *height < 0)
-			return;
-		
-		*width = floor (real_data->x_zoom * *width + 0.5);
-		*height = floor (real_data->y_zoom * *height + 0.5);
-		break;
-		
-	case RSVG_SIZE_ZOOM_MAX:
-		if (*width < 0 || *height < 0)
-			return;
-		
-		*width = floor (real_data->x_zoom * *width + 0.5);
-		*height = floor (real_data->y_zoom * *height + 0.5);
-		
-		if (*width > real_data->width || *height > real_data->height)
-			{
-				zoomx = (double) real_data->width / *width;
-				zoomy = (double) real_data->height / *height;
-				zoom = MIN (zoomx, zoomy);
-				
-				*width = floor (zoom * *width + 0.5);
-				*height = floor (zoom * *height + 0.5);
-			}
-		break;
-		
-	case RSVG_SIZE_WH_MAX:
-		if (*width < 0 || *height < 0)
-			return;
-		
-		zoomx = (double) real_data->width / *width;
-		zoomy = (double) real_data->height / *height;
-		if (zoomx < 0)
-			zoom = zoomy;
-		else if (zoomy < 0)
-			zoom = zoomx;
-		else
-			zoom = MIN (zoomx, zoomy);
-		
-		*width = floor (zoom * *width + 0.5);
-		*height = floor (zoom * *height + 0.5);
-		break;
-		
-	case RSVG_SIZE_WH:
-		
-		if (real_data->width != -1)
-			*width = real_data->width;
-		if (real_data->height != -1)
-			*height = real_data->height;
-		break;
+    switch (real_data->type) {
+    case RSVG_SIZE_ZOOM:
+        if (*width < 0 || *height < 0)
+            return;
 
-	default:
-		g_assert_not_reached ();
-	}
+        *width = floor (real_data->x_zoom * *width + 0.5);
+        *height = floor (real_data->y_zoom * *height + 0.5);
+        break;
 
-	if (real_data->keep_aspect_ratio)
-		{
-			int out_min = MIN(*width, *height);
+    case RSVG_SIZE_ZOOM_MAX:
+        if (*width < 0 || *height < 0)
+            return;
 
-			if (out_min == *width) 
-				{
-					*height = in_height * ((double)*width / (double)in_width);
-				}
-			else
-				{
-					*width = in_width * ((double)*height / (double)in_height);
-				}
-		}
+        *width = floor (real_data->x_zoom * *width + 0.5);
+        *height = floor (real_data->y_zoom * *height + 0.5);
+
+        if (*width > real_data->width || *height > real_data->height) {
+            zoomx = (double) real_data->width / *width;
+            zoomy = (double) real_data->height / *height;
+            zoom = MIN (zoomx, zoomy);
+
+            *width = floor (zoom * *width + 0.5);
+            *height = floor (zoom * *height + 0.5);
+        }
+        break;
+
+    case RSVG_SIZE_WH_MAX:
+        if (*width < 0 || *height < 0)
+            return;
+
+        zoomx = (double) real_data->width / *width;
+        zoomy = (double) real_data->height / *height;
+        if (zoomx < 0)
+            zoom = zoomy;
+        else if (zoomy < 0)
+            zoom = zoomx;
+        else
+            zoom = MIN (zoomx, zoomy);
+
+        *width = floor (zoom * *width + 0.5);
+        *height = floor (zoom * *height + 0.5);
+        break;
+
+    case RSVG_SIZE_WH:
+
+        if (real_data->width != -1)
+            *width = real_data->width;
+        if (real_data->height != -1)
+            *height = real_data->height;
+        break;
+
+    default:
+        g_assert_not_reached ();
+    }
+
+    if (real_data->keep_aspect_ratio) {
+        int out_min = MIN (*width, *height);
+
+        if (out_min == *width) {
+            *height = in_height * ((double) *width / (double) in_width);
+        } else {
+            *width = in_width * ((double) *height / (double) in_height);
+        }
+    }
 }
 
 /* private */
 GdkPixbuf *
 rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
-									  size_t len,
-									  struct RsvgSizeCallbackData * data,
-									  const char * base_uri,
-									  GError ** error)
+                                      size_t len,
+                                      struct RsvgSizeCallbackData *data,
+                                      const char *base_uri, GError ** error)
 {
-	RsvgHandle * handle;
-	GdkPixbuf * retval;
+    RsvgHandle *handle;
+    GdkPixbuf *retval;
 
-	handle = rsvg_handle_new ();	
+    handle = rsvg_handle_new ();
 
-	if (!handle) {
-		g_set_error (error, rsvg_error_quark (), 0,
-					 _("Error creating SVG reader"));
-		return NULL;
-	}
+    if (!handle) {
+        g_set_error (error, rsvg_error_quark (), 0, _("Error creating SVG reader"));
+        return NULL;
+    }
 
-	rsvg_handle_set_size_callback (handle, _rsvg_size_callback, data, NULL);
-	rsvg_handle_set_base_uri (handle, base_uri);
+    rsvg_handle_set_size_callback (handle, _rsvg_size_callback, data, NULL);
+    rsvg_handle_set_base_uri (handle, base_uri);
 
-	if (!rsvg_handle_write (handle, buff, len, error)) {
-		g_object_unref(G_OBJECT(handle));
-		return NULL;
-	}
+    if (!rsvg_handle_write (handle, buff, len, error)) {
+        g_object_unref (G_OBJECT (handle));
+        return NULL;
+    }
 
-	if(!rsvg_handle_close (handle, error)) {
-		g_object_unref(G_OBJECT(handle));
-		return NULL;
-	}
+    if (!rsvg_handle_close (handle, error)) {
+        g_object_unref (G_OBJECT (handle));
+        return NULL;
+    }
 
-	retval = rsvg_handle_get_pixbuf (handle);
-	g_object_unref (G_OBJECT(handle));
+    retval = rsvg_handle_get_pixbuf (handle);
+    g_object_unref (G_OBJECT (handle));
 
-	return retval;	
+    return retval;
 }
 
 static GdkPixbuf *
-rsvg_pixbuf_from_stdio_file_with_size_data(GByteArray *f,
-										   struct RsvgSizeCallbackData * data,
-										   gchar *base_uri,
-										   GError ** error)
+rsvg_pixbuf_from_stdio_file_with_size_data (GByteArray * f,
+                                            struct RsvgSizeCallbackData *data,
+                                            gchar * base_uri, GError ** error)
 {
-	RsvgHandle * handle;
-	GdkPixbuf * retval;
+    RsvgHandle *handle;
+    GdkPixbuf *retval;
 
-	handle = rsvg_handle_new ();
+    handle = rsvg_handle_new ();
 
-	if (!handle) {
-		g_set_error (error, rsvg_error_quark (), 0,
-					 _("Error creating SVG reader"));
-		return NULL;
-	}
+    if (!handle) {
+        g_set_error (error, rsvg_error_quark (), 0, _("Error creating SVG reader"));
+        return NULL;
+    }
 
-	rsvg_handle_set_size_callback (handle, _rsvg_size_callback, data, NULL);
-	rsvg_handle_set_base_uri(handle, base_uri);
+    rsvg_handle_set_size_callback (handle, _rsvg_size_callback, data, NULL);
+    rsvg_handle_set_base_uri (handle, base_uri);
 
-	if (!rsvg_handle_write (handle, f->data, f->len, error)) {
-		g_object_unref (G_OBJECT(handle));
-		return NULL;
-	}
+    if (!rsvg_handle_write (handle, f->data, f->len, error)) {
+        g_object_unref (G_OBJECT (handle));
+        return NULL;
+    }
 
-	if (!rsvg_handle_close (handle, error)) {
-		g_object_unref(G_OBJECT(handle));
-		return NULL;
-	}
+    if (!rsvg_handle_close (handle, error)) {
+        g_object_unref (G_OBJECT (handle));
+        return NULL;
+    }
 
-	retval = rsvg_handle_get_pixbuf (handle);
-	g_object_unref (G_OBJECT(handle));
+    retval = rsvg_handle_get_pixbuf (handle);
+    g_object_unref (G_OBJECT (handle));
 
-	return retval;
+    return retval;
 }
 
 static GdkPixbuf *
 rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
-									  struct RsvgSizeCallbackData * data,
-									  GError ** error)
+                                      struct RsvgSizeCallbackData *data, GError ** error)
 {
-	GdkPixbuf * pixbuf;
-	GByteArray *f;
-	GString * base_uri = g_string_new(file_name);
-	
-	f = _rsvg_acquire_xlink_href_resource (file_name, base_uri->str, error);
+    GdkPixbuf *pixbuf;
+    GByteArray *f;
+    GString *base_uri = g_string_new (file_name);
 
-	if (f)
-		{
-			pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data(f, data, 
-																base_uri->str, error);
-			g_byte_array_free (f, TRUE);
-		} 
-	else 
-		{
-			pixbuf = NULL;
-		}	
-	
-	g_string_free(base_uri, TRUE);
+    f = _rsvg_acquire_xlink_href_resource (file_name, base_uri->str, error);
 
-	return pixbuf;
+    if (f) {
+        pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data (f, data, base_uri->str, error);
+        g_byte_array_free (f, TRUE);
+    } else {
+        pixbuf = NULL;
+    }
+
+    g_string_free (base_uri, TRUE);
+
+    return pixbuf;
 }
 
 /**
@@ -232,10 +216,9 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf *
-rsvg_pixbuf_from_file (const gchar *file_name,
-					   GError     **error)
+rsvg_pixbuf_from_file (const gchar * file_name, GError ** error)
 {
-	return rsvg_pixbuf_from_file_at_size (file_name, -1, -1, error);
+    return rsvg_pixbuf_from_file_at_size (file_name, -1, -1, error);
 }
 
 /**
@@ -254,22 +237,20 @@ rsvg_pixbuf_from_file (const gchar *file_name,
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf *
-rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
-							   double       x_zoom,
-							   double       y_zoom,
-							   GError     **error)
+rsvg_pixbuf_from_file_at_zoom (const gchar * file_name,
+                               double x_zoom, double y_zoom, GError ** error)
 {
-	struct RsvgSizeCallbackData data;
-	
-	g_return_val_if_fail (file_name != NULL, NULL);
-	g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
-	
-	data.type = RSVG_SIZE_ZOOM;
-	data.x_zoom = x_zoom;
-	data.y_zoom = y_zoom;
-	data.keep_aspect_ratio = FALSE;
-	
-	return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
+    struct RsvgSizeCallbackData data;
+
+    g_return_val_if_fail (file_name != NULL, NULL);
+    g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
+
+    data.type = RSVG_SIZE_ZOOM;
+    data.x_zoom = x_zoom;
+    data.y_zoom = y_zoom;
+    data.keep_aspect_ratio = FALSE;
+
+    return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
 
 /**
@@ -290,27 +271,25 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *file_name,
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
-GdkPixbuf  *
-rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
-										double        x_zoom,
-										double        y_zoom,
-										gint          max_width,
-										gint          max_height,
-										GError      **error)
+GdkPixbuf *
+rsvg_pixbuf_from_file_at_zoom_with_max (const gchar * file_name,
+                                        double x_zoom,
+                                        double y_zoom,
+                                        gint max_width, gint max_height, GError ** error)
 {
-	struct RsvgSizeCallbackData data;
-	
-	g_return_val_if_fail (file_name != NULL, NULL);
-	g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
-	
-	data.type = RSVG_SIZE_ZOOM_MAX;
-	data.x_zoom = x_zoom;
-	data.y_zoom = y_zoom;
-	data.width = max_width;
-	data.height = max_height;
-	data.keep_aspect_ratio = FALSE;
-	
-	return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
+    struct RsvgSizeCallbackData data;
+
+    g_return_val_if_fail (file_name != NULL, NULL);
+    g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
+
+    data.type = RSVG_SIZE_ZOOM_MAX;
+    data.x_zoom = x_zoom;
+    data.y_zoom = y_zoom;
+    data.width = max_width;
+    data.height = max_height;
+    data.keep_aspect_ratio = FALSE;
+
+    return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
 
 /**
@@ -330,19 +309,16 @@ rsvg_pixbuf_from_file_at_zoom_with_max (const gchar  *file_name,
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
 GdkPixbuf *
-rsvg_pixbuf_from_file_at_size (const gchar *file_name,
-							   gint         width,
-							   gint         height,
-							   GError     **error)
+rsvg_pixbuf_from_file_at_size (const gchar * file_name, gint width, gint height, GError ** error)
 {
-	struct RsvgSizeCallbackData data;
-	
-	data.type = RSVG_SIZE_WH;
-	data.width = width;
-	data.height = height;
-	data.keep_aspect_ratio = FALSE;
-	
-	return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
+    struct RsvgSizeCallbackData data;
+
+    data.type = RSVG_SIZE_WH;
+    data.width = width;
+    data.height = height;
+    data.keep_aspect_ratio = FALSE;
+
+    return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }
 
 /**
@@ -360,18 +336,16 @@ rsvg_pixbuf_from_file_at_size (const gchar *file_name,
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
-GdkPixbuf  *
-rsvg_pixbuf_from_file_at_max_size (const gchar     *file_name,
-								   gint             max_width,
-								   gint             max_height,
-								   GError         **error)
+GdkPixbuf *
+rsvg_pixbuf_from_file_at_max_size (const gchar * file_name,
+                                   gint max_width, gint max_height, GError ** error)
 {
-	struct RsvgSizeCallbackData data;
-	
-	data.type = RSVG_SIZE_WH_MAX;
-	data.width = max_width;
-	data.height = max_height;
-	data.keep_aspect_ratio = FALSE;
-	
-	return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
+    struct RsvgSizeCallbackData data;
+
+    data.type = RSVG_SIZE_WH_MAX;
+    data.width = max_width;
+    data.height = max_height;
+    data.keep_aspect_ratio = FALSE;
+
+    return rsvg_pixbuf_from_file_with_size_data (file_name, &data, error);
 }

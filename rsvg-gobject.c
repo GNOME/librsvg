@@ -24,18 +24,18 @@
 #include "rsvg-defs.h"
 
 enum {
-	PROP_0,	
-	PROP_DPI_X,
-	PROP_DPI_Y,
-	PROP_BASE_URI,
-	PROP_WIDTH,
-	PROP_HEIGHT,
-	PROP_EM,
-	PROP_EX,
-	PROP_TITLE, 
-	PROP_DESC,
-	PROP_METADATA,
-	NUM_PROPS
+    PROP_0,
+    PROP_DPI_X,
+    PROP_DPI_Y,
+    PROP_BASE_URI,
+    PROP_WIDTH,
+    PROP_HEIGHT,
+    PROP_EM,
+    PROP_EX,
+    PROP_TITLE,
+    PROP_DESC,
+    PROP_METADATA,
+    NUM_PROPS
 };
 
 extern double rsvg_internal_dpi_x;
@@ -44,261 +44,258 @@ extern double rsvg_internal_dpi_y;
 static GObjectClass *rsvg_parent_class = NULL;
 
 static void
-instance_init (RsvgHandle *self)
+instance_init (RsvgHandle * self)
 {
-	self->priv = g_new0(RsvgHandlePrivate, 1);
-	self->priv->defs = rsvg_defs_new ();
-	self->priv->handler_nest = 0;
-	self->priv->entities = g_hash_table_new (g_str_hash, g_str_equal);
-	self->priv->dpi_x = rsvg_internal_dpi_x;
-	self->priv->dpi_y = rsvg_internal_dpi_y;
-	
-	self->priv->css_props = g_hash_table_new_full (g_str_hash, g_str_equal,
-											   g_free, g_free);
-	
-	self->priv->ctxt = NULL;
-	self->priv->currentnode = NULL;
-	self->priv->treebase = NULL;
+    self->priv = g_new0 (RsvgHandlePrivate, 1);
+    self->priv->defs = rsvg_defs_new ();
+    self->priv->handler_nest = 0;
+    self->priv->entities = g_hash_table_new (g_str_hash, g_str_equal);
+    self->priv->dpi_x = rsvg_internal_dpi_x;
+    self->priv->dpi_y = rsvg_internal_dpi_y;
 
-	self->priv->finished = 0;
-	self->priv->first_write = TRUE;
+    self->priv->css_props = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
 
-	self->priv->is_disposed = FALSE;
+    self->priv->ctxt = NULL;
+    self->priv->currentnode = NULL;
+    self->priv->treebase = NULL;
+
+    self->priv->finished = 0;
+    self->priv->first_write = TRUE;
+
+    self->priv->is_disposed = FALSE;
 }
 
 static void
 rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
 {
-	xmlEntityPtr entval = (xmlEntityPtr)value;
-	
-	/* key == entval->name, so it's implicitly freed below */
-	
-	g_free ((char *) entval->name);
-	g_free ((char *) entval->ExternalID);
-	g_free ((char *) entval->SystemID);
-	xmlFree (entval->content);
-	xmlFree (entval->orig);
-	g_free (entval);
+    xmlEntityPtr entval = (xmlEntityPtr) value;
+
+    /* key == entval->name, so it's implicitly freed below */
+
+    g_free ((char *) entval->name);
+    g_free ((char *) entval->ExternalID);
+    g_free ((char *) entval->SystemID);
+    xmlFree (entval->content);
+    xmlFree (entval->orig);
+    g_free (entval);
 }
 
 static void
-instance_dispose (GObject *instance)
+instance_dispose (GObject * instance)
 {
-	RsvgHandle *self = (RsvgHandle*) instance;
+    RsvgHandle *self = (RsvgHandle *) instance;
 
-	self->priv->is_disposed = TRUE;
+    self->priv->is_disposed = TRUE;
 
 #if HAVE_SVGZ
-	if (self->priv->is_gzipped)
-		g_object_unref (G_OBJECT (self->priv->gzipped_data));
+    if (self->priv->is_gzipped)
+        g_object_unref (G_OBJECT (self->priv->gzipped_data));
 #endif
 
-	g_hash_table_foreach (self->priv->entities, rsvg_ctx_free_helper, NULL);
-	g_hash_table_destroy (self->priv->entities);
-	rsvg_defs_free (self->priv->defs);
-	g_hash_table_destroy (self->priv->css_props);
-	
-	if (self->priv->user_data_destroy)
-		(* self->priv->user_data_destroy) (self->priv->user_data);
+    g_hash_table_foreach (self->priv->entities, rsvg_ctx_free_helper, NULL);
+    g_hash_table_destroy (self->priv->entities);
+    rsvg_defs_free (self->priv->defs);
+    g_hash_table_destroy (self->priv->css_props);
 
-	if (self->priv->title)
-		g_string_free (self->priv->title, TRUE);
-	if (self->priv->desc)
-		g_string_free (self->priv->desc, TRUE);
-	if (self->priv->metadata)
-		g_string_free (self->priv->metadata, TRUE);
-	if (self->priv->base_uri)
-		g_free (self->priv->base_uri);
+    if (self->priv->user_data_destroy)
+        (*self->priv->user_data_destroy) (self->priv->user_data);
 
-	g_free(self->priv);
+    if (self->priv->title)
+        g_string_free (self->priv->title, TRUE);
+    if (self->priv->desc)
+        g_string_free (self->priv->desc, TRUE);
+    if (self->priv->metadata)
+        g_string_free (self->priv->metadata, TRUE);
+    if (self->priv->base_uri)
+        g_free (self->priv->base_uri);
 
-	rsvg_parent_class->dispose (G_OBJECT (self));
+    g_free (self->priv);
+
+    rsvg_parent_class->dispose (G_OBJECT (self));
 }
 
 static void
-set_property (GObject      *instance,
-			  guint         prop_id,
-			  GValue const *value,
-			  GParamSpec   *pspec)
+set_property (GObject * instance, guint prop_id, GValue const *value, GParamSpec * pspec)
 {
-	RsvgHandle *self = RSVG_HANDLE (instance);
+    RsvgHandle *self = RSVG_HANDLE (instance);
 
-	switch (prop_id) {
-	case PROP_DPI_X:
-		rsvg_handle_set_dpi_x_y (self, g_value_get_double (value), self->priv->dpi_y);
-		break;
-	case PROP_DPI_Y:
-		rsvg_handle_set_dpi_x_y (self, self->priv->dpi_x, g_value_get_double (value));
-		break;
-	case PROP_BASE_URI:
-		rsvg_handle_set_base_uri (self, g_value_get_string (value));
-		break;
-	default:
-		G_OBJECT_WARN_INVALID_PROPERTY_ID (instance, prop_id, pspec);
-	}
+    switch (prop_id) {
+    case PROP_DPI_X:
+        rsvg_handle_set_dpi_x_y (self, g_value_get_double (value), self->priv->dpi_y);
+        break;
+    case PROP_DPI_Y:
+        rsvg_handle_set_dpi_x_y (self, self->priv->dpi_x, g_value_get_double (value));
+        break;
+    case PROP_BASE_URI:
+        rsvg_handle_set_base_uri (self, g_value_get_string (value));
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (instance, prop_id, pspec);
+    }
 }
 
 static void
-get_property (GObject    *instance,
-			  guint       prop_id,
-			  GValue     *value,
-			  GParamSpec *pspec)
+get_property (GObject * instance, guint prop_id, GValue * value, GParamSpec * pspec)
 {
-	RsvgHandle *self = RSVG_HANDLE (instance);
-	RsvgDimensionData dim;
+    RsvgHandle *self = RSVG_HANDLE (instance);
+    RsvgDimensionData dim;
 
-	switch (prop_id) {
-	case PROP_DPI_X:
-		g_value_set_double (value, self->priv->dpi_x);
-		break;
-	case PROP_DPI_Y:
-		g_value_set_double (value, self->priv->dpi_y);
-		break;
-	case PROP_BASE_URI:
-		g_value_set_string (value, rsvg_handle_get_base_uri (self));
-		break;
-	case PROP_WIDTH:
-		rsvg_handle_get_dimensions (self, &dim);
-		g_value_set_int (value, dim.width);
-		break;
-	case PROP_HEIGHT:
-		rsvg_handle_get_dimensions (self, &dim);
-		g_value_set_int (value, dim.height);
-		break;
-	case PROP_EM:
-		rsvg_handle_get_dimensions (self, &dim);
-		g_value_set_double (value, dim.em);
-		break;
-	case PROP_EX:
-		rsvg_handle_get_dimensions (self, &dim);
-		g_value_set_double (value, dim.ex);
-		break;
-	case PROP_TITLE:
-		g_value_set_string (value, rsvg_handle_get_title (self));
-		break;
-	case PROP_DESC:
-		g_value_set_string (value, rsvg_handle_get_desc (self));
-		break;
-	case PROP_METADATA:
-		g_value_set_string (value, rsvg_handle_get_metadata (self));
-		break;
-	default:
-		G_OBJECT_WARN_INVALID_PROPERTY_ID (instance, prop_id, pspec);
-	}
+    switch (prop_id) {
+    case PROP_DPI_X:
+        g_value_set_double (value, self->priv->dpi_x);
+        break;
+    case PROP_DPI_Y:
+        g_value_set_double (value, self->priv->dpi_y);
+        break;
+    case PROP_BASE_URI:
+        g_value_set_string (value, rsvg_handle_get_base_uri (self));
+        break;
+    case PROP_WIDTH:
+        rsvg_handle_get_dimensions (self, &dim);
+        g_value_set_int (value, dim.width);
+        break;
+    case PROP_HEIGHT:
+        rsvg_handle_get_dimensions (self, &dim);
+        g_value_set_int (value, dim.height);
+        break;
+    case PROP_EM:
+        rsvg_handle_get_dimensions (self, &dim);
+        g_value_set_double (value, dim.em);
+        break;
+    case PROP_EX:
+        rsvg_handle_get_dimensions (self, &dim);
+        g_value_set_double (value, dim.ex);
+        break;
+    case PROP_TITLE:
+        g_value_set_string (value, rsvg_handle_get_title (self));
+        break;
+    case PROP_DESC:
+        g_value_set_string (value, rsvg_handle_get_desc (self));
+        break;
+    case PROP_METADATA:
+        g_value_set_string (value, rsvg_handle_get_metadata (self));
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (instance, prop_id, pspec);
+    }
 }
 
 static void
-class_init (RsvgHandleClass *klass)
+class_init (RsvgHandleClass * klass)
 {
-	GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+    GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
 
-	/* hook gobject vfuncs */
-	gobject_class->dispose = instance_dispose;
+    /* hook gobject vfuncs */
+    gobject_class->dispose = instance_dispose;
 
-	rsvg_parent_class = (GObjectClass*) g_type_class_peek_parent (klass);
+    rsvg_parent_class = (GObjectClass *) g_type_class_peek_parent (klass);
 
-	gobject_class->set_property = set_property;
-	gobject_class->get_property = get_property;
+    gobject_class->set_property = set_property;
+    gobject_class->get_property = get_property;
 
-	/**
+        /**
 	 * dpi-x:
 	 */
-	g_object_class_install_property (gobject_class,
-		PROP_DPI_X,
-		g_param_spec_double ("dpi-x", _("Horizontal resolution"),
-			_("Horizontal resolution"), 0., G_MAXDOUBLE, rsvg_internal_dpi_x,
-			(GParamFlags)(G_PARAM_READWRITE | G_PARAM_CONSTRUCT)));
+    g_object_class_install_property (gobject_class,
+                                     PROP_DPI_X,
+                                     g_param_spec_double ("dpi-x", _("Horizontal resolution"),
+                                                          _("Horizontal resolution"), 0.,
+                                                          G_MAXDOUBLE, rsvg_internal_dpi_x,
+                                                          (GParamFlags) (G_PARAM_READWRITE |
+                                                                         G_PARAM_CONSTRUCT)));
 
-	g_object_class_install_property (gobject_class,
-		PROP_DPI_Y,
-		g_param_spec_double ("dpi-y", _("Vertical resolution"),
-			_("Vertical resolution"), 0., G_MAXDOUBLE, rsvg_internal_dpi_y,
-			(GParamFlags)(G_PARAM_READWRITE | G_PARAM_CONSTRUCT)));
+    g_object_class_install_property (gobject_class,
+                                     PROP_DPI_Y,
+                                     g_param_spec_double ("dpi-y", _("Vertical resolution"),
+                                                          _("Vertical resolution"), 0., G_MAXDOUBLE,
+                                                          rsvg_internal_dpi_y,
+                                                          (GParamFlags) (G_PARAM_READWRITE |
+                                                                         G_PARAM_CONSTRUCT)));
 
-	g_object_class_install_property (gobject_class,
-		PROP_BASE_URI,
-		g_param_spec_string ("base-uri", _("Base URI"),
-			_("Base URI"), NULL, 
-			(GParamFlags)(G_PARAM_READWRITE | G_PARAM_CONSTRUCT)));
+    g_object_class_install_property (gobject_class,
+                                     PROP_BASE_URI,
+                                     g_param_spec_string ("base-uri", _("Base URI"),
+                                                          _("Base URI"), NULL,
+                                                          (GParamFlags) (G_PARAM_READWRITE |
+                                                                         G_PARAM_CONSTRUCT)));
 
-	g_object_class_install_property (gobject_class,
-		PROP_WIDTH,
-		g_param_spec_int ("width", _("Image width"),
-			_("Image width"), 0, G_MAXINT, 0,
-			(GParamFlags)(G_PARAM_READABLE)));
+    g_object_class_install_property (gobject_class,
+                                     PROP_WIDTH,
+                                     g_param_spec_int ("width", _("Image width"),
+                                                       _("Image width"), 0, G_MAXINT, 0,
+                                                       (GParamFlags) (G_PARAM_READABLE)));
 
-	g_object_class_install_property (gobject_class,
-		PROP_HEIGHT,
-		g_param_spec_int ("height", _("Image height"),
-			_("Image height"), 0, G_MAXINT, 0,
-			(GParamFlags)(G_PARAM_READABLE)));
+    g_object_class_install_property (gobject_class,
+                                     PROP_HEIGHT,
+                                     g_param_spec_int ("height", _("Image height"),
+                                                       _("Image height"), 0, G_MAXINT, 0,
+                                                       (GParamFlags) (G_PARAM_READABLE)));
 
-	g_object_class_install_property (gobject_class,
-		PROP_EM,
-		g_param_spec_double ("em", _("em"),
-			_("em"), 0, G_MAXDOUBLE, 0,
-			(GParamFlags)(G_PARAM_READABLE)));
+    g_object_class_install_property (gobject_class,
+                                     PROP_EM,
+                                     g_param_spec_double ("em", _("em"),
+                                                          _("em"), 0, G_MAXDOUBLE, 0,
+                                                          (GParamFlags) (G_PARAM_READABLE)));
 
-	g_object_class_install_property (gobject_class,
-		PROP_EX,
-		g_param_spec_double ("ex", _("ex"),
-			_("ex"), 0, G_MAXDOUBLE, 0,
-			(GParamFlags)(G_PARAM_READABLE)));
+    g_object_class_install_property (gobject_class,
+                                     PROP_EX,
+                                     g_param_spec_double ("ex", _("ex"),
+                                                          _("ex"), 0, G_MAXDOUBLE, 0,
+                                                          (GParamFlags) (G_PARAM_READABLE)));
 
-	g_object_class_install_property (gobject_class,
-		PROP_TITLE,
-		g_param_spec_string ("title", _("Title"),
-			_("SVG file title"), NULL, 
-			(GParamFlags)(G_PARAM_READABLE)));
+    g_object_class_install_property (gobject_class,
+                                     PROP_TITLE,
+                                     g_param_spec_string ("title", _("Title"),
+                                                          _("SVG file title"), NULL,
+                                                          (GParamFlags) (G_PARAM_READABLE)));
 
-	g_object_class_install_property (gobject_class,
-		PROP_DESC,
-		g_param_spec_string ("desc", _("Description"),
-			_("SVG file description"), NULL, 
-			(GParamFlags)(G_PARAM_READABLE)));
+    g_object_class_install_property (gobject_class,
+                                     PROP_DESC,
+                                     g_param_spec_string ("desc", _("Description"),
+                                                          _("SVG file description"), NULL,
+                                                          (GParamFlags) (G_PARAM_READABLE)));
 
-	g_object_class_install_property (gobject_class,
-		PROP_METADATA,
-		g_param_spec_string ("metadata", _("Metadata"),
-			_("SVG file metadata"), NULL, 
-			(GParamFlags)(G_PARAM_READABLE)));
+    g_object_class_install_property (gobject_class,
+                                     PROP_METADATA,
+                                     g_param_spec_string ("metadata", _("Metadata"),
+                                                          _("SVG file metadata"), NULL,
+                                                          (GParamFlags) (G_PARAM_READABLE)));
 
-	rsvg_SAX_handler_struct_init ();
+    rsvg_SAX_handler_struct_init ();
 }
 
 const GTypeInfo rsvg_type_info = {
-	sizeof (RsvgHandleClass),
-	NULL,           /* base_init */
-	NULL,           /* base_finalize */
-	(GClassInitFunc) class_init,
-	NULL,           /* class_finalize */
-	NULL,           /* class_data */
-	sizeof (RsvgHandle),
-	0,              /* n_preallocs */
-	(GInstanceInitFunc) instance_init,
+    sizeof (RsvgHandleClass),
+    NULL,                       /* base_init */
+    NULL,                       /* base_finalize */
+    (GClassInitFunc) class_init,
+    NULL,                       /* class_finalize */
+    NULL,                       /* class_data */
+    sizeof (RsvgHandle),
+    0,                          /* n_preallocs */
+    (GInstanceInitFunc) instance_init,
 };
 
 static GType rsvg_type = 0;
 
 /* HACK to get around bugs 357406 and 362217. private API for now. */
 GType
-_rsvg_register_types(GTypeModule *module)
+_rsvg_register_types (GTypeModule * module)
 {
-	rsvg_type = g_type_module_register_type (module,
-											 G_TYPE_OBJECT,
-											 "RsvgHandle",
-											 &rsvg_type_info, 
-											 (GTypeFlags)0);
-	return rsvg_type;
+    rsvg_type = g_type_module_register_type (module,
+                                             G_TYPE_OBJECT,
+                                             "RsvgHandle", &rsvg_type_info, (GTypeFlags) 0);
+    return rsvg_type;
 }
 
 GType
 rsvg_handle_get_type (void)
 {
-	if (!rsvg_type) {
-		rsvg_type = g_type_register_static (G_TYPE_OBJECT, "RsvgHandle", &rsvg_type_info, (GTypeFlags)0);
-	}
-	return rsvg_type;
+    if (!rsvg_type) {
+        rsvg_type =
+            g_type_register_static (G_TYPE_OBJECT, "RsvgHandle", &rsvg_type_info, (GTypeFlags) 0);
+    }
+    return rsvg_type;
 }
 
 /**
@@ -309,9 +306,9 @@ rsvg_handle_get_type (void)
  * Deprecated: Use g_object_unref() instead.
  **/
 void
-rsvg_handle_free (RsvgHandle *handle)
+rsvg_handle_free (RsvgHandle * handle)
 {
-	g_object_unref (G_OBJECT (handle));
+    g_object_unref (G_OBJECT (handle));
 }
 
 /**
@@ -329,5 +326,5 @@ rsvg_handle_free (RsvgHandle *handle)
 RsvgHandle *
 rsvg_handle_new (void)
 {
-	return RSVG_HANDLE (g_object_new (RSVG_TYPE_HANDLE, NULL));
+    return RSVG_HANDLE (g_object_new (RSVG_TYPE_HANDLE, NULL));
 }

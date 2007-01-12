@@ -31,12 +31,8 @@
 #include "rsvg-cairo-render.h"
 #include <cairo.h>
 
-G_BEGIN_DECLS
-
-void 
-rsvg_cairo_clip (RsvgDrawingCtx *ctx, RsvgClipPath *clip, 
-				 RsvgBbox *bbox);
+G_BEGIN_DECLS void
+ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox);
 
 G_END_DECLS
-
 #endif

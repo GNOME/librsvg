@@ -29,13 +29,10 @@
 #include "rsvg.h"
 #include "rsvg-shapes.h"
 
-G_BEGIN_DECLS
-
-RsvgNode * rsvg_new_text (void);
-RsvgNode * rsvg_new_tspan (void);
-RsvgNode * rsvg_new_tref (void);
-char * rsvg_make_valid_utf8 (const char *str, int len);
+G_BEGIN_DECLS RsvgNode * rsvg_new_text (void);
+RsvgNode *rsvg_new_tspan (void);
+RsvgNode *rsvg_new_tref (void);
+char *rsvg_make_valid_utf8 (const char *str, int len);
 
 G_END_DECLS
-
-#endif /* RSVG_TEXT_H */
+#endif                          /* RSVG_TEXT_H */

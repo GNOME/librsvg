@@ -27,15 +27,11 @@
 
 #include <cairo.h>
 
-G_BEGIN_DECLS
+G_BEGIN_DECLS void
+ rsvg_handle_render_cairo (RsvgHandle * handle, cairo_t * cr);
 
 void
-rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr);
-
-void
-rsvg_handle_render_cairo_sub(RsvgHandle *handle, cairo_t *cr, const char * id);
+ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id);
 
 G_END_DECLS
-
 #endif
-

@@ -35,85 +35,82 @@
 int
 main (int argc, char **argv)
 {
-	int         i, count = 10;
-	GTimer     *timer;
+    int i, count = 10;
+    GTimer *timer;
 
-	GOptionContext *g_option_context;
-	double x_zoom = 1.0;
-	double y_zoom = 1.0;
-	double dpi = -1.0;
-	int width  = -1;
-	int height = -1;
-	int bVersion = 0;
+    GOptionContext *g_option_context;
+    double x_zoom = 1.0;
+    double y_zoom = 1.0;
+    double dpi = -1.0;
+    int width = -1;
+    int height = -1;
+    int bVersion = 0;
 
-	char **args;
-	gint n_args = 0;
-	GdkPixbuf *pixbuf;
+    char **args;
+    gint n_args = 0;
+    GdkPixbuf *pixbuf;
 
-	GOptionEntry options_table[] = {
-		{ "dpi"   ,  'd',  0, G_OPTION_ARG_DOUBLE, &dpi,      "pixels per inch", "<float>" },
-		{ "x-zoom",  'x',  0, G_OPTION_ARG_DOUBLE, &x_zoom,   "x zoom factor", "<float>" },
-		{ "y-zoom",  'y',  0, G_OPTION_ARG_DOUBLE, &y_zoom,   "y zoom factor", "<float>" },
-		{ "width",   'w',  0, G_OPTION_ARG_INT,    &width,    "width", "<int>" },
-		{ "height",  'h',  0, G_OPTION_ARG_INT,    &height,   "height", "<int>" },
-		{ "count",   'c',  0, G_OPTION_ARG_INT,    &count,    "number of times to render the SVG", "<int>" },
-		{ "version", 'v',  0, G_OPTION_ARG_NONE,   &bVersion, "show version information", NULL },
-		{ G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL,  N_("[FILE...]") },
-		{ NULL }
-	};
+    GOptionEntry options_table[] = {
+        {"dpi", 'd', 0, G_OPTION_ARG_DOUBLE, &dpi, "pixels per inch", "<float>"},
+        {"x-zoom", 'x', 0, G_OPTION_ARG_DOUBLE, &x_zoom, "x zoom factor", "<float>"},
+        {"y-zoom", 'y', 0, G_OPTION_ARG_DOUBLE, &y_zoom, "y zoom factor", "<float>"},
+        {"width", 'w', 0, G_OPTION_ARG_INT, &width, "width", "<int>"},
+        {"height", 'h', 0, G_OPTION_ARG_INT, &height, "height", "<int>"},
+        {"count", 'c', 0, G_OPTION_ARG_INT, &count, "number of times to render the SVG", "<int>"},
+        {"version", 'v', 0, G_OPTION_ARG_NONE, &bVersion, "show version information", NULL},
+        {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL, N_("[FILE...]")},
+        {NULL}
+    };
 
-	g_option_context = g_option_context_new (_("- SVG Performance Test"));
-	g_option_context_add_main_entries (g_option_context, options_table, NULL);
-	g_option_context_set_help_enabled (g_option_context, TRUE);
-	if(!g_option_context_parse (g_option_context, &argc, &argv, NULL)) {
-		exit(1);
-	}
+    g_option_context = g_option_context_new (_("- SVG Performance Test"));
+    g_option_context_add_main_entries (g_option_context, options_table, NULL);
+    g_option_context_set_help_enabled (g_option_context, TRUE);
+    if (!g_option_context_parse (g_option_context, &argc, &argv, NULL)) {
+        exit (1);
+    }
 
-	g_option_context_free (g_option_context);
+    g_option_context_free (g_option_context);
 
-	if (bVersion != 0)
-		{
-			g_print ("test-performance version %s\n", VERSION);
-			return 0;
-		}
+    if (bVersion != 0) {
+        g_print ("test-performance version %s\n", VERSION);
+        return 0;
+    }
 
-	if (args)
-		while (args[n_args] != NULL)
-			n_args++;
+    if (args)
+        while (args[n_args] != NULL)
+            n_args++;
 
-	if (n_args != 1)
-		{
-			g_print (_("Must specify a SVG file\n"));
-			return 1;
-		}
+    if (n_args != 1) {
+        g_print (_("Must specify a SVG file\n"));
+        return 1;
+    }
 
-	rsvg_init ();
+    rsvg_init ();
 
-	fprintf (stdout, "File '%s'\n", args[0]);
+    fprintf (stdout, "File '%s'\n", args[0]);
 
-	timer = g_timer_new ();
-	g_timer_start (timer);
+    timer = g_timer_new ();
+    g_timer_start (timer);
 
-	for (i = 0; i < count; i++) {
-		/* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
-		if (width == -1 && height == -1)
-			pixbuf = rsvg_pixbuf_from_file_at_zoom (args[0], x_zoom, y_zoom, NULL);
-		/* if both are unspecified, assume user wants to resize pixbuf in at least 1 dimension */
-		else if (x_zoom == 1.0 && y_zoom == 1.0)
-			pixbuf = rsvg_pixbuf_from_file_at_size (args[0], width, height, NULL);
-		else
-			/* assume the user wants to zoom the pixbuf, but cap the maximum size */
-			pixbuf = rsvg_pixbuf_from_file_at_zoom_with_max (args[0], x_zoom, y_zoom,
-									 width, height, NULL);
-		
-		g_object_unref (pixbuf);
-	}
+    for (i = 0; i < count; i++) {
+        /* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
+        if (width == -1 && height == -1)
+            pixbuf = rsvg_pixbuf_from_file_at_zoom (args[0], x_zoom, y_zoom, NULL);
+        /* if both are unspecified, assume user wants to resize pixbuf in at least 1 dimension */
+        else if (x_zoom == 1.0 && y_zoom == 1.0)
+            pixbuf = rsvg_pixbuf_from_file_at_size (args[0], width, height, NULL);
+        else
+            /* assume the user wants to zoom the pixbuf, but cap the maximum size */
+            pixbuf = rsvg_pixbuf_from_file_at_zoom_with_max (args[0], x_zoom, y_zoom,
+                                                             width, height, NULL);
 
-	fprintf (stdout, "Rendering took %g(s)\n",
-		 g_timer_elapsed (timer, NULL) / count);
-	g_timer_destroy(timer);
+        g_object_unref (pixbuf);
+    }
 
-	rsvg_term ();
+    fprintf (stdout, "Rendering took %g(s)\n", g_timer_elapsed (timer, NULL) / count);
+    g_timer_destroy (timer);
 
-	return 0;
+    rsvg_term ();
+
+    return 0;
 }

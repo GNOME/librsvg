@@ -48,276 +48,259 @@
 #include <cairo-svg.h>
 #endif
 
-static void 
-display_error(GError *err)
+static void
+display_error (GError * err)
 {
-	if (err)
-		{
-			g_print ("%s", err->message);
-			g_error_free (err);
-		}
+    if (err) {
+        g_print ("%s", err->message);
+        g_error_free (err);
+    }
 }
 
-static RsvgHandle * 
-rsvg_handle_new_from_stdio_file (FILE * f,
-								 GError **error)
+static RsvgHandle *
+rsvg_handle_new_from_stdio_file (FILE * f, GError ** error)
 {
-	RsvgHandle * handle;
-	gchar * base_uri;
-	
-	handle = rsvg_handle_new ();
+    RsvgHandle *handle;
+    gchar *base_uri;
 
-	while (!feof (f)) 
-		{
-			guchar buffer [4096];
-			gsize length = fread (buffer, 1, sizeof (buffer), f);
+    handle = rsvg_handle_new ();
 
-			if (length > 0) 
-				{
-					if (!rsvg_handle_write (handle, buffer, length, error))
-						{
-							g_object_unref (G_OBJECT(handle));
-							return NULL;
-						}
-				}
-			else if (ferror (f)) 
-				{
-					g_object_unref (G_OBJECT(handle));
-					return NULL;
-				}
-		}
+    while (!feof (f)) {
+        guchar buffer[4096];
+        gsize length = fread (buffer, 1, sizeof (buffer), f);
 
-	if(!rsvg_handle_close (handle, error)) {
-		g_object_unref(G_OBJECT(handle));
-		return NULL;
-	}
+        if (length > 0) {
+            if (!rsvg_handle_write (handle, buffer, length, error)) {
+                g_object_unref (G_OBJECT (handle));
+                return NULL;
+            }
+        } else if (ferror (f)) {
+            g_object_unref (G_OBJECT (handle));
+            return NULL;
+        }
+    }
 
-	base_uri = g_get_current_dir ();
-	rsvg_handle_set_base_uri (handle, base_uri);
-	g_free (base_uri);
+    if (!rsvg_handle_close (handle, error)) {
+        g_object_unref (G_OBJECT (handle));
+        return NULL;
+    }
 
-	return handle;
+    base_uri = g_get_current_dir ();
+    rsvg_handle_set_base_uri (handle, base_uri);
+    g_free (base_uri);
+
+    return handle;
 }
 
 static void
-rsvg_cairo_size_callback (int *width,
-						  int *height,
-						  gpointer  data)
+rsvg_cairo_size_callback (int *width, int *height, gpointer data)
 {
-	RsvgDimensionData * dimensions = data;
-	*width = dimensions->width;
-	*height = dimensions->height;
+    RsvgDimensionData *dimensions = data;
+    *width = dimensions->width;
+    *height = dimensions->height;
 }
 
 static cairo_status_t
-rsvg_cairo_write_func (void *closure,
-					   const unsigned char *data,
-					   unsigned int length)
+rsvg_cairo_write_func (void *closure, const unsigned char *data, unsigned int length)
 {
-	fwrite (data, 1, length, (FILE *)closure);
-	return CAIRO_STATUS_SUCCESS;
+    fwrite (data, 1, length, (FILE *) closure);
+    return CAIRO_STATUS_SUCCESS;
 }
 
 int
 main (int argc, char **argv)
 {
-	GOptionContext *g_option_context;
-	double x_zoom = 1.0;
-	double y_zoom = 1.0;
-	double zoom = 1.0;
-	double dpi_x = -1.0;
-	double dpi_y = -1.0;
-	int width  = -1;
-	int height = -1;
-	int bVersion = 0;
-	char * format = NULL;
-	char * output = NULL;
-	int keep_aspect_ratio = FALSE;
-	char * base_uri = NULL;
-	gboolean using_stdin = FALSE;
-	GError *error = NULL;
+    GOptionContext *g_option_context;
+    double x_zoom = 1.0;
+    double y_zoom = 1.0;
+    double zoom = 1.0;
+    double dpi_x = -1.0;
+    double dpi_y = -1.0;
+    int width = -1;
+    int height = -1;
+    int bVersion = 0;
+    char *format = NULL;
+    char *output = NULL;
+    int keep_aspect_ratio = FALSE;
+    char *base_uri = NULL;
+    gboolean using_stdin = FALSE;
+    GError *error = NULL;
 
-	int i;
-	char **args;
-	gint n_args = 0;
-	RsvgHandle *rsvg;
-	cairo_surface_t *surface = NULL;
-	cairo_t *cr = NULL;
-	RsvgDimensionData dimensions;
-	FILE * output_file = stdout;
+    int i;
+    char **args;
+    gint n_args = 0;
+    RsvgHandle *rsvg;
+    cairo_surface_t *surface = NULL;
+    cairo_t *cr = NULL;
+    RsvgDimensionData dimensions;
+    FILE *output_file = stdout;
 
-	GOptionEntry options_table[] = {
-		{ "dpi-x",   'd',  0, G_OPTION_ARG_DOUBLE, &dpi_x,    N_("pixels per inch [optional; defaults to 90dpi]"), N_("<float>") },
-		{ "dpi-y",   'p',  0, G_OPTION_ARG_DOUBLE, &dpi_y,    N_("pixels per inch [optional; defaults to 90dpi]"), N_("<float>") },
-		{ "x-zoom",  'x',  0, G_OPTION_ARG_DOUBLE, &x_zoom,   N_("x zoom factor [optional; defaults to 1.0]"), N_("<float>") },
-		{ "y-zoom",  'y',  0, G_OPTION_ARG_DOUBLE, &y_zoom,   N_("y zoom factor [optional; defaults to 1.0]"), N_("<float>") },
-		{ "zoom",    'z',  0, G_OPTION_ARG_DOUBLE, &zoom,     N_("zoom factor [optional; defaults to 1.0]"), N_("<float>") },
-		{ "width",   'w',  0, G_OPTION_ARG_INT,    &width,    N_("width [optional; defaults to the SVG's width]"), N_("<int>") },
-		{ "height",  'h',  0, G_OPTION_ARG_INT,    &height,   N_("height [optional; defaults to the SVG's height]"), N_("<int>") },		
-		{ "format",  'f',  0, G_OPTION_ARG_STRING, &format,   N_("save format [optional; defaults to 'png']"), N_("[png, pdf, ps, svg]") },
-		{ "output",  'o',  0, G_OPTION_ARG_STRING, &output,   N_("output filename [optional; defaults to stdout]"), NULL },
-		{ "keep-aspect-ratio", 'a', 0, G_OPTION_ARG_NONE, &keep_aspect_ratio, N_("whether to preserve the aspect ratio [optional; defaults to FALSE]"), NULL },
-		{ "version", 'v',  0, G_OPTION_ARG_NONE,   &bVersion, N_("show version information"), NULL },
-		{ "base-uri", 'b', 0, G_OPTION_ARG_STRING, &base_uri, N_("base uri"), NULL },
-		{ G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL,  N_("[FILE...]") },
-		{ NULL }
-	};
+    GOptionEntry options_table[] = {
+        {"dpi-x", 'd', 0, G_OPTION_ARG_DOUBLE, &dpi_x,
+         N_("pixels per inch [optional; defaults to 90dpi]"), N_("<float>")},
+        {"dpi-y", 'p', 0, G_OPTION_ARG_DOUBLE, &dpi_y,
+         N_("pixels per inch [optional; defaults to 90dpi]"), N_("<float>")},
+        {"x-zoom", 'x', 0, G_OPTION_ARG_DOUBLE, &x_zoom,
+         N_("x zoom factor [optional; defaults to 1.0]"), N_("<float>")},
+        {"y-zoom", 'y', 0, G_OPTION_ARG_DOUBLE, &y_zoom,
+         N_("y zoom factor [optional; defaults to 1.0]"), N_("<float>")},
+        {"zoom", 'z', 0, G_OPTION_ARG_DOUBLE, &zoom, N_("zoom factor [optional; defaults to 1.0]"),
+         N_("<float>")},
+        {"width", 'w', 0, G_OPTION_ARG_INT, &width,
+         N_("width [optional; defaults to the SVG's width]"), N_("<int>")},
+        {"height", 'h', 0, G_OPTION_ARG_INT, &height,
+         N_("height [optional; defaults to the SVG's height]"), N_("<int>")},
+        {"format", 'f', 0, G_OPTION_ARG_STRING, &format,
+         N_("save format [optional; defaults to 'png']"), N_("[png, pdf, ps, svg]")},
+        {"output", 'o', 0, G_OPTION_ARG_STRING, &output,
+         N_("output filename [optional; defaults to stdout]"), NULL},
+        {"keep-aspect-ratio", 'a', 0, G_OPTION_ARG_NONE, &keep_aspect_ratio,
+         N_("whether to preserve the aspect ratio [optional; defaults to FALSE]"), NULL},
+        {"version", 'v', 0, G_OPTION_ARG_NONE, &bVersion, N_("show version information"), NULL},
+        {"base-uri", 'b', 0, G_OPTION_ARG_STRING, &base_uri, N_("base uri"), NULL},
+        {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL, N_("[FILE...]")},
+        {NULL}
+    };
 
-	g_option_context = g_option_context_new (_("- SVG Converter"));
-	g_option_context_add_main_entries (g_option_context, options_table, NULL);
-	g_option_context_set_help_enabled (g_option_context, TRUE);
-	if(!g_option_context_parse (g_option_context, &argc, &argv, &error)) {
-		display_error (error);
-		exit(1);
-	}
+    g_option_context = g_option_context_new (_("- SVG Converter"));
+    g_option_context_add_main_entries (g_option_context, options_table, NULL);
+    g_option_context_set_help_enabled (g_option_context, TRUE);
+    if (!g_option_context_parse (g_option_context, &argc, &argv, &error)) {
+        display_error (error);
+        exit (1);
+    }
 
-	g_option_context_free (g_option_context);
+    g_option_context_free (g_option_context);
 
-	if (bVersion != 0)
-		{
-		    printf (_("rsvg-convert version %s\n"), VERSION);
-			return 0;
-		}
+    if (bVersion != 0) {
+        printf (_("rsvg-convert version %s\n"), VERSION);
+        return 0;
+    }
 
-	if (output != NULL)
-		{
-			output_file = fopen (output, "wb");
-			if (!output_file)
-				{
-					fprintf (stderr, _("Error saving to file: %s\n"), output);
-					exit (1);
-				}
-		}
+    if (output != NULL) {
+        output_file = fopen (output, "wb");
+        if (!output_file) {
+            fprintf (stderr, _("Error saving to file: %s\n"), output);
+            exit (1);
+        }
+    }
 
-	if (args)
-		while (args[n_args] != NULL)
-			n_args++;
+    if (args)
+        while (args[n_args] != NULL)
+            n_args++;
 
-	if (n_args == 0)
-		{
-			n_args = 1;
-			using_stdin = TRUE;
-		}
-	else if (n_args > 1 && (!format || !(!strcmp (format, "ps") || !strcmp (format, "pdf")))) 
-		{
-			fprintf (stderr, _("Multiple SVG files are only allowed for PDF and PS output.\n"));
-			exit (1);
-		}
+    if (n_args == 0) {
+        n_args = 1;
+        using_stdin = TRUE;
+    } else if (n_args > 1 && (!format || !(!strcmp (format, "ps") || !strcmp (format, "pdf")))) {
+        fprintf (stderr, _("Multiple SVG files are only allowed for PDF and PS output.\n"));
+        exit (1);
+    }
 
-	if (zoom != 1.0)
-		x_zoom = y_zoom = zoom;
+    if (zoom != 1.0)
+        x_zoom = y_zoom = zoom;
 
-	rsvg_init ();
-	rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
+    rsvg_init ();
+    rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 
-	for(i = 0; i < n_args; i++) 
-		{
-			if (using_stdin)
-				rsvg = rsvg_handle_new_from_stdio_file (stdin, &error);
-			else
-				rsvg = rsvg_handle_new_from_file (args[i], &error);
-			
-			if(!rsvg) {
-				fprintf (stderr, _("Error reading SVG:"));
-				display_error (error);
-				fprintf (stderr, "\n");
-				exit (1);
-			}
+    for (i = 0; i < n_args; i++) {
+        if (using_stdin)
+            rsvg = rsvg_handle_new_from_stdio_file (stdin, &error);
+        else
+            rsvg = rsvg_handle_new_from_file (args[i], &error);
 
-			if (base_uri)
-				rsvg_handle_set_base_uri (rsvg, base_uri);
+        if (!rsvg) {
+            fprintf (stderr, _("Error reading SVG:"));
+            display_error (error);
+            fprintf (stderr, "\n");
+            exit (1);
+        }
 
-			/* in the case of multi-page output, all subsequent SVGs are scaled to the first's size */
-			rsvg_handle_set_size_callback (rsvg, rsvg_cairo_size_callback, &dimensions, NULL);			
+        if (base_uri)
+            rsvg_handle_set_base_uri (rsvg, base_uri);
 
-			if (i == 0) 
-				{
-					struct RsvgSizeCallbackData size_data;
+        /* in the case of multi-page output, all subsequent SVGs are scaled to the first's size */
+        rsvg_handle_set_size_callback (rsvg, rsvg_cairo_size_callback, &dimensions, NULL);
 
-					rsvg_handle_get_dimensions (rsvg, &dimensions);
-					/* if both are unspecified, assume user wants to zoom the image in at least 1 dimension */
-					if (width == -1 && height == -1)
-						{
-							size_data.type = RSVG_SIZE_ZOOM;
-							size_data.x_zoom = x_zoom;
-							size_data.y_zoom = y_zoom;
-							size_data.keep_aspect_ratio = keep_aspect_ratio;
-						}
-					/* if both are unspecified, assume user wants to resize image in at least 1 dimension */
-					else if (x_zoom == 1.0 && y_zoom == 1.0)
-						{
-							/* if one parameter is unspecified, assume user wants to keep the aspect ratio */
-							if (width == -1 || height == -1)
-								{
-									size_data.type = RSVG_SIZE_WH_MAX;
-									size_data.width = width;
-									size_data.height = height;
-									size_data.keep_aspect_ratio = keep_aspect_ratio;
-								}
-							else
-								{
-									size_data.type = RSVG_SIZE_WH;
-									size_data.width = width;
-									size_data.height = height;
-									size_data.keep_aspect_ratio = keep_aspect_ratio;
-								}
-						}
-					else
-						{
-							/* assume the user wants to zoom the image, but cap the maximum size */
-							size_data.type = RSVG_SIZE_ZOOM_MAX;
-							size_data.x_zoom = x_zoom;
-							size_data.y_zoom = y_zoom;
-							size_data.width = width;
-							size_data.height = height;
-							size_data.keep_aspect_ratio = keep_aspect_ratio;
-						}
+        if (i == 0) {
+            struct RsvgSizeCallbackData size_data;
 
-					_rsvg_size_callback (&dimensions.width, &dimensions.height, &size_data);
-					
-					if (!format || !strcmp (format, "png"))
-						surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-															  dimensions.width, dimensions.height);
+            rsvg_handle_get_dimensions (rsvg, &dimensions);
+            /* if both are unspecified, assume user wants to zoom the image in at least 1 dimension */
+            if (width == -1 && height == -1) {
+                size_data.type = RSVG_SIZE_ZOOM;
+                size_data.x_zoom = x_zoom;
+                size_data.y_zoom = y_zoom;
+                size_data.keep_aspect_ratio = keep_aspect_ratio;
+            }
+            /* if both are unspecified, assume user wants to resize image in at least 1 dimension */
+            else if (x_zoom == 1.0 && y_zoom == 1.0) {
+                /* if one parameter is unspecified, assume user wants to keep the aspect ratio */
+                if (width == -1 || height == -1) {
+                    size_data.type = RSVG_SIZE_WH_MAX;
+                    size_data.width = width;
+                    size_data.height = height;
+                    size_data.keep_aspect_ratio = keep_aspect_ratio;
+                } else {
+                    size_data.type = RSVG_SIZE_WH;
+                    size_data.width = width;
+                    size_data.height = height;
+                    size_data.keep_aspect_ratio = keep_aspect_ratio;
+                }
+            } else {
+                /* assume the user wants to zoom the image, but cap the maximum size */
+                size_data.type = RSVG_SIZE_ZOOM_MAX;
+                size_data.x_zoom = x_zoom;
+                size_data.y_zoom = y_zoom;
+                size_data.width = width;
+                size_data.height = height;
+                size_data.keep_aspect_ratio = keep_aspect_ratio;
+            }
+
+            _rsvg_size_callback (&dimensions.width, &dimensions.height, &size_data);
+
+            if (!format || !strcmp (format, "png"))
+                surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+                                                      dimensions.width, dimensions.height);
 #ifdef CAIRO_HAS_PDF_SURFACE
-					else if (!strcmp (format, "pdf"))
-						surface = cairo_pdf_surface_create_for_stream (rsvg_cairo_write_func, output_file,
-																	   dimensions.width, dimensions.height);
+            else if (!strcmp (format, "pdf"))
+                surface = cairo_pdf_surface_create_for_stream (rsvg_cairo_write_func, output_file,
+                                                               dimensions.width, dimensions.height);
 #endif
 #ifdef CAIRO_HAS_PS_SURFACE
-					else if (!strcmp (format, "ps"))
-						surface = cairo_ps_surface_create_for_stream (rsvg_cairo_write_func, output_file,
-																	  dimensions.width, dimensions.height);
+            else if (!strcmp (format, "ps"))
+                surface = cairo_ps_surface_create_for_stream (rsvg_cairo_write_func, output_file,
+                                                              dimensions.width, dimensions.height);
 #endif
 #ifdef CAIRO_HAS_SVG_SURFACE
-					else if (!strcmp (format, "svg"))
-						surface = cairo_svg_surface_create_for_stream (rsvg_cairo_write_func, output_file,
-																	   dimensions.width, dimensions.height);
+            else if (!strcmp (format, "svg"))
+                surface = cairo_svg_surface_create_for_stream (rsvg_cairo_write_func, output_file,
+                                                               dimensions.width, dimensions.height);
 #endif
-					else 
-						{
-							fprintf (stderr, _("Unknown output format."));
-							exit (1);
-						}
+            else {
+                fprintf (stderr, _("Unknown output format."));
+                exit (1);
+            }
 
-					cr = cairo_create (surface);
-				}
+            cr = cairo_create (surface);
+        }
 
-			rsvg_handle_render_cairo (rsvg, cr);
+        rsvg_handle_render_cairo (rsvg, cr);
 
-			if (!format || !strcmp (format, "png"))
-				cairo_surface_write_to_png_stream (surface, rsvg_cairo_write_func, output_file);
-			else
-				cairo_show_page (cr);
+        if (!format || !strcmp (format, "png"))
+            cairo_surface_write_to_png_stream (surface, rsvg_cairo_write_func, output_file);
+        else
+            cairo_show_page (cr);
 
-			g_object_unref (G_OBJECT(rsvg));
-		}
-	
-	cairo_destroy (cr);
-	cairo_surface_destroy (surface);
+        g_object_unref (G_OBJECT (rsvg));
+    }
 
-	fclose (output_file);
+    cairo_destroy (cr);
+    cairo_surface_destroy (surface);
 
-	rsvg_term();
+    fclose (output_file);
 
-	return 0;
+    rsvg_term ();
+
+    return 0;
 }

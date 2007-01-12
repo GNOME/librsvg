@@ -1,5 +1,9 @@
 2007-01-12  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
+	Indentation fix, using: indent -kr -nut -pcs -psl -i4 -l100
+
+2007-01-12  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
 	Add support for porterduff comp-op operators and for enable-background.
 
 	* rsvg-cairo-draw.c (_rsvg_cairo_set_operator): new.

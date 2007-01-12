@@ -29,19 +29,17 @@
 
 static gboolean
 rsvg_handle_fill_with_data (RsvgHandle * handle,
-							const guint8 *data,
-							gsize data_len,
-							GError **error)
+                            const guint8 * data, gsize data_len, GError ** error)
 {
-	rsvg_return_val_if_fail(data != NULL, FALSE, error);
-	rsvg_return_val_if_fail(data_len != 0, FALSE, error);
+    rsvg_return_val_if_fail (data != NULL, FALSE, error);
+    rsvg_return_val_if_fail (data_len != 0, FALSE, error);
 
-	if(!rsvg_handle_write (handle, data, data_len, error))
-		return FALSE;
-	if(!rsvg_handle_close(handle, error))
-		return FALSE;
+    if (!rsvg_handle_write (handle, data, data_len, error))
+        return FALSE;
+    if (!rsvg_handle_close (handle, error))
+        return FALSE;
 
-	return TRUE;
+    return TRUE;
 }
 
 /**
@@ -55,22 +53,21 @@ rsvg_handle_fill_with_data (RsvgHandle * handle,
  * Returns: A RsvgHandle or %NULL if an error occurs.
  * Since: 2.14
  */
-RsvgHandle * rsvg_handle_new_from_data (const guint8 *data,
-										gsize data_len,
-										GError **error)
+RsvgHandle *
+rsvg_handle_new_from_data (const guint8 * data, gsize data_len, GError ** error)
 {
-	RsvgHandle * handle;
+    RsvgHandle *handle;
 
-	handle = rsvg_handle_new ();
+    handle = rsvg_handle_new ();
 
-	if(handle) {
-		if (!rsvg_handle_fill_with_data (handle, data, data_len, error)) {
-			g_object_unref(G_OBJECT(handle));
-			handle = NULL;
-		}
-	}
+    if (handle) {
+        if (!rsvg_handle_fill_with_data (handle, data, data_len, error)) {
+            g_object_unref (G_OBJECT (handle));
+            handle = NULL;
+        }
+    }
 
-	return handle;
+    return handle;
 }
 
 /**
@@ -83,32 +80,31 @@ RsvgHandle * rsvg_handle_new_from_data (const guint8 *data,
  * Returns: A RsvgHandle or %NULL if an error occurs.
  * Since: 2.14
  */
-RsvgHandle * rsvg_handle_new_from_file (const gchar *file_name,
-										GError **error)
+RsvgHandle *
+rsvg_handle_new_from_file (const gchar * file_name, GError ** error)
 {
-	gchar * base_uri;
-	GByteArray *f;
-	RsvgHandle * handle = NULL;
-	
-	rsvg_return_val_if_fail(file_name != NULL, NULL, error);
+    gchar *base_uri;
+    GByteArray *f;
+    RsvgHandle *handle = NULL;
 
-	base_uri = rsvg_get_base_uri_from_filename(file_name);
-	f = _rsvg_acquire_xlink_href_resource (file_name, base_uri, error);
+    rsvg_return_val_if_fail (file_name != NULL, NULL, error);
 
-	if (f)
-		{
-			handle = rsvg_handle_new ();
-			if (handle) {
-				rsvg_handle_set_base_uri (handle, base_uri);
-				if(!rsvg_handle_fill_with_data (handle, f->data, f->len, error)) {
-					g_object_unref (G_OBJECT (handle));
-					handle = NULL;
-				}
-			}
-			g_byte_array_free (f, TRUE);
-		} 
-	
-	g_free(base_uri);
+    base_uri = rsvg_get_base_uri_from_filename (file_name);
+    f = _rsvg_acquire_xlink_href_resource (file_name, base_uri, error);
 
-	return handle;
+    if (f) {
+        handle = rsvg_handle_new ();
+        if (handle) {
+            rsvg_handle_set_base_uri (handle, base_uri);
+            if (!rsvg_handle_fill_with_data (handle, f->data, f->len, error)) {
+                g_object_unref (G_OBJECT (handle));
+                handle = NULL;
+            }
+        }
+        g_byte_array_free (f, TRUE);
+    }
+
+    g_free (base_uri);
+
+    return handle;
 }

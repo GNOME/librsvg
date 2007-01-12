@@ -30,26 +30,23 @@
 #include "rsvg-private.h"
 #include <cairo.h>
 
-G_BEGIN_DECLS
-
-typedef struct _RsvgCairoRender RsvgCairoRender;
+G_BEGIN_DECLS typedef struct _RsvgCairoRender RsvgCairoRender;
 
 struct _RsvgCairoRender {
-	RsvgRender super;
-	cairo_t *cr;
-	double width;
-	double height;
+    RsvgRender super;
+    cairo_t *cr;
+    double width;
+    double height;
 
-	GList *cr_stack;
+    GList *cr_stack;
 
-	RsvgBbox bbox;
-	GList *bb_stack;
-	GList *pixbuf_stack;
+    RsvgBbox bbox;
+    GList *bb_stack;
+    GList *pixbuf_stack;
 };
 
-RsvgCairoRender * rsvg_cairo_render_new(cairo_t * cr, double width, double height);
-void rsvg_cairo_render_rsvg_handle (cairo_t *cr, RsvgHandle *handle);
+RsvgCairoRender *rsvg_cairo_render_new (cairo_t * cr, double width, double height);
+void rsvg_cairo_render_rsvg_handle (cairo_t * cr, RsvgHandle * handle);
 
 G_END_DECLS
-
 #endif

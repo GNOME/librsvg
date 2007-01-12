@@ -30,36 +30,30 @@
 
 #include <glib/gtypes.h>
 
-G_BEGIN_DECLS
+G_BEGIN_DECLS RsvgDefs * rsvg_defs_new (void);
 
-RsvgDefs *
-rsvg_defs_new (void);
-
-RsvgNode *
-rsvg_defs_lookup (const RsvgDefs *defs, const char *name);
+RsvgNode *rsvg_defs_lookup (const RsvgDefs * defs, const char *name);
 
 void
-rsvg_defs_set (RsvgDefs *defs, const char *name, RsvgNode *val);
+ rsvg_defs_set (RsvgDefs * defs, const char *name, RsvgNode * val);
 
 void
-rsvg_defs_free (RsvgDefs *defs);
+ rsvg_defs_free (RsvgDefs * defs);
 
 void
-rsvg_defs_set_base_uri (RsvgDefs * self, gchar * base_uri);
+ rsvg_defs_set_base_uri (RsvgDefs * self, gchar * base_uri);
 
 void
-rsvg_defs_add_resolver(RsvgDefs *defs, RsvgNode ** tochange, 
-					   const gchar * name);
+ rsvg_defs_add_resolver (RsvgDefs * defs, RsvgNode ** tochange, const gchar * name);
 
 void
-rsvg_defs_resolve_all(RsvgDefs *defs);
+ rsvg_defs_resolve_all (RsvgDefs * defs);
 
 void
-rsvg_defs_register_name (RsvgDefs *defs, const char *name, RsvgNode *val);
+ rsvg_defs_register_name (RsvgDefs * defs, const char *name, RsvgNode * val);
 
 void
-rsvg_defs_register_memory (RsvgDefs *defs, RsvgNode *val);
+ rsvg_defs_register_memory (RsvgDefs * defs, RsvgNode * val);
 
 G_END_DECLS
-
 #endif
