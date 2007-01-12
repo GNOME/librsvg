@@ -60,6 +60,26 @@ typedef enum {
 	UNICODE_BIDI_OVERRIDE = 2	
 } UnicodeBidi;
 
+typedef enum {
+    RSVG_COMP_OP_CLEAR,
+    RSVG_COMP_OP_SRC,
+    RSVG_COMP_OP_DST,
+    RSVG_COMP_OP_SRC_OVER,
+    RSVG_COMP_OP_DST_OVER,
+    RSVG_COMP_OP_SRC_IN,
+    RSVG_COMP_OP_DST_IN,
+    RSVG_COMP_OP_SRC_OUT,
+    RSVG_COMP_OP_DST_OUT,
+    RSVG_COMP_OP_SRC_ATOP,
+    RSVG_COMP_OP_DST_ATOP,
+    RSVG_COMP_OP_XOR
+} RsvgCompOpType;
+
+typedef enum {
+    RSVG_ENABLE_BACKGROUND_ACCUMULATE,
+    RSVG_ENABLE_BACKGROUND_NEW
+} RsvgEnableBackgroundType;
+
 /* enums and data structures are ABI compatible with libart */
 
 typedef enum {
@@ -91,7 +111,6 @@ struct _RsvgState {
 	RsvgFilter *filter;
 	void *mask;
 	void *clip_path_ref;
-	gboolean backgroundnew;
 	guint8 adobe_blend; /* 0..11 */
 	guint8 opacity; /* 0..255 */
 	
@@ -175,6 +194,9 @@ struct _RsvgState {
 	gboolean has_startMarker;
 	gboolean has_middleMarker;
 	gboolean has_endMarker;	
+
+	RsvgCompOpType comp_op;
+	RsvgEnableBackgroundType enable_background;
 };
 
 RsvgState * rsvg_state_new ();

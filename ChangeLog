@@ -1,3 +1,23 @@
+2007-01-12  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
+	Add support for porterduff comp-op operators and for enable-background.
+
+	* rsvg-cairo-draw.c (_rsvg_cairo_set_operator): new.
+	(rsvg_cairo_render_path): request a temporary buffer when operator is
+	not src-over.
+	(rsvg_cairo_render_image): set composite operator before painting.
+	(rsvg_cairo_push_render_stack): don't exit for operator != src-over
+	or enable-background != accumulate.
+	(rsvg_cairo_pop_render_stack): ditto. Set composite operator.
+	* rsvg-styles.c (rsvg_state_init): added comp_op and
+	enable_background.
+	(rsvg_state_inherit_run): force inherit for comp_op and
+	enable_background.
+	(rsvg_parse_style_arg): parse for comp_op and enable_background.
+	
+	* rsvg-structure.c (rsvg_node_symbol_set_atts): move
+	rsvg_parse_style_attrs inside the conditionnal block.
+	
 2007-01-05  Christian Persch  <chpe@svn.gnome.org>
 
 	* gtk-engine/svg-draw.c: (rsvg_style_register_type):

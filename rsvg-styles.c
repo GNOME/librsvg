@@ -55,23 +55,24 @@ rsvg_state_init (RsvgState *state)
 	
 	_rsvg_affine_identity (state->affine);
 	_rsvg_affine_identity (state->personal_affine);
-	state->mask = NULL;
-	state->opacity = 0xff;
-	state->adobe_blend = 0;
-	state->fill = rsvg_paint_server_parse (NULL, NULL, "#000", 0);
-	state->fill_opacity = 0xff;
-	state->stroke_opacity = 0xff;
-	state->stroke_width = _rsvg_css_parse_length("1");
-	state->miter_limit = 4;
-	state->cap = RSVG_PATH_STROKE_CAP_BUTT;
-	state->join = RSVG_PATH_STROKE_JOIN_MITER;
-	state->stop_opacity = 0xff;
-	state->fill_rule = FILL_RULE_NONZERO;
-	state->clip_rule = FILL_RULE_NONZERO;
-	state->backgroundnew = FALSE;	
-	state->overflow = FALSE;
-	state->flood_color = 0;
-	state->flood_opacity = 255;
+	state->mask 			= NULL;
+	state->opacity 			= 0xff;
+	state->adobe_blend 		= 0;
+	state->fill 			= rsvg_paint_server_parse (NULL, NULL, "#000", 0);
+	state->fill_opacity 		= 0xff;
+	state->stroke_opacity 		= 0xff;
+	state->stroke_width 		= _rsvg_css_parse_length("1");
+	state->miter_limit 		= 4;
+	state->cap 			= RSVG_PATH_STROKE_CAP_BUTT;
+	state->join 			= RSVG_PATH_STROKE_JOIN_MITER;
+	state->stop_opacity 		= 0xff;
+	state->fill_rule 		= FILL_RULE_NONZERO;
+	state->clip_rule 		= FILL_RULE_NONZERO;
+	state->enable_background 	= RSVG_ENABLE_BACKGROUND_ACCUMULATE;
+	state->comp_op 			= RSVG_COMP_OP_SRC_OVER;
+	state->overflow 		= FALSE;
+	state->flood_color 		= 0;
+	state->flood_opacity 		= 255;
 
 	state->font_family  = g_strdup (RSVG_DEFAULT_FONT);
 	state->font_size    = _rsvg_css_parse_length("12.0");
@@ -257,10 +258,11 @@ rsvg_state_inherit_run (RsvgState *dst, const RsvgState *src,
 		{
 			dst->clip_path_ref = src->clip_path_ref;
 			dst->mask = src->mask;
-			dst->backgroundnew = src->backgroundnew;
+			dst->enable_background = src->enable_background;
 			dst->adobe_blend = src->adobe_blend;
 			dst->opacity = src->opacity;
 			dst->filter = src->filter;
+			dst->comp_op = src->comp_op;
 		}
 }
 
@@ -418,64 +420,93 @@ rsvg_parse_style_arg (RsvgHandle *ctx, RsvgState *state, const char *str)
 	else if (rsvg_css_param_match (str, "enable-background"))
 		{
 			if (!strcmp (str + arg_off, "new"))
-				state->backgroundnew = TRUE;
+				state->enable_background = RSVG_ENABLE_BACKGROUND_NEW;
 			else
-				state->backgroundnew = FALSE;
+				state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
+		}	
+	else if (rsvg_css_param_match (str, "comp-op"))
+		{
+		    if (!strcmp (str + arg_off, "clear"))
+			state->comp_op = RSVG_COMP_OP_CLEAR;
+		    else if (!strcmp (str + arg_off, "src"))
+			state->comp_op = RSVG_COMP_OP_SRC;
+		    else if (!strcmp (str + arg_off, "dst"))
+			state->comp_op = RSVG_COMP_OP_DST;
+		    else if (!strcmp (str + arg_off, "src-over"))
+			state->comp_op = RSVG_COMP_OP_SRC_OVER;
+		    else if (!strcmp (str + arg_off, "dst-over"))
+			state->comp_op = RSVG_COMP_OP_DST_OVER;
+		    else if (!strcmp (str + arg_off, "src-in"))
+			state->comp_op = RSVG_COMP_OP_SRC_IN;
+		    else if (!strcmp (str + arg_off, "dst-in"))
+			state->comp_op = RSVG_COMP_OP_DST_IN;
+		    else if (!strcmp (str + arg_off, "src-out"))
+			state->comp_op = RSVG_COMP_OP_SRC_OUT;
+		    else if (!strcmp (str + arg_off, "dst-out"))
+			state->comp_op = RSVG_COMP_OP_DST_OUT;
+		    else if (!strcmp (str + arg_off, "src-atop"))
+			state->comp_op = RSVG_COMP_OP_SRC_ATOP;
+		    else if (!strcmp (str + arg_off, "dst-atop"))
+			state->comp_op = RSVG_COMP_OP_DST_ATOP;
+		    else if (!strcmp (str + arg_off, "xor"))
+			state->comp_op = RSVG_COMP_OP_XOR;
+		    else 
+			state->comp_op = RSVG_COMP_OP_SRC_OVER;
 		}	
 	else if (rsvg_css_param_match (str, "display"))
-		{
-			state->has_visible = TRUE;
-			if (!strcmp (str + arg_off, "none"))
-				state->visible = FALSE;
-			else if (strcmp (str + arg_off, "inherit") != 0)
-				state->visible = TRUE;
-			else
-				state->has_visible = FALSE;
-		}
+	{
+	    state->has_visible = TRUE;
+	    if (!strcmp (str + arg_off, "none"))
+		state->visible = FALSE;
+	    else if (strcmp (str + arg_off, "inherit") != 0)
+		state->visible = TRUE;
+	    else
+		state->has_visible = FALSE;
+	}
 	else if (rsvg_css_param_match (str, "visibility"))
-		{
-			state->has_visible = TRUE;
-			if (!strcmp (str + arg_off, "visible"))
-				state->visible = TRUE;
-			else if (strcmp (str + arg_off, "inherit") != 0)
-				state->visible = FALSE; /* collapse or hidden */
-			else
-				state->has_visible = FALSE;
-		}
+	{
+	    state->has_visible = TRUE;
+	    if (!strcmp (str + arg_off, "visible"))
+		state->visible = TRUE;
+	    else if (strcmp (str + arg_off, "inherit") != 0)
+		state->visible = FALSE; /* collapse or hidden */
+	    else
+		state->has_visible = FALSE;
+	}
 	else if (rsvg_css_param_match (str, "fill"))
-		{
-			RsvgPaintServer * fill = state->fill;
-			state->fill = rsvg_paint_server_parse (&state->has_fill_server, ctx->priv->defs, str + arg_off, 0);
-			rsvg_paint_server_unref (fill);
-		}
+	{
+	    RsvgPaintServer * fill = state->fill;
+	    state->fill = rsvg_paint_server_parse (&state->has_fill_server, ctx->priv->defs, str + arg_off, 0);
+	    rsvg_paint_server_unref (fill);
+	}
 	else if (rsvg_css_param_match (str, "fill-opacity"))
-		{
-			state->fill_opacity = rsvg_css_parse_opacity (str + arg_off);
-			state->has_fill_opacity = TRUE;
-		}
+	{
+	    state->fill_opacity = rsvg_css_parse_opacity (str + arg_off);
+	    state->has_fill_opacity = TRUE;
+	}
 	else if (rsvg_css_param_match (str, "fill-rule"))
-		{
-			state->has_fill_rule = TRUE;
-			if (!strcmp (str + arg_off, "nonzero"))
-				state->fill_rule = FILL_RULE_NONZERO;
-			else if (!strcmp (str + arg_off, "evenodd"))
-				state->fill_rule = FILL_RULE_EVENODD;
-			else
-				state->has_fill_rule = FALSE;
-		}
+	{
+	    state->has_fill_rule = TRUE;
+	    if (!strcmp (str + arg_off, "nonzero"))
+		state->fill_rule = FILL_RULE_NONZERO;
+	    else if (!strcmp (str + arg_off, "evenodd"))
+		state->fill_rule = FILL_RULE_EVENODD;
+	    else
+		state->has_fill_rule = FALSE;
+	}
 	else if (rsvg_css_param_match (str, "clip-rule"))
-		{
-			state->has_clip_rule = TRUE;
-			if (!strcmp (str + arg_off, "nonzero"))
-				state->clip_rule = FILL_RULE_NONZERO;
-			else if (!strcmp (str + arg_off, "evenodd"))
-				state->clip_rule = FILL_RULE_EVENODD;
-			else
-				state->has_clip_rule = FALSE;
-		}
+	{
+	    state->has_clip_rule = TRUE;
+	    if (!strcmp (str + arg_off, "nonzero"))
+		state->clip_rule = FILL_RULE_NONZERO;
+	    else if (!strcmp (str + arg_off, "evenodd"))
+		state->clip_rule = FILL_RULE_EVENODD;
+	    else
+		state->has_clip_rule = FALSE;
+	}
 	else if (rsvg_css_param_match (str, "stroke"))
-		{
-			RsvgPaintServer * stroke = state->stroke;
+	{
+	    RsvgPaintServer * stroke = state->stroke;
 
 			state->stroke = rsvg_paint_server_parse (&state->has_stroke_server, ctx->priv->defs, str + arg_off, 0);
 
@@ -759,6 +790,7 @@ rsvg_parse_style_pairs (RsvgHandle *ctx, RsvgState *state,
 	rsvg_lookup_parse_style_pair (ctx, state, "direction", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "display", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "enable-background", atts);
+	rsvg_lookup_parse_style_pair (ctx, state, "comp-op", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "fill", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "fill-opacity", atts);
 	rsvg_lookup_parse_style_pair (ctx, state, "fill-rule", atts);

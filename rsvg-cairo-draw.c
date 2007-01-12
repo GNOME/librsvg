@@ -42,6 +42,40 @@
 #include <pango/pangocairo.h>
 
 static void
+_rsvg_cairo_set_operator (cairo_t *cr, RsvgCompOpType comp_op)
+{
+    cairo_operator_t op;
+
+    switch (comp_op) {
+	case RSVG_COMP_OP_CLEAR: 
+	    op = CAIRO_OPERATOR_CLEAR; break;
+	case RSVG_COMP_OP_SRC:
+	    op = CAIRO_OPERATOR_SOURCE; break;
+	case RSVG_COMP_OP_DST:
+	    op = CAIRO_OPERATOR_DEST; break;
+	case RSVG_COMP_OP_DST_OVER:
+	    op = CAIRO_OPERATOR_DEST_OVER; break;
+	case RSVG_COMP_OP_SRC_IN:
+	    op = CAIRO_OPERATOR_IN; break;
+	case RSVG_COMP_OP_DST_IN:
+	    op = CAIRO_OPERATOR_DEST_IN; break;
+	case RSVG_COMP_OP_SRC_OUT:
+	    op = CAIRO_OPERATOR_OUT; break;
+	case RSVG_COMP_OP_DST_OUT:
+	    op = CAIRO_OPERATOR_DEST_OUT; break;
+	case RSVG_COMP_OP_SRC_ATOP:
+	    op = CAIRO_OPERATOR_ATOP; break;
+	case RSVG_COMP_OP_DST_ATOP:
+	    op = CAIRO_OPERATOR_DEST_ATOP; break;
+	case RSVG_COMP_OP_XOR:
+	    op = CAIRO_OPERATOR_XOR; break;
+	default:
+	    op = CAIRO_OPERATOR_OVER; break;
+    }
+    cairo_set_operator (cr, op);
+}
+
+static void
 rsvg_pixmap_destroy (gchar *pixels, gpointer data)
 {
   g_free (pixels);
@@ -485,7 +519,8 @@ rsvg_cairo_render_path (RsvgDrawingCtx *ctx, const RsvgBpathDef *bpath_def)
 
 	need_tmpbuf = ((state->fill != NULL) && (state->stroke != NULL) &&
 				   state->opacity != 0xff) 
-		|| state->clip_path_ref || state->mask || state->filter;
+		|| state->clip_path_ref || state->mask || state->filter
+		|| (state->comp_op != RSVG_COMP_OP_SRC_OVER);
 
 	if (need_tmpbuf)
 		rsvg_cairo_push_discrete_layer (ctx);
@@ -702,6 +737,7 @@ void rsvg_cairo_render_image (RsvgDrawingCtx *ctx, const GdkPixbuf * pixbuf,
 			cairo_pixels += 4 * width;
 		}
 
+	_rsvg_cairo_set_operator (render->cr, state->comp_op);
 	cairo_set_source_surface (render->cr, surface, pixbuf_x, pixbuf_y);
 	cairo_paint (render->cr);
 	cairo_surface_destroy (surface);
@@ -833,9 +869,13 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx *ctx)
 			objectBoundingBox)
 			lateclip = TRUE;
 
-	if (state->opacity == 0xFF && !state->filter && !state->mask && !lateclip){
-		return;
-	}
+	if (state->opacity == 0xFF 
+	    && !state->filter 
+	    && !state->mask 
+	    && !lateclip
+	    && (state->comp_op == RSVG_COMP_OP_SRC_OVER)
+	    && (state->enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
+	    return;
 	if (!state->filter)
 		surface = cairo_surface_create_similar (cairo_get_target (render->cr),
 												CAIRO_CONTENT_COLOR_ALPHA,
@@ -878,8 +918,8 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx *ctx)
 void
 rsvg_cairo_push_discrete_layer (RsvgDrawingCtx *ctx)
 {
-	rsvg_cairo_push_early_clips(ctx);
-	rsvg_cairo_push_render_stack(ctx);
+    rsvg_cairo_push_early_clips(ctx);
+    rsvg_cairo_push_render_stack(ctx);
 }
 
 static GdkPixbuf *
@@ -924,85 +964,93 @@ rsvg_compile_bg(RsvgDrawingCtx *ctx)
 static void
 rsvg_cairo_pop_render_stack (RsvgDrawingCtx *ctx)
 {
-	RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
-	cairo_t *child_cr = render->cr;
-	gboolean lateclip = FALSE;
-	GdkPixbuf * output = NULL;
-	cairo_surface_t *surface = NULL;
-	RsvgState *state = rsvg_state_current(ctx);
+    RsvgCairoRender *render = (RsvgCairoRender *)ctx->render;
+    cairo_t *child_cr = render->cr;
+    gboolean lateclip = FALSE;
+    GdkPixbuf * output = NULL;
+    cairo_surface_t *surface = NULL;
+    RsvgState *state = rsvg_state_current(ctx);
 
-	if (rsvg_state_current(ctx)->clip_path_ref)
-		if (((RsvgClipPath *)rsvg_state_current(ctx)->clip_path_ref)->units ==
-			objectBoundingBox)
-			lateclip = TRUE;
+    if (rsvg_state_current(ctx)->clip_path_ref)
+	if (((RsvgClipPath *)rsvg_state_current(ctx)->clip_path_ref)->units ==
+	    objectBoundingBox)
+	    lateclip = TRUE;
 
-	if (state->opacity == 0xFF && !state->filter && !state->mask && !lateclip)
-		return;
+    if (state->opacity == 0xFF 
+	&& !state->filter 
+	&& !state->mask 
+	&& !lateclip
+	&& (state->comp_op == RSVG_COMP_OP_SRC_OVER)
+	&& (state->enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
+	return;
 
-	if (state->filter)
-		{
-			GdkPixbuf * pixbuf = render->pixbuf_stack->data;
-			GdkPixbuf * bg = rsvg_compile_bg(ctx);
+    if (state->filter)
+    {
+	GdkPixbuf * pixbuf = render->pixbuf_stack->data;
+	GdkPixbuf * bg = rsvg_compile_bg(ctx);
 
-			render->pixbuf_stack = g_list_remove_link (render->pixbuf_stack,
-													   render->pixbuf_stack);
-
-
-			output = rsvg_filter_render (state->filter, pixbuf, bg, 
-										 ctx, &render->bbox, "2103");
-			g_object_unref (G_OBJECT (pixbuf));
-			g_object_unref (G_OBJECT (bg));
-
-			surface = cairo_image_surface_create_for_data (gdk_pixbuf_get_pixels(output),
-														   CAIRO_FORMAT_ARGB32,
-														   gdk_pixbuf_get_width(output), 
-														   gdk_pixbuf_get_height(output),
-														   gdk_pixbuf_get_rowstride(output));
-		}
-	else
-		surface = cairo_get_target (child_cr);
-
-	render->cr = (cairo_t *)render->cr_stack->data;
-	render->cr_stack = g_list_remove_link (render->cr_stack, render->cr_stack);
-
-	cairo_set_source_surface (render->cr,
-							  surface,
-							  0, 0);
-
-	if (lateclip)
-		rsvg_cairo_clip(ctx, rsvg_state_current(ctx)->clip_path_ref, 
-						&render->bbox);
-	if (state->mask)
-		{
-			rsvg_cairo_generate_mask(render->cr, state->mask, ctx, &render->bbox);
-		}
-	else if (state->opacity != 0xFF)
-		cairo_paint_with_alpha (render->cr, (double)state->opacity / 255.0);
-	else
-		cairo_paint (render->cr);	
-	cairo_destroy (child_cr);
+	render->pixbuf_stack = g_list_remove_link (render->pixbuf_stack,
+						   render->pixbuf_stack);
 
 
-	rsvg_bbox_insert((RsvgBbox *)render->bb_stack->data, 
-						   &render->bbox);
-	
-	render->bbox = *((RsvgBbox *)render->bb_stack->data);
+	output = rsvg_filter_render (state->filter, pixbuf, bg, 
+				     ctx, &render->bbox, "2103");
+	g_object_unref (G_OBJECT (pixbuf));
+	g_object_unref (G_OBJECT (bg));
 
-	g_free(render->bb_stack->data);
-	render->bb_stack = g_list_remove_link (render->bb_stack, render->bb_stack);
+	surface = cairo_image_surface_create_for_data (gdk_pixbuf_get_pixels(output),
+						       CAIRO_FORMAT_ARGB32,
+						       gdk_pixbuf_get_width(output), 
+						       gdk_pixbuf_get_height(output),
+						       gdk_pixbuf_get_rowstride(output));
+    }
+    else
+	surface = cairo_get_target (child_cr);
 
-	if (state->filter)
-		{
-			g_object_unref (G_OBJECT (output));
-			cairo_surface_destroy(surface);
-		}
+    render->cr = (cairo_t *)render->cr_stack->data;
+    render->cr_stack = g_list_remove_link (render->cr_stack, render->cr_stack);
+
+    cairo_set_source_surface (render->cr,
+			      surface,
+			      0, 0);
+
+    if (lateclip)
+	rsvg_cairo_clip(ctx, rsvg_state_current(ctx)->clip_path_ref, 
+			&render->bbox);
+
+    _rsvg_cairo_set_operator (render->cr, state->comp_op);
+
+    if (state->mask)
+    {
+	rsvg_cairo_generate_mask(render->cr, state->mask, ctx, &render->bbox);
+    }
+    else if (state->opacity != 0xFF)
+	cairo_paint_with_alpha (render->cr, (double)state->opacity / 255.0);
+    else
+	cairo_paint (render->cr);	
+    cairo_destroy (child_cr);
+
+
+    rsvg_bbox_insert((RsvgBbox *)render->bb_stack->data, 
+		     &render->bbox);
+
+    render->bbox = *((RsvgBbox *)render->bb_stack->data);
+
+    g_free(render->bb_stack->data);
+    render->bb_stack = g_list_remove_link (render->bb_stack, render->bb_stack);
+
+    if (state->filter)
+    {
+	g_object_unref (G_OBJECT (output));
+	cairo_surface_destroy(surface);
+    }
 }
 
 void
 rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx *ctx)
 {
-	rsvg_cairo_pop_render_stack(ctx);
-	cairo_restore(((RsvgCairoRender *)ctx->render)->cr);
+    rsvg_cairo_pop_render_stack(ctx);
+    cairo_restore(((RsvgCairoRender *)ctx->render)->cr);
 }
 
 void 
