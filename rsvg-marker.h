@@ -1,4 +1,4 @@
-/* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /*
    rsvg-marker.h: Marker loading and rendering
 
@@ -27,7 +27,9 @@
 
 #include "rsvg-structure.h"
 
-G_BEGIN_DECLS typedef struct _RsvgMarker RsvgMarker;
+G_BEGIN_DECLS 
+
+typedef struct _RsvgMarker RsvgMarker;
 
 struct _RsvgMarker {
     RsvgNode super;
@@ -39,15 +41,12 @@ struct _RsvgMarker {
     RsvgViewBox vbox;
 };
 
-RsvgNode *rsvg_new_marker (void);
-
-void
- rsvg_marker_render (RsvgMarker * self, gdouble x, gdouble y, gdouble orient, gdouble linewidth, RsvgDrawingCtx * ctx);
-
-RsvgNode *rsvg_marker_parse (const RsvgDefs * defs, const char *str);
-
-void
- rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx);
+RsvgNode    *rsvg_new_marker	    (void);
+void	     rsvg_marker_render	    (RsvgMarker * self, gdouble x, gdouble y, 
+				     gdouble orient, gdouble linewidth, RsvgDrawingCtx * ctx);
+RsvgNode    *rsvg_marker_parse	    (const RsvgDefs * defs, const char *str);
+void	     rsvg_render_markers    (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx);
 
 G_END_DECLS
+
 #endif                          /* RSVG_MARKER_H */

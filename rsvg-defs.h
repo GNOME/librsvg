@@ -1,4 +1,4 @@
-/* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /*
    rsvg-defs.h : SVG defs utilities
 
@@ -30,30 +30,17 @@
 
 #include <glib/gtypes.h>
 
-G_BEGIN_DECLS RsvgDefs * rsvg_defs_new (void);
+G_BEGIN_DECLS 
 
-RsvgNode *rsvg_defs_lookup (const RsvgDefs * defs, const char *name);
-
-void
- rsvg_defs_set (RsvgDefs * defs, const char *name, RsvgNode * val);
-
-void
- rsvg_defs_free (RsvgDefs * defs);
-
-void
- rsvg_defs_set_base_uri (RsvgDefs * self, gchar * base_uri);
-
-void
- rsvg_defs_add_resolver (RsvgDefs * defs, RsvgNode ** tochange, const gchar * name);
-
-void
- rsvg_defs_resolve_all (RsvgDefs * defs);
-
-void
- rsvg_defs_register_name (RsvgDefs * defs, const char *name, RsvgNode * val);
-
-void
- rsvg_defs_register_memory (RsvgDefs * defs, RsvgNode * val);
+RsvgDefs    *rsvg_defs_new		(void);
+RsvgNode    *rsvg_defs_lookup		(const RsvgDefs * defs, const char *name);
+void	     rsvg_defs_set		(RsvgDefs * defs, const char *name, RsvgNode * val);
+void	     rsvg_defs_free		(RsvgDefs * defs);
+void	     rsvg_defs_set_base_uri	(RsvgDefs * self, gchar * base_uri);
+void	     rsvg_defs_add_resolver	(RsvgDefs * defs, RsvgNode ** tochange, const gchar * name);
+void	     rsvg_defs_resolve_all	(RsvgDefs * defs);
+void	     rsvg_defs_register_name	(RsvgDefs * defs, const char *name, RsvgNode * val);
+void	     rsvg_defs_register_memory	(RsvgDefs * defs, RsvgNode * val);
 
 G_END_DECLS
 #endif

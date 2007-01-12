@@ -1,4 +1,4 @@
-/* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /*
    rsvg-shapes.h: Draw SVG shapes
 
@@ -31,7 +31,9 @@
 
 #include "rsvg-structure.h"
 
-G_BEGIN_DECLS RsvgNode * rsvg_new_path (void);
+G_BEGIN_DECLS 
+
+RsvgNode * rsvg_new_path (void);
 RsvgNode *rsvg_new_polygon (void);
 RsvgNode *rsvg_new_polyline (void);
 RsvgNode *rsvg_new_line (void);
@@ -48,4 +50,5 @@ struct _RsvgNodePath {
 };
 
 G_END_DECLS
+
 #endif                          /* RSVG_SHAPES_H */

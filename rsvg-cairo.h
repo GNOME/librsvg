@@ -1,4 +1,4 @@
-/* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /* 
    rsvg-cairo.h: SAX-based renderer for SVG files using cairo
  
@@ -27,11 +27,11 @@
 
 #include <cairo.h>
 
-G_BEGIN_DECLS void
- rsvg_handle_render_cairo (RsvgHandle * handle, cairo_t * cr);
+G_BEGIN_DECLS 
 
-void
- rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id);
+void	rsvg_handle_render_cairo     (RsvgHandle * handle, cairo_t * cr);
+void	rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id);
 
 G_END_DECLS
+
 #endif

@@ -1,4 +1,4 @@
-/* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /*
    rsvg-structure.h: Rsvg's structual elements
 
@@ -33,7 +33,9 @@
 #include "rsvg-defs.h"
 #include "rsvg-styles.h"
 
-G_BEGIN_DECLS RsvgNode * rsvg_new_use (void);
+G_BEGIN_DECLS 
+
+RsvgNode * rsvg_new_use (void);
 RsvgNode *rsvg_new_symbol (void);
 RsvgNode *rsvg_new_svg (void);
 RsvgNode *rsvg_new_defs (void);
@@ -69,14 +71,15 @@ struct _RsvgNodeSvg {
     GdkPixbuf *img;
 };
 
-void rsvg_pop_def_group (RsvgHandle * ctx);
-void rsvg_node_group_pack (RsvgNode * self, RsvgNode * child);
+void rsvg_pop_def_group		(RsvgHandle * ctx);
+void rsvg_node_group_pack	(RsvgNode * self, RsvgNode * child);
 
-void rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
-void _rsvg_node_draw_children (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
-void _rsvg_node_finalize (RsvgNode * self);
-void _rsvg_node_free (RsvgNode * self);
-void _rsvg_node_init (RsvgNode * self);
+void rsvg_node_draw		(RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
+void _rsvg_node_draw_children	(RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
+void _rsvg_node_finalize	(RsvgNode * self);
+void _rsvg_node_free		(RsvgNode * self);
+void _rsvg_node_init		(RsvgNode * self);
 
 G_END_DECLS
+
 #endif                          /* RSVG_STRUCTURE_H */

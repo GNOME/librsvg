@@ -1,4 +1,4 @@
-/* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /*
    rsvg-cairo-render.h: The cairo backend plugin
 
@@ -31,8 +31,10 @@
 #include "rsvg-cairo-render.h"
 #include <cairo.h>
 
-G_BEGIN_DECLS void
- rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox);
+G_BEGIN_DECLS 
+
+void rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox);
 
 G_END_DECLS
+
 #endif

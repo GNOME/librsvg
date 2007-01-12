@@ -1,4 +1,4 @@
-/* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /*
    rsvg-mask.h : Provides Masks
 
@@ -32,7 +32,9 @@
 #include "rsvg-shapes.h"
 #include <libxml/SAX.h>
 
-G_BEGIN_DECLS typedef RsvgCoordUnits RsvgMaskUnits;
+G_BEGIN_DECLS 
+
+typedef RsvgCoordUnits RsvgMaskUnits;
 
 typedef struct _RsvgMask RsvgMask;
 
@@ -43,9 +45,8 @@ struct _RsvgMask {
     RsvgMaskUnits contentunits;
 };
 
-RsvgNode *rsvg_new_mask (void);
-
-RsvgNode *rsvg_mask_parse (const RsvgDefs * defs, const char *str);
+RsvgNode *rsvg_new_mask	    (void);
+RsvgNode *rsvg_mask_parse   (const RsvgDefs * defs, const char *str);
 
 typedef struct _RsvgClipPath RsvgClipPath;
 
@@ -54,9 +55,8 @@ struct _RsvgClipPath {
     RsvgCoordUnits units;
 };
 
-RsvgNode *rsvg_new_clip_path (void);
-
-RsvgNode *rsvg_clip_path_parse (const RsvgDefs * defs, const char *str);
+RsvgNode *rsvg_new_clip_path	(void);
+RsvgNode *rsvg_clip_path_parse	(const RsvgDefs * defs, const char *str);
 
 G_END_DECLS
 #endif

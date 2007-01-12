@@ -1,5 +1,10 @@
 2007-01-12  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
+	Fix indentation of *.h files. Running indent on them was not a good
+	idea. Also add sts setting to vim modeline.
+
+2007-01-12  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
 	Indentation fix, using: indent -kr -nut -pcs -psl -i4 -l100
 
 2007-01-12  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>

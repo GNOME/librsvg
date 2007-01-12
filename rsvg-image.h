@@ -1,4 +1,4 @@
-/* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /*
    rsvg-image.h: Image loading and displaying
 
@@ -31,7 +31,9 @@
 
 #include "rsvg-structure.h"
 
-G_BEGIN_DECLS RsvgNode * rsvg_new_image (void);
+G_BEGIN_DECLS 
+
+RsvgNode *rsvg_new_image (void);
 
 typedef struct _RsvgNodeImage RsvgNodeImage;
 
@@ -51,4 +53,5 @@ gchar *rsvg_get_file_path (const gchar * filename, const gchar * basedir);
 GdkPixbuf *rsvg_pixbuf_new_from_href (const char *href, const char *base_uri, GError ** error);
 
 G_END_DECLS
+
 #endif                          /* RSVG_IMAGE_H */

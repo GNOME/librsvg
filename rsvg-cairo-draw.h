@@ -1,4 +1,4 @@
-/* vim: set sw=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /*
    rsvg-shapes.c: Draw shapes with libart
 
@@ -29,33 +29,26 @@
 
 #include "rsvg-private.h"
 
-G_BEGIN_DECLS PangoContext * rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx);
+G_BEGIN_DECLS 
 
-void
- rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, double x, double y);
+PangoContext	*rsvg_cairo_create_pango_context    (RsvgDrawingCtx *ctx);
+void		 rsvg_cairo_render_pango_layout	    (RsvgDrawingCtx *ctx, PangoLayout *layout, 
+						     double x, double y);
+void		 rsvg_cairo_render_path		    (RsvgDrawingCtx *ctx, 
+						     const RsvgBpathDef * path);
+void		 rsvg_cairo_render_image	    (RsvgDrawingCtx *ctx, const GdkPixbuf * img, 
+						     double x, double y, double w, double h);
+void		 rsvg_cairo_push_discrete_layer	    (RsvgDrawingCtx *ctx);
+void		 rsvg_cairo_pop_discrete_layer	    (RsvgDrawingCtx *ctx);
+void		 rsvg_cairo_add_clipping_rect	    (RsvgDrawingCtx *ctx,
+						     double x, double y, double width, double height);
 
-void
- rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * path);
+GdkPixbuf	*rsvg_cairo_get_image_of_node	    (RsvgDrawingCtx *ctx, RsvgNode *drawable, 
+						     double width, double height);
 
-void
- rsvg_cairo_render_image (RsvgDrawingCtx * ctx,
-                          const GdkPixbuf * img, double x, double y, double w, double h);
-
-void
- rsvg_cairo_push_discrete_layer (RsvgDrawingCtx * ctx);
-
-void
- rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx * ctx);
-
-void
- rsvg_cairo_add_clipping_rect (RsvgDrawingCtx * ctx,
-                               double x, double y, double width, double height);
-
-GdkPixbuf *rsvg_cairo_get_image_of_node (RsvgDrawingCtx * ctx,
-                                         RsvgNode * drawable, double width, double height);
-
-void rsvg_cairo_to_pixbuf (guint8 * pixels, int rowstride, int height);
-void rsvg_pixbuf_to_cairo (guint8 * pixels, int rowstride, int height);
+void		 rsvg_cairo_to_pixbuf		    (guint8 * pixels, int rowstride, int height);
+void		 rsvg_pixbuf_to_cairo		    (guint8 * pixels, int rowstride, int height);
 
 G_END_DECLS
-#endif                          /*RSVG_CAIRO_DRAW_H */
+
+#endif /*RSVG_CAIRO_DRAW_H */
