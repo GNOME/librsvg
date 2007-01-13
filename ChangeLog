@@ -1,3 +1,7 @@
+2007-01-13  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
+	Fix Emacs modeline. Tab is 8 characters.
+
 2007-01-12  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
 	Fix indentation of *.h files. Running indent on them was not a good
