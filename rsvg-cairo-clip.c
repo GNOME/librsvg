@@ -44,14 +44,32 @@ struct RsvgCairoClipRender {
 };
 
 static void
+rsvg_cairo_clip_apply_affine (cairo_t *cr, const double affine[6])
+{
+	cairo_matrix_t matrix;
+
+	cairo_matrix_init (&matrix,
+					   affine[0], affine[1],
+					   affine[2], affine[3],
+					   affine[4], affine[5]);
+	cairo_transform (cr, &matrix);
+}
+
+static void
 rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
 {
     RsvgCairoClipRender *render = (RsvgCairoClipRender *) ctx->render;
+	RsvgState *state = rsvg_state_current (ctx);
     cairo_t *cr;
     RsvgBpath *bpath;
+	cairo_matrix_t save;
     int i;
 
     cr = render->cr;
+
+	cairo_get_matrix (cr, &save);
+
+	rsvg_cairo_clip_apply_affine (cr, state->affine);
 
     if (rsvg_state_current (ctx)->clip_rule == FILL_RULE_EVENODD)
         cairo_set_fill_rule (((RsvgCairoRender *) ctx->render)->cr, CAIRO_FILL_RULE_EVEN_ODD);
@@ -78,6 +96,7 @@ rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_de
             break;
         }
     }
+	cairo_set_matrix (cr, &save);
 }
 
 static void
