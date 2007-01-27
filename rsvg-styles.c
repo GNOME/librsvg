@@ -432,6 +432,30 @@ rsvg_parse_style_arg (RsvgHandle * ctx, RsvgState * state, const char *str)
             state->comp_op = RSVG_COMP_OP_DST_ATOP;
         else if (!strcmp (str + arg_off, "xor"))
             state->comp_op = RSVG_COMP_OP_XOR;
+        else if (!strcmp (str + arg_off, "plus"))
+            state->comp_op = RSVG_COMP_OP_PLUS;
+        else if (!strcmp (str + arg_off, "multiply"))
+            state->comp_op = RSVG_COMP_OP_MULTIPLY;
+        else if (!strcmp (str + arg_off, "screen"))
+            state->comp_op = RSVG_COMP_OP_SCREEN;
+        else if (!strcmp (str + arg_off, "overlay"))
+            state->comp_op = RSVG_COMP_OP_OVERLAY;
+        else if (!strcmp (str + arg_off, "darken"))
+            state->comp_op = RSVG_COMP_OP_DARKEN;
+        else if (!strcmp (str + arg_off, "lighten"))
+            state->comp_op = RSVG_COMP_OP_LIGHTEN;
+        else if (!strcmp (str + arg_off, "color-dodge"))
+            state->comp_op = RSVG_COMP_OP_COLOR_DODGE;
+        else if (!strcmp (str + arg_off, "color-burn"))
+            state->comp_op = RSVG_COMP_OP_COLOR_BURN;
+        else if (!strcmp (str + arg_off, "hard-light"))
+            state->comp_op = RSVG_COMP_OP_HARD_LIGHT;
+        else if (!strcmp (str + arg_off, "soft-light"))
+            state->comp_op = RSVG_COMP_OP_SOFT_LIGHT;
+        else if (!strcmp (str + arg_off, "difference"))
+            state->comp_op = RSVG_COMP_OP_DIFFERENCE;
+        else if (!strcmp (str + arg_off, "exclusion"))
+            state->comp_op = RSVG_COMP_OP_EXCLUSION;
         else
             state->comp_op = RSVG_COMP_OP_SRC_OVER;
     } else if (rsvg_css_param_match (str, "display")) {

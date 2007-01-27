@@ -80,6 +80,20 @@ _rsvg_cairo_set_operator (cairo_t * cr, RsvgCompOpType comp_op)
     case RSVG_COMP_OP_XOR:
         op = CAIRO_OPERATOR_XOR;
         break;
+    case RSVG_COMP_OP_PLUS:
+	op = CAIRO_OPERATOR_ADD;
+	break;
+    case RSVG_COMP_OP_MULTIPLY:
+    case RSVG_COMP_OP_SCREEN:
+    case RSVG_COMP_OP_OVERLAY:
+    case RSVG_COMP_OP_DARKEN:
+    case RSVG_COMP_OP_LIGHTEN:
+    case RSVG_COMP_OP_COLOR_DODGE:
+    case RSVG_COMP_OP_COLOR_BURN:
+    case RSVG_COMP_OP_HARD_LIGHT:
+    case RSVG_COMP_OP_SOFT_LIGHT:
+    case RSVG_COMP_OP_DIFFERENCE:
+    case RSVG_COMP_OP_EXCLUSION:
     default:
         op = CAIRO_OPERATOR_OVER;
         break;

@@ -1,3 +1,10 @@
+2007-01-27  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
+	* rvsg-cairo-draw.c (_rsvg_cairo_set_operator): add support for 'plus'
+	comp-op.
+	* rsvg-styles.c (rsvg_parse_style_arg): ditto.
+	* rsvg-styles.h: ditto.
+	
 2007-01-25  Kouhei Sutou <kou@cozmixng.org>
 
 	* rsvg-cairo-clip.c: Fix clipping regression introduced by the 
