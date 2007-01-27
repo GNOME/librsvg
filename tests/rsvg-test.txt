@@ -1,0 +1,8 @@
+# List of SVG render tests
+# 
+# A 'X' after a test name means expected test failure.
+
+bugs/388545
+samples/artwork
+samples/butterfly		
+svg1.2/comp-op-porterduff

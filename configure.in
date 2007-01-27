@@ -369,6 +369,8 @@ gtk-engine/examples/bubble/Makefile
 gtk-engine/examples/bubble/gtk-2.0/Makefile
 gdk-pixbuf-loader/Makefile
 moz-plugin/Makefile
+tests/Makefile
+tests/pdiff/Makefile
 doc/Makefile
 ])
 

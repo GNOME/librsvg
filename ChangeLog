@@ -1,5 +1,15 @@
 2007-01-27  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
+	Regression test suite (use make check).
+
+	* tests/rsvg-test.c: new.
+	* tests/rsvg-test.txt: new. Contains the list of test files.
+	* tests/bugs: directory for bug test files.
+	* tests/samples: directory for random test files.
+	* tests/svg1.2: directory for SVG 1.2 feature test files.
+
+2007-01-27  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
 	* rvsg-cairo-draw.c (_rsvg_cairo_set_operator): add support for 'plus'
 	comp-op.
 	* rsvg-styles.c (rsvg_parse_style_arg): ditto.

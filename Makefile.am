@@ -4,7 +4,7 @@ else
 target_rsvg_view =
 endif
 
-SUBDIRS = . moz-plugin gdk-pixbuf-loader gtk-engine data doc
+SUBDIRS = . moz-plugin gdk-pixbuf-loader gtk-engine data tests doc
 
 lib_LTLIBRARIES = librsvg-2.la
 bin_PROGRAMS = rsvg-convert $(target_rsvg_view)
