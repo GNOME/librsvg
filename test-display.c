@@ -648,7 +648,7 @@ main (int argc, char **argv)
 
     struct RsvgSizeCallbackData size_data;
 
-    char **args;
+    char **args = NULL;
     gint n_args = 0;
 
     GOptionEntry options_table[] = {

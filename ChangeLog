@@ -1,3 +1,8 @@
+2007-01-29  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* test-display.c: 402107 . rsvg_convert and rsvg_viiew crash if called without arguments
+	* rsvg-convert.c: ditto
+	
 2007-01-27  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
 	Regression test suite (use make check).

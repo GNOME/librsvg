@@ -127,7 +127,7 @@ main (int argc, char **argv)
     GError *error = NULL;
 
     int i;
-    char **args;
+    char **args = NULL;
     gint n_args = 0;
     RsvgHandle *rsvg;
     cairo_surface_t *surface = NULL;
