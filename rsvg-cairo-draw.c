@@ -942,7 +942,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
         surface = cairo_get_target (child_cr);
 
     render->cr = (cairo_t *) render->cr_stack->data;
-    render->cr_stack = g_list_remove_link (render->cr_stack, render->cr_stack);
+    render->cr_stack = g_list_delete_link (render->cr_stack, render->cr_stack);
 
     cairo_set_source_surface (render->cr, surface, 0, 0);
 
@@ -965,7 +965,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     render->bbox = *((RsvgBbox *) render->bb_stack->data);
 
     g_free (render->bb_stack->data);
-    render->bb_stack = g_list_remove_link (render->bb_stack, render->bb_stack);
+    render->bb_stack = g_list_delete_link (render->bb_stack, render->bb_stack);
 
     if (state->filter) {
         g_object_unref (G_OBJECT (output));

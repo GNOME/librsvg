@@ -861,6 +861,8 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
         pango_layout_iter_free (iter);
         ctx->render->render_pango_layout (ctx, layout, *x, *y - baseline);
         *x += w;
+        g_object_unref (layout);
+        g_object_unref (context);
     } else {
         GString *render;
         render = rsvg_text_render_text_as_string (ctx, text, x, y);
