@@ -3,6 +3,7 @@
 # A 'X' after a test name means expected test failure.
 
 bugs/388545
+bugs/403357
 samples/artwork
 samples/butterfly		
 svg1.2/comp-op-porterduff

@@ -1,3 +1,9 @@
+2007-02-01  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
+	* rsvg-marker.c (rsvg_marker_render): Don't clip if overflow style
+	property is set to visible. Fix display of markers generated with
+	inkscape.
+
 2007-01-30  Ross Burton <ross@burtonini.com>
 
 	* rsvg-cairo-draw.c: Bug 402246 - Rsvg was leaking Pango contexts,

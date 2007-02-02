@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--Bug 403357 – Marker display doesn't respect overflow property-->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="200" height="160">
+  <defs>
+    <marker orient="0" markerHeight="10" markerWidth="10" viewBox="0 0 1 1" refY="0.5" refX="0.5" id="marker0" overflow="hidden">
+	    <path d="M 0 0.5 L 0.5 1 L 1 0.5 L 0.5 0 Z" />
+    </marker>
+    <marker orient="0" markerHeight="5" markerWidth="5" viewBox="0 0 .5 .5" refY="0.5" refX="0.5" id="marker1" overflow="hidden">
+	    <path d="M 0 0.5 L 0.5 1 L 1 0.5 L 0.5 0 Z" />
+    </marker>
+    <marker orient="0" markerHeight="5" markerWidth="5" viewBox="0 0 .5 .5" refY="0.5" refX="0.5" id="marker2" overflow="visible">
+	    <path d="M 0 0.5 L 0.5 1 L 1 0.5 L 0.5 0 Z" />
+    </marker>
+    <marker orient="30" markerHeight="10" markerWidth="10" viewBox="0 0 1 1" refY="0.5" refX="0.5" id="marker3" overflow="hidden">
+	    <path d="M 0 0.5 L 0.5 1 L 1 0.5 L 0.5 0 Z" />
+    </marker>
+    <marker orient="30" markerHeight="5" markerWidth="5" viewBox="0 0 .5 .5" refY="0.5" refX="0.5" id="marker4" overflow="hidden">
+	    <path d="M 0 0.5 L 0.5 1 L 1 0.5 L 0.5 0 Z" />
+    </marker>
+    <marker orient="30" markerHeight="5" markerWidth="5" viewBox="0 0 .5 .5" refY="0.5" refX="0.5" id="marker5" overflow="visible">
+	    <path d="M 0 0.5 L 0.5 1 L 1 0.5 L 0.5 0 Z" />
+    </marker>
+    <marker orient="0" markerHeight="10" markerWidth="10" refY="5" refX="5" id="marker10" overflow="hidden">
+	    <path d="M 0 5 L 5 10 L 10 5 L 5 0 Z" />
+    </marker>
+    <marker orient="0" markerHeight="5" markerWidth="5" refY="5" refX="5" id="marker11" overflow="hidden">
+	    <path d="M 0 5 L 5 10 L 10 5 L 5 0 Z" />
+    </marker>
+    <marker orient="0" markerHeight="5" markerWidth="5" refY="5" refX="5" id="marker12" overflow="visible">
+	    <path d="M 0 5 L 5 10 L 10 5 L 5 0 Z" />
+    </marker>
+    <marker orient="30" markerHeight="10" markerWidth="10" refY="5" refX="5" id="marker13" overflow="hidden">
+	    <path d="M 0 5 L 5 10 L 10 5 L 5 0 Z" />
+    </marker>
+    <marker orient="30" markerHeight="5" markerWidth="5" refY="5" refX="5" id="marker14" overflow="hidden">
+	    <path d="M 0 5 L 5 10 L 10 5 L 5 0 Z" />
+    </marker>
+    <marker orient="30" markerHeight="5" markerWidth="5" refY="5" refX="5" id="marker15" overflow="visible">
+	    <path d="M 0 5 L 5 10 L 10 5 L 5 0 Z" />
+    </marker>
+  </defs>
+  <path stroke="black" stroke-width="2" marker-start="url(#marker0)" marker-end="url(#marker10)" d="M 20 40 L 80 40" />
+  <path stroke="black" stroke-width="2" marker-start="url(#marker1)" marker-end="url(#marker11)" d="M 20 80 L 80 80" />
+  <path stroke="black" stroke-width="2" marker-start="url(#marker2)" marker-end="url(#marker12)" d="M 20 120 L 80 120" />
+  <path stroke="black" stroke-width="2" marker-start="url(#marker3)" marker-end="url(#marker13)" d="M 120 40 L 180 40" />
+  <path stroke="black" stroke-width="2" marker-start="url(#marker4)" marker-end="url(#marker14)" d="M 120 80 L 180 80" />
+  <path stroke="black" stroke-width="2" marker-start="url(#marker5)" marker-end="url(#marker15)" d="M 120 120 L 180 120" />
+</svg>

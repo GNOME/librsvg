@@ -164,12 +164,14 @@ rsvg_marker_render (RsvgMarker * self, gdouble x, gdouble y, gdouble orient, gdo
 
     state = rsvg_state_current (ctx);
 
-    if (self->vbox.active)
-        rsvg_add_clipping_rect (ctx, self->vbox.x, self->vbox.y, self->vbox.w, self->vbox.h);
-    else
-        rsvg_add_clipping_rect (ctx, 0, 0,
-                                _rsvg_css_normalize_length (&self->width, ctx, 'h'),
-                                _rsvg_css_normalize_length (&self->height, ctx, 'v'));
+    if (!state->overflow) {
+	if (self->vbox.active)
+	    rsvg_add_clipping_rect (ctx, self->vbox.x, self->vbox.y, self->vbox.w, self->vbox.h);
+	else
+	    rsvg_add_clipping_rect (ctx, 0, 0,
+				    _rsvg_css_normalize_length (&self->width, ctx, 'h'),
+				    _rsvg_css_normalize_length (&self->height, ctx, 'v'));
+    }
 
     for (i = 0; i < self->super.children->len; i++) {
         rsvg_state_push (ctx);
