@@ -1,9 +1,191 @@
 # List of SVG render tests
 # 
 # A 'X' after a test name means expected test failure.
+# A 'I' makes rsvg-test ignore the line
 
 bugs/388545
 bugs/403357
 samples/artwork
 samples/butterfly		
+svg1.1/svg/animate-elem-02-t		I	Can't test
+svg1.1/svg/animate-elem-03-t		I	Can't test
+svg1.1/svg/animate-elem-04-t		I	Can't test
+svg1.1/svg/animate-elem-05-t		I	Can't test
+svg1.1/svg/animate-elem-06-t		I	Can't test
+svg1.1/svg/animate-elem-07-t		I	Can't test
+svg1.1/svg/animate-elem-08-t		I	Can't test
+svg1.1/svg/animate-elem-09-t		I	Can't test
+svg1.1/svg/animate-elem-10-t		I	Can't test
+svg1.1/svg/animate-elem-11-t		I	Can't test
+svg1.1/svg/animate-elem-12-t		I	Can't test
+svg1.1/svg/animate-elem-13-t		I	Can't test
+svg1.1/svg/animate-elem-14-t		I	Can't test
+svg1.1/svg/animate-elem-15-t		I	Can't test
+svg1.1/svg/animate-elem-16-t		I	Can't test
+svg1.1/svg/animate-elem-17-t		I	Can't test
+svg1.1/svg/animate-elem-18-t		I	Can't test
+svg1.1/svg/animate-elem-19-t		I	Can't test
+svg1.1/svg/animate-elem-20-t		I	Can't test
+svg1.1/svg/animate-elem-21-t		I	Can't test
+svg1.1/svg/animate-elem-22-b		I	Can't test
+svg1.1/svg/animate-elem-23-t		I	Can't test
+svg1.1/svg/animate-elem-24-t		I	Can't test
+svg1.1/svg/animate-elem-25-t		I	Can't test
+svg1.1/svg/animate-elem-26-t		I	Can't test
+svg1.1/svg/animate-elem-27-t		I	Can't test
+svg1.1/svg/animate-elem-28-t		I	Can't test
+svg1.1/svg/animate-elem-29-b		I	Can't test
+svg1.1/svg/color-prof-01-f		I	Can't test
+svg1.1/svg/color-prop-01-b
+svg1.1/svg/color-prop-02-f
+svg1.1/svg/color-prop-03-t
+svg1.1/svg/coords-trans-01-b
+svg1.1/svg/coords-trans-02-t
+svg1.1/svg/coords-trans-03-t
+svg1.1/svg/coords-trans-04-t
+svg1.1/svg/coords-trans-05-t
+svg1.1/svg/coords-trans-06-t
+svg1.1/svg/coords-units-01-b
+svg1.1/svg/coords-units-02-b
+svg1.1/svg/coords-units-03-b
+svg1.1/svg/coords-viewattr-01-b
+svg1.1/svg/coords-viewattr-02-b
+svg1.1/svg/extend-namespace-01-f	X	Nothing rendered
+svg1.1/svg/filters-blend-01-b		X	Color mismatch
+svg1.1/svg/filters-color-01-b		X	Color mismatch
+svg1.1/svg/filters-composite-02-b	X	Color mismatch
+svg1.1/svg/filters-comptran-01-b	X	Color mismatch
+svg1.1/svg/filters-conv-01-f		X	rsvg-test image bug
+svg1.1/svg/filters-diffuse-01-f		X	rsvg-test image bug
+svg1.1/svg/filters-displace-01-f	X	rsvg-test image bug
+svg1.1/svg/filters-example-01-b	
+svg1.1/svg/filters-gauss-01-b		X	Filter is not correctly clipped
+svg1.1/svg/filters-image-01-b		X	rsvg-test image bug
+svg1.1/svg/filters-light-01-f		X	rsvg-test image bug
+svg1.1/svg/filters-morph-01-f
+svg1.1/svg/filters-offset-01-b
+svg1.1/svg/filters-specular-01-f	X	rsvg-test image bug
+svg1.1/svg/filters-tile-01-b
+svg1.1/svg/filters-turb-01-f
+svg1.1/svg/fonts-elem-01-t		X	SVG font not supported
+svg1.1/svg/fonts-elem-02-t		X	SVG font not supported
+svg1.1/svg/fonts-elem-03-b		X	SVG font not supported
+svg1.1/svg/fonts-elem-04-b		X	SVG font not supported
+svg1.1/svg/interact-cursor-01-f		I	Can't test
+svg1.1/svg/interact-dom-01-b		I	Can't test
+svg1.1/svg/interact-events-01-b		I	Can't test
+svg1.1/svg/interact-order-01-b		I	Can't test
+svg1.1/svg/interact-order-02-b		I	Can't test
+svg1.1/svg/interact-order-03-b		I	Can't test
+svg1.1/svg/interact-zoom-01-t		I	Can't test
+svg1.1/svg/linking-a-01-b		I	Can't test
+svg1.1/svg/linking-a-02-b		I	Can't test
+svg1.1/svg/linking-a-03-b		I	Can't test
+svg1.1/svg/linking-a-04-t		I	Can't test
+svg1.1/svg/linking-uri-01-b		I	Can't test
+svg1.1/svg/linking-uri-02-b		I	Can't test
+svg1.1/svg/linking-uri-03-t		I	Can't test
+svg1.1/svg/masking-mask-01-b		X	SVG font not supported
+svg1.1/svg/masking-opacity-01-b
+svg1.1/svg/masking-path-01-b
+svg1.1/svg/masking-path-02-b
+svg1.1/svg/masking-path-03-b
+svg1.1/svg/masking-path-04-b		X	SVG font not supported - rsvg-test image bug
+svg1.1/svg/masking-path-05-f
+svg1.1/svg/metadata-example-01-b
+svg1.1/svg/painting-fill-01-t
+svg1.1/svg/painting-fill-02-t
+svg1.1/svg/painting-fill-03-t
+svg1.1/svg/painting-fill-04-t
+svg1.1/svg/painting-marker-01-f
+svg1.1/svg/painting-marker-02-f
+svg1.1/svg/painting-render-01-b		X	Color interpolation not supported
+svg1.1/svg/painting-stroke-01-t
+svg1.1/svg/painting-stroke-02-t
+svg1.1/svg/painting-stroke-03-t
+svg1.1/svg/painting-stroke-04-t
+svg1.1/svg/paths-data-01-t
+svg1.1/svg/paths-data-02-t
+svg1.1/svg/paths-data-03-f		X	Bug in rendering bottom left hemispheres
+svg1.1/svg/paths-data-04-t
+svg1.1/svg/paths-data-05-t
+svg1.1/svg/paths-data-06-t
+svg1.1/svg/paths-data-07-t
+svg1.1/svg/pservers-grad-01-b
+svg1.1/svg/pservers-grad-02-b
+svg1.1/svg/pservers-grad-03-b
+svg1.1/svg/pservers-grad-04-b
+svg1.1/svg/pservers-grad-05-b
+svg1.1/svg/pservers-grad-06-b
+svg1.1/svg/pservers-grad-07-b
+svg1.1/svg/pservers-grad-08-b		X 	SVG font not supported
+svg1.1/svg/pservers-grad-09-b
+svg1.1/svg/pservers-grad-10-b		X	Continuity issue in reflect mode
+svg1.1/svg/pservers-grad-11-b		X	No radial gradient on text or on stroke
+svg1.1/svg/pservers-grad-12-b
+svg1.1/svg/pservers-pattern-01-b
+svg1.1/svg/render-elems-01-t
+svg1.1/svg/render-elems-02-t
+svg1.1/svg/render-elems-03-t
+svg1.1/svg/render-elems-06-t		X	SVG font not supported
+svg1.1/svg/render-elems-07-t		X	SVG font not supported
+svg1.1/svg/render-elems-08-t		X	SVG font not supported
+svg1.1/svg/render-groups-01-b		X	SVG font not supported - rsvg-test image bug
+svg1.1/svg/render-groups-03-t		X	SVG font not supported - rsvg-test image bug
+svg1.1/svg/script-handle-01-b		I	Can't test
+svg1.1/svg/script-handle-02-b		I	Can't test
+svg1.1/svg/script-handle-03-b		I	Can't test
+svg1.1/svg/script-handle-04-b		I	Can't test
+svg1.1/svg/shapes-circle-01-t
+svg1.1/svg/shapes-ellipse-01-t
+svg1.1/svg/shapes-line-01-t
+svg1.1/svg/shapes-polygon-01-t
+svg1.1/svg/shapes-polyline-01-t
+svg1.1/svg/shapes-rect-01-t
+svg1.1/svg/struct-cond-01-t
+svg1.1/svg/struct-cond-02-t		I	Can't test
+svg1.1/svg/struct-defs-01-t
+svg1.1/svg/struct-dom-01-b		X	Not supported
+svg1.1/svg/struct-dom-02-b		X	Not supported
+svg1.1/svg/struct-dom-03-b		X 	Not supported
+svg1.1/svg/struct-dom-04-b		X	Not supported
+svg1.1/svg/struct-dom-05-b		X	Not supported
+svg1.1/svg/struct-dom-06-b		X	Not supported
+svg1.1/svg/struct-frag-01-t		X	Not supported
+svg1.1/svg/struct-group-01-t
+svg1.1/svg/struct-group-02-b
+svg1.1/svg/struct-image-01-t		X	rsvg-test image bug
+svg1.1/svg/struct-image-02-b		X	rsvg-test image bug
+svg1.1/svg/struct-image-03-t		X	rsvg-test image bug
+svg1.1/svg/struct-image-04-t
+svg1.1/svg/struct-image-05-b		X	rsvg-test image bug
+svg1.1/svg/struct-symbol-01-b		X	rsvg-test image bug
+svg1.1/svg/styling-css-01-b
+svg1.1/svg/styling-css-02-b		X	Bug
+svg1.1/svg/styling-css-03-b		X	Bug
+svg1.1/svg/styling-inherit-01-b
+svg1.1/svg/styling-pres-01-t
+svg1.1/svg/text-align-01-b
+svg1.1/svg/text-align-02-b		X	Not supported
+svg1.1/svg/text-align-03-b
+svg1.1/svg/text-align-04-b		X	Text on path not supported
+svg1.1/svg/text-align-05-b		X	Vertical text not supported
+svg1.1/svg/text-align-06-b		X	Vertical text not supported
+svg1.1/svg/text-altglyph-01-b		X	SVG font not supported
+svg1.1/svg/text-deco-01-b		X	Text decoration not supported
+svg1.1/svg/text-fonts-01-t		X	Monospace selection bug
+svg1.1/svg/text-fonts-02-t
+svg1.1/svg/text-intro-01-t		X	Hebrew and Yiddish bug ?
+svg1.1/svg/text-intro-02-b		X	Rtl selection not supported
+svg1.1/svg/text-intro-03-b		X	Vertical text not supported
+svg1.1/svg/text-intro-04-t		X	Bug in hebrew line
+svg1.1/svg/text-path-01-b		X	Text on path not supported
+svg1.1/svg/text-spacing-01-b		X	Not supported
+svg1.1/svg/text-text-01-b		X	Squeeze/stretch not supported
+svg1.1/svg/text-text-03-b		X	Text decoration not supported
+svg1.1/svg/text-tref-01-b		X	Not supported or rsvg-test bug ?
+svg1.1/svg/text-tselect-01-b		I	Can't test
+svg1.1/svg/text-tspan-01-b		X	"cute and fuzzy" bug
+svg1.1/svg/text-ws-01-t
+svg1.1/svg/text-ws-02-t			X	Indentation bug
 svg1.2/comp-op-porterduff

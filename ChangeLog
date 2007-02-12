@@ -1,3 +1,9 @@
+2007-02-12  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
+	Add the W3C test files.
+
+	* tests/rsvg-test.c: generates a html file with test failures.
+
 2007-02-01  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
 	* rsvg-marker.c (rsvg_marker_render): Don't clip if overflow style

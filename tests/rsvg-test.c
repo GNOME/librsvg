@@ -53,6 +53,7 @@ typedef enum {
 
 static const char *fail_face = "", *normal_face = "";
 FILE *rsvg_test_log_file = NULL;
+FILE *rsvg_test_html_file = NULL;
 
 static void
 rsvg_test_log (const char *fmt, ...)
@@ -65,9 +66,21 @@ rsvg_test_log (const char *fmt, ...)
     va_end (va);
 }
 
+static void
+rsvg_test_html (const char *fmt, ...)
+{
+    va_list va;
+    FILE *file = rsvg_test_html_file ? rsvg_test_html_file : stdout;
+
+    va_start (va, fmt);
+    vfprintf (file, fmt, va);
+    va_end (va);
+}
+
 #define TEST_WIDTH 480
 #define TEST_LIST_FILENAME  "rsvg-test.txt"
 #define TEST_LOG_FILENAME   "rsvg-test.log"
+#define HTML_FILENAME	    "rsvg-test.html"
 
 #if   HAVE_STDINT_H
 # include <stdint.h>
@@ -250,8 +263,10 @@ rsvg_cairo_check (char const *test_name, gboolean xfail)
     _rsvg_size_callback (&dimensions.width, &dimensions.height, &size_data);
 
     surface_a = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-					  dimensions.width, dimensions.height);
+					    dimensions.width, dimensions.height);
     cr = cairo_create (surface_a);
+    cairo_set_source_rgb (cr, 1, 1, 1);
+    cairo_paint (cr);
     rsvg_handle_render_cairo (rsvg, cr);
     cairo_surface_write_to_png (surface_a, png_filename);
 
@@ -306,9 +321,18 @@ rsvg_cairo_check (char const *test_name, gboolean xfail)
 
     g_object_unref (G_OBJECT (rsvg));
 
+    if (status == RSVG_TEST_FAILURE) {
+	rsvg_test_html ("<tr>");
+	rsvg_test_html ("<td><img src=\"%s\"/></td>", png_filename);
+	rsvg_test_html ("<td><img src=\"%s\"/></td>", reference_png_filename);
+	rsvg_test_html ("<td><img src=\"%s\"/></td>", difference_png_filename);
+	rsvg_test_html ("</tr>\n");
+    }
+
     g_free (png_filename);
     g_free (svg_filename);
     g_free (reference_png_filename);
+    g_free (difference_png_filename);
 
     return status;
 }
@@ -320,7 +344,7 @@ main (int argc, char **argv)
     char *list_content;
     char **list_lines, **strings;
     char *test_name;
-    gboolean xfail;
+    gboolean xfail, ignore;
     int i, j;
     unsigned length;
 
@@ -336,15 +360,17 @@ main (int argc, char **argv)
 #endif
 
     rsvg_test_log_file = fopen (TEST_LOG_FILENAME, "w");
-    if (rsvg_test_log_file == NULL) {
-	fprintf (stderr, "Error opening log file: %s\n", TEST_LOG_FILENAME);
-	rsvg_test_log_file = stderr;
-    }
+    rsvg_test_html_file = fopen (HTML_FILENAME, "w");
 
+    rsvg_test_html ("<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\""
+		    "\"http://www.w3.org/TR/html4/loose.dtd\"/>\n");
+    rsvg_test_html ("<html>\n");
+    rsvg_test_html ("<table>\n");
+    
     rsvg_init ();
 
     if (g_file_get_contents (TEST_LIST_FILENAME, &list_content, &length, NULL)) {
-	rsvg_set_default_dpi_x_y (300, 300);
+	rsvg_set_default_dpi_x_y (72, 72);
 
 	list_lines = g_strsplit (list_content, "\n", 0);
 	for (i = 0; list_lines[i] != NULL; i++) {
@@ -354,11 +380,14 @@ main (int argc, char **argv)
 		&& strlen (test_name) > 0 
 		&& test_name[0] != '#') {
 		xfail = FALSE;
+		ignore = FALSE;
 		for (j = 1; strings[j] != NULL; j++) {
 		    if (strcmp (strings[j], "X") == 0)
 			xfail = TRUE;
+		    else if (strcmp (strings[j], "I") == 0)
+			ignore = TRUE;
 		}
-		if (rsvg_cairo_check (test_name, xfail) != RSVG_TEST_SUCCESS)
+		if (!ignore && rsvg_cairo_check (test_name, xfail) != RSVG_TEST_SUCCESS)
 		    status = RSVG_TEST_FAILURE;
 	    }
 	    g_strfreev (strings);
@@ -370,7 +399,13 @@ main (int argc, char **argv)
 
     rsvg_term ();
 
-    if (rsvg_test_log_file != stderr)
+    rsvg_test_html ("</table>\n");
+    rsvg_test_html ("</html>\n");
+
+    if (rsvg_test_html_file != NULL)
+	fclose (rsvg_test_html_file);
+
+    if (rsvg_test_log_file != NULL)
 	fclose (rsvg_test_log_file);
 
     return status;
