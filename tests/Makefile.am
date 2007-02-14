@@ -2,7 +2,6 @@ SUBDIRS=pdiff .
 
 TESTS = rsvg-test
 
-
 LDADD = $(top_builddir)/librsvg-2.la		\
 	$(top_builddir)/tests/pdiff/libpdiff.la
 
@@ -14,5 +13,12 @@ INCLUDES = -I$(srcdir) 				\
 
 EXTRA_PROGRAMS = $(TESTS)
 
+CLEANFILES = $(TESTS)
+
+DISTCLEANFILES = rsvg-test.html			\
+		 rsvg-test.log
+
 test:
 	@$(MAKE) $(AM_MAKEFLAGS) check;
+
+.PHONY: test
