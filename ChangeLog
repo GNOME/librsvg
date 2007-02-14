@@ -1,3 +1,9 @@
+2007-02-14  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* tests/Makefile.am: Bug 407230 - make check fails when builddir 
+	!= srcdir in that certain headers are not found
+	* tests/rsvg-test.c: Ditto
+
 2007-02-12  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
 	Add the W3C test files.

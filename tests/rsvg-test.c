@@ -78,7 +78,7 @@ rsvg_test_html (const char *fmt, ...)
 }
 
 #define TEST_WIDTH 480
-#define TEST_LIST_FILENAME  "rsvg-test.txt"
+#define TEST_LIST_FILENAME  TEST_DATA_DIR"/rsvg-test.txt"
 #define TEST_LOG_FILENAME   "rsvg-test.log"
 #define HTML_FILENAME	    "rsvg-test.html"
 
@@ -379,6 +379,10 @@ main (int argc, char **argv)
 	    if (test_name != NULL 
 		&& strlen (test_name) > 0 
 		&& test_name[0] != '#') {
+		char * test_filename;
+
+		test_filename = g_build_filename (TEST_DATA_DIR, test_name, NULL);
+
 		xfail = FALSE;
 		ignore = FALSE;
 		for (j = 1; strings[j] != NULL; j++) {
@@ -387,8 +391,10 @@ main (int argc, char **argv)
 		    else if (strcmp (strings[j], "I") == 0)
 			ignore = TRUE;
 		}
-		if (!ignore && rsvg_cairo_check (test_name, xfail) != RSVG_TEST_SUCCESS)
+		if (!ignore && rsvg_cairo_check (test_filename, xfail) != RSVG_TEST_SUCCESS)
 		    status = RSVG_TEST_FAILURE;
+
+		g_free (test_filename);
 	    }
 	    g_strfreev (strings);
 	}
