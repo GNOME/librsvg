@@ -483,6 +483,8 @@ rsvg_text_create_layout (RsvgDrawingCtx * ctx,
 {
     PangoFontDescription *font_desc;
     PangoLayout *layout;
+    PangoAttrList *attr_list;
+    PangoAttribute *attribute;
 
     if (state->lang)
         pango_context_set_language (context, pango_language_from_string (state->lang));
@@ -507,6 +509,15 @@ rsvg_text_create_layout (RsvgDrawingCtx * ctx,
     layout = pango_layout_new (context);
     pango_layout_set_font_description (layout, font_desc);
     pango_font_description_free (font_desc);
+
+    attr_list = pango_attr_list_new ();
+    attribute = pango_attr_letter_spacing_new ( _rsvg_css_normalize_length (&state->letter_spacing, 
+									    ctx, 'h') * PANGO_SCALE);
+    attribute->start_index = 0;
+    attribute->end_index = G_MAXINT;
+    pango_attr_list_insert (attr_list, attribute); 
+    pango_layout_set_attributes (layout, attr_list);
+    pango_attr_list_unref (attr_list);
 
     if (text)
         pango_layout_set_text (layout, text, -1);

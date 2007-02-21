@@ -83,6 +83,7 @@ rsvg_state_init (RsvgState * state)
     state->text_dir = PANGO_DIRECTION_LTR;
     state->unicode_bidi = UNICODE_BIDI_NORMAL;
     state->text_anchor = TEXT_ANCHOR_START;
+    state->letter_spacing = _rsvg_css_parse_length ("0.0");
     state->visible = TRUE;
     state->cond_true = TRUE;
     state->filter = NULL;
@@ -120,6 +121,7 @@ rsvg_state_init (RsvgState * state)
     state->has_text_dir = FALSE;
     state->has_unicode_bidi = FALSE;
     state->has_text_anchor = FALSE;
+    state->has_letter_spacing = FALSE;
     state->has_startMarker = FALSE;
     state->has_middleMarker = FALSE;
     state->has_endMarker = FALSE;
@@ -221,6 +223,8 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->unicode_bidi = src->unicode_bidi;
     if (function (dst->has_text_anchor, src->has_text_anchor))
         dst->text_anchor = src->text_anchor;
+    if (function (dst->has_letter_spacing, src->has_letter_spacing))
+	dst->letter_spacing = src->letter_spacing;
     if (function (dst->has_startMarker, src->has_startMarker))
         dst->startMarker = src->startMarker;
     if (function (dst->has_middleMarker, src->has_middleMarker))
@@ -612,6 +616,9 @@ rsvg_parse_style_arg (RsvgHandle * ctx, RsvgState * state, const char *str)
             else if (strstr (str + arg_off, "end"))
                 state->text_anchor = TEXT_ANCHOR_END;
         }
+    } else if (rsvg_css_param_match (str, "letter-spacing")) {
+	state->has_letter_spacing = TRUE;
+	state->letter_spacing = _rsvg_css_parse_length (str + arg_off);
     } else if (rsvg_css_param_match (str, "stop-color")) {
         if (strcmp (str + arg_off, "inherit")) {
             state->stop_color = rsvg_css_parse_color (str + arg_off, &state->has_stop_color);
@@ -745,6 +752,7 @@ rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * a
     rsvg_lookup_parse_style_pair (ctx, state, "text-anchor", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "text-decoration", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "unicode-bidi", atts);
+    rsvg_lookup_parse_style_pair (ctx, state, "letter-spacing", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "visibility", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "writing-mode", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "xml:lang", atts);

@@ -174,6 +174,8 @@ struct _RsvgState {
     gboolean has_unicode_bidi;
     TextAnchor text_anchor;
     gboolean has_text_anchor;
+    RsvgLength letter_spacing;
+    gboolean has_letter_spacing;
 
     guint text_offset;
 
