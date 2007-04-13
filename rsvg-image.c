@@ -354,14 +354,14 @@ _rsvg_acquire_xlink_href_resource (const char *href, const char *base_uri, GErro
         return NULL;
 
     if (!strncmp (href, "data:", 5))
-        arr = rsvg_acquire_base64_resource (href, err);
+        arr = rsvg_acquire_base64_resource (href, NULL);
 
     if (!arr)
-        arr = rsvg_acquire_file_resource (href, base_uri, err);
+        arr = rsvg_acquire_file_resource (href, base_uri, NULL);
 
 #ifdef HAVE_GNOME_VFS
     if (!arr)
-        arr = rsvg_acquire_vfs_resource (href, base_uri, err);
+        arr = rsvg_acquire_vfs_resource (href, base_uri, NULL);
 #endif
 
     return arr;
