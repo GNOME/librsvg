@@ -1669,12 +1669,19 @@ void
 rsvg_bbox_clip (RsvgBbox * dst, RsvgBbox * src)
 {
     double affine[6];
-    double xmin = dst->x + dst->w, ymin = dst->y + dst->h;
-    double xmax = dst->x, ymax = dst->y;
+	double xmin, ymin;
+	double xmax, ymax;
     int i;
 
     if (src->virgin)
         return;
+
+	if (!dst->virgin)
+		{
+			xmin = dst->x, ymin = dst->y;
+			xmax = dst->x + dst->w, ymax = dst->y + dst->h;
+		}
+
     _rsvg_affine_invert (affine, dst->affine);
     _rsvg_affine_multiply (affine, src->affine, affine);
 

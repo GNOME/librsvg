@@ -1,3 +1,10 @@
+2007-04-12  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-base.c: If dst->virgin is set, dst->x, y, w and h are 
+	uninitialised. The result of the addition is already not used, 
+	but the addition itself can trigger floating point exceptions, 
+	so make sure it's not performed. Bug 427031 (Harald van Dijk)
+
 2007-02-22  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
 	Update reference files. They are generated using MS fonts.
