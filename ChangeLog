@@ -1,5 +1,10 @@
 2007-04-12  Dom Lachowicz <domlachowicz@gmail.com>
 
+	* configure.in: Bug 421710 - want a way to detect whether 
+	gnome-vfs support is enabled (Christian Perch)
+	
+2007-04-12  Dom Lachowicz <domlachowicz@gmail.com>
+
 	* rsvg-base.c: If dst->virgin is set, dst->x, y, w and h are 
 	uninitialised. The result of the addition is already not used, 
 	but the addition itself can trigger floating point exceptions, 

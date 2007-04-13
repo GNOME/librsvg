@@ -133,23 +133,24 @@ LIBGNOME_VFS_CFLAGS=""
 LIBGNOME_VFS_LIBS=""
 
 LIBGNOME_VFS_PKG=""
-test_gnome_vfs=true
-AC_ARG_ENABLE(gnome-vfs, [  --enable-gnome-vfs  Use Gnome VFS for reading remote files [default = auto]],
-			 test_gnome_vfs="$enableval")
+AC_ARG_ENABLE([gnome-vfs],
+        [AS_HELP_STRING([--enable-gnome-vfs],[Use Gnome VFS for reading remote files (default = auto)])],
+        [],[enable_gnome_vfs=auto])
 
-if test "x$test_gnome_vfs" != "xno"; then
-	PKG_CHECK_MODULES(LIBGNOME_VFS,[gnome-vfs-2.0 >= 1.9.16], test_gnome_vfs=true, test_gnome_vfs=false)
+if test "$enable_gnome_vfs" != "no"; then
+	PKG_CHECK_MODULES([LIBGNOME_VFS],[gnome-vfs-2.0 >= 1.9.16],[enable_gnome_vfs=yes],[enable_gnome_vfs=no])
 fi
 
-if test "x$test_gnome_vfs" = "xtrue"; then
+if test "$enable_gnome_vfs" = "yes"; then
 	LIBGNOME_VFS_CFLAGS="$LIBGNOME_VFS_CFLAGS -DHAVE_GNOME_VFS=1"
 	LIBGNOME_VFS_PKG="gnome-vfs-2.0"
 else
-	AC_MSG_WARN([Gnome VFS support disabled, as requested (Use --with-gnome-vfs to enable)])
+	AC_MSG_WARN([Gnome VFS support disabled, as requested (Use --enable-gnome-vfs to enable)])
 fi
-AM_CONDITIONAL(WITH_LIBGNOME_VFS,[test "$LIBGNOME_VFS_PKG" != ""])
+AM_CONDITIONAL([WITH_LIBGNOME_VFS],[test "$enable_gnome_vfs" = "yes"])
 
-AC_SUBST(LIBGNOME_VFSPKG)
+AC_SUBST([LIBGNOME_VFS_PKG])
+AC_SUBST([GNOME_VFS_SUPPORTED],[$enable_gnome_vfs])
 
 AC_SUBST(LIBGNOME_VFS_CFLAGS)
 AC_SUBST(LIBGNOME_VFS_LIBS)
