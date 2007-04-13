@@ -1681,6 +1681,10 @@ rsvg_bbox_clip (RsvgBbox * dst, RsvgBbox * src)
 			xmin = dst->x, ymin = dst->y;
 			xmax = dst->x + dst->w, ymax = dst->y + dst->h;
 		}
+	else
+		{
+			xmin = ymin = xmax = ymax = 0;
+		}
 
     _rsvg_affine_invert (affine, dst->affine);
     _rsvg_affine_multiply (affine, src->affine, affine);
