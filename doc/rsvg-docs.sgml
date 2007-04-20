@@ -20,8 +20,8 @@
     <title>RSVG Overview</title>
     <partintro>
     <para>
-The GNOME SVG Library (RSVG) is library for rendering SVG and SVGZ files. RSVG is released under the GNU General Public
-License (GNU GPL), which allows for flexible licensing of client applications.
+The GNOME SVG Library (RSVG) is library for rendering SVG and SVGZ files. RSVG is released under the GNU Library General Public
+License (GNU LGPL), which allows for flexible licensing of client applications.
     </para>
     <para>
 RSVG depends on the following libraries:
