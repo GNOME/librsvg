@@ -1,3 +1,8 @@
+2007-04-23  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-base.c: Incorrect rendering of certain SVG files because of
+	SVG namespaces. Patch from Bertram Felgenhauer (#375649)
+	
 2007-04-12  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* rsvg-image.c: Bug 421697 - rsvg_handle_new_from_file overwrites GError

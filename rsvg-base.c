@@ -666,6 +666,11 @@ rsvg_end_element (void *data, const xmlChar * name)
             ctx->priv->handler->end_element (ctx->priv->handler, (const char *) name);
         ctx->priv->handler_nest--;
     } else {
+        const char *tempname;
+        for (tempname = (const char *) name; *tempname != '\0'; tempname++)
+            if (*tempname == ':')
+                name = (const xmlChar *) (tempname + 1);
+
         if (ctx->priv->handler != NULL) {
             ctx->priv->handler->free (ctx->priv->handler);
             ctx->priv->handler = NULL;
