@@ -1,3 +1,7 @@
+2007-05-01  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-base.c: #427031, again
+	
 2007-05-01  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
 	* tests/rsvg-test.c: change generated png filename suffix from .png to
