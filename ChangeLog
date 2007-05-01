@@ -1,3 +1,10 @@
+2007-05-01  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
+	* rsvg-marker.c (rsvg_render_markers): fix marker orientation for spline
+	paths. 
+	* tests/samples/arrows.svg,
+	* tests/samples/arrows-ref.png: test file and reference rendering.
+
 2007-04-23  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* rsvg-base.c: Incorrect rendering of certain SVG files because of

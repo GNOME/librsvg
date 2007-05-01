@@ -213,6 +213,7 @@ rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
     double lastx, lasty;
     double nextx, nexty;
     double linewidth;
+    int code, lastcode, nextcode;
 
     RsvgState *state;
     RsvgMarker *startmarker;
@@ -231,38 +232,67 @@ rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
 
     x = 0;
     y = 0;
+    code = RSVG_END;
     nextx = bpath_def->bpath[0].x3;
     nexty = bpath_def->bpath[0].y3;
+    nextcode = bpath_def->bpath[0].code;
 
     for (i = 0; i < bpath_def->n_bpath - 1; i++) {
         lastx = x;
         lasty = y;
+	lastcode = code;
         x = nextx;
         y = nexty;
+	code = nextcode;
         nextx = bpath_def->bpath[i + 1].x3;
         nexty = bpath_def->bpath[i + 1].y3;
+	nextcode = bpath_def->bpath[i + 1].code;
 
-        if (bpath_def->bpath[i + 1].code == RSVG_MOVETO ||
-            bpath_def->bpath[i + 1].code == RSVG_MOVETO_OPEN ||
-            bpath_def->bpath[i + 1].code == RSVG_END) {
-            if (endmarker)
-                rsvg_marker_render (endmarker, x, y, atan2 (y - lasty, x - lastx), linewidth, ctx);
-        } else if (bpath_def->bpath[i].code == RSVG_MOVETO
-                   || bpath_def->bpath[i].code == RSVG_MOVETO_OPEN) {
-            if (startmarker)
-                rsvg_marker_render (startmarker, x, y, atan2 (nexty - y, nextx - x), linewidth,
-                                    ctx);
-        } else {
-            if (middlemarker) {
-                double xdifin, ydifin, xdifout, ydifout, intot, outtot, angle;
+        if (nextcode == RSVG_MOVETO 
+	    || nextcode == RSVG_MOVETO_OPEN 
+	    || nextcode == RSVG_END) {
+            if (endmarker) {
+		if (code == RSVG_CURVETO) 
+		    rsvg_marker_render (endmarker, x, y, 
+					atan2 (y - bpath_def->bpath[i].y2, 
+					       x - bpath_def->bpath[i].x2), 
+					linewidth, ctx);
+		else
+		    rsvg_marker_render (endmarker, x, y, atan2 (y - lasty, x - lastx), linewidth, ctx);
+	    }
+        } else if (code == RSVG_MOVETO
+                   || code == RSVG_MOVETO_OPEN) {
+            if (startmarker) {
+		if (nextcode == RSVG_CURVETO)
+		    rsvg_marker_render (startmarker, x, y, 
+					atan2 (bpath_def->bpath[i + 1].y1 - y, 
+					       bpath_def->bpath[i + 1].x1 - x), linewidth,
+					ctx);
+		else 
+		    rsvg_marker_render (startmarker, x, y, atan2 (nexty - y, nextx - x), linewidth,
+					ctx);
+	    }
+	} else {
+	    if (middlemarker) {
+		double xdifin, ydifin, xdifout, ydifout, intot, outtot, angle;
 
-                xdifin = x - lastx;
-                ydifin = y - lasty;
-                xdifout = nextx - x;
-                ydifout = nexty - y;
+		if (code == RSVG_CURVETO) {
+		    xdifin = x - bpath_def->bpath[i].x2;
+		    ydifin = y - bpath_def->bpath[i].y2;
+		} else {
+		    xdifin = x - lastx;
+		    ydifin = y - lasty;
+		}
+		if (nextcode == RSVG_CURVETO) {
+		    xdifout = bpath_def->bpath[i+1].x1 - x;
+		    ydifout = bpath_def->bpath[i+1].y1 - y;
+		} else {
+		    xdifout = nextx - x;
+		    ydifout = nexty - y;
+		}
 
-                intot = sqrt (xdifin * xdifin + ydifin * ydifin);
-                outtot = sqrt (xdifout * xdifout + ydifout * ydifout);
+		intot = sqrt (xdifin * xdifin + ydifin * ydifin);
+		outtot = sqrt (xdifout * xdifout + ydifout * ydifout);
 
                 xdifin /= intot;
                 ydifin /= intot;

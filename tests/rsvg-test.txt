@@ -6,7 +6,8 @@
 bugs/388545
 bugs/403357
 samples/artwork
-samples/butterfly		
+samples/butterfly
+samples/arrows
 svg1.1/svg/animate-elem-02-t		I	Can't test
 svg1.1/svg/animate-elem-03-t		I	Can't test
 svg1.1/svg/animate-elem-04-t		I	Can't test
