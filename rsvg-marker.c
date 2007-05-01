@@ -213,7 +213,7 @@ rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
     double lastx, lasty;
     double nextx, nexty;
     double linewidth;
-    int code, lastcode, nextcode;
+    RsvgPathcode code, lastcode, nextcode;
 
     RsvgState *state;
     RsvgMarker *startmarker;
