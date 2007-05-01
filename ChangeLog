@@ -1,5 +1,10 @@
 2007-05-01  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
+	* tests/rsvg-test.c: change generated png filename suffix from .png to
+	-out.png. That makes thing cleaner for svn:ignore.
+
+2007-05-01  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
 	* rsvg-marker.c (rsvg_render_markers): fix marker orientation for spline
 	paths. 
 	* tests/samples/arrows.svg,

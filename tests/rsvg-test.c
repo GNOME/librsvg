@@ -245,7 +245,7 @@ rsvg_cairo_check (char const *test_name, gboolean xfail)
 
     rsvg_test_log ("%s%s\n",test_name, xfail ? " X" : "");
 
-    png_filename = g_strdup_printf ("%s.png", test_name);
+    png_filename = g_strdup_printf ("%s-out.png", test_name);
     svg_filename = g_strdup_printf ("%s.svg", test_name);
     reference_png_filename = g_strdup_printf ("%s-ref.png", test_name);
     difference_png_filename = g_strdup_printf ("%s-diff.png", test_name);
