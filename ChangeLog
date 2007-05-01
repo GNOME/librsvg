@@ -1,5 +1,9 @@
 2007-05-01  Dom Lachowicz <domlachowicz@gmail.com>
 
+	* rsvg-base.c: mem leak in rsvg_cairo_render_sub (#409030)
+	
+2007-05-01  Dom Lachowicz <domlachowicz@gmail.com>
+
 	* rsvg-base.c: #427031, again
 	
 2007-05-01  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
