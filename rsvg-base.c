@@ -1038,13 +1038,6 @@ rsvg_state_free_func (gpointer data, gpointer user_data)
     g_mem_chunk_free (ctx->state_allocator, data);
 }
 
-static void
-rsvg_node_free_func (gpointer data, gpointer user_data)
-{
-    RsvgNode *node = (RsvgNode *) data;
-	_rsvg_node_free (node);
-}
-
 void
 rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
 {
@@ -1053,7 +1046,7 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
     g_slist_foreach (handle->state, rsvg_state_free_func, (gpointer) handle);
     g_slist_free (handle->state);
 
-	g_slist_foreach (handle->drawsub_stack, rsvg_node_free_func, NULL);
+	/* the drawsub stack's nodes are owned by the ->defs */
 	g_slist_free (handle->drawsub_stack);
 
     if (handle->base_uri)
