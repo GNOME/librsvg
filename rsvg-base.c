@@ -1041,7 +1041,7 @@ rsvg_state_free_func (gpointer data, gpointer user_data)
 static void
 rsvg_node_free_func (gpointer data, gpointer user_data)
 {
-    RsvgNode *node = (RsvgNode *) user_data;
+    RsvgNode *node = (RsvgNode *) data;
 	_rsvg_node_free (node);
 }
 

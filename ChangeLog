@@ -1,3 +1,7 @@
+2007-05-02  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-base.c: Bug 435129 - crashes when using subrendering
+	
 2007-05-01  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* rsvg-base.c: mem leak in rsvg_cairo_render_sub (#409030)
