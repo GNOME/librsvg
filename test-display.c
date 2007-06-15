@@ -51,6 +51,43 @@ _rsvg_basename (const char *file)
     return NULL;
 }
 
+static GdkPixbuf *
+pixbuf_from_data_with_size_data (const guchar * buff,
+                                 size_t len,
+                                 struct RsvgSizeCallbackData *data,
+                                 const char *base_uri,
+                                 const char *id,
+                                 GError ** error)
+{
+    RsvgHandle *handle;
+    GdkPixbuf *retval;
+
+    handle = rsvg_handle_new ();
+
+    if (!handle) {
+        g_set_error (error, rsvg_error_quark (), 0, _("Error creating SVG reader"));
+        return NULL;
+    }
+
+    rsvg_handle_set_size_callback (handle, _rsvg_size_callback, data, NULL);
+    rsvg_handle_set_base_uri (handle, base_uri);
+
+    if (!rsvg_handle_write (handle, buff, len, error)) {
+        g_object_unref (G_OBJECT (handle));
+        return NULL;
+    }
+
+    if (!rsvg_handle_close (handle, error)) {
+        g_object_unref (G_OBJECT (handle));
+        return NULL;
+    }
+
+    retval = rsvg_handle_get_pixbuf_sub (handle, id);
+    g_object_unref (G_OBJECT (handle));
+
+    return retval;
+}
+
 typedef struct _ViewerCbInfo ViewerCbInfo;
 struct _ViewerCbInfo {
     GtkWidget *window;
@@ -61,6 +98,7 @@ struct _ViewerCbInfo {
     GByteArray *svg_bytes;
     GtkAccelGroup *accel_group;
     char *base_uri;
+    char *id;
 };
 
 static void
@@ -75,8 +113,8 @@ zoom_image (ViewerCbInfo * info, gint width, gint height)
     size_data.keep_aspect_ratio = FALSE;
 
     info->pixbuf =
-        rsvg_pixbuf_from_data_with_size_data (info->svg_bytes->data, info->svg_bytes->len,
-                                              &size_data, info->base_uri, NULL);
+        pixbuf_from_data_with_size_data (info->svg_bytes->data, info->svg_bytes->len,
+                                         &size_data, info->base_uri, info->id, NULL);
     gtk_image_set_from_pixbuf (GTK_IMAGE (info->image), info->pixbuf);
 
     if (save_pixbuf)
@@ -641,6 +679,7 @@ main (int argc, char **argv)
     char *bg_color = NULL;
     char *base_uri = NULL;
     int bKeepAspect = 0;
+    char *id = NULL;
 
     int xid = -1;
     int from_stdin = 0;
@@ -671,12 +710,16 @@ main (int argc, char **argv)
          N_("Set the image background color (default: transparent)"), N_("<string>")},
         {"base-uri", 'u', 0, G_OPTION_ARG_STRING, &base_uri, N_("Set the base URI (default: none)"),
          N_("<string>")},
+        {"id", 0, 0, G_OPTION_ARG_STRING, &id, N_("Only show one node (default: all)"),
+         N_("<string>")},
         {"keep-aspect", 'k', 0, G_OPTION_ARG_NONE, &bKeepAspect,
          N_("Preserve the image's aspect ratio"), NULL},
         {"version", 'v', 0, G_OPTION_ARG_NONE, &bVersion, N_("Show version information"), NULL},
         {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL, N_("[FILE...]")},
         {NULL}
     };
+
+    g_thread_init (NULL);
 
     info.pixbuf = NULL;
     info.svg_bytes = NULL;
@@ -772,10 +815,11 @@ main (int argc, char **argv)
     }
 
     info.base_uri = base_uri;
+    info.id = id;
 
-    info.pixbuf =
-        rsvg_pixbuf_from_data_with_size_data (info.svg_bytes->data, info.svg_bytes->len, &size_data,
-                                              base_uri, &err);
+    info.pixbuf = 
+        pixbuf_from_data_with_size_data (info.svg_bytes->data, info.svg_bytes->len, &size_data,
+                                         base_uri, id, &err);
 
     if (!info.pixbuf) {
         g_print (_("Error displaying image"));

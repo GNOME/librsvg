@@ -1,3 +1,8 @@
+2007-06-15  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* test-display.c: Bug 444443 - allow to subrender with rsvg-view. From
+	Christian Persch.
+	
 2007-05-02  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* rsvg-base.c: Bug 435129 - crashes when using subrendering
