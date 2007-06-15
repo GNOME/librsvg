@@ -94,6 +94,7 @@ DEPS = $(top_builddir)/librsvg-2.la
 LDADDS =				\
 	$(LIBGNOME_VFS_LIBS)		\
 	$(LIBGSF_LIBS)			\
+	$(GLIB_LIBS)			\
 	$(LIBCROCO_LIBS)		\
 	$(LIBRSVG_LIBS) 		\
 	$(top_builddir)/librsvg-2.la

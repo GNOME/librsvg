@@ -162,6 +162,8 @@ main (int argc, char **argv)
         {NULL}
     };
 
+	g_thread_init(NULL);
+
     g_option_context = g_option_context_new (_("- SVG Converter"));
     g_option_context_add_main_entries (g_option_context, options_table, NULL);
     g_option_context_set_help_enabled (g_option_context, TRUE);
