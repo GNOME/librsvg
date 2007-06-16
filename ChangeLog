@@ -1,3 +1,8 @@
+2007-06-16  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-structure.c: Bug 444462 - x & y attributes shouldn't affect the
+	outermost <svg> element
+	
 2007-06-15  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* test-display.c: Bug 444443 - allow to subrender with rsvg-view. From

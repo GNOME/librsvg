@@ -87,6 +87,7 @@ _rsvg_node_dont_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * a
 void
 _rsvg_node_init (RsvgNode * self)
 {
+	self->parent = NULL;
     self->children = g_ptr_array_new ();
     self->state = g_new (RsvgState, 1);
     rsvg_state_init (self->state);
@@ -329,9 +330,14 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
             svg->w = _rsvg_css_parse_length (value);
         if ((value = rsvg_property_bag_lookup (atts, "height")))
             svg->h = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
+
+		/* 
+		 * x & y attributes have no effect on outermost svg
+		 * http://www.w3.org/TR/SVG/struct.html#SVGElement 
+		 */
+        if (self->parent && (value = rsvg_property_bag_lookup (atts, "x")))
             svg->x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
+        if (self->parent && (value = rsvg_property_bag_lookup (atts, "y")))
             svg->y = _rsvg_css_parse_length (value);
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
