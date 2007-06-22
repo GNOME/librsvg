@@ -61,6 +61,7 @@ static RsvgHandle *
 rsvg_handle_new_from_stdio_file (FILE * f, GError ** error)
 {
     RsvgHandle *handle;
+    gchar *current_dir;
     gchar *base_uri;
 
     handle = rsvg_handle_new ();
@@ -85,9 +86,11 @@ rsvg_handle_new_from_stdio_file (FILE * f, GError ** error)
         return NULL;
     }
 
-    base_uri = g_get_current_dir ();
+    current_dir = g_get_current_dir ();
+    base_uri = g_build_filename (current_dir, "file.svg", NULL);
     rsvg_handle_set_base_uri (handle, base_uri);
     g_free (base_uri);
+    g_free (current_dir);
 
     return handle;
 }

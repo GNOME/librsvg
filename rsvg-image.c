@@ -215,7 +215,7 @@ rsvg_acquire_base64_resource (const char *data, GError ** error)
 }
 
 gchar *
-rsvg_get_file_path (const gchar * filename, const gchar * basedir)
+rsvg_get_file_path (const gchar * filename, const gchar * base_uri)
 {
     gchar *absolute_filename;
 
@@ -223,11 +223,17 @@ rsvg_get_file_path (const gchar * filename, const gchar * basedir)
         absolute_filename = g_strdup (filename);
     } else {
         gchar *tmpcdir;
+	gchar *base_filename;
 
-        if (basedir)
-            tmpcdir = g_path_get_dirname (basedir);
-        else
-            tmpcdir = g_get_current_dir ();
+        if (base_uri) {
+	    base_filename = g_filename_from_uri (base_uri, NULL, NULL);
+	    if (base_filename != NULL) {
+		tmpcdir = g_path_get_dirname (base_filename);
+		g_free (base_filename);
+	    } else 
+		return NULL;
+	} else
+	    tmpcdir = g_get_current_dir ();
 
         absolute_filename = g_build_filename (tmpcdir, filename, NULL);
         g_free (tmpcdir);
@@ -249,6 +255,9 @@ rsvg_acquire_file_resource (const char *filename, const char *base_uri, GError *
     rsvg_return_val_if_fail (filename != NULL, NULL, error);
 
     path = rsvg_get_file_path (filename, base_uri);
+    if (path == NULL)
+	return NULL;
+
     f = fopen (path, "rb");
     g_free (path);
 

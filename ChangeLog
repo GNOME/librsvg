@@ -1,3 +1,20 @@
+2007-06-22  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
+	* test-display.c: fix modeline.
+
+2007-06-22  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
+	Fix for Bug 448327
+
+	* rsvg-base.c (rsvg_path_is_uri): new.
+	(rsvg_get_base_uri_from_filename): really return a URI.
+	(rsvg_handle_set_base_uri): accept a non URI as parameter, converting
+	it to local URI.
+	* rsvg-convert.c: fix rsvg_handle_set_base_uri call.
+	* rsvg-image.c (rsvg_get_file_path): adpat the code to the fact
+	base_uri is now really an URI.	
+	(rsvg_acquire_file_resource): handle path==NULL.
+	
 2007-06-16  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* rsvg-structure.c: Bug 444462 - x & y attributes shouldn't affect the

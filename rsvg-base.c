@@ -886,22 +886,54 @@ rsvg_SAX_handler_struct_init (void)
     }
 }
 
-gchar *
-rsvg_get_base_uri_from_filename (const gchar * file_name)
+/* http://www.ietf.org/rfc/rfc2396.txt */
+
+static gboolean
+rsvg_path_is_uri (char const *path)
 {
-    gchar *curdir;
-    gchar *reldir;
+    char const *p;
+
+    if (path == NULL)
+	return FALSE;
+
+    if (strlen (path) < 4)
+	return FALSE;
+
+    if (   (path[0] < 'a' || path[0] > 'z')
+	&& (path[0] < 'A' || path[0] > 'Z'))
+	return FALSE;
+
+    for (p = &path[1];
+	    (*p >= 'a' && *p <= 'z') 
+	 || (*p >= 'A' && *p <= 'Z') 
+	 || (*p >= '0' && *p <= '9') 
+	 || *p == '+' 
+	 || *p == '-' 
+	 || *p == '.';
+	 p++);
+
+    if (strlen (p) < 3)
+	return FALSE;
+
+    return (p[0] == ':' && p[1] == '/' && p[2] == '/');
+}
+
+gchar *
+rsvg_get_base_uri_from_filename (const gchar * filename)
+{
+    gchar *current_dir;
+    gchar *absolute_filename;
     gchar *base_uri;
 
-    reldir = g_path_get_dirname (file_name);
 
-    if (g_path_is_absolute (file_name))
-        return reldir;
+    if (g_path_is_absolute (filename))
+        return g_filename_to_uri (filename, NULL, NULL);
 
-    curdir = g_get_current_dir ();
-    base_uri = g_build_filename (curdir, reldir, NULL);
-    g_free (curdir);
-    g_free (reldir);
+    current_dir = g_get_current_dir ();
+    absolute_filename = g_build_filename (current_dir, filename, NULL);
+    base_uri = g_filename_to_uri (absolute_filename, NULL, NULL);
+    g_free (absolute_filename);
+    g_free (current_dir);
 
     return base_uri;
 }
@@ -919,12 +951,22 @@ rsvg_get_base_uri_from_filename (const gchar * file_name)
 void
 rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
 {
-    g_return_if_fail (handle);
+    gchar *uri;
 
-    if (base_uri) {
+    g_return_if_fail (handle != NULL);
+
+    if (base_uri == NULL)
+	return;
+
+    if (rsvg_path_is_uri (base_uri)) 
+	uri = g_strdup (base_uri);
+    else
+	uri = rsvg_get_base_uri_from_filename (base_uri);
+
+    if (uri) {
         if (handle->priv->base_uri)
             g_free (handle->priv->base_uri);
-        handle->priv->base_uri = g_strdup (base_uri);
+        handle->priv->base_uri = uri;
         rsvg_defs_set_base_uri (handle->priv->defs, handle->priv->base_uri);
     }
 }
