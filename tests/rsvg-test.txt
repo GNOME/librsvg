@@ -56,16 +56,16 @@ svg1.1/svg/filters-blend-01-b		X	Color mismatch
 svg1.1/svg/filters-color-01-b		X	Color mismatch
 svg1.1/svg/filters-composite-02-b	X	Color mismatch
 svg1.1/svg/filters-comptran-01-b	X	Color mismatch
-svg1.1/svg/filters-conv-01-f		X	rsvg-test image bug
-svg1.1/svg/filters-diffuse-01-f		X	rsvg-test image bug
-svg1.1/svg/filters-displace-01-f	X	rsvg-test image bug
+svg1.1/svg/filters-conv-01-f	
+svg1.1/svg/filters-diffuse-01-f	
+svg1.1/svg/filters-displace-01-f
 svg1.1/svg/filters-example-01-b	
 svg1.1/svg/filters-gauss-01-b		X	Filter is not correctly clipped
-svg1.1/svg/filters-image-01-b		X	rsvg-test image bug
-svg1.1/svg/filters-light-01-f		X	rsvg-test image bug
+svg1.1/svg/filters-image-01-b
+svg1.1/svg/filters-light-01-f
 svg1.1/svg/filters-morph-01-f
 svg1.1/svg/filters-offset-01-b
-svg1.1/svg/filters-specular-01-f	X	rsvg-test image bug
+svg1.1/svg/filters-specular-01-f
 svg1.1/svg/filters-tile-01-b
 svg1.1/svg/filters-turb-01-f
 svg1.1/svg/fonts-elem-01-t		X	SVG font not supported
@@ -155,12 +155,12 @@ svg1.1/svg/struct-dom-06-b		X	Not supported
 svg1.1/svg/struct-frag-01-t		X	Not supported
 svg1.1/svg/struct-group-01-t
 svg1.1/svg/struct-group-02-b
-svg1.1/svg/struct-image-01-t		X	rsvg-test image bug
-svg1.1/svg/struct-image-02-b		X	rsvg-test image bug
-svg1.1/svg/struct-image-03-t		X	rsvg-test image bug
+svg1.1/svg/struct-image-01-t
+svg1.1/svg/struct-image-02-b		X	SVG x,y bug
+svg1.1/svg/struct-image-03-t		X	SVG x,y bug
 svg1.1/svg/struct-image-04-t
-svg1.1/svg/struct-image-05-b		X	rsvg-test image bug
-svg1.1/svg/struct-symbol-01-b		X	rsvg-test image bug
+svg1.1/svg/struct-image-05-b
+svg1.1/svg/struct-symbol-01-b
 svg1.1/svg/styling-css-01-b
 svg1.1/svg/styling-css-02-b		X	Bug
 svg1.1/svg/styling-css-03-b		X	Bug

@@ -1,5 +1,9 @@
 2007-06-22  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
+	* tests: Enable additional tests and add reference images.
+
+2007-06-22  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
 	* test-display.c: fix modeline.
 
 2007-06-22  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
