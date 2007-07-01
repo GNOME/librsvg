@@ -1,3 +1,7 @@
+2007-07-01  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* io-svg.c: Support compressed SVG from the GdkPixbufLoader (#452823)
+
 2007-06-22  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
 	* tests: Enable additional tests and add reference images.

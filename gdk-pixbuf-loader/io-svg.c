@@ -234,6 +234,7 @@ fill_info (GdkPixbufFormat *info)
                 "image/svg-xml",
                 "image/vnd.adobe.svg+xml",
                 "text/xml-svg",
+                "image/svg+xml-compressed",
                 NULL
         };
         static gchar *extensions[] = {
