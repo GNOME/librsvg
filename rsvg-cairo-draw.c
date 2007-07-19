@@ -647,7 +647,10 @@ rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
     else
         format = CAIRO_FORMAT_ARGB32;
 
-    cairo_pixels = g_malloc (4 * width * height);
+    cairo_pixels = g_try_malloc (4 * width * height);
+	if (!cairo_pixels)
+		return;
+
     surface = cairo_image_surface_create_for_data ((unsigned char *) cairo_pixels,
                                                    format, width, height, 4 * width);
     cairo_surface_set_user_data (surface, &key, cairo_pixels, (cairo_destroy_func_t) g_free);

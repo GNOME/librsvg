@@ -1,3 +1,9 @@
+2007-07-19  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-cairo-draw.c: Replace g_malloc with g_try_malloc. We'll need
+	to go through the rest of the source and replace g_new with g_try_new,
+	and fall-back gracefully.
+	
 2007-07-01  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* io-svg.c: Support compressed SVG from the GdkPixbufLoader (#452823)
