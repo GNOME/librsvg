@@ -1,3 +1,7 @@
+2007-07-20  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
+
+	* rsvg-base.c: Fix for embedded SVG position issue (#444462)
+	
 2007-07-19  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* rsvg-cairo-draw.c: Replace g_malloc with g_try_malloc. We'll need

@@ -254,13 +254,13 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
         newnode = rsvg_new_tref ();
     if (newnode) {
         newnode->type = g_string_new (name);
+	newnode->parent = ctx->priv->currentnode;
         rsvg_node_set_atts (newnode, ctx, atts);
         rsvg_defs_register_memory (ctx->priv->defs, newnode);
         if (ctx->priv->currentnode) {
             rsvg_node_group_pack (ctx->priv->currentnode, newnode);
             ctx->priv->currentnode = newnode;
         } else if (!strcmp (name, "svg")) {
-            newnode->parent = NULL;
             ctx->priv->treebase = newnode;
             ctx->priv->currentnode = newnode;
         }
