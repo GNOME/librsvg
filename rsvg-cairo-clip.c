@@ -52,7 +52,7 @@ rsvg_cairo_clip_apply_affine (cairo_t *cr, const double affine[6])
 					   affine[0], affine[1],
 					   affine[2], affine[3],
 					   affine[4], affine[5]);
-	cairo_transform (cr, &matrix);
+	cairo_set_matrix (cr, &matrix);
 }
 
 static void

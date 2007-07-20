@@ -63,6 +63,8 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
     cairo_render->super.get_image_of_node = rsvg_cairo_get_image_of_node;
     cairo_render->width = width;
     cairo_render->height = height;
+    cairo_render->offset_x = 0;
+    cairo_render->offset_y = 0;
     cairo_render->cr = cr;
     cairo_render->cr_stack = NULL;
     cairo_render->bb_stack = NULL;
@@ -71,13 +73,48 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
     return cairo_render;
 }
 
+static void rsvg_cairo_transformed_image_bounding_box (
+    cairo_matrix_t * transform,
+    double width, double height,
+    double *x0, double *y0, double *x1, double *y1)
+{
+    double x00 = 0, x01 = 0, x10 = width, x11 = width;
+    double y00 = 0, y01 = height, y10 = 0, y11 = height;
+    double t;
+
+    /* transform the four corners of the image */
+    cairo_matrix_transform_point (transform, &x00, &y00);
+    cairo_matrix_transform_point (transform, &x01, &y01);
+    cairo_matrix_transform_point (transform, &x10, &y10);
+    cairo_matrix_transform_point (transform, &x11, &y11);
+
+    /* find minimum and maximum coordinates */
+    t = x00  < x01 ? x00  : x01;
+    t = t < x10 ? t : x10;
+    *x0 = floor (t < x11 ? t : x11);
+
+    t = y00  < y01 ? y00  : y01;
+    t = t < y10 ? t : y10;
+    *y0 = floor (t < y11 ? t : y11);
+
+    t = x00  > x01 ? x00  : x01;
+    t = t > x10 ? t : x10;
+    *x1 = ceil (t > x11 ? t : x11);
+
+    t = y00  > y01 ? y00  : y01;
+    t = t > y10 ? t : y10;
+    *y1 = ceil (t > y11 ? t : y11);
+}
+
 static RsvgDrawingCtx *
 rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
 {
     RsvgDimensionData data;
     RsvgDrawingCtx *draw;
+    RsvgCairoRender *render;
     RsvgState *state;
-    double affine[6];
+    cairo_matrix_t cairo_transform;
+    double affine[6], bbx0, bby0, bbx1, bby1;
 
     rsvg_handle_get_dimensions (handle, &data);
     if (data.width == 0 || data.height == 0)
@@ -85,10 +122,23 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
 
     draw = g_new (RsvgDrawingCtx, 1);
 
-    draw->render = (RsvgRender *) rsvg_cairo_render_new (cr, data.width, data.height);
+    cairo_get_matrix (cr, &cairo_transform);
 
-    if (!draw->render)
+    /* find bounding box of image as transformed by the current cairo context
+     * The size of this bounding box determines the size of the intermediate
+     * surfaces allocated during drawing. */
+    rsvg_cairo_transformed_image_bounding_box (&cairo_transform,
+                                               data.width, data.height,
+                                               &bbx0, &bby0, &bbx1, &bby1);
+
+    render = rsvg_cairo_render_new (cr, bbx1 - bbx0, bby1 - bby0);
+
+    if (!render)
         return NULL;
+
+    draw->render = (RsvgRender *) render;
+    render->offset_x = bbx0;
+    render->offset_y = bby0;
 
     draw->state = NULL;
 
@@ -107,6 +157,16 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
     rsvg_state_push (draw);
     state = rsvg_state_current (draw);
 
+    /* apply cairo transformation to our affine transform */
+    affine[0] = cairo_transform.xx;
+    affine[1] = cairo_transform.yx;
+    affine[2] = cairo_transform.xy;
+    affine[3] = cairo_transform.yy;
+    affine[4] = cairo_transform.x0;
+    affine[5] = cairo_transform.y0;
+    _rsvg_affine_multiply (state->affine, affine, state->affine);
+
+    /* scale according to size set by size_func callback */
     affine[0] = data.width / data.em;
     affine[1] = 0;
     affine[2] = 0;
@@ -114,6 +174,12 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
     affine[4] = 0;
     affine[5] = 0;
     _rsvg_affine_multiply (state->affine, affine, state->affine);
+
+    /* adjust transform so that the corner of the bounding box above is
+     * at (0,0) - we compensate for this in rsvg_handle_render_cairo_sub()
+     * below */
+    state->affine[4] -= render->offset_x;
+    state->affine[5] -= render->offset_y;
 
     rsvg_bbox_init (&((RsvgCairoRender *) draw->render)->bbox, state->affine);
 
@@ -137,6 +203,9 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 {
     RsvgDrawingCtx *draw;
     RsvgNode *drawsub = NULL;
+    RsvgCairoRender *render;
+    cairo_surface_t *surface = cairo_get_target (cr);
+    double save_dx, save_dy;
 
     g_return_if_fail (handle != NULL);
 
@@ -156,7 +225,22 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     }
 
     rsvg_state_push (draw);
+    cairo_save (cr);
+    cairo_identity_matrix (cr);
+
+    /* adjust the underlying surface's device offset such that the
+     * bounding box from rsvg_cairo_new_drawing_ctx is placed correctly */
+    cairo_surface_get_device_offset (surface, &save_dx, &save_dy);
+    render = (RsvgCairoRender *) draw->render;
+    cairo_surface_set_device_offset (surface,
+                                     save_dx + render->offset_x,
+                                     save_dy + render->offset_y);
+
     rsvg_node_draw ((RsvgNode *) handle->priv->treebase, draw, 0);
+
+    cairo_surface_set_device_offset (surface, save_dx, save_dy);
+
+    cairo_restore (cr);
     rsvg_state_pop (draw);
     rsvg_drawing_ctx_free (draw);
 }

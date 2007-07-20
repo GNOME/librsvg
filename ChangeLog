@@ -1,5 +1,13 @@
 2007-07-20  Dom Lachowicz <domlachowicz@gmail.com>
 
+	* rsvg-cairo-render.h:
+	* rsvg-cairo-draw.c:
+	* rsvg-cairo-clip.c:
+	* rsvg-cairo-render.c: Rendering magnified SVGs with rsvg-cairo produces blurry images (#412682)
+	From Bertram Felgenhauer
+	
+2007-07-20  Dom Lachowicz <domlachowicz@gmail.com>
+
 	* rsvg-styles.c: Re-order how CSS styles get applied (#418823)
 	
 2007-07-20  Dom Lachowicz <domlachowicz@gmail.com>
