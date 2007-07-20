@@ -238,7 +238,6 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
         newnode = rsvg_new_filter_primitive_light_source ('s');
     else if (!strcmp (name, "fePointLight"))
         newnode = rsvg_new_filter_primitive_light_source ('p');
-
     /* hack to make multiImage sort-of work */
     else if (!strcmp (name, "multiImage"))
         newnode = rsvg_new_switch ();
@@ -252,6 +251,12 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
         newnode = rsvg_new_tspan ();
     else if (!strcmp (name, "tref"))
         newnode = rsvg_new_tref ();
+	else {
+		/* hack for bug 401115. whenever we encounter a node we don't understand, push it into a group. 
+		   this will allow us to handle things like conditionals properly. */
+		newnode = rsvg_new_group ();
+	}
+
     if (newnode) {
         newnode->type = g_string_new (name);
 	newnode->parent = ctx->priv->currentnode;

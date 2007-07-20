@@ -1,3 +1,9 @@
+2007-07-20  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-base.c: rsvg threw away nodes that it didn't understand, which caused
+	things like <switch> not to work properly. Now, treat unknown nodes as
+	groups (#401115)
+	
 2007-07-20  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
 	* rsvg-base.c: Fix for embedded SVG position issue (#444462)
