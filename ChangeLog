@@ -1,3 +1,7 @@
+2007-07-24  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* configure.in: Bump version to 2.18.0
+	
 2007-07-20  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* rsvg-cairo-render.h:

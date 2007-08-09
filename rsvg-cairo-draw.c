@@ -709,7 +709,25 @@ rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
     }
 
     _rsvg_cairo_set_operator (render->cr, state->comp_op);
+
+#if 0
     cairo_set_source_surface (render->cr, surface, pixbuf_x, pixbuf_y);
+#else
+	{
+		cairo_pattern_t *pattern;
+		cairo_matrix_t matrix;
+
+		pattern = cairo_pattern_create_for_surface (surface);
+		cairo_pattern_set_extend (pattern, CAIRO_EXTEND_PAD);
+
+		cairo_matrix_init_translate (&matrix, -pixbuf_x, -pixbuf_y);
+		cairo_pattern_set_matrix (pattern, &matrix);
+
+		cairo_set_source (render->cr, pattern);
+		cairo_pattern_destroy (pattern);
+	}
+#endif
+
     cairo_paint (render->cr);
     cairo_surface_destroy (surface);
 
