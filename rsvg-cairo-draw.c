@@ -42,6 +42,32 @@
 #include <pango/pangocairo.h>
 
 static void
+_rsvg_cairo_set_shape_antialias (cairo_t * cr, ShapeRenderingProperty aa)
+{
+	if (SHAPE_RENDERING_AUTO == aa)
+		cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
+	else if (SHAPE_RENDERING_OPTIMIZE_SPEED == aa)
+		cairo_set_antialias (cr, CAIRO_ANTIALIAS_NONE);
+	else if (SHAPE_RENDERING_CRISP_EDGES == aa)
+		cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
+	else if (SHAPE_RENDERING_GEOMETRIC_PRECISION == aa)
+		cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
+}
+
+static void
+_rsvg_cairo_set_text_antialias (cairo_t * cr, TextRenderingProperty aa)
+{
+	if (TEXT_RENDERING_AUTO == aa)
+		cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
+	else if (TEXT_RENDERING_OPTIMIZE_SPEED == aa)
+		cairo_set_antialias (cr, CAIRO_ANTIALIAS_NONE);
+	else if (TEXT_RENDERING_OPTIMIZE_LEGIBILITY == aa)
+		cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
+	else if (TEXT_RENDERING_GEOMETRIC_PRECISION == aa)
+		cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
+}
+
+static void
 _rsvg_cairo_set_operator (cairo_t * cr, RsvgCompOpType comp_op)
 {
     cairo_operator_t op;
@@ -446,6 +472,9 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     RsvgBbox bbox;
 
     cairo_save (render->cr);
+
+	_rsvg_cairo_set_text_antialias (render->cr, state->text_rendering_type);
+
     _set_rsvg_affine (render->cr, state->affine);
     cairo_set_line_width (render->cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, 'h'));
 
@@ -512,6 +541,8 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
     cr = render->cr;
 
     cairo_save (cr);
+
+	_rsvg_cairo_set_shape_antialias (cr, state->shape_rendering_type);
 
     _set_rsvg_affine (cr, state->affine);
 
@@ -710,7 +741,7 @@ rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
 
     _rsvg_cairo_set_operator (render->cr, state->comp_op);
 
-#if 0
+#if 1
     cairo_set_source_surface (render->cr, surface, pixbuf_x, pixbuf_y);
 #else
 	{

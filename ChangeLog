@@ -1,3 +1,10 @@
+2007-08-20  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-styles.c: Basic support for SVG 1.1's text-rendering and shape-rendering properties (#464599)
+	http://www.w3.org/TR/SVG/painting.html#ShapeRenderingProperty
+	* rsvg-styles.h: Ditto
+	* rsvg-cairo-draw.c: Ditto
+	
 2007-07-24  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* configure.in: Bump version to 2.18.0

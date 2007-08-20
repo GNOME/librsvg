@@ -126,6 +126,11 @@ rsvg_state_init (RsvgState * state)
     state->has_middleMarker = FALSE;
     state->has_endMarker = FALSE;
     state->has_overflow = FALSE;
+
+	state->shape_rendering_type = SHAPE_RENDERING_AUTO;
+	state->has_shape_rendering_type = FALSE;
+	state->text_rendering_type = TEXT_RENDERING_AUTO;
+	state->has_text_rendering_type = FALSE;
 }
 
 typedef int (*InheritanceFunction) (int dst, int src);
@@ -231,6 +236,10 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->middleMarker = src->middleMarker;
     if (function (dst->has_endMarker, src->has_endMarker))
         dst->endMarker = src->endMarker;
+	if (function (dst->has_shape_rendering_type, src->has_shape_rendering_type))
+		dst->shape_rendering_type = src->shape_rendering_type;
+	if (function (dst->has_text_rendering_type, src->has_text_rendering_type))
+		dst->text_rendering_type = src->text_rendering_type;
 
     if (function (dst->has_font_family, src->has_font_family)) {
         g_free (dst->font_family);      /* font_family is always set to something */
@@ -645,6 +654,30 @@ rsvg_parse_style_arg (RsvgHandle * ctx, RsvgState * state, const char *str)
         state->dash.offset = _rsvg_css_parse_length (str + arg_off);
         if (state->dash.offset.length < 0.)
             state->dash.offset.length = 0.;
+	} else if (rsvg_css_param_match (str, "shape-rendering")) {
+		state->has_shape_rendering_type = TRUE;
+
+        if (!strcmp (str + arg_off, "auto") || !strcmp (str + arg_off, "default"))
+			state->shape_rendering_type = SHAPE_RENDERING_AUTO;
+        else if (!strcmp (str + arg_off, "optimizeSpeed"))
+			state->shape_rendering_type = SHAPE_RENDERING_OPTIMIZE_SPEED;
+        else if (!strcmp (str + arg_off, "crispEdges"))
+			state->shape_rendering_type = SHAPE_RENDERING_CRISP_EDGES;
+        else if (!strcmp (str + arg_off, "geometricPrecision"))
+			state->shape_rendering_type = SHAPE_RENDERING_GEOMETRIC_PRECISION;
+
+	} else if (rsvg_css_param_match (str, "text-rendering")) {
+		state->has_text_rendering_type = TRUE;
+
+        if (!strcmp (str + arg_off, "auto" || !strcmp (str + arg_off, "default")))
+			state->text_rendering_type = TEXT_RENDERING_AUTO;
+        else if (!strcmp (str + arg_off, "optimizeSpeed"))
+			state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_SPEED;
+        else if (!strcmp (str + arg_off, "optimizeLegibility"))
+			state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_LEGIBILITY;
+        else if (!strcmp (str + arg_off, "geometricPrecision"))
+			state->text_rendering_type = TEXT_RENDERING_GEOMETRIC_PRECISION;
+
     } else if (rsvg_css_param_match (str, "stroke-dasharray")) {
         state->has_dash = TRUE;
         if (!strcmp (str + arg_off, "none")) {
