@@ -6,6 +6,7 @@ Version 2.18.0
 - Support compressed SVG from the GdkPixbuf plugin
 - CSS fixes
 - Better support for SVG conditionals
+- Support for SVG 1.1's shape-rendering and text-rendering properties
 
 Version 2.7.x
 
