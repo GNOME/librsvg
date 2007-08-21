@@ -669,7 +669,7 @@ rsvg_parse_style_arg (RsvgHandle * ctx, RsvgState * state, const char *str)
 	} else if (rsvg_css_param_match (str, "text-rendering")) {
 		state->has_text_rendering_type = TRUE;
 
-        if (!strcmp (str + arg_off, "auto" || !strcmp (str + arg_off, "default")))
+        if (!strcmp (str + arg_off, "auto") || !strcmp (str + arg_off, "default"))
 			state->text_rendering_type = TEXT_RENDERING_AUTO;
         else if (!strcmp (str + arg_off, "optimizeSpeed"))
 			state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_SPEED;
