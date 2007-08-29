@@ -1,7 +1,17 @@
+2007-08-29  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* NEWS: update
+	* configure.in: 2.18.2
+
 2007-08-21  Emmanuel Pacaud <emmanuel.pacaud@lapp.in2p3.fr>
 
 	* rsvg-styles.c: fix a typo preventing the compilation.
 
+2007-08-20  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* NEWS: update
+	* configure.in: 2.18.1
+	
 2007-08-20  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* rsvg-styles.c: Basic support for SVG 1.1's text-rendering and shape-rendering properties (#464599)
