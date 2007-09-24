@@ -1,6 +1,7 @@
 2007-09-24  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* gdk-pixbuf-loader/io-svg.c: svgz support is optional (#473836, Lucas Rocha)
+	* rsvg-cairo-draw.c: Fix memory leak (#475841, Matthias Clasen)
 	
 2007-08-29  Dom Lachowicz <domlachowicz@gmail.com>
 

@@ -981,7 +981,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
         GdkPixbuf *pixbuf = render->pixbuf_stack->data;
         GdkPixbuf *bg = rsvg_compile_bg (ctx);
 
-        render->pixbuf_stack = g_list_remove_link (render->pixbuf_stack, render->pixbuf_stack);
+        render->pixbuf_stack = g_list_remove (render->pixbuf_stack, pixbuf);
 
 
         output = rsvg_filter_render (state->filter, pixbuf, bg, ctx, &render->bbox, "2103");
