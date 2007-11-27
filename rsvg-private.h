@@ -125,6 +125,7 @@ struct RsvgSaxHandler {
 
 struct RsvgHandlePrivate {
     gboolean is_disposed;
+    gboolean is_closed;
 
     RsvgSizeFunc size_func;
     gpointer user_data;

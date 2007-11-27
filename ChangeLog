@@ -1,3 +1,8 @@
+2007-11-27  Dom Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-base.c: 499386 - rsvg_handle_close leads to segfault
+	* rsvg-private.h: Ditto
+	
 2007-09-24  Dom Lachowicz <domlachowicz@gmail.com>
 
 	* gdk-pixbuf-loader/io-svg.c: svgz support is optional (#473836, Lucas Rocha)

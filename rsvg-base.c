@@ -1047,6 +1047,8 @@ rsvg_handle_close_impl (RsvgHandle * handle, GError ** error)
 {
     GError *real_error = NULL;
 
+	handle->priv->is_closed = TRUE;
+
     handle->priv->error = &real_error;
 
     if (handle->priv->ctxt != NULL) {
@@ -1484,6 +1486,7 @@ gboolean
 rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError ** error)
 {
     rsvg_return_val_if_fail (handle, FALSE, error);
+    rsvg_return_val_if_fail (!handle->priv->is_closed, FALSE, error);
 
     if (handle->priv->first_write) {
         handle->priv->first_write = FALSE;
@@ -1526,6 +1529,9 @@ gboolean
 rsvg_handle_close (RsvgHandle * handle, GError ** error)
 {
     rsvg_return_val_if_fail (handle, FALSE, error);
+
+	if (handle->priv->is_closed)
+		return TRUE;
 
 #if HAVE_SVGZ
     if (handle->priv->is_gzipped) {
