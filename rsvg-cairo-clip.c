@@ -41,18 +41,21 @@ typedef struct RsvgCairoClipRender RsvgCairoClipRender;
 struct RsvgCairoClipRender {
     RsvgRender super;
     cairo_t *cr;
+    RsvgCairoRender *parent;
 };
 
 static void
-rsvg_cairo_clip_apply_affine (cairo_t *cr, const double affine[6])
+rsvg_cairo_clip_apply_affine (RsvgCairoClipRender *render, const double affine[6])
 {
 	cairo_matrix_t matrix;
+	gboolean nest = render->cr != render->parent->initial_cr;
 
 	cairo_matrix_init (&matrix,
 					   affine[0], affine[1],
 					   affine[2], affine[3],
-					   affine[4], affine[5]);
-	cairo_set_matrix (cr, &matrix);
+					   affine[4] + (nest ? 0 : render->parent->offset_x),
+					   affine[5] + (nest ? 0 : render->parent->offset_y));
+	cairo_set_matrix (render->cr, &matrix);
 }
 
 static void
@@ -62,14 +65,11 @@ rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_de
 	RsvgState *state = rsvg_state_current (ctx);
     cairo_t *cr;
     RsvgBpath *bpath;
-	cairo_matrix_t save;
     int i;
 
     cr = render->cr;
 
-	cairo_get_matrix (cr, &save);
-
-	rsvg_cairo_clip_apply_affine (cr, state->affine);
+	rsvg_cairo_clip_apply_affine (render, state->affine);
 
     if (rsvg_state_current (ctx)->clip_rule == FILL_RULE_EVENODD)
         cairo_set_fill_rule (((RsvgCairoRender *) ctx->render)->cr, CAIRO_FILL_RULE_EVEN_ODD);
@@ -96,7 +96,6 @@ rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_de
             break;
         }
     }
-	cairo_set_matrix (cr, &save);
 }
 
 static void
@@ -130,7 +129,7 @@ rsvg_cairo_clip_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, dou
 }
 
 static RsvgRender *
-rsvg_cairo_clip_render_new (cairo_t * cr)
+rsvg_cairo_clip_render_new (cairo_t * cr, RsvgCairoRender *parent)
 {
     RsvgCairoClipRender *cairo_render = g_new0 (RsvgCairoClipRender, 1);
 
@@ -142,6 +141,7 @@ rsvg_cairo_clip_render_new (cairo_t * cr)
     cairo_render->super.add_clipping_rect = rsvg_cairo_clip_add_clipping_rect;
     cairo_render->super.get_image_of_node = NULL;
     cairo_render->cr = cr;
+    cairo_render->parent = parent;
 
     return &cairo_render->super;
 }
@@ -152,7 +152,7 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox)
     RsvgCairoRender *save = (RsvgCairoRender *) ctx->render;
     double affinesave[6];
     int i;
-    ctx->render = rsvg_cairo_clip_render_new (save->cr);
+    ctx->render = rsvg_cairo_clip_render_new (save->cr, save);
 
     /* Horribly dirty hack to have the bbox premultiplied to everything */
     if (clip->units == objectBoundingBox) {

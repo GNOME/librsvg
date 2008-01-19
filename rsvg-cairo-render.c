@@ -65,6 +65,7 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
     cairo_render->height = height;
     cairo_render->offset_x = 0;
     cairo_render->offset_y = 0;
+    cairo_render->initial_cr = cr;
     cairo_render->cr = cr;
     cairo_render->cr_stack = NULL;
     cairo_render->bb_stack = NULL;
@@ -176,8 +177,8 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
     _rsvg_affine_multiply (state->affine, affine, state->affine);
 
     /* adjust transform so that the corner of the bounding box above is
-     * at (0,0) - we compensate for this in rsvg_handle_render_cairo_sub()
-     * below */
+     * at (0,0) - we compensate for this in _set_rsvg_affine() in
+     * rsvg-cairo-render.c and a few other places */
     state->affine[4] -= render->offset_x;
     state->affine[5] -= render->offset_y;
 
@@ -203,9 +204,6 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 {
     RsvgDrawingCtx *draw;
     RsvgNode *drawsub = NULL;
-    RsvgCairoRender *render;
-    cairo_surface_t *surface = cairo_get_target (cr);
-    double save_dx, save_dy;
 
     g_return_if_fail (handle != NULL);
 
@@ -226,19 +224,8 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     rsvg_state_push (draw);
     cairo_save (cr);
-    cairo_identity_matrix (cr);
-
-    /* adjust the underlying surface's device offset such that the
-     * bounding box from rsvg_cairo_new_drawing_ctx is placed correctly */
-    cairo_surface_get_device_offset (surface, &save_dx, &save_dy);
-    render = (RsvgCairoRender *) draw->render;
-    cairo_surface_set_device_offset (surface,
-                                     save_dx + render->offset_x,
-                                     save_dy + render->offset_y);
 
     rsvg_node_draw ((RsvgNode *) handle->priv->treebase, draw, 0);
-
-    cairo_surface_set_device_offset (surface, save_dx, save_dy);
 
     cairo_restore (cr);
     rsvg_state_pop (draw);

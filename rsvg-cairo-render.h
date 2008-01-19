@@ -37,6 +37,8 @@ struct _RsvgCairoRender {
     cairo_t *cr;
     double width;
     double height;
+
+    cairo_t *initial_cr;
     double offset_x;
     double offset_y;
 

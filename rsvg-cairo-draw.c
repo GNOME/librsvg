@@ -417,6 +417,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
         _rsvg_pop_view_box (ctx);
 }
 
+/* note: _set_source_rsvg_paint_server does not change cairo's CTM */
 static void
 _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
                                guint32 current_color_rgb,
@@ -440,14 +441,17 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
 }
 
 static void
-_set_rsvg_affine (cairo_t * cr, const double affine[6])
+_set_rsvg_affine (RsvgCairoRender * render, const double affine[6])
 {
+    cairo_t * cr = render->cr;
     cairo_matrix_t matrix;
+    gboolean nest = cr != render->initial_cr;
 
     cairo_matrix_init (&matrix,
                        affine[0], affine[1],
                        affine[2], affine[3],
-                       affine[4], affine[5]);
+                       affine[4] + (nest ? 0 : render->offset_x),
+                       affine[5] + (nest ? 0 : render->offset_y));
     cairo_set_matrix (cr, &matrix);
 }
 
@@ -471,11 +475,9 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     PangoRectangle logical;
     RsvgBbox bbox;
 
-    cairo_save (render->cr);
-
 	_rsvg_cairo_set_text_antialias (render->cr, state->text_rendering_type);
 
-    _set_rsvg_affine (render->cr, state->affine);
+    _set_rsvg_affine (render, state->affine);
     cairo_set_line_width (render->cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, 'h'));
 
     pango_cairo_update_layout (render->cr, layout);
@@ -513,8 +515,6 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
                                        bbox, rsvg_state_current (ctx)->current_color);
         cairo_stroke (render->cr);
     }
-
-    cairo_restore (render->cr);
 }
 
 void
@@ -540,11 +540,9 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
 
     cr = render->cr;
 
-    cairo_save (cr);
-
 	_rsvg_cairo_set_shape_antialias (cr, state->shape_rendering_type);
 
-    _set_rsvg_affine (cr, state->affine);
+    _set_rsvg_affine (render, state->affine);
 
     cairo_set_line_width (cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, 'h'));
     cairo_set_miter_limit (cr, state->miter_limit);
@@ -634,7 +632,6 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
 
         cairo_stroke (cr);
     }
-    cairo_restore (cr);
 
     if (need_tmpbuf)
         rsvg_cairo_pop_discrete_layer (ctx);
@@ -670,8 +667,7 @@ rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
     bbox.h = h;
     bbox.virgin = 0;
 
-    cairo_save (render->cr);
-    _set_rsvg_affine (render->cr, state->affine);
+    _set_rsvg_affine (render, state->affine);
     cairo_scale (render->cr, w / dwidth, h / dheight);
     pixbuf_x *= dwidth / w;
     pixbuf_y *= dheight / h;
@@ -763,8 +759,6 @@ rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
     cairo_surface_destroy (surface);
 
     rsvg_bbox_insert (&render->bbox, &bbox);
-
-    cairo_restore (render->cr);
 }
 
 static void
@@ -779,6 +773,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
     guint32 rowstride = width * 4, row, i;
     double affinesave[6];
     double sx, sy, sw, sh;
+    gboolean nest = cr != render->initial_cr;
 
     if (self->maskunits == objectBoundingBox)
         _rsvg_push_view_box (ctx, 1, 1);
@@ -845,7 +840,10 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
 
     cairo_destroy (mask_cr);
 
-    cairo_mask_surface (cr, surface, 0, 0);
+    cairo_identity_matrix (cr);
+    cairo_mask_surface (cr, surface,
+                        nest ? 0 : render->offset_x,
+                        nest ? 0 : render->offset_y);
     cairo_surface_destroy (surface);
     g_free (pixels);
 }
@@ -948,9 +946,11 @@ rsvg_compile_bg (RsvgDrawingCtx * ctx)
     cairo_surface_destroy (surface);
 
     for (i = g_list_last (render->cr_stack); i != NULL; i = g_list_previous (i)) {
-        cairo_t *draw;
-        draw = i->data;
-        cairo_set_source_surface (cr, cairo_get_target (draw), 0, 0);
+        cairo_t *draw = i->data;
+        gboolean nest = draw != render->initial_cr;
+        cairo_set_source_surface (cr, cairo_get_target (draw),
+                                  nest ? 0 : -render->offset_x,
+                                  nest ? 0 : -render->offset_y);
         cairo_paint (cr);
     }
 
@@ -967,6 +967,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     GdkPixbuf *output = NULL;
     cairo_surface_t *surface = NULL;
     RsvgState *state = rsvg_state_current (ctx);
+    gboolean nest;
 
     if (rsvg_state_current (ctx)->clip_path_ref)
         if (((RsvgClipPath *) rsvg_state_current (ctx)->clip_path_ref)->units == objectBoundingBox)
@@ -999,7 +1000,11 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     render->cr = (cairo_t *) render->cr_stack->data;
     render->cr_stack = g_list_delete_link (render->cr_stack, render->cr_stack);
 
-    cairo_set_source_surface (render->cr, surface, 0, 0);
+    nest = render->cr != render->initial_cr;
+    cairo_identity_matrix (render->cr);
+    cairo_set_source_surface (render->cr, surface,
+                              nest ? 0 : render->offset_x,
+                              nest ? 0 : render->offset_y);
 
     if (lateclip)
         rsvg_cairo_clip (ctx, rsvg_state_current (ctx)->clip_path_ref, &render->bbox);
@@ -1040,15 +1045,11 @@ rsvg_cairo_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w
 {
     RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
     cairo_t *cr = render->cr;
-    cairo_matrix_t save;
 
-    cairo_get_matrix (cr, &save);
-    _set_rsvg_affine (cr, rsvg_state_current (ctx)->affine);
+    _set_rsvg_affine (render, rsvg_state_current (ctx)->affine);
 
     cairo_rectangle (cr, x, y, w, h);
     cairo_clip (cr);
-
-    cairo_set_matrix (cr, &save);
 }
 
 GdkPixbuf *
