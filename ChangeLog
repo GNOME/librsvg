@@ -1,3 +1,7 @@
+2008-01-20  Dominic Lachowicz <domlachowicz@gmail.com>
+
+	* configure.in: Bump version #to 2.20.0
+	
 2008-01-19  Bertram Felgenhauer <bertram.felgenhauer@googlemail.com>
 
 	* Bug 500787 - translation gets ignored when rendering an svg with cairo in the context of a cairo_push_group()
