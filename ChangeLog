@@ -1,3 +1,8 @@
+2008-01-29  Christian Persch  <chpe@gnome.org>
+
+	* test-display.c: (view_pixbuf): Add the filename to the window title.
+	Bug #512797.
+
 2008-01-20  Dominic Lachowicz <domlachowicz@gmail.com>
 
 	* configure.in: Bump version #to 2.20.0

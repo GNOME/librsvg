@@ -618,12 +618,20 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char *color)
     } else
 #endif
     {
+        char *title;
+
         win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
         win_width = DEFAULT_WIDTH;
         win_height = DEFAULT_HEIGHT;
 
-        gtk_window_set_title (GTK_WINDOW (win), _("SVG Viewer"));
+        if (info->id) {
+            title = g_strdup_printf ("%s#%s — %s", info->base_uri, info->id, _("SVG Viewer"));
+        } else {
+            title = g_strdup_printf ("%s — %s", info->base_uri,  _("SVG Viewer"));
+        }
+        gtk_window_set_title (GTK_WINDOW (win), title);
+        g_free (title);
     }
 
     populate_window (win, info, xid, win_width, win_height);
