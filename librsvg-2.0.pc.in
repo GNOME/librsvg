@@ -3,12 +3,10 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-gnome_vfs_supported=@GNOME_VFS_SUPPORTED@
-
 Name: librsvg
 Description: library that renders svg files
 Version: @VERSION@
-Requires: glib-2.0 gdk-pixbuf-2.0
-Requires.private: @LIBGNOME_VFS_PKG@
+Requires: glib-2.0 gdk-pixbuf-2.0 cairo
+Requires.private
 Libs: -L${libdir} -lrsvg-2
 Cflags: -I${includedir}/librsvg-2
