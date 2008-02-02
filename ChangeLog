@@ -1,3 +1,7 @@
+2008-02-02  Dominic Lachowicz <domlachowicz@gmail.com>
+
+	* configure.in: Bump version #; automake warning about required AM_PROG_CC_C_O (#513858)
+	
 2008-02-02  Jan Arne Petersen <jpetersen@jpetersen.org>
 
 	* Migrate to gio (#513778)
