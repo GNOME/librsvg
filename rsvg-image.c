@@ -26,11 +26,16 @@
             Caleb Moore <c.moore@student.unsw.edu.au>
 */
 
+#include "config.h"
+
 #include "rsvg-image.h"
 #include <string.h>
 #include <math.h>
 #include <errno.h>
 #include "rsvg-css.h"
+#ifdef HAVE_GIO
+#include <gio/gio.h>
+#endif
 
 static const char s_UTF8_B64Alphabet[64] = {
     0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
@@ -292,66 +297,51 @@ rsvg_acquire_file_resource (const char *filename, const char *base_uri, GError *
     return array;
 }
 
-#ifdef HAVE_GNOME_VFS
-
-#include <libgnomevfs/gnome-vfs.h>
+#ifdef HAVE_GIO
 
 static GByteArray *
 rsvg_acquire_vfs_resource (const char *filename, const char *base_uri, GError ** error)
 {
     GByteArray *array;
 
-    guchar buffer[4096];
-    GnomeVFSFileSize length;
-    GnomeVFSHandle *f = NULL;
-    GnomeVFSResult res;
+    GFile *file;
+    char *data;
+    gsize size;
+    gboolean res;
 
     rsvg_return_val_if_fail (filename != NULL, NULL, error);
-    rsvg_return_val_if_fail (gnome_vfs_initialized (), NULL, error);
 
-    res = gnome_vfs_open (&f, filename, GNOME_VFS_OPEN_READ);
+    file = g_file_new_for_uri (filename);
 
-    if (res != GNOME_VFS_OK) {
-        if (base_uri) {
-            GnomeVFSURI *base = gnome_vfs_uri_new (base_uri);
-            if (base) {
-                GnomeVFSURI *uri = gnome_vfs_uri_resolve_relative (base, filename);
-                if (uri) {
-                    res = gnome_vfs_open_uri (&f, uri, GNOME_VFS_OPEN_READ);
-                    gnome_vfs_uri_unref (uri);
-                }
+    if (!(res = g_file_load_contents (file, NULL, &data, &size, NULL, error))) {
+        if (base_uri != NULL) {
+            GFile *base;
 
-                gnome_vfs_uri_unref (base);
-            }
+            g_error_free (*error);
+            *error = NULL;
+
+            g_object_unref (file);
+            base = g_file_new_for_uri (base_uri);
+            file = g_file_resolve_relative_path (base, filename);
+            g_object_unref (base);
+
+            res = g_file_load_contents (file, NULL, &data, &size, NULL, error);
         }
     }
 
-    if (res != GNOME_VFS_OK) {
-        g_set_error (error, rsvg_error_quark (), (gint) res, gnome_vfs_result_to_string (res));
+    g_object_unref (file);
+
+    if (res) {
+        array = g_byte_array_new ();
+
+        g_byte_array_append (array, (guint8 *)data, size);
+        g_free (data);
+    } else {
         return NULL;
     }
 
-    /* TODO: an optimization is to use the file's size */
-    array = g_byte_array_new ();
-
-    while (TRUE) {
-        res = gnome_vfs_read (f, buffer, sizeof (buffer), &length);
-        if (res == GNOME_VFS_OK && length > 0) {
-            if (g_byte_array_append (array, buffer, length) == NULL) {
-                gnome_vfs_close (f);
-                g_byte_array_free (array, TRUE);
-                return NULL;
-            }
-        } else {
-            break;
-        }
-    }
-
-    gnome_vfs_close (f);
-
     return array;
 }
-
 #endif
 
 GByteArray *
@@ -368,7 +358,7 @@ _rsvg_acquire_xlink_href_resource (const char *href, const char *base_uri, GErro
     if (!arr)
         arr = rsvg_acquire_file_resource (href, base_uri, NULL);
 
-#ifdef HAVE_GNOME_VFS
+#ifdef HAVE_GIO
     if (!arr)
         arr = rsvg_acquire_vfs_resource (href, base_uri, NULL);
 #endif

@@ -1598,10 +1598,6 @@ rsvg_init (void)
 #endif
 
     xmlInitParser ();
-
-#ifdef HAVE_GNOME_VFS
-    gnome_vfs_init ();
-#endif
 }
 
 /**

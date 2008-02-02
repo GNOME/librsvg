@@ -1,3 +1,7 @@
+2008-02-02  Jan Arne Petersen <jpetersen@jpetersen.org>
+
+	* Migrate to gio (#513778)
+	
 2008-01-29  Christian Persch  <chpe@gnome.org>
 
 	* test-display.c: (view_pixbuf): Add the filename to the window title.

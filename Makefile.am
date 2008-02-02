@@ -70,7 +70,7 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-file-util.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -export-dynamic -no-undefined -export-symbols $(srcdir)/librsvg.def
-librsvg_2_la_LIBADD = $(LIBGNOME_VFS_LIBS) $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS)
+librsvg_2_la_LIBADD = $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS)
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = 	\
@@ -79,7 +79,6 @@ librsvginc_HEADERS = 	\
 	librsvg-enum-types.h
 
 INCLUDES =				\
-	$(LIBGNOME_VFS_CFLAGS)		\
 	$(LIBGSF_CFLAGS)		\
 	$(LIBCROCO_CFLAGS)		\
 	-I$(top_srcdir) 		\
@@ -92,7 +91,6 @@ INCLUDES =				\
 
 DEPS = $(top_builddir)/librsvg-2.la
 LDADDS =				\
-	$(LIBGNOME_VFS_LIBS)		\
 	$(LIBGSF_LIBS)			\
 	$(GLIB_LIBS)			\
 	$(LIBCROCO_LIBS)		\
