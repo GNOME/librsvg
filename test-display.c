@@ -18,6 +18,7 @@
 
 #include "config.h"
 #include "rsvg.h"
+#include "rsvg-cairo.h"
 #include "rsvg-private.h"
 
 #include <stdio.h>
@@ -173,104 +174,86 @@ rsvg_window_set_default_icon (GtkWindow * window, GdkPixbuf * src)
     g_object_unref (G_OBJECT (icon));
 }
 
-#ifdef HAVE_GNOME_PRINT
+#if GTK_CHECK_VERSION(2,10,0)
 
-#include <libgnomeprint/gnome-print.h>
-#include <libgnomeprint/gnome-print-job.h>
-#include <libgnomeprintui/gnome-print-dialog.h>
-#include <libgnomeprintui/gnome-print-job-preview.h>
+static void
+begin_print (GtkPrintOperation *operation,
+			 GtkPrintContext   *context,
+			 gpointer           user_data)
+{
+	gtk_print_operation_set_n_pages(operation, 1);
+}
+
+static void
+draw_page (GtkPrintOperation *operation,
+		   GtkPrintContext   *context,
+		   gint               page_nr,
+		   gpointer           user_data)
+{
+    ViewerCbInfo *info = (ViewerCbInfo *) user_data;
+
+	cairo_t *cr;
+	gdouble page_width, page_height;
+  
+	cr = gtk_print_context_get_cairo_context (context);
+	page_width = gtk_print_context_get_width (context);
+	page_height = gtk_print_context_get_height (context);
+
+	{
+		RsvgHandle *handle;
+		RsvgDimensionData svg_dimensions;
+		struct RsvgSizeCallbackData size_data;
+
+		/* should not fail */
+		handle = rsvg_handle_new_from_data(info->svg_bytes->data, info->svg_bytes->len, NULL);
+		rsvg_handle_set_base_uri (handle, info->base_uri);
+		rsvg_handle_set_dpi_x_y (handle, gtk_print_context_get_dpi_x(context), 
+								 gtk_print_context_get_dpi_y(context));
+		rsvg_handle_get_dimensions(handle, &svg_dimensions);
+
+        if (svg_dimensions.width > page_width || svg_dimensions.height > page_height) {
+            /* scale down the image to the page's size, while preserving the aspect ratio */
+
+            if ((double) svg_dimensions.height * (double) page_width > (double) svg_dimensions.width * (double) page_height) {
+                svg_dimensions.width = 0.5 + (double) svg_dimensions.width *(double) page_height / (double) svg_dimensions.height;
+                svg_dimensions.height = page_height;
+            } else {
+                svg_dimensions.height = 0.5 + (double) svg_dimensions.height *(double) page_width / (double) svg_dimensions.width;
+                svg_dimensions.width = page_width;
+            }
+        }
+
+		size_data.type = RSVG_SIZE_WH;
+		size_data.width = svg_dimensions.width;
+		size_data.height = svg_dimensions.height;
+		size_data.keep_aspect_ratio = FALSE;
+		rsvg_handle_set_size_callback (handle, _rsvg_size_callback, &size_data, NULL);
+
+		rsvg_handle_render_cairo(handle, cr);
+
+		g_object_unref (handle);
+	}
+}
 
 static void
 print_pixbuf (GObject * ignored, gpointer user_data)
 {
-    ViewerCbInfo *info = (ViewerCbInfo *) user_data;
-    GtkWidget *gpd;
-    gint result;
+  GtkPrintOperation *print;
+  GtkPrintOperationResult res;
+  ViewerCbInfo *info = (ViewerCbInfo *) user_data;
 
-    gpd =
-        gnome_print_dialog_new (gnome_print_job_new (gnome_print_config_default ()),
-                                (unsigned char *) _("Print SVG"), 0);
-    gtk_window_set_transient_for (GTK_WINDOW (gpd), GTK_WINDOW (info->window));
+  print = gtk_print_operation_new ();
 
-    if ((result = gtk_dialog_run (GTK_DIALOG (gpd))) != GNOME_PRINT_DIALOG_RESPONSE_CANCEL) {
-        GnomePrintJob *gpm;
-        GnomePrintContext *gpc;
-        GdkPixbuf *image;
+  g_signal_connect (print, "begin_print", G_CALLBACK (begin_print), info);
+  g_signal_connect (print, "draw_page", G_CALLBACK (draw_page), info);
 
-        gint width, height, rowstride;
-        const guchar *pixels;
+  res = gtk_print_operation_run (print, GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG,
+                                 GTK_WINDOW (info->window), NULL);
 
-        gdouble page_width, page_height;
-
-        gpm = gnome_print_job_new (gnome_print_dialog_get_config (GNOME_PRINT_DIALOG (gpd)));
-        gpc = gnome_print_job_get_context (gpm);
-
-        gnome_print_config_get_page_size (gnome_print_job_get_config (gpm), &page_width,
-                                          &page_height);
-        image = info->pixbuf;
-
-        width = gdk_pixbuf_get_width (image);
-        height = gdk_pixbuf_get_height (image);
-
-        if (width > page_width || height > page_height) {
-            struct RsvgSizeCallbackData size_data;
-
-            /* scale down the image to the page's size, while preserving the aspect ratio */
-
-            if ((double) height * (double) page_width > (double) width * (double) page_height) {
-                width = 0.5 + (double) width *(double) page_height / (double) height;
-                height = page_height;
-            } else {
-                height = 0.5 + (double) height *(double) page_width / (double) width;
-                width = page_width;
-            }
-
-            size_data.type = RSVG_SIZE_WH;
-            size_data.width = width;
-            size_data.height = height;
-            size_data.keep_aspect_ratio = FALSE;
-
-            image =
-                rsvg_pixbuf_from_data_with_size_data (info->svg_bytes->data, info->svg_bytes->len,
-                                                      &size_data, info->base_uri, NULL);
-        } else
-            g_object_ref (G_OBJECT (image));
-
-        rowstride = gdk_pixbuf_get_rowstride (image);
-        pixels = gdk_pixbuf_get_pixels (image);
-
-        gnome_print_beginpage (gpc, (unsigned char *) "1");
-        gnome_print_gsave (gpc);
-        gnome_print_translate (gpc, 0, page_height - height);
-        gnome_print_scale (gpc, width, height);
-        gnome_print_moveto (gpc, 0, 0);
-
-        gnome_print_rgbaimage (gpc, pixels, width, height, rowstride);
-
-        gnome_print_grestore (gpc);
-        gnome_print_showpage (gpc);
-        gnome_print_job_close (gpm);
-
-        if (result == GNOME_PRINT_DIALOG_RESPONSE_PRINT)
-            gnome_print_job_print (gpm);
-        else {
-            GtkWidget *preview;
-
-            preview = gnome_print_job_preview_new (gpm, (unsigned char *) _("SVG Print Preview"));
-            gtk_window_set_transient_for (GTK_WINDOW (preview), GTK_WINDOW (info->window));
-            gtk_widget_show (GTK_WIDGET (preview));
-        }
-
-        g_object_unref (G_OBJECT (gpm));
-        g_object_unref (G_OBJECT (image));
-    }
-
-    gtk_widget_destroy (gpd);
+  g_object_unref (print);
 }
 
 #endif                          /* HAVE_GNOME_PRINT */
-
-#if GTK_CHECK_VERSION(2,4,0)
 
 static char *
 save_file (const char *title, const char *suggested_filename, GtkWidget * parent, int *success)
@@ -298,36 +281,6 @@ save_file (const char *title, const char *suggested_filename, GtkWidget * parent
 
     return filename;
 }
-
-#else
-
-static char *
-save_file (const char *title, const char *suggested_filename, GtkWidget * parent, int *success)
-{
-    GtkWidget *filesel;
-    char *filename = NULL;
-
-    *success = 0;
-    filesel = gtk_file_selection_new (title);
-    gtk_window_set_transient_for (GTK_WINDOW (filesel), parent);
-
-    if (suggested_filename && *suggested_filename) {
-        char *utf8_suggestion = g_filename_from_utf8 (suggested_filename);
-        gtk_file_selection_set_filename (GTK_FILE_SELECTION (filesel), utf8_suggestion);
-        g_free (utf8_suggestion);
-    }
-
-    if (gtk_dialog_run (GTK_DIALOG (filesel)) == GTK_RESPONSE_OK) {
-        filename = g_strdup (gtk_file_selection_get_filename (GTK_FILE_SELECTION (filesel)));
-        *success = 1;
-    }
-
-    gtk_widget_destroy (dialog);
-
-    return filename;
-}
-
-#endif
 
 static void
 save_pixbuf (GObject * ignored, gpointer user_data)
@@ -501,7 +454,7 @@ create_popup_menu (ViewerCbInfo * info)
     gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_S,
                                 GDK_CONTROL_MASK | GDK_SHIFT_MASK, GTK_ACCEL_VISIBLE);
 
-#ifdef HAVE_GNOME_PRINT
+#if GTK_CHECK_VERSION(2,10,0)
     menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_PRINT, NULL);
     g_signal_connect (menu_item, "activate", G_CALLBACK (print_pixbuf), info);
     gtk_widget_show (menu_item);

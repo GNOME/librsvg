@@ -113,8 +113,7 @@ rsvg_view_SOURCES = 		\
 	test-display.c
 rsvg_view_LDFLAGS =
 rsvg_view_DEPENDENCIES = $(DEPS)
-rsvg_view_CFLAGS= $(GNOME_PRINT_CFLAGS)
-rsvg_view_LDADD = $(GNOME_PRINT_LIBS) $(GTK_LIBS) $(GDK_X11_LIBS) $(libm) $(LDADDS)
+rsvg_view_LDADD = $(GTK_LIBS) $(GDK_X11_LIBS) $(libm) $(LDADDS)
 
 EXTRA_DIST =				\
 	MAINTAINERS			\
