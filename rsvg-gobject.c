@@ -72,12 +72,12 @@ rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
 
     /* key == entval->name, so it's implicitly freed below */
 
-    g_free ((char *) entval->name);
-    g_free ((char *) entval->ExternalID);
-    g_free ((char *) entval->SystemID);
+    xmlFree ((xmlChar *) entval->name);
+    xmlFree ((xmlChar *) entval->ExternalID);
+    xmlFree ((xmlChar *) entval->SystemID);
     xmlFree (entval->content);
     xmlFree (entval->orig);
-    g_free (entval);
+    xmlFree (entval);
 }
 
 static void

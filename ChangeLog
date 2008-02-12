@@ -1,3 +1,8 @@
+2008-02-03  Christian Persch  <chpe@gnome.org>
+
+	* rsvg-gobject.c: (rsvg_ctx_free_helper): Fix mismatched allocators.
+	Bug #514071.
+
 2008-02-02  Dominic Lachowicz <domlachowicz@gmail.com>
 
 	* test-display.c: Get rid of gnome print. Use gtk-print instead (#508526)
