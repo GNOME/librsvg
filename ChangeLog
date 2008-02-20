@@ -1,3 +1,10 @@
+2008-02-20  Dominic Lachowicz <domlachowicz@gmail.com>
+
+	From Behdad Esfahbod <behdad@behdad.org>
+
+	* Fixes bugs described in the following thread: 
+	http://lists.cairographics.org/archives/cairo/2008-February/013082.html
+
 2008-02-03  Christian Persch  <chpe@gnome.org>
 
 	* rsvg-gobject.c: (rsvg_ctx_free_helper): Fix mismatched allocators.

@@ -550,23 +550,6 @@ rsvg_text_layout_new (RsvgDrawingCtx * ctx, RsvgState * state, const char *text)
     return layout;
 }
 
-static void
-rsvg_text_layout_get_offsets (RsvgTextLayout * layout, gint * x, gint * y)
-{
-    PangoRectangle ink;
-    PangoRectangle logical;
-
-    pango_layout_get_pixel_extents (layout->layout, &ink, &logical);
-
-    if (ink.width < 1 || ink.height < 1) {
-        *x = *y = 0;
-        return;
-    }
-
-    *x = MIN (ink.x, logical.x);
-    *y = MIN (ink.y, logical.y);
-}
-
 static FT_Int32
 rsvg_text_layout_render_flags (RsvgTextLayout * layout)
 {
@@ -775,7 +758,6 @@ rsvg_text_layout_render_line (RsvgTextLayout * layout,
     for (list = line->runs; list; list = list->next) {
         PangoLayoutRun *run = list->data;
 
-        pango_glyph_string_extents (run->glyphs, run->item->analysis.font, NULL, &rect);
         x_off += rsvg_text_layout_render_glyphs (layout,
                                                  run->item->analysis.font, run->glyphs,
                                                  render_func, x + x_off, y, render_data);
@@ -788,13 +770,10 @@ rsvg_text_layout_render (RsvgTextLayout * layout,
                          RsvgTextRenderFunc render_func, gpointer render_data)
 {
     PangoLayoutIter *iter;
-    gint offx, offy;
     gint x, y;
 
-    rsvg_text_layout_get_offsets (layout, &offx, &offy);
-
-    x = offx + layout->x;
-    y = offy + layout->y;
+    x = layout->x;
+    y = layout->y;
 
     x *= PANGO_SCALE;
     y *= PANGO_SCALE;
@@ -802,19 +781,19 @@ rsvg_text_layout_render (RsvgTextLayout * layout,
     iter = pango_layout_get_iter (layout->layout);
 
     if (iter) {
-        PangoRectangle rect;
+        PangoRectangle logical;
         PangoLayoutLine *line;
         gint baseline;
 
         line = pango_layout_iter_get_line (iter);
 
-        pango_layout_iter_get_line_extents (iter, NULL, &rect);
+        pango_layout_iter_get_line_extents (iter, NULL, &logical);
         baseline = pango_layout_iter_get_baseline (iter);
 
         rsvg_text_layout_render_line (layout, line,
-                                      render_func, x + rect.x, y + baseline, render_data);
+                                      render_func, x, y + baseline, render_data);
 
-        layout->x += rect.width / PANGO_SCALE + offx;
+        layout->x += logical.width / (double)PANGO_SCALE;
     }
 
     pango_layout_iter_free (iter);
@@ -866,12 +845,12 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
         state = rsvg_state_current (ctx);
         context = ctx->render->create_pango_context (ctx);
         layout = rsvg_text_create_layout (ctx, state, text, context);
-        pango_layout_get_pixel_size (layout, &w, &h);
+        pango_layout_get_size (layout, &w, &h);
         iter = pango_layout_get_iter (layout);
-        baseline = pango_layout_iter_get_baseline (iter) / PANGO_SCALE;
+        baseline = pango_layout_iter_get_baseline (iter) / (double)PANGO_SCALE;
         pango_layout_iter_free (iter);
         ctx->render->render_pango_layout (ctx, layout, *x, *y - baseline);
-        *x += w;
+        *x += w / (double)PANGO_SCALE;
         g_object_unref (layout);
         g_object_unref (context);
     } else {
@@ -885,26 +864,11 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
 static gdouble
 rsvg_text_layout_width (RsvgTextLayout * layout)
 {
-    PangoLayoutIter *iter;
-    gint offx, offy;
+    gint width;
 
-    rsvg_text_layout_get_offsets (layout, &offx, &offy);
+    pango_layout_get_size (layout->layout, &width, NULL);
 
-    iter = pango_layout_get_iter (layout->layout);
-
-    if (iter) {
-        PangoRectangle rect;
-        PangoLayoutLine *line;
-
-        line = pango_layout_iter_get_line (iter);
-
-        pango_layout_iter_get_line_extents (iter, NULL, &rect);
-
-        pango_layout_iter_free (iter);
-        return rect.width / PANGO_SCALE + offx;
-    }
-
-    return 0;
+    return width / (double)PANGO_SCALE;
 }
 
 static gdouble

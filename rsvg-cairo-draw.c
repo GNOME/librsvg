@@ -460,9 +460,11 @@ rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
 {
     PangoFontMap *fontmap;
     PangoContext *context;
+    RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
 
     fontmap = pango_cairo_font_map_get_default ();
     context = pango_cairo_font_map_create_context (PANGO_CAIRO_FONT_MAP (fontmap));
+    pango_cairo_update_context (render->cr, context);
     pango_cairo_context_set_resolution (context, ctx->dpi_y);
     return context;
 }
@@ -472,26 +474,23 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
 {
     RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
     RsvgState *state = rsvg_state_current (ctx);
-    PangoRectangle logical;
+    PangoRectangle ink;
     RsvgBbox bbox;
 
-	_rsvg_cairo_set_text_antialias (render->cr, state->text_rendering_type);
+    _rsvg_cairo_set_text_antialias (render->cr, state->text_rendering_type);
 
     _set_rsvg_affine (render, state->affine);
-    cairo_set_line_width (render->cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, 'h'));
 
-    pango_cairo_update_layout (render->cr, layout);
-
-    pango_layout_get_pixel_extents (layout, NULL, &logical);
+    pango_layout_get_extents (layout, &ink, NULL);
 
     rsvg_bbox_init (&bbox, state->affine);
-    bbox.x = x;
-    bbox.y = y;
-    bbox.w = logical.width;
-    bbox.h = logical.height;
+    bbox.x = x + ink.x / (double)PANGO_SCALE;
+    bbox.y = y + ink.y / (double)PANGO_SCALE;
+    bbox.w = ink.width / (double)PANGO_SCALE;
+    bbox.h = ink.height / (double)PANGO_SCALE;
     bbox.virgin = 0;
 
-    cairo_translate (render->cr, x, y);
+    cairo_move_to (render->cr, x, y);
 
     rsvg_bbox_insert (&render->bbox, &bbox);
 
@@ -513,6 +512,8 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
                                        state->stroke,
                                        state->stroke_opacity,
                                        bbox, rsvg_state_current (ctx)->current_color);
+
+	cairo_set_line_width (render->cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, 'h'));
         cairo_stroke (render->cr);
     }
 }
