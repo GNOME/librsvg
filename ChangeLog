@@ -1,5 +1,11 @@
 2008-02-20  Dominic Lachowicz <domlachowicz@gmail.com>
 
+	* Fixes last bug @ below url. Text inside of text and tspan nodes
+	now gets coalesced, so that we can pass it all to a single PangoLayout.
+	This fixes some rendering bugs.
+	
+2008-02-20  Dominic Lachowicz <domlachowicz@gmail.com>
+
 	From Behdad Esfahbod <behdad@behdad.org>
 
 	* Fixes bugs described in the following thread: 
