@@ -751,7 +751,6 @@ rsvg_text_layout_render_line (RsvgTextLayout * layout,
                               PangoLayoutLine * line,
                               RsvgTextRenderFunc render_func, gint x, gint y, gpointer render_data)
 {
-    PangoRectangle rect;
     GSList *list;
     gint x_off = 0;
 
