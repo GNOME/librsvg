@@ -1,3 +1,10 @@
+Version 2.22.0
+
+- Text rendering fixes (especially for non-ASCII text)
+- Better cairo integration (fixed bugs when rendering inside of cairo groups)
+- Migrate from GVFS to GIO
+- Migrate rsvg-view from GnomePrint to GtkPrint
+
 Version 2.18.0
 
 - Support for some of the SVG 1.2 comp-op properties
