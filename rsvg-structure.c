@@ -47,7 +47,7 @@ rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
             return;
         ctx->drawsub_stack = stacksave->next;
     }
-    if (0 /*!state->visible */ )
+    if (!state->visible)
         return;
 
     self->draw (self, ctx, dominate);

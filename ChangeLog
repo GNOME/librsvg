@@ -3,6 +3,8 @@
 	* rsvg-path.c (rsvg_parse_path_do_cmd): If a moveto is followed by 
 	multiple pairs of coordinates, the subsequent pairs are treated as 
 	implicit lineto commands. (#482787)
+
+	* rsvg-structure.c (rsvg_node_draw): Handle display:none (#486377)
 	
 2008-02-20  Dominic Lachowicz <domlachowicz@gmail.com>
 
