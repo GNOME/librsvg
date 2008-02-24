@@ -203,6 +203,7 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
             ctx->cpx = ctx->rpx = ctx->params[0];
             ctx->cpy = ctx->rpy = ctx->params[1];
             ctx->param = 0;
+	    ctx->cmd = 'l'; /* implicit linetos after a moveto */
         }
         break;
     case 'l':
@@ -451,6 +452,7 @@ rsvg_parse_path_data (RSVGParsePathCtx * ctx, const char *data)
             }
             ctx->params[ctx->param++] = val;
             rsvg_parse_path_do_cmd (ctx, FALSE);
+
             in_num = FALSE;
         }
 
