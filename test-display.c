@@ -505,15 +505,24 @@ static void
 populate_window (GtkWidget * win, ViewerCbInfo * info, int xid, gint win_width, gint win_height)
 {
     GtkWidget *vbox;
-    GtkWidget *toolbar;
     GtkWidget *scroll;
-    GtkToolItem *toolitem;
     gint img_width, img_height;
 
     vbox = gtk_vbox_new (FALSE, 0);
     gtk_container_add (GTK_CONTAINER (win), vbox);
 
+    /* create a new image */
+    info->image = gtk_image_new_from_pixbuf (info->pixbuf);
+
+    /* pack the window with the image */
+    img_width = gdk_pixbuf_get_width (info->pixbuf);
+    img_height = gdk_pixbuf_get_height (info->pixbuf);
+
     if (xid <= 0) {
+		GtkWidget *toolbar;
+		GtkToolItem *toolitem;
+		GtkRequisition requisition;
+
         toolbar = gtk_toolbar_new ();
         gtk_box_pack_start (GTK_BOX (vbox), toolbar, FALSE, FALSE, 0);
 
@@ -524,14 +533,18 @@ populate_window (GtkWidget * win, ViewerCbInfo * info, int xid, gint win_width, 
         toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_OUT);
         gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 1);
         g_signal_connect (G_OBJECT (toolitem), "clicked", G_CALLBACK (zoom_out), info);
+
+		gtk_widget_size_request(toolbar, &requisition);
+
+		g_print("w: %d | h: %d\n", requisition.width, requisition.height);
+
+		/* HACK: adjust for frame width & height + packing borders */
+		img_height += requisition.height + 30;
+		win_height += requisition.height + 30;
+		img_width  += 20;
+		win_width  += 20;
     }
 
-    /* create a new image */
-    info->image = gtk_image_new_from_pixbuf (info->pixbuf);
-
-    /* pack the window with the image */
-    img_width = gdk_pixbuf_get_width (info->pixbuf);
-    img_height = gdk_pixbuf_get_height (info->pixbuf);
     if ((xid > 0 && (img_width > win_width || img_height > win_height))
         || (xid <= 0)) {
         gtk_window_set_default_size (GTK_WINDOW (win), MIN (img_width, win_width),
