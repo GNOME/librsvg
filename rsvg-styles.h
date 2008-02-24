@@ -201,6 +201,9 @@ struct _RsvgState {
     gboolean visible;
     gboolean has_visible;
 
+    gboolean space_preserve;
+    gboolean has_space_preserve;
+
     gboolean has_cond;
     gboolean cond_true;
 

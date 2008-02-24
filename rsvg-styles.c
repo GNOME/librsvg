@@ -246,6 +246,12 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->font_family = g_strdup (src->font_family);
     }
 
+	if (function (dst->has_space_preserve, src->has_space_preserve))
+		dst->space_preserve = src->space_preserve;
+
+	if (function (dst->has_visible, src->has_visible))
+		dst->visible = src->visible;
+
     if (function (dst->has_lang, src->has_lang)) {
         if (dst->has_lang)
             g_free (dst->lang);
@@ -479,6 +485,14 @@ rsvg_parse_style_arg (RsvgHandle * ctx, RsvgState * state, const char *str)
             state->visible = TRUE;
         else
             state->has_visible = FALSE;
+	} else if (rsvg_css_param_match (str, "xml:space")) {
+        state->has_space_preserve = TRUE;
+        if (!strcmp (str + arg_off, "default"))
+            state->space_preserve = FALSE;
+        else if (strcmp (str + arg_off, "preserve") == 0)
+            state->space_preserve = TRUE;
+        else
+            state->space_preserve = FALSE;
     } else if (rsvg_css_param_match (str, "visibility")) {
         state->has_visible = TRUE;
         if (!strcmp (str + arg_off, "visible"))
@@ -789,6 +803,7 @@ rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * a
     rsvg_lookup_parse_style_pair (ctx, state, "visibility", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "writing-mode", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "xml:lang", atts);
+    rsvg_lookup_parse_style_pair (ctx, state, "xml:space", atts);
 
     {
         /* TODO: this conditional behavior isn't quite correct, and i'm not sure it should reside here */

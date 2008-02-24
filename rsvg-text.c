@@ -90,34 +90,36 @@ rsvg_make_valid_utf8 (const char *str, int len)
 }
 
 static GString *
-_rsvg_text_chomp (GString * in, gboolean * lastwasspace)
+_rsvg_text_chomp (RsvgState *state, GString * in, gboolean * lastwasspace)
 {
     GString *out;
     guint i;
     out = g_string_new (in->str);
 
-    for (i = 0; i < out->len;) {
-        if (out->str[i] == '\n')
-            g_string_erase (out, i, 1);
-        else
-            i++;
-    }
-
-    for (i = 0; i < out->len; i++)
-        if (out->str[i] == '\t')
-            out->str[i] = ' ';
-
-    for (i = 0; i < out->len;) {
-        if (out->str[i] == ' ' && *lastwasspace)
-            g_string_erase (out, i, 1);
-        else {
-            if (out->str[i] == ' ')
-                *lastwasspace = TRUE;
-            else
-                *lastwasspace = FALSE;
-            i++;
-        }
-    }
+	if (!state->space_preserve) {
+		for (i = 0; i < out->len;) {
+			if (out->str[i] == '\n')
+				g_string_erase (out, i, 1);
+			else
+				i++;
+		}
+		
+		for (i = 0; i < out->len; i++)
+			if (out->str[i] == '\t')
+				out->str[i] = ' ';
+		
+		for (i = 0; i < out->len;) {
+			if (out->str[i] == ' ' && *lastwasspace)
+				g_string_erase (out, i, 1);
+			else {
+				if (out->str[i] == ' ')
+					*lastwasspace = TRUE;
+				else
+					*lastwasspace = FALSE;
+				i++;
+			}
+		}
+	}
 
     return out;
 }
@@ -172,7 +174,7 @@ _rsvg_node_text_type_children (RsvgNode * self, RsvgDrawingCtx * ctx,
         RsvgNode *node = g_ptr_array_index (self->children, i);
         if (!strcmp (node->type->str, "RSVG_NODE_CHARS")) {
             RsvgNodeChars *chars = (RsvgNodeChars *) node;
-            GString *str = _rsvg_text_chomp (chars->contents, lastwasspace);
+            GString *str = _rsvg_text_chomp (rsvg_state_current (ctx), chars->contents, lastwasspace);
             rsvg_text_render_text (ctx, str->str, x, y);
             g_string_free (str, TRUE);
         } else if (!strcmp (node->type->str, "tspan")) {
@@ -208,7 +210,7 @@ _rsvg_node_text_length_children (RsvgNode * self, RsvgDrawingCtx * ctx,
         RsvgNode *node = g_ptr_array_index (self->children, i);
         if (!strcmp (node->type->str, "RSVG_NODE_CHARS")) {
             RsvgNodeChars *chars = (RsvgNodeChars *) node;
-            GString *str = _rsvg_text_chomp (chars->contents, lastwasspace);
+            GString *str = _rsvg_text_chomp (rsvg_state_current (ctx), chars->contents, lastwasspace);
             *x += rsvg_text_length_text_as_string (ctx, str->str);
             g_string_free (str, TRUE);
         } else if (!strcmp (node->type->str, "tspan")) {
