@@ -1082,6 +1082,8 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx * ctx,
     rsvg_node_draw (drawable, ctx, 0);
     rsvg_state_pop (ctx);
 
+	/* no colorspace conversion necessary. this is just a convenient
+	   holder of ARGB data with a width, height, & stride */
     img = gdk_pixbuf_new_from_data (pixels,
                                     GDK_COLORSPACE_RGB,
                                     TRUE,
