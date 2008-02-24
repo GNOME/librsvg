@@ -37,8 +37,8 @@
 #include <gdk/gdkx.h>
 #endif                          /* ENABLE_XEMBED */
 
-#define DEFAULT_WIDTH  240
-#define DEFAULT_HEIGHT 240
+#define DEFAULT_WIDTH  640
+#define DEFAULT_HEIGHT 480
 
 static char *
 _rsvg_basename (const char *file)

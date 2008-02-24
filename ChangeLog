@@ -5,6 +5,8 @@
 	implicit lineto commands. (#482787)
 
 	* rsvg-structure.c (rsvg_node_draw): Handle display:none (#486377)
+
+	* test-display: Make window size larger (#445870)
 	
 2008-02-20  Dominic Lachowicz <domlachowicz@gmail.com>
 
