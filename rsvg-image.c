@@ -299,6 +299,17 @@ rsvg_acquire_file_resource (const char *filename, const char *base_uri, GError *
 
 #ifdef HAVE_GIO
 
+static void
+rsvg_free_error (GError ** err)
+{
+	if (err) {
+		if (*err) {
+			g_error_free (*err);
+			*err = NULL;
+		}
+	}
+}
+
 static GByteArray *
 rsvg_acquire_vfs_resource (const char *filename, const char *base_uri, GError ** error)
 {
@@ -307,7 +318,7 @@ rsvg_acquire_vfs_resource (const char *filename, const char *base_uri, GError **
     GFile *file;
     char *data;
     gsize size;
-    gboolean res;
+    gboolean res = FALSE;
 
     rsvg_return_val_if_fail (filename != NULL, NULL, error);
 
@@ -317,19 +328,19 @@ rsvg_acquire_vfs_resource (const char *filename, const char *base_uri, GError **
         if (base_uri != NULL) {
             GFile *base;
 
-            g_error_free (*error);
-            *error = NULL;
+			rsvg_free_error(error);
+			
+			g_object_unref (file);
 
-            g_object_unref (file);
             base = g_file_new_for_uri (base_uri);
             file = g_file_resolve_relative_path (base, filename);
             g_object_unref (base);
 
-            res = g_file_load_contents (file, NULL, &data, &size, NULL, error);
+			res = g_file_load_contents (file, NULL, &data, &size, NULL, error);
         }
     }
 
-    g_object_unref (file);
+	g_object_unref (file);
 
     if (res) {
         array = g_byte_array_new ();
