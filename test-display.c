@@ -536,8 +536,6 @@ populate_window (GtkWidget * win, ViewerCbInfo * info, int xid, gint win_width, 
 
 		gtk_widget_size_request(toolbar, &requisition);
 
-		g_print("w: %d | h: %d\n", requisition.width, requisition.height);
-
 		/* HACK: adjust for frame width & height + packing borders */
 		img_height += requisition.height + 30;
 		win_height += requisition.height + 30;
