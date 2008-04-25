@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "rsvg-private.h"
+
 /* This module parses an SVG path element into an RsvgBpathDef.
 
    At present, there is no support for <marker> or any other contextual

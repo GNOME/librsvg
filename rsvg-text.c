@@ -32,11 +32,19 @@
 
 #include "rsvg-shapes.h"
 
+/* what we use for text rendering depends on what cairo has to offer */
+#include <pango/pangocairo.h>
+
+#if defined CAIRO_HAS_FT_FONT
 #include <ft2build.h>
 #include FT_GLYPH_H
 #include FT_OUTLINE_H
 
 #include <pango/pangoft2.h>
+#else if defined (CAIRO_HAS_WIN32_FONT)
+/* nothing more needed? */
+#include <cairo-win32.h>
+#endif
 
 typedef struct _RsvgNodeText RsvgNodeText;
 
@@ -398,6 +406,7 @@ struct _RenderCtx {
     gdouble offset_y;
 };
 
+#ifdef CAIRO_HAS_FT_FONT
 typedef void (*RsvgTextRenderFunc) (PangoFont * font,
                                     PangoGlyph glyph,
                                     FT_Int32 load_flags, gint x, gint y, gpointer render_data);
@@ -409,6 +418,7 @@ typedef void (*RsvgTextRenderFunc) (PangoFont * font,
 #ifndef FT_LOAD_TARGET_MONO
 #define FT_LOAD_TARGET_MONO FT_LOAD_MONOCHROME
 #endif
+#endif /* CAIRO_HAS_FT_FONT */
 
 static RenderCtx *
 rsvg_render_ctx_new (void)
@@ -428,6 +438,7 @@ rsvg_render_ctx_free (RenderCtx * ctx)
     g_free (ctx);
 }
 
+#ifdef CAIRO_HAS_FT_FONT
 static void
 rsvg_text_ft2_subst_func (FcPattern * pattern, gpointer data)
 {
@@ -471,6 +482,28 @@ rsvg_text_get_pango_context (RsvgDrawingCtx * ctx)
 
     return context;
 }
+#else
+/* although the #if condtionalizes on FT2 here we try to use pure cairo */
+typedef void (*RsvgTextRenderFunc) (PangoFont * font,
+                                    PangoGlyph glyph,
+                                    gint x, gint y, gpointer render_data);
+
+static PangoContext *
+rsvg_text_get_pango_context (RsvgDrawingCtx * ctx)
+{
+    PangoContext *context;
+    PangoCairoFontMap *fontmap;
+    
+    fontmap = PANGO_CAIRO_FONT_MAP (pango_cairo_font_map_new ());
+    if (ctx->dpi_x != ctx->dpi_y)
+	g_warning ("asymmetric dpi not handled");
+    pango_cairo_font_map_set_resolution (fontmap, ctx->dpi_x);
+    context = pango_cairo_font_map_create_context (fontmap);
+    g_object_unref (fontmap);
+    
+    return context;
+}
+#endif /* #ifdef CAIRO_HAS_FT_FONT */
 
 static void
 rsvg_text_layout_free (RsvgTextLayout * layout)
@@ -552,6 +585,7 @@ rsvg_text_layout_new (RsvgDrawingCtx * ctx, RsvgState * state, const char *text)
     return layout;
 }
 
+#ifdef CAIRO_HAS_FT_FONT
 static FT_Int32
 rsvg_text_layout_render_flags (RsvgTextLayout * layout)
 {
@@ -747,6 +781,39 @@ rsvg_text_render_vectors (PangoFont * font,
 
     FT_Done_Glyph (glyph);
 }
+#else 
+static gint
+rsvg_text_layout_render_glyphs (RsvgTextLayout * layout,
+                                PangoFont * font,
+                                PangoGlyphString * glyphs,
+                                RsvgTextRenderFunc render_func,
+                                gint x, gint y, gpointer render_data)
+{
+    PangoGlyphInfo *gi;
+    gint i;
+    gint x_position = 0;
+    gint pos_x, pos_y;
+    
+    for (i = 0, gi = glyphs->glyphs; i < glyphs->num_glyphs; i++, gi++) {
+        if (gi->glyph) {
+            pos_x = x + x_position + gi->geometry.x_offset;
+            pos_y = y + gi->geometry.y_offset;
+
+            render_func (font, gi->glyph, pos_x, pos_y, render_data);
+        }
+
+        x_position += glyphs->glyphs[i].geometry.width;
+    }
+
+    return x_position;
+}
+
+static void
+rsvg_text_render_vectors (PangoFont * font,
+                          PangoGlyph pango_glyph, gint x, gint y, gpointer ud)
+{
+}
+#endif /* CAIRO_HAS_FT_FONT */
 
 static void
 rsvg_text_layout_render_line (RsvgTextLayout * layout,

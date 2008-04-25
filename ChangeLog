@@ -1,3 +1,12 @@
+2008-04-25  Hans Breuer  <hans@breuer.org>
+
+	* rsvg-css.c : use HAVE_STRINGS_H
+	* rsvg-path.c : #include "rsvg-private.h" to get common definitions
+	* rsvg-text.c : make the text rendering capability depend on what 
+	cairo provides. If there is no CAIRO_HAS_FT_FONT try to use 
+	CAIRO_HAS_WIN32_FONT. Makes librsvg buildable on windows without 
+	freetype dependency, bug #529889
+
 2008-03-04  Dominic Lachowicz <domlachowicz@gmail.com>
 
 	* rsvg-image.c: rsvg-convert crashed with SIGSEGV in _rsvg_acquire_xlink_href_resource()
