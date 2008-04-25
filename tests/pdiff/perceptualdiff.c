@@ -16,8 +16,21 @@
   if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
+#include "config.h"
 #include <stdio.h>
+
+#ifdef HAVE_STDINT_H
 #include <stdint.h>
+#else
+#include <glib.h>
+typedef gint8 int8_t;
+typedef guint8 uint8_t;
+typedef gint16 int16_t;
+typedef guint16 uint16_t;
+typedef gint32 int32_t;
+typedef guint32 uint32_t;
+#endif
+
 #include <string.h>
 #include <math.h>
 #include "lpyramid.h"

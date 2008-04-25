@@ -16,11 +16,24 @@
 
 #define _GNU_SOURCE
 
+#include "config.h"
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#else
+#include <glib.h>
+typedef gint8 int8_t;
+typedef guint8 uint8_t;
+typedef gint16 int16_t;
+typedef guint16 uint16_t;
+typedef gint32 int32_t;
+typedef guint32 uint32_t;
+#endif
+
 #include "lpyramid.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include "pdiff.h"
 
 #ifndef M_PI
