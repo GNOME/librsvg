@@ -41,9 +41,11 @@
 #include FT_OUTLINE_H
 
 #include <pango/pangoft2.h>
-#else if defined (CAIRO_HAS_WIN32_FONT)
+#else
+#if defined (CAIRO_HAS_WIN32_FONT)
 /* nothing more needed? */
 #include <cairo-win32.h>
+#endif
 #endif
 
 typedef struct _RsvgNodeText RsvgNodeText;
