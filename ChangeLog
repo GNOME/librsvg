@@ -1,5 +1,9 @@
 2008-04-28  Wouter Bolsterlee  <wbolster@svn.gnome.org>
 
+	* rsvg-text.c: Use #elif instead of nested #else #if.
+
+2008-04-28  Wouter Bolsterlee  <wbolster@svn.gnome.org>
+
 	* rsvg-text.c: Don't use #else if, but #else and an
 	additional #if. Fixes the build with at least gcc 4.2.3.
 
