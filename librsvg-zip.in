@@ -19,8 +19,8 @@ bin/$DLLNAME
 EOF
 
 rm $DEVZIP
-zip -r $DEVZIP -@ <<EOF
-bin/rsvg.exe
+zip -r -D $DEVZIP -@ <<EOF
+bin/rsvg-convert.exe
 bin/rsvg-view.exe
 include/librsvg-2
 lib/librsvg-2.dll.a

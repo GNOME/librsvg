@@ -1,3 +1,8 @@
+2008-05-20  Tor Lillqvist  <tml@novell.com>
+
+	* librsvg-zip.in: Package rsvg-convert.exe instead of the now
+	nonexistent rsvg.exe.
+
 2008-04-28  Wouter Bolsterlee  <wbolster@svn.gnome.org>
 
 	* rsvg-text.c: Use #elif instead of nested #else #if.
