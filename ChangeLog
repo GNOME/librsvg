@@ -1,3 +1,11 @@
+2008-05-23  Tor Lillqvist  <tml@novell.com>
+
+	* tests/samples/artwork.svg: Use "sans-serif" instead of
+	"sanserif".
+
+	* tests/samples/Picasso.svg: Use "sans-serif" instead of
+	"sansserif".
+
 2008-05-20  Tor Lillqvist  <tml@novell.com>
 
 	* librsvg-zip.in: Package rsvg-convert.exe instead of the now
