@@ -209,6 +209,7 @@ struct _RsvgState {
 
     RsvgVpathDash dash;
     gboolean has_dash;
+    gboolean has_dashoffset;
 
     guint32 current_color;
     gboolean has_current_color;

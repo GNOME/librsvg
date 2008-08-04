@@ -106,6 +106,7 @@ rsvg_state_init (RsvgState * state)
     state->has_cap = FALSE;
     state->has_join = FALSE;
     state->has_dash = FALSE;
+    state->has_dashoffset = FALSE;
     state->has_visible = FALSE;
     state->has_cond = FALSE;
     state->has_stop_color = FALSE;
@@ -266,6 +267,10 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->dash.n_dash = src->dash.n_dash;
         for (i = 0; i < src->dash.n_dash; i++)
             dst->dash.dash[i] = src->dash.dash[i];
+    }
+
+    if (function (dst->has_dashoffset, src->has_dashoffset)) {
+        dst->dash.offset = src->dash.offset;
     }
 
     if (inherituninheritables) {
@@ -664,7 +669,7 @@ rsvg_parse_style_arg (RsvgHandle * ctx, RsvgState * state, const char *str)
         state->has_miter_limit = TRUE;
         state->miter_limit = g_ascii_strtod (str + arg_off, NULL);
     } else if (rsvg_css_param_match (str, "stroke-dashoffset")) {
-        state->has_dash = TRUE;
+        state->has_dashoffset = TRUE;
         state->dash.offset = _rsvg_css_parse_length (str + arg_off);
         if (state->dash.offset.length < 0.)
             state->dash.offset.length = 0.;
