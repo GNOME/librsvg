@@ -351,6 +351,60 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
 }
 
 static void
+rsvg_path_end_of_number (RSVGParsePathCtx * ctx, double val, int sign, int exp_sign, int exp)
+{
+    val *= sign * pow (10, exp_sign * exp);
+    if (ctx->rel) {
+      /* Handle relative coordinates. This switch statement attempts
+	 to determine _what_ the coords are relative to. This is
+	 underspecified in the 12 Apr working draft. */
+      switch (ctx->cmd) {
+      case 'l':
+      case 'm':
+      case 'c':
+      case 's':
+      case 'q':
+      case 't':
+#ifndef RSVGV_RELATIVE
+	/* rule: even-numbered params are x-relative, odd-numbered
+	   are y-relative */
+	if ((ctx->param & 1) == 0)
+	  val += ctx->cpx;
+	else if ((ctx->param & 1) == 1)
+	  val += ctx->cpy;
+	break;
+#else
+	/* rule: even-numbered params are x-relative, odd-numbered
+	   are y-relative */
+	if (ctx->param == 0 || (ctx->param % 2 == 0))
+	  val += ctx->cpx;
+	else
+	  val += ctx->cpy;
+	break;
+#endif
+      case 'a':
+	/* rule: sixth and seventh are x and y, rest are not
+	   relative */
+	if (ctx->param == 5)
+	  val += ctx->cpx;
+	else if (ctx->param == 6)
+	  val += ctx->cpy;
+	break;
+      case 'h':
+	/* rule: x-relative */
+	val += ctx->cpx;
+	break;
+      case 'v':
+	/* rule: y-relative */
+	val += ctx->cpy;
+	break;
+      }
+    }
+    ctx->params[ctx->param++] = val;
+    rsvg_parse_path_do_cmd (ctx, FALSE);    
+}
+
+static void
 rsvg_parse_path_data (RSVGParsePathCtx * ctx, const char *data)
 {
     int i = 0;
@@ -389,7 +443,18 @@ rsvg_parse_path_data (RSVGParsePathCtx * ctx, const char *data)
                 sign = 1;
             }
         } else if (c == '.') {
-            if (!in_num) {
+	    if (in_frac) {
+	      rsvg_path_end_of_number(ctx, val, sign, exp_sign, exp);
+	      in_num = TRUE;
+	      in_frac = FALSE;
+	      in_exp = FALSE;
+	      exp = 0;
+	      exp_sign = 1;
+	      exp_wait_sign = FALSE;
+	      val = 0;
+	      sign = 1;
+	    }
+	    else if (!in_num) {
                 in_num = TRUE;
                 val = 0;
             }
@@ -404,58 +469,8 @@ rsvg_parse_path_data (RSVGParsePathCtx * ctx, const char *data)
             exp_sign = c == '+' ? 1 : -1;
         } else if (in_num) {
             /* end of number */
-
-            val *= sign * pow (10, exp_sign * exp);
-            if (ctx->rel) {
-                /* Handle relative coordinates. This switch statement attempts
-                   to determine _what_ the coords are relative to. This is
-                   underspecified in the 12 Apr working draft. */
-                switch (ctx->cmd) {
-                case 'l':
-                case 'm':
-                case 'c':
-                case 's':
-                case 'q':
-                case 't':
-#ifndef RSVGV_RELATIVE
-                    /* rule: even-numbered params are x-relative, odd-numbered
-                       are y-relative */
-                    if ((ctx->param & 1) == 0)
-                        val += ctx->cpx;
-                    else if ((ctx->param & 1) == 1)
-                        val += ctx->cpy;
-                    break;
-#else
-                    /* rule: even-numbered params are x-relative, odd-numbered
-                       are y-relative */
-                    if (ctx->param == 0 || (ctx->param % 2 == 0))
-                        val += ctx->cpx;
-                    else
-                        val += ctx->cpy;
-                    break;
-#endif
-                case 'a':
-                    /* rule: sixth and seventh are x and y, rest are not
-                       relative */
-                    if (ctx->param == 5)
-                        val += ctx->cpx;
-                    else if (ctx->param == 6)
-                        val += ctx->cpy;
-                    break;
-                case 'h':
-                    /* rule: x-relative */
-                    val += ctx->cpx;
-                    break;
-                case 'v':
-                    /* rule: y-relative */
-                    val += ctx->cpy;
-                    break;
-                }
-            }
-            ctx->params[ctx->param++] = val;
-            rsvg_parse_path_do_cmd (ctx, FALSE);
-
-            in_num = FALSE;
+	    rsvg_path_end_of_number(ctx, val, sign, exp_sign, exp);
+	    in_num = FALSE;
         }
 
         if (c == '\0')
