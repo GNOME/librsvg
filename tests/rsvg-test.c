@@ -346,7 +346,7 @@ main (int argc, char **argv)
     char *test_name;
     gboolean xfail, ignore;
     int i, j;
-    unsigned length;
+    gsize length;
 
     printf ("===============\n"
 	    "Rendering tests\n"

@@ -1,3 +1,7 @@
+2008-08-22  Dominic Lachowicz <domlachowicz@gmail.com>
+
+	* tests/rsvg-test.c: Bug #547981 - librsvg-test.c doesn't build on x86_64
+	
 2008-08-21  Dominic Lachowicz <domlachowicz@gmail.com>
 
 	* rsvg-path.c: Bug #548494 - bad rendering for some wacko
