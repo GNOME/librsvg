@@ -19,6 +19,7 @@
    Boston, MA 02111-1307, USA.
   
    Author: Raph Levien <raph@artofcode.com>
+           F. Wang <fred.wang@free.fr> - fix drawing of arc
 */
 
 /* This is adapted from svg-path in Gill. */
@@ -57,34 +58,34 @@ struct _RSVGParsePathCtx {
 static void
 rsvg_path_arc_segment (RSVGParsePathCtx * ctx,
                        double xc, double yc,
-                       double th0, double th1, double rx, double ry, double x_axis_rotation)
+                       double th0, double th1, double rx, double ry,
+		       double x_axis_rotation)
 {
-    double sin_th, cos_th;
-    double a00, a01, a10, a11;
     double x1, y1, x2, y2, x3, y3;
     double t;
     double th_half;
+    double f, sinf, cosf;
 
-    sin_th = sin (x_axis_rotation * (M_PI / 180.0));
-    cos_th = cos (x_axis_rotation * (M_PI / 180.0));
-    /* inverse transform compared with rsvg_path_arc */
-    a00 = cos_th * rx;
-    a01 = -sin_th * ry;
-    a10 = sin_th * rx;
-    a11 = cos_th * ry;
+    f = x_axis_rotation * M_PI / 180.0;
+    sinf = sin(f);
+    cosf = cos(f);
 
     th_half = 0.5 * (th1 - th0);
     t = (8.0 / 3.0) * sin (th_half * 0.5) * sin (th_half * 0.5) / sin (th_half);
-    x1 = xc + cos (th0) - t * sin (th0);
-    y1 = yc + sin (th0) + t * cos (th0);
-    x3 = xc + cos (th1);
-    y3 = yc + sin (th1);
-    x2 = x3 + t * sin (th1);
-    y2 = y3 - t * cos (th1);
+    x1 = rx*(cos (th0) - t * sin (th0));
+    y1 = ry*(sin (th0) + t * cos (th0));
+    x3 = rx*cos (th1);
+    y3 = ry*sin (th1);
+    x2 = x3 + rx*(t * sin (th1));
+    y2 = y3 + ry*(-t * cos (th1));
+
     rsvg_bpath_def_curveto (ctx->bpath,
-                            a00 * x1 + a01 * y1, a10 * x1 + a11 * y1,
-                            a00 * x2 + a01 * y2, a10 * x2 + a11 * y2,
-                            a00 * x3 + a01 * y3, a10 * x3 + a11 * y3);
+                            xc + cosf*x1 - sinf*y1,
+			    yc + sinf*x1 + cosf*y1,
+                            xc + cosf*x2 - sinf*y2,
+			    yc + sinf*x2 + cosf*y2,
+                            xc + cosf*x3 - sinf*y3,
+			    yc + sinf*x3 + cosf*y3);
 }
 
 /**
@@ -104,63 +105,115 @@ rsvg_path_arc (RSVGParsePathCtx * ctx,
                double rx, double ry, double x_axis_rotation,
                int large_arc_flag, int sweep_flag, double x, double y)
 {
-    double sin_th, cos_th;
-    double a00, a01, a10, a11;
-    double x0, y0, x1, y1, xc, yc;
-    double d, sfactor, sfactor_sq;
-    double th0, th1, th_arc;
-    int i, n_segs;
 
-    /* Check that neither radius is zero, since its isn't either
-       geometrically or mathematically meaningful and will
-       cause divide by zero and subsequent NaNs.  We should
-       really do some ranged check ie -0.001 < x < 000.1 rather
-       can just a straight check again zero.
-     */
+  /* See Appendix F.6 Elliptical arc implementation notes
+     http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes */
+
+  double f, sinf, cosf;
+  double x1, y1, x2, y2;
+  double x1_, y1_;
+  double cx_, cy_, cx, cy;
+  double gamma;
+  double theta1, delta_theta;
+  double k1, k2, k3, k4, k5;
+
+  int i, n_segs;
+
+    /* Start and end of path segment */
+    x1 = ctx->cpx;
+    y1 = ctx->cpy;
+
+    x2 = x;
+    y2 = y;
+
+    if(x1 == x2 && y1 == y2)
+      return;
+
+    /* X-axis */
+    f = x_axis_rotation * M_PI / 180.0;
+    sinf = sin(f);
+    cosf = cos(f);
+
+    /* Check the radius */
     if ((rx == 0.0) || (ry == 0.0))
+      {
+	rsvg_bpath_def_lineto (ctx->bpath, x, y);
         return;
+      }
 
-    sin_th = sin (x_axis_rotation * (M_PI / 180.0));
-    cos_th = cos (x_axis_rotation * (M_PI / 180.0));
-    a00 = cos_th / rx;
-    a01 = sin_th / rx;
-    a10 = -sin_th / ry;
-    a11 = cos_th / ry;
-    x0 = a00 * ctx->cpx + a01 * ctx->cpy;
-    y0 = a10 * ctx->cpx + a11 * ctx->cpy;
-    x1 = a00 * x + a01 * y;
-    y1 = a10 * x + a11 * y;
-    /* (x0, y0) is current point in transformed coordinate space.
-       (x1, y1) is new point in transformed coordinate space.
+    if(rx < 0)rx = -rx;
+    if(ry < 0)ry = -ry;
 
-       The arc fits a unit-radius circle in this space.
-     */
-    d = (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0);
-    sfactor_sq = 1.0 / d - 0.25;
-    if (sfactor_sq < 0)
-        sfactor_sq = 0;
-    sfactor = sqrt (sfactor_sq);
-    if (sweep_flag == large_arc_flag)
-        sfactor = -sfactor;
-    xc = 0.5 * (x0 + x1) - sfactor * (y1 - y0);
-    yc = 0.5 * (y0 + y1) + sfactor * (x1 - x0);
-    /* (xc, yc) is center of the circle. */
+    k1 = (x1 - x2)/2;
+    k2 = (y1 - y2)/2;
 
-    th0 = atan2 (y0 - yc, x0 - xc);
-    th1 = atan2 (y1 - yc, x1 - xc);
+    x1_ = cosf * k1 + sinf * k2;
+    y1_ = -sinf * k1 + cosf * k2;
 
-    th_arc = th1 - th0;
-    if (th_arc < 0 && sweep_flag)
-        th_arc += 2 * M_PI;
-    else if (th_arc > 0 && !sweep_flag)
-        th_arc -= 2 * M_PI;
+    gamma = (x1_*x1_)/(rx*rx) + (y1_*y1_)/(ry*ry);
+    if(gamma > 1)
+      {
+	rx *= sqrt(gamma);
+	ry *= sqrt(gamma);
+      }
 
-    n_segs = ceil (fabs (th_arc / (M_PI * 0.5 + 0.001)));
+    /* Compute the center */
+
+    k1 = rx*rx*y1_*y1_ + ry*ry*x1_*x1_;
+    if(k1 == 0)    
+      return;
+
+    k1 = sqrt(fabs((rx*rx*ry*ry)/k1 - 1));
+    if(sweep_flag == large_arc_flag)
+      k1 = -k1;
+
+    cx_ = k1*rx*y1_/ry;
+    cy_ = -k1*ry*x1_/rx;
+    
+    cx = cosf*cx_ - sinf*cy_ + (x1+x2)/2;
+    cy = sinf*cx_ + cosf*cy_ + (y1+y2)/2;
+
+    /* Compute start angle */
+
+    k1 = (x1_ - cx_)/rx;
+    k2 = (y1_ - cy_)/ry;
+    k3 = (-x1_ - cx_)/rx;
+    k4 = (-y1_ - cy_)/ry;
+
+    k5 = sqrt(fabs(k1*k1 + k2*k2));
+    if(k5 == 0)return;
+
+    k5 = k1/k5;
+    if(k5 < -1)k5 = -1;
+    else if(k5 > 1)k5 = 1;
+    theta1 = acos(k5);
+    if(k2 < 0)theta1 = -theta1;
+
+    /* Compute delta_theta */
+
+    k5 = sqrt(fabs((k1*k1 + k2*k2)*(k3*k3 + k4*k4)));
+    if(k5 == 0)return;
+
+    k5 = (k1*k3 + k2*k4)/k5;
+    if(k5 < -1)k5 = -1;
+    else if(k5 > 1)k5 = 1;
+    delta_theta = acos(k5);
+    if(k1*k4 - k3*k2 < 0)delta_theta = -delta_theta;
+
+    if(sweep_flag && delta_theta < 0)
+      delta_theta += M_PI*2;
+    else if(!sweep_flag && delta_theta > 0)
+      delta_theta -= M_PI*2;
+   
+    /* Now draw the arc */
+
+    n_segs = ceil (fabs (delta_theta / (M_PI * 0.5 + 0.001)));
 
     for (i = 0; i < n_segs; i++)
-        rsvg_path_arc_segment (ctx, xc, yc,
-                               th0 + i * th_arc / n_segs,
-                               th0 + (i + 1) * th_arc / n_segs, rx, ry, x_axis_rotation);
+      rsvg_path_arc_segment (ctx, cx, cy,
+			     theta1 + i * delta_theta / n_segs,
+			     theta1 + (i + 1) * delta_theta / n_segs,
+			     rx, ry, x_axis_rotation);
 
     ctx->cpx = x;
     ctx->cpy = y;

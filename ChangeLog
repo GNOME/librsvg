@@ -1,3 +1,8 @@
+2008-08-25  Dominic Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-path.c: 549256 - some arcs are not well drawn in SVG path. From
+	Frederic Wang <fred.wang%40free.fr>
+	
 2008-08-22  Dominic Lachowicz <domlachowicz@gmail.com>
 
 	* tests/rsvg-test.c: Bug #547981 - librsvg-test.c doesn't build on x86_64
