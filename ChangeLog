@@ -1,5 +1,9 @@
 2008-08-26  Dominic Lachowicz <domlachowicz@gmail.com>
 
+	* rsvg-filters.c: #548154 - Nautilus Segmentation fault when displaying SVG file
+	
+2008-08-26  Dominic Lachowicz <domlachowicz@gmail.com>
+
 	* gdk-pixbuf-loader/io-svg.c: #549418 - build failure: test-display.c 
 	io-svg.c format not a string literal and no format arguments
 	* test-display.c: Ditto

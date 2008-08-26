@@ -1133,7 +1133,7 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode * self,
                                                 RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
     gint i, j;
-    guint listlen;
+    guint listlen = 0;
     const char *value;
     gboolean has_target_x, has_target_y;
     RsvgFilterPrimitiveConvolveMatrix *filter;
@@ -1859,7 +1859,7 @@ rsvg_filter_primitive_colour_matrix_set_atts (RsvgNode * self, RsvgHandle * ctx,
                                               RsvgPropertyBag * atts)
 {
     gint type;
-    guint listlen;
+    guint listlen = 0;
     const char *value;
     RsvgFilterPrimitiveColourMatrix *filter;
 
