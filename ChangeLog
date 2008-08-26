@@ -1,4 +1,8 @@
 2008-08-26  Dominic Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-text.c: #524835 - nautilus crashed with SIGSEGV
+	
+2008-08-26  Dominic Lachowicz <domlachowicz@gmail.com>
 	
 	* gdk-pixbuf-loader/io-svg.c: #538149 - svg_loader.so does not set license field 
 	in GdkPixBufFormat

@@ -766,9 +766,11 @@ rsvg_text_render_vectors (PangoFont * font,
 
     face = pango_ft2_font_get_face (font);
 
-    FT_Load_Glyph (face, (FT_UInt) pango_glyph, flags);
+    if (0 != FT_Load_Glyph (face, (FT_UInt) pango_glyph, flags))
+		return;
 
-    FT_Get_Glyph (face->glyph, &glyph);
+    if (0 != FT_Get_Glyph (face->glyph, &glyph))
+		return;
 
     if (face->glyph->format == FT_GLYPH_FORMAT_OUTLINE) {
         FT_OutlineGlyph outline_glyph = (FT_OutlineGlyph) glyph;
