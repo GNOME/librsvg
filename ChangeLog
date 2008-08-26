@@ -1,4 +1,9 @@
 2008-08-26  Dominic Lachowicz <domlachowicz@gmail.com>
+	
+	* gdk-pixbuf-loader/io-svg.c: #538149 - svg_loader.so does not set license field 
+	in GdkPixBufFormat
+	
+2008-08-26  Dominic Lachowicz <domlachowicz@gmail.com>
 
 	* rsvg-filters.c: #548154 - Nautilus Segmentation fault when displaying SVG file
 	
