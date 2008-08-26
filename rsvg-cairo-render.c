@@ -196,23 +196,28 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
  *
  * Since: 2.14
  */
-void
+gboolean
 rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 {
     RsvgDrawingCtx *draw;
     RsvgNode *drawsub = NULL;
 
-    g_return_if_fail (handle != NULL);
+    g_return_val_if_fail (handle != NULL, FALSE);
 
     if (!handle->priv->finished)
-        return;
-
-    draw = rsvg_cairo_new_drawing_ctx (cr, handle);
-    if (!draw)
-        return;
+        return FALSE;
 
     if (id && *id)
         drawsub = rsvg_defs_lookup (handle->priv->defs, id);
+
+	if (drawsub == NULL && id != NULL) {
+		/* todo: there's no way to signal that @id doesn't exist */
+		return FALSE;
+	}
+
+    draw = rsvg_cairo_new_drawing_ctx (cr, handle);
+    if (!draw)
+        return FALSE;
 
     while (drawsub != NULL) {
         draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, drawsub);
@@ -227,6 +232,8 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     cairo_restore (cr);
     rsvg_state_pop (draw);
     rsvg_drawing_ctx_free (draw);
+
+	return TRUE;
 }
 
 /**
@@ -238,8 +245,8 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
  *
  * Since: 2.14
  */
-void
+gboolean
 rsvg_handle_render_cairo (RsvgHandle * handle, cairo_t * cr)
 {
-    rsvg_handle_render_cairo_sub (handle, cr, NULL);
+    return rsvg_handle_render_cairo_sub (handle, cr, NULL);
 }

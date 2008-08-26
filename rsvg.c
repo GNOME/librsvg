@@ -94,23 +94,26 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
     surface = cairo_image_surface_create_for_data (pixels,
                                                    CAIRO_FORMAT_ARGB32,
                                                    dimensions.width, dimensions.height, rowstride);
-
     cr = cairo_create (surface);
+    cairo_surface_destroy (surface);
 
-    rsvg_handle_render_cairo_sub (handle, cr, id);
-    rsvg_cairo_to_pixbuf (pixels, rowstride, dimensions.height);
+    if (rsvg_handle_render_cairo_sub (handle, cr, id)) {
+		rsvg_cairo_to_pixbuf (pixels, rowstride, dimensions.height);
 
-    output = gdk_pixbuf_new_from_data (pixels,
-                                       GDK_COLORSPACE_RGB,
-                                       TRUE,
-                                       8,
-                                       dimensions.width,
-                                       dimensions.height,
-                                       rowstride,
-                                       (GdkPixbufDestroyNotify) rsvg_pixmap_destroy, NULL);
+		output = gdk_pixbuf_new_from_data (pixels,
+										   GDK_COLORSPACE_RGB,
+										   TRUE,
+										   8,
+										   dimensions.width,
+										   dimensions.height,
+										   rowstride,
+										   (GdkPixbufDestroyNotify) rsvg_pixmap_destroy, NULL);
+	} else {
+		g_free (pixels);
+		output = NULL;
+	}
 
     cairo_destroy (cr);
-    cairo_surface_destroy (surface);
 
     return output;
 }

@@ -1,5 +1,16 @@
 2008-08-26  Dominic Lachowicz <domlachowicz@gmail.com>
 
+	* rsvg-cairo.h: Make cairo render functions return a gboolean. Returns TRUE
+	if the image can't be rendered
+	* rsvg.c: Check && handle the return value
+	* rsvg-cairo-render.c: Implement the above. Also, return FALSE if we're asked
+	to render an ID that doesn't exist
+
+	Collectively, fixes #540383 - rsvg_handle_render_cairo_sub - if ID not found, 
+	return an error and/or dont render whole SVG
+	
+2008-08-26  Dominic Lachowicz <domlachowicz@gmail.com>
+
 	* rsvg-private.h: #539488 - migrate use of GMemChunk to GSlice, from Felix Riemann
 	* rsvg-base.c: ditto
 	* rsvg-styles.c: ditto
