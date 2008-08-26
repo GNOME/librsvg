@@ -54,7 +54,7 @@ rsvg_propegate_error (GError ** err,
 {
         if (err) {
                 *err = NULL;
-                g_set_error (err, rsvg_error_quark (), code, reason);
+                g_set_error (err, rsvg_error_quark (), code, "%s", reason);
         }
 }
 

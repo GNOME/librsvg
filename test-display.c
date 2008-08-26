@@ -309,7 +309,7 @@ save_pixbuf (GObject * ignored, gpointer user_data)
                 errmsg = gtk_message_dialog_new (GTK_WINDOW (info->window),
                                                  GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
                                                  GTK_MESSAGE_WARNING,
-                                                 GTK_BUTTONS_CLOSE, err->message);
+                                                 GTK_BUTTONS_CLOSE, "%s", err->message);
 
                 gtk_dialog_run (GTK_DIALOG (errmsg));
 

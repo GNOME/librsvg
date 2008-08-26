@@ -1,4 +1,10 @@
-2008-08-25  Dominic Lachowicz <domlachowicz@gmail.com>
+2008-08-26  Dominic Lachowicz <domlachowicz@gmail.com>
+
+	* gdk-pixbuf-loader/io-svg.c: #549418 - build failure: test-display.c 
+	io-svg.c format not a string literal and no format arguments
+	* test-display.c: Ditto
+	
+2008-08-25  Dominic Lachowicz <domlachowicz@gmail.com>	
 
 	* rsvg-path.c: 549256 - some arcs are not well drawn in SVG path. From
 	Frederic Wang <fred.wang%40free.fr>
