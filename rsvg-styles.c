@@ -1421,7 +1421,7 @@ rsvg_state_push (RsvgDrawingCtx * ctx)
     RsvgState *baseon;
 
     baseon = (RsvgState *) g_slist_nth_data (ctx->state, 0);
-    data = g_chunk_new (RsvgState, ctx->state_allocator);
+    data = g_slice_new (RsvgState);
 
     if (baseon) {
         int i;
@@ -1443,7 +1443,7 @@ rsvg_state_pop (RsvgDrawingCtx * ctx)
 
     rsvg_state_finalize (dead_state);
     ctx->state = g_slist_delete_link (ctx->state, link);
-    g_mem_chunk_free (ctx->state_allocator, dead_state);
+    g_slice_free (RsvgState, dead_state);
 }
 
 /*

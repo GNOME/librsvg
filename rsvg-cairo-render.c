@@ -143,9 +143,6 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
 
     draw->state = NULL;
 
-    /* should this be G_ALLOC_ONLY? */
-    draw->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
-
     draw->defs = handle->priv->defs;
     draw->base_uri = g_strdup (handle->priv->base_uri);
     draw->dpi_x = handle->priv->dpi_x;

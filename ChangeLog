@@ -1,5 +1,12 @@
 2008-08-26  Dominic Lachowicz <domlachowicz@gmail.com>
 
+	* rsvg-private.h: #539488 - migrate use of GMemChunk to GSlice, from Felix Riemann
+	* rsvg-base.c: ditto
+	* rsvg-styles.c: ditto
+	* rsvg-cairo-render.c: ditto
+	
+2008-08-26  Dominic Lachowicz <domlachowicz@gmail.com>
+
 	* rsvg-text.c: #524835 - nautilus crashed with SIGSEGV
 	
 2008-08-26  Dominic Lachowicz <domlachowicz@gmail.com>

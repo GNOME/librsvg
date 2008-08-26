@@ -182,7 +182,6 @@ struct RsvgDrawingCtx {
     GError **error;
     RsvgDefs *defs;
     gchar *base_uri;
-    GMemChunk *state_allocator;
     PangoContext *pango_context;
     double dpi_x, dpi_y;
     RsvgViewBox vb;

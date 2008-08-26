@@ -1114,9 +1114,8 @@ rsvg_handle_close_impl (RsvgHandle * handle, GError ** error)
 static void
 rsvg_state_free_func (gpointer data, gpointer user_data)
 {
-    RsvgDrawingCtx *ctx = (RsvgDrawingCtx *) user_data;
     rsvg_state_finalize ((RsvgState *) data);
-    g_mem_chunk_free (ctx->state_allocator, data);
+    g_slice_free (RsvgState, data);
 }
 
 void
@@ -1132,8 +1131,6 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
 
     if (handle->base_uri)
         g_free (handle->base_uri);
-
-    g_mem_chunk_destroy (handle->state_allocator);
 
     if (handle->pango_context != NULL)
         g_object_unref (handle->pango_context);
@@ -1312,8 +1309,6 @@ _rsvg_find_bbox (RsvgHandle * handle)
     ctx->render = (RsvgRender *) render;
 
     ctx->state = NULL;
-
-    ctx->state_allocator = g_mem_chunk_create (RsvgState, 256, G_ALLOC_AND_FREE);
 
     ctx->defs = handle->priv->defs;
     ctx->base_uri = g_strdup (handle->priv->base_uri);
