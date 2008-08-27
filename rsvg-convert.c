@@ -106,8 +106,9 @@ rsvg_cairo_size_callback (int *width, int *height, gpointer data)
 static cairo_status_t
 rsvg_cairo_write_func (void *closure, const unsigned char *data, unsigned int length)
 {
-    fwrite (data, 1, length, (FILE *) closure);
-    return CAIRO_STATUS_SUCCESS;
+    if (fwrite (data, 1, length, (FILE *) closure) == length)
+		return CAIRO_STATUS_SUCCESS;
+	return CAIRO_STATUS_WRITE_ERROR;
 }
 
 int
