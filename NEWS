@@ -1,3 +1,26 @@
+Version 2.22.3
+
+- Make librsvg buildable on windows without freetype dependency
+- Fix build and tests
+- Fix the handling of the stroke-dashoffset property
+- Bad rendering for some wacko SVG path data
+- Fix some arcs not being well drawn in SVG path
+- Fix various crashes
+- Set license field of GdkPixBufFormat in the SVG loader
+- Migrate use of GMemChunk to GSlice
+- If an ID is not found, return an error and/or do not render whole SVG
+
+Version 2.22.2
+
+- Fix rsvg-convert crash in  _rsvg_acquire_xlink_href_resource()
+
+Version 2.22.1
+
+- If a moveto is followed by multiple pairs of coordinates, the subsequent
+  pairs are treated as implicit lineto commands.
+- Handle display:none
+- Handle xml:space="preserve"
+
 Version 2.22.0
 
 - Text rendering fixes (especially for non-ASCII text)

@@ -1,3 +1,8 @@
+2008-09-23  Vincent Untz  <vuntz@gnome.org>
+
+	* NEWS:
+	* configure.in: version 2.22.3
+
 2008-08-26  Dominic Lachowicz <domlachowicz@gmail.com>
 
 	* rsvg-cairo.h: Make cairo render functions return a gboolean. Returns TRUE
