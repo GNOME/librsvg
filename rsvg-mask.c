@@ -158,8 +158,6 @@ rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * at
             klazz = value;
     }
 
-    rsvg_state_init (clip_path->super.state);
-
     rsvg_parse_style_attrs (ctx, clip_path->super.state, "clipPath", klazz, id, atts);
 }
 

@@ -1,5 +1,9 @@
 2008-10-20  Dominic Lachowicz <domlachowicz@gmail.com>
 
+	* rsvg-mask.c: another memory leak (#552919). Found by mclasen.
+	
+2008-10-20  Dominic Lachowicz <domlachowicz@gmail.com>
+
 	* rsvg-gobject.c: gdmgreeter segfault due to libxml2 API/ABI change
 	(#549087). Patch by Tom Parker (palfrey%40tevp.net). Untested against
 	libxml2 >= 2.7.0, but DV says "from the distance, that patch seems 
