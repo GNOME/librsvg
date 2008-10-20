@@ -1,5 +1,11 @@
 2008-10-20  Dominic Lachowicz <domlachowicz@gmail.com>
 
+	* rsvg-convert.c: background color setting feature in rsvg_convert program
+	(#556969). Patch inspired by harobed (stephane%40harobed.org)
+	* librsvg.def: Export 1 function necessary for the above
+	
+2008-10-20  Dominic Lachowicz <domlachowicz@gmail.com>
+
 	* rsvg-convert.c: command-line tools can't handle UTF-8 encoded 
 	filenames (#557036, reported by Tim Starling)
 	* test-display.c: ditto

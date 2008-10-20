@@ -33,6 +33,7 @@
 #include <string.h>
 #include <locale.h>
 
+#include "rsvg-css.h"
 #include "rsvg.h"
 #include "rsvg-cairo.h"
 #include "rsvg-private.h"
@@ -127,6 +128,8 @@ main (int argc, char **argv)
     char *format = NULL;
     char *output = NULL;
     int keep_aspect_ratio = FALSE;
+    guint32 background_color = NULL;
+    char *background_color_str = NULL;
     char *base_uri = NULL;
     gboolean using_stdin = FALSE;
     GError *error = NULL;
@@ -161,6 +164,8 @@ main (int argc, char **argv)
          N_("output filename [optional; defaults to stdout]"), NULL},
         {"keep-aspect-ratio", 'a', 0, G_OPTION_ARG_NONE, &keep_aspect_ratio,
          N_("whether to preserve the aspect ratio [optional; defaults to FALSE]"), NULL},
+        {"background-color", 'b', 0, G_OPTION_ARG_STRING, &background_color_str,
+         N_("set the background color [optional; defaults to None]"), N_("[black, white, #abccee, #aaa...]")},
         {"version", 'v', 0, G_OPTION_ARG_NONE, &bVersion, N_("show version information"), NULL},
         {"base-uri", 'b', 0, G_OPTION_ARG_STRING, &base_uri, N_("base uri"), NULL},
         {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL, N_("[FILE...]")},
@@ -214,6 +219,7 @@ main (int argc, char **argv)
     rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 
     for (i = 0; i < n_args; i++) {
+
         if (using_stdin)
             rsvg = rsvg_handle_new_from_stdio_file (stdin, &error);
         else
@@ -293,6 +299,19 @@ main (int argc, char **argv)
             }
 
             cr = cairo_create (surface);
+        }
+
+        // Set background color
+        if (background_color_str && g_ascii_strcasecmp(background_color_str, "none") != 0) {
+            background_color = rsvg_css_parse_color(background_color_str, FALSE);
+
+            cairo_set_source_rgb (
+                cr, 
+                ((background_color >> 16) & 0xff) / 255.0, 
+                ((background_color >> 8) & 0xff) / 255.0, 
+                ((background_color >> 0) & 0xff) / 255.0);
+            cairo_rectangle (cr, 0, 0, dimensions.width, dimensions.height);
+            cairo_fill (cr);
         }
 
         rsvg_handle_render_cairo (rsvg, cr);
