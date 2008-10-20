@@ -1,3 +1,9 @@
+2008-10-20  Dominic Lachowicz <domlachowicz@gmail.com>
+
+	* rsvg-convert.c: command-line tools can't handle UTF-8 encoded 
+	filenames (#557036, reported by Tim Starling)
+	* test-display.c: ditto
+	
 2008-09-23  Vincent Untz  <vuntz@gnome.org>
 
 	* configure.in: post-release bump to 2.22.4.

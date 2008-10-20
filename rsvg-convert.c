@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <locale.h>
 
 #include "rsvg.h"
 #include "rsvg-cairo.h"
@@ -52,7 +53,7 @@ static void
 display_error (GError * err)
 {
     if (err) {
-        g_print ("%s", err->message);
+        g_print ("%s\n", err->message);
         g_error_free (err);
     }
 }
@@ -165,6 +166,9 @@ main (int argc, char **argv)
         {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL, N_("[FILE...]")},
         {NULL}
     };
+
+	/* Set the locale so that UTF-8 filenames work */
+	setlocale(LC_ALL, "");
 
 	g_thread_init(NULL);
 

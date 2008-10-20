@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <locale.h>
 
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
@@ -691,6 +692,9 @@ main (int argc, char **argv)
         {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL, N_("[FILE...]")},
         {NULL}
     };
+
+	/* Set the locale so that UTF-8 filenames work */
+	setlocale(LC_ALL, "");
 
     g_thread_init (NULL);
 
