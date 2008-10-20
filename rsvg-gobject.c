@@ -70,6 +70,7 @@ rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
 {
     xmlEntityPtr entval = (xmlEntityPtr) value;
 
+#if LIBXML_VERSION < 20700
     /* key == entval->name, so it's implicitly freed below */
 
     xmlFree ((xmlChar *) entval->name);
@@ -78,6 +79,9 @@ rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
     xmlFree (entval->content);
     xmlFree (entval->orig);
     xmlFree (entval);
+#else
+	xmlFreeNode(entval);
+#endif
 }
 
 static void

@@ -43,6 +43,8 @@
 #include "rsvg-mask.h"
 #include "rsvg-marker.h"
 
+#include <libxml/uri.h>
+
 #include <math.h>
 #include <string.h>
 #include <stdarg.h>
@@ -796,6 +798,21 @@ rsvg_entity_decl (void *data, const xmlChar * name, int type,
     RsvgHandle *ctx = (RsvgHandle *) data;
     GHashTable *entities = ctx->priv->entities;
     xmlEntityPtr entity;
+#if LIBXML_VERSION >= 20700
+    xmlChar *resolvedSystemId = NULL, *resolvedPublicId = NULL;
+
+    if (systemId)
+        resolvedSystemId = xmlBuildRelativeURI (systemId, (xmlChar*) rsvg_handle_get_base_uri (ctx));
+    else if (publicId)
+        resolvedPublicId = xmlBuildRelativeURI (publicId, (xmlChar*) rsvg_handle_get_base_uri (ctx));
+
+    entity = xmlNewEntity(NULL, name, type, resolvedPublicId, resolvedSystemId, content);
+
+    free(resolvedPublicId);
+    free(resolvedSystemId);
+
+    g_hash_table_insert (entities, g_strdup ((const char*) name), entity);
+#else
     xmlChar *dupname;
 
     entity = xmlMalloc (sizeof (xmlEntity));
@@ -834,6 +851,7 @@ rsvg_entity_decl (void *data, const xmlChar * name, int type,
     }
 
     g_hash_table_insert (entities, dupname, entity);
+#endif
 }
 
 static void
