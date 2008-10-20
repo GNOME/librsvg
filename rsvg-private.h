@@ -187,6 +187,7 @@ struct RsvgDrawingCtx {
     RsvgViewBox vb;
     GSList *vb_stack;
     GSList *drawsub_stack;
+    GSList *ptrs;
 };
 
 /*Abstract base class for context for our backends (one as yet)*/

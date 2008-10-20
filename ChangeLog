@@ -1,5 +1,13 @@
 2008-10-20  Dominic Lachowicz <domlachowicz@gmail.com>
 
+	* rsvg-structure.c: Stop crash due to recursive references (#518640).
+	Patch by Tom Parker
+	* rsvg-private.h: ditto
+	* rsvg-base.c: ditto
+	* rsvg-cairo-render.c: ditto
+	
+2008-10-20  Dominic Lachowicz <domlachowicz@gmail.com>
+
 	* rsvg-mask.c: another memory leak (#552919). Found by mclasen.
 	
 2008-10-20  Dominic Lachowicz <domlachowicz@gmail.com>

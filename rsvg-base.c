@@ -1147,6 +1147,8 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
 	/* the drawsub stack's nodes are owned by the ->defs */
 	g_slist_free (handle->drawsub_stack);
 
+    g_slist_free (handle->ptrs);
+	
     if (handle->base_uri)
         g_free (handle->base_uri);
 
@@ -1324,6 +1326,7 @@ _rsvg_find_bbox (RsvgHandle * handle)
     RsvgBbox output;
     RsvgBboxRender *render = rsvg_bbox_render_new ();
     ctx->drawsub_stack = NULL;
+    ctx->ptrs = NULL;
     ctx->render = (RsvgRender *) render;
 
     ctx->state = NULL;
