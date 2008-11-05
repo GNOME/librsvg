@@ -1,5 +1,9 @@
 2008-11-05  Kjartan Maraas  <kmaraas@gnome.org>
 
+	* rsvg-private.h: Use G_STRFUNC as suggested by Christian Persch.
+
+2008-11-05  Kjartan Maraas  <kmaraas@gnome.org>
+
 	* rsvg-private.h: Don't use deprecated glib symbols.
 
 2008-10-20  Dominic Lachowicz <domlachowicz@gmail.com>
