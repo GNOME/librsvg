@@ -42,6 +42,7 @@
 #include "rsvg-filter.h"
 #include "rsvg-mask.h"
 #include "rsvg-marker.h"
+#include "rsvg-cairo-render.h"
 
 #include <libxml/uri.h>
 
@@ -1224,132 +1225,6 @@ rsvg_handle_get_desc (RsvgHandle * handle)
         return NULL;
 }
 
-typedef struct {
-    RsvgRender super;
-    RsvgBbox bbox;
-} RsvgBboxRender;
-
-static void
-rsvg_bbox_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
-{
-    RsvgState *state = rsvg_state_current (ctx);
-    RsvgBpath *bpath;
-    RsvgBboxRender *render = (RsvgBboxRender *) ctx->render;
-    RsvgBbox bbox;
-    int i;
-
-    rsvg_bbox_init (&bbox, state->affine);
-    bbox.w = bbox.h = bbox.virgin = 0;
-
-    for (i = 0; i < bpath_def->n_bpath; i++) {
-        bpath = &bpath_def->bpath[i];
-
-        switch (bpath->code) {
-        case RSVG_MOVETO:
-        case RSVG_MOVETO_OPEN:
-        case RSVG_CURVETO:
-        case RSVG_LINETO:
-            bbox.x = bpath->x3;
-            bbox.y = bpath->y3;
-            rsvg_bbox_insert (&render->bbox, &bbox);
-            break;
-        default:
-            break;
-        }
-    }
-}
-
-static void
-rsvg_bbox_render_image (RsvgDrawingCtx * ctx,
-                        const GdkPixbuf * pixbuf,
-                        double pixbuf_x, double pixbuf_y, double w, double h)
-{
-    RsvgState *state = rsvg_state_current (ctx);
-    RsvgBboxRender *render = (RsvgBboxRender *) ctx->render;
-    RsvgBbox bbox;
-
-    rsvg_bbox_init (&bbox, state->affine);
-    bbox.x = pixbuf_x;
-    bbox.y = pixbuf_y;
-    bbox.w = w;
-    bbox.h = h;
-    bbox.virgin = 0;
-
-    rsvg_bbox_insert (&render->bbox, &bbox);
-}
-
-
-static void
-rsvg_bbox_render_free (RsvgRender * self)
-{
-    g_free (self);
-}
-
-static void
-rsvg_bbox_push_discrete_layer (RsvgDrawingCtx * ctx)
-{
-}
-
-static void
-rsvg_bbox_pop_discrete_layer (RsvgDrawingCtx * ctx)
-{
-}
-
-static void
-rsvg_bbox_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w, double h)
-{
-}
-
-static RsvgBboxRender *
-rsvg_bbox_render_new ()
-{
-    RsvgBboxRender *render = g_new0 (RsvgBboxRender, 1);
-    double affine[6];
-
-    render->super.free = rsvg_bbox_render_free;
-    render->super.render_image = rsvg_bbox_render_image;
-    render->super.render_path = rsvg_bbox_render_path;
-    render->super.pop_discrete_layer = rsvg_bbox_pop_discrete_layer;
-    render->super.push_discrete_layer = rsvg_bbox_push_discrete_layer;
-    render->super.add_clipping_rect = rsvg_bbox_add_clipping_rect;
-    render->super.get_image_of_node = NULL;
-    _rsvg_affine_identity (affine);
-    rsvg_bbox_init (&render->bbox, affine);
-
-    return render;
-}
-
-static RsvgBbox
-_rsvg_find_bbox (RsvgHandle * handle)
-{
-    RsvgDrawingCtx *ctx = g_new (RsvgDrawingCtx, 1);
-    RsvgBbox output;
-    RsvgBboxRender *render = rsvg_bbox_render_new ();
-    ctx->drawsub_stack = NULL;
-    ctx->ptrs = NULL;
-    ctx->render = (RsvgRender *) render;
-
-    ctx->state = NULL;
-
-    ctx->defs = handle->priv->defs;
-    ctx->base_uri = g_strdup (handle->priv->base_uri);
-    ctx->dpi_x = handle->priv->dpi_x;
-    ctx->dpi_y = handle->priv->dpi_y;
-    ctx->vb.w = 512;
-    ctx->vb.h = 512;
-    ctx->pango_context = NULL;
-
-    rsvg_state_push (ctx);
-    _rsvg_affine_identity (rsvg_state_current (ctx)->affine);
-    _rsvg_node_draw_children ((RsvgNode *) handle->priv->treebase, ctx, 0);
-    rsvg_state_pop (ctx);
-
-    output = render->bbox;
-    rsvg_render_free (ctx->render);
-    g_free (ctx);
-    return output;
-}
-
 /**
  * rsvg_handle_get_dimensions
  * @handle: A #RsvgHandle
@@ -1362,42 +1237,134 @@ _rsvg_find_bbox (RsvgHandle * handle)
 void
 rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_data)
 {
-    RsvgNodeSvg *sself;
+    /* This function is probably called from the cairo_render functions.
+     * To prevent an infinite loop we are saving the state.
+     */
+    if (!handle->priv->in_loop) {
+	handle->priv->in_loop = TRUE;
+	rsvg_handle_get_dimensions_sub (handle, dimension_data, NULL);
+	handle->priv->in_loop = FALSE;
+    } else {
+	/* Called within the size function, so return a standard size */
+	dimension_data->em = dimension_data->width = 1;
+	dimension_data->ex = dimension_data->height = 1;
+    }
+}
+
+/**
+ * rsvg_handle_get_dimensions_sub
+ * @handle: A #RsvgHandle
+ * @dimension_data: A place to store the SVG's size
+ * @id: An element's id within the SVG, or NULL to get the dimension of the whole SVG. 
+ * For example, if you have a layer called "layer1" for that you want to get the dimension, 
+ * pass "#layer1" as the id.
+ *
+ * Get the size of a subelement of the SVG file. Do not call from within the size_func callback, because an infinite loop will occur.
+ *
+ * Since: 2.22
+ */
+gboolean
+rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimension_data, const char *id)
+{
+    cairo_t *cr;
+    cairo_surface_t *target;
+    RsvgDrawingCtx *draw;
+    RsvgCairoRender *render;
+    RsvgNodeSvg *root = NULL;
+    RsvgNode *sself = NULL;
     RsvgBbox bbox;
 
-    g_return_if_fail (handle);
-    g_return_if_fail (dimension_data);
+    gboolean handle_subelement = TRUE;
+
+    g_return_val_if_fail (handle, FALSE);
+    g_return_val_if_fail (dimension_data, FALSE);
 
     memset (dimension_data, 0, sizeof (RsvgDimensionData));
 
-    sself = (RsvgNodeSvg *) handle->priv->treebase;
-    if (!sself)
-        return;
+    if (id && *id) {
+	sself = (RsvgNode *) rsvg_defs_lookup (handle->priv->defs, id);
+
+	if (sself == (RsvgNode *) handle->priv->treebase)
+	    id = NULL;
+    }
+    else
+	sself = (RsvgNode *) handle->priv->treebase;
+
+    if (!sself && id)
+	return FALSE;
+
+    root = (RsvgNodeSvg *) handle->priv->treebase;
+
+    if (!root)
+	return FALSE;
 
     bbox.x = bbox.y = 0;
     bbox.w = bbox.h = 1;
 
-    if (sself->w.factor == 'p' || sself->h.factor == 'p') {
-        if (sself->vbox.active && sself->vbox.w > 0. && sself->vbox.h > 0.) {
-            bbox.w = sself->vbox.w;
-            bbox.h = sself->vbox.h;
-        } else
-            bbox = _rsvg_find_bbox (handle);
+    if (!id && (root->w.factor == 'p' || root->h.factor == 'p')
+	    && root->vbox.active && root->vbox.w > 0. && root->vbox.h > 0.)
+	handle_subelement = TRUE;
+    else if (!id && root->w.length != -1 && root->h.length != -1)
+	handle_subelement = FALSE;
+
+    if (handle_subelement == TRUE) {
+	target = cairo_image_surface_create (CAIRO_FORMAT_RGB24,
+					 1, 1);
+	cr = cairo_create  (target);
+
+	draw = rsvg_cairo_new_drawing_ctx (cr, handle);
+    
+	if (!draw)
+	    return FALSE;
+
+	while (sself != NULL) {
+	    draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, sself);
+	    sself = sself->parent;
+	}
+
+	rsvg_state_push (draw);
+	cairo_save (cr);
+
+	rsvg_node_draw ((RsvgNode *) handle->priv->treebase, draw, 0);
+	render = (RsvgCairoRender *) draw->render;
+
+	bbox.x = render->bbox.x;
+	bbox.y = render->bbox.y;
+	bbox.w = render->bbox.w;
+	bbox.h = render->bbox.h;
+
+	cairo_restore (cr);
+	rsvg_state_pop (draw);
+	rsvg_drawing_ctx_free (draw);
+	cairo_destroy (cr);
+	cairo_surface_destroy (target);
+
+	dimension_data->width = (int) (_rsvg_css_hand_normalize_length_sub (&root->w, bbox.w, handle->priv->dpi_x,
+									    bbox.w + bbox.x * 2, 12) + 0.5);
+	dimension_data->height = (int) (_rsvg_css_hand_normalize_length_sub (&root->h, bbox.h, handle->priv->dpi_y, 
+									    bbox.h + bbox.y * 2,
+									    12) + 0.5);
+    } else {
+	bbox.w = root->vbox.w; 
+	bbox.h = root->vbox.h; 
+
+	dimension_data->width = (int) (_rsvg_css_hand_normalize_length (&root->w, handle->priv->dpi_x,
+									bbox.w + bbox.x * 2, 12) + 0.5);
+	dimension_data->height = (int) (_rsvg_css_hand_normalize_length (&root->h, handle->priv->dpi_y, 
+									bbox.h + bbox.y * 2,
+									12) + 0.5);
     }
-
-    dimension_data->width = (int) (_rsvg_css_hand_normalize_length (&sself->w, handle->priv->dpi_x,
-                                                                    bbox.w + bbox.x * 2, 12) + 0.5);
-    dimension_data->height = (int) (_rsvg_css_hand_normalize_length (&sself->h, handle->priv->dpi_y,
-                                                                     bbox.h + bbox.y * 2,
-                                                                     12) + 0.5);
-
+    
     dimension_data->em = dimension_data->width;
     dimension_data->ex = dimension_data->height;
 
     if (handle->priv->size_func)
         (*handle->priv->size_func) (&dimension_data->width, &dimension_data->height,
                                     handle->priv->user_data);
+
+    return TRUE;
 }
+
 
 /** 
  * rsvg_set_default_dpi

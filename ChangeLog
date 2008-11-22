@@ -1,4 +1,21 @@
 2008-11-22  Dominic Lachowicz  <domlachowicz@gmail.com>
+
+	* rsvg-cairo-render.h: Feature request: rsvg_handle_get_dimensions_sub()
+	(#555682). Patches from Hagen Schink (troja84@gmail.com) and 
+	Robert Staudinger (robert.staudinger@gmail.com)
+	* librsvg.def: 
+	* rsvg-private.h:
+	* ChangeLog:
+	* rsvg-structure.c:
+	* rsvg-base.c:
+	* rsvg-css.c:
+	* rsvg.h:
+	* rsvg-dimensions.c:
+	* Makefile.am:
+	* rsvg-cairo-render.c:
+	* rsvg-gobject.c: ditto
+	
+2008-11-22  Dominic Lachowicz  <domlachowicz@gmail.com>
 	
 	* gdk-pixbuf-loader/Makefile.am: -I flag-ordering problem breaks build
 	if system already has lib installed (#558040). Patch from 

@@ -8,7 +8,7 @@ SUBDIRS = . moz-plugin gdk-pixbuf-loader gtk-engine data tests doc
 
 lib_LTLIBRARIES = librsvg-2.la
 bin_PROGRAMS = rsvg-convert $(target_rsvg_view)
-noinst_PROGRAMS = test-performance
+noinst_PROGRAMS = test-performance rsvg-dimensions
 
 man_MANS = rsvg.1
 
@@ -108,6 +108,11 @@ test_performance_SOURCES=test-performance.c
 test_performance_LDFLAGS =
 test_performance_DEPENDENCIES = $(DEPS)
 test_performance_LDADD = $(LDADDS) $(libm)
+
+rsvg_dimensions_SOURCES=rsvg-dimensions.c
+rsvg_dimensions_LDFLAGS =
+rsvg_dimensions_DEPENDENCIES = $(DEPS)
+rsvg_dimensions_LDADD = $(LDADDS) $(libm)
 
 rsvg_view_SOURCES = 		\
 	test-display.c

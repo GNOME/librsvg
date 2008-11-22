@@ -15,6 +15,7 @@ rsvg_handle_free
 rsvg_handle_get_base_uri
 rsvg_handle_set_base_uri
 rsvg_handle_get_dimensions
+rsvg_handle_get_dimensions_sub
 rsvg_handle_get_title
 rsvg_handle_get_desc
 rsvg_handle_get_metadata

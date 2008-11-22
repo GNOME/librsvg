@@ -63,6 +63,7 @@ instance_init (RsvgHandle * self)
     self->priv->first_write = TRUE;
 
     self->priv->is_disposed = FALSE;
+    self->priv->in_loop = FALSE;
 }
 
 static void

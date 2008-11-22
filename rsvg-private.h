@@ -167,6 +167,7 @@ struct RsvgHandlePrivate {
     gboolean first_write;
     gboolean is_gzipped;
     void *gzipped_data;         /* really a GsfOutput */
+    gboolean in_loop;		/* see get_dimension() */
 };
 
 typedef struct {
@@ -345,6 +346,9 @@ void rsvg_bbox_clip	(RsvgBbox * dst, RsvgBbox * src);
 double _rsvg_css_normalize_length	(const RsvgLength * in, RsvgDrawingCtx * ctx, char dir);
 double _rsvg_css_hand_normalize_length	(const RsvgLength * in, gdouble pixels_per_inch,
 					 gdouble width_or_height, gdouble font_size);
+double _rsvg_css_hand_normalize_length_sub	(const RsvgLength * in, gdouble length,
+						 gdouble pixels_per_inch, gdouble width_or_height, 
+						 gdouble font_size);
 
 RsvgLength _rsvg_css_parse_length (const char *str);
 

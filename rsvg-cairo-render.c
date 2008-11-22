@@ -107,7 +107,7 @@ static void rsvg_cairo_transformed_image_bounding_box (
     *y1 = ceil (t > y11 ? t : y11);
 }
 
-static RsvgDrawingCtx *
+RsvgDrawingCtx *
 rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
 {
     RsvgDimensionData data;
