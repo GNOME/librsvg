@@ -1,3 +1,8 @@
+2008-11-22  Dominic Lachowicz  <domlachowicz@gmail.com>
+
+	* gtk-engine/svg-rc-style.c: Remove deprecated GLib symbols (#560444).
+	Patch by Luis Menina (liberforce@freeside.fr)
+	
 2008-11-05  Kjartan Maraas  <kmaraas@gnome.org>
 
 	* rsvg-private.h: Use G_STRFUNC as suggested by Christian Persch.
