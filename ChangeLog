@@ -1,4 +1,11 @@
 2008-11-22  Dominic Lachowicz  <domlachowicz@gmail.com>
+	
+	* gdk-pixbuf-loader/Makefile.am: -I flag-ordering problem breaks build
+	if system already has lib installed (#558040). Patch from 
+	dmacks@netspace.org
+	* Makefile.am: ditto
+
+2008-11-22  Dominic Lachowicz  <domlachowicz@gmail.com>
 
 	* Makefile.am: Stray Makefile variables (#558039). Patches from
 	dmacks@netspace.org

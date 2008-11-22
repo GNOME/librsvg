@@ -6,11 +6,11 @@ no_undefined = -no-undefined
 endif
 
 INCLUDES = \
+	-I$(top_srcdir) \
 	$(LIBRSVG_CFLAGS) \
 	$(LIBGSF_CFLAGS) \
 	$(LIBCROCO_CFLAGS)\
-	-DGDK_PIXBUF_ENABLE_BACKEND \
-	-I$(top_srcdir)
+	-DGDK_PIXBUF_ENABLE_BACKEND
 
 if ENABLE_PIXBUF_LOADER
 target_pixbuf_loader = svg_loader.la 
