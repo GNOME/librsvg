@@ -1626,10 +1626,6 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
     return rsvg_handle_close_impl (handle, error);
 }
 
-#ifdef HAVE_GNOME_VFS
-#include <libgnomevfs/gnome-vfs.h>
-#endif
-
 /**
  * rsvg_init:
  *

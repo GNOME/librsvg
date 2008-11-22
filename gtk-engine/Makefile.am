@@ -4,7 +4,7 @@ if PLATFORM_WIN32
 no_undefined = -no-undefined
 endif
 
-INCLUDES = $(GTK_CFLAGS) $(LIBGSF_CFLAGS) $(LIBCROCO_CFLAGS) $(LIBRSVG_CFLAGS) -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir) $(GTK_CFLAGS) $(LIBGSF_CFLAGS) $(LIBCROCO_CFLAGS) $(LIBRSVG_CFLAGS)
 
 enginedir = $(libdir)/gtk-2.0/$(GTK_VERSION)/engines
 themedir = $(datadir)/themes
@@ -29,6 +29,6 @@ libsvg_la_SOURCES = 		\
 	svg.h
 
 libsvg_la_LDFLAGS =  -avoid-version -module $(no_undefined)
-libsvg_la_LIBADD = $(top_builddir)/librsvg-2.la $(GTK_LIBS) $(LIBRSVG_LIBS) $(LIBGNOME_VFS_LIBS) $(LIBCROCO_LIBS)
+libsvg_la_LIBADD = $(top_builddir)/librsvg-2.la $(GTK_LIBS) $(LIBRSVG_LIBS) $(LIBCROCO_LIBS)
 
 EXTRA_DIST = $(libsvg_la_SOURCES)

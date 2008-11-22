@@ -70,7 +70,7 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-file-util.c
 
 librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -export-dynamic -no-undefined -export-symbols $(srcdir)/librsvg.def
-librsvg_2_la_LIBADD = $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) $(FREETYPE_LIBS)
+librsvg_2_la_LIBADD = $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS)
 
 librsvgincdir = $(includedir)/librsvg-2/librsvg
 librsvginc_HEADERS = 	\
