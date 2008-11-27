@@ -28,6 +28,7 @@ main (int	  argc,
 	char const		 *file;
 	RsvgHandle		 *handle;
 	RsvgDimensionData	  dimensions;
+	RsvgPositionData	  position;
 	GError			 *error;
 	int			  exit_code;
 	int                       i;
@@ -40,8 +41,11 @@ main (int	  argc,
 
 	rsvg_init ();
 
+	context = NULL;
 	fragment = NULL;
 	filenames = NULL;
+	handle = NULL;
+	error = NULL;
 
 	context = g_option_context_new ("- SVG measuring tool.");
 	g_option_context_add_main_entries (context, options, NULL);
@@ -50,23 +54,23 @@ main (int	  argc,
 	if (argc < 2) {
 		show_help (context);
 		exit_code = EXIT_SUCCESS;
-		goto bail1;
+		goto bail;
 	}
 
 	error = NULL;
 	g_option_context_parse (context, &argc, &argv, &error);
 	if (error) {
 		show_help (context);
-		g_warning (error->message);
+		g_warning ("%s", error->message);
 		exit_code = EXIT_FAILURE;
-		goto bail2;
+		goto bail;
 	}
 
 	/* Invalid / missing args? */
 	if (filenames == NULL) {
 		show_help (context);
 		exit_code = EXIT_FAILURE;
-		goto bail2;
+		goto bail;
 	}
 
 	g_option_context_free (context), context = NULL;
@@ -76,24 +80,27 @@ main (int	  argc,
 		error = NULL;
 		handle = rsvg_handle_new_from_file (file, &error);
 		if (error) {
-			g_warning (error->message);
+			g_warning ("%s", error->message);
 			exit_code = EXIT_FAILURE;
-			goto bail2;
+			goto bail;
 		}
 
 		if (fragment && handle) {
-			gboolean have_fragment;
-			have_fragment = rsvg_handle_get_dimensions_sub (handle,
+			gboolean have_fragment = FALSE;
+			have_fragment |= rsvg_handle_get_dimensions_sub (handle,
 						&dimensions, fragment);
+			have_fragment |= rsvg_handle_get_position_sub (handle,
+						&position, fragment);
 			if (!have_fragment) {
 				g_warning ("%s: fragment `'%s' not found.",
 						file, fragment);
 				exit_code = EXIT_FAILURE;
-				goto bail3;
+				goto bail;
 			}
 
-			printf ("%s, fragment `%s': %dx%d, em=%f, ex=%f\n",
+			printf ("%s, fragment `%s': x=%d, y=%d, %dx%d, em=%f, ex=%f\n",
 					file, fragment,
+					position.x, position.y,
 					dimensions.width, dimensions.height,
 					dimensions.em, dimensions.ex);
 
@@ -105,7 +112,7 @@ main (int	  argc,
 		} else {
 			g_warning ("Could not open file `%s'", file);
 			exit_code = EXIT_FAILURE;
-			goto bail2;
+			goto bail;
 		}
 
 		g_object_unref (G_OBJECT (handle)), handle = NULL;
@@ -113,15 +120,13 @@ main (int	  argc,
 
 	exit_code = EXIT_SUCCESS;
 
-bail3:
+bail:
 	if (handle)
 		g_object_unref (G_OBJECT (handle)), handle = NULL;
-bail2:
 	if (context)
 		g_option_context_free (context), context = NULL;
 	if (error)
 		g_error_free (error), error = NULL;
-bail1:
 	rsvg_term ();
 	return exit_code;
 }

@@ -58,6 +58,7 @@ typedef struct _RsvgHandle RsvgHandle;
 typedef struct RsvgHandlePrivate RsvgHandlePrivate;
 typedef struct _RsvgHandleClass RsvgHandleClass;
 typedef struct _RsvgDimensionData RsvgDimensionData;
+typedef struct _RsvgPositionData RsvgPositionData;
 
 struct _RsvgHandleClass {
     GObjectClass parent;
@@ -97,6 +98,14 @@ struct _RsvgDimensionData {
     gdouble ex;
 };
 
+/**
+ * Position of an SVG fragment.
+ **/
+struct _RsvgPositionData {
+    int x;
+    int y;
+};
+
 void rsvg_init (void);
 void rsvg_term (void);
 
@@ -119,6 +128,7 @@ void			 rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri);
 void rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_data);
 
 gboolean rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimension_data, const char *id);
+gboolean rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id);
 
 /* Accessibility API */
 

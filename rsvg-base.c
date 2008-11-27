@@ -1365,6 +1365,112 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     return TRUE;
 }
 
+/**
+ * rsvg_handle_get_position_sub
+ * @handle: A #RsvgHandle
+ * @position_data: A place to store the SVG fragment's position.
+ * @id: An element's id within the SVG.
+ * For example, if you have a layer called "layer1" for that you want to get
+ * the position, pass "#layer1" as the id.
+ *
+ * Get the position of a subelement of the SVG file. Do not call from within
+ * the size_func callback, because an infinite loop will occur.
+ *
+ * Since: 2.22
+ */
+gboolean
+rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id)
+{
+	RsvgDrawingCtx		*draw;
+	RsvgNodeSvg			*root;
+	RsvgNode			*node;
+	RsvgBbox			 bbox;
+	RsvgDimensionData    dimension_data;
+	cairo_surface_t		*target = NULL;
+	cairo_t				*cr = NULL;
+	gboolean			 ret = FALSE;
+
+	g_return_val_if_fail (handle, FALSE);
+	g_return_val_if_fail (position_data, FALSE);
+
+	/* Short-cut when no id is given. */
+	if (NULL == id || '\0' == *id) {
+		position_data->x = 0;
+		position_data->y = 0;
+		return TRUE;
+	}
+
+	memset (position_data, 0, sizeof (*position_data));
+	memset (&dimension_data, 0, sizeof (dimension_data));
+
+	node = (RsvgNode *) rsvg_defs_lookup (handle->priv->defs, id);
+	if (!node) {
+		return FALSE;
+	} else if (node == (RsvgNode *) handle->priv->treebase) {
+		/* Root node. */
+		position_data->x = 0;
+		position_data->y = 0;
+		return TRUE;
+	}
+
+	root = (RsvgNodeSvg *) handle->priv->treebase;
+	if (!root)
+		return FALSE;
+
+	target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
+	cr = cairo_create  (target);
+	draw = rsvg_cairo_new_drawing_ctx (cr, handle);
+	if (!draw)
+	    goto bail;
+
+	while (node != NULL) {
+	    draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, node);
+	    node = node->parent;
+	}
+
+	rsvg_state_push (draw);
+	cairo_save (cr);
+
+	rsvg_node_draw ((RsvgNode *) handle->priv->treebase, draw, 0);
+	bbox.x = ((RsvgCairoRender *) draw->render)->bbox.x;
+	bbox.y = ((RsvgCairoRender *) draw->render)->bbox.y;
+	bbox.w = ((RsvgCairoRender *) draw->render)->bbox.w;
+	bbox.h = ((RsvgCairoRender *) draw->render)->bbox.h;
+
+	cairo_restore (cr);
+	rsvg_state_pop (draw);
+	rsvg_drawing_ctx_free (draw);
+
+	/* Calculate position.
+	 * TODO: figure out what "bbox.w + bbox.x * 2" is or means
+	 * (copied from rsvg_handle_get_dimensions_sub(). - robsta */
+	position_data->x = (int) (_rsvg_css_hand_normalize_length_sub (&root->x, bbox.x, handle->priv->dpi_x,
+									    bbox.w + bbox.x * 2, 12) + 0.5);
+	position_data->y = (int) (_rsvg_css_hand_normalize_length_sub (&root->y, bbox.y, handle->priv->dpi_y, 
+									    bbox.h + bbox.y * 2, 12) + 0.5);
+
+	/* Also calculate dimension for the size callback, while re're at it. */
+	dimension_data.width = (int) (_rsvg_css_hand_normalize_length_sub (&root->w, bbox.w, handle->priv->dpi_x,
+									    bbox.w + bbox.x * 2, 12) + 0.5);
+	dimension_data.height = (int) (_rsvg_css_hand_normalize_length_sub (&root->h, bbox.h, handle->priv->dpi_y, 
+									    bbox.h + bbox.y * 2, 12) + 0.5);
+
+	dimension_data.em = dimension_data.width;
+	dimension_data.ex = dimension_data.height;
+
+	if (handle->priv->size_func)
+	    (*handle->priv->size_func) (&dimension_data.width, &dimension_data.height,
+	                                handle->priv->user_data);
+
+bail:
+	if (cr)
+		cairo_destroy (cr);
+	if (target)
+		cairo_surface_destroy (target);
+
+	return ret;
+}
+
 
 /** 
  * rsvg_set_default_dpi
