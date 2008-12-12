@@ -1,3 +1,7 @@
+2008-12-12  Christian Persch  <chpe@gnome.org>
+
+	* librsvg-features.h.in: Add version check macro. Bug #564226.
+
 2008-11-27  Robert Staudinger  <robsta@gnome.org>
 
 	* doc/rsvg-sections.txt: New API rsvg_handle_get_position_sub(), gets
