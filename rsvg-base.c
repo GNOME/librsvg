@@ -1462,6 +1462,8 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
 	    (*handle->priv->size_func) (&dimension_data.width, &dimension_data.height,
 	                                handle->priv->user_data);
 
+        ret = TRUE;
+
 bail:
 	if (cr)
 		cairo_destroy (cr);
