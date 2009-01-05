@@ -127,9 +127,11 @@ if test "x$test_gsf" = "xtrue"; then
 fi
 
 if test "x$test_gsf" = "xtrue"; then
+        svgz_define=1
 	LIBGSF_CFLAGS="$LIBGSF_CFLAGS -DHAVE_SVGZ=1"
 	LIBGSFPKG="libgsf-1"
 else
+        svgz_define=0
 	AC_MSG_WARN([SVGZ support disabled, as requested (Use --with-svgz to enable)])
 	gsf_warning="
 	You are building without libgsf support. LibRSVG will not be able to handle GZipped SVGs, as is required per the SVG specification. If you are a library vendor or distributor, you are doing the world a disservice and should strongly consider shipping libgsf."
@@ -142,6 +144,7 @@ AC_SUBST(LIBGSF_CFLAGS)
 AC_SUBST(LIBGSF_LIBS)
 
 AC_SUBST([SVGZ_SUPPORTED],[$test_gsf])
+AC_SUBST([LIBRSVG_HAVE_SVGZ],[$svgz_define])
 
 dnl ===========================================================================
 
@@ -160,9 +163,11 @@ if test "x$test_croco" = "xtrue"; then
 fi
 
 if test "x$test_croco" = "xtrue"; then
+        croco_define=1
 	LIBCROCO_CFLAGS="$LIBCROCO_CFLAGS -DHAVE_LIBCROCO=1"
 	LIBCROCOPKG="libcroco-0.6"
 else
+        croco_define=0
 	AC_MSG_WARN([LibCroco support disabled, as requested (Use --with-croco to enable)])
         croco_warning="
 You are building without libcroco support. LibRSVG will not be able to handle embedded CSS, as is required per the SVG specification. If you are a library vendor or distributor, you are doing the world a disservice and should strongly consider shipping libcroco. Even KSVG needs libcroco now..."
@@ -173,6 +178,7 @@ AC_SUBST(LIBCROCO_CFLAGS)
 AC_SUBST(LIBCROCO_LIBS)
 
 AC_SUBST([CSS_SUPPORTED],[$test_croco])
+AC_SUBST([LIBRSVG_HAVE_CSS],[$croco_define])
 
 dnl ===========================================================================
 

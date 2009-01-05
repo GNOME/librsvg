@@ -1,6 +1,12 @@
 2009-01-06  Christian Persch  <chpe@gnome.org>
 
 	* configure.in:
+	* librsvg-features.h.in: Also add feature defines and check macro to
+	librsvg-features.h.in. Bug #566701.
+
+2009-01-06  Christian Persch  <chpe@gnome.org>
+
+	* configure.in:
 	* librsvg-2.0-uninstalled.pc.in:
 	* librsvg-2.0.pc.in: Indicate in the .pc file whether svgz and css
 	support is available. Bug #564616.
