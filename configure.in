@@ -141,6 +141,8 @@ AC_SUBST(LIBGSFPKG)
 AC_SUBST(LIBGSF_CFLAGS)
 AC_SUBST(LIBGSF_LIBS)
 
+AC_SUBST([SVGZ_SUPPORTED],[$test_gsf])
+
 dnl ===========================================================================
 
 LIBCROCO_CFLAGS=""
@@ -169,6 +171,8 @@ fi
 AC_SUBST(LIBCROCOPKG)
 AC_SUBST(LIBCROCO_CFLAGS)
 AC_SUBST(LIBCROCO_LIBS)
+
+AC_SUBST([CSS_SUPPORTED],[$test_croco])
 
 dnl ===========================================================================
 
