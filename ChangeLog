@@ -1,3 +1,11 @@
+2009-01-09  Christian Persch  <chpe@gnome.org>
+
+	* doc/rsvg-sections.txt:
+	* librsvg.def:
+	* rsvg-base.c:
+	* rsvg.h: Add function to check whether the SVG document contains an
+	element by ID. Bug #567070.
+
 2009-01-06  Christian Persch  <chpe@gnome.org>
 
 	* configure.in:

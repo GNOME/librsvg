@@ -130,6 +130,8 @@ void rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimens
 gboolean rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimension_data, const char *id);
 gboolean rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id);
 
+gboolean rsvg_handle_has_sub (RsvgHandle * handle, const char *id);
+
 /* Accessibility API */
 
 G_CONST_RETURN char *rsvg_handle_get_title	(RsvgHandle * handle);

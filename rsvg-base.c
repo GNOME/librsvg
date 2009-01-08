@@ -1473,6 +1473,30 @@ bail:
 	return ret;
 }
 
+/** 
+ * rsvg_handle_has_sub:
+ * @handle: a #RsvgHandle
+ * @id: an element's id within the SVG
+ *
+ * Checks whether the element @id exists in the SVG document.
+ *
+ * Returns: %TRUE if @id exists in the SVG document
+ *
+ * Since: 2.22
+ */
+gboolean
+rsvg_handle_has_sub (RsvgHandle * handle,
+                     const char *id)
+{
+    RsvgNode *sself;
+
+    g_return_val_if_fail (handle, FALSE);
+
+    if (G_UNLIKELY (!id || !id[0]))
+      return FALSE;
+
+    return rsvg_defs_lookup (handle->priv->defs, id) != NULL;
+}
 
 /** 
  * rsvg_set_default_dpi
