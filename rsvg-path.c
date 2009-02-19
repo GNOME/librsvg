@@ -134,8 +134,9 @@ rsvg_path_arc (RSVGParsePathCtx * ctx,
     sinf = sin(f);
     cosf = cos(f);
 
-    /* Check the radius */
-    if ((rx == 0.0) || (ry == 0.0))
+    /* Check the radius against floading point underflow.
+       See http://bugs.debian.org/508443 */
+    if ((fabs(rx) < DBL_EPSILON) || (fabs(ry) < DBL_EPSILON))
       {
 	rsvg_bpath_def_lineto (ctx->bpath, x, y);
         return;
