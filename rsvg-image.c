@@ -472,9 +472,10 @@ rsvg_node_image_free (RsvgNode * self)
     RsvgNodeImage *z = (RsvgNodeImage *) self;
     rsvg_state_finalize (z->super.state);
     g_free (z->super.state);
+    z->super.state = NULL;
     if (z->img)
         g_object_unref (G_OBJECT (z->img));
-    g_free (z);
+    _rsvg_node_free(self);
 }
 
 static void
