@@ -412,7 +412,7 @@ pixbuf_render (GdkPixbuf    *src,
 			x_scale, y_scale,
 			GDK_INTERP_BILINEAR);
 
-      gdk_pixbuf_unref (partial_src);
+      g_object_unref (partial_src);
 
       x_offset = 0;
       y_offset = 0;
@@ -434,7 +434,7 @@ pixbuf_render (GdkPixbuf    *src,
 				       GDK_PIXBUF_ALPHA_FULL, 128,
 				       GDK_RGB_DITHER_NORMAL,
 				       0, 0);
-  gdk_pixbuf_unref (tmp_pixbuf);
+  g_object_unref (tmp_pixbuf);
 }
 
 ThemePixbuf *

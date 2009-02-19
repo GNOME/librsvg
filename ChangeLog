@@ -1,3 +1,7 @@
+2009-02-19  Thomas Andersen <phomes@gmail.com>
+
+	* gtk-engine/svg-draw.c: don't use deprecated gdk_pixbuf_unref. Bug #570938
+	
 2009-02-19  liucougar <liucougar@gmail.com>
 
 	* rsvg-text.c: librsvg can not render text-decoration=underline text. Bug #566365
