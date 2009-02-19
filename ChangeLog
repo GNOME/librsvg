@@ -1,3 +1,7 @@
+2009-02-19  Matthias Clasen <mclasen@redhat.com>
+
+	* rsvg-filter.c: filter nodes are leaked. Bug #475851.
+	
 2009-02-19  Josselin Mouette <joss@malsain.org>
 
 	* rsvg-path.c: Crashes on some architectures because of wrong zero check on doubles. Bug #565371	

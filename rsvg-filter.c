@@ -703,7 +703,6 @@ rsvg_new_filter (void)
     filter->y = _rsvg_css_parse_length ("-10%");
     filter->width = _rsvg_css_parse_length ("120%");
     filter->height = _rsvg_css_parse_length ("120%");
-    filter->super.children = g_ptr_array_new ();
     filter->super.set_atts = rsvg_filter_set_args;
     return (RsvgNode *) filter;
 }
@@ -1702,7 +1701,6 @@ rsvg_new_filter_primitive_merge (void)
     filter->super.super.free = &rsvg_filter_primitive_merge_free;
 
     filter->super.super.set_atts = rsvg_filter_primitive_merge_set_atts;
-    filter->super.super.children = g_ptr_array_new ();
     return (RsvgNode *) filter;
 }
 
@@ -2201,7 +2199,6 @@ rsvg_new_filter_primitive_component_transfer (void)
 
     filter->super.super.set_atts = rsvg_filter_primitive_component_transfer_set_atts;
 
-    filter->super.super.children = g_ptr_array_new ();
     return (RsvgNode *) filter;
 }
 
@@ -4088,7 +4085,6 @@ rsvg_new_filter_primitive_diffuse_lighting (void)
     filter->super.render = &rsvg_filter_primitive_diffuse_lighting_render;
     filter->super.super.free = &rsvg_filter_primitive_diffuse_lighting_free;
     filter->super.super.set_atts = rsvg_filter_primitive_diffuse_lighting_set_atts;
-    filter->super.super.children = g_ptr_array_new ();
     return (RsvgNode *) filter;
 }
 
@@ -4267,7 +4263,6 @@ rsvg_new_filter_primitive_specular_lighting (void)
     filter->super.render = &rsvg_filter_primitive_specular_lighting_render;
     filter->super.super.free = &rsvg_filter_primitive_specular_lighting_free;
     filter->super.super.set_atts = rsvg_filter_primitive_specular_lighting_set_atts;
-    filter->super.super.children = g_ptr_array_new ();
     return (RsvgNode *) filter;
 }
 
