@@ -1510,8 +1510,6 @@ gboolean
 rsvg_handle_has_sub (RsvgHandle * handle,
                      const char *id)
 {
-    RsvgNode *sself;
-
     g_return_val_if_fail (handle, FALSE);
 
     if (G_UNLIKELY (!id || !id[0]))
