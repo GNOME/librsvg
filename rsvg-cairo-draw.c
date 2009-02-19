@@ -490,11 +490,9 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     bbox.h = ink.height / (double)PANGO_SCALE;
     bbox.virgin = 0;
 
-    cairo_move_to (render->cr, x, y);
-
-    rsvg_bbox_insert (&render->bbox, &bbox);
-
     if (state->fill) {
+    cairo_move_to (render->cr, x, y);
+    rsvg_bbox_insert (&render->bbox, &bbox);
         _set_source_rsvg_paint_server (ctx,
                                        state->current_color,
                                        state->fill,
@@ -505,6 +503,8 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     }
 
     if (state->stroke) {
+        cairo_move_to (render->cr, x, y);
+        rsvg_bbox_insert (&render->bbox, &bbox);
         pango_cairo_layout_path (render->cr, layout);
 
         _set_source_rsvg_paint_server (ctx,

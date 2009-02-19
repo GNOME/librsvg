@@ -551,6 +551,22 @@ rsvg_text_create_layout (RsvgDrawingCtx * ctx,
     attribute->start_index = 0;
     attribute->end_index = G_MAXINT;
     pango_attr_list_insert (attr_list, attribute); 
+
+    if (state->has_font_decor && text) {
+        if (state->font_decor & TEXT_UNDERLINE) {
+            attribute = pango_attr_underline_new (PANGO_UNDERLINE_SINGLE);
+            attribute->start_index = 0;
+            attribute->end_index = -1;
+            pango_attr_list_insert (attr_list, attribute);
+        }
+	if (state->font_decor & TEXT_STRIKE) {
+            attribute = pango_attr_strikethrough_new (TRUE);
+            attribute->start_index = 0;
+            attribute->end_index = -1;
+            pango_attr_list_insert (attr_list, attribute);
+	}
+    }
+
     pango_layout_set_attributes (layout, attr_list);
     pango_attr_list_unref (attr_list);
 

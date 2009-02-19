@@ -1,3 +1,8 @@
+2009-02-19  liucougar <liucougar@gmail.com>
+
+	* rsvg-text.c: librsvg can not render text-decoration=underline text. Bug #566365
+	* rsvg-cairo-draw.c: ditto
+	
 2009-02-19  Luis Menina  <liberforce@freeside.fr>
 
 	* *: GNOME Goal: Clean up GLib and GTK+ includes. Bug #563789
