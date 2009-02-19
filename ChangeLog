@@ -1,3 +1,7 @@
+2009-02-19  Christian Persch  <chpe@gnome.org>
+
+	* rsvg-base.c: fails to parse SVG with parameter entities. Bug #567311
+
 2009-02-19  Thomas Andersen <phomes@gmail.com>
 
 	* rsvg-image.c: mem leaks. Bug #444444

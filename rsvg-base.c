@@ -807,6 +807,21 @@ rsvg_entity_decl (void *data, const xmlChar * name, int type,
     else if (publicId)
         resolvedPublicId = xmlBuildRelativeURI (publicId, (xmlChar*) rsvg_handle_get_base_uri (ctx));
 
+    if (type == XML_EXTERNAL_PARAMETER_ENTITY && !content) {
+      GByteArray *arr;
+
+      if (systemId)
+        arr = _rsvg_acquire_xlink_href_resource ((const char *) systemId,
+                                                 rsvg_handle_get_base_uri (ctx), NULL);
+      else if (publicId)
+        arr = _rsvg_acquire_xlink_href_resource ((const char *) publicId,
+                                                 rsvg_handle_get_base_uri (ctx), NULL);
+      if (arr) {
+        content = xmlCharStrndup ((const char*)arr->data, arr->len);
+        g_byte_array_free(arr, TRUE);
+      }
+    }
+      
     entity = xmlNewEntity(NULL, name, type, resolvedPublicId, resolvedSystemId, content);
 
     free(resolvedPublicId);
@@ -862,6 +877,17 @@ rsvg_unparsed_entity_decl (void *ctx,
                            const xmlChar * systemId, const xmlChar * notationName)
 {
     rsvg_entity_decl (ctx, name, XML_INTERNAL_GENERAL_ENTITY, publicId, systemId, NULL);
+}
+
+static xmlEntityPtr
+rsvg_get_parameter_entity (void *data, const xmlChar * name)
+{
+    RsvgHandle *ctx = (RsvgHandle *) data;
+    xmlEntityPtr entity;
+
+    entity = g_hash_table_lookup (ctx->priv->entities, name);
+
+    return entity;
 }
 
 #endif
@@ -932,6 +958,7 @@ rsvg_SAX_handler_struct_init (void)
         rsvgSAXHandlerStruct.getEntity = rsvg_get_entity;
         rsvgSAXHandlerStruct.entityDecl = rsvg_entity_decl;
         rsvgSAXHandlerStruct.unparsedEntityDecl = rsvg_unparsed_entity_decl;
+        rsvgSAXHandlerStruct.getParameterEntity = rsvg_get_parameter_entity;
 #endif
         rsvgSAXHandlerStruct.characters = rsvg_characters;
         rsvgSAXHandlerStruct.error = rsvg_error_cb;
