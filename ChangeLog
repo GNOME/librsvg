@@ -1,5 +1,9 @@
 2009-02-19  Thomas Andersen <phomes@gmail.com>
 
+	* rsvg-filter.c:  "const static" should be "static const". Bug #570656 
+
+2009-02-19  Thomas Andersen <phomes@gmail.com>
+
 	* gtk-engine/svg-draw.c: don't use deprecated gdk_pixbuf_unref. Bug #570938
 	
 2009-02-19  liucougar <liucougar@gmail.com>

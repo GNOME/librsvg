@@ -3563,7 +3563,7 @@ normalise (vector3 A)
 static FactorAndMatrix
 get_light_normal_matrix_x (gint n)
 {
-    const static FactorAndMatrix matrix_list[] = {
+    static const FactorAndMatrix matrix_list[] = {
         {
          {0, 0, 0,
           0, -2, 2,
@@ -3617,7 +3617,7 @@ get_light_normal_matrix_x (gint n)
 static FactorAndMatrix
 get_light_normal_matrix_y (gint n)
 {
-    const static FactorAndMatrix matrix_list[] = {
+    static const FactorAndMatrix matrix_list[] = {
         {
          {0, 0, 0,
           0, -2, -1,
