@@ -1,3 +1,8 @@
+2009-02-19  Robert Staudinger <robert.staudinger@gmail.com>
+
+	* rsvg-file.c: Do not allocate RsvgState in rsvg_new_image(), use the instance that's been
+	allocated and set up in the call to _rsvg_node_init(). Bug #557082
+	
 2009-01-09  Christian Persch  <chpe@gnome.org>
 
 	* doc/rsvg-sections.txt:
