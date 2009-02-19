@@ -1058,6 +1058,24 @@ rsvg_error_quark (void)
     return g_quark_from_string ("rsvg-error-quark");
 }
 
+static void
+rsvg_set_error (GError **error, xmlParserCtxtPtr ctxt)
+{
+  xmlErrorPtr xerr;
+
+  xerr = xmlCtxtGetLastError (ctxt);
+  if (xerr) {
+    g_set_error (error, rsvg_error_quark (), 0,
+                 _("Error domain %d code %d on line %d column %d of %s: %s"),
+                 xerr->domain, xerr->code,
+                 xerr->line, xerr->int2,
+                 xerr->file ? xerr->file : "data",
+                 xerr->message ? xerr->message: "-");
+  } else {
+    g_set_error (error, rsvg_error_quark (), 0, _("Error parsing XML data"));
+  }
+}
+
 static gboolean
 rsvg_handle_write_impl (RsvgHandle * handle, const guchar * buf, gsize count, GError ** error)
 {
@@ -1079,7 +1097,7 @@ rsvg_handle_write_impl (RsvgHandle * handle, const guchar * buf, gsize count, GE
 
     result = xmlParseChunk (handle->priv->ctxt, (char *) buf, count, 0);
     if (result != 0) {
-        g_set_error (error, rsvg_error_quark (), 0, _("Error parsing XML data"));
+        rsvg_set_error (error, handle->priv->ctxt);
         return FALSE;
     }
 
@@ -1113,7 +1131,7 @@ rsvg_handle_close_impl (RsvgHandle * handle, GError ** error)
         xmlFreeDoc (xmlDoc);
 
         if (result != 0) {
-            g_set_error (error, rsvg_error_quark (), 0, _("Error parsing XML data"));
+            rsvg_set_error (error, handle->priv->ctxt);
             return FALSE;
         }
     }

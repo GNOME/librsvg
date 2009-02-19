@@ -1,3 +1,7 @@
+2009-02-19  Christian Persch  <chpe@gnome.org>
+
+	* rsvg-base.c: better error messages. Bug #567307 
+	
 2009-02-19  Thomas Andersen <phomes@gmail.com>
 
 	* rsvg-filter.c:  "const static" should be "static const". Bug #570656 
