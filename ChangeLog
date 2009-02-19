@@ -1,3 +1,7 @@
+2009-02-19  Hagen Schink <troja84@gmail.com>
+
+	* rsvg-base.c: Memory leak in rsvg_handle_get_dimensions_sub(). Bug #562546
+	
 2009-02-19  Robert Staudinger <robert.staudinger@gmail.com>
 
 	* rsvg-file.c: Do not allocate RsvgState in rsvg_new_image(), use the instance that's been

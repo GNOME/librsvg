@@ -1314,8 +1314,12 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 
 	draw = rsvg_cairo_new_drawing_ctx (cr, handle);
     
-	if (!draw)
+	if (!draw) {
+	    cairo_destroy (cr);
+	    cairo_surface_destroy (target);
+	    
 	    return FALSE;
+	}
 
 	while (sself != NULL) {
 	    draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, sself);
