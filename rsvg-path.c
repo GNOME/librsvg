@@ -27,7 +27,7 @@
 #include "config.h"
 #include "rsvg-path.h"
 
-#include <glib/gtypes.h>
+#include <glib.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>

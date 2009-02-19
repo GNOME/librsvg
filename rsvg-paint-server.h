@@ -26,7 +26,7 @@
 #ifndef RSVG_PAINT_SERVER_H
 #define RSVG_PAINT_SERVER_H
 
-#include <glib/gtypes.h>
+#include <glib.h>
 #include "rsvg-defs.h"
 
 G_BEGIN_DECLS 

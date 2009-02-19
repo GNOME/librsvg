@@ -29,9 +29,7 @@
 #include "rsvg-styles.h"
 #include "rsvg-image.h"
 
-#include <glib/gmem.h>
-#include <glib/gmessages.h>
-#include <glib/gstrfuncs.h>
+#include <glib.h>
 #include <string.h>
 #include <math.h>
 

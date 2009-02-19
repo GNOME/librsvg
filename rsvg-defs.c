@@ -28,11 +28,7 @@
 #include "rsvg-styles.h"
 #include "rsvg-image.h"
 
-#include <glib/ghash.h>
-#include <glib/gmem.h>
-#include <glib/gslist.h>
-#include <glib/gstrfuncs.h>
-#include <glib/gmessages.h>
+#include <glib.h>
 
 struct _RsvgDefs {
     GHashTable *hash;

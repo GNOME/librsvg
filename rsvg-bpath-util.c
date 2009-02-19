@@ -29,8 +29,7 @@
 #include <math.h>
 #include <string.h>
 
-#include <glib/gmem.h>
-#include <glib/gmessages.h>
+#include <glib.h>
 
 /* This is adapted from gnome-canvas-bpath-util in libgnomeprint
    (originally developed as part of Gill). */

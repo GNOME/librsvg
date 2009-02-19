@@ -25,7 +25,7 @@
 #ifndef RSVG_CSS_H
 #define RSVG_CSS_H
 
-#include <glib/gtypes.h>
+#include <glib.h>
 #include <pango/pango.h>
 #include "rsvg-private.h"
 

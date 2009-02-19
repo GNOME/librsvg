@@ -26,7 +26,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <glib/gslist.h>
+#include <glib.h>
 #include <math.h>
 #include <string.h>
 

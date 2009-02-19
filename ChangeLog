@@ -1,3 +1,7 @@
+2009-02-19  Luis Menina  <liberforce@freeside.fr>
+
+	* *: GNOME Goal: Clean up GLib and GTK+ includes. Bug #563789
+	
 2009-02-19  Hagen Schink <troja84@gmail.com>
 
 	* rsvg-base.c: Memory leak in rsvg_handle_get_dimensions_sub(). Bug #562546

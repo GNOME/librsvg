@@ -21,7 +21,7 @@
  * Carsten Haitzler <raster@rasterman.com>
  */
 
-#include <gtk/gtkstyle.h>
+#include <gtk/gtk.h>
 
 typedef struct _RsvgStyle RsvgStyle;
 typedef struct _RsvgStyleClass RsvgStyleClass;

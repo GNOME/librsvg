@@ -24,7 +24,6 @@
 #include <rsvg.h>
 #include <stdlib.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
-#include <gdk-pixbuf/gdk-pixbuf-io.h>
 #include "rsvg-private.h"
 
 typedef struct {

@@ -26,7 +26,7 @@
 #ifndef RSVG_BPATH_UTIL_H
 #define RSVG_BPATH_UTIL_H
 
-#include <glib/gtypes.h>
+#include <glib.h>
 
 G_BEGIN_DECLS 
 typedef enum {

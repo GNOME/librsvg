@@ -28,7 +28,7 @@
 
 /* A module for handling SVG defs */
 
-#include <glib/gtypes.h>
+#include <glib.h>
 
 G_BEGIN_DECLS 
 
