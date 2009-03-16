@@ -1,3 +1,7 @@
+2009-03-16  Dominic Lachowicz <domlachowicz@gmail.com>
+
+	* configure.in: 2.26.0
+	
 2009-02-19  Christian Persch  <chpe@gnome.org>
 
 	* rsvg-base.c: fails to parse SVG with parameter entities. Bug #567311
