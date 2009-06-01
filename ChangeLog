@@ -1,5 +1,11 @@
 2009-06-01  Andre Klapper  <a9016009@gmx.de>
 
+	* gtk-engine/svg-render.c:
+	Replace deprecated gdk_pixmap_unref() with g_object_unref().
+	Partially fixes bug #572084.
+
+2009-06-01  Andre Klapper  <a9016009@gmx.de>
+
 	* configure.in:
 	* gtk-engine/svg-render.c:
 	* gtk-engine/svg-draw.c:

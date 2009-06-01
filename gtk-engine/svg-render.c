@@ -855,7 +855,7 @@ theme_pixbuf_render (ThemePixbuf  *theme_pb,
 	    gdk_draw_rectangle (window, tmp_gc, TRUE, x, y, width, height);
 	  
 	  g_object_unref (tmp_gc);
-	  gdk_pixmap_unref (tmp_pixmap);
+	  g_object_unref (tmp_pixmap);
 	}
     }
 
