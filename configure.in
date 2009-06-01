@@ -212,7 +212,7 @@ else
 fi
 
 have_gtk=no
-PKG_CHECK_MODULES(GTK, gtk+-2.0 >= 2.6.0, have_gtk=yes,
+PKG_CHECK_MODULES(GTK, gtk+-2.0 >= 2.16.0, have_gtk=yes,
 		       have_gtk=no)
 
 GTK_VERSION=
