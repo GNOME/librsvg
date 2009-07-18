@@ -594,8 +594,12 @@ draw_string (GtkStyle * style,
 	     gint y,
 	     const gchar * string)
 {
+  PangoLayout *layout = NULL;
+
   g_return_if_fail(style != NULL);
   g_return_if_fail(window != NULL);
+
+  layout = gtk_widget_create_pango_layout (widget, string);
 
   if (state == GTK_STATE_INSENSITIVE)
     {
@@ -605,7 +609,7 @@ draw_string (GtkStyle * style,
 	  gdk_gc_set_clip_rectangle(style->fg_gc[state], area);
 	}
 
-      gdk_draw_string(window, gtk_style_get_font (style), style->fg_gc[state], x, y, string);
+      gdk_draw_layout(GTK_DRAWABLE (window), style->fg_gc[state], x, y, layout);
       
       if (area)
 	{
@@ -616,7 +620,7 @@ draw_string (GtkStyle * style,
   else
     {
       gdk_gc_set_clip_rectangle(style->fg_gc[state], area);
-      gdk_draw_string(window, gtk_style_get_font (style), style->fg_gc[state], x, y, string);
+      gdk_draw_layout(GTK_DRAWABLE (window), style->fg_gc[state], x, y, layout);
       gdk_gc_set_clip_rectangle(style->fg_gc[state], NULL);
     }
 }
