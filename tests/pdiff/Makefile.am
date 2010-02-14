@@ -13,4 +13,4 @@ perceptualdiff_SOURCES =	\
 	perceptualdiff.c
 
 INCLUDES = $(LIBRSVG_CFLAGS)
-LDADD = libpdiff.la $(LIBRSVG_LIBS)
+LDADD = libpdiff.la $(LIBRSVG_LIBS) -lm
