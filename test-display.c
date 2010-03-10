@@ -631,9 +631,9 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char *color)
 
 #ifdef ENABLE_XEMBED
     if (xid > 0) {
-        XReparentWindow (GDK_WINDOW_XDISPLAY (win->window),
-                         GDK_WINDOW_XID (win->window), xid, 0, 0);
-        XMapWindow (GDK_WINDOW_XDISPLAY (win->window), GDK_WINDOW_XID (win->window));
+        XReparentWindow (GDK_WINDOW_XDISPLAY (gtk_widget_get_window(win)),
+                         GDK_WINDOW_XID (gtk_widget_get_window(win)), xid, 0, 0);
+        XMapWindow (GDK_WINDOW_XDISPLAY (gtk_widget_get_window(win)), GDK_WINDOW_XID (gtk_widget_get_window(win)));
     }
 #endif
 }
