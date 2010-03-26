@@ -5,13 +5,6 @@ Higher priority:
    to use it to load PNGs/JPEGs/etc., but that piece of code's implementation will be flexible so that it isn't exclusively
    dependant on GdkPixbuf.
 
- * Improvements to the Mozilla plugin
-	* Possibly use a Cairo backend to draw directly onto Mozilla's Drawable, rather than using our XEmbed hack.
-		* Should enable proper translucency, but could be SLOW
-	* Enable printing support, integrated with Mozilla's (http://wp.netscape.com/eng/mozilla/3.0/handbook/plugins/pi4.htm#npprint)
-		* Ideally would use Cairo->PS for this
-			* In a pinch, embedding a PNG inside of a PS snippet would also work
-
  * Areas in need of improvement:
 	* multiImage
 	* Text

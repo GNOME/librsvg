@@ -272,36 +272,6 @@ fi
 AM_CONDITIONAL(ENABLE_PIXBUF_LOADER, test x$enable_pixbuf_loader = xyes)
 
 ##################################################
-##################################################
-
-MOZILLA_CFLAGS=
-build_mozilla_plugin=no
-
-test_mozilla_plugin=true
-AC_ARG_ENABLE(mozilla-plugin, [  --enable-mozilla-plugin  Build a Mozilla/Firefox SVG viewing plugin [default = auto]],
-			 test_mozilla_plugin="$enableval")
-
-if test "x$test_mozilla_plugin" != "xno"; then
-   if test -z "$MOZILLA_CONFIG"; then
-      AC_PATH_PROGS(MOZILLA_CONFIG, mozilla-config firefox-config xulrunner-config, no)
-   fi
-
-   if test "x$MOZILLA_CONFIG" != "xno"; then
-      MOZILLA_CFLAGS=`$MOZILLA_CONFIG --cflags plugin java`
-   else
-	PKG_CHECK_MODULES(MOZILLA, mozilla-plugin, build_mozilla_plugin=yes, 
-			[AC_MSG_WARN([mozilla-config not found. Mozilla/Netscape plugin will not be built])])
-   fi
-
-   if test "x$MOZILLA_CFLAGS" != "x"; then
-      build_mozilla_plugin=yes
-   fi
-fi
-
-AM_CONDITIONAL(WITH_MOZILLA,[test "x$build_mozilla_plugin" = "xyes"])
-AC_SUBST(MOZILLA_CFLAGS)
-
-##################################################
 # Checks for gtk-doc and docbook-tools
 ##################################################
 gtk_doc_installed=true
@@ -344,7 +314,6 @@ gtk-engine/examples/Makefile
 gtk-engine/examples/bubble/Makefile
 gtk-engine/examples/bubble/gtk-2.0/Makefile
 gdk-pixbuf-loader/Makefile
-moz-plugin/Makefile
 tests/Makefile
 tests/pdiff/Makefile
 doc/Makefile
@@ -361,7 +330,6 @@ librsvg-$LIBRSVG_VERSION
 	
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
 	Build theme engine:             ${enable_gtk_theme}
-	Build Netscape plugin:          ${build_mozilla_plugin}
 	Handle svgz files:              ${test_gsf}
 	Use GIO:                        ${test_gio}
 	Use libcroco for css parsing:   ${test_croco}

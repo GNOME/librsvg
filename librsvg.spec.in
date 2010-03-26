@@ -71,7 +71,6 @@ rm -rf $RPM_BUILD_ROOT
 rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.4.0/engines/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/gtk-2.0/2.4.0/loaders/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
-rm -f $RPM_BUILD_ROOT%{_libdir}/mozilla/plugins/libmozsvgdec.la
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
 mkdir -p $RPM_BUILD_DIR/librsvg-%{version}
 touch $RPM_BUILD_DIR/librsvg-%{version}/debugfiles.list
@@ -106,7 +105,6 @@ gdk-pixbuf-query-loaders-32 > %{_sysconfdir}/gtk-2.0/gdk-pixbuf.loaders
 %{_bindir}/rsvg*
 %{_libdir}/gtk-2.0/2.4.0/engines/*
 %{_libdir}/gtk-2.0/2.4.0/loaders/*
-%{_libdir}/mozilla/plugins/*
 %{_datadir}/pixmaps/*
 # %{_datadir}/themes/bubble/gtk-2.0/*
 # %{_datadir}/themes/bubble/README
