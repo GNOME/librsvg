@@ -609,7 +609,7 @@ draw_string (GtkStyle * style,
 	  gdk_gc_set_clip_rectangle(style->fg_gc[state], area);
 	}
 
-      gdk_draw_layout(GTK_DRAWABLE (window), style->fg_gc[state], x, y, layout);
+      gdk_draw_layout(GDK_DRAWABLE (window), style->fg_gc[state], x, y, layout);
       
       if (area)
 	{
@@ -620,7 +620,7 @@ draw_string (GtkStyle * style,
   else
     {
       gdk_gc_set_clip_rectangle(style->fg_gc[state], area);
-      gdk_draw_layout(GTK_DRAWABLE (window), style->fg_gc[state], x, y, layout);
+      gdk_draw_layout(GDK_DRAWABLE (window), style->fg_gc[state], x, y, layout);
       gdk_gc_set_clip_rectangle(style->fg_gc[state], NULL);
     }
 }
