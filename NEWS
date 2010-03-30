@@ -1,3 +1,10 @@
+Version 2.26.1
+
+- Remove some deprecated gtk+/gdk functions and bump gtk+ requirement
+- Fix linking with pedantic linkers
+- Make librsvg compile with -DGSEAL_ENABLED
+- Drop mozilla plugin
+
 Version 2.22.3
 
 - Make librsvg buildable on windows without freetype dependency

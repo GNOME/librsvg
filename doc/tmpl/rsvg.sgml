@@ -229,3 +229,35 @@ librsvg is a component used within software applications to enable support for S
 @dimension_data: 
 
 
+<!-- ##### FUNCTION rsvg_handle_get_dimensions_sub ##### -->
+<para>
+
+</para>
+
+@handle: 
+@dimension_data: 
+@id: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_get_position_sub ##### -->
+<para>
+
+</para>
+
+@handle: 
+@position_data: 
+@id: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_has_sub ##### -->
+<para>
+
+</para>
+
+@handle: 
+@id: 
+@Returns: 
+
+
