@@ -128,7 +128,7 @@ main (int argc, char **argv)
     char *format = NULL;
     char *output = NULL;
     int keep_aspect_ratio = FALSE;
-    guint32 background_color = NULL;
+    guint32 background_color = 0;
     char *background_color_str = NULL;
     char *base_uri = NULL;
     gboolean using_stdin = FALSE;

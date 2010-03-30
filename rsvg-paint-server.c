@@ -461,8 +461,7 @@ rsvg_new_pattern (void)
     _rsvg_affine_identity (pattern->affine);
     pattern->super.set_atts = rsvg_pattern_set_atts;
     pattern->hasx = pattern->hasy = pattern->haswidth = pattern->hasheight = pattern->hasbbox =
-        pattern->hascbox = pattern->hasvbox = pattern->hasaspect = pattern->hastransform =
-        pattern->hasaspect = FALSE;
+        pattern->hascbox = pattern->hasvbox = pattern->hasaspect = pattern->hastransform = FALSE;
     return &pattern->super;
 }
 
