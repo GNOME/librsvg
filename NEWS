@@ -1,3 +1,9 @@
+Version 2.26.2
+
+- Enable silent build by default
+- Use GDK_DRAWABLE() instead of non-existing GTK_DRAWABLE()
+- Fix compiler warnings
+
 Version 2.26.1
 
 - Remove some deprecated gtk+/gdk functions and bump gtk+ requirement
