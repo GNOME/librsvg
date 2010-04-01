@@ -67,9 +67,6 @@ RsvgNode    *rsvg_new_filter_primitive_light_source	    (char type);
 RsvgNode    *rsvg_new_filter_primitive_specular_lighting    (void);
 RsvgNode    *rsvg_new_filter_primitive_tile		    (void);
 
-void	     rsvg_filter_adobe_blend	(gint modenum, GdkPixbuf * in, GdkPixbuf * bg,
-					 GdkPixbuf * output, RsvgIRect boundarys, 
-					 RsvgDrawingCtx * ctx);
 void	     rsvg_alpha_blt		(GdkPixbuf * src, gint srcx, gint srcy,
 					 gint srcwidth, gint srcheight, 
 					 GdkPixbuf * dst, gint dstx, gint dsty);

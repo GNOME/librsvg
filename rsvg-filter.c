@@ -864,56 +864,6 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self, RsvgFilterContex
     g_object_unref (G_OBJECT (output));
 }
 
-void
-rsvg_filter_adobe_blend (gint modenum, GdkPixbuf * in, GdkPixbuf * bg, GdkPixbuf * output,
-                         RsvgIRect boundarys, RsvgDrawingCtx * ctx)
-{
-    int standardmap[4] = { 0, 1, 2, 3 };
-    RsvgFilterPrimitiveBlendMode mode;
-    mode = normal;
-
-    switch (modenum) {
-    case 0:
-        mode = normal;
-        break;
-    case 1:
-        mode = multiply;
-        break;
-    case 2:
-        mode = screen;
-        break;
-    case 3:
-        mode = darken;
-        break;
-    case 4:
-        mode = lighten;
-        break;
-    case 5:
-        mode = softlight;
-        break;
-    case 6:
-        mode = hardlight;
-        break;
-    case 7:
-        mode = colordodge;
-        break;
-    case 8:
-        mode = colorburn;
-        break;
-    case 9:
-        mode = overlay;
-        break;
-    case 10:
-        mode = exclusion;
-        break;
-    case 11:
-        mode = difference;
-        break;
-    }
-
-    rsvg_filter_blend (mode, in, bg, output, boundarys, standardmap);
-}
-
 static void
 rsvg_filter_primitive_blend_free (RsvgNode * self)
 {
