@@ -27,7 +27,7 @@ lib/librsvg-2.dll.a
 lib/pkgconfig/librsvg-2.0.pc
 EOF
 
-gtk_binary_version=`$PKG_CONFIG --variable=gtk_binary_version gtk+-2.0`
+gtk_binary_version=`pkg-config --variable=gtk_binary_version gtk+-2.0`
 
 rm $ENGINEZIP
 zip $ENGINEZIP lib/gtk-2.0/${gtk_binary_version}/engines/libsvg.dll
