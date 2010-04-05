@@ -1347,7 +1347,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     bbox.w = bbox.h = 1;
 
     if (!id && (root->w.factor == 'p' || root->h.factor == 'p')
-	    && root->vbox.active && root->vbox.w > 0. && root->vbox.h > 0.)
+	    && !root->vbox.active)
 	handle_subelement = TRUE;
     else if (!id && root->w.length != -1 && root->h.length != -1)
 	handle_subelement = FALSE;

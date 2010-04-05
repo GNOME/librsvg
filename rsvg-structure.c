@@ -345,16 +345,8 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
             svg->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
         if ((value = rsvg_property_bag_lookup (atts, "width")))
             svg->w = _rsvg_css_parse_length (value);
-	else {
-	    svg->w.length = -1;
-	    svg->w.factor = '\0';
-	}
         if ((value = rsvg_property_bag_lookup (atts, "height")))
             svg->h = _rsvg_css_parse_length (value);
-	else {
-	    svg->h.length = -1;
-	    svg->h.factor = '\0';
-	}
 		/* 
 		 * x & y attributes have no effect on outermost svg
 		 * http://www.w3.org/TR/SVG/struct.html#SVGElement 
