@@ -1,0 +1,355 @@
+<?xml version="1.0" standalone="no"?>
+
+<!--
+    Copyright (C) 2008 Papavasileiou Dimitris                             
+                                                                     
+    This program is free software: you can redistribute it and/or modify 
+    it under the terms of the GNU General Public License as published by 
+    the Free Software Foundation, either version 3 of the License, or    
+    (at your option) any later version.                                  
+    
+    This program is distributed in the hope that it will be useful,      
+    but WITHOUT ANY WARRANTY; without even the implied warranty of       
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        
+    GNU General Public License for more details.                         
+                                                                     
+    You should have received a copy of the GNU General Public License    
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
+	    "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+
+  <svg viewBox="-1.620000 -0.910000 3.240000 1.820000"
+       xmlns="http://www.w3.org/2000/svg" version="1.1" 
+       xmlns:xlink="http://www.w3.org/1999/xlink">
+
+    <defs>
+      <pattern id="stripe" patternUnits="userSpaceOnUse"
+               x="-0.0286"
+	       y="-0.0286"
+	       width="0.0572"
+	       height="0.0572"
+	       viewBox="0 0 1 1" >
+            
+        <rect x="0" y="0.3" width="1" height="0.4" fill="white" />
+      </pattern> 
+
+      <g id="side">
+	<path d="M -1.378
+	           -0.75
+		 L -0.06
+	           -0.75
+		 L -0.07
+	           -0.71
+		 L -1.36
+	           -0.71
+		 z"
+	      stroke="rgb(50, 50, 50)" stroke-width="0.003"
+  	      fill="rgb(110, 139,  61)" />
+      </g>
+
+      <g id="top">
+	<path d="M -1.46
+	           -0.668
+		 L -1.42
+	           -0.648
+		 L -1.42
+	           0.648
+		 L -1.46
+	           0.668
+		 z"
+	      stroke="rgb(50, 50, 50)" stroke-width="0.003"
+  	      fill="rgb(110, 139,  61)" />
+      </g>
+      
+      <g id="pocket">
+	<path fill="rgb(30, 30, 30)" stroke="black" stroke-width="0.003"
+	      d="M -0.06 0 A 0.065 0.07 0 1 1 0.06 0"/>
+	<path fill="black" d="M -0.06 0 A 0.06 0.08 0 0 1 0.06 0"/>
+	<path fill="black" d="M -0.061 0 A 0.10 0.10 0 0 0 0.061 0"/>
+      </g>
+
+      <g id="diamond" transform="translate(0 -0.0141) rotate(45)">
+	<rect width="0.02" height="0.02" fill="white" stroke="none"/>
+      </g>
+
+      <g id="ball">
+	<circle r="0.0286" stroke-width="0.003"/>
+      </g>
+    </defs>
+
+    <g id="table">
+      <!-- The frame. -->
+
+      <rect x="-1.61"
+	    y="-0.9"
+	    rx="0.09"
+            width="3.22"
+	    height="1.8"
+	    fill="rgb(40, 30, 17)" 
+  	    stroke="rgb(110, 90, 60)" stroke-width="0.015"/>
+
+      <!-- The cloth. -->
+
+      <rect x="-1.46"
+	    y="-0.75"
+	    width="2.92"
+            height="1.5"
+	    stroke="rgb(84, 139, 84)" stroke-width="0.008"
+	    fill="rgb(107, 142, 35)" />
+
+      <!-- The cushions. -->
+
+      <use xlink:href="#side"/>
+      <use transform="scale(-1, 1)" xlink:href="#side"/>
+      <use transform="scale(-1, -1)" xlink:href="#side"/>
+      <use transform="scale(1, -1)" xlink:href="#side"/>
+      <use xlink:href="#top"/>
+      <use transform="scale(-1, 1)" xlink:href="#top"/>
+
+      <!-- The spots. -->
+
+      <circle cx="-0.71" cy="0"
+	      r="0.01"
+	      stroke="none"
+	      fill="rgb(50, 70, 50)"/>
+
+      <circle cx="0.71" cy="0"
+	      r="0.01"
+	      stroke="none"
+	      fill="rgb(50, 70, 50)"/>
+
+      <!-- The pockets. -->
+
+      <use transform="translate(0 -0.75)"
+	   xlink:href="#pocket"/>
+
+      <use transform="translate(0 0.75)
+		      rotate(180)" xlink:href="#pocket"/>
+
+      <use transform="translate(1.42
+		                -0.71)
+		      rotate(45)" xlink:href="#pocket"/>
+
+      <use transform="translate(1.42
+		                0.71)
+		      rotate(135)" xlink:href="#pocket"/>
+
+      <use transform="translate(-1.42
+		                -0.71)
+		      rotate(-45)" xlink:href="#pocket"/>
+
+      <use transform="translate(-1.42
+		                0.71)
+		      rotate(-135)" xlink:href="#pocket"/>
+
+      	 <use x="-1.065000" y="0.820000" xlink:href="#diamond"/>
+	 <use x="-1.065000" y="-0.820000" xlink:href="#diamond"/>
+	              	 <use x="-0.710000" y="0.820000" xlink:href="#diamond"/>
+	 <use x="-0.710000" y="-0.820000" xlink:href="#diamond"/>
+	              	 <use x="-0.355000" y="0.820000" xlink:href="#diamond"/>
+	 <use x="-0.355000" y="-0.820000" xlink:href="#diamond"/>
+	              	 <use x="0.355000" y="0.820000" xlink:href="#diamond"/>
+	 <use x="0.355000" y="-0.820000" xlink:href="#diamond"/>
+	              	 <use x="0.710000" y="0.820000" xlink:href="#diamond"/>
+	 <use x="0.710000" y="-0.820000" xlink:href="#diamond"/>
+	              	 <use x="1.065000" y="0.820000" xlink:href="#diamond"/>
+	 <use x="1.065000" y="-0.820000" xlink:href="#diamond"/>
+	              	 <use x="1.530000" y="-0.355000" xlink:href="#diamond"/>
+	 <use x="-1.530000" y="-0.355000" xlink:href="#diamond"/>
+	           	 <use x="1.530000" y="0.000000" xlink:href="#diamond"/>
+	 <use x="-1.530000" y="0.000000" xlink:href="#diamond"/>
+	           	 <use x="1.530000" y="0.355000" xlink:href="#diamond"/>
+	 <use x="-1.530000" y="0.355000" xlink:href="#diamond"/>
+	            	 <circle cx="0.058979" cy="-0.067725" r="0.01" stroke="none"
+		 fill="rgb(255, 255, 255)"/> 	 <circle cx="0.058979" cy="-0.067725" r="0.028600" fill="none"
+		 stroke="rgb(255, 255, 255)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(255, 255, 255)" stroke-width="0.005"
+	       d="M 0.059 -0.068
+		  L 0.059 -0.068
+		  L 0.059 -0.068"/>
+
+ 	 <circle cx="0.831806" cy="-0.142947" r="0.01" stroke="none"
+		 fill="rgb(255, 124, 0)"/> 	 <circle cx="0.831806" cy="-0.142947" r="0.028600" fill="none"
+		 stroke="rgb(255, 124, 0)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(255, 124, 0)" stroke-width="0.005"
+	       d="M 0.832 -0.143
+		  L 0.832 -0.143
+		  L 0.832 -0.143"/>
+
+ 	 <circle cx="-1.183625" cy="-0.190027" r="0.01" stroke="none"
+		 fill="rgb(6, 22, 157)"/> 	 <circle cx="-1.183625" cy="-0.190027" r="0.028600" fill="none"
+		 stroke="rgb(6, 22, 157)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(6, 22, 157)" stroke-width="0.005"
+	       d="M -1.184 -0.190
+		  L -1.184 -0.190
+		  L -1.184 -0.190"/>
+
+ 	 <circle cx="0.108950" cy="0.107066" r="0.01" stroke="none"
+		 fill="rgb(255, 0, 0)"/> 	 <circle cx="0.108950" cy="0.107066" r="0.028600" fill="none"
+		 stroke="rgb(255, 0, 0)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(255, 0, 0)" stroke-width="0.005"
+	       d="M 0.109 0.107
+		  L 0.109 0.107
+		  L 0.109 0.107"/>
+
+ 	 <circle cx="-0.527822" cy="-0.266026" r="0.01" stroke="none"
+		 fill="rgb(0, 0, 34)"/> 	 <circle cx="-0.527822" cy="-0.266026" r="0.028600" fill="none"
+		 stroke="rgb(0, 0, 34)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(0, 0, 34)" stroke-width="0.005"
+	       d="M -0.528 -0.266
+		  L -0.528 -0.266
+		  L -0.528 -0.266"/>
+
+ 	 <circle cx="0.201618" cy="0.140210" r="0.01" stroke="none"
+		 fill="rgb(255, 48, 0)"/> 	 <circle cx="0.201618" cy="0.140210" r="0.028600" fill="none"
+		 stroke="rgb(255, 48, 0)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(255, 48, 0)" stroke-width="0.005"
+	       d="M 0.202 0.140
+		  L 0.202 0.140
+		  L 0.202 0.140"/>
+
+ 	 <circle cx="-1.366404" cy="-0.445032" r="0.01" stroke="none"
+		 fill="rgb(0, 61, 9)"/> 	 <circle cx="-1.366404" cy="-0.445032" r="0.028600" fill="none"
+		 stroke="rgb(0, 61, 9)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(0, 61, 9)" stroke-width="0.005"
+	       d="M -1.366 -0.445
+		  L -1.366 -0.445
+		  L -1.366 -0.445"/>
+
+ 	 <circle cx="-0.472246" cy="0.681671" r="0.01" stroke="none"
+		 fill="rgb(54, 0, 0)"/> 	 <circle cx="-0.472246" cy="0.681671" r="0.028600" fill="none"
+		 stroke="rgb(54, 0, 0)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(54, 0, 0)" stroke-width="0.005"
+	       d="M -0.472 0.682
+		  L -0.472 0.682
+		  L -0.472 0.682"/>
+
+ 	 <circle cx="-1.211370" cy="-0.477456" r="0.01" stroke="none"
+		 fill="rgb(0, 0, 0)"/> 	 <circle cx="-1.211370" cy="-0.477456" r="0.028600" fill="none"
+		 stroke="rgb(0, 0, 0)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(0, 0, 0)" stroke-width="0.005"
+	       d="M -1.211 -0.477
+		  L -1.211 -0.477
+		  L -1.211 -0.478"/>
+
+ 	 <circle cx="-1.420060" cy="-0.675371" r="0.01" stroke="none"
+		 fill="rgb(255, 124, 0)"/> 	 <circle cx="-1.420060" cy="-0.675371" r="0.028600" fill="none"
+		 stroke="rgb(255, 124, 0)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(255, 124, 0)" stroke-width="0.005"
+	       d="M -1.420 -0.675
+		  L -1.420 -0.675
+		  L -1.420 -0.676"/>
+
+ 	 <circle cx="-1.130869" cy="-0.287088" r="0.01" stroke="none"
+		 fill="rgb(6, 22, 157)"/> 	 <circle cx="-1.130869" cy="-0.287088" r="0.028600" fill="none"
+		 stroke="rgb(6, 22, 157)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(6, 22, 157)" stroke-width="0.005"
+	       d="M -1.131 -0.287
+		  L -1.131 -0.287
+		  L -1.131 -0.287"/>
+
+ 	 <circle cx="1.442492" cy="0.400212" r="0.01" stroke="none"
+		 fill="rgb(255, 0, 0)"/> 	 <circle cx="1.442492" cy="0.400212" r="0.028600" fill="none"
+		 stroke="rgb(255, 0, 0)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(255, 0, 0)" stroke-width="0.005"
+	       d="M 1.442 0.400
+		  L 1.442 0.400
+		  L 1.442 0.400"/>
+
+ 	 <circle cx="0.874867" cy="0.588390" r="0.01" stroke="none"
+		 fill="rgb(0, 0, 34)"/> 	 <circle cx="0.874867" cy="0.588390" r="0.028600" fill="none"
+		 stroke="rgb(0, 0, 34)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(0, 0, 34)" stroke-width="0.005"
+	       d="M 0.875 0.588
+		  L 0.875 0.588
+		  L 0.875 0.588"/>
+
+ 	 <circle cx="1.273824" cy="0.159112" r="0.01" stroke="none"
+		 fill="rgb(255, 48, 0)"/> 	 <circle cx="1.273824" cy="0.159112" r="0.028600" fill="none"
+		 stroke="rgb(255, 48, 0)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(255, 48, 0)" stroke-width="0.005"
+	       d="M 1.274 0.159
+		  L 1.274 0.159
+		  L 1.274 0.159"/>
+
+ 	 <circle cx="0.341479" cy="-0.601032" r="0.01" stroke="none"
+		 fill="rgb(0, 61, 9)"/> 	 <circle cx="0.341479" cy="-0.601032" r="0.028600" fill="none"
+		 stroke="rgb(0, 61, 9)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(0, 61, 9)" stroke-width="0.005"
+	       d="M 0.341 -0.601
+		  L 0.341 -0.601
+		  L 0.342 -0.601"/>
+
+ 	 <circle cx="0.214091" cy="-0.519331" r="0.01" stroke="none"
+		 fill="rgb(54, 0, 0)"/> 	 <circle cx="0.214091" cy="-0.519331" r="0.028600" fill="none"
+		 stroke="rgb(54, 0, 0)" stroke-width="0.003"/>
+         <path fill="none" stroke="rgb(54, 0, 0)" stroke-width="0.005"
+	       d="M 0.214 -0.519
+		  L 0.214 -0.519
+		  L 0.214 -0.519"/>
+
+ 
+         <g transform="translate(0.058888, -0.067729)"> 
+	   <use fill="rgb(255, 255, 255)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/>         </g> 
+         <g transform="translate(0.831894, -0.142925)"> 
+	   <use fill="rgb(255, 124, 0)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/>         </g> 
+         <g transform="translate(-1.183534, -0.190030)"> 
+	   <use fill="rgb(6, 22, 157)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/>         </g> 
+         <g transform="translate(0.109041, 0.107067)"> 
+	   <use fill="rgb(255, 0, 0)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/>         </g> 
+         <g transform="translate(-0.527764, -0.266095)"> 
+	   <use fill="rgb(0, 0, 34)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/>         </g> 
+         <g transform="translate(0.201682, 0.140275)"> 
+	   <use fill="rgb(255, 48, 0)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/>         </g> 
+         <g transform="translate(-1.366393, -0.445122)"> 
+	   <use fill="rgb(0, 61, 9)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/>         </g> 
+         <g transform="translate(-0.472162, 0.681705)"> 
+	   <use fill="rgb(54, 0, 0)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/>         </g> 
+         <g transform="translate(-1.211327, -0.477535)"> 
+	   <use fill="rgb(0, 0, 0)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/> 
+	   <use transform="rotate(30)"
+	        fill="url(#stripe)" xlink:href="#ball"/>         </g> 
+         <g transform="translate(-1.420173, -0.675545)"> 
+	   <use fill="rgb(255, 124, 0)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/> 
+	   <use transform="rotate(86)"
+	        fill="url(#stripe)" xlink:href="#ball"/>         </g> 
+         <g transform="translate(-1.130782, -0.287114)"> 
+	   <use fill="rgb(6, 22, 157)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/> 
+	   <use transform="rotate(137)"
+	        fill="url(#stripe)" xlink:href="#ball"/>         </g> 
+         <g transform="translate(1.442492, 0.400212)">         </g> 
+         <g transform="translate(0.874932, 0.588453)"> 
+	   <use fill="rgb(0, 0, 34)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/> 
+	   <use transform="rotate(140)"
+	        fill="url(#stripe)" xlink:href="#ball"/>         </g> 
+         <g transform="translate(1.273907, 0.159075)"> 
+	   <use fill="rgb(255, 48, 0)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/> 
+	   <use transform="rotate(1)"
+	        fill="url(#stripe)" xlink:href="#ball"/>         </g> 
+         <g transform="translate(0.341568, -0.601015)"> 
+	   <use fill="rgb(0, 61, 9)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/> 
+	   <use transform="rotate(104)"
+	        fill="url(#stripe)" xlink:href="#ball"/>         </g> 
+         <g transform="translate(0.214180, -0.519311)"> 
+	   <use fill="rgb(54, 0, 0)" stroke="rgb(10, 10, 10)"
+                xlink:href="#ball"/> 
+	   <use transform="rotate(133)"
+	        fill="url(#stripe)" xlink:href="#ball"/>         </g>
+  </g>
+</svg>
