@@ -1388,11 +1388,8 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 	cairo_destroy (cr);
 	cairo_surface_destroy (target);
 
-	dimension_data->width = (int) (_rsvg_css_hand_normalize_length_sub (&root->w, bbox.w, handle->priv->dpi_x,
-									    bbox.w + bbox.x * 2, 12) + 0.5);
-	dimension_data->height = (int) (_rsvg_css_hand_normalize_length_sub (&root->h, bbox.h, handle->priv->dpi_y, 
-									    bbox.h + bbox.y * 2,
-									    12) + 0.5);
+	dimension_data->width = bbox.w;
+	dimension_data->height = bbox.h;
     } else {
 	bbox.w = root->vbox.w; 
 	bbox.h = root->vbox.h; 
@@ -1490,19 +1487,10 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
 	rsvg_state_pop (draw);
 	rsvg_drawing_ctx_free (draw);
 
-	/* Calculate position.
-	 * TODO: figure out what "bbox.w + bbox.x * 2" is or means
-	 * (copied from rsvg_handle_get_dimensions_sub(). - robsta */
-	position_data->x = (int) (_rsvg_css_hand_normalize_length_sub (&root->x, bbox.x, handle->priv->dpi_x,
-									    bbox.w + bbox.x * 2, 12) + 0.5);
-	position_data->y = (int) (_rsvg_css_hand_normalize_length_sub (&root->y, bbox.y, handle->priv->dpi_y, 
-									    bbox.h + bbox.y * 2, 12) + 0.5);
-
-	/* Also calculate dimension for the size callback, while re're at it. */
-	dimension_data.width = (int) (_rsvg_css_hand_normalize_length_sub (&root->w, bbox.w, handle->priv->dpi_x,
-									    bbox.w + bbox.x * 2, 12) + 0.5);
-	dimension_data.height = (int) (_rsvg_css_hand_normalize_length_sub (&root->h, bbox.h, handle->priv->dpi_y, 
-									    bbox.h + bbox.y * 2, 12) + 0.5);
+	position_data->x = bbox.x;
+	position_data->y = bbox.y;
+	dimension_data.width = bbox.w;
+	dimension_data.height = bbox.h;
 
 	dimension_data.em = dimension_data.width;
 	dimension_data.ex = dimension_data.height;

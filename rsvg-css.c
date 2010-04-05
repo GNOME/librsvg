@@ -252,25 +252,6 @@ _rsvg_css_hand_normalize_length (const RsvgLength * in, gdouble pixels_per_inch,
     return 0;
 }
 
-double
-_rsvg_css_hand_normalize_length_sub (const RsvgLength * in, gdouble length, 
-				     gdouble pixels_per_inch, gdouble width_or_height, 
-				     gdouble font_size)
-{
-    if (in->factor == '\0')
-        return length;
-    else if (in->factor == 'p')
-        return length * width_or_height;
-    else if (in->factor == 'm')
-        return length * font_size;
-    else if (in->factor == 'x')
-        return length * font_size / 2.;
-    else if (in->factor == 'i')
-        return length * pixels_per_inch;
-
-    return 0;
-}
-
 gboolean
 rsvg_css_param_match (const char *str, const char *param_name)
 {
