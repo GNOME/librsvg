@@ -81,7 +81,7 @@ rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
     xmlFree (entval->orig);
     xmlFree (entval);
 #else
-	xmlFreeNode(entval);
+	xmlFreeNode((xmlNode *) entval);
 #endif
 }
 

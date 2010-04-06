@@ -808,7 +808,7 @@ rsvg_entity_decl (void *data, const xmlChar * name, int type,
         resolvedPublicId = xmlBuildRelativeURI (publicId, (xmlChar*) rsvg_handle_get_base_uri (ctx));
 
     if (type == XML_EXTERNAL_PARAMETER_ENTITY && !content) {
-      GByteArray *arr;
+      GByteArray *arr = NULL;
 
       if (systemId)
         arr = _rsvg_acquire_xlink_href_resource ((const char *) systemId,
