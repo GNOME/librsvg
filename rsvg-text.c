@@ -508,7 +508,7 @@ rsvg_text_get_pango_context (RsvgDrawingCtx * ctx)
 static void
 rsvg_text_layout_free (RsvgTextLayout * layout)
 {
-    g_object_unref (G_OBJECT (layout->layout));
+    g_object_unref (layout->layout);
     g_free (layout);
 }
 

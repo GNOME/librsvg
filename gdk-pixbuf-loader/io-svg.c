@@ -162,7 +162,7 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
                 result = FALSE;
         }
 
-        g_object_unref (G_OBJECT(context->handle));
+        g_object_unref (context->handle);
         g_free (context);
 
         return TRUE;

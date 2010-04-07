@@ -115,14 +115,14 @@ main (int	  argc,
 			goto bail;
 		}
 
-		g_object_unref (G_OBJECT (handle)), handle = NULL;
+		g_object_unref (handle), handle = NULL;
 	}
 
 	exit_code = EXIT_SUCCESS;
 
 bail:
 	if (handle)
-		g_object_unref (G_OBJECT (handle)), handle = NULL;
+		g_object_unref (handle), handle = NULL;
 	if (context)
 		g_option_context_free (context), context = NULL;
 	if (error)

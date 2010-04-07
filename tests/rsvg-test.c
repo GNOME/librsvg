@@ -319,7 +319,7 @@ rsvg_cairo_check (char const *test_name, gboolean xfail)
     cairo_surface_destroy (surface_b);
     cairo_destroy (cr);
 
-    g_object_unref (G_OBJECT (rsvg));
+    g_object_unref (rsvg);
 
     if (status == RSVG_TEST_FAILURE) {
 	rsvg_test_html ("<tr>");

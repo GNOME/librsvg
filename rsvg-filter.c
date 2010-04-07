@@ -435,7 +435,7 @@ rsvg_filter_free_pair (gpointer value)
     RsvgFilterPrimitiveOutput *output;
 
     output = (RsvgFilterPrimitiveOutput *) value;
-    g_object_unref (G_OBJECT (output->result));
+    g_object_unref (output->result);
     g_free (output);
 }
 
@@ -466,7 +466,7 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
     ctx->results = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, rsvg_filter_free_pair);
     ctx->ctx = context;
 
-    g_object_ref (G_OBJECT (source));
+    g_object_ref (source);
 
     rsvg_filter_fix_coordinate_system (ctx, rsvg_state_current (context), *bounds);
 
@@ -509,17 +509,17 @@ rsvg_filter_store_output (GString * name, RsvgFilterPrimitiveOutput result, Rsvg
 {
     RsvgFilterPrimitiveOutput *store;
 
-    g_object_unref (G_OBJECT (ctx->lastresult.result));
+    g_object_unref (ctx->lastresult.result);
 
     store = g_new (RsvgFilterPrimitiveOutput, 1);
     *store = result;
 
     if (strcmp (name->str, "")) {
-        g_object_ref (G_OBJECT (result.result));        /* increments the references for the table */
+        g_object_ref (result.result);        /* increments the references for the table */
         g_hash_table_insert (ctx->results, g_strdup (name->str), store);
     }
 
-    g_object_ref (G_OBJECT (result.result));    /* increments the references for the last result */
+    g_object_ref (result.result);    /* increments the references for the last result */
     ctx->lastresult = result;
 }
 
@@ -579,17 +579,17 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
     output.bounds.x0 = output.bounds.x1 = output.bounds.y0 = output.bounds.y1 = 0;
 
     if (!strcmp (name->str, "SourceGraphic")) {
-        g_object_ref (G_OBJECT (ctx->source));
+        g_object_ref (ctx->source);
         output.result = ctx->source;
         output.Rused = output.Gused = output.Bused = output.Aused = 1;
         return output;
     } else if (!strcmp (name->str, "BackgroundImage")) {
-        g_object_ref (G_OBJECT (ctx->bg));
+        g_object_ref (ctx->bg);
         output.result = ctx->bg;
         output.Rused = output.Gused = output.Bused = output.Aused = 1;
         return output;
     } else if (!strcmp (name->str, "") || !strcmp (name->str, "none") || !name) {
-        g_object_ref (G_OBJECT (ctx->lastresult.result));
+        g_object_ref (ctx->lastresult.result);
         output = ctx->lastresult;
         return output;
     } else if (!strcmp (name->str, "SourceAlpha")) {
@@ -608,14 +608,14 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
 
     if (outputpointer != NULL) {
         output = *outputpointer;
-        g_object_ref (G_OBJECT (output.result));
+        g_object_ref (output.result);
         return output;
     }
 
     g_warning (_("%s not found\n"), name->str);
 
     output = ctx->lastresult;
-    g_object_ref (G_OBJECT (ctx->lastresult.result));
+    g_object_ref (ctx->lastresult.result);
     return output;
 }
 
@@ -859,9 +859,9 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (G_OBJECT (in));
-    g_object_unref (G_OBJECT (in2));
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (in);
+    g_object_unref (in2);
+    g_object_unref (output);
 }
 
 static void
@@ -1061,8 +1061,8 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
         }
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (G_OBJECT (in));
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (in);
+    g_object_unref (output);
 }
 
 static void
@@ -1364,8 +1364,8 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilt
     op.bounds = boundarys;
     rsvg_filter_store_output (self->result, op, ctx);
 
-    g_object_unref (G_OBJECT (in));
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (in);
+    g_object_unref (output);
 }
 
 static void
@@ -1499,8 +1499,8 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
 
     rsvg_filter_store_output (self->result, out, ctx);
 
-    g_object_unref (G_OBJECT (in));
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (in);
+    g_object_unref (output);
 }
 
 static void
@@ -1595,12 +1595,12 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self, RsvgFilterContex
         in = rsvg_filter_get_in (mn->in, ctx);
         rsvg_alpha_blt (in, boundarys.x0, boundarys.y0, boundarys.x1 - boundarys.x0,
                         boundarys.y1 - boundarys.y0, output, boundarys.x0, boundarys.y0);
-        g_object_unref (G_OBJECT (in));
+        g_object_unref (in);
     }
 
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (output);
 }
 
 static void
@@ -1785,8 +1785,8 @@ rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self, RsvgFilt
 
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (G_OBJECT (in));
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (in);
+    g_object_unref (output);
 }
 
 static void
@@ -2103,8 +2103,8 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
         }
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (G_OBJECT (in));
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (in);
+    g_object_unref (output);
 }
 
 static void
@@ -2301,8 +2301,8 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContex
             }
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (G_OBJECT (in));
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (in);
+    g_object_unref (output);
 }
 
 static void
@@ -2509,9 +2509,9 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterCo
 
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (G_OBJECT (in));
-    g_object_unref (G_OBJECT (in2));
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (in);
+    g_object_unref (in2);
+    g_object_unref (output);
 }
 
 static void
@@ -2644,7 +2644,7 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     rsvg_filter_store_output (self->result, out, ctx);
 
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (output);
 }
 
 static void
@@ -2805,9 +2805,9 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
 
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (G_OBJECT (in));
-    g_object_unref (G_OBJECT (in2));
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (in);
+    g_object_unref (in2);
+    g_object_unref (output);
 }
 
 static void
@@ -3176,8 +3176,8 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterC
 
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (G_OBJECT (in));
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (in);
+    g_object_unref (output);
 }
 
 static void
@@ -3324,12 +3324,12 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterCo
                            (boundarys.y1 - boundarys.y0) / ctx->paffine[3]);
 
     if (!intermediate) {
-        g_object_unref (G_OBJECT (img));
+        g_object_unref (img);
         return NULL;
     }
 
 
-    g_object_unref (G_OBJECT (img));
+    g_object_unref (img);
 
     length = gdk_pixbuf_get_height (intermediate) * gdk_pixbuf_get_rowstride (intermediate);
     for (i = 0; i < 4; i++)
@@ -3381,12 +3381,12 @@ rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self, RsvgFilterContex
             gdk_pixbuf_copy_area (img, 0, 0,
                                   boundarys.x1 - boundarys.x0,
                                   boundarys.y1 - boundarys.y0, output, boundarys.x0, boundarys.y0);
-            g_object_unref (G_OBJECT (img));
+            g_object_unref (img);
         }
     } else {
         gdk_pixbuf_copy_area (img, boundarys.x0, boundarys.y0, boundarys.x1 - boundarys.x0,
                               boundarys.y1 - boundarys.y0, output, boundarys.x0, boundarys.y0);
-        g_object_unref (G_OBJECT (img));
+        g_object_unref (img);
     }
 
     op.result = output;
@@ -3398,7 +3398,7 @@ rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     rsvg_filter_store_output (self->result, op, ctx);
 
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (output);
 }
 
 static void
@@ -3966,8 +3966,8 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
 
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (G_OBJECT (in));
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (in);
+    g_object_unref (output);
 }
 
 static void
@@ -4145,8 +4145,8 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
 
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (G_OBJECT (in));
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (in);
+    g_object_unref (output);
 }
 
 static void
@@ -4278,7 +4278,7 @@ rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self, RsvgFilterContext
 
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (G_OBJECT (output));
+    g_object_unref (output);
 }
 
 static void

@@ -74,17 +74,17 @@ rsvg_handle_new_from_stdio_file (FILE * f, GError ** error)
 
         if (length > 0) {
             if (!rsvg_handle_write (handle, buffer, length, error)) {
-                g_object_unref (G_OBJECT (handle));
+                g_object_unref (handle);
                 return NULL;
             }
         } else if (ferror (f)) {
-            g_object_unref (G_OBJECT (handle));
+            g_object_unref (handle);
             return NULL;
         }
     }
 
     if (!rsvg_handle_close (handle, error)) {
-        g_object_unref (G_OBJECT (handle));
+        g_object_unref (handle);
         return NULL;
     }
 
@@ -321,7 +321,7 @@ main (int argc, char **argv)
         else
             cairo_show_page (cr);
 
-        g_object_unref (G_OBJECT (rsvg));
+        g_object_unref (rsvg);
     }
 
     cairo_destroy (cr);

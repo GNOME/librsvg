@@ -987,8 +987,8 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
 
         output = rsvg_filter_render (state->filter, pixbuf, bg, ctx, &render->bbox, "2103");
-        g_object_unref (G_OBJECT (pixbuf));
-        g_object_unref (G_OBJECT (bg));
+        g_object_unref (pixbuf);
+        g_object_unref (bg);
 
         surface = cairo_image_surface_create_for_data (gdk_pixbuf_get_pixels (output),
                                                        CAIRO_FORMAT_ARGB32,
@@ -1029,7 +1029,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     render->bb_stack = g_list_delete_link (render->bb_stack, render->bb_stack);
 
     if (state->filter) {
-        g_object_unref (G_OBJECT (output));
+        g_object_unref (output);
         cairo_surface_destroy (surface);
     }
 }

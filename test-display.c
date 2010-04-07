@@ -76,17 +76,17 @@ pixbuf_from_data_with_size_data (const guchar * buff,
     rsvg_handle_set_base_uri (handle, base_uri);
 
     if (!rsvg_handle_write (handle, buff, len, error)) {
-        g_object_unref (G_OBJECT (handle));
+        g_object_unref (handle);
         return NULL;
     }
 
     if (!rsvg_handle_close (handle, error)) {
-        g_object_unref (G_OBJECT (handle));
+        g_object_unref (handle);
         return NULL;
     }
 
     retval = rsvg_handle_get_pixbuf_sub (handle, id);
-    g_object_unref (G_OBJECT (handle));
+    g_object_unref (handle);
 
     return retval;
 }
@@ -121,7 +121,7 @@ zoom_image (ViewerCbInfo * info, gint width, gint height)
     gtk_image_set_from_pixbuf (GTK_IMAGE (info->image), info->pixbuf);
 
     if (save_pixbuf)
-        g_object_unref (G_OBJECT (save_pixbuf));
+        g_object_unref (save_pixbuf);
 }
 
 static void
@@ -165,14 +165,14 @@ rsvg_window_set_default_icon (GtkWindow * window, GdkPixbuf * src)
 
         icon = gdk_pixbuf_scale_simple (src, width, height, GDK_INTERP_BILINEAR);
     } else {
-        icon = g_object_ref (G_OBJECT (src));
+        icon = g_object_ref (src);
     }
 
     list = g_list_prepend (NULL, icon);
     gtk_window_set_icon_list (window, list);
     g_list_free (list);
 
-    g_object_unref (G_OBJECT (icon));
+    g_object_unref (icon);
 }
 
 #if GTK_CHECK_VERSION(2,10,0)
@@ -529,11 +529,11 @@ populate_window (GtkWidget * win, ViewerCbInfo * info, int xid, gint win_width, 
 
         toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_IN);
         gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 0);
-        g_signal_connect (G_OBJECT (toolitem), "clicked", G_CALLBACK (zoom_in), info);
+        g_signal_connect (toolitem, "clicked", G_CALLBACK (zoom_in), info);
 
         toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_OUT);
         gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 1);
-        g_signal_connect (G_OBJECT (toolitem), "clicked", G_CALLBACK (zoom_out), info);
+        g_signal_connect (toolitem, "clicked", G_CALLBACK (zoom_out), info);
 
 		gtk_widget_size_request(toolbar, &requisition);
 
@@ -604,8 +604,8 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char *color)
     rsvg_window_set_default_icon (GTK_WINDOW (win), info->pixbuf);
 
     /* exit when 'X' is clicked */
-    g_signal_connect (G_OBJECT (win), "destroy", G_CALLBACK (quit_cb), NULL);
-    g_signal_connect (G_OBJECT (win), "delete_event", G_CALLBACK (quit_cb), NULL);
+    g_signal_connect (win, "destroy", G_CALLBACK (quit_cb), NULL);
+    g_signal_connect (win, "delete_event", G_CALLBACK (quit_cb), NULL);
 
     if (color && strcmp (color, "none") != 0) {
         if (gdk_color_parse (color, &bg_color)) {
@@ -625,7 +625,7 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char *color)
     info->window = win;
     gtk_window_add_accel_group (GTK_WINDOW (win), info->accel_group);
 
-    g_signal_connect (G_OBJECT (win), "button-press-event", G_CALLBACK (button_press_event), info);
+    g_signal_connect (win, "button-press-event", G_CALLBACK (button_press_event), info);
 
     gtk_widget_show_all (win);
 
@@ -818,7 +818,7 @@ main (int argc, char **argv)
     /* run the gtk+ main loop */
     gtk_main ();
 
-    g_object_unref (G_OBJECT (info.pixbuf));
+    g_object_unref (info.pixbuf);
     g_byte_array_free (info.svg_bytes, TRUE);
     rsvg_term ();
 

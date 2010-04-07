@@ -1762,7 +1762,7 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
             }
             remaining = gsf_input_remaining (gzip);
         }
-        g_object_unref (G_OBJECT (gzip));
+        g_object_unref (gzip);
 
         /* close parent */
         gsf_output_close (handle->priv->gzipped_data);

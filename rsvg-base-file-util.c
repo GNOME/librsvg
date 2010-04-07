@@ -62,7 +62,7 @@ rsvg_handle_new_from_data (const guint8 * data, gsize data_len, GError ** error)
 
     if (handle) {
         if (!rsvg_handle_fill_with_data (handle, data, data_len, error)) {
-            g_object_unref (G_OBJECT (handle));
+            g_object_unref (handle);
             handle = NULL;
         }
     }
@@ -97,7 +97,7 @@ rsvg_handle_new_from_file (const gchar * file_name, GError ** error)
         if (handle) {
             rsvg_handle_set_base_uri (handle, base_uri);
             if (!rsvg_handle_fill_with_data (handle, f->data, f->len, error)) {
-                g_object_unref (G_OBJECT (handle));
+                g_object_unref (handle);
                 handle = NULL;
             }
         }

@@ -94,7 +94,7 @@ instance_dispose (GObject * instance)
 
 #if HAVE_SVGZ
     if (self->priv->is_gzipped)
-        g_object_unref (G_OBJECT (self->priv->gzipped_data));
+        g_object_unref (self->priv->gzipped_data);
 #endif
 
     g_hash_table_foreach (self->priv->entities, rsvg_ctx_free_helper, NULL);
@@ -116,7 +116,7 @@ instance_dispose (GObject * instance)
 
     g_free (self->priv);
 
-    rsvg_parent_class->dispose (G_OBJECT (self));
+    rsvg_parent_class->dispose (instance);
 }
 
 static void
@@ -313,7 +313,7 @@ rsvg_handle_get_type (void)
 void
 rsvg_handle_free (RsvgHandle * handle)
 {
-    g_object_unref (G_OBJECT (handle));
+    g_object_unref (handle);
 }
 
 /**
