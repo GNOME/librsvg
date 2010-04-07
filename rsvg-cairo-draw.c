@@ -49,7 +49,7 @@ _rsvg_cairo_set_shape_antialias (cairo_t * cr, ShapeRenderingProperty aa)
 	else if (SHAPE_RENDERING_OPTIMIZE_SPEED == aa)
 		cairo_set_antialias (cr, CAIRO_ANTIALIAS_NONE);
 	else if (SHAPE_RENDERING_CRISP_EDGES == aa)
-		cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
+		cairo_set_antialias (cr, CAIRO_ANTIALIAS_NONE);
 	else if (SHAPE_RENDERING_GEOMETRIC_PRECISION == aa)
 		cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
 }
