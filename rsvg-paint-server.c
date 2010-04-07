@@ -265,8 +265,10 @@ rsvg_linear_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
             }
             grad->hasspread = TRUE;
         }
-        if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
-            rsvg_defs_add_resolver (ctx->priv->defs, &grad->fallback, value);
+        if ((value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
+            if (self != rsvg_defs_lookup (ctx->priv->defs, value))
+                rsvg_defs_add_resolver (ctx->priv->defs, &grad->fallback, value);
+	}
         if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
             rsvg_parse_transform (grad->affine, value);
             grad->hastransform = TRUE;
@@ -337,8 +339,10 @@ rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
             grad->fy = _rsvg_css_parse_length (value);
             grad->hasfy = TRUE;
         }
-        if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
-            rsvg_defs_add_resolver (ctx->priv->defs, &grad->fallback, value);
+        if ((value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
+            if (self != rsvg_defs_lookup (ctx->priv->defs, value))
+                rsvg_defs_add_resolver (ctx->priv->defs, &grad->fallback, value);
+        }
         if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
             rsvg_parse_transform (grad->affine, value);
             grad->hastransform = TRUE;
@@ -414,12 +418,14 @@ rsvg_pattern_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts
             pattern->hasheight = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
-            /* The (void *) cast is to avoid a GCC warning like:
-             * "warning: dereferencing type-punned pointer will break strict-aliasing rules"
-             * which is wrong for this code. (void *) introduces a compatible
-             * intermediate type in the cast list. */
-            rsvg_defs_add_resolver (ctx->priv->defs, (RsvgNode **) (void *) &pattern->fallback,
-                                    value);
+            if (self != rsvg_defs_lookup (ctx->priv->defs, value)) {
+                /* The (void *) cast is to avoid a GCC warning like:
+                 * "warning: dereferencing type-punned pointer will break strict-aliasing rules"
+                 * which is wrong for this code. (void *) introduces a compatible
+                 * intermediate type in the cast list. */
+                rsvg_defs_add_resolver (ctx->priv->defs, (RsvgNode **) (void *) &pattern->fallback,
+                                        value);
+            }
         }
         if ((value = rsvg_property_bag_lookup (atts, "patternTransform"))) {
             rsvg_parse_transform (pattern->affine, value);
