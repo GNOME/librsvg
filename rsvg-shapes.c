@@ -338,6 +338,9 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     rx = _rsvg_css_normalize_length (&rect->rx, ctx, 'h');
     ry = _rsvg_css_normalize_length (&rect->ry, ctx, 'v');
 
+    if (w == 0. || h == 0.)
+	return;
+
     if (rect->got_rx)
         rx = rx;
     else
