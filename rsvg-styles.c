@@ -791,6 +791,7 @@ rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * a
     rsvg_lookup_parse_style_pair (ctx, state, "marker-start", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "opacity", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "overflow", atts);
+    rsvg_lookup_parse_style_pair (ctx, state, "shape-rendering", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "stop-color", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "stop-opacity", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "stroke", atts);
