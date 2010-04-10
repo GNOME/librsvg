@@ -30,10 +30,6 @@
 #include <gdk/gdk.h>
 #include <gdk/gdkkeysyms.h>
 
-#ifdef HAVE_BASENAME
-#include <libgen.h>
-#endif
-
 #ifdef ENABLE_XEMBED
 #include <gdk/gdkx.h>
 #endif                          /* ENABLE_XEMBED */
@@ -44,12 +40,8 @@
 static char *
 _rsvg_basename (const char *file)
 {
-#ifdef HAVE_BASENAME
-    if (file && *file) {
-        char *file_dup = g_strdup (file);
-        return basename (file_dup);
-    }
-#endif
+    if (file && *file)
+	return g_path_get_basename (file);
 
     return NULL;
 }

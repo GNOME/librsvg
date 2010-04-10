@@ -183,7 +183,7 @@ AC_SUBST([LIBRSVG_HAVE_CSS],[$croco_define])
 
 dnl ===========================================================================
 
-AC_CHECK_FUNCS(strtok_r basename)
+AC_CHECK_FUNCS(strtok_r)
 
 dnl ===========================================================================
 
