@@ -12,10 +12,6 @@
 
   <maintainer>
     <foaf:Person>
-      <foaf:name>Dominic Lachowicz</foaf:name>
-      <gnome:userid>doml</gnome:userid>
-    </foaf:Person>
-    <foaf:Person>
       <foaf:name>Hiroyuki Ikezoe</foaf:name>
       <foaf:mbox rdf:resource="mailto:poincare@ikezoe.net" />
       <gnome:userid>hiikezoe</gnome:userid>
