@@ -497,22 +497,24 @@ rsvg_parse_path_data (RSVGParsePathCtx * ctx, const char *data)
                 sign = 1;
             }
         } else if (c == '.') {
-	    if (in_frac) {
-	      rsvg_path_end_of_number(ctx, val, sign, exp_sign, exp);
-	      in_num = TRUE;
-	      in_frac = FALSE;
-	      in_exp = FALSE;
-	      exp = 0;
-	      exp_sign = 1;
-	      exp_wait_sign = FALSE;
-	      val = 0;
-	      sign = 1;
-	    }
-	    else if (!in_num) {
-                in_num = TRUE;
+            if (!in_num) {
+                in_frac = TRUE;
                 val = 0;
             }
-            in_frac = TRUE;
+            else if (in_frac) {
+                rsvg_path_end_of_number(ctx, val, sign, exp_sign, exp);
+                in_frac = FALSE;
+                in_exp = FALSE;
+                exp = 0;
+                exp_sign = 1;
+                exp_wait_sign = FALSE;
+                val = 0;
+                sign = 1;
+            }
+            else {
+                in_frac = TRUE;
+            }
+            in_num = TRUE;
             frac = 1;
         } else if ((c == 'E' || c == 'e') && in_num) {
             in_exp = TRUE;
