@@ -2060,7 +2060,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
                 }
         }
         if (i == self->super.children->len)
-            functions[c] = identity_component_transfer_func;
+            functions[ctx->channelmap[c]] = identity_component_transfer_func;
 
     }
 
