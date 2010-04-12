@@ -153,7 +153,7 @@ librsvg-enum-types.h: s-enum-types-h
 	@true
 
 s-enum-types-h: $(headers) Makefile
-	( cd $(srcdir) && glib-mkenums \
+	( cd $(srcdir) && $(GLIB_MKENUMS) \
 			--fhead "#ifndef __LIBRSVG_ENUM_TYPES_H__\n#define __LIBRSVG_ENUM_TYPES_H__\n\n#include <glib-object.h>\n\nG_BEGIN_DECLS\n" \
 			--fprod "/* enumerations from \"@filename@\" */\n" \
 			--vhead "GType @enum_name@_get_type (void);\n#define RSVG_TYPE_@ENUMSHORT@ (@enum_name@_get_type())\n" 	\
@@ -167,7 +167,7 @@ librsvg-enum-types.c: s-enum-types-c librsvg-enum-types.h
 	@true
 
 s-enum-types-c: $(headers) Makefile
-	( cd $(srcdir) && glib-mkenums \
+	( cd $(srcdir) && $(GLIB_MKENUMS) \
 			--fhead "#include \"librsvg-enum-types.h\"\n#include \"rsvg.h\"" \
 			--fprod "\n/* enumerations from \"@filename@\" */" \
 			--vhead "GType\n@enum_name@_get_type (void)\n{\n  static GType etype = 0;\n  if (etype == 0) {\n    static const G@Type@Value values[] = {" 	\
