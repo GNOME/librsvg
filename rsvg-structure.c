@@ -334,7 +334,7 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 static void
 rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *id = NULL, *klazz = NULL, *value;
+    const char *value;
     RsvgNodeSvg *svg = (RsvgNodeSvg *) self;
 
     if (rsvg_property_bag_size (atts)) {
@@ -355,13 +355,27 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
             svg->x = _rsvg_css_parse_length (value);
         if (self->parent && (value = rsvg_property_bag_lookup (atts, "y")))
             svg->y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "class")))
-            klazz = value;
         if ((value = rsvg_property_bag_lookup (atts, "id"))) {
-            id = value;
             rsvg_defs_register_name (ctx->priv->defs, value, &svg->super);
         }
-        rsvg_parse_style_attrs (ctx, self->state, "svg", klazz, id, atts);
+        /*
+         * style element is not loaded yet here, so we need to store those attribues
+         * to be applied later.
+         */
+        svg->atts = rsvg_property_bag_ref(atts);
+    }
+}
+
+void
+_rsvg_node_svg_apply_atts (RsvgNodeSvg * self, RsvgHandle * ctx)
+{
+    const char *id = NULL, *klazz = NULL, *value;
+    if (rsvg_property_bag_size (self->atts)) {
+        if ((value = rsvg_property_bag_lookup (self->atts, "class")))
+            klazz = value;
+        if ((value = rsvg_property_bag_lookup (self->atts, "id")))
+            id = value;
+        rsvg_parse_style_attrs (ctx, ((RsvgNode *)self)->state, "svg", klazz, id, self->atts);
     }
 }
 

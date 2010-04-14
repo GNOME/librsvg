@@ -37,6 +37,7 @@
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"
+#include "rsvg-structure.h"
 #include "rsvg-image.h"
 #include "rsvg-text.h"
 #include "rsvg-filter.h"
@@ -688,6 +689,8 @@ rsvg_end_element (void *data, const xmlChar * name)
             && !strcmp ((const char *) name, ctx->priv->currentnode->type->str))
             rsvg_pop_def_group (ctx);
 
+        if (!strcmp ((const char *)name, "style"))
+            _rsvg_node_svg_apply_atts ((RsvgNodeSvg *)ctx->priv->treebase, ctx);
     }
 }
 

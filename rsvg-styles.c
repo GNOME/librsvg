@@ -1387,41 +1387,45 @@ rsvg_property_bag_new (const char **atts)
     RsvgPropertyBag *bag;
     int i;
 
-    bag = g_new (RsvgPropertyBag, 1);
-    bag->props = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, NULL);
+    bag = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
 
     if (atts != NULL) {
         for (i = 0; atts[i] != NULL; i += 2)
-            g_hash_table_insert (bag->props, (gpointer) atts[i], (gpointer) atts[i + 1]);
+            g_hash_table_insert (bag, (gpointer) g_strdup(atts[i]), (gpointer) g_strdup(atts[i + 1]));
     }
 
     return bag;
 }
 
+RsvgPropertyBag *
+rsvg_property_bag_ref (RsvgPropertyBag * bag)
+{
+    return g_hash_table_ref (bag);
+}
+
 void
 rsvg_property_bag_free (RsvgPropertyBag * bag)
 {
-    g_hash_table_destroy (bag->props);
-    g_free (bag);
+    g_hash_table_unref (bag);
 }
 
 G_CONST_RETURN char *
 rsvg_property_bag_lookup (RsvgPropertyBag * bag, const char *key)
 {
-    return (const char *) g_hash_table_lookup (bag->props, (gconstpointer) key);
+    return (const char *) g_hash_table_lookup (bag, (gconstpointer) key);
 }
 
 guint
 rsvg_property_bag_size (RsvgPropertyBag * bag)
 {
-    return g_hash_table_size (bag->props);
+    return g_hash_table_size (bag);
 }
 
 void
 rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPropertyBagEnumFunc func,
                              gpointer user_data)
 {
-    g_hash_table_foreach (bag->props, (GHFunc) func, user_data);
+    g_hash_table_foreach (bag, (GHFunc) func, user_data);
 }
 
 void

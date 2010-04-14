@@ -68,6 +68,7 @@ struct _RsvgNodeSvg {
     gint preserve_aspect_ratio;
     RsvgLength x, y, w, h;
     RsvgViewBox vbox;
+    RsvgPropertyBag *atts;
     GdkPixbuf *img;
 };
 
@@ -79,6 +80,7 @@ void _rsvg_node_draw_children	(RsvgNode * self, RsvgDrawingCtx * ctx, int domina
 void _rsvg_node_finalize	(RsvgNode * self);
 void _rsvg_node_free		(RsvgNode * self);
 void _rsvg_node_init		(RsvgNode * self);
+void _rsvg_node_svg_apply_atts	(RsvgNodeSvg * self, RsvgHandle * ctx);
 
 G_END_DECLS
 

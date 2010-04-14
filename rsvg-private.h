@@ -45,7 +45,7 @@ G_BEGIN_DECLS
 typedef struct RsvgSaxHandler RsvgSaxHandler;
 typedef struct RsvgDrawingCtx RsvgDrawingCtx;
 typedef struct RsvgRender RsvgRender;
-typedef struct _RsvgPropertyBag RsvgPropertyBag;
+typedef GHashTable RsvgPropertyBag;
 typedef struct _RsvgState RsvgState;
 typedef struct _RsvgDefs RsvgDefs;
 typedef struct _RsvgNode RsvgNode;
@@ -249,10 +249,6 @@ struct RsvgSizeCallbackData {
 
 void _rsvg_size_callback (int *width, int *height, gpointer data);
 
-struct _RsvgPropertyBag {
-    GHashTable *props;
-};
-
 struct _RsvgNode {
     RsvgState *state;
     RsvgNode *parent;
@@ -271,6 +267,7 @@ struct _RsvgNodeChars {
 typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
 
 RsvgPropertyBag	    *rsvg_property_bag_new	(const char **atts);
+RsvgPropertyBag	    *rsvg_property_bag_ref	(RsvgPropertyBag * bag);
 void		     rsvg_property_bag_free	(RsvgPropertyBag * bag);
 G_CONST_RETURN char *rsvg_property_bag_lookup	(RsvgPropertyBag * bag, const char *key);
 guint		     rsvg_property_bag_size	(RsvgPropertyBag * bag);
