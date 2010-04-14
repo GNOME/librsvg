@@ -93,8 +93,8 @@ typedef enum _RelativeSize {
 } RelativeSize;
 
 static double
-rsvg_css_parse_raw_length (const char *str, gint * in,
-                           gint * percent, gint * em, gint * ex, RelativeSize * relative_size)
+rsvg_css_parse_raw_length (const char *str, gboolean * in,
+                           gboolean * percent, gboolean * em, gboolean * ex, RelativeSize * relative_size)
 {
     double length = 0.0;
     char *p = NULL;
@@ -177,7 +177,7 @@ RsvgLength
 _rsvg_css_parse_length (const char *str)
 {
     RsvgLength out;
-    gint percent, em, ex, in;
+    gboolean percent, em, ex, in;
     RelativeSize relative_size = RELATIVE_SIZE_NORMAL;
     percent = em = ex = in = FALSE;
 
