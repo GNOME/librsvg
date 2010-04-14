@@ -1296,6 +1296,11 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
     /* * */
     rsvg_lookup_apply_css_style (ctx, "*", state);
 
+    /* tag */
+    if (tag != NULL) {
+        rsvg_lookup_apply_css_style (ctx, tag, state);
+    }
+
     if (klazz != NULL) {
         i = strlen (klazz);
         while (j < i) {
@@ -1330,23 +1335,19 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
         }
     }
 
-    /* tag#id */
-    if (tag != NULL && id != NULL && !found) {
-        target = g_strdup_printf ("%s#%s", tag, id);
+    /* #id */
+    if (id != NULL) {
+        target = g_strdup_printf ("#%s", id);
         rsvg_lookup_apply_css_style (ctx, target, state);
         g_free (target);
     }
 
-    /* #id */
-    if (id != NULL && !found) {
-        target = g_strdup_printf ("#%s", id);
-        found = rsvg_lookup_apply_css_style (ctx, target, state);
+    /* tag#id */
+    if (tag != NULL && id != NULL) {
+        target = g_strdup_printf ("%s#%s", tag, id);
+        rsvg_lookup_apply_css_style (ctx, target, state);
         g_free (target);
     }
-
-    /* tag */
-    if (tag != NULL && !found)
-        found = rsvg_lookup_apply_css_style (ctx, tag, state);
 
     if (rsvg_property_bag_size (atts) > 0) {
         const char *value;
