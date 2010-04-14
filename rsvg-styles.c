@@ -1316,16 +1316,23 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
             while (j < i && !g_ascii_isspace (klazz[j]))
                 g_string_append_c (klazz_list, klazz[j++]);
 
-            /* tag.class */
-            if (tag != NULL && klazz_list->len != 1) {
-                target = g_strdup_printf ("%s%s", tag, klazz_list->str);
+            /* tag.class#id */
+            if (tag != NULL && klazz_list->len != 1 && id != NULL) {
+                target = g_strdup_printf ("%s%s#%s", tag, klazz_list->str, id);
                 found = found || rsvg_lookup_apply_css_style (ctx, target, state);
                 g_free (target);
             }
 
-            /* tag.class#id */
-            if (tag != NULL && klazz_list->len != 1 && id != NULL) {
-                target = g_strdup_printf ("%s%s#%s", tag, klazz_list->str, id);
+            /* class#id */
+            if (klazz_list->len != 1 && id != NULL) {
+                target = g_strdup_printf ("%s#%s", klazz_list->str, id);
+                found = found || rsvg_lookup_apply_css_style (ctx, target, state);
+                g_free (target);
+            }
+
+            /* tag.class */
+            if (tag != NULL && klazz_list->len != 1) {
+                target = g_strdup_printf ("%s%s", tag, klazz_list->str);
                 found = found || rsvg_lookup_apply_css_style (ctx, target, state);
                 g_free (target);
             }
