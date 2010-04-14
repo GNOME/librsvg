@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- <?xml-stylesheet  type="text/css" href="inject.css" ?>  -->
+
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   width="16"
+   height="16"
+   id="svg7384"
+   inkscape:version="0.47+devel r9222 custom"
+   sodipodi:docname="battery-critical-charging-symbolic.svg">
+<style type="text/css">
+<![CDATA[rect,path {
+ fill:#000000 !important;
+ /* fill-opacity:1 !important; */
+}
+
+.critical {
+  fill: red !important;
+  }]]>
+</style>
+
+  <metadata
+     id="metadata84369">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="640"
+     inkscape:window-height="480"
+     id="namedview84367"
+     showgrid="false"
+     inkscape:zoom="21.125"
+     inkscape:cx="8"
+     inkscape:cy="8"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg7384" />
+  <title
+     id="title9167">Moblin Icon Theme</title>
+  <defs
+     id="defs7386" />
+  <g
+     transform="translate(-179.99975,-236.00025)"
+     id="layer3"
+     style="display:inline">
+    <path
+       d="m 182.99975,247 0,2 3.00025,0 0,-2 -3.00025,0 z"
+       id="path6306"
+       style="fill:#bebebe;fill-opacity:1;stroke:none"
+       class="critical"
+       inkscape:label="crit" />
+    <path
+       d="m 183.46875,236.03125 c -0.49033,0 -0.79607,0.22845 -1.03125,0.46875 -0.23518,0.2403 -0.4375,0.55851 -0.4375,1.03125 l 0,0.46875 -1,0 -1,0 0,1 0,12 0,1 1,0 7,0 0,-2 -6,0 0,-10 1,0 1,0 0,-1 0,-0.96875 3,0 0,0.96875 0,1 1,0 1,0 0,3 2,0 0,-4 0,-1 -1,0 -1,0 0,-0.34375 0,-0.0312 c -0.0239,-0.4306 -0.17024,-0.75229 -0.40625,-1.03125 -0.22373,-0.26444 -0.62669,-0.52931 -1.15625,-0.53125 l 0,-0.0312 -0.0625,0 -3.90625,0 z"
+       id="path6308"
+       style="font-size:medium;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;color:#000000;fill:#bebebe;fill-opacity:1;stroke:none;stroke-width:2;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Abandoned Bitplane;-inkscape-font-specification:Abandoned Bitplane" />
+    <path
+       d="m 190.875,244 a 1.0001,1.0001 0 0 0 -0.59375,0.28125 l -3,3 A 1.0001,1.0001 0 0 0 188,249 l 2.5625,0 -1.28125,1.28125 a 1.016466,1.016466 0 1 0 1.4375,1.4375 l 3,-3 A 1.0001,1.0001 0 0 0 193,247 l -2.5625,0 1.28125,-1.28125 A 1.0001,1.0001 0 0 0 190.875,244 z"
+       id="path6312"
+       style="font-size:medium;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;color:#000000;fill:#bebebe;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Abandoned Bitplane;-inkscape-font-specification:Abandoned Bitplane" />
+    <rect
+       width="1"
+       height="1"
+       x="193"
+       y="247"
+       id="rect6314"
+       style="color:#000000;fill:#bebebe;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+    <rect
+       width="1"
+       height="1"
+       x="187"
+       y="248"
+       id="rect6316"
+       style="color:#000000;fill:#bebebe;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+    <rect
+       width="1"
+       height="1"
+       x="191"
+       y="244"
+       id="rect6318"
+       style="color:#000000;fill:#bebebe;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+    <rect
+       width="1"
+       height="1"
+       x="189"
+       y="251"
+       id="rect6320"
+       style="color:#000000;fill:#bebebe;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+    <path
+       d="m 190.15625,244.4375 -2,3 1.6875,1.125 2,-3 -1.6875,-1.125 z"
+       id="path6322"
+       style="font-size:medium;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;color:#000000;fill:#bebebe;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Abandoned Bitplane;-inkscape-font-specification:Abandoned Bitplane" />
+    <path
+       d="m 191.15625,247.4375 -2,3 1.6875,1.125 2,-3 -1.6875,-1.125 z"
+       id="path6324"
+       style="font-size:medium;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;color:#000000;fill:#bebebe;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Abandoned Bitplane;-inkscape-font-specification:Abandoned Bitplane" />
+    <path
+       d="m 189,244 2,-2 -2,0 0,2 z"
+       id="path6326"
+       style="color:#000000;fill:#bebebe;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+  </g>
+  <g
+     transform="translate(-179.99975,-236.00025)"
+     id="layer2" />
+  <g
+     transform="translate(-179.99975,-236.00025)"
+     id="layer1">
+  </g>
+</svg>

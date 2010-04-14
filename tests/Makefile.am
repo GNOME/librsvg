@@ -2,7 +2,8 @@ SUBDIRS=pdiff .
 
 TESTS = 		\
 	rsvg-test	\
-	dimensions
+	dimensions	\
+	styles
 
 LDADD = $(top_builddir)/librsvg-2.la		\
 	$(top_builddir)/tests/pdiff/libpdiff.la

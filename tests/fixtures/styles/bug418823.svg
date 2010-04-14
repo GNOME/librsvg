@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="100" height="100" version="1.0">
+
+<defs>
+ <style type="text/css">
+  path        { fill: #ff0000 }
+  #bla        { fill: #00ff00 }
+ </style>
+</defs>
+
+<path id="bla" d="M 50,20 L 20,80 L 80,80 z " />
+</svg>

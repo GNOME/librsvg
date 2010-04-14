@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg width="100px" height="100px" xmlns="http://www.w3.org/2000/svg"
+xmlns:xlink="http://www.w3.org/1999/xlink">
+<defs>
+  <style type="text/css"><![CDATA[
+    rect { fill: #ff0000; }
+    .class1 { stroke: #0000ff; }
+]]>
+  </style>
+</defs>
+<rect id="target" x="20" y="20" width="50" height="50" class="class1"/>
+</svg>

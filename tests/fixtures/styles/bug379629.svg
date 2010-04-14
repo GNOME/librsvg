@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg"  xmlns:xlink="http://www.w3.org/1999/xlink" version="1.0" width="128" height="128" id="etiquette-icon">
+	<style type="text/css"> 
+<!--really this stuff should in a be external css file	-->
+<![CDATA[
+/*  PLEASE PLEASE PLEASE PLEASE FIX OH THIS RSVG GODS .... you're my only hope  */
+
+
+
+/* non contextural Styles that work well in rsvg*/
+path {stroke: white; stroke-width:1pt;}
+path {stroke: pink !important;stroke-width:5pt !important;}
+
+
+]]>
+	</style>
+	<defs id="definitions">
+		<linearGradient id="WhiteTransparent"><stop style="stop-color:white;stop-opacity:1"   offset="0" /><stop style="stop-color:white;stop-opacity:0"   offset="1" /></linearGradient>
+		<linearGradient id="BlackTransparent"><stop style="stop-color:black;stop-opacity:1"   offset="0" /><stop style="stop-color:black;stop-opacity:0"   offset="1" /></linearGradient>
+		<radialGradient cx="40.31" cy="479.61" r="66.26" fx="40.31" fy="479.61" id="radialGradient6330" xlink:href="#BlackTransparent" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.97,0,0,0.23,24.91,-9.95e-2)" />
+		<linearGradient x1="57.70" y1="21.05" x2="57.70" y2="93.67" id="linearGradient6341" xlink:href="#WhiteTransparent" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1.18,0,0,0.65,7.28,6.28)" />
+		<linearGradient x1="61" y1="103" x2="61" y2="16" id="linearGradient6344" xlink:href="#WhiteTransparent" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1.15,0,0,0.79,2.02,2.17)" />
+		<linearGradient x1="75.97" y1="99.13" x2="75.97" y2="87.68" id="linearGradient6347" xlink:href="#WhiteTransparent" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1.08,0,0,0.86,6.29,-7.90)" />
+		<linearGradient x1="64.00" y1="97.70" x2="64.00" y2="4.53" id="linearGradient6352" xlink:href="#BlackTransparent" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.95,0,0,0.95,3.23,3.22)" />
+		<linearGradient x1="36.93" y1="225.90" x2="36.93" y2="184.39" id="linearGradient6358" xlink:href="#WhiteTransparent" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1.82,0,0,0.46,3.18,5.37)" />	
+	</defs>
+	<g id="computer-monitor">
+
+		<path d="M 127.78,110.55 C 127.78,118.81 99.23,125.50 64.00,125.50 C 28.77,125.50 0.22,118.81 0.22,110.55 C 0.22,102.30 28.77,95.61 64.00,95.61 C 92.89,95.61 117.29,100.11 125.13,106.28 C 126.85,107.64 127.78,109.07 127.78,110.55 z " style="opacity:0.25;fill:url(#radialGradient6330)" id="base_shadow" />
+		<g id="monitor-stand" >
+			<path d="M 47.62,93.47 L 47.62,101.85 C 47.62,107.48 32.30,104.25 32.30,109.87 L 32.30,112.32 L 95.46,112.32 L 95.46,109.23 C 95.46,103.61 80.09,107.48 80.09,101.85 L 80.09,93.47 L 47.62,93.47 z " class="aluminium4" />
+			<path d="M 47.59,101.94 C 47.59,107.01 33.36102,104.6073 32.432943,109.2 L 95.594366,109.2 C 95.594366,103.73809 80.12,107.326 80.12,102 C 70,96.162436 57.357567,96.304 47.59,101.94375 z  " class="high-specularity" style="fill:url(#linearGradient6358)" />
+		</g>
+		<g id="computer-screen" >
+			<path d="M 8.00,11.04 C 8.00,9.16 9.69,8.05 11.57,8.05 L 116.61,8.05 C 118.48,8.05 120.00,10.16 120.00,12.05 L 120.00,92.36 C 120.00,94.25 118.24,96.00 116.37,96.00 L 11.69,96.00 C 9.82,96.00 8.00,94.48 8.00,92.60 L 8.00,11.04 z " class="aluminium1" />
+			<path d="M 8.00,11.04 C 8.00,9.16 9.69,8.05 11.57,8.05 L 116.61,8.05 C 118.48,8.05 120.00,10.16 120.00,12.05 L 120.00,92.36 C 120.00,94.25 118.24,96.00 116.37,96.00 L 11.69,96.00 C 9.82,96.00 8.00,94.48 8.00,92.60 L 8.00,11.04 z " class="low-shade" style="fill:url(#linearGradient6352);" />
+			<path d="M 17.19,17.34 L 110.52,17.34 L 110.52,81.61 L 17.19,81.61 L 17.19,17.34 z " class="skyblue3" />
+
+			<path d="M 107.38,65.19 L 107.38,78.62 L 85.56,78.62 L 41.92,78.62 L 20.10,78.62 L 20.10,65.19 L 107.38,65.19 z " class="low-specularity" style="fill:url(#linearGradient6347)"  />
+			<path d="M 15.70,16.08 L 111.67,16.08 L 111.67,82.69 L 15.70,82.69 L 15.70,16.08 z " class="high-specularity" style="fill:none;stroke:url(#linearGradient6344);" />
+			<path d="M 20.04,19.52 L 107.45,19.52 L 107.45,32.73 C 67.64,33.66 37.09,50.64 20.04,67.62 L 20.04,19.52 z " class="specularity" style="fill:url(#linearGradient6341)" />
+		</g>
+	</g>
+</svg>
