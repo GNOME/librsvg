@@ -1282,6 +1282,9 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
     gboolean found = FALSE;
     GString *klazz_list = NULL;
 
+    if (rsvg_property_bag_size (atts) > 0)
+        rsvg_parse_style_pairs (ctx, state, atts);
+
     /* Try to properly support all of the following, including inheritance:
      * *
      * #id
@@ -1351,8 +1354,6 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 
     if (rsvg_property_bag_size (atts) > 0) {
         const char *value;
-
-        rsvg_parse_style_pairs (ctx, state, atts);
 
         if ((value = rsvg_property_bag_lookup (atts, "style")) != NULL)
             rsvg_parse_style (ctx, state, value);
