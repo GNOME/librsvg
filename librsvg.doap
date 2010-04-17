@@ -13,7 +13,7 @@
   <maintainer>
     <foaf:Person>
       <foaf:name>Hiroyuki Ikezoe</foaf:name>
-      <foaf:mbox rdf:resource="mailto:poincare@ikezoe.net" />
+      <foaf:mbox rdf:resource="mailto:hiikezoe@gnome.org" />
       <gnome:userid>hiikezoe</gnome:userid>
     </foaf:Person>
   </maintainer>
