@@ -46,6 +46,94 @@ _rsvg_basename (const char *file)
     return NULL;
 }
 
+typedef struct _ViewerCbInfo ViewerCbInfo;
+struct _ViewerCbInfo {
+    GtkWidget *window;
+    GtkWidget *popup_menu;
+    GtkWidget *image;           /* the image widget */
+
+    GdkPixbuf *pixbuf;
+    GByteArray *svg_bytes;
+    GtkAccelGroup *accel_group;
+    char *base_uri;
+    char *id;
+    gdouble x_zoom;
+    gdouble y_zoom;
+};
+
+static gboolean
+get_image_size_from_data (ViewerCbInfo *info,
+                          gint *width,
+                          gint *height,
+                          GError **error)
+{
+    RsvgHandle *handle;
+    RsvgDimensionData dimensions;
+    gboolean ret;
+
+    handle = rsvg_handle_new ();
+
+    if (!handle) {
+        g_set_error (error, rsvg_error_quark (), 0, _("Error creating SVG reader"));
+        return FALSE;
+    }
+
+    rsvg_handle_set_base_uri (handle, info->base_uri);
+
+    if (!rsvg_handle_write (handle, info->svg_bytes->data, info->svg_bytes->len, error)) {
+        g_object_unref (handle);
+        return FALSE;
+    }
+
+    if (!rsvg_handle_close (handle, error)) {
+        g_object_unref (handle);
+        return FALSE;
+    }
+
+    ret = rsvg_handle_get_dimensions_sub (handle, &dimensions, info->id);
+    g_object_unref (handle);
+
+    if (width)
+	*width = dimensions.width;
+    if (height)
+	*height = dimensions.height;
+
+    return TRUE;
+}
+
+static gboolean
+calculate_zoom_ratio (ViewerCbInfo *info,
+                      struct RsvgSizeCallbackData *size_data,
+                      GError **error)
+{
+    GdkScreen *screen;
+    gint image_width, image_height;
+    gint screen_width, screen_height;
+    gdouble x_zoom = 1.0, y_zoom = 1.0, zoom;
+
+    if (!get_image_size_from_data (info, &image_width, &image_height, error))
+        return FALSE;
+
+    screen = gdk_screen_get_default ();
+    screen_width = gdk_screen_get_width (screen);
+    screen_height = gdk_screen_get_height (screen);
+
+    if (image_width > screen_width)
+        x_zoom = (gdouble) screen_width / image_width * 0.8;
+
+    if (image_height > screen_height)
+        y_zoom = (gdouble) screen_height / image_height * 0.8;
+
+    zoom = MAX (x_zoom, y_zoom);
+
+    info->x_zoom = zoom;
+    info->y_zoom = zoom;
+    size_data->x_zoom = zoom;
+    size_data->y_zoom = zoom;
+
+    return TRUE;
+}
+
 static GdkPixbuf *
 pixbuf_from_data_with_size_data (const guchar * buff,
                                  size_t len,
@@ -82,21 +170,6 @@ pixbuf_from_data_with_size_data (const guchar * buff,
 
     return retval;
 }
-
-typedef struct _ViewerCbInfo ViewerCbInfo;
-struct _ViewerCbInfo {
-    GtkWidget *window;
-    GtkWidget *popup_menu;
-    GtkWidget *image;           /* the image widget */
-
-    GdkPixbuf *pixbuf;
-    GByteArray *svg_bytes;
-    GtkAccelGroup *accel_group;
-    char *base_uri;
-    char *id;
-    gdouble x_zoom;
-    gdouble y_zoom;
-};
 
 static void
 set_window_title (ViewerCbInfo * info)
@@ -816,6 +889,17 @@ main (int argc, char **argv)
     info.id = id;
     info.x_zoom = x_zoom;
     info.y_zoom = y_zoom;
+
+    if (size_data.type == RSVG_SIZE_ZOOM &&
+        x_zoom == 1.0 && y_zoom == 1.0) {
+        if (!calculate_zoom_ratio (&info, &size_data, &err)) {
+            if (err) {
+                g_print (": %s\n", err->message);
+                g_error_free (err);
+            }
+            return 1;
+        }
+    }
 
     info.pixbuf = 
         pixbuf_from_data_with_size_data (info.svg_bytes->data, info.svg_bytes->len, &size_data,
