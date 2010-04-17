@@ -286,6 +286,23 @@ GTK_DOC_CHECK([1.0])
 AM_CONDITIONAL(GTK_DOC_INSTALLED, $gtk_doc_installed)
 
 dnl ===========================================================================
+dnl Do we build the miscellaenous tools provided with librsvg ?
+
+AC_ARG_ENABLE(tools,
+              AC_HELP_STRING([--disable-tools],
+                             [do not build miscellaenous tools [default=no]]),
+              [build_misc_tools=$enableval],
+              [build_misc_tools=yes])
+
+AC_MSG_CHECKING(whether to build miscellaenous tools)
+if test "x$build_misc_tools" = "xyes" ; then
+	AC_MSG_RESULT(yes)
+else
+	AC_MSG_RESULT(no)
+fi
+AM_CONDITIONAL([BUILD_MISC_TOOLS], [test "x$build_misc_tools" = "xyes"])
+
+dnl ===========================================================================
 
 m4_copy([AC_DEFUN],[glib_DEFUN])
 glib_DEFUN([GLIB_LC_MESSAGES],
@@ -334,6 +351,7 @@ librsvg-$LIBRSVG_VERSION
 	
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
 	Build theme engine:             ${enable_gtk_theme}
+	Build miscellaenous tools:      ${build_misc_tools}
 	Handle svgz files:              ${test_gsf}
 	Use GIO:                        ${test_gio}
 	Use libcroco for css parsing:   ${test_croco}

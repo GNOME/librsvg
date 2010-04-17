@@ -8,7 +8,9 @@ SUBDIRS = . gdk-pixbuf-loader gtk-engine data tests doc
 
 lib_LTLIBRARIES = librsvg-2.la
 bin_PROGRAMS = rsvg-convert $(target_rsvg_view)
+if BUILD_MISC_TOOLS
 noinst_PROGRAMS = test-performance rsvg-dimensions
+endif
 
 man_MANS = rsvg.1
 
