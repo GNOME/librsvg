@@ -94,23 +94,61 @@ struct _ViewerCbInfo {
     GtkAccelGroup *accel_group;
     char *base_uri;
     char *id;
+    gdouble x_zoom;
+    gdouble y_zoom;
 };
 
 static void
-zoom_image (ViewerCbInfo * info, gint width, gint height)
+set_window_title (ViewerCbInfo * info)
+{
+    char *title;
+    gchar *zoom_string;
+
+    if (info->x_zoom != info->y_zoom) {
+        zoom_string = g_strdup_printf ("%4d%% : %4d%%",
+                                       (gint) (info->x_zoom * 100),
+                                       (gint) (info->y_zoom * 100));
+    } else {
+        zoom_string = g_strdup_printf ("%4d%%",
+                                       (gint) (info->x_zoom * 100));
+    }
+
+    if (info->id) {
+	title = g_strdup_printf ("%s#%s (%s) — %s",
+                                 info->base_uri, info->id,
+                                 zoom_string,
+                                 _("SVG Viewer"));
+    } else {
+	title = g_strdup_printf ("%s (%s) — %s",
+                                 info->base_uri,
+                                 zoom_string,
+                                 _("SVG Viewer"));
+    }
+    gtk_window_set_title (GTK_WINDOW (info->window), title);
+    g_free (title);
+    g_free (zoom_string);
+}
+
+static void
+zoom_image (ViewerCbInfo * info, gdouble factor)
 {
     struct RsvgSizeCallbackData size_data;
     GdkPixbuf *save_pixbuf = info->pixbuf;
 
+    info->x_zoom *= factor;
+    info->y_zoom *= factor;
+
     size_data.type = RSVG_SIZE_WH;
-    size_data.width = width;
-    size_data.height = height;
+    size_data.width = gdk_pixbuf_get_width (info->pixbuf) * factor;
+    size_data.height = gdk_pixbuf_get_height (info->pixbuf) * factor;
     size_data.keep_aspect_ratio = FALSE;
 
     info->pixbuf =
         pixbuf_from_data_with_size_data (info->svg_bytes->data, info->svg_bytes->len,
                                          &size_data, info->base_uri, info->id, NULL);
     gtk_image_set_from_pixbuf (GTK_IMAGE (info->image), info->pixbuf);
+
+    set_window_title (info);
 
     if (save_pixbuf)
         g_object_unref (save_pixbuf);
@@ -121,8 +159,7 @@ zoom_in (GObject * ignored, ViewerCbInfo * info)
 {
     if (!info->pixbuf)
         return;
-    zoom_image (info, gdk_pixbuf_get_width (info->pixbuf) * 1.25,
-                gdk_pixbuf_get_height (info->pixbuf) * 1.25);
+    zoom_image (info, 1.25);
 }
 
 static void
@@ -130,8 +167,7 @@ zoom_out (GObject * ignored, ViewerCbInfo * info)
 {
     if (!info->pixbuf)
         return;
-    zoom_image (info, gdk_pixbuf_get_width (info->pixbuf) / 1.25,
-                gdk_pixbuf_get_height (info->pixbuf) / 1.25);
+    zoom_image (info, 1. / 1.25);
 }
 
 static void
@@ -575,20 +611,10 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char *color)
     } else
 #endif
     {
-        char *title;
-
         win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
         win_width = DEFAULT_WIDTH;
         win_height = DEFAULT_HEIGHT;
-
-        if (info->id) {
-            title = g_strdup_printf ("%s#%s — %s", info->base_uri, info->id, _("SVG Viewer"));
-        } else {
-            title = g_strdup_printf ("%s — %s", info->base_uri,  _("SVG Viewer"));
-        }
-        gtk_window_set_title (GTK_WINDOW (win), title);
-        g_free (title);
     }
 
     populate_window (win, info, xid, win_width, win_height);
@@ -626,8 +652,11 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char *color)
         XReparentWindow (GDK_WINDOW_XDISPLAY (gtk_widget_get_window(win)),
                          GDK_WINDOW_XID (gtk_widget_get_window(win)), xid, 0, 0);
         XMapWindow (GDK_WINDOW_XDISPLAY (gtk_widget_get_window(win)), GDK_WINDOW_XID (gtk_widget_get_window(win)));
-    }
+    } else
 #endif
+    {
+        set_window_title (info);
+    }
 }
 
 int
@@ -785,6 +814,8 @@ main (int argc, char **argv)
 
     info.base_uri = base_uri;
     info.id = id;
+    info.x_zoom = x_zoom;
+    info.y_zoom = y_zoom;
 
     info.pixbuf = 
         pixbuf_from_data_with_size_data (info.svg_bytes->data, info.svg_bytes->len, &size_data,
