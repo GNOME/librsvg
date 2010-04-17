@@ -216,6 +216,8 @@ _rsvg_node_text_length_children (RsvgNode * self, RsvgDrawingCtx * ctx,
     int out = FALSE;
     for (i = 0; i < self->children->len; i++) {
         RsvgNode *node = g_ptr_array_index (self->children, i);
+        rsvg_state_push (ctx);
+        rsvg_state_reinherit_top (ctx, node->state, 0);
         if (!strcmp (node->type->str, "RSVG_NODE_CHARS")) {
             RsvgNodeChars *chars = (RsvgNodeChars *) node;
             GString *str = _rsvg_text_chomp (rsvg_state_current (ctx), chars->contents, lastwasspace);
@@ -228,6 +230,7 @@ _rsvg_node_text_length_children (RsvgNode * self, RsvgDrawingCtx * ctx,
             RsvgNodeTref *tref = (RsvgNodeTref *) node;
             out = _rsvg_node_text_length_tref (tref, ctx, x, lastwasspace);
         }
+        rsvg_state_pop (ctx);
         if (out)
             break;
     }
@@ -588,8 +591,12 @@ rsvg_text_layout_new (RsvgDrawingCtx * ctx, RsvgState * state, const char *text)
 {
     RsvgTextLayout *layout;
 
-    if (ctx->pango_context == NULL)
-        ctx->pango_context = rsvg_text_get_pango_context (ctx);
+    if (ctx->pango_context == NULL) {
+        if (ctx->render->create_pango_context)
+            ctx->pango_context = ctx->render->create_pango_context (ctx);
+        else
+            ctx->pango_context = rsvg_text_get_pango_context (ctx);
+    }
 
     layout = g_new0 (RsvgTextLayout, 1);
 
