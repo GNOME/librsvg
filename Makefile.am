@@ -4,13 +4,10 @@ else
 target_rsvg_view =
 endif
 
-SUBDIRS = . gdk-pixbuf-loader gtk-engine data tests doc
+SUBDIRS = . gdk-pixbuf-loader gtk-engine data tests tools doc
 
 lib_LTLIBRARIES = librsvg-2.la
 bin_PROGRAMS = rsvg-convert $(target_rsvg_view)
-if BUILD_MISC_TOOLS
-noinst_PROGRAMS = test-performance rsvg-dimensions
-endif
 
 man_MANS = rsvg.1
 
@@ -105,16 +102,6 @@ rsvg_convert_SOURCES=rsvg-convert.c
 rsvg_convert_LDFLAGS =
 rsvg_convert_DEPENDENCIES = $(DEPS)
 rsvg_convert_LDADD = $(LDADDS) $(libm)
-
-test_performance_SOURCES=test-performance.c
-test_performance_LDFLAGS =
-test_performance_DEPENDENCIES = $(DEPS)
-test_performance_LDADD = $(LDADDS) $(libm)
-
-rsvg_dimensions_SOURCES=rsvg-dimensions.c
-rsvg_dimensions_LDFLAGS =
-rsvg_dimensions_DEPENDENCIES = $(DEPS)
-rsvg_dimensions_LDADD = $(LDADDS) $(libm)
 
 rsvg_view_SOURCES = 		\
 	test-display.c
