@@ -72,7 +72,7 @@ read_contents (const gchar *file_name, guint8 **contents, gsize *length)
 int
 main (int argc, char **argv)
 {
-    int i, count = 10;
+    int i, j, count = 10;
     GTimer *timer;
 
     GOptionContext *g_option_context;
@@ -122,56 +122,56 @@ main (int argc, char **argv)
         while (args[n_args] != NULL)
             n_args++;
 
-    if (n_args != 1) {
+    if (n_args < 1) {
         g_print (_("Must specify a SVG file\n"));
         exit (EXIT_FAILURE);
     }
 
     rsvg_init ();
 
-    fprintf (stdout, "File '%s'\n", args[0]);
+    for (j = 0; j < n_args; j++) {
+        if (!read_contents (args[j], &contents, &length))
+            continue;
 
-    if (!read_contents (args[0], &contents, &length))
-        exit (EXIT_FAILURE);
-
-    handle = rsvg_handle_new_from_data (contents, length, NULL);
-    if (!handle)
-        exit (EXIT_FAILURE);
-
-    rsvg_handle_get_dimensions (handle, &dimensions);
-    /* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
-    if (width == -1 && height == -1) {
-        width = dimensions.width * x_zoom;
-        height = dimensions.height * y_zoom;
-    } else if (x_zoom == 1.0 && y_zoom == 1.0) {
-        /* if both are unspecified, assume user wants to resize pixbuf in at least 1 dimension */
-    } else { /* assume the user wants to zoom the pixbuf, but cap the maximum size */
-        if (dimensions.width * x_zoom < width)
-            width = dimensions.width * x_zoom;
-        if (dimensions.height * y_zoom < height)
-            height = dimensions.height * y_zoom;
-    }
-    g_object_unref (handle);
-
-    image = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
-    cr = cairo_create (image);
-    cairo_surface_destroy (image);
-
-    timer = g_timer_new ();
-    g_timer_start (timer);
-
-    for (i = 0; i < count; i++) {
         handle = rsvg_handle_new_from_data (contents, length, NULL);
-        cairo_scale (cr, (double) width / dimensions.width, (double) height / dimensions.height);
-        rsvg_handle_render_cairo (handle, cr);
+        if (!handle)
+            continue;
+
+        rsvg_handle_get_dimensions (handle, &dimensions);
+        /* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
+        if (width == -1 && height == -1) {
+            width = dimensions.width * x_zoom;
+            height = dimensions.height * y_zoom;
+        } else if (x_zoom == 1.0 && y_zoom == 1.0) {
+            /* if both are unspecified, assume user wants to resize pixbuf in at least 1 dimension */
+        } else { /* assume the user wants to zoom the pixbuf, but cap the maximum size */
+            if (dimensions.width * x_zoom < width)
+                width = dimensions.width * x_zoom;
+            if (dimensions.height * y_zoom < height)
+                height = dimensions.height * y_zoom;
+        }
         g_object_unref (handle);
+
+        image = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
+        cr = cairo_create (image);
+        cairo_surface_destroy (image);
+
+        timer = g_timer_new ();
+        g_timer_start (timer);
+
+        for (i = 0; i < count; i++) {
+            handle = rsvg_handle_new_from_data (contents, length, NULL);
+            cairo_scale (cr, (double) width / dimensions.width, (double) height / dimensions.height);
+            rsvg_handle_render_cairo (handle, cr);
+            g_object_unref (handle);
+        }
+
+        g_print ("%-50s\t\t%g(s)\n", args[j], g_timer_elapsed (timer, NULL) / count);
+        g_timer_destroy (timer);
+
+        g_free (contents);
+        cairo_destroy (cr);
     }
-
-    fprintf (stdout, "Rendering took %g(s)\n", g_timer_elapsed (timer, NULL) / count);
-    g_timer_destroy (timer);
-
-    g_free (contents);
-    cairo_destroy (cr);
 
     rsvg_term ();
 
