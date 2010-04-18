@@ -1,4 +1,4 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 8; tab-width: 8 -*-
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*-
 
    test-performance.c: performance tests.
  
@@ -30,7 +30,44 @@
 #include <stdlib.h>
 
 #include "rsvg.h"
+#include "rsvg-cairo.h"
 #include "rsvg-private.h"
+
+static gboolean
+read_contents (const gchar *file_name, guint8 **contents, gsize *length)
+{
+    GFile *file;
+    GFileInputStream *input_stream;
+    gboolean success = FALSE;
+
+    file = g_file_new_for_commandline_arg (file_name);
+    input_stream = g_file_read (file, NULL, NULL);
+    if (input_stream) {
+        GFileInfo *file_info;
+
+        file_info = g_file_input_stream_query_info (input_stream,
+                                                    G_FILE_ATTRIBUTE_STANDARD_SIZE,
+                                                    NULL, NULL);
+        if (file_info) {
+            gsize bytes_read;
+
+            *length = g_file_info_get_size (file_info);
+            *contents = (guint8 *) g_new (guint8*, *length);
+            success = g_input_stream_read_all (G_INPUT_STREAM(input_stream),
+                                               *contents,
+                                               *length,
+                                               &bytes_read,
+                                               NULL,
+                                               NULL);
+            g_object_unref (file_info);
+        }
+        g_object_unref (input_stream);
+    }
+
+    g_object_unref (file);
+
+    return success;
+}
 
 int
 main (int argc, char **argv)
@@ -48,7 +85,12 @@ main (int argc, char **argv)
 
     char **args;
     gint n_args = 0;
-    GdkPixbuf *pixbuf;
+    cairo_surface_t *image;
+    cairo_t *cr;
+    guint8 *contents = NULL;
+    gsize length;
+    RsvgHandle *handle;
+    RsvgDimensionData dimensions;
 
     GOptionEntry options_table[] = {
         {"dpi", 'd', 0, G_OPTION_ARG_DOUBLE, &dpi, "pixels per inch", "<float>"},
@@ -66,14 +108,14 @@ main (int argc, char **argv)
     g_option_context_add_main_entries (g_option_context, options_table, NULL);
     g_option_context_set_help_enabled (g_option_context, TRUE);
     if (!g_option_context_parse (g_option_context, &argc, &argv, NULL)) {
-        exit (1);
+        exit (EXIT_FAILURE);
     }
 
     g_option_context_free (g_option_context);
 
     if (bVersion != 0) {
         g_print ("test-performance version %s\n", VERSION);
-        return 0;
+        exit (EXIT_SUCCESS);
     }
 
     if (args)
@@ -82,33 +124,54 @@ main (int argc, char **argv)
 
     if (n_args != 1) {
         g_print (_("Must specify a SVG file\n"));
-        return 1;
+        exit (EXIT_FAILURE);
     }
 
     rsvg_init ();
 
     fprintf (stdout, "File '%s'\n", args[0]);
 
+    if (!read_contents (args[0], &contents, &length))
+        exit (EXIT_FAILURE);
+
+    handle = rsvg_handle_new_from_data (contents, length, NULL);
+    if (!handle)
+        exit (EXIT_FAILURE);
+
+    rsvg_handle_get_dimensions (handle, &dimensions);
+    /* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
+    if (width == -1 && height == -1) {
+        width = dimensions.width * x_zoom;
+        height = dimensions.height * y_zoom;
+    } else if (x_zoom == 1.0 && y_zoom == 1.0) {
+        /* if both are unspecified, assume user wants to resize pixbuf in at least 1 dimension */
+    } else { /* assume the user wants to zoom the pixbuf, but cap the maximum size */
+        if (dimensions.width * x_zoom < width)
+            width = dimensions.width * x_zoom;
+        if (dimensions.height * y_zoom < height)
+            height = dimensions.height * y_zoom;
+    }
+    g_object_unref (handle);
+
+    image = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
+    cr = cairo_create (image);
+    cairo_surface_destroy (image);
+
     timer = g_timer_new ();
     g_timer_start (timer);
 
     for (i = 0; i < count; i++) {
-        /* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
-        if (width == -1 && height == -1)
-            pixbuf = rsvg_pixbuf_from_file_at_zoom (args[0], x_zoom, y_zoom, NULL);
-        /* if both are unspecified, assume user wants to resize pixbuf in at least 1 dimension */
-        else if (x_zoom == 1.0 && y_zoom == 1.0)
-            pixbuf = rsvg_pixbuf_from_file_at_size (args[0], width, height, NULL);
-        else
-            /* assume the user wants to zoom the pixbuf, but cap the maximum size */
-            pixbuf = rsvg_pixbuf_from_file_at_zoom_with_max (args[0], x_zoom, y_zoom,
-                                                             width, height, NULL);
-
-        g_object_unref (pixbuf);
+        handle = rsvg_handle_new_from_data (contents, length, NULL);
+        cairo_scale (cr, (double) width / dimensions.width, (double) height / dimensions.height);
+        rsvg_handle_render_cairo (handle, cr);
+        g_object_unref (handle);
     }
 
     fprintf (stdout, "Rendering took %g(s)\n", g_timer_elapsed (timer, NULL) / count);
     g_timer_destroy (timer);
+
+    g_free (contents);
+    cairo_destroy (cr);
 
     rsvg_term ();
 
