@@ -134,8 +134,10 @@ main (int argc, char **argv)
             continue;
 
         handle = rsvg_handle_new_from_data (contents, length, NULL);
-        if (!handle)
+        if (!handle) {
+            g_free (contents);
             continue;
+        }
 
         rsvg_handle_get_dimensions (handle, &dimensions);
         /* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
@@ -161,8 +163,10 @@ main (int argc, char **argv)
 
         for (i = 0; i < count; i++) {
             handle = rsvg_handle_new_from_data (contents, length, NULL);
+            cairo_save (cr);
             cairo_scale (cr, (double) width / dimensions.width, (double) height / dimensions.height);
             rsvg_handle_render_cairo (handle, cr);
+            cairo_restore (cr);
             g_object_unref (handle);
         }
 
@@ -177,3 +181,4 @@ main (int argc, char **argv)
 
     return 0;
 }
+/* vim: set ts=4 nowrap ai expandtab sw=4: */
