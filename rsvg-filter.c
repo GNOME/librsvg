@@ -746,7 +746,7 @@ rsvg_filter_blend (RsvgFilterPrimitiveBlendMode mode, GdkPixbuf * in, GdkPixbuf 
     if (boundarys.x0 < 0)
         boundarys.x0 = 0;
     if (boundarys.y0 < 0)
-        boundarys.y1 = 0;
+        boundarys.y0 = 0;
     if (boundarys.x1 >= width)
         boundarys.x1 = width;
     if (boundarys.y1 >= height)
