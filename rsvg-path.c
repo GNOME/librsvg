@@ -419,7 +419,6 @@ rsvg_path_end_of_number (RSVGParsePathCtx * ctx, double val, int sign, int exp_s
       case 's':
       case 'q':
       case 't':
-#ifndef RSVGV_RELATIVE
 	/* rule: even-numbered params are x-relative, odd-numbered
 	   are y-relative */
 	if ((ctx->param & 1) == 0)
@@ -427,15 +426,6 @@ rsvg_path_end_of_number (RSVGParsePathCtx * ctx, double val, int sign, int exp_s
 	else if ((ctx->param & 1) == 1)
 	  val += ctx->cpy;
 	break;
-#else
-	/* rule: even-numbered params are x-relative, odd-numbered
-	   are y-relative */
-	if (ctx->param == 0 || (ctx->param % 2 == 0))
-	  val += ctx->cpx;
-	else
-	  val += ctx->cpy;
-	break;
-#endif
       case 'a':
 	/* rule: sixth and seventh are x and y, rest are not
 	   relative */
