@@ -1052,6 +1052,8 @@ rsvg_real_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
     size_t loc = 0;
 
     while (loc < buflen) {
+        gchar **styles;
+        guint i;
         GString *style_name = g_string_new (NULL);
         GString *style_props = g_string_new (NULL);
 
@@ -1059,11 +1061,10 @@ rsvg_real_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
         while (loc < buflen && g_ascii_isspace (buff[loc]))
             loc++;
 
-        while (loc < buflen && !g_ascii_isspace (buff[loc]))
-            g_string_append_c (style_name, buff[loc++]);
-
         /* advance to the first { that defines the style's properties */
-        while (loc < buflen && buff[loc++] != '{');
+        while (loc < buflen && buff[loc] != '{')
+            g_string_append_c (style_name, buff[loc++]);
+        loc++;
 
         while (loc < buflen && g_ascii_isspace (buff[loc]))
             loc++;
@@ -1085,7 +1086,11 @@ rsvg_real_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
             }
         }
 
-        rsvg_css_define_style (ctx, style_name->str, style_props->str);
+        styles = g_strsplit (style_name->str, ",", -1);
+        for (i = 0; i < g_strv_length (styles); i++)
+            rsvg_css_define_style (ctx, g_strstrip (styles[i]), style_props->str);
+        g_strfreev (styles);
+
         g_string_free (style_name, TRUE);
         g_string_free (style_props, TRUE);
 
