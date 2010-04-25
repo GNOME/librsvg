@@ -1,4 +1,6 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*-
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
+/*
 
    rsvg-convert.c: Command line utility for exercising rsvg with cairo.
  
@@ -109,8 +111,8 @@ static cairo_status_t
 rsvg_cairo_write_func (void *closure, const unsigned char *data, unsigned int length)
 {
     if (fwrite (data, 1, length, (FILE *) closure) == length)
-		return CAIRO_STATUS_SUCCESS;
-	return CAIRO_STATUS_WRITE_ERROR;
+        return CAIRO_STATUS_SUCCESS;
+    return CAIRO_STATUS_WRITE_ERROR;
 }
 
 int
@@ -172,10 +174,10 @@ main (int argc, char **argv)
         {NULL}
     };
 
-	/* Set the locale so that UTF-8 filenames work */
-	setlocale(LC_ALL, "");
+    /* Set the locale so that UTF-8 filenames work */
+    setlocale(LC_ALL, "");
 
-	g_thread_init(NULL);
+    g_thread_init(NULL);
 
     g_option_context = g_option_context_new (_("- SVG Converter"));
     g_option_context_add_main_entries (g_option_context, options_table, NULL);
