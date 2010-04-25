@@ -1,3 +1,5 @@
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /* Libart_LGPL - library of basic graphic primitives
  * Copyright (C) 1998 Raph Levien
  *
