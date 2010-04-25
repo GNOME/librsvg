@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-file-util.c: SAX-based renderer for SVG files into a GdkPixbuf.
 
@@ -89,7 +90,6 @@ _rsvg_size_callback (int *width, int *height, gpointer data)
         break;
 
     case RSVG_SIZE_WH:
-
         if (real_data->width != -1)
             *width = real_data->width;
         if (real_data->height != -1)

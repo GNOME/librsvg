@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
  * test-display: 
  *
@@ -41,7 +42,7 @@ static char *
 _rsvg_basename (const char *file)
 {
     if (file && *file)
-	return g_path_get_basename (file);
+        return g_path_get_basename (file);
 
     return NULL;
 }
@@ -94,9 +95,9 @@ get_image_size_from_data (ViewerCbInfo *info,
     g_object_unref (handle);
 
     if (width)
-	*width = dimensions.width;
+        *width = dimensions.width;
     if (height)
-	*height = dimensions.height;
+        *height = dimensions.height;
 
     return TRUE;
 }
@@ -187,12 +188,12 @@ set_window_title (ViewerCbInfo * info)
     }
 
     if (info->id) {
-	title = g_strdup_printf ("%s#%s (%s) — %s",
+        title = g_strdup_printf ("%s#%s (%s) — %s",
                                  info->base_uri, info->id,
                                  zoom_string,
                                  _("SVG Viewer"));
     } else {
-	title = g_strdup_printf ("%s (%s) — %s",
+        title = g_strdup_printf ("%s (%s) — %s",
                                  info->base_uri,
                                  zoom_string,
                                  _("SVG Viewer"));
@@ -283,7 +284,7 @@ begin_print (GtkPrintOperation *operation,
 			 GtkPrintContext   *context,
 			 gpointer           user_data)
 {
-	gtk_print_operation_set_n_pages(operation, 1);
+	gtk_print_operation_set_n_pages (operation, 1);
 }
 
 static void
@@ -302,16 +303,16 @@ draw_page (GtkPrintOperation *operation,
 	page_height = gtk_print_context_get_height (context);
 
 	{
-		RsvgHandle *handle;
-		RsvgDimensionData svg_dimensions;
-		struct RsvgSizeCallbackData size_data;
+        RsvgHandle *handle;
+        RsvgDimensionData svg_dimensions;
+        struct RsvgSizeCallbackData size_data;
 
-		/* should not fail */
-		handle = rsvg_handle_new_from_data(info->svg_bytes->data, info->svg_bytes->len, NULL);
-		rsvg_handle_set_base_uri (handle, info->base_uri);
-		rsvg_handle_set_dpi_x_y (handle, gtk_print_context_get_dpi_x(context), 
-								 gtk_print_context_get_dpi_y(context));
-		rsvg_handle_get_dimensions(handle, &svg_dimensions);
+        /* should not fail */
+        handle = rsvg_handle_new_from_data(info->svg_bytes->data, info->svg_bytes->len, NULL);
+        rsvg_handle_set_base_uri (handle, info->base_uri);
+        rsvg_handle_set_dpi_x_y (handle, gtk_print_context_get_dpi_x(context), 
+                                 gtk_print_context_get_dpi_y(context));
+        rsvg_handle_get_dimensions(handle, &svg_dimensions);
 
         if (svg_dimensions.width > page_width || svg_dimensions.height > page_height) {
             /* scale down the image to the page's size, while preserving the aspect ratio */
@@ -325,15 +326,15 @@ draw_page (GtkPrintOperation *operation,
             }
         }
 
-		size_data.type = RSVG_SIZE_WH;
-		size_data.width = svg_dimensions.width;
-		size_data.height = svg_dimensions.height;
-		size_data.keep_aspect_ratio = FALSE;
-		rsvg_handle_set_size_callback (handle, _rsvg_size_callback, &size_data, NULL);
+        size_data.type = RSVG_SIZE_WH;
+        size_data.width = svg_dimensions.width;
+        size_data.height = svg_dimensions.height;
+        size_data.keep_aspect_ratio = FALSE;
+        rsvg_handle_set_size_callback (handle, _rsvg_size_callback, &size_data, NULL);
 
-		rsvg_handle_render_cairo(handle, cr);
+        rsvg_handle_render_cairo(handle, cr);
 
-		g_object_unref (handle);
+        g_object_unref (handle);
 	}
 }
 
@@ -788,7 +789,7 @@ main (int argc, char **argv)
     };
 
 	/* Set the locale so that UTF-8 filenames work */
-	setlocale(LC_ALL, "");
+    setlocale(LC_ALL, "");
 
     g_thread_init (NULL);
 
