@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg.c: SAX-based renderer for SVG files into a GdkPixbuf.
 
@@ -98,19 +99,19 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
     cairo_surface_destroy (surface);
 
     if (rsvg_handle_render_cairo_sub (handle, cr, id)) {
-		rsvg_cairo_to_pixbuf (pixels, rowstride, dimensions.height);
+        rsvg_cairo_to_pixbuf (pixels, rowstride, dimensions.height);
 
-		output = gdk_pixbuf_new_from_data (pixels,
-										   GDK_COLORSPACE_RGB,
-										   TRUE,
-										   8,
-										   dimensions.width,
-										   dimensions.height,
-										   rowstride,
-										   (GdkPixbufDestroyNotify) rsvg_pixmap_destroy, NULL);
+        output = gdk_pixbuf_new_from_data (pixels,
+                                           GDK_COLORSPACE_RGB,
+                                           TRUE,
+                                           8,
+                                           dimensions.width,
+                                           dimensions.height,
+                                           rowstride,
+                                           (GdkPixbufDestroyNotify) rsvg_pixmap_destroy, NULL);
 	} else {
-		g_free (pixels);
-		output = NULL;
+        g_free (pixels);
+        output = NULL;
 	}
 
     cairo_destroy (cr);

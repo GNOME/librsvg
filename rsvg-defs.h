@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-defs.h : SVG defs utilities
 
@@ -40,7 +41,7 @@ void	     rsvg_defs_set_base_uri	(RsvgDefs * self, gchar * base_uri);
 void	     rsvg_defs_add_resolver	(RsvgDefs * defs, RsvgNode ** tochange, const gchar * name);
 void	     rsvg_defs_resolve_all	(RsvgDefs * defs);
 void	     rsvg_defs_register_name	(RsvgDefs * defs, const char *name, RsvgNode * val);
-void	     rsvg_defs_register_memory	(RsvgDefs * defs, RsvgNode * val);
+void	     rsvg_defs_register_memory  (RsvgDefs * defs, RsvgNode * val);
 
 G_END_DECLS
 #endif
