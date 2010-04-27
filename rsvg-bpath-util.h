@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-bpath-util.h: Path utility functions
 
@@ -58,18 +59,18 @@ struct _RsvgBpathDef {
     int moveto_idx;
 };
 
-RsvgBpathDef *rsvg_bpath_def_new	(void);
-RsvgBpathDef *rsvg_bpath_def_new_from	(RsvgBpath * bpath);
+RsvgBpathDef *rsvg_bpath_def_new        (void);
+RsvgBpathDef *rsvg_bpath_def_new_from   (RsvgBpath * bpath);
 
-void rsvg_bpath_def_free	(RsvgBpathDef * bpd);
+void rsvg_bpath_def_free        (RsvgBpathDef * bpd);
 
-void rsvg_bpath_def_moveto	(RsvgBpathDef * bpd, double x, double y);
-void rsvg_bpath_def_lineto	(RsvgBpathDef * bpd, double x, double y);
-void rsvg_bpath_def_curveto	(RsvgBpathDef * bpd,
-				 double x1, double y1, double x2, double y2, double x3, double y3);
-void rsvg_bpath_def_closepath	(RsvgBpathDef * bpd);
+void rsvg_bpath_def_moveto      (RsvgBpathDef * bpd, double x, double y);
+void rsvg_bpath_def_lineto      (RsvgBpathDef * bpd, double x, double y);
+void rsvg_bpath_def_curveto     (RsvgBpathDef * bpd,
+                                 double x1, double y1, double x2, double y2, double x3, double y3);
+void rsvg_bpath_def_closepath   (RsvgBpathDef * bpd);
 
-void rsvg_bpath_def_art_finish	(RsvgBpathDef * bpd);
+void rsvg_bpath_def_art_finish  (RsvgBpathDef * bpd);
 
 G_END_DECLS
 

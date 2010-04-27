@@ -1,3 +1,5 @@
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /* 
    rsvg-path.c: Parse SVG path element data into bezier path.
  
@@ -81,11 +83,11 @@ rsvg_path_arc_segment (RSVGParsePathCtx * ctx,
 
     rsvg_bpath_def_curveto (ctx->bpath,
                             xc + cosf*x1 - sinf*y1,
-			    yc + sinf*x1 + cosf*y1,
+                            yc + sinf*x1 + cosf*y1,
                             xc + cosf*x2 - sinf*y2,
-			    yc + sinf*x2 + cosf*y2,
+                            yc + sinf*x2 + cosf*y2,
                             xc + cosf*x3 - sinf*y3,
-			    yc + sinf*x3 + cosf*y3);
+                            yc + sinf*x3 + cosf*y3);
 }
 
 /**
@@ -106,18 +108,18 @@ rsvg_path_arc (RSVGParsePathCtx * ctx,
                int large_arc_flag, int sweep_flag, double x, double y)
 {
 
-  /* See Appendix F.6 Elliptical arc implementation notes
-     http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes */
+    /* See Appendix F.6 Elliptical arc implementation notes
+       http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes */
 
-  double f, sinf, cosf;
-  double x1, y1, x2, y2;
-  double x1_, y1_;
-  double cx_, cy_, cx, cy;
-  double gamma;
-  double theta1, delta_theta;
-  double k1, k2, k3, k4, k5;
+    double f, sinf, cosf;
+    double x1, y1, x2, y2;
+    double x1_, y1_;
+    double cx_, cy_, cx, cy;
+    double gamma;
+    double theta1, delta_theta;
+    double k1, k2, k3, k4, k5;
 
-  int i, n_segs;
+    int i, n_segs;
 
     /* Start and end of path segment */
     x1 = ctx->cpx;
@@ -127,7 +129,7 @@ rsvg_path_arc (RSVGParsePathCtx * ctx,
     y2 = y;
 
     if(x1 == x2 && y1 == y2)
-      return;
+        return;
 
     /* X-axis */
     f = x_axis_rotation * M_PI / 180.0;
@@ -136,11 +138,10 @@ rsvg_path_arc (RSVGParsePathCtx * ctx,
 
     /* Check the radius against floading point underflow.
        See http://bugs.debian.org/508443 */
-    if ((fabs(rx) < DBL_EPSILON) || (fabs(ry) < DBL_EPSILON))
-      {
-	rsvg_bpath_def_lineto (ctx->bpath, x, y);
+    if ((fabs(rx) < DBL_EPSILON) || (fabs(ry) < DBL_EPSILON)) {
+        rsvg_bpath_def_lineto (ctx->bpath, x, y);
         return;
-      }
+    }
 
     if(rx < 0)rx = -rx;
     if(ry < 0)ry = -ry;
@@ -152,21 +153,20 @@ rsvg_path_arc (RSVGParsePathCtx * ctx,
     y1_ = -sinf * k1 + cosf * k2;
 
     gamma = (x1_*x1_)/(rx*rx) + (y1_*y1_)/(ry*ry);
-    if(gamma > 1)
-      {
-	rx *= sqrt(gamma);
-	ry *= sqrt(gamma);
-      }
+    if (gamma > 1) {
+        rx *= sqrt(gamma);
+        ry *= sqrt(gamma);
+    }
 
     /* Compute the center */
 
     k1 = rx*rx*y1_*y1_ + ry*ry*x1_*x1_;
     if(k1 == 0)    
-      return;
+        return;
 
     k1 = sqrt(fabs((rx*rx*ry*ry)/k1 - 1));
     if(sweep_flag == large_arc_flag)
-      k1 = -k1;
+        k1 = -k1;
 
     cx_ = k1*rx*y1_/ry;
     cy_ = -k1*ry*x1_/rx;
@@ -202,19 +202,19 @@ rsvg_path_arc (RSVGParsePathCtx * ctx,
     if(k1*k4 - k3*k2 < 0)delta_theta = -delta_theta;
 
     if(sweep_flag && delta_theta < 0)
-      delta_theta += M_PI*2;
+        delta_theta += M_PI*2;
     else if(!sweep_flag && delta_theta > 0)
-      delta_theta -= M_PI*2;
+        delta_theta -= M_PI*2;
    
     /* Now draw the arc */
 
     n_segs = ceil (fabs (delta_theta / (M_PI * 0.5 + 0.001)));
 
     for (i = 0; i < n_segs; i++)
-      rsvg_path_arc_segment (ctx, cx, cy,
-			     theta1 + i * delta_theta / n_segs,
-			     theta1 + (i + 1) * delta_theta / n_segs,
-			     rx, ry, x_axis_rotation);
+        rsvg_path_arc_segment (ctx, cx, cy,
+			                   theta1 + i * delta_theta / n_segs,
+                               theta1 + (i + 1) * delta_theta / n_segs,
+                               rx, ry, x_axis_rotation);
 
     ctx->cpx = x;
     ctx->cpy = y;
@@ -409,40 +409,40 @@ rsvg_path_end_of_number (RSVGParsePathCtx * ctx, double val, int sign, int exp_s
 {
     val *= sign * pow (10, exp_sign * exp);
     if (ctx->rel) {
-      /* Handle relative coordinates. This switch statement attempts
-	 to determine _what_ the coords are relative to. This is
-	 underspecified in the 12 Apr working draft. */
-      switch (ctx->cmd) {
-      case 'l':
-      case 'm':
-      case 'c':
-      case 's':
-      case 'q':
-      case 't':
-	/* rule: even-numbered params are x-relative, odd-numbered
-	   are y-relative */
-	if ((ctx->param & 1) == 0)
-	  val += ctx->cpx;
-	else if ((ctx->param & 1) == 1)
-	  val += ctx->cpy;
-	break;
-      case 'a':
-	/* rule: sixth and seventh are x and y, rest are not
-	   relative */
-	if (ctx->param == 5)
-	  val += ctx->cpx;
-	else if (ctx->param == 6)
-	  val += ctx->cpy;
-	break;
-      case 'h':
-	/* rule: x-relative */
-	val += ctx->cpx;
-	break;
-      case 'v':
-	/* rule: y-relative */
-	val += ctx->cpy;
-	break;
-      }
+        /* Handle relative coordinates. This switch statement attempts
+           to determine _what_ the coords are relative to. This is
+           underspecified in the 12 Apr working draft. */
+        switch (ctx->cmd) {
+        case 'l':
+        case 'm':
+        case 'c':
+        case 's':
+        case 'q':
+        case 't':
+            /* rule: even-numbered params are x-relative, odd-numbered
+               are y-relative */
+            if ((ctx->param & 1) == 0)
+                val += ctx->cpx;
+            else if ((ctx->param & 1) == 1)
+                val += ctx->cpy;
+            break;
+        case 'a':
+            /* rule: sixth and seventh are x and y, rest are not
+               relative */
+            if (ctx->param == 5)
+                val += ctx->cpx;
+            else if (ctx->param == 6)
+                val += ctx->cpy;
+            break;
+        case 'h':
+            /* rule: x-relative */
+            val += ctx->cpx;
+            break;
+        case 'v':
+            /* rule: y-relative */
+            val += ctx->cpy;
+            break;
+        }
     }
     ctx->params[ctx->param++] = val;
     rsvg_parse_path_do_cmd (ctx, FALSE);    
@@ -515,8 +515,8 @@ rsvg_parse_path_data (RSVGParsePathCtx * ctx, const char *data)
             exp_sign = c == '+' ? 1 : -1;
         } else if (in_num) {
             /* end of number */
-	    rsvg_path_end_of_number(ctx, val, sign, exp_sign, exp);
-	    in_num = FALSE;
+            rsvg_path_end_of_number(ctx, val, sign, exp_sign, exp);
+            in_num = FALSE;
         }
 
         if (c == '\0')

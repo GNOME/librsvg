@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-image.c: Image loading and displaying
 
@@ -228,17 +229,17 @@ rsvg_get_file_path (const gchar * filename, const gchar * base_uri)
         absolute_filename = g_strdup (filename);
     } else {
         gchar *tmpcdir;
-	gchar *base_filename;
+        gchar *base_filename;
 
         if (base_uri) {
-	    base_filename = g_filename_from_uri (base_uri, NULL, NULL);
-	    if (base_filename != NULL) {
-		tmpcdir = g_path_get_dirname (base_filename);
-		g_free (base_filename);
-	    } else 
-		return NULL;
-	} else
-	    tmpcdir = g_get_current_dir ();
+            base_filename = g_filename_from_uri (base_uri, NULL, NULL);
+            if (base_filename != NULL) {
+                tmpcdir = g_path_get_dirname (base_filename);
+                g_free (base_filename);
+            } else 
+                return NULL;
+        } else
+            tmpcdir = g_get_current_dir ();
 
         absolute_filename = g_build_filename (tmpcdir, filename, NULL);
         g_free (tmpcdir);
@@ -261,7 +262,7 @@ rsvg_acquire_file_resource (const char *filename, const char *base_uri, GError *
 
     path = rsvg_get_file_path (filename, base_uri);
     if (path == NULL)
-	return NULL;
+        return NULL;
 
     f = fopen (path, "rb");
     g_free (path);
@@ -328,19 +329,19 @@ rsvg_acquire_vfs_resource (const char *filename, const char *base_uri, GError **
         if (base_uri != NULL) {
             GFile *base;
 
-			rsvg_free_error(error);
-			
-			g_object_unref (file);
+            rsvg_free_error (error);
+
+            g_object_unref (file);
 
             base = g_file_new_for_uri (base_uri);
             file = g_file_resolve_relative_path (base, filename);
             g_object_unref (base);
 
-			res = g_file_load_contents (file, NULL, &data, &size, NULL, error);
+            res = g_file_load_contents (file, NULL, &data, &size, NULL, error);
         }
     }
 
-	g_object_unref (file);
+    g_object_unref (file);
 
     if (res) {
         array = g_byte_array_new ();
