@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-styles.h: Handle SVG styles
 
@@ -241,9 +242,9 @@ struct _RsvgState {
 
 RsvgState *rsvg_state_new ();
 
-void rsvg_state_init	    (RsvgState * state);
-void rsvg_state_clone	    (RsvgState * dst, const RsvgState * src);
-void rsvg_state_inherit	    (RsvgState * dst, const RsvgState * src);
+void rsvg_state_init        (RsvgState * state);
+void rsvg_state_clone       (RsvgState * dst, const RsvgState * src);
+void rsvg_state_inherit     (RsvgState * dst, const RsvgState * src);
 void rsvg_state_reinherit   (RsvgState * dst, const RsvgState * src);
 void rsvg_state_dominate    (RsvgState * dst, const RsvgState * src);
 void rsvg_state_override    (RsvgState * dst, const RsvgState * src);
@@ -256,16 +257,16 @@ void rsvg_parse_cssbuffer   (RsvgHandle * ctx, const char *buff, size_t buflen);
 void rsvg_parse_style_attrs (RsvgHandle * ctx, RsvgState * state, const char *tag,
                              const char *klazz, const char *id, RsvgPropertyBag * atts);
 
-gdouble rsvg_viewport_percentage    (gdouble width, gdouble height);
-gdouble rsvg_dpi_percentage	    (RsvgHandle * ctx);
+gdouble rsvg_viewport_percentage (gdouble width, gdouble height);
+gdouble rsvg_dpi_percentage      (RsvgHandle * ctx);
 
-gboolean rsvg_parse_transform	    (double dst[6], const char *src);
+gboolean rsvg_parse_transform   (double dst[6], const char *src);
 
-RsvgState *rsvg_state_parent	(RsvgDrawingCtx * ctx);
-RsvgState *rsvg_state_current	(RsvgDrawingCtx * ctx);
+RsvgState *rsvg_state_parent    (RsvgDrawingCtx * ctx);
+RsvgState *rsvg_state_current   (RsvgDrawingCtx * ctx);
 
-void rsvg_state_pop	(RsvgDrawingCtx * ctx);
-void rsvg_state_push	(RsvgDrawingCtx * ctx);
+void rsvg_state_pop	 (RsvgDrawingCtx * ctx);
+void rsvg_state_push (RsvgDrawingCtx * ctx);
 
 void rsvg_state_reinherit_top	(RsvgDrawingCtx * ctx, RsvgState * state, int dominate);
 

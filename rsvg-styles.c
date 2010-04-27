@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-styles.c: Handle SVG styles
 
@@ -154,10 +155,10 @@ rsvg_state_init (RsvgState * state)
     state->has_endMarker = FALSE;
     state->has_overflow = FALSE;
 
-	state->shape_rendering_type = SHAPE_RENDERING_AUTO;
-	state->has_shape_rendering_type = FALSE;
-	state->text_rendering_type = TEXT_RENDERING_AUTO;
-	state->has_text_rendering_type = FALSE;
+    state->shape_rendering_type = SHAPE_RENDERING_AUTO;
+    state->has_shape_rendering_type = FALSE;
+    state->text_rendering_type = TEXT_RENDERING_AUTO;
+    state->has_text_rendering_type = FALSE;
 
     state->styles = g_hash_table_new_full (g_str_hash, g_str_equal,
                                            g_free, (GDestroyNotify) style_value_data_free);
@@ -278,11 +279,11 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->font_family = g_strdup (src->font_family);
     }
 
-	if (function (dst->has_space_preserve, src->has_space_preserve))
-		dst->space_preserve = src->space_preserve;
+    if (function (dst->has_space_preserve, src->has_space_preserve))
+	dst->space_preserve = src->space_preserve;
 
-	if (function (dst->has_visible, src->has_visible))
-		dst->visible = src->visible;
+    if (function (dst->has_visible, src->has_visible))
+	dst->visible = src->visible;
 
     if (function (dst->has_lang, src->has_lang)) {
         if (dst->has_lang)
@@ -719,29 +720,29 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
         state->dash.offset = _rsvg_css_parse_length (value);
         if (state->dash.offset.length < 0.)
             state->dash.offset.length = 0.;
-	} else if (g_str_equal (name, "shape-rendering")) {
-		state->has_shape_rendering_type = TRUE;
+    } else if (g_str_equal (name, "shape-rendering")) {
+        state->has_shape_rendering_type = TRUE;
 
         if (g_str_equal (value, "auto") || g_str_equal (value, "default"))
-			state->shape_rendering_type = SHAPE_RENDERING_AUTO;
+            state->shape_rendering_type = SHAPE_RENDERING_AUTO;
         else if (g_str_equal (value, "optimizeSpeed"))
-			state->shape_rendering_type = SHAPE_RENDERING_OPTIMIZE_SPEED;
+            state->shape_rendering_type = SHAPE_RENDERING_OPTIMIZE_SPEED;
         else if (g_str_equal (value, "crispEdges"))
-			state->shape_rendering_type = SHAPE_RENDERING_CRISP_EDGES;
+            state->shape_rendering_type = SHAPE_RENDERING_CRISP_EDGES;
         else if (g_str_equal (value, "geometricPrecision"))
-			state->shape_rendering_type = SHAPE_RENDERING_GEOMETRIC_PRECISION;
+            state->shape_rendering_type = SHAPE_RENDERING_GEOMETRIC_PRECISION;
 
-	} else if (g_str_equal (name, "text-rendering")) {
-		state->has_text_rendering_type = TRUE;
+    } else if (g_str_equal (name, "text-rendering")) {
+        state->has_text_rendering_type = TRUE;
 
         if (g_str_equal (value, "auto") || g_str_equal (value, "default"))
-			state->text_rendering_type = TEXT_RENDERING_AUTO;
+            state->text_rendering_type = TEXT_RENDERING_AUTO;
         else if (g_str_equal (value, "optimizeSpeed"))
-			state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_SPEED;
+            state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_SPEED;
         else if (g_str_equal (value, "optimizeLegibility"))
-			state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_LEGIBILITY;
+            state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_LEGIBILITY;
         else if (g_str_equal (value, "geometricPrecision"))
-			state->text_rendering_type = TEXT_RENDERING_GEOMETRIC_PRECISION;
+            state->text_rendering_type = TEXT_RENDERING_GEOMETRIC_PRECISION;
 
     } else if (g_str_equal (name, "stroke-dasharray")) {
         state->has_dash = TRUE;
