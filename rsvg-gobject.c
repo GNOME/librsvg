@@ -53,7 +53,10 @@ instance_init (RsvgHandle * self)
     self->priv->dpi_x = rsvg_internal_dpi_x;
     self->priv->dpi_y = rsvg_internal_dpi_y;
 
-    self->priv->css_props = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    self->priv->css_props = g_hash_table_new_full (g_str_hash,
+                                                   g_str_equal,
+                                                   g_free,
+                                                   (GDestroyNotify) g_hash_table_destroy);
 
     self->priv->ctxt = NULL;
     self->priv->currentnode = NULL;

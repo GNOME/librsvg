@@ -36,6 +36,32 @@
 
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
+typedef struct _StyleValueData {
+    gchar *value;
+    gboolean important;
+} StyleValueData;
+
+static StyleValueData *
+style_value_data_new (const gchar *value, gboolean important)
+{
+    StyleValueData *ret;
+
+    ret = g_new (StyleValueData, 1);
+    ret->value = g_strdup (value);
+    ret->important = important;
+
+    return ret;
+}
+
+static void
+style_value_data_free (StyleValueData *value)
+{
+    if (!value)
+        return;
+    g_free (value->value);
+    g_free (value);
+}
+
 gdouble
 rsvg_viewport_percentage (gdouble width, gdouble height)
 {
@@ -132,6 +158,9 @@ rsvg_state_init (RsvgState * state)
 	state->has_shape_rendering_type = FALSE;
 	state->text_rendering_type = TEXT_RENDERING_AUTO;
 	state->has_text_rendering_type = FALSE;
+
+    state->styles = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                           g_free, (GDestroyNotify) style_value_data_free);
 }
 
 typedef int (*InheritanceFunction) (int dst, int src);
@@ -148,6 +177,8 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
     dst->lang = g_strdup (src->lang);
     rsvg_paint_server_ref (dst->fill);
     rsvg_paint_server_ref (dst->stroke);
+
+    dst->styles = g_hash_table_ref (src->styles);
 
     if (src->dash.n_dash > 0) {
         dst->dash.dash = g_new (gdouble, src->dash.n_dash);
@@ -370,343 +401,358 @@ rsvg_state_finalize (RsvgState * state)
 
     if (state->dash.n_dash != 0)
         g_free (state->dash.dash);
+
+    if (state->styles) {
+        g_hash_table_unref (state->styles);
+        state->styles = NULL;
+    }
 }
 
 /* Parse a CSS2 style argument, setting the SVG context attributes. */
 static void
-rsvg_parse_style_arg (RsvgHandle * ctx, RsvgState * state, const char *str)
+rsvg_parse_style_pair (RsvgHandle * ctx,
+                       RsvgState * state,
+                       const gchar * name,
+                       const gchar * value,
+                       gboolean important)
 {
-    int arg_off;
+    StyleValueData *data;
 
-    arg_off = rsvg_css_param_arg_offset (str);
+    data = g_hash_table_lookup (state->styles, name);
+    if (data && data->important && !important)
+        return;
 
-    if (rsvg_css_param_match (str, "color"))
-        state->current_color = rsvg_css_parse_color (str + arg_off, &state->has_current_color);
-    else if (rsvg_css_param_match (str, "opacity"))
-        state->opacity = rsvg_css_parse_opacity (str + arg_off);
-    else if (rsvg_css_param_match (str, "flood-color"))
-        state->flood_color = rsvg_css_parse_color (str + arg_off, &state->has_flood_color);
-    else if (rsvg_css_param_match (str, "flood-opacity")) {
-        state->flood_opacity = rsvg_css_parse_opacity (str + arg_off);
+    g_hash_table_insert (state->styles,
+                         (gpointer) g_strdup (name),
+                         (gpointer) style_value_data_new (value, important));
+
+    if (g_str_equal (name, "color"))
+        state->current_color = rsvg_css_parse_color (value, &state->has_current_color);
+    else if (g_str_equal (name, "opacity"))
+        state->opacity = rsvg_css_parse_opacity (value);
+    else if (g_str_equal (name, "flood-color"))
+        state->flood_color = rsvg_css_parse_color (value, &state->has_flood_color);
+    else if (g_str_equal (name, "flood-opacity")) {
+        state->flood_opacity = rsvg_css_parse_opacity (value);
         state->has_flood_opacity = TRUE;
-    } else if (rsvg_css_param_match (str, "filter"))
-        state->filter = rsvg_filter_parse (ctx->priv->defs, str + arg_off);
-    else if (rsvg_css_param_match (str, "a:adobe-blending-mode")) {
-        if (!strcmp (str + arg_off, "normal"))
+    } else if (g_str_equal (name, "filter"))
+        state->filter = rsvg_filter_parse (ctx->priv->defs, value);
+    else if (g_str_equal (name, "a:adobe-blending-mode")) {
+        if (g_str_equal (value, "normal"))
             state->adobe_blend = 0;
-        else if (!strcmp (str + arg_off, "multiply"))
+        else if (g_str_equal (value, "multiply"))
             state->adobe_blend = 1;
-        else if (!strcmp (str + arg_off, "screen"))
+        else if (g_str_equal (value, "screen"))
             state->adobe_blend = 2;
-        else if (!strcmp (str + arg_off, "darken"))
+        else if (g_str_equal (value, "darken"))
             state->adobe_blend = 3;
-        else if (!strcmp (str + arg_off, "lighten"))
+        else if (g_str_equal (value, "lighten"))
             state->adobe_blend = 4;
-        else if (!strcmp (str + arg_off, "softlight"))
+        else if (g_str_equal (value, "softlight"))
             state->adobe_blend = 5;
-        else if (!strcmp (str + arg_off, "hardlight"))
+        else if (g_str_equal (value, "hardlight"))
             state->adobe_blend = 6;
-        else if (!strcmp (str + arg_off, "colordodge"))
+        else if (g_str_equal (value, "colordodge"))
             state->adobe_blend = 7;
-        else if (!strcmp (str + arg_off, "colorburn"))
+        else if (g_str_equal (value, "colorburn"))
             state->adobe_blend = 8;
-        else if (!strcmp (str + arg_off, "overlay"))
+        else if (g_str_equal (value, "overlay"))
             state->adobe_blend = 9;
-        else if (!strcmp (str + arg_off, "exclusion"))
+        else if (g_str_equal (value, "exclusion"))
             state->adobe_blend = 10;
-        else if (!strcmp (str + arg_off, "difference"))
+        else if (g_str_equal (value, "difference"))
             state->adobe_blend = 11;
         else
             state->adobe_blend = 0;
-    } else if (rsvg_css_param_match (str, "mask"))
-        state->mask = rsvg_mask_parse (ctx->priv->defs, str + arg_off);
-    else if (rsvg_css_param_match (str, "clip-path")) {
-        state->clip_path_ref = rsvg_clip_path_parse (ctx->priv->defs, str + arg_off);
-    } else if (rsvg_css_param_match (str, "overflow")) {
-        if (strcmp (str + arg_off, "inherit")) {
-            state->overflow = rsvg_css_parse_overflow (str + arg_off, &state->has_overflow);
+    } else if (g_str_equal (name, "mask"))
+        state->mask = rsvg_mask_parse (ctx->priv->defs, value);
+    else if (g_str_equal (name, "clip-path")) {
+        state->clip_path_ref = rsvg_clip_path_parse (ctx->priv->defs, value);
+    } else if (g_str_equal (name, "overflow")) {
+        if (!g_str_equal (value, "inherit")) {
+            state->overflow = rsvg_css_parse_overflow (value, &state->has_overflow);
         }
-    } else if (rsvg_css_param_match (str, "enable-background")) {
-        if (!strcmp (str + arg_off, "new"))
+    } else if (g_str_equal (name, "enable-background")) {
+        if (g_str_equal (value, "new"))
             state->enable_background = RSVG_ENABLE_BACKGROUND_NEW;
         else
             state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
-    } else if (rsvg_css_param_match (str, "comp-op")) {
-        if (!strcmp (str + arg_off, "clear"))
+    } else if (g_str_equal (name, "comp-op")) {
+        if (g_str_equal (value, "clear"))
             state->comp_op = RSVG_COMP_OP_CLEAR;
-        else if (!strcmp (str + arg_off, "src"))
+        else if (g_str_equal (value, "src"))
             state->comp_op = RSVG_COMP_OP_SRC;
-        else if (!strcmp (str + arg_off, "dst"))
+        else if (g_str_equal (value, "dst"))
             state->comp_op = RSVG_COMP_OP_DST;
-        else if (!strcmp (str + arg_off, "src-over"))
+        else if (g_str_equal (value, "src-over"))
             state->comp_op = RSVG_COMP_OP_SRC_OVER;
-        else if (!strcmp (str + arg_off, "dst-over"))
+        else if (g_str_equal (value, "dst-over"))
             state->comp_op = RSVG_COMP_OP_DST_OVER;
-        else if (!strcmp (str + arg_off, "src-in"))
+        else if (g_str_equal (value, "src-in"))
             state->comp_op = RSVG_COMP_OP_SRC_IN;
-        else if (!strcmp (str + arg_off, "dst-in"))
+        else if (g_str_equal (value, "dst-in"))
             state->comp_op = RSVG_COMP_OP_DST_IN;
-        else if (!strcmp (str + arg_off, "src-out"))
+        else if (g_str_equal (value, "src-out"))
             state->comp_op = RSVG_COMP_OP_SRC_OUT;
-        else if (!strcmp (str + arg_off, "dst-out"))
+        else if (g_str_equal (value, "dst-out"))
             state->comp_op = RSVG_COMP_OP_DST_OUT;
-        else if (!strcmp (str + arg_off, "src-atop"))
+        else if (g_str_equal (value, "src-atop"))
             state->comp_op = RSVG_COMP_OP_SRC_ATOP;
-        else if (!strcmp (str + arg_off, "dst-atop"))
+        else if (g_str_equal (value, "dst-atop"))
             state->comp_op = RSVG_COMP_OP_DST_ATOP;
-        else if (!strcmp (str + arg_off, "xor"))
+        else if (g_str_equal (value, "xor"))
             state->comp_op = RSVG_COMP_OP_XOR;
-        else if (!strcmp (str + arg_off, "plus"))
+        else if (g_str_equal (value, "plus"))
             state->comp_op = RSVG_COMP_OP_PLUS;
-        else if (!strcmp (str + arg_off, "multiply"))
+        else if (g_str_equal (value, "multiply"))
             state->comp_op = RSVG_COMP_OP_MULTIPLY;
-        else if (!strcmp (str + arg_off, "screen"))
+        else if (g_str_equal (value, "screen"))
             state->comp_op = RSVG_COMP_OP_SCREEN;
-        else if (!strcmp (str + arg_off, "overlay"))
+        else if (g_str_equal (value, "overlay"))
             state->comp_op = RSVG_COMP_OP_OVERLAY;
-        else if (!strcmp (str + arg_off, "darken"))
+        else if (g_str_equal (value, "darken"))
             state->comp_op = RSVG_COMP_OP_DARKEN;
-        else if (!strcmp (str + arg_off, "lighten"))
+        else if (g_str_equal (value, "lighten"))
             state->comp_op = RSVG_COMP_OP_LIGHTEN;
-        else if (!strcmp (str + arg_off, "color-dodge"))
+        else if (g_str_equal (value, "color-dodge"))
             state->comp_op = RSVG_COMP_OP_COLOR_DODGE;
-        else if (!strcmp (str + arg_off, "color-burn"))
+        else if (g_str_equal (value, "color-burn"))
             state->comp_op = RSVG_COMP_OP_COLOR_BURN;
-        else if (!strcmp (str + arg_off, "hard-light"))
+        else if (g_str_equal (value, "hard-light"))
             state->comp_op = RSVG_COMP_OP_HARD_LIGHT;
-        else if (!strcmp (str + arg_off, "soft-light"))
+        else if (g_str_equal (value, "soft-light"))
             state->comp_op = RSVG_COMP_OP_SOFT_LIGHT;
-        else if (!strcmp (str + arg_off, "difference"))
+        else if (g_str_equal (value, "difference"))
             state->comp_op = RSVG_COMP_OP_DIFFERENCE;
-        else if (!strcmp (str + arg_off, "exclusion"))
+        else if (g_str_equal (value, "exclusion"))
             state->comp_op = RSVG_COMP_OP_EXCLUSION;
         else
             state->comp_op = RSVG_COMP_OP_SRC_OVER;
-    } else if (rsvg_css_param_match (str, "display")) {
+    } else if (g_str_equal (name, "display")) {
         state->has_visible = TRUE;
-        if (!strcmp (str + arg_off, "none"))
+        if (g_str_equal (value, "none"))
             state->visible = FALSE;
-        else if (strcmp (str + arg_off, "inherit") != 0)
+        else if (!g_str_equal (value, "inherit") != 0)
             state->visible = TRUE;
         else
             state->has_visible = FALSE;
-	} else if (rsvg_css_param_match (str, "xml:space")) {
+	} else if (g_str_equal (name, "xml:space")) {
         state->has_space_preserve = TRUE;
-        if (!strcmp (str + arg_off, "default"))
+        if (g_str_equal (value, "default"))
             state->space_preserve = FALSE;
-        else if (strcmp (str + arg_off, "preserve") == 0)
+        else if (!g_str_equal (value, "preserve") == 0)
             state->space_preserve = TRUE;
         else
             state->space_preserve = FALSE;
-    } else if (rsvg_css_param_match (str, "visibility")) {
+    } else if (g_str_equal (name, "visibility")) {
         state->has_visible = TRUE;
-        if (!strcmp (str + arg_off, "visible"))
+        if (g_str_equal (value, "visible"))
             state->visible = TRUE;
-        else if (strcmp (str + arg_off, "inherit") != 0)
+        else if (!g_str_equal (value, "inherit") != 0)
             state->visible = FALSE;     /* collapse or hidden */
         else
             state->has_visible = FALSE;
-    } else if (rsvg_css_param_match (str, "fill")) {
+    } else if (g_str_equal (name, "fill")) {
         RsvgPaintServer *fill = state->fill;
         state->fill =
-            rsvg_paint_server_parse (&state->has_fill_server, ctx->priv->defs, str + arg_off, 0);
+            rsvg_paint_server_parse (&state->has_fill_server, ctx->priv->defs, value, 0);
         rsvg_paint_server_unref (fill);
-    } else if (rsvg_css_param_match (str, "fill-opacity")) {
-        state->fill_opacity = rsvg_css_parse_opacity (str + arg_off);
+    } else if (g_str_equal (name, "fill-opacity")) {
+        state->fill_opacity = rsvg_css_parse_opacity (value);
         state->has_fill_opacity = TRUE;
-    } else if (rsvg_css_param_match (str, "fill-rule")) {
+    } else if (g_str_equal (name, "fill-rule")) {
         state->has_fill_rule = TRUE;
-        if (!strcmp (str + arg_off, "nonzero"))
+        if (g_str_equal (value, "nonzero"))
             state->fill_rule = FILL_RULE_NONZERO;
-        else if (!strcmp (str + arg_off, "evenodd"))
+        else if (g_str_equal (value, "evenodd"))
             state->fill_rule = FILL_RULE_EVENODD;
         else
             state->has_fill_rule = FALSE;
-    } else if (rsvg_css_param_match (str, "clip-rule")) {
+    } else if (g_str_equal (name, "clip-rule")) {
         state->has_clip_rule = TRUE;
-        if (!strcmp (str + arg_off, "nonzero"))
+        if (g_str_equal (value, "nonzero"))
             state->clip_rule = FILL_RULE_NONZERO;
-        else if (!strcmp (str + arg_off, "evenodd"))
+        else if (g_str_equal (value, "evenodd"))
             state->clip_rule = FILL_RULE_EVENODD;
         else
             state->has_clip_rule = FALSE;
-    } else if (rsvg_css_param_match (str, "stroke")) {
+    } else if (g_str_equal (name, "stroke")) {
         RsvgPaintServer *stroke = state->stroke;
 
         state->stroke =
-            rsvg_paint_server_parse (&state->has_stroke_server, ctx->priv->defs, str + arg_off, 0);
+            rsvg_paint_server_parse (&state->has_stroke_server, ctx->priv->defs, value, 0);
 
         rsvg_paint_server_unref (stroke);
-    } else if (rsvg_css_param_match (str, "stroke-width")) {
-        state->stroke_width = _rsvg_css_parse_length (str + arg_off);
+    } else if (g_str_equal (name, "stroke-width")) {
+        state->stroke_width = _rsvg_css_parse_length (value);
         state->has_stroke_width = TRUE;
-    } else if (rsvg_css_param_match (str, "stroke-linecap")) {
+    } else if (g_str_equal (name, "stroke-linecap")) {
         state->has_cap = TRUE;
-        if (!strcmp (str + arg_off, "butt"))
+        if (g_str_equal (value, "butt"))
             state->cap = RSVG_PATH_STROKE_CAP_BUTT;
-        else if (!strcmp (str + arg_off, "round"))
+        else if (g_str_equal (value, "round"))
             state->cap = RSVG_PATH_STROKE_CAP_ROUND;
-        else if (!strcmp (str + arg_off, "square"))
+        else if (g_str_equal (value, "square"))
             state->cap = RSVG_PATH_STROKE_CAP_SQUARE;
         else
-            g_warning (_("unknown line cap style %s\n"), str + arg_off);
-    } else if (rsvg_css_param_match (str, "stroke-opacity")) {
-        state->stroke_opacity = rsvg_css_parse_opacity (str + arg_off);
+            g_warning (_("unknown line cap style %s\n"), value);
+    } else if (g_str_equal (name, "stroke-opacity")) {
+        state->stroke_opacity = rsvg_css_parse_opacity (value);
         state->has_stroke_opacity = TRUE;
-    } else if (rsvg_css_param_match (str, "stroke-linejoin")) {
+    } else if (g_str_equal (name, "stroke-linejoin")) {
         state->has_join = TRUE;
-        if (!strcmp (str + arg_off, "miter"))
+        if (g_str_equal (value, "miter"))
             state->join = RSVG_PATH_STROKE_JOIN_MITER;
-        else if (!strcmp (str + arg_off, "round"))
+        else if (g_str_equal (value, "round"))
             state->join = RSVG_PATH_STROKE_JOIN_ROUND;
-        else if (!strcmp (str + arg_off, "bevel"))
+        else if (g_str_equal (value, "bevel"))
             state->join = RSVG_PATH_STROKE_JOIN_BEVEL;
         else
-            g_warning (_("unknown line join style %s\n"), str + arg_off);
-    } else if (rsvg_css_param_match (str, "font-size")) {
-        state->font_size = _rsvg_css_parse_length (str + arg_off);
+            g_warning (_("unknown line join style %s\n"), value);
+    } else if (g_str_equal (name, "font-size")) {
+        state->font_size = _rsvg_css_parse_length (value);
         state->has_font_size = TRUE;
-    } else if (rsvg_css_param_match (str, "font-family")) {
-        char *save = g_strdup (rsvg_css_parse_font_family (str + arg_off, &state->has_font_family));
+    } else if (g_str_equal (name, "font-family")) {
+        char *save = g_strdup (rsvg_css_parse_font_family (value, &state->has_font_family));
         g_free (state->font_family);
         state->font_family = save;
-    } else if (rsvg_css_param_match (str, "xml:lang")) {
-        char *save = g_strdup (str + arg_off);
+    } else if (g_str_equal (name, "xml:lang")) {
+        char *save = g_strdup (value);
         g_free (state->lang);
         state->lang = save;
         state->has_lang = TRUE;
-    } else if (rsvg_css_param_match (str, "font-style")) {
-        state->font_style = rsvg_css_parse_font_style (str + arg_off, &state->has_font_style);
-    } else if (rsvg_css_param_match (str, "font-variant")) {
-        state->font_variant = rsvg_css_parse_font_variant (str + arg_off, &state->has_font_variant);
-    } else if (rsvg_css_param_match (str, "font-weight")) {
-        state->font_weight = rsvg_css_parse_font_weight (str + arg_off, &state->has_font_weight);
-    } else if (rsvg_css_param_match (str, "font-stretch")) {
-        state->font_stretch = rsvg_css_parse_font_stretch (str + arg_off, &state->has_font_stretch);
-    } else if (rsvg_css_param_match (str, "text-decoration")) {
-        if (!strcmp (str + arg_off, "inherit")) {
+    } else if (g_str_equal (name, "font-style")) {
+        state->font_style = rsvg_css_parse_font_style (value, &state->has_font_style);
+    } else if (g_str_equal (name, "font-variant")) {
+        state->font_variant = rsvg_css_parse_font_variant (value, &state->has_font_variant);
+    } else if (g_str_equal (name, "font-weight")) {
+        state->font_weight = rsvg_css_parse_font_weight (value, &state->has_font_weight);
+    } else if (g_str_equal (name, "font-stretch")) {
+        state->font_stretch = rsvg_css_parse_font_stretch (value, &state->has_font_stretch);
+    } else if (g_str_equal (name, "text-decoration")) {
+        if (g_str_equal (value, "inherit")) {
             state->has_font_decor = FALSE;
             state->font_decor = TEXT_NORMAL;
         } else {
-            if (strstr (str + arg_off, "underline"))
+            if (strstr (value, "underline"))
                 state->font_decor |= TEXT_UNDERLINE;
-            if (strstr (str + arg_off, "overline"))
+            if (strstr (value, "overline"))
                 state->font_decor |= TEXT_OVERLINE;
-            if (strstr (str + arg_off, "strike") || strstr (str + arg_off, "line-through"))     /* strike though or line-through */
+            if (strstr (value, "strike") || strstr (value, "line-through"))     /* strike though or line-through */
                 state->font_decor |= TEXT_STRIKE;
             state->has_font_decor = TRUE;
         }
-    } else if (rsvg_css_param_match (str, "direction")) {
+    } else if (g_str_equal (name, "direction")) {
         state->has_text_dir = TRUE;
-        if (!strcmp (str + arg_off, "inherit")) {
+        if (g_str_equal (value, "inherit")) {
             state->text_dir = PANGO_DIRECTION_LTR;
             state->has_text_dir = FALSE;
-        } else if (!strcmp (str + arg_off, "rtl"))
+        } else if (g_str_equal (value, "rtl"))
             state->text_dir = PANGO_DIRECTION_RTL;
         else                    /* ltr */
             state->text_dir = PANGO_DIRECTION_LTR;
-    } else if (rsvg_css_param_match (str, "unicode-bidi")) {
+    } else if (g_str_equal (name, "unicode-bidi")) {
         state->has_unicode_bidi = TRUE;
-        if (!strcmp (str + arg_off, "inherit")) {
+        if (g_str_equal (value, "inherit")) {
             state->unicode_bidi = PANGO_DIRECTION_LTR;
             state->has_unicode_bidi = FALSE;
-        } else if (!strcmp (str + arg_off, "embed"))
+        } else if (g_str_equal (value, "embed"))
             state->unicode_bidi = UNICODE_BIDI_EMBED;
-        else if (!strcmp (str + arg_off, "bidi-override"))
+        else if (g_str_equal (value, "bidi-override"))
             state->unicode_bidi = UNICODE_BIDI_OVERRIDE;
         else                    /* normal */
             state->unicode_bidi = UNICODE_BIDI_NORMAL;
-    } else if (rsvg_css_param_match (str, "writing-mode")) {
+    } else if (g_str_equal (name, "writing-mode")) {
         /* TODO: these aren't quite right... */
 
         state->has_text_dir = TRUE;
-        if (!strcmp (str + arg_off, "inherit")) {
+        if (g_str_equal (value, "inherit")) {
             state->text_dir = PANGO_DIRECTION_LTR;
             state->has_text_dir = FALSE;
-        } else if (!strcmp (str + arg_off, "lr-tb") || !strcmp (str + arg_off, "tb"))
+        } else if (g_str_equal (value, "lr-tb") || g_str_equal (value, "tb"))
             state->text_dir = PANGO_DIRECTION_TTB_LTR;
-        else if (!strcmp (str + arg_off, "rl"))
+        else if (g_str_equal (value, "rl"))
             state->text_dir = PANGO_DIRECTION_RTL;
-        else if (!strcmp (str + arg_off, "tb-rl") || !strcmp (str + arg_off, "rl-tb"))
+        else if (g_str_equal (value, "tb-rl") || g_str_equal (value, "rl-tb"))
             state->text_dir = PANGO_DIRECTION_TTB_RTL;
         else
             state->text_dir = PANGO_DIRECTION_LTR;
-    } else if (rsvg_css_param_match (str, "text-anchor")) {
+    } else if (g_str_equal (name, "text-anchor")) {
         state->has_text_anchor = TRUE;
-        if (!strcmp (str + arg_off, "inherit")) {
+        if (g_str_equal (value, "inherit")) {
             state->text_anchor = TEXT_ANCHOR_START;
             state->has_text_anchor = FALSE;
         } else {
-            if (strstr (str + arg_off, "start"))
+            if (strstr (value, "start"))
                 state->text_anchor = TEXT_ANCHOR_START;
-            else if (strstr (str + arg_off, "middle"))
+            else if (strstr (value, "middle"))
                 state->text_anchor = TEXT_ANCHOR_MIDDLE;
-            else if (strstr (str + arg_off, "end"))
+            else if (strstr (value, "end"))
                 state->text_anchor = TEXT_ANCHOR_END;
         }
-    } else if (rsvg_css_param_match (str, "letter-spacing")) {
+    } else if (g_str_equal (name, "letter-spacing")) {
 	state->has_letter_spacing = TRUE;
-	state->letter_spacing = _rsvg_css_parse_length (str + arg_off);
-    } else if (rsvg_css_param_match (str, "stop-color")) {
-        if (strcmp (str + arg_off, "inherit")) {
-            state->stop_color = rsvg_css_parse_color (str + arg_off, &state->has_stop_color);
+	state->letter_spacing = _rsvg_css_parse_length (value);
+    } else if (g_str_equal (name, "stop-color")) {
+        if (!g_str_equal (value, "inherit")) {
+            state->stop_color = rsvg_css_parse_color (value, &state->has_stop_color);
         }
-    } else if (rsvg_css_param_match (str, "stop-opacity")) {
-        if (strcmp (str + arg_off, "inherit")) {
+    } else if (g_str_equal (name, "stop-opacity")) {
+        if (!g_str_equal (value, "inherit")) {
             state->has_stop_opacity = TRUE;
-            state->stop_opacity = rsvg_css_parse_opacity (str + arg_off);
+            state->stop_opacity = rsvg_css_parse_opacity (value);
         }
-    } else if (rsvg_css_param_match (str, "marker-start")) {
-        state->startMarker = rsvg_marker_parse (ctx->priv->defs, str + arg_off);
+    } else if (g_str_equal (name, "marker-start")) {
+        state->startMarker = rsvg_marker_parse (ctx->priv->defs, value);
         state->has_startMarker = TRUE;
-    } else if (rsvg_css_param_match (str, "marker-mid")) {
-        state->middleMarker = rsvg_marker_parse (ctx->priv->defs, str + arg_off);
+    } else if (g_str_equal (name, "marker-mid")) {
+        state->middleMarker = rsvg_marker_parse (ctx->priv->defs, value);
         state->has_middleMarker = TRUE;
-    } else if (rsvg_css_param_match (str, "marker-end")) {
-        state->endMarker = rsvg_marker_parse (ctx->priv->defs, str + arg_off);
+    } else if (g_str_equal (name, "marker-end")) {
+        state->endMarker = rsvg_marker_parse (ctx->priv->defs, value);
         state->has_endMarker = TRUE;
-    } else if (rsvg_css_param_match (str, "stroke-miterlimit")) {
+    } else if (g_str_equal (name, "stroke-miterlimit")) {
         state->has_miter_limit = TRUE;
-        state->miter_limit = g_ascii_strtod (str + arg_off, NULL);
-    } else if (rsvg_css_param_match (str, "stroke-dashoffset")) {
+        state->miter_limit = g_ascii_strtod (value, NULL);
+    } else if (g_str_equal (name, "stroke-dashoffset")) {
         state->has_dashoffset = TRUE;
-        state->dash.offset = _rsvg_css_parse_length (str + arg_off);
+        state->dash.offset = _rsvg_css_parse_length (value);
         if (state->dash.offset.length < 0.)
             state->dash.offset.length = 0.;
-	} else if (rsvg_css_param_match (str, "shape-rendering")) {
+	} else if (g_str_equal (name, "shape-rendering")) {
 		state->has_shape_rendering_type = TRUE;
 
-        if (!strcmp (str + arg_off, "auto") || !strcmp (str + arg_off, "default"))
+        if (g_str_equal (value, "auto") || g_str_equal (value, "default"))
 			state->shape_rendering_type = SHAPE_RENDERING_AUTO;
-        else if (!strcmp (str + arg_off, "optimizeSpeed"))
+        else if (g_str_equal (value, "optimizeSpeed"))
 			state->shape_rendering_type = SHAPE_RENDERING_OPTIMIZE_SPEED;
-        else if (!strcmp (str + arg_off, "crispEdges"))
+        else if (g_str_equal (value, "crispEdges"))
 			state->shape_rendering_type = SHAPE_RENDERING_CRISP_EDGES;
-        else if (!strcmp (str + arg_off, "geometricPrecision"))
+        else if (g_str_equal (value, "geometricPrecision"))
 			state->shape_rendering_type = SHAPE_RENDERING_GEOMETRIC_PRECISION;
 
-	} else if (rsvg_css_param_match (str, "text-rendering")) {
+	} else if (g_str_equal (name, "text-rendering")) {
 		state->has_text_rendering_type = TRUE;
 
-        if (!strcmp (str + arg_off, "auto") || !strcmp (str + arg_off, "default"))
+        if (g_str_equal (value, "auto") || g_str_equal (value, "default"))
 			state->text_rendering_type = TEXT_RENDERING_AUTO;
-        else if (!strcmp (str + arg_off, "optimizeSpeed"))
+        else if (g_str_equal (value, "optimizeSpeed"))
 			state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_SPEED;
-        else if (!strcmp (str + arg_off, "optimizeLegibility"))
+        else if (g_str_equal (value, "optimizeLegibility"))
 			state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_LEGIBILITY;
-        else if (!strcmp (str + arg_off, "geometricPrecision"))
+        else if (g_str_equal (value, "geometricPrecision"))
 			state->text_rendering_type = TEXT_RENDERING_GEOMETRIC_PRECISION;
 
-    } else if (rsvg_css_param_match (str, "stroke-dasharray")) {
+    } else if (g_str_equal (name, "stroke-dasharray")) {
         state->has_dash = TRUE;
-        if (!strcmp (str + arg_off, "none")) {
+        if (g_str_equal (value, "none")) {
             if (state->dash.n_dash != 0) {
                 /* free any cloned dash data */
                 g_free (state->dash.dash);
                 state->dash.n_dash = 0;
             }
         } else {
-            gchar **dashes = g_strsplit (str + arg_off, ",", -1);
+            gchar **dashes = g_strsplit (value, ",", -1);
             if (NULL != dashes) {
                 gint n_dashes, i;
                 gboolean is_even = FALSE;
@@ -743,14 +789,6 @@ rsvg_parse_style_arg (RsvgHandle * ctx, RsvgState * state, const char *str)
     }
 }
 
-void
-rsvg_parse_style_pair (RsvgHandle * ctx, RsvgState * state, const char *key, const char *val)
-{
-    gchar *str = g_strdup_printf ("%s:%s", key, val);
-    rsvg_parse_style_arg (ctx, state, str);
-    g_free (str);
-}
-
 static void
 rsvg_lookup_parse_style_pair (RsvgHandle * ctx, RsvgState * state,
                               const char *key, RsvgPropertyBag * atts)
@@ -758,7 +796,7 @@ rsvg_lookup_parse_style_pair (RsvgHandle * ctx, RsvgState * state,
     const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, key)) != NULL)
-        rsvg_parse_style_pair (ctx, state, key, value);
+        rsvg_parse_style_pair (ctx, state, key, value, FALSE);
 }
 
 /* take a pair of the form (fill="#ff00ff") and parse it as a style */
@@ -824,6 +862,23 @@ rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * a
     }
 }
 
+static gboolean
+is_important (const gchar *value)
+{
+    gchar **strings;
+    gboolean important = FALSE;
+
+    strings = g_strsplit (value, "!", 2);
+    if (g_strv_length (strings) == 2 &&
+        g_str_equal (g_strstrip (strings[1]), "important")) {
+        important = TRUE;
+    }
+
+    g_strfreev (strings);
+
+    return important;
+}
+
 /* Split a CSS2 style into individual style arguments, setting attributes
    in the SVG context.
    
@@ -833,40 +888,55 @@ rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * a
 void
 rsvg_parse_style (RsvgHandle * ctx, RsvgState * state, const char *str)
 {
-    int start, end;
-    char *arg;
+    gchar **styles;
+    guint i;
 
-    start = 0;
-    while (str[start] != '\0') {
-        for (end = start; str[end] != '\0' && str[end] != ';'; end++);
-        arg = g_new (char, 1 + end - start);
-        memcpy (arg, str + start, end - start);
-        arg[end - start] = '\0';
-        rsvg_parse_style_arg (ctx, state, arg);
-        g_free (arg);
-        start = end;
-        if (str[start] == ';')
-            start++;
-        while (str[start] == ' ')
-            start++;
+    styles = g_strsplit (str, ";", -1);
+    for (i = 0; i < g_strv_length (styles); i++) {
+        gchar **values;
+        values = g_strsplit (styles[i], ":", 2);
+        if (!values)
+            continue;
+
+        if (g_strv_length (values)  == 2) {
+            rsvg_parse_style_pair (ctx, state,
+                                   g_strstrip (values[0]),
+                                   g_strstrip (values[1]),
+                                   is_important (values[1]));
+        }
+        g_strfreev (values);
     }
+    g_strfreev (styles);
 }
 
 static void
-rsvg_css_define_style (RsvgHandle * ctx, const gchar * style_name, const char *style_def)
+rsvg_css_define_style (RsvgHandle * ctx,
+                       const gchar * selector,
+                       const gchar * style_name,
+                       const gchar * style_value,
+                       gboolean important)
 {
-    GString *str = g_string_new (style_def);
-    char *existing = NULL;
+    GHashTable *styles;
+    gboolean need_insert = FALSE;
 
     /* push name/style pair into HT */
-    existing = (char *) g_hash_table_lookup (ctx->priv->css_props, style_name);
-    if (existing != NULL)
-        g_string_append_len (str, existing, strlen (existing));
-
-    /* will destroy the existing key and value for us */
-    g_hash_table_insert (ctx->priv->css_props, (gpointer) g_strdup ((gchar *) style_name),
-                         (gpointer) str->str);
-    g_string_free (str, FALSE);
+    styles = g_hash_table_lookup (ctx->priv->css_props, selector);
+    if (styles == NULL) {
+        styles = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                        g_free, (GDestroyNotify) style_value_data_free);
+        g_hash_table_insert (ctx->priv->css_props, (gpointer) g_strdup (selector), styles);
+        need_insert = TRUE;
+    } else {
+        StyleValueData *current_value;
+        current_value = g_hash_table_lookup (styles, style_name);
+        if (current_value == NULL || !current_value->important)
+            need_insert = TRUE;
+    }
+    if (need_insert) {
+        g_hash_table_insert (styles,
+                             (gpointer) g_strdup (style_name),
+                             (gpointer) style_value_data_new (style_value, important));
+    }
 }
 
 #ifdef HAVE_LIBCROCO
@@ -875,14 +945,14 @@ rsvg_css_define_style (RsvgHandle * ctx, const gchar * style_name, const char *s
 
 typedef struct _CSSUserData {
     RsvgHandle *ctx;
-    GString *def;
+    CRSelector *selector;
 } CSSUserData;
 
 static void
 css_user_data_init (CSSUserData * user_data, RsvgHandle * ctx)
 {
     user_data->ctx = ctx;
-    user_data->def = NULL;
+    user_data->selector = NULL;
 }
 
 static void
@@ -893,54 +963,56 @@ ccss_start_selector (CRDocHandler * a_handler, CRSelector * a_selector_list)
     g_return_if_fail (a_handler);
 
     user_data = (CSSUserData *) a_handler->app_data;
-    user_data->def = g_string_new (NULL);
+    cr_selector_ref (a_selector_list);
+    user_data->selector = a_selector_list;
 }
 
 static void
 ccss_end_selector (CRDocHandler * a_handler, CRSelector * a_selector_list)
 {
     CSSUserData *user_data;
-    CRSelector *cur;
 
     g_return_if_fail (a_handler);
 
     user_data = (CSSUserData *) a_handler->app_data;
 
-    if (a_selector_list)
-        for (cur = a_selector_list; cur; cur = cur->next) {
-            if (cur->simple_sel) {
-                gchar *style_name = (gchar *) cr_simple_sel_to_string (cur->simple_sel);
-                if (style_name) {
-                    rsvg_css_define_style (user_data->ctx, style_name, user_data->def->str);
-                    g_free (style_name);
-                }
-            }
-        }
-
-    g_string_free (user_data->def, TRUE);
+    cr_selector_unref (user_data->selector);
+    user_data->selector = NULL;
 }
 
 static void
 ccss_property (CRDocHandler * a_handler, CRString * a_name, CRTerm * a_expr, gboolean a_important)
 {
     CSSUserData *user_data;
-    gchar *expr = NULL, *name = NULL;
+    gchar *name = NULL;
     size_t len = 0;
 
     g_return_if_fail (a_handler);
 
     user_data = (CSSUserData *) a_handler->app_data;
 
-    if (a_name && a_expr && user_data->def) {
-        name = (gchar *) cr_string_peek_raw_str (a_name);
-        len = cr_string_peek_raw_str_len (a_name);
-
-        g_string_append_len (user_data->def, (gchar *) name, len);
-        g_string_append (user_data->def, ": ");
-        expr = (gchar *) cr_term_to_string (a_expr);
-        g_string_append_len (user_data->def, expr, strlen (expr));
-        g_free (expr);
-        g_string_append (user_data->def, "; ");
+    if (a_name && a_expr && user_data->selector) {
+        CRSelector *cur;
+        for (cur = user_data->selector; cur; cur = cur->next) {
+            if (cur->simple_sel) {
+                gchar *selector = (gchar *) cr_simple_sel_to_string (cur->simple_sel);
+                if (selector) {
+                    gchar *style_name, *style_value;
+                    name = (gchar *) cr_string_peek_raw_str (a_name);
+                    len = cr_string_peek_raw_str_len (a_name);
+                    style_name = g_strndup (name, len);
+                    style_value = (gchar *)cr_term_to_string (a_expr);
+                    rsvg_css_define_style (user_data->ctx,
+                                           selector,
+                                           style_name,
+                                           style_value,
+                                           a_important);
+                    g_free (selector);
+                    g_free (style_name);
+                    g_free (style_value);
+                }
+            }
+        }
     }
 }
 
@@ -1052,9 +1124,9 @@ rsvg_real_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
     size_t loc = 0;
 
     while (loc < buflen) {
-        gchar **styles;
+        gchar **selectors;
         guint i;
-        GString *style_name = g_string_new (NULL);
+        GString *selector = g_string_new (NULL);
         GString *style_props = g_string_new (NULL);
 
         /* advance to the style's name */
@@ -1063,7 +1135,7 @@ rsvg_real_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
 
         /* advance to the first { that defines the style's properties */
         while (loc < buflen && buff[loc] != '{')
-            g_string_append_c (style_name, buff[loc++]);
+            g_string_append_c (selector, buff[loc++]);
         loc++;
 
         while (loc < buflen && g_ascii_isspace (buff[loc]))
@@ -1086,12 +1158,16 @@ rsvg_real_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
             }
         }
 
-        styles = g_strsplit (style_name->str, ",", -1);
-        for (i = 0; i < g_strv_length (styles); i++)
-            rsvg_css_define_style (ctx, g_strstrip (styles[i]), style_props->str);
-        g_strfreev (styles);
+        selectors = g_strsplit (selector->str, ",", -1);
+        for (i = 0; i < g_strv_length (selectors); i++) {
+            rsvg_css_define_style (ctx,
+                                   g_strstrip (selectors[i]),
+                                   style_props->str,
+                                   FALSE);
+        }
+        g_strfreev (selectors);
 
-        g_string_free (style_name, TRUE);
+        g_string_free (selector, TRUE);
         g_string_free (style_props, TRUE);
 
         loc++;
@@ -1254,13 +1330,31 @@ rsvg_parse_transform_attr (RsvgHandle * ctx, RsvgState * state, const char *str)
     }
 }
 
+typedef struct _StylesData {
+    RsvgHandle *ctx;
+    RsvgState *state;
+} StylesData;
+
+static void
+apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
+{
+    StylesData *data = (StylesData *) user_data;
+    rsvg_parse_style_pair (data->ctx, data->state, key, value->value, value->important);
+}
+
 static gboolean
 rsvg_lookup_apply_css_style (RsvgHandle * ctx, const char *target, RsvgState * state)
 {
-    const char *value = (const char *) g_hash_table_lookup (ctx->priv->css_props, target);
+    GHashTable *styles;
 
-    if (value != NULL) {
-        rsvg_parse_style (ctx, state, value);
+    styles = g_hash_table_lookup (ctx->priv->css_props, target);
+
+    if (styles != NULL) {
+        StylesData *data = g_new (StylesData, 1);
+        data->ctx = ctx;
+        data->state = state;
+        g_hash_table_foreach (styles, (GHFunc) apply_style, data);
+        g_free (data);
         return TRUE;
     }
     return FALSE;

@@ -235,6 +235,8 @@ struct _RsvgState {
     
     TextRenderingProperty text_rendering_type;
     gboolean has_text_rendering_type;
+
+    GHashTable *styles;
 };
 
 RsvgState *rsvg_state_new ();
@@ -248,7 +250,6 @@ void rsvg_state_override    (RsvgState * dst, const RsvgState * src);
 void rsvg_state_finalize    (RsvgState * state);
 
 void rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * atts);
-void rsvg_parse_style_pair  (RsvgHandle * ctx, RsvgState * state, const char *key, const char *val);
 void rsvg_parse_style	    (RsvgHandle * ctx, RsvgState * state, const char *str);
 void rsvg_parse_cssbuffer   (RsvgHandle * ctx, const char *buff, size_t buflen);
 

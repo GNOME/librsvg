@@ -45,9 +45,6 @@ G_BEGIN_DECLS
 
 int	    rsvg_css_parse_aspect_ratio	    (const char *str);
 
-gboolean    rsvg_css_param_match	    (const char *str, const char *param_name);
-int	    rsvg_css_param_arg_offset	    (const char *str);
-
 guint32	    rsvg_css_parse_color	    (const char *str, gboolean * inherit);
 guint	    rsvg_css_parse_opacity	    (const char *str);
 double	    rsvg_css_parse_angle	    (const char *str);
