@@ -2858,7 +2858,7 @@ rsvg_filter_primitive_displacement_map_set_atts (RsvgNode * self, RsvgHandle * c
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_displacement_map ()
+rsvg_new_filter_primitive_displacement_map (void)
 {
     RsvgFilterPrimitiveDisplacementMap *filter;
     filter = g_new (RsvgFilterPrimitiveDisplacementMap, 1);

@@ -426,7 +426,7 @@ rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
 }
 
 RsvgNode *
-rsvg_new_use ()
+rsvg_new_use (void)
 {
     RsvgNodeUse *use;
     use = g_new (RsvgNodeUse, 1);
@@ -480,7 +480,7 @@ rsvg_new_symbol (void)
 }
 
 RsvgNode *
-rsvg_new_defs ()
+rsvg_new_defs (void)
 {
     RsvgNodeGroup *group;
     group = g_new (RsvgNodeGroup, 1);

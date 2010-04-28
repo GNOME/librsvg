@@ -50,7 +50,7 @@ rsvg_paint_server_solid (guint32 rgb)
 }
 
 static RsvgPaintServer *
-rsvg_paint_server_solid_current_colour ()
+rsvg_paint_server_solid_current_colour (void)
 {
     RsvgPaintServer *result = g_new (RsvgPaintServer, 1);
 

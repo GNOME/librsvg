@@ -240,7 +240,7 @@ struct _RsvgState {
     GHashTable *styles;
 };
 
-RsvgState *rsvg_state_new ();
+RsvgState *rsvg_state_new (void);
 
 void rsvg_state_init        (RsvgState * state);
 void rsvg_state_clone       (RsvgState * dst, const RsvgState * src);
