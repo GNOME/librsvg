@@ -33,7 +33,7 @@ EXTRA_DIST =						\
 	fixtures/dimensions/bug612951.svg		\
 	fixtures/dimensions/bug608102.svg		\
 	fixtures/dimensions/sub-rect-no-unit.svg	\
-	fixtures/styles/bug614705.svg			\
+	fixtures/styles/bug614704.svg			\
 	fixtures/styles/bug614606.svg			\
 	fixtures/styles/important.svg			\
 	fixtures/styles/svg-class.svg			\
