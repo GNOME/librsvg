@@ -5,13 +5,17 @@ TESTS = 		\
 	dimensions	\
 	styles
 
+noinst_LTLIBRARIES = 			\
+	libtest-utils.la
+
 LDADD = $(top_builddir)/librsvg-2.la		\
+	$(top_builddir)/tests/libtest-utils.la	\
 	$(top_builddir)/tests/pdiff/libpdiff.la
 
-INCLUDES = -I$(srcdir) 				\
-	   -I$(top_srcdir)			\
-	   -I$(srcdir)/pdiff			\
-	   -DTEST_DATA_DIR="\"$(srcdir)\""	\
+INCLUDES = -I$(srcdir) 							\
+	   -I$(top_srcdir)						\
+	   -I$(srcdir)/pdiff						\
+	   -DTEST_DATA_DIR="\"$(srcdir)\""				\
 	  $(LIBRSVG_CFLAGS)
 
 EXTRA_PROGRAMS = $(TESTS)
@@ -20,6 +24,8 @@ CLEANFILES = $(TESTS)
 
 DISTCLEANFILES = rsvg-test.html			\
 		 rsvg-test.log
+
+libtest_utils_la_SOURCES = test-utils.c
 
 EXTRA_DIST =						\
 	fixtures/dimensions/bug564527.svg		\

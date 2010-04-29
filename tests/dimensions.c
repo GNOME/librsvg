@@ -2,6 +2,7 @@
 
 #include <glib.h>
 #include "rsvg.h"
+#include "test-utils.h"
 
 typedef struct _FixtureData
 {
@@ -17,9 +18,13 @@ test_dimensions (FixtureData *fixture)
 {
     RsvgHandle *handle;
     RsvgDimensionData dimension;
+    gchar *target_file;
     GError *error = NULL;
 
-    handle = rsvg_handle_new_from_file (fixture->file_path, &error);
+    target_file = g_build_filename (test_utils_get_test_data_path (),
+                                    fixture->file_path, NULL);
+    handle = rsvg_handle_new_from_file (target_file, &error);
+    g_free (target_file);
     g_assert_no_error (error);
 
     if (fixture->id)
@@ -34,11 +39,11 @@ test_dimensions (FixtureData *fixture)
 
 static FixtureData fixtures[] =
 {
-    {"/dimensions/no viewbox, width and height", "fixtures/dimensions/bug608102.svg", NULL, 16, 16},
-    {"/dimensions/100% width and height", "fixtures/dimensions/bug612951.svg", NULL, 45, 45},
-    {"/dimensions/viewbox only", "fixtures/dimensions/bug614018.svg", NULL, 3, 2},
-    {"/dimensions/sub/rect no unit", "fixtures/dimensions/sub-rect-no-unit.svg", "#rect-no-unit", 44, 45},
-    {"/dimensions/sub/rect with transform", "fixtures/dimensions/bug564527.svg", "#back", 144, 203}
+    {"/dimensions/no viewbox, width and height", "dimensions/bug608102.svg", NULL, 16, 16},
+    {"/dimensions/100% width and height", "dimensions/bug612951.svg", NULL, 45, 45},
+    {"/dimensions/viewbox only", "dimensions/bug614018.svg", NULL, 3, 2},
+    {"/dimensions/sub/rect no unit", "dimensions/sub-rect-no-unit.svg", "#rect-no-unit", 44, 45},
+    {"/dimensions/sub/rect with transform", "dimensions/bug564527.svg", "#back", 144, 203}
 };
 
 static const gint n_fixtures = G_N_ELEMENTS (fixtures);
