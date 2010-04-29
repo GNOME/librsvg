@@ -21,12 +21,22 @@ CLEANFILES = $(TESTS)
 DISTCLEANFILES = rsvg-test.html			\
 		 rsvg-test.log
 
-EXTRA_DIST =					\
-	fixtures/dimensions/bug564527.svg	\
-	fixtures/dimensions/bug614018.svg	\
-	fixtures/dimensions/bug612951.svg	\
-	fixtures/dimensions/bug608102.svg	\
-	fixtures/dimensions/sub-rect.svg
+EXTRA_DIST =						\
+	fixtures/dimensions/bug564527.svg		\
+	fixtures/dimensions/bug614018.svg		\
+	fixtures/dimensions/bug612951.svg		\
+	fixtures/dimensions/bug608102.svg		\
+	fixtures/dimensions/sub-rect-no-unit.svg	\
+	fixtures/styles/bug614705.svg			\
+	fixtures/styles/bug614606.svg			\
+	fixtures/styles/important.svg			\
+	fixtures/styles/svg-class.svg			\
+	fixtures/styles/bug592207.svg			\
+	fixtures/styles/bug338160.svg			\
+	fixtures/styles/bug379629.svg			\
+	fixtures/styles/bug614643.svg			\
+	fixtures/styles/bug418823.svg			\
+	fixtures/styles/order.svg
 
 test:
 	@$(MAKE) $(AM_MAKEFLAGS) check;
