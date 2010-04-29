@@ -1126,6 +1126,7 @@ rsvg_real_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
 
     while (loc < buflen) {
         gchar **selectors;
+        gchar **styles;
         guint i;
         GString *selector = g_string_new (NULL);
         GString *style_props = g_string_new (NULL);
@@ -1160,13 +1161,24 @@ rsvg_real_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
         }
 
         selectors = g_strsplit (selector->str, ",", -1);
+        styles = g_strsplit (style_props->str, ";", -1);
         for (i = 0; i < g_strv_length (selectors); i++) {
-            rsvg_css_define_style (ctx,
-                                   g_strstrip (selectors[i]),
-                                   style_props->str,
-                                   FALSE);
+            guint j;
+            for (j = 0; j < g_strv_length (styles); j++) {
+                gchar **values;
+                values = g_strsplit (styles[j], ":", 2);
+                if (g_strv_length (values) == 2) {
+                    rsvg_css_define_style (ctx,
+                                           g_strstrip (selectors[i]),
+                                           g_strstrip (values[0]),
+                                           g_strstrip (values[1]),
+                                           FALSE);
+                }
+                g_strfreev (values);
+            }
         }
         g_strfreev (selectors);
+        g_strfreev (styles);
 
         g_string_free (selector, TRUE);
         g_string_free (style_props, TRUE);
