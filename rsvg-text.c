@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-text.c: Text handling routines for RSVG
 
@@ -104,30 +105,30 @@ _rsvg_text_chomp (RsvgState *state, GString * in, gboolean * lastwasspace)
     guint i;
     out = g_string_new (in->str);
 
-	if (!state->space_preserve) {
-		for (i = 0; i < out->len;) {
-			if (out->str[i] == '\n')
-				g_string_erase (out, i, 1);
-			else
-				i++;
-		}
-		
-		for (i = 0; i < out->len; i++)
-			if (out->str[i] == '\t')
-				out->str[i] = ' ';
-		
-		for (i = 0; i < out->len;) {
-			if (out->str[i] == ' ' && *lastwasspace)
-				g_string_erase (out, i, 1);
-			else {
-				if (out->str[i] == ' ')
-					*lastwasspace = TRUE;
-				else
-					*lastwasspace = FALSE;
-				i++;
-			}
-		}
-	}
+    if (!state->space_preserve) {
+        for (i = 0; i < out->len;) {
+            if (out->str[i] == '\n')
+                g_string_erase (out, i, 1);
+            else
+                i++;
+        }
+
+        for (i = 0; i < out->len; i++)
+            if (out->str[i] == '\t')
+                out->str[i] = ' ';
+
+        for (i = 0; i < out->len;) {
+            if (out->str[i] == ' ' && *lastwasspace)
+                g_string_erase (out, i, 1);
+            else {
+                if (out->str[i] == ' ')
+                    *lastwasspace = TRUE;
+                else
+                    *lastwasspace = FALSE;
+                i++;
+            }
+        }
+    }
 
     return out;
 }
@@ -790,7 +791,7 @@ rsvg_text_render_vectors (PangoFont * font,
     face = pango_ft2_font_get_face (font);
 
     if (0 != FT_Load_Glyph (face, (FT_UInt) pango_glyph, flags))
-		return;
+        return;
 
     if (0 != FT_Get_Glyph (face->glyph, &glyph))
 		return;
@@ -937,9 +938,9 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
 
         state = rsvg_state_current (ctx);
 
-	/* Do not render the text if the font size is zero. See bug #581491. */
-	if (state->font_size.length == 0)
-	    return;
+        /* Do not render the text if the font size is zero. See bug #581491. */
+        if (state->font_size.length == 0)
+            return;
 
         context = ctx->render->create_pango_context (ctx);
         layout = rsvg_text_create_layout (ctx, state, text, context);

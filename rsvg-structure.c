@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-structure.c: Rsvg's structual elements
 
@@ -104,7 +105,7 @@ _rsvg_node_dont_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * a
 void
 _rsvg_node_init (RsvgNode * self)
 {
-	self->parent = NULL;
+    self->parent = NULL;
     self->children = g_ptr_array_new ();
     self->state = g_new (RsvgState, 1);
     rsvg_state_init (self->state);
@@ -125,7 +126,6 @@ _rsvg_node_finalize (RsvgNode * self)
         g_ptr_array_free (self->children, TRUE);
     if (self->type != NULL)
         g_string_free (self->type, TRUE);
-
 }
 
 void
@@ -347,10 +347,10 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
             svg->w = _rsvg_css_parse_length (value);
         if ((value = rsvg_property_bag_lookup (atts, "height")))
             svg->h = _rsvg_css_parse_length (value);
-		/* 
-		 * x & y attributes have no effect on outermost svg
-		 * http://www.w3.org/TR/SVG/struct.html#SVGElement 
-		 */
+        /* 
+         * x & y attributes have no effect on outermost svg
+         * http://www.w3.org/TR/SVG/struct.html#SVGElement 
+         */
         if (self->parent && (value = rsvg_property_bag_lookup (atts, "x")))
             svg->x = _rsvg_css_parse_length (value);
         if (self->parent && (value = rsvg_property_bag_lookup (atts, "y")))
