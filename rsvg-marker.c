@@ -228,6 +228,9 @@ rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
     middlemarker = (RsvgMarker *) state->middleMarker;
     endmarker = (RsvgMarker *) state->endMarker;
 
+    if (linewidth == 0)
+        return;
+
     if (!startmarker && !middlemarker && !endmarker)
         return;
 
