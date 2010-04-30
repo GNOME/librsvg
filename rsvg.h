@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /* 
    rsvg.h: SAX-based renderer for SVG files into a GdkPixbuf.
  
@@ -77,24 +78,24 @@ struct _RsvgHandle {
 /* RsvgDimensionData
  */
 struct _RsvgDimensionData {
-        /**
-	 * SVG's width, in pixels
-	 */
+    /**
+     * SVG's width, in pixels
+     */
     int width;
 
-        /**
-	 * SVG's height, in pixels
-	 */
+    /**
+     * SVG's height, in pixels
+     */
     int height;
 
-        /**
-	 * em
-	 */
+    /**
+     * em
+     */
     gdouble em;
 
-        /**
-	 * ex
-	 */
+    /**
+     * ex
+     */
     gdouble ex;
 };
 
@@ -117,13 +118,13 @@ void rsvg_handle_set_dpi_x_y	(RsvgHandle * handle, double dpi_x, double dpi_y);
 
 RsvgHandle  *rsvg_handle_new		(void);
 gboolean     rsvg_handle_write		(RsvgHandle * handle, const guchar * buf, 
-					 gsize count, GError ** error);
+                                     gsize count, GError ** error);
 gboolean     rsvg_handle_close		(RsvgHandle * handle, GError ** error);
 GdkPixbuf   *rsvg_handle_get_pixbuf	(RsvgHandle * handle);
 GdkPixbuf   *rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id);
 
 G_CONST_RETURN char	*rsvg_handle_get_base_uri (RsvgHandle * handle);
-void			 rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri);
+void                 rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri);
 
 void rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_data);
 
@@ -160,22 +161,22 @@ void rsvg_handle_free (RsvgHandle * handle);
  */
 typedef void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
 void rsvg_handle_set_size_callback (RsvgHandle * handle,
-				    RsvgSizeFunc size_func,
-				    gpointer user_data, GDestroyNotify user_data_destroy);
+                                    RsvgSizeFunc size_func,
+                                    gpointer user_data, GDestroyNotify user_data_destroy);
 
 /* GdkPixbuf convenience API */
 
-GdkPixbuf *rsvg_pixbuf_from_file		(const gchar * file_name, GError ** error);
-GdkPixbuf *rsvg_pixbuf_from_file_at_zoom	(const gchar * file_name,
-						 double x_zoom, double y_zoom, GError ** error);
-GdkPixbuf *rsvg_pixbuf_from_file_at_size	(const gchar * file_name, gint width, gint height, 
-						 GError ** error);
-GdkPixbuf *rsvg_pixbuf_from_file_at_max_size	(const gchar * file_name,
-						 gint max_width, gint max_height, GError ** error);
+GdkPixbuf *rsvg_pixbuf_from_file            (const gchar * file_name, GError ** error);
+GdkPixbuf *rsvg_pixbuf_from_file_at_zoom    (const gchar * file_name,
+                                             double x_zoom, double y_zoom, GError ** error);
+GdkPixbuf *rsvg_pixbuf_from_file_at_size    (const gchar * file_name, gint width, gint height,
+                                             GError ** error);
+GdkPixbuf *rsvg_pixbuf_from_file_at_max_size    (const gchar * file_name,
+                                                 gint max_width, gint max_height, GError ** error);
 GdkPixbuf *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar * file_name,
-						   double x_zoom,
-						   double y_zoom,
-						   gint max_width, gint max_height, GError ** error);
+                                                   double x_zoom,
+                                                   double y_zoom,
+                                                   gint max_width, gint max_height, GError ** error);
 
 #endif                          /* RSVG_DISABLE_DEPRECATED */
 

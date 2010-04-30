@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-private.h: Internals of RSVG
 
@@ -196,18 +197,18 @@ struct RsvgDrawingCtx {
 struct RsvgRender {
     void (*free) (RsvgRender * self);
 
-    PangoContext    *(*create_pango_context)	(RsvgDrawingCtx * ctx);
-    void	     (*render_pango_layout)	(RsvgDrawingCtx * ctx, PangoLayout *layout, 
-						 double x, double y);
-    void	     (*render_path)		(RsvgDrawingCtx * ctx, const RsvgBpathDef * path);
-    void	     (*render_image)		(RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
-						 double x, double y, double w, double h);
-    void	     (*pop_discrete_layer)	(RsvgDrawingCtx * ctx);
-    void	     (*push_discrete_layer)	(RsvgDrawingCtx * ctx);
-    void	     (*add_clipping_rect)	(RsvgDrawingCtx * ctx, double x, double y, 
-						 double w, double h);
-    GdkPixbuf	    *(*get_image_of_node)	(RsvgDrawingCtx * ctx, RsvgNode * drawable, 
-						 double w, double h);
+    PangoContext    *(*create_pango_context)    (RsvgDrawingCtx * ctx);
+    void             (*render_pango_layout)	    (RsvgDrawingCtx * ctx, PangoLayout *layout,
+                                                 double x, double y);
+    void             (*render_path)             (RsvgDrawingCtx * ctx, const RsvgBpathDef * path);
+    void             (*render_image)            (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
+                                                 double x, double y, double w, double h);
+    void             (*pop_discrete_layer)      (RsvgDrawingCtx * ctx);
+    void             (*push_discrete_layer)     (RsvgDrawingCtx * ctx);
+    void             (*add_clipping_rect)       (RsvgDrawingCtx * ctx, double x, double y,
+                                                 double w, double h);
+    GdkPixbuf       *(*get_image_of_node)       (RsvgDrawingCtx * ctx, RsvgNode * drawable,
+                                                 double w, double h);
 };
 
 
@@ -266,13 +267,13 @@ struct _RsvgNodeChars {
 
 typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
 
-RsvgPropertyBag	    *rsvg_property_bag_new	(const char **atts);
-RsvgPropertyBag	    *rsvg_property_bag_ref	(RsvgPropertyBag * bag);
-void		     rsvg_property_bag_free	(RsvgPropertyBag * bag);
-G_CONST_RETURN char *rsvg_property_bag_lookup	(RsvgPropertyBag * bag, const char *key);
-guint		     rsvg_property_bag_size	(RsvgPropertyBag * bag);
-void		     rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPropertyBagEnumFunc func, 
-						  gpointer user_data);
+RsvgPropertyBag	    *rsvg_property_bag_new       (const char **atts);
+RsvgPropertyBag	    *rsvg_property_bag_ref       (RsvgPropertyBag * bag);
+void                 rsvg_property_bag_free      (RsvgPropertyBag * bag);
+G_CONST_RETURN char *rsvg_property_bag_lookup    (RsvgPropertyBag * bag, const char *key);
+guint                rsvg_property_bag_size	     (RsvgPropertyBag * bag);
+void                 rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPropertyBagEnumFunc func,
+                                                  gpointer user_data);
 
 GdkPixbuf *rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
                                                  size_t len,
@@ -280,20 +281,20 @@ GdkPixbuf *rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
                                                  const char *base_uri, GError ** error);
 
 gboolean     rsvg_eval_switch_attributes	(RsvgPropertyBag * atts, gboolean * p_has_cond);
-GdkPixbuf   *_rsvg_pixbuf_new_cleared		(GdkColorspace colorspace, gboolean has_alpha,
-						 int bits_per_sample, int width, int height);
+GdkPixbuf   *_rsvg_pixbuf_new_cleared       (GdkColorspace colorspace, gboolean has_alpha,
+                                             int bits_per_sample, int width, int height);
 
-gchar	    *rsvg_get_base_uri_from_filename	(const gchar * file_name);
-GByteArray  *_rsvg_acquire_xlink_href_resource	(const char *href,
-						 const char *base_uri, GError ** err);
+gchar       *rsvg_get_base_uri_from_filename    (const gchar * file_name);
+GByteArray  *_rsvg_acquire_xlink_href_resource  (const char *href,
+                                                 const char *base_uri, GError ** err);
 
-void rsvg_pop_discrete_layer	(RsvgDrawingCtx * ctx);
-void rsvg_push_discrete_layer	(RsvgDrawingCtx * ctx);
-void rsvg_render_path		(RsvgDrawingCtx * ctx, const char *d);
-void rsvg_render_image		(RsvgDrawingCtx * ctx, GdkPixbuf * pb,
-				 double x, double y, double w, double h);
-void rsvg_render_free		(RsvgRender * render);
-void rsvg_add_clipping_rect	(RsvgDrawingCtx * ctx, double x, double y, double w, double h);
+void rsvg_pop_discrete_layer    (RsvgDrawingCtx * ctx);
+void rsvg_push_discrete_layer   (RsvgDrawingCtx * ctx);
+void rsvg_render_path           (RsvgDrawingCtx * ctx, const char *d);
+void rsvg_render_image          (RsvgDrawingCtx * ctx, GdkPixbuf * pb,
+                                 double x, double y, double w, double h);
+void rsvg_render_free           (RsvgRender * render);
+void rsvg_add_clipping_rect     (RsvgDrawingCtx * ctx, double x, double y, double w, double h);
 GdkPixbuf *rsvg_get_image_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
 
 
@@ -336,13 +337,13 @@ void rsvg_node_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * at
 
 void rsvg_drawing_ctx_free (RsvgDrawingCtx * handle);
 
-void rsvg_bbox_init	(RsvgBbox * self, double *affine);
-void rsvg_bbox_insert	(RsvgBbox * dst, RsvgBbox * src);
-void rsvg_bbox_clip	(RsvgBbox * dst, RsvgBbox * src);
+void rsvg_bbox_init     (RsvgBbox * self, double *affine);
+void rsvg_bbox_insert   (RsvgBbox * dst, RsvgBbox * src);
+void rsvg_bbox_clip     (RsvgBbox * dst, RsvgBbox * src);
 
-double _rsvg_css_normalize_length	(const RsvgLength * in, RsvgDrawingCtx * ctx, char dir);
-double _rsvg_css_hand_normalize_length	(const RsvgLength * in, gdouble pixels_per_inch,
-					 gdouble width_or_height, gdouble font_size);
+double _rsvg_css_normalize_length       (const RsvgLength * in, RsvgDrawingCtx * ctx, char dir);
+double _rsvg_css_hand_normalize_length  (const RsvgLength * in, gdouble pixels_per_inch,
+                                         gdouble width_or_height, gdouble font_size);
 
 RsvgLength _rsvg_css_parse_length (const char *str);
 
@@ -356,20 +357,20 @@ char *rsvg_get_url_string (const char *str);
 void rsvg_return_if_fail_warning (const char *pretty_function,
                                   const char *expression, GError ** error);
 
-#define rsvg_return_if_fail(expr, error)		G_STMT_START{			\
-     if G_LIKELY(expr) { } else       					\
-       {								\
-	 rsvg_return_if_fail_warning (G_STRFUNC,			\
-		                   #expr, error);			\
-	 return;							\
+#define rsvg_return_if_fail(expr, error)    G_STMT_START{			\
+     if G_LIKELY(expr) { } else                                     \
+       {                                                            \
+           rsvg_return_if_fail_warning (G_STRFUNC,                  \
+                                        #expr, error);              \
+           return;                                                  \
        };				}G_STMT_END
 
-#define rsvg_return_val_if_fail(expr,val,error)	G_STMT_START{			\
-     if G_LIKELY(expr) { } else						\
-       {								\
-	 rsvg_return_if_fail_warning (G_STRFUNC,	    		\
-		                   #expr, error);			\
-	 return (val);							\
+#define rsvg_return_val_if_fail(expr,val,error)	G_STMT_START{       \
+     if G_LIKELY(expr) { } else                                     \
+       {                                                            \
+           rsvg_return_if_fail_warning (G_STRFUNC,                  \
+                                        #expr, error);              \
+           return (val);                                            \
        };				}G_STMT_END
 
 G_END_DECLS

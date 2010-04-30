@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-gobject.c: GObject support.
 
@@ -84,7 +85,7 @@ rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
     xmlFree (entval->orig);
     xmlFree (entval);
 #else
-	xmlFreeNode((xmlNode *) entval);
+    xmlFreeNode((xmlNode *) entval);
 #endif
 }
 
@@ -201,9 +202,9 @@ class_init (RsvgHandleClass * klass)
     gobject_class->set_property = set_property;
     gobject_class->get_property = get_property;
 
-        /**
-	 * dpi-x:
-	 */
+    /**
+     * dpi-x:
+     */
     g_object_class_install_property (gobject_class,
                                      PROP_DPI_X,
                                      g_param_spec_double ("dpi-x", _("Horizontal resolution"),

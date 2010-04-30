@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg.c: SAX-based renderer for SVG files into a GdkPixbuf.
 
@@ -263,7 +264,7 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
 
     if (newnode) {
         newnode->type = g_string_new (name);
-	newnode->parent = ctx->priv->currentnode;
+        newnode->parent = ctx->priv->currentnode;
         rsvg_node_set_atts (newnode, ctx, atts);
         rsvg_defs_register_memory (ctx->priv->defs, newnode);
         if (ctx->priv->currentnode) {
@@ -710,37 +711,35 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
     if (!ch || !len)
         return;
 
-	if (ctx->priv->currentnode)
-		{
-			if (!strcmp ("tspan", ctx->priv->currentnode->type->str) ||
-				!strcmp ("text", ctx->priv->currentnode->type->str))
-				{
-					guint i;
+    if (ctx->priv->currentnode) {
+        if (!strcmp ("tspan", ctx->priv->currentnode->type->str) ||
+            !strcmp ("text", ctx->priv->currentnode->type->str)) {
+            guint i;
 
-					/* find the last CHARS node in the text or tspan node, so that we
-					   can coalesce the text, and thus avoid screwing up the Pango layouts */
-					self = NULL;
-					for (i = 0; i < ctx->priv->currentnode->children->len; i++) {
-						RsvgNode *node = g_ptr_array_index (ctx->priv->currentnode->children, i);
-						if (!strcmp (node->type->str, "RSVG_NODE_CHARS")) {
-							self = (RsvgNodeChars*)node;
-						}
-					}
+            /* find the last CHARS node in the text or tspan node, so that we
+               can coalesce the text, and thus avoid screwing up the Pango layouts */
+            self = NULL;
+            for (i = 0; i < ctx->priv->currentnode->children->len; i++) {
+                RsvgNode *node = g_ptr_array_index (ctx->priv->currentnode->children, i);
+                if (!strcmp (node->type->str, "RSVG_NODE_CHARS")) {
+                    self = (RsvgNodeChars*)node;
+                }
+            }
 
-					if (self != NULL) {
-						if (!g_utf8_validate ((char *) ch, len, NULL)) {
-							char *utf8;
-							utf8 = rsvg_make_valid_utf8 ((char *) ch, len);
-							g_string_append (self->contents, utf8);
-							g_free (utf8);
-						} else {
-							g_string_append_len (self->contents, (char *)ch, len);
-						}
+            if (self != NULL) {
+                if (!g_utf8_validate ((char *) ch, len, NULL)) {
+                    char *utf8;
+                    utf8 = rsvg_make_valid_utf8 ((char *) ch, len);
+                    g_string_append (self->contents, utf8);
+                    g_free (utf8);
+                } else {
+                    g_string_append_len (self->contents, (char *)ch, len);
+                }
 
-						return;
-					}
-				}
-		}
+                return;
+            }
+        }
+    }
 
     self = g_new (RsvgNodeChars, 1);
     _rsvg_node_init (&self->super);
@@ -980,26 +979,27 @@ rsvg_path_is_uri (char const *path)
     char const *p;
 
     if (path == NULL)
-	return FALSE;
+        return FALSE;
 
     if (strlen (path) < 4)
-	return FALSE;
+        return FALSE;
 
-    if (   (path[0] < 'a' || path[0] > 'z')
-	&& (path[0] < 'A' || path[0] > 'Z'))
-	return FALSE;
+    if ((path[0] < 'a' || path[0] > 'z') &&
+        (path[0] < 'A' || path[0] > 'Z')) {
+        return FALSE;
+    }
 
     for (p = &path[1];
-	    (*p >= 'a' && *p <= 'z') 
-	 || (*p >= 'A' && *p <= 'Z') 
-	 || (*p >= '0' && *p <= '9') 
-	 || *p == '+' 
-	 || *p == '-' 
-	 || *p == '.';
-	 p++);
+	    (*p >= 'a' && *p <= 'z') ||
+        (*p >= 'A' && *p <= 'Z') ||
+        (*p >= '0' && *p <= '9') ||
+         *p == '+' ||
+         *p == '-' ||
+         *p == '.';
+        p++);
 
     if (strlen (p) < 3)
-	return FALSE;
+        return FALSE;
 
     return (p[0] == ':' && p[1] == '/' && p[2] == '/');
 }
@@ -1045,9 +1045,9 @@ rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
 	return;
 
     if (rsvg_path_is_uri (base_uri)) 
-	uri = g_strdup (base_uri);
+        uri = g_strdup (base_uri);
     else
-	uri = rsvg_get_base_uri_from_filename (base_uri);
+        uri = rsvg_get_base_uri_from_filename (base_uri);
 
     if (uri) {
         if (handle->priv->base_uri)
@@ -1091,19 +1091,19 @@ rsvg_error_quark (void)
 static void
 rsvg_set_error (GError **error, xmlParserCtxtPtr ctxt)
 {
-  xmlErrorPtr xerr;
+    xmlErrorPtr xerr;
 
-  xerr = xmlCtxtGetLastError (ctxt);
-  if (xerr) {
-    g_set_error (error, rsvg_error_quark (), 0,
-                 _("Error domain %d code %d on line %d column %d of %s: %s"),
-                 xerr->domain, xerr->code,
-                 xerr->line, xerr->int2,
-                 xerr->file ? xerr->file : "data",
-                 xerr->message ? xerr->message: "-");
-  } else {
-    g_set_error (error, rsvg_error_quark (), 0, _("Error parsing XML data"));
-  }
+    xerr = xmlCtxtGetLastError (ctxt);
+    if (xerr) {
+        g_set_error (error, rsvg_error_quark (), 0,
+                     _("Error domain %d code %d on line %d column %d of %s: %s"),
+                     xerr->domain, xerr->code,
+                     xerr->line, xerr->int2,
+                     xerr->file ? xerr->file : "data",
+                     xerr->message ? xerr->message: "-");
+    } else {
+        g_set_error (error, rsvg_error_quark (), 0, _("Error parsing XML data"));
+    }
 }
 
 static gboolean
@@ -1289,13 +1289,13 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
      * To prevent an infinite loop we are saving the state.
      */
     if (!handle->priv->in_loop) {
-	handle->priv->in_loop = TRUE;
-	rsvg_handle_get_dimensions_sub (handle, dimension_data, NULL);
-	handle->priv->in_loop = FALSE;
+        handle->priv->in_loop = TRUE;
+        rsvg_handle_get_dimensions_sub (handle, dimension_data, NULL);
+        handle->priv->in_loop = FALSE;
     } else {
-	/* Called within the size function, so return a standard size */
-	dimension_data->em = dimension_data->width = 1;
-	dimension_data->ex = dimension_data->height = 1;
+        /* Called within the size function, so return a standard size */
+        dimension_data->em = dimension_data->width = 1;
+        dimension_data->ex = dimension_data->height = 1;
     }
 }
 
@@ -1330,78 +1330,78 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     memset (dimension_data, 0, sizeof (RsvgDimensionData));
 
     if (id && *id) {
-	sself = (RsvgNode *) rsvg_defs_lookup (handle->priv->defs, id);
+        sself = (RsvgNode *) rsvg_defs_lookup (handle->priv->defs, id);
 
-	if (sself == (RsvgNode *) handle->priv->treebase)
-	    id = NULL;
+        if (sself == (RsvgNode *) handle->priv->treebase)
+            id = NULL;
     }
     else
-	sself = (RsvgNode *) handle->priv->treebase;
+        sself = (RsvgNode *) handle->priv->treebase;
 
     if (!sself && id)
-	return FALSE;
+        return FALSE;
 
     root = (RsvgNodeSvg *) handle->priv->treebase;
 
     if (!root)
-	return FALSE;
+        return FALSE;
 
     bbox.x = bbox.y = 0;
     bbox.w = bbox.h = 1;
 
     if (!id && (root->w.factor == 'p' || root->h.factor == 'p')
-	    && !root->vbox.active)
-	handle_subelement = TRUE;
+            && !root->vbox.active)
+        handle_subelement = TRUE;
     else if (!id && root->w.length != -1 && root->h.length != -1)
-	handle_subelement = FALSE;
+        handle_subelement = FALSE;
 
     if (handle_subelement == TRUE) {
-	target = cairo_image_surface_create (CAIRO_FORMAT_RGB24,
-					 1, 1);
-	cr = cairo_create  (target);
+        target = cairo_image_surface_create (CAIRO_FORMAT_RGB24,
+                                             1, 1);
+        cr = cairo_create  (target);
 
-	draw = rsvg_cairo_new_drawing_ctx (cr, handle);
-    
-	if (!draw) {
-	    cairo_destroy (cr);
-	    cairo_surface_destroy (target);
-	    
-	    return FALSE;
-	}
+        draw = rsvg_cairo_new_drawing_ctx (cr, handle);
 
-	while (sself != NULL) {
-	    draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, sself);
-	    sself = sself->parent;
-	}
+        if (!draw) {
+            cairo_destroy (cr);
+            cairo_surface_destroy (target);
 
-	rsvg_state_push (draw);
-	cairo_save (cr);
+            return FALSE;
+        }
 
-	rsvg_node_draw ((RsvgNode *) handle->priv->treebase, draw, 0);
-	render = (RsvgCairoRender *) draw->render;
+        while (sself != NULL) {
+            draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, sself);
+            sself = sself->parent;
+        }
 
-	bbox.x = render->bbox.x;
-	bbox.y = render->bbox.y;
-	bbox.w = render->bbox.w;
-	bbox.h = render->bbox.h;
+        rsvg_state_push (draw);
+        cairo_save (cr);
 
-	cairo_restore (cr);
-	rsvg_state_pop (draw);
-	rsvg_drawing_ctx_free (draw);
-	cairo_destroy (cr);
-	cairo_surface_destroy (target);
+        rsvg_node_draw ((RsvgNode *) handle->priv->treebase, draw, 0);
+        render = (RsvgCairoRender *) draw->render;
 
-	dimension_data->width = bbox.w;
-	dimension_data->height = bbox.h;
+        bbox.x = render->bbox.x;
+        bbox.y = render->bbox.y;
+        bbox.w = render->bbox.w;
+        bbox.h = render->bbox.h;
+
+        cairo_restore (cr);
+        rsvg_state_pop (draw);
+        rsvg_drawing_ctx_free (draw);
+        cairo_destroy (cr);
+        cairo_surface_destroy (target);
+
+        dimension_data->width = bbox.w;
+        dimension_data->height = bbox.h;
     } else {
-	bbox.w = root->vbox.w; 
-	bbox.h = root->vbox.h; 
+        bbox.w = root->vbox.w;
+        bbox.h = root->vbox.h;
 
-	dimension_data->width = (int) (_rsvg_css_hand_normalize_length (&root->w, handle->priv->dpi_x,
-									bbox.w + bbox.x * 2, 12) + 0.5);
-	dimension_data->height = (int) (_rsvg_css_hand_normalize_length (&root->h, handle->priv->dpi_y, 
-									bbox.h + bbox.y * 2,
-									12) + 0.5);
+        dimension_data->width = (int) (_rsvg_css_hand_normalize_length (&root->w, handle->priv->dpi_x,
+                                       bbox.w + bbox.x * 2, 12) + 0.5);
+        dimension_data->height = (int) (_rsvg_css_hand_normalize_length (&root->h, handle->priv->dpi_y,
+                                         bbox.h + bbox.y * 2,
+                                         12) + 0.5);
     }
     
     dimension_data->em = dimension_data->width;
@@ -1430,87 +1430,87 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 gboolean
 rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id)
 {
-	RsvgDrawingCtx		*draw;
-	RsvgNodeSvg			*root;
-	RsvgNode			*node;
-	RsvgBbox			 bbox;
-	RsvgDimensionData    dimension_data;
-	cairo_surface_t		*target = NULL;
-	cairo_t				*cr = NULL;
-	gboolean			 ret = FALSE;
+    RsvgDrawingCtx		*draw;
+    RsvgNodeSvg			*root;
+    RsvgNode			*node;
+    RsvgBbox			 bbox;
+    RsvgDimensionData    dimension_data;
+    cairo_surface_t		*target = NULL;
+    cairo_t				*cr = NULL;
+    gboolean			 ret = FALSE;
 
-	g_return_val_if_fail (handle, FALSE);
-	g_return_val_if_fail (position_data, FALSE);
+    g_return_val_if_fail (handle, FALSE);
+    g_return_val_if_fail (position_data, FALSE);
 
-	/* Short-cut when no id is given. */
-	if (NULL == id || '\0' == *id) {
-		position_data->x = 0;
-		position_data->y = 0;
-		return TRUE;
-	}
+    /* Short-cut when no id is given. */
+    if (NULL == id || '\0' == *id) {
+        position_data->x = 0;
+        position_data->y = 0;
+        return TRUE;
+    }
 
-	memset (position_data, 0, sizeof (*position_data));
-	memset (&dimension_data, 0, sizeof (dimension_data));
+    memset (position_data, 0, sizeof (*position_data));
+    memset (&dimension_data, 0, sizeof (dimension_data));
 
-	node = (RsvgNode *) rsvg_defs_lookup (handle->priv->defs, id);
-	if (!node) {
-		return FALSE;
-	} else if (node == (RsvgNode *) handle->priv->treebase) {
-		/* Root node. */
-		position_data->x = 0;
-		position_data->y = 0;
-		return TRUE;
-	}
+    node = (RsvgNode *) rsvg_defs_lookup (handle->priv->defs, id);
+    if (!node) {
+        return FALSE;
+    } else if (node == (RsvgNode *) handle->priv->treebase) {
+        /* Root node. */
+        position_data->x = 0;
+        position_data->y = 0;
+        return TRUE;
+    }
 
-	root = (RsvgNodeSvg *) handle->priv->treebase;
-	if (!root)
-		return FALSE;
+    root = (RsvgNodeSvg *) handle->priv->treebase;
+    if (!root)
+        return FALSE;
 
-	target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
-	cr = cairo_create  (target);
-	draw = rsvg_cairo_new_drawing_ctx (cr, handle);
-	if (!draw)
-	    goto bail;
+    target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
+    cr = cairo_create  (target);
+    draw = rsvg_cairo_new_drawing_ctx (cr, handle);
+    if (!draw)
+        goto bail;
 
-	while (node != NULL) {
-	    draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, node);
-	    node = node->parent;
-	}
+    while (node != NULL) {
+        draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, node);
+        node = node->parent;
+    }
 
-	rsvg_state_push (draw);
-	cairo_save (cr);
+    rsvg_state_push (draw);
+    cairo_save (cr);
 
-	rsvg_node_draw ((RsvgNode *) handle->priv->treebase, draw, 0);
-	bbox.x = ((RsvgCairoRender *) draw->render)->bbox.x;
-	bbox.y = ((RsvgCairoRender *) draw->render)->bbox.y;
-	bbox.w = ((RsvgCairoRender *) draw->render)->bbox.w;
-	bbox.h = ((RsvgCairoRender *) draw->render)->bbox.h;
+    rsvg_node_draw ((RsvgNode *) handle->priv->treebase, draw, 0);
+    bbox.x = ((RsvgCairoRender *) draw->render)->bbox.x;
+    bbox.y = ((RsvgCairoRender *) draw->render)->bbox.y;
+    bbox.w = ((RsvgCairoRender *) draw->render)->bbox.w;
+    bbox.h = ((RsvgCairoRender *) draw->render)->bbox.h;
 
-	cairo_restore (cr);
-	rsvg_state_pop (draw);
-	rsvg_drawing_ctx_free (draw);
+    cairo_restore (cr);
+    rsvg_state_pop (draw);
+    rsvg_drawing_ctx_free (draw);
 
-	position_data->x = bbox.x;
-	position_data->y = bbox.y;
-	dimension_data.width = bbox.w;
-	dimension_data.height = bbox.h;
+    position_data->x = bbox.x;
+    position_data->y = bbox.y;
+    dimension_data.width = bbox.w;
+    dimension_data.height = bbox.h;
 
-	dimension_data.em = dimension_data.width;
-	dimension_data.ex = dimension_data.height;
+    dimension_data.em = dimension_data.width;
+    dimension_data.ex = dimension_data.height;
 
-	if (handle->priv->size_func)
-	    (*handle->priv->size_func) (&dimension_data.width, &dimension_data.height,
-	                                handle->priv->user_data);
+    if (handle->priv->size_func)
+        (*handle->priv->size_func) (&dimension_data.width, &dimension_data.height,
+                                    handle->priv->user_data);
 
-        ret = TRUE;
+    ret = TRUE;
 
 bail:
-	if (cr)
-		cairo_destroy (cr);
-	if (target)
-		cairo_surface_destroy (target);
+    if (cr)
+        cairo_destroy (cr);
+    if (target)
+        cairo_surface_destroy (target);
 
-	return ret;
+    return ret;
 }
 
 /** 
@@ -1874,15 +1874,12 @@ rsvg_bbox_insert (RsvgBbox * dst, RsvgBbox * src)
     if (src->virgin)
         return;
 
-    if (!dst->virgin)
-        {
-            xmin = dst->x, ymin = dst->y;
-            xmax = dst->x + dst->w, ymax = dst->y + dst->h;
-        }
-    else
-        {
-            xmin = ymin = xmax = ymax = 0;
-        }
+    if (!dst->virgin) {
+        xmin = dst->x, ymin = dst->y;
+        xmax = dst->x + dst->w, ymax = dst->y + dst->h;
+    } else {
+        xmin = ymin = xmax = ymax = 0;
+    }
 
     _rsvg_affine_invert (affine, dst->affine);
     _rsvg_affine_multiply (affine, src->affine, affine);
@@ -1925,15 +1922,12 @@ rsvg_bbox_clip (RsvgBbox * dst, RsvgBbox * src)
     if (src->virgin)
         return;
 
-	if (!dst->virgin)
-		{
-			xmin = dst->x + dst->w, ymin = dst->y + dst->h;
-			xmax = dst->x, ymax = dst->y;
-		}
-	else
-		{
-			xmin = ymin = xmax = ymax = 0;
-		}
+	if (!dst->virgin) {
+        xmin = dst->x + dst->w, ymin = dst->y + dst->h;
+        xmax = dst->x, ymax = dst->y;
+    } else {
+        xmin = ymin = xmax = ymax = 0;
+    }
 
     _rsvg_affine_invert (affine, dst->affine);
     _rsvg_affine_multiply (affine, src->affine, affine);

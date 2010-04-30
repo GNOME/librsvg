@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-paint-server.h : RSVG colors
 
@@ -141,19 +142,19 @@ struct _RsvgPaintServer {
 };
 
 /* Create a new paint server based on a specification string. */
-RsvgPaintServer	    *rsvg_paint_server_parse	(gboolean * inherit, const RsvgDefs * defs,
-						 const char *str, guint32 current_color);
-void		     rsvg_paint_server_ref	(RsvgPaintServer * ps);
-void		     rsvg_paint_server_unref	(RsvgPaintServer * ps);
+RsvgPaintServer	    *rsvg_paint_server_parse    (gboolean * inherit, const RsvgDefs * defs,
+                                                 const char *str, guint32 current_color);
+void                 rsvg_paint_server_ref      (RsvgPaintServer * ps);
+void                 rsvg_paint_server_unref    (RsvgPaintServer * ps);
 RsvgRadialGradient  *rsvg_clone_radial_gradient (const RsvgRadialGradient * grad,
-						 gboolean * shallow_cloned);
+                                                 gboolean * shallow_cloned);
 RsvgLinearGradient  *rsvg_clone_linear_gradient (const RsvgLinearGradient * grad,
-						 gboolean * shallow_cloned);
+                                                 gboolean * shallow_cloned);
 RsvgNode *rsvg_new_linear_gradient  (void);
 RsvgNode *rsvg_new_radial_gradient  (void);
-RsvgNode *rsvg_new_stop		    (void);
-RsvgNode *rsvg_new_pattern	    (void);
-void rsvg_pattern_fix_fallback		(RsvgPattern * pattern);
+RsvgNode *rsvg_new_stop	        (void);
+RsvgNode *rsvg_new_pattern      (void);
+void rsvg_pattern_fix_fallback          (RsvgPattern * pattern);
 void rsvg_linear_gradient_fix_fallback	(RsvgLinearGradient * grad);
 void rsvg_radial_gradient_fix_fallback	(RsvgRadialGradient * grad);
 
