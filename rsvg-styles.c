@@ -864,20 +864,22 @@ rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * a
 }
 
 static gboolean
-is_important (const gchar *value)
+parse_style_value (const gchar *string, gchar **value, gboolean *important)
 {
     gchar **strings;
-    gboolean important = FALSE;
 
-    strings = g_strsplit (value, "!", 2);
+    strings = g_strsplit (string, "!", 2);
     if (g_strv_length (strings) == 2 &&
         g_str_equal (g_strstrip (strings[1]), "important")) {
-        important = TRUE;
+        *important = TRUE;
+    } else {
+        *important = FALSE;
     }
+    *value = g_strdup (g_strstrip (strings[0]));
 
     g_strfreev (strings);
 
-    return important;
+    return TRUE;
 }
 
 /* Split a CSS2 style into individual style arguments, setting attributes
@@ -900,10 +902,14 @@ rsvg_parse_style (RsvgHandle * ctx, RsvgState * state, const char *str)
             continue;
 
         if (g_strv_length (values)  == 2) {
+            gboolean important;
+            gchar *style_value = NULL;
+            parse_style_value (values[1], &style_value, &important);
             rsvg_parse_style_pair (ctx, state,
                                    g_strstrip (values[0]),
-                                   g_strstrip (values[1]),
-                                   is_important (values[1]));
+                                   style_value,
+                                   important);
+            g_free (style_value);
         }
         g_strfreev (values);
     }

@@ -102,6 +102,7 @@ static const FixtureData fixtures[] =
     {"/styles/!important/#id prior than class", NULL, "styles/important.svg", "#red", "fill", .expected.color = 0xff0000 },
     {"/styles/!important/class prior than type", NULL, "styles/important.svg", "#blue", "fill", .expected.color = 0x0000ff },
     {"/styles/!important/presentation attribute is invalid", NULL, "styles/important.svg", "#white", "fill", .expected.color = 0xffffff },
+    {"/styles/!important/style prior than class", NULL, "styles/important.svg", "#pink", "fill", .expected.color = 0xffc0cb },
     {"/styles/selectors/descendant", "338160", "styles/bug338160.svg", "#base_shadow", "stroke-width", .expected.length = {2., '\0'}},
 };
 static const gint n_fixtures = G_N_ELEMENTS (fixtures);
