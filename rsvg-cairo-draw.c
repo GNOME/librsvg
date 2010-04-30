@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-shapes.c: Draw shapes with cairo
 
@@ -44,27 +45,27 @@
 static void
 _rsvg_cairo_set_shape_antialias (cairo_t * cr, ShapeRenderingProperty aa)
 {
-	if (SHAPE_RENDERING_AUTO == aa)
-		cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
-	else if (SHAPE_RENDERING_OPTIMIZE_SPEED == aa)
-		cairo_set_antialias (cr, CAIRO_ANTIALIAS_NONE);
-	else if (SHAPE_RENDERING_CRISP_EDGES == aa)
-		cairo_set_antialias (cr, CAIRO_ANTIALIAS_NONE);
-	else if (SHAPE_RENDERING_GEOMETRIC_PRECISION == aa)
-		cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
+    if (SHAPE_RENDERING_AUTO == aa)
+        cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
+    else if (SHAPE_RENDERING_OPTIMIZE_SPEED == aa)
+        cairo_set_antialias (cr, CAIRO_ANTIALIAS_NONE);
+    else if (SHAPE_RENDERING_CRISP_EDGES == aa)
+        cairo_set_antialias (cr, CAIRO_ANTIALIAS_NONE);
+    else if (SHAPE_RENDERING_GEOMETRIC_PRECISION == aa)
+        cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
 }
 
 static void
 _rsvg_cairo_set_text_antialias (cairo_t * cr, TextRenderingProperty aa)
 {
-	if (TEXT_RENDERING_AUTO == aa)
-		cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
-	else if (TEXT_RENDERING_OPTIMIZE_SPEED == aa)
-		cairo_set_antialias (cr, CAIRO_ANTIALIAS_NONE);
-	else if (TEXT_RENDERING_OPTIMIZE_LEGIBILITY == aa)
-		cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
-	else if (TEXT_RENDERING_GEOMETRIC_PRECISION == aa)
-		cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
+    if (TEXT_RENDERING_AUTO == aa)
+        cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
+    else if (TEXT_RENDERING_OPTIMIZE_SPEED == aa)
+        cairo_set_antialias (cr, CAIRO_ANTIALIAS_NONE);
+    else if (TEXT_RENDERING_OPTIMIZE_LEGIBILITY == aa)
+        cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
+    else if (TEXT_RENDERING_GEOMETRIC_PRECISION == aa)
+        cairo_set_antialias (cr, CAIRO_ANTIALIAS_DEFAULT);
 }
 
 static void
@@ -107,8 +108,8 @@ _rsvg_cairo_set_operator (cairo_t * cr, RsvgCompOpType comp_op)
         op = CAIRO_OPERATOR_XOR;
         break;
     case RSVG_COMP_OP_PLUS:
-	op = CAIRO_OPERATOR_ADD;
-	break;
+        op = CAIRO_OPERATOR_ADD;
+        break;
     case RSVG_COMP_OP_MULTIPLY:
     case RSVG_COMP_OP_SCREEN:
     case RSVG_COMP_OP_OVERLAY:
@@ -513,7 +514,7 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
                                        state->stroke_opacity,
                                        bbox, rsvg_state_current (ctx)->current_color);
 
-	cairo_set_line_width (render->cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, 'h'));
+        cairo_set_line_width (render->cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, 'h'));
         cairo_stroke (render->cr);
     }
 }
@@ -741,19 +742,19 @@ rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
 #if 1
     cairo_set_source_surface (render->cr, surface, pixbuf_x, pixbuf_y);
 #else
-	{
-		cairo_pattern_t *pattern;
-		cairo_matrix_t matrix;
+    {
+        cairo_pattern_t *pattern;
+        cairo_matrix_t matrix;
 
-		pattern = cairo_pattern_create_for_surface (surface);
-		cairo_pattern_set_extend (pattern, CAIRO_EXTEND_PAD);
+        pattern = cairo_pattern_create_for_surface (surface);
+        cairo_pattern_set_extend (pattern, CAIRO_EXTEND_PAD);
 
-		cairo_matrix_init_translate (&matrix, -pixbuf_x, -pixbuf_y);
-		cairo_pattern_set_matrix (pattern, &matrix);
+        cairo_matrix_init_translate (&matrix, -pixbuf_x, -pixbuf_y);
+        cairo_pattern_set_matrix (pattern, &matrix);
 
-		cairo_set_source (render->cr, pattern);
-		cairo_pattern_destroy (pattern);
-	}
+        cairo_set_source (render->cr, pattern);
+        cairo_pattern_destroy (pattern);
+    }
 #endif
 
     cairo_paint (render->cr);
@@ -1082,8 +1083,8 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx * ctx,
     rsvg_node_draw (drawable, ctx, 0);
     rsvg_state_pop (ctx);
 
-	/* no colorspace conversion necessary. this is just a convenient
-	   holder of ARGB data with a width, height, & stride */
+    /* no colorspace conversion necessary. this is just a convenient
+       holder of ARGB data with a width, height, & stride */
     img = gdk_pixbuf_new_from_data (pixels,
                                     GDK_COLORSPACE_RGB,
                                     TRUE,

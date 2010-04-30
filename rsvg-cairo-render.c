@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-cairo-render.c: The cairo backend plugin
 
@@ -211,10 +212,10 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     if (id && *id)
         drawsub = rsvg_defs_lookup (handle->priv->defs, id);
 
-	if (drawsub == NULL && id != NULL) {
-		/* todo: there's no way to signal that @id doesn't exist */
-		return FALSE;
-	}
+    if (drawsub == NULL && id != NULL) {
+	/* todo: there's no way to signal that @id doesn't exist */
+	return FALSE;
+    }
 
     draw = rsvg_cairo_new_drawing_ctx (cr, handle);
     if (!draw)
@@ -234,7 +235,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     rsvg_state_pop (draw);
     rsvg_drawing_ctx_free (draw);
 
-	return TRUE;
+    return TRUE;
 }
 
 /**

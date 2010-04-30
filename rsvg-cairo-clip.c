@@ -1,4 +1,5 @@
-/* vim: set sw=4 sts=4: -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
    rsvg-shapes.c: Draw shapes with cairo
 
@@ -47,29 +48,29 @@ struct RsvgCairoClipRender {
 static void
 rsvg_cairo_clip_apply_affine (RsvgCairoClipRender *render, const double affine[6])
 {
-	cairo_matrix_t matrix;
-	gboolean nest = render->cr != render->parent->initial_cr;
+    cairo_matrix_t matrix;
+    gboolean nest = render->cr != render->parent->initial_cr;
 
-	cairo_matrix_init (&matrix,
-					   affine[0], affine[1],
-					   affine[2], affine[3],
-					   affine[4] + (nest ? 0 : render->parent->offset_x),
-					   affine[5] + (nest ? 0 : render->parent->offset_y));
-	cairo_set_matrix (render->cr, &matrix);
+    cairo_matrix_init (&matrix,
+                       affine[0], affine[1],
+                       affine[2], affine[3],
+                       affine[4] + (nest ? 0 : render->parent->offset_x),
+                       affine[5] + (nest ? 0 : render->parent->offset_y));
+    cairo_set_matrix (render->cr, &matrix);
 }
 
 static void
 rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
 {
     RsvgCairoClipRender *render = (RsvgCairoClipRender *) ctx->render;
-	RsvgState *state = rsvg_state_current (ctx);
+    RsvgState *state = rsvg_state_current (ctx);
     cairo_t *cr;
     RsvgBpath *bpath;
     int i;
 
     cr = render->cr;
 
-	rsvg_cairo_clip_apply_affine (render, state->affine);
+    rsvg_cairo_clip_apply_affine (render, state->affine);
 
     if (rsvg_state_current (ctx)->clip_rule == FILL_RULE_EVENODD)
         cairo_set_fill_rule (((RsvgCairoRender *) ctx->render)->cr, CAIRO_FILL_RULE_EVEN_ODD);
