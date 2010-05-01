@@ -25,7 +25,9 @@ CLEANFILES = $(TESTS)
 DISTCLEANFILES = rsvg-test.html			\
 		 rsvg-test.log
 
-libtest_utils_la_SOURCES = test-utils.c
+libtest_utils_la_SOURCES = 				\
+	test-utils.c	   				\
+	test-utils.h
 
 EXTRA_DIST =						\
 	fixtures/dimensions/bug564527.svg		\
