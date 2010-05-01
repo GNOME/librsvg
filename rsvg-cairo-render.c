@@ -196,6 +196,8 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
  *
  * Draws a subset of a SVG to a Cairo surface
  *
+ * Returns: %TRUE if drawing succeeded.
+ *
  * Since: 2.14
  */
 gboolean
@@ -245,6 +247,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
  *
  * Draws a SVG to a Cairo surface
  *
+ * Returns: %TRUE if drawing succeeded.
  * Since: 2.14
  */
 gboolean

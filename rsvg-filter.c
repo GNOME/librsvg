@@ -569,7 +569,7 @@ pixbuf_get_alpha (GdkPixbuf * pb, RsvgFilterContext * ctx)
  * @name: The name of the pixbuf
  * @ctx: the context that this was called in
  *
- * Returns a pointer to the result that the name refers to, a special
+ * Returns: a pointer to the result that the name refers to, a special
  * Pixbuf if the name is a special keyword or NULL if nothing was found
  **/
 static RsvgFilterPrimitiveOutput
@@ -632,7 +632,7 @@ rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
  * @defs: a pointer to the hash of definitions
  * @str: a string with the name of the filter to be looked up
  *
- * Returns a pointer to the filter that the name refers to, or NULL
+ * Returns: a pointer to the filter that the name refers to, or NULL
  * if none was found
  **/
 RsvgFilter *
