@@ -1,3 +1,41 @@
+Version 2.26.3
+
+- Bug fixed:
+  143300 wrong bounding box when importing SVG
+  403274 text in thumbnail too large
+  404976 Unicode decomposed chars are not rendered well
+  524690 text alignment incorrect with text-anchor:end
+  545158 Segfault or bad rendering when displaying a SVG file
+  563933 corrupted rendering of a card in 'Paris' aisleriot card theme
+  564527 rsvg_handle_get_dimensions_sub weird behaviour
+  564544 shape-rendering crispEdges property is antialiasing line elements
+  566433 Could not  read  a valid svg file (inkspace read it)
+  579286 This SVG-File crashes nautilus/rsvg-view
+  581491 rsvg rendering is broken when encounters a 0px styled <text>
+  589612 EOG error when loading a large SVG
+  592207 Object cannot be rendered with more than 1 CSS {} rule
+  597873 glib-mkenums cannot be invoked when GLib is uninstalled.
+  597988 incorrect pkgconfig file let's others fail to detect librsvg
+  598151 Incorrect rendering of svg file
+  608575 Hang on particular SVG input
+  612951 SVG not rendered if header contains width or height in percentage
+  614123 librsvg builds tests even if tests are not run
+  614555 should remove unused rsvg_filter_adobe_blend function
+  614566 Needless G_OBJECT macro should be removed.
+  614606 !important is not respected
+  614643 does not handle comma separated CSS selector without libcroco
+  614703 Need tests for get_dimensions.
+  614704 css style doesn't override presentation attributes
+  614730 Rendering not disabled for 0 sized objects
+  614866 tests for CSS handling
+  615490 rsvg-view should scale image size by default if the image has huge canvas.
+  615699 rsvg-view should show zoom ratio.
+  615701 class directive in svg element is not used at all
+  615715 .class#id type selector is not supported.
+  616187 rsvg-view crashes when open a svg image
+  616835 Fix linking with pedantic linkers
+  617163 !important directive support without libcroco.
+
 Version 2.26.2
 
 - Enable silent build by default
