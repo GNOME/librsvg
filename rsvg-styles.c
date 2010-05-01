@@ -1174,11 +1174,15 @@ rsvg_real_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
                 gchar **values;
                 values = g_strsplit (styles[j], ":", 2);
                 if (g_strv_length (values) == 2) {
+                    gchar *style_value = NULL;
+                    gboolean important;
+                    parse_style_value (g_strstrip (values[1]), &style_value, &important);
                     rsvg_css_define_style (ctx,
                                            g_strstrip (selectors[i]),
                                            g_strstrip (values[0]),
-                                           g_strstrip (values[1]),
-                                           FALSE);
+                                           g_strstrip (style_value),
+                                           important);
+                    g_free (style_value);
                 }
                 g_strfreev (values);
             }
