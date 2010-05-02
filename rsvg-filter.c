@@ -30,6 +30,7 @@
 #include "rsvg-styles.h"
 #include "rsvg-image.h"
 #include "rsvg-css.h"
+#include "rsvg-cairo-render.h"
 #include <string.h>
 
 #include <math.h>
@@ -440,11 +441,22 @@ rsvg_filter_free_pair (gpointer value)
     g_free (output);
 }
 
+static void
+rsvg_filter_context_free (RsvgFilterContext * ctx)
+{
+    if (!ctx)
+	return;
+
+    if (ctx->bg)
+	g_object_unref (ctx->bg);
+
+    g_free (ctx);
+}
+
 /**
- * rsvg_filter_render: Copy the source to the bg using a filter.
+ * rsvg_filter_render: Create a new pixbuf applied the filter.
  * @self: a pointer to the filter to use
  * @source: a pointer to the source pixbuf
- * @bg: the background pixbuf
  * @context: the context
  *
  * This function will create a context for itself, set up the coordinate systems
@@ -452,7 +464,7 @@ rsvg_filter_free_pair (gpointer value)
  **/
 GdkPixbuf *
 rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
-                    GdkPixbuf * bg, RsvgDrawingCtx * context, RsvgBbox * bounds, char *channelmap)
+                    RsvgDrawingCtx * context, RsvgBbox * bounds, char *channelmap)
 {
     RsvgFilterContext *ctx;
     RsvgFilterPrimitive *current;
@@ -463,7 +475,7 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
     ctx = g_new (RsvgFilterContext, 1);
     ctx->filter = self;
     ctx->source = source;
-    ctx->bg = bg;
+    ctx->bg = NULL;
     ctx->results = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, rsvg_filter_free_pair);
     ctx->ctx = context;
 
@@ -491,7 +503,7 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
 
     g_hash_table_destroy (ctx->results);
 
-    g_free (ctx);
+    rsvg_filter_context_free (ctx);
 
     return out;
 }
@@ -564,6 +576,52 @@ pixbuf_get_alpha (GdkPixbuf * pb, RsvgFilterContext * ctx)
     return output;
 }
 
+static GdkPixbuf *
+rsvg_compile_bg (RsvgDrawingCtx * ctx)
+{
+    RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
+    cairo_t *cr;
+    cairo_surface_t *surface;
+    GList *i;
+    unsigned char *pixels = g_new0 (guint8, render->width * render->height * 4);
+    int rowstride = render->width * 4;
+
+    GdkPixbuf *output = gdk_pixbuf_new_from_data (pixels,
+                                                  GDK_COLORSPACE_RGB, TRUE, 8,
+                                                  render->width, render->height,
+                                                  rowstride,
+                                                  (GdkPixbufDestroyNotify) g_free,
+                                                  NULL);
+
+    surface = cairo_image_surface_create_for_data (pixels,
+                                                   CAIRO_FORMAT_ARGB32,
+                                                   render->width, render->height, rowstride);
+
+    cr = cairo_create (surface);
+    cairo_surface_destroy (surface);
+
+    for (i = g_list_last (render->cr_stack); i != NULL; i = g_list_previous (i)) {
+        cairo_t *draw = i->data;
+        gboolean nest = draw != render->initial_cr;
+        cairo_set_source_surface (cr, cairo_get_target (draw),
+                                  nest ? 0 : -render->offset_x,
+                                  nest ? 0 : -render->offset_y);
+        cairo_paint (cr);
+    }
+
+    cairo_destroy (cr);
+    return output;
+}
+
+static GdkPixbuf *
+rsvg_filter_get_bg (RsvgFilterContext * ctx)
+{
+    if (!ctx->bg)
+	ctx->bg = rsvg_compile_bg (ctx->ctx);
+
+    return ctx->bg;
+}
+
 /**
  * rsvg_filter_get_in: Gets a pixbuf for a primative.
  * @name: The name of the pixbuf
@@ -585,8 +643,7 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
         output.Rused = output.Gused = output.Bused = output.Aused = 1;
         return output;
     } else if (!strcmp (name->str, "BackgroundImage")) {
-        g_object_ref (ctx->bg);
-        output.result = ctx->bg;
+        output.result = g_object_ref (rsvg_filter_get_bg (ctx));
         output.Rused = output.Gused = output.Bused = output.Aused = 1;
         return output;
     } else if (!strcmp (name->str, "") || !strcmp (name->str, "none") || !name) {
@@ -601,7 +658,7 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
     } else if (!strcmp (name->str, "BackgroundAlpha")) {
         output.Rused = output.Gused = output.Bused = 0;
         output.Aused = 1;
-        output.result = pixbuf_get_alpha (ctx->bg, ctx);
+        output.result = pixbuf_get_alpha (rsvg_filter_get_bg (ctx), ctx);
         return output;
     }
 

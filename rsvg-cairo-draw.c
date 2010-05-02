@@ -923,43 +923,6 @@ rsvg_cairo_push_discrete_layer (RsvgDrawingCtx * ctx)
     rsvg_cairo_push_render_stack (ctx);
 }
 
-static GdkPixbuf *
-rsvg_compile_bg (RsvgDrawingCtx * ctx)
-{
-    RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
-    cairo_t *cr;
-    cairo_surface_t *surface;
-    GList *i;
-    unsigned char *pixels = g_new0 (guint8, render->width * render->height * 4);
-    int rowstride = render->width * 4;
-
-    GdkPixbuf *output = gdk_pixbuf_new_from_data (pixels,
-                                                  GDK_COLORSPACE_RGB, TRUE, 8,
-                                                  render->width, render->height,
-                                                  rowstride,
-                                                  (GdkPixbufDestroyNotify) rsvg_pixmap_destroy,
-                                                  NULL);
-
-    surface = cairo_image_surface_create_for_data (pixels,
-                                                   CAIRO_FORMAT_ARGB32,
-                                                   render->width, render->height, rowstride);
-
-    cr = cairo_create (surface);
-    cairo_surface_destroy (surface);
-
-    for (i = g_list_last (render->cr_stack); i != NULL; i = g_list_previous (i)) {
-        cairo_t *draw = i->data;
-        gboolean nest = draw != render->initial_cr;
-        cairo_set_source_surface (cr, cairo_get_target (draw),
-                                  nest ? 0 : -render->offset_x,
-                                  nest ? 0 : -render->offset_y);
-        cairo_paint (cr);
-    }
-
-    cairo_destroy (cr);
-    return output;
-}
-
 static void
 rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 {
@@ -982,14 +945,12 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
     if (state->filter) {
         GdkPixbuf *pixbuf = render->pixbuf_stack->data;
-        GdkPixbuf *bg = rsvg_compile_bg (ctx);
 
         render->pixbuf_stack = g_list_remove (render->pixbuf_stack, pixbuf);
 
 
-        output = rsvg_filter_render (state->filter, pixbuf, bg, ctx, &render->bbox, "2103");
+        output = rsvg_filter_render (state->filter, pixbuf, ctx, &render->bbox, "2103");
         g_object_unref (pixbuf);
-        g_object_unref (bg);
 
         surface = cairo_image_surface_create_for_data (gdk_pixbuf_get_pixels (output),
                                                        CAIRO_FORMAT_ARGB32,
