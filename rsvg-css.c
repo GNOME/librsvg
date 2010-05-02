@@ -201,6 +201,30 @@ _rsvg_css_parse_length (const char *str)
 }
 
 double
+_rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
+{
+    RsvgState *parent;
+
+    switch (state->font_size.factor) {
+    case 'p':
+    case 'm':
+    case 'x':
+        parent= rsvg_state_parent (state);
+        if (parent) {
+            double parent_size;
+            parent_size = _rsvg_css_normalize_font_size (parent, ctx);
+            return state->font_size.length * parent_size;
+        }
+        break;
+    default:
+        return _rsvg_css_normalize_length (&state->font_size, ctx, 'v');
+        break;
+    }
+
+    return 12.;
+}
+
+double
 _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, char dir)
 {
     if (in->factor == '\0')
@@ -213,8 +237,7 @@ _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, char di
         if (dir == 'o')
             return in->length * rsvg_viewport_percentage (ctx->vb.w, ctx->vb.h);
     } else if (in->factor == 'm' || in->factor == 'x') {
-        double font = _rsvg_css_hand_normalize_length (&rsvg_current_state (ctx)->font_size,
-                                                       ctx->dpi_y, ctx->vb.h, 1);
+        double font = _rsvg_css_normalize_font_size (rsvg_current_state (ctx), ctx);
         if (in->factor == 'm')
             return in->length * font;
         else

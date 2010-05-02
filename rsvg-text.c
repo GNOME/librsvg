@@ -541,17 +541,16 @@ rsvg_text_create_layout (RsvgDrawingCtx * ctx,
     pango_font_description_set_weight (font_desc, state->font_weight);
     pango_font_description_set_stretch (font_desc, state->font_stretch);
     pango_font_description_set_size (font_desc,
-                                     _rsvg_css_normalize_length (&state->font_size, ctx,
-                                                                 'v') * PANGO_SCALE / ctx->dpi_y *
-                                     72);
+                                     _rsvg_css_normalize_font_size (state, ctx) *
+                                     PANGO_SCALE / ctx->dpi_y * 72);
 
     layout = pango_layout_new (context);
     pango_layout_set_font_description (layout, font_desc);
     pango_font_description_free (font_desc);
 
     attr_list = pango_attr_list_new ();
-    attribute = pango_attr_letter_spacing_new ( _rsvg_css_normalize_length (&state->letter_spacing, 
-									    ctx, 'h') * PANGO_SCALE);
+    attribute = pango_attr_letter_spacing_new (_rsvg_css_normalize_length (&state->letter_spacing,
+                                                                           ctx, 'h') * PANGO_SCALE);
     attribute->start_index = 0;
     attribute->end_index = G_MAXINT;
     pango_attr_list_insert (attr_list, attribute); 
