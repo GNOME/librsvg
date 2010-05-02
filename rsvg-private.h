@@ -180,7 +180,7 @@ typedef struct {
 
 struct RsvgDrawingCtx {
     RsvgRender *render;
-    GSList *state;
+    RsvgState *state;
     GError **error;
     RsvgDefs *defs;
     gchar *base_uri;

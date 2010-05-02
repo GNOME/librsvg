@@ -153,8 +153,7 @@ rsvg_marker_render (RsvgMarker * self, gdouble x, gdouble y, gdouble orient, gdo
     rsvg_state_push (ctx);
     state = rsvg_state_current (ctx);
 
-    rsvg_state_finalize (state);
-    rsvg_state_init (state);
+    rsvg_state_reinit (state);
 
     rsvg_state_reconstruct (state, &self->super);
 

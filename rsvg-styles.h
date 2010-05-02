@@ -132,6 +132,7 @@ struct _RsvgVpathDash {
 /* end libart theft... */
 
 struct _RsvgState {
+    RsvgState *parent;
     double affine[6];
     double personal_affine[6];
 
@@ -243,12 +244,14 @@ struct _RsvgState {
 RsvgState *rsvg_state_new (void);
 
 void rsvg_state_init        (RsvgState * state);
+void rsvg_state_reinit      (RsvgState * state);
 void rsvg_state_clone       (RsvgState * dst, const RsvgState * src);
 void rsvg_state_inherit     (RsvgState * dst, const RsvgState * src);
 void rsvg_state_reinherit   (RsvgState * dst, const RsvgState * src);
 void rsvg_state_dominate    (RsvgState * dst, const RsvgState * src);
 void rsvg_state_override    (RsvgState * dst, const RsvgState * src);
 void rsvg_state_finalize    (RsvgState * state);
+void rsvg_state_free_all    (RsvgState * state);
 
 void rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * atts);
 void rsvg_parse_style	    (RsvgHandle * ctx, RsvgState * state, const char *str);
@@ -262,7 +265,7 @@ gdouble rsvg_dpi_percentage      (RsvgHandle * ctx);
 
 gboolean rsvg_parse_transform   (double dst[6], const char *src);
 
-RsvgState *rsvg_state_parent    (RsvgDrawingCtx * ctx);
+RsvgState *rsvg_state_parent    (RsvgState * state);
 RsvgState *rsvg_state_current   (RsvgDrawingCtx * ctx);
 
 void rsvg_state_pop	 (RsvgDrawingCtx * ctx);

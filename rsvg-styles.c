@@ -80,6 +80,7 @@ rsvg_state_init (RsvgState * state)
 {
     memset (state, 0, sizeof (RsvgState));
 
+    state->parent = NULL;
     _rsvg_affine_identity (state->affine);
     _rsvg_affine_identity (state->personal_affine);
     state->mask = NULL;
@@ -164,16 +165,27 @@ rsvg_state_init (RsvgState * state)
                                            g_free, (GDestroyNotify) style_value_data_free);
 }
 
+void
+rsvg_state_reinit (RsvgState * state)
+{
+    RsvgState *parent = state->parent;
+    rsvg_state_finalize (state);
+    rsvg_state_init (state);
+    state->parent = parent;
+}
+
 typedef int (*InheritanceFunction) (int dst, int src);
 
 void
 rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 {
     gint i;
+    RsvgState *parent = dst->parent;
 
     rsvg_state_finalize (dst);
 
     *dst = *src;
+    dst->parent = parent;
     dst->font_family = g_strdup (src->font_family);
     dst->lang = g_strdup (src->lang);
     rsvg_paint_server_ref (dst->fill);
@@ -1494,13 +1506,24 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 RsvgState *
 rsvg_state_current (RsvgDrawingCtx * ctx)
 {
-    return g_slist_nth_data (ctx->state, 0);
+    return ctx->state;
 }
 
 RsvgState *
-rsvg_state_parent (RsvgDrawingCtx * ctx)
+rsvg_state_parent (RsvgState * state)
 {
-    return g_slist_nth_data (ctx->state, 1);
+    return state->parent;
+}
+
+void
+rsvg_state_free_all (RsvgState * state)
+{
+    while (state) {
+	RsvgState *parent = state->parent;
+	rsvg_state_finalize (state);
+	g_slice_free (RsvgState, state);
+	state = parent;
+    }
 }
 
 RsvgPropertyBag *
@@ -1556,29 +1579,27 @@ rsvg_state_push (RsvgDrawingCtx * ctx)
     RsvgState *data;
     RsvgState *baseon;
 
-    baseon = (RsvgState *) g_slist_nth_data (ctx->state, 0);
+    baseon = ctx->state;
     data = g_slice_new (RsvgState);
+    rsvg_state_init (data);
 
     if (baseon) {
         int i;
-        rsvg_state_init (data);
         rsvg_state_reinherit (data, baseon);
         for (i = 0; i < 6; i++)
             data->affine[i] = baseon->affine[i];
-    } else
-        rsvg_state_init (data);
+        data->parent = baseon;
+    }
 
-    ctx->state = g_slist_prepend (ctx->state, data);
+    ctx->state = data;
 }
 
 void
 rsvg_state_pop (RsvgDrawingCtx * ctx)
 {
-    GSList *link = g_slist_nth (ctx->state, 0);
-    RsvgState *dead_state = (RsvgState *) link->data;
-
+    RsvgState *dead_state = ctx->state;
+    ctx->state = dead_state->parent;
     rsvg_state_finalize (dead_state);
-    ctx->state = g_slist_delete_link (ctx->state, link);
     g_slice_free (RsvgState, dead_state);
 }
 
@@ -1599,34 +1620,27 @@ rsvg_state_pop (RsvgDrawingCtx * ctx)
 void
 rsvg_state_reinherit_top (RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
 {
+    RsvgState *current;
+
     if (dominate == 3)
         return;
 
+    current = rsvg_state_current (ctx);
     /*This is a special domination mode for patterns, the transform
        is simply left as is, wheras the style is totally overridden */
     if (dominate == 2) {
-        rsvg_state_override (rsvg_state_current (ctx), state);
-    } else if (dominate) {
-        RsvgState *parent;
-        rsvg_state_clone (rsvg_state_current (ctx), state);
-
-        parent = rsvg_state_parent (ctx);
-        if (parent) {
-            rsvg_state_dominate (rsvg_state_current (ctx), rsvg_state_parent (ctx));
-            _rsvg_affine_multiply (rsvg_state_current (ctx)->affine,
-                                   rsvg_state_current (ctx)->affine,
-                                   rsvg_state_parent (ctx)->affine);
-        }
+        rsvg_state_override (current, state);
     } else {
-        RsvgState *parent;
-        rsvg_state_clone (rsvg_state_current (ctx), state);
-
-        parent = rsvg_state_parent (ctx);
+        RsvgState *parent= rsvg_state_parent (current);
+        rsvg_state_clone (current, state);
         if (parent) {
-            rsvg_state_reinherit (rsvg_state_current (ctx), rsvg_state_parent (ctx));
-            _rsvg_affine_multiply (rsvg_state_current (ctx)->affine,
-                                   rsvg_state_current (ctx)->affine,
-                                   rsvg_state_parent (ctx)->affine);
+            if (dominate)
+                rsvg_state_dominate (current, parent);
+	    else
+                rsvg_state_reinherit (current, parent);
+            _rsvg_affine_multiply (current->affine,
+                                   current->affine,
+                                   parent->affine);
         }
     }
 }

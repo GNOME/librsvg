@@ -1178,20 +1178,12 @@ rsvg_handle_close_impl (RsvgHandle * handle, GError ** error)
     return TRUE;
 }
 
-static void
-rsvg_state_free_func (gpointer data, gpointer user_data)
-{
-    rsvg_state_finalize ((RsvgState *) data);
-    g_slice_free (RsvgState, data);
-}
-
 void
 rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
 {
     rsvg_render_free (handle->render);
 
-    g_slist_foreach (handle->state, rsvg_state_free_func, (gpointer) handle);
-    g_slist_free (handle->state);
+    rsvg_state_free_all (handle->state);
 
 	/* the drawsub stack's nodes are owned by the ->defs */
 	g_slist_free (handle->drawsub_stack);
