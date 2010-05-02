@@ -36,17 +36,6 @@
 /* what we use for text rendering depends on what cairo has to offer */
 #include <pango/pangocairo.h>
 
-#if defined CAIRO_HAS_FT_FONT
-#include <ft2build.h>
-#include FT_GLYPH_H
-#include FT_OUTLINE_H
-
-#include <pango/pangoft2.h>
-#elif defined (CAIRO_HAS_WIN32_FONT)
-/* nothing more needed? */
-#include <cairo-win32.h>
-#endif
-
 typedef struct _RsvgNodeText RsvgNodeText;
 
 struct _RsvgNodeText {
@@ -401,114 +390,6 @@ struct _RsvgTextLayout {
     gboolean orientation;
 };
 
-typedef struct _RenderCtx RenderCtx;
-
-struct _RenderCtx {
-    GString *path;
-    gboolean wrote;
-    gdouble offset_x;
-    gdouble offset_y;
-};
-
-#ifdef CAIRO_HAS_FT_FONT
-typedef void (*RsvgTextRenderFunc) (PangoFont * font,
-                                    PangoGlyph glyph,
-                                    FT_Int32 load_flags, gint x, gint y, gpointer render_data);
-
-#ifndef FT_GLYPH_FORMAT_OUTLINE
-#define FT_GLYPH_FORMAT_OUTLINE ft_glyph_format_outline
-#endif
-
-#ifndef FT_LOAD_TARGET_MONO
-#define FT_LOAD_TARGET_MONO FT_LOAD_MONOCHROME
-#endif
-#endif /* CAIRO_HAS_FT_FONT */
-
-static RenderCtx *
-rsvg_render_ctx_new (void)
-{
-    RenderCtx *ctx;
-
-    ctx = g_new0 (RenderCtx, 1);
-    ctx->path = g_string_new (NULL);
-
-    return ctx;
-}
-
-static void
-rsvg_render_ctx_free (RenderCtx * ctx)
-{
-    g_string_free (ctx->path, TRUE);
-    g_free (ctx);
-}
-
-#ifdef CAIRO_HAS_FT_FONT
-static void
-rsvg_text_ft2_subst_func (FcPattern * pattern, gpointer data)
-{
-    RsvgHandle *ctx = (RsvgHandle *) data;
-
-    (void) ctx;
-
-    FcPatternAddBool (pattern, FC_HINTING, 0);
-    FcPatternAddBool (pattern, FC_ANTIALIAS, 0);
-    FcPatternAddBool (pattern, FC_AUTOHINT, 0);
-    FcPatternAddBool (pattern, FC_SCALABLE, 1);
-}
-
-static PangoContext *
-rsvg_text_get_pango_context (RsvgDrawingCtx * ctx)
-{
-    PangoContext *context;
-    PangoFT2FontMap *fontmap;
-
-    fontmap = PANGO_FT2_FONT_MAP (pango_ft2_font_map_new ());
-
-    pango_ft2_font_map_set_resolution (fontmap, ctx->dpi_x, ctx->dpi_y);
-
-    pango_ft2_font_map_set_default_substitute (fontmap,
-                                               rsvg_text_ft2_subst_func,
-                                               ctx, (GDestroyNotify) NULL);
-
-    context = pango_ft2_font_map_create_context (fontmap);
-    g_object_unref (fontmap);
-
-    /*  Workaround for bug #143542 (PangoFT2Fontmap leak),
-     *  see also bug #344235 (Text layer rendering leaks font file descriptor):
-     *
-     *  Calling pango_ft2_font_map_substitute_changed() causes the
-     *  font_map cache to be flushed, thereby removing the circular
-     *  reference that causes the leak.
-     */
-    g_object_weak_ref (G_OBJECT (context),
-                       (GWeakNotify) pango_ft2_font_map_substitute_changed, fontmap);
-
-
-    return context;
-}
-#else
-/* although the #if condtionalizes on FT2 here we try to use pure cairo */
-typedef void (*RsvgTextRenderFunc) (PangoFont * font,
-                                    PangoGlyph glyph,
-                                    gint x, gint y, gpointer render_data);
-
-static PangoContext *
-rsvg_text_get_pango_context (RsvgDrawingCtx * ctx)
-{
-    PangoContext *context;
-    PangoCairoFontMap *fontmap;
-    
-    fontmap = PANGO_CAIRO_FONT_MAP (pango_cairo_font_map_new ());
-    if (ctx->dpi_x != ctx->dpi_y)
-	g_warning ("asymmetric dpi not handled");
-    pango_cairo_font_map_set_resolution (fontmap, ctx->dpi_x);
-    context = pango_cairo_font_map_create_context (fontmap);
-    g_object_unref (fontmap);
-    
-    return context;
-}
-#endif /* #ifdef CAIRO_HAS_FT_FONT */
-
 static void
 rsvg_text_layout_free (RsvgTextLayout * layout)
 {
@@ -591,12 +472,8 @@ rsvg_text_layout_new (RsvgDrawingCtx * ctx, RsvgState * state, const char *text)
 {
     RsvgTextLayout *layout;
 
-    if (ctx->pango_context == NULL) {
-        if (ctx->render->create_pango_context)
-            ctx->pango_context = ctx->render->create_pango_context (ctx);
-        else
-            ctx->pango_context = rsvg_text_get_pango_context (ctx);
-    }
+    if (ctx->pango_context == NULL)
+        ctx->pango_context = ctx->render->create_pango_context (ctx);
 
     layout = g_new0 (RsvgTextLayout, 1);
 
@@ -608,355 +485,31 @@ rsvg_text_layout_new (RsvgDrawingCtx * ctx, RsvgState * state, const char *text)
     return layout;
 }
 
-#ifdef CAIRO_HAS_FT_FONT
-static FT_Int32
-rsvg_text_layout_render_flags (RsvgTextLayout * layout)
-{
-    gint flags = 0;
-
-    flags |= FT_LOAD_NO_BITMAP;
-    flags |= FT_LOAD_TARGET_MONO;
-    flags |= FT_LOAD_NO_HINTING;
-
-    return flags;
-}
-
-static void
-rsvg_text_vector_coords (RenderCtx * ctx, const FT_Vector * vector, gdouble * x, gdouble * y)
-{
-    *x = ctx->offset_x + (double) vector->x / 64;
-    *y = ctx->offset_y - (double) vector->y / 64;
-}
-
-static gint
-moveto (const FT_Vector * to, gpointer data)
-{
-    RenderCtx *ctx;
-    gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
-    gdouble x, y;
-
-    ctx = (RenderCtx *) data;
-
-    if (ctx->wrote)
-        g_string_append (ctx->path, "Z ");
-    else
-        ctx->wrote = TRUE;
-
-    g_string_append_c (ctx->path, 'M');
-
-    rsvg_text_vector_coords (ctx, to, &x, &y);
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), x));
-    g_string_append_c (ctx->path, ',');
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), y));
-    g_string_append_c (ctx->path, ' ');
-
-    return 0;
-}
-
-static gint
-lineto (const FT_Vector * to, gpointer data)
-{
-    RenderCtx *ctx;
-    gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
-    gdouble x, y;
-
-    ctx = (RenderCtx *) data;
-
-    if (!ctx->wrote)
-        return 0;
-
-    g_string_append_c (ctx->path, 'L');
-
-    rsvg_text_vector_coords (ctx, to, &x, &y);
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), x));
-    g_string_append_c (ctx->path, ',');
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), y));
-    g_string_append_c (ctx->path, ' ');
-
-    return 0;
-}
-
-static gint
-conicto (const FT_Vector * ftcontrol, const FT_Vector * to, gpointer data)
-{
-    RenderCtx *ctx;
-    gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
-    gdouble x, y;
-
-    ctx = (RenderCtx *) data;
-
-    if (!ctx->wrote)
-        return 0;
-
-    g_string_append_c (ctx->path, 'Q');
-
-    rsvg_text_vector_coords (ctx, ftcontrol, &x, &y);
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), x));
-    g_string_append_c (ctx->path, ',');
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), y));
-
-    rsvg_text_vector_coords (ctx, to, &x, &y);
-    g_string_append_c (ctx->path, ' ');
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), x));
-    g_string_append_c (ctx->path, ',');
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), y));
-    g_string_append_c (ctx->path, ' ');
-
-    return 0;
-}
-
-static gint
-cubicto (const FT_Vector * ftcontrol1,
-         const FT_Vector * ftcontrol2, const FT_Vector * to, gpointer data)
-{
-    RenderCtx *ctx;
-    gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
-    gdouble x, y;
-
-    ctx = (RenderCtx *) data;
-
-    if (!ctx->wrote)
-        return 0;
-
-    g_string_append_c (ctx->path, 'C');
-
-    rsvg_text_vector_coords (ctx, ftcontrol1, &x, &y);
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), x));
-    g_string_append_c (ctx->path, ',');
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), y));
-
-    rsvg_text_vector_coords (ctx, ftcontrol2, &x, &y);
-    g_string_append_c (ctx->path, ' ');
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), x));
-    g_string_append_c (ctx->path, ',');
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), y));
-
-    rsvg_text_vector_coords (ctx, to, &x, &y);
-    g_string_append_c (ctx->path, ' ');
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), x));
-    g_string_append_c (ctx->path, ',');
-    g_string_append (ctx->path, g_ascii_dtostr (buf, sizeof (buf), y));
-    g_string_append_c (ctx->path, ' ');
-
-    return 0;
-}
-
-static gint
-rsvg_text_layout_render_glyphs (RsvgTextLayout * layout,
-                                PangoFont * font,
-                                PangoGlyphString * glyphs,
-                                RsvgTextRenderFunc render_func,
-                                gint x, gint y, gpointer render_data)
-{
-    PangoGlyphInfo *gi;
-    FT_Int32 flags;
-    FT_Vector pos;
-    gint i;
-    gint x_position = 0;
-
-    flags = rsvg_text_layout_render_flags (layout);
-
-    for (i = 0, gi = glyphs->glyphs; i < glyphs->num_glyphs; i++, gi++) {
-        if (gi->glyph) {
-            pos.x = x + x_position + gi->geometry.x_offset;
-            pos.y = y + gi->geometry.y_offset;
-
-            render_func (font, gi->glyph, flags, pos.x, pos.y, render_data);
-        }
-
-        x_position += glyphs->glyphs[i].geometry.width;
-    }
-    return x_position;
-}
-
-static void
-rsvg_text_render_vectors (PangoFont * font,
-                          PangoGlyph pango_glyph, FT_Int32 flags, gint x, gint y, gpointer ud)
-{
-    static const FT_Outline_Funcs outline_funcs = {
-        (FT_Outline_MoveToFunc) moveto,
-        (FT_Outline_LineToFunc) lineto,
-        (FT_Outline_ConicToFunc) conicto,
-        (FT_Outline_CubicToFunc) cubicto,
-        0,
-        0
-    };
-
-    FT_Face face;
-    FT_Glyph glyph;
-
-    RenderCtx *context = (RenderCtx *) ud;
-
-    face = pango_ft2_font_get_face (font);
-
-    if (0 != FT_Load_Glyph (face, (FT_UInt) pango_glyph, flags))
-        return;
-
-    if (0 != FT_Get_Glyph (face->glyph, &glyph))
-		return;
-
-    if (face->glyph->format == FT_GLYPH_FORMAT_OUTLINE) {
-        FT_OutlineGlyph outline_glyph = (FT_OutlineGlyph) glyph;
-
-        context->offset_x = (gdouble) x / PANGO_SCALE;
-        context->offset_y = (gdouble) y / PANGO_SCALE - (int) face->size->metrics.ascender / 64;
-
-        FT_Outline_Decompose (&outline_glyph->outline, &outline_funcs, context);
-    }
-
-    FT_Done_Glyph (glyph);
-}
-#else 
-static gint
-rsvg_text_layout_render_glyphs (RsvgTextLayout * layout,
-                                PangoFont * font,
-                                PangoGlyphString * glyphs,
-                                RsvgTextRenderFunc render_func,
-                                gint x, gint y, gpointer render_data)
-{
-    PangoGlyphInfo *gi;
-    gint i;
-    gint x_position = 0;
-    gint pos_x, pos_y;
-    
-    for (i = 0, gi = glyphs->glyphs; i < glyphs->num_glyphs; i++, gi++) {
-        if (gi->glyph) {
-            pos_x = x + x_position + gi->geometry.x_offset;
-            pos_y = y + gi->geometry.y_offset;
-
-            render_func (font, gi->glyph, pos_x, pos_y, render_data);
-        }
-
-        x_position += glyphs->glyphs[i].geometry.width;
-    }
-
-    return x_position;
-}
-
-static void
-rsvg_text_render_vectors (PangoFont * font,
-                          PangoGlyph pango_glyph, gint x, gint y, gpointer ud)
-{
-}
-#endif /* CAIRO_HAS_FT_FONT */
-
-static void
-rsvg_text_layout_render_line (RsvgTextLayout * layout,
-                              PangoLayoutLine * line,
-                              RsvgTextRenderFunc render_func, gint x, gint y, gpointer render_data)
-{
-    GSList *list;
-    gint x_off = 0;
-
-    for (list = line->runs; list; list = list->next) {
-        PangoLayoutRun *run = list->data;
-
-        x_off += rsvg_text_layout_render_glyphs (layout,
-                                                 run->item->analysis.font, run->glyphs,
-                                                 render_func, x + x_off, y, render_data);
-
-    }
-}
-
-static void
-rsvg_text_layout_render (RsvgTextLayout * layout,
-                         RsvgTextRenderFunc render_func, gpointer render_data)
-{
-    PangoLayoutIter *iter;
-    gint x, y;
-
-    x = layout->x;
-    y = layout->y;
-
-    x *= PANGO_SCALE;
-    y *= PANGO_SCALE;
-
-    iter = pango_layout_get_iter (layout->layout);
-
-    if (iter) {
-        PangoRectangle logical;
-        PangoLayoutLine *line;
-        gint baseline;
-
-        line = pango_layout_iter_get_line (iter);
-
-        pango_layout_iter_get_line_extents (iter, NULL, &logical);
-        baseline = pango_layout_iter_get_baseline (iter);
-
-        rsvg_text_layout_render_line (layout, line,
-                                      render_func, x, y + baseline, render_data);
-
-        layout->x += logical.width / (double)PANGO_SCALE;
-    }
-
-    pango_layout_iter_free (iter);
-}
-
-static GString *
-rsvg_text_render_text_as_string (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdouble * y)
-{
-    RsvgTextLayout *layout;
-    RenderCtx *render;
-    RsvgState *state;
-    GString *output;
-    state = rsvg_current_state (ctx);
-
-    state->fill_rule = FILL_RULE_EVENODD;
-    state->has_fill_rule = TRUE;
-
-    layout = rsvg_text_layout_new (ctx, state, text);
-    layout->x = *x;
-    layout->y = *y;
-    layout->orientation = rsvg_current_state (ctx)->text_dir == PANGO_DIRECTION_TTB_LTR ||
-        rsvg_current_state (ctx)->text_dir == PANGO_DIRECTION_TTB_RTL;
-    render = rsvg_render_ctx_new ();
-
-    rsvg_text_layout_render (layout, rsvg_text_render_vectors, (gpointer) render);
-
-    if (render->wrote)
-        g_string_append_c (render->path, 'Z');
-
-    *x = layout->x;
-    *y = layout->y;
-
-    output = g_string_new (render->path->str);
-    rsvg_render_ctx_free (render);
-    rsvg_text_layout_free (layout);
-    return output;
-}
-
 void
 rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdouble * y)
 {
-    if (ctx->render->create_pango_context && ctx->render->render_pango_layout) {
-        PangoContext *context;
-        PangoLayout *layout;
-        PangoLayoutIter *iter;
-        RsvgState *state;
-        gint w, h, baseline;
+    PangoContext *context;
+    PangoLayout *layout;
+    PangoLayoutIter *iter;
+    RsvgState *state;
+    gint w, h, baseline;
 
-        state = rsvg_current_state (ctx);
+    state = rsvg_current_state (ctx);
 
-        /* Do not render the text if the font size is zero. See bug #581491. */
-        if (state->font_size.length == 0)
-            return;
+    /* Do not render the text if the font size is zero. See bug #581491. */
+    if (state->font_size.length == 0)
+        return;
 
-        context = ctx->render->create_pango_context (ctx);
-        layout = rsvg_text_create_layout (ctx, state, text, context);
-        pango_layout_get_size (layout, &w, &h);
-        iter = pango_layout_get_iter (layout);
-        baseline = pango_layout_iter_get_baseline (iter) / (double)PANGO_SCALE;
-        pango_layout_iter_free (iter);
-        ctx->render->render_pango_layout (ctx, layout, *x, *y - baseline);
-        *x += w / (double)PANGO_SCALE;
-        g_object_unref (layout);
-        g_object_unref (context);
-    } else {
-        GString *render;
-        render = rsvg_text_render_text_as_string (ctx, text, x, y);
-        rsvg_render_path (ctx, render->str);
-        g_string_free (render, TRUE);
-    }
+    context = ctx->render->create_pango_context (ctx);
+    layout = rsvg_text_create_layout (ctx, state, text, context);
+    pango_layout_get_size (layout, &w, &h);
+    iter = pango_layout_get_iter (layout);
+    baseline = pango_layout_iter_get_baseline (iter) / (double)PANGO_SCALE;
+    pango_layout_iter_free (iter);
+    ctx->render->render_pango_layout (ctx, layout, *x, *y - baseline);
+    *x += w / (double)PANGO_SCALE;
+    g_object_unref (layout);
+    g_object_unref (context);
 }
 
 static gdouble
