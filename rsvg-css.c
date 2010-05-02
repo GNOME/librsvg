@@ -213,7 +213,7 @@ _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, char di
         if (dir == 'o')
             return in->length * rsvg_viewport_percentage (ctx->vb.w, ctx->vb.h);
     } else if (in->factor == 'm' || in->factor == 'x') {
-        double font = _rsvg_css_hand_normalize_length (&rsvg_state_current (ctx)->font_size,
+        double font = _rsvg_css_hand_normalize_length (&rsvg_current_state (ctx)->font_size,
                                                        ctx->dpi_y, ctx->vb.h, 1);
         if (in->factor == 'm')
             return in->length * font;

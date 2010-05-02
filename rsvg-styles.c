@@ -1504,7 +1504,7 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 }
 
 RsvgState *
-rsvg_state_current (RsvgDrawingCtx * ctx)
+rsvg_current_state (RsvgDrawingCtx * ctx)
 {
     return ctx->state;
 }
@@ -1625,7 +1625,7 @@ rsvg_state_reinherit_top (RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
     if (dominate == 3)
         return;
 
-    current = rsvg_state_current (ctx);
+    current = rsvg_current_state (ctx);
     /*This is a special domination mode for patterns, the transform
        is simply left as is, wheras the style is totally overridden */
     if (dominate == 2) {

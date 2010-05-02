@@ -268,8 +268,9 @@ gboolean rsvg_parse_transform   (double dst[6], const char *src);
 RsvgState *rsvg_state_parent    (RsvgState * state);
 RsvgState *rsvg_state_current   (RsvgDrawingCtx * ctx);
 
-void rsvg_state_pop	 (RsvgDrawingCtx * ctx);
-void rsvg_state_push (RsvgDrawingCtx * ctx);
+void       rsvg_state_pop       (RsvgDrawingCtx * ctx);
+void       rsvg_state_push      (RsvgDrawingCtx * ctx);
+RsvgState *rsvg_current_state   (RsvgDrawingCtx * ctx);
 
 void rsvg_state_reinherit_top	(RsvgDrawingCtx * ctx, RsvgState * state, int dominate);
 

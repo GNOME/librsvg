@@ -469,7 +469,7 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
 
     g_object_ref (source);
 
-    rsvg_filter_fix_coordinate_system (ctx, rsvg_state_current (context), *bounds);
+    rsvg_filter_fix_coordinate_system (ctx, rsvg_current_state (context), *bounds);
 
     ctx->lastresult.result = source;
     ctx->lastresult.Rused = 1;
@@ -3284,7 +3284,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self, RsvgFilterCon
         return NULL;
 
     for (i = 0; i < 6; i++)
-        rsvg_state_current (ctx)->affine[i] = context->paffine[i];
+        rsvg_current_state (ctx)->affine[i] = context->paffine[i];
 
     return rsvg_get_image_of_node (ctx, drawable, context->width, context->height);
 }

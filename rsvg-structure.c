@@ -217,7 +217,7 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     else if (rsvg_node_is_ancestor (child, self))       /* or, if we're <use>'ing ourself */
         return;
 
-    state = rsvg_state_current (ctx);
+    state = rsvg_current_state (ctx);
     if (strcmp (child->type->str, "symbol")) {
         _rsvg_affine_translate (affine, x, y);
         _rsvg_affine_multiply (state->affine, affine, state->affine);
@@ -279,7 +279,7 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
 
-    state = rsvg_state_current (ctx);
+    state = rsvg_current_state (ctx);
 
     for (i = 0; i < 6; i++)
         affine_old[i] = state->affine[i];

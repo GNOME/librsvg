@@ -155,7 +155,7 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
     draw->ptrs = NULL;
 
     rsvg_state_push (draw);
-    state = rsvg_state_current (draw);
+    state = rsvg_current_state (draw);
 
     /* apply cairo transformation to our affine transform */
     affine[0] = cairo_transform.xx;

@@ -104,7 +104,7 @@ rsvg_marker_render (RsvgMarker * self, gdouble x, gdouble y, gdouble orient, gdo
     gdouble taffine[6];
     unsigned int i;
     gdouble rotation;
-    RsvgState *state = rsvg_state_current (ctx);
+    RsvgState *state = rsvg_current_state (ctx);
 
     _rsvg_affine_translate (taffine, x, y);
     _rsvg_affine_multiply (affine, taffine, state->affine);
@@ -151,7 +151,7 @@ rsvg_marker_render (RsvgMarker * self, gdouble x, gdouble y, gdouble orient, gdo
 
 
     rsvg_state_push (ctx);
-    state = rsvg_state_current (ctx);
+    state = rsvg_current_state (ctx);
 
     rsvg_state_reinit (state);
 
@@ -162,7 +162,7 @@ rsvg_marker_render (RsvgMarker * self, gdouble x, gdouble y, gdouble orient, gdo
 
     rsvg_push_discrete_layer (ctx);
 
-    state = rsvg_state_current (ctx);
+    state = rsvg_current_state (ctx);
 
     if (!state->overflow) {
         if (self->vbox.active)
@@ -220,7 +220,7 @@ rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
     RsvgMarker *middlemarker;
     RsvgMarker *endmarker;
 
-    state = rsvg_state_current (ctx);
+    state = rsvg_current_state (ctx);
 
     linewidth = _rsvg_css_normalize_length (&state->stroke_width, ctx, 'o');
     startmarker = (RsvgMarker *) state->startMarker;
