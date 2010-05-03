@@ -61,7 +61,7 @@ static void
 rsvg_path_arc_segment (RSVGParsePathCtx * ctx,
                        double xc, double yc,
                        double th0, double th1, double rx, double ry,
-		       double x_axis_rotation)
+                       double x_axis_rotation)
 {
     double x1, y1, x2, y2, x3, y3;
     double t;
