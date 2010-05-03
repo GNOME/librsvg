@@ -266,7 +266,6 @@ gdouble rsvg_dpi_percentage      (RsvgHandle * ctx);
 gboolean rsvg_parse_transform   (double dst[6], const char *src);
 
 RsvgState *rsvg_state_parent    (RsvgState * state);
-RsvgState *rsvg_state_current   (RsvgDrawingCtx * ctx);
 
 void       rsvg_state_pop       (RsvgDrawingCtx * ctx);
 void       rsvg_state_push      (RsvgDrawingCtx * ctx);
