@@ -55,6 +55,7 @@ rsvg_acquire_base64_resource (const char *data, GError ** error)
     if (bufptr) {
         array = g_byte_array_sized_new (buffer_len);
         g_byte_array_append (array, bufptr, buffer_len);
+        g_free (bufptr);
     }
 
     return array;
