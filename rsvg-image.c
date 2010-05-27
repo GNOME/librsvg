@@ -93,10 +93,8 @@ rsvg_acquire_file_resource (const char *filename, const char *base_uri, GError *
 {
     GByteArray *array;
     gchar *path;
-
-    guchar buffer[4096];
-    int length;
-    FILE *f;
+    gchar *data = NULL;
+    gsize length;
 
     rsvg_return_val_if_fail (filename != NULL, NULL, error);
 
@@ -104,36 +102,15 @@ rsvg_acquire_file_resource (const char *filename, const char *base_uri, GError *
     if (path == NULL)
         return NULL;
 
-    f = fopen (path, "rb");
-    g_free (path);
-
-    if (!f) {
-        g_set_error (error,
-                     G_FILE_ERROR,
-                     g_file_error_from_errno (errno),
-                     _("Failed to open file '%s': %s"), filename, g_strerror (errno));
+    if (!g_file_get_contents (path, &data, &length, error)) {
+        g_free (path);
         return NULL;
     }
 
-    /* TODO: an optimization is to use the file's size */
     array = g_byte_array_new ();
 
-    while (!feof (f)) {
-        length = fread (buffer, 1, sizeof (buffer), f);
-        if (length > 0) {
-            if (g_byte_array_append (array, buffer, length) == NULL) {
-                fclose (f);
-                g_byte_array_free (array, TRUE);
-                return NULL;
-            }
-        } else if (ferror (f)) {
-            fclose (f);
-            g_byte_array_free (array, TRUE);
-            return NULL;
-        }
-    }
-
-    fclose (f);
+    g_byte_array_append (array, (guint8 *)data, length);
+    g_free (data);
 
     return array;
 }
