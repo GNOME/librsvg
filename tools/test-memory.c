@@ -27,5 +27,9 @@
 int
 main (int argc, char **argv)
 {
-    return rsvg_tools_main(&argc, &argv);
+    int ret;
+    g_mem_set_vtable (glib_mem_profiler_table);
+    ret = rsvg_tools_main (&argc, &argv);
+    g_mem_profile ();
+    return ret;
 }
