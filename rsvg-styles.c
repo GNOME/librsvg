@@ -1636,7 +1636,7 @@ rsvg_state_reinherit_top (RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
         if (parent) {
             if (dominate)
                 rsvg_state_dominate (current, parent);
-	    else
+            else
                 rsvg_state_reinherit (current, parent);
             _rsvg_affine_multiply (current->affine,
                                    current->affine,
