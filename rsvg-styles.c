@@ -1519,10 +1519,10 @@ void
 rsvg_state_free_all (RsvgState * state)
 {
     while (state) {
-	RsvgState *parent = state->parent;
-	rsvg_state_finalize (state);
-	g_slice_free (RsvgState, state);
-	state = parent;
+        RsvgState *parent = state->parent;
+        rsvg_state_finalize (state);
+        g_slice_free (RsvgState, state);
+        state = parent;
     }
 }
 
