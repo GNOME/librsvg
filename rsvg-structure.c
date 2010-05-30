@@ -379,6 +379,19 @@ _rsvg_node_svg_apply_atts (RsvgNodeSvg * self, RsvgHandle * ctx)
     }
 }
 
+static void
+_rsvg_svg_free (RsvgNode * self)
+{
+    RsvgNodeSvg *svg = (RsvgNodeSvg *) self;
+
+    if (svg->atts) {
+        rsvg_property_bag_free (svg->atts);
+        svg->atts = NULL;
+    }
+
+    _rsvg_node_free (self);
+}
+
 RsvgNode *
 rsvg_new_svg (void)
 {
@@ -392,6 +405,7 @@ rsvg_new_svg (void)
     svg->w = _rsvg_css_parse_length ("100%");
     svg->h = _rsvg_css_parse_length ("100%");
     svg->super.draw = rsvg_node_svg_draw;
+    svg->super.free = _rsvg_svg_free;
     svg->super.set_atts = rsvg_node_svg_set_atts;
     return &svg->super;
 }
