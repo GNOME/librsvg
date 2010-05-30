@@ -112,6 +112,7 @@ rsvg_acquire_file_resource (const char *filename, const char *base_uri, GError *
 
     g_byte_array_append (array, (guint8 *)data, length);
     g_free (data);
+    g_free (path);
 
     return array;
 }
