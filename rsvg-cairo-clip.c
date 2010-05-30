@@ -135,6 +135,8 @@ rsvg_cairo_clip_render_new (cairo_t * cr, RsvgCairoRender *parent)
     RsvgCairoClipRender *cairo_render = g_new0 (RsvgCairoClipRender, 1);
 
     cairo_render->super.free = rsvg_cairo_clip_render_free;
+    cairo_render->super.create_pango_context = rsvg_cairo_create_pango_context;
+    cairo_render->super.render_pango_layout = rsvg_cairo_render_pango_layout;
     cairo_render->super.render_image = rsvg_cairo_clip_render_image;
     cairo_render->super.render_path = rsvg_cairo_clip_render_path;
     cairo_render->super.pop_discrete_layer = rsvg_cairo_clip_pop_discrete_layer;
