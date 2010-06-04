@@ -826,8 +826,8 @@ rsvg_entity_decl (void *data, const xmlChar * name, int type,
       
     entity = xmlNewEntity(NULL, name, type, resolvedPublicId, resolvedSystemId, content);
 
-    free(resolvedPublicId);
-    free(resolvedSystemId);
+    xmlFree(resolvedPublicId);
+    xmlFree(resolvedSystemId);
 
     g_hash_table_insert (entities, g_strdup ((const char*) name), entity);
 #else
