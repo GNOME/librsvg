@@ -42,8 +42,9 @@ static GByteArray *
 rsvg_acquire_base64_resource (const char *data, GError ** error)
 {
     GByteArray *array = NULL;
-    guchar *bufptr;
-    gsize buffer_len;
+    gsize data_len, written_len;
+    int state = 0;
+    guint save = 0;
 
     rsvg_return_val_if_fail (data != NULL, NULL, error);
 
@@ -51,12 +52,11 @@ rsvg_acquire_base64_resource (const char *data, GError ** error)
         if (*data++ == ',')
             break;
 
-    bufptr = g_base64_decode (data, &buffer_len);
-    if (bufptr) {
-        array = g_byte_array_sized_new (buffer_len);
-        g_byte_array_append (array, bufptr, buffer_len);
-        g_free (bufptr);
-    }
+    data_len = strlen (data);
+    array = g_byte_array_sized_new (data_len / 4 * 3);
+    written_len = g_base64_decode_step (data, data_len, array->data,
+                                        &state, &save);
+    g_byte_array_set_size (array, written_len);
 
     return array;
 }
