@@ -119,17 +119,6 @@ rsvg_acquire_file_resource (const char *filename, const char *base_uri, GError *
 
 #ifdef HAVE_GIO
 
-static void
-rsvg_free_error (GError ** err)
-{
-	if (err) {
-		if (*err) {
-			g_error_free (*err);
-			*err = NULL;
-		}
-	}
-}
-
 static GByteArray *
 rsvg_acquire_vfs_resource (const char *filename, const char *base_uri, GError ** error)
 {
@@ -148,7 +137,7 @@ rsvg_acquire_vfs_resource (const char *filename, const char *base_uri, GError **
         if (base_uri != NULL) {
             GFile *base;
 
-            rsvg_free_error (error);
+            g_clear_error (error);
 
             g_object_unref (file);
 
