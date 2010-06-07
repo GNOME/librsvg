@@ -19,7 +19,8 @@ INCLUDES =				\
 	-DG_LOG_DOMAIN=\"librsvg\" 	\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""
 
-DEPS = $(top_builddir)/librsvg-2.la
+DEPS = $(top_builddir)/librsvg-2.la	\
+	librsvg_tools_main.la
 LDADDS =				\
 	$(LIBGSF_LIBS)			\
 	$(GLIB_LIBS)			\
