@@ -492,8 +492,8 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     bbox.virgin = 0;
 
     if (state->fill) {
-    cairo_move_to (render->cr, x, y);
-    rsvg_bbox_insert (&render->bbox, &bbox);
+        cairo_move_to (render->cr, x, y);
+        rsvg_bbox_insert (&render->bbox, &bbox);
         _set_source_rsvg_paint_server (ctx,
                                        state->current_color,
                                        state->fill,
