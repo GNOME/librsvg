@@ -95,6 +95,7 @@ static const FixtureData fixtures[] =
     {"/styles/selectors/2 or more selectors (fill)", "592207", "styles/bug592207.svg", "#target", "fill", .expected.color = 0xff0000},
     {"/styles/selectors/2 or more selectors (stroke)", "592207", "styles/bug592207.svg", "#target", "stroke", .expected.color = 0x0000ff},
     {"/styles/svg-element-style", "615701", "styles/svg-class.svg", "#svg", "fill", .expected.color = 0x0000ff},
+    {"/styles/presentation attribute in svg element", "620693", "styles/bug620693.svg", "#svg", "stroke", .expected.color = 0xff0000},
     {"/styles/!important", "379629", "styles/bug379629.svg", "#base_shadow", "stroke", .expected.color = 0xffc0cb /* pink */},
     {"/styles/!important", "379629", "styles/bug379629.svg", "#base_shadow", "stroke-width", .expected.length = {POINTS_LENGTH(5.), 'i'}},
     {"/styles/!important/class", "614606", "styles/bug614606.svg", "#path6306", "fill", .expected.color = 0xff0000 /* red */ },
