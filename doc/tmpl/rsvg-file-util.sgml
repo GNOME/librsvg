@@ -19,6 +19,9 @@ GdkPixbuf is a library for image loading and manipulation. It is part of the cro
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### FUNCTION rsvg_handle_get_pixbuf ##### -->
 <para>
 

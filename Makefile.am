@@ -1,15 +1,11 @@
-if HAVE_GTK
-target_rsvg_view = rsvg-view
-else
-target_rsvg_view =
-endif
-
 SUBDIRS = . gdk-pixbuf-loader gtk-engine data tests tools doc
 
-lib_LTLIBRARIES = librsvg-2.la
-bin_PROGRAMS = rsvg-convert $(target_rsvg_view)
+lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
 
-man_MANS = rsvg.1
+bin_PROGRAMS = rsvg-convert-@RSVG_API_MAJOR_VERSION@
+if HAVE_GTK
+bin_PROGRAMS += rsvg-view-@RSVG_API_MAJOR_VERSION@
+endif
 
 if OS_WIN32
 else
@@ -24,7 +20,7 @@ enum_sources = \
 	librsvg-enum-types.h	\
 	librsvg-enum-types.c
 
-librsvg_2_la_SOURCES = 		\
+librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = 		\
 	rsvg-affine.c		\
 	librsvg-features.c 	\
 	rsvg-bpath-util.c 	\
@@ -68,10 +64,10 @@ librsvg_2_la_SOURCES = 		\
 	rsvg-gobject.c		\
 	rsvg-file-util.c
 
-librsvg_2_la_LDFLAGS = -version-info @VERSION_INFO@ -export-dynamic -no-undefined -export-symbols $(srcdir)/librsvg.def
-librsvg_2_la_LIBADD = $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) -lm
+librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = -version-info @RSVG_LT_VERSION_INFO@ -export-dynamic -no-undefined -export-symbols $(srcdir)/librsvg.def
+librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) -lm
 
-librsvgincdir = $(includedir)/librsvg-2/librsvg
+librsvgincdir = $(includedir)/librsvg-$(RSVG_API_VERSION)/librsvg
 librsvginc_HEADERS = 	\
 	$(headers)	\
 	librsvg-features.h \
@@ -88,26 +84,29 @@ INCLUDES =				\
 	-DG_LOG_DOMAIN=\"librsvg\" 	\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""
 
-DEPS = $(top_builddir)/librsvg-2.la
+DEPS = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la
 LDADDS =				\
 	$(LIBGSF_LIBS)			\
 	$(GLIB_LIBS)			\
 	$(LIBCROCO_LIBS)		\
 	$(LIBRSVG_LIBS) 		\
-	$(top_builddir)/librsvg-2.la
+	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la
 
-bin_SCRIPTS=rsvg
+if GTK_API_VERSION_2
+nodist_bin_SCRIPTS = rsvg
+man_MANS = rsvg.1
+endif
 
-rsvg_convert_SOURCES=rsvg-convert.c
-rsvg_convert_LDFLAGS =
-rsvg_convert_DEPENDENCIES = $(DEPS)
-rsvg_convert_LDADD = $(LDADDS) $(libm)
+rsvg_convert_@RSVG_API_MAJOR_VERSION@_SOURCES=rsvg-convert.c
+rsvg_convert_@RSVG_API_MAJOR_VERSION@_LDFLAGS =
+rsvg_convert_@RSVG_API_MAJOR_VERSION@_DEPENDENCIES = $(DEPS)
+rsvg_convert_@RSVG_API_MAJOR_VERSION@_LDADD = $(LDADDS) $(libm)
 
-rsvg_view_SOURCES = 		\
+rsvg_view_@RSVG_API_MAJOR_VERSION@_SOURCES = 		\
 	test-display.c
-rsvg_view_LDFLAGS =
-rsvg_view_DEPENDENCIES = $(DEPS)
-rsvg_view_LDADD = $(GTK_LIBS) $(GDK_X11_LIBS) $(libm) $(LDADDS)
+rsvg_view_@RSVG_API_MAJOR_VERSION@_LDFLAGS =
+rsvg_view_@RSVG_API_MAJOR_VERSION@_DEPENDENCIES = $(DEPS)
+rsvg_view_@RSVG_API_MAJOR_VERSION@_LDADD = $(GTK_LIBS) $(GDK_X11_LIBS) $(libm) $(LDADDS)
 
 EXTRA_DIST =				\
 	MAINTAINERS			\
@@ -116,13 +115,10 @@ EXTRA_DIST =				\
 	TODO				\
 	COPYING.LIB 			\
 	librsvg.spec.in 		\
-	librsvg-2.0.pc.in 		\
-	librsvg-2.0-uninstalled.pc.in 	\
 	librsvg-zip.in 			\
 	rsvg.in				\
 	librsvg.def			\
 	$(man_MANS)			\
-	$(rsvg_view_SOURCES)		\
 	gtk-doc.make
 
 CLEANFILES = \
@@ -133,7 +129,7 @@ CLEANFILES = \
 ## `install-exec', not `install-data'.
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = librsvg-2.0.pc
+pkgconfig_DATA = librsvg-$(RSVG_API_VERSION).pc
 
 dist-hook: librsvg.spec
 	cp librsvg.spec $(distdir)
@@ -142,7 +138,7 @@ librsvg-enum-types.h: s-enum-types-h
 	@true
 
 s-enum-types-h: $(headers) Makefile
-	( cd $(srcdir) && $(GLIB_MKENUMS) \
+	$(AM_V_GEN) ( cd $(srcdir) && $(GLIB_MKENUMS) \
 			--fhead "#ifndef __LIBRSVG_ENUM_TYPES_H__\n#define __LIBRSVG_ENUM_TYPES_H__\n\n#include <glib-object.h>\n\nG_BEGIN_DECLS\n" \
 			--fprod "/* enumerations from \"@filename@\" */\n" \
 			--vhead "GType @enum_name@_get_type (void);\n#define RSVG_TYPE_@ENUMSHORT@ (@enum_name@_get_type())\n" 	\
@@ -156,7 +152,7 @@ librsvg-enum-types.c: s-enum-types-c librsvg-enum-types.h
 	@true
 
 s-enum-types-c: $(headers) Makefile
-	( cd $(srcdir) && $(GLIB_MKENUMS) \
+	$(AM_V_GEN) ( cd $(srcdir) && $(GLIB_MKENUMS) \
 			--fhead "#include \"librsvg-enum-types.h\"\n#include \"rsvg.h\"" \
 			--fprod "\n/* enumerations from \"@filename@\" */" \
 			--vhead "GType\n@enum_name@_get_type (void)\n{\n  static GType etype = 0;\n  if (etype == 0) {\n    static const G@Type@Value values[] = {" 	\
@@ -168,3 +164,9 @@ s-enum-types-c: $(headers) Makefile
 	&& echo timestamp > $(@F)
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
+
+if GTK_API_VERSION_2
+install-exec-hook:
+	(cd $(DESTDIR)$(bindir) && $(LN_S) rsvg-convert-2 rsvg-convert)
+	(cd $(DESTDIR)$(bindir) && $(LN_S) rsvg-view-2 rsvg-view)
+endif

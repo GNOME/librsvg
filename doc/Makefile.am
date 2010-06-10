@@ -3,6 +3,9 @@
 # The name of the module.
 DOC_MODULE=rsvg
 
+# Uncomment for versioned docs and specify the version of the module, e.g. '2'.
+DOC_MODULE_VERSION = $(RSVG_API_VERSION)
+
 # The top-level SGML file.
 DOC_MAIN_SGML_FILE=rsvg-docs.sgml
 
@@ -57,7 +60,7 @@ extra_files=
 # if $(DOC_MODULE).types is non-empty.
 GTKDOC_CFLAGS = -I$(top_srcdir) $(LIBRSVG_CFLAGS)
 
-GTKDOC_LIBS = $(top_builddir)/librsvg-2.la $(LIBRSVG_LIBS)
+GTKDOC_LIBS = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la $(LIBRSVG_LIBS)
 
 if GTK_DOC_INSTALLED
 include $(top_srcdir)/gtk-doc.make

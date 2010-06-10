@@ -6,7 +6,7 @@ endif
 
 INCLUDES = -I$(top_srcdir) $(GTK_CFLAGS) $(LIBGSF_CFLAGS) $(LIBCROCO_CFLAGS) $(LIBRSVG_CFLAGS)
 
-enginedir = $(libdir)/gtk-2.0/$(GTK_VERSION)/engines
+enginedir = $(libdir)/gtk-$(GTK_API_VERSION)/$(GTK_BINARY_VERSION)/engines
 themedir = $(datadir)/themes
 
 if ENABLE_GTK_ENGINE
@@ -29,6 +29,6 @@ libsvg_la_SOURCES = 		\
 	svg.h
 
 libsvg_la_LDFLAGS =  -avoid-version -module $(no_undefined)
-libsvg_la_LIBADD = $(top_builddir)/librsvg-2.la $(GTK_LIBS) $(LIBRSVG_LIBS) $(LIBCROCO_LIBS)
+libsvg_la_LIBADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la $(GTK_LIBS) $(LIBRSVG_LIBS) $(LIBCROCO_LIBS)
 
 EXTRA_DIST = $(libsvg_la_SOURCES)

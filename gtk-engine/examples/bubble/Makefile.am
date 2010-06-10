@@ -1,4 +1,12 @@
-SUBDIRS=gtk-2.0
+themedir = $(datadir)/themes/bubble/gtk-$(GTK_API_VERSION)
+theme_DATA = \
+	gtkrc		\
+	blue.svg	\
+	green.svg	\
+	orange.svg	\
+	purple.svg	\
+	red.svg
 
-themedir = $(datadir)/themes/bubble
-theme_DATA = README
+EXTRA_DIST = \
+	$(theme_DATA)	\
+	README

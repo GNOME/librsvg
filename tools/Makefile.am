@@ -19,14 +19,14 @@ INCLUDES =				\
 	-DG_LOG_DOMAIN=\"librsvg\" 	\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""
 
-DEPS = $(top_builddir)/librsvg-2.la	\
+DEPS = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
 	librsvg_tools_main.la
 LDADDS =				\
 	$(LIBGSF_LIBS)			\
 	$(GLIB_LIBS)			\
 	$(LIBCROCO_LIBS)		\
 	$(LIBRSVG_LIBS) 		\
-	$(top_builddir)/librsvg-2.la
+	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la
 
 librsvg_tools_main_la_SOURCES = 		\
 	rsvg-tools-main.c		\
@@ -47,4 +47,3 @@ test_memory_SOURCES = test-memory.c
 test_memory_LDFLAGS =
 test_memory_DEPENDENCIES = $(DEPS)
 test_memory_LDADD = librsvg_tools_main.la $(LDADDS) $(libm)
-

@@ -9,7 +9,7 @@ TESTS = 		\
 noinst_LTLIBRARIES = 			\
 	libtest-utils.la
 
-LDADD = $(top_builddir)/librsvg-2.la		\
+LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
 	$(top_builddir)/tests/libtest-utils.la	\
 	$(top_builddir)/tests/pdiff/libpdiff.la
 
