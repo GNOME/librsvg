@@ -583,6 +583,7 @@ draw_diamond (GtkStyle     *style,
 				x, y, width, height);
 }
 
+#if ! (GTK_CHECK_VERSION(2,90,0))
 static void
 draw_string (GtkStyle * style,
 	     GdkWindow * window,
@@ -624,6 +625,7 @@ draw_string (GtkStyle * style,
       gdk_gc_set_clip_rectangle(style->fg_gc[state], NULL);
     }
 }
+#endif /* ! (GTK_CHECK_VERSION(2,90,0)) */
 
 static void
 draw_box (GtkStyle     *style,
@@ -1024,7 +1026,9 @@ rsvg_style_class_init (RsvgStyleClass *klass)
   style_class->draw_shadow = draw_shadow;
   style_class->draw_arrow = draw_arrow;
   style_class->draw_diamond = draw_diamond;
+#if ! (GTK_CHECK_VERSION(2,90,0))
   style_class->draw_string = draw_string;
+#endif
   style_class->draw_box = draw_box;
   style_class->draw_flat_box = draw_flat_box;
   style_class->draw_check = draw_check;
