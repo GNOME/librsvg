@@ -47,6 +47,8 @@
 #include "rsvg-cairo-render.h"
 
 #include <libxml/uri.h>
+#include <libxml/parser.h>
+#include <libxml/parserInternals.h>
 
 #include <math.h>
 #include <string.h>
@@ -55,6 +57,7 @@
 #include "rsvg-bpath-util.h"
 #include "rsvg-path.h"
 #include "rsvg-paint-server.h"
+#include "rsvg-xml.h"
 
 /*
  * This is configurable at runtime
@@ -1058,6 +1061,39 @@ rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
 }
 
 /**
+ * rsvg_handle_set_base_gfile:
+ * @handle: a #RsvgHandle
+ * @file: a #GFile
+ *
+ * Set the base URI for @handle from @file.
+ * Note: This function may only be called before rsvg_handle_write()
+ * or rsvg_handle_read_stream() has been called.
+ *
+ * Since: 2.32
+ */
+void
+rsvg_handle_set_base_gfile (RsvgHandle *handle,
+                            GFile      *base_file)
+{
+    RsvgHandlePrivate *priv;
+
+    g_return_if_fail (RSVG_IS_HANDLE (handle));
+    g_return_if_fail (G_IS_FILE (base_file));
+
+    priv = handle->priv;
+
+    g_object_ref (base_file);
+    if (priv->base_gfile)
+        g_object_unref (priv->base_gfile);
+    priv->base_gfile = base_file;
+    
+    g_free (priv->base_uri);
+    priv->base_uri = g_file_get_uri (base_file);
+
+    rsvg_defs_set_base_uri (priv->defs, priv->base_uri);
+}
+
+/**
  * rsvg_handle_get_base_uri:
  * @handle: A #RsvgHandle
  *
@@ -1753,6 +1789,182 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
 #endif
 
     return rsvg_handle_close_impl (handle, error);
+}
+
+/**
+ * rsvg_handle_read_stream_sync:
+ * @handle: a #RsvgHandle
+ * @stream: a #GInputStream
+ * @cancellable: (allow-none): a #GCancellable, or %NULL
+ * @error: (allow-none): a location to store a #GError, or %NULL
+ *
+ * Reads @stream and writes the data from it to @handle.
+ *
+ * If @cancellable is not %NULL, then the operation can be cancelled by
+ * triggering the cancellable object from another thread. If the
+ * operation was cancelled, the error G_IO_ERROR_CANCELLED will be
+ * returned.
+ *
+ * Returns: %TRUE if reading @stream succeeded, or %FALSE otherwise
+ *   with @error filled in
+ *
+ * Since: 2.32
+ */
+gboolean
+rsvg_handle_read_stream_sync (RsvgHandle   *handle,
+                              GInputStream *stream,
+                              GCancellable *cancellable,
+                              GError      **error)
+{
+    RsvgHandlePrivate *priv;
+    xmlParserInputBufferPtr buffer;
+    xmlParserInputPtr input;
+    int result;
+    xmlDocPtr doc;
+    GError *err = NULL;
+
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+    g_return_val_if_fail (G_IS_INPUT_STREAM (stream), FALSE);
+    g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), FALSE);
+    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+
+    priv = handle->priv;
+
+    priv->error = &err;
+    if (priv->ctxt == NULL) {
+        priv->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0,
+                                              rsvg_handle_get_base_uri (handle));
+
+        /* if false, external entities work, but internal ones don't. if true, internal entities
+           work, but external ones don't. favor internal entities, in order to not cause a
+           regression */
+        /* FIXMEchpe: FIX THIS! */
+        priv->ctxt->replaceEntities = TRUE;
+    }
+
+    buffer = _rsvg_xml_input_buffer_new_from_stream (stream, cancellable, XML_CHAR_ENCODING_NONE, &err);
+    input = xmlNewIOInputStream (priv->ctxt, buffer, XML_CHAR_ENCODING_NONE);
+    if (xmlPushInput (priv->ctxt, input) < 0) {
+        rsvg_set_error (error, priv->ctxt);
+        xmlFreeInputStream (input);
+        return FALSE;
+    }
+
+    result = xmlParseDocument (priv->ctxt);
+    if (result != 0) {
+        if (err)
+            g_propagate_error (error, err);
+        else
+            rsvg_set_error (error, handle->priv->ctxt);
+
+        return FALSE;
+    }
+
+    priv->error = NULL;
+
+    if (err != NULL) {
+        g_propagate_error (error, err);
+        return FALSE;
+    }
+
+    doc = priv->ctxt->myDoc;
+    xmlFreeParserCtxt (priv->ctxt);
+    priv->ctxt = NULL;
+
+    xmlFreeDoc (doc);
+
+    rsvg_defs_resolve_all (priv->defs);
+    priv->finished = TRUE;
+
+    return TRUE;
+}
+
+/**
+ * rsvg_handle_new_from_gfile_sync:
+ * @file: a #GFile
+ * @flags: flags from #RsvgHandleFlags
+ * @cancellable: (allow-none): a #GCancellable, or %NULL
+ * @error: (allow-none): a location to store a #GError, or %NULL
+ *
+ * Creates a new #RsvgHandle for @file.
+ *
+ * If @cancellable is not %NULL, then the operation can be cancelled by
+ * triggering the cancellable object from another thread. If the
+ * operation was cancelled, the error G_IO_ERROR_CANCELLED will be
+ * returned.
+ *
+ * Returns: a new #RsvgHandle on success, or %NULL with @error filled in
+ *
+ * Since: 2.32
+ */
+RsvgHandle *
+rsvg_handle_new_from_gfile_sync (GFile          *file,
+                                 RsvgHandleFlags flags,
+                                 GCancellable   *cancellable,
+                                 GError        **error)
+{
+    RsvgHandle *handle;
+    GFileInputStream *stream;
+
+    g_return_val_if_fail (G_IS_FILE (file), NULL);
+    g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
+    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
+
+    stream = g_file_read (file, cancellable, error);
+    if (stream == NULL)
+        return NULL;
+
+    handle = rsvg_handle_new_from_stream_sync (G_INPUT_STREAM (stream), file,
+                                               flags, cancellable, error);
+    g_object_unref (stream);
+
+    return handle;
+}
+
+/**
+ * rsvg_handle_new_from_stream_sync:
+ * @stream: a #GInputStream
+ * @base_file: (allow-none): a #GFile, or %NULL
+ * @flags: flags from #RsvgHandleFlags
+ * @cancellable: (allow-none): a #GCancellable, or %NULL
+ * @error: (allow-none): a location to store a #GError, or %NULL
+ *
+ * Creates a new #RsvgHandle for @stream.
+ *
+ * If @cancellable is not %NULL, then the operation can be cancelled by
+ * triggering the cancellable object from another thread. If the
+ * operation was cancelled, the error G_IO_ERROR_CANCELLED will be
+ * returned.
+ *
+ * Returns: a new #RsvgHandle on success, or %NULL with @error filled in
+ *
+ * Since: 2.32
+ */
+RsvgHandle *
+rsvg_handle_new_from_stream_sync (GInputStream   *stream,
+                                  GFile          *base_file,
+                                  RsvgHandleFlags flags,
+                                  GCancellable    *cancellable,
+                                  GError         **error)
+{
+    RsvgHandle *handle;
+
+    g_return_val_if_fail (G_IS_INPUT_STREAM (stream), NULL);
+    g_return_val_if_fail (base_file == NULL || G_IS_FILE (base_file), NULL);
+    g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
+    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
+
+    handle = rsvg_handle_new ();
+
+    if (base_file)
+        rsvg_handle_set_base_gfile (handle, base_file);
+
+    if (!rsvg_handle_read_stream_sync (handle, stream, cancellable, error)) {
+        g_object_unref (handle);
+        return NULL;
+    }
+
+    return handle;
 }
 
 /**

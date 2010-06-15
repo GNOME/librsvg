@@ -62,7 +62,9 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = 		\
 	rsvg-cairo-clip.c	\
 	rsvg.c			\
 	rsvg-gobject.c		\
-	rsvg-file-util.c
+	rsvg-file-util.c	\
+	rsvg-xml.c		\
+	rsvg-xml.h
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = -version-info @RSVG_LT_VERSION_INFO@ -export-dynamic -no-undefined -export-symbols $(srcdir)/librsvg.def
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) -lm

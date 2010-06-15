@@ -14,6 +14,7 @@ rsvg_handle_get_pixbuf_sub
 rsvg_handle_free
 rsvg_handle_get_base_uri
 rsvg_handle_set_base_uri
+rsvg_handle_set_base_gfile
 rsvg_handle_get_dimensions
 rsvg_handle_get_dimensions_sub
 rsvg_handle_get_position_sub
@@ -38,3 +39,7 @@ _rsvg_register_types
 rsvg_defs_lookup
 rsvg_pixbuf_from_data_with_size_data
 rsvg_css_parse_color
+rsvg_cairo_to_pixbuf
+rsvg_handle_read_stream_sync
+rsvg_handle_new_from_gfile_sync
+rsvg_handle_new_from_stream_sync

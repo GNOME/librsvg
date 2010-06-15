@@ -120,6 +120,11 @@ instance_dispose (GObject * instance)
 
     g_free (self->priv);
 
+    if (self->priv->base_gfile) {
+        g_object_unref (self->priv->base_gfile);
+        self->priv->base_gfile = NULL;
+    }
+
     rsvg_parent_class->dispose (instance);
 }
 

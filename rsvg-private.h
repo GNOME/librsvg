@@ -162,6 +162,7 @@ struct RsvgHandlePrivate {
     GString *metadata;
 
     gchar *base_uri;
+    GFile *base_gfile;
 
     gboolean finished;
 

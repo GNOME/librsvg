@@ -268,3 +268,56 @@ librsvg is a component used within software applications to enable support for S
 @Returns: 
 
 
+<!-- ##### ENUM RsvgHandleFlags ##### -->
+<para>
+
+</para>
+
+@RSVG_HANDLE_FLAGS_NONE: 
+
+<!-- ##### FUNCTION rsvg_handle_set_base_gfile ##### -->
+<para>
+
+</para>
+
+@handle: 
+@base_file: 
+
+
+<!-- ##### FUNCTION rsvg_handle_read_stream_sync ##### -->
+<para>
+
+</para>
+
+@handle: 
+@stream: 
+@cancellable: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_new_from_gfile_sync ##### -->
+<para>
+
+</para>
+
+@file: 
+@flags: 
+@cancellable: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION rsvg_handle_new_from_stream_sync ##### -->
+<para>
+
+</para>
+
+@input_stream: 
+@base_file: 
+@flags: 
+@cancellable: 
+@error: 
+@Returns: 
+
+

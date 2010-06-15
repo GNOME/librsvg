@@ -26,6 +26,9 @@
 #ifndef RSVG_H
 #define RSVG_H
 
+#include <glib-object.h>
+#include <gio/gio.h>
+
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 G_BEGIN_DECLS
@@ -132,6 +135,31 @@ gboolean rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData 
 gboolean rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id);
 
 gboolean rsvg_handle_has_sub (RsvgHandle * handle, const char *id);
+
+/* GIO APIs */
+
+typedef enum {
+    RSVG_HANDLE_FLAGS_NONE        = 0,
+} RsvgHandleFlags;
+
+void        rsvg_handle_set_base_gfile (RsvgHandle *handle,
+                                        GFile      *base_file);
+
+gboolean    rsvg_handle_read_stream_sync (RsvgHandle   *handle,
+                                          GInputStream *stream,
+                                          GCancellable *cancellable,
+                                          GError      **error);
+
+RsvgHandle *rsvg_handle_new_from_gfile_sync (GFile          *file,
+                                             RsvgHandleFlags flags,
+                                             GCancellable   *cancellable,
+                                             GError        **error);
+
+RsvgHandle *rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
+                                              GFile          *base_file,
+                                              RsvgHandleFlags flags,
+                                              GCancellable   *cancellable,
+                                              GError        **error);
 
 /* Accessibility API */
 
