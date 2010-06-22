@@ -26,13 +26,6 @@
 
 #include "config.h"
 
-#ifdef HAVE_SVGZ
-#include <gsf/gsf-input-gzip.h>
-#include <gsf/gsf-input-memory.h>
-#include <gsf/gsf-output-memory.h>
-#include <gsf/gsf-utils.h>
-#endif
-
 #include "rsvg.h"
 #include "rsvg-private.h"
 #include "rsvg-css.h"
@@ -53,6 +46,13 @@
 #include <math.h>
 #include <string.h>
 #include <stdarg.h>
+
+#ifdef HAVE_GSF
+#include <gsf/gsf-input-gzip.h>
+#include <gsf/gsf-input-memory.h>
+#include <gsf/gsf-output-memory.h>
+#include <gsf/gsf-utils.h>
+#endif
 
 #include "rsvg-bpath-util.h"
 #include "rsvg-path.h"
@@ -1682,79 +1682,109 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
 
 /**
  * rsvg_handle_write:
- * @handle: An #RsvgHandle
- * @buf: Pointer to svg data
+ * @handle: an #RsvgHandle
+ * @buf: (array length=count) (element-type uint8): pointer to svg data
  * @count: length of the @buf buffer in bytes
- * @error: return location for errors
+ * @error: (allow-none): a location to store a #GError, or %NULL
  *
  * Loads the next @count bytes of the image.  This will return #TRUE if the data
  * was loaded successful, and #FALSE if an error occurred.  In the latter case,
  * the loader will be closed, and will not accept further writes. If FALSE is
- * returned, @error will be set to an error from the #RSVG_ERROR domain.
+ * returned, @error will be set to an error from the #RsvgError domain. Errors
+ * from #GIOErrorEnum are also possible.
  *
- * Returns: #TRUE if the write was successful, or #FALSE if there was an
- * error.
+ * Returns: %TRUE on success, or %FALSE on error
  **/
 gboolean
 rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError ** error)
 {
-    rsvg_return_val_if_fail (handle, FALSE, error);
-    rsvg_return_val_if_fail (!handle->priv->is_closed, FALSE, error);
+    RsvgHandlePrivate *priv;
 
-    if (handle->priv->first_write) {
-        handle->priv->first_write = FALSE;
+    rsvg_return_val_if_fail (handle, FALSE, error);
+    priv = handle->priv;
+
+    rsvg_return_val_if_fail (!priv->is_closed, FALSE, error);
+
+    if (priv->first_write) {
+        priv->first_write = FALSE;
 
         /* test for GZ marker. todo: store the first 2 bytes in the odd circumstance that someone calls
          * write() in 1 byte increments */
         if ((count >= 2) && (buf[0] == (guchar) 0x1f) && (buf[1] == (guchar) 0x8b)) {
-            handle->priv->is_gzipped = TRUE;
-
-#ifdef HAVE_SVGZ
-            handle->priv->gzipped_data = GSF_OUTPUT (gsf_output_memory_new ());
+#if GLIB_CHECK_VERSION (2, 24, 0)
+            priv->data_input_stream = g_memory_input_stream_new ();
+#elif defined (HAVE_GSF)
+            priv->gzipped_data = GSF_OUTPUT (gsf_output_memory_new ());
+#else
+            g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
+                                 "GZip compressed SVG not supported");
+            return FALSE;
 #endif
         }
     }
 
-    if (handle->priv->is_gzipped) {
-#ifdef HAVE_SVGZ
-        return gsf_output_write (handle->priv->gzipped_data, count, buf);
-#else
-        return FALSE;
-#endif
+#if GLIB_CHECK_VERSION (2, 24, 0)
+    if (priv->data_input_stream) {
+        g_memory_input_stream_add_data ((GMemoryInputStream *) priv->data_input_stream,
+                                        g_memdup (buf, count), count, (GDestroyNotify) g_free);
+        return TRUE;
     }
+#elif defined (HAVE_GSF)
+    if (priv->gzipped_data)
+        return gsf_output_write (handle->priv->gzipped_data, count, buf);
+#endif
 
     return rsvg_handle_write_impl (handle, buf, count, error);
 }
 
 /**
  * rsvg_handle_close:
- * @handle: A #RsvgHandle
- * @error: A #GError
+ * @handle: a #RsvgHandle
+ * @error: (allow-none): a location to store a #GError, or %NULL
  *
  * Closes @handle, to indicate that loading the image is complete.  This will
- * return #TRUE if the loader closed successfully.  Note that @handle isn't
+ * return %TRUE if the loader closed successfully.  Note that @handle isn't
  * freed until @g_object_unref is called.
  *
- * Returns: #TRUE if the loader closed successfully, or #FALSE if there was
- * an error.
+ * Returns: %TRUE on success, or %FALSE on error
  **/
 gboolean
 rsvg_handle_close (RsvgHandle * handle, GError ** error)
 {
+    RsvgHandlePrivate *priv;
+    gboolean ret;
+
     rsvg_return_val_if_fail (handle, FALSE, error);
+    priv = handle->priv;
 
-	if (handle->priv->is_closed)
-		return TRUE;
+    if (priv->is_closed)
+          return TRUE;
 
-#if HAVE_SVGZ
-    if (handle->priv->is_gzipped) {
+#if GLIB_CHECK_VERSION (2, 24, 0)
+    if (priv->data_input_stream) {
+        GConverter *converter;
+        GInputStream *stream;
+
+        converter = G_CONVERTER (g_zlib_decompressor_new (G_ZLIB_COMPRESSOR_FORMAT_GZIP));
+        stream = g_converter_input_stream_new (priv->data_input_stream, converter);
+        g_object_unref (converter);
+        g_object_unref (priv->data_input_stream);
+        priv->data_input_stream = NULL;
+
+        ret = rsvg_handle_read_stream_sync (handle, stream, NULL, error);
+        g_object_unref (stream);
+
+        return ret;
+    }
+#elif defined(HAVE_GSF)
+    if (priv->gzipped_data) {
         GsfInput *gzip;
         const guchar *bytes;
         gsize size;
         gsize remaining;
 
-        bytes = gsf_output_memory_get_bytes (GSF_OUTPUT_MEMORY (handle->priv->gzipped_data));
-        size = gsf_output_size (handle->priv->gzipped_data);
+        bytes = gsf_output_memory_get_bytes (GSF_OUTPUT_MEMORY (priv->gzipped_data));
+        size = gsf_output_size (priv->gzipped_data);
 
         gzip =
             GSF_INPUT (gsf_input_gzip_new
@@ -1784,9 +1814,11 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
         g_object_unref (gzip);
 
         /* close parent */
-        gsf_output_close (handle->priv->gzipped_data);
+        gsf_output_close (priv->gzipped_data);
+        g_object_unref (priv->gzipped_data);
+        priv->gzipped_data = NULL;
     }
-#endif
+#endif /* GIO >= 2.24.0 */
 
     return rsvg_handle_close_impl (handle, error);
 }
@@ -1978,7 +2010,7 @@ rsvg_init (void)
 {
     g_type_init ();
 
-#ifdef HAVE_SVGZ
+#ifdef HAVE_GSF
     gsf_init ();
 #endif
 
@@ -1994,7 +2026,7 @@ rsvg_init (void)
 void
 rsvg_term (void)
 {
-#ifdef HAVE_SVGZ
+#ifdef HAVE_GSF
     gsf_shutdown ();
 #endif
 

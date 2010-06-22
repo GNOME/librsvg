@@ -133,38 +133,54 @@ PKG_CHECK_MODULES(LIBRSVG, \
 
 dnl ===========================================================================
 
-LIBGSF_CFLAGS=""
-LIBGSF_LIBS=""
+# Using GIO 2.24 we support reading .svg.gz data
 
-LIBGSFPKG=""
-test_gsf=true
-AC_ARG_WITH(svgz,[  --with-svgz  Use libgsf for run-time decompression],[
-	if test "x$withval" = "xno"; then
-		test_gsf=false
-	fi
-])
-if test "x$test_gsf" = "xtrue"; then
-	PKG_CHECK_MODULES(LIBGSF,[libgsf-1 >= 1.6.0], test_gsf=true, test_gsf=false)
-fi
+svgz_warning=
 
-if test "x$test_gsf" = "xtrue"; then
-        svgz_define=1
-	LIBGSF_CFLAGS="$LIBGSF_CFLAGS -DHAVE_SVGZ=1"
-	LIBGSFPKG="libgsf-1"
+AC_MSG_CHECKING([whether gio 2.24 is available])
+PKG_CHECK_EXISTS([gio-2.0 >= 2.24.0],[have_gio_2_24=yes],[have_gio_2_24=no])
+AC_MSG_RESULT([$have_gio_2_24])
+
+AC_SUBST([HAVE_GIO_2_24],[$have_gio_2_24])
+
+if test "$have_gio_2_24" = "yes"; then
+  svgz_define=1
+  test_svgz=true
 else
-        svgz_define=0
-	AC_MSG_WARN([SVGZ support disabled, as requested (Use --with-svgz to enable)])
-	gsf_warning="
-	You are building without libgsf support. LibRSVG will not be able to handle GZipped SVGs, as is required per the SVG specification. If you are a library vendor or distributor, you are doing the world a disservice and should strongly consider shipping libgsf."
+  LIBGSF_CFLAGS=""
+  LIBGSF_LIBS=""
+
+  LIBGSFPKG=""
+  test_svgz=true
+  AC_ARG_WITH(svgz,[  --with-svgz  Use libgsf for run-time decompression],[
+          if test "x$withval" = "xno"; then
+                  test_svgz=false
+          fi
+  ])
+  if test "x$test_svgz" = "xtrue"; then
+          PKG_CHECK_MODULES(LIBGSF,[libgsf-1 >= 1.6.0], test_svgz=true, test_svgz=false)
+  fi
+
+  if test "x$test_svgz" = "xtrue"; then
+          svgz_define=1
+          AC_DEFINE([HAVE_GSF],[1],[Define if using libgsf])
+          LIBGSFPKG="libgsf-1"
+  else
+          svgz_define=0
+          AC_MSG_WARN([SVGZ support disabled, as requested (Use --with-svgz to enable)])
+  fi
+
+  AC_SUBST(LIBGSFPKG)
+
+  AC_SUBST(LIBGSF_CFLAGS)
+  AC_SUBST(LIBGSF_LIBS)
+fi # have_gio_2_24
+
+if test "$test_svgz" != "true"; then
+  svgz_warning="You are building without libgsf support. LibRSVG will not be able to handle GZipped SVGs, as is required per the SVG specification. If you are a library vendor or distributor, you are doing the world a disservice and should strongly consider shipping libgsf."
 fi
-AM_CONDITIONAL(WITH_LIBGSF,[test "$LIBGSFPKG" != ""])
 
-AC_SUBST(LIBGSFPKG)
-
-AC_SUBST(LIBGSF_CFLAGS)
-AC_SUBST(LIBGSF_LIBS)
-
-AC_SUBST([SVGZ_SUPPORTED],[$test_gsf])
+AC_SUBST([SVGZ_SUPPORTED],[$test_svgz])
 AC_SUBST([LIBRSVG_HAVE_SVGZ],[$svgz_define])
 
 dnl ===========================================================================
@@ -376,7 +392,7 @@ librsvg-$VERSION for gtk+-$GTK_API_VERSION
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
 	Build theme engine:             ${enable_gtk_theme}
 	Build miscellaenous tools:      ${build_misc_tools}
-	Handle svgz files:              ${test_gsf}
+	Handle svgz files:              ${test_svgz}
 	Use libcroco for css parsing:   ${test_croco}
 "
 
@@ -384,6 +400,6 @@ if test "x$croco_warning" != "x"; then
    AC_MSG_RESULT([$croco_warning]);
 fi
 
-if test "x$gsf_warning" != "x"; then
-   AC_MSG_RESULT([$gsf_warning]);
+if test "x$svgz_warning" != "x"; then
+   AC_MSG_NOTICE([$svgz_warning]);
 fi

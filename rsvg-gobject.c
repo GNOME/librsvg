@@ -21,6 +21,8 @@
    Boston, MA 02111-1307, USA.
 */
 
+#include "config.h"
+
 #include "rsvg-private.h"
 #include "rsvg-defs.h"
 
@@ -64,6 +66,11 @@ instance_init (RsvgHandle * self)
     self->priv->treebase = NULL;
 
     self->priv->finished = 0;
+#if GLIB_CHECK_VERSION (2, 24, 0)
+    self->priv->data_input_stream = NULL;
+#elif defined(HAVE_GSF)
+    self->priv->gzipped_data = NULL;
+#endif
     self->priv->first_write = TRUE;
 
     self->priv->is_disposed = FALSE;
@@ -96,11 +103,6 @@ instance_dispose (GObject * instance)
 
     self->priv->is_disposed = TRUE;
 
-#if HAVE_SVGZ
-    if (self->priv->is_gzipped)
-        g_object_unref (self->priv->gzipped_data);
-#endif
-
     g_hash_table_foreach (self->priv->entities, rsvg_ctx_free_helper, NULL);
     g_hash_table_destroy (self->priv->entities);
     rsvg_defs_free (self->priv->defs);
@@ -120,10 +122,17 @@ instance_dispose (GObject * instance)
 
     g_free (self->priv);
 
+#if GLIB_CHECK_VERSION (2, 24, 0)
     if (self->priv->base_gfile) {
         g_object_unref (self->priv->base_gfile);
         self->priv->base_gfile = NULL;
     }
+#elif defined(HAVE_GSF)
+    if (self->priv->gzipped_data) {
+        g_object_unref (self->priv->gzipped_data);
+        self->priv->gzipped_data = NULL;
+    }
+#endif
 
     rsvg_parent_class->dispose (instance);
 }
