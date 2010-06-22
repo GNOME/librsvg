@@ -19,7 +19,7 @@ dnl ===========================================================================
 
 FONTCONFIG_REQUIRED=1.0.1	dnl Same as in Pango, ???
 GLIB_REQUIRED=2.12.0
-GIO_REQUIRED=2.15.4
+GIO_REQUIRED=2.16.0
 LIBXML_REQUIRED=2.4.7
 CAIRO_REQUIRED=1.2.0
 PANGOFT2_REQUIRED=1.2.0
@@ -122,6 +122,7 @@ AC_SUBST(GLIB_MKENUMS)
 PKG_CHECK_MODULES(LIBRSVG, \
 	gdk-pixbuf-$GTK_API_VERSION >= $GDK_PIXBUF_REQUIRED \
 	glib-2.0 >= $GLIB_REQUIRED \
+	gio-2.0 >= $GIO_REQUIRED \
 	libxml-2.0 >= $LIBXML_REQUIRED \
 	pangoft2 >= $PANGOFT2_REQUIRED \
 	pangocairo >= $PANGOCAIRO_REQUIRED \
@@ -129,19 +130,6 @@ PKG_CHECK_MODULES(LIBRSVG, \
 	cairo-png >= $CAIRO_REQUIRED \
 	fontconfig >= $FONTCONFIG_REQUIRED
 	freetype2)
-
-test_gio=true
-PKG_CHECK_EXISTS(gio-2.0 >= $GIO_REQUIRED, [
-	PKG_CHECK_MODULES(GIO, gio-2.0 >= $GIO_REQUIRED)
-	LIBRSVG_CFLAGS="$LIBRSVG_CFLAGS $GIO_CFLAGS"
-	LIBRSVG_LIBS="$LIBRSVG_LIBS $GIO_LIBS"
-	AC_DEFINE(HAVE_GIO, 1, [Defined if gio is avaiable])
-],[
-	test_gio=false
-])
-
-AC_SUBST(LIBRSVG_LIBS)
-AC_SUBST(LIBRSVG_CFLAGS)
 
 dnl ===========================================================================
 
@@ -389,7 +377,6 @@ librsvg-$VERSION for gtk+-$GTK_API_VERSION
 	Build theme engine:             ${enable_gtk_theme}
 	Build miscellaenous tools:      ${build_misc_tools}
 	Handle svgz files:              ${test_gsf}
-	Use GIO:                        ${test_gio}
 	Use libcroco for css parsing:   ${test_croco}
 "
 

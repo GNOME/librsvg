@@ -34,9 +34,7 @@
 #include <math.h>
 #include <errno.h>
 #include "rsvg-css.h"
-#ifdef HAVE_GIO
 #include <gio/gio.h>
-#endif
 
 static GByteArray *
 rsvg_acquire_base64_resource (const char *data, GError ** error)
@@ -117,8 +115,6 @@ rsvg_acquire_file_resource (const char *filename, const char *base_uri, GError *
     return array;
 }
 
-#ifdef HAVE_GIO
-
 static GByteArray *
 rsvg_acquire_vfs_resource (const char *filename, const char *base_uri, GError ** error)
 {
@@ -162,7 +158,6 @@ rsvg_acquire_vfs_resource (const char *filename, const char *base_uri, GError **
 
     return array;
 }
-#endif
 
 GByteArray *
 _rsvg_acquire_xlink_href_resource (const char *href, const char *base_uri, GError ** err)
@@ -178,10 +173,8 @@ _rsvg_acquire_xlink_href_resource (const char *href, const char *base_uri, GErro
     if (!arr)
         arr = rsvg_acquire_file_resource (href, base_uri, NULL);
 
-#ifdef HAVE_GIO
     if (!arr)
         arr = rsvg_acquire_vfs_resource (href, base_uri, NULL);
-#endif
 
     return arr;
 }
