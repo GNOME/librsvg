@@ -1067,7 +1067,7 @@ rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
  *
  * Set the base URI for @handle from @file.
  * Note: This function may only be called before rsvg_handle_write()
- * or rsvg_handle_read_stream() has been called.
+ * or rsvg_handle_read_stream_sync() has been called.
  *
  * Since: 2.32
  */
@@ -1100,7 +1100,7 @@ rsvg_handle_set_base_gfile (RsvgHandle *handle,
  * Gets the base uri for this #RsvgHandle.
  *
  * Returns: the base uri, possibly null
- * Since: 2.9 (really present in 2.8 as well)
+ * Since: 2.8
  */
 G_CONST_RETURN char *
 rsvg_handle_get_base_uri (RsvgHandle * handle)

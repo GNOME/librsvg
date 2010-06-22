@@ -314,12 +314,12 @@ AM_CONDITIONAL(ENABLE_PIXBUF_LOADER, test x$enable_pixbuf_loader = xyes)
 ##################################################
 # Checks for gtk-doc and docbook-tools
 ##################################################
-gtk_doc_installed=true
-#ifdef([GTK_DOC_CHECK],[GTK_DOC_CHECK([1.0])],[gtk_doc_installed=false])
-# I would have liked to conditionalize this, but 
-# that appears to break other things http://bugzilla.gnome.org/show_bug.cgi?id=156399
-GTK_DOC_CHECK([1.0])
-AM_CONDITIONAL(GTK_DOC_INSTALLED, $gtk_doc_installed)
+
+GTK_DOC_CHECK([1.13],[--flavour no-tmpl])
+
+AC_SUBST([GLIB_PREFIX],[$($PKG_CONFIG --variable=prefix glib-2.0)])
+AC_SUBST([GTK_PREFIX],[$($PKG_CONFIG --variable=prefix gdk-pixbuf-$GTK_API_VERSION)])
+AC_SUBST([CAIRO_PREFIX],[$($PKG_CONFIG --variable=prefix cairo)])
 
 dnl ===========================================================================
 dnl Do we build the miscellaenous tools provided with librsvg ?
@@ -371,6 +371,7 @@ tests/Makefile
 tests/pdiff/Makefile
 tools/Makefile
 doc/Makefile
+doc/version.xml
 ])
 
 AC_CONFIG_FILES([librsvg-${RSVG_API_VERSION}.pc:librsvg.pc.in],[],[RSVG_API_VERSION=$RSVG_API_VERSION])

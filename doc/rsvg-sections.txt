@@ -1,50 +1,74 @@
 <SECTION>
-<FILE>rsvg</FILE>
-<TITLE>Core API</TITLE>
+<FILE>rsvg-handle</FILE>
+<TITLE>RsvgHandle</TITLE>
 RsvgError
 RSVG_ERROR
 rsvg_error_quark
+RsvgHandle
+RsvgHandlePrivate
+RsvgHandleClass
+RsvgDimensionData
+RsvgPositionData
 rsvg_init
 rsvg_term
 rsvg_set_default_dpi
 rsvg_set_default_dpi_x_y
-rsvg_handle_new
-rsvg_handle_free
 rsvg_handle_set_dpi
 rsvg_handle_set_dpi_x_y
+rsvg_handle_new
 rsvg_handle_write
 rsvg_handle_close
-rsvg_handle_new_from_data
-rsvg_handle_new_from_file
-RsvgDimensionData
-RsvgSizeFunc
-rsvg_handle_set_size_callback
 rsvg_handle_get_base_uri
 rsvg_handle_set_base_uri
-rsvg_handle_get_title
-rsvg_handle_get_desc
 rsvg_handle_get_dimensions
 rsvg_handle_get_dimensions_sub
 rsvg_handle_get_position_sub
 rsvg_handle_has_sub
+rsvg_handle_get_title
+rsvg_handle_get_desc
+rsvg_handle_get_metadata
+rsvg_handle_new_from_data
+rsvg_handle_new_from_file
+rsvg_handle_free
+RsvgSizeFunc
+rsvg_handle_set_size_callback
+rsvg_error_get_type
+RSVG_TYPE_ERROR
 
-<SUBSECTION>
+<SUBSECTION Standard>
+RSVG_HANDLE
+RSVG_IS_HANDLE
+RSVG_TYPE_HANDLE
+rsvg_handle_get_type
+RSVG_HANDLE_CLASS
+RSVG_IS_HANDLE_CLASS
+RSVG_HANDLE_GET_CLASS
+</SECTION>
+
+<SECTION>
+<FILE>rsvg-gio</FILE>
+<TITLE>Using RSVG with GIO</TITLE>
 RsvgHandleFlags
 rsvg_handle_set_base_gfile
 rsvg_handle_read_stream_sync
 rsvg_handle_new_from_gfile_sync
 rsvg_handle_new_from_stream_sync
+
+<SUBSECTION Standard>
+rsvg_handle_flags_get_type
+RSVG_TYPE_HANDLE_FLAGS
 </SECTION>
 
 <SECTION>
 <FILE>rsvg-cairo</FILE>
-<TITLE>Cairo</TITLE>
+<TITLE>Using RSVG with cairo</TITLE>
 rsvg_handle_render_cairo
 rsvg_handle_render_cairo_sub
 </SECTION>
+
 <SECTION>
-<FILE>rsvg-file-util</FILE>
-<TITLE>GdkPixbuf</TITLE>
+<FILE>rsvg-pixbuf</FILE>
+<TITLE>Using RSVG with GdkPixbuf</TITLE>
 rsvg_handle_get_pixbuf
 rsvg_handle_get_pixbuf_sub
 rsvg_pixbuf_from_file
@@ -52,4 +76,20 @@ rsvg_pixbuf_from_file_at_zoom
 rsvg_pixbuf_from_file_at_size
 rsvg_pixbuf_from_file_at_max_size
 rsvg_pixbuf_from_file_at_zoom_with_max
+</SECTION>
+
+<SECTION>
+<FILE>rsvg-features</FILE>
+<TITLE>Version check and feature tests</TITLE>
+LIBRSVG_MAJOR_VERSION
+LIBRSVG_MINOR_VERSION
+LIBRSVG_MICRO_VERSION
+LIBRSVG_VERSION
+LIBRSVG_CHECK_VERSION
+LIBRSVG_HAVE_SVGZ
+LIBRSVG_HAVE_CSS
+LIBRSVG_CHECK_FEATURE
+librsvg_version
+librsvg_preinit
+librsvg_postinit
 </SECTION>

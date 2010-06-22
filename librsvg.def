@@ -43,3 +43,5 @@ rsvg_cairo_to_pixbuf
 rsvg_handle_read_stream_sync
 rsvg_handle_new_from_gfile_sync
 rsvg_handle_new_from_stream_sync
+rsvg_error_get_type
+rsvg_handle_flags_get_type

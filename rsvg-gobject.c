@@ -21,6 +21,20 @@
    Boston, MA 02111-1307, USA.
 */
 
+/**
+ * SECTION: rsvg-handle
+ * @short_description: Create and manipulate SVG objects
+ *
+ * librsvg is a component used within software applications to enable
+ * support for SVG-format scalable graphics. In contrast to raster
+ * formats, scalable vector graphics provide users and artists a way
+ * to create, view, and provide imagery that is not limited to the
+ * pixel or dot density that an output device is capable of.
+ *
+ * Many software developers use the librsvg library to render
+ * SVG graphics. It is lightweight and portable.
+ */
+
 #include "config.h"
 
 #include "rsvg-private.h"

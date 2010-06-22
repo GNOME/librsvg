@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+               "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd"
+[
+  <!ENTITY % local.common.attrib "xmlns:xi  CDATA  #FIXED 'http://www.w3.org/2003/XInclude'">
+  <!ENTITY version SYSTEM "version.xml">
+]>
+<book id="librsvg">
+  <!--
+    Copyright © 2009, 2010 Christian Persch
+
+    Permission is granted to copy, distribute and/or modify this document
+    under the terms of the GNU General Public License, Version 2
+    as published by the Free Software Foundation; or (at your option) any
+    later version.
+
+    A copy of the license is included in the COPYING file.
+    -->
+  <bookinfo>
+    <title>RSVG Libary Reference Manual</title>
+    <releaseinfo>
+      For RSVG version &version;.
+      The latest version of this documentation can be found on-line at the
+      <ulink role="online-location" url="http://library.gnome.org/devel/rsvg/index.html">GNOME Library</ulink>.
+    </releaseinfo>
+
+    <copyright>
+      <year>2003</year>
+      <year>2004</year>
+      <year>2005</year>
+      <year>2006</year>
+      <year>2007</year>
+      <year>2008</year>
+      <year>2009</year>
+      <holder>Dom Lachowicz</holder>
+    </copyright>
+
+    <copyright>
+      <year>2010</year>
+      <holder>Christian Persch</holder>
+    </copyright>
+
+    <legalnotice>
+      <para>
+        Permission is granted to copy, distribute and/or modify this document
+        under the terms of the <citetitle>GNU General Public Licence</citetitle>
+        published by the Free Software Foundation; either version 2 of the License,
+        or (at your option) any later version.
+
+        You may obtain a copy of the <citetitle>GNU General Public Licence</citetitle>
+        from the Free Software Foundation at
+        <ulink type="http" url="http://www.gnu.org/licences/">GNU Licences web site</ulink>
+        or by writing to:
+
+        <address>
+          The Free Software Foundation, Inc.,
+          <street>51 Franklin St</street> – Fifth Floor,
+          <city>Boston</city>, <state>MA</state> <postcode>02110-1301</postcode>,
+          <country>USA</country>
+        </address>
+      </para>
+    </legalnotice>
+  </bookinfo>
+
+  <part id="rsvg">
+    <title>API Reference</title>
+    <partintro>
+      <para>
+        The GNOME SVG Library (RSVG) is library for rendering SVG and SVGZ files.
+      </para>
+    </partintro>
+
+    <xi:include href="xml/rsvg-handle.xml"/>
+    <xi:include href="xml/rsvg-gio.xml"/>
+    <xi:include href="xml/rsvg-cairo.xml"/>
+    <xi:include href="xml/rsvg-pixbuf.xml"/>
+    <xi:include href="xml/rsvg-features.xml"/>
+  </part>
+
+  <chapter id="object-tree">
+    <title>Object Hierarchy</title>
+     <xi:include href="xml/tree_index.sgml"/>
+  </chapter>
+  <index id="api-index-full">
+    <title>API Index</title>
+    <xi:include href="xml/api-index-full.xml"><xi:fallback /></xi:include>
+  </index>
+  <index id="api-index-deprecated" role="deprecated">
+    <title>Index of deprecated symbols</title>
+    <xi:include href="xml/api-index-deprecated.xml"><xi:fallback /></xi:include>
+  </index>
+  <index id="api-index-2-4" role="2.4">
+    <title>Index of new symbols in 2.4</title>
+    <xi:include href="xml/api-index-2.4.xml"><xi:fallback /></xi:include>
+  </index>
+  <index id="api-index-2-8" role="2.8">
+    <title>Index of new symbols in 2.8</title>
+    <xi:include href="xml/api-index-2.8.xml"><xi:fallback /></xi:include>
+  </index>
+  <index id="api-index-2-9" role="2.9">
+    <title>Index of new symbols in 2.9</title>
+    <xi:include href="xml/api-index-2.9.xml"><xi:fallback /></xi:include>
+  </index>
+  <index id="api-index-2-14" role="2.14">
+    <title>Index of new symbols in 2.14</title>
+    <xi:include href="xml/api-index-2.14.xml"><xi:fallback /></xi:include>
+  </index>
+  <index id="api-index-2-22" role="2.22">
+    <title>Index of new symbols in 2.22</title>
+    <xi:include href="xml/api-index-2.22.xml"><xi:fallback /></xi:include>
+  </index>
+  <index id="api-index-2-32" role="2.32">
+    <title>Index of new symbols in 2.32</title>
+    <xi:include href="xml/api-index-2.32.xml"><xi:fallback /></xi:include>
+  </index>
+
+  <xi:include href="xml/annotation-glossary.xml"><xi:fallback /></xi:include>
+
+  <appendix id="licence">
+    <title>Licence</title>
+
+    <para>
+      This library is free software; you can redistribute it and/or
+      modify it under the terms of the <citetitle>GNU General Public
+      Licence</citetitle> as published by the Free Software Foundation; either
+      version 2 of the Licence, or (at your option) any later version.
+    </para>
+
+    <para>
+      This library is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      <citetitle>GNU General Public Licence</citetitle> for
+      more details.
+    </para>
+
+    <para>
+      You may obtain a copy of the <citetitle>GNU General Public Licence</citetitle>
+      from the Free Software Foundation at
+      <ulink type="http" url="http://www.gnu.org/licences/">GNU Licences web site</ulink>
+      or by writing to:
+
+      <address>
+        The Free Software Foundation, Inc.,
+        <street>51 Franklin St</street> – Fifth Floor,
+        <city>Boston</city>, <state>MA</state> <postcode>02110-1301</postcode>,
+        <country>USA</country>
+      </address>
+    </para>
+  </appendix>
+
+</book>
