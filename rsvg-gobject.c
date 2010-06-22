@@ -127,6 +127,10 @@ instance_dispose (GObject * instance)
         g_object_unref (self->priv->base_gfile);
         self->priv->base_gfile = NULL;
     }
+    if (self->priv->data_input_stream) {
+        g_object_unref (self->priv->data_input_stream);
+        self->priv->data_input_stream = NULL;
+    }
 #elif defined(HAVE_GSF)
     if (self->priv->gzipped_data) {
         g_object_unref (self->priv->gzipped_data);
