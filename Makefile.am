@@ -169,6 +169,6 @@ DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
 
 if GTK_API_VERSION_2
 install-exec-hook:
-	(cd $(DESTDIR)$(bindir) && $(LN_S) rsvg-convert-2 rsvg-convert)
-	(cd $(DESTDIR)$(bindir) && $(LN_S) rsvg-view-2 rsvg-view)
+	@test -e "$(DESTDIR)$(bindir)/rsvg-convert" || (cd $(DESTDIR)$(bindir) && $(LN_S) rsvg-convert-2 rsvg-convert)
+	@test -e "$(DESTDIR)$(bindir)/rsvg-view" || (cd $(DESTDIR)$(bindir) && $(LN_S) rsvg-view-2 rsvg-view)
 endif
