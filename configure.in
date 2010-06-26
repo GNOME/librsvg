@@ -261,25 +261,6 @@ AC_SUBST(GTK_LIBS)
 AC_SUBST(GTK_BINARY_VERSION)
 AM_CONDITIONAL(HAVE_GTK, test "x$have_gtk" = "xyes")
 
-have_gdk_x11=no
-PKG_CHECK_MODULES(GDK_X11, gdk-x11-$GTK_API_VERSION >= $GTK_X11_REQUIRED, have_gdk_x11=yes, have_gdk_x11=no)
-
-if test "x$have_gdk_x11" = "xyes"; then
-	AC_PATH_XTRA
-
-	if test "x$have_x" != "xyes"; then
-		GDK_X11_LIBS=""
-		GDK_X11_CFLAGS=""
-	else
-		GDK_X11_LIBS="$GDK_X11_LIBS $X_LIBS -lX11"
-		GDK_X11_CFLAGS="$GDK_X11_CFLAGS $X_CFLAGS"
-		AC_DEFINE(ENABLE_XEMBED, 1, [Is XEmbed available])
-	fi
-fi
-
-AC_SUBST(GDK_X11_CFLAGS)
-AC_SUBST(GDK_X11_LIBS)
-
 AC_ARG_ENABLE(gtk-theme,
     [  --enable-gtk-theme  Enable a RSVG based GTK+ theme engine [default=auto]],,
     enable_gtk_theme=yes)

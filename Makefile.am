@@ -82,7 +82,6 @@ INCLUDES =				\
 	$(LIBCROCO_CFLAGS)		\
 	$(LIBRSVG_CFLAGS) 		\
 	$(GTK_CFLAGS)			\
-	$(GDK_X11_CFLAGS)		\
 	-DG_LOG_DOMAIN=\"librsvg\" 	\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""
 
@@ -108,7 +107,7 @@ rsvg_view_@RSVG_API_MAJOR_VERSION@_SOURCES = 		\
 	test-display.c
 rsvg_view_@RSVG_API_MAJOR_VERSION@_LDFLAGS =
 rsvg_view_@RSVG_API_MAJOR_VERSION@_DEPENDENCIES = $(DEPS)
-rsvg_view_@RSVG_API_MAJOR_VERSION@_LDADD = $(GTK_LIBS) $(GDK_X11_LIBS) $(libm) $(LDADDS)
+rsvg_view_@RSVG_API_MAJOR_VERSION@_LDADD = $(GTK_LIBS) $(libm) $(LDADDS)
 
 EXTRA_DIST =				\
 	MAINTAINERS			\

@@ -31,10 +31,6 @@
 #include <gdk/gdk.h>
 #include <gdk/gdkkeysyms.h>
 
-#ifdef ENABLE_XEMBED
-#include <gdk/gdkx.h>
-#endif                          /* ENABLE_XEMBED */
-
 #define DEFAULT_WIDTH  640
 #define DEFAULT_HEIGHT 480
 
@@ -671,25 +667,10 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char *color)
 
     /* create toplevel window and set its title */
 
-#ifdef ENABLE_XEMBED
-    if (xid > 0) {
-        GdkWindow *gdk_parent;
+    win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
-        win = gtk_plug_new (0);
-
-        gdk_parent = gdk_window_foreign_new (xid);
-        gdk_window_get_geometry (gdk_parent, NULL, NULL, &win_width, &win_height, NULL);
-
-        /* so that button and key presses get registered */
-        gtk_widget_add_events (win, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
-    } else
-#endif
-    {
-        win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-
-        win_width = DEFAULT_WIDTH;
-        win_height = DEFAULT_HEIGHT;
-    }
+    win_width = DEFAULT_WIDTH;
+    win_height = DEFAULT_HEIGHT;
 
     populate_window (win, info, xid, win_width, win_height);
 
@@ -721,16 +702,7 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char *color)
 
     gtk_widget_show_all (win);
 
-#ifdef ENABLE_XEMBED
-    if (xid > 0) {
-        XReparentWindow (GDK_WINDOW_XDISPLAY (gtk_widget_get_window(win)),
-                         GDK_WINDOW_XID (gtk_widget_get_window(win)), xid, 0, 0);
-        XMapWindow (GDK_WINDOW_XDISPLAY (gtk_widget_get_window(win)), GDK_WINDOW_XID (gtk_widget_get_window(win)));
-    } else
-#endif
-    {
-        set_window_title (info);
-    }
+    set_window_title (info);
 }
 
 int
@@ -760,9 +732,6 @@ main (int argc, char **argv)
     gint n_args = 0;
 
     GOptionEntry options_table[] = {
-#ifdef ENABLE_XEMBED
-        {"xid", 'i', 0, G_OPTION_ARG_INT, &xid, N_("XWindow ID [for X11 embedding]"), N_("<int>")},
-#endif
         {"stdin", 's', 0, G_OPTION_ARG_NONE, &from_stdin, N_("Read from stdin instead of a file"),
          NULL},
         {"dpi-x", 'd', 0, G_OPTION_ARG_DOUBLE, &dpi_x, N_("Set the # of Pixels Per Inch"),
