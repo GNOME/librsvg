@@ -46,8 +46,8 @@ MKHTML_OPTIONS = --path="$(abs_builddir)"
 FIXXREF_OPTIONS = \
 	--extra-dir=$(GLIB_PREFIX)/share/gtk-doc/html/glib \
 	--extra-dir=$(GLIB_PREFIX)/share/gtk-doc/html/gio \
+	--extra-dir=$(GDK_PIXBUF_PREFIX)/share/gtk-doc/html/gdk-pixbuf \
 	--extra-dir=$(GTK_PREFIX)/share/gtk-doc/html/gdk \
-	--extra-dir=$(GTK_PREFIX)/share/gtk-doc/html/gdk-pixbuf \
 	--extra-dir=$(CAIRO_PREFIX)/share/gtk-doc/html/cairo
 
 # Used for dependencies. The docs will be rebuilt if any of these change.

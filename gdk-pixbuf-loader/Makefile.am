@@ -1,34 +1,41 @@
-loaderdir = $(libdir)/gtk-$(GTK_API_VERSION)/$(GTK_BINARY_VERSION)/loaders
+if ENABLE_PIXBUF_LOADER
+
+gdk_pixbuf_module_LTLIBRARIES = libpixbufloader-svg.la
+
+libpixbufloader_svg_la_SOURCES = \
+	io-svg.c
+
+libpixbufloader_svg_la_CPPFLAGS = \
+	-I$(top_srcdir) 			\
+	-I$(top_builddir)			\
+	-DGDK_PIXBUF_ENABLE_BACKEND		\
+	-DG_LOG_DOMAIN=\"libpixbufloader-svg\" 	\
+	$(AM_CPPFLAGS)
+
+libpixbufloader_svg_la_CFLAGS = \
+	$(GDK_PIXBUF_CFLAGS)	\
+	$(LIBRSVG_CFLAGS)	\
+	$(LIBCROCO_CFLAGS)	\
+	$(LIBGSF_CFLAGS)	\
+	$(AM_CFLASG)
+
+libpixbufloader_svg_la_LDFLAGS = -avoid-version -module $(AM_LDFLAGS)
+
+libpixbufloader_svg_la_LIBADD = \
+	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
+	$(GDK_PIXBUF_LIBS)	\
+	$(LIBRSVG_LIBS) 	\
+	$(LIBCROCO_LIBS)	\
+	$(LIBGSF_LIBS) 
 
 if PLATFORM_WIN32
-no_undefined = -no-undefined
+libpixbufloader_svg_la_LDFLAGS += -no-undefined
 endif
 
-INCLUDES = \
-	-I$(top_srcdir) \
-	$(LIBRSVG_CFLAGS) \
-	$(LIBGSF_CFLAGS) \
-	$(LIBCROCO_CFLAGS)\
-	-DGDK_PIXBUF_ENABLE_BACKEND
-
-if ENABLE_PIXBUF_LOADER
-target_pixbuf_loader = svg_loader.la 
-else
-target_pixbuf_loader = 
-endif
-
-svg_loader_la_SOURCES = io-svg.c
-svg_loader_la_LDFLAGS = -avoid-version -module $(no_undefined)
-svg_loader_la_LIBADD = \
-	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
-	$(LIBRSVG_LIBS) 	\
-	$(LIBGSF_LIBS) $(LIBCROCO_LIBS)
-
-loader_LTLIBRARIES = $(target_pixbuf_loader)
-
-install-data-hook: 
-	if [ -z "$(DESTDIR)" ] ; then \
-	  $(mkinstalldirs) $(DESTDIR)$(sysconfdir)/gtk-$(GTK_API_VERSION) ; \
-	  $(GDK_PIXBUF_QUERYLOADERS) > $(DESTDIR)$(sysconfdir)/gtk-$(GTK_API_VERSION)/gdk-pixbuf.loaders ; \
+install-data-hook:
+	if test -z "$(DESTDIR)"; then \
+		$(mkinstalldirs) $(DESTDIR)$(gdk_pixbuf_binary_dir) ; \
+		$(GDK_PIXBUF_QUERYLOADERS) > $(DESTDIR)$(gdk_pixbuf_cache_file) ; \
 	fi
 
+endif # ENABLE_PIXBUF_LOADER

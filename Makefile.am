@@ -2,9 +2,12 @@ SUBDIRS = . gdk-pixbuf-loader gtk-engine data tests tools doc
 
 lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
 
-bin_PROGRAMS = rsvg-convert-@RSVG_API_MAJOR_VERSION@
-if HAVE_GTK
-bin_PROGRAMS += rsvg-view-@RSVG_API_MAJOR_VERSION@
+bin_PROGRAMS = rsvg-convert
+if HAVE_GTK_2
+bin_PROGRAMS += rsvg-view
+endif
+if HAVE_GTK_3
+bin_PROGRAMS += rsvg-view-3
 endif
 
 if OS_WIN32
@@ -20,7 +23,7 @@ enum_sources = \
 	librsvg-enum-types.h	\
 	librsvg-enum-types.c
 
-librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = 		\
+librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	rsvg-affine.c		\
 	librsvg-features.c 	\
 	rsvg-bpath-util.c 	\
@@ -66,8 +69,26 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = 		\
 	rsvg-xml.c		\
 	rsvg-xml.h
 
-librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = -version-info @RSVG_LT_VERSION_INFO@ -export-dynamic -no-undefined -export-symbols $(srcdir)/librsvg.def
-librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = $(LIBGSF_LIBS) $(LIBCROCO_LIBS) $(LIBRSVG_LIBS) -lm
+librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
+	-I$(top_srcdir) 			\
+	-I$(top_builddir) 			\
+	-DG_LOG_DOMAIN=\"librsvg\" 		\
+	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
+	$(AM_CPPFLAGS)
+
+librsvg_@RSVG_API_MAJOR_VERSION@_la_CFLAGS = \
+	$(LIBRSVG_CFLAGS) 	\
+	$(LIBCROCO_CFLAGS)	\
+	$(LIBGSF_CFLAGS)	\
+	$(AM_CFLAGS)
+
+librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = -version-info @RSVG_LT_VERSION_INFO@ -export-dynamic -no-undefined -export-symbols $(srcdir)/librsvg.def $(AM_LDFLAGS)
+
+librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
+	$(LIBRSVG_LIBS) 	\
+	$(LIBCROCO_LIBS)	\
+	$(LIBGSF_LIBS)		\
+	$(libm)
 
 librsvgincdir = $(includedir)/librsvg-$(RSVG_API_VERSION)/librsvg
 librsvginc_HEADERS = 	\
@@ -75,39 +96,86 @@ librsvginc_HEADERS = 	\
 	librsvg-features.h \
 	librsvg-enum-types.h
 
-INCLUDES =				\
-	-I$(top_srcdir) 		\
-	-I$(top_builddir) 		\
-	$(LIBGSF_CFLAGS)		\
-	$(LIBCROCO_CFLAGS)		\
-	$(LIBRSVG_CFLAGS) 		\
-	$(GTK_CFLAGS)			\
-	-DG_LOG_DOMAIN=\"librsvg\" 	\
-	-DLIBRSVG_DATADIR="\"$(datadir)\""
-
-DEPS = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la
-LDADDS =				\
-	$(LIBGSF_LIBS)			\
-	$(GLIB_LIBS)			\
-	$(LIBCROCO_LIBS)		\
-	$(LIBRSVG_LIBS) 		\
-	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la
-
-if GTK_API_VERSION_2
+if HAVE_GTK_2
 nodist_bin_SCRIPTS = rsvg
-man_MANS = rsvg.1
+dist_man_MANS = rsvg.1
 endif
 
-rsvg_convert_@RSVG_API_MAJOR_VERSION@_SOURCES=rsvg-convert.c
-rsvg_convert_@RSVG_API_MAJOR_VERSION@_LDFLAGS =
-rsvg_convert_@RSVG_API_MAJOR_VERSION@_DEPENDENCIES = $(DEPS)
-rsvg_convert_@RSVG_API_MAJOR_VERSION@_LDADD = $(LDADDS) $(libm)
+rsvg_convert_SOURCES = \
+	rsvg-convert.c
 
-rsvg_view_@RSVG_API_MAJOR_VERSION@_SOURCES = 		\
+rsvg_convert_CPPFLAGS = \
+	-I$(top_srcdir) 			\
+	-I$(top_builddir) 			\
+	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
+	$(AM_CPPFLAGS)
+
+rsvg_convert_CFLAGS =\
+	$(LIBRSVG_CFLAGS) 	\
+	$(LIBCROCO_CFLAGS)	\
+	$(LIBGSF_CFLAGS)	\
+	$(AM_CFLAGS)
+
+rsvg_convert_LDFLAGS = $(AM_LDFLAGS)
+
+rsvg_convert_LDADD = \
+	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
+	$(LIBRSVG_LIBS)		\
+	$(LIBCROCO_LIBS)	\
+	$(LIBGSF_LIBS)		\
+	$(libm)
+
+rsvg_view_SOURCES = \
 	test-display.c
-rsvg_view_@RSVG_API_MAJOR_VERSION@_LDFLAGS =
-rsvg_view_@RSVG_API_MAJOR_VERSION@_DEPENDENCIES = $(DEPS)
-rsvg_view_@RSVG_API_MAJOR_VERSION@_LDADD = $(GTK_LIBS) $(libm) $(LDADDS)
+
+rsvg_view_CPPFLAGS = \
+	-I$(top_srcdir) 			\
+	-I$(top_builddir) 			\
+	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
+	$(AM_CPPFLAGS)
+
+rsvg_view_CFLAGS =\
+	$(GTK2_CFLAGS)		\
+	$(LIBRSVG_CFLAGS) 	\
+	$(LIBCROCO_CFLAGS)	\
+	$(LIBGSF_CFLAGS)	\
+	$(AM_CFLAGS)
+
+rsvg_view_LDFLAGS =
+
+rsvg_view_LDADD = \
+	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la \
+	$(GTK2_LIBS)		\
+	$(LIBRSVG_LIBS)		\
+	$(LIBCROCO_LIBS)	\
+	$(LIBGSF_LIBS)		\
+	$(libm)
+
+rsvg_view_3_SOURCES = \
+	test-display.c
+
+rsvg_view_3_CPPFLAGS = \
+	-I$(top_srcdir) 			\
+	-I$(top_builddir) 			\
+	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
+	$(AM_CPPFLAGS)
+
+rsvg_view_3_CFLAGS =\
+	$(GTK3_CFLAGS)		\
+	$(LIBRSVG_CFLAGS) 	\
+	$(LIBCROCO_CFLAGS)	\
+	$(LIBGSF_CFLAGS)	\
+	$(AM_CFLAGS)
+
+rsvg_view_3_LDFLAGS =
+
+rsvg_view_3_LDADD = \
+	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la \
+	$(GTK3_LIBS)		\
+	$(LIBRSVG_LIBS)		\
+	$(LIBCROCO_LIBS)	\
+	$(LIBGSF_LIBS)		\
+	$(libm)
 
 EXTRA_DIST =				\
 	MAINTAINERS			\
@@ -119,7 +187,6 @@ EXTRA_DIST =				\
 	librsvg-zip.in 			\
 	rsvg.in				\
 	librsvg.def			\
-	$(man_MANS)			\
 	gtk-doc.make
 
 CLEANFILES = \
@@ -165,9 +232,3 @@ s-enum-types-c: $(headers) Makefile
 	&& echo timestamp > $(@F)
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
-
-if GTK_API_VERSION_2
-install-exec-hook:
-	@test -e "$(DESTDIR)$(bindir)/rsvg-convert" || (cd $(DESTDIR)$(bindir) && $(LN_S) rsvg-convert-2 rsvg-convert)
-	@test -e "$(DESTDIR)$(bindir)/rsvg-view" || (cd $(DESTDIR)$(bindir) && $(LN_S) rsvg-view-2 rsvg-view)
-endif
