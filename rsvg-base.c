@@ -1752,7 +1752,6 @@ gboolean
 rsvg_handle_close (RsvgHandle * handle, GError ** error)
 {
     RsvgHandlePrivate *priv;
-    gboolean ret;
 
     rsvg_return_val_if_fail (handle, FALSE, error);
     priv = handle->priv;
@@ -1764,6 +1763,7 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
     if (priv->data_input_stream) {
         GConverter *converter;
         GInputStream *stream;
+        gboolean ret;
 
         converter = G_CONVERTER (g_zlib_decompressor_new (G_ZLIB_COMPRESSOR_FORMAT_GZIP));
         stream = g_converter_input_stream_new (priv->data_input_stream, converter);
