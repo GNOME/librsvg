@@ -59,6 +59,8 @@ AM_PROG_CC_C_O
 
 AC_C_BIGENDIAN
 
+PKG_PROG_PKG_CONFIG
+
 dnl ===========================================================================
 
 #AC_CANONICAL_HOST
@@ -89,12 +91,6 @@ AM_CONDITIONAL(OS_WIN32, test "$native_win32" = "yes")
 
 dnl ===========================================================================
 
-PKG_CHECK_MODULES(GLIB, \
-		glib-2.0 >= $GLIB_REQUIRED \
-		gthread-2.0 >= $GLIB_REQUIRED)
-AC_SUBST(GLIB_LIBS)
-AC_SUBST(GLIB_CFLAGS)	
-
 GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`
 AC_SUBST(GLIB_MKENUMS)
 
@@ -109,6 +105,8 @@ PKG_CHECK_MODULES(LIBRSVG, \
 	cairo-png >= $CAIRO_REQUIRED \
 	fontconfig >= $FONTCONFIG_REQUIRED
 	freetype2)
+
+PKG_CHECK_MODULES([GTHREAD],[gthread-2.0 >= $GLIB_REQUIRED])
 
 dnl ===========================================================================
 

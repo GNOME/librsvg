@@ -123,6 +123,7 @@ rsvg_convert_LDADD = \
 	$(LIBRSVG_LIBS)		\
 	$(LIBCROCO_LIBS)	\
 	$(LIBGSF_LIBS)		\
+	$(GTHREAD_LIBS)		\
 	$(libm)
 
 rsvg_view_SOURCES = \
@@ -149,6 +150,7 @@ rsvg_view_LDADD = \
 	$(LIBRSVG_LIBS)		\
 	$(LIBCROCO_LIBS)	\
 	$(LIBGSF_LIBS)		\
+	$(GTHREAD_LIBS)		\
 	$(libm)
 
 rsvg_view_3_SOURCES = \
@@ -175,6 +177,7 @@ rsvg_view_3_LDADD = \
 	$(LIBRSVG_LIBS)		\
 	$(LIBCROCO_LIBS)	\
 	$(LIBGSF_LIBS)		\
+	$(GTHREAD_LIBS)		\
 	$(libm)
 
 EXTRA_DIST =				\

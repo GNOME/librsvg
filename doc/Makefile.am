@@ -124,7 +124,7 @@ GTKDOC_LIBS = \
 	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la \
 	$(LIBRSVG_LIBS) \
 	$(LIBGSF_LIBS) \
-	$(GLIB_LIBS) \
+	$(GTHREAD_LIBS) \
 	$(LIBCROCO_LIBS) \
 	$(GTK_LIBS)
 
