@@ -1876,11 +1876,15 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 
     buffer = _rsvg_xml_input_buffer_new_from_stream (stream, cancellable, XML_CHAR_ENCODING_NONE, &err);
     input = xmlNewIOInputStream (priv->ctxt, buffer, XML_CHAR_ENCODING_NONE);
+#if LIBXML_VERSION >= 20700
     if (xmlPushInput (priv->ctxt, input) < 0) {
         rsvg_set_error (error, priv->ctxt);
         xmlFreeInputStream (input);
         return FALSE;
     }
+#else
+    xmlPushInput (priv->ctxt, input);
+#endif
 
     result = xmlParseDocument (priv->ctxt);
     if (result != 0) {
