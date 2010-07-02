@@ -134,8 +134,6 @@ instance_dispose (GObject * instance)
     if (self->priv->base_uri)
         g_free (self->priv->base_uri);
 
-    g_free (self->priv);
-
 #if GLIB_CHECK_VERSION (2, 24, 0)
     if (self->priv->base_gfile) {
         g_object_unref (self->priv->base_gfile);
@@ -151,6 +149,8 @@ instance_dispose (GObject * instance)
         self->priv->gzipped_data = NULL;
     }
 #endif
+
+    g_free (self->priv);
 
     rsvg_parent_class->dispose (instance);
 }
