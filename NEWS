@@ -1,3 +1,24 @@
+Version 2.31.0
+
+- buildable against standalone gdk-pixbuf
+- require GIO
+
+- Bug fixed:
+
+  337979 text size not rendered correctly
+  545158 Segfault or bad rendering when displaying a SVG file
+  614556 Background pixbuf in filter process should not be created if it's not needed.
+  616018 cairo-freetype font rendering code should be removed.
+  620130 Decode base64 inplace
+  620238 crashes rending a trivial file
+  620592 Use correct free func
+  620649 Simplify code by using g_clear_error
+  620693 presentation attributes in svg element are ignored
+  620822 Build fails with make -jx"
+  621699 make librsvg gio friendly
+  622790 use standalone gdk-pixbuf
+  623383 [PATCH] crash on rsvg-gobject.c:141, in instance_dispose function
+
 Version 2.26.3
 
 - Bug fixed:
