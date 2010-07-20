@@ -34,7 +34,7 @@ endif
 
 install-data-hook:
 	if test -z "$(DESTDIR)"; then \
-		$(mkinstalldirs) $(DESTDIR)$(gdk_pixbuf_binary_dir) ; \
+		$(mkinstalldirs) $(DESTDIR)$(gdk_pixbuf_binarydir) ; \
 		$(GDK_PIXBUF_QUERYLOADERS) > $(DESTDIR)$(gdk_pixbuf_cache_file) ; \
 	fi
 
