@@ -29,7 +29,13 @@
 
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
+
+#if GTK_CHECK_VERSION(2,90,7)
+#define GDK_KEY(symbol) GDK_KEY_##symbol
+#else
 #include <gdk/gdkkeysyms.h>
+#define GDK_KEY(symbol) GDK_##symbol
+#endif
 
 #define DEFAULT_WIDTH  640
 #define DEFAULT_HEIGHT 480
@@ -532,7 +538,7 @@ create_popup_menu (ViewerCbInfo * info)
         g_signal_connect (menu_item, "activate", G_CALLBACK (copy_svg_location), info);
         gtk_widget_show (menu_item);
         gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
-        gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_C,
+        gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY(C),
                                     GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
     }
 
@@ -540,7 +546,7 @@ create_popup_menu (ViewerCbInfo * info)
     g_signal_connect (menu_item, "activate", G_CALLBACK (save_svg), info);
     gtk_widget_show (menu_item);
     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
-    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_S, GDK_CONTROL_MASK,
+    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY(S), GDK_CONTROL_MASK,
                                 GTK_ACCEL_VISIBLE);
 
     menu_item = gtk_image_menu_item_new_with_label (_("Save as PNG"));
@@ -550,7 +556,7 @@ create_popup_menu (ViewerCbInfo * info)
     g_signal_connect (menu_item, "activate", G_CALLBACK (save_pixbuf), info);
     gtk_widget_show (menu_item);
     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
-    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_S,
+    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY(S),
                                 GDK_CONTROL_MASK | GDK_SHIFT_MASK, GTK_ACCEL_VISIBLE);
 
 #if GTK_CHECK_VERSION(2,10,0)
@@ -558,7 +564,7 @@ create_popup_menu (ViewerCbInfo * info)
     g_signal_connect (menu_item, "activate", G_CALLBACK (print_pixbuf), info);
     gtk_widget_show (menu_item);
     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
-    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_P, GDK_CONTROL_MASK,
+    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY(P), GDK_CONTROL_MASK,
                                 GTK_ACCEL_VISIBLE);
 #endif
 
@@ -566,14 +572,14 @@ create_popup_menu (ViewerCbInfo * info)
     g_signal_connect (menu_item, "activate", G_CALLBACK (zoom_in), info);
     gtk_widget_show (menu_item);
     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
-    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_plus,
+    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY(plus),
                                 GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 
     menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_ZOOM_OUT, NULL);
     g_signal_connect (menu_item, "activate", G_CALLBACK (zoom_out), info);
     gtk_widget_show (menu_item);
     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
-    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_minus,
+    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY(minus),
                                 GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 
     info->popup_menu = popup_menu;
