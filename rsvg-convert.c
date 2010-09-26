@@ -52,6 +52,10 @@
 #include <cairo-svg.h>
 #endif
 
+#ifdef CAIRO_HAS_XML_SURFACE
+#include <cairo-xml.h>
+#endif
+
 static void
 display_error (GError * err)
 {
@@ -161,7 +165,7 @@ main (int argc, char **argv)
         {"height", 'h', 0, G_OPTION_ARG_INT, &height,
          N_("height [optional; defaults to the SVG's height]"), N_("<int>")},
         {"format", 'f', 0, G_OPTION_ARG_STRING, &format,
-         N_("save format [optional; defaults to 'png']"), N_("[png, pdf, ps, svg]")},
+         N_("save format [optional; defaults to 'png']"), N_("[png, pdf, ps, svg, xml, recording]")},
         {"output", 'o', 0, G_OPTION_ARG_STRING, &output,
          N_("output filename [optional; defaults to stdout]"), NULL},
         {"keep-aspect-ratio", 'a', 0, G_OPTION_ARG_NONE, &keep_aspect_ratio,
@@ -295,6 +299,18 @@ main (int argc, char **argv)
                 surface = cairo_svg_surface_create_for_stream (rsvg_cairo_write_func, output_file,
                                                                dimensions.width, dimensions.height);
 #endif
+#ifdef CAIRO_HAS_XML_SURFACE
+            else if (!strcmp (format, "xml")) {
+                cairo_device_t *device = cairo_xml_create_for_stream (rsvg_cairo_write_func, output_file);
+                surface = cairo_xml_surface_create (device, CAIRO_CONTENT_COLOR_ALPHA,
+                                                    dimensions.width, dimensions.height);
+                cairo_device_destroy (device);
+            }
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE (1, 10, 0)
+            else if (!strcmp (format, "recording"))
+                surface = cairo_recording_surface_create (CAIRO_CONTENT_COLOR_ALPHA, NULL);
+#endif
+#endif
             else {
                 fprintf (stderr, _("Unknown output format."));
                 exit (1);
@@ -320,6 +336,13 @@ main (int argc, char **argv)
 
         if (!format || !strcmp (format, "png"))
             cairo_surface_write_to_png_stream (surface, rsvg_cairo_write_func, output_file);
+#if CAIRO_HAS_XML_SURFACE && CAIRO_VERSION >= CAIRO_VERSION_ENCODE (1, 10, 0)
+        else if (!strcmp (format, "recording")) {
+            cairo_device_t *device = cairo_xml_create_for_stream (rsvg_cairo_write_func, output_file);
+            cairo_xml_for_recording_surface (device, surface);
+            cairo_device_destroy (device);
+        }
+#endif
         else
             cairo_show_page (cr);
 
@@ -327,6 +350,7 @@ main (int argc, char **argv)
     }
 
     cairo_destroy (cr);
+
     cairo_surface_destroy (surface);
 
     fclose (output_file);
