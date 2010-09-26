@@ -242,13 +242,9 @@ GTK3_BINARY_VERSION=
 
 if test "x$enable_gtk_theme" = "xyes" -o "x$enable_pixbuf_loader" = "xyes"; then
   PKG_CHECK_MODULES([GTK2],[gtk+-2.0 >= $GTK2_REQUIRED],[have_gtk_2=yes],[have_gtk_2=no])
-  PKG_CHECK_MODULES([GTK3],[gtk+-3.0 >= $GTK3_REQUIRED],[have_gtk_3=yes],[have_gtk_3=no])
 
   if test "$have_gtk_2" = "yes"; then
      GTK2_BINARY_VERSION="`$PKG_CONFIG --variable=gtk_binary_version gtk+-2.0`"
-  fi
-  if test "$have_gtk_3" = "yes"; then
-     GTK3_BINARY_VERSION="`$PKG_CONFIG --variable=gtk_binary_version gtk+-3.0`"
   fi
 fi
 
