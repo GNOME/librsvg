@@ -690,11 +690,15 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char *color)
         if (gdk_color_parse (color, &bg_color)) {
             GtkWidget *parent_widget = gtk_widget_get_parent (info->image);
 
+#if GTK_CHECK_VERSION (2, 90, 8)
+            gtk_widget_modify_bg (parent_widget, GTK_STATE_NORMAL, &bg_color);
+#else
             if (gdk_colormap_alloc_color
                 (gtk_widget_get_colormap (parent_widget), &bg_color, FALSE, TRUE))
                 gtk_widget_modify_bg (parent_widget, GTK_STATE_NORMAL, &bg_color);
             else
                 g_warning (_("Couldn't allocate color '%s'"), color);
+#endif
         } else
             g_warning (_("Couldn't parse color '%s'"), color);
     }
