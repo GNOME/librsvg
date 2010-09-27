@@ -1,4 +1,10 @@
-SUBDIRS = . gdk-pixbuf-loader gtk-engine data tests tools doc
+SUBDIRS = . gdk-pixbuf-loader data tests tools doc
+
+if ENABLE_GTK_ENGINE
+if HAVE_GTK_2
+SUBDIRS += gtk-engine
+endif
+endif
 
 lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
 
