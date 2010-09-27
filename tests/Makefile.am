@@ -33,11 +33,13 @@ libtest_utils_la_SOURCES = 				\
 	test-utils.h
 
 EXTRA_DIST =						\
+	fixtures/crash/bug620238.svg			\
 	fixtures/dimensions/bug564527.svg		\
 	fixtures/dimensions/bug614018.svg		\
 	fixtures/dimensions/bug612951.svg		\
 	fixtures/dimensions/bug608102.svg		\
 	fixtures/dimensions/sub-rect-no-unit.svg	\
+	fixtures/styles/bug620693.svg			\
 	fixtures/styles/bug614704.svg			\
 	fixtures/styles/bug614606.svg			\
 	fixtures/styles/important.svg			\
