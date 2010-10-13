@@ -343,8 +343,12 @@ main (int argc, char **argv)
             cairo_device_destroy (device);
         }
 #endif
-        else
+        else if (!strcmp (format, "xml"))
+          ;
+        else if (!strcmp (format, "svg") || !strcmp (format, "pdf") || !strcmp (format, "ps"))
             cairo_show_page (cr);
+        else
+          g_assert_not_reached ();
 
         g_object_unref (rsvg);
     }
