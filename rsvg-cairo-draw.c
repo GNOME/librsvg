@@ -971,7 +971,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
                                                        gdk_pixbuf_get_height (output),
                                                        gdk_pixbuf_get_rowstride (output));
         cairo_surface_set_user_data (surface, &surface_pixel_data_key,
-                                     g_object_ref (output),
+                                     output,
                                      (cairo_destroy_func_t) g_object_unref);
 
     } else
