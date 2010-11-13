@@ -1,3 +1,12 @@
+Version 2.32.1
+
+- Make sure the surfaces own their pixels
+  Fixes https://bugs.freedesktop.org/show_bug.cgi?id=30071
+- Remove stray comma from enum (#630714)
+- Dist testcase input file (#629412)
+
+Version 2.32.0
+
 Version 2.31.0
 
 - buildable against standalone gdk-pixbuf
