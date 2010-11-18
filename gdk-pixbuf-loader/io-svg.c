@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include "rsvg-private.h"
+#include "librsvg-features.h"
 
 typedef struct {
         RsvgHandle                 *handle;
@@ -233,14 +234,14 @@ fill_info (GdkPixbufFormat *info)
                 "image/svg-xml",
                 "image/vnd.adobe.svg+xml",
                 "text/xml-svg",
-#ifdef HAVE_SVGZ
+#if LIBRSVG_CHECK_FEATURE(SVGZ)
                 "image/svg+xml-compressed",
 #endif
                 NULL
         };
         static gchar *extensions[] = {
                 "svg",
-#ifdef HAVE_SVGZ
+#if LIBRSVG_CHECK_FEATURE(SVGZ)
                 "svgz",
                 "svg.gz",
 #endif
