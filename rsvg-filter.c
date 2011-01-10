@@ -1350,12 +1350,12 @@ box_blur (GdkPixbuf * in, GdkPixbuf * output, guchar * intermediate, gint kw,
                     if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y1)
                         output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / kh;
                 }
-                for (; y < boundarys.y1; y++) {
+                for (y = boundarys.y0 + kh; y < boundarys.y1; y++) {
                     sum -= intermediate[y % kh];
                     sum += (intermediate[y % kh] = in_pixels[4 * x + y * rowstride + ch]);
                     output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / kh;
                 }
-                for (; y < boundarys.y1 + kh; y++) {
+                for (y = boundarys.y1; y < boundarys.y1 + kh; y++) {
                     sum -= intermediate[y % kh];
 
                     if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y1)
