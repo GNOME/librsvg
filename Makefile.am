@@ -1,5 +1,7 @@
 SUBDIRS = . gdk-pixbuf-loader data tests tools doc
 
+ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
+
 if ENABLE_GTK_ENGINE
 if HAVE_GTK_2
 SUBDIRS += gtk-engine
