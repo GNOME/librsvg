@@ -887,7 +887,10 @@ parse_style_value (const gchar *string, gchar **value, gboolean *important)
     } else {
         *important = FALSE;
     }
-    *value = g_strdup (g_strstrip (strings[0]));
+    if (strings[0])
+        *value = g_strdup (g_strstrip (strings[0]));
+    else
+        *value = g_strdup ("");
 
     g_strfreev (strings);
 
