@@ -517,6 +517,11 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
                                        bbox, rsvg_current_state (ctx)->current_color);
 
         cairo_set_line_width (render->cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, 'h'));
+        cairo_set_miter_limit (render->cr, state->miter_limit);
+        cairo_set_line_cap (render->cr, (cairo_line_cap_t) state->cap);
+        cairo_set_line_join (render->cr, (cairo_line_join_t) state->join);
+        cairo_set_dash (render->cr, state->dash.dash, state->dash.n_dash,
+                        _rsvg_css_normalize_length (&state->dash.offset, ctx, 'o'));
         cairo_stroke (render->cr);
     }
 }
