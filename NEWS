@@ -1,3 +1,21 @@
+Version 2.34.0
+
+- Allow building rsvg-view with gtk 3
+
+Bugs fixed:
+  629392 - stroke-dasharray is inherited by sibling texts
+  626802 - NULL-ptr crash in g_str_equal in rsvg-styles.c
+  641586 - configure should honour aclocal flags ACLOCAL_FLAGS 
+  640336 - Typo in rsvg.1
+  635214 - svgz never supported by pixbuf loader
+  FDO 30071 - crash when rendering this svg with librsvg to a pdf or ps or recording surface
+  629412 - Missing test files on librsvg-2.31.0
+  630714 - fix stray comma 
+
+Version 2.32.1
+
+Version 2.32.0
+
 Version 2.31.0
 
 - buildable against standalone gdk-pixbuf
