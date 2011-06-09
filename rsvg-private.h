@@ -275,7 +275,7 @@ typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpo
 RsvgPropertyBag	    *rsvg_property_bag_new       (const char **atts);
 RsvgPropertyBag	    *rsvg_property_bag_ref       (RsvgPropertyBag * bag);
 void                 rsvg_property_bag_free      (RsvgPropertyBag * bag);
-G_CONST_RETURN char *rsvg_property_bag_lookup    (RsvgPropertyBag * bag, const char *key);
+const char          *rsvg_property_bag_lookup    (RsvgPropertyBag * bag, const char *key);
 guint                rsvg_property_bag_size	     (RsvgPropertyBag * bag);
 void                 rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPropertyBagEnumFunc func,
                                                   gpointer user_data);

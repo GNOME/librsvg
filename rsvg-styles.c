@@ -1557,7 +1557,7 @@ rsvg_property_bag_free (RsvgPropertyBag * bag)
     g_hash_table_unref (bag);
 }
 
-G_CONST_RETURN char *
+const char *
 rsvg_property_bag_lookup (RsvgPropertyBag * bag, const char *key)
 {
     return (const char *) g_hash_table_lookup (bag, (gconstpointer) key);

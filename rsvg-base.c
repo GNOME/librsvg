@@ -1102,7 +1102,7 @@ rsvg_handle_set_base_gfile (RsvgHandle *handle,
  * Returns: the base uri, possibly null
  * Since: 2.8
  */
-G_CONST_RETURN char *
+const char *
 rsvg_handle_get_base_uri (RsvgHandle * handle)
 {
     g_return_val_if_fail (handle, NULL);
@@ -1246,7 +1246,7 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
  *
  * Since: 2.9
  */
-G_CONST_RETURN char *
+const char *
 rsvg_handle_get_metadata (RsvgHandle * handle)
 {
     g_return_val_if_fail (handle, NULL);
@@ -1268,7 +1268,7 @@ rsvg_handle_get_metadata (RsvgHandle * handle)
  *
  * Since: 2.4
  */
-G_CONST_RETURN char *
+const char *
 rsvg_handle_get_title (RsvgHandle * handle)
 {
     g_return_val_if_fail (handle, NULL);
@@ -1290,7 +1290,7 @@ rsvg_handle_get_title (RsvgHandle * handle)
  *
  * Since: 2.4
  */
-G_CONST_RETURN char *
+const char *
 rsvg_handle_get_desc (RsvgHandle * handle)
 {
     g_return_val_if_fail (handle, NULL);
