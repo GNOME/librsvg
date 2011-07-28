@@ -1193,13 +1193,15 @@ rsvg_handle_close_impl (RsvgHandle * handle, GError ** error)
         xmlDoc = handle->priv->ctxt->myDoc;
 
         result = xmlParseChunk (handle->priv->ctxt, "", 0, TRUE);
-        xmlFreeParserCtxt (handle->priv->ctxt);
-        xmlFreeDoc (xmlDoc);
-
         if (result != 0) {
             rsvg_set_error (error, handle->priv->ctxt);
+            xmlFreeParserCtxt (handle->priv->ctxt);
+            xmlFreeDoc (xmlDoc);
             return FALSE;
         }
+
+        xmlFreeParserCtxt (handle->priv->ctxt);
+        xmlFreeDoc (xmlDoc);
     }
 
     rsvg_defs_resolve_all (handle->priv->defs);
