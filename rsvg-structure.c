@@ -369,7 +369,7 @@ void
 _rsvg_node_svg_apply_atts (RsvgNodeSvg * self, RsvgHandle * ctx)
 {
     const char *id = NULL, *klazz = NULL, *value;
-    if (rsvg_property_bag_size (self->atts)) {
+    if (self->atts && rsvg_property_bag_size (self->atts)) {
         if ((value = rsvg_property_bag_lookup (self->atts, "class")))
             klazz = value;
         if ((value = rsvg_property_bag_lookup (self->atts, "id")))
@@ -406,6 +406,7 @@ rsvg_new_svg (void)
     svg->super.draw = rsvg_node_svg_draw;
     svg->super.free = _rsvg_svg_free;
     svg->super.set_atts = rsvg_node_svg_set_atts;
+    svg->atts = NULL;
     return &svg->super;
 }
 
