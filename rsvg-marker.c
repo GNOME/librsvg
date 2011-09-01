@@ -84,7 +84,7 @@ rsvg_new_marker (void)
 {
     RsvgMarker *marker;
     marker = g_new (RsvgMarker, 1);
-    _rsvg_node_init (&marker->super);
+    _rsvg_node_init (&marker->super, RSVG_NODE_TYPE_MARKER);
     marker->orient = 0;
     marker->orientAuto = FALSE;
     marker->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
@@ -198,7 +198,7 @@ rsvg_marker_parse (const RsvgDefs * defs, const char *str)
         val = rsvg_defs_lookup (defs, name);
         g_free (name);
 
-        if (val && (!strcmp (val->type->str, "marker")))
+        if (val && RSVG_NODE_TYPE (val) == RSVG_NODE_TYPE_MARKER)
             return val;
     }
     return NULL;

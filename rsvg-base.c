@@ -147,7 +147,6 @@ rsvg_start_style (RsvgHandle * ctx, RsvgPropertyBag * atts)
 static void
 rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag * atts)
 {
-
     /*replace this stuff with a hash for fast reading! */
     RsvgNode *newnode = NULL;
     if (!strcmp (name, "g"))
@@ -241,11 +240,11 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
     else if (!strcmp (name, "feFuncA"))
         newnode = rsvg_new_node_component_transfer_function ('a');
     else if (!strcmp (name, "feDistantLight"))
-        newnode = rsvg_new_filter_primitive_light_source ('d');
+        newnode = rsvg_new_node_light_source ('d');
     else if (!strcmp (name, "feSpotLight"))
-        newnode = rsvg_new_filter_primitive_light_source ('s');
+        newnode = rsvg_new_node_light_source ('s');
     else if (!strcmp (name, "fePointLight"))
-        newnode = rsvg_new_filter_primitive_light_source ('p');
+        newnode = rsvg_new_node_light_source ('p');
     /* hack to make multiImage sort-of work */
     else if (!strcmp (name, "multiImage"))
         newnode = rsvg_new_switch ();
@@ -259,21 +258,22 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
         newnode = rsvg_new_tspan ();
     else if (!strcmp (name, "tref"))
         newnode = rsvg_new_tref ();
-	else {
+    else {
 		/* hack for bug 401115. whenever we encounter a node we don't understand, push it into a group. 
 		   this will allow us to handle things like conditionals properly. */
 		newnode = rsvg_new_group ();
 	}
 
     if (newnode) {
-        newnode->type = g_string_new (name);
+        g_assert (RSVG_NODE_TYPE (newnode) != RSVG_NODE_TYPE_INVALID);
+        newnode->name = (char *) name; /* libxml will keep this while parsing */
         newnode->parent = ctx->priv->currentnode;
         rsvg_node_set_atts (newnode, ctx, atts);
         rsvg_defs_register_memory (ctx->priv->defs, newnode);
         if (ctx->priv->currentnode) {
             rsvg_node_group_pack (ctx->priv->currentnode, newnode);
             ctx->priv->currentnode = newnode;
-        } else if (!strcmp (name, "svg")) {
+        } else if (RSVG_NODE_TYPE (newnode) == RSVG_NODE_TYPE_SVG) {
             ctx->priv->treebase = newnode;
             ctx->priv->currentnode = newnode;
         }
@@ -689,10 +689,11 @@ rsvg_end_element (void *data, const xmlChar * name)
             ctx->priv->handler = NULL;
         }
 
-        if (ctx->priv->currentnode
-            && !strcmp ((const char *) name, ctx->priv->currentnode->type->str))
-            rsvg_pop_def_group (ctx);
+        if (ctx->priv->currentnode &&
+            !strcmp ((const char *) name, ctx->priv->currentnode->name))
+                rsvg_pop_def_group (ctx);
 
+        /* FIXMEchpe: shouldn't this check that currentnode == treebase or sth like that? */
         if (ctx->priv->treebase && !strcmp ((const char *)name, "svg"))
             _rsvg_node_svg_apply_atts ((RsvgNodeSvg *)ctx->priv->treebase, ctx);
     }
@@ -706,6 +707,30 @@ _rsvg_node_chars_free (RsvgNode * node)
     _rsvg_node_free (node);
 }
 
+static RsvgNodeChars *
+rsvg_new_node_chars (const char *text,
+                     int len)
+{
+    RsvgNodeChars *self;
+
+    self = g_new (RsvgNodeChars, 1);
+    _rsvg_node_init (&self->super, RSVG_NODE_TYPE_CHARS);
+
+    if (!g_utf8_validate (text, len, NULL)) {
+        char *utf8;
+        utf8 = rsvg_make_valid_utf8 (text, len);
+        self->contents = g_string_new (utf8);
+        g_free (utf8);
+    } else {
+        self->contents = g_string_new_len (text, len);
+    }
+
+    self->super.free = _rsvg_node_chars_free;
+    self->super.state->cond_true = FALSE;
+
+    return self;
+}
+
 static void
 rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
 {
@@ -715,8 +740,9 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
         return;
 
     if (ctx->priv->currentnode) {
-        if (!strcmp ("tspan", ctx->priv->currentnode->type->str) ||
-            !strcmp ("text", ctx->priv->currentnode->type->str)) {
+        RsvgNodeType type = RSVG_NODE_TYPE (ctx->priv->currentnode);
+        if (type == RSVG_NODE_TYPE_TSPAN ||
+            type == RSVG_NODE_TYPE_TEXT) {
             guint i;
 
             /* find the last CHARS node in the text or tspan node, so that we
@@ -724,7 +750,7 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
             self = NULL;
             for (i = 0; i < ctx->priv->currentnode->children->len; i++) {
                 RsvgNode *node = g_ptr_array_index (ctx->priv->currentnode->children, i);
-                if (!strcmp (node->type->str, "RSVG_NODE_CHARS")) {
+                if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_CHARS) {
                     self = (RsvgNodeChars*)node;
                 }
             }
@@ -744,21 +770,7 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
         }
     }
 
-    self = g_new (RsvgNodeChars, 1);
-    _rsvg_node_init (&self->super);
-
-    if (!g_utf8_validate ((char *) ch, len, NULL)) {
-        char *utf8;
-        utf8 = rsvg_make_valid_utf8 ((char *) ch, len);
-        self->contents = g_string_new (utf8);
-        g_free (utf8);
-    } else {
-        self->contents = g_string_new_len ((char *) ch, len);
-    }
-
-    self->super.type = g_string_new ("RSVG_NODE_CHARS");
-    self->super.free = _rsvg_node_chars_free;
-    self->super.state->cond_true = FALSE;
+    self = rsvg_new_node_chars ((char *) ch, len);
 
     rsvg_defs_register_memory (ctx->priv->defs, (RsvgNode *) self);
     if (ctx->priv->currentnode)

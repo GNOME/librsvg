@@ -34,7 +34,7 @@
 
 G_BEGIN_DECLS 
 
-RsvgNode * rsvg_new_path (void);
+RsvgNode *rsvg_new_path (void);
 RsvgNode *rsvg_new_polygon (void);
 RsvgNode *rsvg_new_polyline (void);
 RsvgNode *rsvg_new_line (void);

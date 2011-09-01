@@ -495,7 +495,7 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
 
     for (i = 0; i < self->super.children->len; i++) {
         current = g_ptr_array_index (self->super.children, i);
-        if (!strncmp (current->super.type->str, "fe", 2))
+        if (RSVG_NODE_IS_FILTER_PRIMITIVE (&current->super))
             rsvg_filter_primitive_render (current, ctx);
     }
 
@@ -703,7 +703,7 @@ rsvg_filter_parse (const RsvgDefs * defs, const char *str)
         val = rsvg_defs_lookup (defs, name);
         g_free (name);
 
-        if (val && (!strcmp (val->type->str, "filter")))
+        if (val && RSVG_NODE_TYPE (val) == RSVG_NODE_TYPE_FILTER)
             return (RsvgFilter *) val;
     }
     return NULL;
@@ -754,7 +754,7 @@ rsvg_new_filter (void)
     RsvgFilter *filter;
 
     filter = g_new (RsvgFilter, 1);
-    _rsvg_node_init (&filter->super);
+    _rsvg_node_init (&filter->super, RSVG_NODE_TYPE_FILTER);
     filter->filterunits = objectBoundingBox;
     filter->primitiveunits = userSpaceOnUse;
     filter->x = _rsvg_css_parse_length ("-10%");
@@ -978,7 +978,7 @@ rsvg_new_filter_primitive_blend (void)
 {
     RsvgFilterPrimitiveBlend *filter;
     filter = g_new (RsvgFilterPrimitiveBlend, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_BLEND);
     filter->mode = normal;
     filter->super.in = g_string_new ("none");
     filter->in2 = g_string_new ("none");
@@ -1230,7 +1230,7 @@ rsvg_new_filter_primitive_convolve_matrix (void)
 {
     RsvgFilterPrimitiveConvolveMatrix *filter;
     filter = g_new (RsvgFilterPrimitiveConvolveMatrix, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_CONVOLVE_MATRIX);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
@@ -1471,7 +1471,7 @@ rsvg_new_filter_primitive_gaussian_blur (void)
 {
     RsvgFilterPrimitiveGaussianBlur *filter;
     filter = g_new (RsvgFilterPrimitiveGaussianBlur, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_GAUSSIAN_BLUR);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
@@ -1607,7 +1607,7 @@ rsvg_new_filter_primitive_offset (void)
 {
     RsvgFilterPrimitiveOffset *filter;
     filter = g_new (RsvgFilterPrimitiveOffset, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_OFFSET);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
@@ -1648,7 +1648,7 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self, RsvgFilterContex
     for (i = 0; i < upself->super.super.children->len; i++) {
         RsvgFilterPrimitive *mn;
         mn = g_ptr_array_index (upself->super.super.children, i);
-        if (strcmp (mn->super.type->str, "feMergeNode"))
+        if (RSVG_NODE_TYPE (&mn->super) != RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE)
             continue;
         in = rsvg_filter_get_in (mn->in, ctx);
         rsvg_alpha_blt (in, boundarys.x0, boundarys.y0, boundarys.x1 - boundarys.x0,
@@ -1701,7 +1701,7 @@ rsvg_new_filter_primitive_merge (void)
 {
     RsvgFilterPrimitiveMerge *filter;
     filter = g_new (RsvgFilterPrimitiveMerge, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE);
     filter->super.result = g_string_new ("none");
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
         filter->super.height.factor = 'n';
@@ -1744,7 +1744,7 @@ rsvg_new_filter_primitive_merge_node (void)
 {
     RsvgFilterPrimitive *filter;
     filter = g_new (RsvgFilterPrimitive, 1);
-    _rsvg_node_init (&filter->super);
+    _rsvg_node_init (&filter->super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE);
     filter->in = g_string_new ("none");
     filter->super.free = rsvg_filter_primitive_merge_node_free;
     filter->render = &rsvg_filter_primitive_merge_node_render;
@@ -1978,7 +1978,7 @@ rsvg_new_filter_primitive_colour_matrix (void)
 {
     RsvgFilterPrimitiveColourMatrix *filter;
     filter = g_new (RsvgFilterPrimitiveColourMatrix, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_COLOUR_MATRIX);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
@@ -2010,8 +2010,9 @@ struct _RsvgNodeComponentTransferFunc {
     gint slope;
     gint intercept;
     gint amplitude;
-    gdouble exponent;
     gint offset;
+    gdouble exponent;
+    char channel;
 };
 
 struct _RsvgFilterPrimitiveComponentTransfer {
@@ -2107,15 +2108,18 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
     for (c = 0; c < 4; c++) {
         char channel = "RGBA"[c];
         for (i = 0; i < self->super.children->len; i++) {
-            RsvgNodeComponentTransferFunc *temp;
-            temp = (RsvgNodeComponentTransferFunc *)
-                g_ptr_array_index (self->super.children, i);
-            if (!strncmp (temp->super.type->str, "feFunc", 6))
-                if (temp->super.type->str[6] == channel) {
+            RsvgNode *child_node;
+
+            child_node = (RsvgNode *) g_ptr_array_index (self->super.children, i);
+            if (RSVG_NODE_TYPE (child_node) == RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPONENT_TRANSFER) {
+                RsvgNodeComponentTransferFunc *temp = (RsvgNodeComponentTransferFunc *) child_node;
+
+                if (temp->channel == channel) {
                     functions[ctx->channelmap[c]] = temp->function;
                     channels[ctx->channelmap[c]] = temp;
                     break;
                 }
+            }
         }
         if (i == self->super.children->len)
             functions[ctx->channelmap[c]] = identity_component_transfer_func;
@@ -2198,7 +2202,7 @@ rsvg_new_filter_primitive_component_transfer (void)
     RsvgFilterPrimitiveComponentTransfer *filter;
 
     filter = g_new (RsvgFilterPrimitiveComponentTransfer, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPONENT_TRANSFER);
     filter->super.result = g_string_new ("none");
     filter->super.in = g_string_new ("none");
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
@@ -2272,7 +2276,7 @@ rsvg_new_node_component_transfer_function (char channel)
     RsvgNodeComponentTransferFunc *filter;
 
     filter = g_new (RsvgNodeComponentTransferFunc, 1);
-    _rsvg_node_init (&filter->super);
+    _rsvg_node_init (&filter->super, RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION);
     filter->super.free = rsvg_component_transfer_function_free;
     filter->super.set_atts = rsvg_node_component_transfer_function_set_atts;
     filter->function = identity_component_transfer_func;
@@ -2414,7 +2418,7 @@ rsvg_new_filter_primitive_erode (void)
 {
     RsvgFilterPrimitiveErode *filter;
     filter = g_new (RsvgFilterPrimitiveErode, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_ERODE);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
@@ -2639,7 +2643,7 @@ rsvg_new_filter_primitive_composite (void)
 {
     RsvgFilterPrimitiveComposite *filter;
     filter = g_new (RsvgFilterPrimitiveComposite, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPOSITE);
     filter->mode = COMPOSITE_MODE_OVER;
     filter->super.in = g_string_new ("none");
     filter->in2 = g_string_new ("none");
@@ -2744,7 +2748,7 @@ rsvg_new_filter_primitive_flood (void)
 {
     RsvgFilterPrimitive *filter;
     filter = g_new (RsvgFilterPrimitive, 1);
-    _rsvg_node_init (&filter->super);
+    _rsvg_node_init (&filter->super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_FLOOD);
     filter->in = g_string_new ("none");
     filter->result = g_string_new ("none");
     filter->x.factor = filter->y.factor = filter->width.factor = filter->height.factor = 'n';
@@ -2920,7 +2924,7 @@ rsvg_new_filter_primitive_displacement_map (void)
 {
     RsvgFilterPrimitiveDisplacementMap *filter;
     filter = g_new (RsvgFilterPrimitiveDisplacementMap, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_DISPLACEMENT_MAP);
     filter->super.in = g_string_new ("none");
     filter->in2 = g_string_new ("none");
     filter->super.result = g_string_new ("none");
@@ -3291,7 +3295,7 @@ rsvg_new_filter_primitive_turbulence (void)
 {
     RsvgFilterPrimitiveTurbulence *filter;
     filter = g_new (RsvgFilterPrimitiveTurbulence, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_TURBULENCE);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
@@ -3510,7 +3514,7 @@ rsvg_new_filter_primitive_image (void)
 {
     RsvgFilterPrimitiveImage *filter;
     filter = g_new (RsvgFilterPrimitiveImage, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_IMAGE);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
@@ -3871,8 +3875,8 @@ get_light_colour (RsvgNodeLightSource * source, vector3 colour,
 
 
 static void
-rsvg_filter_primitive_light_source_set_atts (RsvgNode * self,
-                                             RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_node_light_source_set_atts (RsvgNode * self,
+                                 RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
     RsvgNodeLightSource *data;
     const char *value;
@@ -3904,13 +3908,13 @@ rsvg_filter_primitive_light_source_set_atts (RsvgNode * self,
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_light_source (char type)
+rsvg_new_node_light_source (char type)
 {
     RsvgNodeLightSource *data;
     data = g_new (RsvgNodeLightSource, 1);
-    _rsvg_node_init (&data->super);
+    _rsvg_node_init (&data->super, RSVG_NODE_TYPE_LIGHT_SOURCE);
     data->super.free = _rsvg_node_free;
-    data->super.set_atts = rsvg_filter_primitive_light_source_set_atts;
+    data->super.set_atts = rsvg_node_light_source_set_atts;
     data->specularExponent = 1;
     if (type == 's')
         data->type = SPOTLIGHT;
@@ -3960,10 +3964,11 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
 
     for (i = 0; i < self->super.children->len; i++) {
         RsvgNode *temp;
+
         temp = g_ptr_array_index (self->super.children, i);
-        if (!strcmp (temp->type->str, "feDistantLight") ||
-            !strcmp (temp->type->str, "fePointLight") || !strcmp (temp->type->str, "feSpotLight"))
+        if (RSVG_NODE_TYPE (temp) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
             source = (RsvgNodeLightSource *) temp;
+        }
     }
     if (source == NULL)
         return;
@@ -4080,7 +4085,7 @@ rsvg_new_filter_primitive_diffuse_lighting (void)
 {
     RsvgFilterPrimitiveDiffuseLighting *filter;
     filter = g_new (RsvgFilterPrimitiveDiffuseLighting, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_DIFFUSE_LIGHTING);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
@@ -4135,9 +4140,9 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
     for (i = 0; i < self->super.children->len; i++) {
         RsvgNode *temp;
         temp = g_ptr_array_index (self->super.children, i);
-        if (!strcmp (temp->type->str, "feDistantLight") ||
-            !strcmp (temp->type->str, "fePointLight") || !strcmp (temp->type->str, "feSpotLight"))
+        if (RSVG_NODE_TYPE (temp) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
             source = (RsvgNodeLightSource *) temp;
+        }
     }
     if (source == NULL)
         return;
@@ -4259,7 +4264,7 @@ rsvg_new_filter_primitive_specular_lighting (void)
 {
     RsvgFilterPrimitiveSpecularLighting *filter;
     filter = g_new (RsvgFilterPrimitiveSpecularLighting, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_SPECULAR_LIGHTING);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
@@ -4381,7 +4386,7 @@ rsvg_new_filter_primitive_tile (void)
 {
     RsvgFilterPrimitiveTile *filter;
     filter = g_new (RsvgFilterPrimitiveTile, 1);
-    _rsvg_node_init (&filter->super.super);
+    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_TILE);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =

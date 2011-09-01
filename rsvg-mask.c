@@ -74,7 +74,7 @@ rsvg_new_mask (void)
     RsvgMask *mask;
 
     mask = g_new (RsvgMask, 1);
-    _rsvg_node_init (&mask->super);
+    _rsvg_node_init (&mask->super, RSVG_NODE_TYPE_MASK);
     mask->maskunits = objectBoundingBox;
     mask->contentunits = userSpaceOnUse;
     mask->x = _rsvg_css_parse_length ("0");
@@ -113,7 +113,7 @@ rsvg_mask_parse (const RsvgDefs * defs, const char *str)
         val = rsvg_defs_lookup (defs, name);
         g_free (name);
 
-        if (val && (!strcmp (val->type->str, "mask")))
+        if (val && RSVG_NODE_TYPE (val) == RSVG_NODE_TYPE_MASK)
             return val;
     }
     return NULL;
@@ -130,7 +130,7 @@ rsvg_clip_path_parse (const RsvgDefs * defs, const char *str)
         val = rsvg_defs_lookup (defs, name);
         g_free (name);
 
-        if (val && (!strcmp (val->type->str, "clipPath")))
+        if (val && RSVG_NODE_TYPE (val) == RSVG_NODE_TYPE_CLIP_PATH)
             return val;
     }
     return NULL;
@@ -168,7 +168,7 @@ rsvg_new_clip_path (void)
     RsvgClipPath *clip_path;
 
     clip_path = g_new (RsvgClipPath, 1);
-    _rsvg_node_init (&clip_path->super);
+    _rsvg_node_init (&clip_path->super, RSVG_NODE_TYPE_CLIP_PATH);
     clip_path->units = userSpaceOnUse;
     clip_path->super.set_atts = rsvg_clip_path_set_atts;
     clip_path->super.free = _rsvg_node_free;

@@ -147,7 +147,7 @@ _pattern_add_rsvg_color_stops (cairo_pattern_t * pattern,
 
     for (i = 0; i < stops->len; i++) {
         node = (RsvgNode *) g_ptr_array_index (stops, i);
-        if (strcmp (node->type->str, "stop"))
+        if (RSVG_NODE_TYPE (node) != RSVG_NODE_TYPE_STOP)
             continue;
         stop = (RsvgGradientStop *) node;
         rgba = stop->rgba;

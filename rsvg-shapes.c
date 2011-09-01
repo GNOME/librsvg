@@ -89,7 +89,7 @@ rsvg_new_path (void)
 {
     RsvgNodePath *path;
     path = g_new (RsvgNodePath, 1);
-    _rsvg_node_init (&path->super);
+    _rsvg_node_init (&path->super, RSVG_NODE_TYPE_PATH);
     path->d = NULL;
     path->super.free = rsvg_node_path_free;
     path->super.draw = rsvg_node_path_draw;
@@ -101,7 +101,6 @@ rsvg_new_path (void)
 struct _RsvgNodePoly {
     RsvgNode super;
     gdouble *pointlist;
-    gboolean is_polyline;
     guint pointlist_len;
 };
 
@@ -126,7 +125,8 @@ _rsvg_node_poly_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
             rsvg_defs_register_name (ctx->priv->defs, value, self);
         }
 
-        rsvg_parse_style_attrs (ctx, self->state, (poly->is_polyline ? "polyline" : "polygon"),
+        rsvg_parse_style_attrs (ctx, self->state,
+                                RSVG_NODE_TYPE (self) == RSVG_NODE_TYPE_POLYLINE ? "polyline" : "polygon",
                                 klazz, id, atts);
     }
 
@@ -160,7 +160,7 @@ _rsvg_node_poly_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), poly->pointlist[i + 1]));
     }
 
-    if (!poly->is_polyline)
+    if (RSVG_NODE_TYPE (self) == RSVG_NODE_TYPE_POLYGON)
         g_string_append (d, " Z");
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
@@ -181,16 +181,15 @@ _rsvg_node_poly_free (RsvgNode * self)
 
 
 static RsvgNode *
-rsvg_new_any_poly (gboolean is_polyline)
+rsvg_new_any_poly (RsvgNodeType type)
 {
     RsvgNodePoly *poly;
     poly = g_new (RsvgNodePoly, 1);
-    _rsvg_node_init (&poly->super);
+    _rsvg_node_init (&poly->super, type);
     poly->super.free = _rsvg_node_poly_free;
     poly->super.draw = _rsvg_node_poly_draw;
     poly->super.set_atts = _rsvg_node_poly_set_atts;
     poly->pointlist = NULL;
-    poly->is_polyline = is_polyline;
     poly->pointlist_len = 0;
     return &poly->super;
 }
@@ -198,13 +197,13 @@ rsvg_new_any_poly (gboolean is_polyline)
 RsvgNode *
 rsvg_new_polygon (void)
 {
-    return rsvg_new_any_poly (FALSE);
+    return rsvg_new_any_poly (RSVG_NODE_TYPE_POLYGON);
 }
 
 RsvgNode *
 rsvg_new_polyline (void)
 {
-    return rsvg_new_any_poly (TRUE);
+    return rsvg_new_any_poly (RSVG_NODE_TYPE_POLYLINE);
 }
 
 
@@ -275,7 +274,7 @@ rsvg_new_line (void)
 {
     RsvgNodeLine *line;
     line = g_new (RsvgNodeLine, 1);
-    _rsvg_node_init (&line->super);
+    _rsvg_node_init (&line->super, RSVG_NODE_TYPE_LINE);
     line->super.draw = _rsvg_node_line_draw;
     line->super.set_atts = _rsvg_node_line_set_atts;
     line->x1 = line->x2 = line->y1 = line->y2 = _rsvg_css_parse_length ("0");
@@ -451,7 +450,7 @@ rsvg_new_rect (void)
 {
     RsvgNodeRect *rect;
     rect = g_new (RsvgNodeRect, 1);
-    _rsvg_node_init (&rect->super);
+    _rsvg_node_init (&rect->super, RSVG_NODE_TYPE_RECT);
     rect->super.draw = _rsvg_node_rect_draw;
     rect->super.set_atts = _rsvg_node_rect_set_atts;
     rect->x = rect->y = rect->w = rect->h = rect->rx = rect->ry = _rsvg_css_parse_length ("0");
@@ -577,7 +576,7 @@ rsvg_new_circle (void)
 {
     RsvgNodeCircle *circle;
     circle = g_new (RsvgNodeCircle, 1);
-    _rsvg_node_init (&circle->super);
+    _rsvg_node_init (&circle->super, RSVG_NODE_TYPE_CIRCLE);
     circle->super.draw = _rsvg_node_circle_draw;
     circle->super.set_atts = _rsvg_node_circle_set_atts;
     circle->cx = circle->cy = circle->r = _rsvg_css_parse_length ("0");
@@ -703,7 +702,7 @@ rsvg_new_ellipse (void)
 {
     RsvgNodeEllipse *ellipse;
     ellipse = g_new (RsvgNodeEllipse, 1);
-    _rsvg_node_init (&ellipse->super);
+    _rsvg_node_init (&ellipse->super, RSVG_NODE_TYPE_ELLIPSE);
     ellipse->super.draw = _rsvg_node_ellipse_draw;
     ellipse->super.set_atts = _rsvg_node_ellipse_set_atts;
     ellipse->cx = ellipse->cy = ellipse->rx = ellipse->ry = _rsvg_css_parse_length ("0");

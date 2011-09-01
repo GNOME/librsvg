@@ -36,7 +36,7 @@
 
 G_BEGIN_DECLS 
 
-RsvgNode * rsvg_new_use (void);
+RsvgNode *rsvg_new_use (void);
 RsvgNode *rsvg_new_symbol (void);
 RsvgNode *rsvg_new_svg (void);
 RsvgNode *rsvg_new_defs (void);
@@ -50,6 +50,7 @@ typedef struct _RsvgNodeSvg RsvgNodeSvg;
 
 struct _RsvgNodeGroup {
     RsvgNode super;
+    char *name;
 };
 
 struct _RsvgNodeSymbol {
@@ -80,7 +81,7 @@ void rsvg_node_draw         (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate
 void _rsvg_node_draw_children   (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
 void _rsvg_node_finalize    (RsvgNode * self);
 void _rsvg_node_free        (RsvgNode * self);
-void _rsvg_node_init        (RsvgNode * self);
+void _rsvg_node_init        (RsvgNode * self, RsvgNodeType type);
 void _rsvg_node_svg_apply_atts  (RsvgNodeSvg * self, RsvgHandle * ctx);
 
 G_END_DECLS

@@ -170,17 +170,19 @@ _rsvg_node_text_type_children (RsvgNode * self, RsvgDrawingCtx * ctx,
     rsvg_push_discrete_layer (ctx);
     for (i = 0; i < self->children->len; i++) {
         RsvgNode *node = g_ptr_array_index (self->children, i);
-        if (!strcmp (node->type->str, "RSVG_NODE_CHARS")) {
+        RsvgNodeType type = RSVG_NODE_TYPE (node);
+
+        if (type == RSVG_NODE_TYPE_CHARS) {
             RsvgNodeChars *chars = (RsvgNodeChars *) node;
             GString *str = _rsvg_text_chomp (rsvg_current_state (ctx), chars->contents, lastwasspace);
             rsvg_text_render_text (ctx, str->str, x, y);
             g_string_free (str, TRUE);
-        } else if (!strcmp (node->type->str, "tspan")) {
+        } else if (type == RSVG_NODE_TYPE_TSPAN) {
             RsvgNodeText *tspan = (RsvgNodeText *) node;
             rsvg_state_push (ctx);
             _rsvg_node_text_type_tspan (tspan, ctx, x, y, lastwasspace);
             rsvg_state_pop (ctx);
-        } else if (!strcmp (node->type->str, "tref")) {
+        } else if (type == RSVG_NODE_TYPE_TREF) {
             RsvgNodeTref *tref = (RsvgNodeTref *) node;
             _rsvg_node_text_type_tref (tref, ctx, x, y, lastwasspace);
         }
@@ -206,17 +208,19 @@ _rsvg_node_text_length_children (RsvgNode * self, RsvgDrawingCtx * ctx,
     int out = FALSE;
     for (i = 0; i < self->children->len; i++) {
         RsvgNode *node = g_ptr_array_index (self->children, i);
+        RsvgNodeType type = RSVG_NODE_TYPE (node);
+
         rsvg_state_push (ctx);
         rsvg_state_reinherit_top (ctx, node->state, 0);
-        if (!strcmp (node->type->str, "RSVG_NODE_CHARS")) {
+        if (type == RSVG_NODE_TYPE_CHARS) {
             RsvgNodeChars *chars = (RsvgNodeChars *) node;
             GString *str = _rsvg_text_chomp (rsvg_current_state (ctx), chars->contents, lastwasspace);
             *x += rsvg_text_length_text_as_string (ctx, str->str);
             g_string_free (str, TRUE);
-        } else if (!strcmp (node->type->str, "tspan")) {
+        } else if (type == RSVG_NODE_TYPE_TSPAN) {
             RsvgNodeText *tspan = (RsvgNodeText *) node;
             out = _rsvg_node_text_length_tspan (tspan, ctx, x, lastwasspace);
-        } else if (!strcmp (node->type->str, "tref")) {
+        } else if (type == RSVG_NODE_TYPE_TREF) {
             RsvgNodeTref *tref = (RsvgNodeTref *) node;
             out = _rsvg_node_text_length_tref (tref, ctx, x, lastwasspace);
         }
@@ -259,7 +263,7 @@ rsvg_new_text (void)
 {
     RsvgNodeText *text;
     text = g_new (RsvgNodeText, 1);
-    _rsvg_node_init (&text->super);
+    _rsvg_node_init (&text->super, RSVG_NODE_TYPE_TEXT);
     text->super.draw = _rsvg_node_text_draw;
     text->super.set_atts = _rsvg_node_text_set_atts;
     text->x = text->y = text->dx = text->dy = _rsvg_css_parse_length ("0");
@@ -331,7 +335,7 @@ rsvg_new_tspan (void)
 {
     RsvgNodeText *text;
     text = g_new (RsvgNodeText, 1);
-    _rsvg_node_init (&text->super);
+    _rsvg_node_init (&text->super, RSVG_NODE_TYPE_TSPAN);
     text->super.set_atts = _rsvg_node_tspan_set_atts;
     text->x.factor = text->y.factor = 'n';
     text->dx = text->dy = _rsvg_css_parse_length ("0");
@@ -374,7 +378,7 @@ rsvg_new_tref (void)
 {
     RsvgNodeTref *text;
     text = g_new (RsvgNodeTref, 1);
-    _rsvg_node_init (&text->super);
+    _rsvg_node_init (&text->super, RSVG_NODE_TYPE_TREF);
     text->super.set_atts = _rsvg_node_tref_set_atts;
     text->link = NULL;
     return &text->super;

@@ -64,7 +64,7 @@ RsvgNode    *rsvg_new_filter_primitive_displacement_map     (void);
 RsvgNode    *rsvg_new_filter_primitive_turbulence           (void);
 RsvgNode    *rsvg_new_filter_primitive_image                (void);
 RsvgNode    *rsvg_new_filter_primitive_diffuse_lighting	    (void);
-RsvgNode    *rsvg_new_filter_primitive_light_source	        (char type);
+RsvgNode    *rsvg_new_node_light_source	                    (char type);
 RsvgNode    *rsvg_new_filter_primitive_specular_lighting    (void);
 RsvgNode    *rsvg_new_filter_primitive_tile                 (void);
 
