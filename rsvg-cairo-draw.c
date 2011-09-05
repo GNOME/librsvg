@@ -536,6 +536,7 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
     int i;
     int need_tmpbuf = 0;
     RsvgBbox bbox;
+    double backup_tolerance;
 
     if (state->fill == NULL && state->stroke == NULL)
         return;
@@ -583,6 +584,12 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
 
     rsvg_bbox_init (&bbox, state->affine);
 
+    backup_tolerance = cairo_get_tolerance (cr);
+    cairo_set_tolerance (cr, 1.0);
+    /* dropping the precision of cairo's bezier subdivision, yielding 2x
+       _rendering_ time speedups, are these rather expensive operations
+       really needed here? */
+
     if (state->fill != NULL) {
         RsvgBbox fb;
         rsvg_bbox_init (&fb, state->affine);
@@ -601,6 +608,8 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
         sb.virgin = 0;
         rsvg_bbox_insert (&bbox, &sb);
     }
+
+    cairo_set_tolerance (cr, backup_tolerance);
 
     rsvg_bbox_insert (&render->bbox, &bbox);
 
