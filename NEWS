@@ -1,3 +1,12 @@
+Version 2.34.1
+
+This version contains fixes for CVE-2011-3146.
+
+- cairo: reduce cost of measuring bounding boxes
+- Use "const" instead G_CONST_RETURN (#652213)
+- Call xmlFreeParserCtxt after using the context (#655472)
+- Store node type separately in RsvgNode (#658014)
+
 Version 2.34.0
 
 - Allow building rsvg-view with gtk 3
