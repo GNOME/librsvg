@@ -189,7 +189,7 @@ rsvg_view_3_LDADD = \
 	$(libm)
 
 EXTRA_DIST =				\
-	MAINTAINERS			\
+	librsvg.doap			\
 	AUTHORS				\
 	NEWS				\
 	TODO				\
