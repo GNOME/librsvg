@@ -63,7 +63,8 @@ static GObjectClass *rsvg_parent_class = NULL;
 static void
 instance_init (RsvgHandle * self)
 {
-    self->priv = g_new0 (RsvgHandlePrivate, 1);
+    self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, RSVG_TYPE_HANDLE, RsvgHandlePrivate);
+
     self->priv->defs = rsvg_defs_new ();
     self->priv->handler_nest = 0;
     self->priv->entities = g_hash_table_new (g_str_hash, g_str_equal);
@@ -149,8 +150,6 @@ instance_dispose (GObject * instance)
         self->priv->gzipped_data = NULL;
     }
 #endif
-
-    g_free (self->priv);
 
     rsvg_parent_class->dispose (instance);
 }
@@ -301,6 +300,8 @@ class_init (RsvgHandleClass * klass)
                                      g_param_spec_string ("metadata", _("Metadata"),
                                                           _("SVG file metadata"), NULL,
                                                           (GParamFlags) (G_PARAM_READABLE)));
+
+    g_type_class_add_private (klass, sizeof (RsvgHandlePrivate));
 
     rsvg_SAX_handler_struct_init ();
 }
