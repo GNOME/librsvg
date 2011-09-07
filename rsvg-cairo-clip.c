@@ -75,9 +75,9 @@ rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_de
     rsvg_cairo_clip_apply_affine (render, state->affine);
 
     if (rsvg_current_state (ctx)->clip_rule == FILL_RULE_EVENODD)
-        cairo_set_fill_rule (((RsvgCairoRender *) ctx->render)->cr, CAIRO_FILL_RULE_EVEN_ODD);
+        cairo_set_fill_rule (cr, CAIRO_FILL_RULE_EVEN_ODD);
     else                        /* state->fill_rule == FILL_RULE_NONZERO */
-        cairo_set_fill_rule (((RsvgCairoRender *) ctx->render)->cr, CAIRO_FILL_RULE_WINDING);
+        cairo_set_fill_rule (cr, CAIRO_FILL_RULE_WINDING);
 
     for (i = 0; i < bpath_def->n_bpath; i++) {
         bpath = &bpath_def->bpath[i];
