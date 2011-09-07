@@ -718,6 +718,7 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char *color)
 int
 main (int argc, char **argv)
 {
+    int retval = 1;
     GError *err = NULL;
     GOptionContext *g_option_context;
     double x_zoom = 1.0;
@@ -895,8 +896,10 @@ main (int argc, char **argv)
 
         g_print ("\n");
 
-        return 1;
+        goto done;
     }
+
+    retval = 0;
 
     info.accel_group = gtk_accel_group_new ();
 
@@ -906,8 +909,11 @@ main (int argc, char **argv)
     gtk_main ();
 
     g_object_unref (info.pixbuf);
+
+  done:
     g_byte_array_free (info.svg_bytes, TRUE);
+    g_strfreev (args);
     rsvg_term ();
 
-    return 0;
+    return retval;
 }
