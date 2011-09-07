@@ -41,7 +41,7 @@
 static void
 rsvg_cairo_render_free (RsvgRender * self)
 {
-    RsvgCairoRender *me = (RsvgCairoRender *) self;
+    RsvgCairoRender *me = RSVG_CAIRO_RENDER (self);
 
     /* TODO */
 
@@ -53,6 +53,7 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
 {
     RsvgCairoRender *cairo_render = g_new0 (RsvgCairoRender, 1);
 
+    cairo_render->super.type = RSVG_RENDER_TYPE_CAIRO;
     cairo_render->super.free = rsvg_cairo_render_free;
     cairo_render->super.create_pango_context = rsvg_cairo_create_pango_context;
     cairo_render->super.render_pango_layout = rsvg_cairo_render_pango_layout;

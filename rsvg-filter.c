@@ -579,7 +579,7 @@ pixbuf_get_alpha (GdkPixbuf * pb, RsvgFilterContext * ctx)
 static GdkPixbuf *
 rsvg_compile_bg (RsvgDrawingCtx * ctx)
 {
-    RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_t *cr;
     cairo_surface_t *surface;
     GList *i;

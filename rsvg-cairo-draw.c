@@ -164,7 +164,8 @@ _set_source_rsvg_linear_gradient (RsvgDrawingCtx * ctx,
                                   RsvgLinearGradient * linear,
                                   guint32 current_color_rgb, guint8 opacity, RsvgBbox bbox)
 {
-    cairo_t *cr = ((RsvgCairoRender *) ctx->render)->cr;
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+    cairo_t *cr = render->cr;
     cairo_pattern_t *pattern;
     cairo_matrix_t matrix;
     RsvgLinearGradient statlinear;
@@ -212,7 +213,8 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
                                   RsvgRadialGradient * radial,
                                   guint32 current_color_rgb, guint8 opacity, RsvgBbox bbox)
 {
-    cairo_t *cr = ((RsvgCairoRender *) ctx->render)->cr;
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+    cairo_t *cr = render->cr;
     cairo_pattern_t *pattern;
     cairo_matrix_t matrix;
     RsvgRadialGradient statradial;
@@ -261,7 +263,8 @@ static void
 _set_source_rsvg_solid_colour (RsvgDrawingCtx * ctx,
                                RsvgSolidColour * colour, guint8 opacity, guint32 current_colour)
 {
-    cairo_t *cr = ((RsvgCairoRender *) ctx->render)->cr;
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+    cairo_t *cr = render->cr;
     guint32 rgb = colour->rgb;
     double r, g, b;
 
@@ -282,7 +285,7 @@ static void
 _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
                           RsvgPattern * rsvg_pattern, guint8 opacity, RsvgBbox bbox)
 {
-    RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgPattern local_pattern = *rsvg_pattern;
     cairo_t *cr_render, *cr_pattern;
     cairo_pattern_t *pattern;
@@ -463,7 +466,7 @@ rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
 {
     PangoFontMap *fontmap;
     PangoContext *context;
-    RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
 
     fontmap = pango_cairo_font_map_get_default ();
     context = pango_cairo_font_map_create_context (PANGO_CAIRO_FONT_MAP (fontmap));
@@ -475,7 +478,7 @@ rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
 void
 rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, double x, double y)
 {
-    RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state = rsvg_current_state (ctx);
     PangoRectangle ink;
     RsvgBbox bbox;
@@ -529,7 +532,7 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
 void
 rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
 {
-    RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state = rsvg_current_state (ctx);
     cairo_t *cr;
     RsvgBpath *bpath;
@@ -659,7 +662,7 @@ void
 rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
                          double pixbuf_x, double pixbuf_y, double w, double h)
 {
-    RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state = rsvg_current_state (ctx);
 
     gint width = gdk_pixbuf_get_width (pixbuf);
@@ -781,9 +784,9 @@ rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
 static void
 rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, RsvgBbox * bbox)
 {
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_surface_t *surface;
     cairo_t *mask_cr, *save_cr;
-    RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
     RsvgState *state = rsvg_current_state (ctx);
     guint8 *pixels;
     guint32 width = render->width, height = render->height;
@@ -871,7 +874,9 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
 static void
 rsvg_cairo_push_early_clips (RsvgDrawingCtx * ctx)
 {
-    cairo_save (((RsvgCairoRender *) ctx->render)->cr);
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+  
+    cairo_save (render->cr);
     if (rsvg_current_state (ctx)->clip_path_ref)
         if (((RsvgClipPath *) rsvg_current_state (ctx)->clip_path_ref)->units == userSpaceOnUse)
             rsvg_cairo_clip (ctx, rsvg_current_state (ctx)->clip_path_ref, NULL);
@@ -883,7 +888,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 {
     /* XXX: Untested, probably needs help wrt filters */
 
-    RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_surface_t *surface;
     cairo_t *child_cr;
     RsvgBbox *bbox;
@@ -953,7 +958,7 @@ rsvg_cairo_push_discrete_layer (RsvgDrawingCtx * ctx)
 static void
 rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 {
-    RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_t *child_cr = render->cr;
     gboolean lateclip = FALSE;
     cairo_surface_t *surface = NULL;
@@ -1029,14 +1034,16 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 void
 rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx * ctx)
 {
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+
     rsvg_cairo_pop_render_stack (ctx);
-    cairo_restore (((RsvgCairoRender *) ctx->render)->cr);
+    cairo_restore (render->cr);
 }
 
 void
 rsvg_cairo_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w, double h)
 {
-    RsvgCairoRender *render = (RsvgCairoRender *) ctx->render;
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_t *cr = render->cr;
 
     _set_rsvg_affine (render, rsvg_current_state (ctx)->affine);

@@ -199,7 +199,18 @@ struct RsvgDrawingCtx {
 
 /*Abstract base class for context for our backends (one as yet)*/
 
+typedef enum {
+  RSVG_RENDER_TYPE_INVALID,
+
+  RSVG_RENDER_TYPE_BASE,
+
+  RSVG_RENDER_TYPE_CAIRO = 8,
+  RSVG_RENDER_TYPE_CAIRO_CLIP
+} RsvgRenderType;
+
 struct RsvgRender {
+    RsvgRenderType type;
+
     void (*free) (RsvgRender * self);
 
     PangoContext    *(*create_pango_context)    (RsvgDrawingCtx * ctx);
@@ -216,6 +227,16 @@ struct RsvgRender {
                                                  double w, double h);
 };
 
+static inline RsvgRender *
+_rsvg_render_check_type (RsvgRender *render,
+                         RsvgRenderType type)
+{
+  g_assert (render->type == type);
+  return render;
+}
+
+#define _RSVG_RENDER_CIC(render, render_type, RenderCType) \
+  ((RenderCType*) _rsvg_render_check_type ((render), (render_type)))
 
 typedef struct {
     double length;

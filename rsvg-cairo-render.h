@@ -50,6 +50,8 @@ struct _RsvgCairoRender {
     GList *pixbuf_stack;
 };
 
+#define RSVG_CAIRO_RENDER(render) (_RSVG_RENDER_CIC ((render), RSVG_RENDER_TYPE_CAIRO, RsvgCairoRender))
+
 RsvgCairoRender *rsvg_cairo_render_new		(cairo_t * cr, double width, double height);
 void		rsvg_cairo_render_rsvg_handle	(cairo_t * cr, RsvgHandle * handle);
 RsvgDrawingCtx *rsvg_cairo_new_drawing_ctx	(cairo_t * cr, RsvgHandle * handle);
