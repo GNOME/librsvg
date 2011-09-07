@@ -116,6 +116,9 @@ instance_dispose (GObject * instance)
 {
     RsvgHandle *self = (RsvgHandle *) instance;
 
+    if (self->priv->is_disposed)
+      goto chain;
+
     self->priv->is_disposed = TRUE;
 
     g_hash_table_foreach (self->priv->entities, rsvg_ctx_free_helper, NULL);
@@ -151,6 +154,7 @@ instance_dispose (GObject * instance)
     }
 #endif
 
+  chain:
     rsvg_parent_class->dispose (instance);
 }
 
