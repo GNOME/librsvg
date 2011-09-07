@@ -30,12 +30,10 @@ AC_SUBST([RSVG_API_VERSION_U],[AS_TR_SH([$RSVG_API_VERSION])])
 
 dnl ===========================================================================
 
-FONTCONFIG_REQUIRED=1.0.1	dnl Same as in Pango, ???
 GLIB_REQUIRED=2.12.0
 GIO_REQUIRED=2.16.0
 LIBXML_REQUIRED=2.4.7
 CAIRO_REQUIRED=1.2.0
-PANGOFT2_REQUIRED=1.2.0
 PANGOCAIRO_REQUIRED=1.10.0
 GDK_PIXBUF_REQUIRED=1.3.7
 GTK2_REQUIRED=2.16.0
@@ -102,12 +100,9 @@ PKG_CHECK_MODULES(LIBRSVG, \
 	glib-2.0 >= $GLIB_REQUIRED \
 	gio-2.0 >= $GIO_REQUIRED \
 	libxml-2.0 >= $LIBXML_REQUIRED \
-	pangoft2 >= $PANGOFT2_REQUIRED \
 	pangocairo >= $PANGOCAIRO_REQUIRED \
 	cairo >= $CAIRO_REQUIRED \
-	cairo-png >= $CAIRO_REQUIRED \
-	fontconfig >= $FONTCONFIG_REQUIRED
-	freetype2)
+	cairo-png >= $CAIRO_REQUIRED)
 
 PKG_CHECK_MODULES([GTHREAD],[gthread-2.0 >= $GLIB_REQUIRED])
 
