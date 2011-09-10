@@ -3522,6 +3522,7 @@ rsvg_new_filter_primitive_image (void)
     filter->super.render = &rsvg_filter_primitive_image_render;
     filter->super.super.free = &rsvg_filter_primitive_image_free;
     filter->super.super.set_atts = rsvg_filter_primitive_image_set_atts;
+    filter->href = NULL;
     return (RsvgNode *) filter;
 }
 
