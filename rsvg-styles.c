@@ -97,7 +97,7 @@ rsvg_state_init (RsvgState * state)
     state->fill_rule = FILL_RULE_NONZERO;
     state->clip_rule = FILL_RULE_NONZERO;
     state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
-    state->comp_op = RSVG_COMP_OP_SRC_OVER;
+    state->comp_op = CAIRO_OPERATOR_OVER;
     state->overflow = FALSE;
     state->flood_color = 0;
     state->flood_opacity = 255;
@@ -492,55 +492,55 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
             state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
     } else if (g_str_equal (name, "comp-op")) {
         if (g_str_equal (value, "clear"))
-            state->comp_op = RSVG_COMP_OP_CLEAR;
+            state->comp_op = CAIRO_OPERATOR_CLEAR;
         else if (g_str_equal (value, "src"))
-            state->comp_op = RSVG_COMP_OP_SRC;
+            state->comp_op = CAIRO_OPERATOR_SOURCE;
         else if (g_str_equal (value, "dst"))
-            state->comp_op = RSVG_COMP_OP_DST;
+            state->comp_op = CAIRO_OPERATOR_DEST;
         else if (g_str_equal (value, "src-over"))
-            state->comp_op = RSVG_COMP_OP_SRC_OVER;
+            state->comp_op = CAIRO_OPERATOR_OVER;
         else if (g_str_equal (value, "dst-over"))
-            state->comp_op = RSVG_COMP_OP_DST_OVER;
+            state->comp_op = CAIRO_OPERATOR_DEST_OVER;
         else if (g_str_equal (value, "src-in"))
-            state->comp_op = RSVG_COMP_OP_SRC_IN;
+            state->comp_op = CAIRO_OPERATOR_IN;
         else if (g_str_equal (value, "dst-in"))
-            state->comp_op = RSVG_COMP_OP_DST_IN;
+            state->comp_op = CAIRO_OPERATOR_DEST_IN;
         else if (g_str_equal (value, "src-out"))
-            state->comp_op = RSVG_COMP_OP_SRC_OUT;
+            state->comp_op = CAIRO_OPERATOR_OUT;
         else if (g_str_equal (value, "dst-out"))
-            state->comp_op = RSVG_COMP_OP_DST_OUT;
+            state->comp_op = CAIRO_OPERATOR_DEST_OUT;
         else if (g_str_equal (value, "src-atop"))
-            state->comp_op = RSVG_COMP_OP_SRC_ATOP;
+            state->comp_op = CAIRO_OPERATOR_ATOP;
         else if (g_str_equal (value, "dst-atop"))
-            state->comp_op = RSVG_COMP_OP_DST_ATOP;
+            state->comp_op = CAIRO_OPERATOR_DEST_ATOP;
         else if (g_str_equal (value, "xor"))
-            state->comp_op = RSVG_COMP_OP_XOR;
+            state->comp_op = CAIRO_OPERATOR_XOR;
         else if (g_str_equal (value, "plus"))
-            state->comp_op = RSVG_COMP_OP_PLUS;
+            state->comp_op = CAIRO_OPERATOR_ADD;
         else if (g_str_equal (value, "multiply"))
-            state->comp_op = RSVG_COMP_OP_MULTIPLY;
+            state->comp_op = CAIRO_OPERATOR_MULTIPLY;
         else if (g_str_equal (value, "screen"))
-            state->comp_op = RSVG_COMP_OP_SCREEN;
+            state->comp_op = CAIRO_OPERATOR_SCREEN;
         else if (g_str_equal (value, "overlay"))
-            state->comp_op = RSVG_COMP_OP_OVERLAY;
+            state->comp_op = CAIRO_OPERATOR_OVERLAY;
         else if (g_str_equal (value, "darken"))
-            state->comp_op = RSVG_COMP_OP_DARKEN;
+            state->comp_op = CAIRO_OPERATOR_DARKEN;
         else if (g_str_equal (value, "lighten"))
-            state->comp_op = RSVG_COMP_OP_LIGHTEN;
+            state->comp_op = CAIRO_OPERATOR_LIGHTEN;
         else if (g_str_equal (value, "color-dodge"))
-            state->comp_op = RSVG_COMP_OP_COLOR_DODGE;
+            state->comp_op = CAIRO_OPERATOR_COLOR_DODGE;
         else if (g_str_equal (value, "color-burn"))
-            state->comp_op = RSVG_COMP_OP_COLOR_BURN;
+            state->comp_op = CAIRO_OPERATOR_COLOR_BURN;
         else if (g_str_equal (value, "hard-light"))
-            state->comp_op = RSVG_COMP_OP_HARD_LIGHT;
+            state->comp_op = CAIRO_OPERATOR_HARD_LIGHT;
         else if (g_str_equal (value, "soft-light"))
-            state->comp_op = RSVG_COMP_OP_SOFT_LIGHT;
+            state->comp_op = CAIRO_OPERATOR_SOFT_LIGHT;
         else if (g_str_equal (value, "difference"))
-            state->comp_op = RSVG_COMP_OP_DIFFERENCE;
+            state->comp_op = CAIRO_OPERATOR_DIFFERENCE;
         else if (g_str_equal (value, "exclusion"))
-            state->comp_op = RSVG_COMP_OP_EXCLUSION;
+            state->comp_op = CAIRO_OPERATOR_EXCLUSION;
         else
-            state->comp_op = RSVG_COMP_OP_SRC_OVER;
+            state->comp_op = CAIRO_OPERATOR_OVER;
     } else if (g_str_equal (name, "display")) {
         state->has_visible = TRUE;
         if (g_str_equal (value, "none"))

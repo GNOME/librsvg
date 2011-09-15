@@ -71,66 +71,6 @@ _rsvg_cairo_set_text_antialias (cairo_t * cr, TextRenderingProperty aa)
 }
 
 static void
-_rsvg_cairo_set_operator (cairo_t * cr, RsvgCompOpType comp_op)
-{
-    cairo_operator_t op;
-
-    switch (comp_op) {
-    case RSVG_COMP_OP_CLEAR:
-        op = CAIRO_OPERATOR_CLEAR;
-        break;
-    case RSVG_COMP_OP_SRC:
-        op = CAIRO_OPERATOR_SOURCE;
-        break;
-    case RSVG_COMP_OP_DST:
-        op = CAIRO_OPERATOR_DEST;
-        break;
-    case RSVG_COMP_OP_DST_OVER:
-        op = CAIRO_OPERATOR_DEST_OVER;
-        break;
-    case RSVG_COMP_OP_SRC_IN:
-        op = CAIRO_OPERATOR_IN;
-        break;
-    case RSVG_COMP_OP_DST_IN:
-        op = CAIRO_OPERATOR_DEST_IN;
-        break;
-    case RSVG_COMP_OP_SRC_OUT:
-        op = CAIRO_OPERATOR_OUT;
-        break;
-    case RSVG_COMP_OP_DST_OUT:
-        op = CAIRO_OPERATOR_DEST_OUT;
-        break;
-    case RSVG_COMP_OP_SRC_ATOP:
-        op = CAIRO_OPERATOR_ATOP;
-        break;
-    case RSVG_COMP_OP_DST_ATOP:
-        op = CAIRO_OPERATOR_DEST_ATOP;
-        break;
-    case RSVG_COMP_OP_XOR:
-        op = CAIRO_OPERATOR_XOR;
-        break;
-    case RSVG_COMP_OP_PLUS:
-        op = CAIRO_OPERATOR_ADD;
-        break;
-    case RSVG_COMP_OP_MULTIPLY:
-    case RSVG_COMP_OP_SCREEN:
-    case RSVG_COMP_OP_OVERLAY:
-    case RSVG_COMP_OP_DARKEN:
-    case RSVG_COMP_OP_LIGHTEN:
-    case RSVG_COMP_OP_COLOR_DODGE:
-    case RSVG_COMP_OP_COLOR_BURN:
-    case RSVG_COMP_OP_HARD_LIGHT:
-    case RSVG_COMP_OP_SOFT_LIGHT:
-    case RSVG_COMP_OP_DIFFERENCE:
-    case RSVG_COMP_OP_EXCLUSION:
-    default:
-        op = CAIRO_OPERATOR_OVER;
-        break;
-    }
-    cairo_set_operator (cr, op);
-}
-
-static void
 rsvg_pixmap_destroy (gchar * pixels, gpointer data)
 {
     g_free (pixels);
@@ -546,7 +486,7 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
 
     need_tmpbuf = ((state->fill != NULL) && (state->stroke != NULL) && state->opacity != 0xff)
         || state->clip_path_ref || state->mask || state->filter
-        || (state->comp_op != RSVG_COMP_OP_SRC_OVER);
+        || (state->comp_op != CAIRO_OPERATOR_OVER);
 
     if (need_tmpbuf)
         rsvg_cairo_push_discrete_layer (ctx);
@@ -755,7 +695,7 @@ rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
         cairo_pixels += 4 * width;
     }
 
-    _rsvg_cairo_set_operator (render->cr, state->comp_op);
+    cairo_set_operator (render->cr, state->comp_op);
 
 #if 1
     cairo_set_source_surface (render->cr, surface, pixbuf_x, pixbuf_y);
@@ -900,7 +840,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
             lateclip = TRUE;
 
     if (state->opacity == 0xFF
-        && !state->filter && !state->mask && !lateclip && (state->comp_op == RSVG_COMP_OP_SRC_OVER)
+        && !state->filter && !state->mask && !lateclip && (state->comp_op == CAIRO_OPERATOR_OVER)
         && (state->enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
         return;
     if (!state->filter)
@@ -970,7 +910,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
             lateclip = TRUE;
 
     if (state->opacity == 0xFF
-        && !state->filter && !state->mask && !lateclip && (state->comp_op == RSVG_COMP_OP_SRC_OVER)
+        && !state->filter && !state->mask && !lateclip && (state->comp_op == CAIRO_OPERATOR_OVER)
         && (state->enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
         return;
 
@@ -1008,7 +948,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     if (lateclip)
         rsvg_cairo_clip (ctx, rsvg_current_state (ctx)->clip_path_ref, &render->bbox);
 
-    _rsvg_cairo_set_operator (render->cr, state->comp_op);
+    cairo_set_operator (render->cr, state->comp_op);
 
     if (state->mask) {
         rsvg_cairo_generate_mask (render->cr, state->mask, ctx, &render->bbox);

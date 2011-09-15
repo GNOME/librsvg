@@ -27,6 +27,7 @@
 #ifndef RSVG_STYLES_H
 #define RSVG_STYLES_H
 
+#include <cairo.h>
 #include "rsvg.h"
 #include "rsvg-paint-server.h"
 
@@ -74,33 +75,6 @@ typedef enum {
     TEXT_RENDERING_OPTIMIZE_LEGIBILITY,
     TEXT_RENDERING_GEOMETRIC_PRECISION
 } TextRenderingProperty;
-
-typedef enum {
-    RSVG_COMP_OP_CLEAR,
-    RSVG_COMP_OP_SRC,
-    RSVG_COMP_OP_DST,
-    RSVG_COMP_OP_SRC_OVER,
-    RSVG_COMP_OP_DST_OVER,
-    RSVG_COMP_OP_SRC_IN,
-    RSVG_COMP_OP_DST_IN,
-    RSVG_COMP_OP_SRC_OUT,
-    RSVG_COMP_OP_DST_OUT,
-    RSVG_COMP_OP_SRC_ATOP,
-    RSVG_COMP_OP_DST_ATOP,
-    RSVG_COMP_OP_XOR,
-    RSVG_COMP_OP_PLUS,
-    RSVG_COMP_OP_MULTIPLY,
-    RSVG_COMP_OP_SCREEN,
-    RSVG_COMP_OP_OVERLAY,
-    RSVG_COMP_OP_DARKEN,
-    RSVG_COMP_OP_LIGHTEN,
-    RSVG_COMP_OP_COLOR_DODGE,
-    RSVG_COMP_OP_COLOR_BURN,
-    RSVG_COMP_OP_HARD_LIGHT,
-    RSVG_COMP_OP_SOFT_LIGHT,
-    RSVG_COMP_OP_DIFFERENCE,
-    RSVG_COMP_OP_EXCLUSION
-} RsvgCompOpType;
 
 typedef enum {
     RSVG_ENABLE_BACKGROUND_ACCUMULATE,
@@ -229,7 +203,7 @@ struct _RsvgState {
     gboolean has_middleMarker;
     gboolean has_endMarker;
 
-    RsvgCompOpType comp_op;
+    cairo_operator_t comp_op;
     RsvgEnableBackgroundType enable_background;
 
     ShapeRenderingProperty shape_rendering_type;
