@@ -217,14 +217,14 @@ gdk_pixbuf_get_interp_pixel (guchar * src, gdouble ox, gdouble oy, guchar ch, Rs
 }
 
 static void
-rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, RsvgBbox bbox)
+rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, RsvgBbox *bbox)
 {
     int x, y, height, width;
 
-    x = bbox.rect.x;
-    y = bbox.rect.y;
-    width = bbox.rect.width;
-    height = bbox.rect.height;
+    x = bbox->rect.x;
+    y = bbox->rect.y;
+    width = bbox->rect.width;
+    height = bbox->rect.height;
 
     ctx->width = gdk_pixbuf_get_width (ctx->source);
     ctx->height = gdk_pixbuf_get_height (ctx->source);
@@ -482,7 +482,7 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
 
     g_object_ref (source);
 
-    rsvg_filter_fix_coordinate_system (ctx, rsvg_current_state (context), *bounds);
+    rsvg_filter_fix_coordinate_system (ctx, rsvg_current_state (context), bounds);
 
     ctx->lastresult.result = source;
     ctx->lastresult.Rused = 1;
