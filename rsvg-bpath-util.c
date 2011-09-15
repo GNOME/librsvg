@@ -72,7 +72,7 @@ rsvg_bpath_def_moveto (RsvgBpathDef * bpd, double x, double y)
     n_bpath = bpd->n_bpath;
 
     if (n_bpath > 0)
-        if (bpath[n_bpath - 1].code == RSVG_MOVETO_OPEN) {
+        if (bpath[n_bpath - 1].code == CAIRO_PATH_MOVE_TO) {
             bpath[n_bpath - 1].x3 = x;
             bpath[n_bpath - 1].y3 = y;
             bpd->moveto_idx = n_bpath - 1;
@@ -84,7 +84,7 @@ rsvg_bpath_def_moveto (RsvgBpathDef * bpd, double x, double y)
     if (n_bpath == bpd->n_bpath_max)
         bpd->bpath = g_realloc (bpd->bpath, (bpd->n_bpath_max <<= 1) * sizeof (RsvgBpath));
     bpath = bpd->bpath;
-    bpath[n_bpath].code = RSVG_MOVETO_OPEN;
+    bpath[n_bpath].code = CAIRO_PATH_MOVE_TO;
     bpath[n_bpath].x3 = x;
     bpath[n_bpath].y3 = y;
     bpd->moveto_idx = n_bpath;
@@ -104,7 +104,7 @@ rsvg_bpath_def_lineto (RsvgBpathDef * bpd, double x, double y)
     if (n_bpath == bpd->n_bpath_max)
         bpd->bpath = g_realloc (bpd->bpath, (bpd->n_bpath_max <<= 1) * sizeof (RsvgBpath));
     bpath = bpd->bpath;
-    bpath[n_bpath].code = RSVG_LINETO;
+    bpath[n_bpath].code = CAIRO_PATH_LINE_TO;
     bpath[n_bpath].x3 = x;
     bpath[n_bpath].y3 = y;
 }
@@ -124,7 +124,7 @@ rsvg_bpath_def_curveto (RsvgBpathDef * bpd, double x1, double y1, double x2, dou
     if (n_bpath == bpd->n_bpath_max)
         bpd->bpath = g_realloc (bpd->bpath, (bpd->n_bpath_max <<= 1) * sizeof (RsvgBpath));
     bpath = bpd->bpath;
-    bpath[n_bpath].code = RSVG_CURVETO;
+    bpath[n_bpath].code = CAIRO_PATH_CURVE_TO;
     bpath[n_bpath].x1 = x1;
     bpath[n_bpath].y1 = y1;
     bpath[n_bpath].x2 = x2;
@@ -159,20 +159,11 @@ rsvg_bpath_def_closepath (RsvgBpathDef * bpd)
     rsvg_bpath_def_replicate (bpd, bpd->moveto_idx);
     bpath = bpd->bpath;
 
-    bpath[bpd->n_bpath - 1].code = RSVG_MOVETO;
+    bpath[bpd->n_bpath - 1].code = CAIRO_PATH_CLOSE_PATH;
     bpd->moveto_idx = bpd->n_bpath - 1;
 }
 
 void
-rsvg_bpath_def_art_finish (RsvgBpathDef * bpd)
+rsvg_bpath_def_finish (RsvgBpathDef *bpd)
 {
-    int n_bpath;
-
-    g_return_if_fail (bpd != NULL);
-
-    n_bpath = bpd->n_bpath++;
-
-    if (n_bpath == bpd->n_bpath_max)
-        bpd->bpath = g_realloc (bpd->bpath, (bpd->n_bpath_max <<= 1) * sizeof (RsvgBpath));
-    bpd->bpath[n_bpath].code = RSVG_END;
 }

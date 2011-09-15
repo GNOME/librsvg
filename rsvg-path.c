@@ -568,5 +568,7 @@ rsvg_parse_path (const char *path_str)
     if (ctx.param)
         rsvg_parse_path_do_cmd (&ctx, TRUE);
 
+    rsvg_bpath_def_finish (ctx.bpath);
+
     return ctx.bpath;
 }

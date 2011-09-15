@@ -81,19 +81,17 @@ rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_de
         bpath = &bpath_def->bpath[i];
 
         switch (bpath->code) {
-        case RSVG_MOVETO:
+        case CAIRO_PATH_CLOSE_PATH:
             cairo_close_path (cr);
             /* fall-through */
-        case RSVG_MOVETO_OPEN:
+        case CAIRO_PATH_MOVE_TO:
             cairo_move_to (cr, bpath->x3, bpath->y3);
             break;
-        case RSVG_CURVETO:
+        case CAIRO_PATH_CURVE_TO:
             cairo_curve_to (cr, bpath->x1, bpath->y1, bpath->x2, bpath->y2, bpath->x3, bpath->y3);
             break;
-        case RSVG_LINETO:
+        case CAIRO_PATH_LINE_TO:
             cairo_line_to (cr, bpath->x3, bpath->y3);
-            break;
-        case RSVG_END:
             break;
         }
     }

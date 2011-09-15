@@ -28,20 +28,14 @@
 #define RSVG_BPATH_UTIL_H
 
 #include <glib.h>
+#include <cairo.h>
 
 G_BEGIN_DECLS 
-typedef enum {
-    RSVG_MOVETO,
-    RSVG_MOVETO_OPEN,
-    RSVG_CURVETO,
-    RSVG_LINETO,
-    RSVG_END
-} RsvgPathcode;
 
 typedef struct _RsvgBpath RsvgBpath;
 struct _RsvgBpath {
     /*< public > */
-    RsvgPathcode code;
+    cairo_path_data_type_t code;
     double x1;
     double y1;
     double x2;
@@ -69,7 +63,7 @@ void rsvg_bpath_def_curveto     (RsvgBpathDef * bpd,
                                  double x1, double y1, double x2, double y2, double x3, double y3);
 void rsvg_bpath_def_closepath   (RsvgBpathDef * bpd);
 
-void rsvg_bpath_def_art_finish  (RsvgBpathDef * bpd);
+void rsvg_bpath_def_finish      (RsvgBpathDef * bpd);
 
 G_END_DECLS
 

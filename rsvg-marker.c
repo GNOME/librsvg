@@ -208,12 +208,13 @@ void
 rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
 {
     int i;
+    int n_bpath, n_bpath_minus_1;
 
     double x, y;
     double lastx, lasty;
     double nextx, nexty;
     double linewidth;
-    RsvgPathcode code, lastcode, nextcode;
+    cairo_path_data_type_t code, nextcode;
 
     RsvgState *state;
     RsvgMarker *startmarker;
@@ -235,27 +236,32 @@ rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
 
     x = 0;
     y = 0;
-    code = RSVG_END;
     nextx = bpath_def->bpath[0].x3;
     nexty = bpath_def->bpath[0].y3;
     nextcode = bpath_def->bpath[0].code;
 
-    for (i = 0; i < bpath_def->n_bpath - 1; i++) {
+    n_bpath = bpath_def->n_bpath;
+    n_bpath_minus_1 = n_bpath - 1;
+
+    for (i = 0; i < n_bpath; i++) {
         lastx = x;
         lasty = y;
-        lastcode = code;
         x = nextx;
         y = nexty;
         code = nextcode;
-        nextx = bpath_def->bpath[i + 1].x3;
-        nexty = bpath_def->bpath[i + 1].y3;
-        nextcode = bpath_def->bpath[i + 1].code;
 
-        if (nextcode == RSVG_MOVETO ||
-            nextcode == RSVG_MOVETO_OPEN ||
-            nextcode == RSVG_END) {
+        if (i == n_bpath_minus_1) {
+            nextcode = CAIRO_PATH_MOVE_TO;
+        } else {
+            nextx = bpath_def->bpath[i + 1].x3;
+            nexty = bpath_def->bpath[i + 1].y3;
+            nextcode = bpath_def->bpath[i + 1].code;
+        }
+
+        if (nextcode == CAIRO_PATH_CLOSE_PATH ||
+            nextcode == CAIRO_PATH_MOVE_TO) {
             if (endmarker) {
-                if (code == RSVG_CURVETO) {
+                if (code == CAIRO_PATH_CURVE_TO) {
                     rsvg_marker_render (endmarker, x, y,
                                         atan2 (y - bpath_def->bpath[i].y2,
                                                x - bpath_def->bpath[i].x2),
@@ -266,10 +272,10 @@ rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
                                         linewidth, ctx);
                 }
             }
-        } else if (code == RSVG_MOVETO ||
-                   code == RSVG_MOVETO_OPEN) {
+        } else if (code == CAIRO_PATH_CLOSE_PATH ||
+                   code == CAIRO_PATH_MOVE_TO) {
             if (startmarker) {
-                if (nextcode == RSVG_CURVETO) {
+                if (nextcode == CAIRO_PATH_CURVE_TO) {
                     rsvg_marker_render (startmarker, x, y,
                                         atan2 (bpath_def->bpath[i + 1].y1 - y,
                                                bpath_def->bpath[i + 1].x1 - x),
@@ -286,14 +292,14 @@ rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
             if (middlemarker) {
                 double xdifin, ydifin, xdifout, ydifout, intot, outtot, angle;
 
-                if (code == RSVG_CURVETO) {
+                if (code == CAIRO_PATH_CURVE_TO) {
                     xdifin = x - bpath_def->bpath[i].x2;
                     ydifin = y - bpath_def->bpath[i].y2;
                 } else {
                     xdifin = x - lastx;
                     ydifin = y - lasty;
                 }
-                if (nextcode == RSVG_CURVETO) {
+                if (nextcode == CAIRO_PATH_CURVE_TO) {
                     xdifout = bpath_def->bpath[i+1].x1 - x;
                     ydifout = bpath_def->bpath[i+1].y1 - y;
                 } else {
