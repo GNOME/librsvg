@@ -47,17 +47,17 @@ struct RsvgCairoClipRender {
 #define RSVG_CAIRO_CLIP_RENDER(render) (_RSVG_RENDER_CIC ((render), RSVG_RENDER_TYPE_CAIRO_CLIP, RsvgCairoClipRender))
 
 static void
-rsvg_cairo_clip_apply_affine (RsvgCairoClipRender *render, const double affine[6])
+rsvg_cairo_clip_apply_affine (RsvgCairoClipRender *render, cairo_matrix_t *affine)
 {
     RsvgCairoRender *cairo_render = &render->super;
     cairo_matrix_t matrix;
     gboolean nest = cairo_render->cr != cairo_render->initial_cr;
 
     cairo_matrix_init (&matrix,
-                       affine[0], affine[1],
-                       affine[2], affine[3],
-                       affine[4] + (nest ? 0 : render->parent->offset_x),
-                       affine[5] + (nest ? 0 : render->parent->offset_y));
+                       affine->xx, affine->yx,
+                       affine->xy, affine->yy,
+                       affine->x0 + (nest ? 0 : render->parent->offset_x),
+                       affine->y0 + (nest ? 0 : render->parent->offset_y));
     cairo_set_matrix (cairo_render->cr, &matrix);
 }
 
@@ -73,7 +73,7 @@ rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_de
 
     cr = cairo_render->cr;
 
-    rsvg_cairo_clip_apply_affine (render, state->affine);
+    rsvg_cairo_clip_apply_affine (render, &state->affine);
 
     cairo_set_fill_rule (cr, rsvg_current_state (ctx)->clip_rule);
 
@@ -158,22 +158,22 @@ void
 rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox)
 {
     RsvgCairoRender *save = RSVG_CAIRO_RENDER (ctx->render);
-    double affinesave[6];
-    int i;
+    cairo_matrix_t affinesave;
+
     ctx->render = rsvg_cairo_clip_render_new (save->cr, save);
 
     /* Horribly dirty hack to have the bbox premultiplied to everything */
     if (clip->units == objectBoundingBox) {
-        double bbtransform[6];
-        bbtransform[0] = bbox->rect.width;
-        bbtransform[1] = 0.;
-        bbtransform[2] = 0.;
-        bbtransform[3] = bbox->rect.height;
-        bbtransform[4] = bbox->rect.x;
-        bbtransform[5] = bbox->rect.y;
-        for (i = 0; i < 6; i++)
-            affinesave[i] = clip->super.state->affine[i];
-        _rsvg_affine_multiply (clip->super.state->affine, bbtransform, clip->super.state->affine);
+        cairo_matrix_t bbtransform;
+        cairo_matrix_init (&bbtransform,
+                           bbox->rect.width,
+                           0,
+                           0,
+                           bbox->rect.height,
+                           bbox->rect.x,
+                           bbox->rect.y);
+        affinesave = clip->super.state->affine;
+        cairo_matrix_multiply (&clip->super.state->affine, &bbtransform, &clip->super.state->affine);
     }
 
     rsvg_state_push (ctx);
@@ -181,8 +181,7 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox)
     rsvg_state_pop (ctx);
 
     if (clip->units == objectBoundingBox)
-        for (i = 0; i < 6; i++)
-            clip->super.state->affine[i] = affinesave[i];
+        clip->super.state->affine = affinesave;
 
     g_free (ctx->render);
     cairo_clip (save->cr);

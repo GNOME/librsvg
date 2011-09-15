@@ -23,6 +23,8 @@
 
    Author: Raph Levien <raph@artofcode.com>
 */
+#include "config.h"
+
 #include <string.h>
 #include <math.h>
 
@@ -55,6 +57,21 @@ typedef struct _StyleValueData {
     gchar *value;
     gboolean important;
 } StyleValueData;
+
+/*
+ * _rsvg_cairo_matrix_init_shear: Set up a shearing matrix.
+ * @dst: Where to store the resulting affine transform.
+ * @theta: Shear angle in degrees.
+ *
+ * Sets up a shearing matrix. In the standard libart coordinate system
+ * and a small value for theta, || becomes \\. Horizontal lines remain
+ * unchanged.
+ **/
+static void
+_rsvg_cairo_matrix_init_shear (cairo_matrix_t *dst, double theta)
+{
+  cairo_matrix_init (dst, 1., 0., tan (theta * M_PI / 180.0), 1., 0., 0);
+}
 
 static StyleValueData *
 style_value_data_new (const gchar *value, gboolean important)
@@ -95,8 +112,8 @@ rsvg_state_init (RsvgState * state)
     memset (state, 0, sizeof (RsvgState));
 
     state->parent = NULL;
-    _rsvg_affine_identity (state->affine);
-    _rsvg_affine_identity (state->personal_affine);
+    cairo_matrix_init_identity (&state->affine);
+    cairo_matrix_init_identity (&state->personal_affine);
     state->mask = NULL;
     state->opacity = 0xff;
     state->adobe_blend = 0;
@@ -1241,16 +1258,16 @@ rsvg_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
    working draft dated 1999-07-06, section 8.5. Return TRUE on
    success. */
 gboolean
-rsvg_parse_transform (double dst[6], const char *src)
+rsvg_parse_transform (cairo_matrix_t *dst, const char *src)
 {
     int idx;
     char keyword[32];
     double args[6];
     int n_args;
     guint key_len;
-    double tmp_affine[6];
+    cairo_matrix_t affine;
 
-    _rsvg_affine_identity (dst);
+    cairo_matrix_init_identity (dst);
 
     idx = 0;
     while (src[idx]) {
@@ -1314,49 +1331,52 @@ rsvg_parse_transform (double dst[6], const char *src)
         if (!strcmp (keyword, "matrix")) {
             if (n_args != 6)
                 return FALSE;
-            _rsvg_affine_multiply (dst, args, dst);
+
+            cairo_matrix_init (&affine, args[0], args[1], args[2], args[3], args[4], args[5]);
+            cairo_matrix_multiply (dst, &affine, dst);
         } else if (!strcmp (keyword, "translate")) {
             if (n_args == 1)
                 args[1] = 0;
             else if (n_args != 2)
                 return FALSE;
-            _rsvg_affine_translate (tmp_affine, args[0], args[1]);
-            _rsvg_affine_multiply (dst, tmp_affine, dst);
+            cairo_matrix_init_translate (&affine, args[0], args[1]);
+            cairo_matrix_multiply (dst, &affine, dst);
         } else if (!strcmp (keyword, "scale")) {
             if (n_args == 1)
                 args[1] = args[0];
             else if (n_args != 2)
                 return FALSE;
-            _rsvg_affine_scale (tmp_affine, args[0], args[1]);
-            _rsvg_affine_multiply (dst, tmp_affine, dst);
+            cairo_matrix_init_scale (&affine, args[0], args[1]);
+            cairo_matrix_multiply (dst, &affine, dst);
         } else if (!strcmp (keyword, "rotate")) {
             if (n_args == 1) {
-                _rsvg_affine_rotate (tmp_affine, args[0]);
-                _rsvg_affine_multiply (dst, tmp_affine, dst);
+
+                cairo_matrix_init_rotate (&affine, args[0] * M_PI / 180.);
+                cairo_matrix_multiply (dst, &affine, dst);
             } else if (n_args == 3) {
-                _rsvg_affine_translate (tmp_affine, args[1], args[2]);
-                _rsvg_affine_multiply (dst, tmp_affine, dst);
+                cairo_matrix_init_translate (&affine, args[1], args[2]);
+                cairo_matrix_multiply (dst, &affine, dst);
 
-                _rsvg_affine_rotate (tmp_affine, args[0]);
-                _rsvg_affine_multiply (dst, tmp_affine, dst);
+                cairo_matrix_init_rotate (&affine, args[0] * M_PI / 180.);
+                cairo_matrix_multiply (dst, &affine, dst);
 
-                _rsvg_affine_translate (tmp_affine, -args[1], -args[2]);
-                _rsvg_affine_multiply (dst, tmp_affine, dst);
+                cairo_matrix_init_translate (&affine, -args[1], -args[2]);
+                cairo_matrix_multiply (dst, &affine, dst);
             } else
                 return FALSE;
         } else if (!strcmp (keyword, "skewX")) {
             if (n_args != 1)
                 return FALSE;
-            _rsvg_affine_shear (tmp_affine, args[0]);
-            _rsvg_affine_multiply (dst, tmp_affine, dst);
+            _rsvg_cairo_matrix_init_shear (&affine, args[0]);
+            cairo_matrix_multiply (dst, &affine, dst);
         } else if (!strcmp (keyword, "skewY")) {
             if (n_args != 1)
                 return FALSE;
-            _rsvg_affine_shear (tmp_affine, args[0]);
+            _rsvg_cairo_matrix_init_shear (&affine, args[0]);
             /* transpose the affine, given that we know [1] is zero */
-            tmp_affine[1] = tmp_affine[2];
-            tmp_affine[2] = 0;
-            _rsvg_affine_multiply (dst, tmp_affine, dst);
+            affine.yx = affine.xy;
+            affine.xy = 0.;
+            cairo_matrix_multiply (dst, &affine, dst);
         } else
             return FALSE;       /* unknown keyword */
     }
@@ -1374,11 +1394,11 @@ rsvg_parse_transform (double dst[6], const char *src)
 static void
 rsvg_parse_transform_attr (RsvgHandle * ctx, RsvgState * state, const char *str)
 {
-    double affine[6];
+    cairo_matrix_t affine;
 
-    if (rsvg_parse_transform (affine, str)) {
-        _rsvg_affine_multiply (state->personal_affine, affine, state->personal_affine);
-        _rsvg_affine_multiply (state->affine, affine, state->affine);
+    if (rsvg_parse_transform (&affine, str)) {
+        cairo_matrix_multiply (&state->personal_affine, &affine, &state->personal_affine);
+        cairo_matrix_multiply (&state->affine, &affine, &state->affine);
     }
 }
 
@@ -1601,10 +1621,8 @@ rsvg_state_push (RsvgDrawingCtx * ctx)
     rsvg_state_init (data);
 
     if (baseon) {
-        int i;
         rsvg_state_reinherit (data, baseon);
-        for (i = 0; i < 6; i++)
-            data->affine[i] = baseon->affine[i];
+        data->affine = baseon->affine;
         data->parent = baseon;
     }
 
@@ -1655,9 +1673,9 @@ rsvg_state_reinherit_top (RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
                 rsvg_state_dominate (current, parent);
             else
                 rsvg_state_reinherit (current, parent);
-            _rsvg_affine_multiply (current->affine,
-                                   current->affine,
-                                   parent->affine);
+            cairo_matrix_multiply (&current->affine,
+                                   &current->affine,
+                                   &parent->affine);
         }
     }
 }

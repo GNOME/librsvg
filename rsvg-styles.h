@@ -76,8 +76,8 @@ struct _RsvgVpathDash {
 
 struct _RsvgState {
     RsvgState *parent;
-    double affine[6];
-    double personal_affine[6];
+    cairo_matrix_t affine;
+    cairo_matrix_t personal_affine;
 
     RsvgFilter *filter;
     void *mask;
@@ -206,7 +206,7 @@ void rsvg_parse_style_attrs (RsvgHandle * ctx, RsvgState * state, const char *ta
 gdouble rsvg_viewport_percentage (gdouble width, gdouble height);
 gdouble rsvg_dpi_percentage      (RsvgHandle * ctx);
 
-gboolean rsvg_parse_transform   (double dst[6], const char *src);
+gboolean rsvg_parse_transform   (cairo_matrix_t *matrix, const char *src);
 
 RsvgState *rsvg_state_parent    (RsvgState * state);
 

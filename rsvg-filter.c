@@ -59,8 +59,8 @@ struct _RsvgFilterContext {
     GdkPixbuf *source;
     GdkPixbuf *bg;
     RsvgFilterPrimitiveOutput lastresult;
-    double affine[6];
-    double paffine[6];
+    cairo_matrix_t affine;
+    cairo_matrix_t paffine;
     int channelmap[4];
     RsvgDrawingCtx *ctx;
 };
@@ -89,11 +89,11 @@ static RsvgIRect
 rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
 {
     RsvgBbox box, otherbox;
-    double affine[6];
+    cairo_matrix_t affine;
 
-    _rsvg_affine_identity (affine);
-    rsvg_bbox_init (&box, affine);
-    rsvg_bbox_init (&otherbox, ctx->affine);
+    cairo_matrix_init_identity (&affine);
+    rsvg_bbox_init (&box, &affine);
+    rsvg_bbox_init (&otherbox, &ctx->affine);
     otherbox.virgin = 0;
     if (ctx->filter->filterunits == objectBoundingBox)
         _rsvg_push_view_box (ctx->ctx, 1., 1.);
@@ -110,7 +110,7 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
         if (self->x.factor != 'n' || self->y.factor != 'n' ||
             self->width.factor != 'n' || self->height.factor != 'n') {
 
-            rsvg_bbox_init (&otherbox, ctx->paffine);
+            rsvg_bbox_init (&otherbox, &ctx->paffine);
             otherbox.virgin = 0;
             if (ctx->filter->primitiveunits == objectBoundingBox)
                 _rsvg_push_view_box (ctx->ctx, 1., 1.);
@@ -135,7 +135,7 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
             rsvg_bbox_clip (&box, &otherbox);
         }
 
-    rsvg_bbox_init (&otherbox, affine);
+    rsvg_bbox_init (&otherbox, &affine);
     otherbox.virgin = 0;
     otherbox.rect.x = 0;
     otherbox.rect.y = 0;
@@ -214,7 +214,6 @@ static void
 rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, RsvgBbox bbox)
 {
     int x, y, height, width;
-    int i;
 
     x = bbox.rect.x;
     y = bbox.rect.y;
@@ -224,17 +223,17 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, R
     ctx->width = gdk_pixbuf_get_width (ctx->source);
     ctx->height = gdk_pixbuf_get_height (ctx->source);
 
-    for (i = 0; i < 6; i++)
-        ctx->affine[i] = state->affine[i];
+    ctx->affine = state->affine;
     if (ctx->filter->filterunits == objectBoundingBox) {
-        double affine[6] = { width, 0, 0, height, x, y };
-        _rsvg_affine_multiply (ctx->affine, affine, ctx->affine);
+        cairo_matrix_t affine;
+        cairo_matrix_init (&affine, width, 0, 0, height, x, y);
+        cairo_matrix_multiply (&ctx->affine, &affine, &ctx->affine);
     }
-    for (i = 0; i < 6; i++)
-        ctx->paffine[i] = state->affine[i];
+    ctx->paffine = state->affine;
     if (ctx->filter->primitiveunits == objectBoundingBox) {
-        double affine[6] = { width, 0, 0, height, x, y };
-        _rsvg_affine_multiply (ctx->paffine, affine, ctx->paffine);
+        cairo_matrix_t affine;
+        cairo_matrix_init (&affine, width, 0, 0, height, x, y);
+        cairo_matrix_multiply (&ctx->paffine, &affine, &ctx->paffine);
     }
 }
 
@@ -339,11 +338,9 @@ rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
 
 void
 rsvg_art_affine_image (const GdkPixbuf * img, GdkPixbuf * intermediate,
-                       double *affine, double w, double h)
+                       cairo_matrix_t *affine, double w, double h)
 {
-    gdouble tmp_affine[6];
-    gdouble inv_affine[6];
-    gdouble raw_inv_affine[6];
+    cairo_matrix_t inv_affine, raw_inv_affine;
     gint intstride;
     gint basestride;
     gint basex, basey;
@@ -371,28 +368,26 @@ rsvg_art_affine_image (const GdkPixbuf * img, GdkPixbuf * intermediate,
     intpix = gdk_pixbuf_get_pixels (intermediate);
     basebpp = has_alpha ? 4 : 3;
 
-    _rsvg_affine_invert (raw_inv_affine, affine);
+    raw_inv_affine = *affine;
+    if (cairo_matrix_invert (&raw_inv_affine) != CAIRO_STATUS_SUCCESS)
+      return;
 
-    /*scale to w and h */
-    tmp_affine[0] = (double) w;
-    tmp_affine[3] = (double) h;
-    tmp_affine[1] = tmp_affine[2] = tmp_affine[4] = tmp_affine[5] = 0;
-    _rsvg_affine_multiply (tmp_affine, tmp_affine, affine);
-
-    _rsvg_affine_invert (inv_affine, tmp_affine);
-
+    cairo_matrix_init_scale (&inv_affine, w, h);
+    cairo_matrix_multiply (&inv_affine, &inv_affine, affine);
+    if (cairo_matrix_invert (&inv_affine) != CAIRO_STATUS_SUCCESS)
+      return;
 
     /*apply the transformation */
     for (i = 0; i < iwidth; i++)
         for (j = 0; j < iheight; j++) {
-            fbasex = (inv_affine[0] * (double) i + inv_affine[2] * (double) j +
-                      inv_affine[4]) * (double) width;
-            fbasey = (inv_affine[1] * (double) i + inv_affine[3] * (double) j +
-                      inv_affine[5]) * (double) height;
+            fbasex = (inv_affine.xx * (double) i + inv_affine.xy * (double) j +
+                      inv_affine.x0) * (double) width;
+            fbasey = (inv_affine.yx * (double) i + inv_affine.yy * (double) j +
+                      inv_affine.y0) * (double) height;
             basex = floor (fbasex);
             basey = floor (fbasey);
-            rawx = raw_inv_affine[0] * i + raw_inv_affine[2] * j + raw_inv_affine[4];
-            rawy = raw_inv_affine[1] * i + raw_inv_affine[3] * j + raw_inv_affine[5];
+            rawx = raw_inv_affine.xx * i + raw_inv_affine.xy * j + raw_inv_affine.x0;
+            rawy = raw_inv_affine.yx * i + raw_inv_affine.yy * j + raw_inv_affine.y0;
             if (rawx < 0 || rawy < 0 || rawx >= w ||
                 rawy >= h || basex < 0 || basey < 0 || basex >= width || basey >= height) {
                 for (k = 0; k < 4; k++)
@@ -1041,12 +1036,12 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
     height = gdk_pixbuf_get_height (in);
     width = gdk_pixbuf_get_width (in);
 
-    targetx = upself->targetx * ctx->paffine[0];
-    targety = upself->targety * ctx->paffine[3];
+    targetx = upself->targetx * ctx->paffine.xx;
+    targety = upself->targety * ctx->paffine.yy;
 
     if (upself->dx != 0 || upself->dy != 0) {
-        dx = upself->dx * ctx->paffine[0];
-        dy = upself->dy * ctx->paffine[3];
+        dx = upself->dx * ctx->paffine.xx;
+        dy = upself->dy * ctx->paffine.yy;
     } else
         dx = dy = 1;
 
@@ -1413,8 +1408,8 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilt
                                        gdk_pixbuf_get_width (in), gdk_pixbuf_get_height (in));
 
     /* scale the SD values */
-    sdx = upself->sdx * ctx->paffine[0];
-    sdy = upself->sdy * ctx->paffine[3];
+    sdx = upself->sdx * ctx->paffine.xx;
+    sdy = upself->sdy * ctx->paffine.yy;
 
     fast_blur (in, output, sdx, sdy, boundarys, op);
 
@@ -1532,8 +1527,8 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
     dx = _rsvg_css_normalize_length (&upself->dx, ctx->ctx, 'w');
     dy = _rsvg_css_normalize_length (&upself->dy, ctx->ctx, 'v');
 
-    ox = ctx->paffine[0] * dx + ctx->paffine[2] * dy;
-    oy = ctx->paffine[1] * dx + ctx->paffine[3] * dy;
+    ox = ctx->paffine.xx * dx + ctx->paffine.xy * dy;
+    oy = ctx->paffine.yx * dx + ctx->paffine.yy * dy;
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
@@ -2328,8 +2323,8 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContex
     rowstride = gdk_pixbuf_get_rowstride (in);
 
     /* scale the radius values */
-    kx = upself->rx * ctx->paffine[0];
-    ky = upself->ry * ctx->paffine[3];
+    kx = upself->rx * ctx->paffine.xx;
+    ky = upself->ry * ctx->paffine.yy;
 
     output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
 
@@ -2848,13 +2843,13 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             if (xch != 4)
-                ox = x + upself->scale * ctx->paffine[0] *
+                ox = x + upself->scale * ctx->paffine.xx *
                     ((double) in2_pixels[y * rowstride + x * 4 + xch] / 255.0 - 0.5);
             else
                 ox = x;
 
             if (ych != 4)
-                oy = y + upself->scale * ctx->paffine[3] *
+                oy = y + upself->scale * ctx->paffine.yy *
                     ((double) in2_pixels[y * rowstride + x * 4 + ych] / 255.0 - 0.5);
             else
                 oy = y;
@@ -3185,8 +3180,12 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterC
     RsvgIRect boundarys;
     guchar *output_pixels;
     GdkPixbuf *output;
-    gdouble affine[6];
+    cairo_matrix_t affine;
     GdkPixbuf *in;
+
+    affine = ctx->paffine;
+    if (cairo_matrix_invert (&affine) != CAIRO_STATUS_SUCCESS)
+      return;
 
     in = rsvg_filter_get_in (self->in, ctx);
     height = gdk_pixbuf_get_height (in);
@@ -3202,15 +3201,13 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterC
     output = _rsvg_pixbuf_new_cleared (GDK_COLORSPACE_RGB, 1, 8, width, height);
     output_pixels = gdk_pixbuf_get_pixels (output);
 
-    _rsvg_affine_invert (affine, ctx->paffine);
-
     for (y = 0; y < tileHeight; y++) {
         for (x = 0; x < tileWidth; x++) {
             gint i;
             double point[2];
             guchar *pixel;
-            point[0] = affine[0] * (x + boundarys.x0) + affine[2] * (y + boundarys.y0) + affine[4];
-            point[1] = affine[1] * (x + boundarys.x0) + affine[3] * (y + boundarys.y0) + affine[5];
+            point[0] = affine.xx * (x + boundarys.x0) + affine.xy * (y + boundarys.y0) + affine.x0;
+            point[1] = affine.yx * (x + boundarys.x0) + affine.yy * (y + boundarys.y0) + affine.y0;
 
             pixel = output_pixels + 4 * (x + boundarys.x0) + (y + boundarys.y0) * rowstride;
 
@@ -3330,7 +3327,6 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self, RsvgFilterCon
 {
     RsvgDrawingCtx *ctx;
     RsvgFilterPrimitiveImage *upself;
-    int i;
     RsvgNode *drawable;
 
     ctx = context->ctx;
@@ -3344,8 +3340,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self, RsvgFilterCon
     if (!drawable)
         return NULL;
 
-    for (i = 0; i < 6; i++)
-        rsvg_current_state (ctx)->affine[i] = context->paffine[i];
+    rsvg_current_state (ctx)->affine = context->paffine;
 
     return rsvg_get_image_of_node (ctx, drawable, context->width, context->height);
 }
@@ -3381,9 +3376,9 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterCo
 
 
     rsvg_art_affine_image (img, intermediate,
-                           ctx->paffine,
-                           (boundarys.x1 - boundarys.x0) / ctx->paffine[0],
-                           (boundarys.y1 - boundarys.y0) / ctx->paffine[3]);
+                           &ctx->paffine,
+                           (boundarys.x1 - boundarys.x0) / ctx->paffine.xx,
+                           (boundarys.y1 - boundarys.y0) / ctx->paffine.yy);
 
     if (!intermediate) {
         g_object_unref (img);
@@ -3798,7 +3793,7 @@ struct _RsvgNodeLightSource {
 
 static vector3
 get_light_direction (RsvgNodeLightSource * source, gdouble x1, gdouble y1, gdouble z,
-                     gdouble * affine, RsvgDrawingCtx * ctx)
+                     cairo_matrix_t *affine, RsvgDrawingCtx * ctx)
 {
     vector3 output;
 
@@ -3811,8 +3806,8 @@ get_light_direction (RsvgNodeLightSource * source, gdouble x1, gdouble y1, gdoub
     default:
         {
             double x, y;
-            x = affine[0] * x1 + affine[2] * y1 + affine[4];
-            y = affine[1] * x1 + affine[3] * y1 + affine[5];
+            x = affine->xx * x1 + affine->xy * y1 + affine->x0;
+            y = affine->yx * x1 + affine->yy * y1 + affine->y0;
             output.x = _rsvg_css_normalize_length (&source->x, ctx, 'h') - x;
             output.y = _rsvg_css_normalize_length (&source->y, ctx, 'v') - y;
             output.z = _rsvg_css_normalize_length (&source->z, ctx, 'o') - z;
@@ -3825,7 +3820,7 @@ get_light_direction (RsvgNodeLightSource * source, gdouble x1, gdouble y1, gdoub
 
 static vector3
 get_light_colour (RsvgNodeLightSource * source, vector3 colour,
-                  gdouble x1, gdouble y1, gdouble z, gdouble * affine, RsvgDrawingCtx * ctx)
+                  gdouble x1, gdouble y1, gdouble z, cairo_matrix_t *affine, RsvgDrawingCtx * ctx)
 {
     double base, angle, x, y;
     vector3 s;
@@ -3843,8 +3838,8 @@ get_light_colour (RsvgNodeLightSource * source, vector3 colour,
     spy = _rsvg_css_normalize_length (&source->pointsAtY, ctx, 'v');
     spz = _rsvg_css_normalize_length (&source->pointsAtZ, ctx, 'o');
 
-    x = affine[0] * x1 + affine[2] * y1 + affine[4];
-    y = affine[1] * x1 + affine[3] * y1 + affine[5];
+    x = affine->xx * x1 + affine->xy * y1 + affine->x0;
+    y = affine->yx * x1 + affine->yy * y1 + affine->y0;
 
     L.x = sx - x;
     L.y = sy - y;
@@ -3950,7 +3945,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
     gdouble factor, surfaceScale;
     vector3 lightcolour, L, N;
     vector3 colour;
-    gdouble iaffine[6];
+    cairo_matrix_t iaffine;
     RsvgNodeLightSource *source = NULL;
     RsvgIRect boundarys;
 
@@ -3973,6 +3968,10 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
     }
     if (source == NULL)
         return;
+
+    iaffine = ctx->paffine;
+    if (cairo_matrix_invert (&iaffine) != CAIRO_STATUS_SUCCESS)
+      return;
 
     upself = (RsvgFilterPrimitiveDiffuseLighting *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
@@ -4001,22 +4000,20 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
         rawdx = 1;
         rawdy = 1;
     } else {
-        dx = upself->dx * ctx->paffine[0];
-        dy = upself->dy * ctx->paffine[3];
+        dx = upself->dx * ctx->paffine.xx;
+        dy = upself->dy * ctx->paffine.yy;
         rawdx = upself->dx;
         rawdy = upself->dy;
     }
 
-    _rsvg_affine_invert (iaffine, ctx->paffine);
-
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             z = surfaceScale * (double) in_pixels[y * rowstride + x * 4 + ctx->channelmap[3]];
-            L = get_light_direction (source, x, y, z, iaffine, ctx->ctx);
+            L = get_light_direction (source, x, y, z, &iaffine, ctx->ctx);
             N = get_surface_normal (in_pixels, boundarys, x, y,
                                     dx, dy, rawdx, rawdy, upself->surfaceScale,
                                     rowstride, ctx->channelmap[3]);
-            lightcolour = get_light_colour (source, colour, x, y, z, iaffine, ctx->ctx);
+            lightcolour = get_light_colour (source, colour, x, y, z, &iaffine, ctx->ctx);
             factor = dotproduct (N, L);
 
             output_pixels[y * rowstride + x * 4 + ctx->channelmap[0]] =
@@ -4124,7 +4121,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
     gdouble factor, max, base;
     vector3 lightcolour, colour;
     vector3 L;
-    gdouble iaffine[6];
+    cairo_matrix_t iaffine;
     RsvgIRect boundarys;
     RsvgNodeLightSource *source = NULL;
 
@@ -4148,6 +4145,10 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
     if (source == NULL)
         return;
 
+    iaffine = ctx->paffine;
+    if (cairo_matrix_invert (&iaffine) != CAIRO_STATUS_SUCCESS)
+      return;
+
     upself = (RsvgFilterPrimitiveSpecularLighting *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
@@ -4169,19 +4170,17 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
 
     surfaceScale = upself->surfaceScale / 255.0;
 
-    _rsvg_affine_invert (iaffine, ctx->paffine);
-
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             z = in_pixels[y * rowstride + x * 4 + 3] * surfaceScale;
-            L = get_light_direction (source, x, y, z, iaffine, ctx->ctx);
+            L = get_light_direction (source, x, y, z, &iaffine, ctx->ctx);
             L.z += 1;
             L = normalise (L);
 
-            lightcolour = get_light_colour (source, colour, x, y, z, iaffine, ctx->ctx);
+            lightcolour = get_light_colour (source, colour, x, y, z, &iaffine, ctx->ctx);
             base = dotproduct (get_surface_normal (in_pixels, boundarys, x, y,
-                                                   1, 1, 1.0 / ctx->paffine[0],
-                                                   1.0 / ctx->paffine[3], upself->surfaceScale,
+                                                   1, 1, 1.0 / ctx->paffine.xx,
+                                                   1.0 / ctx->paffine.yy, upself->surfaceScale,
                                                    rowstride, ctx->channelmap[3]), L);
 
             factor = upself->specularConstant * pow (base, upself->specularExponent) * 255;

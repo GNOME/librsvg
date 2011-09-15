@@ -251,8 +251,8 @@ struct _RsvgIRect {
 
 typedef struct {
     cairo_rectangle_t rect;
+    cairo_matrix_t affine;
     gboolean virgin;
-    double affine[6];
 } RsvgBbox;
 
 typedef enum {
@@ -384,30 +384,11 @@ void rsvg_add_clipping_rect     (RsvgDrawingCtx * ctx, double x, double y, doubl
 GdkPixbuf *rsvg_get_image_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
 
 
-void _rsvg_affine_invert (double dst_affine[6], const double src_affine[6]);
-
-void _rsvg_affine_multiply (double dst[6], const double src1[6], const double src2[6]);
-
-/* set up the identity matrix */
-void _rsvg_affine_identity (double dst[6]);
-
-/* set up a scaling matrix */
-void _rsvg_affine_scale (double dst[6], double sx, double sy);
-
-/* set up a rotation matrix; theta is given in degrees */
-void _rsvg_affine_rotate (double dst[6], double theta);
-
-/* set up a shearing matrix; theta is given in degrees */
-void _rsvg_affine_shear (double dst[6], double theta);
-
-/* set up a translation matrix */
-void _rsvg_affine_translate (double dst[6], double tx, double ty);
-
 void rsvg_node_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts);
 
 void rsvg_drawing_ctx_free (RsvgDrawingCtx * handle);
 
-void rsvg_bbox_init     (RsvgBbox * self, double *affine);
+void rsvg_bbox_init     (RsvgBbox * self, cairo_matrix_t *matrix);
 void rsvg_bbox_insert   (RsvgBbox * dst, RsvgBbox * src);
 void rsvg_bbox_clip     (RsvgBbox * dst, RsvgBbox * src);
 

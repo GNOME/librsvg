@@ -100,25 +100,25 @@ void
 rsvg_marker_render (RsvgMarker * self, gdouble x, gdouble y, gdouble orient, gdouble linewidth,
 		    RsvgDrawingCtx * ctx)
 {
-    gdouble affine[6];
-    gdouble taffine[6];
+    cairo_matrix_t affine, taffine;
     unsigned int i;
     gdouble rotation;
     RsvgState *state = rsvg_current_state (ctx);
 
-    _rsvg_affine_translate (taffine, x, y);
-    _rsvg_affine_multiply (affine, taffine, state->affine);
+    cairo_matrix_init_translate (&taffine, x, y);
+    cairo_matrix_multiply (&affine, &taffine, &state->affine);
 
     if (self->orientAuto)
-        rotation = orient * 180. / M_PI;
+        rotation = orient;
     else
-        rotation = self->orient;
-    _rsvg_affine_rotate (taffine, rotation);
-    _rsvg_affine_multiply (affine, taffine, affine);
+        rotation = self->orient * M_PI / 180.;
+
+    cairo_matrix_init_rotate (&taffine, rotation);
+    cairo_matrix_multiply (&affine, &taffine, &affine);
 
     if (self->bbox) {
-        _rsvg_affine_scale (taffine, linewidth, linewidth);
-        _rsvg_affine_multiply (affine, taffine, affine);
+        cairo_matrix_init_scale (&taffine, linewidth, linewidth);
+        cairo_matrix_multiply (&affine, &taffine, &affine);
     }
 
     if (self->vbox.active) {
@@ -137,20 +137,21 @@ rsvg_marker_render (RsvgMarker * self, gdouble x, gdouble y, gdouble orient, gdo
         x = -self->vbox.rect.x * w / self->vbox.rect.width;
         y = -self->vbox.rect.y * h / self->vbox.rect.height;
 
-        taffine[0] = w / self->vbox.rect.width;
-        taffine[1] = 0.;
-        taffine[2] = 0.;
-        taffine[3] = h / self->vbox.rect.height;
-        taffine[4] = x;
-        taffine[5] = y;
-        _rsvg_affine_multiply (affine, taffine, affine);
+        cairo_matrix_init (&taffine,
+                           w / self->vbox.rect.width,
+                           0,
+                           0,
+                           h / self->vbox.rect.height,
+                           x,
+                           y);
+        cairo_matrix_multiply (&affine, &taffine, &affine);
         _rsvg_push_view_box (ctx, self->vbox.rect.width, self->vbox.rect.height);
     }
-    _rsvg_affine_translate (taffine,
-                            -_rsvg_css_normalize_length (&self->refX, ctx, 'h'),
-                            -_rsvg_css_normalize_length (&self->refY, ctx, 'v'));
-    _rsvg_affine_multiply (affine, taffine, affine);
 
+    cairo_matrix_init_translate (&taffine,
+                                 -_rsvg_css_normalize_length (&self->refX, ctx, 'h'),
+                                 -_rsvg_css_normalize_length (&self->refY, ctx, 'v'));
+    cairo_matrix_multiply (&affine, &taffine, &affine);
 
     rsvg_state_push (ctx);
     state = rsvg_current_state (ctx);
@@ -159,8 +160,7 @@ rsvg_marker_render (RsvgMarker * self, gdouble x, gdouble y, gdouble orient, gdo
 
     rsvg_state_reconstruct (state, &self->super);
 
-    for (i = 0; i < 6; i++)
-        state->affine[i] = affine[i];
+    state->affine = affine;
 
     rsvg_push_discrete_layer (ctx);
 

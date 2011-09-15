@@ -53,7 +53,7 @@ struct _RsvgGradientStop {
 struct _RsvgLinearGradient {
     RsvgNode super;
     gboolean obj_bbox;
-    double affine[6];           /* user space to actual at time of gradient def */
+    cairo_matrix_t affine; /* user space to actual at time of gradient def */
     cairo_extend_t spread;
     RsvgLength x1, y1, x2, y2;
     guint32 current_color;
@@ -71,7 +71,7 @@ struct _RsvgLinearGradient {
 struct _RsvgRadialGradient {
     RsvgNode super;
     gboolean obj_bbox;
-    double affine[6];           /* user space to actual at time of gradient def */
+    cairo_matrix_t affine; /* user space to actual at time of gradient def */
     cairo_extend_t spread;
     RsvgLength cx, cy, r, fx, fy;
     guint32 current_color;
@@ -91,7 +91,7 @@ struct _RsvgPattern {
     RsvgNode super;
     gboolean obj_cbbox;
     gboolean obj_bbox;
-    double affine[6];           /* user space to actual at time of gradient def */
+    cairo_matrix_t affine; /* user space to actual at time of gradient def */
     RsvgLength x, y, width, height;
     RsvgViewBox vbox;
     unsigned int preserve_aspect_ratio;

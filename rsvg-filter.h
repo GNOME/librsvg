@@ -72,7 +72,7 @@ void         rsvg_alpha_blt         (GdkPixbuf * src, gint srcx, gint srcy,
                                      gint srcwidth, gint srcheight,
                                      GdkPixbuf * dst, gint dstx, gint dsty);
 void         rsvg_art_affine_image	(const GdkPixbuf * img, GdkPixbuf * intermediate,
-                                     double *affine, double w, double h);
+                                     cairo_matrix_t *affine, double w, double h);
 
 G_END_DECLS
 

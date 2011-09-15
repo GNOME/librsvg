@@ -199,7 +199,7 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     RsvgNodeUse *use = (RsvgNodeUse *) self;
     RsvgNode *child;
     RsvgState *state;
-    double affine[6];
+    cairo_matrix_t affine;
     double x, y, w, h;
     x = _rsvg_css_normalize_length (&use->x, ctx, 'h');
     y = _rsvg_css_normalize_length (&use->y, ctx, 'v');
@@ -218,8 +218,8 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     state = rsvg_current_state (ctx);
     if (RSVG_NODE_TYPE (child) != RSVG_NODE_TYPE_SYMBOL) {
-        _rsvg_affine_translate (affine, x, y);
-        _rsvg_affine_multiply (state->affine, affine, state->affine);
+        cairo_matrix_init_translate (&affine, x, y);
+        cairo_matrix_multiply (&state->affine, &affine, &state->affine);
 
         rsvg_push_discrete_layer (ctx);
         rsvg_state_push (ctx);
@@ -235,12 +235,14 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
                  symbol->vbox.rect.width, symbol->vbox.rect.height,
                  &w, &h, &x, &y);
 
-            _rsvg_affine_translate (affine, x, y);
-            _rsvg_affine_multiply (state->affine, affine, state->affine);
-            _rsvg_affine_scale (affine, w / symbol->vbox.rect.width, h / symbol->vbox.rect.height);
-            _rsvg_affine_multiply (state->affine, affine, state->affine);
-            _rsvg_affine_translate (affine, -symbol->vbox.rect.x, -symbol->vbox.rect.y);
-            _rsvg_affine_multiply (state->affine, affine, state->affine);
+            cairo_matrix_init_translate (&affine, x, y);
+            cairo_matrix_multiply (&state->affine, &affine, &state->affine);
+
+            cairo_matrix_init_scale (&affine, w / symbol->vbox.rect.width, h / symbol->vbox.rect.height);
+            cairo_matrix_multiply (&state->affine, &affine, &state->affine);
+
+            cairo_matrix_init_translate (&affine, -symbol->vbox.rect.x, -symbol->vbox.rect.y);
+            cairo_matrix_multiply (&state->affine, &affine, &state->affine);
 
             _rsvg_push_view_box (ctx, symbol->vbox.rect.width, symbol->vbox.rect.height);
             rsvg_push_discrete_layer (ctx);
@@ -248,8 +250,8 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
                 rsvg_add_clipping_rect (ctx, symbol->vbox.rect.x, symbol->vbox.rect.y,
                                         symbol->vbox.rect.width, symbol->vbox.rect.height);
         } else {
-            _rsvg_affine_translate (affine, x, y);
-            _rsvg_affine_multiply (state->affine, affine, state->affine);
+            cairo_matrix_init_translate (&affine, x, y);
+            cairo_matrix_multiply (&state->affine, &affine, &state->affine);
             rsvg_push_discrete_layer (ctx);
         }
 
@@ -268,7 +270,7 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     RsvgNodeSvg *sself;
     RsvgState *state;
-    gdouble affine[6], affine_old[6], affine_new[6];
+    cairo_matrix_t affine, affine_old, affine_new;
     guint i;
     double nx, ny, nw, nh;
     sself = (RsvgNodeSvg *) self;
@@ -282,45 +284,38 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     state = rsvg_current_state (ctx);
 
-    for (i = 0; i < 6; i++)
-        affine_old[i] = state->affine[i];
+    affine_old = state->affine;
 
     if (sself->vbox.active) {
         double x = nx, y = ny, w = nw, h = nh;
         rsvg_preserve_aspect_ratio (sself->preserve_aspect_ratio,
                                     sself->vbox.rect.width, sself->vbox.rect.height,
                                     &w, &h, &x, &y);
-        affine[0] = w / sself->vbox.rect.width;
-        affine[1] = 0;
-        affine[2] = 0;
-        affine[3] = h / sself->vbox.rect.height;
-        affine[4] = x - sself->vbox.rect.x * w / sself->vbox.rect.width;
-        affine[5] = y - sself->vbox.rect.y * h / sself->vbox.rect.height;
-        _rsvg_affine_multiply (state->affine, affine, state->affine);
+        cairo_matrix_init (&affine,
+                           w / sself->vbox.rect.width,
+                           0,
+                           0,
+                           h / sself->vbox.rect.height,
+                           x - sself->vbox.rect.x * w / sself->vbox.rect.width,
+                           y - sself->vbox.rect.y * h / sself->vbox.rect.height);
+        cairo_matrix_multiply (&state->affine, &affine, &state->affine);
         _rsvg_push_view_box (ctx, sself->vbox.rect.width, sself->vbox.rect.height);
     } else {
-        affine[0] = 1;
-        affine[1] = 0;
-        affine[2] = 0;
-        affine[3] = 1;
-        affine[4] = nx;
-        affine[5] = ny;
-        _rsvg_affine_multiply (state->affine, affine, state->affine);
+        cairo_matrix_init_translate (&affine, nx, ny);
+        cairo_matrix_multiply (&state->affine, &affine, &state->affine);
         _rsvg_push_view_box (ctx, nw, nh);
     }
-    for (i = 0; i < 6; i++)
-        affine_new[i] = state->affine[i];
+
+    affine_new = state->affine;
 
     rsvg_push_discrete_layer (ctx);
 
     /* Bounding box addition must be AFTER the discrete layer push, 
        which must be AFTER the transformation happens. */
     if (!state->overflow && self->parent) {
-        for (i = 0; i < 6; i++)
-            state->affine[i] = affine_old[i];
+        state->affine = affine_old;
         rsvg_add_clipping_rect (ctx, nx, ny, nw, nh);
-        for (i = 0; i < 6; i++)
-            state->affine[i] = affine_new[i];
+        state->affine = affine_new;
     }
 
     for (i = 0; i < self->children->len; i++) {

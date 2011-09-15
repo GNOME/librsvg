@@ -2099,18 +2099,16 @@ rsvg_render_free (RsvgRender * render)
 }
 
 void
-rsvg_bbox_init (RsvgBbox * self, double *affine)
+rsvg_bbox_init (RsvgBbox * self, cairo_matrix_t *affine)
 {
-    int i;
     self->virgin = 1;
-    for (i = 0; i < 6; i++)
-        self->affine[i] = affine[i];
+    self->affine = *affine;
 }
 
 void
 rsvg_bbox_insert (RsvgBbox * dst, RsvgBbox * src)
 {
-    double affine[6];
+    cairo_matrix_t affine;
     double xmin, ymin;
     double xmax, ymax;
     int i;
@@ -2125,15 +2123,18 @@ rsvg_bbox_insert (RsvgBbox * dst, RsvgBbox * src)
         xmin = ymin = xmax = ymax = 0;
     }
 
-    _rsvg_affine_invert (affine, dst->affine);
-    _rsvg_affine_multiply (affine, src->affine, affine);
+    affine = dst->affine;
+    if (cairo_matrix_invert (&affine) != CAIRO_STATUS_SUCCESS)
+      return; //FIXMEchpe correct??
+
+    cairo_matrix_multiply (&affine, &src->affine, &affine);
 
     for (i = 0; i < 4; i++) {
         double rx, ry, x, y;
         rx = src->rect.x + src->rect.width * (double) (i % 2);
         ry = src->rect.y + src->rect.height * (double) (i / 2);
-        x = affine[0] * rx + affine[2] * ry + affine[4];
-        y = affine[1] * rx + affine[3] * ry + affine[5];
+        x = affine.xx * rx + affine.xy * ry + affine.x0;
+        y = affine.yx * rx + affine.yy * ry + affine.y0;
         if (dst->virgin) {
             xmin = xmax = x;
             ymin = ymax = y;
@@ -2158,7 +2159,7 @@ rsvg_bbox_insert (RsvgBbox * dst, RsvgBbox * src)
 void
 rsvg_bbox_clip (RsvgBbox * dst, RsvgBbox * src)
 {
-    double affine[6];
+    cairo_matrix_t affine;
 	double xmin, ymin;
 	double xmax, ymax;
     int i;
@@ -2173,15 +2174,18 @@ rsvg_bbox_clip (RsvgBbox * dst, RsvgBbox * src)
         xmin = ymin = xmax = ymax = 0;
     }
 
-    _rsvg_affine_invert (affine, dst->affine);
-    _rsvg_affine_multiply (affine, src->affine, affine);
+    affine = dst->affine;
+    if (cairo_matrix_invert (&affine) != CAIRO_STATUS_SUCCESS)
+      return;
+
+    cairo_matrix_multiply (&affine, &src->affine, &affine);
 
     for (i = 0; i < 4; i++) {
         double rx, ry, x, y;
         rx = src->rect.x + src->rect.width * (double) (i % 2);
         ry = src->rect.y + src->rect.height * (double) (i / 2);
-        x = affine[0] * rx + affine[2] * ry + affine[4];
-        y = affine[1] * rx + affine[3] * ry + affine[5];
+        x = affine.xx * rx + affine.xy * ry + affine.x0;
+        y = affine.yx * rx + affine.yy * ry + affine.y0;
         if (dst->virgin) {
             xmin = xmax = x;
             ymin = ymax = y;
