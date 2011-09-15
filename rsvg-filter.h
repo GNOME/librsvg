@@ -36,7 +36,6 @@ typedef RsvgCoordUnits RsvgFilterUnits;
 
 struct _RsvgFilter {
     RsvgNode super;
-    int refcnt;
     RsvgLength x, y, width, height;
     RsvgFilterUnits filterunits;
     RsvgFilterUnits primitiveunits;
