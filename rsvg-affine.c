@@ -53,29 +53,6 @@ _rsvg_affine_invert (double dst[6], const double src[6])
     dst[5] = -src[4] * dst[1] - src[5] * dst[3];
 }
 
-/**
- * _rsvg_affine_flip: Flip an affine transformation horizontally and/or vertically.
- * @dst_affine: Where the resulting affine is stored.
- * @src_affine: The original affine transformation.
- * @horiz: Whether or not to flip horizontally.
- * @vert: Whether or not to flip horizontally.
- *
- * Flips the affine transform. FALSE for both @horiz and @vert implements
- * a simple copy operation. TRUE for both @horiz and @vert is a
- * 180 degree rotation. It is ok for @src_affine and @dst_affine to
- * be equal pointers.
- **/
-void
-_rsvg_affine_flip (double dst_affine[6], const double src_affine[6], int horz, int vert)
-{
-    dst_affine[0] = horz ? -src_affine[0] : src_affine[0];
-    dst_affine[1] = horz ? -src_affine[1] : src_affine[1];
-    dst_affine[2] = vert ? -src_affine[2] : src_affine[2];
-    dst_affine[3] = vert ? -src_affine[3] : src_affine[3];
-    dst_affine[4] = horz ? -src_affine[4] : src_affine[4];
-    dst_affine[5] = vert ? -src_affine[5] : src_affine[5];
-}
-
 #define EPSILON 1e-6
 
 /**
@@ -213,58 +190,4 @@ _rsvg_affine_translate (double dst[6], double tx, double ty)
     dst[3] = 1;
     dst[4] = tx;
     dst[5] = ty;
-}
-
-/**
- * _rsvg_affine_expansion: Find the affine's expansion factor.
- * @src: The affine transformation.
- *
- * Finds the expansion factor, i.e. the square root of the factor
- * by which the affine transform affects area. In an affine transform
- * composed of scaling, rotation, shearing, and translation, returns
- * the amount of scaling.
- *
- * Return value: the expansion factor.
- **/
-double
-_rsvg_affine_expansion (const double src[6])
-{
-    return sqrt (fabs (src[0] * src[3] - src[1] * src[2]));
-}
-
-/**
- * _rsvg_affine_rectilinear: Determine whether the affine transformation is rectilinear.
- * @src: The original affine transformation.
- *
- * Determines whether @src is rectilinear, i.e.  grid-aligned
- * rectangles are transformed to other grid-aligned rectangles.  The
- * implementation has epsilon-tolerance for roundoff errors.
- *
- * Return value: TRUE if @src is rectilinear.
- **/
-int
-_rsvg_affine_rectilinear (const double src[6])
-{
-    return ((fabs (src[1]) < EPSILON && fabs (src[2]) < EPSILON) ||
-            (fabs (src[0]) < EPSILON && fabs (src[3]) < EPSILON));
-}
-
-/**
- * _rsvg_affine_equal: Determine whether two affine transformations are equal.
- * @matrix1: An affine transformation.
- * @matrix2: Another affine transformation.
- *
- * Determines whether @matrix1 and @matrix2 are equal, with
- * epsilon-tolerance for roundoff errors.
- *
- * Return value: TRUE if @matrix1 and @matrix2 are equal.
- **/
-int
-_rsvg_affine_equal (double matrix1[6], double matrix2[6])
-{
-    return (fabs (matrix1[0] - matrix2[0]) < EPSILON &&
-            fabs (matrix1[1] - matrix2[1]) < EPSILON &&
-            fabs (matrix1[2] - matrix2[2]) < EPSILON &&
-            fabs (matrix1[3] - matrix2[3]) < EPSILON &&
-            fabs (matrix1[4] - matrix2[4]) < EPSILON && fabs (matrix1[5] - matrix2[5]) < EPSILON);
 }
