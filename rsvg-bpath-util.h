@@ -60,7 +60,6 @@ struct _RsvgBpathDef {
 };
 
 RsvgBpathDef *rsvg_bpath_def_new        (void);
-RsvgBpathDef *rsvg_bpath_def_new_from   (RsvgBpath * bpath);
 
 void rsvg_bpath_def_free        (RsvgBpathDef * bpd);
 

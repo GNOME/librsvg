@@ -49,29 +49,6 @@ rsvg_bpath_def_new (void)
     return bpd;
 }
 
-RsvgBpathDef *
-rsvg_bpath_def_new_from (RsvgBpath * path)
-{
-    RsvgBpathDef *bpd;
-    int i;
-
-    g_return_val_if_fail (path != NULL, NULL);
-
-    for (i = 0; path[i].code != RSVG_END; i++);
-    if (i <= 0)
-        return rsvg_bpath_def_new ();
-
-    bpd = g_new (RsvgBpathDef, 1);
-
-    bpd->n_bpath = i;
-    bpd->n_bpath_max = i;
-    bpd->moveto_idx = -1;
-    bpd->bpath = g_new (RsvgBpath, i);
-
-    memcpy (bpd->bpath, path, i * sizeof (RsvgBpath));
-    return bpd;
-}
-
 void
 rsvg_bpath_def_free (RsvgBpathDef * bpd)
 {
