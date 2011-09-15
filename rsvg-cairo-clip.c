@@ -40,8 +40,7 @@
 typedef struct RsvgCairoClipRender RsvgCairoClipRender;
 
 struct RsvgCairoClipRender {
-    RsvgRender super;
-    cairo_t *cr;
+    RsvgCairoRender super;
     RsvgCairoRender *parent;
 };
 
@@ -50,27 +49,29 @@ struct RsvgCairoClipRender {
 static void
 rsvg_cairo_clip_apply_affine (RsvgCairoClipRender *render, const double affine[6])
 {
+    RsvgCairoRender *cairo_render = &render->super;
     cairo_matrix_t matrix;
-    gboolean nest = render->cr != render->parent->initial_cr;
+    gboolean nest = cairo_render->cr != cairo_render->initial_cr;
 
     cairo_matrix_init (&matrix,
                        affine[0], affine[1],
                        affine[2], affine[3],
                        affine[4] + (nest ? 0 : render->parent->offset_x),
                        affine[5] + (nest ? 0 : render->parent->offset_y));
-    cairo_set_matrix (render->cr, &matrix);
+    cairo_set_matrix (cairo_render->cr, &matrix);
 }
 
 static void
 rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
 {
     RsvgCairoClipRender *render = RSVG_CAIRO_CLIP_RENDER (ctx->render);
+    RsvgCairoRender *cairo_render = &render->super;
     RsvgState *state = rsvg_current_state (ctx);
     cairo_t *cr;
     RsvgBpath *bpath;
     int i;
 
-    cr = render->cr;
+    cr = cairo_render->cr;
 
     rsvg_cairo_clip_apply_affine (render, state->affine);
 
@@ -112,9 +113,9 @@ rsvg_cairo_clip_render_image (RsvgDrawingCtx * ctx,
 static void
 rsvg_cairo_clip_render_free (RsvgRender * self)
 {
-    RsvgCairoClipRender *me = RSVG_CAIRO_CLIP_RENDER (self);
+    RsvgCairoClipRender *clip_render = RSVG_CAIRO_CLIP_RENDER (self);
 
-    g_free (me);
+    g_free (clip_render);
 }
 
 static void
@@ -135,24 +136,27 @@ rsvg_cairo_clip_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, dou
 static RsvgRender *
 rsvg_cairo_clip_render_new (cairo_t * cr, RsvgCairoRender *parent)
 {
-    RsvgCairoClipRender *cairo_render = g_new0 (RsvgCairoClipRender, 1);
+    RsvgCairoClipRender *clip_render = g_new0 (RsvgCairoClipRender, 1);
+    RsvgCairoRender *cairo_render = &clip_render->super;
+    RsvgRender *render = &cairo_render->super;
 
     g_assert (parent->super.type == RSVG_RENDER_TYPE_CAIRO);
 
-    cairo_render->super.type = RSVG_RENDER_TYPE_CAIRO_CLIP;
-    cairo_render->super.free = rsvg_cairo_clip_render_free;
-    cairo_render->super.create_pango_context = rsvg_cairo_create_pango_context;
-    cairo_render->super.render_pango_layout = rsvg_cairo_render_pango_layout;
-    cairo_render->super.render_image = rsvg_cairo_clip_render_image;
-    cairo_render->super.render_path = rsvg_cairo_clip_render_path;
-    cairo_render->super.pop_discrete_layer = rsvg_cairo_clip_pop_discrete_layer;
-    cairo_render->super.push_discrete_layer = rsvg_cairo_clip_push_discrete_layer;
-    cairo_render->super.add_clipping_rect = rsvg_cairo_clip_add_clipping_rect;
-    cairo_render->super.get_image_of_node = NULL;
+    render->type = RSVG_RENDER_TYPE_CAIRO_CLIP;
+    render->free = rsvg_cairo_clip_render_free;
+    render->create_pango_context = rsvg_cairo_create_pango_context;
+    render->render_pango_layout = rsvg_cairo_render_pango_layout;
+    render->render_image = rsvg_cairo_clip_render_image;
+    render->render_path = rsvg_cairo_clip_render_path;
+    render->pop_discrete_layer = rsvg_cairo_clip_pop_discrete_layer;
+    render->push_discrete_layer = rsvg_cairo_clip_push_discrete_layer;
+    render->add_clipping_rect = rsvg_cairo_clip_add_clipping_rect;
+    render->get_image_of_node = NULL;
+    cairo_render->initial_cr = parent->cr;
     cairo_render->cr = cr;
-    cairo_render->parent = parent;
+    clip_render->parent = parent;
 
-    return &cairo_render->super;
+    return render;
 }
 
 void

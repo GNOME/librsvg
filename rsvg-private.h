@@ -231,7 +231,7 @@ static inline RsvgRender *
 _rsvg_render_check_type (RsvgRender *render,
                          RsvgRenderType type)
 {
-  g_assert (render->type == type);
+  g_assert ((render->type & type) == type);
   return render;
 }
 
