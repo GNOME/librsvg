@@ -106,7 +106,7 @@ rsvg_state_init (RsvgState * state)
     state->stroke_width = _rsvg_css_parse_length ("1");
     state->miter_limit = 4;
     state->cap = RSVG_PATH_STROKE_CAP_BUTT;
-    state->join = RSVG_PATH_STROKE_JOIN_MITER;
+    state->join = CAIRO_LINE_JOIN_MITER;
     state->stop_opacity = 0xff;
     state->fill_rule = CAIRO_FILL_RULE_WINDING;
     state->clip_rule = CAIRO_FILL_RULE_WINDING;
@@ -629,11 +629,11 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
     } else if (g_str_equal (name, "stroke-linejoin")) {
         state->has_join = TRUE;
         if (g_str_equal (value, "miter"))
-            state->join = RSVG_PATH_STROKE_JOIN_MITER;
+            state->join = CAIRO_LINE_JOIN_MITER;
         else if (g_str_equal (value, "round"))
-            state->join = RSVG_PATH_STROKE_JOIN_ROUND;
+            state->join = CAIRO_LINE_JOIN_ROUND;
         else if (g_str_equal (value, "bevel"))
-            state->join = RSVG_PATH_STROKE_JOIN_BEVEL;
+            state->join = CAIRO_LINE_JOIN_BEVEL;
         else
             g_warning (_("unknown line join style %s\n"), value);
     } else if (g_str_equal (name, "font-size")) {

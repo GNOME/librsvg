@@ -65,12 +65,6 @@ typedef enum {
 /* enums and data structures are ABI compatible with libart */
 
 typedef enum {
-    RSVG_PATH_STROKE_JOIN_MITER,
-    RSVG_PATH_STROKE_JOIN_ROUND,
-    RSVG_PATH_STROKE_JOIN_BEVEL
-} RsvgPathStrokeJoinType;
-
-typedef enum {
     RSVG_PATH_STROKE_CAP_BUTT,
     RSVG_PATH_STROKE_CAP_ROUND,
     RSVG_PATH_STROKE_CAP_SQUARE
@@ -120,7 +114,7 @@ struct _RsvgState {
 
     RsvgPathStrokeCapType cap;
     gboolean has_cap;
-    RsvgPathStrokeJoinType join;
+    cairo_line_join_t join;
     gboolean has_join;
 
     RsvgLength font_size;
