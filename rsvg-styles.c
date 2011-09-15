@@ -105,7 +105,7 @@ rsvg_state_init (RsvgState * state)
     state->stroke_opacity = 0xff;
     state->stroke_width = _rsvg_css_parse_length ("1");
     state->miter_limit = 4;
-    state->cap = RSVG_PATH_STROKE_CAP_BUTT;
+    state->cap = CAIRO_LINE_CAP_BUTT;
     state->join = CAIRO_LINE_JOIN_MITER;
     state->stop_opacity = 0xff;
     state->fill_rule = CAIRO_FILL_RULE_WINDING;
@@ -616,11 +616,11 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
     } else if (g_str_equal (name, "stroke-linecap")) {
         state->has_cap = TRUE;
         if (g_str_equal (value, "butt"))
-            state->cap = RSVG_PATH_STROKE_CAP_BUTT;
+            state->cap = CAIRO_LINE_CAP_BUTT;
         else if (g_str_equal (value, "round"))
-            state->cap = RSVG_PATH_STROKE_CAP_ROUND;
+            state->cap = CAIRO_LINE_CAP_ROUND;
         else if (g_str_equal (value, "square"))
-            state->cap = RSVG_PATH_STROKE_CAP_SQUARE;
+            state->cap = CAIRO_LINE_CAP_SQUARE;
         else
             g_warning (_("unknown line cap style %s\n"), value);
     } else if (g_str_equal (name, "stroke-opacity")) {
