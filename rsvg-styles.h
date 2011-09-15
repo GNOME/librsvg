@@ -58,20 +58,6 @@ typedef enum {
 } UnicodeBidi;
 
 typedef enum {
-    SHAPE_RENDERING_AUTO = 0,
-    SHAPE_RENDERING_OPTIMIZE_SPEED,
-    SHAPE_RENDERING_CRISP_EDGES,
-    SHAPE_RENDERING_GEOMETRIC_PRECISION
-} ShapeRenderingProperty;
-
-typedef enum {
-    TEXT_RENDERING_AUTO = 0,
-    TEXT_RENDERING_OPTIMIZE_SPEED,
-    TEXT_RENDERING_OPTIMIZE_LEGIBILITY,
-    TEXT_RENDERING_GEOMETRIC_PRECISION
-} TextRenderingProperty;
-
-typedef enum {
     RSVG_ENABLE_BACKGROUND_ACCUMULATE,
     RSVG_ENABLE_BACKGROUND_NEW
 } RsvgEnableBackgroundType;
@@ -201,10 +187,10 @@ struct _RsvgState {
     cairo_operator_t comp_op;
     RsvgEnableBackgroundType enable_background;
 
-    ShapeRenderingProperty shape_rendering_type;
+    cairo_antialias_t shape_rendering_type;
     gboolean has_shape_rendering_type;
-    
-    TextRenderingProperty text_rendering_type;
+
+    cairo_antialias_t text_rendering_type;
     gboolean has_text_rendering_type;
 
     GHashTable *styles;
