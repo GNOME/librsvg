@@ -51,11 +51,6 @@ typedef enum {
     TEXT_ANCHOR_END
 } TextAnchor;
 
-enum {
-    FILL_RULE_EVENODD = 0,
-    FILL_RULE_NONZERO = 1
-};
-
 typedef enum {
     UNICODE_BIDI_NORMAL = 0,
     UNICODE_BIDI_EMBED = 1,

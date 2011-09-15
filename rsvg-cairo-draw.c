@@ -558,10 +558,8 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
 
     if (state->fill != NULL) {
         int opacity;
-        if (state->fill_rule == FILL_RULE_EVENODD)
-            cairo_set_fill_rule (cr, CAIRO_FILL_RULE_EVEN_ODD);
-        else                    /* state->fill_rule == FILL_RULE_NONZERO */
-            cairo_set_fill_rule (cr, CAIRO_FILL_RULE_WINDING);
+
+        cairo_set_fill_rule (cr, state->fill_rule);
 
         if (!need_tmpbuf)
             opacity = (state->fill_opacity * state->opacity) / 255;

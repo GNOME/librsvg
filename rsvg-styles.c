@@ -94,8 +94,8 @@ rsvg_state_init (RsvgState * state)
     state->cap = RSVG_PATH_STROKE_CAP_BUTT;
     state->join = RSVG_PATH_STROKE_JOIN_MITER;
     state->stop_opacity = 0xff;
-    state->fill_rule = FILL_RULE_NONZERO;
-    state->clip_rule = FILL_RULE_NONZERO;
+    state->fill_rule = CAIRO_FILL_RULE_WINDING;
+    state->clip_rule = CAIRO_FILL_RULE_WINDING;
     state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
     state->comp_op = CAIRO_OPERATOR_OVER;
     state->overflow = FALSE;
@@ -576,17 +576,17 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
     } else if (g_str_equal (name, "fill-rule")) {
         state->has_fill_rule = TRUE;
         if (g_str_equal (value, "nonzero"))
-            state->fill_rule = FILL_RULE_NONZERO;
+            state->fill_rule = CAIRO_FILL_RULE_WINDING;
         else if (g_str_equal (value, "evenodd"))
-            state->fill_rule = FILL_RULE_EVENODD;
+            state->fill_rule = CAIRO_FILL_RULE_EVEN_ODD;
         else
             state->has_fill_rule = FALSE;
     } else if (g_str_equal (name, "clip-rule")) {
         state->has_clip_rule = TRUE;
         if (g_str_equal (value, "nonzero"))
-            state->clip_rule = FILL_RULE_NONZERO;
+            state->clip_rule = CAIRO_FILL_RULE_WINDING;
         else if (g_str_equal (value, "evenodd"))
-            state->clip_rule = FILL_RULE_EVENODD;
+            state->clip_rule = CAIRO_FILL_RULE_EVEN_ODD;
         else
             state->has_clip_rule = FALSE;
     } else if (g_str_equal (name, "stroke")) {
