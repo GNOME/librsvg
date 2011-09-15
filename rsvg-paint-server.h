@@ -28,6 +28,7 @@
 #define RSVG_PAINT_SERVER_H
 
 #include <glib.h>
+#include <cairo.h>
 #include "rsvg-defs.h"
 
 G_BEGIN_DECLS 
@@ -43,12 +44,6 @@ typedef struct _RsvgPaintServer RsvgPaintServer;
 
 typedef struct _RsvgPSCtx RsvgPSCtx;
 
-typedef enum {
-    RSVG_GRADIENT_PAD,
-    RSVG_GRADIENT_REFLECT,
-    RSVG_GRADIENT_REPEAT
-} RsvgGradientSpread;
-
 struct _RsvgGradientStop {
     RsvgNode super;
     double offset;
@@ -59,7 +54,7 @@ struct _RsvgLinearGradient {
     RsvgNode super;
     gboolean obj_bbox;
     double affine[6];           /* user space to actual at time of gradient def */
-    RsvgGradientSpread spread;
+    cairo_extend_t spread;
     RsvgLength x1, y1, x2, y2;
     guint32 current_color;
     gboolean has_current_color;
@@ -77,7 +72,7 @@ struct _RsvgRadialGradient {
     RsvgNode super;
     gboolean obj_bbox;
     double affine[6];           /* user space to actual at time of gradient def */
-    RsvgGradientSpread spread;
+    cairo_extend_t spread;
     RsvgLength cx, cy, r, fx, fy;
     guint32 current_color;
     gboolean has_current_color;

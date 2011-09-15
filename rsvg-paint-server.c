@@ -258,11 +258,11 @@ rsvg_linear_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
         }
         if ((value = rsvg_property_bag_lookup (atts, "spreadMethod"))) {
             if (!strcmp (value, "pad")) {
-                grad->spread = RSVG_GRADIENT_PAD;
+                grad->spread = CAIRO_EXTEND_PAD;
             } else if (!strcmp (value, "reflect")) {
-                grad->spread = RSVG_GRADIENT_REFLECT;
+                grad->spread = CAIRO_EXTEND_REFLECT;
             } else if (!strcmp (value, "repeat")) {
-                grad->spread = RSVG_GRADIENT_REPEAT;
+                grad->spread = CAIRO_EXTEND_REPEAT;
             }
             grad->hasspread = TRUE;
         }
@@ -300,7 +300,7 @@ rsvg_new_linear_gradient (void)
     grad->x2 = _rsvg_css_parse_length ("1");
     grad->fallback = NULL;
     grad->obj_bbox = TRUE;
-    grad->spread = RSVG_GRADIENT_PAD;
+    grad->spread = CAIRO_EXTEND_PAD;
     grad->super.set_atts = rsvg_linear_gradient_set_atts;
     grad->hasx1 = grad->hasy1 = grad->hasx2 = grad->hasy2 = grad->hasbbox = grad->hasspread =
         grad->hastransform = FALSE;
@@ -353,11 +353,11 @@ rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
         }
         if ((value = rsvg_property_bag_lookup (atts, "spreadMethod"))) {
             if (!strcmp (value, "pad"))
-                grad->spread = RSVG_GRADIENT_PAD;
+                grad->spread = CAIRO_EXTEND_PAD;
             else if (!strcmp (value, "reflect"))
-                grad->spread = RSVG_GRADIENT_REFLECT;
+                grad->spread = CAIRO_EXTEND_REFLECT;
             else if (!strcmp (value, "repeat"))
-                grad->spread = RSVG_GRADIENT_REPEAT;
+                grad->spread = CAIRO_EXTEND_REPEAT;
             grad->hasspread = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
@@ -380,7 +380,7 @@ rsvg_new_radial_gradient (void)
     _rsvg_affine_identity (grad->affine);
     grad->has_current_color = FALSE;
     grad->obj_bbox = TRUE;
-    grad->spread = RSVG_GRADIENT_PAD;
+    grad->spread = CAIRO_EXTEND_PAD;
     grad->fallback = NULL;
     grad->cx = grad->cy = grad->r = grad->fx = grad->fy = _rsvg_css_parse_length ("0.5");
     grad->super.set_atts = rsvg_radial_gradient_set_atts;

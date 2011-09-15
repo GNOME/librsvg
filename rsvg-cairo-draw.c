@@ -136,11 +136,7 @@ _set_source_rsvg_linear_gradient (RsvgDrawingCtx * ctx,
     }
     cairo_matrix_invert (&matrix);
     cairo_pattern_set_matrix (pattern, &matrix);
-
-    if (linear->spread == RSVG_GRADIENT_REFLECT)
-        cairo_pattern_set_extend (pattern, CAIRO_EXTEND_REFLECT);
-    else if (linear->spread == RSVG_GRADIENT_REPEAT)
-        cairo_pattern_set_extend (pattern, CAIRO_EXTEND_REPEAT);
+    cairo_pattern_set_extend (pattern, linear->spread);
 
     _pattern_add_rsvg_color_stops (pattern, linear->super.children, current_color_rgb, opacity);
 
@@ -187,11 +183,7 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
 
     cairo_matrix_invert (&matrix);
     cairo_pattern_set_matrix (pattern, &matrix);
-
-    if (radial->spread == RSVG_GRADIENT_REFLECT)
-        cairo_pattern_set_extend (pattern, CAIRO_EXTEND_REFLECT);
-    else if (radial->spread == RSVG_GRADIENT_REPEAT)
-        cairo_pattern_set_extend (pattern, CAIRO_EXTEND_REPEAT);
+    cairo_pattern_set_extend (pattern, radial->spread);
 
     _pattern_add_rsvg_color_stops (pattern, radial->super.children, current_color_rgb, opacity);
 
