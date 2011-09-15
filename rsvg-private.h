@@ -27,6 +27,8 @@
 #ifndef RSVG_PRIVATE_H
 #define RSVG_PRIVATE_H
 
+#include <cairo.h>
+
 #include "rsvg.h"
 #include "rsvg-bpath-util.h"
 
@@ -177,8 +179,8 @@ struct RsvgHandlePrivate {
 };
 
 typedef struct {
+    cairo_rectangle_t rect;
     gboolean active;
-    double x, y, w, h;
 } RsvgViewBox;
 
 /*Contextual information for the drawing phase*/
@@ -248,7 +250,7 @@ struct _RsvgIRect {
 };
 
 typedef struct {
-    gdouble x, y, w, h;
+    cairo_rectangle_t rect;
     gboolean virgin;
     double affine[6];
 } RsvgBbox;

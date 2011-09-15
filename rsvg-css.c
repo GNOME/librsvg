@@ -65,8 +65,8 @@ rsvg_css_parse_vbox (const char *vbox)
     guint list_len;
     vb.active = FALSE;
 
-    vb.x = vb.y = 0;
-    vb.w = vb.h = 0;
+    vb.rect.x = vb.rect.y = 0;
+    vb.rect.width = vb.rect.height = 0;
 
     list = rsvg_css_parse_number_list (vbox, &list_len);
 
@@ -76,10 +76,10 @@ rsvg_css_parse_vbox (const char *vbox)
         g_free (list);
         return vb;
     } else {
-        vb.x = list[0];
-        vb.y = list[1];
-        vb.w = list[2];
-        vb.h = list[3];
+        vb.rect.x = list[0];
+        vb.rect.y = list[1];
+        vb.rect.width = list[2];
+        vb.rect.height = list[3];
         vb.active = TRUE;
 
         g_free (list);
@@ -231,11 +231,12 @@ _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, char di
         return in->length;
     else if (in->factor == 'p') {
         if (dir == 'h')
-            return in->length * ctx->vb.w;
+            return in->length * ctx->vb.rect.width;
         if (dir == 'v')
-            return in->length * ctx->vb.h;
+            return in->length * ctx->vb.rect.height;
         if (dir == 'o')
-            return in->length * rsvg_viewport_percentage (ctx->vb.w, ctx->vb.h);
+            return in->length * rsvg_viewport_percentage (ctx->vb.rect.width,
+                                                          ctx->vb.rect.height);
     } else if (in->factor == 'm' || in->factor == 'x') {
         double font = _rsvg_css_normalize_font_size (rsvg_current_state (ctx), ctx);
         if (in->factor == 'm')

@@ -231,20 +231,22 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
         if (symbol->vbox.active) {
             rsvg_preserve_aspect_ratio
-                (symbol->preserve_aspect_ratio, symbol->vbox.w, symbol->vbox.h, &w, &h, &x, &y);
+                (symbol->preserve_aspect_ratio,
+                 symbol->vbox.rect.width, symbol->vbox.rect.height,
+                 &w, &h, &x, &y);
 
             _rsvg_affine_translate (affine, x, y);
             _rsvg_affine_multiply (state->affine, affine, state->affine);
-            _rsvg_affine_scale (affine, w / symbol->vbox.w, h / symbol->vbox.h);
+            _rsvg_affine_scale (affine, w / symbol->vbox.rect.width, h / symbol->vbox.rect.height);
             _rsvg_affine_multiply (state->affine, affine, state->affine);
-            _rsvg_affine_translate (affine, -symbol->vbox.x, -symbol->vbox.y);
+            _rsvg_affine_translate (affine, -symbol->vbox.rect.x, -symbol->vbox.rect.y);
             _rsvg_affine_multiply (state->affine, affine, state->affine);
 
-            _rsvg_push_view_box (ctx, symbol->vbox.w, symbol->vbox.h);
+            _rsvg_push_view_box (ctx, symbol->vbox.rect.width, symbol->vbox.rect.height);
             rsvg_push_discrete_layer (ctx);
             if (!state->overflow || (!state->has_overflow && child->state->overflow))
-                rsvg_add_clipping_rect (ctx, symbol->vbox.x, symbol->vbox.y,
-                                        symbol->vbox.w, symbol->vbox.h);
+                rsvg_add_clipping_rect (ctx, symbol->vbox.rect.x, symbol->vbox.rect.y,
+                                        symbol->vbox.rect.width, symbol->vbox.rect.height);
         } else {
             _rsvg_affine_translate (affine, x, y);
             _rsvg_affine_multiply (state->affine, affine, state->affine);
@@ -286,15 +288,16 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     if (sself->vbox.active) {
         double x = nx, y = ny, w = nw, h = nh;
         rsvg_preserve_aspect_ratio (sself->preserve_aspect_ratio,
-                                    sself->vbox.w, sself->vbox.h, &w, &h, &x, &y);
-        affine[0] = w / sself->vbox.w;
+                                    sself->vbox.rect.width, sself->vbox.rect.height,
+                                    &w, &h, &x, &y);
+        affine[0] = w / sself->vbox.rect.width;
         affine[1] = 0;
         affine[2] = 0;
-        affine[3] = h / sself->vbox.h;
-        affine[4] = x - sself->vbox.x * w / sself->vbox.w;
-        affine[5] = y - sself->vbox.y * h / sself->vbox.h;
+        affine[3] = h / sself->vbox.rect.height;
+        affine[4] = x - sself->vbox.rect.x * w / sself->vbox.rect.width;
+        affine[5] = y - sself->vbox.rect.y * h / sself->vbox.rect.height;
         _rsvg_affine_multiply (state->affine, affine, state->affine);
-        _rsvg_push_view_box (ctx, sself->vbox.w, sself->vbox.h);
+        _rsvg_push_view_box (ctx, sself->vbox.rect.width, sself->vbox.rect.height);
     } else {
         affine[0] = 1;
         affine[1] = 0;

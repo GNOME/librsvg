@@ -97,10 +97,10 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
     otherbox.virgin = 0;
     if (ctx->filter->filterunits == objectBoundingBox)
         _rsvg_push_view_box (ctx->ctx, 1., 1.);
-    otherbox.x = _rsvg_css_normalize_length (&ctx->filter->x, ctx->ctx, 'h');
-    otherbox.y = _rsvg_css_normalize_length (&ctx->filter->y, ctx->ctx, 'v');
-    otherbox.w = _rsvg_css_normalize_length (&ctx->filter->width, ctx->ctx, 'h');
-    otherbox.h = _rsvg_css_normalize_length (&ctx->filter->height, ctx->ctx, 'v');
+    otherbox.rect.x = _rsvg_css_normalize_length (&ctx->filter->x, ctx->ctx, 'h');
+    otherbox.rect.y = _rsvg_css_normalize_length (&ctx->filter->y, ctx->ctx, 'v');
+    otherbox.rect.width = _rsvg_css_normalize_length (&ctx->filter->width, ctx->ctx, 'h');
+    otherbox.rect.height = _rsvg_css_normalize_length (&ctx->filter->height, ctx->ctx, 'v');
     if (ctx->filter->filterunits == objectBoundingBox)
         _rsvg_pop_view_box (ctx->ctx);
 
@@ -115,21 +115,21 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
             if (ctx->filter->primitiveunits == objectBoundingBox)
                 _rsvg_push_view_box (ctx->ctx, 1., 1.);
             if (self->x.factor != 'n')
-                otherbox.x = _rsvg_css_normalize_length (&self->x, ctx->ctx, 'h');
+                otherbox.rect.x = _rsvg_css_normalize_length (&self->x, ctx->ctx, 'h');
             else
-                otherbox.x = 0;
+                otherbox.rect.x = 0;
             if (self->y.factor != 'n')
-                otherbox.y = _rsvg_css_normalize_length (&self->y, ctx->ctx, 'v');
+                otherbox.rect.y = _rsvg_css_normalize_length (&self->y, ctx->ctx, 'v');
             else
-                otherbox.y = 0;
+                otherbox.rect.y = 0;
             if (self->width.factor != 'n')
-                otherbox.w = _rsvg_css_normalize_length (&self->width, ctx->ctx, 'h');
+                otherbox.rect.width = _rsvg_css_normalize_length (&self->width, ctx->ctx, 'h');
             else
-                otherbox.w = ctx->ctx->vb.w;
+                otherbox.rect.width = ctx->ctx->vb.rect.width;
             if (self->height.factor != 'n')
-                otherbox.h = _rsvg_css_normalize_length (&self->height, ctx->ctx, 'v');
+                otherbox.rect.height = _rsvg_css_normalize_length (&self->height, ctx->ctx, 'v');
             else
-                otherbox.h = ctx->ctx->vb.h;
+                otherbox.rect.height = ctx->ctx->vb.rect.height;
             if (ctx->filter->primitiveunits == objectBoundingBox)
                 _rsvg_pop_view_box (ctx->ctx);
             rsvg_bbox_clip (&box, &otherbox);
@@ -137,15 +137,15 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
 
     rsvg_bbox_init (&otherbox, affine);
     otherbox.virgin = 0;
-    otherbox.x = 0;
-    otherbox.y = 0;
-    otherbox.w = ctx->width;
-    otherbox.h = ctx->height;
+    otherbox.rect.x = 0;
+    otherbox.rect.y = 0;
+    otherbox.rect.width = ctx->width;
+    otherbox.rect.height = ctx->height;
     rsvg_bbox_clip (&box, &otherbox);
     {
-        RsvgIRect output = { box.x, box.y,
-            box.x + box.w,
-            box.y + box.h
+        RsvgIRect output = { box.rect.x, box.rect.y,
+            box.rect.x + box.rect.width,
+            box.rect.y + box.rect.height
         };
         return output;
     }
@@ -216,10 +216,10 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, R
     int x, y, height, width;
     int i;
 
-    x = bbox.x;
-    y = bbox.y;
-    width = bbox.w;
-    height = bbox.h;
+    x = bbox.rect.x;
+    y = bbox.rect.y;
+    width = bbox.rect.width;
+    height = bbox.rect.height;
 
     ctx->width = gdk_pixbuf_get_width (ctx->source);
     ctx->height = gdk_pixbuf_get_height (ctx->source);

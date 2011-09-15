@@ -165,12 +165,12 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox)
     /* Horribly dirty hack to have the bbox premultiplied to everything */
     if (clip->units == objectBoundingBox) {
         double bbtransform[6];
-        bbtransform[0] = bbox->w;
+        bbtransform[0] = bbox->rect.width;
         bbtransform[1] = 0.;
         bbtransform[2] = 0.;
-        bbtransform[3] = bbox->h;
-        bbtransform[4] = bbox->x;
-        bbtransform[5] = bbox->y;
+        bbtransform[3] = bbox->rect.height;
+        bbtransform[4] = bbox->rect.x;
+        bbtransform[5] = bbox->rect.y;
         for (i = 0; i < 6; i++)
             affinesave[i] = clip->super.state->affine[i];
         _rsvg_affine_multiply (clip->super.state->affine, bbtransform, clip->super.state->affine);

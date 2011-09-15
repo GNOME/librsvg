@@ -130,19 +130,21 @@ rsvg_marker_render (RsvgMarker * self, gdouble x, gdouble y, gdouble orient, gdo
         y = 0;
 
         rsvg_preserve_aspect_ratio (self->preserve_aspect_ratio,
-                                    self->vbox.w, self->vbox.h, &w, &h, &x, &y);
+                                    self->vbox.rect.width,
+                                    self->vbox.rect.height,
+                                    &w, &h, &x, &y);
 
-        x = -self->vbox.x * w / self->vbox.w;
-        y = -self->vbox.y * h / self->vbox.h;
+        x = -self->vbox.rect.x * w / self->vbox.rect.width;
+        y = -self->vbox.rect.y * h / self->vbox.rect.height;
 
-        taffine[0] = w / self->vbox.w;
+        taffine[0] = w / self->vbox.rect.width;
         taffine[1] = 0.;
         taffine[2] = 0.;
-        taffine[3] = h / self->vbox.h;
+        taffine[3] = h / self->vbox.rect.height;
         taffine[4] = x;
         taffine[5] = y;
         _rsvg_affine_multiply (affine, taffine, affine);
-        _rsvg_push_view_box (ctx, self->vbox.w, self->vbox.h);
+        _rsvg_push_view_box (ctx, self->vbox.rect.width, self->vbox.rect.height);
     }
     _rsvg_affine_translate (taffine,
                             -_rsvg_css_normalize_length (&self->refX, ctx, 'h'),
@@ -166,7 +168,8 @@ rsvg_marker_render (RsvgMarker * self, gdouble x, gdouble y, gdouble orient, gdo
 
     if (!state->overflow) {
         if (self->vbox.active)
-            rsvg_add_clipping_rect (ctx, self->vbox.x, self->vbox.y, self->vbox.w, self->vbox.h);
+            rsvg_add_clipping_rect (ctx, self->vbox.rect.x, self->vbox.rect.y,
+                                    self->vbox.rect.width, self->vbox.rect.height);
         else
             rsvg_add_clipping_rect (ctx, 0, 0,
                                     _rsvg_css_normalize_length (&self->width, ctx, 'h'),

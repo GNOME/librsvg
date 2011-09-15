@@ -1387,8 +1387,8 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     if (!root)
         return FALSE;
 
-    bbox.x = bbox.y = 0;
-    bbox.w = bbox.h = 1;
+    bbox.rect.x = bbox.rect.y = 0;
+    bbox.rect.width = bbox.rect.height = 1;
 
     if (!id && (root->w.factor == 'p' || root->h.factor == 'p')
             && !root->vbox.active)
@@ -1427,16 +1427,16 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         cairo_destroy (cr);
         cairo_surface_destroy (target);
 
-        dimension_data->width = bbox.w;
-        dimension_data->height = bbox.h;
+        dimension_data->width = bbox.rect.width;
+        dimension_data->height = bbox.rect.height;
     } else {
-        bbox.w = root->vbox.w;
-        bbox.h = root->vbox.h;
+        bbox.rect.width = root->vbox.rect.width;
+        bbox.rect.height = root->vbox.rect.height;
 
         dimension_data->width = (int) (_rsvg_css_hand_normalize_length (&root->w, handle->priv->dpi_x,
-                                       bbox.w + bbox.x * 2, 12) + 0.5);
+                                       bbox.rect.width + bbox.rect.x * 2, 12) + 0.5);
         dimension_data->height = (int) (_rsvg_css_hand_normalize_length (&root->h, handle->priv->dpi_y,
-                                         bbox.h + bbox.y * 2,
+                                         bbox.rect.height + bbox.rect.y * 2,
                                          12) + 0.5);
     }
     
@@ -1523,10 +1523,10 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     rsvg_state_pop (draw);
     rsvg_drawing_ctx_free (draw);
 
-    position_data->x = bbox.x;
-    position_data->y = bbox.y;
-    dimension_data.width = bbox.w;
-    dimension_data.height = bbox.h;
+    position_data->x = bbox.rect.x;
+    position_data->y = bbox.rect.y;
+    dimension_data.width = bbox.rect.width;
+    dimension_data.height = bbox.rect.height;
 
     dimension_data.em = dimension_data.width;
     dimension_data.ex = dimension_data.height;
@@ -2119,8 +2119,8 @@ rsvg_bbox_insert (RsvgBbox * dst, RsvgBbox * src)
         return;
 
     if (!dst->virgin) {
-        xmin = dst->x, ymin = dst->y;
-        xmax = dst->x + dst->w, ymax = dst->y + dst->h;
+        xmin = dst->rect.x, ymin = dst->rect.y;
+        xmax = dst->rect.x + dst->rect.width, ymax = dst->rect.y + dst->rect.height;
     } else {
         xmin = ymin = xmax = ymax = 0;
     }
@@ -2130,8 +2130,8 @@ rsvg_bbox_insert (RsvgBbox * dst, RsvgBbox * src)
 
     for (i = 0; i < 4; i++) {
         double rx, ry, x, y;
-        rx = src->x + src->w * (double) (i % 2);
-        ry = src->y + src->h * (double) (i / 2);
+        rx = src->rect.x + src->rect.width * (double) (i % 2);
+        ry = src->rect.y + src->rect.height * (double) (i / 2);
         x = affine[0] * rx + affine[2] * ry + affine[4];
         y = affine[1] * rx + affine[3] * ry + affine[5];
         if (dst->virgin) {
@@ -2149,10 +2149,10 @@ rsvg_bbox_insert (RsvgBbox * dst, RsvgBbox * src)
                 ymax = y;
         }
     }
-    dst->x = xmin;
-    dst->y = ymin;
-    dst->w = xmax - xmin;
-    dst->h = ymax - ymin;
+    dst->rect.x = xmin;
+    dst->rect.y = ymin;
+    dst->rect.width = xmax - xmin;
+    dst->rect.height = ymax - ymin;
 }
 
 void
@@ -2167,8 +2167,8 @@ rsvg_bbox_clip (RsvgBbox * dst, RsvgBbox * src)
         return;
 
 	if (!dst->virgin) {
-        xmin = dst->x + dst->w, ymin = dst->y + dst->h;
-        xmax = dst->x, ymax = dst->y;
+        xmin = dst->rect.x + dst->rect.width, ymin = dst->rect.y + dst->rect.height;
+        xmax = dst->rect.x, ymax = dst->rect.y;
     } else {
         xmin = ymin = xmax = ymax = 0;
     }
@@ -2178,8 +2178,8 @@ rsvg_bbox_clip (RsvgBbox * dst, RsvgBbox * src)
 
     for (i = 0; i < 4; i++) {
         double rx, ry, x, y;
-        rx = src->x + src->w * (double) (i % 2);
-        ry = src->y + src->h * (double) (i / 2);
+        rx = src->rect.x + src->rect.width * (double) (i % 2);
+        ry = src->rect.y + src->rect.height * (double) (i / 2);
         x = affine[0] * rx + affine[2] * ry + affine[4];
         y = affine[1] * rx + affine[3] * ry + affine[5];
         if (dst->virgin) {
@@ -2198,19 +2198,19 @@ rsvg_bbox_clip (RsvgBbox * dst, RsvgBbox * src)
         }
     }
 
-    if (xmin < dst->x)
-        xmin = dst->x;
-    if (ymin < dst->y)
-        ymin = dst->y;
-    if (xmax > dst->x + dst->w)
-        xmax = dst->x + dst->w;
-    if (ymax > dst->y + dst->h)
-        ymax = dst->y + dst->h;
+    if (xmin < dst->rect.x)
+        xmin = dst->rect.x;
+    if (ymin < dst->rect.y)
+        ymin = dst->rect.y;
+    if (xmax > dst->rect.x + dst->rect.width)
+        xmax = dst->rect.x + dst->rect.width;
+    if (ymax > dst->rect.y + dst->rect.height)
+        ymax = dst->rect.y + dst->rect.height;
 
-    dst->x = xmin;
-    dst->w = xmax - xmin;
-    dst->y = ymin;
-    dst->h = ymax - ymin;
+    dst->rect.x = xmin;
+    dst->rect.width = xmax - xmin;
+    dst->rect.y = ymin;
+    dst->rect.height = ymax - ymin;
 }
 
 void
@@ -2219,8 +2219,8 @@ _rsvg_push_view_box (RsvgDrawingCtx * ctx, double w, double h)
     RsvgViewBox *vb = g_new (RsvgViewBox, 1);
     *vb = ctx->vb;
     ctx->vb_stack = g_slist_prepend (ctx->vb_stack, vb);
-    ctx->vb.w = w;
-    ctx->vb.h = h;
+    ctx->vb.rect.width = w;
+    ctx->vb.rect.height = h;
 }
 
 void

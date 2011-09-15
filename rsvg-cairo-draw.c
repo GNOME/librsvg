@@ -105,7 +105,8 @@ _set_source_rsvg_linear_gradient (RsvgDrawingCtx * ctx,
                        linear->affine[2], linear->affine[3], linear->affine[4], linear->affine[5]);
     if (linear->obj_bbox) {
         cairo_matrix_t bboxmatrix;
-        cairo_matrix_init (&bboxmatrix, bbox.w, 0, 0, bbox.h, bbox.x, bbox.y);
+        cairo_matrix_init (&bboxmatrix, bbox.rect.width, 0, 0, bbox.rect.height,
+                           bbox.rect.x, bbox.rect.y);
         cairo_matrix_multiply (&matrix, &matrix, &bboxmatrix);
     }
     cairo_matrix_invert (&matrix);
@@ -151,7 +152,8 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
                        radial->affine[2], radial->affine[3], radial->affine[4], radial->affine[5]);
     if (radial->obj_bbox) {
         cairo_matrix_t bboxmatrix;
-        cairo_matrix_init (&bboxmatrix, bbox.w, 0, 0, bbox.h, bbox.x, bbox.y);
+        cairo_matrix_init (&bboxmatrix, bbox.rect.width, 0, 0, bbox.rect.height,
+                           bbox.rect.x, bbox.rect.y);
         cairo_matrix_multiply (&matrix, &matrix, &bboxmatrix);
     }
 
@@ -224,8 +226,8 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
 
 
     if (rsvg_pattern->obj_bbox) {
-        bbwscale = bbox.w;
-        bbhscale = bbox.h;
+        bbwscale = bbox.rect.width;
+        bbhscale = bbox.rect.height;
     } else {
         bbwscale = 1.0;
         bbhscale = 1.0;
@@ -249,8 +251,8 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
     /* Create the pattern coordinate system */
     if (rsvg_pattern->obj_bbox) {
         /* subtract the pattern origin */
-        affine[4] = bbox.x + patternx * bbox.w;
-        affine[5] = bbox.y + patterny * bbox.h;
+        affine[4] = bbox.rect.x + patternx * bbox.rect.width;
+        affine[5] = bbox.rect.y + patterny * bbox.rect.height;
     } else {
         /* subtract the pattern origin */
         affine[4] = patternx;
@@ -268,20 +270,21 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
         x = 0;
         y = 0;
         rsvg_preserve_aspect_ratio (rsvg_pattern->preserve_aspect_ratio,
-                                    rsvg_pattern->vbox.w, rsvg_pattern->vbox.h, &w, &h, &x, &y);
+                                    rsvg_pattern->vbox.rect.width, rsvg_pattern->vbox.rect.height,
+                                    &w, &h, &x, &y);
 
-        x -= rsvg_pattern->vbox.x * w / rsvg_pattern->vbox.w;
-        y -= rsvg_pattern->vbox.y * h / rsvg_pattern->vbox.h;
+        x -= rsvg_pattern->vbox.rect.x * w / rsvg_pattern->vbox.rect.width;
+        y -= rsvg_pattern->vbox.rect.y * h / rsvg_pattern->vbox.rect.height;
 
-        caffine[0] = w / rsvg_pattern->vbox.w;
-        caffine[3] = h / rsvg_pattern->vbox.h;
+        caffine[0] = w / rsvg_pattern->vbox.rect.width;
+        caffine[3] = h / rsvg_pattern->vbox.rect.height;
         caffine[4] = x;
         caffine[5] = y;
-        _rsvg_push_view_box (ctx, rsvg_pattern->vbox.w, rsvg_pattern->vbox.h);
+        _rsvg_push_view_box (ctx, rsvg_pattern->vbox.rect.width, rsvg_pattern->vbox.rect.height);
     } else if (rsvg_pattern->obj_cbbox) {
         /* If coords are in terms of the bounding box, use them */
-        caffine[0] = bbox.w;
-        caffine[3] = bbox.h;
+        caffine[0] = bbox.rect.width;
+        caffine[3] = bbox.rect.height;
         _rsvg_push_view_box (ctx, 1., 1.);
     }
 
@@ -396,10 +399,10 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     pango_layout_get_extents (layout, &ink, NULL);
 
     rsvg_bbox_init (&bbox, state->affine);
-    bbox.x = x + ink.x / (double)PANGO_SCALE;
-    bbox.y = y + ink.y / (double)PANGO_SCALE;
-    bbox.w = ink.width / (double)PANGO_SCALE;
-    bbox.h = ink.height / (double)PANGO_SCALE;
+    bbox.rect.x = x + ink.x / (double)PANGO_SCALE;
+    bbox.rect.y = y + ink.y / (double)PANGO_SCALE;
+    bbox.rect.width = ink.width / (double)PANGO_SCALE;
+    bbox.rect.height = ink.height / (double)PANGO_SCALE;
     bbox.virgin = 0;
 
     if (state->fill) {
@@ -500,18 +503,18 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
     if (state->fill != NULL) {
         RsvgBbox fb;
         rsvg_bbox_init (&fb, state->affine);
-        cairo_fill_extents (cr, &fb.x, &fb.y, &fb.w, &fb.h);
-        fb.w -= fb.x;
-        fb.h -= fb.y;
+        cairo_fill_extents (cr, &fb.rect.x, &fb.rect.y, &fb.rect.width, &fb.rect.height);
+        fb.rect.width -= fb.rect.x;
+        fb.rect.height -= fb.rect.y;
         fb.virgin = 0;
         rsvg_bbox_insert (&bbox, &fb);
     }
     if (state->stroke != NULL) {
         RsvgBbox sb;
         rsvg_bbox_init (&sb, state->affine);
-        cairo_stroke_extents (cr, &sb.x, &sb.y, &sb.w, &sb.h);
-        sb.w -= sb.x;
-        sb.h -= sb.y;
+        cairo_stroke_extents (cr, &sb.rect.x, &sb.rect.y, &sb.rect.width, &sb.rect.height);
+        sb.rect.width -= sb.rect.x;
+        sb.rect.height -= sb.rect.y;
         sb.virgin = 0;
         rsvg_bbox_insert (&bbox, &sb);
     }
@@ -587,10 +590,10 @@ rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
         return;
 
     rsvg_bbox_init (&bbox, state->affine);
-    bbox.x = pixbuf_x;
-    bbox.y = pixbuf_y;
-    bbox.w = w;
-    bbox.h = h;
+    bbox.rect.x = pixbuf_x;
+    bbox.rect.y = pixbuf_y;
+    bbox.rect.width = w;
+    bbox.rect.height = h;
     bbox.virgin = 0;
 
     _set_rsvg_affine (render, state->affine);
@@ -722,20 +725,22 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
 
     if (self->maskunits == objectBoundingBox)
         rsvg_cairo_add_clipping_rect (ctx,
-                                      sx * bbox->w + bbox->x,
-                                      sy * bbox->h + bbox->y, sw * bbox->w, sh * bbox->h);
+                                      sx * bbox->rect.width + bbox->rect.x,
+                                      sy * bbox->rect.height + bbox->rect.y,
+                                      sw * bbox->rect.width,
+                                      sh * bbox->rect.height);
     else
         rsvg_cairo_add_clipping_rect (ctx, sx, sy, sw, sh);
 
     /* Horribly dirty hack to have the bbox premultiplied to everything */
     if (self->contentunits == objectBoundingBox) {
         double bbtransform[6];
-        bbtransform[0] = bbox->w;
+        bbtransform[0] = bbox->rect.width;
         bbtransform[1] = 0.;
         bbtransform[2] = 0.;
-        bbtransform[3] = bbox->h;
-        bbtransform[4] = bbox->x;
-        bbtransform[5] = bbox->y;
+        bbtransform[3] = bbox->rect.height;
+        bbtransform[4] = bbox->rect.x;
+        bbtransform[5] = bbox->rect.y;
         for (i = 0; i < 6; i++)
             affinesave[i] = self->super.state->affine[i];
         _rsvg_affine_multiply (self->super.state->affine, bbtransform, self->super.state->affine);
