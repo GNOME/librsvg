@@ -375,7 +375,7 @@ GByteArray  *_rsvg_acquire_xlink_href_resource  (const char *href,
 
 void rsvg_pop_discrete_layer    (RsvgDrawingCtx * ctx);
 void rsvg_push_discrete_layer   (RsvgDrawingCtx * ctx);
-void rsvg_render_path           (RsvgDrawingCtx * ctx, const char *d);
+void rsvg_render_path           (RsvgDrawingCtx * ctx, const cairo_path_t *path);
 void rsvg_render_image          (RsvgDrawingCtx * ctx, GdkPixbuf * pb,
                                  double x, double y, double w, double h);
 void rsvg_render_free           (RsvgRender * render);

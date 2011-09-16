@@ -30,6 +30,8 @@
 #ifndef RSVG_SHAPES_H
 #define RSVG_SHAPES_H
 
+#include <cairo.h>
+
 #include "rsvg-structure.h"
 
 G_BEGIN_DECLS 
@@ -41,7 +43,6 @@ RsvgNode *rsvg_new_line (void);
 RsvgNode *rsvg_new_rect (void);
 RsvgNode *rsvg_new_circle (void);
 RsvgNode *rsvg_new_ellipse (void);
-
 
 typedef struct _RsvgNodePath RsvgNodePath;
 

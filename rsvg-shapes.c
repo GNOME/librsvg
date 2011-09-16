@@ -35,6 +35,7 @@
 #include "rsvg-shapes.h"
 #include "rsvg-css.h"
 #include "rsvg-defs.h"
+#include "rsvg-path.h"
 
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
@@ -42,23 +43,25 @@
 static void
 rsvg_node_path_free (RsvgNode * self)
 {
-    RsvgNodePath *z = (RsvgNodePath *) self;
-    if (z->d)
-        g_free (z->d);
-    _rsvg_node_finalize (&z->super);
-    g_free (z);
+    RsvgNodePath *path = (RsvgNodePath *) self;
+    g_free (path->d);
+    _rsvg_node_finalize (&path->super);
+    g_free (path);
 }
 
 static void
 rsvg_node_path_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     RsvgNodePath *path = (RsvgNodePath *) self;
+    cairo_path_t *p;
     if (!path->d)
         return;
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
 
-    rsvg_render_path (ctx, path->d);
+    p = rsvg_parse_path (path->d);
+    rsvg_render_path (ctx, p);
+    rsvg_cairo_path_destroy (p);
 }
 
 static void
@@ -138,6 +141,7 @@ _rsvg_node_poly_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     RsvgNodePoly *poly = (RsvgNodePoly *) self;
     gsize i;
     GString *d;
+    cairo_path_t *path;
     char buf[G_ASCII_DTOSTR_BUF_SIZE];
 
     /* represent as a "moveto, lineto*, close" path */
@@ -164,7 +168,10 @@ _rsvg_node_poly_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         g_string_append (d, " Z");
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
-    rsvg_render_path (ctx, d->str);
+
+    path = rsvg_parse_path (d->str);
+    rsvg_render_path (ctx, path);
+    rsvg_cairo_path_destroy (path);
 
     g_string_free (d, TRUE);
 }
@@ -244,6 +251,7 @@ static void
 _rsvg_node_line_draw (RsvgNode * overself, RsvgDrawingCtx * ctx, int dominate)
 {
     GString *d;
+    cairo_path_t *path;
     char buf[G_ASCII_DTOSTR_BUF_SIZE];
     RsvgNodeLine *self = (RsvgNodeLine *) overself;
 
@@ -264,7 +272,10 @@ _rsvg_node_line_draw (RsvgNode * overself, RsvgDrawingCtx * ctx, int dominate)
                                         _rsvg_css_normalize_length (&self->y2, ctx, 'v')));
 
     rsvg_state_reinherit_top (ctx, overself->state, dominate);
-    rsvg_render_path (ctx, d->str);
+
+    path = rsvg_parse_path (d->str);
+    rsvg_render_path (ctx, path);
+    rsvg_cairo_path_destroy (path);
 
     g_string_free (d, TRUE);
 }
@@ -328,6 +339,7 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     double x, y, w, h, rx, ry;
     GString *d = NULL;
+    cairo_path_t *path;
     RsvgNodeRect *rect = (RsvgNodeRect *) self;
     char buf[G_ASCII_DTOSTR_BUF_SIZE];
 
@@ -441,7 +453,10 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     g_string_append (d, " Z");
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
-    rsvg_render_path (ctx, d->str);
+
+    path = rsvg_parse_path (d->str);
+    rsvg_render_path (ctx, path);
+    rsvg_cairo_path_destroy (path);
     g_string_free (d, TRUE);
 }
 
@@ -493,6 +508,7 @@ static void
 _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     GString *d = NULL;
+    cairo_path_t *path;
     RsvgNodeCircle *circle = (RsvgNodeCircle *) self;
     char buf[G_ASCII_DTOSTR_BUF_SIZE];
     double cx, cy, r;
@@ -566,7 +582,10 @@ _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     g_string_append (d, " Z");
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
-    rsvg_render_path (ctx, d->str);
+
+    path = rsvg_parse_path (d->str);
+    rsvg_render_path (ctx, path);
+    rsvg_cairo_path_destroy (path);
 
     g_string_free (d, TRUE);
 }
@@ -621,6 +640,7 @@ _rsvg_node_ellipse_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     RsvgNodeEllipse *ellipse = (RsvgNodeEllipse *) self;
     GString *d = NULL;
+    cairo_path_t *path;
     char buf[G_ASCII_DTOSTR_BUF_SIZE];
     double cx, cy, rx, ry;
 
@@ -693,7 +713,11 @@ _rsvg_node_ellipse_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     g_string_append (d, " Z");
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
-    rsvg_render_path (ctx, d->str);
+
+    path = rsvg_parse_path (d->str);
+    rsvg_render_path (ctx, path);
+    rsvg_cairo_path_destroy (path);
+
     g_string_free (d, TRUE);
 }
 

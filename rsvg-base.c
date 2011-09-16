@@ -2060,16 +2060,10 @@ rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
 }
 
 void
-rsvg_render_path (RsvgDrawingCtx * ctx, const char *d)
+rsvg_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
 {
-    /* todo: store and use the path higher up */
-    cairo_path_t *path;
-
-    path = rsvg_parse_path (d);
-
     ctx->render->render_path (ctx, path);
     rsvg_render_markers (ctx, path);
-    rsvg_cairo_path_destroy (path);
 }
 
 void
