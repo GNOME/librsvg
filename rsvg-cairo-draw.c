@@ -31,7 +31,6 @@
 #include "rsvg-cairo-render.h"
 #include "rsvg-cairo-clip.h"
 #include "rsvg-styles.h"
-#include "rsvg-bpath-util.h"
 #include "rsvg-path.h"
 #include "rsvg-filter.h"
 #include "rsvg-structure.h"
@@ -437,16 +436,15 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
 }
 
 void
-rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
+rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state = rsvg_current_state (ctx);
     cairo_t *cr;
-    RsvgBpath *bpath;
-    int i;
     int need_tmpbuf = 0;
     RsvgBbox bbox;
     double backup_tolerance;
+    const cairo_path_data_t *data, *end;
 
     if (state->fill == NULL && state->stroke == NULL)
         return;
@@ -471,21 +469,23 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const RsvgBpathDef * bpath_def)
     cairo_set_dash (cr, state->dash.dash, state->dash.n_dash,
                     _rsvg_css_normalize_length (&state->dash.offset, ctx, 'o'));
 
-    for (i = 0; i < bpath_def->n_bpath; i++) {
-        bpath = &bpath_def->bpath[i];
-
-        switch (bpath->code) {
+    end = &path->data[path->num_data];
+    for (data = &path->data[0]; data < end; data += data->header.length) {
+        switch (data[0].header.type) {
         case CAIRO_PATH_CLOSE_PATH:
             cairo_close_path (cr);
-            /* fall-through */
+            break;
         case CAIRO_PATH_MOVE_TO:
-            cairo_move_to (cr, bpath->x3, bpath->y3);
+            cairo_move_to (cr, data[1].point.x, data[1].point.y);
             break;
         case CAIRO_PATH_CURVE_TO:
-            cairo_curve_to (cr, bpath->x1, bpath->y1, bpath->x2, bpath->y2, bpath->x3, bpath->y3);
+            cairo_curve_to (cr,
+                            data[1].point.x, data[1].point.y,
+                            data[2].point.x, data[2].point.y,
+                            data[3].point.x, data[3].point.y);
             break;
         case CAIRO_PATH_LINE_TO:
-            cairo_line_to (cr, bpath->x3, bpath->y3);
+            cairo_line_to (cr, data[1].point.x, data[1].point.y);
             break;
         }
     }

@@ -54,7 +54,6 @@
 #include <gsf/gsf-utils.h>
 #endif
 
-#include "rsvg-bpath-util.h"
 #include "rsvg-path.h"
 #include "rsvg-paint-server.h"
 #include "rsvg-xml.h"
@@ -2063,15 +2062,14 @@ rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
 void
 rsvg_render_path (RsvgDrawingCtx * ctx, const char *d)
 {
-    /* todo: store and use the bpath higher up */
-    RsvgBpathDef *bpath_def;
+    /* todo: store and use the path higher up */
+    cairo_path_t *path;
 
-    bpath_def = rsvg_parse_path (d);
+    path = rsvg_parse_path (d);
 
-    ctx->render->render_path (ctx, bpath_def);
-    rsvg_render_markers (bpath_def, ctx);
-
-    rsvg_bpath_def_free (bpath_def);
+    ctx->render->render_path (ctx, path);
+    rsvg_render_markers (ctx, path);
+    rsvg_cairo_path_destroy (path);
 }
 
 void

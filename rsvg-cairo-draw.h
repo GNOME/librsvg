@@ -36,7 +36,7 @@ PangoContext    *rsvg_cairo_create_pango_context    (RsvgDrawingCtx *ctx);
 void         rsvg_cairo_render_pango_layout	    (RsvgDrawingCtx *ctx, PangoLayout *layout, 
                                                  double x, double y);
 void         rsvg_cairo_render_path             (RsvgDrawingCtx *ctx, 
-                                                 const RsvgBpathDef * path);
+                                                 const cairo_path_t *path);
 void         rsvg_cairo_render_image            (RsvgDrawingCtx *ctx, const GdkPixbuf * img, 
                                                  double x, double y, double w, double h);
 void         rsvg_cairo_push_discrete_layer	    (RsvgDrawingCtx *ctx);

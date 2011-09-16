@@ -23,6 +23,8 @@
    Authors: Caleb Moore <c.moore@student.unsw.edu.au>
 */
 
+#include "config.h"
+
 #include "rsvg-marker.h"
 #include "rsvg-private.h"
 #include "rsvg-styles.h"
@@ -32,6 +34,7 @@
 #include "rsvg-filter.h"
 #include "rsvg-mask.h"
 #include "rsvg-image.h"
+#include "rsvg-path.h"
 
 #include <string.h>
 #include <math.h>
@@ -208,14 +211,11 @@ rsvg_marker_parse (const RsvgDefs * defs, const char *str)
 }
 
 void
-rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
+rsvg_render_markers (RsvgDrawingCtx * ctx,
+                     const cairo_path_t *path)
 {
-    int i;
-    int n_bpath, n_bpath_minus_1;
-
     double x, y;
     double lastx, lasty;
-    double nextx, nexty;
     double linewidth;
     cairo_path_data_type_t code, nextcode;
 
@@ -223,6 +223,8 @@ rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
     RsvgMarker *startmarker;
     RsvgMarker *middlemarker;
     RsvgMarker *endmarker;
+    cairo_path_data_t *data, *nextdata, *end;
+    cairo_path_data_t nextp;
 
     state = rsvg_current_state (ctx);
 
@@ -239,35 +241,44 @@ rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
 
     x = 0;
     y = 0;
-    nextx = bpath_def->bpath[0].x3;
-    nexty = bpath_def->bpath[0].y3;
-    nextcode = bpath_def->bpath[0].code;
 
-    n_bpath = bpath_def->n_bpath;
-    n_bpath_minus_1 = n_bpath - 1;
+    if (path->num_data <= 0)
+        return;
 
-    for (i = 0; i < n_bpath; i++) {
+    end = &path->data[path->num_data];
+    data = &path->data[0];
+    nextcode = data[0].header.type;
+    if (data[0].header.length > 1)
+        nextp = data[data[0].header.length - 1];
+    else
+        nextp.point.x = nextp.point.y = 0.;
+
+    for ( ; data < end; data = nextdata) {
         lastx = x;
         lasty = y;
-        x = nextx;
-        y = nexty;
+        x = nextp.point.x;
+        y = nextp.point.y;
         code = nextcode;
 
-        if (i == n_bpath_minus_1) {
-            nextcode = CAIRO_PATH_MOVE_TO;
+        nextdata = data + data->header.length;
+        if (nextdata < end) {
+            nextcode = nextdata->header.type;
+            if (nextdata->header.length > 1) {
+                nextp = nextdata[nextdata->header.length - 1];
+            } else {
+                /* keep nextp unchanged */
+            }
         } else {
-            nextx = bpath_def->bpath[i + 1].x3;
-            nexty = bpath_def->bpath[i + 1].y3;
-            nextcode = bpath_def->bpath[i + 1].code;
+            nextcode = CAIRO_PATH_MOVE_TO;
         }
 
-        if (nextcode == CAIRO_PATH_CLOSE_PATH ||
-            nextcode == CAIRO_PATH_MOVE_TO) {
+        if (nextcode == CAIRO_PATH_MOVE_TO ||
+            code == CAIRO_PATH_CLOSE_PATH) {
             if (endmarker) {
                 if (code == CAIRO_PATH_CURVE_TO) {
                     rsvg_marker_render (endmarker, x, y,
-                                        atan2 (y - bpath_def->bpath[i].y2,
-                                               x - bpath_def->bpath[i].x2),
+                                        atan2 (y - data[2].point.y,
+                                               x - data[2].point.x),
                                         linewidth, ctx);
                 } else {
                     rsvg_marker_render (endmarker, x, y,
@@ -275,20 +286,20 @@ rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
                                         linewidth, ctx);
                 }
             }
-        } else if (code == CAIRO_PATH_CLOSE_PATH ||
-                   code == CAIRO_PATH_MOVE_TO) {
+        } else if (code == CAIRO_PATH_MOVE_TO ||
+                   code == CAIRO_PATH_CLOSE_PATH) {
             if (startmarker) {
                 if (nextcode == CAIRO_PATH_CURVE_TO) {
                     rsvg_marker_render (startmarker, x, y,
-                                        atan2 (bpath_def->bpath[i + 1].y1 - y,
-                                               bpath_def->bpath[i + 1].x1 - x),
+                                        atan2 (nextdata[1].point.y - y,
+                                               nextdata[1].point.x - x),
                                         linewidth,
                                         ctx);
                 } else {
                     rsvg_marker_render (startmarker, x, y,
-                                        atan2 (nexty - y, nextx - x),
+                                        atan2 (nextp.point.y - y, nextp.point.x - x),
                                         linewidth,
-					                    ctx);
+                                        ctx);
                 }
             }
         } else {
@@ -296,18 +307,18 @@ rsvg_render_markers (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx)
                 double xdifin, ydifin, xdifout, ydifout, intot, outtot, angle;
 
                 if (code == CAIRO_PATH_CURVE_TO) {
-                    xdifin = x - bpath_def->bpath[i].x2;
-                    ydifin = y - bpath_def->bpath[i].y2;
+                    xdifin = x - data[2].point.x;
+                    ydifin = y - data[2].point.y;
                 } else {
                     xdifin = x - lastx;
                     ydifin = y - lasty;
                 }
                 if (nextcode == CAIRO_PATH_CURVE_TO) {
-                    xdifout = bpath_def->bpath[i+1].x1 - x;
-                    ydifout = bpath_def->bpath[i+1].y1 - y;
+                    xdifout = nextdata[1].point.x - x;
+                    ydifout = nextdata[1].point.y - y;
                 } else {
-                    xdifout = nextx - x;
-                    ydifout = nexty - y;
+                    xdifout = nextp.point.x - x;
+                    ydifout = nextp.point.y - y;
                 }
 
                 intot = sqrt (xdifin * xdifin + ydifin * ydifin);

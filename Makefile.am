@@ -33,8 +33,6 @@ enum_sources = \
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	librsvg-features.c 	\
-	rsvg-bpath-util.c 	\
-	rsvg-bpath-util.h 	\
 	rsvg-css.c 		\
 	rsvg-css.h 		\
 	rsvg-defs.c 		\

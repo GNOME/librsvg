@@ -27,12 +27,15 @@
 #ifndef RSVG_PATH_H
 #define RSVG_PATH_H
 
-#include "rsvg-bpath-util.h"
+#include <glib.h>
+#include <cairo.h>
 
 G_BEGIN_DECLS 
 
-RsvgBpathDef *rsvg_parse_path (const char *path_str);
+cairo_path_t *rsvg_parse_path (const char *path_str);
+
+void rsvg_cairo_path_destroy (cairo_path_t *path);
 
 G_END_DECLS
 
-#endif                          /* RSVG_PATH_H */
+#endif /* RSVG_PATH_H */

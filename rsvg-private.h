@@ -30,7 +30,6 @@
 #include <cairo.h>
 
 #include "rsvg.h"
-#include "rsvg-bpath-util.h"
 
 #include <libxml/SAX.h>
 #include <libxml/xmlmemory.h>
@@ -218,7 +217,7 @@ struct RsvgRender {
     PangoContext    *(*create_pango_context)    (RsvgDrawingCtx * ctx);
     void             (*render_pango_layout)	    (RsvgDrawingCtx * ctx, PangoLayout *layout,
                                                  double x, double y);
-    void             (*render_path)             (RsvgDrawingCtx * ctx, const RsvgBpathDef * path);
+    void             (*render_path)             (RsvgDrawingCtx * ctx, const cairo_path_t *path);
     void             (*render_image)            (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
                                                  double x, double y, double w, double h);
     void             (*pop_discrete_layer)      (RsvgDrawingCtx * ctx);

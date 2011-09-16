@@ -46,7 +46,7 @@ RsvgNode    *rsvg_new_marker	    (void);
 void	     rsvg_marker_render	    (RsvgMarker * self, gdouble x, gdouble y, 
 				     gdouble orient, gdouble linewidth, RsvgDrawingCtx * ctx);
 RsvgNode    *rsvg_marker_parse	    (const RsvgDefs * defs, const char *str);
-void	     rsvg_render_markers    (const RsvgBpathDef * bpath_def, RsvgDrawingCtx * ctx);
+void	     rsvg_render_markers    (RsvgDrawingCtx *ctx, const cairo_path_t *path);
 
 G_END_DECLS
 
