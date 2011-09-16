@@ -32,6 +32,31 @@
 
 G_BEGIN_DECLS 
 
+typedef struct {
+    GArray *path_data;
+    int     last_move_to_index;
+} RsvgPathBuilder;
+
+void rsvg_path_builder_init (RsvgPathBuilder *builder,
+                             int n_elements);
+void rsvg_path_builder_move_to (RsvgPathBuilder *builder,
+                                double x,
+                                double y);
+void rsvg_path_builder_line_to (RsvgPathBuilder *builder,
+                                double x,
+                                double y);
+
+void rsvg_path_builder_curve_to (RsvgPathBuilder *builder,
+                                 double x1,
+                                 double y1,
+                                 double x2,
+                                 double y2,
+                                 double x3,
+                                 double y3);
+void rsvg_path_builder_close_path (RsvgPathBuilder *builder);
+
+cairo_path_t *rsvg_path_builder_finish (RsvgPathBuilder *builder);
+
 cairo_path_t *rsvg_parse_path (const char *path_str);
 
 void rsvg_cairo_path_destroy (cairo_path_t *path);
