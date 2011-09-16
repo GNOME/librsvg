@@ -102,11 +102,14 @@ rsvg_new_path (void)
 
 struct _RsvgNodePoly {
     RsvgNode super;
-    gdouble *pointlist;
-    guint pointlist_len;
+    cairo_path_t *path;
 };
 
 typedef struct _RsvgNodePoly RsvgNodePoly;
+
+static cairo_path_t *
+_rsvg_node_poly_build_path (const char *value,
+                            gboolean close_path);
 
 static void
 _rsvg_node_poly_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
@@ -118,7 +121,10 @@ _rsvg_node_poly_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
         /* support for svg < 1.0 which used verts */
         if ((value = rsvg_property_bag_lookup (atts, "verts"))
             || (value = rsvg_property_bag_lookup (atts, "points"))) {
-            poly->pointlist = rsvg_css_parse_number_list (value, &poly->pointlist_len);
+            if (poly->path)
+                rsvg_cairo_path_destroy (poly->path);
+            poly->path = _rsvg_node_poly_build_path (value,
+                                                     RSVG_NODE_TYPE (self) == RSVG_NODE_TYPE_POLYGON);
         }
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
@@ -134,57 +140,74 @@ _rsvg_node_poly_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 
 }
 
-static void
-_rsvg_node_poly_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
+static cairo_path_t *
+_rsvg_node_poly_build_path (const char *value,
+                            gboolean close_path)
 {
-    RsvgNodePoly *poly = (RsvgNodePoly *) self;
-    gsize i;
+    double *pointlist;
+    guint pointlist_len, i;
     GString *d;
     cairo_path_t *path;
     char buf[G_ASCII_DTOSTR_BUF_SIZE];
 
-    /* represent as a "moveto, lineto*, close" path */
-    if (poly->pointlist_len < 2)
-        return;
+    pointlist = rsvg_css_parse_number_list (value, &pointlist_len);
+    if (pointlist == NULL)
+        return NULL;
+
+    if (pointlist_len < 2) {
+        g_free (pointlist);
+        return NULL;
+    }
 
     d = g_string_new (NULL);
 
     /*      "M %f %f " */
     g_string_append (d, " M ");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), poly->pointlist[0]));
+    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), pointlist[0]));
     g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), poly->pointlist[1]));
+    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), pointlist[1]));
 
     /* "L %f %f " */
-    for (i = 2; i < poly->pointlist_len; i += 2) {
+    for (i = 2; i < pointlist_len; i += 2) {
         g_string_append (d, " L ");
-        g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), poly->pointlist[i]));
+        g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), pointlist[i]));
         g_string_append_c (d, ' ');
-        g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), poly->pointlist[i + 1]));
+        g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), pointlist[i + 1]));
     }
 
-    if (RSVG_NODE_TYPE (self) == RSVG_NODE_TYPE_POLYGON)
+    if (close_path)
         g_string_append (d, " Z");
+
+    path = rsvg_parse_path (d->str);
+
+    g_string_free (d, TRUE);
+    g_free (pointlist);
+
+    return path;
+}
+
+static void
+_rsvg_node_poly_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
+{
+    RsvgNodePoly *poly = (RsvgNodePoly *) self;
+
+    if (poly->path == NULL)
+        return;
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
 
-    path = rsvg_parse_path (d->str);
-    rsvg_render_path (ctx, path);
-    rsvg_cairo_path_destroy (path);
-
-    g_string_free (d, TRUE);
+    rsvg_render_path (ctx, poly->path);
 }
 
 static void
 _rsvg_node_poly_free (RsvgNode * self)
 {
-    RsvgNodePoly *z = (RsvgNodePoly *) self;
-    if (z->pointlist)
-        g_free (z->pointlist);
-    _rsvg_node_finalize (&z->super);
-    g_free (z);
+    RsvgNodePoly *poly = (RsvgNodePoly *) self;
+    if (poly->path)
+        rsvg_cairo_path_destroy (poly->path);
+    _rsvg_node_finalize (&poly->super);
+    g_free (poly);
 }
-
 
 static RsvgNode *
 rsvg_new_any_poly (RsvgNodeType type)
@@ -195,8 +218,7 @@ rsvg_new_any_poly (RsvgNodeType type)
     poly->super.free = _rsvg_node_poly_free;
     poly->super.draw = _rsvg_node_poly_draw;
     poly->super.set_atts = _rsvg_node_poly_set_atts;
-    poly->pointlist = NULL;
-    poly->pointlist_len = 0;
+    poly->path = NULL;
     return &poly->super;
 }
 
