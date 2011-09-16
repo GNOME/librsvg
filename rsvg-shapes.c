@@ -44,7 +44,8 @@ static void
 rsvg_node_path_free (RsvgNode * self)
 {
     RsvgNodePath *path = (RsvgNodePath *) self;
-    g_free (path->d);
+    if (path->path)
+        rsvg_cairo_path_destroy (path->path);
     _rsvg_node_finalize (&path->super);
     g_free (path);
 }
@@ -53,15 +54,13 @@ static void
 rsvg_node_path_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     RsvgNodePath *path = (RsvgNodePath *) self;
-    cairo_path_t *p;
-    if (!path->d)
+
+    if (!path->path)
         return;
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
 
-    p = rsvg_parse_path (path->d);
-    rsvg_render_path (ctx, p);
-    rsvg_cairo_path_destroy (p);
+    rsvg_render_path (ctx, path->path);
 }
 
 static void
@@ -72,9 +71,9 @@ rsvg_node_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * at
 
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "d"))) {
-            if (path->d)
-                g_free (path->d);
-            path->d = g_strdup (value);
+            if (path->path)
+                rsvg_cairo_path_destroy (path->path);
+            path->path = rsvg_parse_path (value);
         }
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
@@ -93,7 +92,7 @@ rsvg_new_path (void)
     RsvgNodePath *path;
     path = g_new (RsvgNodePath, 1);
     _rsvg_node_init (&path->super, RSVG_NODE_TYPE_PATH);
-    path->d = NULL;
+    path->path = NULL;
     path->super.free = rsvg_node_path_free;
     path->super.draw = rsvg_node_path_draw;
     path->super.set_atts = rsvg_node_path_set_atts;
