@@ -67,7 +67,6 @@ rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
     RsvgCairoRender *cairo_render = &render->super;
     RsvgState *state = rsvg_current_state (ctx);
     cairo_t *cr;
-    const cairo_path_data_t *data, *end;
 
     cr = cairo_render->cr;
 
@@ -75,26 +74,7 @@ rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
 
     cairo_set_fill_rule (cr, rsvg_current_state (ctx)->clip_rule);
 
-    end = &path->data[path->num_data];
-    for (data = &path->data[0]; data < end; data += data->header.length) {
-        switch (data[0].header.type) {
-        case CAIRO_PATH_CLOSE_PATH:
-            cairo_close_path (cr);
-            break;
-        case CAIRO_PATH_MOVE_TO:
-            cairo_move_to (cr, data[1].point.x, data[1].point.y);
-            break;
-        case CAIRO_PATH_CURVE_TO:
-            cairo_curve_to (cr,
-                            data[1].point.x, data[1].point.y,
-                            data[2].point.x, data[2].point.y,
-                            data[3].point.x, data[3].point.y);
-            break;
-        case CAIRO_PATH_LINE_TO:
-            cairo_line_to (cr, data[1].point.x, data[1].point.y);
-            break;
-        }
-    }
+    cairo_append_path (cr, path);
 }
 
 static void
