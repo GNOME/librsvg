@@ -118,7 +118,7 @@ rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs * defs, const char *
     guint32 rgb;
     if (inherit != NULL)
         *inherit = 1;
-    if (!strcmp (str, "none"))
+    if (str == NULL || !strcmp (str, "none"))
         return NULL;
 
     name = rsvg_get_url_string (str);
