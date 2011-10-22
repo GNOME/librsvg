@@ -37,6 +37,8 @@
 #include "rsvg-mask.h"
 #include "rsvg-marker.h"
 
+#include <libcroco/libcroco.h>
+
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
 enum {
@@ -992,10 +994,6 @@ rsvg_css_define_style (RsvgHandle * ctx,
     }
 }
 
-#ifdef HAVE_LIBCROCO
-
-#include <libcroco/libcroco.h>
-
 typedef struct _CSSUserData {
     RsvgHandle *ctx;
     CRSelector *selector;
@@ -1112,8 +1110,8 @@ init_sac_handler (CRDocHandler * a_handler)
     a_handler->unrecoverable_error = ccss_unrecoverable_error;
 }
 
-static void
-rsvg_real_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
+void
+rsvg_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
 {
     enum CRStatus status = CR_OK;
     CRParser *parser = NULL;
@@ -1157,101 +1155,11 @@ ccss_import_style (CRDocHandler * a_this,
             _rsvg_acquire_xlink_href_resource ((gchar *) cr_string_peek_raw_str (a_uri),
                                                rsvg_handle_get_base_uri (user_data->ctx), NULL);
         if (stylesheet_data) {
-            rsvg_real_parse_cssbuffer (user_data->ctx, (const char *) stylesheet_data->data,
-                                       (size_t) stylesheet_data->len);
+            rsvg_parse_cssbuffer (user_data->ctx, (const char *) stylesheet_data->data,
+                                  (size_t) stylesheet_data->len);
             g_byte_array_free (stylesheet_data, TRUE);
         }
     }
-}
-
-#else                           /* !HAVE_LIBCROCO */
-
-static void
-rsvg_real_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
-{
-    /*
-     * Extremely poor man's CSS parser. Not robust. Not compliant.
-     * See also: http://www.w3.org/TR/REC-CSS2/syndata.html
-     */
-
-    size_t loc = 0;
-
-    while (loc < buflen) {
-        gchar **selectors;
-        gchar **styles;
-        guint i;
-        GString *selector = g_string_new (NULL);
-        GString *style_props = g_string_new (NULL);
-
-        /* advance to the style's name */
-        while (loc < buflen && g_ascii_isspace (buff[loc]))
-            loc++;
-
-        /* advance to the first { that defines the style's properties */
-        while (loc < buflen && buff[loc] != '{')
-            g_string_append_c (selector, buff[loc++]);
-        loc++;
-
-        while (loc < buflen && g_ascii_isspace (buff[loc]))
-            loc++;
-
-        while (loc < buflen && buff[loc] != '}') {
-            /* suck in and append our property */
-            while (loc < buflen && buff[loc] != ';' && buff[loc] != '}')
-                g_string_append_c (style_props, buff[loc++]);
-
-            if (loc == buflen || buff[loc] == '}')
-                break;
-            else {
-                g_string_append_c (style_props, ';');
-
-                /* advance to the next property */
-                loc++;
-                while (loc < buflen && g_ascii_isspace (buff[loc]))
-                    loc++;
-            }
-        }
-
-        selectors = g_strsplit (selector->str, ",", -1);
-        styles = g_strsplit (style_props->str, ";", -1);
-        for (i = 0; i < g_strv_length (selectors); i++) {
-            guint j;
-            for (j = 0; j < g_strv_length (styles); j++) {
-                gchar **values;
-                values = g_strsplit (styles[j], ":", 2);
-                if (g_strv_length (values) == 2) {
-                    gchar *style_value = NULL;
-                    gboolean important;
-                    parse_style_value (g_strstrip (values[1]), &style_value, &important);
-                    rsvg_css_define_style (ctx,
-                                           g_strstrip (selectors[i]),
-                                           g_strstrip (values[0]),
-                                           g_strstrip (style_value),
-                                           important);
-                    g_free (style_value);
-                }
-                g_strfreev (values);
-            }
-        }
-        g_strfreev (selectors);
-        g_strfreev (styles);
-
-        g_string_free (selector, TRUE);
-        g_string_free (style_props, TRUE);
-
-        loc++;
-        while (loc < buflen && g_ascii_isspace (buff[loc]))
-            loc++;
-    }
-}
-
-#endif                          /* HAVE_LIBCROCO */
-
-void
-rsvg_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
-{
-    /* delegate off to the builtin or libcroco implementation */
-    rsvg_real_parse_cssbuffer (ctx, buff, buflen);
 }
 
 /* Parse an SVG transform string into an affine matrix. Reference: SVG

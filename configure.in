@@ -38,6 +38,7 @@ PANGOCAIRO_REQUIRED=1.10.0
 GDK_PIXBUF_REQUIRED=1.3.7
 GTK2_REQUIRED=2.16.0
 GTK3_REQUIRED=3.0.0
+CROCO_REQUIRED=0.6.1
 
 # ===========================================================================
 
@@ -102,43 +103,10 @@ PKG_CHECK_MODULES(LIBRSVG, \
 	libxml-2.0 >= $LIBXML_REQUIRED \
 	pangocairo >= $PANGOCAIRO_REQUIRED \
 	cairo >= $CAIRO_REQUIRED \
-	cairo-png >= $CAIRO_REQUIRED)
+	cairo-png >= $CAIRO_REQUIRED
+        libcroco-0.6 >= $CROCO_REQUIRED)
 
 PKG_CHECK_MODULES([GTHREAD],[gthread-2.0 >= $GLIB_REQUIRED])
-
-dnl ===========================================================================
-
-LIBCROCO_CFLAGS=""
-LIBCROCO_LIBS=""
-LIBCROCOPKG=""
-
-test_croco=true
-AC_ARG_WITH(croco,[  --with-croco  Use libcroco for CSS parsing],[
-	if test "x$withval" = "xno"; then
-		test_croco=false
-	fi
-])
-if test "x$test_croco" = "xtrue"; then
-	PKG_CHECK_MODULES(LIBCROCO,[libcroco-0.6 >= 0.6.1], test_croco=true, test_croco=false)
-fi
-
-if test "x$test_croco" = "xtrue"; then
-        croco_define=1
-	LIBCROCO_CFLAGS="$LIBCROCO_CFLAGS -DHAVE_LIBCROCO=1"
-	LIBCROCOPKG="libcroco-0.6"
-else
-        croco_define=0
-	AC_MSG_WARN([LibCroco support disabled, as requested (Use --with-croco to enable)])
-        croco_warning="
-You are building without libcroco support. LibRSVG will not be able to handle embedded CSS, as is required per the SVG specification. If you are a library vendor or distributor, you are doing the world a disservice and should strongly consider shipping libcroco. Even KSVG needs libcroco now..."
-fi
-
-AC_SUBST(LIBCROCOPKG)
-AC_SUBST(LIBCROCO_CFLAGS)
-AC_SUBST(LIBCROCO_LIBS)
-
-AC_SUBST([CSS_SUPPORTED],[$test_croco])
-AC_SUBST([LIBRSVG_HAVE_CSS],[$croco_define])
 
 dnl ===========================================================================
 
@@ -349,9 +317,4 @@ librsvg-$VERSION
         GTK 3.0:                        ${have_gtk_3}
 	Build GTK 2.0 theme engine:     ${enable_gtk_theme}
 	Build miscellaenous tools:      ${build_misc_tools}
-	Use libcroco for css parsing:   ${test_croco}
 "
-
-if test "x$croco_warning" != "x"; then
-   AC_MSG_RESULT([$croco_warning]);
-fi
