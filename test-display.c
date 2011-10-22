@@ -771,7 +771,7 @@ main (int argc, char **argv)
 	/* Set the locale so that UTF-8 filenames work */
     setlocale(LC_ALL, "");
 
-    g_thread_init (NULL);
+    g_type_init ();
 
     info.pixbuf = NULL;
     info.svg_bytes = NULL;
