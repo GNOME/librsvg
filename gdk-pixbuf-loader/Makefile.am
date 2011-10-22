@@ -18,7 +18,6 @@ libpixbufloader_svg_la_CFLAGS = \
 	$(GDK_PIXBUF_CFLAGS)	\
 	$(LIBRSVG_CFLAGS)	\
 	$(LIBCROCO_CFLAGS)	\
-	$(LIBGSF_CFLAGS)	\
 	$(AM_CFLASG)
 
 libpixbufloader_svg_la_LDFLAGS = -avoid-version -module $(AM_LDFLAGS)
@@ -27,8 +26,7 @@ libpixbufloader_svg_la_LIBADD = \
 	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
 	$(GDK_PIXBUF_LIBS)	\
 	$(LIBRSVG_LIBS) 	\
-	$(LIBCROCO_LIBS)	\
-	$(LIBGSF_LIBS) 
+	$(LIBCROCO_LIBS)
 
 if PLATFORM_WIN32
 libpixbufloader_svg_la_LDFLAGS += -no-undefined

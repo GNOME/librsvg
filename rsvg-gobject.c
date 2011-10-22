@@ -81,11 +81,7 @@ instance_init (RsvgHandle * self)
     self->priv->treebase = NULL;
 
     self->priv->finished = 0;
-#if GLIB_CHECK_VERSION (2, 24, 0)
     self->priv->data_input_stream = NULL;
-#elif defined(HAVE_GSF)
-    self->priv->gzipped_data = NULL;
-#endif
     self->priv->first_write = TRUE;
 
     self->priv->is_disposed = FALSE;
@@ -138,7 +134,6 @@ instance_dispose (GObject * instance)
     if (self->priv->base_uri)
         g_free (self->priv->base_uri);
 
-#if GLIB_CHECK_VERSION (2, 24, 0)
     if (self->priv->base_gfile) {
         g_object_unref (self->priv->base_gfile);
         self->priv->base_gfile = NULL;
@@ -147,12 +142,6 @@ instance_dispose (GObject * instance)
         g_object_unref (self->priv->data_input_stream);
         self->priv->data_input_stream = NULL;
     }
-#elif defined(HAVE_GSF)
-    if (self->priv->gzipped_data) {
-        g_object_unref (self->priv->gzipped_data);
-        self->priv->gzipped_data = NULL;
-    }
-#endif
 
   chain:
     rsvg_parent_class->dispose (instance);

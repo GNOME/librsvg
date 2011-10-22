@@ -11,7 +11,6 @@ endif
 INCLUDES =				\
 	-I$(top_srcdir) 		\
 	-I$(top_builddir) 		\
-	$(LIBGSF_CFLAGS)		\
 	$(LIBCROCO_CFLAGS)		\
 	$(LIBRSVG_CFLAGS) 		\
 	$(GTK_CFLAGS)			\
@@ -22,7 +21,6 @@ INCLUDES =				\
 DEPS = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
 	librsvg_tools_main.la
 LDADDS =				\
-	$(LIBGSF_LIBS)			\
 	$(GLIB_LIBS)			\
 	$(LIBCROCO_LIBS)		\
 	$(LIBRSVG_LIBS) 		\

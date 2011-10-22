@@ -112,7 +112,6 @@ GTKDOC_CFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_builddir) \
 	$(LIBRSVG_CFLAGS) \
-	$(LIBGSF_CFLAGS) \
 	$(LIBCROCO_CFLAGS) \
 	$(GTK_CFLAGS) \
 	$(GDK_X11_CFLAGS) \
@@ -123,7 +122,6 @@ GTKDOC_CFLAGS = \
 GTKDOC_LIBS = \
 	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la \
 	$(LIBRSVG_LIBS) \
-	$(LIBGSF_LIBS) \
 	$(GTHREAD_LIBS) \
 	$(LIBCROCO_LIBS) \
 	$(GTK_LIBS)

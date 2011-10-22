@@ -43,16 +43,11 @@
 #include <libxml/parser.h>
 #include <libxml/parserInternals.h>
 
+#include <gio/gio.h>
+
 #include <math.h>
 #include <string.h>
 #include <stdarg.h>
-
-#ifdef HAVE_GSF
-#include <gsf/gsf-input-gzip.h>
-#include <gsf/gsf-input-memory.h>
-#include <gsf/gsf-output-memory.h>
-#include <gsf/gsf-utils.h>
-#endif
 
 #include "rsvg-path.h"
 #include "rsvg-paint-server.h"
@@ -1715,28 +1710,15 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
         /* test for GZ marker. todo: store the first 2 bytes in the odd circumstance that someone calls
          * write() in 1 byte increments */
         if ((count >= 2) && (buf[0] == (guchar) 0x1f) && (buf[1] == (guchar) 0x8b)) {
-#if GLIB_CHECK_VERSION (2, 24, 0)
             priv->data_input_stream = g_memory_input_stream_new ();
-#elif defined (HAVE_GSF)
-            priv->gzipped_data = GSF_OUTPUT (gsf_output_memory_new ());
-#else
-            g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-                                 "GZip compressed SVG not supported");
-            return FALSE;
-#endif
         }
     }
 
-#if GLIB_CHECK_VERSION (2, 24, 0)
     if (priv->data_input_stream) {
         g_memory_input_stream_add_data ((GMemoryInputStream *) priv->data_input_stream,
                                         g_memdup (buf, count), count, (GDestroyNotify) g_free);
         return TRUE;
     }
-#elif defined (HAVE_GSF)
-    if (priv->gzipped_data)
-        return gsf_output_write (handle->priv->gzipped_data, count, buf);
-#endif
 
     return rsvg_handle_write_impl (handle, buf, count, error);
 }
@@ -1763,7 +1745,6 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
     if (priv->is_closed)
           return TRUE;
 
-#if GLIB_CHECK_VERSION (2, 24, 0)
     if (priv->data_input_stream) {
         GConverter *converter;
         GInputStream *stream;
@@ -1780,49 +1761,6 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
 
         return ret;
     }
-#elif defined(HAVE_GSF)
-    if (priv->gzipped_data) {
-        GsfInput *gzip;
-        const guchar *bytes;
-        gsize size;
-        gsize remaining;
-
-        bytes = gsf_output_memory_get_bytes (GSF_OUTPUT_MEMORY (priv->gzipped_data));
-        size = gsf_output_size (priv->gzipped_data);
-
-        gzip =
-            GSF_INPUT (gsf_input_gzip_new
-                       (GSF_INPUT (gsf_input_memory_new (bytes, size, FALSE)), error));
-        remaining = gsf_input_remaining (gzip);
-        while ((size = MIN (remaining, 1024)) > 0) {
-            guint8 const *buf;
-
-            /* write to parent */
-            buf = gsf_input_read (gzip, size, NULL);
-            if (!buf) {
-                /* an error occured, so bail */
-                g_warning (_("rsvg_gz_handle_close_impl: gsf_input_read returned NULL"));
-                break;
-            }
-
-            rsvg_handle_write_impl (handle, buf, size, error);
-            /* if we didn't manage to lower remaining number of bytes,
-             * something is wrong, and we should avoid an endless loop */
-            if (remaining == ((gsize) gsf_input_remaining (gzip))) {
-                g_warning (_
-                           ("rsvg_gz_handle_close_impl: write_impl didn't lower the input_remaining count"));
-                break;
-            }
-            remaining = gsf_input_remaining (gzip);
-        }
-        g_object_unref (gzip);
-
-        /* close parent */
-        gsf_output_close (priv->gzipped_data);
-        g_object_unref (priv->gzipped_data);
-        priv->gzipped_data = NULL;
-    }
-#endif /* GIO >= 2.24.0 */
 
     return rsvg_handle_close_impl (handle, error);
 }
@@ -2018,10 +1956,6 @@ rsvg_init (void)
 {
     g_type_init ();
 
-#ifdef HAVE_GSF
-    gsf_init ();
-#endif
-
     xmlInitParser ();
 }
 
@@ -2034,10 +1968,6 @@ rsvg_init (void)
 void
 rsvg_term (void)
 {
-#ifdef HAVE_GSF
-    gsf_shutdown ();
-#endif
-
     xmlCleanupParser ();
 }
 

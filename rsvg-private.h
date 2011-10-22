@@ -170,11 +170,7 @@ struct RsvgHandlePrivate {
     gboolean in_loop;		/* see get_dimension() */
 
     gboolean first_write;
-#if GLIB_CHECK_VERSION (2, 24, 0)
     GInputStream *data_input_stream; /* for rsvg_handle_write of svgz data */
-#elif defined(HAVE_GSF)
-    void *gzipped_data;         /* really a GsfOutput */
-#endif
 };
 
 typedef struct {

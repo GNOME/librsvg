@@ -89,7 +89,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CFLAGS = \
 	$(LIBRSVG_CFLAGS) 	\
 	$(LIBCROCO_CFLAGS)	\
-	$(LIBGSF_CFLAGS)	\
 	$(AM_CFLAGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = -version-info @RSVG_LT_VERSION_INFO@ -export-dynamic -no-undefined -export-symbols $(srcdir)/librsvg.def $(AM_LDFLAGS)
@@ -97,7 +96,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = -version-info @RSVG_LT_VERSION_INF
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
 	$(LIBRSVG_LIBS) 	\
 	$(LIBCROCO_LIBS)	\
-	$(LIBGSF_LIBS)		\
 	$(libm)
 
 librsvgincdir = $(includedir)/librsvg-$(RSVG_API_VERSION)/librsvg
@@ -123,7 +121,6 @@ rsvg_convert_CPPFLAGS = \
 rsvg_convert_CFLAGS =\
 	$(LIBRSVG_CFLAGS) 	\
 	$(LIBCROCO_CFLAGS)	\
-	$(LIBGSF_CFLAGS)	\
 	$(AM_CFLAGS)
 
 rsvg_convert_LDFLAGS = $(AM_LDFLAGS)
@@ -132,7 +129,6 @@ rsvg_convert_LDADD = \
 	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
 	$(LIBRSVG_LIBS)		\
 	$(LIBCROCO_LIBS)	\
-	$(LIBGSF_LIBS)		\
 	$(GTHREAD_LIBS)		\
 	$(libm)
 
@@ -149,7 +145,6 @@ rsvg_view_CFLAGS =\
 	$(GTK2_CFLAGS)		\
 	$(LIBRSVG_CFLAGS) 	\
 	$(LIBCROCO_CFLAGS)	\
-	$(LIBGSF_CFLAGS)	\
 	$(AM_CFLAGS)
 
 rsvg_view_LDFLAGS =
@@ -159,7 +154,6 @@ rsvg_view_LDADD = \
 	$(GTK2_LIBS)		\
 	$(LIBRSVG_LIBS)		\
 	$(LIBCROCO_LIBS)	\
-	$(LIBGSF_LIBS)		\
 	$(GTHREAD_LIBS)		\
 	$(libm)
 
@@ -176,7 +170,6 @@ rsvg_view_3_CFLAGS =\
 	$(GTK3_CFLAGS)		\
 	$(LIBRSVG_CFLAGS) 	\
 	$(LIBCROCO_CFLAGS)	\
-	$(LIBGSF_CFLAGS)	\
 	$(AM_CFLAGS)
 
 rsvg_view_3_LDFLAGS =
@@ -186,7 +179,6 @@ rsvg_view_3_LDADD = \
 	$(GTK3_LIBS)		\
 	$(LIBRSVG_LIBS)		\
 	$(LIBCROCO_LIBS)	\
-	$(LIBGSF_LIBS)		\
 	$(GTHREAD_LIBS)		\
 	$(libm)
 

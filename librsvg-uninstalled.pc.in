@@ -3,7 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-svgz_supported=@SVGZ_SUPPORTED@
+svgz_supported=true
 css_supported=@CSS_SUPPORTED@
 
 Name: librsvg

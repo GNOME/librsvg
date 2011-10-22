@@ -31,7 +31,7 @@ AC_SUBST([RSVG_API_VERSION_U],[AS_TR_SH([$RSVG_API_VERSION])])
 dnl ===========================================================================
 
 GLIB_REQUIRED=2.12.0
-GIO_REQUIRED=2.16.0
+GIO_REQUIRED=2.24.0
 LIBXML_REQUIRED=2.4.7
 CAIRO_REQUIRED=1.2.0
 PANGOCAIRO_REQUIRED=1.10.0
@@ -105,58 +105,6 @@ PKG_CHECK_MODULES(LIBRSVG, \
 	cairo-png >= $CAIRO_REQUIRED)
 
 PKG_CHECK_MODULES([GTHREAD],[gthread-2.0 >= $GLIB_REQUIRED])
-
-dnl ===========================================================================
-
-# Using GIO 2.24 we support reading .svg.gz data
-
-svgz_warning=
-
-AC_MSG_CHECKING([whether gio 2.24 is available])
-PKG_CHECK_EXISTS([gio-2.0 >= 2.24.0],[have_gio_2_24=yes],[have_gio_2_24=no])
-AC_MSG_RESULT([$have_gio_2_24])
-
-AC_SUBST([HAVE_GIO_2_24],[$have_gio_2_24])
-
-if test "$have_gio_2_24" = "yes"; then
-  svgz_define=1
-  test_svgz=true
-else
-  LIBGSF_CFLAGS=""
-  LIBGSF_LIBS=""
-
-  LIBGSFPKG=""
-  test_svgz=true
-  AC_ARG_WITH(svgz,[  --with-svgz  Use libgsf for run-time decompression],[
-          if test "x$withval" = "xno"; then
-                  test_svgz=false
-          fi
-  ])
-  if test "x$test_svgz" = "xtrue"; then
-          PKG_CHECK_MODULES(LIBGSF,[libgsf-1 >= 1.6.0], test_svgz=true, test_svgz=false)
-  fi
-
-  if test "x$test_svgz" = "xtrue"; then
-          svgz_define=1
-          AC_DEFINE([HAVE_GSF],[1],[Define if using libgsf])
-          LIBGSFPKG="libgsf-1"
-  else
-          svgz_define=0
-          AC_MSG_WARN([SVGZ support disabled, as requested (Use --with-svgz to enable)])
-  fi
-
-  AC_SUBST(LIBGSFPKG)
-
-  AC_SUBST(LIBGSF_CFLAGS)
-  AC_SUBST(LIBGSF_LIBS)
-fi # have_gio_2_24
-
-if test "$test_svgz" != "true"; then
-  svgz_warning="You are building without libgsf support. LibRSVG will not be able to handle GZipped SVGs, as is required per the SVG specification. If you are a library vendor or distributor, you are doing the world a disservice and should strongly consider shipping libgsf."
-fi
-
-AC_SUBST([SVGZ_SUPPORTED],[$test_svgz])
-AC_SUBST([LIBRSVG_HAVE_SVGZ],[$svgz_define])
 
 dnl ===========================================================================
 
@@ -401,14 +349,9 @@ librsvg-$VERSION
         GTK 3.0:                        ${have_gtk_3}
 	Build GTK 2.0 theme engine:     ${enable_gtk_theme}
 	Build miscellaenous tools:      ${build_misc_tools}
-	Handle svgz files:              ${test_svgz}
 	Use libcroco for css parsing:   ${test_croco}
 "
 
 if test "x$croco_warning" != "x"; then
    AC_MSG_RESULT([$croco_warning]);
-fi
-
-if test "x$svgz_warning" != "x"; then
-   AC_MSG_NOTICE([$svgz_warning]);
 fi

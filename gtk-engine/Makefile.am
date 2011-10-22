@@ -28,7 +28,6 @@ libsvg_la_CFLAGS = \
 	$(GTK2_CFLAGS)		\
 	$(LIBRSVG_CFLAGS)	\
 	$(LIBCROCO_CFLAGS) 	\
-	$(LIBGSF_CFLAGS) 	\
 	$(AM_CFLAGS)
 
 libsvg_la_LDFLAGS =  -avoid-version -module $(AM_LDFLAGS)
@@ -36,8 +35,7 @@ libsvg_la_LIBADD = \
 	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la \
 	$(GTK2_LIBS) 		\
 	$(LIBRSVG_LIBS)		\
-	$(LIBCROCO_LIBS)	\
-	$(LIBGSF_LIBS)
+	$(LIBCROCO_LIBS)
 
 if PLATFORM_WIN32
 libsvg_la_LDFLAGS += -no-undefined
