@@ -1,5 +1,7 @@
 SUBDIRS = . gdk-pixbuf-loader data tests tools doc
 
+NULL =
+
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
 if ENABLE_GTK_ENGINE
@@ -75,7 +77,12 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	rsvg-gobject.c		\
 	rsvg-file-util.c	\
 	rsvg-xml.c		\
-	rsvg-xml.h
+	rsvg-xml.h		\
+	rsvg.h			\
+	rsvg-cairo.h		\
+	librsvg-features.h 	\
+	librsvg-enum-types.h	\
+	$(NULL)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
@@ -243,6 +250,42 @@ s-enum-types-c: $(headers) Makefile
 	&& echo timestamp > $(@F)
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
+
+if HAVE_INTROSPECTION
+-include $(INTROSPECTION_MAKEFILE)
+
+INTROSPECTION_GIRS = Rsvg-@RSVG_API_VERSION@.gir
+INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir)
+INTROSPECTION_COMPILER_ARGS = --includedir=$(srcdir)
+
+Rsvg-@RSVG_API_VERSION_U@.gir: librsvg-@RSVG_API_MAJOR_VERSION@.la
+
+Rsvg_@RSVG_API_VERSION_U@_gir_NAMESPACE = Rsvg
+Rsvg_@RSVG_API_VERSION_U@_gir_EXPORT_PACKAGES = librsvg-$(RSVG_API_VERSION)
+Rsvg_@RSVG_API_VERSION_U@_gir_FILES = $(librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES)
+Rsvg_@RSVG_API_VERSION_U@_gir_INCLUDES = \
+	GLib-2.0 \
+	GObject-2.0 \
+	Gio-2.0 \
+	cairo-1.0 \
+	GdkPixbuf-2.0 \
+	$(NULL)
+Rsvg_@RSVG_API_VERSION_U@_gir_PACKAGES = \
+	Pango-1.0 \
+	libxml2-2.0 \
+	$(NULL)
+Rsvg_@RSVG_API_VERSION_U@_gir_CFLAGS = -I$(top_builddir)
+Rsvg_@RSVG_API_VERSION_U@_gir_LIBS = librsvg-@RSVG_API_MAJOR_VERSION@.la
+
+girdir = $(datadir)/gir-1.0
+dist_gir_DATA = $(INTROSPECTION_GIRS)
+
+typelibsdir = $(libdir)/girepository-1.0
+typelibs_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
+
+CLEANFILES += $(dist_gir_DATA) $(typelibs_DATA)
+
+endif # HAVE_INTROSPECTION
 
 # ChangeLog generation
 

@@ -129,7 +129,7 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
  * will be returned.  Note that the pixbuf may not be complete until
  * @rsvg_handle_close has been called.
  *
- * Returns: the pixbuf loaded by #handle, or %NULL.
+ * Returns: (transfer full): the pixbuf loaded by #handle, or %NULL.
  **/
 GdkPixbuf *
 rsvg_handle_get_pixbuf (RsvgHandle * handle)

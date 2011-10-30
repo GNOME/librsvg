@@ -21,9 +21,12 @@ dnl ===========================================================================
 
 RSVG_API_VERSION=2.0
 RSVG_API_MAJOR_VERSION=2
+RSVG_API_MINOR_VERSION=0
 
 AC_SUBST([RSVG_API_VERSION])
 AC_SUBST([RSVG_API_MAJOR_VERSION])
+AC_SUBST([RSVG_API_MINOR_VERSION])
+AC_SUBST([RSVG_API_VERSION_U],[AS_TR_SH([$RSVG_API_VERSION])])
 
 dnl ===========================================================================
 
@@ -331,6 +334,16 @@ fi
 AM_CONDITIONAL([BUILD_MISC_TOOLS], [test "x$build_misc_tools" = "xyes"])
 
 dnl ===========================================================================
+dnl Build introspectable bindings
+
+# No automagic please!
+if test -z "$enable_introspection"; then
+  enable_introspection=no
+fi
+
+GOBJECT_INTROSPECTION_CHECK([0.10.8])
+
+dnl ===========================================================================
 
 m4_copy([AC_DEFUN],[glib_DEFUN])
 glib_DEFUN([GLIB_LC_MESSAGES],
@@ -382,6 +395,7 @@ librsvg-$VERSION
 	prefix:                         ${prefix}
 	compiler:                       ${CC}
 	
+	Build introspectable bindings:  ${found_introspection}
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
 	Build theme engine:             ${enable_gtk_theme}
 	Build miscellaenous tools:      ${build_misc_tools}

@@ -45,7 +45,7 @@ rsvg_handle_fill_with_data (RsvgHandle * handle,
 
 /**
  * rsvg_handle_new_from_data:
- * @data: The SVG data
+ * @data: (array length=data_len): The SVG data
  * @data_len: The length of #data, in bytes
  * @error: return location for errors
  *

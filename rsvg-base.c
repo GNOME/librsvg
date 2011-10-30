@@ -1318,7 +1318,7 @@ rsvg_handle_get_desc (RsvgHandle * handle)
 /**
  * rsvg_handle_get_dimensions
  * @handle: A #RsvgHandle
- * @dimension_data: A place to store the SVG's size
+ * @dimension_data: (out): A place to store the SVG's size
  *
  * Get the SVG's size. Do not call from within the size_func callback, because an infinite loop will occur.
  *
