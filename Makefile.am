@@ -271,8 +271,8 @@ Rsvg_@RSVG_API_VERSION_U@_gir_INCLUDES = \
 	GdkPixbuf-2.0 \
 	$(NULL)
 Rsvg_@RSVG_API_VERSION_U@_gir_PACKAGES = \
-	Pango-1.0 \
-	libxml2-2.0 \
+	pango \
+	libxml-2.0 \
 	$(NULL)
 Rsvg_@RSVG_API_VERSION_U@_gir_CFLAGS = -I$(top_builddir)
 Rsvg_@RSVG_API_VERSION_U@_gir_LIBS = librsvg-@RSVG_API_MAJOR_VERSION@.la
