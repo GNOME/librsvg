@@ -181,7 +181,7 @@ main (int argc, char **argv)
     /* Set the locale so that UTF-8 filenames work */
     setlocale(LC_ALL, "");
 
-    g_thread_init(NULL);
+    g_type_init ();
 
     g_option_context = g_option_context_new (_("- SVG Converter"));
     g_option_context_add_main_entries (g_option_context, options_table, NULL);
