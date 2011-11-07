@@ -746,6 +746,9 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
                 if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_CHARS) {
                     self = (RsvgNodeChars*)node;
                 }
+                else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_TSPAN) {
+                    self = NULL;
+                }
             }
 
             if (self != NULL) {
