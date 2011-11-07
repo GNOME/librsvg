@@ -21,11 +21,17 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include <rsvg.h>
+#include "config.h"
+
 #include <stdlib.h>
+
+#include <rsvg.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
-#include "rsvg-private.h"
+
 #include "librsvg-features.h"
+
+#define N_(string) (string)
+#define _(string) (string)
 
 typedef struct {
         RsvgHandle                 *handle;
