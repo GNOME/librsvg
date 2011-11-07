@@ -178,9 +178,6 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
 void
 fill_vtable (GdkPixbufModule *module)
 {
-        /*todo: call this somewhere to make sure the gnome-vfs et. al. are initialized */
-        /*rsvg_init ();*/
-
         module->begin_load     = gdk_pixbuf__svg_image_begin_load;
         module->stop_load      = gdk_pixbuf__svg_image_stop_load;
         module->load_increment = gdk_pixbuf__svg_image_load_increment;

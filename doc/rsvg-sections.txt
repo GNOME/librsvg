@@ -9,8 +9,7 @@ RsvgHandlePrivate
 RsvgHandleClass
 RsvgDimensionData
 RsvgPositionData
-rsvg_init
-rsvg_term
+rsvg_cleanup
 rsvg_set_default_dpi
 rsvg_set_default_dpi_x_y
 rsvg_handle_set_dpi
@@ -34,6 +33,8 @@ rsvg_error_get_type
 RSVG_TYPE_ERROR
 
 <SUBSECTION Deprecated>
+rsvg_init
+rsvg_term
 rsvg_handle_free
 RsvgSizeFunc
 rsvg_handle_set_size_callback

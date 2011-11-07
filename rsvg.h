@@ -118,8 +118,7 @@ struct _RsvgPositionData {
     int y;
 };
 
-void rsvg_init (void);
-void rsvg_term (void);
+void rsvg_cleanup (void);
 
 void rsvg_set_default_dpi	(double dpi);
 void rsvg_set_default_dpi_x_y	(double dpi_x, double dpi_y);
@@ -182,6 +181,11 @@ RsvgHandle *rsvg_handle_new_from_data (const guint8 * data, gsize data_len, GErr
 RsvgHandle *rsvg_handle_new_from_file (const gchar * file_name, GError ** error);
 
 /* BEGIN deprecated APIs. Do not use! */
+
+RSVG_DEPRECATED_FOR(g_type_init)
+void rsvg_init (void);
+RSVG_DEPRECATED
+void rsvg_term (void);
 
 RSVG_DEPRECATED_FOR(g_object_unref)
 void rsvg_handle_free (RsvgHandle * handle);

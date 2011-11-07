@@ -40,7 +40,7 @@ main (int	  argc,
         { NULL }
     };
 
-    rsvg_init ();
+    g_type_init ();
 
     context = NULL;
     fragment = NULL;
@@ -128,7 +128,8 @@ bail:
         g_option_context_free (context), context = NULL;
     if (error)
         g_error_free (error), error = NULL;
-    rsvg_term ();
+
+    rsvg_cleanup ();
+
     return exit_code;
 }
-

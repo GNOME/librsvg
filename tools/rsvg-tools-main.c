@@ -128,7 +128,7 @@ rsvg_tools_main (int *argc, char ***argv)
         exit (EXIT_FAILURE);
     }
 
-    rsvg_init ();
+    g_type_init ();
 
     for (j = 0; j < n_args; j++) {
         if (!read_contents (args[j], &contents, &length))
@@ -178,7 +178,7 @@ rsvg_tools_main (int *argc, char ***argv)
         cairo_destroy (cr);
     }
 
-    rsvg_term ();
+    rsvg_cleanup ();
 
     return 0;
 }

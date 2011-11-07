@@ -221,7 +221,6 @@ main (int argc, char **argv)
     if (zoom != 1.0)
         x_zoom = y_zoom = zoom;
 
-    rsvg_init ();
     rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 
     for (i = 0; i < n_args; i++) {
@@ -359,7 +358,7 @@ main (int argc, char **argv)
 
     fclose (output_file);
 
-    rsvg_term ();
+    rsvg_cleanup ();
 
     return 0;
 }

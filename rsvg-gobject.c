@@ -319,6 +319,8 @@ class_init (RsvgHandleClass * klass)
 
     g_type_class_add_private (klass, sizeof (RsvgHandlePrivate));
 
+    xmlInitParser ();
+
     rsvg_SAX_handler_struct_init ();
 }
 

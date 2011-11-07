@@ -114,7 +114,7 @@ main (int argc, char *argv[])
     gint i;
     int result;
 
-    rsvg_init ();
+    g_type_init ();
     g_test_init (&argc, &argv, NULL);
     g_test_bug_base ("https://bugzilla.gnome.org/show_bug.cgi?id=");
 
@@ -122,7 +122,8 @@ main (int argc, char *argv[])
         g_test_add_data_func (fixtures[i].test_name, &fixtures[i], (void*)test_value);
 
     result = g_test_run ();
-    rsvg_term ();
+
+    rsvg_cleanup ();
 
     return result;
 }

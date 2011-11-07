@@ -805,9 +805,6 @@ main (int argc, char **argv)
         return 1;
     }
 
-    /* initialize gtk+ and rsvg */
-    rsvg_init ();
-
     rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 
     /* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
@@ -915,7 +912,8 @@ main (int argc, char **argv)
   done:
     g_byte_array_free (info.svg_bytes, TRUE);
     g_strfreev (args);
-    rsvg_term ();
+
+    rsvg_cleanup ();
 
     return retval;
 }

@@ -348,6 +348,8 @@ main (int argc, char **argv)
     int i, j;
     gsize length;
 
+    g_type_init ();
+
     printf ("===============\n"
 	    "Rendering tests\n"
 	    "===============\n");
@@ -367,8 +369,6 @@ main (int argc, char **argv)
     rsvg_test_html ("<html>\n");
     rsvg_test_html ("<table>\n");
     
-    rsvg_init ();
-
     if (g_file_get_contents (TEST_LIST_FILENAME, &list_content, &length, NULL)) {
 	rsvg_set_default_dpi_x_y (72, 72);
 
@@ -403,8 +403,6 @@ main (int argc, char **argv)
     } else 	
 	fprintf (stderr, "Error opening test list file "TEST_LIST_FILENAME"\n");
 
-    rsvg_term ();
-
     rsvg_test_html ("</table>\n");
     rsvg_test_html ("</html>\n");
 
@@ -413,6 +411,8 @@ main (int argc, char **argv)
 
     if (rsvg_test_log_file != NULL)
 	fclose (rsvg_test_log_file);
+
+    rsvg_cleanup ();
 
     return status;
 }

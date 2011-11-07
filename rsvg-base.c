@@ -1949,23 +1949,37 @@ rsvg_handle_new_from_stream_sync (GInputStream   *stream,
  *
  * Initializes librsvg
  * Since: 2.9
+ * Deprecated: 2.36: Use g_type_init()
  **/
 void
 rsvg_init (void)
 {
     g_type_init ();
-
-    xmlInitParser ();
 }
 
 /**
  * rsvg_term:
  *
- * De-initializes librsvg
+ * This function does nothing.
+ *
  * Since: 2.9
+ * Deprecated: 2.36
  **/
 void
 rsvg_term (void)
+{
+}
+
+/**
+ * rsvg_cleanup:
+ *
+ * This function should not be called from normal programs.
+ * See xmlCleanupParser() for more information.
+ *
+ * Since: 2.36
+ **/
+void
+rsvg_cleanup (void)
 {
     xmlCleanupParser ();
 }
