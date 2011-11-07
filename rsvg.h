@@ -143,6 +143,8 @@ typedef enum /*< flags >*/
     RSVG_HANDLE_FLAGS_NONE        = 0
 } RsvgHandleFlags;
 
+RsvgHandle *rsvg_handle_new_with_flags (RsvgHandleFlags flags);
+
 void        rsvg_handle_set_base_gfile (RsvgHandle *handle,
                                         GFile      *base_file);
 

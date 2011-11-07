@@ -39,9 +39,11 @@
 
 #include "rsvg-private.h"
 #include "rsvg-defs.h"
+#include "librsvg-enum-types.h"
 
 enum {
     PROP_0,
+    PROP_FLAGS,
     PROP_DPI_X,
     PROP_DPI_Y,
     PROP_BASE_URI,
@@ -65,6 +67,7 @@ instance_init (RsvgHandle * self)
 {
     self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, RSVG_TYPE_HANDLE, RsvgHandlePrivate);
 
+    self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
     self->priv->defs = rsvg_defs_new ();
     self->priv->handler_nest = 0;
     self->priv->entities = g_hash_table_new (g_str_hash, g_str_equal);
@@ -153,6 +156,9 @@ set_property (GObject * instance, guint prop_id, GValue const *value, GParamSpec
     RsvgHandle *self = RSVG_HANDLE (instance);
 
     switch (prop_id) {
+    case PROP_FLAGS:
+        self->priv->flags = g_value_get_flags (value);
+        break;
     case PROP_DPI_X:
         rsvg_handle_set_dpi_x_y (self, g_value_get_double (value), self->priv->dpi_y);
         break;
@@ -174,6 +180,9 @@ get_property (GObject * instance, guint prop_id, GValue * value, GParamSpec * ps
     RsvgDimensionData dim;
 
     switch (prop_id) {
+    case PROP_FLAGS:
+        g_value_set_flags (value, self->priv->flags);
+        break;
     case PROP_DPI_X:
         g_value_set_double (value, self->priv->dpi_x);
         break;
@@ -225,6 +234,20 @@ class_init (RsvgHandleClass * klass)
 
     gobject_class->set_property = set_property;
     gobject_class->get_property = get_property;
+
+    /**
+     * RsvgHandle:flags:
+     * 
+     * Flags from #RsvgHandleFlags.
+     * 
+     * Since: 2.36
+     */
+    g_object_class_install_property (gobject_class,
+                                     PROP_FLAGS,
+                                     g_param_spec_flags ("flags", NULL, NULL,
+                                                         RSVG_TYPE_HANDLE_FLAGS,
+                                                         RSVG_HANDLE_FLAGS_NONE,
+                                                         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
     /**
      * dpi-x:
@@ -362,4 +385,23 @@ RsvgHandle *
 rsvg_handle_new (void)
 {
     return RSVG_HANDLE (g_object_new (RSVG_TYPE_HANDLE, NULL));
+}
+
+
+/**
+ * rsvg_handle_new_with_flags:
+ * @flags: flags from #RsvgHandleFlags
+ *
+ * Creates a new #RsvgHandle with flags @flags.
+ *
+ * Returns: (transfer full): a new #RsvgHandle
+ * 
+ * Since: 2.36
+ **/
+RsvgHandle *
+rsvg_handle_new_with_flags (RsvgHandleFlags flags)
+{
+    return g_object_new (RSVG_TYPE_HANDLE, 
+                         "flags", flags,
+                         NULL);
 }

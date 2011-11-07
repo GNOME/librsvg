@@ -126,6 +126,8 @@ struct RsvgSaxHandler {
 };
 
 struct RsvgHandlePrivate {
+    RsvgHandleFlags flags;
+
     gboolean is_disposed;
     gboolean is_closed;
 

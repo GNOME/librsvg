@@ -1931,7 +1931,7 @@ rsvg_handle_new_from_stream_sync (GInputStream   *stream,
     g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
     g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
-    handle = rsvg_handle_new ();
+    handle = rsvg_handle_new_with_flags (flags);
 
     if (base_file)
         rsvg_handle_set_base_gfile (handle, base_file);
