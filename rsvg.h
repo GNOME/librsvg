@@ -138,7 +138,8 @@ gboolean rsvg_handle_has_sub (RsvgHandle * handle, const char *id);
 
 /* GIO APIs */
 
-typedef enum {
+typedef enum /*< flags >*/ 
+{
     RSVG_HANDLE_FLAGS_NONE        = 0
 } RsvgHandleFlags;
 
