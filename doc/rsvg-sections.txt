@@ -30,11 +30,13 @@ rsvg_handle_get_desc
 rsvg_handle_get_metadata
 rsvg_handle_new_from_data
 rsvg_handle_new_from_file
+rsvg_error_get_type
+RSVG_TYPE_ERROR
+
+<SUBSECTION Deprecated>
 rsvg_handle_free
 RsvgSizeFunc
 rsvg_handle_set_size_callback
-rsvg_error_get_type
-RSVG_TYPE_ERROR
 
 <SUBSECTION Standard>
 RSVG_HANDLE
