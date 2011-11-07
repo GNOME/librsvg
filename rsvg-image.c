@@ -29,7 +29,6 @@
 
 #include "config.h"
 
-#define GDK_PIXBUF_ENABLE_BACKEND
 #include "rsvg-image.h"
 #include <string.h>
 #include <math.h>
@@ -189,21 +188,9 @@ rsvg_pixbuf_new_from_href (const char *href, const char *base_uri, GError ** err
     if (arr) {
         GdkPixbufLoader *loader;
         GdkPixbuf *pixbuf = NULL;
-        GdkPixbufFormat *format;
         int res;
 
         loader = gdk_pixbuf_loader_new ();
-        format = gdk_pixbuf_loader_get_format (loader);
-        if (format == NULL ||
-            (format->flags & GDK_PIXBUF_FORMAT_THREADSAFE) == 0) {
-            g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-                         "Loader for format '%s' is not threadsafe; deadlock prevented.",
-                         format && format->name ? format->name : "(unknown)");
-            g_byte_array_free (arr, TRUE);
-            gdk_pixbuf_loader_close (loader, NULL /* ignore errors */);
-            g_object_unref (loader);
-            return NULL;
-        }
 
         res = gdk_pixbuf_loader_write (loader, arr->data, arr->len, error);
         g_byte_array_free (arr, TRUE);
