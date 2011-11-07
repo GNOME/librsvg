@@ -596,11 +596,10 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
                 /* xml */
                 xmlDocPtr xml_doc;
                 xmlParserCtxtPtr xml_parser;
-                int result;
 
                 xml_parser = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, ctx, NULL, 0, NULL);
-                result = xmlParseChunk (xml_parser, (char *) data->data, data->len, 0);
-                result = xmlParseChunk (xml_parser, "", 0, TRUE);
+                (void) xmlParseChunk (xml_parser, (char *) data->data, data->len, 0);
+                (void) xmlParseChunk (xml_parser, "", 0, TRUE);
 
                 xml_doc = xml_parser->myDoc;
                 xmlFreeParserCtxt (xml_parser);

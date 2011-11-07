@@ -72,7 +72,6 @@ get_image_size_from_data (ViewerCbInfo *info,
 {
     RsvgHandle *handle;
     RsvgDimensionData dimensions;
-    gboolean ret;
 
     handle = rsvg_handle_new ();
 
@@ -93,7 +92,7 @@ get_image_size_from_data (ViewerCbInfo *info,
         return FALSE;
     }
 
-    ret = rsvg_handle_get_dimensions_sub (handle, &dimensions, info->id);
+    (void) rsvg_handle_get_dimensions_sub (handle, &dimensions, info->id);
     g_object_unref (handle);
 
     if (width)
@@ -344,7 +343,6 @@ static void
 print_pixbuf (GObject * ignored, gpointer user_data)
 {
   GtkPrintOperation *print;
-  GtkPrintOperationResult res;
   ViewerCbInfo *info = (ViewerCbInfo *) user_data;
 
   print = gtk_print_operation_new ();
@@ -352,7 +350,7 @@ print_pixbuf (GObject * ignored, gpointer user_data)
   g_signal_connect (print, "begin_print", G_CALLBACK (begin_print), info);
   g_signal_connect (print, "draw_page", G_CALLBACK (draw_page), info);
 
-  res = gtk_print_operation_run (print, GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG,
+  (void)gtk_print_operation_run (print, GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG,
                                  GTK_WINDOW (info->window), NULL);
 
   g_object_unref (print);

@@ -1265,16 +1265,10 @@ box_blur (GdkPixbuf * in, GdkPixbuf * output, guchar * intermediate, gint kw,
 {
     gint ch;
     gint x, y;
-    gint rowstride, height, width;
-
+    gint rowstride;
     guchar *in_pixels;
     guchar *output_pixels;
-
     gint sum;
-
-
-    height = gdk_pixbuf_get_height (in);
-    width = gdk_pixbuf_get_width (in);
 
     in_pixels = gdk_pixbuf_get_pixels (in);
     output_pixels = gdk_pixbuf_get_pixels (output);
@@ -2098,12 +2092,9 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
     gint achan = ctx->channelmap[3];
     guchar *in_pixels;
     guchar *output_pixels;
-
-    RsvgFilterPrimitiveComponentTransfer *upself;
-
     GdkPixbuf *output;
     GdkPixbuf *in;
-    upself = (RsvgFilterPrimitiveComponentTransfer *) self;
+
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     for (c = 0; c < 4; c++) {
@@ -4318,9 +4309,6 @@ rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self, RsvgFilterContext
     GdkPixbuf *output;
     GdkPixbuf *in;
 
-    RsvgFilterPrimitiveTile *upself;
-
-    upself = (RsvgFilterPrimitiveTile *) self;
     oboundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     input = rsvg_filter_get_result (self->in, ctx);
