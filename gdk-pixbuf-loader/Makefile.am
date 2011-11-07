@@ -34,7 +34,7 @@ noinst_PROGRAMS = rsvg-loader
 
 rsvg_loader_SOURCES = \
 	test.c \
-	(NULL)
+	$(NULL)
 rsvg_loader_CPPFLAGS = \
 	$(AM_CPPFLAGS)
 rsvg_loader_CFLAGS = \
