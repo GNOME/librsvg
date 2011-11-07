@@ -24,6 +24,9 @@
 #include <stdio.h>
 #include <string.h>
 
+/* GCache is deprecated */
+#define GLIB_DISABLE_DEPRECATION_WARNINGS
+
 #include "svg.h"
 
 static GCache *pixbuf_cache = NULL;
