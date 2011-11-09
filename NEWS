@@ -1,3 +1,9 @@
+Version 2.34.2
+
+- Add GObject introspection support (#663049)
+- Fix crashes on problematic files (#626559, #624835, #624820)
+- Fix blur filter (#155974)
+
 Version 2.34.1
 
 This version contains fixes for CVE-2011-3146.
