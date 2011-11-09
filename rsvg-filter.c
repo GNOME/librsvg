@@ -3362,6 +3362,7 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterCo
     unsigned char *pixels;
     int channelmap[4];
     int length;
+    int width, height;
 
     upself = (RsvgFilterPrimitiveImage *) self;
 
@@ -3370,15 +3371,18 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterCo
 
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
+    width = boundarys.x1 - boundarys.x0;
+    height = boundarys.y1 - boundarys.y0;
+    if (width == 0 || height == 0)
+        return NULL;
+
     img = rsvg_pixbuf_new_from_href (upself->href->str,
                                      rsvg_handle_get_base_uri (upself->ctx), NULL);
 
     if (!img)
         return NULL;
 
-
-    intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, boundarys.x1 - boundarys.x0,
-                                   boundarys.y1 - boundarys.y0);
+    intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, width, height);
 
 
     rsvg_art_affine_image (img, intermediate,
@@ -3390,7 +3394,6 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterCo
         g_object_unref (img);
         return NULL;
     }
-
 
     g_object_unref (img);
 
