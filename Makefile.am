@@ -1,4 +1,4 @@
-SUBDIRS = . gdk-pixbuf-loader data tests tools doc
+SUBDIRS = . gdk-pixbuf-loader tests tools doc
 
 NULL =
 

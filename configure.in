@@ -283,7 +283,6 @@ librsvg.spec
 librsvg-features.h
 Makefile
 librsvg-zip
-data/Makefile
 gtk-engine/Makefile
 gtk-engine/examples/Makefile
 gtk-engine/examples/bubble/Makefile
