@@ -1205,6 +1205,9 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode * self,
             rsvg_defs_register_name (ctx->priv->defs, value, &filter->super.super);
     }
 
+    if ((gint) listlen != filter->orderx * filter->ordery)
+        filter->orderx = filter->ordery = 0;
+
     if (filter->divisor == 0) {
         for (j = 0; j < filter->orderx; j++)
             for (i = 0; i < filter->ordery; i++)
@@ -1213,9 +1216,6 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode * self,
 
     if (filter->divisor == 0)
         filter->divisor = 1;
-
-    if ((gint) listlen < filter->orderx * filter->ordery)
-        filter->orderx = filter->ordery = 0;
 
     if (!has_target_x) {
         filter->targetx = floor (filter->orderx / 2);
@@ -1235,6 +1235,7 @@ rsvg_new_filter_primitive_convolve_matrix (void)
     filter->super.result = g_string_new ("none");
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
         filter->super.height.factor = 'n';
+    filter->KernelMatrix = NULL;
     filter->divisor = 0;
     filter->bias = 0;
     filter->dx = 0;
