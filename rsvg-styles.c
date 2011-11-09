@@ -435,6 +435,9 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
     if (data && data->important && !important)
         return;
 
+    if (name == NULL || value == NULL)
+        return;
+
     g_hash_table_insert (state->styles,
                          (gpointer) g_strdup (name),
                          (gpointer) style_value_data_new (value, important));
@@ -881,6 +884,10 @@ parse_style_value (const gchar *string, gchar **value, gboolean *important)
     gchar **strings;
 
     strings = g_strsplit (string, "!", 2);
+
+    if (strings[0] == NULL)
+       return FALSE;
+
     if (g_strv_length (strings) == 2 &&
         g_str_equal (g_strstrip (strings[1]), "important")) {
         *important = TRUE;
@@ -919,11 +926,11 @@ rsvg_parse_style (RsvgHandle * ctx, RsvgState * state, const char *str)
         if (g_strv_length (values)  == 2) {
             gboolean important;
             gchar *style_value = NULL;
-            parse_style_value (values[1], &style_value, &important);
-            rsvg_parse_style_pair (ctx, state,
-                                   g_strstrip (values[0]),
-                                   style_value,
-                                   important);
+            if (parse_style_value (values[1], &style_value, &important))
+                rsvg_parse_style_pair (ctx, state,
+                                       g_strstrip (values[0]),
+                                       style_value,
+                                       important);
             g_free (style_value);
         }
         g_strfreev (values);
@@ -1191,12 +1198,12 @@ rsvg_real_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
                 if (g_strv_length (values) == 2) {
                     gchar *style_value = NULL;
                     gboolean important;
-                    parse_style_value (g_strstrip (values[1]), &style_value, &important);
-                    rsvg_css_define_style (ctx,
-                                           g_strstrip (selectors[i]),
-                                           g_strstrip (values[0]),
-                                           g_strstrip (style_value),
-                                           important);
+                    if (parse_style_value (g_strstrip (values[1]), &style_value, &important))
+                        rsvg_css_define_style (ctx,
+                                               g_strstrip (selectors[i]),
+                                               g_strstrip (values[0]),
+                                               g_strstrip (style_value),
+                                               important);
                     g_free (style_value);
                 }
                 g_strfreev (values);
