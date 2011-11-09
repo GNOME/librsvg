@@ -468,6 +468,9 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
     if (data && data->important && !important)
         return;
 
+    if (name == NULL || value == NULL)
+        return;
+
     g_hash_table_insert (state->styles,
                          (gpointer) g_strdup (name),
                          (gpointer) style_value_data_new (value, important));
@@ -914,6 +917,10 @@ parse_style_value (const gchar *string, gchar **value, gboolean *important)
     gchar **strings;
 
     strings = g_strsplit (string, "!", 2);
+
+    if (strings[0] == NULL)
+       return FALSE;
+
     if (g_strv_length (strings) == 2 &&
         g_str_equal (g_strstrip (strings[1]), "important")) {
         *important = TRUE;
@@ -949,14 +956,14 @@ rsvg_parse_style (RsvgHandle * ctx, RsvgState * state, const char *str)
         if (!values)
             continue;
 
-        if (g_strv_length (values)  == 2) {
+        if (g_strv_length (values) == 2) {
             gboolean important;
             gchar *style_value = NULL;
-            parse_style_value (values[1], &style_value, &important);
-            rsvg_parse_style_pair (ctx, state,
-                                   g_strstrip (values[0]),
-                                   style_value,
-                                   important);
+            if (parse_style_value (values[1], &style_value, &important))
+                rsvg_parse_style_pair (ctx, state,
+                                       g_strstrip (values[0]),
+                                       style_value,
+                                       important);
             g_free (style_value);
         }
         g_strfreev (values);
