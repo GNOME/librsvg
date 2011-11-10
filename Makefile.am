@@ -18,11 +18,6 @@ if HAVE_GTK_3
 bin_PROGRAMS += rsvg-view-3
 endif
 
-if OS_WIN32
-else
-libm = -lm
-endif
-
 headers = \
 	rsvg.h	\
 	rsvg-cairo.h
@@ -95,7 +90,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = -version-info @RSVG_LT_VERSION_INF
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
 	$(LIBRSVG_LIBS) 	\
-	$(libm)
+	$(LIBM)
 
 librsvgincdir = $(includedir)/librsvg-$(RSVG_API_VERSION)/librsvg
 librsvginc_HEADERS = 	\
@@ -127,7 +122,7 @@ rsvg_convert_LDADD = \
 	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
 	$(LIBRSVG_LIBS)		\
 	$(GTHREAD_LIBS)		\
-	$(libm)
+	$(LIBM)
 
 rsvg_view_SOURCES = \
 	test-display.c
@@ -150,7 +145,7 @@ rsvg_view_LDADD = \
 	$(GTK2_LIBS)		\
 	$(LIBRSVG_LIBS)		\
 	$(GTHREAD_LIBS)		\
-	$(libm)
+	$(LIBM)
 
 rsvg_view_3_SOURCES = \
 	test-display.c
@@ -173,7 +168,7 @@ rsvg_view_3_LDADD = \
 	$(GTK3_LIBS)		\
 	$(LIBRSVG_LIBS)		\
 	$(GTHREAD_LIBS)		\
-	$(libm)
+	$(LIBM)
 
 EXTRA_DIST =				\
 	librsvg.doap			\

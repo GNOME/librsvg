@@ -54,14 +54,15 @@ AC_ISC_POSIX
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_AWK
-AC_LIBTOOL_WIN32_DLL
-AM_PROG_LIBTOOL
 AC_STDC_HEADERS
 AM_PROG_CC_C_O
 
 AC_C_BIGENDIAN
 
 PKG_PROG_PKG_CONFIG
+
+LT_INIT([win32-dll])
+LT_LIB_M
 
 dnl ===========================================================================
 
