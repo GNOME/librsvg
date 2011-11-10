@@ -176,7 +176,6 @@ EXTRA_DIST =				\
 	NEWS				\
 	TODO				\
 	COPYING.LIB 			\
-	librsvg.spec.in 		\
 	librsvg-zip.in 			\
 	rsvg.in				\
 	librsvg.def			\
@@ -191,9 +190,6 @@ CLEANFILES = \
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librsvg-$(RSVG_API_VERSION).pc
-
-dist-hook: librsvg.spec
-	cp librsvg.spec $(distdir)
 
 librsvg-enum-types.h: s-enum-types-h
 	@true
