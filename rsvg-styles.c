@@ -918,19 +918,19 @@ parse_style_value (const gchar *string, gchar **value, gboolean *important)
 
     strings = g_strsplit (string, "!", 2);
 
-    if (strings[0] == NULL)
-       return FALSE;
+    if (strings == NULL || strings[0] == NULL) {
+        g_strfreev (strings);
+        return FALSE;
+    }
 
-    if (g_strv_length (strings) == 2 &&
+    if (strings[1] != NULL && strings[2] == NULL &&
         g_str_equal (g_strstrip (strings[1]), "important")) {
         *important = TRUE;
     } else {
         *important = FALSE;
     }
-    if (strings[0])
-        *value = g_strdup (g_strstrip (strings[0]));
-    else
-        *value = g_strdup ("");
+
+    *value = g_strdup (g_strstrip (strings[0]));
 
     g_strfreev (strings);
 
