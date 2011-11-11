@@ -86,7 +86,13 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_CFLAGS = \
 	$(LIBRSVG_CFLAGS) 	\
 	$(AM_CFLAGS)
 
-librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = -version-info @RSVG_LT_VERSION_INFO@ -export-dynamic -no-undefined -export-symbols $(srcdir)/librsvg.def $(AM_LDFLAGS)
+librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = \
+	$(BSYMBOLIC_LDFLAG) \
+	-version-info @RSVG_LT_VERSION_INFO@ \
+	-export-dynamic \
+	-no-undefined \
+	-export-symbols $(srcdir)/librsvg.def \
+	$(AM_LDFLAGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
 	$(LIBRSVG_LIBS) 	\
