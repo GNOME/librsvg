@@ -351,7 +351,7 @@ struct _RsvgNodeChars {
 typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
 
 RsvgPropertyBag	    *rsvg_property_bag_new       (const char **atts);
-RsvgPropertyBag	    *rsvg_property_bag_ref       (RsvgPropertyBag * bag);
+RsvgPropertyBag	    *rsvg_property_bag_dup       (RsvgPropertyBag * bag);
 void                 rsvg_property_bag_free      (RsvgPropertyBag * bag);
 const char          *rsvg_property_bag_lookup    (RsvgPropertyBag * bag, const char *key);
 guint                rsvg_property_bag_size	     (RsvgPropertyBag * bag);

@@ -359,7 +359,7 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
          * style element is not loaded yet here, so we need to store those attribues
          * to be applied later.
          */
-        svg->atts = rsvg_property_bag_ref(atts);
+        svg->atts = rsvg_property_bag_dup(atts);
     }
 }
 

@@ -121,7 +121,7 @@ rsvg_style_handler_end (RsvgSaxHandler * self, const char *name)
 }
 
 static void
-rsvg_start_style (RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_start_style (RsvgHandle * ctx)
 {
     RsvgSaxHandlerStyle *handler = g_new0 (RsvgSaxHandlerStyle, 1);
 
@@ -324,7 +324,7 @@ rsvg_desc_handler_end (RsvgSaxHandler * self, const char *name)
 }
 
 static void
-rsvg_start_desc (RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_start_desc (RsvgHandle * ctx)
 {
     RsvgSaxHandlerDesc *handler = g_new0 (RsvgSaxHandlerDesc, 1);
 
@@ -390,7 +390,7 @@ rsvg_title_handler_end (RsvgSaxHandler * self, const char *name)
 }
 
 static void
-rsvg_start_title (RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_start_title (RsvgHandle * ctx)
 {
     RsvgSaxHandlerTitle *handler = g_new0 (RsvgSaxHandlerTitle, 1);
 
@@ -470,7 +470,7 @@ rsvg_metadata_handler_end (RsvgSaxHandler * self, const char *name)
 }
 
 static void
-rsvg_start_metadata (RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_start_metadata (RsvgHandle * ctx)
 {
     RsvgSaxHandlerMetadata *handler = g_new0 (RsvgSaxHandlerMetadata, 1);
 
@@ -646,13 +646,13 @@ rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
                 name = (const xmlChar *) (tempname + 1);
 
         if (!strcmp ((const char *) name, "style"))
-            rsvg_start_style (ctx, bag);
+            rsvg_start_style (ctx);
         else if (!strcmp ((const char *) name, "title"))
-            rsvg_start_title (ctx, bag);
+            rsvg_start_title (ctx);
         else if (!strcmp ((const char *) name, "desc"))
-            rsvg_start_desc (ctx, bag);
+            rsvg_start_desc (ctx);
         else if (!strcmp ((const char *) name, "metadata"))
-            rsvg_start_metadata (ctx, bag);
+            rsvg_start_metadata (ctx);
         else if (!strcmp ((const char *) name, "include"))      /* xi:include */
             rsvg_start_xinclude (ctx, bag);
         else

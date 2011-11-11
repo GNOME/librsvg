@@ -1478,26 +1478,55 @@ rsvg_state_free_all (RsvgState * state)
     }
 }
 
+/**
+ * rsvg_property_bag_new:
+ * @atts:
+ * 
+ * The property bag will NOT copy the attributes and values. If you need
+ * to store them for later, use rsvg_property_bag_dup().
+ * 
+ * Returns: (transfer full): a new property bag
+ */
 RsvgPropertyBag *
 rsvg_property_bag_new (const char **atts)
 {
     RsvgPropertyBag *bag;
     int i;
 
-    bag = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    bag = g_hash_table_new (g_str_hash, g_str_equal);
 
     if (atts != NULL) {
         for (i = 0; atts[i] != NULL; i += 2)
-            g_hash_table_insert (bag, (gpointer) g_strdup(atts[i]), (gpointer) g_strdup(atts[i + 1]));
+            g_hash_table_insert (bag, (gpointer) atts[i], (gpointer) atts[i + 1]);
     }
 
     return bag;
 }
 
+/**
+ * rsvg_property_bag_dup:
+ * @bag:
+ * 
+ * Returns a copy of @bag that owns the attributes and values.
+ * 
+ * Returns: (transfer full): a new property bag
+ */
 RsvgPropertyBag *
-rsvg_property_bag_ref (RsvgPropertyBag * bag)
+rsvg_property_bag_dup (RsvgPropertyBag * bag)
 {
-    return g_hash_table_ref (bag);
+    RsvgPropertyBag *dup;
+    GHashTableIter iter;
+    gpointer key, value;
+
+    dup = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+
+    g_hash_table_iter_init (&iter, bag);
+    while (g_hash_table_iter_next (&iter, &key, &value))
+      g_hash_table_insert (dup, 
+                           (gpointer) g_strdup ((char *) key),
+                           (gpointer) g_strdup ((char *) value));
+
+    return dup;
 }
 
 void
