@@ -187,6 +187,7 @@ main (int argc, char **argv)
     g_option_context_add_main_entries (g_option_context, options_table, NULL);
     g_option_context_set_help_enabled (g_option_context, TRUE);
     if (!g_option_context_parse (g_option_context, &argc, &argv, &error)) {
+        g_option_context_free (g_option_context);
         display_error (error);
         exit (1);
     }
