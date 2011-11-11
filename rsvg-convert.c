@@ -203,8 +203,11 @@ main (int argc, char **argv)
         output_file = fopen (output, "wb");
         if (!output_file) {
             fprintf (stderr, _("Error saving to file: %s\n"), output);
+            g_free (output);
             exit (1);
         }
+
+        g_free (output);
     }
 
     if (args)
