@@ -786,14 +786,6 @@ rsvg_characters (void *data, const xmlChar * ch, int len)
     rsvg_characters_impl (ctx, ch, len);
 }
 
-#if LIBXML_VERSION >= 20621
-#define RSVG_ENABLE_ENTITIES
-#elif defined(__GNUC__)
-#warning "libxml version less than 2.6.22. XML entities won't work"
-#endif
-
-#ifdef RSVG_ENABLE_ENTITIES
-
 static xmlEntityPtr
 rsvg_get_entity (void *data, const xmlChar * name)
 {
@@ -812,7 +804,6 @@ rsvg_entity_decl (void *data, const xmlChar * name, int type,
     RsvgHandle *ctx = (RsvgHandle *) data;
     GHashTable *entities = ctx->priv->entities;
     xmlEntityPtr entity;
-#if LIBXML_VERSION >= 20700
     xmlChar *resolvedSystemId = NULL, *resolvedPublicId = NULL;
 
     if (systemId)
@@ -841,46 +832,6 @@ rsvg_entity_decl (void *data, const xmlChar * name, int type,
     xmlFree(resolvedSystemId);
 
     g_hash_table_insert (entities, g_strdup ((const char*) name), entity);
-#else
-    xmlChar *dupname;
-
-    entity = xmlMalloc (sizeof (xmlEntity));
-    memset (entity, 0, sizeof (xmlEntity));
-    entity->type = XML_ENTITY_DECL;
-    dupname = (xmlChar *) xmlMemStrdup ((const char *) name);
-    entity->name = dupname;
-
-    entity->etype = type;
-    if (content) {
-        entity->content = (xmlChar *) xmlMemStrdup ((const char *) content);
-        entity->length = strlen ((const char *) content);
-    } else if (systemId || publicId) {
-        GByteArray *data = NULL;
-
-        if (systemId)
-            data =
-                _rsvg_acquire_xlink_href_resource ((const char *) systemId,
-                                                   rsvg_handle_get_base_uri (ctx), NULL);
-        else if (publicId)
-            data =
-                _rsvg_acquire_xlink_href_resource ((const char *) publicId,
-                                                   rsvg_handle_get_base_uri (ctx), NULL);
-
-        if (data) {
-            entity->SystemID = (xmlChar *) xmlMemStrdup ((const char *) systemId);
-            entity->ExternalID = (xmlChar *) xmlMemStrdup ((const char *) publicId);
-            entity->content = (xmlChar *) xmlMemStrdup ((const char *) data->data);
-            entity->length = data->len;
-
-            /* fool libxml2 into supporting SYSTEM and PUBLIC entities */
-            entity->etype = XML_INTERNAL_GENERAL_ENTITY;
-
-            g_byte_array_free (data, TRUE);
-        }
-    }
-
-    g_hash_table_insert (entities, dupname, entity);
-#endif
 }
 
 static void
@@ -902,8 +853,6 @@ rsvg_get_parameter_entity (void *data, const xmlChar * name)
 
     return entity;
 }
-
-#endif
 
 static void
 rsvg_error_cb (void *data, const char *msg, ...)
@@ -1820,15 +1769,12 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 
     buffer = _rsvg_xml_input_buffer_new_from_stream (stream, cancellable, XML_CHAR_ENCODING_NONE, &err);
     input = xmlNewIOInputStream (priv->ctxt, buffer, XML_CHAR_ENCODING_NONE);
-#if LIBXML_VERSION >= 20700
+
     if (xmlPushInput (priv->ctxt, input) < 0) {
         rsvg_set_error (error, priv->ctxt);
         xmlFreeInputStream (input);
         return FALSE;
     }
-#else
-    xmlPushInput (priv->ctxt, input);
-#endif
 
     result = xmlParseDocument (priv->ctxt);
     if (result != 0) {
