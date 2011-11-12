@@ -156,6 +156,20 @@ rsvg_defs_register_memory (RsvgDefs * defs, RsvgNode * val)
     g_ptr_array_add (defs->unnamed, val);
 }
 
+static void
+rsvg_defs_free_toresolve (RsvgDefs *defs)
+{
+    GSList *l;
+
+    for (l = defs->toresolve; l ; l = l ->next) {
+        RsvgResolutionPending *data = l->data;
+
+        g_free (data->name);
+        g_free (data);
+    }
+    g_slist_free (defs->toresolve);
+}
+
 void
 rsvg_defs_free (RsvgDefs * defs)
 {
@@ -169,6 +183,7 @@ rsvg_defs_free (RsvgDefs * defs)
     g_ptr_array_free (defs->unnamed, TRUE);
 
     g_hash_table_destroy (defs->externs);
+    rsvg_defs_free_toresolve (defs);
 
     g_free (defs);
 }
@@ -186,13 +201,14 @@ rsvg_defs_add_resolver (RsvgDefs * defs, RsvgNode ** tochange, const gchar * nam
 void
 rsvg_defs_resolve_all (RsvgDefs * defs)
 {
-    while (defs->toresolve) {
-        RsvgResolutionPending *data;
-        data = defs->toresolve->data;
-        *(data->tochange) = rsvg_defs_lookup (defs, data->name);
-        g_free (data->name);
-        g_free (data);
-        defs->toresolve = g_slist_delete_link (defs->toresolve, defs->toresolve);
+    GSList *l;
 
+    for (l = defs->toresolve; l ; l = l ->next) {
+        RsvgResolutionPending *data = l->data;
+
+        *(data->tochange) = rsvg_defs_lookup (defs, data->name);
     }
+
+    rsvg_defs_free_toresolve (defs);
+    defs->toresolve = NULL;
 }
