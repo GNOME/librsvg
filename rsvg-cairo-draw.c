@@ -281,6 +281,8 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
         /* If coords are in terms of the bounding box, use them */
         cairo_matrix_init_scale (&caffine, bbox.rect.width, bbox.rect.height);
         _rsvg_push_view_box (ctx, 1., 1.);
+    } else {
+        cairo_matrix_init_identity (&caffine);
     }
 
     if (scwscale != 1.0 || schscale != 1.0) {
