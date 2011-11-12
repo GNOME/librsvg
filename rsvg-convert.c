@@ -362,6 +362,8 @@ main (int argc, char **argv)
 
     fclose (output_file);
 
+    g_strfreev (args);
+
     rsvg_cleanup ();
 
     return 0;
