@@ -63,6 +63,23 @@ extern double rsvg_internal_dpi_y;
 static GObjectClass *rsvg_parent_class = NULL;
 
 static void
+rsvg_ctx_free_entity (xmlEntityPtr entval)
+{
+#if LIBXML_VERSION < 20700
+    /* key == entval->name, so it's implicitly freed below */
+
+    xmlFree ((xmlChar *) entval->name);
+    xmlFree ((xmlChar *) entval->ExternalID);
+    xmlFree ((xmlChar *) entval->SystemID);
+    xmlFree (entval->content);
+    xmlFree (entval->orig);
+    xmlFree (entval);
+#else
+    xmlFreeNode((xmlNode *) entval);
+#endif
+}
+
+static void
 instance_init (RsvgHandle * self)
 {
     self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, RSVG_TYPE_HANDLE, RsvgHandlePrivate);
@@ -70,7 +87,10 @@ instance_init (RsvgHandle * self)
     self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
     self->priv->defs = rsvg_defs_new ();
     self->priv->handler_nest = 0;
-    self->priv->entities = g_hash_table_new (g_str_hash, g_str_equal);
+    self->priv->entities = g_hash_table_new_full (g_str_hash, 
+                                                  g_str_equal,
+                                                  g_free,
+                                                  (GDestroyNotify) rsvg_ctx_free_entity);
     self->priv->dpi_x = rsvg_internal_dpi_x;
     self->priv->dpi_y = rsvg_internal_dpi_y;
 
@@ -92,25 +112,6 @@ instance_init (RsvgHandle * self)
 }
 
 static void
-rsvg_ctx_free_helper (gpointer key, gpointer value, gpointer user_data)
-{
-    xmlEntityPtr entval = (xmlEntityPtr) value;
-
-#if LIBXML_VERSION < 20700
-    /* key == entval->name, so it's implicitly freed below */
-
-    xmlFree ((xmlChar *) entval->name);
-    xmlFree ((xmlChar *) entval->ExternalID);
-    xmlFree ((xmlChar *) entval->SystemID);
-    xmlFree (entval->content);
-    xmlFree (entval->orig);
-    xmlFree (entval);
-#else
-    xmlFreeNode((xmlNode *) entval);
-#endif
-}
-
-static void
 instance_dispose (GObject * instance)
 {
     RsvgHandle *self = (RsvgHandle *) instance;
@@ -120,7 +121,6 @@ instance_dispose (GObject * instance)
 
     self->priv->is_disposed = TRUE;
 
-    g_hash_table_foreach (self->priv->entities, rsvg_ctx_free_helper, NULL);
     g_hash_table_destroy (self->priv->entities);
     rsvg_defs_free (self->priv->defs);
     g_hash_table_destroy (self->priv->css_props);
