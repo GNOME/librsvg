@@ -1,3 +1,13 @@
+Version 2.35.0
+
+This version contains many bug fixes and improvements.
+- Update libxml2 dependency to 2.7.0
+- Make GIO and libcroco hard requirements
+- Use attributes for deprecations instead of defines
+- Many memory leaks plugged
+- Bugs fixed: #621636, #630112, #624820, #624835, #581108, #614157, 
+              #630733, #473862, #590788, #626559, #663049, #663049
+
 Version 2.34.1
 
 This version contains fixes for CVE-2011-3146.
