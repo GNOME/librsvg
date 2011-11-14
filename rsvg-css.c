@@ -817,7 +817,6 @@ rsvg_css_parse_xml_attribute_string (const char *attribute_string)
     xmlDocPtr doc;
     xmlNodePtr node;
     xmlAttrPtr attr;
-    int ret;
     char *tag;
     GPtrArray *attributes;
     char **retval = NULL;
@@ -828,9 +827,7 @@ rsvg_css_parse_xml_attribute_string (const char *attribute_string)
     xmlSAX2InitDefaultSAXHandler (&handler, 0);
     handler.serror = rsvg_xml_noerror;
     parser = xmlCreatePushParserCtxt (&handler, NULL, tag, strlen (tag) + 1, NULL);
-    ret = xmlParseDocument (parser);
-
-    if (ret != 0)
+    if (xmlParseDocument (parser) != 0)
         goto done;
 
     if ((doc = parser->myDoc) == NULL ||
@@ -855,7 +852,8 @@ rsvg_css_parse_xml_attribute_string (const char *attribute_string)
     retval = (char **) g_ptr_array_free (attributes, FALSE);
 
   done:
-    xmlFreeDoc (parser->myDoc);
+    if (parser->myDoc)
+      xmlFreeDoc (parser->myDoc);
     xmlFreeParserCtxt (parser);
     g_free (tag);
 
