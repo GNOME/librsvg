@@ -916,12 +916,10 @@ rsvg_SAX_handler_struct_init (void)
 
         memset (&rsvgSAXHandlerStruct, 0, sizeof (rsvgSAXHandlerStruct));
 
-#ifdef RSVG_ENABLE_ENTITIES
         rsvgSAXHandlerStruct.getEntity = rsvg_get_entity;
         rsvgSAXHandlerStruct.entityDecl = rsvg_entity_decl;
         rsvgSAXHandlerStruct.unparsedEntityDecl = rsvg_unparsed_entity_decl;
         rsvgSAXHandlerStruct.getParameterEntity = rsvg_get_parameter_entity;
-#endif
         rsvgSAXHandlerStruct.characters = rsvg_characters;
         rsvgSAXHandlerStruct.error = rsvg_error_cb;
         rsvgSAXHandlerStruct.cdataBlock = rsvg_characters;
