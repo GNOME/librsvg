@@ -877,17 +877,17 @@ rsvg_processing_instruction (void *ctx, const xmlChar * target, const xmlChar * 
         char **xml_atts;
 
         xml_atts = rsvg_css_parse_xml_attribute_string ((const char *) data);
-        atts = rsvg_property_bag_new ((const char **) xml_atts);
 
-        if (atts) {
+        if (xml_atts) {
             const char *value;
 
+            atts = rsvg_property_bag_new ((const char **) xml_atts);
             value = rsvg_property_bag_lookup (atts, "alternate");
-            if (!value || (strcmp (value, "no") != 0)) {
+            if (!value || !value[0] || (strcmp (value, "no") != 0)) {
                 value = rsvg_property_bag_lookup (atts, "type");
                 if (value && strcmp (value, "text/css") == 0) {
                     value = rsvg_property_bag_lookup (atts, "href");
-                    if (value) {
+                    if (value && value[0]) {
                         GByteArray *style;
 
                         style =
@@ -902,8 +902,8 @@ rsvg_processing_instruction (void *ctx, const xmlChar * target, const xmlChar * 
                 }
             }
 
-            g_strfreev (xml_atts);
             rsvg_property_bag_free (atts);
+            g_strfreev (xml_atts);
         }
     }
 }
