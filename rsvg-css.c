@@ -556,13 +556,16 @@ rsvg_css_parse_color (const char *str, gboolean * inherit)
 guint
 rsvg_css_parse_opacity (const char *str)
 {
-    char *end_ptr;
+    char *end_ptr = NULL;
     double opacity;
 
     opacity = g_ascii_strtod (str, &end_ptr);
 
-    if (end_ptr && end_ptr[0] == '%')
-        opacity *= 0.01;
+    if ((opacity == -HUGE_VAL || opacity == HUGE_VAL) && (ERANGE == errno) ||
+        *end_ptr != '\0')
+        opacity = 1.;
+
+    opacity = CLAMP (opacity, 0., 1.);
 
     return (guint) floor (opacity * 255. + 0.5);
 }
