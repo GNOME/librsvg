@@ -239,7 +239,10 @@ Rsvg-@RSVG_API_VERSION@.gir: librsvg-@RSVG_API_MAJOR_VERSION@.la
 
 Rsvg_@RSVG_API_VERSION_U@_gir_NAMESPACE = Rsvg
 Rsvg_@RSVG_API_VERSION_U@_gir_EXPORT_PACKAGES = librsvg-$(RSVG_API_VERSION)
-Rsvg_@RSVG_API_VERSION_U@_gir_FILES = $(librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES)
+Rsvg_@RSVG_API_VERSION_U@_gir_FILES = \
+	$(librsvginc_HEADERS) \
+	$(filter-out %.h,$(librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES)) \
+	$(NULL)
 Rsvg_@RSVG_API_VERSION_U@_gir_INCLUDES = \
 	GLib-2.0 \
 	GObject-2.0 \
