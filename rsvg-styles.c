@@ -703,7 +703,7 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
     } else if (g_str_equal (name, "unicode-bidi")) {
         state->has_unicode_bidi = TRUE;
         if (g_str_equal (value, "inherit")) {
-            state->unicode_bidi = PANGO_DIRECTION_LTR;
+            state->unicode_bidi = UNICODE_BIDI_NORMAL;
             state->has_unicode_bidi = FALSE;
         } else if (g_str_equal (value, "embed"))
             state->unicode_bidi = UNICODE_BIDI_EMBED;
