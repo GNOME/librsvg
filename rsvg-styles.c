@@ -142,6 +142,7 @@ rsvg_state_init (RsvgState * state)
     state->font_weight = PANGO_WEIGHT_NORMAL;
     state->font_stretch = PANGO_STRETCH_NORMAL;
     state->text_dir = PANGO_DIRECTION_LTR;
+    state->text_gravity = PANGO_GRAVITY_SOUTH;
     state->unicode_bidi = UNICODE_BIDI_NORMAL;
     state->text_anchor = TEXT_ANCHOR_START;
     state->letter_spacing = _rsvg_css_parse_length ("0.0");
@@ -181,6 +182,7 @@ rsvg_state_init (RsvgState * state)
     state->has_font_stretch = FALSE;
     state->has_font_decor = FALSE;
     state->has_text_dir = FALSE;
+    state->has_text_gravity = FALSE;
     state->has_unicode_bidi = FALSE;
     state->has_text_anchor = FALSE;
     state->has_letter_spacing = FALSE;
@@ -302,6 +304,8 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->font_decor = src->font_decor;
     if (function (dst->has_text_dir, src->has_text_dir))
         dst->text_dir = src->text_dir;
+    if (function (dst->has_text_gravity, src->has_text_gravity))
+        dst->text_gravity = src->text_gravity;
     if (function (dst->has_unicode_bidi, src->has_unicode_bidi))
         dst->unicode_bidi = src->unicode_bidi;
     if (function (dst->has_text_anchor, src->has_text_anchor))
@@ -715,17 +719,22 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
         /* TODO: these aren't quite right... */
 
         state->has_text_dir = TRUE;
+        state->has_text_gravity = TRUE;
         if (g_str_equal (value, "inherit")) {
             state->text_dir = PANGO_DIRECTION_LTR;
             state->has_text_dir = FALSE;
-        } else if (g_str_equal (value, "lr-tb") || g_str_equal (value, "tb"))
-            state->text_dir = PANGO_DIRECTION_TTB_LTR;
-        else if (g_str_equal (value, "rl"))
-            state->text_dir = PANGO_DIRECTION_RTL;
-        else if (g_str_equal (value, "tb-rl") || g_str_equal (value, "rl-tb"))
-            state->text_dir = PANGO_DIRECTION_TTB_RTL;
-        else
+            state->text_gravity = PANGO_GRAVITY_SOUTH;
+            state->has_text_gravity = FALSE;
+        } else if (g_str_equal (value, "lr-tb") || g_str_equal (value, "lr")) {
             state->text_dir = PANGO_DIRECTION_LTR;
+            state->text_gravity = PANGO_GRAVITY_SOUTH;
+        } else if (g_str_equal (value, "rl-tb") || g_str_equal (value, "rl")) {
+            state->text_dir = PANGO_DIRECTION_RTL;
+            state->text_gravity = PANGO_GRAVITY_SOUTH;
+        } else if (g_str_equal (value, "tb-rl") || g_str_equal (value, "tb")) {
+            state->text_dir = PANGO_DIRECTION_LTR;
+            state->text_gravity = PANGO_GRAVITY_EAST;
+        }
     } else if (g_str_equal (name, "text-anchor")) {
         state->has_text_anchor = TRUE;
         if (g_str_equal (value, "inherit")) {

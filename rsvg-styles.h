@@ -129,6 +129,8 @@ struct _RsvgState {
     gboolean has_font_decor;
     PangoDirection text_dir;
     gboolean has_text_dir;
+    PangoGravity text_gravity;
+    gboolean has_text_gravity;
     UnicodeBidi unicode_bidi;
     gboolean has_unicode_bidi;
     TextAnchor text_anchor;

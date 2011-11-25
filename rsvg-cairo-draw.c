@@ -390,6 +390,8 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     RsvgState *state = rsvg_current_state (ctx);
     PangoRectangle ink;
     RsvgBbox bbox;
+    PangoGravity gravity = pango_context_get_gravity (pango_layout_get_context (layout));
+    double rotation;
 
     cairo_set_antialias (render->cr, state->text_rendering_type);
 
@@ -398,13 +400,22 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     pango_layout_get_extents (layout, &ink, NULL);
 
     rsvg_bbox_init (&bbox, &state->affine);
-    bbox.rect.x = x + ink.x / (double)PANGO_SCALE;
-    bbox.rect.y = y + ink.y / (double)PANGO_SCALE;
-    bbox.rect.width = ink.width / (double)PANGO_SCALE;
-    bbox.rect.height = ink.height / (double)PANGO_SCALE;
+    if (PANGO_GRAVITY_IS_VERTICAL (gravity)) {
+        bbox.rect.x = x + (ink.x - ink.height) / (double)PANGO_SCALE;
+        bbox.rect.y = y + ink.y / (double)PANGO_SCALE;
+        bbox.rect.width = ink.height / (double)PANGO_SCALE;
+        bbox.rect.height = ink.width / (double)PANGO_SCALE;
+    } else {
+        bbox.rect.x = x + ink.x / (double)PANGO_SCALE;
+        bbox.rect.y = y + ink.y / (double)PANGO_SCALE;
+        bbox.rect.width = ink.width / (double)PANGO_SCALE;
+        bbox.rect.height = ink.height / (double)PANGO_SCALE;
+    }
     bbox.virgin = 0;
 
+    rotation = pango_gravity_to_rotation (gravity);
     if (state->fill) {
+        cairo_save (render->cr);
         cairo_move_to (render->cr, x, y);
         rsvg_bbox_insert (&render->bbox, &bbox);
         _set_source_rsvg_paint_server (ctx,
@@ -412,20 +423,26 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
                                        state->fill,
                                        state->fill_opacity,
                                        bbox, rsvg_current_state (ctx)->current_color);
-
+        if (rotation != 0.)
+            cairo_rotate (render->cr, -rotation);
         pango_cairo_show_layout (render->cr, layout);
+        cairo_restore (render->cr);
     }
 
     if (state->stroke) {
+        cairo_save (render->cr);
         cairo_move_to (render->cr, x, y);
         rsvg_bbox_insert (&render->bbox, &bbox);
-        pango_cairo_layout_path (render->cr, layout);
 
         _set_source_rsvg_paint_server (ctx,
                                        state->current_color,
                                        state->stroke,
                                        state->stroke_opacity,
                                        bbox, rsvg_current_state (ctx)->current_color);
+
+        if (rotation != 0.)
+            cairo_rotate (render->cr, -rotation);
+        pango_cairo_layout_path (render->cr, layout);
 
         cairo_set_line_width (render->cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, 'h'));
         cairo_set_miter_limit (render->cr, state->miter_limit);
@@ -434,6 +451,7 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
         cairo_set_dash (render->cr, state->dash.dash, state->dash.n_dash,
                         _rsvg_css_normalize_length (&state->dash.offset, ctx, 'o'));
         cairo_stroke (render->cr);
+        cairo_restore (render->cr);
     }
 }
 
