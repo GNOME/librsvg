@@ -182,6 +182,8 @@ RsvgHandle *rsvg_handle_new_from_file (const gchar * file_name, GError ** error)
 
 /* BEGIN deprecated APIs. Do not use! */
 
+#ifndef __GI_SCANNER__
+
 RSVG_DEPRECATED_FOR(g_type_init)
 void rsvg_init (void);
 RSVG_DEPRECATED
@@ -228,6 +230,8 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar * file_name,
                                                    double x_zoom,
                                                    double y_zoom,
                                                    gint max_width, gint max_height, GError ** error);
+
+#endif /* !__GI_SCANNER__ */
 
 /* END deprecated APIs. */
 
