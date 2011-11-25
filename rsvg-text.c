@@ -424,7 +424,6 @@ struct _RsvgTextLayout {
     RsvgDrawingCtx *ctx;
     TextAnchor anchor;
     gdouble x, y;
-    gboolean orientation;
 };
 
 static void
@@ -567,8 +566,6 @@ rsvg_text_length_text_as_string (RsvgDrawingCtx * ctx, const char *text)
 
     layout = rsvg_text_layout_new (ctx, rsvg_current_state (ctx), text);
     layout->x = layout->y = 0;
-    layout->orientation = rsvg_current_state (ctx)->text_dir == PANGO_DIRECTION_TTB_LTR ||
-        rsvg_current_state (ctx)->text_dir == PANGO_DIRECTION_TTB_RTL;
 
     x = rsvg_text_layout_width (layout);
 
