@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "rsvg.h"
+#include "rsvg-private.h"
 #include "rsvg-cairo.h"
 #include "rsvg-cairo-draw.h"
 #include "rsvg-cairo-render.h"
@@ -63,6 +64,7 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
     cairo_render->super.push_discrete_layer = rsvg_cairo_push_discrete_layer;
     cairo_render->super.add_clipping_rect = rsvg_cairo_add_clipping_rect;
     cairo_render->super.get_image_of_node = rsvg_cairo_get_image_of_node;
+    cairo_render->super.get_surface_of_node = rsvg_cairo_get_surface_of_node;
     cairo_render->width = width;
     cairo_render->height = height;
     cairo_render->offset_x = 0;

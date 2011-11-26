@@ -224,6 +224,8 @@ struct RsvgRender {
                                                  double w, double h);
     GdkPixbuf       *(*get_image_of_node)       (RsvgDrawingCtx * ctx, RsvgNode * drawable,
                                                  double w, double h);
+    cairo_surface_t *(*get_surface_of_node)     (RsvgDrawingCtx * ctx, RsvgNode * drawable,
+                                                 double w, double h);
 };
 
 static inline RsvgRender *
@@ -379,7 +381,7 @@ void rsvg_render_image          (RsvgDrawingCtx * ctx, GdkPixbuf * pb,
 void rsvg_render_free           (RsvgRender * render);
 void rsvg_add_clipping_rect     (RsvgDrawingCtx * ctx, double x, double y, double w, double h);
 GdkPixbuf *rsvg_get_image_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
-
+cairo_surface_t *rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
 
 void rsvg_node_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts);
 

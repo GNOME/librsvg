@@ -127,6 +127,7 @@ rsvg_cairo_clip_render_new (cairo_t * cr, RsvgCairoRender *parent)
     render->push_discrete_layer = rsvg_cairo_clip_push_discrete_layer;
     render->add_clipping_rect = rsvg_cairo_clip_add_clipping_rect;
     render->get_image_of_node = NULL;
+    render->get_surface_of_node = NULL;
     cairo_render->initial_cr = parent->cr;
     cairo_render->cr = cr;
     clip_render->parent = parent;

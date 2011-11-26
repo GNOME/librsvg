@@ -1974,6 +1974,12 @@ rsvg_get_image_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, dou
     return ctx->render->get_image_of_node (ctx, drawable, w, h);
 }
 
+cairo_surface_t *
+rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h)
+{
+    return ctx->render->get_surface_of_node (ctx, drawable, w, h);
+}
+
 void
 rsvg_render_free (RsvgRender * render)
 {

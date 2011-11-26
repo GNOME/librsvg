@@ -995,6 +995,41 @@ rsvg_cairo_get_image_of_node (RsvgDrawingCtx * ctx,
     return img;
 }
 
+cairo_surface_t *
+rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
+                                RsvgNode *drawable, 
+                                double width, 
+                                double height)
+{
+    cairo_surface_t *surface;
+    cairo_t *cr;
+
+    RsvgCairoRender *save_render = (RsvgCairoRender *) ctx->render;
+    RsvgCairoRender *render;
+
+    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
+    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+        cairo_surface_destroy (surface);
+        return NULL;
+    }
+
+    cr = cairo_create (surface);
+
+    render = rsvg_cairo_render_new (cr, width, height);
+    ctx->render = (RsvgRender *) render;
+
+    rsvg_state_push (ctx);
+    rsvg_node_draw (drawable, ctx, 0);
+    rsvg_state_pop (ctx);
+
+    cairo_destroy (cr);
+
+    rsvg_render_free (ctx->render);
+    ctx->render = (RsvgRender *) save_render;
+
+    return surface;
+}
+
 void
 rsvg_cairo_to_pixbuf (guint8 * pixels, int rowstride, int height)
 {
