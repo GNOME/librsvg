@@ -47,7 +47,7 @@ struct _RsvgCairoRender {
 
     RsvgBbox bbox;
     GList *bb_stack;
-    GList *pixbuf_stack;
+    GList *surfaces_stack;
 };
 
 #define RSVG_CAIRO_RENDER(render) (_RSVG_RENDER_CIC ((render), RSVG_RENDER_TYPE_CAIRO, RsvgCairoRender))

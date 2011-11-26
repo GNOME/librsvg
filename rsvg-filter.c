@@ -31,6 +31,7 @@
 #include "rsvg-image.h"
 #include "rsvg-css.h"
 #include "rsvg-cairo-render.h"
+
 #include <string.h>
 
 #include <math.h>
@@ -454,37 +455,63 @@ rsvg_filter_context_free (RsvgFilterContext * ctx)
     g_free (ctx);
 }
 
+static void
+unref_surface (guchar *pixels,
+               gpointer user_data)
+{
+  cairo_surface_t *surface = user_data;
+
+  cairo_surface_destroy (surface);
+}
+
 /**
  * rsvg_filter_render: Create a new pixbuf applied the filter.
  * @self: a pointer to the filter to use
- * @source: a pointer to the source pixbuf
+ * @source: the a #cairo_surface_t of type %CAIRO_SURFACE_TYPE_IMAGE
  * @context: the context
  *
  * This function will create a context for itself, set up the coordinate systems
  * execute all its little primatives and then clean up its own mess
+ * 
+ * Returns: (transfer full): a new #cairo_surface_t
  **/
-GdkPixbuf *
-rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
-                    RsvgDrawingCtx * context, RsvgBbox * bounds, char *channelmap)
+cairo_surface_t *
+rsvg_filter_render (RsvgFilter *self,
+                    cairo_surface_t *source,
+                    RsvgDrawingCtx *context, 
+                    RsvgBbox *bounds, 
+                    char *channelmap)
 {
+    static const cairo_user_data_key_t surface_pixel_data_key;
     RsvgFilterContext *ctx;
     RsvgFilterPrimitive *current;
     guint i;
-    GdkPixbuf *out;
+    GdkPixbuf *in, *out;
+    cairo_surface_t *output;
 
+    g_return_val_if_fail (source != NULL, NULL);
+    g_return_val_if_fail (cairo_surface_get_type (source) == CAIRO_SURFACE_TYPE_IMAGE, NULL);
+
+    in = gdk_pixbuf_new_from_data (cairo_image_surface_get_data (source),
+                                   GDK_COLORSPACE_RGB,
+                                   cairo_image_surface_get_format (source) == CAIRO_FORMAT_ARGB32,
+                                   8,
+                                   cairo_image_surface_get_width (source),
+                                   cairo_image_surface_get_height (source),
+                                   cairo_image_surface_get_stride (source),
+                                   (GdkPixbufDestroyNotify) unref_surface,
+                                   cairo_surface_reference (source));
 
     ctx = g_new (RsvgFilterContext, 1);
     ctx->filter = self;
-    ctx->source = source;
+    ctx->source = in;
     ctx->bg = NULL;
     ctx->results = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, rsvg_filter_free_pair);
     ctx->ctx = context;
 
-    g_object_ref (source);
-
     rsvg_filter_fix_coordinate_system (ctx, rsvg_current_state (context), bounds);
 
-    ctx->lastresult.result = source;
+    ctx->lastresult.result = in;
     ctx->lastresult.Rused = 1;
     ctx->lastresult.Gused = 1;
     ctx->lastresult.Bused = 1;
@@ -506,7 +533,18 @@ rsvg_filter_render (RsvgFilter * self, GdkPixbuf * source,
 
     rsvg_filter_context_free (ctx);
 
-    return out;
+    output = cairo_image_surface_create_for_data (gdk_pixbuf_get_pixels (out),
+                                                  gdk_pixbuf_get_has_alpha (out) ? CAIRO_FORMAT_ARGB32 
+                                                                                 : CAIRO_FORMAT_RGB24,
+                                                  gdk_pixbuf_get_width (out),
+                                                  gdk_pixbuf_get_height (out),
+                                                  gdk_pixbuf_get_rowstride (out));
+    /* Also keep a reference to the pixbuf which owns the pixels */
+    cairo_surface_set_user_data (output, &surface_pixel_data_key,
+                                 out /* adopt */,
+                                 (cairo_destroy_func_t) g_object_unref);
+
+    return output;
 }
 
 /**

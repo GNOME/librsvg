@@ -41,8 +41,11 @@ struct _RsvgFilter {
     RsvgFilterUnits primitiveunits;
 };
 
-GdkPixbuf   *rsvg_filter_render	    (RsvgFilter * self, GdkPixbuf * source,
-                                     RsvgDrawingCtx * context, RsvgBbox * dimentions, char *channelmap);
+cairo_surface_t *rsvg_filter_render (RsvgFilter *self,
+                                     cairo_surface_t *source,
+                                     RsvgDrawingCtx *context, 
+                                     RsvgBbox *dimentions, 
+                                     char *channelmap);
 
 RsvgNode    *rsvg_new_filter	    (void);
 RsvgFilter  *rsvg_filter_parse	    (const RsvgDefs * defs, const char *str);
