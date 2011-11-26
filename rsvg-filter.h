@@ -28,7 +28,6 @@
 
 #include "rsvg.h"
 #include "rsvg-defs.h"
-#include <libxml/SAX.h>
 
 G_BEGIN_DECLS 
 
@@ -69,12 +68,6 @@ RsvgNode    *rsvg_new_filter_primitive_diffuse_lighting	    (void);
 RsvgNode    *rsvg_new_node_light_source	                    (char type);
 RsvgNode    *rsvg_new_filter_primitive_specular_lighting    (void);
 RsvgNode    *rsvg_new_filter_primitive_tile                 (void);
-
-void         rsvg_alpha_blt         (GdkPixbuf * src, gint srcx, gint srcy,
-                                     gint srcwidth, gint srcheight,
-                                     GdkPixbuf * dst, gint dstx, gint dsty);
-void         rsvg_art_affine_image	(const GdkPixbuf * img, GdkPixbuf * intermediate,
-                                     cairo_matrix_t *affine, double w, double h);
 
 G_END_DECLS
 

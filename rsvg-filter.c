@@ -244,7 +244,7 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, R
     }
 }
 
-void
+static void
 rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
                 gint srcheight, GdkPixbuf * dst, gint dstx, gint dsty)
 {
@@ -343,7 +343,7 @@ rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
         }
 }
 
-void
+static void
 rsvg_art_affine_image (const GdkPixbuf * img, GdkPixbuf * intermediate,
                        cairo_matrix_t *affine, double w, double h)
 {
