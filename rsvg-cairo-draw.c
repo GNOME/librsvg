@@ -565,9 +565,18 @@ rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
     if (pixbuf == NULL)
         return;
 
-    cairo_pixels = g_try_malloc (4 * width * height);
-    if (!cairo_pixels)
+    if (n_channels == 3)
+        format = CAIRO_FORMAT_RGB24;
+    else
+        format = CAIRO_FORMAT_ARGB32;
+
+    surface = cairo_image_surface_create (format, width, height);
+    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+        cairo_surface_destroy (surface);
         return;
+    }
+
+    cairo_pixels = cairo_image_surface_get_data (surface);
 
     rsvg_bbox_init (&bbox, &state->affine);
     bbox.rect.x = pixbuf_x;
@@ -580,15 +589,6 @@ rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
     cairo_scale (render->cr, w / dwidth, h / dheight);
     pixbuf_x *= dwidth / w;
     pixbuf_y *= dheight / h;
-
-    if (n_channels == 3)
-        format = CAIRO_FORMAT_RGB24;
-    else
-        format = CAIRO_FORMAT_ARGB32;
-
-    surface = cairo_image_surface_create_for_data ((unsigned char *) cairo_pixels,
-                                                   format, width, height, 4 * width);
-    cairo_surface_set_user_data (surface, &surface_pixel_data_key, cairo_pixels, (cairo_destroy_func_t) g_free);
 
     for (j = height; j; j--) {
         guchar *p = gdk_pixels;
@@ -680,9 +680,14 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
     double sx, sy, sw, sh;
     gboolean nest = cr != render->initial_cr;
 
-    pixels = g_try_malloc0 (height * rowstride);
-    if (pixels == NULL)
-          return;
+    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
+    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+        cairo_surface_destroy (surface);
+        return;
+    }
+
+    pixels = cairo_image_surface_get_data (surface);
+    rowstride = cairo_image_surface_get_stride (surface);
 
     if (self->maskunits == objectBoundingBox)
         _rsvg_push_view_box (ctx, 1, 1);
@@ -694,10 +699,6 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
 
     if (self->maskunits == objectBoundingBox)
         _rsvg_pop_view_box (ctx);
-
-    surface = cairo_image_surface_create_for_data (pixels,
-                                                   CAIRO_FORMAT_ARGB32, width, height, rowstride);
-    cairo_surface_set_user_data (surface, &surface_pixel_data_key, pixels, (cairo_destroy_func_t) g_free);
 
     mask_cr = cairo_create (surface);
     save_cr = render->cr;
