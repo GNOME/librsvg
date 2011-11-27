@@ -32,6 +32,8 @@
 
 #include "rsvg-structure.h"
 
+#include <cairo.h>
+
 G_BEGIN_DECLS 
 
 RsvgNode *rsvg_new_image (void);
@@ -42,7 +44,7 @@ struct _RsvgNodeImage {
     RsvgNode super;
     gint preserve_aspect_ratio;
     RsvgLength x, y, w, h;
-    GdkPixbuf *img;
+    cairo_surface_t *surface; /* a cairo image surface */
 };
 
 void rsvg_preserve_aspect_ratio (unsigned int aspect_ratio, double width,
@@ -52,6 +54,8 @@ void rsvg_preserve_aspect_ratio (unsigned int aspect_ratio, double width,
 gchar *rsvg_get_file_path (const gchar * filename, const gchar * basedir);
 
 GdkPixbuf *rsvg_pixbuf_new_from_href (const char *href, const char *base_uri, GError ** error);
+
+cairo_surface_t *rsvg_cairo_surface_new_from_href (const char *href, const char *base_uri, GError ** error);
 
 G_END_DECLS
 

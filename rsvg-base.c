@@ -1963,6 +1963,15 @@ rsvg_render_image (RsvgDrawingCtx * ctx, GdkPixbuf * pb, double x, double y, dou
 }
 
 void
+rsvg_render_surface (RsvgDrawingCtx * ctx, cairo_surface_t *surface, double x, double y, double w, double h)
+{
+    /* surface must be a cairo image surface */
+    g_return_if_fail (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE);
+
+    ctx->render->render_surface (ctx, surface, x, y, w, h);
+}
+
+void
 rsvg_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w, double h)
 {
     ctx->render->add_clipping_rect (ctx, x, y, w, h);

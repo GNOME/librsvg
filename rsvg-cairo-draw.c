@@ -547,103 +547,61 @@ void
 rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
                          double pixbuf_x, double pixbuf_y, double w, double h)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    RsvgState *state = rsvg_current_state (ctx);
-
-    gint width = gdk_pixbuf_get_width (pixbuf);
-    gint height = gdk_pixbuf_get_height (pixbuf);
-    double dwidth = width, dheight = height;
-    guchar *gdk_pixels = gdk_pixbuf_get_pixels (pixbuf);
-    int gdk_rowstride = gdk_pixbuf_get_rowstride (pixbuf);
-    int n_channels = gdk_pixbuf_get_n_channels (pixbuf);
-    guchar *cairo_pixels;
-    cairo_format_t format;
     cairo_surface_t *surface;
-    int j;
-    RsvgBbox bbox;
 
     if (pixbuf == NULL)
         return;
 
-    if (n_channels == 3)
-        format = CAIRO_FORMAT_RGB24;
-    else
-        format = CAIRO_FORMAT_ARGB32;
-
-    surface = cairo_image_surface_create (format, width, height);
-    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
-        cairo_surface_destroy (surface);
+    surface = rsvg_cairo_surface_from_pixbuf (pixbuf);
+    if (surface == NULL)
         return;
-    }
 
-    cairo_pixels = cairo_image_surface_get_data (surface);
+    rsvg_cairo_render_surface (ctx, surface, pixbuf_x, pixbuf_y, w, h);
+    cairo_surface_destroy (surface);
+}
+
+void
+rsvg_cairo_render_surface (RsvgDrawingCtx *ctx, 
+                           cairo_surface_t *surface,
+                           double src_x, 
+                           double src_y, 
+                           double w, 
+                           double h)
+{
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+    RsvgState *state = rsvg_current_state (ctx);
+
+    int width, height;
+    double dwidth, dheight;
+    int j;
+    RsvgBbox bbox;
+
+    if (surface == NULL)
+        return;
+
+    g_return_if_fail (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE);
+
+    dwidth = width = cairo_image_surface_get_width (surface);
+    dheight = height = cairo_image_surface_get_height (surface);
+    if (width == 0 || height == 0)
+        return;
 
     rsvg_bbox_init (&bbox, &state->affine);
-    bbox.rect.x = pixbuf_x;
-    bbox.rect.y = pixbuf_y;
+    bbox.rect.x = src_x;
+    bbox.rect.y = src_y;
     bbox.rect.width = w;
     bbox.rect.height = h;
     bbox.virgin = 0;
 
     _set_rsvg_affine (render, &state->affine);
     cairo_scale (render->cr, w / dwidth, h / dheight);
-    pixbuf_x *= dwidth / w;
-    pixbuf_y *= dheight / h;
-
-    for (j = height; j; j--) {
-        guchar *p = gdk_pixels;
-        guchar *q = cairo_pixels;
-
-        if (n_channels == 3) {
-            guchar *end = p + 3 * width;
-
-            while (p < end) {
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-                q[0] = p[2];
-                q[1] = p[1];
-                q[2] = p[0];
-#else
-                q[1] = p[0];
-                q[2] = p[1];
-                q[3] = p[2];
-#endif
-                p += 3;
-                q += 4;
-            }
-        } else {
-            guchar *end = p + 4 * width;
-            guint t1, t2, t3;
-
-#define MULT(d,c,a,t) G_STMT_START { t = c * a + 0x7f; d = ((t >> 8) + t) >> 8; } G_STMT_END
-
-            while (p < end) {
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-                MULT (q[0], p[2], p[3], t1);
-                MULT (q[1], p[1], p[3], t2);
-                MULT (q[2], p[0], p[3], t3);
-                q[3] = p[3];
-#else
-                q[0] = p[3];
-                MULT (q[1], p[0], p[3], t1);
-                MULT (q[2], p[1], p[3], t2);
-                MULT (q[3], p[2], p[3], t3);
-#endif
-
-                p += 4;
-                q += 4;
-            }
-
-#undef MULT
-        }
-
-        gdk_pixels += gdk_rowstride;
-        cairo_pixels += 4 * width;
-    }
+    src_x *= dwidth / w;
+    src_y *= dheight / h;
 
     cairo_set_operator (render->cr, state->comp_op);
 
 #if 1
-    cairo_set_source_surface (render->cr, surface, pixbuf_x, pixbuf_y);
+    cairo_set_source_surface (render->cr, surface, src_x, src_y);
 #else
     {
         cairo_pattern_t *pattern;
@@ -652,7 +610,7 @@ rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
         pattern = cairo_pattern_create_for_surface (surface);
         cairo_pattern_set_extend (pattern, CAIRO_EXTEND_PAD);
 
-        cairo_matrix_init_translate (&matrix, -pixbuf_x, -pixbuf_y);
+        cairo_matrix_init_translate (&matrix, -src_x, -src_y);
         cairo_pattern_set_matrix (pattern, &matrix);
 
         cairo_set_source (render->cr, pattern);
@@ -661,7 +619,6 @@ rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
 #endif
 
     cairo_paint (render->cr);
-    cairo_surface_destroy (surface);
 
     rsvg_bbox_insert (&render->bbox, &bbox);
 }
@@ -1061,4 +1018,95 @@ rsvg_pixbuf_to_cairo (guint8 * pixels, int rowstride, int height)
                     (int) pixel[1] * alpha / 255 << 8 | (int) pixel[2] * alpha / 255;
         }
     }
+}
+
+cairo_surface_t *
+rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf)
+{
+    gint width, height, gdk_rowstride, n_channels, cairo_rowstride;
+    guchar *gdk_pixels, *cairo_pixels;
+    cairo_format_t format;
+    cairo_surface_t *surface;
+    int j;
+
+    if (pixbuf == NULL)
+        return NULL;
+
+    width = gdk_pixbuf_get_width (pixbuf);
+    height = gdk_pixbuf_get_height (pixbuf);
+    gdk_pixels = gdk_pixbuf_get_pixels (pixbuf);
+    gdk_rowstride = gdk_pixbuf_get_rowstride (pixbuf);
+    n_channels = gdk_pixbuf_get_n_channels (pixbuf);
+
+    if (n_channels == 3)
+        format = CAIRO_FORMAT_RGB24;
+    else
+        format = CAIRO_FORMAT_ARGB32;
+
+    surface = cairo_image_surface_create (format, width, height);
+    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+        cairo_surface_destroy (surface);
+        return;
+    }
+
+    cairo_pixels = cairo_image_surface_get_data (surface);
+    cairo_rowstride = cairo_image_surface_get_stride (surface);
+
+    if (n_channels == 3) {
+        for (j = height; j; j--) {
+            guchar *p = gdk_pixels;
+            guchar *q = cairo_pixels;
+            guchar *end = p + 3 * width;
+
+            while (p < end) {
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+                q[0] = p[2];
+                q[1] = p[1];
+                q[2] = p[0];
+#else
+                q[1] = p[0];
+                q[2] = p[1];
+                q[3] = p[2];
+#endif
+                p += 3;
+                q += 4;
+            }
+
+            gdk_pixels += gdk_rowstride;
+            cairo_pixels += cairo_rowstride;
+        }
+    } else {
+        for (j = height; j; j--) {
+            guchar *p = gdk_pixels;
+            guchar *q = cairo_pixels;
+            guchar *end = p + 4 * width;
+            guint t1, t2, t3;
+
+#define MULT(d,c,a,t) G_STMT_START { t = c * a + 0x7f; d = ((t >> 8) + t) >> 8; } G_STMT_END
+
+            while (p < end) {
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+                MULT (q[0], p[2], p[3], t1);
+                MULT (q[1], p[1], p[3], t2);
+                MULT (q[2], p[0], p[3], t3);
+                q[3] = p[3];
+#else
+                q[0] = p[3];
+                MULT (q[1], p[0], p[3], t1);
+                MULT (q[2], p[1], p[3], t2);
+                MULT (q[3], p[2], p[3], t3);
+#endif
+
+                p += 4;
+                q += 4;
+            }
+
+#undef MULT
+            gdk_pixels += gdk_rowstride;
+            cairo_pixels += cairo_rowstride;
+        }
+    }
+
+    cairo_surface_mark_dirty (surface);
+    return surface;
 }

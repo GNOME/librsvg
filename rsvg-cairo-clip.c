@@ -84,6 +84,16 @@ rsvg_cairo_clip_render_image (RsvgDrawingCtx * ctx,
 {
 }
 
+static void
+rsvg_cairo_clip_render_surface (RsvgDrawingCtx *ctx,
+                                cairo_surface_t *surface,
+                                double src_x,
+                                double src_y, 
+                                double w, 
+                                double h)
+{
+}
+
 
 static void
 rsvg_cairo_clip_render_free (RsvgRender * self)
@@ -122,6 +132,7 @@ rsvg_cairo_clip_render_new (cairo_t * cr, RsvgCairoRender *parent)
     render->create_pango_context = rsvg_cairo_create_pango_context;
     render->render_pango_layout = rsvg_cairo_render_pango_layout;
     render->render_image = rsvg_cairo_clip_render_image;
+    render->render_surface = rsvg_cairo_clip_render_surface;
     render->render_path = rsvg_cairo_clip_render_path;
     render->pop_discrete_layer = rsvg_cairo_clip_pop_discrete_layer;
     render->push_discrete_layer = rsvg_cairo_clip_push_discrete_layer;

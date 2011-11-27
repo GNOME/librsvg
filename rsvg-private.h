@@ -218,6 +218,8 @@ struct RsvgRender {
     void             (*render_path)             (RsvgDrawingCtx * ctx, const cairo_path_t *path);
     void             (*render_image)            (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
                                                  double x, double y, double w, double h);
+    void             (*render_surface)          (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
+                                                 double x, double y, double w, double h);
     void             (*pop_discrete_layer)      (RsvgDrawingCtx * ctx);
     void             (*push_discrete_layer)     (RsvgDrawingCtx * ctx);
     void             (*add_clipping_rect)       (RsvgDrawingCtx * ctx, double x, double y,
@@ -376,8 +378,11 @@ void rsvg_push_discrete_layer   (RsvgDrawingCtx * ctx);
 void rsvg_render_path           (RsvgDrawingCtx * ctx, const cairo_path_t *path);
 void rsvg_render_image          (RsvgDrawingCtx * ctx, GdkPixbuf * pb,
                                  double x, double y, double w, double h);
+void rsvg_render_surface        (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
+                                 double x, double y, double w, double h);
 void rsvg_render_free           (RsvgRender * render);
 void rsvg_add_clipping_rect     (RsvgDrawingCtx * ctx, double x, double y, double w, double h);
+cairo_surface_t *rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf);
 GdkPixbuf *rsvg_get_image_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
 cairo_surface_t *rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
 

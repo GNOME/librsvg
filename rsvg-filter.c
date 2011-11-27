@@ -43,7 +43,7 @@
 typedef struct _RsvgFilterPrimitiveOutput RsvgFilterPrimitiveOutput;
 
 struct _RsvgFilterPrimitiveOutput {
-    GdkPixbuf *result;
+    cairo_surface_t *surface;
     RsvgIRect bounds;
     gboolean Rused;
     gboolean Gused;
@@ -57,8 +57,8 @@ struct _RsvgFilterContext {
     gint width, height;
     RsvgFilter *filter;
     GHashTable *results;
-    GdkPixbuf *source;
-    GdkPixbuf *bg;
+    cairo_surface_t *source_surface;
+    cairo_surface_t *bg_surface;
     RsvgFilterPrimitiveOutput lastresult;
     cairo_matrix_t affine;
     cairo_matrix_t paffine;
@@ -152,21 +152,22 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
     }
 }
 
-static GdkPixbuf *
-_rsvg_pixbuf_new_cleared (int width, int height)
+static cairo_surface_t *
+_rsvg_image_surface_new (int width, int height)
 {
-    GdkPixbuf *pb;
-    guchar *data;
+    cairo_surface_t *surface;
 
-    pb = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, width, height);
-    data = gdk_pixbuf_get_pixels (pb);
-    memset (data, 0, width * height * 4);
+    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
+    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+      cairo_surface_destroy (surface);
+      return NULL;
+    }
 
-    return pb;
+    return surface;
 }
 
 static guchar
-gdk_pixbuf_get_interp_pixel (guchar * src, gdouble ox, gdouble oy, guchar ch, RsvgIRect boundarys,
+get_interp_pixel (guchar * src, gdouble ox, gdouble oy, guchar ch, RsvgIRect boundarys,
                              guint rowstride)
 {
     double xmod, ymod;
@@ -226,8 +227,8 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, R
     width = bbox->rect.width;
     height = bbox->rect.height;
 
-    ctx->width = gdk_pixbuf_get_width (ctx->source);
-    ctx->height = gdk_pixbuf_get_height (ctx->source);
+    ctx->width = cairo_image_surface_get_width (ctx->source_surface);
+    ctx->height = cairo_image_surface_get_height (ctx->source_surface);
 
     ctx->affine = state->affine;
     if (ctx->filter->filterunits == objectBoundingBox) {
@@ -244,8 +245,14 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, R
 }
 
 static void
-rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
-                gint srcheight, GdkPixbuf * dst, gint dstx, gint dsty)
+rsvg_alpha_blt (cairo_surface_t *src,
+                gint srcx,
+                gint srcy,
+                gint srcwidth,
+                gint srcheight,
+                cairo_surface_t *dst,
+                gint dstx,
+                gint dsty)
 {
     gint rightx;
     gint bottomy;
@@ -266,19 +273,19 @@ rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
     rightx = srcx + srcwidth;
     bottomy = srcy + srcheight;
 
-    if (rightx > gdk_pixbuf_get_width (src))
-        rightx = gdk_pixbuf_get_width (src);
-    if (bottomy > gdk_pixbuf_get_height (src))
-        bottomy = gdk_pixbuf_get_height (src);
+    if (rightx > cairo_image_surface_get_width (src))
+        rightx = cairo_image_surface_get_width (src);
+    if (bottomy > cairo_image_surface_get_height (src))
+        bottomy = cairo_image_surface_get_height (src);
     srcwidth = rightx - srcx;
     srcheight = bottomy - srcy;
 
     rightx = dstx + dstwidth;
     bottomy = dsty + dstheight;
-    if (rightx > gdk_pixbuf_get_width (dst))
-        rightx = gdk_pixbuf_get_width (dst);
-    if (bottomy > gdk_pixbuf_get_height (dst))
-        bottomy = gdk_pixbuf_get_height (dst);
+    if (rightx > cairo_image_surface_get_width (dst))
+        rightx = cairo_image_surface_get_width (dst);
+    if (bottomy > cairo_image_surface_get_height (dst))
+        bottomy = cairo_image_surface_get_height (dst);
     dstwidth = rightx - dstx;
     dstheight = bottomy - dsty;
 
@@ -312,11 +319,11 @@ rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
     if (dstoffsety > srcoffsety)
         srcoffsety = dstoffsety;
 
-    srcrowstride = gdk_pixbuf_get_rowstride (src);
-    dstrowstride = gdk_pixbuf_get_rowstride (dst);
+    srcrowstride = cairo_image_surface_get_stride (src);
+    dstrowstride = cairo_image_surface_get_stride (dst);
 
-    src_pixels = gdk_pixbuf_get_pixels (src);
-    dst_pixels = gdk_pixbuf_get_pixels (dst);
+    src_pixels = cairo_image_surface_get_data (src);
+    dst_pixels = cairo_image_surface_get_data (dst);
 
     for (y = srcoffsety; y < srcheight; y++)
         for (x = srcoffsetx; x < srcwidth; x++) {
@@ -340,11 +347,16 @@ rsvg_alpha_blt (GdkPixbuf * src, gint srcx, gint srcy, gint srcwidth,
                 }
             }
         }
+
+    cairo_surface_mark_dirty (dst);
 }
 
-static void
-rsvg_art_affine_image (const GdkPixbuf * img, GdkPixbuf * intermediate,
-                       cairo_matrix_t *affine, double w, double h)
+static gboolean
+rsvg_art_affine_image (cairo_surface_t *img, 
+                       cairo_surface_t *intermediate,
+                       cairo_matrix_t *affine, 
+                       double w, 
+                       double h)
 {
     cairo_matrix_t inv_affine, raw_inv_affine;
     gint intstride;
@@ -361,27 +373,29 @@ rsvg_art_affine_image (const GdkPixbuf * img, GdkPixbuf * intermediate,
     gint iwidth, iheight;
     gint width, height;
 
-    width = gdk_pixbuf_get_width (img);
-    height = gdk_pixbuf_get_height (img);
-    iwidth = gdk_pixbuf_get_width (intermediate);
-    iheight = gdk_pixbuf_get_height (intermediate);
+    g_assert (cairo_image_surface_get_format (intermediate) == CAIRO_FORMAT_ARGB32);
 
-    has_alpha = gdk_pixbuf_get_has_alpha (img);
+    width = cairo_image_surface_get_width (img);
+    height = cairo_image_surface_get_height (img);
+    iwidth = cairo_image_surface_get_width (intermediate);
+    iheight = cairo_image_surface_get_height (intermediate);
 
-    basestride = gdk_pixbuf_get_rowstride (img);
-    intstride = gdk_pixbuf_get_rowstride (intermediate);
-    basepix = gdk_pixbuf_get_pixels (img);
-    intpix = gdk_pixbuf_get_pixels (intermediate);
+    has_alpha = cairo_image_surface_get_format (img) == CAIRO_FORMAT_ARGB32;
+
+    basestride = cairo_image_surface_get_stride (img);
+    intstride = cairo_image_surface_get_stride (intermediate);
+    basepix = cairo_image_surface_get_data (img);
+    intpix = cairo_image_surface_get_data (intermediate);
     basebpp = has_alpha ? 4 : 3;
 
     raw_inv_affine = *affine;
     if (cairo_matrix_invert (&raw_inv_affine) != CAIRO_STATUS_SUCCESS)
-      return;
+      return FALSE;
 
     cairo_matrix_init_scale (&inv_affine, w, h);
     cairo_matrix_multiply (&inv_affine, &inv_affine, affine);
     if (cairo_matrix_invert (&inv_affine) != CAIRO_STATUS_SUCCESS)
-      return;
+      return FALSE;
 
     /*apply the transformation */
     for (i = 0; i < iwidth; i++)
@@ -430,6 +444,12 @@ rsvg_art_affine_image (const GdkPixbuf * img, GdkPixbuf * intermediate,
             }
 
         }
+
+    /* Don't need cairo_surface_mark_dirty(intermediate) here since
+     * the only caller does further work and then calls that himself.
+     */
+
+    return TRUE;
 }
 
 static void
@@ -438,7 +458,7 @@ rsvg_filter_free_pair (gpointer value)
     RsvgFilterPrimitiveOutput *output;
 
     output = (RsvgFilterPrimitiveOutput *) value;
-    g_object_unref (output->result);
+    cairo_surface_destroy (output->surface);
     g_free (output);
 }
 
@@ -448,23 +468,14 @@ rsvg_filter_context_free (RsvgFilterContext * ctx)
     if (!ctx)
 	return;
 
-    if (ctx->bg)
-	g_object_unref (ctx->bg);
+    if (ctx->bg_surface)
+        cairo_surface_destroy (ctx->bg_surface);
 
     g_free (ctx);
 }
 
-static void
-unref_surface (guchar *pixels,
-               gpointer user_data)
-{
-  cairo_surface_t *surface = user_data;
-
-  cairo_surface_destroy (surface);
-}
-
 /**
- * rsvg_filter_render: Create a new pixbuf applied the filter.
+ * rsvg_filter_render: Create a new surface applied the filter.
  * @self: a pointer to the filter to use
  * @source: the a #cairo_surface_t of type %CAIRO_SURFACE_TYPE_IMAGE
  * @context: the context
@@ -481,36 +492,24 @@ rsvg_filter_render (RsvgFilter *self,
                     RsvgBbox *bounds, 
                     char *channelmap)
 {
-    static const cairo_user_data_key_t surface_pixel_data_key;
     RsvgFilterContext *ctx;
     RsvgFilterPrimitive *current;
     guint i;
-    GdkPixbuf *in, *out;
     cairo_surface_t *output;
 
     g_return_val_if_fail (source != NULL, NULL);
     g_return_val_if_fail (cairo_surface_get_type (source) == CAIRO_SURFACE_TYPE_IMAGE, NULL);
 
-    in = gdk_pixbuf_new_from_data (cairo_image_surface_get_data (source),
-                                   GDK_COLORSPACE_RGB,
-                                   cairo_image_surface_get_format (source) == CAIRO_FORMAT_ARGB32,
-                                   8,
-                                   cairo_image_surface_get_width (source),
-                                   cairo_image_surface_get_height (source),
-                                   cairo_image_surface_get_stride (source),
-                                   (GdkPixbufDestroyNotify) unref_surface,
-                                   cairo_surface_reference (source));
-
     ctx = g_new (RsvgFilterContext, 1);
     ctx->filter = self;
-    ctx->source = in;
-    ctx->bg = NULL;
+    ctx->source_surface = source;
+    ctx->bg_surface = NULL;
     ctx->results = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, rsvg_filter_free_pair);
     ctx->ctx = context;
 
     rsvg_filter_fix_coordinate_system (ctx, rsvg_current_state (context), bounds);
 
-    ctx->lastresult.result = in;
+    ctx->lastresult.surface = source;
     ctx->lastresult.Rused = 1;
     ctx->lastresult.Gused = 1;
     ctx->lastresult.Bused = 1;
@@ -526,22 +525,11 @@ rsvg_filter_render (RsvgFilter *self,
             rsvg_filter_primitive_render (current, ctx);
     }
 
-    out = ctx->lastresult.result;
+    output = ctx->lastresult.surface;
 
     g_hash_table_destroy (ctx->results);
 
     rsvg_filter_context_free (ctx);
-
-    output = cairo_image_surface_create_for_data (gdk_pixbuf_get_pixels (out),
-                                                  gdk_pixbuf_get_has_alpha (out) ? CAIRO_FORMAT_ARGB32 
-                                                                                 : CAIRO_FORMAT_RGB24,
-                                                  gdk_pixbuf_get_width (out),
-                                                  gdk_pixbuf_get_height (out),
-                                                  gdk_pixbuf_get_rowstride (out));
-    /* Also keep a reference to the pixbuf which owns the pixels */
-    cairo_surface_set_user_data (output, &surface_pixel_data_key,
-                                 out /* adopt */,
-                                 (cairo_destroy_func_t) g_object_unref);
 
     return output;
 }
@@ -560,22 +548,24 @@ rsvg_filter_store_output (GString * name, RsvgFilterPrimitiveOutput result, Rsvg
 {
     RsvgFilterPrimitiveOutput *store;
 
-    g_object_unref (ctx->lastresult.result);
+    cairo_surface_destroy (ctx->lastresult.surface);
 
     store = g_new (RsvgFilterPrimitiveOutput, 1);
     *store = result;
 
-    if (strcmp (name->str, "")) {
-        g_object_ref (result.result);        /* increments the references for the table */
+    if (name->str[0] != '\0') {
+        cairo_surface_reference (result.surface);        /* increments the references for the table */
         g_hash_table_insert (ctx->results, g_strdup (name->str), store);
     }
 
-    g_object_ref (result.result);    /* increments the references for the last result */
+    cairo_surface_reference (result.surface);    /* increments the references for the last result */
     ctx->lastresult = result;
 }
 
 static void
-rsvg_filter_store_result (GString * name, GdkPixbuf * result, RsvgFilterContext * ctx)
+rsvg_filter_store_result (GString * name,
+                          cairo_surface_t *surface,
+                          RsvgFilterContext * ctx)
 {
     RsvgFilterPrimitiveOutput output;
     output.Rused = 1;
@@ -586,57 +576,48 @@ rsvg_filter_store_result (GString * name, GdkPixbuf * result, RsvgFilterContext 
     output.bounds.y0 = 0;
     output.bounds.x1 = ctx->width;
     output.bounds.y1 = ctx->height;
-    output.result = result;
+    output.surface = surface;
 
     rsvg_filter_store_output (name, output, ctx);
 }
 
-static GdkPixbuf *
-pixbuf_get_alpha (GdkPixbuf * pb, RsvgFilterContext * ctx)
+static cairo_surface_t *
+surface_get_alpha (cairo_surface_t *source,
+                   RsvgFilterContext * ctx)
 {
     guchar *data;
     guchar *pbdata;
-    GdkPixbuf *output;
-
     gsize i, pbsize;
+    cairo_surface_t *surface;
 
-    pbsize = gdk_pixbuf_get_width (pb) * gdk_pixbuf_get_height (pb);
+    pbsize = cairo_image_surface_get_width (source) * 
+             cairo_image_surface_get_height (source);
 
-    output = _rsvg_pixbuf_new_cleared (
-                                       gdk_pixbuf_get_width (pb), gdk_pixbuf_get_height (pb));
+    surface = _rsvg_image_surface_new (cairo_image_surface_get_width (source),
+                                       cairo_image_surface_get_height (source));
 
-    data = gdk_pixbuf_get_pixels (output);
-    pbdata = gdk_pixbuf_get_pixels (pb);
+    data = cairo_image_surface_get_data (surface);
+    pbdata = cairo_image_surface_get_data (source);
 
+    /* FIXMEchpe: rewrite this into nested width, height loops */
     for (i = 0; i < pbsize; i++)
         data[i * 4 + ctx->channelmap[3]] = pbdata[i * 4 + ctx->channelmap[3]];
 
-    return output;
+    cairo_surface_mark_dirty (surface);
+    return surface;
 }
 
-static GdkPixbuf *
+static cairo_surface_t *
 rsvg_compile_bg (RsvgDrawingCtx * ctx)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    cairo_t *cr;
     cairo_surface_t *surface;
+    cairo_t *cr;
     GList *i;
-    unsigned char *pixels = g_new0 (guint8, render->width * render->height * 4);
-    int rowstride = render->width * 4;
 
-    GdkPixbuf *output = gdk_pixbuf_new_from_data (pixels,
-                                                  GDK_COLORSPACE_RGB, TRUE, 8,
-                                                  render->width, render->height,
-                                                  rowstride,
-                                                  (GdkPixbufDestroyNotify) g_free,
-                                                  NULL);
-
-    surface = cairo_image_surface_create_for_data (pixels,
-                                                   CAIRO_FORMAT_ARGB32,
-                                                   render->width, render->height, rowstride);
+    surface = _rsvg_image_surface_new (render->width, render->height);
 
     cr = cairo_create (surface);
-    cairo_surface_destroy (surface);
 
     for (i = g_list_last (render->cr_stack); i != NULL; i = g_list_previous (i)) {
         cairo_t *draw = i->data;
@@ -648,25 +629,32 @@ rsvg_compile_bg (RsvgDrawingCtx * ctx)
     }
 
     cairo_destroy (cr);
-    return output;
-}
 
-static GdkPixbuf *
-rsvg_filter_get_bg (RsvgFilterContext * ctx)
-{
-    if (!ctx->bg)
-	ctx->bg = rsvg_compile_bg (ctx->ctx);
-
-    return ctx->bg;
+    return surface;
 }
 
 /**
- * rsvg_filter_get_in: Gets a pixbuf for a primative.
- * @name: The name of the pixbuf
+ * rsvg_filter_get_bg:
+ * 
+ * Returns: (transfer none): a #cairo_surface_t, or %NULL
+ */
+static cairo_surface_t *
+rsvg_filter_get_bg (RsvgFilterContext * ctx)
+{
+    if (!ctx->bg_surface)
+        ctx->bg_surface = rsvg_compile_bg (ctx->ctx);
+
+    return ctx->bg_surface;
+}
+
+/* FIXMEchpe: proper return value and out param! */
+/**
+ * rsvg_filter_get_in: Gets a surface for a primitive
+ * @name: The name of the surface
  * @ctx: the context that this was called in
- *
+ * @
  * Returns: a pointer to the result that the name refers to, a special
- * Pixbuf if the name is a special keyword or NULL if nothing was found
+ * surface if the name is a special keyword or NULL if nothing was found
  **/
 static RsvgFilterPrimitiveOutput
 rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
@@ -676,27 +664,28 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
     output.bounds.x0 = output.bounds.x1 = output.bounds.y0 = output.bounds.y1 = 0;
 
     if (!strcmp (name->str, "SourceGraphic")) {
-        g_object_ref (ctx->source);
-        output.result = ctx->source;
+        output.surface = cairo_surface_reference (ctx->source_surface);
         output.Rused = output.Gused = output.Bused = output.Aused = 1;
         return output;
     } else if (!strcmp (name->str, "BackgroundImage")) {
-        output.result = g_object_ref (rsvg_filter_get_bg (ctx));
+        /* FIXMEchpe: cope with NULL? */
+        output.surface = cairo_surface_reference (rsvg_filter_get_bg (ctx));
         output.Rused = output.Gused = output.Bused = output.Aused = 1;
         return output;
     } else if (!strcmp (name->str, "") || !strcmp (name->str, "none") || !name) {
-        g_object_ref (ctx->lastresult.result);
         output = ctx->lastresult;
+        cairo_surface_reference (output.surface);
         return output;
     } else if (!strcmp (name->str, "SourceAlpha")) {
         output.Rused = output.Gused = output.Bused = 0;
         output.Aused = 1;
-        output.result = pixbuf_get_alpha (ctx->source, ctx);
+        output.surface = surface_get_alpha (ctx->source_surface, ctx);
         return output;
     } else if (!strcmp (name->str, "BackgroundAlpha")) {
         output.Rused = output.Gused = output.Bused = 0;
         output.Aused = 1;
-        output.result = pixbuf_get_alpha (rsvg_filter_get_bg (ctx), ctx);
+        /* FIXMEchpe: cope with NULL ? */
+        output.surface = surface_get_alpha (rsvg_filter_get_bg (ctx), ctx);
         return output;
     }
 
@@ -704,22 +693,28 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
 
     if (outputpointer != NULL) {
         output = *outputpointer;
-        g_object_ref (output.result);
+        cairo_surface_reference (output.surface);
         return output;
     }
 
     /* g_warning (_("%s not found\n"), name->str); */
 
     output = ctx->lastresult;
-    g_object_ref (ctx->lastresult.result);
+    cairo_surface_reference (output.surface);
     return output;
 }
 
-
-static GdkPixbuf *
+/**
+ * rsvg_filter_get_in:
+ * @name:
+ * @ctx:
+ * 
+ * Returns: (transfer full): a new #cairo_surface_t, or %NULL
+ */
+static cairo_surface_t *
 rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
 {
-    return rsvg_filter_get_result (name, ctx).result;
+    return rsvg_filter_get_result (name, ctx).surface;
 }
 
 /**
@@ -820,8 +815,12 @@ struct _RsvgFilterPrimitiveBlend {
 };
 
 static void
-rsvg_filter_blend (RsvgFilterPrimitiveBlendMode mode, GdkPixbuf * in, GdkPixbuf * in2,
-                   GdkPixbuf * output, RsvgIRect boundarys, int *channelmap)
+rsvg_filter_blend (RsvgFilterPrimitiveBlendMode mode, 
+                   cairo_surface_t *in, 
+                   cairo_surface_t *in2,
+                   cairo_surface_t* output, 
+                   RsvgIRect boundarys, 
+                   int *channelmap)
 {
     guchar i;
     gint x, y;
@@ -829,15 +828,15 @@ rsvg_filter_blend (RsvgFilterPrimitiveBlendMode mode, GdkPixbuf * in, GdkPixbuf 
     guchar *in_pixels;
     guchar *in2_pixels;
     guchar *output_pixels;
-    height = gdk_pixbuf_get_height (in);
-    width = gdk_pixbuf_get_width (in);
-    rowstride = gdk_pixbuf_get_rowstride (in);
-    rowstride2 = gdk_pixbuf_get_rowstride (in2);
-    rowstrideo = gdk_pixbuf_get_rowstride (output);
+    height = cairo_image_surface_get_height (in);
+    width = cairo_image_surface_get_width (in);
+    rowstride = cairo_image_surface_get_stride (in);
+    rowstride2 = cairo_image_surface_get_stride (in2);
+    rowstrideo = cairo_image_surface_get_stride (output);
 
-    output_pixels = gdk_pixbuf_get_pixels (output);
-    in_pixels = gdk_pixbuf_get_pixels (in);
-    in2_pixels = gdk_pixbuf_get_pixels (in2);
+    output_pixels = cairo_image_surface_get_data (output);
+    in_pixels = cairo_image_surface_get_data (in);
+    in2_pixels = cairo_image_surface_get_data (in2);
 
     if (boundarys.x0 < 0)
         boundarys.x0 = 0;
@@ -927,8 +926,9 @@ rsvg_filter_blend (RsvgFilterPrimitiveBlendMode mode, GdkPixbuf * in, GdkPixbuf 
             }
             output_pixels[4 * x + y * rowstrideo + channelmap[3]] = qr * 255.0;
         }
-}
 
+    cairo_surface_mark_dirty (output);
+}
 
 static void
 rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
@@ -937,9 +937,7 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     RsvgFilterPrimitiveBlend *upself;
 
-    GdkPixbuf *output;
-    GdkPixbuf *in;
-    GdkPixbuf *in2;
+    cairo_surface_t *output, *in, *in2;
 
     upself = (RsvgFilterPrimitiveBlend *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
@@ -947,17 +945,16 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self, RsvgFilterContex
     in = rsvg_filter_get_in (self->in, ctx);
     in2 = rsvg_filter_get_in (upself->in2, ctx);
 
-    output =
-        _rsvg_pixbuf_new_cleared ( gdk_pixbuf_get_width (in),
-                                  gdk_pixbuf_get_height (in));
+    output = _rsvg_image_surface_new (cairo_image_surface_get_width (in),
+                                      cairo_image_surface_get_height (in));
 
     rsvg_filter_blend (upself->mode, in, in2, output, boundarys, ctx->channelmap);
 
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (in);
-    g_object_unref (in2);
-    g_object_unref (output);
+    cairo_surface_destroy (in);
+    cairo_surface_destroy (in2);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -1060,8 +1057,7 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
 
     RsvgFilterPrimitiveConvolveMatrix *upself;
 
-    GdkPixbuf *output;
-    GdkPixbuf *in;
+    cairo_surface_t *output, *in;
 
     gint sx, sy, kx, ky;
     guchar sval;
@@ -1074,10 +1070,10 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
-    in_pixels = gdk_pixbuf_get_pixels (in);
+    in_pixels = cairo_image_surface_get_data (in);
 
-    height = gdk_pixbuf_get_height (in);
-    width = gdk_pixbuf_get_width (in);
+    height = cairo_image_surface_get_height (in);
+    width = cairo_image_surface_get_width (in);
 
     targetx = upself->targetx * ctx->paffine.xx;
     targety = upself->targety * ctx->paffine.yy;
@@ -1088,10 +1084,10 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
     } else
         dx = dy = 1;
 
-    rowstride = gdk_pixbuf_get_rowstride (in);
+    rowstride = cairo_image_surface_get_stride (in);
 
-    output = _rsvg_pixbuf_new_cleared ( width, height);
-    output_pixels = gdk_pixbuf_get_pixels (output);
+    output = _rsvg_image_surface_new (width, height);
+    output_pixels = cairo_image_surface_get_data (output);
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
@@ -1155,10 +1151,13 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
                     output_pixels[4 * x + y * rowstride + ctx->channelmap[3]] / 255;
             }
         }
+
+    cairo_surface_mark_dirty (output);
+
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (in);
-    g_object_unref (output);
+    cairo_surface_destroy (in);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -1298,8 +1297,13 @@ struct _RsvgFilterPrimitiveGaussianBlur {
 };
 
 static void
-box_blur (GdkPixbuf * in, GdkPixbuf * output, guchar * intermediate, gint kw,
-          gint kh, RsvgIRect boundarys, RsvgFilterPrimitiveOutput op)
+box_blur (cairo_surface_t *in, 
+          cairo_surface_t *output, 
+          guchar *intermediate, 
+          gint kw,
+          gint kh, 
+          RsvgIRect boundarys, 
+          RsvgFilterPrimitiveOutput op)
 {
     gint ch;
     gint x, y;
@@ -1308,10 +1312,10 @@ box_blur (GdkPixbuf * in, GdkPixbuf * output, guchar * intermediate, gint kw,
     guchar *output_pixels;
     gint sum;
 
-    in_pixels = gdk_pixbuf_get_pixels (in);
-    output_pixels = gdk_pixbuf_get_pixels (output);
+    in_pixels = cairo_image_surface_get_data (in);
+    output_pixels = cairo_image_surface_get_data (output);
 
-    rowstride = gdk_pixbuf_get_rowstride (in);
+    rowstride = cairo_image_surface_get_stride (in);
 
     if (kw > boundarys.x1 - boundarys.x0)
         kw = boundarys.x1 - boundarys.x0;
@@ -1404,8 +1408,12 @@ box_blur (GdkPixbuf * in, GdkPixbuf * output, guchar * intermediate, gint kw,
 }
 
 static void
-fast_blur (GdkPixbuf * in, GdkPixbuf * output, gfloat sx,
-           gfloat sy, RsvgIRect boundarys, RsvgFilterPrimitiveOutput op)
+fast_blur (cairo_surface_t *in, 
+           cairo_surface_t *output, 
+           gfloat sx,
+           gfloat sy, 
+           RsvgIRect boundarys, 
+           RsvgFilterPrimitiveOutput op)
 {
     gint kx, ky;
     guchar *intermediate;
@@ -1423,15 +1431,15 @@ fast_blur (GdkPixbuf * in, GdkPixbuf * output, gfloat sx,
     box_blur (output, output, intermediate, kx, ky, boundarys, op);
 
     g_free (intermediate);
+
+    cairo_surface_mark_dirty (output);
 }
 
 static void
 rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
 {
     RsvgFilterPrimitiveGaussianBlur *upself;
-
-    GdkPixbuf *output;
-    GdkPixbuf *in;
+    cairo_surface_t *output, *in;
     RsvgIRect boundarys;
     gfloat sdx, sdy;
     RsvgFilterPrimitiveOutput op;
@@ -1440,10 +1448,10 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilt
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     op = rsvg_filter_get_result (self->in, ctx);
-    in = op.result;
+    in = op.surface;
 
-    output = _rsvg_pixbuf_new_cleared (
-                                       gdk_pixbuf_get_width (in), gdk_pixbuf_get_height (in));
+    output = _rsvg_image_surface_new (cairo_image_surface_get_width (in), 
+                                      cairo_image_surface_get_height (in));
 
     /* scale the SD values */
     sdx = upself->sdx * ctx->paffine.xx;
@@ -1451,12 +1459,12 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilt
 
     fast_blur (in, output, sdx, sdy, boundarys, op);
 
-    op.result = output;
+    op.surface = output;
     op.bounds = boundarys;
     rsvg_filter_store_output (self->result, op, ctx);
 
-    g_object_unref (in);
-    g_object_unref (output);
+    cairo_surface_destroy (in);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -1541,8 +1549,7 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
     RsvgFilterPrimitiveOutput out;
     RsvgFilterPrimitiveOffset *upself;
 
-    GdkPixbuf *output;
-    GdkPixbuf *in;
+    cairo_surface_t *output, *in;
 
     double dx, dy;
     int ox, oy;
@@ -1551,16 +1558,16 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
-    in_pixels = gdk_pixbuf_get_pixels (in);
+    in_pixels = cairo_image_surface_get_data (in);
 
-    height = gdk_pixbuf_get_height (in);
-    width = gdk_pixbuf_get_width (in);
+    height = cairo_image_surface_get_height (in);
+    width = cairo_image_surface_get_width (in);
 
-    rowstride = gdk_pixbuf_get_rowstride (in);
+    rowstride = cairo_image_surface_get_stride (in);
 
-    output = _rsvg_pixbuf_new_cleared ( width, height);
+    output = _rsvg_image_surface_new (width, height);
 
-    output_pixels = gdk_pixbuf_get_pixels (output);
+    output_pixels = cairo_image_surface_get_data (output);
 
     dx = _rsvg_css_normalize_length (&upself->dx, ctx->ctx, 'w');
     dy = _rsvg_css_normalize_length (&upself->dy, ctx->ctx, 'v');
@@ -1581,7 +1588,9 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
             }
         }
 
-    out.result = output;
+    cairo_surface_mark_dirty (output);
+
+    out.surface = output;
     out.Rused = 1;
     out.Gused = 1;
     out.Bused = 1;
@@ -1590,8 +1599,8 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
 
     rsvg_filter_store_output (self->result, out, ctx);
 
-    g_object_unref (in);
-    g_object_unref (output);
+    cairo_surface_destroy  (in);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -1670,13 +1679,12 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     RsvgFilterPrimitiveMerge *upself;
 
-    GdkPixbuf *output;
-    GdkPixbuf *in;
+    cairo_surface_t *output, *in;
 
     upself = (RsvgFilterPrimitiveMerge *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
-    output = _rsvg_pixbuf_new_cleared ( ctx->width, ctx->height);
+    output = _rsvg_image_surface_new (ctx->width, ctx->height);
 
     for (i = 0; i < upself->super.super.children->len; i++) {
         RsvgFilterPrimitive *mn;
@@ -1686,12 +1694,12 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self, RsvgFilterContex
         in = rsvg_filter_get_in (mn->in, ctx);
         rsvg_alpha_blt (in, boundarys.x0, boundarys.y0, boundarys.x1 - boundarys.x0,
                         boundarys.y1 - boundarys.y0, output, boundarys.x0, boundarys.y0);
-        g_object_unref (in);
+        cairo_surface_destroy (in);
     }
 
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (output);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -1810,8 +1818,7 @@ rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self, RsvgFilt
 
     RsvgFilterPrimitiveColourMatrix *upself;
 
-    GdkPixbuf *output;
-    GdkPixbuf *in;
+    cairo_surface_t *output, *in;
 
     int sum;
 
@@ -1819,15 +1826,15 @@ rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self, RsvgFilt
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
-    in_pixels = gdk_pixbuf_get_pixels (in);
+    in_pixels = cairo_image_surface_get_data (in);
 
-    height = gdk_pixbuf_get_height (in);
-    width = gdk_pixbuf_get_width (in);
+    height = cairo_image_surface_get_height (in);
+    width = cairo_image_surface_get_width (in);
 
-    rowstride = gdk_pixbuf_get_rowstride (in);
+    rowstride = cairo_image_surface_get_stride (in);
 
-    output = _rsvg_pixbuf_new_cleared ( width, height);
-    output_pixels = gdk_pixbuf_get_pixels (output);
+    output = _rsvg_image_surface_new (width, height);
+    output_pixels = cairo_image_surface_get_data (output);
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
@@ -1874,10 +1881,12 @@ rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self, RsvgFilt
             }
         }
 
+    cairo_surface_mark_dirty (output);
+
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (in);
-    g_object_unref (output);
+    cairo_surface_destroy (in);
+    cairo_surface_destroy(output);
 }
 
 static void
@@ -2130,8 +2139,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
     gint achan = ctx->channelmap[3];
     guchar *in_pixels;
     guchar *output_pixels;
-    GdkPixbuf *output;
-    GdkPixbuf *in;
+    cairo_surface_t *output, *in;
 
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
@@ -2157,16 +2165,16 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
     }
 
     in = rsvg_filter_get_in (self->in, ctx);
-    in_pixels = gdk_pixbuf_get_pixels (in);
+    in_pixels = cairo_image_surface_get_data (in);
 
-    height = gdk_pixbuf_get_height (in);
-    width = gdk_pixbuf_get_width (in);
+    height = cairo_image_surface_get_height (in);
+    width = cairo_image_surface_get_width (in);
 
-    rowstride = gdk_pixbuf_get_rowstride (in);
+    rowstride = cairo_image_surface_get_stride (in);
 
-    output = _rsvg_pixbuf_new_cleared ( width, height);
+    output = _rsvg_image_surface_new (width, height);
 
-    output_pixels = gdk_pixbuf_get_pixels (output);
+    output_pixels = cairo_image_surface_get_data (output);
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
@@ -2193,10 +2201,13 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
                     outpix[ctx->channelmap[c]] * outpix[achan] / 255;
             output_pixels[y * rowstride + x * 4 + achan] = outpix[achan];
         }
+
+    cairo_surface_mark_dirty (output);
+
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (in);
-    g_object_unref (output);
+    cairo_surface_destroy (in);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -2340,8 +2351,7 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     RsvgFilterPrimitiveErode *upself;
 
-    GdkPixbuf *output;
-    GdkPixbuf *in;
+    cairo_surface_t *output, *in;
 
     gint kx, ky;
     guchar val;
@@ -2350,20 +2360,20 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContex
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
-    in_pixels = gdk_pixbuf_get_pixels (in);
+    in_pixels = cairo_image_surface_get_data (in);
 
-    height = gdk_pixbuf_get_height (in);
-    width = gdk_pixbuf_get_width (in);
+    height = cairo_image_surface_get_height (in);
+    width = cairo_image_surface_get_width (in);
 
-    rowstride = gdk_pixbuf_get_rowstride (in);
+    rowstride = cairo_image_surface_get_stride (in);
 
     /* scale the radius values */
     kx = upself->rx * ctx->paffine.xx;
     ky = upself->ry * ctx->paffine.yy;
 
-    output = _rsvg_pixbuf_new_cleared ( width, height);
+    output = _rsvg_image_surface_new (width, height);
 
-    output_pixels = gdk_pixbuf_get_pixels (output);
+    output_pixels = cairo_image_surface_get_data (output);
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++)
@@ -2391,10 +2401,13 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContex
                     }
                 output_pixels[y * rowstride + x * 4 + ch] = extreme;
             }
+
+    cairo_surface_mark_dirty (output);
+
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (in);
-    g_object_unref (output);
+    cairo_surface_destroy (in);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -2493,25 +2506,23 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterCo
 
     RsvgFilterPrimitiveComposite *upself;
 
-    GdkPixbuf *output;
-    GdkPixbuf *in;
-    GdkPixbuf *in2;
+    cairo_surface_t *output, *in, *in2;
 
     upself = (RsvgFilterPrimitiveComposite *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
-    in_pixels = gdk_pixbuf_get_pixels (in);
+    in_pixels = cairo_image_surface_get_data (in);
     in2 = rsvg_filter_get_in (upself->in2, ctx);
-    in2_pixels = gdk_pixbuf_get_pixels (in2);
+    in2_pixels = cairo_image_surface_get_data (in2);
 
-    height = gdk_pixbuf_get_height (in);
-    width = gdk_pixbuf_get_width (in);
+    height = cairo_image_surface_get_height (in);
+    width = cairo_image_surface_get_width (in);
 
-    rowstride = gdk_pixbuf_get_rowstride (in);
+    rowstride = cairo_image_surface_get_stride (in);
 
-    output = _rsvg_pixbuf_new_cleared ( width, height);
-    output_pixels = gdk_pixbuf_get_pixels (output);
+    output = _rsvg_image_surface_new (width, height);
+    output_pixels = cairo_image_surface_get_data (output);
 
     if (upself->mode == COMPOSITE_MODE_ARITHMETIC)
         for (y = boundarys.y0; y < boundarys.y1; y++)
@@ -2599,11 +2610,13 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterCo
                 output_pixels[4 * x + y * rowstride + 3] = qr;
             }
 
+    cairo_surface_mark_dirty (output);
+
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (in);
-    g_object_unref (in2);
-    g_object_unref (output);
+    cairo_surface_destroy (in);
+    cairo_surface_destroy (in2);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -2701,7 +2714,7 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self, RsvgFilterContex
     gint rowstride, height, width;
     RsvgIRect boundarys;
     guchar *output_pixels;
-    GdkPixbuf *output;
+    cairo_surface_t *output;
     char pixcolour[4];
     RsvgFilterPrimitiveOutput out;
 
@@ -2712,10 +2725,10 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     height = ctx->height;
     width = ctx->width;
-    output = _rsvg_pixbuf_new_cleared ( width, height);
-    rowstride = gdk_pixbuf_get_rowstride (output);
+    output = _rsvg_image_surface_new (width, height);
+    rowstride = cairo_image_surface_get_stride (output);
 
-    output_pixels = gdk_pixbuf_get_pixels (output);
+    output_pixels = cairo_image_surface_get_data (output);
 
     for (i = 0; i < 3; i++)
         pixcolour[i] = (int) (((unsigned char *)
@@ -2727,7 +2740,9 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self, RsvgFilterContex
             for (i = 0; i < 4; i++)
                 output_pixels[4 * x + y * rowstride + ctx->channelmap[i]] = pixcolour[i];
 
-    out.result = output;
+    cairo_surface_mark_dirty (output);
+
+    out.surface = output;
     out.Rused = 1;
     out.Gused = 1;
     out.Bused = 1;
@@ -2736,7 +2751,7 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     rsvg_filter_store_output (self->result, out, ctx);
 
-    g_object_unref (output);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -2815,9 +2830,7 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
 
     RsvgFilterPrimitiveDisplacementMap *upself;
 
-    GdkPixbuf *output;
-    GdkPixbuf *in;
-    GdkPixbuf *in2;
+    cairo_surface_t *output, *in, *in2;
 
     double ox, oy;
 
@@ -2825,19 +2838,19 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
-    in_pixels = gdk_pixbuf_get_pixels (in);
+    in_pixels = cairo_image_surface_get_data (in);
 
     in2 = rsvg_filter_get_in (upself->in2, ctx);
-    in2_pixels = gdk_pixbuf_get_pixels (in2);
+    in2_pixels = cairo_image_surface_get_data (in2);
 
-    height = gdk_pixbuf_get_height (in);
-    width = gdk_pixbuf_get_width (in);
+    height = cairo_image_surface_get_height (in);
+    width = cairo_image_surface_get_width (in);
 
-    rowstride = gdk_pixbuf_get_rowstride (in);
+    rowstride = cairo_image_surface_get_stride (in);
 
-    output = _rsvg_pixbuf_new_cleared ( width, height);
+    output = _rsvg_image_surface_new (width, height);
 
-    output_pixels = gdk_pixbuf_get_pixels (output);
+    output_pixels = cairo_image_surface_get_data (output);
 
     switch (upself->xChannelSelector) {
     case 'R':
@@ -2891,15 +2904,17 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
 
             for (ch = 0; ch < 4; ch++) {
                 output_pixels[y * rowstride + x * 4 + ch] =
-                    gdk_pixbuf_get_interp_pixel (in_pixels, ox, oy, ch, boundarys, rowstride);
+                    get_interp_pixel (in_pixels, ox, oy, ch, boundarys, rowstride);
             }
         }
 
+    cairo_surface_mark_dirty (output);
+
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (in);
-    g_object_unref (in2);
-    g_object_unref (output);
+    cairo_surface_destroy (in);
+    cairo_surface_destroy (in2);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -3214,18 +3229,17 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterC
     gint x, y, tileWidth, tileHeight, rowstride, width, height;
     RsvgIRect boundarys;
     guchar *output_pixels;
-    GdkPixbuf *output;
+    cairo_surface_t *output, *in;
     cairo_matrix_t affine;
-    GdkPixbuf *in;
 
     affine = ctx->paffine;
     if (cairo_matrix_invert (&affine) != CAIRO_STATUS_SUCCESS)
       return;
 
     in = rsvg_filter_get_in (self->in, ctx);
-    height = gdk_pixbuf_get_height (in);
-    width = gdk_pixbuf_get_width (in);
-    rowstride = gdk_pixbuf_get_rowstride (in);
+    height = cairo_image_surface_get_height (in);
+    width = cairo_image_surface_get_width (in);
+    rowstride = cairo_image_surface_get_stride (in);
 
     upself = (RsvgFilterPrimitiveTurbulence *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
@@ -3233,8 +3247,8 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterC
     tileWidth = (boundarys.x1 - boundarys.x0);
     tileHeight = (boundarys.y1 - boundarys.y0);
 
-    output = _rsvg_pixbuf_new_cleared ( width, height);
-    output_pixels = gdk_pixbuf_get_pixels (output);
+    output = _rsvg_image_surface_new (width, height);
+    output_pixels = cairo_image_surface_get_data (output);
 
     for (y = 0; y < tileHeight; y++) {
         for (x = 0; x < tileWidth; x++) {
@@ -3268,10 +3282,12 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterC
         }
     }
 
+    cairo_surface_mark_dirty (output);
+
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (in);
-    g_object_unref (output);
+    cairo_surface_destroy (in);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -3357,7 +3373,7 @@ struct _RsvgFilterPrimitiveImage {
     GString *href;
 };
 
-static GdkPixbuf *
+static cairo_surface_t *
 rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self, RsvgFilterContext * context)
 {
     RsvgDrawingCtx *ctx;
@@ -3377,17 +3393,16 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self, RsvgFilterCon
 
     rsvg_current_state (ctx)->affine = context->paffine;
 
-    return rsvg_get_image_of_node (ctx, drawable, context->width, context->height);
+    return rsvg_get_surface_of_node (ctx, drawable, context->width, context->height);
 }
 
-static GdkPixbuf *
+static cairo_surface_t *
 rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
 {
     RsvgIRect boundarys;
     RsvgFilterPrimitiveImage *upself;
-    GdkPixbuf *img;
+    cairo_surface_t *img, *intermediate;
     int i;
-    GdkPixbuf *intermediate;
     unsigned char *pixels;
     int channelmap[4];
     int length;
@@ -3405,31 +3420,30 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterCo
     if (width == 0 || height == 0)
         return NULL;
 
-    img = rsvg_pixbuf_new_from_href (upself->href->str,
-                                     rsvg_handle_get_base_uri (upself->ctx), NULL);
-
+    img = rsvg_cairo_surface_new_from_href (upself->href->str,
+                                            rsvg_handle_get_base_uri (upself->ctx), 
+                                            NULL);
     if (!img)
         return NULL;
 
-    intermediate = gdk_pixbuf_new (GDK_COLORSPACE_RGB, 1, 8, width, height);
-
-
-    rsvg_art_affine_image (img, intermediate,
-                           &ctx->paffine,
-                           (gdouble) width / ctx->paffine.xx,
-                           (gdouble) height / ctx->paffine.yy);
-
-    if (!intermediate) {
-        g_object_unref (img);
+    intermediate = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
+    if (cairo_surface_status (intermediate) != CAIRO_STATUS_SUCCESS ||
+        !rsvg_art_affine_image (img, intermediate,
+                                &ctx->paffine,
+                                (gdouble) width / ctx->paffine.xx,
+                                (gdouble) height / ctx->paffine.yy)) {
+        cairo_surface_destroy (intermediate);
+        cairo_surface_destroy (img);
         return NULL;
     }
 
-    g_object_unref (img);
+    cairo_surface_destroy (img);
 
-    length = gdk_pixbuf_get_height (intermediate) * gdk_pixbuf_get_rowstride (intermediate);
+    length = cairo_image_surface_get_height (intermediate) * 
+             cairo_image_surface_get_stride (intermediate);
     for (i = 0; i < 4; i++)
         channelmap[i] = ctx->channelmap[i];
-    pixels = gdk_pixbuf_get_pixels (intermediate);
+    pixels = cairo_image_surface_get_data (intermediate);
     for (i = 0; i < length; i += 4) {
         unsigned char alpha;
         unsigned char pixel[4];
@@ -3447,8 +3461,8 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterCo
             pixels[i + ch] = pixel[ch];
     }
 
+    cairo_surface_mark_dirty (intermediate);
     return intermediate;
-
 }
 
 static void
@@ -3457,8 +3471,9 @@ rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self, RsvgFilterContex
     RsvgIRect boundarys;
     RsvgFilterPrimitiveImage *upself;
     RsvgFilterPrimitiveOutput op;
+    int x, y;
 
-    GdkPixbuf *output, *img;
+    cairo_surface_t *output, *img;
 
     upself = (RsvgFilterPrimitiveImage *) self;
 
@@ -3467,24 +3482,35 @@ rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
-    output = _rsvg_pixbuf_new_cleared ( ctx->width, ctx->height);
+    output = _rsvg_image_surface_new (ctx->width, ctx->height);
+    if (output == NULL)
+        return;
 
     img = rsvg_filter_primitive_image_render_in (self, ctx);
     if (img == NULL) {
         img = rsvg_filter_primitive_image_render_ext (self, ctx);
-        if (img) {
-            gdk_pixbuf_copy_area (img, 0, 0,
-                                  boundarys.x1 - boundarys.x0,
-                                  boundarys.y1 - boundarys.y0, output, boundarys.x0, boundarys.y0);
-            g_object_unref (img);
-        }
+        x = y = 0;
     } else {
-        gdk_pixbuf_copy_area (img, boundarys.x0, boundarys.y0, boundarys.x1 - boundarys.x0,
-                              boundarys.y1 - boundarys.y0, output, boundarys.x0, boundarys.y0);
-        g_object_unref (img);
+        x = boundarys.x0;
+        y = boundarys.y0;
+    }
+    if (img) {
+        cairo_t *cr;
+
+        cr = cairo_create (output);
+        cairo_set_source_surface (cr, img, x, y);
+        cairo_rectangle (cr, 0, 0,
+                         boundarys.x1 - boundarys.x0,
+                         boundarys.y1 - boundarys.y0);
+        cairo_clip (cr);
+        cairo_translate (cr, -boundarys.x0, -boundarys.y0);
+        cairo_paint (cr);
+        cairo_destroy (cr);
+
+        cairo_surface_destroy (img);
     }
 
-    op.result = output;
+    op.surface = output;
     op.bounds = boundarys;
     op.Rused = 1;
     op.Gused = 1;
@@ -3493,7 +3519,7 @@ rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     rsvg_filter_store_output (self->result, op, ctx);
 
-    g_object_unref (output);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -3749,59 +3775,59 @@ get_surface_normal (guchar * I, RsvgIRect boundarys, gint x, gint y,
 
     Nx = -surfaceScale * factorx * ((gdouble)
                                     (Kx[0] *
-                                     gdk_pixbuf_get_interp_pixel (I, x - dx, y - dy, chan,
+                                     get_interp_pixel (I, x - dx, y - dy, chan,
                                                                   boundarys,
                                                                   rowstride) +
-                                     Kx[1] * gdk_pixbuf_get_interp_pixel (I, x, y - dy, chan,
+                                     Kx[1] * get_interp_pixel (I, x, y - dy, chan,
                                                                           boundarys,
                                                                           rowstride) +
-                                     Kx[2] * gdk_pixbuf_get_interp_pixel (I, x + dx, y - dy, chan,
+                                     Kx[2] * get_interp_pixel (I, x + dx, y - dy, chan,
                                                                           boundarys,
                                                                           rowstride) +
-                                     Kx[3] * gdk_pixbuf_get_interp_pixel (I, x - dx, y, chan,
+                                     Kx[3] * get_interp_pixel (I, x - dx, y, chan,
                                                                           boundarys,
                                                                           rowstride) +
-                                     Kx[4] * gdk_pixbuf_get_interp_pixel (I, x, y, chan, boundarys,
+                                     Kx[4] * get_interp_pixel (I, x, y, chan, boundarys,
                                                                           rowstride) +
-                                     Kx[5] * gdk_pixbuf_get_interp_pixel (I, x + dx, y, chan,
+                                     Kx[5] * get_interp_pixel (I, x + dx, y, chan,
                                                                           boundarys,
                                                                           rowstride) +
-                                     Kx[6] * gdk_pixbuf_get_interp_pixel (I, x - dx, y + dy, chan,
+                                     Kx[6] * get_interp_pixel (I, x - dx, y + dy, chan,
                                                                           boundarys,
                                                                           rowstride) +
-                                     Kx[7] * gdk_pixbuf_get_interp_pixel (I, x, y + dy, chan,
+                                     Kx[7] * get_interp_pixel (I, x, y + dy, chan,
                                                                           boundarys,
                                                                           rowstride) +
-                                     Kx[8] * gdk_pixbuf_get_interp_pixel (I, x + dx, y + dy, chan,
+                                     Kx[8] * get_interp_pixel (I, x + dx, y + dy, chan,
                                                                           boundarys,
                                                                           rowstride))) / 255.0;
 
     Ny = -surfaceScale * factory * ((gdouble)
                                     (Ky[0] *
-                                     gdk_pixbuf_get_interp_pixel (I, x - dx, y - dy, chan,
+                                     get_interp_pixel (I, x - dx, y - dy, chan,
                                                                   boundarys,
                                                                   rowstride) +
-                                     Ky[1] * gdk_pixbuf_get_interp_pixel (I, x, y - dy, chan,
+                                     Ky[1] * get_interp_pixel (I, x, y - dy, chan,
                                                                           boundarys,
                                                                           rowstride) +
-                                     Ky[2] * gdk_pixbuf_get_interp_pixel (I, x + dx, y - dy, chan,
+                                     Ky[2] * get_interp_pixel (I, x + dx, y - dy, chan,
                                                                           boundarys,
                                                                           rowstride) +
-                                     Ky[3] * gdk_pixbuf_get_interp_pixel (I, x - dx, y, chan,
+                                     Ky[3] * get_interp_pixel (I, x - dx, y, chan,
                                                                           boundarys,
                                                                           rowstride) +
-                                     Ky[4] * gdk_pixbuf_get_interp_pixel (I, x, y, chan, boundarys,
+                                     Ky[4] * get_interp_pixel (I, x, y, chan, boundarys,
                                                                           rowstride) +
-                                     Ky[5] * gdk_pixbuf_get_interp_pixel (I, x + dx, y, chan,
+                                     Ky[5] * get_interp_pixel (I, x + dx, y, chan,
                                                                           boundarys,
                                                                           rowstride) +
-                                     Ky[6] * gdk_pixbuf_get_interp_pixel (I, x - dx, y + dy, chan,
+                                     Ky[6] * get_interp_pixel (I, x - dx, y + dy, chan,
                                                                           boundarys,
                                                                           rowstride) +
-                                     Ky[7] * gdk_pixbuf_get_interp_pixel (I, x, y + dy, chan,
+                                     Ky[7] * get_interp_pixel (I, x, y + dy, chan,
                                                                           boundarys,
                                                                           rowstride) +
-                                     Ky[8] * gdk_pixbuf_get_interp_pixel (I, x + dx, y + dy, chan,
+                                     Ky[8] * get_interp_pixel (I, x + dx, y + dy, chan,
                                                                           boundarys,
                                                                           rowstride))) / 255.0;
 
@@ -3992,8 +4018,8 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
 
     RsvgFilterPrimitiveDiffuseLighting *upself;
 
-    GdkPixbuf *output;
-    GdkPixbuf *in;
+    cairo_surface_t *output, *in;
+
     unsigned int i;
 
     for (i = 0; i < self->super.children->len; i++) {
@@ -4015,16 +4041,16 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
-    in_pixels = gdk_pixbuf_get_pixels (in);
+    in_pixels = cairo_image_surface_get_data (in);
 
-    height = gdk_pixbuf_get_height (in);
-    width = gdk_pixbuf_get_width (in);
+    height = cairo_image_surface_get_height (in);
+    width = cairo_image_surface_get_width (in);
 
-    rowstride = gdk_pixbuf_get_rowstride (in);
+    rowstride = cairo_image_surface_get_stride (in);
 
-    output = _rsvg_pixbuf_new_cleared ( width, height);
+    output = _rsvg_image_surface_new (width, height);
 
-    output_pixels = gdk_pixbuf_get_pixels (output);
+    output_pixels = cairo_image_surface_get_data (output);
 
     colour.x = ((guchar *) (&upself->lightingcolour))[2] / 255.0;
     colour.y = ((guchar *) (&upself->lightingcolour))[1] / 255.0;
@@ -4063,10 +4089,12 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
             output_pixels[y * rowstride + x * 4 + ctx->channelmap[3]] = 255;
         }
 
+    cairo_surface_mark_dirty (output);
+
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (in);
-    g_object_unref (output);
+    cairo_surface_destroy (in);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -4168,8 +4196,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
 
     RsvgFilterPrimitiveSpecularLighting *upself;
 
-    GdkPixbuf *output;
-    GdkPixbuf *in;
+    cairo_surface_t *output, *in;
 
     unsigned int i;
 
@@ -4191,16 +4218,16 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
-    in_pixels = gdk_pixbuf_get_pixels (in);
+    in_pixels = cairo_image_surface_get_data (in);
 
-    height = gdk_pixbuf_get_height (in);
-    width = gdk_pixbuf_get_width (in);
+    height = cairo_image_surface_get_height (in);
+    width = cairo_image_surface_get_width (in);
 
-    rowstride = gdk_pixbuf_get_rowstride (in);
+    rowstride = cairo_image_surface_get_stride (in);
 
-    output = _rsvg_pixbuf_new_cleared ( width, height);
+    output = _rsvg_image_surface_new (width, height);
 
-    output_pixels = gdk_pixbuf_get_pixels (output);
+    output_pixels = cairo_image_surface_get_data (output);
 
     colour.x = ((guchar *) (&upself->lightingcolour))[2] / 255.0;
     colour.y = ((guchar *) (&upself->lightingcolour))[1] / 255.0;
@@ -4244,10 +4271,12 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
 
         }
 
+    cairo_surface_mark_dirty (output);
+
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (in);
-    g_object_unref (output);
+    cairo_surface_destroy (in);
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -4347,22 +4376,21 @@ rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self, RsvgFilterContext
     guchar *in_pixels;
     guchar *output_pixels;
 
-    GdkPixbuf *output;
-    GdkPixbuf *in;
+    cairo_surface_t *output, *in;
 
     oboundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     input = rsvg_filter_get_result (self->in, ctx);
-    in = input.result;
+    in = input.surface;
     boundarys = input.bounds;
 
 
-    in_pixels = gdk_pixbuf_get_pixels (in);
+    in_pixels = cairo_image_surface_get_data (in);
 
-    output = _rsvg_pixbuf_new_cleared ( ctx->width, ctx->height);
-    rowstride = gdk_pixbuf_get_rowstride (output);
+    output = _rsvg_image_surface_new (ctx->width, ctx->height);
+    rowstride = cairo_image_surface_get_stride (output);
 
-    output_pixels = gdk_pixbuf_get_pixels (output);
+    output_pixels = cairo_image_surface_get_data (output);
 
     for (y = oboundarys.y0; y < oboundarys.y1; y++)
         for (x = oboundarys.x0; x < oboundarys.x1; x++)
@@ -4374,9 +4402,11 @@ rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self, RsvgFilterContext
                                boundarys.y0) * rowstride + i];
             }
 
+    cairo_surface_mark_dirty (output);
+
     rsvg_filter_store_result (self->result, output, ctx);
 
-    g_object_unref (output);
+    cairo_surface_destroy (output);
 }
 
 static void
