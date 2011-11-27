@@ -47,9 +47,6 @@ void         rsvg_cairo_add_clipping_rect       (RsvgDrawingCtx *ctx,
 cairo_surface_t*rsvg_cairo_get_surface_of_node  (RsvgDrawingCtx *ctx, RsvgNode *drawable, 
                                                  double width, double height);
 
-void         rsvg_cairo_to_pixbuf           (guint8 * pixels, int rowstride, int height);
-void         rsvg_pixbuf_to_cairo           (guint8 * pixels, int rowstride, int height);
-
 G_END_DECLS
 
 #endif /*RSVG_CAIRO_DRAW_H */

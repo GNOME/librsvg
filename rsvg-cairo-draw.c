@@ -892,60 +892,6 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
     return surface;
 }
 
-void
-rsvg_cairo_to_pixbuf (guint8 * pixels, int rowstride, int height)
-{
-    int row;
-    /* un-premultiply data */
-    for (row = 0; row < height; row++) {
-        guint8 *row_data = (pixels + (row * rowstride));
-        int i;
-
-        for (i = 0; i < rowstride; i += 4) {
-            guint8 *b = &row_data[i];
-            guint32 pixel;
-            guint8 alpha;
-
-            memcpy (&pixel, b, sizeof (guint32));
-            alpha = (pixel & 0xff000000) >> 24;
-            if (alpha == 0) {
-                b[0] = b[1] = b[2] = b[3] = 0;
-            } else {
-                b[0] = (((pixel & 0xff0000) >> 16) * 255 + alpha / 2) / alpha;
-                b[1] = (((pixel & 0x00ff00) >> 8) * 255 + alpha / 2) / alpha;
-                b[2] = (((pixel & 0x0000ff) >> 0) * 255 + alpha / 2) / alpha;
-                b[3] = alpha;
-            }
-        }
-    }
-}
-
-void
-rsvg_pixbuf_to_cairo (guint8 * pixels, int rowstride, int height)
-{
-    int row;
-    /* un-premultiply data */
-    for (row = 0; row < height; row++) {
-        guint8 *row_data = (pixels + (row * rowstride));
-        int i;
-
-        for (i = 0; i < rowstride; i += 4) {
-            guint32 *b = (guint32 *) & row_data[i];
-            guint8 pixel[4];
-            int alpha;
-
-            memcpy (&pixel, b, sizeof (guint32));
-            alpha = pixel[3];
-            if (alpha == 0)
-                *b = 0;
-            else
-                *b = alpha << 24 |
-                    (int) pixel[0] * alpha / 255 << 16 |
-                    (int) pixel[1] * alpha / 255 << 8 | (int) pixel[2] * alpha / 255;
-        }
-    }
-}
-
 cairo_surface_t *
 rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf)
 {
