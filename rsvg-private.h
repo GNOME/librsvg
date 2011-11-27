@@ -377,6 +377,7 @@ void rsvg_render_surface        (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
 void rsvg_render_free           (RsvgRender * render);
 void rsvg_add_clipping_rect     (RsvgDrawingCtx * ctx, double x, double y, double w, double h);
 cairo_surface_t *rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf);
+GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
 cairo_surface_t *rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
 
 void rsvg_node_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts);

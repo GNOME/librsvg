@@ -86,35 +86,25 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
     if (!(dimensions.width && dimensions.height))
         return NULL;
 
-    rowstride = dimensions.width * 4;
-
-    pixels = g_try_malloc0 (dimensions.width * dimensions.height * 4UL);
-    if (!pixels)
+    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+                                          dimensions.width, dimensions.height);
+    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+        cairo_surface_destroy (surface);
         return NULL;
+    }
 
-    surface = cairo_image_surface_create_for_data (pixels,
-                                                   CAIRO_FORMAT_ARGB32,
-                                                   dimensions.width, dimensions.height, rowstride);
     cr = cairo_create (surface);
-    cairo_surface_destroy (surface);
 
-    if (rsvg_handle_render_cairo_sub (handle, cr, id)) {
-        rsvg_cairo_to_pixbuf (pixels, rowstride, dimensions.height);
-
-        output = gdk_pixbuf_new_from_data (pixels,
-                                           GDK_COLORSPACE_RGB,
-                                           TRUE,
-                                           8,
-                                           dimensions.width,
-                                           dimensions.height,
-                                           rowstride,
-                                           (GdkPixbufDestroyNotify) rsvg_pixmap_destroy, NULL);
-	} else {
-        g_free (pixels);
-        output = NULL;
-	}
+    if (!rsvg_handle_render_cairo_sub (handle, cr, id)) {
+        cairo_destroy (cr);
+        cairo_surface_destroy (surface);
+        return NULL;
+    }
 
     cairo_destroy (cr);
+
+    output = rsvg_cairo_surface_to_pixbuf (surface);
+    cairo_surface_destroy (surface);
 
     return output;
 }

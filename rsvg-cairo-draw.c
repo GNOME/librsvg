@@ -1036,3 +1036,116 @@ rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf)
     cairo_surface_mark_dirty (surface);
     return surface;
 }
+
+/* Copied from gtk+/gdk/gdkpixbuf-drawable.c, LGPL 2+.
+ *
+ * Copyright (C) 1999 Michael Zucchi
+ *
+ * Authors: Michael Zucchi <zucchi@zedzone.mmc.com.au>
+ *          Cody Russell <bratsche@dfw.net>
+ *          Federico Mena-Quintero <federico@gimp.org>
+ */
+
+static void
+convert_alpha (guchar *dest_data,
+               int     dest_stride,
+               guchar *src_data,
+               int     src_stride,
+               int     src_x,
+               int     src_y,
+               int     width,
+               int     height)
+{
+    int x, y;
+
+    src_data += src_stride * src_y + src_x * 4;
+
+    for (y = 0; y < height; y++) {
+        guint32 *src = (guint32 *) src_data;
+
+        for (x = 0; x < width; x++) {
+          guint alpha = src[x] >> 24;
+
+          if (alpha == 0) {
+              dest_data[x * 4 + 0] = 0;
+              dest_data[x * 4 + 1] = 0;
+              dest_data[x * 4 + 2] = 0;
+          } else {
+              dest_data[x * 4 + 0] = (((src[x] & 0xff0000) >> 16) * 255 + alpha / 2) / alpha;
+              dest_data[x * 4 + 1] = (((src[x] & 0x00ff00) >>  8) * 255 + alpha / 2) / alpha;
+              dest_data[x * 4 + 2] = (((src[x] & 0x0000ff) >>  0) * 255 + alpha / 2) / alpha;
+          }
+          dest_data[x * 4 + 3] = alpha;
+      }
+
+      src_data += src_stride;
+      dest_data += dest_stride;
+    }
+}
+
+static void
+convert_no_alpha (guchar *dest_data,
+                  int     dest_stride,
+                  guchar *src_data,
+                  int     src_stride,
+                  int     src_x,
+                  int     src_y,
+                  int     width,
+                  int     height)
+{
+    int x, y;
+
+    src_data += src_stride * src_y + src_x * 4;
+
+    for (y = 0; y < height; y++) {
+        guint32 *src = (guint32 *) src_data;
+
+        for (x = 0; x < width; x++) {
+            dest_data[x * 3 + 0] = src[x] >> 16;
+            dest_data[x * 3 + 1] = src[x] >>  8;
+            dest_data[x * 3 + 2] = src[x];
+        }
+
+        src_data += src_stride;
+        dest_data += dest_stride;
+    }
+}
+
+GdkPixbuf *
+rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface)
+{
+    cairo_content_t content;
+    GdkPixbuf *dest;
+    int width, height;
+
+    /* General sanity checks */
+    g_assert (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE);
+
+    width = cairo_image_surface_get_width (surface);
+    height = cairo_image_surface_get_height (surface);
+    if (width == 0 || height == 0)
+        return NULL;
+
+    content = cairo_surface_get_content (surface) | CAIRO_CONTENT_COLOR;
+    dest = gdk_pixbuf_new (GDK_COLORSPACE_RGB,
+                          !!(content & CAIRO_CONTENT_ALPHA),
+                          8,
+                          width, height);
+
+    if (gdk_pixbuf_get_has_alpha (dest))
+      convert_alpha (gdk_pixbuf_get_pixels (dest),
+                    gdk_pixbuf_get_rowstride (dest),
+                    cairo_image_surface_get_data (surface),
+                    cairo_image_surface_get_stride (surface),
+                    0, 0,
+                    width, height);
+    else
+      convert_no_alpha (gdk_pixbuf_get_pixels (dest),
+                        gdk_pixbuf_get_rowstride (dest),
+                        cairo_image_surface_get_data (surface),
+                        cairo_image_surface_get_stride (surface),
+                        0, 0,
+                        width, height);
+
+    return dest;
+}
