@@ -78,13 +78,6 @@ rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
 }
 
 static void
-rsvg_cairo_clip_render_image (RsvgDrawingCtx * ctx,
-                              const GdkPixbuf * pixbuf,
-                              double pixbuf_x, double pixbuf_y, double w, double h)
-{
-}
-
-static void
 rsvg_cairo_clip_render_surface (RsvgDrawingCtx *ctx,
                                 cairo_surface_t *surface,
                                 double src_x,
@@ -131,13 +124,11 @@ rsvg_cairo_clip_render_new (cairo_t * cr, RsvgCairoRender *parent)
     render->free = rsvg_cairo_clip_render_free;
     render->create_pango_context = rsvg_cairo_create_pango_context;
     render->render_pango_layout = rsvg_cairo_render_pango_layout;
-    render->render_image = rsvg_cairo_clip_render_image;
     render->render_surface = rsvg_cairo_clip_render_surface;
     render->render_path = rsvg_cairo_clip_render_path;
     render->pop_discrete_layer = rsvg_cairo_clip_pop_discrete_layer;
     render->push_discrete_layer = rsvg_cairo_clip_push_discrete_layer;
     render->add_clipping_rect = rsvg_cairo_clip_add_clipping_rect;
-    render->get_image_of_node = NULL;
     render->get_surface_of_node = NULL;
     cairo_render->initial_cr = parent->cr;
     cairo_render->cr = cr;

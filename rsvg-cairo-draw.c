@@ -544,23 +544,6 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
 }
 
 void
-rsvg_cairo_render_image (RsvgDrawingCtx * ctx, const GdkPixbuf * pixbuf,
-                         double pixbuf_x, double pixbuf_y, double w, double h)
-{
-    cairo_surface_t *surface;
-
-    if (pixbuf == NULL)
-        return;
-
-    surface = rsvg_cairo_surface_from_pixbuf (pixbuf);
-    if (surface == NULL)
-        return;
-
-    rsvg_cairo_render_surface (ctx, surface, pixbuf_x, pixbuf_y, w, h);
-    cairo_surface_destroy (surface);
-}
-
-void
 rsvg_cairo_render_surface (RsvgDrawingCtx *ctx, 
                            cairo_surface_t *surface,
                            double src_x, 
@@ -872,63 +855,6 @@ rsvg_cairo_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w
 
     cairo_rectangle (cr, x, y, w, h);
     cairo_clip (cr);
-}
-
-GdkPixbuf *
-rsvg_cairo_get_image_of_node (RsvgDrawingCtx * ctx,
-                              RsvgNode * drawable, double width, double height)
-{
-    /* XXX: untested, should work */
-
-    GdkPixbuf *img = NULL;
-    cairo_surface_t *surface;
-    cairo_t *cr;
-    guint8 *pixels;
-    int rowstride;
-
-    RsvgCairoRender *save_render = (RsvgCairoRender *) ctx->render;
-    RsvgCairoRender *render;
-
-    rowstride = width * 4;
-    pixels = g_try_malloc0 (width * height * 4);
-    if (pixels == NULL)
-        return NULL;
-
-    /* no colorspace conversion necessary. this is just a convenient
-       holder of ARGB data with a width, height, & stride */
-    img = gdk_pixbuf_new_from_data (pixels,
-                                    GDK_COLORSPACE_RGB,
-                                    TRUE,
-                                    8,
-                                    width,
-                                    height,
-                                    rowstride,
-                                    (GdkPixbufDestroyNotify) rsvg_pixmap_destroy,
-                                    NULL);
-
-    surface = cairo_image_surface_create_for_data (pixels,
-                                                   CAIRO_FORMAT_ARGB32, width, height, rowstride);
-    /* Also keep a reference to the pixbuf which owns the pixels */
-    cairo_surface_set_user_data (surface, &surface_pixel_data_key,
-                                 g_object_ref (img),
-                                 (cairo_destroy_func_t) g_object_unref);
-
-    cr = cairo_create (surface);
-    cairo_surface_destroy (surface);
-
-    render = rsvg_cairo_render_new (cr, width, height);
-    ctx->render = (RsvgRender *) render;
-
-    rsvg_state_push (ctx);
-    rsvg_node_draw (drawable, ctx, 0);
-    rsvg_state_pop (ctx);
-
-    cairo_destroy (cr);
-
-    rsvg_render_free (ctx->render);
-    ctx->render = (RsvgRender *) save_render;
-
-    return img;
 }
 
 cairo_surface_t *

@@ -37,8 +37,6 @@ void         rsvg_cairo_render_pango_layout	    (RsvgDrawingCtx *ctx, PangoLayou
                                                  double x, double y);
 void         rsvg_cairo_render_path             (RsvgDrawingCtx *ctx, 
                                                  const cairo_path_t *path);
-void         rsvg_cairo_render_image            (RsvgDrawingCtx *ctx, const GdkPixbuf * img, 
-                                                 double x, double y, double w, double h);
 void         rsvg_cairo_render_surface          (RsvgDrawingCtx *ctx, cairo_surface_t *surface,
                                                  double x, double y, double w, double h);
 void         rsvg_cairo_push_discrete_layer	    (RsvgDrawingCtx *ctx);
@@ -46,8 +44,6 @@ void         rsvg_cairo_pop_discrete_layer      (RsvgDrawingCtx *ctx);
 void         rsvg_cairo_add_clipping_rect       (RsvgDrawingCtx *ctx,
                                                  double x, double y, double width, double height);
 
-GdkPixbuf   *rsvg_cairo_get_image_of_node       (RsvgDrawingCtx *ctx, RsvgNode *drawable, 
-                                                 double width, double height);
 cairo_surface_t*rsvg_cairo_get_surface_of_node  (RsvgDrawingCtx *ctx, RsvgNode *drawable, 
                                                  double width, double height);
 

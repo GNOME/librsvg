@@ -1957,12 +1957,6 @@ rsvg_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
 }
 
 void
-rsvg_render_image (RsvgDrawingCtx * ctx, GdkPixbuf * pb, double x, double y, double w, double h)
-{
-    ctx->render->render_image (ctx, pb, x, y, w, h);
-}
-
-void
 rsvg_render_surface (RsvgDrawingCtx * ctx, cairo_surface_t *surface, double x, double y, double w, double h)
 {
     /* surface must be a cairo image surface */
@@ -1975,12 +1969,6 @@ void
 rsvg_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w, double h)
 {
     ctx->render->add_clipping_rect (ctx, x, y, w, h);
-}
-
-GdkPixbuf *
-rsvg_get_image_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h)
-{
-    return ctx->render->get_image_of_node (ctx, drawable, w, h);
 }
 
 cairo_surface_t *
