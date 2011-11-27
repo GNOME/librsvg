@@ -31,6 +31,10 @@
 
 G_BEGIN_DECLS 
 
+typedef struct  {
+    int x0, y0, x1, y1;
+} RsvgIRect;
+
 typedef RsvgCoordUnits RsvgFilterUnits;
 
 struct _RsvgFilter {

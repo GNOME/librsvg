@@ -53,7 +53,6 @@ typedef struct _RsvgDefs RsvgDefs;
 typedef struct _RsvgNode RsvgNode;
 typedef struct _RsvgFilter RsvgFilter;
 typedef struct _RsvgNodeChars RsvgNodeChars;
-typedef struct _RsvgIRect RsvgIRect;
 
 /* prepare for gettext */
 #ifndef _
@@ -241,10 +240,6 @@ typedef struct {
     double length;
     char factor;
 } RsvgLength;
-
-struct _RsvgIRect {
-    int x0, y0, x1, y1;
-};
 
 typedef struct {
     cairo_rectangle_t rect;
