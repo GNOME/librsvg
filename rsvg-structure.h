@@ -71,7 +71,6 @@ struct _RsvgNodeSvg {
     RsvgLength x, y, w, h;
     RsvgViewBox vbox;
     RsvgPropertyBag *atts;
-    GdkPixbuf *img;
 };
 
 void rsvg_pop_def_group     (RsvgHandle * ctx);
