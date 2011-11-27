@@ -179,70 +179,52 @@ _rsvg_acquire_xlink_href_resource (const char *href, const char *base_uri, GErro
     return arr;
 }
 
-GdkPixbuf *
-rsvg_pixbuf_new_from_href (const char *href, const char *base_uri, GError ** error)
-{
-    GByteArray *arr;
-
-    arr = _rsvg_acquire_xlink_href_resource (href, base_uri, error);
-    if (arr) {
-        GdkPixbufLoader *loader;
-        GdkPixbuf *pixbuf = NULL;
-        int res;
-
-        loader = gdk_pixbuf_loader_new ();
-
-        res = gdk_pixbuf_loader_write (loader, arr->data, arr->len, error);
-        g_byte_array_free (arr, TRUE);
-
-        if (!res) {
-            gdk_pixbuf_loader_close (loader, NULL);
-            g_object_unref (loader);
-            return NULL;
-        }
-
-        if (!gdk_pixbuf_loader_close (loader, error)) {
-            g_object_unref (loader);
-            return NULL;
-        }
-
-        pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
-
-        if (!pixbuf) {
-            g_object_unref (loader);
-            g_set_error (error,
-                         GDK_PIXBUF_ERROR,
-                         GDK_PIXBUF_ERROR_FAILED,
-                         _
-                         ("Failed to load image '%s': reason not known, probably a corrupt image file"),
-                         href);
-            return NULL;
-        }
-
-        g_object_ref (pixbuf);
-
-        g_object_unref (loader);
-
-        return pixbuf;
-    }
-
-    return NULL;
-}
-
 cairo_surface_t *
 rsvg_cairo_surface_new_from_href (const char *href, 
                                   const char *base_uri, 
                                   GError **error)
 {
-    GdkPixbuf *pixbuf;
+    GByteArray *arr;
+    GdkPixbufLoader *loader;
+    GdkPixbuf *pixbuf = NULL;
+    int res;
     cairo_surface_t *surface;
 
-    pixbuf = rsvg_pixbuf_new_from_href (href, base_uri, error);
-    if (pixbuf == NULL)
+    arr = _rsvg_acquire_xlink_href_resource (href, base_uri, error);
+    if (arr == NULL)
         return NULL;
 
+    loader = gdk_pixbuf_loader_new ();
+
+    res = gdk_pixbuf_loader_write (loader, arr->data, arr->len, error);
+    g_byte_array_free (arr, TRUE);
+
+    if (!res) {
+        gdk_pixbuf_loader_close (loader, NULL);
+        g_object_unref (loader);
+        return NULL;
+    }
+
+    if (!gdk_pixbuf_loader_close (loader, error)) {
+        g_object_unref (loader);
+        return NULL;
+    }
+
+    pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
+
+    if (!pixbuf) {
+        g_object_unref (loader);
+        g_set_error (error,
+                     GDK_PIXBUF_ERROR,
+                     GDK_PIXBUF_ERROR_FAILED,
+                      _("Failed to load image '%s': reason not known, probably a corrupt image file"),
+                      href);
+        return NULL;
+    }
+
     surface = rsvg_cairo_surface_from_pixbuf (pixbuf);
-    g_object_unref (pixbuf);
+
+    g_object_unref (loader);
 
     return surface;
 }
