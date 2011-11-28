@@ -513,7 +513,7 @@ rsvg_filter_render (RsvgFilter *self,
 
     rsvg_filter_fix_coordinate_system (ctx, rsvg_current_state (context), bounds);
 
-    ctx->lastresult.surface = source;
+    ctx->lastresult.surface = cairo_surface_reference (source);
     ctx->lastresult.Rused = 1;
     ctx->lastresult.Gused = 1;
     ctx->lastresult.Bused = 1;
