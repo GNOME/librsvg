@@ -4053,7 +4053,7 @@ get_light_colour (RsvgNodeLightSource * source, vector3 colour,
 
     base = -dotproduct (L, s);
 
-    angle = acos (base) * 180.0 / M_PI;
+    angle = acos (base);
 
     if (base < 0 || angle > source->limitingconeAngle) {
         output.x = 0;
@@ -4085,7 +4085,7 @@ rsvg_node_light_source_set_atts (RsvgNode * self,
         if ((value = rsvg_property_bag_lookup (atts, "elevation")))
             data->elevation = rsvg_css_parse_angle (value) / 180.0 * M_PI;
         if ((value = rsvg_property_bag_lookup (atts, "limitingConeAngle")))
-            data->limitingconeAngle = rsvg_css_parse_angle (value);
+            data->limitingconeAngle = rsvg_css_parse_angle (value) / 180.0 * M_PI;
         if ((value = rsvg_property_bag_lookup (atts, "x")))
             data->x = data->pointsAtX = _rsvg_css_parse_length (value);
         if ((value = rsvg_property_bag_lookup (atts, "y")))
