@@ -4544,6 +4544,7 @@ rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self, RsvgFilterContext
 
     output = _rsvg_image_surface_new (ctx->width, ctx->height);
     if (output == NULL) {
+        cairo_surface_destroy (in);
         return;
     }
 
@@ -4565,6 +4566,7 @@ rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self, RsvgFilterContext
 
     rsvg_filter_store_result (self->result, output, ctx);
 
+    cairo_surface_destroy (in);
     cairo_surface_destroy (output);
 }
 
