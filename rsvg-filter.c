@@ -594,6 +594,9 @@ surface_get_alpha (cairo_surface_t *source,
     gsize i, pbsize;
     cairo_surface_t *surface;
 
+    if (source == NULL)
+        return NULL;
+
     cairo_surface_flush (source);
 
     pbsize = cairo_image_surface_get_width (source) * 
@@ -601,6 +604,8 @@ surface_get_alpha (cairo_surface_t *source,
 
     surface = _rsvg_image_surface_new (cairo_image_surface_get_width (source),
                                        cairo_image_surface_get_height (source));
+    if (surface == NULL)
+        return NULL;
 
     data = cairo_image_surface_get_data (surface);
     pbdata = cairo_image_surface_get_data (source);
@@ -622,6 +627,8 @@ rsvg_compile_bg (RsvgDrawingCtx * ctx)
     GList *i;
 
     surface = _rsvg_image_surface_new (render->width, render->height);
+    if (surface == NULL)
+        return NULL;
 
     cr = cairo_create (surface);
 
@@ -674,8 +681,9 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
         output.Rused = output.Gused = output.Bused = output.Aused = 1;
         return output;
     } else if (!strcmp (name->str, "BackgroundImage")) {
-        /* FIXMEchpe: cope with NULL? */
-        output.surface = cairo_surface_reference (rsvg_filter_get_bg (ctx));
+        output.surface = rsvg_filter_get_bg (ctx);
+        if (output.surface)
+            cairo_surface_reference (output.surface);
         output.Rused = output.Gused = output.Bused = output.Aused = 1;
         return output;
     } else if (!name || !strcmp (name->str, "") || !strcmp (name->str, "none")) {
@@ -690,7 +698,6 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
     } else if (!strcmp (name->str, "BackgroundAlpha")) {
         output.Rused = output.Gused = output.Bused = 0;
         output.Aused = 1;
-        /* FIXMEchpe: cope with NULL ? */
         output.surface = surface_get_alpha (rsvg_filter_get_bg (ctx), ctx);
         return output;
     }
@@ -953,10 +960,22 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self, RsvgFilterContex
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
+    if (in == NULL)
+      return;
+
     in2 = rsvg_filter_get_in (upself->in2, ctx);
+    if (in2 == NULL) {
+        cairo_surface_destroy (in);
+        return;
+    }
 
     output = _rsvg_image_surface_new (cairo_image_surface_get_width (in),
                                       cairo_image_surface_get_height (in));
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        cairo_surface_destroy (in2);
+        return;
+    }
 
     rsvg_filter_blend (upself->mode, in, in2, output, boundarys, ctx->channelmap);
 
@@ -1080,6 +1099,9 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
+    if (in == NULL)
+        return;
+
     cairo_surface_flush (in);
 
     in_pixels = cairo_image_surface_get_data (in);
@@ -1099,6 +1121,11 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
     rowstride = cairo_image_surface_get_stride (in);
 
     output = _rsvg_image_surface_new (width, height);
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        return;
+    }
+
     output_pixels = cairo_image_surface_get_data (output);
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
@@ -1466,6 +1493,10 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilt
 
     output = _rsvg_image_surface_new (cairo_image_surface_get_width (in), 
                                       cairo_image_surface_get_height (in));
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        return;
+    }
 
     /* scale the SD values */
     sdx = upself->sdx * ctx->paffine.xx;
@@ -1572,6 +1603,8 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
+    if (in == NULL)
+        return;
 
     cairo_surface_flush (in);
 
@@ -1583,6 +1616,10 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
     rowstride = cairo_image_surface_get_stride (in);
 
     output = _rsvg_image_surface_new (width, height);
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        return;
+    }
 
     output_pixels = cairo_image_surface_get_data (output);
 
@@ -1702,6 +1739,10 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self, RsvgFilterContex
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     output = _rsvg_image_surface_new (ctx->width, ctx->height);
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        return;
+    }
 
     for (i = 0; i < upself->super.super.children->len; i++) {
         RsvgFilterPrimitive *mn;
@@ -1709,6 +1750,9 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self, RsvgFilterContex
         if (RSVG_NODE_TYPE (&mn->super) != RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE)
             continue;
         in = rsvg_filter_get_in (mn->in, ctx);
+        if (in == NULL)
+            continue;
+
         rsvg_alpha_blt (in, boundarys.x0, boundarys.y0, boundarys.x1 - boundarys.x0,
                         boundarys.y1 - boundarys.y0, output, boundarys.x0, boundarys.y0);
         cairo_surface_destroy (in);
@@ -1843,6 +1887,9 @@ rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self, RsvgFilt
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
+    if (in == NULL)
+        return;
+
     cairo_surface_flush (in);
 
     in_pixels = cairo_image_surface_get_data (in);
@@ -1853,6 +1900,11 @@ rsvg_filter_primitive_colour_matrix_render (RsvgFilterPrimitive * self, RsvgFilt
     rowstride = cairo_image_surface_get_stride (in);
 
     output = _rsvg_image_surface_new (width, height);
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        return;
+    }
+
     output_pixels = cairo_image_surface_get_data (output);
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
@@ -2184,6 +2236,9 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
     }
 
     in = rsvg_filter_get_in (self->in, ctx);
+    if (in == NULL)
+        return;
+
     cairo_surface_flush (in);
 
     in_pixels = cairo_image_surface_get_data (in);
@@ -2194,6 +2249,10 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
     rowstride = cairo_image_surface_get_stride (in);
 
     output = _rsvg_image_surface_new (width, height);
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        return;
+    }
 
     output_pixels = cairo_image_surface_get_data (output);
 
@@ -2381,6 +2440,9 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContex
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
+    if (in == NULL)
+        return;
+
     cairo_surface_flush (in);
 
     in_pixels = cairo_image_surface_get_data (in);
@@ -2395,6 +2457,10 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContex
     ky = upself->ry * ctx->paffine.yy;
 
     output = _rsvg_image_surface_new (width, height);
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        return;
+    }
 
     output_pixels = cairo_image_surface_get_data (output);
 
@@ -2535,9 +2601,17 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterCo
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
+    if (in == NULL)
+        return;
+
     cairo_surface_flush (in);
 
     in2 = rsvg_filter_get_in (upself->in2, ctx);
+    if (in2 == NULL) {
+        cairo_surface_destroy (in);
+        return;
+    }
+
     cairo_surface_flush (in2);
 
     in_pixels = cairo_image_surface_get_data (in);
@@ -2549,6 +2623,12 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterCo
     rowstride = cairo_image_surface_get_stride (in);
 
     output = _rsvg_image_surface_new (width, height);
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        cairo_surface_destroy (in2);
+        return;
+    }
+
     output_pixels = cairo_image_surface_get_data (output);
 
     if (upself->mode == COMPOSITE_MODE_ARITHMETIC)
@@ -2753,6 +2833,9 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self, RsvgFilterContex
     height = ctx->height;
     width = ctx->width;
     output = _rsvg_image_surface_new (width, height);
+    if (output == NULL)
+        return;
+
     rowstride = cairo_image_surface_get_stride (output);
 
     output_pixels = cairo_image_surface_get_data (output);
@@ -2865,9 +2948,17 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
+    if (in == NULL)
+        return;
+
     cairo_surface_flush (in);
 
     in2 = rsvg_filter_get_in (upself->in2, ctx);
+    if (in == NULL) {
+        cairo_surface_destroy (in);
+        return;
+    }
+
     cairo_surface_flush (in2);
 
     in_pixels = cairo_image_surface_get_data (in);
@@ -2879,6 +2970,11 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
     rowstride = cairo_image_surface_get_stride (in);
 
     output = _rsvg_image_surface_new (width, height);
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        cairo_surface_destroy (in2);
+        return;
+    }
 
     output_pixels = cairo_image_surface_get_data (output);
 
@@ -3267,6 +3363,9 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterC
       return;
 
     in = rsvg_filter_get_in (self->in, ctx);
+    if (in == NULL)
+        return;
+
     cairo_surface_flush (in);
 
     height = cairo_image_surface_get_height (in);
@@ -3280,6 +3379,11 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterC
     tileHeight = (boundarys.y1 - boundarys.y0);
 
     output = _rsvg_image_surface_new (width, height);
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        return;
+    }
+
     output_pixels = cairo_image_surface_get_data (output);
 
     for (y = 0; y < tileHeight; y++) {
@@ -4073,6 +4177,9 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
+    if (in == NULL)
+        return;
+
     cairo_surface_flush (in);
 
     in_pixels = cairo_image_surface_get_data (in);
@@ -4083,6 +4190,10 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
     rowstride = cairo_image_surface_get_stride (in);
 
     output = _rsvg_image_surface_new (width, height);
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        return;
+    }
 
     output_pixels = cairo_image_surface_get_data (output);
 
@@ -4252,6 +4363,9 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
+    if (in == NULL)
+        return;
+
     cairo_surface_flush (in);
 
     in_pixels = cairo_image_surface_get_data (in);
@@ -4262,6 +4376,10 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
     rowstride = cairo_image_surface_get_stride (in);
 
     output = _rsvg_image_surface_new (width, height);
+    if (output == NULL) {
+        cairo_surface_destroy (in);
+        return;
+    }
 
     output_pixels = cairo_image_surface_get_data (output);
 
@@ -4425,6 +4543,10 @@ rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self, RsvgFilterContext
     in_pixels = cairo_image_surface_get_data (in);
 
     output = _rsvg_image_surface_new (ctx->width, ctx->height);
+    if (output == NULL) {
+        return;
+    }
+
     rowstride = cairo_image_surface_get_stride (output);
 
     output_pixels = cairo_image_surface_get_data (output);
