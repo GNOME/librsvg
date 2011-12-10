@@ -205,7 +205,7 @@ void rsvg_handle_free (RsvgHandle * handle);
  *
  * Deprecated: Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
  */
-typedef RSVG_DEPRECATED void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
+typedef /* RSVG_DEPRECATED */ void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
 
 RSVG_DEPRECATED
 void rsvg_handle_set_size_callback (RsvgHandle * handle,
