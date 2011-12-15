@@ -1232,6 +1232,8 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
  * Returns: The SVG's title
  *
  * Since: 2.9
+ *
+ * Deprecated: 2.36
  */
 const char *
 rsvg_handle_get_metadata (RsvgHandle * handle)
@@ -1254,6 +1256,8 @@ rsvg_handle_get_metadata (RsvgHandle * handle)
  * Returns: The SVG's title
  *
  * Since: 2.4
+ *
+ * Deprecated: 2.36
  */
 const char *
 rsvg_handle_get_title (RsvgHandle * handle)
@@ -1276,6 +1280,8 @@ rsvg_handle_get_title (RsvgHandle * handle)
  * Returns: The SVG's description
  *
  * Since: 2.4
+ *
+ * Deprecated: 2.36
  */
 const char *
 rsvg_handle_get_desc (RsvgHandle * handle)

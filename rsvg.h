@@ -171,12 +171,6 @@ RsvgHandle *rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
                                               GCancellable   *cancellable,
                                               GError        **error);
 
-/* Accessibility API */
-
-const char *rsvg_handle_get_title	(RsvgHandle * handle);
-const char *rsvg_handle_get_desc	(RsvgHandle * handle);
-const char *rsvg_handle_get_metadata	(RsvgHandle * handle);
-
 RsvgHandle *rsvg_handle_new_from_data (const guint8 * data, gsize data_len, GError ** error);
 RsvgHandle *rsvg_handle_new_from_file (const gchar * file_name, GError ** error);
 
@@ -230,6 +224,13 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar * file_name,
                                                    double x_zoom,
                                                    double y_zoom,
                                                    gint max_width, gint max_height, GError ** error);
+
+RSVG_DEPRECATED
+const char *rsvg_handle_get_title       (RsvgHandle * handle);
+RSVG_DEPRECATED
+const char *rsvg_handle_get_desc        (RsvgHandle * handle);
+RSVG_DEPRECATED
+const char *rsvg_handle_get_metadata    (RsvgHandle * handle);
 
 #endif /* !__GI_SCANNER__ */
 
