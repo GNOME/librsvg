@@ -294,6 +294,9 @@ rsvg_desc_handler_characters (RsvgSaxHandler * self, const char *ch, int len)
     if (!ch || !len)
         return;
 
+    if (ctx->priv->desc == NULL)
+        ctx->priv->desc = g_string_new (NULL);
+
     if (!g_utf8_validate ((char *) ch, len, NULL)) {
         char *utf8;
         utf8 = rsvg_make_valid_utf8 ((char *) ch, len);
@@ -327,14 +330,22 @@ static void
 rsvg_start_desc (RsvgHandle * ctx)
 {
     RsvgSaxHandlerDesc *handler = g_new0 (RsvgSaxHandlerDesc, 1);
+    RsvgNode *treebase = ctx->priv->treebase;
+    RsvgNode *currentnode = ctx->priv->currentnode;
+    gboolean do_care;
+
+    /* only parse <desc> for the <svg> node.
+     * This isn't quite the correct behavior - any graphics
+     * element may contain a <desc> element.
+     */
+    do_care = treebase != NULL && treebase == currentnode;
 
     handler->super.free = rsvg_desc_handler_free;
-    handler->super.characters = rsvg_desc_handler_characters;
+    handler->super.characters = do_care ? rsvg_desc_handler_characters : NULL;
     handler->super.start_element = rsvg_desc_handler_start;
     handler->super.end_element = rsvg_desc_handler_end;
     handler->ctx = ctx;
 
-    ctx->priv->desc = g_string_new (NULL);
     ctx->priv->handler = &handler->super;
 }
 
@@ -359,6 +370,9 @@ rsvg_title_handler_characters (RsvgSaxHandler * self, const char *ch, int len)
 
     if (!ch || !len)
         return;
+
+    if (ctx->priv->title == NULL)
+        ctx->priv->title = g_string_new (NULL);
 
     if (!g_utf8_validate ((char *) ch, len, NULL)) {
         char *utf8;
@@ -393,14 +407,22 @@ static void
 rsvg_start_title (RsvgHandle * ctx)
 {
     RsvgSaxHandlerTitle *handler = g_new0 (RsvgSaxHandlerTitle, 1);
+    RsvgNode *treebase = ctx->priv->treebase;
+    RsvgNode *currentnode = ctx->priv->currentnode;
+    gboolean do_care;
+
+    /* only parse <title> for the <svg> node.
+     * This isn't quite the correct behavior - any graphics
+     * element may contain a <title> element.
+     */
+    do_care = treebase != NULL && treebase == currentnode;
 
     handler->super.free = rsvg_title_handler_free;
-    handler->super.characters = rsvg_title_handler_characters;
+    handler->super.characters = do_care ? rsvg_title_handler_characters : NULL;
     handler->super.start_element = rsvg_title_handler_start;
     handler->super.end_element = rsvg_title_handler_end;
     handler->ctx = ctx;
 
-    ctx->priv->title = g_string_new (NULL);
     ctx->priv->handler = &handler->super;
 }
 
@@ -420,11 +442,11 @@ rsvg_metadata_handler_characters (RsvgSaxHandler * self, const char *ch, int len
     RsvgSaxHandlerDesc *z = (RsvgSaxHandlerDesc *) self;
     RsvgHandle *ctx = z->ctx;
 
-    /* This isn't quite the correct behavior - in theory, any graphics
-       element may contain a metadata or desc element */
-
     if (!ch || !len)
         return;
+
+    if (ctx->priv->metadata == NULL)
+        ctx->priv->metadata = g_string_new (NULL);
 
     if (!g_utf8_validate ((char *) ch, len, NULL)) {
         char *utf8;
@@ -473,14 +495,22 @@ static void
 rsvg_start_metadata (RsvgHandle * ctx)
 {
     RsvgSaxHandlerMetadata *handler = g_new0 (RsvgSaxHandlerMetadata, 1);
+    RsvgNode *treebase = ctx->priv->treebase;
+    RsvgNode *currentnode = ctx->priv->currentnode;
+    gboolean do_care;
+
+    /* only parse <metadata> for the <svg> node.
+     * This isn't quite the correct behavior - any graphics
+     * element may contain a <metadata> element.
+     */
+    do_care = treebase != NULL && treebase == currentnode;
 
     handler->super.free = rsvg_metadata_handler_free;
-    handler->super.characters = rsvg_metadata_handler_characters;
+    handler->super.characters = do_care ? rsvg_metadata_handler_characters : NULL;
     handler->super.start_element = rsvg_metadata_handler_start;
     handler->super.end_element = rsvg_metadata_handler_end;
     handler->ctx = ctx;
 
-    ctx->priv->metadata = g_string_new (NULL);
     ctx->priv->handler = &handler->super;
 }
 
