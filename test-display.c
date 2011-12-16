@@ -30,15 +30,129 @@
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
-#if GTK_CHECK_VERSION(2,90,7)
-#define GDK_KEY(symbol) GDK_KEY_##symbol
-#else
-#include <gdk/gdkkeysyms.h>
-#define GDK_KEY(symbol) GDK_##symbol
+#if 0 // defined (G_OS_UNIX)
+#include <gio/gunixinputstream.h>
 #endif
 
 #define DEFAULT_WIDTH  640
 #define DEFAULT_HEIGHT 480
+
+/* RsvgImage */
+
+#define RSVG_TYPE_IMAGE (rsvg_image_get_type ())
+#define RSVG_IMAGE(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), RSVG_TYPE_IMAGE, RsvgImage))
+
+typedef struct _RsvgImage       RsvgImage;
+typedef struct _RsvgImageClass  RsvgImageClass;
+
+struct _RsvgImage {
+    GtkWidget parent_instance;
+
+    cairo_surface_t *surface; /* a cairo image surface */
+};
+
+struct _RsvgImageClass {
+    GtkWidgetClass parent_class;
+};
+
+static GType rsvg_image_get_type (void);
+
+static void
+rsvg_image_take_surface (RsvgImage *image,
+                         cairo_surface_t *surface)
+{
+    if (image->surface == surface)
+      return;
+    if (image->surface)
+      cairo_surface_destroy (image->surface);
+    image->surface = surface; /* adopted */
+
+    gtk_widget_queue_resize (GTK_WIDGET (image));
+}
+
+G_DEFINE_TYPE (RsvgImage, rsvg_image, GTK_TYPE_WIDGET);
+
+static void
+rsvg_image_init (RsvgImage *image)
+{
+  gtk_widget_set_has_window (GTK_WIDGET (image), FALSE);
+}
+
+static void
+rsvg_image_finalize (GObject *object)
+{
+  RsvgImage *image = RSVG_IMAGE (object);
+
+  rsvg_image_take_surface (image, NULL);
+}
+
+static void
+rsvg_image_get_preferred_width (GtkWidget *widget,
+                                gint      *minimum,
+                                gint      *natural)
+{
+  RsvgImage *image = RSVG_IMAGE (widget);
+
+  *minimum = *natural = image->surface ? cairo_image_surface_get_width (image->surface) : 1;
+}
+
+static void
+rsvg_image_get_preferred_height (GtkWidget *widget,
+                                 gint      *minimum,
+                                 gint      *natural)
+{
+  RsvgImage *image = RSVG_IMAGE (widget);
+
+  *minimum = *natural = image->surface ? cairo_image_surface_get_height (image->surface) : 1;
+}
+
+static gboolean
+rsvg_image_draw (GtkWidget *widget,
+                 cairo_t *cr)
+{
+  RsvgImage *image = RSVG_IMAGE (widget);
+
+  if (image->surface == NULL)
+      return FALSE;
+
+  cairo_save (cr);
+  cairo_set_source_surface (cr, image->surface, 0, 0);
+  cairo_paint (cr);
+  cairo_restore (cr);
+
+  return FALSE;
+}
+
+static void
+rsvg_image_class_init (RsvgImageClass *klass)
+{
+  GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
+
+  gobject_class->finalize = rsvg_image_finalize;
+  widget_class->get_preferred_width = rsvg_image_get_preferred_width;
+  widget_class->get_preferred_height = rsvg_image_get_preferred_height;
+  widget_class->draw = rsvg_image_draw;
+}
+
+static RsvgImage *
+rsvg_image_new_take_surface (cairo_surface_t *surface)
+{
+  RsvgImage *image;
+
+  image = g_object_new (RSVG_TYPE_IMAGE, NULL);
+  rsvg_image_take_surface (image, surface);
+
+  return image;
+}
+
+static cairo_surface_t *
+rsvg_image_get_surface (RsvgImage *image)
+{
+  return image->surface;
+}
+
+/* Main */
 
 static char *
 _rsvg_basename (const char *file)
@@ -53,124 +167,51 @@ typedef struct _ViewerCbInfo ViewerCbInfo;
 struct _ViewerCbInfo {
     GtkWidget *window;
     GtkWidget *popup_menu;
-    GtkWidget *image;           /* the image widget */
-
-    GdkPixbuf *pixbuf;
-    GByteArray *svg_bytes;
+    RsvgImage *image;
+    RsvgHandle *handle;
     GtkAccelGroup *accel_group;
     char *base_uri;
     char *id;
+    RsvgDimensionData dimensions;
     gdouble x_zoom;
     gdouble y_zoom;
 };
 
-static gboolean
-get_image_size_from_data (ViewerCbInfo *info,
-                          gint *width,
-                          gint *height,
-                          GError **error)
+static cairo_surface_t *
+render_to_surface (ViewerCbInfo *info)
 {
-    RsvgHandle *handle;
     RsvgDimensionData dimensions;
+    int width, height;
+    cairo_matrix_t matrix;
+    GdkPixbuf *output = NULL;
+    guint8 *pixels;
+    cairo_surface_t *surface;
+    cairo_t *cr;
+    int rowstride, minimum;
 
-    handle = rsvg_handle_new ();
+    width = ceil ((double) info->dimensions.width * info->x_zoom);
+    height = ceil ((double) info->dimensions.height * info->y_zoom);
 
-    if (!handle) {
-        g_set_error (error, rsvg_error_quark (), 0, _("Error creating SVG reader"));
-        return FALSE;
-    }
-
-    rsvg_handle_set_base_uri (handle, info->base_uri);
-
-    if (!rsvg_handle_write (handle, info->svg_bytes->data, info->svg_bytes->len, error)) {
-        g_object_unref (handle);
-        return FALSE;
-    }
-
-    if (!rsvg_handle_close (handle, error)) {
-        g_object_unref (handle);
-        return FALSE;
-    }
-
-    (void) rsvg_handle_get_dimensions_sub (handle, &dimensions, info->id);
-    g_object_unref (handle);
-
-    if (width)
-        *width = dimensions.width;
-    if (height)
-        *height = dimensions.height;
-
-    return TRUE;
-}
-
-static gboolean
-calculate_zoom_ratio (ViewerCbInfo *info,
-                      struct RsvgSizeCallbackData *size_data,
-                      GError **error)
-{
-    GdkScreen *screen;
-    gint image_width, image_height;
-    gint screen_width, screen_height;
-    gdouble x_zoom = 1.0, y_zoom = 1.0, zoom;
-
-    if (!get_image_size_from_data (info, &image_width, &image_height, error))
-        return FALSE;
-
-    screen = gdk_screen_get_default ();
-    screen_width = gdk_screen_get_width (screen);
-    screen_height = gdk_screen_get_height (screen);
-
-    if (image_width > screen_width)
-        x_zoom = (gdouble) screen_width / image_width * 0.8;
-
-    if (image_height > screen_height)
-        y_zoom = (gdouble) screen_height / image_height * 0.8;
-
-    zoom = MAX (x_zoom, y_zoom);
-
-    info->x_zoom = zoom;
-    info->y_zoom = zoom;
-    size_data->x_zoom = zoom;
-    size_data->y_zoom = zoom;
-
-    return TRUE;
-}
-
-static GdkPixbuf *
-pixbuf_from_data_with_size_data (const guchar * buff,
-                                 size_t len,
-                                 struct RsvgSizeCallbackData *data,
-                                 const char *base_uri,
-                                 const char *id,
-                                 GError ** error)
-{
-    RsvgHandle *handle;
-    GdkPixbuf *retval;
-
-    handle = rsvg_handle_new ();
-
-    if (!handle) {
-        g_set_error (error, rsvg_error_quark (), 0, _("Error creating SVG reader"));
+    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
+    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+        cairo_surface_destroy (surface);
         return NULL;
     }
 
-    rsvg_handle_set_size_callback (handle, _rsvg_size_callback, data, NULL);
-    rsvg_handle_set_base_uri (handle, base_uri);
+    cr = cairo_create (surface);
 
-    if (!rsvg_handle_write (handle, buff, len, error)) {
-        g_object_unref (handle);
+    cairo_matrix_init_scale (&matrix, info->x_zoom, info->y_zoom);
+    cairo_transform (cr, &matrix);
+
+    if (!rsvg_handle_render_cairo_sub (info->handle, cr, info->id)) {
+        cairo_destroy (cr);
+        cairo_surface_destroy (surface);
         return NULL;
     }
 
-    if (!rsvg_handle_close (handle, error)) {
-        g_object_unref (handle);
-        return NULL;
-    }
+    cairo_destroy (cr);
 
-    retval = rsvg_handle_get_pixbuf_sub (handle, id);
-    g_object_unref (handle);
-
-    return retval;
+    return surface;
 }
 
 static void
@@ -207,78 +248,25 @@ set_window_title (ViewerCbInfo * info)
 static void
 zoom_image (ViewerCbInfo * info, gdouble factor)
 {
-    struct RsvgSizeCallbackData size_data;
-    GdkPixbuf *save_pixbuf = info->pixbuf;
-
     info->x_zoom *= factor;
     info->y_zoom *= factor;
 
-    size_data.type = RSVG_SIZE_WH;
-    size_data.width = gdk_pixbuf_get_width (info->pixbuf) * factor;
-    size_data.height = gdk_pixbuf_get_height (info->pixbuf) * factor;
-    size_data.keep_aspect_ratio = FALSE;
-
-    info->pixbuf =
-        pixbuf_from_data_with_size_data (info->svg_bytes->data, info->svg_bytes->len,
-                                         &size_data, info->base_uri, info->id, NULL);
-    gtk_image_set_from_pixbuf (GTK_IMAGE (info->image), info->pixbuf);
+    rsvg_image_take_surface (info->image, render_to_surface (info));
 
     set_window_title (info);
-
-    if (save_pixbuf)
-        g_object_unref (save_pixbuf);
 }
 
 static void
 zoom_in (GObject * ignored, ViewerCbInfo * info)
 {
-    if (!info->pixbuf)
-        return;
-    zoom_image (info, 1.25);
+    zoom_image (info, sqrt (G_SQRT2));
 }
 
 static void
 zoom_out (GObject * ignored, ViewerCbInfo * info)
 {
-    if (!info->pixbuf)
-        return;
-    zoom_image (info, 1. / 1.25);
+    zoom_image (info, 1. / sqrt (G_SQRT2));
 }
-
-static void
-rsvg_window_set_default_icon (GtkWindow * window, GdkPixbuf * src)
-{
-    GList *list;
-    GdkPixbuf *icon;
-    gint width, height;
-
-    width = gdk_pixbuf_get_width (src);
-    height = gdk_pixbuf_get_height (src);
-
-    if (width > 128 || height > 128) {
-        /* sending images greater than 128x128 has this nasty tendency to 
-           cause broken pipe errors X11 Servers */
-        if (width > height) {
-            width = 0.5 + width * 128. / height;
-            height = 128;
-        } else {
-            height = 0.5 + height * 128. / width;
-            width = 128;
-        }
-
-        icon = gdk_pixbuf_scale_simple (src, width, height, GDK_INTERP_BILINEAR);
-    } else {
-        icon = g_object_ref (src);
-    }
-
-    list = g_list_prepend (NULL, icon);
-    gtk_window_set_icon_list (window, list);
-    g_list_free (list);
-
-    g_object_unref (icon);
-}
-
-#if GTK_CHECK_VERSION(2,10,0)
 
 static void
 begin_print (GtkPrintOperation *operation,
@@ -295,48 +283,40 @@ draw_page (GtkPrintOperation *operation,
 		   gpointer           user_data)
 {
     ViewerCbInfo *info = (ViewerCbInfo *) user_data;
+    cairo_t *cr;
+    gdouble page_width, page_height, page_aspect;
+    gdouble width, height, aspect;
+    cairo_matrix_t matrix;
 
-	cairo_t *cr;
-	gdouble page_width, page_height;
-  
-	cr = gtk_print_context_get_cairo_context (context);
-	page_width = gtk_print_context_get_width (context);
-	page_height = gtk_print_context_get_height (context);
+    cr = gtk_print_context_get_cairo_context (context);
+    page_width = gtk_print_context_get_width (context);
+    page_height = gtk_print_context_get_height (context);
+    page_aspect = page_width / page_height;
 
-	{
-        RsvgHandle *handle;
-        RsvgDimensionData svg_dimensions;
-        struct RsvgSizeCallbackData size_data;
+    // FIXMEchpe
+    rsvg_handle_set_dpi_x_y (info->handle, 
+                             gtk_print_context_get_dpi_x(context), 
+                             gtk_print_context_get_dpi_y(context));
 
-        /* should not fail */
-        handle = rsvg_handle_new_from_data(info->svg_bytes->data, info->svg_bytes->len, NULL);
-        rsvg_handle_set_base_uri (handle, info->base_uri);
-        rsvg_handle_set_dpi_x_y (handle, gtk_print_context_get_dpi_x(context), 
-                                 gtk_print_context_get_dpi_y(context));
-        rsvg_handle_get_dimensions(handle, &svg_dimensions);
+    width = info->dimensions.width;
+    height = info->dimensions.height;
+    aspect = width / height;
 
-        if (svg_dimensions.width > page_width || svg_dimensions.height > page_height) {
-            /* scale down the image to the page's size, while preserving the aspect ratio */
+    if (aspect <= page_aspect) {
+        width = page_height * aspect;
+        height = page_height;
+    } else {
+        width = page_width;
+        height = page_width / aspect;
+    }
 
-            if ((double) svg_dimensions.height * (double) page_width > (double) svg_dimensions.width * (double) page_height) {
-                svg_dimensions.width = 0.5 + (double) svg_dimensions.width *(double) page_height / (double) svg_dimensions.height;
-                svg_dimensions.height = page_height;
-            } else {
-                svg_dimensions.height = 0.5 + (double) svg_dimensions.height *(double) page_width / (double) svg_dimensions.width;
-                svg_dimensions.width = page_width;
-            }
-        }
-
-        size_data.type = RSVG_SIZE_WH;
-        size_data.width = svg_dimensions.width;
-        size_data.height = svg_dimensions.height;
-        size_data.keep_aspect_ratio = FALSE;
-        rsvg_handle_set_size_callback (handle, _rsvg_size_callback, &size_data, NULL);
-
-        rsvg_handle_render_cairo(handle, cr);
-
-        g_object_unref (handle);
-	}
+    cairo_save (cr);
+    cairo_matrix_init_scale (&matrix, 
+                             width / info->dimensions.width,
+                             height / info->dimensions.height);
+    cairo_transform (cr, &matrix);
+    rsvg_handle_render_cairo (info->handle, cr);
+    cairo_restore (cr);
 }
 
 static void
@@ -355,8 +335,6 @@ print_pixbuf (GObject * ignored, gpointer user_data)
 
   g_object_unref (print);
 }
-
-#endif                          /* HAVE_GNOME_PRINT */
 
 static char *
 save_file (const char *title, const char *suggested_filename, GtkWidget * parent, int *success)
@@ -391,6 +369,7 @@ save_pixbuf (GObject * ignored, gpointer user_data)
     ViewerCbInfo *info = (ViewerCbInfo *) user_data;
     char *filename, *base_name, *filename_suggestion;
     int success = 0;
+    cairo_surface_t *surface;
 
     base_name = _rsvg_basename (info->base_uri);
     if (base_name)
@@ -403,92 +382,18 @@ save_pixbuf (GObject * ignored, gpointer user_data)
     g_free (filename_suggestion);
 
     if (filename) {
-        GError *err = NULL;
-
-        if (!gdk_pixbuf_save (info->pixbuf, filename, "png", &err, NULL)) {
-            if (err) {
+        surface = rsvg_image_get_surface (info->image);
+        if (cairo_surface_write_to_png (surface, filename) != CAIRO_STATUS_SUCCESS) {
                 GtkWidget *errmsg;
 
                 errmsg = gtk_message_dialog_new (GTK_WINDOW (info->window),
                                                  GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
                                                  GTK_MESSAGE_WARNING,
-                                                 GTK_BUTTONS_CLOSE, "%s", err->message);
+                                                 GTK_BUTTONS_CLOSE, "Failed to save");
 
                 gtk_dialog_run (GTK_DIALOG (errmsg));
 
-                g_error_free (err);
                 gtk_widget_destroy (errmsg);
-            }
-        }
-
-        g_free (filename);
-    } else if (success) {
-        GtkWidget *errmsg;
-
-        errmsg = gtk_message_dialog_new (GTK_WINDOW (info->window),
-                                         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                         GTK_MESSAGE_WARNING,
-                                         GTK_BUTTONS_CLOSE, _("No filename given"));
-        gtk_window_set_transient_for (GTK_WINDOW (errmsg), GTK_WINDOW (info->window));
-
-        gtk_dialog_run (GTK_DIALOG (errmsg));
-        gtk_widget_destroy (errmsg);
-    }
-}
-
-static void
-save_svg (GObject * ignored, gpointer user_data)
-{
-    ViewerCbInfo *info = (ViewerCbInfo *) user_data;
-    char *filename, *base_name;
-    int success = 0;
-
-    base_name = _rsvg_basename (info->base_uri);
-    filename = save_file (_("Save SVG"), base_name, info->window, &success);
-    g_free (base_name);
-
-    if (filename) {
-        FILE *fp;
-
-        /* todo: make this support gnome vfs */
-        fp = fopen (filename, "wb");
-        if (!fp) {
-            GtkWidget *errmsg;
-
-            errmsg = gtk_message_dialog_new (GTK_WINDOW (info->window),
-                                             GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                             GTK_MESSAGE_WARNING,
-                                             GTK_BUTTONS_CLOSE, _("Couldn't save %s"), filename);
-            gtk_window_set_transient_for (GTK_WINDOW (errmsg), GTK_WINDOW (info->window));
-
-            gtk_dialog_run (GTK_DIALOG (errmsg));
-            gtk_widget_destroy (errmsg);
-        } else {
-            size_t written = 0, remaining = info->svg_bytes->len;
-            const unsigned char *buffer = info->svg_bytes->data;
-
-            while (remaining > 0) {
-                written = fwrite (buffer + (info->svg_bytes->len - remaining), 1, remaining, fp);
-                if ((written < remaining) && ferror (fp) != 0) {
-                    GtkWidget *errmsg;
-
-                    errmsg = gtk_message_dialog_new (GTK_WINDOW (info->window),
-                                                     GTK_DIALOG_MODAL |
-                                                     GTK_DIALOG_DESTROY_WITH_PARENT,
-                                                     GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
-                                                     _("Couldn't save %s"), filename);
-                    gtk_window_set_transient_for (GTK_WINDOW (errmsg), GTK_WINDOW (info->window));
-
-                    gtk_dialog_run (GTK_DIALOG (errmsg));
-                    gtk_widget_destroy (errmsg);
-
-                    break;
-                }
-
-                remaining -= written;
-            }
-
-            fclose (fp);
         }
 
         g_free (filename);
@@ -536,16 +441,9 @@ create_popup_menu (ViewerCbInfo * info)
         g_signal_connect (menu_item, "activate", G_CALLBACK (copy_svg_location), info);
         gtk_widget_show (menu_item);
         gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
-        gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY(C),
+        gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY_C,
                                     GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
     }
-
-    menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_SAVE, NULL);
-    g_signal_connect (menu_item, "activate", G_CALLBACK (save_svg), info);
-    gtk_widget_show (menu_item);
-    gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
-    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY(S), GDK_CONTROL_MASK,
-                                GTK_ACCEL_VISIBLE);
 
     menu_item = gtk_image_menu_item_new_with_label (_("Save as PNG"));
     stock = gtk_image_new_from_stock (GTK_STOCK_SAVE_AS, GTK_ICON_SIZE_MENU);
@@ -554,30 +452,28 @@ create_popup_menu (ViewerCbInfo * info)
     g_signal_connect (menu_item, "activate", G_CALLBACK (save_pixbuf), info);
     gtk_widget_show (menu_item);
     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
-    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY(S),
+    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY_S,
                                 GDK_CONTROL_MASK | GDK_SHIFT_MASK, GTK_ACCEL_VISIBLE);
 
-#if GTK_CHECK_VERSION(2,10,0)
     menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_PRINT, NULL);
     g_signal_connect (menu_item, "activate", G_CALLBACK (print_pixbuf), info);
     gtk_widget_show (menu_item);
     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
-    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY(P), GDK_CONTROL_MASK,
+    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY_P, GDK_CONTROL_MASK,
                                 GTK_ACCEL_VISIBLE);
-#endif
 
     menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_ZOOM_IN, NULL);
     g_signal_connect (menu_item, "activate", G_CALLBACK (zoom_in), info);
     gtk_widget_show (menu_item);
     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
-    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY(plus),
+    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY_plus,
                                 GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 
     menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_ZOOM_OUT, NULL);
     g_signal_connect (menu_item, "activate", G_CALLBACK (zoom_out), info);
     gtk_widget_show (menu_item);
     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
-    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY(minus),
+    gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY_minus,
                                 GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 
     info->popup_menu = popup_menu;
@@ -605,10 +501,17 @@ quit_cb (GtkWidget * win, gpointer unused)
 }
 
 static void
-populate_window (GtkWidget * win, ViewerCbInfo * info, int xid, gint win_width, gint win_height)
+populate_window (GtkWidget * win, 
+                 ViewerCbInfo * info, 
+                 cairo_surface_t *surface /* adopted */,
+                 gint win_width, 
+                 gint win_height)
 {
     GtkWidget *vbox;
     GtkWidget *scroll;
+    GtkWidget *toolbar;
+    GtkToolItem *toolitem;
+    GtkRequisition requisition;
     gint img_width, img_height;
 
 #if GTK_CHECK_VERSION (3, 2, 0)
@@ -618,56 +521,44 @@ populate_window (GtkWidget * win, ViewerCbInfo * info, int xid, gint win_width, 
 #endif
     gtk_container_add (GTK_CONTAINER (win), vbox);
 
-    /* create a new image */
-    info->image = gtk_image_new_from_pixbuf (info->pixbuf);
-
     /* pack the window with the image */
-    img_width = gdk_pixbuf_get_width (info->pixbuf);
-    img_height = gdk_pixbuf_get_height (info->pixbuf);
+    img_width = cairo_image_surface_get_width (surface);
+    img_height = cairo_image_surface_get_height (surface);
 
-    if (xid <= 0) {
-		GtkWidget *toolbar;
-		GtkToolItem *toolitem;
-		GtkRequisition requisition;
+    /* create a new image */
+    info->image = rsvg_image_new_take_surface (surface);
 
-        toolbar = gtk_toolbar_new ();
-        gtk_box_pack_start (GTK_BOX (vbox), toolbar, FALSE, FALSE, 0);
+    toolbar = gtk_toolbar_new ();
+    gtk_box_pack_start (GTK_BOX (vbox), toolbar, FALSE, FALSE, 0);
 
-        toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_IN);
-        gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 0);
-        g_signal_connect (toolitem, "clicked", G_CALLBACK (zoom_in), info);
+    toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_IN);
+    gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 0);
+    g_signal_connect (toolitem, "clicked", G_CALLBACK (zoom_in), info);
 
-        toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_OUT);
-        gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 1);
-        g_signal_connect (toolitem, "clicked", G_CALLBACK (zoom_out), info);
+    toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_OUT);
+    gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 1);
+    g_signal_connect (toolitem, "clicked", G_CALLBACK (zoom_out), info);
 
-		gtk_widget_size_request(toolbar, &requisition);
+    gtk_widget_size_request(toolbar, &requisition);
 
-		/* HACK: adjust for frame width & height + packing borders */
-		img_height += requisition.height + 30;
-		win_height += requisition.height + 30;
-		img_width  += 20;
-		win_width  += 20;
-    }
+    /* HACK: adjust for frame width & height + packing borders */
+    img_height += requisition.height + 30;
+    win_height += requisition.height + 30;
+    img_width  += 20;
+    win_width  += 20;
 
-    if ((xid > 0 && (img_width > win_width || img_height > win_height))
-        || (xid <= 0)) {
-        gtk_window_set_default_size (GTK_WINDOW (win), MIN (img_width, win_width),
-                                     MIN (img_height, win_height));
-
-        scroll = gtk_scrolled_window_new (NULL, NULL);
-        gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroll),
-                                        GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-        gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scroll), info->image);
-        gtk_box_pack_start (GTK_BOX (vbox), scroll, TRUE, TRUE, 0);
-    } else {
-        gtk_box_pack_start (GTK_BOX (vbox), info->image, TRUE, TRUE, 0);
-        gtk_window_set_default_size (GTK_WINDOW (win), img_width, img_height);
-    }
+    scroll = gtk_scrolled_window_new (NULL, NULL);
+    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroll),
+                                    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scroll), 
+                                           GTK_WIDGET (info->image));
+    gtk_box_pack_start (GTK_BOX (vbox), scroll, TRUE, TRUE, 0);
 }
 
 static void
-view_pixbuf (ViewerCbInfo * info, int xid, const char *color)
+view_surface (ViewerCbInfo * info, 
+              cairo_surface_t *surface /* adopted */,
+              const char *color)
 {
     GtkWidget *win;
     GdkColor bg_color;
@@ -680,9 +571,7 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char *color)
     win_width = DEFAULT_WIDTH;
     win_height = DEFAULT_HEIGHT;
 
-    populate_window (win, info, xid, win_width, win_height);
-
-    rsvg_window_set_default_icon (GTK_WINDOW (win), info->pixbuf);
+    populate_window (win, info, surface, win_width, win_height);
 
     /* exit when 'X' is clicked */
     g_signal_connect (win, "destroy", G_CALLBACK (quit_cb), NULL);
@@ -690,17 +579,9 @@ view_pixbuf (ViewerCbInfo * info, int xid, const char *color)
 
     if (color && strcmp (color, "none") != 0) {
         if (gdk_color_parse (color, &bg_color)) {
-            GtkWidget *parent_widget = gtk_widget_get_parent (info->image);
+            GtkWidget *parent_widget = gtk_widget_get_parent (GTK_WIDGET (info->image));
 
-#if GTK_CHECK_VERSION (2, 90, 8)
             gtk_widget_modify_bg (parent_widget, GTK_STATE_NORMAL, &bg_color);
-#else
-            if (gdk_colormap_alloc_color
-                (gtk_widget_get_colormap (parent_widget), &bg_color, FALSE, TRUE))
-                gtk_widget_modify_bg (parent_widget, GTK_STATE_NORMAL, &bg_color);
-            else
-                g_warning (_("Couldn't allocate color '%s'"), color);
-#endif
         } else
             g_warning (_("Couldn't parse color '%s'"), color);
     }
@@ -732,10 +613,12 @@ main (int argc, char **argv)
     int bVersion = 0;
     char *bg_color = NULL;
     char *base_uri = NULL;
-    int bKeepAspect = 0;
+    gboolean keep_aspect_ratio = FALSE;
     char *id = NULL;
+    GInputStream *input;
+    GFile *file, *base_file;
+    cairo_surface_t *surface;
 
-    int xid = -1;
     int from_stdin = 0;
     ViewerCbInfo info;
 
@@ -763,7 +646,7 @@ main (int argc, char **argv)
          N_("<string>")},
         {"id", 0, 0, G_OPTION_ARG_STRING, &id, N_("Only show one node (default: all)"),
          N_("<string>")},
-        {"keep-aspect", 'k', 0, G_OPTION_ARG_NONE, &bKeepAspect,
+        {"keep-aspect", 'k', 0, G_OPTION_ARG_NONE, &keep_aspect_ratio,
          N_("Preserve the image's aspect ratio"), NULL},
         {"version", 'v', 0, G_OPTION_ARG_NONE, &bVersion, N_("Show version information"), NULL},
         {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL, N_("[FILE...]")},
@@ -775,8 +658,6 @@ main (int argc, char **argv)
 
     g_type_init ();
 
-    info.pixbuf = NULL;
-    info.svg_bytes = NULL;
     info.window = NULL;
     info.popup_menu = NULL;
 
@@ -795,10 +676,10 @@ main (int argc, char **argv)
         return 0;
     }
 
-    if (args) {
-        while (args[n_args] != NULL)
-            n_args++;
-    }
+    if (args)
+        n_args = g_strv_length (args);
+    else
+        n_args = 0;
 
     if ((!from_stdin) && (n_args != 1)) {
         g_print (_("No files specified, and not using --stdin\n"));
@@ -807,94 +688,70 @@ main (int argc, char **argv)
 
     rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 
-    /* if both are unspecified, assume user wants to zoom the pixbuf in at least 1 dimension */
-    if (width == -1 && height == -1) {
-        size_data.type = RSVG_SIZE_ZOOM;
-        size_data.x_zoom = x_zoom;
-        size_data.y_zoom = y_zoom;
-    }
-    /* if both are unspecified, assume user wants to resize pixbuf in at least 1 dimension */
-    else if (x_zoom == 1.0 && y_zoom == 1.0) {
-        size_data.type = RSVG_SIZE_WH;
-        size_data.width = width;
-        size_data.height = height;
-    }
-    /* assume the user wants to zoom the pixbuf, but cap the maximum size */
-    else {
-        size_data.type = RSVG_SIZE_ZOOM_MAX;
-        size_data.x_zoom = x_zoom;
-        size_data.y_zoom = y_zoom;
-        size_data.width = width;
-        size_data.height = height;
-    }
-
-    size_data.keep_aspect_ratio = bKeepAspect;
-
-    if (!from_stdin) {
-        if (base_uri == NULL)
-            base_uri = (char *) args[0];
-
-        info.svg_bytes = _rsvg_acquire_xlink_href_resource (args[0], base_uri, NULL);
+    if (from_stdin) {
+#if 0 // defined (G_OS_UNIX)
+        input = g_unix_input_stream_new (STDIN_FILENO, FALSE);
+#else
+        input = NULL;
+        g_set_error_literal (&err, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
+                             "Reading from stdin not supported");
+#endif
+        base_file = NULL;
     } else {
-        info.svg_bytes = g_byte_array_new ();
+        file = g_file_new_for_commandline_arg (args[0]);
+        input = (GInputStream *) g_file_read (file, NULL, &err);
 
-        for (;;) {
-            unsigned char buf[1024 * 8];
-            size_t nread = fread (buf, 1, sizeof (buf), stdin);
+        if (base_uri)
+            base_file = g_file_new_for_uri (base_uri);
+        else
+            base_file = g_object_ref (file);
 
-            if (nread > 0)
-                g_byte_array_append (info.svg_bytes, buf, nread);
-
-            if (nread < sizeof (buf)) {
-                if (ferror (stdin)) {
-                    g_print (_("Error reading\n"));
-                    g_byte_array_free (info.svg_bytes, TRUE);
-                    fclose (stdin);
-
-                    return 1;
-                } else if (feof (stdin))
-                    break;
-            }
-        }
-
-        fclose (stdin);
+        g_object_unref (file);
     }
 
-    if (!info.svg_bytes || !info.svg_bytes->len) {
-        g_print (_("Couldn't open %s\n"), args[0]);
+    g_strfreev (args);
+
+    if (input == NULL) {
+        g_printerr ("Failed to read input: %s\n", err->message);
+        g_error_free (err);
         return 1;
     }
 
-    info.base_uri = base_uri;
+    info.base_uri = base_file ? g_file_get_uri (base_file) : g_strdup ("");
     info.id = id;
     info.x_zoom = x_zoom;
     info.y_zoom = y_zoom;
 
-    if (size_data.type == RSVG_SIZE_ZOOM &&
-        x_zoom == 1.0 && y_zoom == 1.0) {
-        if (!calculate_zoom_ratio (&info, &size_data, &err)) {
-            if (err) {
-                g_print (": %s\n", err->message);
-                g_error_free (err);
-            }
-            return 1;
-        }
+    info.handle = rsvg_handle_new_from_stream_sync (input, 
+                                                    base_file, 
+                                                    RSVG_HANDLE_FLAGS_NONE,
+                                                    NULL /* cancellable */,
+                                                    &err);
+    g_object_unref (base_file);
+
+    if (info.handle == NULL) {
+        g_printerr ("Failed to load SVG: %s\n", err->message);
+        g_error_free (err);
+        g_object_unref (info.handle);
+        return 1;
     }
 
-    info.pixbuf = 
-        pixbuf_from_data_with_size_data (info.svg_bytes->data, info.svg_bytes->len, &size_data,
-                                         base_uri, id, &err);
+    rsvg_handle_get_dimensions (info.handle, &info.dimensions);
 
-    if (!info.pixbuf) {
-        g_print (_("Error displaying image"));
+    if (width != -1) {
+        info.x_zoom = (double) width / info.dimensions.width;
+    } else {
+        info.x_zoom = x_zoom;
+    }
+    if (height != -1) {
+        info.y_zoom = (double) height / info.dimensions.height;
+    } else {
+        info.y_zoom = y_zoom;
+    }
 
-        if (err) {
-            g_print (": %s", err->message);
-            g_error_free (err);
-        }
-
-        g_print ("\n");
-
+    surface = render_to_surface (&info);
+    if (surface == NULL) {
+        g_printerr (_("Error displaying image"));
         goto done;
     }
 
@@ -902,16 +759,15 @@ main (int argc, char **argv)
 
     info.accel_group = gtk_accel_group_new ();
 
-    view_pixbuf (&info, xid, bg_color);
+    view_surface (&info, surface, bg_color);
 
     /* run the gtk+ main loop */
     gtk_main ();
 
-    g_object_unref (info.pixbuf);
-
   done:
-    g_byte_array_free (info.svg_bytes, TRUE);
-    g_strfreev (args);
+
+    g_free (info.base_uri);
+    g_object_unref (info.handle);
 
     rsvg_cleanup ();
 

@@ -11,9 +11,6 @@ endif
 lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
 
 bin_PROGRAMS = rsvg-convert
-if HAVE_GTK_2
-bin_PROGRAMS += rsvg-view
-endif
 if HAVE_GTK_3
 bin_PROGRAMS += rsvg-view-3
 endif
@@ -126,29 +123,6 @@ rsvg_convert_LDFLAGS = $(AM_LDFLAGS)
 
 rsvg_convert_LDADD = \
 	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
-	$(LIBRSVG_LIBS)		\
-	$(GTHREAD_LIBS)		\
-	$(LIBM)
-
-rsvg_view_SOURCES = \
-	test-display.c
-
-rsvg_view_CPPFLAGS = \
-	-I$(top_srcdir) 			\
-	-I$(top_builddir) 			\
-	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
-	$(AM_CPPFLAGS)
-
-rsvg_view_CFLAGS =\
-	$(GTK2_CFLAGS)		\
-	$(LIBRSVG_CFLAGS) 	\
-	$(AM_CFLAGS)
-
-rsvg_view_LDFLAGS =
-
-rsvg_view_LDADD = \
-	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la \
-	$(GTK2_LIBS)		\
 	$(LIBRSVG_LIBS)		\
 	$(GTHREAD_LIBS)		\
 	$(LIBM)
