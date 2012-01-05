@@ -361,7 +361,7 @@ rsvg_start_extra (RsvgHandle * ctx,
     do_care = treebase != NULL && treebase == currentnode;
 
     handler->super.free = rsvg_extra_handler_free;
-    handler->super.characters = do_care ? rsvg_extra_handler_characters : NULL;
+    handler->super.characters = rsvg_extra_handler_characters;
     handler->super.start_element = rsvg_extra_handler_start;
     handler->super.end_element = rsvg_extra_handler_end;
     handler->ctx = ctx;
