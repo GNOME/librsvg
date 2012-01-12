@@ -74,6 +74,7 @@ typedef struct _RsvgSaxHandlerStyle {
     RsvgSaxHandlerDefs *parent;
     RsvgHandle *ctx;
     GString *style;
+    gboolean is_text_css;
 } RsvgSaxHandlerStyle;
 
 typedef struct {
@@ -95,7 +96,8 @@ rsvg_style_handler_free (RsvgSaxHandler * self)
     RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
     RsvgHandle *ctx = z->ctx;
 
-    rsvg_parse_cssbuffer (ctx, z->style->str, z->style->len);
+    if (z->is_text_css)
+        rsvg_parse_cssbuffer (ctx, z->style->str, z->style->len);
 
     g_string_free (z->style, TRUE);
     g_free (z);
@@ -129,9 +131,12 @@ rsvg_style_handler_end (RsvgSaxHandler * self, const char *name)
 }
 
 static void
-rsvg_start_style (RsvgHandle * ctx)
+rsvg_start_style (RsvgHandle * ctx, RsvgPropertyBag *atts)
 {
     RsvgSaxHandlerStyle *handler = g_new0 (RsvgSaxHandlerStyle, 1);
+    const char *type;
+
+    type = rsvg_property_bag_lookup (atts, "type");
 
     handler->super.free = rsvg_style_handler_free;
     handler->super.characters = rsvg_style_handler_characters;
@@ -140,6 +145,7 @@ rsvg_start_style (RsvgHandle * ctx)
     handler->ctx = ctx;
 
     handler->style = g_string_new (NULL);
+    handler->is_text_css = type && g_ascii_strcasecmp (type, "text/css") == 0;
 
     handler->parent = (RsvgSaxHandlerDefs *) ctx->priv->handler;
     ctx->priv->handler = &handler->super;
@@ -604,7 +610,7 @@ rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
                 name = (const xmlChar *) (tempname + 1);
 
         if (!strcmp ((const char *) name, "style"))
-            rsvg_start_style (ctx);
+            rsvg_start_style (ctx, bag);
         else if (!strcmp ((const char *) name, "title"))
             rsvg_start_title (ctx);
         else if (!strcmp ((const char *) name, "desc"))
