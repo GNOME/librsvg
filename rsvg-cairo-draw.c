@@ -1113,3 +1113,34 @@ rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface)
 
     return dest;
 }
+
+/* This is unused but still exists for ABI compat. See bug #666868. */
+void rsvg_cairo_to_pixbuf (guint8 * pixels, int rowstride, int height);
+
+void
+rsvg_cairo_to_pixbuf (guint8 * pixels, int rowstride, int height)
+{
+    int row;
+    /* un-premultiply data */
+    for (row = 0; row < height; row++) {
+        guint8 *row_data = (pixels + (row * rowstride));
+        int i;
+
+        for (i = 0; i < rowstride; i += 4) {
+            guint8 *b = &row_data[i];
+            guint32 pixel;
+            guint8 alpha;
+
+            memcpy (&pixel, b, sizeof (guint32));
+            alpha = (pixel & 0xff000000) >> 24;
+            if (alpha == 0) {
+                b[0] = b[1] = b[2] = b[3] = 0;
+            } else {
+                b[0] = (((pixel & 0xff0000) >> 16) * 255 + alpha / 2) / alpha;
+                b[1] = (((pixel & 0x00ff00) >> 8) * 255 + alpha / 2) / alpha;
+                b[2] = (((pixel & 0x0000ff) >> 0) * 255 + alpha / 2) / alpha;
+                b[3] = alpha;
+            }
+        }
+    }
+}
