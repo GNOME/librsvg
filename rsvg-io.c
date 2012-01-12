@@ -92,6 +92,7 @@ rsvg_acquire_file_data (const char *filename,
     GFile *file;
     gchar *path, *data;
     GInputStream *stream;
+    gboolean res;
 
     rsvg_return_val_if_fail (filename != NULL, NULL, error);
 
@@ -99,10 +100,10 @@ rsvg_acquire_file_data (const char *filename,
     if (path == NULL)
         return NULL;
 
-    if (!g_file_get_contents (path, &data, len, error))
-        return NULL;
+    res = g_file_get_contents (path, &data, len, error);
+    g_free (path);
 
-    return data;
+    return res ? data : NULL;
 }
 
 static GInputStream *
