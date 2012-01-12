@@ -361,9 +361,6 @@ GdkPixbuf *rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 gboolean     rsvg_eval_switch_attributes	(RsvgPropertyBag * atts, gboolean * p_has_cond);
 
 gchar       *rsvg_get_base_uri_from_filename    (const gchar * file_name);
-GByteArray  *_rsvg_acquire_xlink_href_resource  (const char *href,
-                                                 const char *base_uri, GError ** err);
-
 void rsvg_pop_discrete_layer    (RsvgDrawingCtx * ctx);
 void rsvg_push_discrete_layer   (RsvgDrawingCtx * ctx);
 void rsvg_render_path           (RsvgDrawingCtx * ctx, const cairo_path_t *path);

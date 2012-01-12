@@ -201,7 +201,6 @@ void rsvg_state_free_all    (RsvgState * state);
 void rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * atts);
 void rsvg_parse_style	    (RsvgHandle * ctx, RsvgState * state, const char *str);
 void rsvg_parse_cssbuffer   (RsvgHandle * ctx, const char *buff, size_t buflen);
-
 void rsvg_parse_style_attrs (RsvgHandle * ctx, RsvgState * state, const char *tag,
                              const char *klazz, const char *id, RsvgPropertyBag * atts);
 

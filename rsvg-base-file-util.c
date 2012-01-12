@@ -26,6 +26,7 @@
 
 #include "config.h"
 #include "rsvg.h"
+#include "rsvg-io.h"
 #include "rsvg-private.h"
 
 static gboolean
@@ -85,24 +86,23 @@ RsvgHandle *
 rsvg_handle_new_from_file (const gchar * file_name, GError ** error)
 {
     gchar *base_uri;
-    GByteArray *f;
+    guint8 *data;
+    gsize data_len;
     RsvgHandle *handle = NULL;
 
     rsvg_return_val_if_fail (file_name != NULL, NULL, error);
 
     base_uri = rsvg_get_base_uri_from_filename (file_name);
-    f = _rsvg_acquire_xlink_href_resource (file_name, base_uri, error);
+    data = _rsvg_io_acquire_data (file_name, base_uri, &data_len, error);
 
-    if (f) {
+    if (data) {
         handle = rsvg_handle_new ();
-        if (handle) {
-            rsvg_handle_set_base_uri (handle, base_uri);
-            if (!rsvg_handle_fill_with_data (handle, f->data, f->len, error)) {
-                g_object_unref (handle);
-                handle = NULL;
-            }
+        rsvg_handle_set_base_uri (handle, base_uri);
+        if (!rsvg_handle_fill_with_data (handle, data, data_len, error)) {
+            g_object_unref (handle);
+            handle = NULL;
         }
-        g_byte_array_free (f, TRUE);
+        g_free (data);
     }
 
     g_free (base_uri);

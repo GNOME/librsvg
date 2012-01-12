@@ -32,6 +32,7 @@
 #include "rsvg-private.h"
 #include "rsvg-filter.h"
 #include "rsvg-css.h"
+#include "rsvg-io.h"
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"
 #include "rsvg-mask.h"
@@ -1161,21 +1162,23 @@ ccss_import_style (CRDocHandler * a_this,
                    GList * a_media_list,
                    CRString * a_uri, CRString * a_uri_default_ns, CRParsingLocation * a_location)
 {
-    if (a_uri) {
-        GByteArray *stylesheet_data;
-        CSSUserData *user_data;
+    CSSUserData *user_data = (CSSUserData *) a_this->app_data;
+    guint8 *stylesheet_data;
+    gsize stylesheet_data_len;
 
-        user_data = (CSSUserData *) a_this->app_data;
+    if (a_uri == NULL)
+        return;
 
-        stylesheet_data =
-            _rsvg_acquire_xlink_href_resource ((gchar *) cr_string_peek_raw_str (a_uri),
-                                               rsvg_handle_get_base_uri (user_data->ctx), NULL);
-        if (stylesheet_data) {
-            rsvg_parse_cssbuffer (user_data->ctx, (const char *) stylesheet_data->data,
-                                  (size_t) stylesheet_data->len);
-            g_byte_array_free (stylesheet_data, TRUE);
-        }
-    }
+    stylesheet_data = _rsvg_io_acquire_data ((gchar *) cr_string_peek_raw_str (a_uri),
+                                             rsvg_handle_get_base_uri (user_data->ctx), 
+                                             &stylesheet_data_len,
+                                             NULL);
+    if (stylesheet_data == NULL)
+        return;
+
+    rsvg_parse_cssbuffer (user_data->ctx, (const char *) stylesheet_data,
+                          stylesheet_data_len);
+    g_free (stylesheet_data);
 }
 
 /* Parse an SVG transform string into an affine matrix. Reference: SVG

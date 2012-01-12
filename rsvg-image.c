@@ -34,170 +34,28 @@
 #include <math.h>
 #include <errno.h>
 #include "rsvg-css.h"
-#include <gio/gio.h>
-
-static GByteArray *
-rsvg_acquire_base64_resource (const char *data, GError ** error)
-{
-    GByteArray *array = NULL;
-    gsize data_len, written_len;
-    int state = 0;
-    guint save = 0;
-
-    rsvg_return_val_if_fail (data != NULL, NULL, error);
-
-    while (*data)
-        if (*data++ == ',')
-            break;
-
-    data_len = strlen (data);
-    array = g_byte_array_sized_new (data_len / 4 * 3);
-    written_len = g_base64_decode_step (data, data_len, array->data,
-                                        &state, &save);
-    g_byte_array_set_size (array, written_len);
-
-    return array;
-}
-
-gchar *
-rsvg_get_file_path (const gchar * filename, const gchar * base_uri)
-{
-    gchar *absolute_filename;
-
-    if (g_file_test (filename, G_FILE_TEST_EXISTS) || g_path_is_absolute (filename)) {
-        absolute_filename = g_strdup (filename);
-    } else {
-        gchar *tmpcdir;
-        gchar *base_filename;
-
-        if (base_uri) {
-            base_filename = g_filename_from_uri (base_uri, NULL, NULL);
-            if (base_filename != NULL) {
-                tmpcdir = g_path_get_dirname (base_filename);
-                g_free (base_filename);
-            } else 
-                return NULL;
-        } else
-            tmpcdir = g_get_current_dir ();
-
-        absolute_filename = g_build_filename (tmpcdir, filename, NULL);
-        g_free (tmpcdir);
-    }
-
-    return absolute_filename;
-}
-
-static GByteArray *
-rsvg_acquire_file_resource (const char *filename, const char *base_uri, GError ** error)
-{
-    GByteArray *array;
-    gchar *path;
-    gchar *data = NULL;
-    gsize length;
-
-    rsvg_return_val_if_fail (filename != NULL, NULL, error);
-
-    path = rsvg_get_file_path (filename, base_uri);
-    if (path == NULL)
-        return NULL;
-
-    if (!g_file_get_contents (path, &data, &length, error)) {
-        g_free (path);
-        return NULL;
-    }
-
-    array = g_byte_array_new ();
-
-    g_byte_array_append (array, (guint8 *)data, length);
-    g_free (data);
-    g_free (path);
-
-    return array;
-}
-
-static GByteArray *
-rsvg_acquire_vfs_resource (const char *filename, const char *base_uri, GError ** error)
-{
-    GByteArray *array;
-
-    GFile *file;
-    char *data;
-    gsize size;
-    gboolean res = FALSE;
-
-    rsvg_return_val_if_fail (filename != NULL, NULL, error);
-
-    file = g_file_new_for_uri (filename);
-
-    if (!(res = g_file_load_contents (file, NULL, &data, &size, NULL, error))) {
-        if (base_uri != NULL) {
-            GFile *base;
-
-            g_clear_error (error);
-
-            g_object_unref (file);
-
-            base = g_file_new_for_uri (base_uri);
-            file = g_file_resolve_relative_path (base, filename);
-            g_object_unref (base);
-
-            res = g_file_load_contents (file, NULL, &data, &size, NULL, error);
-        }
-    }
-
-    g_object_unref (file);
-
-    if (res) {
-        array = g_byte_array_new ();
-
-        g_byte_array_append (array, (guint8 *)data, size);
-        g_free (data);
-    } else {
-        return NULL;
-    }
-
-    return array;
-}
-
-GByteArray *
-_rsvg_acquire_xlink_href_resource (const char *href, const char *base_uri, GError ** err)
-{
-    GByteArray *arr = NULL;
-
-    if (!(href && *href))
-        return NULL;
-
-    if (!strncmp (href, "data:", 5))
-        arr = rsvg_acquire_base64_resource (href, NULL);
-
-    if (!arr)
-        arr = rsvg_acquire_file_resource (href, base_uri, NULL);
-
-    if (!arr)
-        arr = rsvg_acquire_vfs_resource (href, base_uri, NULL);
-
-    return arr;
-}
+#include "rsvg-io.h"
 
 cairo_surface_t *
 rsvg_cairo_surface_new_from_href (const char *href, 
                                   const char *base_uri, 
                                   GError **error)
 {
-    GByteArray *arr;
+    guint8 *data;
+    gsize data_len;
     GdkPixbufLoader *loader;
     GdkPixbuf *pixbuf = NULL;
     int res;
     cairo_surface_t *surface;
 
-    arr = _rsvg_acquire_xlink_href_resource (href, base_uri, error);
-    if (arr == NULL)
+    data = _rsvg_io_acquire_data (href, base_uri, &data_len, error);
+    if (data == NULL)
         return NULL;
 
     loader = gdk_pixbuf_loader_new ();
 
-    res = gdk_pixbuf_loader_write (loader, arr->data, arr->len, error);
-    g_byte_array_free (arr, TRUE);
+    res = gdk_pixbuf_loader_write (loader, data, data_len, error);
+    g_free (data);
 
     if (!res) {
         gdk_pixbuf_loader_close (loader, NULL);

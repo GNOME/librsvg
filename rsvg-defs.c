@@ -28,6 +28,7 @@
 #include "rsvg-defs.h"
 #include "rsvg-styles.h"
 #include "rsvg-image.h"
+#include "rsvg-io.h"
 
 #include <glib.h>
 
@@ -72,25 +73,26 @@ rsvg_defs_load_extern (const RsvgDefs * defs, const char *name)
 {
     RsvgHandle *handle;
     gchar *filename, *base_uri;
-    GByteArray *chars;
+    guint8 *data;
+    gsize data_len;
 
     filename = rsvg_get_file_path (name, defs->base_uri);
 
-    chars = _rsvg_acquire_xlink_href_resource (name, defs->base_uri, NULL);
+    data = _rsvg_io_acquire_data (name, defs->base_uri, &data_len, NULL);
 
-    if (chars) {
+    if (data) {
         handle = rsvg_handle_new ();
 
         base_uri = rsvg_get_base_uri_from_filename (filename);
         rsvg_handle_set_base_uri (handle, base_uri);
         g_free (base_uri);
 
-        if (rsvg_handle_write (handle, chars->data, chars->len, NULL) &&
+        if (rsvg_handle_write (handle, data, data_len, NULL) &&
             rsvg_handle_close (handle, NULL)) {
             g_hash_table_insert (defs->externs, g_strdup (name), handle);
         }
 
-        g_byte_array_free (chars, TRUE);
+        g_free (data);
     }
 
     g_free (filename);

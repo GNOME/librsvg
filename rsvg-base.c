@@ -33,6 +33,7 @@
 #include "rsvg-shapes.h"
 #include "rsvg-structure.h"
 #include "rsvg-image.h"
+#include "rsvg-io.h"
 #include "rsvg-text.h"
 #include "rsvg-filter.h"
 #include "rsvg-mask.h"
@@ -524,56 +525,80 @@ static void
 rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
     RsvgSaxHandlerXinclude *handler;
-    GByteArray *data;
-    const char *href;
+    const char *href, *parse;
     gboolean success = FALSE;
 
     href = rsvg_property_bag_lookup (atts, "href");
-    if (href) {
-        data = _rsvg_acquire_xlink_href_resource (href, rsvg_handle_get_base_uri (ctx), NULL);
-        if (data) {
-            const char *parse;
+    if (href == NULL)
+        goto fallback;
 
-            parse = rsvg_property_bag_lookup (atts, "parse");
-            if (parse && !strcmp (parse, "text")) {
-                const char *encoding;
-                char *text_data;
-                gsize text_data_len;
-                gboolean text_data_needs_free = FALSE;
+    parse = rsvg_property_bag_lookup (atts, "parse");
+    if (parse && !strcmp (parse, "text")) {
+        guint8 *data;
+        gsize data_len;
+        const char *encoding;
 
-                encoding = rsvg_property_bag_lookup (atts, "encoding");
-                if (encoding) {
-                    text_data =
-                        g_convert ((const char *) data->data, data->len, "utf-8", encoding, NULL,
+        data = _rsvg_io_acquire_data (href, rsvg_handle_get_base_uri (ctx), &data_len, NULL);
+        if (data == NULL)
+            goto fallback;
+
+        encoding = rsvg_property_bag_lookup (atts, "encoding");
+        if (encoding && g_ascii_strcasecmp (encoding, "UTF-8") != 0) {
+            char *text_data;
+            gsize text_data_len;
+
+            text_data = g_convert (data, data_len, "utf-8", encoding, NULL,
                                    &text_data_len, NULL);
-                    text_data_needs_free = TRUE;
-                } else {
-                    text_data = (char *) data->data;
-                    text_data_len = data->len;
-                }
+            g_free (data);
 
-                rsvg_characters_impl (ctx, (const xmlChar *) text_data, text_data_len);
-
-                if (text_data_needs_free)
-                    g_free (text_data);
-            } else {
-                /* xml */
-                xmlDocPtr xml_doc;
-                xmlParserCtxtPtr xml_parser;
-
-                xml_parser = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, ctx, NULL, 0, NULL);
-                (void) xmlParseChunk (xml_parser, (char *) data->data, data->len, 0);
-                (void) xmlParseChunk (xml_parser, "", 0, TRUE);
-
-                xml_doc = xml_parser->myDoc;
-                xmlFreeParserCtxt (xml_parser);
-                xmlFreeDoc (xml_doc);
-            }
-
-            g_byte_array_free (data, TRUE);
-            success = TRUE;
+            data = text_data;
+            data_len = text_data_len;
         }
+
+        rsvg_characters_impl (ctx, (const xmlChar *) data, data_len);
+
+        g_free (data);
+    } else {
+        /* xml */
+        GInputStream *stream;
+        GError *err = NULL;
+        xmlDocPtr xml_doc;
+        xmlParserCtxtPtr xml_parser;
+        xmlParserInputBufferPtr buffer;
+        xmlParserInputPtr input;
+        int result;
+
+        stream = _rsvg_io_acquire_stream (href, rsvg_handle_get_base_uri (ctx), NULL);
+        if (stream == NULL)
+            goto fallback;
+
+        xml_parser = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, ctx, NULL, 0, NULL);
+
+        buffer = _rsvg_xml_input_buffer_new_from_stream (stream, NULL /* cancellable */, XML_CHAR_ENCODING_NONE, &err);
+        g_object_unref (stream);
+
+        input = xmlNewIOInputStream (xml_parser, buffer /* adopts */, XML_CHAR_ENCODING_NONE);
+
+        if (xmlPushInput (xml_parser, input) < 0) {
+            g_clear_error (&err);
+            xmlFreeInputStream (input);
+            xmlFreeParserCtxt (xml_parser);
+            goto fallback;
+        }
+
+        (void) xmlParseDocument (xml_parser);
+
+        xml_doc = xml_parser->myDoc;
+        xmlFreeParserCtxt (xml_parser);
+        if (xml_doc)
+            xmlFreeDoc (xml_doc);
+
+        g_clear_error (&err);
     }
+
+    success = TRUE;
+
+  fallback:
 
     /* needed to handle xi:fallback */
     handler = g_new0 (RsvgSaxHandlerXinclude, 1);
@@ -776,20 +801,25 @@ rsvg_entity_decl (void *data, const xmlChar * name, int type,
         resolvedPublicId = xmlBuildRelativeURI (publicId, (xmlChar*) rsvg_handle_get_base_uri (ctx));
 
     if (type == XML_EXTERNAL_PARAMETER_ENTITY && !content) {
-      GByteArray *arr = NULL;
+        guint8 *entity_data;
+        gsize entity_data_len;
 
-      if (systemId)
-        arr = _rsvg_acquire_xlink_href_resource ((const char *) systemId,
-                                                 rsvg_handle_get_base_uri (ctx), NULL);
-      else if (publicId)
-        arr = _rsvg_acquire_xlink_href_resource ((const char *) publicId,
-                                                 rsvg_handle_get_base_uri (ctx), NULL);
-      if (arr) {
-        content = xmlCharStrndup ((const char*)arr->data, arr->len);
-        g_byte_array_free(arr, TRUE);
-      }
+        if (systemId)
+            entity_data = _rsvg_io_acquire_data ((const char *) systemId,
+                                                 rsvg_handle_get_base_uri (ctx),
+                                                 &entity_data_len,
+                                                 NULL);
+        else if (publicId)
+            entity_data = _rsvg_io_acquire_data ((const char *) publicId,
+                                                 rsvg_handle_get_base_uri (ctx),
+                                                 &entity_data_len,
+                                                 NULL);
+        if (entity_data) {
+            content = xmlCharStrndup (entity_data, entity_data_len);
+            g_free (entity_data);
+        }
     }
-      
+
     entity = xmlNewEntity(NULL, name, type, resolvedPublicId, resolvedSystemId, content);
 
     xmlFree(resolvedPublicId);
@@ -852,15 +882,16 @@ rsvg_processing_instruction (void *ctx, const xmlChar * target, const xmlChar * 
                 if (value && strcmp (value, "text/css") == 0) {
                     value = rsvg_property_bag_lookup (atts, "href");
                     if (value && value[0]) {
-                        GByteArray *style;
+                        guint8 *style_data;
+                        gsize style_data_len;
 
-                        style =
-                            _rsvg_acquire_xlink_href_resource (value,
-                                                               rsvg_handle_get_base_uri (handle),
-                                                               NULL);
-                        if (style) {
-                            rsvg_parse_cssbuffer (handle, (char *) style->data, style->len);
-                            g_byte_array_free (style, TRUE);
+                        style_data = _rsvg_io_acquire_data (value,
+                                                            rsvg_handle_get_base_uri (handle),
+                                                            &style_data_len,
+                                                            NULL);
+                        if (style_data) {
+                            rsvg_parse_cssbuffer (handle, (char *) style_data, style_data_len);
+                            g_free (style_data);
                         }
                     }
                 }
