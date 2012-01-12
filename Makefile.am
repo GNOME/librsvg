@@ -152,6 +152,10 @@ rsvg_view_3_LDADD = \
 	$(GTHREAD_LIBS)		\
 	$(LIBM)
 
+if OS_WIN32
+rsvg_view_3_LDFLAGS += -mwindows
+endif # OS_WIN32
+
 EXTRA_DIST =				\
 	librsvg.doap			\
 	AUTHORS				\
