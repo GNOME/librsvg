@@ -690,6 +690,8 @@ main (int argc, char **argv)
 
     rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 
+    compressed = FALSE;
+
     if (from_stdin) {
 #if 0 // defined (G_OS_UNIX)
         input = g_unix_input_stream_new (STDIN_FILENO, FALSE);
@@ -699,8 +701,6 @@ main (int argc, char **argv)
                              "Reading from stdin not supported");
 #endif
         base_file = NULL;
-
-        compressed = FALSE;
     } else {
         file = g_file_new_for_commandline_arg (args[0]);
         input = (GInputStream *) g_file_read (file, NULL, &err);
