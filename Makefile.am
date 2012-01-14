@@ -163,7 +163,6 @@ EXTRA_DIST =				\
 	TODO				\
 	COPYING.LIB 			\
 	librsvg-zip.in 			\
-	rsvg.in				\
 	librsvg.def			\
 	gtk-doc.make
 
