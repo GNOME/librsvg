@@ -104,7 +104,6 @@ librsvginc_HEADERS = 	\
 	librsvg-enum-types.h
 
 if HAVE_GTK_2
-nodist_bin_SCRIPTS = rsvg
 dist_man_MANS = rsvg.1
 endif
 
