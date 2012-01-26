@@ -149,7 +149,7 @@ _rsvg_node_text_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
     }
 }
 
-void
+static void
  rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdouble * y);
 
 

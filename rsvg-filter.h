@@ -44,33 +44,54 @@ struct _RsvgFilter {
     RsvgFilterUnits primitiveunits;
 };
 
+G_GNUC_INTERNAL
 cairo_surface_t *rsvg_filter_render (RsvgFilter *self,
                                      cairo_surface_t *source,
                                      RsvgDrawingCtx *context, 
                                      RsvgBbox *dimentions, 
                                      char *channelmap);
 
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter	    (void);
+G_GNUC_INTERNAL
 RsvgFilter  *rsvg_filter_parse	    (const RsvgDefs * defs, const char *str);
-
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_blend                (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_convolve_matrix      (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_gaussian_blur        (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_offset               (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_merge                (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_merge_node           (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_colour_matrix        (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_component_transfer   (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_node_component_transfer_function      (char channel);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_erode                (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_composite            (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_flood                (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_displacement_map     (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_turbulence           (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_image                (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_diffuse_lighting	    (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_node_light_source	                    (char type);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_specular_lighting    (void);
+G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_tile                 (void);
 
 G_END_DECLS

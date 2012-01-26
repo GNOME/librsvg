@@ -34,6 +34,7 @@
 
 G_BEGIN_DECLS 
 
+G_GNUC_INTERNAL
 void rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox);
 
 G_END_DECLS

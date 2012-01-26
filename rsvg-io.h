@@ -26,11 +26,13 @@
 #include <glib.h>
 #include <gio/gio.h>
 
+G_GNUC_INTERNAL
 guint8* _rsvg_io_acquire_data (const char *uri,
                                const char *base_uri,
                                gsize *len,
                                GError **error);
 
+G_GNUC_INTERNAL
 GInputStream *_rsvg_io_acquire_stream (const char *uri,
                                        const char *base_uri,
                                        GError **error);

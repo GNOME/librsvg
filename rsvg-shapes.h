@@ -36,12 +36,19 @@
 
 G_BEGIN_DECLS 
 
+G_GNUC_INTERNAL
 RsvgNode *rsvg_new_path (void);
+G_GNUC_INTERNAL
 RsvgNode *rsvg_new_polygon (void);
+G_GNUC_INTERNAL
 RsvgNode *rsvg_new_polyline (void);
+G_GNUC_INTERNAL
 RsvgNode *rsvg_new_line (void);
+G_GNUC_INTERNAL
 RsvgNode *rsvg_new_rect (void);
+G_GNUC_INTERNAL
 RsvgNode *rsvg_new_circle (void);
+G_GNUC_INTERNAL
 RsvgNode *rsvg_new_ellipse (void);
 
 typedef struct _RsvgNodePath RsvgNodePath;

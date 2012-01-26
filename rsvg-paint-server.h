@@ -137,20 +137,32 @@ struct _RsvgPaintServer {
 };
 
 /* Create a new paint server based on a specification string. */
+G_GNUC_INTERNAL
 RsvgPaintServer	    *rsvg_paint_server_parse    (gboolean * inherit, const RsvgDefs * defs,
                                                  const char *str, guint32 current_color);
+G_GNUC_INTERNAL
 void                 rsvg_paint_server_ref      (RsvgPaintServer * ps);
+G_GNUC_INTERNAL
 void                 rsvg_paint_server_unref    (RsvgPaintServer * ps);
+G_GNUC_INTERNAL
 RsvgRadialGradient  *rsvg_clone_radial_gradient (const RsvgRadialGradient * grad,
                                                  gboolean * shallow_cloned);
+G_GNUC_INTERNAL
 RsvgLinearGradient  *rsvg_clone_linear_gradient (const RsvgLinearGradient * grad,
                                                  gboolean * shallow_cloned);
+G_GNUC_INTERNAL
 RsvgNode *rsvg_new_linear_gradient  (void);
+G_GNUC_INTERNAL
 RsvgNode *rsvg_new_radial_gradient  (void);
+G_GNUC_INTERNAL
 RsvgNode *rsvg_new_stop	        (void);
+G_GNUC_INTERNAL
 RsvgNode *rsvg_new_pattern      (void);
+G_GNUC_INTERNAL
 void rsvg_pattern_fix_fallback          (RsvgPattern * pattern);
+G_GNUC_INTERNAL
 void rsvg_linear_gradient_fix_fallback	(RsvgLinearGradient * grad);
+G_GNUC_INTERNAL
 void rsvg_radial_gradient_fix_fallback	(RsvgRadialGradient * grad);
 
 G_END_DECLS

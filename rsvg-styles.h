@@ -186,37 +186,60 @@ struct _RsvgState {
     GHashTable *styles;
 };
 
+G_GNUC_INTERNAL
 RsvgState *rsvg_state_new (void);
 
+G_GNUC_INTERNAL
 void rsvg_state_init        (RsvgState * state);
+G_GNUC_INTERNAL
 void rsvg_state_reinit      (RsvgState * state);
+G_GNUC_INTERNAL
 void rsvg_state_clone       (RsvgState * dst, const RsvgState * src);
+G_GNUC_INTERNAL
 void rsvg_state_inherit     (RsvgState * dst, const RsvgState * src);
+G_GNUC_INTERNAL
 void rsvg_state_reinherit   (RsvgState * dst, const RsvgState * src);
+G_GNUC_INTERNAL
 void rsvg_state_dominate    (RsvgState * dst, const RsvgState * src);
+G_GNUC_INTERNAL
 void rsvg_state_override    (RsvgState * dst, const RsvgState * src);
+G_GNUC_INTERNAL
 void rsvg_state_finalize    (RsvgState * state);
+G_GNUC_INTERNAL
 void rsvg_state_free_all    (RsvgState * state);
 
+G_GNUC_INTERNAL
 void rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * atts);
+G_GNUC_INTERNAL
 void rsvg_parse_style	    (RsvgHandle * ctx, RsvgState * state, const char *str);
+G_GNUC_INTERNAL
 void rsvg_parse_cssbuffer   (RsvgHandle * ctx, const char *buff, size_t buflen);
+G_GNUC_INTERNAL
 void rsvg_parse_style_attrs (RsvgHandle * ctx, RsvgState * state, const char *tag,
                              const char *klazz, const char *id, RsvgPropertyBag * atts);
 
+G_GNUC_INTERNAL
 gdouble rsvg_viewport_percentage (gdouble width, gdouble height);
+G_GNUC_INTERNAL
 gdouble rsvg_dpi_percentage      (RsvgHandle * ctx);
 
+G_GNUC_INTERNAL
 gboolean rsvg_parse_transform   (cairo_matrix_t *matrix, const char *src);
 
+G_GNUC_INTERNAL
 RsvgState *rsvg_state_parent    (RsvgState * state);
 
+G_GNUC_INTERNAL
 void       rsvg_state_pop       (RsvgDrawingCtx * ctx);
+G_GNUC_INTERNAL
 void       rsvg_state_push      (RsvgDrawingCtx * ctx);
+G_GNUC_INTERNAL
 RsvgState *rsvg_current_state   (RsvgDrawingCtx * ctx);
 
+G_GNUC_INTERNAL
 void rsvg_state_reinherit_top	(RsvgDrawingCtx * ctx, RsvgState * state, int dominate);
 
+G_GNUC_INTERNAL
 void rsvg_state_reconstruct	(RsvgState * state, RsvgNode * current);
 
 G_END_DECLS

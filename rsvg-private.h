@@ -324,55 +324,74 @@ struct _RsvgNodeChars {
 
 typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
 
+G_GNUC_INTERNAL
 RsvgPropertyBag	    *rsvg_property_bag_new       (const char **atts);
+G_GNUC_INTERNAL
 RsvgPropertyBag	    *rsvg_property_bag_dup       (RsvgPropertyBag * bag);
+G_GNUC_INTERNAL
 void                 rsvg_property_bag_free      (RsvgPropertyBag * bag);
+G_GNUC_INTERNAL
 const char          *rsvg_property_bag_lookup    (RsvgPropertyBag * bag, const char *key);
+G_GNUC_INTERNAL
 guint                rsvg_property_bag_size	     (RsvgPropertyBag * bag);
+G_GNUC_INTERNAL
 void                 rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPropertyBagEnumFunc func,
                                                   gpointer user_data);
-
+/* for some reason this one's public... */
 GdkPixbuf *rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
                                                  size_t len,
                                                  gpointer data,
                                                  const char *base_uri, GError ** error);
-
+G_GNUC_INTERNAL
 gboolean     rsvg_eval_switch_attributes	(RsvgPropertyBag * atts, gboolean * p_has_cond);
-
+G_GNUC_INTERNAL
 gchar       *rsvg_get_base_uri_from_filename    (const gchar * file_name);
+G_GNUC_INTERNAL
 void rsvg_pop_discrete_layer    (RsvgDrawingCtx * ctx);
+G_GNUC_INTERNAL
 void rsvg_push_discrete_layer   (RsvgDrawingCtx * ctx);
+G_GNUC_INTERNAL
 void rsvg_render_path           (RsvgDrawingCtx * ctx, const cairo_path_t *path);
+G_GNUC_INTERNAL
 void rsvg_render_surface        (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
                                  double x, double y, double w, double h);
+G_GNUC_INTERNAL
 void rsvg_render_free           (RsvgRender * render);
+G_GNUC_INTERNAL
 void rsvg_add_clipping_rect     (RsvgDrawingCtx * ctx, double x, double y, double w, double h);
+G_GNUC_INTERNAL
 cairo_surface_t *rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf);
+G_GNUC_INTERNAL
 GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
+G_GNUC_INTERNAL
 cairo_surface_t *rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
-
+G_GNUC_INTERNAL
 void rsvg_node_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts);
-
+G_GNUC_INTERNAL
 void rsvg_drawing_ctx_free (RsvgDrawingCtx * handle);
-
+G_GNUC_INTERNAL
 void rsvg_bbox_init     (RsvgBbox * self, cairo_matrix_t *matrix);
+G_GNUC_INTERNAL
 void rsvg_bbox_insert   (RsvgBbox * dst, RsvgBbox * src);
+G_GNUC_INTERNAL
 void rsvg_bbox_clip     (RsvgBbox * dst, RsvgBbox * src);
-
+G_GNUC_INTERNAL
 double _rsvg_css_normalize_length       (const RsvgLength * in, RsvgDrawingCtx * ctx, char dir);
+G_GNUC_INTERNAL
 double _rsvg_css_hand_normalize_length  (const RsvgLength * in, gdouble pixels_per_inch,
                                          gdouble width_or_height, gdouble font_size);
 double _rsvg_css_normalize_font_size    (RsvgState * state, RsvgDrawingCtx * ctx);
-
+G_GNUC_INTERNAL
 RsvgLength _rsvg_css_parse_length (const char *str);
-
+G_GNUC_INTERNAL
 void _rsvg_push_view_box    (RsvgDrawingCtx * ctx, double w, double h);
+G_GNUC_INTERNAL
 void _rsvg_pop_view_box	    (RsvgDrawingCtx * ctx);
-
+G_GNUC_INTERNAL
 void rsvg_SAX_handler_struct_init (void);
-
+G_GNUC_INTERNAL
 char *rsvg_get_url_string (const char *str);
-
+G_GNUC_INTERNAL
 void rsvg_return_if_fail_warning (const char *pretty_function,
                                   const char *expression, GError ** error);
 

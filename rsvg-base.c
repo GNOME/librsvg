@@ -59,7 +59,10 @@
  */
 #define RSVG_DEFAULT_DPI_X 90.0
 #define RSVG_DEFAULT_DPI_Y 90.0
+
+G_GNUC_INTERNAL
 double rsvg_internal_dpi_x = RSVG_DEFAULT_DPI_X;
+G_GNUC_INTERNAL
 double rsvg_internal_dpi_y = RSVG_DEFAULT_DPI_Y;
 
 static xmlSAXHandler rsvgSAXHandlerStruct;

@@ -52,8 +52,11 @@ struct _RsvgCairoRender {
 
 #define RSVG_CAIRO_RENDER(render) (_RSVG_RENDER_CIC ((render), RSVG_RENDER_TYPE_CAIRO, RsvgCairoRender))
 
+G_GNUC_INTERNAL
 RsvgCairoRender *rsvg_cairo_render_new		(cairo_t * cr, double width, double height);
+G_GNUC_INTERNAL
 void		rsvg_cairo_render_rsvg_handle	(cairo_t * cr, RsvgHandle * handle);
+G_GNUC_INTERNAL
 RsvgDrawingCtx *rsvg_cairo_new_drawing_ctx	(cairo_t * cr, RsvgHandle * handle);
 
 G_END_DECLS
