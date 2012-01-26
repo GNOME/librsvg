@@ -60,10 +60,10 @@ enum {
 extern double rsvg_internal_dpi_x;
 extern double rsvg_internal_dpi_y;
 
-static GObjectClass *rsvg_parent_class = NULL;
+G_DEFINE_TYPE (RsvgHandle, rsvg_handle, G_TYPE_OBJECT)
 
 static void
-instance_init (RsvgHandle * self)
+rsvg_handle_init (RsvgHandle * self)
 {
     self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, RSVG_TYPE_HANDLE, RsvgHandlePrivate);
 
@@ -95,7 +95,7 @@ instance_init (RsvgHandle * self)
 }
 
 static void
-instance_dispose (GObject * instance)
+rsvg_handle_dispose (GObject *instance)
 {
     RsvgHandle *self = (RsvgHandle *) instance;
 
@@ -130,11 +130,11 @@ instance_dispose (GObject * instance)
     }
 
   chain:
-    rsvg_parent_class->dispose (instance);
+    G_OBJECT_CLASS (rsvg_handle_parent_class)->dispose (instance);
 }
 
 static void
-set_property (GObject * instance, guint prop_id, GValue const *value, GParamSpec * pspec)
+rsvg_handle_set_property (GObject * instance, guint prop_id, GValue const *value, GParamSpec * pspec)
 {
     RsvgHandle *self = RSVG_HANDLE (instance);
 
@@ -157,7 +157,7 @@ set_property (GObject * instance, guint prop_id, GValue const *value, GParamSpec
 }
 
 static void
-get_property (GObject * instance, guint prop_id, GValue * value, GParamSpec * pspec)
+rsvg_handle_get_property (GObject * instance, guint prop_id, GValue * value, GParamSpec * pspec)
 {
     RsvgHandle *self = RSVG_HANDLE (instance);
     RsvgDimensionData dim;
@@ -206,17 +206,13 @@ get_property (GObject * instance, guint prop_id, GValue * value, GParamSpec * ps
 }
 
 static void
-class_init (RsvgHandleClass * klass)
+rsvg_handle_class_init (RsvgHandleClass * klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
 
-    /* hook gobject vfuncs */
-    gobject_class->dispose = instance_dispose;
-
-    rsvg_parent_class = (GObjectClass *) g_type_class_peek_parent (klass);
-
-    gobject_class->set_property = set_property;
-    gobject_class->get_property = get_property;
+    gobject_class->dispose = rsvg_handle_dispose;
+    gobject_class->set_property = rsvg_handle_set_property;
+    gobject_class->get_property = rsvg_handle_get_property;
 
     /**
      * RsvgHandle:flags:
@@ -305,40 +301,6 @@ class_init (RsvgHandleClass * klass)
     xmlInitParser ();
 
     rsvg_SAX_handler_struct_init ();
-}
-
-const GTypeInfo rsvg_type_info = {
-    sizeof (RsvgHandleClass),
-    NULL,                       /* base_init */
-    NULL,                       /* base_finalize */
-    (GClassInitFunc) class_init,
-    NULL,                       /* class_finalize */
-    NULL,                       /* class_data */
-    sizeof (RsvgHandle),
-    0,                          /* n_preallocs */
-    (GInstanceInitFunc) instance_init,
-};
-
-static GType rsvg_type = 0;
-
-/* HACK to get around bugs 357406 and 362217. private API for now. */
-GType
-_rsvg_register_types (GTypeModule * module)
-{
-    rsvg_type = g_type_module_register_type (module,
-                                             G_TYPE_OBJECT,
-                                             "RsvgHandle", &rsvg_type_info, (GTypeFlags) 0);
-    return rsvg_type;
-}
-
-GType
-rsvg_handle_get_type (void)
-{
-    if (!rsvg_type) {
-        rsvg_type =
-            g_type_register_static (G_TYPE_OBJECT, "RsvgHandle", &rsvg_type_info, (GTypeFlags) 0);
-    }
-    return rsvg_type;
 }
 
 /**

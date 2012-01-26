@@ -21,10 +21,12 @@
  * Carsten Haitzler <raster@rasterman.com>
  */
 
+#include "config.h"
+
 #include "svg.h"
 #include "svg-style.h"
 #include "svg-rc-style.h"
-#include "rsvg-private.h"
+
 #include <gmodule.h>
 
 G_MODULE_EXPORT const gchar* g_module_check_init (GModule *module);
@@ -35,7 +37,6 @@ G_MODULE_EXPORT GtkRcStyle * theme_create_rc_style (void);
 void
 theme_init (GTypeModule *module)
 {
-  _rsvg_register_types (module); /* HACK to get around bugs 357406 and 362217 */
   rsvg_rc_style_register_type (module);
   rsvg_style_register_type (module);
 }
@@ -58,6 +59,9 @@ theme_create_rc_style (void)
 const gchar*
 g_module_check_init (GModule *module)
 {
+  /* See bugs 357406 and 362217 */
+  g_module_make_resident (module);
+
   return gtk_check_version (GTK_MAJOR_VERSION,
 			    GTK_MINOR_VERSION,
 			    GTK_MICRO_VERSION - GTK_INTERFACE_AGE);
