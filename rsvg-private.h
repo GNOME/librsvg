@@ -122,8 +122,16 @@ struct RsvgSaxHandler {
     void (*characters) (RsvgSaxHandler * self, const char *ch, int len);
 };
 
+typedef enum {
+    RSVG_LOAD_POLICY_ALL_PERMISSIVE
+} RsvgLoadPolicy;
+
+#define RSVG_LOAD_POLICY_DEFAULT (RSVG_LOAD_POLICY_ALL_PERMISSIVE)
+
 struct RsvgHandlePrivate {
     RsvgHandleFlags flags;
+
+    RsvgLoadPolicy load_policy;
 
     gboolean is_disposed;
     gboolean is_closed;
@@ -394,6 +402,17 @@ char *rsvg_get_url_string (const char *str);
 G_GNUC_INTERNAL
 void rsvg_return_if_fail_warning (const char *pretty_function,
                                   const char *expression, GError ** error);
+
+G_GNUC_INTERNAL
+guint8* _rsvg_handle_acquire_data (RsvgHandle *handle,
+                                   const char *uri,
+                                   gsize *len,
+                                   GError **error);
+G_GNUC_INTERNAL
+GInputStream *_rsvg_handle_acquire_stream (RsvgHandle *handle,
+                                           const char *uri,
+                                           GError **error);
+
 
 #define rsvg_return_if_fail(expr, error)    G_STMT_START{			\
      if G_LIKELY(expr) { } else                                     \

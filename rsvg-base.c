@@ -541,7 +541,7 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
         gsize data_len;
         const char *encoding;
 
-        data = _rsvg_io_acquire_data (href, rsvg_handle_get_base_uri (ctx), &data_len, NULL);
+        data = _rsvg_handle_acquire_data (ctx, href, &data_len, NULL);
         if (data == NULL)
             goto fallback;
 
@@ -571,7 +571,7 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
         xmlParserInputPtr input;
         int result;
 
-        stream = _rsvg_io_acquire_stream (href, rsvg_handle_get_base_uri (ctx), NULL);
+        stream = _rsvg_handle_acquire_stream (ctx, href, NULL);
         if (stream == NULL)
             goto fallback;
 
@@ -808,15 +808,15 @@ rsvg_entity_decl (void *data, const xmlChar * name, int type,
         gsize entity_data_len;
 
         if (systemId)
-            entity_data = _rsvg_io_acquire_data ((const char *) systemId,
-                                                 rsvg_handle_get_base_uri (ctx),
-                                                 &entity_data_len,
-                                                 NULL);
+            entity_data = _rsvg_handle_acquire_data (ctx,
+                                                     (const char *) systemId,
+                                                     &entity_data_len,
+                                                     NULL);
         else if (publicId)
-            entity_data = _rsvg_io_acquire_data ((const char *) publicId,
-                                                 rsvg_handle_get_base_uri (ctx),
-                                                 &entity_data_len,
-                                                 NULL);
+            entity_data = _rsvg_handle_acquire_data (ctx,
+                                                     (const char *) publicId,
+                                                     &entity_data_len,
+                                                     NULL);
         if (entity_data) {
             content = xmlCharStrndup (entity_data, entity_data_len);
             g_free (entity_data);
@@ -888,10 +888,10 @@ rsvg_processing_instruction (void *ctx, const xmlChar * target, const xmlChar * 
                         guint8 *style_data;
                         gsize style_data_len;
 
-                        style_data = _rsvg_io_acquire_data (value,
-                                                            rsvg_handle_get_base_uri (handle),
-                                                            &style_data_len,
-                                                            NULL);
+                        style_data = _rsvg_handle_acquire_data (handle,
+                                                                value,
+                                                                &style_data_len,
+                                                                NULL);
                         if (style_data) {
                             rsvg_parse_cssbuffer (handle, (char *) style_data, style_data_len);
                             g_free (style_data);
@@ -1009,7 +1009,6 @@ rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
         if (handle->priv->base_uri)
             g_free (handle->priv->base_uri);
         handle->priv->base_uri = uri;
-        rsvg_defs_set_base_uri (handle->priv->defs, handle->priv->base_uri);
     }
 }
 
@@ -1039,11 +1038,9 @@ rsvg_handle_set_base_gfile (RsvgHandle *handle,
     if (priv->base_gfile)
         g_object_unref (priv->base_gfile);
     priv->base_gfile = base_file;
-    
+
     g_free (priv->base_uri);
     priv->base_uri = g_file_get_uri (base_file);
-
-    rsvg_defs_set_base_uri (priv->defs, priv->base_uri);
 }
 
 /**
@@ -2128,4 +2125,40 @@ void
 rsvg_return_if_fail_warning (const char *pretty_function, const char *expression, GError ** error)
 {
     g_set_error (error, RSVG_ERROR, 0, _("%s: assertion `%s' failed"), pretty_function, expression);
+}
+
+static gboolean
+_rsvg_handle_allow_load (RsvgHandle *handle,
+                         const char *uri,
+                         GError **error)
+{
+    RsvgLoadPolicy policy = handle->priv->load_policy;
+
+    if (policy == RSVG_LOAD_POLICY_ALL_PERMISSIVE)
+        return TRUE;
+
+    return TRUE;
+}
+
+guint8* 
+_rsvg_handle_acquire_data (RsvgHandle *handle,
+                           const char *uri,
+                           gsize *len,
+                           GError **error)
+{
+    if (!_rsvg_handle_allow_load (handle, uri, error))
+        return NULL;
+
+    return _rsvg_io_acquire_data (uri, rsvg_handle_get_base_uri (handle), len, error);
+}
+
+GInputStream *
+_rsvg_handle_acquire_stream (RsvgHandle *handle,
+                             const char *uri,
+                             GError **error)
+{
+    if (!_rsvg_handle_allow_load (handle, uri, error))
+        return NULL;
+
+    return _rsvg_io_acquire_stream (uri, rsvg_handle_get_base_uri (handle), error);
 }

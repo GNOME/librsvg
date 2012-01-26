@@ -37,8 +37,8 @@
 #include "rsvg-io.h"
 
 cairo_surface_t *
-rsvg_cairo_surface_new_from_href (const char *href, 
-                                  const char *base_uri, 
+rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
+                                  const char *href,
                                   GError **error)
 {
     guint8 *data;
@@ -48,7 +48,7 @@ rsvg_cairo_surface_new_from_href (const char *href,
     int res;
     cairo_surface_t *surface;
 
-    data = _rsvg_io_acquire_data (href, base_uri, &data_len, error);
+    data = _rsvg_handle_acquire_data (handle, href, &data_len, error);
     if (data == NULL)
         return NULL;
 
@@ -190,8 +190,8 @@ rsvg_node_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
         /* path is used by some older adobe illustrator versions */
         if ((value = rsvg_property_bag_lookup (atts, "path"))
             || (value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
-            image->surface = rsvg_cairo_surface_new_from_href (value, 
-                                                               rsvg_handle_get_base_uri (ctx), 
+            image->surface = rsvg_cairo_surface_new_from_href (ctx,
+                                                               value, 
                                                                NULL);
 
             if (!image->surface) {

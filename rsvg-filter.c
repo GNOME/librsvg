@@ -3556,8 +3556,8 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterCo
     if (width == 0 || height == 0)
         return NULL;
 
-    img = rsvg_cairo_surface_new_from_href (upself->href->str,
-                                            rsvg_handle_get_base_uri (upself->ctx), 
+    img = rsvg_cairo_surface_new_from_href (upself->ctx,
+                                            upself->href->str,
                                             NULL);
     if (!img)
         return NULL;

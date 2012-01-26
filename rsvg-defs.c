@@ -36,8 +36,8 @@ struct _RsvgDefs {
     GHashTable *hash;
     GPtrArray *unnamed;
     GHashTable *externs;
-    gchar *base_uri;
     GSList *toresolve;
+    RsvgHandle *ctx;
 };
 
 typedef struct _RsvgResolutionPending RsvgResolutionPending;
@@ -48,7 +48,7 @@ struct _RsvgResolutionPending {
 };
 
 RsvgDefs *
-rsvg_defs_new (void)
+rsvg_defs_new (RsvgHandle *handle)
 {
     RsvgDefs *result = g_new (RsvgDefs, 1);
 
@@ -56,16 +56,10 @@ rsvg_defs_new (void)
     result->externs =
         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_object_unref);
     result->unnamed = g_ptr_array_new ();
-    result->base_uri = NULL;
     result->toresolve = NULL;
+    result->ctx = handle; /* no need to take a ref here */
 
     return result;
-}
-
-void
-rsvg_defs_set_base_uri (RsvgDefs * self, gchar * base_uri)
-{
-    self->base_uri = base_uri;
 }
 
 static int
@@ -76,9 +70,9 @@ rsvg_defs_load_extern (const RsvgDefs * defs, const char *name)
     guint8 *data;
     gsize data_len;
 
-    filename = rsvg_get_file_path (name, defs->base_uri);
+    filename = rsvg_get_file_path (name, rsvg_handle_get_base_uri (defs->ctx));
 
-    data = _rsvg_io_acquire_data (name, defs->base_uri, &data_len, NULL);
+    data = _rsvg_handle_acquire_data (defs->ctx, name, &data_len, NULL);
 
     if (data) {
         handle = rsvg_handle_new ();

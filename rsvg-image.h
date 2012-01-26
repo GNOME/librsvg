@@ -54,7 +54,7 @@ void rsvg_preserve_aspect_ratio (unsigned int aspect_ratio, double width,
 G_GNUC_INTERNAL
 gchar *rsvg_get_file_path (const gchar * filename, const gchar * basedir);
 G_GNUC_INTERNAL
-cairo_surface_t *rsvg_cairo_surface_new_from_href (const char *href, const char *base_uri, GError ** error);
+cairo_surface_t *rsvg_cairo_surface_new_from_href (RsvgHandle *handle, const char *href, GError ** error);
 
 G_END_DECLS
 

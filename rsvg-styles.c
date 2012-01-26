@@ -32,7 +32,6 @@
 #include "rsvg-private.h"
 #include "rsvg-filter.h"
 #include "rsvg-css.h"
-#include "rsvg-io.h"
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"
 #include "rsvg-mask.h"
@@ -1169,10 +1168,10 @@ ccss_import_style (CRDocHandler * a_this,
     if (a_uri == NULL)
         return;
 
-    stylesheet_data = _rsvg_io_acquire_data ((gchar *) cr_string_peek_raw_str (a_uri),
-                                             rsvg_handle_get_base_uri (user_data->ctx), 
-                                             &stylesheet_data_len,
-                                             NULL);
+    stylesheet_data = _rsvg_handle_acquire_data (user_data->ctx,
+                                                 (gchar *) cr_string_peek_raw_str (a_uri),
+                                                 &stylesheet_data_len,
+                                                 NULL);
     if (stylesheet_data == NULL)
         return;
 
