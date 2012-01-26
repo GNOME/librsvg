@@ -39,6 +39,7 @@
 #include "rsvg.h"
 #include "rsvg-cairo.h"
 #include "rsvg-private.h"
+#include "rsvg-size-callback.h"
 
 #ifdef CAIRO_HAS_PS_SURFACE
 #include <cairo-ps.h>

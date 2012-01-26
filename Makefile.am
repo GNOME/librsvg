@@ -65,6 +65,8 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	rsvg.c			\
 	rsvg-gobject.c		\
 	rsvg-file-util.c	\
+	rsvg-size-callback.c	\
+	rsvg-size-callback.h	\
 	rsvg-xml.c		\
 	rsvg-xml.h		\
 	rsvg.h			\
@@ -108,7 +110,10 @@ dist_man_MANS = rsvg.1
 endif
 
 rsvg_convert_SOURCES = \
-	rsvg-convert.c
+	rsvg-convert.c \
+	rsvg-size-callback.c \
+	rsvg-size-callback.h \
+	$(NULL)
 
 rsvg_convert_CPPFLAGS = \
 	-I$(top_srcdir) 			\
@@ -129,7 +134,8 @@ rsvg_convert_LDADD = \
 	$(LIBM)
 
 rsvg_view_3_SOURCES = \
-	test-display.c
+	test-display.c \
+	rsvg-size-callback.h
 
 rsvg_view_3_CPPFLAGS = \
 	-I$(top_srcdir) 			\

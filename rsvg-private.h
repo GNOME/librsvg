@@ -248,27 +248,8 @@ typedef struct {
 } RsvgBbox;
 
 typedef enum {
-    RSVG_SIZE_ZOOM,
-    RSVG_SIZE_WH,
-    RSVG_SIZE_WH_MAX,
-    RSVG_SIZE_ZOOM_MAX
-} RsvgSizeType;
-
-typedef enum {
     objectBoundingBox, userSpaceOnUse
 } RsvgCoordUnits;
-
-struct RsvgSizeCallbackData {
-    RsvgSizeType type;
-    double x_zoom;
-    double y_zoom;
-    gint width;
-    gint height;
-
-    gboolean keep_aspect_ratio;
-};
-
-void _rsvg_size_callback (int *width, int *height, gpointer data);
 
 typedef enum {
     RSVG_NODE_TYPE_INVALID = 0,
@@ -355,7 +336,7 @@ void                 rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPro
 
 GdkPixbuf *rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
                                                  size_t len,
-                                                 struct RsvgSizeCallbackData *data,
+                                                 gpointer data,
                                                  const char *base_uri, GError ** error);
 
 gboolean     rsvg_eval_switch_attributes	(RsvgPropertyBag * atts, gboolean * p_has_cond);

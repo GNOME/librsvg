@@ -34,7 +34,6 @@ rsvg_pixbuf_from_file_at_zoom_with_max
 rsvg_handle_render_cairo
 rsvg_handle_render_cairo_sub
 rsvg_handle_get_type
-_rsvg_size_callback
 _rsvg_register_types
 rsvg_defs_lookup
 rsvg_pixbuf_from_data_with_size_data

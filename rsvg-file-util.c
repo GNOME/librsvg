@@ -37,95 +37,19 @@
 #include "rsvg.h"
 #include "rsvg-private.h"
 #include "rsvg-io.h"
+#include "rsvg-size-callback.h"
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 #define SVG_BUFFER_SIZE (1024 * 8)
-
-void
-_rsvg_size_callback (int *width, int *height, gpointer data)
-{
-    struct RsvgSizeCallbackData *real_data = (struct RsvgSizeCallbackData *) data;
-    double zoomx, zoomy, zoom;
-
-    int in_width, in_height;
-
-    in_width = *width;
-    in_height = *height;
-
-    switch (real_data->type) {
-    case RSVG_SIZE_ZOOM:
-        if (*width < 0 || *height < 0)
-            return;
-
-        *width = floor (real_data->x_zoom * *width + 0.5);
-        *height = floor (real_data->y_zoom * *height + 0.5);
-        break;
-
-    case RSVG_SIZE_ZOOM_MAX:
-        if (*width < 0 || *height < 0)
-            return;
-
-        *width = floor (real_data->x_zoom * *width + 0.5);
-        *height = floor (real_data->y_zoom * *height + 0.5);
-
-        if (*width > real_data->width || *height > real_data->height) {
-            zoomx = (double) real_data->width / *width;
-            zoomy = (double) real_data->height / *height;
-            zoom = MIN (zoomx, zoomy);
-
-            *width = floor (zoom * *width + 0.5);
-            *height = floor (zoom * *height + 0.5);
-        }
-        break;
-
-    case RSVG_SIZE_WH_MAX:
-        if (*width < 0 || *height < 0)
-            return;
-
-        zoomx = (double) real_data->width / *width;
-        zoomy = (double) real_data->height / *height;
-        if (zoomx < 0)
-            zoom = zoomy;
-        else if (zoomy < 0)
-            zoom = zoomx;
-        else
-            zoom = MIN (zoomx, zoomy);
-
-        *width = floor (zoom * *width + 0.5);
-        *height = floor (zoom * *height + 0.5);
-        break;
-
-    case RSVG_SIZE_WH:
-        if (real_data->width != -1)
-            *width = real_data->width;
-        if (real_data->height != -1)
-            *height = real_data->height;
-        break;
-
-    default:
-        g_assert_not_reached ();
-    }
-
-    if (real_data->keep_aspect_ratio) {
-        int out_min = MIN (*width, *height);
-
-        if (out_min == *width) {
-            *height = in_height * ((double) *width / (double) in_width);
-        } else {
-            *width = in_width * ((double) *height / (double) in_height);
-        }
-    }
-}
 
 /* private */
 GdkPixbuf *
 rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
                                       size_t len,
-                                      struct RsvgSizeCallbackData *data,
+                                      /* RsvgSizeCallbackData */ gpointer data,
                                       const char *base_uri, GError ** error)
 {
     RsvgHandle *handle;

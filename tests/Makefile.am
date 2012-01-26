@@ -30,7 +30,9 @@ DISTCLEANFILES = rsvg-test.html			\
 
 libtest_utils_la_SOURCES = 				\
 	test-utils.c	   				\
-	test-utils.h
+	test-utils.h					\
+	$(top_srcdir)/rsvg-size-callback.c		\
+	$(top_srcdir)/rsvg-size-callback.h
 
 EXTRA_DIST =						\
 	fixtures/crash/bug620238.svg			\

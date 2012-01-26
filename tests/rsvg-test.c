@@ -42,6 +42,7 @@
 #include "rsvg.h"
 #include "rsvg-cairo.h"
 #include "rsvg-private.h"
+#include "rsvg-size-callback.h"
 
 #include "pdiff.h"
 
