@@ -161,6 +161,7 @@ struct RsvgHandlePrivate {
 
     xmlParserCtxtPtr ctxt;
     GError **error;
+    GCancellable *cancellable;
 
     double dpi_x;
     double dpi_y;

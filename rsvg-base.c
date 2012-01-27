@@ -1749,6 +1749,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     int result;
     xmlDocPtr doc;
     GError *err = NULL;
+    gboolean res = FALSE;
 
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (G_IS_INPUT_STREAM (stream), FALSE);
@@ -1758,6 +1759,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     priv = handle->priv;
 
     priv->error = &err;
+    priv->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
     if (priv->ctxt == NULL) {
         priv->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0,
                                               rsvg_handle_get_base_uri (handle));
@@ -1775,7 +1777,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     if (xmlPushInput (priv->ctxt, input) < 0) {
         rsvg_set_error (error, priv->ctxt);
         xmlFreeInputStream (input);
-        return FALSE;
+        goto out;
     }
 
     result = xmlParseDocument (priv->ctxt);
@@ -1785,14 +1787,12 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
         else
             rsvg_set_error (error, handle->priv->ctxt);
 
-        return FALSE;
+        goto out;
     }
-
-    priv->error = NULL;
 
     if (err != NULL) {
         g_propagate_error (error, err);
-        return FALSE;
+        goto out;
     }
 
     doc = priv->ctxt->myDoc;
@@ -1804,7 +1804,14 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     rsvg_defs_resolve_all (priv->defs);
     priv->finished = TRUE;
 
-    return TRUE;
+    res = TRUE;
+
+  out:
+
+    priv->error = NULL;
+    g_clear_object (&priv->cancellable);
+
+    return res;
 }
 
 /**
@@ -2153,7 +2160,12 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
     if (!_rsvg_handle_allow_load (handle, uri, error))
         return NULL;
 
-    return _rsvg_io_acquire_data (uri, rsvg_handle_get_base_uri (handle), content_type, len, error);
+    return _rsvg_io_acquire_data (uri, 
+                                  rsvg_handle_get_base_uri (handle), 
+                                  content_type, 
+                                  len, 
+                                  handle->priv->cancellable,
+                                  error);
 }
 
 GInputStream *
@@ -2165,5 +2177,9 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
     if (!_rsvg_handle_allow_load (handle, uri, error))
         return NULL;
 
-    return _rsvg_io_acquire_stream (uri, rsvg_handle_get_base_uri (handle), content_type, error);
+    return _rsvg_io_acquire_stream (uri, 
+                                    rsvg_handle_get_base_uri (handle), 
+                                    content_type, 
+                                    handle->priv->cancellable,
+                                    error);
 }

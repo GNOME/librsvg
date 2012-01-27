@@ -90,6 +90,7 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv->finished = 0;
     self->priv->data_input_stream = NULL;
     self->priv->first_write = TRUE;
+    self->priv->cancellable = NULL;
 
     self->priv->is_disposed = FALSE;
     self->priv->in_loop = FALSE;
@@ -129,6 +130,8 @@ rsvg_handle_dispose (GObject *instance)
         g_object_unref (self->priv->data_input_stream);
         self->priv->data_input_stream = NULL;
     }
+
+    g_clear_object (&self->priv->cancellable);
 
   chain:
     G_OBJECT_CLASS (rsvg_handle_parent_class)->dispose (instance);

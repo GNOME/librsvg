@@ -159,6 +159,7 @@ rsvg_acquire_file_data (const char *filename,
                         const char *base_uri,
                         char **out_content_type,
                         gsize *out_len,
+                        GCancellable *cancellable,
                         GError **error)
 {
     GFile *file;
@@ -193,6 +194,7 @@ static GInputStream *
 rsvg_acquire_gvfs_stream (const char *uri, 
                           const char *base_uri, 
                           char **out_content_type,
+                          GCancellable *cancellable,
                           GError **error)
 {
     GFile *base, *file;
@@ -202,7 +204,7 @@ rsvg_acquire_gvfs_stream (const char *uri,
 
     file = g_file_new_for_uri (uri);
 
-    stream = g_file_read (file, NULL /* cancellable */, &err);
+    stream = g_file_read (file, cancellable, &err);
     g_object_unref (file);
 
     if (stream == NULL &&
@@ -213,7 +215,7 @@ rsvg_acquire_gvfs_stream (const char *uri,
         file = g_file_resolve_relative_path (base, uri);
         g_object_unref (base);
 
-        stream = g_file_read (file, NULL /* cancellable */, &err);
+        stream = g_file_read (file, cancellable, &err);
         g_object_unref (file);
     }
 
@@ -227,7 +229,7 @@ rsvg_acquire_gvfs_stream (const char *uri,
 
         file_info = g_file_input_stream_query_info (stream, 
                                                     G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-                                                    NULL /* cancellable */,
+                                                    cancellable,
                                                     NULL /* error */);
         if (file_info) {
             *out_content_type = g_strdup (g_file_info_get_content_type (file_info));
@@ -237,7 +239,7 @@ rsvg_acquire_gvfs_stream (const char *uri,
         }
     }
 
-    return stream;
+    return G_INPUT_STREAM (stream);
 }
 
 static guint8 *
@@ -245,6 +247,7 @@ rsvg_acquire_gvfs_data (const char *uri,
                         const char *base_uri,
                         char **out_content_type,
                         gsize *out_len,
+                        GCancellable *cancellable,
                         GError **error)
 {
     GFile *base, *file;
@@ -258,7 +261,7 @@ rsvg_acquire_gvfs_data (const char *uri,
 
     err = NULL;
     data = NULL;
-    if (!(res = g_file_load_contents (file, NULL, &data, &len, NULL, &err)) &&
+    if (!(res = g_file_load_contents (file, cancellable, &data, &len, NULL, &err)) &&
         g_error_matches (err, G_IO_ERROR, G_IO_ERROR_NOT_FOUND) &&
         base_uri != NULL) {
         g_clear_error (&err);
@@ -267,7 +270,7 @@ rsvg_acquire_gvfs_data (const char *uri,
         file = g_file_resolve_relative_path (base, uri);
         g_object_unref (base);
 
-        res = g_file_load_contents (file, NULL, &data, &len, NULL, &err);
+        res = g_file_load_contents (file, cancellable, &data, &len, NULL, &err);
     }
 
     g_object_unref (file);
@@ -290,6 +293,7 @@ _rsvg_io_acquire_data (const char *href,
                        const char *base_uri, 
                        char **content_type,
                        gsize *len,
+                       GCancellable *cancellable,
                        GError **error)
 {
     guint8 *data;
@@ -307,10 +311,10 @@ _rsvg_io_acquire_data (const char *href,
     if (strncmp (href, "data:", 5) == 0)
       return rsvg_acquire_data_data (href, NULL, content_type, len, error);
 
-    if ((data = rsvg_acquire_file_data (href, base_uri, content_type, len, NULL)))
+    if ((data = rsvg_acquire_file_data (href, base_uri, content_type, len, cancellable, NULL)))
       return data;
 
-    if ((data = rsvg_acquire_gvfs_data (href, base_uri, content_type, len, error)))
+    if ((data = rsvg_acquire_gvfs_data (href, base_uri, content_type, len, cancellable, error)))
       return data;
 
     return NULL;
@@ -320,6 +324,7 @@ GInputStream *
 _rsvg_io_acquire_stream (const char *href, 
                          const char *base_uri, 
                          char **content_type,
+                         GCancellable *cancellable,
                          GError **error)
 {
     GInputStream *stream;
@@ -339,10 +344,10 @@ _rsvg_io_acquire_stream (const char *href,
         return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
     }
 
-    if ((data = rsvg_acquire_file_data (href, base_uri, content_type, &len, NULL)))
+    if ((data = rsvg_acquire_file_data (href, base_uri, content_type, &len, cancellable, NULL)))
       return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
 
-    if ((stream = rsvg_acquire_gvfs_stream (href, base_uri, content_type, error)))
+    if ((stream = rsvg_acquire_gvfs_stream (href, base_uri, content_type, cancellable, error)))
       return stream;
 
     return NULL;

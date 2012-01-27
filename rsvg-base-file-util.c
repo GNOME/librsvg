@@ -93,7 +93,7 @@ rsvg_handle_new_from_file (const gchar * file_name, GError ** error)
     rsvg_return_val_if_fail (file_name != NULL, NULL, error);
 
     base_uri = rsvg_get_base_uri_from_filename (file_name);
-    data = _rsvg_io_acquire_data (file_name, base_uri, NULL, &data_len, error);
+    data = _rsvg_io_acquire_data (file_name, base_uri, NULL, &data_len, NULL, error);
 
     if (data) {
         handle = rsvg_handle_new ();

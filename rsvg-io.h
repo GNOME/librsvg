@@ -30,11 +30,13 @@ guint8* _rsvg_io_acquire_data (const char *uri,
                                const char *base_uri,
                                char **content_type,
                                gsize *len,
+                               GCancellable *cancellable,
                                GError **error);
 
 GInputStream *_rsvg_io_acquire_stream (const char *uri,
                                        const char *base_uri,
                                        char **content_type,
+                                       GCancellable *cancellable,
                                        GError **error);
 
 #endif /* RSVG_IO_H */
