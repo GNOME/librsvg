@@ -27,32 +27,99 @@
 
 #include <string.h>
 
-static guint8 *
-rsvg_acquire_base64_data (const char *data, 
-                          const char *base_uri, 
-                          gsize *len,
-                          GError **error)
+/* Copied from soup-request-data.c (LGPL2+):
+ * Copyright (C) 2009, 2010 Red Hat, Inc.
+ * Copyright (C) 2010 Igalia, S.L.
+ * and from soup-uri.c:
+ * Copyright 1999-2003 Ximian, Inc.
+ */
+
+#define XDIGIT(c) ((c) <= '9' ? (c) - '0' : ((c) & 0x4F) - 'A' + 10)
+#define HEXCHAR(s) ((XDIGIT (s[1]) << 4) + XDIGIT (s[2]))
+
+static char *
+uri_decoded_copy (const char *part, 
+                  gsize length)
 {
-    guint8 *bytes;
-    gsize data_len, written_len;
-    int state = 0;
-    guint save = 0;
+    unsigned char *s, *d;
+    char *decoded = g_strndup (part, length);
 
-    /* FIXME: be more correct! Check that is indeed a base64 data: URI */
-    while (*data)
-        if (*data++ == ',')
-            break;
+    s = d = (unsigned char *)decoded;
+    do {
+        if (*s == '%') {
+            if (!g_ascii_isxdigit (s[1]) ||
+                !g_ascii_isxdigit (s[2])) {
+                *d++ = *s;
+                continue;
+            }
+            *d++ = HEXCHAR (s);
+            s += 2;
+        } else {
+            *d++ = *s;
+        }
+    } while (*s++);
 
-    data_len = strlen (data);
-    bytes = g_try_malloc (data_len / 4 * 3);
-    if (bytes == NULL)
-        return NULL;
+    return decoded;
+}
 
-    written_len = g_base64_decode_step (data, data_len, bytes, &state, &save);
+#define BASE64_INDICATOR     ";base64"
+#define BASE64_INDICATOR_LEN (sizeof (";base64") - 1)
 
-    *len = written_len;
+static guint8 *
+rsvg_acquire_data_data (const char *uri,
+                        const char *base_uri, 
+                        gsize *out_len,
+                        char **out_content_type,
+                        GError **error)
+{
+    const char *comma, *start, *end;
+    char *content_type = NULL;
+    char *data;
+    gsize data_len;
+    gboolean base64 = FALSE;
 
-    return bytes;
+    g_assert (out_len != NULL);
+
+    g_assert (g_str_has_prefix (uri, "data:"));
+    start = uri + 5;
+    comma = strchr (start, ',');
+
+    if (comma && comma != start) {
+        /* Deal with MIME type / params */
+        if (comma > start + BASE64_INDICATOR_LEN && 
+            !g_ascii_strncasecmp (comma - BASE64_INDICATOR_LEN, BASE64_INDICATOR, BASE64_INDICATOR_LEN)) {
+            end = comma - BASE64_INDICATOR_LEN;
+            base64 = TRUE;
+        } else {
+            end = comma;
+        }
+
+        if (end != start)
+            content_type = uri_decoded_copy (start, end - start);
+    }
+
+    if (comma)
+        start = comma + 1;
+
+    if (*start) {
+        data = uri_decoded_copy (start, strlen (start));
+
+        if (base64)
+            data = g_base64_decode_inplace ((char*) data, &data_len);
+        else
+            data_len = strlen ((const char *) data);
+    } else {
+        data = NULL;
+        data_len = 0;
+    }
+
+    if (out_content_type)
+        *out_content_type = content_type;
+    else
+        g_free (content_type);
+
+    *out_len = data_len;
+    return data;
 }
 
 gchar *
@@ -191,7 +258,7 @@ _rsvg_io_acquire_data (const char *href,
     }
 
     if (strncmp (href, "data:", 5) == 0)
-      return rsvg_acquire_base64_data (href, NULL, len, error);
+      return rsvg_acquire_data_data (href, NULL, len, NULL, error);
 
     if ((data = rsvg_acquire_file_data (href, base_uri, len, NULL)))
       return data;
@@ -218,7 +285,7 @@ _rsvg_io_acquire_stream (const char *href,
     }
 
     if (strncmp (href, "data:", 5) == 0) {
-        if (!(data = rsvg_acquire_base64_data (href, NULL, &len, error)))
+        if (!(data = rsvg_acquire_data_data (href, NULL, &len, NULL, error)))
             return NULL;
 
         return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
