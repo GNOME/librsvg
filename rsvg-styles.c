@@ -1164,20 +1164,29 @@ ccss_import_style (CRDocHandler * a_this,
     CSSUserData *user_data = (CSSUserData *) a_this->app_data;
     guint8 *stylesheet_data;
     gsize stylesheet_data_len;
+    char *content_type = NULL, *css_content_type;
 
     if (a_uri == NULL)
         return;
 
     stylesheet_data = _rsvg_handle_acquire_data (user_data->ctx,
                                                  (gchar *) cr_string_peek_raw_str (a_uri),
-                                                 NULL,
+                                                 &content_type,
                                                  &stylesheet_data_len,
                                                  NULL);
     if (stylesheet_data == NULL)
         return;
 
-    rsvg_parse_cssbuffer (user_data->ctx, (const char *) stylesheet_data,
-                          stylesheet_data_len);
+    if (content_type) {
+        css_content_type = g_content_type_from_mime_type ("text/css");
+        if (g_content_type_is_a (content_type, css_content_type)) {
+            rsvg_parse_cssbuffer (user_data->ctx, (const char *) stylesheet_data,
+                                  stylesheet_data_len);
+        }
+        g_free (css_content_type);
+        g_free (content_type);
+    }
+
     g_free (stylesheet_data);
 }
 

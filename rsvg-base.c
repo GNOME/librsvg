@@ -889,16 +889,21 @@ rsvg_processing_instruction (void *ctx, const xmlChar * target, const xmlChar * 
                     if (value && value[0]) {
                         guint8 *style_data;
                         gsize style_data_len;
+                        char *content_type = NULL, *css_content_type;
 
                         style_data = _rsvg_handle_acquire_data (handle,
                                                                 value,
-                                                                NULL,
+                                                                &content_type,
                                                                 &style_data_len,
                                                                 NULL);
-                        if (style_data) {
-                            rsvg_parse_cssbuffer (handle, (char *) style_data, style_data_len);
-                            g_free (style_data);
+                        if (style_data && content_type) {
+                            css_content_type = g_content_type_from_mime_type ("text/css");
+                            if (g_content_type_is_a (content_type, css_content_type))
+                                rsvg_parse_cssbuffer (handle, (char *) style_data, style_data_len);
+                            g_free (css_content_type);
+                            g_free (content_type);
                         }
+                        g_free (style_data);
                     }
                 }
             }
