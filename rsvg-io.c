@@ -184,12 +184,14 @@ _rsvg_io_acquire_data (const char *href,
 {
     guint8 *data;
 
-    if (!(href && *href))
+    if (!(href && *href)) {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                            "Invalid URI");
         return NULL;
+    }
 
-    if (strncmp (href, "data:", 5) == 0 &&
-        (data = rsvg_acquire_base64_data (href, NULL, len, NULL)))
-      return data;
+    if (strncmp (href, "data:", 5) == 0)
+      return rsvg_acquire_base64_data (href, NULL, len, error);
 
     if ((data = rsvg_acquire_file_data (href, base_uri, len, NULL)))
       return data;
@@ -209,12 +211,18 @@ _rsvg_io_acquire_stream (const char *href,
     guint8 *data;
     gsize len;
 
-    if (!(href && *href))
+    if (!(href && *href)) {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                            "Invalid URI");
         return NULL;
+    }
 
-    if (strncmp (href, "data:", 5) == 0 &&
-        (data = rsvg_acquire_base64_data (href, NULL, &len, NULL)))
-      return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
+    if (strncmp (href, "data:", 5) == 0) {
+        if (!(data = rsvg_acquire_base64_data (href, NULL, &len, error)))
+            return NULL;
+
+        return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
+    }
 
     if ((data = rsvg_acquire_file_data (href, base_uri, &len, NULL)))
       return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
