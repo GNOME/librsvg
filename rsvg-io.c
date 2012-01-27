@@ -188,10 +188,10 @@ _rsvg_io_acquire_data (const char *href,
         return NULL;
 
     if (strncmp (href, "data:", 5) == 0 &&
-        (data = rsvg_acquire_base64_data (href, NULL, len, error)))
+        (data = rsvg_acquire_base64_data (href, NULL, len, NULL)))
       return data;
 
-    if ((data = rsvg_acquire_file_data (href, base_uri, len, error)))
+    if ((data = rsvg_acquire_file_data (href, base_uri, len, NULL)))
       return data;
 
     if ((data = rsvg_acquire_gvfs_data (href, base_uri, len, error)))
@@ -213,10 +213,10 @@ _rsvg_io_acquire_stream (const char *href,
         return NULL;
 
     if (strncmp (href, "data:", 5) == 0 &&
-        (data = rsvg_acquire_base64_data (href, NULL, &len, error)))
+        (data = rsvg_acquire_base64_data (href, NULL, &len, NULL)))
       return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
 
-    if ((data = rsvg_acquire_file_data (href, base_uri, &len, error)))
+    if ((data = rsvg_acquire_file_data (href, base_uri, &len, NULL)))
       return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
 
     if ((stream = rsvg_acquire_gvfs_stream (href, base_uri, error)))
