@@ -127,7 +127,7 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
     gsize data_len;
     GString *base_uri = g_string_new (file_name);
 
-    data = _rsvg_io_acquire_data (file_name, base_uri->str, &data_len, error);
+    data = _rsvg_io_acquire_data (file_name, base_uri->str, NULL, &data_len, error);
 
     if (data) {
         pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data (data, data_len,

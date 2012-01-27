@@ -48,7 +48,7 @@ rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
     int res;
     cairo_surface_t *surface;
 
-    data = _rsvg_handle_acquire_data (handle, href, &data_len, error);
+    data = _rsvg_handle_acquire_data (handle, href, NULL, &data_len, error);
     if (data == NULL)
         return NULL;
 

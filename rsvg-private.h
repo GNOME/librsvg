@@ -406,11 +406,13 @@ void rsvg_return_if_fail_warning (const char *pretty_function,
 G_GNUC_INTERNAL
 guint8* _rsvg_handle_acquire_data (RsvgHandle *handle,
                                    const char *uri,
+                                   char **content_type,
                                    gsize *len,
                                    GError **error);
 G_GNUC_INTERNAL
 GInputStream *_rsvg_handle_acquire_stream (RsvgHandle *handle,
                                            const char *uri,
+                                           char **content_type,
                                            GError **error);
 
 

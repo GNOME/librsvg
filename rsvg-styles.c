@@ -1170,6 +1170,7 @@ ccss_import_style (CRDocHandler * a_this,
 
     stylesheet_data = _rsvg_handle_acquire_data (user_data->ctx,
                                                  (gchar *) cr_string_peek_raw_str (a_uri),
+                                                 NULL,
                                                  &stylesheet_data_len,
                                                  NULL);
     if (stylesheet_data == NULL)

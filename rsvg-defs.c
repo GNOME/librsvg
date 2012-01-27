@@ -72,7 +72,7 @@ rsvg_defs_load_extern (const RsvgDefs * defs, const char *name)
 
     filename = rsvg_get_file_path (name, rsvg_handle_get_base_uri (defs->ctx));
 
-    data = _rsvg_handle_acquire_data (defs->ctx, name, &data_len, NULL);
+    data = _rsvg_handle_acquire_data (defs->ctx, name, NULL, &data_len, NULL);
 
     if (data) {
         handle = rsvg_handle_new ();
