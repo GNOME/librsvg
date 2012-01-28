@@ -1164,30 +1164,28 @@ ccss_import_style (CRDocHandler * a_this,
     CSSUserData *user_data = (CSSUserData *) a_this->app_data;
     guint8 *stylesheet_data;
     gsize stylesheet_data_len;
-    char *content_type = NULL, *css_content_type;
+    char *mime_type = NULL;
 
     if (a_uri == NULL)
         return;
 
     stylesheet_data = _rsvg_handle_acquire_data (user_data->ctx,
                                                  (gchar *) cr_string_peek_raw_str (a_uri),
-                                                 &content_type,
+                                                 &mime_type,
                                                  &stylesheet_data_len,
                                                  NULL);
-    if (stylesheet_data == NULL)
+    if (stylesheet_data == NULL || 
+        mime_type == NULL || 
+        strcmp (mime_type, "text/css") != 0) {
+        g_free (stylesheet_data);
+        g_free (mime_type);
         return;
-
-    if (content_type) {
-        css_content_type = g_content_type_from_mime_type ("text/css");
-        if (g_content_type_is_a (content_type, css_content_type)) {
-            rsvg_parse_cssbuffer (user_data->ctx, (const char *) stylesheet_data,
-                                  stylesheet_data_len);
-        }
-        g_free (css_content_type);
-        g_free (content_type);
     }
 
+    rsvg_parse_cssbuffer (user_data->ctx, (const char *) stylesheet_data,
+                          stylesheet_data_len);
     g_free (stylesheet_data);
+    g_free (mime_type);
 }
 
 /* Parse an SVG transform string into an affine matrix. Reference: SVG
