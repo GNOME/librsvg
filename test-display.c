@@ -780,7 +780,12 @@ main (int argc, char **argv)
 
     surface = render_to_surface (&info);
     if (surface == NULL) {
-        g_printerr (_("Error displaying image"));
+        g_printerr ("Unknown error while rendering image\n");
+        goto done;
+    }
+    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+        g_printerr ("Error while rendering image: %d\n", cairo_surface_status (surface));
+        cairo_surface_destroy (surface);
         goto done;
     }
 
