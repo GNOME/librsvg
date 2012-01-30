@@ -270,6 +270,7 @@ rsvg_acquire_gvfs_data (const char *uri,
         g_error_matches (err, G_IO_ERROR, G_IO_ERROR_NOT_FOUND) &&
         base_uri != NULL) {
         g_clear_error (&err);
+        g_object_unref (file);
 
         base = g_file_new_for_uri (base_uri);
         file = g_file_resolve_relative_path (base, uri);
