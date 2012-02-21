@@ -758,6 +758,7 @@ main (int argc, char **argv)
                                                     NULL /* cancellable */,
                                                     &err);
     g_object_unref (base_file);
+    g_object_unref (input);
 
     if (info.handle == NULL) {
         g_printerr ("Failed to load SVG: %s\n", err->message);
