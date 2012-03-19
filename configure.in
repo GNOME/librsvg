@@ -279,7 +279,7 @@ dnl Build introspectable bindings
 
 # No automagic please!
 if test -z "$enable_introspection"; then
-  enable_introspection=no
+  enable_introspection=yes
 fi
 
 GOBJECT_INTROSPECTION_CHECK([0.10.8])

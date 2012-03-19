@@ -1133,6 +1133,9 @@ rsvg_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
     CRDocHandler *css_handler = NULL;
     CSSUserData user_data;
 
+    if (buff == NULL || buflen == 0)
+        return;
+
     css_handler = cr_doc_handler_new ();
     init_sac_handler (css_handler);
 
@@ -1142,7 +1145,6 @@ rsvg_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
     /* TODO: fix libcroco to take in const strings */
     parser = cr_parser_new_from_buf ((guchar *) buff, (gulong) buflen, CR_UTF_8, FALSE);
     if (parser == NULL) {
-        g_warning (_("Error creating CSS parser\n"));
         cr_doc_handler_unref (css_handler);
         return;
     }
