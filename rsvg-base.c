@@ -819,6 +819,9 @@ rsvg_entity_decl (void *data, const xmlChar * name, int type,
                                                      NULL,
                                                      &entity_data_len,
                                                      NULL);
+        else
+            entity_data = NULL;
+
         if (entity_data) {
             content = xmlCharStrndup (entity_data, entity_data_len);
             g_free (entity_data);

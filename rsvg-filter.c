@@ -1740,7 +1740,6 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     output = _rsvg_image_surface_new (ctx->width, ctx->height);
     if (output == NULL) {
-        cairo_surface_destroy (in);
         return;
     }
 
