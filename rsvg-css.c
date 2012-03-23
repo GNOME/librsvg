@@ -399,7 +399,7 @@ rsvg_css_parse_opacity (const char *str)
 
     opacity = g_ascii_strtod (str, &end_ptr);
 
-    if ((opacity == -HUGE_VAL || opacity == HUGE_VAL) && (ERANGE == errno) ||
+    if (((opacity == -HUGE_VAL || opacity == HUGE_VAL) && (ERANGE == errno)) ||
         *end_ptr != '\0')
         opacity = 1.;
 
