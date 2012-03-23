@@ -181,14 +181,10 @@ struct _ViewerCbInfo {
 static cairo_surface_t *
 render_to_surface (ViewerCbInfo *info)
 {
-    RsvgDimensionData dimensions;
     int width, height;
     cairo_matrix_t matrix;
-    GdkPixbuf *output = NULL;
-    guint8 *pixels;
     cairo_surface_t *surface;
     cairo_t *cr;
-    int rowstride, minimum;
 
     width = ceil ((double) info->dimensions.width * info->x_zoom);
     height = ceil ((double) info->dimensions.height * info->y_zoom);
@@ -624,8 +620,6 @@ main (int argc, char **argv)
 
     int from_stdin = 0;
     ViewerCbInfo info;
-
-    struct RsvgSizeCallbackData size_data;
 
     char **args = NULL;
     gint n_args = 0;

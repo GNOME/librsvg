@@ -44,12 +44,6 @@
 #include "rsvg-cairo.h"
 #include "rsvg-cairo-draw.h"
 
-static void
-rsvg_pixmap_destroy (gchar * pixels, gpointer data)
-{
-    g_free (pixels);
-}
-
 /**
  * rsvg_handle_get_pixbuf_sub:
  * @handle: An #RsvgHandle
@@ -72,10 +66,8 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
 {
     RsvgDimensionData dimensions;
     GdkPixbuf *output = NULL;
-    guint8 *pixels;
     cairo_surface_t *surface;
     cairo_t *cr;
-    int rowstride;
 
     g_return_val_if_fail (handle != NULL, NULL);
 

@@ -314,7 +314,6 @@ static void
 rsvg_extra_handler_characters (RsvgSaxHandler * self, const char *ch, int len)
 {
     RsvgSaxHandlerExtra *z = (RsvgSaxHandlerExtra *) self;
-    RsvgHandle *ctx = z->ctx;
 
     /* This isn't quite the correct behavior - in theory, any graphics
        element may contain a title, desc, or metadata element */
@@ -417,7 +416,6 @@ static void
 rsvg_metadata_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag * atts)
 {
     RsvgSaxHandlerMetadata *z = (RsvgSaxHandlerMetadata *) self;
-    RsvgHandle *ctx = z->ctx;
 
     rsvg_extra_handler_start (self, name, atts);
 
@@ -433,7 +431,6 @@ static void
 rsvg_metadata_handler_end (RsvgSaxHandler * self, const char *name)
 {
     RsvgSaxHandlerMetadata *z = (RsvgSaxHandlerMetadata *) self;
-    RsvgHandle *ctx = z->ctx;
 
     if (strcmp (name, z->name) != 0) {
         if (z->string)
@@ -569,7 +566,6 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
         xmlParserCtxtPtr xml_parser;
         xmlParserInputBufferPtr buffer;
         xmlParserInputPtr input;
-        int result;
 
         stream = _rsvg_handle_acquire_stream (ctx, href, NULL, NULL);
         if (stream == NULL)

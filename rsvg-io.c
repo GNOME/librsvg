@@ -160,12 +160,9 @@ rsvg_acquire_file_data (const char *filename,
                         GCancellable *cancellable,
                         GError **error)
 {
-    GFile *file;
     gchar *path, *data;
-    GInputStream *stream;
     gsize len;
     char *content_type;
-    gboolean res;
 
     rsvg_return_val_if_fail (filename != NULL, NULL, error);
     g_assert (out_len != NULL);
@@ -201,7 +198,6 @@ rsvg_acquire_gvfs_stream (const char *uri,
     GFile *base, *file;
     GFileInputStream *stream;
     GError *err = NULL;
-    gchar *data;
 
     file = g_file_new_for_uri (uri);
 
@@ -255,7 +251,6 @@ rsvg_acquire_gvfs_data (const char *uri,
                         GError **error)
 {
     GFile *base, *file;
-    GInputStream *stream;
     GError *err;
     gchar *data;
     gsize len;

@@ -44,12 +44,6 @@
 static const cairo_user_data_key_t surface_pixel_data_key;
 
 static void
-rsvg_pixmap_destroy (gchar * pixels, gpointer data)
-{
-    g_free (pixels);
-}
-
-static void
 _pattern_add_rsvg_color_stops (cairo_pattern_t * pattern,
                                GPtrArray * stops, guint32 current_color_rgb, guint8 opacity)
 {
@@ -574,7 +568,6 @@ rsvg_cairo_render_surface (RsvgDrawingCtx *ctx,
 
     int width, height;
     double dwidth, dheight;
-    int j;
     RsvgBbox bbox;
 
     if (surface == NULL)
