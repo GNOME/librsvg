@@ -936,7 +936,7 @@ rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf)
     surface = cairo_image_surface_create (format, width, height);
     if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
         cairo_surface_destroy (surface);
-        return;
+        return NULL;
     }
 
     cairo_pixels = cairo_image_surface_get_data (surface);
