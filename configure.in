@@ -193,7 +193,7 @@ gdk_pixbuf_moduledir=
 if test "$enable_pixbuf_loader" = "yes"; then
   PKG_CHECK_MODULES([GDK_PIXBUF],[gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED])
 
-  AC_PATH_PROG([GDK_PIXBUF_QUERYLOADERS],[gdk-pixbuf-query-loaders],[none])
+  AC_PATH_PROGS([GDK_PIXBUF_QUERYLOADERS],[gdk-pixbuf-query-loaders-64 gdk-pixbuf-query-loaders],[none])
 
   if test "x$GDK_PIXBUF_QUERYLOADERS" = "xnone"; then
     AC_MSG_ERROR([gdk-pixbuf-query-loaders not found in path])
