@@ -168,7 +168,6 @@ EXTRA_DIST =				\
 	TODO				\
 	COPYING.LIB 			\
 	librsvg-zip.in 			\
-	librsvg.def			\
 	gtk-doc.make
 
 CLEANFILES = \
