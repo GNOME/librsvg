@@ -113,33 +113,6 @@ dnl ===========================================================================
 
 AC_CHECK_FUNCS(strtok_r)
 
-dnl ===========================================================================
-
-dnl Turn on the additional warnings last, so -Werror doesn't affect other tests.
-
-AC_ARG_ENABLE(more-warnings,
-[  --enable-more-warnings  Maximum compiler warnings],
-set_more_warnings="$enableval",[
-if test -f $srcdir/CVSVERSION; then
-        is_cvs_version=true
-        set_more_warnings=yes
-else
-        set_more_warnings=no
-fi
-])
-AC_MSG_CHECKING(for more warnings, including -Werror)
-if test "$GCC" = "yes" -a "$set_more_warnings" != "no"; then
-        AC_MSG_RESULT(yes)
-        CFLAGS="\
-        -Wall \
-        -Wchar-subscripts -Wmissing-declarations -Wmissing-prototypes \
-        -Wnested-externs -Wpointer-arith \
-        -Wcast-align -Wsign-compare \
-        $CFLAGS"
-else
-        AC_MSG_RESULT(no)
-fi
-
 # ===========================================================================
 # GTK
 # ===========================================================================
@@ -245,6 +218,31 @@ if test "$enable_Bsymbolic" != "no"; then
 fi
 
 AC_SUBST([BSYMBOLIC_LDFLAG])
+
+##################################################
+# Compiler warnings
+##################################################
+
+save_CFLAGS="$CFLAGS"
+CFLAGS=
+CC_CHECK_CFLAGS_APPEND([ \
+  -Wall -Wextra \
+  -Wunused -Wreturn-type -Wswitch -Wcomment -Wtrigraphs \
+  -Wchar-subscripts -Wparentheses -Winline -Wredundant-decls \
+  -Wformat-nonliteral -Werror=format-security \
+  -Wsign-compare -Werror=implicit-function-declaration \
+  -Wpointer-arith -Wwrite-strings -Wstrict-prototypes \
+  -Waggregate-return -Wcast-align -Wimplicit -Wuninitialized \
+  -Wmissing-prototypes -Wmissing-declarations -Wnested-externs \
+  -Wpacked -Wmissing-format-attribute -Wshadow \
+  -Wstrict-aliasing=2 -Winit-self -Wunsafe-loop-optimizations \
+  -Wdeclaration-after-statement -Wold-style-definition \
+  -Wno-missing-field-initializers -Wno-unused-parameter \
+  -Wunused-variable -Wunused-functions \
+  -Wempty-body -Wno-switch-enum \
+  -fno-common])
+AM_CFLAGS="$AM_CFLAGS $CFLAGS"
+CFLAGS="$save_CFLAGS"
 
 ##################################################
 # Checks for gtk-doc and docbook-tools
