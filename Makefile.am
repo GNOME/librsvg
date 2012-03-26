@@ -242,12 +242,12 @@ Rsvg_@RSVG_API_VERSION_U@_gir_CFLAGS = -I$(top_builddir)
 Rsvg_@RSVG_API_VERSION_U@_gir_LIBS = librsvg-@RSVG_API_MAJOR_VERSION@.la
 
 girdir = $(datadir)/gir-1.0
-gir_DATA = $(INTROSPECTION_GIRS)
+nodist_gir_DATA = $(INTROSPECTION_GIRS)
 
 typelibsdir = $(libdir)/girepository-1.0
-typelibs_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
+nodist_typelibs_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
 
-CLEANFILES += $(dist_gir_DATA) $(typelibs_DATA)
+CLEANFILES += $(nodist_gir_DATA) $(nodist_typelibs_DATA)
 
 endif # HAVE_INTROSPECTION
 
