@@ -26,6 +26,7 @@ libsvg_la_CPPFLAGS = \
 
 libsvg_la_CFLAGS = \
 	$(GTK2_CFLAGS)		\
+	$(GMODULE_CFLAGS)	\
 	$(LIBRSVG_CFLAGS)	\
 	$(LIBCROCO_CFLAGS) 	\
 	$(AM_CFLAGS)
@@ -34,6 +35,7 @@ libsvg_la_LDFLAGS =  -avoid-version -module $(AM_LDFLAGS)
 libsvg_la_LIBADD = \
 	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la \
 	$(GTK2_LIBS) 		\
+	$(GMODULE_LIBS)		\
 	$(LIBRSVG_LIBS)		\
 	$(LIBCROCO_LIBS)
 

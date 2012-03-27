@@ -109,6 +109,8 @@ PKG_CHECK_MODULES(LIBRSVG, \
 
 PKG_CHECK_MODULES([GTHREAD],[gthread-2.0 >= $GLIB_REQUIRED])
 
+PKG_CHECK_MODULES([GMODULE],[gmodule-2.0])
+
 dnl ===========================================================================
 
 AC_CHECK_FUNCS(strtok_r)
