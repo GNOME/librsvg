@@ -105,9 +105,7 @@ librsvginc_HEADERS = 	\
 	librsvg-features.h \
 	librsvg-enum-types.h
 
-if HAVE_GTK_2
-dist_man_MANS = rsvg.1
-endif
+dist_man_MANS = rsvg-convert.1
 
 rsvg_convert_SOURCES = \
 	rsvg-convert.c \

@@ -1,12 +1,12 @@
-.TH rsvg 1
+.TH rsvg-convert 1
 .SH NAME
-rsvg \- Turn SVG files into raster images.
+rsvg-convert \- turn SVG files into raster images.
 .SH SYNOPSIS
-.B rsvg
-[options] in.svg out.png
+.B rsvg-convert
+[options] in.svg > out.png
 .I ""
 .SH DESCRIPTION
-RSVG converts SVG images into PNG, JPEG, and ICO raster images.
+Converts SVG images into PNG raster images, PDF, PS, or SVG vector images, or dumps of Cairo XML or recording surfaces.
 .SS OPTIONS
 .TP
 .I "\-d \-\-dpi-x number"
@@ -21,17 +21,29 @@ X Zoom factor, as a percentage. If unspecified, 1.0 is used as the default.
 .I "\-y \-\-y\-zoom number"
 Y Zoom factor, as a percentage. If unspecified, 1.0 is used as the default.
 .TP
+.I "\-z \-\-\-zoom number"
+Zoom factor, as a percentage. If unspecified, 1.0 is used as the default.
+.TP
 .I "\-w \-\-width integer"
 Specify how wide you wish the image to be. If unspecified, the natural width of the image is used as the default.
 .TP
 .I "\-h \-\-height integer"
 Specify how tall you wish the image to be. If unspecified, the natural height of the image is used as the default.
 .TP
-.I "\-f \-\-format [png, jpeg, ico]"
+.I "\-f \-\-format [png, pdf, ps, svg, xml, recording]"
 Specify the output format you wish the image to be saved in. If unspecified, PNG is used as the default.
 .TP
-.I "\-q \-\-quality integer"
-Specify JPEG compression factor. Number must be between 1 and 100, inclusive.
+.I "\-o \-\-output filename"
+Specify the output filename. If unspecified, outputs to stdout.
+.TP
+.I "\-a \-\-keep-aspect-ratio"
+Specify that the aspect ratio is to be preserved. If unspecified, aspect ratio will not be preserved.
+.TP
+.I "\-b \-\-background-color [black, white, #abccee, #aaa...]"
+Specify the background color. If unspecified, none is used as the default.
+.TP
+.I "\-\-base-uri uri"
+Specify the base URI for SVG files. If unspecified, none is used as the default.
 .TP
 .I "\-v \-\-version"
 Display what version of rsvg this is.
