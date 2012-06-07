@@ -27,7 +27,6 @@
 #include "rsvg-private.h"
 #include "rsvg-defs.h"
 #include "rsvg-styles.h"
-#include "rsvg-image.h"
 #include "rsvg-io.h"
 
 #include <glib.h>
@@ -70,7 +69,7 @@ rsvg_defs_load_extern (const RsvgDefs * defs, const char *name)
     guint8 *data;
     gsize data_len;
 
-    filename = rsvg_get_file_path (name, rsvg_handle_get_base_uri (defs->ctx));
+    filename = _rsvg_io_get_file_path (name, rsvg_handle_get_base_uri (defs->ctx));
 
     data = _rsvg_handle_acquire_data (defs->ctx, name, NULL, &data_len, NULL);
 

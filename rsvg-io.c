@@ -125,7 +125,8 @@ rsvg_acquire_data_data (const char *uri,
 }
 
 gchar *
-rsvg_get_file_path (const gchar * filename, const gchar * base_uri)
+_rsvg_io_get_file_path (const gchar * filename,
+                        const gchar * base_uri)
 {
     gchar *absolute_filename;
 
@@ -167,7 +168,7 @@ rsvg_acquire_file_data (const char *filename,
     rsvg_return_val_if_fail (filename != NULL, NULL, error);
     g_assert (out_len != NULL);
 
-    path = rsvg_get_file_path (filename, base_uri);
+    path = _rsvg_io_get_file_path (filename, base_uri);
     if (path == NULL)
         return NULL;
 
