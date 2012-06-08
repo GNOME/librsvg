@@ -20,6 +20,7 @@ rsvg
 rsvg-convert
 rsvg-dimensions
 rsvg-view
+rsvg-view-3
 s-enum-types-c
 s-enum-types-h
 stamp-h1
@@ -28,6 +29,11 @@ test-performance
 *.stamp
 *-out.png
 *-diff.png
+*.la
+*.o
+*.lo
+.deps
+.libs
 doc/html/
 doc/rsvg-decl-list.txt
 doc/rsvg-decl.txt
@@ -42,11 +48,17 @@ doc/rsvg.signals
 doc/tmpl/rsvg-cairo.sgml
 doc/tmpl/rsvg-file-util.sgml.bak
 doc/tmpl/rsvg.sgml.bak
+doc/version.xml
 doc/xml/
+gdk-pixbuf-loader/gdk-pixbuf.loaders
+gdk-pixbuf-loader/rsvg-loader
 tests/dimensions
 tests/pdiff/perceptualdiff
 tests/rsvg-test
 tests/rsvg-test.html
 tests/rsvg-test.log
 tests/styles
+tools/test-memory
+Rsvg-2.0.gir
+Rsvg-2.0.typelib
 
