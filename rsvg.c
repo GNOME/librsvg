@@ -57,7 +57,7 @@
  * will be returned.  Note that the pixbuf may not be complete until
  * @rsvg_handle_close has been called.
  *
- * Returns: the pixbuf loaded by #handle, or %NULL.
+ * Returns: (transfer full): the pixbuf loaded by #handle, or %NULL.
  *
  * Since: 2.14
  **/

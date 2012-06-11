@@ -282,18 +282,39 @@ rsvg_handle_class_init (RsvgHandleClass * klass)
                                                           _("ex"), 0, G_MAXDOUBLE, 0,
                                                           (GParamFlags) (G_PARAM_READABLE)));
 
+    /**
+     * RsvgHandle:title:
+     *
+     * SVG's description
+     *
+     * Deprecated: 2.36
+     */
     g_object_class_install_property (gobject_class,
                                      PROP_TITLE,
                                      g_param_spec_string ("title", _("Title"),
                                                           _("SVG file title"), NULL,
                                                           (GParamFlags) (G_PARAM_READABLE)));
 
+    /**
+     * RsvgHandle:desc:
+     *
+     * SVG's description
+     *
+     * Deprecated: 2.36
+     */
     g_object_class_install_property (gobject_class,
                                      PROP_DESC,
                                      g_param_spec_string ("desc", _("Description"),
                                                           _("SVG file description"), NULL,
                                                           (GParamFlags) (G_PARAM_READABLE)));
 
+    /**
+     * RsvgHandle:metadata:
+     *
+     * SVG's description
+     *
+     * Deprecated: 2.36
+     */
     g_object_class_install_property (gobject_class,
                                      PROP_METADATA,
                                      g_param_spec_string ("metadata", _("Metadata"),

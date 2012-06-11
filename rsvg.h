@@ -83,6 +83,8 @@ struct _RsvgHandleClass {
 struct _RsvgHandle {
     GObject parent;
 
+    /*< private >*/
+
     RsvgHandlePrivate *priv;
 
     gpointer _abi_padding[15];

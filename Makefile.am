@@ -238,6 +238,7 @@ Rsvg_@RSVG_API_VERSION_U@_gir_PACKAGES = \
 	$(NULL)
 Rsvg_@RSVG_API_VERSION_U@_gir_CFLAGS = -I$(top_builddir) -DRSVG_COMPILATION
 Rsvg_@RSVG_API_VERSION_U@_gir_LIBS = librsvg-@RSVG_API_MAJOR_VERSION@.la
+Rsvg_@RSVG_API_VERSION_U@_gir_SCANNERFLAGS = --c-include="librsvg/rsvg.h"
 
 girdir = $(datadir)/gir-1.0
 nodist_gir_DATA = $(INTROSPECTION_GIRS)

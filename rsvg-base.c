@@ -1022,7 +1022,7 @@ rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
 /**
  * rsvg_handle_set_base_gfile:
  * @handle: a #RsvgHandle
- * @file: a #GFile
+ * @base_file: a #GFile
  *
  * Set the base URI for @handle from @file.
  * Note: This function may only be called before rsvg_handle_write()
@@ -1295,7 +1295,7 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
 /**
  * rsvg_handle_get_dimensions_sub
  * @handle: A #RsvgHandle
- * @dimension_data: A place to store the SVG's size
+ * @dimension_data: (out): A place to store the SVG's size
  * @id: An element's id within the SVG, or NULL to get the dimension of the whole SVG. 
  * For example, if you have a layer called "layer1" for that you want to get the dimension, 
  * pass "#layer1" as the id.
@@ -1404,7 +1404,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 /**
  * rsvg_handle_get_position_sub
  * @handle: A #RsvgHandle
- * @position_data: A place to store the SVG fragment's position.
+ * @position_data: (out): A place to store the SVG fragment's position.
  * @id: An element's id within the SVG.
  * For example, if you have a layer called "layer1" for that you want to get
  * the position, pass "#layer1" as the id.
@@ -1639,7 +1639,7 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
 /**
  * rsvg_handle_write:
  * @handle: an #RsvgHandle
- * @buf: (array length=count) (element-type uint8): pointer to svg data
+ * @buf: (array length=count) (element-type guint8): pointer to svg data
  * @count: length of the @buf buffer in bytes
  * @error: (allow-none): a location to store a #GError, or %NULL
  *
@@ -1862,7 +1862,7 @@ rsvg_handle_new_from_gfile_sync (GFile          *file,
 
 /**
  * rsvg_handle_new_from_stream_sync:
- * @stream: a #GInputStream
+ * @input_stream: a #GInputStream
  * @base_file: (allow-none): a #GFile, or %NULL
  * @flags: flags from #RsvgHandleFlags
  * @cancellable: (allow-none): a #GCancellable, or %NULL
@@ -1880,7 +1880,7 @@ rsvg_handle_new_from_gfile_sync (GFile          *file,
  * Since: 2.32
  */
 RsvgHandle *
-rsvg_handle_new_from_stream_sync (GInputStream   *stream,
+rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
                                   GFile          *base_file,
                                   RsvgHandleFlags flags,
                                   GCancellable    *cancellable,
@@ -1888,7 +1888,7 @@ rsvg_handle_new_from_stream_sync (GInputStream   *stream,
 {
     RsvgHandle *handle;
 
-    g_return_val_if_fail (G_IS_INPUT_STREAM (stream), NULL);
+    g_return_val_if_fail (G_IS_INPUT_STREAM (input_stream), NULL);
     g_return_val_if_fail (base_file == NULL || G_IS_FILE (base_file), NULL);
     g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
     g_return_val_if_fail (error == NULL || *error == NULL, NULL);
@@ -1898,7 +1898,7 @@ rsvg_handle_new_from_stream_sync (GInputStream   *stream,
     if (base_file)
         rsvg_handle_set_base_gfile (handle, base_file);
 
-    if (!rsvg_handle_read_stream_sync (handle, stream, cancellable, error)) {
+    if (!rsvg_handle_read_stream_sync (handle, input_stream, cancellable, error)) {
         g_object_unref (handle);
         return NULL;
     }
