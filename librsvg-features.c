@@ -1,4 +1,4 @@
-#include "librsvg-features.h"
+#include "rsvg.h"
 
 /* General initialization hooks */
 const unsigned int librsvg_major_version = LIBRSVG_MAJOR_VERSION,

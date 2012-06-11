@@ -39,7 +39,7 @@
 
 #include "rsvg-private.h"
 #include "rsvg-defs.h"
-#include "librsvg-enum-types.h"
+#include "rsvg.h"
 
 enum {
     PROP_0,

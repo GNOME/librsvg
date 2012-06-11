@@ -26,6 +26,8 @@
 #ifndef RSVG_H
 #define RSVG_H
 
+#define __RSVG_RSVG_H_INSIDE__
+
 #include <glib-object.h>
 #include <gio/gio.h>
 
@@ -237,5 +239,11 @@ const char *rsvg_handle_get_metadata    (RsvgHandle * handle);
 /* END deprecated APIs. */
 
 G_END_DECLS
+
+#include "librsvg-enum-types.h"
+#include "librsvg-features.h"
+#include "rsvg-cairo.h"
+
+#undef __RSVG_RSVG_H_INSIDE__
 
 #endif                          /* RSVG_H */

@@ -23,6 +23,10 @@
    Author: Carl Worth <cworth@cworth.org>
 */
 
+#if !defined (__RSVG_RSVG_H_INSIDE__) && !defined (RSVG_COMPILATION)
+#warning "Including <librsvg/rsvg-cairo.h> directly is deprecated."
+#endif
+
 #ifndef RSVG_CAIRO_H
 #define RSVG_CAIRO_H
 

@@ -84,6 +84,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	$(AM_CPPFLAGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CFLAGS = \
+	-DRSVG_COMPILATION	\
 	$(LIBRSVG_CFLAGS) 	\
 	$(AM_CFLAGS)
 
@@ -183,7 +184,7 @@ librsvg-enum-types.h: s-enum-types-h
 
 s-enum-types-h: $(headers) Makefile
 	$(AM_V_GEN) ( cd $(srcdir) && $(GLIB_MKENUMS) \
-			--fhead "#ifndef __LIBRSVG_ENUM_TYPES_H__\n#define __LIBRSVG_ENUM_TYPES_H__\n\n#include <glib-object.h>\n\nG_BEGIN_DECLS\n" \
+			--fhead "#if !defined (__RSVG_RSVG_H_INSIDE__) && !defined (RSVG_COMPILATION)\n#warning \"Including <librsvg/librsvg-enum-types.h> directly is deprecated.\"\n#endif\n\n#ifndef __LIBRSVG_ENUM_TYPES_H__\n#define __LIBRSVG_ENUM_TYPES_H__\n\n#include <glib-object.h>\n\nG_BEGIN_DECLS\n" \
 			--fprod "/* enumerations from \"@filename@\" */\n" \
 			--vhead "GType @enum_name@_get_type (void);\n#define RSVG_TYPE_@ENUMSHORT@ (@enum_name@_get_type())\n" 	\
 			--ftail "G_END_DECLS\n\n#endif /* __LIBRSVG_ENUM_TYPES_H__ */" \
@@ -197,7 +198,7 @@ librsvg-enum-types.c: s-enum-types-c librsvg-enum-types.h
 
 s-enum-types-c: $(headers) Makefile
 	$(AM_V_GEN) ( cd $(srcdir) && $(GLIB_MKENUMS) \
-			--fhead "#include \"librsvg-enum-types.h\"\n#include \"rsvg.h\"" \
+			--fhead "#include \"rsvg.h\"" \
 			--fprod "\n/* enumerations from \"@filename@\" */" \
 			--vhead "GType\n@enum_name@_get_type (void)\n{\n  static GType etype = 0;\n  if (etype == 0) {\n    static const G@Type@Value values[] = {" 	\
 			--vprod "      { @VALUENAME@, \"@VALUENAME@\", \"@valuenick@\" }," \
@@ -235,7 +236,7 @@ Rsvg_@RSVG_API_VERSION_U@_gir_PACKAGES = \
 	pango \
 	libxml-2.0 \
 	$(NULL)
-Rsvg_@RSVG_API_VERSION_U@_gir_CFLAGS = -I$(top_builddir)
+Rsvg_@RSVG_API_VERSION_U@_gir_CFLAGS = -I$(top_builddir) -DRSVG_COMPILATION
 Rsvg_@RSVG_API_VERSION_U@_gir_LIBS = librsvg-@RSVG_API_MAJOR_VERSION@.la
 
 girdir = $(datadir)/gir-1.0

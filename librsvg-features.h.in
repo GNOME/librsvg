@@ -1,3 +1,7 @@
+#if !defined (__RSVG_RSVG_H_INSIDE__) && !defined (RSVG_COMPILATION)
+#warning "Including <librsvg/librsvg-features.h> directly is deprecated."
+#endif
+
 #ifndef LIBRSVG_FEATURES_H
 #define LIBRSVG_FEATURES_H 1
 
