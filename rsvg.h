@@ -53,19 +53,20 @@ G_BEGIN_DECLS
 GType rsvg_handle_get_type (void);
 
 /**
+ * RsvgError:
+ *
  * An enumeration representing possible error domains
  */
 typedef enum {
     RSVG_ERROR_FAILED
 } RsvgError;
 
-/**
- * 
- */
 #define RSVG_ERROR (rsvg_error_quark ())
 GQuark rsvg_error_quark (void) G_GNUC_CONST;
 
 /**
+ * RsvgHandle:
+ *
  * The RsvgHandle is an object representing the parsed form of a SVG
  */
 typedef struct _RsvgHandle RsvgHandle;
@@ -90,33 +91,24 @@ struct _RsvgHandle {
     gpointer _abi_padding[15];
 };
 
-/* RsvgDimensionData
+/**
+ * RsvgDimensionData:
+ * @width: SVG's width, in pixels
+ * @height: SVG's height, in pixels
+ * @em: em
+ * @ex: ex
  */
 struct _RsvgDimensionData {
-    /**
-     * SVG's width, in pixels
-     */
     int width;
-
-    /**
-     * SVG's height, in pixels
-     */
     int height;
-
-    /**
-     * em
-     */
     gdouble em;
-
-    /**
-     * ex
-     */
     gdouble ex;
 };
 
 /**
+ * RsvgPositionData:
  * Position of an SVG fragment.
- **/
+ */
 struct _RsvgPositionData {
     int x;
     int y;

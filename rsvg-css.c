@@ -52,7 +52,7 @@
 #define UNSETINHERIT() G_STMT_START {if (inherit != NULL) *inherit = FALSE;} G_STMT_END
 
 /**
- * rsvg_css_parse_vbox
+ * rsvg_css_parse_vbox:
  * @vbox: The CSS viewBox
  * @x : The X output
  * @y: The Y output
@@ -307,7 +307,13 @@ rsvg_css_clip_rgb (gint rgb)
 #define PACK_RGB(r,g,b) (((r) << 16) | ((g) << 8) | (b))
 
 /**
+ * rsvg_css_parse_color:
+ * @str: string to parse
+ * @inherit: whether to inherit
+ *
  * Parse a CSS2 color specifier, return RGB value
+ *
+ * Returns: and RGB value
  */
 guint32
 rsvg_css_parse_color (const char *str, gboolean * inherit)

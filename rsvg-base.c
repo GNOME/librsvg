@@ -988,7 +988,7 @@ rsvg_get_base_uri_from_filename (const gchar * filename)
 }
 
 /**
- * rsvg_handle_set_base_uri
+ * rsvg_handle_set_base_uri:
  * @handle: A #RsvgHandle
  * @base_uri: The base uri
  *
@@ -1067,7 +1067,7 @@ rsvg_handle_get_base_uri (RsvgHandle * handle)
 }
 
 /**
- * rsvg_error_quark
+ * rsvg_error_quark:
  *
  * The error domain for RSVG
  *
@@ -1267,7 +1267,7 @@ rsvg_handle_get_desc (RsvgHandle * handle)
 }
 
 /**
- * rsvg_handle_get_dimensions
+ * rsvg_handle_get_dimensions:
  * @handle: A #RsvgHandle
  * @dimension_data: (out): A place to store the SVG's size
  *
@@ -1293,7 +1293,7 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
 }
 
 /**
- * rsvg_handle_get_dimensions_sub
+ * rsvg_handle_get_dimensions_sub:
  * @handle: A #RsvgHandle
  * @dimension_data: (out): A place to store the SVG's size
  * @id: An element's id within the SVG, or NULL to get the dimension of the whole SVG. 
@@ -1402,7 +1402,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 }
 
 /**
- * rsvg_handle_get_position_sub
+ * rsvg_handle_get_position_sub:
  * @handle: A #RsvgHandle
  * @position_data: (out): A place to store the SVG fragment's position.
  * @id: An element's id within the SVG.
@@ -1521,7 +1521,7 @@ rsvg_handle_has_sub (RsvgHandle * handle,
 }
 
 /** 
- * rsvg_set_default_dpi
+ * rsvg_set_default_dpi:
  * @dpi: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the all future outgoing pixbufs. Common values are
@@ -1537,7 +1537,7 @@ rsvg_set_default_dpi (double dpi)
 }
 
 /** 
- * rsvg_set_default_dpi_x_y
+ * rsvg_set_default_dpi_x_y:
  * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
@@ -1562,7 +1562,7 @@ rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y)
 }
 
 /**
- * rsvg_handle_set_dpi
+ * rsvg_handle_set_dpi:
  * @handle: An #RsvgHandle
  * @dpi: Dots Per Inch (aka Pixels Per Inch)
  *
@@ -1579,7 +1579,7 @@ rsvg_handle_set_dpi (RsvgHandle * handle, double dpi)
 }
 
 /**
- * rsvg_handle_set_dpi_x_y
+ * rsvg_handle_set_dpi_x_y:
  * @handle: An #RsvgHandle
  * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)

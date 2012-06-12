@@ -1320,7 +1320,7 @@ rsvg_parse_transform (cairo_matrix_t *dst, const char *src)
 }
 
 /**
- * rsvg_parse_transform_attr: Parse transform attribute and apply to state.
+ * rsvg_parse_transform_attr:
  * @ctx: Rsvg context.
  * @state: State in which to apply the transform.
  * @str: String containing transform.
@@ -1369,7 +1369,7 @@ rsvg_lookup_apply_css_style (RsvgHandle * ctx, const char *target, RsvgState * s
 }
 
 /**
- * rsvg_parse_style_attrs: Parse style attribute.
+ * rsvg_parse_style_attrs:
  * @ctx: Rsvg context.
  * @state: Rsvg state
  * @tag: The SVG tag we're processing (eg: circle, ellipse), optionally %NULL

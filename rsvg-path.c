@@ -210,7 +210,7 @@ rsvg_path_arc_segment (RSVGParsePathCtx * ctx,
 }
 
 /**
- * rsvg_path_arc: Add an RSVG arc to the path context.
+ * rsvg_path_arc:
  * @ctx: Path context.
  * @rx: Radius in x direction (before rotation).
  * @ry: Radius in y direction (before rotation).
@@ -220,6 +220,7 @@ rsvg_path_arc_segment (RSVGParsePathCtx * ctx,
  * @x: New x coordinate.
  * @y: New y coordinate.
  *
+ * Add an RSVG arc to the path context.
  **/
 static void
 rsvg_path_arc (RSVGParsePathCtx * ctx,

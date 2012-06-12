@@ -479,13 +479,14 @@ rsvg_filter_context_free (RsvgFilterContext * ctx)
 }
 
 /**
- * rsvg_filter_render: Create a new surface applied the filter.
+ * rsvg_filter_render:
  * @self: a pointer to the filter to use
  * @source: the a #cairo_surface_t of type %CAIRO_SURFACE_TYPE_IMAGE
  * @context: the context
  *
- * This function will create a context for itself, set up the coordinate systems
- * execute all its little primatives and then clean up its own mess
+ * Create a new surface applied the filter. This function will create
+ * a context for itself, set up the coordinate systems execute all its
+ * little primatives and then clean up its own mess.
  * 
  * Returns: (transfer full): a new #cairo_surface_t
  **/
@@ -539,7 +540,7 @@ rsvg_filter_render (RsvgFilter *self,
 }
 
 /**
- * rsvg_filter_store_result: Files a result into a context.
+ * rsvg_filter_store_result:
  * @name: The name of the result
  * @result: The pointer to the result
  * @ctx: the context that this was called in
@@ -662,10 +663,12 @@ rsvg_filter_get_bg (RsvgFilterContext * ctx)
 
 /* FIXMEchpe: proper return value and out param! */
 /**
- * rsvg_filter_get_in: Gets a surface for a primitive
+ * rsvg_filter_get_result:
  * @name: The name of the surface
  * @ctx: the context that this was called in
- * @
+ *
+ * Gets a surface for a primitive
+ *
  * Returns: a pointer to the result that the name refers to, a special
  * surface if the name is a special keyword or NULL if nothing was found
  **/
@@ -731,9 +734,11 @@ rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
 }
 
 /**
- * rsvg_filter_parse: Looks up an allready created filter.
+ * rsvg_filter_parse:
  * @defs: a pointer to the hash of definitions
  * @str: a string with the name of the filter to be looked up
+ *
+ * Looks up an allready created filter.
  *
  * Returns: a pointer to the filter that the name refers to, or NULL
  * if none was found
@@ -790,7 +795,7 @@ rsvg_filter_set_args (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 }
 
 /**
- * rsvg_new_filter: Creates a black filter
+ * rsvg_new_filter:
  *
  * Creates a blank filter and assigns default values to everything
  **/

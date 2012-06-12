@@ -178,7 +178,7 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
 }
 
 /**
- * rsvg_handle_render_cairo_sub
+ * rsvg_handle_render_cairo_sub:
  * @handle: A RsvgHandle
  * @cr: A Cairo renderer
  * @id: An element's id within the SVG, or %NULL to render the whole SVG. For
@@ -232,7 +232,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 }
 
 /**
- * rsvg_handle_render_cairo
+ * rsvg_handle_render_cairo:
  * @handle: A RsvgHandle
  * @cr: A Cairo renderer
  *

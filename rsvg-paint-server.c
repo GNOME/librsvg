@@ -101,7 +101,7 @@ rsvg_paint_server_pattern (RsvgPattern * pattern)
 }
 
 /**
- * rsvg_paint_server_parse: Parse an SVG paint specification.
+ * rsvg_paint_server_parse:
  * @defs: Defs for looking up gradients.
  * @str: The SVG paint specification string to parse.
  *
@@ -152,8 +152,10 @@ rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs * defs, const char *
 }
 
 /**
- * rsvg_paint_server_ref: Reference a paint server object.
+ * rsvg_paint_server_ref:
  * @ps: The paint server object to reference.
+ *
+ * Reference a paint server object.
  **/
 void
 rsvg_paint_server_ref (RsvgPaintServer * ps)
@@ -164,8 +166,10 @@ rsvg_paint_server_ref (RsvgPaintServer * ps)
 }
 
 /**
- * rsvg_paint_server_unref: Unreference a paint server object.
+ * rsvg_paint_server_unref:
  * @ps: The paint server object to unreference.
+ *
+ * Unreference a paint server object.
  **/
 void
 rsvg_paint_server_unref (RsvgPaintServer * ps)
