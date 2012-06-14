@@ -216,7 +216,7 @@ if HAVE_INTROSPECTION
 -include $(INTROSPECTION_MAKEFILE)
 
 INTROSPECTION_GIRS = Rsvg-@RSVG_API_VERSION@.gir
-INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir)
+INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir) --symbol-prefix=rsvg --symbol-prefix=librsvg
 INTROSPECTION_COMPILER_ARGS = --includedir=$(srcdir)
 
 Rsvg-@RSVG_API_VERSION@.gir: librsvg-@RSVG_API_MAJOR_VERSION@.la
@@ -249,6 +249,24 @@ typelibsdir = $(libdir)/girepository-1.0
 nodist_typelibs_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
 
 CLEANFILES += $(nodist_gir_DATA) $(nodist_typelibs_DATA)
+
+if ENABLE_VAPIGEN
+include $(VAPIGEN_MAKEFILE)
+
+librsvg-$(RSVG_API_VERSION).vapi: Rsvg-$(RSVG_API_VERSION).gir
+
+VAPIGEN_VAPIS = librsvg-$(RSVG_API_VERSION).vapi
+
+librsvg_@RSVG_API_VERSION_U@_vapi_DEPS = gio-2.0 cairo
+librsvg_@RSVG_API_VERSION_U@_vapi_METADATADIRS = $(srcdir)
+librsvg_@RSVG_API_VERSION_U@_vapi_FILES = Rsvg-$(RSVG_API_VERSION).gir Rsvg-$(RSVG_API_VERSION)-custom.vala
+
+vapidir = $(datadir)/vala/vapi
+vapi_DATA = $(VAPIGEN_VAPIS)
+
+CLEANFILES += $(VAPIGEN_VAPIS)
+
+endif # ENABLE_VAPIGEN
 
 endif # HAVE_INTROSPECTION
 

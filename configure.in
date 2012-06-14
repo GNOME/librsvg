@@ -9,6 +9,7 @@ AC_INIT([RSVG],[rsvg_version],[https://bugzilla.gnome.org/enter_bug.cgi?product=
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([rsvg.h])
+AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([1.9 foreign no-dist-gzip dist-bzip2])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -284,6 +285,9 @@ fi
 
 GOBJECT_INTROSPECTION_CHECK([0.10.8])
 
+# Vala bindings
+VAPIGEN_CHECK([0.17.1.26],,,[no])
+
 dnl ===========================================================================
 
 m4_copy([AC_DEFUN],[glib_DEFUN])
@@ -335,6 +339,7 @@ librsvg-$VERSION
 	compiler:                       ${CC}
 	
 	Build introspectable bindings:  ${found_introspection}
+	Build Vala bindings:            ${enable_vala}
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
         GTK 2.0:                        ${have_gtk_2}
         GTK 3.0:                        ${have_gtk_3}

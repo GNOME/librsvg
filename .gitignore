@@ -61,4 +61,4 @@ tests/styles
 tools/test-memory
 Rsvg-2.0.gir
 Rsvg-2.0.typelib
-
+librsvg-2.0.vapi
