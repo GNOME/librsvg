@@ -1,6 +1,7 @@
 SUBDIRS = . gdk-pixbuf-loader tests tools doc
 
 NULL =
+BUILT_SOURCES =
 
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
@@ -22,6 +23,7 @@ headers = \
 enum_sources = \
 	librsvg-enum-types.h	\
 	librsvg-enum-types.c
+BUILT_SOURCES += $(enum_sources)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	librsvg-features.c 	\
