@@ -23,6 +23,6 @@
 #endif
 
 extern const guint librsvg_major_version, librsvg_minor_version, librsvg_micro_version;
-extern const char *librsvg_version;
+extern const char librsvg_version[];
 
 #endif
