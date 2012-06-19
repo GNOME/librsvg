@@ -22,7 +22,7 @@
 #define LIBRSVG_CHECK_FEATURE(FEATURE) (defined(LIBRSVG_HAVE_##FEATURE) && LIBRSVG_HAVE_##FEATURE)
 #endif
 
-extern const unsigned int librsvg_major_version, librsvg_minor_version, librsvg_micro_version;
+extern const guint librsvg_major_version, librsvg_minor_version, librsvg_micro_version;
 extern const char *librsvg_version;
 
 #endif
