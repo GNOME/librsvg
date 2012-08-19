@@ -1,3 +1,9 @@
+Version 2.36.2
+- GObject introspection fixes (#677674)
+- added Vala bindings (#677676)
+- deprecate including headers apart from rsvg.h directly
+- build fixes (#677661)
+
 Version 2.36.1
 - Bugs fixed: #672725, #672791, #672885, #673748
 
