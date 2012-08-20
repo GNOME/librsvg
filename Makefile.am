@@ -169,7 +169,9 @@ EXTRA_DIST =				\
 	TODO				\
 	COPYING.LIB 			\
 	librsvg-zip.in 			\
-	gtk-doc.make
+	gtk-doc.make			\
+	Rsvg-2.0-custom.vala		\
+	Rsvg-2.0.metadata
 
 CLEANFILES = \
 	$(enum_sources) \
