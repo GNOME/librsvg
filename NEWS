@@ -1,3 +1,6 @@
+Version 2.36.3
+- build fixes
+
 Version 2.36.2
 - GObject introspection fixes (#677674)
 - added Vala bindings (#677676)
