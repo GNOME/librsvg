@@ -60,7 +60,7 @@ static void
 display_error (GError * err)
 {
     if (err) {
-        g_print ("%s\n", err->message);
+        g_printerr ("%s\n", err->message);
         g_error_free (err);
     }
 }
