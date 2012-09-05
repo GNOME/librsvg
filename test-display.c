@@ -684,7 +684,7 @@ main (int argc, char **argv)
         n_args = 0;
 
     if ((!from_stdin) && (n_args != 1)) {
-        g_print (_("No files specified, and not using --stdin\n"));
+        g_printerr (_("No files specified, and not using --stdin\n"));
         return 1;
     }
 
