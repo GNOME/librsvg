@@ -114,7 +114,7 @@ rsvg_tools_main (int *argc, char ***argv)
     g_option_context_free (g_option_context);
 
     if (bVersion != 0) {
-        g_print ("test-performance version %s\n", VERSION);
+        g_printerr ("test-performance version %s\n", VERSION);
         exit (EXIT_SUCCESS);
     }
 
@@ -123,7 +123,7 @@ rsvg_tools_main (int *argc, char ***argv)
             n_args++;
 
     if (n_args < 1) {
-        g_print (_("Must specify a SVG file\n"));
+        g_printerr (_("Must specify a SVG file\n"));
         exit (EXIT_FAILURE);
     }
 
