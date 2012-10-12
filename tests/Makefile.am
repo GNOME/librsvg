@@ -34,6 +34,9 @@ libtest_utils_la_SOURCES = 				\
 	$(top_srcdir)/rsvg-size-callback.c		\
 	$(top_srcdir)/rsvg-size-callback.h
 
+libtest_utils_la_LIBADD = \
+	$(LIBM)
+
 EXTRA_DIST =						\
 	fixtures/crash/bug620238.svg			\
 	fixtures/dimensions/bug564527.svg		\
