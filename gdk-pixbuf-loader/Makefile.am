@@ -44,7 +44,7 @@ rsvg_loader_LDFLAGS = \
 	$(AM_LDFLAGS)
 rsvg_loader_LDADD = \
 	$(GDK_PIXBUF_LIBS)
-rsvg_loader_DEPENDENCIES = libpixbufloader-svg.la gdk-pixbuf-loaders
+EXTRA_rsvg_loader_DEPENDENCIES = libpixbufloader-svg.la gdk-pixbuf-loaders
 
 gdk-pixbuf-loaders: Makefile
 	$(AM_V_GEN) ( $(GDK_PIXBUF_QUERYLOADERS) ./libpixbufloader-svg.la && $(GDK_PIXBUF_QUERYLOADERS)) > gdk-pixbuf.loaders 2>/dev/null
