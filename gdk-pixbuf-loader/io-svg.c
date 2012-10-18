@@ -183,53 +183,14 @@ fill_vtable (GdkPixbufModule *module)
         module->load_increment = gdk_pixbuf__svg_image_load_increment;
 }
 
-/* this is present only in GTK+ 2.4 and later. we want librsvg to work with older versions too */
-#ifndef GDK_PIXBUF_FORMAT_SCALABLE
-#define GDK_PIXBUF_FORMAT_SCALABLE (1 << 1)
-#endif
-
-/* this is present only in GTK+ 2.6 and later. we want librsvg to work with older versions too. 
-   we can't define this flag yet because Pango isn't threadsafe. */
-#ifndef GDK_PIXBUF_FORMAT_THREADSAFE
-#define GDK_PIXBUF_FORMAT_THREADSAFE (1 << 2)
-#endif
-
-#ifndef GDK_PIXBUF_CHECK_VERSION
-#define GDK_PIXBUF_CHECK_VERSION(major,minor,micro)    \
-    (GDK_PIXBUF_MAJOR > (major) || \
-     (GDK_PIXBUF_MAJOR == (major) && GDK_PIXBUF_MINOR > (minor)) || \
-     (GDK_PIXBUF_MAJOR == (major) && GDK_PIXBUF_MINOR == (minor) && \
-      GDK_PIXBUF_MICRO >= (micro)))
-#endif
-
-
 void
 fill_info (GdkPixbufFormat *info)
 {
-/* see http://bugzilla.gnome.org/show_bug.cgi?id=329850 */
-#if GDK_PIXBUF_CHECK_VERSION(2,9,0)
-        static GdkPixbufModulePattern signature_old[] = {
-                {  "<svg", NULL, 100 },
-                {  "<!DOCTYPE svg", NULL, 100 },
-                { NULL, NULL, 0 }
-        };
-        static GdkPixbufModulePattern signature_new[] = {
+        static GdkPixbufModulePattern signature[] = {
                 {  " <svg",  "*    ", 100 },
                 {  " <!DOCTYPE svg",  "*             ", 100 },
                 { NULL, NULL, 0 }
         };
-#else
-        static GdkPixbufModulePattern signature_old[] = {
-                { (unsigned char*) "<svg", NULL, 100 },
-                { (unsigned char*) "<!DOCTYPE svg", NULL, 100 },
-                { NULL, NULL, 0 }
-        };
-        static GdkPixbufModulePattern signature_new[] = {
-                { (unsigned char*) " <svg", (unsigned char*) "*    ", 100 },
-                { (unsigned char*) " <!DOCTYPE svg", (unsigned char*) "*             ", 100 },
-                { NULL, NULL, 0 }
-        };
-#endif
 
         static gchar *mime_types[] = { /* yes folks, i actually have run into all of these in the wild... */
                 "image/svg+xml",
@@ -248,11 +209,7 @@ fill_info (GdkPixbufFormat *info)
         };
 
         info->name        = "svg";
-        if (GDK_PIXBUF_CHECK_VERSION (2, 7, 4)) {
-                info->signature = signature_new;
-        } else {
-                info->signature = signature_old;
-        }
+        info->signature   = signature;
         info->description = _("Scalable Vector Graphics");
         info->mime_types  = mime_types;
         info->extensions  = extensions;
