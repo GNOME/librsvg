@@ -5,10 +5,6 @@ BUILT_SOURCES =
 
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
-if ENABLE_GTK2_ENGINE
-SUBDIRS += gtk-engine
-endif
-
 lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
 
 bin_PROGRAMS = rsvg-convert

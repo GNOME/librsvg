@@ -37,7 +37,6 @@ LIBXML_REQUIRED=2.7.0
 CAIRO_REQUIRED=1.2.0
 PANGOCAIRO_REQUIRED=1.32.6
 GDK_PIXBUF_REQUIRED=1.3.7
-GTK2_REQUIRED=2.16.0
 GTK3_REQUIRED=3.0.0
 CROCO_REQUIRED=0.6.1
 
@@ -120,39 +119,17 @@ AC_CHECK_FUNCS(strtok_r)
 # GTK
 # ===========================================================================
 
-PKG_CHECK_MODULES([GTK2],[gtk+-2.0 >= $GTK2_REQUIRED],[have_gtk_2=yes],[have_gtk_2=no])
 PKG_CHECK_MODULES([GTK3],[gtk+-3.0 >= $GTK3_REQUIRED],[have_gtk_3=yes],[have_gtk_3=no])
 
-GTK2_BINARY_VERSION=
 GTK3_BINARY_VERSION=
 
-if test "$have_gtk_2" = "yes"; then
-    GTK2_BINARY_VERSION="`$PKG_CONFIG --variable=gtk_binary_version gtk+-2.0`"
-fi
 if test "$have_gtk_3" = "yes"; then
     GTK3_BINARY_VERSION="`$PKG_CONFIG --variable=gtk_binary_version gtk+-3.0`"
 fi
 
-AC_SUBST([GTK2_BINARY_VERSION])
 AC_SUBST([GTK3_BINARY_VERSION])
 
-AM_CONDITIONAL([HAVE_GTK_2],[test "$have_gtk_2" = "yes"])
 AM_CONDITIONAL([HAVE_GTK_3],[test "$have_gtk_3" = "yes"])
-
-# ===========================================================================
-# GTK theme engine
-# ===========================================================================
-if test "$have_gtk_2" = "yes"; then
-  AC_MSG_CHECKING([whether to build the GTK+ theme engine])
-  AC_ARG_ENABLE([gtk-theme],
-    [AS_HELP_STRING([--disable-gtk-theme],[Disable a RSVG based GTK+ theme engine (default=yes)])],
-    [],[enable_gtk_theme=yes])
-  AC_MSG_RESULT([$enable_gtk_theme])
-else
-  enable_gtk_theme=no
-fi
-
-AM_CONDITIONAL([ENABLE_GTK2_ENGINE],[test "$enable_gtk_theme" = "yes"])
 
 dnl ===========================================================================
 dnl GDK-Pixbuf SVG loader
@@ -179,15 +156,6 @@ if test "$enable_pixbuf_loader" = "yes"; then
   gdk_pixbuf_binarydir="`$PKG_CONFIG --variable=gdk_pixbuf_binarydir gdk-pixbuf-2.0`"
   gdk_pixbuf_moduledir=`$PKG_CONFIG --variable gdk_pixbuf_moduledir gdk-pixbuf-2.0`
   gdk_pixbuf_cache_file=`$PKG_CONFIG --variable gdk_pixbuf_cache_file gdk-pixbuf-2.0`
-
-  # If that didn't work, fall back to the gtk+-2.0 one
-  if test "x$gdk_pixbuf_moduledir" = "x"; then
-    gtk_binary_version="`$PKG_CONFIG --variable=gtk_binary_version gtk+-2.0`"
-    gdk_pixbuf_binarydir='${sysconfdir}/gtk-2.0'
-    gdk_pixbuf_moduledir='${libdir}/gtk-2.0/'
-    gdk_pixbuf_moduledir="$gdk_pixbuf_moduledir/$gtk_binary_version/loaders"
-    gdk_pixbuf_cache_file='${gdk_pixbuf_binarydir}/gdk-pixbuf.loaders'
-  fi
 fi
 
 AC_SUBST([gdk_pixbuf_binary_version])
@@ -314,9 +282,6 @@ AC_CONFIG_FILES([
 librsvg-features.h
 Makefile
 librsvg-zip
-gtk-engine/Makefile
-gtk-engine/examples/Makefile
-gtk-engine/examples/bubble/Makefile
 gdk-pixbuf-loader/Makefile
 tests/Makefile
 tests/pdiff/Makefile
@@ -340,8 +305,6 @@ librsvg-$VERSION
 	Build introspectable bindings:  ${found_introspection}
 	Build Vala bindings:            ${enable_vala}
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
-        GTK 2.0:                        ${have_gtk_2}
         GTK 3.0:                        ${have_gtk_3}
-	Build GTK 2.0 theme engine:     ${enable_gtk_theme}
 	Build miscellaenous tools:      ${build_misc_tools}
 "
