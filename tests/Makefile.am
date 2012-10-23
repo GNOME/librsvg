@@ -11,7 +11,8 @@ noinst_LTLIBRARIES = 			\
 
 LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
 	$(top_builddir)/tests/libtest-utils.la	\
-	$(top_builddir)/tests/pdiff/libpdiff.la
+	$(top_builddir)/tests/pdiff/libpdiff.la \
+	$(LIBRSVG_LIBS)
 
 INCLUDES = -I$(srcdir) 							\
 	   -I$(top_srcdir)						\
