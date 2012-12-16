@@ -17,7 +17,7 @@ libpixbufloader_svg_la_CPPFLAGS = \
 libpixbufloader_svg_la_CFLAGS = \
 	$(GDK_PIXBUF_CFLAGS)	\
 	$(LIBRSVG_CFLAGS)	\
-	$(AM_CFLASG)
+	$(AM_CFLAGS)
 
 libpixbufloader_svg_la_LDFLAGS = -avoid-version -module $(AM_LDFLAGS)
 
