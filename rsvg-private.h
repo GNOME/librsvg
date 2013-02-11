@@ -123,10 +123,10 @@ struct RsvgSaxHandler {
 };
 
 typedef enum {
-    RSVG_LOAD_POLICY_ALL_PERMISSIVE
+    RSVG_LOAD_POLICY_STRICT
 } RsvgLoadPolicy;
 
-#define RSVG_LOAD_POLICY_DEFAULT (RSVG_LOAD_POLICY_ALL_PERMISSIVE)
+#define RSVG_LOAD_POLICY_DEFAULT (RSVG_LOAD_POLICY_STRICT)
 
 struct RsvgHandlePrivate {
     RsvgHandleFlags flags;

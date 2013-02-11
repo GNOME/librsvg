@@ -79,7 +79,7 @@ rsvg_acquire_data_data (const char *uri,
     gboolean base64 = FALSE;
 
     g_assert (out_len != NULL);
-    g_assert (g_str_has_prefix (uri, "data:"));
+    g_assert (strncmp (uri, "data:", 5) == 0);
 
     mime_type = NULL;
     start = uri + 5;
