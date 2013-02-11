@@ -836,6 +836,8 @@ rsvg_css_parse_xml_attribute_string (const char *attribute_string)
     xmlSAX2InitDefaultSAXHandler (&handler, 0);
     handler.serror = rsvg_xml_noerror;
     parser = xmlCreatePushParserCtxt (&handler, NULL, tag, strlen (tag) + 1, NULL);
+    parser->options |= XML_PARSE_NONET;
+
     if (xmlParseDocument (parser) != 0)
         goto done;
 

@@ -572,6 +572,7 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
             goto fallback;
 
         xml_parser = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, ctx, NULL, 0, NULL);
+        xml_parser->options |= XML_PARSE_NONET;
 
         buffer = _rsvg_xml_input_buffer_new_from_stream (stream, NULL /* cancellable */, XML_CHAR_ENCODING_NONE, &err);
         g_object_unref (stream);
@@ -1111,6 +1112,7 @@ rsvg_handle_write_impl (RsvgHandle * handle, const guchar * buf, gsize count, GE
     if (handle->priv->ctxt == NULL) {
         handle->priv->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0,
                                                       rsvg_handle_get_base_uri (handle));
+        handle->priv->ctxt->options |= XML_PARSE_NONET;
 
         /* if false, external entities work, but internal ones don't. if true, internal entities
            work, but external ones don't. favor internal entities, in order to not cause a
@@ -1767,6 +1769,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     if (priv->ctxt == NULL) {
         priv->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0,
                                               rsvg_handle_get_base_uri (handle));
+        priv->ctxt->options |= XML_PARSE_NONET;
 
         /* if false, external entities work, but internal ones don't. if true, internal entities
            work, but external ones don't. favor internal entities, in order to not cause a
