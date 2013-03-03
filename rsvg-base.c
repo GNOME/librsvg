@@ -2154,36 +2154,83 @@ _rsvg_handle_allow_load (RsvgHandle *handle,
     return TRUE;
 }
 
+static char *
+_rsvg_handle_resolve_uri (RsvgHandle *handle,
+                          const char *uri)
+{
+    RsvgHandlePrivate *priv = handle->priv;
+    char *scheme, *resolved_uri;
+    GFile *base, *resolved;
+
+    if (uri == NULL)
+        return NULL;
+
+    scheme = g_uri_parse_scheme (uri);
+    if (scheme != NULL ||
+        priv->base_gfile == NULL ||
+        (base = g_file_get_parent (priv->base_gfile)) == NULL) {
+        g_free (scheme);
+        return g_strdup (uri);
+    }
+
+    resolved = g_file_resolve_relative_path (base, uri);
+    resolved_uri = g_file_get_uri (resolved);
+
+    g_free (scheme);
+    g_object_unref (base);
+    g_object_unref (resolved);
+
+    return resolved_uri;
+}
+
 guint8* 
 _rsvg_handle_acquire_data (RsvgHandle *handle,
-                           const char *uri,
+                           const char *url,
                            char **content_type,
                            gsize *len,
                            GError **error)
 {
-    if (!_rsvg_handle_allow_load (handle, uri, error))
-        return NULL;
+    char *uri;
+    guint8 *data;
 
-    return _rsvg_io_acquire_data (uri, 
-                                  rsvg_handle_get_base_uri (handle), 
-                                  content_type, 
-                                  len, 
-                                  handle->priv->cancellable,
-                                  error);
+    uri = _rsvg_handle_resolve_uri (handle, url);
+
+    if (_rsvg_handle_allow_load (handle, uri, error)) {
+        data = _rsvg_io_acquire_data (uri, 
+                                      rsvg_handle_get_base_uri (handle), 
+                                      content_type, 
+                                      len, 
+                                      handle->priv->cancellable,
+                                      error);
+    } else {
+        data = NULL;
+    }
+
+    g_free (uri);
+    return data;
 }
 
 GInputStream *
 _rsvg_handle_acquire_stream (RsvgHandle *handle,
-                             const char *uri,
+                             const char *url,
                              char **content_type,
                              GError **error)
 {
-    if (!_rsvg_handle_allow_load (handle, uri, error))
-        return NULL;
+    char *uri;
+    GInputStream *stream;
 
-    return _rsvg_io_acquire_stream (uri, 
-                                    rsvg_handle_get_base_uri (handle), 
-                                    content_type, 
-                                    handle->priv->cancellable,
-                                    error);
+    uri = _rsvg_handle_resolve_uri (handle, url);
+
+    if (_rsvg_handle_allow_load (handle, uri, error)) {
+        stream = _rsvg_io_acquire_stream (uri, 
+                                          rsvg_handle_get_base_uri (handle), 
+                                          content_type, 
+                                          handle->priv->cancellable,
+                                          error);
+    } else {
+        stream = NULL;
+    }
+
+    g_free (uri);
+    return stream;
 }
