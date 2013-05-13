@@ -1410,7 +1410,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
  * @position_data: (out): A place to store the SVG fragment's position.
  * @id: An element's id within the SVG.
  * For example, if you have a layer called "layer1" for that you want to get
- * the position, pass "#layer1" as the id.
+ * the position, pass "##layer1" as the id.
  *
  * Get the position of a subelement of the SVG file. Do not call from within
  * the size_func callback, because an infinite loop will occur.
