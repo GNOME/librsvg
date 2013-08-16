@@ -3,7 +3,6 @@ SUBDIRS=pdiff .
 TESTS = 		\
 	rsvg-test	\
 	crash		\
-	dimensions	\
 	styles
 
 noinst_LTLIBRARIES = 			\
