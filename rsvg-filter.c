@@ -2958,7 +2958,7 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
     cairo_surface_flush (in);
 
     in2 = rsvg_filter_get_in (upself->in2, ctx);
-    if (in == NULL) {
+    if (in2 == NULL) {
         cairo_surface_destroy (in);
         return;
     }
