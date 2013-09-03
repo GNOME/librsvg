@@ -2996,8 +2996,9 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
         xch = 3;
         break;
     default:
-        xch = 4;
-    };
+        ych = 0;
+        break;
+    }
 
     switch (upself->yChannelSelector) {
     case 'R':
@@ -3013,8 +3014,9 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
         ych = 3;
         break;
     default:
-        ych = 4;
-    };
+        ych = 1;
+        break;
+    }
 
     xch = ctx->channelmap[xch];
     ych = ctx->channelmap[ych];
