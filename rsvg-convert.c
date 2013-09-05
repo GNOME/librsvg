@@ -165,7 +165,7 @@ main (int argc, char **argv)
         {"height", 'h', 0, G_OPTION_ARG_INT, &height,
          N_("height [optional; defaults to the SVG's height]"), N_("<int>")},
         {"format", 'f', 0, G_OPTION_ARG_STRING, &format,
-         N_("save format [optional; defaults to 'png']"), N_("[png, pdf, ps, svg, xml, recording]")},
+         N_("save format [optional; defaults to 'png']"), N_("[png, pdf, ps, eps, svg, xml, recording]")},
         {"output", 'o', 0, G_OPTION_ARG_STRING, &output,
          N_("output filename [optional; defaults to stdout]"), NULL},
         {"keep-aspect-ratio", 'a', 0, G_OPTION_ARG_NONE, &keep_aspect_ratio,
@@ -217,8 +217,8 @@ main (int argc, char **argv)
     if (n_args == 0) {
         n_args = 1;
         using_stdin = TRUE;
-    } else if (n_args > 1 && (!format || !(!strcmp (format, "ps") || !strcmp (format, "pdf")))) {
-        fprintf (stderr, _("Multiple SVG files are only allowed for PDF and PS output.\n"));
+    } else if (n_args > 1 && (!format || !(!strcmp (format, "ps") || !strcmp (format, "eps") || !strcmp (format, "pdf")))) {
+        fprintf (stderr, _("Multiple SVG files are only allowed for PDF and (E)PS output.\n"));
         exit (1);
     }
 
@@ -293,9 +293,12 @@ main (int argc, char **argv)
                                                                dimensions.width, dimensions.height);
 #endif
 #ifdef CAIRO_HAS_PS_SURFACE
-            else if (!strcmp (format, "ps"))
+            else if (!strcmp (format, "ps") || !strcmp (format, "eps")){
                 surface = cairo_ps_surface_create_for_stream (rsvg_cairo_write_func, output_file,
                                                               dimensions.width, dimensions.height);
+                if(!strcmp (format, "eps"))
+                    cairo_ps_surface_set_eps(surface, TRUE);
+            }
 #endif
 #ifdef CAIRO_HAS_SVG_SURFACE
             else if (!strcmp (format, "svg"))
@@ -348,7 +351,7 @@ main (int argc, char **argv)
 #endif
         else if (!strcmp (format, "xml"))
           ;
-        else if (!strcmp (format, "svg") || !strcmp (format, "pdf") || !strcmp (format, "ps"))
+        else if (!strcmp (format, "svg") || !strcmp (format, "pdf") || !strcmp (format, "ps") || !strcmp (format, "eps"))
             cairo_show_page (cr);
         else
           g_assert_not_reached ();
