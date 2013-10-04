@@ -162,20 +162,18 @@ _set_source_rsvg_solid_colour (RsvgDrawingCtx * ctx,
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_t *cr = render->cr;
-    guint32 rgb = colour->rgb;
-    double r, g, b;
+    guint32 argb = colour->argb;
+    double r, g, b, a;
 
     if (colour->currentcolour)
-        rgb = current_colour;
+        argb = current_colour;
 
-    r = ((rgb >> 16) & 0xff) / 255.0;
-    g = ((rgb >> 8) & 0xff) / 255.0;
-    b = ((rgb >> 0) & 0xff) / 255.0;
+    r = ((argb >> 16) & 0xff) / 255.0;
+    g = ((argb >>  8) & 0xff) / 255.0;
+    b = ((argb >>  0) & 0xff) / 255.0;
+    a =  (argb >> 24) / 255.0 * (opacity / 255.0);
 
-    if (opacity == 0xff)
-        cairo_set_source_rgb (cr, r, g, b);
-    else
-        cairo_set_source_rgba (cr, r, g, b, opacity / 255.0);
+    cairo_set_source_rgba (cr, r, g, b, a);
 }
 
 static void

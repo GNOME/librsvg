@@ -109,7 +109,7 @@ struct _RsvgPattern {
 
 struct _RsvgSolidColour {
     gboolean currentcolour;
-    guint32 rgb;
+    guint32 argb;
 };
 
 typedef struct _RsvgSolidColour RsvgPaintServerColour;

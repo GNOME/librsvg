@@ -304,7 +304,8 @@ rsvg_css_clip_rgb (gint rgb)
 }
 
 /* pack 3 [0,255] ints into one 32 bit one */
-#define PACK_RGB(r,g,b) (((r) << 16) | ((g) << 8) | (b))
+#define PACK_RGBA(r,g,b,a) (((a) << 24) | ((r) << 16) | ((g) << 8) | (b))
+#define PACK_RGB(r,g,b) PACK_RGBA(r, g, b, 255)
 
 /**
  * rsvg_css_parse_color:
@@ -343,6 +344,46 @@ rsvg_css_parse_color (const char *str, gboolean * inherit)
         }
     }
     /* i want to use g_str_has_prefix but it isn't in my gstrfuncs.h?? */
+    else if (strstr (str, "rgba") != NULL) {
+        gint r, g, b, a;
+        r = g = b = 0;
+        a = 255;
+
+        if (strstr (str, "%") != 0) {
+            guint i, nb_toks;
+            char **toks;
+
+            /* assume rgba (9%, 100%, 23%, 100%) */
+            for (i = 0; str[i] != '('; i++);
+
+            i++;
+
+            toks = rsvg_css_parse_list (str + i, &nb_toks);
+
+            if (toks) {
+                if (nb_toks == 4) {
+                    r = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[0], NULL));
+                    g = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[1], NULL));
+                    b = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[2], NULL));
+                    a = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[3], NULL));
+                }
+
+                g_strfreev (toks);
+            }
+        } else {
+            float alpha;
+
+            /* assume "rgb (r, g, b)" */
+            if (4 == sscanf (str, " rgba ( %d , %d , %d , %g ) ", &r, &g, &b, &alpha)) {
+                r = rsvg_css_clip_rgb (r);
+                g = rsvg_css_clip_rgb (g);
+                b = rsvg_css_clip_rgb (b);
+                a = CLAMP (alpha * 255, 0, 255);
+            }
+        }
+
+        val = PACK_RGBA (r, g, b, a);
+    }
     else if (strstr (str, "rgb") != NULL) {
         gint r, g, b;
         r = g = b = 0;
@@ -396,6 +437,7 @@ rsvg_css_parse_color (const char *str, gboolean * inherit)
 }
 
 #undef PACK_RGB
+#undef PACK_RGBA
 
 guint
 rsvg_css_parse_opacity (const char *str)

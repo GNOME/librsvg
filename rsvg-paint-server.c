@@ -37,14 +37,14 @@
 #include "rsvg-css.h"
 
 static RsvgPaintServer *
-rsvg_paint_server_solid (guint32 rgb)
+rsvg_paint_server_solid (guint32 argb)
 {
     RsvgPaintServer *result = g_new (RsvgPaintServer, 1);
 
     result->refcnt = 1;
     result->type = RSVG_PAINT_SERVER_SOLID;
     result->core.colour = g_new (RsvgSolidColour, 1);
-    result->core.colour->rgb = rgb;
+    result->core.colour->argb = argb;
     result->core.colour->currentcolour = FALSE;
 
     return result;
@@ -115,7 +115,7 @@ rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs * defs, const char *
                          guint32 current_color)
 {
     char *name;
-    guint32 rgb;
+    guint32 argb;
     if (inherit != NULL)
         *inherit = 1;
     if (str == NULL || !strcmp (str, "none"))
@@ -146,8 +146,8 @@ rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs * defs, const char *
         ps = rsvg_paint_server_solid_current_colour ();
         return ps;
     } else {
-        rgb = rsvg_css_parse_color (str, inherit);
-        return rsvg_paint_server_solid (rgb);
+        argb = rsvg_css_parse_color (str, inherit);
+        return rsvg_paint_server_solid (argb);
     }
 }
 
