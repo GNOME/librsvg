@@ -282,25 +282,21 @@ _rsvg_css_hand_normalize_length (const RsvgLength * in, gdouble pixels_per_inch,
 }
 
 static gint
-rsvg_css_clip_rgb_percent (gdouble in_percent)
+rsvg_css_clip_rgb_percent (const char *s, double max)
 {
-    /* spec says to clip these values */
-    if (in_percent > 100.)
-        return 255;
-    else if (in_percent <= 0.)
-        return 0;
-    return (gint) floor (255. * in_percent / 100. + 0.5);
-}
+    double value;
+    char *end;
 
-static gint
-rsvg_css_clip_rgb (gint rgb)
-{
-    /* spec says to clip these values */
-    if (rgb > 255)
-        return 255;
-    else if (rgb < 0)
-        return 0;
-    return rgb;
+    value = g_ascii_strtod (s, &end);
+
+    if (*end == '%') {
+        value = CLAMP (value, 0, 100) / 100.0;
+    }
+    else {
+        value = CLAMP (value, 0, max) / max;
+    }
+    
+    return (gint) floor (value * 255 + 0.5);
 }
 
 /* pack 3 [0,255] ints into one 32 bit one */
@@ -343,82 +339,47 @@ rsvg_css_parse_color (const char *str, gboolean * inherit)
             val |= val << 4;
         }
     }
-    /* i want to use g_str_has_prefix but it isn't in my gstrfuncs.h?? */
-    else if (strstr (str, "rgba") != NULL) {
+    else if (g_str_has_prefix (str, "rgb")) {
         gint r, g, b, a;
+        gboolean has_alpha;
+        guint nb_toks;
+        char **toks;
+
         r = g = b = 0;
         a = 255;
 
-        if (strstr (str, "%") != 0) {
-            guint i, nb_toks;
-            char **toks;
+        if (str[3] == 'a') {
+            /* "rgba" */
+            has_alpha = TRUE;
+            str += 4;
+        }
+        else {
+            /* "rgb" */
+            has_alpha = FALSE;
+            str += 3;
+        }
 
-            /* assume rgba (9%, 100%, 23%, 100%) */
-            for (i = 0; str[i] != '('; i++);
+        str = strchr (str, '(');
+        if (str == NULL)
+          return val;
 
-            i++;
+        toks = rsvg_css_parse_list (str + 1, &nb_toks);
 
-            toks = rsvg_css_parse_list (str + i, &nb_toks);
-
-            if (toks) {
-                if (nb_toks == 4) {
-                    r = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[0], NULL));
-                    g = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[1], NULL));
-                    b = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[2], NULL));
-                    a = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[3], NULL));
-                }
-
-                g_strfreev (toks);
+        if (toks) {
+            if (nb_toks == (has_alpha ? 4 : 3)) {
+                r = rsvg_css_clip_rgb_percent (toks[0], 255.0);
+                g = rsvg_css_clip_rgb_percent (toks[1], 255.0);
+                b = rsvg_css_clip_rgb_percent (toks[2], 255.0);
+                if (has_alpha)
+                    a = rsvg_css_clip_rgb_percent (toks[3], 1.0);
+                else
+                    a = 255;
             }
-        } else {
-            float alpha;
 
-            /* assume "rgb (r, g, b)" */
-            if (4 == sscanf (str, " rgba ( %d , %d , %d , %g ) ", &r, &g, &b, &alpha)) {
-                r = rsvg_css_clip_rgb (r);
-                g = rsvg_css_clip_rgb (g);
-                b = rsvg_css_clip_rgb (b);
-                a = CLAMP (alpha * 255, 0, 255);
-            }
+            g_strfreev (toks);
         }
 
         val = PACK_RGBA (r, g, b, a);
-    }
-    else if (strstr (str, "rgb") != NULL) {
-        gint r, g, b;
-        r = g = b = 0;
-
-        if (strstr (str, "%") != 0) {
-            guint i, nb_toks;
-            char **toks;
-
-            /* assume rgb (9%, 100%, 23%) */
-            for (i = 0; str[i] != '('; i++);
-
-            i++;
-
-            toks = rsvg_css_parse_list (str + i, &nb_toks);
-
-            if (toks) {
-                if (nb_toks == 3) {
-                    r = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[0], NULL));
-                    g = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[1], NULL));
-                    b = rsvg_css_clip_rgb_percent (g_ascii_strtod (toks[2], NULL));
-                }
-
-                g_strfreev (toks);
-            }
-        } else {
-            /* assume "rgb (r, g, b)" */
-            if (3 == sscanf (str, " rgb ( %d , %d , %d ) ", &r, &g, &b)) {
-                r = rsvg_css_clip_rgb (r);
-                g = rsvg_css_clip_rgb (g);
-                b = rsvg_css_clip_rgb (b);
-            } else
-                r = g = b = 0;
-        }
-
-        val = PACK_RGB (r, g, b);
     } else if (!strcmp (str, "inherit"))
         UNSETINHERIT ();
     else {
