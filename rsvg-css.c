@@ -338,6 +338,8 @@ rsvg_css_parse_color (const char *str, gboolean * inherit)
             val = ((val & 0xf00) << 8) | ((val & 0x0f0) << 4) | (val & 0x00f);
             val |= val << 4;
         }
+
+        val |= 0xff000000; /* opaque */
     }
     else if (g_str_has_prefix (str, "rgb")) {
         gint r, g, b, a;
@@ -388,9 +390,9 @@ rsvg_css_parse_color (const char *str, gboolean * inherit)
         if (cr_rgb_set_from_name (&rgb, (const guchar *) str) == CR_OK) {
             val = PACK_RGB (rgb.red, rgb.green, rgb.blue);
         } else {
-            /* default to black on failed lookup */
+            /* default to opaque black on failed lookup */
             UNSETINHERIT ();
-            val = 0;
+            val = PACK_RGB (0, 0, 0);
         }
     }
 
