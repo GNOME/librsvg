@@ -1,4 +1,12 @@
-Version 2.38.0
+Version 2.40
+- Add support for parsing rgba() colours and improve colour parsing
+- rsvg-filter: Fix memory leak
+- Remove support for GTK+2 along with the old theme engine
+- Require at least version 3.2 of GTK+
+- Remove support for old versions of gdk-pixbuf
+- Add eps support to rsvg-convert
+
+Version 2.39.0
 - don't load resources from the net (#691708, CVE-2013-1881)
 
 Version 2.37.0
