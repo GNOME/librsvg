@@ -50,6 +50,8 @@
 #include <math.h>
 #include <string.h>
 #include <stdarg.h>
+#include <limits.h>
+#include <stdlib.h>
 
 #include "rsvg-path.h"
 #include "rsvg-paint-server.h"
@@ -2190,8 +2192,7 @@ _rsvg_handle_allow_load (RsvgHandle *handle,
     dir = g_file_get_path (base);
     g_object_unref (base);
 
-    /* FIXME portability */
-    cdir = canonicalize_file_name (dir);
+    cdir = realpath (dir, NULL);
     g_free (dir);
     if (cdir == NULL)
         goto deny;
@@ -2200,8 +2201,7 @@ _rsvg_handle_allow_load (RsvgHandle *handle,
     if (path == NULL)
         goto deny;
 
-    /* FIXME portability */
-    cpath = canonicalize_file_name (path);
+    cpath = realpath (path, NULL);
     g_free (path);
 
     if (cpath == NULL)
