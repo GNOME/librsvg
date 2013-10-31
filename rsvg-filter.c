@@ -689,7 +689,7 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
             cairo_surface_reference (output.surface);
         output.Rused = output.Gused = output.Bused = output.Aused = 1;
         return output;
-    } else if (!name || !strcmp (name->str, "") || !strcmp (name->str, "none")) {
+    } else if (!strcmp (name->str, "") || !strcmp (name->str, "none")) {
         output = ctx->lastresult;
         cairo_surface_reference (output.surface);
         return output;
