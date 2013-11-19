@@ -1,3 +1,7 @@
+Version 2.40.1
+- Build fixes
+- Crash fixes
+
 Version 2.40
 - Add support for parsing rgba() colours and improve colour parsing
 - rsvg-filter: Fix memory leak
