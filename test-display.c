@@ -752,7 +752,8 @@ main (int argc, char **argv)
                                                     RSVG_HANDLE_FLAGS_NONE,
                                                     NULL /* cancellable */,
                                                     &err);
-    g_object_unref (base_file);
+    if (base_file != NULL)
+        g_object_unref (base_file);
     g_object_unref (input);
 
     if (info.handle == NULL) {
