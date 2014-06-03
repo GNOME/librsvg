@@ -1501,7 +1501,8 @@ rsvg_state_free_all (RsvgState * state)
 
 /**
  * rsvg_property_bag_new:
- * @atts:
+ * @atts: (array zero-terminated=1): list of alternating attributes
+ *   and values
  * 
  * The property bag will NOT copy the attributes and values. If you need
  * to store them for later, use rsvg_property_bag_dup().
@@ -1526,7 +1527,7 @@ rsvg_property_bag_new (const char **atts)
 
 /**
  * rsvg_property_bag_dup:
- * @bag:
+ * @bag: property bag to duplicate
  * 
  * Returns a copy of @bag that owns the attributes and values.
  * 

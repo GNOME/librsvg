@@ -54,8 +54,9 @@ GType rsvg_handle_get_type (void);
 
 /**
  * RsvgError:
+ * @RSVG_ERROR_FAILED: the request failed
  *
- * An enumeration representing possible error domains
+ * An enumeration representing possible errors
  */
 typedef enum {
     RSVG_ERROR_FAILED
@@ -75,9 +76,16 @@ typedef struct _RsvgHandleClass RsvgHandleClass;
 typedef struct _RsvgDimensionData RsvgDimensionData;
 typedef struct _RsvgPositionData RsvgPositionData;
 
+/**
+ * RsvgHandleClass:
+ * @parent: parent class
+ *
+ * Class structure for #RsvgHandle
+ */
 struct _RsvgHandleClass {
     GObjectClass parent;
 
+    /*< private >*/
     gpointer _abi_padding[15];
 };
 
@@ -107,6 +115,9 @@ struct _RsvgDimensionData {
 
 /**
  * RsvgPositionData:
+ * @x: position on the x axis
+ * @y: position on the y axis
+ *
  * Position of an SVG fragment.
  */
 struct _RsvgPositionData {
@@ -141,6 +152,10 @@ gboolean rsvg_handle_has_sub (RsvgHandle * handle, const char *id);
 
 /* GIO APIs */
 
+/**
+ * RsvgHandleFlags:
+ * @RSVG_HANDLE_FLAGS_NONE: none
+ */
 typedef enum /*< flags >*/ 
 {
     RSVG_HANDLE_FLAGS_NONE        = 0
@@ -184,14 +199,11 @@ void rsvg_handle_free (RsvgHandle * handle);
 
 /**
  * RsvgSizeFunc:
- * @width: Pointer to where to set/store the width
- * @height: Pointer to where to set/store the height
- * @user_data: User data pointer
+ * @width: (out): the width of the SVG
+ * @height: (out): the height of the SVG
+ * @user_data: user data
  *
  * Function to let a user of the library specify the SVG's dimensions
- * @width: the ouput width the SVG should be
- * @height: the output height the SVG should be
- * @user_data: user data
  *
  * Deprecated: Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
  */
