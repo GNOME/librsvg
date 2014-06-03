@@ -1372,8 +1372,8 @@ rsvg_lookup_apply_css_style (RsvgHandle * ctx, const char *target, RsvgState * s
  * rsvg_parse_style_attrs:
  * @ctx: Rsvg context.
  * @state: Rsvg state
- * @tag: The SVG tag we're processing (eg: circle, ellipse), optionally %NULL
- * @klazz: The space delimited class list, optionally %NULL
+ * @tag: (nullable): The SVG tag we're processing (eg: circle, ellipse), optionally %NULL
+ * @klazz: (nullable): The space delimited class list, optionally %NULL
  * @atts: Attributes in SAX style.
  *
  * Parses style and transform attributes and modifies state at top of

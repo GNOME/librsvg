@@ -1206,7 +1206,7 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
  * Returns the SVG's metadata in UTF-8 or %NULL. You must make a copy
  * of this metadata if you wish to use it after @handle has been freed.
  *
- * Returns: The SVG's title
+ * Returns: (nullable): The SVG's title
  *
  * Since: 2.9
  *
@@ -1230,7 +1230,7 @@ rsvg_handle_get_metadata (RsvgHandle * handle)
  * Returns the SVG's title in UTF-8 or %NULL. You must make a copy
  * of this title if you wish to use it after @handle has been freed.
  *
- * Returns: The SVG's title
+ * Returns: (nullable): The SVG's title
  *
  * Since: 2.4
  *
@@ -1254,7 +1254,7 @@ rsvg_handle_get_title (RsvgHandle * handle)
  * Returns the SVG's description in UTF-8 or %NULL. You must make a copy
  * of this description if you wish to use it after @handle has been freed.
  *
- * Returns: The SVG's description
+ * Returns: (nullable): The SVG's description
  *
  * Since: 2.4
  *
@@ -1301,9 +1301,10 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
  * rsvg_handle_get_dimensions_sub:
  * @handle: A #RsvgHandle
  * @dimension_data: (out): A place to store the SVG's size
- * @id: An element's id within the SVG, or %NULL to get the dimension of the whole SVG.
- * For example, if you have a layer called "layer1" for that you want to get the dimension, 
- * pass "#layer1" as the id.
+ * @id: (nullable): An element's id within the SVG, or %NULL to get
+ *   the dimension of the whole SVG.  For example, if you have a layer
+ *   called "layer1" for that you want to get the dimension, pass
+ *   "#layer1" as the id.
  *
  * Get the size of a subelement of the SVG file. Do not call from within the size_func callback, because an infinite loop will occur.
  *
@@ -1614,7 +1615,7 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
 /**
  * rsvg_handle_set_size_callback:
  * @handle: An #RsvgHandle
- * @size_func: A sizing function, or %NULL
+ * @size_func: (nullable): A sizing function, or %NULL
  * @user_data: User data to pass to @size_func, or %NULL
  * @user_data_destroy: Destroy function for @user_data, or %NULL
  *

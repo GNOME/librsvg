@@ -47,9 +47,9 @@
 /**
  * rsvg_handle_get_pixbuf_sub:
  * @handle: An #RsvgHandle
- * @id: The id of an element inside the SVG, or %NULL to render the whole SVG. For
- * example, if you have a layer called "layer1" that you wish to render, pass 
- * "##layer1" as the id.
+ * @id: (nullable): The id of an element inside the SVG, or %NULL to
+ * render the whole SVG. For example, if you have a layer called
+ * "layer1" that you wish to render, pass "##layer1" as the id.
  *
  * Returns the pixbuf loaded by @handle.  The pixbuf returned will be reffed, so
  * the caller of this function must assume that ref.  If insufficient data has
@@ -57,7 +57,7 @@
  * will be returned.  Note that the pixbuf may not be complete until
  * @rsvg_handle_close has been called.
  *
- * Returns: (transfer full): the pixbuf loaded by @handle, or %NULL.
+ * Returns: (transfer full) (nullable): the pixbuf loaded by @handle, or %NULL.
  *
  * Since: 2.14
  **/
@@ -111,7 +111,7 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
  * will be returned.  Note that the pixbuf may not be complete until
  * @rsvg_handle_close has been called.
  *
- * Returns: (transfer full): the pixbuf loaded by @handle, or %NULL.
+ * Returns: (transfer full) (nullable): the pixbuf loaded by @handle, or %NULL.
  **/
 GdkPixbuf *
 rsvg_handle_get_pixbuf (RsvgHandle * handle)
