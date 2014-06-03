@@ -47,12 +47,12 @@ rsvg_handle_fill_with_data (RsvgHandle * handle,
 /**
  * rsvg_handle_new_from_data:
  * @data: (array length=data_len): The SVG data
- * @data_len: The length of #data, in bytes
+ * @data_len: The length of @data, in bytes
  * @error: return location for errors
  *
- * Loads the SVG specified by #data.
+ * Loads the SVG specified by @data.
  *
- * Returns: A RsvgHandle or %NULL if an error occurs.
+ * Returns: A #RsvgHandle or %NULL if an error occurs.
  * Since: 2.14
  */
 RsvgHandle *
@@ -77,9 +77,9 @@ rsvg_handle_new_from_data (const guint8 * data, gsize data_len, GError ** error)
  * @file_name: The file name to load. If built with gnome-vfs, can be a URI.
  * @error: return location for errors
  *
- * Loads the SVG specified by #file_name.
+ * Loads the SVG specified by @file_name.
  *
- * Returns: A RsvgHandle or %NULL if an error occurs.
+ * Returns: A #RsvgHandle or %NULL if an error occurs.
  * Since: 2.14
  */
 RsvgHandle *

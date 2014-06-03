@@ -670,7 +670,7 @@ rsvg_filter_get_bg (RsvgFilterContext * ctx)
  * Gets a surface for a primitive
  *
  * Returns: a pointer to the result that the name refers to, a special
- * surface if the name is a special keyword or NULL if nothing was found
+ * surface if the name is a special keyword or %NULL if nothing was found
  **/
 static RsvgFilterPrimitiveOutput
 rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
@@ -740,7 +740,7 @@ rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
  *
  * Looks up an allready created filter.
  *
- * Returns: a pointer to the filter that the name refers to, or NULL
+ * Returns: a pointer to the filter that the name refers to, or %NULL
  * if none was found
  **/
 RsvgFilter *

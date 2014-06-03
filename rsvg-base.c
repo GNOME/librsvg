@@ -1204,7 +1204,7 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
  * @handle: An #RsvgHandle
  *
  * Returns the SVG's metadata in UTF-8 or %NULL. You must make a copy
- * of this metadata if you wish to use it after #handle has been freed.
+ * of this metadata if you wish to use it after @handle has been freed.
  *
  * Returns: The SVG's title
  *
@@ -1228,7 +1228,7 @@ rsvg_handle_get_metadata (RsvgHandle * handle)
  * @handle: An #RsvgHandle
  *
  * Returns the SVG's title in UTF-8 or %NULL. You must make a copy
- * of this title if you wish to use it after #handle has been freed.
+ * of this title if you wish to use it after @handle has been freed.
  *
  * Returns: The SVG's title
  *
@@ -1252,7 +1252,7 @@ rsvg_handle_get_title (RsvgHandle * handle)
  * @handle: An #RsvgHandle
  *
  * Returns the SVG's description in UTF-8 or %NULL. You must make a copy
- * of this description if you wish to use it after #handle has been freed.
+ * of this description if you wish to use it after @handle has been freed.
  *
  * Returns: The SVG's description
  *
@@ -1301,7 +1301,7 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
  * rsvg_handle_get_dimensions_sub:
  * @handle: A #RsvgHandle
  * @dimension_data: (out): A place to store the SVG's size
- * @id: An element's id within the SVG, or NULL to get the dimension of the whole SVG. 
+ * @id: An element's id within the SVG, or %NULL to get the dimension of the whole SVG.
  * For example, if you have a layer called "layer1" for that you want to get the dimension, 
  * pass "#layer1" as the id.
  *
@@ -1530,7 +1530,7 @@ rsvg_handle_has_sub (RsvgHandle * handle,
  * @dpi: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the all future outgoing pixbufs. Common values are
- * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * 75, 90, and 300 DPI. Passing a number <= 0 to @dpi will
  * reset the DPI to whatever the default value happens to be.
  *
  * Since: 2.8
@@ -1547,7 +1547,7 @@ rsvg_set_default_dpi (double dpi)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the all future outgoing pixbufs. Common values are
- * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * 75, 90, and 300 DPI. Passing a number <= 0 to @dpi will
  * reset the DPI to whatever the default value happens to be.
  *
  * Since: 2.8
@@ -1572,7 +1572,7 @@ rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y)
  * @dpi: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the outgoing pixbuf. Common values are
- * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi will 
+ * 75, 90, and 300 DPI. Passing a number <= 0 to @dpi will
  * reset the DPI to whatever the default value happens to be.
  *
  * Since: 2.8
@@ -1590,7 +1590,7 @@ rsvg_handle_set_dpi (RsvgHandle * handle, double dpi)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
  * Sets the DPI for the outgoing pixbuf. Common values are
- * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi_x or #dpi_y will 
+ * 75, 90, and 300 DPI. Passing a number <= 0 to #dpi_x or @dpi_y will
  * reset the DPI to whatever the default value happens to be.
  *
  * Since: 2.8
@@ -1648,9 +1648,9 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
  * @count: length of the @buf buffer in bytes
  * @error: (allow-none): a location to store a #GError, or %NULL
  *
- * Loads the next @count bytes of the image.  This will return #TRUE if the data
- * was loaded successful, and #FALSE if an error occurred.  In the latter case,
- * the loader will be closed, and will not accept further writes. If FALSE is
+ * Loads the next @count bytes of the image.  This will return %TRUE if the data
+ * was loaded successful, and %FALSE if an error occurred.  In the latter case,
+ * the loader will be closed, and will not accept further writes. If %FALSE is
  * returned, @error will be set to an error from the #RsvgError domain. Errors
  * from #GIOErrorEnum are also possible.
  *
@@ -1738,7 +1738,7 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
  *
  * If @cancellable is not %NULL, then the operation can be cancelled by
  * triggering the cancellable object from another thread. If the
- * operation was cancelled, the error G_IO_ERROR_CANCELLED will be
+ * operation was cancelled, the error %G_IO_ERROR_CANCELLED will be
  * returned.
  *
  * Returns: %TRUE if reading @stream succeeded, or %FALSE otherwise
@@ -1835,7 +1835,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
  *
  * If @cancellable is not %NULL, then the operation can be cancelled by
  * triggering the cancellable object from another thread. If the
- * operation was cancelled, the error G_IO_ERROR_CANCELLED will be
+ * operation was cancelled, the error %G_IO_ERROR_CANCELLED will be
  * returned.
  *
  * Returns: a new #RsvgHandle on success, or %NULL with @error filled in
@@ -1878,7 +1878,7 @@ rsvg_handle_new_from_gfile_sync (GFile          *file,
  *
  * If @cancellable is not %NULL, then the operation can be cancelled by
  * triggering the cancellable object from another thread. If the
- * operation was cancelled, the error G_IO_ERROR_CANCELLED will be
+ * operation was cancelled, the error %G_IO_ERROR_CANCELLED will be
  * returned.
  *
  * Returns: a new #RsvgHandle on success, or %NULL with @error filled in

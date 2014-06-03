@@ -67,7 +67,7 @@ GQuark rsvg_error_quark (void) G_GNUC_CONST;
 /**
  * RsvgHandle:
  *
- * The RsvgHandle is an object representing the parsed form of a SVG
+ * The #RsvgHandle is an object representing the parsed form of a SVG
  */
 typedef struct _RsvgHandle RsvgHandle;
 typedef struct RsvgHandlePrivate RsvgHandlePrivate;
@@ -183,7 +183,7 @@ RSVG_DEPRECATED_FOR(g_object_unref)
 void rsvg_handle_free (RsvgHandle * handle);
 
 /**
- * RsvgSizeFunc ():
+ * RsvgSizeFunc:
  * @width: Pointer to where to set/store the width
  * @height: Pointer to where to set/store the height
  * @user_data: User data pointer

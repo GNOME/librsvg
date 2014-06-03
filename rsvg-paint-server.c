@@ -108,7 +108,7 @@ rsvg_paint_server_pattern (RsvgPattern * pattern)
  * Parses the paint specification @str, creating a new paint server
  * object.
  *
- * Return value: The newly created paint server, or NULL on error.
+ * Return value: The newly created paint server, or %NULL on error.
  **/
 RsvgPaintServer *
 rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs * defs, const char *str,

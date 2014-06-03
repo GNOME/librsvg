@@ -332,7 +332,7 @@ rsvg_handle_class_init (RsvgHandleClass * klass)
  * rsvg_handle_free:
  * @handle: An #RsvgHandle
  *
- * Frees #handle.
+ * Frees @handle.
  * Deprecated: Use g_object_unref() instead.
  **/
 void
