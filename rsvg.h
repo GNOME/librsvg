@@ -155,10 +155,14 @@ gboolean rsvg_handle_has_sub (RsvgHandle * handle, const char *id);
 /**
  * RsvgHandleFlags:
  * @RSVG_HANDLE_FLAGS_NONE: none
+ * @RSVG_HANDLE_FLAG_UNLIMITED: Allow any SVG XML without size limitations.
+ *   For security reasons, this should only be used for trusted input!
+ *   Since: 2.40.3
  */
 typedef enum /*< flags >*/ 
 {
-    RSVG_HANDLE_FLAGS_NONE        = 0
+    RSVG_HANDLE_FLAGS_NONE        = 0,
+    RSVG_HANDLE_FLAG_UNLIMITED    = 1 << 0
 } RsvgHandleFlags;
 
 RsvgHandle *rsvg_handle_new_with_flags (RsvgHandleFlags flags);

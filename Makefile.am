@@ -119,15 +119,14 @@ rsvg_convert_CPPFLAGS = \
 	$(AM_CPPFLAGS)
 
 rsvg_convert_CFLAGS =\
-	$(LIBRSVG_CFLAGS) 	\
+	$(RSVG_CONVERT_CFLAGS) \
 	$(AM_CFLAGS)
 
 rsvg_convert_LDFLAGS = $(AM_LDFLAGS)
 
 rsvg_convert_LDADD = \
 	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
-	$(LIBRSVG_LIBS)		\
-	$(GTHREAD_LIBS)		\
+	$(RSVG_CONVERT_LIBS) \
 	$(LIBM)
 
 rsvg_view_3_SOURCES = \

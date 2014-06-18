@@ -34,10 +34,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <locale.h>
+#include <glib/gi18n.h>
+#include <gio/gio.h>
+#include <gio/gunixinputstream.h>
 
 #include "rsvg-css.h"
 #include "rsvg.h"
-#include "rsvg-private.h"
 #include "rsvg-size-callback.h"
 
 #ifdef CAIRO_HAS_PS_SURFACE
@@ -63,44 +65,6 @@ display_error (GError * err)
         g_printerr ("%s\n", err->message);
         g_error_free (err);
     }
-}
-
-static RsvgHandle *
-rsvg_handle_new_from_stdio_file (FILE * f, GError ** error)
-{
-    RsvgHandle *handle;
-    gchar *current_dir;
-    gchar *base_uri;
-
-    handle = rsvg_handle_new ();
-
-    while (!feof (f)) {
-        guchar buffer[4096];
-        gsize length = fread (buffer, 1, sizeof (buffer), f);
-
-        if (length > 0) {
-            if (!rsvg_handle_write (handle, buffer, length, error)) {
-                g_object_unref (handle);
-                return NULL;
-            }
-        } else if (ferror (f)) {
-            g_object_unref (handle);
-            return NULL;
-        }
-    }
-
-    if (!rsvg_handle_close (handle, error)) {
-        g_object_unref (handle);
-        return NULL;
-    }
-
-    current_dir = g_get_current_dir ();
-    base_uri = g_build_filename (current_dir, "file.svg", NULL);
-    rsvg_handle_set_base_uri (handle, base_uri);
-    g_free (base_uri);
-    g_free (current_dir);
-
-    return handle;
 }
 
 static void
@@ -136,8 +100,8 @@ main (int argc, char **argv)
     int keep_aspect_ratio = FALSE;
     guint32 background_color = 0;
     char *background_color_str = NULL;
-    char *base_uri = NULL;
     gboolean using_stdin = FALSE;
+    gboolean unlimited = FALSE;
     GError *error = NULL;
 
     int i;
@@ -146,6 +110,7 @@ main (int argc, char **argv)
     RsvgHandle *rsvg;
     cairo_surface_t *surface = NULL;
     cairo_t *cr = NULL;
+    RsvgHandleFlags flags = RSVG_HANDLE_FLAGS_NONE;
     RsvgDimensionData dimensions;
     FILE *output_file = stdout;
 
@@ -172,8 +137,8 @@ main (int argc, char **argv)
          N_("whether to preserve the aspect ratio [optional; defaults to FALSE]"), NULL},
         {"background-color", 'b', 0, G_OPTION_ARG_STRING, &background_color_str,
          N_("set the background color [optional; defaults to None]"), N_("[black, white, #abccee, #aaa...]")},
+        {"unlimited", 'u', 0, G_OPTION_ARG_NONE, &unlimited, N_("Allow huge SVG files"), NULL},
         {"version", 'v', 0, G_OPTION_ARG_NONE, &bVersion, N_("show version information"), NULL},
-        {"base-uri", 'b', 0, G_OPTION_ARG_STRING, &base_uri, N_("base uri"), NULL},
         {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL, N_("[FILE...]")},
         {NULL}
     };
@@ -227,22 +192,35 @@ main (int argc, char **argv)
 
     rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 
+    if (unlimited)
+        flags |= RSVG_HANDLE_FLAG_UNLIMITED;
+
     for (i = 0; i < n_args; i++) {
+        GFile *file;
+        GInputStream *stream;
 
-        if (using_stdin)
-            rsvg = rsvg_handle_new_from_stdio_file (stdin, &error);
-        else
-            rsvg = rsvg_handle_new_from_file (args[i], &error);
+        if (using_stdin) {
+            file = NULL;
+            stream = g_unix_input_stream_new (STDIN_FILENO, FALSE);
+        } else {
+            file = g_file_new_for_commandline_arg (args[i]);
+            stream = (GInputStream *) g_file_read (file, NULL, &error);
+            if (stream == NULL)
+                goto done;
+        }
 
-        if (!rsvg) {
+        rsvg = rsvg_handle_new_from_stream_sync (stream, file, flags, NULL, &error);
+
+    done:
+        g_clear_object (&stream);
+        g_clear_object (&file);
+
+        if (error != NULL) {
             fprintf (stderr, _("Error reading SVG:"));
             display_error (error);
             fprintf (stderr, "\n");
             exit (1);
         }
-
-        if (base_uri)
-            rsvg_handle_set_base_uri (rsvg, base_uri);
 
         /* in the case of multi-page output, all subsequent SVGs are scaled to the first's size */
         rsvg_handle_set_size_callback (rsvg, rsvg_cairo_size_callback, &dimensions, NULL);

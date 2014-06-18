@@ -27,8 +27,11 @@
 #define RSVG_CSS_H
 
 #include <glib.h>
+
+#ifdef RSVG_COMPILATION
 #include <pango/pango.h>
 #include "rsvg-private.h"
+#endif
 
 G_BEGIN_DECLS
 
@@ -44,10 +47,13 @@ G_BEGIN_DECLS
 #define RSVG_ASPECT_RATIO_XMAX_YMAX (1 << 8)
 #define RSVG_ASPECT_RATIO_SLICE (1 << 31)
 
+/* This one is semi-public for mis-use in rsvg-convert */
+guint32	    rsvg_css_parse_color        (const char *str, gboolean * inherit);
+
+#ifdef RSVG_COMPILATION
+
 G_GNUC_INTERNAL
 int	    rsvg_css_parse_aspect_ratio	    (const char *str);
-/* for some reason this one's public... */
-guint32	    rsvg_css_parse_color        (const char *str, gboolean * inherit);
 G_GNUC_INTERNAL
 guint       rsvg_css_parse_opacity	    (const char *str);
 G_GNUC_INTERNAL
@@ -78,6 +84,8 @@ G_GNUC_INTERNAL
 gboolean      rsvg_css_parse_overflow       (const char *str, gboolean * inherit);
 G_GNUC_INTERNAL
 char        **rsvg_css_parse_xml_attribute_string   (const char *attribute_string);
+
+#endif /* RSVG_COMPILATION */
 
 G_END_DECLS
 

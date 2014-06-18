@@ -612,6 +612,7 @@ main (int argc, char **argv)
     char *bg_color = NULL;
     char *base_uri = NULL;
     gboolean keep_aspect_ratio = FALSE;
+    gboolean unlimited = FALSE;
     char *id = NULL;
     GInputStream *input;
     GFileInfo *file_info;
@@ -621,6 +622,8 @@ main (int argc, char **argv)
 
     int from_stdin = 0;
     ViewerCbInfo info;
+
+    RsvgHandleFlags flags = RSVG_HANDLE_FLAGS_NONE;
 
     char **args = NULL;
     gint n_args = 0;
@@ -646,6 +649,8 @@ main (int argc, char **argv)
          N_("<string>")},
         {"keep-aspect", 'k', 0, G_OPTION_ARG_NONE, &keep_aspect_ratio,
          N_("Preserve the image's aspect ratio"), NULL},
+        {"unlimited", 'u', 0, G_OPTION_ARG_NONE, &unlimited,
+         N_("Allow huge SVG files"), NULL},
         {"version", 'v', 0, G_OPTION_ARG_NONE, &bVersion, N_("Show version information"), NULL},
         {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL, N_("[FILE...]")},
         {NULL}
@@ -687,6 +692,9 @@ main (int argc, char **argv)
     rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 
     compressed = FALSE;
+
+    if (unlimited)
+        flags |= RSVG_HANDLE_FLAG_UNLIMITED;
 
     if (from_stdin) {
 #if 0 // defined (G_OS_UNIX)
@@ -749,7 +757,7 @@ main (int argc, char **argv)
 
     info.handle = rsvg_handle_new_from_stream_sync (input, 
                                                     base_file, 
-                                                    RSVG_HANDLE_FLAGS_NONE,
+                                                    flags,
                                                     NULL /* cancellable */,
                                                     &err);
     if (base_file != NULL)
