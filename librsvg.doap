@@ -9,6 +9,7 @@
   <homepage rdf:resource="http://librsvg.sourceforge.net/" />
   <mailing-list rdf:resource="http://sourceforge.net/mailarchive/forum.php?forum_name=librsvg-devel" />
   <category rdf:resource="http://api.gnome.org/doap-extensions#core" />
+  <programming-language>C</programming-language>
 
   <maintainer>
     <foaf:Person>
