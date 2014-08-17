@@ -158,11 +158,16 @@ gboolean rsvg_handle_has_sub (RsvgHandle * handle, const char *id);
  * @RSVG_HANDLE_FLAG_UNLIMITED: Allow any SVG XML without size limitations.
  *   For security reasons, this should only be used for trusted input!
  *   Since: 2.40.3
+ * @RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: Keeps the image data when loading images,
+ *  for use by cairo when painting to e.g. a PDF surface. This will make the
+ *  resulting PDF file smaller and faster.
+ *  Since: 2.40.3
  */
 typedef enum /*< flags >*/ 
 {
-    RSVG_HANDLE_FLAGS_NONE        = 0,
-    RSVG_HANDLE_FLAG_UNLIMITED    = 1 << 0
+    RSVG_HANDLE_FLAGS_NONE           = 0,
+    RSVG_HANDLE_FLAG_UNLIMITED       = 1 << 0,
+    RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA = 1 << 1
 } RsvgHandleFlags;
 
 RsvgHandle *rsvg_handle_new_with_flags (RsvgHandleFlags flags);

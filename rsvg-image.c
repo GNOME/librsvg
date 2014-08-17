@@ -44,10 +44,9 @@ rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
     guint8 *data;
     gsize data_len;
     char *mime_type = NULL;
-    GdkPixbufLoader *loader;
+    GdkPixbufLoader *loader = NULL;
     GdkPixbuf *pixbuf = NULL;
-    int res;
-    cairo_surface_t *surface;
+    cairo_surface_t *surface = NULL;
 
     data = _rsvg_handle_acquire_data (handle, href, &mime_type, &data_len, error);
     if (data == NULL)
@@ -55,45 +54,60 @@ rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
 
     if (mime_type) {
         loader = gdk_pixbuf_loader_new_with_mime_type (mime_type, error);
-        g_free (mime_type);
     } else {
         loader = gdk_pixbuf_loader_new ();
     }
 
-    if (loader == NULL) {
-        g_free (data);
-        return NULL;
-    }
+    if (loader == NULL)
+        goto out;
 
-    res = gdk_pixbuf_loader_write (loader, data, data_len, error);
-    g_free (data);
-
-    if (!res) {
+    if (!gdk_pixbuf_loader_write (loader, data, data_len, error)) {
         gdk_pixbuf_loader_close (loader, NULL);
-        g_object_unref (loader);
-        return NULL;
+        goto out;
     }
 
-    if (!gdk_pixbuf_loader_close (loader, error)) {
-        g_object_unref (loader);
-        return NULL;
-    }
+    if (!gdk_pixbuf_loader_close (loader, error))
+        goto out;
 
     pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
 
     if (!pixbuf) {
-        g_object_unref (loader);
         g_set_error (error,
                      GDK_PIXBUF_ERROR,
                      GDK_PIXBUF_ERROR_FAILED,
                       _("Failed to load image '%s': reason not known, probably a corrupt image file"),
                       href);
-        return NULL;
+        goto out;
     }
 
     surface = rsvg_cairo_surface_from_pixbuf (pixbuf);
 
-    g_object_unref (loader);
+    if (mime_type == NULL) {
+        /* Try to get the information from the loader */
+        GdkPixbufFormat *format;
+        char **mime_types;
+
+        if ((format = gdk_pixbuf_loader_get_format (loader)) != NULL) {
+            mime_types = gdk_pixbuf_format_get_mime_types (format);
+
+            if (mime_types != NULL)
+                mime_type = g_strdup (mime_types[0]);
+            g_strfreev (mime_types);
+        }
+    }
+
+    if ((handle->priv->flags & RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA) != 0 &&
+        mime_type != NULL &&
+        cairo_surface_set_mime_data (surface, mime_type, data,
+                                     data_len, g_free, data) == CAIRO_STATUS_SUCCESS) {
+        data = NULL; /* transferred to the surface */
+    }
+
+  out:
+    if (loader)
+        g_object_unref (loader);
+    g_free (mime_type);
+    g_free (data);
 
     return surface;
 }

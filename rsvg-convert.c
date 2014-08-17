@@ -102,6 +102,8 @@ main (int argc, char **argv)
     char *background_color_str = NULL;
     gboolean using_stdin = FALSE;
     gboolean unlimited = FALSE;
+    gboolean keep_image_data = FALSE;
+    gboolean no_keep_image_data = FALSE;
     GError *error = NULL;
 
     int i;
@@ -138,6 +140,8 @@ main (int argc, char **argv)
         {"background-color", 'b', 0, G_OPTION_ARG_STRING, &background_color_str,
          N_("set the background color [optional; defaults to None]"), N_("[black, white, #abccee, #aaa...]")},
         {"unlimited", 'u', 0, G_OPTION_ARG_NONE, &unlimited, N_("Allow huge SVG files"), NULL},
+        {"keep-image-data", 0, 0, G_OPTION_ARG_NONE, &keep_image_data, N_("Keep image data"), NULL},
+        {"no-keep-image-data", 0, 0, G_OPTION_ARG_NONE, &no_keep_image_data, N_("Don't keep image data"), NULL},
         {"version", 'v', 0, G_OPTION_ARG_NONE, &bVersion, N_("show version information"), NULL},
         {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &args, NULL, N_("[FILE...]")},
         {NULL}
@@ -187,6 +191,11 @@ main (int argc, char **argv)
         exit (1);
     }
 
+    if (format != NULL &&
+        (g_str_equal (format, "ps") || g_str_equal (format, "eps") || g_str_equal (format, "pdf")) &&
+        !no_keep_image_data)
+        keep_image_data = TRUE;
+
     if (zoom != 1.0)
         x_zoom = y_zoom = zoom;
 
@@ -194,6 +203,9 @@ main (int argc, char **argv)
 
     if (unlimited)
         flags |= RSVG_HANDLE_FLAG_UNLIMITED;
+
+    if (keep_image_data)
+        flags |= RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA;
 
     for (i = 0; i < n_args; i++) {
         GFile *file;
