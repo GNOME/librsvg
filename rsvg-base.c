@@ -58,6 +58,15 @@
 #include "rsvg-xml.h"
 
 /*
+ * XXX: Perhaps do a GIO-based implementation for
+ * realpath() or use gnulib implementation for this
+ * https://bugzilla.gnome.org/show_bug.cgi?id=710163
+ */
+#ifdef G_OS_WIN32
+#define realpath(a,b) _fullpath(b,a,_MAX_PATH)
+#endif
+
+/*
  * This is configurable at runtime
  */
 #define RSVG_DEFAULT_DPI_X 90.0
