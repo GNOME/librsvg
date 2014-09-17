@@ -218,7 +218,7 @@ main (int argc, char **argv)
             GFileInfo *file_info;
             gboolean compressed = FALSE;
 
-            file = g_file_new_for_commandline_arg (args[0]);
+            file = g_file_new_for_commandline_arg (args[i]);
             stream = (GInputStream *) g_file_read (file, NULL, &error);
 
             if ((file_info = g_file_query_info (file,
