@@ -66,6 +66,7 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
     rsvg_handle_set_base_uri (handle, base_uri);
 
     if (!rsvg_handle_write (handle, buff, len, error)) {
+        (void) rsvg_handle_close (handle, NULL);
         g_object_unref (handle);
         return NULL;
     }
@@ -102,6 +103,7 @@ rsvg_pixbuf_from_stdio_file_with_size_data (guint8 *data,
     rsvg_handle_set_base_uri (handle, base_uri);
 
     if (!rsvg_handle_write (handle, data, data_len, error)) {
+        (void) rsvg_handle_close (handle, NULL);
         g_object_unref (handle);
         return NULL;
     }

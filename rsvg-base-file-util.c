@@ -33,15 +33,14 @@ static gboolean
 rsvg_handle_fill_with_data (RsvgHandle * handle,
                             const guint8 * data, gsize data_len, GError ** error)
 {
+    gboolean rv;
+
     rsvg_return_val_if_fail (data != NULL, FALSE, error);
     rsvg_return_val_if_fail (data_len != 0, FALSE, error);
 
-    if (!rsvg_handle_write (handle, data, data_len, error))
-        return FALSE;
-    if (!rsvg_handle_close (handle, error))
-        return FALSE;
+    rv = rsvg_handle_write (handle, data, data_len, error);
 
-    return TRUE;
+    return rsvg_handle_close (handle, rv ? error : NULL) && rv;
 }
 
 /**
