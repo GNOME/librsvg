@@ -3,8 +3,6 @@ SUBDIRS = . gdk-pixbuf-loader tests tools doc
 NULL =
 BUILT_SOURCES =
 
-ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
-
 lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
 
 bin_PROGRAMS = rsvg-convert
