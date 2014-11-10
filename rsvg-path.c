@@ -568,100 +568,135 @@ rsvg_path_end_of_number (RSVGParsePathCtx * ctx, double val, int sign, int exp_s
     rsvg_parse_path_do_cmd (ctx, FALSE);    
 }
 
+#define RSVGN_IN_PREINTEGER  0
+#define RSVGN_IN_INTEGER     1
+#define RSVGN_IN_FRACTION    2
+#define RSVGN_IN_PREEXPONENT 3
+#define RSVGN_IN_EXPONENT    4
+
+#define RSVGN_GOT_SIGN          0x1
+#define RSVGN_GOT_EXPONENT_SIGN 0x2
+
+/* Returns the length of the number parsed, so it can be skipped
+ * in rsvg_parse_path_data. Calls rsvg_path_end_number to have the number
+ * processed in its command.
+ */
+static int
+rsvg_parse_number (RSVGParsePathCtx * ctx, const char *data)
+{
+    int length = 0;
+    int in = RSVGN_IN_PREINTEGER; /* Current location within the number */
+    int got = 0x0; /* [bitfield] Having 2 of each of these is an error */
+    gboolean end = FALSE; /* Set to true if the number should end after a char */
+    gboolean error = FALSE; /* Set to true if the number ended due to an error */
+
+    double value = 0.0;
+    double fraction = 1.0;
+    int sign = +1; /* Presume the INTEGER is positive if it has no sign */
+    int exponent = 0;
+    int exponent_sign = +1; /* Presume the EXPONENT is positive if it has no sign */
+
+    while (data[length] != '\0' && !end && !error) {
+        char c = data[length];
+        switch (in) {
+            case RSVGN_IN_PREINTEGER: /* No numbers yet, we're just starting out */
+                /* LEGAL: + - .->FRACTION DIGIT->INTEGER */
+                if (c == '+' || c == '-') {
+                    if (got & RSVGN_GOT_SIGN) {
+                        error = TRUE; /* Two signs: not allowed */
+                    } else {
+                        sign = c == '+' ? +1 : -1;
+                        got |= RSVGN_GOT_SIGN;
+                    }
+                } else if (c == '.') {
+                    in = RSVGN_IN_FRACTION;
+                } else if (c >= '0' && c <= '9') {
+                    value = c - '0';
+                    in = RSVGN_IN_INTEGER;
+                }
+                break;
+            case RSVGN_IN_INTEGER: /* Previous character(s) was/were digit(s) */
+                /* LEGAL: DIGIT .->FRACTION E->PREEXPONENT */
+                if (c >= '0' && c <= '9') {
+                    value = value * 10 + (c - '0');
+                }
+                else if (c == '.') {
+                    in = RSVGN_IN_FRACTION;
+                }
+                else if (c == 'e' || c == 'E') {
+                    in = RSVGN_IN_PREEXPONENT;
+                }
+                else {
+                    end = TRUE;
+                }
+                break;
+            case RSVGN_IN_FRACTION: /* Previously, digit(s) in the fractional part */
+                /* LEGAL: DIGIT E->PREEXPONENT */
+                if (c >= '0' && c <= '9') {
+                    fraction *= 0.1;
+                    value += fraction * (c - '0');
+                }
+                else if (c == 'e' || c == 'E') {
+                    in = RSVGN_IN_PREEXPONENT;
+                }
+                else {
+                    end = TRUE;
+                }
+                break;
+            case RSVGN_IN_PREEXPONENT: /* Right after E */
+                /* LEGAL: + - DIGIT->EXPONENT */
+                if (c == '+' || c == '-') {
+                    if (got & RSVGN_GOT_EXPONENT_SIGN) {
+                        error = TRUE; /* Two signs: not allowed */
+                    } else {
+                        exponent_sign = c == '+' ? +1 : -1;
+                        got |= RSVGN_GOT_EXPONENT_SIGN;
+                    }
+                } else if (c >= '0' && c <= '9') {
+                    exponent = c - '0';
+                    in = RSVGN_IN_EXPONENT;
+                }
+                break;
+            case RSVGN_IN_EXPONENT: /* After E and the sign, if applicable */
+                /* LEGAL: DIGIT */
+                if (c >= '0' && c <= '9') {
+                    exponent = exponent * 10 + (c - '0');
+                } else {
+                    end = TRUE;
+                }
+                break;
+        }
+        length++;
+    }
+
+    /* TODO? if (error) report_the_error_somehow(); */
+    rsvg_path_end_of_number(ctx, value, sign, exponent_sign, exponent);
+    return end /* && !error */ ? length - 1 : length;
+}
+
 static void
 rsvg_parse_path_data (RSVGParsePathCtx * ctx, const char *data)
 {
     int i = 0;
-    double val = 0;
     char c = 0;
-    gboolean in_num = FALSE;
-    gboolean in_frac = FALSE;
-    gboolean in_exp = FALSE;
-    gboolean exp_wait_sign = FALSE;
-    int sign = 0;
-    int exp = 0;
-    int exp_sign = 0;
-    double frac = 0.0;
 
-    in_num = FALSE;
-    for (i = 0;; i++) {
+    for (i = 0; data[i] != '\0'; i++) {
         c = data[i];
-        if (c >= '0' && c <= '9') {
+        if (c >= '0' && c <= '9' || c == '+' || c == '-' || c == '.') {
             /* digit */
-            if (in_num) {
-                if (in_exp) {
-                    exp = (exp * 10) + c - '0';
-                    exp_wait_sign = FALSE;
-                } else if (in_frac)
-                    val += (frac *= 0.1) * (c - '0');
-                else
-                    val = (val * 10) + c - '0';
-            } else {
-                in_num = TRUE;
-                in_frac = FALSE;
-                in_exp = FALSE;
-                exp = 0;
-                exp_sign = 1;
-                exp_wait_sign = FALSE;
-                val = c - '0';
-                sign = 1;
-            }
-        } else if (c == '.') {
-            if (!in_num) {
-                in_frac = TRUE;
-                val = 0;
-            }
-            else if (in_frac) {
-                rsvg_path_end_of_number(ctx, val, sign, exp_sign, exp);
-                in_frac = FALSE;
-                in_exp = FALSE;
-                exp = 0;
-                exp_sign = 1;
-                exp_wait_sign = FALSE;
-                val = 0;
-                sign = 1;
-            }
-            else {
-                in_frac = TRUE;
-            }
-            in_num = TRUE;
-            frac = 1;
-        } else if ((c == 'E' || c == 'e') && in_num) {
-            in_exp = TRUE;
-            exp_wait_sign = TRUE;
-            exp = 0;
-            exp_sign = 1;
-        } else if ((c == '+' || c == '-') && in_exp) {
-            exp_sign = c == '+' ? 1 : -1;
-        } else if (in_num) {
-            /* end of number */
-            rsvg_path_end_of_number(ctx, val, sign, exp_sign, exp);
-            in_num = FALSE;
-        }
-
-        if (c == '\0')
-            break;
-        else if ((c == '+' || c == '-') && !exp_wait_sign) {
-            sign = c == '+' ? 1 : -1;
-            val = 0;
-            in_num = TRUE;
-            in_frac = FALSE;
-            in_exp = FALSE;
-            exp = 0;
-            exp_sign = 1;
-            exp_wait_sign = FALSE;
+            i += rsvg_parse_number(ctx, data + i) - 1;
         } else if (c == 'z' || c == 'Z') {
             if (ctx->param)
                 rsvg_parse_path_do_cmd (ctx, TRUE);
             rsvg_path_builder_close_path (&ctx->builder);
 
             ctx->cp = ctx->rp = g_array_index (ctx->builder.path_data, cairo_path_data_t, ctx->builder.path_data->len - 1);
-        } else if (c >= 'A' && c <= 'Z' && c != 'E') {
+        } else if (c >= 'A' && c < 'Z' && c != 'E') {
             if (ctx->param)
                 rsvg_parse_path_do_cmd (ctx, TRUE);
             ctx->cmd = c + 'a' - 'A';
             ctx->rel = FALSE;
-        } else if (c >= 'a' && c <= 'z' && c != 'e') {
+        } else if (c >= 'a' && c < 'z' && c != 'e') {
             if (ctx->param)
                 rsvg_parse_path_do_cmd (ctx, TRUE);
             ctx->cmd = c;
