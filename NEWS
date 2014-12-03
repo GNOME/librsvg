@@ -1,3 +1,8 @@
+Version 2.40.6
+- MinGW build fixes
+- Fix path data number parsing
+- Fix build with newer libtool
+
 Version 2.40.1
 - Build fixes
 - Crash fixes
