@@ -36,7 +36,11 @@
 #include <locale.h>
 #include <glib/gi18n.h>
 #include <gio/gio.h>
+#ifdef _WIN32
+#include <gio/gwin32inputstream.h>
+#else
 #include <gio/gunixinputstream.h>
+#endif
 
 #include "rsvg-css.h"
 #include "rsvg.h"
@@ -213,7 +217,11 @@ main (int argc, char **argv)
 
         if (using_stdin) {
             file = NULL;
+#ifdef _WIN32
+            stream = g_win32_input_stream_new (STDIN_FILENO, FALSE);
+#else
             stream = g_unix_input_stream_new (STDIN_FILENO, FALSE);
+#endif
         } else {
             GFileInfo *file_info;
             gboolean compressed = FALSE;
