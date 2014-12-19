@@ -36,10 +36,16 @@
 #include <locale.h>
 #include <glib/gi18n.h>
 #include <gio/gio.h>
-#ifdef _WIN32
-#include <gio/gwin32inputstream.h>
-#else
+
+#ifdef G_OS_UNIX
 #include <gio/gunixinputstream.h>
+#endif
+
+#ifdef G_OS_WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#include <gio/gwin32inputstream.h>
 #endif
 
 #include "rsvg-css.h"
@@ -119,6 +125,10 @@ main (int argc, char **argv)
     RsvgHandleFlags flags = RSVG_HANDLE_FLAGS_NONE;
     RsvgDimensionData dimensions;
     FILE *output_file = stdout;
+
+#ifdef G_OS_WIN32
+    HANDLE handle;
+#endif
 
     GOptionEntry options_table[] = {
         {"dpi-x", 'd', 0, G_OPTION_ARG_DOUBLE, &dpi_x,
@@ -218,7 +228,15 @@ main (int argc, char **argv)
         if (using_stdin) {
             file = NULL;
 #ifdef _WIN32
-            stream = g_win32_input_stream_new (STDIN_FILENO, FALSE);
+            handle = GetStdHandle (STD_INPUT_HANDLE);
+
+            if (handle == INVALID_HANDLE_VALUE) {
+              gchar *emsg = g_win32_error_message (GetLastError());
+              g_printerr ( _("Unable to acquire HANDLE for STDIN: %s\n"), emsg);
+              g_free (emsg);
+              exit (1);
+            }
+            stream = g_win32_input_stream_new (handle, FALSE);
 #else
             stream = g_unix_input_stream_new (STDIN_FILENO, FALSE);
 #endif
