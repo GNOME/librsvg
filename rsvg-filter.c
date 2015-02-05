@@ -244,6 +244,32 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, R
     }
 }
 
+static gboolean
+rectangle_intersect (gint ax, gint ay, gint awidth, gint aheight,
+                     gint bx, gint by, gint bwidth, gint bheight,
+                     gint *rx, gint *ry, gint *rwidth, gint *rheight)
+{
+    gint rx1, ry1, rx2, ry2;
+
+    rx1 = MAX (ax, bx);
+    ry1 = MAX (ay, by);
+    rx2 = MIN (ax + awidth, bx + bwidth);
+    ry2 = MIN (ay + aheight, by + bheight);
+
+    if (rx2 > rx1 && ry2 > ry1) {
+        *rx = rx1;
+        *ry = ry1;
+        *rwidth = rx2 - rx1;
+        *rheight = ry2 - ry1;
+
+        return TRUE;
+    } else {
+        *rx = *ry = *rwidth = *rheight = 0;
+
+        return FALSE;
+    }
+}
+
 static void
 rsvg_alpha_blt (cairo_surface_t *src,
                 gint srcx,
@@ -254,72 +280,33 @@ rsvg_alpha_blt (cairo_surface_t *src,
                 gint dstx,
                 gint dsty)
 {
-    gint rightx;
-    gint bottomy;
-    gint dstwidth;
-    gint dstheight;
-
-    gint srcoffsetx;
-    gint srcoffsety;
-    gint dstoffsetx;
-    gint dstoffsety;
-
+    gint src_surf_width, src_surf_height;
+    gint dst_surf_width, dst_surf_height;
+    gint src_clipped_x, src_clipped_y, src_clipped_width, src_clipped_height;
+    gint dst_clipped_x, dst_clipped_y, dst_clipped_width, dst_clipped_height;
     gint x, y, srcrowstride, dstrowstride, sx, sy, dx, dy;
     guchar *src_pixels, *dst_pixels;
 
+    g_assert (cairo_image_surface_get_format (src) == CAIRO_FORMAT_ARGB32);
+    g_assert (cairo_image_surface_get_format (dst) == CAIRO_FORMAT_ARGB32);
+
     cairo_surface_flush (src);
 
-    dstheight = srcheight;
-    dstwidth = srcwidth;
+    src_surf_width  = cairo_image_surface_get_width (src);
+    src_surf_height = cairo_image_surface_get_height (src);
 
-    rightx = srcx + srcwidth;
-    bottomy = srcy + srcheight;
+    dst_surf_width  = cairo_image_surface_get_width (dst);
+    dst_surf_height = cairo_image_surface_get_height (dst);
 
-    if (rightx > cairo_image_surface_get_width (src))
-        rightx = cairo_image_surface_get_width (src);
-    if (bottomy > cairo_image_surface_get_height (src))
-        bottomy = cairo_image_surface_get_height (src);
-    srcwidth = rightx - srcx;
-    srcheight = bottomy - srcy;
+    if (!rectangle_intersect (0, 0, src_surf_width, src_surf_height,
+                              srcx, srcy, srcwidth, srcheight,
+                              &src_clipped_x, &src_clipped_y, &src_clipped_width, &src_clipped_height))
+        return; /* source rectangle is not in source surface */
 
-    rightx = dstx + dstwidth;
-    bottomy = dsty + dstheight;
-    if (rightx > cairo_image_surface_get_width (dst))
-        rightx = cairo_image_surface_get_width (dst);
-    if (bottomy > cairo_image_surface_get_height (dst))
-        bottomy = cairo_image_surface_get_height (dst);
-    dstwidth = rightx - dstx;
-    dstheight = bottomy - dsty;
-
-    if (dstwidth < srcwidth)
-        srcwidth = dstwidth;
-    if (dstheight < srcheight)
-        srcheight = dstheight;
-
-    if (srcx < 0)
-        srcoffsetx = 0 - srcx;
-    else
-        srcoffsetx = 0;
-
-    if (srcy < 0)
-        srcoffsety = 0 - srcy;
-    else
-        srcoffsety = 0;
-
-    if (dstx < 0)
-        dstoffsetx = 0 - dstx;
-    else
-        dstoffsetx = 0;
-
-    if (dsty < 0)
-        dstoffsety = 0 - dsty;
-    else
-        dstoffsety = 0;
-
-    if (dstoffsetx > srcoffsetx)
-        srcoffsetx = dstoffsetx;
-    if (dstoffsety > srcoffsety)
-        srcoffsety = dstoffsety;
+    if (!rectangle_intersect (0, 0, dst_surf_width, dst_surf_height,
+                              dstx, dsty, src_clipped_width, src_clipped_height,
+                              &dst_clipped_x, &dst_clipped_y, &dst_clipped_width, &dst_clipped_height))
+        return; /* dest rectangle is not in dest surface */
 
     srcrowstride = cairo_image_surface_get_stride (src);
     dstrowstride = cairo_image_surface_get_stride (dst);
@@ -327,14 +314,14 @@ rsvg_alpha_blt (cairo_surface_t *src,
     src_pixels = cairo_image_surface_get_data (src);
     dst_pixels = cairo_image_surface_get_data (dst);
 
-    for (y = srcoffsety; y < srcheight; y++)
-        for (x = srcoffsetx; x < srcwidth; x++) {
+    for (y = 0; y < dst_clipped_height; y++)
+        for (x = 0; x < dst_clipped_width; x++) {
             guint a, c, ad, cd, ar, cr, i;
 
-            sx = x + srcx;
-            sy = y + srcy;
-            dx = x + dstx;
-            dy = y + dsty;
+            sx = x + src_clipped_x;
+            sy = y + src_clipped_y;
+            dx = x + dst_clipped_x;
+            dy = y + dst_clipped_y;
             a = src_pixels[4 * sx + sy * srcrowstride + 3];
 
             if (a) {
