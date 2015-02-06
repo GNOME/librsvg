@@ -1,3 +1,7 @@
+Version 2.40.7
+- Bugs fixed from fuzz testing: #703102, #738050, #738169
+- Fix build of rsvg-convert on Windows
+
 Version 2.40.6
 - MinGW build fixes
 - Fix path data number parsing
