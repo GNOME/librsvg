@@ -169,10 +169,22 @@ _rsvg_node_poly_build_path (const char *value,
 
     /* "L %f %f " */
     for (i = 2; i < pointlist_len; i += 2) {
+        double p;
+
         g_string_append (d, " L ");
         g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), pointlist[i]));
         g_string_append_c (d, ' ');
-        g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), pointlist[i + 1]));
+
+        /* We expect points to come in coordinate pairs.  But if there is a
+         * missing part of one pair in a corrupt SVG, we'll have an incomplete
+         * list.  In that case, we reuse the last-known Y coordinate.
+         */
+        if (i + 1 < pointlist_len)
+            p = pointlist[i + 1];
+        else
+            p = pointlist[i - 1];
+
+        g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), p));
     }
 
     if (close_path)
