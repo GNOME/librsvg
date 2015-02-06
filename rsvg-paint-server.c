@@ -489,64 +489,225 @@ hasstop (GPtrArray * lookin)
     return 0;
 }
 
+typedef gpointer (* GetFallbackFn) (gpointer data);
+typedef void (* ApplyFallbackFn) (gpointer data, gpointer fallback_data);
+
+/* Some SVG paint servers can reference a "parent" or "fallback" paint server
+ * through the xlink:href attribute (for example,
+ * http://www.w3.org/TR/SVG11/pservers.html#LinearGradientElementHrefAttribute )
+ * This is used to define a chain of properties to be resolved from each
+ * fallback.  However, a malicious SVG may have a cycle in the chain of
+ * fallbacks, which could lead to an infinite loop when resolving the chain.
+ *
+ * This is a generic function to apply a chain of fallbacks without cycling; it
+ * uses a tortoise-and-hare to detect cycles.  The hare moves twice as fast as
+ * the tortoise; if they catch up, then there is a cycle and we stop.
+ *
+ * The parameters are:
+ *
+ * @data: the paint server to resolve
+ * @get_fallback: a function which, given a paint server, will return its fallback (or NULL)
+ * @apply_fallback: a function which, given a paint server and a fallback one, will apply
+ *                  the fallback to the paint server as appropriate
+ *
+ * We use plain gpointers because this is called from different places with different
+ * structure types.
+ */
+static void
+resolve_fallbacks (gpointer data,
+                   GetFallbackFn get_fallback,
+                   ApplyFallbackFn apply_fallback)
+{
+    gpointer tortoise, hare;
+
+    g_assert (data != NULL);
+
+    tortoise = data;
+    hare = data;
+
+    while (hare) {
+        gpointer fallback;
+
+        fallback = get_fallback (hare);
+        if (fallback)
+            apply_fallback (data, fallback);
+
+        hare = fallback;
+
+        if (hare) {
+            fallback = get_fallback (hare);
+            if (fallback)
+                apply_fallback (data, fallback);
+
+            hare = fallback;
+        }
+
+        tortoise = get_fallback (tortoise);
+        if (tortoise == hare)
+            break;
+    }
+}
+
+static gpointer
+gradient_get_fallback (gpointer data)
+{
+    RsvgNode *node;
+
+    node = data;
+    if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
+        RsvgLinearGradient *g = (RsvgLinearGradient *) node;
+        return g->fallback;
+    } else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
+        RsvgRadialGradient *g = (RsvgRadialGradient *) node;
+        return g->fallback;
+    } else
+        return NULL;
+}
+
+static void
+linear_gradient_apply_fallback (gpointer data, gpointer fallback_data)
+{
+    RsvgNode *node;
+    RsvgLinearGradient *grad;
+    RsvgNode *fallback_node;
+
+    node = data;
+    g_assert (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT);
+    grad = (RsvgLinearGradient *) node;
+
+    fallback_node = fallback_data;
+
+    if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
+        RsvgLinearGradient *fallback = (RsvgLinearGradient *) fallback_node;
+
+        if (!grad->hasx1 && fallback->hasx1) {
+            grad->hasx1 = TRUE;
+            grad->x1 = fallback->x1;
+        }
+        if (!grad->hasy1 && fallback->hasy1) {
+            grad->hasy1 = TRUE;
+            grad->y1 = fallback->y1;
+        }
+        if (!grad->hasx2 && fallback->hasx2) {
+            grad->hasx2 = TRUE;
+            grad->x2 = fallback->x2;
+        }
+        if (!grad->hasy2 && fallback->hasy2) {
+            grad->hasy2 = TRUE;
+            grad->y2 = fallback->y2;
+        }
+        if (!grad->hastransform && fallback->hastransform) {
+            grad->hastransform = TRUE;
+            grad->affine = fallback->affine;
+        }
+        if (!grad->hasspread && fallback->hasspread) {
+            grad->hasspread = TRUE;
+            grad->spread = fallback->spread;
+        }
+        if (!grad->hasbbox && fallback->hasbbox) {
+            grad->hasbbox = TRUE;
+            grad->obj_bbox = fallback->obj_bbox;
+        }
+        if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
+            grad->super.children = fallback->super.children;
+        }
+    } else if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
+        RsvgRadialGradient *fallback = (RsvgRadialGradient *) fallback_node;
+
+        if (!grad->hastransform && fallback->hastransform) {
+            grad->hastransform = TRUE;
+            grad->affine = fallback->affine;
+        }
+        if (!grad->hasspread && fallback->hasspread) {
+            grad->hasspread = TRUE;
+            grad->spread = fallback->spread;
+        }
+        if (!grad->hasbbox && fallback->hasbbox) {
+            grad->hasbbox = TRUE;
+            grad->obj_bbox = fallback->obj_bbox;
+        }
+        if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
+            grad->super.children = fallback->super.children;
+        }
+    }
+}
+
 void
 rsvg_linear_gradient_fix_fallback (RsvgLinearGradient * grad)
 {
-    RsvgNode *ufallback;
-    ufallback = grad->fallback;
-    while (ufallback != NULL) {
-        if (RSVG_NODE_TYPE (ufallback) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
-            RsvgLinearGradient *fallback = (RsvgLinearGradient *) ufallback;
-            if (!grad->hasx1 && fallback->hasx1) {
-                grad->hasx1 = TRUE;
-                grad->x1 = fallback->x1;
-            }
-            if (!grad->hasy1 && fallback->hasy1) {
-                grad->hasy1 = TRUE;
-                grad->y1 = fallback->y1;
-            }
-            if (!grad->hasx2 && fallback->hasx2) {
-                grad->hasx2 = TRUE;
-                grad->x2 = fallback->x2;
-            }
-            if (!grad->hasy2 && fallback->hasy2) {
-                grad->hasy2 = TRUE;
-                grad->y2 = fallback->y2;
-            }
-            if (!grad->hastransform && fallback->hastransform) {
-                grad->hastransform = TRUE;
-                grad->affine = fallback->affine;
-            }
-            if (!grad->hasspread && fallback->hasspread) {
-                grad->hasspread = TRUE;
-                grad->spread = fallback->spread;
-            }
-            if (!grad->hasbbox && fallback->hasbbox) {
-                grad->hasbbox = TRUE;
-                grad->obj_bbox = fallback->obj_bbox;
-            }
-            if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
-                grad->super.children = fallback->super.children;
-            }
-            ufallback = fallback->fallback;
-        } else if (RSVG_NODE_TYPE (ufallback) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
-            RsvgRadialGradient *fallback = (RsvgRadialGradient *) ufallback;
-            if (!grad->hastransform && fallback->hastransform) {
-                grad->hastransform = TRUE;
-                grad->affine = fallback->affine;
-            }
-            if (!grad->hasspread && fallback->hasspread) {
-                grad->hasspread = TRUE;
-                grad->spread = fallback->spread;
-            }
-            if (!grad->hasbbox && fallback->hasbbox) {
-                grad->hasbbox = TRUE;
-                grad->obj_bbox = fallback->obj_bbox;
-            }
-            if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
-                grad->super.children = fallback->super.children;
-            }
-            ufallback = fallback->fallback;
+    resolve_fallbacks (grad,
+                       gradient_get_fallback,
+                       linear_gradient_apply_fallback);
+}
+
+static void
+radial_gradient_apply_fallback (gpointer data, gpointer fallback_data)
+{
+    RsvgNode *node;
+    RsvgRadialGradient *grad;
+    RsvgNode *fallback_node;
+
+    node = data;
+    g_assert (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT);
+    grad = (RsvgRadialGradient *) node;
+
+    fallback_node = fallback_data;
+
+    if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
+        RsvgRadialGradient *fallback = (RsvgRadialGradient *) fallback_node;
+
+        if (!grad->hascx && fallback->hascx) {
+            grad->hascx = TRUE;
+            grad->cx = fallback->cx;
+        }
+        if (!grad->hascy && fallback->hascy) {
+            grad->hascy = TRUE;
+            grad->cy = fallback->cy;
+        }
+        if (!grad->hasfx && fallback->hasfx) {
+            grad->hasfx = TRUE;
+            grad->fx = fallback->fx;
+        }
+        if (!grad->hasfy && fallback->hasfy) {
+            grad->hasfy = TRUE;
+            grad->fy = fallback->fy;
+        }
+        if (!grad->hasr && fallback->hasr) {
+            grad->hasr = TRUE;
+            grad->r = fallback->r;
+        }
+        if (!grad->hastransform && fallback->hastransform) {
+            grad->hastransform = TRUE;
+            grad->affine = fallback->affine;
+        }
+        if (!grad->hasspread && fallback->hasspread) {
+            grad->hasspread = TRUE;
+            grad->spread = fallback->spread;
+        }
+        if (!grad->hasbbox && fallback->hasbbox) {
+            grad->hasbbox = TRUE;
+            grad->obj_bbox = fallback->obj_bbox;
+        }
+        if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
+            grad->super.children = fallback->super.children;
+        }
+    } else if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
+        RsvgLinearGradient *fallback = (RsvgLinearGradient *) fallback_node;
+
+        if (!grad->hastransform && fallback->hastransform) {
+            grad->hastransform = TRUE;
+            grad->affine = fallback->affine;
+        }
+        if (!grad->hasspread && fallback->hasspread) {
+            grad->hasspread = TRUE;
+            grad->spread = fallback->spread;
+        }
+        if (!grad->hasbbox && fallback->hasbbox) {
+            grad->hasbbox = TRUE;
+            grad->obj_bbox = fallback->obj_bbox;
+        }
+        if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
+            grad->super.children = fallback->super.children;
         }
     }
 }
@@ -554,112 +715,72 @@ rsvg_linear_gradient_fix_fallback (RsvgLinearGradient * grad)
 void
 rsvg_radial_gradient_fix_fallback (RsvgRadialGradient * grad)
 {
-    RsvgNode *ufallback;
-    ufallback = grad->fallback;
-    while (ufallback != NULL) {
-        if (RSVG_NODE_TYPE (ufallback) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
-            RsvgRadialGradient *fallback = (RsvgRadialGradient *) ufallback;
-            if (!grad->hascx && fallback->hascx) {
-                grad->hascx = TRUE;
-                grad->cx = fallback->cx;
-            }
-            if (!grad->hascy && fallback->hascy) {
-                grad->hascy = TRUE;
-                grad->cy = fallback->cy;
-            }
-            if (!grad->hasfx && fallback->hasfx) {
-                grad->hasfx = TRUE;
-                grad->fx = fallback->fx;
-            }
-            if (!grad->hasfy && fallback->hasfy) {
-                grad->hasfy = TRUE;
-                grad->fy = fallback->fy;
-            }
-            if (!grad->hasr && fallback->hasr) {
-                grad->hasr = TRUE;
-                grad->r = fallback->r;
-            }
-            if (!grad->hastransform && fallback->hastransform) {
-                grad->hastransform = TRUE;
-                grad->affine = fallback->affine;
-            }
-            if (!grad->hasspread && fallback->hasspread) {
-                grad->hasspread = TRUE;
-                grad->spread = fallback->spread;
-            }
-            if (!grad->hasbbox && fallback->hasbbox) {
-                grad->hasbbox = TRUE;
-                grad->obj_bbox = fallback->obj_bbox;
-            }
-            if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
-                grad->super.children = fallback->super.children;
-            }
-            ufallback = fallback->fallback;
-        } else if (RSVG_NODE_TYPE (ufallback) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
-            RsvgLinearGradient *fallback = (RsvgLinearGradient *) ufallback;
-            if (!grad->hastransform && fallback->hastransform) {
-                grad->hastransform = TRUE;
-                grad->affine = fallback->affine;
-            }
-            if (!grad->hasspread && fallback->hasspread) {
-                grad->hasspread = TRUE;
-                grad->spread = fallback->spread;
-            }
-            if (!grad->hasbbox && fallback->hasbbox) {
-                grad->hasbbox = TRUE;
-                grad->obj_bbox = fallback->obj_bbox;
-            }
-            if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
-                grad->super.children = fallback->super.children;
-            }
-            ufallback = fallback->fallback;
-        }
-    }
+    resolve_fallbacks (grad,
+                       gradient_get_fallback,
+                       radial_gradient_apply_fallback);
 }
 
+static gpointer
+pattern_get_fallback (gpointer data)
+{
+    RsvgPattern *pattern = data;
+
+    return pattern->fallback;
+}
+
+static void
+pattern_apply_fallback (gpointer data, gpointer fallback_data)
+{
+    RsvgPattern *pattern;
+    RsvgPattern *fallback;
+
+    pattern = data;
+    fallback = fallback_data;
+
+    if (!pattern->hasx && fallback->hasx) {
+        pattern->hasx = TRUE;
+        pattern->x = fallback->x;
+    }
+    if (!pattern->hasy && fallback->hasy) {
+        pattern->hasy = TRUE;
+        pattern->y = fallback->y;
+    }
+    if (!pattern->haswidth && fallback->haswidth) {
+        pattern->haswidth = TRUE;
+        pattern->width = fallback->width;
+    }
+    if (!pattern->hasheight && fallback->hasheight) {
+        pattern->hasheight = TRUE;
+        pattern->height = fallback->height;
+    }
+    if (!pattern->hastransform && fallback->hastransform) {
+        pattern->hastransform = TRUE;
+        pattern->affine = fallback->affine;
+    }
+    if (!pattern->hasvbox && fallback->hasvbox) {
+        pattern->vbox = fallback->vbox;
+    }
+    if (!pattern->hasaspect && fallback->hasaspect) {
+        pattern->hasaspect = TRUE;
+        pattern->preserve_aspect_ratio = fallback->preserve_aspect_ratio;
+    }
+    if (!pattern->hasbbox && fallback->hasbbox) {
+        pattern->hasbbox = TRUE;
+        pattern->obj_bbox = fallback->obj_bbox;
+    }
+    if (!pattern->hascbox && fallback->hascbox) {
+        pattern->hascbox = TRUE;
+        pattern->obj_cbbox = fallback->obj_cbbox;
+    }
+    if (!pattern->super.children->len && fallback->super.children->len) {
+        pattern->super.children = fallback->super.children;
+    }
+}
 
 void
 rsvg_pattern_fix_fallback (RsvgPattern * pattern)
 {
-    RsvgPattern *fallback;
-    for (fallback = pattern->fallback; fallback != NULL; fallback = fallback->fallback) {
-        if (!pattern->hasx && fallback->hasx) {
-            pattern->hasx = TRUE;
-            pattern->x = fallback->x;
-        }
-        if (!pattern->hasy && fallback->hasy) {
-            pattern->hasy = TRUE;
-            pattern->y = fallback->y;
-        }
-        if (!pattern->haswidth && fallback->haswidth) {
-            pattern->haswidth = TRUE;
-            pattern->width = fallback->width;
-        }
-        if (!pattern->hasheight && fallback->hasheight) {
-            pattern->hasheight = TRUE;
-            pattern->height = fallback->height;
-        }
-        if (!pattern->hastransform && fallback->hastransform) {
-            pattern->hastransform = TRUE;
-            pattern->affine = fallback->affine;
-        }
-        if (!pattern->hasvbox && fallback->hasvbox) {
-            pattern->vbox = fallback->vbox;
-        }
-        if (!pattern->hasaspect && fallback->hasaspect) {
-            pattern->hasaspect = TRUE;
-            pattern->preserve_aspect_ratio = fallback->preserve_aspect_ratio;
-        }
-        if (!pattern->hasbbox && fallback->hasbbox) {
-            pattern->hasbbox = TRUE;
-            pattern->obj_bbox = fallback->obj_bbox;
-        }
-        if (!pattern->hascbox && fallback->hascbox) {
-            pattern->hascbox = TRUE;
-            pattern->obj_cbbox = fallback->obj_cbbox;
-        }
-        if (!pattern->super.children->len && fallback->super.children->len) {
-            pattern->super.children = fallback->super.children;
-        }
-    }
+    resolve_fallbacks (pattern,
+                       pattern_get_fallback,
+                       pattern_apply_fallback);
 }
