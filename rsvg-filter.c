@@ -2982,7 +2982,7 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
         xch = 3;
         break;
     default:
-        ych = 0;
+        xch = 0;
         break;
     }
 
