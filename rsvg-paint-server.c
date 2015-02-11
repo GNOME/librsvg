@@ -506,9 +506,11 @@ typedef void (* ApplyFallbackFn) (gpointer data, gpointer fallback_data);
  * The parameters are:
  *
  * @data: the paint server to resolve
- * @get_fallback: a function which, given a paint server, will return its fallback (or NULL)
+ * @get_fallback: a function which, given a paint server, will return its fallback (or NULL).
+ *                This function must make sure that the type of the node it gets passed is correct.
  * @apply_fallback: a function which, given a paint server and a fallback one, will apply
- *                  the fallback to the paint server as appropriate
+ *                  the fallback to the paint server as appropriate.  This function must
+ *                  ensure that the type of the fallback node it gets passed is correct.
  *
  * We use plain gpointers because this is called from different places with different
  * structure types.
@@ -723,19 +725,34 @@ rsvg_radial_gradient_fix_fallback (RsvgRadialGradient * grad)
 static gpointer
 pattern_get_fallback (gpointer data)
 {
-    RsvgPattern *pattern = data;
+    RsvgNode *node = data;
 
-    return pattern->fallback;
+    if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_PATTERN) {
+        RsvgPattern *pattern = (RsvgPattern *) node;
+
+        return pattern->fallback;
+    } else
+        return NULL;
 }
 
 static void
 pattern_apply_fallback (gpointer data, gpointer fallback_data)
 {
+    RsvgNode *pattern_node;
     RsvgPattern *pattern;
+    RsvgNode *fallback_node;
     RsvgPattern *fallback;
 
-    pattern = data;
-    fallback = fallback_data;
+    pattern_node = data;
+    fallback_node = fallback_data;
+
+    g_assert (RSVG_NODE_TYPE (pattern_node) == RSVG_NODE_TYPE_PATTERN);
+
+    if (RSVG_NODE_TYPE (fallback_node) != RSVG_NODE_TYPE_PATTERN)
+        return;
+
+    pattern = (RsvgPattern *) pattern_node;
+    fallback = (RsvgPattern *) fallback_node;
 
     if (!pattern->hasx && fallback->hasx) {
         pattern->hasx = TRUE;
