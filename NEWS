@@ -1,5 +1,7 @@
 Version 2.40.7
-- Bugs fixed from fuzz testing: #703102, #738050, #738169
+- Bugs fixed from fuzz testing: #703102, #738050, #738169, #744299
+- Fixed unfiled bug from fuzz testing, where the convolution filter
+  had an integer multiplication overflow.
 - Fix build of rsvg-convert on Windows
 
 Version 2.40.6

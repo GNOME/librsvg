@@ -5,25 +5,24 @@
          xmlns="http://usefulinc.com/ns/doap#">
 
   <name xml:lang="en">librsvg</name>
-  <shortdesc xml:lang="en">A SVG viewing library</shortdesc>
+  <shortdesc xml:lang="en">An SVG rendering library</shortdesc>
   <homepage rdf:resource="http://librsvg.sourceforge.net/" />
   <mailing-list rdf:resource="http://sourceforge.net/mailarchive/forum.php?forum_name=librsvg-devel" />
   <category rdf:resource="http://api.gnome.org/doap-extensions#core" />
   <programming-language>C</programming-language>
 
-  <maintainer>
-    <foaf:Person>
-      <foaf:name>Hiroyuki Ikezoe</foaf:name>
-      <foaf:mbox rdf:resource="mailto:hiikezoe@gnome.org" />
-      <gnome:userid>hiikezoe</gnome:userid>
-    </foaf:Person>
-  </maintainer>
+  <description>
+    librsvg is a library to render SVG documents into GdkPixbuf images or
+    Cairo contexts in general.  It is used throughout GNOME to render things
+    like scalable icons, from image viewers to view SVGs easily, or to generate
+    thumbnails for SVG files.
+  </description>
 
   <maintainer>
     <foaf:Person>
-      <foaf:name>Christian Persch</foaf:name>
-      <foaf:mbox rdf:resource="mailto:chpe%40gnome.org" />
-      <gnome:userid>chpe</gnome:userid>
+      <foaf:name>Federico Mena Quintero</foaf:name>
+      <foaf:mbox rdf:resource="mailto:federico@gnome.org" />
+      <gnome:userid>federico</gnome:userid>
     </foaf:Person>
   </maintainer>
 
