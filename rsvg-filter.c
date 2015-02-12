@@ -2191,7 +2191,6 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 {
     gint x, y, c;
     guint i;
-    gint temp;
     gint rowstride, height, width;
     RsvgIRect boundarys;
     RsvgNodeComponentTransferFunc *channels[4];
@@ -2250,6 +2249,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             inpix = in_pixels + (y * rowstride + x * 4);
             for (c = 0; c < 4; c++) {
+                gint temp;
                 int inval;
                 if (c != achan) {
                     if (inpix[achan] == 0)

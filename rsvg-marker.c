@@ -100,15 +100,15 @@ rsvg_new_marker (void)
 }
 
 void
-rsvg_marker_render (RsvgMarker * self, gdouble x, gdouble y, gdouble orient, gdouble linewidth,
-		    RsvgDrawingCtx * ctx)
+rsvg_marker_render (RsvgMarker * self, gdouble xpos, gdouble ypos, gdouble orient, gdouble linewidth,
+                    RsvgDrawingCtx * ctx)
 {
     cairo_matrix_t affine, taffine;
     unsigned int i;
     gdouble rotation;
     RsvgState *state = rsvg_current_state (ctx);
 
-    cairo_matrix_init_translate (&taffine, x, y);
+    cairo_matrix_init_translate (&taffine, xpos, ypos);
     cairo_matrix_multiply (&affine, &taffine, &state->affine);
 
     if (self->orientAuto)
