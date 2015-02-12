@@ -199,31 +199,6 @@ fi
 AC_SUBST([BSYMBOLIC_LDFLAG])
 
 ##################################################
-# Compiler warnings
-##################################################
-
-save_CFLAGS="$CFLAGS"
-CFLAGS=
-CC_CHECK_CFLAGS_APPEND([ \
-  -Wall -Wextra \
-  -Wunused -Wreturn-type -Wswitch -Wcomment -Wtrigraphs \
-  -Wchar-subscripts -Wparentheses -Winline -Wredundant-decls \
-  -Wformat-nonliteral -Werror=format-security \
-  -Wsign-compare -Werror=implicit-function-declaration \
-  -Wpointer-arith -Wwrite-strings -Wstrict-prototypes \
-  -Wnoaggregate-return -Wcast-align -Wimplicit -Wuninitialized \
-  -Wmissing-prototypes -Wmissing-declarations -Wnested-externs \
-  -Wpacked -Wmissing-format-attribute -Wshadow \
-  -Wstrict-aliasing=2 -Winit-self -Wunsafe-loop-optimizations \
-  -Wdeclaration-after-statement -Wold-style-definition \
-  -Wno-missing-field-initializers -Wno-unused-parameter \
-  -Wunused-variable -Wunused-function \
-  -Wempty-body -Wno-switch-enum \
-  -fno-common])
-AM_CFLAGS="$AM_CFLAGS $CFLAGS"
-CFLAGS="$save_CFLAGS"
-
-##################################################
 # Checks for gtk-doc and docbook-tools
 ##################################################
 
