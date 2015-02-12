@@ -12,7 +12,7 @@ USE_GNOME2_MACROS=1
 srcdir=`dirname $0`
 test -z "$srcdir" && srcdir=.
 
-(test -f $srcdir/configure.in \
+(test -f $srcdir/configure.ac \
   && test -d $srcdir/gdk-pixbuf-loader \
   && test -f $srcdir/gdk-pixbuf-loader/io-svg.c) || {
     echo -n "**Error**: Directory "\`$srcdir\'" does not look like the"
