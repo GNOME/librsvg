@@ -1175,21 +1175,21 @@ rsvg_handle_close_impl (RsvgHandle * handle, GError ** error)
     handle->priv->error = &real_error;
 
     if (handle->priv->ctxt != NULL) {
-        xmlDocPtr xmlDoc;
+        xmlDocPtr xml_doc;
         int result;
 
-        xmlDoc = handle->priv->ctxt->myDoc;
+        xml_doc = handle->priv->ctxt->myDoc;
 
         result = xmlParseChunk (handle->priv->ctxt, "", 0, TRUE);
         if (result != 0) {
             rsvg_set_error (error, handle->priv->ctxt);
             xmlFreeParserCtxt (handle->priv->ctxt);
-            xmlFreeDoc (xmlDoc);
+            xmlFreeDoc (xml_doc);
             return FALSE;
         }
 
         xmlFreeParserCtxt (handle->priv->ctxt);
-        xmlFreeDoc (xmlDoc);
+        xmlFreeDoc (xml_doc);
     }
 
     rsvg_defs_resolve_all (handle->priv->defs);
