@@ -682,7 +682,7 @@ rsvg_parse_path_data (RSVGParsePathCtx * ctx, const char *data)
 
     for (i = 0; data[i] != '\0'; i++) {
         c = data[i];
-        if (c >= '0' && c <= '9' || c == '+' || c == '-' || c == '.') {
+        if ((c >= '0' && c <= '9') || c == '+' || c == '-' || c == '.') {
             /* digit */
             i += rsvg_parse_number(ctx, data + i) - 1;
         } else if (c == 'z' || c == 'Z') {
