@@ -119,7 +119,7 @@ main (int argc, char **argv)
     int i;
     char **args = NULL;
     gint n_args = 0;
-    RsvgHandle *rsvg;
+    RsvgHandle *rsvg = NULL;
     cairo_surface_t *surface = NULL;
     cairo_t *cr = NULL;
     RsvgHandleFlags flags = RSVG_HANDLE_FLAGS_NONE;
