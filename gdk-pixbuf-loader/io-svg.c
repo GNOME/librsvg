@@ -28,8 +28,6 @@
 #include <rsvg.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
-#include "librsvg-features.h"
-
 #define N_(string) (string)
 #define _(string) (string)
 
@@ -186,13 +184,13 @@ fill_vtable (GdkPixbufModule *module)
 void
 fill_info (GdkPixbufFormat *info)
 {
-        static GdkPixbufModulePattern signature[] = {
+        static const GdkPixbufModulePattern signature[] = {
                 {  " <svg",  "*    ", 100 },
                 {  " <!DOCTYPE svg",  "*             ", 100 },
                 { NULL, NULL, 0 }
         };
 
-        static gchar *mime_types[] = { /* yes folks, i actually have run into all of these in the wild... */
+        static const gchar *mime_types[] = { /* yes folks, i actually have run into all of these in the wild... */
                 "image/svg+xml",
                 "image/svg",
                 "image/svg-xml",
@@ -201,7 +199,7 @@ fill_info (GdkPixbufFormat *info)
                 "image/svg+xml-compressed",
                 NULL
         };
-        static gchar *extensions[] = {
+        static const gchar *extensions[] = {
                 "svg",
                 "svgz",
                 "svg.gz",
