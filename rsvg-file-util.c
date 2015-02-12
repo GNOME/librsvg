@@ -83,7 +83,7 @@ rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
 }
 
 static GdkPixbuf *
-rsvg_pixbuf_from_stdio_file_with_size_data (guint8 *data,
+rsvg_pixbuf_from_stdio_file_with_size_data (const char *data,
                                             gsize data_len,
                                             struct RsvgSizeCallbackData *cb_data,
                                             gchar * base_uri, 
@@ -102,7 +102,7 @@ rsvg_pixbuf_from_stdio_file_with_size_data (guint8 *data,
     rsvg_handle_set_size_callback (handle, _rsvg_size_callback, cb_data, NULL);
     rsvg_handle_set_base_uri (handle, base_uri);
 
-    if (!rsvg_handle_write (handle, data, data_len, error)) {
+    if (!rsvg_handle_write (handle, (guchar *) data, data_len, error)) {
         (void) rsvg_handle_close (handle, NULL);
         g_object_unref (handle);
         return NULL;
@@ -125,7 +125,7 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
                                       GError ** error)
 {
     GdkPixbuf *pixbuf;
-    guint8 *data;
+    char *data;
     gsize data_len;
     GString *base_uri = g_string_new (file_name);
 

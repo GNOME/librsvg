@@ -41,7 +41,7 @@ rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
                                   const char *href,
                                   GError **error)
 {
-    guint8 *data;
+    char *data;
     gsize data_len;
     char *mime_type = NULL;
     GdkPixbufLoader *loader = NULL;
@@ -61,7 +61,7 @@ rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
     if (loader == NULL)
         goto out;
 
-    if (!gdk_pixbuf_loader_write (loader, data, data_len, error)) {
+    if (!gdk_pixbuf_loader_write (loader, (guchar *) data, data_len, error)) {
         gdk_pixbuf_loader_close (loader, NULL);
         goto out;
     }
@@ -98,7 +98,7 @@ rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
 
     if ((handle->priv->flags & RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA) != 0 &&
         mime_type != NULL &&
-        cairo_surface_set_mime_data (surface, mime_type, data,
+        cairo_surface_set_mime_data (surface, mime_type, (guchar *) data,
                                      data_len, g_free, data) == CAIRO_STATUS_SUCCESS) {
         data = NULL; /* transferred to the surface */
     }

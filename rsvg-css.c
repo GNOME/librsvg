@@ -848,7 +848,7 @@ rsvg_css_parse_xml_attribute_string (const char *attribute_string)
 
     if ((doc = parser->myDoc) == NULL ||
         (node = doc->children) == NULL ||
-        strcmp (node->name, "rsvg-hack") != 0 ||
+        strcmp ((const char *) node->name, "rsvg-hack") != 0 ||
         node->next != NULL ||
         node->properties == NULL)
           goto done;

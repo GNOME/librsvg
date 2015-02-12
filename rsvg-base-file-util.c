@@ -31,14 +31,14 @@
 
 static gboolean
 rsvg_handle_fill_with_data (RsvgHandle * handle,
-                            const guint8 * data, gsize data_len, GError ** error)
+                            const char * data, gsize data_len, GError ** error)
 {
     gboolean rv;
 
     rsvg_return_val_if_fail (data != NULL, FALSE, error);
     rsvg_return_val_if_fail (data_len != 0, FALSE, error);
 
-    rv = rsvg_handle_write (handle, data, data_len, error);
+    rv = rsvg_handle_write (handle, (guchar *) data, data_len, error);
 
     return rsvg_handle_close (handle, rv ? error : NULL) && rv;
 }
@@ -62,7 +62,7 @@ rsvg_handle_new_from_data (const guint8 * data, gsize data_len, GError ** error)
     handle = rsvg_handle_new ();
 
     if (handle) {
-        if (!rsvg_handle_fill_with_data (handle, data, data_len, error)) {
+        if (!rsvg_handle_fill_with_data (handle, (char *) data, data_len, error)) {
             g_object_unref (handle);
             handle = NULL;
         }
@@ -85,7 +85,7 @@ RsvgHandle *
 rsvg_handle_new_from_file (const gchar * file_name, GError ** error)
 {
     gchar *base_uri;
-    guint8 *data;
+    char *data;
     gsize data_len;
     RsvgHandle *handle = NULL;
 

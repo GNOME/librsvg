@@ -1164,7 +1164,7 @@ ccss_import_style (CRDocHandler * a_this,
                    CRString * a_uri, CRString * a_uri_default_ns, CRParsingLocation * a_location)
 {
     CSSUserData *user_data = (CSSUserData *) a_this->app_data;
-    guint8 *stylesheet_data;
+    char *stylesheet_data;
     gsize stylesheet_data_len;
     char *mime_type = NULL;
 
@@ -1172,7 +1172,7 @@ ccss_import_style (CRDocHandler * a_this,
         return;
 
     stylesheet_data = _rsvg_handle_acquire_data (user_data->ctx,
-                                                 (gchar *) cr_string_peek_raw_str (a_uri),
+                                                 cr_string_peek_raw_str (a_uri),
                                                  &mime_type,
                                                  &stylesheet_data_len,
                                                  NULL);
@@ -1184,8 +1184,7 @@ ccss_import_style (CRDocHandler * a_this,
         return;
     }
 
-    rsvg_parse_cssbuffer (user_data->ctx, (const char *) stylesheet_data,
-                          stylesheet_data_len);
+    rsvg_parse_cssbuffer (user_data->ctx, stylesheet_data, stylesheet_data_len);
     g_free (stylesheet_data);
     g_free (mime_type);
 }

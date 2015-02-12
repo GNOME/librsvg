@@ -563,7 +563,7 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
 
     parse = rsvg_property_bag_lookup (atts, "parse");
     if (parse && !strcmp (parse, "text")) {
-        guint8 *data;
+        char *data;
         gsize data_len;
         const char *encoding;
 
@@ -584,7 +584,7 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
             data_len = text_data_len;
         }
 
-        rsvg_characters_impl (ctx, (const xmlChar *) data, data_len);
+        rsvg_characters_impl (ctx, (xmlChar *) data, data_len);
 
         g_free (data);
     } else {
@@ -830,7 +830,7 @@ rsvg_entity_decl (void *data, const xmlChar * name, int type,
         resolvedPublicId = xmlBuildRelativeURI (publicId, (xmlChar*) rsvg_handle_get_base_uri (ctx));
 
     if (type == XML_EXTERNAL_PARAMETER_ENTITY && !content) {
-        guint8 *entity_data;
+        char *entity_data;
         gsize entity_data_len;
 
         if (systemId)
@@ -916,7 +916,7 @@ rsvg_processing_instruction (void *ctx, const xmlChar * target, const xmlChar * 
                 if (value && strcmp (value, "text/css") == 0) {
                     value = rsvg_property_bag_lookup (atts, "href");
                     if (value && value[0]) {
-                        guint8 *style_data;
+                        char *style_data;
                         gsize style_data_len;
                         char *mime_type = NULL;
 
@@ -928,7 +928,7 @@ rsvg_processing_instruction (void *ctx, const xmlChar * target, const xmlChar * 
                         if (style_data && 
                             mime_type &&
                             strcmp (mime_type, "text/css") == 0) {
-                            rsvg_parse_cssbuffer (handle, (char *) style_data, style_data_len);
+                            rsvg_parse_cssbuffer (handle, style_data, style_data_len);
                         }
 
                         g_free (mime_type);
@@ -1671,7 +1671,7 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
 /**
  * rsvg_handle_write:
  * @handle: an #RsvgHandle
- * @buf: (array length=count) (element-type guint8): pointer to svg data
+ * @buf: (array length=count) (element-type guchar): pointer to svg data
  * @count: length of the @buf buffer in bytes
  * @error: (allow-none): a location to store a #GError, or %NULL
  *
@@ -2286,7 +2286,7 @@ _rsvg_handle_resolve_uri (RsvgHandle *handle,
     return resolved_uri;
 }
 
-guint8* 
+char * 
 _rsvg_handle_acquire_data (RsvgHandle *handle,
                            const char *url,
                            char **content_type,
@@ -2294,7 +2294,7 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
                            GError **error)
 {
     char *uri;
-    guint8 *data;
+    char *data;
 
     uri = _rsvg_handle_resolve_uri (handle, url);
 

@@ -30,12 +30,12 @@ G_GNUC_INTERNAL
 gchar *_rsvg_io_get_file_path (const gchar *filename, 
                                const gchar *basedir);
 
-guint8* _rsvg_io_acquire_data (const char *uri,
-                               const char *base_uri,
-                               char **mime_type,
-                               gsize *len,
-                               GCancellable *cancellable,
-                               GError **error);
+char *_rsvg_io_acquire_data (const char *uri,
+			     const char *base_uri,
+			     char **mime_type,
+			     gsize *len,
+			     GCancellable *cancellable,
+			     GError **error);
 
 GInputStream *_rsvg_io_acquire_stream (const char *uri,
                                        const char *base_uri,

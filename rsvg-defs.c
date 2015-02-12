@@ -66,7 +66,7 @@ rsvg_defs_load_extern (const RsvgDefs * defs, const char *name)
 {
     RsvgHandle *handle;
     gchar *filename, *base_uri;
-    guint8 *data;
+    char *data;
     gsize data_len;
     gboolean rv;
 
@@ -81,7 +81,7 @@ rsvg_defs_load_extern (const RsvgDefs * defs, const char *name)
         rsvg_handle_set_base_uri (handle, base_uri);
         g_free (base_uri);
 
-        rv = rsvg_handle_write (handle, data, data_len, NULL);
+        rv = rsvg_handle_write (handle, (guchar *) data, data_len, NULL);
         rv = rsvg_handle_close (handle, NULL) && rv;
         if (rv) {
             g_hash_table_insert (defs->externs, g_strdup (name), handle);

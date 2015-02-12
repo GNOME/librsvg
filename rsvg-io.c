@@ -65,7 +65,7 @@ uri_decoded_copy (const char *part,
 #define BASE64_INDICATOR     ";base64"
 #define BASE64_INDICATOR_LEN (sizeof (";base64") - 1)
 
-static guint8 *
+static char *
 rsvg_acquire_data_data (const char *uri,
                         const char *base_uri, 
                         char **out_mime_type,
@@ -104,12 +104,12 @@ rsvg_acquire_data_data (const char *uri,
         start = comma + 1;
 
     if (*start) {
-        data = uri_decoded_copy (start, strlen (start));
+	data = uri_decoded_copy (start, strlen (start));
 
         if (base64)
-            data = g_base64_decode_inplace ((char*) data, &data_len);
+            data = (char *) g_base64_decode_inplace (data, &data_len);
         else
-            data_len = strlen ((const char *) data);
+            data_len = strlen (data);
     } else {
         data = NULL;
         data_len = 0;
@@ -153,7 +153,7 @@ _rsvg_io_get_file_path (const gchar * filename,
     return absolute_filename;
 }
 
-static guint8 *
+static char *
 rsvg_acquire_file_data (const char *filename,
                         const char *base_uri,
                         char **out_mime_type,
@@ -178,7 +178,7 @@ rsvg_acquire_file_data (const char *filename,
     }
 
     if (out_mime_type &&
-        (content_type = g_content_type_guess (path, data, len, NULL))) {
+        (content_type = g_content_type_guess (path, (guchar *) data, len, NULL))) {
         *out_mime_type = g_content_type_get_mime_type (content_type);
         g_free (content_type);
     }
@@ -243,7 +243,7 @@ rsvg_acquire_gvfs_stream (const char *uri,
     return G_INPUT_STREAM (stream);
 }
 
-static guint8 *
+static char *
 rsvg_acquire_gvfs_data (const char *uri,
                         const char *base_uri,
                         char **out_mime_type,
@@ -253,7 +253,7 @@ rsvg_acquire_gvfs_data (const char *uri,
 {
     GFile *base, *file;
     GError *err;
-    gchar *data;
+    char *data;
     gsize len;
     char *content_type;
     gboolean res;
@@ -283,7 +283,7 @@ rsvg_acquire_gvfs_data (const char *uri,
     }
 
     if (out_mime_type &&
-        (content_type = g_content_type_guess (uri, data, len, NULL))) {
+        (content_type = g_content_type_guess (uri, (guchar *) data, len, NULL))) {
         *out_mime_type = g_content_type_get_mime_type (content_type);
         g_free (content_type);
     }
@@ -292,7 +292,7 @@ rsvg_acquire_gvfs_data (const char *uri,
     return data;
 }
 
-guint8 *
+char *
 _rsvg_io_acquire_data (const char *href, 
                        const char *base_uri, 
                        char **mime_type,
@@ -300,7 +300,7 @@ _rsvg_io_acquire_data (const char *href,
                        GCancellable *cancellable,
                        GError **error)
 {
-    guint8 *data;
+    char *data;
     gsize llen;
 
     if (!(href && *href)) {
@@ -332,7 +332,7 @@ _rsvg_io_acquire_stream (const char *href,
                          GError **error)
 {
     GInputStream *stream;
-    guint8 *data;
+    char *data;
     gsize len;
 
     if (!(href && *href)) {
