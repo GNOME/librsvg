@@ -1,5 +1,3 @@
 This is librsvg - A high performance SVG rendering library associated with the Gnome Project.
 
-If you have questions or comments about librsvg, please send email to librsvg-devel@lists.sourceforge.net. Any bugs should be reported to http://bugzilla.gnome.org/
-
-Also, more information on librsvg can be found at librsvg.sf.net
+Please report bugs at http://bugzilla.gnome.org/enter_bug.cgi?product=librsvg
