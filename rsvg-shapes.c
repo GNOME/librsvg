@@ -330,6 +330,7 @@ _rsvg_node_rect_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
     const char *klazz = NULL, *id = NULL, *value;
     RsvgNodeRect *rect = (RsvgNodeRect *) self;
 
+    /* FIXME: negative w/h/rx/ry is an error, per http://www.w3.org/TR/SVG11/shapes.html#RectElement */
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "x")))
             rect->x = _rsvg_css_parse_length (value);
@@ -362,126 +363,142 @@ static void
 _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     double x, y, w, h, rx, ry;
-    GString *d = NULL;
+    double half_w, half_h;
+    RsvgPathBuilder builder;
     cairo_path_t *path;
     RsvgNodeRect *rect = (RsvgNodeRect *) self;
-    char buf[G_ASCII_DTOSTR_BUF_SIZE];
 
     x = _rsvg_css_normalize_length (&rect->x, ctx, 'h');
     y = _rsvg_css_normalize_length (&rect->y, ctx, 'v');
-    w = _rsvg_css_normalize_length (&rect->w, ctx, 'h');
-    h = _rsvg_css_normalize_length (&rect->h, ctx, 'v');
-    rx = _rsvg_css_normalize_length (&rect->rx, ctx, 'h');
-    ry = _rsvg_css_normalize_length (&rect->ry, ctx, 'v');
+
+    /* FIXME: negative w/h/rx/ry is an error, per http://www.w3.org/TR/SVG11/shapes.html#RectElement
+     * For now we'll just take the absolute value.
+     */
+    w = fabs (_rsvg_css_normalize_length (&rect->w, ctx, 'h'));
+    h = fabs (_rsvg_css_normalize_length (&rect->h, ctx, 'v'));
+    rx = fabs (_rsvg_css_normalize_length (&rect->rx, ctx, 'h'));
+    ry = fabs (_rsvg_css_normalize_length (&rect->ry, ctx, 'v'));
 
     if (w == 0. || h == 0.)
-	return;
+        return;
 
     if (rect->got_rx)
         rx = rx;
     else
         rx = ry;
+
     if (rect->got_ry)
         ry = ry;
     else
         ry = rx;
 
-    if (rx > fabs (w / 2.))
-        rx = fabs (w / 2.);
-    if (ry > fabs (h / 2.))
-        ry = fabs (h / 2.);
+    half_w = w / 2;
+    half_h = h / 2;
+
+    if (rx > half_w)
+        rx = half_w;
+
+    if (ry > half_h)
+        ry = half_h;
 
     if (rx == 0)
         ry = 0;
     else if (ry == 0)
         rx = 0;
 
-    /* emulate a rect using a path */
-    d = g_string_new ("M ");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + rx));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y));
+    if (rx == 0) {
+        /* Easy case, no rounded corners */
 
-    g_string_append (d, " H ");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + w - rx));
+        rsvg_path_builder_init (&builder, 11);
 
-    g_string_append (d, " A");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rx));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ry));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 1.));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + w));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y + ry));
+        rsvg_path_builder_move_to (&builder, x, y);
+        rsvg_path_builder_line_to (&builder, x + w, y);
+        rsvg_path_builder_line_to (&builder, x + w, y + h);
+        rsvg_path_builder_line_to (&builder, x, y + h);
+        rsvg_path_builder_line_to (&builder, x, y);
+        rsvg_path_builder_close_path (&builder);
+    } else {
+        double top_x1, top_x2, top_y;
+        double bottom_x1, bottom_x2, bottom_y;
+        double left_x, left_y1, left_y2;
+        double right_x, right_y1, right_y2;
 
-    g_string_append (d, " V ");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y + h - ry));
+        /* Hard case, rounded corners
+         *
+         *      (top_x1, top_y)                   (top_x2, top_y)
+         *     *--------------------------------*
+         *    /                                  \
+         *   * (left_x, left_y1)                  * (right_x, right_y1)
+         *   |                                    |
+         *   |                                    |
+         *   |                                    |
+         *   |                                    |
+         *   |                                    |
+         *   |                                    |
+         *   |                                    |
+         *   |                                    |
+         *   |                                    |
+         *   * (left_x, left_y2)                  * (right_x, right_y2)
+         *    \                                  /
+         *     *--------------------------------*
+         *      (bottom_x1, bottom_y)            (bottom_x2, bottom_y)
+         */
 
-    g_string_append (d, " A");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rx));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ry));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 1.));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + w - rx));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y + h));
+        top_x1 = x + rx;
+        top_x2 = x + w - rx;
+        top_y  = y;
 
-    g_string_append (d, " H ");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + rx));
+        bottom_x1 = top_x1;
+        bottom_x2 = top_x2;
+        bottom_y  = y + h;
 
-    g_string_append (d, " A");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rx));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ry));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 1.));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y + h - ry));
+        left_x = x;
+        left_y1 = y + ry;
+        left_y2 = y + h - ry;
 
-    g_string_append (d, " V ");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y + ry));
+        right_x = x + w;
+        right_y1 = left_y1;
+        right_y2 = left_y2;
 
-    g_string_append (d, " A");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), rx));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), ry));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 0.));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), 1.));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), x + rx));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), y));
+        rsvg_path_builder_init (&builder, 32); /* an estimate; the arc segments may grow the array anyway */
 
-    g_string_append (d, " Z");
+        rsvg_path_builder_move_to (&builder, top_x1, top_y);
+        rsvg_path_builder_line_to (&builder, top_x2, top_y);
+
+        rsvg_path_builder_arc (&builder,
+                               top_x2, top_y,
+                               rx, ry, 0, FALSE, TRUE,
+                               right_x, right_y1);
+
+        rsvg_path_builder_line_to (&builder, right_x, right_y2);
+
+        rsvg_path_builder_arc (&builder,
+                               right_x, right_y2,
+                               rx, ry, 0, FALSE, TRUE,
+                               bottom_x2, bottom_y);
+
+        rsvg_path_builder_line_to (&builder, bottom_x1, bottom_y);
+
+        rsvg_path_builder_arc (&builder,
+                               bottom_x1, bottom_y,
+                               rx, ry, 0, FALSE, TRUE,
+                               left_x, left_y2);
+
+        rsvg_path_builder_line_to (&builder, left_x, left_y1);
+
+        rsvg_path_builder_arc (&builder,
+                               left_x, left_y1,
+                               rx, ry, 0, FALSE, TRUE,
+                               top_x1, top_y);
+
+        rsvg_path_builder_close_path (&builder);
+    }
+
+    path = rsvg_path_builder_finish (&builder);
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
-
-    path = rsvg_parse_path (d->str);
     rsvg_render_path (ctx, path);
     rsvg_cairo_path_destroy (path);
-    g_string_free (d, TRUE);
 }
 
 RsvgNode *
