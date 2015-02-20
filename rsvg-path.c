@@ -201,7 +201,7 @@ rsvg_path_arc_segment (RsvgPathBuilder *builder,
 }
 
 /**
- * rsvg_path_arc:
+ * rsvg_path_builder_arc:
  * @builder: Path builder.
  * @x1: Starting x coordinate
  * @y1: Starting y coordinate
@@ -215,13 +215,13 @@ rsvg_path_arc_segment (RsvgPathBuilder *builder,
  *
  * Add an RSVG arc to the path context.
  **/
-static void
-rsvg_path_arc (RsvgPathBuilder *builder,
-               double x1, double y1,
-               double rx, double ry,
-               double x_axis_rotation,
-               gboolean large_arc_flag, gboolean sweep_flag,
-               double x2, double y2)
+void
+rsvg_path_builder_arc (RsvgPathBuilder *builder,
+                       double x1, double y1,
+                       double rx, double ry,
+                       double x_axis_rotation,
+                       gboolean large_arc_flag, gboolean sweep_flag,
+                       double x2, double y2)
 {
 
     /* See Appendix F.6 Elliptical arc implementation notes
@@ -521,13 +521,13 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
             x2 = ctx->params[5];
             y2 = ctx->params[6];
 
-            rsvg_path_arc (&ctx->builder,
-                           x1, y1,
-                           rx, ry,
-                           x_axis_rotation,
-                           large_arc_flag,
-                           sweep_flag,
-                           x2, y2);
+            rsvg_path_builder_arc (&ctx->builder,
+                                   x1, y1,
+                                   rx, ry,
+                                   x_axis_rotation,
+                                   large_arc_flag,
+                                   sweep_flag,
+                                   x2, y2);
 
             ctx->cp.point.x = x2;
             ctx->cp.point.y = y2;

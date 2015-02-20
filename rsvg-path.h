@@ -55,6 +55,15 @@ void rsvg_path_builder_curve_to (RsvgPathBuilder *builder,
                                  double y2,
                                  double x3,
                                  double y3);
+
+G_GNUC_INTERNAL
+void rsvg_path_builder_arc (RsvgPathBuilder *builder,
+                            double x1, double y1,
+                            double rx, double ry,
+                            double x_axis_rotation,
+                            gboolean large_arc_flag, gboolean sweep_flag,
+                            double x2, double y2);
+
 G_GNUC_INTERNAL
 void rsvg_path_builder_close_path (RsvgPathBuilder *builder);
 G_GNUC_INTERNAL
