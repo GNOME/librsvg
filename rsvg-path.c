@@ -202,28 +202,32 @@ rsvg_path_arc_segment (RsvgPathBuilder *builder,
 
 /**
  * rsvg_path_arc:
- * @ctx: Path context.
+ * @builder: Path builder.
+ * @x1: Starting x coordinate
+ * @y1: Starting y coordinate
  * @rx: Radius in x direction (before rotation).
  * @ry: Radius in y direction (before rotation).
  * @x_axis_rotation: Rotation angle for axes.
  * @large_arc_flag: 0 for arc length <= 180, 1 for arc >= 180.
- * @sweep: 0 for "negative angle", 1 for "positive angle".
- * @x: New x coordinate.
- * @y: New y coordinate.
+ * @sweep_flag: 0 for "negative angle", 1 for "positive angle".
+ * @x2: Ending x coordinate
+ * @y2: Ending y coordinate
  *
  * Add an RSVG arc to the path context.
  **/
 static void
-rsvg_path_arc (RSVGParsePathCtx * ctx,
-               double rx, double ry, double x_axis_rotation,
-               int large_arc_flag, int sweep_flag, double x, double y)
+rsvg_path_arc (RsvgPathBuilder *builder,
+               double x1, double y1,
+               double rx, double ry,
+               double x_axis_rotation,
+               gboolean large_arc_flag, gboolean sweep_flag,
+               double x2, double y2)
 {
 
     /* See Appendix F.6 Elliptical arc implementation notes
        http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes */
 
     double f, sinf, cosf;
-    double x1, y1, x2, y2;
     double x1_, y1_;
     double cx_, cy_, cx, cy;
     double gamma;
@@ -232,103 +236,95 @@ rsvg_path_arc (RSVGParsePathCtx * ctx,
 
     int i, n_segs;
 
-    /* Start and end of path segment */
-    x1 = ctx->cp.point.x;
-    y1 = ctx->cp.point.y;
-
-    x2 = x;
-    y2 = y;
-
-    if(x1 == x2 && y1 == y2)
+    if (x1 == x2 && y1 == y2)
         return;
 
     /* X-axis */
     f = x_axis_rotation * M_PI / 180.0;
-    sinf = sin(f);
-    cosf = cos(f);
+    sinf = sin (f);
+    cosf = cos (f);
+
+    rx = fabs (rx);
+    ry = fabs (ry);
 
     /* Check the radius against floading point underflow.
        See http://bugs.debian.org/508443 */
-    if ((fabs(rx) < DBL_EPSILON) || (fabs(ry) < DBL_EPSILON)) {
-        rsvg_path_builder_line_to (&ctx->builder, x, y);
+    if ((rx < DBL_EPSILON) || (ry < DBL_EPSILON)) {
+        rsvg_path_builder_line_to (builder, x2, y2);
         return;
     }
 
-    if(rx < 0)rx = -rx;
-    if(ry < 0)ry = -ry;
-
-    k1 = (x1 - x2)/2;
-    k2 = (y1 - y2)/2;
+    k1 = (x1 - x2) / 2;
+    k2 = (y1 - y2) / 2;
 
     x1_ = cosf * k1 + sinf * k2;
     y1_ = -sinf * k1 + cosf * k2;
 
-    gamma = (x1_*x1_)/(rx*rx) + (y1_*y1_)/(ry*ry);
+    gamma = (x1_ * x1_) / (rx * rx) + (y1_ * y1_) / (ry * ry);
     if (gamma > 1) {
-        rx *= sqrt(gamma);
-        ry *= sqrt(gamma);
+        rx *= sqrt (gamma);
+        ry *= sqrt (gamma);
     }
 
     /* Compute the center */
 
-    k1 = rx*rx*y1_*y1_ + ry*ry*x1_*x1_;
-    if(k1 == 0)    
+    k1 = rx * rx * y1_ * y1_ + ry * ry * x1_ * x1_;
+    if (k1 == 0)
         return;
 
-    k1 = sqrt(fabs((rx*rx*ry*ry)/k1 - 1));
-    if(sweep_flag == large_arc_flag)
+    k1 = sqrt (fabs ((rx * rx * ry * ry) / k1 - 1));
+    if (sweep_flag == large_arc_flag)
         k1 = -k1;
 
-    cx_ = k1*rx*y1_/ry;
-    cy_ = -k1*ry*x1_/rx;
+    cx_ = k1 * rx * y1_ / ry;
+    cy_ = -k1 * ry * x1_ / rx;
     
-    cx = cosf*cx_ - sinf*cy_ + (x1+x2)/2;
-    cy = sinf*cx_ + cosf*cy_ + (y1+y2)/2;
+    cx = cosf * cx_ - sinf * cy_ + (x1 + x2) / 2;
+    cy = sinf * cx_ + cosf * cy_ + (y1 + y2) / 2;
 
     /* Compute start angle */
 
-    k1 = (x1_ - cx_)/rx;
-    k2 = (y1_ - cy_)/ry;
-    k3 = (-x1_ - cx_)/rx;
-    k4 = (-y1_ - cy_)/ry;
+    k1 = (x1_ - cx_) / rx;
+    k2 = (y1_ - cy_) / ry;
+    k3 = (-x1_ - cx_) / rx;
+    k4 = (-y1_ - cy_) / ry;
 
-    k5 = sqrt(fabs(k1*k1 + k2*k2));
-    if(k5 == 0)return;
+    k5 = sqrt (fabs (k1 * k1 + k2 * k2));
+    if (k5 == 0)
+        return;
 
-    k5 = k1/k5;
-    if(k5 < -1)k5 = -1;
-    else if(k5 > 1)k5 = 1;
-    theta1 = acos(k5);
-    if(k2 < 0)theta1 = -theta1;
+    k5 = k1 / k5;
+    k5 = CLAMP (k5, -1, 1);
+    theta1 = acos (k5);
+    if (k2 < 0)
+        theta1 = -theta1;
 
     /* Compute delta_theta */
 
-    k5 = sqrt(fabs((k1*k1 + k2*k2)*(k3*k3 + k4*k4)));
-    if(k5 == 0)return;
+    k5 = sqrt (fabs ((k1 * k1 + k2 * k2) * (k3 * k3 + k4 * k4)));
+    if (k5 == 0)
+        return;
 
-    k5 = (k1*k3 + k2*k4)/k5;
-    if(k5 < -1)k5 = -1;
-    else if(k5 > 1)k5 = 1;
-    delta_theta = acos(k5);
-    if(k1*k4 - k3*k2 < 0)delta_theta = -delta_theta;
+    k5 = (k1 * k3 + k2 * k4) / k5;
+    k5 = CLAMP (k5, -1, 1);
+    delta_theta = acos (k5);
+    if (k1 * k4 - k3 * k2 < 0)
+        delta_theta = -delta_theta;
 
-    if(sweep_flag && delta_theta < 0)
-        delta_theta += M_PI*2;
-    else if(!sweep_flag && delta_theta > 0)
-        delta_theta -= M_PI*2;
+    if (sweep_flag && delta_theta < 0)
+        delta_theta += M_PI * 2;
+    else if (!sweep_flag && delta_theta > 0)
+        delta_theta -= M_PI * 2;
    
     /* Now draw the arc */
 
     n_segs = ceil (fabs (delta_theta / (M_PI * 0.5 + 0.001)));
 
     for (i = 0; i < n_segs; i++)
-        rsvg_path_arc_segment (&ctx->builder, cx, cy,
+        rsvg_path_arc_segment (builder, cx, cy,
 			                   theta1 + i * delta_theta / n_segs,
                                theta1 + (i + 1) * delta_theta / n_segs,
                                rx, ry, x_axis_rotation);
-
-    ctx->cp.point.x = x;
-    ctx->cp.point.y = y;
 }
 
 
@@ -504,9 +500,38 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
         break;
     case 'a':
         if (ctx->param == 7 || final) {
-            rsvg_path_arc (ctx,
-                           ctx->params[0], ctx->params[1], ctx->params[2],
-                           ctx->params[3], ctx->params[4], ctx->params[5], ctx->params[6]);
+            double x1, y1;
+            double rx, ry;
+            double x_axis_rotation;
+            gboolean large_arc_flag;
+            gboolean sweep_flag;
+            double x2, y2;
+
+            x1 = ctx->cp.point.x;
+            y1 = ctx->cp.point.y;
+
+            rx = ctx->params[0];
+            ry = ctx->params[1];
+
+            x_axis_rotation = ctx->params[2];
+
+            large_arc_flag = (ctx->params[3] == 0 ? FALSE : TRUE);
+            sweep_flag = (ctx->params[4] == 0 ? FALSE : TRUE);
+
+            x2 = ctx->params[5];
+            y2 = ctx->params[6];
+
+            rsvg_path_arc (&ctx->builder,
+                           x1, y1,
+                           rx, ry,
+                           x_axis_rotation,
+                           large_arc_flag,
+                           sweep_flag,
+                           x2, y2);
+
+            ctx->cp.point.x = x2;
+            ctx->cp.point.y = y2;
+
             ctx->param = 0;
         }
         break;
