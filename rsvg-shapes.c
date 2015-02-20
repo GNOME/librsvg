@@ -548,11 +548,10 @@ _rsvg_node_circle_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *
 static void
 _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
-    GString *d = NULL;
     cairo_path_t *path;
     RsvgNodeCircle *circle = (RsvgNodeCircle *) self;
-    char buf[G_ASCII_DTOSTR_BUF_SIZE];
     double cx, cy, r;
+    RsvgPathBuilder builder;
 
     cx = _rsvg_css_normalize_length (&circle->cx, ctx, 'h');
     cy = _rsvg_css_normalize_length (&circle->cy, ctx, 'v');
@@ -563,72 +562,37 @@ _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     /* approximate a circle using 4 bezier curves */
 
-    d = g_string_new ("M ");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
+    rsvg_path_builder_init (&builder, 19);
 
-    g_string_append (d, " C ");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r * RSVG_ARC_MAGIC));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r * RSVG_ARC_MAGIC));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r));
+    rsvg_path_builder_move_to (&builder, cx + r, cy);
 
-    g_string_append (d, " C ");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r * RSVG_ARC_MAGIC));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy + r * RSVG_ARC_MAGIC));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
+    rsvg_path_builder_curve_to (&builder,
+                                cx + r, cy + r * RSVG_ARC_MAGIC,
+                                cx + r * RSVG_ARC_MAGIC, cy + r,
+                                cx, cy + r);
 
-    g_string_append (d, " C ");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r * RSVG_ARC_MAGIC));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx - r * RSVG_ARC_MAGIC));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r));
+    rsvg_path_builder_curve_to (&builder,
+                                cx - r * RSVG_ARC_MAGIC, cy + r,
+                                cx - r, cy + r * RSVG_ARC_MAGIC,
+                                cx - r, cy);
 
-    g_string_append (d, " C ");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r * RSVG_ARC_MAGIC));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy - r * RSVG_ARC_MAGIC));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cx + r));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), cy));
+    rsvg_path_builder_curve_to (&builder,
+                                cx - r, cy - r * RSVG_ARC_MAGIC,
+                                cx - r * RSVG_ARC_MAGIC, cy - r,
+                                cx, cy - r);
 
-    g_string_append (d, " Z");
+    rsvg_path_builder_curve_to (&builder,
+                                cx + r * RSVG_ARC_MAGIC, cy - r,
+                                cx + r, cy - r * RSVG_ARC_MAGIC,
+                                cx + r, cy);
+
+    rsvg_path_builder_close_path (&builder);
+
+    path = rsvg_path_builder_finish (&builder);
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
-
-    path = rsvg_parse_path (d->str);
     rsvg_render_path (ctx, path);
     rsvg_cairo_path_destroy (path);
-
-    g_string_free (d, TRUE);
 }
 
 RsvgNode *
