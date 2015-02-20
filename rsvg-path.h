@@ -34,7 +34,6 @@ G_BEGIN_DECLS
 
 typedef struct {
     GArray *path_data;
-    int     last_move_to_index;
 } RsvgPathBuilder;
 
 G_GNUC_INTERNAL
