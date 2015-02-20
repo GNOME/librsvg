@@ -146,9 +146,8 @@ _rsvg_node_poly_build_path (const char *value,
 {
     double *pointlist;
     guint pointlist_len, i;
-    GString *d;
+    RsvgPathBuilder builder;
     cairo_path_t *path;
-    char buf[G_ASCII_DTOSTR_BUF_SIZE];
 
     pointlist = rsvg_css_parse_number_list (value, &pointlist_len);
     if (pointlist == NULL)
@@ -159,40 +158,39 @@ _rsvg_node_poly_build_path (const char *value,
         return NULL;
     }
 
-    d = g_string_new (NULL);
+    /* Calculate the number of cairo_path_data_t we'll need:
+     *
+     *     pointlist_len / 2 -> number of commands
+     *     pointlist_len / 2 -> number of points
+     * +   1                 -> closepath
+     * ---------------------------------------------
+     *     pointlist_len + 1 -> total
+     */
+    rsvg_path_builder_init (&builder, pointlist_len + 1);
 
-    /*      "M %f %f " */
-    g_string_append (d, " M ");
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), pointlist[0]));
-    g_string_append_c (d, ' ');
-    g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), pointlist[1]));
+    rsvg_path_builder_move_to (&builder, pointlist[0], pointlist[1]);
 
-    /* "L %f %f " */
     for (i = 2; i < pointlist_len; i += 2) {
-        double p;
+        double x, y;
 
-        g_string_append (d, " L ");
-        g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), pointlist[i]));
-        g_string_append_c (d, ' ');
+        x = pointlist[i];
 
         /* We expect points to come in coordinate pairs.  But if there is a
          * missing part of one pair in a corrupt SVG, we'll have an incomplete
          * list.  In that case, we reuse the last-known Y coordinate.
          */
         if (i + 1 < pointlist_len)
-            p = pointlist[i + 1];
+            y = pointlist[i + 1];
         else
-            p = pointlist[i - 1];
+            y = pointlist[i - 1];
 
-        g_string_append (d, g_ascii_dtostr (buf, sizeof (buf), p));
+        rsvg_path_builder_line_to (&builder, x, y);
     }
 
     if (close_path)
-        g_string_append (d, " Z");
+        rsvg_path_builder_close_path (&builder);
 
-    path = rsvg_parse_path (d->str);
-
-    g_string_free (d, TRUE);
+    path = rsvg_path_builder_finish (&builder);
     g_free (pointlist);
 
     return path;
