@@ -168,7 +168,7 @@ rsvg_path_builder_finish (RsvgPathBuilder *builder)
 }
 
 static void
-rsvg_path_arc_segment (RSVGParsePathCtx * ctx,
+rsvg_path_arc_segment (RsvgPathBuilder *builder,
                        double xc, double yc,
                        double th0, double th1, double rx, double ry,
                        double x_axis_rotation)
@@ -191,13 +191,13 @@ rsvg_path_arc_segment (RSVGParsePathCtx * ctx,
     x2 = x3 + rx*(t * sin (th1));
     y2 = y3 + ry*(-t * cos (th1));
 
-    rsvg_path_builder_curve_to (&ctx->builder,
-                            xc + cosf*x1 - sinf*y1,
-                            yc + sinf*x1 + cosf*y1,
-                            xc + cosf*x2 - sinf*y2,
-                            yc + sinf*x2 + cosf*y2,
-                            xc + cosf*x3 - sinf*y3,
-                            yc + sinf*x3 + cosf*y3);
+    rsvg_path_builder_curve_to (builder,
+                                xc + cosf*x1 - sinf*y1,
+                                yc + sinf*x1 + cosf*y1,
+                                xc + cosf*x2 - sinf*y2,
+                                yc + sinf*x2 + cosf*y2,
+                                xc + cosf*x3 - sinf*y3,
+                                yc + sinf*x3 + cosf*y3);
 }
 
 /**
@@ -322,7 +322,7 @@ rsvg_path_arc (RSVGParsePathCtx * ctx,
     n_segs = ceil (fabs (delta_theta / (M_PI * 0.5 + 0.001)));
 
     for (i = 0; i < n_segs; i++)
-        rsvg_path_arc_segment (ctx, cx, cy,
+        rsvg_path_arc_segment (&ctx->builder, cx, cy,
 			                   theta1 + i * delta_theta / n_segs,
                                theta1 + (i + 1) * delta_theta / n_segs,
                                rx, ry, x_axis_rotation);
