@@ -311,7 +311,7 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     if (function (dst->has_text_anchor, src->has_text_anchor))
         dst->text_anchor = src->text_anchor;
     if (function (dst->has_letter_spacing, src->has_letter_spacing))
-	dst->letter_spacing = src->letter_spacing;
+        dst->letter_spacing = src->letter_spacing;
     if (function (dst->has_startMarker, src->has_startMarker))
         dst->startMarker = src->startMarker;
     if (function (dst->has_middleMarker, src->has_middleMarker))
@@ -329,10 +329,10 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     }
 
     if (function (dst->has_space_preserve, src->has_space_preserve))
-	dst->space_preserve = src->space_preserve;
+        dst->space_preserve = src->space_preserve;
 
     if (function (dst->has_visible, src->has_visible))
-	dst->visible = src->visible;
+        dst->visible = src->visible;
 
     if (function (dst->has_lang, src->has_lang)) {
         if (dst->has_lang)
@@ -807,6 +807,7 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
             if (state->dash.n_dash != 0) {
                 /* free any cloned dash data */
                 g_free (state->dash.dash);
+                state->dash.dash = NULL;
                 state->dash.n_dash = 0;
             }
         } else {
@@ -840,6 +841,7 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
                    be ignored */
                 if (total == 0) {
                     g_free (state->dash.dash);
+                    state->dash.dash = NULL;
                     state->dash.n_dash = 0;
                 }
             }
