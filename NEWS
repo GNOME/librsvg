@@ -1,3 +1,10 @@
+Version 2.40.8
+- Bugs fixed from fuzz testing: #744688 - possible double g_free()
+  when processing stroke-dasharray
+- Optimize rendering of polylines, lines, rectangles, circles, and
+  ellipses.  These should be marginally faster, marginally more
+  precise, and should put less pressure on the memory allocator.
+
 Version 2.40.7
 - Bugs fixed from fuzz testing: #703102, #738050, #738169, #744270, #744299
 - Fixed unfiled bug from fuzz testing, where the convolution filter
