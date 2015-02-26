@@ -77,6 +77,7 @@ rsvg_path_builder_init (RsvgPathBuilder *builder,
                         int n_elements)
 {
   builder->path_data = g_array_sized_new (FALSE, FALSE, sizeof (cairo_path_data_t), n_elements);
+  builder->last_move_to_index = -1;
 }
 
 void
@@ -91,6 +92,7 @@ rsvg_path_builder_move_to (RsvgPathBuilder *builder,
   data.header.type = CAIRO_PATH_MOVE_TO;
   data.header.length = 2;
   rsvg_path_builder_add_element (builder, &data);
+  builder->last_move_to_index = builder->path_data->len - 1;
 
   data.point.x = x;
   data.point.y = y;
@@ -151,6 +153,13 @@ rsvg_path_builder_close_path (RsvgPathBuilder *builder)
   data.header.type = CAIRO_PATH_CLOSE_PATH;
   data.header.length = 1;
   rsvg_path_builder_add_element (builder, &data);
+
+  /* Add a 'move-to' element */
+  if (builder->last_move_to_index >= 0) {
+    cairo_path_data_t *moveto = &g_array_index (builder->path_data, cairo_path_data_t, builder->last_move_to_index);
+
+    rsvg_path_builder_move_to (builder, moveto[1].point.x, moveto[1].point.y);
+  }
 }
 
 cairo_path_t *
