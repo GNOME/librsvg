@@ -429,6 +429,7 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
         if (ctx->param == 1) {
             rsvg_path_builder_line_to (&ctx->builder, ctx->params[0], ctx->cp.point.y);
             ctx->cp.point.x = ctx->rp.point.x = ctx->params[0];
+            ctx->rp.point.y = ctx->cp.point.y;
             ctx->param = 0;
         }
         break;
@@ -436,6 +437,7 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
         /* vertical lineto */
         if (ctx->param == 1) {
             rsvg_path_builder_line_to (&ctx->builder, ctx->cp.point.x, ctx->params[0]);
+            ctx->rp.point.x = ctx->cp.point.x;
             ctx->cp.point.y = ctx->rp.point.y = ctx->params[0];
             ctx->param = 0;
         }
