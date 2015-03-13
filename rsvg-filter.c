@@ -1327,144 +1327,534 @@ struct _RsvgFilterPrimitiveGaussianBlur {
 };
 
 static void
-box_blur (cairo_surface_t *in, 
-          cairo_surface_t *output, 
-          guchar *intermediate, 
-          gint kw,
-          gint kh, 
-          RsvgIRect boundarys, 
-          RsvgFilterPrimitiveOutput op)
+box_blur_line (gint box_width, gint even_offset,
+               guchar *src, guchar *dest,
+               gint len, gint bpp)
 {
-    gint ch;
-    gint x, y;
-    gint rowstride;
-    guchar *in_pixels;
-    guchar *output_pixels;
-    gint sum;
-
-    in_pixels = cairo_image_surface_get_data (in);
-    output_pixels = cairo_image_surface_get_data (output);
-
-    rowstride = cairo_image_surface_get_stride (in);
-
-    if (kw > boundarys.x1 - boundarys.x0)
-        kw = boundarys.x1 - boundarys.x0;
-
-    if (kh > boundarys.y1 - boundarys.y0)
-        kh = boundarys.y1 - boundarys.y0;
+    gint  i;
+    gint  lead;    /* This marks the leading edge of the kernel              */
+    gint  output;  /* This marks the center of the kernel                    */
+    gint  trail;   /* This marks the pixel BEHIND the last 1 in the
+                      kernel; it's the pixel to remove from the accumulator. */
+    gint  ac[bpp]; /* Accumulator for each channel                           */
 
 
-    if (kw >= 1) {
-        for (ch = 0; ch < 4; ch++) {
-            switch (ch) {
-            case 0:
-                if (!op.Rused)
-                    continue;
-            case 1:
-                if (!op.Gused)
-                    continue;
-            case 2:
-                if (!op.Bused)
-                    continue;
-            case 3:
-                if (!op.Aused)
-                    continue;
-            }
-            for (y = boundarys.y0; y < boundarys.y1; y++) {
-                sum = 0;
-                for (x = boundarys.x0; x < boundarys.x0 + kw; x++) {
-                    sum += (intermediate[x % kw] = in_pixels[4 * x + y * rowstride + ch]);
+    /* The algorithm differs for even and odd-sized kernels.
+     * With the output at the center,
+     * If odd, the kernel might look like this: 0011100
+     * If even, the kernel will either be centered on the boundary between
+     * the output and its left neighbor, or on the boundary between the
+     * output and its right neighbor, depending on even_lr.
+     * So it might be 0111100 or 0011110, where output is on the center
+     * of these arrays.
+     */
+    lead = 0;
 
-                    if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x1)
-                        output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / kw;
-                }
-                for (x = boundarys.x0 + kw; x < boundarys.x1; x++) {
-                    sum -= intermediate[x % kw];
-                    sum += (intermediate[x % kw] = in_pixels[4 * x + y * rowstride + ch]);
-                    output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / kw;
-                }
-                for (x = boundarys.x1; x < boundarys.x1 + kw; x++) {
-                    sum -= intermediate[x % kw];
-
-                    if (x - kw / 2 >= 0 && x - kw / 2 < boundarys.x1)
-                        output_pixels[4 * (x - kw / 2) + y * rowstride + ch] = sum / kw;
-                }
-            }
+    if (box_width % 2 != 0) {
+        /* Odd-width kernel */
+        output = lead - (box_width - 1) / 2;
+        trail  = lead - box_width;
+    } else {
+        /* Even-width kernel. */
+        if (even_offset == 1) {
+            /* Right offset */
+            output = lead + 1 - box_width / 2;
+            trail  = lead - box_width;
+        } else if (even_offset == -1) {
+            /* Left offset */
+            output = lead - box_width / 2;
+            trail  = lead - box_width;
+        } else {
+            /* If even_offset isn't 1 or -1, there's some error. */
+            g_assert_not_reached ();
         }
-        in_pixels = output_pixels;
     }
 
-    if (kh >= 1) {
-        for (ch = 0; ch < 4; ch++) {
-            switch (ch) {
-            case 0:
-                if (!op.Rused)
-                    continue;
-            case 1:
-                if (!op.Gused)
-                    continue;
-            case 2:
-                if (!op.Bused)
-                    continue;
-            case 3:
-                if (!op.Aused)
-                    continue;
+    /* Initialize accumulator */
+    for (i = 0; i < bpp; i++)
+        ac[i] = 0;
+
+    /* As the kernel moves across the image, it has a leading edge and a
+     * trailing edge, and the output is in the middle. */
+    while (output < len) {
+        /* The number of pixels that are both in the image and
+         * currently covered by the kernel. This is necessary to
+         * handle edge cases. */
+        guint coverage = (lead < len ? lead : len - 1) - (trail >= 0 ? trail : -1);
+
+#ifdef READABLE_BOXBLUR_CODE
+/* The code here does the same as the code below, but the code below
+ * has been optimized by moving the if statements out of the tight for
+ * loop, and is harder to understand.
+ * Don't use both this code and the code below. */
+        for (i = 0; i < bpp; i++) {
+            /* If the leading edge of the kernel is still on the image,
+             * add the value there to the accumulator. */
+            if (lead < len)
+                ac[i] += src[bpp * lead + i];
+
+            /* If the trailing edge of the kernel is on the image,
+             * subtract the value there from the accumulator. */
+            if (trail >= 0)
+                ac[i] -= src[bpp * trail + i];
+
+            /* Take the averaged value in the accumulator and store
+             * that value in the output. The number of pixels currently
+             * stored in the accumulator can be less than the nominal
+             * width of the kernel because the kernel can go "over the edge"
+             * of the image. */
+            if (output >= 0)
+                dest[bpp * output + i] = (ac[i] + (coverage >> 1)) / coverage;
+        }
+#endif
+
+        /* If the leading edge of the kernel is still on the image... */
+        if (lead < len) {
+            if (trail >= 0) {
+                /* If the trailing edge of the kernel is on the image. (Since
+                 * the output is in between the lead and trail, it must be on
+                 * the image. */
+                for (i = 0; i < bpp; i++) {
+                    ac[i] += src[bpp * lead + i];
+                    ac[i] -= src[bpp * trail + i];
+                    dest[bpp * output + i] = (ac[i] + (coverage >> 1)) / coverage;
+                }
+            } else if (output >= 0) {
+                /* If the output is on the image, but the trailing edge isn't yet
+                 * on the image. */
+            
+                for (i = 0; i < bpp; i++) {
+                    ac[i] += src[bpp * lead + i];
+                    dest[bpp * output + i] = (ac[i] + (coverage >> 1)) / coverage;
+                }
+            } else {
+                /* If leading edge is on the image, but the output and trailing
+                 * edge aren't yet on the image. */
+                for (i = 0; i < bpp; i++)
+                    ac[i] += src[bpp * lead + i];
+            }
+        } else if (trail >= 0) {
+            /* If the leading edge has gone off the image, but the output and
+             * trailing edge are on the image. (The big loop exits when the
+             * output goes off the image. */
+            for (i = 0; i < bpp; i++) {
+                ac[i] -= src[bpp * trail + i];
+                dest[bpp * output + i] = (ac[i] + (coverage >> 1)) / coverage;
+            }
+        } else if (output >= 0) {
+            /* Leading has gone off the image and trailing isn't yet in it
+             * (small image) */
+            for (i = 0; i < bpp; i++)
+                dest[bpp * output + i] = (ac[i] + (coverage >> 1)) / coverage;
+        }
+
+        lead++;
+        output++;
+        trail++;
+    }
+}
+
+static gint
+compute_box_blur_width (double radius)
+{
+    double width;
+
+    width = radius * 3 * sqrt (2 * G_PI) / 4;
+    return (gint) (width + 0.5);
+}
+
+#define SQR(x) ((x) * (x))
+
+static void
+make_gaussian_convolution_matrix (gdouble radius, gdouble **out_matrix, gint *out_matrix_len)
+{
+    gdouble *matrix;
+    gdouble std_dev;
+    gdouble sum;
+    gint matrix_len;
+    gint i, j;
+
+    std_dev = radius + 1.0;
+    radius = std_dev * 2;
+
+    matrix_len = 2 * ceil (radius - 0.5) + 1;
+    if (matrix_len <= 0)
+        matrix_len = 1;
+
+    matrix = g_new (gdouble, matrix_len);
+
+    /* Fill the matrix by doing numerical integration approximation
+     * from -2*std_dev to 2*std_dev, sampling 50 points per pixel.
+     * We do the bottom half, mirror it to the top half, then compute the
+     * center point.  Otherwise asymmetric quantization errors will occur.
+     * The formula to integrate is e^-(x^2/2s^2).
+     */
+
+    for (i = matrix_len / 2 + 1; i < matrix_len; i++)
+    {
+        gdouble base_x = i - (matrix_len / 2) - 0.5;
+
+        sum = 0;
+        for (j = 1; j <= 50; j++)
+        {
+            gdouble r = base_x + 0.02 * j;
+
+            if (r <= radius)
+                sum += exp (- SQR (r) / (2 * SQR (std_dev)));
+        }
+
+        matrix[i] = sum / 50;
+    }
+
+    /* mirror to the bottom half */
+    for (i = 0; i <= matrix_len / 2; i++)
+        matrix[i] = matrix[matrix_len - 1 - i];
+
+    /* find center val -- calculate an odd number of quanta to make it
+     * symmetric, even if the center point is weighted slightly higher
+     * than others.
+     */
+    sum = 0;
+    for (j = 0; j <= 50; j++)
+        sum += exp (- SQR (- 0.5 + 0.02 * j) / (2 * SQR (std_dev)));
+
+    matrix[matrix_len / 2] = sum / 51;
+
+    /* normalize the distribution by scaling the total sum to one */
+    sum = 0;
+    for (i = 0; i < matrix_len; i++)
+        sum += matrix[i];
+
+    for (i = 0; i < matrix_len; i++)
+        matrix[i] = matrix[i] / sum;
+
+    *out_matrix = matrix;
+    *out_matrix_len = matrix_len;
+}
+
+static void
+gaussian_blur_line (gdouble *matrix,
+                    gint matrix_len,
+                    guchar *src,
+                    guchar *dest,
+                    gint len,
+                    gint bpp)
+{
+    guchar *src_p;
+    guchar *src_p1;
+    gint matrix_middle;
+    gint row;
+    gint i, j;
+
+    matrix_middle = matrix_len / 2;
+
+    /* picture smaller than the matrix? */
+    if (matrix_len > len) {
+        for (row = 0; row < len; row++) {
+            /* find the scale factor */
+            gdouble scale = 0;
+
+            for (j = 0; j < len; j++) {
+                /* if the index is in bounds, add it to the scale counter */
+                if (j + matrix_middle - row >= 0 &&
+                    j + matrix_middle - row < matrix_len)
+                    scale += matrix[j];
             }
 
+            src_p = src;
 
-            for (x = boundarys.x0; x < boundarys.x1; x++) {
-                sum = 0;
+            for (i = 0; i < bpp; i++) {
+                gdouble sum = 0;
 
-                for (y = boundarys.y0; y < boundarys.y0 + kh; y++) {
-                    sum += (intermediate[y % kh] = in_pixels[4 * x + y * rowstride + ch]);
+                src_p1 = src_p++;
 
-                    if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y1)
-                        output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / kh;
+                for (j = 0; j < len; j++) {
+                    if (j + matrix_middle - row >= 0 &&
+                        j + matrix_middle - row < matrix_len)
+                        sum += *src_p1 * matrix[j];
+
+                    src_p1 += bpp;
                 }
-                for (y = boundarys.y0 + kh; y < boundarys.y1; y++) {
-                    sum -= intermediate[y % kh];
-                    sum += (intermediate[y % kh] = in_pixels[4 * x + y * rowstride + ch]);
-                    output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / kh;
-                }
-                for (y = boundarys.y1; y < boundarys.y1 + kh; y++) {
-                    sum -= intermediate[y % kh];
 
-                    if (y - kh / 2 >= 0 && y - kh / 2 < boundarys.y1)
-                        output_pixels[4 * x + (y - kh / 2) * rowstride + ch] = sum / kh;
+                *dest++ = (guchar) (sum / scale + 0.5);
+            }
+        }
+    } else {
+        /* left edge */
+
+        for (row = 0; row < matrix_middle; row++) {
+            /* find scale factor */
+            gdouble scale = 0;
+
+            for (j = matrix_middle - row; j < matrix_len; j++)
+                scale += matrix[j];
+
+            src_p = src;
+
+            for (i = 0; i < bpp; i++) {
+                gdouble sum = 0;
+
+                src_p1 = src_p++;
+
+                for (j = matrix_middle - row; j < matrix_len; j++) {
+                    sum += *src_p1 * matrix[j];
+                    src_p1 += bpp;
                 }
+
+                *dest++ = (guchar) (sum / scale + 0.5);
+            }
+        }
+
+        /* go through each pixel in each col */
+        for (; row < len - matrix_middle; row++) {
+            src_p = src + (row - matrix_middle) * bpp;
+
+            for (i = 0; i < bpp; i++) {
+                gdouble sum = 0;
+
+                src_p1 = src_p++;
+
+                for (j = 0; j < matrix_len; j++) {
+                    sum += matrix[j] * *src_p1;
+                    src_p1 += bpp;
+                }
+
+                *dest++ = (guchar) (sum + 0.5);
+            }
+        }
+
+        /* for the edge condition, we only use available info and scale to one */
+        for (; row < len; row++) {
+            /* find scale factor */
+            gdouble scale = 0;
+
+            for (j = 0; j < len - row + matrix_middle; j++)
+                scale += matrix[j];
+
+            src_p = src + (row - matrix_middle) * bpp;
+
+            for (i = 0; i < bpp; i++) {
+                gdouble sum = 0;
+
+                src_p1 = src_p++;
+
+                for (j = 0; j < len - row + matrix_middle; j++) {
+                    sum += *src_p1 * matrix[j];
+                    src_p1 += bpp;
+                }
+
+                *dest++ = (guchar) (sum / scale + 0.5);
             }
         }
     }
 }
 
 static void
-fast_blur (cairo_surface_t *in, 
-           cairo_surface_t *output, 
-           gfloat sx,
-           gfloat sy, 
-           RsvgIRect boundarys, 
-           RsvgFilterPrimitiveOutput op)
+get_column (guchar *column_data,
+            guchar *src_data,
+            gint src_stride,
+            gint bpp,
+            gint height,
+            gint x)
 {
-    gint kx, ky;
-    guchar *intermediate;
+    gint y;
+    gint c;
 
+    for (y = 0; y < height; y++) {
+        guchar *src = src_data + y * src_stride + x * bpp;
+
+        for (c = 0; c < bpp; c++)
+            column_data[c] = src[c];
+
+        column_data += bpp;
+    }
+}
+
+static void
+put_column (guchar *column_data, guchar *dest_data, gint dest_stride, gint bpp, gint height, gint x)
+{
+    gint y;
+    gint c;
+
+    for (y = 0; y < height; y++) {
+        guchar *dst = dest_data + y * dest_stride + x * bpp;
+
+        for (c = 0; c < bpp; c++)
+            dst[c] = column_data[c];
+
+        column_data += bpp;
+    }
+}
+
+static void
+gaussian_blur_surface (cairo_surface_t *in,
+                       cairo_surface_t *out,
+                       gdouble sx,
+                       gdouble sy,
+                       RsvgIRect boundarys)
+{
+    gboolean use_box_blur;
+    gint width, height;
+    cairo_format_t in_format, out_format;
+    gint in_stride;
+    gint out_stride;
+    guchar *in_data, *out_data;
+    gint bpp;
+    gboolean out_has_data;
+    
     cairo_surface_flush (in);
 
-    kx = floor (sx * 3 * sqrt (2 * M_PI) / 4 + 0.5);
-    ky = floor (sy * 3 * sqrt (2 * M_PI) / 4 + 0.5);
+    width = cairo_image_surface_get_width (in);
+    height = cairo_image_surface_get_height (in);
 
-    if (kx < 1 && ky < 1)
+    g_assert (width == cairo_image_surface_get_width (out)
+              && height == cairo_image_surface_get_height (out));
+
+    in_format = cairo_image_surface_get_format (in);
+    out_format = cairo_image_surface_get_format (out);
+    g_assert (in_format == out_format);
+    g_assert (in_format == CAIRO_FORMAT_ARGB32
+              || in_format == CAIRO_FORMAT_A8);
+
+    if (in_format == CAIRO_FORMAT_ARGB32)
+        bpp = 4;
+    else if (in_format == CAIRO_FORMAT_A8)
+        bpp = 1;
+    else {
+        g_assert_not_reached ();
         return;
+    }
 
-    intermediate = g_new (guchar, MAX (kx, ky));
+    in_stride = cairo_image_surface_get_stride (in);
+    out_stride = cairo_image_surface_get_stride (out);
 
-    box_blur (in, output, intermediate, kx, ky, boundarys, op);
-    box_blur (output, output, intermediate, kx, ky, boundarys, op);
-    box_blur (output, output, intermediate, kx, ky, boundarys, op);
+    in_data = cairo_image_surface_get_data (in);
+    out_data = cairo_image_surface_get_data (out);
 
-    g_free (intermediate);
+    if (sx < 0.0)
+        sx = 0.0;
 
-    cairo_surface_mark_dirty (output);
+    if (sy < 0.0)
+        sy = 0.0;
+
+    /* For small radiuses, use a true gaussian kernel; otherwise use three box blurs with
+     * clever offsets.
+     */
+    if (sx < 10.0 && sy < 10.0)
+        use_box_blur = FALSE;
+    else
+        use_box_blur = TRUE;
+
+    /* Bail out by just copying? */
+    if ((sx == 0.0 && sy == 0.0)
+        || sx > 1000 || sy > 1000) {
+        cairo_t *cr;
+
+        cr = cairo_create (out);
+        cairo_set_source_surface (cr, in, 0, 0);
+        cairo_paint (cr);
+        return;
+    }
+
+    if (sx != 0.0) {
+        gint box_width;
+        gdouble *gaussian_matrix;
+        gint gaussian_matrix_len;
+        int y;
+        guchar *row_buffer;
+        guchar *row1, *row2;
+
+        if (use_box_blur) {
+            box_width = compute_box_blur_width (sx);
+
+            /* twice the size so we can have "two" scratch rows */
+            row_buffer = g_new (guchar, width * bpp * 2);
+            row1 = row_buffer;
+            row2 = row_buffer + width * bpp;
+        } else
+            make_gaussian_convolution_matrix (sx, &gaussian_matrix, &gaussian_matrix_len);
+
+        for (y = 0; y < height; y++) {
+            guchar *in_row, *out_row;
+
+            in_row = in_data + in_stride * y;
+            out_row = out_data + out_stride * y;
+
+            if (use_box_blur) {
+                if (box_width % 2 != 0) {
+                    /* Odd-width box blur: repeat 3 times, centered on output pixel */
+
+                    box_blur_line (box_width, 0, in_row, row1,    width, bpp);
+                    box_blur_line (box_width, 0, row1,   row2,    width, bpp);
+                    box_blur_line (box_width, 0, row2,   out_row, width, bpp);
+                } else {
+                    /* Even-width box blur:
+                     * This method is suggested by the specification for SVG.
+                     * One pass with width n, centered between output and right pixel
+                     * One pass with width n, centered between output and left pixel
+                     * One pass with width n+1, centered on output pixel
+                     */
+                    box_blur_line (box_width,     -1, in_row, row1,    width, bpp);
+                    box_blur_line (box_width,      1, row1,   row2,    width, bpp);
+                    box_blur_line (box_width + 1,  0, row2,   out_row, width, bpp);
+                }
+            } else
+                gaussian_blur_line (gaussian_matrix, gaussian_matrix_len, in_row, out_row, width, bpp);
+        }
+
+        if (!use_box_blur)
+            g_free (gaussian_matrix);
+
+        out_has_data = TRUE;
+    } else
+        out_has_data = FALSE;
+
+    if (sy != 0.0) {
+        gint box_height;
+        gdouble *gaussian_matrix;
+        gint gaussian_matrix_len;
+        guchar *col_buffer;
+        guchar *col1, *col2;
+        int x;
+
+        /* twice the size so we can have the source pixels and the blurred pixels */
+        col_buffer = g_new (guchar, height * bpp * 2);
+        col1 = col_buffer;
+        col2 = col_buffer + height * bpp;
+
+        if (use_box_blur) {
+            box_height = compute_box_blur_width (sy);
+        } else
+            make_gaussian_convolution_matrix (sy, &gaussian_matrix, &gaussian_matrix_len);
+
+        for (x = 0; x < width; x++) {
+            if (out_has_data)
+                get_column (col1, out_data, out_stride, bpp, height, x);
+            else
+                get_column (col1, in_data, in_stride, bpp, height, x);
+
+            if (use_box_blur) {
+                if (box_height % 2 != 0) {
+                    /* Odd-width box blur */
+                    box_blur_line (box_height, 0, col1, col2, height, bpp);
+                    box_blur_line (box_height, 0, col2, col1, height, bpp);
+                    box_blur_line (box_height, 0, col1, col2, height, bpp);
+                } else {
+                    /* Even-width box blur */
+                    box_blur_line (box_height,     -1, col1, col2, height, bpp);
+                    box_blur_line (box_height,      1, col2, col1, height, bpp);
+                    box_blur_line (box_height + 1,  0, col1, col2, height, bpp);
+                }
+            } else
+                gaussian_blur_line (gaussian_matrix, gaussian_matrix_len, col1, col2, height, bpp);
+
+            put_column (col2, out_data, out_stride, bpp, height, x);
+        }
+
+        g_free (col_buffer);
+    }
+
+    cairo_surface_mark_dirty (out);
 }
 
 static void
@@ -1493,7 +1883,7 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilt
     sdx = upself->sdx * ctx->paffine.xx;
     sdy = upself->sdy * ctx->paffine.yy;
 
-    fast_blur (in, output, sdx, sdy, boundarys, op);
+    gaussian_blur_surface (in, output, sdx, sdy, boundarys);
 
     op.surface = output;
     op.bounds = boundarys;
