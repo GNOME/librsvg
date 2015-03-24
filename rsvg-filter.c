@@ -1690,8 +1690,7 @@ static void
 gaussian_blur_surface (cairo_surface_t *in,
                        cairo_surface_t *out,
                        gdouble sx,
-                       gdouble sy,
-                       RsvgIRect boundarys)
+                       gdouble sy)
 {
     gboolean use_box_blur;
     gint width, height;
@@ -1861,10 +1860,12 @@ static void
 rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
 {
     RsvgFilterPrimitiveGaussianBlur *upself;
+    int width, height;
     cairo_surface_t *output, *in;
     RsvgIRect boundarys;
     gfloat sdx, sdy;
     RsvgFilterPrimitiveOutput op;
+    cairo_t *cr;
 
     upself = (RsvgFilterPrimitiveGaussianBlur *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
@@ -1872,8 +1873,11 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilt
     op = rsvg_filter_get_result (self->in, ctx);
     in = op.surface;
 
-    output = _rsvg_image_surface_new (cairo_image_surface_get_width (in), 
-                                      cairo_image_surface_get_height (in));
+    width = cairo_image_surface_get_width (in);
+    height = cairo_image_surface_get_height (in);
+
+    output = _rsvg_image_surface_new (width, height);
+
     if (output == NULL) {
         cairo_surface_destroy (in);
         return;
@@ -1883,7 +1887,22 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilt
     sdx = upself->sdx * ctx->paffine.xx;
     sdy = upself->sdy * ctx->paffine.yy;
 
-    gaussian_blur_surface (in, output, sdx, sdy, boundarys);
+    gaussian_blur_surface (in, output, sdx, sdy);
+
+    /* Hard-clip to the filter area */
+    if (!(boundarys.x0 == 0
+          && boundarys.y0 == 0
+          && boundarys.x1 == width
+          && boundarys.y1 == height)) {
+        cr = cairo_create (output);
+        cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
+        cairo_set_fill_rule (cr, CAIRO_FILL_RULE_EVEN_ODD);
+        cairo_rectangle (cr, 0, 0, width, height);
+        cairo_rectangle (cr,
+                         boundarys.x0, boundarys.y0,
+                         boundarys.x1 - boundarys.x0, boundarys.y1 - boundarys.y0);
+        cairo_fill (cr);
+    }
 
     op.surface = output;
     op.bounds = boundarys;
