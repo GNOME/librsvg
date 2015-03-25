@@ -57,13 +57,33 @@
 #include "rsvg-paint-server.h"
 #include "rsvg-xml.h"
 
-/*
- * XXX: Perhaps do a GIO-based implementation for
- * realpath() or use gnulib implementation for this
- * https://bugzilla.gnome.org/show_bug.cgi?id=710163
- */
 #ifdef G_OS_WIN32
-#define realpath(a,b) _fullpath(b,a,_MAX_PATH)
+static char *
+rsvg_realpath_utf8 (const char *filename, const char *unused)
+{
+    wchar_t *wfilename;
+    wchar_t *wfull;
+    char *full;
+
+    wfilename = g_utf8_to_utf16 (filename, -1, NULL, NULL, NULL);
+    if (!wfilename)
+        return NULL;
+
+    wfull = _wfullpath (NULL, wfilename, 0);
+    g_free (wfilename);
+    if (!wfull)
+        return NULL;
+
+    full = g_utf16_to_utf8 (wfull, -1, NULL, NULL, NULL);
+    free (wfull);
+
+    if (!full)
+        return NULL;
+
+    return full;
+}
+
+#define realpath(a,b) rsvg_realpath_utf8 (a, b)
 #endif
 
 /*
