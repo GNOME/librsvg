@@ -1,3 +1,11 @@
+Version 2.40.9
+- Fixed bgo#738367 - V/v/H/h commands in path elements were not
+  working.  Patch by Andrea Griffini.
+- Fixed bgo#605875 - Gaussian-blurred objects were sometimes missing.
+  Based on a patch by Eduard Braun.
+- Fixed bgo#710163 - use _wfullpath() on Windows when canonicalizing
+  filenames.  Patch by LRN.
+
 Version 2.40.8
 - Bugs fixed from fuzz testing: #744688 - possible double g_free()
   when processing stroke-dasharray
