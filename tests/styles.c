@@ -2,6 +2,7 @@
 
 #include <glib.h>
 #include "rsvg.h"
+#include "rsvg-compat.h"
 #include "rsvg-private.h"
 #include "rsvg-defs.h"
 #include "rsvg-styles.h"
@@ -114,7 +115,7 @@ main (int argc, char *argv[])
     gint i;
     int result;
 
-    g_type_init ();
+    RSVG_G_TYPE_INIT;
     g_test_init (&argc, &argv, NULL);
     g_test_bug_base ("https://bugzilla.gnome.org/show_bug.cgi?id=");
 

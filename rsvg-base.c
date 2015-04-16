@@ -28,6 +28,7 @@
 #define _GNU_SOURCE 1
 
 #include "rsvg.h"
+#include "rsvg-compat.h"
 #include "rsvg-private.h"
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
@@ -1969,7 +1970,7 @@ rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
 void
 rsvg_init (void)
 {
-    g_type_init ();
+    RSVG_G_TYPE_INIT;
 }
 
 /**

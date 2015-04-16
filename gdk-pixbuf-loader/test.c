@@ -24,6 +24,8 @@
 #include <glib.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
+#include "rsvg-compat.h"
+
 int
 main (int argc, char **argv)
 {
@@ -49,7 +51,7 @@ main (int argc, char **argv)
     /* Use the locally built rsvg loader, not the system one */
     g_setenv ("GDK_PIXBUF_MODULE_FILE", "./gdk-pixbuf.loaders", TRUE);
 
-    g_type_init ();
+    RSVG_G_TYPE_INIT;
 
     context = g_option_context_new ("- Pixbuf Test Loader");
     g_option_context_add_main_entries (context, options_table, NULL);

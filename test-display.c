@@ -18,7 +18,6 @@
  */
 
 #include "config.h"
-#include "rsvg.h"
 #include "rsvg-private.h"
 #include "rsvg-size-callback.h"
 
@@ -29,6 +28,8 @@
 
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
+
+#include "rsvg-compat.h"
 
 #if 0 // defined (G_OS_UNIX)
 #include <gio/gunixinputstream.h>
@@ -659,7 +660,7 @@ main (int argc, char **argv)
 	/* Set the locale so that UTF-8 filenames work */
     setlocale(LC_ALL, "");
 
-    g_type_init ();
+    RSVG_G_TYPE_INIT;
 
     info.window = NULL;
     info.popup_menu = NULL;

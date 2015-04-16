@@ -42,6 +42,7 @@
 #include "rsvg.h"
 #include "rsvg-private.h"
 #include "rsvg-size-callback.h"
+#include "rsvg-compat.h"
 
 #include "pdiff.h"
 
@@ -348,7 +349,7 @@ main (int argc, char **argv)
     int i, j;
     gsize length;
 
-    g_type_init ();
+    RSVG_G_TYPE_INIT;
 
     printf ("===============\n"
 	    "Rendering tests\n"

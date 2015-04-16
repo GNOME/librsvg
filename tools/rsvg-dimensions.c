@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <glib.h>
 #include <rsvg.h>
+#include "rsvg-compat.h"
 
 static void
 show_help (GOptionContext *context)
@@ -40,7 +41,7 @@ main (int	  argc,
         { NULL }
     };
 
-    g_type_init ();
+    RSVG_G_TYPE_INIT;
 
     context = NULL;
     fragment = NULL;
