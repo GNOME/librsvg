@@ -540,10 +540,9 @@ populate_window (GtkWidget * win,
 static void
 view_surface (ViewerCbInfo * info, 
               cairo_surface_t *surface /* adopted */,
-              const char *color)
+              const char *bg_color)
 {
     GtkWidget *win;
-    GdkColor bg_color;
 
     /* create toplevel window and set its title */
 
@@ -555,13 +554,15 @@ view_surface (ViewerCbInfo * info,
     g_signal_connect (win, "destroy", G_CALLBACK (quit_cb), NULL);
     g_signal_connect (win, "delete_event", G_CALLBACK (quit_cb), NULL);
 
-    if (color && strcmp (color, "none") != 0) {
-        if (gdk_color_parse (color, &bg_color)) {
+    if (bg_color && strcmp (bg_color, "none") != 0) {
+        GdkRGBA rgba;
+
+        if (gdk_rgba_parse (&rgba, bg_color)) {
             GtkWidget *parent_widget = gtk_widget_get_parent (GTK_WIDGET (info->image));
 
-            gtk_widget_modify_bg (parent_widget, GTK_STATE_NORMAL, &bg_color);
+            gtk_widget_override_background_color (parent_widget, GTK_STATE_FLAG_NORMAL, &rgba);
         } else
-            g_warning (_("Couldn't parse color '%s'"), color);
+            g_warning (_("Couldn't parse color '%s'"), bg_color);
     }
 
     create_popup_menu (info);
