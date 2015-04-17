@@ -35,9 +35,6 @@
 #include <gio/gunixinputstream.h>
 #endif
 
-#define DEFAULT_WIDTH  640
-#define DEFAULT_HEIGHT 480
-
 /* RsvgImage */
 
 #define RSVG_TYPE_IMAGE (rsvg_image_get_type ())
@@ -509,23 +506,15 @@ tool_button_new (const char *icon_name)
 static void
 populate_window (GtkWidget * win, 
                  ViewerCbInfo * info, 
-                 cairo_surface_t *surface /* adopted */,
-                 gint win_width, 
-                 gint win_height)
+                 cairo_surface_t *surface /* adopted */)
 {
     GtkWidget *vbox;
     GtkWidget *scroll;
     GtkWidget *toolbar;
     GtkToolItem *toolitem;
-    GtkRequisition requisition;
-    gint img_width, img_height;
 
     vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add (GTK_CONTAINER (win), vbox);
-
-    /* pack the window with the image */
-    img_width = cairo_image_surface_get_width (surface);
-    img_height = cairo_image_surface_get_height (surface);
 
     /* create a new image */
     info->image = rsvg_image_new_take_surface (surface);
@@ -540,14 +529,6 @@ populate_window (GtkWidget * win,
     toolitem = tool_button_new ("zoom-out");
     gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 1);
     g_signal_connect (toolitem, "clicked", G_CALLBACK (zoom_out), info);
-
-    gtk_widget_size_request(toolbar, &requisition);
-
-    /* HACK: adjust for frame width & height + packing borders */
-    img_height += requisition.height + 30;
-    win_height += requisition.height + 30;
-    img_width  += 20;
-    win_width  += 20;
 
     scroll = gtk_scrolled_window_new (NULL, NULL);
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroll),
@@ -564,16 +545,12 @@ view_surface (ViewerCbInfo * info,
 {
     GtkWidget *win;
     GdkColor bg_color;
-    gint win_width, win_height;
 
     /* create toplevel window and set its title */
 
     win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
-    win_width = DEFAULT_WIDTH;
-    win_height = DEFAULT_HEIGHT;
-
-    populate_window (win, info, surface, win_width, win_height);
+    populate_window (win, info, surface);
 
     /* exit when 'X' is clicked */
     g_signal_connect (win, "destroy", G_CALLBACK (quit_cb), NULL);
