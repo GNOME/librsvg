@@ -369,7 +369,7 @@ rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
 
     fontmap = pango_cairo_font_map_get_default ();
-    context = pango_cairo_font_map_create_context (PANGO_CAIRO_FONT_MAP (fontmap));
+    context = pango_font_map_create_context (fontmap);
     pango_cairo_update_context (render->cr, context);
     pango_cairo_context_set_resolution (context, ctx->dpi_y);
     return context;
