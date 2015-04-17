@@ -37,7 +37,7 @@ LIBXML_REQUIRED=2.7.0
 CAIRO_REQUIRED=1.2.0
 PANGOCAIRO_REQUIRED=1.32.6
 GDK_PIXBUF_REQUIRED=2.20
-GTK3_REQUIRED=3.2.0
+GTK3_REQUIRED=3.10.0
 CROCO_REQUIRED=0.6.1
 
 # ===========================================================================
@@ -289,6 +289,6 @@ librsvg-$VERSION
 	Build introspectable bindings:  ${found_introspection}
 	Build Vala bindings:            ${enable_vala}
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
-        GTK 3.0:                        ${have_gtk_3}
+        GTK+ $GTK3_REQUIRED or later:           ${have_gtk_3}
 	Build miscellaenous tools:      ${build_misc_tools}
 "
