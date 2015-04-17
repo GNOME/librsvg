@@ -349,8 +349,8 @@ save_file (const char *title, const char *suggested_filename, GtkWidget * parent
     dialog = gtk_file_chooser_dialog_new (title,
                                           GTK_WINDOW (parent),
                                           GTK_FILE_CHOOSER_ACTION_SAVE,
-                                          GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-                                          GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT, NULL);
+                                          _("_Cancel"), GTK_RESPONSE_CANCEL,
+                                          _("_Save"), GTK_RESPONSE_ACCEPT, NULL);
 
     if (suggested_filename && *suggested_filename) {
         gtk_file_chooser_set_current_name (GTK_FILE_CHOOSER (dialog), suggested_filename);
@@ -431,16 +431,12 @@ create_popup_menu (ViewerCbInfo * info)
 {
     GtkWidget *popup_menu;
     GtkWidget *menu_item;
-    GtkWidget *stock;
 
     popup_menu = gtk_menu_new ();
     gtk_menu_set_accel_group (GTK_MENU (popup_menu), info->accel_group);
 
     if (info->base_uri) {
-        menu_item = gtk_image_menu_item_new_with_label (_("Copy SVG location"));
-        stock = gtk_image_new_from_stock (GTK_STOCK_COPY, GTK_ICON_SIZE_MENU);
-        gtk_widget_show (stock);
-        gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menu_item), stock);
+        menu_item = gtk_menu_item_new_with_label (_("Copy SVG location"));
         g_signal_connect (menu_item, "activate", G_CALLBACK (copy_svg_location), info);
         gtk_widget_show (menu_item);
         gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
@@ -448,31 +444,28 @@ create_popup_menu (ViewerCbInfo * info)
                                     GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
     }
 
-    menu_item = gtk_image_menu_item_new_with_label (_("Save as PNG"));
-    stock = gtk_image_new_from_stock (GTK_STOCK_SAVE_AS, GTK_ICON_SIZE_MENU);
-    gtk_widget_show (stock);
-    gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menu_item), stock);
+    menu_item = gtk_menu_item_new_with_label (_("Save as PNG"));
     g_signal_connect (menu_item, "activate", G_CALLBACK (save_pixbuf), info);
     gtk_widget_show (menu_item);
     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
     gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY_S,
                                 GDK_CONTROL_MASK | GDK_SHIFT_MASK, GTK_ACCEL_VISIBLE);
 
-    menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_PRINT, NULL);
+    menu_item = gtk_menu_item_new_with_label (_("Print"));
     g_signal_connect (menu_item, "activate", G_CALLBACK (print_pixbuf), info);
     gtk_widget_show (menu_item);
     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
     gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY_P, GDK_CONTROL_MASK,
                                 GTK_ACCEL_VISIBLE);
 
-    menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_ZOOM_IN, NULL);
+    menu_item = gtk_menu_item_new_with_label (_("Zoom In"));
     g_signal_connect (menu_item, "activate", G_CALLBACK (zoom_in), info);
     gtk_widget_show (menu_item);
     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
     gtk_widget_add_accelerator (menu_item, "activate", info->accel_group, GDK_KEY_plus,
                                 GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
-
-    menu_item = gtk_image_menu_item_new_from_stock (GTK_STOCK_ZOOM_OUT, NULL);
+                                              
+    menu_item = gtk_menu_item_new_with_label (_("Zoom Out"));
     g_signal_connect (menu_item, "activate", G_CALLBACK (zoom_out), info);
     gtk_widget_show (menu_item);
     gtk_menu_shell_append (GTK_MENU_SHELL (popup_menu), menu_item);
@@ -503,6 +496,16 @@ quit_cb (GtkWidget * win, gpointer unused)
     gtk_main_quit ();
 }
 
+static GtkToolItem *
+tool_button_new (const char *icon_name)
+{
+    GtkToolItem *toolitem;
+
+    toolitem = gtk_tool_button_new (NULL, NULL);
+    gtk_tool_button_set_icon_name (GTK_TOOL_BUTTON (toolitem), icon_name);
+    return toolitem;
+}
+
 static void
 populate_window (GtkWidget * win, 
                  ViewerCbInfo * info, 
@@ -530,11 +533,11 @@ populate_window (GtkWidget * win,
     toolbar = gtk_toolbar_new ();
     gtk_box_pack_start (GTK_BOX (vbox), toolbar, FALSE, FALSE, 0);
 
-    toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_IN);
+    toolitem = tool_button_new ("zoom-in");
     gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 0);
     g_signal_connect (toolitem, "clicked", G_CALLBACK (zoom_in), info);
 
-    toolitem = gtk_tool_button_new_from_stock (GTK_STOCK_ZOOM_OUT);
+    toolitem = tool_button_new ("zoom-out");
     gtk_toolbar_insert (GTK_TOOLBAR (toolbar), toolitem, 1);
     g_signal_connect (toolitem, "clicked", G_CALLBACK (zoom_out), info);
 
