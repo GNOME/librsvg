@@ -36,6 +36,8 @@ rsvg_loader_SOURCES = \
 	test.c \
 	$(NULL)
 rsvg_loader_CPPFLAGS = \
+	-I$(top_srcdir) 			\
+	-I$(top_builddir)			\
 	$(AM_CPPFLAGS)
 rsvg_loader_CFLAGS = \
 	$(GDK_PIXBUF_CFLAGS) \
