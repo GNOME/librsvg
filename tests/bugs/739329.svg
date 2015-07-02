@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" height="640" width="1024">
+ <g style="font-size:24px;text-align:center" transform="translate(-3.45 -14.3)">
+  <text y="44.679" x="42" style="font-family:'AR PL UKai HK'">楷體 AR PL UKai HK</text>
+  <text y="75.890" x="42" style="font-family:'AR PL UKai CN'">楷体 AR PL UKai CN</text>
+  <text y="106.406" x="42" style="font-family:'AR PL UMing HK'">明體 AR PL UMing HK</text>
+  <text y="137.984" x="42" style="font-family:'AR PL UMing CN'">宋体 AR PL UMing CN</text>
+  <text y="211.011" x="40.550" style="font-family:'Baekmuk Batang'">백묵 바탕 Baekmuk Batang</text>
+  <text y="242.418" x="40.550" style="font-family:'Baekmuk Dotum'">백묵 돋움 Baekmuk Dotum</text>
+  <text y="275.826" x="40.550" style="font-family:'Baekmuk Gulim'">백묵 굴림 Baekmuk Gulim</text>
+  <text y="308.233" x="40.550" style="font-family:'Baekmuk Headline'">백묵 헤드라인 Baekmuk Headline</text>
+  <text y="377.970" x="40.550" style="font-family:'Bitstream Charter'">Bitstream Charter</text>
+  <text y="406.735" x="40.550" style="font-family:'Bitstream Vera Sans'">Bitstream Vera Sans</text>
+  <text y="433.501" x="40.550" style="font-family:'Bitstream Vera Sans Mono'">Bitstream Vera Sans Mono</text>
+  <text y="462.267" x="40.550" style="font-family:'Bitstream Vera Serif'">Bitstream Vera Serif</text>
+  <text y="596.964" x="40.186" style="font-stretch:condensed;font-family:'DejaVu Sans Condensed,DejaVu Sans'">DejaVu Sans Condensed</text>
+  <text y="530.472" x="41.112" style="font-family:'Century Schoolbook L'">Century Schoolbook L</text>
+  <text y="562.718" x="39.952" style="font-family:'DejaVu Sans'">DejaVu Sans</text>
+  <text y="630.210" x="39.390" style="font-family:'DejaVu Sans Light'">DejaVu Sans Light</text>
+  <text y="41.875" x="454.964" style="font-family:'DejaVu Sans Mono'">DejaVu Sans Mono</text>
+  <text y="77.322" x="455.245" style="font-family:'DejaVu Serif'">DejaVu Serif</text>
+  <text y="111.770" x="455.374" style="font-stretch:condensed;font-family:'DejaVu Serif Condensed,DejaVu Serif'">DejaVu Serif Condensed</text>
+  <text y="306.346" x="803.358" style="font-family:'Lohit Punjabi'">Lohit Punjabi</text>
+  <text y="340.229" x="803.358" style="font-family:'Lohit Tamil'">Lohit Tamil</text>
+  <text y="451.595" x="454.416" style="font-family:'Marumoji'">まるもじ Marumoji</text>
+  <text y="637.405" x="458" style="font-family:'Nimbus Mono L'">Nimbus Mono L</text>
+  <text y="553" x="458" style="font-family:'Nimbus Roman No9 L'">Nimbus Roman No9 L</text>
+  <text y="582.288" x="458" style="font-family:'Nimbus Sans L'">Nimbus Sans L</text>
+  <text y="610.567" x="458" style="font-stretch:condensed;font-family:'Nimbus Sans L'">Nimbus Sans L Condensed</text>
+  <text y="483.481" x="458.752" style="font-family:'Standard Symbols L'">Standard Symbols L</text>
+  <text y="145.217" x="454.398" style="font-family:'Kochi Gothic'">東風ゴシック Kochi Gothic</text>
+  <text y="211.520" x="803.358" style="font-family:'Lohit Bengali'">Lohit Bengali</text>
+  <text y="242.419" x="803.358" style="font-family:'Lohit Gujarati'">Lohit Gujarati</text>
+  <text y="275.319" x="803.358" style="font-family:'Lohit Hindi'">Lohit Hindi</text>
+  <text y="173.925" x="459.038" style="font-family:'Kochi Mincho'">東風明朝 Kochi Mincho</text>
+  <text y="41.820" x="803.628" style="font-family:'URW Bookman L'">URW Bookman L</text>
+  <text y="71.106" x="803.628" style="font-family:'URW Chancery L'">URW Chancery L</text>
+  <text y="99.393" x="801.808" style="font-family:'URW Gothic L'">URW Gothic L</text>
+  <text y="129.680" x="801.808" style="font-family:'URW Palladio L'">URW Palladio L</text>
+  <text y="420.174" x="459.234" style="font-family:'Utopia'">Utopia</text>
+  <text style="font-family:Ubuntu" y="219.014" x="457.740">
+   <tspan x="457.740" y="219">Ubuntu</tspan>
+   <tspan x="457.740" y="249.580" style="font-family:'Ubuntu Mono'">Ubuntu Monospace</tspan>
+   <tspan x="457.740" y="279" style="font-family:'Ubuntu Light';font-weight:300">Ubuntu Light</tspan>
+   <tspan x="457.740" y="309" style="font-family:'Ubuntu Medium';font-weight:500">Ubuntu Medium</tspan>
+   <tspan x="457.740" y="339" style="font-family:'Ubuntu Bold';font-weight:bold">Ubuntu Bold</tspan>
+   <tspan x="457.740" y="369" style="font-family:'Ubuntu Condensed';font-stretch:condensed;">Ubuntu Condensed</tspan>
+  </text>
+ </g>
+</svg>
