@@ -970,12 +970,28 @@ rsvg_parse_style (RsvgHandle * ctx, RsvgState * state, const char *str)
         if (g_strv_length (values) == 2) {
             gboolean important;
             gchar *style_value = NULL;
-            if (parse_style_value (values[1], &style_value, &important))
+            gchar *first_value = values[0];
+            gchar *second_value = values[1];
+            gchar **split_list;
+
+            /* Just remove single quotes in a trivial way.  No handling for any
+             * special character inside the quotes is done.  This relates
+             * especially to font-family names but cases with special characters
+             * are rare.
+             *
+             * We need a real CSS parser, sigh.
+             */
+            split_list = g_strsplit (second_value, "'", -1);
+            second_value = g_strjoinv(NULL, split_list);
+            g_strfreev(split_list);
+
+            if (parse_style_value (second_value, &style_value, &important))
                 rsvg_parse_style_pair (ctx, state,
-                                       g_strstrip (values[0]),
+                                       g_strstrip (first_value),
                                        style_value,
                                        important);
             g_free (style_value);
+            g_free (second_value);
         }
         g_strfreev (values);
     }
