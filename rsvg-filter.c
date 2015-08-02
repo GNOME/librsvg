@@ -1902,6 +1902,7 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilt
                          boundarys.x0, boundarys.y0,
                          boundarys.x1 - boundarys.x0, boundarys.y1 - boundarys.y0);
         cairo_fill (cr);
+        cairo_destroy (cr);
     }
 
     op.surface = output;
