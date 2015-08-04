@@ -1752,6 +1752,7 @@ gaussian_blur_surface (cairo_surface_t *in,
         cr = cairo_create (out);
         cairo_set_source_surface (cr, in, 0, 0);
         cairo_paint (cr);
+        cairo_destroy (cr);
         return;
     }
 
