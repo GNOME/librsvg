@@ -519,7 +519,9 @@ rsvg_css_parse_font_style (const char *str, gboolean * inherit)
             return PANGO_STYLE_OBLIQUE;
         if (!strcmp (str, "italic"))
             return PANGO_STYLE_ITALIC;
-        else if (!strcmp (str, "inherit")) {
+        if (!strcmp (str, "normal"))
+            return PANGO_STYLE_NORMAL;
+        if (!strcmp (str, "inherit")) {
             UNSETINHERIT ();
             return PANGO_STYLE_NORMAL;
         }
