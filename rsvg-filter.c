@@ -1811,7 +1811,7 @@ gaussian_blur_surface (cairo_surface_t *in,
 
     if (sy != 0.0) {
         gint box_height;
-        gdouble *gaussian_matrix;
+        gdouble *gaussian_matrix = NULL;
         gint gaussian_matrix_len;
         guchar *col_buffer;
         guchar *col1, *col2;
@@ -1851,6 +1851,7 @@ gaussian_blur_surface (cairo_surface_t *in,
             put_column (col2, out_data, out_stride, bpp, height, x);
         }
 
+        g_free (gaussian_matrix);
         g_free (col_buffer);
     }
 
