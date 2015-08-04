@@ -1761,7 +1761,7 @@ gaussian_blur_surface (cairo_surface_t *in,
         gdouble *gaussian_matrix;
         gint gaussian_matrix_len;
         int y;
-        guchar *row_buffer;
+        guchar *row_buffer = NULL;
         guchar *row1, *row2;
 
         if (use_box_blur) {
@@ -1804,6 +1804,8 @@ gaussian_blur_surface (cairo_surface_t *in,
 
         if (!use_box_blur)
             g_free (gaussian_matrix);
+
+        g_free (row_buffer);
 
         out_has_data = TRUE;
     } else
