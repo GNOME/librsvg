@@ -1,8 +1,12 @@
 Version 2.40.10
+- Fixed bgo#748608 - Memory leak when Gaussian-blurring.  Thanks to
+  Carlos Garnacho for fixing my leaky code.
 - Fixed bgo#739329 - font-family attributes with singly-quoted names
   were not handled correctly, yielding incorrect fonts.  Patch by Menner.
 - Fixed bgo#476507 - Path start/end markers didn't have the correct angle
   if the path was a curve with coincident control points.  Patch by Menner.
+- Fixed bgo#688689 - Support font-style="normal" within a non-normal
+  styled text block.  Patch by Paolo.
 - Fixed builddir != srcdir.  Patch by Matthias Clasen.
 - Remove a bunch of deprecated GTK+ calls.
 - This version of librsvg requires GTK+ 3.10.0, which is, ahem, only two years old.
