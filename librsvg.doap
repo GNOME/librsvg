@@ -5,11 +5,7 @@
          xmlns="http://usefulinc.com/ns/doap#">
 
   <name xml:lang="en">librsvg</name>
-  <shortdesc xml:lang="en">An SVG rendering library</shortdesc>
-  <homepage rdf:resource="http://librsvg.sourceforge.net/" />
-  <mailing-list rdf:resource="http://sourceforge.net/mailarchive/forum.php?forum_name=librsvg-devel" />
-  <category rdf:resource="http://api.gnome.org/doap-extensions#core" />
-  <programming-language>C</programming-language>
+  <shortdesc xml:lang="en">SVG rendering library</shortdesc>
 
   <description>
     librsvg is a library to render SVG documents into GdkPixbuf images or
@@ -17,6 +13,13 @@
     like scalable icons, from image viewers to view SVGs easily, or to generate
     thumbnails for SVG files.
   </description>
+
+  <homepage rdf:resource="https://wiki.gnome.org/action/show/Projects/LibRsvg" />
+  <mailing-list rdf:resource="https://mail.gnome.org/mailman/listinfo/desktop-devel-list" />
+  <download-page rdf:resource="https://download.gnome.org/sources/librsvg/" />
+  <bug-database rdf:resource="https://bugzilla.gnome.org/browse.cgi?product=librsvg" />
+  <category rdf:resource="http://api.gnome.org/doap-extensions#deprecated" />
+  <programming-language>C</programming-language>
 
   <maintainer>
     <foaf:Person>
