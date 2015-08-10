@@ -206,8 +206,8 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
         drawsub = rsvg_defs_lookup (handle->priv->defs, id);
 
     if (drawsub == NULL && id != NULL) {
-	/* todo: there's no way to signal that @id doesn't exist */
-	return FALSE;
+        /* todo: there's no way to signal that @id doesn't exist */
+        return FALSE;
     }
 
     draw = rsvg_cairo_new_drawing_ctx (cr, handle);

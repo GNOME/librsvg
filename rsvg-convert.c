@@ -78,14 +78,6 @@ display_error (GError * err)
     }
 }
 
-static void
-rsvg_cairo_size_callback (int *width, int *height, gpointer data)
-{
-    RsvgDimensionData *dimensions = data;
-    *width = dimensions->width;
-    *height = dimensions->height;
-}
-
 static cairo_status_t
 rsvg_cairo_write_func (void *closure, const unsigned char *data, unsigned int length)
 {
@@ -94,6 +86,26 @@ rsvg_cairo_write_func (void *closure, const unsigned char *data, unsigned int le
     return CAIRO_STATUS_WRITE_ERROR;
 }
 
+static char *
+get_lookup_id_from_command_line (const char *lookup_id)
+{
+    char *export_lookup_id;
+
+    if (lookup_id == NULL)
+        export_lookup_id = NULL;
+    else {
+        /* rsvg_handle_has_sub() and rsvg_defs_lookup() expect ids to have a
+         * '#' prepended to them, so they can lookup ids in externs like
+         * "subfile.svg#subid".  For the user's convenience, we include this
+         * '#' automatically; we only support specifying ids from the
+         * toplevel, and don't expect users to lookup things in externs.
+         */
+        export_lookup_id = g_strdup_printf ("#%s", lookup_id);
+    }
+
+    return export_lookup_id;
+}
+ 
 int
 main (int argc, char **argv)
 {
@@ -108,6 +120,7 @@ main (int argc, char **argv)
     int bVersion = 0;
     char *format = NULL;
     char *output = NULL;
+    char *export_id = NULL;
     int keep_aspect_ratio = FALSE;
     guint32 background_color = 0;
     char *background_color_str = NULL;
@@ -126,6 +139,7 @@ main (int argc, char **argv)
     RsvgHandleFlags flags = RSVG_HANDLE_FLAGS_NONE;
     RsvgDimensionData dimensions;
     FILE *output_file = stdout;
+    char *export_lookup_id;
 
 #ifdef G_OS_WIN32
     HANDLE handle;
@@ -150,6 +164,8 @@ main (int argc, char **argv)
          N_("save format [optional; defaults to 'png']"), N_("[png, pdf, ps, eps, svg, xml, recording]")},
         {"output", 'o', 0, G_OPTION_ARG_STRING, &output,
          N_("output filename [optional; defaults to stdout]"), NULL},
+        {"export-id", 'i', 0, G_OPTION_ARG_STRING, &export_id,
+         N_("SVG id of object to export [optional; defaults to exporting all objects]"), N_("<object id>")},
         {"keep-aspect-ratio", 'a', 0, G_OPTION_ARG_NONE, &keep_aspect_ratio,
          N_("whether to preserve the aspect ratio [optional; defaults to FALSE]"), NULL},
         {"background-color", 'b', 0, G_OPTION_ARG_STRING, &background_color_str,
@@ -290,22 +306,26 @@ main (int argc, char **argv)
             exit (1);
         }
 
-        /* in the case of multi-page output, all subsequent SVGs are scaled to the first's size */
-        rsvg_handle_set_size_callback (rsvg, rsvg_cairo_size_callback, &dimensions, NULL);
+        export_lookup_id = get_lookup_id_from_command_line (export_id);
+        if (export_lookup_id != NULL
+            && !rsvg_handle_has_sub (rsvg, export_lookup_id)) {
+            fprintf (stderr, _("File %s does not have an object with id \"%s\"\n"), args[i], export_id);
+            exit (1);
+        }
 
         if (i == 0) {
             struct RsvgSizeCallbackData size_data;
 
-            rsvg_handle_get_dimensions (rsvg, &dimensions);
+            if (!rsvg_handle_get_dimensions_sub (rsvg, &dimensions, export_lookup_id))
+                fprintf (stderr, "Could not get dimensions for file %s\n", args[i]);
+
             /* if both are unspecified, assume user wants to zoom the image in at least 1 dimension */
             if (width == -1 && height == -1) {
                 size_data.type = RSVG_SIZE_ZOOM;
                 size_data.x_zoom = x_zoom;
                 size_data.y_zoom = y_zoom;
                 size_data.keep_aspect_ratio = keep_aspect_ratio;
-            }
-            /* if both are unspecified, assume user wants to resize image in at least 1 dimension */
-            else if (x_zoom == 1.0 && y_zoom == 1.0) {
+            } else if (x_zoom == 1.0 && y_zoom == 1.0) {
                 /* if one parameter is unspecified, assume user wants to keep the aspect ratio */
                 if (width == -1 || height == -1) {
                     size_data.type = RSVG_SIZE_WH_MAX;
@@ -384,7 +404,21 @@ main (int argc, char **argv)
             cairo_fill (cr);
         }
 
-        rsvg_handle_render_cairo (rsvg, cr);
+        if (export_lookup_id) {
+            RsvgPositionData pos;
+
+            if (!rsvg_handle_get_position_sub (rsvg, &pos, export_lookup_id)) {
+                fprintf (stderr, _("File %s does not have an object with id \"%s\"\n"), args[i], export_id);
+                exit (1);
+            }
+
+            /* Move the whole thing to 0, 0 so the object to export is at the origin */
+            cairo_translate (cr, -pos.x, -pos.y);
+        }
+
+        rsvg_handle_render_cairo_sub (rsvg, cr, export_lookup_id);
+
+        g_free (export_lookup_id);
 
         if (!format || !strcmp (format, "png"))
             cairo_surface_write_to_png_stream (surface, rsvg_cairo_write_func, output_file);
