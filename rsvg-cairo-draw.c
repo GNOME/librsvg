@@ -457,9 +457,6 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
     RsvgBbox bbox;
     double backup_tolerance;
 
-    if (state->fill == NULL && state->stroke == NULL)
-        return;
-
     need_tmpbuf = ((state->fill != NULL) && (state->stroke != NULL) && state->opacity != 0xff)
         || state->clip_path_ref || state->mask || state->filter
         || (state->comp_op != CAIRO_OPERATOR_OVER);
@@ -490,7 +487,15 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
        _rendering_ time speedups, are these rather expensive operations
        really needed here? */
 
-    if (state->fill != NULL) {
+    /* Bounding box for fill
+     *
+     * Unlike the case for stroke, for fills we always compute the bounding box.
+     * In GNOME we have SVGs for symbolic icons where each icon has a bounding
+     * rectangle with no fill and no stroke, and inside it there are the actual
+     * paths for the icon's shape.  We need to be able to compute the bounding
+     * rectangle's extents, even when it has no fill nor stroke.
+     */
+    {
         RsvgBbox fb;
         rsvg_bbox_init (&fb, &state->affine);
         cairo_fill_extents (cr, &fb.rect.x, &fb.rect.y, &fb.rect.width, &fb.rect.height);
@@ -499,6 +504,8 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
         fb.virgin = 0;
         rsvg_bbox_insert (&bbox, &fb);
     }
+
+    /* Bounding box for stroke */
     if (state->stroke != NULL) {
         RsvgBbox sb;
         rsvg_bbox_init (&sb, &state->affine);
@@ -548,6 +555,8 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
 
         cairo_stroke (cr);
     }
+
+    cairo_new_path (cr); /* clear the path in case stroke == fill == NULL; otherwise we leave it around from computing the bounding box */
 
     if (need_tmpbuf)
         rsvg_cairo_pop_discrete_layer (ctx);
