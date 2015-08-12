@@ -272,6 +272,7 @@ tests/pdiff/Makefile
 tools/Makefile
 doc/Makefile
 doc/version.xml
+config.h.win32
 ])
 
 AC_CONFIG_FILES([librsvg-${RSVG_API_VERSION}.pc:librsvg.pc.in],[],[RSVG_API_VERSION=$RSVG_API_VERSION])
