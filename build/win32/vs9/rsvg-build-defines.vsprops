@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="rsvgbuilddefinesprops"
+	InheritedPropertySheets=".\rsvg-version-paths.vsprops"
+	OutputDirectory="$(SolutionDir)$(ConfigurationName)\$(PlatformName)\bin"
+	IntermediateDirectory="$(SolutionDir)$(ConfigurationName)\$(PlatformName)\obj\$(ProjectName)"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="..\..\..;$(GlibEtcInstallRoot)\include\gdk-pixbuf-2.0;$(GlibEtcInstallRoot)\include\glib-2.0;$(GlibEtcInstallRoot)\lib\glib-2.0\include;$(GlibEtcInstallRoot)\include"
+		PreprocessorDefinitions="HAVE_CONFIG_H"
+		ForcedIncludeFiles="msvc_recommended_pragmas.h"
+		AdditionalOptions="/MP"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalDependencies="gdk_pixbuf-2.0.lib gio-2.0.lib gobject-2.0.lib glib-2.0.lib cairo.lib"
+		AdditionalLibraryDirectories="$(GlibEtcInstallRoot)\lib"
+	/>
+	<UserMacro
+		Name="LibRsvgIncPath"
+		Value="$(GlibEtcInstallRoot)\include\pango-1.0;$(GlibEtcInstallRoot)\include\libcroco-0.6;$(GlibEtcInstallRoot)\include\libxml2"
+	/>
+	<UserMacro
+		Name="Gtk3IncPath"
+		Value="$(GlibEtcInstallRoot)\include\gtk-3.0;$(GlibEtcInstallRoot)\include\atk-1.0;$(LibRsvgIncPath)"
+	/>
+	<UserMacro
+		Name="LibRsvgCFlags"
+		Value="G_LOG_DOMAIN=\&quot;librsvg\&quot;;RSVG_DISABLE_DEPRECATION_WARNINGS;RSVG_COMPILATION"
+	/>
+	<UserMacro
+		Name="LibRsvgLibs"
+		Value="pangocairo-1.0.lib pango-1.0.lib croco-0.6.lib libxml2.lib "
+	/>
+	<UserMacro
+		Name="IntlLib"
+		Value="intl.lib"
+	/>
+	<UserMacro
+		Name="Gtk3Libs"
+		Value="gtk-3.0.lib gdk-3.0.lib"
+	/>
+	<UserMacro
+		Name="RsvgPixbufLoaderCFlags"
+		Value="GDK_PIXBUF_ENABLE_BACKEND;G_LOG_DOMAIN=\&quot;libpixbufloader-svg\&quot;"
+	/>
+</VisualStudioPropertySheet>
