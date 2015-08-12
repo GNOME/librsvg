@@ -1336,8 +1336,9 @@ box_blur_line (gint box_width, gint even_offset,
     gint  output;  /* This marks the center of the kernel                    */
     gint  trail;   /* This marks the pixel BEHIND the last 1 in the
                       kernel; it's the pixel to remove from the accumulator. */
-    gint  ac[bpp]; /* Accumulator for each channel                           */
+    gint  *ac;     /* Accumulator for each channel                           */
 
+    ac = (gint *) g_malloc (sizeof (gint) * bpp);
 
     /* The algorithm differs for even and odd-sized kernels.
      * With the output at the center,
@@ -1452,6 +1453,8 @@ box_blur_line (gint box_width, gint even_offset,
         output++;
         trail++;
     }
+
+    g_free (ac);
 }
 
 static gint
