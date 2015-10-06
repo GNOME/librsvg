@@ -1375,13 +1375,13 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     memset (dimension_data, 0, sizeof (RsvgDimensionData));
 
     if (id && *id) {
-        sself = (RsvgNode *) rsvg_defs_lookup (handle->priv->defs, id);
+        sself = rsvg_defs_lookup (handle->priv->defs, id);
 
-        if (sself == (RsvgNode *) handle->priv->treebase)
+        if (sself == handle->priv->treebase)
             id = NULL;
     }
     else
-        sself = (RsvgNode *) handle->priv->treebase;
+        sself = handle->priv->treebase;
 
     if (!sself && id)
         return FALSE;
@@ -1422,7 +1422,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         rsvg_state_push (draw);
         cairo_save (cr);
 
-        rsvg_node_draw ((RsvgNode *) handle->priv->treebase, draw, 0);
+        rsvg_node_draw (handle->priv->treebase, draw, 0);
         bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
         cairo_restore (cr);
@@ -1492,10 +1492,10 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     memset (position_data, 0, sizeof (*position_data));
     memset (&dimension_data, 0, sizeof (dimension_data));
 
-    node = (RsvgNode *) rsvg_defs_lookup (handle->priv->defs, id);
+    node = rsvg_defs_lookup (handle->priv->defs, id);
     if (!node) {
         return FALSE;
-    } else if (node == (RsvgNode *) handle->priv->treebase) {
+    } else if (node == handle->priv->treebase) {
         /* Root node. */
         position_data->x = 0;
         position_data->y = 0;
@@ -1520,7 +1520,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     rsvg_state_push (draw);
     cairo_save (cr);
 
-    rsvg_node_draw ((RsvgNode *) handle->priv->treebase, draw, 0);
+    rsvg_node_draw (handle->priv->treebase, draw, 0);
     bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
     cairo_restore (cr);

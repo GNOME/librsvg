@@ -106,7 +106,7 @@ rsvg_defs_extern_lookup (const RsvgDefs * defs, const char *filename, const char
     }
 
     if (file != NULL)
-        return (RsvgNode *) g_hash_table_lookup (file->priv->defs->hash, name);
+        return g_hash_table_lookup (file->priv->defs->hash, name);
     else
         return NULL;
 }
@@ -120,7 +120,7 @@ rsvg_defs_lookup (const RsvgDefs * defs, const char *name)
         return NULL;
     }
     if (hashpos == name) {
-        return (RsvgNode *) g_hash_table_lookup (defs->hash, name + 1);
+        return g_hash_table_lookup (defs->hash, name + 1);
     } else {
         gchar **splitbits;
         RsvgNode *toreturn;
