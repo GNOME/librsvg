@@ -94,7 +94,6 @@ rsvg_paint_server_pattern (RsvgPattern * pattern)
 
     result->refcnt = 1;
     result->type = RSVG_PAINT_SERVER_PATTERN;
-    rsvg_pattern_fix_fallback (pattern);
     result->core.pattern = pattern;
 
     return result;
