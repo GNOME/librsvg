@@ -67,7 +67,7 @@ struct _RsvgNodeSymbol {
 
 struct _RsvgNodeUse {
     RsvgNode super;
-    RsvgNode *link;
+    char *link;
     RsvgLength x, y, w, h;
 };
 

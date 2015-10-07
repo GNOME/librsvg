@@ -208,13 +208,15 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
 
-    child = use->link;
-
-    /* If it can find nothing to draw... draw nothing */
+    if (use->link == NULL)
+      return;
+    child = rsvg_acquire_node (ctx, use->link);
     if (!child)
         return;
-    else if (rsvg_node_is_ancestor (child, self))       /* or, if we're <use>'ing ourself */
+    else if (rsvg_node_is_ancestor (child, self)) {     /* or, if we're <use>'ing ourself */
+        rsvg_release_node (ctx, child);
         return;
+    }
 
     state = rsvg_current_state (ctx);
     if (RSVG_NODE_TYPE (child) != RSVG_NODE_TYPE_SYMBOL) {
@@ -263,6 +265,7 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
             _rsvg_pop_view_box (ctx);
     }
 
+    rsvg_release_node (ctx, child);
 }
 
 static void
@@ -409,6 +412,14 @@ rsvg_new_svg (void)
 }
 
 static void
+rsvg_node_use_free (RsvgNode * node)
+{
+    RsvgNodeUse *use = (RsvgNodeUse *) node;
+    g_free (use->link);
+    _rsvg_node_free (node);
+}
+
+static void
 rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
     const char *value = NULL, *klazz = NULL, *id = NULL;
@@ -430,8 +441,10 @@ rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
             id = value;
             rsvg_defs_register_name (ctx->priv->defs, value, &use->super);
         }
-        if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
-            rsvg_defs_add_resolver (ctx->priv->defs, &use->link, value);
+        if ((value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
+            g_free (use->link);
+            use->link = g_strdup (value);
+        }
         rsvg_parse_style_attrs (ctx, self->state, "use", klazz, id, atts);
     }
 
@@ -444,6 +457,7 @@ rsvg_new_use (void)
     use = g_new (RsvgNodeUse, 1);
     _rsvg_node_init (&use->super, RSVG_NODE_TYPE_USE);
     use->super.draw = rsvg_node_use_draw;
+    use->super.free = rsvg_node_use_free;
     use->super.set_atts = rsvg_node_use_set_atts;
     use->x = _rsvg_css_parse_length ("0");
     use->y = _rsvg_css_parse_length ("0");
