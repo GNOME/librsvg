@@ -458,7 +458,7 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
     double backup_tolerance;
 
     need_tmpbuf = ((state->fill != NULL) && (state->stroke != NULL) && state->opacity != 0xff)
-        || state->clip_path_ref || state->mask || state->filter
+        || state->clip_path || state->mask || state->filter
         || (state->comp_op != CAIRO_OPERATOR_OVER);
 
     if (need_tmpbuf)
@@ -717,18 +717,6 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
 }
 
 static void
-rsvg_cairo_push_early_clips (RsvgDrawingCtx * ctx)
-{
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-  
-    cairo_save (render->cr);
-    if (rsvg_current_state (ctx)->clip_path_ref)
-        if (((RsvgClipPath *) rsvg_current_state (ctx)->clip_path_ref)->units == userSpaceOnUse)
-            rsvg_cairo_clip (ctx, rsvg_current_state (ctx)->clip_path_ref, NULL);
-
-}
-
-static void
 rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 {
     /* XXX: Untested, probably needs help wrt filters */
@@ -740,9 +728,27 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     RsvgState *state = rsvg_current_state (ctx);
     gboolean lateclip = FALSE;
 
-    if (rsvg_current_state (ctx)->clip_path_ref)
-        if (((RsvgClipPath *) rsvg_current_state (ctx)->clip_path_ref)->units == objectBoundingBox)
-            lateclip = TRUE;
+    if (rsvg_current_state (ctx)->clip_path) {
+        RsvgNode *node;
+        node = rsvg_defs_lookup (ctx->defs, rsvg_current_state (ctx)->clip_path);
+        if (node && RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_CLIP_PATH) {
+            RsvgClipPath *clip_path = (RsvgClipPath *) node;
+
+            switch (clip_path->units) {
+            case userSpaceOnUse:
+                rsvg_cairo_clip (ctx, clip_path, NULL);
+                break;
+            case objectBoundingBox:
+                lateclip = TRUE;
+                break;
+
+            default:
+                g_assert_not_reached ();
+                break;
+            }
+
+        }
+    }
 
     if (state->opacity == 0xFF
         && !state->filter && !state->mask && !lateclip && (state->comp_op == CAIRO_OPERATOR_OVER)
@@ -783,7 +789,9 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 void
 rsvg_cairo_push_discrete_layer (RsvgDrawingCtx * ctx)
 {
-    rsvg_cairo_push_early_clips (ctx);
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+
+    cairo_save (render->cr);
     rsvg_cairo_push_render_stack (ctx);
 }
 
@@ -792,14 +800,18 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_t *child_cr = render->cr;
-    gboolean lateclip = FALSE;
+    RsvgClipPath *lateclip = NULL;
     cairo_surface_t *surface = NULL;
     RsvgState *state = rsvg_current_state (ctx);
     gboolean nest;
 
-    if (rsvg_current_state (ctx)->clip_path_ref)
-        if (((RsvgClipPath *) rsvg_current_state (ctx)->clip_path_ref)->units == objectBoundingBox)
-            lateclip = TRUE;
+    if (rsvg_current_state (ctx)->clip_path) {
+        RsvgNode *node;
+        node = rsvg_defs_lookup (ctx->defs, rsvg_current_state (ctx)->clip_path);
+        if (node && RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_CLIP_PATH
+            && ((RsvgClipPath *) node)->units == objectBoundingBox)
+            lateclip = (RsvgClipPath *) node;
+    }
 
     if (state->opacity == 0xFF
         && !state->filter && !state->mask && !lateclip && (state->comp_op == CAIRO_OPERATOR_OVER)
@@ -829,7 +841,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
                               nest ? 0 : render->offset_y);
 
     if (lateclip)
-        rsvg_cairo_clip (ctx, rsvg_current_state (ctx)->clip_path_ref, &render->bbox);
+        rsvg_cairo_clip (ctx, lateclip, &render->bbox);
 
     cairo_set_operator (render->cr, state->comp_op);
 

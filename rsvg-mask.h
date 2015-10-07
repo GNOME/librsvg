@@ -58,8 +58,6 @@ struct _RsvgClipPath {
 
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_clip_path	(void);
-G_GNUC_INTERNAL
-RsvgNode *rsvg_clip_path_parse	(const RsvgDefs * defs, const char *str);
 
 G_END_DECLS
 #endif
