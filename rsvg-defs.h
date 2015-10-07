@@ -44,10 +44,6 @@ void	     rsvg_defs_set		(RsvgDefs * defs, const char *name, RsvgNode * val);
 G_GNUC_INTERNAL
 void	     rsvg_defs_free		(RsvgDefs * defs);
 G_GNUC_INTERNAL
-void	     rsvg_defs_add_resolver	(RsvgDefs * defs, RsvgNode ** tochange, const gchar * name);
-G_GNUC_INTERNAL
-void	     rsvg_defs_resolve_all	(RsvgDefs * defs);
-G_GNUC_INTERNAL
 void	     rsvg_defs_register_name	(RsvgDefs * defs, const char *name, RsvgNode * val);
 G_GNUC_INTERNAL
 void	     rsvg_defs_register_memory  (RsvgDefs * defs, RsvgNode * val);

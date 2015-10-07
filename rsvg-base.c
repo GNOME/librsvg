@@ -1213,7 +1213,6 @@ rsvg_handle_close_impl (RsvgHandle * handle, GError ** error)
         xmlFreeDoc (xml_doc);
     }
 
-    rsvg_defs_resolve_all (handle->priv->defs);
     handle->priv->finished = TRUE;
     handle->priv->error = NULL;
 
@@ -1861,7 +1860,6 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 
     xmlFreeDoc (doc);
 
-    rsvg_defs_resolve_all (priv->defs);
     priv->finished = TRUE;
 
     res = TRUE;
