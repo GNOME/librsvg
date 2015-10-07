@@ -83,27 +83,6 @@ rsvg_test_html (const char *fmt, ...)
 #define TEST_LOG_FILENAME   "rsvg-test.log"
 #define HTML_FILENAME	    "rsvg-test.html"
 
-#if   HAVE_STDINT_H
-# include <stdint.h>
-#elif HAVE_INTTYPES_H
-# include <inttypes.h>
-#elif HAVE_SYS_INT_TYPES_H
-# include <sys/int_types.h>
-#elif defined(_MSC_VER)
-  typedef __int8 int8_t;
-  typedef unsigned __int8 uint8_t;
-  typedef __int16 int16_t;
-  typedef unsigned __int16 uint16_t;
-  typedef __int32 int32_t;
-  typedef unsigned __int32 uint32_t;
-  typedef __int64 int64_t;
-  typedef unsigned __int64 uint64_t;
-#else
-#error Cannot find definitions for fixed-width integral types (uint8_t, uint32_t, etc.)
-#endif
-
-typedef uint32_t pixman_bits_t;
-
 typedef struct _buffer_diff_result {
     unsigned int pixels_changed;
     unsigned int max_diff;
@@ -123,17 +102,17 @@ buffer_diff_core (unsigned char *_buf_a,
 		  int		width,
 		  int		height,
 		  int		stride,
-		  pixman_bits_t mask,
+		  guint32       mask,
 		  buffer_diff_result_t *result_ret)
 {
     int x, y;
-    pixman_bits_t *row_a, *row_b, *row;
+    guint32 *row_a, *row_b, *row;
     buffer_diff_result_t result = {0, 0};
-    pixman_bits_t *buf_a = (pixman_bits_t*)_buf_a;
-    pixman_bits_t *buf_b = (pixman_bits_t*)_buf_b;
-    pixman_bits_t *buf_diff = (pixman_bits_t*)_buf_diff;
+    guint32 *buf_a = (guint32 *) _buf_a;
+    guint32 *buf_b = (guint32 *) _buf_b;
+    guint32 *buf_diff = (guint32 *) _buf_diff;
 
-    stride /= sizeof(pixman_bits_t);
+    stride /= sizeof(guint32);
     for (y = 0; y < height; y++)
     {
 	row_a = buf_a + y * stride;
@@ -144,7 +123,7 @@ buffer_diff_core (unsigned char *_buf_a,
 	    /* check if the pixels are the same */
 	    if ((row_a[x] & mask) != (row_b[x] & mask)) {
 		int channel;
-		pixman_bits_t diff_pixel = 0;
+		guint32 diff_pixel = 0;
 
 		/* calculate a difference value for all 4 channels */
 		for (channel = 0; channel < 4; channel++) {
