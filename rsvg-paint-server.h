@@ -139,7 +139,7 @@ struct _RsvgPaintServer {
 /* Create a new paint server based on a specification string. */
 G_GNUC_INTERNAL
 RsvgPaintServer	    *rsvg_paint_server_parse    (gboolean * inherit, const RsvgDefs * defs,
-                                                 const char *str, guint32 current_color);
+                                                 const char *str);
 G_GNUC_INTERNAL
 void                 rsvg_paint_server_ref      (RsvgPaintServer * ps);
 G_GNUC_INTERNAL

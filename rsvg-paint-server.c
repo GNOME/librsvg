@@ -111,8 +111,7 @@ rsvg_paint_server_pattern (RsvgPattern * pattern)
  *   on error.
  **/
 RsvgPaintServer *
-rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs * defs, const char *str,
-                         guint32 current_color)
+rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs * defs, const char *str)
 {
     char *name;
     guint32 argb;

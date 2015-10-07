@@ -119,7 +119,7 @@ rsvg_state_init (RsvgState * state)
     state->mask = NULL;
     state->opacity = 0xff;
     state->adobe_blend = 0;
-    state->fill = rsvg_paint_server_parse (NULL, NULL, "#000", 0);
+    state->fill = rsvg_paint_server_parse (NULL, NULL, "#000");
     state->fill_opacity = 0xff;
     state->stroke_opacity = 0xff;
     state->stroke_width = _rsvg_css_parse_length ("1");
@@ -616,7 +616,7 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
     } else if (g_str_equal (name, "fill")) {
         RsvgPaintServer *fill = state->fill;
         state->fill =
-            rsvg_paint_server_parse (&state->has_fill_server, ctx->priv->defs, value, 0);
+            rsvg_paint_server_parse (&state->has_fill_server, ctx->priv->defs, value);
         rsvg_paint_server_unref (fill);
     } else if (g_str_equal (name, "fill-opacity")) {
         state->fill_opacity = rsvg_css_parse_opacity (value);
@@ -641,7 +641,7 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
         RsvgPaintServer *stroke = state->stroke;
 
         state->stroke =
-            rsvg_paint_server_parse (&state->has_stroke_server, ctx->priv->defs, value, 0);
+            rsvg_paint_server_parse (&state->has_stroke_server, ctx->priv->defs, value);
 
         rsvg_paint_server_unref (stroke);
     } else if (g_str_equal (name, "stroke-width")) {
