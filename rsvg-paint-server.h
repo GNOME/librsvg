@@ -117,17 +117,13 @@ typedef enum _RsvgPaintServerType RsvgPaintServerType;
 typedef union _RsvgPaintServerCore RsvgPaintServerCore;
 
 union _RsvgPaintServerCore {
-    RsvgLinearGradient *lingrad;
-    RsvgRadialGradient *radgrad;
     RsvgSolidColour *colour;
-    RsvgPattern *pattern;
+    char *iri;
 };
 
 enum _RsvgPaintServerType {
-    RSVG_PAINT_SERVER_RAD_GRAD,
-    RSVG_PAINT_SERVER_LIN_GRAD,
     RSVG_PAINT_SERVER_SOLID,
-    RSVG_PAINT_SERVER_PATTERN
+    RSVG_PAINT_SERVER_IRI
 };
 
 struct _RsvgPaintServer {
@@ -138,8 +134,7 @@ struct _RsvgPaintServer {
 
 /* Create a new paint server based on a specification string. */
 G_GNUC_INTERNAL
-RsvgPaintServer	    *rsvg_paint_server_parse    (gboolean * inherit, const RsvgDefs * defs,
-                                                 const char *str);
+RsvgPaintServer	    *rsvg_paint_server_parse    (gboolean * inherit, const char *str);
 G_GNUC_INTERNAL
 void                 rsvg_paint_server_ref      (RsvgPaintServer * ps);
 G_GNUC_INTERNAL

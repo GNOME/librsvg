@@ -330,18 +330,23 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
                                RsvgPaintServer * ps,
                                guint8 opacity, RsvgBbox bbox, guint32 current_colour)
 {
+    RsvgNode *node;
+
     switch (ps->type) {
-    case RSVG_PAINT_SERVER_LIN_GRAD:
-        _set_source_rsvg_linear_gradient (ctx, ps->core.lingrad, current_color_rgb, opacity, bbox);
-        break;
-    case RSVG_PAINT_SERVER_RAD_GRAD:
-        _set_source_rsvg_radial_gradient (ctx, ps->core.radgrad, current_color_rgb, opacity, bbox);
+    case RSVG_PAINT_SERVER_IRI:
+        node = rsvg_acquire_node (ctx, ps->core.iri);
+        if (node == NULL)
+            break;
+        else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT)
+            _set_source_rsvg_linear_gradient (ctx, (RsvgLinearGradient *) node, current_color_rgb, opacity, bbox);
+        else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT)
+            _set_source_rsvg_radial_gradient (ctx, (RsvgRadialGradient *) node, current_color_rgb, opacity, bbox);
+        else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_PATTERN)
+            _set_source_rsvg_pattern (ctx, (RsvgPattern *) node, opacity, bbox);
+        rsvg_release_node (ctx, node);
         break;
     case RSVG_PAINT_SERVER_SOLID:
         _set_source_rsvg_solid_colour (ctx, ps->core.colour, opacity, current_colour);
-        break;
-    case RSVG_PAINT_SERVER_PATTERN:
-        _set_source_rsvg_pattern (ctx, ps->core.pattern, opacity, bbox);
         break;
     }
 }

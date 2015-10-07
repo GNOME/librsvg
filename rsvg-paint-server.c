@@ -64,44 +64,19 @@ rsvg_paint_server_solid_current_colour (void)
 }
 
 static RsvgPaintServer *
-rsvg_paint_server_lin_grad (RsvgLinearGradient * gradient)
+rsvg_paint_server_iri (char *iri)
 {
     RsvgPaintServer *result = g_new (RsvgPaintServer, 1);
 
     result->refcnt = 1;
-    result->type = RSVG_PAINT_SERVER_LIN_GRAD;
-    result->core.lingrad = gradient;
-
-    return result;
-}
-
-static RsvgPaintServer *
-rsvg_paint_server_rad_grad (RsvgRadialGradient * gradient)
-{
-    RsvgPaintServer *result = g_new (RsvgPaintServer, 1);
-
-    result->refcnt = 1;
-    result->type = RSVG_PAINT_SERVER_RAD_GRAD;
-    result->core.radgrad = gradient;
-
-    return result;
-}
-
-static RsvgPaintServer *
-rsvg_paint_server_pattern (RsvgPattern * pattern)
-{
-    RsvgPaintServer *result = g_new (RsvgPaintServer, 1);
-
-    result->refcnt = 1;
-    result->type = RSVG_PAINT_SERVER_PATTERN;
-    result->core.pattern = pattern;
+    result->type = RSVG_PAINT_SERVER_IRI;
+    result->core.iri = iri;
 
     return result;
 }
 
 /**
  * rsvg_paint_server_parse:
- * @defs: Defs for looking up gradients.
  * @str: The SVG paint specification string to parse.
  *
  * Parses the paint specification @str, creating a new paint server
@@ -111,7 +86,7 @@ rsvg_paint_server_pattern (RsvgPattern * pattern)
  *   on error.
  **/
 RsvgPaintServer *
-rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs * defs, const char *str)
+rsvg_paint_server_parse (gboolean * inherit, const char *str)
 {
     char *name;
     guint32 argb;
@@ -122,20 +97,7 @@ rsvg_paint_server_parse (gboolean * inherit, const RsvgDefs * defs, const char *
 
     name = rsvg_get_url_string (str);
     if (name) {
-        RsvgNode *val;
-        val = rsvg_defs_lookup (defs, name);
-        g_free (name);
-
-        if (val == NULL)
-            return NULL;
-        if (RSVG_NODE_TYPE (val) == RSVG_NODE_TYPE_LINEAR_GRADIENT)
-            return rsvg_paint_server_lin_grad ((RsvgLinearGradient *) val);
-        else if (RSVG_NODE_TYPE (val) == RSVG_NODE_TYPE_RADIAL_GRADIENT)
-            return rsvg_paint_server_rad_grad ((RsvgRadialGradient *) val);
-        else if (RSVG_NODE_TYPE (val) == RSVG_NODE_TYPE_PATTERN)
-            return rsvg_paint_server_pattern ((RsvgPattern *) val);
-        else
-            return NULL;
+        return rsvg_paint_server_iri (name);
     } else if (!strcmp (str, "inherit")) {
         if (inherit != NULL)
             *inherit = 0;
@@ -178,6 +140,8 @@ rsvg_paint_server_unref (RsvgPaintServer * ps)
     if (--ps->refcnt == 0) {
         if (ps->type == RSVG_PAINT_SERVER_SOLID)
             g_free (ps->core.colour);
+        else if (ps->type == RSVG_PAINT_SERVER_IRI)
+            g_free (ps->core.iri);
         g_free (ps);
     }
 }
