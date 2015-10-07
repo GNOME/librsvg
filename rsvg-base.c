@@ -1234,7 +1234,6 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
 	/* the drawsub stack's nodes are owned by the ->defs */
 	g_slist_free (handle->drawsub_stack);
 
-    g_slist_free (handle->ptrs);
     g_warn_if_fail (handle->acquired_nodes == NULL);
     g_slist_free (handle->acquired_nodes);
 	

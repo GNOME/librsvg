@@ -51,25 +51,8 @@ rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     if (!state->visible)
         return;
 
-    if (g_slist_find(ctx->ptrs, self) != NULL)
-    {
-        /*
-         * 5.3.1 of the SVG 1.1 spec (http://www.w3.org/TR/SVG11/struct.html#HeadOverview)
-         * seems to indicate ("URI references that directly or indirectly reference
-         * themselves are treated as invalid circular references") that circular
-         * references are invalid, and so we can drop them to avoid infinite recursion.
-         * 
-         * See also http://bugzilla.gnome.org/show_bug.cgi?id=518640
-         */
-        g_warning("Circular SVG reference noticed, dropping");
-        return;
-    }
-    ctx->ptrs = g_slist_append(ctx->ptrs, self);
-
     self->draw (self, ctx, dominate);
     ctx->drawsub_stack = stacksave;
-
-    ctx->ptrs = g_slist_remove(ctx->ptrs, self);
 }
 
 /* generic function for drawing all of the children of a particular node */

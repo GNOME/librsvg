@@ -199,7 +199,6 @@ struct RsvgDrawingCtx {
     RsvgViewBox vb;
     GSList *vb_stack;
     GSList *drawsub_stack;
-    GSList *ptrs;
     GSList *acquired_nodes;
 };
 
