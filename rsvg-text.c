@@ -47,7 +47,7 @@ typedef struct _RsvgNodeTref RsvgNodeTref;
 
 struct _RsvgNodeTref {
     RsvgNode super;
-    RsvgNode *link;
+    char *link;
 };
 char *
 rsvg_make_valid_utf8 (const char *str, int len)
@@ -415,18 +415,46 @@ _rsvg_node_text_type_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
                            gdouble * x, gdouble * y, gboolean * lastwasspace,
                            gboolean usetextonly)
 {
-    if (self->link)
-        _rsvg_node_text_type_children (self->link, ctx, x, y, lastwasspace,
-                                                              TRUE);
+    RsvgNode *link;
+
+    if (self->link == NULL)
+      return;
+    link = rsvg_acquire_node (ctx, self->link);
+    if (link == NULL)
+      return;
+
+    _rsvg_node_text_type_children (link, ctx, x, y, lastwasspace,
+                                                    TRUE);
+
+    rsvg_release_node (ctx, link);
 }
 
 static int
 _rsvg_node_text_length_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx, gdouble * x,
                              gboolean * lastwasspace, gboolean usetextonly)
 {
-    if (self->link)
-        return _rsvg_node_text_length_children (self->link, ctx, x, lastwasspace, TRUE);
-    return FALSE;
+    gboolean result;
+    RsvgNode *link;
+
+    if (self->link == NULL)
+      return FALSE;
+    link = rsvg_acquire_node (ctx, self->link);
+    if (link == NULL)
+      return FALSE;
+
+    result = _rsvg_node_text_length_children (link, ctx, x, lastwasspace, TRUE);
+
+    rsvg_release_node (ctx, link);
+
+    return result;
+}
+
+static void
+rsvg_node_tref_free (RsvgNode * node)
+{
+    RsvgNodeTref *self = (RsvgNodeTref *) node;
+    g_free (self->link);
+    _rsvg_node_free (node);
 }
 
 static void
@@ -436,8 +464,10 @@ _rsvg_node_tref_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
     RsvgNodeTref *text = (RsvgNodeTref *) self;
 
     if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "xlink:href")))
-            rsvg_defs_add_resolver (ctx->priv->defs, &text->link, value);
+        if ((value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
+            g_free (text->link);
+            text->link = g_strdup (value);
+        }
         if ((value = rsvg_property_bag_lookup (atts, "id")))
             rsvg_defs_register_name (ctx->priv->defs, value, self);
     }
@@ -449,6 +479,7 @@ rsvg_new_tref (void)
     RsvgNodeTref *text;
     text = g_new (RsvgNodeTref, 1);
     _rsvg_node_init (&text->super, RSVG_NODE_TYPE_TREF);
+    text->super.free = rsvg_node_tref_free;
     text->super.set_atts = _rsvg_node_tref_set_atts;
     text->link = NULL;
     return &text->super;
