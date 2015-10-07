@@ -144,12 +144,7 @@ G_GNUC_INTERNAL
 void                 rsvg_paint_server_ref      (RsvgPaintServer * ps);
 G_GNUC_INTERNAL
 void                 rsvg_paint_server_unref    (RsvgPaintServer * ps);
-G_GNUC_INTERNAL
-RsvgRadialGradient  *rsvg_clone_radial_gradient (const RsvgRadialGradient * grad,
-                                                 gboolean * shallow_cloned);
-G_GNUC_INTERNAL
-RsvgLinearGradient  *rsvg_clone_linear_gradient (const RsvgLinearGradient * grad,
-                                                 gboolean * shallow_cloned);
+
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_linear_gradient  (void);
 G_GNUC_INTERNAL
