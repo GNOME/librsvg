@@ -118,7 +118,6 @@ rsvg_state_init (RsvgState * state)
     cairo_matrix_init_identity (&state->personal_affine);
     state->mask = NULL;
     state->opacity = 0xff;
-    state->adobe_blend = 0;
     state->fill = rsvg_paint_server_parse (NULL, "#000");
     state->fill_opacity = 0xff;
     state->stroke_opacity = 0xff;
@@ -374,7 +373,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         g_free (dst->filter);
         dst->filter = g_strdup (src->filter);
         dst->enable_background = src->enable_background;
-        dst->adobe_blend = src->adobe_blend;
         dst->opacity = src->opacity;
         dst->comp_op = src->comp_op;
     }
@@ -512,33 +510,6 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
     } else if (g_str_equal (name, "filter")) {
         g_free (state->filter);
         state->filter = rsvg_get_url_string (value);
-    } else if (g_str_equal (name, "a:adobe-blending-mode")) {
-        if (g_str_equal (value, "normal"))
-            state->adobe_blend = 0;
-        else if (g_str_equal (value, "multiply"))
-            state->adobe_blend = 1;
-        else if (g_str_equal (value, "screen"))
-            state->adobe_blend = 2;
-        else if (g_str_equal (value, "darken"))
-            state->adobe_blend = 3;
-        else if (g_str_equal (value, "lighten"))
-            state->adobe_blend = 4;
-        else if (g_str_equal (value, "softlight"))
-            state->adobe_blend = 5;
-        else if (g_str_equal (value, "hardlight"))
-            state->adobe_blend = 6;
-        else if (g_str_equal (value, "colordodge"))
-            state->adobe_blend = 7;
-        else if (g_str_equal (value, "colorburn"))
-            state->adobe_blend = 8;
-        else if (g_str_equal (value, "overlay"))
-            state->adobe_blend = 9;
-        else if (g_str_equal (value, "exclusion"))
-            state->adobe_blend = 10;
-        else if (g_str_equal (value, "difference"))
-            state->adobe_blend = 11;
-        else
-            state->adobe_blend = 0;
     } else if (g_str_equal (name, "mask")) {
         g_free (state->mask);
         state->mask = rsvg_get_url_string (value);
