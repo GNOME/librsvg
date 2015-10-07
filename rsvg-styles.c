@@ -221,6 +221,7 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 
     *dst = *src;
     dst->parent = parent;
+    dst->mask = g_strdup (src->mask);
     dst->font_family = g_strdup (src->font_family);
     dst->lang = g_strdup (src->lang);
     rsvg_paint_server_ref (dst->fill);
@@ -356,7 +357,8 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
 
     if (inherituninheritables) {
         dst->clip_path_ref = src->clip_path_ref;
-        dst->mask = src->mask;
+        g_free (dst->mask);
+        dst->mask = g_strdup (src->mask);
         dst->enable_background = src->enable_background;
         dst->adobe_blend = src->adobe_blend;
         dst->opacity = src->opacity;
@@ -444,6 +446,7 @@ rsvg_state_inherit (RsvgState * dst, const RsvgState * src)
 void
 rsvg_state_finalize (RsvgState * state)
 {
+    g_free (state->mask);
     g_free (state->font_family);
     g_free (state->lang);
     rsvg_paint_server_unref (state->fill);
@@ -517,9 +520,10 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
             state->adobe_blend = 11;
         else
             state->adobe_blend = 0;
-    } else if (g_str_equal (name, "mask"))
-        state->mask = rsvg_mask_parse (ctx->priv->defs, value);
-    else if (g_str_equal (name, "clip-path")) {
+    } else if (g_str_equal (name, "mask")) {
+        g_free (state->mask);
+        state->mask = rsvg_get_url_string (value);
+    } else if (g_str_equal (name, "clip-path")) {
         state->clip_path_ref = rsvg_clip_path_parse (ctx->priv->defs, value);
     } else if (g_str_equal (name, "overflow")) {
         if (!g_str_equal (value, "inherit")) {

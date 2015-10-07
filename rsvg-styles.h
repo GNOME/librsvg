@@ -80,7 +80,7 @@ struct _RsvgState {
     cairo_matrix_t personal_affine;
 
     RsvgFilter *filter;
-    void *mask;
+    char *mask;
     void *clip_path_ref;
     guint8 adobe_blend;         /* 0..11 */
     guint8 opacity;             /* 0..255 */

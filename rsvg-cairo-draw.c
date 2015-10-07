@@ -834,7 +834,11 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     cairo_set_operator (render->cr, state->comp_op);
 
     if (state->mask) {
-        rsvg_cairo_generate_mask (render->cr, state->mask, ctx, &render->bbox);
+        RsvgNode *mask;
+
+        mask = rsvg_defs_lookup (ctx->defs, state->mask);
+        if (mask && RSVG_NODE_TYPE (mask) == RSVG_NODE_TYPE_MASK)
+          rsvg_cairo_generate_mask (render->cr, (RsvgMask *) mask, ctx, &render->bbox);
     } else if (state->opacity != 0xFF)
         cairo_paint_with_alpha (render->cr, (double) state->opacity / 255.0);
     else
