@@ -1,3 +1,14 @@
+Version 2.40.11
+- Add project files for building on Visual Studio (bgo#753555).  Work
+  by Chun-wei Fan.
+- Added an "--export-id" option to rsvg-convert(1).  This lets you
+  select a single object to export, for example, to pick out a group
+  from a multi-part drawing.  Note that this is mostly useful for PNG
+  output right now; for SVG output we don't preserve many attributes
+  which could be useful in the extracted version.  Doing this properly
+  requires an internal "output to SVG" backend instead of just telling
+  Cairo to render to SVG.
+
 Version 2.40.10
 - Fixed bgo#748608 - Memory leak when Gaussian-blurring.  Thanks to
   Carlos Garnacho for fixing my leaky code.
