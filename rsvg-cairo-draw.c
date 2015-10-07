@@ -827,17 +827,22 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
         && (state->enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
         return;
 
+    surface = cairo_get_target (child_cr);
+
     if (state->filter) {
+        RsvgNode *filter;
         cairo_surface_t *output;
 
-        output = render->surfaces_stack->data;
-        render->surfaces_stack = g_list_delete_link (render->surfaces_stack, render->surfaces_stack);
+        filter = rsvg_acquire_node (ctx, state->filter);
+        if (filter && RSVG_NODE_TYPE (filter) == RSVG_NODE_TYPE_FILTER) {
+            output = render->surfaces_stack->data;
+            render->surfaces_stack = g_list_delete_link (render->surfaces_stack, render->surfaces_stack);
 
-        surface = rsvg_filter_render (state->filter, output, ctx, &render->bbox, "2103");
+            surface = rsvg_filter_render ((RsvgFilter *) filter, output, ctx, &render->bbox, "2103");
+            /* Don't destroy the output surface, it's owned by child_cr */
+        }
 
-        /* Don't destroy the output surface, it's owned by child_cr */
-    } else {
-        surface = cairo_get_target (child_cr);
+        rsvg_release_node (ctx, filter);
     }
 
     render->cr = (cairo_t *) render->cr_stack->data;

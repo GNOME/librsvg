@@ -221,6 +221,7 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 
     *dst = *src;
     dst->parent = parent;
+    dst->filter = g_strdup (src->filter);
     dst->mask = g_strdup (src->mask);
     dst->clip_path = g_strdup (src->clip_path);
     dst->font_family = g_strdup (src->font_family);
@@ -361,10 +362,11 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->clip_path = g_strdup (src->clip_path);
         g_free (dst->mask);
         dst->mask = g_strdup (src->mask);
+        g_free (dst->filter);
+        dst->filter = g_strdup (src->filter);
         dst->enable_background = src->enable_background;
         dst->adobe_blend = src->adobe_blend;
         dst->opacity = src->opacity;
-        dst->filter = src->filter;
         dst->comp_op = src->comp_op;
     }
 }
@@ -448,6 +450,7 @@ rsvg_state_inherit (RsvgState * dst, const RsvgState * src)
 void
 rsvg_state_finalize (RsvgState * state)
 {
+    g_free (state->filter);
     g_free (state->mask);
     g_free (state->clip_path);
     g_free (state->font_family);
@@ -494,9 +497,10 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
     else if (g_str_equal (name, "flood-opacity")) {
         state->flood_opacity = rsvg_css_parse_opacity (value);
         state->has_flood_opacity = TRUE;
-    } else if (g_str_equal (name, "filter"))
-        state->filter = rsvg_filter_parse (ctx->priv->defs, value);
-    else if (g_str_equal (name, "a:adobe-blending-mode")) {
+    } else if (g_str_equal (name, "filter")) {
+        g_free (state->filter);
+        state->filter = rsvg_get_url_string (value);
+    } else if (g_str_equal (name, "a:adobe-blending-mode")) {
         if (g_str_equal (value, "normal"))
             state->adobe_blend = 0;
         else if (g_str_equal (value, "multiply"))

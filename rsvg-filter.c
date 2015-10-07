@@ -720,33 +720,6 @@ rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
     return rsvg_filter_get_result (name, ctx).surface;
 }
 
-/**
- * rsvg_filter_parse:
- * @defs: a pointer to the hash of definitions
- * @str: a string with the name of the filter to be looked up
- *
- * Looks up an allready created filter.
- *
- * Returns: (nullable): a pointer to the filter that the name refers to, or %NULL
- * if none was found
- **/
-RsvgFilter *
-rsvg_filter_parse (const RsvgDefs * defs, const char *str)
-{
-    char *name;
-
-    name = rsvg_get_url_string (str);
-    if (name) {
-        RsvgNode *val;
-        val = rsvg_defs_lookup (defs, name);
-        g_free (name);
-
-        if (val && RSVG_NODE_TYPE (val) == RSVG_NODE_TYPE_FILTER)
-            return (RsvgFilter *) val;
-    }
-    return NULL;
-}
-
 static void
 rsvg_filter_set_args (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
