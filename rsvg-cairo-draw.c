@@ -730,7 +730,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 
     if (rsvg_current_state (ctx)->clip_path) {
         RsvgNode *node;
-        node = rsvg_defs_lookup (ctx->defs, rsvg_current_state (ctx)->clip_path);
+        node = rsvg_acquire_node (ctx, rsvg_current_state (ctx)->clip_path);
         if (node && RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_CLIP_PATH) {
             RsvgClipPath *clip_path = (RsvgClipPath *) node;
 
@@ -748,6 +748,8 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
             }
 
         }
+        
+        rsvg_release_node (ctx, node);
     }
 
     if (state->opacity == 0xFF
@@ -807,10 +809,12 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
     if (rsvg_current_state (ctx)->clip_path) {
         RsvgNode *node;
-        node = rsvg_defs_lookup (ctx->defs, rsvg_current_state (ctx)->clip_path);
+        node = rsvg_acquire_node (ctx, rsvg_current_state (ctx)->clip_path);
         if (node && RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_CLIP_PATH
             && ((RsvgClipPath *) node)->units == objectBoundingBox)
             lateclip = (RsvgClipPath *) node;
+        else
+            rsvg_release_node (ctx, node);
     }
 
     if (state->opacity == 0xFF
@@ -840,17 +844,20 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
                               nest ? 0 : render->offset_x,
                               nest ? 0 : render->offset_y);
 
-    if (lateclip)
+    if (lateclip) {
         rsvg_cairo_clip (ctx, lateclip, &render->bbox);
+        rsvg_release_node (ctx, (RsvgNode *) lateclip);
+    }
 
     cairo_set_operator (render->cr, state->comp_op);
 
     if (state->mask) {
         RsvgNode *mask;
 
-        mask = rsvg_defs_lookup (ctx->defs, state->mask);
+        mask = rsvg_acquire_node (ctx, state->mask);
         if (mask && RSVG_NODE_TYPE (mask) == RSVG_NODE_TYPE_MASK)
           rsvg_cairo_generate_mask (render->cr, (RsvgMask *) mask, ctx, &render->bbox);
+        rsvg_release_node (ctx, mask);
     } else if (state->opacity != 0xFF)
         cairo_paint_with_alpha (render->cr, (double) state->opacity / 255.0);
     else

@@ -155,6 +155,7 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
     draw->pango_context = NULL;
     draw->drawsub_stack = NULL;
     draw->ptrs = NULL;
+    draw->acquired_nodes = NULL;
 
     rsvg_state_push (draw);
     state = rsvg_current_state (draw);

@@ -1236,6 +1236,8 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
 	g_slist_free (handle->drawsub_stack);
 
     g_slist_free (handle->ptrs);
+    g_warn_if_fail (handle->acquired_nodes == NULL);
+    g_slist_free (handle->acquired_nodes);
 	
     if (handle->base_uri)
         g_free (handle->base_uri);
@@ -2016,6 +2018,59 @@ void
 rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
 {
     ctx->render->push_discrete_layer (ctx);
+}
+
+/*
+ * rsvg_acquire_node:
+ * @ctx: The drawing context in use
+ * @url: The IRI to lookup
+ *
+ * Use this function when looking up urls to other nodes. This
+ * function does proper recursion checking and thereby avoids
+ * infinite loops.
+ *
+ * Nodes acquired by this function must be released using
+ * rsvg_release_node() in reverse acquiring order.
+ *
+ * Returns: The node referenced by @url or %NULL if the @url
+ *          does not reference a node.
+ */
+RsvgNode *
+rsvg_acquire_node (RsvgDrawingCtx * ctx, const char *url)
+{
+  RsvgNode *node;
+
+  node = rsvg_defs_lookup (ctx->defs, url);
+  if (node == NULL)
+    return NULL;
+
+  if (g_slist_find (ctx->acquired_nodes, node))
+    return NULL;
+
+  ctx->acquired_nodes = g_slist_prepend (ctx->acquired_nodes, node);
+
+  return node;
+}
+
+/*
+ * rsvg_release_node:
+ * @ctx: The drawing context the node was acquired from
+ * @node: Node to release
+ *
+ * Releases a node previously acquired via rsvg_acquire_node().
+ *
+ * if @node is %NULL, this function does nothing.
+ */
+void
+rsvg_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
+{
+  if (node == NULL)
+    return;
+
+  g_return_if_fail (ctx->acquired_nodes != NULL);
+  g_return_if_fail (ctx->acquired_nodes->data == node);
+
+  ctx->acquired_nodes = g_slist_remove (ctx->acquired_nodes, node);
 }
 
 void

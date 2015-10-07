@@ -200,6 +200,7 @@ struct RsvgDrawingCtx {
     GSList *vb_stack;
     GSList *drawsub_stack;
     GSList *ptrs;
+    GSList *acquired_nodes;
 };
 
 /*Abstract base class for context for our backends (one as yet)*/
@@ -359,6 +360,10 @@ G_GNUC_INTERNAL
 void rsvg_pop_discrete_layer    (RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
 void rsvg_push_discrete_layer   (RsvgDrawingCtx * ctx);
+G_GNUC_INTERNAL
+RsvgNode *rsvg_acquire_node     (RsvgDrawingCtx * ctx, const char *url);
+G_GNUC_INTERNAL
+void rsvg_release_node          (RsvgDrawingCtx * ctx, RsvgNode *node);
 G_GNUC_INTERNAL
 void rsvg_render_path           (RsvgDrawingCtx * ctx, const cairo_path_t *path);
 G_GNUC_INTERNAL
