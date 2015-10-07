@@ -502,82 +502,41 @@ hasstop (GPtrArray * lookin)
     return 0;
 }
 
-typedef const char * (* GetFallbackFn) (gpointer data);
-typedef void (* ApplyFallbackFn) (gpointer data, gpointer fallback_data);
+typedef const char * (* GetFallbackFn) (RsvgNode *node);
+typedef void (* ApplyFallbackFn) (RsvgNode *node, RsvgNode *fallback_node);
 
 /* Some SVG paint servers can reference a "parent" or "fallback" paint server
  * through the xlink:href attribute (for example,
  * http://www.w3.org/TR/SVG11/pservers.html#LinearGradientElementHrefAttribute )
  * This is used to define a chain of properties to be resolved from each
- * fallback.  However, a malicious SVG may have a cycle in the chain of
- * fallbacks, which could lead to an infinite loop when resolving the chain.
- *
- * This is a generic function to apply a chain of fallbacks without cycling; it
- * uses a tortoise-and-hare to detect cycles.  The hare moves twice as fast as
- * the tortoise; if they catch up, then there is a cycle and we stop.
- *
- * The parameters are:
- *
- * @data: the paint server to resolve
- * @get_fallback: a function which, given a paint server, will return its fallback (or NULL).
- *                This function must make sure that the type of the node it gets passed is correct.
- * @apply_fallback: a function which, given a paint server and a fallback one, will apply
- *                  the fallback to the paint server as appropriate.  This function must
- *                  ensure that the type of the fallback node it gets passed is correct.
- *
- * We use plain gpointers because this is called from different places with different
- * structure types.
+ * fallback.
  */
 static void
 resolve_fallbacks (RsvgDrawingCtx *ctx,
-                   gpointer data,
+                   RsvgNode *data,
+                   RsvgNode *last_fallback,
                    GetFallbackFn get_fallback,
                    ApplyFallbackFn apply_fallback)
 {
-    gpointer tortoise, hare;
+    RsvgNode *fallback;
+    const char *fallback_id;
 
-    g_assert (data != NULL);
+    fallback_id = get_fallback (last_fallback);
+    if (fallback_id == NULL)
+        return;
+    fallback = rsvg_acquire_node (ctx, fallback_id);
+    if (fallback == NULL)
+      return;
 
-    tortoise = data;
-    hare = data;
+    apply_fallback (data, fallback);
+    resolve_fallbacks (ctx, data, fallback, get_fallback, apply_fallback);
 
-    while (hare) {
-        gpointer fallback;
-        const char *fallback_id;
-
-        fallback_id = get_fallback (hare);
-        if (fallback_id == NULL)
-          break;
-        fallback = rsvg_defs_lookup (ctx->defs, fallback_id);
-        if (fallback)
-            apply_fallback (data, fallback);
-
-        hare = fallback;
-
-        if (hare) {
-            fallback_id = get_fallback (hare);
-            if (fallback_id == NULL)
-              break;
-            fallback = rsvg_defs_lookup (ctx->defs, fallback_id);
-            if (fallback)
-                apply_fallback (data, fallback);
-
-            hare = fallback;
-        }
-
-        fallback_id = get_fallback (tortoise);
-        tortoise = rsvg_defs_lookup (ctx->defs, fallback_id);
-        if (tortoise == hare)
-            break;
-    }
+    rsvg_release_node (ctx, fallback);
 }
 
 static const char *
-gradient_get_fallback (gpointer data)
+gradient_get_fallback (RsvgNode *node)
 {
-    RsvgNode *node;
-
-    node = data;
     if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
         RsvgLinearGradient *g = (RsvgLinearGradient *) node;
         return g->fallback;
@@ -589,17 +548,12 @@ gradient_get_fallback (gpointer data)
 }
 
 static void
-linear_gradient_apply_fallback (gpointer data, gpointer fallback_data)
+linear_gradient_apply_fallback (RsvgNode *node, RsvgNode *fallback_node)
 {
-    RsvgNode *node;
     RsvgLinearGradient *grad;
-    RsvgNode *fallback_node;
 
-    node = data;
     g_assert (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT);
     grad = (RsvgLinearGradient *) node;
-
-    fallback_node = fallback_data;
 
     if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
         RsvgLinearGradient *fallback = (RsvgLinearGradient *) fallback_node;
@@ -660,23 +614,19 @@ void
 rsvg_linear_gradient_fix_fallback (RsvgDrawingCtx *ctx, RsvgLinearGradient * grad)
 {
     resolve_fallbacks (ctx,
-                       grad,
+                       (RsvgNode *) grad,
+                       (RsvgNode *) grad,
                        gradient_get_fallback,
                        linear_gradient_apply_fallback);
 }
 
 static void
-radial_gradient_apply_fallback (gpointer data, gpointer fallback_data)
+radial_gradient_apply_fallback (RsvgNode *node, RsvgNode *fallback_node)
 {
-    RsvgNode *node;
     RsvgRadialGradient *grad;
-    RsvgNode *fallback_node;
 
-    node = data;
     g_assert (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT);
     grad = (RsvgRadialGradient *) node;
-
-    fallback_node = fallback_data;
 
     if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
         RsvgRadialGradient *fallback = (RsvgRadialGradient *) fallback_node;
@@ -741,16 +691,15 @@ void
 rsvg_radial_gradient_fix_fallback (RsvgDrawingCtx *ctx, RsvgRadialGradient * grad)
 {
     resolve_fallbacks (ctx,
-                       grad,
+                       (RsvgNode *) grad,
+                       (RsvgNode *) grad,
                        gradient_get_fallback,
                        radial_gradient_apply_fallback);
 }
 
 static const char *
-pattern_get_fallback (gpointer data)
+pattern_get_fallback (RsvgNode *node)
 {
-    RsvgNode *node = data;
-
     if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_PATTERN) {
         RsvgPattern *pattern = (RsvgPattern *) node;
 
@@ -760,15 +709,10 @@ pattern_get_fallback (gpointer data)
 }
 
 static void
-pattern_apply_fallback (gpointer data, gpointer fallback_data)
+pattern_apply_fallback (RsvgNode *pattern_node, RsvgNode *fallback_node)
 {
-    RsvgNode *pattern_node;
     RsvgPattern *pattern;
-    RsvgNode *fallback_node;
     RsvgPattern *fallback;
-
-    pattern_node = data;
-    fallback_node = fallback_data;
 
     g_assert (RSVG_NODE_TYPE (pattern_node) == RSVG_NODE_TYPE_PATTERN);
 
@@ -822,7 +766,8 @@ void
 rsvg_pattern_fix_fallback (RsvgDrawingCtx *ctx, RsvgPattern * pattern)
 {
     resolve_fallbacks (ctx,
-                       pattern,
+                       (RsvgNode *) pattern,
+                       (RsvgNode *) pattern,
                        pattern_get_fallback,
                        pattern_apply_fallback);
 }
