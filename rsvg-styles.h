@@ -167,9 +167,9 @@ struct _RsvgState {
     guchar flood_opacity;
     gboolean has_flood_opacity;
 
-    RsvgNode *startMarker;
-    RsvgNode *middleMarker;
-    RsvgNode *endMarker;
+    char *startMarker;
+    char *middleMarker;
+    char *endMarker;
     gboolean has_startMarker;
     gboolean has_middleMarker;
     gboolean has_endMarker;

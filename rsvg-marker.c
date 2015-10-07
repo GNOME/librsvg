@@ -99,14 +99,22 @@ rsvg_new_marker (void)
     return &marker->super;
 }
 
-void
-rsvg_marker_render (RsvgMarker * self, gdouble xpos, gdouble ypos, gdouble orient, gdouble linewidth,
+static void
+rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdouble orient, gdouble linewidth,
                     RsvgDrawingCtx * ctx)
 {
+    RsvgMarker *self;
     cairo_matrix_t affine, taffine;
     unsigned int i;
     gdouble rotation;
     RsvgState *state = rsvg_current_state (ctx);
+
+    self = (RsvgMarker *) rsvg_acquire_node (ctx, marker_name);
+    if (self == NULL || RSVG_NODE_TYPE (&self->super) != RSVG_NODE_TYPE_MARKER)
+      {
+        rsvg_release_node (ctx, &self->super);
+        return;
+      }
 
     cairo_matrix_init_translate (&taffine, xpos, ypos);
     cairo_matrix_multiply (&affine, &taffine, &state->affine);
@@ -191,23 +199,8 @@ rsvg_marker_render (RsvgMarker * self, gdouble xpos, gdouble ypos, gdouble orien
     rsvg_state_pop (ctx);
     if (self->vbox.active)
         _rsvg_pop_view_box (ctx);
-}
 
-RsvgNode *
-rsvg_marker_parse (const RsvgDefs * defs, const char *str)
-{
-    char *name;
-
-    name = rsvg_get_url_string (str);
-    if (name) {
-        RsvgNode *val;
-        val = rsvg_defs_lookup (defs, name);
-        g_free (name);
-
-        if (val && RSVG_NODE_TYPE (val) == RSVG_NODE_TYPE_MARKER)
-            return val;
-    }
-    return NULL;
+    rsvg_release_node (ctx, (RsvgNode *) self);
 }
 
 void
@@ -220,18 +213,18 @@ rsvg_render_markers (RsvgDrawingCtx * ctx,
     cairo_path_data_type_t code, nextcode;
 
     RsvgState *state;
-    RsvgMarker *startmarker;
-    RsvgMarker *middlemarker;
-    RsvgMarker *endmarker;
+    const char *startmarker;
+    const char *middlemarker;
+    const char *endmarker;
     cairo_path_data_t *data, *nextdata, *end;
     cairo_path_data_t nextp;
 
     state = rsvg_current_state (ctx);
 
     linewidth = _rsvg_css_normalize_length (&state->stroke_width, ctx, 'o');
-    startmarker = (RsvgMarker *) state->startMarker;
-    middlemarker = (RsvgMarker *) state->middleMarker;
-    endmarker = (RsvgMarker *) state->endMarker;
+    startmarker = state->startMarker;
+    middlemarker = state->middleMarker;
+    endmarker = state->endMarker;
 
     if (linewidth == 0)
         return;

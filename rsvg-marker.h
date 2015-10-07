@@ -45,11 +45,6 @@ struct _RsvgMarker {
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_marker	    (void);
 G_GNUC_INTERNAL
-void	     rsvg_marker_render	    (RsvgMarker * self, gdouble xpos, gdouble ypos, 
-                                     gdouble orient, gdouble linewidth, RsvgDrawingCtx * ctx);
-G_GNUC_INTERNAL
-RsvgNode    *rsvg_marker_parse	    (const RsvgDefs * defs, const char *str);
-G_GNUC_INTERNAL
 void	     rsvg_render_markers    (RsvgDrawingCtx *ctx, const cairo_path_t *path);
 
 G_END_DECLS

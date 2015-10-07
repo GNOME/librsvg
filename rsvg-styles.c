@@ -226,6 +226,9 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
     dst->clip_path = g_strdup (src->clip_path);
     dst->font_family = g_strdup (src->font_family);
     dst->lang = g_strdup (src->lang);
+    dst->startMarker = g_strdup (src->startMarker);
+    dst->middleMarker = g_strdup (src->middleMarker);
+    dst->endMarker = g_strdup (src->endMarker);
     rsvg_paint_server_ref (dst->fill);
     rsvg_paint_server_ref (dst->stroke);
 
@@ -315,16 +318,22 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->text_anchor = src->text_anchor;
     if (function (dst->has_letter_spacing, src->has_letter_spacing))
         dst->letter_spacing = src->letter_spacing;
-    if (function (dst->has_startMarker, src->has_startMarker))
-        dst->startMarker = src->startMarker;
-    if (function (dst->has_middleMarker, src->has_middleMarker))
-        dst->middleMarker = src->middleMarker;
-    if (function (dst->has_endMarker, src->has_endMarker))
-        dst->endMarker = src->endMarker;
-	if (function (dst->has_shape_rendering_type, src->has_shape_rendering_type))
-		dst->shape_rendering_type = src->shape_rendering_type;
-	if (function (dst->has_text_rendering_type, src->has_text_rendering_type))
-		dst->text_rendering_type = src->text_rendering_type;
+    if (function (dst->has_startMarker, src->has_startMarker)) {
+        g_free (dst->startMarker);
+        dst->startMarker = g_strdup (src->startMarker);
+    }
+    if (function (dst->has_middleMarker, src->has_middleMarker)) {
+        g_free (dst->middleMarker);
+        dst->middleMarker = g_strdup (src->middleMarker);
+    }
+    if (function (dst->has_endMarker, src->has_endMarker)) {
+        g_free (dst->endMarker);
+        dst->endMarker = g_strdup (src->endMarker);
+    }
+    if (function (dst->has_shape_rendering_type, src->has_shape_rendering_type))
+            dst->shape_rendering_type = src->shape_rendering_type;
+    if (function (dst->has_text_rendering_type, src->has_text_rendering_type))
+            dst->text_rendering_type = src->text_rendering_type;
 
     if (function (dst->has_font_family, src->has_font_family)) {
         g_free (dst->font_family);      /* font_family is always set to something */
@@ -455,6 +464,9 @@ rsvg_state_finalize (RsvgState * state)
     g_free (state->clip_path);
     g_free (state->font_family);
     g_free (state->lang);
+    g_free (state->startMarker);
+    g_free (state->middleMarker);
+    g_free (state->endMarker);
     rsvg_paint_server_unref (state->fill);
     rsvg_paint_server_unref (state->stroke);
 
@@ -773,13 +785,16 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
             state->stop_opacity = rsvg_css_parse_opacity (value);
         }
     } else if (g_str_equal (name, "marker-start")) {
-        state->startMarker = rsvg_marker_parse (ctx->priv->defs, value);
+        g_free (state->startMarker);
+        state->startMarker = rsvg_get_url_string (value);
         state->has_startMarker = TRUE;
     } else if (g_str_equal (name, "marker-mid")) {
-        state->middleMarker = rsvg_marker_parse (ctx->priv->defs, value);
+        g_free (state->middleMarker);
+        state->middleMarker = rsvg_get_url_string (value);
         state->has_middleMarker = TRUE;
     } else if (g_str_equal (name, "marker-end")) {
-        state->endMarker = rsvg_marker_parse (ctx->priv->defs, value);
+        g_free (state->endMarker);
+        state->endMarker = rsvg_get_url_string (value);
         state->has_endMarker = TRUE;
     } else if (g_str_equal (name, "stroke-miterlimit")) {
         state->has_miter_limit = TRUE;
