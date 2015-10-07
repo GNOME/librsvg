@@ -1338,7 +1338,7 @@ box_blur_line (gint box_width, gint even_offset,
                       kernel; it's the pixel to remove from the accumulator. */
     gint  *ac;     /* Accumulator for each channel                           */
 
-    ac = (gint *) g_malloc (sizeof (gint) * bpp);
+    ac = g_new (gint, bpp);
 
     /* The algorithm differs for even and odd-sized kernels.
      * With the output at the center,
