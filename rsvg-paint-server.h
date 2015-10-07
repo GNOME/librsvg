@@ -65,7 +65,7 @@ struct _RsvgLinearGradient {
     int hasbbox:1;
     int hasspread:1;
     int hastransform:1;
-    RsvgNode *fallback;
+    char *fallback;
 };
 
 struct _RsvgRadialGradient {
@@ -84,7 +84,7 @@ struct _RsvgRadialGradient {
     int hasspread:1;
     int hasbbox:1;
     int hastransform:1;
-    RsvgNode *fallback;
+    char *fallback;
 };
 
 struct _RsvgPattern {
@@ -104,7 +104,7 @@ struct _RsvgPattern {
     int hascbox:1;
     int hasbbox:1;
     int hastransform:1;
-    RsvgPattern *fallback;
+    char *fallback;
 };
 
 struct _RsvgSolidColour {
@@ -159,11 +159,14 @@ RsvgNode *rsvg_new_stop	        (void);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_pattern      (void);
 G_GNUC_INTERNAL
-void rsvg_pattern_fix_fallback          (RsvgPattern * pattern);
+void rsvg_pattern_fix_fallback          (RsvgDrawingCtx * ctx,
+                                         RsvgPattern * pattern);
 G_GNUC_INTERNAL
-void rsvg_linear_gradient_fix_fallback	(RsvgLinearGradient * grad);
+void rsvg_linear_gradient_fix_fallback	(RsvgDrawingCtx * ctx,
+                                         RsvgLinearGradient * grad);
 G_GNUC_INTERNAL
-void rsvg_radial_gradient_fix_fallback	(RsvgRadialGradient * grad);
+void rsvg_radial_gradient_fix_fallback	(RsvgDrawingCtx * ctx,
+                                         RsvgRadialGradient * grad);
 
 G_END_DECLS
 

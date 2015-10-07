@@ -78,7 +78,7 @@ _set_source_rsvg_linear_gradient (RsvgDrawingCtx * ctx,
     RsvgLinearGradient statlinear;
     statlinear = *linear;
     linear = &statlinear;
-    rsvg_linear_gradient_fix_fallback (linear);
+    rsvg_linear_gradient_fix_fallback (ctx, linear);
 
     if (linear->has_current_color)
         current_color_rgb = linear->current_color;
@@ -122,7 +122,7 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
     RsvgRadialGradient statradial;
     statradial = *radial;
     radial = &statradial;
-    rsvg_radial_gradient_fix_fallback (radial);
+    rsvg_radial_gradient_fix_fallback (ctx, radial);
 
     if (radial->has_current_color)
         current_color_rgb = radial->current_color;
@@ -192,7 +192,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
     int pw, ph;
 
     rsvg_pattern = &local_pattern;
-    rsvg_pattern_fix_fallback (rsvg_pattern);
+    rsvg_pattern_fix_fallback (ctx, rsvg_pattern);
     cr_render = render->cr;
 
     if (rsvg_pattern->obj_bbox)
