@@ -5,47 +5,35 @@
 #include "rsvg-compat.h"
 #include "test-utils.h"
 
-typedef struct _FixtureData
-{
-    const gchar *test_name;
-    const gchar *file_path;
-} FixtureData;
-
 static void
-test_crash (FixtureData *fixture)
+test_crash (gconstpointer data)
 {
+    GFile *file = G_FILE (data);
     RsvgHandle *handle;
-    gchar *target_file;
     GError *error = NULL;
 
-    target_file = g_build_filename (test_utils_get_test_data_path (),
-                                    fixture->file_path, NULL);
-    handle = rsvg_handle_new_from_file (target_file, &error);
-    g_free (target_file);
+    handle = rsvg_handle_new_from_gfile_sync (file, RSVG_HANDLE_FLAGS_NONE, NULL, &error);
     g_assert_no_error (error);
+    g_assert (handle != NULL);
 
     g_object_unref (handle);
 }
 
-static FixtureData fixtures[] =
-{
-    {"/crash/only style information", "crash/bug620238.svg"}
-};
-
-static const gint n_fixtures = G_N_ELEMENTS (fixtures);
-
 int
 main (int argc, char *argv[])
 {
-    gint i;
+    GFile *base, *crash;
     int result;
 
     RSVG_G_TYPE_INIT;
     g_test_init (&argc, &argv, NULL);
 
-    for (i = 0; i < n_fixtures; i++)
-        g_test_add_data_func (fixtures[i].test_name, &fixtures[i], (void*)test_crash);
-
+    base = g_file_new_for_path (test_utils_get_test_data_path ());
+    crash = g_file_get_child (base, "crash");
+    test_utils_add_test_for_all_files ("/crash", crash, crash, test_crash, NULL);
+    g_object_unref (base);
+    g_object_unref (crash);
+                                       
     result = g_test_run ();
 
     rsvg_cleanup ();

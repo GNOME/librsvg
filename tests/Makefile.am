@@ -38,7 +38,7 @@ libtest_utils_la_LIBADD = \
 	$(LIBM)
 
 EXTRA_DIST =						\
-	fixtures/crash/bug620238.svg			\
+	$(wildcard $(srcdir)/fixtures/crash/*.svg) 	\
 	fixtures/dimensions/bug564527.svg		\
 	fixtures/dimensions/bug614018.svg		\
 	fixtures/dimensions/bug612951.svg		\
