@@ -28,12 +28,24 @@ main (int argc, char *argv[])
     RSVG_G_TYPE_INIT;
     g_test_init (&argc, &argv, NULL);
 
-    base = g_file_new_for_path (test_utils_get_test_data_path ());
-    crash = g_file_get_child (base, "crash");
-    test_utils_add_test_for_all_files ("/crash", crash, crash, test_crash, NULL);
-    g_object_unref (base);
-    g_object_unref (crash);
-                                       
+    if (argc < 2) {
+        base = g_file_new_for_path (test_utils_get_test_data_path ());
+        crash = g_file_get_child (base, "crash");
+        test_utils_add_test_for_all_files ("/crash", crash, crash, test_crash, NULL);
+        g_object_unref (base);
+        g_object_unref (crash);
+    } else {
+        guint i;
+
+        for (i = 1; i < argc; i++) {
+            GFile *file = g_file_new_for_commandline_arg (argv[i]);
+
+            test_utils_add_test_for_all_files ("/crash", NULL, file, test_crash, NULL);
+
+            g_object_unref (file);
+        }
+    }
+
     result = g_test_run ();
 
     rsvg_cleanup ();
