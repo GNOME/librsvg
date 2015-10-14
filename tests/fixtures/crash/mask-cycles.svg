@@ -1,0 +1,6 @@
+<svg>
+  <defs>
+    <mask mask="url(#b)" id="b" />
+  </defs>
+  <rect mask="url(#b)" width="10" height="10" />
+</svg>
