@@ -25,8 +25,7 @@ EXTRA_PROGRAMS = $(TESTS)
 
 CLEANFILES = $(TESTS)
 
-DISTCLEANFILES = rsvg-test.html			\
-		 rsvg-test.log
+DISTCLEANFILES = rsvg-test.log
 
 libtest_utils_la_SOURCES = 				\
 	test-utils.c	   				\

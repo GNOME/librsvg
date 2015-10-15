@@ -54,7 +54,6 @@ typedef enum {
 
 static const char *fail_face = "", *normal_face = "";
 FILE *rsvg_test_log_file = NULL;
-FILE *rsvg_test_html_file = NULL;
 
 static void
 rsvg_test_log (const char *fmt, ...)
@@ -67,21 +66,9 @@ rsvg_test_log (const char *fmt, ...)
     va_end (va);
 }
 
-static void
-rsvg_test_html (const char *fmt, ...)
-{
-    va_list va;
-    FILE *file = rsvg_test_html_file ? rsvg_test_html_file : stdout;
-
-    va_start (va, fmt);
-    vfprintf (file, fmt, va);
-    va_end (va);
-}
-
 #define TEST_WIDTH 480
 #define TEST_LIST_FILENAME  TEST_DATA_DIR"/rsvg-test.txt"
 #define TEST_LOG_FILENAME   "rsvg-test.log"
-#define HTML_FILENAME	    "rsvg-test.html"
 
 typedef struct _buffer_diff_result {
     unsigned int pixels_changed;
@@ -301,14 +288,6 @@ rsvg_cairo_check (char const *test_name, gboolean xfail)
 
     g_object_unref (rsvg);
 
-    if (status == RSVG_TEST_FAILURE) {
-	rsvg_test_html ("<tr>");
-	rsvg_test_html ("<td><img src=\"%s\"/></td>", png_filename);
-	rsvg_test_html ("<td><img src=\"%s\"/></td>", reference_png_filename);
-	rsvg_test_html ("<td><img src=\"%s\"/></td>", difference_png_filename);
-	rsvg_test_html ("</tr>\n");
-    }
-
     g_free (png_filename);
     g_free (svg_filename);
     g_free (reference_png_filename);
@@ -342,13 +321,7 @@ main (int argc, char **argv)
 #endif
 
     rsvg_test_log_file = fopen (TEST_LOG_FILENAME, "w");
-    rsvg_test_html_file = fopen (HTML_FILENAME, "w");
 
-    rsvg_test_html ("<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\""
-		    "\"http://www.w3.org/TR/html4/loose.dtd\"/>\n");
-    rsvg_test_html ("<html>\n");
-    rsvg_test_html ("<table>\n");
-    
     if (g_file_get_contents (TEST_LIST_FILENAME, &list_content, &length, NULL)) {
 	rsvg_set_default_dpi_x_y (72, 72);
 
@@ -382,12 +355,6 @@ main (int argc, char **argv)
 	g_free (list_content);
     } else 	
 	fprintf (stderr, "Error opening test list file "TEST_LIST_FILENAME"\n");
-
-    rsvg_test_html ("</table>\n");
-    rsvg_test_html ("</html>\n");
-
-    if (rsvg_test_html_file != NULL)
-	fclose (rsvg_test_html_file);
 
     if (rsvg_test_log_file != NULL)
 	fclose (rsvg_test_log_file);
