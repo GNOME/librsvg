@@ -46,12 +46,6 @@
 
 #include "pdiff.h"
 
-typedef enum {
-    RSVG_TEST_SUCCESS = 0,
-    RSVG_TEST_FAILURE,
-    RSVG_TEST_CRASHED
-} RsvgTestStatus;	
-
 static const char *fail_face = "", *normal_face = "";
 FILE *rsvg_test_log_file = NULL;
 
@@ -193,12 +187,11 @@ rsvg_cairo_size_callback (int *width, int *height, gpointer data)
     *height = dimensions->height;
 }
 
-static RsvgTestStatus
+static void
 rsvg_cairo_check (char const *test_name, gboolean xfail)
 {
     RsvgHandle *rsvg;
     RsvgDimensionData dimensions;
-    RsvgTestStatus status = RSVG_TEST_SUCCESS;
     struct RsvgSizeCallbackData size_data;
     cairo_t *cr;
     cairo_surface_t *surface_a, *surface_b, *surface_diff;
@@ -250,9 +243,8 @@ rsvg_cairo_check (char const *test_name, gboolean xfail)
 	stride_a != stride_b) {
 	if (xfail) {
 	    printf ("%s:\tXFAIL\n", test_name);
-	    status = RSVG_TEST_SUCCESS;
 	} else {
-	    status = RSVG_TEST_FAILURE;
+	    g_test_fail ();
 	    rsvg_test_log ("Image size mismatch (%dx%d != %dx%d)\n",
 			   width_a, height_a, width_b, height_b); 
 	    fprintf (stderr, "%s:\t%sFAIL%s\n",
@@ -266,12 +258,11 @@ rsvg_cairo_check (char const *test_name, gboolean xfail)
 	compare_surfaces (surface_a, surface_b, surface_diff, &result);
 
 	if (result.pixels_changed && result.max_diff > 1) {
-	    status = RSVG_TEST_FAILURE;
+            g_test_fail ();
 	    fprintf (stderr, "%s:\t%sFAIL%s\n",
 		     test_name, fail_face, normal_face);
 	    cairo_surface_write_to_png (surface_diff, difference_png_filename);
 	} else {
-	    status = RSVG_TEST_SUCCESS;
 	    if (xfail)
 		fprintf (stderr, "%s:\t%sUNEXPECTD PASS%s\n",
 			 test_name, fail_face, normal_face);
@@ -292,22 +283,33 @@ rsvg_cairo_check (char const *test_name, gboolean xfail)
     g_free (svg_filename);
     g_free (reference_png_filename);
     g_free (difference_png_filename);
+}
 
-    return status;
+static void
+rsvg_cairo_check_success (gconstpointer filename)
+{
+    rsvg_cairo_check (filename, FALSE);
+}
+
+static void
+rsvg_cairo_check_xfail (gconstpointer filename)
+{
+    rsvg_cairo_check (filename, TRUE);
 }
 
 int
 main (int argc, char **argv)
 {
-    RsvgTestStatus status = RSVG_TEST_SUCCESS;
     char *list_content;
     char **list_lines, **strings;
     char *test_name;
     gboolean xfail, ignore;
     int i, j;
     gsize length;
+    int result;
 
     RSVG_G_TYPE_INIT;
+    g_test_init (&argc, &argv, NULL);
 
     printf ("===============\n"
 	    "Rendering tests\n"
@@ -332,9 +334,6 @@ main (int argc, char **argv)
 	    if (test_name != NULL 
 		&& strlen (test_name) > 0 
 		&& test_name[0] != '#') {
-		char * test_filename;
-
-		test_filename = g_build_filename (TEST_DATA_DIR, test_name, NULL);
 
 		xfail = FALSE;
 		ignore = FALSE;
@@ -344,10 +343,20 @@ main (int argc, char **argv)
 		    else if (strcmp (strings[j], "I") == 0)
 			ignore = TRUE;
 		}
-		if (!ignore && rsvg_cairo_check (test_filename, xfail) != RSVG_TEST_SUCCESS)
-		    status = RSVG_TEST_FAILURE;
+		if (!ignore)
+                {
+		    char * test_filename, * test_testname;
 
-		g_free (test_filename);
+                    test_testname = g_strconcat ("/rsvg/reftest/", test_name, NULL);
+		    test_filename = g_build_filename (TEST_DATA_DIR, test_name, NULL);
+
+                    if (xfail)
+                      g_test_add_data_func_full (test_testname, test_filename, rsvg_cairo_check_xfail, g_free);
+                    else
+                      g_test_add_data_func_full (test_testname, test_filename, rsvg_cairo_check_success, g_free);
+
+                    g_free (test_testname);
+                }
 	    }
 	    g_strfreev (strings);
 	}
@@ -356,11 +365,13 @@ main (int argc, char **argv)
     } else 	
 	fprintf (stderr, "Error opening test list file "TEST_LIST_FILENAME"\n");
 
+    result = g_test_run ();
+
     if (rsvg_test_log_file != NULL)
 	fclose (rsvg_test_log_file);
 
     rsvg_cleanup ();
 
-    return status;
+    return result;
 }
 
