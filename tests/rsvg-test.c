@@ -205,8 +205,6 @@ rsvg_cairo_check (gconstpointer data)
     surface_a = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
 					    dimensions.width, dimensions.height);
     cr = cairo_create (surface_a);
-    cairo_set_source_rgb (cr, 1, 1, 1);
-    cairo_paint (cr);
     rsvg_handle_render_cairo (rsvg, cr);
     cairo_surface_write_to_png (surface_a, png_filename);
 
