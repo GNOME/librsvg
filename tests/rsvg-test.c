@@ -38,8 +38,6 @@
 #include "rsvg.h"
 #include "rsvg-compat.h"
 
-#include "pdiff.h"
-
 #define TEST_LIST_FILENAME  TEST_DATA_DIR"/rsvg-test.txt"
 
 typedef struct _buffer_diff_result {
@@ -118,17 +116,8 @@ compare_surfaces (cairo_surface_t	*surface_a,
 		  cairo_surface_t	*surface_diff,
 		  buffer_diff_result_t	*result)
 {
-    /* These default values were taken straight from the
-     * perceptualdiff program. We'll probably want to tune these as
-     * necessary. */
-    double gamma = 2.2;
-    double luminance = 100.0;
-    double field_of_view = 45.0;
-    int discernible_pixels_changed;
-
-    /* First, we run cairo's old buffer_diff algorithm which looks for
-     * pixel-perfect images, (we do this first since the test suite
-     * runs about 3x slower if we run pdiff_compare first).
+    /* Here, we run cairo's old buffer_diff algorithm which looks for
+     * pixel-perfect images.
      */
     buffer_diff_core (cairo_image_surface_get_data (surface_a),
 		      cairo_image_surface_get_data (surface_b),
@@ -143,18 +132,6 @@ compare_surfaces (cairo_surface_t	*surface_a,
 
     g_test_message ("%d pixels differ (with maximum difference of %d) from reference image\n",
 		    result->pixels_changed, result->max_diff);
-
-    /* Then, if there are any different pixels, we give the pdiff code
-     * a crack at the images. If it decides that there are no visually
-     * discernible differences in any pixels, then we accept this
-     * result as good enough. */
-    discernible_pixels_changed = pdiff_compare (surface_a, surface_b,
-						gamma, luminance, field_of_view);
-    if (discernible_pixels_changed == 0) {
-	result->pixels_changed = 0;
-	g_test_message ("But perceptual diff finds no visually discernible difference.\n"
-		        "Accepting result.\n");
-    }
 }
 
 static void

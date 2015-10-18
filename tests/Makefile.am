@@ -1,5 +1,3 @@
-SUBDIRS=pdiff .
-
 TESTS = 		\
 	rsvg-test	\
 	crash		\
@@ -10,12 +8,10 @@ noinst_LTLIBRARIES = 			\
 
 LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
 	libtest-utils.la						\
-	pdiff/libpdiff.la 						\
 	$(LIBRSVG_LIBS)
 
 INCLUDES = -I$(srcdir) 							\
 	   -I$(top_srcdir)						\
-	   -I$(srcdir)/pdiff						\
 	   -DTEST_DATA_DIR="\"$(srcdir)\""				\
 	   -DTEST_SRC_DIR="\"$(PWD)\""					\
 	   -DTOP_SRC_DIR="\"$(top_srcdir)\""				\
