@@ -11,6 +11,3 @@ bugs/563933
 bugs/605875
 bugs/738367
 bugs/739329
-samples/artwork
-samples/butterfly
-samples/arrows
