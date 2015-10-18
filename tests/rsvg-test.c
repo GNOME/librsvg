@@ -35,9 +35,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 #include "rsvg.h"
 #include "rsvg-private.h"
@@ -46,23 +43,8 @@
 
 #include "pdiff.h"
 
-static const char *fail_face = "", *normal_face = "";
-FILE *rsvg_test_log_file = NULL;
-
-static void
-rsvg_test_log (const char *fmt, ...)
-{
-    va_list va;
-    FILE *file = rsvg_test_log_file ? rsvg_test_log_file : stderr;
-
-    va_start (va, fmt);
-    vfprintf (file, fmt, va);
-    va_end (va);
-}
-
 #define TEST_WIDTH 480
 #define TEST_LIST_FILENAME  TEST_DATA_DIR"/rsvg-test.txt"
-#define TEST_LOG_FILENAME   "rsvg-test.log"
 
 typedef struct _buffer_diff_result {
     unsigned int pixels_changed;
@@ -163,8 +145,8 @@ compare_surfaces (cairo_surface_t	*surface_a,
     if (result->pixels_changed == 0)
 	return;
 
-    rsvg_test_log ("%d pixels differ (with maximum difference of %d) from reference image\n",
-		   result->pixels_changed, result->max_diff);
+    g_test_message ("%d pixels differ (with maximum difference of %d) from reference image\n",
+		    result->pixels_changed, result->max_diff);
 
     /* Then, if there are any different pixels, we give the pdiff code
      * a crack at the images. If it decides that there are no visually
@@ -174,8 +156,8 @@ compare_surfaces (cairo_surface_t	*surface_a,
 						gamma, luminance, field_of_view);
     if (discernible_pixels_changed == 0) {
 	result->pixels_changed = 0;
-	rsvg_test_log ("But perceptual diff finds no visually discernible difference.\n"
-		       "Accepting result.\n");
+	g_test_message ("But perceptual diff finds no visually discernible difference.\n"
+		        "Accepting result.\n");
     }
 }
 
@@ -203,16 +185,13 @@ rsvg_cairo_check (char const *test_name, gboolean xfail)
     unsigned int width_a, height_a, stride_a;
     unsigned int width_b, height_b, stride_b;
 
-    rsvg_test_log ("%s%s\n",test_name, xfail ? " X" : "");
-
     png_filename = g_strdup_printf ("%s-out.png", test_name);
     svg_filename = g_strdup_printf ("%s.svg", test_name);
     reference_png_filename = g_strdup_printf ("%s-ref.png", test_name);
     difference_png_filename = g_strdup_printf ("%s-diff.png", test_name);
 
     rsvg = rsvg_handle_new_from_file (svg_filename, NULL);
-    if (rsvg == NULL)
-	fprintf (stderr, "Cannot open input file %s\n", svg_filename);
+    g_assert (rsvg != NULL);
 
     rsvg_handle_set_size_callback (rsvg, rsvg_cairo_size_callback, &dimensions, NULL);
     rsvg_handle_get_dimensions (rsvg, &dimensions);
@@ -242,13 +221,11 @@ rsvg_cairo_check (char const *test_name, gboolean xfail)
 	height_a != height_b ||
 	stride_a != stride_b) {
 	if (xfail) {
-	    printf ("%s:\tXFAIL\n", test_name);
+	    g_test_message ("XFAIL");
 	} else {
 	    g_test_fail ();
-	    rsvg_test_log ("Image size mismatch (%dx%d != %dx%d)\n",
-			   width_a, height_a, width_b, height_b); 
-	    fprintf (stderr, "%s:\t%sFAIL%s\n",
-		     test_name, fail_face, normal_face);
+	    g_test_message ("Image size mismatch (%dx%d != %dx%d)\n",
+			    width_a, height_a, width_b, height_b); 
 	}
     }
     else {
@@ -259,15 +236,7 @@ rsvg_cairo_check (char const *test_name, gboolean xfail)
 
 	if (result.pixels_changed && result.max_diff > 1) {
             g_test_fail ();
-	    fprintf (stderr, "%s:\t%sFAIL%s\n",
-		     test_name, fail_face, normal_face);
 	    cairo_surface_write_to_png (surface_diff, difference_png_filename);
-	} else {
-	    if (xfail)
-		fprintf (stderr, "%s:\t%sUNEXPECTD PASS%s\n",
-			 test_name, fail_face, normal_face);
-	    else
-		printf ("%s:\tPASS\n", test_name);
 	}
 
 	cairo_surface_destroy (surface_diff);
@@ -311,19 +280,6 @@ main (int argc, char **argv)
     RSVG_G_TYPE_INIT;
     g_test_init (&argc, &argv, NULL);
 
-    printf ("===============\n"
-	    "Rendering tests\n"
-	    "===============\n");
-
-#ifdef HAVE_UNISTD_H
-    if (isatty (2)) {
-	fail_face = "\033[41m\033[37m\033[1m";
-	normal_face = "\033[m";
-    }
-#endif
-
-    rsvg_test_log_file = fopen (TEST_LOG_FILENAME, "w");
-
     if (g_file_get_contents (TEST_LIST_FILENAME, &list_content, &length, NULL)) {
 	rsvg_set_default_dpi_x_y (72, 72);
 
@@ -362,13 +318,12 @@ main (int argc, char **argv)
 	}
 	g_strfreev (list_lines);
 	g_free (list_content);
-    } else 	
-	fprintf (stderr, "Error opening test list file "TEST_LIST_FILENAME"\n");
+    } else {
+	g_test_message ("Error opening test list file "TEST_LIST_FILENAME"\n");
+        g_assert_not_reached ();
+    }
 
     result = g_test_run ();
-
-    if (rsvg_test_log_file != NULL)
-	fclose (rsvg_test_log_file);
 
     rsvg_cleanup ();
 

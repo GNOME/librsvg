@@ -25,8 +25,6 @@ EXTRA_PROGRAMS = $(TESTS)
 
 CLEANFILES = $(TESTS)
 
-DISTCLEANFILES = rsvg-test.log
-
 libtest_utils_la_SOURCES = 				\
 	test-utils.c	   				\
 	test-utils.h					\
