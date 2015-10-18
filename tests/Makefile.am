@@ -27,9 +27,7 @@ CLEANFILES = $(TESTS)
 
 libtest_utils_la_SOURCES = 				\
 	test-utils.c	   				\
-	test-utils.h					\
-	$(top_srcdir)/rsvg-size-callback.c		\
-	$(top_srcdir)/rsvg-size-callback.h
+	test-utils.h
 
 libtest_utils_la_LIBADD = \
 	$(LIBM)

@@ -32,18 +32,14 @@
 
 #include "config.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "rsvg.h"
-#include "rsvg-private.h"
-#include "rsvg-size-callback.h"
 #include "rsvg-compat.h"
 
 #include "pdiff.h"
 
-#define TEST_WIDTH 480
 #define TEST_LIST_FILENAME  TEST_DATA_DIR"/rsvg-test.txt"
 
 typedef struct _buffer_diff_result {
@@ -162,20 +158,11 @@ compare_surfaces (cairo_surface_t	*surface_a,
 }
 
 static void
-rsvg_cairo_size_callback (int *width, int *height, gpointer data)
-{
-    RsvgDimensionData *dimensions = data;
-    *width = dimensions->width;
-    *height = dimensions->height;
-}
-
-static void
 rsvg_cairo_check (gconstpointer data)
 {
     char const *test_name = data;
     RsvgHandle *rsvg;
     RsvgDimensionData dimensions;
-    struct RsvgSizeCallbackData size_data;
     cairo_t *cr;
     cairo_surface_t *surface_a, *surface_b, *surface_diff;
     buffer_diff_result_t result;
@@ -194,14 +181,9 @@ rsvg_cairo_check (gconstpointer data)
     rsvg = rsvg_handle_new_from_file (svg_filename, NULL);
     g_assert (rsvg != NULL);
 
-    rsvg_handle_set_size_callback (rsvg, rsvg_cairo_size_callback, &dimensions, NULL);
     rsvg_handle_get_dimensions (rsvg, &dimensions);
-    size_data.type = RSVG_SIZE_WH_MAX;
-    size_data.height = -1;
-    size_data.width = TEST_WIDTH;
-    size_data.keep_aspect_ratio = FALSE;
-    _rsvg_size_callback (&dimensions.width, &dimensions.height, &size_data);
-
+    g_assert (dimensions.width > 0);
+    g_assert (dimensions.height > 0);
     surface_a = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
 					    dimensions.width, dimensions.height);
     cr = cairo_create (surface_a);
