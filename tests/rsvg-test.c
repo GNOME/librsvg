@@ -99,6 +99,11 @@ buffer_diff_core (unsigned char *_buf_a,
 		}
 
 		result.pixels_changed++;
+		if ((diff_pixel & 0x00ffffff) == 0) {
+		    /* alpha only difference, convert to luminance */
+		    guint8 alpha = diff_pixel >> 24;
+		    diff_pixel = alpha * 0x010101;
+		}
 		row[x] = diff_pixel;
 	    } else {
 		row[x] = 0;
