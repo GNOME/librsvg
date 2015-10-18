@@ -170,8 +170,9 @@ rsvg_cairo_size_callback (int *width, int *height, gpointer data)
 }
 
 static void
-rsvg_cairo_check (char const *test_name, gboolean xfail)
+rsvg_cairo_check (gconstpointer data)
 {
+    char const *test_name = data;
     RsvgHandle *rsvg;
     RsvgDimensionData dimensions;
     struct RsvgSizeCallbackData size_data;
@@ -220,13 +221,9 @@ rsvg_cairo_check (char const *test_name, gboolean xfail)
     if (width_a  != width_b  ||
 	height_a != height_b ||
 	stride_a != stride_b) {
-	if (xfail) {
-	    g_test_message ("XFAIL");
-	} else {
-	    g_test_fail ();
-	    g_test_message ("Image size mismatch (%dx%d != %dx%d)\n",
-			    width_a, height_a, width_b, height_b); 
-	}
+        g_test_fail ();
+        g_test_message ("Image size mismatch (%dx%d != %dx%d)\n",
+                        width_a, height_a, width_b, height_b); 
     }
     else {
 	surface_diff = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
@@ -255,15 +252,10 @@ rsvg_cairo_check (char const *test_name, gboolean xfail)
 }
 
 static void
-rsvg_cairo_check_success (gconstpointer filename)
-{
-    rsvg_cairo_check (filename, FALSE);
-}
-
-static void
 rsvg_cairo_check_xfail (gconstpointer filename)
 {
-    rsvg_cairo_check (filename, TRUE);
+    g_test_incomplete ("Test is expected to fail.");
+    rsvg_cairo_check (filename);
 }
 
 int
@@ -309,7 +301,7 @@ main (int argc, char **argv)
                     if (xfail)
                       g_test_add_data_func_full (test_testname, test_filename, rsvg_cairo_check_xfail, g_free);
                     else
-                      g_test_add_data_func_full (test_testname, test_filename, rsvg_cairo_check_success, g_free);
+                      g_test_add_data_func_full (test_testname, test_filename, rsvg_cairo_check, g_free);
 
                     g_free (test_testname);
                 }
