@@ -139,6 +139,37 @@ compare_surfaces (cairo_surface_t	*surface_a,
 		    result->pixels_changed, result->max_diff);
 }
 
+static char *
+get_output_file (const char *test_file,
+                 const char *extension)
+{
+  const char *output_dir = g_get_tmp_dir ();
+  char *result, *base;
+
+  base = g_path_get_basename (test_file);
+
+  if (g_str_has_suffix (base, ".svg"))
+    base[strlen (base) - strlen (".svg")] = '\0';
+
+  result = g_strconcat (output_dir, G_DIR_SEPARATOR_S, base, extension, NULL);
+  g_free (base);
+
+  return result;
+}
+
+static void
+save_image (cairo_surface_t *surface,
+            const char      *test_name,
+            const char      *extension)
+{
+  char *filename = get_output_file (test_name, extension);
+
+  g_test_message ("Storing test result image at %s", filename);
+  g_assert (cairo_surface_write_to_png (surface, filename) == CAIRO_STATUS_SUCCESS);
+
+  g_free (filename);
+}
+
 static void
 rsvg_cairo_check (gconstpointer data)
 {
@@ -148,17 +179,13 @@ rsvg_cairo_check (gconstpointer data)
     cairo_t *cr;
     cairo_surface_t *surface_a, *surface_b, *surface_diff;
     buffer_diff_result_t result;
-    char *png_filename;
     char *svg_filename;
     char *reference_png_filename;
-    char *difference_png_filename;
     unsigned int width_a, height_a, stride_a;
     unsigned int width_b, height_b, stride_b;
 
-    png_filename = g_strdup_printf ("%s-out.png", test_name);
     svg_filename = g_strdup_printf ("%s.svg", test_name);
     reference_png_filename = g_strdup_printf ("%s-ref.png", test_name);
-    difference_png_filename = g_strdup_printf ("%s-diff.png", test_name);
 
     rsvg = rsvg_handle_new_from_file (svg_filename, NULL);
     g_assert (rsvg != NULL);
@@ -170,7 +197,7 @@ rsvg_cairo_check (gconstpointer data)
 					    dimensions.width, dimensions.height);
     cr = cairo_create (surface_a);
     rsvg_handle_render_cairo (rsvg, cr);
-    cairo_surface_write_to_png (surface_a, png_filename);
+    save_image (surface_a, test_name, "-out.png");
 
     surface_b = cairo_image_surface_create_from_png (reference_png_filename);
     width_a = cairo_image_surface_get_width (surface_a);
@@ -195,7 +222,7 @@ rsvg_cairo_check (gconstpointer data)
 
 	if (result.pixels_changed && result.max_diff > 1) {
             g_test_fail ();
-	    cairo_surface_write_to_png (surface_diff, difference_png_filename);
+            save_image (surface_diff, test_name, "-diff.png");
 	}
 
 	cairo_surface_destroy (surface_diff);
