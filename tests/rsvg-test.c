@@ -207,10 +207,8 @@ rsvg_cairo_check (gconstpointer data)
 
     g_object_unref (rsvg);
 
-    g_free (png_filename);
     g_free (svg_filename);
     g_free (reference_png_filename);
-    g_free (difference_png_filename);
 }
 
 static void

@@ -4,10 +4,10 @@
 # A 'I' makes rsvg-test ignore the line
 
 bugs/388545
-bugs/403357
-bugs/476507
-bugs/548494
-bugs/563933
+reftests/bugs/403357
+reftests/bugs/476507
+reftests/bugs/548494
+reftests/bugs/563933
 bugs/605875
-bugs/738367
+reftests/bugs/738367
 bugs/739329
