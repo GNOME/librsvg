@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="10" height="10">
+  <defs>
+    <rect fill="chartreuse" id="a" width="10" height="10" />
+    <rect fill="tomato" id="a" width="10" height="10" />
+  </defs>
+  <use xlink:href="#a"/>
+</svg>

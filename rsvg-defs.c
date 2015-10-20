@@ -135,6 +135,9 @@ rsvg_defs_set (RsvgDefs * defs, const char *name, RsvgNode * val)
 void
 rsvg_defs_register_name (RsvgDefs * defs, const char *name, RsvgNode * val)
 {
+    if (g_hash_table_lookup (defs->hash, name))
+        return;
+
     g_hash_table_insert (defs->hash, g_strdup (name), val);
 }
 
