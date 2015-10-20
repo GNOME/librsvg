@@ -38,7 +38,7 @@
 #include "rsvg.h"
 #include "rsvg-compat.h"
 
-#define TEST_LIST_FILENAME  TEST_DATA_DIR"/rsvg-test.txt"
+#include "test-utils.h"
 
 typedef struct _buffer_diff_result {
     unsigned int pixels_changed;
@@ -170,24 +170,81 @@ save_image (cairo_surface_t *surface,
   g_free (filename);
 }
 
+static gboolean
+is_svg_or_subdir (GFile *file)
+{
+  char *uri;
+  gboolean result;
+
+  if (g_file_query_file_type (file, 0, NULL) == G_FILE_TYPE_DIRECTORY)
+    return TRUE;
+
+  uri = g_file_get_uri (file);
+  result = g_str_has_suffix (uri, ".svg");
+  g_free (uri);
+
+  return result;
+}
+
+static cairo_status_t
+read_from_stream (void          *stream,
+                  unsigned char *data,
+                  unsigned int   length)
+
+{
+  gssize result;
+  GError *error = NULL;
+
+  result = g_input_stream_read (stream, data, length, NULL, &error);
+  g_assert_no_error (error);
+  g_assert (result == length);
+
+  return CAIRO_STATUS_SUCCESS;
+}
+
+static cairo_surface_t *
+read_png (const char *test_name)
+{
+  char *reference_uri;
+  GFileInputStream *stream;
+  GFile *file;
+  GError *error = NULL;
+  cairo_surface_t *surface;
+
+  reference_uri = g_strconcat (test_name, "-ref.png", NULL);
+  file = g_file_new_for_uri (reference_uri);
+  stream = g_file_read (file, NULL, &error);
+  g_assert_no_error (error);
+  g_assert (stream);
+
+  surface = cairo_image_surface_create_from_png_stream (read_from_stream, stream);
+
+  g_object_unref (stream);
+  g_object_unref (file);
+
+  return surface;
+}
+
 static void
 rsvg_cairo_check (gconstpointer data)
 {
-    char const *test_name = data;
+    GFile *test_file = G_FILE (data);
     RsvgHandle *rsvg;
     RsvgDimensionData dimensions;
     cairo_t *cr;
     cairo_surface_t *surface_a, *surface_b, *surface_diff;
     buffer_diff_result_t result;
-    char *svg_filename;
-    char *reference_png_filename;
+    char *test_file_base;
     unsigned int width_a, height_a, stride_a;
     unsigned int width_b, height_b, stride_b;
+    GError *error = NULL;
 
-    svg_filename = g_strdup_printf ("%s.svg", test_name);
-    reference_png_filename = g_strdup_printf ("%s-ref.png", test_name);
+    test_file_base = g_file_get_uri (test_file);
+    if (g_str_has_suffix (test_file_base, ".svg"))
+      test_file_base[strlen (test_file_base) - strlen (".svg")] = '\0';
 
-    rsvg = rsvg_handle_new_from_file (svg_filename, NULL);
+    rsvg = rsvg_handle_new_from_gfile_sync (test_file, 0, NULL, &error);
+    g_assert_no_error (error);
     g_assert (rsvg != NULL);
 
     rsvg_handle_get_dimensions (rsvg, &dimensions);
@@ -197,9 +254,9 @@ rsvg_cairo_check (gconstpointer data)
 					    dimensions.width, dimensions.height);
     cr = cairo_create (surface_a);
     rsvg_handle_render_cairo (rsvg, cr);
-    save_image (surface_a, test_name, "-out.png");
+    save_image (surface_a, test_file_base, "-out.png");
 
-    surface_b = cairo_image_surface_create_from_png (reference_png_filename);
+    surface_b = read_png (test_file_base);
     width_a = cairo_image_surface_get_width (surface_a);
     height_a = cairo_image_surface_get_height (surface_a);
     stride_a = cairo_image_surface_get_stride (surface_a);
@@ -222,7 +279,7 @@ rsvg_cairo_check (gconstpointer data)
 
 	if (result.pixels_changed && result.max_diff > 1) {
             g_test_fail ();
-            save_image (surface_diff, test_name, "-diff.png");
+            save_image (surface_diff, test_file_base, "-diff.png");
 	}
 
 	cairo_surface_destroy (surface_diff);
@@ -233,73 +290,36 @@ rsvg_cairo_check (gconstpointer data)
     cairo_destroy (cr);
 
     g_object_unref (rsvg);
-
-    g_free (svg_filename);
-    g_free (reference_png_filename);
-}
-
-static void
-rsvg_cairo_check_xfail (gconstpointer filename)
-{
-    g_test_incomplete ("Test is expected to fail.");
-    rsvg_cairo_check (filename);
 }
 
 int
 main (int argc, char **argv)
 {
-    char *list_content;
-    char **list_lines, **strings;
-    char *test_name;
-    gboolean xfail, ignore;
-    int i, j;
-    gsize length;
     int result;
 
     RSVG_G_TYPE_INIT;
     g_test_init (&argc, &argv, NULL);
 
-    if (g_file_get_contents (TEST_LIST_FILENAME, &list_content, &length, NULL)) {
-	rsvg_set_default_dpi_x_y (72, 72);
+    rsvg_set_default_dpi_x_y (72, 72);
 
-	list_lines = g_strsplit (list_content, "\n", 0);
-	for (i = 0; list_lines[i] != NULL; i++) {
-	    strings = g_strsplit_set (list_lines[i], " \t", 0);
-	    test_name = strings[0];
-	    if (test_name != NULL 
-		&& strlen (test_name) > 0 
-		&& test_name[0] != '#') {
+    if (argc < 2) {
+        GFile *base, *tests;
 
-		xfail = FALSE;
-		ignore = FALSE;
-		for (j = 1; strings[j] != NULL; j++) {
-		    if (strcmp (strings[j], "X") == 0)
-			xfail = TRUE;
-		    else if (strcmp (strings[j], "I") == 0)
-			ignore = TRUE;
-		}
-		if (!ignore)
-                {
-		    char * test_filename, * test_testname;
-
-                    test_testname = g_strconcat ("/rsvg/reftest/", test_name, NULL);
-		    test_filename = g_build_filename (TEST_DATA_DIR, test_name, NULL);
-
-                    if (xfail)
-                      g_test_add_data_func_full (test_testname, test_filename, rsvg_cairo_check_xfail, g_free);
-                    else
-                      g_test_add_data_func_full (test_testname, test_filename, rsvg_cairo_check, g_free);
-
-                    g_free (test_testname);
-                }
-	    }
-	    g_strfreev (strings);
-	}
-	g_strfreev (list_lines);
-	g_free (list_content);
+        base = g_file_new_for_path (test_utils_get_test_data_path ());
+        tests = g_file_get_child (base, "reftests");
+        test_utils_add_test_for_all_files ("/rsvg/reftest", tests, tests, rsvg_cairo_check, is_svg_or_subdir);
+        g_object_unref (tests);
+        g_object_unref (base);
     } else {
-	g_test_message ("Error opening test list file "TEST_LIST_FILENAME"\n");
-        g_assert_not_reached ();
+        guint i;
+
+        for (i = 1; i < argc; i++) {
+            GFile *file = g_file_new_for_commandline_arg (argv[i]);
+
+            test_utils_add_test_for_all_files ("/rsvg/reftest", NULL, file, rsvg_cairo_check, is_svg_or_subdir);
+
+            g_object_unref (file);
+        }
     }
 
     result = g_test_run ();
