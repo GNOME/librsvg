@@ -13,10 +13,9 @@ test_utils_get_test_data_path (void)
     if (data_path)
         return data_path;
 
-    data_path = g_build_filename (TEST_SRC_DIR,
-                                  TOP_SRC_DIR,
-                                  "tests",
-                                  "fixtures", NULL);
+    data_path = g_build_filename (g_test_get_dir (G_TEST_DIST),
+                                  "fixtures",
+                                  NULL);
 
     return data_path;
 }

@@ -1,14 +1,28 @@
-TESTS = 		\
+include $(top_srcdir)/glib-tap.mk
+
+test_programs = \
 	rsvg-test	\
 	crash		\
 	styles
 
-noinst_LTLIBRARIES = 			\
-	libtest-utils.la
+rsvg_test_SOURCES = \
+	rsvg-test.c	\
+	test-utils.c	\
+	test-utils.h
+
+crash_SOURCES = \
+	crash.c		\
+	test-utils.c	\
+	test-utils.h
+
+styles_SOURCES = \
+	styles.c	\
+	test-utils.c	\
+	test-utils.h
 
 LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
-	libtest-utils.la						\
-	$(LIBRSVG_LIBS)
+	$(LIBRSVG_LIBS)							\
+	$(LIBM)
 
 INCLUDES = -I$(srcdir) 							\
 	   -I$(top_srcdir)						\
@@ -17,18 +31,7 @@ INCLUDES = -I$(srcdir) 							\
 	   -DTOP_SRC_DIR="\"$(top_srcdir)\""				\
 	  $(LIBRSVG_CFLAGS)
 
-EXTRA_PROGRAMS = $(TESTS)
-
-CLEANFILES = $(TESTS)
-
-libtest_utils_la_SOURCES = 				\
-	test-utils.c	   				\
-	test-utils.h
-
-libtest_utils_la_LIBADD = \
-	$(LIBM)
-
-EXTRA_DIST =						\
+dist_installed_test_data =				\
 	$(wildcard $(srcdir)/fixtures/crash/*.svg) 	\
 	$(wildcard $(srcdir)/fixtures/reftests/*.svg) 	\
 	$(wildcard $(srcdir)/fixtures/reftests/bugs*.svg) 	\
@@ -48,8 +51,3 @@ EXTRA_DIST =						\
 	fixtures/styles/bug614643.svg			\
 	fixtures/styles/bug418823.svg			\
 	fixtures/styles/order.svg
-
-test:
-	@$(MAKE) $(AM_MAKEFLAGS) check;
-
-.PHONY: test
