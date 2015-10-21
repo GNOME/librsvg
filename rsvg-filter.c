@@ -2621,12 +2621,12 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     for (c = 0; c < 4; c++) {
-        char channel = "RGBA"[c];
+        char channel = "rgba"[c]; /* see rsvg_standard_element_start() for where these chars come from */
         for (i = 0; i < self->super.children->len; i++) {
             RsvgNode *child_node;
 
             child_node = (RsvgNode *) g_ptr_array_index (self->super.children, i);
-            if (RSVG_NODE_TYPE (child_node) == RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPONENT_TRANSFER) {
+            if (RSVG_NODE_TYPE (child_node) == RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION) {
                 RsvgNodeComponentTransferFunc *temp = (RsvgNodeComponentTransferFunc *) child_node;
 
                 if (temp->channel == channel) {
@@ -2803,12 +2803,13 @@ rsvg_new_node_component_transfer_function (char channel)
 {
     RsvgNodeComponentTransferFunc *filter;
 
-    filter = g_new (RsvgNodeComponentTransferFunc, 1);
+    filter = g_new0 (RsvgNodeComponentTransferFunc, 1);
     _rsvg_node_init (&filter->super, RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION);
     filter->super.free = rsvg_component_transfer_function_free;
     filter->super.set_atts = rsvg_node_component_transfer_function_set_atts;
     filter->function = identity_component_transfer_func;
     filter->nbTableValues = 0;
+    filter->channel = channel;
     return (RsvgNode *) filter;
 }
 

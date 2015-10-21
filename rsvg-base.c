@@ -277,7 +277,7 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
     else if (!strcmp (name, "feMergeNode"))
         newnode = rsvg_new_filter_primitive_merge_node ();
     else if (!strcmp (name, "feFuncR"))
-        newnode = rsvg_new_node_component_transfer_function ('r');
+        newnode = rsvg_new_node_component_transfer_function ('r'); /* See rsvg_filter_primitive_component_transfer_render() for where these values are used */
     else if (!strcmp (name, "feFuncG"))
         newnode = rsvg_new_node_component_transfer_function ('g');
     else if (!strcmp (name, "feFuncB"))
