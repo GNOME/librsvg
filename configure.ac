@@ -210,15 +210,15 @@ AC_SUBST([GTK_PREFIX],[$($PKG_CONFIG --variable=prefix gdk-pixbuf-2.0)])
 AC_SUBST([CAIRO_PREFIX],[$($PKG_CONFIG --variable=prefix cairo)])
 
 dnl ===========================================================================
-dnl Do we build the miscellaenous tools provided with librsvg ?
+dnl Do we build the miscellaneous tools provided with librsvg ?
 
 AC_ARG_ENABLE(tools,
               AC_HELP_STRING([--disable-tools],
-                             [do not build miscellaenous tools [default=no]]),
+                             [do not build miscellaneous tools [default=no]]),
               [build_misc_tools=$enableval],
               [build_misc_tools=yes])
 
-AC_MSG_CHECKING(whether to build miscellaenous tools)
+AC_MSG_CHECKING(whether to build miscellaneous tools)
 if test "x$build_misc_tools" = "xyes" ; then
 	AC_MSG_RESULT(yes)
 else
@@ -298,5 +298,5 @@ librsvg-$VERSION
 	Build Vala bindings:            ${enable_vala}
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
         GTK+ $GTK3_REQUIRED or later:           ${have_gtk_3}
-	Build miscellaenous tools:      ${build_misc_tools}
+	Build miscellaneous tools:      ${build_misc_tools}
 "
