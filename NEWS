@@ -1,3 +1,6 @@
+Version 2.40.12
+- Fixed bgo#700911 - feComponentTransfer filter functions did not work at all.
+
 Version 2.40.11
 - Add project files for building on Visual Studio (bgo#753555).  Work
   by Chun-wei Fan.
