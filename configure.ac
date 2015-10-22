@@ -270,7 +270,6 @@ Makefile
 librsvg-zip
 gdk-pixbuf-loader/Makefile
 tests/Makefile
-tests/pdiff/Makefile
 tools/Makefile
 doc/Makefile
 doc/version.xml
