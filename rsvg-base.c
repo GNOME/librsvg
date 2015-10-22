@@ -1237,9 +1237,6 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
     g_warn_if_fail (handle->acquired_nodes == NULL);
     g_slist_free (handle->acquired_nodes);
 	
-    if (handle->base_uri)
-        g_free (handle->base_uri);
-
     if (handle->pango_context != NULL)
         g_object_unref (handle->pango_context);
 
