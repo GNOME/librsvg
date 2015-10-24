@@ -1753,18 +1753,11 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
           return TRUE;
 
     if (priv->data_input_stream) {
-        GConverter *converter;
-        GInputStream *stream;
         gboolean ret;
 
-        converter = G_CONVERTER (g_zlib_decompressor_new (G_ZLIB_COMPRESSOR_FORMAT_GZIP));
-        stream = g_converter_input_stream_new (priv->data_input_stream, converter);
-        g_object_unref (converter);
+        ret = rsvg_handle_read_stream_sync (handle, priv->data_input_stream, NULL, error);
         g_object_unref (priv->data_input_stream);
         priv->data_input_stream = NULL;
-
-        ret = rsvg_handle_read_stream_sync (handle, stream, NULL, error);
-        g_object_unref (stream);
 
         return ret;
     }
@@ -1804,6 +1797,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     xmlDocPtr doc;
     GError *err = NULL;
     gboolean res = FALSE;
+    const guchar *buf;
 
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (G_IS_INPUT_STREAM (stream), FALSE);
@@ -1811,6 +1805,25 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
     priv = handle->priv;
+
+    /* detect zipped streams */
+    stream = g_buffered_input_stream_new (stream);
+    if (g_buffered_input_stream_fill (G_BUFFERED_INPUT_STREAM (stream), 2, cancellable, error) != 2) {
+        g_object_unref (stream);
+        return FALSE;
+    }
+    buf = g_buffered_input_stream_peek_buffer (G_BUFFERED_INPUT_STREAM (stream), NULL);
+    if ((buf[0] == 0x1f) && (buf[1] == 0x8b)) {
+        GConverter *converter;
+        GInputStream *conv_stream;
+
+        converter = G_CONVERTER (g_zlib_decompressor_new (G_ZLIB_COMPRESSOR_FORMAT_GZIP));
+        conv_stream = g_converter_input_stream_new (stream, converter);
+        g_object_unref (converter);
+        g_object_unref (stream);
+
+        stream = conv_stream;
+    }
 
     priv->error = &err;
     priv->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
@@ -1861,6 +1874,8 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     res = TRUE;
 
   out:
+
+    g_object_unref (stream);
 
     priv->error = NULL;
     g_clear_object (&priv->cancellable);
