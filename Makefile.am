@@ -168,7 +168,10 @@ EXTRA_DIST =				\
 	Rsvg-2.0.metadata		\
 	config.h.win32.in		\
 	config.h.win32			\
-	rsvg.symbols
+	rsvg.symbols			\
+	glib-tap.mk			\
+	tap-driver.sh			\
+	tap-test
 
 CLEANFILES = \
 	$(enum_sources) \
