@@ -810,7 +810,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     RsvgClipPath *lateclip = NULL;
     cairo_surface_t *surface = NULL;
     RsvgState *state = rsvg_current_state (ctx);
-    gboolean nest;
+    gboolean nest, needs_destroy = FALSE;
 
     if (rsvg_current_state (ctx)->clip_path) {
         RsvgNode *node;
@@ -838,6 +838,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
             output = render->surfaces_stack->data;
             render->surfaces_stack = g_list_delete_link (render->surfaces_stack, render->surfaces_stack);
 
+            needs_destroy = TRUE;
             surface = rsvg_filter_render ((RsvgFilter *) filter, output, ctx, &render->bbox, "2103");
             /* Don't destroy the output surface, it's owned by child_cr */
         }
@@ -882,7 +883,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     g_free (render->bb_stack->data);
     render->bb_stack = g_list_delete_link (render->bb_stack, render->bb_stack);
 
-    if (state->filter) {
+    if (needs_destroy) {
         cairo_surface_destroy (surface);
     }
 }
