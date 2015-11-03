@@ -331,7 +331,7 @@ rsvg_path_builder_arc (RsvgPathBuilder *builder,
 
     for (i = 0; i < n_segs; i++)
         rsvg_path_arc_segment (builder, cx, cy,
-			                   theta1 + i * delta_theta / n_segs,
+                               theta1 + i * delta_theta / n_segs,
                                theta1 + (i + 1) * delta_theta / n_segs,
                                rx, ry, x_axis_rotation);
 }
@@ -375,7 +375,7 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
             ctx->cp.point.x = ctx->rp.point.x = ctx->params[0];
             ctx->cp.point.y = ctx->rp.point.y = ctx->params[1];
             ctx->param = 0;
-	    ctx->cmd = 'l'; /* implicit linetos after a moveto */
+            ctx->cmd = 'l'; /* implicit linetos after a moveto */
         }
         break;
     case 'l':
@@ -540,8 +540,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
                                    sweep_flag,
                                    x2, y2);
 
-            ctx->cp.point.x = x2;
-            ctx->cp.point.y = y2;
+            ctx->rp.point.x = ctx->cp.point.x = x2;
+            ctx->rp.point.y = ctx->cp.point.y = y2;
 
             ctx->param = 0;
         }
