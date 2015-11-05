@@ -346,14 +346,14 @@ rsvg_parse_path_default_xy (RSVGParsePathCtx * ctx, int n_params)
 
     if (ctx->rel) {
         for (i = ctx->param; i < n_params; i++) {
-            if (i > 2)
-                ctx->params[i] = ctx->params[i - 2];
+            /* we shouldn't get 0 here (usually ctx->param > 0 as
+               precondition) */
+            if (i == 0)
+                ctx->params[i] = ctx->cp.point.x;
             else if (i == 1)
                 ctx->params[i] = ctx->cp.point.y;
-            else if (i == 0)
-                /* we shouldn't get here (usually ctx->param > 0 as
-                   precondition) */
-                ctx->params[i] = ctx->cp.point.x;
+            else
+                ctx->params[i] = ctx->params[i - 2];
         }
     } else {
         for (i = ctx->param; i < n_params; i++)
