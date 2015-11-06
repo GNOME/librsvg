@@ -202,7 +202,7 @@ main (int argc, char **argv)
     if (output != NULL) {
         output_file = fopen (output, "wb");
         if (!output_file) {
-            fprintf (stderr, _("Error saving to file: %s\n"), output);
+            g_printerr (_("Error saving to file: %s\n"), output);
             g_free (output);
             exit (1);
         }
@@ -218,7 +218,7 @@ main (int argc, char **argv)
         n_args = 1;
         using_stdin = TRUE;
     } else if (n_args > 1 && (!format || !(!strcmp (format, "ps") || !strcmp (format, "eps") || !strcmp (format, "pdf")))) {
-        fprintf (stderr, _("Multiple SVG files are only allowed for PDF and (E)PS output.\n"));
+        g_printerr (_("Multiple SVG files are only allowed for PDF and (E)PS output.\n"));
         exit (1);
     }
 
@@ -300,16 +300,16 @@ main (int argc, char **argv)
         g_clear_object (&file);
 
         if (error != NULL) {
-            fprintf (stderr, _("Error reading SVG:"));
+            g_printerr (_("Error reading SVG:"));
             display_error (error);
-            fprintf (stderr, "\n");
+            g_printerr ("\n");
             exit (1);
         }
 
         export_lookup_id = get_lookup_id_from_command_line (export_id);
         if (export_lookup_id != NULL
             && !rsvg_handle_has_sub (rsvg, export_lookup_id)) {
-            fprintf (stderr, _("File %s does not have an object with id \"%s\"\n"), args[i], export_id);
+            g_printerr (_("File %s does not have an object with id \"%s\"\n"), args[i], export_id);
             exit (1);
         }
 
@@ -317,7 +317,7 @@ main (int argc, char **argv)
             struct RsvgSizeCallbackData size_data;
 
             if (!rsvg_handle_get_dimensions_sub (rsvg, &dimensions, export_lookup_id))
-                fprintf (stderr, "Could not get dimensions for file %s\n", args[i]);
+                g_printerr ("Could not get dimensions for file %s\n", args[i]);
 
             /* if both are unspecified, assume user wants to zoom the image in at least 1 dimension */
             if (width == -1 && height == -1) {
@@ -384,7 +384,7 @@ main (int argc, char **argv)
 #endif
 #endif
             else {
-                fprintf (stderr, _("Unknown output format."));
+                g_printerr (_("Unknown output format."));
                 exit (1);
             }
 
@@ -408,7 +408,7 @@ main (int argc, char **argv)
             RsvgPositionData pos;
 
             if (!rsvg_handle_get_position_sub (rsvg, &pos, export_lookup_id)) {
-                fprintf (stderr, _("File %s does not have an object with id \"%s\"\n"), args[i], export_id);
+                g_printerr (_("File %s does not have an object with id \"%s\"\n"), args[i], export_id);
                 exit (1);
             }
 
