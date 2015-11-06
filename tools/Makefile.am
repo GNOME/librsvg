@@ -1,8 +1,7 @@
 if BUILD_MISC_TOOLS
 noinst_PROGRAMS = 			\
 	rsvg-dimensions			\
-	test-performance		\
-	test-memory
+	test-performance
 
 noinst_LTLIBRARIES = 			\
 	librsvg_tools_main.la
@@ -38,8 +37,3 @@ rsvg_dimensions_SOURCES = rsvg-dimensions.c
 rsvg_dimensions_LDFLAGS =
 rsvg_dimensions_DEPENDENCIES = $(DEPS)
 rsvg_dimensions_LDADD = $(LDADDS) $(LIBM)
-
-test_memory_SOURCES = test-memory.c
-test_memory_LDFLAGS =
-test_memory_DEPENDENCIES = $(DEPS)
-test_memory_LDADD = librsvg_tools_main.la $(LDADDS) $(LIBM)
