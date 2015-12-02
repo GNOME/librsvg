@@ -1,5 +1,17 @@
 Version 2.40.12
+- Benjamin Otte did *great* work in refactoring the test harness to
+  use Glib's gtest infrastructure, instead of using home-grown
+  machinery.  Tests can simply be put as SVG files in the tests/
+  subdirectories; it is not necessary to list them explicitly in some
+  text file.  Yay!
+- Gzipped SVGs now work if read from streams.
+- References to objects/filters/URIs/etc. are now handled lazily.
+  Also, there is a general-purpose cycle detector so malformed SVGs
+  don't cause infinite loops.  Work by Benjamin Otte.
+- Removed parsing of Adobe blend modes; they were not implemented, anyway.
 - Fixed bgo#700911 - feComponentTransfer filter functions did not work at all.
+- Fixed bgo#630732 - out-of-bounds read in feComponentTransfer with tableValues.
+- Fixed bgo#677068 - incorrect reflection points in paths.
 
 Version 2.40.11
 - Add project files for building on Visual Studio (bgo#753555).  Work
