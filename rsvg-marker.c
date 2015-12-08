@@ -203,21 +203,361 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
     rsvg_release_node (ctx, (RsvgNode *) self);
 }
 
+typedef struct {
+    gboolean is_degenerate; /* If true, only (p1x, p1y) are valid.  If false, all are valid */
+    double p1x, p1y;
+    double p2x, p2y;
+    double p3x, p3y;
+    double p4x, p4y;
+} Segment;
+
+typedef enum {
+    SEGMENT_START,
+    SEGMENT_END,
+} SegmentState;
+
+/* This converts a cairo_path_t into a list of curveto-like segments.  Each segment can be:
+ *
+ * 1. segment->is_degenerate = TRUE => the segment is actually a single point (segment->p1x, segment->p1y)
+ *
+ * 2. segment->is_degenerate = FALSE => either a lineto or a curveto (or the effective lineto that results from a closepath).
+ *    We have the following points:
+ *       P1 = (p1x, p1y)
+ *       P2 = (p2x, p2y)
+ *       P3 = (p3x, p3y)
+ *       P4 = (p4x, p4y)
+ *
+ *    The start and end points are P1 and P4, respectively.
+ *    The tangent at the start point is given by the vector (P2 - P1).
+ *    The tangent at the end point is given by the vector (P4 - P3).
+ *    The tangents also work if the segment refers to a lineto (they will both just point in the same direction).
+ */
+
+#define EPSILON 1e-10
+#define DOUBLE_EQUALS(a, b) (fabs ((a) - (b)) < EPSILON)
+
+static void
+path_to_segments (const cairo_path_t *path,
+                  Segment **out_segments,
+                  int *num_segments)
+{
+    int i;
+    double last_x, last_y;
+    double cur_x, cur_y;
+    double subpath_start_x, subpath_start_y;
+    int max_segments;
+    int segment_num;
+    Segment *segments;
+    SegmentState state;
+
+    max_segments = path->num_data; /* We'll generate maximum this many segments */
+    segments = g_new (Segment, max_segments);
+    *out_segments = segments;
+
+    last_x = last_y = cur_x = cur_y = subpath_start_x = subpath_start_y = 0.0;
+
+    segment_num = -1;
+    state = SEGMENT_END;
+
+    for (i = 0; i < path->num_data; i += path->data[i].header.length) {
+        last_x = cur_x;
+        last_y = cur_y;
+
+        switch (path->data[i].header.type) {
+        case CAIRO_PATH_MOVE_TO:
+            segment_num++;
+            g_assert (segment_num < max_segments);
+
+            g_assert (i + 1 < path->num_data);
+            cur_x = path->data[i + 1].point.x;
+            cur_y = path->data[i + 1].point.y;
+
+            subpath_start_x = cur_x;
+            subpath_start_y = cur_y;
+
+            segments[segment_num].is_degenerate = TRUE;
+
+            segments[segment_num].p1x = cur_x;
+            segments[segment_num].p1y = cur_y;
+
+            state = SEGMENT_START;
+
+            break;
+
+        case CAIRO_PATH_LINE_TO:
+            g_assert (i + 1 < path->num_data);
+            cur_x = path->data[i + 1].point.x;
+            cur_y = path->data[i + 1].point.y;
+
+            if (state == SEGMENT_START) {
+                segments[segment_num].is_degenerate = FALSE;
+                state = SEGMENT_END;
+            } else {
+                segment_num++;
+                g_assert (segment_num < max_segments);
+
+                segments[segment_num].is_degenerate = FALSE;
+
+                segments[segment_num].p1x = last_x;
+                segments[segment_num].p1y = last_y;
+            }
+
+            segments[segment_num].p2x = cur_x;
+            segments[segment_num].p2y = cur_y;
+
+            segments[segment_num].p3x = last_x;
+            segments[segment_num].p3y = last_y;
+
+            segments[segment_num].p4x = cur_x;
+            segments[segment_num].p4y = cur_y;
+
+            break;
+
+        case CAIRO_PATH_CURVE_TO:
+            g_assert (i + 3 < path->num_data);
+            cur_x = path->data[i + 3].point.x;
+            cur_y = path->data[i + 3].point.y;
+
+            if (state == SEGMENT_START) {
+                segments[segment_num].is_degenerate = FALSE;
+                state = SEGMENT_END;
+            } else {
+                segment_num++;
+                g_assert (segment_num < max_segments);
+
+                segments[segment_num].is_degenerate = FALSE;
+
+                segments[segment_num].p1x = last_x;
+                segments[segment_num].p1y = last_y;
+            }
+
+            segments[segment_num].p2x = path->data[i + 1].point.x;
+            segments[segment_num].p2y = path->data[i + 1].point.y;
+
+            segments[segment_num].p3x = path->data[i + 2].point.x;
+            segments[segment_num].p3y = path->data[i + 2].point.y;
+
+            segments[segment_num].p4x = cur_x;
+            segments[segment_num].p4y = cur_y;
+
+            /* Fix the tangents for when the middle control points coincide with their respective endpoints */
+
+            if (DOUBLE_EQUALS (segments[segment_num].p2x, segments[segment_num].p1x)
+                && DOUBLE_EQUALS (segments[segment_num].p2y, segments[segment_num].p1y)) {
+                segments[segment_num].p2x = segments[segment_num].p3x;
+                segments[segment_num].p2y = segments[segment_num].p3y;
+            }
+
+            if (DOUBLE_EQUALS (segments[segment_num].p3x, segments[segment_num].p4x)
+                && DOUBLE_EQUALS (segments[segment_num].p3y, segments[segment_num].p4y)) {
+                segments[segment_num].p3x = segments[segment_num].p2x;
+                segments[segment_num].p3y = segments[segment_num].p2y;
+            }
+
+            break;
+
+        case CAIRO_PATH_CLOSE_PATH:
+            cur_x = subpath_start_x;
+            cur_y = subpath_start_y;
+
+            if (state == SEGMENT_START) {
+                segments[segment_num].is_degenerate = FALSE;
+
+                segments[segment_num].p2x = cur_x;
+                segments[segment_num].p2y = cur_y;
+
+                segments[segment_num].p3x = last_x;
+                segments[segment_num].p3y = last_y;
+
+                segments[segment_num].p4x = cur_x;
+                segments[segment_num].p4y = cur_y;
+
+                state = SEGMENT_END;
+            } else {
+                /* nothing; closepath after moveto (or a single lone closepath) does nothing */
+            }
+
+            break;
+
+        default:
+            g_assert_not_reached ();
+        }
+    }
+
+    *num_segments = segment_num + 1;
+    g_assert (*num_segments <= max_segments);
+}
+
+static gboolean
+points_equal (double x1, double y1, double x2, double y2)
+{
+    return DOUBLE_EQUALS (x1, x2) && DOUBLE_EQUALS (y1, y2);
+}
+
+/* A segment is zero length if it is degenerate, or if all four control points
+ * coincide (the first and last control points may coincide, but the others may
+ * define a loop - thus nonzero length)
+ */
+static gboolean
+is_zero_length_segment (Segment *segment)
+{
+    double p1x, p1y;
+    double p2x, p2y;
+    double p3x, p3y;
+    double p4x, p4y;
+
+    if (segment->is_degenerate)
+        return TRUE;
+
+    p1x = segment->p1x;
+    p1y = segment->p1y;
+
+    p2x = segment->p2x;
+    p2y = segment->p2y;
+
+    p3x = segment->p3x;
+    p3y = segment->p3y;
+
+    p4x = segment->p4x;
+    p4y = segment->p4y;
+
+    return (points_equal (p1x, p1y, p2x, p2y)
+            && points_equal (p1x, p1y, p3x, p3y)
+            && points_equal (p1x, p1y, p4x, p4y));
+}
+
+/* The SVG spec 1.1 says http://www.w3.org/TR/SVG/implnote.html#PathElementImplementationNotes
+ *
+ * Certain line-capping and line-joining situations and markers
+ * require that a path segment have directionality at its start and
+ * end points. Zero-length path segments have no directionality. In
+ * these cases, the following algorithm is used to establish
+ * directionality:  to determine the directionality of the start
+ * point of a zero-length path segment, go backwards in the path
+ * data specification within the current subpath until you find a
+ * segment which has directionality at its end point (e.g., a path
+ * segment with non-zero length) and use its ending direction;
+ * otherwise, temporarily consider the start point to lack
+ * directionality. Similarly, to determine the directionality of the
+ * end point of a zero-length path segment, go forwards in the path
+ * data specification within the current subpath until you find a
+ * segment which has directionality at its start point (e.g., a path
+ * segment with non-zero length) and use its starting direction;
+ * otherwise, temporarily consider the end point to lack
+ * directionality. If the start point has directionality but the end
+ * point doesn't, then the end point uses the start point's
+ * directionality. If the end point has directionality but the start
+ * point doesn't, then the start point uses the end point's
+ * directionality. Otherwise, set the directionality for the path
+ * segment's start and end points to align with the positive x-axis
+ * in user space.
+ */
+static gboolean
+find_incoming_directionality_backwards (Segment *segments, int num_segments, int start_index, double *vx, double *vy)
+{
+    int j;
+    gboolean found;
+
+    /* "go backwards ... within the current subpath until ... segment which has directionality at its end point" */
+
+    found = FALSE;
+
+    for (j = start_index; j >= 0; j--) {
+        if (segments[j].is_degenerate)
+            break; /* reached the beginning of the subpath as we ran into a standalone point */
+        else {
+            if (is_zero_length_segment (&segments[j]))
+                continue;
+            else {
+                found = TRUE;
+                break;
+            }
+        }
+    }
+
+    if (found) {
+        g_assert (j >= 0);
+        *vx = segments[j].p4x - segments[j].p3x;
+        *vy = segments[j].p4y - segments[j].p3y;
+        return TRUE;
+    } else {
+        *vx = 0.0;
+        *vy = 0.0;
+        return FALSE;
+    }
+}
+
+static gboolean
+find_outgoing_directionality_forwards (Segment *segments, int num_segments, int start_index, double *vx, double *vy)
+{
+    int j;
+    gboolean found;
+
+    /* "go forwards ... within the current subpath until ... segment which has directionality at its start point" */
+
+    found = FALSE;
+
+    for (j = start_index; j < num_segments; j++) {
+        if (segments[j].is_degenerate)
+            break; /* reached the end of a subpath as we ran into a standalone point */
+        else {
+            if (is_zero_length_segment (&segments[j]))
+                continue;
+            else {
+                found = TRUE;
+                break;
+            }
+        }
+    }
+
+    if (found) {
+        g_assert (j < num_segments);
+        *vx = segments[j].p2x - segments[j].p1x;
+        *vy = segments[j].p2y - segments[j].p1y;
+        return TRUE;
+    } else {
+        *vx = 0.0;
+        *vy = 0.0;
+        return FALSE;
+    }
+}
+
+static double
+angle_from_vector (double vx, double vy)
+{
+    double angle;
+
+    angle = atan2 (vy, vx);
+
+    if (isnan (angle))
+        return 0.0;
+    else
+        return angle;
+}
+
+typedef enum {
+    NO_SUBPATH,
+    IN_SUBPATH,
+} SubpathState;
+
 void
 rsvg_render_markers (RsvgDrawingCtx * ctx,
                      const cairo_path_t *path)
 {
-    double x, y;
-    double lastx, lasty;
-    double linewidth;
-    cairo_path_data_type_t code, nextcode;
-
     RsvgState *state;
+    double linewidth;
     const char *startmarker;
     const char *middlemarker;
     const char *endmarker;
-    cairo_path_data_t *data, *nextdata, *end;
-    cairo_path_data_t nextp;
+
+    int i;
+    double incoming_vx, incoming_vy;
+    double outgoing_vx, outgoing_vy;
+
+    Segment *segments;
+    int num_segments;
+
+    SubpathState subpath_state;
 
     state = rsvg_current_state (ctx);
 
@@ -232,116 +572,80 @@ rsvg_render_markers (RsvgDrawingCtx * ctx,
     if (!startmarker && !middlemarker && !endmarker)
         return;
 
-    x = 0;
-    y = 0;
-
     if (path->num_data <= 0)
         return;
 
-    end = &path->data[path->num_data];
-    data = &path->data[0];
-    nextcode = data[0].header.type;
-    if (data[0].header.length > 1)
-        nextp = data[data[0].header.length - 1];
-    else
-        nextp.point.x = nextp.point.y = 0.;
+    /* Convert the path to a list of segments and bare points (i.e. degenerate segments) */
+    path_to_segments (path, &segments, &num_segments);
 
-    for ( ; data < end; data = nextdata) {
-        lastx = x;
-        lasty = y;
-        x = nextp.point.x;
-        y = nextp.point.y;
-        code = nextcode;
+    subpath_state = NO_SUBPATH;
 
-        nextdata = data + data->header.length;
-        if (nextdata < end) {
-            nextcode = nextdata->header.type;
-            if (nextdata->header.length > 1) {
-                nextp = nextdata[nextdata->header.length - 1];
+    for (i = 0; i < num_segments; i++) {
+        incoming_vx = incoming_vy = outgoing_vx = outgoing_vy = 0.0;
+
+        if (segments[i].is_degenerate) {
+            if (subpath_state == IN_SUBPATH) {
+                g_assert (i > 0);
+
+                /* Got a lone point after a subpath; render the subpath's end marker first */
+
+                find_incoming_directionality_backwards (segments, num_segments, i - 1, &incoming_vx, &incoming_vy);
+                rsvg_marker_render (endmarker, segments[i - 1].p4x, segments[i - 1].p4y, angle_from_vector (incoming_vx, incoming_vy), linewidth, ctx);
+            }
+
+            /* Render marker for the lone point; no directionality */
+            rsvg_marker_render (middlemarker, segments[i].p1x, segments[i].p1y, 0.0, linewidth, ctx);
+
+            subpath_state = NO_SUBPATH;
+        } else {
+            /* Not a degenerate segment */
+
+            if (subpath_state == NO_SUBPATH) {
+                find_outgoing_directionality_forwards (segments, num_segments, i, &outgoing_vx, &outgoing_vy);
+                rsvg_marker_render (startmarker, segments[i].p1x, segments[i].p1y, angle_from_vector (outgoing_vx, outgoing_vy), linewidth, ctx);
+
+                subpath_state = IN_SUBPATH;
             } else {
-                /* keep nextp unchanged */
-            }
-        } else {
-            nextcode = CAIRO_PATH_MOVE_TO;
-        }
+                /* subpath_state == IN_SUBPATH */
 
-        if (nextcode == CAIRO_PATH_MOVE_TO ||
-            code == CAIRO_PATH_CLOSE_PATH) {
-            if (endmarker) {
-                if (code == CAIRO_PATH_CURVE_TO) {
-                    if (data[2].point.x == x && data[2].point.y == y) {
-                        /* Can't calculate angle as points are coincident; use the previous point */
-                        rsvg_marker_render (endmarker, x, y,
-                                            atan2 (y - data[1].point.y,
-                                                   x - data[1].point.x),
-                                            linewidth, ctx);
-                    } else {
-                        rsvg_marker_render (endmarker, x, y,
-                                            atan2 (y - data[2].point.y,
-                                                   x - data[2].point.x),
-                                            linewidth, ctx);
-                    }
-                } else {
-                    rsvg_marker_render (endmarker, x, y,
-                                        atan2 (y - lasty, x - lastx),
-                                        linewidth, ctx);
-                }
-            }
-        } else if (code == CAIRO_PATH_MOVE_TO ||
-                   code == CAIRO_PATH_CLOSE_PATH) {
-            if (startmarker) {
-                if (nextcode == CAIRO_PATH_CURVE_TO) {
-                    if (nextdata[1].point.x == x && nextdata[1].point.y == y) {
-                        /* Can't calculate angle as points are coincident; use the next point */
-                        rsvg_marker_render (startmarker, x, y,
-                                            atan2 (nextdata[2].point.y - y,
-                                                   nextdata[2].point.x - x),
-                                            linewidth,
-                                            ctx);
-                    } else {
-                        rsvg_marker_render (startmarker, x, y,
-                                            atan2 (nextdata[1].point.y - y,
-                                                   nextdata[1].point.x - x),
-                                            linewidth,
-                                            ctx);
-                    }
-                } else {
-                    rsvg_marker_render (startmarker, x, y,
-                                        atan2 (nextp.point.y - y, nextp.point.x - x),
-                                        linewidth,
-                                        ctx);
-                }
-            }
-        } else {
-            if (middlemarker) {
-                double xdifin, ydifin, xdifout, ydifout, intot, outtot, angle;
+                gboolean has_incoming, has_outgoing;
+                double incoming, outgoing;
+                double angle;
 
-                if (code == CAIRO_PATH_CURVE_TO) {
-                    xdifin = x - data[2].point.x;
-                    ydifin = y - data[2].point.y;
-                } else {
-                    xdifin = x - lastx;
-                    ydifin = y - lasty;
-                }
-                if (nextcode == CAIRO_PATH_CURVE_TO) {
-                    xdifout = nextdata[1].point.x - x;
-                    ydifout = nextdata[1].point.y - y;
-                } else {
-                    xdifout = nextp.point.x - x;
-                    ydifout = nextp.point.y - y;
-                }
+                g_assert (i > 0);
 
-                intot = sqrt (xdifin * xdifin + ydifin * ydifin);
-                outtot = sqrt (xdifout * xdifout + ydifout * ydifout);
+                has_incoming = find_incoming_directionality_backwards (segments, num_segments, i - 1, &incoming_vx, &incoming_vy);
+                has_outgoing = find_outgoing_directionality_forwards (segments, num_segments, i, &outgoing_vx, &outgoing_vy);
 
-                xdifin /= intot;
-                ydifin /= intot;
-                xdifout /= outtot;
-                ydifout /= outtot;
+                if (has_incoming)
+                    incoming = angle_from_vector (incoming_vx, incoming_vy);
 
-                angle = atan2 ((ydifin + ydifout) / 2, (xdifin + xdifout) / 2);
-                rsvg_marker_render (middlemarker, x, y, angle, linewidth, ctx);
+                if (has_outgoing)
+                    outgoing = angle_from_vector (outgoing_vx, outgoing_vy);
+
+                if (has_incoming && has_outgoing)
+                    angle = (incoming + outgoing) / 2;
+                else if (has_incoming)
+                    angle = incoming;
+                else if (has_outgoing)
+                    angle = outgoing;
+                else
+                    angle = 0.0;
+
+                rsvg_marker_render (middlemarker, segments[i].p1x, segments[i].p1y, angle, linewidth, ctx);
             }
         }
     }
+
+    /* Finally, render the last point */
+
+    if (num_segments > 0) {
+        if (!segments[num_segments - 1].is_degenerate) {
+            find_incoming_directionality_backwards (segments, num_segments, num_segments - 1, &incoming_vx, &incoming_vy);
+
+            rsvg_marker_render (endmarker, segments[num_segments - 1].p4x, segments[num_segments - 1].p4y, angle_from_vector (incoming_vx, incoming_vy), linewidth, ctx);
+        }
+    }
+
+    g_free (segments);
 }
