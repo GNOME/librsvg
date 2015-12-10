@@ -45,10 +45,6 @@ typedef struct _RsvgFilterPrimitiveOutput RsvgFilterPrimitiveOutput;
 struct _RsvgFilterPrimitiveOutput {
     cairo_surface_t *surface;
     RsvgIRect bounds;
-    gboolean Rused;
-    gboolean Gused;
-    gboolean Bused;
-    gboolean Aused;
 };
 
 typedef struct _RsvgFilterContext RsvgFilterContext;
@@ -502,10 +498,6 @@ rsvg_filter_render (RsvgFilter *self,
     rsvg_filter_fix_coordinate_system (ctx, rsvg_current_state (context), bounds);
 
     ctx->lastresult.surface = cairo_surface_reference (source);
-    ctx->lastresult.Rused = 1;
-    ctx->lastresult.Gused = 1;
-    ctx->lastresult.Bused = 1;
-    ctx->lastresult.Aused = 1;
     ctx->lastresult.bounds = rsvg_filter_primitive_get_bounds (NULL, ctx);
 
     for (i = 0; i < 4; i++)
@@ -560,10 +552,6 @@ rsvg_filter_store_result (GString * name,
                           RsvgFilterContext * ctx)
 {
     RsvgFilterPrimitiveOutput output;
-    output.Rused = 1;
-    output.Gused = 1;
-    output.Bused = 1;
-    output.Aused = 1;
     output.bounds.x0 = 0;
     output.bounds.y0 = 0;
     output.bounds.x1 = ctx->width;
@@ -668,26 +656,20 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
 
     if (!strcmp (name->str, "SourceGraphic")) {
         output.surface = cairo_surface_reference (ctx->source_surface);
-        output.Rused = output.Gused = output.Bused = output.Aused = 1;
         return output;
     } else if (!strcmp (name->str, "BackgroundImage")) {
         output.surface = rsvg_filter_get_bg (ctx);
         if (output.surface)
             cairo_surface_reference (output.surface);
-        output.Rused = output.Gused = output.Bused = output.Aused = 1;
         return output;
     } else if (!strcmp (name->str, "") || !strcmp (name->str, "none")) {
         output = ctx->lastresult;
         cairo_surface_reference (output.surface);
         return output;
     } else if (!strcmp (name->str, "SourceAlpha")) {
-        output.Rused = output.Gused = output.Bused = 0;
-        output.Aused = 1;
         output.surface = surface_get_alpha (ctx->source_surface, ctx);
         return output;
     } else if (!strcmp (name->str, "BackgroundAlpha")) {
-        output.Rused = output.Gused = output.Bused = 0;
-        output.Aused = 1;
         output.surface = surface_get_alpha (rsvg_filter_get_bg (ctx), ctx);
         return output;
     }
@@ -2026,10 +2008,6 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
     cairo_surface_mark_dirty (output);
 
     out.surface = output;
-    out.Rused = 1;
-    out.Gused = 1;
-    out.Bused = 1;
-    out.Aused = 1;
     out.bounds = boundarys;
 
     rsvg_filter_store_output (self->result, out, ctx);
@@ -3237,10 +3215,6 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self, RsvgFilterContex
     cairo_surface_mark_dirty (output);
 
     out.surface = output;
-    out.Rused = 1;
-    out.Gused = 1;
-    out.Bused = 1;
-    out.Aused = 1;
     out.bounds = boundarys;
 
     rsvg_filter_store_output (self->result, out, ctx);
@@ -4039,10 +4013,6 @@ rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     op.surface = output;
     op.bounds = boundarys;
-    op.Rused = 1;
-    op.Gused = 1;
-    op.Bused = 1;
-    op.Aused = 1;
 
     rsvg_filter_store_output (self->result, op, ctx);
 
