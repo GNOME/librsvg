@@ -26,7 +26,7 @@ copy $(SolutionDir)$(ConfigurationName)\$(PlatformName)\bin\rsvg-$(ApiVersion).l
 copy $(SolutionDir)$(ConfigurationName)\$(PlatformName)\bin\libpixbufloader-svg.dll $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders&#x0D;&#x0A;
 copy $(SolutionDir)$(ConfigurationName)\$(PlatformName)\bin\libpixbufloader-svg.pdb $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders&#x0D;&#x0A;
 
-$(CopyDir)\bin\gdk-pixbuf-query-loaders.exe &gt; $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache&#x0D;&#x0A;
+$(GlibEtcInstallRoot)\bin\gdk-pixbuf-query-loaders.exe &gt; $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache&#x0D;&#x0A;
 "
  />
 </VisualStudioPropertySheet>

@@ -23,7 +23,7 @@ copy $(SolutionDir)$(Configuration)\$(Platform)\bin\rsvg-$(ApiVersion).lib $(Cop
 copy $(SolutionDir)$(Configuration)\$(Platform)\bin\libpixbufloader-svg.dll $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders
 copy $(SolutionDir)$(Configuration)\$(Platform)\bin\libpixbufloader-svg.pdb $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders
 
-$(CopyDir)\bin\gdk-pixbuf-query-loaders.exe &gt; $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache
+$(GlibEtcInstallRoot)\bin\gdk-pixbuf-query-loaders.exe &gt; $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache
 </RsvgDoInstall>
   </PropertyGroup>
   <PropertyGroup>
