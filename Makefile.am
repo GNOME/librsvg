@@ -293,6 +293,27 @@ MSVCPROJ_GENERATED = \
 	$(top_builddir)/build/win32/vs9/rsvg.vcproj		\
 	$(top_builddir)/build/win32/vs9/rsvg-convert.vcproj
 
+if HAVE_INTROSPECTION
+
+MSVC_INTROSPECT_GIRS = $(INTROSPECTION_GIRS)
+
+INTROSPECTION_INTERMEDIATE_ITEMS = \
+	$(top_builddir)/build/win32/Rsvg-@RSVG_API_VERSION@.gir.msvc.introspect		\
+	$(top_builddir)/build/win32/Rsvg_@RSVG_API_VERSION_U@_gir_list
+
+Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_FILES = $(Rsvg_@RSVG_API_VERSION_U@_gir_FILES)
+Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_PACKAGES = $(Rsvg_@RSVG_API_VERSION_U@_gir_PACKAGES)
+Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_EXPORT_PACKAGES = $(Rsvg_@RSVG_API_VERSION_U@_gir_EXPORT_PACKAGES)
+Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_INCLUDE_GIRS = $(Rsvg_@RSVG_API_VERSION_U@_gir_INCLUDES)
+Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_LIBS = rsvg-@RSVG_API_VERSION@
+Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_CFLAGS = -I../.. -DRSVG_COMPILATION
+Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_SCANNERFLAGS = $(Rsvg_@RSVG_API_VERSION_U@_gir_SCANNERFLAGS)
+
+MSVCPROJ_GENERATED += $(INTROSPECTION_INTERMEDIATE_ITEMS)
+
+include $(top_srcdir)/build/Makefile.msvc-introspection
+endif # HAVE_INTROSPECTION
+
 $(MSVCPROJ_GENERATED): $(top_builddir)/build/win32/vs9/rsvg.headers
 
 EXTRA_DIST += $(MSVCPROJ_GENERATED)
