@@ -163,6 +163,7 @@ static void
                             gdouble * x, gdouble * y, gboolean * lastwasspace,
                             gboolean usetextonly);
 
+/* This function is responsible of selecting render for a text element including its children and giving it the drawing context */
 static void
 _rsvg_node_text_type_children (RsvgNode * self, RsvgDrawingCtx * ctx,
                                gdouble * x, gdouble * y, gboolean * lastwasspace,
@@ -598,7 +599,8 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
     PangoLayout *layout;
     PangoLayoutIter *iter;
     RsvgState *state;
-    gint w, h, offsetX, offsetY;
+    gint w, h;
+    double offset_x, offset_y, offset;
 
     state = rsvg_current_state (ctx);
 
@@ -610,15 +612,17 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
     layout = rsvg_text_create_layout (ctx, state, text, context);
     pango_layout_get_size (layout, &w, &h);
     iter = pango_layout_get_iter (layout);
+    offset = pango_layout_iter_get_baseline (iter) / (double) PANGO_SCALE;
+    offset += _rsvg_css_accumulate_baseline_shift (state, ctx);
     if (PANGO_GRAVITY_IS_VERTICAL (state->text_gravity)) {
-        offsetX = -pango_layout_iter_get_baseline (iter) / (double)PANGO_SCALE;
-        offsetY = 0;
+        offset_x = -offset;
+        offset_y = 0;
     } else {
-        offsetX = 0;
-        offsetY = pango_layout_iter_get_baseline (iter) / (double)PANGO_SCALE;
+        offset_x = 0;
+        offset_y = offset;
     }
     pango_layout_iter_free (iter);
-    ctx->render->render_pango_layout (ctx, layout, *x - offsetX, *y - offsetY);
+    ctx->render->render_pango_layout (ctx, layout, *x - offset_x, *y - offset_y);
     if (PANGO_GRAVITY_IS_VERTICAL (state->text_gravity))
         *y += w / (double)PANGO_SCALE;
     else

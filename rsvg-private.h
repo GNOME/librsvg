@@ -394,6 +394,8 @@ double _rsvg_css_hand_normalize_length  (const RsvgLength * in, gdouble pixels_p
                                          gdouble width_or_height, gdouble font_size);
 double _rsvg_css_normalize_font_size    (RsvgState * state, RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
+double _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx);
+G_GNUC_INTERNAL
 RsvgLength _rsvg_css_parse_length (const char *str);
 G_GNUC_INTERNAL
 void _rsvg_push_view_box    (RsvgDrawingCtx * ctx, double w, double h);

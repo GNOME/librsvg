@@ -204,6 +204,7 @@ _rsvg_css_parse_length (const char *str)
     return out;
 }
 
+/* Recursive evaluation of all parent elements regarding absolute font size */
 double
 _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
 {
@@ -213,7 +214,7 @@ _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
     case 'p':
     case 'm':
     case 'x':
-        parent= rsvg_state_parent (state);
+        parent = rsvg_state_parent (state);
         if (parent) {
             double parent_size;
             parent_size = _rsvg_css_normalize_font_size (parent, ctx);
@@ -262,6 +263,27 @@ _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, char di
 
     return 0;
 }
+
+/* Recursive evaluation of all parent elements regarding basline-shift */
+double
+_rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx)
+{
+    RsvgState *parent;
+    double shift = 0.;
+
+    parent = rsvg_state_parent (state);
+    if (parent) {
+        if (state->has_baseline_shift) {
+            double parent_font_size;
+            parent_font_size = _rsvg_css_normalize_font_size (parent, ctx); /* font size from here */
+            shift = parent_font_size * state->baseline_shift;
+        }
+        shift += _rsvg_css_accumulate_baseline_shift (parent, ctx); /* baseline-shift for parent element */
+    }
+
+    return shift;
+}
+
 
 double
 _rsvg_css_hand_normalize_length (const RsvgLength * in, gdouble pixels_per_inch,

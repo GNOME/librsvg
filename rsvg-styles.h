@@ -83,6 +83,8 @@ struct _RsvgState {
     char *mask;
     char *clip_path;
     guint8 opacity;             /* 0..255 */
+    double baseline_shift;
+    gboolean has_baseline_shift;
 
     RsvgPaintServer *fill;
     gboolean has_fill_server;

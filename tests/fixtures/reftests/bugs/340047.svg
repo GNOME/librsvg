@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="744.09448819"
+   height="1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.47 r22583"
+   sodipodi:docname="New document 1">
+
+    <g fill = "navy">
+        <text x = "10" y = "25" font-size = "20">
+            <tspan>
+                e = mc
+                <tspan baseline-shift = "super">
+                    2
+                </tspan>
+            </tspan>
+            <tspan x = "10" y = "60">
+                T
+                <tspan baseline-shift = "sub">
+                    i+2
+                </tspan>
+                =T
+                <tspan baseline-shift = "sub">
+                    i
+                </tspan>
+                + T
+                <tspan baseline-shift = "sub">
+                    i+1
+                </tspan>
+            </tspan>
+        </text>
+    </g>
+</svg>

@@ -118,6 +118,7 @@ rsvg_state_init (RsvgState * state)
     cairo_matrix_init_identity (&state->personal_affine);
     state->mask = NULL;
     state->opacity = 0xff;
+    state->baseline_shift = 0.;
     state->fill = rsvg_paint_server_parse (NULL, "#000");
     state->fill_opacity = 0xff;
     state->stroke_opacity = 0xff;
@@ -153,6 +154,7 @@ rsvg_state_init (RsvgState * state)
     state->middleMarker = NULL;
     state->endMarker = NULL;
 
+    state->has_baseline_shift = FALSE;
     state->has_current_color = FALSE;
     state->has_flood_color = FALSE;
     state->has_flood_opacity = FALSE;
@@ -253,6 +255,8 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
 {
     gint i;
 
+    if (function (dst->has_baseline_shift, src->has_baseline_shift))
+        dst->baseline_shift = src->baseline_shift;
     if (function (dst->has_current_color, src->has_current_color))
         dst->current_color = src->current_color;
     if (function (dst->has_flood_color, src->has_flood_color))
@@ -513,6 +517,22 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
     } else if (g_str_equal (name, "mask")) {
         g_free (state->mask);
         state->mask = rsvg_get_url_string (value);
+    } else if (g_str_equal (name, "baseline-shift")) {
+        /* These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
+         * see sp_style_merge_baseline_shift_from_parent()
+         */
+        if (g_str_equal (value, "sub")) {
+           state->has_baseline_shift = TRUE;
+           state->baseline_shift = -0.2;
+        } else if (g_str_equal (value, "super")) {
+           state->has_baseline_shift = TRUE;
+           state->baseline_shift = 0.4;
+        } else if (g_str_equal (value, "baseline")) {
+           state->has_baseline_shift = TRUE;
+           state->baseline_shift = 0.;
+        } else {
+          g_warning ("value \'%s\' for attribute \'baseline-shift\' is not supported; only 'sub', 'super', and 'baseline' are supported\n", value);
+        }
     } else if (g_str_equal (name, "clip-path")) {
         g_free (state->clip_path);
         state->clip_path = rsvg_get_url_string (value);
@@ -862,6 +882,7 @@ void
 rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * atts)
 {
     rsvg_lookup_parse_style_pair (ctx, state, "a:adobe-blending-mode", atts);
+    rsvg_lookup_parse_style_pair (ctx, state, "baseline-shift", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "clip-path", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "clip-rule", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "color", atts);
