@@ -458,16 +458,10 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state = rsvg_current_state (ctx);
     cairo_t *cr;
-    int need_tmpbuf = 0;
     RsvgBbox bbox;
     double backup_tolerance;
 
-    need_tmpbuf = ((state->fill != NULL) && (state->stroke != NULL) && state->opacity != 0xff)
-        || state->clip_path || state->mask || state->filter
-        || (state->comp_op != CAIRO_OPERATOR_OVER);
-
-    if (need_tmpbuf)
-        rsvg_cairo_push_discrete_layer (ctx);
+    rsvg_cairo_push_discrete_layer (ctx);
 
     cr = render->cr;
 
@@ -530,10 +524,7 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
 
         cairo_set_fill_rule (cr, state->fill_rule);
 
-        if (!need_tmpbuf)
-            opacity = (state->fill_opacity * state->opacity) / 255;
-        else
-            opacity = state->fill_opacity;
+        opacity = state->fill_opacity;
 
         _set_source_rsvg_paint_server (ctx,
                                        state->current_color,
@@ -548,10 +539,7 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
 
     if (state->stroke != NULL) {
         int opacity;
-        if (!need_tmpbuf)
-            opacity = (state->stroke_opacity * state->opacity) / 255;
-        else
-            opacity = state->stroke_opacity;
+        opacity = state->stroke_opacity;
 
         _set_source_rsvg_paint_server (ctx,
                                        state->current_color,
@@ -563,8 +551,7 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
 
     cairo_new_path (cr); /* clear the path in case stroke == fill == NULL; otherwise we leave it around from computing the bounding box */
 
-    if (need_tmpbuf)
-        rsvg_cairo_pop_discrete_layer (ctx);
+    rsvg_cairo_pop_discrete_layer (ctx);
 }
 
 void
@@ -724,8 +711,6 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
 static void
 rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 {
-    /* XXX: Untested, probably needs help wrt filters */
-
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_surface_t *surface;
     cairo_t *child_cr;
