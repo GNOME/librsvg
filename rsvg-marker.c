@@ -109,6 +109,9 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
     gdouble rotation;
     RsvgState *state = rsvg_current_state (ctx);
 
+    if (marker_name == NULL)
+        return; /* to avoid the caller having to check for nonexistent markers on every call */
+
     self = (RsvgMarker *) rsvg_acquire_node (ctx, marker_name);
     if (self == NULL || RSVG_NODE_TYPE (&self->super) != RSVG_NODE_TYPE_MARKER)
       {
