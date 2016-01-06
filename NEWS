@@ -4,6 +4,10 @@ Version 2.40.13
   you can at least have subscripts and superscripts for formulas and
   such.  There is no support for percentages or explicit lengths yet.
   bgo#340047.
+- Menner fixed some duplicate logic when rendering paths, which would
+  try to decide whether to create intermediate surfaces.  Now we have
+  a single place where this is done.  This fixes inconsistent text
+  spacing in some situations.  bgo#749415.
 
 Version 2.40.12
 - Benjamin Otte did *great* work in refactoring the test harness to
