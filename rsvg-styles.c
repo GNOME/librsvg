@@ -881,7 +881,6 @@ rsvg_lookup_parse_style_pair (RsvgHandle * ctx, RsvgState * state,
 void
 rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * atts)
 {
-    rsvg_lookup_parse_style_pair (ctx, state, "a:adobe-blending-mode", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "baseline-shift", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "clip-path", atts);
     rsvg_lookup_parse_style_pair (ctx, state, "clip-rule", atts);
