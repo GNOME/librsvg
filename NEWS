@@ -1,3 +1,10 @@
+Version 2.40.13
+- Menner added basic support for the "baseline-shift" attribute in
+  text objects.  We support "sub", "super", and plain "baseline", so
+  you can at least have subscripts and superscripts for formulas and
+  such.  There is no support for percentages or explicit lengths yet.
+  bgo#340047.
+
 Version 2.40.12
 - Benjamin Otte did *great* work in refactoring the test harness to
   use Glib's gtest infrastructure, instead of using home-grown
