@@ -5,8 +5,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
     <RsvgDoInstall>
-mkdir $(GlibEtcInstallRoot)
-mkdir $(GlibEtcInstallRoot)\bin
+mkdir $(CopyDir)
+mkdir $(CopyDir)\bin
 
 copy $(SolutionDir)$(Configuration)\$(Platform)\bin\$(RsvgDllPrefix)rsvg$(RsvgDllSuffix).dll $(CopyDir)\bin
 copy $(SolutionDir)$(Configuration)\$(Platform)\bin\$(RsvgDllPrefix)rsvg$(RsvgDllSuffix).pdb $(CopyDir)\bin
