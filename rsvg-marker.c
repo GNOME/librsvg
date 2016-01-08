@@ -136,7 +136,6 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
     }
 
     if (self->vbox.active) {
-
         double w, h, x, y;
         w = _rsvg_css_normalize_length (&self->width, ctx, 'h');
         h = _rsvg_css_normalize_length (&self->height, ctx, 'v');
@@ -148,17 +147,9 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
                                     self->vbox.rect.height,
                                     &w, &h, &x, &y);
 
-        x = -self->vbox.rect.x * w / self->vbox.rect.width;
-        y = -self->vbox.rect.y * h / self->vbox.rect.height;
-
-        cairo_matrix_init (&taffine,
-                           w / self->vbox.rect.width,
-                           0,
-                           0,
-                           h / self->vbox.rect.height,
-                           x,
-                           y);
+        cairo_matrix_init_scale (&taffine, w / self->vbox.rect.width, h / self->vbox.rect.height);
         cairo_matrix_multiply (&affine, &taffine, &affine);
+
         _rsvg_push_view_box (ctx, self->vbox.rect.width, self->vbox.rect.height);
     }
 
