@@ -1,4 +1,5 @@
 Version 2.40.13
+- Chun-wei Fan and Paolo Borelli fixed the Windows build.
 - Menner added basic support for the "baseline-shift" attribute in
   text objects.  We support "sub", "super", and plain "baseline", so
   you can at least have subscripts and superscripts for formulas and
@@ -8,6 +9,14 @@ Version 2.40.13
   try to decide whether to create intermediate surfaces.  Now we have
   a single place where this is done.  This fixes inconsistent text
   spacing in some situations.  bgo#749415.
+- Rewrote the markers engine, for bgo#685906 and bgo#760180 - Our
+  machinery for rendering SVG markers (like arrowheads and such)
+  didn't handle several cases correctly.  Curves with coincident
+  control points produced incorrect orientations for the markers, as
+  did multiple contiguous zero-length segments.  We follow the spec
+  for this now and handle things correctly.  Also, markers didn't
+  render in the correct position if they had the viewBox attribute
+  set.
 
 Version 2.40.12
 - Benjamin Otte did *great* work in refactoring the test harness to
