@@ -3,7 +3,8 @@ GENERATED_ITEMS =			\
 	rsvg.vcxproj.filters		\
 	rsvg-convert.vcxproj		\
 	rsvg-convert.vcxproj.filters	\
-	rsvg-install.props
+	rsvg-install.props		\
+	math.h
 
 EXTRA_DIST =	\
 	librsvg.sln				\
@@ -26,6 +27,9 @@ EXTRA_DIST =	\
 rsvg-install.props: $(top_srcdir)/build/win32/vs10/rsvg-install.propsin rsvg.vs10.headers
 	$(CPP) -P - <$(top_srcdir)/build/win32/vs10/rsvg-install.propsin >$@
 	rm rsvg.vs10.headers
+
+math.h: $(top_srcdir)/build/win32/vs9/math.h
+	cp $< $@
 
 DISTCLEANFILES = $(GENERATED_ITEMS)
 

@@ -15,6 +15,7 @@ EXTRA_DIST =	\
 	rsvg-install.vcproj		\
 	rsvg-view-3.vcproj		\
 	README.txt			\
+	math.h				\
 	$(GENERATED_ITEMS)
 
 rsvg-install.vsprops: $(top_srcdir)/build/win32/vs9/rsvg-install.vspropsin rsvg.headers

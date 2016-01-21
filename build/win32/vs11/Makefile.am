@@ -13,7 +13,8 @@ EXTRA_DIST =    \
 	rsvg-install.vcxproj			\
 	rsvg-view-3.vcxproj			\
 	rsvg-view-3.vcxproj.filters		\
-	README.txt 
+	README.txt				\
+	math.h
 
 DISTCLEANFILES = $(EXTRA_DIST)
 
@@ -22,3 +23,6 @@ MSVC_FORMAT_VER = 12
 MSVC_VER_LONG = 2012
 
 include $(top_srcdir)/build/Makefile-newvs.am
+
+math.h: $(top_srcdir)/build/win32/vs9/math.h
+	cp $< $@
