@@ -819,10 +819,10 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
         cairo_surface_t *output;
 
         filter = rsvg_acquire_node (ctx, state->filter);
-        if (filter && RSVG_NODE_TYPE (filter) == RSVG_NODE_TYPE_FILTER) {
-            output = render->surfaces_stack->data;
-            render->surfaces_stack = g_list_delete_link (render->surfaces_stack, render->surfaces_stack);
+        output = render->surfaces_stack->data;
+        render->surfaces_stack = g_list_delete_link (render->surfaces_stack, render->surfaces_stack);
 
+        if (filter && RSVG_NODE_TYPE (filter) == RSVG_NODE_TYPE_FILTER) {
             needs_destroy = TRUE;
             surface = rsvg_filter_render ((RsvgFilter *) filter, output, ctx, &render->bbox, "2103");
             /* Don't destroy the output surface, it's owned by child_cr */

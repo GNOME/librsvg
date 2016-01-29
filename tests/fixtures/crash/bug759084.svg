@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">
+  <defs>
+    <filter id="filter">
+    </filter>
+  </defs>
+  <g filter="url(#filter)">
+    <rect fill="red" width="10" height="10" filter="url(#doesnotexist)" />
+  </g>
+</svg>
