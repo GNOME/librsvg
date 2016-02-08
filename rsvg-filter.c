@@ -2678,6 +2678,17 @@ rsvg_filter_primitive_component_transfer_set_atts (RsvgNode * self, RsvgHandle *
     }
 }
 
+static void
+rsvg_filter_primitive_component_transfer_free (RsvgNode * self)
+{
+    RsvgFilterPrimitiveComponentTransfer *upself;
+
+    upself = (RsvgFilterPrimitiveComponentTransfer*) self;
+    g_string_free (upself->super.result, TRUE);
+    g_string_free (upself->super.in, TRUE);
+    _rsvg_node_free (self);
+}
+
 RsvgNode *
 rsvg_new_filter_primitive_component_transfer (void)
 {
@@ -2690,9 +2701,8 @@ rsvg_new_filter_primitive_component_transfer (void)
     filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
         filter->super.height.factor = 'n';
     filter->super.render = &rsvg_filter_primitive_component_transfer_render;
-
+    filter->super.super.free = &rsvg_filter_primitive_component_transfer_free;
     filter->super.super.set_atts = rsvg_filter_primitive_component_transfer_set_atts;
-
     return (RsvgNode *) filter;
 }
 
