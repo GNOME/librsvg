@@ -52,7 +52,7 @@ enum {
 } RsvgLoaderErrorReasons;
 
 static void
-rsvg_propegate_error (GError ** err,
+rsvg_propagate_error (GError ** err,
                       const char * reason,
                       gint code)
 {
@@ -118,7 +118,7 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
                 context->handle = rsvg_handle_new ();
 
                 if (!context->handle) {
-                        rsvg_propegate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
+                        rsvg_propagate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
                         return FALSE;
                 }
 
@@ -126,12 +126,12 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
         }
 
         if (!context->handle) {
-                rsvg_propegate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
+                rsvg_propagate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
                 return FALSE;
         }
 
         if (!rsvg_handle_write (context->handle, buf, size, error)) {
-                rsvg_propegate_error (error, _("Error writing"), ERROR_WRITING);
+                rsvg_propagate_error (error, _("Error writing"), ERROR_WRITING);
                 return FALSE;
         }
 
@@ -149,7 +149,7 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
                 *error = NULL;
 
         if (!context->handle) {
-                rsvg_propegate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
+                rsvg_propagate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
                 return FALSE;
         }
 
@@ -163,7 +163,7 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
                 g_object_unref (pixbuf);
         }
         else {
-                rsvg_propegate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
+                rsvg_propagate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
                 result = FALSE;
         }
 
