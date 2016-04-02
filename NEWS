@@ -1,3 +1,16 @@
+Version 2.40.15
+- Apologies for the lack of 2.40.14.  I mistakenly tagged the
+  repository before updating the NEWS file.
+- librsvg now uses the Contributor Covenant Code of Conduct, 
+  version 1.4, to which all contributors and maintainers are expected
+  to abide. Please see the code_of_conduct.md file for details.
+- Chun-wei Fan fixed builds on Visual Studio pre-2012.
+- Fixed bgo#759084 - Don't crash when filters don't actually exist
+  Fix by Benjamin Otte.
+- Javier Jardón updated our autogen.sh to use modern autotools.
+- Fixed bgo#761728 - Memory leak in the PrimitiveComponentTransfer
+  filter.  Fix by Ron Hopper.
+
 Version 2.40.13
 - Chun-wei Fan and Paolo Borelli fixed the Windows build.
 - Menner added basic support for the "baseline-shift" attribute in
