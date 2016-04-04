@@ -1,3 +1,7 @@
+Version 2.40.16
+- Fixed bgo#760262 - Make the zooming options in rsvg-convert(1) work again
+  for scaling the resulting image.  Fix by Menner <mix@gmx.org>.
+
 Version 2.40.15
 - Apologies for the lack of 2.40.14.  I mistakenly tagged the
   repository before updating the NEWS file.
