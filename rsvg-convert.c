@@ -140,6 +140,8 @@ main (int argc, char **argv)
     RsvgDimensionData dimensions;
     FILE *output_file = stdout;
     char *export_lookup_id;
+    double unscaled_width, unscaled_height;
+    int scaled_width, scaled_height;
 
 #ifdef G_OS_WIN32
     HANDLE handle;
@@ -319,6 +321,9 @@ main (int argc, char **argv)
             if (!rsvg_handle_get_dimensions_sub (rsvg, &dimensions, export_lookup_id))
                 g_printerr ("Could not get dimensions for file %s\n", args[i]);
 
+            unscaled_width = dimensions.width;
+            unscaled_height = dimensions.height;
+
             /* if both are unspecified, assume user wants to zoom the image in at least 1 dimension */
             if (width == -1 && height == -1) {
                 size_data.type = RSVG_SIZE_ZOOM;
@@ -348,20 +353,22 @@ main (int argc, char **argv)
                 size_data.keep_aspect_ratio = keep_aspect_ratio;
             }
 
-            _rsvg_size_callback (&dimensions.width, &dimensions.height, &size_data);
+            scaled_width = dimensions.width;
+            scaled_height = dimensions.height;
+            _rsvg_size_callback (&scaled_width, &scaled_height, &size_data);
 
             if (!format || !strcmp (format, "png"))
                 surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-                                                      dimensions.width, dimensions.height);
+                                                      scaled_width, scaled_height);
 #ifdef CAIRO_HAS_PDF_SURFACE
             else if (!strcmp (format, "pdf"))
                 surface = cairo_pdf_surface_create_for_stream (rsvg_cairo_write_func, output_file,
-                                                               dimensions.width, dimensions.height);
+                                                               scaled_width, scaled_height);
 #endif
 #ifdef CAIRO_HAS_PS_SURFACE
             else if (!strcmp (format, "ps") || !strcmp (format, "eps")){
                 surface = cairo_ps_surface_create_for_stream (rsvg_cairo_write_func, output_file,
-                                                              dimensions.width, dimensions.height);
+                                                              scaled_width, scaled_height);
                 if(!strcmp (format, "eps"))
                     cairo_ps_surface_set_eps(surface, TRUE);
             }
@@ -369,13 +376,13 @@ main (int argc, char **argv)
 #ifdef CAIRO_HAS_SVG_SURFACE
             else if (!strcmp (format, "svg"))
                 surface = cairo_svg_surface_create_for_stream (rsvg_cairo_write_func, output_file,
-                                                               dimensions.width, dimensions.height);
+                                                               scaled_width, scaled_height);
 #endif
 #ifdef CAIRO_HAS_XML_SURFACE
             else if (!strcmp (format, "xml")) {
                 cairo_device_t *device = cairo_xml_create_for_stream (rsvg_cairo_write_func, output_file);
                 surface = cairo_xml_surface_create (device, CAIRO_CONTENT_COLOR_ALPHA,
-                                                    dimensions.width, dimensions.height);
+                                                    scaled_width, scaled_height);
                 cairo_device_destroy (device);
             }
 #if CAIRO_VERSION >= CAIRO_VERSION_ENCODE (1, 10, 0)
@@ -400,7 +407,7 @@ main (int argc, char **argv)
                 ((background_color >> 16) & 0xff) / 255.0, 
                 ((background_color >> 8) & 0xff) / 255.0, 
                 ((background_color >> 0) & 0xff) / 255.0);
-            cairo_rectangle (cr, 0, 0, dimensions.width, dimensions.height);
+            cairo_rectangle (cr, 0, 0, scaled_width, scaled_height);
             cairo_fill (cr);
         }
 
@@ -416,6 +423,9 @@ main (int argc, char **argv)
             cairo_translate (cr, -pos.x, -pos.y);
         }
 
+        cairo_scale (cr,
+                     scaled_width / unscaled_width,
+                     scaled_height / unscaled_height);
         rsvg_handle_render_cairo_sub (rsvg, cr, export_lookup_id);
 
         g_free (export_lookup_id);
