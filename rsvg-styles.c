@@ -119,6 +119,10 @@ rsvg_state_init (RsvgState * state)
     state->mask = NULL;
     state->opacity = 0xff;
     state->baseline_shift = 0.;
+    state->current_color = 0xff000000; /* See bgo#764808; we don't inherit CSS
+                                        * from the public API, so start off with
+                                        * opaque black instead of transparent.
+                                        */
     state->fill = rsvg_paint_server_parse (NULL, "#000");
     state->fill_opacity = 0xff;
     state->stroke_opacity = 0xff;
