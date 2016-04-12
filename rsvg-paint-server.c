@@ -43,22 +43,22 @@ rsvg_paint_server_solid (guint32 argb)
 
     result->refcnt = 1;
     result->type = RSVG_PAINT_SERVER_SOLID;
-    result->core.colour = g_new (RsvgSolidColour, 1);
-    result->core.colour->argb = argb;
-    result->core.colour->currentcolour = FALSE;
+    result->core.color = g_new (RsvgSolidColor, 1);
+    result->core.color->argb = argb;
+    result->core.color->currentcolor = FALSE;
 
     return result;
 }
 
 static RsvgPaintServer *
-rsvg_paint_server_solid_current_colour (void)
+rsvg_paint_server_solid_current_color (void)
 {
     RsvgPaintServer *result = g_new (RsvgPaintServer, 1);
 
     result->refcnt = 1;
     result->type = RSVG_PAINT_SERVER_SOLID;
-    result->core.colour = g_new (RsvgSolidColour, 1);
-    result->core.colour->currentcolour = TRUE;
+    result->core.color = g_new (RsvgSolidColor, 1);
+    result->core.color->currentcolor = TRUE;
 
     return result;
 }
@@ -104,7 +104,7 @@ rsvg_paint_server_parse (gboolean * inherit, const char *str)
         return rsvg_paint_server_solid (0);
     } else if (!strcmp (str, "currentColor")) {
         RsvgPaintServer *ps;
-        ps = rsvg_paint_server_solid_current_colour ();
+        ps = rsvg_paint_server_solid_current_color ();
         return ps;
     } else {
         argb = rsvg_css_parse_color (str, inherit);
@@ -139,7 +139,7 @@ rsvg_paint_server_unref (RsvgPaintServer * ps)
         return;
     if (--ps->refcnt == 0) {
         if (ps->type == RSVG_PAINT_SERVER_SOLID)
-            g_free (ps->core.colour);
+            g_free (ps->core.color);
         else if (ps->type == RSVG_PAINT_SERVER_IRI)
             g_free (ps->core.iri);
         g_free (ps);

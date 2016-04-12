@@ -245,7 +245,7 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
     else if (!strcmp (name, "feBlend"))
         newnode = rsvg_new_filter_primitive_blend ();
     else if (!strcmp (name, "feColorMatrix"))
-        newnode = rsvg_new_filter_primitive_colour_matrix ();
+        newnode = rsvg_new_filter_primitive_color_matrix ();
     else if (!strcmp (name, "feComponentTransfer"))
         newnode = rsvg_new_filter_primitive_component_transfer ();
     else if (!strcmp (name, "feComposite"))

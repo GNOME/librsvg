@@ -66,7 +66,7 @@ RsvgNode    *rsvg_new_filter_primitive_merge                (void);
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_merge_node           (void);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_filter_primitive_colour_matrix        (void);
+RsvgNode    *rsvg_new_filter_primitive_color_matrix        (void);
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_filter_primitive_component_transfer   (void);
 G_GNUC_INTERNAL

@@ -157,16 +157,16 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
 }
 
 static void
-_set_source_rsvg_solid_colour (RsvgDrawingCtx * ctx,
-                               RsvgSolidColour * colour, guint8 opacity, guint32 current_colour)
+_set_source_rsvg_solid_color (RsvgDrawingCtx * ctx,
+                              RsvgSolidColor * color, guint8 opacity, guint32 current_color)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_t *cr = render->cr;
-    guint32 argb = colour->argb;
+    guint32 argb = color->argb;
     double r, g, b, a;
 
-    if (colour->currentcolour)
-        argb = current_colour;
+    if (color->currentcolor)
+        argb = current_color;
 
     r = ((argb >> 16) & 0xff) / 255.0;
     g = ((argb >>  8) & 0xff) / 255.0;
@@ -328,7 +328,7 @@ static void
 _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
                                guint32 current_color_rgb,
                                RsvgPaintServer * ps,
-                               guint8 opacity, RsvgBbox bbox, guint32 current_colour)
+                               guint8 opacity, RsvgBbox bbox, guint32 current_color)
 {
     RsvgNode *node;
 
@@ -346,7 +346,7 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
         rsvg_release_node (ctx, node);
         break;
     case RSVG_PAINT_SERVER_SOLID:
-        _set_source_rsvg_solid_colour (ctx, ps->core.colour, opacity, current_colour);
+        _set_source_rsvg_solid_color (ctx, ps->core.color, opacity, current_color);
         break;
     }
 }

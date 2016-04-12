@@ -38,7 +38,7 @@ typedef struct _RsvgGradientStops RsvgGradientStops;
 typedef struct _RsvgLinearGradient RsvgLinearGradient;
 typedef struct _RsvgRadialGradient RsvgRadialGradient;
 typedef struct _RsvgPattern RsvgPattern;
-typedef struct _RsvgSolidColour RsvgSolidColour;
+typedef struct _RsvgSolidColor RsvgSolidColor;
 
 typedef struct _RsvgPaintServer RsvgPaintServer;
 
@@ -107,17 +107,17 @@ struct _RsvgPattern {
     char *fallback;
 };
 
-struct _RsvgSolidColour {
-    gboolean currentcolour;
+struct _RsvgSolidColor {
+    gboolean currentcolor;
     guint32 argb;
 };
 
-typedef struct _RsvgSolidColour RsvgPaintServerColour;
+typedef struct _RsvgSolidColor RsvgPaintServerColor;
 typedef enum _RsvgPaintServerType RsvgPaintServerType;
 typedef union _RsvgPaintServerCore RsvgPaintServerCore;
 
 union _RsvgPaintServerCore {
-    RsvgSolidColour *colour;
+    RsvgSolidColor *color;
     char *iri;
 };
 

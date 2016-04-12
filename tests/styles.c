@@ -41,9 +41,9 @@ static void
 assert_equal_value (FixtureData *fixture, RsvgNode *node)
 {
     if (g_str_equal (fixture->target_name, "stroke"))
-        assert_equal_color (fixture->expected.color, node->state->stroke->core.colour->argb);
+        assert_equal_color (fixture->expected.color, node->state->stroke->core.color->argb);
     else if (g_str_equal (fixture->target_name, "fill"))
-        assert_equal_color (fixture->expected.color, node->state->fill->core.colour->argb);
+        assert_equal_color (fixture->expected.color, node->state->fill->core.color->argb);
     else if (g_str_equal (fixture->target_name, "stroke-width"))
         assert_equal_length (&fixture->expected.length, &node->state->stroke_width);
     else
