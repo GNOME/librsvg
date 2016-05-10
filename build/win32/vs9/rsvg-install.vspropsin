@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioPropertySheet
- ProjectType="Visual C++"
- Version="8.00"
- Name="rsvginstallprops"
- InheritedPropertySheets=".\rsvg-build-defines.vsprops"
- >
- <UserMacro
-  Name="RsvgDoInstall"
-  Value="
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="rsvginstallprops"
+	InheritedPropertySheets=".\rsvg-build-defines.vsprops"
+	>
+	<UserMacro
+		Name="RsvgDoInstall"
+		Value="
 mkdir $(CopyDir)&#x0D;&#x0A;
 mkdir $(CopyDir)\bin&#x0D;&#x0A;
 
@@ -25,8 +25,10 @@ mkdir $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders&#x0D;&#x0A;
 copy $(SolutionDir)$(ConfigurationName)\$(PlatformName)\bin\rsvg-$(ApiVersion).lib $(CopyDir)\lib&#x0D;&#x0A;
 copy $(SolutionDir)$(ConfigurationName)\$(PlatformName)\bin\libpixbufloader-svg.dll $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders&#x0D;&#x0A;
 copy $(SolutionDir)$(ConfigurationName)\$(PlatformName)\bin\libpixbufloader-svg.pdb $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders&#x0D;&#x0A;
-
-$(GlibEtcInstallRoot)\bin\gdk-pixbuf-query-loaders.exe &gt; $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache&#x0D;&#x0A;
-"
- />
+		      "
+	/>
+	<UserMacro
+		Name="RsvgPostInstall"
+		Value="$(GlibEtcInstallRoot)\bin\gdk-pixbuf-query-loaders.exe &gt; $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache"
+	/>
 </VisualStudioPropertySheet>

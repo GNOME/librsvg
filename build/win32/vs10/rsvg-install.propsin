@@ -22,9 +22,8 @@ mkdir $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders
 copy $(SolutionDir)$(Configuration)\$(Platform)\bin\rsvg-$(ApiVersion).lib $(CopyDir)\lib
 copy $(SolutionDir)$(Configuration)\$(Platform)\bin\libpixbufloader-svg.dll $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders
 copy $(SolutionDir)$(Configuration)\$(Platform)\bin\libpixbufloader-svg.pdb $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders
-
-$(GlibEtcInstallRoot)\bin\gdk-pixbuf-query-loaders.exe &gt; $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache
-</RsvgDoInstall>
+    </RsvgDoInstall>
+    <RsvgPostInstall>$(GlibEtcInstallRoot)\bin\gdk-pixbuf-query-loaders.exe &gt; $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache</RsvgPostInstall>
   </PropertyGroup>
   <PropertyGroup>
     <_PropertySheetDisplayName>rsvginstallprops</_PropertySheetDisplayName>
@@ -33,6 +32,9 @@ $(GlibEtcInstallRoot)\bin\gdk-pixbuf-query-loaders.exe &gt; $(CopyDir)\lib\gdk-p
   <ItemGroup>
     <BuildMacro Include="RsvgDoInstall">
       <Value>$(RsvgDoInstall)</Value>
+    </BuildMacro>
+    <BuildMacro Include="RsvgPostInstall">
+      <Value>$(RsvgPostInstall)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>
