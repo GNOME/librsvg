@@ -1,6 +1,13 @@
 Version 2.40.16
+- Chun-wei Fan added support for building the introspection files under MSVC.
 - Fixed bgo#760262 - Make the zooming options in rsvg-convert(1) work again
   for scaling the resulting image.  Fix by Menner <mix@gmx.org>.
+- Fixed bgo#764808 - Wikipedia generates equations as SVGs and renders
+  them, but uses fill="currentColor".  Since we don't let callers
+  specify a starting state for CSS, we need to start with opaque black
+  as the default current color.
+- Added documentation for how to replace the deprecated
+  rsvg_handle_set_size_callback().
 
 Version 2.40.15
 - Apologies for the lack of 2.40.14.  I mistakenly tagged the
