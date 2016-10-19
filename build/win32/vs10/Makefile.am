@@ -25,6 +25,9 @@ EXTRA_DIST =	\
 	$(GENERATED_ITEMS)
 
 rsvg-install.props: $(top_srcdir)/build/win32/vs10/rsvg-install.propsin rsvg.vs10.headers
+	-$(RM) $(top_builddir)/build/win32/vs11/rsvg-install.props
+	-$(RM) $(top_builddir)/build/win32/vs12/rsvg-install.props
+	-$(RM) $(top_builddir)/build/win32/vs14/rsvg-install.props
 	$(CPP) -P - <$(top_srcdir)/build/win32/vs10/rsvg-install.propsin >$@
 	rm rsvg.vs10.headers
 
