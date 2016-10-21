@@ -260,36 +260,8 @@ main (int argc, char **argv)
             stream = g_unix_input_stream_new (STDIN_FILENO, FALSE);
 #endif
         } else {
-            GFileInfo *file_info;
-            gboolean compressed = FALSE;
-
             file = g_file_new_for_commandline_arg (args[i]);
             stream = (GInputStream *) g_file_read (file, NULL, &error);
-
-            if ((file_info = g_file_query_info (file,
-                                                G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-                                                G_FILE_QUERY_INFO_NONE,
-                                                NULL,
-                                                NULL))) {
-                const char *content_type;
-                char *gz_content_type;
-
-                content_type = g_file_info_get_content_type (file_info);
-                gz_content_type = g_content_type_from_mime_type ("application/x-gzip");
-                compressed = (content_type != NULL && g_content_type_is_a (content_type, gz_content_type));
-                g_free (gz_content_type);
-                g_object_unref (file_info);
-            }
-
-            if (compressed) {
-                GZlibDecompressor *decompressor;
-                GInputStream *converter_stream;
-
-                decompressor = g_zlib_decompressor_new (G_ZLIB_COMPRESSOR_FORMAT_GZIP);
-                converter_stream = g_converter_input_stream_new (stream, G_CONVERTER (decompressor));
-                g_object_unref (stream);
-                stream = converter_stream;
-            }
 
             if (stream == NULL)
                 goto done;
