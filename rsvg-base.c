@@ -1150,15 +1150,9 @@ rsvg_set_error (GError **error, xmlParserCtxtPtr ctxt)
     }
 }
 
-static gboolean
-rsvg_handle_write_impl (RsvgHandle * handle, const guchar * buf, gsize count, GError ** error)
+static void
+create_xml_push_parser_ctxt (RsvgHandle *handle)
 {
-    GError *real_error = NULL;
-    int result;
-
-    rsvg_return_val_if_fail (handle != NULL, FALSE, error);
-
-    handle->priv->error = &real_error;
     if (handle->priv->ctxt == NULL) {
         handle->priv->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0,
                                                       rsvg_handle_get_base_uri (handle));
@@ -1169,6 +1163,18 @@ rsvg_handle_write_impl (RsvgHandle * handle, const guchar * buf, gsize count, GE
            regression */
         handle->priv->ctxt->replaceEntities = TRUE;
     }
+}
+
+static gboolean
+rsvg_handle_write_impl (RsvgHandle * handle, const guchar * buf, gsize count, GError ** error)
+{
+    GError *real_error = NULL;
+    int result;
+
+    rsvg_return_val_if_fail (handle != NULL, FALSE, error);
+
+    handle->priv->error = &real_error;
+    create_xml_push_parser_ctxt (handle);
 
     result = xmlParseChunk (handle->priv->ctxt, (char *) buf, count, 0);
     if (result != 0) {
@@ -1852,17 +1858,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 
     priv->error = &err;
     priv->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
-    if (priv->ctxt == NULL) {
-        priv->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0,
-                                              rsvg_handle_get_base_uri (handle));
-        _rsvg_set_xml_parse_options(priv->ctxt, handle);
-
-        /* if false, external entities work, but internal ones don't. if true, internal entities
-           work, but external ones don't. favor internal entities, in order to not cause a
-           regression */
-        /* FIXMEchpe: FIX THIS! */
-        priv->ctxt->replaceEntities = TRUE;
-    }
+    create_xml_push_parser_ctxt (handle);
 
     buffer = _rsvg_xml_input_buffer_new_from_stream (stream, cancellable, XML_CHAR_ENCODING_NONE, &err);
     input = xmlNewIOInputStream (priv->ctxt, buffer, XML_CHAR_ENCODING_NONE);
@@ -2210,7 +2206,7 @@ rsvg_bbox_clip (RsvgBbox * dst, RsvgBbox * src)
     if (src->virgin)
         return;
 
-	if (!dst->virgin) {
+    if (!dst->virgin) {
         xmin = dst->rect.x + dst->rect.width, ymin = dst->rect.y + dst->rect.height;
         xmax = dst->rect.x, ymax = dst->rect.y;
     } else {
