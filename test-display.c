@@ -596,7 +596,6 @@ main (int argc, char **argv)
     gboolean unlimited = FALSE;
     char *id = NULL;
     GInputStream *input;
-    gboolean compressed;
     GFile *file, *base_file;
     cairo_surface_t *surface;
 
@@ -670,8 +669,6 @@ main (int argc, char **argv)
     }
 
     rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
-
-    compressed = FALSE;
 
     if (unlimited)
         flags |= RSVG_HANDLE_FLAG_UNLIMITED;
