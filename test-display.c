@@ -596,7 +596,6 @@ main (int argc, char **argv)
     gboolean unlimited = FALSE;
     char *id = NULL;
     GInputStream *input;
-    GFileInfo *file_info;
     gboolean compressed;
     GFile *file, *base_file;
     cairo_surface_t *surface;
@@ -695,21 +694,6 @@ main (int argc, char **argv)
         else
             base_file = g_object_ref (file);
 
-        if ((file_info = g_file_query_info (file,
-                                            G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-                                            G_FILE_QUERY_INFO_NONE,
-                                            NULL,
-                                            NULL))) {
-            const char *content_type;
-            char *gz_content_type;
-
-            content_type = g_file_info_get_content_type (file_info);
-            gz_content_type = g_content_type_from_mime_type ("application/x-gzip");
-            compressed = (content_type != NULL && g_content_type_is_a (content_type, gz_content_type));
-            g_free (gz_content_type);
-            g_object_unref (file_info);
-        }
-
         g_object_unref (file);
     }
 
@@ -719,16 +703,6 @@ main (int argc, char **argv)
         g_printerr ("Failed to read input: %s\n", err->message);
         g_error_free (err);
         return 1;
-    }
-
-    if (compressed) {
-        GZlibDecompressor *decompressor;
-        GInputStream *converter_stream;
-
-        decompressor = g_zlib_decompressor_new (G_ZLIB_COMPRESSOR_FORMAT_GZIP);
-        converter_stream = g_converter_input_stream_new (input, G_CONVERTER (decompressor));
-        g_object_unref (input);
-        input = converter_stream;
     }
 
     info.base_uri = base_file ? g_file_get_uri (base_file) : g_strdup ("");
