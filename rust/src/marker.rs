@@ -78,8 +78,8 @@ fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
 
                 let seg = Segment {
                     is_degenerate: true,
-                    p1x: x,
-                    p1y: y,
+                    p1x: cur_x,
+                    p1y: cur_y,
                     p2x: 0.0, p2y: 0.0, p3x: 0.0, p3y: 0.0, p4x: 0.0, p4y: 0.0 // these are set in the next iteration
                 };
 
