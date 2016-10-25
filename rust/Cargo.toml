@@ -1,0 +1,10 @@
+[package]
+name = "marker"
+version = "0.0.1"
+authors = ["Federico Mena Quintero <federico@gnome.org>"]
+
+[dependencies]
+cairo-rs = "^0"
+
+[[bin]]
+name = "marker"
