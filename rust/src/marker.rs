@@ -211,7 +211,7 @@ mod tests {
 
     fn test_path_to_segments (path: cairo::Path, expected_segments: Vec<Segment>) {
         let segments = path_to_segments (path);
-        assert_eq! (segments, expected_segments);
+        assert_eq! (expected_segments, segments);
     }
 
     /* Single open path */
