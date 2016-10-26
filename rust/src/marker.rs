@@ -209,9 +209,15 @@ mod tests {
     use super::*;
     extern crate cairo;
 
-    fn setup_open_path () -> cairo::Path {
+    fn create_cr () -> cairo::Context {
         let surf = cairo::ImageSurface::create (cairo::Format::Rgb24, 1, 1);
         let cr = cairo::Context::new (&surf);
+
+        cr
+    }
+
+    fn setup_open_path () -> cairo::Path {
+        let cr = create_cr ();
 
         cr.move_to (10.0, 10.0);
         cr.line_to (20.0, 10.0);
