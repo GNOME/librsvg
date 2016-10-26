@@ -44,6 +44,27 @@ fn double_equals (a: f64, b: f64) -> bool {
     (a - b).abs () < EPSILON
 }
 
+fn make_degenerate (x: f64, y: f64) -> Segment {
+    Segment::Degenerate { x: x, y: y}
+}
+
+fn make_curve (x1: f64, y1: f64,
+               x2: f64, y2: f64,
+               x3: f64, y3: f64,
+               x4: f64, y4: f64) -> Segment {
+    Segment::LineOrCurve {
+        x1: x1, y1: y1,
+        x2: x2, y2: y2,
+        x3: x3, y3: y3,
+        x4: x4, y4: y4
+    }
+}
+
+fn make_line (x1: f64, y1: f64, x2: f64, y2: f64) -> Segment {
+    make_curve (x1, y1, x2, y2, x1, y1, x2, y2)
+}
+
+
 pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
     let mut last_x: f64;
     let mut last_y: f64;
@@ -74,10 +95,7 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 cur_x = x;
                 cur_y = y;
 
-                seg = Segment::Degenerate {
-                    x: cur_x,
-                    y: cur_y
-                };
+                seg = make_degenerate (cur_x, cur_y);
                 needs_new_segment = true;
 
                 subpath_start_x = cur_x;
@@ -90,19 +108,7 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 cur_x = x;
                 cur_y = y;
 
-                seg = Segment::LineOrCurve {
-                    x1: last_x,
-                    y1: last_y,
-
-                    x2: cur_x,
-                    y2: cur_y,
-
-                    x3: last_x,
-                    y3: last_y,
-
-                    x4: cur_x,
-                    y4: cur_y,
-                };
+                seg = make_line (last_x, last_y, cur_x, cur_y);
 
                 match state {
                     SegmentState::Start => {
@@ -135,19 +141,7 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     y3 = y2;
                 }
 
-                seg = Segment::LineOrCurve {
-                    x1: x1,
-                    y1: y1,
-
-                    x2: x2,
-                    y2: y2,
-
-                    x3: x3,
-                    y3: y3,
-
-                    x4: x4,
-                    y4: y4,
-                };
+                seg = make_curve (x1, y1, x2, y2, x3, y3, x4, y4);
 
                 match state {
                     SegmentState::Start => {
@@ -165,19 +159,7 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 cur_x = subpath_start_x;
                 cur_y = subpath_start_y;
 
-                seg = Segment::LineOrCurve {
-                    x1: last_x,
-                    y1: last_y,
-
-                    x2: cur_x,
-                    y2: cur_y,
-
-                    x3: last_x,
-                    y3: last_y,
-
-                    x4: cur_x,
-                    y4: cur_y,
-                };
+                seg = make_line (last_x, last_y, cur_x, cur_y);
 
                 match state {
                     SegmentState::Start => {
@@ -220,10 +202,14 @@ mod tests {
         Segment::Degenerate { x: x, y: y }
     }
 
-    fn line_or_curve (x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) -> Segment {
+    fn curve (x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) -> Segment {
         Segment::LineOrCurve {
             x1: x1, y1: y1, x2: x2, y2: y2, x3: x3, y3: y3, x4: x4, y4: y4
         }
+    }
+
+    fn line (x1: f64, y1: f64, x2: f64, y2: f64) -> Segment {
+        curve (x1, y1, x2, y2, x1, y1, x2, y2)
     }
 
     fn test_path_to_segments (path: cairo::Path, expected_segments: Vec<Segment>) {
@@ -247,8 +233,8 @@ mod tests {
     #[test]
     fn path_to_segments_handles_open_path () {
         let expected_segments: Vec<Segment> = vec![
-            line_or_curve (10.0, 10.0, 20.0, 10.0, 10.0, 10.0, 20.0, 10.0),
-            line_or_curve (20.0, 10.0, 20.0, 20.0, 20.0, 10.0, 20.0, 20.0)
+            line (10.0, 10.0, 20.0, 10.0),
+            line (20.0, 10.0, 20.0, 20.0)
         ];
 
         test_path_to_segments (setup_open_path(), expected_segments);
@@ -275,12 +261,12 @@ mod tests {
     #[test]
     fn path_to_segments_handles_multiple_open_subpaths () {
         let expected_segments: Vec<Segment> = vec![
-            line_or_curve (10.0, 10.0, 20.0, 10.0, 10.0, 10.0, 20.0, 10.0),
-            line_or_curve (20.0, 10.0, 20.0, 20.0, 20.0, 10.0, 20.0, 20.0),
+            line  (10.0, 10.0, 20.0, 10.0),
+            line  (20.0, 10.0, 20.0, 20.0),
 
-            line_or_curve (30.0, 30.0, 40.0, 30.0, 30.0, 30.0, 40.0, 30.0),
-            line_or_curve (40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
-            line_or_curve (70.0, 70.0, 80.0, 90.0, 70.0, 70.0, 80.0, 90.0)
+            line  (30.0, 30.0, 40.0, 30.0),
+            curve (40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
+            line  (70.0, 70.0, 80.0, 90.0)
         ];
 
         test_path_to_segments (setup_multiple_open_subpaths (), expected_segments);
