@@ -1,11 +1,11 @@
 extern crate cairo;
 
 pub struct Segment {
-    is_degenerate: bool, /* If true, only (p1x, p1y) are valid.  If false, all are valid */
-    p1x: f64, p1y: f64,
-    p2x: f64, p2y: f64,
-    p3x: f64, p3y: f64,
-    p4x: f64, p4y: f64
+    is_degenerate: bool, /* If true, only (x1, y1) are valid.  If false, all are valid */
+    x1: f64, y1: f64,
+    x2: f64, y2: f64,
+    x3: f64, y3: f64,
+    x4: f64, y4: f64
 }
 
 enum SegmentState {
@@ -15,14 +15,14 @@ enum SegmentState {
 
 /* This converts a cairo_path_t into a list of curveto-like segments.  Each segment can be:
  *
- * 1. segment.is_degenerate = TRUE => the segment is actually a single point (segment.p1x, segment.p1y)
+ * 1. segment.is_degenerate = TRUE => the segment is actually a single point (segment.x1, segment.y1)
  *
  * 2. segment.is_degenerate = FALSE => either a lineto or a curveto (or the effective lineto that results from a closepath).
  *    We have the following points:
- *       P1 = (p1x, p1y)
- *       P2 = (p2x, p2y)
- *       P3 = (p3x, p3y)
- *       P4 = (p4x, p4y)
+ *       P1 = (x1, y1)
+ *       P2 = (x2, y2)
+ *       P3 = (x3, y3)
+ *       P4 = (x4, y4)
  *
  *    The start and end points are P1 and P4, respectively.
  *    The tangent at the start point is given by the vector (P2 - P1).
@@ -78,9 +78,9 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
 
                 let seg = Segment {
                     is_degenerate: true,
-                    p1x: cur_x,
-                    p1y: cur_y,
-                    p2x: 0.0, p2y: 0.0, p3x: 0.0, p3y: 0.0, p4x: 0.0, p4y: 0.0 // these are set in the next iteration
+                    x1: cur_x,
+                    y1: cur_y,
+                    x2: 0.0, y2: 0.0, x3: 0.0, y3: 0.0, x4: 0.0, y4: 0.0 // these are set in the next iteration
                 };
 
                 segments.push (seg);
@@ -103,28 +103,28 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
 
                         let seg = Segment {
                             is_degenerate: false,
-                            p1x: last_x,
-                            p1y: last_y,
-                            p2x: 0.0, p2y: 0.0, p3x: 0.0, p3y: 0.0, p4x: 0.0, p4y: 0.0  // these are set below
+                            x1: last_x,
+                            y1: last_y,
+                            x2: 0.0, y2: 0.0, x3: 0.0, y3: 0.0, x4: 0.0, y4: 0.0  // these are set below
                         };
 
                         segments.push (seg);
                     }
                 }
 
-                segments[segment_num].p2x = cur_x;
-                segments[segment_num].p2y = cur_y;
+                segments[segment_num].x2 = cur_x;
+                segments[segment_num].y2 = cur_y;
 
-                segments[segment_num].p3x = last_x;
-                segments[segment_num].p3y = last_y;
+                segments[segment_num].x3 = last_x;
+                segments[segment_num].y3 = last_y;
 
-                segments[segment_num].p4x = cur_x;
-                segments[segment_num].p4y = cur_y;
+                segments[segment_num].x4 = cur_x;
+                segments[segment_num].y4 = cur_y;
             },
 
-            cairo::PathSegment::CurveTo ((p2x, p2y), (p3x, p3y), (p4x, p4y)) => {
-                cur_x = p4x;
-                cur_y = p4y;
+            cairo::PathSegment::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
+                cur_x = x4;
+                cur_y = y4;
 
                 match state {
                     SegmentState::Start => {
@@ -137,36 +137,36 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
 
                         let seg = Segment {
                             is_degenerate: false,
-                            p1x: last_x,
-                            p1y: last_y,
-                            p2x: 0.0, p2y: 0.0, p3x: 0.0, p3y: 0.0, p4x: 0.0, p4y: 0.0 // these are set below
+                            x1: last_x,
+                            y1: last_y,
+                            x2: 0.0, y2: 0.0, x3: 0.0, y3: 0.0, x4: 0.0, y4: 0.0 // these are set below
                         };
 
                         segments.push (seg);
                     }
                 }
 
-                segments[segment_num].p2x = p2x;
-                segments[segment_num].p2y = p2y;
+                segments[segment_num].x2 = x2;
+                segments[segment_num].y2 = y2;
 
-                segments[segment_num].p3x = p3x;
-                segments[segment_num].p3y = p3y;
+                segments[segment_num].x3 = x3;
+                segments[segment_num].y3 = y3;
 
-                segments[segment_num].p4x = cur_x;
-                segments[segment_num].p4y = cur_y;
+                segments[segment_num].x4 = cur_x;
+                segments[segment_num].y4 = cur_y;
 
                 /* Fix the tangents for when the middle control points coincide with their respective endpoints */
 
-                if double_equals (segments[segment_num].p2x, segments[segment_num].p1x)
-                    && double_equals (segments[segment_num].p2y, segments[segment_num].p1y) {
-                    segments[segment_num].p2x = segments[segment_num].p3x;
-                    segments[segment_num].p2y = segments[segment_num].p3y;
+                if double_equals (segments[segment_num].x2, segments[segment_num].x1)
+                    && double_equals (segments[segment_num].y2, segments[segment_num].y1) {
+                    segments[segment_num].x2 = segments[segment_num].x3;
+                    segments[segment_num].y2 = segments[segment_num].y3;
                 }
 
-                if double_equals (segments[segment_num].p3x, segments[segment_num].p4x)
-                    && double_equals (segments[segment_num].p3y, segments[segment_num].p4y) {
-                    segments[segment_num].p3x = segments[segment_num].p2x;
-                    segments[segment_num].p3y = segments[segment_num].p2y;
+                if double_equals (segments[segment_num].x3, segments[segment_num].x4)
+                    && double_equals (segments[segment_num].y3, segments[segment_num].y4) {
+                    segments[segment_num].x3 = segments[segment_num].x2;
+                    segments[segment_num].y3 = segments[segment_num].y2;
                 }
             }
 
@@ -178,14 +178,14 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     SegmentState::Start => {
                         segments[segment_num].is_degenerate = false;
 
-                        segments[segment_num].p2x = cur_x;
-                        segments[segment_num].p2y = cur_y;
+                        segments[segment_num].x2 = cur_x;
+                        segments[segment_num].y2 = cur_y;
 
-                        segments[segment_num].p3x = last_x;
-                        segments[segment_num].p3y = last_y;
+                        segments[segment_num].x3 = last_x;
+                        segments[segment_num].y3 = last_y;
 
-                        segments[segment_num].p4x = cur_x;
-                        segments[segment_num].p4y = cur_y;
+                        segments[segment_num].x4 = cur_x;
+                        segments[segment_num].y4 = cur_y;
 
                         state = SegmentState::End;
                     },
@@ -227,18 +227,18 @@ mod tests {
             match index {
                 0 => {
                     assert_eq! (seg.is_degenerate, false);
-                    assert_eq! ((seg.p1x, seg.p1y), (10.0, 10.0));
-                    assert_eq! ((seg.p2x, seg.p2y), (20.0, 10.0));
-                    assert_eq! ((seg.p3x, seg.p3y), (10.0, 10.0));
-                    assert_eq! ((seg.p4x, seg.p4y), (20.0, 10.0));
+                    assert_eq! ((seg.x1, seg.y1), (10.0, 10.0));
+                    assert_eq! ((seg.x2, seg.y2), (20.0, 10.0));
+                    assert_eq! ((seg.x3, seg.y3), (10.0, 10.0));
+                    assert_eq! ((seg.x4, seg.y4), (20.0, 10.0));
                 },
 
                 1 => {
                     assert_eq! (seg.is_degenerate, false);
-                    assert_eq! ((seg.p1x, seg.p1y), (20.0, 10.0));
-                    assert_eq! ((seg.p2x, seg.p2y), (20.0, 20.0));
-                    assert_eq! ((seg.p3x, seg.p3y), (20.0, 10.0));
-                    assert_eq! ((seg.p4x, seg.p4y), (20.0, 20.0));
+                    assert_eq! ((seg.x1, seg.y1), (20.0, 10.0));
+                    assert_eq! ((seg.x2, seg.y2), (20.0, 20.0));
+                    assert_eq! ((seg.x3, seg.y3), (20.0, 10.0));
+                    assert_eq! ((seg.x4, seg.y4), (20.0, 20.0));
                 },
 
                 _ => { unreachable! (); }
