@@ -49,9 +49,21 @@ fn make_degenerate (x: f64, y: f64) -> Segment {
 }
 
 fn make_curve (x1: f64, y1: f64,
-               x2: f64, y2: f64,
-               x3: f64, y3: f64,
+               mut x2: f64, mut y2: f64,
+               mut x3: f64, mut y3: f64,
                x4: f64, y4: f64) -> Segment {
+    /* Fix the tangents for when the middle control points coincide with their respective endpoints */
+
+    if double_equals (x2, x1) && double_equals (y2, y1) {
+        x2 = x3;
+        y2 = y3;
+    }
+
+    if double_equals (x3, x4) && double_equals (y3, y4) {
+        x3 = x2;
+        y3 = y2;
+    }
+
     Segment::LineOrCurve {
         x1: x1, y1: y1,
         x2: x2, y2: y2,
@@ -122,26 +134,11 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 }
             },
 
-            cairo::PathSegment::CurveTo ((mut x2, mut y2), (mut x3, mut y3), (x4, y4)) => {
+            cairo::PathSegment::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
                 cur_x = x4;
                 cur_y = y4;
 
-                /* Fix the tangents for when the middle control points coincide with their respective endpoints */
-
-                let x1 = last_x;
-                let y1 = last_y;
-
-                if double_equals (x2, x1) && double_equals (y2, y1) {
-                    x2 = x3;
-                    y2 = y3;
-                }
-
-                if double_equals (x3, x4) && double_equals (y3, y4) {
-                    x3 = x2;
-                    y3 = y2;
-                }
-
-                seg = make_curve (x1, y1, x2, y2, x3, y3, x4, y4);
+                seg = make_curve (last_x, last_y, x2, y2, x3, y3, cur_x, cur_y);
 
                 match state {
                     SegmentState::Start => {
