@@ -239,4 +239,37 @@ mod tests {
 
         assert_eq! (expected_segments, segments);
     }
+
+    fn setup_multiple_open_subpaths () -> cairo::Path {
+        let cr = create_cr ();
+
+        cr.move_to (10.0, 10.0);
+        cr.line_to (20.0, 10.0);
+        cr.line_to (20.0, 20.0);
+
+        cr.move_to (30.0, 30.0);
+        cr.line_to (40.0, 30.0);
+        cr.curve_to (50.0, 35.0, 60.0, 60.0, 70.0, 70.0);
+        cr.line_to (80.0, 90.0);
+
+        let path = cr.copy_path ();
+        path
+    }
+
+    #[test]
+    fn path_to_segments_handles_multiple_open_subpaths () {
+        let expected_segments: Vec<Segment> = vec![
+            Segment::LineOrCurve { x1: 10.0, y1: 10.0, x2: 20.0, y2: 10.0, x3: 10.0, y3: 10.0, x4: 20.0, y4: 10.0 },
+            Segment::LineOrCurve { x1: 20.0, y1: 10.0, x2: 20.0, y2: 20.0, x3: 20.0, y3: 10.0, x4: 20.0, y4: 20.0 },
+
+            Segment::LineOrCurve { x1: 30.0, y1: 30.0, x2: 40.0, y2: 30.0, x3: 30.0, y3: 30.0, x4: 40.0, y4: 30.0 },
+            Segment::LineOrCurve { x1: 40.0, y1: 30.0, x2: 50.0, y2: 35.0, x3: 60.0, y3: 60.0, x4: 70.0, y4: 70.0 },
+            Segment::LineOrCurve { x1: 70.0, y1: 70.0, x2: 80.0, y2: 90.0, x3: 70.0, y3: 70.0, x4: 80.0, y4: 90.0 }
+        ];
+
+        let path = setup_multiple_open_subpaths ();
+        let segments = path_to_segments (path);
+
+        assert_eq! (expected_segments, segments);
+    }
 }
