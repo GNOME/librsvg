@@ -43,8 +43,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
     let mut cur_y: f64;
     let mut subpath_start_x: f64;
     let mut subpath_start_y: f64;
-    let mut has_first_segment : bool;
-    let mut segment_num : usize;
     let mut segments: Vec<Segment>;
     let mut state: SegmentState;
 
@@ -53,8 +51,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
     subpath_start_x = 0.0;
     subpath_start_y = 0.0;
 
-    has_first_segment = false;
-    segment_num = 0;
     segments = Vec::new ();
     state = SegmentState::End;
 
@@ -64,12 +60,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
 
         match cairo_segment {
             cairo::PathSegment::MoveTo ((x, y)) => {
-                if has_first_segment {
-                    segment_num += 1;
-                } else {
-                    has_first_segment = true;
-                }
-
                 cur_x = x;
                 cur_y = y;
 
@@ -94,13 +84,11 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
 
                 match state {
                     SegmentState::Start => {
-                        segments[segment_num].is_degenerate = false;
+                        segments.last_mut().expect("LineTo without a segment!").is_degenerate = false;
                         state = SegmentState::End;
                     },
 
                     SegmentState::End => {
-                        segment_num += 1;
-
                         let seg = Segment {
                             is_degenerate: false,
                             p1x: last_x,
@@ -112,14 +100,15 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     }
                 }
 
-                segments[segment_num].p2x = cur_x;
-                segments[segment_num].p2y = cur_y;
+                let segment = segments.last_mut().expect("No segment after LineTo");
+                segment.p2x = cur_x;
+                segment.p2y = cur_y;
 
-                segments[segment_num].p3x = last_x;
-                segments[segment_num].p3y = last_y;
+                segment.p3x = last_x;
+                segment.p3y = last_y;
 
-                segments[segment_num].p4x = cur_x;
-                segments[segment_num].p4y = cur_y;
+                segment.p4x = cur_x;
+                segment.p4y = cur_y;
             },
 
             cairo::PathSegment::CurveTo ((p2x, p2y), (p3x, p3y), (p4x, p4y)) => {
@@ -128,13 +117,11 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
 
                 match state {
                     SegmentState::Start => {
-                        segments[segment_num as usize].is_degenerate = false;
+                        segments.last_mut().expect("CurveTo without a segment!").is_degenerate = false;
                         state = SegmentState::End;
                     },
 
                     SegmentState::End => {
-                        segment_num += 1;
-
                         let seg = Segment {
                             is_degenerate: false,
                             p1x: last_x,
@@ -146,27 +133,28 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     }
                 }
 
-                segments[segment_num].p2x = p2x;
-                segments[segment_num].p2y = p2y;
+                let segment = segments.last_mut().expect("No segment after CurveTo!");
+                segment.p2x = p2x;
+                segment.p2y = p2y;
 
-                segments[segment_num].p3x = p3x;
-                segments[segment_num].p3y = p3y;
+                segment.p3x = p3x;
+                segment.p3y = p3y;
 
-                segments[segment_num].p4x = cur_x;
-                segments[segment_num].p4y = cur_y;
+                segment.p4x = cur_x;
+                segment.p4y = cur_y;
 
                 /* Fix the tangents for when the middle control points coincide with their respective endpoints */
 
-                if double_equals (segments[segment_num].p2x, segments[segment_num].p1x)
-                    && double_equals (segments[segment_num].p2y, segments[segment_num].p1y) {
-                    segments[segment_num].p2x = segments[segment_num].p3x;
-                    segments[segment_num].p2y = segments[segment_num].p3y;
+                if double_equals (segment.p2x, segment.p1x)
+                    && double_equals (segment.p2y, segment.p1y) {
+                    segment.p2x = segment.p3x;
+                    segment.p2y = segment.p3y;
                 }
 
-                if double_equals (segments[segment_num].p3x, segments[segment_num].p4x)
-                    && double_equals (segments[segment_num].p3y, segments[segment_num].p4y) {
-                    segments[segment_num].p3x = segments[segment_num].p2x;
-                    segments[segment_num].p3y = segments[segment_num].p2y;
+                if double_equals (segment.p3x, segment.p4x)
+                    && double_equals (segment.p3y, segment.p4y) {
+                    segment.p3x = segment.p2x;
+                    segment.p3y = segment.p2y;
                 }
             }
 
@@ -176,16 +164,17 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
 
                 match state {
                     SegmentState::Start => {
-                        segments[segment_num].is_degenerate = false;
+                        let segment = segments.last_mut().expect("ClosePath without a segment!");
+                        segment.is_degenerate = false;
 
-                        segments[segment_num].p2x = cur_x;
-                        segments[segment_num].p2y = cur_y;
+                        segment.p2x = cur_x;
+                        segment.p2y = cur_y;
 
-                        segments[segment_num].p3x = last_x;
-                        segments[segment_num].p3y = last_y;
+                        segment.p3x = last_x;
+                        segment.p3y = last_y;
 
-                        segments[segment_num].p4x = cur_x;
-                        segments[segment_num].p4y = cur_y;
+                        segment.p4x = cur_x;
+                        segment.p4y = cur_y;
 
                         state = SegmentState::End;
                     },
