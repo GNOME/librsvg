@@ -216,6 +216,18 @@ mod tests {
         cr
     }
 
+    fn degenerate (x: f64, y: f64) -> Segment {
+        Segment::Degenerate { x: x, y: y }
+    }
+
+    fn line_or_curve (x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) -> Segment {
+        Segment::LineOrCurve {
+            x1: x1, y1: y1, x2: x2, y2: y2, x3: x3, y3: y3, x4: x4, y4: y4
+        }
+    }
+
+    /* Single open path */
+
     fn setup_open_path () -> cairo::Path {
         let cr = create_cr ();
 
@@ -230,8 +242,8 @@ mod tests {
     #[test]
     fn path_to_segments_handles_open_path () {
         let expected_segments: Vec<Segment> = vec![
-            Segment::LineOrCurve { x1: 10.0, y1: 10.0, x2: 20.0, y2: 10.0, x3: 10.0, y3: 10.0, x4: 20.0, y4: 10.0 },
-            Segment::LineOrCurve { x1: 20.0, y1: 10.0, x2: 20.0, y2: 20.0, x3: 20.0, y3: 10.0, x4: 20.0, y4: 20.0 }
+            line_or_curve (10.0, 10.0, 20.0, 10.0, 10.0, 10.0, 20.0, 10.0),
+            line_or_curve (20.0, 10.0, 20.0, 20.0, 20.0, 10.0, 20.0, 20.0)
         ];
 
         let path = setup_open_path ();
@@ -239,6 +251,8 @@ mod tests {
 
         assert_eq! (expected_segments, segments);
     }
+
+    /* Multiple open subpaths */
 
     fn setup_multiple_open_subpaths () -> cairo::Path {
         let cr = create_cr ();
@@ -259,12 +273,12 @@ mod tests {
     #[test]
     fn path_to_segments_handles_multiple_open_subpaths () {
         let expected_segments: Vec<Segment> = vec![
-            Segment::LineOrCurve { x1: 10.0, y1: 10.0, x2: 20.0, y2: 10.0, x3: 10.0, y3: 10.0, x4: 20.0, y4: 10.0 },
-            Segment::LineOrCurve { x1: 20.0, y1: 10.0, x2: 20.0, y2: 20.0, x3: 20.0, y3: 10.0, x4: 20.0, y4: 20.0 },
+            line_or_curve (10.0, 10.0, 20.0, 10.0, 10.0, 10.0, 20.0, 10.0),
+            line_or_curve (20.0, 10.0, 20.0, 20.0, 20.0, 10.0, 20.0, 20.0),
 
-            Segment::LineOrCurve { x1: 30.0, y1: 30.0, x2: 40.0, y2: 30.0, x3: 30.0, y3: 30.0, x4: 40.0, y4: 30.0 },
-            Segment::LineOrCurve { x1: 40.0, y1: 30.0, x2: 50.0, y2: 35.0, x3: 60.0, y3: 60.0, x4: 70.0, y4: 70.0 },
-            Segment::LineOrCurve { x1: 70.0, y1: 70.0, x2: 80.0, y2: 90.0, x3: 70.0, y3: 70.0, x4: 80.0, y4: 90.0 }
+            line_or_curve (30.0, 30.0, 40.0, 30.0, 30.0, 30.0, 40.0, 30.0),
+            line_or_curve (40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
+            line_or_curve (70.0, 70.0, 80.0, 90.0, 70.0, 70.0, 80.0, 90.0)
         ];
 
         let path = setup_multiple_open_subpaths ();
