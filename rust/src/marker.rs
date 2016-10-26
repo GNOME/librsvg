@@ -1,11 +1,19 @@
 extern crate cairo;
 
-pub struct Segment {
-    is_degenerate: bool, /* If true, only (x1, y1) are valid.  If false, all are valid */
-    x1: f64, y1: f64,
-    x2: f64, y2: f64,
-    x3: f64, y3: f64,
-    x4: f64, y4: f64
+#[derive(Debug)]
+#[derive(PartialEq)]
+pub enum Segment {
+    Degenerate {            // A single lone point
+        x: f64,
+        y: f64
+    },
+
+    LineOrCurve {
+        x1: f64, y1: f64,
+        x2: f64, y2: f64,
+        x3: f64, y3: f64,
+        x4: f64, y4: f64
+    },
 }
 
 enum SegmentState {
@@ -15,9 +23,9 @@ enum SegmentState {
 
 /* This converts a cairo_path_t into a list of curveto-like segments.  Each segment can be:
  *
- * 1. segment.is_degenerate = TRUE => the segment is actually a single point (segment.x1, segment.y1)
+ * 1. Segment::Degenerate => the segment is actually a single point (x, y)
  *
- * 2. segment.is_degenerate = FALSE => either a lineto or a curveto (or the effective lineto that results from a closepath).
+ * 2. Segment::LineOrCurve => either a lineto or a curveto (or the effective lineto that results from a closepath).
  *    We have the following points:
  *       P1 = (x1, y1)
  *       P2 = (x2, y2)
@@ -76,11 +84,9 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 subpath_start_x = cur_x;
                 subpath_start_y = cur_y;
 
-                let seg = Segment {
-                    is_degenerate: true,
-                    x1: cur_x,
-                    y1: cur_y,
-                    x2: 0.0, y2: 0.0, x3: 0.0, y3: 0.0, x4: 0.0, y4: 0.0 // these are set in the next iteration
+                let seg = Segment::Degenerate {
+                    x: cur_x,
+                    y: cur_y
                 };
 
                 segments.push (seg);
@@ -92,81 +98,94 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 cur_x = x;
                 cur_y = y;
 
+                let needs_new_segment : bool;
+                let seg : Segment;
+
                 match state {
                     SegmentState::Start => {
-                        segments[segment_num].is_degenerate = false;
                         state = SegmentState::End;
+                        needs_new_segment = false;
                     },
 
                     SegmentState::End => {
                         segment_num += 1;
-
-                        let seg = Segment {
-                            is_degenerate: false,
-                            x1: last_x,
-                            y1: last_y,
-                            x2: 0.0, y2: 0.0, x3: 0.0, y3: 0.0, x4: 0.0, y4: 0.0  // these are set below
-                        };
-
-                        segments.push (seg);
+                        needs_new_segment = true;
                     }
                 }
 
-                segments[segment_num].x2 = cur_x;
-                segments[segment_num].y2 = cur_y;
+                seg = Segment::LineOrCurve {
+                    x1: last_x,
+                    y1: last_y,
 
-                segments[segment_num].x3 = last_x;
-                segments[segment_num].y3 = last_y;
+                    x2: cur_x,
+                    y2: cur_y,
 
-                segments[segment_num].x4 = cur_x;
-                segments[segment_num].y4 = cur_y;
+                    x3: last_x,
+                    y3: last_y,
+
+                    x4: cur_x,
+                    y4: cur_y,
+                };
+
+                if needs_new_segment {
+                    segments.push (seg);
+                } else {
+                    segments[segment_num] = seg;
+                }
             },
 
-            cairo::PathSegment::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
+            cairo::PathSegment::CurveTo ((mut x2, mut y2), (mut x3, mut y3), (x4, y4)) => {
                 cur_x = x4;
                 cur_y = y4;
 
+                let x1 = last_x;
+                let y1 = last_y;
+
+                let needs_new_segment : bool;
+                let seg : Segment;
+
                 match state {
                     SegmentState::Start => {
-                        segments[segment_num as usize].is_degenerate = false;
                         state = SegmentState::End;
+                        needs_new_segment = false;
                     },
 
                     SegmentState::End => {
                         segment_num += 1;
-
-                        let seg = Segment {
-                            is_degenerate: false,
-                            x1: last_x,
-                            y1: last_y,
-                            x2: 0.0, y2: 0.0, x3: 0.0, y3: 0.0, x4: 0.0, y4: 0.0 // these are set below
-                        };
-
-                        segments.push (seg);
+                        needs_new_segment = true;
                     }
                 }
 
-                segments[segment_num].x2 = x2;
-                segments[segment_num].y2 = y2;
-
-                segments[segment_num].x3 = x3;
-                segments[segment_num].y3 = y3;
-
-                segments[segment_num].x4 = cur_x;
-                segments[segment_num].y4 = cur_y;
-
                 /* Fix the tangents for when the middle control points coincide with their respective endpoints */
 
-                if double_equals (segments[segment_num].x2, segments[segment_num].x1)
-                    && double_equals (segments[segment_num].y2, segments[segment_num].y1) {
-                    segments[segment_num].x2 = segments[segment_num].x3;
-                    segments[segment_num].y2 = segments[segment_num].y3;
+                if double_equals (x2, x1) && double_equals (y2, y1) {
+                    x2 = x3;
+                    y2 = y3;
                 }
 
-                if double_equals (segments[segment_num].x3, segments[segment_num].x4)
-                    && double_equals (segments[segment_num].y3, segments[segment_num].y4) {
-                    segments[segment_num].x3 = segments[segment_num].x2;
-                    segments[segment_num].y3 = segments[segment_num].y2;
+                if double_equals (x3, x4) && double_equals (y3, y4) {
+                    x3 = x2;
+                    y3 = y2;
+                }
+
+                seg = Segment::LineOrCurve {
+                    x1: x1,
+                    y1: y1,
+
+                    x2: x2,
+                    y2: y2,
+
+                    x3: x3,
+                    y3: y3,
+
+                    x4: x4,
+                    y4: y4,
+                };
+
+                if needs_new_segment {
+                    segments.push (seg);
+                } else {
+                    segments[segment_num] = seg;
                 }
             }
 
@@ -174,25 +193,39 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 cur_x = subpath_start_x;
                 cur_y = subpath_start_y;
 
+                let needs_new_segment : bool;
+                let seg: Segment;
+
                 match state {
                     SegmentState::Start => {
-                        segments[segment_num].is_degenerate = false;
-
-                        segments[segment_num].x2 = cur_x;
-                        segments[segment_num].y2 = cur_y;
-
-                        segments[segment_num].x3 = last_x;
-                        segments[segment_num].y3 = last_y;
-
-                        segments[segment_num].x4 = cur_x;
-                        segments[segment_num].y4 = cur_y;
-
                         state = SegmentState::End;
+                        needs_new_segment = false;
                     },
 
                     SegmentState::End => {
+                        needs_new_segment = false;
                         /* nothing; closepath after moveto (or a single lone closepath) does nothing */
                     }
+                }
+
+                seg = Segment::LineOrCurve {
+                    x1: last_x,
+                    y1: last_y,
+
+                    x2: cur_x,
+                    y2: cur_y,
+
+                    x3: last_x,
+                    y3: last_y,
+
+                    x4: cur_x,
+                    y4: cur_y,
+                };
+
+                if needs_new_segment {
+                    segments.push (seg);
+                } else {
+                    segments[segment_num] = seg;
                 }
             }
         }
@@ -220,29 +253,14 @@ mod tests {
 
     #[test]
     fn path_to_segments_handles_open_path () {
+        let expected_segments: Vec<Segment> = vec![
+            Segment::LineOrCurve { x1: 10.0, y1: 10.0, x2: 20.0, y2: 10.0, x3: 10.0, y3: 10.0, x4: 20.0, y4: 10.0 },
+            Segment::LineOrCurve { x1: 20.0, y1: 10.0, x2: 20.0, y2: 20.0, x3: 20.0, y3: 10.0, x4: 20.0, y4: 20.0 }
+        ];
+
         let path = setup_open_path ();
         let segments = path_to_segments (path);
 
-        for (index, seg) in segments.iter ().enumerate () {
-            match index {
-                0 => {
-                    assert_eq! (seg.is_degenerate, false);
-                    assert_eq! ((seg.x1, seg.y1), (10.0, 10.0));
-                    assert_eq! ((seg.x2, seg.y2), (20.0, 10.0));
-                    assert_eq! ((seg.x3, seg.y3), (10.0, 10.0));
-                    assert_eq! ((seg.x4, seg.y4), (20.0, 10.0));
-                },
-
-                1 => {
-                    assert_eq! (seg.is_degenerate, false);
-                    assert_eq! ((seg.x1, seg.y1), (20.0, 10.0));
-                    assert_eq! ((seg.x2, seg.y2), (20.0, 20.0));
-                    assert_eq! ((seg.x3, seg.y3), (20.0, 10.0));
-                    assert_eq! ((seg.x4, seg.y4), (20.0, 20.0));
-                },
-
-                _ => { unreachable! (); }
-            }
-        }
+        assert_eq! (expected_segments, segments);
     }
 }
