@@ -51,8 +51,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
     let mut cur_y: f64;
     let mut subpath_start_x: f64;
     let mut subpath_start_y: f64;
-    let mut has_first_segment : bool;
-    let mut segment_num : usize;
     let mut segments: Vec<Segment>;
     let mut state: SegmentState;
 
@@ -61,8 +59,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
     subpath_start_x = 0.0;
     subpath_start_y = 0.0;
 
-    has_first_segment = false;
-    segment_num = 0;
     segments = Vec::new ();
     state = SegmentState::End;
 
@@ -70,26 +66,22 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
         last_x = cur_x;
         last_y = cur_y;
 
+        let needs_new_segment: bool;
+        let seg: Segment;
+
         match cairo_segment {
             cairo::PathSegment::MoveTo ((x, y)) => {
-                if has_first_segment {
-                    segment_num += 1;
-                } else {
-                    has_first_segment = true;
-                }
-
                 cur_x = x;
                 cur_y = y;
 
                 subpath_start_x = cur_x;
                 subpath_start_y = cur_y;
 
-                let seg = Segment::Degenerate {
+                seg = Segment::Degenerate {
                     x: cur_x,
                     y: cur_y
                 };
-
-                segments.push (seg);
+                needs_new_segment = true;
 
                 state = SegmentState::Start;
             },
@@ -98,9 +90,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 cur_x = x;
                 cur_y = y;
 
-                let needs_new_segment : bool;
-                let seg : Segment;
-
                 match state {
                     SegmentState::Start => {
                         state = SegmentState::End;
@@ -108,7 +97,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     },
 
                     SegmentState::End => {
-                        segment_num += 1;
                         needs_new_segment = true;
                     }
                 }
@@ -126,12 +114,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     x4: cur_x,
                     y4: cur_y,
                 };
-
-                if needs_new_segment {
-                    segments.push (seg);
-                } else {
-                    segments[segment_num] = seg;
-                }
             },
 
             cairo::PathSegment::CurveTo ((mut x2, mut y2), (mut x3, mut y3), (x4, y4)) => {
@@ -141,9 +123,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 let x1 = last_x;
                 let y1 = last_y;
 
-                let needs_new_segment : bool;
-                let seg : Segment;
-
                 match state {
                     SegmentState::Start => {
                         state = SegmentState::End;
@@ -151,7 +130,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     },
 
                     SegmentState::End => {
-                        segment_num += 1;
                         needs_new_segment = true;
                     }
                 }
@@ -181,20 +159,11 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     x4: x4,
                     y4: y4,
                 };
-
-                if needs_new_segment {
-                    segments.push (seg);
-                } else {
-                    segments[segment_num] = seg;
-                }
             }
 
             cairo::PathSegment::ClosePath => {
                 cur_x = subpath_start_x;
                 cur_y = subpath_start_y;
-
-                let needs_new_segment : bool;
-                let seg: Segment;
 
                 match state {
                     SegmentState::Start => {
@@ -221,13 +190,14 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     x4: cur_x,
                     y4: cur_y,
                 };
-
-                if needs_new_segment {
-                    segments.push (seg);
-                } else {
-                    segments[segment_num] = seg;
-                }
             }
+        }
+
+        if needs_new_segment {
+            segments.push (seg);
+        } else {
+            let len = segments.len ();
+            segments[len - 1] = seg;
         }
     }
 
