@@ -1,6 +1,6 @@
 extern crate cairo;
 
-struct Segment {
+pub struct Segment {
     is_degenerate: bool, /* If true, only (p1x, p1y) are valid.  If false, all are valid */
     p1x: f64, p1y: f64,
     p2x: f64, p2y: f64,
@@ -36,7 +36,7 @@ fn double_equals (a: f64, b: f64) -> bool {
     (a - b).abs () < EPSILON
 }
 
-fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
+pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
     let mut last_x: f64;
     let mut last_y: f64;
     let mut cur_x: f64;
@@ -201,37 +201,48 @@ fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
     segments
 }
 
-//#[cfg(test)]
-//mod tests {
-//    #[test]
-//    fn it_works() {
-fn main () {
-    let surf = cairo::ImageSurface::create (cairo::Format::Rgb24, 256, 256);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    extern crate cairo;
 
-    let cr = cairo::Context::new (&surf);
+    fn setup_open_path () -> cairo::Path {
+        let surf = cairo::ImageSurface::create (cairo::Format::Rgb24, 1, 1);
+        let cr = cairo::Context::new (&surf);
 
-    cr.move_to (10.0, 10.0);
-    cr.curve_to (20.0, 20.0, 30.0, 20.0, 40.0, 20.0);
-    cr.close_path ();
-//    cr.move_to (30.0, 30.0);
+        cr.move_to (10.0, 10.0);
+        cr.line_to (20.0, 10.0);
+        cr.line_to (20.0, 20.0);
 
-    let path = cr.copy_path ();
+        let path = cr.copy_path ();
+        path
+    }
 
-    let segments = path_to_segments (path);
+    #[test]
+    fn path_to_segments_handles_open_path () {
+        let path = setup_open_path ();
+        let segments = path_to_segments (path);
 
-    let mut i : usize = 0;
+        for (index, seg) in segments.iter ().enumerate () {
+            match index {
+                0 => {
+                    assert_eq! (seg.is_degenerate, false);
+                    assert_eq! ((seg.p1x, seg.p1y), (10.0, 10.0));
+                    assert_eq! ((seg.p2x, seg.p2y), (20.0, 10.0));
+                    assert_eq! ((seg.p3x, seg.p3y), (10.0, 10.0));
+                    assert_eq! ((seg.p4x, seg.p4y), (20.0, 10.0));
+                },
 
-    for s in segments {
-        println! ("segment {}: is_degenerate={}, ({}, {}) ({}, {}) ({}, {}) ({}, {})",
-                  i,
-                  s.is_degenerate,
-                  s.p1x, s.p1y,
-                  s.p2x, s.p2y,
-                  s.p3x, s.p3y,
-                  s.p4x, s.p4y);
-        i += 1;
+                1 => {
+                    assert_eq! (seg.is_degenerate, false);
+                    assert_eq! ((seg.p1x, seg.p1y), (20.0, 10.0));
+                    assert_eq! ((seg.p2x, seg.p2y), (20.0, 20.0));
+                    assert_eq! ((seg.p3x, seg.p3y), (20.0, 10.0));
+                    assert_eq! ((seg.p4x, seg.p4y), (20.0, 20.0));
+                },
+
+                _ => { unreachable! (); }
+            }
+        }
     }
 }
-
-//    }
-//}
