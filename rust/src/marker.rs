@@ -226,6 +226,11 @@ mod tests {
         }
     }
 
+    fn test_path_to_segments (path: cairo::Path, expected_segments: Vec<Segment>) {
+        let segments = path_to_segments (path);
+        assert_eq! (segments, expected_segments);
+    }
+
     /* Single open path */
 
     fn setup_open_path () -> cairo::Path {
@@ -246,10 +251,7 @@ mod tests {
             line_or_curve (20.0, 10.0, 20.0, 20.0, 20.0, 10.0, 20.0, 20.0)
         ];
 
-        let path = setup_open_path ();
-        let segments = path_to_segments (path);
-
-        assert_eq! (expected_segments, segments);
+        test_path_to_segments (setup_open_path(), expected_segments);
     }
 
     /* Multiple open subpaths */
@@ -281,9 +283,6 @@ mod tests {
             line_or_curve (70.0, 70.0, 80.0, 90.0, 70.0, 70.0, 80.0, 90.0)
         ];
 
-        let path = setup_multiple_open_subpaths ();
-        let segments = path_to_segments (path);
-
-        assert_eq! (expected_segments, segments);
+        test_path_to_segments (setup_multiple_open_subpaths (), expected_segments);
     }
 }
