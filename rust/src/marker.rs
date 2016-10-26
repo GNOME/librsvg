@@ -74,14 +74,14 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 cur_x = x;
                 cur_y = y;
 
-                subpath_start_x = cur_x;
-                subpath_start_y = cur_y;
-
                 seg = Segment::Degenerate {
                     x: cur_x,
                     y: cur_y
                 };
                 needs_new_segment = true;
+
+                subpath_start_x = cur_x;
+                subpath_start_y = cur_y;
 
                 state = SegmentState::Start;
             },
@@ -89,17 +89,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
             cairo::PathSegment::LineTo ((x, y)) => {
                 cur_x = x;
                 cur_y = y;
-
-                match state {
-                    SegmentState::Start => {
-                        state = SegmentState::End;
-                        needs_new_segment = false;
-                    },
-
-                    SegmentState::End => {
-                        needs_new_segment = true;
-                    }
-                }
 
                 seg = Segment::LineOrCurve {
                     x1: last_x,
@@ -114,14 +103,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     x4: cur_x,
                     y4: cur_y,
                 };
-            },
-
-            cairo::PathSegment::CurveTo ((mut x2, mut y2), (mut x3, mut y3), (x4, y4)) => {
-                cur_x = x4;
-                cur_y = y4;
-
-                let x1 = last_x;
-                let y1 = last_y;
 
                 match state {
                     SegmentState::Start => {
@@ -133,8 +114,16 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                         needs_new_segment = true;
                     }
                 }
+            },
+
+            cairo::PathSegment::CurveTo ((mut x2, mut y2), (mut x3, mut y3), (x4, y4)) => {
+                cur_x = x4;
+                cur_y = y4;
 
                 /* Fix the tangents for when the middle control points coincide with their respective endpoints */
+
+                let x1 = last_x;
+                let y1 = last_y;
 
                 if double_equals (x2, x1) && double_equals (y2, y1) {
                     x2 = x3;
@@ -159,11 +148,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     x4: x4,
                     y4: y4,
                 };
-            }
-
-            cairo::PathSegment::ClosePath => {
-                cur_x = subpath_start_x;
-                cur_y = subpath_start_y;
 
                 match state {
                     SegmentState::Start => {
@@ -172,10 +156,14 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     },
 
                     SegmentState::End => {
-                        needs_new_segment = false;
-                        /* nothing; closepath after moveto (or a single lone closepath) does nothing */
+                        needs_new_segment = true;
                     }
                 }
+            }
+
+            cairo::PathSegment::ClosePath => {
+                cur_x = subpath_start_x;
+                cur_y = subpath_start_y;
 
                 seg = Segment::LineOrCurve {
                     x1: last_x,
@@ -190,6 +178,18 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     x4: cur_x,
                     y4: cur_y,
                 };
+
+                match state {
+                    SegmentState::Start => {
+                        state = SegmentState::End;
+                        needs_new_segment = false;
+                    },
+
+                    SegmentState::End => {
+                        needs_new_segment = false;
+                        /* nothing; closepath after moveto (or a single lone closepath) does nothing */
+                    }
+                }
             }
         }
 
