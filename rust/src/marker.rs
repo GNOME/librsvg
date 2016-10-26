@@ -268,4 +268,27 @@ mod tests {
 
         test_path_to_segments (setup_multiple_open_subpaths (), expected_segments);
     }
+
+    fn setup_closed_subpath () -> cairo::Path {
+        let cr = create_cr ();
+
+        cr.move_to (10.0, 10.0);
+        cr.line_to (20.0, 10.0);
+        cr.line_to (20.0, 20.0);
+        cr.close_path ();
+
+        let path = cr.copy_path ();
+        path
+    }
+
+    #[test]
+    fn path_to_segments_handles_closed_subpath () {
+        let expected_segments: Vec<Segment> = vec![
+            line (10.0, 10.0, 20.0, 10.0),
+            line (20.0, 10.0, 20.0, 20.0),
+            line (20.0, 20.0, 10.0, 10.0)
+        ];
+
+        test_path_to_segments (setup_closed_subpath (), expected_segments);
+    }
 }
