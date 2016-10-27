@@ -199,17 +199,15 @@ mod tests {
     }
 
     fn degenerate (x: f64, y: f64) -> Segment {
-        Segment::Degenerate { x: x, y: y }
-    }
-
-    fn curve (x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) -> Segment {
-        Segment::LineOrCurve {
-            x1: x1, y1: y1, x2: x2, y2: y2, x3: x3, y3: y3, x4: x4, y4: y4
-        }
+        super::make_degenerate (x, y)
     }
 
     fn line (x1: f64, y1: f64, x2: f64, y2: f64) -> Segment {
-        curve (x1, y1, x2, y2, x1, y1, x2, y2)
+        super::make_line (x1, y1, x2, y2)
+    }
+
+    fn curve (x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) -> Segment {
+        super::make_curve (x1, y1, x2, y2, x3, y3, x4, y4)
     }
 
     fn test_path_to_segments (path: cairo::Path, expected_segments: Vec<Segment>) {
