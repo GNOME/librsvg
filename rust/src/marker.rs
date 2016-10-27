@@ -371,4 +371,41 @@ mod tests {
 
         test_path_to_segments (setup_no_moveto_after_closepath (), expected_segments);
     }
+
+    /* Sequence of moveto; should generate degenerate points.
+     *
+     * This test is not enabled right now!  We create the 
+     * path fixtures with Cairo, and Cairo compresses
+     * sequences of moveto into a single one.  So, we can't
+     * really test this, as we don't get the fixture we want.
+     *
+     * Eventually we'll probably have to switch librsvg to
+     * its own internal path representation which should
+     * allow for unelided path commands, and which should
+     * only build a cairo_path_t for the final rendering step.
+
+    fn setup_sequence_of_moveto () -> cairo::Path {
+        let cr = create_cr ();
+
+        cr.move_to (10.0, 10.0);
+        cr.move_to (20.0, 20.0);
+        cr.move_to (30.0, 30.0);
+        cr.move_to (40.0, 40.0);
+
+        let path = cr.copy_path ();
+        path
+    }
+
+    #[test]
+    fn path_to_segments_handles_sequence_of_moveto () {
+        let expected_segments: Vec<Segment> = vec! [
+            degenerate (10.0, 10.0),
+            degenerate (20.0, 20.0),
+            degenerate (30.0, 30.0),
+            degenerate (40.0, 40.0)
+        ];
+
+        test_path_to_segments (setup_sequence_of_moveto (), expected_segments);
+    }
+     */
 }
