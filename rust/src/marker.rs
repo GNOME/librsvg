@@ -334,4 +334,31 @@ mod tests {
 
         test_path_to_segments (setup_multiple_closed_subpaths (), expected_segments);
     }
+
+    fn setup_no_moveto_after_closepath () -> cairo::Path {
+        let cr = create_cr ();
+
+        cr.move_to (10.0, 10.0);
+        cr.line_to (20.0, 10.0);
+        cr.line_to (20.0, 20.0);
+        cr.close_path ();
+
+        cr.line_to (40.0, 30.0);
+
+        let path = cr.copy_path ();
+        path
+    }
+
+    #[test]
+    fn path_to_segments_handles_no_moveto_after_closepath () {
+        let expected_segments: Vec<Segment> = vec![
+            line  (10.0, 10.0, 20.0, 10.0),
+            line  (20.0, 10.0, 20.0, 20.0),
+            line  (20.0, 20.0, 10.0, 10.0),
+
+            line  (10.0, 10.0, 40.0, 30.0)
+        ];
+
+        test_path_to_segments (setup_no_moveto_after_closepath (), expected_segments);
+    }
 }
