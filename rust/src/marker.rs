@@ -223,7 +223,7 @@ mod tests {
         assert_eq! (expected_segments, segments);
     }
 
-    /* Single open path */
+    /* Single open path; the easy case */
 
     fn setup_open_path () -> cairo::Path {
         let cr = create_cr ();
@@ -278,6 +278,8 @@ mod tests {
         test_path_to_segments (setup_multiple_open_subpaths (), expected_segments);
     }
 
+    /* Closed subpath; must have a line segment back to the first point */
+
     fn setup_closed_subpath () -> cairo::Path {
         let cr = create_cr ();
 
@@ -300,6 +302,10 @@ mod tests {
 
         test_path_to_segments (setup_closed_subpath (), expected_segments);
     }
+
+    /* Multiple closed subpaths; each must have a line segment back to their
+     * initial points, with no degenerate segments between subpaths.
+     */
 
     fn setup_multiple_closed_subpaths () -> cairo::Path {
         let cr = create_cr ();
@@ -334,6 +340,10 @@ mod tests {
 
         test_path_to_segments (setup_multiple_closed_subpaths (), expected_segments);
     }
+
+    /* A lineto follows the first closed subpath, with no moveto to start the second subpath.  The
+     * lineto must start at the first point of the first subpath.
+     */
 
     fn setup_no_moveto_after_closepath () -> cairo::Path {
         let cr = create_cr ();
