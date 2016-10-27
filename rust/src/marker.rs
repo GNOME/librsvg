@@ -165,8 +165,7 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                     },
 
                     SegmentState::End => {
-                        needs_new_segment = false;
-                        /* nothing; closepath after moveto (or a single lone closepath) does nothing */
+                        needs_new_segment = true;
                     }
                 }
             }
