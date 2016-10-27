@@ -17,8 +17,10 @@ pub enum Segment {
 }
 
 enum SegmentState {
+    Initial,
     NewSubpath,
-    InSubpath
+    InSubpath,
+    ClosedSubpath
 }
 
 /* This converts a cairo_path_t into a list of curveto-like segments.  Each segment can be:
@@ -93,13 +95,12 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
     subpath_start_y = 0.0;
 
     segments = Vec::new ();
-    state = SegmentState::InSubpath;
+    state = SegmentState::Initial;
 
     for cairo_segment in path.iter () {
         last_x = cur_x;
         last_y = cur_y;
 
-        let needs_new_segment: bool;
         let seg: Segment;
 
         match cairo_segment {
@@ -107,13 +108,40 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 cur_x = x;
                 cur_y = y;
 
-                seg = make_degenerate (cur_x, cur_y);
-                needs_new_segment = true;
-
                 subpath_start_x = cur_x;
                 subpath_start_y = cur_y;
 
-                state = SegmentState::NewSubpath;
+                match state {
+                    SegmentState::Initial |
+                    SegmentState::InSubpath => {
+                        /* Ignore the very first moveto in a sequence (Initial state), or if we were
+                         * already drawing within a subpath, start a new subpath.
+                         */
+                        state = SegmentState::NewSubpath;
+                    },
+
+                    SegmentState::NewSubpath => {
+                        /* We had just begun a new subpath (i.e. from a moveto) and we got another
+                         * moveto?  Output a stray point for the previous moveto.
+                         */
+                        segments.push (make_degenerate (last_x, last_y));
+                        state = SegmentState::NewSubpath;
+                    }
+
+                    SegmentState::ClosedSubpath => {
+                        /* Cairo outputs a moveto after every closepath, so that subsequent
+                         * lineto/curveto commands will start at the closed vertex.
+                         *
+                         * We don't want to actually emit a point (a degenerate segment) in that
+                         * artificial-moveto case.
+                         *
+                         * We'll reset to the Initial state so that a subsequent "real" moveto will
+                         * be handled as the beginning of a new subpath, or a degenerate point, as
+                         * usual.
+                         */
+                        state = SegmentState::Initial;
+                    }
+                }
             },
 
             cairo::PathSegment::LineTo ((x, y)) => {
@@ -122,16 +150,8 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
 
                 seg = make_line (last_x, last_y, cur_x, cur_y);
 
-                match state {
-                    SegmentState::NewSubpath => {
-                        state = SegmentState::InSubpath;
-                        needs_new_segment = false;
-                    },
-
-                    SegmentState::InSubpath => {
-                        needs_new_segment = true;
-                    }
-                }
+                state = SegmentState::InSubpath;
+                segments.push (seg);
             },
 
             cairo::PathSegment::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
@@ -140,16 +160,8 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
 
                 seg = make_curve (last_x, last_y, x2, y2, x3, y3, cur_x, cur_y);
 
-                match state {
-                    SegmentState::NewSubpath => {
-                        state = SegmentState::InSubpath;
-                        needs_new_segment = false;
-                    },
-
-                    SegmentState::InSubpath => {
-                        needs_new_segment = true;
-                    }
-                }
+                state = SegmentState::InSubpath;
+                segments.push (seg);
             }
 
             cairo::PathSegment::ClosePath => {
@@ -158,24 +170,22 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
 
                 seg = make_line (last_x, last_y, cur_x, cur_y);
 
-                match state {
-                    SegmentState::NewSubpath => {
-                        state = SegmentState::InSubpath;
-                        needs_new_segment = false;
-                    },
-
-                    SegmentState::InSubpath => {
-                        needs_new_segment = true;
-                    }
-                }
+                state = SegmentState::ClosedSubpath;
+                segments.push (seg);
             }
         }
+    }
 
-        if needs_new_segment {
+    match state {
+        SegmentState::NewSubpath => {
+            /* Output a lone point if we started a subpath with a
+             * moveto command, but there are no subsequent commands.
+             */
+            let seg = make_degenerate (cur_x, cur_y);
             segments.push (seg);
-        } else {
-            let len = segments.len ();
-            segments[len - 1] = seg;
+        },
+
+        _ => {
         }
     }
 
