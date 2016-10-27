@@ -232,8 +232,7 @@ mod tests {
         cr.line_to (20.0, 10.0);
         cr.line_to (20.0, 20.0);
 
-        let path = cr.copy_path ();
-        path
+        cr.copy_path ()
     }
 
     #[test]
@@ -260,8 +259,7 @@ mod tests {
         cr.curve_to (50.0, 35.0, 60.0, 60.0, 70.0, 70.0);
         cr.line_to (80.0, 90.0);
 
-        let path = cr.copy_path ();
-        path
+        cr.copy_path ()
     }
 
     #[test]
@@ -288,8 +286,7 @@ mod tests {
         cr.line_to (20.0, 20.0);
         cr.close_path ();
 
-        let path = cr.copy_path ();
-        path
+        cr.copy_path ()
     }
 
     #[test]
@@ -321,8 +318,7 @@ mod tests {
         cr.line_to (80.0, 90.0);
         cr.close_path ();
 
-        let path = cr.copy_path ();
-        path
+        cr.copy_path ()
     }
 
     #[test]
@@ -355,8 +351,7 @@ mod tests {
 
         cr.line_to (40.0, 30.0);
 
-        let path = cr.copy_path ();
-        path
+        cr.copy_path ()
     }
 
     #[test]
