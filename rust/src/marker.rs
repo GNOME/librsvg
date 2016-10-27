@@ -162,7 +162,7 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
 
                 state = SegmentState::InSubpath;
                 segments.push (seg);
-            }
+            },
 
             cairo::PathSegment::ClosePath => {
                 cur_x = subpath_start_x;
@@ -299,5 +299,39 @@ mod tests {
         ];
 
         test_path_to_segments (setup_closed_subpath (), expected_segments);
+    }
+
+    fn setup_multiple_closed_subpaths () -> cairo::Path {
+        let cr = create_cr ();
+
+        cr.move_to (10.0, 10.0);
+        cr.line_to (20.0, 10.0);
+        cr.line_to (20.0, 20.0);
+        cr.close_path ();
+
+        cr.move_to (30.0, 30.0);
+        cr.line_to (40.0, 30.0);
+        cr.curve_to (50.0, 35.0, 60.0, 60.0, 70.0, 70.0);
+        cr.line_to (80.0, 90.0);
+        cr.close_path ();
+
+        let path = cr.copy_path ();
+        path
+    }
+
+    #[test]
+    fn path_to_segments_handles_multiple_closed_subpaths () {
+        let expected_segments: Vec<Segment> = vec![
+            line  (10.0, 10.0, 20.0, 10.0),
+            line  (20.0, 10.0, 20.0, 20.0),
+            line  (20.0, 20.0, 10.0, 10.0),
+
+            line  (30.0, 30.0, 40.0, 30.0),
+            curve (40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
+            line  (70.0, 70.0, 80.0, 90.0),
+            line  (80.0, 90.0, 30.0, 30.0)
+        ];
+
+        test_path_to_segments (setup_multiple_closed_subpaths (), expected_segments);
     }
 }
