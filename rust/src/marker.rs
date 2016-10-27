@@ -101,8 +101,6 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
         last_x = cur_x;
         last_y = cur_y;
 
-        let seg: Segment;
-
         match cairo_segment {
             cairo::PathSegment::MoveTo ((x, y)) => {
                 cur_x = x;
@@ -148,30 +146,27 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 cur_x = x;
                 cur_y = y;
 
-                seg = make_line (last_x, last_y, cur_x, cur_y);
+                segments.push (make_line (last_x, last_y, cur_x, cur_y));
 
                 state = SegmentState::InSubpath;
-                segments.push (seg);
             },
 
             cairo::PathSegment::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
                 cur_x = x4;
                 cur_y = y4;
 
-                seg = make_curve (last_x, last_y, x2, y2, x3, y3, cur_x, cur_y);
+                segments.push (make_curve (last_x, last_y, x2, y2, x3, y3, cur_x, cur_y));
 
                 state = SegmentState::InSubpath;
-                segments.push (seg);
             },
 
             cairo::PathSegment::ClosePath => {
                 cur_x = subpath_start_x;
                 cur_y = subpath_start_y;
 
-                seg = make_line (last_x, last_y, cur_x, cur_y);
+                segments.push (make_line (last_x, last_y, cur_x, cur_y));
 
                 state = SegmentState::ClosedSubpath;
-                segments.push (seg);
             }
         }
     }
@@ -181,8 +176,7 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
             /* Output a lone point if we started a subpath with a
              * moveto command, but there are no subsequent commands.
              */
-            let seg = make_degenerate (cur_x, cur_y);
-            segments.push (seg);
+            segments.push (make_degenerate (cur_x, cur_y));
         },
 
         _ => {
