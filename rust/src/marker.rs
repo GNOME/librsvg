@@ -17,8 +17,8 @@ pub enum Segment {
 }
 
 enum SegmentState {
-    Start,
-    End
+    NewSubpath,
+    InSubpath
 }
 
 /* This converts a cairo_path_t into a list of curveto-like segments.  Each segment can be:
@@ -93,7 +93,7 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
     subpath_start_y = 0.0;
 
     segments = Vec::new ();
-    state = SegmentState::End;
+    state = SegmentState::InSubpath;
 
     for cairo_segment in path.iter () {
         last_x = cur_x;
@@ -113,7 +113,7 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 subpath_start_x = cur_x;
                 subpath_start_y = cur_y;
 
-                state = SegmentState::Start;
+                state = SegmentState::NewSubpath;
             },
 
             cairo::PathSegment::LineTo ((x, y)) => {
@@ -123,12 +123,12 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 seg = make_line (last_x, last_y, cur_x, cur_y);
 
                 match state {
-                    SegmentState::Start => {
-                        state = SegmentState::End;
+                    SegmentState::NewSubpath => {
+                        state = SegmentState::InSubpath;
                         needs_new_segment = false;
                     },
 
-                    SegmentState::End => {
+                    SegmentState::InSubpath => {
                         needs_new_segment = true;
                     }
                 }
@@ -141,12 +141,12 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 seg = make_curve (last_x, last_y, x2, y2, x3, y3, cur_x, cur_y);
 
                 match state {
-                    SegmentState::Start => {
-                        state = SegmentState::End;
+                    SegmentState::NewSubpath => {
+                        state = SegmentState::InSubpath;
                         needs_new_segment = false;
                     },
 
-                    SegmentState::End => {
+                    SegmentState::InSubpath => {
                         needs_new_segment = true;
                     }
                 }
@@ -159,12 +159,12 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
                 seg = make_line (last_x, last_y, cur_x, cur_y);
 
                 match state {
-                    SegmentState::Start => {
-                        state = SegmentState::End;
+                    SegmentState::NewSubpath => {
+                        state = SegmentState::InSubpath;
                         needs_new_segment = false;
                     },
 
-                    SegmentState::End => {
+                    SegmentState::InSubpath => {
                         needs_new_segment = true;
                     }
                 }
