@@ -40,6 +40,13 @@
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
 
+typedef struct _RsvgNodePath RsvgNodePath;
+
+struct _RsvgNodePath {
+    RsvgNode super;
+    cairo_path_t *path;
+};
+
 static void
 rsvg_node_path_free (RsvgNode * self)
 {

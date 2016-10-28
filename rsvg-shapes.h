@@ -51,13 +51,6 @@ RsvgNode *rsvg_new_circle (void);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_ellipse (void);
 
-typedef struct _RsvgNodePath RsvgNodePath;
-
-struct _RsvgNodePath {
-    RsvgNode super;
-    cairo_path_t *path;
-};
-
 G_END_DECLS
 
 #endif                          /* RSVG_SHAPES_H */
