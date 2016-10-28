@@ -30,18 +30,6 @@
 
 G_BEGIN_DECLS 
 
-typedef struct _RsvgMarker RsvgMarker;
-
-struct _RsvgMarker {
-    RsvgNode super;
-    gboolean bbox;
-    RsvgLength refX, refY, width, height;
-    double orient;
-    gint preserve_aspect_ratio;
-    gboolean orientAuto;
-    RsvgViewBox vbox;
-};
-
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_marker	    (void);
 G_GNUC_INTERNAL

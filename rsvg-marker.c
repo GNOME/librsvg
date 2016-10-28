@@ -40,6 +40,18 @@
 #include <math.h>
 #include <errno.h>
 
+typedef struct _RsvgMarker RsvgMarker;
+
+struct _RsvgMarker {
+    RsvgNode super;
+    gboolean bbox;
+    RsvgLength refX, refY, width, height;
+    double orient;
+    gint preserve_aspect_ratio;
+    gboolean orientAuto;
+    RsvgViewBox vbox;
+};
+
 static void
 rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
