@@ -40,8 +40,8 @@ typedef struct {
 } RsvgPathBuilder;
 
 G_GNUC_INTERNAL
-void rsvg_path_builder_init (RsvgPathBuilder *builder,
-                             int n_elements);
+void rsvg_path_builder_init (RsvgPathBuilder *builder);
+
 G_GNUC_INTERNAL
 void rsvg_path_builder_move_to (RsvgPathBuilder *builder,
                                 double x,

@@ -71,10 +71,12 @@ rsvg_path_builder_add_element (RsvgPathBuilder *builder,
 }
 
 void
-rsvg_path_builder_init (RsvgPathBuilder *builder,
-                        int n_elements)
+rsvg_path_builder_init (RsvgPathBuilder *builder)
 {
-  builder->path_data = g_array_sized_new (FALSE, FALSE, sizeof (cairo_path_data_t), n_elements);
+  /* The starting capacity is just to avoid lots of little resizes while growing
+   * a small path.  After that, it will grow as needed.
+   */
+  builder->path_data = g_array_sized_new (FALSE, FALSE, sizeof (cairo_path_data_t), 32);
   builder->last_move_to_index = -1;
 }
 
@@ -736,7 +738,7 @@ rsvg_parse_path (const char *path_str)
 {
     RSVGParsePathCtx ctx;
 
-    rsvg_path_builder_init (&ctx.builder, 32);
+    rsvg_path_builder_init (&ctx.builder);
 
     ctx.cp.point.x = 0.0;
     ctx.cp.point.y = 0.0;

@@ -165,15 +165,7 @@ _rsvg_node_poly_build_path (const char *value,
         return NULL;
     }
 
-    /* Calculate the number of cairo_path_data_t we'll need:
-     *
-     *     pointlist_len / 2 -> number of commands
-     *     pointlist_len / 2 -> number of points
-     * +   1                 -> closepath
-     * ---------------------------------------------
-     *     pointlist_len + 1 -> total
-     */
-    rsvg_path_builder_init (&builder, pointlist_len + 1);
+    rsvg_path_builder_init (&builder);
 
     rsvg_path_builder_move_to (&builder, pointlist[0], pointlist[1]);
 
@@ -293,7 +285,7 @@ _rsvg_node_line_draw (RsvgNode * overself, RsvgDrawingCtx * ctx, int dominate)
     RsvgNodeLine *self = (RsvgNodeLine *) overself;
     double x1, y1, x2, y2;
 
-    rsvg_path_builder_init (&builder, 4);
+    rsvg_path_builder_init (&builder);
 
     x1 = _rsvg_css_normalize_length (&self->x1, ctx, 'h');
     y1 = _rsvg_css_normalize_length (&self->y1, ctx, 'v');
@@ -416,7 +408,7 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     if (rx == 0) {
         /* Easy case, no rounded corners */
 
-        rsvg_path_builder_init (&builder, 11);
+        rsvg_path_builder_init (&builder);
 
         rsvg_path_builder_move_to (&builder, x, y);
         rsvg_path_builder_line_to (&builder, x + w, y);
@@ -467,7 +459,7 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         right_y1 = left_y1;
         right_y2 = left_y2;
 
-        rsvg_path_builder_init (&builder, 32); /* an estimate; the arc segments may grow the array anyway */
+        rsvg_path_builder_init (&builder);
 
         rsvg_path_builder_move_to (&builder, top_x1, top_y);
         rsvg_path_builder_line_to (&builder, top_x2, top_y);
@@ -569,7 +561,7 @@ _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     /* approximate a circle using 4 bezier curves */
 
-    rsvg_path_builder_init (&builder, 19);
+    rsvg_path_builder_init (&builder);
 
     rsvg_path_builder_move_to (&builder, cx + r, cy);
 
@@ -665,7 +657,7 @@ _rsvg_node_ellipse_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     /* approximate an ellipse using 4 bezier curves */
 
-    rsvg_path_builder_init (&builder, 19);
+    rsvg_path_builder_init (&builder);
 
     rsvg_path_builder_move_to (&builder, cx + rx, cy);
 
