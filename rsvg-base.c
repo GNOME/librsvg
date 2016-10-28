@@ -2053,7 +2053,7 @@ rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
 /*
  * rsvg_acquire_node:
  * @ctx: The drawing context in use
- * @url: The IRI to lookup
+ * @url: The IRI to lookup, or %NULL
  *
  * Use this function when looking up urls to other nodes. This
  * function does proper recursion checking and thereby avoids
@@ -2062,13 +2062,20 @@ rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
  * Nodes acquired by this function must be released using
  * rsvg_release_node() in reverse acquiring order.
  *
- * Returns: The node referenced by @url or %NULL if the @url
- *          does not reference a node.
+ * Note that if you acquire a node, you have to release it before trying to
+ * acquire it again.  If you acquire a node "#foo" and don't release it before
+ * trying to acquire "foo" again, you will obtain a %NULL the second time.
+ *
+ * Returns: The node referenced by @url; or %NULL if the @url
+ *          is %NULL or it does not reference a node.
  */
 RsvgNode *
 rsvg_acquire_node (RsvgDrawingCtx * ctx, const char *url)
 {
   RsvgNode *node;
+
+  if (url == NULL)
+      return NULL;
 
   node = rsvg_defs_lookup (ctx->defs, url);
   if (node == NULL)
@@ -2082,12 +2089,51 @@ rsvg_acquire_node (RsvgDrawingCtx * ctx, const char *url)
   return node;
 }
 
+/**
+ * rsvg_acquire_node_of_type:
+ * @ctx: The drawing context in use
+ * @url: The IRI to lookup
+ * @type: Type which the node must have
+ *
+ * Use this function when looking up urls to other nodes, and when you expect
+ * the node to be of a particular type. This function does proper recursion
+ * checking and thereby avoids infinite loops.
+ *
+ * Malformed SVGs, for example, may reference a marker by its IRI, but
+ * the object referenced by the IRI is not a marker.
+ *
+ * Nodes acquired by this function must be released using
+ * rsvg_release_node() in reverse acquiring order.
+ *
+ * Note that if you acquire a node, you have to release it before trying to
+ * acquire it again.  If you acquire a node "#foo" and don't release it before
+ * trying to acquire "foo" again, you will obtain a %NULL the second time.
+ *
+ * Returns: The node referenced by @url or %NULL if the @url
+ *          does not reference a node.  Also returns %NULL if
+ *          the node referenced by @url is not of the specified @type.
+ */
+RsvgNode *
+rsvg_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, RsvgNodeType type)
+{
+    RsvgNode *node;
+
+    node = rsvg_acquire_node (ctx, url);
+    if (node == NULL || RSVG_NODE_TYPE (node) != type) {
+        rsvg_release_node (ctx, node);
+        return NULL;
+    }
+
+    return node;
+}
+
 /*
  * rsvg_release_node:
  * @ctx: The drawing context the node was acquired from
  * @node: Node to release
  *
- * Releases a node previously acquired via rsvg_acquire_node().
+ * Releases a node previously acquired via rsvg_acquire_node() or
+ * rsvg_acquire_node_of_type().
  *
  * if @node is %NULL, this function does nothing.
  */
