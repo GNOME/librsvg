@@ -8,3 +8,4 @@ cairo-rs = "^0"
 
 [lib]
 name = "rsvg_internals"
+crate-type = ["cdylib"]

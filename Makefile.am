@@ -72,6 +72,13 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	librsvg-enum-types.h	\
 	$(NULL)
 
+RUST_LIB = rust/target/debug/librsvg_internals.so
+
+.PHONY: rust/target/debug/librsvg_internals.so
+rust/target/release/librsvg_internals.so:
+	cd rust && \
+	cargo build --verbose
+
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
 	-I$(top_builddir) 			\
@@ -95,6 +102,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = \
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
 	$(LIBRSVG_LIBS) 	\
+	rust/target/release/librsvg_internals.so \
 	$(LIBM)
 
 librsvgincdir = $(includedir)/librsvg-$(RSVG_API_VERSION)/librsvg
