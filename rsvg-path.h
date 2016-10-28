@@ -5,6 +5,7 @@
 
    Copyright (C) 2000 Eazel, Inc.
    Copyright (C) 2002 Dom Lachowicz <cinamod@hotmail.com>
+   Copyright (C) 2016 Federico Mena Quintero <federico@gnome.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as
@@ -21,7 +22,8 @@
    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.
 
-   Author: Raph Levien <raph@artofcode.com>
+   Authors: Raph Levien <raph@artofcode.com>
+            Federico Mena Quintero <federico@gnome.org>
 */
 
 #ifndef RSVG_PATH_H

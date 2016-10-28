@@ -5,6 +5,7 @@
  
    Copyright (C) 2000 Eazel, Inc.
    Copyright © 2011 Christian Persch
+   Copyright (C) 2016 Federico Mena Quintero <federico@gnome.org>
   
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as
@@ -21,11 +22,10 @@
    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.
   
-   Author: Raph Levien <raph@artofcode.com>
-           F. Wang <fred.wang@free.fr> - fix drawing of arc
+   Authors: Raph Levien <raph@artofcode.com>
+            F. Wang <fred.wang@free.fr> - fix drawing of arc
+            Federico Mena Quintero <federico@gnome.org>
 */
-
-/* This is adapted from svg-path in Gill. */
 
 #include "config.h"
 #include "rsvg-path.h"
@@ -37,13 +37,11 @@
 
 #include "rsvg-private.h"
 
-/* This module parses an SVG path element into an cairo_path_t.
+/* This module provides a general-purpose RsvgPathBuilder to build Cairo paths
+   gradually.  It also provides a high-level utility function to parses an SVG path element
+   into an cairo_path_t.
 
-   At present, there is no support for <marker> or any other contextual
-   information from the SVG file. The API will need to change rather
-   significantly to support these.
-
-   Reference: SVG working draft 3 March 2000, section 8.
+   Reference: https://www.w3.org/TR/SVG/paths.html#PathDataBNF
 */
 
 typedef struct _RSVGParsePathCtx RSVGParsePathCtx;
