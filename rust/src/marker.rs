@@ -186,6 +186,26 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
     segments
 }
 
+fn points_equal (x1: f64, y1: f64, x2: f64, y2: f64) -> bool {
+    double_equals (x1, x2) && double_equals (y1, y2)
+}
+
+/* A segment is zero length if it is degenerate, or if all four control points
+ * coincide (the first and last control points may coincide, but the others may
+ * define a loop - thus nonzero length)
+ */
+fn is_zero_length_segment (segment: Segment) -> bool {
+    match segment {
+        Segment::Degenerate { .. } => { true },
+
+        Segment::LineOrCurve { x1, y1, x2, y2, x3, y3, x4, y4 } => {
+            (points_equal (x1, y1, x2, y2)
+             && points_equal (x1, y1, x3, y3)
+             && points_equal (x1, y1, x4, y4))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -395,4 +415,31 @@ mod tests {
         test_path_to_segments (setup_sequence_of_moveto (), expected_segments);
     }
      */
+
+    #[test]
+    fn degenerate_segment_is_zero_length () {
+        assert! (super::is_zero_length_segment (degenerate (1.0, 2.0)));
+    }
+
+    #[test]
+    fn line_segment_is_nonzero_length () {
+        assert! (!super::is_zero_length_segment (line (1.0, 2.0, 3.0, 4.0)));
+    }
+
+    #[test]
+    fn line_segment_with_coincident_ends_is_zero_length () {
+        assert! (super::is_zero_length_segment (line (1.0, 2.0, 1.0, 2.0)));
+    }
+
+    #[test]
+    fn curves_with_loops_and_coincident_ends_are_nonzero_length () {
+        assert! (!super::is_zero_length_segment (curve (1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0)));
+        assert! (!super::is_zero_length_segment (curve (1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0)));
+        assert! (!super::is_zero_length_segment (curve (1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0)));
+    }
+
+    #[test]
+    fn curve_with_coincident_control_points_is_zero_length () {
+        assert! (super::is_zero_length_segment (curve (1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0)));
+    }
 }
