@@ -232,8 +232,7 @@ fn is_zero_length_segment (segment: &Segment) -> bool {
  * segment's start and end points to align with the positive x-axis
  * in user space.
  */
-fn find_incoming_directionality_backwards (segments: Vec<Segment>, start_index: usize) -> (bool, f64, f64)
-{
+fn find_incoming_directionality_backwards (segments: Vec<Segment>, start_index: usize) -> (bool, f64, f64) {
     /* "go backwards ... within the current subpath until ... segment which has directionality at its end point" */
 
     for j in (0 .. start_index + 1).rev () {
@@ -255,6 +254,27 @@ fn find_incoming_directionality_backwards (segments: Vec<Segment>, start_index: 
     (false, 0.0, 0.0)
 }
 
+fn find_outgoing_directionality_forwards (segments: Vec<Segment>, start_index: usize) -> (bool, f64, f64) {
+    /* "go forwards ... within the current subpath until ... segment which has directionality at its start point" */
+
+    for j in start_index .. segments.len () {
+        match segments[j] {
+            Segment::Degenerate { .. } => {
+                return (false, 0.0, 0.0);  /* reached the end of a subpath as we ran into a standalone point */
+            },
+
+            Segment::LineOrCurve { x1, y1, x2, y2, .. } => {
+                if is_zero_length_segment (&segments[j]) {
+                    continue;
+                } else {
+                    return (true, x2 - x1, y2 - y1);
+                }
+            }
+        }
+    }
+
+    (false, 0.0, 0.0)
+}
 
 #[cfg(test)]
 mod tests {
