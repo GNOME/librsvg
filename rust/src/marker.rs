@@ -194,8 +194,8 @@ fn points_equal (x1: f64, y1: f64, x2: f64, y2: f64) -> bool {
  * coincide (the first and last control points may coincide, but the others may
  * define a loop - thus nonzero length)
  */
-fn is_zero_length_segment (segment: Segment) -> bool {
-    match segment {
+fn is_zero_length_segment (segment: &Segment) -> bool {
+    match *segment {
         Segment::Degenerate { .. } => { true },
 
         Segment::LineOrCurve { x1, y1, x2, y2, x3, y3, x4, y4 } => {
@@ -205,6 +205,71 @@ fn is_zero_length_segment (segment: Segment) -> bool {
         }
     }
 }
+
+/* The SVG spec 1.1 says http://www.w3.org/TR/SVG/implnote.html#PathElementImplementationNotes
+ *
+ * Certain line-capping and line-joining situations and markers
+ * require that a path segment have directionality at its start and
+ * end points. Zero-length path segments have no directionality. In
+ * these cases, the following algorithm is used to establish
+ * directionality:  to determine the directionality of the start
+ * point of a zero-length path segment, go backwards in the path
+ * data specification within the current subpath until you find a
+ * segment which has directionality at its end point (e.g., a path
+ * segment with non-zero length) and use its ending direction;
+ * otherwise, temporarily consider the start point to lack
+ * directionality. Similarly, to determine the directionality of the
+ * end point of a zero-length path segment, go forwards in the path
+ * data specification within the current subpath until you find a
+ * segment which has directionality at its start point (e.g., a path
+ * segment with non-zero length) and use its starting direction;
+ * otherwise, temporarily consider the end point to lack
+ * directionality. If the start point has directionality but the end
+ * point doesn't, then the end point uses the start point's
+ * directionality. If the end point has directionality but the start
+ * point doesn't, then the start point uses the end point's
+ * directionality. Otherwise, set the directionality for the path
+ * segment's start and end points to align with the positive x-axis
+ * in user space.
+ */
+fn find_incoming_directionality_backwards (segments: Vec<Segment>, start_index: usize) -> (bool, f64, f64)
+{
+    let mut found: bool;
+    let mut vx: f64;
+    let mut vy: f64;
+
+    /* "go backwards ... within the current subpath until ... segment which has directionality at its end point" */
+
+    found = false;
+    vx = 0.0;
+    vy = 0.0;
+
+    for j in (0 .. start_index + 1).rev () {
+        match segments[j] {
+            Segment::Degenerate { .. } => {
+                break; /* reached the beginning of the subpath as we ran into a standalone point */
+            },
+
+            Segment::LineOrCurve { x3, y3, x4, y4, .. } => {
+                if is_zero_length_segment (&segments[j]) {
+                    continue;
+                } else {
+                    vx = x4 - x3;
+                    vy = y4 - y3;
+                    found = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if found {
+        (true, vx, vy)
+    } else {
+        (false, 0.0, 0.0)
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -418,28 +483,28 @@ mod tests {
 
     #[test]
     fn degenerate_segment_is_zero_length () {
-        assert! (super::is_zero_length_segment (degenerate (1.0, 2.0)));
+        assert! (super::is_zero_length_segment (&degenerate (1.0, 2.0)));
     }
 
     #[test]
     fn line_segment_is_nonzero_length () {
-        assert! (!super::is_zero_length_segment (line (1.0, 2.0, 3.0, 4.0)));
+        assert! (!super::is_zero_length_segment (&line (1.0, 2.0, 3.0, 4.0)));
     }
 
     #[test]
     fn line_segment_with_coincident_ends_is_zero_length () {
-        assert! (super::is_zero_length_segment (line (1.0, 2.0, 1.0, 2.0)));
+        assert! (super::is_zero_length_segment (&line (1.0, 2.0, 1.0, 2.0)));
     }
 
     #[test]
     fn curves_with_loops_and_coincident_ends_are_nonzero_length () {
-        assert! (!super::is_zero_length_segment (curve (1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0)));
-        assert! (!super::is_zero_length_segment (curve (1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0)));
-        assert! (!super::is_zero_length_segment (curve (1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0)));
+        assert! (!super::is_zero_length_segment (&curve (1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0)));
+        assert! (!super::is_zero_length_segment (&curve (1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0)));
+        assert! (!super::is_zero_length_segment (&curve (1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0)));
     }
 
     #[test]
     fn curve_with_coincident_control_points_is_zero_length () {
-        assert! (super::is_zero_length_segment (curve (1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0)));
+        assert! (super::is_zero_length_segment (&curve (1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0)));
     }
 }
