@@ -234,40 +234,25 @@ fn is_zero_length_segment (segment: &Segment) -> bool {
  */
 fn find_incoming_directionality_backwards (segments: Vec<Segment>, start_index: usize) -> (bool, f64, f64)
 {
-    let mut found: bool;
-    let mut vx: f64;
-    let mut vy: f64;
-
     /* "go backwards ... within the current subpath until ... segment which has directionality at its end point" */
-
-    found = false;
-    vx = 0.0;
-    vy = 0.0;
 
     for j in (0 .. start_index + 1).rev () {
         match segments[j] {
             Segment::Degenerate { .. } => {
-                break; /* reached the beginning of the subpath as we ran into a standalone point */
+                return (false, 0.0, 0.0); /* reached the beginning of the subpath as we ran into a standalone point */
             },
 
             Segment::LineOrCurve { x3, y3, x4, y4, .. } => {
                 if is_zero_length_segment (&segments[j]) {
                     continue;
                 } else {
-                    vx = x4 - x3;
-                    vy = y4 - y3;
-                    found = true;
-                    break;
+                    return (true, x4 - x3, y4 - y3);
                 }
             }
         }
     }
 
-    if found {
-        (true, vx, vy)
-    } else {
-        (false, 0.0, 0.0)
-    }
+    (false, 0.0, 0.0)
 }
 
 
