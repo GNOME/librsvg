@@ -495,19 +495,40 @@ mod tests {
 
     #[test]
     fn line_segment_has_directionality () {
-        assert! (super::get_segment_directionalities (&line (1.0, 2.0, 3.0, 4.0)).is_some ());
+        let (v1x, v1y, v2x, v2y) = super::get_segment_directionalities (&line (1.0, 2.0, 3.0, 4.0)).unwrap ();
+        assert_eq! ((2.0, 2.0), (v1x, v1y));
+        assert_eq! ((2.0, 2.0), (v2x, v2y));
     }
 
     #[test]
-    fn line_segment_with_coincident_has_no_directionality () {
+    fn line_segment_with_coincident_ends_has_no_directionality () {
         assert! (super::get_segment_directionalities (&line (1.0, 2.0, 1.0, 2.0)).is_none ());
     }
 
     #[test]
+    fn curve_has_directionality () {
+        let (v1x, v1y, v2x, v2y) =
+            super::get_segment_directionalities (&curve (1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 20.0, 33.0)).unwrap ();
+        assert_eq! ((2.0, 3.0), (v1x, v1y));
+        assert_eq! ((12.0, 20.0), (v2x, v2y));
+    }
+
+    #[test]
     fn curves_with_loops_and_coincident_ends_have_directionality () {
-        assert! (super::get_segment_directionalities (&curve (1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0)).is_some ());
-        assert! (super::get_segment_directionalities (&curve (1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0)).is_some ());
-        assert! (super::get_segment_directionalities (&curve (1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0)).is_some ());
+        let (v1x, v1y, v2x, v2y) = 
+            super::get_segment_directionalities (&curve (1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0)).unwrap ();
+        assert_eq! ((2.0, 2.0), (v1x, v1y));
+        assert_eq! ((-4.0, -4.0), (v2x, v2y));
+
+        let (v1x, v1y, v2x, v2y) = 
+            super::get_segment_directionalities (&curve (1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0)).unwrap ();
+        assert_eq! ((2.0, 2.0), (v1x, v1y));
+        assert_eq! ((-2.0, -2.0), (v2x, v2y));
+
+        let (v1x, v1y, v2x, v2y) = 
+            super::get_segment_directionalities (&curve (1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0)).unwrap ();
+        assert_eq! ((2.0, 2.0), (v1x, v1y));
+        assert_eq! ((-2.0, -2.0), (v2x, v2y));
     }
 
     #[test]
