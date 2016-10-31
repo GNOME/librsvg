@@ -190,18 +190,22 @@ fn points_equal (x1: f64, y1: f64, x2: f64, y2: f64) -> bool {
     double_equals (x1, x2) && double_equals (y1, y2)
 }
 
-/* A segment is zero length if it is degenerate, or if all four control points
- * coincide (the first and last control points may coincide, but the others may
- * define a loop - thus nonzero length)
+/* If the segment has directionality, returns two vectors (v1x, v1y, v2x, v2y); otherwise, returns None.  The
+ * vectors are the tangents at the beginning and at the end of the segment, respectively.  A segment does not have
+ * directionality if it is degenerate (i.e. a single point) or a zero-length segment, i.e. where all four control
+ * points are coincident (the first and last control points may coincide, but the others may define a loop - thus
+ * nonzero length)
  */
-fn is_zero_length_segment (segment: &Segment) -> bool {
+fn get_segment_directionalities (segment: &Segment) -> Option <(f64, f64, f64, f64)> {
     match *segment {
-        Segment::Degenerate { .. } => { true },
+        Segment::Degenerate { .. } => { None },
 
         Segment::LineOrCurve { x1, y1, x2, y2, x3, y3, x4, y4 } => {
-            (points_equal (x1, y1, x2, y2)
-             && points_equal (x1, y1, x3, y3)
-             && points_equal (x1, y1, x4, y4))
+            if points_equal (x1, y1, x2, y2) && points_equal (x1, y1, x3, y3) && points_equal (x1, y1, x4, y4) {
+                None
+            } else {
+                Some ((x2 - x1, y2 - y1, x4 - x3, y4 - y3))
+            }
         }
     }
 }
@@ -241,11 +245,10 @@ fn find_incoming_directionality_backwards (segments: Vec<Segment>, start_index: 
                 return (false, 0.0, 0.0); /* reached the beginning of the subpath as we ran into a standalone point */
             },
 
-            Segment::LineOrCurve { x3, y3, x4, y4, .. } => {
-                if is_zero_length_segment (&segments[j]) {
-                    continue;
-                } else {
-                    return (true, x4 - x3, y4 - y3);
+            Segment::LineOrCurve { .. } => {
+                match get_segment_directionalities (&segments[j]) {
+                    Some ((_, _, v2x, v2y)) => { return (true, v2x, v2y); }
+                    None => { continue; }
                 }
             }
         }
@@ -263,11 +266,10 @@ fn find_outgoing_directionality_forwards (segments: Vec<Segment>, start_index: u
                 return (false, 0.0, 0.0);  /* reached the end of a subpath as we ran into a standalone point */
             },
 
-            Segment::LineOrCurve { x1, y1, x2, y2, .. } => {
-                if is_zero_length_segment (&segments[j]) {
-                    continue;
-                } else {
-                    return (true, x2 - x1, y2 - y1);
+            Segment::LineOrCurve { .. } => {
+                match get_segment_directionalities (&segments[j]) {
+                    Some ((v1x, v1y, _, _)) => { return (true, v1x, v1y); }
+                    None => { continue; }
                 }
             }
         }
@@ -487,29 +489,29 @@ mod tests {
      */
 
     #[test]
-    fn degenerate_segment_is_zero_length () {
-        assert! (super::is_zero_length_segment (&degenerate (1.0, 2.0)));
+    fn degenerate_segment_has_no_directionality () {
+        assert! (super::get_segment_directionalities (&degenerate (1.0, 2.0)).is_none ());
     }
 
     #[test]
-    fn line_segment_is_nonzero_length () {
-        assert! (!super::is_zero_length_segment (&line (1.0, 2.0, 3.0, 4.0)));
+    fn line_segment_has_directionality () {
+        assert! (super::get_segment_directionalities (&line (1.0, 2.0, 3.0, 4.0)).is_some ());
     }
 
     #[test]
-    fn line_segment_with_coincident_ends_is_zero_length () {
-        assert! (super::is_zero_length_segment (&line (1.0, 2.0, 1.0, 2.0)));
+    fn line_segment_with_coincident_has_no_directionality () {
+        assert! (super::get_segment_directionalities (&line (1.0, 2.0, 1.0, 2.0)).is_none ());
     }
 
     #[test]
-    fn curves_with_loops_and_coincident_ends_are_nonzero_length () {
-        assert! (!super::is_zero_length_segment (&curve (1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0)));
-        assert! (!super::is_zero_length_segment (&curve (1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0)));
-        assert! (!super::is_zero_length_segment (&curve (1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0)));
+    fn curves_with_loops_and_coincident_ends_have_directionality () {
+        assert! (super::get_segment_directionalities (&curve (1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0)).is_some ());
+        assert! (super::get_segment_directionalities (&curve (1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0)).is_some ());
+        assert! (super::get_segment_directionalities (&curve (1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0)).is_some ());
     }
 
     #[test]
-    fn curve_with_coincident_control_points_is_zero_length () {
-        assert! (super::is_zero_length_segment (&curve (1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0)));
+    fn curve_with_coincident_control_points_has_no_directionality () {
+        assert! (super::get_segment_directionalities (&curve (1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0)).is_none ());
     }
 }
