@@ -200,6 +200,22 @@ rsvg_path_builder_copy_path (RsvgPathBuilder *builder)
     return path;
 }
 
+void
+rsvg_path_builder_add_to_cairo_context (RsvgPathBuilder *builder, cairo_t *cr)
+{
+    cairo_path_t *path;
+
+    g_assert (builder != NULL);
+    g_assert (cr != NULL);
+
+    path = rsvg_path_builder_copy_path (builder);
+
+    cairo_new_path (cr);
+    cairo_append_path (cr, path);
+
+    rsvg_cairo_path_destroy (path);
+}
+
 static void
 rsvg_path_arc_segment (RsvgPathBuilder *builder,
                        double xc, double yc,
