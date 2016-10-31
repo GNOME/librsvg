@@ -2150,10 +2150,10 @@ rsvg_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
 }
 
 void
-rsvg_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
+rsvg_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 {
-    ctx->render->render_path (ctx, path);
-    rsvg_render_markers (ctx, path);
+    ctx->render->render_path_builder (ctx, builder);
+    rsvg_render_markers (ctx, builder);
 }
 
 void

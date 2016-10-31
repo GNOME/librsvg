@@ -541,14 +541,15 @@ typedef enum {
 } SubpathState;
 
 void
-rsvg_render_markers (RsvgDrawingCtx * ctx,
-                     const cairo_path_t *path)
+rsvg_render_markers (RsvgDrawingCtx *ctx,
+                     RsvgPathBuilder *builder)
 {
     RsvgState *state;
     double linewidth;
     const char *startmarker;
     const char *middlemarker;
     const char *endmarker;
+    cairo_path_t *path;
 
     int i;
     double incoming_vx, incoming_vy;
@@ -558,6 +559,7 @@ rsvg_render_markers (RsvgDrawingCtx * ctx,
     int num_segments;
 
     SubpathState subpath_state;
+
 
     state = rsvg_current_state (ctx);
 
@@ -572,8 +574,12 @@ rsvg_render_markers (RsvgDrawingCtx * ctx,
     if (!startmarker && !middlemarker && !endmarker)
         return;
 
-    if (path->num_data <= 0)
+    path = rsvg_path_builder_copy_path (builder);
+
+    if (path->num_data <= 0) {
+        rsvg_cairo_path_destroy (path);
         return;
+    }
 
     /* Convert the path to a list of segments and bare points (i.e. degenerate segments) */
     path_to_segments (path, &segments, &num_segments);
@@ -648,4 +654,6 @@ rsvg_render_markers (RsvgDrawingCtx * ctx,
     }
 
     g_free (segments);
+
+    rsvg_cairo_path_destroy (path);
 }

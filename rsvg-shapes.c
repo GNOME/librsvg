@@ -44,6 +44,7 @@ typedef struct _RsvgNodePath RsvgNodePath;
 
 struct _RsvgNodePath {
     RsvgNode super;
+    RsvgPathBuilder *builder;
     cairo_path_t *path;
 };
 
@@ -51,8 +52,8 @@ static void
 rsvg_node_path_free (RsvgNode * self)
 {
     RsvgNodePath *path = (RsvgNodePath *) self;
-    if (path->path)
-        rsvg_cairo_path_destroy (path->path);
+    if (path->builder)
+        rsvg_path_builder_destroy (path->builder);
     _rsvg_node_finalize (&path->super);
     g_free (path);
 }
@@ -62,12 +63,12 @@ rsvg_node_path_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     RsvgNodePath *path = (RsvgNodePath *) self;
 
-    if (!path->path)
+    if (!path->builder)
         return;
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
 
-    rsvg_render_path (ctx, path->path);
+    rsvg_render_path_builder (ctx, path->builder);
 }
 
 static void
@@ -78,9 +79,9 @@ rsvg_node_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * at
 
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "d"))) {
-            if (path->path)
-                rsvg_cairo_path_destroy (path->path);
-            path->path = rsvg_parse_path (value);
+            if (path->builder)
+                rsvg_path_builder_destroy (path->builder);
+            path->builder = rsvg_path_builder_parse_path (value);
         }
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
@@ -99,7 +100,7 @@ rsvg_new_path (void)
     RsvgNodePath *path;
     path = g_new (RsvgNodePath, 1);
     _rsvg_node_init (&path->super, RSVG_NODE_TYPE_PATH);
-    path->path = NULL;
+    path->builder = NULL;
     path->super.free = rsvg_node_path_free;
     path->super.draw = rsvg_node_path_draw;
     path->super.set_atts = rsvg_node_path_set_atts;
@@ -109,14 +110,14 @@ rsvg_new_path (void)
 
 struct _RsvgNodePoly {
     RsvgNode super;
-    cairo_path_t *path;
+    RsvgPathBuilder *builder;
 };
 
 typedef struct _RsvgNodePoly RsvgNodePoly;
 
-static cairo_path_t *
-_rsvg_node_poly_build_path (const char *value,
-                            gboolean close_path);
+static RsvgPathBuilder *
+_rsvg_node_poly_create_builder (const char *value,
+                                gboolean close_path);
 
 static void
 _rsvg_node_poly_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
@@ -128,10 +129,10 @@ _rsvg_node_poly_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
         /* support for svg < 1.0 which used verts */
         if ((value = rsvg_property_bag_lookup (atts, "verts"))
             || (value = rsvg_property_bag_lookup (atts, "points"))) {
-            if (poly->path)
-                rsvg_cairo_path_destroy (poly->path);
-            poly->path = _rsvg_node_poly_build_path (value,
-                                                     RSVG_NODE_TYPE (self) == RSVG_NODE_TYPE_POLYGON);
+            if (poly->builder)
+                rsvg_path_builder_destroy (poly->builder);
+            poly->builder = _rsvg_node_poly_create_builder (value,
+                                                            RSVG_NODE_TYPE (self) == RSVG_NODE_TYPE_POLYGON);
         }
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
@@ -147,14 +148,13 @@ _rsvg_node_poly_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 
 }
 
-static cairo_path_t *
-_rsvg_node_poly_build_path (const char *value,
-                            gboolean close_path)
+static RsvgPathBuilder *
+_rsvg_node_poly_create_builder (const char *value,
+                                gboolean close_path)
 {
     double *pointlist;
     guint pointlist_len, i;
     RsvgPathBuilder *builder;
-    cairo_path_t *path;
 
     pointlist = rsvg_css_parse_number_list (value, &pointlist_len);
     if (pointlist == NULL)
@@ -189,12 +189,9 @@ _rsvg_node_poly_build_path (const char *value,
     if (close_path)
         rsvg_path_builder_close_path (builder);
 
-    path = rsvg_path_builder_copy_path (builder);
     g_free (pointlist);
 
-    rsvg_path_builder_destroy (builder);
-
-    return path;
+    return builder;
 }
 
 static void
@@ -202,20 +199,20 @@ _rsvg_node_poly_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     RsvgNodePoly *poly = (RsvgNodePoly *) self;
 
-    if (poly->path == NULL)
+    if (poly->builder == NULL)
         return;
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
 
-    rsvg_render_path (ctx, poly->path);
+    rsvg_render_path_builder (ctx, poly->builder);
 }
 
 static void
 _rsvg_node_poly_free (RsvgNode * self)
 {
     RsvgNodePoly *poly = (RsvgNodePoly *) self;
-    if (poly->path)
-        rsvg_cairo_path_destroy (poly->path);
+    if (poly->builder)
+        rsvg_path_builder_destroy (poly->builder);
     _rsvg_node_finalize (&poly->super);
     g_free (poly);
 }
@@ -229,7 +226,7 @@ rsvg_new_any_poly (RsvgNodeType type)
     poly->super.free = _rsvg_node_poly_free;
     poly->super.draw = _rsvg_node_poly_draw;
     poly->super.set_atts = _rsvg_node_poly_set_atts;
-    poly->path = NULL;
+    poly->builder = NULL;
     return &poly->super;
 }
 
@@ -282,7 +279,6 @@ _rsvg_node_line_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 static void
 _rsvg_node_line_draw (RsvgNode * overself, RsvgDrawingCtx * ctx, int dominate)
 {
-    cairo_path_t *path;
     RsvgPathBuilder *builder;
     RsvgNodeLine *self = (RsvgNodeLine *) overself;
     double x1, y1, x2, y2;
@@ -297,14 +293,11 @@ _rsvg_node_line_draw (RsvgNode * overself, RsvgDrawingCtx * ctx, int dominate)
     rsvg_path_builder_move_to (builder, x1, y1);
     rsvg_path_builder_line_to (builder, x2, y2);
 
-    path = rsvg_path_builder_copy_path (builder);
-
-    rsvg_path_builder_destroy (builder);
-
     rsvg_state_reinherit_top (ctx, overself->state, dominate);
 
-    rsvg_render_path (ctx, path);
-    rsvg_cairo_path_destroy (path);
+    rsvg_render_path_builder (ctx, builder);
+
+    rsvg_path_builder_destroy (builder);
 }
 
 RsvgNode *
@@ -368,7 +361,6 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     double x, y, w, h, rx, ry;
     double half_w, half_h;
     RsvgPathBuilder *builder;
-    cairo_path_t *path;
     RsvgNodeRect *rect = (RsvgNodeRect *) self;
 
     x = _rsvg_css_normalize_length (&rect->x, ctx, 'h');
@@ -495,13 +487,11 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         rsvg_path_builder_close_path (builder);
     }
 
-    path = rsvg_path_builder_copy_path (builder);
+    rsvg_state_reinherit_top (ctx, self->state, dominate);
+
+    rsvg_render_path_builder (ctx, builder);
 
     rsvg_path_builder_destroy (builder);
-
-    rsvg_state_reinherit_top (ctx, self->state, dominate);
-    rsvg_render_path (ctx, path);
-    rsvg_cairo_path_destroy (path);
 }
 
 RsvgNode *
@@ -551,7 +541,6 @@ _rsvg_node_circle_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *
 static void
 _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
-    cairo_path_t *path;
     RsvgNodeCircle *circle = (RsvgNodeCircle *) self;
     double cx, cy, r;
     RsvgPathBuilder *builder;
@@ -591,13 +580,11 @@ _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     rsvg_path_builder_close_path (builder);
 
-    path = rsvg_path_builder_copy_path (builder);
+    rsvg_state_reinherit_top (ctx, self->state, dominate);
+
+    rsvg_render_path_builder (ctx, builder);
 
     rsvg_path_builder_destroy (builder);
-
-    rsvg_state_reinherit_top (ctx, self->state, dominate);
-    rsvg_render_path (ctx, path);
-    rsvg_cairo_path_destroy (path);
 }
 
 RsvgNode *
@@ -649,7 +636,6 @@ static void
 _rsvg_node_ellipse_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     RsvgNodeEllipse *ellipse = (RsvgNodeEllipse *) self;
-    cairo_path_t *path;
     double cx, cy, rx, ry;
     RsvgPathBuilder *builder;
 
@@ -689,13 +675,11 @@ _rsvg_node_ellipse_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     rsvg_path_builder_close_path (builder);
 
-    path = rsvg_path_builder_copy_path (builder);
+    rsvg_state_reinherit_top (ctx, self->state, dominate);
+
+    rsvg_render_path_builder (ctx, builder);
 
     rsvg_path_builder_destroy (builder);
-
-    rsvg_state_reinherit_top (ctx, self->state, dominate);
-    rsvg_render_path (ctx, path);
-    rsvg_cairo_path_destroy (path);
 }
 
 RsvgNode *

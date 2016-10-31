@@ -773,11 +773,10 @@ rsvg_parse_path_data (RSVGParsePathCtx * ctx, const char *data)
     }
 }
 
-cairo_path_t *
-rsvg_parse_path (const char *path_str)
+RsvgPathBuilder *
+rsvg_path_builder_parse_path (const char *path_str)
 {
     RSVGParsePathCtx ctx;
-    cairo_path_t *path;
 
     ctx.builder = rsvg_path_builder_new ();
 
@@ -793,11 +792,7 @@ rsvg_parse_path (const char *path_str)
     if (ctx.param)
         rsvg_parse_path_do_cmd (&ctx, TRUE);
 
-    path = rsvg_path_builder_copy_path (ctx.builder);
-
-    rsvg_path_builder_destroy (ctx.builder);
-
-    return path;
+    return ctx.builder;
 }
 
 void

@@ -61,7 +61,7 @@ rsvg_cairo_clip_apply_affine (RsvgCairoClipRender *render, cairo_matrix_t *affin
 }
 
 static void
-rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
+rsvg_cairo_clip_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 {
     RsvgCairoClipRender *render = RSVG_CAIRO_CLIP_RENDER (ctx->render);
     RsvgCairoRender *cairo_render = &render->super;
@@ -74,7 +74,7 @@ rsvg_cairo_clip_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
 
     cairo_set_fill_rule (cr, rsvg_current_state (ctx)->clip_rule);
 
-    cairo_append_path (cr, path);
+    rsvg_path_builder_add_to_cairo_context (builder, cr);
 }
 
 static void
@@ -125,7 +125,7 @@ rsvg_cairo_clip_render_new (cairo_t * cr, RsvgCairoRender *parent)
     render->create_pango_context = rsvg_cairo_create_pango_context;
     render->render_pango_layout = rsvg_cairo_render_pango_layout;
     render->render_surface = rsvg_cairo_clip_render_surface;
-    render->render_path = rsvg_cairo_clip_render_path;
+    render->render_path_builder = rsvg_cairo_clip_render_path_builder;
     render->pop_discrete_layer = rsvg_cairo_clip_pop_discrete_layer;
     render->push_discrete_layer = rsvg_cairo_clip_push_discrete_layer;
     render->add_clipping_rect = rsvg_cairo_clip_add_clipping_rect;

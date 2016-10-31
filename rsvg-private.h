@@ -30,6 +30,7 @@
 #include <cairo.h>
 
 #include "rsvg.h"
+#include "rsvg-path.h"
 
 #include <libxml/SAX.h>
 #include <libxml/xmlmemory.h>
@@ -220,7 +221,7 @@ struct RsvgRender {
     PangoContext    *(*create_pango_context)    (RsvgDrawingCtx * ctx);
     void             (*render_pango_layout)	    (RsvgDrawingCtx * ctx, PangoLayout *layout,
                                                  double x, double y);
-    void             (*render_path)             (RsvgDrawingCtx * ctx, const cairo_path_t *path);
+    void             (*render_path_builder)     (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder);
     void             (*render_surface)          (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
                                                  double x, double y, double w, double h);
     void             (*pop_discrete_layer)      (RsvgDrawingCtx * ctx);
@@ -365,7 +366,7 @@ RsvgNode *rsvg_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, Rsvg
 G_GNUC_INTERNAL
 void rsvg_release_node          (RsvgDrawingCtx * ctx, RsvgNode *node);
 G_GNUC_INTERNAL
-void rsvg_render_path           (RsvgDrawingCtx * ctx, const cairo_path_t *path);
+void rsvg_render_path_builder   (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder);
 G_GNUC_INTERNAL
 void rsvg_render_surface        (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
                                  double x, double y, double w, double h);

@@ -33,7 +33,7 @@ G_BEGIN_DECLS
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_marker	    (void);
 G_GNUC_INTERNAL
-void	     rsvg_render_markers    (RsvgDrawingCtx *ctx, const cairo_path_t *path);
+void	     rsvg_render_markers    (RsvgDrawingCtx *ctx, RsvgPathBuilder *builder);
 
 G_END_DECLS
 

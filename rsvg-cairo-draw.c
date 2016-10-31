@@ -454,7 +454,7 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
 }
 
 void
-rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
+rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state = rsvg_current_state (ctx);
@@ -477,7 +477,7 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
     cairo_set_dash (cr, state->dash.dash, state->dash.n_dash,
                     _rsvg_css_normalize_length (&state->dash.offset, ctx, 'o'));
 
-    cairo_append_path (cr, path);
+    rsvg_path_builder_add_to_cairo_context (builder, cr);
 
     rsvg_bbox_init (&bbox, &state->affine);
 

@@ -78,7 +78,8 @@ G_GNUC_INTERNAL
 void rsvg_path_builder_add_to_cairo_context (RsvgPathBuilder *builder, cairo_t *cr);
 
 G_GNUC_INTERNAL
-cairo_path_t *rsvg_parse_path (const char *path_str);
+RsvgPathBuilder *rsvg_path_builder_parse_path (const char *path_str);
+
 G_GNUC_INTERNAL
 void rsvg_cairo_path_destroy (cairo_path_t *path);
 
