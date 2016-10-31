@@ -153,7 +153,7 @@ _rsvg_node_poly_build_path (const char *value,
 {
     double *pointlist;
     guint pointlist_len, i;
-    RsvgPathBuilder builder;
+    RsvgPathBuilder *builder;
     cairo_path_t *path;
 
     pointlist = rsvg_css_parse_number_list (value, &pointlist_len);
@@ -165,9 +165,9 @@ _rsvg_node_poly_build_path (const char *value,
         return NULL;
     }
 
-    rsvg_path_builder_init (&builder);
+    builder = rsvg_path_builder_new ();
 
-    rsvg_path_builder_move_to (&builder, pointlist[0], pointlist[1]);
+    rsvg_path_builder_move_to (builder, pointlist[0], pointlist[1]);
 
     for (i = 2; i < pointlist_len; i += 2) {
         double x, y;
@@ -183,14 +183,16 @@ _rsvg_node_poly_build_path (const char *value,
         else
             y = pointlist[i - 1];
 
-        rsvg_path_builder_line_to (&builder, x, y);
+        rsvg_path_builder_line_to (builder, x, y);
     }
 
     if (close_path)
-        rsvg_path_builder_close_path (&builder);
+        rsvg_path_builder_close_path (builder);
 
-    path = rsvg_path_builder_finish (&builder);
+    path = rsvg_path_builder_copy_path (builder);
     g_free (pointlist);
+
+    rsvg_path_builder_destroy (builder);
 
     return path;
 }
@@ -281,21 +283,23 @@ static void
 _rsvg_node_line_draw (RsvgNode * overself, RsvgDrawingCtx * ctx, int dominate)
 {
     cairo_path_t *path;
-    RsvgPathBuilder builder;
+    RsvgPathBuilder *builder;
     RsvgNodeLine *self = (RsvgNodeLine *) overself;
     double x1, y1, x2, y2;
 
-    rsvg_path_builder_init (&builder);
+    builder = rsvg_path_builder_new ();
 
     x1 = _rsvg_css_normalize_length (&self->x1, ctx, 'h');
     y1 = _rsvg_css_normalize_length (&self->y1, ctx, 'v');
     x2 = _rsvg_css_normalize_length (&self->x2, ctx, 'h');
     y2 = _rsvg_css_normalize_length (&self->y2, ctx, 'v');
 
-    rsvg_path_builder_move_to (&builder, x1, y1);
-    rsvg_path_builder_line_to (&builder, x2, y2);
+    rsvg_path_builder_move_to (builder, x1, y1);
+    rsvg_path_builder_line_to (builder, x2, y2);
 
-    path = rsvg_path_builder_finish (&builder);
+    path = rsvg_path_builder_copy_path (builder);
+
+    rsvg_path_builder_destroy (builder);
 
     rsvg_state_reinherit_top (ctx, overself->state, dominate);
 
@@ -363,7 +367,7 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     double x, y, w, h, rx, ry;
     double half_w, half_h;
-    RsvgPathBuilder builder;
+    RsvgPathBuilder *builder;
     cairo_path_t *path;
     RsvgNodeRect *rect = (RsvgNodeRect *) self;
 
@@ -405,17 +409,17 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     else if (ry == 0)
         rx = 0;
 
+    builder = rsvg_path_builder_new ();
+
     if (rx == 0) {
         /* Easy case, no rounded corners */
 
-        rsvg_path_builder_init (&builder);
-
-        rsvg_path_builder_move_to (&builder, x, y);
-        rsvg_path_builder_line_to (&builder, x + w, y);
-        rsvg_path_builder_line_to (&builder, x + w, y + h);
-        rsvg_path_builder_line_to (&builder, x, y + h);
-        rsvg_path_builder_line_to (&builder, x, y);
-        rsvg_path_builder_close_path (&builder);
+        rsvg_path_builder_move_to (builder, x, y);
+        rsvg_path_builder_line_to (builder, x + w, y);
+        rsvg_path_builder_line_to (builder, x + w, y + h);
+        rsvg_path_builder_line_to (builder, x, y + h);
+        rsvg_path_builder_line_to (builder, x, y);
+        rsvg_path_builder_close_path (builder);
     } else {
         double top_x1, top_x2, top_y;
         double bottom_x1, bottom_x2, bottom_y;
@@ -459,41 +463,41 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         right_y1 = left_y1;
         right_y2 = left_y2;
 
-        rsvg_path_builder_init (&builder);
+        rsvg_path_builder_move_to (builder, top_x1, top_y);
+        rsvg_path_builder_line_to (builder, top_x2, top_y);
 
-        rsvg_path_builder_move_to (&builder, top_x1, top_y);
-        rsvg_path_builder_line_to (&builder, top_x2, top_y);
-
-        rsvg_path_builder_arc (&builder,
+        rsvg_path_builder_arc (builder,
                                top_x2, top_y,
                                rx, ry, 0, FALSE, TRUE,
                                right_x, right_y1);
 
-        rsvg_path_builder_line_to (&builder, right_x, right_y2);
+        rsvg_path_builder_line_to (builder, right_x, right_y2);
 
-        rsvg_path_builder_arc (&builder,
+        rsvg_path_builder_arc (builder,
                                right_x, right_y2,
                                rx, ry, 0, FALSE, TRUE,
                                bottom_x2, bottom_y);
 
-        rsvg_path_builder_line_to (&builder, bottom_x1, bottom_y);
+        rsvg_path_builder_line_to (builder, bottom_x1, bottom_y);
 
-        rsvg_path_builder_arc (&builder,
+        rsvg_path_builder_arc (builder,
                                bottom_x1, bottom_y,
                                rx, ry, 0, FALSE, TRUE,
                                left_x, left_y2);
 
-        rsvg_path_builder_line_to (&builder, left_x, left_y1);
+        rsvg_path_builder_line_to (builder, left_x, left_y1);
 
-        rsvg_path_builder_arc (&builder,
+        rsvg_path_builder_arc (builder,
                                left_x, left_y1,
                                rx, ry, 0, FALSE, TRUE,
                                top_x1, top_y);
 
-        rsvg_path_builder_close_path (&builder);
+        rsvg_path_builder_close_path (builder);
     }
 
-    path = rsvg_path_builder_finish (&builder);
+    path = rsvg_path_builder_copy_path (builder);
+
+    rsvg_path_builder_destroy (builder);
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
     rsvg_render_path (ctx, path);
@@ -550,7 +554,7 @@ _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     cairo_path_t *path;
     RsvgNodeCircle *circle = (RsvgNodeCircle *) self;
     double cx, cy, r;
-    RsvgPathBuilder builder;
+    RsvgPathBuilder *builder;
 
     cx = _rsvg_css_normalize_length (&circle->cx, ctx, 'h');
     cy = _rsvg_css_normalize_length (&circle->cy, ctx, 'v');
@@ -561,33 +565,35 @@ _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     /* approximate a circle using 4 bezier curves */
 
-    rsvg_path_builder_init (&builder);
+    builder = rsvg_path_builder_new ();
 
-    rsvg_path_builder_move_to (&builder, cx + r, cy);
+    rsvg_path_builder_move_to (builder, cx + r, cy);
 
-    rsvg_path_builder_curve_to (&builder,
+    rsvg_path_builder_curve_to (builder,
                                 cx + r, cy + r * RSVG_ARC_MAGIC,
                                 cx + r * RSVG_ARC_MAGIC, cy + r,
                                 cx, cy + r);
 
-    rsvg_path_builder_curve_to (&builder,
+    rsvg_path_builder_curve_to (builder,
                                 cx - r * RSVG_ARC_MAGIC, cy + r,
                                 cx - r, cy + r * RSVG_ARC_MAGIC,
                                 cx - r, cy);
 
-    rsvg_path_builder_curve_to (&builder,
+    rsvg_path_builder_curve_to (builder,
                                 cx - r, cy - r * RSVG_ARC_MAGIC,
                                 cx - r * RSVG_ARC_MAGIC, cy - r,
                                 cx, cy - r);
 
-    rsvg_path_builder_curve_to (&builder,
+    rsvg_path_builder_curve_to (builder,
                                 cx + r * RSVG_ARC_MAGIC, cy - r,
                                 cx + r, cy - r * RSVG_ARC_MAGIC,
                                 cx + r, cy);
 
-    rsvg_path_builder_close_path (&builder);
+    rsvg_path_builder_close_path (builder);
 
-    path = rsvg_path_builder_finish (&builder);
+    path = rsvg_path_builder_copy_path (builder);
+
+    rsvg_path_builder_destroy (builder);
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
     rsvg_render_path (ctx, path);
@@ -645,7 +651,7 @@ _rsvg_node_ellipse_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     RsvgNodeEllipse *ellipse = (RsvgNodeEllipse *) self;
     cairo_path_t *path;
     double cx, cy, rx, ry;
-    RsvgPathBuilder builder;
+    RsvgPathBuilder *builder;
 
     cx = _rsvg_css_normalize_length (&ellipse->cx, ctx, 'h');
     cy = _rsvg_css_normalize_length (&ellipse->cy, ctx, 'v');
@@ -657,33 +663,35 @@ _rsvg_node_ellipse_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     /* approximate an ellipse using 4 bezier curves */
 
-    rsvg_path_builder_init (&builder);
+    builder = rsvg_path_builder_new ();
 
-    rsvg_path_builder_move_to (&builder, cx + rx, cy);
+    rsvg_path_builder_move_to (builder, cx + rx, cy);
 
-    rsvg_path_builder_curve_to (&builder,
+    rsvg_path_builder_curve_to (builder,
                                 cx + rx, cy - RSVG_ARC_MAGIC * ry,
                                 cx + RSVG_ARC_MAGIC * rx, cy - ry,
                                 cx, cy - ry);
 
-    rsvg_path_builder_curve_to (&builder,
+    rsvg_path_builder_curve_to (builder,
                                 cx - RSVG_ARC_MAGIC * rx, cy - ry,
                                 cx - rx, cy - RSVG_ARC_MAGIC * ry,
                                 cx - rx, cy);
 
-    rsvg_path_builder_curve_to (&builder,
+    rsvg_path_builder_curve_to (builder,
                                 cx - rx, cy + RSVG_ARC_MAGIC * ry,
                                 cx - RSVG_ARC_MAGIC * rx, cy + ry,
                                 cx, cy + ry);
 
-    rsvg_path_builder_curve_to (&builder,
+    rsvg_path_builder_curve_to (builder,
                                 cx + RSVG_ARC_MAGIC * rx, cy + ry,
                                 cx + rx, cy + RSVG_ARC_MAGIC * ry,
                                 cx + rx, cy);
 
-    rsvg_path_builder_close_path (&builder);
+    rsvg_path_builder_close_path (builder);
 
-    path = rsvg_path_builder_finish (&builder);
+    path = rsvg_path_builder_copy_path (builder);
+
+    rsvg_path_builder_destroy (builder);
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
     rsvg_render_path (ctx, path);
