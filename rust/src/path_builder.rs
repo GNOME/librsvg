@@ -2,27 +2,27 @@ extern crate cairo;
 
 #[repr(C)]
 pub struct RsvgPathBuilder {
-    path_data: Vec<cairo::PathSegment>,
+    path_segments: Vec<cairo::PathSegment>,
     last_move_to_index: Option<usize>
 }
 
 impl RsvgPathBuilder {
     fn move_to (&mut self, x: f64, y: f64) {
-        self.path_data.push (cairo::PathSegment::MoveTo ((x, y)));
-        self.last_move_to_index = Some (self.path_data.len () - 1);
+        self.path_segments.push (cairo::PathSegment::MoveTo ((x, y)));
+        self.last_move_to_index = Some (self.path_segments.len () - 1);
     }
 
     fn line_to (&mut self, x: f64, y: f64) {
-        self.path_data.push (cairo::PathSegment::LineTo ((x, y)));
+        self.path_segments.push (cairo::PathSegment::LineTo ((x, y)));
     }
 
     fn curve_to (&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
-        self.path_data.push (cairo::PathSegment::CurveTo ((x2, y2), (x3, y3), (x4, y4)));
+        self.path_segments.push (cairo::PathSegment::CurveTo ((x2, y2), (x3, y3), (x4, y4)));
     }
 
     fn close_path (&mut self) {
         if let Some (idx) = self.last_move_to_index {
-            let segment = self.path_data[idx];
+            let segment = self.path_segments[idx];
 
             if let cairo::PathSegment::MoveTo ((x, y)) = segment {
                 self.move_to (x, y);
@@ -36,7 +36,7 @@ impl RsvgPathBuilder {
 #[no_mangle]
 pub unsafe extern fn rsvg_path_builder_new () -> *mut RsvgPathBuilder {
     let builder = RsvgPathBuilder {
-        path_data: Vec::new (),
+        path_segments: Vec::new (),
         last_move_to_index: None
     };
 
