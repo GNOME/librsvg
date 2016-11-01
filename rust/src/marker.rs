@@ -1,8 +1,7 @@
 extern crate libc;
 extern crate cairo;
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Segment {
     Degenerate {            // A single lone point
         x: f64,
