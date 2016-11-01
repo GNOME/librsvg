@@ -58,8 +58,7 @@ pub extern fn rsvg_path_builder_move_to (raw_builder: *mut RsvgPathBuilder,
                                          y: f64) {
     assert! (!raw_builder.is_null ());
 
-    let builder: &mut RsvgPathBuilder;
-    unsafe { builder = &mut (*raw_builder); }
+    let builder: &mut RsvgPathBuilder = unsafe { &mut (*raw_builder) };
 
     builder.move_to (x, y);
 }
@@ -70,8 +69,7 @@ pub extern fn rsvg_path_builder_line_to (raw_builder: *mut RsvgPathBuilder,
                                          y: f64) {
     assert! (!raw_builder.is_null ());
 
-    let builder: &mut RsvgPathBuilder;
-    unsafe { builder = &mut (*raw_builder); }
+    let builder: &mut RsvgPathBuilder = unsafe { &mut (*raw_builder) };
 
     builder.line_to (x, y);
 }
@@ -83,8 +81,7 @@ pub extern fn rsvg_path_builder_curve_to (raw_builder: *mut RsvgPathBuilder,
                                           x4: f64, y4: f64) {
     assert! (!raw_builder.is_null ());
 
-    let builder: &mut RsvgPathBuilder;
-    unsafe { builder = &mut (*raw_builder); }
+    let builder: &mut RsvgPathBuilder = unsafe { &mut (*raw_builder) };
 
     builder.curve_to (x2, y2, x3, y3, x4, y4);
 }
@@ -93,8 +90,7 @@ pub extern fn rsvg_path_builder_curve_to (raw_builder: *mut RsvgPathBuilder,
 pub extern fn rsvg_path_builder_close_path (raw_builder: *mut RsvgPathBuilder) {
     assert! (!raw_builder.is_null ());
 
-    let builder: &mut RsvgPathBuilder;
-    unsafe { builder = &mut (*raw_builder); }
+    let builder: &mut RsvgPathBuilder = unsafe { &mut (*raw_builder) };
 
     builder.close_path ();
 }
