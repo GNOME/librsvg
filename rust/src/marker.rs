@@ -1,5 +1,6 @@
 extern crate libc;
 extern crate cairo;
+extern crate cairo_sys;
 
 #[derive(Debug, PartialEq)]
 pub enum Segment {
@@ -292,7 +293,7 @@ pub enum RsvgDrawingCtx {}
 pub enum RsvgPathBuilder {}
 
 extern "C" {
-    fn rsvg_path_builder_copy_path (builder: *mut RsvgPathBuilder) -> *mut cairo::cairo_path_t;
+    fn rsvg_path_builder_copy_path (builder: *mut RsvgPathBuilder) -> *mut cairo_sys::cairo_path_t;
     fn rsvg_marker_render (marker_name: *const libc::c_char,
                            xpos: f64,
                            ypos: f64,
@@ -367,10 +368,12 @@ pub extern fn rsvg_rust_render_markers (ctx: *mut RsvgDrawingCtx,
         return;
     }
 
-    let cairopath: *mut cairo::cairo_path_t;
+    let cairopath: *mut cairo_sys::cairo_path_t;
 
     unsafe { cairopath = rsvg_path_builder_copy_path (builder); }
     let path = cairo::Path::wrap (cairopath);
+
+    /* FIXME: free the path with rsvg_cairo_path_destroy() */
 
     /* Convert the path to a list of segments and bare points */
     let segments = path_to_segments (path);

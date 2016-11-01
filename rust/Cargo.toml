@@ -5,7 +5,12 @@ authors = ["Federico Mena Quintero <federico@gnome.org>"]
 
 [dependencies]
 libc = "0.2"
-cairo-rs = { git = "https://github.com/federicomenaquintero/cairo.git" }
+
+[dependencies.cairo-sys-rs]
+git = "https://github.com/gtk-rs/cairo.git"
+
+[dependencies.cairo-rs]
+git = "https://github.com/gtk-rs/cairo.git"
 
 [lib]
 name = "rsvg_internals"
