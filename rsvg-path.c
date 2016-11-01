@@ -63,12 +63,6 @@ struct _RSVGParsePathCtx {
 };
 
 static inline void
-rsvg_path_builder_ensure_capacity (RsvgPathBuilder *builder,
-                                   int additional_capacity)
-{
-}
-
-static inline void
 rsvg_path_builder_add_element (RsvgPathBuilder *builder,
                                cairo_path_data_t *data)
 {
@@ -109,8 +103,6 @@ rsvg_path_builder_move_to (RsvgPathBuilder *builder,
 {
   cairo_path_data_t data;
 
-  rsvg_path_builder_ensure_capacity (builder, 2);
-
   data.header.type = CAIRO_PATH_MOVE_TO;
   data.header.length = 2;
   rsvg_path_builder_add_element (builder, &data);
@@ -127,8 +119,6 @@ rsvg_path_builder_line_to (RsvgPathBuilder *builder,
                            double y)
 {
   cairo_path_data_t data;
-
-  rsvg_path_builder_ensure_capacity (builder, 2);
 
   data.header.type = CAIRO_PATH_LINE_TO;
   data.header.length = 2;
@@ -149,8 +139,6 @@ rsvg_path_builder_curve_to (RsvgPathBuilder *builder,
 {
   cairo_path_data_t data;
 
-  rsvg_path_builder_ensure_capacity (builder, 4);
-
   data.header.type = CAIRO_PATH_CURVE_TO;
   data.header.length = 4;
   rsvg_path_builder_add_element (builder, &data);
@@ -169,8 +157,6 @@ void
 rsvg_path_builder_close_path (RsvgPathBuilder *builder)
 {
   cairo_path_data_t data;
-
-  rsvg_path_builder_ensure_capacity (builder, 1);
 
   data.header.type = CAIRO_PATH_CLOSE_PATH;
   data.header.length = 1;
