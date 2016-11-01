@@ -32,12 +32,9 @@
 #include <glib.h>
 #include <cairo.h>
 
-G_BEGIN_DECLS 
+G_BEGIN_DECLS
 
-typedef struct {
-    GArray *path_data;
-    int     last_move_to_index;
-} RsvgPathBuilder;
+typedef struct _RsvgPathBuilder RsvgPathBuilder;
 
 G_GNUC_INTERNAL
 RsvgPathBuilder *rsvg_path_builder_new (void);

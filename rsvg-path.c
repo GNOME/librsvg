@@ -44,6 +44,11 @@
    Reference: https://www.w3.org/TR/SVG/paths.html#PathDataBNF
 */
 
+struct _RsvgPathBuilder {
+    GArray *path_data;
+    int     last_move_to_index;
+};
+
 typedef struct _RSVGParsePathCtx RSVGParsePathCtx;
 
 struct _RSVGParsePathCtx {
