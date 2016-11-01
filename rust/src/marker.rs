@@ -420,17 +420,8 @@ pub extern fn rsvg_rust_render_markers (ctx: *mut RsvgDrawingCtx,
                         let incoming: f64;
                         let outgoing: f64;
 
-                        if has_incoming {
-                            incoming = angle_from_vector (incoming_vx, incoming_vy);
-                        } else {
-                            incoming = 0.0;
-                        }
-
-                        if has_outgoing {
-                            outgoing = angle_from_vector (outgoing_vx, outgoing_vy);
-                        } else {
-                            outgoing = 0.0;
-                        }
+                        incoming = angle_from_vector (incoming_vx, incoming_vy);
+                        outgoing = angle_from_vector (outgoing_vx, outgoing_vy);
 
                         let angle: f64;
 
