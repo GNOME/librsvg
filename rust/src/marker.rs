@@ -1,3 +1,4 @@
+extern crate libc;
 extern crate cairo;
 
 #[derive(Debug)]
@@ -236,7 +237,7 @@ fn get_segment_directionalities (segment: &Segment) -> Option <(f64, f64, f64, f
  * segment's start and end points to align with the positive x-axis
  * in user space.
  */
-fn find_incoming_directionality_backwards (segments: Vec<Segment>, start_index: usize) -> (bool, f64, f64) {
+fn find_incoming_directionality_backwards (segments: &Vec<Segment>, start_index: usize) -> (bool, f64, f64) {
     /* "go backwards ... within the current subpath until ... segment which has directionality at its end point" */
 
     for j in (0 .. start_index + 1).rev () {
@@ -257,7 +258,7 @@ fn find_incoming_directionality_backwards (segments: Vec<Segment>, start_index: 
     (false, 0.0, 0.0)
 }
 
-fn find_outgoing_directionality_forwards (segments: Vec<Segment>, start_index: usize) -> (bool, f64, f64) {
+fn find_outgoing_directionality_forwards (segments: &Vec<Segment>, start_index: usize) -> (bool, f64, f64) {
     /* "go forwards ... within the current subpath until ... segment which has directionality at its start point" */
 
     for j in start_index .. segments.len () {
@@ -277,6 +278,197 @@ fn find_outgoing_directionality_forwards (segments: Vec<Segment>, start_index: u
 
     (false, 0.0, 0.0)
 }
+
+fn angle_from_vector (vx: f64, vy: f64) -> f64 {
+    let angle = vy.atan2 (vx);
+
+    if angle.is_nan () {
+        0.0
+    } else {
+        angle
+    }
+}
+
+pub enum RsvgDrawingCtx {}
+pub enum RsvgPathBuilder {}
+
+extern "C" {
+    fn rsvg_path_builder_copy_path (builder: *mut RsvgPathBuilder) -> *mut cairo::cairo_path_t;
+    fn rsvg_marker_render (marker_name: *const libc::c_char,
+                           xpos: f64,
+                           ypos: f64,
+                           orient: f64,
+                           linewidth: f64,
+                           ctx: *mut RsvgDrawingCtx);
+}
+
+enum SubpathState {
+    NoSubpath,
+    InSubpath
+}
+
+fn render_marker_at_start_of_segment (segment: &Segment,
+                                      marker_name: *const libc::c_char,
+                                      orient: f64,
+                                      linewidth: f64,
+                                      ctx: *mut RsvgDrawingCtx) {
+    let xpos: f64;
+    let ypos: f64;
+
+    match *segment {
+        Segment::Degenerate { x, y } => {
+            xpos = x;
+            ypos = y;
+        },
+
+        Segment::LineOrCurve { x1, y1, .. } => {
+            xpos = x1;
+            ypos = y1;
+        }
+    }
+
+    unsafe { rsvg_marker_render (marker_name, xpos, ypos, orient, linewidth, ctx); }
+}
+
+fn render_marker_at_end_of_segment (segment: &Segment,
+                                    marker_name: *const libc::c_char,
+                                    orient: f64,
+                                    linewidth: f64,
+                                    ctx: *mut RsvgDrawingCtx) {
+    let xpos: f64;
+    let ypos: f64;
+
+    match *segment {
+        Segment::Degenerate { x, y } => {
+            xpos = x;
+            ypos = y;
+        },
+
+        Segment::LineOrCurve { x4, y4, .. } => {
+            xpos = x4;
+            ypos = y4;
+        }
+    }
+
+    unsafe { rsvg_marker_render (marker_name, xpos, ypos, orient, linewidth, ctx); }
+}
+
+#[no_mangle]
+pub extern fn rsvg_rust_render_markers (ctx: *mut RsvgDrawingCtx,
+                                        builder: *mut RsvgPathBuilder,
+                                        linewidth: f64,
+                                        startmarker: *const libc::c_char,
+                                        middlemarker: *const libc::c_char,
+                                        endmarker: *const libc::c_char) {
+    if linewidth == 0.0 {
+        return;
+    }
+
+    if startmarker.is_null () && middlemarker.is_null () && endmarker.is_null () {
+        return;
+    }
+
+    let cairopath: *mut cairo::cairo_path_t;
+
+    unsafe { cairopath = rsvg_path_builder_copy_path (builder); }
+    let path = cairo::Path::wrap (cairopath);
+
+    /* Convert the path to a list of segments and bare points */
+    let segments = path_to_segments (path);
+
+    let mut subpath_state = SubpathState::NoSubpath;
+
+    for (i, segment) in segments.iter ().enumerate () {
+        match *segment {
+            Segment::Degenerate { .. } => {
+                match subpath_state {
+                    SubpathState::InSubpath => {
+                        assert! (i > 0);
+
+                        /* Got a lone point after a subpath; render the subpath's end marker first */
+
+                        let (_, incoming_vx, incoming_vy) = find_incoming_directionality_backwards (&segments, i - 1);
+                        render_marker_at_end_of_segment (&segments[i - 1], endmarker, angle_from_vector (incoming_vx, incoming_vy), linewidth, ctx);
+                    },
+
+                    _ => { }
+                }
+
+                /* Render marker for the lone point; no directionality */
+                render_marker_at_start_of_segment (segment, middlemarker, 0.0, linewidth, ctx);
+
+                subpath_state = SubpathState::NoSubpath;
+            },
+
+            Segment::LineOrCurve { .. } => {
+                /* Not a degenerate segment */
+
+                match subpath_state {
+                    SubpathState::NoSubpath => {
+                        let (_, outgoing_vx, outgoing_vy) = find_outgoing_directionality_forwards (&segments, i);
+                        render_marker_at_start_of_segment (segment, startmarker, angle_from_vector (outgoing_vx, outgoing_vy), linewidth, ctx);
+
+                        subpath_state = SubpathState::InSubpath;
+                    },
+
+                    SubpathState::InSubpath => {
+                        assert! (i > 0);
+
+                        let (has_incoming, incoming_vx, incoming_vy) = find_incoming_directionality_backwards (&segments, i - 1);
+                        let (has_outgoing, outgoing_vx, outgoing_vy) = find_outgoing_directionality_forwards (&segments, i);
+
+                        let incoming: f64;
+                        let outgoing: f64;
+
+                        if has_incoming {
+                            incoming = angle_from_vector (incoming_vx, incoming_vy);
+                        } else {
+                            incoming = 0.0;
+                        }
+
+                        if has_outgoing {
+                            outgoing = angle_from_vector (outgoing_vx, outgoing_vy);
+                        } else {
+                            outgoing = 0.0;
+                        }
+
+                        let angle: f64;
+
+                        if has_incoming && has_outgoing {
+                            angle = (incoming + outgoing) / 2.0;
+                        } else if has_incoming {
+                            angle = incoming;
+                        } else if has_outgoing {
+                            angle = outgoing;
+                        } else {
+                            angle = 0.0;
+                        }
+
+                        render_marker_at_start_of_segment (segment, middlemarker, angle, linewidth, ctx);
+                    }
+                }
+            }
+        }
+    }
+
+    /* Finally, render the last point */
+
+    if segments.len() > 0 {
+        let segment = &segments[segments.len() - 1];
+        match *segment {
+            Segment::LineOrCurve { .. } => {
+                let (_, incoming_vx, incoming_vy) = find_incoming_directionality_backwards (&segments, segments.len () - 1);
+
+                render_marker_at_end_of_segment (&segment, endmarker, angle_from_vector (incoming_vx, incoming_vy), linewidth, ctx);
+            },
+
+            _ => { }
+        }
+    }
+}
+
+
+/******************** Tests ********************/
 
 #[cfg(test)]
 mod tests {

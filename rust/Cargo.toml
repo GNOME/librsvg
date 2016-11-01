@@ -4,8 +4,9 @@ version = "0.0.1"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
 
 [dependencies]
-cairo-rs = "^0"
+libc = "0.2"
+cairo-rs = { git = "file:///home/federico/src/gtk-rs/cairo" }
 
 [lib]
 name = "rsvg_internals"
-crate-type = ["cdylib"]
+crate-type = ["staticlib"]

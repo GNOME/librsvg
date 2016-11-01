@@ -1,6 +1,5 @@
 pub use marker::{
-    Segment,
-    path_to_segments,
+    rsvg_rust_render_markers,
 };
 
 mod marker;

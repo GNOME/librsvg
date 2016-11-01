@@ -35,6 +35,9 @@ RsvgNode    *rsvg_new_marker	    (void);
 G_GNUC_INTERNAL
 void	     rsvg_render_markers    (RsvgDrawingCtx *ctx, RsvgPathBuilder *builder);
 
+G_GNUC_INTERNAL
+void rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdouble orient, gdouble linewidth, RsvgDrawingCtx * ctx);
+
 G_END_DECLS
 
 #endif                          /* RSVG_MARKER_H */
