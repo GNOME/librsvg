@@ -4,14 +4,12 @@ extern crate cairo_sys;
 #[repr(C)]
 pub struct RsvgPathBuilder {
     path_segments: Vec<cairo::PathSegment>,
-    last_move_to_index: Option<usize>
 }
 
 impl RsvgPathBuilder {
     pub fn new () -> RsvgPathBuilder {
         let builder = RsvgPathBuilder {
-            path_segments: Vec::new (),
-            last_move_to_index: None
+            path_segments: Vec::new ()
         };
 
         builder
@@ -19,7 +17,6 @@ impl RsvgPathBuilder {
 
     pub fn move_to (&mut self, x: f64, y: f64) {
         self.path_segments.push (cairo::PathSegment::MoveTo ((x, y)));
-        self.last_move_to_index = Some (self.path_segments.len () - 1);
     }
 
     pub fn line_to (&mut self, x: f64, y: f64) {
@@ -31,15 +28,7 @@ impl RsvgPathBuilder {
     }
 
     pub fn close_path (&mut self) {
-        if let Some (idx) = self.last_move_to_index {
-            let segment = self.path_segments[idx];
-
-            if let cairo::PathSegment::MoveTo ((x, y)) = segment {
-                self.move_to (x, y);
-            } else {
-                unreachable! ();
-            }
-        }
+        self.path_segments.push (cairo::PathSegment::ClosePath);
     }
 
     pub fn get_path_segments (&self) -> &Vec<cairo::PathSegment> {
@@ -131,9 +120,6 @@ pub extern fn rsvg_path_builder_add_to_cairo_context (raw_builder: *mut RsvgPath
 
                 cairo::PathSegment::ClosePath => {
                     cairo_sys::cairo_close_path (cr);
-                    /* FIXME: we'll get a MoveTo from the path builder.  Do we need to omit it
-                     * if Cairo will add a similar Moveto by itself?
-                     */
                 }
             }
         }
