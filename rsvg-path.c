@@ -44,168 +44,19 @@
    Reference: https://www.w3.org/TR/SVG/paths.html#PathDataBNF
 */
 
-struct _RsvgPathBuilder {
-    GArray *path_data;
-    int     last_move_to_index;
-};
+typedef struct _RsvgPathBuilder RsvgPathBuilder; /* This is in rust/src/path_builder.rs */
 
-typedef struct _RSVGParsePathCtx RSVGParsePathCtx;
-
-struct _RSVGParsePathCtx {
+typedef struct {
     RsvgPathBuilder *builder;
 
-    cairo_path_data_t cp;       /* current point */
-    cairo_path_data_t rp;       /* reflection point (for 's' and 't' commands) */
+    double cp_x, cp_y;          /* current point */
+    double rp_x, rp_y;          /* reflection point (for 's' and 't' commands) */
+    double last_moveto_x, last_moveto_y; /* Location of last move_to command, so close_path can go back to it */
     char cmd;                   /* current command (lowercase) */
     int param;                  /* parameter number */
     gboolean rel;               /* true if relative coords */
     double params[7];           /* parameters that have been parsed */
-};
-
-static inline void
-rsvg_path_builder_add_element (RsvgPathBuilder *builder,
-                               cairo_path_data_t *data)
-{
-  g_array_append_val (builder->path_data, *data);
-}
-
-RsvgPathBuilder *
-rsvg_path_builder_new (void)
-{
-    RsvgPathBuilder *builder;
-
-    builder = g_new (RsvgPathBuilder, 1);
-
-    /* The starting capacity is just to avoid lots of little resizes while growing
-     * a small path.  After that, it will grow as needed.
-     */
-    builder->path_data = g_array_sized_new (FALSE, FALSE, sizeof (cairo_path_data_t), 32);
-    builder->last_move_to_index = -1;
-
-    return builder;
-}
-
-void
-rsvg_path_builder_destroy (RsvgPathBuilder *builder)
-{
-    g_assert (builder != NULL);
-
-    g_array_free (builder->path_data, TRUE);
-    builder->path_data = NULL;
-    builder->last_move_to_index = -1;
-    g_free (builder);
-}
-
-void
-rsvg_path_builder_move_to (RsvgPathBuilder *builder,
-                           double x,
-                           double y)
-{
-  cairo_path_data_t data;
-
-  data.header.type = CAIRO_PATH_MOVE_TO;
-  data.header.length = 2;
-  rsvg_path_builder_add_element (builder, &data);
-  builder->last_move_to_index = builder->path_data->len - 1;
-
-  data.point.x = x;
-  data.point.y = y;
-  rsvg_path_builder_add_element (builder, &data);
-}
-
-void
-rsvg_path_builder_line_to (RsvgPathBuilder *builder,
-                           double x,
-                           double y)
-{
-  cairo_path_data_t data;
-
-  data.header.type = CAIRO_PATH_LINE_TO;
-  data.header.length = 2;
-  rsvg_path_builder_add_element (builder, &data);
-  data.point.x = x;
-  data.point.y = y;
-  rsvg_path_builder_add_element (builder, &data);
-}
-
-void
-rsvg_path_builder_curve_to (RsvgPathBuilder *builder,
-                            double x1,
-                            double y1,
-                            double x2,
-                            double y2,
-                            double x3,
-                            double y3)
-{
-  cairo_path_data_t data;
-
-  data.header.type = CAIRO_PATH_CURVE_TO;
-  data.header.length = 4;
-  rsvg_path_builder_add_element (builder, &data);
-  data.point.x = x1;
-  data.point.y = y1;
-  rsvg_path_builder_add_element (builder, &data);
-  data.point.x = x2;
-  data.point.y = y2;
-  rsvg_path_builder_add_element (builder, &data);
-  data.point.x = x3;
-  data.point.y = y3;
-  rsvg_path_builder_add_element (builder, &data);
-}
-
-void
-rsvg_path_builder_close_path (RsvgPathBuilder *builder)
-{
-  cairo_path_data_t data;
-
-  data.header.type = CAIRO_PATH_CLOSE_PATH;
-  data.header.length = 1;
-  rsvg_path_builder_add_element (builder, &data);
-
-  /* Add a 'move-to' element */
-  if (builder->last_move_to_index >= 0) {
-    cairo_path_data_t *moveto = &g_array_index (builder->path_data, cairo_path_data_t, builder->last_move_to_index);
-
-    rsvg_path_builder_move_to (builder, moveto[1].point.x, moveto[1].point.y);
-  }
-}
-
-cairo_path_t *
-rsvg_path_builder_copy_path (RsvgPathBuilder *builder)
-{
-    cairo_path_t *path;
-    int i;
-
-    path = g_new (cairo_path_t, 1);
-    path->status = CAIRO_STATUS_SUCCESS;
-    path->num_data = builder->path_data->len;
-    path->data = g_new (cairo_path_data_t, path->num_data);
-
-    for (i = 0; i < path->num_data; i++) {
-        cairo_path_data_t *data;
-
-        data = &g_array_index (builder->path_data, cairo_path_data_t, i);
-        path->data[i] = *data;
-    }
-
-    return path;
-}
-
-void
-rsvg_path_builder_add_to_cairo_context (RsvgPathBuilder *builder, cairo_t *cr)
-{
-    cairo_path_t *path;
-
-    g_assert (builder != NULL);
-    g_assert (cr != NULL);
-
-    path = rsvg_path_builder_copy_path (builder);
-
-    cairo_new_path (cr);
-    cairo_append_path (cr, path);
-
-    rsvg_cairo_path_destroy (path);
-}
+} RSVGParsePathCtx;
 
 static void
 rsvg_path_arc_segment (RsvgPathBuilder *builder,
@@ -380,9 +231,9 @@ rsvg_parse_path_default_xy (RSVGParsePathCtx * ctx, int n_params)
             /* we shouldn't get 0 here (usually ctx->param > 0 as
                precondition) */
             if (i == 0)
-                ctx->params[i] = ctx->cp.point.x;
+                ctx->params[i] = ctx->cp_x;
             else if (i == 1)
-                ctx->params[i] = ctx->cp.point.y;
+                ctx->params[i] = ctx->cp_y;
             else
                 ctx->params[i] = ctx->params[i - 2];
         }
@@ -403,8 +254,10 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
         if (ctx->param == 2 || final) {
             rsvg_parse_path_default_xy (ctx, 2);
             rsvg_path_builder_move_to (ctx->builder, ctx->params[0], ctx->params[1]);
-            ctx->cp.point.x = ctx->rp.point.x = ctx->params[0];
-            ctx->cp.point.y = ctx->rp.point.y = ctx->params[1];
+            ctx->cp_x = ctx->rp_x = ctx->params[0];
+            ctx->cp_y = ctx->rp_y = ctx->params[1];
+            ctx->last_moveto_x = ctx->cp_x;
+            ctx->last_moveto_y = ctx->cp_y;
             ctx->param = 0;
             ctx->cmd = 'l'; /* implicit linetos after a moveto */
         }
@@ -414,8 +267,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
         if (ctx->param == 2 || final) {
             rsvg_parse_path_default_xy (ctx, 2);
             rsvg_path_builder_line_to (ctx->builder, ctx->params[0], ctx->params[1]);
-            ctx->cp.point.x = ctx->rp.point.x = ctx->params[0];
-            ctx->cp.point.y = ctx->rp.point.y = ctx->params[1];
+            ctx->cp_x = ctx->rp_x = ctx->params[0];
+            ctx->cp_y = ctx->rp_y = ctx->params[1];
             ctx->param = 0;
         }
         break;
@@ -430,10 +283,10 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
             x3 = ctx->params[4];
             y3 = ctx->params[5];
             rsvg_path_builder_curve_to (ctx->builder, x1, y1, x2, y2, x3, y3);
-            ctx->rp.point.x = x2;
-            ctx->rp.point.y = y2;
-            ctx->cp.point.x = x3;
-            ctx->cp.point.y = y3;
+            ctx->rp_x = x2;
+            ctx->rp_y = y2;
+            ctx->cp_x = x3;
+            ctx->cp_y = y3;
             ctx->param = 0;
         }
         break;
@@ -441,35 +294,35 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
         /* smooth curveto */
         if (ctx->param == 4 || final) {
             rsvg_parse_path_default_xy (ctx, 4);
-            x1 = 2 * ctx->cp.point.x - ctx->rp.point.x;
-            y1 = 2 * ctx->cp.point.y - ctx->rp.point.y;
+            x1 = 2 * ctx->cp_x - ctx->rp_x;
+            y1 = 2 * ctx->cp_y - ctx->rp_y;
             x2 = ctx->params[0];
             y2 = ctx->params[1];
             x3 = ctx->params[2];
             y3 = ctx->params[3];
             rsvg_path_builder_curve_to (ctx->builder, x1, y1, x2, y2, x3, y3);
-            ctx->rp.point.x = x2;
-            ctx->rp.point.y = y2;
-            ctx->cp.point.x = x3;
-            ctx->cp.point.y = y3;
+            ctx->rp_x = x2;
+            ctx->rp_y = y2;
+            ctx->cp_x = x3;
+            ctx->cp_y = y3;
             ctx->param = 0;
         }
         break;
     case 'h':
         /* horizontal lineto */
         if (ctx->param == 1) {
-            rsvg_path_builder_line_to (ctx->builder, ctx->params[0], ctx->cp.point.y);
-            ctx->cp.point.x = ctx->rp.point.x = ctx->params[0];
-            ctx->rp.point.y = ctx->cp.point.y;
+            rsvg_path_builder_line_to (ctx->builder, ctx->params[0], ctx->cp_y);
+            ctx->cp_x = ctx->rp_x = ctx->params[0];
+            ctx->rp_y = ctx->cp_y;
             ctx->param = 0;
         }
         break;
     case 'v':
         /* vertical lineto */
         if (ctx->param == 1) {
-            rsvg_path_builder_line_to (ctx->builder, ctx->cp.point.x, ctx->params[0]);
-            ctx->rp.point.x = ctx->cp.point.x;
-            ctx->cp.point.y = ctx->rp.point.y = ctx->params[0];
+            rsvg_path_builder_line_to (ctx->builder, ctx->cp_x, ctx->params[0]);
+            ctx->rp_x = ctx->cp_x;
+            ctx->cp_y = ctx->rp_y = ctx->params[0];
             ctx->param = 0;
         }
         break;
@@ -482,17 +335,17 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
         if (ctx->param == 4 || final) {
             rsvg_parse_path_default_xy (ctx, 4);
             /* raise quadratic bezier to cubic */
-            x1 = (ctx->cp.point.x + 2 * ctx->params[0]) * (1.0 / 3.0);
-            y1 = (ctx->cp.point.y + 2 * ctx->params[1]) * (1.0 / 3.0);
+            x1 = (ctx->cp_x + 2 * ctx->params[0]) * (1.0 / 3.0);
+            y1 = (ctx->cp_y + 2 * ctx->params[1]) * (1.0 / 3.0);
             x3 = ctx->params[2];
             y3 = ctx->params[3];
             x2 = (x3 + 2 * ctx->params[0]) * (1.0 / 3.0);
             y2 = (y3 + 2 * ctx->params[1]) * (1.0 / 3.0);
             rsvg_path_builder_curve_to (ctx->builder, x1, y1, x2, y2, x3, y3);
-            ctx->rp.point.x = ctx->params[0];
-            ctx->rp.point.y = ctx->params[1];
-            ctx->cp.point.x = x3;
-            ctx->cp.point.y = y3;
+            ctx->rp_x = ctx->params[0];
+            ctx->rp_y = ctx->params[1];
+            ctx->cp_x = x3;
+            ctx->cp_y = y3;
             ctx->param = 0;
         }
         break;
@@ -501,41 +354,41 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
         if (ctx->param == 2 || final) {
             double xc, yc;      /* quadratic control point */
 
-            xc = 2 * ctx->cp.point.x - ctx->rp.point.x;
-            yc = 2 * ctx->cp.point.y - ctx->rp.point.y;
+            xc = 2 * ctx->cp_x - ctx->rp_x;
+            yc = 2 * ctx->cp_y - ctx->rp_y;
             /* generate a quadratic bezier with control point = xc, yc */
-            x1 = (ctx->cp.point.x + 2 * xc) * (1.0 / 3.0);
-            y1 = (ctx->cp.point.y + 2 * yc) * (1.0 / 3.0);
+            x1 = (ctx->cp_x + 2 * xc) * (1.0 / 3.0);
+            y1 = (ctx->cp_y + 2 * yc) * (1.0 / 3.0);
             x3 = ctx->params[0];
             y3 = ctx->params[1];
             x2 = (x3 + 2 * xc) * (1.0 / 3.0);
             y2 = (y3 + 2 * yc) * (1.0 / 3.0);
             rsvg_path_builder_curve_to (ctx->builder, x1, y1, x2, y2, x3, y3);
-            ctx->rp.point.x = xc;
-            ctx->rp.point.y = yc;
-            ctx->cp.point.x = x3;
-            ctx->cp.point.y = y3;
+            ctx->rp_x = xc;
+            ctx->rp_y = yc;
+            ctx->cp_x = x3;
+            ctx->cp_y = y3;
             ctx->param = 0;
         } else if (final) {
             if (ctx->param > 2) {
                 rsvg_parse_path_default_xy (ctx, 4);
                 /* raise quadratic bezier to cubic */
-                x1 = (ctx->cp.point.x + 2 * ctx->params[0]) * (1.0 / 3.0);
-                y1 = (ctx->cp.point.y + 2 * ctx->params[1]) * (1.0 / 3.0);
+                x1 = (ctx->cp_x + 2 * ctx->params[0]) * (1.0 / 3.0);
+                y1 = (ctx->cp_y + 2 * ctx->params[1]) * (1.0 / 3.0);
                 x3 = ctx->params[2];
                 y3 = ctx->params[3];
                 x2 = (x3 + 2 * ctx->params[0]) * (1.0 / 3.0);
                 y2 = (y3 + 2 * ctx->params[1]) * (1.0 / 3.0);
                 rsvg_path_builder_curve_to (ctx->builder, x1, y1, x2, y2, x3, y3);
-                ctx->rp.point.x = ctx->params[0];
-                ctx->rp.point.y = ctx->params[1];
-                ctx->cp.point.x = x3;
-                ctx->cp.point.y = y3;
+                ctx->rp_x = ctx->params[0];
+                ctx->rp_y = ctx->params[1];
+                ctx->cp_x = x3;
+                ctx->cp_y = y3;
             } else {
                 rsvg_parse_path_default_xy (ctx, 2);
                 rsvg_path_builder_line_to (ctx->builder, ctx->params[0], ctx->params[1]);
-                ctx->cp.point.x = ctx->rp.point.x = ctx->params[0];
-                ctx->cp.point.y = ctx->rp.point.y = ctx->params[1];
+                ctx->cp_x = ctx->rp_x = ctx->params[0];
+                ctx->cp_y = ctx->rp_y = ctx->params[1];
             }
             ctx->param = 0;
         }
@@ -549,8 +402,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
             gboolean sweep_flag;
             double x2, y2;
 
-            x1 = ctx->cp.point.x;
-            y1 = ctx->cp.point.y;
+            x1 = ctx->cp_x;
+            y1 = ctx->cp_y;
 
             rx = ctx->params[0];
             ry = ctx->params[1];
@@ -571,8 +424,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
                                    sweep_flag,
                                    x2, y2);
 
-            ctx->rp.point.x = ctx->cp.point.x = x2;
-            ctx->rp.point.y = ctx->cp.point.y = y2;
+            ctx->rp_x = ctx->cp_x = x2;
+            ctx->rp_y = ctx->cp_y = y2;
 
             ctx->param = 0;
         }
@@ -600,25 +453,25 @@ rsvg_path_end_of_number (RSVGParsePathCtx * ctx, double val, int sign, int exp_s
             /* rule: even-numbered params are x-relative, odd-numbered
                are y-relative */
             if ((ctx->param & 1) == 0)
-                val += ctx->cp.point.x;
+                val += ctx->cp_x;
             else if ((ctx->param & 1) == 1)
-                val += ctx->cp.point.y;
+                val += ctx->cp_y;
             break;
         case 'a':
             /* rule: sixth and seventh are x and y, rest are not
                relative */
             if (ctx->param == 5)
-                val += ctx->cp.point.x;
+                val += ctx->cp_x;
             else if (ctx->param == 6)
-                val += ctx->cp.point.y;
+                val += ctx->cp_y;
             break;
         case 'h':
             /* rule: x-relative */
-            val += ctx->cp.point.x;
+            val += ctx->cp_x;
             break;
         case 'v':
             /* rule: y-relative */
-            val += ctx->cp.point.y;
+            val += ctx->cp_y;
             break;
         }
     }
@@ -748,7 +601,10 @@ rsvg_parse_path_data (RSVGParsePathCtx * ctx, const char *data)
                 rsvg_parse_path_do_cmd (ctx, TRUE);
             rsvg_path_builder_close_path (ctx->builder);
 
-            ctx->cp = ctx->rp = g_array_index (ctx->builder->path_data, cairo_path_data_t, ctx->builder->path_data->len - 1);
+            ctx->cp_x = ctx->last_moveto_x;
+            ctx->cp_y = ctx->last_moveto_y;
+            ctx->rp_x = ctx->cp_x;
+            ctx->rp_y = ctx->cp_y;
         } else if (c >= 'A' && c < 'Z' && c != 'E') {
             if (ctx->param)
                 rsvg_parse_path_do_cmd (ctx, TRUE);
@@ -771,10 +627,12 @@ rsvg_path_builder_parse_path (const char *path_str)
 
     ctx.builder = rsvg_path_builder_new ();
 
-    ctx.cp.point.x = 0.0;
-    ctx.cp.point.y = 0.0;
-    ctx.rp.point.x = 0.0;
-    ctx.rp.point.y = 0.0;
+    ctx.cp_x = 0.0;
+    ctx.cp_y = 0.0;
+    ctx.rp_x = 0.0;
+    ctx.rp_y = 0.0;
+    ctx.last_moveto_x = 0.0;
+    ctx.last_moveto_y = 0.0;
     ctx.cmd = 0;
     ctx.param = 0;
 
@@ -784,14 +642,4 @@ rsvg_path_builder_parse_path (const char *path_str)
         rsvg_parse_path_do_cmd (&ctx, TRUE);
 
     return ctx.builder;
-}
-
-void
-rsvg_cairo_path_destroy (cairo_path_t *path)
-{
-    if (path == NULL)
-        return;
-
-    g_free (path->data);
-    g_free (path);
 }

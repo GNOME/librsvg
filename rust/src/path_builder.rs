@@ -1,4 +1,5 @@
 extern crate cairo;
+extern crate cairo_sys;
 
 #[repr(C)]
 pub struct RsvgPathBuilder {
@@ -30,6 +31,10 @@ impl RsvgPathBuilder {
                 unreachable! ();
             }
         }
+    }
+
+    fn get_path_segments (&mut self) -> &Vec<cairo::PathSegment> {
+        &self.path_segments
     }
 }
 
@@ -93,4 +98,38 @@ pub extern fn rsvg_path_builder_close_path (raw_builder: *mut RsvgPathBuilder) {
     let builder: &mut RsvgPathBuilder = unsafe { &mut (*raw_builder) };
 
     builder.close_path ();
+}
+
+#[no_mangle]
+pub extern fn rsvg_path_builder_add_to_cairo_context (raw_builder: *mut RsvgPathBuilder, cr: *mut cairo_sys::cairo_t) {
+    assert! (!raw_builder.is_null ());
+
+    let builder: &mut RsvgPathBuilder = unsafe { &mut (*raw_builder) };
+
+    unsafe {
+        let path_segments = builder.get_path_segments ();
+
+        for s in path_segments {
+            match *s {
+                cairo::PathSegment::MoveTo ((x, y)) => {
+                    cairo_sys::cairo_move_to (cr, x, y);
+                },
+
+                cairo::PathSegment::LineTo ((x, y)) => {
+                    cairo_sys::cairo_line_to (cr, x, y);
+                },
+
+                cairo::PathSegment::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
+                    cairo_sys::cairo_curve_to (cr, x2, y2, x3, y3, x4, y4);
+                },
+
+                cairo::PathSegment::ClosePath => {
+                    cairo_sys::cairo_close_path (cr);
+                    /* FIXME: we'll get a MoveTo from the path builder.  Do we need to omit it
+                     * if Cairo will add a similar Moveto by itself?
+                     */
+                }
+            }
+        }
+    }
 }
