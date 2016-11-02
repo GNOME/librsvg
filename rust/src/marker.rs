@@ -2,6 +2,8 @@ extern crate libc;
 extern crate cairo;
 extern crate cairo_sys;
 
+use path_builder::*;
+
 #[derive(Debug, PartialEq)]
 pub enum Segment {
     Degenerate {            // A single lone point
@@ -80,7 +82,7 @@ fn make_line (x1: f64, y1: f64, x2: f64, y2: f64) -> Segment {
 }
 
 
-pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
+pub fn path_builder_to_segments (builder: &RsvgPathBuilder) -> Vec<Segment> {
     let mut last_x: f64;
     let mut last_y: f64;
     let mut cur_x: f64;
@@ -98,11 +100,11 @@ pub fn path_to_segments (path: cairo::Path) -> Vec<Segment> {
     segments = Vec::new ();
     state = SegmentState::Initial;
 
-    for cairo_segment in path.iter () {
+    for cairo_segment in builder.get_path_segments () {
         last_x = cur_x;
         last_y = cur_y;
 
-        match cairo_segment {
+        match *cairo_segment {
             cairo::PathSegment::MoveTo ((x, y)) => {
                 cur_x = x;
                 cur_y = y;
@@ -290,10 +292,8 @@ fn angle_from_vector (vx: f64, vy: f64) -> f64 {
 }
 
 pub enum RsvgDrawingCtx {}
-pub enum RsvgPathBuilder {}
 
 extern "C" {
-    fn rsvg_path_builder_copy_path (builder: *mut RsvgPathBuilder) -> *mut cairo_sys::cairo_path_t;
     fn rsvg_marker_render (marker_name: *const libc::c_char,
                            xpos: f64,
                            ypos: f64,
@@ -355,7 +355,7 @@ fn render_marker_at_end_of_segment (segment: &Segment,
 
 #[no_mangle]
 pub extern fn rsvg_rust_render_markers (ctx: *mut RsvgDrawingCtx,
-                                        builder: *mut RsvgPathBuilder,
+                                        raw_builder: *mut RsvgPathBuilder,
                                         linewidth: f64,
                                         startmarker: *const libc::c_char,
                                         middlemarker: *const libc::c_char,
@@ -368,15 +368,11 @@ pub extern fn rsvg_rust_render_markers (ctx: *mut RsvgDrawingCtx,
         return;
     }
 
-    let cairopath: *mut cairo_sys::cairo_path_t;
-
-    unsafe { cairopath = rsvg_path_builder_copy_path (builder); }
-    let path = cairo::Path::wrap (cairopath);
-
-    /* FIXME: free the path with rsvg_cairo_path_destroy() */
+    assert! (!raw_builder.is_null ());
+    let builder: &mut RsvgPathBuilder = unsafe { &mut (*raw_builder) };
 
     /* Convert the path to a list of segments and bare points */
-    let segments = path_to_segments (path);
+    let segments = path_builder_to_segments (builder);
 
     let mut subpath_state = SubpathState::NoSubpath;
 
@@ -466,14 +462,8 @@ pub extern fn rsvg_rust_render_markers (ctx: *mut RsvgDrawingCtx,
 #[cfg(test)]
 mod tests {
     use super::*;
+    use path_builder::*;
     extern crate cairo;
-
-    fn create_cr () -> cairo::Context {
-        let surf = cairo::ImageSurface::create (cairo::Format::Rgb24, 1, 1);
-        let cr = cairo::Context::new (&surf);
-
-        cr
-    }
 
     fn degenerate (x: f64, y: f64) -> Segment {
         super::make_degenerate (x, y)
@@ -487,21 +477,21 @@ mod tests {
         super::make_curve (x1, y1, x2, y2, x3, y3, x4, y4)
     }
 
-    fn test_path_to_segments (path: cairo::Path, expected_segments: Vec<Segment>) {
-        let segments = path_to_segments (path);
+    fn test_path_builder_to_segments (builder: &RsvgPathBuilder, expected_segments: Vec<Segment>) {
+        let segments = path_builder_to_segments (builder);
         assert_eq! (expected_segments, segments);
     }
 
     /* Single open path; the easy case */
 
-    fn setup_open_path () -> cairo::Path {
-        let cr = create_cr ();
+    fn setup_open_path () -> RsvgPathBuilder {
+        let mut builder = RsvgPathBuilder::new ();
 
-        cr.move_to (10.0, 10.0);
-        cr.line_to (20.0, 10.0);
-        cr.line_to (20.0, 20.0);
+        builder.move_to (10.0, 10.0);
+        builder.line_to (20.0, 10.0);
+        builder.line_to (20.0, 20.0);
 
-        cr.copy_path ()
+        builder
     }
 
     #[test]
@@ -511,24 +501,24 @@ mod tests {
             line (20.0, 10.0, 20.0, 20.0)
         ];
 
-        test_path_to_segments (setup_open_path(), expected_segments);
+        test_path_builder_to_segments (&setup_open_path (), expected_segments);
     }
 
     /* Multiple open subpaths */
 
-    fn setup_multiple_open_subpaths () -> cairo::Path {
-        let cr = create_cr ();
+    fn setup_multiple_open_subpaths () -> RsvgPathBuilder {
+        let mut builder = RsvgPathBuilder::new ();
 
-        cr.move_to (10.0, 10.0);
-        cr.line_to (20.0, 10.0);
-        cr.line_to (20.0, 20.0);
+        builder.move_to (10.0, 10.0);
+        builder.line_to (20.0, 10.0);
+        builder.line_to (20.0, 20.0);
 
-        cr.move_to (30.0, 30.0);
-        cr.line_to (40.0, 30.0);
-        cr.curve_to (50.0, 35.0, 60.0, 60.0, 70.0, 70.0);
-        cr.line_to (80.0, 90.0);
+        builder.move_to (30.0, 30.0);
+        builder.line_to (40.0, 30.0);
+        builder.curve_to (50.0, 35.0, 60.0, 60.0, 70.0, 70.0);
+        builder.line_to (80.0, 90.0);
 
-        cr.copy_path ()
+        builder
     }
 
     #[test]
@@ -542,20 +532,20 @@ mod tests {
             line  (70.0, 70.0, 80.0, 90.0)
         ];
 
-        test_path_to_segments (setup_multiple_open_subpaths (), expected_segments);
+        test_path_builder_to_segments (&setup_multiple_open_subpaths (), expected_segments);
     }
 
     /* Closed subpath; must have a line segment back to the first point */
 
-    fn setup_closed_subpath () -> cairo::Path {
-        let cr = create_cr ();
+    fn setup_closed_subpath () -> RsvgPathBuilder {
+        let mut builder = RsvgPathBuilder::new ();
 
-        cr.move_to (10.0, 10.0);
-        cr.line_to (20.0, 10.0);
-        cr.line_to (20.0, 20.0);
-        cr.close_path ();
+        builder.move_to (10.0, 10.0);
+        builder.line_to (20.0, 10.0);
+        builder.line_to (20.0, 20.0);
+        builder.close_path ();
 
-        cr.copy_path ()
+        builder
     }
 
     #[test]
@@ -566,28 +556,28 @@ mod tests {
             line (20.0, 20.0, 10.0, 10.0)
         ];
 
-        test_path_to_segments (setup_closed_subpath (), expected_segments);
+        test_path_builder_to_segments (&setup_closed_subpath (), expected_segments);
     }
 
     /* Multiple closed subpaths; each must have a line segment back to their
      * initial points, with no degenerate segments between subpaths.
      */
 
-    fn setup_multiple_closed_subpaths () -> cairo::Path {
-        let cr = create_cr ();
+    fn setup_multiple_closed_subpaths () -> RsvgPathBuilder {
+        let mut builder = RsvgPathBuilder::new ();
 
-        cr.move_to (10.0, 10.0);
-        cr.line_to (20.0, 10.0);
-        cr.line_to (20.0, 20.0);
-        cr.close_path ();
+        builder.move_to (10.0, 10.0);
+        builder.line_to (20.0, 10.0);
+        builder.line_to (20.0, 20.0);
+        builder.close_path ();
 
-        cr.move_to (30.0, 30.0);
-        cr.line_to (40.0, 30.0);
-        cr.curve_to (50.0, 35.0, 60.0, 60.0, 70.0, 70.0);
-        cr.line_to (80.0, 90.0);
-        cr.close_path ();
+        builder.move_to (30.0, 30.0);
+        builder.line_to (40.0, 30.0);
+        builder.curve_to (50.0, 35.0, 60.0, 60.0, 70.0, 70.0);
+        builder.line_to (80.0, 90.0);
+        builder.close_path ();
 
-        cr.copy_path ()
+        builder
     }
 
     #[test]
@@ -603,24 +593,24 @@ mod tests {
             line  (80.0, 90.0, 30.0, 30.0)
         ];
 
-        test_path_to_segments (setup_multiple_closed_subpaths (), expected_segments);
+        test_path_builder_to_segments (&setup_multiple_closed_subpaths (), expected_segments);
     }
 
     /* A lineto follows the first closed subpath, with no moveto to start the second subpath.  The
      * lineto must start at the first point of the first subpath.
      */
 
-    fn setup_no_moveto_after_closepath () -> cairo::Path {
-        let cr = create_cr ();
+    fn setup_no_moveto_after_closepath () -> RsvgPathBuilder {
+        let mut builder = RsvgPathBuilder::new ();
 
-        cr.move_to (10.0, 10.0);
-        cr.line_to (20.0, 10.0);
-        cr.line_to (20.0, 20.0);
-        cr.close_path ();
+        builder.move_to (10.0, 10.0);
+        builder.line_to (20.0, 10.0);
+        builder.line_to (20.0, 20.0);
+        builder.close_path ();
 
-        cr.line_to (40.0, 30.0);
+        builder.line_to (40.0, 30.0);
 
-        cr.copy_path ()
+        builder
     }
 
     #[test]
@@ -633,7 +623,7 @@ mod tests {
             line  (10.0, 10.0, 40.0, 30.0)
         ];
 
-        test_path_to_segments (setup_no_moveto_after_closepath (), expected_segments);
+        test_path_builder_to_segments (&setup_no_moveto_after_closepath (), expected_segments);
     }
 
     /* Sequence of moveto; should generate degenerate points.
@@ -648,16 +638,15 @@ mod tests {
      * allow for unelided path commands, and which should
      * only build a cairo_path_t for the final rendering step.
 
-    fn setup_sequence_of_moveto () -> cairo::Path {
-        let cr = create_cr ();
+    fn setup_sequence_of_moveto () -> RsvgPathBuilder {
+        let mut builder = RsvgPathBuilder::new ();
 
-        cr.move_to (10.0, 10.0);
-        cr.move_to (20.0, 20.0);
-        cr.move_to (30.0, 30.0);
-        cr.move_to (40.0, 40.0);
+        builder.move_to (10.0, 10.0);
+        builder.move_to (20.0, 20.0);
+        builder.move_to (30.0, 30.0);
+        builder.move_to (40.0, 40.0);
 
-        let path = cr.copy_path ();
-        path
+        builder
     }
 
     #[test]
@@ -669,7 +658,7 @@ mod tests {
             degenerate (40.0, 40.0)
         ];
 
-        test_path_to_segments (setup_sequence_of_moveto (), expected_segments);
+        test_path_builder_to_segments (&setup_sequence_of_moveto (), expected_segments);
     }
      */
 
