@@ -45,7 +45,6 @@ typedef struct _RsvgNodePath RsvgNodePath;
 struct _RsvgNodePath {
     RsvgNode super;
     RsvgPathBuilder *builder;
-    cairo_path_t *path;
 };
 
 static void
