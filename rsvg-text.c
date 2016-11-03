@@ -284,10 +284,10 @@ _rsvg_node_text_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     RsvgNodeText *text = (RsvgNodeText *) self;
     rsvg_state_reinherit_top (ctx, self->state, dominate);
 
-    x = _rsvg_css_normalize_length (&text->x, ctx, 'h');
-    y = _rsvg_css_normalize_length (&text->y, ctx, 'v');
-    dx = _rsvg_css_normalize_length (&text->dx, ctx, 'h');
-    dy = _rsvg_css_normalize_length (&text->dy, ctx, 'v');
+    x = _rsvg_css_normalize_length (&text->x, ctx, LENGTH_DIR_HORIZONTAL);
+    y = _rsvg_css_normalize_length (&text->y, ctx, LENGTH_DIR_VERTICAL);
+    dx = _rsvg_css_normalize_length (&text->dx, ctx, LENGTH_DIR_HORIZONTAL);
+    dy = _rsvg_css_normalize_length (&text->dy, ctx, LENGTH_DIR_VERTICAL);
 
     if (rsvg_current_state (ctx)->text_anchor != TEXT_ANCHOR_START) {
         _rsvg_node_text_length_children (self, ctx, &length, &lastwasspace, FALSE);
@@ -334,8 +334,8 @@ _rsvg_node_text_type_tspan (RsvgNodeText * self, RsvgDrawingCtx * ctx,
     double dx, dy, length = 0;
     rsvg_state_reinherit_top (ctx, self->super.state, 0);
 
-    dx = _rsvg_css_normalize_length (&self->dx, ctx, 'h');
-    dy = _rsvg_css_normalize_length (&self->dy, ctx, 'v');
+    dx = _rsvg_css_normalize_length (&self->dx, ctx, LENGTH_DIR_HORIZONTAL);
+    dy = _rsvg_css_normalize_length (&self->dy, ctx, LENGTH_DIR_VERTICAL);
 
     if (rsvg_current_state (ctx)->text_anchor != TEXT_ANCHOR_START) {
         gboolean lws = *lastwasspace;
@@ -346,7 +346,7 @@ _rsvg_node_text_type_tspan (RsvgNodeText * self, RsvgDrawingCtx * ctx,
     }
 
     if (self->x_specified) {
-        *x = _rsvg_css_normalize_length (&self->x, ctx, 'h');
+        *x = _rsvg_css_normalize_length (&self->x, ctx, LENGTH_DIR_HORIZONTAL);
         if (!PANGO_GRAVITY_IS_VERTICAL (rsvg_current_state (ctx)->text_gravity)) {
             *x -= length;
             if (rsvg_current_state (ctx)->text_anchor == TEXT_ANCHOR_MIDDLE)
@@ -358,7 +358,7 @@ _rsvg_node_text_type_tspan (RsvgNodeText * self, RsvgDrawingCtx * ctx,
     *x += dx;
 
     if (self->y_specified) {
-        *y = _rsvg_css_normalize_length (&self->y, ctx, 'v');
+        *y = _rsvg_css_normalize_length (&self->y, ctx, LENGTH_DIR_VERTICAL);
         if (PANGO_GRAVITY_IS_VERTICAL (rsvg_current_state (ctx)->text_gravity)) {
             *y -= length;
             if (rsvg_current_state (ctx)->text_anchor == TEXT_ANCHOR_MIDDLE)
@@ -381,9 +381,9 @@ _rsvg_node_text_length_tspan (RsvgNodeText * self,
         return TRUE;
 
     if (PANGO_GRAVITY_IS_VERTICAL (rsvg_current_state (ctx)->text_gravity))
-        *length += _rsvg_css_normalize_length (&self->dy, ctx, 'v');
+        *length += _rsvg_css_normalize_length (&self->dy, ctx, LENGTH_DIR_VERTICAL);
     else
-        *length += _rsvg_css_normalize_length (&self->dx, ctx, 'h');
+        *length += _rsvg_css_normalize_length (&self->dx, ctx, LENGTH_DIR_HORIZONTAL);
 
     return _rsvg_node_text_length_children (&self->super, ctx, length,
                                              lastwasspace, usetextonly);
@@ -548,7 +548,7 @@ rsvg_text_create_layout (RsvgDrawingCtx * ctx,
 
     attr_list = pango_attr_list_new ();
     attribute = pango_attr_letter_spacing_new (_rsvg_css_normalize_length (&state->letter_spacing,
-                                                                           ctx, 'h') * PANGO_SCALE);
+                                                                           ctx, LENGTH_DIR_HORIZONTAL) * PANGO_SCALE);
     attribute->start_index = 0;
     attribute->end_index = G_MAXINT;
     pango_attr_list_insert (attr_list, attribute); 

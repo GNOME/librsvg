@@ -143,8 +143,8 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
 
     if (self->vbox.active) {
         double w, h, x, y;
-        w = _rsvg_css_normalize_length (&self->width, ctx, 'h');
-        h = _rsvg_css_normalize_length (&self->height, ctx, 'v');
+        w = _rsvg_css_normalize_length (&self->width, ctx, LENGTH_DIR_HORIZONTAL);
+        h = _rsvg_css_normalize_length (&self->height, ctx, LENGTH_DIR_VERTICAL);
         x = 0;
         y = 0;
 
@@ -160,8 +160,8 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
     }
 
     cairo_matrix_init_translate (&taffine,
-                                 -_rsvg_css_normalize_length (&self->refX, ctx, 'h'),
-                                 -_rsvg_css_normalize_length (&self->refY, ctx, 'v'));
+                                 -_rsvg_css_normalize_length (&self->refX, ctx, LENGTH_DIR_HORIZONTAL),
+                                 -_rsvg_css_normalize_length (&self->refY, ctx, LENGTH_DIR_VERTICAL));
     cairo_matrix_multiply (&affine, &taffine, &affine);
 
     rsvg_state_push (ctx);
@@ -183,8 +183,8 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
                                     self->vbox.rect.width, self->vbox.rect.height);
         else
             rsvg_add_clipping_rect (ctx, 0, 0,
-                                    _rsvg_css_normalize_length (&self->width, ctx, 'h'),
-                                    _rsvg_css_normalize_length (&self->height, ctx, 'v'));
+                                    _rsvg_css_normalize_length (&self->width, ctx, LENGTH_DIR_HORIZONTAL),
+                                    _rsvg_css_normalize_length (&self->height, ctx, LENGTH_DIR_VERTICAL));
     }
 
     for (i = 0; i < self->super.children->len; i++) {
@@ -219,7 +219,7 @@ rsvg_render_markers (RsvgDrawingCtx *ctx,
 
     state = rsvg_current_state (ctx);
 
-    linewidth = _rsvg_css_normalize_length (&state->stroke_width, ctx, 'o');
+    linewidth = _rsvg_css_normalize_length (&state->stroke_width, ctx, LENGTH_DIR_BOTH);
 
     rsvg_rust_render_markers (ctx,
                               builder,

@@ -407,7 +407,7 @@ void rsvg_bbox_insert   (RsvgBbox * dst, RsvgBbox * src);
 G_GNUC_INTERNAL
 void rsvg_bbox_clip     (RsvgBbox * dst, RsvgBbox * src);
 G_GNUC_INTERNAL
-double _rsvg_css_normalize_length       (const RsvgLength * in, RsvgDrawingCtx * ctx, char dir);
+double _rsvg_css_normalize_length       (const RsvgLength * in, RsvgDrawingCtx * ctx, LengthDir dir);
 G_GNUC_INTERNAL
 double _rsvg_css_hand_normalize_length  (const RsvgLength * in, gdouble pixels_per_inch,
                                          gdouble width_or_height, gdouble font_size);

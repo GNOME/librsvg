@@ -226,7 +226,7 @@ _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
         }
         break;
     default:
-        return _rsvg_css_normalize_length (&state->font_size, ctx, 'v');
+        return _rsvg_css_normalize_length (&state->font_size, ctx, LENGTH_DIR_VERTICAL);
         break;
     }
 
@@ -234,18 +234,22 @@ _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
 }
 
 double
-_rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, char dir)
+_rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, LengthDir dir)
 {
     if (in->unit == LENGTH_UNIT_DEFAULT)
         return in->length;
     else if (in->unit == LENGTH_UNIT_PERCENT) {
-        if (dir == 'h')
+        switch (dir) {
+        case LENGTH_DIR_HORIZONTAL:
             return in->length * ctx->vb.rect.width;
-        if (dir == 'v')
+
+        case LENGTH_DIR_VERTICAL:
             return in->length * ctx->vb.rect.height;
-        if (dir == 'o')
+
+        case LENGTH_DIR_BOTH:
             return in->length * rsvg_viewport_percentage (ctx->vb.rect.width,
                                                           ctx->vb.rect.height);
+        }
     } else if (in->unit == LENGTH_UNIT_FONT_EM || in->unit == LENGTH_UNIT_FONT_EX) {
         double font = _rsvg_css_normalize_font_size (rsvg_current_state (ctx), ctx);
         if (in->unit == LENGTH_UNIT_FONT_EM)
@@ -253,12 +257,16 @@ _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, char di
         else
             return in->length * font / 2.;
     } else if (in->unit == LENGTH_UNIT_INCH) {
-        if (dir == 'h')
+        switch (dir) {
+        case LENGTH_DIR_HORIZONTAL:
             return in->length * ctx->dpi_x;
-        if (dir == 'v')
+
+        case LENGTH_DIR_VERTICAL:
             return in->length * ctx->dpi_y;
-        if (dir == 'o')
+
+        case LENGTH_DIR_BOTH:
             return in->length * rsvg_viewport_percentage (ctx->dpi_x, ctx->dpi_y);
+        }
     } else if (in->unit == LENGTH_UNIT_RELATIVE_LARGER) {
         /* todo: "larger" */
     } else if (in->unit == LENGTH_UNIT_RELATIVE_SMALLER) {
