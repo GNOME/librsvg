@@ -55,7 +55,6 @@ gdk-pixbuf-loader/rsvg-loader
 tests/dimensions
 tests/pdiff/perceptualdiff
 tests/rsvg-test
-tests/rsvg-test.html
 tests/rsvg-test.log
 tests/styles
 tools/test-memory

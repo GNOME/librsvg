@@ -307,7 +307,7 @@ main (int argc, char **argv)
 
         base = g_file_new_for_path (test_utils_get_test_data_path ());
         tests = g_file_get_child (base, "reftests");
-        test_utils_add_test_for_all_files ("/rsvg/reftest", tests, tests, rsvg_cairo_check, is_svg_or_subdir);
+        test_utils_add_test_for_all_files ("/rsvg-test/reftests", tests, tests, rsvg_cairo_check, is_svg_or_subdir);
         g_object_unref (tests);
         g_object_unref (base);
     } else {
@@ -316,7 +316,7 @@ main (int argc, char **argv)
         for (i = 1; i < argc; i++) {
             GFile *file = g_file_new_for_commandline_arg (argv[i]);
 
-            test_utils_add_test_for_all_files ("/rsvg/reftest", NULL, file, rsvg_cairo_check, is_svg_or_subdir);
+            test_utils_add_test_for_all_files ("/rsvg-test/reftests", NULL, file, rsvg_cairo_check, is_svg_or_subdir);
 
             g_object_unref (file);
         }
