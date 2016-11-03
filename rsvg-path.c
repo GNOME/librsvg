@@ -455,8 +455,12 @@ rsvg_parse_path_data (RSVGParsePathCtx * ctx, const char *data)
                 rsvg_parse_path_do_cmd (ctx, TRUE);
             ctx->cmd = c;
             ctx->rel = TRUE;
+        } else if (g_ascii_isspace (c)) {
+        } else if (c == ',') {
+        } else {
+            ctx->param = 0;
+            break; /* all other characters are an error */
         }
-        /* else c _should_ be whitespace or , */
     }
 }
 
