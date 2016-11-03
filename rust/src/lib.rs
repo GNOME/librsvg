@@ -14,4 +14,5 @@ pub use marker::{
 };
 
 mod path_builder;
+mod path_parser;
 mod marker;
