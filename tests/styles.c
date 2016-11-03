@@ -34,7 +34,7 @@ static void
 assert_equal_length (RsvgLength *expected, RsvgLength *actual)
 {
     g_assert_cmpfloat (expected->length, ==, actual->length);
-    g_assert_cmpint (expected->factor, ==, actual->factor);
+    g_assert_cmpint (expected->unit, ==, actual->unit);
 }
 
 static void
@@ -98,14 +98,14 @@ static const FixtureData fixtures[] =
     {"/styles/svg-element-style", "615701", "styles/svg-class.svg", "#svg", "fill", .expected.color = 0xff0000ff},
     {"/styles/presentation attribute in svg element", "620693", "styles/bug620693.svg", "#svg", "stroke", .expected.color = 0xffff0000},
     {"/styles/!important/stroke", "379629", "styles/bug379629.svg", "#base_shadow", "stroke", .expected.color = 0xffffc0cb /* pink */},
-    {"/styles/!important/stroke-width", "379629", "styles/bug379629.svg", "#base_shadow", "stroke-width", .expected.length = {POINTS_LENGTH(5.), 'i'}},
+    {"/styles/!important/stroke-width", "379629", "styles/bug379629.svg", "#base_shadow", "stroke-width", .expected.length = {POINTS_LENGTH(5.), LENGTH_UNIT_INCH}},
     {"/styles/!important/class", "614606", "styles/bug614606.svg", "#path6306", "fill", .expected.color = 0xffff0000 /* red */ },
     {"/styles/!important/element", "614606", "styles/bug614606.svg", "#path6308", "fill", .expected.color = 0xff000000},
     {"/styles/!important/#id prior than class", NULL, "styles/important.svg", "#red", "fill", .expected.color = 0xffff0000 },
     {"/styles/!important/class prior than type", NULL, "styles/important.svg", "#blue", "fill", .expected.color = 0xff0000ff },
     {"/styles/!important/presentation attribute is invalid", NULL, "styles/important.svg", "#white", "fill", .expected.color = 0xffffffff },
     {"/styles/!important/style prior than class", NULL, "styles/important.svg", "#pink", "fill", .expected.color = 0xffffc0cb },
-    /* {"/styles/selectors/descendant", "338160", "styles/bug338160.svg", "#base_shadow", "stroke-width", .expected.length = {2., '\0'}}, */
+    /* {"/styles/selectors/descendant", "338160", "styles/bug338160.svg", "#base_shadow", "stroke-width", .expected.length = {2., LENGTH_UNIT_DEFAULT}}, */
 };
 static const gint n_fixtures = G_N_ELEMENTS (fixtures);
 

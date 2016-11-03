@@ -178,6 +178,9 @@ rsvg_css_parse_raw_length (const char *str, gboolean * in,
     return length;
 }
 
+/* https://www.w3.org/TR/SVG/types.html#DataTypeLength
+ * https://www.w3.org/TR/2008/REC-CSS2-20080411/syndata.html#length-units
+ */
 RsvgLength
 _rsvg_css_parse_length (const char *str)
 {
@@ -188,19 +191,20 @@ _rsvg_css_parse_length (const char *str)
 
     out.length = rsvg_css_parse_raw_length (str, &in, &percent, &em, &ex, &relative_size);
     if (percent)
-        out.factor = 'p';
+        out.unit = LENGTH_UNIT_PERCENT;
     else if (em)
-        out.factor = 'm';
+        out.unit = LENGTH_UNIT_FONT_EM;
     else if (ex)
-        out.factor = 'x';
+        out.unit = LENGTH_UNIT_FONT_EX;
     else if (in)
-        out.factor = 'i';
+        out.unit = LENGTH_UNIT_INCH;
     else if (relative_size == RELATIVE_SIZE_LARGER)
-        out.factor = 'l';
+        out.unit = LENGTH_UNIT_RELATIVE_LARGER;
     else if (relative_size == RELATIVE_SIZE_SMALLER)
-        out.factor = 's';
+        out.unit = LENGTH_UNIT_RELATIVE_SMALLER;
     else
-        out.factor = '\0';
+        out.unit = LENGTH_UNIT_DEFAULT;
+
     return out;
 }
 
@@ -210,10 +214,10 @@ _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
 {
     RsvgState *parent;
 
-    switch (state->font_size.factor) {
-    case 'p':
-    case 'm':
-    case 'x':
+    switch (state->font_size.unit) {
+    case LENGTH_UNIT_PERCENT:
+    case LENGTH_UNIT_FONT_EM:
+    case LENGTH_UNIT_FONT_EX:
         parent = rsvg_state_parent (state);
         if (parent) {
             double parent_size;
@@ -232,9 +236,9 @@ _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
 double
 _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, char dir)
 {
-    if (in->factor == '\0')
+    if (in->unit == LENGTH_UNIT_DEFAULT)
         return in->length;
-    else if (in->factor == 'p') {
+    else if (in->unit == LENGTH_UNIT_PERCENT) {
         if (dir == 'h')
             return in->length * ctx->vb.rect.width;
         if (dir == 'v')
@@ -242,22 +246,22 @@ _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, char di
         if (dir == 'o')
             return in->length * rsvg_viewport_percentage (ctx->vb.rect.width,
                                                           ctx->vb.rect.height);
-    } else if (in->factor == 'm' || in->factor == 'x') {
+    } else if (in->unit == LENGTH_UNIT_FONT_EM || in->unit == LENGTH_UNIT_FONT_EX) {
         double font = _rsvg_css_normalize_font_size (rsvg_current_state (ctx), ctx);
-        if (in->factor == 'm')
+        if (in->unit == LENGTH_UNIT_FONT_EM)
             return in->length * font;
         else
             return in->length * font / 2.;
-    } else if (in->factor == 'i') {
+    } else if (in->unit == LENGTH_UNIT_INCH) {
         if (dir == 'h')
             return in->length * ctx->dpi_x;
         if (dir == 'v')
             return in->length * ctx->dpi_y;
         if (dir == 'o')
             return in->length * rsvg_viewport_percentage (ctx->dpi_x, ctx->dpi_y);
-    } else if (in->factor == 'l') {
+    } else if (in->unit == LENGTH_UNIT_RELATIVE_LARGER) {
         /* todo: "larger" */
-    } else if (in->factor == 's') {
+    } else if (in->unit == LENGTH_UNIT_RELATIVE_SMALLER) {
         /* todo: "smaller" */
     }
 
@@ -289,15 +293,15 @@ double
 _rsvg_css_hand_normalize_length (const RsvgLength * in, gdouble pixels_per_inch,
                                  gdouble width_or_height, gdouble font_size)
 {
-    if (in->factor == '\0')
+    if (in->unit == LENGTH_UNIT_DEFAULT)
         return in->length;
-    else if (in->factor == 'p')
+    else if (in->unit == LENGTH_UNIT_PERCENT)
         return in->length * width_or_height;
-    else if (in->factor == 'm')
+    else if (in->unit == LENGTH_UNIT_FONT_EM)
         return in->length * font_size;
-    else if (in->factor == 'x')
+    else if (in->unit == LENGTH_UNIT_FONT_EX)
         return in->length * font_size / 2.;
-    else if (in->factor == 'i')
+    else if (in->unit == LENGTH_UNIT_INCH)
         return in->length * pixels_per_inch;
 
     return 0;

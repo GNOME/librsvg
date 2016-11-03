@@ -95,6 +95,10 @@ typedef struct _RsvgFilterPrimitive RsvgFilterPrimitive;
 struct _RsvgFilterPrimitive {
     RsvgNode super;
     RsvgLength x, y, width, height;
+    gboolean x_specified;
+    gboolean y_specified;
+    gboolean width_specified;
+    gboolean height_specified;
     GString *in;
     GString *result;
 
@@ -114,6 +118,29 @@ rsvg_filter_primitive_free (RsvgNode *self)
     g_string_free (primitive->result, TRUE);
 
     _rsvg_node_free (self);
+}
+
+static void
+filter_primitive_set_x_y_width_height_atts (RsvgFilterPrimitive *prim, RsvgPropertyBag *atts)
+{
+    const char *value;
+
+    if ((value = rsvg_property_bag_lookup (atts, "x"))) {
+        prim->x = _rsvg_css_parse_length (value);
+        prim->x_specified = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "y"))) {
+        prim->y = _rsvg_css_parse_length (value);
+        prim->y_specified = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "width"))) {
+        prim->width = _rsvg_css_parse_length (value);
+        prim->width_specified = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "height"))) {
+        prim->height = _rsvg_css_parse_length (value);
+        prim->height_specified = TRUE;
+    }
 }
 
 static void
@@ -144,26 +171,26 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
     rsvg_bbox_insert (&box, &otherbox);
 
     if (self != NULL)
-        if (self->x.factor != 'n' || self->y.factor != 'n' ||
-            self->width.factor != 'n' || self->height.factor != 'n') {
+        if (self->x_specified || self->y_specified ||
+            self->width_specified || self->height_specified) {
 
             rsvg_bbox_init (&otherbox, &ctx->paffine);
             otherbox.virgin = 0;
             if (ctx->filter->primitiveunits == objectBoundingBox)
                 _rsvg_push_view_box (ctx->ctx, 1., 1.);
-            if (self->x.factor != 'n')
+            if (self->x_specified)
                 otherbox.rect.x = _rsvg_css_normalize_length (&self->x, ctx->ctx, 'h');
             else
                 otherbox.rect.x = 0;
-            if (self->y.factor != 'n')
+            if (self->y_specified)
                 otherbox.rect.y = _rsvg_css_normalize_length (&self->y, ctx->ctx, 'v');
             else
                 otherbox.rect.y = 0;
-            if (self->width.factor != 'n')
+            if (self->width_specified)
                 otherbox.rect.width = _rsvg_css_normalize_length (&self->width, ctx->ctx, 'h');
             else
                 otherbox.rect.width = ctx->ctx->vb.rect.width;
-            if (self->height.factor != 'n')
+            if (self->height_specified)
                 otherbox.rect.height = _rsvg_css_normalize_length (&self->height, ctx->ctx, 'v');
             else
                 otherbox.rect.height = ctx->ctx->vb.rect.height;
@@ -1010,14 +1037,9 @@ rsvg_filter_primitive_blend_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPro
             g_string_assign (filter->in2, value);
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->super.result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+        
         if ((value = rsvg_property_bag_lookup (atts, "id")))
             rsvg_defs_register_name (ctx->priv->defs, value, &filter->super.super);
     }
@@ -1027,14 +1049,12 @@ RsvgNode *
 rsvg_new_filter_primitive_blend (void)
 {
     RsvgFilterPrimitiveBlend *filter;
-    filter = g_new (RsvgFilterPrimitiveBlend, 1);
+    filter = g_new0 (RsvgFilterPrimitiveBlend, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_BLEND);
     filter->mode = normal;
     filter->super.in = g_string_new ("none");
     filter->in2 = g_string_new ("none");
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->super.render = rsvg_filter_primitive_blend_render;
     filter->super.super.free = rsvg_filter_primitive_blend_free;
     filter->super.super.set_atts = rsvg_filter_primitive_blend_set_atts;
@@ -1215,14 +1235,9 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode * self,
             g_string_assign (filter->super.in, value);
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->super.result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
         if ((value = rsvg_property_bag_lookup (atts, "targetX"))) {
             has_target_x = 1;
             filter->targetx = atoi (value);
@@ -1289,12 +1304,10 @@ RsvgNode *
 rsvg_new_filter_primitive_convolve_matrix (void)
 {
     RsvgFilterPrimitiveConvolveMatrix *filter;
-    filter = g_new (RsvgFilterPrimitiveConvolveMatrix, 1);
+    filter = g_new0 (RsvgFilterPrimitiveConvolveMatrix, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_CONVOLVE_MATRIX);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->KernelMatrix = NULL;
     filter->divisor = 0;
     filter->bias = 0;
@@ -1927,14 +1940,9 @@ rsvg_filter_primitive_gaussian_blur_set_atts (RsvgNode * self,
             g_string_assign (filter->super.in, value);
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->super.result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
         if ((value = rsvg_property_bag_lookup (atts, "stdDeviation")))
             rsvg_css_parse_number_optional_number (value, &filter->sdx, &filter->sdy);
         if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -1946,12 +1954,10 @@ RsvgNode *
 rsvg_new_filter_primitive_gaussian_blur (void)
 {
     RsvgFilterPrimitiveGaussianBlur *filter;
-    filter = g_new (RsvgFilterPrimitiveGaussianBlur, 1);
+    filter = g_new0 (RsvgFilterPrimitiveGaussianBlur, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_GAUSSIAN_BLUR);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->sdx = 0;
     filter->sdy = 0;
     filter->super.render = rsvg_filter_primitive_gaussian_blur_render;
@@ -2013,7 +2019,7 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
 
     output_pixels = cairo_image_surface_get_data (output);
 
-    dx = _rsvg_css_normalize_length (&upself->dx, ctx->ctx, 'w');
+    dx = _rsvg_css_normalize_length (&upself->dx, ctx->ctx, 'h');
     dy = _rsvg_css_normalize_length (&upself->dy, ctx->ctx, 'v');
 
     ox = ctx->paffine.xx * dx + ctx->paffine.xy * dy;
@@ -2056,14 +2062,9 @@ rsvg_filter_primitive_offset_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPr
             g_string_assign (filter->super.in, value);
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->super.result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
         if ((value = rsvg_property_bag_lookup (atts, "dx")))
             filter->dx = _rsvg_css_parse_length (value);
         if ((value = rsvg_property_bag_lookup (atts, "dy")))
@@ -2077,12 +2078,10 @@ RsvgNode *
 rsvg_new_filter_primitive_offset (void)
 {
     RsvgFilterPrimitiveOffset *filter;
-    filter = g_new (RsvgFilterPrimitiveOffset, 1);
+    filter = g_new0 (RsvgFilterPrimitiveOffset, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_OFFSET);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->dy = _rsvg_css_parse_length ("0");
     filter->dx = _rsvg_css_parse_length ("0");
     filter->super.render = rsvg_filter_primitive_offset_render;
@@ -2159,14 +2158,9 @@ rsvg_filter_primitive_merge_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->super.result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
         if ((value = rsvg_property_bag_lookup (atts, "id")))
             rsvg_defs_register_name (ctx->priv->defs, value, &filter->super.super);
     }
@@ -2176,11 +2170,9 @@ RsvgNode *
 rsvg_new_filter_primitive_merge (void)
 {
     RsvgFilterPrimitiveMerge *filter;
-    filter = g_new (RsvgFilterPrimitiveMerge, 1);
+    filter = g_new0 (RsvgFilterPrimitiveMerge, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE);
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->super.render = rsvg_filter_primitive_merge_render;
     filter->super.super.free = rsvg_filter_primitive_merge_free;
 
@@ -2365,14 +2357,9 @@ rsvg_filter_primitive_color_matrix_set_atts (RsvgNode * self, RsvgHandle * ctx,
             g_string_assign (filter->super.in, value);
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->super.result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
         if ((value = rsvg_property_bag_lookup (atts, "values"))) {
             unsigned int i;
             double *temp = rsvg_css_parse_number_list (value, &listlen);
@@ -2464,12 +2451,10 @@ RsvgNode *
 rsvg_new_filter_primitive_color_matrix (void)
 {
     RsvgFilterPrimitiveColorMatrix *filter;
-    filter = g_new (RsvgFilterPrimitiveColorMatrix, 1);
+    filter = g_new0 (RsvgFilterPrimitiveColorMatrix, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_COLOR_MATRIX);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->KernelMatrix = NULL;
     filter->super.render = rsvg_filter_primitive_color_matrix_render;
     filter->super.super.free = rsvg_filter_primitive_color_matrix_free;
@@ -2681,14 +2666,9 @@ rsvg_filter_primitive_component_transfer_set_atts (RsvgNode * self, RsvgHandle *
             g_string_assign (filter->super.result, value);
         if ((value = rsvg_property_bag_lookup (atts, "in")))
             g_string_assign (filter->super.in, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
         if ((value = rsvg_property_bag_lookup (atts, "id")))
             rsvg_defs_register_name (ctx->priv->defs, value, &filter->super.super);
     }
@@ -2699,12 +2679,10 @@ rsvg_new_filter_primitive_component_transfer (void)
 {
     RsvgFilterPrimitiveComponentTransfer *filter;
 
-    filter = g_new (RsvgFilterPrimitiveComponentTransfer, 1);
+    filter = g_new0 (RsvgFilterPrimitiveComponentTransfer, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPONENT_TRANSFER);
     filter->super.result = g_string_new ("none");
     filter->super.in = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->super.render = rsvg_filter_primitive_component_transfer_render;
     filter->super.super.free = rsvg_filter_primitive_free;
     filter->super.super.set_atts = rsvg_filter_primitive_component_transfer_set_atts;
@@ -2889,14 +2867,9 @@ rsvg_filter_primitive_erode_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
             g_string_assign (filter->super.in, value);
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->super.result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
         if ((value = rsvg_property_bag_lookup (atts, "radius"))) {
             rsvg_css_parse_number_optional_number (value, &filter->rx, &filter->ry);
         }
@@ -2915,12 +2888,10 @@ RsvgNode *
 rsvg_new_filter_primitive_erode (void)
 {
     RsvgFilterPrimitiveErode *filter;
-    filter = g_new (RsvgFilterPrimitiveErode, 1);
+    filter = g_new0 (RsvgFilterPrimitiveErode, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_ERODE);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->rx = 0;
     filter->ry = 0;
     filter->mode = 0;
@@ -3132,14 +3103,9 @@ rsvg_filter_primitive_composite_set_atts (RsvgNode * self, RsvgHandle * ctx, Rsv
             g_string_assign (filter->in2, value);
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->super.result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
         if ((value = rsvg_property_bag_lookup (atts, "k1")))
             filter->k1 = g_ascii_strtod (value, NULL) * 255.;
         if ((value = rsvg_property_bag_lookup (atts, "k2")))
@@ -3157,14 +3123,12 @@ RsvgNode *
 rsvg_new_filter_primitive_composite (void)
 {
     RsvgFilterPrimitiveComposite *filter;
-    filter = g_new (RsvgFilterPrimitiveComposite, 1);
+    filter = g_new0 (RsvgFilterPrimitiveComposite, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPOSITE);
     filter->mode = COMPOSITE_MODE_OVER;
     filter->super.in = g_string_new ("none");
     filter->in2 = g_string_new ("none");
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->k1 = 0;
     filter->k2 = 0;
     filter->k3 = 0;
@@ -3234,14 +3198,9 @@ rsvg_filter_primitive_flood_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+        
         if ((value = rsvg_property_bag_lookup (atts, "id")))
             rsvg_defs_register_name (ctx->priv->defs, id = value, &filter->super);
         rsvg_parse_style_attrs (ctx, self->state, "feFlood", NULL, id, atts);
@@ -3252,11 +3211,10 @@ RsvgNode *
 rsvg_new_filter_primitive_flood (void)
 {
     RsvgFilterPrimitive *filter;
-    filter = g_new (RsvgFilterPrimitive, 1);
+    filter = g_new0 (RsvgFilterPrimitive, 1);
     _rsvg_node_init (&filter->super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_FLOOD);
     filter->in = g_string_new ("none");
     filter->result = g_string_new ("none");
-    filter->x.factor = filter->y.factor = filter->width.factor = filter->height.factor = 'n';
     filter->render = rsvg_filter_primitive_flood_render;
     filter->super.free = rsvg_filter_primitive_free;
     filter->super.set_atts = rsvg_filter_primitive_flood_set_atts;
@@ -3422,14 +3380,9 @@ rsvg_filter_primitive_displacement_map_set_atts (RsvgNode * self, RsvgHandle * c
             g_string_assign (filter->in2, value);
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->super.result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+        
         if ((value = rsvg_property_bag_lookup (atts, "xChannelSelector")))
             filter->xChannelSelector = (value)[0];
         if ((value = rsvg_property_bag_lookup (atts, "yChannelSelector")))
@@ -3445,13 +3398,11 @@ RsvgNode *
 rsvg_new_filter_primitive_displacement_map (void)
 {
     RsvgFilterPrimitiveDisplacementMap *filter;
-    filter = g_new (RsvgFilterPrimitiveDisplacementMap, 1);
+    filter = g_new0 (RsvgFilterPrimitiveDisplacementMap, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_DISPLACEMENT_MAP);
     filter->super.in = g_string_new ("none");
     filter->in2 = g_string_new ("none");
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->xChannelSelector = ' ';
     filter->yChannelSelector = ' ';
     filter->scale = 0;
@@ -3791,14 +3742,9 @@ rsvg_filter_primitive_turbulence_set_atts (RsvgNode * self, RsvgHandle * ctx,
             g_string_assign (filter->super.in, value);
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->super.result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+        
         if ((value = rsvg_property_bag_lookup (atts, "baseFrequency")))
             rsvg_css_parse_number_optional_number (value, &filter->fBaseFreqX, &filter->fBaseFreqY);
         if ((value = rsvg_property_bag_lookup (atts, "numOctaves")))
@@ -3818,12 +3764,10 @@ RsvgNode *
 rsvg_new_filter_primitive_turbulence (void)
 {
     RsvgFilterPrimitiveTurbulence *filter;
-    filter = g_new (RsvgFilterPrimitiveTurbulence, 1);
+    filter = g_new0 (RsvgFilterPrimitiveTurbulence, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_TURBULENCE);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->fBaseFreqX = 0;
     filter->fBaseFreqY = 0;
     filter->nNumOctaves = 1;
@@ -4030,14 +3974,9 @@ rsvg_filter_primitive_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
             filter->href = g_string_new (NULL);
             g_string_assign (filter->href, value);
         }
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+        
         if ((value = rsvg_property_bag_lookup (atts, "id")))
             rsvg_defs_register_name (ctx->priv->defs, value, &filter->super.super);
     }
@@ -4047,12 +3986,10 @@ RsvgNode *
 rsvg_new_filter_primitive_image (void)
 {
     RsvgFilterPrimitiveImage *filter;
-    filter = g_new (RsvgFilterPrimitiveImage, 1);
+    filter = g_new0 (RsvgFilterPrimitiveImage, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_IMAGE);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->super.render = rsvg_filter_primitive_image_render;
     filter->super.super.free = rsvg_filter_primitive_image_free;
     filter->super.super.set_atts = rsvg_filter_primitive_image_set_atts;
@@ -4596,14 +4533,9 @@ rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode * self, RsvgHandle * c
             g_string_assign (filter->super.in, value);
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->super.result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+        
         if ((value = rsvg_property_bag_lookup (atts, "kernelUnitLength")))
             rsvg_css_parse_number_optional_number (value, &filter->dx, &filter->dy);
         if ((value = rsvg_property_bag_lookup (atts, "lighting-color")))
@@ -4621,12 +4553,10 @@ RsvgNode *
 rsvg_new_filter_primitive_diffuse_lighting (void)
 {
     RsvgFilterPrimitiveDiffuseLighting *filter;
-    filter = g_new (RsvgFilterPrimitiveDiffuseLighting, 1);
+    filter = g_new0 (RsvgFilterPrimitiveDiffuseLighting, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_DIFFUSE_LIGHTING);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->surfaceScale = 1;
     filter->diffuseConstant = 1;
     filter->dx = 1;
@@ -4775,14 +4705,9 @@ rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode * self, RsvgHandle * 
             g_string_assign (filter->super.in, value);
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->super.result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+        
         if ((value = rsvg_property_bag_lookup (atts, "lighting-color")))
             filter->lightingcolor = rsvg_css_parse_color (value, 0);
         if ((value = rsvg_property_bag_lookup (atts, "specularConstant")))
@@ -4801,12 +4726,10 @@ RsvgNode *
 rsvg_new_filter_primitive_specular_lighting (void)
 {
     RsvgFilterPrimitiveSpecularLighting *filter;
-    filter = g_new (RsvgFilterPrimitiveSpecularLighting, 1);
+    filter = g_new0 (RsvgFilterPrimitiveSpecularLighting, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_SPECULAR_LIGHTING);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->surfaceScale = 1;
     filter->specularConstant = 1;
     filter->specularExponent = 1;
@@ -4900,14 +4823,9 @@ rsvg_filter_primitive_tile_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgProp
             g_string_assign (filter->super.in, value);
         if ((value = rsvg_property_bag_lookup (atts, "result")))
             g_string_assign (filter->super.result, value);
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            filter->super.x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            filter->super.y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            filter->super.width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            filter->super.height = _rsvg_css_parse_length (value);
+
+        filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+        
         if ((value = rsvg_property_bag_lookup (atts, "id")))
             rsvg_defs_register_name (ctx->priv->defs, value, &filter->super.super);
     }
@@ -4917,12 +4835,10 @@ RsvgNode *
 rsvg_new_filter_primitive_tile (void)
 {
     RsvgFilterPrimitiveTile *filter;
-    filter = g_new (RsvgFilterPrimitiveTile, 1);
+    filter = g_new0 (RsvgFilterPrimitiveTile, 1);
     _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_TILE);
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
-    filter->super.x.factor = filter->super.y.factor = filter->super.width.factor =
-        filter->super.height.factor = 'n';
     filter->super.render = rsvg_filter_primitive_tile_render;
     filter->super.super.free = rsvg_filter_primitive_free;
     filter->super.super.set_atts = rsvg_filter_primitive_tile_set_atts;

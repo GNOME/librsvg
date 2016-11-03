@@ -243,10 +243,26 @@ _rsvg_render_check_type (RsvgRender *render,
 #define _RSVG_RENDER_CIC(render, render_type, RenderCType) \
   ((RenderCType*) _rsvg_render_check_type ((render), (render_type)))
 
+typedef enum {
+    LENGTH_UNIT_DEFAULT,
+    LENGTH_UNIT_PERCENT,
+    LENGTH_UNIT_FONT_EM,
+    LENGTH_UNIT_FONT_EX,
+    LENGTH_UNIT_INCH,
+    LENGTH_UNIT_RELATIVE_LARGER,
+    LENGTH_UNIT_RELATIVE_SMALLER
+} LengthUnit;
+
 typedef struct {
     double length;
-    char factor;
+    LengthUnit unit;
 } RsvgLength;
+
+typedef enum {
+    LENGTH_DIR_HORIZONTAL,
+    LENGTH_DIR_VERTICAL,
+    LENGTH_DIR_BOTH
+} LengthDir;
 
 typedef struct {
     cairo_rectangle_t rect;
