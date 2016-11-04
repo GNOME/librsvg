@@ -487,9 +487,49 @@ mod tests {
                          moveto (10.0, 20.0)
                      ]);
 
+        test_parser ("M -10 -20",
+                     &vec![
+                         moveto (-10.0, -20.0)
+                     ]);
+
         test_parser ("M .10 0.20",
                      &vec![
                          moveto (0.10, 0.20)
+                     ]);
+
+        test_parser ("M -.10 -0.20",
+                     &vec![
+                         moveto (-0.10, -0.20)
+                     ]);
+
+        test_parser ("M-.10-0.20",
+                     &vec![
+                         moveto (-0.10, -0.20)
+                     ]);
+
+        test_parser ("M.10.20",
+                     &vec![
+                         moveto (0.10, 0.20)
+                     ]);
+
+        test_parser ("M .10E1 .20e-4",
+                     &vec![
+                         moveto (1.0, 0.000020)
+                     ]);
+
+        test_parser ("M-.10E1-.20",
+                     &vec![
+                         moveto (-1.0, -0.20)
+                     ]);
+
+        test_parser ("M10.10E2 -0.20e3",
+                     &vec![
+                         moveto (1010.0, -200.0)
+                     ]);
+
+        test_parser ("M-10.10E2-0.20e-3",
+                     &vec![
+                         moveto (-1010.0, -0.00020)
                      ]);
     }
 
