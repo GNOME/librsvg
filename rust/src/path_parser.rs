@@ -5,7 +5,7 @@ use path_builder::*;
 
 extern crate cairo;
 
-struct Parser<'external> {
+pub struct PathParser<'external> {
     path_str: &'external str,
     chars_enumerator: Enumerate<Chars<'external>>,
     lookahead: Option <char>, /* None if we are in EOF */
@@ -20,9 +20,9 @@ struct Parser<'external> {
     current_y: f64
 }
 
-impl<'external> Parser<'external> {
-    pub fn new (builder: &'external mut RsvgPathBuilder, path_str: &'external str) -> Parser<'external> {
-        Parser {
+impl<'external> PathParser<'external> {
+    pub fn new (builder: &'external mut RsvgPathBuilder, path_str: &'external str) -> PathParser<'external> {
+        PathParser {
             path_str: path_str,
             chars_enumerator: path_str.chars ().enumerate (),
             lookahead: None,
@@ -352,44 +352,11 @@ fn char_to_digit (c: char) -> i32 {
 }
 
 
-
-fn print_error (parser: &Parser) {
-    let prefix = "Error in \"";
-
-    println! ("");
-
-    println! ("{}{}\"", prefix, &parser.path_str);
-
-    for _ in 0 .. (prefix.len() + parser.current_pos) {
-        print! (" ");
-    }
-
-    println! ("^ pos {}", parser.current_pos);
-    println! ("{}", &parser.error_message);
-}
-
-fn parse_path (path_str: &str) -> RsvgPathBuilder {
-    let mut builder = RsvgPathBuilder::new ();
-
-    {
-        let mut parser = Parser::new (&mut builder, path_str);
-        if parser.parse () {
-            /* all okay */
-        } else {
-            print_error (&parser);
-
-            /* FIXME: we aren't returning errors at all.  Just return the
-             * parsed path up to here, per the spec.
-             */
-        }
-    }
-
-    builder
-}
-
-
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use path_builder::*;
+
     extern crate cairo;
 
     fn path_segment_vectors_are_equal (a: &Vec<cairo::PathSegment>,
@@ -456,9 +423,36 @@ mod tests {
         true
     }
 
+    fn print_error (parser: &PathParser) {
+        let prefix = "Error in \"";
+
+        println! ("");
+        println! ("{}{}\"", prefix, &parser.path_str);
+
+        for _ in 0 .. (prefix.len() + parser.current_pos) {
+            print! (" ");
+        }
+
+        println! ("^ pos {}", parser.current_pos);
+        println! ("{}", &parser.error_message);
+    }
+
+    fn parse_path (path_str: &str) -> RsvgPathBuilder {
+        let mut builder = RsvgPathBuilder::new ();
+
+        {
+            let mut parser = PathParser::new (&mut builder, path_str);
+            if !parser.parse () {
+                print_error (&parser);
+            }
+        }
+
+        builder
+    }
+
     fn test_parser (path_str: &str,
                     expected_segments: &Vec<cairo::PathSegment>) {
-        let builder = super::parse_path (path_str);
+        let builder = parse_path (path_str);
         let segments = builder.get_path_segments ();
 
         assert! (path_segment_vectors_are_equal (expected_segments, segments));
