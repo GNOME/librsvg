@@ -350,7 +350,7 @@ impl<'external> PathParser<'external> {
     fn moveto_drawto_command_group (&mut self, is_initial_moveto: bool) -> bool {
         if self.moveto (is_initial_moveto) {
             return self.optional_whitespace () &&
-                true; // FIXME self.optional_drawto_commands ();
+            { println! ("w00p"); true }; // FIXME self.optional_drawto_commands ();
         } else {
             false
         }
@@ -689,6 +689,34 @@ mod tests {
                          moveto (10.0, 20.0),
                          lineto (40.0, 60.0),
                          lineto (90.0, 120.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_absolute_moveto_moveto () {
+        test_parser ("M10 20 M 30 40",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         moveto (30.0, 40.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_relative_moveto_moveto () {
+        test_parser ("m10 20 m 30 40",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         moveto (40.0, 60.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_relative_moveto_lineto_moveto () {
+        test_parser ("m10 20 30 40 m 50 60",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (40.0, 60.0),
+                         moveto (80.0, 120.0)
                      ]);
     }
 }
