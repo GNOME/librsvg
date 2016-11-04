@@ -534,6 +534,59 @@ mod tests {
     }
 
     #[test]
+    fn path_parser_handles_numbers_with_comma () {
+        test_parser ("M 10, 20",
+                     &vec![
+                         moveto (10.0, 20.0)
+                     ]);
+
+        test_parser ("M -10,-20",
+                     &vec![
+                         moveto (-10.0, -20.0)
+                     ]);
+
+        test_parser ("M.10    ,    0.20",
+                     &vec![
+                         moveto (0.10, 0.20)
+                     ]);
+
+        test_parser ("M -.10, -0.20   ",
+                     &vec![
+                         moveto (-0.10, -0.20)
+                     ]);
+
+        test_parser ("M-.10-0.20",
+                     &vec![
+                         moveto (-0.10, -0.20)
+                     ]);
+
+        test_parser ("M.10.20",
+                     &vec![
+                         moveto (0.10, 0.20)
+                     ]);
+
+        test_parser ("M .10E1,.20e-4",
+                     &vec![
+                         moveto (1.0, 0.000020)
+                     ]);
+
+        test_parser ("M-.10E-2,-.20",
+                     &vec![
+                         moveto (-0.0010, -0.20)
+                     ]);
+
+        test_parser ("M10.10E2,-0.20e3",
+                     &vec![
+                         moveto (1010.0, -200.0)
+                     ]);
+
+        test_parser ("M-10.10E2,-0.20e-3",
+                     &vec![
+                         moveto (-1010.0, -0.00020)
+                     ]);
+    }
+
+    #[test]
     fn path_parser_handles_single_moveto () {
         test_parser ("M 10 20",
                      &vec![
@@ -565,7 +618,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_absolute_moveto_with_implicit_linetos () {
+    fn path_parser_handles_absolute_moveto_with_implicit_lineto () {
         test_parser ("M10 20 30 40",
                      &vec![
                          moveto (10.0, 20.0),
@@ -574,11 +627,31 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_relative_moveto_with_implicit_linetos () {
+    fn path_parser_handles_relative_moveto_with_implicit_lineto () {
         test_parser ("m10 20 30 40",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (40.0, 60.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_absolute_moveto_with_implicit_linetos () {
+        test_parser ("M10 20 30 40 50 60",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (30.0, 40.0),
+                         lineto (50.0, 60.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_relative_moveto_with_implicit_linetos () {
+        test_parser ("m10 20 30 40 50 60",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (40.0, 60.0),
+                         lineto (90.0, 120.0)
                      ]);
     }
 }
