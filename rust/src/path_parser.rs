@@ -20,6 +20,31 @@ pub struct PathParser<'external> {
     current_y: f64
 }
 
+/* This is a recursive descent parser for path data in SVG files,
+ * as specified in https://www.w3.org/TR/SVG/paths.html#PathDataBNF
+ *
+ * Some peculiarities:
+ * 
+ * - SVG allows optional commas inside coordiante pairs, and between 
+ * coordinate pairs.  So, for example, these are equivalent:
+ *
+ *     M 10 20 30 40
+ *     M 10, 20 30, 40
+ *     M 10, 20, 30, 40
+ *
+ * - Whitespace is optional.  These are equivalent:
+ *
+ *     M10,20 30,40
+ *     M10,20,30,40
+ *
+ *   These are also equivalent:
+ *
+ *     M-10,20-30-40
+ *     M -10 20 -30 -40
+ *
+ *     M.1-2,3E2-4
+ *     M 0.1 -2 300 -4
+ */
 impl<'external> PathParser<'external> {
     pub fn new (builder: &'external mut RsvgPathBuilder, path_str: &'external str) -> PathParser<'external> {
         PathParser {
@@ -624,6 +649,18 @@ mod tests {
                          moveto (10.0, 20.0),
                          lineto (30.0, 40.0)
                      ]);
+
+        test_parser ("M10,20,30,40",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (30.0, 40.0)
+                     ]);
+
+        test_parser ("M.1-2,3E2-4",
+                     &vec![
+                         moveto (0.1, -2.0),
+                         lineto (300.0, -4.0)
+                     ]);
     }
 
     #[test]
@@ -637,7 +674,7 @@ mod tests {
 
     #[test]
     fn path_parser_handles_absolute_moveto_with_implicit_linetos () {
-        test_parser ("M10 20 30 40 50 60",
+        test_parser ("M10,20 30,40,50 60",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (30.0, 40.0),
