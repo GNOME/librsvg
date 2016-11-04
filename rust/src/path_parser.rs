@@ -110,6 +110,16 @@ impl<'external> PathParser<'external> {
         }
     }
 
+    fn lookahead_is (&self, c: char) -> bool {
+        if let Some (x) = self.lookahead {
+            if x == c {
+                return true;
+            }
+        }
+
+        false
+    }
+
     fn lookahead_is_digit (&self, d: &mut char) -> bool {
         if let Some (c) = self.lookahead {
             if c.is_digit (10) {
@@ -144,7 +154,7 @@ impl<'external> PathParser<'external> {
 
         let mut c: char = ' ';
 
-        if self.lookahead_is_digit (&mut c) {
+        if self.lookahead_is_digit (&mut c) || self.lookahead_is ('.') {
             /* Integer part */
 
             while self.lookahead_is_digit (&mut c) {
@@ -216,16 +226,6 @@ impl<'external> PathParser<'external> {
         }
 
         None
-    }
-
-    fn lookahead_is (&self, c: char) -> bool {
-        if let Some (x) = self.lookahead {
-            if x == c {
-                return true;
-            }
-        }
-
-        false
     }
 
     fn emit_line_to (&mut self, absolute: bool, x: f64, y: f64) {
@@ -478,6 +478,19 @@ mod tests {
     fn path_parser_handles_empty_data () {
         test_parser ("",
                      &Vec::<cairo::PathSegment>::new ());
+    }
+
+    #[test]
+    fn path_parser_handles_numbers () {
+        test_parser ("M 10 20",
+                     &vec![
+                         moveto (10.0, 20.0)
+                     ]);
+
+        test_parser ("M .10 0.20",
+                     &vec![
+                         moveto (0.10, 0.20)
+                     ]);
     }
 
     #[test]
