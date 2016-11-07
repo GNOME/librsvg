@@ -24,8 +24,8 @@ pub struct PathParser<'external> {
  * as specified in https://www.w3.org/TR/SVG/paths.html#PathDataBNF
  *
  * Some peculiarities:
- * 
- * - SVG allows optional commas inside coordiante pairs, and between 
+ *
+ * - SVG allows optional commas inside coordiante pairs, and between
  * coordinate pairs.  So, for example, these are equivalent:
  *
  *     M 10 20 30 40
@@ -67,7 +67,7 @@ impl<'external> PathParser<'external> {
         self.getchar ();
 
         return self.optional_whitespace () &&
-            self.moveto_drawto_command_groups () && 
+            self.moveto_drawto_command_groups () &&
             self.optional_whitespace ();
     }
 
@@ -328,7 +328,7 @@ impl<'external> PathParser<'external> {
     }
 
     fn moveto (&mut self, is_initial_moveto: bool) -> bool {
-        if self.lookahead_is ('M') || self.lookahead_is ('m') { 
+        if self.lookahead_is ('M') || self.lookahead_is ('m') {
             let absolute: bool;
 
             if self.match_char ('M') {
@@ -373,7 +373,7 @@ impl<'external> PathParser<'external> {
         if self.drawto_command () {
             loop {
                 self.optional_whitespace ();
-                if !self.optional_drawto_commands () {
+                if !self.drawto_command () {
                     break;
                 }
             }
@@ -399,6 +399,25 @@ impl<'external> PathParser<'external> {
     }
 
     fn line_to (&mut self) -> bool {
+        if self.lookahead_is ('L') || self.lookahead_is ('l') {
+            let absolute: bool;
+
+            if self.match_char ('L') {
+                absolute = true;
+            } else {
+                assert! (self.match_char ('l'));
+                absolute = false;
+            }
+
+            self.optional_whitespace ();
+
+            if self.lineto_argument_sequence (absolute) {
+                return true;
+            } else {
+                return self.error ("Expected coordinate pair after lineto");
+            }
+        }
+
         false
     }
 
@@ -776,6 +795,36 @@ mod tests {
                          moveto (10.0, 20.0),
                          lineto (40.0, 60.0),
                          moveto (90.0, 120.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_absolute_moveto_lineto () {
+        test_parser ("M10 20 L30,40",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (30.0, 40.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_relative_moveto_lineto () {
+        test_parser ("m10 20 l30,40",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (40.0, 60.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_relative_moveto_lineto_lineto_abs_lineto () {
+        test_parser ("m10 20 30 40,l30,40,50 60L200,300",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (40.0, 60.0),
+                         lineto (70.0, 100.0),
+                         lineto (120.0, 160.0),
+                         lineto (200.0, 300.0)
                      ]);
     }
 }
