@@ -348,7 +348,7 @@ impl<'external> PathParser<'external> {
     fn moveto_drawto_command_group (&mut self, is_initial_moveto: bool) -> bool {
         if self.moveto (is_initial_moveto) {
             return self.optional_whitespace () &&
-            { println! ("w00p"); true }; // FIXME self.optional_drawto_commands ();
+                self.optional_drawto_commands ();
         } else {
             false
         }
@@ -367,6 +367,67 @@ impl<'external> PathParser<'external> {
         } else {
             self.error ("Expected moveto command")
         }
+    }
+
+    fn optional_drawto_commands (&mut self) -> bool {
+        if self.drawto_command () {
+            loop {
+                self.optional_whitespace ();
+                if !self.optional_drawto_commands () {
+                    break;
+                }
+            }
+        }
+
+        true
+    }
+
+    fn drawto_command (&mut self) -> bool {
+        return self.close_path () ||
+            self.line_to () ||
+            self.horizontal_line_to () ||
+            self.vertical_line_to () ||
+            self.curve_to () ||
+            self.smooth_curve_to () ||
+            self.quadratic_bezier_curve_to () ||
+            self.smooth_quadratic_bezier_curve_to () ||
+            self.elliptical_arc ();
+    }
+
+    fn close_path (&mut self) -> bool {
+        false
+    }
+
+    fn line_to (&mut self) -> bool {
+        false
+    }
+
+    fn horizontal_line_to (&mut self) -> bool {
+        false
+    }
+
+    fn vertical_line_to (&mut self) -> bool {
+        false
+    }
+
+    fn curve_to (&mut self) -> bool {
+        false
+    }
+
+    fn smooth_curve_to (&mut self) -> bool {
+        false
+    }
+
+    fn quadratic_bezier_curve_to (&mut self) -> bool {
+        false
+    }
+
+    fn smooth_quadratic_bezier_curve_to (&mut self) -> bool {
+        false
+    }
+
+    fn elliptical_arc (&mut self) -> bool {
+        false
     }
 }
 
@@ -714,7 +775,7 @@ mod tests {
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (40.0, 60.0),
-                         moveto (80.0, 120.0)
+                         moveto (90.0, 120.0)
                      ]);
     }
 }
