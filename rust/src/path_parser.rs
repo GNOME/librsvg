@@ -128,11 +128,9 @@ impl<'external> PathParser<'external> {
 
     fn optional_comma_whitespace (&mut self) -> bool {
         assert! (self.optional_whitespace ());
-        if self.match_char (',') {
-            self.optional_whitespace ()
-        } else {
-            true
-        }
+        self.match_char (',');
+        assert! (self.optional_whitespace ());
+        true
     }
 
     fn lookahead_is (&self, c: char) -> bool {
