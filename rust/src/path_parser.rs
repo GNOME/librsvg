@@ -261,32 +261,36 @@ impl<'external> PathParser<'external> {
         None
     }
 
-    fn set_current_and_reflection_to_same (&mut self, x: f64, y: f64) {
+    fn set_current_point (&mut self, x: f64, y: f64) {
         self.current_x = x;
         self.current_y = y;
         self.reflection_x = self.current_x;
         self.reflection_y = self.current_y;
     }
 
+    fn set_cubic_reflection_and_current_point (&mut self, x3: f64, y3: f64, x4: f64, y4: f64) {
+        self.reflection_x = x3;
+        self.reflection_y = y3;
+        self.current_x = x4;
+        self.current_y = y4;
+    }
+
     fn emit_move_to (&mut self, x: f64, y: f64) {
-        self.set_current_and_reflection_to_same (x, y);
+        self.set_current_point (x, y);
 
         self.builder.move_to (self.current_x, self.current_y);
         println! ("emitting moveto {} {}", self.current_x, self.current_y);
     }
 
     fn emit_line_to (&mut self, x: f64, y: f64) {
-        self.set_current_and_reflection_to_same (x, y);
+        self.set_current_point (x, y);
 
         self.builder.line_to (self.current_x, self.current_y);
         println! ("emitting lineto {} {}", self.current_x, self.current_y);
     }
 
     fn emit_curve_to (&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
-        self.current_x = x4;
-        self.current_y = y4;
-        self.reflection_x = x3;
-        self.reflection_y = y3;
+        self.set_cubic_reflection_and_current_point (x3, y3, x4, y4);
 
         self.builder.curve_to (x2, y2, x3, y3, x4, y4);
         println! ("emitting curveto ({} {}) ({} {}) ({} {})", x2, y2, x3, y3, x4, y4);
