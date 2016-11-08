@@ -20,11 +20,11 @@ pub struct PathParser<'external> {
     current_x: f64,
     current_y: f64,
 
-    /* Last control point from previous curve command, used to reflect
-     * the new control point for smooth curve commands.
+    /* Last control point from previous cubic curve command, used to reflect
+     * the new control point for smooth cubic curve commands.
      */
-    reflection_x: f64,
-    reflection_y: f64
+    cubic_reflection_x: f64,
+    cubic_reflection_y: f64
 }
 
 /* This is a recursive descent parser for path data in SVG files,
@@ -68,8 +68,8 @@ impl<'external> PathParser<'external> {
             current_x: 0.0,
             current_y: 0.0,
 
-            reflection_x: 0.0,
-            reflection_y: 0.0
+            cubic_reflection_x: 0.0,
+            cubic_reflection_y: 0.0
         }
     }
 
@@ -264,13 +264,13 @@ impl<'external> PathParser<'external> {
     fn set_current_point (&mut self, x: f64, y: f64) {
         self.current_x = x;
         self.current_y = y;
-        self.reflection_x = self.current_x;
-        self.reflection_y = self.current_y;
+        self.cubic_reflection_x = self.current_x;
+        self.cubic_reflection_y = self.current_y;
     }
 
     fn set_cubic_reflection_and_current_point (&mut self, x3: f64, y3: f64, x4: f64, y4: f64) {
-        self.reflection_x = x3;
-        self.reflection_y = y3;
+        self.cubic_reflection_x = x3;
+        self.cubic_reflection_y = y3;
         self.current_x = x4;
         self.current_y = y4;
     }
@@ -609,8 +609,8 @@ impl<'external> PathParser<'external> {
                     y4 += self.current_y;
                 }
 
-                let (x2, y2) = (self.current_x + self.current_x - self.reflection_x,
-                                self.current_y + self.current_y - self.reflection_y);
+                let (x2, y2) = (self.current_x + self.current_x - self.cubic_reflection_x,
+                                self.current_y + self.current_y - self.cubic_reflection_y);
 
                 self.emit_curve_to (x2, y2, x3, y3, x4, y4);
 
