@@ -473,7 +473,55 @@ impl<'external> PathParser<'external> {
         false
     }
 
+    fn vertical_lineto_argument_sequence (&mut self, absolute: bool) -> bool {
+        if let Some (mut y) = self.number () {
+            let x = self.current_x;
+
+            if !absolute {
+                y += self.current_y;
+            }
+
+            self.emit_line_to (x, y);
+
+            self.whitespace ();
+
+            if self.lookahead_is (',') {
+                assert! (self.match_char (','));
+                assert! (self.optional_whitespace ());
+
+                if !self.vertical_lineto_argument_sequence (absolute) {
+                    self.error ("Expected offset after comma");
+                    return false;
+                }
+            }
+
+            self.vertical_lineto_argument_sequence (absolute);
+            true
+        } else {
+            false
+        }
+    }
+
     fn vertical_line_to (&mut self) -> bool {
+        if self.lookahead_is ('V') || self.lookahead_is ('v') {
+            let absolute: bool;
+
+            if self.match_char ('V') {
+                absolute = true;
+            } else {
+                assert! (self.match_char ('v'));
+                absolute = false;
+            }
+
+            self.optional_whitespace ();
+
+            if self.vertical_lineto_argument_sequence (absolute) {
+                return true;
+            } else {
+                return self.error ("Expected offset after vertical lineto");
+            }
+        }
+
         false
     }
 
@@ -905,6 +953,38 @@ mod tests {
                          lineto (40.0, 20.0),
                          lineto (80.0, 20.0),
                          lineto (30.0, 20.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_vertical_lineto () {
+        test_parser ("M10 20 V30",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (10.0, 30.0)
+                     ]);
+
+        test_parser ("M10 20 V30 40",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (10.0, 30.0),
+                         lineto (10.0, 40.0)
+                     ]);
+
+        test_parser ("M10 20 V30,40-50",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (10.0, 30.0),
+                         lineto (10.0, 40.0),
+                         lineto (10.0, -50.0),
+                     ]);
+
+        test_parser ("m10 20 v30,40-50",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (10.0, 50.0),
+                         lineto (10.0, 90.0),
+                         lineto (10.0, 40.0)
                      ]);
     }
 }
