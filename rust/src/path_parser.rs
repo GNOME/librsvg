@@ -24,7 +24,13 @@ pub struct PathParser<'external> {
      * the new control point for smooth cubic curve commands.
      */
     cubic_reflection_x: f64,
-    cubic_reflection_y: f64
+    cubic_reflection_y: f64,
+
+    /* Last control point from previous quadratic curve command, used to reflect
+     * the new control point for smooth quadratic curve commands.
+     */
+    quadratic_reflection_x: f64,
+    quadratic_reflection_y: f64,
 }
 
 /* This is a recursive descent parser for path data in SVG files,
@@ -69,7 +75,10 @@ impl<'external> PathParser<'external> {
             current_y: 0.0,
 
             cubic_reflection_x: 0.0,
-            cubic_reflection_y: 0.0
+            cubic_reflection_y: 0.0,
+
+            quadratic_reflection_x: 0.0,
+            quadratic_reflection_y: 0.0
         }
     }
 
@@ -264,15 +273,23 @@ impl<'external> PathParser<'external> {
     fn set_current_point (&mut self, x: f64, y: f64) {
         self.current_x = x;
         self.current_y = y;
+
         self.cubic_reflection_x = self.current_x;
         self.cubic_reflection_y = self.current_y;
+
+        self.quadratic_reflection_x = self.current_x;
+        self.quadratic_reflection_y = self.current_y;
     }
 
     fn set_cubic_reflection_and_current_point (&mut self, x3: f64, y3: f64, x4: f64, y4: f64) {
         self.cubic_reflection_x = x3;
         self.cubic_reflection_y = y3;
+
         self.current_x = x4;
         self.current_y = y4;
+
+        self.quadratic_reflection_x = self.current_x;
+        self.quadratic_reflection_y = self.current_y;
     }
 
     fn emit_move_to (&mut self, x: f64, y: f64) {
