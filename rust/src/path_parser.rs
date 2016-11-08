@@ -251,22 +251,22 @@ impl<'external> PathParser<'external> {
         None
     }
 
-    fn emit_line_to (&mut self, absolute: bool, x: f64, y: f64) {
-        if absolute {
-            self.current_x = x;
-            self.current_y = y;
-        } else {
-            self.current_x += x;
-            self.current_y += y;
-        }
+    fn emit_line_to (&mut self, x: f64, y: f64) {
+        self.current_x = x;
+        self.current_y = y;
 
         self.builder.line_to (self.current_x, self.current_y);
         println! ("emitting lineto {} {}", self.current_x, self.current_y);
     }
 
     fn lineto_argument_sequence (&mut self, absolute: bool) -> bool {
-        if let Some ((x, y)) = self.coordinate_pair () {
-            self.emit_line_to (absolute, x, y);
+        if let Some ((mut x, mut y)) = self.coordinate_pair () {
+            if !absolute {
+                x += self.current_x;
+                y += self.current_y;
+            }
+
+            self.emit_line_to (x, y);
 
             self.whitespace ();
 
@@ -421,7 +421,55 @@ impl<'external> PathParser<'external> {
         false
     }
 
+    fn horizontal_lineto_argument_sequence (&mut self, absolute: bool) -> bool {
+        if let Some (mut x) = self.number () {
+            if !absolute {
+                x += self.current_x;
+            }
+
+            let y = self.current_y;
+
+            self.emit_line_to (x, y);
+
+            self.whitespace ();
+
+            if self.lookahead_is (',') {
+                assert! (self.match_char (','));
+                assert! (self.optional_whitespace ());
+
+                if !self.horizontal_lineto_argument_sequence (absolute) {
+                    self.error ("Expected offset after comma");
+                    return false;
+                }
+            }
+
+            self.horizontal_lineto_argument_sequence (absolute);
+            true
+        } else {
+            false
+        }
+    }
+
     fn horizontal_line_to (&mut self) -> bool {
+        if self.lookahead_is ('H') || self.lookahead_is ('h') {
+            let absolute: bool;
+
+            if self.match_char ('H') {
+                absolute = true;
+            } else {
+                assert! (self.match_char ('h'));
+                absolute = false;
+            }
+
+            self.optional_whitespace ();
+
+            if self.horizontal_lineto_argument_sequence (absolute) {
+                return true;
+            } else {
+                return self.error ("Expected offset after horizontal lineto");
+            }
+        }
+
         false
     }
 
@@ -825,6 +873,38 @@ mod tests {
                          lineto (70.0, 100.0),
                          lineto (120.0, 160.0),
                          lineto (200.0, 300.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_horizontal_lineto () {
+        test_parser ("M10 20 H30",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (30.0, 20.0)
+                     ]);
+
+        test_parser ("M10 20 H30 40",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (30.0, 20.0),
+                         lineto (40.0, 20.0)
+                     ]);
+
+        test_parser ("M10 20 H30,40-50",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (30.0, 20.0),
+                         lineto (40.0, 20.0),
+                         lineto (-50.0, 20.0),
+                     ]);
+
+        test_parser ("m10 20 h30,40-50",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (40.0, 20.0),
+                         lineto (80.0, 20.0),
+                         lineto (30.0, 20.0)
                      ]);
     }
 }
