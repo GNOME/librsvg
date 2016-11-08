@@ -342,37 +342,33 @@ impl<'external> PathParser<'external> {
         self.subpath_start_y = self.current_y;
 
         self.builder.move_to (self.current_x, self.current_y);
-        println! ("emitting moveto {} {}", self.current_x, self.current_y);
     }
 
     fn emit_line_to (&mut self, x: f64, y: f64) {
         self.set_current_point (x, y);
 
         self.builder.line_to (self.current_x, self.current_y);
-        println! ("emitting lineto {} {}", self.current_x, self.current_y);
     }
 
     fn emit_curve_to (&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
         self.set_cubic_reflection_and_current_point (x3, y3, x4, y4);
 
         self.builder.curve_to (x2, y2, x3, y3, x4, y4);
-        println! ("emitting curveto ({} {}) ({} {}) ({} {})", x2, y2, x3, y3, x4, y4);
     }
 
     fn emit_quadratic_curve_to (&mut self, a: f64, b: f64, c: f64, d: f64) {
         /* raise quadratic Bézier to cubic */
 
-        let x2 = (self.current_x + 2.0 * a) / 3.0; // (50 + 2*70) / 3
-        let y2 = (self.current_y + 2.0 * b) / 3.0; // (60 + 2*80) / 3
-        let x4 = c;                                // 70
-        let y4 = d;                                // 80
-        let x3 = (x4 + 2.0 * a) / 3.0;             // (70 + 2*70) / 3
-        let y3 = (y4 + 2.0 * b) / 3.0;             // (80 + 2*80) / 3
+        let x2 = (self.current_x + 2.0 * a) / 3.0;
+        let y2 = (self.current_y + 2.0 * b) / 3.0;
+        let x4 = c;
+        let y4 = d;
+        let x3 = (x4 + 2.0 * a) / 3.0;
+        let y3 = (y4 + 2.0 * b) / 3.0;
 
         self.set_quadratic_reflection_and_current_point (a, b, c, d);
 
         self.builder.curve_to (x2, y2, x3, y3, x4, y4);
-        println! ("emitting curveto ({} {}) ({} {}) ({} {})", x2, y2, x3, y3, x4, y4);
     }
 
     fn emit_arc (&mut self, rx: f64, ry: f64, x_axis_rotation: f64, large_arc: bool, sweep: bool, x: f64, y: f64) {
@@ -1028,7 +1024,6 @@ mod tests {
                 match *seg1 {
                     cairo::PathSegment::MoveTo ((x, y)) => {
                         if let cairo::PathSegment::MoveTo ((ox, oy)) = *seg2 {
-                            println! ("{} {} {} {}", x, y, ox, oy);
                             if (x, y) != (ox, oy) {
                                 return false;
                             }
@@ -1039,7 +1034,6 @@ mod tests {
 
                     cairo::PathSegment::LineTo ((x, y)) => {
                         if let cairo::PathSegment::LineTo ((ox, oy)) = *seg2 {
-                            println! ("{} {} {} {}", x, y, ox, oy);
                             if (x, y) != (ox, oy) {
                                 return false;
                             }
