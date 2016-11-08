@@ -31,6 +31,12 @@ pub struct PathParser<'external> {
      */
     quadratic_reflection_x: f64,
     quadratic_reflection_y: f64,
+
+    /* Start point of current subpath (i.e. position of last moveto);
+     * used for closepath.
+     */
+    subpath_start_x: f64,
+    subpath_start_y: f64
 }
 
 /* This is a recursive descent parser for path data in SVG files,
@@ -78,7 +84,10 @@ impl<'external> PathParser<'external> {
             cubic_reflection_y: 0.0,
 
             quadratic_reflection_x: 0.0,
-            quadratic_reflection_y: 0.0
+            quadratic_reflection_y: 0.0,
+
+            subpath_start_x: 0.0,
+            subpath_start_y: 0.0
         }
     }
 
@@ -306,6 +315,9 @@ impl<'external> PathParser<'external> {
     fn emit_move_to (&mut self, x: f64, y: f64) {
         self.set_current_point (x, y);
 
+        self.subpath_start_x = self.current_x;
+        self.subpath_start_y = self.current_y;
+
         self.builder.move_to (self.current_x, self.current_y);
         println! ("emitting moveto {} {}", self.current_x, self.current_y);
     }
@@ -338,6 +350,13 @@ impl<'external> PathParser<'external> {
 
         self.builder.curve_to (x2, y2, x3, y3, x4, y4);
         println! ("emitting curveto ({} {}) ({} {}) ({} {})", x2, y2, x3, y3, x4, y4);
+    }
+
+    fn emit_close_path (&mut self) {
+        let (x, y) = (self.subpath_start_x, self.subpath_start_y);
+        self.set_current_point (x, y);
+
+        self.builder.close_path ();
     }
 
     fn lineto_argument_sequence (&mut self, absolute: bool) -> bool {
@@ -468,7 +487,12 @@ impl<'external> PathParser<'external> {
     }
 
     fn close_path (&mut self) -> bool {
-        false
+        if self.match_char ('Z') || self.match_char ('z') {
+            self.emit_close_path ();
+            true
+        } else {
+            false
+        }
     }
 
     fn line_to (&mut self) -> bool {
@@ -1382,6 +1406,25 @@ mod tests {
                          moveto  (10.0, 20.0),
                          curveto (90.0 / 3.0, 140.0 / 3.0, 140.0 / 3.0, 200.0 / 3.0, 60.0, 80.0),
                          curveto (220.0 / 3.0, 280.0 / 3.0, 50.0, 120.0, -10.0, 160.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_close_path () {
+        test_parser ("M10 20 Z",
+                     &vec! [
+                         moveto (10.0, 20.0),
+                         closepath ()
+                     ]);
+
+        test_parser ("m10 20 30 40 m 50 60 70 80 90 100z",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         lineto (40.0, 60.0),
+                         moveto (90.0, 120.0),
+                         lineto (160.0, 200.0),
+                         lineto (250.0, 300.0),
+                         closepath ()
                      ]);
     }
 }
