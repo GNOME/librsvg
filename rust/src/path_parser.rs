@@ -261,6 +261,16 @@ impl<'external> PathParser<'external> {
         None
     }
 
+    fn emit_move_to (&mut self, x: f64, y: f64) {
+        self.current_x = x;
+        self.current_y = y;
+        self.reflection_x = self.current_x;
+        self.reflection_y = self.current_y;
+
+        self.builder.move_to (self.current_x, self.current_y);
+        println! ("emitting moveto {} {}", self.current_x, self.current_y);
+    }
+
     fn emit_line_to (&mut self, x: f64, y: f64) {
         self.current_x = x;
         self.current_y = y;
@@ -269,6 +279,17 @@ impl<'external> PathParser<'external> {
 
         self.builder.line_to (self.current_x, self.current_y);
         println! ("emitting lineto {} {}", self.current_x, self.current_y);
+    }
+
+    fn emit_curve_to (&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
+        self.current_x = x4;
+        self.current_y = y4;
+        self.reflection_x = x3;
+        self.reflection_y = y3;
+
+        self.builder.curve_to (x2, y2, x3, y3, x4, y4);
+
+        println! ("emitting curveto ({} {}) ({} {}) ({} {})", x2, y2, x3, y3, x4, y4);
     }
 
     fn lineto_argument_sequence (&mut self, absolute: bool) -> bool {
@@ -297,16 +318,6 @@ impl<'external> PathParser<'external> {
         } else {
             false
         }
-    }
-
-    fn emit_move_to (&mut self, x: f64, y: f64) {
-        self.current_x = x;
-        self.current_y = y;
-        self.reflection_x = self.current_x;
-        self.reflection_y = self.current_y;
-
-        self.builder.move_to (self.current_x, self.current_y);
-        println! ("emitting moveto {} {}", self.current_x, self.current_y);
     }
 
     fn moveto_argument_sequence (&mut self, absolute: bool, is_initial_moveto: bool) -> bool {
@@ -537,18 +548,6 @@ impl<'external> PathParser<'external> {
         }
 
         false
-    }
-
-    fn emit_curve_to (&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
-        self.current_x = x4;
-        self.current_y = y4;
-        self.reflection_x = x3;
-        self.reflection_y = y3;
-
-        self.builder.curve_to (x2, y2, x3, y3, x4, y4);
-
-        println! ("emitting curveto ({} {}) ({} {}) ({} {})", x2, y2, x3, y3, x4, y4);
-        
     }
 
     fn curveto_argument_sequence (&mut self, absolute: bool) -> bool {
