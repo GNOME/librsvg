@@ -80,7 +80,7 @@ rsvg_node_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * at
         if ((value = rsvg_property_bag_lookup (atts, "d"))) {
             if (path->builder)
                 rsvg_path_builder_destroy (path->builder);
-            path->builder = rsvg_path_builder_parse_path (value);
+            path->builder = rsvg_path_parser_from_str_into_builder (value);
         }
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;

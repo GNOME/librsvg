@@ -34,6 +34,9 @@
 
 G_BEGIN_DECLS
 
+/* All the following functions and types are implemented in the Rust code.
+ */
+
 typedef struct _RsvgPathBuilder RsvgPathBuilder;
 
 G_GNUC_INTERNAL
@@ -74,7 +77,7 @@ G_GNUC_INTERNAL
 void rsvg_path_builder_add_to_cairo_context (RsvgPathBuilder *builder, cairo_t *cr);
 
 G_GNUC_INTERNAL
-RsvgPathBuilder *rsvg_path_builder_parse_path (const char *path_str);
+RsvgPathBuilder *rsvg_path_parser_from_str_into_builder (const char *path_str);
 
 G_END_DECLS
 

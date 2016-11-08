@@ -1,12 +1,16 @@
+extern crate libc;
+extern crate glib;
+
 use std::str;
 use std::str::Chars;
 use std::iter::Enumerate;
 use path_builder::*;
 
+use self::glib::translate::*;
+
 extern crate cairo;
 
 pub struct PathParser<'external> {
-    path_str: &'external str,
     chars_enumerator: Enumerate<Chars<'external>>,
     lookahead: Option <char>, /* None if we are in EOF */
     current_pos: usize,
@@ -67,7 +71,6 @@ pub struct PathParser<'external> {
 impl<'external> PathParser<'external> {
     pub fn new (builder: &'external mut RsvgPathBuilder, path_str: &'external str) -> PathParser<'external> {
         PathParser {
-            path_str: path_str,
             chars_enumerator: path_str.chars ().enumerate (),
             lookahead: None,
             current_pos: 0,
@@ -984,6 +987,21 @@ fn char_to_digit (c: char) -> i32 {
     c as i32 - '0' as i32
 }
 
+#[no_mangle]
+pub extern fn rsvg_path_parser_from_str_into_builder (path_str: *const libc::c_char) -> *mut RsvgPathBuilder {
+    let mut builder = RsvgPathBuilder::new ();
+    let my_path_str = unsafe { &String::from_glib_none (path_str) };
+
+    {
+        let mut parser = PathParser::new (&mut builder, my_path_str);
+        parser.parse ();
+        /* FIXME: we aren't passing errors back to the caller. */
+    }
+
+    let boxed_builder = Box::new (builder);
+
+    Box::into_raw (boxed_builder)
+}
 
 #[cfg(test)]
 mod tests {
@@ -1056,11 +1074,11 @@ mod tests {
         true
     }
 
-    fn print_error (parser: &PathParser) {
+    fn print_error (parser: &PathParser, path_str: &str) {
         let prefix = "Error in \"";
 
         println! ("");
-        println! ("{}{}\"", prefix, &parser.path_str);
+        println! ("{}{}\"", prefix, path_str);
 
         for _ in 0 .. (prefix.len() + parser.current_pos) {
             print! (" ");
@@ -1076,7 +1094,7 @@ mod tests {
         {
             let mut parser = PathParser::new (&mut builder, path_str);
             if !parser.parse () {
-                print_error (&parser);
+                print_error (&parser, path_str);
             }
         }
 
