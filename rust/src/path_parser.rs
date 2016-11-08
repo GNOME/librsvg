@@ -274,6 +274,16 @@ impl<'external> PathParser<'external> {
         }
     }
 
+    fn flag (&mut self) -> Option <bool> {
+        if self.match_char ('0') {
+            return Some (false);
+        } else if self.match_char ('1') {
+            return Some (true);
+        } else {
+            return None;
+        }
+    }
+
     fn coordinate_pair (&mut self) -> Option<(f64, f64)> {
         if let Some (num1) = self.number () {
             assert! (self.optional_comma_whitespace ());
@@ -360,6 +370,19 @@ impl<'external> PathParser<'external> {
 
         self.builder.curve_to (x2, y2, x3, y3, x4, y4);
         println! ("emitting curveto ({} {}) ({} {}) ({} {})", x2, y2, x3, y3, x4, y4);
+    }
+
+    fn emit_arc (&mut self, rx: f64, ry: f64, x_axis_rotation: f64, large_arc: bool, sweep: bool, x: f64, y: f64) {
+        let (start_x, start_y) = (self.current_x, self.current_y);
+
+        self.set_current_point (x, y);
+
+        self.builder.arc (start_x, start_y,
+                          rx, ry,
+                          x_axis_rotation,
+                          large_arc,
+                          sweep,
+                          self.current_x, self.current_y);
     }
 
     fn emit_close_path (&mut self) {
@@ -873,7 +896,86 @@ impl<'external> PathParser<'external> {
         false
     }
 
+    fn elliptical_arc_argument_sequence (&mut self, absolute: bool) -> bool {
+        if let Some (rx) = self.nonnegative_number () {
+            assert! (self.optional_comma_whitespace ());
+
+            if let Some (ry) = self.nonnegative_number () {
+                assert! (self.optional_comma_whitespace ());
+
+                if let Some (x_axis_rotation) = self.number () {
+                    if self.match_char (',') || self.optional_whitespace () {
+                        if let Some (large_arc_flag) = self.flag () {
+                            assert! (self.optional_comma_whitespace ());
+
+                            if let Some (sweep_flag) = self.flag () {
+                                assert! (self.optional_comma_whitespace ());
+
+                                if let Some ((mut x, mut y)) = self.coordinate_pair () {
+                                    if !absolute {
+                                        x += self.current_x;
+                                        y += self.current_y;
+                                    }
+
+                                    self.emit_arc (rx, ry, x_axis_rotation, large_arc_flag, sweep_flag, x, y);
+
+                                    self.whitespace ();
+
+                                    if self.lookahead_is (',') {
+                                        assert! (self.match_char (','));
+                                        assert! (self.optional_whitespace ());
+
+                                        if !self.elliptical_arc_argument_sequence (absolute) {
+                                            self.error ("Expected x-radius after comma");
+                                            return false;
+                                        }
+                                    }
+
+                                    self.elliptical_arc_argument_sequence (absolute);
+                                    return true;
+                                } else {
+                                    return self.error ("Expected destination coordinate pair for elliptical arc");
+                                }
+                            } else {
+                                return self.error ("Expected sweep-flag for elliptical arc");
+                            }
+                        } else {
+                            return self.error ("Expected large-arc-flag for elliptical arc");
+                        }
+                    } else {
+                        unreachable! ();
+                    }
+                } else {
+                    return self.error ("Expected x-axis-rotation for elliptical arc");
+                }
+            } else {
+                return self.error ("Expected nonnegative y-radius for elliptical arc");
+            }
+        } else {
+            false
+        }
+    }
+
     fn elliptical_arc (&mut self) -> bool {
+        if self.lookahead_is ('A') || self.lookahead_is ('a') {
+            let absolute: bool;
+
+            if self.match_char ('A') {
+                absolute = true;
+            } else {
+                assert! (self.match_char ('a'));
+                absolute = false;
+            }
+
+            self.optional_whitespace ();
+
+            if self.elliptical_arc_argument_sequence (absolute) {
+                return true;
+            } else {
+                return self.error ("Expected nonnegative x-radius for elliptical arc");
+            }
+        }
+
         false
     }
 }
@@ -1437,4 +1539,10 @@ mod tests {
                          closepath ()
                      ]);
     }
+
+    /* FIXME: we don't have a handles_arc() because
+     * we don't know what segments will be computed by PathBuilder::arc().
+     * Maybe we need to represent arcs as native path builder segments,
+     * and only explode them to Cairo curves at rendering time.
+     */
 }
