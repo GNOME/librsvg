@@ -299,15 +299,9 @@ impl<'external> PathParser<'external> {
         }
     }
 
-    fn emit_move_to (&mut self, absolute: bool, x: f64, y: f64) {
-        if absolute {
-            self.current_x = x;
-            self.current_y = y;
-        } else {
-            self.current_x += x;
-            self.current_y += y;
-        }
-
+    fn emit_move_to (&mut self, x: f64, y: f64) {
+        self.current_x = x;
+        self.current_y = y;
         self.reflection_x = self.current_x;
         self.reflection_y = self.current_y;
 
@@ -316,11 +310,16 @@ impl<'external> PathParser<'external> {
     }
 
     fn moveto_argument_sequence (&mut self, absolute: bool, is_initial_moveto: bool) -> bool {
-        if let Some ((x, y)) = self.coordinate_pair () {
+        if let Some ((mut x, mut y)) = self.coordinate_pair () {
             if is_initial_moveto {
-                self.emit_move_to (true, x, y);
+                self.emit_move_to (x, y);
             } else {
-                self.emit_move_to (absolute, x, y);
+                if !absolute {
+                    x += self.current_x;
+                    y += self.current_y;
+                }
+
+                self.emit_move_to (x, y);
             }
 
             self.whitespace ();
