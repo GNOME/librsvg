@@ -996,13 +996,13 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_empty_data () {
+    fn handles_empty_data () {
         test_parser ("",
                      &Vec::<cairo::PathSegment>::new ());
     }
 
     #[test]
-    fn path_parser_handles_numbers () {
+    fn handles_numbers () {
         test_parser ("M 10 20",
                      &vec![
                          moveto (10.0, 20.0)
@@ -1055,7 +1055,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_numbers_with_comma () {
+    fn handles_numbers_with_comma () {
         test_parser ("M 10, 20",
                      &vec![
                          moveto (10.0, 20.0)
@@ -1108,7 +1108,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_single_moveto () {
+    fn handles_single_moveto () {
         test_parser ("M 10 20",
                      &vec![
                          moveto (10.0, 20.0)
@@ -1131,7 +1131,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_relative_moveto () {
+    fn handles_relative_moveto () {
         test_parser ("m10 20",
                      &vec![
                          moveto (10.0, 20.0)
@@ -1139,7 +1139,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_absolute_moveto_with_implicit_lineto () {
+    fn handles_absolute_moveto_with_implicit_lineto () {
         test_parser ("M10 20 30 40",
                      &vec![
                          moveto (10.0, 20.0),
@@ -1160,7 +1160,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_relative_moveto_with_implicit_lineto () {
+    fn handles_relative_moveto_with_implicit_lineto () {
         test_parser ("m10 20 30 40",
                      &vec![
                          moveto (10.0, 20.0),
@@ -1169,7 +1169,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_absolute_moveto_with_implicit_linetos () {
+    fn handles_absolute_moveto_with_implicit_linetos () {
         test_parser ("M10,20 30,40,50 60",
                      &vec![
                          moveto (10.0, 20.0),
@@ -1179,7 +1179,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_relative_moveto_with_implicit_linetos () {
+    fn handles_relative_moveto_with_implicit_linetos () {
         test_parser ("m10 20 30 40 50 60",
                      &vec![
                          moveto (10.0, 20.0),
@@ -1189,7 +1189,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_absolute_moveto_moveto () {
+    fn handles_absolute_moveto_moveto () {
         test_parser ("M10 20 M 30 40",
                      &vec![
                          moveto (10.0, 20.0),
@@ -1198,7 +1198,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_relative_moveto_moveto () {
+    fn handles_relative_moveto_moveto () {
         test_parser ("m10 20 m 30 40",
                      &vec![
                          moveto (10.0, 20.0),
@@ -1207,7 +1207,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_relative_moveto_lineto_moveto () {
+    fn handles_relative_moveto_lineto_moveto () {
         test_parser ("m10 20 30 40 m 50 60",
                      &vec![
                          moveto (10.0, 20.0),
@@ -1217,7 +1217,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_absolute_moveto_lineto () {
+    fn handles_absolute_moveto_lineto () {
         test_parser ("M10 20 L30,40",
                      &vec![
                          moveto (10.0, 20.0),
@@ -1226,7 +1226,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_relative_moveto_lineto () {
+    fn handles_relative_moveto_lineto () {
         test_parser ("m10 20 l30,40",
                      &vec![
                          moveto (10.0, 20.0),
@@ -1235,7 +1235,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_relative_moveto_lineto_lineto_abs_lineto () {
+    fn handles_relative_moveto_lineto_lineto_abs_lineto () {
         test_parser ("m10 20 30 40,l30,40,50 60L200,300",
                      &vec![
                          moveto (10.0, 20.0),
@@ -1247,7 +1247,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_horizontal_lineto () {
+    fn handles_horizontal_lineto () {
         test_parser ("M10 20 H30",
                      &vec![
                          moveto (10.0, 20.0),
@@ -1279,7 +1279,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_vertical_lineto () {
+    fn handles_vertical_lineto () {
         test_parser ("M10 20 V30",
                      &vec![
                          moveto (10.0, 20.0),
@@ -1311,7 +1311,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_curveto () {
+    fn handles_curveto () {
         test_parser ("M10 20 C 30,40 50 60-70,80",
                      &vec![
                          moveto  (10.0, 20.0),
@@ -1341,7 +1341,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_smooth_curveto () {
+    fn handles_smooth_curveto () {
         test_parser ("M10 20 S 30,40-50,60",
                      &vec![
                          moveto  (10.0, 20.0),
@@ -1364,7 +1364,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_quadratic_curveto () {
+    fn handles_quadratic_curveto () {
         test_parser ("M10 20 Q30 40 50 60",
                      &vec![
                          moveto  (10.0, 20.0),
@@ -1387,7 +1387,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_smooth_quadratic_curveto () {
+    fn handles_smooth_quadratic_curveto () {
         test_parser ("M10 20 T30 40",
                      &vec! [
                          moveto (10.0, 20.0),
@@ -1410,7 +1410,7 @@ mod tests {
     }
 
     #[test]
-    fn path_parser_handles_close_path () {
+    fn handles_close_path () {
         test_parser ("M10 20 Z",
                      &vec! [
                          moveto (10.0, 20.0),
