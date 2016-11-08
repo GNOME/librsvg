@@ -292,6 +292,17 @@ impl<'external> PathParser<'external> {
         self.quadratic_reflection_y = self.current_y;
     }
 
+    fn set_quadratic_reflection_and_current_point (&mut self, a: f64, b: f64, c: f64, d: f64) {
+        self.quadratic_reflection_x = a;
+        self.quadratic_reflection_y = b;
+
+        self.current_x = c;
+        self.current_y = d;
+
+        self.cubic_reflection_x = self.current_x;
+        self.cubic_reflection_y = self.current_y;
+    }
+
     fn emit_move_to (&mut self, x: f64, y: f64) {
         self.set_current_point (x, y);
 
@@ -308,6 +319,22 @@ impl<'external> PathParser<'external> {
 
     fn emit_curve_to (&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
         self.set_cubic_reflection_and_current_point (x3, y3, x4, y4);
+
+        self.builder.curve_to (x2, y2, x3, y3, x4, y4);
+        println! ("emitting curveto ({} {}) ({} {}) ({} {})", x2, y2, x3, y3, x4, y4);
+    }
+
+    fn emit_quadratic_curve_to (&mut self, a: f64, b: f64, c: f64, d: f64) {
+        /* raise quadratic Bézier to cubic */
+
+        let x2 = (self.current_x + 2.0 * a) / 3.0; // (50 + 2*70) / 3
+        let y2 = (self.current_y + 2.0 * b) / 3.0; // (60 + 2*80) / 3
+        let x4 = c;                                // 70
+        let y4 = d;                                // 80
+        let x3 = (x4 + 2.0 * a) / 3.0;             // (70 + 2*70) / 3
+        let y3 = (y4 + 2.0 * b) / 3.0;             // (80 + 2*80) / 3
+
+        self.set_quadratic_reflection_and_current_point (a, b, c, d);
 
         self.builder.curve_to (x2, y2, x3, y3, x4, y4);
         println! ("emitting curveto ({} {}) ({} {}) ({} {})", x2, y2, x3, y3, x4, y4);
@@ -711,16 +738,7 @@ impl<'external> PathParser<'external> {
                     d += self.current_y;
                 }
 
-                /* raise quadratic Bézier to cubic */
-
-                let x2 = (self.current_x + 2.0 * a) / 3.0;  // (60 + 2*150) * 1/3
-                let y2 = (self.current_y + 2.0 * b) / 3.0;  // (80 + 2*180) * 1/3
-                let x4 = c;                                 // 170
-                let y4 = d;                                 // 200
-                let x3 = (x4 + 2.0 * a) / 3.0;              // (170 + 2*150) * 1/3
-                let y3 = (y4 + 2.0 * b) / 3.0;              // (200 + 2*180) * 1/3
-
-                self.emit_curve_to (x2, y2, x3, y3, x4, y4);
+                self.emit_quadratic_curve_to (a, b, c, d);
 
                 self.whitespace ();
 
@@ -767,7 +785,57 @@ impl<'external> PathParser<'external> {
         false
     }
 
+    fn smooth_quadratic_curveto_argument_sequence (&mut self, absolute: bool) -> bool {
+        if let Some ((mut c, mut d)) = self.coordinate_pair () {
+            if !absolute {
+                c += self.current_x;
+                d += self.current_y;
+            }
+
+            let (a, b) = (self.current_x + self.current_x - self.quadratic_reflection_x,
+                          self.current_y + self.current_y - self.quadratic_reflection_y);
+
+            self.emit_quadratic_curve_to (a, b, c, d);
+
+            self.whitespace ();
+
+            if self.lookahead_is (',') {
+                assert! (self.match_char (','));
+                assert! (self.optional_whitespace ());
+
+                if !self.smooth_quadratic_curveto_argument_sequence (absolute) {
+                    self.error ("Expected coordinate pair after comma");
+                    return false;
+                }
+            }
+
+            self.smooth_quadratic_curveto_argument_sequence (absolute);
+            true
+        } else {
+            false
+        }
+    }
+
     fn smooth_quadratic_bezier_curve_to (&mut self) -> bool {
+        if self.lookahead_is ('T') || self.lookahead_is ('t') {
+            let absolute: bool;
+
+            if self.match_char ('T') {
+                absolute = true;
+            } else {
+                assert! (self.match_char ('t'));
+                absolute = false;
+            }
+
+            self.optional_whitespace ();
+
+            if self.smooth_quadratic_curveto_argument_sequence (absolute) {
+                return true;
+            } else {
+                return self.error ("Expected coordinate pair after smooth quadratic curveto");
+            }
+        }
+
         false
     }
 
@@ -1286,11 +1354,34 @@ mod tests {
                          curveto (190.0 / 3.0, 220.0 / 3.0, 50.0 / 3.0, 260.0 / 3.0, -90.0, 100.0)
                      ]);
 
-        test_parser ("m10 20 q 30,40 50 60-70,80q90 100,110 120",
+        test_parser ("m10 20 q 30,40 50 60-70,80 90 100",
                      &vec![
                          moveto  (10.0, 20.0),
                          curveto (90.0 / 3.0, 140.0 / 3.0, 140.0 / 3.0, 200.0 / 3.0, 60.0, 80.0),
-                         curveto (360.0 / 3.0, 440.0 / 3.0, 470.0 / 3.0, 560.0 / 3.0, 170.0, 200.0)
+                         curveto (40.0 / 3.0, 400.0 / 3.0, 130.0 / 3.0, 500.0 / 3.0, 150.0, 180.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_smooth_quadratic_curveto () {
+        test_parser ("M10 20 T30 40",
+                     &vec! [
+                         moveto (10.0, 20.0),
+                         curveto (10.0, 20.0, 50.0 / 3.0, 80.0 / 3.0, 30.0, 40.0)
+                     ]);
+
+        test_parser ("M10 20 Q30 40 50 60 T70 80",
+                     &vec! [
+                         moveto  (10.0, 20.0),
+                         curveto (70.0 / 3.0, 100.0 / 3.0, 110.0 / 3.0, 140.0 / 3.0, 50.0, 60.0),
+                         curveto (190.0 / 3.0, 220.0 / 3.0, 70.0, 80.0, 70.0, 80.0)
+                     ]);
+
+        test_parser ("m10 20 q 30,40 50 60t-70,80",
+                     &vec! [
+                         moveto  (10.0, 20.0),
+                         curveto (90.0 / 3.0, 140.0 / 3.0, 140.0 / 3.0, 200.0 / 3.0, 60.0, 80.0),
+                         curveto (220.0 / 3.0, 280.0 / 3.0, 50.0, 120.0, -10.0, 160.0)
                      ]);
     }
 }
