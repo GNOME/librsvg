@@ -184,16 +184,10 @@ impl<'external> PathParser<'external> {
 
     fn number (&mut self) -> Option <f64> {
         let mut has_sign: bool;
-        let mut value: f64;
         let mut sign: f64;
-        let mut exponent_sign: f64;
-        let mut exponent: f64;
 
         has_sign = false;
         sign = 1.0;
-        value = 0.0;
-        exponent_sign = 1.0;
-        exponent = 0.0;
 
         if self.match_char ('+') {
             sign = 1.0;
@@ -202,6 +196,26 @@ impl<'external> PathParser<'external> {
             sign = -1.0;
             has_sign = true;
         }
+
+        if let Some (num) = self.nonnegative_number () {
+            return Some (num * sign);
+        } else {
+            if has_sign {
+                self.error ("Expected number after sign");
+            }
+
+            None
+        }
+    }
+
+    fn nonnegative_number (&mut self) -> Option<f64> {
+        let mut value: f64;
+        let mut exponent_sign: f64;
+        let mut exponent: f64;
+
+        value = 0.0;
+        exponent_sign = 1.0;
+        exponent = 0.0;
 
         let mut c: char = ' ';
 
@@ -254,12 +268,8 @@ impl<'external> PathParser<'external> {
                 }
             }
 
-            Some (value * sign * 10.0f64.powf (exponent * exponent_sign))
+            Some (value * 10.0f64.powf (exponent * exponent_sign))
         } else {
-            if has_sign {
-                self.error ("Expected number after sign");
-            }
-
             None
         }
     }
