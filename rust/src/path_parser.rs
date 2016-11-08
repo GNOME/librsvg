@@ -261,21 +261,22 @@ impl<'external> PathParser<'external> {
         None
     }
 
-    fn emit_move_to (&mut self, x: f64, y: f64) {
+    fn set_current_and_reflection_to_same (&mut self, x: f64, y: f64) {
         self.current_x = x;
         self.current_y = y;
         self.reflection_x = self.current_x;
         self.reflection_y = self.current_y;
+    }
+
+    fn emit_move_to (&mut self, x: f64, y: f64) {
+        self.set_current_and_reflection_to_same (x, y);
 
         self.builder.move_to (self.current_x, self.current_y);
         println! ("emitting moveto {} {}", self.current_x, self.current_y);
     }
 
     fn emit_line_to (&mut self, x: f64, y: f64) {
-        self.current_x = x;
-        self.current_y = y;
-        self.reflection_x = self.current_x;
-        self.reflection_y = self.current_y;
+        self.set_current_and_reflection_to_same (x, y);
 
         self.builder.line_to (self.current_x, self.current_y);
         println! ("emitting lineto {} {}", self.current_x, self.current_y);
@@ -288,7 +289,6 @@ impl<'external> PathParser<'external> {
         self.reflection_y = y3;
 
         self.builder.curve_to (x2, y2, x3, y3, x4, y4);
-
         println! ("emitting curveto ({} {}) ({} {}) ({} {})", x2, y2, x3, y3, x4, y4);
     }
 
