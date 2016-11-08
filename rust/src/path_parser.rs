@@ -678,7 +678,71 @@ impl<'external> PathParser<'external> {
         false
     }
 
+    fn quadratic_curveto_argument_sequence (&mut self, absolute: bool) -> bool {
+        if let Some ((mut a, mut b)) = self.coordinate_pair () {
+            assert! (self.optional_comma_whitespace ());
+
+            if let Some ((mut c, mut d)) = self.coordinate_pair () {
+                if !absolute {
+                    a += self.current_x;
+                    b += self.current_y;
+                    c += self.current_x;
+                    d += self.current_y;
+                }
+
+                /* raise quadratic Bézier to cubic */
+
+                let x2 = (self.current_x + 2.0 * a) / 3.0;  // (60 + 2*150) * 1/3
+                let y2 = (self.current_y + 2.0 * b) / 3.0;  // (80 + 2*180) * 1/3
+                let x4 = c;                                 // 170
+                let y4 = d;                                 // 200
+                let x3 = (x4 + 2.0 * a) / 3.0;              // (170 + 2*150) * 1/3
+                let y3 = (y4 + 2.0 * b) / 3.0;              // (200 + 2*180) * 1/3
+
+                self.emit_curve_to (x2, y2, x3, y3, x4, y4);
+
+                self.whitespace ();
+
+                if self.lookahead_is (',') {
+                    assert! (self.match_char (','));
+                    assert! (self.optional_whitespace ());
+
+                    if !self.quadratic_curveto_argument_sequence (absolute) {
+                        self.error ("Expected coordinate pair after comma");
+                        return false;
+                    }
+                }
+
+                self.quadratic_curveto_argument_sequence (absolute);
+                return true;
+            } else {
+                return self.error ("Expected second coordinate pair for quadratic curveto");
+            }
+        } else {
+            false
+        }
+    }
+
     fn quadratic_bezier_curve_to (&mut self) -> bool {
+        if self.lookahead_is ('Q') || self.lookahead_is ('q') {
+            let absolute: bool;
+
+            if self.match_char ('Q') {
+                absolute = true;
+            } else {
+                assert! (self.match_char ('q'));
+                absolute = false;
+            }
+
+            self.optional_whitespace ();
+
+            if self.quadratic_curveto_argument_sequence (absolute) {
+                return true;
+            } else {
+                return self.error ("Expected coordinate pair after quadratic curveto");
+            }
+        }
+
         false
     }
 
@@ -1183,6 +1247,29 @@ mod tests {
                          moveto (10.0, 20.0),
                          curveto (10.0, 20.0, 40.0, 60.0, 60.0, 80.0),
                          curveto (80.0, 100.0, -10.0, 160.0, 150.0, 180.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_quadratic_curveto () {
+        test_parser ("M10 20 Q30 40 50 60",
+                     &vec![
+                         moveto  (10.0, 20.0),
+                         curveto (70.0 / 3.0, 100.0 / 3.0, 110.0 / 3.0, 140.0 / 3.0, 50.0, 60.0)
+                     ]);
+
+        test_parser ("M10 20 Q30 40 50 60,70,80-90 100",
+                     &vec![
+                         moveto  (10.0, 20.0),
+                         curveto (70.0 / 3.0, 100.0 / 3.0, 110.0 / 3.0, 140.0 / 3.0, 50.0, 60.0),
+                         curveto (190.0 / 3.0, 220.0 / 3.0, 50.0 / 3.0, 260.0 / 3.0, -90.0, 100.0)
+                     ]);
+
+        test_parser ("m10 20 q 30,40 50 60-70,80q90 100,110 120",
+                     &vec![
+                         moveto  (10.0, 20.0),
+                         curveto (90.0 / 3.0, 140.0 / 3.0, 140.0 / 3.0, 200.0 / 3.0, 60.0, 80.0),
+                         curveto (360.0 / 3.0, 440.0 / 3.0, 470.0 / 3.0, 560.0 / 3.0, 170.0, 200.0)
                      ]);
     }
 }
