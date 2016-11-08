@@ -16,8 +16,15 @@ pub struct PathParser<'external> {
     error_message: &'static str,
     has_error: bool,
 
+    /* Current point; adjusted at every command */
     current_x: f64,
-    current_y: f64
+    current_y: f64,
+
+    /* Last control point from previous curve command, used to reflect
+     * the new control point for smooth curve commands.
+     */
+    reflection_x: f64,
+    reflection_y: f64
 }
 
 /* This is a recursive descent parser for path data in SVG files,
@@ -59,7 +66,10 @@ impl<'external> PathParser<'external> {
             has_error: false,
 
             current_x: 0.0,
-            current_y: 0.0
+            current_y: 0.0,
+
+            reflection_x: 0.0,
+            reflection_y: 0.0
         }
     }
 
@@ -254,6 +264,8 @@ impl<'external> PathParser<'external> {
     fn emit_line_to (&mut self, x: f64, y: f64) {
         self.current_x = x;
         self.current_y = y;
+        self.reflection_x = self.current_x;
+        self.reflection_y = self.current_y;
 
         self.builder.line_to (self.current_x, self.current_y);
         println! ("emitting lineto {} {}", self.current_x, self.current_y);
@@ -295,6 +307,9 @@ impl<'external> PathParser<'external> {
             self.current_x += x;
             self.current_y += y;
         }
+
+        self.reflection_x = self.current_x;
+        self.reflection_y = self.current_y;
 
         self.builder.move_to (self.current_x, self.current_y);
         println! ("emitting moveto {} {}", self.current_x, self.current_y);
@@ -528,6 +543,8 @@ impl<'external> PathParser<'external> {
     fn emit_curve_to (&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
         self.current_x = x4;
         self.current_y = y4;
+        self.reflection_x = x3;
+        self.reflection_y = y3;
 
         self.builder.curve_to (x2, y2, x3, y3, x4, y4);
 
@@ -578,6 +595,45 @@ impl<'external> PathParser<'external> {
         }
     }
 
+    fn smooth_curveto_argument_sequence (&mut self, absolute: bool) -> bool {
+        if let Some ((mut x3, mut y3)) = self.coordinate_pair () {
+            assert! (self.optional_comma_whitespace ());
+
+            if let Some ((mut x4, mut y4)) = self.coordinate_pair () {
+                if !absolute {
+                    x3 += self.current_x;
+                    y3 += self.current_y;
+                    x4 += self.current_x;
+                    y4 += self.current_y;
+                }
+
+                let (x2, y2) = (self.current_x + self.current_x - self.reflection_x,
+                                self.current_y + self.current_y - self.reflection_y);
+
+                self.emit_curve_to (x2, y2, x3, y3, x4, y4);
+
+                self.whitespace ();
+
+                if self.lookahead_is (',') {
+                    assert! (self.match_char (','));
+                    assert! (self.optional_whitespace ());
+
+                    if !self.smooth_curveto_argument_sequence (absolute) {
+                        self.error ("Expected coordinate pair after comma");
+                        return false;
+                    }
+                }
+
+                self.smooth_curveto_argument_sequence (absolute);
+                return true;
+            } else {
+                return self.error ("Expected second coordinate pair for smooth curveto");
+            }
+        } else {
+            false
+        }
+    }
+
     fn curve_to (&mut self) -> bool {
         if self.lookahead_is ('C') || self.lookahead_is ('c') {
             let absolute: bool;
@@ -602,6 +658,25 @@ impl<'external> PathParser<'external> {
     }
 
     fn smooth_curve_to (&mut self) -> bool {
+        if self.lookahead_is ('S') || self.lookahead_is ('s') {
+            let absolute: bool;
+
+            if self.match_char ('S') {
+                absolute = true;
+            } else {
+                assert! (self.match_char ('s'));
+                absolute = false;
+            }
+
+            self.optional_whitespace ();
+
+            if self.smooth_curveto_argument_sequence (absolute) {
+                return true;
+            } else {
+                return self.error ("Expected coordinate pair after smooth curveto");
+            }
+        }
+
         false
     }
 
@@ -1087,6 +1162,29 @@ mod tests {
                          moveto (10.0, 20.0),
                          curveto (40.0, 60.0, 60.0, 80.0, -60.0, 100.0),
                          curveto (30.0, 200.0, 50.0, 220.0, 70.0, 240.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_smooth_curveto () {
+        test_parser ("M10 20 S 30,40-50,60",
+                     &vec![
+                         moveto  (10.0, 20.0),
+                         curveto (10.0, 20.0, 30.0, 40.0, -50.0, 60.0)
+                     ]);
+
+        test_parser ("M10 20 S 30,40 50 60-70,80,90 100",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         curveto (10.0, 20.0, 30.0, 40.0, 50.0, 60.0),
+                         curveto (70.0, 80.0, -70.0, 80.0, 90.0, 100.0)
+                     ]);
+
+        test_parser ("m10 20 s 30,40 50 60-70,80,90 100,110 120",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         curveto (10.0, 20.0, 40.0, 60.0, 60.0, 80.0),
+                         curveto (80.0, 100.0, -10.0, 160.0, 150.0, 180.0)
                      ]);
     }
 }
