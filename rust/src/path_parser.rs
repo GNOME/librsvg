@@ -525,7 +525,79 @@ impl<'external> PathParser<'external> {
         false
     }
 
+    fn emit_curve_to (&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
+        self.current_x = x4;
+        self.current_y = y4;
+
+        self.builder.curve_to (x2, y2, x3, y3, x4, y4);
+
+        println! ("emitting curveto ({} {}) ({} {}) ({} {})", x2, y2, x3, y3, x4, y4);
+        
+    }
+
+    fn curveto_argument_sequence (&mut self, absolute: bool) -> bool {
+        if let Some ((mut x2, mut y2)) = self.coordinate_pair () {
+            assert! (self.optional_comma_whitespace ());
+
+            if let Some ((mut x3, mut y3)) = self.coordinate_pair () {
+                assert! (self.optional_comma_whitespace ());
+
+                if let Some ((mut x4, mut y4)) = self.coordinate_pair () {
+                    if !absolute {
+                        x2 += self.current_x;
+                        y2 += self.current_y;
+                        x3 += self.current_x;
+                        y3 += self.current_y;
+                        x4 += self.current_x;
+                        y4 += self.current_y;
+                    }
+                    self.emit_curve_to (x2, y2, x3, y3, x4, y4);
+
+                    self.whitespace ();
+
+                    if self.lookahead_is (',') {
+                        assert! (self.match_char (','));
+                        assert! (self.optional_whitespace ());
+
+                        if !self.curveto_argument_sequence (absolute) {
+                            self.error ("Expected coordinate pair after comma");
+                            return false;
+                        }
+                    }
+
+                    self.curveto_argument_sequence (absolute);
+                    return true;
+                } else {
+                    return self.error ("Expected third coordinate pair for curveto");
+                }
+            } else {
+                return self.error ("Expected second coordinate pair for curveto");
+            }
+        } else {
+            false
+        }
+    }
+
     fn curve_to (&mut self) -> bool {
+        if self.lookahead_is ('C') || self.lookahead_is ('c') {
+            let absolute: bool;
+
+            if self.match_char ('C') {
+                absolute = true;
+            } else {
+                assert! (self.match_char ('c'));
+                absolute = false;
+            }
+
+            self.optional_whitespace ();
+
+            if self.curveto_argument_sequence (absolute) {
+                return true;
+            } else {
+                return self.error ("Expected coordinate pair after curveto");
+            }
+        }
+
         false
     }
 
@@ -985,6 +1057,36 @@ mod tests {
                          lineto (10.0, 50.0),
                          lineto (10.0, 90.0),
                          lineto (10.0, 40.0)
+                     ]);
+    }
+
+    #[test]
+    fn path_parser_handles_curveto () {
+        test_parser ("M10 20 C 30,40 50 60-70,80",
+                     &vec![
+                         moveto  (10.0, 20.0),
+                         curveto (30.0, 40.0, 50.0, 60.0, -70.0, 80.0)
+                     ]);
+
+        test_parser ("M10 20 C 30,40 50 60-70,80,90 100,110 120,130,140",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         curveto (30.0, 40.0, 50.0, 60.0, -70.0, 80.0),
+                         curveto (90.0, 100.0, 110.0, 120.0, 130.0, 140.0)
+                     ]);
+
+        test_parser ("m10 20 c 30,40 50 60-70,80,90 100,110 120,130,140",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         curveto (40.0, 60.0, 60.0, 80.0, -60.0, 100.0),
+                         curveto (30.0, 200.0, 50.0, 220.0, 70.0, 240.0)
+                     ]);
+
+        test_parser ("m10 20 c 30,40 50 60-70,80,90 100,110 120,130,140",
+                     &vec![
+                         moveto (10.0, 20.0),
+                         curveto (40.0, 60.0, 60.0, 80.0, -60.0, 100.0),
+                         curveto (30.0, 200.0, 50.0, 220.0, 70.0, 240.0)
                      ]);
     }
 }
