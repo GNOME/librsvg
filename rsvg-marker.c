@@ -202,20 +202,3 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
 
     rsvg_release_node (ctx, (RsvgNode *) self);
 }
-
-extern void rsvg_rust_render_markers (RsvgDrawingCtx *ctx,
-                                      RsvgPathBuilder *builder,
-                                      const char *startmarker,
-                                      const char *middlemarker,
-                                      const char *endmarker);
-
-void
-rsvg_render_markers (RsvgDrawingCtx *ctx,
-                     RsvgPathBuilder *builder)
-{
-    rsvg_rust_render_markers (ctx,
-                              builder,
-                              rsvg_get_start_marker (ctx),
-                              rsvg_get_middle_marker (ctx),
-                              rsvg_get_end_marker (ctx));
-}

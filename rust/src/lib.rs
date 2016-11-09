@@ -10,7 +10,7 @@ pub use path_builder::{
 };
 
 pub use marker::{
-    rsvg_rust_render_markers,
+    rsvg_render_markers,
 };
 
 pub use path_parser::{

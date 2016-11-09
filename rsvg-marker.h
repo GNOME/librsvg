@@ -32,6 +32,8 @@ G_BEGIN_DECLS
 
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_marker	    (void);
+
+/* In the Rust code */
 G_GNUC_INTERNAL
 void	     rsvg_render_markers    (RsvgDrawingCtx *ctx, RsvgPathBuilder *builder);
 
