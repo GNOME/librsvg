@@ -3,7 +3,6 @@ use std::f64;
 extern crate cairo;
 extern crate cairo_sys;
 
-#[repr(C)]
 pub struct RsvgPathBuilder {
     path_segments: Vec<cairo::PathSegment>,
 }
