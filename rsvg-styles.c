@@ -132,7 +132,7 @@ rsvg_state_init (RsvgState * state)
     state->fill = rsvg_paint_server_parse (NULL, "#000");
     state->fill_opacity = 0xff;
     state->stroke_opacity = 0xff;
-    state->stroke_width = _rsvg_css_parse_length ("1");
+    state->stroke_width = _rsvg_css_parse_length ("1", LENGTH_DIR_BOTH);
     state->miter_limit = 4;
     state->cap = CAIRO_LINE_CAP_BUTT;
     state->join = CAIRO_LINE_JOIN_MITER;
@@ -146,7 +146,7 @@ rsvg_state_init (RsvgState * state)
     state->flood_opacity = 255;
 
     state->font_family = g_strdup (RSVG_DEFAULT_FONT);
-    state->font_size = _rsvg_css_parse_length ("12.0");
+    state->font_size = _rsvg_css_parse_length ("12.0", LENGTH_DIR_BOTH);
     state->font_style = PANGO_STYLE_NORMAL;
     state->font_variant = PANGO_VARIANT_NORMAL;
     state->font_weight = PANGO_WEIGHT_NORMAL;
@@ -155,7 +155,7 @@ rsvg_state_init (RsvgState * state)
     state->text_gravity = PANGO_GRAVITY_SOUTH;
     state->unicode_bidi = UNICODE_BIDI_NORMAL;
     state->text_anchor = TEXT_ANCHOR_START;
-    state->letter_spacing = _rsvg_css_parse_length ("0.0");
+    state->letter_spacing = _rsvg_css_parse_length ("0.0", LENGTH_DIR_HORIZONTAL);
     state->visible = TRUE;
     state->cond_true = TRUE;
     state->filter = NULL;
@@ -662,7 +662,7 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
 
         rsvg_paint_server_unref (stroke);
     } else if (g_str_equal (name, "stroke-width")) {
-        state->stroke_width = _rsvg_css_parse_length (value);
+        state->stroke_width = _rsvg_css_parse_length (value, LENGTH_DIR_BOTH);
         state->has_stroke_width = TRUE;
     } else if (g_str_equal (name, "stroke-linecap")) {
         state->has_cap = TRUE;
@@ -688,7 +688,7 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
         else
             g_warning (_("unknown line join style %s\n"), value);
     } else if (g_str_equal (name, "font-size")) {
-        state->font_size = _rsvg_css_parse_length (value);
+        state->font_size = _rsvg_css_parse_length (value, LENGTH_DIR_BOTH);
         state->has_font_size = TRUE;
     } else if (g_str_equal (name, "font-family")) {
         char *save = g_strdup (rsvg_css_parse_font_family (value, &state->has_font_family));
@@ -775,7 +775,7 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
         }
     } else if (g_str_equal (name, "letter-spacing")) {
 	state->has_letter_spacing = TRUE;
-	state->letter_spacing = _rsvg_css_parse_length (value);
+	state->letter_spacing = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
     } else if (g_str_equal (name, "stop-color")) {
         if (!g_str_equal (value, "inherit")) {
             state->stop_color = rsvg_css_parse_color (value, &state->has_stop_color);
@@ -802,7 +802,7 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
         state->miter_limit = g_ascii_strtod (value, NULL);
     } else if (g_str_equal (name, "stroke-dashoffset")) {
         state->has_dashoffset = TRUE;
-        state->dash.offset = _rsvg_css_parse_length (value);
+        state->dash.offset = _rsvg_css_parse_length (value, LENGTH_DIR_BOTH);
         if (state->dash.offset.length < 0.)
             state->dash.offset.length = 0.;
     } else if (g_str_equal (name, "shape-rendering")) {

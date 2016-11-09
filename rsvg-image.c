@@ -174,10 +174,10 @@ rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     if (surface == NULL)
         return;
 
-    x = _rsvg_css_normalize_length (&z->x, ctx, LENGTH_DIR_HORIZONTAL);
-    y = _rsvg_css_normalize_length (&z->y, ctx, LENGTH_DIR_VERTICAL);
-    w = _rsvg_css_normalize_length (&z->w, ctx, LENGTH_DIR_HORIZONTAL);
-    h = _rsvg_css_normalize_length (&z->h, ctx, LENGTH_DIR_VERTICAL);
+    x = _rsvg_css_normalize_length (&z->x, ctx);
+    y = _rsvg_css_normalize_length (&z->y, ctx);
+    w = _rsvg_css_normalize_length (&z->w, ctx);
+    h = _rsvg_css_normalize_length (&z->h, ctx);
 
     rsvg_state_reinherit_top (ctx, z->super.state, dominate);
 
@@ -205,13 +205,13 @@ rsvg_node_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "x")))
-            image->x = _rsvg_css_parse_length (value);
+            image->x = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "y")))
-            image->y = _rsvg_css_parse_length (value);
+            image->y = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "width")))
-            image->w = _rsvg_css_parse_length (value);
+            image->w = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "height")))
-            image->h = _rsvg_css_parse_length (value);
+            image->h = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         /* path is used by some older adobe illustrator versions */
         if ((value = rsvg_property_bag_lookup (atts, "path"))
             || (value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
@@ -247,7 +247,7 @@ rsvg_new_image (void)
     g_assert (image->super.state);
     image->surface = NULL;
     image->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-    image->x = image->y = image->w = image->h = _rsvg_css_parse_length ("0");
+    image->x = image->y = image->w = image->h = _rsvg_css_parse_length ("0", LENGTH_DIR_BOTH);
     image->super.free = rsvg_node_image_free;
     image->super.draw = rsvg_node_image_draw;
     image->super.set_atts = rsvg_node_image_set_atts;

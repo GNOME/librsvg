@@ -184,10 +184,10 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     RsvgState *state;
     cairo_matrix_t affine;
     double x, y, w, h;
-    x = _rsvg_css_normalize_length (&use->x, ctx, LENGTH_DIR_HORIZONTAL);
-    y = _rsvg_css_normalize_length (&use->y, ctx, LENGTH_DIR_VERTICAL);
-    w = _rsvg_css_normalize_length (&use->w, ctx, LENGTH_DIR_HORIZONTAL);
-    h = _rsvg_css_normalize_length (&use->h, ctx, LENGTH_DIR_VERTICAL);
+    x = _rsvg_css_normalize_length (&use->x, ctx);
+    y = _rsvg_css_normalize_length (&use->y, ctx);
+    w = _rsvg_css_normalize_length (&use->w, ctx);
+    h = _rsvg_css_normalize_length (&use->h, ctx);
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
 
@@ -261,10 +261,10 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     double nx, ny, nw, nh;
     sself = (RsvgNodeSvg *) self;
 
-    nx = _rsvg_css_normalize_length (&sself->x, ctx, LENGTH_DIR_HORIZONTAL);
-    ny = _rsvg_css_normalize_length (&sself->y, ctx, LENGTH_DIR_VERTICAL);
-    nw = _rsvg_css_normalize_length (&sself->w, ctx, LENGTH_DIR_HORIZONTAL);
-    nh = _rsvg_css_normalize_length (&sself->h, ctx, LENGTH_DIR_VERTICAL);
+    nx = _rsvg_css_normalize_length (&sself->x, ctx);
+    ny = _rsvg_css_normalize_length (&sself->y, ctx);
+    nw = _rsvg_css_normalize_length (&sself->w, ctx);
+    nh = _rsvg_css_normalize_length (&sself->h, ctx);
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
 
@@ -327,17 +327,17 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
         if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
             svg->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
         if ((value = rsvg_property_bag_lookup (atts, "width")))
-            svg->w = _rsvg_css_parse_length (value);
+            svg->w = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "height")))
-            svg->h = _rsvg_css_parse_length (value);
+            svg->h = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         /* 
          * x & y attributes have no effect on outermost svg
          * http://www.w3.org/TR/SVG/struct.html#SVGElement 
          */
         if (self->parent && (value = rsvg_property_bag_lookup (atts, "x")))
-            svg->x = _rsvg_css_parse_length (value);
+            svg->x = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if (self->parent && (value = rsvg_property_bag_lookup (atts, "y")))
-            svg->y = _rsvg_css_parse_length (value);
+            svg->y = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "id"))) {
             rsvg_defs_register_name (ctx->priv->defs, value, &svg->super);
         }
@@ -383,10 +383,10 @@ rsvg_new_svg (void)
     _rsvg_node_init (&svg->super, RSVG_NODE_TYPE_SVG);
     svg->vbox.active = FALSE;
     svg->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-    svg->x = _rsvg_css_parse_length ("0");
-    svg->y = _rsvg_css_parse_length ("0");
-    svg->w = _rsvg_css_parse_length ("100%");
-    svg->h = _rsvg_css_parse_length ("100%");
+    svg->x = _rsvg_css_parse_length ("0", LENGTH_DIR_HORIZONTAL);
+    svg->y = _rsvg_css_parse_length ("0", LENGTH_DIR_VERTICAL);
+    svg->w = _rsvg_css_parse_length ("100%", LENGTH_DIR_HORIZONTAL);
+    svg->h = _rsvg_css_parse_length ("100%", LENGTH_DIR_VERTICAL);
     svg->super.draw = rsvg_node_svg_draw;
     svg->super.free = _rsvg_svg_free;
     svg->super.set_atts = rsvg_node_svg_set_atts;
@@ -411,13 +411,13 @@ rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
     use = (RsvgNodeUse *) self;
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "x")))
-            use->x = _rsvg_css_parse_length (value);
+            use->x = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "y")))
-            use->y = _rsvg_css_parse_length (value);
+            use->y = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "width")))
-            use->w = _rsvg_css_parse_length (value);
+            use->w = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "height")))
-            use->h = _rsvg_css_parse_length (value);
+            use->h = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
         if ((value = rsvg_property_bag_lookup (atts, "id"))) {
@@ -442,10 +442,10 @@ rsvg_new_use (void)
     use->super.draw = rsvg_node_use_draw;
     use->super.free = rsvg_node_use_free;
     use->super.set_atts = rsvg_node_use_set_atts;
-    use->x = _rsvg_css_parse_length ("0");
-    use->y = _rsvg_css_parse_length ("0");
-    use->w = _rsvg_css_parse_length ("0");
-    use->h = _rsvg_css_parse_length ("0");
+    use->x = _rsvg_css_parse_length ("0", LENGTH_DIR_HORIZONTAL);
+    use->y = _rsvg_css_parse_length ("0", LENGTH_DIR_VERTICAL);
+    use->w = _rsvg_css_parse_length ("0", LENGTH_DIR_HORIZONTAL);
+    use->h = _rsvg_css_parse_length ("0", LENGTH_DIR_VERTICAL);
     use->link = NULL;
     return (RsvgNode *) use;
 }

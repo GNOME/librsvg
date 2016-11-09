@@ -180,9 +180,17 @@ rsvg_css_parse_raw_length (const char *str, gboolean * in,
 
 /* https://www.w3.org/TR/SVG/types.html#DataTypeLength
  * https://www.w3.org/TR/2008/REC-CSS2-20080411/syndata.html#length-units
+ *
+ * Lengths have units.  When they need to be need resolved to
+ * units in the user's coordinate system, some unit types
+ * need to know if they are horizontal/vertical/both.  For example,
+ * a some_object.width="50%" is 50% with respect to the current
+ * viewport's width.  In this case, the @dir argument is used
+ * when _rsvg_css_normalize_length() needs to know to what the
+ * length refers.
  */
 RsvgLength
-_rsvg_css_parse_length (const char *str)
+_rsvg_css_parse_length (const char *str, LengthDir dir)
 {
     RsvgLength out;
     gboolean percent, em, ex, in;
@@ -205,6 +213,8 @@ _rsvg_css_parse_length (const char *str)
     else
         out.unit = LENGTH_UNIT_DEFAULT;
 
+    out.dir = dir;
+
     return out;
 }
 
@@ -226,7 +236,7 @@ _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
         }
         break;
     default:
-        return _rsvg_css_normalize_length (&state->font_size, ctx, LENGTH_DIR_VERTICAL);
+        return _rsvg_css_normalize_length (&state->font_size, ctx);
         break;
     }
 
@@ -234,12 +244,12 @@ _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
 }
 
 double
-_rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, LengthDir dir)
+_rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx)
 {
     if (in->unit == LENGTH_UNIT_DEFAULT)
         return in->length;
     else if (in->unit == LENGTH_UNIT_PERCENT) {
-        switch (dir) {
+        switch (in->dir) {
         case LENGTH_DIR_HORIZONTAL:
             return in->length * ctx->vb.rect.width;
 
@@ -257,7 +267,7 @@ _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, LengthD
         else
             return in->length * font / 2.;
     } else if (in->unit == LENGTH_UNIT_INCH) {
-        switch (dir) {
+        switch (in->dir) {
         case LENGTH_DIR_HORIZONTAL:
             return in->length * ctx->dpi_x;
 

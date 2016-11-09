@@ -160,7 +160,7 @@ rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "offset"))) {
             /* either a number [0,1] or a percentage */
-            RsvgLength length = _rsvg_css_parse_length (value);
+            RsvgLength length = _rsvg_css_parse_length (value, LENGTH_DIR_BOTH);
             offset = _rsvg_css_hand_normalize_length (&length, rsvg_dpi_percentage (ctx), 1., 0.);
 
             if (offset < 0.)
@@ -208,19 +208,19 @@ rsvg_linear_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
         if ((value = rsvg_property_bag_lookup (atts, "id")))
             rsvg_defs_register_name (ctx->priv->defs, value, self);
         if ((value = rsvg_property_bag_lookup (atts, "x1"))) {
-            grad->x1 = _rsvg_css_parse_length (value);
+            grad->x1 = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
             grad->hasx1 = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "y1"))) {
-            grad->y1 = _rsvg_css_parse_length (value);
+            grad->y1 = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
             grad->hasy1 = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "x2"))) {
-            grad->x2 = _rsvg_css_parse_length (value);
+            grad->x2 = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
             grad->hasx2 = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "y2"))) {
-            grad->y2 = _rsvg_css_parse_length (value);
+            grad->y2 = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
             grad->hasy2 = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "spreadMethod"))) {
@@ -268,8 +268,9 @@ rsvg_new_linear_gradient (void)
     _rsvg_node_init (&grad->super, RSVG_NODE_TYPE_LINEAR_GRADIENT);
     cairo_matrix_init_identity (&grad->affine);
     grad->has_current_color = FALSE;
-    grad->x1 = grad->y1 = grad->y2 = _rsvg_css_parse_length ("0");
-    grad->x2 = _rsvg_css_parse_length ("1");
+    grad->x1 = _rsvg_css_parse_length ("0", LENGTH_DIR_HORIZONTAL);
+    grad->y1 = grad->y2 = _rsvg_css_parse_length ("0", LENGTH_DIR_VERTICAL);
+    grad->x2 = _rsvg_css_parse_length ("1", LENGTH_DIR_HORIZONTAL);
     grad->fallback = NULL;
     grad->obj_bbox = TRUE;
     grad->spread = CAIRO_EXTEND_PAD;
@@ -290,27 +291,27 @@ rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
         if ((value = rsvg_property_bag_lookup (atts, "id")))
             rsvg_defs_register_name (ctx->priv->defs, value, self);
         if ((value = rsvg_property_bag_lookup (atts, "cx"))) {
-            grad->cx = _rsvg_css_parse_length (value);
+            grad->cx = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
             grad->hascx = TRUE;
             if (!grad->hasfx)
                 grad->fx = grad->cx;
         }
         if ((value = rsvg_property_bag_lookup (atts, "cy"))) {
-            grad->cy = _rsvg_css_parse_length (value);
+            grad->cy = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
             grad->hascy = TRUE;
             if (!grad->hasfy)
                 grad->fy = grad->cy;
         }
         if ((value = rsvg_property_bag_lookup (atts, "r"))) {
-            grad->r = _rsvg_css_parse_length (value);
+            grad->r = _rsvg_css_parse_length (value, LENGTH_DIR_BOTH);
             grad->hasr = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "fx"))) {
-            grad->fx = _rsvg_css_parse_length (value);
+            grad->fx = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
             grad->hasfx = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "fy"))) {
-            grad->fy = _rsvg_css_parse_length (value);
+            grad->fy = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
             grad->hasfy = TRUE;
         }
         g_free (grad->fallback);
@@ -361,7 +362,7 @@ rsvg_new_radial_gradient (void)
     grad->obj_bbox = TRUE;
     grad->spread = CAIRO_EXTEND_PAD;
     grad->fallback = NULL;
-    grad->cx = grad->cy = grad->r = grad->fx = grad->fy = _rsvg_css_parse_length ("0.5");
+    grad->cx = grad->cy = grad->r = grad->fx = grad->fy = _rsvg_css_parse_length ("0.5", LENGTH_DIR_BOTH);
     grad->super.free = rsvg_radial_gradient_free;
     grad->super.set_atts = rsvg_radial_gradient_set_atts;
     grad->hascx = grad->hascy = grad->hasfx = grad->hasfy = grad->hasr = grad->hasbbox =
@@ -383,19 +384,19 @@ rsvg_pattern_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts
             pattern->hasvbox = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "x"))) {
-            pattern->x = _rsvg_css_parse_length (value);
+            pattern->x = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
             pattern->hasx = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "y"))) {
-            pattern->y = _rsvg_css_parse_length (value);
+            pattern->y = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
             pattern->hasy = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "width"))) {
-            pattern->width = _rsvg_css_parse_length (value);
+            pattern->width = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
             pattern->haswidth = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "height"))) {
-            pattern->height = _rsvg_css_parse_length (value);
+            pattern->height = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
             pattern->hasheight = TRUE;
         }
         g_free (pattern->fallback);
@@ -442,7 +443,7 @@ rsvg_new_pattern (void)
     cairo_matrix_init_identity (&pattern->affine);
     pattern->obj_bbox = TRUE;
     pattern->obj_cbbox = FALSE;
-    pattern->x = pattern->y = pattern->width = pattern->height = _rsvg_css_parse_length ("0");
+    pattern->x = pattern->y = pattern->width = pattern->height = _rsvg_css_parse_length ("0", LENGTH_DIR_BOTH);
     pattern->fallback = NULL;
     pattern->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
     pattern->vbox.active = FALSE;

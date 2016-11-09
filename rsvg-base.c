@@ -2170,7 +2170,7 @@ rsvg_get_normalized_stroke_width (RsvgDrawingCtx *ctx)
 {
     RsvgState *state = rsvg_current_state (ctx);
 
-    return _rsvg_css_normalize_length (&state->stroke_width, ctx, LENGTH_DIR_BOTH);
+    return _rsvg_css_normalize_length (&state->stroke_width, ctx);
 }
 
 

@@ -257,13 +257,13 @@ _rsvg_node_line_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "x1")))
-            line->x1 = _rsvg_css_parse_length (value);
+            line->x1 = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "y1")))
-            line->y1 = _rsvg_css_parse_length (value);
+            line->y1 = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "x2")))
-            line->x2 = _rsvg_css_parse_length (value);
+            line->x2 = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "y2")))
-            line->y2 = _rsvg_css_parse_length (value);
+            line->y2 = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
         if ((value = rsvg_property_bag_lookup (atts, "id"))) {
@@ -284,10 +284,10 @@ _rsvg_node_line_draw (RsvgNode * overself, RsvgDrawingCtx * ctx, int dominate)
 
     builder = rsvg_path_builder_new ();
 
-    x1 = _rsvg_css_normalize_length (&self->x1, ctx, LENGTH_DIR_HORIZONTAL);
-    y1 = _rsvg_css_normalize_length (&self->y1, ctx, LENGTH_DIR_VERTICAL);
-    x2 = _rsvg_css_normalize_length (&self->x2, ctx, LENGTH_DIR_HORIZONTAL);
-    y2 = _rsvg_css_normalize_length (&self->y2, ctx, LENGTH_DIR_VERTICAL);
+    x1 = _rsvg_css_normalize_length (&self->x1, ctx);
+    y1 = _rsvg_css_normalize_length (&self->y1, ctx);
+    x2 = _rsvg_css_normalize_length (&self->x2, ctx);
+    y2 = _rsvg_css_normalize_length (&self->y2, ctx);
 
     rsvg_path_builder_move_to (builder, x1, y1);
     rsvg_path_builder_line_to (builder, x2, y2);
@@ -307,7 +307,7 @@ rsvg_new_line (void)
     _rsvg_node_init (&line->super, RSVG_NODE_TYPE_LINE);
     line->super.draw = _rsvg_node_line_draw;
     line->super.set_atts = _rsvg_node_line_set_atts;
-    line->x1 = line->x2 = line->y1 = line->y2 = _rsvg_css_parse_length ("0");
+    line->x1 = line->x2 = line->y1 = line->y2 = _rsvg_css_parse_length ("0", LENGTH_DIR_BOTH);
     return &line->super;
 }
 
@@ -328,19 +328,19 @@ _rsvg_node_rect_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
     /* FIXME: negative w/h/rx/ry is an error, per http://www.w3.org/TR/SVG11/shapes.html#RectElement */
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "x")))
-            rect->x = _rsvg_css_parse_length (value);
+            rect->x = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "y")))
-            rect->y = _rsvg_css_parse_length (value);
+            rect->y = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "width")))
-            rect->w = _rsvg_css_parse_length (value);
+            rect->w = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "height")))
-            rect->h = _rsvg_css_parse_length (value);
+            rect->h = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "rx"))) {
-            rect->rx = _rsvg_css_parse_length (value);
+            rect->rx = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
             rect->got_rx = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "ry"))) {
-            rect->ry = _rsvg_css_parse_length (value);
+            rect->ry = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
             rect->got_ry = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "class")))
@@ -362,16 +362,16 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     RsvgPathBuilder *builder;
     RsvgNodeRect *rect = (RsvgNodeRect *) self;
 
-    x = _rsvg_css_normalize_length (&rect->x, ctx, LENGTH_DIR_HORIZONTAL);
-    y = _rsvg_css_normalize_length (&rect->y, ctx, LENGTH_DIR_VERTICAL);
+    x = _rsvg_css_normalize_length (&rect->x, ctx);
+    y = _rsvg_css_normalize_length (&rect->y, ctx);
 
     /* FIXME: negative w/h/rx/ry is an error, per http://www.w3.org/TR/SVG11/shapes.html#RectElement
      * For now we'll just take the absolute value.
      */
-    w = fabs (_rsvg_css_normalize_length (&rect->w, ctx, LENGTH_DIR_HORIZONTAL));
-    h = fabs (_rsvg_css_normalize_length (&rect->h, ctx, LENGTH_DIR_VERTICAL));
-    rx = fabs (_rsvg_css_normalize_length (&rect->rx, ctx, LENGTH_DIR_HORIZONTAL));
-    ry = fabs (_rsvg_css_normalize_length (&rect->ry, ctx, LENGTH_DIR_VERTICAL));
+    w = fabs (_rsvg_css_normalize_length (&rect->w, ctx));
+    h = fabs (_rsvg_css_normalize_length (&rect->h, ctx));
+    rx = fabs (_rsvg_css_normalize_length (&rect->rx, ctx));
+    ry = fabs (_rsvg_css_normalize_length (&rect->ry, ctx));
 
     if (w == 0. || h == 0.)
         return;
@@ -501,7 +501,7 @@ rsvg_new_rect (void)
     _rsvg_node_init (&rect->super, RSVG_NODE_TYPE_RECT);
     rect->super.draw = _rsvg_node_rect_draw;
     rect->super.set_atts = _rsvg_node_rect_set_atts;
-    rect->x = rect->y = rect->w = rect->h = rect->rx = rect->ry = _rsvg_css_parse_length ("0");
+    rect->x = rect->y = rect->w = rect->h = rect->rx = rect->ry = _rsvg_css_parse_length ("0", LENGTH_DIR_BOTH);
     rect->got_rx = rect->got_ry = FALSE;
     return &rect->super;
 }
@@ -521,11 +521,11 @@ _rsvg_node_circle_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *
 
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "cx")))
-            circle->cx = _rsvg_css_parse_length (value);
+            circle->cx = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "cy")))
-            circle->cy = _rsvg_css_parse_length (value);
+            circle->cy = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "r")))
-            circle->r = _rsvg_css_parse_length (value);
+            circle->r = _rsvg_css_parse_length (value, LENGTH_DIR_BOTH);
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
         if ((value = rsvg_property_bag_lookup (atts, "id"))) {
@@ -544,9 +544,9 @@ _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     double cx, cy, r;
     RsvgPathBuilder *builder;
 
-    cx = _rsvg_css_normalize_length (&circle->cx, ctx, LENGTH_DIR_HORIZONTAL);
-    cy = _rsvg_css_normalize_length (&circle->cy, ctx, LENGTH_DIR_VERTICAL);
-    r = _rsvg_css_normalize_length (&circle->r, ctx, LENGTH_DIR_BOTH);
+    cx = _rsvg_css_normalize_length (&circle->cx, ctx);
+    cy = _rsvg_css_normalize_length (&circle->cy, ctx);
+    r = _rsvg_css_normalize_length (&circle->r, ctx);
 
     if (r <= 0)
         return;
@@ -594,7 +594,7 @@ rsvg_new_circle (void)
     _rsvg_node_init (&circle->super, RSVG_NODE_TYPE_CIRCLE);
     circle->super.draw = _rsvg_node_circle_draw;
     circle->super.set_atts = _rsvg_node_circle_set_atts;
-    circle->cx = circle->cy = circle->r = _rsvg_css_parse_length ("0");
+    circle->cx = circle->cy = circle->r = _rsvg_css_parse_length ("0", LENGTH_DIR_BOTH);
     return &circle->super;
 }
 
@@ -613,13 +613,13 @@ _rsvg_node_ellipse_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag 
 
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "cx")))
-            ellipse->cx = _rsvg_css_parse_length (value);
+            ellipse->cx = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "cy")))
-            ellipse->cy = _rsvg_css_parse_length (value);
+            ellipse->cy = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "rx")))
-            ellipse->rx = _rsvg_css_parse_length (value);
+            ellipse->rx = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "ry")))
-            ellipse->ry = _rsvg_css_parse_length (value);
+            ellipse->ry = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
         if ((value = rsvg_property_bag_lookup (atts, "id"))) {
@@ -638,10 +638,10 @@ _rsvg_node_ellipse_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     double cx, cy, rx, ry;
     RsvgPathBuilder *builder;
 
-    cx = _rsvg_css_normalize_length (&ellipse->cx, ctx, LENGTH_DIR_HORIZONTAL);
-    cy = _rsvg_css_normalize_length (&ellipse->cy, ctx, LENGTH_DIR_VERTICAL);
-    rx = _rsvg_css_normalize_length (&ellipse->rx, ctx, LENGTH_DIR_HORIZONTAL);
-    ry = _rsvg_css_normalize_length (&ellipse->ry, ctx, LENGTH_DIR_VERTICAL);
+    cx = _rsvg_css_normalize_length (&ellipse->cx, ctx);
+    cy = _rsvg_css_normalize_length (&ellipse->cy, ctx);
+    rx = _rsvg_css_normalize_length (&ellipse->rx, ctx);
+    ry = _rsvg_css_normalize_length (&ellipse->ry, ctx);
 
     if (rx <= 0 || ry <= 0)
         return;
@@ -689,6 +689,6 @@ rsvg_new_ellipse (void)
     _rsvg_node_init (&ellipse->super, RSVG_NODE_TYPE_ELLIPSE);
     ellipse->super.draw = _rsvg_node_ellipse_draw;
     ellipse->super.set_atts = _rsvg_node_ellipse_set_atts;
-    ellipse->cx = ellipse->cy = ellipse->rx = ellipse->ry = _rsvg_css_parse_length ("0");
+    ellipse->cx = ellipse->cy = ellipse->rx = ellipse->ry = _rsvg_css_parse_length ("0", LENGTH_DIR_BOTH);
     return &ellipse->super;
 }
