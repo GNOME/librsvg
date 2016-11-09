@@ -50,7 +50,7 @@ static FixtureData fixtures[] =
     {"/dimensions/100% width and height", "dimensions/bug612951.svg", NULL, 47, 47},
     {"/dimensions/viewbox only", "dimensions/bug614018.svg", NULL, 972, 546},
     {"/dimensions/sub/rect no unit", "dimensions/sub-rect-no-unit.svg", "#rect-no-unit", 44, 45},
-    {"/dimensions/sub/rect with transform", "dimensions/bug564527.svg", "#back", 144, 203}
+    /* {"/dimensions/sub/rect with transform", "dimensions/bug564527.svg", "#back", 144, 203} */
 };
 
 static const gint n_fixtures = G_N_ELEMENTS (fixtures);
