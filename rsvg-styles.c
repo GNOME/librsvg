@@ -99,7 +99,13 @@ style_value_data_free (StyleValueData *value)
 gdouble
 rsvg_viewport_percentage (gdouble width, gdouble height)
 {
-    return sqrt (width * height);
+    /* https://www.w3.org/TR/SVG/coords.html#Units
+     *
+     * "For any other length value expressed as a percentage of the viewport, the
+     * percentage is calculated as the specified percentage of
+     * sqrt((actual-width)**2 + (actual-height)**2))/sqrt(2)."
+     */
+    return sqrt (width * width + height * height) / M_SQRT2;
 }
 
 gdouble
