@@ -1,3 +1,4 @@
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* vim: set ts=4 nowrap ai expandtab sw=4: */
 
 #include <glib.h>
@@ -29,11 +30,14 @@ test_dimensions (FixtureData *fixture)
     g_assert_no_error (error);
 
     if (fixture->id) {
-	    g_message ("id = %s", fixture->id);
-        rsvg_handle_get_dimensions_sub (handle, &dimension, fixture->id);
-	g_message ("w=%d h=%d", dimension.width, dimension.height);
+        gboolean got_sub;
+
+        got_sub = rsvg_handle_get_dimensions_sub (handle, &dimension, fixture->id);
+        g_assert (got_sub);
+        g_message ("w=%d h=%d", dimension.width, dimension.height);
     } else
         rsvg_handle_get_dimensions (handle, &dimension);
+
     g_assert_cmpint (fixture->width,  ==, dimension.width);
     g_assert_cmpint (fixture->height, ==, dimension.height);
 
