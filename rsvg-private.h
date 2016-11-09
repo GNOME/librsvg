@@ -144,7 +144,6 @@ struct RsvgHandlePrivate {
     /* stack; there is a state for each element */
 
     RsvgDefs *defs;
-    guint nest_level;
     RsvgNode *currentnode;
     /* this is the root level of the displayable tree, essentially what the
        file is converted into at the end */
