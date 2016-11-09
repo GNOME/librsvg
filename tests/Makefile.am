@@ -7,8 +7,6 @@ test_programs =		\
 	styles		\
 	dimensions
 
-# Removed "styles" from the above; it is broken right now
-
 test_utils_common_sources = \
 	test-utils.c	\
 	test-utils.h
