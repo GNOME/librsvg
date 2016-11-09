@@ -141,9 +141,9 @@ struct RsvgHandlePrivate {
     gpointer user_data;
     GDestroyNotify user_data_destroy;
 
-    /* stack; there is a state for each element */
+    GPtrArray *all_nodes;
 
-    RsvgDefs *defs;
+    RsvgDefs *defs; /* lookup table for nodes that have an id="foo" attribute */
     RsvgNode *currentnode;
     /* this is the root level of the displayable tree, essentially what the
        file is converted into at the end */

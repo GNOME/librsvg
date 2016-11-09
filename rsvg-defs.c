@@ -33,7 +33,6 @@
 
 struct _RsvgDefs {
     GHashTable *hash;
-    GPtrArray *unnamed;
     GHashTable *externs;
     RsvgHandle *ctx;
 };
@@ -46,7 +45,6 @@ rsvg_defs_new (RsvgHandle *handle)
     result->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     result->externs =
         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_object_unref);
-    result->unnamed = g_ptr_array_new ();
     result->ctx = handle; /* no need to take a ref here */
 
     return result;
@@ -136,24 +134,13 @@ rsvg_defs_register_node_by_id (RsvgDefs *defs, const char *id, RsvgNode *node)
 }
 
 void
-rsvg_defs_register_memory (RsvgDefs * defs, RsvgNode * val)
-{
-    g_ptr_array_add (defs->unnamed, val);
-}
-
-void
 rsvg_defs_free (RsvgDefs * defs)
 {
-    guint i;
-
     g_hash_table_destroy (defs->hash);
-
-    for (i = 0; i < defs->unnamed->len; i++)
-        ((RsvgNode *) g_ptr_array_index (defs->unnamed, i))->
-            free (g_ptr_array_index (defs->unnamed, i));
-    g_ptr_array_free (defs->unnamed, TRUE);
+    defs->hash = NULL;
 
     g_hash_table_destroy (defs->externs);
+    defs->externs = NULL;
 
     g_free (defs);
 }

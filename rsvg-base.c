@@ -189,6 +189,15 @@ rsvg_start_style (RsvgHandle * ctx, RsvgPropertyBag *atts)
 }
 
 static void
+add_node_to_handle (RsvgHandle *ctx, RsvgNode *node)
+{
+    g_assert (ctx != NULL);
+    g_assert (node != NULL);
+
+    g_ptr_array_add (ctx->priv->all_nodes, node);
+}
+
+static void
 register_node_in_defs (RsvgHandle *ctx, RsvgNode *node, RsvgPropertyBag *atts)
 {
     const char *id;
@@ -197,8 +206,6 @@ register_node_in_defs (RsvgHandle *ctx, RsvgNode *node, RsvgPropertyBag *atts)
     if (id) {
         rsvg_defs_register_node_by_id (ctx->priv->defs, id, node);
     }
-
-    rsvg_defs_register_memory (ctx->priv->defs, node);
 }
 
 
@@ -327,6 +334,7 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
         newnode->name = (char *) name; /* libxml will keep this while parsing */
         newnode->parent = ctx->priv->currentnode;
 
+        add_node_to_handle (ctx, newnode);
         register_node_in_defs (ctx, newnode, atts);
         rsvg_node_set_atts (newnode, ctx, atts);
 
@@ -823,7 +831,8 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
 
     self = rsvg_new_node_chars ((char *) ch, len);
 
-    rsvg_defs_register_memory (ctx->priv->defs, (RsvgNode *) self);
+    add_node_to_handle (ctx, (RsvgNode *) self);
+
     if (ctx->priv->currentnode)
         rsvg_node_group_pack (ctx->priv->currentnode, (RsvgNode *) self);
 }
