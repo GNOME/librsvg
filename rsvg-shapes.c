@@ -84,10 +84,8 @@ rsvg_node_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * at
         }
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
-        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
+        if ((value = rsvg_property_bag_lookup (atts, "id")))
             id = value;
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
-        }
 
         rsvg_parse_style_attrs (ctx, self->state, "path", klazz, id, atts);
     }
@@ -135,10 +133,8 @@ _rsvg_node_poly_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
         }
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
-        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
+        if ((value = rsvg_property_bag_lookup (atts, "id")))
             id = value;
-            rsvg_defs_register_node_by_id (ctx->priv->defs, id, self);
-        }
 
         rsvg_parse_style_attrs (ctx, self->state,
                                 RSVG_NODE_TYPE (self) == RSVG_NODE_TYPE_POLYLINE ? "polyline" : "polygon",
@@ -266,10 +262,8 @@ _rsvg_node_line_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
             line->y2 = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
-        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
+        if ((value = rsvg_property_bag_lookup (atts, "id")))
             id = value;
-            rsvg_defs_register_node_by_id (ctx->priv->defs, id, self);
-        }
 
         rsvg_parse_style_attrs (ctx, self->state, "line", klazz, id, atts);
     }
@@ -345,10 +339,8 @@ _rsvg_node_rect_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
         }
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
-        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
+        if ((value = rsvg_property_bag_lookup (atts, "id")))
             id = value;
-            rsvg_defs_register_node_by_id (ctx->priv->defs, id, self);
-        }
 
         rsvg_parse_style_attrs (ctx, self->state, "rect", klazz, id, atts);
     }
@@ -528,10 +520,8 @@ _rsvg_node_circle_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *
             circle->r = _rsvg_css_parse_length (value, LENGTH_DIR_BOTH);
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
-        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
+        if ((value = rsvg_property_bag_lookup (atts, "id")))
             id = value;
-            rsvg_defs_register_node_by_id (ctx->priv->defs, id, self);
-        }
 
         rsvg_parse_style_attrs (ctx, self->state, "circle", klazz, id, atts);
     }
@@ -622,10 +612,8 @@ _rsvg_node_ellipse_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag 
             ellipse->ry = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
-        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
+        if ((value = rsvg_property_bag_lookup (atts, "id")))
             id = value;
-            rsvg_defs_register_node_by_id (ctx->priv->defs, id, self);
-        }
 
         rsvg_parse_style_attrs (ctx, self->state, "ellipse", klazz, id, atts);
     }

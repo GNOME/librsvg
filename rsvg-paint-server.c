@@ -205,8 +205,6 @@ rsvg_linear_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
     const char *value;
 
     if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
         if ((value = rsvg_property_bag_lookup (atts, "x1"))) {
             grad->x1 = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
             grad->hasx1 = TRUE;
@@ -288,8 +286,6 @@ rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
     const char *value;
 
     if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
         if ((value = rsvg_property_bag_lookup (atts, "cx"))) {
             grad->cx = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
             grad->hascx = TRUE;
@@ -377,8 +373,6 @@ rsvg_pattern_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts
     const char *value;
 
     if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
         if ((value = rsvg_property_bag_lookup (atts, "viewBox"))) {
             pattern->vbox = rsvg_css_parse_vbox (value);
             pattern->hasvbox = TRUE;

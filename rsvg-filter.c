@@ -798,8 +798,6 @@ rsvg_filter_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
             filter->width = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "height")))
             filter->height = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 }
 
@@ -1039,9 +1037,6 @@ rsvg_filter_primitive_blend_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPro
             g_string_assign (filter->super.result, value);
 
         filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
-        
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, node);
     }
 }
 
@@ -1276,8 +1271,6 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode * self,
             else
                 filter->edgemode = 0;
         }
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 
     if ((gint64) listlen != (gint64) filter->orderx * filter->ordery)
@@ -1945,8 +1938,6 @@ rsvg_filter_primitive_gaussian_blur_set_atts (RsvgNode * self,
 
         if ((value = rsvg_property_bag_lookup (atts, "stdDeviation")))
             rsvg_css_parse_number_optional_number (value, &filter->sdx, &filter->sdy);
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 }
 
@@ -2069,8 +2060,6 @@ rsvg_filter_primitive_offset_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPr
             filter->dx = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "dy")))
             filter->dy = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 }
 
@@ -2160,9 +2149,6 @@ rsvg_filter_primitive_merge_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
             g_string_assign (filter->super.result, value);
 
         filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
-
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 }
 
@@ -2380,8 +2366,6 @@ rsvg_filter_primitive_color_matrix_set_atts (RsvgNode * self, RsvgHandle * ctx,
             else
                 type = 0;
         }
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 
     if (type == 0) {
@@ -2668,9 +2652,6 @@ rsvg_filter_primitive_component_transfer_set_atts (RsvgNode * self, RsvgHandle *
             g_string_assign (filter->super.in, value);
 
         filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
-
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 }
 
@@ -2879,8 +2860,6 @@ rsvg_filter_primitive_erode_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
             else if (!strcmp (value, "dilate"))
                 filter->mode = 1;
         }
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 }
 
@@ -3114,8 +3093,6 @@ rsvg_filter_primitive_composite_set_atts (RsvgNode * self, RsvgHandle * ctx, Rsv
             filter->k3 = g_ascii_strtod (value, NULL) * 255.;
         if ((value = rsvg_property_bag_lookup (atts, "k4")))
             filter->k4 = g_ascii_strtod (value, NULL) * 255.;
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 }
 
@@ -3201,10 +3178,9 @@ rsvg_filter_primitive_flood_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
 
         filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
         
-        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
+        if ((value = rsvg_property_bag_lookup (atts, "id")))
             id = value;
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
-        }
+
         rsvg_parse_style_attrs (ctx, self->state, "feFlood", NULL, id, atts);
     }
 }
@@ -3391,8 +3367,6 @@ rsvg_filter_primitive_displacement_map_set_atts (RsvgNode * self, RsvgHandle * c
             filter->yChannelSelector = (value)[0];
         if ((value = rsvg_property_bag_lookup (atts, "scale")))
             filter->scale = g_ascii_strtod (value, NULL);
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 }
 
@@ -3757,8 +3731,6 @@ rsvg_filter_primitive_turbulence_set_atts (RsvgNode * self, RsvgHandle * ctx,
             filter->bDoStitching = (!strcmp (value, "stitch"));
         if ((value = rsvg_property_bag_lookup (atts, "type")))
             filter->bFractalSum = (!strcmp (value, "fractalNoise"));
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 }
 
@@ -3978,9 +3950,6 @@ rsvg_filter_primitive_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
         }
 
         filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
-        
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 }
 
@@ -4546,8 +4515,6 @@ rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode * self, RsvgHandle * c
             filter->diffuseConstant = g_ascii_strtod (value, NULL);
         if ((value = rsvg_property_bag_lookup (atts, "surfaceScale")))
             filter->surfaceScale = g_ascii_strtod (value, NULL);
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 }
 
@@ -4718,8 +4685,6 @@ rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode * self, RsvgHandle * 
             filter->specularExponent = g_ascii_strtod (value, NULL);
         if ((value = rsvg_property_bag_lookup (atts, "surfaceScale")))
             filter->surfaceScale = g_ascii_strtod (value, NULL);
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 }
 
@@ -4827,9 +4792,6 @@ rsvg_filter_primitive_tile_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgProp
             g_string_assign (filter->super.result, value);
 
         filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
-        
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
     }
 }
 
