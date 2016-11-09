@@ -472,18 +472,40 @@ void
 rsvg_state_finalize (RsvgState * state)
 {
     g_free (state->filter);
-    g_free (state->mask);
-    g_free (state->clip_path);
-    g_free (state->font_family);
-    g_free (state->lang);
-    g_free (state->startMarker);
-    g_free (state->middleMarker);
-    g_free (state->endMarker);
-    rsvg_paint_server_unref (state->fill);
-    rsvg_paint_server_unref (state->stroke);
+    state->filter = NULL;
 
-    if (state->dash.n_dash != 0)
+    g_free (state->mask);
+    state->mask = NULL;
+
+    g_free (state->clip_path);
+    state->clip_path = NULL;
+
+    g_free (state->font_family);
+    state->font_family = NULL;
+
+    g_free (state->lang);
+    state->lang = NULL;
+
+    g_free (state->startMarker);
+    state->startMarker = NULL;
+
+    g_free (state->middleMarker);
+    state->middleMarker = NULL;
+
+    g_free (state->endMarker);
+    state->endMarker = NULL;
+
+    rsvg_paint_server_unref (state->fill);
+    state->fill = NULL;
+
+    rsvg_paint_server_unref (state->stroke);
+    state->stroke = NULL;
+
+    if (state->dash.n_dash != 0) {
         g_free (state->dash.dash);
+        state->dash.n_dash = 0;
+        state->dash.dash = NULL;
+    }
 
     if (state->styles) {
         g_hash_table_unref (state->styles);
