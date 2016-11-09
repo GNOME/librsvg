@@ -442,7 +442,7 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
             cairo_rotate (render->cr, -rotation);
         pango_cairo_layout_path (render->cr, layout);
 
-        cairo_set_line_width (render->cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, LENGTH_DIR_HORIZONTAL));
+        cairo_set_line_width (render->cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, LENGTH_DIR_BOTH));
         cairo_set_miter_limit (render->cr, state->miter_limit);
         cairo_set_line_cap (render->cr, (cairo_line_cap_t) state->cap);
         cairo_set_line_join (render->cr, (cairo_line_join_t) state->join);
