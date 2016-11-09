@@ -41,8 +41,6 @@
 
 #include <pango/pangocairo.h>
 
-static const cairo_user_data_key_t surface_pixel_data_key;
-
 static void
 _pattern_add_rsvg_color_stops (cairo_pattern_t * pattern,
                                GPtrArray * stops, guint32 current_color_rgb, guint8 opacity)
