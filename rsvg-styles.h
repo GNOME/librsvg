@@ -201,8 +201,7 @@ G_GNUC_INTERNAL
 void rsvg_state_inherit     (RsvgState * dst, const RsvgState * src);
 G_GNUC_INTERNAL
 void rsvg_state_reinherit   (RsvgState * dst, const RsvgState * src);
-G_GNUC_INTERNAL
-void rsvg_state_override    (RsvgState * dst, const RsvgState * src);
+
 G_GNUC_INTERNAL
 void rsvg_state_free_all    (RsvgState * state);
 

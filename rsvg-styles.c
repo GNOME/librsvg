@@ -508,8 +508,8 @@ clonefunction (int dst, int src)
     return 1;
 }
 
-void
-rsvg_state_override (RsvgState * dst, const RsvgState * src)
+static void
+state_override (RsvgState * dst, const RsvgState * src)
 {
     rsvg_state_inherit_run (dst, src, clonefunction, 0);
 }
@@ -1718,7 +1718,7 @@ rsvg_state_reinherit_top (RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
     /*This is a special domination mode for patterns, the transform
        is simply left as is, wheras the style is totally overridden */
     if (dominate == 2) {
-        rsvg_state_override (current, state);
+        state_override (current, state);
     } else {
         RsvgState *parent= rsvg_state_parent (current);
         rsvg_state_clone (current, state);
