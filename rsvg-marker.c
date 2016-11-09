@@ -219,7 +219,7 @@ rsvg_render_markers (RsvgDrawingCtx *ctx,
 
     state = rsvg_current_state (ctx);
 
-    linewidth = _rsvg_css_normalize_length (&state->stroke_width, ctx, LENGTH_DIR_BOTH);
+    linewidth = rsvg_get_normalized_stroke_width (ctx);
 
     rsvg_rust_render_markers (ctx,
                               builder,

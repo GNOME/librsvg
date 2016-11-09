@@ -384,7 +384,7 @@ rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
 static void
 setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgState *state)
 {
-    cairo_set_line_width (cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, LENGTH_DIR_BOTH));
+    cairo_set_line_width (cr, rsvg_get_normalized_stroke_width (ctx));
     cairo_set_miter_limit (cr, state->miter_limit);
     cairo_set_line_cap (cr, (cairo_line_cap_t) state->cap);
     cairo_set_line_join (cr, (cairo_line_join_t) state->join);

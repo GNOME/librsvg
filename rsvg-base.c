@@ -2165,6 +2165,14 @@ rsvg_render_surface (RsvgDrawingCtx * ctx, cairo_surface_t *surface, double x, d
     ctx->render->render_surface (ctx, surface, x, y, w, h);
 }
 
+double
+rsvg_get_normalized_stroke_width (RsvgDrawingCtx *ctx)
+{
+    RsvgState *state = rsvg_current_state (ctx);
+
+    return _rsvg_css_normalize_length (&state->stroke_width, ctx, LENGTH_DIR_BOTH);
+}
+
 void
 rsvg_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w, double h)
 {

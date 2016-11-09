@@ -387,6 +387,8 @@ G_GNUC_INTERNAL
 void rsvg_render_surface        (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
                                  double x, double y, double w, double h);
 G_GNUC_INTERNAL
+double rsvg_get_normalized_stroke_width (RsvgDrawingCtx *ctx);
+G_GNUC_INTERNAL
 void rsvg_render_free           (RsvgRender * render);
 G_GNUC_INTERNAL
 void rsvg_add_clipping_rect     (RsvgDrawingCtx * ctx, double x, double y, double w, double h);
