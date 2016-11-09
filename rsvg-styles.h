@@ -191,7 +191,8 @@ G_GNUC_INTERNAL
 RsvgState *rsvg_state_new (void);
 
 G_GNUC_INTERNAL
-void rsvg_state_init        (RsvgState * state);
+void rsvg_state_free (RsvgState *state);
+
 G_GNUC_INTERNAL
 void rsvg_state_reinit      (RsvgState * state);
 G_GNUC_INTERNAL
@@ -204,8 +205,6 @@ G_GNUC_INTERNAL
 void rsvg_state_dominate    (RsvgState * dst, const RsvgState * src);
 G_GNUC_INTERNAL
 void rsvg_state_override    (RsvgState * dst, const RsvgState * src);
-G_GNUC_INTERNAL
-void rsvg_state_finalize    (RsvgState * state);
 G_GNUC_INTERNAL
 void rsvg_state_free_all    (RsvgState * state);
 

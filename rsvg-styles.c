@@ -114,7 +114,7 @@ rsvg_dpi_percentage (RsvgHandle * ctx)
     return sqrt (ctx->priv->dpi_x * ctx->priv->dpi_y);
 }
 
-void
+static void
 rsvg_state_init (RsvgState * state)
 {
     memset (state, 0, sizeof (RsvgState));
@@ -209,6 +209,71 @@ rsvg_state_init (RsvgState * state)
 
     state->styles = g_hash_table_new_full (g_str_hash, g_str_equal,
                                            g_free, (GDestroyNotify) style_value_data_free);
+}
+
+RsvgState *
+rsvg_state_new (void)
+{
+    RsvgState *state;
+
+    state = g_slice_new (RsvgState);
+    rsvg_state_init (state);
+
+    return state;
+}
+
+static void
+rsvg_state_finalize (RsvgState * state)
+{
+    g_free (state->filter);
+    state->filter = NULL;
+
+    g_free (state->mask);
+    state->mask = NULL;
+
+    g_free (state->clip_path);
+    state->clip_path = NULL;
+
+    g_free (state->font_family);
+    state->font_family = NULL;
+
+    g_free (state->lang);
+    state->lang = NULL;
+
+    g_free (state->startMarker);
+    state->startMarker = NULL;
+
+    g_free (state->middleMarker);
+    state->middleMarker = NULL;
+
+    g_free (state->endMarker);
+    state->endMarker = NULL;
+
+    rsvg_paint_server_unref (state->fill);
+    state->fill = NULL;
+
+    rsvg_paint_server_unref (state->stroke);
+    state->stroke = NULL;
+
+    if (state->dash.n_dash != 0) {
+        g_free (state->dash.dash);
+        state->dash.n_dash = 0;
+        state->dash.dash = NULL;
+    }
+
+    if (state->styles) {
+        g_hash_table_unref (state->styles);
+        state->styles = NULL;
+    }
+}
+
+void
+rsvg_state_free (RsvgState *state)
+{
+    g_assert (state != NULL);
+
+    rsvg_state_finalize (state);
+    g_slice_free (RsvgState, state);
 }
 
 void
@@ -466,51 +531,6 @@ void
 rsvg_state_inherit (RsvgState * dst, const RsvgState * src)
 {
     rsvg_state_inherit_run (dst, src, inheritfunction, 1);
-}
-
-void
-rsvg_state_finalize (RsvgState * state)
-{
-    g_free (state->filter);
-    state->filter = NULL;
-
-    g_free (state->mask);
-    state->mask = NULL;
-
-    g_free (state->clip_path);
-    state->clip_path = NULL;
-
-    g_free (state->font_family);
-    state->font_family = NULL;
-
-    g_free (state->lang);
-    state->lang = NULL;
-
-    g_free (state->startMarker);
-    state->startMarker = NULL;
-
-    g_free (state->middleMarker);
-    state->middleMarker = NULL;
-
-    g_free (state->endMarker);
-    state->endMarker = NULL;
-
-    rsvg_paint_server_unref (state->fill);
-    state->fill = NULL;
-
-    rsvg_paint_server_unref (state->stroke);
-    state->stroke = NULL;
-
-    if (state->dash.n_dash != 0) {
-        g_free (state->dash.dash);
-        state->dash.n_dash = 0;
-        state->dash.dash = NULL;
-    }
-
-    if (state->styles) {
-        g_hash_table_unref (state->styles);
-        state->styles = NULL;
-    }
 }
 
 /* Parse a CSS2 style argument, setting the SVG context attributes. */
@@ -1560,8 +1580,9 @@ rsvg_state_free_all (RsvgState * state)
 {
     while (state) {
         RsvgState *parent = state->parent;
-        rsvg_state_finalize (state);
-        g_slice_free (RsvgState, state);
+
+        rsvg_state_free (state);
+
         state = parent;
     }
 }
@@ -1650,8 +1671,7 @@ rsvg_state_push (RsvgDrawingCtx * ctx)
     RsvgState *baseon;
 
     baseon = ctx->state;
-    data = g_slice_new (RsvgState);
-    rsvg_state_init (data);
+    data = rsvg_state_new ();
 
     if (baseon) {
         rsvg_state_reinherit (data, baseon);
@@ -1666,9 +1686,10 @@ void
 rsvg_state_pop (RsvgDrawingCtx * ctx)
 {
     RsvgState *dead_state = ctx->state;
+
     ctx->state = dead_state->parent;
-    rsvg_state_finalize (dead_state);
-    g_slice_free (RsvgState, dead_state);
+
+    rsvg_state_free (dead_state);
 }
 
 /*

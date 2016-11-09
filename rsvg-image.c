@@ -155,9 +155,7 @@ static void
 rsvg_node_image_free (RsvgNode * self)
 {
     RsvgNodeImage *z = (RsvgNodeImage *) self;
-    rsvg_state_finalize (z->super.state);
-    g_free (z->super.state);
-    z->super.state = NULL;
+
     if (z->surface)
         cairo_surface_destroy (z->surface);
     _rsvg_node_free(self);
