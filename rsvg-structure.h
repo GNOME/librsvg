@@ -80,8 +80,6 @@ struct _RsvgNodeSvg {
 };
 
 G_GNUC_INTERNAL
-void rsvg_pop_def_group     (RsvgHandle * ctx);
-G_GNUC_INTERNAL
 void rsvg_node_group_pack   (RsvgNode * self, RsvgNode * child);
 G_GNUC_INTERNAL
 void rsvg_node_draw         (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);

@@ -722,8 +722,9 @@ rsvg_end_element (void *data, const xmlChar * name)
         }
 
         if (ctx->priv->currentnode &&
-            !strcmp ((const char *) name, ctx->priv->currentnode->name))
-                rsvg_pop_def_group (ctx);
+            !strcmp ((const char *) name, ctx->priv->currentnode->name)) {
+            ctx->priv->currentnode = ctx->priv->currentnode->parent;
+        }
 
         /* FIXMEchpe: shouldn't this check that currentnode == treebase or sth like that? */
         if (ctx->priv->treebase && !strcmp ((const char *)name, "svg"))

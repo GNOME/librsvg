@@ -146,13 +146,6 @@ rsvg_new_group (void)
 }
 
 void
-rsvg_pop_def_group (RsvgHandle * ctx)
-{
-    g_assert (ctx->priv->currentnode != NULL);
-    ctx->priv->currentnode = ctx->priv->currentnode->parent;
-}
-
-void
 rsvg_node_group_pack (RsvgNode * self, RsvgNode * child)
 {
     g_ptr_array_add (self->children, child);
