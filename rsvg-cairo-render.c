@@ -44,7 +44,9 @@ rsvg_cairo_render_free (RsvgRender * self)
 {
     RsvgCairoRender *me = RSVG_CAIRO_RENDER (self);
 
-    /* TODO */
+    g_assert (me->cr_stack == NULL);
+    g_assert (me->bb_stack == NULL);
+    g_assert (me->surfaces_stack == NULL);
 
     g_free (me);
 }
