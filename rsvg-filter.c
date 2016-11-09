@@ -770,7 +770,7 @@ rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
 }
 
 static void
-rsvg_filter_set_args (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_filter_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
     const char *value;
     RsvgFilter *filter;
@@ -821,7 +821,7 @@ rsvg_new_filter (void)
     filter->y = _rsvg_css_parse_length ("-10%", LENGTH_DIR_VERTICAL);
     filter->width = _rsvg_css_parse_length ("120%", LENGTH_DIR_HORIZONTAL);
     filter->height = _rsvg_css_parse_length ("120%", LENGTH_DIR_VERTICAL);
-    filter->super.set_atts = rsvg_filter_set_args;
+    filter->super.set_atts = rsvg_filter_set_atts;
     return (RsvgNode *) filter;
 }
 
