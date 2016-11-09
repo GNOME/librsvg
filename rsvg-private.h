@@ -386,8 +386,17 @@ void rsvg_render_path_builder   (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 G_GNUC_INTERNAL
 void rsvg_render_surface        (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
                                  double x, double y, double w, double h);
+
 G_GNUC_INTERNAL
 double rsvg_get_normalized_stroke_width (RsvgDrawingCtx *ctx);
+
+G_GNUC_INTERNAL
+const char *rsvg_get_start_marker (RsvgDrawingCtx *ctx);
+G_GNUC_INTERNAL
+const char *rsvg_get_middle_marker (RsvgDrawingCtx *ctx);
+G_GNUC_INTERNAL
+const char *rsvg_get_end_marker (RsvgDrawingCtx *ctx);
+
 G_GNUC_INTERNAL
 void rsvg_render_free           (RsvgRender * render);
 G_GNUC_INTERNAL

@@ -1699,21 +1699,3 @@ rsvg_state_reconstruct (RsvgState * state, RsvgNode * current)
     rsvg_state_reconstruct (state, current->parent);
     rsvg_state_inherit (state, current->state);
 }
-
-const char *
-rsvg_state_get_start_marker (RsvgState *state)
-{
-    return state->startMarker;
-}
-
-const char *
-rsvg_state_get_middle_marker (RsvgState *state)
-{
-    return state->middleMarker;
-}
-    
-const char *
-rsvg_state_get_end_marker (RsvgState *state)
-{
-    return state->endMarker;
-}

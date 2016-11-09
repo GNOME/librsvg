@@ -300,6 +300,7 @@ extern "C" {
                            orient: f64,
                            linewidth: f64,
                            ctx: *mut RsvgDrawingCtx);
+    fn rsvg_get_normalized_stroke_width (ctx: *const RsvgDrawingCtx) -> f64;
 }
 
 enum SubpathState {
@@ -356,10 +357,11 @@ fn render_marker_at_end_of_segment (segment: &Segment,
 #[no_mangle]
 pub extern fn rsvg_rust_render_markers (ctx: *mut RsvgDrawingCtx,
                                         raw_builder: *mut RsvgPathBuilder,
-                                        linewidth: f64,
                                         startmarker: *const libc::c_char,
                                         middlemarker: *const libc::c_char,
                                         endmarker: *const libc::c_char) {
+    let linewidth: f64 = unsafe { rsvg_get_normalized_stroke_width (ctx) };
+
     if linewidth == 0.0 {
         return;
     }

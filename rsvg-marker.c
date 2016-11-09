@@ -205,7 +205,6 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
 
 extern void rsvg_rust_render_markers (RsvgDrawingCtx *ctx,
                                       RsvgPathBuilder *builder,
-                                      double linewidth,
                                       const char *startmarker,
                                       const char *middlemarker,
                                       const char *endmarker);
@@ -214,17 +213,9 @@ void
 rsvg_render_markers (RsvgDrawingCtx *ctx,
                      RsvgPathBuilder *builder)
 {
-    RsvgState *state;
-    double linewidth;
-
-    state = rsvg_current_state (ctx);
-
-    linewidth = rsvg_get_normalized_stroke_width (ctx);
-
     rsvg_rust_render_markers (ctx,
                               builder,
-                              linewidth,
-                              rsvg_state_get_start_marker (state),
-                              rsvg_state_get_middle_marker (state),
-                              rsvg_state_get_end_marker (state));
+                              rsvg_get_start_marker (ctx),
+                              rsvg_get_middle_marker (ctx),
+                              rsvg_get_end_marker (ctx));
 }
