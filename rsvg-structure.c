@@ -127,7 +127,7 @@ rsvg_node_group_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
             klazz = value;
         if ((value = rsvg_property_bag_lookup (atts, "id"))) {
             id = value;
-            rsvg_defs_register_name (ctx->priv->defs, value, self);
+            rsvg_defs_register_node_by_id (ctx->priv->defs, id, self);
         }
 
         rsvg_parse_style_attrs (ctx, self->state, "g", klazz, id, atts);
@@ -332,7 +332,7 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
         if (self->parent && (value = rsvg_property_bag_lookup (atts, "y")))
             svg->y = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "id"))) {
-            rsvg_defs_register_name (ctx->priv->defs, value, &svg->super);
+            rsvg_defs_register_node_by_id (ctx->priv->defs, value, self);
         }
         /*
          * style element is not loaded yet here, so we need to store those attribues
@@ -415,7 +415,7 @@ rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
             klazz = value;
         if ((value = rsvg_property_bag_lookup (atts, "id"))) {
             id = value;
-            rsvg_defs_register_name (ctx->priv->defs, value, &use->super);
+            rsvg_defs_register_node_by_id (ctx->priv->defs, id, self);
         }
         if ((value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
             g_free (use->link);
@@ -455,7 +455,7 @@ rsvg_node_symbol_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * 
             klazz = value;
         if ((value = rsvg_property_bag_lookup (atts, "id"))) {
             id = value;
-            rsvg_defs_register_name (ctx->priv->defs, value, &symbol->super);
+            rsvg_defs_register_node_by_id (ctx->priv->defs, id, self);
         }
         if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
             symbol->vbox = rsvg_css_parse_vbox (value);

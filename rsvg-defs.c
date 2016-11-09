@@ -123,12 +123,16 @@ rsvg_defs_lookup (const RsvgDefs * defs, const char *name)
 }
 
 void
-rsvg_defs_register_name (RsvgDefs * defs, const char *name, RsvgNode * val)
+rsvg_defs_register_node_by_id (RsvgDefs *defs, const char *id, RsvgNode *node)
 {
-    if (g_hash_table_lookup (defs->hash, name))
+    g_assert (defs != NULL);
+    g_assert (id != NULL);
+    g_assert (node != NULL);
+
+    if (g_hash_table_lookup (defs->hash, id))
         return;
 
-    g_hash_table_insert (defs->hash, g_strdup (name), val);
+    g_hash_table_insert (defs->hash, g_strdup (id), node);
 }
 
 void

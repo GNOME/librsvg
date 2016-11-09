@@ -229,7 +229,7 @@ rsvg_node_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
             klazz = value;
         if ((value = rsvg_property_bag_lookup (atts, "id"))) {
             id = value;
-            rsvg_defs_register_name (ctx->priv->defs, id, &image->super);
+            rsvg_defs_register_node_by_id (ctx->priv->defs, id, self);
         }
         if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
             image->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
