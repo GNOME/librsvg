@@ -56,7 +56,6 @@ typedef struct _RsvgNodeSvg RsvgNodeSvg;
 
 struct _RsvgNodeGroup {
     RsvgNode super;
-    char *name;
 };
 
 struct _RsvgNodeSymbol {
