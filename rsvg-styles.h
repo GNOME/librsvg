@@ -243,6 +243,13 @@ void rsvg_state_reinherit_top	(RsvgDrawingCtx * ctx, RsvgState * state, int domi
 G_GNUC_INTERNAL
 void rsvg_state_reconstruct	(RsvgState * state, RsvgNode * current);
 
+G_GNUC_INTERNAL
+const char *rsvg_state_get_start_marker (RsvgState *state);
+G_GNUC_INTERNAL
+const char *rsvg_state_get_middle_marker (RsvgState *state);
+G_GNUC_INTERNAL
+const char *rsvg_state_get_end_marker (RsvgState *state);
+
 G_END_DECLS
 
 #endif                          /* RSVG_STYLES_H */

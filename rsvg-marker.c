@@ -224,7 +224,7 @@ rsvg_render_markers (RsvgDrawingCtx *ctx,
     rsvg_rust_render_markers (ctx,
                               builder,
                               linewidth,
-                              state->startMarker,
-                              state->middleMarker,
-                              state->endMarker);
+                              rsvg_state_get_start_marker (state),
+                              rsvg_state_get_middle_marker (state),
+                              rsvg_state_get_end_marker (state));
 }
