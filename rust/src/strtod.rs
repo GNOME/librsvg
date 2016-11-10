@@ -21,22 +21,17 @@ pub fn strtod (string: &str) -> (f64, &str) {
         match state {
             State::Whitespace => {
                 if c.is_whitespace () {
-                    last_pos += 1;
                     continue;
                 } else if c == '+' || c == '-' {
                     if c == '-' {
                         sign = -1.0;
                     }
 
-                    last_pos += 1;
                     state = State::IntegralPart;
                 } else if c.is_digit (10) {
                     state = State::IntegralPart;
                     value = (c as i32 - '0' as i32) as f64;
-                    last_pos += 1;
-                    println! ("sign: value={}", value);
                 } else if c == '.' {
-                    last_pos += 1;
                     state = State::FractionalPart;
                 } else {
                     break;
@@ -46,13 +41,9 @@ pub fn strtod (string: &str) -> (f64, &str) {
             State::IntegralPart => {
                 if c.is_digit (10) {
                     value = value * 10.0 + (c as i32 - '0' as i32) as f64;
-                    last_pos += 1;
-                    println! ("int: value={}", value);
                 } else if c == '.' {
-                    last_pos += 1;
                     state = State::FractionalPart;
                 } else if c == 'e' || c == 'E' {
-                    last_pos += 1;
                     state = State::ExponentSign;
                 } else {
                     break;
@@ -63,10 +54,7 @@ pub fn strtod (string: &str) -> (f64, &str) {
                 if c.is_digit (10) {
                     fraction *= 0.1;
                     value += fraction * (c as i32 - '0' as i32) as f64;
-                    println! ("frac: value={}", value);
-                    last_pos += 1;
                 } else if c == 'e' || c == 'E' {
-                    last_pos += 1;
                     state = State::ExponentSign;
                 } else {
                     break;
@@ -79,10 +67,8 @@ pub fn strtod (string: &str) -> (f64, &str) {
                         exponent_sign = -1.0;
                     }
 
-                    last_pos += 1;
                     state = State::Exponent;
                 } else if c.is_digit (10) {
-                    last_pos += 1;
                     exponent = (c as i32 - '0' as i32) as f64;
                 } else {
                     break;
@@ -91,13 +77,14 @@ pub fn strtod (string: &str) -> (f64, &str) {
 
             State::Exponent => {
                 if c.is_digit (10) {
-                    last_pos += 1;
                     exponent = exponent * 10.0 + (c as i32 - '0' as i32) as f64;
                 } else {
                     break;
                 }
             }
         }
+
+        last_pos += 1;
     }
 
     // return tuple with the value and the non-matching slice
