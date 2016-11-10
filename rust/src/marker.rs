@@ -239,7 +239,7 @@ fn get_segment_directionalities (segment: &Segment) -> Option <(f64, f64, f64, f
  * segment's start and end points to align with the positive x-axis
  * in user space.
  */
-fn find_incoming_directionality_backwards (segments: &Vec<Segment>, start_index: usize) -> (bool, f64, f64) {
+fn find_incoming_directionality_backwards (segments: &[Segment], start_index: usize) -> (bool, f64, f64) {
     /* "go backwards ... within the current subpath until ... segment which has directionality at its end point" */
 
     for segment in segments[.. start_index + 1].iter ().rev () {
@@ -260,7 +260,7 @@ fn find_incoming_directionality_backwards (segments: &Vec<Segment>, start_index:
     (false, 0.0, 0.0)
 }
 
-fn find_outgoing_directionality_forwards (segments: &Vec<Segment>, start_index: usize) -> (bool, f64, f64) {
+fn find_outgoing_directionality_forwards (segments: &[Segment], start_index: usize) -> (bool, f64, f64) {
     /* "go forwards ... within the current subpath until ... segment which has directionality at its start point" */
 
     for segment in &segments[start_index .. ] {
