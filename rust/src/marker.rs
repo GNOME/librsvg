@@ -242,7 +242,7 @@ fn get_segment_directionalities (segment: &Segment) -> Option <(f64, f64, f64, f
 fn find_incoming_directionality_backwards (segments: &Vec<Segment>, start_index: usize) -> (bool, f64, f64) {
     /* "go backwards ... within the current subpath until ... segment which has directionality at its end point" */
 
-    for segment in (&segments[0 .. start_index + 1]).iter ().rev () {
+    for segment in segments[.. start_index + 1].iter ().rev () {
         match *segment {
             Segment::Degenerate { .. } => {
                 return (false, 0.0, 0.0); /* reached the beginning of the subpath as we ran into a standalone point */
@@ -263,7 +263,7 @@ fn find_incoming_directionality_backwards (segments: &Vec<Segment>, start_index:
 fn find_outgoing_directionality_forwards (segments: &Vec<Segment>, start_index: usize) -> (bool, f64, f64) {
     /* "go forwards ... within the current subpath until ... segment which has directionality at its start point" */
 
-    for segment in &segments[start_index .. segments.len ()] {
+    for segment in &segments[start_index .. ] {
         match *segment {
             Segment::Degenerate { .. } => {
                 return (false, 0.0, 0.0);  /* reached the end of a subpath as we ran into a standalone point */
