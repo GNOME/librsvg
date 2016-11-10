@@ -20,3 +20,4 @@ pub use path_parser::{
 mod path_builder;
 mod path_parser;
 mod marker;
+mod strtod;
