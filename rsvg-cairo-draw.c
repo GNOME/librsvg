@@ -132,6 +132,65 @@ _set_source_rsvg_linear_gradient (RsvgDrawingCtx * ctx,
     cairo_pattern_destroy (pattern);
 }
 
+/* SVG defines radial gradients as being inside a circle (cx, cy, radius).  The
+ * gradient projects out from a focus point (fx, fy), which is assumed to be
+ * inside the circle, to the edge of the circle.
+ *
+ * The description of https://www.w3.org/TR/SVG/pservers.html#RadialGradientElement
+ * states:
+ *
+ * If the point defined by ‘fx’ and ‘fy’ lies outside the circle defined by
+ * ‘cx’, ‘cy’ and ‘r’, then the user agent shall set the focal point to the
+ * intersection of the line from (‘cx’, ‘cy’) to (‘fx’, ‘fy’) with the circle
+ * defined by ‘cx’, ‘cy’ and ‘r’.
+ *
+ * So, let's do that!
+ */
+static void
+fix_focus_point (double fx, double fy, double cx, double cy, double radius,
+                 double *out_fx, double *out_fy)
+{
+    double vx, vy;
+    double mag, scale;
+
+    /* Easy case first: the focus point is inside the circle */
+
+    if ((fx - cx) * (fx - cx) + (fy - cy) * (fy - cy) <= radius * radius) {
+        *out_fx = fx;
+        *out_fy = fy;
+        return;
+    }
+
+    /* Hard case: focus point is outside the circle.
+     *
+     * First, translate everything to the origin.
+     */
+
+    fx -= cx;
+    fy -= cy;
+
+    /* Find the vector from the origin to (fx, fy) */
+
+    vx = fx;
+    vy = fy;
+
+    /* Find the vector's magnitude */
+
+    mag = sqrt (vx * vx + vy * vy);
+
+    /* Normalize the vector to have a magnitude equal to radius; (vx, vy) will now be on the edge of the circle */
+
+    scale = mag / radius;
+
+    vx /= scale;
+    vy /= scale;
+
+    /* Translate back to (cx, cy) and we are done! */
+
+    *out_fx = vx + cx;
+    *out_fy = vy + cy;
+}
+
 static void
 _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
                                   RsvgRadialGradient * radial,
@@ -142,6 +201,10 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
     cairo_pattern_t *pattern;
     cairo_matrix_t matrix;
     RsvgRadialGradient statradial;
+    double fx, fy;
+    double cx, cy, radius;
+    double new_fx, new_fy;
+
     statradial = *radial;
     radial = &statradial;
     rsvg_radial_gradient_fix_fallback (ctx, radial);
@@ -149,11 +212,18 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
     if (radial->obj_bbox)
         _rsvg_push_view_box (ctx, 1., 1.);
 
-    pattern = cairo_pattern_create_radial (_rsvg_css_normalize_length (&radial->fx, ctx),
-                                           _rsvg_css_normalize_length (&radial->fy, ctx), 0.0,
-                                           _rsvg_css_normalize_length (&radial->cx, ctx),
-                                           _rsvg_css_normalize_length (&radial->cy, ctx),
-                                           _rsvg_css_normalize_length (&radial->r, ctx));
+    fx = _rsvg_css_normalize_length (&radial->fx, ctx);
+    fy = _rsvg_css_normalize_length (&radial->fy, ctx);
+
+    cx = _rsvg_css_normalize_length (&radial->cx, ctx);
+    cy = _rsvg_css_normalize_length (&radial->cy, ctx);
+    radius = _rsvg_css_normalize_length (&radial->r, ctx);
+
+    fix_focus_point (fx, fy, cx, cy, radius, &new_fx, &new_fy);
+
+    pattern = cairo_pattern_create_radial (new_fx, new_fy, 0.0,
+                                           cx, cy, radius);
+
     if (radial->obj_bbox)
         _rsvg_pop_view_box (ctx);
 
