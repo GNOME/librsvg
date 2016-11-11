@@ -152,6 +152,55 @@ just render the SVG image and output it to the specified PNG file.
 You can then run `make check` again and ensure that the tests pass.
 
 
+### Issues with the official SVG test suite
+
+Our SVG files in tests/fixtures/reftests/svg1.1 come from the "SVG 1.1
+Second Edition test suite" archive linked here:
+
+https://www.w3.org/Graphics/SVG/WG/wiki/Test_Suite_Overview
+
+We don't know how the reference PNG files in that archive are
+generated.  However, they are done in such a way that objects tend not
+to be pixel-aligned.  For example, many tests have a rectangular frame
+around the whole viewport, defined like this:
+
+  <rect id="test-frame" x="1" y="1" width="478" height="358" fill="none" stroke="#000000"/>
+
+This specifies no stroke with, so it uses 1 by default.  The desired
+effect is "stroke this rectangle with a 1-pixel wide line".
+
+However, notice that the (x, y) coordinates of the rect are (1, 1).
+This means that the actual bounds of the stroked outline are from
+(0.5, 0.5) to (479.5, 359.5).  The result is a fuzzy outline: it
+occupies two pixels of width, with each pixel having half-black
+coverage.
+
+Some elements in the reference PNG images from the official SVG test
+suite are pixel-aligned, and some are not, like the example test-frame
+above.  It looks like their renderer uses a (0.5, 0.5) offset just for
+strokes, but not for fills, which sounds hackish.
+
+Our test suite doesn't use special offsets so that SVG images not from
+the official test suite are rendered "normally".  This means that the
+reference images from the official test suite will always fail
+initially, since stroke outlines will be fuzzy in librsvg, but not in
+the test suite (and conversely, SVGs *not* from the test suite would
+be crips in librsvg but probably not in the test suite's renderer
+renderer).
+
+Also, the original reference PNGs either use fonts that are different
+from those usually on free software systems, or they use SVG fonts
+which librsvg currently doesn't support (with glyph shapes referenced
+from a secondary SVG).
+
+In any case, look at the results by hand, and compare them by eye to
+the official reference image.  If the thing being tested looks
+correct, and just the outlines are fuzzy --- and also it is just the
+actual font shapes that are different --- then the test is probably
+correct.  Follow the procedure as in "Regenerating reference images"
+listed above in order to have a reference image suitable for librsvg.
+
+
 ## Crash tests for crash.c
 
 These load and parse an SVG, and ensure that there are no errors in
