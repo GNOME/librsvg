@@ -86,7 +86,6 @@ pub fn parse_length (string: &str, dir: LengthDir) -> RsvgLength {
     let unit: LengthUnit;
 
     let (mut value, rest) = strtod (string);
-    println! ("strtod yielded {}, {}", value, rest);
 
     match rest.as_ref () {
         "%" => {
