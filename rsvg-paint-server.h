@@ -56,8 +56,6 @@ struct _RsvgLinearGradient {
     cairo_matrix_t affine; /* user space to actual at time of gradient def */
     cairo_extend_t spread;
     RsvgLength x1, y1, x2, y2;
-    guint32 current_color;
-    gboolean has_current_color;
     int hasx1:1;
     int hasy1:1;
     int hasx2:1;
@@ -74,8 +72,6 @@ struct _RsvgRadialGradient {
     cairo_matrix_t affine; /* user space to actual at time of gradient def */
     cairo_extend_t spread;
     RsvgLength cx, cy, r, fx, fy;
-    guint32 current_color;
-    gboolean has_current_color;
     int hascx:1;
     int hascy:1;
     int hasfx:1;
