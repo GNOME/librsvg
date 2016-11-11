@@ -136,7 +136,7 @@ rsvg_convert_LDADD = \
 	$(LIBM)
 
 rsvg_view_3_SOURCES = \
-	test-display.c \
+	rsvg-view.c \
 	rsvg-size-callback.h
 
 rsvg_view_3_CPPFLAGS = \
