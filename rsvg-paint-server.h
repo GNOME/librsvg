@@ -48,6 +48,7 @@ struct _RsvgGradientStop {
     RsvgNode super;
     double offset;
     guint32 rgba;
+    gboolean is_valid;
 };
 
 struct _RsvgLinearGradient {
