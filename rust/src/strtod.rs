@@ -70,7 +70,10 @@ pub fn strtod (string: &str) -> (f64, &str) {
                     state = State::Exponent;
                 } else if c.is_digit (10) {
                     exponent = (c as i32 - '0' as i32) as f64;
+                    state = State::Exponent;
                 } else {
+                    // un-consume the 'e' or 'E', so strtod("42em") produces the expected value.
+                    last_pos -= 1;
                     break;
                 }
             },
@@ -126,8 +129,17 @@ mod tests {
         let str = "-.25foo";
         assert_eq! (strtod (str), (-0.25f64, &str[4..]));
 
-        let str = ".25";
+        let str = ".25bar";
         assert_eq! (strtod (str), (0.25f64, &str[3..]));
+
+        let str = "22.5em";
+        assert_eq! (strtod (str), (22.5, "em"));
+
+        let str = "22.5e1Ex";
+        assert_eq! (strtod (str), (225.0, "Ex"));
+
+        let str = "22.5Ex";
+        assert_eq! (strtod (str), (22.5, "Ex"));
     }
 
     #[test]
@@ -146,6 +158,9 @@ mod tests {
 
         let str = "123.45E2";
         assert_eq! (strtod (str), (12345.0, &str[8..]));
+
+        let str = "123.45E10";
+        assert_eq! (strtod (str), (1234500000000.0, &str[9..]));
     }
 
     #[test]
