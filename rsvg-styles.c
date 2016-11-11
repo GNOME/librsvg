@@ -1176,7 +1176,7 @@ ccss_error (CRDocHandler * a_handler)
 {
     /* yup, like i care about CSS parsing errors ;-)
        ignore, chug along */
-    g_warning (_("CSS parsing error\n"));
+    g_message (_("CSS parsing error\n"));
 }
 
 static void
@@ -1184,7 +1184,7 @@ ccss_unrecoverable_error (CRDocHandler * a_handler)
 {
     /* yup, like i care about CSS parsing errors ;-)
        ignore, chug along */
-    g_warning (_("CSS unrecoverable error\n"));
+    g_message (_("CSS unrecoverable error\n"));
 }
 
 static void
@@ -1242,6 +1242,10 @@ rsvg_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
 
     cr_parser_set_use_core_grammar (parser, FALSE);
     cr_parser_parse (parser);
+
+    /* FIXME: we aren't reporting errors in the CSS; we have no way to know if
+     * we should print the "buff" for diagnostics.
+     */
 
     cr_parser_destroy (parser);
 }
