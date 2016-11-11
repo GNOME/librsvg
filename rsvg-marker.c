@@ -67,13 +67,13 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * 
         if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
             marker->vbox = rsvg_css_parse_vbox (value);
         if ((value = rsvg_property_bag_lookup (atts, "refX")))
-            marker->refX = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            marker->refX = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "refY")))
-            marker->refY = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            marker->refY = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "markerWidth")))
-            marker->width = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            marker->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "markerHeight")))
-            marker->height = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            marker->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "orient"))) {
             if (!strcmp (value, "auto"))
                 marker->orientAuto = TRUE;
@@ -101,8 +101,8 @@ rsvg_new_marker (void)
     marker->orient = 0;
     marker->orientAuto = FALSE;
     marker->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-    marker->refX = marker->refY = _rsvg_css_parse_length ("0", LENGTH_DIR_BOTH);
-    marker->width = marker->height = _rsvg_css_parse_length ("3", LENGTH_DIR_BOTH);
+    marker->refX = marker->refY = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
+    marker->width = marker->height = rsvg_length_parse ("3", LENGTH_DIR_BOTH);
     marker->bbox = TRUE;
     marker->vbox.active = FALSE;
     marker->super.set_atts = rsvg_node_marker_set_atts;

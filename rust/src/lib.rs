@@ -17,7 +17,17 @@ pub use path_parser::{
     rsvg_path_parser_from_str_into_builder
 };
 
+pub use length::{
+    LengthUnit,
+    LengthDir,
+    RsvgLength,
+    rsvg_length_parse,
+    rsvg_length_normalize,
+    rsvg_length_hand_normalize,
+};
+
 mod path_builder;
 mod path_parser;
 mod marker;
 mod strtod;
+mod length;

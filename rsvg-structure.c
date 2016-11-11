@@ -319,17 +319,17 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
         if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
             svg->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
         if ((value = rsvg_property_bag_lookup (atts, "width")))
-            svg->w = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            svg->w = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "height")))
-            svg->h = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            svg->h = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         /* 
          * x & y attributes have no effect on outermost svg
          * http://www.w3.org/TR/SVG/struct.html#SVGElement 
          */
         if (self->parent && (value = rsvg_property_bag_lookup (atts, "x")))
-            svg->x = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            svg->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         if (self->parent && (value = rsvg_property_bag_lookup (atts, "y")))
-            svg->y = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            svg->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
 
         /*
          * style element is not loaded yet here, so we need to store those attribues
@@ -373,10 +373,10 @@ rsvg_new_svg (void)
     _rsvg_node_init (&svg->super, RSVG_NODE_TYPE_SVG);
     svg->vbox.active = FALSE;
     svg->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-    svg->x = _rsvg_css_parse_length ("0", LENGTH_DIR_HORIZONTAL);
-    svg->y = _rsvg_css_parse_length ("0", LENGTH_DIR_VERTICAL);
-    svg->w = _rsvg_css_parse_length ("100%", LENGTH_DIR_HORIZONTAL);
-    svg->h = _rsvg_css_parse_length ("100%", LENGTH_DIR_VERTICAL);
+    svg->x = rsvg_length_parse ("0", LENGTH_DIR_HORIZONTAL);
+    svg->y = rsvg_length_parse ("0", LENGTH_DIR_VERTICAL);
+    svg->w = rsvg_length_parse ("100%", LENGTH_DIR_HORIZONTAL);
+    svg->h = rsvg_length_parse ("100%", LENGTH_DIR_VERTICAL);
     svg->super.draw = rsvg_node_svg_draw;
     svg->super.free = _rsvg_svg_free;
     svg->super.set_atts = rsvg_node_svg_set_atts;
@@ -401,13 +401,13 @@ rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
     use = (RsvgNodeUse *) self;
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "x")))
-            use->x = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            use->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "y")))
-            use->y = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            use->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "width")))
-            use->w = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            use->w = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "height")))
-            use->h = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            use->h = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
         if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -431,10 +431,10 @@ rsvg_new_use (void)
     use->super.draw = rsvg_node_use_draw;
     use->super.free = rsvg_node_use_free;
     use->super.set_atts = rsvg_node_use_set_atts;
-    use->x = _rsvg_css_parse_length ("0", LENGTH_DIR_HORIZONTAL);
-    use->y = _rsvg_css_parse_length ("0", LENGTH_DIR_VERTICAL);
-    use->w = _rsvg_css_parse_length ("0", LENGTH_DIR_HORIZONTAL);
-    use->h = _rsvg_css_parse_length ("0", LENGTH_DIR_VERTICAL);
+    use->x = rsvg_length_parse ("0", LENGTH_DIR_HORIZONTAL);
+    use->y = rsvg_length_parse ("0", LENGTH_DIR_VERTICAL);
+    use->w = rsvg_length_parse ("0", LENGTH_DIR_HORIZONTAL);
+    use->h = rsvg_length_parse ("0", LENGTH_DIR_VERTICAL);
     use->link = NULL;
     return (RsvgNode *) use;
 }

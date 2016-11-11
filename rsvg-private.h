@@ -242,6 +242,7 @@ _rsvg_render_check_type (RsvgRender *render,
 #define _RSVG_RENDER_CIC(render, render_type, RenderCType) \
   ((RenderCType*) _rsvg_render_check_type ((render), (render_type)))
 
+/* Keep this in sync with rust/src/length.rs:LengthUnit */
 typedef enum {
     LENGTH_UNIT_DEFAULT,
     LENGTH_UNIT_PERCENT,
@@ -252,12 +253,14 @@ typedef enum {
     LENGTH_UNIT_RELATIVE_SMALLER
 } LengthUnit;
 
+/* Keep this in sync with rust/src/length.rs:LengthDir */
 typedef enum {
     LENGTH_DIR_HORIZONTAL,
     LENGTH_DIR_VERTICAL,
     LENGTH_DIR_BOTH
 } LengthDir;
 
+/* Keep this in sync with rust/src/length.rs:RsvgLength */
 typedef struct {
     double length;
     LengthUnit unit;
@@ -425,8 +428,11 @@ double _rsvg_css_hand_normalize_length  (const RsvgLength * in, gdouble pixels_p
 double _rsvg_css_normalize_font_size    (RsvgState * state, RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
 double _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx);
+
+/* Implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
-RsvgLength _rsvg_css_parse_length (const char *str, LengthDir dir);
+RsvgLength rsvg_length_parse (const char *str, LengthDir dir);
+
 G_GNUC_INTERNAL
 void _rsvg_push_view_box    (RsvgDrawingCtx * ctx, double w, double h);
 G_GNUC_INTERNAL

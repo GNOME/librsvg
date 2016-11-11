@@ -131,17 +131,17 @@ set_text_common_atts (RsvgNodeText *text, RsvgPropertyBag * atts)
     const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "x"))) {
-        text->x = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+        text->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         text->x_specified = TRUE;
     }
     if ((value = rsvg_property_bag_lookup (atts, "y"))) {
-        text->y = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+        text->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         text->y_specified = TRUE;
     }
     if ((value = rsvg_property_bag_lookup (atts, "dx")))
-        text->dx = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+        text->dx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
     if ((value = rsvg_property_bag_lookup (atts, "dy")))
-        text->dy = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+        text->dy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
 }
 
 
@@ -320,7 +320,7 @@ rsvg_new_text (void)
     _rsvg_node_init (&text->super, RSVG_NODE_TYPE_TEXT);
     text->super.draw = _rsvg_node_text_draw;
     text->super.set_atts = _rsvg_node_text_set_atts;
-    text->x = text->y = text->dx = text->dy = _rsvg_css_parse_length ("0", LENGTH_DIR_BOTH);
+    text->x = text->y = text->dx = text->dy = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     return &text->super;
 }
 
@@ -412,7 +412,7 @@ rsvg_new_tspan (void)
     text = g_new0 (RsvgNodeText, 1);
     _rsvg_node_init (&text->super, RSVG_NODE_TYPE_TSPAN);
     text->super.set_atts = _rsvg_node_tspan_set_atts;
-    text->dx = text->dy = _rsvg_css_parse_length ("0", LENGTH_DIR_BOTH);
+    text->dx = text->dy = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     return &text->super;
 }
 

@@ -253,13 +253,13 @@ _rsvg_node_line_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "x1")))
-            line->x1 = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            line->x1 = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "y1")))
-            line->y1 = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            line->y1 = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "x2")))
-            line->x2 = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            line->x2 = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "y2")))
-            line->y2 = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            line->y2 = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
         if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -301,7 +301,7 @@ rsvg_new_line (void)
     _rsvg_node_init (&line->super, RSVG_NODE_TYPE_LINE);
     line->super.draw = _rsvg_node_line_draw;
     line->super.set_atts = _rsvg_node_line_set_atts;
-    line->x1 = line->x2 = line->y1 = line->y2 = _rsvg_css_parse_length ("0", LENGTH_DIR_BOTH);
+    line->x1 = line->x2 = line->y1 = line->y2 = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     return &line->super;
 }
 
@@ -322,19 +322,19 @@ _rsvg_node_rect_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
     /* FIXME: negative w/h/rx/ry is an error, per http://www.w3.org/TR/SVG11/shapes.html#RectElement */
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "x")))
-            rect->x = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            rect->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "y")))
-            rect->y = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            rect->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "width")))
-            rect->w = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            rect->w = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "height")))
-            rect->h = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            rect->h = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "rx"))) {
-            rect->rx = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            rect->rx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
             rect->got_rx = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "ry"))) {
-            rect->ry = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            rect->ry = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
             rect->got_ry = TRUE;
         }
         if ((value = rsvg_property_bag_lookup (atts, "class")))
@@ -493,7 +493,7 @@ rsvg_new_rect (void)
     _rsvg_node_init (&rect->super, RSVG_NODE_TYPE_RECT);
     rect->super.draw = _rsvg_node_rect_draw;
     rect->super.set_atts = _rsvg_node_rect_set_atts;
-    rect->x = rect->y = rect->w = rect->h = rect->rx = rect->ry = _rsvg_css_parse_length ("0", LENGTH_DIR_BOTH);
+    rect->x = rect->y = rect->w = rect->h = rect->rx = rect->ry = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     rect->got_rx = rect->got_ry = FALSE;
     return &rect->super;
 }
@@ -513,11 +513,11 @@ _rsvg_node_circle_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *
 
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "cx")))
-            circle->cx = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            circle->cx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "cy")))
-            circle->cy = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            circle->cy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "r")))
-            circle->r = _rsvg_css_parse_length (value, LENGTH_DIR_BOTH);
+            circle->r = rsvg_length_parse (value, LENGTH_DIR_BOTH);
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
         if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -584,7 +584,7 @@ rsvg_new_circle (void)
     _rsvg_node_init (&circle->super, RSVG_NODE_TYPE_CIRCLE);
     circle->super.draw = _rsvg_node_circle_draw;
     circle->super.set_atts = _rsvg_node_circle_set_atts;
-    circle->cx = circle->cy = circle->r = _rsvg_css_parse_length ("0", LENGTH_DIR_BOTH);
+    circle->cx = circle->cy = circle->r = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     return &circle->super;
 }
 
@@ -603,13 +603,13 @@ _rsvg_node_ellipse_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag 
 
     if (rsvg_property_bag_size (atts)) {
         if ((value = rsvg_property_bag_lookup (atts, "cx")))
-            ellipse->cx = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            ellipse->cx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "cy")))
-            ellipse->cy = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            ellipse->cy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "rx")))
-            ellipse->rx = _rsvg_css_parse_length (value, LENGTH_DIR_HORIZONTAL);
+            ellipse->rx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
         if ((value = rsvg_property_bag_lookup (atts, "ry")))
-            ellipse->ry = _rsvg_css_parse_length (value, LENGTH_DIR_VERTICAL);
+            ellipse->ry = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         if ((value = rsvg_property_bag_lookup (atts, "class")))
             klazz = value;
         if ((value = rsvg_property_bag_lookup (atts, "id")))
@@ -677,6 +677,6 @@ rsvg_new_ellipse (void)
     _rsvg_node_init (&ellipse->super, RSVG_NODE_TYPE_ELLIPSE);
     ellipse->super.draw = _rsvg_node_ellipse_draw;
     ellipse->super.set_atts = _rsvg_node_ellipse_set_atts;
-    ellipse->cx = ellipse->cy = ellipse->rx = ellipse->ry = _rsvg_css_parse_length ("0", LENGTH_DIR_BOTH);
+    ellipse->cx = ellipse->cy = ellipse->rx = ellipse->ry = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     return &ellipse->super;
 }
