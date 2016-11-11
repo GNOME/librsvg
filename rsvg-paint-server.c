@@ -149,10 +149,14 @@ rsvg_paint_server_unref (RsvgPaintServer * ps)
 static void
 rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
+    gboolean has_stop_color = FALSE;
+    gboolean has_stop_opacity = FALSE;
     gboolean is_current_color = FALSE;
     const char *value;
     RsvgGradientStop *stop;
     RsvgState *state;
+    int opacity;
+    guint32 color;
 
     stop = (RsvgGradientStop *) self;
 
@@ -181,9 +185,16 @@ rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
         if ((value = rsvg_property_bag_lookup (atts, "style")))
             rsvg_parse_style (ctx, self->state, value);
 
-        if ((value = rsvg_property_bag_lookup (atts, "stop-color")))
+        if ((value = rsvg_property_bag_lookup (atts, "stop-color"))) {
+            has_stop_color = TRUE;
+
             if (!strcmp (value, "currentColor"))
                 is_current_color = TRUE;
+        }
+
+        if ((value = rsvg_property_bag_lookup (atts, "stop-opacity"))) {
+            has_stop_opacity = TRUE;
+        }
 
         rsvg_parse_style_pairs (ctx, self->state, atts);
     }
@@ -192,9 +203,23 @@ rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
     state = rsvg_state_new ();
     rsvg_state_reconstruct (state, self);
 
-    if (is_current_color)
-        state->stop_color = state->current_color;
-    stop->rgba = (state->stop_color << 8) | state->stop_opacity;
+    if (has_stop_color) {
+        if (is_current_color)
+            color = state->current_color;
+        else {
+            color = state->stop_color & 0x00ffffff;
+        }
+    } else {
+        color = 0x0;
+    }
+
+    if (has_stop_opacity) {
+        opacity = state->stop_opacity;
+    } else {
+        opacity = 0xff;
+    }
+
+    stop->rgba = (color << 8) | opacity;
 
     rsvg_state_free (state);
 }
@@ -206,7 +231,7 @@ rsvg_new_stop (void)
     _rsvg_node_init (&stop->super, RSVG_NODE_TYPE_STOP);
     stop->super.set_atts = rsvg_stop_set_atts;
     stop->offset = 0;
-    stop->rgba = 0;
+    stop->rgba = 0xff000000;
     stop->is_valid = FALSE;
     return &stop->super;
 }
