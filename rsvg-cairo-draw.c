@@ -71,13 +71,11 @@ add_color_stops_for_gradient (cairo_pattern_t * pattern,
         if (!stop->is_valid)
             return FALSE;
 
-        if (stop->offset < last_offset)
-            return FALSE;
-
-        last_offset = stop->offset;
+        /* deal with unsorted stop offsets as per the spec */
+        last_offset = MAX (last_offset, stop->offset);
 
         rgba = stop->rgba;
-        cairo_pattern_add_color_stop_rgba (pattern, stop->offset,
+        cairo_pattern_add_color_stop_rgba (pattern, last_offset,
                                            ((rgba >> 24) & 0xff) / 255.0,
                                            ((rgba >> 16) & 0xff) / 255.0,
                                            ((rgba >> 8) & 0xff) / 255.0,
