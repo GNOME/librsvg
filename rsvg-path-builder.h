@@ -1,7 +1,7 @@
 /* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* vim: set sw=4 sts=4 ts=4 expandtab: */
 /*
-   rsvg-path.h: Draw SVG paths
+   rsvg-path-builder.h: Hold SVG paths to replay them to a cairo_t later
 
    Copyright (C) 2000 Eazel, Inc.
    Copyright (C) 2002 Dom Lachowicz <cinamod@hotmail.com>
@@ -26,8 +26,8 @@
             Federico Mena Quintero <federico@gnome.org>
 */
 
-#ifndef RSVG_PATH_H
-#define RSVG_PATH_H
+#ifndef RSVG_PATH_BUILDER_H
+#define RSVG_PATH_BUILDER_H
 
 #include <glib.h>
 #include <cairo.h>
@@ -81,4 +81,4 @@ RsvgPathBuilder *rsvg_path_parser_from_str_into_builder (const char *path_str);
 
 G_END_DECLS
 
-#endif /* RSVG_PATH_H */
+#endif /* RSVG_PATH_BUILDER_H */

@@ -35,7 +35,7 @@
 #include "rsvg-shapes.h"
 #include "rsvg-css.h"
 #include "rsvg-defs.h"
-#include "rsvg-path.h"
+#include "rsvg-path-builder.h"
 
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)

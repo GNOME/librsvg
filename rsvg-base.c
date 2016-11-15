@@ -54,7 +54,7 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#include "rsvg-path.h"
+#include "rsvg-path-builder.h"
 #include "rsvg-paint-server.h"
 #include "rsvg-xml.h"
 

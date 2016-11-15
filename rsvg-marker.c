@@ -34,7 +34,7 @@
 #include "rsvg-filter.h"
 #include "rsvg-mask.h"
 #include "rsvg-image.h"
-#include "rsvg-path.h"
+#include "rsvg-path-builder.h"
 
 #include <string.h>
 #include <math.h>

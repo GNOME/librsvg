@@ -30,7 +30,7 @@
 #include <cairo.h>
 
 #include "rsvg.h"
-#include "rsvg-path.h"
+#include "rsvg-path-builder.h"
 
 #include <libxml/SAX.h>
 #include <libxml/xmlmemory.h>
