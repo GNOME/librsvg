@@ -3,6 +3,7 @@ extern crate cairo;
 extern crate cairo_sys;
 
 use path_builder::*;
+use drawing_ctx::RsvgDrawingCtx;
 
 #[derive(Debug, PartialEq)]
 pub enum Segment {
@@ -290,8 +291,6 @@ fn angle_from_vector (vx: f64, vy: f64) -> f64 {
         angle
     }
 }
-
-pub enum RsvgDrawingCtx {}
 
 extern "C" {
     fn rsvg_marker_render (marker_name: *const libc::c_char,

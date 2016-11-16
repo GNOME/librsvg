@@ -26,8 +26,9 @@ pub use length::{
     rsvg_length_hand_normalize,
 };
 
+mod drawing_ctx;
+mod length;
+mod marker;
 mod path_builder;
 mod path_parser;
-mod marker;
 mod strtod;
-mod length;
