@@ -506,14 +506,16 @@ rsvg_text_layout_free (RsvgTextLayout * layout)
 }
 
 static PangoLayout *
-rsvg_text_create_layout (RsvgDrawingCtx * ctx,
-                         RsvgState * state, const char *text, PangoContext * context)
+rsvg_text_create_layout (RsvgDrawingCtx * ctx, const char *text, PangoContext * context)
 {
+    RsvgState *state;
     PangoFontDescription *font_desc;
     PangoLayout *layout;
     PangoAttrList *attr_list;
     PangoAttribute *attribute;
     double dpi_y;
+
+    state = rsvg_current_state (ctx);
 
     if (state->lang)
         pango_context_set_language (context, pango_language_from_string (state->lang));
@@ -579,16 +581,19 @@ rsvg_text_create_layout (RsvgDrawingCtx * ctx,
 
 
 static RsvgTextLayout *
-rsvg_text_layout_new (RsvgDrawingCtx * ctx, RsvgState * state, const char *text)
+rsvg_text_layout_new (RsvgDrawingCtx * ctx, const char *text)
 {
+    RsvgState *state;
     RsvgTextLayout *layout;
+
+    state = rsvg_current_state (ctx);
 
     if (ctx->pango_context == NULL)
         ctx->pango_context = ctx->render->create_pango_context (ctx);
 
     layout = g_new0 (RsvgTextLayout, 1);
 
-    layout->layout = rsvg_text_create_layout (ctx, state, text, ctx->pango_context);
+    layout->layout = rsvg_text_create_layout (ctx, text, ctx->pango_context);
     layout->ctx = ctx;
 
     layout->anchor = state->text_anchor;
@@ -613,7 +618,7 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
         return;
 
     context = ctx->render->create_pango_context (ctx);
-    layout = rsvg_text_create_layout (ctx, state, text, context);
+    layout = rsvg_text_create_layout (ctx, text, context);
     pango_layout_get_size (layout, &w, &h);
     iter = pango_layout_get_iter (layout);
     offset = pango_layout_iter_get_baseline (iter) / (double) PANGO_SCALE;
@@ -652,7 +657,7 @@ rsvg_text_length_text_as_string (RsvgDrawingCtx * ctx, const char *text)
     RsvgTextLayout *layout;
     gdouble x;
 
-    layout = rsvg_text_layout_new (ctx, rsvg_current_state (ctx), text);
+    layout = rsvg_text_layout_new (ctx, text);
     layout->x = layout->y = 0;
 
     x = rsvg_text_layout_width (layout);
