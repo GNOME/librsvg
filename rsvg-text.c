@@ -538,7 +538,7 @@ rsvg_text_create_layout (RsvgDrawingCtx * ctx, const char *text, PangoContext * 
 
     rsvg_drawing_ctx_get_dpi (ctx, NULL, &dpi_y);
     pango_font_description_set_size (font_desc,
-                                     _rsvg_css_normalize_font_size (state, ctx) * PANGO_SCALE / dpi_y * 72);
+                                     rsvg_drawing_ctx_get_normalized_font_size (ctx) * PANGO_SCALE / dpi_y * 72);
 
     layout = pango_layout_new (context);
     pango_layout_set_font_description (layout, font_desc);

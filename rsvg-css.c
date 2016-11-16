@@ -92,8 +92,8 @@ rsvg_css_parse_vbox (const char *vbox)
 }
 
 /* Recursive evaluation of all parent elements regarding absolute font size */
-double
-_rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
+static double
+normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
 {
     RsvgState *parent;
 
@@ -104,7 +104,7 @@ _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
         parent = rsvg_state_parent (state);
         if (parent) {
             double parent_size;
-            parent_size = _rsvg_css_normalize_font_size (parent, ctx);
+            parent_size = normalize_font_size (parent, ctx);
             return state->font_size.length * parent_size;
         }
         break;
@@ -114,6 +114,12 @@ _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
     }
 
     return 12.;
+}
+
+double
+rsvg_drawing_ctx_get_normalized_font_size (RsvgDrawingCtx *ctx)
+{
+    return normalize_font_size (rsvg_current_state (ctx), ctx);
 }
 
 double
@@ -137,7 +143,7 @@ _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx)
             return in->length * rsvg_viewport_percentage (w, h);
         }
     } else if (in->unit == LENGTH_UNIT_FONT_EM || in->unit == LENGTH_UNIT_FONT_EX) {
-        double font = _rsvg_css_normalize_font_size (rsvg_current_state (ctx), ctx);
+        double font = rsvg_drawing_ctx_get_normalized_font_size (ctx);
         if (in->unit == LENGTH_UNIT_FONT_EM)
             return in->length * font;
         else
@@ -177,7 +183,7 @@ _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx)
     if (parent) {
         if (state->has_baseline_shift) {
             double parent_font_size;
-            parent_font_size = _rsvg_css_normalize_font_size (parent, ctx); /* font size from here */
+            parent_font_size = normalize_font_size (parent, ctx); /* font size from here */
             shift = parent_font_size * state->baseline_shift;
         }
         shift += _rsvg_css_accumulate_baseline_shift (parent, ctx); /* baseline-shift for parent element */
