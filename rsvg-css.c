@@ -122,6 +122,18 @@ rsvg_drawing_ctx_get_normalized_font_size (RsvgDrawingCtx *ctx)
     return normalize_font_size (rsvg_current_state (ctx), ctx);
 }
 
+static double
+viewport_percentage (double width, double height)
+{
+    /* https://www.w3.org/TR/SVG/coords.html#Units
+     *
+     * "For any other length value expressed as a percentage of the viewport, the
+     * percentage is calculated as the specified percentage of
+     * sqrt((actual-width)**2 + (actual-height)**2))/sqrt(2)."
+     */
+    return sqrt (width * width + height * height) / M_SQRT2;
+}
+
 double
 _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx)
 {
@@ -140,7 +152,7 @@ _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx)
             return in->length * h;
 
         case LENGTH_DIR_BOTH:
-            return in->length * rsvg_viewport_percentage (w, h);
+            return in->length * viewport_percentage (w, h);
         }
     } else if (in->unit == LENGTH_UNIT_FONT_EM || in->unit == LENGTH_UNIT_FONT_EX) {
         double font = rsvg_drawing_ctx_get_normalized_font_size (ctx);
@@ -161,7 +173,7 @@ _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx)
             return in->length * dpi_y;
 
         case LENGTH_DIR_BOTH:
-            return in->length * rsvg_viewport_percentage (dpi_x, dpi_y);
+            return in->length * viewport_percentage (dpi_x, dpi_y);
         }
     } else if (in->unit == LENGTH_UNIT_RELATIVE_LARGER) {
         /* todo: "larger" */

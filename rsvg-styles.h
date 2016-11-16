@@ -216,11 +216,6 @@ void rsvg_parse_style_attrs (RsvgHandle * ctx, RsvgState * state, const char *ta
                              const char *klazz, const char *id, RsvgPropertyBag * atts);
 
 G_GNUC_INTERNAL
-gdouble rsvg_viewport_percentage (gdouble width, gdouble height);
-G_GNUC_INTERNAL
-gdouble rsvg_dpi_percentage      (RsvgHandle * ctx);
-
-G_GNUC_INTERNAL
 gboolean rsvg_parse_transform   (cairo_matrix_t *matrix, const char *src);
 
 G_GNUC_INTERNAL

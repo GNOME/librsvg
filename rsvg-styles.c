@@ -96,24 +96,6 @@ style_value_data_free (StyleValueData *value)
     g_free (value);
 }
 
-gdouble
-rsvg_viewport_percentage (gdouble width, gdouble height)
-{
-    /* https://www.w3.org/TR/SVG/coords.html#Units
-     *
-     * "For any other length value expressed as a percentage of the viewport, the
-     * percentage is calculated as the specified percentage of
-     * sqrt((actual-width)**2 + (actual-height)**2))/sqrt(2)."
-     */
-    return sqrt (width * width + height * height) / M_SQRT2;
-}
-
-gdouble
-rsvg_dpi_percentage (RsvgHandle * ctx)
-{
-    return sqrt (ctx->priv->dpi_x * ctx->priv->dpi_y);
-}
-
 static void
 rsvg_state_init (RsvgState * state)
 {
