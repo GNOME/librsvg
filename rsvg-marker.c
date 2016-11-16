@@ -154,7 +154,7 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
         cairo_matrix_init_scale (&taffine, w / self->vbox.rect.width, h / self->vbox.rect.height);
         cairo_matrix_multiply (&affine, &taffine, &affine);
 
-        _rsvg_push_view_box (ctx, self->vbox.rect.width, self->vbox.rect.height);
+        rsvg_drawing_ctx_push_view_box (ctx, self->vbox.rect.width, self->vbox.rect.height);
     }
 
     cairo_matrix_init_translate (&taffine,
@@ -196,7 +196,7 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
 
     rsvg_state_pop (ctx);
     if (self->vbox.active)
-        _rsvg_pop_view_box (ctx);
+        rsvg_drawing_ctx_pop_view_box (ctx);
 
     rsvg_release_node (ctx, (RsvgNode *) self);
 }

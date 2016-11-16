@@ -221,7 +221,7 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
             cairo_matrix_init_translate (&affine, -symbol->vbox.rect.x, -symbol->vbox.rect.y);
             cairo_matrix_multiply (&state->affine, &affine, &state->affine);
 
-            _rsvg_push_view_box (ctx, symbol->vbox.rect.width, symbol->vbox.rect.height);
+            rsvg_drawing_ctx_push_view_box (ctx, symbol->vbox.rect.width, symbol->vbox.rect.height);
             rsvg_push_discrete_layer (ctx);
             if (!state->overflow || (!state->has_overflow && child->state->overflow))
                 rsvg_add_clipping_rect (ctx, symbol->vbox.rect.x, symbol->vbox.rect.y,
@@ -237,7 +237,7 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         rsvg_state_pop (ctx);
         rsvg_pop_discrete_layer (ctx);
         if (symbol->vbox.active)
-            _rsvg_pop_view_box (ctx);
+            rsvg_drawing_ctx_pop_view_box (ctx);
     }
 
     rsvg_release_node (ctx, child);
@@ -277,11 +277,11 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
                            x - sself->vbox.rect.x * w / sself->vbox.rect.width,
                            y - sself->vbox.rect.y * h / sself->vbox.rect.height);
         cairo_matrix_multiply (&state->affine, &affine, &state->affine);
-        _rsvg_push_view_box (ctx, sself->vbox.rect.width, sself->vbox.rect.height);
+        rsvg_drawing_ctx_push_view_box (ctx, sself->vbox.rect.width, sself->vbox.rect.height);
     } else {
         cairo_matrix_init_translate (&affine, nx, ny);
         cairo_matrix_multiply (&state->affine, &affine, &state->affine);
-        _rsvg_push_view_box (ctx, nw, nh);
+        rsvg_drawing_ctx_push_view_box (ctx, nw, nh);
     }
 
     affine_new = state->affine;
@@ -303,7 +303,7 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     }
 
     rsvg_pop_discrete_layer (ctx);
-    _rsvg_pop_view_box (ctx);
+    rsvg_drawing_ctx_pop_view_box (ctx);
 }
 
 static void

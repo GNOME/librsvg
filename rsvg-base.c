@@ -2361,7 +2361,7 @@ rsvg_bbox_clip (RsvgBbox * dst, RsvgBbox * src)
 }
 
 void
-_rsvg_push_view_box (RsvgDrawingCtx * ctx, double w, double h)
+rsvg_drawing_ctx_push_view_box (RsvgDrawingCtx * ctx, double w, double h)
 {
     RsvgViewBox *vb = g_new (RsvgViewBox, 1);
     *vb = ctx->vb;
@@ -2371,7 +2371,7 @@ _rsvg_push_view_box (RsvgDrawingCtx * ctx, double w, double h)
 }
 
 void
-_rsvg_pop_view_box (RsvgDrawingCtx * ctx)
+rsvg_drawing_ctx_pop_view_box (RsvgDrawingCtx * ctx)
 {
     ctx->vb = *((RsvgViewBox *) ctx->vb_stack->data);
     g_free (ctx->vb_stack->data);

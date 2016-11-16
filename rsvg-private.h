@@ -440,9 +440,9 @@ G_GNUC_INTERNAL
 RsvgLength rsvg_length_parse (const char *str, LengthDir dir);
 
 G_GNUC_INTERNAL
-void _rsvg_push_view_box    (RsvgDrawingCtx * ctx, double w, double h);
+void rsvg_drawing_ctx_push_view_box (RsvgDrawingCtx * ctx, double w, double h);
 G_GNUC_INTERNAL
-void _rsvg_pop_view_box	    (RsvgDrawingCtx * ctx);
+void rsvg_drawing_ctx_pop_view_box  (RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
 void rsvg_SAX_handler_struct_init (void);
 G_GNUC_INTERNAL

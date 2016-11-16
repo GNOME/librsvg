@@ -100,14 +100,14 @@ _set_source_rsvg_linear_gradient (RsvgDrawingCtx * ctx,
     rsvg_linear_gradient_fix_fallback (ctx, linear);
 
     if (linear->obj_bbox)
-        _rsvg_push_view_box (ctx, 1., 1.);
+        rsvg_drawing_ctx_push_view_box (ctx, 1., 1.);
     pattern = cairo_pattern_create_linear (_rsvg_css_normalize_length (&linear->x1, ctx),
                                            _rsvg_css_normalize_length (&linear->y1, ctx),
                                            _rsvg_css_normalize_length (&linear->x2, ctx),
                                            _rsvg_css_normalize_length (&linear->y2, ctx));
 
     if (linear->obj_bbox)
-        _rsvg_pop_view_box (ctx);
+        rsvg_drawing_ctx_pop_view_box (ctx);
 
     matrix = linear->affine;
     if (linear->obj_bbox) {
@@ -208,7 +208,7 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
     rsvg_radial_gradient_fix_fallback (ctx, radial);
 
     if (radial->obj_bbox)
-        _rsvg_push_view_box (ctx, 1., 1.);
+        rsvg_drawing_ctx_push_view_box (ctx, 1., 1.);
 
     fx = _rsvg_css_normalize_length (&radial->fx, ctx);
     fy = _rsvg_css_normalize_length (&radial->fy, ctx);
@@ -223,7 +223,7 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
                                            cx, cy, radius);
 
     if (radial->obj_bbox)
-        _rsvg_pop_view_box (ctx);
+        rsvg_drawing_ctx_pop_view_box (ctx);
 
     matrix = radial->affine;
     if (radial->obj_bbox) {
@@ -287,7 +287,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
     cr_render = render->cr;
 
     if (rsvg_pattern->obj_bbox)
-        _rsvg_push_view_box (ctx, 1., 1.);
+        rsvg_drawing_ctx_push_view_box (ctx, 1., 1.);
 
     patternx = _rsvg_css_normalize_length (&rsvg_pattern->x, ctx);
     patterny = _rsvg_css_normalize_length (&rsvg_pattern->y, ctx);
@@ -295,7 +295,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
     patternh = _rsvg_css_normalize_length (&rsvg_pattern->height, ctx);
 
     if (rsvg_pattern->obj_bbox)
-        _rsvg_pop_view_box (ctx);
+        rsvg_drawing_ctx_pop_view_box (ctx);
 
 
     /* Work out the size of the rectangle so it takes into account the object bounding box */
@@ -359,11 +359,11 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
                            h / rsvg_pattern->vbox.rect.height,
                            x,
                            y);
-        _rsvg_push_view_box (ctx, rsvg_pattern->vbox.rect.width, rsvg_pattern->vbox.rect.height);
+        rsvg_drawing_ctx_push_view_box (ctx, rsvg_pattern->vbox.rect.width, rsvg_pattern->vbox.rect.height);
     } else if (rsvg_pattern->obj_cbbox) {
         /* If coords are in terms of the bounding box, use them */
         cairo_matrix_init_scale (&caffine, bbox.rect.width, bbox.rect.height);
-        _rsvg_push_view_box (ctx, 1., 1.);
+        rsvg_drawing_ctx_push_view_box (ctx, 1., 1.);
     } else {
         cairo_matrix_init_identity (&caffine);
     }
@@ -411,7 +411,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
 
   out:
     if (rsvg_pattern->obj_cbbox || rsvg_pattern->vbox.active)
-        _rsvg_pop_view_box (ctx);
+        rsvg_drawing_ctx_pop_view_box (ctx);
 }
 
 /* note: _set_source_rsvg_paint_server does not change cairo's CTM */
@@ -734,7 +734,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
     rowstride = cairo_image_surface_get_stride (surface);
 
     if (self->maskunits == objectBoundingBox)
-        _rsvg_push_view_box (ctx, 1, 1);
+        rsvg_drawing_ctx_push_view_box (ctx, 1, 1);
 
     sx = _rsvg_css_normalize_length (&self->x, ctx);
     sy = _rsvg_css_normalize_length (&self->y, ctx);
@@ -742,7 +742,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
     sh = _rsvg_css_normalize_length (&self->height, ctx);
 
     if (self->maskunits == objectBoundingBox)
-        _rsvg_pop_view_box (ctx);
+        rsvg_drawing_ctx_pop_view_box (ctx);
 
     mask_cr = cairo_create (surface);
     save_cr = render->cr;
@@ -769,7 +769,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
                            bbox->rect.y);
         affinesave = self->super.state->affine;
         cairo_matrix_multiply (&self->super.state->affine, &bbtransform, &self->super.state->affine);
-        _rsvg_push_view_box (ctx, 1, 1);
+        rsvg_drawing_ctx_push_view_box (ctx, 1, 1);
     }
 
     rsvg_state_push (ctx);
@@ -777,7 +777,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
     rsvg_state_pop (ctx);
 
     if (self->contentunits == objectBoundingBox) {
-        _rsvg_pop_view_box (ctx);
+        rsvg_drawing_ctx_pop_view_box (ctx);
         self->super.state->affine = affinesave;
     }
 
