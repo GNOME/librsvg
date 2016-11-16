@@ -143,15 +143,19 @@ _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx)
         else
             return in->length * font / 2.;
     } else if (in->unit == LENGTH_UNIT_INCH) {
+        double dpi_x, dpi_y;
+
+        rsvg_drawing_ctx_get_dpi (ctx, &dpi_x, &dpi_y);
+
         switch (in->dir) {
         case LENGTH_DIR_HORIZONTAL:
-            return in->length * ctx->dpi_x;
+            return in->length * dpi_x;
 
         case LENGTH_DIR_VERTICAL:
-            return in->length * ctx->dpi_y;
+            return in->length * dpi_y;
 
         case LENGTH_DIR_BOTH:
-            return in->length * rsvg_viewport_percentage (ctx->dpi_x, ctx->dpi_y);
+            return in->length * rsvg_viewport_percentage (dpi_x, dpi_y);
         }
     } else if (in->unit == LENGTH_UNIT_RELATIVE_LARGER) {
         /* todo: "larger" */

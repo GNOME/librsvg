@@ -2381,8 +2381,21 @@ rsvg_drawing_ctx_pop_view_box (RsvgDrawingCtx * ctx)
 void
 rsvg_drawing_ctx_get_view_box_size (RsvgDrawingCtx *ctx, double *out_width, double *out_height)
 {
-    *out_width = ctx->vb.rect.width;
-    *out_height = ctx->vb.rect.height;
+    if (out_width)
+        *out_width = ctx->vb.rect.width;
+
+    if (out_height)
+        *out_height = ctx->vb.rect.height;
+}
+
+void
+rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dpi_y)
+{
+    if (out_dpi_x)
+        *out_dpi_x = ctx->dpi_x;
+
+    if (out_dpi_y)
+        *out_dpi_y = ctx->dpi_y;
 }
 
 void
