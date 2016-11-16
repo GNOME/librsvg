@@ -2379,6 +2379,13 @@ rsvg_drawing_ctx_pop_view_box (RsvgDrawingCtx * ctx)
 }
 
 void
+rsvg_drawing_ctx_get_view_box_size (RsvgDrawingCtx *ctx, double *out_width, double *out_height)
+{
+    *out_width = ctx->vb.rect.width;
+    *out_height = ctx->vb.rect.height;
+}
+
+void
 rsvg_return_if_fail_warning (const char *pretty_function, const char *expression, GError ** error)
 {
     g_set_error (error, RSVG_ERROR, 0, _("%s: assertion `%s' failed"), pretty_function, expression);

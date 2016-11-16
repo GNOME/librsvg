@@ -170,10 +170,8 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
 
     rsvg_bbox_insert (&box, &otherbox);
 
-    if (self != NULL)
-        if (self->x_specified || self->y_specified ||
-            self->width_specified || self->height_specified) {
-
+    if (self != NULL) {
+        if (self->x_specified || self->y_specified || self->width_specified || self->height_specified) {
             rsvg_bbox_init (&otherbox, &ctx->paffine);
             otherbox.virgin = 0;
             if (ctx->filter->primitiveunits == objectBoundingBox)
@@ -186,18 +184,28 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
                 otherbox.rect.y = _rsvg_css_normalize_length (&self->y, ctx->ctx);
             else
                 otherbox.rect.y = 0;
-            if (self->width_specified)
-                otherbox.rect.width = _rsvg_css_normalize_length (&self->width, ctx->ctx);
-            else
-                otherbox.rect.width = ctx->ctx->vb.rect.width;
-            if (self->height_specified)
-                otherbox.rect.height = _rsvg_css_normalize_length (&self->height, ctx->ctx);
-            else
-                otherbox.rect.height = ctx->ctx->vb.rect.height;
+
+            if (self->width_specified || self->height_specified) {
+                double curr_vbox_w, curr_vbox_h;
+
+                rsvg_drawing_ctx_get_view_box_size (ctx->ctx, &curr_vbox_w, &curr_vbox_h);
+
+                if (self->width_specified)
+                    otherbox.rect.width = _rsvg_css_normalize_length (&self->width, ctx->ctx);
+                else
+                    otherbox.rect.width = curr_vbox_w;
+
+                if (self->height_specified)
+                    otherbox.rect.height = _rsvg_css_normalize_length (&self->height, ctx->ctx);
+                else
+                    otherbox.rect.height = curr_vbox_h;
+            }
+
             if (ctx->filter->primitiveunits == objectBoundingBox)
                 rsvg_drawing_ctx_pop_view_box (ctx->ctx);
             rsvg_bbox_clip (&box, &otherbox);
         }
+    }
 
     rsvg_bbox_init (&otherbox, &affine);
     otherbox.virgin = 0;

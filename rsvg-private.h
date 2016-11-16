@@ -444,6 +444,9 @@ void rsvg_drawing_ctx_push_view_box (RsvgDrawingCtx * ctx, double w, double h);
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_pop_view_box  (RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
+void rsvg_drawing_ctx_get_view_box_size (RsvgDrawingCtx *ctx, double *out_width, double *out_height);
+
+G_GNUC_INTERNAL
 void rsvg_SAX_handler_struct_init (void);
 G_GNUC_INTERNAL
 char *rsvg_get_url_string (const char *str);

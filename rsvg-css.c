@@ -122,16 +122,19 @@ _rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx)
     if (in->unit == LENGTH_UNIT_DEFAULT)
         return in->length;
     else if (in->unit == LENGTH_UNIT_PERCENT) {
+        double w, h;
+
+        rsvg_drawing_ctx_get_view_box_size (ctx, &w, &h);
+
         switch (in->dir) {
         case LENGTH_DIR_HORIZONTAL:
-            return in->length * ctx->vb.rect.width;
+            return in->length * w;
 
         case LENGTH_DIR_VERTICAL:
-            return in->length * ctx->vb.rect.height;
+            return in->length * h;
 
         case LENGTH_DIR_BOTH:
-            return in->length * rsvg_viewport_percentage (ctx->vb.rect.width,
-                                                          ctx->vb.rect.height);
+            return in->length * rsvg_viewport_percentage (w, h);
         }
     } else if (in->unit == LENGTH_UNIT_FONT_EM || in->unit == LENGTH_UNIT_FONT_EX) {
         double font = _rsvg_css_normalize_font_size (rsvg_current_state (ctx), ctx);
