@@ -422,9 +422,15 @@ G_GNUC_INTERNAL
 void rsvg_bbox_clip     (RsvgBbox * dst, RsvgBbox * src);
 G_GNUC_INTERNAL
 double _rsvg_css_normalize_length       (const RsvgLength * in, RsvgDrawingCtx * ctx);
+
+/* This is implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
-double _rsvg_css_hand_normalize_length  (const RsvgLength * in, gdouble pixels_per_inch,
-                                         gdouble width_or_height, gdouble font_size);
+double rsvg_length_hand_normalize (const RsvgLength *length,
+                                   double pixels_per_inch,
+                                   double width_or_height,
+                                   double font_size);
+
+G_GNUC_INTERNAL
 double _rsvg_css_normalize_font_size    (RsvgState * state, RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
 double _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx);

@@ -1466,10 +1466,10 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         bbox.rect.width = root->vbox.rect.width;
         bbox.rect.height = root->vbox.rect.height;
 
-        dimension_data->width = (int) (_rsvg_css_hand_normalize_length (&root->w, handle->priv->dpi_x,
-                                       bbox.rect.width, 12) + 0.5);
-        dimension_data->height = (int) (_rsvg_css_hand_normalize_length (&root->h, handle->priv->dpi_y,
-                                         bbox.rect.height, 12) + 0.5);
+        dimension_data->width = (int) (rsvg_length_hand_normalize (&root->w, handle->priv->dpi_x,
+                                                                   bbox.rect.width, 12) + 0.5);
+        dimension_data->height = (int) (rsvg_length_hand_normalize (&root->h, handle->priv->dpi_y,
+                                                                    bbox.rect.height, 12) + 0.5);
     }
 
     dimension_data->em = dimension_data->width;

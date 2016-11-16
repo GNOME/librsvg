@@ -179,25 +179,6 @@ _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx)
     return shift;
 }
 
-
-double
-_rsvg_css_hand_normalize_length (const RsvgLength * in, gdouble pixels_per_inch,
-                                 gdouble width_or_height, gdouble font_size)
-{
-    if (in->unit == LENGTH_UNIT_DEFAULT)
-        return in->length;
-    else if (in->unit == LENGTH_UNIT_PERCENT)
-        return in->length * width_or_height;
-    else if (in->unit == LENGTH_UNIT_FONT_EM)
-        return in->length * font_size;
-    else if (in->unit == LENGTH_UNIT_FONT_EX)
-        return in->length * font_size / 2.;
-    else if (in->unit == LENGTH_UNIT_INCH)
-        return in->length * pixels_per_inch;
-
-    return 0;
-}
-
 static gint
 rsvg_css_clip_rgb_percent (const char *s, double max)
 {

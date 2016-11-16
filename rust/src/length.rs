@@ -156,19 +156,42 @@ impl RsvgLength {
             dir: dir
         }
     }
+
+    pub fn hand_normalize (&self,
+                           pixels_per_inch: f64,
+                           width_or_height: f64,
+                           font_size: f64) -> f64 {
+        match self.unit {
+            LengthUnit::Default => { self.length },
+
+            LengthUnit::Percent => { self.length * width_or_height },
+
+            LengthUnit::FontEm => { self.length * font_size },
+
+            LengthUnit::FontEx => { self.length * font_size / 2.0 },
+
+            LengthUnit::Inch => { self.length * pixels_per_inch },
+
+            _ => { 0.0 }
+        }
+    }
 }
 
 #[no_mangle]
-pub extern fn rsvg_length_normalize (length: *const RsvgLength, draw_ctx: *const RsvgDrawingCtx) -> f64 {
+pub extern fn rsvg_length_normalize (raw_length: *const RsvgLength, draw_ctx: *const RsvgDrawingCtx) -> f64 {
     unimplemented! ();
 }
 
 #[no_mangle]
-pub extern fn rsvg_length_hand_normalize (length: *const RsvgLength,
+pub extern fn rsvg_length_hand_normalize (raw_length: *const RsvgLength,
                                           pixels_per_inch: f64,
                                           width_or_height: f64,
                                           font_size: f64) -> f64 {
-    unimplemented! ();
+    assert! (!raw_length.is_null ());
+
+    let length: &RsvgLength = unsafe { &*raw_length };
+
+    length.hand_normalize (pixels_per_inch, width_or_height, font_size)
 }
 
 #[cfg(test)]
