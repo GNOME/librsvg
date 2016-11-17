@@ -420,8 +420,10 @@ G_GNUC_INTERNAL
 void rsvg_bbox_insert   (RsvgBbox * dst, RsvgBbox * src);
 G_GNUC_INTERNAL
 void rsvg_bbox_clip     (RsvgBbox * dst, RsvgBbox * src);
+
+/* This is implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
-double _rsvg_css_normalize_length       (const RsvgLength * in, RsvgDrawingCtx * ctx);
+double rsvg_length_normalize (const RsvgLength *length, RsvgDrawingCtx * ctx);
 
 /* This is implemented in rust/src/length.rs */
 G_GNUC_INTERNAL

@@ -176,10 +176,10 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     RsvgState *state;
     cairo_matrix_t affine;
     double x, y, w, h;
-    x = _rsvg_css_normalize_length (&use->x, ctx);
-    y = _rsvg_css_normalize_length (&use->y, ctx);
-    w = _rsvg_css_normalize_length (&use->w, ctx);
-    h = _rsvg_css_normalize_length (&use->h, ctx);
+    x = rsvg_length_normalize (&use->x, ctx);
+    y = rsvg_length_normalize (&use->y, ctx);
+    w = rsvg_length_normalize (&use->w, ctx);
+    h = rsvg_length_normalize (&use->h, ctx);
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
 
@@ -253,10 +253,10 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     double nx, ny, nw, nh;
     sself = (RsvgNodeSvg *) self;
 
-    nx = _rsvg_css_normalize_length (&sself->x, ctx);
-    ny = _rsvg_css_normalize_length (&sself->y, ctx);
-    nw = _rsvg_css_normalize_length (&sself->w, ctx);
-    nh = _rsvg_css_normalize_length (&sself->h, ctx);
+    nx = rsvg_length_normalize (&sself->x, ctx);
+    ny = rsvg_length_normalize (&sself->y, ctx);
+    nw = rsvg_length_normalize (&sself->w, ctx);
+    nh = rsvg_length_normalize (&sself->h, ctx);
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
 

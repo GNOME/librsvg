@@ -1,9 +1,13 @@
 extern crate libc;
 extern crate glib;
 
+use std::f64;
+
 use self::glib::translate::*;
 
 use strtod::*;
+use drawing_ctx;
+use drawing_ctx::RsvgDrawingCtx;
 
 /* Keep this in sync with ../../rsvg-private.h:LengthUnit */
 #[repr(C)]
@@ -39,8 +43,6 @@ pub struct RsvgLength {
     unit: LengthUnit,
     dir: LengthDir
 }
-
-pub enum RsvgDrawingCtx {}
 
 const POINTS_PER_INCH: f64 = 72.0;
 const CM_PER_INCH:     f64 = 2.54;
@@ -79,7 +81,7 @@ pub extern fn rsvg_length_parse (string: *const libc::c_char, dir: LengthDir) ->
  * need to know if they are horizontal/vertical/both.  For example,
  * a some_object.width="50%" is 50% with respect to the current
  * viewport's width.  In this case, the @dir argument is used
- * when _rsvg_css_normalize_length() needs to know to what the
+ * inside RsvgLength::normalize(), when it needs to know to what the
  * length refers.
  */
 impl RsvgLength {
@@ -157,6 +159,46 @@ impl RsvgLength {
         }
     }
 
+    pub fn normalize (&self, draw_ctx: *const RsvgDrawingCtx) -> f64 {
+        match self.unit {
+            LengthUnit::Default => {
+                self.length
+            },
+
+            LengthUnit::Percent => {
+                let (width, height) = drawing_ctx::get_view_box_size (draw_ctx);
+
+                match self.dir {
+                    LengthDir::Horizontal => { self.length * width },
+                    LengthDir::Vertical   => { self.length * height },
+                    LengthDir::Both       => { self.length * viewport_percentage (width, height) }
+                }
+            },
+
+            LengthUnit::FontEm => {
+                self.length * drawing_ctx::get_normalized_font_size (draw_ctx)
+            },
+
+            LengthUnit::FontEx => {
+                self.length * drawing_ctx::get_normalized_font_size (draw_ctx) / 2.0
+            },
+
+            LengthUnit::Inch => {
+                let (dpi_x, dpi_y) = drawing_ctx::get_dpi (draw_ctx);
+
+                match self.dir {
+                    LengthDir::Horizontal => { self.length * dpi_x },
+                    LengthDir::Vertical   => { self.length * dpi_y },
+                    LengthDir::Both       => { self.length * viewport_percentage (dpi_x, dpi_y) }
+                }
+            },
+
+            // FIXME: these are pending: https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
+            LengthUnit::RelativeLarger |
+            LengthUnit::RelativeSmaller => { 0.0 }
+        }
+    }
+
     pub fn hand_normalize (&self,
                            pixels_per_inch: f64,
                            width_or_height: f64,
@@ -177,9 +219,23 @@ impl RsvgLength {
     }
 }
 
+fn viewport_percentage (x: f64, y: f64) -> f64 {
+    /* https://www.w3.org/TR/SVG/coords.html#Units
+     *
+     * "For any other length value expressed as a percentage of the viewport, the
+     * percentage is calculated as the specified percentage of
+     * sqrt((actual-width)**2 + (actual-height)**2))/sqrt(2)."
+     */
+    return (x * x + y * y).sqrt () / f64::consts::SQRT_2;
+}
+
 #[no_mangle]
 pub extern fn rsvg_length_normalize (raw_length: *const RsvgLength, draw_ctx: *const RsvgDrawingCtx) -> f64 {
-    unimplemented! ();
+    assert! (!raw_length.is_null ());
+
+    let length: &RsvgLength = unsafe { &*raw_length };
+
+    length.normalize (draw_ctx)
 }
 
 #[no_mangle]

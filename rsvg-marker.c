@@ -141,8 +141,8 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
 
     if (self->vbox.active) {
         double w, h, x, y;
-        w = _rsvg_css_normalize_length (&self->width, ctx);
-        h = _rsvg_css_normalize_length (&self->height, ctx);
+        w = rsvg_length_normalize (&self->width, ctx);
+        h = rsvg_length_normalize (&self->height, ctx);
         x = 0;
         y = 0;
 
@@ -158,8 +158,8 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
     }
 
     cairo_matrix_init_translate (&taffine,
-                                 -_rsvg_css_normalize_length (&self->refX, ctx),
-                                 -_rsvg_css_normalize_length (&self->refY, ctx));
+                                 -rsvg_length_normalize (&self->refX, ctx),
+                                 -rsvg_length_normalize (&self->refY, ctx));
     cairo_matrix_multiply (&affine, &taffine, &affine);
 
     rsvg_state_push (ctx);
@@ -181,8 +181,8 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
                                     self->vbox.rect.width, self->vbox.rect.height);
         else
             rsvg_add_clipping_rect (ctx, 0, 0,
-                                    _rsvg_css_normalize_length (&self->width, ctx),
-                                    _rsvg_css_normalize_length (&self->height, ctx));
+                                    rsvg_length_normalize (&self->width, ctx),
+                                    rsvg_length_normalize (&self->height, ctx));
     }
 
     for (i = 0; i < self->super.children->len; i++) {

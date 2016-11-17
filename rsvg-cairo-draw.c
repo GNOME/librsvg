@@ -101,10 +101,10 @@ _set_source_rsvg_linear_gradient (RsvgDrawingCtx * ctx,
 
     if (linear->obj_bbox)
         rsvg_drawing_ctx_push_view_box (ctx, 1., 1.);
-    pattern = cairo_pattern_create_linear (_rsvg_css_normalize_length (&linear->x1, ctx),
-                                           _rsvg_css_normalize_length (&linear->y1, ctx),
-                                           _rsvg_css_normalize_length (&linear->x2, ctx),
-                                           _rsvg_css_normalize_length (&linear->y2, ctx));
+    pattern = cairo_pattern_create_linear (rsvg_length_normalize (&linear->x1, ctx),
+                                           rsvg_length_normalize (&linear->y1, ctx),
+                                           rsvg_length_normalize (&linear->x2, ctx),
+                                           rsvg_length_normalize (&linear->y2, ctx));
 
     if (linear->obj_bbox)
         rsvg_drawing_ctx_pop_view_box (ctx);
@@ -210,12 +210,12 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
     if (radial->obj_bbox)
         rsvg_drawing_ctx_push_view_box (ctx, 1., 1.);
 
-    fx = _rsvg_css_normalize_length (&radial->fx, ctx);
-    fy = _rsvg_css_normalize_length (&radial->fy, ctx);
+    fx = rsvg_length_normalize (&radial->fx, ctx);
+    fy = rsvg_length_normalize (&radial->fy, ctx);
 
-    cx = _rsvg_css_normalize_length (&radial->cx, ctx);
-    cy = _rsvg_css_normalize_length (&radial->cy, ctx);
-    radius = _rsvg_css_normalize_length (&radial->r, ctx);
+    cx = rsvg_length_normalize (&radial->cx, ctx);
+    cy = rsvg_length_normalize (&radial->cy, ctx);
+    radius = rsvg_length_normalize (&radial->r, ctx);
 
     fix_focus_point (fx, fy, cx, cy, radius, &new_fx, &new_fy);
 
@@ -289,10 +289,10 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
     if (rsvg_pattern->obj_bbox)
         rsvg_drawing_ctx_push_view_box (ctx, 1., 1.);
 
-    patternx = _rsvg_css_normalize_length (&rsvg_pattern->x, ctx);
-    patterny = _rsvg_css_normalize_length (&rsvg_pattern->y, ctx);
-    patternw = _rsvg_css_normalize_length (&rsvg_pattern->width, ctx);
-    patternh = _rsvg_css_normalize_length (&rsvg_pattern->height, ctx);
+    patternx = rsvg_length_normalize (&rsvg_pattern->x, ctx);
+    patterny = rsvg_length_normalize (&rsvg_pattern->y, ctx);
+    patternw = rsvg_length_normalize (&rsvg_pattern->width, ctx);
+    patternh = rsvg_length_normalize (&rsvg_pattern->height, ctx);
 
     if (rsvg_pattern->obj_bbox)
         rsvg_drawing_ctx_pop_view_box (ctx);
@@ -484,7 +484,7 @@ setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgState *state)
     cairo_set_line_cap (cr, (cairo_line_cap_t) state->cap);
     cairo_set_line_join (cr, (cairo_line_join_t) state->join);
     cairo_set_dash (cr, state->dash.dash, state->dash.n_dash,
-                    _rsvg_css_normalize_length (&state->dash.offset, ctx));
+                    rsvg_length_normalize (&state->dash.offset, ctx));
 }
 
 void
@@ -740,10 +740,10 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
     if (self->maskunits == objectBoundingBox)
         rsvg_drawing_ctx_push_view_box (ctx, 1, 1);
 
-    sx = _rsvg_css_normalize_length (&self->x, ctx);
-    sy = _rsvg_css_normalize_length (&self->y, ctx);
-    sw = _rsvg_css_normalize_length (&self->width, ctx);
-    sh = _rsvg_css_normalize_length (&self->height, ctx);
+    sx = rsvg_length_normalize (&self->x, ctx);
+    sy = rsvg_length_normalize (&self->y, ctx);
+    sw = rsvg_length_normalize (&self->width, ctx);
+    sh = rsvg_length_normalize (&self->height, ctx);
 
     if (self->maskunits == objectBoundingBox)
         rsvg_drawing_ctx_pop_view_box (ctx);

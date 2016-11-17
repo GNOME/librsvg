@@ -109,7 +109,7 @@ normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
         }
         break;
     default:
-        return _rsvg_css_normalize_length (&state->font_size, ctx);
+        return rsvg_length_normalize (&state->font_size, ctx);
         break;
     }
 
@@ -120,68 +120,6 @@ double
 rsvg_drawing_ctx_get_normalized_font_size (RsvgDrawingCtx *ctx)
 {
     return normalize_font_size (rsvg_current_state (ctx), ctx);
-}
-
-static double
-viewport_percentage (double width, double height)
-{
-    /* https://www.w3.org/TR/SVG/coords.html#Units
-     *
-     * "For any other length value expressed as a percentage of the viewport, the
-     * percentage is calculated as the specified percentage of
-     * sqrt((actual-width)**2 + (actual-height)**2))/sqrt(2)."
-     */
-    return sqrt (width * width + height * height) / M_SQRT2;
-}
-
-double
-_rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx)
-{
-    if (in->unit == LENGTH_UNIT_DEFAULT)
-        return in->length;
-    else if (in->unit == LENGTH_UNIT_PERCENT) {
-        double w, h;
-
-        rsvg_drawing_ctx_get_view_box_size (ctx, &w, &h);
-
-        switch (in->dir) {
-        case LENGTH_DIR_HORIZONTAL:
-            return in->length * w;
-
-        case LENGTH_DIR_VERTICAL:
-            return in->length * h;
-
-        case LENGTH_DIR_BOTH:
-            return in->length * viewport_percentage (w, h);
-        }
-    } else if (in->unit == LENGTH_UNIT_FONT_EM || in->unit == LENGTH_UNIT_FONT_EX) {
-        double font = rsvg_drawing_ctx_get_normalized_font_size (ctx);
-        if (in->unit == LENGTH_UNIT_FONT_EM)
-            return in->length * font;
-        else
-            return in->length * font / 2.;
-    } else if (in->unit == LENGTH_UNIT_INCH) {
-        double dpi_x, dpi_y;
-
-        rsvg_drawing_ctx_get_dpi (ctx, &dpi_x, &dpi_y);
-
-        switch (in->dir) {
-        case LENGTH_DIR_HORIZONTAL:
-            return in->length * dpi_x;
-
-        case LENGTH_DIR_VERTICAL:
-            return in->length * dpi_y;
-
-        case LENGTH_DIR_BOTH:
-            return in->length * viewport_percentage (dpi_x, dpi_y);
-        }
-    } else if (in->unit == LENGTH_UNIT_RELATIVE_LARGER) {
-        /* todo: "larger" */
-    } else if (in->unit == LENGTH_UNIT_RELATIVE_SMALLER) {
-        /* todo: "smaller" */
-    }
-
-    return 0;
 }
 
 /* Recursive evaluation of all parent elements regarding basline-shift */

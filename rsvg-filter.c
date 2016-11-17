@@ -161,10 +161,10 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
     otherbox.virgin = 0;
     if (ctx->filter->filterunits == objectBoundingBox)
         rsvg_drawing_ctx_push_view_box (ctx->ctx, 1., 1.);
-    otherbox.rect.x = _rsvg_css_normalize_length (&ctx->filter->x, ctx->ctx);
-    otherbox.rect.y = _rsvg_css_normalize_length (&ctx->filter->y, ctx->ctx);
-    otherbox.rect.width = _rsvg_css_normalize_length (&ctx->filter->width, ctx->ctx);
-    otherbox.rect.height = _rsvg_css_normalize_length (&ctx->filter->height, ctx->ctx);
+    otherbox.rect.x = rsvg_length_normalize (&ctx->filter->x, ctx->ctx);
+    otherbox.rect.y = rsvg_length_normalize (&ctx->filter->y, ctx->ctx);
+    otherbox.rect.width = rsvg_length_normalize (&ctx->filter->width, ctx->ctx);
+    otherbox.rect.height = rsvg_length_normalize (&ctx->filter->height, ctx->ctx);
     if (ctx->filter->filterunits == objectBoundingBox)
         rsvg_drawing_ctx_pop_view_box (ctx->ctx);
 
@@ -177,11 +177,11 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
             if (ctx->filter->primitiveunits == objectBoundingBox)
                 rsvg_drawing_ctx_push_view_box (ctx->ctx, 1., 1.);
             if (self->x_specified)
-                otherbox.rect.x = _rsvg_css_normalize_length (&self->x, ctx->ctx);
+                otherbox.rect.x = rsvg_length_normalize (&self->x, ctx->ctx);
             else
                 otherbox.rect.x = 0;
             if (self->y_specified)
-                otherbox.rect.y = _rsvg_css_normalize_length (&self->y, ctx->ctx);
+                otherbox.rect.y = rsvg_length_normalize (&self->y, ctx->ctx);
             else
                 otherbox.rect.y = 0;
 
@@ -191,12 +191,12 @@ rsvg_filter_primitive_get_bounds (RsvgFilterPrimitive * self, RsvgFilterContext 
                 rsvg_drawing_ctx_get_view_box_size (ctx->ctx, &curr_vbox_w, &curr_vbox_h);
 
                 if (self->width_specified)
-                    otherbox.rect.width = _rsvg_css_normalize_length (&self->width, ctx->ctx);
+                    otherbox.rect.width = rsvg_length_normalize (&self->width, ctx->ctx);
                 else
                     otherbox.rect.width = curr_vbox_w;
 
                 if (self->height_specified)
-                    otherbox.rect.height = _rsvg_css_normalize_length (&self->height, ctx->ctx);
+                    otherbox.rect.height = rsvg_length_normalize (&self->height, ctx->ctx);
                 else
                     otherbox.rect.height = curr_vbox_h;
             }
@@ -2018,8 +2018,8 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
 
     output_pixels = cairo_image_surface_get_data (output);
 
-    dx = _rsvg_css_normalize_length (&upself->dx, ctx->ctx);
-    dy = _rsvg_css_normalize_length (&upself->dy, ctx->ctx);
+    dx = rsvg_length_normalize (&upself->dx, ctx->ctx);
+    dy = rsvg_length_normalize (&upself->dy, ctx->ctx);
 
     ox = ctx->paffine.xx * dx + ctx->paffine.xy * dy;
     oy = ctx->paffine.yx * dx + ctx->paffine.yy * dy;
@@ -4263,9 +4263,9 @@ get_light_direction (RsvgNodeLightSource * source, gdouble x1, gdouble y1, gdoub
             double x, y;
             x = affine->xx * x1 + affine->xy * y1 + affine->x0;
             y = affine->yx * x1 + affine->yy * y1 + affine->y0;
-            output.x = _rsvg_css_normalize_length (&source->x, ctx) - x;
-            output.y = _rsvg_css_normalize_length (&source->y, ctx) - y;
-            output.z = _rsvg_css_normalize_length (&source->z, ctx) - z;
+            output.x = rsvg_length_normalize (&source->x, ctx) - x;
+            output.y = rsvg_length_normalize (&source->y, ctx) - y;
+            output.z = rsvg_length_normalize (&source->z, ctx) - z;
             output = normalise (output);
         }
         break;
@@ -4286,12 +4286,12 @@ get_light_color (RsvgNodeLightSource * source, vector3 color,
     if (source->type != SPOTLIGHT)
         return color;
 
-    sx = _rsvg_css_normalize_length (&source->x, ctx);
-    sy = _rsvg_css_normalize_length (&source->y, ctx);
-    sz = _rsvg_css_normalize_length (&source->z, ctx);
-    spx = _rsvg_css_normalize_length (&source->pointsAtX, ctx);
-    spy = _rsvg_css_normalize_length (&source->pointsAtY, ctx);
-    spz = _rsvg_css_normalize_length (&source->pointsAtZ, ctx);
+    sx = rsvg_length_normalize (&source->x, ctx);
+    sy = rsvg_length_normalize (&source->y, ctx);
+    sz = rsvg_length_normalize (&source->z, ctx);
+    spx = rsvg_length_normalize (&source->pointsAtX, ctx);
+    spy = rsvg_length_normalize (&source->pointsAtY, ctx);
+    spz = rsvg_length_normalize (&source->pointsAtZ, ctx);
 
     x = affine->xx * x1 + affine->xy * y1 + affine->x0;
     y = affine->yx * x1 + affine->yy * y1 + affine->y0;

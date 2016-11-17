@@ -278,10 +278,10 @@ _rsvg_node_line_draw (RsvgNode * overself, RsvgDrawingCtx * ctx, int dominate)
 
     builder = rsvg_path_builder_new ();
 
-    x1 = _rsvg_css_normalize_length (&self->x1, ctx);
-    y1 = _rsvg_css_normalize_length (&self->y1, ctx);
-    x2 = _rsvg_css_normalize_length (&self->x2, ctx);
-    y2 = _rsvg_css_normalize_length (&self->y2, ctx);
+    x1 = rsvg_length_normalize (&self->x1, ctx);
+    y1 = rsvg_length_normalize (&self->y1, ctx);
+    x2 = rsvg_length_normalize (&self->x2, ctx);
+    y2 = rsvg_length_normalize (&self->y2, ctx);
 
     rsvg_path_builder_move_to (builder, x1, y1);
     rsvg_path_builder_line_to (builder, x2, y2);
@@ -354,16 +354,16 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     RsvgPathBuilder *builder;
     RsvgNodeRect *rect = (RsvgNodeRect *) self;
 
-    x = _rsvg_css_normalize_length (&rect->x, ctx);
-    y = _rsvg_css_normalize_length (&rect->y, ctx);
+    x = rsvg_length_normalize (&rect->x, ctx);
+    y = rsvg_length_normalize (&rect->y, ctx);
 
     /* FIXME: negative w/h/rx/ry is an error, per http://www.w3.org/TR/SVG11/shapes.html#RectElement
      * For now we'll just take the absolute value.
      */
-    w = fabs (_rsvg_css_normalize_length (&rect->w, ctx));
-    h = fabs (_rsvg_css_normalize_length (&rect->h, ctx));
-    rx = fabs (_rsvg_css_normalize_length (&rect->rx, ctx));
-    ry = fabs (_rsvg_css_normalize_length (&rect->ry, ctx));
+    w = fabs (rsvg_length_normalize (&rect->w, ctx));
+    h = fabs (rsvg_length_normalize (&rect->h, ctx));
+    rx = fabs (rsvg_length_normalize (&rect->rx, ctx));
+    ry = fabs (rsvg_length_normalize (&rect->ry, ctx));
 
     if (w == 0. || h == 0.)
         return;
@@ -534,9 +534,9 @@ _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     double cx, cy, r;
     RsvgPathBuilder *builder;
 
-    cx = _rsvg_css_normalize_length (&circle->cx, ctx);
-    cy = _rsvg_css_normalize_length (&circle->cy, ctx);
-    r = _rsvg_css_normalize_length (&circle->r, ctx);
+    cx = rsvg_length_normalize (&circle->cx, ctx);
+    cy = rsvg_length_normalize (&circle->cy, ctx);
+    r = rsvg_length_normalize (&circle->r, ctx);
 
     if (r <= 0)
         return;
@@ -626,10 +626,10 @@ _rsvg_node_ellipse_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     double cx, cy, rx, ry;
     RsvgPathBuilder *builder;
 
-    cx = _rsvg_css_normalize_length (&ellipse->cx, ctx);
-    cy = _rsvg_css_normalize_length (&ellipse->cy, ctx);
-    rx = _rsvg_css_normalize_length (&ellipse->rx, ctx);
-    ry = _rsvg_css_normalize_length (&ellipse->ry, ctx);
+    cx = rsvg_length_normalize (&ellipse->cx, ctx);
+    cy = rsvg_length_normalize (&ellipse->cy, ctx);
+    rx = rsvg_length_normalize (&ellipse->rx, ctx);
+    ry = rsvg_length_normalize (&ellipse->ry, ctx);
 
     if (rx <= 0 || ry <= 0)
         return;
