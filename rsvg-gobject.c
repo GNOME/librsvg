@@ -68,7 +68,6 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, RSVG_TYPE_HANDLE, RsvgHandlePrivate);
 
     self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
-    self->priv->load_policy = RSVG_LOAD_POLICY_DEFAULT;
     self->priv->all_nodes = g_ptr_array_new ();
     self->priv->defs = rsvg_defs_new (self);
     self->priv->handler_nest = 0;

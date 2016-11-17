@@ -2414,8 +2414,6 @@ _rsvg_handle_allow_load (RsvgHandle *handle,
     char *path, *dir;
     char *scheme = NULL, *cpath = NULL, *cdir = NULL;
 
-    g_assert (handle->priv->load_policy == RSVG_LOAD_POLICY_STRICT);
-
     scheme = g_uri_parse_scheme (uri);
 
     /* Not a valid URI */
