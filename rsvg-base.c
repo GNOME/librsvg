@@ -208,6 +208,36 @@ register_node_in_defs (RsvgHandle *ctx, RsvgNode *node, RsvgPropertyBag *atts)
     }
 }
 
+static void
+push_element_name (RsvgHandle *ctx, const char *name)
+{
+    /* libxml holds on to the name while parsing; we won't dup the name here */
+    ctx->priv->element_name_stack = g_slist_prepend (ctx->priv->element_name_stack, (void *) name);
+}
+
+static gboolean
+topmost_element_name_is (RsvgHandle *ctx, const char *name)
+{
+    if (ctx->priv->element_name_stack) {
+        const char *name_in_stack = ctx->priv->element_name_stack->data;
+
+        return strcmp (name, name_in_stack) == 0;
+    } else
+        return FALSE;
+}
+
+static void
+pop_element_name (RsvgHandle *ctx)
+{
+    ctx->priv->element_name_stack = g_slist_delete_link (ctx->priv->element_name_stack, ctx->priv->element_name_stack);
+}
+
+static void
+free_element_name_stack (RsvgHandle *ctx)
+{
+    g_slist_free (ctx->priv->element_name_stack);
+    ctx->priv->element_name_stack = NULL;
+}
 
 static void
 rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag * atts)
@@ -331,8 +361,9 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
 
     if (newnode) {
         g_assert (RSVG_NODE_TYPE (newnode) != RSVG_NODE_TYPE_INVALID);
-        newnode->name = (char *) name; /* libxml will keep this while parsing */
         newnode->parent = ctx->priv->currentnode;
+
+        push_element_name (ctx, name);
 
         add_node_to_handle (ctx, newnode);
         register_node_in_defs (ctx, newnode, atts);
@@ -725,32 +756,33 @@ rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
 }
 
 static void
-rsvg_end_element (void *data, const xmlChar * name)
+rsvg_end_element (void *data, const xmlChar * xmlname)
 {
     RsvgHandle *ctx = (RsvgHandle *) data;
+    const char *name = (const char *) xmlname;
 
     if (ctx->priv->handler_nest > 0 && ctx->priv->handler != NULL) {
         if (ctx->priv->handler->end_element != NULL)
-            ctx->priv->handler->end_element (ctx->priv->handler, (const char *) name);
+            ctx->priv->handler->end_element (ctx->priv->handler, name);
         ctx->priv->handler_nest--;
     } else {
         const char *tempname;
-        for (tempname = (const char *) name; *tempname != '\0'; tempname++)
+        for (tempname = name; *tempname != '\0'; tempname++)
             if (*tempname == ':')
-                name = (const xmlChar *) (tempname + 1);
+                name = tempname + 1;
 
         if (ctx->priv->handler != NULL) {
             ctx->priv->handler->free (ctx->priv->handler);
             ctx->priv->handler = NULL;
         }
 
-        if (ctx->priv->currentnode &&
-            !strcmp ((const char *) name, ctx->priv->currentnode->name)) {
+        if (ctx->priv->currentnode && topmost_element_name_is (ctx, name)) {
             ctx->priv->currentnode = ctx->priv->currentnode->parent;
+            pop_element_name (ctx);
         }
 
         /* FIXMEchpe: shouldn't this check that currentnode == treebase or sth like that? */
-        if (ctx->priv->treebase && !strcmp ((const char *)name, "svg"))
+        if (ctx->priv->treebase && !strcmp (name, "svg"))
             _rsvg_node_svg_apply_atts ((RsvgNodeSvg *)ctx->priv->treebase, ctx);
     }
 }
@@ -1243,6 +1275,8 @@ rsvg_handle_close_impl (RsvgHandle * handle, GError ** error)
         xmlFreeParserCtxt (handle->priv->ctxt);
         xmlFreeDoc (xml_doc);
     }
+
+    free_element_name_stack (handle);
 
     handle->priv->finished = TRUE;
     handle->priv->error = NULL;

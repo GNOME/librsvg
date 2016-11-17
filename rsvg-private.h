@@ -141,6 +141,11 @@ struct RsvgHandlePrivate {
        file is converted into at the end */
     RsvgNode *treebase;
 
+    /* Stack of element names while parsing; used to know when to stop parsing
+     * the current element.
+     */
+    GSList *element_name_stack;
+
     GHashTable *css_props;
 
     /* not a handler stack. each nested handler keeps
@@ -328,7 +333,6 @@ struct _RsvgNode {
     RsvgNode *parent;
     GPtrArray *children;
     RsvgNodeType type;
-    const char *name; /* owned by the xmlContext, invalid after parsing! */
     void (*free) (RsvgNode * self);
     void (*draw) (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
     void (*set_atts) (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *);
