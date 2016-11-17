@@ -66,7 +66,7 @@ rsvg_mask_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 }
 
 RsvgNode *
-rsvg_new_mask (void)
+rsvg_new_mask (const char *element_name)
 {
     RsvgMask *mask;
 
@@ -123,7 +123,7 @@ rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * at
 }
 
 RsvgNode *
-rsvg_new_clip_path (void)
+rsvg_new_clip_path (const char *element_name)
 {
     RsvgClipPath *clip_path;
 

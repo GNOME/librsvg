@@ -311,7 +311,7 @@ _rsvg_node_text_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 }
 
 RsvgNode *
-rsvg_new_text (void)
+rsvg_new_text (const char *element_name)
 {
     RsvgNodeText *text;
     text = g_new (RsvgNodeText, 1);
@@ -402,7 +402,7 @@ _rsvg_node_tspan_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * 
 }
 
 RsvgNode *
-rsvg_new_tspan (void)
+rsvg_new_tspan (const char *element_name)
 {
     RsvgNodeText *text;
     text = g_new0 (RsvgNodeText, 1);
@@ -472,7 +472,7 @@ _rsvg_node_tref_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 }
 
 RsvgNode *
-rsvg_new_tref (void)
+rsvg_new_tref (const char *element_name)
 {
     RsvgNodeTref *text;
     text = g_new (RsvgNodeTref, 1);

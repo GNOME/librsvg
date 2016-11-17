@@ -234,7 +234,7 @@ rsvg_node_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 }
 
 RsvgNode *
-rsvg_new_image (void)
+rsvg_new_image (const char *element_name)
 {
     RsvgNodeImage *image;
     image = g_new (RsvgNodeImage, 1);

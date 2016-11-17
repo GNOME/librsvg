@@ -132,7 +132,7 @@ rsvg_node_group_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 }
 
 RsvgNode *
-rsvg_new_group (void)
+rsvg_new_group (const char *element_name)
 {
     RsvgNodeGroup *group;
     group = g_new (RsvgNodeGroup, 1);
@@ -362,7 +362,7 @@ _rsvg_svg_free (RsvgNode * self)
 }
 
 RsvgNode *
-rsvg_new_svg (void)
+rsvg_new_svg (const char *element_name)
 {
     RsvgNodeSvg *svg;
     svg = g_new (RsvgNodeSvg, 1);
@@ -418,7 +418,7 @@ rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
 }
 
 RsvgNode *
-rsvg_new_use (void)
+rsvg_new_use (const char *element_name)
 {
     RsvgNodeUse *use;
     use = g_new (RsvgNodeUse, 1);
@@ -456,7 +456,7 @@ rsvg_node_symbol_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * 
 
 
 RsvgNode *
-rsvg_new_symbol (void)
+rsvg_new_symbol (const char *element_name)
 {
     RsvgNodeSymbol *symbol;
     symbol = g_new (RsvgNodeSymbol, 1);
@@ -469,7 +469,7 @@ rsvg_new_symbol (void)
 }
 
 RsvgNode *
-rsvg_new_defs (void)
+rsvg_new_defs (const char *element_name)
 {
     RsvgNodeGroup *group;
     group = g_new (RsvgNodeGroup, 1);
@@ -504,7 +504,7 @@ _rsvg_node_switch_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 }
 
 RsvgNode *
-rsvg_new_switch (void)
+rsvg_new_switch (const char *element_name)
 {
     RsvgNodeGroup *group;
     group = g_new (RsvgNodeGroup, 1);

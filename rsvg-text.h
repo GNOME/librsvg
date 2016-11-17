@@ -33,11 +33,11 @@
 G_BEGIN_DECLS 
 
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_text	    (void);
+RsvgNode    *rsvg_new_text	    (const char *element_name);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_tspan	    (void);
+RsvgNode    *rsvg_new_tspan	    (const char *element_name);
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_tref	    (void);
+RsvgNode    *rsvg_new_tref	    (const char *element_name);
 G_GNUC_INTERNAL
 char	    *rsvg_make_valid_utf8   (const char *str, int len);
 

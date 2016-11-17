@@ -224,7 +224,7 @@ rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 }
 
 RsvgNode *
-rsvg_new_stop (void)
+rsvg_new_stop (const char *element_name)
 {
     RsvgGradientStop *stop = g_new (RsvgGradientStop, 1);
     _rsvg_node_init (&stop->super, RSVG_NODE_TYPE_STOP);
@@ -292,7 +292,7 @@ rsvg_linear_gradient_free (RsvgNode * node)
 }
 
 RsvgNode *
-rsvg_new_linear_gradient (void)
+rsvg_new_linear_gradient (const char *element_name)
 {
     RsvgLinearGradient *grad = NULL;
     grad = g_new (RsvgLinearGradient, 1);
@@ -375,7 +375,7 @@ rsvg_radial_gradient_free (RsvgNode * node)
 }
 
 RsvgNode *
-rsvg_new_radial_gradient (void)
+rsvg_new_radial_gradient (const char *element_name)
 {
 
     RsvgRadialGradient *grad = g_new (RsvgRadialGradient, 1);
@@ -454,7 +454,7 @@ rsvg_pattern_free (RsvgNode * node)
 
 
 RsvgNode *
-rsvg_new_pattern (void)
+rsvg_new_pattern (const char *element_name)
 {
     RsvgPattern *pattern = g_new (RsvgPattern, 1);
     _rsvg_node_init (&pattern->super, RSVG_NODE_TYPE_PATTERN);

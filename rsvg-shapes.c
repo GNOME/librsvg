@@ -90,7 +90,7 @@ rsvg_node_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * at
 }
 
 RsvgNode *
-rsvg_new_path (void)
+rsvg_new_path (const char *element_name)
 {
     RsvgNodePath *path;
     path = g_new (RsvgNodePath, 1);
@@ -222,13 +222,13 @@ rsvg_new_any_poly (RsvgNodeType type)
 }
 
 RsvgNode *
-rsvg_new_polygon (void)
+rsvg_new_polygon (const char *element_name)
 {
     return rsvg_new_any_poly (RSVG_NODE_TYPE_POLYGON);
 }
 
 RsvgNode *
-rsvg_new_polyline (void)
+rsvg_new_polyline (const char *element_name)
 {
     return rsvg_new_any_poly (RSVG_NODE_TYPE_POLYLINE);
 }
@@ -288,7 +288,7 @@ _rsvg_node_line_draw (RsvgNode * overself, RsvgDrawingCtx * ctx, int dominate)
 }
 
 RsvgNode *
-rsvg_new_line (void)
+rsvg_new_line (const char *element_name)
 {
     RsvgNodeLine *line;
     line = g_new (RsvgNodeLine, 1);
@@ -478,7 +478,7 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 }
 
 RsvgNode *
-rsvg_new_rect (void)
+rsvg_new_rect (const char *element_name)
 {
     RsvgNodeRect *rect;
     rect = g_new (RsvgNodeRect, 1);
@@ -567,7 +567,7 @@ _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 }
 
 RsvgNode *
-rsvg_new_circle (void)
+rsvg_new_circle (const char *element_name)
 {
     RsvgNodeCircle *circle;
     circle = g_new (RsvgNodeCircle, 1);
@@ -658,7 +658,7 @@ _rsvg_node_ellipse_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 }
 
 RsvgNode *
-rsvg_new_ellipse (void)
+rsvg_new_ellipse (const char *element_name)
 {
     RsvgNodeEllipse *ellipse;
     ellipse = g_new (RsvgNodeEllipse, 1);

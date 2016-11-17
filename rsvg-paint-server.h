@@ -138,13 +138,13 @@ G_GNUC_INTERNAL
 void                 rsvg_paint_server_unref    (RsvgPaintServer * ps);
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_linear_gradient  (void);
+RsvgNode *rsvg_new_linear_gradient  (const char *element_name);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_radial_gradient  (void);
+RsvgNode *rsvg_new_radial_gradient  (const char *element_name);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_stop	        (void);
+RsvgNode *rsvg_new_stop	        (const char *element_name);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_pattern      (void);
+RsvgNode *rsvg_new_pattern      (const char *element_name);
 G_GNUC_INTERNAL
 void rsvg_pattern_fix_fallback          (RsvgDrawingCtx * ctx,
                                          RsvgPattern * pattern);

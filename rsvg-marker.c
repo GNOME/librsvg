@@ -91,7 +91,7 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * 
 }
 
 RsvgNode *
-rsvg_new_marker (void)
+rsvg_new_marker (const char *element_name)
 {
     RsvgMarker *marker;
     marker = g_new (RsvgMarker, 1);

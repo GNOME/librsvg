@@ -37,17 +37,17 @@
 G_BEGIN_DECLS 
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_use (void);
+RsvgNode *rsvg_new_use (const char *element_name);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_symbol (void);
+RsvgNode *rsvg_new_symbol (const char *element_name);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_svg (void);
+RsvgNode *rsvg_new_svg (const char *element_name);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_defs (void);
+RsvgNode *rsvg_new_defs (const char *element_name);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_group (void);
+RsvgNode *rsvg_new_group (const char *element_name);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_switch (void);
+RsvgNode *rsvg_new_switch (const char *element_name);
 
 typedef struct _RsvgNodeGroup RsvgNodeGroup;
 typedef struct _RsvgNodeUse RsvgNodeUse;

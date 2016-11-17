@@ -37,7 +37,7 @@
 G_BEGIN_DECLS 
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_image (void);
+RsvgNode *rsvg_new_image (const char *element_name);
 
 typedef struct _RsvgNodeImage RsvgNodeImage;
 
