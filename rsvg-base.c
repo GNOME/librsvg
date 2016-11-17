@@ -240,6 +240,12 @@ free_element_name_stack (RsvgHandle *ctx)
 }
 
 static void
+node_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts)
+{
+    node->set_atts (node, ctx, atts);
+}
+
+static void
 rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag * atts)
 {
     /*replace this stuff with a hash for fast reading! */
@@ -367,7 +373,7 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
 
         add_node_to_handle (ctx, newnode);
         register_node_in_defs (ctx, newnode, atts);
-        rsvg_node_set_atts (newnode, ctx, atts);
+        node_set_atts (newnode, ctx, atts);
 
         if (ctx->priv->currentnode) {
             rsvg_node_group_pack (ctx->priv->currentnode, newnode);
@@ -2089,12 +2095,6 @@ void
 rsvg_cleanup (void)
 {
     xmlCleanupParser ();
-}
-
-void
-rsvg_node_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts)
-{
-    node->set_atts (node, ctx, atts);
 }
 
 void
