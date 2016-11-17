@@ -31,4 +31,5 @@ mod length;
 mod marker;
 mod path_builder;
 mod path_parser;
+mod property_bag;
 mod strtod;
