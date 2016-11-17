@@ -201,38 +201,36 @@ rsvg_node_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
     const char *klazz = NULL, *id = NULL, *value;
     RsvgNodeImage *image = (RsvgNodeImage *) self;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            image->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            image->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            image->w = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            image->h = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-        /* path is used by some older adobe illustrator versions */
-        if ((value = rsvg_property_bag_lookup (atts, "path"))
-            || (value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
-            image->surface = rsvg_cairo_surface_new_from_href (ctx,
-                                                               value, 
-                                                               NULL);
+    if ((value = rsvg_property_bag_lookup (atts, "x")))
+        image->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+    if ((value = rsvg_property_bag_lookup (atts, "y")))
+        image->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+    if ((value = rsvg_property_bag_lookup (atts, "width")))
+        image->w = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+    if ((value = rsvg_property_bag_lookup (atts, "height")))
+        image->h = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+    /* path is used by some older adobe illustrator versions */
+    if ((value = rsvg_property_bag_lookup (atts, "path"))
+        || (value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
+        image->surface = rsvg_cairo_surface_new_from_href (ctx,
+                                                           value, 
+                                                           NULL);
 
-            if (!image->surface) {
+        if (!image->surface) {
 #ifdef G_ENABLE_DEBUG
-                g_warning ("Couldn't load image: %s\n", value);
+            g_warning ("Couldn't load image: %s\n", value);
 #endif
-            }
         }
-        if ((value = rsvg_property_bag_lookup (atts, "class")))
-            klazz = value;
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            id = value;
-
-        if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
-            image->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-
-        rsvg_parse_style_attrs (ctx, image->super.state, "image", klazz, id, atts);
     }
+    if ((value = rsvg_property_bag_lookup (atts, "class")))
+        klazz = value;
+    if ((value = rsvg_property_bag_lookup (atts, "id")))
+        id = value;
+
+    if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
+        image->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
+
+    rsvg_parse_style_attrs (ctx, image->super.state, "image", klazz, id, atts);
 }
 
 RsvgNode *

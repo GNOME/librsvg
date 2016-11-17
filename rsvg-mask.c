@@ -36,33 +36,31 @@ rsvg_mask_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
     RsvgMask *mask;
     mask = (RsvgMask *) self;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "maskUnits"))) {
-            if (!strcmp (value, "userSpaceOnUse"))
-                mask->maskunits = userSpaceOnUse;
-            else
-                mask->maskunits = objectBoundingBox;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "maskContentUnits"))) {
-            if (!strcmp (value, "objectBoundingBox"))
-                mask->contentunits = objectBoundingBox;
-            else
-                mask->contentunits = userSpaceOnUse;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            mask->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            mask->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            mask->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            mask->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            id = value;
-
-        if ((value = rsvg_property_bag_lookup (atts, "class")))
-            klazz = value;
+    if ((value = rsvg_property_bag_lookup (atts, "maskUnits"))) {
+        if (!strcmp (value, "userSpaceOnUse"))
+            mask->maskunits = userSpaceOnUse;
+        else
+            mask->maskunits = objectBoundingBox;
     }
+    if ((value = rsvg_property_bag_lookup (atts, "maskContentUnits"))) {
+        if (!strcmp (value, "objectBoundingBox"))
+            mask->contentunits = objectBoundingBox;
+        else
+            mask->contentunits = userSpaceOnUse;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "x")))
+        mask->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+    if ((value = rsvg_property_bag_lookup (atts, "y")))
+        mask->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+    if ((value = rsvg_property_bag_lookup (atts, "width")))
+        mask->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+    if ((value = rsvg_property_bag_lookup (atts, "height")))
+        mask->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+    if ((value = rsvg_property_bag_lookup (atts, "id")))
+        id = value;
+
+    if ((value = rsvg_property_bag_lookup (atts, "class")))
+        klazz = value;
 
     rsvg_parse_style_attrs (ctx, mask->super.state, "mask", klazz, id, atts);
 }
@@ -109,19 +107,17 @@ rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * at
 
     clip_path = (RsvgClipPath *) self;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "clipPathUnits"))) {
-            if (!strcmp (value, "objectBoundingBox"))
-                clip_path->units = objectBoundingBox;
-            else
-                clip_path->units = userSpaceOnUse;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            id = value;
-
-        if ((value = rsvg_property_bag_lookup (atts, "class")))
-            klazz = value;
+    if ((value = rsvg_property_bag_lookup (atts, "clipPathUnits"))) {
+        if (!strcmp (value, "objectBoundingBox"))
+            clip_path->units = objectBoundingBox;
+        else
+            clip_path->units = userSpaceOnUse;
     }
+    if ((value = rsvg_property_bag_lookup (atts, "id")))
+        id = value;
+
+    if ((value = rsvg_property_bag_lookup (atts, "class")))
+        klazz = value;
 
     rsvg_parse_style_attrs (ctx, clip_path->super.state, "clipPath", klazz, id, atts);
 }

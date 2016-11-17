@@ -160,44 +160,43 @@ rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 
     stop = (RsvgGradientStop *) self;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "offset"))) {
-            /* either a number [0,1] or a percentage */
-            RsvgLength length = rsvg_length_parse (value, LENGTH_DIR_BOTH);
+    if ((value = rsvg_property_bag_lookup (atts, "offset"))) {
+        /* either a number [0,1] or a percentage */
+        RsvgLength length = rsvg_length_parse (value, LENGTH_DIR_BOTH);
 
-            if (length.unit == LENGTH_UNIT_DEFAULT || length.unit == LENGTH_UNIT_PERCENT) {
-                double offset;
+        if (length.unit == LENGTH_UNIT_DEFAULT || length.unit == LENGTH_UNIT_PERCENT) {
+            double offset;
 
-                offset = length.length;
+            offset = length.length;
 
-                if (offset < 0.0)
-                    offset = 0.0;
-                else if (offset > 1.0)
-                    offset = 1.0;
+            if (offset < 0.0)
+                offset = 0.0;
+            else if (offset > 1.0)
+                offset = 1.0;
 
-                stop->offset = offset;
-                stop->is_valid = TRUE;
-            } else {
-                /* Only default and percent values are allowed */
-                stop->is_valid = FALSE;
-            }
+            stop->offset = offset;
+            stop->is_valid = TRUE;
+        } else {
+            /* Only default and percent values are allowed */
+            stop->is_valid = FALSE;
         }
-        if ((value = rsvg_property_bag_lookup (atts, "style")))
-            rsvg_parse_style (ctx, self->state, value);
-
-        if ((value = rsvg_property_bag_lookup (atts, "stop-color"))) {
-            has_stop_color = TRUE;
-
-            if (!strcmp (value, "currentColor"))
-                is_current_color = TRUE;
-        }
-
-        if ((value = rsvg_property_bag_lookup (atts, "stop-opacity"))) {
-            has_stop_opacity = TRUE;
-        }
-
-        rsvg_parse_style_pairs (ctx, self->state, atts);
     }
+    if ((value = rsvg_property_bag_lookup (atts, "style")))
+        rsvg_parse_style (ctx, self->state, value);
+
+    if ((value = rsvg_property_bag_lookup (atts, "stop-color"))) {
+        has_stop_color = TRUE;
+
+        if (!strcmp (value, "currentColor"))
+            is_current_color = TRUE;
+    }
+
+    if ((value = rsvg_property_bag_lookup (atts, "stop-opacity"))) {
+        has_stop_opacity = TRUE;
+    }
+
+    rsvg_parse_style_pairs (ctx, self->state, atts);
+
     self->parent = ctx->priv->currentnode;
 
     state = rsvg_state_new ();
@@ -242,48 +241,46 @@ rsvg_linear_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
     RsvgLinearGradient *grad = (RsvgLinearGradient *) self;
     const char *value;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "x1"))) {
-            grad->x1 = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-            grad->hasx1 = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "y1"))) {
-            grad->y1 = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-            grad->hasy1 = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "x2"))) {
-            grad->x2 = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-            grad->hasx2 = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "y2"))) {
-            grad->y2 = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-            grad->hasy2 = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "spreadMethod"))) {
-            if (!strcmp (value, "pad")) {
-                grad->spread = CAIRO_EXTEND_PAD;
-            } else if (!strcmp (value, "reflect")) {
-                grad->spread = CAIRO_EXTEND_REFLECT;
-            } else if (!strcmp (value, "repeat")) {
-                grad->spread = CAIRO_EXTEND_REPEAT;
-            }
-            grad->hasspread = TRUE;
-        }
-        g_free (grad->fallback);
-        grad->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
-        if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
-            rsvg_parse_transform (&grad->affine, value);
-            grad->hastransform = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
-            if (!strcmp (value, "userSpaceOnUse"))
-                grad->obj_bbox = FALSE;
-            else if (!strcmp (value, "objectBoundingBox"))
-                grad->obj_bbox = TRUE;
-            grad->hasbbox = TRUE;
-        }
-        rsvg_parse_style_attrs (ctx, self->state, "linearGradient", NULL, NULL, atts);
+    if ((value = rsvg_property_bag_lookup (atts, "x1"))) {
+        grad->x1 = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+        grad->hasx1 = TRUE;
     }
+    if ((value = rsvg_property_bag_lookup (atts, "y1"))) {
+        grad->y1 = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+        grad->hasy1 = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "x2"))) {
+        grad->x2 = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+        grad->hasx2 = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "y2"))) {
+        grad->y2 = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+        grad->hasy2 = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "spreadMethod"))) {
+        if (!strcmp (value, "pad")) {
+            grad->spread = CAIRO_EXTEND_PAD;
+        } else if (!strcmp (value, "reflect")) {
+            grad->spread = CAIRO_EXTEND_REFLECT;
+        } else if (!strcmp (value, "repeat")) {
+            grad->spread = CAIRO_EXTEND_REPEAT;
+        }
+        grad->hasspread = TRUE;
+    }
+    g_free (grad->fallback);
+    grad->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
+    if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
+        rsvg_parse_transform (&grad->affine, value);
+        grad->hastransform = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
+        if (!strcmp (value, "userSpaceOnUse"))
+            grad->obj_bbox = FALSE;
+        else if (!strcmp (value, "objectBoundingBox"))
+            grad->obj_bbox = TRUE;
+        grad->hasbbox = TRUE;
+    }
+    rsvg_parse_style_attrs (ctx, self->state, "linearGradient", NULL, NULL, atts);
 }
 
 static void
@@ -320,55 +317,53 @@ rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
     RsvgRadialGradient *grad = (RsvgRadialGradient *) self;
     const char *value;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "cx"))) {
-            grad->cx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-            grad->hascx = TRUE;
-            if (!grad->hasfx)
-                grad->fx = grad->cx;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "cy"))) {
-            grad->cy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-            grad->hascy = TRUE;
-            if (!grad->hasfy)
-                grad->fy = grad->cy;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "r"))) {
-            grad->r = rsvg_length_parse (value, LENGTH_DIR_BOTH);
-            grad->hasr = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "fx"))) {
-            grad->fx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-            grad->hasfx = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "fy"))) {
-            grad->fy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-            grad->hasfy = TRUE;
-        }
-        g_free (grad->fallback);
-        grad->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
-        if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
-            rsvg_parse_transform (&grad->affine, value);
-            grad->hastransform = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "spreadMethod"))) {
-            if (!strcmp (value, "pad"))
-                grad->spread = CAIRO_EXTEND_PAD;
-            else if (!strcmp (value, "reflect"))
-                grad->spread = CAIRO_EXTEND_REFLECT;
-            else if (!strcmp (value, "repeat"))
-                grad->spread = CAIRO_EXTEND_REPEAT;
-            grad->hasspread = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
-            if (!strcmp (value, "userSpaceOnUse"))
-                grad->obj_bbox = FALSE;
-            else if (!strcmp (value, "objectBoundingBox"))
-                grad->obj_bbox = TRUE;
-            grad->hasbbox = TRUE;
-        }
-        rsvg_parse_style_attrs (ctx, self->state, "radialGradient", NULL, NULL, atts);
+    if ((value = rsvg_property_bag_lookup (atts, "cx"))) {
+        grad->cx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+        grad->hascx = TRUE;
+        if (!grad->hasfx)
+            grad->fx = grad->cx;
     }
+    if ((value = rsvg_property_bag_lookup (atts, "cy"))) {
+        grad->cy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+        grad->hascy = TRUE;
+        if (!grad->hasfy)
+            grad->fy = grad->cy;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "r"))) {
+        grad->r = rsvg_length_parse (value, LENGTH_DIR_BOTH);
+        grad->hasr = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "fx"))) {
+        grad->fx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+        grad->hasfx = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "fy"))) {
+        grad->fy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+        grad->hasfy = TRUE;
+    }
+    g_free (grad->fallback);
+    grad->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
+    if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
+        rsvg_parse_transform (&grad->affine, value);
+        grad->hastransform = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "spreadMethod"))) {
+        if (!strcmp (value, "pad"))
+            grad->spread = CAIRO_EXTEND_PAD;
+        else if (!strcmp (value, "reflect"))
+            grad->spread = CAIRO_EXTEND_REFLECT;
+        else if (!strcmp (value, "repeat"))
+            grad->spread = CAIRO_EXTEND_REPEAT;
+        grad->hasspread = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
+        if (!strcmp (value, "userSpaceOnUse"))
+            grad->obj_bbox = FALSE;
+        else if (!strcmp (value, "objectBoundingBox"))
+            grad->obj_bbox = TRUE;
+        grad->hasbbox = TRUE;
+    }
+    rsvg_parse_style_attrs (ctx, self->state, "radialGradient", NULL, NULL, atts);
 }
 
 static void
@@ -403,51 +398,49 @@ rsvg_pattern_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts
     RsvgPattern *pattern = (RsvgPattern *) self;
     const char *value;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "viewBox"))) {
-            pattern->vbox = rsvg_css_parse_vbox (value);
-            pattern->hasvbox = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "x"))) {
-            pattern->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-            pattern->hasx = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "y"))) {
-            pattern->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-            pattern->hasy = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "width"))) {
-            pattern->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-            pattern->haswidth = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "height"))) {
-            pattern->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-            pattern->hasheight = TRUE;
-        }
-        g_free (pattern->fallback);
-        pattern->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
-        if ((value = rsvg_property_bag_lookup (atts, "patternTransform"))) {
-            rsvg_parse_transform (&pattern->affine, value);
-            pattern->hastransform = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "patternUnits"))) {
-            if (!strcmp (value, "userSpaceOnUse"))
-                pattern->obj_bbox = FALSE;
-            else if (!strcmp (value, "objectBoundingBox"))
-                pattern->obj_bbox = TRUE;
-            pattern->hasbbox = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "patternContentUnits"))) {
-            if (!strcmp (value, "userSpaceOnUse"))
-                pattern->obj_cbbox = FALSE;
-            else if (!strcmp (value, "objectBoundingBox"))
-                pattern->obj_cbbox = TRUE;
-            pattern->hascbox = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio"))) {
-            pattern->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-            pattern->hasaspect = TRUE;
-        }
+    if ((value = rsvg_property_bag_lookup (atts, "viewBox"))) {
+        pattern->vbox = rsvg_css_parse_vbox (value);
+        pattern->hasvbox = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "x"))) {
+        pattern->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+        pattern->hasx = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "y"))) {
+        pattern->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+        pattern->hasy = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "width"))) {
+        pattern->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+        pattern->haswidth = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "height"))) {
+        pattern->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+        pattern->hasheight = TRUE;
+    }
+    g_free (pattern->fallback);
+    pattern->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
+    if ((value = rsvg_property_bag_lookup (atts, "patternTransform"))) {
+        rsvg_parse_transform (&pattern->affine, value);
+        pattern->hastransform = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "patternUnits"))) {
+        if (!strcmp (value, "userSpaceOnUse"))
+            pattern->obj_bbox = FALSE;
+        else if (!strcmp (value, "objectBoundingBox"))
+            pattern->obj_bbox = TRUE;
+        pattern->hasbbox = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "patternContentUnits"))) {
+        if (!strcmp (value, "userSpaceOnUse"))
+            pattern->obj_cbbox = FALSE;
+        else if (!strcmp (value, "objectBoundingBox"))
+            pattern->obj_cbbox = TRUE;
+        pattern->hascbox = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio"))) {
+        pattern->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
+        pattern->hasaspect = TRUE;
     }
 }
 

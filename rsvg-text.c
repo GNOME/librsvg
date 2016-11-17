@@ -151,16 +151,14 @@ _rsvg_node_text_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
     const char *klazz = NULL, *id = NULL, *value;
     RsvgNodeText *text = (RsvgNodeText *) self;
 
-    if (rsvg_property_bag_size (atts)) {
-        set_text_common_atts (text, atts);
+    set_text_common_atts (text, atts);
 
-        if ((value = rsvg_property_bag_lookup (atts, "class")))
-            klazz = value;
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            id = value;
+    if ((value = rsvg_property_bag_lookup (atts, "class")))
+        klazz = value;
+    if ((value = rsvg_property_bag_lookup (atts, "id")))
+        id = value;
 
-        rsvg_parse_style_attrs (ctx, self->state, "text", klazz, id, atts);
-    }
+    rsvg_parse_style_attrs (ctx, self->state, "text", klazz, id, atts);
 }
 
 static void
@@ -393,16 +391,14 @@ _rsvg_node_tspan_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * 
     const char *klazz = NULL, *id = NULL, *value;
     RsvgNodeText *text = (RsvgNodeText *) self;
 
-    if (rsvg_property_bag_size (atts)) {
-        set_text_common_atts (text, atts);
+    set_text_common_atts (text, atts);
 
-        if ((value = rsvg_property_bag_lookup (atts, "class")))
-            klazz = value;
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            id = value;
+    if ((value = rsvg_property_bag_lookup (atts, "class")))
+        klazz = value;
+    if ((value = rsvg_property_bag_lookup (atts, "id")))
+        id = value;
 
-        rsvg_parse_style_attrs (ctx, self->state, "tspan", klazz, id, atts);
-    }
+    rsvg_parse_style_attrs (ctx, self->state, "tspan", klazz, id, atts);
 }
 
 RsvgNode *
@@ -469,11 +465,9 @@ _rsvg_node_tref_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
     const char *value;
     RsvgNodeTref *text = (RsvgNodeTref *) self;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
-            g_free (text->link);
-            text->link = g_strdup (value);
-        }
+    if ((value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
+        g_free (text->link);
+        text->link = g_strdup (value);
     }
 }
 

@@ -59,37 +59,35 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * 
     RsvgMarker *marker;
     marker = (RsvgMarker *) self;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            id = value;
-        if ((value = rsvg_property_bag_lookup (atts, "class")))
-            klazz = value;
-        if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
-            marker->vbox = rsvg_css_parse_vbox (value);
-        if ((value = rsvg_property_bag_lookup (atts, "refX")))
-            marker->refX = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-        if ((value = rsvg_property_bag_lookup (atts, "refY")))
-            marker->refY = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-        if ((value = rsvg_property_bag_lookup (atts, "markerWidth")))
-            marker->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-        if ((value = rsvg_property_bag_lookup (atts, "markerHeight")))
-            marker->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-        if ((value = rsvg_property_bag_lookup (atts, "orient"))) {
-            if (!strcmp (value, "auto"))
-                marker->orientAuto = TRUE;
-            else
-                marker->orient = rsvg_css_parse_angle (value);
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "markerUnits"))) {
-            if (!strcmp (value, "userSpaceOnUse"))
-                marker->bbox = FALSE;
-            if (!strcmp (value, "strokeWidth"))
-                marker->bbox = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
-            marker->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-        rsvg_parse_style_attrs (ctx, self->state, "marker", klazz, id, atts);
+    if ((value = rsvg_property_bag_lookup (atts, "id")))
+        id = value;
+    if ((value = rsvg_property_bag_lookup (atts, "class")))
+        klazz = value;
+    if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
+        marker->vbox = rsvg_css_parse_vbox (value);
+    if ((value = rsvg_property_bag_lookup (atts, "refX")))
+        marker->refX = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+    if ((value = rsvg_property_bag_lookup (atts, "refY")))
+        marker->refY = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+    if ((value = rsvg_property_bag_lookup (atts, "markerWidth")))
+        marker->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+    if ((value = rsvg_property_bag_lookup (atts, "markerHeight")))
+        marker->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+    if ((value = rsvg_property_bag_lookup (atts, "orient"))) {
+        if (!strcmp (value, "auto"))
+            marker->orientAuto = TRUE;
+        else
+            marker->orient = rsvg_css_parse_angle (value);
     }
+    if ((value = rsvg_property_bag_lookup (atts, "markerUnits"))) {
+        if (!strcmp (value, "userSpaceOnUse"))
+            marker->bbox = FALSE;
+        if (!strcmp (value, "strokeWidth"))
+            marker->bbox = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
+        marker->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
+    rsvg_parse_style_attrs (ctx, self->state, "marker", klazz, id, atts);
 }
 
 RsvgNode *

@@ -242,7 +242,9 @@ free_element_name_stack (RsvgHandle *ctx)
 static void
 node_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    node->set_atts (node, ctx, atts);
+    if (rsvg_property_bag_size (atts) > 0) {
+        node->set_atts (node, ctx, atts);
+    }
 }
 
 static void
