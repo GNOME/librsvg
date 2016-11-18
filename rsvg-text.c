@@ -148,17 +148,9 @@ set_text_common_atts (RsvgNodeText *text, RsvgPropertyBag * atts)
 static void
 _rsvg_node_text_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *klazz = NULL, *id = NULL, *value;
     RsvgNodeText *text = (RsvgNodeText *) self;
 
     set_text_common_atts (text, atts);
-
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
-
-    rsvg_parse_style_attrs (ctx, self->state, "text", klazz, id, atts);
 }
 
 static void
@@ -388,17 +380,9 @@ _rsvg_node_text_length_tspan (RsvgNodeText * self,
 static void
 _rsvg_node_tspan_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *klazz = NULL, *id = NULL, *value;
     RsvgNodeText *text = (RsvgNodeText *) self;
 
     set_text_common_atts (text, atts);
-
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
-
-    rsvg_parse_style_attrs (ctx, self->state, "tspan", klazz, id, atts);
 }
 
 RsvgNode *

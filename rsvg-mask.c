@@ -32,8 +32,9 @@
 static void
 rsvg_mask_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *id = NULL, *klazz = NULL, *value;
     RsvgMask *mask;
+    const char *value;
+
     mask = (RsvgMask *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "maskUnits"))) {
@@ -56,13 +57,6 @@ rsvg_mask_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
         mask->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
     if ((value = rsvg_property_bag_lookup (atts, "height")))
         mask->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-
-    rsvg_parse_style_attrs (ctx, mask->super.state, "mask", klazz, id, atts);
 }
 
 RsvgNode *
@@ -102,8 +96,8 @@ rsvg_get_url_string (const char *str)
 static void
 rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *id = NULL, *klazz = NULL, *value = NULL;
     RsvgClipPath *clip_path;
+    const char *value;
 
     clip_path = (RsvgClipPath *) self;
 
@@ -113,13 +107,6 @@ rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * at
         else
             clip_path->units = userSpaceOnUse;
     }
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-
-    rsvg_parse_style_attrs (ctx, clip_path->super.state, "clipPath", klazz, id, atts);
 }
 
 RsvgNode *

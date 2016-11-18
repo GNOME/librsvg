@@ -198,8 +198,8 @@ rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 static void
 rsvg_node_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *klazz = NULL, *id = NULL, *value;
     RsvgNodeImage *image = (RsvgNodeImage *) self;
+    const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "x")))
         image->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
@@ -222,15 +222,9 @@ rsvg_node_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 #endif
         }
     }
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
 
     if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
         image->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-
-    rsvg_parse_style_attrs (ctx, image->super.state, "image", klazz, id, atts);
 }
 
 RsvgNode *

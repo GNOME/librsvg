@@ -73,20 +73,14 @@ rsvg_node_path_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 static void
 rsvg_node_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *klazz = NULL, *id = NULL, *value;
     RsvgNodePath *path = (RsvgNodePath *) self;
+    const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "d"))) {
         if (path->builder)
             rsvg_path_builder_destroy (path->builder);
         path->builder = rsvg_path_parser_from_str_into_builder (value);
     }
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
-
-    rsvg_parse_style_attrs (ctx, self->state, "path", klazz, id, atts);
 }
 
 RsvgNode *
@@ -118,7 +112,7 @@ static void
 _rsvg_node_poly_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
     RsvgNodePoly *poly = (RsvgNodePoly *) self;
-    const char *klazz = NULL, *id = NULL, *value;
+    const char *value;
 
     /* support for svg < 1.0 which used verts */
     if ((value = rsvg_property_bag_lookup (atts, "verts"))
@@ -128,15 +122,6 @@ _rsvg_node_poly_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
         poly->builder = _rsvg_node_poly_create_builder (value,
                                                         RSVG_NODE_TYPE (self) == RSVG_NODE_TYPE_POLYGON);
     }
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
-
-    rsvg_parse_style_attrs (ctx, self->state,
-                            RSVG_NODE_TYPE (self) == RSVG_NODE_TYPE_POLYLINE ? "polyline" : "polygon",
-                            klazz, id, atts);
-
 }
 
 static RsvgPathBuilder *
@@ -244,8 +229,8 @@ typedef struct _RsvgNodeLine RsvgNodeLine;
 static void
 _rsvg_node_line_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *klazz = NULL, *id = NULL, *value;
     RsvgNodeLine *line = (RsvgNodeLine *) self;
+    const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "x1")))
         line->x1 = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
@@ -255,12 +240,6 @@ _rsvg_node_line_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
         line->x2 = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
     if ((value = rsvg_property_bag_lookup (atts, "y2")))
         line->y2 = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
-
-    rsvg_parse_style_attrs (ctx, self->state, "line", klazz, id, atts);
 }
 
 static void
@@ -310,8 +289,8 @@ typedef struct _RsvgNodeRect RsvgNodeRect;
 static void
 _rsvg_node_rect_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *klazz = NULL, *id = NULL, *value;
     RsvgNodeRect *rect = (RsvgNodeRect *) self;
+    const char *value;
 
     /* FIXME: negative w/h/rx/ry is an error, per http://www.w3.org/TR/SVG11/shapes.html#RectElement */
     if ((value = rsvg_property_bag_lookup (atts, "x")))
@@ -330,12 +309,6 @@ _rsvg_node_rect_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
         rect->ry = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
         rect->got_ry = TRUE;
     }
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
-
-    rsvg_parse_style_attrs (ctx, self->state, "rect", klazz, id, atts);
 }
 
 static void
@@ -500,8 +473,8 @@ typedef struct _RsvgNodeCircle RsvgNodeCircle;
 static void
 _rsvg_node_circle_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *klazz = NULL, *id = NULL, *value;
     RsvgNodeCircle *circle = (RsvgNodeCircle *) self;
+    const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "cx")))
         circle->cx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
@@ -509,12 +482,6 @@ _rsvg_node_circle_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *
         circle->cy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
     if ((value = rsvg_property_bag_lookup (atts, "r")))
         circle->r = rsvg_length_parse (value, LENGTH_DIR_BOTH);
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
-
-    rsvg_parse_style_attrs (ctx, self->state, "circle", klazz, id, atts);
 }
 
 static void
@@ -588,8 +555,8 @@ typedef struct _RsvgNodeEllipse RsvgNodeEllipse;
 static void
 _rsvg_node_ellipse_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *klazz = NULL, *id = NULL, *value;
     RsvgNodeEllipse *ellipse = (RsvgNodeEllipse *) self;
+    const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "cx")))
         ellipse->cx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
@@ -599,12 +566,6 @@ _rsvg_node_ellipse_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag 
         ellipse->rx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
     if ((value = rsvg_property_bag_lookup (atts, "ry")))
         ellipse->ry = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
-
-    rsvg_parse_style_attrs (ctx, self->state, "ellipse", klazz, id, atts);
 }
 
 static void

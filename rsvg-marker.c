@@ -55,14 +55,11 @@ struct _RsvgMarker {
 static void
 rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *klazz = NULL, *id = NULL, *value;
     RsvgMarker *marker;
+    const char *value;
+
     marker = (RsvgMarker *) self;
 
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
     if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
         marker->vbox = rsvg_css_parse_vbox (value);
     if ((value = rsvg_property_bag_lookup (atts, "refX")))
@@ -87,7 +84,6 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * 
     }
     if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
         marker->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-    rsvg_parse_style_attrs (ctx, self->state, "marker", klazz, id, atts);
 }
 
 RsvgNode *

@@ -118,19 +118,6 @@ _rsvg_node_free (RsvgNode * self)
     g_free (self);
 }
 
-static void
-rsvg_node_group_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
-{
-    const char *klazz = NULL, *id = NULL, *value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
-
-    rsvg_parse_style_attrs (ctx, self->state, "g", klazz, id, atts);
-}
-
 RsvgNode *
 rsvg_new_group (const char *element_name)
 {
@@ -138,7 +125,6 @@ rsvg_new_group (const char *element_name)
     group = g_new (RsvgNodeGroup, 1);
     _rsvg_node_init (&group->super, RSVG_NODE_TYPE_GROUP);
     group->super.draw = _rsvg_node_draw_children;
-    group->super.set_atts = rsvg_node_group_set_atts;
     return &group->super;
 }
 
@@ -391,8 +377,8 @@ rsvg_node_use_free (RsvgNode * node)
 static void
 rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *value = NULL, *klazz = NULL, *id = NULL;
     RsvgNodeUse *use;
+    const char *value;
 
     use = (RsvgNodeUse *) self;
 
@@ -404,17 +390,11 @@ rsvg_node_use_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
         use->w = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
     if ((value = rsvg_property_bag_lookup (atts, "height")))
         use->h = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
 
     if ((value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
         g_free (use->link);
         use->link = g_strdup (value);
     }
-    rsvg_parse_style_attrs (ctx, self->state, "use", klazz, id, atts);
-
 }
 
 RsvgNode *
@@ -438,20 +418,12 @@ static void
 rsvg_node_symbol_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
     RsvgNodeSymbol *symbol = (RsvgNodeSymbol *) self;
-
-    const char *klazz = NULL, *value, *id = NULL;
-
-    if ((value = rsvg_property_bag_lookup (atts, "class")))
-        klazz = value;
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
+    const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
         symbol->vbox = rsvg_css_parse_vbox (value);
     if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
         symbol->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-
-    rsvg_parse_style_attrs (ctx, self->state, "symbol", klazz, id, atts);
 }
 
 
@@ -475,7 +447,6 @@ rsvg_new_defs (const char *element_name)
     group = g_new (RsvgNodeGroup, 1);
     _rsvg_node_init (&group->super, RSVG_NODE_TYPE_DEFS);
     group->super.draw = _rsvg_node_draw_nothing;
-    group->super.set_atts = rsvg_node_group_set_atts;
     return &group->super;
 }
 
@@ -510,6 +481,5 @@ rsvg_new_switch (const char *element_name)
     group = g_new (RsvgNodeGroup, 1);
     _rsvg_node_init (&group->super, RSVG_NODE_TYPE_SWITCH);
     group->super.draw = _rsvg_node_switch_draw;
-    group->super.set_atts = rsvg_node_group_set_atts;
     return &group->super;
 }

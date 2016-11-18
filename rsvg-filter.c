@@ -3168,18 +3168,13 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self, RsvgFilterContex
 static void
 rsvg_filter_primitive_flood_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *value, *id = NULL;
     RsvgFilterPrimitive *filter = (RsvgFilterPrimitive *) self;
+    const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "result")))
         g_string_assign (filter->result, value);
 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
-        
-    if ((value = rsvg_property_bag_lookup (atts, "id")))
-        id = value;
-
-    rsvg_parse_style_attrs (ctx, self->state, "feFlood", NULL, id, atts);
 }
 
 RsvgNode *

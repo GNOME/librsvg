@@ -280,7 +280,6 @@ rsvg_linear_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
             grad->obj_bbox = TRUE;
         grad->hasbbox = TRUE;
     }
-    rsvg_parse_style_attrs (ctx, self->state, "linearGradient", NULL, NULL, atts);
 }
 
 static void
@@ -363,7 +362,6 @@ rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
             grad->obj_bbox = TRUE;
         grad->hasbbox = TRUE;
     }
-    rsvg_parse_style_attrs (ctx, self->state, "radialGradient", NULL, NULL, atts);
 }
 
 static void

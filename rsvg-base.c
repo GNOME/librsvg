@@ -239,14 +239,6 @@ free_element_name_stack (RsvgHandle *ctx)
     ctx->priv->element_name_stack = NULL;
 }
 
-static void
-node_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts)
-{
-    if (rsvg_property_bag_size (atts) > 0) {
-        node->set_atts (node, ctx, atts);
-    }
-}
-
 typedef RsvgNode *(* CreateNodeFn) (const char *element_name);
 
 typedef struct {
@@ -384,6 +376,32 @@ get_node_creator_for_element_name (const char *name)
 }
 
 static void
+node_set_atts (RsvgNode * node, RsvgHandle * ctx, const NodeCreator *creator, RsvgPropertyBag * atts)
+{
+    if (rsvg_property_bag_size (atts) > 0) {
+        const char *id;
+        const char *klazz;
+
+        node->set_atts (node, ctx, atts);
+
+        /* The "svg" node is special; it will load its id/class
+         * attributes until the end, when rsvg_end_element() calls
+         * _rsvg_node_svg_apply_atts()
+         */
+        if (RSVG_NODE_TYPE (node) != RSVG_NODE_TYPE_SVG) {
+            id = rsvg_property_bag_lookup (atts, "id");
+
+            if (creator->supports_class_attribute)
+                klazz = rsvg_property_bag_lookup (atts, "class");
+            else
+                klazz = NULL;
+
+            rsvg_parse_style_attrs (ctx, node->state, creator->element_name, klazz, id, atts);
+        }
+    }
+}
+
+static void
 rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag * atts)
 {
     /*replace this stuff with a hash for fast reading! */
@@ -403,7 +421,7 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
 
         add_node_to_handle (ctx, newnode);
         register_node_in_defs (ctx, newnode, atts);
-        node_set_atts (newnode, ctx, atts);
+        node_set_atts (newnode, ctx, creator, atts);
 
         if (ctx->priv->currentnode) {
             rsvg_node_group_pack (ctx->priv->currentnode, newnode);
