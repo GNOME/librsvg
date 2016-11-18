@@ -250,72 +250,106 @@ node_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts)
 typedef RsvgNode *(* CreateNodeFn) (const char *element_name);
 
 typedef struct {
-    const char *element_name;
-    CreateNodeFn create_fn;
+    const char   *element_name;
+    gboolean      supports_class_attribute; /* from https://www.w3.org/TR/SVG/attindex.html#RegularAttributes */
+    CreateNodeFn  create_fn;
 } NodeCreator;
 
-/* Keep these sorted by element_name! */
+/* Keep these sorted by element_name!
+ *
+ * Lines in comments are elements that we don't support.
+ */
 static const NodeCreator node_creators[] = {
-    { "a",                   rsvg_new_group },    /* treat anchors as groups for now */
-    { "circle",              rsvg_new_circle },
-    { "clipPath",            rsvg_new_clip_path },
-    { "conicalGradient",     rsvg_new_radial_gradient },
-    { "defs",                rsvg_new_defs },
-    { "ellipse",             rsvg_new_ellipse },
-    { "feBlend",             rsvg_new_filter_primitive_blend },
-    { "feColorMatrix",       rsvg_new_filter_primitive_color_matrix },
-    { "feComponentTransfer", rsvg_new_filter_primitive_component_transfer },
-    { "feComposite",         rsvg_new_filter_primitive_composite },
-    { "feConvolveMatrix",    rsvg_new_filter_primitive_convolve_matrix },
-    { "feDiffuseLighting",   rsvg_new_filter_primitive_diffuse_lighting },
-    { "feDisplacementMap",   rsvg_new_filter_primitive_displacement_map },
-    { "feDistantLight",      rsvg_new_node_light_source },
-    { "feFlood",             rsvg_new_filter_primitive_flood },
-    { "feFuncA",             rsvg_new_node_component_transfer_function },
-    { "feFuncB",             rsvg_new_node_component_transfer_function },
-    { "feFuncG",             rsvg_new_node_component_transfer_function },
-    { "feFuncR",             rsvg_new_node_component_transfer_function },
-    { "feGaussianBlur",      rsvg_new_filter_primitive_gaussian_blur },
-    { "feImage",             rsvg_new_filter_primitive_image },
-    { "feMerge",             rsvg_new_filter_primitive_merge },
-    { "feMergeNode",         rsvg_new_filter_primitive_merge_node },
-    { "feMorphology",        rsvg_new_filter_primitive_erode },
-    { "feOffset",            rsvg_new_filter_primitive_offset },
-    { "fePointLight",        rsvg_new_node_light_source },
-    { "feSpecularLighting",  rsvg_new_filter_primitive_specular_lighting },
-    { "feSpotLight",         rsvg_new_node_light_source },
-    { "feTile",              rsvg_new_filter_primitive_tile },
-    { "feTurbulence",        rsvg_new_filter_primitive_turbulence },
-    { "filter",              rsvg_new_filter },
-    { "g",                   rsvg_new_group },
-    { "image",               rsvg_new_image },
-    { "line",                rsvg_new_line },
-    { "linearGradient",      rsvg_new_linear_gradient },
-    { "marker",              rsvg_new_marker },
-    { "mask",                rsvg_new_mask },
-    { "multiImage",          rsvg_new_switch }, /* hack to make multiImage sort-of work */
-    { "path",                rsvg_new_path },
-    { "pattern",             rsvg_new_pattern },
-    { "polygon",             rsvg_new_polygon },
-    { "polyline",            rsvg_new_polyline },
-    { "radialGradient",      rsvg_new_radial_gradient },
-    { "rect",                rsvg_new_rect },
-    { "stop",                rsvg_new_stop },
-    { "subImage",            rsvg_new_group },
-    { "subImageRef",         rsvg_new_image },
-    { "svg",                 rsvg_new_svg },
-    { "switch",              rsvg_new_switch },
-    { "symbol",              rsvg_new_symbol },
-    { "text",                rsvg_new_text },
-    { "tref",                rsvg_new_tref },
-    { "tspan",               rsvg_new_tspan },
-    { "use",                 rsvg_new_use },
+    { "a",                   TRUE,  rsvg_new_group },    /* treat anchors as groups for now */
+    /* "altGlyph",           TRUE,  */
+    /* "altGlyphDef",        FALSE, */
+    /* "altGlyphItem",       FALSE, */
+    /* "animate",            FALSE, */
+    /* "animateColor",       FALSE, */
+    /* "animateMotion",      FALSE, */
+    /* "animateTransform",   FALSE, */
+    { "circle",              TRUE,  rsvg_new_circle },
+    { "clipPath",            TRUE,  rsvg_new_clip_path },
+    /* "color-profile",      FALSE, */
+    { "conicalGradient",     TRUE,  rsvg_new_radial_gradient },
+    /* "cursor",             FALSE, */
+    { "defs",                TRUE,  rsvg_new_defs },
+    /* "desc",               TRUE,  */
+    { "ellipse",             TRUE,  rsvg_new_ellipse },
+    { "feBlend",             TRUE,  rsvg_new_filter_primitive_blend },
+    { "feColorMatrix",       TRUE,  rsvg_new_filter_primitive_color_matrix },
+    { "feComponentTransfer", TRUE,  rsvg_new_filter_primitive_component_transfer },
+    { "feComposite",         TRUE,  rsvg_new_filter_primitive_composite },
+    { "feConvolveMatrix",    TRUE,  rsvg_new_filter_primitive_convolve_matrix },
+    { "feDiffuseLighting",   TRUE,  rsvg_new_filter_primitive_diffuse_lighting },
+    { "feDisplacementMap",   TRUE,  rsvg_new_filter_primitive_displacement_map },
+    { "feDistantLight",      FALSE, rsvg_new_node_light_source },
+    { "feFlood",             TRUE,  rsvg_new_filter_primitive_flood },
+    { "feFuncA",             FALSE, rsvg_new_node_component_transfer_function },
+    { "feFuncB",             FALSE, rsvg_new_node_component_transfer_function },
+    { "feFuncG",             FALSE, rsvg_new_node_component_transfer_function },
+    { "feFuncR",             FALSE, rsvg_new_node_component_transfer_function },
+    { "feGaussianBlur",      TRUE,  rsvg_new_filter_primitive_gaussian_blur },
+    { "feImage",             TRUE,  rsvg_new_filter_primitive_image },
+    { "feMerge",             TRUE,  rsvg_new_filter_primitive_merge },
+    { "feMergeNode",         FALSE, rsvg_new_filter_primitive_merge_node },
+    { "feMorphology",        TRUE,  rsvg_new_filter_primitive_erode },
+    { "feOffset",            TRUE,  rsvg_new_filter_primitive_offset },
+    { "fePointLight",        FALSE, rsvg_new_node_light_source },
+    { "feSpecularLighting",  TRUE,  rsvg_new_filter_primitive_specular_lighting },
+    { "feSpotLight",         FALSE, rsvg_new_node_light_source },
+    { "feTile",              TRUE,  rsvg_new_filter_primitive_tile },
+    { "feTurbulence",        TRUE,  rsvg_new_filter_primitive_turbulence },
+    { "filter",              TRUE,  rsvg_new_filter },
+    /* "font",               TRUE,  */
+    /* "font-face",          FALSE, */
+    /* "font-face-format",   FALSE, */
+    /* "font-face-name",     FALSE, */
+    /* "font-face-src",      FALSE, */
+    /* "font-face-uri",      FALSE, */
+    /* "foreignObject",      TRUE,  */
+    { "g",                   TRUE,  rsvg_new_group },
+    /* "glyph",              TRUE,  */
+    /* "glyphRef",           TRUE,  */
+    /* "hkern",              FALSE, */
+    { "image",               TRUE,  rsvg_new_image },
+    { "line",                TRUE,  rsvg_new_line },
+    { "linearGradient",      TRUE,  rsvg_new_linear_gradient },
+    { "marker",              TRUE,  rsvg_new_marker },
+    { "mask",                TRUE,  rsvg_new_mask },
+    /* "metadata",           FALSE, */
+    /* "missing-glyph",      TRUE,  */
+    /* "mpath"               FALSE, */
+    { "multiImage",          FALSE, rsvg_new_switch }, /* hack to make multiImage sort-of work */
+    { "path",                TRUE,  rsvg_new_path },
+    { "pattern",             TRUE,  rsvg_new_pattern },
+    { "polygon",             TRUE,  rsvg_new_polygon },
+    { "polyline",            TRUE,  rsvg_new_polyline },
+    { "radialGradient",      TRUE,  rsvg_new_radial_gradient },
+    { "rect",                TRUE,  rsvg_new_rect },
+    /* "script",             FALSE, */
+    /* "set",                FALSE, */
+    { "stop",                TRUE,  rsvg_new_stop },
+    /* "style",              FALSE, */
+    { "subImage",            FALSE, rsvg_new_group },
+    { "subImageRef",         FALSE, rsvg_new_image },
+    { "svg",                 TRUE,  rsvg_new_svg },
+    { "switch",              TRUE,  rsvg_new_switch },
+    { "symbol",              TRUE,  rsvg_new_symbol },
+    { "text",                TRUE,  rsvg_new_text },
+    /* "textPath",           TRUE,  */
+    /* "title",              TRUE,  */
+    { "tref",                TRUE,  rsvg_new_tref },
+    { "tspan",               TRUE,  rsvg_new_tspan },
+    { "use",                 TRUE,  rsvg_new_use },
+    /* "view",               FALSE, */
+    /* "vkern",              FALSE, */
 };
 
 /* hack for bug 401115. whenever we encounter a node we don't understand, push it into a group.
  * this will allow us to handle things like conditionals properly.
  */
-static const NodeCreator default_node_creator = { NULL, rsvg_new_group };
+static const NodeCreator default_node_creator = { NULL, TRUE, rsvg_new_group };
 
 /* Used from bsearch() */
 static int
@@ -334,6 +368,7 @@ get_node_creator_for_element_name (const char *name)
     const NodeCreator *result;
 
     key.element_name = name;
+    key.supports_class_attribute = FALSE;
     key.create_fn = NULL;
 
     result = bsearch (&key,
