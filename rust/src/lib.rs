@@ -27,10 +27,13 @@ pub use length::{
 };
 
 mod drawing_ctx;
+mod handle;
 mod length;
 mod marker;
-//mod node;
+mod node;
 mod path_builder;
 mod path_parser;
 mod property_bag;
+mod state;
+mod shapes;
 mod strtod;

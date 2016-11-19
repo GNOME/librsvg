@@ -1,3 +1,8 @@
+extern crate libc;
+
+use state::RsvgState;
+use path_builder::RsvgPathBuilder;
+
 pub enum RsvgDrawingCtx {}
 
 extern "C" {
@@ -10,6 +15,13 @@ extern "C" {
     fn rsvg_drawing_ctx_get_view_box_size (draw_ctx: *const RsvgDrawingCtx,
                                            out_x: *mut f64,
                                            out_y: *mut f64);
+
+    fn rsvg_state_reinherit_top (draw_ctx: *const RsvgDrawingCtx,
+                                 state: *mut RsvgState,
+                                 dominate: libc::c_int);
+
+    fn rsvg_render_path_builder (draw_ctx: *const RsvgDrawingCtx,
+                                 builder: *const RsvgPathBuilder);
 }
 
 pub fn get_dpi (draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
@@ -33,4 +45,16 @@ pub fn get_view_box_size (draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
     unsafe { rsvg_drawing_ctx_get_view_box_size (draw_ctx, &mut w, &mut h); }
 
     (w, h)
+}
+
+pub fn state_reinherit_top (draw_ctx: *const RsvgDrawingCtx,
+                            state: *mut RsvgState,
+                            dominate: i32) {
+    unsafe { rsvg_state_reinherit_top (draw_ctx, state, dominate); }
+}
+
+pub fn render_path_builder (draw_ctx: *const RsvgDrawingCtx,
+                            builder: &RsvgPathBuilder)
+{
+    unsafe { rsvg_render_path_builder (draw_ctx, builder); }
 }
