@@ -10,7 +10,7 @@ use self::glib::translate::*;
 
 extern crate cairo;
 
-pub struct PathParser<'external> {
+struct PathParser<'external> {
     chars_enumerator: Enumerate<Chars<'external>>,
     lookahead: Option <char>, /* None if we are in EOF */
     current_pos: usize,
@@ -69,7 +69,7 @@ pub struct PathParser<'external> {
  *     M 0.1 -2 300 -4
  */
 impl<'external> PathParser<'external> {
-    pub fn new (builder: &'external mut RsvgPathBuilder, path_str: &'external str) -> PathParser<'external> {
+    fn new (builder: &'external mut RsvgPathBuilder, path_str: &'external str) -> PathParser<'external> {
         PathParser {
             chars_enumerator: path_str.chars ().enumerate (),
             lookahead: None,
@@ -94,7 +94,7 @@ impl<'external> PathParser<'external> {
         }
     }
 
-    pub fn parse (&mut self) -> bool {
+    fn parse (&mut self) -> bool {
         self.getchar ();
 
         return self.optional_whitespace () &&
@@ -983,6 +983,22 @@ fn char_to_digit (c: char) -> i32 {
     c as i32 - '0' as i32
 }
 
+pub struct ParseError {
+    position: usize,
+    message: &'static str
+}
+
+pub fn parse_path_into_builder (path_str: &str, builder: &mut RsvgPathBuilder) -> Result <(), ParseError> {
+    let mut parser = PathParser::new (builder, path_str);
+
+    if parser.parse () {
+        Ok (())
+    } else {
+        Err (ParseError { position: parser.current_pos,
+                          message: parser.error_message })
+    }
+}
+
 #[no_mangle]
 pub extern fn rsvg_path_parser_from_str_into_builder (path_str: *const libc::c_char) -> *mut RsvgPathBuilder {
     let mut builder = RsvgPathBuilder::new ();
@@ -1068,28 +1084,27 @@ mod tests {
         true
     }
 
-    fn print_error (parser: &PathParser, path_str: &str) {
+    fn print_error (error: &ParseError, path_str: &str) {
         let prefix = "Error in \"";
 
         println! ("");
         println! ("{}{}\"", prefix, path_str);
 
-        for _ in 0 .. (prefix.len() + parser.current_pos) {
+        for _ in 0 .. (prefix.len() + error.position) {
             print! (" ");
         }
 
-        println! ("^ pos {}", parser.current_pos);
-        println! ("{}", &parser.error_message);
+        println! ("^ pos {}", error.position);
+        println! ("{}", error.message);
     }
 
     fn parse_path (path_str: &str) -> RsvgPathBuilder {
         let mut builder = RsvgPathBuilder::new ();
 
-        {
-            let mut parser = PathParser::new (&mut builder, path_str);
-            if !parser.parse () {
-                print_error (&parser, path_str);
-            }
+        let result = parse_path_into_builder (path_str, &mut builder);
+
+        if let Err (e) = result {
+            print_error (&e, path_str);
         }
 
         builder
