@@ -307,7 +307,7 @@ typedef enum {
     RSVG_NODE_TYPE_USE,
 
     /* Filter primitives */
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE = 64,
+    RSVG_NODE_TYPE_FILTER_PRIMITIVE_FIRST,              /* just a marker; not a valid type */
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_BLEND,
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_COLOR_MATRIX,
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPONENT_TRANSFER,
@@ -325,7 +325,7 @@ typedef enum {
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_SPECULAR_LIGHTING,
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_TILE,
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_TURBULENCE,
-
+    RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST                /* just a marker; not a valid type */
 } RsvgNodeType;
 
 struct _RsvgNode {
@@ -339,7 +339,6 @@ struct _RsvgNode {
 };
 
 #define RSVG_NODE_TYPE(node)                ((node)->type)
-#define RSVG_NODE_IS_FILTER_PRIMITIVE(node) (RSVG_NODE_TYPE((node)) & RSVG_NODE_TYPE_FILTER_PRIMITIVE)
 
 struct _RsvgNodeChars {
     RsvgNode super;

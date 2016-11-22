@@ -536,6 +536,14 @@ rsvg_filter_context_free (RsvgFilterContext * ctx)
     g_free (ctx);
 }
 
+static gboolean
+node_is_filter_primitive (RsvgNode *node)
+{
+    RsvgNodeType type = RSVG_NODE_TYPE (node);
+
+    return type > RSVG_NODE_TYPE_FILTER_PRIMITIVE_FIRST && type < RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST;
+}
+
 /**
  * rsvg_filter_render:
  * @self: a pointer to the filter to use
@@ -580,7 +588,7 @@ rsvg_filter_render (RsvgFilter *self,
 
     for (i = 0; i < self->super.children->len; i++) {
         current = g_ptr_array_index (self->super.children, i);
-        if (RSVG_NODE_IS_FILTER_PRIMITIVE (&current->super))
+        if (node_is_filter_primitive ((RsvgNode *) current))
             rsvg_filter_primitive_render (current, ctx);
     }
 
