@@ -41,6 +41,44 @@
 
 #include <pango/pangocairo.h>
 
+typedef struct {
+    cairo_pattern_t *pattern;
+    guint8 opacity;
+    double last_offset;
+    gboolean stops_are_valid;
+} AddStopsClosure;
+
+static gboolean
+add_color_stop (RsvgNode *node, gpointer data)
+{
+    AddStopsClosure *closure = data;
+    RsvgGradientStop *stop;
+    guint32 rgba;
+
+    if (rsvg_node_type (node) != RSVG_NODE_TYPE_STOP)
+        return TRUE; /* just ignore this node */
+
+    stop = (RsvgGradientStop *) node;
+
+    if (!stop->is_valid) {
+        closure->stops_are_valid = FALSE;
+        return FALSE;
+    }
+
+    /* deal with unsorted stop offsets as per the spec */
+    closure->last_offset = MAX (closure->last_offset, stop->offset);
+
+    rgba = stop->rgba;
+    cairo_pattern_add_color_stop_rgba (closure->pattern,
+                                       closure->last_offset,
+                                       ((rgba >> 24) & 0xff) / 255.0,
+                                       ((rgba >> 16) & 0xff) / 255.0,
+                                       ((rgba >> 8) & 0xff) / 255.0,
+                                       (((rgba >> 0) & 0xff) * closure->opacity) / 255.0 / 255.0);
+
+    return TRUE;
+}
+
 /* Adds the color stops from the array of child nodes (of type RSVG_NODE_TYPE_STOP)
  * to a cairo_pattern_t.
  *
@@ -50,39 +88,18 @@
  * stop.
  */
 static gboolean
-add_color_stops_for_gradient (cairo_pattern_t * pattern,
-                              GPtrArray * stops, guint8 opacity)
+add_color_stops_for_gradient (RsvgNode *node, cairo_pattern_t *pattern, guint8 opacity)
 {
-    gsize i;
-    RsvgGradientStop *stop;
-    RsvgNode *node;
-    guint32 rgba;
-    double last_offset;
+    AddStopsClosure closure;
 
-    last_offset = 0.0;
+    closure.pattern = pattern;
+    closure.opacity = opacity;
+    closure.last_offset = 0.0;
+    closure.stops_are_valid = TRUE;
 
-    for (i = 0; i < stops->len; i++) {
-        node = (RsvgNode *) g_ptr_array_index (stops, i);
-        if (rsvg_node_type (node) != RSVG_NODE_TYPE_STOP)
-            continue;
+    rsvg_node_foreach_child (node, add_color_stop, &closure);
 
-        stop = (RsvgGradientStop *) node;
-
-        if (!stop->is_valid)
-            return FALSE;
-
-        /* deal with unsorted stop offsets as per the spec */
-        last_offset = MAX (last_offset, stop->offset);
-
-        rgba = stop->rgba;
-        cairo_pattern_add_color_stop_rgba (pattern, last_offset,
-                                           ((rgba >> 24) & 0xff) / 255.0,
-                                           ((rgba >> 16) & 0xff) / 255.0,
-                                           ((rgba >> 8) & 0xff) / 255.0,
-                                           (((rgba >> 0) & 0xff) * opacity) / 255.0 / 255.0);
-    }
-
-    return TRUE;
+    return closure.stops_are_valid;
 }
 
 static void
@@ -95,6 +112,7 @@ _set_source_rsvg_linear_gradient (RsvgDrawingCtx * ctx,
     cairo_pattern_t *pattern;
     cairo_matrix_t matrix;
     RsvgLinearGradient statlinear;
+
     statlinear = *linear;
     linear = &statlinear;
     rsvg_linear_gradient_fix_fallback (ctx, linear);
@@ -124,7 +142,7 @@ _set_source_rsvg_linear_gradient (RsvgDrawingCtx * ctx,
      * whether the stops are conformant to the spec.  This is so that we can
      * render a partially-generated gradient if some of the stops are invalid.
      */
-    add_color_stops_for_gradient (pattern, linear->super.children, opacity);
+    add_color_stops_for_gradient ((RsvgNode *) linear, pattern, opacity);
 
     cairo_set_source (cr, pattern);
     cairo_pattern_destroy (pattern);
@@ -241,7 +259,7 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
      * whether the stops are conformant to the spec.  This is so that we can
      * render a partially-generated gradient if some of the stops are invalid.
      */
-    add_color_stops_for_gradient (pattern, radial->super.children, opacity);
+    add_color_stops_for_gradient ((RsvgNode *) radial, pattern, opacity);
 
     cairo_set_source (cr, pattern);
     cairo_pattern_destroy (pattern);
