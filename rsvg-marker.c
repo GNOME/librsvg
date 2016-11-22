@@ -103,13 +103,26 @@ rsvg_new_marker (const char *element_name)
     return &marker->super;
 }
 
+static gboolean
+draw_child (RsvgNode *node, gpointer data)
+{
+    RsvgDrawingCtx *ctx;
+
+    ctx = data;
+
+    rsvg_state_push (ctx);
+    rsvg_node_draw (node, ctx, 0);
+    rsvg_state_pop (ctx);
+
+    return TRUE;
+}
+
 void
 rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdouble orient, gdouble linewidth,
                     RsvgDrawingCtx * ctx)
 {
     RsvgMarker *self;
     cairo_matrix_t affine, taffine;
-    unsigned int i;
     gdouble rotation;
     RsvgState *state = rsvg_current_state (ctx);
 
@@ -179,13 +192,8 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
                                     rsvg_length_normalize (&self->height, ctx));
     }
 
-    for (i = 0; i < self->super.children->len; i++) {
-        rsvg_state_push (ctx);
+    rsvg_node_foreach_child ((RsvgNode *) self, draw_child, ctx);
 
-        rsvg_node_draw (g_ptr_array_index (self->super.children, i), ctx, 0);
-
-        rsvg_state_pop (ctx);
-    }
     rsvg_pop_discrete_layer (ctx);
 
     rsvg_state_pop (ctx);
