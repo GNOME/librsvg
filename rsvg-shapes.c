@@ -120,7 +120,7 @@ _rsvg_node_poly_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
         if (poly->builder)
             rsvg_path_builder_destroy (poly->builder);
         poly->builder = _rsvg_node_poly_create_builder (value,
-                                                        RSVG_NODE_TYPE (self) == RSVG_NODE_TYPE_POLYGON);
+                                                        rsvg_node_type (self) == RSVG_NODE_TYPE_POLYGON);
     }
 }
 

@@ -539,7 +539,7 @@ rsvg_filter_context_free (RsvgFilterContext * ctx)
 static gboolean
 node_is_filter_primitive (RsvgNode *node)
 {
-    RsvgNodeType type = RSVG_NODE_TYPE (node);
+    RsvgNodeType type = rsvg_node_type (node);
 
     return type > RSVG_NODE_TYPE_FILTER_PRIMITIVE_FIRST && type < RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST;
 }
@@ -2115,7 +2115,7 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self, RsvgFilterContex
     for (i = 0; i < upself->super.super.children->len; i++) {
         RsvgFilterPrimitive *mn;
         mn = g_ptr_array_index (upself->super.super.children, i);
-        if (RSVG_NODE_TYPE (&mn->super) != RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE)
+        if (rsvg_node_type (&mn->super) != RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE)
             continue;
         in = rsvg_filter_get_in (mn->in, ctx);
         if (in == NULL)
@@ -2566,7 +2566,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
             RsvgNode *child_node;
 
             child_node = (RsvgNode *) g_ptr_array_index (self->super.children, i);
-            if (RSVG_NODE_TYPE (child_node) == RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION) {
+            if (rsvg_node_type (child_node) == RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION) {
                 RsvgNodeComponentTransferFunc *temp = (RsvgNodeComponentTransferFunc *) child_node;
 
                 if (temp->channel == channel) {
@@ -4406,7 +4406,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
         RsvgNode *temp;
 
         temp = g_ptr_array_index (self->super.children, i);
-        if (RSVG_NODE_TYPE (temp) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
+        if (rsvg_node_type (temp) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
             source = (RsvgNodeLightSource *) temp;
         }
     }
@@ -4569,7 +4569,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
     for (i = 0; i < self->super.children->len; i++) {
         RsvgNode *temp;
         temp = g_ptr_array_index (self->super.children, i);
-        if (RSVG_NODE_TYPE (temp) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
+        if (rsvg_node_type (temp) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
             source = (RsvgNodeLightSource *) temp;
         }
     }

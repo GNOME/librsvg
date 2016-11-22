@@ -189,7 +189,7 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     }
 
     state = rsvg_current_state (ctx);
-    if (RSVG_NODE_TYPE (child) != RSVG_NODE_TYPE_SYMBOL) {
+    if (rsvg_node_type (child) != RSVG_NODE_TYPE_SYMBOL) {
         cairo_matrix_init_translate (&affine, x, y);
         cairo_matrix_multiply (&state->affine, &affine, &state->affine);
 

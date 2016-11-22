@@ -63,7 +63,7 @@ add_color_stops_for_gradient (cairo_pattern_t * pattern,
 
     for (i = 0; i < stops->len; i++) {
         node = (RsvgNode *) g_ptr_array_index (stops, i);
-        if (RSVG_NODE_TYPE (node) != RSVG_NODE_TYPE_STOP)
+        if (rsvg_node_type (node) != RSVG_NODE_TYPE_STOP)
             continue;
 
         stop = (RsvgGradientStop *) node;
@@ -428,11 +428,11 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
         node = rsvg_acquire_node (ctx, ps->core.iri);
         if (node == NULL)
             break;
-        else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT)
+        else if (rsvg_node_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT)
             _set_source_rsvg_linear_gradient (ctx, (RsvgLinearGradient *) node, opacity, bbox);
-        else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT)
+        else if (rsvg_node_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT)
             _set_source_rsvg_radial_gradient (ctx, (RsvgRadialGradient *) node, opacity, bbox);
-        else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_PATTERN)
+        else if (rsvg_node_type (node) == RSVG_NODE_TYPE_PATTERN)
             _set_source_rsvg_pattern (ctx, (RsvgPattern *) node, opacity, bbox);
 
         rsvg_release_node (ctx, node);

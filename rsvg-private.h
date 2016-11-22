@@ -338,7 +338,8 @@ struct _RsvgNode {
     void (*set_atts) (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *);
 };
 
-#define RSVG_NODE_TYPE(node)                ((node)->type)
+G_GNUC_INTERNAL
+RsvgNodeType rsvg_node_type (RsvgNode *node);
 
 G_GNUC_INTERNAL
 RsvgState *rsvg_node_get_state (RsvgNode *node);

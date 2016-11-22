@@ -474,7 +474,7 @@ hasstop (GPtrArray * lookin)
     unsigned int i;
     for (i = 0; i < lookin->len; i++) {
         RsvgNode *node = g_ptr_array_index (lookin, i);
-        if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_STOP)
+        if (rsvg_node_type (node) == RSVG_NODE_TYPE_STOP)
             return 1;
     }
     return 0;
@@ -515,10 +515,10 @@ resolve_fallbacks (RsvgDrawingCtx *ctx,
 static const char *
 gradient_get_fallback (RsvgNode *node)
 {
-    if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
+    if (rsvg_node_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
         RsvgLinearGradient *g = (RsvgLinearGradient *) node;
         return g->fallback;
-    } else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
+    } else if (rsvg_node_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
         RsvgRadialGradient *g = (RsvgRadialGradient *) node;
         return g->fallback;
     } else
@@ -530,10 +530,10 @@ linear_gradient_apply_fallback (RsvgNode *node, RsvgNode *fallback_node)
 {
     RsvgLinearGradient *grad;
 
-    g_assert (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT);
+    g_assert (rsvg_node_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT);
     grad = (RsvgLinearGradient *) node;
 
-    if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
+    if (rsvg_node_type (fallback_node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
         RsvgLinearGradient *fallback = (RsvgLinearGradient *) fallback_node;
 
         if (!grad->hasx1 && fallback->hasx1) {
@@ -567,7 +567,7 @@ linear_gradient_apply_fallback (RsvgNode *node, RsvgNode *fallback_node)
         if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
             grad->super.children = fallback->super.children;
         }
-    } else if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
+    } else if (rsvg_node_type (fallback_node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
         RsvgRadialGradient *fallback = (RsvgRadialGradient *) fallback_node;
 
         if (!grad->hastransform && fallback->hastransform) {
@@ -603,10 +603,10 @@ radial_gradient_apply_fallback (RsvgNode *node, RsvgNode *fallback_node)
 {
     RsvgRadialGradient *grad;
 
-    g_assert (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT);
+    g_assert (rsvg_node_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT);
     grad = (RsvgRadialGradient *) node;
 
-    if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
+    if (rsvg_node_type (fallback_node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
         RsvgRadialGradient *fallback = (RsvgRadialGradient *) fallback_node;
 
         if (!grad->hascx && fallback->hascx) {
@@ -644,7 +644,7 @@ radial_gradient_apply_fallback (RsvgNode *node, RsvgNode *fallback_node)
         if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
             grad->super.children = fallback->super.children;
         }
-    } else if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
+    } else if (rsvg_node_type (fallback_node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
         RsvgLinearGradient *fallback = (RsvgLinearGradient *) fallback_node;
 
         if (!grad->hastransform && fallback->hastransform) {
@@ -678,7 +678,7 @@ rsvg_radial_gradient_fix_fallback (RsvgDrawingCtx *ctx, RsvgRadialGradient * gra
 static const char *
 pattern_get_fallback (RsvgNode *node)
 {
-    if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_PATTERN) {
+    if (rsvg_node_type (node) == RSVG_NODE_TYPE_PATTERN) {
         RsvgPattern *pattern = (RsvgPattern *) node;
 
         return pattern->fallback;
@@ -692,9 +692,9 @@ pattern_apply_fallback (RsvgNode *pattern_node, RsvgNode *fallback_node)
     RsvgPattern *pattern;
     RsvgPattern *fallback;
 
-    g_assert (RSVG_NODE_TYPE (pattern_node) == RSVG_NODE_TYPE_PATTERN);
+    g_assert (rsvg_node_type (pattern_node) == RSVG_NODE_TYPE_PATTERN);
 
-    if (RSVG_NODE_TYPE (fallback_node) != RSVG_NODE_TYPE_PATTERN)
+    if (rsvg_node_type (fallback_node) != RSVG_NODE_TYPE_PATTERN)
         return;
 
     pattern = (RsvgPattern *) pattern_node;
