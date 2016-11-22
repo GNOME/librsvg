@@ -173,15 +173,15 @@ save_image (cairo_surface_t *surface,
 static gboolean
 is_svg_or_subdir (GFile *file)
 {
-  char *uri;
+  char *basename;
   gboolean result;
 
   if (g_file_query_file_type (file, 0, NULL) == G_FILE_TYPE_DIRECTORY)
     return TRUE;
 
-  uri = g_file_get_uri (file);
-  result = g_str_has_suffix (uri, ".svg");
-  g_free (uri);
+  basename = g_file_get_basename (file);
+  result = !g_str_has_prefix (basename, "ignore-") && g_str_has_suffix (basename, ".svg");
+  g_free (basename);
 
   return result;
 }
