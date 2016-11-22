@@ -22,8 +22,8 @@
    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.
 
-   Authors: Raph Levien <raph@artofcode.com>, 
-            Dom Lachowicz <cinamod@hotmail.com>, 
+   Authors: Raph Levien <raph@artofcode.com>,
+            Dom Lachowicz <cinamod@hotmail.com>,
             Caleb Moore <c.moore@student.unsw.edu.au>
 */
 
@@ -55,21 +55,32 @@ rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     ctx->drawsub_stack = stacksave;
 }
 
+static gboolean
+draw_child (RsvgNode *node, gpointer data)
+{
+    RsvgDrawingCtx *ctx;
+
+    ctx = data;
+
+    rsvg_state_push (ctx);
+    rsvg_node_draw (node, ctx, 0);
+    rsvg_state_pop (ctx);
+
+    return TRUE;
+}
+
 /* generic function for drawing all of the children of a particular node */
 void
 _rsvg_node_draw_children (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
-    guint i;
     if (dominate != -1) {
         rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
         rsvg_push_discrete_layer (ctx);
     }
-    for (i = 0; i < self->children->len; i++) {
-        rsvg_state_push (ctx);
-        rsvg_node_draw (g_ptr_array_index (self->children, i), ctx, 0);
-        rsvg_state_pop (ctx);
-    }
+
+    rsvg_node_foreach_child (self, draw_child, ctx);
+
     if (dominate != -1)
         rsvg_pop_discrete_layer (ctx);
 }
@@ -233,7 +244,6 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     RsvgNodeSvg *sself;
     RsvgState *state;
     cairo_matrix_t affine, affine_old, affine_new;
-    guint i;
     double nx, ny, nw, nh;
     sself = (RsvgNodeSvg *) self;
 
@@ -272,7 +282,7 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     rsvg_push_discrete_layer (ctx);
 
-    /* Bounding box addition must be AFTER the discrete layer push, 
+    /* Bounding box addition must be AFTER the discrete layer push,
        which must be AFTER the transformation happens. */
     if (!state->overflow && rsvg_node_get_parent (self)) {
         state->affine = affine_old;
@@ -280,11 +290,7 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         state->affine = affine_new;
     }
 
-    for (i = 0; i < self->children->len; i++) {
-        rsvg_state_push (ctx);
-        rsvg_node_draw (g_ptr_array_index (self->children, i), ctx, 0);
-        rsvg_state_pop (ctx);
-    }
+    rsvg_node_foreach_child (self, draw_child, ctx);
 
     rsvg_pop_discrete_layer (ctx);
     rsvg_drawing_ctx_pop_view_box (ctx);
@@ -305,9 +311,9 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
         svg->w = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
     if ((value = rsvg_property_bag_lookup (atts, "height")))
         svg->h = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-    /* 
+    /*
      * x & y attributes have no effect on outermost svg
-     * http://www.w3.org/TR/SVG/struct.html#SVGElement 
+     * http://www.w3.org/TR/SVG/struct.html#SVGElement
      */
     if (rsvg_node_get_parent (self)) {
         if ((value = rsvg_property_bag_lookup (atts, "x")))
@@ -453,26 +459,32 @@ rsvg_new_defs (const char *element_name)
     return &group->super;
 }
 
+static gboolean
+draw_child_if_cond_true_and_stop (RsvgNode *node, gpointer data)
+{
+    RsvgDrawingCtx *ctx;
+
+    ctx = data;
+
+    if (rsvg_node_get_state (node)->cond_true) {
+        rsvg_state_push (ctx);
+        rsvg_node_draw (node, ctx, 0);
+        rsvg_state_pop (ctx);
+
+        return FALSE;
+    } else {
+        return TRUE;
+    }
+}
+
 static void
 _rsvg_node_switch_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
-    guint i;
-
     rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
     rsvg_push_discrete_layer (ctx);
 
-    for (i = 0; i < self->children->len; i++) {
-        RsvgNode *drawable = g_ptr_array_index (self->children, i);
-
-        if (rsvg_node_get_state (drawable)->cond_true) {
-            rsvg_state_push (ctx);
-            rsvg_node_draw (g_ptr_array_index (self->children, i), ctx, 0);
-            rsvg_state_pop (ctx);
-
-            break;              /* only render the 1st one */
-        }
-    }
+    rsvg_node_foreach_child (self, draw_child_if_cond_true_and_stop, ctx);
 
     rsvg_pop_discrete_layer (ctx);
 }

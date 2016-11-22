@@ -346,6 +346,15 @@ RsvgState *rsvg_node_get_state (RsvgNode *node);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_get_parent (RsvgNode *node);
 
+/* Used to iterate among a node's children with rsvg_node_foreach_child().
+ * If this caller-supplied function returns FALSE, iteration will stop.
+ * Otherwise, iteration will continue to the next child node.
+ */
+typedef gboolean (* RsvgNodeForeachChildFn) (RsvgNode *node, gpointer data);
+
+G_GNUC_INTERNAL
+void rsvg_node_foreach_child (RsvgNode *node, RsvgNodeForeachChildFn fn, gpointer data);
+
 struct _RsvgNodeChars {
     RsvgNode super;
     GString *contents;

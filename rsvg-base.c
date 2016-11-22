@@ -445,6 +445,25 @@ rsvg_node_get_parent (RsvgNode *node)
     return node->parent;
 }
 
+void
+rsvg_node_foreach_child (RsvgNode *node, RsvgNodeForeachChildFn fn, gpointer data)
+{
+    guint len;
+    guint i;
+
+    len = node->children->len;
+
+    for (i = 0; i < len; i++) {
+        RsvgNode *child;
+        gboolean next;
+
+        child = g_ptr_array_index (node->children, i);
+        next = fn (child, data);
+        if (!next)
+            break;
+    }
+}
+
 /* extra (title, desc, metadata) */
 
 static void
@@ -885,6 +904,22 @@ rsvg_new_node_chars (const char *text,
     return self;
 }
 
+static gboolean
+find_last_chars_node (RsvgNode *node, gpointer data)
+{
+    RsvgNode **dest;
+
+    dest = data;
+
+    if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_CHARS) {
+        *dest = node;
+    } else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_TSPAN) {
+        *dest = NULL;
+    }
+
+    return TRUE;
+}
+
 static void
 rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
 {
@@ -895,22 +930,13 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
 
     if (ctx->priv->currentnode) {
         RsvgNodeType type = RSVG_NODE_TYPE (ctx->priv->currentnode);
-        if (type == RSVG_NODE_TYPE_TSPAN ||
-            type == RSVG_NODE_TYPE_TEXT) {
-            guint i;
-
+        if (type == RSVG_NODE_TYPE_TSPAN || type == RSVG_NODE_TYPE_TEXT) {
             /* find the last CHARS node in the text or tspan node, so that we
                can coalesce the text, and thus avoid screwing up the Pango layouts */
             self = NULL;
-            for (i = 0; i < ctx->priv->currentnode->children->len; i++) {
-                RsvgNode *node = g_ptr_array_index (ctx->priv->currentnode->children, i);
-                if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_CHARS) {
-                    self = (RsvgNodeChars*)node;
-                }
-                else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_TSPAN) {
-                    self = NULL;
-                }
-            }
+            rsvg_node_foreach_child (ctx->priv->currentnode,
+                                     find_last_chars_node,
+                                     &self);
 
             if (self != NULL) {
                 if (!g_utf8_validate ((char *) ch, len, NULL)) {

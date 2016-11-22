@@ -156,16 +156,75 @@ _rsvg_node_text_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 static void
  rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdouble * y);
 
+static void
+_rsvg_node_text_type_children (RsvgNode * self, RsvgDrawingCtx * ctx,
+                               gdouble * x, gdouble * y, gboolean * lastwasspace,
+                               gboolean usetextonly);
 
 static void
- _rsvg_node_text_type_tspan (RsvgNodeText * self, RsvgDrawingCtx * ctx,
-                             gdouble * x, gdouble * y, gboolean * lastwasspace,
-                             gboolean usetextonly);
-
-static void
- _rsvg_node_text_type_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
+_rsvg_node_text_type_tspan (RsvgNodeText * self, RsvgDrawingCtx * ctx,
                             gdouble * x, gdouble * y, gboolean * lastwasspace,
                             gboolean usetextonly);
+
+static void
+_rsvg_node_text_type_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
+                           gdouble * x, gdouble * y, gboolean * lastwasspace,
+                           gboolean usetextonly);
+
+typedef struct {
+    RsvgDrawingCtx *ctx;
+    gdouble *x;
+    gdouble *y;
+    gboolean *lastwasspace;
+    gboolean usetextonly;
+} DrawTextClosure;
+
+static gboolean
+draw_text_child (RsvgNode *node, gpointer data)
+{
+    DrawTextClosure *closure;
+    RsvgNodeType type = RSVG_NODE_TYPE (node);
+
+    closure = data;
+
+    if (type == RSVG_NODE_TYPE_CHARS) {
+        RsvgNodeChars *chars = (RsvgNodeChars *) node;
+        GString *str = _rsvg_text_chomp (rsvg_current_state (closure->ctx), chars->contents, closure->lastwasspace);
+        rsvg_text_render_text (closure->ctx, str->str, closure->x, closure->y);
+        g_string_free (str, TRUE);
+    } else {
+        if (closure->usetextonly) {
+            _rsvg_node_text_type_children (node,
+                                           closure->ctx,
+                                           closure->x,
+                                           closure->y,
+                                           closure->lastwasspace,
+                                           closure->usetextonly);
+        } else {
+            if (type == RSVG_NODE_TYPE_TSPAN) {
+                RsvgNodeText *tspan = (RsvgNodeText *) node;
+                rsvg_state_push (closure->ctx);
+                _rsvg_node_text_type_tspan (tspan,
+                                            closure->ctx,
+                                            closure->x,
+                                            closure->y,
+                                            closure->lastwasspace,
+                                            closure->usetextonly);
+                rsvg_state_pop (closure->ctx);
+            } else if (type == RSVG_NODE_TYPE_TREF) {
+                RsvgNodeTref *tref = (RsvgNodeTref *) node;
+                _rsvg_node_text_type_tref (tref,
+                                           closure->ctx,
+                                           closure->x,
+                                           closure->y,
+                                           closure->lastwasspace,
+                                           closure->usetextonly);
+            }
+        }
+    }
+
+    return TRUE;
+}
 
 /* This function is responsible of selecting render for a text element including its children and giving it the drawing context */
 static void
@@ -173,94 +232,112 @@ _rsvg_node_text_type_children (RsvgNode * self, RsvgDrawingCtx * ctx,
                                gdouble * x, gdouble * y, gboolean * lastwasspace,
                                gboolean usetextonly)
 {
-    guint i;
+    DrawTextClosure closure;
 
     rsvg_push_discrete_layer (ctx);
-    for (i = 0; i < self->children->len; i++) {
-        RsvgNode *node = g_ptr_array_index (self->children, i);
-        RsvgNodeType type = RSVG_NODE_TYPE (node);
 
-        if (type == RSVG_NODE_TYPE_CHARS) {
-            RsvgNodeChars *chars = (RsvgNodeChars *) node;
-            GString *str = _rsvg_text_chomp (rsvg_current_state (ctx), chars->contents, lastwasspace);
-            rsvg_text_render_text (ctx, str->str, x, y);
-            g_string_free (str, TRUE);
-        } else {
-            if (usetextonly) {
-                _rsvg_node_text_type_children (node, ctx, x, y, lastwasspace,
-                                               usetextonly);
-            } else {
-                if (type == RSVG_NODE_TYPE_TSPAN) {
-                    RsvgNodeText *tspan = (RsvgNodeText *) node;
-                    rsvg_state_push (ctx);
-                    _rsvg_node_text_type_tspan (tspan, ctx, x, y, lastwasspace,
-                                                usetextonly);
-                    rsvg_state_pop (ctx);
-                } else if (type == RSVG_NODE_TYPE_TREF) {
-                    RsvgNodeTref *tref = (RsvgNodeTref *) node;
-                    _rsvg_node_text_type_tref (tref, ctx, x, y, lastwasspace,
-                                               usetextonly);
-                }
-            }
-        }
-    }
+    closure.ctx = ctx;
+    closure.x = x;
+    closure.y = y;
+    closure.lastwasspace = lastwasspace;
+    closure.usetextonly = usetextonly;
+
+    rsvg_node_foreach_child (self, draw_text_child, &closure);
+
     rsvg_pop_discrete_layer (ctx);
 }
 
-static int
- _rsvg_node_text_length_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
+static gboolean
+_rsvg_node_text_length_children (RsvgNode * self, RsvgDrawingCtx * ctx,
+                                 gdouble * length, gboolean * lastwasspace,
+                                 gboolean usetextonly);
+
+static gboolean
+_rsvg_node_text_length_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
+                             gdouble * x, gboolean * lastwasspace,
+                             gboolean usetextonly);
+
+static gboolean
+_rsvg_node_text_length_tspan (RsvgNodeText * self, RsvgDrawingCtx * ctx,
                               gdouble * x, gboolean * lastwasspace,
                               gboolean usetextonly);
 
-static int
- _rsvg_node_text_length_tspan (RsvgNodeText * self, RsvgDrawingCtx * ctx,
-                               gdouble * x, gboolean * lastwasspace,
-                               gboolean usetextonly);
-
 static gdouble rsvg_text_length_text_as_string (RsvgDrawingCtx * ctx, const char *text);
 
-static int
+typedef struct {
+    RsvgDrawingCtx *ctx;
+    gdouble *length;
+    gboolean *lastwasspace;
+    gboolean usetextonly;
+    gboolean done;
+} ChildrenLengthClosure;
+
+static gboolean
+compute_child_length (RsvgNode *node, gpointer data)
+{
+    ChildrenLengthClosure *closure;
+    RsvgNodeType type = RSVG_NODE_TYPE (node);
+    gboolean done;
+
+    closure = data;
+    done = FALSE;
+
+    rsvg_state_push (closure->ctx);
+    rsvg_state_reinherit_top (closure->ctx, rsvg_node_get_state (node), 0);
+
+    if (type == RSVG_NODE_TYPE_CHARS) {
+        RsvgNodeChars *chars = (RsvgNodeChars *) node;
+        GString *str = _rsvg_text_chomp (rsvg_current_state (closure->ctx), chars->contents, closure->lastwasspace);
+        *closure->length += rsvg_text_length_text_as_string (closure->ctx, str->str);
+        g_string_free (str, TRUE);
+    } else {
+        if (closure->usetextonly) {
+            done = _rsvg_node_text_length_children (node,
+                                                    closure->ctx,
+                                                    closure->length,
+                                                    closure->lastwasspace,
+                                                    closure->usetextonly);
+        } else {
+            if (type == RSVG_NODE_TYPE_TSPAN) {
+                RsvgNodeText *tspan = (RsvgNodeText *) node;
+                done = _rsvg_node_text_length_tspan (tspan,
+                                                     closure->ctx,
+                                                     closure->length,
+                                                     closure->lastwasspace,
+                                                     closure->usetextonly);
+            } else if (type == RSVG_NODE_TYPE_TREF) {
+                RsvgNodeTref *tref = (RsvgNodeTref *) node;
+                done = _rsvg_node_text_length_tref (tref,
+                                                    closure->ctx,
+                                                    closure->length,
+                                                    closure->lastwasspace,
+                                                    closure->usetextonly);
+            }
+        }
+    }
+
+    rsvg_state_pop (closure->ctx);
+
+    closure->done = done;
+    return !done;
+}
+
+static gboolean
 _rsvg_node_text_length_children (RsvgNode * self, RsvgDrawingCtx * ctx,
                                  gdouble * length, gboolean * lastwasspace,
                                  gboolean usetextonly)
 {
-    guint i;
-    int out = FALSE;
-    for (i = 0; i < self->children->len; i++) {
-        RsvgNode *node = g_ptr_array_index (self->children, i);
-        RsvgNodeType type = RSVG_NODE_TYPE (node);
+    ChildrenLengthClosure closure;
 
-        rsvg_state_push (ctx);
-        rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), 0);
-        if (type == RSVG_NODE_TYPE_CHARS) {
-            RsvgNodeChars *chars = (RsvgNodeChars *) node;
-            GString *str = _rsvg_text_chomp (rsvg_current_state (ctx), chars->contents, lastwasspace);
-            *length += rsvg_text_length_text_as_string (ctx, str->str);
-            g_string_free (str, TRUE);
-        } else {
-            if (usetextonly) {
-                out = _rsvg_node_text_length_children(node, ctx, length,
-                                                      lastwasspace,
-                                                      usetextonly);
-            } else {
-                if (type == RSVG_NODE_TYPE_TSPAN) {
-                    RsvgNodeText *tspan = (RsvgNodeText *) node;
-                    out = _rsvg_node_text_length_tspan (tspan, ctx, length,
-                                                        lastwasspace,
-                                                        usetextonly);
-                } else if (type == RSVG_NODE_TYPE_TREF) {
-                    RsvgNodeTref *tref = (RsvgNodeTref *) node;
-                    out = _rsvg_node_text_length_tref (tref, ctx, length,
-                                                       lastwasspace,
-                                                       usetextonly);
-                }
-            }
-        }
-        rsvg_state_pop (ctx);
-        if (out)
-            break;
-    }
-    return out;
+    closure.ctx = ctx;
+    closure.length = length;
+    closure.lastwasspace = lastwasspace;
+    closure.usetextonly = usetextonly;
+    closure.done = FALSE;
+
+    rsvg_node_foreach_child (self, compute_child_length, &closure);
+
+    return closure.done;
 }
 
 
@@ -360,7 +437,7 @@ _rsvg_node_text_type_tspan (RsvgNodeText * self, RsvgDrawingCtx * ctx,
                                    usetextonly);
 }
 
-static int
+static gboolean
 _rsvg_node_text_length_tspan (RsvgNodeText * self,
                               RsvgDrawingCtx * ctx, gdouble * length,
                               gboolean * lastwasspace, gboolean usetextonly)
@@ -415,7 +492,7 @@ _rsvg_node_text_type_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
     rsvg_release_node (ctx, link);
 }
 
-static int
+static gboolean
 _rsvg_node_text_length_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx, gdouble * x,
                              gboolean * lastwasspace, gboolean usetextonly)
 {
@@ -526,7 +603,7 @@ rsvg_text_create_layout (RsvgDrawingCtx * ctx, const char *text, PangoContext * 
     attribute = pango_attr_letter_spacing_new (rsvg_length_normalize (&state->letter_spacing, ctx) * PANGO_SCALE);
     attribute->start_index = 0;
     attribute->end_index = G_MAXINT;
-    pango_attr_list_insert (attr_list, attribute); 
+    pango_attr_list_insert (attr_list, attribute);
 
     if (state->has_font_decor && text) {
         if (state->font_decor & TEXT_UNDERLINE) {
