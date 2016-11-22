@@ -340,6 +340,9 @@ struct _RsvgNode {
 
 #define RSVG_NODE_TYPE(node)                ((node)->type)
 
+G_GNUC_INTERNAL
+RsvgState *rsvg_node_get_state (RsvgNode *node);
+
 struct _RsvgNodeChars {
     RsvgNode super;
     GString *contents;

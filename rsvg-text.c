@@ -231,7 +231,7 @@ _rsvg_node_text_length_children (RsvgNode * self, RsvgDrawingCtx * ctx,
         RsvgNodeType type = RSVG_NODE_TYPE (node);
 
         rsvg_state_push (ctx);
-        rsvg_state_reinherit_top (ctx, node->state, 0);
+        rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), 0);
         if (type == RSVG_NODE_TYPE_CHARS) {
             RsvgNodeChars *chars = (RsvgNodeChars *) node;
             GString *str = _rsvg_text_chomp (rsvg_current_state (ctx), chars->contents, lastwasspace);
@@ -270,7 +270,7 @@ _rsvg_node_text_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     double x, y, dx, dy, length = 0;
     gboolean lastwasspace = TRUE;
     RsvgNodeText *text = (RsvgNodeText *) self;
-    rsvg_state_reinherit_top (ctx, self->state, dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
     x = rsvg_length_normalize (&text->x, ctx);
     y = rsvg_length_normalize (&text->y, ctx);

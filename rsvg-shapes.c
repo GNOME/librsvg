@@ -65,7 +65,7 @@ rsvg_node_path_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     if (!path->builder)
         return;
 
-    rsvg_state_reinherit_top (ctx, self->state, dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
     rsvg_render_path_builder (ctx, path->builder);
 }
@@ -178,7 +178,7 @@ _rsvg_node_poly_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     if (poly->builder == NULL)
         return;
 
-    rsvg_state_reinherit_top (ctx, self->state, dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
     rsvg_render_path_builder (ctx, poly->builder);
 }
@@ -243,23 +243,23 @@ _rsvg_node_line_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 }
 
 static void
-_rsvg_node_line_draw (RsvgNode * overself, RsvgDrawingCtx * ctx, int dominate)
+_rsvg_node_line_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     RsvgPathBuilder *builder;
-    RsvgNodeLine *self = (RsvgNodeLine *) overself;
+    RsvgNodeLine *line = (RsvgNodeLine *) self;
     double x1, y1, x2, y2;
 
     builder = rsvg_path_builder_new ();
 
-    x1 = rsvg_length_normalize (&self->x1, ctx);
-    y1 = rsvg_length_normalize (&self->y1, ctx);
-    x2 = rsvg_length_normalize (&self->x2, ctx);
-    y2 = rsvg_length_normalize (&self->y2, ctx);
+    x1 = rsvg_length_normalize (&line->x1, ctx);
+    y1 = rsvg_length_normalize (&line->y1, ctx);
+    x2 = rsvg_length_normalize (&line->x2, ctx);
+    y2 = rsvg_length_normalize (&line->y2, ctx);
 
     rsvg_path_builder_move_to (builder, x1, y1);
     rsvg_path_builder_line_to (builder, x2, y2);
 
-    rsvg_state_reinherit_top (ctx, overself->state, dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
     rsvg_render_path_builder (ctx, builder);
 
@@ -443,7 +443,7 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         rsvg_path_builder_close_path (builder);
     }
 
-    rsvg_state_reinherit_top (ctx, self->state, dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
     rsvg_render_path_builder (ctx, builder);
 
@@ -526,7 +526,7 @@ _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     rsvg_path_builder_close_path (builder);
 
-    rsvg_state_reinherit_top (ctx, self->state, dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
     rsvg_render_path_builder (ctx, builder);
 
@@ -611,7 +611,7 @@ _rsvg_node_ellipse_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     rsvg_path_builder_close_path (builder);
 
-    rsvg_state_reinherit_top (ctx, self->state, dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
     rsvg_render_path_builder (ctx, builder);
 

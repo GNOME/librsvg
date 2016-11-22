@@ -182,7 +182,7 @@ rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
         }
     }
     if ((value = rsvg_property_bag_lookup (atts, "style")))
-        rsvg_parse_style (ctx, self->state, value);
+        rsvg_parse_style (ctx, rsvg_node_get_state (self), value);
 
     if ((value = rsvg_property_bag_lookup (atts, "stop-color"))) {
         has_stop_color = TRUE;
@@ -195,7 +195,7 @@ rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
         has_stop_opacity = TRUE;
     }
 
-    rsvg_parse_style_pairs (ctx, self->state, atts);
+    rsvg_parse_style_pairs (ctx, rsvg_node_get_state (self), atts);
 
     self->parent = ctx->priv->currentnode;
 

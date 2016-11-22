@@ -396,7 +396,7 @@ node_set_atts (RsvgNode * node, RsvgHandle * ctx, const NodeCreator *creator, Rs
             else
                 klazz = NULL;
 
-            rsvg_parse_style_attrs (ctx, node->state, creator->element_name, klazz, id, atts);
+            rsvg_parse_style_attrs (ctx, rsvg_node_get_state (node), creator->element_name, klazz, id, atts);
         }
     }
 }
@@ -431,6 +431,12 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
             ctx->priv->currentnode = newnode;
         }
     }
+}
+
+RsvgState *
+rsvg_node_get_state (RsvgNode *node)
+{
+    return node->state;
 }
 
 /* extra (title, desc, metadata) */

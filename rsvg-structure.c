@@ -40,7 +40,7 @@ rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     RsvgState *state;
     GSList *stacksave;
 
-    state = self->state;
+    state = rsvg_node_get_state (self);
 
     stacksave = ctx->drawsub_stack;
     if (stacksave) {
@@ -61,7 +61,7 @@ _rsvg_node_draw_children (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     guint i;
     if (dominate != -1) {
-        rsvg_state_reinherit_top (ctx, self->state, dominate);
+        rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
         rsvg_push_discrete_layer (ctx);
     }
@@ -207,7 +207,7 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
             rsvg_drawing_ctx_push_view_box (ctx, symbol->vbox.rect.width, symbol->vbox.rect.height);
             rsvg_push_discrete_layer (ctx);
-            if (!state->overflow || (!state->has_overflow && child->state->overflow))
+            if (!state->overflow || (!state->has_overflow && rsvg_node_get_state (child)->overflow))
                 rsvg_add_clipping_rect (ctx, symbol->vbox.rect.x, symbol->vbox.rect.y,
                                         symbol->vbox.rect.width, symbol->vbox.rect.height);
         } else {
@@ -242,7 +242,7 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     nw = rsvg_length_normalize (&sself->w, ctx);
     nh = rsvg_length_normalize (&sself->h, ctx);
 
-    rsvg_state_reinherit_top (ctx, self->state, dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
     state = rsvg_current_state (ctx);
 
@@ -330,7 +330,7 @@ _rsvg_node_svg_apply_atts (RsvgNodeSvg * self, RsvgHandle * ctx)
             klazz = value;
         if ((value = rsvg_property_bag_lookup (self->atts, "id")))
             id = value;
-        rsvg_parse_style_attrs (ctx, ((RsvgNode *)self)->state, "svg", klazz, id, self->atts);
+        rsvg_parse_style_attrs (ctx, rsvg_node_get_state ((RsvgNode *) self), "svg", klazz, id, self->atts);
     }
 }
 
@@ -455,14 +455,14 @@ _rsvg_node_switch_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     guint i;
 
-    rsvg_state_reinherit_top (ctx, self->state, dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
     rsvg_push_discrete_layer (ctx);
 
     for (i = 0; i < self->children->len; i++) {
         RsvgNode *drawable = g_ptr_array_index (self->children, i);
 
-        if (drawable->state->cond_true) {
+        if (rsvg_node_get_state (drawable)->cond_true) {
             rsvg_state_push (ctx);
             rsvg_node_draw (g_ptr_array_index (self->children, i), ctx, 0);
             rsvg_state_pop (ctx);

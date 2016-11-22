@@ -1726,5 +1726,5 @@ rsvg_state_reconstruct (RsvgState * state, RsvgNode * current)
     if (current == NULL)
         return;
     rsvg_state_reconstruct (state, current->parent);
-    rsvg_state_inherit (state, current->state);
+    rsvg_state_inherit (state, rsvg_node_get_state (current));
 }
