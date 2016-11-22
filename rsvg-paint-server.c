@@ -197,8 +197,6 @@ rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 
     rsvg_parse_style_pairs (ctx, rsvg_node_get_state (self), atts);
 
-    self->parent = ctx->priv->currentnode;
-
     state = rsvg_state_new ();
     rsvg_state_reconstruct (state, self);
 

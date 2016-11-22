@@ -415,21 +415,21 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
 
     if (newnode) {
         g_assert (RSVG_NODE_TYPE (newnode) != RSVG_NODE_TYPE_INVALID);
-        newnode->parent = ctx->priv->currentnode;
 
         push_element_name (ctx, name);
 
         add_node_to_handle (ctx, newnode);
         register_node_in_defs (ctx, newnode, atts);
-        node_set_atts (newnode, ctx, creator, atts);
 
         if (ctx->priv->currentnode) {
             rsvg_node_group_pack (ctx->priv->currentnode, newnode);
-            ctx->priv->currentnode = newnode;
         } else if (RSVG_NODE_TYPE (newnode) == RSVG_NODE_TYPE_SVG) {
             ctx->priv->treebase = newnode;
-            ctx->priv->currentnode = newnode;
         }
+
+        ctx->priv->currentnode = newnode;
+
+        node_set_atts (newnode, ctx, creator, atts);
     }
 }
 
@@ -437,6 +437,12 @@ RsvgState *
 rsvg_node_get_state (RsvgNode *node)
 {
     return node->state;
+}
+
+RsvgNode *
+rsvg_node_get_parent (RsvgNode *node)
+{
+    return node->parent;
 }
 
 /* extra (title, desc, metadata) */
@@ -837,7 +843,7 @@ rsvg_end_element (void *data, const xmlChar * xmlname)
         }
 
         if (ctx->priv->currentnode && topmost_element_name_is (ctx, name)) {
-            ctx->priv->currentnode = ctx->priv->currentnode->parent;
+            ctx->priv->currentnode = rsvg_node_get_parent (ctx->priv->currentnode);
             pop_element_name (ctx);
         }
 
@@ -1539,7 +1545,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 
         while (sself != NULL) {
             draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, sself);
-            sself = sself->parent;
+            sself = rsvg_node_get_parent (sself);
         }
 
         rsvg_state_push (draw);
@@ -1636,7 +1642,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
 
     while (node != NULL) {
         draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, node);
-        node = node->parent;
+        node = rsvg_node_get_parent (node);
     }
 
     rsvg_state_push (draw);

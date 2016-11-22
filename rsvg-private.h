@@ -343,6 +343,9 @@ struct _RsvgNode {
 G_GNUC_INTERNAL
 RsvgState *rsvg_node_get_state (RsvgNode *node);
 
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_get_parent (RsvgNode *node);
+
 struct _RsvgNodeChars {
     RsvgNode super;
     GString *contents;

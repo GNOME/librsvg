@@ -142,10 +142,10 @@ rsvg_node_is_ancestor (RsvgNode * potential_ancestor, RsvgNode * potential_desce
     while (TRUE) {
         if (potential_ancestor == potential_descendant)
             return TRUE;
-        else if (potential_descendant->parent == NULL)
+        else if (rsvg_node_get_parent (potential_descendant) == NULL)
             return FALSE;
         else
-            potential_descendant = potential_descendant->parent;
+            potential_descendant = rsvg_node_get_parent (potential_descendant);
     }
 
     g_assert_not_reached ();
@@ -274,7 +274,7 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     /* Bounding box addition must be AFTER the discrete layer push, 
        which must be AFTER the transformation happens. */
-    if (!state->overflow && self->parent) {
+    if (!state->overflow && rsvg_node_get_parent (self)) {
         state->affine = affine_old;
         rsvg_add_clipping_rect (ctx, nx, ny, nw, nh);
         state->affine = affine_new;
@@ -309,10 +309,13 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
      * x & y attributes have no effect on outermost svg
      * http://www.w3.org/TR/SVG/struct.html#SVGElement 
      */
-    if (self->parent && (value = rsvg_property_bag_lookup (atts, "x")))
-        svg->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-    if (self->parent && (value = rsvg_property_bag_lookup (atts, "y")))
-        svg->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+    if (rsvg_node_get_parent (self)) {
+        if ((value = rsvg_property_bag_lookup (atts, "x")))
+            svg->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+
+        if ((value = rsvg_property_bag_lookup (atts, "y")))
+            svg->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+    }
 
     /*
      * style element is not loaded yet here, so we need to store those attribues

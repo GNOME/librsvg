@@ -217,13 +217,13 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     while (drawsub != NULL) {
         draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, drawsub);
-        drawsub = drawsub->parent;
+        drawsub = rsvg_node_get_parent (drawsub);
     }
 
     rsvg_state_push (draw);
     cairo_save (cr);
 
-    rsvg_node_draw ((RsvgNode *) handle->priv->treebase, draw, 0);
+    rsvg_node_draw (handle->priv->treebase, draw, 0);
 
     cairo_restore (cr);
     rsvg_state_pop (draw);
