@@ -140,7 +140,7 @@ rsvg_new_group (const char *element_name)
 }
 
 void
-rsvg_node_group_pack (RsvgNode * self, RsvgNode * child)
+rsvg_node_add_child (RsvgNode * self, RsvgNode * child)
 {
     g_ptr_array_add (self->children, child);
     child->parent = self;

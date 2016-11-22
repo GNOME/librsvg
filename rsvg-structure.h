@@ -79,7 +79,7 @@ struct _RsvgNodeSvg {
 };
 
 G_GNUC_INTERNAL
-void rsvg_node_group_pack   (RsvgNode * self, RsvgNode * child);
+void rsvg_node_add_child   (RsvgNode * self, RsvgNode * child);
 G_GNUC_INTERNAL
 void rsvg_node_draw         (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
 G_GNUC_INTERNAL

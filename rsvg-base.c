@@ -422,7 +422,7 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
         register_node_in_defs (ctx, newnode, atts);
 
         if (ctx->priv->currentnode) {
-            rsvg_node_group_pack (ctx->priv->currentnode, newnode);
+            rsvg_node_add_child (ctx->priv->currentnode, newnode);
         } else if (RSVG_NODE_TYPE (newnode) == RSVG_NODE_TYPE_SVG) {
             ctx->priv->treebase = newnode;
         }
@@ -958,7 +958,7 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
     add_node_to_handle (ctx, (RsvgNode *) self);
 
     if (ctx->priv->currentnode)
-        rsvg_node_group_pack (ctx->priv->currentnode, (RsvgNode *) self);
+        rsvg_node_add_child (ctx->priv->currentnode, (RsvgNode *) self);
 }
 
 static void
