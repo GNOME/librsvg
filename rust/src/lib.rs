@@ -28,6 +28,7 @@ pub use length::{
 
 mod drawing_ctx;
 mod handle;
+mod gradient;
 mod length;
 mod marker;
 mod node;
