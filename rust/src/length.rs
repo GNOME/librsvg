@@ -11,7 +11,7 @@ use drawing_ctx::RsvgDrawingCtx;
 
 /* Keep this in sync with ../../rsvg-private.h:LengthUnit */
 #[repr(C)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthUnit {
     Default,
     Percent,
@@ -24,7 +24,7 @@ pub enum LengthUnit {
 
 /* Keep this in sync with ../../rsvg-private.h:LengthDir */
 #[repr(C)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthDir {
     Horizontal,
     Vertical,
@@ -37,7 +37,7 @@ pub enum LengthDir {
  */
 /* Keep this in sync with ../../rsvg-private.h:RsvgLength */
 #[repr(C)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct RsvgLength {
     length: f64,
     unit: LengthUnit,
