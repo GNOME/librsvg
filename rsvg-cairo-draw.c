@@ -103,14 +103,44 @@ add_color_stops_for_gradient (RsvgNode *node, cairo_pattern_t *pattern, guint8 o
 }
 
 static void
+set_source_gradient_common (RsvgDrawingCtx *ctx,
+                            RsvgNode *node,
+                            cairo_pattern_t *pattern,
+                            cairo_extend_t extend,
+                            guint8 opacity,
+                            cairo_matrix_t affine,
+                            gboolean obj_bbox,
+                            RsvgBbox bbox)
+{
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+    cairo_t *cr = render->cr;
+
+    if (obj_bbox) {
+        cairo_matrix_t bboxmatrix;
+        cairo_matrix_init (&bboxmatrix, bbox.rect.width, 0, 0, bbox.rect.height,
+                           bbox.rect.x, bbox.rect.y);
+        cairo_matrix_multiply (&affine, &affine, &bboxmatrix);
+    }
+
+    cairo_matrix_invert (&affine);
+    cairo_pattern_set_matrix (pattern, &affine);
+    cairo_pattern_set_extend (pattern, extend);
+
+    /* We ignore the return value of add_color_stops_for_gradient(), which is
+     * whether the stops are conformant to the spec.  This is so that we can
+     * render a partially-generated gradient if some of the stops are invalid.
+     */
+    add_color_stops_for_gradient (node, pattern, opacity);
+
+    cairo_set_source (cr, pattern);
+}
+
+static void
 _set_source_rsvg_linear_gradient (RsvgDrawingCtx * ctx,
                                   RsvgLinearGradient * linear,
                                   guint8 opacity, RsvgBbox bbox)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    cairo_t *cr = render->cr;
     cairo_pattern_t *pattern;
-    cairo_matrix_t matrix;
     RsvgLinearGradient statlinear;
 
     statlinear = *linear;
@@ -127,24 +157,15 @@ _set_source_rsvg_linear_gradient (RsvgDrawingCtx * ctx,
     if (linear->obj_bbox)
         rsvg_drawing_ctx_pop_view_box (ctx);
 
-    matrix = linear->affine;
-    if (linear->obj_bbox) {
-        cairo_matrix_t bboxmatrix;
-        cairo_matrix_init (&bboxmatrix, bbox.rect.width, 0, 0, bbox.rect.height,
-                           bbox.rect.x, bbox.rect.y);
-        cairo_matrix_multiply (&matrix, &matrix, &bboxmatrix);
-    }
-    cairo_matrix_invert (&matrix);
-    cairo_pattern_set_matrix (pattern, &matrix);
-    cairo_pattern_set_extend (pattern, linear->spread);
+    set_source_gradient_common (ctx,
+                                (RsvgNode *) linear,
+                                pattern,
+                                linear->spread,
+                                opacity,
+                                linear->affine,
+                                linear->obj_bbox,
+                                bbox);
 
-    /* We ignore the return value of add_color_stops_for_gradient(), which is
-     * whether the stops are conformant to the spec.  This is so that we can
-     * render a partially-generated gradient if some of the stops are invalid.
-     */
-    add_color_stops_for_gradient ((RsvgNode *) linear, pattern, opacity);
-
-    cairo_set_source (cr, pattern);
     cairo_pattern_destroy (pattern);
 }
 
@@ -212,10 +233,7 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
                                   RsvgRadialGradient * radial,
                                   guint8 opacity, RsvgBbox bbox)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    cairo_t *cr = render->cr;
     cairo_pattern_t *pattern;
-    cairo_matrix_t matrix;
     RsvgRadialGradient statradial;
     double fx, fy;
     double cx, cy, radius;
@@ -243,25 +261,15 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
     if (radial->obj_bbox)
         rsvg_drawing_ctx_pop_view_box (ctx);
 
-    matrix = radial->affine;
-    if (radial->obj_bbox) {
-        cairo_matrix_t bboxmatrix;
-        cairo_matrix_init (&bboxmatrix, bbox.rect.width, 0, 0, bbox.rect.height,
-                           bbox.rect.x, bbox.rect.y);
-        cairo_matrix_multiply (&matrix, &matrix, &bboxmatrix);
-    }
+    set_source_gradient_common (ctx,
+                                (RsvgNode *) radial,
+                                pattern,
+                                radial->spread,
+                                opacity,
+                                radial->affine,
+                                radial->obj_bbox,
+                                bbox);
 
-    cairo_matrix_invert (&matrix);
-    cairo_pattern_set_matrix (pattern, &matrix);
-    cairo_pattern_set_extend (pattern, radial->spread);
-
-    /* We ignore the return value of add_color_stops_for_gradient(), which is
-     * whether the stops are conformant to the spec.  This is so that we can
-     * render a partially-generated gradient if some of the stops are invalid.
-     */
-    add_color_stops_for_gradient ((RsvgNode *) radial, pattern, opacity);
-
-    cairo_set_source (cr, pattern);
     cairo_pattern_destroy (pattern);
 }
 
