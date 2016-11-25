@@ -1,3 +1,10 @@
+pub use bbox::{
+    RsvgBbox,
+    rsvg_bbox_init,
+    rsvg_bbox_insert,
+    rsvg_bbox_clip
+};
+
 pub use gradient::{
     gradient_linear_new,
     gradient_destroy,
@@ -32,6 +39,7 @@ pub use length::{
     rsvg_length_hand_normalize,
 };
 
+mod bbox;
 mod drawing_ctx;
 mod handle;
 mod gradient;

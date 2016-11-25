@@ -264,6 +264,7 @@ typedef struct {
     LengthDir dir;
 } RsvgLength;
 
+/* Keep this in sync with rust/src/bbox.rs:RsvgBbox */
 typedef struct {
     cairo_rectangle_t rect;
     cairo_matrix_t affine;
@@ -424,10 +425,16 @@ cairo_surface_t *rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * draw
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_free (RsvgDrawingCtx * handle);
+
+/* Implemented in rust/src/bbox.rs */
 G_GNUC_INTERNAL
 void rsvg_bbox_init     (RsvgBbox * self, cairo_matrix_t *matrix);
+
+/* Implemented in rust/src/bbox.rs */
 G_GNUC_INTERNAL
 void rsvg_bbox_insert   (RsvgBbox * dst, RsvgBbox * src);
+
+/* Implemented in rust/src/bbox.rs */
 G_GNUC_INTERNAL
 void rsvg_bbox_clip     (RsvgBbox * dst, RsvgBbox * src);
 
