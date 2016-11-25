@@ -84,6 +84,28 @@ struct _RsvgRadialGradient {
     char *fallback;
 };
 
+typedef struct _Gradient Gradient;
+
+/* Implemented in rust/src/gradient.rs */
+G_GNUC_INTERNAL
+Gradient *gradient_linear_new (RsvgLength     *x1,
+                               RsvgLength     *y1,
+                               RsvgLength     *x2,
+                               RsvgLength     *y2,
+                               gboolean       *obj_bbox,
+                               cairo_matrix_t *affine,
+                               cairo_extend_t *extend,
+                               const char     *fallback_name);
+
+/* Implemented in rust/src/gradient.rs */
+G_GNUC_INTERNAL
+void gradient_destroy (Gradient *gradient);
+
+G_GNUC_INTERNAL
+void gradient_add_color_stop (Gradient *gradient,
+                              double    offset,
+                              guint32   rgba);
+
 struct _RsvgPattern {
     RsvgNode super;
     gboolean obj_cbbox;

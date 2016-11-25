@@ -1,5 +1,9 @@
+extern crate libc;
 extern crate cairo;
 extern crate cairo_sys;
+extern crate glib;
+
+use self::glib::translate::*;
 
 use length::*;
 
@@ -96,6 +100,29 @@ impl GradientCommon {
 
         if self.fallback.is_none () {
             self.fallback = clone_fallback_name (&fallback.fallback);
+        }
+    }
+
+    fn add_color_stop (&mut self, mut offset: f64, rgba: u32) {
+        if self.stops.is_none () {
+            self.stops = Some (Vec::<ColorStop>::new ());
+        }
+
+        if let Some (ref mut stops) = self.stops {
+            let mut last_offset: f64 = 0.0;
+
+            if stops.len () > 0 {
+                last_offset = stops[stops.len () - 1].offset;
+            }
+
+            if last_offset > offset {
+                offset = last_offset;
+            }
+
+            stops.push (ColorStop { offset: offset,
+                                    rgba:   rgba });
+        } else {
+            unreachable! ();
         }
     }
 }
@@ -196,6 +223,11 @@ impl Gradient {
         self.common.resolve_from_fallback (&fallback.common);
         self.variant.resolve_from_fallback (&fallback.variant);
     }
+
+    fn add_color_stop (&mut self, offset: f64, rgba: u32) {
+        self.common.add_color_stop (offset, rgba);
+    }
+
 }
 
 trait FallbackSource {
@@ -226,4 +258,56 @@ fn resolve_gradient (gradient: &Gradient, fallback_source: &FallbackSource) -> G
     }
 
     result
+}
+
+/* All the arguments are pointers because they are in fact optional in
+ * SVG.  We turn the arguments into Option<foo>: NULL into None, and
+ * anything else into a Some().
+ */
+#[no_mangle]
+pub unsafe extern fn gradient_linear_new (x1: *const RsvgLength,
+                                          y1: *const RsvgLength,
+                                          x2: *const RsvgLength,
+                                          y2: *const RsvgLength,
+                                          obj_bbox: *const bool,
+                                          affine: *const cairo::Matrix,
+                                          spread: *const cairo::enums::Extend,
+                                          fallback_name: *const libc::c_char) -> *mut Gradient {
+    let my_obj_bbox      = { if obj_bbox.is_null ()      { None } else { Some (*obj_bbox) } };
+    let my_affine        = { if affine.is_null ()        { None } else { Some (*affine) } };
+    let my_spread        = { if spread.is_null ()        { None } else { Some (*spread) } };
+    let my_fallback_name = from_glib_none (fallback_name);
+
+    let my_x1 = { if x1.is_null () { None } else { Some (*x1) } };
+    let my_y1 = { if y1.is_null () { None } else { Some (*y1) } };
+    let my_x2 = { if x2.is_null () { None } else { Some (*x2) } };
+    let my_y2 = { if y2.is_null () { None } else { Some (*y2) } };
+
+    let gradient = Gradient::new (GradientCommon::new (my_obj_bbox, my_affine, my_spread, my_fallback_name, None),
+                                  GradientVariant::Linear { x1: my_x1,
+                                                            y1: my_y1,
+                                                            x2: my_x2,
+                                                            y2: my_y2 });
+
+    let boxed_gradient = Box::new (gradient);
+
+    Box::into_raw (boxed_gradient)
+}
+
+#[no_mangle]
+pub unsafe extern fn gradient_destroy (raw_gradient: *mut Gradient) {
+    assert! (!raw_gradient.is_null ());
+
+    let _ = Box::from_raw (raw_gradient);
+}
+
+#[no_mangle]
+pub extern fn gradient_add_color_stop (raw_gradient: *mut Gradient,
+                                       offset:       f64,
+                                       rgba:         u32) {
+    assert! (!raw_gradient.is_null ());
+
+    let gradient: &mut Gradient = unsafe { &mut (*raw_gradient) };
+
+    gradient.add_color_stop (offset, rgba);
 }

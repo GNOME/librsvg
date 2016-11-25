@@ -1,3 +1,9 @@
+pub use gradient::{
+    gradient_linear_new,
+    gradient_destroy,
+    gradient_add_color_stop
+};
+
 pub use path_builder::{
     rsvg_path_builder_new,
     rsvg_path_builder_destroy,
