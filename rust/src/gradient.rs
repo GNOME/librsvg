@@ -1,6 +1,9 @@
 extern crate cairo;
+extern crate cairo_sys;
 
 use length::*;
+
+use self::cairo::MatrixTrait;
 
 struct ColorStop {
     offset: f64,
@@ -14,8 +17,8 @@ struct ColorStop {
 struct GradientCommon {
     obj_bbox: Option<bool>,
     affine:   Option<cairo::Matrix>,
-    spread:   Option<cairo::Extend>,
-    fallback: Option<&str>,
+    spread:   Option<cairo::enums::Extend>,
+    fallback: Option<String>,
     stops:    Option<Vec<ColorStop>>
 }
 
@@ -41,9 +44,9 @@ impl GradientCommon {
         GradientCommon {
             obj_bbox: Some (true),                         // these are per the spec
             affine:   Some (cairo::Matrix::identity ()),
-            spread:   Some (cairo::Extend::Pad),
+            spread:   Some (cairo::enums::Extend::Pad),
             fallback: None,
-            stops:    Some (Vec<ColorStop>::new ())        // empty array of color stops
+            stops:    Some (Vec::<ColorStop>::new ())        // empty array of color stops
         }
     }
 
@@ -55,24 +58,14 @@ impl GradientCommon {
     }
 }
 
-fn make_length (value: f64, dir: LengthDir) -> RsvgLength {
-    assert! (value >= 0.0 && value <= 1.0);
-
-    RsvgLength {
-        length: value,
-        unit:   LengthUnit::Default,
-        dir:    dir
-    }
-}
-
 impl LinearGradient {
     fn get_defaults () -> LinearGradient {
         LinearGradient {
             common: GradientCommon::get_defaults (),
-            x1:     Some (make_length (0.0, LengthDir::Horizontal)),  // these are per the spec
-            y1:     Some (make_length (0.0, LengthDir::Vertical)),
-            x2:     Some (make_length (1.0, LengthDir::Horizontal)),
-            y2:     Some (make_length (0.0, LengthDir::Vertical))
+            x1:     Some (RsvgLength::parse ("0%", LengthDir::Horizontal)),  // these are per the spec
+            y1:     Some (RsvgLength::parse ("0%", LengthDir::Vertical)),
+            x2:     Some (RsvgLength::parse ("100%", LengthDir::Horizontal)),
+            y2:     Some (RsvgLength::parse ("0%", LengthDir::Vertical))
         }
     }
 
@@ -89,11 +82,11 @@ impl RadialGradient {
     fn get_defaults () -> RadialGradient {
         RadialGradient {
             common: GradientCommon::get_defaults (),
-            cx:     Some (make_length (0.5, LengthDir::Horizontal)),
-            cy:     Some (make_length (0.5, LengthDir::Vertical)),
-            r:      Some (make_length (0.5, LengthDir::Both)),
-            fx:     Some (make_length (0.5, LengthDir::Horizontal)) // per the spec, equal to cx
-            fy:     Some (make_length (0.5, LengthDir::Vertical))   // per the spec, equal to cy
+            cx:     Some (RsvgLength::parse ("50%", LengthDir::Horizontal)),
+            cy:     Some (RsvgLength::parse ("50%", LengthDir::Vertical)),
+            r:      Some (RsvgLength::parse ("50%", LengthDir::Both)),
+            fx:     Some (RsvgLength::parse ("50%", LengthDir::Horizontal)), // per the spec, equal to cx
+            fy:     Some (RsvgLength::parse ("50%", LengthDir::Vertical))    // per the spec, equal to cy
         }
     }
 
