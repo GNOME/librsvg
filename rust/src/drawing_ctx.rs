@@ -10,6 +10,8 @@ use path_builder::RsvgPathBuilder;
 
 pub enum RsvgDrawingCtx {}
 
+pub enum RsvgNode {}
+
 extern "C" {
     fn rsvg_drawing_ctx_get_dpi (draw_ctx: *const RsvgDrawingCtx,
                                  out_dpi_x: *mut f64,
@@ -26,6 +28,12 @@ extern "C" {
                                        height:    f64);
 
     fn rsvg_drawing_ctx_pop_view_box (draw_ctx: *const RsvgDrawingCtx);
+
+    fn rsvg_drawing_ctx_acquire_node (draw_ctx: *const RsvgDrawingCtx,
+                                      url:      *const libc::c_char) -> *mut RsvgNode;
+
+    fn rsvg_drawing_ctx_release_node (draw_ctx: *const RsvgDrawingCtx,
+                                      node:     *mut RsvgNode);
 
     fn rsvg_state_reinherit_top (draw_ctx: *const RsvgDrawingCtx,
                                  state: *mut RsvgState,
@@ -69,6 +77,16 @@ pub fn push_view_box (draw_ctx: *const RsvgDrawingCtx,
 
 pub fn pop_view_box (draw_ctx: *const RsvgDrawingCtx) {
     unsafe { rsvg_drawing_ctx_pop_view_box (draw_ctx); }
+}
+
+pub fn acquire_node (draw_ctx: *const RsvgDrawingCtx,
+                     url:      &str) -> *mut RsvgNode {
+    unsafe { rsvg_drawing_ctx_acquire_node (draw_ctx, str::to_glib_none (url).0) }
+}
+
+pub fn release_node (draw_ctx: *const RsvgDrawingCtx,
+                     node:     *mut RsvgNode) {
+    unsafe { rsvg_drawing_ctx_release_node (draw_ctx, node); }
 }
 
 pub fn state_reinherit_top (draw_ctx: *const RsvgDrawingCtx,
