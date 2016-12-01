@@ -4,12 +4,12 @@ extern crate cairo_sys;
 extern crate glib;
 
 use self::glib::translate::*;
-use self::cairo::Pattern;
 
 use length::*;
 
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
+use drawing_ctx::RsvgNode;
 
 use bbox::*;
 
@@ -141,6 +141,18 @@ fn clone_fallback_name (fallback: &Option<String>) -> Option<String> {
     }
 }
 
+impl Clone for GradientCommon {
+    fn clone (&self) -> Self {
+        GradientCommon {
+            obj_bbox: self.obj_bbox,
+            affine:   self.affine,
+            spread:   self.spread,
+            fallback: clone_fallback_name (&self.fallback),
+            stops:    self.clone_stops ()
+        }
+    }
+}
+
 impl GradientVariant {
     fn is_resolved (&self) -> bool {
         match *self {
@@ -250,17 +262,21 @@ impl Gradient {
     }
 }
 
-trait FallbackSource {
-    fn get_fallback (&self, name: &str) -> Option<Gradient>;
+impl Clone for Gradient {
+    fn clone (&self) -> Self {
+        Gradient {
+            common: self.common.clone (),
+            variant: self.variant
+        }
+    }
 }
 
-fn resolve_gradient (gradient: &Gradient, fallback_source: &FallbackSource) -> Gradient {
-    let mut result = Gradient::new (GradientCommon::new (gradient.common.obj_bbox,
-                                                         gradient.common.affine,
-                                                         gradient.common.spread,
-                                                         clone_fallback_name (&gradient.common.fallback),
-                                                         gradient.common.clone_stops ()),
-                                    gradient.variant);
+trait FallbackSource {
+    fn get_fallback (&mut self, name: &str) -> Option<Gradient>;
+}
+
+fn resolve_gradient (gradient: &Gradient, fallback_source: &mut FallbackSource) -> Gradient {
+    let mut result = gradient.clone ();
 
     while !result.is_resolved () {
         let mut opt_fallback: Option<Gradient> = None;
@@ -280,11 +296,55 @@ fn resolve_gradient (gradient: &Gradient, fallback_source: &FallbackSource) -> G
     result
 }
 
-fn set_common_on_pattern (gradient: &Gradient,
-                          draw_ctx: &mut RsvgDrawingCtx,
-                          pattern:  &mut cairo::LinearGradient,
-                          bbox:     &RsvgBbox,
-                          opacity:  u8)
+struct NodeFallbackSource {
+    draw_ctx: *mut RsvgDrawingCtx,
+    acquired_nodes: Vec<*mut RsvgNode>
+}
+
+impl NodeFallbackSource {
+    fn new (draw_ctx: *mut RsvgDrawingCtx) -> NodeFallbackSource {
+        NodeFallbackSource {
+            draw_ctx: draw_ctx,
+            acquired_nodes: Vec::<*mut RsvgNode>::new ()
+        }
+    }
+}
+
+impl Drop for NodeFallbackSource {
+    fn drop (&mut self) {
+        while let Some (node) = self.acquired_nodes.pop () {
+            drawing_ctx::release_node (self.draw_ctx, node);
+        }
+    }
+}
+
+impl FallbackSource for NodeFallbackSource {
+    fn get_fallback (&mut self, name: &str) -> Option<Gradient> {
+        let fallback_node = drawing_ctx::acquire_node (self.draw_ctx, name);
+
+        if fallback_node.is_null () {
+            return None;
+        }
+
+        self.acquired_nodes.push (fallback_node);
+
+        let raw_fallback_gradient = unsafe { rsvg_gradient_node_to_rust_gradient (fallback_node) };
+
+        if raw_fallback_gradient.is_null () {
+            return None;
+        }
+
+        let fallback_gradient: &mut Gradient = unsafe { &mut (*raw_fallback_gradient) };
+
+        return Some (fallback_gradient.clone ());
+    }
+}
+
+fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient> (gradient: &Gradient,
+                                                               draw_ctx: *mut RsvgDrawingCtx,
+                                                               pattern:  &mut P,
+                                                               bbox:     &RsvgBbox,
+                                                               opacity:  u8)
 {
     let cr = drawing_ctx::get_cairo_context (draw_ctx);
 
@@ -309,7 +369,7 @@ fn set_common_on_pattern (gradient: &Gradient,
 }
 
 fn set_linear_gradient_on_pattern (gradient: &Gradient,
-                                   draw_ctx: &mut RsvgDrawingCtx,
+                                   draw_ctx: *mut RsvgDrawingCtx,
                                    bbox:     &RsvgBbox,
                                    opacity:  u8)
 {
@@ -335,17 +395,95 @@ fn set_linear_gradient_on_pattern (gradient: &Gradient,
     }
 }
 
+/* SVG defines radial gradients as being inside a circle (cx, cy, radius).  The
+ * gradient projects out from a focus point (fx, fy), which is assumed to be
+ * inside the circle, to the edge of the circle.
+ *
+ * The description of https://www.w3.org/TR/SVG/pservers.html#RadialGradientElement
+ * states:
+ *
+ * If the point defined by ‘fx’ and ‘fy’ lies outside the circle defined by
+ * ‘cx’, ‘cy’ and ‘r’, then the user agent shall set the focal point to the
+ * intersection of the line from (‘cx’, ‘cy’) to (‘fx’, ‘fy’) with the circle
+ * defined by ‘cx’, ‘cy’ and ‘r’.
+ *
+ * So, let's do that!
+ */
+fn fix_focus_point (mut fx: f64,
+                    mut fy: f64,
+                    cx: f64,
+                    cy: f64,
+                    radius: f64) -> (f64, f64) {
+    /* Easy case first: the focus point is inside the circle */
+
+    if (fx - cx) * (fx - cx) + (fy - cy) * (fy - cy) <= radius * radius {
+        return (fx, fy);
+    }
+
+    /* Hard case: focus point is outside the circle.
+     *
+     * First, translate everything to the origin.
+     */
+
+    fx -= cx;
+    fy -= cy;
+
+    /* Find the vector from the origin to (fx, fy) */
+
+    let mut vx = fx;
+    let mut vy = fy;
+
+    /* Find the vector's magnitude */
+
+    let mag = (vx * vx + vy * vy).sqrt ();
+
+    /* Normalize the vector to have a magnitude equal to radius; (vx, vy) will now be on the edge of the circle */
+
+    let scale = mag / radius;
+
+    vx /= scale;
+    vy /= scale;
+
+    /* Translate back to (cx, cy) and we are done! */
+
+    (vx + cx, vy + cy)
+}
+
 fn set_radial_gradient_on_pattern (gradient: &Gradient,
-                                   draw_ctx: &mut RsvgDrawingCtx,
+                                   draw_ctx: *mut RsvgDrawingCtx,
                                    bbox:     &RsvgBbox,
                                    opacity:  u8) {
-    unimplemented! ();
+    if let GradientVariant::Radial { cx, cy, r, fx, fy } = gradient.variant {
+        let obj_bbox = gradient.common.obj_bbox.unwrap ();
+
+        if obj_bbox {
+            drawing_ctx::push_view_box (draw_ctx, 1.0, 1.0);
+        }
+
+        let n_cx = cx.as_ref ().unwrap ().normalize (draw_ctx);
+        let n_cy = cy.as_ref ().unwrap ().normalize (draw_ctx);
+        let n_r  =  r.as_ref ().unwrap ().normalize (draw_ctx);
+        let n_fx = fx.as_ref ().unwrap ().normalize (draw_ctx);
+        let n_fy = fy.as_ref ().unwrap ().normalize (draw_ctx);
+
+        let (new_fx, new_fy) = fix_focus_point (n_fx, n_fy, n_cx, n_cy, n_r);
+
+        let mut pattern = cairo::RadialGradient::new (new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
+
+        if obj_bbox {
+            drawing_ctx::pop_view_box (draw_ctx);
+        }
+
+        set_common_on_pattern (gradient, draw_ctx, &mut pattern, bbox, opacity);
+    } else {
+        unreachable! ();
+    }
 }
 
 fn set_pattern_on_draw_context (gradient: &Gradient,
-                                draw_ctx: &mut RsvgDrawingCtx,
-                                bbox:     &RsvgBbox,
-                                opacity:  u8) {
+                                draw_ctx: *mut RsvgDrawingCtx,
+                                opacity:  u8,
+                                bbox:     &RsvgBbox) {
     assert! (gradient.is_resolved ());
 
     match gradient.variant {
@@ -445,4 +583,26 @@ pub extern fn gradient_add_color_stop (raw_gradient: *mut Gradient,
     let gradient: &mut Gradient = unsafe { &mut (*raw_gradient) };
 
     gradient.add_color_stop (offset, rgba);
+}
+
+extern "C" {
+    fn rsvg_gradient_node_to_rust_gradient (node: *const RsvgNode) -> *mut Gradient;
+}
+
+#[no_mangle]
+pub extern fn gradient_resolve_fallbacks_and_set_pattern (raw_gradient: *mut Gradient,
+                                                          draw_ctx:     *mut RsvgDrawingCtx,
+                                                          opacity:      u8,
+                                                          bbox:         RsvgBbox) {
+    assert! (!raw_gradient.is_null ());
+    let gradient: &mut Gradient = unsafe { &mut (*raw_gradient) };
+
+    let mut fallback_source = NodeFallbackSource::new (draw_ctx);
+
+    let resolved = resolve_gradient (gradient, &mut fallback_source);
+
+    set_pattern_on_draw_context (&resolved,
+                                 draw_ctx,
+                                 opacity,
+                                 &bbox);
 }

@@ -29,7 +29,6 @@
 
 #include <glib.h>
 #include <cairo.h>
-#include "rsvg-defs.h"
 
 G_BEGIN_DECLS 
 
@@ -57,13 +56,13 @@ struct _RsvgLinearGradient {
     cairo_matrix_t affine; /* user space to actual at time of gradient def */
     cairo_extend_t spread;
     RsvgLength x1, y1, x2, y2;
-    int hasx1:1;
-    int hasy1:1;
-    int hasx2:1;
-    int hasy2:1;
-    int hasbbox:1;
-    int hastransform:1;
-    int hasspread:1;
+    gboolean hasx1;
+    gboolean hasy1;
+    gboolean hasx2;
+    gboolean hasy2;
+    gboolean hasbbox;
+    gboolean hastransform;
+    gboolean hasspread;
     char *fallback;
 };
 
@@ -73,14 +72,14 @@ struct _RsvgRadialGradient {
     cairo_matrix_t affine; /* user space to actual at time of gradient def */
     cairo_extend_t spread;
     RsvgLength cx, cy, r, fx, fy;
-    int hascx:1;
-    int hascy:1;
-    int hasr:1;
-    int hasfx:1;
-    int hasfy:1;
-    int hasbbox:1;
-    int hastransform:1;
-    int hasspread:1;
+    gboolean hascx;
+    gboolean hascy;
+    gboolean hasr;
+    gboolean hasfx;
+    gboolean hasfy;
+    gboolean hasbbox;
+    gboolean hastransform;
+    gboolean hasspread;
     char *fallback;
 };
 
@@ -113,10 +112,21 @@ Gradient *gradient_radial_new (RsvgLength     *cx,
 G_GNUC_INTERNAL
 void gradient_destroy (Gradient *gradient);
 
+/* Implemented in rust/src/gradient.rs */
 G_GNUC_INTERNAL
 void gradient_add_color_stop (Gradient *gradient,
                               double    offset,
                               guint32   rgba);
+
+/* Implemented in rust/src/gradient.rs */
+G_GNUC_INTERNAL
+void gradient_resolve_fallbacks_and_set_pattern (Gradient       *gradient,
+                                                 RsvgDrawingCtx *draw_ctx,
+                                                 guint8          opacity,
+                                                 RsvgBbox        bbox);
+
+G_GNUC_INTERNAL
+Gradient *rsvg_gradient_node_to_rust_gradient (RsvgNode *node);
 
 struct _RsvgPattern {
     RsvgNode super;
