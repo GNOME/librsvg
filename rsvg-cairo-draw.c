@@ -740,6 +740,14 @@ rsvg_cairo_render_surface (RsvgDrawingCtx *ctx,
     rsvg_bbox_insert (&render->bbox, &bbox);
 }
 
+cairo_t *
+rsvg_cairo_get_cairo_context (RsvgDrawingCtx *ctx)
+{
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+
+    return render->cr;
+}
+
 static void
 rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, RsvgBbox * bbox)
 {
