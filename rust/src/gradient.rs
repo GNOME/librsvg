@@ -318,6 +318,10 @@ impl Drop for NodeFallbackSource {
     }
 }
 
+extern "C" {
+    fn rsvg_gradient_node_to_rust_gradient (node: *const RsvgNode) -> *mut Gradient;
+}
+
 impl FallbackSource for NodeFallbackSource {
     fn get_fallback (&mut self, name: &str) -> Option<Gradient> {
         let fallback_node = drawing_ctx::acquire_node (self.draw_ctx, name);
@@ -335,8 +339,11 @@ impl FallbackSource for NodeFallbackSource {
         }
 
         let fallback_gradient: &mut Gradient = unsafe { &mut (*raw_fallback_gradient) };
+        let cloned = fallback_gradient.clone ();
 
-        return Some (fallback_gradient.clone ());
+        unsafe { gradient_destroy (raw_fallback_gradient); }
+
+        return Some (cloned);
     }
 }
 
@@ -583,10 +590,6 @@ pub extern fn gradient_add_color_stop (raw_gradient: *mut Gradient,
     let gradient: &mut Gradient = unsafe { &mut (*raw_gradient) };
 
     gradient.add_color_stop (offset, rgba);
-}
-
-extern "C" {
-    fn rsvg_gradient_node_to_rust_gradient (node: *const RsvgNode) -> *mut Gradient;
 }
 
 #[no_mangle]
