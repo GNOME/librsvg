@@ -4,8 +4,14 @@ extern crate cairo_sys;
 extern crate glib;
 
 use self::glib::translate::*;
+use self::cairo::Pattern;
 
 use length::*;
+
+use drawing_ctx;
+use drawing_ctx::RsvgDrawingCtx;
+
+use bbox::*;
 
 use self::cairo::MatrixTrait;
 
@@ -74,7 +80,7 @@ impl GradientCommon {
     }
 
     fn is_resolved (&self) -> bool {
-        self.obj_bbox.is_some() && 
+        self.obj_bbox.is_some() &&
             self.affine.is_some () &&
             self.spread.is_some () &&
             self.stops.is_some ()
@@ -146,10 +152,10 @@ impl GradientVariant {
             },
 
             GradientVariant::Radial { cx, cy, r, fx, fy } => {
-                cx.is_some () && 
-                    cy.is_some () && 
-                    r.is_some () && 
-                    fx.is_some () && 
+                cx.is_some () &&
+                    cy.is_some () &&
+                    r.is_some () &&
+                    fx.is_some () &&
                     fy.is_some ()
             }
         }
@@ -228,6 +234,20 @@ impl Gradient {
         self.common.add_color_stop (offset, rgba);
     }
 
+    fn add_color_stops_to_pattern (&self,
+                                   pattern:  &mut cairo::Gradient,
+                                   opacity:  u8) {
+        let stops = self.common.stops.as_ref ().unwrap ();
+
+        for stop in stops {
+            let rgba = stop.rgba;
+            pattern.add_color_stop_rgba (stop.offset,
+                                         ((rgba >> 24) & 0xff) as f64 / 255.0,
+                                         ((rgba >> 16) & 0xff) as f64 / 255.0,
+                                         ((rgba >> 8) & 0xff) as f64 / 255.0,
+                                         (((rgba >> 0) & 0xff) * opacity as u32) as f64 / 255.0 / 255.0);
+        }
+    }
 }
 
 trait FallbackSource {
@@ -260,6 +280,88 @@ fn resolve_gradient (gradient: &Gradient, fallback_source: &FallbackSource) -> G
     result
 }
 
+fn set_common_on_pattern (gradient: &Gradient,
+                          draw_ctx: &mut RsvgDrawingCtx,
+                          pattern:  &mut cairo::LinearGradient,
+                          bbox:     &RsvgBbox,
+                          opacity:  u8)
+{
+    let cr = drawing_ctx::get_cairo_context (draw_ctx);
+
+    let mut affine = gradient.common.affine.unwrap ();
+
+    let obj_bbox = gradient.common.obj_bbox.unwrap ();
+
+    if obj_bbox {
+        let bbox_matrix = cairo::Matrix::new (bbox.rect.width, 0.0,
+                                              0.0, bbox.rect.height,
+                                              bbox.rect.x, bbox.rect.y);
+        affine = cairo::Matrix::multiply (&affine, &bbox_matrix);
+    }
+
+    affine.invert ();
+    pattern.set_matrix (affine);
+    pattern.set_extend (gradient.common.spread.unwrap ());
+
+    gradient.add_color_stops_to_pattern (pattern, opacity);
+
+    cr.set_source (pattern);
+}
+
+fn set_linear_gradient_on_pattern (gradient: &Gradient,
+                                   draw_ctx: &mut RsvgDrawingCtx,
+                                   bbox:     &RsvgBbox,
+                                   opacity:  u8)
+{
+    if let GradientVariant::Linear { x1, y1, x2, y2 } = gradient.variant {
+        let obj_bbox = gradient.common.obj_bbox.unwrap ();
+
+        if obj_bbox {
+            drawing_ctx::push_view_box (draw_ctx, 1.0, 1.0);
+        }
+
+        let mut pattern = cairo::LinearGradient::new (x1.as_ref ().unwrap ().normalize (draw_ctx),
+                                                      y1.as_ref ().unwrap ().normalize (draw_ctx),
+                                                      x2.as_ref ().unwrap ().normalize (draw_ctx),
+                                                      y2.as_ref ().unwrap ().normalize (draw_ctx));
+
+        if obj_bbox {
+            drawing_ctx::pop_view_box (draw_ctx);
+        }
+
+        set_common_on_pattern (gradient, draw_ctx, &mut pattern, bbox, opacity);
+    } else {
+        unreachable! ();
+    }
+}
+
+fn set_radial_gradient_on_pattern (gradient: &Gradient,
+                                   draw_ctx: &mut RsvgDrawingCtx,
+                                   bbox:     &RsvgBbox,
+                                   opacity:  u8) {
+    unimplemented! ();
+}
+
+fn set_pattern_on_draw_context (gradient: &Gradient,
+                                draw_ctx: &mut RsvgDrawingCtx,
+                                bbox:     &RsvgBbox,
+                                opacity:  u8) {
+    assert! (gradient.is_resolved ());
+
+    match gradient.variant {
+        GradientVariant::Linear { .. } => {
+            set_linear_gradient_on_pattern (gradient, draw_ctx, bbox, opacity);
+        }
+
+        GradientVariant::Radial { .. } => {
+            set_radial_gradient_on_pattern (gradient, draw_ctx, bbox, opacity);
+        }
+    }
+
+
+}
+
+
 /* All the arguments are pointers because they are in fact optional in
  * SVG.  We turn the arguments into Option<foo>: NULL into None, and
  * anything else into a Some().
@@ -276,7 +378,7 @@ pub unsafe extern fn gradient_linear_new (x1: *const RsvgLength,
     let my_obj_bbox      = { if obj_bbox.is_null ()      { None } else { Some (*obj_bbox) } };
     let my_affine        = { if affine.is_null ()        { None } else { Some (*affine) } };
     let my_spread        = { if spread.is_null ()        { None } else { Some (*spread) } };
-    let my_fallback_name = from_glib_none (fallback_name);
+    let my_fallback_name = { if fallback_name.is_null () { None } else { Some (String::from_glib_none (fallback_name)) } };
 
     let my_x1 = { if x1.is_null () { None } else { Some (*x1) } };
     let my_y1 = { if y1.is_null () { None } else { Some (*y1) } };
