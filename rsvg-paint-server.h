@@ -62,8 +62,8 @@ struct _RsvgLinearGradient {
     int hasx2:1;
     int hasy2:1;
     int hasbbox:1;
-    int hasspread:1;
     int hastransform:1;
+    int hasspread:1;
     char *fallback;
 };
 
@@ -75,12 +75,12 @@ struct _RsvgRadialGradient {
     RsvgLength cx, cy, r, fx, fy;
     int hascx:1;
     int hascy:1;
+    int hasr:1;
     int hasfx:1;
     int hasfy:1;
-    int hasr:1;
-    int hasspread:1;
     int hasbbox:1;
     int hastransform:1;
+    int hasspread:1;
     char *fallback;
 };
 
