@@ -397,6 +397,39 @@ pub unsafe extern fn gradient_linear_new (x1: *const RsvgLength,
 }
 
 #[no_mangle]
+pub unsafe extern fn gradient_radial_new (cx: *const RsvgLength,
+                                          cy: *const RsvgLength,
+                                          r:  *const RsvgLength,
+                                          fx: *const RsvgLength,
+                                          fy: *const RsvgLength,
+                                          obj_bbox: *const bool,
+                                          affine: *const cairo::Matrix,
+                                          spread: *const cairo::enums::Extend,
+                                          fallback_name: *const libc::c_char) -> *mut Gradient {
+    let my_obj_bbox      = { if obj_bbox.is_null ()      { None } else { Some (*obj_bbox) } };
+    let my_affine        = { if affine.is_null ()        { None } else { Some (*affine) } };
+    let my_spread        = { if spread.is_null ()        { None } else { Some (*spread) } };
+    let my_fallback_name = { if fallback_name.is_null () { None } else { Some (String::from_glib_none (fallback_name)) } };
+
+    let my_cx = { if cx.is_null () { None } else { Some (*cx) } };
+    let my_cy = { if cy.is_null () { None } else { Some (*cy) } };
+    let my_r  = { if r.is_null  () { None } else { Some (*r)  } };
+    let my_fx = { if fx.is_null () { None } else { Some (*fx) } };
+    let my_fy = { if fy.is_null () { None } else { Some (*fy) } };
+
+    let gradient = Gradient::new (GradientCommon::new (my_obj_bbox, my_affine, my_spread, my_fallback_name, None),
+                                  GradientVariant::Radial { cx: my_cx,
+                                                            cy: my_cy,
+                                                            r:  my_r,
+                                                            fx: my_fx,
+                                                            fy: my_fy });
+
+    let boxed_gradient = Box::new (gradient);
+
+    Box::into_raw (boxed_gradient)
+}
+
+#[no_mangle]
 pub unsafe extern fn gradient_destroy (raw_gradient: *mut Gradient) {
     assert! (!raw_gradient.is_null ());
 
