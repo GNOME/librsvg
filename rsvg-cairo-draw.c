@@ -41,19 +41,11 @@
 
 #include <pango/pangocairo.h>
 
-typedef struct {
-    cairo_pattern_t *pattern;
-    guint8 opacity;
-    double last_offset;
-    gboolean stops_are_valid;
-} AddStopsClosure;
-
 static gboolean
-add_color_stop (RsvgNode *node, gpointer data)
+add_color_stop_to_gradient (RsvgNode *node, gpointer data)
 {
-    AddStopsClosure *closure = data;
+    Gradient *gradient = data;
     RsvgGradientStop *stop;
-    guint32 rgba;
 
     if (rsvg_node_type (node) != RSVG_NODE_TYPE_STOP)
         return TRUE; /* just ignore this node */
@@ -61,171 +53,84 @@ add_color_stop (RsvgNode *node, gpointer data)
     stop = (RsvgGradientStop *) node;
 
     if (!stop->is_valid) {
-        closure->stops_are_valid = FALSE;
+        /* Don't add any more stops. */
         return FALSE;
     }
 
-    /* deal with unsorted stop offsets as per the spec */
-    closure->last_offset = MAX (closure->last_offset, stop->offset);
-
-    rgba = stop->rgba;
-    cairo_pattern_add_color_stop_rgba (closure->pattern,
-                                       closure->last_offset,
-                                       ((rgba >> 24) & 0xff) / 255.0,
-                                       ((rgba >> 16) & 0xff) / 255.0,
-                                       ((rgba >> 8) & 0xff) / 255.0,
-                                       (((rgba >> 0) & 0xff) * closure->opacity) / 255.0 / 255.0);
+    gradient_add_color_stop (gradient, stop->offset, stop->rgba);
 
     return TRUE;
 }
 
-/* Adds the color stops from the array of child nodes (of type RSVG_NODE_TYPE_STOP)
- * to a cairo_pattern_t.
- *
- * Returns true if the stops are all valid and conform to the SVG spec; false
- * otherwise.  It is up to the caller to decide whether to render the gradient
- * in this last case: it will have color stops added only up to the first invalid
- * stop.
- */
-static gboolean
-add_color_stops_for_gradient (RsvgNode *node, cairo_pattern_t *pattern, guint8 opacity)
+static void
+add_color_stops_to_gradient (Gradient *gradient, RsvgNode *node)
 {
-    AddStopsClosure closure;
-
-    closure.pattern = pattern;
-    closure.opacity = opacity;
-    closure.last_offset = 0.0;
-    closure.stops_are_valid = TRUE;
-
-    rsvg_node_foreach_child (node, add_color_stop, &closure);
-
-    return closure.stops_are_valid;
+    rsvg_node_foreach_child (node, add_color_stop_to_gradient, gradient);
 }
 
-static void
-set_source_gradient_common (RsvgDrawingCtx *ctx,
-                            RsvgNode *node,
-                            cairo_pattern_t *pattern,
-                            cairo_extend_t extend,
-                            guint8 opacity,
-                            cairo_matrix_t affine,
-                            gboolean obj_bbox,
-                            RsvgBbox bbox)
+static Gradient *
+linear_gradient_to_rust (RsvgLinearGradient *linear)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    cairo_t *cr = render->cr;
+    Gradient *gradient;
 
-    if (obj_bbox) {
-        cairo_matrix_t bboxmatrix;
-        cairo_matrix_init (&bboxmatrix, bbox.rect.width, 0, 0, bbox.rect.height,
-                           bbox.rect.x, bbox.rect.y);
-        cairo_matrix_multiply (&affine, &affine, &bboxmatrix);
+    gradient = gradient_linear_new (linear->hasx1 ? &linear->x1 : NULL,
+                                    linear->hasy1 ? &linear->y1 : NULL,
+                                    linear->hasx2 ? &linear->x2 : NULL,
+                                    linear->hasy2 ? &linear->y2 : NULL,
+                                    linear->hasbbox ? &linear->obj_bbox : NULL,
+                                    linear->hastransform ? &linear->affine : NULL,
+                                    linear->hasspread ? &linear->spread : NULL,
+                                    linear->fallback);
+
+    add_color_stops_to_gradient (gradient, (RsvgNode *) linear);
+
+    return gradient;
+}
+
+static Gradient *
+radial_gradient_to_rust (RsvgRadialGradient *radial)
+{
+    Gradient *gradient;
+
+    gradient = gradient_radial_new (radial->hascx ? &radial->cx : NULL,
+                                    radial->hascy ? &radial->cy : NULL,
+                                    radial->hasr  ? &radial->r  : NULL,
+                                    radial->hasfx ? &radial->fx : NULL,
+                                    radial->hasfy ? &radial->fy : NULL,
+                                    radial->hasbbox ? &radial->obj_bbox : NULL,
+                                    radial->hastransform ? &radial->affine : NULL,
+                                    radial->hasspread ? &radial->spread : NULL,
+                                    radial->fallback);
+
+    add_color_stops_to_gradient (gradient, (RsvgNode *) radial);
+
+    return gradient;
+}
+
+Gradient *
+rsvg_gradient_node_to_rust_gradient (RsvgNode *node)
+{
+    if (rsvg_node_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
+        return linear_gradient_to_rust ((RsvgLinearGradient *) node);
+    } else if (rsvg_node_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
+        return radial_gradient_to_rust ((RsvgRadialGradient *) node);
+    } else {
+        return NULL;
     }
-
-    cairo_matrix_invert (&affine);
-    cairo_pattern_set_matrix (pattern, &affine);
-    cairo_pattern_set_extend (pattern, extend);
-
-    /* We ignore the return value of add_color_stops_for_gradient(), which is
-     * whether the stops are conformant to the spec.  This is so that we can
-     * render a partially-generated gradient if some of the stops are invalid.
-     */
-    add_color_stops_for_gradient (node, pattern, opacity);
-
-    cairo_set_source (cr, pattern);
 }
 
 static void
-_set_source_rsvg_linear_gradient (RsvgDrawingCtx * ctx,
-                                  RsvgLinearGradient * linear,
+_set_source_rsvg_linear_gradient (RsvgDrawingCtx *ctx,
+                                  RsvgLinearGradient *linear,
                                   guint8 opacity, RsvgBbox bbox)
 {
-    cairo_pattern_t *pattern;
-    RsvgLinearGradient statlinear;
+    Gradient *gradient;
 
-    statlinear = *linear;
-    linear = &statlinear;
-    rsvg_linear_gradient_fix_fallback (ctx, linear);
+    gradient = linear_gradient_to_rust (linear);
 
-    if (linear->obj_bbox)
-        rsvg_drawing_ctx_push_view_box (ctx, 1., 1.);
-    pattern = cairo_pattern_create_linear (rsvg_length_normalize (&linear->x1, ctx),
-                                           rsvg_length_normalize (&linear->y1, ctx),
-                                           rsvg_length_normalize (&linear->x2, ctx),
-                                           rsvg_length_normalize (&linear->y2, ctx));
+    gradient_resolve_fallbacks_and_set_pattern (gradient, ctx, opacity, bbox);
 
-    if (linear->obj_bbox)
-        rsvg_drawing_ctx_pop_view_box (ctx);
-
-    set_source_gradient_common (ctx,
-                                (RsvgNode *) linear,
-                                pattern,
-                                linear->spread,
-                                opacity,
-                                linear->affine,
-                                linear->obj_bbox,
-                                bbox);
-
-    cairo_pattern_destroy (pattern);
-}
-
-/* SVG defines radial gradients as being inside a circle (cx, cy, radius).  The
- * gradient projects out from a focus point (fx, fy), which is assumed to be
- * inside the circle, to the edge of the circle.
- *
- * The description of https://www.w3.org/TR/SVG/pservers.html#RadialGradientElement
- * states:
- *
- * If the point defined by ‘fx’ and ‘fy’ lies outside the circle defined by
- * ‘cx’, ‘cy’ and ‘r’, then the user agent shall set the focal point to the
- * intersection of the line from (‘cx’, ‘cy’) to (‘fx’, ‘fy’) with the circle
- * defined by ‘cx’, ‘cy’ and ‘r’.
- *
- * So, let's do that!
- */
-static void
-fix_focus_point (double fx, double fy, double cx, double cy, double radius,
-                 double *out_fx, double *out_fy)
-{
-    double vx, vy;
-    double mag, scale;
-
-    /* Easy case first: the focus point is inside the circle */
-
-    if ((fx - cx) * (fx - cx) + (fy - cy) * (fy - cy) <= radius * radius) {
-        *out_fx = fx;
-        *out_fy = fy;
-        return;
-    }
-
-    /* Hard case: focus point is outside the circle.
-     *
-     * First, translate everything to the origin.
-     */
-
-    fx -= cx;
-    fy -= cy;
-
-    /* Find the vector from the origin to (fx, fy) */
-
-    vx = fx;
-    vy = fy;
-
-    /* Find the vector's magnitude */
-
-    mag = sqrt (vx * vx + vy * vy);
-
-    /* Normalize the vector to have a magnitude equal to radius; (vx, vy) will now be on the edge of the circle */
-
-    scale = mag / radius;
-
-    vx /= scale;
-    vy /= scale;
-
-    /* Translate back to (cx, cy) and we are done! */
-
-    *out_fx = vx + cx;
-    *out_fy = vy + cy;
+    gradient_destroy (gradient);
 }
 
 static void
@@ -233,44 +138,13 @@ _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
                                   RsvgRadialGradient * radial,
                                   guint8 opacity, RsvgBbox bbox)
 {
-    cairo_pattern_t *pattern;
-    RsvgRadialGradient statradial;
-    double fx, fy;
-    double cx, cy, radius;
-    double new_fx, new_fy;
+    Gradient *gradient;
 
-    statradial = *radial;
-    radial = &statradial;
-    rsvg_radial_gradient_fix_fallback (ctx, radial);
+    gradient = radial_gradient_to_rust (radial);
 
-    if (radial->obj_bbox)
-        rsvg_drawing_ctx_push_view_box (ctx, 1., 1.);
+    gradient_resolve_fallbacks_and_set_pattern (gradient, ctx, opacity, bbox);
 
-    fx = rsvg_length_normalize (&radial->fx, ctx);
-    fy = rsvg_length_normalize (&radial->fy, ctx);
-
-    cx = rsvg_length_normalize (&radial->cx, ctx);
-    cy = rsvg_length_normalize (&radial->cy, ctx);
-    radius = rsvg_length_normalize (&radial->r, ctx);
-
-    fix_focus_point (fx, fy, cx, cy, radius, &new_fx, &new_fy);
-
-    pattern = cairo_pattern_create_radial (new_fx, new_fy, 0.0,
-                                           cx, cy, radius);
-
-    if (radial->obj_bbox)
-        rsvg_drawing_ctx_pop_view_box (ctx);
-
-    set_source_gradient_common (ctx,
-                                (RsvgNode *) radial,
-                                pattern,
-                                radial->spread,
-                                opacity,
-                                radial->affine,
-                                radial->obj_bbox,
-                                bbox);
-
-    cairo_pattern_destroy (pattern);
+    gradient_destroy (gradient);
 }
 
 static void
@@ -580,6 +454,8 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
         cairo_restore (render->cr);
     }
 }
+
+
 
 void
 rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
