@@ -386,16 +386,19 @@ G_GNUC_INTERNAL
 gboolean     rsvg_eval_switch_attributes	(RsvgPropertyBag * atts, gboolean * p_has_cond);
 G_GNUC_INTERNAL
 gchar       *rsvg_get_base_uri_from_filename    (const gchar * file_name);
+
 G_GNUC_INTERNAL
 void rsvg_pop_discrete_layer    (RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
 void rsvg_push_discrete_layer   (RsvgDrawingCtx * ctx);
+
 G_GNUC_INTERNAL
-RsvgNode *rsvg_acquire_node     (RsvgDrawingCtx * ctx, const char *url);
+RsvgNode *rsvg_drawing_ctx_acquire_node         (RsvgDrawingCtx * ctx, const char *url);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, RsvgNodeType type);
+RsvgNode *rsvg_drawing_ctx_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, RsvgNodeType type);
 G_GNUC_INTERNAL
-void rsvg_release_node          (RsvgDrawingCtx * ctx, RsvgNode *node);
+void rsvg_drawing_ctx_release_node              (RsvgDrawingCtx * ctx, RsvgNode *node);
+
 G_GNUC_INTERNAL
 void rsvg_render_path_builder   (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder);
 G_GNUC_INTERNAL

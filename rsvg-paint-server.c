@@ -502,14 +502,14 @@ resolve_fallbacks (RsvgDrawingCtx *ctx,
     fallback_id = get_fallback (last_fallback);
     if (fallback_id == NULL)
         return;
-    fallback = rsvg_acquire_node (ctx, fallback_id);
+    fallback = rsvg_drawing_ctx_acquire_node (ctx, fallback_id);
     if (fallback == NULL)
       return;
 
     apply_fallback (data, fallback);
     resolve_fallbacks (ctx, data, fallback, get_fallback, apply_fallback);
 
-    rsvg_release_node (ctx, fallback);
+    rsvg_drawing_ctx_release_node (ctx, fallback);
 }
 
 static const char *

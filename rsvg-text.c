@@ -482,14 +482,14 @@ _rsvg_node_text_type_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
 
     if (self->link == NULL)
       return;
-    link = rsvg_acquire_node (ctx, self->link);
+    link = rsvg_drawing_ctx_acquire_node (ctx, self->link);
     if (link == NULL)
       return;
 
     _rsvg_node_text_type_children (link, ctx, x, y, lastwasspace,
                                                     TRUE);
 
-    rsvg_release_node (ctx, link);
+    rsvg_drawing_ctx_release_node (ctx, link);
 }
 
 static gboolean
@@ -501,13 +501,13 @@ _rsvg_node_text_length_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx, gdouble 
 
     if (self->link == NULL)
       return FALSE;
-    link = rsvg_acquire_node (ctx, self->link);
+    link = rsvg_drawing_ctx_acquire_node (ctx, self->link);
     if (link == NULL)
       return FALSE;
 
     result = _rsvg_node_text_length_children (link, ctx, x, lastwasspace, TRUE);
 
-    rsvg_release_node (ctx, link);
+    rsvg_drawing_ctx_release_node (ctx, link);
 
     return result;
 }

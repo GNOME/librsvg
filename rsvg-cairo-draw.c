@@ -451,7 +451,7 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
 
     switch (ps->type) {
     case RSVG_PAINT_SERVER_IRI:
-        node = rsvg_acquire_node (ctx, ps->core.iri);
+        node = rsvg_drawing_ctx_acquire_node (ctx, ps->core.iri);
         if (node == NULL)
             break;
         else if (rsvg_node_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT)
@@ -461,7 +461,7 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
         else if (rsvg_node_type (node) == RSVG_NODE_TYPE_PATTERN)
             _set_source_rsvg_pattern (ctx, (RsvgPattern *) node, opacity, bbox);
 
-        rsvg_release_node (ctx, node);
+        rsvg_drawing_ctx_release_node (ctx, node);
         break;
     case RSVG_PAINT_SERVER_SOLID:
         _set_source_rsvg_solid_color (ctx, ps->core.color, opacity, current_color);
@@ -852,7 +852,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 
     if (rsvg_current_state (ctx)->clip_path) {
         RsvgNode *node;
-        node = rsvg_acquire_node_of_type (ctx, rsvg_current_state (ctx)->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
+        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, rsvg_current_state (ctx)->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
         if (node) {
             RsvgClipPath *clip_path = (RsvgClipPath *) node;
 
@@ -869,7 +869,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
                 break;
             }
 
-            rsvg_release_node (ctx, node);
+            rsvg_drawing_ctx_release_node (ctx, node);
         }
     }
 
@@ -930,11 +930,11 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
     if (rsvg_current_state (ctx)->clip_path) {
         RsvgNode *node;
-        node = rsvg_acquire_node_of_type (ctx, rsvg_current_state (ctx)->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
+        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, rsvg_current_state (ctx)->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
         if (node && ((RsvgClipPath *) node)->units == objectBoundingBox)
             lateclip = (RsvgClipPath *) node;
         else
-            rsvg_release_node (ctx, node);
+            rsvg_drawing_ctx_release_node (ctx, node);
     }
 
     if (state->opacity == 0xFF
@@ -951,11 +951,11 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
         output = render->surfaces_stack->data;
         render->surfaces_stack = g_list_delete_link (render->surfaces_stack, render->surfaces_stack);
 
-        filter = rsvg_acquire_node_of_type (ctx, state->filter, RSVG_NODE_TYPE_FILTER);
+        filter = rsvg_drawing_ctx_acquire_node_of_type (ctx, state->filter, RSVG_NODE_TYPE_FILTER);
         if (filter) {
             needs_destroy = TRUE;
             surface = rsvg_filter_render ((RsvgFilter *) filter, output, ctx, &render->bbox, "2103");
-            rsvg_release_node (ctx, filter);
+            rsvg_drawing_ctx_release_node (ctx, filter);
 
             /* Don't destroy the output surface, it's owned by child_cr */
         }
@@ -972,7 +972,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
     if (lateclip) {
         rsvg_cairo_clip (ctx, lateclip, &render->bbox);
-        rsvg_release_node (ctx, (RsvgNode *) lateclip);
+        rsvg_drawing_ctx_release_node (ctx, (RsvgNode *) lateclip);
     }
 
     cairo_set_operator (render->cr, state->comp_op);
@@ -980,10 +980,10 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     if (state->mask) {
         RsvgNode *mask;
 
-        mask = rsvg_acquire_node_of_type (ctx, state->mask, RSVG_NODE_TYPE_MASK);
+        mask = rsvg_drawing_ctx_acquire_node_of_type (ctx, state->mask, RSVG_NODE_TYPE_MASK);
         if (mask) {
             rsvg_cairo_generate_mask (render->cr, (RsvgMask *) mask, ctx, &render->bbox);
-            rsvg_release_node (ctx, mask);
+            rsvg_drawing_ctx_release_node (ctx, mask);
         }
     } else if (state->opacity != 0xFF)
         cairo_paint_with_alpha (render->cr, (double) state->opacity / 255.0);

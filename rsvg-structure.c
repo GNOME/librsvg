@@ -180,11 +180,11 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     if (use->link == NULL)
       return;
-    child = rsvg_acquire_node (ctx, use->link);
+    child = rsvg_drawing_ctx_acquire_node (ctx, use->link);
     if (!child)
         return;
     else if (rsvg_node_is_ancestor (child, self)) {     /* or, if we're <use>'ing ourself */
-        rsvg_release_node (ctx, child);
+        rsvg_drawing_ctx_release_node (ctx, child);
         return;
     }
 
@@ -235,7 +235,7 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
             rsvg_drawing_ctx_pop_view_box (ctx);
     }
 
-    rsvg_release_node (ctx, child);
+    rsvg_drawing_ctx_release_node (ctx, child);
 }
 
 static void

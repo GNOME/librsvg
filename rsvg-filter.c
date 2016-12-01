@@ -3778,7 +3778,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self, RsvgFilterCon
     if (!upself->href)
         return NULL;
 
-    drawable = rsvg_acquire_node (ctx, upself->href->str);
+    drawable = rsvg_drawing_ctx_acquire_node (ctx, upself->href->str);
     if (!drawable)
         return NULL;
 
@@ -3786,7 +3786,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self, RsvgFilterCon
 
     result = rsvg_get_surface_of_node (ctx, drawable, context->width, context->height);
 
-    rsvg_release_node (ctx, drawable);
+    rsvg_drawing_ctx_release_node (ctx, drawable);
 
     return result;
 }

@@ -2202,7 +2202,7 @@ rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
 }
 
 /*
- * rsvg_acquire_node:
+ * rsvg_drawing_ctx_acquire_node:
  * @ctx: The drawing context in use
  * @url: The IRI to lookup, or %NULL
  *
@@ -2211,7 +2211,7 @@ rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
  * infinite loops.
  *
  * Nodes acquired by this function must be released using
- * rsvg_release_node() in reverse acquiring order.
+ * rsvg_drawing_ctx_release_node() in reverse acquiring order.
  *
  * Note that if you acquire a node, you have to release it before trying to
  * acquire it again.  If you acquire a node "#foo" and don't release it before
@@ -2221,7 +2221,7 @@ rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
  *          is %NULL or it does not reference a node.
  */
 RsvgNode *
-rsvg_acquire_node (RsvgDrawingCtx * ctx, const char *url)
+rsvg_drawing_ctx_acquire_node (RsvgDrawingCtx * ctx, const char *url)
 {
   RsvgNode *node;
 
@@ -2241,7 +2241,7 @@ rsvg_acquire_node (RsvgDrawingCtx * ctx, const char *url)
 }
 
 /**
- * rsvg_acquire_node_of_type:
+ * rsvg_drawing_ctx_acquire_node_of_type:
  * @ctx: The drawing context in use
  * @url: The IRI to lookup
  * @type: Type which the node must have
@@ -2254,7 +2254,7 @@ rsvg_acquire_node (RsvgDrawingCtx * ctx, const char *url)
  * the object referenced by the IRI is not a marker.
  *
  * Nodes acquired by this function must be released using
- * rsvg_release_node() in reverse acquiring order.
+ * rsvg_drawing_ctx_release_node() in reverse acquiring order.
  *
  * Note that if you acquire a node, you have to release it before trying to
  * acquire it again.  If you acquire a node "#foo" and don't release it before
@@ -2265,13 +2265,13 @@ rsvg_acquire_node (RsvgDrawingCtx * ctx, const char *url)
  *          the node referenced by @url is not of the specified @type.
  */
 RsvgNode *
-rsvg_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, RsvgNodeType type)
+rsvg_drawing_ctx_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, RsvgNodeType type)
 {
     RsvgNode *node;
 
-    node = rsvg_acquire_node (ctx, url);
+    node = rsvg_drawing_ctx_acquire_node (ctx, url);
     if (node == NULL || rsvg_node_type (node) != type) {
-        rsvg_release_node (ctx, node);
+        rsvg_drawing_ctx_release_node (ctx, node);
         return NULL;
     }
 
@@ -2279,17 +2279,17 @@ rsvg_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, RsvgNodeType t
 }
 
 /*
- * rsvg_release_node:
+ * rsvg_drawing_ctx_release_node:
  * @ctx: The drawing context the node was acquired from
  * @node: Node to release
  *
- * Releases a node previously acquired via rsvg_acquire_node() or
- * rsvg_acquire_node_of_type().
+ * Releases a node previously acquired via rsvg_drawing_ctx_acquire_node() or
+ * rsvg_drawing_ctx_acquire_node_of_type().
  *
  * if @node is %NULL, this function does nothing.
  */
 void
-rsvg_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
+rsvg_drawing_ctx_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
 {
   if (node == NULL)
     return;

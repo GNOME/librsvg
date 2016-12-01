@@ -126,7 +126,7 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
     gdouble rotation;
     RsvgState *state = rsvg_current_state (ctx);
 
-    self = (RsvgMarker *) rsvg_acquire_node_of_type (ctx, marker_name, RSVG_NODE_TYPE_MARKER);
+    self = (RsvgMarker *) rsvg_drawing_ctx_acquire_node_of_type (ctx, marker_name, RSVG_NODE_TYPE_MARKER);
     if (self == NULL)
         return;
 
@@ -200,5 +200,5 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
     if (self->vbox.active)
         rsvg_drawing_ctx_pop_view_box (ctx);
 
-    rsvg_release_node (ctx, (RsvgNode *) self);
+    rsvg_drawing_ctx_release_node (ctx, (RsvgNode *) self);
 }
