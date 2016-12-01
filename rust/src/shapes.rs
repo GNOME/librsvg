@@ -24,7 +24,7 @@ impl NodePath {
     }
 }
 
-impl Node for NodePath {
+impl NodeTrait for NodePath {
     fn set_atts (&self, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
         if let Some (value) = property_bag::lookup (pbag, "d") {
             let mut builder = self.builder.borrow_mut ();

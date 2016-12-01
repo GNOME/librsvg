@@ -9,7 +9,7 @@ use property_bag::RsvgPropertyBag;
 
 use state::RsvgState;
 
-pub trait Node {
+pub trait NodeTrait {
     fn set_atts (&self, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag);
     fn draw (&self, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
 }
