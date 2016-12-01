@@ -272,21 +272,21 @@ impl Clone for Gradient {
 }
 
 trait FallbackSource {
-    fn get_fallback (&mut self, name: &str) -> Option<Gradient>;
+    fn get_fallback (&mut self, name: &str) -> Option<Box<Gradient>>;
 }
 
 fn resolve_gradient (gradient: &Gradient, fallback_source: &mut FallbackSource) -> Gradient {
     let mut result = gradient.clone ();
 
     while !result.is_resolved () {
-        let mut opt_fallback: Option<Gradient> = None;
+        let mut opt_fallback: Option<Box<Gradient>> = None;
 
         if let Some (ref fallback_name) = result.common.fallback {
             opt_fallback = fallback_source.get_fallback (&**fallback_name);
         }
 
         if let Some (fallback_gradient) = opt_fallback {
-            result.resolve_from_fallback (&fallback_gradient);
+            result.resolve_from_fallback (&*fallback_gradient);
         } else {
             result.resolve_from_defaults ();
             break;
@@ -323,7 +323,7 @@ extern "C" {
 }
 
 impl FallbackSource for NodeFallbackSource {
-    fn get_fallback (&mut self, name: &str) -> Option<Gradient> {
+    fn get_fallback (&mut self, name: &str) -> Option<Box<Gradient>> {
         let fallback_node = drawing_ctx::acquire_node (self.draw_ctx, name);
 
         if fallback_node.is_null () {
@@ -338,12 +338,9 @@ impl FallbackSource for NodeFallbackSource {
             return None;
         }
 
-        let fallback_gradient: &mut Gradient = unsafe { &mut (*raw_fallback_gradient) };
-        let cloned = fallback_gradient.clone ();
+        let fallback_gradient = unsafe { Box::from_raw (raw_fallback_gradient) };
 
-        unsafe { gradient_destroy (raw_fallback_gradient); }
-
-        return Some (cloned);
+        return Some (fallback_gradient);
     }
 }
 
