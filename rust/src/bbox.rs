@@ -5,9 +5,9 @@ use self::cairo::MatrixTrait;
 /* Keep this in sync with ../../rsvg-private.h:RsvgBbox */
 #[repr(C)]
 pub struct RsvgBbox {
-    rect:   cairo::Rectangle,
-    affine: cairo::Matrix,
-    virgin: bool
+    pub rect:   cairo::Rectangle,
+    pub affine: cairo::Matrix,
+    pub virgin: bool
 }
 
 #[no_mangle]

@@ -37,6 +37,7 @@ PangoContext    *rsvg_cairo_create_pango_context    (RsvgDrawingCtx *ctx);
 G_GNUC_INTERNAL
 void         rsvg_cairo_render_pango_layout	    (RsvgDrawingCtx *ctx, PangoLayout *layout, 
                                                  double x, double y);
+
 G_GNUC_INTERNAL
 void         rsvg_cairo_render_path_builder     (RsvgDrawingCtx *ctx, 
                                                  RsvgPathBuilder *builder);

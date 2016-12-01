@@ -1,4 +1,9 @@
+extern crate glib;
+extern crate cairo;
+extern crate cairo_sys;
 extern crate libc;
+
+use self::glib::translate::*;
 
 use state::RsvgState;
 use path_builder::RsvgPathBuilder;
@@ -16,12 +21,20 @@ extern "C" {
                                            out_x: *mut f64,
                                            out_y: *mut f64);
 
+    fn rsvg_drawing_ctx_push_view_box (draw_ctx: *const RsvgDrawingCtx,
+                                       width:     f64,
+                                       height:    f64);
+
+    fn rsvg_drawing_ctx_pop_view_box (draw_ctx: *const RsvgDrawingCtx);
+
     fn rsvg_state_reinherit_top (draw_ctx: *const RsvgDrawingCtx,
                                  state: *mut RsvgState,
                                  dominate: libc::c_int);
 
     fn rsvg_render_path_builder (draw_ctx: *const RsvgDrawingCtx,
                                  builder: *const RsvgPathBuilder);
+
+    fn rsvg_cairo_get_cairo_context (draw_ctx: *const RsvgDrawingCtx) -> *mut cairo_sys::cairo_t;
 }
 
 pub fn get_dpi (draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
@@ -47,6 +60,17 @@ pub fn get_view_box_size (draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
     (w, h)
 }
 
+pub fn push_view_box (draw_ctx: *const RsvgDrawingCtx,
+                      width:     f64,
+                      height:    f64)
+{
+    unsafe { rsvg_drawing_ctx_push_view_box (draw_ctx, width, height); }
+}
+
+pub fn pop_view_box (draw_ctx: *const RsvgDrawingCtx) {
+    unsafe { rsvg_drawing_ctx_pop_view_box (draw_ctx); }
+}
+
 pub fn state_reinherit_top (draw_ctx: *const RsvgDrawingCtx,
                             state: *mut RsvgState,
                             dominate: i32) {
@@ -57,4 +81,15 @@ pub fn render_path_builder (draw_ctx: *const RsvgDrawingCtx,
                             builder: &RsvgPathBuilder)
 {
     unsafe { rsvg_render_path_builder (draw_ctx, builder); }
+}
+
+pub fn get_cairo_context (draw_ctx: *const RsvgDrawingCtx) -> cairo::Context
+{
+    unsafe {
+        let raw_cr = rsvg_cairo_get_cairo_context (draw_ctx);
+
+        let cr = cairo::Context::from_glib_none (raw_cr);
+
+        cr
+    }
 }
