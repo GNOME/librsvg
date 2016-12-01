@@ -99,6 +99,18 @@ Gradient *gradient_linear_new (RsvgLength     *x1,
 
 /* Implemented in rust/src/gradient.rs */
 G_GNUC_INTERNAL
+Gradient *gradient_radial_new (RsvgLength     *cx,
+                               RsvgLength     *cy,
+                               RsvgLength     *r,
+                               RsvgLength     *fx,
+                               RsvgLength     *fy,
+                               gboolean       *obj_bbox,
+                               cairo_matrix_t *affine,
+                               cairo_extend_t *extend,
+                               const char     *fallback_name);
+
+/* Implemented in rust/src/gradient.rs */
+G_GNUC_INTERNAL
 void gradient_destroy (Gradient *gradient);
 
 G_GNUC_INTERNAL
