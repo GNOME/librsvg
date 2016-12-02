@@ -40,25 +40,25 @@ rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     RsvgState *state;
     GSList *stacksave;
 
-    rsvg_state_push (ctx);
-
-    state = rsvg_node_get_state (self);
-
     stacksave = ctx->drawsub_stack;
     if (stacksave) {
         if (stacksave->data != self)
-            goto out;
+            return;
 
         ctx->drawsub_stack = stacksave->next;
     }
-    if (!state->visible)
-        goto out;
 
-    self->draw (self, ctx, dominate);
+    state = rsvg_node_get_state (self);
+
+    if (state->visible) {
+        rsvg_state_push (ctx);
+
+        self->draw (self, ctx, dominate);
+
+        rsvg_state_pop (ctx);
+    }
+
     ctx->drawsub_stack = stacksave;
-
-out:
-    rsvg_state_pop (ctx);
 }
 
 static gboolean
