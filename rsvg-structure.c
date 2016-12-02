@@ -40,19 +40,25 @@ rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     RsvgState *state;
     GSList *stacksave;
 
+    rsvg_state_push (ctx);
+
     state = rsvg_node_get_state (self);
 
     stacksave = ctx->drawsub_stack;
     if (stacksave) {
         if (stacksave->data != self)
-            return;
+            goto out;
+
         ctx->drawsub_stack = stacksave->next;
     }
     if (!state->visible)
-        return;
+        goto out;
 
     self->draw (self, ctx, dominate);
     ctx->drawsub_stack = stacksave;
+
+out:
+    rsvg_state_pop (ctx);
 }
 
 static gboolean
@@ -62,9 +68,7 @@ draw_child (RsvgNode *node, gpointer data)
 
     ctx = data;
 
-    rsvg_state_push (ctx);
     rsvg_node_draw (node, ctx, 0);
-    rsvg_state_pop (ctx);
 
     return TRUE;
 }
@@ -194,9 +198,7 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         cairo_matrix_multiply (&state->affine, &affine, &state->affine);
 
         rsvg_push_discrete_layer (ctx);
-        rsvg_state_push (ctx);
         rsvg_node_draw (child, ctx, 1);
-        rsvg_state_pop (ctx);
         rsvg_pop_discrete_layer (ctx);
     } else {
         RsvgNodeSymbol *symbol = (RsvgNodeSymbol *) child;
@@ -467,9 +469,7 @@ draw_child_if_cond_true_and_stop (RsvgNode *node, gpointer data)
     ctx = data;
 
     if (rsvg_node_get_state (node)->cond_true) {
-        rsvg_state_push (ctx);
         rsvg_node_draw (node, ctx, 0);
-        rsvg_state_pop (ctx);
 
         return FALSE;
     } else {

@@ -110,9 +110,7 @@ draw_child (RsvgNode *node, gpointer data)
 
     ctx = data;
 
-    rsvg_state_push (ctx);
     rsvg_node_draw (node, ctx, 0);
-    rsvg_state_pop (ctx);
 
     return TRUE;
 }

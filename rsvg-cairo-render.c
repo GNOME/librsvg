@@ -220,13 +220,12 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
         drawsub = rsvg_node_get_parent (drawsub);
     }
 
-    rsvg_state_push (draw);
     cairo_save (cr);
 
     rsvg_node_draw (handle->priv->treebase, draw, 0);
 
     cairo_restore (cr);
-    rsvg_state_pop (draw);
+
     rsvg_drawing_ctx_free (draw);
 
     return TRUE;

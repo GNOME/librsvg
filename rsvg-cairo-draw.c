@@ -924,9 +924,7 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
     render = rsvg_cairo_render_new (cr, width, height);
     ctx->render = (RsvgRender *) render;
 
-    rsvg_state_push (ctx);
     rsvg_node_draw (drawable, ctx, 0);
-    rsvg_state_pop (ctx);
 
     cairo_destroy (cr);
 
