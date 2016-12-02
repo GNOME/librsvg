@@ -382,7 +382,7 @@ node_set_atts (RsvgNode * node, RsvgHandle * ctx, const NodeCreator *creator, Rs
         const char *id;
         const char *klazz;
 
-        node->set_atts (node, ctx, atts);
+        node->vtable->set_atts (node, ctx, atts);
 
         /* The "svg" node is special; it will load its id/class
          * attributes until the end, when rsvg_end_element() calls
@@ -890,9 +890,14 @@ rsvg_new_node_chars (const char *text,
                      int len)
 {
     RsvgNodeChars *self;
+    RsvgNodeVtable vtable = {
+        _rsvg_node_chars_free,
+        NULL,
+        NULL
+    };
 
     self = g_new (RsvgNodeChars, 1);
-    _rsvg_node_init (&self->super, RSVG_NODE_TYPE_CHARS);
+    _rsvg_node_init (&self->super, RSVG_NODE_TYPE_CHARS, &vtable);
 
     if (!g_utf8_validate (text, len, NULL)) {
         char *utf8;
@@ -903,7 +908,6 @@ rsvg_new_node_chars (const char *text,
         self->contents = g_string_new_len (text, len);
     }
 
-    self->super.free = _rsvg_node_chars_free;
     self->super.state->cond_true = FALSE;
 
     return self;

@@ -225,8 +225,14 @@ RsvgNode *
 rsvg_new_stop (const char *element_name)
 {
     RsvgGradientStop *stop = g_new (RsvgGradientStop, 1);
-    _rsvg_node_init (&stop->super, RSVG_NODE_TYPE_STOP);
-    stop->super.set_atts = rsvg_stop_set_atts;
+    RsvgNodeVtable vtable = {
+        NULL,
+        NULL,
+        rsvg_stop_set_atts
+    };
+
+    _rsvg_node_init (&stop->super, RSVG_NODE_TYPE_STOP, &vtable);
+
     stop->offset = 0;
     stop->rgba = 0xff000000;
     stop->is_valid = FALSE;
@@ -292,8 +298,15 @@ RsvgNode *
 rsvg_new_linear_gradient (const char *element_name)
 {
     RsvgLinearGradient *grad = NULL;
+    RsvgNodeVtable vtable = {
+        rsvg_linear_gradient_free,
+        NULL,
+        rsvg_linear_gradient_set_atts
+    };
+
     grad = g_new (RsvgLinearGradient, 1);
-    _rsvg_node_init (&grad->super, RSVG_NODE_TYPE_LINEAR_GRADIENT);
+    _rsvg_node_init (&grad->super, RSVG_NODE_TYPE_LINEAR_GRADIENT, &vtable);
+
     cairo_matrix_init_identity (&grad->affine);
     grad->x1 = rsvg_length_parse ("0", LENGTH_DIR_HORIZONTAL);
     grad->y1 = grad->y2 = rsvg_length_parse ("0", LENGTH_DIR_VERTICAL);
@@ -301,8 +314,6 @@ rsvg_new_linear_gradient (const char *element_name)
     grad->fallback = NULL;
     grad->obj_bbox = TRUE;
     grad->spread = CAIRO_EXTEND_PAD;
-    grad->super.free = rsvg_linear_gradient_free;
-    grad->super.set_atts = rsvg_linear_gradient_set_atts;
     grad->hasx1 = grad->hasy1 = grad->hasx2 = grad->hasy2 = grad->hasbbox = grad->hasspread =
         grad->hastransform = FALSE;
     return &grad->super;
@@ -374,15 +385,20 @@ RsvgNode *
 rsvg_new_radial_gradient (const char *element_name)
 {
 
+    RsvgNodeVtable vtable = {
+        rsvg_radial_gradient_free,
+        NULL,
+        rsvg_radial_gradient_set_atts
+    };
+
     RsvgRadialGradient *grad = g_new (RsvgRadialGradient, 1);
-    _rsvg_node_init (&grad->super, RSVG_NODE_TYPE_RADIAL_GRADIENT);
+    _rsvg_node_init (&grad->super, RSVG_NODE_TYPE_RADIAL_GRADIENT, &vtable);
+
     cairo_matrix_init_identity (&grad->affine);
     grad->obj_bbox = TRUE;
     grad->spread = CAIRO_EXTEND_PAD;
     grad->fallback = NULL;
     grad->cx = grad->cy = grad->r = grad->fx = grad->fy = rsvg_length_parse ("0.5", LENGTH_DIR_BOTH);
-    grad->super.free = rsvg_radial_gradient_free;
-    grad->super.set_atts = rsvg_radial_gradient_set_atts;
     grad->hascx = grad->hascy = grad->hasfx = grad->hasfy = grad->hasr = grad->hasbbox =
         grad->hasspread = grad->hastransform = FALSE;
     return &grad->super;
@@ -453,7 +469,14 @@ RsvgNode *
 rsvg_new_pattern (const char *element_name)
 {
     RsvgPattern *pattern = g_new (RsvgPattern, 1);
-    _rsvg_node_init (&pattern->super, RSVG_NODE_TYPE_PATTERN);
+    RsvgNodeVtable vtable = {
+        rsvg_pattern_free,
+        NULL,
+        rsvg_pattern_set_atts
+    };
+
+    _rsvg_node_init (&pattern->super, RSVG_NODE_TYPE_PATTERN, &vtable);
+
     cairo_matrix_init_identity (&pattern->affine);
     pattern->obj_bbox = TRUE;
     pattern->obj_cbbox = FALSE;
@@ -461,8 +484,6 @@ rsvg_new_pattern (const char *element_name)
     pattern->fallback = NULL;
     pattern->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
     pattern->vbox.active = FALSE;
-    pattern->super.free = rsvg_pattern_free;
-    pattern->super.set_atts = rsvg_pattern_set_atts;
     pattern->hasx = pattern->hasy = pattern->haswidth = pattern->hasheight = pattern->hasbbox =
         pattern->hascbox = pattern->hasvbox = pattern->hasaspect = pattern->hastransform = FALSE;
     return &pattern->super;

@@ -86,8 +86,12 @@ G_GNUC_INTERNAL
 void _rsvg_node_draw_children   (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
 G_GNUC_INTERNAL
 void _rsvg_node_free        (RsvgNode * self);
+
 G_GNUC_INTERNAL
-void _rsvg_node_init        (RsvgNode * self, RsvgNodeType type);
+void _rsvg_node_init        (RsvgNode * self,
+                             RsvgNodeType type,
+                             RsvgNodeVtable *vtable);
+
 G_GNUC_INTERNAL
 void _rsvg_node_svg_apply_atts  (RsvgNodeSvg * self, RsvgHandle * ctx);
 

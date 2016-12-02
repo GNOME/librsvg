@@ -329,14 +329,18 @@ typedef enum {
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST                /* just a marker; not a valid type */
 } RsvgNodeType;
 
+typedef struct {
+    void (*free) (RsvgNode * self);
+    void (*draw) (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
+    void (*set_atts) (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *atts);
+} RsvgNodeVtable;
+
 struct _RsvgNode {
     RsvgState *state;
     RsvgNode *parent;
     GPtrArray *children;
     RsvgNodeType type;
-    void (*free) (RsvgNode * self);
-    void (*draw) (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
-    void (*set_atts) (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *);
+    RsvgNodeVtable *vtable;
 };
 
 G_GNUC_INTERNAL

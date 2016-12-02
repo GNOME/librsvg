@@ -90,8 +90,15 @@ RsvgNode *
 rsvg_new_marker (const char *element_name)
 {
     RsvgMarker *marker;
+    RsvgNodeVtable vtable = {
+        NULL,
+        NULL,
+        rsvg_node_marker_set_atts
+    };
+
     marker = g_new (RsvgMarker, 1);
-    _rsvg_node_init (&marker->super, RSVG_NODE_TYPE_MARKER);
+    _rsvg_node_init (&marker->super, RSVG_NODE_TYPE_MARKER, &vtable);
+
     marker->orient = 0;
     marker->orientAuto = FALSE;
     marker->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
@@ -99,7 +106,6 @@ rsvg_new_marker (const char *element_name)
     marker->width = marker->height = rsvg_length_parse ("3", LENGTH_DIR_BOTH);
     marker->bbox = TRUE;
     marker->vbox.active = FALSE;
-    marker->super.set_atts = rsvg_node_marker_set_atts;
     return &marker->super;
 }
 

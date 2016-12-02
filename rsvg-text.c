@@ -383,10 +383,15 @@ RsvgNode *
 rsvg_new_text (const char *element_name)
 {
     RsvgNodeText *text;
+    RsvgNodeVtable vtable = {
+        NULL,
+        _rsvg_node_text_draw,
+        _rsvg_node_text_set_atts
+    };
+
     text = g_new (RsvgNodeText, 1);
-    _rsvg_node_init (&text->super, RSVG_NODE_TYPE_TEXT);
-    text->super.draw = _rsvg_node_text_draw;
-    text->super.set_atts = _rsvg_node_text_set_atts;
+    _rsvg_node_init (&text->super, RSVG_NODE_TYPE_TEXT, &vtable);
+
     text->x = text->y = text->dx = text->dy = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     return &text->super;
 }
@@ -466,9 +471,15 @@ RsvgNode *
 rsvg_new_tspan (const char *element_name)
 {
     RsvgNodeText *text;
+    RsvgNodeVtable vtable = {
+        NULL,
+        NULL,
+        _rsvg_node_tspan_set_atts
+    };
+
     text = g_new0 (RsvgNodeText, 1);
-    _rsvg_node_init (&text->super, RSVG_NODE_TYPE_TSPAN);
-    text->super.set_atts = _rsvg_node_tspan_set_atts;
+    _rsvg_node_init (&text->super, RSVG_NODE_TYPE_TSPAN, &vtable);
+
     text->dx = text->dy = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     return &text->super;
 }
@@ -536,10 +547,15 @@ RsvgNode *
 rsvg_new_tref (const char *element_name)
 {
     RsvgNodeTref *text;
+    RsvgNodeVtable vtable = {
+        rsvg_node_tref_free,
+        NULL,
+        _rsvg_node_tref_set_atts
+    };
+
     text = g_new (RsvgNodeTref, 1);
-    _rsvg_node_init (&text->super, RSVG_NODE_TYPE_TREF);
-    text->super.free = rsvg_node_tref_free;
-    text->super.set_atts = _rsvg_node_tref_set_atts;
+    _rsvg_node_init (&text->super, RSVG_NODE_TYPE_TREF, &vtable);
+
     text->link = NULL;
     return &text->super;
 }

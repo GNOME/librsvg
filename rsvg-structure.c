@@ -53,7 +53,7 @@ rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     if (state->visible) {
         rsvg_state_push (ctx);
 
-        self->draw (self, ctx, dominate);
+        self->vtable->draw (self, ctx, dominate);
 
         rsvg_state_pop (ctx);
     }
@@ -102,15 +102,32 @@ _rsvg_node_dont_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * a
 
 void
 _rsvg_node_init (RsvgNode * self,
-                 RsvgNodeType type)
+                 RsvgNodeType type,
+                 RsvgNodeVtable *vtable)
 {
     self->type = type;
     self->parent = NULL;
     self->children = g_ptr_array_new ();
     self->state = rsvg_state_new ();
-    self->free = _rsvg_node_free;
-    self->draw = _rsvg_node_draw_nothing;
-    self->set_atts = _rsvg_node_dont_set_atts;
+    self->vtable = g_new (RsvgNodeVtable, 1);
+
+    if (vtable->free) {
+        self->vtable->free = vtable->free;
+    } else {
+        self->vtable->free = _rsvg_node_free;
+    }
+
+    if (vtable->draw) {
+        self->vtable->draw = vtable->draw;
+    } else {
+        self->vtable->draw = _rsvg_node_draw_nothing;
+    }
+
+    if (vtable->set_atts) {
+        self->vtable->set_atts = vtable->set_atts;
+    } else {
+        self->vtable->set_atts = _rsvg_node_dont_set_atts;
+    }
 }
 
 void
@@ -128,6 +145,9 @@ _rsvg_node_free (RsvgNode * self)
     self->parent = NULL;
     self->type = RSVG_NODE_TYPE_INVALID;
 
+    g_free (self->vtable);
+    self->vtable = NULL;
+
     g_free (self);
 }
 
@@ -135,9 +155,15 @@ RsvgNode *
 rsvg_new_group (const char *element_name)
 {
     RsvgNodeGroup *group;
+    RsvgNodeVtable vtable = {
+        NULL,
+        _rsvg_node_draw_children,
+        NULL
+    };
+
     group = g_new (RsvgNodeGroup, 1);
-    _rsvg_node_init (&group->super, RSVG_NODE_TYPE_GROUP);
-    group->super.draw = _rsvg_node_draw_children;
+    _rsvg_node_init (&group->super, RSVG_NODE_TYPE_GROUP, &vtable);
+
     return &group->super;
 }
 
@@ -344,7 +370,7 @@ _rsvg_node_svg_apply_atts (RsvgNodeSvg * self, RsvgHandle * ctx)
 }
 
 static void
-_rsvg_svg_free (RsvgNode * self)
+rsvg_node_svg_free (RsvgNode * self)
 {
     RsvgNodeSvg *svg = (RsvgNodeSvg *) self;
 
@@ -360,17 +386,21 @@ RsvgNode *
 rsvg_new_svg (const char *element_name)
 {
     RsvgNodeSvg *svg;
+    RsvgNodeVtable vtable = {
+        rsvg_node_svg_free,
+        rsvg_node_svg_draw,
+        rsvg_node_svg_set_atts
+    };
+
     svg = g_new (RsvgNodeSvg, 1);
-    _rsvg_node_init (&svg->super, RSVG_NODE_TYPE_SVG);
+    _rsvg_node_init (&svg->super, RSVG_NODE_TYPE_SVG, &vtable);
+
     svg->vbox.active = FALSE;
     svg->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
     svg->x = rsvg_length_parse ("0", LENGTH_DIR_HORIZONTAL);
     svg->y = rsvg_length_parse ("0", LENGTH_DIR_VERTICAL);
     svg->w = rsvg_length_parse ("100%", LENGTH_DIR_HORIZONTAL);
     svg->h = rsvg_length_parse ("100%", LENGTH_DIR_VERTICAL);
-    svg->super.draw = rsvg_node_svg_draw;
-    svg->super.free = _rsvg_svg_free;
-    svg->super.set_atts = rsvg_node_svg_set_atts;
     svg->atts = NULL;
     return &svg->super;
 }
@@ -410,11 +440,15 @@ RsvgNode *
 rsvg_new_use (const char *element_name)
 {
     RsvgNodeUse *use;
+    RsvgNodeVtable vtable = {
+        rsvg_node_use_free,
+        rsvg_node_use_draw,
+        rsvg_node_use_set_atts
+    };
+
     use = g_new (RsvgNodeUse, 1);
-    _rsvg_node_init (&use->super, RSVG_NODE_TYPE_USE);
-    use->super.draw = rsvg_node_use_draw;
-    use->super.free = rsvg_node_use_free;
-    use->super.set_atts = rsvg_node_use_set_atts;
+    _rsvg_node_init (&use->super, RSVG_NODE_TYPE_USE, &vtable);
+
     use->x = rsvg_length_parse ("0", LENGTH_DIR_HORIZONTAL);
     use->y = rsvg_length_parse ("0", LENGTH_DIR_VERTICAL);
     use->w = rsvg_length_parse ("0", LENGTH_DIR_HORIZONTAL);
@@ -440,12 +474,17 @@ RsvgNode *
 rsvg_new_symbol (const char *element_name)
 {
     RsvgNodeSymbol *symbol;
+    RsvgNodeVtable vtable = {
+        NULL,
+        NULL,
+        rsvg_node_symbol_set_atts
+    };
+
     symbol = g_new (RsvgNodeSymbol, 1);
-    _rsvg_node_init (&symbol->super, RSVG_NODE_TYPE_SYMBOL);
+    _rsvg_node_init (&symbol->super, RSVG_NODE_TYPE_SYMBOL, &vtable);
+
     symbol->vbox.active = FALSE;
     symbol->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-    symbol->super.draw = _rsvg_node_draw_nothing;
-    symbol->super.set_atts = rsvg_node_symbol_set_atts;
     return &symbol->super;
 }
 
@@ -453,9 +492,15 @@ RsvgNode *
 rsvg_new_defs (const char *element_name)
 {
     RsvgNodeGroup *group;
+    RsvgNodeVtable vtable = {
+        NULL,
+        NULL,
+        NULL,
+    };
+
     group = g_new (RsvgNodeGroup, 1);
-    _rsvg_node_init (&group->super, RSVG_NODE_TYPE_DEFS);
-    group->super.draw = _rsvg_node_draw_nothing;
+    _rsvg_node_init (&group->super, RSVG_NODE_TYPE_DEFS, &vtable);
+
     return &group->super;
 }
 
@@ -491,8 +536,14 @@ RsvgNode *
 rsvg_new_switch (const char *element_name)
 {
     RsvgNodeGroup *group;
+    RsvgNodeVtable vtable = {
+        NULL,
+        _rsvg_node_switch_draw,
+        NULL
+    };
+
     group = g_new (RsvgNodeGroup, 1);
-    _rsvg_node_init (&group->super, RSVG_NODE_TYPE_SWITCH);
-    group->super.draw = _rsvg_node_switch_draw;
+    _rsvg_node_init (&group->super, RSVG_NODE_TYPE_SWITCH, &vtable);
+
     return &group->super;
 }

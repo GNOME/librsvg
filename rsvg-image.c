@@ -231,14 +231,18 @@ RsvgNode *
 rsvg_new_image (const char *element_name)
 {
     RsvgNodeImage *image;
+    RsvgNodeVtable vtable = {
+        rsvg_node_image_free,
+        rsvg_node_image_draw,
+        rsvg_node_image_set_atts
+    };
+
     image = g_new (RsvgNodeImage, 1);
-    _rsvg_node_init (&image->super, RSVG_NODE_TYPE_IMAGE);
+    _rsvg_node_init (&image->super, RSVG_NODE_TYPE_IMAGE, &vtable);
+
     g_assert (image->super.state);
     image->surface = NULL;
     image->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
     image->x = image->y = image->w = image->h = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
-    image->super.free = rsvg_node_image_free;
-    image->super.draw = rsvg_node_image_draw;
-    image->super.set_atts = rsvg_node_image_set_atts;
     return &image->super;
 }

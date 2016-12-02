@@ -87,12 +87,16 @@ RsvgNode *
 rsvg_new_path (const char *element_name)
 {
     RsvgNodePath *path;
+    RsvgNodeVtable vtable = {
+        rsvg_node_path_free,
+        rsvg_node_path_draw,
+        rsvg_node_path_set_atts
+    };
+
     path = g_new (RsvgNodePath, 1);
-    _rsvg_node_init (&path->super, RSVG_NODE_TYPE_PATH);
+    _rsvg_node_init (&path->super, RSVG_NODE_TYPE_PATH, &vtable);
+
     path->builder = NULL;
-    path->super.free = rsvg_node_path_free;
-    path->super.draw = rsvg_node_path_draw;
-    path->super.set_atts = rsvg_node_path_set_atts;
 
     return &path->super;
 }
@@ -197,11 +201,15 @@ static RsvgNode *
 rsvg_new_any_poly (RsvgNodeType type)
 {
     RsvgNodePoly *poly;
+    RsvgNodeVtable vtable = {
+        _rsvg_node_poly_free,
+        _rsvg_node_poly_draw,
+        _rsvg_node_poly_set_atts
+    };
+
     poly = g_new (RsvgNodePoly, 1);
-    _rsvg_node_init (&poly->super, type);
-    poly->super.free = _rsvg_node_poly_free;
-    poly->super.draw = _rsvg_node_poly_draw;
-    poly->super.set_atts = _rsvg_node_poly_set_atts;
+    _rsvg_node_init (&poly->super, type, &vtable);
+
     poly->builder = NULL;
     return &poly->super;
 }
@@ -270,10 +278,15 @@ RsvgNode *
 rsvg_new_line (const char *element_name)
 {
     RsvgNodeLine *line;
+    RsvgNodeVtable vtable = {
+        NULL,
+        _rsvg_node_line_draw,
+        _rsvg_node_line_set_atts
+    };
+
     line = g_new (RsvgNodeLine, 1);
-    _rsvg_node_init (&line->super, RSVG_NODE_TYPE_LINE);
-    line->super.draw = _rsvg_node_line_draw;
-    line->super.set_atts = _rsvg_node_line_set_atts;
+    _rsvg_node_init (&line->super, RSVG_NODE_TYPE_LINE, &vtable);
+
     line->x1 = line->x2 = line->y1 = line->y2 = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     return &line->super;
 }
@@ -454,10 +467,15 @@ RsvgNode *
 rsvg_new_rect (const char *element_name)
 {
     RsvgNodeRect *rect;
+    RsvgNodeVtable vtable = {
+        NULL,
+        _rsvg_node_rect_draw,
+        _rsvg_node_rect_set_atts
+    };
+
     rect = g_new (RsvgNodeRect, 1);
-    _rsvg_node_init (&rect->super, RSVG_NODE_TYPE_RECT);
-    rect->super.draw = _rsvg_node_rect_draw;
-    rect->super.set_atts = _rsvg_node_rect_set_atts;
+    _rsvg_node_init (&rect->super, RSVG_NODE_TYPE_RECT, &vtable);
+
     rect->x = rect->y = rect->w = rect->h = rect->rx = rect->ry = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     rect->got_rx = rect->got_ry = FALSE;
     return &rect->super;
@@ -537,10 +555,15 @@ RsvgNode *
 rsvg_new_circle (const char *element_name)
 {
     RsvgNodeCircle *circle;
+    RsvgNodeVtable vtable = {
+        NULL,
+        _rsvg_node_circle_draw,
+        _rsvg_node_circle_set_atts
+    };
+
     circle = g_new (RsvgNodeCircle, 1);
-    _rsvg_node_init (&circle->super, RSVG_NODE_TYPE_CIRCLE);
-    circle->super.draw = _rsvg_node_circle_draw;
-    circle->super.set_atts = _rsvg_node_circle_set_atts;
+    _rsvg_node_init (&circle->super, RSVG_NODE_TYPE_CIRCLE, &vtable);
+
     circle->cx = circle->cy = circle->r = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     return &circle->super;
 }
@@ -622,10 +645,15 @@ RsvgNode *
 rsvg_new_ellipse (const char *element_name)
 {
     RsvgNodeEllipse *ellipse;
+    RsvgNodeVtable vtable = {
+        NULL,
+        _rsvg_node_ellipse_draw,
+        _rsvg_node_ellipse_set_atts
+    };
+
     ellipse = g_new (RsvgNodeEllipse, 1);
-    _rsvg_node_init (&ellipse->super, RSVG_NODE_TYPE_ELLIPSE);
-    ellipse->super.draw = _rsvg_node_ellipse_draw;
-    ellipse->super.set_atts = _rsvg_node_ellipse_set_atts;
+    _rsvg_node_init (&ellipse->super, RSVG_NODE_TYPE_ELLIPSE, &vtable);
+
     ellipse->cx = ellipse->cy = ellipse->rx = ellipse->ry = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     return &ellipse->super;
 }
