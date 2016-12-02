@@ -5,12 +5,11 @@ extern crate libc;
 
 use self::glib::translate::*;
 
-use state::RsvgState;
+use node::RsvgNode;
 use path_builder::RsvgPathBuilder;
+use state::RsvgState;
 
 pub enum RsvgDrawingCtx {}
-
-pub enum RsvgNode {}
 
 extern "C" {
     fn rsvg_drawing_ctx_get_dpi (draw_ctx: *const RsvgDrawingCtx,

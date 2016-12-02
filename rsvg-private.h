@@ -279,6 +279,7 @@ typedef enum {
     objectBoundingBox, userSpaceOnUse
 } RsvgCoordUnits;
 
+/* Keep this in sync with rust/src/node.rs:NodeType */
 typedef enum {
     RSVG_NODE_TYPE_INVALID = 0,
 

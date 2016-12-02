@@ -54,6 +54,10 @@ pub use length::{
     rsvg_length_hand_normalize,
 };
 
+pub use node::{
+    rsvg_node_get_type,
+};
+
 pub use viewbox::{
     RsvgViewBox
 };
