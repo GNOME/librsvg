@@ -404,7 +404,6 @@ node_set_atts (RsvgNode * node, RsvgHandle * ctx, const NodeCreator *creator, Rs
 static void
 rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag * atts)
 {
-    /*replace this stuff with a hash for fast reading! */
     const NodeCreator *creator;
     RsvgNode *newnode = NULL;
 
