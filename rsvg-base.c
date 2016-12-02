@@ -1580,12 +1580,10 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         }
 
         rsvg_state_push (draw);
-        cairo_save (cr);
 
         rsvg_node_draw (handle->priv->treebase, draw, 0);
         bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
-        cairo_restore (cr);
         rsvg_state_pop (draw);
         rsvg_drawing_ctx_free (draw);
         cairo_destroy (cr);
@@ -1677,12 +1675,10 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     }
 
     rsvg_state_push (draw);
-    cairo_save (cr);
 
     rsvg_node_draw (handle->priv->treebase, draw, 0);
     bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
-    cairo_restore (cr);
     rsvg_state_pop (draw);
     rsvg_drawing_ctx_free (draw);
 
