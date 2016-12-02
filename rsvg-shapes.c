@@ -53,8 +53,8 @@ rsvg_node_path_free (RsvgNode * self)
     RsvgNodePath *path = (RsvgNodePath *) self;
     if (path->builder)
         rsvg_path_builder_destroy (path->builder);
-    _rsvg_node_finalize (&path->super);
-    g_free (path);
+
+    _rsvg_node_free (self);
 }
 
 static void
@@ -189,8 +189,8 @@ _rsvg_node_poly_free (RsvgNode * self)
     RsvgNodePoly *poly = (RsvgNodePoly *) self;
     if (poly->builder)
         rsvg_path_builder_destroy (poly->builder);
-    _rsvg_node_finalize (&poly->super);
-    g_free (poly);
+
+    _rsvg_node_free (self);
 }
 
 static RsvgNode *
