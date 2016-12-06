@@ -43,8 +43,6 @@ G_GNUC_INTERNAL
 void	     rsvg_defs_free		(RsvgDefs * defs);
 G_GNUC_INTERNAL
 void	     rsvg_defs_register_node_by_id (RsvgDefs *defs, const char *id, RsvgNode *node);
-G_GNUC_INTERNAL
-void	     rsvg_defs_register_memory  (RsvgDefs * defs, RsvgNode * val);
 
 G_END_DECLS
 #endif
