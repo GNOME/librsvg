@@ -2607,7 +2607,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     for (c = 0; c < 4; c++) {
-        char channel = "rgba"[c]; /* see rsvg_standard_element_start() for where these chars come from */
+        char channel = "rgba"[c]; /* see rsvg_new_node_component_transfer_function() for where these chars come from */
         for (i = 0; i < self->super.children->len; i++) {
             RsvgNode *child_node;
 
