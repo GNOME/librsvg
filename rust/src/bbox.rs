@@ -152,5 +152,5 @@ pub extern fn rsvg_bbox_clip (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox) 
     dst.rect.x = xmin;
     dst.rect.width = xmax - xmin;
     dst.rect.y = ymin;
-    dst.rect.y = ymax - ymin;
+    dst.rect.height = ymax - ymin;
 }
