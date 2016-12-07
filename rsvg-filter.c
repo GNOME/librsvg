@@ -2608,6 +2608,8 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
 
     for (c = 0; c < 4; c++) {
         char channel = "rgba"[c]; /* see rsvg_new_node_component_transfer_function() for where these chars come from */
+        gboolean set_func = FALSE;
+
         for (i = 0; i < self->super.children->len; i++) {
             RsvgNode *child_node;
 
@@ -2618,11 +2620,11 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
                 if (temp->channel == channel) {
                     functions[ctx->channelmap[c]] = temp->function;
                     channels[ctx->channelmap[c]] = temp;
-                    break;
+                    set_func = TRUE;
                 }
             }
         }
-        if (i == self->super.children->len)
+        if (!set_func)
             functions[ctx->channelmap[c]] = identity_component_transfer_func;
 
     }
