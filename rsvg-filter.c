@@ -544,6 +544,17 @@ node_is_filter_primitive (RsvgNode *node)
     return type > RSVG_NODE_TYPE_FILTER_PRIMITIVE_FIRST && type < RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST;
 }
 
+static gboolean
+render_child_if_filter_primitive (RsvgNode *node, gpointer data)
+{
+    RsvgFilterContext *filter_ctx = data;
+
+    if (node_is_filter_primitive (node))
+        rsvg_filter_primitive_render ((RsvgFilterPrimitive *) node, filter_ctx);
+
+    return TRUE;
+}
+
 /**
  * rsvg_filter_render:
  * @self: a pointer to the filter to use
@@ -564,7 +575,6 @@ rsvg_filter_render (RsvgFilter *self,
                     char *channelmap)
 {
     RsvgFilterContext *ctx;
-    RsvgFilterPrimitive *current;
     guint i;
     cairo_surface_t *output;
 
@@ -586,11 +596,7 @@ rsvg_filter_render (RsvgFilter *self,
     for (i = 0; i < 4; i++)
         ctx->channelmap[i] = channelmap[i] - '0';
 
-    for (i = 0; i < self->super.children->len; i++) {
-        current = g_ptr_array_index (self->super.children, i);
-        if (node_is_filter_primitive ((RsvgNode *) current))
-            rsvg_filter_primitive_render (current, ctx);
-    }
+    rsvg_node_foreach_child ((RsvgNode *) self, render_child_if_filter_primitive, ctx);
 
     output = ctx->lastresult.surface;
 
