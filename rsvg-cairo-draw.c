@@ -701,9 +701,28 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
         guint8 *row_data = (pixels + (row * rowstride));
         for (i = 0; i < width; i++) {
             guint32 *pixel = (guint32 *) row_data + i;
-            *pixel = ((((*pixel & 0x00ff0000) >> 16) * 13817 +
-                       ((*pixel & 0x0000ff00) >> 8) * 46518 +
-                       ((*pixel & 0x000000ff)) * 4688) * state->opacity);
+            /*
+             *  Assuming, the pixel is linear RGB (not sRGB)
+             *  y = luminance
+             *  Y = 0.2126 R + 0.7152 G + 0.0722 B
+             *  1.0 opacity = 255
+             *
+             *  When Y = 1.0, pixel for mask should be 0xFFFFFFFF
+             *  	(you get 1.0 luminance from 255 from R, G and B)
+             *
+             *	r_mult = 0xFFFFFFFF / (255.0 * 255.0) * .2126 = 14042.45  ~= 14042
+             *	g_mult = 0xFFFFFFFF / (255.0 * 255.0) * .7152 = 47239.69  ~= 47240
+             *	b_mult = 0xFFFFFFFF / (255.0 * 255.0) * .0722 =  4768.88  ~= 4769
+             *
+             * 	This allows for the following expected behaviour:
+             *  (we only care about the most sig byte)
+             *	if pixel = 0x00FFFFFF, pixel' = 0xFF......
+             *	if pixel = 0x00020202, pixel' = 0x02......
+             *	if pixel = 0x00000000, pixel' = 0x00......
+             */
+            *pixel = ((((*pixel & 0x00ff0000) >> 16) * 14042 +
+                       ((*pixel & 0x0000ff00) >>  8) * 47240 +
+                       ((*pixel & 0x000000ff)      ) * 4769    ) * state->opacity);
         }
     }
 
