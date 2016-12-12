@@ -3949,8 +3949,6 @@ rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self, RsvgFilterContex
     RsvgIRect boundarys;
     RsvgFilterPrimitiveImage *upself;
     RsvgFilterPrimitiveOutput op;
-    int x, y;
-
     cairo_surface_t *output, *img;
 
     upself = (RsvgFilterPrimitiveImage *) self;
@@ -3967,21 +3965,19 @@ rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self, RsvgFilterContex
     img = rsvg_filter_primitive_image_render_in (self, ctx);
     if (img == NULL) {
         img = rsvg_filter_primitive_image_render_ext (self, ctx);
-        x = y = 0;
-    } else {
-        x = boundarys.x0;
-        y = boundarys.y0;
     }
+
     if (img) {
         cairo_t *cr;
 
         cr = cairo_create (output);
-        cairo_set_source_surface (cr, img, x, y);
-        cairo_rectangle (cr, 0, 0,
+        cairo_set_source_surface (cr, img, 0, 0);
+        cairo_rectangle (cr,
+                         boundarys.x0,
+                         boundarys.y0,
                          boundarys.x1 - boundarys.x0,
                          boundarys.y1 - boundarys.y0);
         cairo_clip (cr);
-        cairo_translate (cr, -boundarys.x0, -boundarys.y0);
         cairo_paint (cr);
         cairo_destroy (cr);
 
