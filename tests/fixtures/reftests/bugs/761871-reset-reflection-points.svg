@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 256 128">
+
+<!-- alternating S (or C) and T -->
+<path d="M 10 10       S 10 48 48 48       T 48 10"/>
+<path d="M 60 10       S 60 48 98 48 Q 98 48 98 10"/>
+
+<path d="M 10 60 C 10 60 10 98 48 98       T 48 60"/>
+<path d="M 60 60 C 60 60 60 98 98 98 Q 98 98 98 60"/>
+<g transform='translate (128, 0)'>
+<!-- alternating Q (or T) and S -->
+<path d="M 10 10       T 10 48       S 48 48 48 10"/>
+<path d="M 60 10       T 60 48 C 60 48 98 48 98 10"/>
+
+<path d="M 10 60 Q 10 60 10 98       S 48 98 48 60"/>
+<path d="M 60 60 Q 60 60 60 98 C 60 98 98 98 98 60"/>
+</g>
+</svg>
+
