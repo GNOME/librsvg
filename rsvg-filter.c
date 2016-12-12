@@ -2969,20 +2969,36 @@ struct _RsvgFilterPrimitiveComposite {
     int k1, k2, k3, k4;
 };
 
+static cairo_operator_t
+composite_mode_to_cairo_operator (RsvgFilterPrimitiveCompositeMode mode)
+{
+    switch (mode) {
+    case COMPOSITE_MODE_OVER:
+        return CAIRO_OPERATOR_OVER;
+
+    case COMPOSITE_MODE_IN:
+        return CAIRO_OPERATOR_IN;
+
+    case COMPOSITE_MODE_OUT:
+        return CAIRO_OPERATOR_OUT;
+
+    case COMPOSITE_MODE_ATOP:
+        return CAIRO_OPERATOR_ATOP;
+
+    case COMPOSITE_MODE_XOR:
+        return CAIRO_OPERATOR_XOR;
+
+    default:
+        g_assert_not_reached ();
+        return CAIRO_OPERATOR_CLEAR;
+    }
+}
+
 static void
 rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
 {
-    guchar i;
-    gint x, y;
-    gint rowstride, height, width;
     RsvgIRect boundarys;
-
-    guchar *in_pixels;
-    guchar *in2_pixels;
-    guchar *output_pixels;
-
     RsvgFilterPrimitiveComposite *upself;
-
     cairo_surface_t *output, *in, *in2;
 
     upself = (RsvgFilterPrimitiveComposite *) self;
@@ -2992,35 +3008,39 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterCo
     if (in == NULL)
         return;
 
-    cairo_surface_flush (in);
-
     in2 = rsvg_filter_get_in (upself->in2, ctx);
     if (in2 == NULL) {
         cairo_surface_destroy (in);
         return;
     }
 
-    cairo_surface_flush (in2);
+    if (upself->mode == COMPOSITE_MODE_ARITHMETIC) {
+        guchar i;
+        gint x, y;
+        gint rowstride, height, width;
+        guchar *in_pixels;
+        guchar *in2_pixels;
+        guchar *output_pixels;
 
-    in_pixels = cairo_image_surface_get_data (in);
-    in2_pixels = cairo_image_surface_get_data (in2);
+        height = cairo_image_surface_get_height (in);
+        width = cairo_image_surface_get_width (in);
+        rowstride = cairo_image_surface_get_stride (in);
 
-    height = cairo_image_surface_get_height (in);
-    width = cairo_image_surface_get_width (in);
+        output = _rsvg_image_surface_new (width, height);
+        if (output == NULL) {
+            cairo_surface_destroy (in);
+            cairo_surface_destroy (in2);
+            return;
+        }
 
-    rowstride = cairo_image_surface_get_stride (in);
+        cairo_surface_flush (in);
+        cairo_surface_flush (in2);
 
-    output = _rsvg_image_surface_new (width, height);
-    if (output == NULL) {
-        cairo_surface_destroy (in);
-        cairo_surface_destroy (in2);
-        return;
-    }
+        in_pixels = cairo_image_surface_get_data (in);
+        in2_pixels = cairo_image_surface_get_data (in2);
+        output_pixels = cairo_image_surface_get_data (output);
 
-    output_pixels = cairo_image_surface_get_data (output);
-
-    if (upself->mode == COMPOSITE_MODE_ARITHMETIC)
-        for (y = boundarys.y0; y < boundarys.y1; y++)
+        for (y = boundarys.y0; y < boundarys.y1; y++) {
             for (x = boundarys.x0; x < boundarys.x1; x++) {
                 int qr, qa, qb;
 
@@ -3033,7 +3053,7 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterCo
                 if (qr < 0)
                     qr = 0;
                 output_pixels[4 * x + y * rowstride + 3] = qr;
-                if (qr)
+                if (qr) {
                     for (i = 0; i < 3; i++) {
                         int ca, cb, cr;
                         ca = in_pixels[4 * x + y * rowstride + i];
@@ -3046,66 +3066,30 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterCo
                         if (cr < 0)
                             cr = 0;
                         output_pixels[4 * x + y * rowstride + i] = cr;
-
                     }
-            }
-
-    else
-        for (y = boundarys.y0; y < boundarys.y1; y++)
-            for (x = boundarys.x0; x < boundarys.x1; x++) {
-                int qr, cr, qa, qb, ca, cb, Fa, Fb, Fab, Fo;
-
-                qa = in_pixels[4 * x + y * rowstride + 3];
-                qb = in2_pixels[4 * x + y * rowstride + 3];
-                cr = 0;
-                Fa = Fb = Fab = Fo = 0;
-                switch (upself->mode) {
-                case COMPOSITE_MODE_OVER:
-                    Fa = 255;
-                    Fb = 255 - qa;
-                    break;
-                case COMPOSITE_MODE_IN:
-                    Fa = qb;
-                    Fb = 0;
-                    break;
-                case COMPOSITE_MODE_OUT:
-                    Fa = 255 - qb;
-                    Fb = 0;
-                    break;
-                case COMPOSITE_MODE_ATOP:
-                    Fa = qb;
-                    Fb = 255 - qa;
-                    break;
-                case COMPOSITE_MODE_XOR:
-                    Fa = 255 - qb;
-                    Fb = 255 - qa;
-                    break;
-                default:
-                    break;
                 }
-
-                qr = (Fa * qa + Fb * qb) / 255;
-                if (qr > 255)
-                    qr = 255;
-                if (qr < 0)
-                    qr = 0;
-
-                for (i = 0; i < 3; i++) {
-                    ca = in_pixels[4 * x + y * rowstride + i];
-                    cb = in2_pixels[4 * x + y * rowstride + i];
-
-                    cr = (ca * Fa + cb * Fb + ca * cb * Fab + Fo) / 255;
-                    if (cr > qr)
-                        cr = qr;
-                    if (cr < 0)
-                        cr = 0;
-                    output_pixels[4 * x + y * rowstride + i] = cr;
-
-                }
-                output_pixels[4 * x + y * rowstride + 3] = qr;
             }
+        }
 
-    cairo_surface_mark_dirty (output);
+        cairo_surface_mark_dirty (output);
+    } else {
+        cairo_t *cr;
+
+        cairo_surface_reference (in2);
+        output = in2;
+
+        cr = cairo_create (output);
+        cairo_set_source_surface (cr, in, 0, 0);
+        cairo_rectangle (cr,
+                         boundarys.x0,
+                         boundarys.y0,
+                         boundarys.x1 - boundarys.x0,
+                         boundarys.y1 - boundarys.y0);
+        cairo_clip (cr);
+        cairo_set_operator (cr, composite_mode_to_cairo_operator (upself->mode));
+        cairo_paint (cr);
+        cairo_destroy (cr);
+    }
 
     rsvg_filter_store_result (self->result, output, ctx);
 
