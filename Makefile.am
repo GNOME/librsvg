@@ -71,11 +71,36 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	librsvg-enum-types.h	\
 	$(NULL)
 
+RUST_SOURCES =					\
+	rust/Cargo.toml				\
+	rust/src/bbox.rs			\
+	rust/src/drawing_ctx.rs			\
+	rust/src/gradient.rs			\
+	rust/src/handle.rs			\
+	rust/src/length.rs			\
+	rust/src/lib.rs				\
+	rust/src/marker.rs			\
+	rust/src/node.rs			\
+	rust/src/path_builder.rs		\
+	rust/src/path_parser.rs			\
+	rust/src/property_bag.rs		\
+	rust/src/shapes.rs			\
+	rust/src/state.rs			\
+	rust/src/strtod.rs
+
 RUST_LIB = rust/target/debug/librsvg_internals.a
 
-.PHONY: rust/target/debug/librsvg_internals.a
-rust/target/debug/librsvg_internals.a:
-	cd rust && \
+check-local:
+	cd $(srcdir)/rust && \
+	cargo test
+
+clean-local:
+	cd $(srcdir)/rust && \
+	cargo clean
+
+.PHONY: $(RUST_LIB)
+$(RUST_LIB):
+	cd $(srcdir)/rust && \
 	cargo build --verbose
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
@@ -164,6 +189,7 @@ rsvg_view_3_LDFLAGS += -mwindows
 endif # OS_WIN32
 
 EXTRA_DIST =				\
+	$(RUST_SOURCES)			\
 	librsvg.doap			\
 	AUTHORS				\
 	NEWS				\

@@ -29,6 +29,13 @@ AC_SUBST([RSVG_API_MAJOR_VERSION])
 AC_SUBST([RSVG_API_MINOR_VERSION])
 AC_SUBST([RSVG_API_VERSION_U],[AS_TR_SH([$RSVG_API_VERSION])])
 
+# ===========================================================================
+
+AC_SUBST([RSVG_LT_VERSION_INFO],[rsvg_lt_version_info])
+AC_SUBST([LIBRSVG_MAJOR_VERSION],[rsvg_major_version])
+AC_SUBST([LIBRSVG_MINOR_VERSION],[rsvg_minor_version])
+AC_SUBST([LIBRSVG_MICRO_VERSION],[rsvg_micro_version])
+
 dnl ===========================================================================
 
 GLIB_REQUIRED=2.12.0
@@ -39,13 +46,6 @@ PANGOCAIRO_REQUIRED=1.32.6
 GDK_PIXBUF_REQUIRED=2.20
 GTK3_REQUIRED=3.10.0
 CROCO_REQUIRED=0.6.1
-
-# ===========================================================================
-
-AC_SUBST([RSVG_LT_VERSION_INFO],[rsvg_lt_version_info])
-AC_SUBST([LIBRSVG_MAJOR_VERSION],[rsvg_major_version])
-AC_SUBST([LIBRSVG_MINOR_VERSION],[rsvg_minor_version])
-AC_SUBST([LIBRSVG_MICRO_VERSION],[rsvg_micro_version])
 
 dnl ===========================================================================
 
@@ -63,6 +63,17 @@ PKG_PROG_PKG_CONFIG
 
 LT_INIT([win32-dll])
 LT_LIB_M
+
+dnl ===========================================================================
+
+AC_CHECK_PROG(CARGO, [cargo], [yes], [no])
+AS_IF(test x$CARGO = xno,
+    AC_MSG_ERROR([cargo is required.  Please install the Rust toolchain from https://www.rust-lang.org/])
+)
+AC_CHECK_PROG(RUSTC, [rustc], [yes], [no])
+AS_IF(test x$RUSTC = xno,
+    AC_MSG_ERROR([rustc is required.  Please install the Rust toolchain from https://www.rust-lang.org/])
+)
 
 dnl ===========================================================================
 
