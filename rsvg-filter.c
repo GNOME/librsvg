@@ -2542,8 +2542,8 @@ table_component_transfer_func (gint C, RsvgNodeComponentTransferFunc * user_data
 
     k = (C * (num_values - 1)) / 255;
 
-    vk = user_data->tableValues[CLAMP (k, 0, num_values - 1)];
-    vk1 = user_data->tableValues[CLAMP (k + 1, 0, num_values - 1)];
+    vk = user_data->tableValues[MIN (k, num_values - 1)];
+    vk1 = user_data->tableValues[MIN (k + 1, num_values - 1)];
 
     distancefromlast = (C * (user_data->nbTableValues - 1)) - k * 255;
 
@@ -2560,7 +2560,7 @@ discrete_component_transfer_func (gint C, RsvgNodeComponentTransferFunc * user_d
 
     k = (C * user_data->nbTableValues) / 255;
 
-    return user_data->tableValues[CLAMP (k, 0, user_data->nbTableValues)];
+    return user_data->tableValues[CLAMP (k, 0, user_data->nbTableValues - 1)];
 }
 
 static gint
