@@ -63,6 +63,9 @@ directory; the `rsvg-test` program will recursively look inside
 `fixtures/reftests` for all SVG files, render them, and compare them to
 the `-ref.png` reference images.
 
+SVG test files in fixtures/reftests that match "ignore-*.svg" will be
+skipped from the tests.
+
 As of 2016/Nov/03 we have an informal organization of these files:
 
 * `fixtures/reftests/*.svg` - Tests for special situations
