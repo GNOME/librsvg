@@ -3,7 +3,8 @@ Version 2.41.0
   Rust programming language, instead of C.  The public API remains
   identical.  Rust should provide us with memory safety and nicer
   built-in abstractions for the code, as well as an easier way to do
-  unit tests.
+  unit tests.  Special thanks to all the people who sent tips on Rust
+  idioms, and to Sebastian Dröge and Hubert Figuière for the Automake bits.
 - Chun-wei Fan made it possible to regenerate the MSVC project files
   when Makefile.am changes.
 - Fixed bgo#763386 - handle curveto segments where three control
