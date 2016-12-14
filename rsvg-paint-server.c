@@ -149,16 +149,16 @@ rsvg_paint_server_unref (RsvgPaintServer * ps)
 static void
 rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    gboolean has_stop_color = FALSE;
-    gboolean has_stop_opacity = FALSE;
-    gboolean is_current_color = FALSE;
     const char *value;
     RsvgGradientStop *stop;
     RsvgState *state;
+    RsvgState *inherited_state;
     int opacity;
     guint32 color;
 
     stop = (RsvgGradientStop *) self;
+
+    state = rsvg_node_get_state (self);
 
     if ((value = rsvg_property_bag_lookup (atts, "offset"))) {
         /* either a number [0,1] or a percentage */
@@ -182,43 +182,56 @@ rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
         }
     }
     if ((value = rsvg_property_bag_lookup (atts, "style")))
-        rsvg_parse_style (ctx, rsvg_node_get_state (self), value);
+        rsvg_parse_style (ctx, state, value);
 
-    if ((value = rsvg_property_bag_lookup (atts, "stop-color"))) {
-        has_stop_color = TRUE;
+    rsvg_parse_style_pairs (ctx, state, atts);
 
-        if (!strcmp (value, "currentColor"))
-            is_current_color = TRUE;
-    }
+    inherited_state = rsvg_state_new ();
+    rsvg_state_reconstruct (inherited_state, self);
 
-    if ((value = rsvg_property_bag_lookup (atts, "stop-opacity"))) {
-        has_stop_opacity = TRUE;
-    }
-
-    rsvg_parse_style_pairs (ctx, rsvg_node_get_state (self), atts);
-
-    state = rsvg_state_new ();
-    rsvg_state_reconstruct (state, self);
-
-    if (has_stop_color) {
-        if (is_current_color)
-            color = state->current_color;
-        else {
-            color = state->stop_color & 0x00ffffff;
-        }
-    } else {
+    switch (state->stop_color_mode) {
+    case STOP_COLOR_UNSPECIFIED:
         color = 0x0;
+        break;
+
+    case STOP_COLOR_SPECIFIED:
+        color = state->stop_color & 0x00ffffff;
+        break;
+
+    case STOP_COLOR_INHERIT:
+        color = inherited_state->stop_color;
+        break;
+
+    case STOP_COLOR_CURRENT_COLOR:
+        color = inherited_state->current_color;
+        break;
+
+    default:
+        g_assert_not_reached ();
+        color = 0;
     }
 
-    if (has_stop_opacity) {
-        opacity = state->stop_opacity;
-    } else {
+    switch (state->stop_opacity_mode) {
+    case STOP_OPACITY_UNSPECIFIED:
         opacity = 0xff;
+        break;
+
+    case STOP_OPACITY_SPECIFIED:
+        opacity = state->stop_opacity;
+        break;
+
+    case STOP_OPACITY_INHERIT:
+        opacity = inherited_state->stop_opacity;
+        break;
+
+    default:
+        g_assert_not_reached ();
+        opacity = 0;
     }
 
     stop->rgba = (color << 8) | opacity;
 
-    rsvg_state_free (state);
+    rsvg_state_free (inherited_state);
 }
 
 RsvgNode *

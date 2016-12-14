@@ -118,7 +118,10 @@ rsvg_state_init (RsvgState * state)
     state->miter_limit = 4;
     state->cap = CAIRO_LINE_CAP_BUTT;
     state->join = CAIRO_LINE_JOIN_MITER;
+    state->stop_color = 0x00;
+    state->stop_color_mode = STOP_COLOR_UNSPECIFIED;
     state->stop_opacity = 0xff;
+    state->stop_opacity_mode = STOP_OPACITY_UNSPECIFIED;
     state->fill_rule = CAIRO_FILL_RULE_WINDING;
     state->clip_rule = CAIRO_FILL_RULE_WINDING;
     state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
@@ -350,10 +353,14 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->cap = src->cap;
     if (function (dst->has_join, src->has_join))
         dst->join = src->join;
-    if (function (dst->has_stop_color, src->has_stop_color))
+    if (function (dst->has_stop_color, src->has_stop_color)) {
         dst->stop_color = src->stop_color;
-    if (function (dst->has_stop_opacity, src->has_stop_opacity))
+        dst->stop_color_mode = src->stop_color_mode;
+    }
+    if (function (dst->has_stop_opacity, src->has_stop_opacity)) {
         dst->stop_opacity = src->stop_opacity;
+        dst->stop_opacity_mode = src->stop_opacity_mode;
+    }
     if (function (dst->has_cond, src->has_cond))
         dst->cond_true = src->cond_true;
     if (function (dst->has_font_size, src->has_font_size))
@@ -801,13 +808,26 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
 	state->has_letter_spacing = TRUE;
 	state->letter_spacing = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
     } else if (g_str_equal (name, "stop-color")) {
-        if (!g_str_equal (value, "inherit")) {
+        state->has_stop_color = TRUE;
+        if (g_str_equal (value, "inherit")) {
+            state->stop_color_mode = STOP_COLOR_INHERIT;
+            state->has_stop_color = FALSE;
+        } else if (g_str_equal (value, "currentColor")) {
+            state->stop_color_mode = STOP_COLOR_CURRENT_COLOR;
+        } else {
             state->stop_color = rsvg_css_parse_color (value, &state->has_stop_color);
+            if (state->has_stop_color) {
+                state->stop_color_mode = STOP_COLOR_SPECIFIED;
+            }
         }
     } else if (g_str_equal (name, "stop-opacity")) {
-        if (!g_str_equal (value, "inherit")) {
-            state->has_stop_opacity = TRUE;
+        state->has_stop_opacity = TRUE;
+        if (g_str_equal (value, "inherit")) {
+            state->has_stop_opacity = FALSE;
+            state->stop_opacity_mode = STOP_OPACITY_INHERIT;
+        } else {
             state->stop_opacity = rsvg_css_parse_opacity (value);
+            state->stop_opacity_mode = STOP_OPACITY_SPECIFIED;
         }
     } else if (g_str_equal (name, "marker-start")) {
         g_free (state->startMarker);

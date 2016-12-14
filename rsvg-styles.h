@@ -72,6 +72,19 @@ struct _RsvgVpathDash {
     double *dash;
 };
 
+typedef enum {
+    STOP_COLOR_UNSPECIFIED,
+    STOP_COLOR_SPECIFIED,
+    STOP_COLOR_INHERIT,
+    STOP_COLOR_CURRENT_COLOR
+} StopColor;
+
+typedef enum {
+    STOP_OPACITY_UNSPECIFIED,
+    STOP_OPACITY_SPECIFIED,
+    STOP_OPACITY_INHERIT
+} StopOpacity;
+
 /* end libart theft... */
 
 struct _RsvgState {
@@ -143,8 +156,10 @@ struct _RsvgState {
 
     guint32 stop_color;         /* rgb */
     gboolean has_stop_color;
+    StopColor stop_color_mode;
     gint stop_opacity;          /* 0..255 */
     gboolean has_stop_opacity;
+    StopOpacity stop_opacity_mode;
 
     gboolean visible;
     gboolean has_visible;
