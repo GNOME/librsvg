@@ -88,20 +88,22 @@ RUST_SOURCES =					\
 	rust/src/state.rs			\
 	rust/src/strtod.rs
 
-RUST_LIB = rust/target/debug/librsvg_internals.a
+RUST_EXTRA = 					\
+	rust/Cargo.lock
+
+RUST_LIB = @abs_top_builddir@/target/debug/librsvg_internals.a
 
 check-local:
 	cd $(srcdir)/rust && \
-	cargo test
+	CARGO_TARGET_DIR=@abs_top_builddir@/target cargo test
 
 clean-local:
-	cd $(srcdir)/rust && \
-	cargo clean
+	cd $(top_srcdir)/rust && \
+	CARGO_TARGET_DIR=@abs_top_builddir@/target cargo clean
 
-.PHONY: $(RUST_LIB)
-$(RUST_LIB):
-	cd $(srcdir)/rust && \
-	cargo build --verbose
+$(RUST_LIB): $(RUST_SOURCES)
+	cd $(top_srcdir)/rust && \
+	CARGO_TARGET_DIR=@abs_top_builddir@/target cargo build --verbose
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
@@ -190,6 +192,7 @@ endif # OS_WIN32
 
 EXTRA_DIST =				\
 	$(RUST_SOURCES)			\
+	$(RUST_EXTRA)			\
 	librsvg.doap			\
 	AUTHORS				\
 	NEWS				\

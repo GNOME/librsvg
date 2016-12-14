@@ -51,10 +51,31 @@ EXTRA_rsvg_loader_DEPENDENCIES = libpixbufloader-svg.la gdk-pixbuf-loaders
 gdk-pixbuf-loaders: Makefile
 	$(AM_V_GEN) ( $(GDK_PIXBUF_QUERYLOADERS) ./libpixbufloader-svg.la && $(GDK_PIXBUF_QUERYLOADERS)) > gdk-pixbuf.loaders 2>/dev/null
 
+if CROSS_COMPILING
+RUN_QUERY_LOADER_TEST=false
+else
+RUN_QUERY_LOADER_TEST=test -z "$(DESTDIR)"
+endif
+
+# The following bit is stolen from gdk-pixbuf/gdk-pixbuf/Makefile.am:
+#
+# Running this if cross compiling or if DESTDIR is set is going to
+# not work at all, so skip it
+# We use install-data-hook here to workaround a bug in automake and/or libtool
+# that makes the install target for the loader libraries a dependency on
+# install-data-am, and not install-exec-am. We need to ensure this gets run
+# after the libraries are installed in their final locations.
 install-data-hook:
-	if test -z "$(DESTDIR)"; then \
+	@if $(RUN_QUERY_LOADER_TEST) ; then \
 		$(mkinstalldirs) $(DESTDIR)$(gdk_pixbuf_binarydir) ; \
 		$(GDK_PIXBUF_QUERYLOADERS) > $(DESTDIR)$(gdk_pixbuf_cache_file) ; \
+	else \
+	  echo "***" ; \
+	  echo "*** Warning: loaders.cache not built" ; \
+	  echo "***" ; \
+	  echo "*** Generate this file manually on host" ; \
+	  echo "*** system using gdk-pixbuf-query-loaders" ; \
+	  echo "***" ; \
 	fi
 
 CLEANFILES = \
