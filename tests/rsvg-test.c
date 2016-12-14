@@ -173,17 +173,29 @@ save_image (cairo_surface_t *surface,
 static gboolean
 is_svg_or_subdir (GFile *file)
 {
-  char *basename;
-  gboolean result;
+    char *basename;
+    gboolean ignore;
+    gboolean result;
 
-  if (g_file_query_file_type (file, 0, NULL) == G_FILE_TYPE_DIRECTORY)
-    return TRUE;
+    result = FALSE;
 
-  basename = g_file_get_basename (file);
-  result = !g_str_has_prefix (basename, "ignore-") && g_str_has_suffix (basename, ".svg");
-  g_free (basename);
+    basename = g_file_get_basename (file);
+    ignore = g_str_has_prefix (basename, "ignore");
 
-  return result;
+    if (ignore)
+	goto out;
+
+    if (g_file_query_file_type (file, 0, NULL) == G_FILE_TYPE_DIRECTORY) {
+	result = TRUE;
+	goto out;
+    }
+
+    result = g_str_has_suffix (basename, ".svg");
+
+out:
+    g_free (basename);
+
+    return result;
 }
 
 static cairo_status_t
