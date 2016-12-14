@@ -1,3 +1,42 @@
+Version 2.41.0
+- The big news is that parts of librsvg are now implemented in the
+  Rust programming language, instead of C.  The public API remains
+  identical.  Rust should provide us with memory safety and nicer
+  built-in abstractions for the code, as well as an easier way to do
+  unit tests.
+- Chun-wei Fan made it possible to regenerate the MSVC project files
+  when Makefile.am changes.
+- Fixed bgo#763386 - handle curveto segments where three control
+  points are coincident.  Thanks to Massimo for the detailed test cases.
+- Fixed bgo#603550 - Compute the luminance correctly when generating a
+  mask.  Thanks to Mike Lewis for the patch.
+- Fixed feImage filters when they reference SVG nodes; they were
+  translated incorrectly.
+- Fixed feComponentTransferFunction when there are duplicated feFuncX elements.
+- Fixed bgo#761871 - handle reflection points for quadratic and cubic
+  curves correctly.
+- Fixed a few minor issues pointed out by Coverity.
+- Marker orientations and rendering are now done in Rust.
+- The path data parser is now done in Rust.  This is now conformant to
+  the spec.
+- The internal path builder is now done in Rust.
+- Length normalization is now done in Rust.
+- Gradients with inheritance are now resolved in Rust.  Fixed a bunch
+  of conformance bugs.
+- Bounding boxes with affine transformations are now done in Rust.
+- Radial gradients now adjust the focus point correctly to be within
+  the gradient's radius.
+- We only push/pop CSS states when rendering will actually happen,
+  instead of for all nodes, including those that would be invisible.
+- Stroke width normalization is now conformant to the spec.
+- Viewport-relative length normalization is now conformant to the spec.
+- Added some of the official SVG 1.1 test files to our test suite.  Fixed
+  a little bunch of conformance bugs.
+- Lots of refactoring to accomodate the Rust code, and general cleanups as well.
+- Added tests/README.md with instructions on how to run the test suite
+  and update it.
+- Improved the README.
+
 Version 2.40.16
 - Chun-wei Fan added support for building the introspection files under MSVC.
 - Fixed bgo#760262 - Make the zooming options in rsvg-convert(1) work again
