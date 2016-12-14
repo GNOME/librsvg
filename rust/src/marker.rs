@@ -193,18 +193,41 @@ fn get_segment_directionalities (segment: &Segment) -> Option <(f64, f64, f64, f
         Segment::Degenerate { .. } => { None },
 
         Segment::LineOrCurve { x1, y1, x2, y2, x3, y3, x4, y4 } => {
-            if points_equal (x1, y1, x2, y2) && points_equal (x1, y1, x3, y3) && points_equal (x1, y1, x4, y4) {
+            let coincide_1_and_2 = points_equal (x1, y1, x2, y2);
+            let coincide_1_and_3 = points_equal (x1, y1, x3, y3);
+            let coincide_1_and_4 = points_equal (x1, y1, x4, y4);
+            let coincide_2_and_3 = points_equal (x2, y2, x3, y3);
+            let coincide_2_and_4 = points_equal (x2, y2, x4, y4);
+            let coincide_3_and_4 = points_equal (x3, y3, x4, y4);
+
+            if coincide_1_and_2 && coincide_1_and_3 && coincide_1_and_4 {
+
                 None
-            } else if points_equal (x1, y1, x2, y2) && points_equal (x1, y1, x3, y3) {
+
+            } else if coincide_1_and_2 && coincide_1_and_3 {
+
                 Some ((x4 - x1, y4 - y1, x4 - x3, y4 - y3))
-            } else if points_equal (x2, y2, x3, y3) && points_equal (x2, y2, x4, y4) {
+
+            } else if coincide_1_and_2 && coincide_3_and_4 {
+
+                Some ((x4 - x1, y4 - y1, x4 - x1, y4 - y1))
+
+            } else if coincide_2_and_3 && coincide_2_and_4 {
+
                 Some ((x2 - x1, y2 - y1, x4 - x1, y4 - y1))
-            } else if points_equal (x1, y1, x2, y2) {
+
+            } else if coincide_1_and_2 {
+
                 Some  ((x3 - x1, y3 - y1, x4 - x3, y4 - y3))
-            } else if points_equal (x3, y3, x4, y4) {
+
+            } else if coincide_3_and_4 {
+
                 Some ((x2 - x1, y2 - y1, x4 - x2, y4 - y2))
+
             } else {
+
                 Some ((x2 - x1, y2 - y1, x4 - x3, y4 - y3))
+
             }
         }
     }
@@ -727,5 +750,14 @@ mod tests {
 
         assert_eq! ((-20.0, -40.0), (v1x, v1y));
         assert_eq! ((-20.0, -40.0), (v2x, v2y));
+    }
+
+    #[test]
+    fn curve_with_12_34_coincident_has_directionality () {
+        let (v1x, v1y, v2x, v2y) =
+            super::get_segment_directionalities (&curve (20.0, 40.0, 20.0, 40.0, 60.0, 70.0, 60.0, 70.0)).unwrap ();
+
+        assert_eq! ((40.0, 30.0), (v1x, v1y));
+        assert_eq! ((40.0, 30.0), (v2x, v2y));
     }
 }
