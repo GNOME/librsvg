@@ -32,4 +32,5 @@ EXTRA_DIST = \
 	rsvg-introspection-msvc.mak	\
 	introspection-msvc.mak	\
 	detectenv-msvc.mak	\
+	rsvg-rust.mak		\
 	$(GENERATED_ITEMS)
