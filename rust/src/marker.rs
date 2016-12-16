@@ -51,12 +51,12 @@ fn double_equals (a: f64, b: f64) -> bool {
 }
 
 fn make_degenerate (x: f64, y: f64) -> Segment {
-    Segment::Degenerate { x: x, y: y}
+    Segment::Degenerate { x: x, y: y }
 }
 
 fn make_curve (x1: f64, y1: f64,
-               mut x2: f64, mut y2: f64,
-               mut x3: f64, mut y3: f64,
+               x2: f64, y2: f64,
+               x3: f64, y3: f64,
                x4: f64, y4: f64) -> Segment {
     Segment::LineOrCurve {
         x1: x1, y1: y1,
