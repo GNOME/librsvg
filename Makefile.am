@@ -326,8 +326,8 @@ include $(top_srcdir)/build/Makefile.msvcproj
 
 # autotools: Why must we do this instead of dist-hook?
 MSVCPROJ_GENERATED = \
-	$(top_builddir)/build/win32/vs9/rsvg.vcproj		\
-	$(top_builddir)/build/win32/vs9/rsvg-convert.vcproj
+	$(top_builddir)/build/win32/vs12/rsvg.vcxproj		\
+	$(top_builddir)/build/win32/vs12/rsvg-convert.vcxproj
 
 if HAVE_INTROSPECTION
 
@@ -350,7 +350,7 @@ MSVCPROJ_GENERATED += $(INTROSPECTION_INTERMEDIATE_ITEMS)
 include $(top_srcdir)/build/Makefile.msvc-introspection
 endif # HAVE_INTROSPECTION
 
-$(MSVCPROJ_GENERATED): $(top_builddir)/build/win32/vs9/rsvg.headers
+$(MSVCPROJ_GENERATED): $(top_builddir)/build/win32/vs12/rsvg.vs12.headers
 
 EXTRA_DIST += $(MSVCPROJ_GENERATED)
 

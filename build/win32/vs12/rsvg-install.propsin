@@ -16,7 +16,7 @@ copy $(SolutionDir)$(Configuration)\$(Platform)\bin\rsvg-view-3.exe $(CopyDir)\b
 copy $(SolutionDir)$(Configuration)\$(Platform)\bin\rsvg-view-3.pdb $(CopyDir)\bin
 
 mkdir $(CopyDir)\include\librsvg-$(ApiVersion)\librsvg
-#include "rsvg.vs10.headers"
+#include "rsvg.vs12.headers"
 
 mkdir $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders
 copy $(SolutionDir)$(Configuration)\$(Platform)\bin\rsvg-$(ApiVersion).lib $(CopyDir)\lib
