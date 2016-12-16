@@ -242,6 +242,28 @@ fi
 AM_CONDITIONAL([BUILD_MISC_TOOLS], [test "x$build_misc_tools" = "xyes"])
 
 dnl ===========================================================================
+dnl Specify --enable-debug to make a development release.  By default,
+dnl we build in public release mode.
+
+AC_ARG_ENABLE(debug,
+              AC_HELP_STRING([--enable-debug],
+                             [Build Rust code with debugging information [default=no]]),
+              [debug_release=$enableval],
+	      [debug_release=no])
+
+AC_MSG_CHECKING(whether to build Rust code with debugging information)
+if test "x$debug_release" = "xyes" ; then
+	AC_MSG_RESULT(yes)
+	RUST_TARGET_SUBDIR=debug
+else
+	AC_MSG_RESULT(no)
+	RUST_TARGET_SUBDIR=release
+fi
+AM_CONDITIONAL([DEBUG_RELEASE], [test "x$debug_release" = "xyes"])
+
+AC_SUBST([RUST_TARGET_SUBDIR])
+
+dnl ===========================================================================
 dnl Build introspectable bindings
 
 # No automagic please!
@@ -304,7 +326,9 @@ librsvg-$VERSION
 
 	prefix:                         ${prefix}
 	compiler:                       ${CC}
-	
+
+        Debugging information for Rust: ${debug_release}
+
 	Build introspectable bindings:  ${found_introspection}
 	Build Vala bindings:            ${enable_vala}
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}

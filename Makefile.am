@@ -91,7 +91,13 @@ RUST_SOURCES =					\
 RUST_EXTRA = 					\
 	rust/Cargo.lock
 
-RUST_LIB = @abs_top_builddir@/target/debug/librsvg_internals.a
+if DEBUG_RELEASE
+CARGO_RELEASE_ARGS=
+else
+CARGO_RELEASE_ARGS=--release
+endif
+
+RUST_LIB=@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a
 
 check-local:
 	cd $(srcdir)/rust && \
@@ -101,9 +107,9 @@ clean-local:
 	cd $(top_srcdir)/rust && \
 	CARGO_TARGET_DIR=@abs_top_builddir@/target cargo clean
 
-$(RUST_LIB): $(RUST_SOURCES)
+@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a: $(RUST_SOURCES)
 	cd $(top_srcdir)/rust && \
-	CARGO_TARGET_DIR=@abs_top_builddir@/target cargo build --verbose
+	CARGO_TARGET_DIR=@abs_top_builddir@/target cargo build --verbose $(CARGO_RELEASE_ARGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
