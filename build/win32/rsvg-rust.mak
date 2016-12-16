@@ -1,9 +1,7 @@
 !include detectenv-msvc.mak
 
 !if "$(CARGO)" == ""
-BUILD_RUST = 0
-!else
-BUILD_RUST = 1
+CARGO = cargo
 !endif
 
 !if "$(VALID_CFGSET)" == "TRUE"
@@ -40,7 +38,5 @@ clean:
 !else
 !if "$(VALID_CFGSET)" == "FALSE"
 !error You need to specify an appropriate config for your build, using CFG=Release|Debug
-!else
-!error You need to specify an appropriate path for your cargo executable using CARGO=<path_to_cargo.exe>
 !endif
 !endif
