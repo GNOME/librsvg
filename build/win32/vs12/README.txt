@@ -22,6 +22,18 @@ External dependencies are at least Cairo, GLib, libxml2, libcroco, GDK-Pixbuf
 Please see the build\win32\vs12\README.txt file in glib for details where to
 unpack them.
 
+You will also need the Rust compiler package (https://www.rust-lang.org/), where
+binary MSI packages are available.  Note that there are two packages for Windows
+for each of the 32-bit and 64-bit variants--you *will* need to use the MSVC ABI
+(*not* GNU ABI) package that corresponds to your build configuration (Win32/32-bit
+and x64/64-bit).  Do note that the .msi installers will put the path where the
+rustc.exe/cargo.exe are installed in your PATH, so it is recommended that you
+remove the path(s) from your system's PATH settings and setup your IDE to look
+for your 32-bit rustc.exe/cargo.exe for Win32/32-bit configs, and to look for
+your 64-bit rustc.exe/cargo.exe for x64/64-bit configs, or append
+" CARGO=<full_path_to_cargo.exe>" after the the items in the NMake command lines
+in the rsvg-rust project settings.
+
 It is recommended that one builds the dependencies with VS12 as far as
 possible, especially those from and using the GTK+ stack (i.e. GDK-Pixbuf,
 Pango, GLib and Cairo), so that crashes caused by mixing calls to different
