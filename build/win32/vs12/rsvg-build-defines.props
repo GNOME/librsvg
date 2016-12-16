@@ -6,16 +6,20 @@
   <PropertyGroup Label="UserMacros">
     <LibRsvgCFlags>G_LOG_DOMAIN="librsvg";RSVG_DISABLE_DEPRECATION_WARNINGS;RSVG_COMPILATION</LibRsvgCFlags>
     <LibRsvgIncPath>$(GlibEtcInstallRoot)\include\pango-1.0;$(GlibEtcInstallRoot)\include\libcroco-0.6;$(GlibEtcInstallRoot)\include\libxml2</LibRsvgIncPath>
-    <LibRsvgLibs>$(SolutionDir)\$(Configuration)\$(Platform)\obj\rsvg_internals\$(Configuration)\rsvg_internals.lib;pangocairo-1.0.lib;pango-1.0.lib;croco-0.6.lib;libxml2.lib;userenv.lib;ws2_32.lib</LibRsvgLibs>
+    <LibRsvgLibs>pangocairo-1.0.lib;pango-1.0.lib;croco-0.6.lib;libxml2.lib;userenv.lib;ws2_32.lib</LibRsvgLibs>
     <IntlLib>intl.lib</IntlLib>
     <Gtk3IncPath>$(GlibEtcInstallRoot)\include\gtk-3.0;$(GlibEtcInstallRoot)\include\atk-1.0;$(LibRsvgIncPath)</Gtk3IncPath>
     <Gtk3Libs>gtk-3.0.lib;gdk-3.0.lib</Gtk3Libs>
     <RsvgPixbufLoaderCFlags>GDK_PIXBUF_ENABLE_BACKEND;G_LOG_DOMAIN="libpixbufloader-svg"</RsvgPixbufLoaderCFlags>
+    <RsvgRustNMakeCmd>
+cd ..
+set VCInstallDir=$(VCInstallDir)
+nmake -f rsvg-rust.mak CFG=$(Configuration)</RsvgRustNMakeCmd>
   </PropertyGroup>
   <PropertyGroup>
     <_PropertySheetDisplayName>rsvgbuilddefinesprops</_PropertySheetDisplayName>
-    <OutDir>$(SolutionDir)$(Configuration)\$(PlatformName)\bin\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)\$(PlatformName)\obj\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\bin\</OutDir>
+    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\obj\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -48,6 +52,9 @@
     </BuildMacro>
     <BuildMacro Include="RsvgPixbufLoaderCFlags">
       <Value>$(RsvgPixbufLoaderCFlags)</Value>
+    </BuildMacro>
+    <BuildMacro Include="RsvgRustNMakeCmd">
+      <Value>$(RsvgRustNMakeCmd)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>

@@ -18,6 +18,7 @@ EXTRA_DIST =	\
 	rsvg-convert.vcxprojin			\
 	rsvg-convert.vcxproj.filtersin		\
 	rsvg-install.vcxproj			\
+	rsvg-rust.vcxproj			\
 	rsvg-view-3.vcxproj			\
 	rsvg-view-3.vcxproj.filters		\
 	README.txt				\
