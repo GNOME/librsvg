@@ -16,6 +16,8 @@ Version 2.41.0
   points are coincident.  Thanks to Massimo for the detailed test cases.
 - Fixed bgo#603550 - Compute the luminance correctly when generating a
   mask.  Thanks to Mike Lewis for the patch.
+- Fixed bgo#776297 - Only render markers in path, line, polygon,
+  polyline elements.
 - Fixed feImage filters when they reference SVG nodes; they were
   translated incorrectly.
 - Fixed feComponentTransferFunction when there are duplicated feFuncX
