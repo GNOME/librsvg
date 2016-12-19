@@ -5,6 +5,11 @@ Version 2.41.0
   built-in abstractions for the code, as well as an easier way to do
   unit tests.  Special thanks to all the people who sent tips on Rust
   idioms, and to Sebastian Dröge and Hubert Figuière for the Automake bits.
+- Added an "--enable-debug" option to configure.ac - this will tell
+  the Rust compiler to generate debugging code, instead of working in
+  release mode.  Note that you must still pass CFLAGS by hand by the
+  regular means for the C code.
+- For Windows builds, only MSVC 2012 and upward are supported now.
 - Chun-wei Fan made it possible to regenerate the MSVC project files
   when Makefile.am changes.
 - Fixed bgo#763386 - handle curveto segments where three control
@@ -13,29 +18,29 @@ Version 2.41.0
   mask.  Thanks to Mike Lewis for the patch.
 - Fixed feImage filters when they reference SVG nodes; they were
   translated incorrectly.
-- Fixed feComponentTransferFunction when there are duplicated feFuncX elements.
+- Fixed feComponentTransferFunction when there are duplicated feFuncX
+  elements.
 - Fixed bgo#761871 - handle reflection points for quadratic and cubic
   curves correctly.
+- Fixed bgo#686953 - support the "marker" shorthand property.
 - Fixed a few minor issues pointed out by Coverity.
-- Marker orientations and rendering are now done in Rust.
-- The path data parser is now done in Rust.  This is now conformant to
-  the spec.
-- The internal path builder is now done in Rust.
-- Length normalization is now done in Rust.
-- Gradients with inheritance are now resolved in Rust.  Fixed a bunch
-  of conformance bugs.
-- Bounding boxes with affine transformations are now done in Rust.
+- The path data parser now handles boolean values in Arc elements correctly.
+- Fixed conformance bugs in gradient inheritance.
 - Radial gradients now adjust the focus point correctly to be within
   the gradient's radius.
-- We only push/pop CSS states when rendering will actually happen,
-  instead of for all nodes, including those that would be invisible.
 - Stroke width normalization is now conformant to the spec.
 - Viewport-relative length normalization is now conformant to the spec.
 - Added some of the official SVG 1.1 test files to our test suite.  Fixed
   a little bunch of conformance bugs.
+- As a small optimization, we only push/pop CSS states when rendering
+  will actually happen, instead of for all (potentially invisible) nodes.
+- Code that has been converted to Rust:  marker orientations and
+  rendering, path data parser, path building, length normalization,
+  gradient inheritance, bounding boxes with affine transformations.
 - Lots of refactoring to accomodate the Rust code, and general cleanups as well.
 - Added tests/README.md with instructions on how to run the test suite
   and update it.
+  rsvg-test can now skip files or directories that start with "ignore".
 - Improved the README.
 
 Version 2.40.16
