@@ -358,6 +358,19 @@ _set_rsvg_affine (RsvgCairoRender * render, cairo_matrix_t *affine)
     cairo_set_matrix (cr, &matrix);
 }
 
+static cairo_font_options_t *
+get_font_options_for_testing (void)
+{
+    cairo_font_options_t *options;
+
+    options = cairo_font_options_create ();
+    cairo_font_options_set_antialias (options, CAIRO_ANTIALIAS_GRAY);
+    cairo_font_options_set_hint_style (options, CAIRO_HINT_STYLE_FULL);
+    cairo_font_options_set_hint_metrics (options, CAIRO_HINT_METRICS_ON);
+
+    return options;
+}
+
 PangoContext *
 rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
 {
@@ -372,6 +385,13 @@ rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
 
     rsvg_drawing_ctx_get_dpi (ctx, NULL, &dpi_y);
     pango_cairo_context_set_resolution (context, dpi_y);
+
+    if (ctx->is_testing) {
+        cairo_font_options_t *font_options;
+        font_options = get_font_options_for_testing ();
+        pango_cairo_context_set_font_options (context, font_options);
+        cairo_font_options_destroy (font_options);
+    }
 
     return context;
 }

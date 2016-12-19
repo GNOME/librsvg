@@ -176,6 +176,8 @@ struct RsvgHandlePrivate {
 
     gboolean first_write;
     GInputStream *data_input_stream; /* for rsvg_handle_write of svgz data */
+
+    gboolean is_testing; /* Are we being run from the test suite? */
 };
 
 typedef struct {
@@ -196,6 +198,7 @@ struct RsvgDrawingCtx {
     GSList *vb_stack;
     GSList *drawsub_stack;
     GSList *acquired_nodes;
+    gboolean is_testing;
 };
 
 /*Abstract base class for context for our backends (one as yet)*/
