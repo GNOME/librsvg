@@ -259,6 +259,8 @@ rsvg_cairo_check (gconstpointer data)
     g_assert_no_error (error);
     g_assert (rsvg != NULL);
 
+    rsvg_handle_internal_set_testing (rsvg, TRUE);
+
     rsvg_handle_get_dimensions (rsvg, &dimensions);
     g_assert (dimensions.width > 0);
     g_assert (dimensions.height > 0);

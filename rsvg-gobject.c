@@ -93,6 +93,8 @@ rsvg_handle_init (RsvgHandle * self)
 
     self->priv->is_disposed = FALSE;
     self->priv->in_loop = FALSE;
+
+    self->priv->is_testing = FALSE;
 }
 
 static void

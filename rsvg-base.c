@@ -2094,6 +2094,22 @@ rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
 }
 
 /**
+ * _rsvg_handle_internal_set_testing:
+ * @handle: a #RsvgHandle
+ * @testing: Whether to enable testing mode
+ *
+ * Do not call this function.  This is intended for librsvg's internal
+ * test suite only.
+ **/
+void
+rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing)
+{
+    g_return_if_fail (RSVG_IS_HANDLE (handle));
+
+    handle->priv->is_testing = testing ? TRUE : FALSE;
+}
+
+/**
  * rsvg_init:
  *
  * Initializes librsvg
