@@ -841,6 +841,24 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
         g_free (state->endMarker);
         state->endMarker = rsvg_get_url_string (value);
         state->has_endMarker = TRUE;
+    } else if (g_str_equal (name, "marker")) {
+        if (!state->has_startMarker) {
+            g_free (state->startMarker);
+            state->startMarker = rsvg_get_url_string (value);
+            state->has_startMarker = TRUE;
+        }
+
+        if (!state->has_middleMarker) {
+            g_free (state->middleMarker);
+            state->middleMarker = rsvg_get_url_string (value);
+            state->has_middleMarker = TRUE;
+        }
+
+        if (!state->has_endMarker) {
+            g_free (state->endMarker);
+            state->endMarker = rsvg_get_url_string (value);
+            state->has_endMarker = TRUE;
+        }
     } else if (g_str_equal (name, "stroke-miterlimit")) {
         state->has_miter_limit = TRUE;
         state->miter_limit = g_ascii_strtod (value, NULL);
