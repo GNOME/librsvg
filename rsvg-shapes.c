@@ -36,6 +36,7 @@
 #include "rsvg-css.h"
 #include "rsvg-defs.h"
 #include "rsvg-path-builder.h"
+#include "rsvg-marker.h"
 
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
@@ -68,6 +69,7 @@ rsvg_node_path_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
     rsvg_render_path_builder (ctx, path->builder);
+    rsvg_render_markers (ctx, path->builder);
 }
 
 static void
@@ -185,6 +187,7 @@ _rsvg_node_poly_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
     rsvg_render_path_builder (ctx, poly->builder);
+    rsvg_render_markers (ctx, poly->builder);
 }
 
 static void
@@ -270,6 +273,7 @@ _rsvg_node_line_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
 
     rsvg_render_path_builder (ctx, builder);
+    rsvg_render_markers (ctx, builder);
 
     rsvg_path_builder_destroy (builder);
 }
