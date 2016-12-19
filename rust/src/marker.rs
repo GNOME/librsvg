@@ -2,6 +2,7 @@ extern crate libc;
 extern crate cairo;
 extern crate cairo_sys;
 
+use std::f64;
 use path_builder::*;
 use drawing_ctx::RsvgDrawingCtx;
 
@@ -302,11 +303,15 @@ fn find_outgoing_directionality_forwards (segments: &[Segment], start_index: usi
 }
 
 fn angle_from_vector (vx: f64, vy: f64) -> f64 {
-    let angle = vy.atan2 (vx);
+    let mut angle = vy.atan2 (vx);
 
     if angle.is_nan () {
         0.0
     } else {
+        while angle < 0.0 {
+            angle += f64::consts::PI * 2.0;
+        }
+
         angle
     }
 }
