@@ -30,6 +30,7 @@
 #include <cairo.h>
 
 #include "rsvg.h"
+#include "rsvg-path-builder.h"
 
 #include <libxml/SAX.h>
 #include <libxml/xmlmemory.h>
@@ -122,16 +123,8 @@ struct RsvgSaxHandler {
     void (*characters) (RsvgSaxHandler * self, const char *ch, int len);
 };
 
-typedef enum {
-    RSVG_LOAD_POLICY_STRICT
-} RsvgLoadPolicy;
-
-#define RSVG_LOAD_POLICY_DEFAULT (RSVG_LOAD_POLICY_STRICT)
-
 struct RsvgHandlePrivate {
     RsvgHandleFlags flags;
-
-    RsvgLoadPolicy load_policy;
 
     gboolean is_disposed;
     gboolean is_closed;
@@ -140,14 +133,18 @@ struct RsvgHandlePrivate {
     gpointer user_data;
     GDestroyNotify user_data_destroy;
 
-    /* stack; there is a state for each element */
+    GPtrArray *all_nodes;
 
-    RsvgDefs *defs;
-    guint nest_level;
+    RsvgDefs *defs; /* lookup table for nodes that have an id="foo" attribute */
     RsvgNode *currentnode;
     /* this is the root level of the displayable tree, essentially what the
        file is converted into at the end */
     RsvgNode *treebase;
+
+    /* Stack of element names while parsing; used to know when to stop parsing
+     * the current element.
+     */
+    GSList *element_name_stack;
 
     GHashTable *css_props;
 
@@ -179,6 +176,8 @@ struct RsvgHandlePrivate {
 
     gboolean first_write;
     GInputStream *data_input_stream; /* for rsvg_handle_write of svgz data */
+
+    gboolean is_testing; /* Are we being run from the test suite? */
 };
 
 typedef struct {
@@ -199,6 +198,7 @@ struct RsvgDrawingCtx {
     GSList *vb_stack;
     GSList *drawsub_stack;
     GSList *acquired_nodes;
+    gboolean is_testing;
 };
 
 /*Abstract base class for context for our backends (one as yet)*/
@@ -220,7 +220,7 @@ struct RsvgRender {
     PangoContext    *(*create_pango_context)    (RsvgDrawingCtx * ctx);
     void             (*render_pango_layout)	    (RsvgDrawingCtx * ctx, PangoLayout *layout,
                                                  double x, double y);
-    void             (*render_path)             (RsvgDrawingCtx * ctx, const cairo_path_t *path);
+    void             (*render_path_builder)     (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder);
     void             (*render_surface)          (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
                                                  double x, double y, double w, double h);
     void             (*pop_discrete_layer)      (RsvgDrawingCtx * ctx);
@@ -242,11 +242,32 @@ _rsvg_render_check_type (RsvgRender *render,
 #define _RSVG_RENDER_CIC(render, render_type, RenderCType) \
   ((RenderCType*) _rsvg_render_check_type ((render), (render_type)))
 
+/* Keep this in sync with rust/src/length.rs:LengthUnit */
+typedef enum {
+    LENGTH_UNIT_DEFAULT,
+    LENGTH_UNIT_PERCENT,
+    LENGTH_UNIT_FONT_EM,
+    LENGTH_UNIT_FONT_EX,
+    LENGTH_UNIT_INCH,
+    LENGTH_UNIT_RELATIVE_LARGER,
+    LENGTH_UNIT_RELATIVE_SMALLER
+} LengthUnit;
+
+/* Keep this in sync with rust/src/length.rs:LengthDir */
+typedef enum {
+    LENGTH_DIR_HORIZONTAL,
+    LENGTH_DIR_VERTICAL,
+    LENGTH_DIR_BOTH
+} LengthDir;
+
+/* Keep this in sync with rust/src/length.rs:RsvgLength */
 typedef struct {
     double length;
-    char factor;
+    LengthUnit unit;
+    LengthDir dir;
 } RsvgLength;
 
+/* Keep this in sync with rust/src/bbox.rs:RsvgBbox */
 typedef struct {
     cairo_rectangle_t rect;
     cairo_matrix_t affine;
@@ -290,7 +311,7 @@ typedef enum {
     RSVG_NODE_TYPE_USE,
 
     /* Filter primitives */
-    RSVG_NODE_TYPE_FILTER_PRIMITIVE = 64,
+    RSVG_NODE_TYPE_FILTER_PRIMITIVE_FIRST,              /* just a marker; not a valid type */
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_BLEND,
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_COLOR_MATRIX,
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPONENT_TRANSFER,
@@ -308,22 +329,40 @@ typedef enum {
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_SPECULAR_LIGHTING,
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_TILE,
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_TURBULENCE,
-
+    RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST                /* just a marker; not a valid type */
 } RsvgNodeType;
+
+typedef struct {
+    void (*free) (RsvgNode * self);
+    void (*draw) (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
+    void (*set_atts) (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *atts);
+} RsvgNodeVtable;
 
 struct _RsvgNode {
     RsvgState *state;
     RsvgNode *parent;
     GPtrArray *children;
     RsvgNodeType type;
-    const char *name; /* owned by the xmlContext, invalid after parsing! */
-    void (*free) (RsvgNode * self);
-    void (*draw) (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
-    void (*set_atts) (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *);
+    RsvgNodeVtable *vtable;
 };
 
-#define RSVG_NODE_TYPE(node)                ((node)->type)
-#define RSVG_NODE_IS_FILTER_PRIMITIVE(node) (RSVG_NODE_TYPE((node)) & RSVG_NODE_TYPE_FILTER_PRIMITIVE)
+G_GNUC_INTERNAL
+RsvgNodeType rsvg_node_type (RsvgNode *node);
+
+G_GNUC_INTERNAL
+RsvgState *rsvg_node_get_state (RsvgNode *node);
+
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_get_parent (RsvgNode *node);
+
+/* Used to iterate among a node's children with rsvg_node_foreach_child().
+ * If this caller-supplied function returns FALSE, iteration will stop.
+ * Otherwise, iteration will continue to the next child node.
+ */
+typedef gboolean (* RsvgNodeForeachChildFn) (RsvgNode *node, gpointer data);
+
+G_GNUC_INTERNAL
+void rsvg_node_foreach_child (RsvgNode *node, RsvgNodeForeachChildFn fn, gpointer data);
 
 struct _RsvgNodeChars {
     RsvgNode super;
@@ -354,19 +393,35 @@ G_GNUC_INTERNAL
 gboolean     rsvg_eval_switch_attributes	(RsvgPropertyBag * atts, gboolean * p_has_cond);
 G_GNUC_INTERNAL
 gchar       *rsvg_get_base_uri_from_filename    (const gchar * file_name);
+
 G_GNUC_INTERNAL
 void rsvg_pop_discrete_layer    (RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
 void rsvg_push_discrete_layer   (RsvgDrawingCtx * ctx);
+
 G_GNUC_INTERNAL
-RsvgNode *rsvg_acquire_node     (RsvgDrawingCtx * ctx, const char *url);
+RsvgNode *rsvg_drawing_ctx_acquire_node         (RsvgDrawingCtx * ctx, const char *url);
 G_GNUC_INTERNAL
-void rsvg_release_node          (RsvgDrawingCtx * ctx, RsvgNode *node);
+RsvgNode *rsvg_drawing_ctx_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, RsvgNodeType type);
 G_GNUC_INTERNAL
-void rsvg_render_path           (RsvgDrawingCtx * ctx, const cairo_path_t *path);
+void rsvg_drawing_ctx_release_node              (RsvgDrawingCtx * ctx, RsvgNode *node);
+
+G_GNUC_INTERNAL
+void rsvg_render_path_builder   (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder);
 G_GNUC_INTERNAL
 void rsvg_render_surface        (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
                                  double x, double y, double w, double h);
+
+G_GNUC_INTERNAL
+double rsvg_get_normalized_stroke_width (RsvgDrawingCtx *ctx);
+
+G_GNUC_INTERNAL
+const char *rsvg_get_start_marker (RsvgDrawingCtx *ctx);
+G_GNUC_INTERNAL
+const char *rsvg_get_middle_marker (RsvgDrawingCtx *ctx);
+G_GNUC_INTERNAL
+const char *rsvg_get_end_marker (RsvgDrawingCtx *ctx);
+
 G_GNUC_INTERNAL
 void rsvg_render_free           (RsvgRender * render);
 G_GNUC_INTERNAL
@@ -377,30 +432,53 @@ G_GNUC_INTERNAL
 GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
-G_GNUC_INTERNAL
-void rsvg_node_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts);
+
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_free (RsvgDrawingCtx * handle);
+
+/* Implemented in rust/src/bbox.rs */
 G_GNUC_INTERNAL
 void rsvg_bbox_init     (RsvgBbox * self, cairo_matrix_t *matrix);
+
+/* Implemented in rust/src/bbox.rs */
 G_GNUC_INTERNAL
 void rsvg_bbox_insert   (RsvgBbox * dst, RsvgBbox * src);
+
+/* Implemented in rust/src/bbox.rs */
 G_GNUC_INTERNAL
 void rsvg_bbox_clip     (RsvgBbox * dst, RsvgBbox * src);
+
+/* This is implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
-double _rsvg_css_normalize_length       (const RsvgLength * in, RsvgDrawingCtx * ctx, char dir);
+double rsvg_length_normalize (const RsvgLength *length, RsvgDrawingCtx * ctx);
+
+/* This is implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
-double _rsvg_css_hand_normalize_length  (const RsvgLength * in, gdouble pixels_per_inch,
-                                         gdouble width_or_height, gdouble font_size);
-double _rsvg_css_normalize_font_size    (RsvgState * state, RsvgDrawingCtx * ctx);
+double rsvg_length_hand_normalize (const RsvgLength *length,
+                                   double pixels_per_inch,
+                                   double width_or_height,
+                                   double font_size);
+
+G_GNUC_INTERNAL
+double rsvg_drawing_ctx_get_normalized_font_size (RsvgDrawingCtx * ctx);
+
 G_GNUC_INTERNAL
 double _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx);
+
+/* Implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
-RsvgLength _rsvg_css_parse_length (const char *str);
+RsvgLength rsvg_length_parse (const char *str, LengthDir dir);
+
 G_GNUC_INTERNAL
-void _rsvg_push_view_box    (RsvgDrawingCtx * ctx, double w, double h);
+void rsvg_drawing_ctx_push_view_box (RsvgDrawingCtx * ctx, double w, double h);
 G_GNUC_INTERNAL
-void _rsvg_pop_view_box	    (RsvgDrawingCtx * ctx);
+void rsvg_drawing_ctx_pop_view_box  (RsvgDrawingCtx * ctx);
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_get_view_box_size (RsvgDrawingCtx *ctx, double *out_width, double *out_height);
+
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dpi_y);
+
 G_GNUC_INTERNAL
 void rsvg_SAX_handler_struct_init (void);
 G_GNUC_INTERNAL

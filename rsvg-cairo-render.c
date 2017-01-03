@@ -44,7 +44,9 @@ rsvg_cairo_render_free (RsvgRender * self)
 {
     RsvgCairoRender *me = RSVG_CAIRO_RENDER (self);
 
-    /* TODO */
+    g_assert (me->cr_stack == NULL);
+    g_assert (me->bb_stack == NULL);
+    g_assert (me->surfaces_stack == NULL);
 
     g_free (me);
 }
@@ -53,13 +55,14 @@ RsvgCairoRender *
 rsvg_cairo_render_new (cairo_t * cr, double width, double height)
 {
     RsvgCairoRender *cairo_render = g_new0 (RsvgCairoRender, 1);
+    cairo_matrix_t matrix;
 
     cairo_render->super.type = RSVG_RENDER_TYPE_CAIRO;
     cairo_render->super.free = rsvg_cairo_render_free;
     cairo_render->super.create_pango_context = rsvg_cairo_create_pango_context;
     cairo_render->super.render_pango_layout = rsvg_cairo_render_pango_layout;
     cairo_render->super.render_surface = rsvg_cairo_render_surface;
-    cairo_render->super.render_path = rsvg_cairo_render_path;
+    cairo_render->super.render_path_builder = rsvg_cairo_render_path_builder;
     cairo_render->super.pop_discrete_layer = rsvg_cairo_pop_discrete_layer;
     cairo_render->super.push_discrete_layer = rsvg_cairo_push_discrete_layer;
     cairo_render->super.add_clipping_rect = rsvg_cairo_add_clipping_rect;
@@ -73,6 +76,9 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
     cairo_render->cr_stack = NULL;
     cairo_render->bb_stack = NULL;
     cairo_render->surfaces_stack = NULL;
+
+    cairo_matrix_init_identity (&matrix);
+    rsvg_bbox_init (&cairo_render->bbox, &matrix);
 
     return cairo_render;
 }
@@ -154,6 +160,7 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
     draw->pango_context = NULL;
     draw->drawsub_stack = NULL;
     draw->acquired_nodes = NULL;
+    draw->is_testing = handle->priv->is_testing;
 
     rsvg_state_push (draw);
     state = rsvg_current_state (draw);
@@ -215,16 +222,15 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     while (drawsub != NULL) {
         draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, drawsub);
-        drawsub = drawsub->parent;
+        drawsub = rsvg_node_get_parent (drawsub);
     }
 
-    rsvg_state_push (draw);
     cairo_save (cr);
 
-    rsvg_node_draw ((RsvgNode *) handle->priv->treebase, draw, 0);
+    rsvg_node_draw (handle->priv->treebase, draw, 0);
 
     cairo_restore (cr);
-    rsvg_state_pop (draw);
+
     rsvg_drawing_ctx_free (draw);
 
     return TRUE;

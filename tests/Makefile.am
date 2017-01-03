@@ -3,22 +3,28 @@ include $(top_srcdir)/glib-tap.mk
 test_programs = \
 	rsvg-test	\
 	crash		\
-	styles
+	styles		\
+	dimensions
+
+test_utils_common_sources = \
+	test-utils.c	\
+	test-utils.h
 
 rsvg_test_SOURCES = \
 	rsvg-test.c	\
-	test-utils.c	\
-	test-utils.h
+	$(test_utils_common_sources)
 
 crash_SOURCES = \
 	crash.c		\
-	test-utils.c	\
-	test-utils.h
+	$(test_utils_common_sources)
 
 styles_SOURCES = \
 	styles.c	\
-	test-utils.c	\
-	test-utils.h
+	$(test_utils_common_sources)
+
+dimensions_SOURCES = \
+	dimensions.c	\
+	$(test_utils_common_sources)
 
 LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
 	$(LIBRSVG_LIBS)							\
@@ -31,26 +37,28 @@ INCLUDES = -I$(srcdir) 							\
 	   -DTOP_SRC_DIR="\"$(top_srcdir)\""				\
 	  $(LIBRSVG_CFLAGS)
 
-dist_installed_test_data =				\
-	$(wildcard $(srcdir)/fixtures/crash/*.svg) 	\
-	$(wildcard $(srcdir)/fixtures/crash/*.png) 	\
-	$(wildcard $(srcdir)/fixtures/reftests/*.svg) 	\
-	$(wildcard $(srcdir)/fixtures/reftests/*.png) 	\
-	$(wildcard $(srcdir)/fixtures/reftests/bugs*.svg) 	\
-	$(wildcard $(srcdir)/fixtures/reftests/bugs*.png) 	\
-	fixtures/dimensions/bug564527.svg		\
-	fixtures/dimensions/bug614018.svg		\
-	fixtures/dimensions/bug612951.svg		\
-	fixtures/dimensions/bug608102.svg		\
-	fixtures/dimensions/sub-rect-no-unit.svg	\
-	fixtures/styles/bug620693.svg			\
-	fixtures/styles/bug614704.svg			\
-	fixtures/styles/bug614606.svg			\
-	fixtures/styles/important.svg			\
-	fixtures/styles/svg-class.svg			\
-	fixtures/styles/bug592207.svg			\
-	fixtures/styles/bug338160.svg			\
-	fixtures/styles/bug379629.svg			\
-	fixtures/styles/bug614643.svg			\
-	fixtures/styles/bug418823.svg			\
+dist_installed_test_data =					\
+	$(wildcard $(srcdir)/fixtures/crash/*.svg)		\
+	$(wildcard $(srcdir)/fixtures/crash/*.png)		\
+	$(wildcard $(srcdir)/fixtures/reftests/*.svg)		\
+	$(wildcard $(srcdir)/fixtures/reftests/*.png)		\
+	$(wildcard $(srcdir)/fixtures/reftests/bugs/*.svg)	\
+	$(wildcard $(srcdir)/fixtures/reftests/bugs/*.png)	\
+	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/*.svg)	\
+	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/*.png)	\
+	fixtures/dimensions/bug564527.svg			\
+	fixtures/dimensions/bug614018.svg			\
+	fixtures/dimensions/bug612951.svg			\
+	fixtures/dimensions/bug608102.svg			\
+	fixtures/dimensions/sub-rect-no-unit.svg		\
+	fixtures/styles/bug620693.svg				\
+	fixtures/styles/bug614704.svg				\
+	fixtures/styles/bug614606.svg				\
+	fixtures/styles/important.svg				\
+	fixtures/styles/svg-class.svg				\
+	fixtures/styles/bug592207.svg				\
+	fixtures/styles/bug338160.svg				\
+	fixtures/styles/bug379629.svg				\
+	fixtures/styles/bug614643.svg				\
+	fixtures/styles/bug418823.svg				\
 	fixtures/styles/order.svg

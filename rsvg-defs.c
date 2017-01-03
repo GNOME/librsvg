@@ -33,7 +33,6 @@
 
 struct _RsvgDefs {
     GHashTable *hash;
-    GPtrArray *unnamed;
     GHashTable *externs;
     RsvgHandle *ctx;
 };
@@ -46,7 +45,6 @@ rsvg_defs_new (RsvgHandle *handle)
     result->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     result->externs =
         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_object_unref);
-    result->unnamed = g_ptr_array_new ();
     result->ctx = handle; /* no need to take a ref here */
 
     return result;
@@ -123,43 +121,26 @@ rsvg_defs_lookup (const RsvgDefs * defs, const char *name)
 }
 
 void
-rsvg_defs_set (RsvgDefs * defs, const char *name, RsvgNode * val)
+rsvg_defs_register_node_by_id (RsvgDefs *defs, const char *id, RsvgNode *node)
 {
-    if (name == NULL);
-    else if (name[0] == '\0');
-    else
-        rsvg_defs_register_name (defs, name, val);
-    rsvg_defs_register_memory (defs, val);
-}
+    g_assert (defs != NULL);
+    g_assert (id != NULL);
+    g_assert (node != NULL);
 
-void
-rsvg_defs_register_name (RsvgDefs * defs, const char *name, RsvgNode * val)
-{
-    if (g_hash_table_lookup (defs->hash, name))
+    if (g_hash_table_lookup (defs->hash, id))
         return;
 
-    g_hash_table_insert (defs->hash, g_strdup (name), val);
-}
-
-void
-rsvg_defs_register_memory (RsvgDefs * defs, RsvgNode * val)
-{
-    g_ptr_array_add (defs->unnamed, val);
+    g_hash_table_insert (defs->hash, g_strdup (id), node);
 }
 
 void
 rsvg_defs_free (RsvgDefs * defs)
 {
-    guint i;
-
     g_hash_table_destroy (defs->hash);
-
-    for (i = 0; i < defs->unnamed->len; i++)
-        ((RsvgNode *) g_ptr_array_index (defs->unnamed, i))->
-            free (g_ptr_array_index (defs->unnamed, i));
-    g_ptr_array_free (defs->unnamed, TRUE);
+    defs->hash = NULL;
 
     g_hash_table_destroy (defs->externs);
+    defs->externs = NULL;
 
     g_free (defs);
 }

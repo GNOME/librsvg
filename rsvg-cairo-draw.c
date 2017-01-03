@@ -22,7 +22,7 @@
    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.
 
-   Authors: Dom Lachowicz <cinamod@hotmail.com>, 
+   Authors: Dom Lachowicz <cinamod@hotmail.com>,
             Caleb Moore <c.moore@student.unsw.edu.au>
             Carl Worth <cworth@cworth.org>
 */
@@ -31,7 +31,7 @@
 #include "rsvg-cairo-render.h"
 #include "rsvg-cairo-clip.h"
 #include "rsvg-styles.h"
-#include "rsvg-path.h"
+#include "rsvg-path-builder.h"
 #include "rsvg-filter.h"
 #include "rsvg-structure.h"
 #include "rsvg-image.h"
@@ -41,119 +41,110 @@
 
 #include <pango/pangocairo.h>
 
-static const cairo_user_data_key_t surface_pixel_data_key;
+static gboolean
+add_color_stop_to_gradient (RsvgNode *node, gpointer data)
+{
+    Gradient *gradient = data;
+    RsvgGradientStop *stop;
+
+    if (rsvg_node_type (node) != RSVG_NODE_TYPE_STOP)
+        return TRUE; /* just ignore this node */
+
+    stop = (RsvgGradientStop *) node;
+
+    if (!stop->is_valid) {
+        /* Don't add any more stops. */
+        return FALSE;
+    }
+
+    gradient_add_color_stop (gradient, stop->offset, stop->rgba);
+
+    return TRUE;
+}
 
 static void
-_pattern_add_rsvg_color_stops (cairo_pattern_t * pattern,
-                               GPtrArray * stops, guint32 current_color_rgb, guint8 opacity)
+add_color_stops_to_gradient (Gradient *gradient, RsvgNode *node)
 {
-    gsize i;
-    RsvgGradientStop *stop;
-    RsvgNode *node;
-    guint32 rgba;
+    rsvg_node_foreach_child (node, add_color_stop_to_gradient, gradient);
+}
 
-    for (i = 0; i < stops->len; i++) {
-        node = (RsvgNode *) g_ptr_array_index (stops, i);
-        if (RSVG_NODE_TYPE (node) != RSVG_NODE_TYPE_STOP)
-            continue;
-        stop = (RsvgGradientStop *) node;
-        rgba = stop->rgba;
-        cairo_pattern_add_color_stop_rgba (pattern, stop->offset,
-                                           ((rgba >> 24) & 0xff) / 255.0,
-                                           ((rgba >> 16) & 0xff) / 255.0,
-                                           ((rgba >> 8) & 0xff) / 255.0,
-                                           (((rgba >> 0) & 0xff) * opacity) / 255.0 / 255.0);
+static Gradient *
+linear_gradient_to_rust (RsvgLinearGradient *linear)
+{
+    Gradient *gradient;
+
+    gradient = gradient_linear_new (linear->hasx1 ? &linear->x1 : NULL,
+                                    linear->hasy1 ? &linear->y1 : NULL,
+                                    linear->hasx2 ? &linear->x2 : NULL,
+                                    linear->hasy2 ? &linear->y2 : NULL,
+                                    linear->hasbbox ? &linear->obj_bbox : NULL,
+                                    linear->hastransform ? &linear->affine : NULL,
+                                    linear->hasspread ? &linear->spread : NULL,
+                                    linear->fallback);
+
+    add_color_stops_to_gradient (gradient, (RsvgNode *) linear);
+
+    return gradient;
+}
+
+static Gradient *
+radial_gradient_to_rust (RsvgRadialGradient *radial)
+{
+    Gradient *gradient;
+
+    gradient = gradient_radial_new (radial->hascx ? &radial->cx : NULL,
+                                    radial->hascy ? &radial->cy : NULL,
+                                    radial->hasr  ? &radial->r  : NULL,
+                                    radial->hasfx ? &radial->fx : NULL,
+                                    radial->hasfy ? &radial->fy : NULL,
+                                    radial->hasbbox ? &radial->obj_bbox : NULL,
+                                    radial->hastransform ? &radial->affine : NULL,
+                                    radial->hasspread ? &radial->spread : NULL,
+                                    radial->fallback);
+
+    add_color_stops_to_gradient (gradient, (RsvgNode *) radial);
+
+    return gradient;
+}
+
+Gradient *
+rsvg_gradient_node_to_rust_gradient (RsvgNode *node)
+{
+    if (rsvg_node_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
+        return linear_gradient_to_rust ((RsvgLinearGradient *) node);
+    } else if (rsvg_node_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
+        return radial_gradient_to_rust ((RsvgRadialGradient *) node);
+    } else {
+        return NULL;
     }
 }
 
 static void
-_set_source_rsvg_linear_gradient (RsvgDrawingCtx * ctx,
-                                  RsvgLinearGradient * linear,
-                                  guint32 current_color_rgb, guint8 opacity, RsvgBbox bbox)
+_set_source_rsvg_linear_gradient (RsvgDrawingCtx *ctx,
+                                  RsvgLinearGradient *linear,
+                                  guint8 opacity, RsvgBbox bbox)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    cairo_t *cr = render->cr;
-    cairo_pattern_t *pattern;
-    cairo_matrix_t matrix;
-    RsvgLinearGradient statlinear;
-    statlinear = *linear;
-    linear = &statlinear;
-    rsvg_linear_gradient_fix_fallback (ctx, linear);
+    Gradient *gradient;
 
-    if (linear->has_current_color)
-        current_color_rgb = linear->current_color;
+    gradient = linear_gradient_to_rust (linear);
 
-    if (linear->obj_bbox)
-        _rsvg_push_view_box (ctx, 1., 1.);
-    pattern = cairo_pattern_create_linear (_rsvg_css_normalize_length (&linear->x1, ctx, 'h'),
-                                           _rsvg_css_normalize_length (&linear->y1, ctx, 'v'),
-                                           _rsvg_css_normalize_length (&linear->x2, ctx, 'h'),
-                                           _rsvg_css_normalize_length (&linear->y2, ctx, 'v'));
+    gradient_resolve_fallbacks_and_set_pattern (gradient, ctx, opacity, bbox);
 
-    if (linear->obj_bbox)
-        _rsvg_pop_view_box (ctx);
-
-    matrix = linear->affine;
-    if (linear->obj_bbox) {
-        cairo_matrix_t bboxmatrix;
-        cairo_matrix_init (&bboxmatrix, bbox.rect.width, 0, 0, bbox.rect.height,
-                           bbox.rect.x, bbox.rect.y);
-        cairo_matrix_multiply (&matrix, &matrix, &bboxmatrix);
-    }
-    cairo_matrix_invert (&matrix);
-    cairo_pattern_set_matrix (pattern, &matrix);
-    cairo_pattern_set_extend (pattern, linear->spread);
-
-    _pattern_add_rsvg_color_stops (pattern, linear->super.children, current_color_rgb, opacity);
-
-    cairo_set_source (cr, pattern);
-    cairo_pattern_destroy (pattern);
+    gradient_destroy (gradient);
 }
 
 static void
 _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
                                   RsvgRadialGradient * radial,
-                                  guint32 current_color_rgb, guint8 opacity, RsvgBbox bbox)
+                                  guint8 opacity, RsvgBbox bbox)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    cairo_t *cr = render->cr;
-    cairo_pattern_t *pattern;
-    cairo_matrix_t matrix;
-    RsvgRadialGradient statradial;
-    statradial = *radial;
-    radial = &statradial;
-    rsvg_radial_gradient_fix_fallback (ctx, radial);
+    Gradient *gradient;
 
-    if (radial->has_current_color)
-        current_color_rgb = radial->current_color;
+    gradient = radial_gradient_to_rust (radial);
 
-    if (radial->obj_bbox)
-        _rsvg_push_view_box (ctx, 1., 1.);
+    gradient_resolve_fallbacks_and_set_pattern (gradient, ctx, opacity, bbox);
 
-    pattern = cairo_pattern_create_radial (_rsvg_css_normalize_length (&radial->fx, ctx, 'h'),
-                                           _rsvg_css_normalize_length (&radial->fy, ctx, 'v'), 0.0,
-                                           _rsvg_css_normalize_length (&radial->cx, ctx, 'h'),
-                                           _rsvg_css_normalize_length (&radial->cy, ctx, 'v'),
-                                           _rsvg_css_normalize_length (&radial->r, ctx, 'o'));
-    if (radial->obj_bbox)
-        _rsvg_pop_view_box (ctx);
-
-    matrix = radial->affine;
-    if (radial->obj_bbox) {
-        cairo_matrix_t bboxmatrix;
-        cairo_matrix_init (&bboxmatrix, bbox.rect.width, 0, 0, bbox.rect.height,
-                           bbox.rect.x, bbox.rect.y);
-        cairo_matrix_multiply (&matrix, &matrix, &bboxmatrix);
-    }
-
-    cairo_matrix_invert (&matrix);
-    cairo_pattern_set_matrix (pattern, &matrix);
-    cairo_pattern_set_extend (pattern, radial->spread);
-
-    _pattern_add_rsvg_color_stops (pattern, radial->super.children, current_color_rgb, opacity);
-
-    cairo_set_source (cr, pattern);
-    cairo_pattern_destroy (pattern);
+    gradient_destroy (gradient);
 }
 
 static void
@@ -196,15 +187,15 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
     cr_render = render->cr;
 
     if (rsvg_pattern->obj_bbox)
-        _rsvg_push_view_box (ctx, 1., 1.);
+        rsvg_drawing_ctx_push_view_box (ctx, 1., 1.);
 
-    patternx = _rsvg_css_normalize_length (&rsvg_pattern->x, ctx, 'h');
-    patterny = _rsvg_css_normalize_length (&rsvg_pattern->y, ctx, 'v');
-    patternw = _rsvg_css_normalize_length (&rsvg_pattern->width, ctx, 'h');
-    patternh = _rsvg_css_normalize_length (&rsvg_pattern->height, ctx, 'v');
+    patternx = rsvg_length_normalize (&rsvg_pattern->x, ctx);
+    patterny = rsvg_length_normalize (&rsvg_pattern->y, ctx);
+    patternw = rsvg_length_normalize (&rsvg_pattern->width, ctx);
+    patternh = rsvg_length_normalize (&rsvg_pattern->height, ctx);
 
     if (rsvg_pattern->obj_bbox)
-        _rsvg_pop_view_box (ctx);
+        rsvg_drawing_ctx_pop_view_box (ctx);
 
 
     /* Work out the size of the rectangle so it takes into account the object bounding box */
@@ -268,11 +259,11 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
                            h / rsvg_pattern->vbox.rect.height,
                            x,
                            y);
-        _rsvg_push_view_box (ctx, rsvg_pattern->vbox.rect.width, rsvg_pattern->vbox.rect.height);
+        rsvg_drawing_ctx_push_view_box (ctx, rsvg_pattern->vbox.rect.width, rsvg_pattern->vbox.rect.height);
     } else if (rsvg_pattern->obj_cbbox) {
         /* If coords are in terms of the bounding box, use them */
         cairo_matrix_init_scale (&caffine, bbox.rect.width, bbox.rect.height);
-        _rsvg_push_view_box (ctx, 1., 1.);
+        rsvg_drawing_ctx_push_view_box (ctx, 1., 1.);
     } else {
         cairo_matrix_init_identity (&caffine);
     }
@@ -320,7 +311,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
 
   out:
     if (rsvg_pattern->obj_cbbox || rsvg_pattern->vbox.active)
-        _rsvg_pop_view_box (ctx);
+        rsvg_drawing_ctx_pop_view_box (ctx);
 }
 
 /* note: _set_source_rsvg_paint_server does not change cairo's CTM */
@@ -334,16 +325,17 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
 
     switch (ps->type) {
     case RSVG_PAINT_SERVER_IRI:
-        node = rsvg_acquire_node (ctx, ps->core.iri);
+        node = rsvg_drawing_ctx_acquire_node (ctx, ps->core.iri);
         if (node == NULL)
             break;
-        else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT)
-            _set_source_rsvg_linear_gradient (ctx, (RsvgLinearGradient *) node, current_color_rgb, opacity, bbox);
-        else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT)
-            _set_source_rsvg_radial_gradient (ctx, (RsvgRadialGradient *) node, current_color_rgb, opacity, bbox);
-        else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_PATTERN)
+        else if (rsvg_node_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT)
+            _set_source_rsvg_linear_gradient (ctx, (RsvgLinearGradient *) node, opacity, bbox);
+        else if (rsvg_node_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT)
+            _set_source_rsvg_radial_gradient (ctx, (RsvgRadialGradient *) node, opacity, bbox);
+        else if (rsvg_node_type (node) == RSVG_NODE_TYPE_PATTERN)
             _set_source_rsvg_pattern (ctx, (RsvgPattern *) node, opacity, bbox);
-        rsvg_release_node (ctx, node);
+
+        rsvg_drawing_ctx_release_node (ctx, node);
         break;
     case RSVG_PAINT_SERVER_SOLID:
         _set_source_rsvg_solid_color (ctx, ps->core.color, opacity, current_color);
@@ -366,18 +358,53 @@ _set_rsvg_affine (RsvgCairoRender * render, cairo_matrix_t *affine)
     cairo_set_matrix (cr, &matrix);
 }
 
+static cairo_font_options_t *
+get_font_options_for_testing (void)
+{
+    cairo_font_options_t *options;
+
+    options = cairo_font_options_create ();
+    cairo_font_options_set_antialias (options, CAIRO_ANTIALIAS_GRAY);
+    cairo_font_options_set_hint_style (options, CAIRO_HINT_STYLE_FULL);
+    cairo_font_options_set_hint_metrics (options, CAIRO_HINT_METRICS_ON);
+
+    return options;
+}
+
 PangoContext *
 rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
 {
     PangoFontMap *fontmap;
     PangoContext *context;
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+    double dpi_y;
 
     fontmap = pango_cairo_font_map_get_default ();
     context = pango_font_map_create_context (fontmap);
     pango_cairo_update_context (render->cr, context);
-    pango_cairo_context_set_resolution (context, ctx->dpi_y);
+
+    rsvg_drawing_ctx_get_dpi (ctx, NULL, &dpi_y);
+    pango_cairo_context_set_resolution (context, dpi_y);
+
+    if (ctx->is_testing) {
+        cairo_font_options_t *font_options;
+        font_options = get_font_options_for_testing ();
+        pango_cairo_context_set_font_options (context, font_options);
+        cairo_font_options_destroy (font_options);
+    }
+
     return context;
+}
+
+static void
+setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgState *state)
+{
+    cairo_set_line_width (cr, rsvg_get_normalized_stroke_width (ctx));
+    cairo_set_miter_limit (cr, state->miter_limit);
+    cairo_set_line_cap (cr, (cairo_line_cap_t) state->cap);
+    cairo_set_line_join (cr, (cairo_line_join_t) state->join);
+    cairo_set_dash (cr, state->dash.dash, state->dash.n_dash,
+                    rsvg_length_normalize (&state->dash.offset, ctx));
 }
 
 void
@@ -441,19 +468,17 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
             cairo_rotate (render->cr, -rotation);
         pango_cairo_layout_path (render->cr, layout);
 
-        cairo_set_line_width (render->cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, 'h'));
-        cairo_set_miter_limit (render->cr, state->miter_limit);
-        cairo_set_line_cap (render->cr, (cairo_line_cap_t) state->cap);
-        cairo_set_line_join (render->cr, (cairo_line_join_t) state->join);
-        cairo_set_dash (render->cr, state->dash.dash, state->dash.n_dash,
-                        _rsvg_css_normalize_length (&state->dash.offset, ctx, 'o'));
+        setup_cr_for_stroke (render->cr, ctx, state);
+
         cairo_stroke (render->cr);
         cairo_restore (render->cr);
     }
 }
 
+
+
 void
-rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
+rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state = rsvg_current_state (ctx);
@@ -469,14 +494,9 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
 
     _set_rsvg_affine (render, &state->affine);
 
-    cairo_set_line_width (cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, 'h'));
-    cairo_set_miter_limit (cr, state->miter_limit);
-    cairo_set_line_cap (cr, (cairo_line_cap_t) state->cap);
-    cairo_set_line_join (cr, (cairo_line_join_t) state->join);
-    cairo_set_dash (cr, state->dash.dash, state->dash.n_dash,
-                    _rsvg_css_normalize_length (&state->dash.offset, ctx, 'o'));
+    setup_cr_for_stroke (cr, ctx, state);
 
-    cairo_append_path (cr, path);
+    rsvg_path_builder_add_to_cairo_context (builder, cr);
 
     rsvg_bbox_init (&bbox, &state->affine);
 
@@ -555,11 +575,11 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
 }
 
 void
-rsvg_cairo_render_surface (RsvgDrawingCtx *ctx, 
+rsvg_cairo_render_surface (RsvgDrawingCtx *ctx,
                            cairo_surface_t *surface,
-                           double src_x, 
-                           double src_y, 
-                           double w, 
+                           double src_x,
+                           double src_y,
+                           double w,
                            double h)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
@@ -616,6 +636,14 @@ rsvg_cairo_render_surface (RsvgDrawingCtx *ctx,
     rsvg_bbox_insert (&render->bbox, &bbox);
 }
 
+cairo_t *
+rsvg_cairo_get_cairo_context (RsvgDrawingCtx *ctx)
+{
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+
+    return render->cr;
+}
+
 static void
 rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, RsvgBbox * bbox)
 {
@@ -640,15 +668,15 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
     rowstride = cairo_image_surface_get_stride (surface);
 
     if (self->maskunits == objectBoundingBox)
-        _rsvg_push_view_box (ctx, 1, 1);
+        rsvg_drawing_ctx_push_view_box (ctx, 1, 1);
 
-    sx = _rsvg_css_normalize_length (&self->x, ctx, 'h');
-    sy = _rsvg_css_normalize_length (&self->y, ctx, 'v');
-    sw = _rsvg_css_normalize_length (&self->width, ctx, 'h');
-    sh = _rsvg_css_normalize_length (&self->height, ctx, 'v');
+    sx = rsvg_length_normalize (&self->x, ctx);
+    sy = rsvg_length_normalize (&self->y, ctx);
+    sw = rsvg_length_normalize (&self->width, ctx);
+    sh = rsvg_length_normalize (&self->height, ctx);
 
     if (self->maskunits == objectBoundingBox)
-        _rsvg_pop_view_box (ctx);
+        rsvg_drawing_ctx_pop_view_box (ctx);
 
     mask_cr = cairo_create (surface);
     save_cr = render->cr;
@@ -675,7 +703,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
                            bbox->rect.y);
         affinesave = self->super.state->affine;
         cairo_matrix_multiply (&self->super.state->affine, &bbtransform, &self->super.state->affine);
-        _rsvg_push_view_box (ctx, 1, 1);
+        rsvg_drawing_ctx_push_view_box (ctx, 1, 1);
     }
 
     rsvg_state_push (ctx);
@@ -683,7 +711,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
     rsvg_state_pop (ctx);
 
     if (self->contentunits == objectBoundingBox) {
-        _rsvg_pop_view_box (ctx);
+        rsvg_drawing_ctx_pop_view_box (ctx);
         self->super.state->affine = affinesave;
     }
 
@@ -693,9 +721,28 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
         guint8 *row_data = (pixels + (row * rowstride));
         for (i = 0; i < width; i++) {
             guint32 *pixel = (guint32 *) row_data + i;
-            *pixel = ((((*pixel & 0x00ff0000) >> 16) * 13817 +
-                       ((*pixel & 0x0000ff00) >> 8) * 46518 +
-                       ((*pixel & 0x000000ff)) * 4688) * state->opacity);
+            /*
+             *  Assuming, the pixel is linear RGB (not sRGB)
+             *  y = luminance
+             *  Y = 0.2126 R + 0.7152 G + 0.0722 B
+             *  1.0 opacity = 255
+             *
+             *  When Y = 1.0, pixel for mask should be 0xFFFFFFFF
+             *  	(you get 1.0 luminance from 255 from R, G and B)
+             *
+             *	r_mult = 0xFFFFFFFF / (255.0 * 255.0) * .2126 = 14042.45  ~= 14042
+             *	g_mult = 0xFFFFFFFF / (255.0 * 255.0) * .7152 = 47239.69  ~= 47240
+             *	b_mult = 0xFFFFFFFF / (255.0 * 255.0) * .0722 =  4768.88  ~= 4769
+             *
+             * 	This allows for the following expected behaviour:
+             *  (we only care about the most sig byte)
+             *	if pixel = 0x00FFFFFF, pixel' = 0xFF......
+             *	if pixel = 0x00020202, pixel' = 0x02......
+             *	if pixel = 0x00000000, pixel' = 0x00......
+             */
+            *pixel = ((((*pixel & 0x00ff0000) >> 16) * 14042 +
+                       ((*pixel & 0x0000ff00) >>  8) * 47240 +
+                       ((*pixel & 0x000000ff)      ) * 4769    ) * state->opacity);
         }
     }
 
@@ -720,8 +767,8 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 
     if (rsvg_current_state (ctx)->clip_path) {
         RsvgNode *node;
-        node = rsvg_acquire_node (ctx, rsvg_current_state (ctx)->clip_path);
-        if (node && RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_CLIP_PATH) {
+        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, rsvg_current_state (ctx)->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
+        if (node) {
             RsvgClipPath *clip_path = (RsvgClipPath *) node;
 
             switch (clip_path->units) {
@@ -737,9 +784,8 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
                 break;
             }
 
+            rsvg_drawing_ctx_release_node (ctx, node);
         }
-        
-        rsvg_release_node (ctx, node);
     }
 
     if (state->opacity == 0xFF
@@ -752,7 +798,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
                                                 CAIRO_CONTENT_COLOR_ALPHA,
                                                 render->width, render->height);
     } else {
-        surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 
+        surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
                                               render->width, render->height);
 
         /* The surface reference is owned by the child_cr created below and put on the cr_stack! */
@@ -799,12 +845,11 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
     if (rsvg_current_state (ctx)->clip_path) {
         RsvgNode *node;
-        node = rsvg_acquire_node (ctx, rsvg_current_state (ctx)->clip_path);
-        if (node && RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_CLIP_PATH
-            && ((RsvgClipPath *) node)->units == objectBoundingBox)
+        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, rsvg_current_state (ctx)->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
+        if (node && ((RsvgClipPath *) node)->units == objectBoundingBox)
             lateclip = (RsvgClipPath *) node;
         else
-            rsvg_release_node (ctx, node);
+            rsvg_drawing_ctx_release_node (ctx, node);
     }
 
     if (state->opacity == 0xFF
@@ -818,17 +863,17 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
         RsvgNode *filter;
         cairo_surface_t *output;
 
-        filter = rsvg_acquire_node (ctx, state->filter);
         output = render->surfaces_stack->data;
         render->surfaces_stack = g_list_delete_link (render->surfaces_stack, render->surfaces_stack);
 
-        if (filter && RSVG_NODE_TYPE (filter) == RSVG_NODE_TYPE_FILTER) {
+        filter = rsvg_drawing_ctx_acquire_node_of_type (ctx, state->filter, RSVG_NODE_TYPE_FILTER);
+        if (filter) {
             needs_destroy = TRUE;
             surface = rsvg_filter_render ((RsvgFilter *) filter, output, ctx, &render->bbox, "2103");
+            rsvg_drawing_ctx_release_node (ctx, filter);
+
             /* Don't destroy the output surface, it's owned by child_cr */
         }
-
-        rsvg_release_node (ctx, filter);
     }
 
     render->cr = (cairo_t *) render->cr_stack->data;
@@ -842,7 +887,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
     if (lateclip) {
         rsvg_cairo_clip (ctx, lateclip, &render->bbox);
-        rsvg_release_node (ctx, (RsvgNode *) lateclip);
+        rsvg_drawing_ctx_release_node (ctx, (RsvgNode *) lateclip);
     }
 
     cairo_set_operator (render->cr, state->comp_op);
@@ -850,10 +895,11 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     if (state->mask) {
         RsvgNode *mask;
 
-        mask = rsvg_acquire_node (ctx, state->mask);
-        if (mask && RSVG_NODE_TYPE (mask) == RSVG_NODE_TYPE_MASK)
-          rsvg_cairo_generate_mask (render->cr, (RsvgMask *) mask, ctx, &render->bbox);
-        rsvg_release_node (ctx, mask);
+        mask = rsvg_drawing_ctx_acquire_node_of_type (ctx, state->mask, RSVG_NODE_TYPE_MASK);
+        if (mask) {
+            rsvg_cairo_generate_mask (render->cr, (RsvgMask *) mask, ctx, &render->bbox);
+            rsvg_drawing_ctx_release_node (ctx, mask);
+        }
     } else if (state->opacity != 0xFF)
         cairo_paint_with_alpha (render->cr, (double) state->opacity / 255.0);
     else
@@ -896,8 +942,8 @@ rsvg_cairo_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w
 
 cairo_surface_t *
 rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
-                                RsvgNode *drawable, 
-                                double width, 
+                                RsvgNode *drawable,
+                                double width,
                                 double height)
 {
     cairo_surface_t *surface;
@@ -917,9 +963,7 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
     render = rsvg_cairo_render_new (cr, width, height);
     ctx->render = (RsvgRender *) render;
 
-    rsvg_state_push (ctx);
     rsvg_node_draw (drawable, ctx, 0);
-    rsvg_state_pop (ctx);
 
     cairo_destroy (cr);
 

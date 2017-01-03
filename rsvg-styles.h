@@ -72,6 +72,19 @@ struct _RsvgVpathDash {
     double *dash;
 };
 
+typedef enum {
+    STOP_COLOR_UNSPECIFIED,
+    STOP_COLOR_SPECIFIED,
+    STOP_COLOR_INHERIT,
+    STOP_COLOR_CURRENT_COLOR
+} StopColor;
+
+typedef enum {
+    STOP_OPACITY_UNSPECIFIED,
+    STOP_OPACITY_SPECIFIED,
+    STOP_OPACITY_INHERIT
+} StopOpacity;
+
 /* end libart theft... */
 
 struct _RsvgState {
@@ -143,8 +156,10 @@ struct _RsvgState {
 
     guint32 stop_color;         /* rgb */
     gboolean has_stop_color;
+    StopColor stop_color_mode;
     gint stop_opacity;          /* 0..255 */
     gboolean has_stop_opacity;
+    StopOpacity stop_opacity_mode;
 
     gboolean visible;
     gboolean has_visible;
@@ -191,7 +206,8 @@ G_GNUC_INTERNAL
 RsvgState *rsvg_state_new (void);
 
 G_GNUC_INTERNAL
-void rsvg_state_init        (RsvgState * state);
+void rsvg_state_free (RsvgState *state);
+
 G_GNUC_INTERNAL
 void rsvg_state_reinit      (RsvgState * state);
 G_GNUC_INTERNAL
@@ -200,12 +216,7 @@ G_GNUC_INTERNAL
 void rsvg_state_inherit     (RsvgState * dst, const RsvgState * src);
 G_GNUC_INTERNAL
 void rsvg_state_reinherit   (RsvgState * dst, const RsvgState * src);
-G_GNUC_INTERNAL
-void rsvg_state_dominate    (RsvgState * dst, const RsvgState * src);
-G_GNUC_INTERNAL
-void rsvg_state_override    (RsvgState * dst, const RsvgState * src);
-G_GNUC_INTERNAL
-void rsvg_state_finalize    (RsvgState * state);
+
 G_GNUC_INTERNAL
 void rsvg_state_free_all    (RsvgState * state);
 
@@ -218,11 +229,6 @@ void rsvg_parse_cssbuffer   (RsvgHandle * ctx, const char *buff, size_t buflen);
 G_GNUC_INTERNAL
 void rsvg_parse_style_attrs (RsvgHandle * ctx, RsvgState * state, const char *tag,
                              const char *klazz, const char *id, RsvgPropertyBag * atts);
-
-G_GNUC_INTERNAL
-gdouble rsvg_viewport_percentage (gdouble width, gdouble height);
-G_GNUC_INTERNAL
-gdouble rsvg_dpi_percentage      (RsvgHandle * ctx);
 
 G_GNUC_INTERNAL
 gboolean rsvg_parse_transform   (cairo_matrix_t *matrix, const char *src);

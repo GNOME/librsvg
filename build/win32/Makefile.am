@@ -1,9 +1,4 @@
-SUBDIRS = \
-	vs9	\
-	vs10	\
-	vs11	\
-	vs12	\
-	vs14
+SUBDIRS = vs12 vs14
 
 if HAVE_INTROSPECTION
 GENERATED_ITEMS = \
@@ -32,4 +27,5 @@ EXTRA_DIST = \
 	rsvg-introspection-msvc.mak	\
 	introspection-msvc.mak	\
 	detectenv-msvc.mak	\
+	rsvg-rust.mak		\
 	$(GENERATED_ITEMS)

@@ -1,24 +1,34 @@
-EXTRA_DIST =    \
+GENERATED_ITEMS =			\
+	rsvg.vcxproj			\
+	rsvg.vcxproj.filters		\
+	rsvg-convert.vcxproj		\
+	rsvg-convert.vcxproj.filters	\
+	rsvg-install.props
+
+EXTRA_DIST =	\
 	librsvg.sln				\
 	rsvg-build-defines.props		\
 	rsvg-gen-srcs.props			\
-	rsvg-install.props			\
+	rsvg-install.propsin			\
 	rsvg-version-paths.props		\
 	libpixbufloader-svg.vcxproj		\
 	libpixbufloader-svg.vcxproj.filters	\
-	rsvg.vcxproj				\
-	rsvg.vcxproj.filters			\
-	rsvg-convert.vcxproj			\
-	rsvg-convert.vcxproj.filters		\
+	rsvg.vcxprojin				\
+	rsvg.vcxproj.filtersin			\
+	rsvg-convert.vcxprojin			\
+	rsvg-convert.vcxproj.filtersin		\
 	rsvg-install.vcxproj			\
+	rsvg-rust.vcxproj			\
 	rsvg-view-3.vcxproj			\
 	rsvg-view-3.vcxproj.filters		\
-	README.txt 
+	README.txt				\
+	$(GENERATED_ITEMS)
 
-DISTCLEANFILES = $(EXTRA_DIST)
+rsvg-install.props: $(top_srcdir)/build/win32/vs12/rsvg-install.propsin rsvg.vs12.headers
+	-$(RM) $(top_builddir)/build/win32/vs14/rsvg-install.props
+	$(CPP) -P - <$(top_srcdir)/build/win32/vs12/rsvg-install.propsin >$@
+	rm rsvg.vs12.headers
 
-MSVC_VER = 12
-MSVC_FORMAT_VER = 12
-MSVC_VER_LONG = 2013
+DISTCLEANFILES = $(GENERATED_ITEMS)
 
-include $(top_srcdir)/build/Makefile-newvs.am
+-include $(top_srcdir)/git.mk

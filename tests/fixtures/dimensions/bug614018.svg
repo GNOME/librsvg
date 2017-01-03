@@ -20,11 +20,11 @@
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
 	    "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 
-  <svg viewBox="-1.620000 -0.910000 3.240000 1.820000"
+  <svg viewBox="0 0 972 546"
        xmlns="http://www.w3.org/2000/svg" version="1.1" 
        xmlns:xlink="http://www.w3.org/1999/xlink">
 
-    <defs>
+  <defs>
       <pattern id="stripe" patternUnits="userSpaceOnUse"
                x="-0.0286"
 	       y="-0.0286"
@@ -77,7 +77,6 @@
       <g id="ball">
 	<circle r="0.0286" stroke-width="0.003"/>
       </g>
-    </defs>
 
     <g id="table">
       <!-- The frame. -->
@@ -351,5 +350,11 @@
                 xlink:href="#ball"/> 
 	   <use transform="rotate(133)"
 	        fill="url(#stripe)" xlink:href="#ball"/>         </g>
+    </g>
+  </defs>
+
+  <g transform="scale (300, 300) translate (1.62, 0.91)">
+    <use xlink:href="#table"/>
   </g>
+
 </svg>

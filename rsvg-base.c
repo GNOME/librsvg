@@ -54,7 +54,7 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#include "rsvg-path.h"
+#include "rsvg-path-builder.h"
 #include "rsvg-paint-server.h"
 #include "rsvg-xml.h"
 
@@ -188,140 +188,284 @@ rsvg_start_style (RsvgHandle * ctx, RsvgPropertyBag *atts)
     ctx->priv->handler = &handler->super;
 }
 
+static void
+add_node_to_handle (RsvgHandle *ctx, RsvgNode *node)
+{
+    g_assert (ctx != NULL);
+    g_assert (node != NULL);
+
+    g_ptr_array_add (ctx->priv->all_nodes, node);
+}
+
+static void
+register_node_in_defs (RsvgHandle *ctx, RsvgNode *node, RsvgPropertyBag *atts)
+{
+    const char *id;
+
+    id = rsvg_property_bag_lookup (atts, "id");
+    if (id) {
+        rsvg_defs_register_node_by_id (ctx->priv->defs, id, node);
+    }
+}
+
+static void
+push_element_name (RsvgHandle *ctx, const char *name)
+{
+    /* libxml holds on to the name while parsing; we won't dup the name here */
+    ctx->priv->element_name_stack = g_slist_prepend (ctx->priv->element_name_stack, (void *) name);
+}
+
+static gboolean
+topmost_element_name_is (RsvgHandle *ctx, const char *name)
+{
+    if (ctx->priv->element_name_stack) {
+        const char *name_in_stack = ctx->priv->element_name_stack->data;
+
+        return strcmp (name, name_in_stack) == 0;
+    } else
+        return FALSE;
+}
+
+static void
+pop_element_name (RsvgHandle *ctx)
+{
+    ctx->priv->element_name_stack = g_slist_delete_link (ctx->priv->element_name_stack, ctx->priv->element_name_stack);
+}
+
+static void
+free_element_name_stack (RsvgHandle *ctx)
+{
+    g_slist_free (ctx->priv->element_name_stack);
+    ctx->priv->element_name_stack = NULL;
+}
+
+typedef RsvgNode *(* CreateNodeFn) (const char *element_name);
+
+typedef struct {
+    const char   *element_name;
+    gboolean      supports_class_attribute; /* from https://www.w3.org/TR/SVG/attindex.html#RegularAttributes */
+    CreateNodeFn  create_fn;
+} NodeCreator;
+
+/* Keep these sorted by element_name!
+ *
+ * Lines in comments are elements that we don't support.
+ */
+static const NodeCreator node_creators[] = {
+    { "a",                   TRUE,  rsvg_new_group },    /* treat anchors as groups for now */
+    /* "altGlyph",           TRUE,  */
+    /* "altGlyphDef",        FALSE, */
+    /* "altGlyphItem",       FALSE, */
+    /* "animate",            FALSE, */
+    /* "animateColor",       FALSE, */
+    /* "animateMotion",      FALSE, */
+    /* "animateTransform",   FALSE, */
+    { "circle",              TRUE,  rsvg_new_circle },
+    { "clipPath",            TRUE,  rsvg_new_clip_path },
+    /* "color-profile",      FALSE, */
+    { "conicalGradient",     TRUE,  rsvg_new_radial_gradient },
+    /* "cursor",             FALSE, */
+    { "defs",                TRUE,  rsvg_new_defs },
+    /* "desc",               TRUE,  */
+    { "ellipse",             TRUE,  rsvg_new_ellipse },
+    { "feBlend",             TRUE,  rsvg_new_filter_primitive_blend },
+    { "feColorMatrix",       TRUE,  rsvg_new_filter_primitive_color_matrix },
+    { "feComponentTransfer", TRUE,  rsvg_new_filter_primitive_component_transfer },
+    { "feComposite",         TRUE,  rsvg_new_filter_primitive_composite },
+    { "feConvolveMatrix",    TRUE,  rsvg_new_filter_primitive_convolve_matrix },
+    { "feDiffuseLighting",   TRUE,  rsvg_new_filter_primitive_diffuse_lighting },
+    { "feDisplacementMap",   TRUE,  rsvg_new_filter_primitive_displacement_map },
+    { "feDistantLight",      FALSE, rsvg_new_node_light_source },
+    { "feFlood",             TRUE,  rsvg_new_filter_primitive_flood },
+    { "feFuncA",             FALSE, rsvg_new_node_component_transfer_function },
+    { "feFuncB",             FALSE, rsvg_new_node_component_transfer_function },
+    { "feFuncG",             FALSE, rsvg_new_node_component_transfer_function },
+    { "feFuncR",             FALSE, rsvg_new_node_component_transfer_function },
+    { "feGaussianBlur",      TRUE,  rsvg_new_filter_primitive_gaussian_blur },
+    { "feImage",             TRUE,  rsvg_new_filter_primitive_image },
+    { "feMerge",             TRUE,  rsvg_new_filter_primitive_merge },
+    { "feMergeNode",         FALSE, rsvg_new_filter_primitive_merge_node },
+    { "feMorphology",        TRUE,  rsvg_new_filter_primitive_erode },
+    { "feOffset",            TRUE,  rsvg_new_filter_primitive_offset },
+    { "fePointLight",        FALSE, rsvg_new_node_light_source },
+    { "feSpecularLighting",  TRUE,  rsvg_new_filter_primitive_specular_lighting },
+    { "feSpotLight",         FALSE, rsvg_new_node_light_source },
+    { "feTile",              TRUE,  rsvg_new_filter_primitive_tile },
+    { "feTurbulence",        TRUE,  rsvg_new_filter_primitive_turbulence },
+    { "filter",              TRUE,  rsvg_new_filter },
+    /* "font",               TRUE,  */
+    /* "font-face",          FALSE, */
+    /* "font-face-format",   FALSE, */
+    /* "font-face-name",     FALSE, */
+    /* "font-face-src",      FALSE, */
+    /* "font-face-uri",      FALSE, */
+    /* "foreignObject",      TRUE,  */
+    { "g",                   TRUE,  rsvg_new_group },
+    /* "glyph",              TRUE,  */
+    /* "glyphRef",           TRUE,  */
+    /* "hkern",              FALSE, */
+    { "image",               TRUE,  rsvg_new_image },
+    { "line",                TRUE,  rsvg_new_line },
+    { "linearGradient",      TRUE,  rsvg_new_linear_gradient },
+    { "marker",              TRUE,  rsvg_new_marker },
+    { "mask",                TRUE,  rsvg_new_mask },
+    /* "metadata",           FALSE, */
+    /* "missing-glyph",      TRUE,  */
+    /* "mpath"               FALSE, */
+    { "multiImage",          FALSE, rsvg_new_switch }, /* hack to make multiImage sort-of work */
+    { "path",                TRUE,  rsvg_new_path },
+    { "pattern",             TRUE,  rsvg_new_pattern },
+    { "polygon",             TRUE,  rsvg_new_polygon },
+    { "polyline",            TRUE,  rsvg_new_polyline },
+    { "radialGradient",      TRUE,  rsvg_new_radial_gradient },
+    { "rect",                TRUE,  rsvg_new_rect },
+    /* "script",             FALSE, */
+    /* "set",                FALSE, */
+    { "stop",                TRUE,  rsvg_new_stop },
+    /* "style",              FALSE, */
+    { "subImage",            FALSE, rsvg_new_group },
+    { "subImageRef",         FALSE, rsvg_new_image },
+    { "svg",                 TRUE,  rsvg_new_svg },
+    { "switch",              TRUE,  rsvg_new_switch },
+    { "symbol",              TRUE,  rsvg_new_symbol },
+    { "text",                TRUE,  rsvg_new_text },
+    /* "textPath",           TRUE,  */
+    /* "title",              TRUE,  */
+    { "tref",                TRUE,  rsvg_new_tref },
+    { "tspan",               TRUE,  rsvg_new_tspan },
+    { "use",                 TRUE,  rsvg_new_use },
+    /* "view",               FALSE, */
+    /* "vkern",              FALSE, */
+};
+
+/* hack for bug 401115. whenever we encounter a node we don't understand, push it into a group.
+ * this will allow us to handle things like conditionals properly.
+ */
+static const NodeCreator default_node_creator = { NULL, TRUE, rsvg_new_group };
+
+/* Used from bsearch() */
+static int
+compare_node_creators_fn (const void *a, const void *b)
+{
+    const NodeCreator *na = a;
+    const NodeCreator *nb = b;
+
+    return strcmp (na->element_name, nb->element_name);
+}
+
+static const NodeCreator *
+get_node_creator_for_element_name (const char *name)
+{
+    NodeCreator key;
+    const NodeCreator *result;
+
+    key.element_name = name;
+    key.supports_class_attribute = FALSE;
+    key.create_fn = NULL;
+
+    result = bsearch (&key,
+                      node_creators,
+                      G_N_ELEMENTS (node_creators),
+                      sizeof (NodeCreator),
+                      compare_node_creators_fn);
+
+    if (result == NULL)
+        result = &default_node_creator;
+
+    return result;
+}
+
+static void
+node_set_atts (RsvgNode * node, RsvgHandle * ctx, const NodeCreator *creator, RsvgPropertyBag * atts)
+{
+    if (rsvg_property_bag_size (atts) > 0) {
+        const char *id;
+        const char *klazz;
+
+        node->vtable->set_atts (node, ctx, atts);
+
+        /* The "svg" node is special; it will load its id/class
+         * attributes until the end, when rsvg_end_element() calls
+         * _rsvg_node_svg_apply_atts()
+         */
+        if (rsvg_node_type (node) != RSVG_NODE_TYPE_SVG) {
+            id = rsvg_property_bag_lookup (atts, "id");
+
+            if (creator->supports_class_attribute)
+                klazz = rsvg_property_bag_lookup (atts, "class");
+            else
+                klazz = NULL;
+
+            rsvg_parse_style_attrs (ctx, rsvg_node_get_state (node), creator->element_name, klazz, id, atts);
+        }
+    }
+}
 
 static void
 rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag * atts)
 {
-    /*replace this stuff with a hash for fast reading! */
+    const NodeCreator *creator;
     RsvgNode *newnode = NULL;
-    if (!strcmp (name, "g"))
-        newnode = rsvg_new_group ();
-    else if (!strcmp (name, "a"))       /*treat anchors as groups for now */
-        newnode = rsvg_new_group ();
-    else if (!strcmp (name, "switch"))
-        newnode = rsvg_new_switch ();
-    else if (!strcmp (name, "defs"))
-        newnode = rsvg_new_defs ();
-    else if (!strcmp (name, "use"))
-        newnode = rsvg_new_use ();
-    else if (!strcmp (name, "path"))
-        newnode = rsvg_new_path ();
-    else if (!strcmp (name, "line"))
-        newnode = rsvg_new_line ();
-    else if (!strcmp (name, "rect"))
-        newnode = rsvg_new_rect ();
-    else if (!strcmp (name, "ellipse"))
-        newnode = rsvg_new_ellipse ();
-    else if (!strcmp (name, "circle"))
-        newnode = rsvg_new_circle ();
-    else if (!strcmp (name, "polygon"))
-        newnode = rsvg_new_polygon ();
-    else if (!strcmp (name, "polyline"))
-        newnode = rsvg_new_polyline ();
-    else if (!strcmp (name, "symbol"))
-        newnode = rsvg_new_symbol ();
-    else if (!strcmp (name, "svg"))
-        newnode = rsvg_new_svg ();
-    else if (!strcmp (name, "mask"))
-        newnode = rsvg_new_mask ();
-    else if (!strcmp (name, "clipPath"))
-        newnode = rsvg_new_clip_path ();
-    else if (!strcmp (name, "image"))
-        newnode = rsvg_new_image ();
-    else if (!strcmp (name, "marker"))
-        newnode = rsvg_new_marker ();
-    else if (!strcmp (name, "stop"))
-        newnode = rsvg_new_stop ();
-    else if (!strcmp (name, "pattern"))
-        newnode = rsvg_new_pattern ();
-    else if (!strcmp (name, "linearGradient"))
-        newnode = rsvg_new_linear_gradient ();
-    else if (!strcmp (name, "radialGradient"))
-        newnode = rsvg_new_radial_gradient ();
-    else if (!strcmp (name, "conicalGradient"))
-        newnode = rsvg_new_radial_gradient ();
-    else if (!strcmp (name, "filter"))
-        newnode = rsvg_new_filter ();
-    else if (!strcmp (name, "feBlend"))
-        newnode = rsvg_new_filter_primitive_blend ();
-    else if (!strcmp (name, "feColorMatrix"))
-        newnode = rsvg_new_filter_primitive_color_matrix ();
-    else if (!strcmp (name, "feComponentTransfer"))
-        newnode = rsvg_new_filter_primitive_component_transfer ();
-    else if (!strcmp (name, "feComposite"))
-        newnode = rsvg_new_filter_primitive_composite ();
-    else if (!strcmp (name, "feConvolveMatrix"))
-        newnode = rsvg_new_filter_primitive_convolve_matrix ();
-    else if (!strcmp (name, "feDiffuseLighting"))
-        newnode = rsvg_new_filter_primitive_diffuse_lighting ();
-    else if (!strcmp (name, "feDisplacementMap"))
-        newnode = rsvg_new_filter_primitive_displacement_map ();
-    else if (!strcmp (name, "feFlood"))
-        newnode = rsvg_new_filter_primitive_flood ();
-    else if (!strcmp (name, "feGaussianBlur"))
-        newnode = rsvg_new_filter_primitive_gaussian_blur ();
-    else if (!strcmp (name, "feImage"))
-        newnode = rsvg_new_filter_primitive_image ();
-    else if (!strcmp (name, "feMerge"))
-        newnode = rsvg_new_filter_primitive_merge ();
-    else if (!strcmp (name, "feMorphology"))
-        newnode = rsvg_new_filter_primitive_erode ();
-    else if (!strcmp (name, "feOffset"))
-        newnode = rsvg_new_filter_primitive_offset ();
-    else if (!strcmp (name, "feSpecularLighting"))
-        newnode = rsvg_new_filter_primitive_specular_lighting ();
-    else if (!strcmp (name, "feTile"))
-        newnode = rsvg_new_filter_primitive_tile ();
-    else if (!strcmp (name, "feTurbulence"))
-        newnode = rsvg_new_filter_primitive_turbulence ();
-    else if (!strcmp (name, "feMergeNode"))
-        newnode = rsvg_new_filter_primitive_merge_node ();
-    else if (!strcmp (name, "feFuncR"))
-        newnode = rsvg_new_node_component_transfer_function ('r'); /* See rsvg_filter_primitive_component_transfer_render() for where these values are used */
-    else if (!strcmp (name, "feFuncG"))
-        newnode = rsvg_new_node_component_transfer_function ('g');
-    else if (!strcmp (name, "feFuncB"))
-        newnode = rsvg_new_node_component_transfer_function ('b');
-    else if (!strcmp (name, "feFuncA"))
-        newnode = rsvg_new_node_component_transfer_function ('a');
-    else if (!strcmp (name, "feDistantLight"))
-        newnode = rsvg_new_node_light_source ('d');
-    else if (!strcmp (name, "feSpotLight"))
-        newnode = rsvg_new_node_light_source ('s');
-    else if (!strcmp (name, "fePointLight"))
-        newnode = rsvg_new_node_light_source ('p');
-    /* hack to make multiImage sort-of work */
-    else if (!strcmp (name, "multiImage"))
-        newnode = rsvg_new_switch ();
-    else if (!strcmp (name, "subImageRef"))
-        newnode = rsvg_new_image ();
-    else if (!strcmp (name, "subImage"))
-        newnode = rsvg_new_group ();
-    else if (!strcmp (name, "text"))
-        newnode = rsvg_new_text ();
-    else if (!strcmp (name, "tspan"))
-        newnode = rsvg_new_tspan ();
-    else if (!strcmp (name, "tref"))
-        newnode = rsvg_new_tref ();
-    else {
-		/* hack for bug 401115. whenever we encounter a node we don't understand, push it into a group. 
-		   this will allow us to handle things like conditionals properly. */
-		newnode = rsvg_new_group ();
-	}
+
+    creator = get_node_creator_for_element_name (name);
+    g_assert (creator != NULL && creator->create_fn != NULL);
+
+    newnode = creator->create_fn (name);
 
     if (newnode) {
-        g_assert (RSVG_NODE_TYPE (newnode) != RSVG_NODE_TYPE_INVALID);
-        newnode->name = (char *) name; /* libxml will keep this while parsing */
-        newnode->parent = ctx->priv->currentnode;
-        rsvg_node_set_atts (newnode, ctx, atts);
-        rsvg_defs_register_memory (ctx->priv->defs, newnode);
+        g_assert (rsvg_node_type (newnode) != RSVG_NODE_TYPE_INVALID);
+
+        push_element_name (ctx, name);
+
+        add_node_to_handle (ctx, newnode);
+        register_node_in_defs (ctx, newnode, atts);
+
         if (ctx->priv->currentnode) {
-            rsvg_node_group_pack (ctx->priv->currentnode, newnode);
-            ctx->priv->currentnode = newnode;
-        } else if (RSVG_NODE_TYPE (newnode) == RSVG_NODE_TYPE_SVG) {
+            rsvg_node_add_child (ctx->priv->currentnode, newnode);
+        } else if (rsvg_node_type (newnode) == RSVG_NODE_TYPE_SVG) {
             ctx->priv->treebase = newnode;
-            ctx->priv->currentnode = newnode;
         }
+
+        ctx->priv->currentnode = newnode;
+
+        node_set_atts (newnode, ctx, creator, atts);
+    }
+}
+
+RsvgNodeType
+rsvg_node_type (RsvgNode *node)
+{
+    return node->type;
+}
+
+RsvgState *
+rsvg_node_get_state (RsvgNode *node)
+{
+    return node->state;
+}
+
+RsvgNode *
+rsvg_node_get_parent (RsvgNode *node)
+{
+    return node->parent;
+}
+
+void
+rsvg_node_foreach_child (RsvgNode *node, RsvgNodeForeachChildFn fn, gpointer data)
+{
+    guint len;
+    guint i;
+
+    len = node->children->len;
+
+    for (i = 0; i < len; i++) {
+        RsvgNode *child;
+        gboolean next;
+
+        child = g_ptr_array_index (node->children, i);
+        next = fn (child, data);
+        if (!next)
+            break;
     }
 }
 
@@ -702,31 +846,33 @@ rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
 }
 
 static void
-rsvg_end_element (void *data, const xmlChar * name)
+rsvg_end_element (void *data, const xmlChar * xmlname)
 {
     RsvgHandle *ctx = (RsvgHandle *) data;
+    const char *name = (const char *) xmlname;
 
     if (ctx->priv->handler_nest > 0 && ctx->priv->handler != NULL) {
         if (ctx->priv->handler->end_element != NULL)
-            ctx->priv->handler->end_element (ctx->priv->handler, (const char *) name);
+            ctx->priv->handler->end_element (ctx->priv->handler, name);
         ctx->priv->handler_nest--;
     } else {
         const char *tempname;
-        for (tempname = (const char *) name; *tempname != '\0'; tempname++)
+        for (tempname = name; *tempname != '\0'; tempname++)
             if (*tempname == ':')
-                name = (const xmlChar *) (tempname + 1);
+                name = tempname + 1;
 
         if (ctx->priv->handler != NULL) {
             ctx->priv->handler->free (ctx->priv->handler);
             ctx->priv->handler = NULL;
         }
 
-        if (ctx->priv->currentnode &&
-            !strcmp ((const char *) name, ctx->priv->currentnode->name))
-                rsvg_pop_def_group (ctx);
+        if (ctx->priv->currentnode && topmost_element_name_is (ctx, name)) {
+            ctx->priv->currentnode = rsvg_node_get_parent (ctx->priv->currentnode);
+            pop_element_name (ctx);
+        }
 
         /* FIXMEchpe: shouldn't this check that currentnode == treebase or sth like that? */
-        if (ctx->priv->treebase && !strcmp ((const char *)name, "svg"))
+        if (ctx->priv->treebase && !strcmp (name, "svg"))
             _rsvg_node_svg_apply_atts ((RsvgNodeSvg *)ctx->priv->treebase, ctx);
     }
 }
@@ -744,9 +890,14 @@ rsvg_new_node_chars (const char *text,
                      int len)
 {
     RsvgNodeChars *self;
+    RsvgNodeVtable vtable = {
+        _rsvg_node_chars_free,
+        NULL,
+        NULL
+    };
 
     self = g_new (RsvgNodeChars, 1);
-    _rsvg_node_init (&self->super, RSVG_NODE_TYPE_CHARS);
+    _rsvg_node_init (&self->super, RSVG_NODE_TYPE_CHARS, &vtable);
 
     if (!g_utf8_validate (text, len, NULL)) {
         char *utf8;
@@ -757,10 +908,25 @@ rsvg_new_node_chars (const char *text,
         self->contents = g_string_new_len (text, len);
     }
 
-    self->super.free = _rsvg_node_chars_free;
     self->super.state->cond_true = FALSE;
 
     return self;
+}
+
+static gboolean
+find_last_chars_node (RsvgNode *node, gpointer data)
+{
+    RsvgNode **dest;
+
+    dest = data;
+
+    if (rsvg_node_type (node) == RSVG_NODE_TYPE_CHARS) {
+        *dest = node;
+    } else if (rsvg_node_type (node) == RSVG_NODE_TYPE_TSPAN) {
+        *dest = NULL;
+    }
+
+    return TRUE;
 }
 
 static void
@@ -772,23 +938,14 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
         return;
 
     if (ctx->priv->currentnode) {
-        RsvgNodeType type = RSVG_NODE_TYPE (ctx->priv->currentnode);
-        if (type == RSVG_NODE_TYPE_TSPAN ||
-            type == RSVG_NODE_TYPE_TEXT) {
-            guint i;
-
+        RsvgNodeType type = rsvg_node_type (ctx->priv->currentnode);
+        if (type == RSVG_NODE_TYPE_TSPAN || type == RSVG_NODE_TYPE_TEXT) {
             /* find the last CHARS node in the text or tspan node, so that we
                can coalesce the text, and thus avoid screwing up the Pango layouts */
             self = NULL;
-            for (i = 0; i < ctx->priv->currentnode->children->len; i++) {
-                RsvgNode *node = g_ptr_array_index (ctx->priv->currentnode->children, i);
-                if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_CHARS) {
-                    self = (RsvgNodeChars*)node;
-                }
-                else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_TSPAN) {
-                    self = NULL;
-                }
-            }
+            rsvg_node_foreach_child (ctx->priv->currentnode,
+                                     find_last_chars_node,
+                                     &self);
 
             if (self != NULL) {
                 if (!g_utf8_validate ((char *) ch, len, NULL)) {
@@ -807,9 +964,10 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
 
     self = rsvg_new_node_chars ((char *) ch, len);
 
-    rsvg_defs_register_memory (ctx->priv->defs, (RsvgNode *) self);
+    add_node_to_handle (ctx, (RsvgNode *) self);
+
     if (ctx->priv->currentnode)
-        rsvg_node_group_pack (ctx->priv->currentnode, (RsvgNode *) self);
+        rsvg_node_add_child (ctx->priv->currentnode, (RsvgNode *) self);
 }
 
 static void
@@ -946,7 +1104,7 @@ rsvg_processing_instruction (void *ctx, const xmlChar * target, const xmlChar * 
                                                                 &mime_type,
                                                                 &style_data_len,
                                                                 NULL);
-                        if (style_data && 
+                        if (style_data &&
                             mime_type &&
                             strcmp (mime_type, "text/css") == 0) {
                             rsvg_parse_cssbuffer (handle, style_data, style_data_len);
@@ -1059,7 +1217,7 @@ rsvg_handle_set_base_uri (RsvgHandle * handle, const char *base_uri)
     if (base_uri == NULL)
 	return;
 
-    if (rsvg_path_is_uri (base_uri)) 
+    if (rsvg_path_is_uri (base_uri))
         uri = g_strdup (base_uri);
     else
         uri = rsvg_get_base_uri_from_filename (base_uri);
@@ -1219,6 +1377,8 @@ rsvg_handle_close_impl (RsvgHandle * handle, GError ** error)
         xmlFreeDoc (xml_doc);
     }
 
+    free_element_name_stack (handle);
+
     handle->priv->finished = TRUE;
     handle->priv->error = NULL;
 
@@ -1242,7 +1402,7 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
 
     g_warn_if_fail (handle->acquired_nodes == NULL);
     g_slist_free (handle->acquired_nodes);
-	
+
     if (handle->pango_context != NULL)
         g_object_unref (handle->pango_context);
 
@@ -1397,11 +1557,12 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     bbox.rect.x = bbox.rect.y = 0;
     bbox.rect.width = bbox.rect.height = 1;
 
-    if (!id && (root->w.factor == 'p' || root->h.factor == 'p')
-            && !root->vbox.active)
-        handle_subelement = TRUE;
-    else if (!id && root->w.length != -1 && root->h.length != -1)
-        handle_subelement = FALSE;
+    if (!id) {
+        if ((root->w.unit == LENGTH_UNIT_PERCENT || root->h.unit == LENGTH_UNIT_PERCENT) && !root->vbox.active)
+            handle_subelement = TRUE;
+        else
+            handle_subelement = FALSE;
+    }
 
     if (handle_subelement == TRUE) {
         target = cairo_image_surface_create (CAIRO_FORMAT_RGB24,
@@ -1419,17 +1580,12 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 
         while (sself != NULL) {
             draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, sself);
-            sself = sself->parent;
+            sself = rsvg_node_get_parent (sself);
         }
-
-        rsvg_state_push (draw);
-        cairo_save (cr);
 
         rsvg_node_draw (handle->priv->treebase, draw, 0);
         bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
-        cairo_restore (cr);
-        rsvg_state_pop (draw);
         rsvg_drawing_ctx_free (draw);
         cairo_destroy (cr);
         cairo_surface_destroy (target);
@@ -1440,13 +1596,12 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         bbox.rect.width = root->vbox.rect.width;
         bbox.rect.height = root->vbox.rect.height;
 
-        dimension_data->width = (int) (_rsvg_css_hand_normalize_length (&root->w, handle->priv->dpi_x,
-                                       bbox.rect.width + bbox.rect.x * 2, 12) + 0.5);
-        dimension_data->height = (int) (_rsvg_css_hand_normalize_length (&root->h, handle->priv->dpi_y,
-                                         bbox.rect.height + bbox.rect.y * 2,
-                                         12) + 0.5);
+        dimension_data->width = (int) (rsvg_length_hand_normalize (&root->w, handle->priv->dpi_x,
+                                                                   bbox.rect.width, 12) + 0.5);
+        dimension_data->height = (int) (rsvg_length_hand_normalize (&root->h, handle->priv->dpi_y,
+                                                                    bbox.rect.height, 12) + 0.5);
     }
-    
+
     dimension_data->em = dimension_data->width;
     dimension_data->ex = dimension_data->height;
 
@@ -1517,17 +1672,12 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
 
     while (node != NULL) {
         draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, node);
-        node = node->parent;
+        node = rsvg_node_get_parent (node);
     }
-
-    rsvg_state_push (draw);
-    cairo_save (cr);
 
     rsvg_node_draw (handle->priv->treebase, draw, 0);
     bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
-    cairo_restore (cr);
-    rsvg_state_pop (draw);
     rsvg_drawing_ctx_free (draw);
 
     position_data->x = bbox.rect.x;
@@ -1553,7 +1703,7 @@ bail:
     return ret;
 }
 
-/** 
+/**
  * rsvg_handle_has_sub:
  * @handle: a #RsvgHandle
  * @id: an element's id within the SVG
@@ -1576,7 +1726,7 @@ rsvg_handle_has_sub (RsvgHandle * handle,
     return rsvg_defs_lookup (handle->priv->defs, id) != NULL;
 }
 
-/** 
+/**
  * rsvg_set_default_dpi:
  * @dpi: Dots Per Inch (aka Pixels Per Inch)
  *
@@ -1592,7 +1742,7 @@ rsvg_set_default_dpi (double dpi)
     rsvg_set_default_dpi_x_y (dpi, dpi);
 }
 
-/** 
+/**
  * rsvg_set_default_dpi_x_y:
  * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
@@ -1688,16 +1838,16 @@ rsvg_handle_set_dpi_x_y (RsvgHandle * handle, double dpi_x, double dpi_y)
  *     RsvgDimensionData dimensions;
  *     double x_factor, y_factor;
  *     double scale_factor;
- * 
+ *
  *     rsvg_handle_get_dimensions (handle, &dimensions);
- * 
+ *
  *     x_factor = (double) width / dimensions.width;
  *     y_factor = (double) height / dimensions.height;
- * 
+ *
  *     scale_factor = MIN (x_factor, y_factor);
- * 
+ *
  *     cairo_scale (cr, scale_factor, scale_factor);
- * 
+ *
  *     rsvg_handle_render_cairo (handle, cr);
  * }
  * ]|
@@ -1993,6 +2143,22 @@ rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
 }
 
 /**
+ * _rsvg_handle_internal_set_testing:
+ * @handle: a #RsvgHandle
+ * @testing: Whether to enable testing mode
+ *
+ * Do not call this function.  This is intended for librsvg's internal
+ * test suite only.
+ **/
+void
+rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing)
+{
+    g_return_if_fail (RSVG_IS_HANDLE (handle));
+
+    handle->priv->is_testing = testing ? TRUE : FALSE;
+}
+
+/**
  * rsvg_init:
  *
  * Initializes librsvg
@@ -2033,12 +2199,6 @@ rsvg_cleanup (void)
 }
 
 void
-rsvg_node_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts)
-{
-    node->set_atts (node, ctx, atts);
-}
-
-void
 rsvg_pop_discrete_layer (RsvgDrawingCtx * ctx)
 {
     ctx->render->pop_discrete_layer (ctx);
@@ -2051,24 +2211,31 @@ rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
 }
 
 /*
- * rsvg_acquire_node:
+ * rsvg_drawing_ctx_acquire_node:
  * @ctx: The drawing context in use
- * @url: The IRI to lookup
+ * @url: The IRI to lookup, or %NULL
  *
  * Use this function when looking up urls to other nodes. This
  * function does proper recursion checking and thereby avoids
  * infinite loops.
  *
  * Nodes acquired by this function must be released using
- * rsvg_release_node() in reverse acquiring order.
+ * rsvg_drawing_ctx_release_node() in reverse acquiring order.
  *
- * Returns: The node referenced by @url or %NULL if the @url
- *          does not reference a node.
+ * Note that if you acquire a node, you have to release it before trying to
+ * acquire it again.  If you acquire a node "#foo" and don't release it before
+ * trying to acquire "foo" again, you will obtain a %NULL the second time.
+ *
+ * Returns: The node referenced by @url; or %NULL if the @url
+ *          is %NULL or it does not reference a node.
  */
 RsvgNode *
-rsvg_acquire_node (RsvgDrawingCtx * ctx, const char *url)
+rsvg_drawing_ctx_acquire_node (RsvgDrawingCtx * ctx, const char *url)
 {
   RsvgNode *node;
+
+  if (url == NULL)
+      return NULL;
 
   node = rsvg_defs_lookup (ctx->defs, url);
   if (node == NULL)
@@ -2082,17 +2249,56 @@ rsvg_acquire_node (RsvgDrawingCtx * ctx, const char *url)
   return node;
 }
 
+/**
+ * rsvg_drawing_ctx_acquire_node_of_type:
+ * @ctx: The drawing context in use
+ * @url: The IRI to lookup
+ * @type: Type which the node must have
+ *
+ * Use this function when looking up urls to other nodes, and when you expect
+ * the node to be of a particular type. This function does proper recursion
+ * checking and thereby avoids infinite loops.
+ *
+ * Malformed SVGs, for example, may reference a marker by its IRI, but
+ * the object referenced by the IRI is not a marker.
+ *
+ * Nodes acquired by this function must be released using
+ * rsvg_drawing_ctx_release_node() in reverse acquiring order.
+ *
+ * Note that if you acquire a node, you have to release it before trying to
+ * acquire it again.  If you acquire a node "#foo" and don't release it before
+ * trying to acquire "foo" again, you will obtain a %NULL the second time.
+ *
+ * Returns: The node referenced by @url or %NULL if the @url
+ *          does not reference a node.  Also returns %NULL if
+ *          the node referenced by @url is not of the specified @type.
+ */
+RsvgNode *
+rsvg_drawing_ctx_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, RsvgNodeType type)
+{
+    RsvgNode *node;
+
+    node = rsvg_drawing_ctx_acquire_node (ctx, url);
+    if (node == NULL || rsvg_node_type (node) != type) {
+        rsvg_drawing_ctx_release_node (ctx, node);
+        return NULL;
+    }
+
+    return node;
+}
+
 /*
- * rsvg_release_node:
+ * rsvg_drawing_ctx_release_node:
  * @ctx: The drawing context the node was acquired from
  * @node: Node to release
  *
- * Releases a node previously acquired via rsvg_acquire_node().
+ * Releases a node previously acquired via rsvg_drawing_ctx_acquire_node() or
+ * rsvg_drawing_ctx_acquire_node_of_type().
  *
  * if @node is %NULL, this function does nothing.
  */
 void
-rsvg_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
+rsvg_drawing_ctx_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
 {
   if (node == NULL)
     return;
@@ -2104,10 +2310,9 @@ rsvg_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
 }
 
 void
-rsvg_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
+rsvg_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 {
-    ctx->render->render_path (ctx, path);
-    rsvg_render_markers (ctx, path);
+    ctx->render->render_path_builder (ctx, builder);
 }
 
 void
@@ -2117,6 +2322,39 @@ rsvg_render_surface (RsvgDrawingCtx * ctx, cairo_surface_t *surface, double x, d
     g_return_if_fail (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE);
 
     ctx->render->render_surface (ctx, surface, x, y, w, h);
+}
+
+double
+rsvg_get_normalized_stroke_width (RsvgDrawingCtx *ctx)
+{
+    RsvgState *state = rsvg_current_state (ctx);
+
+    return rsvg_length_normalize (&state->stroke_width, ctx);
+}
+
+
+const char *
+rsvg_get_start_marker (RsvgDrawingCtx *ctx)
+{
+    RsvgState *state = rsvg_current_state (ctx);
+
+    return state->startMarker;
+}
+
+const char *
+rsvg_get_middle_marker (RsvgDrawingCtx *ctx)
+{
+    RsvgState *state = rsvg_current_state (ctx);
+
+    return state->middleMarker;
+}
+
+const char *
+rsvg_get_end_marker (RsvgDrawingCtx *ctx)
+{
+    RsvgState *state = rsvg_current_state (ctx);
+
+    return state->endMarker;
 }
 
 void
@@ -2138,126 +2376,7 @@ rsvg_render_free (RsvgRender * render)
 }
 
 void
-rsvg_bbox_init (RsvgBbox * self, cairo_matrix_t *affine)
-{
-    self->virgin = 1;
-    self->affine = *affine;
-}
-
-void
-rsvg_bbox_insert (RsvgBbox * dst, RsvgBbox * src)
-{
-    cairo_matrix_t affine;
-    double xmin, ymin;
-    double xmax, ymax;
-    int i;
-
-    if (src->virgin)
-        return;
-
-    if (!dst->virgin) {
-        xmin = dst->rect.x, ymin = dst->rect.y;
-        xmax = dst->rect.x + dst->rect.width, ymax = dst->rect.y + dst->rect.height;
-    } else {
-        xmin = ymin = xmax = ymax = 0;
-    }
-
-    affine = dst->affine;
-    if (cairo_matrix_invert (&affine) != CAIRO_STATUS_SUCCESS)
-      return; //FIXMEchpe correct??
-
-    cairo_matrix_multiply (&affine, &src->affine, &affine);
-
-    for (i = 0; i < 4; i++) {
-        double rx, ry, x, y;
-        rx = src->rect.x + src->rect.width * (double) (i % 2);
-        ry = src->rect.y + src->rect.height * (double) (i / 2);
-        x = affine.xx * rx + affine.xy * ry + affine.x0;
-        y = affine.yx * rx + affine.yy * ry + affine.y0;
-        if (dst->virgin) {
-            xmin = xmax = x;
-            ymin = ymax = y;
-            dst->virgin = 0;
-        } else {
-            if (x < xmin)
-                xmin = x;
-            if (x > xmax)
-                xmax = x;
-            if (y < ymin)
-                ymin = y;
-            if (y > ymax)
-                ymax = y;
-        }
-    }
-    dst->rect.x = xmin;
-    dst->rect.y = ymin;
-    dst->rect.width = xmax - xmin;
-    dst->rect.height = ymax - ymin;
-}
-
-void
-rsvg_bbox_clip (RsvgBbox * dst, RsvgBbox * src)
-{
-    cairo_matrix_t affine;
-	double xmin, ymin;
-	double xmax, ymax;
-    int i;
-
-    if (src->virgin)
-        return;
-
-    if (!dst->virgin) {
-        xmin = dst->rect.x + dst->rect.width, ymin = dst->rect.y + dst->rect.height;
-        xmax = dst->rect.x, ymax = dst->rect.y;
-    } else {
-        xmin = ymin = xmax = ymax = 0;
-    }
-
-    affine = dst->affine;
-    if (cairo_matrix_invert (&affine) != CAIRO_STATUS_SUCCESS)
-      return;
-
-    cairo_matrix_multiply (&affine, &src->affine, &affine);
-
-    for (i = 0; i < 4; i++) {
-        double rx, ry, x, y;
-        rx = src->rect.x + src->rect.width * (double) (i % 2);
-        ry = src->rect.y + src->rect.height * (double) (i / 2);
-        x = affine.xx * rx + affine.xy * ry + affine.x0;
-        y = affine.yx * rx + affine.yy * ry + affine.y0;
-        if (dst->virgin) {
-            xmin = xmax = x;
-            ymin = ymax = y;
-            dst->virgin = 0;
-        } else {
-            if (x < xmin)
-                xmin = x;
-            if (x > xmax)
-                xmax = x;
-            if (y < ymin)
-                ymin = y;
-            if (y > ymax)
-                ymax = y;
-        }
-    }
-
-    if (xmin < dst->rect.x)
-        xmin = dst->rect.x;
-    if (ymin < dst->rect.y)
-        ymin = dst->rect.y;
-    if (xmax > dst->rect.x + dst->rect.width)
-        xmax = dst->rect.x + dst->rect.width;
-    if (ymax > dst->rect.y + dst->rect.height)
-        ymax = dst->rect.y + dst->rect.height;
-
-    dst->rect.x = xmin;
-    dst->rect.width = xmax - xmin;
-    dst->rect.y = ymin;
-    dst->rect.height = ymax - ymin;
-}
-
-void
-_rsvg_push_view_box (RsvgDrawingCtx * ctx, double w, double h)
+rsvg_drawing_ctx_push_view_box (RsvgDrawingCtx * ctx, double w, double h)
 {
     RsvgViewBox *vb = g_new (RsvgViewBox, 1);
     *vb = ctx->vb;
@@ -2267,11 +2386,31 @@ _rsvg_push_view_box (RsvgDrawingCtx * ctx, double w, double h)
 }
 
 void
-_rsvg_pop_view_box (RsvgDrawingCtx * ctx)
+rsvg_drawing_ctx_pop_view_box (RsvgDrawingCtx * ctx)
 {
     ctx->vb = *((RsvgViewBox *) ctx->vb_stack->data);
     g_free (ctx->vb_stack->data);
     ctx->vb_stack = g_slist_delete_link (ctx->vb_stack, ctx->vb_stack);
+}
+
+void
+rsvg_drawing_ctx_get_view_box_size (RsvgDrawingCtx *ctx, double *out_width, double *out_height)
+{
+    if (out_width)
+        *out_width = ctx->vb.rect.width;
+
+    if (out_height)
+        *out_height = ctx->vb.rect.height;
+}
+
+void
+rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dpi_y)
+{
+    if (out_dpi_x)
+        *out_dpi_x = ctx->dpi_x;
+
+    if (out_dpi_y)
+        *out_dpi_y = ctx->dpi_y;
 }
 
 void
@@ -2289,8 +2428,6 @@ _rsvg_handle_allow_load (RsvgHandle *handle,
     GFile *base;
     char *path, *dir;
     char *scheme = NULL, *cpath = NULL, *cdir = NULL;
-
-    g_assert (handle->priv->load_policy == RSVG_LOAD_POLICY_STRICT);
 
     scheme = g_uri_parse_scheme (uri);
 
@@ -2392,7 +2529,7 @@ _rsvg_handle_resolve_uri (RsvgHandle *handle,
     return resolved_uri;
 }
 
-char * 
+char *
 _rsvg_handle_acquire_data (RsvgHandle *handle,
                            const char *url,
                            char **content_type,
@@ -2405,10 +2542,10 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
     uri = _rsvg_handle_resolve_uri (handle, url);
 
     if (_rsvg_handle_allow_load (handle, uri, error)) {
-        data = _rsvg_io_acquire_data (uri, 
-                                      rsvg_handle_get_base_uri (handle), 
-                                      content_type, 
-                                      len, 
+        data = _rsvg_io_acquire_data (uri,
+                                      rsvg_handle_get_base_uri (handle),
+                                      content_type,
+                                      len,
                                       handle->priv->cancellable,
                                       error);
     } else {
@@ -2431,9 +2568,9 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
     uri = _rsvg_handle_resolve_uri (handle, url);
 
     if (_rsvg_handle_allow_load (handle, uri, error)) {
-        stream = _rsvg_io_acquire_stream (uri, 
-                                          rsvg_handle_get_base_uri (handle), 
-                                          content_type, 
+        stream = _rsvg_io_acquire_stream (uri,
+                                          rsvg_handle_get_base_uri (handle),
+                                          content_type,
                                           handle->priv->cancellable,
                                           error);
     } else {

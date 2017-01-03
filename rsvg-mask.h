@@ -47,7 +47,7 @@ struct _RsvgMask {
 };
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_mask	    (void);
+RsvgNode *rsvg_new_mask	    (const char *element_name);
 
 typedef struct _RsvgClipPath RsvgClipPath;
 
@@ -57,7 +57,7 @@ struct _RsvgClipPath {
 };
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_clip_path	(void);
+RsvgNode *rsvg_new_clip_path	(const char *element_name);
 
 G_END_DECLS
 #endif

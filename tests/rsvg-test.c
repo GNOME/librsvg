@@ -173,17 +173,29 @@ save_image (cairo_surface_t *surface,
 static gboolean
 is_svg_or_subdir (GFile *file)
 {
-  char *uri;
-  gboolean result;
+    char *basename;
+    gboolean ignore;
+    gboolean result;
 
-  if (g_file_query_file_type (file, 0, NULL) == G_FILE_TYPE_DIRECTORY)
-    return TRUE;
+    result = FALSE;
 
-  uri = g_file_get_uri (file);
-  result = g_str_has_suffix (uri, ".svg");
-  g_free (uri);
+    basename = g_file_get_basename (file);
+    ignore = g_str_has_prefix (basename, "ignore");
 
-  return result;
+    if (ignore)
+	goto out;
+
+    if (g_file_query_file_type (file, 0, NULL) == G_FILE_TYPE_DIRECTORY) {
+	result = TRUE;
+	goto out;
+    }
+
+    result = g_str_has_suffix (basename, ".svg");
+
+out:
+    g_free (basename);
+
+    return result;
 }
 
 static cairo_status_t
@@ -247,6 +259,8 @@ rsvg_cairo_check (gconstpointer data)
     g_assert_no_error (error);
     g_assert (rsvg != NULL);
 
+    rsvg_handle_internal_set_testing (rsvg, TRUE);
+
     rsvg_handle_get_dimensions (rsvg, &dimensions);
     g_assert (dimensions.width > 0);
     g_assert (dimensions.height > 0);
@@ -307,7 +321,7 @@ main (int argc, char **argv)
 
         base = g_file_new_for_path (test_utils_get_test_data_path ());
         tests = g_file_get_child (base, "reftests");
-        test_utils_add_test_for_all_files ("/rsvg/reftest", tests, tests, rsvg_cairo_check, is_svg_or_subdir);
+        test_utils_add_test_for_all_files ("/rsvg-test/reftests", tests, tests, rsvg_cairo_check, is_svg_or_subdir);
         g_object_unref (tests);
         g_object_unref (base);
     } else {
@@ -316,7 +330,7 @@ main (int argc, char **argv)
         for (i = 1; i < argc; i++) {
             GFile *file = g_file_new_for_commandline_arg (argv[i]);
 
-            test_utils_add_test_for_all_files ("/rsvg/reftest", NULL, file, rsvg_cairo_check, is_svg_or_subdir);
+            test_utils_add_test_for_all_files ("/rsvg-test/reftests", NULL, file, rsvg_cairo_check, is_svg_or_subdir);
 
             g_object_unref (file);
         }

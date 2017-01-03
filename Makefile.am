@@ -32,8 +32,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	rsvg-io.h		\
 	rsvg-paint-server.c 	\
 	rsvg-paint-server.h 	\
-	rsvg-path.c 		\
-	rsvg-path.h 		\
+	rsvg-path-builder.h	\
 	rsvg-private.h 		\
 	rsvg-base-file-util.c 	\
 	rsvg-filter.c		\
@@ -72,6 +71,46 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	librsvg-enum-types.h	\
 	$(NULL)
 
+RUST_SOURCES =					\
+	rust/Cargo.toml				\
+	rust/src/bbox.rs			\
+	rust/src/drawing_ctx.rs			\
+	rust/src/gradient.rs			\
+	rust/src/handle.rs			\
+	rust/src/length.rs			\
+	rust/src/lib.rs				\
+	rust/src/marker.rs			\
+	rust/src/node.rs			\
+	rust/src/path_builder.rs		\
+	rust/src/path_parser.rs			\
+	rust/src/property_bag.rs		\
+	rust/src/shapes.rs			\
+	rust/src/state.rs			\
+	rust/src/strtod.rs
+
+RUST_EXTRA = 					\
+	rust/Cargo.lock
+
+if DEBUG_RELEASE
+CARGO_RELEASE_ARGS=
+else
+CARGO_RELEASE_ARGS=--release
+endif
+
+RUST_LIB=@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a
+
+check-local:
+	cd $(srcdir)/rust && \
+	CARGO_TARGET_DIR=@abs_top_builddir@/target cargo test
+
+clean-local:
+	cd $(top_srcdir)/rust && \
+	CARGO_TARGET_DIR=@abs_top_builddir@/target cargo clean
+
+@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a: $(RUST_SOURCES)
+	cd $(top_srcdir)/rust && \
+	CARGO_TARGET_DIR=@abs_top_builddir@/target cargo build --verbose $(CARGO_RELEASE_ARGS)
+
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
 	-I$(top_builddir) 			\
@@ -95,7 +134,8 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = \
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
 	$(LIBRSVG_LIBS) 	\
-	$(LIBM)
+	$(LIBM)			\
+	$(RUST_LIB)
 
 librsvgincdir = $(includedir)/librsvg-$(RSVG_API_VERSION)/librsvg
 librsvginc_HEADERS = 	\
@@ -129,7 +169,7 @@ rsvg_convert_LDADD = \
 	$(LIBM)
 
 rsvg_view_3_SOURCES = \
-	test-display.c \
+	rsvg-view.c \
 	rsvg-size-callback.h
 
 rsvg_view_3_CPPFLAGS = \
@@ -157,6 +197,8 @@ rsvg_view_3_LDFLAGS += -mwindows
 endif # OS_WIN32
 
 EXTRA_DIST =				\
+	$(RUST_SOURCES)			\
+	$(RUST_EXTRA)			\
 	librsvg.doap			\
 	AUTHORS				\
 	NEWS				\
@@ -290,8 +332,8 @@ include $(top_srcdir)/build/Makefile.msvcproj
 
 # autotools: Why must we do this instead of dist-hook?
 MSVCPROJ_GENERATED = \
-	$(top_builddir)/build/win32/vs9/rsvg.vcproj		\
-	$(top_builddir)/build/win32/vs9/rsvg-convert.vcproj
+	$(top_builddir)/build/win32/vs12/rsvg.vcxproj		\
+	$(top_builddir)/build/win32/vs12/rsvg-convert.vcxproj
 
 if HAVE_INTROSPECTION
 
@@ -314,7 +356,7 @@ MSVCPROJ_GENERATED += $(INTROSPECTION_INTERMEDIATE_ITEMS)
 include $(top_srcdir)/build/Makefile.msvc-introspection
 endif # HAVE_INTROSPECTION
 
-$(MSVCPROJ_GENERATED): $(top_builddir)/build/win32/vs9/rsvg.headers
+$(MSVCPROJ_GENERATED): $(top_builddir)/build/win32/vs12/rsvg.vs12.headers
 
 EXTRA_DIST += $(MSVCPROJ_GENERATED)
 

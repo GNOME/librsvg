@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 128 64">
+    <marker id="marker"
+      viewBox="0 -1 4 2"
+      orient="auto">
+      <path fill="blue" d="M 0 -1 L 4 0 0 1" />
+    </marker>
+
+  <path stroke-width="4" marker-mid="url(#marker)"
+        stroke="red" fill="none" d="M 12,12 l 40,0 0,40 -40,0 0,-40"/>
+  <circle stroke-width="4" cx="32" cy="32" r="20" marker-mid="url(#marker)"
+        stroke="red" fill="none"/>
+  <rect stroke-width="4" x="76" y="12" width="40" height="40" marker-mid="url(#marker)"
+        stroke="red" fill="none"/>
+</svg>

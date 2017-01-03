@@ -155,9 +155,7 @@ static void
 rsvg_node_image_free (RsvgNode * self)
 {
     RsvgNodeImage *z = (RsvgNodeImage *) self;
-    rsvg_state_finalize (z->super.state);
-    g_free (z->super.state);
-    z->super.state = NULL;
+
     if (z->surface)
         cairo_surface_destroy (z->surface);
     _rsvg_node_free(self);
@@ -174,10 +172,10 @@ rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     if (surface == NULL)
         return;
 
-    x = _rsvg_css_normalize_length (&z->x, ctx, 'h');
-    y = _rsvg_css_normalize_length (&z->y, ctx, 'v');
-    w = _rsvg_css_normalize_length (&z->w, ctx, 'h');
-    h = _rsvg_css_normalize_length (&z->h, ctx, 'v');
+    x = rsvg_length_normalize (&z->x, ctx);
+    y = rsvg_length_normalize (&z->y, ctx);
+    w = rsvg_length_normalize (&z->w, ctx);
+    h = rsvg_length_normalize (&z->h, ctx);
 
     rsvg_state_reinherit_top (ctx, z->super.state, dominate);
 
@@ -200,56 +198,51 @@ rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 static void
 rsvg_node_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *klazz = NULL, *id = NULL, *value;
     RsvgNodeImage *image = (RsvgNodeImage *) self;
+    const char *value;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            image->x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            image->y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            image->w = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            image->h = _rsvg_css_parse_length (value);
-        /* path is used by some older adobe illustrator versions */
-        if ((value = rsvg_property_bag_lookup (atts, "path"))
-            || (value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
-            image->surface = rsvg_cairo_surface_new_from_href (ctx,
-                                                               value, 
-                                                               NULL);
+    if ((value = rsvg_property_bag_lookup (atts, "x")))
+        image->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+    if ((value = rsvg_property_bag_lookup (atts, "y")))
+        image->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+    if ((value = rsvg_property_bag_lookup (atts, "width")))
+        image->w = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+    if ((value = rsvg_property_bag_lookup (atts, "height")))
+        image->h = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+    /* path is used by some older adobe illustrator versions */
+    if ((value = rsvg_property_bag_lookup (atts, "path"))
+        || (value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
+        image->surface = rsvg_cairo_surface_new_from_href (ctx,
+                                                           value, 
+                                                           NULL);
 
-            if (!image->surface) {
+        if (!image->surface) {
 #ifdef G_ENABLE_DEBUG
-                g_warning ("Couldn't load image: %s\n", value);
+            g_warning ("Couldn't load image: %s\n", value);
 #endif
-            }
         }
-        if ((value = rsvg_property_bag_lookup (atts, "class")))
-            klazz = value;
-        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
-            id = value;
-            rsvg_defs_register_name (ctx->priv->defs, id, &image->super);
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
-            image->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-
-        rsvg_parse_style_attrs (ctx, image->super.state, "image", klazz, id, atts);
     }
+
+    if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
+        image->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
 }
 
 RsvgNode *
-rsvg_new_image (void)
+rsvg_new_image (const char *element_name)
 {
     RsvgNodeImage *image;
+    RsvgNodeVtable vtable = {
+        rsvg_node_image_free,
+        rsvg_node_image_draw,
+        rsvg_node_image_set_atts
+    };
+
     image = g_new (RsvgNodeImage, 1);
-    _rsvg_node_init (&image->super, RSVG_NODE_TYPE_IMAGE);
+    _rsvg_node_init (&image->super, RSVG_NODE_TYPE_IMAGE, &vtable);
+
     g_assert (image->super.state);
     image->surface = NULL;
     image->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-    image->x = image->y = image->w = image->h = _rsvg_css_parse_length ("0");
-    image->super.free = rsvg_node_image_free;
-    image->super.draw = rsvg_node_image_draw;
-    image->super.set_atts = rsvg_node_image_set_atts;
+    image->x = image->y = image->w = image->h = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     return &image->super;
 }

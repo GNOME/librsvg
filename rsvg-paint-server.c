@@ -149,52 +149,106 @@ rsvg_paint_server_unref (RsvgPaintServer * ps)
 static void
 rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    double offset = 0;
-    gboolean is_current_color = FALSE;
     const char *value;
     RsvgGradientStop *stop;
-    RsvgState state;
+    RsvgState *state;
+    RsvgState *inherited_state;
+    int opacity;
+    guint32 color;
 
     stop = (RsvgGradientStop *) self;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "offset"))) {
-            /* either a number [0,1] or a percentage */
-            RsvgLength length = _rsvg_css_parse_length (value);
-            offset = _rsvg_css_hand_normalize_length (&length, rsvg_dpi_percentage (ctx), 1., 0.);
+    state = rsvg_node_get_state (self);
 
-            if (offset < 0.)
-                offset = 0.;
-            else if (offset > 1.)
-                offset = 1.;
+    if ((value = rsvg_property_bag_lookup (atts, "offset"))) {
+        /* either a number [0,1] or a percentage */
+        RsvgLength length = rsvg_length_parse (value, LENGTH_DIR_BOTH);
+
+        if (length.unit == LENGTH_UNIT_DEFAULT || length.unit == LENGTH_UNIT_PERCENT) {
+            double offset;
+
+            offset = length.length;
+
+            if (offset < 0.0)
+                offset = 0.0;
+            else if (offset > 1.0)
+                offset = 1.0;
+
             stop->offset = offset;
+            stop->is_valid = TRUE;
+        } else {
+            /* Only default and percent values are allowed */
+            stop->is_valid = FALSE;
         }
-        if ((value = rsvg_property_bag_lookup (atts, "style")))
-            rsvg_parse_style (ctx, self->state, value);
-
-        if ((value = rsvg_property_bag_lookup (atts, "stop-color")))
-            if (!strcmp (value, "currentColor"))
-                is_current_color = TRUE;
-
-        rsvg_parse_style_pairs (ctx, self->state, atts);
     }
-    self->parent = ctx->priv->currentnode;
-    rsvg_state_init (&state);
-    rsvg_state_reconstruct (&state, self);
-    if (is_current_color)
-        state.stop_color = state.current_color;
-    stop->rgba = (state.stop_color << 8) | state.stop_opacity;
-    rsvg_state_finalize (&state);
+    if ((value = rsvg_property_bag_lookup (atts, "style")))
+        rsvg_parse_style (ctx, state, value);
+
+    rsvg_parse_style_pairs (ctx, state, atts);
+
+    inherited_state = rsvg_state_new ();
+    rsvg_state_reconstruct (inherited_state, self);
+
+    switch (state->stop_color_mode) {
+    case STOP_COLOR_UNSPECIFIED:
+        color = 0x0;
+        break;
+
+    case STOP_COLOR_SPECIFIED:
+        color = state->stop_color & 0x00ffffff;
+        break;
+
+    case STOP_COLOR_INHERIT:
+        color = inherited_state->stop_color;
+        break;
+
+    case STOP_COLOR_CURRENT_COLOR:
+        color = inherited_state->current_color;
+        break;
+
+    default:
+        g_assert_not_reached ();
+        color = 0;
+    }
+
+    switch (state->stop_opacity_mode) {
+    case STOP_OPACITY_UNSPECIFIED:
+        opacity = 0xff;
+        break;
+
+    case STOP_OPACITY_SPECIFIED:
+        opacity = state->stop_opacity;
+        break;
+
+    case STOP_OPACITY_INHERIT:
+        opacity = inherited_state->stop_opacity;
+        break;
+
+    default:
+        g_assert_not_reached ();
+        opacity = 0;
+    }
+
+    stop->rgba = (color << 8) | opacity;
+
+    rsvg_state_free (inherited_state);
 }
 
 RsvgNode *
-rsvg_new_stop (void)
+rsvg_new_stop (const char *element_name)
 {
     RsvgGradientStop *stop = g_new (RsvgGradientStop, 1);
-    _rsvg_node_init (&stop->super, RSVG_NODE_TYPE_STOP);
-    stop->super.set_atts = rsvg_stop_set_atts;
+    RsvgNodeVtable vtable = {
+        NULL,
+        NULL,
+        rsvg_stop_set_atts
+    };
+
+    _rsvg_node_init (&stop->super, RSVG_NODE_TYPE_STOP, &vtable);
+
     stop->offset = 0;
-    stop->rgba = 0;
+    stop->rgba = 0xff000000;
+    stop->is_valid = FALSE;
     return &stop->super;
 }
 
@@ -204,51 +258,44 @@ rsvg_linear_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
     RsvgLinearGradient *grad = (RsvgLinearGradient *) self;
     const char *value;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_name (ctx->priv->defs, value, self);
-        if ((value = rsvg_property_bag_lookup (atts, "x1"))) {
-            grad->x1 = _rsvg_css_parse_length (value);
-            grad->hasx1 = TRUE;
+    if ((value = rsvg_property_bag_lookup (atts, "x1"))) {
+        grad->x1 = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+        grad->hasx1 = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "y1"))) {
+        grad->y1 = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+        grad->hasy1 = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "x2"))) {
+        grad->x2 = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+        grad->hasx2 = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "y2"))) {
+        grad->y2 = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+        grad->hasy2 = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "spreadMethod"))) {
+        if (!strcmp (value, "pad")) {
+            grad->spread = CAIRO_EXTEND_PAD;
+        } else if (!strcmp (value, "reflect")) {
+            grad->spread = CAIRO_EXTEND_REFLECT;
+        } else if (!strcmp (value, "repeat")) {
+            grad->spread = CAIRO_EXTEND_REPEAT;
         }
-        if ((value = rsvg_property_bag_lookup (atts, "y1"))) {
-            grad->y1 = _rsvg_css_parse_length (value);
-            grad->hasy1 = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "x2"))) {
-            grad->x2 = _rsvg_css_parse_length (value);
-            grad->hasx2 = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "y2"))) {
-            grad->y2 = _rsvg_css_parse_length (value);
-            grad->hasy2 = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "spreadMethod"))) {
-            if (!strcmp (value, "pad")) {
-                grad->spread = CAIRO_EXTEND_PAD;
-            } else if (!strcmp (value, "reflect")) {
-                grad->spread = CAIRO_EXTEND_REFLECT;
-            } else if (!strcmp (value, "repeat")) {
-                grad->spread = CAIRO_EXTEND_REPEAT;
-            }
-            grad->hasspread = TRUE;
-        }
-        g_free (grad->fallback);
-        grad->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
-        if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
-            rsvg_parse_transform (&grad->affine, value);
-            grad->hastransform = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "color")))
-            grad->current_color = rsvg_css_parse_color (value, 0);
-        if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
-            if (!strcmp (value, "userSpaceOnUse"))
-                grad->obj_bbox = FALSE;
-            else if (!strcmp (value, "objectBoundingBox"))
-                grad->obj_bbox = TRUE;
-            grad->hasbbox = TRUE;
-        }
-        rsvg_parse_style_attrs (ctx, self->state, "linearGradient", NULL, NULL, atts);
+        grad->hasspread = TRUE;
+    }
+    g_free (grad->fallback);
+    grad->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
+    if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
+        rsvg_parse_transform (&grad->affine, value);
+        grad->hastransform = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
+        if (!strcmp (value, "userSpaceOnUse"))
+            grad->obj_bbox = FALSE;
+        else if (!strcmp (value, "objectBoundingBox"))
+            grad->obj_bbox = TRUE;
+        grad->hasbbox = TRUE;
     }
 }
 
@@ -261,20 +308,25 @@ rsvg_linear_gradient_free (RsvgNode * node)
 }
 
 RsvgNode *
-rsvg_new_linear_gradient (void)
+rsvg_new_linear_gradient (const char *element_name)
 {
     RsvgLinearGradient *grad = NULL;
+    RsvgNodeVtable vtable = {
+        rsvg_linear_gradient_free,
+        NULL,
+        rsvg_linear_gradient_set_atts
+    };
+
     grad = g_new (RsvgLinearGradient, 1);
-    _rsvg_node_init (&grad->super, RSVG_NODE_TYPE_LINEAR_GRADIENT);
+    _rsvg_node_init (&grad->super, RSVG_NODE_TYPE_LINEAR_GRADIENT, &vtable);
+
     cairo_matrix_init_identity (&grad->affine);
-    grad->has_current_color = FALSE;
-    grad->x1 = grad->y1 = grad->y2 = _rsvg_css_parse_length ("0");
-    grad->x2 = _rsvg_css_parse_length ("1");
+    grad->x1 = rsvg_length_parse ("0", LENGTH_DIR_HORIZONTAL);
+    grad->y1 = grad->y2 = rsvg_length_parse ("0", LENGTH_DIR_VERTICAL);
+    grad->x2 = rsvg_length_parse ("1", LENGTH_DIR_HORIZONTAL);
     grad->fallback = NULL;
     grad->obj_bbox = TRUE;
     grad->spread = CAIRO_EXTEND_PAD;
-    grad->super.free = rsvg_linear_gradient_free;
-    grad->super.set_atts = rsvg_linear_gradient_set_atts;
     grad->hasx1 = grad->hasy1 = grad->hasx2 = grad->hasy2 = grad->hasbbox = grad->hasspread =
         grad->hastransform = FALSE;
     return &grad->super;
@@ -286,59 +338,51 @@ rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
     RsvgRadialGradient *grad = (RsvgRadialGradient *) self;
     const char *value;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_name (ctx->priv->defs, value, self);
-        if ((value = rsvg_property_bag_lookup (atts, "cx"))) {
-            grad->cx = _rsvg_css_parse_length (value);
-            grad->hascx = TRUE;
-            if (!grad->hasfx)
-                grad->fx = grad->cx;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "cy"))) {
-            grad->cy = _rsvg_css_parse_length (value);
-            grad->hascy = TRUE;
-            if (!grad->hasfy)
-                grad->fy = grad->cy;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "r"))) {
-            grad->r = _rsvg_css_parse_length (value);
-            grad->hasr = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "fx"))) {
-            grad->fx = _rsvg_css_parse_length (value);
-            grad->hasfx = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "fy"))) {
-            grad->fy = _rsvg_css_parse_length (value);
-            grad->hasfy = TRUE;
-        }
-        g_free (grad->fallback);
-        grad->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
-        if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
-            rsvg_parse_transform (&grad->affine, value);
-            grad->hastransform = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "color"))) {
-            grad->current_color = rsvg_css_parse_color (value, 0);
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "spreadMethod"))) {
-            if (!strcmp (value, "pad"))
-                grad->spread = CAIRO_EXTEND_PAD;
-            else if (!strcmp (value, "reflect"))
-                grad->spread = CAIRO_EXTEND_REFLECT;
-            else if (!strcmp (value, "repeat"))
-                grad->spread = CAIRO_EXTEND_REPEAT;
-            grad->hasspread = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
-            if (!strcmp (value, "userSpaceOnUse"))
-                grad->obj_bbox = FALSE;
-            else if (!strcmp (value, "objectBoundingBox"))
-                grad->obj_bbox = TRUE;
-            grad->hasbbox = TRUE;
-        }
-        rsvg_parse_style_attrs (ctx, self->state, "radialGradient", NULL, NULL, atts);
+    if ((value = rsvg_property_bag_lookup (atts, "cx"))) {
+        grad->cx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+        grad->hascx = TRUE;
+        if (!grad->hasfx)
+            grad->fx = grad->cx;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "cy"))) {
+        grad->cy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+        grad->hascy = TRUE;
+        if (!grad->hasfy)
+            grad->fy = grad->cy;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "r"))) {
+        grad->r = rsvg_length_parse (value, LENGTH_DIR_BOTH);
+        grad->hasr = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "fx"))) {
+        grad->fx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+        grad->hasfx = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "fy"))) {
+        grad->fy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+        grad->hasfy = TRUE;
+    }
+    g_free (grad->fallback);
+    grad->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
+    if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
+        rsvg_parse_transform (&grad->affine, value);
+        grad->hastransform = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "spreadMethod"))) {
+        if (!strcmp (value, "pad"))
+            grad->spread = CAIRO_EXTEND_PAD;
+        else if (!strcmp (value, "reflect"))
+            grad->spread = CAIRO_EXTEND_REFLECT;
+        else if (!strcmp (value, "repeat"))
+            grad->spread = CAIRO_EXTEND_REPEAT;
+        grad->hasspread = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
+        if (!strcmp (value, "userSpaceOnUse"))
+            grad->obj_bbox = FALSE;
+        else if (!strcmp (value, "objectBoundingBox"))
+            grad->obj_bbox = TRUE;
+        grad->hasbbox = TRUE;
     }
 }
 
@@ -351,19 +395,23 @@ rsvg_radial_gradient_free (RsvgNode * node)
 }
 
 RsvgNode *
-rsvg_new_radial_gradient (void)
+rsvg_new_radial_gradient (const char *element_name)
 {
 
+    RsvgNodeVtable vtable = {
+        rsvg_radial_gradient_free,
+        NULL,
+        rsvg_radial_gradient_set_atts
+    };
+
     RsvgRadialGradient *grad = g_new (RsvgRadialGradient, 1);
-    _rsvg_node_init (&grad->super, RSVG_NODE_TYPE_RADIAL_GRADIENT);
+    _rsvg_node_init (&grad->super, RSVG_NODE_TYPE_RADIAL_GRADIENT, &vtable);
+
     cairo_matrix_init_identity (&grad->affine);
-    grad->has_current_color = FALSE;
     grad->obj_bbox = TRUE;
     grad->spread = CAIRO_EXTEND_PAD;
     grad->fallback = NULL;
-    grad->cx = grad->cy = grad->r = grad->fx = grad->fy = _rsvg_css_parse_length ("0.5");
-    grad->super.free = rsvg_radial_gradient_free;
-    grad->super.set_atts = rsvg_radial_gradient_set_atts;
+    grad->cx = grad->cy = grad->r = grad->fx = grad->fy = rsvg_length_parse ("0.5", LENGTH_DIR_BOTH);
     grad->hascx = grad->hascy = grad->hasfx = grad->hasfy = grad->hasr = grad->hasbbox =
         grad->hasspread = grad->hastransform = FALSE;
     return &grad->super;
@@ -375,53 +423,49 @@ rsvg_pattern_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts
     RsvgPattern *pattern = (RsvgPattern *) self;
     const char *value;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_name (ctx->priv->defs, value, self);
-        if ((value = rsvg_property_bag_lookup (atts, "viewBox"))) {
-            pattern->vbox = rsvg_css_parse_vbox (value);
-            pattern->hasvbox = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "x"))) {
-            pattern->x = _rsvg_css_parse_length (value);
-            pattern->hasx = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "y"))) {
-            pattern->y = _rsvg_css_parse_length (value);
-            pattern->hasy = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "width"))) {
-            pattern->width = _rsvg_css_parse_length (value);
-            pattern->haswidth = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "height"))) {
-            pattern->height = _rsvg_css_parse_length (value);
-            pattern->hasheight = TRUE;
-        }
-        g_free (pattern->fallback);
-        pattern->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
-        if ((value = rsvg_property_bag_lookup (atts, "patternTransform"))) {
-            rsvg_parse_transform (&pattern->affine, value);
-            pattern->hastransform = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "patternUnits"))) {
-            if (!strcmp (value, "userSpaceOnUse"))
-                pattern->obj_bbox = FALSE;
-            else if (!strcmp (value, "objectBoundingBox"))
-                pattern->obj_bbox = TRUE;
-            pattern->hasbbox = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "patternContentUnits"))) {
-            if (!strcmp (value, "userSpaceOnUse"))
-                pattern->obj_cbbox = FALSE;
-            else if (!strcmp (value, "objectBoundingBox"))
-                pattern->obj_cbbox = TRUE;
-            pattern->hascbox = TRUE;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio"))) {
-            pattern->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-            pattern->hasaspect = TRUE;
-        }
+    if ((value = rsvg_property_bag_lookup (atts, "viewBox"))) {
+        pattern->vbox = rsvg_css_parse_vbox (value);
+        pattern->hasvbox = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "x"))) {
+        pattern->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+        pattern->hasx = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "y"))) {
+        pattern->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+        pattern->hasy = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "width"))) {
+        pattern->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+        pattern->haswidth = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "height"))) {
+        pattern->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+        pattern->hasheight = TRUE;
+    }
+    g_free (pattern->fallback);
+    pattern->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
+    if ((value = rsvg_property_bag_lookup (atts, "patternTransform"))) {
+        rsvg_parse_transform (&pattern->affine, value);
+        pattern->hastransform = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "patternUnits"))) {
+        if (!strcmp (value, "userSpaceOnUse"))
+            pattern->obj_bbox = FALSE;
+        else if (!strcmp (value, "objectBoundingBox"))
+            pattern->obj_bbox = TRUE;
+        pattern->hasbbox = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "patternContentUnits"))) {
+        if (!strcmp (value, "userSpaceOnUse"))
+            pattern->obj_cbbox = FALSE;
+        else if (!strcmp (value, "objectBoundingBox"))
+            pattern->obj_cbbox = TRUE;
+        pattern->hascbox = TRUE;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio"))) {
+        pattern->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
+        pattern->hasaspect = TRUE;
     }
 }
 
@@ -435,34 +479,27 @@ rsvg_pattern_free (RsvgNode * node)
 
 
 RsvgNode *
-rsvg_new_pattern (void)
+rsvg_new_pattern (const char *element_name)
 {
     RsvgPattern *pattern = g_new (RsvgPattern, 1);
-    _rsvg_node_init (&pattern->super, RSVG_NODE_TYPE_PATTERN);
+    RsvgNodeVtable vtable = {
+        rsvg_pattern_free,
+        NULL,
+        rsvg_pattern_set_atts
+    };
+
+    _rsvg_node_init (&pattern->super, RSVG_NODE_TYPE_PATTERN, &vtable);
+
     cairo_matrix_init_identity (&pattern->affine);
     pattern->obj_bbox = TRUE;
     pattern->obj_cbbox = FALSE;
-    pattern->x = pattern->y = pattern->width = pattern->height = _rsvg_css_parse_length ("0");
+    pattern->x = pattern->y = pattern->width = pattern->height = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
     pattern->fallback = NULL;
     pattern->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
     pattern->vbox.active = FALSE;
-    pattern->super.free = rsvg_pattern_free;
-    pattern->super.set_atts = rsvg_pattern_set_atts;
     pattern->hasx = pattern->hasy = pattern->haswidth = pattern->hasheight = pattern->hasbbox =
         pattern->hascbox = pattern->hasvbox = pattern->hasaspect = pattern->hastransform = FALSE;
     return &pattern->super;
-}
-
-static int
-hasstop (GPtrArray * lookin)
-{
-    unsigned int i;
-    for (i = 0; i < lookin->len; i++) {
-        RsvgNode *node = g_ptr_array_index (lookin, i);
-        if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_STOP)
-            return 1;
-    }
-    return 0;
 }
 
 typedef const char * (* GetFallbackFn) (RsvgNode *node);
@@ -487,183 +524,20 @@ resolve_fallbacks (RsvgDrawingCtx *ctx,
     fallback_id = get_fallback (last_fallback);
     if (fallback_id == NULL)
         return;
-    fallback = rsvg_acquire_node (ctx, fallback_id);
+    fallback = rsvg_drawing_ctx_acquire_node (ctx, fallback_id);
     if (fallback == NULL)
       return;
 
     apply_fallback (data, fallback);
     resolve_fallbacks (ctx, data, fallback, get_fallback, apply_fallback);
 
-    rsvg_release_node (ctx, fallback);
-}
-
-static const char *
-gradient_get_fallback (RsvgNode *node)
-{
-    if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
-        RsvgLinearGradient *g = (RsvgLinearGradient *) node;
-        return g->fallback;
-    } else if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
-        RsvgRadialGradient *g = (RsvgRadialGradient *) node;
-        return g->fallback;
-    } else
-        return NULL;
-}
-
-static void
-linear_gradient_apply_fallback (RsvgNode *node, RsvgNode *fallback_node)
-{
-    RsvgLinearGradient *grad;
-
-    g_assert (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT);
-    grad = (RsvgLinearGradient *) node;
-
-    if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
-        RsvgLinearGradient *fallback = (RsvgLinearGradient *) fallback_node;
-
-        if (!grad->hasx1 && fallback->hasx1) {
-            grad->hasx1 = TRUE;
-            grad->x1 = fallback->x1;
-        }
-        if (!grad->hasy1 && fallback->hasy1) {
-            grad->hasy1 = TRUE;
-            grad->y1 = fallback->y1;
-        }
-        if (!grad->hasx2 && fallback->hasx2) {
-            grad->hasx2 = TRUE;
-            grad->x2 = fallback->x2;
-        }
-        if (!grad->hasy2 && fallback->hasy2) {
-            grad->hasy2 = TRUE;
-            grad->y2 = fallback->y2;
-        }
-        if (!grad->hastransform && fallback->hastransform) {
-            grad->hastransform = TRUE;
-            grad->affine = fallback->affine;
-        }
-        if (!grad->hasspread && fallback->hasspread) {
-            grad->hasspread = TRUE;
-            grad->spread = fallback->spread;
-        }
-        if (!grad->hasbbox && fallback->hasbbox) {
-            grad->hasbbox = TRUE;
-            grad->obj_bbox = fallback->obj_bbox;
-        }
-        if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
-            grad->super.children = fallback->super.children;
-        }
-    } else if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
-        RsvgRadialGradient *fallback = (RsvgRadialGradient *) fallback_node;
-
-        if (!grad->hastransform && fallback->hastransform) {
-            grad->hastransform = TRUE;
-            grad->affine = fallback->affine;
-        }
-        if (!grad->hasspread && fallback->hasspread) {
-            grad->hasspread = TRUE;
-            grad->spread = fallback->spread;
-        }
-        if (!grad->hasbbox && fallback->hasbbox) {
-            grad->hasbbox = TRUE;
-            grad->obj_bbox = fallback->obj_bbox;
-        }
-        if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
-            grad->super.children = fallback->super.children;
-        }
-    }
-}
-
-void
-rsvg_linear_gradient_fix_fallback (RsvgDrawingCtx *ctx, RsvgLinearGradient * grad)
-{
-    resolve_fallbacks (ctx,
-                       (RsvgNode *) grad,
-                       (RsvgNode *) grad,
-                       gradient_get_fallback,
-                       linear_gradient_apply_fallback);
-}
-
-static void
-radial_gradient_apply_fallback (RsvgNode *node, RsvgNode *fallback_node)
-{
-    RsvgRadialGradient *grad;
-
-    g_assert (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT);
-    grad = (RsvgRadialGradient *) node;
-
-    if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
-        RsvgRadialGradient *fallback = (RsvgRadialGradient *) fallback_node;
-
-        if (!grad->hascx && fallback->hascx) {
-            grad->hascx = TRUE;
-            grad->cx = fallback->cx;
-        }
-        if (!grad->hascy && fallback->hascy) {
-            grad->hascy = TRUE;
-            grad->cy = fallback->cy;
-        }
-        if (!grad->hasfx && fallback->hasfx) {
-            grad->hasfx = TRUE;
-            grad->fx = fallback->fx;
-        }
-        if (!grad->hasfy && fallback->hasfy) {
-            grad->hasfy = TRUE;
-            grad->fy = fallback->fy;
-        }
-        if (!grad->hasr && fallback->hasr) {
-            grad->hasr = TRUE;
-            grad->r = fallback->r;
-        }
-        if (!grad->hastransform && fallback->hastransform) {
-            grad->hastransform = TRUE;
-            grad->affine = fallback->affine;
-        }
-        if (!grad->hasspread && fallback->hasspread) {
-            grad->hasspread = TRUE;
-            grad->spread = fallback->spread;
-        }
-        if (!grad->hasbbox && fallback->hasbbox) {
-            grad->hasbbox = TRUE;
-            grad->obj_bbox = fallback->obj_bbox;
-        }
-        if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
-            grad->super.children = fallback->super.children;
-        }
-    } else if (RSVG_NODE_TYPE (fallback_node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
-        RsvgLinearGradient *fallback = (RsvgLinearGradient *) fallback_node;
-
-        if (!grad->hastransform && fallback->hastransform) {
-            grad->hastransform = TRUE;
-            grad->affine = fallback->affine;
-        }
-        if (!grad->hasspread && fallback->hasspread) {
-            grad->hasspread = TRUE;
-            grad->spread = fallback->spread;
-        }
-        if (!grad->hasbbox && fallback->hasbbox) {
-            grad->hasbbox = TRUE;
-            grad->obj_bbox = fallback->obj_bbox;
-        }
-        if (!hasstop (grad->super.children) && hasstop (fallback->super.children)) {
-            grad->super.children = fallback->super.children;
-        }
-    }
-}
-
-void
-rsvg_radial_gradient_fix_fallback (RsvgDrawingCtx *ctx, RsvgRadialGradient * grad)
-{
-    resolve_fallbacks (ctx,
-                       (RsvgNode *) grad,
-                       (RsvgNode *) grad,
-                       gradient_get_fallback,
-                       radial_gradient_apply_fallback);
+    rsvg_drawing_ctx_release_node (ctx, fallback);
 }
 
 static const char *
 pattern_get_fallback (RsvgNode *node)
 {
-    if (RSVG_NODE_TYPE (node) == RSVG_NODE_TYPE_PATTERN) {
+    if (rsvg_node_type (node) == RSVG_NODE_TYPE_PATTERN) {
         RsvgPattern *pattern = (RsvgPattern *) node;
 
         return pattern->fallback;
@@ -677,9 +551,9 @@ pattern_apply_fallback (RsvgNode *pattern_node, RsvgNode *fallback_node)
     RsvgPattern *pattern;
     RsvgPattern *fallback;
 
-    g_assert (RSVG_NODE_TYPE (pattern_node) == RSVG_NODE_TYPE_PATTERN);
+    g_assert (rsvg_node_type (pattern_node) == RSVG_NODE_TYPE_PATTERN);
 
-    if (RSVG_NODE_TYPE (fallback_node) != RSVG_NODE_TYPE_PATTERN)
+    if (rsvg_node_type (fallback_node) != RSVG_NODE_TYPE_PATTERN)
         return;
 
     pattern = (RsvgPattern *) pattern_node;

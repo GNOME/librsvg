@@ -25,8 +25,8 @@
 */
 
 #include "config.h"
-#include "rsvg-css.h"
 #include "rsvg-private.h"
+#include "rsvg-css.h"
 #include "rsvg-styles.h"
 
 #include <glib.h>
@@ -91,138 +91,25 @@ rsvg_css_parse_vbox (const char *vbox)
     }
 }
 
-typedef enum _RelativeSize {
-    RELATIVE_SIZE_NORMAL,
-    RELATIVE_SIZE_SMALLER,
-    RELATIVE_SIZE_LARGER
-} RelativeSize;
-
-static double
-rsvg_css_parse_raw_length (const char *str, gboolean * in,
-                           gboolean * percent, gboolean * em, gboolean * ex, RelativeSize * relative_size)
-{
-    double length = 0.0;
-    char *p = NULL;
-
-    /* 
-     *  The supported CSS length unit specifiers are: 
-     *  em, ex, px, pt, pc, cm, mm, in, and %
-     */
-    *percent = FALSE;
-    *em = FALSE;
-    *ex = FALSE;
-    *relative_size = RELATIVE_SIZE_NORMAL;
-
-    length = g_ascii_strtod (str, &p);
-
-    if ((length == -HUGE_VAL || length == HUGE_VAL) && (ERANGE == errno)) {
-        /* todo: error condition - figure out how to best represent it */
-        return 0.0;
-    }
-
-    /* test for either pixels or no unit, which is assumed to be pixels */
-    if (p && *p && (strcmp (p, "px") != 0)) {
-        if (!strcmp (p, "pt")) {
-            length /= POINTS_PER_INCH;
-            *in = TRUE;
-        } else if (!strcmp (p, "in"))
-            *in = TRUE;
-        else if (!strcmp (p, "cm")) {
-            length /= CM_PER_INCH;
-            *in = TRUE;
-        } else if (!strcmp (p, "mm")) {
-            length /= MM_PER_INCH;
-            *in = TRUE;
-        } else if (!strcmp (p, "pc")) {
-            length /= PICA_PER_INCH;
-            *in = TRUE;
-        } else if (!strcmp (p, "em"))
-            *em = TRUE;
-        else if (!strcmp (p, "ex"))
-            *ex = TRUE;
-        else if (!strcmp (p, "%")) {
-            *percent = TRUE;
-            length *= 0.01;
-        } else {
-            double pow_factor = 0.0;
-
-            if (!g_ascii_strcasecmp (p, "larger")) {
-                *relative_size = RELATIVE_SIZE_LARGER;
-                return 0.0;
-            } else if (!g_ascii_strcasecmp (p, "smaller")) {
-                *relative_size = RELATIVE_SIZE_SMALLER;
-                return 0.0;
-            } else if (!g_ascii_strcasecmp (p, "xx-small")) {
-                pow_factor = -3.0;
-            } else if (!g_ascii_strcasecmp (p, "x-small")) {
-                pow_factor = -2.0;
-            } else if (!g_ascii_strcasecmp (p, "small")) {
-                pow_factor = -1.0;
-            } else if (!g_ascii_strcasecmp (p, "medium")) {
-                pow_factor = 0.0;
-            } else if (!g_ascii_strcasecmp (p, "large")) {
-                pow_factor = 1.0;
-            } else if (!g_ascii_strcasecmp (p, "x-large")) {
-                pow_factor = 2.0;
-            } else if (!g_ascii_strcasecmp (p, "xx-large")) {
-                pow_factor = 3.0;
-            } else {
-                return 0.0;
-            }
-
-            length = 12.0 * pow (1.2, pow_factor) / POINTS_PER_INCH;
-            *in = TRUE;
-        }
-    }
-
-    return length;
-}
-
-RsvgLength
-_rsvg_css_parse_length (const char *str)
-{
-    RsvgLength out;
-    gboolean percent, em, ex, in;
-    RelativeSize relative_size = RELATIVE_SIZE_NORMAL;
-    percent = em = ex = in = FALSE;
-
-    out.length = rsvg_css_parse_raw_length (str, &in, &percent, &em, &ex, &relative_size);
-    if (percent)
-        out.factor = 'p';
-    else if (em)
-        out.factor = 'm';
-    else if (ex)
-        out.factor = 'x';
-    else if (in)
-        out.factor = 'i';
-    else if (relative_size == RELATIVE_SIZE_LARGER)
-        out.factor = 'l';
-    else if (relative_size == RELATIVE_SIZE_SMALLER)
-        out.factor = 's';
-    else
-        out.factor = '\0';
-    return out;
-}
-
 /* Recursive evaluation of all parent elements regarding absolute font size */
-double
-_rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
+static double
+normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
 {
     RsvgState *parent;
 
-    switch (state->font_size.factor) {
-    case 'p':
-    case 'm':
-    case 'x':
+    switch (state->font_size.unit) {
+    case LENGTH_UNIT_PERCENT:
+    case LENGTH_UNIT_FONT_EM:
+    case LENGTH_UNIT_FONT_EX:
         parent = rsvg_state_parent (state);
         if (parent) {
             double parent_size;
-            parent_size = _rsvg_css_normalize_font_size (parent, ctx);
+            parent_size = normalize_font_size (parent, ctx);
             return state->font_size.length * parent_size;
         }
         break;
     default:
-        return _rsvg_css_normalize_length (&state->font_size, ctx, 'v');
+        return rsvg_length_normalize (&state->font_size, ctx);
         break;
     }
 
@@ -230,38 +117,9 @@ _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
 }
 
 double
-_rsvg_css_normalize_length (const RsvgLength * in, RsvgDrawingCtx * ctx, char dir)
+rsvg_drawing_ctx_get_normalized_font_size (RsvgDrawingCtx *ctx)
 {
-    if (in->factor == '\0')
-        return in->length;
-    else if (in->factor == 'p') {
-        if (dir == 'h')
-            return in->length * ctx->vb.rect.width;
-        if (dir == 'v')
-            return in->length * ctx->vb.rect.height;
-        if (dir == 'o')
-            return in->length * rsvg_viewport_percentage (ctx->vb.rect.width,
-                                                          ctx->vb.rect.height);
-    } else if (in->factor == 'm' || in->factor == 'x') {
-        double font = _rsvg_css_normalize_font_size (rsvg_current_state (ctx), ctx);
-        if (in->factor == 'm')
-            return in->length * font;
-        else
-            return in->length * font / 2.;
-    } else if (in->factor == 'i') {
-        if (dir == 'h')
-            return in->length * ctx->dpi_x;
-        if (dir == 'v')
-            return in->length * ctx->dpi_y;
-        if (dir == 'o')
-            return in->length * rsvg_viewport_percentage (ctx->dpi_x, ctx->dpi_y);
-    } else if (in->factor == 'l') {
-        /* todo: "larger" */
-    } else if (in->factor == 's') {
-        /* todo: "smaller" */
-    }
-
-    return 0;
+    return normalize_font_size (rsvg_current_state (ctx), ctx);
 }
 
 /* Recursive evaluation of all parent elements regarding basline-shift */
@@ -275,32 +133,13 @@ _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx)
     if (parent) {
         if (state->has_baseline_shift) {
             double parent_font_size;
-            parent_font_size = _rsvg_css_normalize_font_size (parent, ctx); /* font size from here */
+            parent_font_size = normalize_font_size (parent, ctx); /* font size from here */
             shift = parent_font_size * state->baseline_shift;
         }
         shift += _rsvg_css_accumulate_baseline_shift (parent, ctx); /* baseline-shift for parent element */
     }
 
     return shift;
-}
-
-
-double
-_rsvg_css_hand_normalize_length (const RsvgLength * in, gdouble pixels_per_inch,
-                                 gdouble width_or_height, gdouble font_size)
-{
-    if (in->factor == '\0')
-        return in->length;
-    else if (in->factor == 'p')
-        return in->length * width_or_height;
-    else if (in->factor == 'm')
-        return in->length * font_size;
-    else if (in->factor == 'x')
-        return in->length * font_size / 2.;
-    else if (in->factor == 'i')
-        return in->length * pixels_per_inch;
-
-    return 0;
 }
 
 static gint

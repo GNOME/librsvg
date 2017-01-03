@@ -32,56 +32,52 @@
 static void
 rsvg_mask_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *id = NULL, *klazz = NULL, *value;
     RsvgMask *mask;
+    const char *value;
+
     mask = (RsvgMask *) self;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "maskUnits"))) {
-            if (!strcmp (value, "userSpaceOnUse"))
-                mask->maskunits = userSpaceOnUse;
-            else
-                mask->maskunits = objectBoundingBox;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "maskContentUnits"))) {
-            if (!strcmp (value, "objectBoundingBox"))
-                mask->contentunits = objectBoundingBox;
-            else
-                mask->contentunits = userSpaceOnUse;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "x")))
-            mask->x = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "y")))
-            mask->y = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "width")))
-            mask->width = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "height")))
-            mask->height = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
-            id = value;
-            rsvg_defs_register_name (ctx->priv->defs, id, &mask->super);
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "class")))
-            klazz = value;
+    if ((value = rsvg_property_bag_lookup (atts, "maskUnits"))) {
+        if (!strcmp (value, "userSpaceOnUse"))
+            mask->maskunits = userSpaceOnUse;
+        else
+            mask->maskunits = objectBoundingBox;
     }
-
-    rsvg_parse_style_attrs (ctx, mask->super.state, "mask", klazz, id, atts);
+    if ((value = rsvg_property_bag_lookup (atts, "maskContentUnits"))) {
+        if (!strcmp (value, "objectBoundingBox"))
+            mask->contentunits = objectBoundingBox;
+        else
+            mask->contentunits = userSpaceOnUse;
+    }
+    if ((value = rsvg_property_bag_lookup (atts, "x")))
+        mask->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+    if ((value = rsvg_property_bag_lookup (atts, "y")))
+        mask->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+    if ((value = rsvg_property_bag_lookup (atts, "width")))
+        mask->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+    if ((value = rsvg_property_bag_lookup (atts, "height")))
+        mask->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
 }
 
 RsvgNode *
-rsvg_new_mask (void)
+rsvg_new_mask (const char *element_name)
 {
     RsvgMask *mask;
+    RsvgNodeVtable vtable = {
+        NULL,
+        NULL,
+        rsvg_mask_set_atts
+    };
 
     mask = g_new (RsvgMask, 1);
-    _rsvg_node_init (&mask->super, RSVG_NODE_TYPE_MASK);
+    _rsvg_node_init (&mask->super, RSVG_NODE_TYPE_MASK, &vtable);
+
     mask->maskunits = objectBoundingBox;
     mask->contentunits = userSpaceOnUse;
-    mask->x = _rsvg_css_parse_length ("0");
-    mask->y = _rsvg_css_parse_length ("0");
-    mask->width = _rsvg_css_parse_length ("1");
-    mask->height = _rsvg_css_parse_length ("1");
-    mask->super.set_atts = rsvg_mask_set_atts;
+    mask->x = rsvg_length_parse ("0", LENGTH_DIR_HORIZONTAL);
+    mask->y = rsvg_length_parse ("0", LENGTH_DIR_VERTICAL);
+    mask->width = rsvg_length_parse ("1", LENGTH_DIR_HORIZONTAL);
+    mask->height = rsvg_length_parse ("1", LENGTH_DIR_VERTICAL);
     return &mask->super;
 }
 
@@ -105,38 +101,32 @@ rsvg_get_url_string (const char *str)
 static void
 rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *id = NULL, *klazz = NULL, *value = NULL;
     RsvgClipPath *clip_path;
+    const char *value;
 
     clip_path = (RsvgClipPath *) self;
 
-    if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "clipPathUnits"))) {
-            if (!strcmp (value, "objectBoundingBox"))
-                clip_path->units = objectBoundingBox;
-            else
-                clip_path->units = userSpaceOnUse;
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
-            id = value;
-            rsvg_defs_register_name (ctx->priv->defs, id, &clip_path->super);
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "class")))
-            klazz = value;
+    if ((value = rsvg_property_bag_lookup (atts, "clipPathUnits"))) {
+        if (!strcmp (value, "objectBoundingBox"))
+            clip_path->units = objectBoundingBox;
+        else
+            clip_path->units = userSpaceOnUse;
     }
-
-    rsvg_parse_style_attrs (ctx, clip_path->super.state, "clipPath", klazz, id, atts);
 }
 
 RsvgNode *
-rsvg_new_clip_path (void)
+rsvg_new_clip_path (const char *element_name)
 {
     RsvgClipPath *clip_path;
+    RsvgNodeVtable vtable = {
+        NULL,
+        NULL,
+        rsvg_clip_path_set_atts
+    };
 
     clip_path = g_new (RsvgClipPath, 1);
-    _rsvg_node_init (&clip_path->super, RSVG_NODE_TYPE_CLIP_PATH);
+    _rsvg_node_init (&clip_path->super, RSVG_NODE_TYPE_CLIP_PATH, &vtable);
+
     clip_path->units = userSpaceOnUse;
-    clip_path->super.set_atts = rsvg_clip_path_set_atts;
-    clip_path->super.free = _rsvg_node_free;
     return &clip_path->super;
 }
