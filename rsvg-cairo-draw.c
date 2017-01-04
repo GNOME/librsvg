@@ -379,6 +379,16 @@ get_font_options_for_testing (void)
     return options;
 }
 
+static void
+set_font_options_for_testing (PangoContext *context)
+{
+    cairo_font_options_t *font_options;
+
+    font_options = get_font_options_for_testing ();
+    pango_cairo_context_set_font_options (context, font_options);
+    cairo_font_options_destroy (font_options);
+}
+
 PangoContext *
 rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
 {
@@ -393,10 +403,7 @@ rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
     pango_cairo_context_set_resolution (context, ctx->dpi_y);
 
     if (ctx->is_testing) {
-        cairo_font_options_t *font_options;
-        font_options = get_font_options_for_testing ();
-        pango_cairo_context_set_font_options (context, font_options);
-        cairo_font_options_destroy (font_options);
+        set_font_options_for_testing (context);
     }
 
     return context;
