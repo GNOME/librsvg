@@ -38,6 +38,7 @@ INCLUDES = -I$(srcdir) 							\
 	  $(LIBRSVG_CFLAGS)
 
 dist_installed_test_data =					\
+	$(wildcard $(srcdir)/resources/*)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.svg)		\
 	$(wildcard $(srcdir)/fixtures/crash/*.png)		\
 	$(wildcard $(srcdir)/fixtures/reftests/*.svg)		\

@@ -40,7 +40,7 @@
 #include <string.h>
 
 #include <pango/pangocairo.h>
-
+#include <pango/pangofc-fontmap.h>
 static gboolean
 add_color_stop_to_gradient (RsvgNode *node, gpointer data)
 {
@@ -381,6 +381,34 @@ set_font_options_for_testing (PangoContext *context)
     cairo_font_options_destroy (font_options);
 }
 
+static void
+create_font_config_for_testing (RsvgCairoRender *render)
+{
+    const char *font_path = SRCDIR "/tests/resources/LiberationSans-Regular.ttf";
+
+    if (render->font_config_for_testing != NULL)
+        return;
+
+    render->font_config_for_testing = FcConfigCreate ();
+
+    if (!FcConfigAppFontAddFile (render->font_config_for_testing, (const FcChar8 *) font_path)) {
+        g_error ("Could not load font file \"%s\" for tests; aborting", font_path);
+    }
+}
+
+static PangoFontMap *
+get_font_map_for_testing (RsvgCairoRender *render)
+{
+    PangoFontMap *font_map;
+
+    create_font_config_for_testing (render);
+
+    font_map = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
+    pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (font_map), render->font_config_for_testing);
+
+    return font_map;
+}
+
 PangoContext *
 rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
 {
@@ -389,7 +417,12 @@ rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     double dpi_y;
 
-    fontmap = pango_cairo_font_map_get_default ();
+    if (ctx->is_testing) {
+        fontmap = get_font_map_for_testing (render);
+    } else {
+        fontmap = pango_cairo_font_map_get_default ();
+    }
+
     context = pango_font_map_create_context (fontmap);
     pango_cairo_update_context (render->cr, context);
 

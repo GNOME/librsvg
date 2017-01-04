@@ -48,6 +48,11 @@ rsvg_cairo_render_free (RsvgRender * self)
     g_assert (me->bb_stack == NULL);
     g_assert (me->surfaces_stack == NULL);
 
+    if (me->font_config_for_testing) {
+        FcConfigDestroy (me->font_config_for_testing);
+        me->font_config_for_testing = NULL;
+    }
+
     g_free (me);
 }
 
@@ -76,6 +81,7 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
     cairo_render->cr_stack = NULL;
     cairo_render->bb_stack = NULL;
     cairo_render->surfaces_stack = NULL;
+    cairo_render->font_config_for_testing = NULL;
 
     cairo_matrix_init_identity (&matrix);
     rsvg_bbox_init (&cairo_render->bbox, &matrix);

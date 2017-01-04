@@ -30,6 +30,7 @@
 
 #include "rsvg-private.h"
 #include <cairo.h>
+#include <pango/pangofc-fontmap.h>
 
 G_BEGIN_DECLS typedef struct _RsvgCairoRender RsvgCairoRender;
 
@@ -48,6 +49,8 @@ struct _RsvgCairoRender {
     RsvgBbox bbox;
     GList *bb_stack;
     GList *surfaces_stack;
+
+    FcConfig *font_config_for_testing;
 };
 
 #define RSVG_CAIRO_RENDER(render) (_RSVG_RENDER_CIC ((render), RSVG_RENDER_TYPE_CAIRO, RsvgCairoRender))
