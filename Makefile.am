@@ -77,6 +77,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_builddir) 			\
 	-DG_LOG_DOMAIN=\"librsvg\" 		\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
+	-DSRCDIR=\""${abs_top_srcdir}"\"	\
 	-DRSVG_DISABLE_DEPRECATION_WARNINGS	\
 	$(AM_CPPFLAGS)
 

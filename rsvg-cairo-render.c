@@ -46,6 +46,11 @@ rsvg_cairo_render_free (RsvgRender * self)
 
     /* TODO */
 
+    if (me->font_config_for_testing) {
+        FcConfigDestroy (me->font_config_for_testing);
+        me->font_config_for_testing = NULL;
+    }
+
     g_free (me);
 }
 
@@ -73,6 +78,7 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
     cairo_render->cr_stack = NULL;
     cairo_render->bb_stack = NULL;
     cairo_render->surfaces_stack = NULL;
+    cairo_render->font_config_for_testing = NULL;
 
     return cairo_render;
 }
