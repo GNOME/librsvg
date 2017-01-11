@@ -189,6 +189,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
     cairo_matrix_t affine, caffine, taffine;
     double bbwscale, bbhscale, scwscale, schscale;
     double patternw, patternh, patternx, patterny;
+    double scaled_width, scaled_height;
     int pw, ph;
 
     rsvg_pattern = &local_pattern;
@@ -206,9 +207,7 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
     if (rsvg_pattern->obj_bbox)
         _rsvg_pop_view_box (ctx);
 
-
     /* Work out the size of the rectangle so it takes into account the object bounding box */
-
 
     if (rsvg_pattern->obj_bbox) {
         bbwscale = bbox.rect.width;
@@ -226,8 +225,14 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
     pw = patternw * bbwscale * scwscale;
     ph = patternh * bbhscale * schscale;
 
-    scwscale = (double) pw / (double) (patternw * bbwscale);
-    schscale = (double) ph / (double) (patternh * bbhscale);
+    scaled_width = patternw * bbwscale;
+    scaled_height = patternh * bbhscale;
+
+    if (fabs (scaled_width) < DBL_EPSILON || fabs (scaled_height) < DBL_EPSILON)
+        return;
+
+    scwscale = pw / scaled_width;
+    schscale = ph / scaled_height;
 
     surface = cairo_surface_create_similar (cairo_get_target (cr_render),
                                             CAIRO_CONTENT_COLOR_ALPHA, pw, ph);
