@@ -1,0 +1,50 @@
+<svg id="svgt" width="100%" height="100%" viewBox="0 0 480 3">
+  <!--======-->
+  <!--=    =-->
+  <!--=    =-->
+  <!--=    =-->
+  <!--=    =-->
+  <!--=    =-->
+  <!--======-->
+  <d:SVGTestCase s:d="httt" s="$R$">
+<d:testDescription x="hts">
+  <p>
+    </p>
+  <p>  </p>
+    </d:testDescription>
+<d:operatorScript xmlns="httl">
+  <p>Runed.</p>
+</d:operatorScript>
+<d:passCriteria s="html">
+  <p>
+  </p>
+    </d:passCriteria>
+  </d:SVGTestCase>
+  <title id="testle">$RC</title>
+  <defs>
+    <font-face   font-family=""
+  e="UF">
+  <font-face-src>
+    <f xliref="../cii"/>
+  </font-face-src>
+    </font-face>
+  </defs>
+  <g id="teent" font-family="SVf" font-size="18">
+    <defs>
+    <patterl id="Pattern1" patternUnits="userSpaceOnUse" width="100" height="100" viewBox="0 0 10 10" />
+    <pattern id="Pattern2" xlink:href="#Pattern1" />
+<pattern id="Pattern3" xlink:href="#Pattern2">
+    <circle cx="5" cy="5" r="2" fill="green"/>
+    </pattern> </defs> <circle cx="50" cy="50" r="20" fill="red" />
+    <rect fill="url(#Pattern3)" width="100" height="100" />
+  </g>
+  <g font-family="Sif" font-size="32">
+<text id="re0" stroke="none"   fill="black">ision: 1.3 $</text>
+  </g>
+  <rect id="te" x="1" y="1" width="478" height="358" fill="none" stroke="#000"/>
+  <!-- c-->
+  <g id="dra">
+    <rect x="1" y="1" width="478" height="20" fill="red" stroke="black" stroke-width="1"/>
+    <text font-family="SVG" font-weighR="bold" font-size="20"   text-anchor="middle" y="18" stroke-width="0.5" stroke="black" fill="white">DRAFT</text>
+  </g>
+</svg>
