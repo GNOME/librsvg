@@ -5,6 +5,7 @@ test_programs =		\
 	rsvg-test	\
 	crash		\
 	styles		\
+	render-crash	\
 	dimensions
 
 test_utils_common_sources = \
@@ -17,6 +18,10 @@ rsvg_test_SOURCES = \
 
 crash_SOURCES = \
 	crash.c		\
+	$(test_utils_common_sources)
+
+render_crash_SOURCES = \
+	render-crash.c	\
 	$(test_utils_common_sources)
 
 styles_SOURCES = \
@@ -54,6 +59,7 @@ dist_installed_test_data =						\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/*.svg)		\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/*.png)		\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/resources/*)	\
+	$(wildcard $(srcdir)/fixtures/render-crash/*.svg)		\
 	fixtures/dimensions/bug564527.svg				\
 	fixtures/dimensions/bug614018.svg				\
 	fixtures/dimensions/bug612951.svg				\
