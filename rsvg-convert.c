@@ -217,8 +217,11 @@ main (int argc, char **argv)
             n_args++;
 
     if (n_args == 0) {
+        const gchar * const stdin_args[] = { "stdin", NULL };
         n_args = 1;
         using_stdin = TRUE;
+        g_strfreev (args);
+        args = g_strdupv ((gchar **) stdin_args);
     } else if (n_args > 1 && (!format || !(!strcmp (format, "ps") || !strcmp (format, "eps") || !strcmp (format, "pdf")))) {
         g_printerr (_("Multiple SVG files are only allowed for PDF and (E)PS output.\n"));
         exit (1);
