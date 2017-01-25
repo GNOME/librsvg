@@ -35,7 +35,7 @@
 #include <stdio.h>
 
 void
-rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
+rsvg_node_draw_from_stack (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     RsvgState *state;
     GSList *stacksave;
@@ -68,7 +68,7 @@ draw_child (RsvgNode *node, gpointer data)
 
     ctx = data;
 
-    rsvg_node_draw (node, ctx, 0);
+    rsvg_node_draw_from_stack (node, ctx, 0);
 
     return TRUE;
 }
@@ -222,7 +222,7 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         cairo_matrix_multiply (&state->affine, &affine, &state->affine);
 
         rsvg_push_discrete_layer (ctx);
-        rsvg_node_draw (child, ctx, 1);
+        rsvg_node_draw_from_stack (child, ctx, 1);
         rsvg_pop_discrete_layer (ctx);
     } else {
         RsvgNodeSymbol *symbol = (RsvgNodeSymbol *) child;
@@ -513,7 +513,7 @@ draw_child_if_cond_true_and_stop (RsvgNode *node, gpointer data)
     ctx = data;
 
     if (rsvg_node_get_state (node)->cond_true) {
-        rsvg_node_draw (node, ctx, 0);
+        rsvg_node_draw_from_stack (node, ctx, 0);
 
         return FALSE;
     } else {

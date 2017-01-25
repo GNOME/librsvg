@@ -1589,7 +1589,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
             sself = rsvg_node_get_parent (sself);
         }
 
-        rsvg_node_draw (handle->priv->treebase, draw, 0);
+        rsvg_node_draw_from_stack (handle->priv->treebase, draw, 0);
         bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
         rsvg_drawing_ctx_free (draw);
@@ -1681,7 +1681,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
         node = rsvg_node_get_parent (node);
     }
 
-    rsvg_node_draw (handle->priv->treebase, draw, 0);
+    rsvg_node_draw_from_stack (handle->priv->treebase, draw, 0);
     bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
     rsvg_drawing_ctx_free (draw);

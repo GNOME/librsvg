@@ -116,7 +116,7 @@ draw_child (RsvgNode *node, gpointer data)
 
     ctx = data;
 
-    rsvg_node_draw (node, ctx, 0);
+    rsvg_node_draw_from_stack (node, ctx, 0);
 
     return TRUE;
 }
