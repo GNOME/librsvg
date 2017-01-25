@@ -53,7 +53,7 @@ rsvg_node_draw_from_stack (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     if (state->visible) {
         rsvg_state_push (ctx);
 
-        self->vtable->draw (self, ctx, dominate);
+        rsvg_node_draw (self, ctx, dominate);
 
         rsvg_state_pop (ctx);
     }

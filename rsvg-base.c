@@ -381,6 +381,12 @@ rsvg_node_set_atts (RsvgNode *node, RsvgHandle *handle, RsvgPropertyBag *atts)
     node->vtable->set_atts (node, handle, atts);
 }
 
+void
+rsvg_node_draw (RsvgNode *node, RsvgDrawingCtx *draw, int dominate)
+{
+    node->vtable->draw (node, draw, dominate);
+}
+
 static void
 node_set_atts (RsvgNode * node, RsvgHandle * ctx, const NodeCreator *creator, RsvgPropertyBag * atts)
 {
