@@ -375,6 +375,12 @@ get_node_creator_for_element_name (const char *name)
     return result;
 }
 
+void
+rsvg_node_set_atts (RsvgNode *node, RsvgHandle *handle, RsvgPropertyBag *atts)
+{
+    node->vtable->set_atts (node, handle, atts);
+}
+
 static void
 node_set_atts (RsvgNode * node, RsvgHandle * ctx, const NodeCreator *creator, RsvgPropertyBag * atts)
 {
@@ -382,7 +388,7 @@ node_set_atts (RsvgNode * node, RsvgHandle * ctx, const NodeCreator *creator, Rs
         const char *id;
         const char *klazz;
 
-        node->vtable->set_atts (node, ctx, atts);
+        rsvg_node_set_atts (node, ctx, atts);
 
         /* The "svg" node is special; it will load its id/class
          * attributes until the end, when rsvg_end_element() calls
