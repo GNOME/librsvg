@@ -56,6 +56,14 @@ pub use length::{
 
 pub use node::{
     rsvg_node_get_type,
+    rsvg_node_get_parent,
+    rsvg_node_unref,
+    rsvg_node_get_state,
+    rsvg_node_add_child,
+};
+
+pub use cnode::{
+    rsvg_rust_cnode_new,
 };
 
 pub use viewbox::{
@@ -71,6 +79,7 @@ pub use pattern::{
 
 mod aspect_ratio;
 mod bbox;
+mod cnode;
 mod drawing_ctx;
 mod handle;
 mod gradient;

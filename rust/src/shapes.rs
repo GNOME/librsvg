@@ -25,7 +25,7 @@ impl NodePath {
 }
 
 impl NodeTrait for NodePath {
-    fn set_atts (&self, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+    fn set_atts (&self, node: &RsvgRcNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
         if let Some (value) = property_bag::lookup (pbag, "d") {
             let mut builder = self.builder.borrow_mut ();
 
@@ -36,7 +36,7 @@ impl NodeTrait for NodePath {
         }
     }
 
-    fn draw (&self, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    fn draw (&self, node: &RsvgRcNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
         drawing_ctx::state_reinherit_top (draw_ctx, self.state, dominate);
         drawing_ctx::render_path_builder (draw_ctx, & *self.builder.borrow ());
     }
