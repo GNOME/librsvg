@@ -316,6 +316,10 @@ fn angle_from_vector (vx: f64, vy: f64) -> f64 {
     }
 }
 
+fn bisect_angles (incoming: f64, outgoing: f64) -> f64 {
+    (incoming + outgoing) / 2.0
+}
+
 extern "C" {
     fn rsvg_marker_render (marker_name: *const libc::c_char,
                            xpos: f64,
@@ -454,7 +458,7 @@ pub extern fn rsvg_render_markers (ctx: *mut RsvgDrawingCtx,
                         let angle: f64;
 
                         if has_incoming && has_outgoing {
-                            angle = (incoming + outgoing) / 2.0;
+                            angle = bisect_angles (incoming, outgoing);
                         } else if has_incoming {
                             angle = incoming;
                         } else if has_outgoing {
