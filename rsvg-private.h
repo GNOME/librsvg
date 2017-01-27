@@ -180,6 +180,7 @@ struct RsvgHandlePrivate {
     gboolean is_testing; /* Are we being run from the test suite? */
 };
 
+/* Keep this in sync with rust/src/viewbox.rs::RsvgViewBox */
 typedef struct {
     cairo_rectangle_t rect;
     gboolean active;

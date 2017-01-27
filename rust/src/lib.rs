@@ -54,6 +54,10 @@ pub use length::{
     rsvg_length_hand_normalize,
 };
 
+pub use viewbox::{
+    RsvgViewBox
+};
+
 
 mod aspect_ratio;
 mod bbox;
@@ -69,3 +73,5 @@ mod property_bag;
 mod state;
 mod shapes;
 mod strtod;
+mod util;
+mod viewbox;
