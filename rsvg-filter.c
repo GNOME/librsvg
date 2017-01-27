@@ -989,18 +989,18 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self, RsvgFilterContex
 {
     RsvgIRect boundarys;
 
-    RsvgFilterPrimitiveBlend *upself;
+    RsvgFilterPrimitiveBlend *blend;
 
     cairo_surface_t *output, *in, *in2;
 
-    upself = (RsvgFilterPrimitiveBlend *) self;
+    blend = (RsvgFilterPrimitiveBlend *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
     if (in == NULL)
       return;
 
-    in2 = rsvg_filter_get_in (upself->in2, ctx);
+    in2 = rsvg_filter_get_in (blend->in2, ctx);
     if (in2 == NULL) {
         cairo_surface_destroy (in);
         return;
@@ -1014,7 +1014,7 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self, RsvgFilterContex
         return;
     }
 
-    rsvg_filter_blend (upself->mode, in, in2, output, boundarys, ctx->channelmap);
+    rsvg_filter_blend (blend->mode, in, in2, output, boundarys, ctx->channelmap);
 
     rsvg_filter_store_result (self->result, output, ctx);
 
@@ -1113,7 +1113,7 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
     guchar *in_pixels;
     guchar *output_pixels;
 
-    RsvgFilterPrimitiveConvolveMatrix *upself;
+    RsvgFilterPrimitiveConvolveMatrix *convolve;
 
     cairo_surface_t *output, *in;
 
@@ -1124,7 +1124,7 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
 
     gint tempresult;
 
-    upself = (RsvgFilterPrimitiveConvolveMatrix *) self;
+    convolve = (RsvgFilterPrimitiveConvolveMatrix *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
@@ -1138,12 +1138,12 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
     height = cairo_image_surface_get_height (in);
     width = cairo_image_surface_get_width (in);
 
-    targetx = upself->targetx * ctx->paffine.xx;
-    targety = upself->targety * ctx->paffine.yy;
+    targetx = convolve->targetx * ctx->paffine.xx;
+    targety = convolve->targety * ctx->paffine.yy;
 
-    if (upself->dx != 0 || upself->dy != 0) {
-        dx = upself->dx * ctx->paffine.xx;
-        dy = upself->dy * ctx->paffine.yy;
+    if (convolve->dx != 0 || convolve->dy != 0) {
+        dx = convolve->dx * ctx->paffine.xx;
+        dy = convolve->dy * ctx->paffine.yy;
     } else
         dx = dy = 1;
 
@@ -1159,15 +1159,15 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
-            for (umch = 0; umch < 3 + !upself->preservealpha; umch++) {
+            for (umch = 0; umch < 3 + !convolve->preservealpha; umch++) {
                 ch = ctx->channelmap[umch];
                 sum = 0;
-                for (i = 0; i < upself->ordery; i++)
-                    for (j = 0; j < upself->orderx; j++) {
+                for (i = 0; i < convolve->ordery; i++)
+                    for (j = 0; j < convolve->orderx; j++) {
                         int alpha;
                         sx = x - targetx + j * dx;
                         sy = y - targety + i * dy;
-                        if (upself->edgemode == 0) {
+                        if (convolve->edgemode == 0) {
                             if (sx < boundarys.x0)
                                 sx = boundarys.x0;
                             if (sx >= boundarys.x1)
@@ -1176,20 +1176,20 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
                                 sy = boundarys.y0;
                             if (sy >= boundarys.y1)
                                 sy = boundarys.y1 - 1;
-                        } else if (upself->edgemode == 1) {
+                        } else if (convolve->edgemode == 1) {
                             if (sx < boundarys.x0 || (sx >= boundarys.x1))
                                 sx = boundarys.x0 + (sx - boundarys.x0) %
                                     (boundarys.x1 - boundarys.x0);
                             if (sy < boundarys.y0 || (sy >= boundarys.y1))
                                 sy = boundarys.y0 + (sy - boundarys.y0) %
                                     (boundarys.y1 - boundarys.y0);
-                        } else if (upself->edgemode == 2)
+                        } else if (convolve->edgemode == 2)
                             if (sx < boundarys.x0 || (sx >= boundarys.x1) ||
                                 sy < boundarys.y0 || (sy >= boundarys.y1))
                                 continue;
 
-                        kx = upself->orderx - j - 1;
-                        ky = upself->ordery - i - 1;
+                        kx = convolve->orderx - j - 1;
+                        ky = convolve->ordery - i - 1;
                         alpha = in_pixels[4 * sx + sy * rowstride + 3];
                         if (ch == 3)
                             sval = alpha;
@@ -1197,10 +1197,10 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
                             sval = in_pixels[4 * sx + sy * rowstride + ch] * 255 / alpha;
                         else
                             sval = 0;
-                        kval = upself->KernelMatrix[kx + ky * upself->orderx];
+                        kval = convolve->KernelMatrix[kx + ky * convolve->orderx];
                         sum += (double) sval *kval;
                     }
-                tempresult = sum / upself->divisor + upself->bias;
+                tempresult = sum / convolve->divisor + convolve->bias;
 
                 if (tempresult > 255)
                     tempresult = 255;
@@ -1209,7 +1209,7 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
 
                 output_pixels[4 * x + y * rowstride + ch] = tempresult;
             }
-            if (upself->preservealpha)
+            if (convolve->preservealpha)
                 output_pixels[4 * x + y * rowstride + ctx->channelmap[3]] =
                     in_pixels[4 * x + y * rowstride + ctx->channelmap[3]];
             for (umch = 0; umch < 3; umch++) {
@@ -1896,7 +1896,7 @@ gaussian_blur_surface (cairo_surface_t *in,
 static void
 rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
 {
-    RsvgFilterPrimitiveGaussianBlur *upself;
+    RsvgFilterPrimitiveGaussianBlur *gaussian;
     int width, height;
     cairo_surface_t *output, *in;
     RsvgIRect boundarys;
@@ -1904,7 +1904,7 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilt
     RsvgFilterPrimitiveOutput op;
     cairo_t *cr;
 
-    upself = (RsvgFilterPrimitiveGaussianBlur *) self;
+    gaussian = (RsvgFilterPrimitiveGaussianBlur *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     op = rsvg_filter_get_result (self->in, ctx);
@@ -1921,8 +1921,8 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilt
     }
 
     /* scale the SD values */
-    sdx = upself->sdx * ctx->paffine.xx;
-    sdy = upself->sdy * ctx->paffine.yy;
+    sdx = gaussian->sdx * ctx->paffine.xx;
+    sdy = gaussian->sdy * ctx->paffine.yy;
 
     gaussian_blur_surface (in, output, sdx, sdy);
 
@@ -2013,14 +2013,14 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
     guchar *output_pixels;
 
     RsvgFilterPrimitiveOutput out;
-    RsvgFilterPrimitiveOffset *upself;
+    RsvgFilterPrimitiveOffset *offset;
 
     cairo_surface_t *output, *in;
 
     double dx, dy;
     int ox, oy;
 
-    upself = (RsvgFilterPrimitiveOffset *) self;
+    offset = (RsvgFilterPrimitiveOffset *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
@@ -2044,8 +2044,8 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
 
     output_pixels = cairo_image_surface_get_data (output);
 
-    dx = rsvg_length_normalize (&upself->dx, ctx->ctx);
-    dy = rsvg_length_normalize (&upself->dy, ctx->ctx);
+    dx = rsvg_length_normalize (&offset->dx, ctx->ctx);
+    dy = rsvg_length_normalize (&offset->dy, ctx->ctx);
 
     ox = ctx->paffine.xx * dx + ctx->paffine.xy * dy;
     oy = ctx->paffine.yx * dx + ctx->paffine.yy * dy;
@@ -2131,11 +2131,11 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self, RsvgFilterContex
     guint i;
     RsvgIRect boundarys;
 
-    RsvgFilterPrimitiveMerge *upself;
+    RsvgFilterPrimitiveMerge *merge;
 
     cairo_surface_t *output, *in;
 
-    upself = (RsvgFilterPrimitiveMerge *) self;
+    merge = (RsvgFilterPrimitiveMerge *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     output = _rsvg_image_surface_new (ctx->width, ctx->height);
@@ -2143,9 +2143,9 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self, RsvgFilterContex
         return;
     }
 
-    for (i = 0; i < upself->super.super.children->len; i++) {
+    for (i = 0; i < merge->super.super.children->len; i++) {
         RsvgFilterPrimitive *mn;
-        mn = g_ptr_array_index (upself->super.super.children, i);
+        mn = g_ptr_array_index (merge->super.super.children, i);
         if (rsvg_node_type (&mn->super) != RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE)
             continue;
         in = rsvg_filter_get_in (mn->in, ctx);
@@ -2275,13 +2275,13 @@ rsvg_filter_primitive_color_matrix_render (RsvgFilterPrimitive * self, RsvgFilte
     guchar *in_pixels;
     guchar *output_pixels;
 
-    RsvgFilterPrimitiveColorMatrix *upself;
+    RsvgFilterPrimitiveColorMatrix *color_matrix;
 
     cairo_surface_t *output, *in;
 
     int sum;
 
-    upself = (RsvgFilterPrimitiveColorMatrix *) self;
+    color_matrix = (RsvgFilterPrimitiveColorMatrix *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
@@ -2311,7 +2311,7 @@ rsvg_filter_primitive_color_matrix_render (RsvgFilterPrimitive * self, RsvgFilte
             int alpha = in_pixels[4 * x + y * rowstride + ctx->channelmap[3]];
             if (!alpha)
                 for (umch = 0; umch < 4; umch++) {
-                    sum = upself->KernelMatrix[umch * 5 + 4];
+                    sum = color_matrix->KernelMatrix[umch * 5 + 4];
                     if (sum > 255)
                         sum = 255;
                     if (sum < 0)
@@ -2325,13 +2325,13 @@ rsvg_filter_primitive_color_matrix_render (RsvgFilterPrimitive * self, RsvgFilte
                     for (umi = 0; umi < 4; umi++) {
                         i = ctx->channelmap[umi];
                         if (umi != 3)
-                            sum += upself->KernelMatrix[umch * 5 + umi] *
+                            sum += color_matrix->KernelMatrix[umch * 5 + umi] *
                                 in_pixels[4 * x + y * rowstride + i] / alpha;
                         else
-                            sum += upself->KernelMatrix[umch * 5 + umi] *
+                            sum += color_matrix->KernelMatrix[umch * 5 + umi] *
                                 in_pixels[4 * x + y * rowstride + i] / 255;
                     }
-                    sum += upself->KernelMatrix[umch * 5 + 4];
+                    sum += color_matrix->KernelMatrix[umch * 5 + 4];
 
 
 
@@ -2834,14 +2834,14 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContex
     guchar *in_pixels;
     guchar *output_pixels;
 
-    RsvgFilterPrimitiveErode *upself;
+    RsvgFilterPrimitiveErode *erode;
 
     cairo_surface_t *output, *in;
 
     gint kx, ky;
     guchar val;
 
-    upself = (RsvgFilterPrimitiveErode *) self;
+    erode = (RsvgFilterPrimitiveErode *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
@@ -2858,8 +2858,8 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContex
     rowstride = cairo_image_surface_get_stride (in);
 
     /* scale the radius values */
-    kx = upself->rx * ctx->paffine.xx;
-    ky = upself->ry * ctx->paffine.yy;
+    kx = erode->rx * ctx->paffine.xx;
+    ky = erode->ry * ctx->paffine.yy;
 
     output = _rsvg_image_surface_new (width, height);
     if (output == NULL) {
@@ -2872,7 +2872,7 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContex
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++)
             for (ch = 0; ch < 4; ch++) {
-                if (upself->mode == 0)
+                if (erode->mode == 0)
                     extreme = 255;
                 else
                     extreme = 0;
@@ -2884,7 +2884,7 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContex
                         val = in_pixels[(y + i) * rowstride + (x + j) * 4 + ch];
 
 
-                        if (upself->mode == 0) {
+                        if (erode->mode == 0) {
                             if (extreme > val)
                                 extreme = val;
                         } else {
@@ -2998,23 +2998,23 @@ static void
 rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
 {
     RsvgIRect boundarys;
-    RsvgFilterPrimitiveComposite *upself;
+    RsvgFilterPrimitiveComposite *composite;
     cairo_surface_t *output, *in, *in2;
 
-    upself = (RsvgFilterPrimitiveComposite *) self;
+    composite = (RsvgFilterPrimitiveComposite *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
     if (in == NULL)
         return;
 
-    in2 = rsvg_filter_get_in (upself->in2, ctx);
+    in2 = rsvg_filter_get_in (composite->in2, ctx);
     if (in2 == NULL) {
         cairo_surface_destroy (in);
         return;
     }
 
-    if (upself->mode == COMPOSITE_MODE_ARITHMETIC) {
+    if (composite->mode == COMPOSITE_MODE_ARITHMETIC) {
         guchar i;
         gint x, y;
         gint rowstride, height, width;
@@ -3046,7 +3046,7 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterCo
 
                 qa = in_pixels[4 * x + y * rowstride + 3];
                 qb = in2_pixels[4 * x + y * rowstride + 3];
-                qr = (upself->k1 * qa * qb / 255 + upself->k2 * qa + upself->k3 * qb) / 255;
+                qr = (composite->k1 * qa * qb / 255 + composite->k2 * qa + composite->k3 * qb) / 255;
 
                 if (qr > 255)
                     qr = 255;
@@ -3059,8 +3059,8 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterCo
                         ca = in_pixels[4 * x + y * rowstride + i];
                         cb = in2_pixels[4 * x + y * rowstride + i];
 
-                        cr = (ca * cb * upself->k1 / 255 + ca * upself->k2 +
-                              cb * upself->k3 + upself->k4 * qr) / 255;
+                        cr = (ca * cb * composite->k1 / 255 + ca * composite->k2 +
+                              cb * composite->k3 + composite->k4 * qr) / 255;
                         if (cr > qr)
                             cr = qr;
                         if (cr < 0)
@@ -3086,7 +3086,7 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterCo
                          boundarys.x1 - boundarys.x0,
                          boundarys.y1 - boundarys.y0);
         cairo_clip (cr);
-        cairo_set_operator (cr, composite_mode_to_cairo_operator (upself->mode));
+        cairo_set_operator (cr, composite_mode_to_cairo_operator (composite->mode));
         cairo_paint (cr);
         cairo_destroy (cr);
     }
@@ -3281,13 +3281,13 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
     guchar *in2_pixels;
     guchar *output_pixels;
 
-    RsvgFilterPrimitiveDisplacementMap *upself;
+    RsvgFilterPrimitiveDisplacementMap *displacement_map;
 
     cairo_surface_t *output, *in, *in2;
 
     double ox, oy;
 
-    upself = (RsvgFilterPrimitiveDisplacementMap *) self;
+    displacement_map = (RsvgFilterPrimitiveDisplacementMap *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
@@ -3296,7 +3296,7 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
 
     cairo_surface_flush (in);
 
-    in2 = rsvg_filter_get_in (upself->in2, ctx);
+    in2 = rsvg_filter_get_in (displacement_map->in2, ctx);
     if (in2 == NULL) {
         cairo_surface_destroy (in);
         return;
@@ -3321,7 +3321,7 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
 
     output_pixels = cairo_image_surface_get_data (output);
 
-    switch (upself->xChannelSelector) {
+    switch (displacement_map->xChannelSelector) {
     case 'R':
         xch = 0;
         break;
@@ -3339,7 +3339,7 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
         break;
     }
 
-    switch (upself->yChannelSelector) {
+    switch (displacement_map->yChannelSelector) {
     case 'R':
         ych = 0;
         break;
@@ -3362,13 +3362,13 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             if (xch != 4)
-                ox = x + upself->scale * ctx->paffine.xx *
+                ox = x + displacement_map->scale * ctx->paffine.xx *
                     ((double) in2_pixels[y * rowstride + x * 4 + xch] / 255.0 - 0.5);
             else
                 ox = x;
 
             if (ych != 4)
-                oy = y + upself->scale * ctx->paffine.yy *
+                oy = y + displacement_map->scale * ctx->paffine.yy *
                     ((double) in2_pixels[y * rowstride + x * 4 + ych] / 255.0 - 0.5);
             else
                 oy = y;
@@ -3689,7 +3689,7 @@ feTurbulence_turbulence (RsvgFilterPrimitiveTurbulence * filter,
 static void
 rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
 {
-    RsvgFilterPrimitiveTurbulence *upself;
+    RsvgFilterPrimitiveTurbulence *turbulence;
     gint x, y, tileWidth, tileHeight, rowstride, width, height;
     RsvgIRect boundarys;
     guchar *output_pixels;
@@ -3710,7 +3710,7 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterC
     width = cairo_image_surface_get_width (in);
     rowstride = cairo_image_surface_get_stride (in);
 
-    upself = (RsvgFilterPrimitiveTurbulence *) self;
+    turbulence = (RsvgFilterPrimitiveTurbulence *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     tileWidth = (boundarys.x1 - boundarys.x0);
@@ -3737,10 +3737,10 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterC
             for (i = 0; i < 4; i++) {
                 double cr;
 
-                cr = feTurbulence_turbulence (upself, i, point, (double) x, (double) y,
+                cr = feTurbulence_turbulence (turbulence, i, point, (double) x, (double) y,
                                               (double) tileWidth, (double) tileHeight);
 
-                if (upself->bFractalSum)
+                if (turbulence->bFractalSum)
                     cr = ((cr * 255.) + 255.) / 2.;
                 else
                     cr = (cr * 255.);
@@ -3834,18 +3834,18 @@ static cairo_surface_t *
 rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self, RsvgFilterContext * context)
 {
     RsvgDrawingCtx *ctx;
-    RsvgFilterPrimitiveImage *upself;
+    RsvgFilterPrimitiveImage *image;
     RsvgNode *drawable;
     cairo_surface_t *result;
 
     ctx = context->ctx;
 
-    upself = (RsvgFilterPrimitiveImage *) self;
+    image = (RsvgFilterPrimitiveImage *) self;
 
-    if (!upself->href)
+    if (!image->href)
         return NULL;
 
-    drawable = rsvg_drawing_ctx_acquire_node (ctx, upself->href->str);
+    drawable = rsvg_drawing_ctx_acquire_node (ctx, image->href->str);
     if (!drawable)
         return NULL;
 
@@ -3862,7 +3862,7 @@ static cairo_surface_t *
 rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
 {
     RsvgIRect boundarys;
-    RsvgFilterPrimitiveImage *upself;
+    RsvgFilterPrimitiveImage *image;
     cairo_surface_t *img, *intermediate;
     int i;
     unsigned char *pixels;
@@ -3870,9 +3870,9 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterCo
     int length;
     int width, height;
 
-    upself = (RsvgFilterPrimitiveImage *) self;
+    image = (RsvgFilterPrimitiveImage *) self;
 
-    if (!upself->href)
+    if (!image->href)
         return NULL;
 
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
@@ -3882,8 +3882,8 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterCo
     if (width == 0 || height == 0)
         return NULL;
 
-    img = rsvg_cairo_surface_new_from_href (upself->ctx,
-                                            upself->href->str,
+    img = rsvg_cairo_surface_new_from_href (image->ctx,
+                                            image->href->str,
                                             NULL);
     if (!img)
         return NULL;
@@ -3931,13 +3931,13 @@ static void
 rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
 {
     RsvgIRect boundarys;
-    RsvgFilterPrimitiveImage *upself;
+    RsvgFilterPrimitiveImage *image;
     RsvgFilterPrimitiveOutput op;
     cairo_surface_t *output, *img;
 
-    upself = (RsvgFilterPrimitiveImage *) self;
+    image = (RsvgFilterPrimitiveImage *) self;
 
-    if (!upself->href)
+    if (!image->href)
         return;
 
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
@@ -4468,7 +4468,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
     guchar *in_pixels;
     guchar *output_pixels;
 
-    RsvgFilterPrimitiveDiffuseLighting *upself;
+    RsvgFilterPrimitiveDiffuseLighting *diffuse_lighting;
 
     cairo_surface_t *output, *in;
 
@@ -4489,7 +4489,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
     if (cairo_matrix_invert (&iaffine) != CAIRO_STATUS_SUCCESS)
       return;
 
-    upself = (RsvgFilterPrimitiveDiffuseLighting *) self;
+    diffuse_lighting = (RsvgFilterPrimitiveDiffuseLighting *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
@@ -4513,22 +4513,22 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
 
     output_pixels = cairo_image_surface_get_data (output);
 
-    color.x = ((guchar *) (&upself->lightingcolor))[2] / 255.0;
-    color.y = ((guchar *) (&upself->lightingcolor))[1] / 255.0;
-    color.z = ((guchar *) (&upself->lightingcolor))[0] / 255.0;
+    color.x = ((guchar *) (&diffuse_lighting->lightingcolor))[2] / 255.0;
+    color.y = ((guchar *) (&diffuse_lighting->lightingcolor))[1] / 255.0;
+    color.z = ((guchar *) (&diffuse_lighting->lightingcolor))[0] / 255.0;
 
-    surfaceScale = upself->surfaceScale / 255.0;
+    surfaceScale = diffuse_lighting->surfaceScale / 255.0;
 
-    if (upself->dy < 0 || upself->dx < 0) {
+    if (diffuse_lighting->dy < 0 || diffuse_lighting->dx < 0) {
         dx = 1;
         dy = 1;
         rawdx = 1;
         rawdy = 1;
     } else {
-        dx = upself->dx * ctx->paffine.xx;
-        dy = upself->dy * ctx->paffine.yy;
-        rawdx = upself->dx;
-        rawdy = upself->dy;
+        dx = diffuse_lighting->dx * ctx->paffine.xx;
+        dy = diffuse_lighting->dy * ctx->paffine.yy;
+        rawdx = diffuse_lighting->dx;
+        rawdy = diffuse_lighting->dy;
     }
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
@@ -4536,17 +4536,17 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
             z = surfaceScale * (double) in_pixels[y * rowstride + x * 4 + ctx->channelmap[3]];
             L = get_light_direction (source, x, y, z, &iaffine, ctx->ctx);
             N = get_surface_normal (in_pixels, boundarys, x, y,
-                                    dx, dy, rawdx, rawdy, upself->surfaceScale,
+                                    dx, dy, rawdx, rawdy, diffuse_lighting->surfaceScale,
                                     rowstride, ctx->channelmap[3]);
             lightcolor = get_light_color (source, color, x, y, z, &iaffine, ctx->ctx);
             factor = dotproduct (N, L);
 
             output_pixels[y * rowstride + x * 4 + ctx->channelmap[0]] =
-                MAX (0, MIN (255, upself->diffuseConstant * factor * lightcolor.x * 255.0));
+                MAX (0, MIN (255, diffuse_lighting->diffuseConstant * factor * lightcolor.x * 255.0));
             output_pixels[y * rowstride + x * 4 + ctx->channelmap[1]] =
-                MAX (0, MIN (255, upself->diffuseConstant * factor * lightcolor.y * 255.0));
+                MAX (0, MIN (255, diffuse_lighting->diffuseConstant * factor * lightcolor.y * 255.0));
             output_pixels[y * rowstride + x * 4 + ctx->channelmap[2]] =
-                MAX (0, MIN (255, upself->diffuseConstant * factor * lightcolor.z * 255.0));
+                MAX (0, MIN (255, diffuse_lighting->diffuseConstant * factor * lightcolor.z * 255.0));
             output_pixels[y * rowstride + x * 4 + ctx->channelmap[3]] = 255;
         }
 
@@ -4637,7 +4637,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
     guchar *in_pixels;
     guchar *output_pixels;
 
-    RsvgFilterPrimitiveSpecularLighting *upself;
+    RsvgFilterPrimitiveSpecularLighting *specular_lighting;
 
     cairo_surface_t *output, *in;
 
@@ -4657,7 +4657,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
     if (cairo_matrix_invert (&iaffine) != CAIRO_STATUS_SUCCESS)
       return;
 
-    upself = (RsvgFilterPrimitiveSpecularLighting *) self;
+    specular_lighting = (RsvgFilterPrimitiveSpecularLighting *) self;
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
     in = rsvg_filter_get_in (self->in, ctx);
@@ -4681,11 +4681,11 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
 
     output_pixels = cairo_image_surface_get_data (output);
 
-    color.x = ((guchar *) (&upself->lightingcolor))[2] / 255.0;
-    color.y = ((guchar *) (&upself->lightingcolor))[1] / 255.0;
-    color.z = ((guchar *) (&upself->lightingcolor))[0] / 255.0;
+    color.x = ((guchar *) (&specular_lighting->lightingcolor))[2] / 255.0;
+    color.y = ((guchar *) (&specular_lighting->lightingcolor))[1] / 255.0;
+    color.z = ((guchar *) (&specular_lighting->lightingcolor))[0] / 255.0;
 
-    surfaceScale = upself->surfaceScale / 255.0;
+    surfaceScale = specular_lighting->surfaceScale / 255.0;
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
         for (x = boundarys.x0; x < boundarys.x1; x++) {
@@ -4697,10 +4697,10 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
             lightcolor = get_light_color (source, color, x, y, z, &iaffine, ctx->ctx);
             base = dotproduct (get_surface_normal (in_pixels, boundarys, x, y,
                                                    1, 1, 1.0 / ctx->paffine.xx,
-                                                   1.0 / ctx->paffine.yy, upself->surfaceScale,
+                                                   1.0 / ctx->paffine.yy, specular_lighting->surfaceScale,
                                                    rowstride, ctx->channelmap[3]), L);
 
-            factor = upself->specularConstant * pow (base, upself->specularExponent) * 255;
+            factor = specular_lighting->specularConstant * pow (base, specular_lighting->specularExponent) * 255;
 
             max = 0;
             if (max < lightcolor.x)
