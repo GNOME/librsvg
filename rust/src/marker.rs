@@ -2,7 +2,7 @@ extern crate libc;
 extern crate cairo;
 extern crate cairo_sys;
 
-use std::f64;
+use std::f64::consts::*;
 use path_builder::*;
 use drawing_ctx::RsvgDrawingCtx;
 
@@ -302,22 +302,41 @@ fn find_outgoing_directionality_forwards (segments: &[Segment], start_index: usi
     (false, 0.0, 0.0)
 }
 
+// Normalizes an angle to [0.0, 2*PI)
+fn normalize_angle (mut angle: f64) -> f64 {
+    if angle < 0.0 {
+        while angle < 0.0 {
+            angle += PI * 2.0;
+        }
+    } else {
+        while angle > PI * 2.0 {
+            angle -= PI * 2.0;
+        }
+    }
+
+    angle
+}
+
 fn angle_from_vector (vx: f64, vy: f64) -> f64 {
     let mut angle = vy.atan2 (vx);
 
     if angle.is_nan () {
         0.0
     } else {
-        while angle < 0.0 {
-            angle += f64::consts::PI * 2.0;
-        }
-
-        angle
+        normalize_angle (angle)
     }
 }
 
 fn bisect_angles (incoming: f64, outgoing: f64) -> f64 {
-    (incoming + outgoing) / 2.0
+    let half_delta: f64;
+    
+    half_delta = (outgoing - incoming) * 0.5;
+
+    if FRAC_PI_2 < half_delta.abs () { 
+        normalize_angle (incoming + half_delta - PI)
+    } else {
+        normalize_angle (incoming + half_delta)
+    }
 }
 
 extern "C" {
@@ -495,9 +514,85 @@ pub extern fn rsvg_render_markers (ctx: *mut RsvgDrawingCtx,
 
 #[cfg(test)]
 mod tests {
+    use std::f64::consts::*;
     use super::*;
     use path_builder::*;
     extern crate cairo;
+
+    fn test_bisection_angle (expected: f64,
+                             incoming_vx: f64,
+                             incoming_vy: f64,
+                             outgoing_vx: f64,
+                             outgoing_vy: f64) {
+        let bisected = super::bisect_angles (super::angle_from_vector (incoming_vx, incoming_vy),
+                                             super::angle_from_vector (outgoing_vx, outgoing_vy));
+        assert! (super::double_equals (expected, bisected));
+    }
+
+    #[test]
+    fn bisection_angle_is_correct_from_incoming_counterclockwise_to_outgoing () {
+        // 1st quadrant
+        test_bisection_angle (FRAC_PI_4,
+                              1.0, 0.0,
+                              0.0, 1.0);
+
+        // 2nd quadrant
+        test_bisection_angle (FRAC_PI_2 + FRAC_PI_4,
+                              0.0, 1.0,
+                              -1.0, 0.0);
+
+        // 3rd quadrant
+        test_bisection_angle (PI + FRAC_PI_4,
+                              -1.0, 0.0,
+                              0.0, -1.0);
+
+        // 4th quadrant
+        test_bisection_angle (PI + FRAC_PI_2 + FRAC_PI_4,
+                              0.0, -1.0,
+                              1.0, 0.0);
+    }
+
+    #[test]
+    fn bisection_angle_is_correct_from_incoming_clockwise_to_outgoing () {
+        // 1st quadrant
+        test_bisection_angle (FRAC_PI_4,
+                              0.0, 1.0,
+                              1.0, 0.0);
+
+        // 2nd quadrant
+        test_bisection_angle (FRAC_PI_2 + FRAC_PI_4,
+                              -1.0, 0.0,
+                              0.0, 1.0);
+
+        // 3rd quadrant
+        test_bisection_angle (PI + FRAC_PI_4,
+                              0.0, -1.0,
+                              -1.0, 0.0);
+
+        // 4th quadrant
+        test_bisection_angle (PI + FRAC_PI_2 + FRAC_PI_4,
+                              1.0, 0.0,
+                              0.0, -1.0);
+    }
+
+    #[test]
+    fn bisection_angle_is_correct_for_more_than_quarter_turn_angle () {
+        test_bisection_angle (0.0,
+                              0.1, -1.0,
+                              0.1, 1.0);
+
+        test_bisection_angle (FRAC_PI_2,
+                              1.0, 0.1,
+                              -1.0, 0.1);
+
+        test_bisection_angle (PI,
+                              -0.1, 1.0,
+                              -0.1, -1.0);
+
+        test_bisection_angle (PI + FRAC_PI_2,
+                              -1.0, -0.1,
+                              1.0, -0.1);
+    }
 
     fn degenerate (x: f64, y: f64) -> Segment {
         super::make_degenerate (x, y)
