@@ -178,6 +178,7 @@ rsvg_tools_main (int *argc, char ***argv)
         cairo_destroy (cr);
     }
 
+    g_strfreev (args);
     rsvg_cleanup ();
 
     return 0;
