@@ -545,6 +545,24 @@ pattern_get_fallback (RsvgNode *node)
         return NULL;
 }
 
+static gboolean
+has_children_foreach (RsvgNode *node, gpointer data)
+{
+    gboolean *has_child = data;
+
+    *has_child = TRUE;
+    return FALSE; /* stop since we found a child */
+}
+
+static gboolean
+has_children (RsvgNode *node)
+{
+    gboolean has_child = FALSE;
+
+    rsvg_node_foreach_child (node, has_children_foreach, &has_child);
+    return has_child;
+}
+
 static void
 pattern_apply_fallback (RsvgNode *pattern_node, RsvgNode *fallback_node)
 {
@@ -594,7 +612,7 @@ pattern_apply_fallback (RsvgNode *pattern_node, RsvgNode *fallback_node)
         pattern->hascbox = TRUE;
         pattern->obj_cbbox = fallback->obj_cbbox;
     }
-    if (!pattern->super.children->len && fallback->super.children->len) {
+    if (!has_children (pattern_node) && has_children (fallback_node)) {
         pattern->super.children = fallback->super.children;
     }
 }
