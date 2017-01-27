@@ -2125,41 +2125,61 @@ struct _RsvgFilterPrimitiveMerge {
     RsvgFilterPrimitive super;
 };
 
-static void
-rsvg_filter_primitive_merge_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
-{
-    guint i;
+struct merge_render_closure {
+    cairo_surface_t *output;
     RsvgIRect boundarys;
+    RsvgFilterContext *ctx;
+};
 
-    RsvgFilterPrimitiveMerge *merge;
+static gboolean
+merge_render_child (RsvgNode *node, gpointer data)
+{
+    struct merge_render_closure *closure = data;
+    RsvgFilterPrimitive *fp;
+    cairo_surface_t *in;
 
-    cairo_surface_t *output, *in;
+    if (rsvg_node_type (node) != RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE)
+        return TRUE;
 
-    merge = (RsvgFilterPrimitiveMerge *) self;
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    fp = (RsvgFilterPrimitive *) node;
+    
+    in = rsvg_filter_get_in (fp->in, closure->ctx);
+    if (in == NULL)
+        return TRUE;
 
-    output = _rsvg_image_surface_new (ctx->width, ctx->height);
-    if (output == NULL) {
+    rsvg_alpha_blt (in,
+                    closure->boundarys.x0,
+                    closure->boundarys.y0,
+                    closure->boundarys.x1 - closure->boundarys.x0,
+                    closure->boundarys.y1 - closure->boundarys.y0,
+                    closure->output,
+                    closure->boundarys.x0,
+                    closure->boundarys.y0);
+
+    cairo_surface_destroy (in);
+
+    return TRUE;
+}
+
+static void
+rsvg_filter_primitive_merge_render (RsvgFilterPrimitive *self, RsvgFilterContext *ctx)
+{
+    struct merge_render_closure closure;
+
+    closure.boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+
+    closure.output = _rsvg_image_surface_new (ctx->width, ctx->height);
+    if (closure.output == NULL) {
         return;
     }
 
-    for (i = 0; i < merge->super.super.children->len; i++) {
-        RsvgFilterPrimitive *mn;
-        mn = g_ptr_array_index (merge->super.super.children, i);
-        if (rsvg_node_type (&mn->super) != RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE)
-            continue;
-        in = rsvg_filter_get_in (mn->in, ctx);
-        if (in == NULL)
-            continue;
+    closure.ctx = ctx;
 
-        rsvg_alpha_blt (in, boundarys.x0, boundarys.y0, boundarys.x1 - boundarys.x0,
-                        boundarys.y1 - boundarys.y0, output, boundarys.x0, boundarys.y0);
-        cairo_surface_destroy (in);
-    }
+    rsvg_node_foreach_child ((RsvgNode *) self, merge_render_child, &closure);
 
-    rsvg_filter_store_result (self->result, output, ctx);
+    rsvg_filter_store_result (self->result, closure.output, ctx);
 
-    cairo_surface_destroy (output);
+    cairo_surface_destroy (closure.output);
 }
 
 static void
@@ -2588,45 +2608,61 @@ gamma_component_transfer_func (gint C, RsvgNodeComponentTransferFunc * user_data
                                                     user_data->exponent) + user_data->offset;
 }
 
-static void
-rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
-                                                 self, RsvgFilterContext * ctx)
-{
-    gint x, y, c;
-    guint i;
-    gint rowstride, height, width;
-    RsvgIRect boundarys;
+struct component_transfer_closure {
+    int channel_num;
+    char channel;
+    gboolean set_func;
     RsvgNodeComponentTransferFunc *channels[4];
     ComponentTransferFunc functions[4];
+    RsvgFilterContext *ctx;
+};
+
+static gboolean
+component_transfer_render_child (RsvgNode *node, gpointer data)
+{
+    struct component_transfer_closure *closure = data;
+    RsvgNodeComponentTransferFunc *f;
+
+    if (rsvg_node_type (node) != RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION)
+        return TRUE;
+
+    f = (RsvgNodeComponentTransferFunc *) node;
+
+    if (f->channel == closure->channel) {
+        closure->functions[closure->ctx->channelmap[closure->channel_num]] = f->function;
+        closure->channels[closure->ctx->channelmap[closure->channel_num]] = f;
+        closure->set_func = TRUE;
+    }
+
+    return TRUE;
+}
+
+static void
+rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx)
+{
+    gint x, y, c;
+    gint rowstride, height, width;
+    RsvgIRect boundarys;
     guchar *inpix, outpix[4];
     gint achan = ctx->channelmap[3];
     guchar *in_pixels;
     guchar *output_pixels;
     cairo_surface_t *output, *in;
+    struct component_transfer_closure closure;
 
     boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
 
+    closure.ctx = ctx;
+
     for (c = 0; c < 4; c++) {
-        char channel = "rgba"[c]; /* see rsvg_new_node_component_transfer_function() for where these chars come from */
-        gboolean set_func = FALSE;
+        closure.channel_num = c;
+        closure.channel = "rgba"[c]; /* see rsvg_new_node_component_transfer_function() for where these chars come from */
+        closure.set_func = FALSE;
 
-        for (i = 0; i < self->super.children->len; i++) {
-            RsvgNode *child_node;
+        rsvg_node_foreach_child ((RsvgNode *) self, component_transfer_render_child, &closure);
 
-            child_node = (RsvgNode *) g_ptr_array_index (self->super.children, i);
-            if (rsvg_node_type (child_node) == RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION) {
-                RsvgNodeComponentTransferFunc *temp = (RsvgNodeComponentTransferFunc *) child_node;
-
-                if (temp->channel == channel) {
-                    functions[ctx->channelmap[c]] = temp->function;
-                    channels[ctx->channelmap[c]] = temp;
-                    set_func = TRUE;
-                }
-            }
-        }
-        if (!set_func)
-            functions[ctx->channelmap[c]] = identity_component_transfer_func;
-
+        if (!closure.set_func)
+            closure.functions[ctx->channelmap[c]] = identity_component_transfer_func;
     }
 
     in = rsvg_filter_get_in (self->in, ctx);
@@ -2664,7 +2700,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *
                 } else
                     inval = inpix[c];
 
-                temp = functions[c] (inval, channels[c]);
+                temp = closure.functions[c] (inval, closure.channels[c]);
                 if (temp > 255)
                     temp = 255;
                 else if (temp < 0)
@@ -4451,6 +4487,22 @@ struct _RsvgFilterPrimitiveDiffuseLighting {
     guint32 lightingcolor;
 };
 
+struct find_light_source_closure {
+    RsvgNodeLightSource *source;
+};
+
+static gboolean
+find_light_source (RsvgNode *node, gpointer data)
+{
+    struct find_light_source_closure *closure = data;
+
+    if (rsvg_node_type (node) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
+        closure->source = (RsvgNodeLightSource *) node;
+    }
+
+    return TRUE;
+}
+
 static void
 rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
 {
@@ -4472,16 +4524,13 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
 
     cairo_surface_t *output, *in;
 
-    unsigned int i;
+    struct find_light_source_closure closure;
 
-    for (i = 0; i < self->super.children->len; i++) {
-        RsvgNode *temp;
+    closure.source = NULL;
 
-        temp = g_ptr_array_index (self->super.children, i);
-        if (rsvg_node_type (temp) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
-            source = (RsvgNodeLightSource *) temp;
-        }
-    }
+    rsvg_node_foreach_child ((RsvgNode *) self, find_light_source, &closure);
+    source = closure.source;
+
     if (source == NULL)
         return;
 
@@ -4641,15 +4690,13 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
 
     cairo_surface_t *output, *in;
 
-    unsigned int i;
+    struct find_light_source_closure closure;
 
-    for (i = 0; i < self->super.children->len; i++) {
-        RsvgNode *temp;
-        temp = g_ptr_array_index (self->super.children, i);
-        if (rsvg_node_type (temp) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
-            source = (RsvgNodeLightSource *) temp;
-        }
-    }
+    closure.source = NULL;
+
+    rsvg_node_foreach_child ((RsvgNode *) self, find_light_source, &closure);
+    source = closure.source;
+
     if (source == NULL)
         return;
 
