@@ -53,7 +53,7 @@ read_contents (const gchar *file_name, guint8 **contents, gsize *length)
             gsize bytes_read;
 
             *length = g_file_info_get_size (file_info);
-            *contents = (guint8 *) g_new (guint8*, *length);
+            *contents = g_new (guint8, *length);
             success = g_input_stream_read_all (G_INPUT_STREAM(input_stream),
                                                *contents,
                                                *length,
