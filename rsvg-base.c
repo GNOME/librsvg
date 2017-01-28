@@ -2309,6 +2309,19 @@ rsvg_drawing_ctx_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
   ctx->acquired_nodes = g_slist_remove (ctx->acquired_nodes, node);
 }
 
+cairo_matrix_t
+rsvg_drawing_ctx_get_current_state_affine (RsvgDrawingCtx *ctx)
+{
+    return rsvg_current_state (ctx)->affine;
+}
+
+void
+rsvg_drawing_ctx_set_current_state_affine (RsvgDrawingCtx *ctx, cairo_matrix_t *affine)
+{
+    rsvg_current_state (ctx)->personal_affine =
+        rsvg_current_state (ctx)->affine = *affine;
+}
+
 void
 rsvg_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 {
