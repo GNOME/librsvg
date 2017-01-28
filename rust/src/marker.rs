@@ -5,6 +5,7 @@ extern crate cairo_sys;
 use std::f64::consts::*;
 use path_builder::*;
 use drawing_ctx::RsvgDrawingCtx;
+use util::*;
 
 #[derive(Debug, PartialEq)]
 pub enum Segment {
@@ -44,12 +45,6 @@ enum SegmentState {
  *    The tangent at the end point is given by the vector (P4 - P3).
  *    The tangents also work if the segment refers to a lineto (they will both just point in the same direction).
  */
-
-const EPSILON: f64 = 1e-10;
-
-fn double_equals (a: f64, b: f64) -> bool {
-    (a - b).abs () < EPSILON
-}
 
 fn make_degenerate (x: f64, y: f64) -> Segment {
     Segment::Degenerate { x: x, y: y }
@@ -517,6 +512,7 @@ mod tests {
     use std::f64::consts::*;
     use super::*;
     use path_builder::*;
+    use util::*;
     extern crate cairo;
 
     fn test_bisection_angle (expected: f64,
@@ -526,7 +522,7 @@ mod tests {
                              outgoing_vy: f64) {
         let bisected = super::bisect_angles (super::angle_from_vector (incoming_vx, incoming_vy),
                                              super::angle_from_vector (outgoing_vx, outgoing_vy));
-        assert! (super::double_equals (expected, bisected));
+        assert! (double_equals (expected, bisected));
     }
 
     #[test]
