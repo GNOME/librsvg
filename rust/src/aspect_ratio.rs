@@ -15,6 +15,10 @@
 //! [`AspectRatio`]: struct.AspectRatio.html
 //! [spec]: https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
+extern crate libc;
+extern crate glib;
+
+use self::glib::translate::*;
 
 use std::fmt;
 use std::str::FromStr;
@@ -58,6 +62,15 @@ impl Default for Align {
         Align::Aligned {
             align: AlignMode::XmidYmid,
             fit: FitMode::Meet
+        }
+    }
+}
+
+impl Default for AspectRatio {
+    fn default () -> AspectRatio {
+        AspectRatio {
+            defer: false,
+            align: Default::default ()
         }
     }
 }
@@ -258,6 +271,22 @@ impl fmt::Display for ParseAspectRatioError {
         "provided string did not match `[defer] <align> [meet | slice]`".fmt (f)
     }
 }
+
+#[no_mangle]
+pub extern fn rsvg_aspect_ratio_parse (c_str: *const libc::c_char) -> u32 {
+    let my_str = unsafe { &String::from_glib_none (c_str) };
+    let parsed = AspectRatio::from_str (my_str);
+
+    match parsed {
+        Ok (aspect_ratio) => { aspect_ratio_to_u32 (aspect_ratio) },
+        Err (_) => {
+            // We can't propagate the error here, so just return a default value
+            let a: AspectRatio = Default::default ();
+            aspect_ratio_to_u32 (a)
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

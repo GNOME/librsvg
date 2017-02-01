@@ -7,6 +7,7 @@ pub use aspect_ratio::{
     Align,
     AspectRatio,
     ParseAspectRatioError,
+    rsvg_aspect_ratio_parse
 };
 
 pub use bbox::{
