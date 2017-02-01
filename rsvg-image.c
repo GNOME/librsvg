@@ -117,7 +117,7 @@ rsvg_preserve_aspect_ratio (unsigned int aspect_ratio, double width,
                             double height, double *w, double *h, double *x, double *y)
 {
     double neww, newh;
-    if (aspect_ratio & ~RSVG_ASPECT_RATIO_SLICE) {
+    if (aspect_ratio & ~(RSVG_ASPECT_RATIO_SLICE | RSVG_ASPECT_RATIO_DEFER)) {
         neww = *w;
         newh = *h;
         if ((height * *w > width * *h) == ((aspect_ratio & RSVG_ASPECT_RATIO_SLICE) == 0)) {

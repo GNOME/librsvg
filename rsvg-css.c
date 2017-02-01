@@ -657,6 +657,8 @@ rsvg_css_parse_aspect_ratio (const char *str)
                 ratio = RSVG_ASPECT_RATIO_XMAX_YMAX;
             else if (!strcmp (elems[i], "slice"))
                 ratio |= RSVG_ASPECT_RATIO_SLICE;
+            else if (!strcmp (elems[i], "defer"))
+                ratio |= RSVG_ASPECT_RATIO_DEFER;
         }
 
         g_strfreev (elems);
