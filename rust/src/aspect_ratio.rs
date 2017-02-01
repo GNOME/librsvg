@@ -1,3 +1,21 @@
+//! Handling of preserveAspectRatio values
+//!
+//! This module handles preserveAspectRatio values [per the SVG specification][spec].
+//! We have an [`AspectRatio`] struct which encapsulates such a value.
+//!
+//! [`AspectRatio`] implements `FromStr`, so it can be parsed easily:
+//!
+//! ```
+//! assert_eq! (AspectRatio::from_str ("XmidYmid"),
+//!             Ok (AspectRatio { defer: false,
+//!                               align: Align::Aligned { align: AlignMode::XmidYmid,
+//!                                                       fit: FitMode::Meet } }));
+//! ```
+//!
+//! [`AspectRatio`]: struct.AspectRatio.html
+//! [spec]: https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
+
+
 use std::fmt;
 use std::str::FromStr;
 
