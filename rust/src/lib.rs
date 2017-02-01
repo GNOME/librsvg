@@ -1,6 +1,14 @@
 #[macro_use]
 extern crate bitflags;
 
+pub use aspect_ratio::{
+    FitMode,
+    AlignMode,
+    Align,
+    AspectRatio,
+    ParseAspectRatioError,
+};
+
 pub use bbox::{
     RsvgBbox,
     rsvg_bbox_init,

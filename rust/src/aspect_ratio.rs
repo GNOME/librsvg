@@ -49,8 +49,8 @@ pub enum Align {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct AspectRatio {
-    defer: bool,
-    align: Align
+    pub defer: bool,
+    pub align: Align
 }
 
 impl Default for Align {
