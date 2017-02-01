@@ -5,6 +5,7 @@ authors = ["Federico Mena Quintero <federico@gnome.org>"]
 
 [dependencies]
 libc = "0.2"
+bitflags = ""
 
 [dependencies.cairo-sys-rs]
 git = "https://github.com/gtk-rs/cairo.git"

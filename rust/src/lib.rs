@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate bitflags;
+
 pub use bbox::{
     RsvgBbox,
     rsvg_bbox_init,
@@ -41,6 +44,8 @@ pub use length::{
     rsvg_length_hand_normalize,
 };
 
+
+mod aspect_ratio;
 mod bbox;
 mod drawing_ctx;
 mod handle;
