@@ -464,7 +464,7 @@ rsvg_pattern_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts
         pattern->hascbox = TRUE;
     }
     if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio"))) {
-        pattern->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
+        pattern->preserve_aspect_ratio = rsvg_aspect_ratio_parse (value);
         pattern->hasaspect = TRUE;
     }
 }

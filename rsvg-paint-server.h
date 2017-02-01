@@ -135,7 +135,7 @@ struct _RsvgPattern {
     cairo_matrix_t affine; /* user space to actual at time of gradient def */
     RsvgLength x, y, width, height;
     RsvgViewBox vbox;
-    unsigned int preserve_aspect_ratio;
+    guint32 preserve_aspect_ratio;
     int hasx:1;
     int hasy:1;
     int hasvbox:1;

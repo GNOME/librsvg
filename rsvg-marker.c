@@ -47,7 +47,7 @@ struct _RsvgMarker {
     gboolean bbox;
     RsvgLength refX, refY, width, height;
     double orient;
-    gint preserve_aspect_ratio;
+    guint32 preserve_aspect_ratio;
     gboolean orientAuto;
     RsvgViewBox vbox;
 };
@@ -83,7 +83,7 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * 
             marker->bbox = TRUE;
     }
     if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
-        marker->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
+        marker->preserve_aspect_ratio = rsvg_aspect_ratio_parse (value);
 }
 
 RsvgNode *

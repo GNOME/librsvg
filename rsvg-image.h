@@ -43,13 +43,13 @@ typedef struct _RsvgNodeImage RsvgNodeImage;
 
 struct _RsvgNodeImage {
     RsvgNode super;
-    gint preserve_aspect_ratio;
+    guint32 preserve_aspect_ratio;
     RsvgLength x, y, w, h;
     cairo_surface_t *surface; /* a cairo image surface */
 };
 
 G_GNUC_INTERNAL
-void rsvg_preserve_aspect_ratio (unsigned int aspect_ratio, double width,
+void rsvg_preserve_aspect_ratio (guint32 aspect_ratio, double width,
                                  double height, double *w, double *h, double *x, double *y);
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_cairo_surface_new_from_href (RsvgHandle *handle, const char *href, GError ** error);

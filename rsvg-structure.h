@@ -60,7 +60,7 @@ struct _RsvgNodeGroup {
 
 struct _RsvgNodeSymbol {
     RsvgNode super;
-    gint preserve_aspect_ratio;
+    guint32 preserve_aspect_ratio;
     RsvgViewBox vbox;
 };
 
@@ -72,7 +72,7 @@ struct _RsvgNodeUse {
 
 struct _RsvgNodeSvg {
     RsvgNode super;
-    gint preserve_aspect_ratio;
+    guint32 preserve_aspect_ratio;
     RsvgLength x, y, w, h;
     RsvgViewBox vbox;
     RsvgPropertyBag *atts;

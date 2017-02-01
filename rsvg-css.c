@@ -623,50 +623,6 @@ rsvg_css_parse_number_optional_number (const char *str, double *x, double *y)
         *y = *x;
 }
 
-int
-rsvg_css_parse_aspect_ratio (const char *str)
-{
-    char **elems;
-    guint nb_elems;
-
-    int ratio = RSVG_ASPECT_RATIO_NONE;
-
-    elems = rsvg_css_parse_list (str, &nb_elems);
-
-    if (elems && nb_elems) {
-        guint i;
-
-        for (i = 0; i < nb_elems; i++) {
-            if (!strcmp (elems[i], "xMinYMin"))
-                ratio = RSVG_ASPECT_RATIO_XMIN_YMIN;
-            else if (!strcmp (elems[i], "xMidYMin"))
-                ratio = RSVG_ASPECT_RATIO_XMID_YMIN;
-            else if (!strcmp (elems[i], "xMaxYMin"))
-                ratio = RSVG_ASPECT_RATIO_XMAX_YMIN;
-            else if (!strcmp (elems[i], "xMinYMid"))
-                ratio = RSVG_ASPECT_RATIO_XMIN_YMID;
-            else if (!strcmp (elems[i], "xMidYMid"))
-                ratio = RSVG_ASPECT_RATIO_XMID_YMID;
-            else if (!strcmp (elems[i], "xMaxYMid"))
-                ratio = RSVG_ASPECT_RATIO_XMAX_YMID;
-            else if (!strcmp (elems[i], "xMinYMax"))
-                ratio = RSVG_ASPECT_RATIO_XMIN_YMAX;
-            else if (!strcmp (elems[i], "xMidYMax"))
-                ratio = RSVG_ASPECT_RATIO_XMID_YMAX;
-            else if (!strcmp (elems[i], "xMaxYMax"))
-                ratio = RSVG_ASPECT_RATIO_XMAX_YMAX;
-            else if (!strcmp (elems[i], "slice"))
-                ratio |= RSVG_ASPECT_RATIO_SLICE;
-            else if (!strcmp (elems[i], "defer"))
-                ratio |= RSVG_ASPECT_RATIO_DEFER;
-        }
-
-        g_strfreev (elems);
-    }
-
-    return ratio;
-}
-
 gboolean
 rsvg_css_parse_overflow (const char *str, gboolean * inherit)
 {

@@ -113,7 +113,7 @@ rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
 }
 
 void
-rsvg_preserve_aspect_ratio (unsigned int aspect_ratio, double width,
+rsvg_preserve_aspect_ratio (guint32 aspect_ratio, double width,
                             double height, double *w, double *h, double *x, double *y)
 {
     double neww, newh;
@@ -224,7 +224,7 @@ rsvg_node_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
     }
 
     if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
-        image->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
+        image->preserve_aspect_ratio = rsvg_aspect_ratio_parse (value);
 }
 
 RsvgNode *

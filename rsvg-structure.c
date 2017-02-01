@@ -332,7 +332,7 @@ rsvg_node_svg_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * att
         svg->vbox = rsvg_css_parse_vbox (value);
 
     if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
-        svg->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
+        svg->preserve_aspect_ratio = rsvg_aspect_ratio_parse (value);
     if ((value = rsvg_property_bag_lookup (atts, "width")))
         svg->w = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
     if ((value = rsvg_property_bag_lookup (atts, "height")))
@@ -466,7 +466,7 @@ rsvg_node_symbol_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * 
     if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
         symbol->vbox = rsvg_css_parse_vbox (value);
     if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
-        symbol->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
+        symbol->preserve_aspect_ratio = rsvg_aspect_ratio_parse (value);
 }
 
 
