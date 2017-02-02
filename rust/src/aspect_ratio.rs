@@ -315,7 +315,7 @@ impl FromStr for AspectRatio {
             defer: defer,
             align: match align {
                 Align::None => { Align::None },
-                Align::Aligned { align, ..} => {
+                Align::Aligned { align, .. } => {
                     Align::Aligned {
                         align: align,
                         fit: fit_mode
@@ -393,6 +393,10 @@ mod tests {
 
     #[test]
     fn parses_valid_strings () {
+        assert_eq! (AspectRatio::from_str ("defer none"),
+                    Ok (AspectRatio { defer: true,
+                                      align: Align::None }));
+
         assert_eq! (AspectRatio::from_str ("XmidYmid"),
                     Ok (AspectRatio { defer: false,
                                       align: Align::Aligned { align: AlignMode::XmidYmid,
