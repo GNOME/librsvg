@@ -13,6 +13,8 @@ use drawing_ctx::RsvgNode;
 
 use bbox::*;
 
+use util::*;
+
 use self::cairo::MatrixTrait;
 
 #[derive(Copy, Clone)]
@@ -130,14 +132,6 @@ impl GradientCommon {
         } else {
             unreachable! ();
         }
-    }
-}
-
-fn clone_fallback_name (fallback: &Option<String>) -> Option<String> {
-    if let Some (ref fallback_name) = *fallback {
-        Some (fallback_name.clone ())
-    } else {
-        None
     }
 }
 
