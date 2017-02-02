@@ -57,6 +57,69 @@ pub struct AspectRatio {
     pub align: Align
 }
 
+enum Align1D {
+    Min,
+    Mid,
+    Max
+}
+
+fn align_1d (a: Align1D, dest_pos: f64, dest_size: f64, obj_size: f64) -> f64 {
+    match a {
+        Align1D::Min => { dest_pos },
+        Align1D::Mid => { dest_pos + (dest_size - obj_size) / 2.0 },
+        Align1D::Max => { dest_pos + dest_size - obj_size }
+    }
+}
+
+impl AspectRatio {
+    //! Returns (x, y, width, height)
+    pub fn compute (&self,
+                    object_width: f64,
+                    object_height: f64,
+                    dest_x: f64,
+                    dest_y: f64,
+                    dest_width: f64,
+                    dest_height: f64) -> (f64, f64, f64, f64) {
+        match self.align {
+            Align::None => { (dest_x, dest_y, dest_width, dest_height) }
+
+            Align::Aligned { align, fit } => {
+                let w_factor = dest_width / object_width;
+                let h_factor = dest_height / object_height;
+                let factor: f64;
+
+                match fit {
+                    FitMode::Meet  => { factor = w_factor.min (h_factor); }
+                    FitMode::Slice => { factor = w_factor.max (h_factor); }
+                }
+
+                let w = object_width * factor;
+                let h = object_height * factor;
+
+                let xalign: Align1D;
+                let yalign: Align1D;
+
+                match align {
+                    AlignMode::XminYmin => { xalign = Align1D::Min; yalign = Align1D::Min; },
+                    AlignMode::XminYmid => { xalign = Align1D::Min; yalign = Align1D::Mid; },
+                    AlignMode::XminYmax => { xalign = Align1D::Min; yalign = Align1D::Max; },
+                    AlignMode::XmidYmin => { xalign = Align1D::Mid; yalign = Align1D::Min; },
+                    AlignMode::XmidYmid => { xalign = Align1D::Mid; yalign = Align1D::Mid; },
+                    AlignMode::XmidYmax => { xalign = Align1D::Mid; yalign = Align1D::Max; },
+                    AlignMode::XmaxYmin => { xalign = Align1D::Max; yalign = Align1D::Min; },
+                    AlignMode::XmaxYmid => { xalign = Align1D::Max; yalign = Align1D::Mid; },
+                    AlignMode::XmaxYmax => { xalign = Align1D::Max; yalign = Align1D::Max; }
+                }
+
+                let xpos = align_1d (xalign, dest_x, dest_width, w);
+                let ypos = align_1d (yalign, dest_y, dest_height, h);
+
+                (xpos, ypos, w, h)
+            }
+        }
+    }
+}
+
 impl Default for Align {
     fn default () -> Align {
         Align::Aligned {
@@ -352,5 +415,35 @@ mod tests {
         test_roundtrip ("defer XminYmax slice");
         test_roundtrip ("XmaxYmax meet");
         test_roundtrip ("XminYmid slice");
+    }
+
+    #[test]
+    fn aligns () {
+        assert_eq! (AspectRatio::from_str ("XminYmin meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("XminYmin slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 10.0, 100.0));
+
+        assert_eq! (AspectRatio::from_str ("XminYmid meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("XminYmid slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -49.5, 10.0, 100.0));
+
+        assert_eq! (AspectRatio::from_str ("XminYmax meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("XminYmax slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -99.0, 10.0, 100.0));
+
+        assert_eq! (AspectRatio::from_str ("XmidYmin meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (4.95, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("XmidYmin slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 10.0, 100.0));
+
+        assert_eq! (AspectRatio::from_str ("XmidYmid meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (4.95, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("XmidYmid slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -49.5, 10.0, 100.0));
+
+        assert_eq! (AspectRatio::from_str ("XmidYmax meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (4.95, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("XmidYmax slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -99.0, 10.0, 100.0));
+
+        assert_eq! (AspectRatio::from_str ("XmaxYmin meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (9.9, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("XmaxYmin slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 10.0, 100.0));
+
+        assert_eq! (AspectRatio::from_str ("XmaxYmid meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (9.9, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("XmaxYmid slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -49.5, 10.0, 100.0));
+
+        assert_eq! (AspectRatio::from_str ("XmaxYmax meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (9.9, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("XmaxYmax slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -99.0, 10.0, 100.0));
     }
 }
