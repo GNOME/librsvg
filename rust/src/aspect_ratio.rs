@@ -72,7 +72,75 @@ fn align_1d (a: Align1D, dest_pos: f64, dest_size: f64, obj_size: f64) -> f64 {
 }
 
 impl AspectRatio {
-    //! Returns (x, y, width, height)
+    pub fn from_u32 (val: u32) -> AspectRatio {
+        let val = AspectRatioFlags::from_bits (val).unwrap ();
+
+        let defer = val.contains (DEFER);
+
+        let mut aligned: bool = true;
+
+        let align: AlignMode = {
+            if val.contains (XMIN_YMIN)      { AlignMode::XminYmin }
+            else if val.contains (XMID_YMIN) { AlignMode::XmidYmin }
+            else if val.contains (XMAX_YMIN) { AlignMode::XmaxYmin }
+            else if val.contains (XMIN_YMID) { AlignMode::XminYmid }
+            else if val.contains (XMID_YMID) { AlignMode::XmidYmid }
+            else if val.contains (XMAX_YMID) { AlignMode::XmaxYmid }
+            else if val.contains (XMIN_YMAX) { AlignMode::XminYmax }
+            else if val.contains (XMID_YMAX) { AlignMode::XmidYmax }
+            else if val.contains (XMAX_YMAX) { AlignMode::XmaxYmax }
+            else {
+                aligned = false;
+                AlignMode::XmidYmid
+            }
+        };
+
+        let fit: FitMode = if val.contains(SLICE) { FitMode::Slice } else { FitMode::Meet };
+
+        AspectRatio {
+            defer: defer,
+            align: if aligned {
+                Align::Aligned {
+                    align: align,
+                    fit: fit
+                }
+            } else {
+                Align::None
+            }
+        }
+    }
+
+    pub fn to_u32 (&self) -> u32 {
+        let mut val = AspectRatioFlags::empty ();
+
+        if self.defer { val = val | DEFER; }
+
+        match self.align {
+            Align::None => { },
+
+            Align::Aligned { align, fit } => {
+                match align {
+                    AlignMode::XminYmin => { val = val | XMIN_YMIN; },
+                    AlignMode::XmidYmin => { val = val | XMID_YMIN; },
+                    AlignMode::XmaxYmin => { val = val | XMAX_YMIN; },
+                    AlignMode::XminYmid => { val = val | XMIN_YMID; },
+                    AlignMode::XmidYmid => { val = val | XMID_YMID; },
+                    AlignMode::XmaxYmid => { val = val | XMAX_YMID; },
+                    AlignMode::XminYmax => { val = val | XMIN_YMAX; },
+                    AlignMode::XmidYmax => { val = val | XMID_YMAX; },
+                    AlignMode::XmaxYmax => { val = val | XMAX_YMAX; },
+                }
+
+                match fit {
+                    FitMode::Meet  => { },
+                    FitMode::Slice => { val = val | SLICE; }
+                }
+            }
+        }
+
+        val.bits ()
+    }
+
     pub fn compute (&self,
                     object_width: f64,
                     object_height: f64,
@@ -154,74 +222,6 @@ bitflags! {
     }
 }
 
-pub fn aspect_ratio_to_u32 (a: AspectRatio) -> u32 {
-    let mut val = AspectRatioFlags::empty ();
-
-    if a.defer { val = val | DEFER; }
-
-    match a.align {
-        Align::None => { },
-
-        Align::Aligned { align, fit } => {
-            match align {
-                AlignMode::XminYmin => { val = val | XMIN_YMIN; },
-                AlignMode::XmidYmin => { val = val | XMID_YMIN; },
-                AlignMode::XmaxYmin => { val = val | XMAX_YMIN; },
-                AlignMode::XminYmid => { val = val | XMIN_YMID; },
-                AlignMode::XmidYmid => { val = val | XMID_YMID; },
-                AlignMode::XmaxYmid => { val = val | XMAX_YMID; },
-                AlignMode::XminYmax => { val = val | XMIN_YMAX; },
-                AlignMode::XmidYmax => { val = val | XMID_YMAX; },
-                AlignMode::XmaxYmax => { val = val | XMAX_YMAX; },
-            }
-
-            match fit {
-                FitMode::Meet  => { },
-                FitMode::Slice => { val = val | SLICE; }
-            }
-        }
-    }
-
-    val.bits ()
-}
-
-pub fn u32_to_aspect_ratio (val: u32) -> AspectRatio {
-    let val = AspectRatioFlags::from_bits (val).unwrap ();
-
-    let defer = val.contains (DEFER);
-
-    let mut aligned: bool = true;
-
-    let align: AlignMode = {
-        if val.contains (XMIN_YMIN)      { AlignMode::XminYmin }
-        else if val.contains (XMID_YMIN) { AlignMode::XmidYmin }
-        else if val.contains (XMAX_YMIN) { AlignMode::XmaxYmin }
-        else if val.contains (XMIN_YMID) { AlignMode::XminYmid }
-        else if val.contains (XMID_YMID) { AlignMode::XmidYmid }
-        else if val.contains (XMAX_YMID) { AlignMode::XmaxYmid }
-        else if val.contains (XMIN_YMAX) { AlignMode::XminYmax }
-        else if val.contains (XMID_YMAX) { AlignMode::XmidYmax }
-        else if val.contains (XMAX_YMAX) { AlignMode::XmaxYmax }
-        else {
-            aligned = false;
-            AlignMode::XmidYmid
-        }
-    };
-
-    let fit: FitMode = if val.contains(SLICE) { FitMode::Slice } else { FitMode::Meet };
-
-    AspectRatio {
-        defer: defer,
-        align: if aligned {
-            Align::Aligned {
-                align: align,
-                fit: fit
-            }
-        } else {
-            Align::None
-        }
-    }
-}
 
 fn parse_align_mode (s: &str) -> Option<Align> {
     match s {
@@ -341,11 +341,11 @@ pub extern fn rsvg_aspect_ratio_parse (c_str: *const libc::c_char) -> u32 {
     let parsed = AspectRatio::from_str (my_str);
 
     match parsed {
-        Ok (aspect_ratio) => { aspect_ratio_to_u32 (aspect_ratio) },
+        Ok (aspect_ratio) => { aspect_ratio.to_u32 () },
         Err (_) => {
             // We can't propagate the error here, so just return a default value
             let a: AspectRatio = Default::default ();
-            aspect_ratio_to_u32 (a)
+            a.to_u32 ()
         }
     }
 }
@@ -359,7 +359,7 @@ pub extern fn rsvg_aspect_ratio_compute (aspect: u32,
                                          dest_width: *mut f64,
                                          dest_height: *mut f64) {
     unsafe {
-        let (x, y, w, h) = u32_to_aspect_ratio (aspect).compute (object_width, object_height, *dest_x, *dest_y, *dest_width, *dest_height);
+        let (x, y, w, h) = AspectRatio::from_u32 (aspect).compute (object_width, object_height, *dest_x, *dest_y, *dest_width, *dest_height);
         *dest_x = x;
         *dest_y = y;
         *dest_width = w;
@@ -422,7 +422,7 @@ mod tests {
     fn test_roundtrip (s: &str) {
         let a = AspectRatio::from_str (s).unwrap ();
 
-        assert_eq! (u32_to_aspect_ratio (aspect_ratio_to_u32 (a)), a);
+        assert_eq! (AspectRatio::from_u32 (a.to_u32 ()), a);
     }
 
     #[test]
