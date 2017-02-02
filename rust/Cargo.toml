@@ -8,12 +8,14 @@ libc = "0.2"
 bitflags = ""
 
 [dependencies.cairo-sys-rs]
-git = "https://github.com/gtk-rs/cairo.git"
+#git = "https://github.com/gtk-rs/cairo.git"
 #git = "https://github.com/federicomenaquintero/cairo.git"
+git = "file:///home/federico/src/gtk-rs/cairo"
 
 [dependencies.cairo-rs]
-git = "https://github.com/gtk-rs/cairo.git"
+#git = "https://github.com/gtk-rs/cairo.git"
 #git = "https://github.com/federicomenaquintero/cairo.git"
+git = "file:///home/federico/src/gtk-rs/cairo"
 
 [dependencies.glib]
 git = "https://github.com/gtk-rs/glib"
