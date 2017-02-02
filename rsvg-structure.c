@@ -228,10 +228,10 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         RsvgNodeSymbol *symbol = (RsvgNodeSymbol *) child;
 
         if (symbol->vbox.active) {
-            rsvg_preserve_aspect_ratio
-                (symbol->preserve_aspect_ratio,
-                 symbol->vbox.rect.width, symbol->vbox.rect.height,
-                 &w, &h, &x, &y);
+            rsvg_aspect_ratio_compute (symbol->preserve_aspect_ratio,
+                                       symbol->vbox.rect.width,
+                                       symbol->vbox.rect.height,
+                                       &x, &y, &w, &h);
 
             cairo_matrix_init_translate (&affine, x, y);
             cairo_matrix_multiply (&state->affine, &affine, &state->affine);
@@ -286,9 +286,10 @@ rsvg_node_svg_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     if (sself->vbox.active) {
         double x = nx, y = ny, w = nw, h = nh;
-        rsvg_preserve_aspect_ratio (sself->preserve_aspect_ratio,
-                                    sself->vbox.rect.width, sself->vbox.rect.height,
-                                    &w, &h, &x, &y);
+        rsvg_aspect_ratio_compute (sself->preserve_aspect_ratio,
+                                   sself->vbox.rect.width,
+                                   sself->vbox.rect.height,
+                                   &x, &y, &w, &h);
         cairo_matrix_init (&affine,
                            w / sself->vbox.rect.width,
                            0,

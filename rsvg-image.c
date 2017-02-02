@@ -112,45 +112,6 @@ rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
     return surface;
 }
 
-void
-rsvg_preserve_aspect_ratio (guint32 aspect_ratio, double width,
-                            double height, double *w, double *h, double *x, double *y)
-{
-    double neww, newh;
-    if (aspect_ratio & ~(RSVG_ASPECT_RATIO_SLICE | RSVG_ASPECT_RATIO_DEFER)) {
-        neww = *w;
-        newh = *h;
-        if ((height * *w > width * *h) == ((aspect_ratio & RSVG_ASPECT_RATIO_SLICE) == 0)) {
-            neww = width * *h / height;
-        } else {
-            newh = height * *w / width;
-        }
-
-        if (aspect_ratio & RSVG_ASPECT_RATIO_XMIN_YMIN ||
-            aspect_ratio & RSVG_ASPECT_RATIO_XMIN_YMID ||
-            aspect_ratio & RSVG_ASPECT_RATIO_XMIN_YMAX) {
-        } else if (aspect_ratio & RSVG_ASPECT_RATIO_XMID_YMIN ||
-                   aspect_ratio & RSVG_ASPECT_RATIO_XMID_YMID ||
-                   aspect_ratio & RSVG_ASPECT_RATIO_XMID_YMAX)
-            *x -= (neww - *w) / 2;
-        else
-            *x -= neww - *w;
-
-        if (aspect_ratio & RSVG_ASPECT_RATIO_XMIN_YMIN ||
-            aspect_ratio & RSVG_ASPECT_RATIO_XMID_YMIN ||
-            aspect_ratio & RSVG_ASPECT_RATIO_XMAX_YMIN) {
-        } else if (aspect_ratio & RSVG_ASPECT_RATIO_XMIN_YMID ||
-                   aspect_ratio & RSVG_ASPECT_RATIO_XMID_YMID ||
-                   aspect_ratio & RSVG_ASPECT_RATIO_XMAX_YMID)
-            *y -= (newh - *h) / 2;
-        else
-            *y -= newh - *h;
-
-        *w = neww;
-        *h = newh;
-    }
-}
-
 static void
 rsvg_node_image_free (RsvgNode * self)
 {
@@ -185,10 +146,10 @@ rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         rsvg_add_clipping_rect (ctx, x, y, w, h);
     }
 
-    rsvg_preserve_aspect_ratio (aspect_ratio, 
-                                (double) cairo_image_surface_get_width (surface),
-                                (double) cairo_image_surface_get_height (surface), 
-                                &w, &h, &x, &y);
+    rsvg_aspect_ratio_compute (aspect_ratio, 
+                               (double) cairo_image_surface_get_width (surface),
+                               (double) cairo_image_surface_get_height (surface), 
+                               &x, &y, &w, &h);
 
     rsvg_render_surface (ctx, surface, x, y, w, h);
 

@@ -350,6 +350,22 @@ pub extern fn rsvg_aspect_ratio_parse (c_str: *const libc::c_char) -> u32 {
     }
 }
 
+#[no_mangle]
+pub extern fn rsvg_aspect_ratio_compute (aspect: u32,
+                                         object_width: f64,
+                                         object_height: f64,
+                                         dest_x: *mut f64,
+                                         dest_y: *mut f64,
+                                         dest_width: *mut f64,
+                                         dest_height: *mut f64) {
+    unsafe {
+        let (x, y, w, h) = u32_to_aspect_ratio (aspect).compute (object_width, object_height, *dest_x, *dest_y, *dest_width, *dest_height);
+        *dest_x = x;
+        *dest_y = y;
+        *dest_width = w;
+        *dest_height = h;
+    }
+}
 
 #[cfg(test)]
 mod tests {

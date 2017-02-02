@@ -57,6 +57,16 @@ guint32	    rsvg_css_parse_color        (const char *str, gboolean * inherit);
 G_GNUC_INTERNAL
 guint32 rsvg_aspect_ratio_parse (const char *str);
 
+/* This is implemented in rust/src/aspect_ratio.rs */
+G_GNUC_INTERNAL
+void rsvg_aspect_ratio_compute (guint32 aspect,
+                                double object_width,
+                                double object_height,
+                                double *dest_x,
+                                double *dest_y,
+                                double *dest_width,
+                                double *dest_height);
+
 G_GNUC_INTERNAL
 int	    rsvg_css_parse_aspect_ratio	    (const char *str);
 G_GNUC_INTERNAL

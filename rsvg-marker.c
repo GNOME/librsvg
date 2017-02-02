@@ -157,10 +157,10 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
         x = 0;
         y = 0;
 
-        rsvg_preserve_aspect_ratio (self->preserve_aspect_ratio,
-                                    self->vbox.rect.width,
-                                    self->vbox.rect.height,
-                                    &w, &h, &x, &y);
+        rsvg_aspect_ratio_compute (self->preserve_aspect_ratio,
+                                   self->vbox.rect.width,
+                                   self->vbox.rect.height,
+                                   &x, &y, &w, &h);
 
         cairo_matrix_init_scale (&taffine, w / self->vbox.rect.width, h / self->vbox.rect.height);
         cairo_matrix_multiply (&affine, &taffine, &affine);

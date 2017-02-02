@@ -250,9 +250,10 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
         h = patternh * bbhscale;
         x = 0;
         y = 0;
-        rsvg_preserve_aspect_ratio (rsvg_pattern->preserve_aspect_ratio,
-                                    rsvg_pattern->vbox.rect.width, rsvg_pattern->vbox.rect.height,
-                                    &w, &h, &x, &y);
+        rsvg_aspect_ratio_compute (rsvg_pattern->preserve_aspect_ratio,
+                                   rsvg_pattern->vbox.rect.width,
+                                   rsvg_pattern->vbox.rect.height,
+                                   &x, &y, &w, &h);
 
         x -= rsvg_pattern->vbox.rect.x * w / rsvg_pattern->vbox.rect.width;
         y -= rsvg_pattern->vbox.rect.y * h / rsvg_pattern->vbox.rect.height;
