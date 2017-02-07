@@ -313,7 +313,7 @@ fn normalize_angle (mut angle: f64) -> f64 {
 }
 
 fn angle_from_vector (vx: f64, vy: f64) -> f64 {
-    let mut angle = vy.atan2 (vx);
+    let angle = vy.atan2 (vx);
 
     if angle.is_nan () {
         0.0
