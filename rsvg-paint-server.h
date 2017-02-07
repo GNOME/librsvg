@@ -192,12 +192,6 @@ RsvgNode *rsvg_new_pattern      (const char *element_name);
 G_GNUC_INTERNAL
 void rsvg_pattern_fix_fallback          (RsvgDrawingCtx * ctx,
                                          RsvgPattern * pattern);
-G_GNUC_INTERNAL
-void rsvg_linear_gradient_fix_fallback	(RsvgDrawingCtx * ctx,
-                                         RsvgLinearGradient * grad);
-G_GNUC_INTERNAL
-void rsvg_radial_gradient_fix_fallback	(RsvgDrawingCtx * ctx,
-                                         RsvgRadialGradient * grad);
 
 G_END_DECLS
 
