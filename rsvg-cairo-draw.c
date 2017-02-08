@@ -192,15 +192,18 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
 {
     RsvgNode *node;
     gboolean had_paint_server;
+    gboolean use_alternate;
 
     had_paint_server = FALSE;
 
     switch (ps->type) {
     case RSVG_PAINT_SERVER_IRI:
+        use_alternate = FALSE;
+
         node = rsvg_drawing_ctx_acquire_node (ctx, ps->core.iri->iri_str);
-        if (node == NULL)
-            break;
-        else if (rsvg_node_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
+        if (node == NULL) {
+            use_alternate = TRUE;
+        } else if (rsvg_node_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
             _set_source_rsvg_linear_gradient (ctx, (RsvgLinearGradient *) node, opacity, bbox);
             had_paint_server = TRUE;
         } else if (rsvg_node_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
@@ -210,10 +213,14 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
             if (_set_source_rsvg_pattern (ctx, (RsvgPattern *) node, bbox)) {
                 had_paint_server = TRUE;
             } else {
-                if (ps->core.iri->has_alternate) {
-                    _set_source_rsvg_solid_color (ctx, &ps->core.iri->alternate, opacity, current_color);
-                    had_paint_server = TRUE;
-                }
+                use_alternate = TRUE;
+            }
+        }
+
+        if (use_alternate) {
+            if (ps->core.iri->has_alternate) {
+                _set_source_rsvg_solid_color (ctx, &ps->core.iri->alternate, opacity, current_color);
+                had_paint_server = TRUE;
             }
         }
 
