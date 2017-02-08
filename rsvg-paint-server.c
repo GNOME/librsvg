@@ -502,127 +502,55 @@ rsvg_new_pattern (const char *element_name)
     return &pattern->super;
 }
 
-typedef const char * (* GetFallbackFn) (RsvgNode *node);
-typedef void (* ApplyFallbackFn) (RsvgNode *node, RsvgNode *fallback_node);
-
-/* Some SVG paint servers can reference a "parent" or "fallback" paint server
- * through the xlink:href attribute (for example,
- * http://www.w3.org/TR/SVG11/pservers.html#LinearGradientElementHrefAttribute )
- * This is used to define a chain of properties to be resolved from each
- * fallback.
- */
-static void
-resolve_fallbacks (RsvgDrawingCtx *ctx,
-                   RsvgNode *data,
-                   RsvgNode *last_fallback,
-                   GetFallbackFn get_fallback,
-                   ApplyFallbackFn apply_fallback)
+Pattern *
+rsvg_pattern_node_to_rust_pattern (RsvgNode *node)
 {
-    RsvgNode *fallback;
-    const char *fallback_id;
+    RsvgPattern *pnode;
+    Pattern *pattern;
 
-    fallback_id = get_fallback (last_fallback);
-    if (fallback_id == NULL)
-        return;
-    fallback = rsvg_drawing_ctx_acquire_node (ctx, fallback_id);
-    if (fallback == NULL)
-      return;
-
-    apply_fallback (data, fallback);
-    resolve_fallbacks (ctx, data, fallback, get_fallback, apply_fallback);
-
-    rsvg_drawing_ctx_release_node (ctx, fallback);
-}
-
-static const char *
-pattern_get_fallback (RsvgNode *node)
-{
-    if (rsvg_node_type (node) == RSVG_NODE_TYPE_PATTERN) {
-        RsvgPattern *pattern = (RsvgPattern *) node;
-
-        return pattern->fallback;
-    } else
+    if (rsvg_node_type (node) != RSVG_NODE_TYPE_PATTERN)
         return NULL;
+
+    pnode = (RsvgPattern *) node;
+
+    pattern = pattern_new (pnode->hasx         ? &pnode->x : NULL,
+                           pnode->hasy         ? &pnode->y : NULL,
+                           pnode->haswidth     ? &pnode->width : NULL,
+                           pnode->hasheight    ? &pnode->height : NULL,
+                           pnode->hasbbox      ? &pnode->obj_bbox : NULL,
+                           pnode->hascbox      ? &pnode->obj_cbbox : NULL,
+                           pnode->hasvbox      ? &pnode->vbox : NULL,
+                           pnode->hastransform ? &pnode->affine : NULL,
+                           pnode->hasaspect    ? &pnode->preserve_aspect_ratio : NULL,
+                           pnode->fallback,
+                           node);
+
+    return pattern;
 }
 
 static gboolean
-has_children_foreach (RsvgNode *node, gpointer data)
+count_one_child_fn (RsvgNode *child, gpointer data)
 {
-    gboolean *has_child = data;
+    gboolean *has_children = data;
 
-    *has_child = TRUE;
-    return FALSE; /* stop since we found a child */
+    *has_children = TRUE;
+    return FALSE;
 }
 
 static gboolean
-has_children (RsvgNode *node)
+node_has_at_least_one_child (RsvgNode *node)
 {
-    gboolean has_child = FALSE;
+    gboolean has_children = FALSE;
 
-    rsvg_node_foreach_child (node, has_children_foreach, &has_child);
-    return has_child;
+    rsvg_node_foreach_child (node, count_one_child_fn, &has_children);
+    return has_children;
 }
 
-static void
-pattern_apply_fallback (RsvgNode *pattern_node, RsvgNode *fallback_node)
+gboolean
+rsvg_pattern_node_has_children (RsvgNode *node)
 {
-    RsvgPattern *pattern;
-    RsvgPattern *fallback;
+    if (rsvg_node_type (node) != RSVG_NODE_TYPE_PATTERN)
+        return FALSE;
 
-    g_assert (rsvg_node_type (pattern_node) == RSVG_NODE_TYPE_PATTERN);
-
-    if (rsvg_node_type (fallback_node) != RSVG_NODE_TYPE_PATTERN)
-        return;
-
-    pattern = (RsvgPattern *) pattern_node;
-    fallback = (RsvgPattern *) fallback_node;
-
-    if (!pattern->hasx && fallback->hasx) {
-        pattern->hasx = TRUE;
-        pattern->x = fallback->x;
-    }
-    if (!pattern->hasy && fallback->hasy) {
-        pattern->hasy = TRUE;
-        pattern->y = fallback->y;
-    }
-    if (!pattern->haswidth && fallback->haswidth) {
-        pattern->haswidth = TRUE;
-        pattern->width = fallback->width;
-    }
-    if (!pattern->hasheight && fallback->hasheight) {
-        pattern->hasheight = TRUE;
-        pattern->height = fallback->height;
-    }
-    if (!pattern->hastransform && fallback->hastransform) {
-        pattern->hastransform = TRUE;
-        pattern->affine = fallback->affine;
-    }
-    if (!pattern->hasvbox && fallback->hasvbox) {
-        pattern->vbox = fallback->vbox;
-    }
-    if (!pattern->hasaspect && fallback->hasaspect) {
-        pattern->hasaspect = TRUE;
-        pattern->preserve_aspect_ratio = fallback->preserve_aspect_ratio;
-    }
-    if (!pattern->hasbbox && fallback->hasbbox) {
-        pattern->hasbbox = TRUE;
-        pattern->obj_bbox = fallback->obj_bbox;
-    }
-    if (!pattern->hascbox && fallback->hascbox) {
-        pattern->hascbox = TRUE;
-        pattern->obj_cbbox = fallback->obj_cbbox;
-    }
-    if (!has_children (pattern_node) && has_children (fallback_node)) {
-        pattern->super.children = fallback->super.children;
-    }
-}
-
-void
-rsvg_pattern_fix_fallback (RsvgDrawingCtx *ctx, RsvgPattern * pattern)
-{
-    resolve_fallbacks (ctx,
-                       (RsvgNode *) pattern,
-                       (RsvgNode *) pattern,
-                       pattern_get_fallback,
-                       pattern_apply_fallback);
+    return node_has_at_least_one_child (node);
 }

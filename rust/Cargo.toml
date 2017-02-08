@@ -11,11 +11,13 @@ bitflags = ""
 #git = "https://github.com/gtk-rs/cairo.git"
 git = "https://github.com/federicomenaquintero/cairo.git"
 #git = "file:///home/federico/src/gtk-rs/cairo"
+#features = ["png"]
 
 [dependencies.cairo-rs]
 #git = "https://github.com/gtk-rs/cairo.git"
 git = "https://github.com/federicomenaquintero/cairo.git"
 #git = "file:///home/federico/src/gtk-rs/cairo"
+#features = ["png"]
 
 [dependencies.glib]
 git = "https://github.com/gtk-rs/glib"

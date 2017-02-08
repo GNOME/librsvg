@@ -83,6 +83,7 @@ struct _RsvgRadialGradient {
     char *fallback;
 };
 
+/* This is a Rust gradient from rust/src/gradient.rs */
 typedef struct _Gradient Gradient;
 
 /* Implemented in rust/src/gradient.rs */
@@ -148,6 +149,41 @@ struct _RsvgPattern {
     char *fallback;
 };
 
+/* This is a Rust pattern from rust/src/pattern.rs */
+typedef struct _Pattern Pattern;
+
+/* Implemented in rust/src/pattern.rs */
+G_GNUC_INTERNAL
+Pattern *
+pattern_new (RsvgLength     *x,
+             RsvgLength     *y,
+             RsvgLength     *width,
+             RsvgLength     *height,
+             gboolean       *obj_bbox,
+             gboolean       *obj_cbbox,
+             RsvgViewBox    *vbox,
+             cairo_matrix_t *affine,
+             guint32        *preserve_aspect_ratio,
+             const char     *fallback_name,
+             RsvgNode       *node);
+
+/* Implemented in rust/src/pattern.rs */
+G_GNUC_INTERNAL
+void pattern_destroy (Pattern *pattern);
+
+/* Implemented in rust/src/pattern.rs */
+G_GNUC_INTERNAL
+void pattern_resolve_fallbacks_and_set_pattern (Pattern        *pattern,
+                                                RsvgDrawingCtx *draw_ctx,
+                                                RsvgBbox        bbox);
+
+G_GNUC_INTERNAL
+Pattern *rsvg_pattern_node_to_rust_pattern (RsvgNode *node);
+
+G_GNUC_INTERNAL
+gboolean rsvg_pattern_node_has_children (RsvgNode *node);
+
+
 struct _RsvgSolidColor {
     gboolean currentcolor;
     guint32 argb;
@@ -189,9 +225,7 @@ G_GNUC_INTERNAL
 RsvgNode *rsvg_new_stop	        (const char *element_name);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_pattern      (const char *element_name);
-G_GNUC_INTERNAL
-void rsvg_pattern_fix_fallback          (RsvgDrawingCtx * ctx,
-                                         RsvgPattern * pattern);
+
 
 G_END_DECLS
 

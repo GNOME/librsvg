@@ -3,8 +3,13 @@ extern crate cairo;
 extern crate cairo_sys;
 extern crate glib;
 
+use std::io;
+use std::io::prelude::*;
+use std::fs::File;
+
 use self::glib::translate::*;
 
+use aspect_ratio::*;
 use length::*;
 
 use drawing_ctx;
@@ -16,19 +21,33 @@ use util::*;
 use viewbox::*;
 
 use self::cairo::MatrixTrait;
-use self::cairo::enums::Content;
+use self::cairo::enums::*;
+use self::cairo::SurfacePattern;
+use self::cairo::Pattern as CairoPattern;
 
 pub struct Pattern {
     pub obj_bbox:              Option<bool>,
     pub obj_cbbox:             Option<bool>,
     pub vbox:                  Option<RsvgViewBox>,
-    pub preserve_aspect_ratio: Option<u32>,
+    pub preserve_aspect_ratio: Option<AspectRatio>,
     pub affine:                Option<cairo::Matrix>,
     pub fallback:              Option<String>,
     pub x:                     Option<RsvgLength>,
     pub y:                     Option<RsvgLength>,
     pub width:                 Option<RsvgLength>,
-    pub height:                Option<RsvgLength>
+    pub height:                Option<RsvgLength>,
+
+    // We just use c_node to see if the C implementation has children
+    pub c_node:                *const RsvgNode
+}
+
+extern "C" {
+    fn rsvg_pattern_node_to_rust_pattern (node: *const RsvgNode) -> *mut Pattern;
+    fn rsvg_pattern_node_has_children (node: *const RsvgNode) -> bool;
+}
+
+fn pattern_node_has_children (c_node: *const RsvgNode) -> bool {
+    unsafe { rsvg_pattern_node_has_children (c_node) }
 }
 
 impl Pattern {
@@ -41,20 +60,21 @@ impl Pattern {
             self.x.is_some () &&
             self.y.is_some () &&
             self.width.is_some () &&
-            self.height.is_some ()
-        // FIXME: which fallback contains the children?
+            self.height.is_some () &&
+            pattern_node_has_children (self.c_node)
     }
 
     fn resolve_from_defaults (&mut self) {
-        /* FIXME: check the spec */
         /* These are per the spec */
 
         if self.obj_bbox.is_none ()  { self.obj_bbox  = Some (true); }
         if self.obj_cbbox.is_none () { self.obj_cbbox = Some (false); }
         if self.vbox.is_none ()      { self.vbox      = Some (RsvgViewBox::new_inactive ()); }
 
-        // FIXME: this is RSVG_ASPECT_RATIO_XMID_YMID; use a constant, not a number.  Spec says "xMidYMid meet"
-        if self.preserve_aspect_ratio.is_none () { self.preserve_aspect_ratio = Some (1 << 4); }
+        if self.preserve_aspect_ratio.is_none () {
+            let aspect: AspectRatio = Default::default ();
+            self.preserve_aspect_ratio = Some (aspect);
+        }
 
         if self.affine.is_none ()    { self.affine    = Some (cairo::Matrix::identity ()); }
 
@@ -64,6 +84,9 @@ impl Pattern {
         if self.y.is_none ()         { self.y         = Some (RsvgLength::parse ("0", LengthDir::Horizontal)); }
         if self.width.is_none ()     { self.width     = Some (RsvgLength::parse ("0", LengthDir::Horizontal)); }
         if self.height.is_none ()    { self.height    = Some (RsvgLength::parse ("0", LengthDir::Horizontal)); }
+
+        // We don't resolve the children here - instead, we'll just
+        // NOP if there are no children at drawing time.
     }
 
     fn resolve_from_fallback (&mut self, fallback: &Pattern) {
@@ -83,6 +106,10 @@ impl Pattern {
         if self.fallback.is_none () {
             self.fallback = clone_fallback_name (&fallback.fallback);
         }
+
+        if !pattern_node_has_children (self.c_node) {
+            self.c_node = fallback.c_node;
+        }
     }
 }
 
@@ -99,6 +126,7 @@ impl Clone for Pattern {
             y:                     self.y,
             width:                 self.width,
             height:                self.height,
+            c_node:                self.c_node
         }
     }
 }
@@ -150,10 +178,6 @@ impl Drop for NodeFallbackSource {
     }
 }
 
-extern "C" {
-    fn rsvg_pattern_node_to_rust_pattern (node: *const RsvgNode) -> *mut Pattern;
-}
-
 impl FallbackSource for NodeFallbackSource {
     fn get_fallback (&mut self, name: &str) -> Option<Box<Pattern>> {
         let fallback_node = drawing_ctx::acquire_node (self.draw_ctx, name);
@@ -178,11 +202,14 @@ impl FallbackSource for NodeFallbackSource {
 
 fn set_pattern_on_draw_context (pattern: &Pattern,
                                 draw_ctx: *mut RsvgDrawingCtx,
-                                opacity:  u8,
                                 bbox:     &RsvgBbox) {
     assert! (pattern.is_resolved ());
 
-    let obj_bbox = pattern.obj_bbox.unwrap ();
+    let obj_bbox              = pattern.obj_bbox.unwrap ();
+    let obj_cbbox             = pattern.obj_cbbox.unwrap ();
+    let pattern_affine        = pattern.affine.unwrap ();
+    let vbox                  = pattern.vbox.unwrap ();
+    let preserve_aspect_ratio = pattern.preserve_aspect_ratio.unwrap ();
 
     if obj_bbox {
         drawing_ctx::push_view_box (draw_ctx, 1.0, 1.0);
@@ -210,13 +237,13 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
         bbhscale = 1.0;
     }
 
-    let taffine = cairo::Matrix::multiply (&pattern.affine.unwrap (), &drawing_ctx::get_current_state_affine (draw_ctx));
+    let taffine = cairo::Matrix::multiply (&pattern_affine, &drawing_ctx::get_current_state_affine (draw_ctx));
 
     let mut scwscale = (taffine.xx * taffine.xx + taffine.xy * taffine.xy).sqrt ();
     let mut schscale = (taffine.yx * taffine.yx + taffine.yy * taffine.yy).sqrt ();
 
-    let pw = pattern_width * bbwscale * scwscale;
-    let ph = pattern_height * bbhscale * schscale;
+    let pw: i32 = (pattern_width * bbwscale * scwscale) as i32;
+    let ph: i32 = (pattern_height * bbhscale * schscale) as i32;
 
     let scaled_width = pattern_width * bbwscale;
     let scaled_height = pattern_height * bbhscale;
@@ -225,14 +252,8 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
         return
     }
 
-    scwscale = pw / scaled_width;
-    schscale = ph / scaled_height;
-
-    let cr = drawing_ctx::get_cairo_context (draw_ctx);
-
-    let surface = cr.get_target ().create_similar (Content::ColorAlpha, pw as i32, ph as i32);
-
-    let cr_pattern = cairo::Context::new (&surface);
+    scwscale = pw as f64 / scaled_width;
+    schscale = ph as f64 / scaled_height;
 
     let mut affine: cairo::Matrix = cairo::Matrix::identity ();
 
@@ -245,17 +266,96 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     }
 
     // Apply the pattern transform
-    affine = cairo::Matrix::multiply (&affine, pattern.affine.as_ref ().unwrap ());
+    affine = cairo::Matrix::multiply (&affine, &pattern_affine);
 
-    // Create the pattern contents coordinate system
-    if pattern.vbox.unwrap ().active {
+    let mut caffine: cairo::Matrix;
+
+    let pushed_view_box: bool;
+
+        // Create the pattern contents coordinate system
+    if vbox.active {
         // If there is a vbox, use that
-        let w = pattern_width * bbwscale;
-        let h = pattern_height * bbhscale;
-        let mut x: f64 = 0.0;
-        let mut y: f64 = 0.0;
+        let (mut x, mut y, w, h) = preserve_aspect_ratio.compute (vbox.rect.width,
+                                                                  vbox.rect.height,
+                                                                  0.0,
+                                                                  0.0,
+                                                                  pattern_width * bbwscale,
+                                                                  pattern_height * bbhscale);
+
+        x -= vbox.rect.x * w / vbox.rect.width;
+        y -= vbox.rect.y * h / vbox.rect.height;
+
+        caffine = cairo::Matrix::new (w / vbox.rect.width,
+                                      0.0,
+                                      0.0,
+                                      h / vbox.rect.height,
+                                      x,
+                                      y);
+
+        drawing_ctx::push_view_box (draw_ctx, vbox.rect.width, vbox.rect.height);
+        pushed_view_box = true;
+    } else if obj_cbbox {
+        // If coords are in terms of the bounding box, use them
+
+        caffine = cairo::Matrix::identity ();
+        caffine.scale (bbox.rect.width, bbox.rect.height);
+
+        drawing_ctx::push_view_box (draw_ctx, 1.0, 1.0);
+        pushed_view_box = true;
+    } else {
+        caffine = cairo::Matrix::identity ();
+        pushed_view_box = false;
     }
-    
+
+    if scwscale != 1.0 || schscale != 1.0 {
+        let mut scalematrix = cairo::Matrix::identity ();
+        scalematrix.scale (scwscale, schscale);
+        caffine = cairo::Matrix::multiply (&caffine, &scalematrix);
+
+        scalematrix = cairo::Matrix::identity ();
+        scalematrix.scale (1.0 / scwscale, 1.0 / schscale);
+
+        affine = cairo::Matrix::multiply (&scalematrix, &affine);
+    }
+
+    // Draw to another surface
+
+    let cr_save = drawing_ctx::get_cairo_context (draw_ctx);
+    drawing_ctx::state_push (draw_ctx);
+
+    let surface = cr_save.get_target ().create_similar (Content::ColorAlpha, pw, ph);
+
+    let cr_pattern = cairo::Context::new (&surface);
+
+    drawing_ctx::set_cairo_context (draw_ctx, &cr_pattern);
+
+    // Set up transformations to be determined by the contents units
+    drawing_ctx::set_current_state_affine (draw_ctx, caffine);
+
+    // Draw everything
+    drawing_ctx::node_draw_children (draw_ctx, pattern.c_node, 2);
+
+    // Return to the original coordinate system and rendering context
+
+    drawing_ctx::state_pop (draw_ctx);
+    drawing_ctx::set_cairo_context (draw_ctx, &cr_save);
+
+    if pushed_view_box {
+        drawing_ctx::pop_view_box (draw_ctx);
+    }
+
+    // Set the final surface as a Cairo pattern into the Cairo context
+
+    let surface_pattern = SurfacePattern::create (&surface);
+    surface_pattern.set_extend (Extend::Repeat);
+
+    let mut matrix = affine;
+    matrix.invert ();
+
+    surface_pattern.set_matrix (matrix);
+    surface_pattern.set_filter (Filter::Best);
+
+    cr_save.set_source (&surface_pattern);
 }
 
 #[no_mangle]
@@ -268,7 +368,10 @@ pub unsafe extern fn pattern_new (x: *const RsvgLength,
                                   vbox: *const RsvgViewBox,
                                   affine: *const cairo::Matrix,
                                   preserve_aspect_ratio: *const u32,
-                                  fallback_name: *const libc::c_char) -> *mut Pattern {
+                                  fallback_name: *const libc::c_char,
+                                  c_node: *const RsvgNode) -> *mut Pattern {
+    assert! (!c_node.is_null ());
+
     let my_x         = { if x.is_null ()      { None } else { Some (*x) } };
     let my_y         = { if y.is_null ()      { None } else { Some (*y) } };
     let my_width     = { if width.is_null ()  { None } else { Some (*width) } };
@@ -280,7 +383,7 @@ pub unsafe extern fn pattern_new (x: *const RsvgLength,
 
     let my_affine    = { if affine.is_null () { None } else { Some (*affine) } };
 
-    let my_preserve_aspect_ratio = { if preserve_aspect_ratio.is_null () { None } else { Some (*preserve_aspect_ratio) } };
+    let my_preserve_aspect_ratio = { if preserve_aspect_ratio.is_null () { None } else { Some (AspectRatio::from_u32 (*preserve_aspect_ratio)) } };
 
     let my_fallback_name = { if fallback_name.is_null () { None } else { Some (String::from_glib_none (fallback_name)) } };
 
@@ -294,7 +397,8 @@ pub unsafe extern fn pattern_new (x: *const RsvgLength,
         x:                     my_x,
         y:                     my_y,
         width:                 my_width,
-        height:                my_height
+        height:                my_height,
+        c_node:                c_node
     };
 
     let boxed_pattern = Box::new (pattern);
@@ -312,7 +416,6 @@ pub unsafe extern fn pattern_destroy (raw_pattern: *mut Pattern) {
 #[no_mangle]
 pub extern fn pattern_resolve_fallbacks_and_set_pattern (raw_pattern: *mut Pattern,
                                                          draw_ctx:    *mut RsvgDrawingCtx,
-                                                         opacity:     u8,
                                                          bbox:        RsvgBbox) {
     assert! (!raw_pattern.is_null ());
     let pattern: &mut Pattern = unsafe { &mut (*raw_pattern) };
@@ -323,6 +426,5 @@ pub extern fn pattern_resolve_fallbacks_and_set_pattern (raw_pattern: *mut Patte
 
     set_pattern_on_draw_context (&resolved,
                                  draw_ctx,
-                                 opacity,
                                  &bbox);
 }

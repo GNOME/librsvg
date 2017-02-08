@@ -46,6 +46,8 @@ void         rsvg_cairo_render_surface          (RsvgDrawingCtx *ctx, cairo_surf
                                                  double x, double y, double w, double h);
 G_GNUC_INTERNAL
 cairo_t *rsvg_cairo_get_cairo_context (RsvgDrawingCtx *ctx);
+G_GNUC_INTERNAL
+void rsvg_cairo_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr);
 
 G_GNUC_INTERNAL
 void         rsvg_cairo_push_discrete_layer	    (RsvgDrawingCtx *ctx);

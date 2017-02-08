@@ -58,6 +58,12 @@ pub use viewbox::{
     RsvgViewBox
 };
 
+pub use pattern::{
+    pattern_new,
+    pattern_destroy,
+    pattern_resolve_fallbacks_and_set_pattern,
+};
+
 
 mod aspect_ratio;
 mod bbox;
@@ -69,6 +75,7 @@ mod marker;
 mod node;
 mod path_builder;
 mod path_parser;
+mod pattern;
 mod property_bag;
 mod state;
 mod shapes;

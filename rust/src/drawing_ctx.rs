@@ -40,6 +40,9 @@ extern "C" {
     fn rsvg_drawing_ctx_set_current_state_affine (draw_ctx: *const RsvgDrawingCtx,
                                                   affine:   *const cairo::Matrix);
 
+    fn rsvg_state_push (draw_ctx: *const RsvgDrawingCtx);
+    fn rsvg_state_pop (draw_ctx: *const RsvgDrawingCtx);
+
     fn rsvg_state_reinherit_top (draw_ctx: *const RsvgDrawingCtx,
                                  state: *mut RsvgState,
                                  dominate: libc::c_int);
@@ -48,6 +51,9 @@ extern "C" {
                                  builder: *const RsvgPathBuilder);
 
     fn rsvg_cairo_get_cairo_context (draw_ctx: *const RsvgDrawingCtx) -> *mut cairo_sys::cairo_t;
+    fn rsvg_cairo_set_cairo_context (draw_ctx: *const RsvgDrawingCtx, cr: *const cairo_sys::cairo_t);
+
+    fn _rsvg_node_draw_children (node: *const RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: libc::c_int);
 }
 
 pub fn get_dpi (draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
@@ -115,6 +121,14 @@ pub fn get_cairo_context (draw_ctx: *const RsvgDrawingCtx) -> cairo::Context {
     }
 }
 
+pub fn set_cairo_context (draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) {
+    unsafe {
+        let raw_cr = cr.to_glib_none ().0;
+
+        rsvg_cairo_set_cairo_context (draw_ctx, raw_cr);
+    }
+}
+
 pub fn get_current_state_affine (draw_ctx: *const RsvgDrawingCtx) -> cairo::Matrix {
     unsafe {
         rsvg_drawing_ctx_get_current_state_affine (draw_ctx)
@@ -124,5 +138,23 @@ pub fn get_current_state_affine (draw_ctx: *const RsvgDrawingCtx) -> cairo::Matr
 pub fn set_current_state_affine (draw_ctx: *const RsvgDrawingCtx, affine: cairo::Matrix) {
     unsafe {
         rsvg_drawing_ctx_set_current_state_affine (draw_ctx, &affine);
+    }
+}
+
+pub fn state_push (draw_ctx: *const RsvgDrawingCtx) {
+    unsafe {
+        rsvg_state_push (draw_ctx);
+    }
+}
+
+pub fn state_pop (draw_ctx: *const RsvgDrawingCtx) {
+    unsafe {
+        rsvg_state_pop (draw_ctx);
+    }
+}
+
+pub fn node_draw_children (draw_ctx: *const RsvgDrawingCtx, c_node: *const RsvgNode, dominate: libc::c_int) {
+    unsafe {
+        _rsvg_node_draw_children (c_node, draw_ctx, dominate);
     }
 }

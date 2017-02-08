@@ -169,155 +169,15 @@ _set_source_rsvg_solid_color (RsvgDrawingCtx * ctx,
 
 static void
 _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
-                          RsvgPattern * rsvg_pattern, guint8 opacity, RsvgBbox bbox)
+                          RsvgPattern * rsvg_pattern, RsvgBbox bbox)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    RsvgPattern local_pattern = *rsvg_pattern;
-    cairo_t *cr_render, *cr_pattern;
-    cairo_pattern_t *pattern;
-    cairo_surface_t *surface;
-    cairo_matrix_t matrix;
-    cairo_matrix_t affine, caffine, taffine;
-    double bbwscale, bbhscale, scwscale, schscale;
-    double patternw, patternh, patternx, patterny;
-    double scaled_width, scaled_height;
-    int pw, ph;
+    Pattern *pattern;
 
-    rsvg_pattern = &local_pattern;
-    rsvg_pattern_fix_fallback (ctx, rsvg_pattern);
-    cr_render = render->cr;
+    pattern = rsvg_pattern_node_to_rust_pattern ((RsvgNode *) rsvg_pattern);
 
-    if (rsvg_pattern->obj_bbox)
-        rsvg_drawing_ctx_push_view_box (ctx, 1., 1.);
+    pattern_resolve_fallbacks_and_set_pattern (pattern, ctx, bbox);
 
-    patternx = rsvg_length_normalize (&rsvg_pattern->x, ctx);
-    patterny = rsvg_length_normalize (&rsvg_pattern->y, ctx);
-    patternw = rsvg_length_normalize (&rsvg_pattern->width, ctx);
-    patternh = rsvg_length_normalize (&rsvg_pattern->height, ctx);
-
-    if (rsvg_pattern->obj_bbox)
-        rsvg_drawing_ctx_pop_view_box (ctx);
-
-    /* Work out the size of the rectangle so it takes into account the object bounding box */
-
-    if (rsvg_pattern->obj_bbox) {
-        bbwscale = bbox.rect.width;
-        bbhscale = bbox.rect.height;
-    } else {
-        bbwscale = 1.0;
-        bbhscale = 1.0;
-    }
-
-    cairo_matrix_multiply (&taffine, &rsvg_pattern->affine, &rsvg_current_state (ctx)->affine);
-
-    scwscale = sqrt (taffine.xx * taffine.xx + taffine.xy * taffine.xy);
-    schscale = sqrt (taffine.yx * taffine.yx + taffine.yy * taffine.yy);
-
-    pw = patternw * bbwscale * scwscale;
-    ph = patternh * bbhscale * schscale;
-
-    scaled_width = patternw * bbwscale;
-    scaled_height = patternh * bbhscale;
-
-    if (fabs (scaled_width) < DBL_EPSILON || fabs (scaled_height) < DBL_EPSILON)
-        return;
-
-    scwscale = pw / scaled_width;
-    schscale = ph / scaled_height;
-
-    surface = cairo_surface_create_similar (cairo_get_target (cr_render),
-                                            CAIRO_CONTENT_COLOR_ALPHA, pw, ph);
-    cr_pattern = cairo_create (surface);
-
-    /* Create the pattern coordinate system */
-    if (rsvg_pattern->obj_bbox) {
-        /* subtract the pattern origin */
-        cairo_matrix_init_translate (&affine,
-                                     bbox.rect.x + patternx * bbox.rect.width,
-                                     bbox.rect.y + patterny * bbox.rect.height);
-    } else {
-        /* subtract the pattern origin */
-        cairo_matrix_init_translate (&affine, patternx, patterny);
-    }
-    /* Apply the pattern transform */
-    cairo_matrix_multiply (&affine, &affine, &rsvg_pattern->affine);
-
-    /* Create the pattern contents coordinate system */
-    if (rsvg_pattern->vbox.active) {
-        /* If there is a vbox, use that */
-        double w, h, x, y;
-        w = patternw * bbwscale;
-        h = patternh * bbhscale;
-        x = 0;
-        y = 0;
-        rsvg_aspect_ratio_compute (rsvg_pattern->preserve_aspect_ratio,
-                                   rsvg_pattern->vbox.rect.width,
-                                   rsvg_pattern->vbox.rect.height,
-                                   &x, &y, &w, &h);
-
-        x -= rsvg_pattern->vbox.rect.x * w / rsvg_pattern->vbox.rect.width;
-        y -= rsvg_pattern->vbox.rect.y * h / rsvg_pattern->vbox.rect.height;
-
-        cairo_matrix_init (&caffine,
-                           w / rsvg_pattern->vbox.rect.width,
-                           0,
-                           0,
-                           h / rsvg_pattern->vbox.rect.height,
-                           x,
-                           y);
-        rsvg_drawing_ctx_push_view_box (ctx, rsvg_pattern->vbox.rect.width, rsvg_pattern->vbox.rect.height);
-    } else if (rsvg_pattern->obj_cbbox) {
-        /* If coords are in terms of the bounding box, use them */
-        cairo_matrix_init_scale (&caffine, bbox.rect.width, bbox.rect.height);
-        rsvg_drawing_ctx_push_view_box (ctx, 1., 1.);
-    } else {
-        cairo_matrix_init_identity (&caffine);
-    }
-
-    if (scwscale != 1.0 || schscale != 1.0) {
-        cairo_matrix_t scalematrix;
-
-        cairo_matrix_init_scale (&scalematrix, scwscale, schscale);
-        cairo_matrix_multiply (&caffine, &caffine, &scalematrix);
-        cairo_matrix_init_scale (&scalematrix, 1. / scwscale, 1. / schscale);
-        cairo_matrix_multiply (&affine, &scalematrix, &affine);
-    }
-
-    /* Draw to another surface */
-    render->cr = cr_pattern;
-
-    /* Set up transformations to be determined by the contents units */
-    rsvg_state_push (ctx);
-    rsvg_current_state (ctx)->personal_affine =
-            rsvg_current_state (ctx)->affine = caffine;
-
-    /* Draw everything */
-    _rsvg_node_draw_children ((RsvgNode *) rsvg_pattern, ctx, 2);
-    /* Return to the original coordinate system */
-    rsvg_state_pop (ctx);
-
-    /* Set the render to draw where it used to */
-    render->cr = cr_render;
-
-    pattern = cairo_pattern_create_for_surface (surface);
-    cairo_pattern_set_extend (pattern, CAIRO_EXTEND_REPEAT);
-
-    matrix = affine;
-    if (cairo_matrix_invert (&matrix) != CAIRO_STATUS_SUCCESS)
-      goto out;
-
-    cairo_pattern_set_matrix (pattern, &matrix);
-    cairo_pattern_set_filter (pattern, CAIRO_FILTER_BEST);
-
-    cairo_set_source (cr_render, pattern);
-
-    cairo_pattern_destroy (pattern);
-    cairo_destroy (cr_pattern);
-    cairo_surface_destroy (surface);
-
-  out:
-    if (rsvg_pattern->obj_cbbox || rsvg_pattern->vbox.active)
-        rsvg_drawing_ctx_pop_view_box (ctx);
+    pattern_destroy (pattern);
 }
 
 /* note: _set_source_rsvg_paint_server does not change cairo's CTM */
@@ -339,7 +199,7 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
         else if (rsvg_node_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT)
             _set_source_rsvg_radial_gradient (ctx, (RsvgRadialGradient *) node, opacity, bbox);
         else if (rsvg_node_type (node) == RSVG_NODE_TYPE_PATTERN)
-            _set_source_rsvg_pattern (ctx, (RsvgPattern *) node, opacity, bbox);
+            _set_source_rsvg_pattern (ctx, (RsvgPattern *) node, bbox);
 
         rsvg_drawing_ctx_release_node (ctx, node);
         break;
@@ -688,6 +548,32 @@ rsvg_cairo_get_cairo_context (RsvgDrawingCtx *ctx)
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
 
     return render->cr;
+}
+
+/* FIXME: Usage of this function is more less a hack.  Some code does this:
+ *
+ *   save_cr = rsvg_cairo_get_cairo_context (ctx);
+ *
+ *   some_surface = create_surface ();
+ *
+ *   cr = cairo_create (some_surface);
+ *
+ *   rsvg_cairo_set_cairo_context (ctx, cr);
+ *
+ *   ... draw with ctx but to that temporary surface
+ *
+ *   rsvg_cairo_set_cairo_context (ctx, save_cr);
+ *
+ * It would be better to have an explicit push/pop for the cairo_t, or
+ * pushing a temporary surface, or something that does not involve
+ * monkeypatching the cr directly.
+ */
+void
+rsvg_cairo_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr)
+{
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+
+    render->cr = cr;
 }
 
 static void
