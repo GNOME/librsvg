@@ -103,9 +103,7 @@ impl Pattern {
         if self.width.is_none ()     { self.width     = fallback.width; }
         if self.height.is_none ()    { self.height    = fallback.height; }
 
-        if self.fallback.is_none () {
-            self.fallback = clone_fallback_name (&fallback.fallback);
-        }
+        self.fallback = clone_fallback_name (&fallback.fallback);
 
         if !pattern_node_has_children (self.c_node) {
             self.c_node = fallback.c_node;

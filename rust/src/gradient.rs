@@ -106,9 +106,7 @@ impl GradientCommon {
         if self.spread.is_none ()   { self.spread   = fallback.spread; }
         if self.stops.is_none ()    { self.stops    = fallback.clone_stops (); }
 
-        if self.fallback.is_none () {
-            self.fallback = clone_fallback_name (&fallback.fallback);
-        }
+        self.fallback = clone_fallback_name (&fallback.fallback);
     }
 
     fn add_color_stop (&mut self, mut offset: f64, rgba: u32) {
