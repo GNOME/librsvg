@@ -81,23 +81,6 @@ rsvg_new_mask (const char *element_name)
     return &mask->super;
 }
 
-char *
-rsvg_get_url_string (const char *str)
-{
-    if (!strncmp (str, "url(", 4)) {
-        const char *p = str + 4;
-        int ix;
-
-        while (g_ascii_isspace (*p))
-            p++;
-
-        for (ix = 0; p[ix]; ix++)
-            if (p[ix] == ')')
-                return g_strndup (p, ix);
-    }
-    return NULL;
-}
-
 static void
 rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {

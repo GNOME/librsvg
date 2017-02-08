@@ -554,10 +554,10 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
         state->has_flood_opacity = TRUE;
     } else if (g_str_equal (name, "filter")) {
         g_free (state->filter);
-        state->filter = rsvg_get_url_string (value);
+        state->filter = rsvg_get_url_string (value, NULL);
     } else if (g_str_equal (name, "mask")) {
         g_free (state->mask);
-        state->mask = rsvg_get_url_string (value);
+        state->mask = rsvg_get_url_string (value, NULL);
     } else if (g_str_equal (name, "baseline-shift")) {
         /* These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
          * see sp_style_merge_baseline_shift_from_parent()
@@ -576,7 +576,7 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
         }
     } else if (g_str_equal (name, "clip-path")) {
         g_free (state->clip_path);
-        state->clip_path = rsvg_get_url_string (value);
+        state->clip_path = rsvg_get_url_string (value, NULL);
     } else if (g_str_equal (name, "overflow")) {
         if (!g_str_equal (value, "inherit")) {
             state->overflow = rsvg_css_parse_overflow (value, &state->has_overflow);
@@ -831,32 +831,32 @@ rsvg_parse_style_pair (RsvgHandle * ctx,
         }
     } else if (g_str_equal (name, "marker-start")) {
         g_free (state->startMarker);
-        state->startMarker = rsvg_get_url_string (value);
+        state->startMarker = rsvg_get_url_string (value, NULL);
         state->has_startMarker = TRUE;
     } else if (g_str_equal (name, "marker-mid")) {
         g_free (state->middleMarker);
-        state->middleMarker = rsvg_get_url_string (value);
+        state->middleMarker = rsvg_get_url_string (value, NULL);
         state->has_middleMarker = TRUE;
     } else if (g_str_equal (name, "marker-end")) {
         g_free (state->endMarker);
-        state->endMarker = rsvg_get_url_string (value);
+        state->endMarker = rsvg_get_url_string (value, NULL);
         state->has_endMarker = TRUE;
     } else if (g_str_equal (name, "marker")) {
         if (!state->has_startMarker) {
             g_free (state->startMarker);
-            state->startMarker = rsvg_get_url_string (value);
+            state->startMarker = rsvg_get_url_string (value, NULL);
             state->has_startMarker = TRUE;
         }
 
         if (!state->has_middleMarker) {
             g_free (state->middleMarker);
-            state->middleMarker = rsvg_get_url_string (value);
+            state->middleMarker = rsvg_get_url_string (value, NULL);
             state->has_middleMarker = TRUE;
         }
 
         if (!state->has_endMarker) {
             g_free (state->endMarker);
-            state->endMarker = rsvg_get_url_string (value);
+            state->endMarker = rsvg_get_url_string (value, NULL);
             state->has_endMarker = TRUE;
         }
     } else if (g_str_equal (name, "stroke-miterlimit")) {

@@ -95,7 +95,7 @@ rsvg_paint_server_parse (gboolean * inherit, const char *str)
     if (str == NULL || !strcmp (str, "none"))
         return NULL;
 
-    name = rsvg_get_url_string (str);
+    name = rsvg_get_url_string (str, NULL);
     if (name) {
         return rsvg_paint_server_iri (name);
     } else if (!strcmp (str, "inherit")) {
