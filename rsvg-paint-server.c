@@ -1,25 +1,25 @@
 /* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* vim: set sw=4 sts=4 ts=4 expandtab: */
-/* 
+/*
    rsvg-paint-server.c: Implement the SVG paint server abstraction.
- 
+
    Copyright (C) 2000 Eazel, Inc.
-  
+
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public License as
    published by the Free Software Foundation; either version 2 of the
    License, or (at your option) any later version.
-  
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Library General Public License for more details.
-  
+
    You should have received a copy of the GNU Library General Public
    License along with this program; if not, write to the
    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.
-  
+
    Author: Raph Levien <raph@artofcode.com>
 */
 
@@ -64,15 +64,35 @@ rsvg_paint_server_solid_current_color (void)
 }
 
 static RsvgPaintServer *
-rsvg_paint_server_iri (char *iri)
+rsvg_paint_server_iri (char *iri, gboolean has_alternate, RsvgSolidColor alternate)
 {
     RsvgPaintServer *result = g_new (RsvgPaintServer, 1);
 
     result->refcnt = 1;
     result->type = RSVG_PAINT_SERVER_IRI;
-    result->core.iri = iri;
+    result->core.iri = g_new0 (RsvgPaintServerIri, 1);
+    result->core.iri->iri_str = iri;
+    result->core.iri->has_alternate = has_alternate;
+    result->core.iri->alternate = alternate;
 
     return result;
+}
+
+static gboolean
+parse_current_color_or_argb (const char *str, RsvgSolidColor *dest)
+{
+    if (!strcmp (str, "currentColor")) {
+        dest->currentcolor = TRUE;
+        dest->argb = 0;
+        return TRUE;
+    } else {
+        gboolean parsed;
+
+        dest->currentcolor = FALSE;
+        dest->argb = rsvg_css_parse_color (str, &parsed);
+
+        return parsed;
+    }
 }
 
 /**
@@ -86,21 +106,34 @@ rsvg_paint_server_iri (char *iri)
  *   on error.
  **/
 RsvgPaintServer *
-rsvg_paint_server_parse (gboolean * inherit, const char *str)
+rsvg_paint_server_parse (gboolean *inherit, const char *str)
 {
     char *name;
+    const char *rest;
     guint32 argb;
+
     if (inherit != NULL)
-        *inherit = 1;
+        *inherit = TRUE;
+
     if (str == NULL || !strcmp (str, "none"))
         return NULL;
 
-    name = rsvg_get_url_string (str, NULL);
+    name = rsvg_get_url_string (str, &rest);
     if (name) {
-        return rsvg_paint_server_iri (name);
+        RsvgSolidColor alternate;
+        gboolean has_alternate;
+
+        while (*rest && g_ascii_isspace (*rest)) {
+            rest++;
+        }
+
+        has_alternate = parse_current_color_or_argb (rest, &alternate);
+
+        return rsvg_paint_server_iri (name, has_alternate, alternate);
     } else if (!strcmp (str, "inherit")) {
+        /* Do the fallback to black here; don't let the caller do it via inheritance */
         if (inherit != NULL)
-            *inherit = 0;
+            *inherit = FALSE;
         return rsvg_paint_server_solid (0);
     } else if (!strcmp (str, "currentColor")) {
         RsvgPaintServer *ps;
@@ -140,8 +173,10 @@ rsvg_paint_server_unref (RsvgPaintServer * ps)
     if (--ps->refcnt == 0) {
         if (ps->type == RSVG_PAINT_SERVER_SOLID)
             g_free (ps->core.color);
-        else if (ps->type == RSVG_PAINT_SERVER_IRI)
+        else if (ps->type == RSVG_PAINT_SERVER_IRI) {
+            g_free (ps->core.iri->iri_str);
             g_free (ps->core.iri);
+        }
         g_free (ps);
     }
 }

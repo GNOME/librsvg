@@ -202,8 +202,12 @@ impl FallbackSource for NodeFallbackSource {
 
 fn set_pattern_on_draw_context (pattern: &Pattern,
                                 draw_ctx: *mut RsvgDrawingCtx,
-                                bbox:     &RsvgBbox) {
+                                bbox:     &RsvgBbox) -> bool {
     assert! (pattern.is_resolved ());
+
+    if !pattern_node_has_children (pattern.c_node) {
+        return false;
+    }
 
     let obj_bbox              = pattern.obj_bbox.unwrap ();
     let obj_cbbox             = pattern.obj_cbbox.unwrap ();
@@ -248,8 +252,9 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     let scaled_width = pattern_width * bbwscale;
     let scaled_height = pattern_height * bbhscale;
 
-    if scaled_width.abs () < DBL_EPSILON || scaled_height.abs () < DBL_EPSILON {
-        return
+    if scaled_width.abs () < DBL_EPSILON || scaled_height.abs () < DBL_EPSILON
+        || pw < 1 || ph < 1 {
+        return false;
     }
 
     scwscale = pw as f64 / scaled_width;
@@ -356,6 +361,8 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     surface_pattern.set_filter (Filter::Best);
 
     cr_save.set_source (&surface_pattern);
+
+    true
 }
 
 #[no_mangle]
@@ -416,7 +423,7 @@ pub unsafe extern fn pattern_destroy (raw_pattern: *mut Pattern) {
 #[no_mangle]
 pub extern fn pattern_resolve_fallbacks_and_set_pattern (raw_pattern: *mut Pattern,
                                                          draw_ctx:    *mut RsvgDrawingCtx,
-                                                         bbox:        RsvgBbox) {
+                                                         bbox:        RsvgBbox) -> bool {
     assert! (!raw_pattern.is_null ());
     let pattern: &mut Pattern = unsafe { &mut (*raw_pattern) };
 
@@ -426,5 +433,5 @@ pub extern fn pattern_resolve_fallbacks_and_set_pattern (raw_pattern: *mut Patte
 
     set_pattern_on_draw_context (&resolved,
                                  draw_ctx,
-                                 &bbox);
+                                 &bbox)
 }

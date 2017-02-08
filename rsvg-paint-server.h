@@ -173,9 +173,9 @@ void pattern_destroy (Pattern *pattern);
 
 /* Implemented in rust/src/pattern.rs */
 G_GNUC_INTERNAL
-void pattern_resolve_fallbacks_and_set_pattern (Pattern        *pattern,
-                                                RsvgDrawingCtx *draw_ctx,
-                                                RsvgBbox        bbox);
+gboolean pattern_resolve_fallbacks_and_set_pattern (Pattern        *pattern,
+                                                    RsvgDrawingCtx *draw_ctx,
+                                                    RsvgBbox        bbox);
 
 G_GNUC_INTERNAL
 Pattern *rsvg_pattern_node_to_rust_pattern (RsvgNode *node);
@@ -192,10 +192,17 @@ struct _RsvgSolidColor {
 typedef struct _RsvgSolidColor RsvgPaintServerColor;
 typedef enum _RsvgPaintServerType RsvgPaintServerType;
 typedef union _RsvgPaintServerCore RsvgPaintServerCore;
+typedef struct _RsvgPaintServerIri RsvgPaintServerIri;
+
+struct _RsvgPaintServerIri {
+    char *iri_str;
+    gboolean has_alternate;
+    RsvgSolidColor alternate;
+};
 
 union _RsvgPaintServerCore {
     RsvgSolidColor *color;
-    char *iri;
+    RsvgPaintServerIri *iri;
 };
 
 enum _RsvgPaintServerType {
@@ -211,7 +218,7 @@ struct _RsvgPaintServer {
 
 /* Create a new paint server based on a specification string. */
 G_GNUC_INTERNAL
-RsvgPaintServer	    *rsvg_paint_server_parse    (gboolean * inherit, const char *str);
+RsvgPaintServer	    *rsvg_paint_server_parse    (gboolean *inherit, const char *str);
 G_GNUC_INTERNAL
 void                 rsvg_paint_server_ref      (RsvgPaintServer * ps);
 G_GNUC_INTERNAL
