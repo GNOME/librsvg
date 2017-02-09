@@ -49,26 +49,7 @@ RsvgNode *rsvg_new_group (const char *element_name);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_switch (const char *element_name);
 
-typedef struct _RsvgNodeGroup RsvgNodeGroup;
-typedef struct _RsvgNodeUse RsvgNodeUse;
-typedef struct _RsvgNodeSymbol RsvgNodeSymbol;
 typedef struct _RsvgNodeSvg RsvgNodeSvg;
-
-struct _RsvgNodeGroup {
-    RsvgNode super;
-};
-
-struct _RsvgNodeSymbol {
-    RsvgNode super;
-    guint32 preserve_aspect_ratio;
-    RsvgViewBox vbox;
-};
-
-struct _RsvgNodeUse {
-    RsvgNode super;
-    char *link;
-    RsvgLength x, y, w, h;
-};
 
 struct _RsvgNodeSvg {
     RsvgNode super;

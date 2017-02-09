@@ -340,14 +340,6 @@ typedef struct {
     void (*set_atts) (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *atts);
 } RsvgNodeVtable;
 
-struct _RsvgNode {
-    RsvgState *state;
-    RsvgNode *parent;
-    GPtrArray *children;
-    RsvgNodeType type;
-    RsvgNodeVtable *vtable;
-};
-
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
 RsvgNodeType rsvg_node_get_type (RsvgNode *node);

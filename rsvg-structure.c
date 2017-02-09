@@ -34,6 +34,26 @@
 
 #include <stdio.h>
 
+typedef struct _RsvgNodeGroup RsvgNodeGroup;
+typedef struct _RsvgNodeUse RsvgNodeUse;
+typedef struct _RsvgNodeSymbol RsvgNodeSymbol;
+
+struct _RsvgNodeGroup {
+    RsvgNode super;
+};
+
+struct _RsvgNodeSymbol {
+    RsvgNode super;
+    guint32 preserve_aspect_ratio;
+    RsvgViewBox vbox;
+};
+
+struct _RsvgNodeUse {
+    RsvgNode super;
+    char *link;
+    RsvgLength x, y, w, h;
+};
+
 void
 rsvg_node_draw_from_stack (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
