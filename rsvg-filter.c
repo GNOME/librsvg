@@ -539,7 +539,7 @@ rsvg_filter_context_free (RsvgFilterContext * ctx)
 static gboolean
 node_is_filter_primitive (RsvgNode *node)
 {
-    RsvgNodeType type = rsvg_node_type (node);
+    RsvgNodeType type = rsvg_node_get_type (node);
 
     return type > RSVG_NODE_TYPE_FILTER_PRIMITIVE_FIRST && type < RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST;
 }
@@ -2138,7 +2138,7 @@ merge_render_child (RsvgNode *node, gpointer data)
     RsvgFilterPrimitive *fp;
     cairo_surface_t *in;
 
-    if (rsvg_node_type (node) != RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE)
+    if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE)
         return TRUE;
 
     fp = (RsvgFilterPrimitive *) node;
@@ -2623,7 +2623,7 @@ component_transfer_render_child (RsvgNode *node, gpointer data)
     struct component_transfer_closure *closure = data;
     RsvgNodeComponentTransferFunc *f;
 
-    if (rsvg_node_type (node) != RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION)
+    if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION)
         return TRUE;
 
     f = (RsvgNodeComponentTransferFunc *) node;
@@ -4496,7 +4496,7 @@ find_light_source (RsvgNode *node, gpointer data)
 {
     struct find_light_source_closure *closure = data;
 
-    if (rsvg_node_type (node) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
+    if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
         closure->source = (RsvgNodeLightSource *) node;
     }
 

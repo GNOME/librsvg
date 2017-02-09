@@ -348,27 +348,43 @@ struct _RsvgNode {
     RsvgNodeVtable *vtable;
 };
 
+/* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
-RsvgNodeType rsvg_node_type (RsvgNode *node);
+RsvgNodeType rsvg_node_get_type (RsvgNode *node);
 
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+void rsvg_node_unref (RsvgNode *node);
+
+/* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
 RsvgState *rsvg_node_get_state (RsvgNode *node);
 
+/* Implemented in rust/src/node.rs
+ *
+ * Returns a strong reference to the parent (or NULL); use rsvg_node_unref()
+ * when you are done.
+ */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_get_parent (RsvgNode *node);
 
+/* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
 void rsvg_node_set_atts (RsvgNode *node, RsvgHandle *handle, RsvgPropertyBag *atts);
 
+/* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
 void rsvg_node_draw (RsvgNode *node, RsvgDrawingCtx *draw, int dominate);
 
 /* Used to iterate among a node's children with rsvg_node_foreach_child().
  * If this caller-supplied function returns FALSE, iteration will stop.
  * Otherwise, iteration will continue to the next child node.
+ *
+ * Keep this in sync with rust/src/node.rs:NodeForeachChild
  */
 typedef gboolean (* RsvgNodeForeachChildFn) (RsvgNode *node, gpointer data);
 
+/* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
 void rsvg_node_foreach_child (RsvgNode *node, RsvgNodeForeachChildFn fn, gpointer data);
 

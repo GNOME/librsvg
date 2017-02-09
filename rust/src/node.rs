@@ -26,7 +26,7 @@ pub trait NodeTrait {
 
 pub struct Node {
     node_type: NodeType,
-    parent:    Option<Weak<Node>>,      // optional; weak ref to parent
+    parent:    Option<Weak<Node>>,       // optional; weak ref to parent
     children:  RefCell<Vec<Rc<Node>>>,   // strong references to children
     state:     *mut RsvgState,
     node_impl: Box<NodeTrait>
@@ -159,7 +159,39 @@ pub extern fn rsvg_node_add_child (raw_node: *mut RsvgNode, raw_child: *const Rs
     assert! (!raw_node.is_null ());
     assert! (!raw_child.is_null ());
     let node: &mut RsvgNode = unsafe { &mut *raw_node };
-    let child: &RsvgNode = unsafe { & *raw_node };
+    let child: &RsvgNode = unsafe { & *raw_child };
 
     node.add_child (child);
+}
+
+#[no_mangle]
+pub extern fn rsvg_node_set_atts (raw_node: *mut RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+    assert! (!raw_node.is_null ());
+    let node: &RsvgNode = unsafe { & *raw_node };
+
+    node.set_atts (node, handle, pbag);
+}
+
+#[no_mangle]
+pub extern fn rsvg_node_draw (raw_node: *const RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    assert! (!raw_node.is_null ());
+    let node: &RsvgNode = unsafe { & *raw_node };
+
+    node.draw (node, draw_ctx, dominate);
+}
+
+type NodeForeachChild = unsafe extern "C" fn (node: *const RsvgNode, data: *const libc::c_void) -> bool;
+
+#[no_mangle]
+pub extern fn rsvg_node_foreach_child (raw_node: *const RsvgNode, fn: NodeForeachChild, data: *const libc::c_void)
+{
+    assert! (!raw_node.is_null ());
+    let node: &RsvgNode = unsafe { & *raw_node };
+
+    for child in node.children.borrow () {
+        let next = unsafe = { (*fn) (child as *const RsvgNode, data) };
+        if !next {
+            break;
+        }
+    }
 }

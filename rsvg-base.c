@@ -375,18 +375,6 @@ get_node_creator_for_element_name (const char *name)
     return result;
 }
 
-void
-rsvg_node_set_atts (RsvgNode *node, RsvgHandle *handle, RsvgPropertyBag *atts)
-{
-    node->vtable->set_atts (node, handle, atts);
-}
-
-void
-rsvg_node_draw (RsvgNode *node, RsvgDrawingCtx *draw, int dominate)
-{
-    node->vtable->draw (node, draw, dominate);
-}
-
 static void
 node_set_atts (RsvgNode * node, RsvgHandle * ctx, const NodeCreator *creator, RsvgPropertyBag * atts)
 {
@@ -400,7 +388,7 @@ node_set_atts (RsvgNode * node, RsvgHandle * ctx, const NodeCreator *creator, Rs
          * attributes until the end, when rsvg_end_element() calls
          * _rsvg_node_svg_apply_atts()
          */
-        if (rsvg_node_type (node) != RSVG_NODE_TYPE_SVG) {
+        if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_SVG) {
             id = rsvg_property_bag_lookup (atts, "id");
 
             if (creator->supports_class_attribute)
@@ -425,7 +413,7 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
     newnode = creator->create_fn (name);
 
     if (newnode) {
-        g_assert (rsvg_node_type (newnode) != RSVG_NODE_TYPE_INVALID);
+        g_assert (rsvg_node_get_type (newnode) != RSVG_NODE_TYPE_INVALID);
 
         push_element_name (ctx, name);
 
@@ -434,50 +422,13 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
 
         if (ctx->priv->currentnode) {
             rsvg_node_add_child (ctx->priv->currentnode, newnode);
-        } else if (rsvg_node_type (newnode) == RSVG_NODE_TYPE_SVG) {
+        } else if (rsvg_node_get_type (newnode) == RSVG_NODE_TYPE_SVG) {
             ctx->priv->treebase = newnode;
         }
 
         ctx->priv->currentnode = newnode;
 
         node_set_atts (newnode, ctx, creator, atts);
-    }
-}
-
-RsvgNodeType
-rsvg_node_type (RsvgNode *node)
-{
-    return node->type;
-}
-
-RsvgState *
-rsvg_node_get_state (RsvgNode *node)
-{
-    return node->state;
-}
-
-RsvgNode *
-rsvg_node_get_parent (RsvgNode *node)
-{
-    return node->parent;
-}
-
-void
-rsvg_node_foreach_child (RsvgNode *node, RsvgNodeForeachChildFn fn, gpointer data)
-{
-    guint len;
-    guint i;
-
-    len = node->children->len;
-
-    for (i = 0; i < len; i++) {
-        RsvgNode *child;
-        gboolean next;
-
-        child = g_ptr_array_index (node->children, i);
-        next = fn (child, data);
-        if (!next)
-            break;
     }
 }
 
@@ -932,9 +883,9 @@ find_last_chars_node (RsvgNode *node, gpointer data)
 
     dest = data;
 
-    if (rsvg_node_type (node) == RSVG_NODE_TYPE_CHARS) {
+    if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS) {
         *dest = node;
-    } else if (rsvg_node_type (node) == RSVG_NODE_TYPE_TSPAN) {
+    } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_TSPAN) {
         *dest = NULL;
     }
 
@@ -950,7 +901,7 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
         return;
 
     if (ctx->priv->currentnode) {
-        RsvgNodeType type = rsvg_node_type (ctx->priv->currentnode);
+        RsvgNodeType type = rsvg_node_get_type (ctx->priv->currentnode);
         if (type == RSVG_NODE_TYPE_TSPAN || type == RSVG_NODE_TYPE_TEXT) {
             /* find the last CHARS node in the text or tspan node, so that we
                can coalesce the text, and thus avoid screwing up the Pango layouts */
@@ -2291,7 +2242,7 @@ rsvg_drawing_ctx_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, Rs
     RsvgNode *node;
 
     node = rsvg_drawing_ctx_acquire_node (ctx, url);
-    if (node == NULL || rsvg_node_type (node) != type) {
+    if (node == NULL || rsvg_node_get_type (node) != type) {
         rsvg_drawing_ctx_release_node (ctx, node);
         return NULL;
     }

@@ -543,7 +543,7 @@ rsvg_pattern_node_to_rust_pattern (RsvgNode *node)
     RsvgPattern *pnode;
     Pattern *pattern;
 
-    if (rsvg_node_type (node) != RSVG_NODE_TYPE_PATTERN)
+    if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_PATTERN)
         return NULL;
 
     pnode = (RsvgPattern *) node;
@@ -584,7 +584,7 @@ node_has_at_least_one_child (RsvgNode *node)
 gboolean
 rsvg_pattern_node_has_children (RsvgNode *node)
 {
-    if (rsvg_node_type (node) != RSVG_NODE_TYPE_PATTERN)
+    if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_PATTERN)
         return FALSE;
 
     return node_has_at_least_one_child (node);

@@ -60,6 +60,9 @@ pub use node::{
     rsvg_node_unref,
     rsvg_node_get_state,
     rsvg_node_add_child,
+    rsvg_node_set_atts,
+    rsvg_node_draw,
+    rsvg_node_foreach_child,
 };
 
 pub use cnode::{

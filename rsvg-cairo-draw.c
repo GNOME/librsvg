@@ -47,7 +47,7 @@ add_color_stop_to_gradient (RsvgNode *node, gpointer data)
     Gradient *gradient = data;
     RsvgGradientStop *stop;
 
-    if (rsvg_node_type (node) != RSVG_NODE_TYPE_STOP)
+    if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_STOP)
         return TRUE; /* just ignore this node */
 
     stop = (RsvgGradientStop *) node;
@@ -110,9 +110,9 @@ radial_gradient_to_rust (RsvgRadialGradient *radial)
 Gradient *
 rsvg_gradient_node_to_rust_gradient (RsvgNode *node)
 {
-    if (rsvg_node_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
+    if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
         return linear_gradient_to_rust ((RsvgLinearGradient *) node);
-    } else if (rsvg_node_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
+    } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
         return radial_gradient_to_rust ((RsvgRadialGradient *) node);
     } else {
         return NULL;
@@ -203,13 +203,13 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
         node = rsvg_drawing_ctx_acquire_node (ctx, ps->core.iri->iri_str);
         if (node == NULL) {
             use_alternate = TRUE;
-        } else if (rsvg_node_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
+        } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
             _set_source_rsvg_linear_gradient (ctx, (RsvgLinearGradient *) node, opacity, bbox);
             had_paint_server = TRUE;
-        } else if (rsvg_node_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
+        } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
             _set_source_rsvg_radial_gradient (ctx, (RsvgRadialGradient *) node, opacity, bbox);
             had_paint_server = TRUE;
-        } else if (rsvg_node_type (node) == RSVG_NODE_TYPE_PATTERN) {
+        } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_PATTERN) {
             if (_set_source_rsvg_pattern (ctx, (RsvgPattern *) node, bbox)) {
                 had_paint_server = TRUE;
             } else {

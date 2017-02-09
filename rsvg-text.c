@@ -183,7 +183,7 @@ static gboolean
 draw_text_child (RsvgNode *node, gpointer data)
 {
     DrawTextClosure *closure;
-    RsvgNodeType type = rsvg_node_type (node);
+    RsvgNodeType type = rsvg_node_get_type (node);
 
     closure = data;
 
@@ -276,7 +276,7 @@ static gboolean
 compute_child_length (RsvgNode *node, gpointer data)
 {
     ChildrenLengthClosure *closure;
-    RsvgNodeType type = rsvg_node_type (node);
+    RsvgNodeType type = rsvg_node_get_type (node);
     gboolean done;
 
     closure = data;
