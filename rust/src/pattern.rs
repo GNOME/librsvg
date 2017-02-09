@@ -50,6 +50,29 @@ fn pattern_node_has_children (c_node: *const RsvgNode) -> bool {
     unsafe { rsvg_pattern_node_has_children (c_node) }
 }
 
+// All of the Pattern's fields are Option<foo> values, because
+// those fields can be omitted in the SVG file.  We need to resolve
+// them to default values, or to fallback values that come from
+// another Pattern.
+//
+// For the fallback case, this would need something like
+//
+//    if self.foo.is_none () { self.foo = fallback.foo; }
+//
+// And for the default case, it would be like
+//    if self.foo.is_none () { self.foo = Some (default_value); }
+//
+// Both can be replaced by
+//
+//    self.foo = self.foo.take ().or (bar);
+//
+// So we define a macro for that.
+macro_rules! fallback_to (
+    ($dest:expr, $default:expr) => (
+        $dest = $dest.take ().or ($default)
+    );
+);
+
 impl Pattern {
     fn is_resolved (&self) -> bool {
         self.obj_bbox.is_some () &&
@@ -67,41 +90,33 @@ impl Pattern {
     fn resolve_from_defaults (&mut self) {
         /* These are per the spec */
 
-        if self.obj_bbox.is_none ()  { self.obj_bbox  = Some (true); }
-        if self.obj_cbbox.is_none () { self.obj_cbbox = Some (false); }
-        if self.vbox.is_none ()      { self.vbox      = Some (RsvgViewBox::new_inactive ()); }
+        fallback_to! (self.obj_bbox,              Some (true));
+        fallback_to! (self.obj_cbbox,             Some (false));
+        fallback_to! (self.vbox,                  Some (RsvgViewBox::new_inactive ()));
+        fallback_to! (self.preserve_aspect_ratio, Some (AspectRatio::default ()));
+        fallback_to! (self.affine,                Some (cairo::Matrix::identity ()));
 
-        if self.preserve_aspect_ratio.is_none () {
-            let aspect: AspectRatio = Default::default ();
-            self.preserve_aspect_ratio = Some (aspect);
-        }
-
-        if self.affine.is_none ()    { self.affine    = Some (cairo::Matrix::identity ()); }
+        fallback_to! (self.x,                     Some (RsvgLength::parse ("0", LengthDir::Horizontal)));
+        fallback_to! (self.y,                     Some (RsvgLength::parse ("0", LengthDir::Horizontal)));
+        fallback_to! (self.width,                 Some (RsvgLength::parse ("0", LengthDir::Horizontal)));
+        fallback_to! (self.height,                Some (RsvgLength::parse ("0", LengthDir::Horizontal)));
 
         self.fallback = None;
-
-        if self.x.is_none ()         { self.x         = Some (RsvgLength::parse ("0", LengthDir::Horizontal)); }
-        if self.y.is_none ()         { self.y         = Some (RsvgLength::parse ("0", LengthDir::Horizontal)); }
-        if self.width.is_none ()     { self.width     = Some (RsvgLength::parse ("0", LengthDir::Horizontal)); }
-        if self.height.is_none ()    { self.height    = Some (RsvgLength::parse ("0", LengthDir::Horizontal)); }
 
         // We don't resolve the children here - instead, we'll just
         // NOP if there are no children at drawing time.
     }
 
     fn resolve_from_fallback (&mut self, fallback: &Pattern) {
-        if self.obj_bbox.is_none ()  { self.obj_bbox  = fallback.obj_bbox; }
-        if self.obj_cbbox.is_none () { self.obj_cbbox = fallback.obj_cbbox; }
-        if self.vbox.is_none ()      { self.vbox      = fallback.vbox; }
-
-        if self.preserve_aspect_ratio.is_none () { self.preserve_aspect_ratio = fallback.preserve_aspect_ratio; }
-
-        if self.affine.is_none ()    { self.affine    = fallback.affine; }
-
-        if self.x.is_none ()         { self.x         = fallback.x; }
-        if self.y.is_none ()         { self.y         = fallback.y; }
-        if self.width.is_none ()     { self.width     = fallback.width; }
-        if self.height.is_none ()    { self.height    = fallback.height; }
+        fallback_to! (self.obj_bbox,              fallback.obj_bbox);
+        fallback_to! (self.obj_cbbox,             fallback.obj_cbbox);
+        fallback_to! (self.vbox,                  fallback.vbox);
+        fallback_to! (self.preserve_aspect_ratio, fallback.preserve_aspect_ratio);
+        fallback_to! (self.affine,                fallback.affine);
+        fallback_to! (self.x,                     fallback.x);
+        fallback_to! (self.y,                     fallback.y);
+        fallback_to! (self.width,                 fallback.width);
+        fallback_to! (self.height,                fallback.height);
 
         self.fallback = clone_fallback_name (&fallback.fallback);
 

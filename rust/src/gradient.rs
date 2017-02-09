@@ -58,6 +58,29 @@ pub struct Gradient {
     pub variant: GradientVariant
 }
 
+// All of the Gradient's fields are Option<foo> values, because
+// those fields can be omitted in the SVG file.  We need to resolve
+// them to default values, or to fallback values that come from
+// another Gradient.
+//
+// For the fallback case, this would need something like
+//
+//    if self.foo.is_none () { self.foo = fallback.foo; }
+//
+// And for the default case, it would be like
+//    if self.foo.is_none () { self.foo = Some (default_value); }
+//
+// Both can be replaced by
+//
+//    self.foo = self.foo.take ().or (bar);
+//
+// So we define a macro for that.
+macro_rules! fallback_to (
+    ($dest:expr, $default:expr) => (
+        $dest = $dest.take ().or ($default)
+    );
+);
+
 impl GradientCommon {
     fn new (obj_bbox: Option<bool>,
             affine:   Option<cairo::Matrix>,
@@ -91,20 +114,19 @@ impl GradientCommon {
     fn resolve_from_defaults (&mut self) {
         /* These are per the spec */
 
-        if self.obj_bbox.is_none () { self.obj_bbox = Some (true); }
-        if self.affine.is_none ()   { self.affine   = Some (cairo::Matrix::identity ()); }
-        if self.spread.is_none ()   { self.spread   = Some (cairo::enums::Extend::Pad); }
+        fallback_to! (self.obj_bbox, Some (true));
+        fallback_to! (self.affine,   Some (cairo::Matrix::identity ()));
+        fallback_to! (self.spread,   Some (cairo::enums::Extend::Pad));
+        fallback_to! (self.stops,    Some (Vec::<ColorStop>::new ())); // empty array of color stops
 
         self.fallback = None;
-
-        if self.stops.is_none ()    { self.stops    = Some (Vec::<ColorStop>::new ()); } // empty array of color stops
     }
 
     fn resolve_from_fallback (&mut self, fallback: &GradientCommon) {
-        if self.obj_bbox.is_none () { self.obj_bbox = fallback.obj_bbox; }
-        if self.affine.is_none ()   { self.affine   = fallback.affine; }
-        if self.spread.is_none ()   { self.spread   = fallback.spread; }
-        if self.stops.is_none ()    { self.stops    = fallback.clone_stops (); }
+        fallback_to! (self.obj_bbox, fallback.obj_bbox);
+        fallback_to! (self.affine,   fallback.affine);
+        fallback_to! (self.spread,   fallback.spread);
+        fallback_to! (self.stops,    fallback.clone_stops ());
 
         self.fallback = clone_fallback_name (&fallback.fallback);
     }
@@ -170,20 +192,20 @@ impl GradientVariant {
 
         match *self {
             GradientVariant::Linear { ref mut x1, ref mut y1, ref mut x2, ref mut y2 } => {
-                if x1.is_none () { *x1 = Some (RsvgLength::parse ("0%", LengthDir::Horizontal)); }
-                if y1.is_none () { *y1 = Some (RsvgLength::parse ("0%", LengthDir::Vertical)); }
-                if x2.is_none () { *x2 = Some (RsvgLength::parse ("100%", LengthDir::Horizontal)); }
-                if y2.is_none () { *y2 = Some (RsvgLength::parse ("0%", LengthDir::Vertical)); }
+                fallback_to! (*x1, Some (RsvgLength::parse ("0%", LengthDir::Horizontal)));
+                fallback_to! (*y1, Some (RsvgLength::parse ("0%", LengthDir::Vertical)));
+                fallback_to! (*x2, Some (RsvgLength::parse ("100%", LengthDir::Horizontal)));
+                fallback_to! (*y2, Some (RsvgLength::parse ("0%", LengthDir::Vertical)));
             },
 
             GradientVariant::Radial { ref mut cx, ref mut cy, ref mut r, ref mut fx, ref mut fy } => {
-                if cx.is_none () { *cx = Some (RsvgLength::parse ("50%", LengthDir::Horizontal)); }
-                if cy.is_none () { *cy = Some (RsvgLength::parse ("50%", LengthDir::Vertical)); }
-                if r.is_none ()  { *r  = Some (RsvgLength::parse ("50%", LengthDir::Both)); }
+                fallback_to! (*cx, Some (RsvgLength::parse ("50%", LengthDir::Horizontal)));
+                fallback_to! (*cy, Some (RsvgLength::parse ("50%", LengthDir::Vertical)));
+                fallback_to! (*r,  Some (RsvgLength::parse ("50%", LengthDir::Both)));
 
                 /* fx and fy fall back to the presentational value of cx and cy */
-                if fx.is_none () { *fx = *cx }
-                if fy.is_none () { *fy = *cy }
+                fallback_to! (*fx, *cx);
+                fallback_to! (*fy, *cy);
             }
         }
     }
@@ -192,20 +214,20 @@ impl GradientVariant {
         match *self {
             GradientVariant::Linear { ref mut x1, ref mut y1, ref mut x2, ref mut y2 } => {
                 if let &GradientVariant::Linear { x1: x1f, y1: y1f, x2: x2f, y2: y2f } = fallback {
-                    if x1.is_none () { *x1 = x1f; }
-                    if y1.is_none () { *y1 = y1f; }
-                    if x2.is_none () { *x2 = x2f; }
-                    if y2.is_none () { *y2 = y2f; }
+                    fallback_to! (*x1, x1f);
+                    fallback_to! (*y1, y1f);
+                    fallback_to! (*x2, x2f);
+                    fallback_to! (*y2, y2f);
                 }
             },
 
             GradientVariant::Radial { ref mut cx, ref mut cy, ref mut r, ref mut fx, ref mut fy } => {
                 if let &GradientVariant::Radial { cx: cxf, cy: cyf, r: rf, fx: fxf, fy: fyf } = fallback {
-                    if cx.is_none () { *cx = cxf; }
-                    if cy.is_none () { *cy = cyf; }
-                    if r.is_none ()  { *r  = rf;  }
-                    if fx.is_none () { *fx = fxf; }
-                    if fy.is_none () { *fy = fyf; }
+                    fallback_to! (*cx, cxf);
+                    fallback_to! (*cy, cyf);
+                    fallback_to! (*r,  rf);
+                    fallback_to! (*fx, fxf);
+                    fallback_to! (*fy, fyf);
                 }
             }
         }
