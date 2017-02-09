@@ -13,24 +13,21 @@ use property_bag::RsvgPropertyBag;
 
 use state::RsvgState;
 
-/* A const *RsvgNode is just a pointer for the C code's benefit: it
- * points to a RsvgRcNode, which is our refcounted Rust representation
+/* A *const RsvgNode is just a pointer for the C code's benefit: it
+ * points to an  Rc<Node>, which is our refcounted Rust representation
  * of nodes.
  */
-pub enum RsvgNode {}
-
-/* This is just to take a pointer to an Rc<RefCell<Node>> */
-pub type RsvgRcNode = Rc<RefCell<Node>>;
+pub type RsvgNode = Rc<Node>;
 
 pub trait NodeTrait {
-    fn set_atts (&self, node: &RsvgRcNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag);
-    fn draw (&self, node: &RsvgRcNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
+    fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag);
+    fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
 }
 
 pub struct Node {
     node_type: NodeType,
-    parent:    Option<Weak<RefCell<Node>>>, // optional; weak ref to parent-made-mutable
-    children:  Vec<Rc<RefCell<Node>>>,   // strong references to children-made-mutable through RefCell
+    parent:    Option<Weak<Node>>,      // optional; weak ref to parent
+    children:  RefCell<Vec<Rc<Node>>>,   // strong references to children
     state:     *mut RsvgState,
     node_impl: Box<NodeTrait>
 }
@@ -94,13 +91,13 @@ pub enum NodeType {
 
 impl Node {
     pub fn new (node_type: NodeType,
-                parent:    Option<Weak<RefCell<Node>>>,
+                parent:    Option<Weak<Node>>,
                 state:     *mut RsvgState,
                 node_impl: Box<NodeTrait>) -> Node {
         Node {
             node_type: node_type,
             parent:    parent,
-            children:  Vec::new (),
+            children:  RefCell::new (Vec::new ()),
             state:     state,
             node_impl: node_impl
         }
@@ -114,56 +111,55 @@ impl Node {
         self.state
     }
 
-    pub fn add_child (&mut self, child: &Rc<RefCell<Node>>) {
-        self.children.push (child.clone ());
+    pub fn add_child (&self, child: &Rc<Node>) {
+        self.children.borrow_mut ().push (child.clone ());
     }
 }
 
 #[no_mangle]
-pub extern fn rsvg_node_get_type (raw_node: *const RsvgRcNode) -> NodeType {
+pub extern fn rsvg_node_get_type (raw_node: *const RsvgNode) -> NodeType {
     assert! (!raw_node.is_null ());
-    let node: &RsvgRcNode = unsafe { & *raw_node };
+    let node: &RsvgNode = unsafe { & *raw_node };
 
-    node.borrow ().get_type ()
+    node.get_type ()
 }
 
 #[no_mangle]
-pub extern fn rsvg_node_get_parent (raw_node: *const RsvgRcNode) -> *const RsvgRcNode {
+pub extern fn rsvg_node_get_parent (raw_node: *const RsvgNode) -> *const RsvgNode {
     assert! (!raw_node.is_null ());
-    let rc_node: &RsvgRcNode = unsafe { & *raw_node };
+    let node: &RsvgNode = unsafe { & *raw_node };
 
-    match rc_node.borrow ().parent {
+    match node.parent {
         None => { ptr::null () }
 
         Some (ref weak_node) => {
             let strong_node = weak_node.upgrade ().unwrap ();
-            &strong_node as *const RsvgRcNode
+            Box::into_raw (Box::new (strong_node))
         }
     }
 }
 
 #[no_mangle]
-pub extern fn rsvg_node_unref (raw_node: *const RsvgRcNode) {
+pub unsafe extern fn rsvg_node_unref (raw_node: *mut RsvgNode) {
     assert! (!raw_node.is_null ());
-    let rc_node: &RsvgRcNode = unsafe { & *raw_node };
 
-    drop (rc_node);
+    let _ = Box::from_raw (raw_node);
 }
 
 #[no_mangle]
-pub extern fn rsvg_node_get_state (raw_node: *const RsvgRcNode) -> *mut RsvgState {
+pub extern fn rsvg_node_get_state (raw_node: *const RsvgNode) -> *mut RsvgState {
     assert! (!raw_node.is_null ());
-    let rc_node: &RsvgRcNode = unsafe { & *raw_node };
+    let node: &RsvgNode = unsafe { & *raw_node };
 
-    rc_node.borrow ().get_state ()
+    node.get_state ()
 }
 
 #[no_mangle]
-pub extern fn rsvg_node_add_child (raw_node: *mut RsvgRcNode, raw_child: *const RsvgRcNode) {
+pub extern fn rsvg_node_add_child (raw_node: *mut RsvgNode, raw_child: *const RsvgNode) {
     assert! (!raw_node.is_null ());
     assert! (!raw_child.is_null ());
-    let rc_node: &mut RsvgRcNode = unsafe { &mut *raw_node };
-    let rc_child: &RsvgRcNode = unsafe { & *raw_child };
+    let node: &mut RsvgNode = unsafe { &mut *raw_node };
+    let child: &RsvgNode = unsafe { & *raw_node };
 
-    rc_node.borrow_mut ().add_child (rc_child);
+    node.add_child (child);
 }

@@ -3,17 +3,16 @@ use handle::*;
 use node::*;
 use property_bag::RsvgPropertyBag;
 use state::RsvgState;
-use std::rc::Rc;
-use std::rc::Weak;
-use std::cell::RefCell;
+
+use std::rc::*;
 
 /* A *const RsvgCNodeImpl is just an opaque pointer to the C code's
  * struct for a particular node type.
  */
 pub enum RsvgCNodeImpl {}
 
-type CNodeSetAtts = unsafe extern "C" fn (node: *const RsvgRcNode, node_impl: *const RsvgCNodeImpl, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag);
-type CNodeDraw = unsafe extern "C" fn (node: *const RsvgRcNode, node_impl: *const RsvgCNodeImpl, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
+type CNodeSetAtts = unsafe extern "C" fn (node: *const RsvgNode, node_impl: *const RsvgCNodeImpl, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag);
+type CNodeDraw = unsafe extern "C" fn (node: *const RsvgNode, node_impl: *const RsvgCNodeImpl, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
 type CNodeFree = unsafe extern "C" fn (node_impl: *const RsvgCNodeImpl);
 
 struct CNode {
@@ -25,12 +24,12 @@ struct CNode {
 }
 
 impl NodeTrait for CNode {
-    fn set_atts (&self, node: &RsvgRcNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
-        unsafe { (self.set_atts_fn) (node as *const RsvgRcNode, self.c_node_impl, handle, pbag); }
+    fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+        unsafe { (self.set_atts_fn) (node as *const RsvgNode, self.c_node_impl, handle, pbag); }
     }
 
-    fn draw (&self, node: &RsvgRcNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
-        unsafe { (self.draw_fn) (node as *const RsvgRcNode, self.c_node_impl, draw_ctx, dominate); }
+    fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+        unsafe { (self.draw_fn) (node as *const RsvgNode, self.c_node_impl, draw_ctx, dominate); }
     }
 }
 
@@ -42,22 +41,22 @@ impl Drop for CNode {
 
 #[no_mangle]
 pub extern fn rsvg_rust_cnode_new (node_type:   NodeType,
-                                   raw_parent:  *const RsvgRcNode,
+                                   raw_parent:  *const RsvgNode,
                                    state:       *mut RsvgState,
                                    c_node_impl: *const RsvgCNodeImpl,
                                    set_atts_fn: CNodeSetAtts,
                                    draw_fn:     CNodeDraw,
-                                   free_fn:     CNodeFree) -> *const RsvgRcNode {
+                                   free_fn:     CNodeFree) -> *const RsvgNode {
     assert! (!state.is_null ());
     assert! (!c_node_impl.is_null ());
 
-    let parent: Option<Weak<RefCell<Node>>> = unsafe {
+    let parent: Option<Weak<Node>> =
         if raw_parent.is_null () {
             None
         } else {
-            Some (Rc::downgrade (&*(raw_parent as *const RsvgRcNode)))
-        }
-    };
+            let p: &RsvgNode = unsafe { & *raw_parent };
+            Some (Rc::downgrade (&p.clone ()))
+        };
 
     let cnode = CNode {
         c_node_impl: c_node_impl,
@@ -66,9 +65,8 @@ pub extern fn rsvg_rust_cnode_new (node_type:   NodeType,
         free_fn:     free_fn
     };
 
-    &Rc::new (RefCell::new (Node::new (node_type,
-                                        parent,
-                                        state,
-                                       Box::new (cnode))))
-        as *const RsvgRcNode
+    Box::into_raw (Box::new (Rc::new (Node::new (node_type,
+                                                 parent,
+                                                 state,
+                                                 Box::new (cnode)))))
 }

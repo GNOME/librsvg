@@ -14,7 +14,7 @@ use length::*;
 
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
-use drawing_ctx::RsvgNode;
+use node::RsvgNode;
 
 use bbox::*;
 use util::*;
