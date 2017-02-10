@@ -116,6 +116,16 @@ impl Node {
     }
 }
 
+extern "C" {
+    fn rsvg_state_free (state: *mut RsvgState);
+}
+
+impl Drop for Node {
+    fn drop (&mut self) {
+        unsafe { rsvg_state_free (self.state); }
+    }
+}
+
 #[no_mangle]
 pub extern fn rsvg_node_get_type (raw_node: *const RsvgNode) -> NodeType {
     assert! (!raw_node.is_null ());
