@@ -66,34 +66,25 @@ typedef struct _RsvgFilterPrimitive RsvgFilterPrimitive;
 
 /* We don't have real subclassing here.  If you derive something from
  * RsvgFilterPrimitive, and don't need any special code to free your
- * RsvgFilterPrimitiveFoo structure, you can just set
- *
- *    foo_filter->super.super.free = rsvg_filter_primitive_free;
- *
- * for the destructor.  Otherwise, create a custom destructor like this:
- *
- *    foo_filter->super.super.free = &rsvg_filter_primitive_foo_free;
- *
- *    ...
+ * RsvgFilterPrimitiveFoo structure, you can just pass rsvg_filter_primitive_free
+ * to rsvg_rust_cnode_new() for the destructor.  Otherwise, create a custom destructor like this:
  *
  *    static void
- *    rsvg_filter_primitive_foo_free (RsvgNode *self)
+ *    rsvg_filter_primitive_foo_free (gpointer impl)
  *    {
- *        RsvgFilterPrimitiveFoo *foo;
+ *        RsvgFilterPrimitiveFoo *foo = impl;
  *
- *        foo = (RsvgFilterPrimitiveFoo *) self;
  *        g_free (foo->my_custom_stuff);
  *        g_free (foo->more_custom_stuff);
  *        ... etc ...
  *
- *        rsvg_filter_primitive_free (self);
+ *        rsvg_filter_primitive_free (impl);
  *    }
  *
  * That last call to rsvg_filter_primitive_free() will free the base RsvgFilterPrimitive's own fields,
- * and your whole structure itself, via _rsvg_node_free().
+ * and your whole structure itself, via g_free().
  */
 struct _RsvgFilterPrimitive {
-    RsvgNode super;
     RsvgLength x, y, width, height;
     gboolean x_specified;
     gboolean y_specified;
@@ -102,22 +93,21 @@ struct _RsvgFilterPrimitive {
     GString *in;
     GString *result;
 
-    void (*render) (RsvgFilterPrimitive * self, RsvgFilterContext * ctx);
+    void (*render) (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx);
 };
 
 /*************************************************************/
 /*************************************************************/
 
 static void
-rsvg_filter_primitive_free (RsvgNode *self)
+rsvg_filter_primitive_free (gpointer impl)
 {
-    RsvgFilterPrimitive *primitive;
+    RsvgFilterPrimitive *primitive = impl;
 
-    primitive = (RsvgFilterPrimitive *) self;
     g_string_free (primitive->in, TRUE);
     g_string_free (primitive->result, TRUE);
 
-    _rsvg_node_free (self);
+    g_free (primitive);
 }
 
 static void
@@ -144,9 +134,9 @@ filter_primitive_set_x_y_width_height_atts (RsvgFilterPrimitive *prim, RsvgPrope
 }
 
 static void
-rsvg_filter_primitive_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
-    self->render (self, ctx);
+    primitive->render (node, primitive, ctx);
 }
 
 static RsvgIRect
@@ -230,8 +220,8 @@ _rsvg_image_surface_new (int width, int height)
 
     surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
     if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
-      cairo_surface_destroy (surface);
-      return NULL;
+        cairo_surface_destroy (surface);
+        return NULL;
     }
 
     return surface;
@@ -239,7 +229,7 @@ _rsvg_image_surface_new (int width, int height)
 
 static guchar
 get_interp_pixel (guchar * src, gdouble ox, gdouble oy, guchar ch, RsvgIRect boundarys,
-                             guint rowstride)
+                  guint rowstride)
 {
     double xmod, ymod;
     double dist1, dist2, dist3, dist4;
@@ -528,7 +518,7 @@ static void
 rsvg_filter_context_free (RsvgFilterContext * ctx)
 {
     if (!ctx)
-	return;
+        return;
 
     if (ctx->bg_surface)
         cairo_surface_destroy (ctx->bg_surface);
@@ -549,15 +539,19 @@ render_child_if_filter_primitive (RsvgNode *node, gpointer data)
 {
     RsvgFilterContext *filter_ctx = data;
 
-    if (node_is_filter_primitive (node))
-        rsvg_filter_primitive_render ((RsvgFilterPrimitive *) node, filter_ctx);
+    if (node_is_filter_primitive (node)) {
+        RsvgFilterPrimitive *primitive;
+
+        primitive = rsvg_rust_cnode_get_impl (node);
+        rsvg_filter_primitive_render (node, primitive, filter_ctx);
+    }
 
     return TRUE;
 }
 
 /**
  * rsvg_filter_render:
- * @self: a pointer to the filter to use
+ * @node: a pointer to the filter node to use
  * @source: the a #cairo_surface_t of type %CAIRO_SURFACE_TYPE_IMAGE
  * @context: the context
  *
@@ -568,12 +562,13 @@ render_child_if_filter_primitive (RsvgNode *node, gpointer data)
  * Returns: (transfer full): a new #cairo_surface_t
  **/
 cairo_surface_t *
-rsvg_filter_render (RsvgFilter *self,
+rsvg_filter_render (RsvgNode *node,
                     cairo_surface_t *source,
                     RsvgDrawingCtx *context,
                     RsvgBbox *bounds,
                     char *channelmap)
 {
+    RsvgFilter *filter;
     RsvgFilterContext *ctx;
     guint i;
     cairo_surface_t *output;
@@ -581,8 +576,11 @@ rsvg_filter_render (RsvgFilter *self,
     g_return_val_if_fail (source != NULL, NULL);
     g_return_val_if_fail (cairo_surface_get_type (source) == CAIRO_SURFACE_TYPE_IMAGE, NULL);
 
-    ctx = g_new (RsvgFilterContext, 1);
-    ctx->filter = self;
+    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_FILTER);
+    filter = rsvg_rust_cnode_get_impl (node);
+
+    ctx = g_new0 (RsvgFilterContext, 1);
+    ctx->filter = filter;
     ctx->source_surface = source;
     ctx->bg_surface = NULL;
     ctx->results = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, rsvg_filter_free_pair);
@@ -596,7 +594,7 @@ rsvg_filter_render (RsvgFilter *self,
     for (i = 0; i < 4; i++)
         ctx->channelmap[i] = channelmap[i] - '0';
 
-    rsvg_node_foreach_child ((RsvgNode *) self, render_child_if_filter_primitive, ctx);
+    rsvg_node_foreach_child (node, render_child_if_filter_primitive, ctx);
 
     output = ctx->lastresult.surface;
 
@@ -792,12 +790,10 @@ rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
 }
 
 static void
-rsvg_filter_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilter *filter = impl;
     const char *value;
-    RsvgFilter *filter;
-
-    filter = (RsvgFilter *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "filterUnits"))) {
         if (!strcmp (value, "userSpaceOnUse"))
@@ -821,31 +817,45 @@ rsvg_filter_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
         filter->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
 }
 
+static void
+rsvg_filter_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
+{
+    /* nothing; filters are drawn in rsvg-cairo-draw.c */
+}
+
+static void
+rsvg_filter_free (gpointer impl)
+{
+    RsvgFilter *filter = impl;
+
+    g_free (filter);
+}
+
 /**
  * rsvg_new_filter:
  *
  * Creates a blank filter and assigns default values to everything
  **/
 RsvgNode *
-rsvg_new_filter (const char *element_name)
+rsvg_new_filter (const char *element_name, RsvgNode *parent)
 {
     RsvgFilter *filter;
-    RsvgNodeVtable vtable = {
-        NULL,
-        NULL,
-        rsvg_filter_set_atts,
-    };
 
-    filter = g_new (RsvgFilter, 1);
-    _rsvg_node_init (&filter->super, RSVG_NODE_TYPE_FILTER, &vtable);
-
+    filter = g_new0 (RsvgFilter, 1);
     filter->filterunits = objectBoundingBox;
     filter->primitiveunits = userSpaceOnUse;
     filter->x = rsvg_length_parse ("-10%", LENGTH_DIR_HORIZONTAL);
     filter->y = rsvg_length_parse ("-10%", LENGTH_DIR_VERTICAL);
     filter->width = rsvg_length_parse ("120%", LENGTH_DIR_HORIZONTAL);
     filter->height = rsvg_length_parse ("120%", LENGTH_DIR_VERTICAL);
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_free);
 }
 
 /*************************************************************/
@@ -985,18 +995,15 @@ rsvg_filter_blend (RsvgFilterPrimitiveBlendMode mode,
 }
 
 static void
-rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_blend_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
+    RsvgFilterPrimitiveBlend *blend = (RsvgFilterPrimitiveBlend *) primitive;
     RsvgIRect boundarys;
-
-    RsvgFilterPrimitiveBlend *blend;
-
     cairo_surface_t *output, *in, *in2;
 
-    blend = (RsvgFilterPrimitiveBlend *) self;
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    in = rsvg_filter_get_in (self->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx);
     if (in == NULL)
       return;
 
@@ -1016,7 +1023,7 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     rsvg_filter_blend (blend->mode, in, in2, output, boundarys, ctx->channelmap);
 
-    rsvg_filter_store_result (self->result, output, ctx);
+    rsvg_filter_store_result (primitive->result, output, ctx);
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (in2);
@@ -1024,22 +1031,20 @@ rsvg_filter_primitive_blend_render (RsvgFilterPrimitive * self, RsvgFilterContex
 }
 
 static void
-rsvg_filter_primitive_blend_free (RsvgNode * self)
+rsvg_filter_primitive_blend_free (gpointer impl)
 {
-    RsvgFilterPrimitiveBlend *blend;
-    blend = (RsvgFilterPrimitiveBlend *) self;
+    RsvgFilterPrimitiveBlend *blend = impl;
+
     g_string_free (blend->in2, TRUE);
 
-    rsvg_filter_primitive_free (self);
+    rsvg_filter_primitive_free (impl);
 }
 
 static void
-rsvg_filter_primitive_blend_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_filter_primitive_blend_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitiveBlend *filter = impl;
     const char *value;
-    RsvgFilterPrimitiveBlend *filter;
-
-    filter = (RsvgFilterPrimitiveBlend *) node;
 
     if ((value = rsvg_property_bag_lookup (atts, "mode"))) {
         if (!strcmp (value, "multiply"))
@@ -1064,24 +1069,24 @@ rsvg_filter_primitive_blend_set_atts (RsvgNode * node, RsvgHandle * ctx, RsvgPro
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_blend (const char *element_name)
+rsvg_new_filter_primitive_blend (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveBlend *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_blend_free,
-        NULL,
-        rsvg_filter_primitive_blend_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveBlend, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_BLEND, &vtable);
-
     filter->mode = normal;
     filter->super.in = g_string_new ("none");
     filter->in2 = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->super.render = rsvg_filter_primitive_blend_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_BLEND,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_blend_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_blend_free);
 }
 
 /*************************************************************/
@@ -1102,8 +1107,10 @@ struct _RsvgFilterPrimitiveConvolveMatrix {
 };
 
 static void
-rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_convolve_matrix_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
+    RsvgFilterPrimitiveConvolveMatrix *convolve = (RsvgFilterPrimitiveConvolveMatrix *) primitive;
+
     guchar ch;
     gint x, y;
     gint i, j;
@@ -1112,8 +1119,6 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
 
     guchar *in_pixels;
     guchar *output_pixels;
-
-    RsvgFilterPrimitiveConvolveMatrix *convolve;
 
     cairo_surface_t *output, *in;
 
@@ -1124,10 +1129,9 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
 
     gint tempresult;
 
-    convolve = (RsvgFilterPrimitiveConvolveMatrix *) self;
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    in = rsvg_filter_get_in (self->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx);
     if (in == NULL)
         return;
 
@@ -1222,34 +1226,31 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgFilterPrimitive * self, RsvgFi
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (self->result, output, ctx);
+    rsvg_filter_store_result (primitive->result, output, ctx);
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);
 }
 
 static void
-rsvg_filter_primitive_convolve_matrix_free (RsvgNode * self)
+rsvg_filter_primitive_convolve_matrix_free (gpointer impl)
 {
-    RsvgFilterPrimitiveConvolveMatrix *convolve;
+    RsvgFilterPrimitiveConvolveMatrix *convolve = impl;
 
-    convolve = (RsvgFilterPrimitiveConvolveMatrix *) self;
     g_free (convolve->KernelMatrix);
 
-    rsvg_filter_primitive_free (self);
+    rsvg_filter_primitive_free (impl);
 }
 
 static void
-rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode * self,
-                                                RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitiveConvolveMatrix *filter = impl;
     gint i, j;
     guint listlen = 0;
     const char *value;
     gboolean has_target_x, has_target_y;
-    RsvgFilterPrimitiveConvolveMatrix *filter;
 
-    filter = (RsvgFilterPrimitiveConvolveMatrix *) self;
     has_target_x = 0;
     has_target_y = 0;
 
@@ -1320,18 +1321,11 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode * self,
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_convolve_matrix (const char *element_name)
+rsvg_new_filter_primitive_convolve_matrix (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveConvolveMatrix *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_convolve_matrix_free,
-        NULL,
-        rsvg_filter_primitive_convolve_matrix_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveConvolveMatrix, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_CONVOLVE_MATRIX, &vtable);
-
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->KernelMatrix = NULL;
@@ -1342,7 +1336,14 @@ rsvg_new_filter_primitive_convolve_matrix (const char *element_name)
     filter->preservealpha = FALSE;
     filter->edgemode = 0;
     filter->super.render = rsvg_filter_primitive_convolve_matrix_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_CONVOLVE_MATRIX,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_convolve_matrix_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_convolve_matrix_free);
 }
 
 /*************************************************************/
@@ -1894,9 +1895,10 @@ gaussian_blur_surface (cairo_surface_t *in,
 }
 
 static void
-rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
-    RsvgFilterPrimitiveGaussianBlur *gaussian;
+    RsvgFilterPrimitiveGaussianBlur *gaussian = (RsvgFilterPrimitiveGaussianBlur *) primitive;
+
     int width, height;
     cairo_surface_t *output, *in;
     RsvgIRect boundarys;
@@ -1904,10 +1906,9 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilt
     RsvgFilterPrimitiveOutput op;
     cairo_t *cr;
 
-    gaussian = (RsvgFilterPrimitiveGaussianBlur *) self;
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    op = rsvg_filter_get_result (self->in, ctx);
+    op = rsvg_filter_get_result (primitive->in, ctx);
     in = op.surface;
 
     width = cairo_image_surface_get_width (in);
@@ -1944,20 +1945,17 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgFilterPrimitive * self, RsvgFilt
 
     op.surface = output;
     op.bounds = boundarys;
-    rsvg_filter_store_output (self->result, op, ctx);
+    rsvg_filter_store_output (primitive->result, op, ctx);
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);
 }
 
 static void
-rsvg_filter_primitive_gaussian_blur_set_atts (RsvgNode * self,
-                                              RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_filter_primitive_gaussian_blur_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitiveGaussianBlur *filter = impl;
     const char *value;
-    RsvgFilterPrimitiveGaussianBlur *filter;
-
-    filter = (RsvgFilterPrimitiveGaussianBlur *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "in")))
         g_string_assign (filter->super.in, value);
@@ -1971,24 +1969,24 @@ rsvg_filter_primitive_gaussian_blur_set_atts (RsvgNode * self,
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_gaussian_blur (const char *element_name)
+rsvg_new_filter_primitive_gaussian_blur (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveGaussianBlur *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_free,
-        NULL,
-        rsvg_filter_primitive_gaussian_blur_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveGaussianBlur, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_GAUSSIAN_BLUR, &vtable);
-
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->sdx = 0;
     filter->sdy = 0;
     filter->super.render = rsvg_filter_primitive_gaussian_blur_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_GAUSSIAN_BLUR,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_gaussian_blur_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_free);
 }
 
 /*************************************************************/
@@ -2002,8 +2000,10 @@ struct _RsvgFilterPrimitiveOffset {
 };
 
 static void
-rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_offset_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
+    RsvgFilterPrimitiveOffset *offset = (RsvgFilterPrimitiveOffset *) primitive;
+
     guchar ch;
     gint x, y;
     gint rowstride, height, width;
@@ -2013,17 +2013,15 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
     guchar *output_pixels;
 
     RsvgFilterPrimitiveOutput out;
-    RsvgFilterPrimitiveOffset *offset;
 
     cairo_surface_t *output, *in;
 
     double dx, dy;
     int ox, oy;
 
-    offset = (RsvgFilterPrimitiveOffset *) self;
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    in = rsvg_filter_get_in (self->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx);
     if (in == NULL)
         return;
 
@@ -2068,19 +2066,17 @@ rsvg_filter_primitive_offset_render (RsvgFilterPrimitive * self, RsvgFilterConte
     out.surface = output;
     out.bounds = boundarys;
 
-    rsvg_filter_store_output (self->result, out, ctx);
+    rsvg_filter_store_output (primitive->result, out, ctx);
 
     cairo_surface_destroy  (in);
     cairo_surface_destroy (output);
 }
 
 static void
-rsvg_filter_primitive_offset_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_filter_primitive_offset_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag * atts)
 {
+    RsvgFilterPrimitiveOffset *filter = impl;
     const char *value;
-    RsvgFilterPrimitiveOffset *filter;
-
-    filter = (RsvgFilterPrimitiveOffset *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "in")))
         g_string_assign (filter->super.in, value);
@@ -2096,24 +2092,24 @@ rsvg_filter_primitive_offset_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPr
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_offset (const char *element_name)
+rsvg_new_filter_primitive_offset (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveOffset *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_free,
-        NULL,
-        rsvg_filter_primitive_offset_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveOffset, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_OFFSET, &vtable);
-
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->dx = rsvg_length_parse ("0", LENGTH_DIR_HORIZONTAL);
     filter->dy = rsvg_length_parse ("0", LENGTH_DIR_VERTICAL);
     filter->super.render = rsvg_filter_primitive_offset_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_OFFSET,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_offset_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_free);
 }
 
 /*************************************************************/
@@ -2141,8 +2137,8 @@ merge_render_child (RsvgNode *node, gpointer data)
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE)
         return TRUE;
 
-    fp = (RsvgFilterPrimitive *) node;
-    
+    fp = rsvg_rust_cnode_get_impl (node);
+
     in = rsvg_filter_get_in (fp->in, closure->ctx);
     if (in == NULL)
         return TRUE;
@@ -2162,11 +2158,11 @@ merge_render_child (RsvgNode *node, gpointer data)
 }
 
 static void
-rsvg_filter_primitive_merge_render (RsvgFilterPrimitive *self, RsvgFilterContext *ctx)
+rsvg_filter_primitive_merge_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     struct merge_render_closure closure;
 
-    closure.boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    closure.boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
     closure.output = _rsvg_image_surface_new (ctx->width, ctx->height);
     if (closure.output == NULL) {
@@ -2175,31 +2171,18 @@ rsvg_filter_primitive_merge_render (RsvgFilterPrimitive *self, RsvgFilterContext
 
     closure.ctx = ctx;
 
-    rsvg_node_foreach_child ((RsvgNode *) self, merge_render_child, &closure);
+    rsvg_node_foreach_child (node, merge_render_child, &closure);
 
-    rsvg_filter_store_result (self->result, closure.output, ctx);
+    rsvg_filter_store_result (primitive->result, closure.output, ctx);
 
     cairo_surface_destroy (closure.output);
 }
 
 static void
-rsvg_filter_primitive_merge_free (RsvgNode * self)
+rsvg_filter_primitive_merge_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgFilterPrimitiveMerge *merge;
-
-    merge = (RsvgFilterPrimitiveMerge *) self;
-    g_string_free (merge->super.result, TRUE);
-
-    _rsvg_node_free (self);
-}
-
-static void
-rsvg_filter_primitive_merge_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
-{
+    RsvgFilterPrimitiveMerge *filter = impl;
     const char *value;
-    RsvgFilterPrimitiveMerge *filter;
-
-    filter = (RsvgFilterPrimitiveMerge *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "result")))
         g_string_assign (filter->super.result, value);
@@ -2208,75 +2191,62 @@ rsvg_filter_primitive_merge_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_merge (const char *element_name)
+rsvg_new_filter_primitive_merge (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveMerge *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_merge_free,
-        NULL,
-        rsvg_filter_primitive_merge_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveMerge, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE, &vtable);
-
     filter->super.result = g_string_new ("none");
     filter->super.render = rsvg_filter_primitive_merge_render;
 
-    return (RsvgNode *) filter;
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_merge_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_free);
 }
 
 static void
-rsvg_filter_primitive_merge_node_set_atts (RsvgNode * self,
-                                           RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_filter_primitive_merge_node_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitive *primitive = impl;
     const char *value;
 
     /* see bug 145149 - sodipodi generates bad SVG... */
     if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (((RsvgFilterPrimitive *) self)->in, value);
+        g_string_assign (primitive->in, value);
 }
 
 static void
-rsvg_filter_primitive_merge_node_free (RsvgNode * self)
-{
-    RsvgFilterPrimitive *merge_node;
-
-    merge_node = (RsvgFilterPrimitive *) self;
-    g_string_free (merge_node->in, TRUE);
-
-    _rsvg_node_free (self);
-}
-
-static void
-rsvg_filter_primitive_merge_node_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_merge_node_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     /* todo */
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_merge_node (const char *element_name)
+rsvg_new_filter_primitive_merge_node (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitive *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_merge_node_free,
-        NULL,
-        rsvg_filter_primitive_merge_node_set_atts
-    };
 
-    filter = g_new (RsvgFilterPrimitive, 1);
-    _rsvg_node_init (&filter->super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE, &vtable);
-
+    filter = g_new0 (RsvgFilterPrimitive, 1);
     filter->in = g_string_new ("none");
     filter->render = rsvg_filter_primitive_merge_node_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_merge_node_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_free);
 }
 
 /*************************************************************/
 /*************************************************************/
 
-typedef struct _RsvgFilterPrimitiveColorMatrix
- RsvgFilterPrimitiveColorMatrix;
+typedef struct _RsvgFilterPrimitiveColorMatrix RsvgFilterPrimitiveColorMatrix;
 
 struct _RsvgFilterPrimitiveColorMatrix {
     RsvgFilterPrimitive super;
@@ -2284,8 +2254,10 @@ struct _RsvgFilterPrimitiveColorMatrix {
 };
 
 static void
-rsvg_filter_primitive_color_matrix_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_color_matrix_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
+    RsvgFilterPrimitiveColorMatrix *color_matrix = (RsvgFilterPrimitiveColorMatrix *) primitive;
+
     guchar ch;
     gint x, y;
     gint i;
@@ -2295,16 +2267,13 @@ rsvg_filter_primitive_color_matrix_render (RsvgFilterPrimitive * self, RsvgFilte
     guchar *in_pixels;
     guchar *output_pixels;
 
-    RsvgFilterPrimitiveColorMatrix *color_matrix;
-
     cairo_surface_t *output, *in;
 
     int sum;
 
-    color_matrix = (RsvgFilterPrimitiveColorMatrix *) self;
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    in = rsvg_filter_get_in (self->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx);
     if (in == NULL)
         return;
 
@@ -2372,33 +2341,29 @@ rsvg_filter_primitive_color_matrix_render (RsvgFilterPrimitive * self, RsvgFilte
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (self->result, output, ctx);
+    rsvg_filter_store_result (primitive->result, output, ctx);
 
     cairo_surface_destroy (in);
-    cairo_surface_destroy(output);
+    cairo_surface_destroy (output);
 }
 
 static void
-rsvg_filter_primitive_color_matrix_free (RsvgNode * self)
+rsvg_filter_primitive_color_matrix_free (gpointer impl)
 {
-    RsvgFilterPrimitiveColorMatrix *matrix;
+    RsvgFilterPrimitiveColorMatrix *matrix = impl;
 
-    matrix = (RsvgFilterPrimitiveColorMatrix *) self;
     g_free (matrix->KernelMatrix);
 
-    rsvg_filter_primitive_free (self);
+    rsvg_filter_primitive_free (impl);
 }
 
 static void
-rsvg_filter_primitive_color_matrix_set_atts (RsvgNode * self, RsvgHandle * ctx,
-                                              RsvgPropertyBag * atts)
+rsvg_filter_primitive_color_matrix_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitiveColorMatrix *filter = impl;
     gint type;
     guint listlen = 0;
     const char *value;
-    RsvgFilterPrimitiveColorMatrix *filter;
-
-    filter = (RsvgFilterPrimitiveColorMatrix *) self;
 
     type = 0;
 
@@ -2494,24 +2459,23 @@ rsvg_filter_primitive_color_matrix_set_atts (RsvgNode * self, RsvgHandle * ctx,
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_color_matrix (const char *element_name)
+rsvg_new_filter_primitive_color_matrix (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveColorMatrix *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_color_matrix_free,
-        NULL,
-        rsvg_filter_primitive_color_matrix_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveColorMatrix, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_COLOR_MATRIX, &vtable);
-
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->KernelMatrix = NULL;
     filter->super.render = rsvg_filter_primitive_color_matrix_render;
 
-    return (RsvgNode *) filter;
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_COLOR_MATRIX,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_color_matrix_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_color_matrix_free);                                
 }
 
 
@@ -2526,7 +2490,6 @@ typedef struct _RsvgFilterPrimitiveComponentTransfer
  RsvgFilterPrimitiveComponentTransfer;
 
 struct _RsvgNodeComponentTransferFunc {
-    RsvgNode super;
     ComponentTransferFunc function;
     gint *tableValues;
     guint nbTableValues;
@@ -2626,7 +2589,7 @@ component_transfer_render_child (RsvgNode *node, gpointer data)
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION)
         return TRUE;
 
-    f = (RsvgNodeComponentTransferFunc *) node;
+    f = rsvg_rust_cnode_get_impl (node);
 
     if (f->channel == closure->channel) {
         closure->functions[closure->ctx->channelmap[closure->channel_num]] = f->function;
@@ -2638,7 +2601,7 @@ component_transfer_render_child (RsvgNode *node, gpointer data)
 }
 
 static void
-rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_component_transfer_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     gint x, y, c;
     gint rowstride, height, width;
@@ -2650,7 +2613,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *self, Rsvg
     cairo_surface_t *output, *in;
     struct component_transfer_closure closure;
 
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
     closure.ctx = ctx;
 
@@ -2659,13 +2622,13 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *self, Rsvg
         closure.channel = "rgba"[c]; /* see rsvg_new_node_component_transfer_function() for where these chars come from */
         closure.set_func = FALSE;
 
-        rsvg_node_foreach_child ((RsvgNode *) self, component_transfer_render_child, &closure);
+        rsvg_node_foreach_child (node, component_transfer_render_child, &closure);
 
         if (!closure.set_func)
             closure.functions[ctx->channelmap[c]] = identity_component_transfer_func;
     }
 
-    in = rsvg_filter_get_in (self->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx);
     if (in == NULL)
         return;
 
@@ -2715,20 +2678,17 @@ rsvg_filter_primitive_component_transfer_render (RsvgFilterPrimitive *self, Rsvg
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (self->result, output, ctx);
+    rsvg_filter_store_result (primitive->result, output, ctx);
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);
 }
 
 static void
-rsvg_filter_primitive_component_transfer_set_atts (RsvgNode * self, RsvgHandle * ctx,
-                                                   RsvgPropertyBag * atts)
+rsvg_filter_primitive_component_transfer_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitiveComponentTransfer *filter = impl;
     const char *value;
-    RsvgFilterPrimitiveComponentTransfer *filter;
-
-    filter = (RsvgFilterPrimitiveComponentTransfer *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "result")))
         g_string_assign (filter->super.result, value);
@@ -2739,31 +2699,29 @@ rsvg_filter_primitive_component_transfer_set_atts (RsvgNode * self, RsvgHandle *
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_component_transfer (const char *element_name)
+rsvg_new_filter_primitive_component_transfer (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveComponentTransfer *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_free,
-        NULL,
-        rsvg_filter_primitive_component_transfer_set_atts
-    };
-
 
     filter = g_new0 (RsvgFilterPrimitiveComponentTransfer, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPONENT_TRANSFER, &vtable);
-
     filter->super.result = g_string_new ("none");
     filter->super.in = g_string_new ("none");
     filter->super.render = rsvg_filter_primitive_component_transfer_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPONENT_TRANSFER,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_component_transfer_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_free);                                
 }
 
 static void
-rsvg_node_component_transfer_function_set_atts (RsvgNode * self,
-                                                RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_node_component_transfer_function_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgNodeComponentTransferFunc *data = impl;
     const char *value;
-    RsvgNodeComponentTransferFunc *data = (RsvgNodeComponentTransferFunc *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "type"))) {
         if (!strcmp (value, "identity"))
@@ -2804,23 +2762,20 @@ rsvg_node_component_transfer_function_set_atts (RsvgNode * self,
 }
 
 static void
-rsvg_node_component_transfer_function_free (RsvgNode * self)
+rsvg_node_component_transfer_function_free (gpointer impl)
 {
-    RsvgNodeComponentTransferFunc *filter = (RsvgNodeComponentTransferFunc *) self;
+    RsvgNodeComponentTransferFunc *filter = impl;
+
     if (filter->nbTableValues)
         g_free (filter->tableValues);
-    _rsvg_node_free (self);
+
+    g_free (filter);
 }
 
 RsvgNode *
-rsvg_new_node_component_transfer_function (const char *element_name)
+rsvg_new_node_component_transfer_function (const char *element_name, RsvgNode *parent)
 {
     RsvgNodeComponentTransferFunc *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_node_component_transfer_function_free,
-        NULL,
-        rsvg_node_component_transfer_function_set_atts
-    };
 
     char channel;
 
@@ -2838,12 +2793,17 @@ rsvg_new_node_component_transfer_function (const char *element_name)
     }
 
     filter = g_new0 (RsvgNodeComponentTransferFunc, 1);
-    _rsvg_node_init (&filter->super, RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION, &vtable);
-
     filter->function = identity_component_transfer_func;
     filter->nbTableValues = 0;
     filter->channel = channel;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_node_component_transfer_function_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_node_component_transfer_function_free);
 }
 
 /*************************************************************/
@@ -2859,8 +2819,10 @@ struct _RsvgFilterPrimitiveErode {
 };
 
 static void
-rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_erode_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
+    RsvgFilterPrimitiveErode *erode = (RsvgFilterPrimitiveErode *) primitive;
+
     guchar ch, extreme;
     gint x, y;
     gint i, j;
@@ -2870,17 +2832,14 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContex
     guchar *in_pixels;
     guchar *output_pixels;
 
-    RsvgFilterPrimitiveErode *erode;
-
     cairo_surface_t *output, *in;
 
     gint kx, ky;
     guchar val;
 
-    erode = (RsvgFilterPrimitiveErode *) self;
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    in = rsvg_filter_get_in (self->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx);
     if (in == NULL)
         return;
 
@@ -2934,19 +2893,17 @@ rsvg_filter_primitive_erode_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (self->result, output, ctx);
+    rsvg_filter_store_result (primitive->result, output, ctx);
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);
 }
 
 static void
-rsvg_filter_primitive_erode_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_filter_primitive_erode_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitiveErode *filter = impl;
     const char *value;
-    RsvgFilterPrimitiveErode *filter;
-
-    filter = (RsvgFilterPrimitiveErode *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "in")))
         g_string_assign (filter->super.in, value);
@@ -2967,25 +2924,25 @@ rsvg_filter_primitive_erode_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_erode (const char *element_name)
+rsvg_new_filter_primitive_erode (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveErode *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_free,
-        NULL,
-        rsvg_filter_primitive_erode_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveErode, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_ERODE, &vtable);
-
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->rx = 0;
     filter->ry = 0;
     filter->mode = 0;
     filter->super.render = rsvg_filter_primitive_erode_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_ERODE,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_erode_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_free);
 }
 
 /*************************************************************/
@@ -3031,16 +2988,15 @@ composite_mode_to_cairo_operator (RsvgFilterPrimitiveCompositeMode mode)
 }
 
 static void
-rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_composite_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
+    RsvgFilterPrimitiveComposite *composite = (RsvgFilterPrimitiveComposite *) primitive;
     RsvgIRect boundarys;
-    RsvgFilterPrimitiveComposite *composite;
     cairo_surface_t *output, *in, *in2;
 
-    composite = (RsvgFilterPrimitiveComposite *) self;
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    in = rsvg_filter_get_in (self->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx);
     if (in == NULL)
         return;
 
@@ -3127,7 +3083,7 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterCo
         cairo_destroy (cr);
     }
 
-    rsvg_filter_store_result (self->result, output, ctx);
+    rsvg_filter_store_result (primitive->result, output, ctx);
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (in2);
@@ -3135,23 +3091,20 @@ rsvg_filter_primitive_composite_render (RsvgFilterPrimitive * self, RsvgFilterCo
 }
 
 static void
-rsvg_filter_primitive_composite_free (RsvgNode * self)
+rsvg_filter_primitive_composite_free (gpointer impl)
 {
-    RsvgFilterPrimitiveComposite *composite;
+    RsvgFilterPrimitiveComposite *composite = impl;
 
-    composite = (RsvgFilterPrimitiveComposite *) self;
     g_string_free (composite->in2, TRUE);
 
-    rsvg_filter_primitive_free (self);
+    rsvg_filter_primitive_free (impl);
 }
 
 static void
-rsvg_filter_primitive_composite_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_filter_primitive_composite_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitiveComposite *filter = impl;
     const char *value;
-    RsvgFilterPrimitiveComposite *filter;
-
-    filter = (RsvgFilterPrimitiveComposite *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "operator"))) {
         if (!strcmp (value, "in"))
@@ -3187,18 +3140,11 @@ rsvg_filter_primitive_composite_set_atts (RsvgNode * self, RsvgHandle * ctx, Rsv
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_composite (const char *element_name)
+rsvg_new_filter_primitive_composite (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveComposite *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_composite_free,
-        NULL,
-        rsvg_filter_primitive_composite_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveComposite, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPOSITE, &vtable);
-
     filter->mode = COMPOSITE_MODE_OVER;
     filter->super.in = g_string_new ("none");
     filter->in2 = g_string_new ("none");
@@ -3208,15 +3154,23 @@ rsvg_new_filter_primitive_composite (const char *element_name)
     filter->k3 = 0;
     filter->k4 = 0;
     filter->super.render = rsvg_filter_primitive_composite_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_COMPOSITE,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_composite_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_composite_free);
 }
 
 /*************************************************************/
 /*************************************************************/
 
 static void
-rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_flood_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
+    RsvgState *state;
     guchar i;
     gint x, y;
     gint rowstride, height, width;
@@ -3226,10 +3180,12 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self, RsvgFilterContex
     char pixcolor[4];
     RsvgFilterPrimitiveOutput out;
 
-    guint32 color = self->super.state->flood_color;
-    guint8 opacity = self->super.state->flood_opacity;
+    state = rsvg_node_get_state (node);
 
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    guint32 color = state->flood_color;
+    guint8 opacity = state->flood_opacity;
+
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
     height = ctx->height;
     width = ctx->width;
@@ -3243,7 +3199,7 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self, RsvgFilterContex
 
     for (i = 0; i < 3; i++)
         pixcolor[i] = (int) (((unsigned char *)
-                               (&color))[2 - i]) * opacity / 255;
+                              (&color))[2 - i]) * opacity / 255;
     pixcolor[3] = opacity;
 
     for (y = boundarys.y0; y < boundarys.y1; y++)
@@ -3256,15 +3212,15 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self, RsvgFilterContex
     out.surface = output;
     out.bounds = boundarys;
 
-    rsvg_filter_store_output (self->result, out, ctx);
+    rsvg_filter_store_output (primitive->result, out, ctx);
 
     cairo_surface_destroy (output);
 }
 
 static void
-rsvg_filter_primitive_flood_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_filter_primitive_flood_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgFilterPrimitive *filter = (RsvgFilterPrimitive *) self;
+    RsvgFilterPrimitive *filter = impl;
     const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "result")))
@@ -3274,22 +3230,22 @@ rsvg_filter_primitive_flood_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_flood (const char *element_name)
+rsvg_new_filter_primitive_flood (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitive *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_free,
-        NULL,
-        rsvg_filter_primitive_flood_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitive, 1);
-    _rsvg_node_init (&filter->super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_FLOOD, &vtable);
-
     filter->in = g_string_new ("none");
     filter->result = g_string_new ("none");
     filter->render = rsvg_filter_primitive_flood_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_FLOOD,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_flood_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_free);
 }
 
 /*************************************************************/
@@ -3306,8 +3262,9 @@ struct _RsvgFilterPrimitiveDisplacementMap {
 };
 
 static void
-rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_displacement_map_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
+    RsvgFilterPrimitiveDisplacementMap *displacement_map = (RsvgFilterPrimitiveDisplacementMap *) primitive;
     guchar ch, xch, ych;
     gint x, y;
     gint rowstride, height, width;
@@ -3317,16 +3274,13 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
     guchar *in2_pixels;
     guchar *output_pixels;
 
-    RsvgFilterPrimitiveDisplacementMap *displacement_map;
-
     cairo_surface_t *output, *in, *in2;
 
     double ox, oy;
 
-    displacement_map = (RsvgFilterPrimitiveDisplacementMap *) self;
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    in = rsvg_filter_get_in (self->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx);
     if (in == NULL)
         return;
 
@@ -3417,7 +3371,7 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (self->result, output, ctx);
+    rsvg_filter_store_result (primitive->result, output, ctx);
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (in2);
@@ -3425,24 +3379,20 @@ rsvg_filter_primitive_displacement_map_render (RsvgFilterPrimitive * self, RsvgF
 }
 
 static void
-rsvg_filter_primitive_displacement_map_free (RsvgNode * self)
+rsvg_filter_primitive_displacement_map_free (gpointer impl)
 {
-    RsvgFilterPrimitiveDisplacementMap *dmap;
+    RsvgFilterPrimitiveDisplacementMap *dmap = impl;
 
-    dmap = (RsvgFilterPrimitiveDisplacementMap *) self;
     g_string_free (dmap->in2, TRUE);
 
-    rsvg_filter_primitive_free (self);
+    rsvg_filter_primitive_free (impl);
 }
 
 static void
-rsvg_filter_primitive_displacement_map_set_atts (RsvgNode * self, RsvgHandle * ctx,
-                                                 RsvgPropertyBag * atts)
+rsvg_filter_primitive_displacement_map_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitiveDisplacementMap *filter = impl;
     const char *value;
-    RsvgFilterPrimitiveDisplacementMap *filter;
-
-    filter = (RsvgFilterPrimitiveDisplacementMap *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "in")))
         g_string_assign (filter->super.in, value);
@@ -3462,18 +3412,11 @@ rsvg_filter_primitive_displacement_map_set_atts (RsvgNode * self, RsvgHandle * c
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_displacement_map (const char *element_name)
+rsvg_new_filter_primitive_displacement_map (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveDisplacementMap *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_displacement_map_free,
-        NULL,
-        rsvg_filter_primitive_displacement_map_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveDisplacementMap, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_DISPLACEMENT_MAP, &vtable);
-
     filter->super.in = g_string_new ("none");
     filter->in2 = g_string_new ("none");
     filter->super.result = g_string_new ("none");
@@ -3481,7 +3424,14 @@ rsvg_new_filter_primitive_displacement_map (const char *element_name)
     filter->yChannelSelector = ' ';
     filter->scale = 0;
     filter->super.render = rsvg_filter_primitive_displacement_map_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_DISPLACEMENT_MAP,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_displacement_map_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_displacement_map_free);
 }
 
 /*************************************************************/
@@ -3723,9 +3673,10 @@ feTurbulence_turbulence (RsvgFilterPrimitiveTurbulence * filter,
 }
 
 static void
-rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_turbulence_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
-    RsvgFilterPrimitiveTurbulence *turbulence;
+    RsvgFilterPrimitiveTurbulence *turbulence = (RsvgFilterPrimitiveTurbulence *) primitive;
+
     gint x, y, tileWidth, tileHeight, rowstride, width, height;
     RsvgIRect boundarys;
     guchar *output_pixels;
@@ -3736,7 +3687,7 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterC
     if (cairo_matrix_invert (&affine) != CAIRO_STATUS_SUCCESS)
       return;
 
-    in = rsvg_filter_get_in (self->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx);
     if (in == NULL)
         return;
 
@@ -3746,8 +3697,7 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterC
     width = cairo_image_surface_get_width (in);
     rowstride = cairo_image_surface_get_stride (in);
 
-    turbulence = (RsvgFilterPrimitiveTurbulence *) self;
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
     tileWidth = (boundarys.x1 - boundarys.x0);
     tileHeight = (boundarys.y1 - boundarys.y0);
@@ -3794,20 +3744,17 @@ rsvg_filter_primitive_turbulence_render (RsvgFilterPrimitive * self, RsvgFilterC
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (self->result, output, ctx);
+    rsvg_filter_store_result (primitive->result, output, ctx);
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);
 }
 
 static void
-rsvg_filter_primitive_turbulence_set_atts (RsvgNode * self, RsvgHandle * ctx,
-                                           RsvgPropertyBag * atts)
+rsvg_filter_primitive_turbulence_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitiveTurbulence *filter = impl;
     const char *value;
-    RsvgFilterPrimitiveTurbulence *filter;
-
-    filter = (RsvgFilterPrimitiveTurbulence *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "in")))
         g_string_assign (filter->super.in, value);
@@ -3829,18 +3776,11 @@ rsvg_filter_primitive_turbulence_set_atts (RsvgNode * self, RsvgHandle * ctx,
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_turbulence (const char *element_name)
+rsvg_new_filter_primitive_turbulence (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveTurbulence *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_free,
-        NULL,
-        rsvg_filter_primitive_turbulence_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveTurbulence, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_TURBULENCE, &vtable);
-
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->fBaseFreqX = 0;
@@ -3849,9 +3789,18 @@ rsvg_new_filter_primitive_turbulence (const char *element_name)
     filter->seed = 0;
     filter->bDoStitching = 0;
     filter->bFractalSum = 0;
+
     feTurbulence_init (filter);
+
     filter->super.render = rsvg_filter_primitive_turbulence_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_TURBULENCE,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_turbulence_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_free);
 }
 
 
@@ -3867,16 +3816,13 @@ struct _RsvgFilterPrimitiveImage {
 };
 
 static cairo_surface_t *
-rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self, RsvgFilterContext * context)
+rsvg_filter_primitive_image_render_in (RsvgFilterPrimitiveImage *image, RsvgFilterContext * context)
 {
     RsvgDrawingCtx *ctx;
-    RsvgFilterPrimitiveImage *image;
     RsvgNode *drawable;
     cairo_surface_t *result;
 
     ctx = context->ctx;
-
-    image = (RsvgFilterPrimitiveImage *) self;
 
     if (!image->href)
         return NULL;
@@ -3895,18 +3841,16 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitive * self, RsvgFilterCon
 }
 
 static cairo_surface_t *
-rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive *self, RsvgFilterContext * ctx)
 {
+    RsvgFilterPrimitiveImage *image = (RsvgFilterPrimitiveImage *) self;
     RsvgIRect boundarys;
-    RsvgFilterPrimitiveImage *image;
     cairo_surface_t *img, *intermediate;
     int i;
     unsigned char *pixels;
     int channelmap[4];
     int length;
     int width, height;
-
-    image = (RsvgFilterPrimitiveImage *) self;
 
     if (!image->href)
         return NULL;
@@ -3964,27 +3908,26 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive * self, RsvgFilterCo
 }
 
 static void
-rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_image_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
+    RsvgFilterPrimitiveImage *image = (RsvgFilterPrimitiveImage *) primitive;
+
     RsvgIRect boundarys;
-    RsvgFilterPrimitiveImage *image;
     RsvgFilterPrimitiveOutput op;
     cairo_surface_t *output, *img;
-
-    image = (RsvgFilterPrimitiveImage *) self;
 
     if (!image->href)
         return;
 
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
     output = _rsvg_image_surface_new (ctx->width, ctx->height);
     if (output == NULL)
         return;
 
-    img = rsvg_filter_primitive_image_render_in (self, ctx);
+    img = rsvg_filter_primitive_image_render_in (image, ctx);
     if (img == NULL) {
-        img = rsvg_filter_primitive_image_render_ext (self, ctx);
+        img = rsvg_filter_primitive_image_render_ext (primitive, ctx);
     }
 
     if (img) {
@@ -4007,32 +3950,29 @@ rsvg_filter_primitive_image_render (RsvgFilterPrimitive * self, RsvgFilterContex
     op.surface = output;
     op.bounds = boundarys;
 
-    rsvg_filter_store_output (self->result, op, ctx);
+    rsvg_filter_store_output (primitive->result, op, ctx);
 
     cairo_surface_destroy (output);
 }
 
 static void
-rsvg_filter_primitive_image_free (RsvgNode * self)
+rsvg_filter_primitive_image_free (gpointer impl)
 {
-    RsvgFilterPrimitiveImage *image;
-
-    image = (RsvgFilterPrimitiveImage *) self;
+    RsvgFilterPrimitiveImage *image = impl;
 
     if (image->href)
         g_string_free (image->href, TRUE);
 
-    rsvg_filter_primitive_free (self);
+    rsvg_filter_primitive_free (impl);
 }
 
 static void
-rsvg_filter_primitive_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_filter_primitive_image_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitiveImage *filter = impl;
     const char *value;
-    RsvgFilterPrimitiveImage *filter;
 
-    filter = (RsvgFilterPrimitiveImage *) self;
-    filter->ctx = ctx;
+    filter->ctx = handle;
 
     if ((value = rsvg_property_bag_lookup (atts, "in")))
         g_string_assign (filter->super.in, value);
@@ -4047,23 +3987,23 @@ rsvg_filter_primitive_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_image (const char *element_name)
+rsvg_new_filter_primitive_image (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveImage *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_image_free,
-        NULL,
-        rsvg_filter_primitive_image_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveImage, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_IMAGE, &vtable);
-
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->super.render = rsvg_filter_primitive_image_render;
     filter->href = NULL;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_IMAGE,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_image_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_image_free);
 }
 
 /*************************************************************/
@@ -4327,7 +4267,6 @@ typedef enum {
 typedef struct _RsvgNodeLightSource RsvgNodeLightSource;
 
 struct _RsvgNodeLightSource {
-    RsvgNode super;
     lightType type;
     gdouble azimuth;
     gdouble elevation;
@@ -4365,7 +4304,7 @@ get_light_direction (RsvgNodeLightSource * source, gdouble x1, gdouble y1, gdoub
 
 static vector3
 get_light_color (RsvgNodeLightSource * source, vector3 color,
-                  gdouble x1, gdouble y1, gdouble z, cairo_matrix_t *affine, RsvgDrawingCtx * ctx)
+                 gdouble x1, gdouble y1, gdouble z, cairo_matrix_t *affine, RsvgDrawingCtx * ctx)
 {
     double base, angle, x, y;
     vector3 s;
@@ -4416,13 +4355,10 @@ get_light_color (RsvgNodeLightSource * source, vector3 color,
 
 
 static void
-rsvg_node_light_source_set_atts (RsvgNode * self,
-                                 RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_node_light_source_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgNodeLightSource *data;
+    RsvgNodeLightSource *data = impl;
     const char *value;
-
-    data = (RsvgNodeLightSource *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "azimuth")))
         data->azimuth = rsvg_css_parse_angle (value) / 180.0 * M_PI;
@@ -4447,17 +4383,11 @@ rsvg_node_light_source_set_atts (RsvgNode * self,
 }
 
 RsvgNode *
-rsvg_new_node_light_source (const char *element_name)
+rsvg_new_node_light_source (const char *element_name, RsvgNode *parent)
 {
     RsvgNodeLightSource *data;
-    RsvgNodeVtable vtable = {
-        NULL,
-        NULL,
-        rsvg_node_light_source_set_atts
-    };
 
-    data = g_new (RsvgNodeLightSource, 1);
-    _rsvg_node_init (&data->super, RSVG_NODE_TYPE_LIGHT_SOURCE, &vtable);
+    data = g_new0 (RsvgNodeLightSource, 1);
 
     data->specularExponent = 1;
 
@@ -4471,7 +4401,14 @@ rsvg_new_node_light_source (const char *element_name)
         g_assert_not_reached ();
 
     data->limitingconeAngle = 180;
-    return &data->super;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_LIGHT_SOURCE,
+                                parent,
+                                rsvg_state_new (),
+                                data,
+                                rsvg_node_light_source_set_atts,
+                                rsvg_filter_draw,
+                                g_free);                                
 }
 
 /*************************************************************/
@@ -4488,24 +4425,40 @@ struct _RsvgFilterPrimitiveDiffuseLighting {
 };
 
 struct find_light_source_closure {
-    RsvgNodeLightSource *source;
+    RsvgNode *found_node;
 };
 
 static gboolean
-find_light_source (RsvgNode *node, gpointer data)
+is_light_source (RsvgNode *node, gpointer data)
 {
     struct find_light_source_closure *closure = data;
 
     if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
-        closure->source = (RsvgNodeLightSource *) node;
+        closure->found_node = node;
     }
 
     return TRUE;
 }
 
-static void
-rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+static RsvgNodeLightSource *
+find_light_source_in_children (RsvgNode *node)
 {
+    struct find_light_source_closure closure;
+
+    closure.found_node = NULL;
+    rsvg_node_foreach_child (node, is_light_source, &closure);
+    if (closure.found_node == NULL)
+        return NULL;
+
+    g_assert (rsvg_node_get_type (closure.found_node) == RSVG_NODE_TYPE_LIGHT_SOURCE);
+    return rsvg_rust_cnode_get_impl (closure.found_node);
+}
+
+static void
+rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
+{
+    RsvgFilterPrimitiveDiffuseLighting *diffuse_lighting = (RsvgFilterPrimitiveDiffuseLighting *) primitive;
+
     gint x, y;
     float dy, dx, rawdy, rawdx;
     gdouble z;
@@ -4520,17 +4473,9 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
     guchar *in_pixels;
     guchar *output_pixels;
 
-    RsvgFilterPrimitiveDiffuseLighting *diffuse_lighting;
-
     cairo_surface_t *output, *in;
 
-    struct find_light_source_closure closure;
-
-    closure.source = NULL;
-
-    rsvg_node_foreach_child ((RsvgNode *) self, find_light_source, &closure);
-    source = closure.source;
-
+    source = find_light_source_in_children (node);
     if (source == NULL)
         return;
 
@@ -4538,10 +4483,9 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
     if (cairo_matrix_invert (&iaffine) != CAIRO_STATUS_SUCCESS)
       return;
 
-    diffuse_lighting = (RsvgFilterPrimitiveDiffuseLighting *) self;
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    in = rsvg_filter_get_in (self->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx);
     if (in == NULL)
         return;
 
@@ -4601,20 +4545,17 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgFilterPrimitive * self, RsvgF
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (self->result, output, ctx);
+    rsvg_filter_store_result (primitive->result, output, ctx);
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);
 }
 
 static void
-rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode * self, RsvgHandle * ctx,
-                                                 RsvgPropertyBag * atts)
+rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitiveDiffuseLighting *filter = impl;
     const char *value;
-    RsvgFilterPrimitiveDiffuseLighting *filter;
-
-    filter = (RsvgFilterPrimitiveDiffuseLighting *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "in")))
         g_string_assign (filter->super.in, value);
@@ -4634,18 +4575,11 @@ rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode * self, RsvgHandle * c
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_diffuse_lighting (const char *element_name)
+rsvg_new_filter_primitive_diffuse_lighting (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveDiffuseLighting *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_free,
-        NULL,
-        rsvg_filter_primitive_diffuse_lighting_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveDiffuseLighting, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_DIFFUSE_LIGHTING, &vtable);
-
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->surfaceScale = 1;
@@ -4654,7 +4588,14 @@ rsvg_new_filter_primitive_diffuse_lighting (const char *element_name)
     filter->dy = 1;
     filter->lightingcolor = 0xFFFFFFFF;
     filter->super.render = rsvg_filter_primitive_diffuse_lighting_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_DIFFUSE_LIGHTING,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_diffuse_lighting_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_free);
 }
 
 /*************************************************************/
@@ -4671,8 +4612,10 @@ struct _RsvgFilterPrimitiveSpecularLighting {
 };
 
 static void
-rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
+    RsvgFilterPrimitiveSpecularLighting *specular_lighting = (RsvgFilterPrimitiveSpecularLighting *) primitive;
+
     gint x, y;
     gdouble z, surfaceScale;
     gint rowstride, height, width;
@@ -4686,17 +4629,9 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
     guchar *in_pixels;
     guchar *output_pixels;
 
-    RsvgFilterPrimitiveSpecularLighting *specular_lighting;
-
     cairo_surface_t *output, *in;
 
-    struct find_light_source_closure closure;
-
-    closure.source = NULL;
-
-    rsvg_node_foreach_child ((RsvgNode *) self, find_light_source, &closure);
-    source = closure.source;
-
+    source = find_light_source_in_children (node);
     if (source == NULL)
         return;
 
@@ -4704,10 +4639,9 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
     if (cairo_matrix_invert (&iaffine) != CAIRO_STATUS_SUCCESS)
       return;
 
-    specular_lighting = (RsvgFilterPrimitiveSpecularLighting *) self;
-    boundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    in = rsvg_filter_get_in (self->in, ctx);
+    in = rsvg_filter_get_in (primitive->in, ctx);
     if (in == NULL)
         return;
 
@@ -4772,20 +4706,17 @@ rsvg_filter_primitive_specular_lighting_render (RsvgFilterPrimitive * self, Rsvg
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (self->result, output, ctx);
+    rsvg_filter_store_result (primitive->result, output, ctx);
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);
 }
 
 static void
-rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode * self, RsvgHandle * ctx,
-                                                  RsvgPropertyBag * atts)
+rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitiveSpecularLighting *filter = impl;
     const char *value;
-    RsvgFilterPrimitiveSpecularLighting *filter;
-
-    filter = (RsvgFilterPrimitiveSpecularLighting *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "in")))
         g_string_assign (filter->super.in, value);
@@ -4804,20 +4735,12 @@ rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode * self, RsvgHandle * 
         filter->surfaceScale = g_ascii_strtod (value, NULL);
 }
 
-
 RsvgNode *
-rsvg_new_filter_primitive_specular_lighting (const char *element_name)
+rsvg_new_filter_primitive_specular_lighting (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveSpecularLighting *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_free,
-        NULL,
-        rsvg_filter_primitive_specular_lighting_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveSpecularLighting, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_SPECULAR_LIGHTING, &vtable);
-
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->surfaceScale = 1;
@@ -4825,14 +4748,20 @@ rsvg_new_filter_primitive_specular_lighting (const char *element_name)
     filter->specularExponent = 1;
     filter->lightingcolor = 0xFFFFFFFF;
     filter->super.render = rsvg_filter_primitive_specular_lighting_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_SPECULAR_LIGHTING,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_specular_lighting_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_free);
 }
 
 /*************************************************************/
 /*************************************************************/
 
-typedef struct _RsvgFilterPrimitiveTile
- RsvgFilterPrimitiveTile;
+typedef struct _RsvgFilterPrimitiveTile RsvgFilterPrimitiveTile;
 
 struct _RsvgFilterPrimitiveTile {
     RsvgFilterPrimitive super;
@@ -4847,7 +4776,7 @@ mod (int a, int b)
 }
 
 static void
-rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self, RsvgFilterContext * ctx)
+rsvg_filter_primitive_tile_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
     guchar i;
     gint x, y, rowstride;
@@ -4860,9 +4789,9 @@ rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self, RsvgFilterContext
 
     cairo_surface_t *output, *in;
 
-    oboundarys = rsvg_filter_primitive_get_bounds (self, ctx);
+    oboundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    input = rsvg_filter_get_result (self->in, ctx);
+    input = rsvg_filter_get_result (primitive->in, ctx);
     in = input.surface;
     boundarys = input.bounds;
 
@@ -4892,19 +4821,17 @@ rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self, RsvgFilterContext
 
     cairo_surface_mark_dirty (output);
 
-    rsvg_filter_store_result (self->result, output, ctx);
+    rsvg_filter_store_result (primitive->result, output, ctx);
 
     cairo_surface_destroy (in);
     cairo_surface_destroy (output);
 }
 
 static void
-rsvg_filter_primitive_tile_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_filter_primitive_tile_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgFilterPrimitiveTile *filter = impl;
     const char *value;
-    RsvgFilterPrimitiveTile *filter;
-
-    filter = (RsvgFilterPrimitiveTile *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "in")))
         g_string_assign (filter->super.in, value);
@@ -4915,20 +4842,20 @@ rsvg_filter_primitive_tile_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgProp
 }
 
 RsvgNode *
-rsvg_new_filter_primitive_tile (const char *element_name)
+rsvg_new_filter_primitive_tile (const char *element_name, RsvgNode *parent)
 {
     RsvgFilterPrimitiveTile *filter;
-    RsvgNodeVtable vtable = {
-        rsvg_filter_primitive_free,
-        NULL,
-        rsvg_filter_primitive_tile_set_atts
-    };
 
     filter = g_new0 (RsvgFilterPrimitiveTile, 1);
-    _rsvg_node_init (&filter->super.super, RSVG_NODE_TYPE_FILTER_PRIMITIVE_TILE, &vtable);
-
     filter->super.in = g_string_new ("none");
     filter->super.result = g_string_new ("none");
     filter->super.render = rsvg_filter_primitive_tile_render;
-    return (RsvgNode *) filter;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_TILE,
+                                parent,
+                                rsvg_state_new (),
+                                filter,
+                                rsvg_filter_primitive_tile_set_atts,
+                                rsvg_filter_draw,
+                                rsvg_filter_primitive_free);
 }

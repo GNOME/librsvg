@@ -831,7 +831,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
         filter = rsvg_drawing_ctx_acquire_node_of_type (ctx, state->filter, RSVG_NODE_TYPE_FILTER);
         if (filter) {
             needs_destroy = TRUE;
-            surface = rsvg_filter_render ((RsvgFilter *) filter, output, ctx, &render->bbox, "2103");
+            surface = rsvg_filter_render (filter, output, ctx, &render->bbox, "2103");
             rsvg_drawing_ctx_release_node (ctx, filter);
 
             /* Don't destroy the output surface, it's owned by child_cr */
