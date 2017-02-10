@@ -3,10 +3,6 @@ extern crate cairo;
 extern crate cairo_sys;
 extern crate glib;
 
-use std::io;
-use std::io::prelude::*;
-use std::fs::File;
-
 use self::glib::translate::*;
 
 use aspect_ratio::*;
