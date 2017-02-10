@@ -44,38 +44,38 @@
 typedef struct _RsvgNodePath RsvgNodePath;
 
 struct _RsvgNodePath {
-    RsvgNode super;
     RsvgPathBuilder *builder;
 };
 
 static void
-rsvg_node_path_free (RsvgNode * self)
+rsvg_node_path_free (gpointer impl)
 {
-    RsvgNodePath *path = (RsvgNodePath *) self;
+    RsvgNodePath *path = impl;
+
     if (path->builder)
         rsvg_path_builder_destroy (path->builder);
 
-    _rsvg_node_free (self);
+    g_free (path);
 }
 
 static void
-rsvg_node_path_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
+rsvg_node_path_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
 {
-    RsvgNodePath *path = (RsvgNodePath *) self;
+    RsvgNodePath *path = impl;
 
     if (!path->builder)
         return;
 
-    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), dominate);
 
     rsvg_render_path_builder (ctx, path->builder);
     rsvg_render_markers (ctx, path->builder);
 }
 
 static void
-rsvg_node_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_node_path_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag * atts)
 {
-    RsvgNodePath *path = (RsvgNodePath *) self;
+    RsvgNodePath *path = impl;
     const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "d"))) {
@@ -86,38 +86,36 @@ rsvg_node_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * at
 }
 
 RsvgNode *
-rsvg_new_path (const char *element_name)
+rsvg_new_path (const char *element_name, RsvgNode *parent)
 {
     RsvgNodePath *path;
-    RsvgNodeVtable vtable = {
-        rsvg_node_path_free,
-        rsvg_node_path_draw,
-        rsvg_node_path_set_atts
-    };
 
-    path = g_new (RsvgNodePath, 1);
-    _rsvg_node_init (&path->super, RSVG_NODE_TYPE_PATH, &vtable);
-
+    path = g_new0 (RsvgNodePath, 1);
     path->builder = NULL;
 
-    return &path->super;
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_PATH,
+                                parent,
+                                rsvg_state_new (),
+                                path,
+                                rsvg_node_path_set_atts,
+                                rsvg_node_path_draw,
+                                rsvg_node_path_free);
 }
-
-struct _RsvgNodePoly {
-    RsvgNode super;
-    RsvgPathBuilder *builder;
-};
 
 typedef struct _RsvgNodePoly RsvgNodePoly;
 
+struct _RsvgNodePoly {
+    RsvgPathBuilder *builder;
+};
+
 static RsvgPathBuilder *
-_rsvg_node_poly_create_builder (const char *value,
-                                gboolean close_path);
+rsvg_node_poly_create_builder (const char *value,
+                               gboolean close_path);
 
 static void
-_rsvg_node_poly_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_node_poly_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgNodePoly *poly = (RsvgNodePoly *) self;
+    RsvgNodePoly *poly = impl;
     const char *value;
 
     /* support for svg < 1.0 which used verts */
@@ -125,14 +123,14 @@ _rsvg_node_poly_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
         || (value = rsvg_property_bag_lookup (atts, "points"))) {
         if (poly->builder)
             rsvg_path_builder_destroy (poly->builder);
-        poly->builder = _rsvg_node_poly_create_builder (value,
-                                                        rsvg_node_get_type (self) == RSVG_NODE_TYPE_POLYGON);
+        poly->builder = rsvg_node_poly_create_builder (value,
+                                                       rsvg_node_get_type (node) == RSVG_NODE_TYPE_POLYGON);
     }
 }
 
 static RsvgPathBuilder *
-_rsvg_node_poly_create_builder (const char *value,
-                                gboolean close_path)
+rsvg_node_poly_create_builder (const char *value,
+                               gboolean close_path)
 {
     double *pointlist;
     guint pointlist_len, i;
@@ -177,70 +175,70 @@ _rsvg_node_poly_create_builder (const char *value,
 }
 
 static void
-_rsvg_node_poly_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
+rsvg_node_poly_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
 {
-    RsvgNodePoly *poly = (RsvgNodePoly *) self;
+    RsvgNodePoly *poly = impl;
 
     if (poly->builder == NULL)
         return;
 
-    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), dominate);
 
     rsvg_render_path_builder (ctx, poly->builder);
     rsvg_render_markers (ctx, poly->builder);
 }
 
 static void
-_rsvg_node_poly_free (RsvgNode * self)
+rsvg_node_poly_free (gpointer impl)
 {
-    RsvgNodePoly *poly = (RsvgNodePoly *) self;
+    RsvgNodePoly *poly = impl;
+
     if (poly->builder)
         rsvg_path_builder_destroy (poly->builder);
 
-    _rsvg_node_free (self);
+    g_free (poly);
 }
 
 static RsvgNode *
-rsvg_new_any_poly (RsvgNodeType type)
+rsvg_new_any_poly (RsvgNodeType type, RsvgNode *parent)
 {
     RsvgNodePoly *poly;
-    RsvgNodeVtable vtable = {
-        _rsvg_node_poly_free,
-        _rsvg_node_poly_draw,
-        _rsvg_node_poly_set_atts
-    };
 
-    poly = g_new (RsvgNodePoly, 1);
-    _rsvg_node_init (&poly->super, type, &vtable);
-
+    poly = g_new0 (RsvgNodePoly, 1);
     poly->builder = NULL;
-    return &poly->super;
+
+    return rsvg_rust_cnode_new (type,
+                                parent,
+                                rsvg_state_new (),
+                                poly,
+                                rsvg_node_poly_set_atts,
+                                rsvg_node_poly_draw,
+                                rsvg_node_poly_free);
 }
 
 RsvgNode *
-rsvg_new_polygon (const char *element_name)
+rsvg_new_polygon (const char *element_name, RsvgNode *parent)
 {
-    return rsvg_new_any_poly (RSVG_NODE_TYPE_POLYGON);
+    return rsvg_new_any_poly (RSVG_NODE_TYPE_POLYGON, parent);
 }
 
 RsvgNode *
-rsvg_new_polyline (const char *element_name)
+rsvg_new_polyline (const char *element_name, RsvgNode *parent)
 {
-    return rsvg_new_any_poly (RSVG_NODE_TYPE_POLYLINE);
+    return rsvg_new_any_poly (RSVG_NODE_TYPE_POLYLINE, parent);
 }
 
-
-struct _RsvgNodeLine {
-    RsvgNode super;
-    RsvgLength x1, x2, y1, y2;
-};
 
 typedef struct _RsvgNodeLine RsvgNodeLine;
 
+struct _RsvgNodeLine {
+    RsvgLength x1, x2, y1, y2;
+};
+
 static void
-_rsvg_node_line_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_node_line_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgNodeLine *line = (RsvgNodeLine *) self;
+    RsvgNodeLine *line = impl;
     const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "x1")))
@@ -254,10 +252,10 @@ _rsvg_node_line_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 }
 
 static void
-_rsvg_node_line_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
+rsvg_node_line_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
 {
+    RsvgNodeLine *line = impl;
     RsvgPathBuilder *builder;
-    RsvgNodeLine *line = (RsvgNodeLine *) self;
     double x1, y1, x2, y2;
 
     builder = rsvg_path_builder_new ();
@@ -270,7 +268,7 @@ _rsvg_node_line_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     rsvg_path_builder_move_to (builder, x1, y1);
     rsvg_path_builder_line_to (builder, x2, y2);
 
-    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), dominate);
 
     rsvg_render_path_builder (ctx, builder);
     rsvg_render_markers (ctx, builder);
@@ -278,35 +276,42 @@ _rsvg_node_line_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     rsvg_path_builder_destroy (builder);
 }
 
-RsvgNode *
-rsvg_new_line (const char *element_name)
+static void
+rsvg_node_line_free (gpointer impl)
 {
-    RsvgNodeLine *line;
-    RsvgNodeVtable vtable = {
-        NULL,
-        _rsvg_node_line_draw,
-        _rsvg_node_line_set_atts
-    };
+    RsvgNodeLine *line = impl;
 
-    line = g_new (RsvgNodeLine, 1);
-    _rsvg_node_init (&line->super, RSVG_NODE_TYPE_LINE, &vtable);
-
-    line->x1 = line->x2 = line->y1 = line->y2 = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
-    return &line->super;
+    g_free (line);
 }
 
+RsvgNode *
+rsvg_new_line (const char *element_name, RsvgNode *parent)
+{
+    RsvgNodeLine *line;
+
+    line = g_new0 (RsvgNodeLine, 1);
+    line->x1 = line->x2 = line->y1 = line->y2 = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_LINE,
+                                parent,
+                                rsvg_state_new (),
+                                line,
+                                rsvg_node_line_set_atts,
+                                rsvg_node_line_draw,
+                                rsvg_node_line_free);
+}
+
+typedef struct _RsvgNodeRect RsvgNodeRect;
+
 struct _RsvgNodeRect {
-    RsvgNode super;
     RsvgLength x, y, w, h, rx, ry;
     gboolean got_rx, got_ry;
 };
 
-typedef struct _RsvgNodeRect RsvgNodeRect;
-
 static void
-_rsvg_node_rect_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_node_rect_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgNodeRect *rect = (RsvgNodeRect *) self;
+    RsvgNodeRect *rect = impl;
     const char *value;
 
     /* FIXME: negative w/h/rx/ry is an error, per http://www.w3.org/TR/SVG11/shapes.html#RectElement */
@@ -329,12 +334,12 @@ _rsvg_node_rect_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 }
 
 static void
-_rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
+rsvg_node_rect_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
 {
+    RsvgNodeRect *rect = impl;
     double x, y, w, h, rx, ry;
     double half_w, half_h;
     RsvgPathBuilder *builder;
-    RsvgNodeRect *rect = (RsvgNodeRect *) self;
 
     x = rsvg_length_normalize (&rect->x, ctx);
     y = rsvg_length_normalize (&rect->y, ctx);
@@ -455,42 +460,49 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         rsvg_path_builder_close_path (builder);
     }
 
-    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), dominate);
 
     rsvg_render_path_builder (ctx, builder);
 
     rsvg_path_builder_destroy (builder);
 }
 
-RsvgNode *
-rsvg_new_rect (const char *element_name)
+static void
+rsvg_node_rect_free (gpointer impl)
 {
-    RsvgNodeRect *rect;
-    RsvgNodeVtable vtable = {
-        NULL,
-        _rsvg_node_rect_draw,
-        _rsvg_node_rect_set_atts
-    };
+    RsvgNodeRect *rect = impl;
 
-    rect = g_new (RsvgNodeRect, 1);
-    _rsvg_node_init (&rect->super, RSVG_NODE_TYPE_RECT, &vtable);
-
-    rect->x = rect->y = rect->w = rect->h = rect->rx = rect->ry = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
-    rect->got_rx = rect->got_ry = FALSE;
-    return &rect->super;
+    g_free (rect);
 }
 
-struct _RsvgNodeCircle {
-    RsvgNode super;
-    RsvgLength cx, cy, r;
-};
+RsvgNode *
+rsvg_new_rect (const char *element_name, RsvgNode *parent)
+{
+    RsvgNodeRect *rect;
+
+    rect = g_new0 (RsvgNodeRect, 1);
+    rect->x = rect->y = rect->w = rect->h = rect->rx = rect->ry = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
+    rect->got_rx = rect->got_ry = FALSE;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_RECT,
+                                parent,
+                                rsvg_state_new (),
+                                rect,
+                                rsvg_node_rect_set_atts,
+                                rsvg_node_rect_draw,
+                                rsvg_node_rect_free);
+}
 
 typedef struct _RsvgNodeCircle RsvgNodeCircle;
 
+struct _RsvgNodeCircle {
+    RsvgLength cx, cy, r;
+};
+
 static void
-_rsvg_node_circle_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_node_circle_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgNodeCircle *circle = (RsvgNodeCircle *) self;
+    RsvgNodeCircle *circle = impl;
     const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "cx")))
@@ -502,9 +514,9 @@ _rsvg_node_circle_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *
 }
 
 static void
-_rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
+rsvg_node_circle_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
 {
-    RsvgNodeCircle *circle = (RsvgNodeCircle *) self;
+    RsvgNodeCircle *circle = impl;
     double cx, cy, r;
     RsvgPathBuilder *builder;
 
@@ -543,41 +555,48 @@ _rsvg_node_circle_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     rsvg_path_builder_close_path (builder);
 
-    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), dominate);
 
     rsvg_render_path_builder (ctx, builder);
 
     rsvg_path_builder_destroy (builder);
 }
 
-RsvgNode *
-rsvg_new_circle (const char *element_name)
+static void
+rsvg_node_circle_free (gpointer impl)
 {
-    RsvgNodeCircle *circle;
-    RsvgNodeVtable vtable = {
-        NULL,
-        _rsvg_node_circle_draw,
-        _rsvg_node_circle_set_atts
-    };
+    RsvgNodeCircle *circle = impl;
 
-    circle = g_new (RsvgNodeCircle, 1);
-    _rsvg_node_init (&circle->super, RSVG_NODE_TYPE_CIRCLE, &vtable);
-
-    circle->cx = circle->cy = circle->r = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
-    return &circle->super;
+    g_free (circle);
 }
 
-struct _RsvgNodeEllipse {
-    RsvgNode super;
-    RsvgLength cx, cy, rx, ry;
-};
+RsvgNode *
+rsvg_new_circle (const char *element_name, RsvgNode *parent)
+{
+    RsvgNodeCircle *circle;
+
+    circle = g_new0 (RsvgNodeCircle, 1);
+    circle->cx = circle->cy = circle->r = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_CIRCLE,
+                                parent,
+                                rsvg_state_new (),
+                                circle,
+                                rsvg_node_circle_set_atts,
+                                rsvg_node_circle_draw,
+                                rsvg_node_circle_free);
+}
 
 typedef struct _RsvgNodeEllipse RsvgNodeEllipse;
 
+struct _RsvgNodeEllipse {
+    RsvgLength cx, cy, rx, ry;
+};
+
 static void
-_rsvg_node_ellipse_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_node_ellipse_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgNodeEllipse *ellipse = (RsvgNodeEllipse *) self;
+    RsvgNodeEllipse *ellipse = impl;
     const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "cx")))
@@ -591,9 +610,9 @@ _rsvg_node_ellipse_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag 
 }
 
 static void
-_rsvg_node_ellipse_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
+rsvg_node_ellipse_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
 {
-    RsvgNodeEllipse *ellipse = (RsvgNodeEllipse *) self;
+    RsvgNodeEllipse *ellipse = impl;
     double cx, cy, rx, ry;
     RsvgPathBuilder *builder;
 
@@ -633,26 +652,34 @@ _rsvg_node_ellipse_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     rsvg_path_builder_close_path (builder);
 
-    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (self), dominate);
+    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), dominate);
 
     rsvg_render_path_builder (ctx, builder);
 
     rsvg_path_builder_destroy (builder);
 }
 
+static void
+rsvg_node_ellipse_free (gpointer impl)
+{
+    RsvgNodeRect *ellipse = impl;
+
+    g_free (ellipse);
+}
+
 RsvgNode *
-rsvg_new_ellipse (const char *element_name)
+rsvg_new_ellipse (const char *element_name, RsvgNode *parent)
 {
     RsvgNodeEllipse *ellipse;
-    RsvgNodeVtable vtable = {
-        NULL,
-        _rsvg_node_ellipse_draw,
-        _rsvg_node_ellipse_set_atts
-    };
 
-    ellipse = g_new (RsvgNodeEllipse, 1);
-    _rsvg_node_init (&ellipse->super, RSVG_NODE_TYPE_ELLIPSE, &vtable);
-
+    ellipse = g_new0 (RsvgNodeEllipse, 1);
     ellipse->cx = ellipse->cy = ellipse->rx = ellipse->ry = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
-    return &ellipse->super;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_ELLIPSE,
+                                parent,
+                                rsvg_state_new (),
+                                ellipse,
+                                rsvg_node_ellipse_set_atts,
+                                rsvg_node_ellipse_draw,
+                                rsvg_node_ellipse_free);
 }

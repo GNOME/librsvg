@@ -6,11 +6,6 @@ use state::RsvgState;
 
 use std::rc::*;
 
-/* A *const RsvgCNodeImpl is just an opaque pointer to the C code's
- * struct for a particular node type.
- */
-pub enum RsvgCNodeImpl {}
-
 type CNodeSetAtts = unsafe extern "C" fn (node: *const RsvgNode, node_impl: *const RsvgCNodeImpl, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag);
 type CNodeDraw = unsafe extern "C" fn (node: *const RsvgNode, node_impl: *const RsvgCNodeImpl, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
 type CNodeFree = unsafe extern "C" fn (node_impl: *const RsvgCNodeImpl);
@@ -30,6 +25,10 @@ impl NodeTrait for CNode {
 
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
         unsafe { (self.draw_fn) (node as *const RsvgNode, self.c_node_impl, draw_ctx, dominate); }
+    }
+
+    fn get_c_impl (&self) -> *const RsvgCNodeImpl {
+        self.c_node_impl
     }
 }
 
@@ -69,4 +68,12 @@ pub extern fn rsvg_rust_cnode_new (node_type:   NodeType,
                                                  parent,
                                                  state,
                                                  Box::new (cnode)))))
+}
+
+#[no_mangle]
+pub extern fn rsvg_rust_cnode_get_impl (raw_node: *const RsvgNode) -> *const RsvgCNodeImpl {
+    assert! (!raw_node.is_null ());
+    let node: &RsvgNode = unsafe { & *raw_node };
+
+    node.get_c_impl ()
 }

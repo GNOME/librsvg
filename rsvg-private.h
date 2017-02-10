@@ -334,11 +334,23 @@ typedef enum {
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST                /* just a marker; not a valid type */
 } RsvgNodeType;
 
-typedef struct {
-    void (*free) (RsvgNode * self);
-    void (*draw) (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
-    void (*set_atts) (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *atts);
-} RsvgNodeVtable;
+typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *pbag);
+typedef void (* CNodeDraw) (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate);
+typedef void (* CNodeFree) (gpointer impl);
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_rust_cnode_new (RsvgNodeType  node_type,
+                               RsvgNode     *parent,
+                               RsvgState    *state,
+                               gpointer      impl,
+                               CNodeSetAtts  set_atts_fn,
+                               CNodeDraw     draw_fn,
+                               CNodeFree     free_fn);
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+gpointer rsvg_rust_cnode_get_impl (RsvgNode *node);
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
@@ -359,6 +371,10 @@ RsvgState *rsvg_node_get_state (RsvgNode *node);
  */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_get_parent (RsvgNode *node);
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+void rsvg_node_add_child (RsvgNode *node, RsvgNode *child);
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL

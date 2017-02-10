@@ -37,17 +37,17 @@
 G_BEGIN_DECLS 
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_use (const char *element_name);
+RsvgNode *rsvg_new_use (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_symbol (const char *element_name);
+RsvgNode *rsvg_new_symbol (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_svg (const char *element_name);
+RsvgNode *rsvg_new_svg (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_defs (const char *element_name);
+RsvgNode *rsvg_new_defs (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_group (const char *element_name);
+RsvgNode *rsvg_new_group (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_switch (const char *element_name);
+RsvgNode *rsvg_new_switch (const char *element_name, RsvgNode *parent);
 
 typedef struct _RsvgNodeSvg RsvgNodeSvg;
 
@@ -60,21 +60,12 @@ struct _RsvgNodeSvg {
 };
 
 G_GNUC_INTERNAL
-void rsvg_node_add_child   (RsvgNode * self, RsvgNode * child);
+void rsvg_node_draw_from_stack  (RsvgNode *node, RsvgDrawingCtx * ctx, int dominate);
 G_GNUC_INTERNAL
-void rsvg_node_draw_from_stack  (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
-G_GNUC_INTERNAL
-void _rsvg_node_draw_children   (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
-G_GNUC_INTERNAL
-void _rsvg_node_free        (RsvgNode * self);
+void _rsvg_node_draw_children   (RsvgNode *node, RsvgDrawingCtx * ctx, int dominate);
 
 G_GNUC_INTERNAL
-void _rsvg_node_init        (RsvgNode * self,
-                             RsvgNodeType type,
-                             RsvgNodeVtable *vtable);
-
-G_GNUC_INTERNAL
-void _rsvg_node_svg_apply_atts  (RsvgNodeSvg * self, RsvgHandle * ctx);
+void _rsvg_node_svg_apply_atts  (RsvgNode *node, RsvgNodeSvg *svg, RsvgHandle * ctx);
 
 G_END_DECLS
 

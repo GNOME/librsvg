@@ -67,6 +67,7 @@ pub use node::{
 
 pub use cnode::{
     rsvg_rust_cnode_new,
+    rsvg_rust_cnode_get_impl
 };
 
 pub use viewbox::{

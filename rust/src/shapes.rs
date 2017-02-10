@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::ptr;
 
 use drawing_ctx;
 use drawing_ctx::*;
@@ -39,5 +40,10 @@ impl NodeTrait for NodePath {
     fn draw (&self, _: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
         drawing_ctx::state_reinherit_top (draw_ctx, self.state, dominate);
         drawing_ctx::render_path_builder (draw_ctx, & *self.builder.borrow ());
+    }
+
+
+    fn get_c_impl (&self) -> *const RsvgCNodeImpl {
+        ptr::null ()
     }
 }

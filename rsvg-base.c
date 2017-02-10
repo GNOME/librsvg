@@ -239,7 +239,7 @@ free_element_name_stack (RsvgHandle *ctx)
     ctx->priv->element_name_stack = NULL;
 }
 
-typedef RsvgNode *(* CreateNodeFn) (const char *element_name);
+typedef RsvgNode *(* CreateNodeFn) (const char *element_name, RsvgNode *parent);
 
 typedef struct {
     const char   *element_name;
@@ -410,7 +410,7 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
     creator = get_node_creator_for_element_name (name);
     g_assert (creator != NULL && creator->create_fn != NULL);
 
-    newnode = creator->create_fn (name);
+    newnode = creator->create_fn (name, ctx->priv->currentnode);
 
     if (newnode) {
         g_assert (rsvg_node_get_type (newnode) != RSVG_NODE_TYPE_INVALID);
@@ -835,8 +835,14 @@ rsvg_end_element (void *data, const xmlChar * xmlname)
         }
 
         /* FIXMEchpe: shouldn't this check that currentnode == treebase or sth like that? */
-        if (ctx->priv->treebase && !strcmp (name, "svg"))
-            _rsvg_node_svg_apply_atts ((RsvgNodeSvg *)ctx->priv->treebase, ctx);
+        if (ctx->priv->treebase && !strcmp (name, "svg")) {
+            RsvgNodeSvg *svg;
+
+            g_assert (rsvg_node_get_type (ctx->priv->treebase) == RSVG_NODE_TYPE_SVG);
+            svg = rsvg_rust_cnode_get_impl (ctx->priv->treebase);
+
+            _rsvg_node_svg_apply_atts (ctx->priv->treebase, svg, ctx);
+        }
     }
 }
 
@@ -1512,10 +1518,11 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     if (!sself && id)
         return FALSE;
 
-    root = (RsvgNodeSvg *) handle->priv->treebase;
-
-    if (!root)
+    if (!handle->priv->treebase)
         return FALSE;
+
+    g_assert (rsvg_node_get_type (handle->priv->treebase) == RSVG_NODE_TYPE_SVG);
+    root = rsvg_rust_cnode_get_impl (handle->priv->treebase);
 
     bbox.rect.x = bbox.rect.y = 0;
     bbox.rect.width = bbox.rect.height = 1;
@@ -1592,7 +1599,6 @@ gboolean
 rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_data, const char *id)
 {
     RsvgDrawingCtx		*draw;
-    RsvgNodeSvg			*root;
     RsvgNode			*node;
     RsvgBbox			 bbox;
     RsvgDimensionData    dimension_data;
@@ -1623,8 +1629,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
         return TRUE;
     }
 
-    root = (RsvgNodeSvg *) handle->priv->treebase;
-    if (!root)
+    if (!handle->priv->treebase)
         return FALSE;
 
     target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);

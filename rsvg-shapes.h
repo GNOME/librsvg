@@ -37,19 +37,19 @@
 G_BEGIN_DECLS 
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_path (const char *element_name);
+RsvgNode *rsvg_new_path (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_polygon (const char *element_name);
+RsvgNode *rsvg_new_polygon (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_polyline (const char *element_name);
+RsvgNode *rsvg_new_polyline (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_line (const char *element_name);
+RsvgNode *rsvg_new_line (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_rect (const char *element_name);
+RsvgNode *rsvg_new_rect (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_circle (const char *element_name);
+RsvgNode *rsvg_new_circle (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_ellipse (const char *element_name);
+RsvgNode *rsvg_new_ellipse (const char *element_name, RsvgNode *parent);
 
 G_END_DECLS
 

@@ -19,9 +19,15 @@ use state::RsvgState;
  */
 pub type RsvgNode = Rc<Node>;
 
+/* A *const RsvgCNodeImpl is just an opaque pointer to the C code's
+ * struct for a particular node type.
+ */
+pub enum RsvgCNodeImpl {}
+
 pub trait NodeTrait {
     fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag);
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
+    fn get_c_impl (&self) -> *const RsvgCNodeImpl;
 }
 
 pub struct Node {
@@ -114,6 +120,18 @@ impl Node {
     pub fn add_child (&self, child: &Rc<Node>) {
         self.children.borrow_mut ().push (child.clone ());
     }
+
+    pub fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+        self.node_impl.set_atts (node, handle, pbag);
+    }
+
+    pub fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+        self.node_impl.draw (node, draw_ctx, dominate);
+    }
+
+    pub fn get_c_impl (&self) -> *const RsvgCNodeImpl {
+        self.node_impl.get_c_impl ()
+    }
 }
 
 extern "C" {
@@ -193,13 +211,13 @@ pub extern fn rsvg_node_draw (raw_node: *const RsvgNode, draw_ctx: *const RsvgDr
 type NodeForeachChild = unsafe extern "C" fn (node: *const RsvgNode, data: *const libc::c_void) -> bool;
 
 #[no_mangle]
-pub extern fn rsvg_node_foreach_child (raw_node: *const RsvgNode, fn: NodeForeachChild, data: *const libc::c_void)
+pub extern fn rsvg_node_foreach_child (raw_node: *const RsvgNode, func: NodeForeachChild, data: *const libc::c_void)
 {
     assert! (!raw_node.is_null ());
     let node: &RsvgNode = unsafe { & *raw_node };
 
-    for child in node.children.borrow () {
-        let next = unsafe = { (*fn) (child as *const RsvgNode, data) };
+    for child in node.children.borrow ().iter () {
+        let next = unsafe { func (child as *const RsvgNode, data) };
         if !next {
             break;
         }
