@@ -182,18 +182,16 @@ rsvg_paint_server_unref (RsvgPaintServer * ps)
 }
 
 static void
-rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_stop_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
+    RsvgGradientStop *stop = impl;
     const char *value;
-    RsvgGradientStop *stop;
     RsvgState *state;
     RsvgState *inherited_state;
     int opacity;
     guint32 color;
 
-    stop = (RsvgGradientStop *) self;
-
-    state = rsvg_node_get_state (self);
+    state = rsvg_node_get_state (node);
 
     if ((value = rsvg_property_bag_lookup (atts, "offset"))) {
         /* either a number [0,1] or a percentage */
@@ -217,12 +215,12 @@ rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
         }
     }
     if ((value = rsvg_property_bag_lookup (atts, "style")))
-        rsvg_parse_style (ctx, state, value);
+        rsvg_parse_style (handle, state, value);
 
-    rsvg_parse_style_pairs (ctx, state, atts);
+    rsvg_parse_style_pairs (handle, state, atts);
 
     inherited_state = rsvg_state_new ();
-    rsvg_state_reconstruct (inherited_state, self);
+    rsvg_state_reconstruct (inherited_state, node);
 
     switch (state->stop_color_mode) {
     case STOP_COLOR_UNSPECIFIED:
@@ -269,28 +267,34 @@ rsvg_stop_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
     rsvg_state_free (inherited_state);
 }
 
-RsvgNode *
-rsvg_new_stop (const char *element_name)
+static void
+rsvg_paint_server_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
 {
-    RsvgGradientStop *stop = g_new (RsvgGradientStop, 1);
-    RsvgNodeVtable vtable = {
-        NULL,
-        NULL,
-        rsvg_stop_set_atts
-    };
+    /* nothing; paint servers are handled specially */
+}
 
-    _rsvg_node_init (&stop->super, RSVG_NODE_TYPE_STOP, &vtable);
+RsvgNode *
+rsvg_new_stop (const char *element_name, RsvgNode *parent)
+{
+    RsvgGradientStop *stop = g_new0 (RsvgGradientStop, 1);
 
     stop->offset = 0;
     stop->rgba = 0xff000000;
     stop->is_valid = FALSE;
-    return &stop->super;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_STOP,
+                                parent,
+                                rsvg_state_new (),
+                                stop,
+                                rsvg_stop_set_atts,
+                                rsvg_paint_server_draw,
+                                g_free);
 }
 
 static void
-rsvg_linear_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_linear_gradient_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgLinearGradient *grad = (RsvgLinearGradient *) self;
+    RsvgLinearGradient *grad = impl;
     const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "x1"))) {
@@ -335,26 +339,20 @@ rsvg_linear_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
 }
 
 static void
-rsvg_linear_gradient_free (RsvgNode * node)
+rsvg_linear_gradient_free (gpointer impl)
 {
-    RsvgLinearGradient *self = (RsvgLinearGradient *) node;
+    RsvgLinearGradient *self = impl;
+
     g_free (self->fallback);
-    _rsvg_node_free (node);
+    g_free (self);
 }
 
 RsvgNode *
-rsvg_new_linear_gradient (const char *element_name)
+rsvg_new_linear_gradient (const char *element_name, RsvgNode *parent)
 {
     RsvgLinearGradient *grad = NULL;
-    RsvgNodeVtable vtable = {
-        rsvg_linear_gradient_free,
-        NULL,
-        rsvg_linear_gradient_set_atts
-    };
 
-    grad = g_new (RsvgLinearGradient, 1);
-    _rsvg_node_init (&grad->super, RSVG_NODE_TYPE_LINEAR_GRADIENT, &vtable);
-
+    grad = g_new0 (RsvgLinearGradient, 1);
     cairo_matrix_init_identity (&grad->affine);
     grad->x1 = rsvg_length_parse ("0", LENGTH_DIR_HORIZONTAL);
     grad->y1 = grad->y2 = rsvg_length_parse ("0", LENGTH_DIR_VERTICAL);
@@ -364,13 +362,20 @@ rsvg_new_linear_gradient (const char *element_name)
     grad->spread = CAIRO_EXTEND_PAD;
     grad->hasx1 = grad->hasy1 = grad->hasx2 = grad->hasy2 = grad->hasbbox = grad->hasspread =
         grad->hastransform = FALSE;
-    return &grad->super;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_LINEAR_GRADIENT,
+                                parent,
+                                rsvg_state_new (),
+                                grad,
+                                rsvg_linear_gradient_set_atts,
+                                rsvg_paint_server_draw,
+                                rsvg_linear_gradient_free);
 }
 
 static void
-rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_radial_gradient_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgRadialGradient *grad = (RsvgRadialGradient *) self;
+    RsvgRadialGradient *grad = impl;
     const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "cx"))) {
@@ -422,26 +427,18 @@ rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
 }
 
 static void
-rsvg_radial_gradient_free (RsvgNode * node)
+rsvg_radial_gradient_free (gpointer impl)
 {
-    RsvgRadialGradient *self = (RsvgRadialGradient *) node;
+    RsvgRadialGradient *self = impl;
+
     g_free (self->fallback);
-    _rsvg_node_free (node);
+    g_free (self);
 }
 
 RsvgNode *
-rsvg_new_radial_gradient (const char *element_name)
+rsvg_new_radial_gradient (const char *element_name, RsvgNode *parent)
 {
-
-    RsvgNodeVtable vtable = {
-        rsvg_radial_gradient_free,
-        NULL,
-        rsvg_radial_gradient_set_atts
-    };
-
-    RsvgRadialGradient *grad = g_new (RsvgRadialGradient, 1);
-    _rsvg_node_init (&grad->super, RSVG_NODE_TYPE_RADIAL_GRADIENT, &vtable);
-
+    RsvgRadialGradient *grad = g_new0 (RsvgRadialGradient, 1);
     cairo_matrix_init_identity (&grad->affine);
     grad->obj_bbox = TRUE;
     grad->spread = CAIRO_EXTEND_PAD;
@@ -449,13 +446,20 @@ rsvg_new_radial_gradient (const char *element_name)
     grad->cx = grad->cy = grad->r = grad->fx = grad->fy = rsvg_length_parse ("0.5", LENGTH_DIR_BOTH);
     grad->hascx = grad->hascy = grad->hasfx = grad->hasfy = grad->hasr = grad->hasbbox =
         grad->hasspread = grad->hastransform = FALSE;
-    return &grad->super;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_RADIAL_GRADIENT,
+                                parent,
+                                rsvg_state_new (),
+                                grad,
+                                rsvg_radial_gradient_set_atts,
+                                rsvg_paint_server_draw,
+                                rsvg_radial_gradient_free);
 }
 
 static void
-rsvg_pattern_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_pattern_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgPattern *pattern = (RsvgPattern *) self;
+    RsvgPattern *pattern = impl;
     const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "viewBox"))) {
@@ -505,26 +509,19 @@ rsvg_pattern_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts
 }
 
 static void
-rsvg_pattern_free (RsvgNode * node)
+rsvg_pattern_free (gpointer impl)
 {
-    RsvgPattern *self = (RsvgPattern *) node;
+    RsvgPattern *self = impl;
+
     g_free (self->fallback);
-    _rsvg_node_free (node);
+    g_free (self);
 }
 
 
 RsvgNode *
-rsvg_new_pattern (const char *element_name)
+rsvg_new_pattern (const char *element_name, RsvgNode *parent)
 {
-    RsvgPattern *pattern = g_new (RsvgPattern, 1);
-    RsvgNodeVtable vtable = {
-        rsvg_pattern_free,
-        NULL,
-        rsvg_pattern_set_atts
-    };
-
-    _rsvg_node_init (&pattern->super, RSVG_NODE_TYPE_PATTERN, &vtable);
-
+    RsvgPattern *pattern = g_new0 (RsvgPattern, 1);
     cairo_matrix_init_identity (&pattern->affine);
     pattern->obj_bbox = TRUE;
     pattern->obj_cbbox = FALSE;
@@ -534,7 +531,14 @@ rsvg_new_pattern (const char *element_name)
     pattern->vbox.active = FALSE;
     pattern->hasx = pattern->hasy = pattern->haswidth = pattern->hasheight = pattern->hasbbox =
         pattern->hascbox = pattern->hasvbox = pattern->hasaspect = pattern->hastransform = FALSE;
-    return &pattern->super;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_PATTERN,
+                                parent,
+                                rsvg_state_new (),
+                                pattern,
+                                rsvg_pattern_set_atts,
+                                rsvg_paint_server_draw,
+                                rsvg_pattern_free);
 }
 
 Pattern *
@@ -546,7 +550,7 @@ rsvg_pattern_node_to_rust_pattern (RsvgNode *node)
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_PATTERN)
         return NULL;
 
-    pnode = (RsvgPattern *) node;
+    pnode = rsvg_rust_cnode_get_impl (node);
 
     pattern = pattern_new (pnode->hasx         ? &pnode->x : NULL,
                            pnode->hasy         ? &pnode->y : NULL,

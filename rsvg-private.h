@@ -397,7 +397,6 @@ G_GNUC_INTERNAL
 void rsvg_node_foreach_child (RsvgNode *node, RsvgNodeForeachChildFn fn, gpointer data);
 
 struct _RsvgNodeChars {
-    RsvgNode super;
     GString *contents;
 };
 

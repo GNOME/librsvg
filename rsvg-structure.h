@@ -52,7 +52,6 @@ RsvgNode *rsvg_new_switch (const char *element_name, RsvgNode *parent);
 typedef struct _RsvgNodeSvg RsvgNodeSvg;
 
 struct _RsvgNodeSvg {
-    RsvgNode super;
     guint32 preserve_aspect_ratio;
     RsvgLength x, y, w, h;
     RsvgViewBox vbox;

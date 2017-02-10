@@ -44,14 +44,12 @@ typedef struct _RsvgPaintServer RsvgPaintServer;
 typedef struct _RsvgPSCtx RsvgPSCtx;
 
 struct _RsvgGradientStop {
-    RsvgNode super;
     double offset;
     guint32 rgba;
     gboolean is_valid;
 };
 
 struct _RsvgLinearGradient {
-    RsvgNode super;
     gboolean obj_bbox;
     cairo_matrix_t affine; /* user space to actual at time of gradient def */
     cairo_extend_t spread;
@@ -67,7 +65,6 @@ struct _RsvgLinearGradient {
 };
 
 struct _RsvgRadialGradient {
-    RsvgNode super;
     gboolean obj_bbox;
     cairo_matrix_t affine; /* user space to actual at time of gradient def */
     cairo_extend_t spread;
@@ -130,7 +127,6 @@ G_GNUC_INTERNAL
 Gradient *rsvg_gradient_node_to_rust_gradient (RsvgNode *node);
 
 struct _RsvgPattern {
-    RsvgNode super;
     gboolean obj_cbbox;
     gboolean obj_bbox;
     cairo_matrix_t affine; /* user space to actual at time of gradient def */
@@ -225,13 +221,13 @@ G_GNUC_INTERNAL
 void                 rsvg_paint_server_unref    (RsvgPaintServer * ps);
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_linear_gradient  (const char *element_name);
+RsvgNode *rsvg_new_linear_gradient  (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_radial_gradient  (const char *element_name);
+RsvgNode *rsvg_new_radial_gradient  (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_stop	        (const char *element_name);
+RsvgNode *rsvg_new_stop	        (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_pattern      (const char *element_name);
+RsvgNode *rsvg_new_pattern      (const char *element_name, RsvgNode *parent);
 
 
 G_END_DECLS
