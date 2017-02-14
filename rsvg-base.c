@@ -847,26 +847,34 @@ rsvg_end_element (void *data, const xmlChar * xmlname)
 }
 
 static void
-_rsvg_node_chars_free (RsvgNode * node)
+rsvg_node_chars_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag * atts)
 {
-    RsvgNodeChars *self = (RsvgNodeChars *) node;
-    g_string_free (self->contents, TRUE);
-    _rsvg_node_free (node);
+    /* nothing */
 }
 
-static RsvgNodeChars *
+static void
+rsvg_node_chars_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
+{
+    /* nothing */
+}
+
+static void
+rsvg_node_chars_free (gpointer impl)
+{
+    RsvgNodeChars *self = impl;
+    g_string_free (self->contents, TRUE);
+    g_free (self);
+}
+
+static RsvgNode *
 rsvg_new_node_chars (const char *text,
-                     int len)
+                     int len,
+                     RsvgNode *parent)
 {
     RsvgNodeChars *self;
-    RsvgNodeVtable vtable = {
-        _rsvg_node_chars_free,
-        NULL,
-        NULL
-    };
+    RsvgState *state;
 
-    self = g_new (RsvgNodeChars, 1);
-    _rsvg_node_init (&self->super, RSVG_NODE_TYPE_CHARS, &vtable);
+    self = g_new0 (RsvgNodeChars, 1);
 
     if (!g_utf8_validate (text, len, NULL)) {
         char *utf8;
@@ -877,9 +885,16 @@ rsvg_new_node_chars (const char *text,
         self->contents = g_string_new_len (text, len);
     }
 
-    self->super.state->cond_true = FALSE;
+    state = rsvg_state_new ();
+    state->cond_true = FALSE;
 
-    return self;
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_CHARS,
+                                parent,
+                                state,
+                                self,
+                                rsvg_node_chars_set_atts,
+                                rsvg_node_chars_draw,
+                                rsvg_node_chars_free);
 }
 
 static gboolean
@@ -901,7 +916,7 @@ find_last_chars_node (RsvgNode *node, gpointer data)
 static void
 rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
 {
-    RsvgNodeChars *self;
+    RsvgNode *node;
 
     if (!ch || !len)
         return;
@@ -909,12 +924,17 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
     if (ctx->priv->currentnode) {
         RsvgNodeType type = rsvg_node_get_type (ctx->priv->currentnode);
         if (type == RSVG_NODE_TYPE_TSPAN || type == RSVG_NODE_TYPE_TEXT) {
+            RsvgNodeChars *self;
+
             /* find the last CHARS node in the text or tspan node, so that we
                can coalesce the text, and thus avoid screwing up the Pango layouts */
-            self = NULL;
+            node = NULL;
             rsvg_node_foreach_child (ctx->priv->currentnode,
                                      find_last_chars_node,
-                                     &self);
+                                     &node);
+
+            g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
+            self = rsvg_rust_cnode_get_impl (node);
 
             if (self != NULL) {
                 if (!g_utf8_validate ((char *) ch, len, NULL)) {
@@ -931,12 +951,12 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
         }
     }
 
-    self = rsvg_new_node_chars ((char *) ch, len);
+    node = rsvg_new_node_chars ((char *) ch, len, ctx->priv->currentnode);
 
-    add_node_to_handle (ctx, (RsvgNode *) self);
+    add_node_to_handle (ctx, node);
 
     if (ctx->priv->currentnode)
-        rsvg_node_add_child (ctx->priv->currentnode, (RsvgNode *) self);
+        rsvg_node_add_child (ctx->priv->currentnode, node);
 }
 
 static void
