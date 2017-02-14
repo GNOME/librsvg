@@ -113,19 +113,21 @@ rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
 }
 
 static void
-rsvg_node_image_free (RsvgNode * self)
+rsvg_node_image_free (gpointer impl)
 {
-    RsvgNodeImage *z = (RsvgNodeImage *) self;
+    RsvgNodeImage *image = impl;
 
-    if (z->surface)
-        cairo_surface_destroy (z->surface);
-    _rsvg_node_free(self);
+    if (image->surface)
+        cairo_surface_destroy (image->surface);
+
+    g_free (image);
 }
 
 static void
-rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
+rsvg_node_image_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
 {
-    RsvgNodeImage *z = (RsvgNodeImage *) self;
+    RsvgNodeImage *z = impl;
+    RsvgState *state;
     unsigned int aspect_ratio = z->preserve_aspect_ratio;
     gdouble x, y, w, h;
     cairo_surface_t *surface = z->surface;
@@ -138,7 +140,9 @@ rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     w = rsvg_length_normalize (&z->w, ctx);
     h = rsvg_length_normalize (&z->h, ctx);
 
-    rsvg_state_reinherit_top (ctx, z->super.state, dominate);
+    state = rsvg_node_get_state (node);
+
+    rsvg_state_reinherit_top (ctx, state, dominate);
 
     rsvg_push_discrete_layer (ctx);
 
@@ -157,9 +161,9 @@ rsvg_node_image_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 }
 
 static void
-rsvg_node_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_node_image_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgNodeImage *image = (RsvgNodeImage *) self;
+    RsvgNodeImage *image = impl;
     const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "x")))
@@ -173,7 +177,7 @@ rsvg_node_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
     /* path is used by some older adobe illustrator versions */
     if ((value = rsvg_property_bag_lookup (atts, "path"))
         || (value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
-        image->surface = rsvg_cairo_surface_new_from_href (ctx,
+        image->surface = rsvg_cairo_surface_new_from_href (handle,
                                                            value, 
                                                            NULL);
 
@@ -189,21 +193,20 @@ rsvg_node_image_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * a
 }
 
 RsvgNode *
-rsvg_new_image (const char *element_name)
+rsvg_new_image (const char *element_name, RsvgNode *parent)
 {
     RsvgNodeImage *image;
-    RsvgNodeVtable vtable = {
-        rsvg_node_image_free,
-        rsvg_node_image_draw,
-        rsvg_node_image_set_atts
-    };
 
-    image = g_new (RsvgNodeImage, 1);
-    _rsvg_node_init (&image->super, RSVG_NODE_TYPE_IMAGE, &vtable);
-
-    g_assert (image->super.state);
+    image = g_new0 (RsvgNodeImage, 1);
     image->surface = NULL;
     image->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
     image->x = image->y = image->w = image->h = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
-    return &image->super;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_IMAGE,
+                                parent,
+                                rsvg_state_new (),
+                                image,
+                                rsvg_node_image_set_atts,
+                                rsvg_node_image_draw,
+                                rsvg_node_image_free);
 }

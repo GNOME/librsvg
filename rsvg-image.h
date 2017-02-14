@@ -37,12 +37,11 @@
 G_BEGIN_DECLS 
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_image (const char *element_name);
+RsvgNode *rsvg_new_image (const char *element_name, RsvgNode *parent);
 
 typedef struct _RsvgNodeImage RsvgNodeImage;
 
 struct _RsvgNodeImage {
-    RsvgNode super;
     guint32 preserve_aspect_ratio;
     RsvgLength x, y, w, h;
     cairo_surface_t *surface; /* a cairo image surface */
