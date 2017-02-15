@@ -31,7 +31,7 @@
 G_BEGIN_DECLS 
 
 G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_marker	    (const char *element_name);
+RsvgNode    *rsvg_new_marker	    (const char *element_name, RsvgNode *node);
 
 /* In the Rust code */
 G_GNUC_INTERNAL

@@ -43,7 +43,6 @@
 typedef struct _RsvgMarker RsvgMarker;
 
 struct _RsvgMarker {
-    RsvgNode super;
     gboolean bbox;
     RsvgLength refX, refY, width, height;
     double orient;
@@ -53,12 +52,10 @@ struct _RsvgMarker {
 };
 
 static void
-rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_node_marker_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgMarker *marker;
+    RsvgMarker *marker = impl;
     const char *value;
-
-    marker = (RsvgMarker *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
         marker->vbox = rsvg_css_parse_vbox (value);
@@ -86,19 +83,18 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * 
         marker->preserve_aspect_ratio = rsvg_aspect_ratio_parse (value);
 }
 
+static void
+rsvg_node_marker_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
+{
+    /* nothing; markers are drawn by their referencing shapes */
+}
+
 RsvgNode *
-rsvg_new_marker (const char *element_name)
+rsvg_new_marker (const char *element_name, RsvgNode *parent)
 {
     RsvgMarker *marker;
-    RsvgNodeVtable vtable = {
-        NULL,
-        NULL,
-        rsvg_node_marker_set_atts
-    };
 
-    marker = g_new (RsvgMarker, 1);
-    _rsvg_node_init (&marker->super, RSVG_NODE_TYPE_MARKER, &vtable);
-
+    marker = g_new0 (RsvgMarker, 1);
     marker->orient = 0;
     marker->orientAuto = FALSE;
     marker->preserve_aspect_ratio = RSVG_ASPECT_RATIO_XMID_YMID;
@@ -106,7 +102,14 @@ rsvg_new_marker (const char *element_name)
     marker->width = marker->height = rsvg_length_parse ("3", LENGTH_DIR_BOTH);
     marker->bbox = TRUE;
     marker->vbox.active = FALSE;
-    return &marker->super;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_MARKER,
+                                parent,
+                                rsvg_state_new (),
+                                marker,
+                                rsvg_node_marker_set_atts,
+                                rsvg_node_marker_draw,
+                                g_free);
 }
 
 static gboolean
@@ -125,14 +128,17 @@ void
 rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdouble orient, gdouble linewidth,
                     RsvgDrawingCtx * ctx)
 {
+    RsvgNode *node;
     RsvgMarker *self;
     cairo_matrix_t affine, taffine;
     gdouble rotation;
     RsvgState *state = rsvg_current_state (ctx);
 
-    self = (RsvgMarker *) rsvg_drawing_ctx_acquire_node_of_type (ctx, marker_name, RSVG_NODE_TYPE_MARKER);
-    if (self == NULL)
+    node = rsvg_drawing_ctx_acquire_node_of_type (ctx, marker_name, RSVG_NODE_TYPE_MARKER);
+    if (node == NULL)
         return;
+
+    self = rsvg_rust_cnode_get_impl (node);
 
     cairo_matrix_init_translate (&taffine, xpos, ypos);
     cairo_matrix_multiply (&affine, &taffine, &state->affine);
@@ -178,7 +184,7 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
 
     rsvg_state_reinit (state);
 
-    rsvg_state_reconstruct (state, &self->super);
+    rsvg_state_reconstruct (state, node);
 
     state->affine = affine;
 
@@ -196,7 +202,7 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
                                     rsvg_length_normalize (&self->height, ctx));
     }
 
-    rsvg_node_foreach_child ((RsvgNode *) self, draw_child, ctx);
+    rsvg_node_foreach_child (node, draw_child, ctx);
 
     rsvg_pop_discrete_layer (ctx);
 
@@ -204,5 +210,5 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
     if (self->vbox.active)
         rsvg_drawing_ctx_pop_view_box (ctx);
 
-    rsvg_drawing_ctx_release_node (ctx, (RsvgNode *) self);
+    rsvg_drawing_ctx_release_node (ctx, node);
 }
