@@ -295,6 +295,13 @@ GLIB_LC_MESSAGES
 
 dnl ===========================================================================
 
+# Check whether MSVC toolset is explicitly set
+
+AM_CONDITIONAL(MSVC_BASE_NO_TOOLSET_SET, [test x$MSVC_BASE_TOOLSET = x])
+AM_CONDITIONAL(MSVC_NO_TOOLSET_SET, [test x$MSVC_TOOLSET = x])
+
+dnl ===========================================================================
+
 AC_SUBST([AM_CPPFLAGS])
 AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_LDFLAGS])
@@ -313,6 +320,7 @@ build/Makefile
 build/win32/Makefile
 build/win32/vs12/Makefile
 build/win32/vs14/Makefile
+build/win32/vs15/Makefile
 ])
 
 AC_CONFIG_FILES([librsvg-${RSVG_API_VERSION}.pc:librsvg.pc.in],[],[RSVG_API_VERSION=$RSVG_API_VERSION])
