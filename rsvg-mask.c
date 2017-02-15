@@ -30,12 +30,10 @@
 #include <string.h>
 
 static void
-rsvg_mask_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_mask_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgMask *mask;
+    RsvgMask *mask = impl;
     const char *value;
-
-    mask = (RsvgMask *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "maskUnits"))) {
         if (!strcmp (value, "userSpaceOnUse"))
@@ -59,35 +57,39 @@ rsvg_mask_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
         mask->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
 }
 
+static void
+rsvg_mask_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
+{
+    /* nothing; this gets drawn specially in rsvg-cairo-draw.c */
+}
+
 RsvgNode *
-rsvg_new_mask (const char *element_name)
+rsvg_new_mask (const char *element_name, RsvgNode *parent)
 {
     RsvgMask *mask;
-    RsvgNodeVtable vtable = {
-        NULL,
-        NULL,
-        rsvg_mask_set_atts
-    };
 
-    mask = g_new (RsvgMask, 1);
-    _rsvg_node_init (&mask->super, RSVG_NODE_TYPE_MASK, &vtable);
-
+    mask = g_new0 (RsvgMask, 1);
     mask->maskunits = objectBoundingBox;
     mask->contentunits = userSpaceOnUse;
     mask->x = rsvg_length_parse ("0", LENGTH_DIR_HORIZONTAL);
     mask->y = rsvg_length_parse ("0", LENGTH_DIR_VERTICAL);
     mask->width = rsvg_length_parse ("1", LENGTH_DIR_HORIZONTAL);
     mask->height = rsvg_length_parse ("1", LENGTH_DIR_VERTICAL);
-    return &mask->super;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_MASK,
+                                parent,
+                                rsvg_state_new (),
+                                mask,
+                                rsvg_mask_set_atts,
+                                rsvg_mask_draw,
+                                g_free);
 }
 
 static void
-rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_clip_path_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
-    RsvgClipPath *clip_path;
+    RsvgClipPath *clip_path = impl;
     const char *value;
-
-    clip_path = (RsvgClipPath *) self;
 
     if ((value = rsvg_property_bag_lookup (atts, "clipPathUnits"))) {
         if (!strcmp (value, "objectBoundingBox"))
@@ -97,19 +99,25 @@ rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * at
     }
 }
 
+static void
+rsvg_clip_path_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
+{
+    /* nothing; this gets drawn specially in rsvg-cairo-draw.c */
+}
+
 RsvgNode *
-rsvg_new_clip_path (const char *element_name)
+rsvg_new_clip_path (const char *element_name, RsvgNode *parent)
 {
     RsvgClipPath *clip_path;
-    RsvgNodeVtable vtable = {
-        NULL,
-        NULL,
-        rsvg_clip_path_set_atts
-    };
 
     clip_path = g_new (RsvgClipPath, 1);
-    _rsvg_node_init (&clip_path->super, RSVG_NODE_TYPE_CLIP_PATH, &vtable);
-
     clip_path->units = userSpaceOnUse;
-    return &clip_path->super;
+
+    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_CLIP_PATH,
+                                parent,
+                                rsvg_state_new (),
+                                clip_path,
+                                rsvg_clip_path_set_atts,
+                                rsvg_clip_path_draw,
+                                g_free); 
 }

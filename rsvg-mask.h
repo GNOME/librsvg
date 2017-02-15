@@ -40,24 +40,22 @@ typedef RsvgCoordUnits RsvgMaskUnits;
 typedef struct _RsvgMask RsvgMask;
 
 struct _RsvgMask {
-    RsvgNode super;
     RsvgLength x, y, width, height;
     RsvgMaskUnits maskunits;
     RsvgMaskUnits contentunits;
 };
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_mask	    (const char *element_name);
+RsvgNode *rsvg_new_mask	    (const char *element_name, RsvgNode *node);
 
 typedef struct _RsvgClipPath RsvgClipPath;
 
 struct _RsvgClipPath {
-    RsvgNode super;
     RsvgCoordUnits units;
 };
 
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_clip_path	(const char *element_name);
+RsvgNode *rsvg_new_clip_path	(const char *element_name, RsvgNode *node);
 
 G_END_DECLS
 #endif
