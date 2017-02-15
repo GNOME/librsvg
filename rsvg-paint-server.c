@@ -548,7 +548,7 @@ rsvg_pattern_node_to_rust_pattern (RsvgNode *node)
     Pattern *pattern;
 
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_PATTERN)
-        return NULL;
+        return NULL; /* FIXME: make this always return a Pattern; make the checks in the caller */
 
     pnode = rsvg_rust_cnode_get_impl (node);
 

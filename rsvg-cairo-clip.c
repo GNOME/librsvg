@@ -138,10 +138,14 @@ rsvg_cairo_clip_render_new (cairo_t * cr, RsvgCairoRender *parent)
 }
 
 void
-rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox)
+rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox)
 {
+    RsvgClipPath *clip;
     RsvgCairoRender *save = RSVG_CAIRO_RENDER (ctx->render);
     cairo_matrix_t affinesave;
+
+    g_assert (rsvg_node_get_type (node_clip_path) == RSVG_NODE_TYPE_CLIP_PATH);
+    clip = rsvg_rust_cnode_get_impl (node_clip_path);
 
     ctx->render = rsvg_cairo_clip_render_new (save->cr, save);
 
@@ -160,7 +164,7 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox)
     }
 
     rsvg_state_push (ctx);
-    _rsvg_node_draw_children ((RsvgNode *) clip, ctx, 0);
+    _rsvg_node_draw_children (node_clip_path, ctx, 0);
     rsvg_state_pop (ctx);
 
     if (clip->units == objectBoundingBox)

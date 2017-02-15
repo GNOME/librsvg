@@ -562,7 +562,7 @@ render_child_if_filter_primitive (RsvgNode *node, gpointer data)
  * Returns: (transfer full): a new #cairo_surface_t
  **/
 cairo_surface_t *
-rsvg_filter_render (RsvgNode *node,
+rsvg_filter_render (RsvgNode *filter_node,
                     cairo_surface_t *source,
                     RsvgDrawingCtx *context,
                     RsvgBbox *bounds,
@@ -576,8 +576,8 @@ rsvg_filter_render (RsvgNode *node,
     g_return_val_if_fail (source != NULL, NULL);
     g_return_val_if_fail (cairo_surface_get_type (source) == CAIRO_SURFACE_TYPE_IMAGE, NULL);
 
-    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_FILTER);
-    filter = rsvg_rust_cnode_get_impl (node);
+    g_assert (rsvg_node_get_type (filter_node) == RSVG_NODE_TYPE_FILTER);
+    filter = rsvg_rust_cnode_get_impl (filter_node);
 
     ctx = g_new0 (RsvgFilterContext, 1);
     ctx->filter = filter;
@@ -594,7 +594,7 @@ rsvg_filter_render (RsvgNode *node,
     for (i = 0; i < 4; i++)
         ctx->channelmap[i] = channelmap[i] - '0';
 
-    rsvg_node_foreach_child (node, render_child_if_filter_primitive, ctx);
+    rsvg_node_foreach_child (filter_node, render_child_if_filter_primitive, ctx);
 
     output = ctx->lastresult.surface;
 

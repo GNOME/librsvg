@@ -35,7 +35,7 @@
 G_BEGIN_DECLS 
 
 G_GNUC_INTERNAL
-void rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox);
+void rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox);
 
 G_END_DECLS
 

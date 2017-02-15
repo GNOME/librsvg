@@ -41,6 +41,7 @@
 
 #include <pango/pangocairo.h>
 #include <pango/pangofc-fontmap.h>
+
 static gboolean
 add_color_stop_to_gradient (RsvgNode *node, gpointer data)
 {
@@ -50,7 +51,7 @@ add_color_stop_to_gradient (RsvgNode *node, gpointer data)
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_STOP)
         return TRUE; /* just ignore this node */
 
-    stop = (RsvgGradientStop *) node;
+    stop = rsvg_rust_cnode_get_impl (node);
 
     if (!stop->is_valid) {
         /* Don't add any more stops. */
@@ -69,9 +70,13 @@ add_color_stops_to_gradient (Gradient *gradient, RsvgNode *node)
 }
 
 static Gradient *
-linear_gradient_to_rust (RsvgLinearGradient *linear)
+linear_gradient_to_rust (RsvgNode *node)
 {
+    RsvgLinearGradient *linear;
     Gradient *gradient;
+
+    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT);
+    linear = rsvg_rust_cnode_get_impl (node);
 
     gradient = gradient_linear_new (linear->hasx1 ? &linear->x1 : NULL,
                                     linear->hasy1 ? &linear->y1 : NULL,
@@ -82,15 +87,19 @@ linear_gradient_to_rust (RsvgLinearGradient *linear)
                                     linear->hasspread ? &linear->spread : NULL,
                                     linear->fallback);
 
-    add_color_stops_to_gradient (gradient, (RsvgNode *) linear);
+    add_color_stops_to_gradient (gradient, node);
 
     return gradient;
 }
 
 static Gradient *
-radial_gradient_to_rust (RsvgRadialGradient *radial)
+radial_gradient_to_rust (RsvgNode *node)
 {
+    RsvgRadialGradient *radial;
     Gradient *gradient;
+
+    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT);
+    radial = rsvg_rust_cnode_get_impl (node);
 
     gradient = gradient_radial_new (radial->hascx ? &radial->cx : NULL,
                                     radial->hascy ? &radial->cy : NULL,
@@ -102,7 +111,7 @@ radial_gradient_to_rust (RsvgRadialGradient *radial)
                                     radial->hasspread ? &radial->spread : NULL,
                                     radial->fallback);
 
-    add_color_stops_to_gradient (gradient, (RsvgNode *) radial);
+    add_color_stops_to_gradient (gradient, node);
 
     return gradient;
 }
@@ -111,9 +120,9 @@ Gradient *
 rsvg_gradient_node_to_rust_gradient (RsvgNode *node)
 {
     if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
-        return linear_gradient_to_rust ((RsvgLinearGradient *) node);
+        return linear_gradient_to_rust (node);
     } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
-        return radial_gradient_to_rust ((RsvgRadialGradient *) node);
+        return radial_gradient_to_rust (node);
     } else {
         return NULL;
     }
@@ -121,12 +130,12 @@ rsvg_gradient_node_to_rust_gradient (RsvgNode *node)
 
 static void
 _set_source_rsvg_linear_gradient (RsvgDrawingCtx *ctx,
-                                  RsvgLinearGradient *linear,
+                                  RsvgNode *node,
                                   guint8 opacity, RsvgBbox bbox)
 {
     Gradient *gradient;
 
-    gradient = linear_gradient_to_rust (linear);
+    gradient = linear_gradient_to_rust (node);
 
     gradient_resolve_fallbacks_and_set_pattern (gradient, ctx, opacity, bbox);
 
@@ -135,12 +144,12 @@ _set_source_rsvg_linear_gradient (RsvgDrawingCtx *ctx,
 
 static void
 _set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
-                                  RsvgRadialGradient * radial,
+                                  RsvgNode *node,
                                   guint8 opacity, RsvgBbox bbox)
 {
     Gradient *gradient;
 
-    gradient = radial_gradient_to_rust (radial);
+    gradient = radial_gradient_to_rust (node);
 
     gradient_resolve_fallbacks_and_set_pattern (gradient, ctx, opacity, bbox);
 
@@ -168,13 +177,15 @@ _set_source_rsvg_solid_color (RsvgDrawingCtx * ctx,
 }
 
 static gboolean
-_set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
-                          RsvgPattern * rsvg_pattern, RsvgBbox bbox)
+_set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
+                          RsvgNode *node,
+                          RsvgBbox bbox)
 {
     Pattern *pattern;
     gboolean result;
 
-    pattern = rsvg_pattern_node_to_rust_pattern ((RsvgNode *) rsvg_pattern);
+    pattern = rsvg_pattern_node_to_rust_pattern (node);
+    g_assert (pattern != NULL);
 
     result = pattern_resolve_fallbacks_and_set_pattern (pattern, ctx, bbox);
 
@@ -204,13 +215,13 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
         if (node == NULL) {
             use_alternate = TRUE;
         } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
-            _set_source_rsvg_linear_gradient (ctx, (RsvgLinearGradient *) node, opacity, bbox);
+            _set_source_rsvg_linear_gradient (ctx, node, opacity, bbox);
             had_paint_server = TRUE;
         } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
-            _set_source_rsvg_radial_gradient (ctx, (RsvgRadialGradient *) node, opacity, bbox);
+            _set_source_rsvg_radial_gradient (ctx, node, opacity, bbox);
             had_paint_server = TRUE;
         } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_PATTERN) {
-            if (_set_source_rsvg_pattern (ctx, (RsvgPattern *) node, bbox)) {
+            if (_set_source_rsvg_pattern (ctx, node, bbox)) {
                 had_paint_server = TRUE;
             } else {
                 use_alternate = TRUE;
@@ -607,7 +618,7 @@ rsvg_cairo_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr)
 }
 
 static void
-rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, RsvgBbox * bbox)
+rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx, RsvgBbox *bbox)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_surface_t *surface;
@@ -619,6 +630,10 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
     cairo_matrix_t affinesave;
     double sx, sy, sw, sh;
     gboolean nest = cr != render->initial_cr;
+    RsvgMask *self;
+
+    g_assert (rsvg_node_get_type (node_mask) == RSVG_NODE_TYPE_MASK);
+    self = rsvg_rust_cnode_get_impl (node_mask);
 
     surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
     if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
@@ -669,12 +684,16 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgMask * self, RsvgDrawingCtx * ctx, R
     }
 
     rsvg_state_push (ctx);
-    _rsvg_node_draw_children (&self->super, ctx, 0);
+    _rsvg_node_draw_children (node_mask, ctx, 0);
     rsvg_state_pop (ctx);
 
     if (self->contentunits == objectBoundingBox) {
+        RsvgState *state;
+
         rsvg_drawing_ctx_pop_view_box (ctx);
-        self->super.state->affine = affinesave;
+
+        state = rsvg_node_get_state (node_mask);
+        state->affine = affinesave;
     }
 
     render->cr = save_cr;
@@ -731,11 +750,11 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
         RsvgNode *node;
         node = rsvg_drawing_ctx_acquire_node_of_type (ctx, rsvg_current_state (ctx)->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
         if (node) {
-            RsvgClipPath *clip_path = (RsvgClipPath *) node;
+            RsvgClipPath *clip_path = rsvg_rust_cnode_get_impl (node);
 
             switch (clip_path->units) {
             case userSpaceOnUse:
-                rsvg_cairo_clip (ctx, clip_path, NULL);
+                rsvg_cairo_clip (ctx, node, NULL);
                 break;
             case objectBoundingBox:
                 lateclip = TRUE;
@@ -800,7 +819,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_t *child_cr = render->cr;
-    RsvgClipPath *lateclip = NULL;
+    RsvgNode *lateclip = NULL;
     cairo_surface_t *surface = NULL;
     RsvgState *state = rsvg_current_state (ctx);
     gboolean nest, needs_destroy = FALSE;
@@ -808,10 +827,15 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     if (rsvg_current_state (ctx)->clip_path) {
         RsvgNode *node;
         node = rsvg_drawing_ctx_acquire_node_of_type (ctx, rsvg_current_state (ctx)->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
-        if (node && ((RsvgClipPath *) node)->units == objectBoundingBox)
-            lateclip = (RsvgClipPath *) node;
-        else
-            rsvg_drawing_ctx_release_node (ctx, node);
+        if (node) {
+            RsvgClipPath *cp = rsvg_rust_cnode_get_impl (node);
+
+            if (cp->units == objectBoundingBox) {
+                lateclip = node;
+            } else {
+                rsvg_drawing_ctx_release_node (ctx, node);
+            }
+        }
     }
 
     if (state->opacity == 0xFF
@@ -849,7 +873,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
     if (lateclip) {
         rsvg_cairo_clip (ctx, lateclip, &render->bbox);
-        rsvg_drawing_ctx_release_node (ctx, (RsvgNode *) lateclip);
+        rsvg_drawing_ctx_release_node (ctx, lateclip);
     }
 
     cairo_set_operator (render->cr, state->comp_op);
@@ -859,7 +883,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
         mask = rsvg_drawing_ctx_acquire_node_of_type (ctx, state->mask, RSVG_NODE_TYPE_MASK);
         if (mask) {
-            rsvg_cairo_generate_mask (render->cr, (RsvgMask *) mask, ctx, &render->bbox);
+            rsvg_cairo_generate_mask (render->cr, mask, ctx, &render->bbox);
             rsvg_drawing_ctx_release_node (ctx, mask);
         }
     } else if (state->opacity != 0xFF)

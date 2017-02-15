@@ -44,7 +44,7 @@ struct _RsvgFilter {
 };
 
 G_GNUC_INTERNAL
-cairo_surface_t *rsvg_filter_render (RsvgNode *node,
+cairo_surface_t *rsvg_filter_render (RsvgNode *filter_node,
                                      cairo_surface_t *source,
                                      RsvgDrawingCtx *context, 
                                      RsvgBbox *dimentions, 
