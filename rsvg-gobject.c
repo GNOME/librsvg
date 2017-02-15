@@ -108,8 +108,7 @@ free_nodes (RsvgHandle *self)
         RsvgNode *node;
 
         node = g_ptr_array_index (self->priv->all_nodes, i);
-        g_assert (node->vtable->free != NULL);
-        node->vtable->free (node);
+        rsvg_node_unref (node);
     }
 
     g_ptr_array_free (self->priv->all_nodes, TRUE);
