@@ -671,6 +671,8 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx
     /* Horribly dirty hack to have the bbox premultiplied to everything */
     if (self->contentunits == objectBoundingBox) {
         cairo_matrix_t bbtransform;
+        RsvgState *mask_state;
+
         cairo_matrix_init (&bbtransform,
                            bbox->rect.width,
                            0,
@@ -678,8 +680,11 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx
                            bbox->rect.height,
                            bbox->rect.x,
                            bbox->rect.y);
-        affinesave = self->super.state->affine;
-        cairo_matrix_multiply (&self->super.state->affine, &bbtransform, &self->super.state->affine);
+
+        mask_state = rsvg_node_get_state (node_mask);
+
+        affinesave = mask_state->affine;
+        cairo_matrix_multiply (&mask_state->affine, &bbtransform, &mask_state->affine);
         rsvg_drawing_ctx_push_view_box (ctx, 1, 1);
     }
 
@@ -688,12 +693,12 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx
     rsvg_state_pop (ctx);
 
     if (self->contentunits == objectBoundingBox) {
-        RsvgState *state;
+        RsvgState *mask_state;
 
         rsvg_drawing_ctx_pop_view_box (ctx);
 
-        state = rsvg_node_get_state (node_mask);
-        state->affine = affinesave;
+        mask_state = rsvg_node_get_state (node_mask);
+        mask_state->affine = affinesave;
     }
 
     render->cr = save_cr;
