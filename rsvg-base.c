@@ -426,7 +426,7 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
             ctx->priv->treebase = newnode;
         }
 
-        ctx->priv->currentnode = newnode;
+        ctx->priv->currentnode = rsvg_node_ref (newnode);
 
         node_set_atts (newnode, ctx, creator, atts);
     }

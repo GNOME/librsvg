@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::rc::Weak;
 use std::cell::RefCell;
 use std::ptr;
+use std::mem;
 
 use drawing_ctx::RsvgDrawingCtx;
 
@@ -140,7 +141,7 @@ extern "C" {
 
 impl Drop for Node {
     fn drop (&mut self) {
-        unsafe { rsvg_state_free (self.state); }
+//        unsafe { rsvg_state_free (self.state); }
     }
 }
 
@@ -150,6 +151,10 @@ pub extern fn rsvg_node_get_type (raw_node: *const RsvgNode) -> NodeType {
     let node: &RsvgNode = unsafe { & *raw_node };
 
     node.get_type ()
+}
+
+pub fn box_node (node: RsvgNode) -> *mut RsvgNode {
+    Box::into_raw (Box::new (node))
 }
 
 #[no_mangle]
@@ -162,16 +167,26 @@ pub extern fn rsvg_node_get_parent (raw_node: *const RsvgNode) -> *const RsvgNod
 
         Some (ref weak_node) => {
             let strong_node = weak_node.upgrade ().unwrap ();
-            Box::into_raw (Box::new (strong_node))
+            box_node (strong_node)
         }
     }
 }
 
 #[no_mangle]
-pub unsafe extern fn rsvg_node_unref (raw_node: *mut RsvgNode) {
+pub unsafe extern fn rsvg_node_ref (raw_node: *mut RsvgNode) -> *mut RsvgNode {
     assert! (!raw_node.is_null ());
+    let node: &RsvgNode = & *raw_node;
 
-    let _ = Box::from_raw (raw_node);
+    box_node (node.clone ())
+}
+
+#[no_mangle]
+pub extern fn rsvg_node_unref (raw_node: *mut RsvgNode) -> *mut RsvgNode {
+    if !raw_node.is_null () {
+        let _ = unsafe { Box::from_raw (raw_node) };
+    }
+
+    ptr::null_mut () // so the caller can do "node = rsvg_node_unref (node);" and lose access to the node
 }
 
 #[no_mangle]
@@ -221,5 +236,53 @@ pub extern fn rsvg_node_foreach_child (raw_node: *const RsvgNode, func: NodeFore
         if !next {
             break;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::rc::Rc;
+    use drawing_ctx::RsvgDrawingCtx;
+    use handle::RsvgHandle;
+    use property_bag::RsvgPropertyBag;
+    use state::RsvgState;
+    use super::*;
+    use std::ptr;
+    use std::mem;
+
+    struct TestNodeImpl {}
+
+    impl NodeTrait for TestNodeImpl {
+        fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+        }
+
+        fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+        }
+
+        fn get_c_impl (&self) -> *const RsvgCNodeImpl {
+            return ptr::null ();
+        }
+    }
+
+    #[test]
+    fn node_refs_and_unrefs () {
+        let node = Rc::new (Node::new (NodeType::Path,
+                                       None,
+                                       ptr::null_mut (),
+                                       Box::new (TestNodeImpl {})));
+
+        let mut ref1 = box_node (node);
+
+        let new_node: &mut RsvgNode = unsafe { &mut *ref1 };
+        let weak = Rc::downgrade (new_node);
+
+        let mut ref2 = unsafe { rsvg_node_ref (new_node) };
+        assert! (weak.upgrade ().is_some ());
+
+        ref2 = unsafe { rsvg_node_unref (ref2) };
+        assert! (weak.upgrade ().is_some ());
+
+        ref1 = unsafe { rsvg_node_unref (ref1) };
+        assert! (weak.upgrade ().is_none ());
     }
 }

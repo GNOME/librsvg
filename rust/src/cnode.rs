@@ -64,10 +64,10 @@ pub extern fn rsvg_rust_cnode_new (node_type:   NodeType,
         free_fn:     free_fn
     };
 
-    Box::into_raw (Box::new (Rc::new (Node::new (node_type,
-                                                 parent,
-                                                 state,
-                                                 Box::new (cnode)))))
+    box_node (Rc::new (Node::new (node_type,
+                                  parent,
+                                  state,
+                                  Box::new (cnode))))
 }
 
 #[no_mangle]

@@ -339,6 +339,7 @@ typedef void (* CNodeDraw) (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, 
 typedef void (* CNodeFree) (gpointer impl);
 
 /* Implemented in rust/src/node.rs */
+/* Call node = rsvg_node_unref (node) when you are done with the node */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_rust_cnode_new (RsvgNodeType  node_type,
                                RsvgNode     *parent,
@@ -346,7 +347,7 @@ RsvgNode *rsvg_rust_cnode_new (RsvgNodeType  node_type,
                                gpointer      impl,
                                CNodeSetAtts  set_atts_fn,
                                CNodeDraw     draw_fn,
-                               CNodeFree     free_fn);
+                               CNodeFree     free_fn) G_GNUC_WARN_UNUSED_RESULT;
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
@@ -357,8 +358,14 @@ G_GNUC_INTERNAL
 RsvgNodeType rsvg_node_get_type (RsvgNode *node);
 
 /* Implemented in rust/src/node.rs */
+/* Call this as newref = rsvg_node_ref (node);  You don't own the node anymore, just the newref! */
 G_GNUC_INTERNAL
-void rsvg_node_unref (RsvgNode *node);
+RsvgNode *rsvg_node_ref (RsvgNode *node) G_GNUC_WARN_UNUSED_RESULT;
+
+/* Implemented in rust/src/node.rs */
+/* Call this as node = rsvg_node_unref (node);  Then node will be NULL and you don't own it anymore! */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_unref (RsvgNode *node) G_GNUC_WARN_UNUSED_RESULT;
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
@@ -366,11 +373,11 @@ RsvgState *rsvg_node_get_state (RsvgNode *node);
 
 /* Implemented in rust/src/node.rs
  *
- * Returns a strong reference to the parent (or NULL); use rsvg_node_unref()
+ * Returns a new strong reference to the parent (or NULL); use rsvg_node_unref()
  * when you are done.
  */
 G_GNUC_INTERNAL
-RsvgNode *rsvg_node_get_parent (RsvgNode *node);
+RsvgNode *rsvg_node_get_parent (RsvgNode *node) G_GNUC_WARN_UNUSED_RESULT;
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
