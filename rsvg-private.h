@@ -358,6 +358,10 @@ G_GNUC_INTERNAL
 RsvgNodeType rsvg_node_get_type (RsvgNode *node);
 
 /* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+gboolean rsvg_node_is_same (RsvgNode *node1, RsvgNode *node2);
+
+/* Implemented in rust/src/node.rs */
 /* Call this as newref = rsvg_node_ref (node);  You don't own the node anymore, just the newref! */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_ref (RsvgNode *node) G_GNUC_WARN_UNUSED_RESULT;

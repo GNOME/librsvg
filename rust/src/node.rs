@@ -173,9 +173,9 @@ pub extern fn rsvg_node_get_parent (raw_node: *const RsvgNode) -> *const RsvgNod
 }
 
 #[no_mangle]
-pub unsafe extern fn rsvg_node_ref (raw_node: *mut RsvgNode) -> *mut RsvgNode {
+pub extern fn rsvg_node_ref (raw_node: *mut RsvgNode) -> *mut RsvgNode {
     assert! (!raw_node.is_null ());
-    let node: &RsvgNode = & *raw_node;
+    let node: &RsvgNode = unsafe { & *raw_node };
 
     box_node (node.clone ())
 }
@@ -187,6 +187,30 @@ pub extern fn rsvg_node_unref (raw_node: *mut RsvgNode) -> *mut RsvgNode {
     }
 
     ptr::null_mut () // so the caller can do "node = rsvg_node_unref (node);" and lose access to the node
+}
+
+// See https://github.com/rust-lang/rust/issues/36497 - this is what
+// added Rc::ptr_eq(), but we don't want to depend on unstable Rust
+// just yet.
+
+fn rc_node_ptr_eq<T: ?Sized> (this: &Rc<T>, other: &Rc<T>) -> bool {
+    let this_ptr: *const T = &**this;
+    let other_ptr: *const T = &**other;
+    this_ptr == other_ptr
+}
+
+#[no_mangle]
+pub extern fn rsvg_node_is_same (raw_node1: *const RsvgNode, raw_node2: *const RsvgNode) -> bool {
+    if raw_node1.is_null () && raw_node2.is_null () {
+        true
+    } else if !raw_node1.is_null () && !raw_node2.is_null () {
+        let node1: &RsvgNode = unsafe { & *raw_node1 };
+        let node2: &RsvgNode = unsafe { & *raw_node2 };
+
+        rc_node_ptr_eq (node1, node2)
+    } else {
+        false
+    }
 }
 
 #[no_mangle]
@@ -284,5 +308,44 @@ mod tests {
 
         ref1 = unsafe { rsvg_node_unref (ref1) };
         assert! (weak.upgrade ().is_none ());
+    }
+
+    #[test]
+    fn reffed_node_is_same_as_original_node () {
+        let node = Rc::new (Node::new (NodeType::Path,
+                                       None,
+                                       ptr::null_mut (),
+                                       Box::new (TestNodeImpl {})));
+
+        let mut ref1 = box_node (node);
+
+        let mut ref2 = unsafe { rsvg_node_ref (ref1) };
+
+        unsafe { assert! (rsvg_node_is_same (ref1, ref2)); }
+
+        ref1 = rsvg_node_unref (ref1);
+        ref2 = rsvg_node_unref (ref2);
+    }
+
+    #[test]
+    fn different_nodes_have_different_pointers () {
+        let node1 = Rc::new (Node::new (NodeType::Path,
+                                       None,
+                                       ptr::null_mut (),
+                                       Box::new (TestNodeImpl {})));
+
+        let mut ref1 = box_node (node1);
+
+        let node2 = Rc::new (Node::new (NodeType::Path,
+                                       None,
+                                       ptr::null_mut (),
+                                       Box::new (TestNodeImpl {})));
+
+        let mut ref2 = box_node (node2);
+
+        unsafe { assert! (!rsvg_node_is_same (ref1, ref2)); }
+
+        ref1 = rsvg_node_unref (ref1);
+        ref2 = rsvg_node_unref (ref2);
     }
 }

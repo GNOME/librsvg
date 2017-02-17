@@ -59,6 +59,7 @@ pub use node::{
     rsvg_node_get_parent,
     rsvg_node_ref,
     rsvg_node_unref,
+    rsvg_node_is_same,
     rsvg_node_get_state,
     rsvg_node_add_child,
     rsvg_node_set_atts,
