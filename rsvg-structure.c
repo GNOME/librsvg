@@ -60,7 +60,9 @@ rsvg_node_draw_from_stack (RsvgNode *node, RsvgDrawingCtx * ctx, int dominate)
 
     stacksave = ctx->drawsub_stack;
     if (stacksave) {
-        if (stacksave->data != node)
+        RsvgNode *stack_node = stacksave->data;
+
+        if (!rsvg_node_is_same (stack_node, node))
             return;
 
         ctx->drawsub_stack = stacksave->next;
@@ -150,6 +152,7 @@ rsvg_node_svg_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int domi
     RsvgState *state;
     cairo_matrix_t affine, affine_old, affine_new;
     double nx, ny, nw, nh;
+    RsvgNode *parent;
 
     nx = rsvg_length_normalize (&svg->x, ctx);
     ny = rsvg_length_normalize (&svg->y, ctx);
@@ -189,11 +192,15 @@ rsvg_node_svg_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int domi
 
     /* Bounding box addition must be AFTER the discrete layer push,
        which must be AFTER the transformation happens. */
-    if (!state->overflow && rsvg_node_get_parent (node)) {
+    parent = rsvg_node_get_parent (node);
+
+    if (!state->overflow && parent) {
         state->affine = affine_old;
         rsvg_add_clipping_rect (ctx, nx, ny, nw, nh);
         state->affine = affine_new;
     }
+
+    parent = rsvg_node_unref (parent);
 
     rsvg_node_foreach_child (node, draw_child, ctx);
 
@@ -206,6 +213,7 @@ rsvg_node_svg_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgP
 {
     const char *value;
     RsvgNodeSvg *svg = impl;
+    RsvgNode *parent;
 
     if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
         svg->vbox = rsvg_css_parse_vbox (value);
@@ -220,13 +228,17 @@ rsvg_node_svg_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgP
      * x & y attributes have no effect on outermost svg
      * http://www.w3.org/TR/SVG/struct.html#SVGElement
      */
-    if (rsvg_node_get_parent (node)) {
+    parent = rsvg_node_get_parent (node);
+
+    if (parent) {
         if ((value = rsvg_property_bag_lookup (atts, "x")))
             svg->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
 
         if ((value = rsvg_property_bag_lookup (atts, "y")))
             svg->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
     }
+
+    parent = rsvg_node_unref (parent);
 
     /*
      * style element is not loaded yet here, so we need to store those attribues
@@ -285,19 +297,24 @@ rsvg_new_svg (const char *element_name, RsvgNode *parent)
 }
 
 static gboolean
-rsvg_node_is_ancestor (RsvgNode * potential_ancestor, RsvgNode * potential_descendant)
+rsvg_node_is_ancestor (RsvgNode *potential_ancestor, RsvgNode *descendant)
 {
-    /* work our way up the family tree */
-    while (TRUE) {
-        if (potential_ancestor == potential_descendant)
+    descendant = rsvg_node_ref (descendant);
+
+    while (descendant != NULL) {
+        RsvgNode *parent;
+
+        if (rsvg_node_is_same (potential_ancestor, descendant)) {
+            descendant = rsvg_node_unref (descendant);
             return TRUE;
-        else if (rsvg_node_get_parent (potential_descendant) == NULL)
-            return FALSE;
-        else
-            potential_descendant = rsvg_node_get_parent (potential_descendant);
+        }
+
+        parent = rsvg_node_get_parent (descendant);
+
+        descendant = rsvg_node_unref (descendant);
+        descendant = parent;
     }
 
-    g_assert_not_reached ();
     return FALSE;
 }
 

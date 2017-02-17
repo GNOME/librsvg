@@ -430,7 +430,7 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
 
         node_set_atts (newnode, ctx, creator, atts);
 
-        rsvg_node_unref (newnode);
+        newnode = rsvg_node_unref (newnode);
     }
 }
 
@@ -835,7 +835,7 @@ rsvg_end_element (void *data, const xmlChar * xmlname)
             RsvgNode *parent;
 
             parent = rsvg_node_get_parent (ctx->priv->currentnode);
-            ctx->priv->currentnode = rsvg_object_unref (ctx->priv->currentnode);
+            ctx->priv->currentnode = rsvg_node_unref (ctx->priv->currentnode);
             ctx->priv->currentnode = parent;
             pop_element_name (ctx);
         }
@@ -1392,8 +1392,7 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
 
     rsvg_state_free_all (handle->state);
 
-	/* the drawsub stack's nodes are owned by the ->defs */
-	g_slist_free (handle->drawsub_stack);
+	g_slist_free_full (handle->drawsub_stack, (GDestroyNotify) rsvg_node_unref);
 
     g_warn_if_fail (handle->acquired_nodes == NULL);
     g_slist_free (handle->acquired_nodes);
@@ -1535,11 +1534,11 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     if (id && *id) {
         sself = rsvg_defs_lookup (handle->priv->defs, id);
 
-        if (sself == handle->priv->treebase)
+        if (rsvg_node_is_same (sself, handle->priv->treebase))
             id = NULL;
-    }
-    else
+    } else {
         sself = handle->priv->treebase;
+    }
 
     if (!sself && id)
         return FALSE;
@@ -1573,6 +1572,9 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
 
             return FALSE;
         }
+
+        g_assert (sself != NULL);
+        sself = rsvg_node_ref (sself);
 
         while (sself != NULL) {
             draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, sself);
@@ -1663,6 +1665,10 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     draw = rsvg_cairo_new_drawing_ctx (cr, handle);
     if (!draw)
         goto bail;
+
+    g_assert (node != NULL);
+
+    node = rsvg_node_ref (node);
 
     while (node != NULL) {
         draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, node);

@@ -1758,11 +1758,25 @@ rsvg_state_reinherit_top (RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
     }
 }
 
+static void
+reconstruct_helper (RsvgState *state, RsvgNode *current)
+{
+    RsvgNode *currents_parent;
+
+    if (current == NULL)
+        return;
+
+    currents_parent = rsvg_node_get_parent (current);
+
+    reconstruct_helper (state, currents_parent);
+
+    currents_parent = rsvg_node_unref (currents_parent);
+
+    rsvg_state_inherit (state, rsvg_node_get_state (current));
+}
+
 void
 rsvg_state_reconstruct (RsvgState * state, RsvgNode * current)
 {
-    if (current == NULL)
-        return;
-    rsvg_state_reconstruct (state, rsvg_node_get_parent (current));
-    rsvg_state_inherit (state, rsvg_node_get_state (current));
+    reconstruct_helper (state, current);
 }
