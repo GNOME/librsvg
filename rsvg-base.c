@@ -422,6 +422,7 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
 
         if (ctx->priv->currentnode) {
             rsvg_node_add_child (ctx->priv->currentnode, newnode);
+            ctx->priv->currentnode = rsvg_node_unref (ctx->priv->currentnode);
         } else if (rsvg_node_get_type (newnode) == RSVG_NODE_TYPE_SVG) {
             ctx->priv->treebase = rsvg_node_ref (newnode);
         }
@@ -939,10 +940,10 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
                                      find_last_chars_node,
                                      &node);
 
-            g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
-            self = rsvg_rust_cnode_get_impl (node);
+            if (node) {
+                g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
+                self = rsvg_rust_cnode_get_impl (node);
 
-            if (self != NULL) {
                 if (!g_utf8_validate ((char *) ch, len, NULL)) {
                     char *utf8;
                     utf8 = rsvg_make_valid_utf8 ((char *) ch, len);
