@@ -1650,7 +1650,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     node = rsvg_defs_lookup (handle->priv->defs, id);
     if (!node) {
         return FALSE;
-    } else if (node == handle->priv->treebase) {
+    } else if (rsvg_node_is_same (node, handle->priv->treebase)) {
         /* Root node. */
         position_data->x = 0;
         position_data->y = 0;
