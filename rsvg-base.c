@@ -914,7 +914,7 @@ find_last_chars_node (RsvgNode *node, gpointer data)
     if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS) {
         *dest = rsvg_node_ref (node);
     } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_TSPAN) {
-        *dest = NULL;
+        *dest = rsvg_node_unref (*dest); /* Discard the last chars node we found */
     }
 
     return TRUE;
