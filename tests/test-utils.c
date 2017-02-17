@@ -65,6 +65,8 @@ test_utils_add_test_for_all_files (const gchar   *prefix,
       test_path = g_strconcat (prefix, "/", relative_path, NULL);
       
       g_test_add_data_func_full (test_path, g_object_ref (file), test_func, g_object_unref);
+
+      g_free (test_path);
       return;
     }
 
