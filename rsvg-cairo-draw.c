@@ -302,14 +302,15 @@ create_font_config_for_testing (RsvgCairoRender *render)
 static PangoFontMap *
 get_font_map_for_testing (RsvgCairoRender *render)
 {
-    PangoFontMap *font_map;
-
     create_font_config_for_testing (render);
 
-    font_map = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
-    pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (font_map), render->font_config_for_testing);
+    if (!render->font_map_for_testing) {
+        render->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
+        pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (render->font_map_for_testing),
+                                      render->font_config_for_testing);
+    }
 
-    return font_map;
+    return render->font_map_for_testing;
 }
 
 PangoContext *

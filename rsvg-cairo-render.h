@@ -51,6 +51,7 @@ struct _RsvgCairoRender {
     GList *surfaces_stack;
 
     FcConfig *font_config_for_testing;
+    PangoFontMap *font_map_for_testing;
 };
 
 #define RSVG_CAIRO_RENDER(render) (_RSVG_RENDER_CIC ((render), RSVG_RENDER_TYPE_CAIRO, RsvgCairoRender))
