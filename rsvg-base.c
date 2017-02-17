@@ -965,6 +965,8 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
 
     if (ctx->priv->currentnode)
         rsvg_node_add_child (ctx->priv->currentnode, node);
+
+    node = rsvg_node_unref (node);
 }
 
 static void
