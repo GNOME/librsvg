@@ -4,7 +4,6 @@ use std::rc::Rc;
 use std::rc::Weak;
 use std::cell::RefCell;
 use std::ptr;
-use std::mem;
 
 use drawing_ctx::RsvgDrawingCtx;
 
