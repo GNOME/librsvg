@@ -4434,7 +4434,7 @@ is_light_source (RsvgNode *node, gpointer data)
     struct find_light_source_closure *closure = data;
 
     if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
-        closure->found_node = node;
+        closure->found_node = rsvg_node_ref (node);
     }
 
     return TRUE;
@@ -4444,6 +4444,7 @@ static RsvgNodeLightSource *
 find_light_source_in_children (RsvgNode *node)
 {
     struct find_light_source_closure closure;
+    RsvgNodeLightSource *source;
 
     closure.found_node = NULL;
     rsvg_node_foreach_child (node, is_light_source, &closure);
@@ -4451,7 +4452,11 @@ find_light_source_in_children (RsvgNode *node)
         return NULL;
 
     g_assert (rsvg_node_get_type (closure.found_node) == RSVG_NODE_TYPE_LIGHT_SOURCE);
-    return rsvg_rust_cnode_get_impl (closure.found_node);
+
+    source = rsvg_rust_cnode_get_impl (closure.found_node);
+    closure.found_node = rsvg_node_unref (closure.found_node);
+
+    return source;
 }
 
 static void

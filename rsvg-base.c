@@ -912,7 +912,7 @@ find_last_chars_node (RsvgNode *node, gpointer data)
     dest = data;
 
     if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS) {
-        *dest = node;
+        *dest = rsvg_node_ref (node);
     } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_TSPAN) {
         *dest = NULL;
     }
@@ -953,6 +953,7 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
                     g_string_append_len (self->contents, (char *)ch, len);
                 }
 
+                node = rsvg_node_unref (node);
                 return;
             }
         }
