@@ -42,7 +42,7 @@ rsvg_defs_new (RsvgHandle *handle)
 {
     RsvgDefs *result = g_new (RsvgDefs, 1);
 
-    result->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    result->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, rsvg_node_unref);
     result->externs =
         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_object_unref);
     result->ctx = handle; /* no need to take a ref here */
@@ -130,7 +130,7 @@ rsvg_defs_register_node_by_id (RsvgDefs *defs, const char *id, RsvgNode *node)
     if (g_hash_table_lookup (defs->hash, id))
         return;
 
-    g_hash_table_insert (defs->hash, g_strdup (id), node);
+    g_hash_table_insert (defs->hash, g_strdup (id), rsvg_node_ref (node));
 }
 
 void

@@ -194,7 +194,7 @@ add_node_to_handle (RsvgHandle *ctx, RsvgNode *node)
     g_assert (ctx != NULL);
     g_assert (node != NULL);
 
-    g_ptr_array_add (ctx->priv->all_nodes, node);
+    g_ptr_array_add (ctx->priv->all_nodes, rsvg_node_ref (node));
 }
 
 static void
@@ -423,12 +423,14 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
         if (ctx->priv->currentnode) {
             rsvg_node_add_child (ctx->priv->currentnode, newnode);
         } else if (rsvg_node_get_type (newnode) == RSVG_NODE_TYPE_SVG) {
-            ctx->priv->treebase = newnode;
+            ctx->priv->treebase = rsvg_node_ref (newnode);
         }
 
         ctx->priv->currentnode = rsvg_node_ref (newnode);
 
         node_set_atts (newnode, ctx, creator, atts);
+
+        rsvg_node_unref (newnode);
     }
 }
 
@@ -507,7 +509,7 @@ rsvg_start_extra (RsvgHandle * ctx,
      * This isn't quite the correct behavior - any graphics
      * element may contain a <extra> element.
      */
-    do_care = treebase != NULL && treebase == currentnode;
+    do_care = treebase != NULL && rsvg_node_is_same (treebase, currentnode);
 
     handler->super.free = rsvg_extra_handler_free;
     handler->super.characters = rsvg_extra_handler_characters;
@@ -830,7 +832,11 @@ rsvg_end_element (void *data, const xmlChar * xmlname)
         }
 
         if (ctx->priv->currentnode && topmost_element_name_is (ctx, name)) {
-            ctx->priv->currentnode = rsvg_node_get_parent (ctx->priv->currentnode);
+            RsvgNode *parent;
+
+            parent = rsvg_node_get_parent (ctx->priv->currentnode);
+            ctx->priv->currentnode = rsvg_object_unref (ctx->priv->currentnode);
+            ctx->priv->currentnode = parent;
             pop_element_name (ctx);
         }
 

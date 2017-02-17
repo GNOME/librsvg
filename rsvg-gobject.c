@@ -134,6 +134,9 @@ rsvg_handle_dispose (GObject *instance)
 
     g_hash_table_destroy (self->priv->css_props);
 
+    self->priv->treebase = rsvg_node_unref (self->priv->treebase);
+    self->priv->currentnode = rsvg_node_unref (self->priv->currentnode);
+
     if (self->priv->user_data_destroy)
         (*self->priv->user_data_destroy) (self->priv->user_data);
 
