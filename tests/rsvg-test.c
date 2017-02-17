@@ -225,6 +225,8 @@ read_png (const char *test_name)
 
   reference_uri = g_strconcat (test_name, "-ref.png", NULL);
   file = g_file_new_for_uri (reference_uri);
+  g_free (reference_uri);
+
   stream = g_file_read (file, NULL, &error);
   g_assert_no_error (error);
   g_assert (stream);
@@ -304,6 +306,7 @@ rsvg_cairo_check (gconstpointer data)
     cairo_destroy (cr);
 
     g_object_unref (rsvg);
+    g_free (test_file_base);
 }
 
 int
