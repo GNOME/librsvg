@@ -340,12 +340,12 @@ extern "C" {
                            ypos: f64,
                            orient: f64,
                            linewidth: f64,
-                           ctx: *mut RsvgDrawingCtx);
-    fn rsvg_get_normalized_stroke_width (ctx: *const RsvgDrawingCtx) -> f64;
+                           draw_ctx: *const RsvgDrawingCtx);
+    fn rsvg_get_normalized_stroke_width (draw_ctx: *const RsvgDrawingCtx) -> f64;
 
-    fn rsvg_get_start_marker (ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
-    fn rsvg_get_middle_marker (ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
-    fn rsvg_get_end_marker (ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
+    fn rsvg_get_start_marker (draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
+    fn rsvg_get_middle_marker (draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
+    fn rsvg_get_end_marker (draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
 }
 
 enum SubpathState {
@@ -357,7 +357,7 @@ fn render_marker_at_start_of_segment (segment: &Segment,
                                       marker_name: *const libc::c_char,
                                       orient: f64,
                                       linewidth: f64,
-                                      ctx: *mut RsvgDrawingCtx) {
+                                      draw_ctx: *const RsvgDrawingCtx) {
     let xpos: f64;
     let ypos: f64;
 
@@ -373,14 +373,14 @@ fn render_marker_at_start_of_segment (segment: &Segment,
         }
     }
 
-    unsafe { rsvg_marker_render (marker_name, xpos, ypos, orient, linewidth, ctx); }
+    unsafe { rsvg_marker_render (marker_name, xpos, ypos, orient, linewidth, draw_ctx); }
 }
 
 fn render_marker_at_end_of_segment (segment: &Segment,
                                     marker_name: *const libc::c_char,
                                     orient: f64,
                                     linewidth: f64,
-                                    ctx: *mut RsvgDrawingCtx) {
+                                    draw_ctx: *const RsvgDrawingCtx) {
     let xpos: f64;
     let ypos: f64;
 
@@ -396,28 +396,25 @@ fn render_marker_at_end_of_segment (segment: &Segment,
         }
     }
 
-    unsafe { rsvg_marker_render (marker_name, xpos, ypos, orient, linewidth, ctx); }
+    unsafe { rsvg_marker_render (marker_name, xpos, ypos, orient, linewidth, draw_ctx); }
 }
 
-#[no_mangle]
-pub extern fn rsvg_render_markers (ctx: *mut RsvgDrawingCtx,
-                                   raw_builder: *mut RsvgPathBuilder) {
-    let linewidth: f64 = unsafe { rsvg_get_normalized_stroke_width (ctx) };
+pub fn render_markers_for_path_builder (builder:  &RsvgPathBuilder,
+                                        draw_ctx: *const RsvgDrawingCtx) {
+    
+    let linewidth: f64 = unsafe { rsvg_get_normalized_stroke_width (draw_ctx) };
 
     if linewidth == 0.0 {
         return;
     }
 
-    let start_marker = unsafe { rsvg_get_start_marker (ctx) };
-    let middle_marker = unsafe { rsvg_get_middle_marker (ctx) };
-    let end_marker = unsafe { rsvg_get_end_marker (ctx) };
+    let start_marker = unsafe { rsvg_get_start_marker (draw_ctx) };
+    let middle_marker = unsafe { rsvg_get_middle_marker (draw_ctx) };
+    let end_marker = unsafe { rsvg_get_end_marker (draw_ctx) };
 
     if start_marker.is_null () && middle_marker.is_null () && end_marker.is_null () {
         return;
     }
-
-    assert! (!raw_builder.is_null ());
-    let builder: &mut RsvgPathBuilder = unsafe { &mut (*raw_builder) };
 
     /* Convert the path to a list of segments and bare points */
     let segments = path_builder_to_segments (builder);
@@ -434,14 +431,14 @@ pub extern fn rsvg_render_markers (ctx: *mut RsvgDrawingCtx,
                         /* Got a lone point after a subpath; render the subpath's end marker first */
 
                         let (_, incoming_vx, incoming_vy) = find_incoming_directionality_backwards (&segments, i - 1);
-                        render_marker_at_end_of_segment (&segments[i - 1], end_marker, angle_from_vector (incoming_vx, incoming_vy), linewidth, ctx);
+                        render_marker_at_end_of_segment (&segments[i - 1], end_marker, angle_from_vector (incoming_vx, incoming_vy), linewidth, draw_ctx);
                     },
 
                     _ => { }
                 }
 
                 /* Render marker for the lone point; no directionality */
-                render_marker_at_start_of_segment (segment, middle_marker, 0.0, linewidth, ctx);
+                render_marker_at_start_of_segment (segment, middle_marker, 0.0, linewidth, draw_ctx);
 
                 subpath_state = SubpathState::NoSubpath;
             },
@@ -452,7 +449,7 @@ pub extern fn rsvg_render_markers (ctx: *mut RsvgDrawingCtx,
                 match subpath_state {
                     SubpathState::NoSubpath => {
                         let (_, outgoing_vx, outgoing_vy) = find_outgoing_directionality_forwards (&segments, i);
-                        render_marker_at_start_of_segment (segment, start_marker, angle_from_vector (outgoing_vx, outgoing_vy), linewidth, ctx);
+                        render_marker_at_start_of_segment (segment, start_marker, angle_from_vector (outgoing_vx, outgoing_vy), linewidth, draw_ctx);
 
                         subpath_state = SubpathState::InSubpath;
                     },
@@ -481,7 +478,7 @@ pub extern fn rsvg_render_markers (ctx: *mut RsvgDrawingCtx,
                             angle = 0.0;
                         }
 
-                        render_marker_at_start_of_segment (segment, middle_marker, angle, linewidth, ctx);
+                        render_marker_at_start_of_segment (segment, middle_marker, angle, linewidth, draw_ctx);
                     }
                 }
             }
@@ -496,12 +493,21 @@ pub extern fn rsvg_render_markers (ctx: *mut RsvgDrawingCtx,
             Segment::LineOrCurve { .. } => {
                 let (_, incoming_vx, incoming_vy) = find_incoming_directionality_backwards (&segments, segments.len () - 1);
 
-                render_marker_at_end_of_segment (&segment, end_marker, angle_from_vector (incoming_vx, incoming_vy), linewidth, ctx);
+                render_marker_at_end_of_segment (&segment, end_marker, angle_from_vector (incoming_vx, incoming_vy), linewidth, draw_ctx);
             },
 
             _ => { }
         }
     }
+}
+
+#[no_mangle]
+pub extern fn rsvg_render_markers (draw_ctx: *const RsvgDrawingCtx,
+                                   raw_builder: *const RsvgPathBuilder) {
+    assert! (!raw_builder.is_null ());
+    let builder: &RsvgPathBuilder = unsafe { &*raw_builder };
+
+    render_markers_for_path_builder (builder, draw_ctx);
 }
 
 
@@ -511,8 +517,6 @@ pub extern fn rsvg_render_markers (ctx: *mut RsvgDrawingCtx,
 mod tests {
     use std::f64::consts::*;
     use super::*;
-    use path_builder::*;
-    use util::*;
     extern crate cairo;
 
     fn test_bisection_angle (expected: f64,
