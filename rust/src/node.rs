@@ -255,11 +255,11 @@ pub extern fn rsvg_node_foreach_child (raw_node: *const RsvgNode, func: NodeFore
     let node: &RsvgNode = unsafe { & *raw_node };
 
     for child in &*node.children.borrow () {
-        let boxed_child = box_node (child.clone ());
+        let mut boxed_child = box_node (child.clone ());
 
         let next = unsafe { func (boxed_child, data) };
 
-        unsafe { rsvg_node_unref (boxed_child); }
+        boxed_child = rsvg_node_unref (boxed_child);
 
         if !next {
             break;
