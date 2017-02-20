@@ -41,67 +41,6 @@
 /* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
 #define RSVG_ARC_MAGIC ((double) 0.5522847498)
 
-typedef struct _RsvgNodePath RsvgNodePath;
-
-struct _RsvgNodePath {
-    RsvgPathBuilder *builder;
-};
-
-static void
-rsvg_node_path_free (gpointer impl)
-{
-    RsvgNodePath *path = impl;
-
-    if (path->builder)
-        rsvg_path_builder_destroy (path->builder);
-
-    g_free (path);
-}
-
-static void
-rsvg_node_path_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
-{
-    RsvgNodePath *path = impl;
-
-    if (!path->builder)
-        return;
-
-    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), dominate);
-
-    rsvg_render_path_builder (ctx, path->builder);
-    rsvg_render_markers (ctx, path->builder);
-}
-
-static void
-rsvg_node_path_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag * atts)
-{
-    RsvgNodePath *path = impl;
-    const char *value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "d"))) {
-        if (path->builder)
-            rsvg_path_builder_destroy (path->builder);
-        path->builder = rsvg_path_parser_from_str_into_builder (value);
-    }
-}
-
-RsvgNode *
-rsvg_new_path (const char *element_name, RsvgNode *parent)
-{
-    RsvgNodePath *path;
-
-    path = g_new0 (RsvgNodePath, 1);
-    path->builder = NULL;
-
-    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_PATH,
-                                parent,
-                                rsvg_state_new (),
-                                path,
-                                rsvg_node_path_set_atts,
-                                rsvg_node_path_draw,
-                                rsvg_node_path_free);
-}
-
 typedef struct _RsvgNodePoly RsvgNodePoly;
 
 struct _RsvgNodePoly {

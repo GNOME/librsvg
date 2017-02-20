@@ -36,8 +36,10 @@
 
 G_BEGIN_DECLS 
 
+/* Implemented in rust/src/shapes.rs */
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_path (const char *element_name, RsvgNode *parent);
+RsvgNode *rsvg_node_path_new (const char *element_name, RsvgNode *parent);
+
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_polygon (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL

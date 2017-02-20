@@ -313,7 +313,7 @@ static const NodeCreator node_creators[] = {
     /* "missing-glyph",      TRUE,  */
     /* "mpath"               FALSE, */
     { "multiImage",          FALSE, rsvg_new_switch }, /* hack to make multiImage sort-of work */
-    { "path",                TRUE,  rsvg_new_path },
+    { "path",                TRUE,  rsvg_node_path_new },
     { "pattern",             TRUE,  rsvg_new_pattern },
     { "polygon",             TRUE,  rsvg_new_polygon },
     { "polyline",            TRUE,  rsvg_new_polyline },
