@@ -39,6 +39,7 @@ extern "C" {
     fn rsvg_drawing_ctx_set_current_state_affine (draw_ctx: *const RsvgDrawingCtx,
                                                   affine:   *const cairo::Matrix);
 
+    fn rsvg_state_new () -> *mut RsvgState;
     fn rsvg_state_push (draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_state_pop (draw_ctx: *const RsvgDrawingCtx);
 
@@ -138,6 +139,10 @@ pub fn set_current_state_affine (draw_ctx: *const RsvgDrawingCtx, affine: cairo:
     unsafe {
         rsvg_drawing_ctx_set_current_state_affine (draw_ctx, &affine);
     }
+}
+
+pub fn state_new () -> *mut RsvgState {
+    unsafe { rsvg_state_new () }
 }
 
 pub fn state_push (draw_ctx: *const RsvgDrawingCtx) {
