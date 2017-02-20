@@ -318,7 +318,7 @@ static const NodeCreator node_creators[] = {
     { "polygon",             TRUE,  rsvg_new_polygon },
     { "polyline",            TRUE,  rsvg_new_polyline },
     { "radialGradient",      TRUE,  rsvg_new_radial_gradient },
-    { "rect",                TRUE,  rsvg_new_rect },
+    { "rect",                TRUE,  rsvg_node_rect_new },
     /* "script",             FALSE, */
     /* "set",                FALSE, */
     { "stop",                TRUE,  rsvg_new_stop },

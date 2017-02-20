@@ -44,12 +44,14 @@ RsvgNode *rsvg_node_path_new (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_line_new (const char *element_name, RsvgNode *parent);
 
+/* Implemented in rust/src/shapes.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_rect_new (const char *element_name, RsvgNode *parent);
+
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_polygon (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_polyline (const char *element_name, RsvgNode *parent);
-G_GNUC_INTERNAL
-RsvgNode *rsvg_new_rect (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_circle (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
