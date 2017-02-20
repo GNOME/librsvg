@@ -15,6 +15,21 @@ use property_bag;
 use property_bag::*;
 use state::RsvgState;
 
+fn render_path_builder (builder:  &RsvgPathBuilder,
+                        draw_ctx: *const RsvgDrawingCtx,
+                        state:    *mut RsvgState,
+                        dominate: i32,
+                        render_markers: bool) {
+    drawing_ctx::state_reinherit_top (draw_ctx, state, dominate);
+    drawing_ctx::render_path_builder (draw_ctx, builder);
+
+    if render_markers {
+        marker::render_markers_for_path_builder (builder, draw_ctx);
+    }
+}
+
+/***** NodePath *****/
+
 struct NodePath {
     builder: RefCell<RsvgPathBuilder>
 }
@@ -40,17 +55,15 @@ impl NodeTrait for NodePath {
     }
 
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
-        let builder = &*self.builder.borrow ();
-
-        drawing_ctx::state_reinherit_top (draw_ctx, node.get_state (), dominate);
-        drawing_ctx::render_path_builder (draw_ctx, builder);
-        marker::render_markers_for_path_builder (builder, draw_ctx);
+        render_path_builder (&*self.builder.borrow (), draw_ctx, node.get_state (), dominate, true);
     }
 
     fn get_c_impl (&self) -> *const RsvgCNodeImpl {
         ptr::null ()
     }
 }
+
+/***** C Prototypes *****/
 
 #[no_mangle]
 pub extern fn rsvg_node_path_new (element_name: *const libc::c_char, raw_parent: *const RsvgNode) -> *const RsvgNode {
