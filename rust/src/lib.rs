@@ -79,6 +79,7 @@ pub use pattern::{
 };
 
 pub use shapes::{
+    rsvg_node_line_new,
     rsvg_node_path_new,
 };
 pub use viewbox::{
