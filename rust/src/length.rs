@@ -44,6 +44,16 @@ pub struct RsvgLength {
     dir: LengthDir
 }
 
+impl Default for RsvgLength {
+    fn default () -> RsvgLength {
+        RsvgLength {
+            length: 0.0,
+            unit:   LengthUnit::Default,
+            dir:    LengthDir::Both
+        }
+    }
+}
+
 const POINTS_PER_INCH: f64 = 72.0;
 const CM_PER_INCH:     f64 = 2.54;
 const MM_PER_INCH:     f64 = 25.4;
