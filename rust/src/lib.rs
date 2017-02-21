@@ -79,6 +79,7 @@ pub use pattern::{
 };
 
 pub use shapes::{
+    rsvg_node_circle_new,
     rsvg_node_line_new,
     rsvg_node_path_new,
     rsvg_node_rect_new,

@@ -346,6 +346,81 @@ impl NodeTrait for NodeRect {
     }
 }
 
+/***** NodeCircle *****/
+
+struct NodeCircle {
+    cx: Cell<RsvgLength>,
+    cy: Cell<RsvgLength>,
+    r:  Cell<RsvgLength>
+}
+
+impl NodeCircle {
+    fn new () -> NodeCircle {
+        NodeCircle {
+            cx: Cell::new (RsvgLength::default ()),
+            cy: Cell::new (RsvgLength::default ()),
+            r:  Cell::new (RsvgLength::default ()),
+        }
+    }
+}
+
+impl NodeTrait for NodeCircle {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+        self.cx.set (property_bag::lookup (pbag, "cx").map_or (RsvgLength::default (),
+                                                              |v| RsvgLength::parse (&v, LengthDir::Horizontal)));
+
+        self.cy.set (property_bag::lookup (pbag, "cy").map_or (RsvgLength::default (),
+                                                               |v| RsvgLength::parse (&v, LengthDir::Vertical)));
+
+        self.r.set (property_bag::lookup (pbag, "r").map_or (RsvgLength::default (),
+                                                             |v| RsvgLength::parse (&v, LengthDir::Both)));
+    }
+
+    fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+        let cx = self.cx.get ().normalize (draw_ctx);
+        let cy = self.cy.get ().normalize (draw_ctx);
+        let r = self.r.get ().normalize (draw_ctx);
+
+        // Per the spec, r must be nonnegative
+        if r <= 0.0 {
+            return;
+        }
+
+        // 4/3 * (1-cos 45°)/sin 45° = 4/3 * sqrt(2) - 1
+        let arc_magic: f64 = 0.5522847498;
+
+        // approximate a circle using 4 Bézier curves
+
+        let mut builder = RsvgPathBuilder::new ();
+
+        builder.move_to (cx + r, cy);
+
+        builder.curve_to (cx + r, cy + r * arc_magic,
+                          cx + r * arc_magic, cy + r,
+                          cx, cy + r);
+
+        builder.curve_to (cx - r * arc_magic, cy + r,
+                          cx - r, cy + r * arc_magic,
+                          cx - r, cy);
+
+        builder.curve_to (cx - r, cy - r * arc_magic,
+                          cx - r * arc_magic, cy - r,
+                          cx, cy - r);
+
+        builder.curve_to (cx + r * arc_magic, cy - r,
+                          cx + r, cy - r * arc_magic,
+                          cx + r, cy);
+
+        builder.close_path ();
+
+        render_path_builder (&builder, draw_ctx, node.get_state (), dominate, false);
+    }
+
+    fn get_c_impl (&self) -> *const RsvgCNodeImpl {
+        ptr::null ()
+    }
+}
+
 /***** C Prototypes *****/
 
 #[no_mangle]
@@ -370,4 +445,12 @@ pub extern fn rsvg_node_rect_new (_: *const libc::c_char, raw_parent: *const Rsv
                                   parent_ptr_to_weak (raw_parent),
                                   drawing_ctx::state_new (),
                                   Box::new (NodeRect::new ()))))
+}
+
+#[no_mangle]
+pub extern fn rsvg_node_circle_new (_: *const libc::c_char, raw_parent: *const RsvgNode) -> *const RsvgNode {
+    box_node (Rc::new (Node::new (NodeType::Circle,
+                                  parent_ptr_to_weak (raw_parent),
+                                  drawing_ctx::state_new (),
+                                  Box::new (NodeCircle::new ()))))
 }
