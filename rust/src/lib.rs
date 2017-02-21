@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate bitflags;
 
+#[macro_use]
+extern crate nom;
+
 pub use aspect_ratio::{
     FitMode,
     AlignMode,
@@ -99,6 +102,7 @@ mod gradient;
 mod length;
 mod marker;
 mod node;
+mod parsers;
 mod path_builder;
 mod path_parser;
 mod pattern;
