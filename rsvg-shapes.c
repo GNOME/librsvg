@@ -38,9 +38,6 @@
 #include "rsvg-path-builder.h"
 #include "rsvg-marker.h"
 
-/* 4/3 * (1-cos 45)/sin 45 = 4/3 * sqrt(2) - 1 */
-#define RSVG_ARC_MAGIC ((double) 0.5522847498)
-
 typedef struct _RsvgNodePoly RsvgNodePoly;
 
 struct _RsvgNodePoly {
@@ -165,101 +162,4 @@ RsvgNode *
 rsvg_new_polyline (const char *element_name, RsvgNode *parent)
 {
     return rsvg_new_any_poly (RSVG_NODE_TYPE_POLYLINE, parent);
-}
-
-typedef struct _RsvgNodeEllipse RsvgNodeEllipse;
-
-struct _RsvgNodeEllipse {
-    RsvgLength cx, cy, rx, ry;
-};
-
-static void
-rsvg_node_ellipse_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
-{
-    RsvgNodeEllipse *ellipse = impl;
-    const char *value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "cx")))
-        ellipse->cx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-    if ((value = rsvg_property_bag_lookup (atts, "cy")))
-        ellipse->cy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-    if ((value = rsvg_property_bag_lookup (atts, "rx")))
-        ellipse->rx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-    if ((value = rsvg_property_bag_lookup (atts, "ry")))
-        ellipse->ry = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-}
-
-static void
-rsvg_node_ellipse_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
-{
-    RsvgNodeEllipse *ellipse = impl;
-    double cx, cy, rx, ry;
-    RsvgPathBuilder *builder;
-
-    cx = rsvg_length_normalize (&ellipse->cx, ctx);
-    cy = rsvg_length_normalize (&ellipse->cy, ctx);
-    rx = rsvg_length_normalize (&ellipse->rx, ctx);
-    ry = rsvg_length_normalize (&ellipse->ry, ctx);
-
-    if (rx <= 0 || ry <= 0)
-        return;
-
-    /* approximate an ellipse using 4 bezier curves */
-
-    builder = rsvg_path_builder_new ();
-
-    rsvg_path_builder_move_to (builder, cx + rx, cy);
-
-    rsvg_path_builder_curve_to (builder,
-                                cx + rx, cy - RSVG_ARC_MAGIC * ry,
-                                cx + RSVG_ARC_MAGIC * rx, cy - ry,
-                                cx, cy - ry);
-
-    rsvg_path_builder_curve_to (builder,
-                                cx - RSVG_ARC_MAGIC * rx, cy - ry,
-                                cx - rx, cy - RSVG_ARC_MAGIC * ry,
-                                cx - rx, cy);
-
-    rsvg_path_builder_curve_to (builder,
-                                cx - rx, cy + RSVG_ARC_MAGIC * ry,
-                                cx - RSVG_ARC_MAGIC * rx, cy + ry,
-                                cx, cy + ry);
-
-    rsvg_path_builder_curve_to (builder,
-                                cx + RSVG_ARC_MAGIC * rx, cy + ry,
-                                cx + rx, cy + RSVG_ARC_MAGIC * ry,
-                                cx + rx, cy);
-
-    rsvg_path_builder_close_path (builder);
-
-    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), dominate);
-
-    rsvg_render_path_builder (ctx, builder);
-
-    rsvg_path_builder_destroy (builder);
-}
-
-static void
-rsvg_node_ellipse_free (gpointer impl)
-{
-    RsvgNodeEllipse *ellipse = impl;
-
-    g_free (ellipse);
-}
-
-RsvgNode *
-rsvg_new_ellipse (const char *element_name, RsvgNode *parent)
-{
-    RsvgNodeEllipse *ellipse;
-
-    ellipse = g_new0 (RsvgNodeEllipse, 1);
-    ellipse->cx = ellipse->cy = ellipse->rx = ellipse->ry = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
-
-    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_ELLIPSE,
-                                parent,
-                                rsvg_state_new (),
-                                ellipse,
-                                rsvg_node_ellipse_set_atts,
-                                rsvg_node_ellipse_draw,
-                                rsvg_node_ellipse_free);
 }

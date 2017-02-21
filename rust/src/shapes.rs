@@ -30,6 +30,49 @@ fn render_path_builder (builder:  &RsvgPathBuilder,
     }
 }
 
+fn render_ellipse (cx: f64,
+                   cy: f64,
+                   rx: f64,
+                   ry: f64,
+                   node: &RsvgNode,
+                   draw_ctx: *const RsvgDrawingCtx,
+                   dominate: i32) {
+    // Per the spec, rx and ry must be nonnegative
+
+    if rx <= 0.0 || ry <= 0.0 {
+        return;
+    }
+
+    // 4/3 * (1-cos 45°)/sin 45° = 4/3 * sqrt(2) - 1
+    let arc_magic: f64 = 0.5522847498;
+
+    // approximate an ellipse using 4 Bézier curves
+
+    let mut builder = RsvgPathBuilder::new ();
+
+    builder.move_to (cx + rx, cy);
+
+    builder.curve_to (cx + rx, cy - arc_magic * ry,
+                      cx + arc_magic * rx, cy - ry,
+                      cx, cy - ry);
+
+    builder.curve_to (cx - arc_magic * rx, cy - ry,
+                      cx - rx, cy - arc_magic * ry,
+                      cx - rx, cy);
+
+    builder.curve_to (cx - rx, cy + arc_magic * ry,
+                      cx - arc_magic * rx, cy + ry,
+                      cx, cy + ry);
+
+    builder.curve_to (cx + arc_magic * rx, cy + ry,
+                      cx + rx, cy + arc_magic * ry,
+                      cx + rx, cy);
+
+    builder.close_path ();
+
+    render_path_builder (&builder, draw_ctx, node.get_state (), dominate, false);
+}
+
 /***** NodePath *****/
 
 struct NodePath {
@@ -381,40 +424,57 @@ impl NodeTrait for NodeCircle {
         let cy = self.cy.get ().normalize (draw_ctx);
         let r = self.r.get ().normalize (draw_ctx);
 
-        // Per the spec, r must be nonnegative
-        if r <= 0.0 {
-            return;
-        }
-
-        // 4/3 * (1-cos 45°)/sin 45° = 4/3 * sqrt(2) - 1
-        let arc_magic: f64 = 0.5522847498;
-
-        // approximate a circle using 4 Bézier curves
-
-        let mut builder = RsvgPathBuilder::new ();
-
-        builder.move_to (cx + r, cy);
-
-        builder.curve_to (cx + r, cy + r * arc_magic,
-                          cx + r * arc_magic, cy + r,
-                          cx, cy + r);
-
-        builder.curve_to (cx - r * arc_magic, cy + r,
-                          cx - r, cy + r * arc_magic,
-                          cx - r, cy);
-
-        builder.curve_to (cx - r, cy - r * arc_magic,
-                          cx - r * arc_magic, cy - r,
-                          cx, cy - r);
-
-        builder.curve_to (cx + r * arc_magic, cy - r,
-                          cx + r, cy - r * arc_magic,
-                          cx + r, cy);
-
-        builder.close_path ();
-
-        render_path_builder (&builder, draw_ctx, node.get_state (), dominate, false);
+        render_ellipse (cx, cy, r, r, node, draw_ctx, dominate);
     }
+
+    fn get_c_impl (&self) -> *const RsvgCNodeImpl {
+        ptr::null ()
+    }
+}
+
+/***** NodeEllipse *****/
+
+struct NodeEllipse {
+    cx: Cell <RsvgLength>,
+    cy: Cell <RsvgLength>,
+    rx: Cell <RsvgLength>,
+    ry: Cell <RsvgLength>
+}
+
+impl NodeEllipse {
+    fn new () -> NodeEllipse {
+        NodeEllipse {
+            cx: Cell::new (RsvgLength::default ()),
+            cy: Cell::new (RsvgLength::default ()),
+            rx: Cell::new (RsvgLength::default ()),
+            ry: Cell::new (RsvgLength::default ()),
+        }
+    }
+}
+
+impl NodeTrait for NodeEllipse {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+        self.cx.set (property_bag::lookup (pbag, "cx").map_or (RsvgLength::default (),
+                                                              |v| RsvgLength::parse (&v, LengthDir::Horizontal)));
+
+        self.cy.set (property_bag::lookup (pbag, "cy").map_or (RsvgLength::default (),
+                                                               |v| RsvgLength::parse (&v, LengthDir::Vertical)));
+    
+        self.rx.set (property_bag::lookup (pbag, "rx").map_or (RsvgLength::default (),
+                                                               |v| RsvgLength::parse (&v, LengthDir::Horizontal)));
+
+        self.ry.set (property_bag::lookup (pbag, "ry").map_or (RsvgLength::default (),
+                                                               |v| RsvgLength::parse (&v, LengthDir::Vertical)));
+    }
+
+    fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+        let cx = self.cx.get ().normalize (draw_ctx);
+        let cy = self.cy.get ().normalize (draw_ctx);
+        let rx = self.rx.get ().normalize (draw_ctx);
+        let ry = self.ry.get ().normalize (draw_ctx);
+
+        render_ellipse (cx, cy, rx, ry, node, draw_ctx, dominate);
+    }        
 
     fn get_c_impl (&self) -> *const RsvgCNodeImpl {
         ptr::null ()
@@ -453,4 +513,12 @@ pub extern fn rsvg_node_circle_new (_: *const libc::c_char, raw_parent: *const R
                                   parent_ptr_to_weak (raw_parent),
                                   drawing_ctx::state_new (),
                                   Box::new (NodeCircle::new ()))))
+}
+
+#[no_mangle]
+pub extern fn rsvg_node_ellipse_new (_: *const libc::c_char, raw_parent: *const RsvgNode) -> *const RsvgNode {
+    box_node (Rc::new (Node::new (NodeType::Ellipse,
+                                  parent_ptr_to_weak (raw_parent),
+                                  drawing_ctx::state_new (),
+                                  Box::new (NodeEllipse::new ()))))
 }

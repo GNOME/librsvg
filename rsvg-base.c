@@ -267,7 +267,7 @@ static const NodeCreator node_creators[] = {
     /* "cursor",             FALSE, */
     { "defs",                TRUE,  rsvg_new_defs },
     /* "desc",               TRUE,  */
-    { "ellipse",             TRUE,  rsvg_new_ellipse },
+    { "ellipse",             TRUE,  rsvg_node_ellipse_new },
     { "feBlend",             TRUE,  rsvg_new_filter_primitive_blend },
     { "feColorMatrix",       TRUE,  rsvg_new_filter_primitive_color_matrix },
     { "feComponentTransfer", TRUE,  rsvg_new_filter_primitive_component_transfer },
