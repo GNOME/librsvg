@@ -61,15 +61,15 @@ named! (pub comma,
 // Where w and h must be nonnegative.
 
 named! (pub view_box<(f64, f64, f64, f64)>,
-        verify! (ws! (do_parse! (x: double >>
-                                 opt! (comma) >>
-                                 y: double >>
-                                 opt! (comma) >>
-                                 w: double >>
-                                 opt! (comma) >>
-                                 h: double >>
-                                 (x, y, w, h))),
-                 |(x, y, w, h)| w >= 0.0 && h >= 0.0));
+        ws! (do_parse! (x: double    >>
+                        opt! (comma) >>
+                        y: double    >>
+                        opt! (comma) >>
+                        w: double    >>
+                        opt! (comma) >>
+                        h: double    >>
+                        eof! ()      >>
+                        (x, y, w, h))));
 
 #[cfg(test)]
 mod tests {
@@ -93,5 +93,13 @@ mod tests {
     #[test]
     fn parses_view_box () {
         assert_eq! (view_box (b"1 2 3 4"), IResult::Done (&b""[..], (1.0, 2.0, 3.0, 4.0)));
+        assert_eq! (view_box (b"1,2,3 4"), IResult::Done (&b""[..], (1.0, 2.0, 3.0, 4.0)));
+
+        let result = view_box (b"1 2 3 4 5");
+
+        match result {
+            IResult::Error (_) => { },
+            _ => { panic! ("{:?}", result); }
+        }
     }
 }
