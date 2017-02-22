@@ -276,15 +276,14 @@ mod tests {
     use state::RsvgState;
     use super::*;
     use std::ptr;
-    use std::mem;
 
     struct TestNodeImpl {}
 
     impl NodeTrait for TestNodeImpl {
-        fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+        fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, _: *const RsvgPropertyBag) {
         }
 
-        fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+        fn draw (&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
         }
 
         fn get_c_impl (&self) -> *const RsvgCNodeImpl {
@@ -299,18 +298,18 @@ mod tests {
                                        ptr::null_mut (),
                                        Box::new (TestNodeImpl {})));
 
-        let mut ref1 = box_node (node);
+        let ref1 = box_node (node);
 
         let new_node: &mut RsvgNode = unsafe { &mut *ref1 };
         let weak = Rc::downgrade (new_node);
 
-        let mut ref2 = unsafe { rsvg_node_ref (new_node) };
+        let ref2 = rsvg_node_ref (new_node);
         assert! (weak.upgrade ().is_some ());
 
-        ref2 = unsafe { rsvg_node_unref (ref2) };
+        rsvg_node_unref (ref2);
         assert! (weak.upgrade ().is_some ());
 
-        ref1 = unsafe { rsvg_node_unref (ref1) };
+        rsvg_node_unref (ref1);
         assert! (weak.upgrade ().is_none ());
     }
 
@@ -321,14 +320,14 @@ mod tests {
                                        ptr::null_mut (),
                                        Box::new (TestNodeImpl {})));
 
-        let mut ref1 = box_node (node);
+        let ref1 = box_node (node);
 
-        let mut ref2 = unsafe { rsvg_node_ref (ref1) };
+        let ref2 = rsvg_node_ref (ref1);
 
-        unsafe { assert! (rsvg_node_is_same (ref1, ref2)); }
+        assert! (rsvg_node_is_same (ref1, ref2));
 
-        ref1 = rsvg_node_unref (ref1);
-        ref2 = rsvg_node_unref (ref2);
+        rsvg_node_unref (ref1);
+        rsvg_node_unref (ref2);
     }
 
     #[test]
@@ -338,18 +337,18 @@ mod tests {
                                        ptr::null_mut (),
                                        Box::new (TestNodeImpl {})));
 
-        let mut ref1 = box_node (node1);
+        let ref1 = box_node (node1);
 
         let node2 = Rc::new (Node::new (NodeType::Path,
                                        None,
                                        ptr::null_mut (),
                                        Box::new (TestNodeImpl {})));
 
-        let mut ref2 = box_node (node2);
+        let ref2 = box_node (node2);
 
-        unsafe { assert! (!rsvg_node_is_same (ref1, ref2)); }
+        assert! (!rsvg_node_is_same (ref1, ref2));
 
-        ref1 = rsvg_node_unref (ref1);
-        ref2 = rsvg_node_unref (ref2);
+        rsvg_node_unref (ref1);
+        rsvg_node_unref (ref2);
     }
 }

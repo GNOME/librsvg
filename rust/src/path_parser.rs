@@ -1018,7 +1018,6 @@ pub extern fn rsvg_path_parser_from_str_into_builder (path_str: *const libc::c_c
 #[cfg(test)]
 mod tests {
     use super::*;
-    use path_builder::*;
 
     extern crate cairo;
 
