@@ -1,4 +1,4 @@
-use nom::{IResult, is_digit};
+use nom::{IResult, is_digit, double, ErrorKind};
 use std::str;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -48,6 +48,29 @@ named! (pub floating_point_constant<FloatingPointConstant>,
                          ((Some (d), None), Some (e))))
 );
 
+named! (pub comma,
+        tag! (b","));
+
+// Parse a viewBox attribute
+// https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
+//
+// viewBox: double [,] double [,] double [,] double [,]
+//
+// x, y, w, h
+//
+// Where w and h must be nonnegative.
+
+named! (pub view_box<(f64, f64, f64, f64)>,
+        verify! (ws! (do_parse! (x: double >>
+                                 opt! (comma) >>
+                                 y: double >>
+                                 opt! (comma) >>
+                                 w: double >>
+                                 opt! (comma) >>
+                                 h: double >>
+                                 (x, y, w, h))),
+                 |(x, y, w, h)| w >= 0.0 && h >= 0.0));
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -65,6 +88,10 @@ mod tests {
         assert_eq! (fractional_constant (b"1.23"), IResult::Done (&b""[..], (Some (&b"1"[..]), Some (&b"23"[..]))));
         assert_eq! (fractional_constant (b"1."), IResult::Done (&b""[..], (Some (&b"1"[..]), None)));
         assert_eq! (fractional_constant (b".23"), IResult::Done (&b""[..], (None, Some (&b"23"[..]))));
+    }
 
+    #[test]
+    fn parses_view_box () {
+        assert_eq! (view_box (b"1 2 3 4"), IResult::Done (&b""[..], (1.0, 2.0, 3.0, 4.0)));
     }
 }

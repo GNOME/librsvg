@@ -24,7 +24,9 @@ git = "https://github.com/gtk-rs/glib"
 version = "0.1.1"
 
 [dependencies.nom]
-git = "https://github.com/Geal/nom"
+#git = "https://github.com/Geal/nom"
+git = "https://github.com/federicomenaquintero/nom.git"
+features = ["verbose-errors"]
 
 [lib]
 name = "rsvg_internals"
