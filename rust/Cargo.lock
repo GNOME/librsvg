@@ -3,11 +3,11 @@ name = "rsvg_internals"
 version = "0.0.1"
 dependencies = [
  "bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cairo-rs 0.1.1 (git+https://github.com/federicomenaquintero/cairo.git)",
- "cairo-sys-rs 0.3.2 (git+https://github.com/federicomenaquintero/cairo.git)",
+ "cairo-rs 0.1.1 (git+https://github.com/gtk-rs/cairo.git)",
+ "cairo-sys-rs 0.3.2 (git+https://github.com/gtk-rs/cairo.git)",
  "glib 0.1.1 (git+https://github.com/gtk-rs/glib)",
  "libc 0.2.20 (registry+https://github.com/rust-lang/crates.io-index)",
- "nom 2.1.0 (git+https://github.com/Geal/nom)",
+ "nom 2.1.0 (git+https://github.com/federicomenaquintero/nom.git)",
 ]
 
 [[package]]
@@ -33,10 +33,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "cairo-rs"
 version = "0.1.1"
-source = "git+https://github.com/federicomenaquintero/cairo.git#873e182c160bb021d596bed4de5da6b899f381bb"
+source = "git+https://github.com/gtk-rs/cairo.git#411ffb9c719fc686e948bf5f5ff3b0236a6456f3"
 dependencies = [
  "c_vec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cairo-sys-rs 0.3.2 (git+https://github.com/federicomenaquintero/cairo.git)",
+ "cairo-sys-rs 0.3.2 (git+https://github.com/gtk-rs/cairo.git)",
  "glib 0.1.1 (git+https://github.com/gtk-rs/glib)",
  "libc 0.2.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -45,7 +45,7 @@ dependencies = [
 [[package]]
 name = "cairo-sys-rs"
 version = "0.3.2"
-source = "git+https://github.com/federicomenaquintero/cairo.git#873e182c160bb021d596bed4de5da6b899f381bb"
+source = "git+https://github.com/gtk-rs/cairo.git#411ffb9c719fc686e948bf5f5ff3b0236a6456f3"
 dependencies = [
  "libc 0.2.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -109,8 +109,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum bitflags 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4f67931368edf3a9a51d29886d245f1c3db2f1ef0dcc9e35ff70341b78c10d23"
 "checksum bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "aad18937a628ec6abcd26d1489012cc0e18c21798210f491af69ded9b881106d"
 "checksum c_vec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0059f5a658f62a4bd3937a7addc52ccfda144b75cce7a92b187e528629cdc507"
-"checksum cairo-rs 0.1.1 (git+https://github.com/federicomenaquintero/cairo.git)" = "<none>"
-"checksum cairo-sys-rs 0.3.2 (git+https://github.com/federicomenaquintero/cairo.git)" = "<none>"
+"checksum cairo-rs 0.1.1 (git+https://github.com/gtk-rs/cairo.git)" = "<none>"
+"checksum cairo-sys-rs 0.3.2 (git+https://github.com/gtk-rs/cairo.git)" = "<none>"
 "checksum glib 0.1.1 (git+https://github.com/gtk-rs/glib)" = "<none>"
 "checksum glib-sys 0.3.2 (git+https://github.com/gtk-rs/sys)" = "<none>"
 "checksum gobject-sys 0.3.2 (git+https://github.com/gtk-rs/sys)" = "<none>"
