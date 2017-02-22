@@ -6,6 +6,7 @@ use std::cell::RefCell;
 use std::ptr;
 
 use drawing_ctx::RsvgDrawingCtx;
+use drawing_ctx;
 
 use handle::RsvgHandle;
 
@@ -142,6 +143,24 @@ impl Drop for Node {
     fn drop (&mut self) {
 //        unsafe { rsvg_state_free (self.state); }
     }
+}
+
+pub fn node_ptr_to_weak (raw_parent: *const RsvgNode) -> Option<Weak<Node>> {
+    if raw_parent.is_null () {
+        None
+    } else {
+        let p: &RsvgNode = unsafe { & *raw_parent };
+        Some (Rc::downgrade (&p.clone ()))
+    }
+}
+
+pub fn boxed_node_new (node_type:  NodeType,
+                       raw_parent: *const RsvgNode,
+                       node_impl: Box<NodeTrait>) -> *mut RsvgNode {
+    box_node (Rc::new (Node::new (node_type,
+                                  node_ptr_to_weak (raw_parent),
+                                  drawing_ctx::state_new (),
+                                  node_impl)))
 }
 
 #[no_mangle]

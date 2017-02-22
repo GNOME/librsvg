@@ -1,10 +1,8 @@
 use std::cell::RefCell;
 use std::ptr;
-use std::rc::Rc;
 use std::cell::Cell;
 extern crate libc;
 
-use cnode::*;
 use drawing_ctx;
 use drawing_ctx::*;
 use handle::RsvgHandle;
@@ -485,40 +483,35 @@ impl NodeTrait for NodeEllipse {
 
 #[no_mangle]
 pub extern fn rsvg_node_path_new (_: *const libc::c_char, raw_parent: *const RsvgNode) -> *const RsvgNode {
-    box_node (Rc::new (Node::new (NodeType::Path,
-                                  parent_ptr_to_weak (raw_parent),
-                                  drawing_ctx::state_new (),
-                                  Box::new (NodePath::new ()))))
+    boxed_node_new (NodeType::Path,
+                    raw_parent,
+                    Box::new (NodePath::new ()))
 }
 
 #[no_mangle]
 pub extern fn rsvg_node_line_new (_: *const libc::c_char, raw_parent: *const RsvgNode) -> *const RsvgNode {
-    box_node (Rc::new (Node::new (NodeType::Line,
-                                  parent_ptr_to_weak (raw_parent),
-                                  drawing_ctx::state_new (),
-                                  Box::new (NodeLine::new ()))))
+    boxed_node_new (NodeType::Line,
+                    raw_parent,
+                    Box::new (NodeLine::new ()))
 }
 
 #[no_mangle]
 pub extern fn rsvg_node_rect_new (_: *const libc::c_char, raw_parent: *const RsvgNode) -> *const RsvgNode {
-    box_node (Rc::new (Node::new (NodeType::Rect,
-                                  parent_ptr_to_weak (raw_parent),
-                                  drawing_ctx::state_new (),
-                                  Box::new (NodeRect::new ()))))
+    boxed_node_new (NodeType::Rect,
+                    raw_parent,
+                    Box::new (NodeRect::new ()))
 }
 
 #[no_mangle]
 pub extern fn rsvg_node_circle_new (_: *const libc::c_char, raw_parent: *const RsvgNode) -> *const RsvgNode {
-    box_node (Rc::new (Node::new (NodeType::Circle,
-                                  parent_ptr_to_weak (raw_parent),
-                                  drawing_ctx::state_new (),
-                                  Box::new (NodeCircle::new ()))))
+    boxed_node_new (NodeType::Circle,
+                    raw_parent,
+                    Box::new (NodeCircle::new ()))
 }
 
 #[no_mangle]
 pub extern fn rsvg_node_ellipse_new (_: *const libc::c_char, raw_parent: *const RsvgNode) -> *const RsvgNode {
-    box_node (Rc::new (Node::new (NodeType::Ellipse,
-                                  parent_ptr_to_weak (raw_parent),
-                                  drawing_ctx::state_new (),
-                                  Box::new (NodeEllipse::new ()))))
+    boxed_node_new (NodeType::Ellipse,
+                    raw_parent,
+                    Box::new (NodeEllipse::new ()))
 }

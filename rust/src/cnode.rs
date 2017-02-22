@@ -38,15 +38,6 @@ impl Drop for CNode {
     }
 }
 
-pub fn parent_ptr_to_weak (raw_parent: *const RsvgNode) -> Option<Weak<Node>> {
-    if raw_parent.is_null () {
-        None
-    } else {
-        let p: &RsvgNode = unsafe { & *raw_parent };
-        Some (Rc::downgrade (&p.clone ()))
-    }
-}
-
 #[no_mangle]
 pub extern fn rsvg_rust_cnode_new (node_type:   NodeType,
                                    raw_parent:  *const RsvgNode,
@@ -66,7 +57,7 @@ pub extern fn rsvg_rust_cnode_new (node_type:   NodeType,
     };
 
     box_node (Rc::new (Node::new (node_type,
-                                  parent_ptr_to_weak (raw_parent),
+                                  node_ptr_to_weak (raw_parent),
                                   state,
                                   Box::new (cnode))))
 }
