@@ -1,4 +1,4 @@
-use nom::{IResult, is_digit, double, ErrorKind};
+use nom::{IResult, is_digit, double, double_s, ErrorKind, space, sp};
 use std::str;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -48,8 +48,26 @@ named! (pub floating_point_constant<FloatingPointConstant>,
                          ((Some (d), None), Some (e))))
 );
 
-named! (pub comma,
-        tag! (b","));
+fn is_whitespace (c: u8) -> bool {
+    match c as char {
+        ' ' | '\t' | '\r' | '\n' => true,
+        _ => false
+    }
+}
+
+// comma-wsp:
+//     (wsp+ comma? wsp*) | (comma wsp*)
+
+named! (comma, complete! (tag! (",")));
+named! (wsp, recognize! (take_while1! (is_whitespace)));
+named! (wsp_opt, recognize! (take_while! (is_whitespace)));
+
+named! (comma_wsp,
+    alt! (recognize! (tuple! (comma,
+                              wsp_opt))
+          | recognize! (tuple! (wsp,
+                                opt! (comma),
+                                wsp_opt))));
 
 // Parse a viewBox attribute
 // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
@@ -70,6 +88,26 @@ named! (pub view_box<(f64, f64, f64, f64)>,
                         h: double    >>
                         eof! ()      >>
                         (x, y, w, h))));
+
+// Coordinate pairs, separated by optional (whitespace-and/or comma)
+//
+// All of these yield (1, -2): "1 -2", "1, -2", "1-2"
+
+named! (pub coordinate_pair<(f64, f64)>,
+        do_parse! (x: double        >>
+                   opt! (comma_wsp) >>
+                   y: double        >>
+                   (x, y)));
+
+// Parse a list-of-points as for polyline and polygon elements
+// https://www.w3.org/TR/SVG/shapes.html#PointsBNF
+
+named! (pub list_of_points<Vec<(f64, f64)>>,
+        terminated! (separated_list! (comma_wsp, coordinate_pair),
+                     eof! ()));
+
+named! (pub separated_numbers<Vec<f64>>,
+        separated_list! (comma_wsp, double));
 
 #[cfg(test)]
 mod tests {
@@ -94,12 +132,114 @@ mod tests {
     fn parses_view_box () {
         assert_eq! (view_box (b"1 2 3 4"), IResult::Done (&b""[..], (1.0, 2.0, 3.0, 4.0)));
         assert_eq! (view_box (b"1,2,3 4"), IResult::Done (&b""[..], (1.0, 2.0, 3.0, 4.0)));
+        assert_eq! (view_box (b" 1,2,3 4 "), IResult::Done (&b""[..], (1.0, 2.0, 3.0, 4.0)));
 
         let result = view_box (b"1 2 3 4 5");
 
         match result {
             IResult::Error (_) => { },
-            _ => { panic! ("{:?}", result); }
+            _ => { panic! ("{:?} should be an invalid viewBox", result); }
+        }
+    }
+
+    #[test]
+    fn parses_coordinate_pairs () {
+        assert_eq! (coordinate_pair (b"1 2"),    IResult::Done (&b""[..], (1.0, 2.0)));
+        assert_eq! (coordinate_pair (b"1-2"),    IResult::Done (&b""[..], (1.0, -2.0)));
+        assert_eq! (coordinate_pair (b"1,2"),    IResult::Done (&b""[..], (1.0, 2.0)));
+        assert_eq! (coordinate_pair (b"1, 2"),   IResult::Done (&b""[..], (1.0, 2.0)));
+        assert_eq! (coordinate_pair (b"1 ,2"),   IResult::Done (&b""[..], (1.0, 2.0)));
+        assert_eq! (coordinate_pair (b"1 , 2"),  IResult::Done (&b""[..], (1.0, 2.0)));
+        assert_eq! (coordinate_pair (b"1 -2"),   IResult::Done (&b""[..], (1.0, -2.0)));
+        assert_eq! (coordinate_pair (b"1,-2"),   IResult::Done (&b""[..], (1.0, -2.0)));
+        assert_eq! (coordinate_pair (b"1, -2"),  IResult::Done (&b""[..], (1.0, -2.0)));
+        assert_eq! (coordinate_pair (b"1 , -2"), IResult::Done (&b""[..], (1.0, -2.0)));
+    }
+
+    #[test]
+    fn detects_incomplete_coordinate_pair () {
+        let result = coordinate_pair (b"1");
+        match result {
+            IResult::Incomplete (_) => { },
+            _ => { panic! ("{:?} should be an incomplete coordinate-pair", result); }
+        }
+
+        let result = coordinate_pair (b"1,");
+        match result {
+            IResult::Incomplete (_) => { },
+            _ => { panic! ("{:?} should be an incomplete coordinate-pair", result); }
+        }
+
+        let result = coordinate_pair (b"1, ");
+        match result {
+            IResult::Incomplete (_) => { },
+            _ => { panic! ("{:?} should be an incomplete coordinate-pair", result); }
+        }
+
+        let result = coordinate_pair (b"1-");
+        match result {
+            IResult::Incomplete (_) => { },
+            _ => { panic! ("{:?} should be an incomplete coordinate-pair", result); }
+        }
+
+        let result = coordinate_pair (b"1,-");
+        match result {
+            IResult::Incomplete (_) => { },
+            _ => { panic! ("{:?} should be an incomplete coordinate-pair", result); }
+        }
+
+        let result = coordinate_pair (b"-1 -");
+        match result {
+            IResult::Incomplete (_) => { },
+            _ => { panic! ("{:?} should be an incomplete coordinate-pair", result); }
+        }
+    }
+
+    #[test]
+    fn parses_comma_wsp () {
+        assert_eq! (comma_wsp (b" , "), IResult::Done (&b""[..], &b" , "[..]));
+        assert_eq! (comma_wsp (b","),   IResult::Done (&b""[..], &b","[..]));
+        assert_eq! (comma_wsp (b" "),   IResult::Done (&b""[..], &b" "[..]));
+        assert_eq! (comma_wsp (b", "),  IResult::Done (&b""[..], &b", "[..]));
+        assert_eq! (comma_wsp (b" ,"),  IResult::Done (&b""[..], &b" ,"[..]));
+    }
+
+    #[test]
+    fn parses_separated_numbers () {
+        assert_eq! (separated_numbers (b"1 2 3 4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
+        assert_eq! (separated_numbers (b"1,2,3,4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
+        assert_eq! (separated_numbers (b"1 ,2 ,3 ,4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
+        assert_eq! (separated_numbers (b"1  ,2  ,3  ,4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
+        assert_eq! (separated_numbers (b"1, 2, 3, 4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
+        assert_eq! (separated_numbers (b"1,  2,  3,  4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
+        assert_eq! (separated_numbers (b"1 , 2 , 3 , 4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
+        assert_eq! (separated_numbers (b"1  , 2  , 3  , 4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
+        assert_eq! (separated_numbers (b"1  ,  2  ,  3  ,  4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
+    }
+
+    #[test]
+    fn parses_list_of_points () {
+        // FIXME: we are missing optional whitespace at the beginning and end of the list
+        assert_eq! (list_of_points (b"1 2"),  IResult::Done (&b""[..], vec! [(1.0, 2.0)]));
+        assert_eq! (list_of_points (b"1 2 3 4"),  IResult::Done (&b""[..], vec! [(1.0, 2.0), (3.0, 4.0)]));
+        assert_eq! (list_of_points (b"1,2,3,4"),  IResult::Done (&b""[..], vec! [(1.0, 2.0), (3.0, 4.0)]));
+        assert_eq! (list_of_points (b"1,2 3,4"),  IResult::Done (&b""[..], vec! [(1.0, 2.0), (3.0, 4.0)]));
+        assert_eq! (list_of_points (b"1,2 -3,4"),  IResult::Done (&b""[..], vec! [(1.0, 2.0), (-3.0, 4.0)]));
+        assert_eq! (list_of_points (b"1,2,-3,4"),  IResult::Done (&b""[..], vec! [(1.0, 2.0), (-3.0, 4.0)]));
+    }
+
+    #[test]
+    fn errors_on_invalid_list_of_points () {
+        let result = list_of_points (b"-1-2-3-4");
+        match result {
+            IResult::Error (_) => { },
+            _ => { panic! ("{:?} should be an invalid list-of-points", result); }
+        }
+
+        let result = list_of_points (b"1 2-3,-4");
+        match result {
+            IResult::Error (_) => { },
+            _ => { panic! ("{:?} should be an invalid list-of-points", result); }
         }
     }
 }
