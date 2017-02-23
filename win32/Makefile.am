@@ -11,7 +11,7 @@ introspection.body.mak: $(MSVC_INTROSPECTION_INTERMEDIATE_FILES)
 	-$(RM) introspection.body.mak
 	for F in `ls *.msvc.introspect`; do \
 		case $$F in \
-			*)	cat $(top_builddir)/build/win32/$$F >>introspection.body.mak \
+			*)	cat $(top_builddir)/win32/$$F >>introspection.body.mak \
 			;; \
 		esac; \
 	done

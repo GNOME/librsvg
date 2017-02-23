@@ -2,7 +2,7 @@
 # Common autotools file for constructing the g-ir-scanner and
 # g-ir-compiler command lines for Visual Studio builds.
 
-# This is copied from $(srcroot)/build from the gobject-introspection
+# This is copied from $(srcroot)/win32 from the gobject-introspection
 # project, which may be included in projects that support both
 # Visual Studio builds and introspection.
 
@@ -18,7 +18,7 @@
 #    is required unless --headers-only is specified in
 #    YourLib_1_0_gir__MSVC_SCANNERFLAGS)
 #
-#   include $(top_srcdir)/build/Makefile.msvc-introspection
+#   include <this Makefile.msvc-introspection>
 #   MSVC_INTROSPECT_GIRS = YourLib-1.0.gir
 #   YourLib_1_0_gir_NAMESPACE = YourLib # This is optional
 #   YourLib_1_0_gir_VERSION = 1.0 # This is optional
@@ -27,7 +27,9 @@
 #   YourLib_1_0_gir_MSVC_PROGRAM = YourProgram
 #   YourLib_1_0_gir_MSVC_PACKAGES = (Dependent .pc files)
 #   YourLib_1_0_gir_MSVC_INCLUDE_GIRS = (Dependent external .gir's)
-#   YourLiv_1_0_gir_MSVC_EXPORT_PACKAGES = (Packages exported by this .gir)
+#   YourLib_1_0_gir_MSVC_EXPORT_PACKAGES = (Packages exported by this .gir)
+#   YourLib_1_0_gir_MSVC_C_INCLUDES = (List of public C headers which need to be included by
+#                                      consumers at compile time to make use of the API)
 
 # Private functions
 
@@ -63,6 +65,7 @@ _gir_libraries_msvc = $(foreach lib,$($(_gir_name)_MSVC_LIBS),--library=$(lib))
 _gir_packages_msvc = $(foreach pkg,$($(_gir_name)_MSVC_PACKAGES),--pkg=$(pkg))
 _gir_includes_msvc = $(foreach include,$($(_gir_name)_MSVC_INCLUDE_GIRS),--include=$(include))
 _gir_export_packages_msvc = $(foreach pkg,$($(_gir_name)_MSVC_EXPORT_PACKAGES),--pkg-export=$(pkg))
+_gir_c_includes_msvc = $(foreach include,$($(_gir_name)_MSVC_C_INCLUDES),--c-include=$(include))
 
 #
 # Create NMake Makefile Sections for Building Introspection files
@@ -79,47 +82,48 @@ $(if $(or $(findstring --header-only,$($(_gir_name)_MSVC_SCANNERFLAGS)),
           $($(_gir_name)_MSVC_PROGRAM)),,
     $(error Need to define $(_gir_name)_MSVC_LIBS or $(_gir_name)_MSVC_PROGRAM))
 
-$(top_builddir)/build/win32/$(_gir_name)_list:
+$(top_builddir)/win32/$(_gir_name)_list:
 	for F in $(_gir_files_msvc); do \
 		case $$$$F in \
 		*.c|*.cpp|*.cc|*.cxx|*.h|*.hpp|*.hh|*.hxx) \
-			echo '..\..'$(_gir_source_subdir_msvc)$$$$F >>$(top_builddir)/build/win32/$(_gir_name)_list \
+			echo '..'$(_gir_source_subdir_msvc)$$$$F >>$(top_builddir)/win32/$(_gir_name)_list \
 			;; \
 		esac; \
 	done
 
-$(top_builddir)/build/win32/$(1).msvc.introspect:
-	-$(RM) $(top_builddir)/build/win32/$(1).msvc.introspect
+$(top_builddir)/win32/$(1).msvc.introspect:
+	-$(RM) $(top_builddir)/win32/$(1).msvc.introspect
 
 # Assemble the Command to Run g-ir-scanner
-	echo $(1)': '$(_gir_name)'_list '$($(_gir_name)_MSVC_GIR_DEPS)>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	@-echo Generating $$$$@...'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	$$$$(PYTHON) $$$$(G_IR_SCANNER)	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	--verbose -no-libtool	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	--namespace='$(_gir_namespace_msvc)'	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	--nsversion='$(_gir_version_msvc)'	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	'$(_gir_packages_msvc)'	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	'$(_gir_libraries_msvc)'	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	'$(_gir_program_msvc)'	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	--add-include-path=$$$$(G_IR_INCLUDEDIR)	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	'$(_gir_includes_msvc)'	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	'$(_gir_export_packages_msvc)'	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	--cflags-begin	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	'$($(_gir_name)_MSVC_CFLAGS)'	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	--cflags-end	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	'$($(_gir_name)_MSVC_SCANNERFLAGS)'	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	--filelist='$(_gir_name)'_list	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	-o $$$$@'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '' >>$(top_builddir)/build/win32/$(1).msvc.introspect
+	echo $(1)': '$(_gir_name)'_list '$($(_gir_name)_MSVC_GIR_DEPS)>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	@-echo Generating $$$$@...'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	$$$$(PYTHON) $$$$(G_IR_SCANNER)	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	--verbose -no-libtool	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	--namespace='$(_gir_namespace_msvc)'	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	--nsversion='$(_gir_version_msvc)'	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	'$(_gir_packages_msvc)'	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	'$(_gir_libraries_msvc)'	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	'$(_gir_program_msvc)'	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	--add-include-path=$$$$(G_IR_INCLUDEDIR)	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	'$(_gir_includes_msvc)'	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	'$(_gir_export_packages_msvc)'	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '  '$(_gir_c_includes_msvc)'	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	--cflags-begin	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	'$($(_gir_name)_MSVC_CFLAGS)'	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	--cflags-end	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	'$($(_gir_name)_MSVC_SCANNERFLAGS)'	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	--filelist='$(_gir_name)'_list	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	-o $$$$@'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '' >>$(top_builddir)/win32/$(1).msvc.introspect
 
 # Finally Assemble the Command to Compile the generated .gir
-	echo '$(_typelib_basename_msvc).typelib: '$(_typelib_basename_msvc)'.gir'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	@-echo Compiling $$$$@...'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	$$$$(G_IR_COMPILER)	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	--includedir=. --debug --verbose	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	'$(1)'	\'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '	-o $$$$@'>>$(top_builddir)/build/win32/$(1).msvc.introspect
-	echo '' >>$(top_builddir)/build/win32/$(1).msvc.introspect
+	echo '$(_typelib_basename_msvc).typelib: '$(_typelib_basename_msvc)'.gir'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	@-echo Compiling $$$$@...'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	$$$$(G_IR_COMPILER)	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	--includedir=. --debug --verbose	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	'$(1)'	\'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '	-o $$$$@'>>$(top_builddir)/win32/$(1).msvc.introspect
+	echo '' >>$(top_builddir)/win32/$(1).msvc.introspect
 endef
 
 $(foreach gir,$(MSVC_INTROSPECT_GIRS),$(eval $(call gir-nmake-builder,$(gir))))

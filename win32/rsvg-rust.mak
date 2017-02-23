@@ -22,17 +22,17 @@ all: vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals\$(CFG)\rsvg_internals.lib
 vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals\$(CFG)\rsvg_internals.lib:
 	@set CARGO_TARGET_DIR=..\build\win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals
 	@set GTK_LIB_DIR=..\..\vs$(VSVER)\$(PLAT)\lib;$(LIB)
-	@cd ..\..\rust
+	@cd ..\rust
 	$(CARGO_CMD) --verbose
-	@cd ..\build\win32\vs$(VSVER)
+	@cd ..\win32\vs$(VSVER)
 	@set GTK_LIB_DIR=
 	@set CARGO_TARGET_DIR=
 
 clean:
-	@set CARGO_TARGET_DIR=..\build\win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals
-	@cd ..\..\rust
+	@set CARGO_TARGET_DIR=..\win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals
+	@cd ..\rust
 	@$(CARGO) clean
-	@cd ..\build\win32\vs$(VSVER)
+	@cd ..\win32\vs$(VSVER)
 	@set CARGO_TARGET_DIR=
 	
 !else

@@ -15,6 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\rsvg-view.c"><Filter>Sources</Filter></ClCompile>
+    <ClCompile Include="..\..\gdk-pixbuf-loader\io-svg.c"><Filter>Sources</Filter></ClCompile>
   </ItemGroup>
 </Project>

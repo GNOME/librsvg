@@ -15,10 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-#include "rsvg.vs12.sourcefiles.filters"
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="..\..\..\config.h.win32"><Filter>Resource Files</Filter></CustomBuild>
-    <CustomBuild Include="..\..\..\rsvg.symbols"><Filter>Resource Files</Filter></CustomBuild>
+    <ClCompile Include="..\..\rsvg-view.c"><Filter>Sources</Filter></ClCompile>
   </ItemGroup>
 </Project>

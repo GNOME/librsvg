@@ -15,6 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\gdk-pixbuf-loader\io-svg.c"><Filter>Sources</Filter></ClCompile>
+#include "rsvg.vs12.sourcefiles.filters"
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\config.h.win32"><Filter>Resource Files</Filter></CustomBuild>
+    <CustomBuild Include="..\..\rsvg.symbols"><Filter>Resource Files</Filter></CustomBuild>
   </ItemGroup>
 </Project>

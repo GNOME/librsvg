@@ -1,4 +1,4 @@
-SUBDIRS = . gdk-pixbuf-loader tests tools doc build
+SUBDIRS = . gdk-pixbuf-loader tests tools doc win32
 
 NULL =
 BUILT_SOURCES =
@@ -329,35 +329,35 @@ rsvg_HEADERS_EXCLUDES = dummy
 rsvg_convert_FILES = $(rsvg_convert_SOURCES)
 rsvg_convert_EXCLUDES = dummy
 
-include $(top_srcdir)/build/Makefile.msvcproj
+include $(top_srcdir)/win32/Makefile.msvcproj
 
 # autotools: Why must we do this instead of dist-hook?
 MSVCPROJ_GENERATED = \
-	$(top_builddir)/build/win32/vs12/rsvg.vcxproj		\
-	$(top_builddir)/build/win32/vs12/rsvg-convert.vcxproj
+	$(top_builddir)/win32/vs12/rsvg.vcxproj		\
+	$(top_builddir)/win32/vs12/rsvg-convert.vcxproj
 
 if HAVE_INTROSPECTION
 
 MSVC_INTROSPECT_GIRS = $(INTROSPECTION_GIRS)
 
 INTROSPECTION_INTERMEDIATE_ITEMS = \
-	$(top_builddir)/build/win32/Rsvg-@RSVG_API_VERSION@.gir.msvc.introspect		\
-	$(top_builddir)/build/win32/Rsvg_@RSVG_API_VERSION_U@_gir_list
+	$(top_builddir)/win32/Rsvg-@RSVG_API_VERSION@.gir.msvc.introspect		\
+	$(top_builddir)/win32/Rsvg_@RSVG_API_VERSION_U@_gir_list
 
 Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_FILES = $(Rsvg_@RSVG_API_VERSION_U@_gir_FILES)
 Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_PACKAGES = $(Rsvg_@RSVG_API_VERSION_U@_gir_PACKAGES)
 Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_EXPORT_PACKAGES = $(Rsvg_@RSVG_API_VERSION_U@_gir_EXPORT_PACKAGES)
 Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_INCLUDE_GIRS = $(Rsvg_@RSVG_API_VERSION_U@_gir_INCLUDES)
 Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_LIBS = rsvg-@RSVG_API_VERSION@
-Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_CFLAGS = -I../.. -DRSVG_COMPILATION
+Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_CFLAGS = -I.. -DRSVG_COMPILATION
 Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_SCANNERFLAGS = $(Rsvg_@RSVG_API_VERSION_U@_gir_SCANNERFLAGS)
 
 MSVCPROJ_GENERATED += $(INTROSPECTION_INTERMEDIATE_ITEMS)
 
-include $(top_srcdir)/build/Makefile.msvc-introspection
+include $(top_srcdir)/win32/Makefile.msvc-introspection
 endif # HAVE_INTROSPECTION
 
-$(MSVCPROJ_GENERATED): $(top_builddir)/build/win32/vs12/rsvg.vs12.headers
+$(MSVCPROJ_GENERATED): $(top_builddir)/win32/vs12/rsvg.vs12.headers
 
 EXTRA_DIST += $(MSVCPROJ_GENERATED)
 

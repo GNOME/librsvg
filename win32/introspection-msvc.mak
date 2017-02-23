@@ -1,6 +1,6 @@
 # Common NMake Makefile module for checking the build environment is sane
 # for building introspection files under MSVC/NMake.
-# This can be copied from $(gi_srcroot)\build\win32 for GNOME items
+# This can be copied from $(gi_srcroot)\win32 for GNOME items
 # that support MSVC builds and introspection under MSVC.
 
 # Can override with env vars as needed
@@ -8,7 +8,7 @@
 # Change or pass in or set the following to suit your environment
 
 !if "$(PREFIX)" == ""
-PREFIX = ..\..\..\vs$(VSVER)\$(PLAT)
+PREFIX = ..\..\vs$(VSVER)\$(PLAT)
 !endif
 
 !if ![setlocal]		&& \

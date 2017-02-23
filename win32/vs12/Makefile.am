@@ -24,10 +24,10 @@ EXTRA_DIST =	\
 	README.txt				\
 	$(GENERATED_ITEMS)
 
-rsvg-install.props: $(top_srcdir)/build/win32/vs12/rsvg-install.propsin rsvg.vs12.headers
-	-$(RM) $(top_builddir)/build/win32/vs14/rsvg-install.props
-	-$(RM) $(top_builddir)/build/win32/vs15/rsvg-install.props
-	$(CPP) -P - <$(top_srcdir)/build/win32/vs12/rsvg-install.propsin >$@
+rsvg-install.props: $(top_srcdir)/win32/vs12/rsvg-install.propsin rsvg.vs12.headers
+	-$(RM) $(top_builddir)/win32/vs14/rsvg-install.props
+	-$(RM) $(top_builddir)/win32/vs15/rsvg-install.props
+	$(CPP) -P - <$(top_srcdir)/win32/vs12/rsvg-install.propsin >$@
 	rm rsvg.vs12.headers
 
 DISTCLEANFILES = $(GENERATED_ITEMS)

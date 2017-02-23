@@ -4,10 +4,10 @@
     <Import Project="rsvg-build-defines.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
-    <CopyConfigH>copy ..\..\..\config.h.win32 ..\..\..\config.h</CopyConfigH>
+    <CopyConfigH>copy ..\..\config.h.win32 ..\..\config.h</CopyConfigH>
     <GenerateRsvgDef>
 echo EXPORTS &gt; $(DefDir)\rsvg.def
-cl  /EP ..\..\..\rsvg.symbols &gt;&gt; $(DefDir)\rsvg.def
+cl  /EP ..\..\rsvg.symbols &gt;&gt; $(DefDir)\rsvg.def
      </GenerateRsvgDef>
   </PropertyGroup>
   <PropertyGroup>
