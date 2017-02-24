@@ -3,8 +3,6 @@ extern crate cairo;
 use std::fmt;
 use std::str::FromStr;
 
-use nom::{IResult};
-
 use parsers;
 
 /* Keep this in sync with rsvg-private.h:RsvgViewBox */

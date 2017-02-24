@@ -41,7 +41,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	rsvg-marker.h		\
 	rsvg-mask.c		\
 	rsvg-mask.h		\
-	rsvg-shapes.c		\
 	rsvg-shapes.h		\
 	rsvg-structure.c	\
 	rsvg-structure.h	\

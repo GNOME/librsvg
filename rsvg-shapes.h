@@ -30,15 +30,21 @@
 #ifndef RSVG_SHAPES_H
 #define RSVG_SHAPES_H
 
-#include <cairo.h>
-
-#include "rsvg-structure.h"
+#include "rsvg-private.h"
 
 G_BEGIN_DECLS 
 
 /* Implemented in rust/src/shapes.rs */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_path_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/shapes.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_polygon_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/shapes.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_polyline_new (const char *element_name, RsvgNode *parent);
 
 /* Implemented in rust/src/shapes.rs */
 G_GNUC_INTERNAL
@@ -55,11 +61,6 @@ RsvgNode *rsvg_node_circle_new (const char *element_name, RsvgNode *parent);
 /* Implemented in rust/src/shapes.rs */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_ellipse_new (const char *element_name, RsvgNode *parent);
-
-G_GNUC_INTERNAL
-RsvgNode *rsvg_new_polygon (const char *element_name, RsvgNode *parent);
-G_GNUC_INTERNAL
-RsvgNode *rsvg_new_polyline (const char *element_name, RsvgNode *parent);
 
 G_END_DECLS
 

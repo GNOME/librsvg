@@ -9,6 +9,7 @@ use handle::RsvgHandle;
 use length::*;
 use marker;
 use node::*;
+use parsers;
 use path_builder::*;
 use path_parser;
 use property_bag;
@@ -107,15 +108,23 @@ impl NodeTrait for NodePath {
 }
 
 /***** NodePoly *****/
-/*
+
+#[derive(Debug, PartialEq)]
+enum PolyKind {
+    Open,
+    Closed
+}
+
 struct NodePoly {
-    builder: RefCell<RsvgPathBuilder>
+    points: RefCell <Option<Vec<(f64, f64)>>>,
+    kind: PolyKind
 }
 
 impl NodePoly {
-    fn new () -> NodePoly {
+    fn new (kind: PolyKind) -> NodePoly {
         NodePoly {
-            builder: RefCell::new (RsvgPathBuilder::new ())
+            points: RefCell::new (None),
+            kind:   kind
         }
     }
 }
@@ -124,21 +133,45 @@ impl NodeTrait for NodePoly {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
         // support for svg < 1.0 which used verts
         if let Some (value) = property_bag::lookup (pbag, "verts").or (property_bag::lookup (pbag, "points")) {
-            let mut builder = self.builder.borrow_mut ();
+            let result = parsers::list_of_points (value.as_bytes ()).to_full_result ();
 
+            match result {
+                Ok (v) => {
+                    *self.points.borrow_mut () = Some (v);
+                },
 
+                Err (_) => {
+                    // FIXME: propagate errors upstream
+                    *self.points.borrow_mut () = None;
+                }
+            }
         }
     }
 
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
-        render_path_builder (&*self.builder.borrow (), draw_ctx, node.get_state (), dominate, true);
+        if let Some (ref points) = *self.points.borrow () {
+            let mut builder = RsvgPathBuilder::new ();
+
+            for (i, &(x, y)) in points.iter ().enumerate () {
+                if i == 0 {
+                    builder.move_to (x, y);
+                } else {
+                    builder.line_to (x, y);
+                }
+            }
+
+            if self.kind == PolyKind::Closed {
+                builder.close_path ();
+            }
+
+            render_path_builder (&builder, draw_ctx, node.get_state (), dominate, true);
+        }
     }
 
     fn get_c_impl (&self) -> *const RsvgCNodeImpl {
         ptr::null ()
     }
 }
-*/
 
 /***** NodeLine *****/
 
@@ -486,6 +519,20 @@ pub extern fn rsvg_node_path_new (_: *const libc::c_char, raw_parent: *const Rsv
     boxed_node_new (NodeType::Path,
                     raw_parent,
                     Box::new (NodePath::new ()))
+}
+
+#[no_mangle]
+pub extern fn rsvg_node_polygon_new (_: *const libc::c_char, raw_parent: *const RsvgNode) -> *const RsvgNode {
+    boxed_node_new (NodeType::Path,
+                    raw_parent,
+                    Box::new (NodePoly::new (PolyKind::Closed)))
+}
+
+#[no_mangle]
+pub extern fn rsvg_node_polyline_new (_: *const libc::c_char, raw_parent: *const RsvgNode) -> *const RsvgNode {
+    boxed_node_new (NodeType::Path,
+                    raw_parent,
+                    Box::new (NodePoly::new (PolyKind::Open)))
 }
 
 #[no_mangle]
