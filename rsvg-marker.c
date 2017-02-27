@@ -194,12 +194,12 @@ rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdoubl
 
     if (!state->overflow) {
         if (self->vbox.active)
-            rsvg_add_clipping_rect (ctx, self->vbox.rect.x, self->vbox.rect.y,
-                                    self->vbox.rect.width, self->vbox.rect.height);
+            rsvg_drawing_ctx_add_clipping_rect (ctx, self->vbox.rect.x, self->vbox.rect.y,
+                                                self->vbox.rect.width, self->vbox.rect.height);
         else
-            rsvg_add_clipping_rect (ctx, 0, 0,
-                                    rsvg_length_normalize (&self->width, ctx),
-                                    rsvg_length_normalize (&self->height, ctx));
+            rsvg_drawing_ctx_add_clipping_rect (ctx, 0, 0,
+                                                rsvg_length_normalize (&self->width, ctx),
+                                                rsvg_length_normalize (&self->height, ctx));
     }
 
     rsvg_node_foreach_child (node, draw_child, ctx);

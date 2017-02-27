@@ -147,7 +147,7 @@ rsvg_node_image_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int do
     rsvg_push_discrete_layer (ctx);
 
     if (!rsvg_current_state (ctx)->overflow && (aspect_ratio & RSVG_ASPECT_RATIO_SLICE)) {
-        rsvg_add_clipping_rect (ctx, x, y, w, h);
+        rsvg_drawing_ctx_add_clipping_rect (ctx, x, y, w, h);
     }
 
     rsvg_aspect_ratio_compute (aspect_ratio, 

@@ -2375,7 +2375,7 @@ rsvg_get_end_marker (RsvgDrawingCtx *ctx)
 }
 
 void
-rsvg_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w, double h)
+rsvg_drawing_ctx_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w, double h)
 {
     ctx->render->add_clipping_rect (ctx, x, y, w, h);
 }

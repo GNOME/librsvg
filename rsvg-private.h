@@ -467,7 +467,7 @@ const char *rsvg_get_end_marker (RsvgDrawingCtx *ctx);
 G_GNUC_INTERNAL
 void rsvg_render_free           (RsvgRender * render);
 G_GNUC_INTERNAL
-void rsvg_add_clipping_rect     (RsvgDrawingCtx * ctx, double x, double y, double w, double h);
+void rsvg_drawing_ctx_add_clipping_rect     (RsvgDrawingCtx * ctx, double x, double y, double w, double h);
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf);
 G_GNUC_INTERNAL

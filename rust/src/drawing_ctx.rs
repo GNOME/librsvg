@@ -39,13 +39,27 @@ extern "C" {
     fn rsvg_drawing_ctx_set_current_state_affine (draw_ctx: *const RsvgDrawingCtx,
                                                   affine:   *const cairo::Matrix);
 
+    fn rsvg_drawing_ctx_add_clipping_rect (draw_ctx: *const RsvgDrawingCtx,
+                                           x: f64,
+                                           y: f64,
+                                           w: f64,
+                                           h: f64);
+
+    fn rsvg_current_state (draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState;
     fn rsvg_state_new () -> *mut RsvgState;
+    fn rsvg_state_reinit (state: *mut RsvgState);
+    fn rsvg_state_reconstruct (state: *mut RsvgState, node: *const RsvgNode);
+    fn rsvg_state_is_overflow (state: *const RsvgState) -> bool;
+
     fn rsvg_state_push (draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_state_pop (draw_ctx: *const RsvgDrawingCtx);
 
     fn rsvg_state_reinherit_top (draw_ctx: *const RsvgDrawingCtx,
                                  state: *mut RsvgState,
                                  dominate: libc::c_int);
+
+    fn rsvg_push_discrete_layer (draw_ctx: *const RsvgDrawingCtx);
+    fn rsvg_pop_discrete_layer (draw_ctx: *const RsvgDrawingCtx);
 
     fn rsvg_render_path_builder (draw_ctx: *const RsvgDrawingCtx,
                                  builder: *const RsvgPathBuilder);
@@ -106,6 +120,14 @@ pub fn state_reinherit_top (draw_ctx: *const RsvgDrawingCtx,
     unsafe { rsvg_state_reinherit_top (draw_ctx, state, dominate); }
 }
 
+pub fn push_discrete_layer (draw_ctx: *const RsvgDrawingCtx) {
+    unsafe { rsvg_push_discrete_layer (draw_ctx); }
+}
+
+pub fn pop_discrete_layer (draw_ctx: *const RsvgDrawingCtx) {
+    unsafe { rsvg_pop_discrete_layer (draw_ctx); }
+}
+
 pub fn render_path_builder (draw_ctx: *const RsvgDrawingCtx,
                             builder: &RsvgPathBuilder) {
     unsafe { rsvg_render_path_builder (draw_ctx, builder); }
@@ -141,8 +163,32 @@ pub fn set_current_state_affine (draw_ctx: *const RsvgDrawingCtx, affine: cairo:
     }
 }
 
+pub fn add_clipping_rect (draw_ctx: *const RsvgDrawingCtx,
+                          x: f64,
+                          y: f64,
+                          w: f64,
+                          h: f64) {
+    unsafe { rsvg_drawing_ctx_add_clipping_rect (draw_ctx, x, y, w, h); }
+}
+
+pub fn get_current_state (draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState {
+    unsafe { rsvg_current_state (draw_ctx) }
+}
+
 pub fn state_new () -> *mut RsvgState {
     unsafe { rsvg_state_new () }
+}
+
+pub fn state_reinit (state: *mut RsvgState) {
+    unsafe { rsvg_state_reinit (state); }
+}
+
+pub fn state_reconstruct (state: *mut RsvgState, node: *const RsvgNode) {
+    unsafe { rsvg_state_reconstruct (state, node); }
+}
+
+pub fn state_is_overflow (state: *const RsvgState) -> bool {
+    unsafe { rsvg_state_is_overflow (state) }
 }
 
 pub fn state_push (draw_ctx: *const RsvgDrawingCtx) {

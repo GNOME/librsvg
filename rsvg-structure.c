@@ -196,7 +196,7 @@ rsvg_node_svg_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int domi
 
     if (!state->overflow && parent) {
         state->affine = affine_old;
-        rsvg_add_clipping_rect (ctx, nx, ny, nw, nh);
+        rsvg_drawing_ctx_add_clipping_rect (ctx, nx, ny, nw, nh);
         state->affine = affine_new;
     }
 
@@ -373,8 +373,8 @@ rsvg_node_use_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int domi
             rsvg_drawing_ctx_push_view_box (ctx, symbol->vbox.rect.width, symbol->vbox.rect.height);
             rsvg_push_discrete_layer (ctx);
             if (!state->overflow || (!state->has_overflow && rsvg_node_get_state (child)->overflow))
-                rsvg_add_clipping_rect (ctx, symbol->vbox.rect.x, symbol->vbox.rect.y,
-                                        symbol->vbox.rect.width, symbol->vbox.rect.height);
+                rsvg_drawing_ctx_add_clipping_rect (ctx, symbol->vbox.rect.x, symbol->vbox.rect.y,
+                                                    symbol->vbox.rect.width, symbol->vbox.rect.height);
         } else {
             cairo_matrix_init_translate (&affine, x, y);
             cairo_matrix_multiply (&state->affine, &affine, &state->affine);
