@@ -55,7 +55,7 @@ impl FromStr for RsvgViewBox {
     type Err = ParseViewBoxError;
 
     fn from_str (s: &str) -> Result<RsvgViewBox, ParseViewBoxError> {
-        let result = parsers::view_box (s.as_bytes ()).to_full_result ();
+        let result = parsers::view_box (s.trim ().as_bytes ()).to_full_result ();
 
         match result {
             Ok ((x, y, w, h)) => {
@@ -84,14 +84,14 @@ mod tests {
 
     #[test]
     fn parses_valid_viewboxes () {
-        assert_eq! (RsvgViewBox::from_str ("1 2 3 4"),
+        assert_eq! (RsvgViewBox::from_str ("  1 2 3 4"),
                     Ok (RsvgViewBox { rect: cairo::Rectangle { x: 1.0,
                                                                y: 2.0,
                                                                width: 3.0,
                                                                height: 4.0 },
                                       active: true }));
 
-        assert_eq! (RsvgViewBox::from_str ("-1.5 -2.5e1,34,56e2"),
+        assert_eq! (RsvgViewBox::from_str (" -1.5 -2.5e1,34,56e2  "),
                     Ok (RsvgViewBox { rect: cairo::Rectangle { x: -1.5,
                                                                y: -25.0,
                                                                width: 34.0,
@@ -104,13 +104,13 @@ mod tests {
         assert_eq! (RsvgViewBox::from_str (""),
                     Err (ParseViewBoxError::Error));
 
-        assert_eq! (RsvgViewBox::from_str ("1,2,-3,-4"),
+        assert_eq! (RsvgViewBox::from_str (" 1,2,-3,-4 "),
                     Err (ParseViewBoxError::NegativeWidthOrHeight));
 
         assert_eq! (RsvgViewBox::from_str ("qwerasdfzxcv"),
                     Err (ParseViewBoxError::Error));
 
-        assert_eq! (RsvgViewBox::from_str ("1 2 3 4 5"),
+        assert_eq! (RsvgViewBox::from_str (" 1 2 3 4   5"),
                     Err (ParseViewBoxError::Error));
     }
 }
