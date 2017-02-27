@@ -6,6 +6,7 @@ extern crate libc;
 use self::glib::translate::*;
 
 use node::RsvgNode;
+use node::NodeType;
 use path_builder::RsvgPathBuilder;
 use state::RsvgState;
 
@@ -30,6 +31,10 @@ extern "C" {
 
     fn rsvg_drawing_ctx_acquire_node (draw_ctx: *const RsvgDrawingCtx,
                                       url:      *const libc::c_char) -> *mut RsvgNode;
+
+    fn rsvg_drawing_ctx_acquire_node_of_type (draw_ctx:  *const RsvgDrawingCtx,
+                                              url:       *const libc::c_char,
+                                              node_type: NodeType) -> *mut RsvgNode;
 
     fn rsvg_drawing_ctx_release_node (draw_ctx: *const RsvgDrawingCtx,
                                       node:     *mut RsvgNode);
@@ -107,6 +112,12 @@ pub fn pop_view_box (draw_ctx: *const RsvgDrawingCtx) {
 pub fn acquire_node (draw_ctx: *const RsvgDrawingCtx,
                      url:      &str) -> *mut RsvgNode {
     unsafe { rsvg_drawing_ctx_acquire_node (draw_ctx, str::to_glib_none (url).0) }
+}
+
+pub fn acquire_node_of_type (draw_ctx:  *const RsvgDrawingCtx,
+                             url:       &str,
+                             node_type: NodeType) -> *mut RsvgNode {
+    unsafe { rsvg_drawing_ctx_acquire_node_of_type (draw_ctx, str::to_glib_none (url).0, node_type) }
 }
 
 pub fn release_node (draw_ctx: *const RsvgDrawingCtx,
