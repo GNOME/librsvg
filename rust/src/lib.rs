@@ -4,6 +4,9 @@ extern crate bitflags;
 #[macro_use]
 extern crate nom;
 
+#[macro_use]
+extern crate downcast_rs;
+
 pub use aspect_ratio::{
     FitMode,
     AlignMode,
@@ -41,6 +44,10 @@ pub use length::{
     rsvg_length_parse,
     rsvg_length_normalize,
     rsvg_length_hand_normalize,
+};
+
+pub use marker::{
+    rsvg_node_marker_new,
 };
 
 pub use node::{

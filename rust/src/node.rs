@@ -5,6 +5,8 @@ use std::rc::Weak;
 use std::cell::RefCell;
 use std::ptr;
 
+use downcast_rs::*;
+
 use drawing_ctx::RsvgDrawingCtx;
 use drawing_ctx;
 
@@ -25,11 +27,13 @@ pub type RsvgNode = Rc<Node>;
  */
 pub enum RsvgCNodeImpl {}
 
-pub trait NodeTrait {
+pub trait NodeTrait: Downcast {
     fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag);
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
     fn get_c_impl (&self) -> *const RsvgCNodeImpl;
 }
+
+impl_downcast! (NodeTrait);
 
 pub struct Node {
     node_type: NodeType,
@@ -132,6 +136,14 @@ impl Node {
 
     pub fn get_c_impl (&self) -> *const RsvgCNodeImpl {
         self.node_impl.get_c_impl ()
+    }
+
+    pub fn with_impl<T: NodeTrait, F: FnOnce (&T)> (&self, f: F) {
+        if let Some (t) = (&self.node_impl).downcast_ref::<T> () {
+            f (t);
+        } else {
+            panic! ("could not downcast");
+        }
     }
 }
 

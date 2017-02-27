@@ -28,6 +28,10 @@ version = "0.1.1"
 git = "https://github.com/federicomenaquintero/nom.git"
 features = ["verbose-errors"]
 
+[dependencies.downcast-rs]
+git = "https://github.com/marcianx/downcast-rs"
+version = "1.0.0"
+
 [lib]
 name = "rsvg_internals"
 crate-type = ["staticlib"]
