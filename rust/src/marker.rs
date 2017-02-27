@@ -2,10 +2,171 @@ extern crate libc;
 extern crate cairo;
 extern crate cairo_sys;
 
+use std::cell::Cell;
 use std::f64::consts::*;
-use path_builder::*;
+use std::fmt;
+use std::ptr;
+use std::str::FromStr;
+
+use aspect_ratio::*;
 use drawing_ctx::RsvgDrawingCtx;
+use handle::RsvgHandle;
+use length::*;
+use node::*;
+use path_builder::*;
+use parsers;
+use property_bag;
+use property_bag::*;
 use util::*;
+use viewbox::*;
+
+// markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+enum MarkerUnits {
+    UserSpaceOnUse,
+    StrokeWidth
+}
+
+impl Default for MarkerUnits {
+    fn default () -> MarkerUnits {
+        MarkerUnits::StrokeWidth
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+struct MarkerUnitsParseError;
+
+impl fmt::Display for MarkerUnitsParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        "string must be \"userSpaceOnUse\" or \"strokeWidth\"".fmt (f)
+    }
+}
+
+impl FromStr for MarkerUnits {
+    type Err = MarkerUnitsParseError;
+
+    fn from_str (s: &str) -> Result <MarkerUnits, MarkerUnitsParseError> {
+        match s {
+            "userSpaceOnUse" => Ok (MarkerUnits::UserSpaceOnUse),
+            "strokeWidth"    => Ok (MarkerUnits::StrokeWidth),
+            _                => Err (MarkerUnitsParseError)
+        }
+    }
+}
+
+// orient attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
+
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+enum MarkerOrient {
+    Auto,
+    Degrees (f64)
+}
+
+impl Default for MarkerOrient {
+    fn default () -> MarkerOrient {
+        MarkerOrient::Degrees (0.0)
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+struct MarkerOrientParseError;
+
+impl fmt::Display for MarkerOrientParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        "string must be \"auto\" or a CSS angle".fmt (f)
+    }
+}
+
+impl FromStr for MarkerOrient {
+    type Err = MarkerOrientParseError;
+
+    fn from_str (s: &str) -> Result <MarkerOrient, MarkerOrientParseError> {
+        match s {
+            "auto" => Ok (MarkerOrient::Auto),
+            _      => parsers::angle_degrees (s).map (
+                |degrees| MarkerOrient::Degrees (degrees) ).map_err (
+                |_| MarkerOrientParseError)
+        }
+    }
+}
+
+// NodeMarker
+
+struct NodeMarker {
+    units:  Cell<MarkerUnits>,
+    ref_x:  Cell<RsvgLength>,
+    ref_y:  Cell<RsvgLength>,
+    width:  Cell<RsvgLength>,
+    height: Cell<RsvgLength>,
+    orient: Cell<MarkerOrient>,
+    aspect: Cell<AspectRatio>,
+    vbox:   Cell<RsvgViewBox>
+}
+
+impl NodeMarker {
+    fn new () -> NodeMarker {
+        NodeMarker {
+            units:  Cell::new (MarkerUnits::default ()),
+            ref_x:  Cell::new (RsvgLength::default ()),
+            ref_y:  Cell::new (RsvgLength::default ()),
+            width:  Cell::new (NodeMarker::get_default_size ()),
+            height: Cell::new (NodeMarker::get_default_size ()),
+            orient: Cell::new (MarkerOrient::default ()),
+            aspect: Cell::new (AspectRatio::default ()),
+            vbox:   Cell::new (RsvgViewBox::default ())
+        }
+    }
+
+    fn get_default_size () -> RsvgLength {
+        // per the spec
+        RsvgLength::parse ("3", LengthDir::Both)
+    }
+}
+
+impl NodeTrait for NodeMarker {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+        self.units.set (property_bag::lookup (pbag, "markerUnits").map_or (MarkerUnits::default (),
+                                                                           |v| MarkerUnits::from_str (&v).unwrap_or (MarkerUnits::default ())));
+
+        self.ref_x.set (property_bag::lookup (pbag, "refX").map_or (RsvgLength::default (),
+                                                                    |v| RsvgLength::parse (&v, LengthDir::Horizontal)));
+        self.ref_y.set (property_bag::lookup (pbag, "refY").map_or (RsvgLength::default (),
+                                                                    |v| RsvgLength::parse (&v, LengthDir::Vertical)));
+
+        self.width.set (property_bag::lookup (pbag, "markerWidth").map_or (NodeMarker::get_default_size (),
+                                                                           |v| RsvgLength::parse (&v, LengthDir::Horizontal)));
+        self.height.set (property_bag::lookup (pbag, "markerHeight").map_or (NodeMarker::get_default_size (),
+                                                                             |v| RsvgLength::parse (&v, LengthDir::Vertical)));
+
+        self.orient.set (property_bag::lookup (pbag, "orient").map_or (MarkerOrient::default (),
+                                                                       |v| MarkerOrient::from_str (&v).unwrap_or (MarkerOrient::default ())));
+
+        self.aspect.set (property_bag::lookup (pbag, "preserveAspectRatio").map_or (AspectRatio::default (),
+                                                                                    |v| AspectRatio::from_str (&v).unwrap_or (AspectRatio::default ())));
+
+        self.vbox.set (property_bag::lookup (pbag, "viewBox").map_or (RsvgViewBox::default (),
+                                                                      |v| RsvgViewBox::from_str (&v).unwrap_or (RsvgViewBox::default ())));
+    }
+
+    fn draw (&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
+        // nothing; markers are drawn by their referencing shapes
+    }
+
+    fn get_c_impl (&self) -> *const RsvgCNodeImpl {
+        ptr::null ()
+    }
+}
+
+#[no_mangle]
+pub extern fn rsvg_node_marker_new (_: *const libc::c_char, raw_parent: *const RsvgNode) -> *const RsvgNode {
+    boxed_node_new (NodeType::Marker,
+                    raw_parent,
+                    Box::new (NodeMarker::new ()))
+}
+
+// Machinery to figure out marker orientations
 
 #[derive(Debug, PartialEq)]
 pub enum Segment {
@@ -853,5 +1014,13 @@ mod tests {
 
         assert_eq! ((40.0, 30.0), (v1x, v1y));
         assert_eq! ((40.0, 30.0), (v2x, v2y));
+    }
+
+    #[test]
+    fn parses_marker_units () {
+        assert_eq! (MarkerUnits::from_str ("foo"), Err (MarkerUnitsParseError));
+
+        assert_eq! (MarkerUnits::from_str ("userSpaceOnUse"), Ok (MarkerUnits::UserSpaceOnUse));
+        assert_eq! (MarkerUnits::from_str ("strokeWidth"),    Ok (MarkerUnits::StrokeWidth));
     }
 }

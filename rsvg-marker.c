@@ -39,7 +39,7 @@
 #include <string.h>
 #include <math.h>
 #include <errno.h>
-
+#if 0
 typedef struct _RsvgMarker RsvgMarker;
 
 struct _RsvgMarker {
@@ -111,7 +111,7 @@ rsvg_new_marker (const char *element_name, RsvgNode *parent)
                                 rsvg_node_marker_draw,
                                 g_free);
 }
-
+#endif
 static gboolean
 draw_child (RsvgNode *node, gpointer data)
 {

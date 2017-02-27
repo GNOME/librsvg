@@ -307,7 +307,7 @@ static const NodeCreator node_creators[] = {
     { "image",               TRUE,  rsvg_new_image },
     { "line",                TRUE,  rsvg_node_line_new },
     { "linearGradient",      TRUE,  rsvg_new_linear_gradient },
-    { "marker",              TRUE,  rsvg_new_marker },
+    { "marker",              TRUE,  rsvg_node_marker_new },
     { "mask",                TRUE,  rsvg_new_mask },
     /* "metadata",           FALSE, */
     /* "missing-glyph",      TRUE,  */
