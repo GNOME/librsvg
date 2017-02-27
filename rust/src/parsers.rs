@@ -1,5 +1,6 @@
-use nom::{IResult, is_digit, double, double_s, ErrorKind, space, sp};
+use nom::{IResult, is_digit, double, double_s, ErrorKind, space, sp, is_alphabetic};
 use std::str;
+use std::f64::consts::*;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Sign {
@@ -68,6 +69,40 @@ named! (comma_wsp,
           | recognize! (tuple! (wsp,
                                 opt! (comma),
                                 wsp_opt))));
+
+// angle:
+// https://www.w3.org/TR/SVG/types.html#DataTypeAngle
+//
+// angle ::= number ("deg" | "grad" | "rad")?
+//
+// Returns an f64 angle in degrees
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct ParseAngleError;
+
+named! (angle<(f64, Option<&[u8]>)>,
+        tuple! (double,
+                opt! (take_while! (is_alphabetic))));
+
+pub fn angle_degrees (s: &str) -> Result <f64, ParseAngleError> {
+    let r = angle (s.as_bytes ()).to_full_result ();
+
+    println! ("took {:?} parsed {:?}", s, r);
+
+    match r {
+        Ok ((value, unit)) => {
+            match unit {
+                Some (b"deg")  => Ok (value),
+                Some (b"grad") => Ok (value * 360.0 / 400.0),
+                Some (b"rad")  => Ok (value * 180.0 / PI),
+                Some (b"")     => Ok (value),
+                _              => Err (ParseAngleError)
+            }
+        },
+
+        _ => Err (ParseAngleError)
+    }
+}
 
 // Parse a viewBox attribute
 // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
@@ -241,5 +276,18 @@ mod tests {
             IResult::Error (_) => { },
             _ => { panic! ("{:?} should be an invalid list-of-points", result); }
         }
+    }
+
+    #[test]
+    fn parses_angle () {
+        assert_eq! (angle_degrees ("0"),        Ok (0.0));
+        assert_eq! (angle_degrees ("15"),       Ok (15.0));
+        assert_eq! (angle_degrees ("180.5deg"), Ok (180.5));
+        assert_eq! (angle_degrees ("1rad"),     Ok (180.0 / PI));
+        assert_eq! (angle_degrees ("-400grad"), Ok (-360.0));
+
+        assert_eq! (angle_degrees (""), Err (ParseAngleError));
+        assert_eq! (angle_degrees ("foo"), Err (ParseAngleError));
+        assert_eq! (angle_degrees ("300foo"), Err (ParseAngleError));
     }
 }
