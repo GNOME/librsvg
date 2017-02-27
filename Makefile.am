@@ -37,7 +37,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	rsvg-base-file-util.c 	\
 	rsvg-filter.c		\
 	rsvg-filter.h		\
-	rsvg-marker.c		\
 	rsvg-marker.h		\
 	rsvg-mask.c		\
 	rsvg-mask.h		\

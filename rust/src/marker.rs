@@ -1,6 +1,10 @@
+extern crate glib;
 extern crate libc;
 extern crate cairo;
 extern crate cairo_sys;
+
+use self::glib::translate::*;
+use self::cairo::MatrixTrait;
 
 use std::cell::Cell;
 use std::f64::consts::*;
@@ -9,6 +13,7 @@ use std::ptr;
 use std::str::FromStr;
 
 use aspect_ratio::*;
+use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use handle::RsvgHandle;
 use length::*;
@@ -122,6 +127,88 @@ impl NodeMarker {
     fn get_default_size () -> RsvgLength {
         // per the spec
         RsvgLength::parse ("3", LengthDir::Both)
+    }
+
+    fn render (&self,
+               c_node:         *const RsvgNode,
+               draw_ctx:       *const RsvgDrawingCtx,
+               xpos:           f64,
+               ypos:           f64,
+               computed_angle: f64,
+               line_width:     f64) {
+        let marker_width = self.width.get ().normalize (draw_ctx);
+        let marker_height = self.height.get ().normalize (draw_ctx);
+
+        let mut affine = cairo::Matrix::identity ();
+        affine.translate (xpos, ypos);
+
+        affine = cairo::Matrix::multiply (&affine, &drawing_ctx::get_current_state_affine (draw_ctx));
+
+        let rotation: f64;
+
+        match self.orient.get () {
+            MarkerOrient::Auto =>        { rotation = computed_angle; },
+            MarkerOrient::Degrees (d) => { rotation = d * PI / 180.0; }
+        }
+
+        affine.rotate (rotation);
+
+        if self.units.get () == MarkerUnits::StrokeWidth {
+            affine.scale (line_width, line_width);
+        }
+
+        let vbox = self.vbox.get ();
+
+        if vbox.active {
+            let (_, _, w, h) = self.aspect.get ().compute (vbox.rect.width, vbox.rect.height,
+                                                           0.0, 0.0,
+                                                           marker_width, marker_height);
+
+            affine.scale (w / vbox.rect.width, h / vbox.rect.height);
+
+            drawing_ctx::push_view_box (draw_ctx, vbox.rect.width, vbox.rect.height);
+        }
+
+        affine.translate (-self.ref_x.get ().normalize (draw_ctx),
+                          -self.ref_y.get ().normalize (draw_ctx));
+
+        drawing_ctx::state_push (draw_ctx);
+
+        let state = drawing_ctx::get_current_state (draw_ctx);
+        drawing_ctx::state_reinit (state);
+        drawing_ctx::state_reconstruct (state, c_node);
+
+        drawing_ctx::set_current_state_affine (draw_ctx, affine);
+
+        drawing_ctx::push_discrete_layer (draw_ctx);
+
+        let state = drawing_ctx::get_current_state (draw_ctx);
+
+        if !drawing_ctx::state_is_overflow (state) {
+            if vbox.active {
+                drawing_ctx::add_clipping_rect (draw_ctx,
+                                                vbox.rect.x,
+                                                vbox.rect.y,
+                                                vbox.rect.width,
+                                                vbox.rect.height);
+            } else {
+                drawing_ctx::add_clipping_rect (draw_ctx,
+                                                0.0,
+                                                0.0,
+                                                marker_width,
+                                                marker_height);
+            }
+        }
+
+        drawing_ctx::node_draw_children (draw_ctx, c_node, -1); // dominate=-1 so it won't reinherit state / push a layer
+
+        drawing_ctx::pop_discrete_layer (draw_ctx);
+
+        drawing_ctx::state_pop (draw_ctx);
+
+        if vbox.active {
+            drawing_ctx::pop_view_box (draw_ctx);
+        }
     }
 }
 
@@ -485,10 +572,10 @@ fn angle_from_vector (vx: f64, vy: f64) -> f64 {
 
 fn bisect_angles (incoming: f64, outgoing: f64) -> f64 {
     let half_delta: f64;
-    
+
     half_delta = (outgoing - incoming) * 0.5;
 
-    if FRAC_PI_2 < half_delta.abs () { 
+    if FRAC_PI_2 < half_delta.abs () {
         normalize_angle (incoming + half_delta - PI)
     } else {
         normalize_angle (incoming + half_delta)
@@ -496,12 +583,6 @@ fn bisect_angles (incoming: f64, outgoing: f64) -> f64 {
 }
 
 extern "C" {
-    fn rsvg_marker_render (marker_name: *const libc::c_char,
-                           xpos: f64,
-                           ypos: f64,
-                           orient: f64,
-                           linewidth: f64,
-                           draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_get_normalized_stroke_width (draw_ctx: *const RsvgDrawingCtx) -> f64;
 
     fn rsvg_get_start_marker (draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
@@ -514,10 +595,35 @@ enum SubpathState {
     InSubpath
 }
 
+fn render_marker_by_name (draw_ctx:       *const RsvgDrawingCtx,
+                          marker_name:    *const libc::c_char,
+                          xpos:           f64,
+                          ypos:           f64,
+                          computed_angle: f64,
+                          line_width:     f64) {
+    if marker_name.is_null () {
+        return;
+    }
+
+    let name = unsafe { String::from_glib_none (marker_name) };
+
+    let c_node = drawing_ctx::acquire_node_of_type (draw_ctx, &name, NodeType::Marker);
+
+    if c_node.is_null () {
+        return;
+    }
+
+    let node: &RsvgNode = unsafe { & *c_node };
+
+    node.with_impl (|marker: &NodeMarker| marker.render (c_node, draw_ctx, xpos, ypos, computed_angle, line_width));
+
+    drawing_ctx::release_node (draw_ctx, c_node);
+}
+
 fn render_marker_at_start_of_segment (segment: &Segment,
                                       marker_name: *const libc::c_char,
                                       orient: f64,
-                                      linewidth: f64,
+                                      line_width: f64,
                                       draw_ctx: *const RsvgDrawingCtx) {
     let xpos: f64;
     let ypos: f64;
@@ -534,13 +640,13 @@ fn render_marker_at_start_of_segment (segment: &Segment,
         }
     }
 
-    unsafe { rsvg_marker_render (marker_name, xpos, ypos, orient, linewidth, draw_ctx); }
+    render_marker_by_name (draw_ctx, marker_name, xpos, ypos, orient, line_width);
 }
 
 fn render_marker_at_end_of_segment (segment: &Segment,
                                     marker_name: *const libc::c_char,
                                     orient: f64,
-                                    linewidth: f64,
+                                    line_width: f64,
                                     draw_ctx: *const RsvgDrawingCtx) {
     let xpos: f64;
     let ypos: f64;
@@ -557,12 +663,12 @@ fn render_marker_at_end_of_segment (segment: &Segment,
         }
     }
 
-    unsafe { rsvg_marker_render (marker_name, xpos, ypos, orient, linewidth, draw_ctx); }
+    render_marker_by_name (draw_ctx, marker_name, xpos, ypos, orient, line_width);
 }
 
 pub fn render_markers_for_path_builder (builder:  &RsvgPathBuilder,
                                         draw_ctx: *const RsvgDrawingCtx) {
-    
+
     let linewidth: f64 = unsafe { rsvg_get_normalized_stroke_width (draw_ctx) };
 
     if linewidth == 0.0 {
@@ -908,7 +1014,7 @@ mod tests {
 
     /* Sequence of moveto; should generate degenerate points.
      *
-     * This test is not enabled right now!  We create the 
+     * This test is not enabled right now!  We create the
      * path fixtures with Cairo, and Cairo compresses
      * sequences of moveto into a single one.  So, we can't
      * really test this, as we don't get the fixture we want.
@@ -969,17 +1075,17 @@ mod tests {
 
     #[test]
     fn curves_with_loops_and_coincident_ends_have_directionality () {
-        let (v1x, v1y, v2x, v2y) = 
+        let (v1x, v1y, v2x, v2y) =
             super::get_segment_directionalities (&curve (1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0)).unwrap ();
         assert_eq! ((2.0, 2.0), (v1x, v1y));
         assert_eq! ((-4.0, -4.0), (v2x, v2y));
 
-        let (v1x, v1y, v2x, v2y) = 
+        let (v1x, v1y, v2x, v2y) =
             super::get_segment_directionalities (&curve (1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0)).unwrap ();
         assert_eq! ((2.0, 2.0), (v1x, v1y));
         assert_eq! ((-2.0, -2.0), (v2x, v2y));
 
-        let (v1x, v1y, v2x, v2y) = 
+        let (v1x, v1y, v2x, v2y) =
             super::get_segment_directionalities (&curve (1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0)).unwrap ();
         assert_eq! ((2.0, 2.0), (v1x, v1y));
         assert_eq! ((-2.0, -2.0), (v2x, v2y));

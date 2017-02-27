@@ -30,17 +30,9 @@
 
 G_BEGIN_DECLS 
 
-#if 0
-G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_marker	    (const char *element_name, RsvgNode *node);
-#endif
-
 /* Implemented in rust/src/marker.rs */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_marker_new (const char *element_name, RsvgNode *parent);
-
-G_GNUC_INTERNAL
-void rsvg_marker_render (const char * marker_name, gdouble xpos, gdouble ypos, gdouble orient, gdouble linewidth, RsvgDrawingCtx * ctx);
 
 G_END_DECLS
 
