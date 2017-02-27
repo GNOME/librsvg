@@ -249,6 +249,9 @@ void rsvg_state_reinherit_top	(RsvgDrawingCtx * ctx, RsvgState * state, int domi
 G_GNUC_INTERNAL
 void rsvg_state_reconstruct	(RsvgState * state, RsvgNode * current);
 
+G_GNUC_INTERNAL
+gboolean rsvg_state_is_overflow (RsvgState *state);
+
 G_END_DECLS
 
 #endif                          /* RSVG_STYLES_H */

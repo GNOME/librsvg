@@ -1774,3 +1774,8 @@ rsvg_state_reconstruct (RsvgState *state, RsvgNode *current)
 
     rsvg_state_inherit (state, rsvg_node_get_state (current));
 }
+
+gboolean rsvg_state_is_overflow (RsvgState *state)
+{
+    return state->overflow;
+}
