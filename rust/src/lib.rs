@@ -43,10 +43,6 @@ pub use length::{
     rsvg_length_hand_normalize,
 };
 
-pub use marker::{
-    rsvg_render_markers,
-};
-
 pub use node::{
     rsvg_node_get_type,
     rsvg_node_get_parent,

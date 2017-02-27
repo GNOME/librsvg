@@ -501,16 +501,6 @@ pub fn render_markers_for_path_builder (builder:  &RsvgPathBuilder,
     }
 }
 
-#[no_mangle]
-pub extern fn rsvg_render_markers (draw_ctx: *const RsvgDrawingCtx,
-                                   raw_builder: *const RsvgPathBuilder) {
-    assert! (!raw_builder.is_null ());
-    let builder: &RsvgPathBuilder = unsafe { &*raw_builder };
-
-    render_markers_for_path_builder (builder, draw_ctx);
-}
-
-
 /******************** Tests ********************/
 
 #[cfg(test)]
