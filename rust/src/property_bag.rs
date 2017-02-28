@@ -46,7 +46,9 @@ pub fn lookup_length (pbag: *const RsvgPropertyBag, key: &str, length_dir: Lengt
     let value = lookup (pbag, key);
 
     if let Some (v) = value {
-        RsvgLength::parse (&v, length_dir)
+
+        // FIXME: Error is discarded here.  Figure out a way to propagate it upstream.
+        RsvgLength::parse (&v, length_dir).unwrap_or (RsvgLength::default ())
     } else {
         RsvgLength::default ()
     }

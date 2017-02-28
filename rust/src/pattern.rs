@@ -92,10 +92,10 @@ impl Pattern {
         fallback_to! (self.preserve_aspect_ratio, Some (AspectRatio::default ()));
         fallback_to! (self.affine,                Some (cairo::Matrix::identity ()));
 
-        fallback_to! (self.x,                     Some (RsvgLength::parse ("0", LengthDir::Horizontal)));
-        fallback_to! (self.y,                     Some (RsvgLength::parse ("0", LengthDir::Horizontal)));
-        fallback_to! (self.width,                 Some (RsvgLength::parse ("0", LengthDir::Horizontal)));
-        fallback_to! (self.height,                Some (RsvgLength::parse ("0", LengthDir::Horizontal)));
+        fallback_to! (self.x,                     Some (RsvgLength::default ()));
+        fallback_to! (self.y,                     Some (RsvgLength::default ()));
+        fallback_to! (self.width,                 Some (RsvgLength::default ()));
+        fallback_to! (self.height,                Some (RsvgLength::default ()));
 
         self.fallback = None;
 

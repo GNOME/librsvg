@@ -255,11 +255,23 @@ impl NodeTrait for NodeRect {
         self.w.set (property_bag::lookup_length (pbag, "width", LengthDir::Horizontal));
         self.h.set (property_bag::lookup_length (pbag, "height", LengthDir::Vertical));
 
-        self.rx.set (property_bag::lookup (pbag, "rx").map_or (None,
-                                                               |v| Some (RsvgLength::parse (&v, LengthDir::Horizontal))));
+        let v = property_bag::lookup (pbag, "rx");
+        if let Some (val) = v {
+            let rlength = RsvgLength::parse (&val, LengthDir::Horizontal);
+            rlength.map (|v| Some (v)).unwrap_or (None);
+            self.rx.set (rlength.map (|v| Some (v)).unwrap_or (None));
+        } else {
+            self.rx.set (None);
+        }
 
-        self.ry.set (property_bag::lookup (pbag, "ry").map_or (None,
-                                                               |v| Some (RsvgLength::parse (&v, LengthDir::Vertical))));
+        let v = property_bag::lookup (pbag, "ry");
+        if let Some (val) = v {
+            let rlength = RsvgLength::parse (&val, LengthDir::Vertical);
+            rlength.map (|v| Some (v)).unwrap_or (None);
+            self.ry.set (rlength.map (|v| Some (v)).unwrap_or (None));
+        } else {
+            self.ry.set (None);
+        }
     }
 
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {

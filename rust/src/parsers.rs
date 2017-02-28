@@ -1,4 +1,4 @@
-use nom::{IResult, is_digit, double, double_s, ErrorKind, space, sp, is_alphabetic};
+use nom::{IResult, is_digit, double, is_alphabetic};
 use std::str;
 use std::f64::consts::*;
 
@@ -81,10 +81,10 @@ named! (comma_wsp,
 pub struct ParseAngleError;
 
 fn is_alphabetic_or_dash (c: u8) -> bool {
-     is_alphabetic (c) || c == '-' as u8
+     is_alphabetic (c) || c == '-' as u8 || c == '%' as u8
 }
 
-named! (number_and_units<(f64, &[u8])>,
+named! (pub number_and_units<(f64, &[u8])>,
         tuple! (double,
                 take_while! (is_alphabetic_or_dash)));
 

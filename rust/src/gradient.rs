@@ -192,16 +192,16 @@ impl GradientVariant {
 
         match *self {
             GradientVariant::Linear { ref mut x1, ref mut y1, ref mut x2, ref mut y2 } => {
-                fallback_to! (*x1, Some (RsvgLength::parse ("0%", LengthDir::Horizontal)));
-                fallback_to! (*y1, Some (RsvgLength::parse ("0%", LengthDir::Vertical)));
-                fallback_to! (*x2, Some (RsvgLength::parse ("100%", LengthDir::Horizontal)));
-                fallback_to! (*y2, Some (RsvgLength::parse ("0%", LengthDir::Vertical)));
+                fallback_to! (*x1, Some (RsvgLength::parse ("0%", LengthDir::Horizontal).unwrap ()));
+                fallback_to! (*y1, Some (RsvgLength::parse ("0%", LengthDir::Vertical).unwrap ()));
+                fallback_to! (*x2, Some (RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap ()));
+                fallback_to! (*y2, Some (RsvgLength::parse ("0%", LengthDir::Vertical).unwrap ()));
             },
 
             GradientVariant::Radial { ref mut cx, ref mut cy, ref mut r, ref mut fx, ref mut fy } => {
-                fallback_to! (*cx, Some (RsvgLength::parse ("50%", LengthDir::Horizontal)));
-                fallback_to! (*cy, Some (RsvgLength::parse ("50%", LengthDir::Vertical)));
-                fallback_to! (*r,  Some (RsvgLength::parse ("50%", LengthDir::Both)));
+                fallback_to! (*cx, Some (RsvgLength::parse ("50%", LengthDir::Horizontal).unwrap ()));
+                fallback_to! (*cy, Some (RsvgLength::parse ("50%", LengthDir::Vertical).unwrap ()));
+                fallback_to! (*r,  Some (RsvgLength::parse ("50%", LengthDir::Both).unwrap ()));
 
                 /* fx and fy fall back to the presentational value of cx and cy */
                 fallback_to! (*fx, *cx);

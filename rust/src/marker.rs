@@ -126,7 +126,7 @@ impl NodeMarker {
 
     fn get_default_size () -> RsvgLength {
         // per the spec
-        RsvgLength::parse ("3", LengthDir::Both)
+        RsvgLength::parse ("3", LengthDir::Both).unwrap ()
     }
 
     fn render (&self,
@@ -220,9 +220,9 @@ impl NodeTrait for NodeMarker {
         self.ref_y.set (property_bag::lookup_length (pbag, "refY", LengthDir::Vertical));
 
         self.width.set (property_bag::lookup (pbag, "markerWidth").map_or (NodeMarker::get_default_size (),
-                                                                           |v| RsvgLength::parse (&v, LengthDir::Horizontal)));
+                                                                           |v| RsvgLength::parse (&v, LengthDir::Horizontal).unwrap_or (NodeMarker::get_default_size ())));
         self.height.set (property_bag::lookup (pbag, "markerHeight").map_or (NodeMarker::get_default_size (),
-                                                                             |v| RsvgLength::parse (&v, LengthDir::Vertical)));
+                                                                             |v| RsvgLength::parse (&v, LengthDir::Vertical).unwrap_or (NodeMarker::get_default_size ())));
 
         self.orient.set (property_bag::lookup_and_parse (pbag, "orient"));
         self.aspect.set (property_bag::lookup_and_parse (pbag, "preserveAspectRatio"));
