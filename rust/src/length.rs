@@ -157,6 +157,11 @@ impl RsvgLength {
                 unit = LengthUnit::Inch;
             },
 
+            "px" |
+            "" => {
+                unit = LengthUnit::Default;
+            },
+
             _ => {
                 unit = LengthUnit::Default;
             }
