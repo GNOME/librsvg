@@ -214,27 +214,19 @@ impl NodeMarker {
 
 impl NodeTrait for NodeMarker {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
-        self.units.set (property_bag::lookup (pbag, "markerUnits").map_or (MarkerUnits::default (),
-                                                                           |v| MarkerUnits::from_str (&v).unwrap_or (MarkerUnits::default ())));
+        self.units.set (property_bag::lookup_and_parse (pbag, "markerUnits"));
 
-        self.ref_x.set (property_bag::lookup (pbag, "refX").map_or (RsvgLength::default (),
-                                                                    |v| RsvgLength::parse (&v, LengthDir::Horizontal)));
-        self.ref_y.set (property_bag::lookup (pbag, "refY").map_or (RsvgLength::default (),
-                                                                    |v| RsvgLength::parse (&v, LengthDir::Vertical)));
+        self.ref_x.set (property_bag::lookup_length (pbag, "refX", LengthDir::Horizontal));
+        self.ref_y.set (property_bag::lookup_length (pbag, "refY", LengthDir::Vertical));
 
         self.width.set (property_bag::lookup (pbag, "markerWidth").map_or (NodeMarker::get_default_size (),
                                                                            |v| RsvgLength::parse (&v, LengthDir::Horizontal)));
         self.height.set (property_bag::lookup (pbag, "markerHeight").map_or (NodeMarker::get_default_size (),
                                                                              |v| RsvgLength::parse (&v, LengthDir::Vertical)));
 
-        self.orient.set (property_bag::lookup (pbag, "orient").map_or (MarkerOrient::default (),
-                                                                       |v| MarkerOrient::from_str (&v).unwrap_or (MarkerOrient::default ())));
-
-        self.aspect.set (property_bag::lookup (pbag, "preserveAspectRatio").map_or (AspectRatio::default (),
-                                                                                    |v| AspectRatio::from_str (&v).unwrap_or (AspectRatio::default ())));
-
-        self.vbox.set (property_bag::lookup (pbag, "viewBox").map_or (RsvgViewBox::default (),
-                                                                      |v| RsvgViewBox::from_str (&v).unwrap_or (RsvgViewBox::default ())));
+        self.orient.set (property_bag::lookup_and_parse (pbag, "orient"));
+        self.aspect.set (property_bag::lookup_and_parse (pbag, "preserveAspectRatio"));
+        self.vbox.set   (property_bag::lookup_and_parse (pbag, "viewBox"));
     }
 
     fn draw (&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
