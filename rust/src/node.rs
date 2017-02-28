@@ -318,7 +318,7 @@ mod tests {
         }
 
         fn get_c_impl (&self) -> *const RsvgCNodeImpl {
-            return ptr::null ();
+            unreachable! ();
         }
     }
 

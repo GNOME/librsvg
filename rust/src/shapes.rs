@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::ptr;
 use std::cell::Cell;
 extern crate libc;
 
@@ -103,7 +102,7 @@ impl NodeTrait for NodePath {
     }
 
     fn get_c_impl (&self) -> *const RsvgCNodeImpl {
-        ptr::null ()
+        unreachable! ();
     }
 }
 
@@ -169,7 +168,7 @@ impl NodeTrait for NodePoly {
     }
 
     fn get_c_impl (&self) -> *const RsvgCNodeImpl {
-        ptr::null ()
+        unreachable! ();
     }
 }
 
@@ -216,7 +215,7 @@ impl NodeTrait for NodeLine {
     }
 
     fn get_c_impl (&self) -> *const RsvgCNodeImpl {
-        ptr::null ()
+        unreachable! ();
     }
 }
 
@@ -414,7 +413,7 @@ impl NodeTrait for NodeRect {
     }
 
     fn get_c_impl (&self) -> *const RsvgCNodeImpl {
-        ptr::null ()
+        unreachable! ();
     }
 }
 
@@ -452,7 +451,7 @@ impl NodeTrait for NodeCircle {
     }
 
     fn get_c_impl (&self) -> *const RsvgCNodeImpl {
-        ptr::null ()
+        unreachable! ();
     }
 }
 
@@ -494,7 +493,7 @@ impl NodeTrait for NodeEllipse {
     }        
 
     fn get_c_impl (&self) -> *const RsvgCNodeImpl {
-        ptr::null ()
+        unreachable! ();
     }
 }
 

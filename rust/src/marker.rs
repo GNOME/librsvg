@@ -9,7 +9,6 @@ use self::cairo::MatrixTrait;
 use std::cell::Cell;
 use std::f64::consts::*;
 use std::fmt;
-use std::ptr;
 use std::str::FromStr;
 
 use aspect_ratio::*;
@@ -234,7 +233,7 @@ impl NodeTrait for NodeMarker {
     }
 
     fn get_c_impl (&self) -> *const RsvgCNodeImpl {
-        ptr::null ()
+        unreachable! ();
     }
 }
 
