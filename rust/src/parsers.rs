@@ -80,23 +80,25 @@ named! (comma_wsp,
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ParseAngleError;
 
-named! (angle<(f64, Option<&[u8]>)>,
+fn is_alphabetic_or_dash (c: u8) -> bool {
+     is_alphabetic (c) || c == '-' as u8
+}
+
+named! (number_and_units<(f64, &[u8])>,
         tuple! (double,
-                opt! (take_while! (is_alphabetic))));
+                take_while! (is_alphabetic_or_dash)));
 
 pub fn angle_degrees (s: &str) -> Result <f64, ParseAngleError> {
-    let r = angle (s.as_bytes ()).to_full_result ();
-
-    println! ("took {:?} parsed {:?}", s, r);
+    let r = number_and_units (s.as_bytes ()).to_full_result ();
 
     match r {
         Ok ((value, unit)) => {
             match unit {
-                Some (b"deg")  => Ok (value),
-                Some (b"grad") => Ok (value * 360.0 / 400.0),
-                Some (b"rad")  => Ok (value * 180.0 / PI),
-                Some (b"")     => Ok (value),
-                _              => Err (ParseAngleError)
+                b"deg"  => Ok (value),
+                b"grad" => Ok (value * 360.0 / 400.0),
+                b"rad"  => Ok (value * 180.0 / PI),
+                b""     => Ok (value),
+                _       => Err (ParseAngleError)
             }
         },
 
@@ -276,6 +278,13 @@ mod tests {
             IResult::Error (_) => { },
             _ => { panic! ("{:?} should be an invalid list-of-points", result); }
         }
+    }
+
+    #[test]
+    fn parses_number_and_units () {
+        assert_eq! (number_and_units (b"-1"), IResult::Done (&b""[..], (-1.0, &b""[..])));
+        assert_eq! (number_and_units (b"0x"), IResult::Done (&b""[..], (0.0, &b"x"[..])));
+        assert_eq! (number_and_units (b"-55.5x-large"), IResult::Done (&b""[..], (-55.5, &b"x-large"[..])));
     }
 
     #[test]
