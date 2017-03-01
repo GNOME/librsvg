@@ -566,30 +566,3 @@ rsvg_pattern_node_to_rust_pattern (RsvgNode *node)
 
     return pattern;
 }
-
-static gboolean
-count_one_child_fn (RsvgNode *child, gpointer data)
-{
-    gboolean *has_children = data;
-
-    *has_children = TRUE;
-    return FALSE;
-}
-
-static gboolean
-node_has_at_least_one_child (RsvgNode *node)
-{
-    gboolean has_children = FALSE;
-
-    rsvg_node_foreach_child (node, count_one_child_fn, &has_children);
-    return has_children;
-}
-
-gboolean
-rsvg_pattern_node_has_children (RsvgNode *node)
-{
-    if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_PATTERN)
-        return FALSE;
-
-    return node_has_at_least_one_child (node);
-}

@@ -36,11 +36,11 @@ pub trait NodeTrait: Downcast {
 impl_downcast! (NodeTrait);
 
 pub struct Node {
-    node_type: NodeType,
-    parent:    Option<Weak<Node>>,       // optional; weak ref to parent
-    children:  RefCell<Vec<Rc<Node>>>,   // strong references to children
-    state:     *mut RsvgState,
-    node_impl: Box<NodeTrait>
+    node_type:     NodeType,
+    parent:        Option<Weak<Node>>,       // optional; weak ref to parent
+    pub children:  RefCell<Vec<Rc<Node>>>,   // strong references to children
+    state:         *mut RsvgState,
+    node_impl:     Box<NodeTrait>
 }
 
 /* Keep this in sync with rsvg-private.h:RsvgNodeType */

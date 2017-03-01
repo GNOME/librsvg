@@ -176,9 +176,6 @@ gboolean pattern_resolve_fallbacks_and_set_pattern (Pattern        *pattern,
 G_GNUC_INTERNAL
 Pattern *rsvg_pattern_node_to_rust_pattern (RsvgNode *node);
 
-G_GNUC_INTERNAL
-gboolean rsvg_pattern_node_has_children (RsvgNode *node);
-
 
 struct _RsvgSolidColor {
     gboolean currentcolor;

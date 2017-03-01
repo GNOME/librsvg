@@ -10,7 +10,7 @@ use length::*;
 
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
-use node::RsvgNode;
+use node::*;
 
 use bbox::*;
 use util::*;
@@ -39,11 +39,17 @@ pub struct Pattern {
 
 extern "C" {
     fn rsvg_pattern_node_to_rust_pattern (node: *const RsvgNode) -> *mut Pattern;
-    fn rsvg_pattern_node_has_children (node: *const RsvgNode) -> bool;
 }
 
-fn pattern_node_has_children (c_node: *const RsvgNode) -> bool {
-    unsafe { rsvg_pattern_node_has_children (c_node) }
+fn pattern_node_has_children (raw_node: *const RsvgNode) -> bool {
+    assert! (!raw_node.is_null ());
+    let node: &RsvgNode = unsafe { & *raw_node };
+
+    if node.get_type () == NodeType::Pattern {
+        node.children.borrow ().len () > 0
+    } else {
+        false
+    }
 }
 
 // All of the Pattern's fields are Option<foo> values, because
