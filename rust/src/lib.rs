@@ -114,6 +114,5 @@ mod pattern;
 mod property_bag;
 mod state;
 mod shapes;
-mod strtod;
 mod util;
 mod viewbox;
