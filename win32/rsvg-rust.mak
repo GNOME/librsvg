@@ -20,7 +20,7 @@ CARGO_CMD = $(CARGO) build
 all: vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals\$(CFG)\rsvg_internals.lib
 
 vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals\$(CFG)\rsvg_internals.lib:
-	@set CARGO_TARGET_DIR=..\build\win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals
+	@set CARGO_TARGET_DIR=..\win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals
 	@set GTK_LIB_DIR=..\..\vs$(VSVER)\$(PLAT)\lib;$(LIB)
 	@cd ..\rust
 	$(CARGO_CMD) --verbose
