@@ -611,27 +611,30 @@ fn emit_marker_by_name (draw_ctx:       *const RsvgDrawingCtx,
     drawing_ctx::release_node (draw_ctx, c_node);
 }
 
+fn get_marker_position_at_start_of_segment (segment: &Segment) -> (f64, f64) {
+    match *segment {
+        Segment::Degenerate  { x, y } => (x, y),
+
+        Segment::LineOrCurve { x1, y1, .. } => (x1, y1)
+    }
+}
+
+fn get_marker_position_at_end_of_segment (segment: &Segment) -> (f64, f64) {
+    match *segment {
+        Segment::Degenerate  { x, y } => (x, y),
+
+        Segment::LineOrCurve { x4, y4, .. } => (x4, y4)
+    }
+}
+
 fn emit_marker_at_start_of_segment (segment: &Segment,
                                     marker_name: *const libc::c_char,
                                     orient: f64,
                                     line_width: f64,
                                     draw_ctx: *const RsvgDrawingCtx) {
-    let xpos: f64;
-    let ypos: f64;
+    let (x, y) = get_marker_position_at_start_of_segment (segment);
 
-    match *segment {
-        Segment::Degenerate { x, y } => {
-            xpos = x;
-            ypos = y;
-        },
-
-        Segment::LineOrCurve { x1, y1, .. } => {
-            xpos = x1;
-            ypos = y1;
-        }
-    }
-
-    emit_marker_by_name (draw_ctx, marker_name, xpos, ypos, orient, line_width);
+    emit_marker_by_name (draw_ctx, marker_name, x, y, orient, line_width);
 }
 
 fn emit_marker_at_end_of_segment (segment: &Segment,
@@ -639,22 +642,9 @@ fn emit_marker_at_end_of_segment (segment: &Segment,
                                   orient: f64,
                                   line_width: f64,
                                   draw_ctx: *const RsvgDrawingCtx) {
-    let xpos: f64;
-    let ypos: f64;
+    let (x, y) = get_marker_position_at_end_of_segment (segment);
 
-    match *segment {
-        Segment::Degenerate { x, y } => {
-            xpos = x;
-            ypos = y;
-        },
-
-        Segment::LineOrCurve { x4, y4, .. } => {
-            xpos = x4;
-            ypos = y4;
-        }
-    }
-
-    emit_marker_by_name (draw_ctx, marker_name, xpos, ypos, orient, line_width);
+    emit_marker_by_name (draw_ctx, marker_name, x, y, orient, line_width);
 }
 
 extern "C" {
