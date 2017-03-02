@@ -573,6 +573,19 @@ fn bisect_angles (incoming: f64, outgoing: f64) -> f64 {
     }
 }
 
+// From SVG's marker-start, marker-mid, marker-end properties
+enum MarkerType {
+    Start,
+    Middle,
+    End
+}
+
+type RenderMarkerFn = FnOnce (MarkerType,
+                              f64,  // xpos
+                              f64,  // ypos
+                              f64,  // computed_angle
+                              f64); // line_width
+
 fn emit_marker_by_name (draw_ctx:       *const RsvgDrawingCtx,
                         marker_name:    *const libc::c_char,
                         xpos:           f64,
