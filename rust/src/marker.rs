@@ -573,19 +573,6 @@ fn bisect_angles (incoming: f64, outgoing: f64) -> f64 {
     }
 }
 
-extern "C" {
-    fn rsvg_get_normalized_stroke_width (draw_ctx: *const RsvgDrawingCtx) -> f64;
-
-    fn rsvg_get_start_marker (draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
-    fn rsvg_get_middle_marker (draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
-    fn rsvg_get_end_marker (draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
-}
-
-enum SubpathState {
-    NoSubpath,
-    InSubpath
-}
-
 fn render_marker_by_name (draw_ctx:       *const RsvgDrawingCtx,
                           marker_name:    *const libc::c_char,
                           xpos:           f64,
@@ -657,8 +644,20 @@ fn render_marker_at_end_of_segment (segment: &Segment,
     render_marker_by_name (draw_ctx, marker_name, xpos, ypos, orient, line_width);
 }
 
+extern "C" {
+    fn rsvg_get_normalized_stroke_width (draw_ctx: *const RsvgDrawingCtx) -> f64;
+
+    fn rsvg_get_start_marker (draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
+    fn rsvg_get_middle_marker (draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
+    fn rsvg_get_end_marker (draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
+}
+
 pub fn render_markers_for_path_builder (builder:  &RsvgPathBuilder,
                                         draw_ctx: *const RsvgDrawingCtx) {
+    enum SubpathState {
+        NoSubpath,
+        InSubpath
+    }
 
     let linewidth: f64 = unsafe { rsvg_get_normalized_stroke_width (draw_ctx) };
 
