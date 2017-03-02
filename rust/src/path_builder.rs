@@ -4,6 +4,13 @@ use ::cairo_sys;
 use std::f64;
 use std::f64::consts::*;
 
+pub enum PathCommand {
+    MoveTo (f64, f64),
+    LineTo (f64, f64),
+    CurveTo ((f64, f64), (f64, f64), (f64, f64)), // (x2, y2), (x3, y3), (x4, y4) <- this is the destination point
+    ClosePath
+}
+
 #[repr(C)]
 pub struct RsvgPathBuilder {
     path_segments: Vec<cairo::PathSegment>,
