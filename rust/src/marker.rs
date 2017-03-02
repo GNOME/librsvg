@@ -574,6 +574,7 @@ fn bisect_angles (incoming: f64, outgoing: f64) -> f64 {
 }
 
 // From SVG's marker-start, marker-mid, marker-end properties
+#[derive(Debug, PartialEq)]
 enum MarkerType {
     Start,
     Middle,
@@ -623,7 +624,7 @@ fn emit_marker<E> (segment:     &Segment,
                    endpoint:    MarkerEndpoint,
                    marker_type: MarkerType,
                    orient:      f64,
-                   emit_fn:     &E) where E: Fn(MarkerType, f64, f64, f64) {
+                   emit_fn:     &mut E) where E: FnMut(MarkerType, f64, f64, f64) {
     let (x, y) = match *segment {
         Segment::Degenerate  { x, y } => (x, y),
 
@@ -663,7 +664,7 @@ pub fn render_markers_for_path_builder (builder:  &RsvgPathBuilder,
     }
 
     emit_markers_for_path_builder (builder,
-                                   &|marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
+                                   &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
                                        emit_marker_by_name (draw_ctx,
                                                             get_marker_name_from_drawing_ctx (draw_ctx, marker_type),
                                                             x,
@@ -674,7 +675,7 @@ pub fn render_markers_for_path_builder (builder:  &RsvgPathBuilder,
 }
 
 fn emit_markers_for_path_builder<E> (builder: &RsvgPathBuilder,
-                                     emit_fn: &E) where E: Fn(MarkerType, f64, f64, f64) {
+                                     emit_fn: &mut E) where E: FnMut(MarkerType, f64, f64, f64) {
     enum SubpathState {
         NoSubpath,
         InSubpath
@@ -1138,5 +1139,58 @@ mod directionality_tests {
 
         assert_eq! ((40.0, 30.0), (v1x, v1y));
         assert_eq! ((40.0, 30.0), (v2x, v2y));
+    }
+}
+
+#[cfg(test)]
+mod marker_tests {
+    use std::f64::consts::*;
+    use super::*;
+    extern crate cairo;
+
+    #[test]
+    fn emits_for_open_subpath () {
+        let mut builder = RsvgPathBuilder::new ();
+        builder.move_to (0.0, 0.0);
+        builder.line_to (1.0, 0.0);
+        builder.line_to (1.0, 1.0);
+        builder.line_to (0.0, 1.0);
+
+        let mut v = Vec::new ();
+
+        emit_markers_for_path_builder (&builder,
+                                       &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
+                                           v.push ((marker_type, x, y, computed_angle));
+                                       });
+
+        assert_eq! (v, vec! [(MarkerType::Start,  0.0, 0.0, 0.0),
+                             (MarkerType::Middle, 1.0, 0.0, angle_from_vector (1.0, 1.0)),
+                             (MarkerType::Middle, 1.0, 1.0, angle_from_vector (-1.0, 1.0)),
+                             (MarkerType::End,    0.0, 1.0, angle_from_vector (-1.0, 0.0))]);
+    }
+
+    #[test]
+    #[ignore]
+    // https://bugzilla.gnome.org/show_bug.cgi?id=777854
+    fn emits_for_closed_subpath () {
+        let mut builder = RsvgPathBuilder::new ();
+        builder.move_to (0.0, 0.0);
+        builder.line_to (1.0, 0.0);
+        builder.line_to (1.0, 1.0);
+        builder.line_to (0.0, 1.0);
+        builder.close_path ();
+
+        let mut v = Vec::new ();
+
+        emit_markers_for_path_builder (&builder,
+                                       &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
+                                           v.push ((marker_type, x, y, computed_angle));
+                                       });
+
+        assert_eq! (v, vec! [(MarkerType::Start,  0.0, 0.0, 0.0),
+                             (MarkerType::Middle, 1.0, 0.0, angle_from_vector (1.0, 1.0)),
+                             (MarkerType::Middle, 1.0, 1.0, angle_from_vector (-1.0, 1.0)),
+                             (MarkerType::Middle, 0.0, 1.0, angle_from_vector (-1.0, 0.0)),
+                             (MarkerType::End,    0.0, 0.0, angle_from_vector (1.0, -1.0))]);
     }
 }
