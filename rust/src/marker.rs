@@ -580,12 +580,6 @@ enum MarkerType {
     End
 }
 
-type RenderMarkerFn = FnOnce (MarkerType,
-                              f64,  // xpos
-                              f64,  // ypos
-                              f64,  // computed_angle
-                              f64); // line_width
-
 fn emit_marker_by_name (draw_ctx:       *const RsvgDrawingCtx,
                         marker_name:    *const libc::c_char,
                         xpos:           f64,
@@ -636,34 +630,22 @@ fn get_marker_name_from_drawing_ctx (draw_ctx:    *const RsvgDrawingCtx,
     }
 }
 
-fn emit_marker_at_start_of_segment (segment: &Segment,
-                                    marker_type: MarkerType,
-                                    orient: f64,
-                                    line_width: f64,
-                                    draw_ctx: *const RsvgDrawingCtx) {
+fn emit_marker_at_start_of_segment<E> (segment:     &Segment,
+                                       marker_type: MarkerType,
+                                       orient:      f64,
+                                       emit_fn:     &E) where E: Fn(MarkerType, f64, f64, f64) {
     let (x, y) = get_marker_position_at_start_of_segment (segment);
 
-    emit_marker_by_name (draw_ctx,
-                         get_marker_name_from_drawing_ctx (draw_ctx, marker_type),
-                         x,
-                         y,
-                         orient,
-                         line_width);
+    emit_fn (marker_type, x, y, orient);
 }
 
-fn emit_marker_at_end_of_segment (segment: &Segment,
-                                  marker_type: MarkerType,
-                                  orient: f64,
-                                  line_width: f64,
-                                  draw_ctx: *const RsvgDrawingCtx) {
+fn emit_marker_at_end_of_segment<E> (segment:     &Segment,
+                                     marker_type: MarkerType,
+                                     orient:      f64,
+                                     emit_fn:     &E) where E: Fn(MarkerType, f64, f64, f64) {
     let (x, y) = get_marker_position_at_end_of_segment (segment);
 
-    emit_marker_by_name (draw_ctx,
-                         get_marker_name_from_drawing_ctx (draw_ctx, marker_type),
-                         x,
-                         y,
-                         orient,
-                         line_width);
+    emit_fn (marker_type, x, y, orient);
 }
 
 extern "C" {
@@ -682,11 +664,6 @@ fn drawing_ctx_has_markers (draw_ctx: *const RsvgDrawingCtx) -> bool {
 
 pub fn render_markers_for_path_builder (builder:  &RsvgPathBuilder,
                                         draw_ctx: *const RsvgDrawingCtx) {
-    enum SubpathState {
-        NoSubpath,
-        InSubpath
-    }
-
     let linewidth: f64 = unsafe { rsvg_get_normalized_stroke_width (draw_ctx) };
 
     if linewidth == 0.0 {
@@ -696,6 +673,24 @@ pub fn render_markers_for_path_builder (builder:  &RsvgPathBuilder,
     if !drawing_ctx_has_markers (draw_ctx) {
         return;
     }
+
+    emit_markers_for_path_builder (builder,
+                                   &|marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
+                                       emit_marker_by_name (draw_ctx,
+                                                            get_marker_name_from_drawing_ctx (draw_ctx, marker_type),
+                                                            x,
+                                                            y,
+                                                            computed_angle,
+                                                            linewidth);
+                                   });
+}
+
+fn emit_markers_for_path_builder<E> (builder: &RsvgPathBuilder,
+                                     emit_fn: &E) where E: Fn(MarkerType, f64, f64, f64) {
+    enum SubpathState {
+        NoSubpath,
+        InSubpath
+    };
 
     /* Convert the path to a list of segments and bare points */
     let segments = path_builder_to_segments (builder);
@@ -712,14 +707,14 @@ pub fn render_markers_for_path_builder (builder:  &RsvgPathBuilder,
                         /* Got a lone point after a subpath; render the subpath's end marker first */
 
                         let (_, incoming_vx, incoming_vy) = find_incoming_directionality_backwards (&segments, i - 1);
-                        emit_marker_at_end_of_segment (&segments[i - 1], MarkerType::End, angle_from_vector (incoming_vx, incoming_vy), linewidth, draw_ctx);
+                        emit_marker_at_end_of_segment (&segments[i - 1], MarkerType::End, angle_from_vector (incoming_vx, incoming_vy), emit_fn);
                     },
 
                     _ => { }
                 }
 
                 /* Render marker for the lone point; no directionality */
-                emit_marker_at_start_of_segment (segment, MarkerType::Middle, 0.0, linewidth, draw_ctx);
+                emit_marker_at_start_of_segment (segment, MarkerType::Middle, 0.0, emit_fn);
 
                 subpath_state = SubpathState::NoSubpath;
             },
@@ -730,7 +725,7 @@ pub fn render_markers_for_path_builder (builder:  &RsvgPathBuilder,
                 match subpath_state {
                     SubpathState::NoSubpath => {
                         let (_, outgoing_vx, outgoing_vy) = find_outgoing_directionality_forwards (&segments, i);
-                        emit_marker_at_start_of_segment (segment, MarkerType::Start, angle_from_vector (outgoing_vx, outgoing_vy), linewidth, draw_ctx);
+                        emit_marker_at_start_of_segment (segment, MarkerType::Start, angle_from_vector (outgoing_vx, outgoing_vy), emit_fn);
 
                         subpath_state = SubpathState::InSubpath;
                     },
@@ -759,7 +754,7 @@ pub fn render_markers_for_path_builder (builder:  &RsvgPathBuilder,
                             angle = 0.0;
                         }
 
-                        emit_marker_at_start_of_segment (segment, MarkerType::Middle, angle, linewidth, draw_ctx);
+                        emit_marker_at_start_of_segment (segment, MarkerType::Middle, angle, emit_fn);
                     }
                 }
             }
@@ -774,7 +769,7 @@ pub fn render_markers_for_path_builder (builder:  &RsvgPathBuilder,
             Segment::LineOrCurve { .. } => {
                 let (_, incoming_vx, incoming_vy) = find_incoming_directionality_backwards (&segments, segments.len () - 1);
 
-                emit_marker_at_end_of_segment (&segment, MarkerType::End, angle_from_vector (incoming_vx, incoming_vy), linewidth, draw_ctx);
+                emit_marker_at_end_of_segment (&segment, MarkerType::End, angle_from_vector (incoming_vx, incoming_vy), emit_fn);
             },
 
             _ => { }
