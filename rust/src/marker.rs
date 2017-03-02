@@ -776,7 +776,20 @@ fn emit_markers_for_path_builder<E> (builder: &RsvgPathBuilder,
 /******************** Tests ********************/
 
 #[cfg(test)]
-mod tests {
+mod parser_tests {
+    use super::*;
+
+    #[test]
+    fn parses_marker_units () {
+        assert_eq! (MarkerUnits::from_str ("foo"), Err (MarkerUnitsParseError));
+
+        assert_eq! (MarkerUnits::from_str ("userSpaceOnUse"), Ok (MarkerUnits::UserSpaceOnUse));
+        assert_eq! (MarkerUnits::from_str ("strokeWidth"),    Ok (MarkerUnits::StrokeWidth));
+    }
+}
+
+#[cfg(test)]
+mod directionality_tests {
     use std::f64::consts::*;
     use super::*;
     extern crate cairo;
@@ -1125,13 +1138,5 @@ mod tests {
 
         assert_eq! ((40.0, 30.0), (v1x, v1y));
         assert_eq! ((40.0, 30.0), (v2x, v2y));
-    }
-
-    #[test]
-    fn parses_marker_units () {
-        assert_eq! (MarkerUnits::from_str ("foo"), Err (MarkerUnitsParseError));
-
-        assert_eq! (MarkerUnits::from_str ("userSpaceOnUse"), Ok (MarkerUnits::UserSpaceOnUse));
-        assert_eq! (MarkerUnits::from_str ("strokeWidth"),    Ok (MarkerUnits::StrokeWidth));
     }
 }
