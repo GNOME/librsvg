@@ -605,22 +605,6 @@ fn emit_marker_by_name (draw_ctx:       *const RsvgDrawingCtx,
     drawing_ctx::release_node (draw_ctx, c_node);
 }
 
-fn get_marker_position_at_start_of_segment (segment: &Segment) -> (f64, f64) {
-    match *segment {
-        Segment::Degenerate  { x, y } => (x, y),
-
-        Segment::LineOrCurve { x1, y1, .. } => (x1, y1)
-    }
-}
-
-fn get_marker_position_at_end_of_segment (segment: &Segment) -> (f64, f64) {
-    match *segment {
-        Segment::Degenerate  { x, y } => (x, y),
-
-        Segment::LineOrCurve { x4, y4, .. } => (x4, y4)
-    }
-}
-
 fn get_marker_name_from_drawing_ctx (draw_ctx:    *const RsvgDrawingCtx,
                                      marker_type: MarkerType) -> *const libc::c_char {
    match marker_type {
@@ -634,7 +618,11 @@ fn emit_marker_at_start_of_segment<E> (segment:     &Segment,
                                        marker_type: MarkerType,
                                        orient:      f64,
                                        emit_fn:     &E) where E: Fn(MarkerType, f64, f64, f64) {
-    let (x, y) = get_marker_position_at_start_of_segment (segment);
+    let (x, y) = match *segment {
+        Segment::Degenerate  { x, y } => (x, y),
+
+        Segment::LineOrCurve { x1, y1, .. } => (x1, y1)
+    };
 
     emit_fn (marker_type, x, y, orient);
 }
@@ -643,7 +631,11 @@ fn emit_marker_at_end_of_segment<E> (segment:     &Segment,
                                      marker_type: MarkerType,
                                      orient:      f64,
                                      emit_fn:     &E) where E: Fn(MarkerType, f64, f64, f64) {
-    let (x, y) = get_marker_position_at_end_of_segment (segment);
+    let (x, y) = match *segment {
+        Segment::Degenerate  { x, y } => (x, y),
+
+        Segment::LineOrCurve { x4, y4, .. } => (x4, y4)
+    };
 
     emit_fn (marker_type, x, y, orient);
 }
