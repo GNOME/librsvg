@@ -1146,7 +1146,6 @@ mod directionality_tests {
 
 #[cfg(test)]
 mod marker_tests {
-    use std::f64::consts::*;
     use super::*;
     extern crate cairo;
 
