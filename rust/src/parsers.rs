@@ -7,7 +7,6 @@ use std::f64::consts::*;
 // nom::IError into a simple error struct that can be passed around.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParseError {
-    pub description: String,
     pub display: String
 }
 
@@ -15,11 +14,9 @@ pub struct ParseError {
 impl<'a> From<IError<&'a [u8]>> for NomError {
     fn from (e: IError<&[u8]>) -> NomError {
         match e {
-            IError::Error (err) => NomError { description: err.description ().to_string (),
-                                              display: format! ("{}", err) },
+            IError::Error (err) => NomError { display: format! ("{}", err) },
 
-            IError::Incomplete (_) => NomError { description: "incomplete data".to_string (),
-                                                 display: "incomplete data".to_string () }
+            IError::Incomplete (_) => NomError { display: "incomplete data".to_string () }
         }
     }
 }
@@ -71,13 +68,11 @@ pub fn angle_degrees (s: &str) -> Result <f64, ParseError> {
                 b"grad" => Ok (value * 360.0 / 400.0),
                 b"rad"  => Ok (value * 180.0 / PI),
                 b""     => Ok (value),
-                _       => Err (ParseError { description: "angle parse error".to_string (),
-                                             display: "expected (\"deg\", \"rad\", \"grad\")? after number".to_string () })
+                _       => Err (ParseError { display: "expected (\"deg\", \"rad\", \"grad\")? after number".to_string () })
             }
         },
 
-        _ => Err (ParseError { description: "angle parse error".to_string (),
-                               display: "expected a number".to_string () })
+        _ => Err (ParseError { display: "expected a number".to_string () })
     }
 }
 
@@ -121,13 +116,10 @@ named! (list_of_points_impl<Vec<(f64, f64)>>,
 pub fn list_of_points (string: &[u8]) -> Result <Vec<(f64, f64)>, ParseError> {
     list_of_points_impl (string)
         .to_full_result ()
-        .map_err (|_| ParseError { description: "parse error".to_string (),
-                                   display: "invalid syntax for list of points".to_string () })
+        .map_err (|_| ParseError { display: "invalid syntax for list of points".to_string () })
     /*
-        .map_err (|e| match e { IError::Error (err) => ParseError { description: err.description ().to_string (),
-                                                                    display: format! ("{}", err) },
-                                _ => ParseError { description: "incomplete data".to_string (),
-                                                  display: "incomplete list of points".to_string () }
+        .map_err (|e| match e { IError::Error (err) => ParseError { display: format! ("{}", err) },
+                                _ => ParseError { display: "incomplete list of points".to_string () }
         })
      */
 }
