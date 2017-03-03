@@ -232,13 +232,18 @@ impl Node {
     }
 }
 
-extern "C" {
-    fn rsvg_state_free (state: *mut RsvgState);
-}
-
+// Sigh, rsvg_state_free() is only available if we are being linked into
+// librsvg.so.  In testing mode, we run standalone, so we omit this.
+// Fortunately, in testing mode we don't create "real" nodes with
+// states; we only create stub nodes with ptr::null() for state.
+#[cfg(not(test))]
 impl Drop for Node {
+
     fn drop (&mut self) {
-//        unsafe { rsvg_state_free (self.state); }
+        extern "C" {
+            fn rsvg_state_free (state: *mut RsvgState);
+        }
+        unsafe { rsvg_state_free (self.state); }
     }
 }
 
@@ -389,7 +394,6 @@ mod tests {
     use drawing_ctx::RsvgDrawingCtx;
     use handle::RsvgHandle;
     use property_bag::RsvgPropertyBag;
-    use state::RsvgState;
     use super::*;
     use std::ptr;
 
