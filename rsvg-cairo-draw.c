@@ -27,6 +27,8 @@
             Carl Worth <cworth@cworth.org>
 */
 
+#include "config.h"
+
 #include "rsvg-cairo-draw.h"
 #include "rsvg-cairo-render.h"
 #include "rsvg-cairo-clip.h"
@@ -130,6 +132,7 @@ _set_rsvg_affine (RsvgCairoRender * render, cairo_matrix_t *affine)
     cairo_set_matrix (cr, &matrix);
 }
 
+#ifdef HAVE_PANGOFT2
 static cairo_font_options_t *
 get_font_options_for_testing (void)
 {
@@ -181,6 +184,7 @@ get_font_map_for_testing (RsvgCairoRender *render)
 
     return render->font_map_for_testing;
 }
+#endif
 
 PangoContext *
 rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
@@ -190,11 +194,15 @@ rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     double dpi_y;
 
+#ifdef HAVE_PANGOFT2
     if (ctx->is_testing) {
         fontmap = get_font_map_for_testing (render);
     } else {
+#endif
         fontmap = pango_cairo_font_map_get_default ();
+#ifdef HAVE_PANGOFT2
     }
+#endif
 
     context = pango_font_map_create_context (fontmap);
     pango_cairo_update_context (render->cr, context);
@@ -202,9 +210,11 @@ rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
     rsvg_drawing_ctx_get_dpi (ctx, NULL, &dpi_y);
     pango_cairo_context_set_resolution (context, dpi_y);
 
+#ifdef HAVE_PANGOFT2
     if (ctx->is_testing) {
         set_font_options_for_testing (context);
     }
+#endif
 
     return context;
 }
@@ -230,7 +240,7 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     PangoGravity gravity = pango_context_get_gravity (pango_layout_get_context (layout));
     double rotation;
 
-    pango_layout_get_extents (layout, &ink, NULL);
+    pango_layout_get_extents(layout, &ink, NULL);
 
     if (ink.width == 0 || ink.height == 0) {
         return;

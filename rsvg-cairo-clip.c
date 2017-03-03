@@ -27,6 +27,8 @@
             Carl Worth <cworth@cworth.org>
 */
 
+#include "config.h"
+
 #include "rsvg-cairo-draw.h"
 #include "rsvg-cairo-clip.h"
 #include "rsvg-cairo-render.h"
