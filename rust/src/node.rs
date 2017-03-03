@@ -1,5 +1,6 @@
 extern crate libc;
 
+use std::error;
 use std::rc::Rc;
 use std::rc::Weak;
 use std::cell::RefCell;
@@ -35,11 +36,49 @@ pub trait NodeTrait: Downcast {
 
 impl_downcast! (NodeTrait);
 
+#[derive(Debug)]
+pub struct AttributeError {
+    attr_name: &'static str,
+    error: Box<error::Error + Send + Sync>
+}
+
+#[derive(Debug)]
+pub enum Error {
+    // parse error in an attribute
+    AttributeParse (AttributeError),
+
+    // attribute with an invalid value
+    AttributeValue (AttributeError),
+}
+
+// After creating/parsing a Node, it will be in a success or an error state.
+// We represent this with a Result, aliased as a NodeResult.  There is no
+// extra information for the Ok case; all the interesting stuff is in the
+// Err case.
+//
+// https://www.w3.org/TR/SVG/implnote.html#ErrorProcessing
+//
+// When an element has an error during parsing, the SVG spec calls the element
+// to be "in error".  We skip rendering of elements that are in error.
+//
+// When we parse an element's attributes, we stop as soon as we
+// encounter the first error:  a parse error, or an invalid value,
+// etc.  No further attributes will be processed, although note that
+// the order in which an element's attributes are processed is not
+// defined.
+//
+// Alternatively, we could try to parse/validate all the attributes
+// that come in an element and build up a Vec<Error>.  However, we
+// don't do this now.  Doing that may be more useful for an SVG
+// validator, not a renderer like librsvg is.
+pub type NodeResult = Result<(), Error>;
+
 pub struct Node {
     node_type:     NodeType,
     parent:        Option<Weak<Node>>,       // optional; weak ref to parent
     pub children:  RefCell<Vec<Rc<Node>>>,   // strong references to children
     state:         *mut RsvgState,
+    result:        RefCell <NodeResult>,
     node_impl:     Box<NodeTrait>
 }
 
@@ -110,6 +149,7 @@ impl Node {
             parent:    parent,
             children:  RefCell::new (Vec::new ()),
             state:     state,
+            result:    RefCell::new (Ok (())),
             node_impl: node_impl
         }
     }
