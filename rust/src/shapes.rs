@@ -133,17 +133,18 @@ impl NodePoly {
 impl NodeTrait for NodePoly {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         // support for svg < 1.0 which used verts
-        if let Some (value) = property_bag::lookup (pbag, "verts").or (property_bag::lookup (pbag, "points")) {
-            let result = parsers::list_of_points (value.trim ().as_bytes ()).to_full_result ();
 
-            match result {
-                Ok (v) => {
-                    *self.points.borrow_mut () = Some (v);
-                },
+        for name in vec! ["verts", "points"] {
+            if let Some (value) = property_bag::lookup (pbag, name) {
+                let result = parsers::list_of_points (value.trim ().as_bytes ());
 
-                Err (_) => {
-                    // FIXME: propagate errors upstream
-                    *self.points.borrow_mut () = None;
+                match result {
+                    Ok (v) => {
+                        *self.points.borrow_mut () = Some (v);
+                        break;
+                    },
+
+                    Err (e) => { return Err (Error::parse_error (name, e)); }
                 }
             }
         }

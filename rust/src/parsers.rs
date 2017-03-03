@@ -1,6 +1,29 @@
-use nom::{IResult, is_digit, double, is_alphabetic};
+use nom::{IResult, double, is_alphabetic};
 use std::str;
 use std::f64::consts::*;
+
+// I don't know how to copy a nom::IError for long-term storage
+// (i.e. when it can no longer reference the &[u8]).  So, we explode a
+// nom::IError into a simple error struct that can be passed around.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParseError {
+    pub description: String,
+    pub display: String
+}
+
+/*
+impl<'a> From<IError<&'a [u8]>> for NomError {
+    fn from (e: IError<&[u8]>) -> NomError {
+        match e {
+            IError::Error (err) => NomError { description: err.description ().to_string (),
+                                              display: format! ("{}", err) },
+
+            IError::Incomplete (_) => NomError { description: "incomplete data".to_string (),
+                                                 display: "incomplete data".to_string () }
+        }
+    }
+}
+*/
 
 fn is_whitespace (c: u8) -> bool {
     match c as char {
@@ -30,9 +53,6 @@ named! (comma_wsp,
 //
 // Returns an f64 angle in degrees
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct ParseAngleError;
-
 fn is_alphabetic_or_dash (c: u8) -> bool {
      is_alphabetic (c) || c == '-' as u8 || c == '%' as u8
 }
@@ -41,7 +61,7 @@ named! (pub number_and_units<(f64, &[u8])>,
         tuple! (double,
                 take_while! (is_alphabetic_or_dash)));
 
-pub fn angle_degrees (s: &str) -> Result <f64, ParseAngleError> {
+pub fn angle_degrees (s: &str) -> Result <f64, ParseError> {
     let r = number_and_units (s.as_bytes ()).to_full_result ();
 
     match r {
@@ -51,11 +71,13 @@ pub fn angle_degrees (s: &str) -> Result <f64, ParseAngleError> {
                 b"grad" => Ok (value * 360.0 / 400.0),
                 b"rad"  => Ok (value * 180.0 / PI),
                 b""     => Ok (value),
-                _       => Err (ParseAngleError)
+                _       => Err (ParseError { description: "angle parse error".to_string (),
+                                             display: "expected (\"deg\", \"rad\", \"grad\")? after number".to_string () })
             }
         },
 
-        _ => Err (ParseAngleError)
+        _ => Err (ParseError { description: "angle parse error".to_string (),
+                               display: "expected a number".to_string () })
     }
 }
 
@@ -92,9 +114,23 @@ named! (pub coordinate_pair<(f64, f64)>,
 // Parse a list-of-points as for polyline and polygon elements
 // https://www.w3.org/TR/SVG/shapes.html#PointsBNF
 
-named! (pub list_of_points<Vec<(f64, f64)>>,
+named! (list_of_points_impl<Vec<(f64, f64)>>,
         terminated! (separated_list! (comma_wsp, coordinate_pair),
                      eof! ()));
+
+pub fn list_of_points (string: &[u8]) -> Result <Vec<(f64, f64)>, ParseError> {
+    list_of_points_impl (string)
+        .to_full_result ()
+        .map_err (|_| ParseError { description: "parse error".to_string (),
+                                   display: "invalid syntax for list of points".to_string () })
+    /*
+        .map_err (|e| match e { IError::Error (err) => ParseError { description: err.description ().to_string (),
+                                                                    display: format! ("{}", err) },
+                                _ => ParseError { description: "incomplete data".to_string (),
+                                                  display: "incomplete list of points".to_string () }
+        })
+     */
+}
 
 named! (pub separated_numbers<Vec<f64>>,
         separated_list! (comma_wsp, double));
@@ -195,27 +231,18 @@ mod tests {
     #[test]
     fn parses_list_of_points () {
         // FIXME: we are missing optional whitespace at the beginning and end of the list
-        assert_eq! (list_of_points (b"1 2"),  IResult::Done (&b""[..], vec! [(1.0, 2.0)]));
-        assert_eq! (list_of_points (b"1 2 3 4"),  IResult::Done (&b""[..], vec! [(1.0, 2.0), (3.0, 4.0)]));
-        assert_eq! (list_of_points (b"1,2,3,4"),  IResult::Done (&b""[..], vec! [(1.0, 2.0), (3.0, 4.0)]));
-        assert_eq! (list_of_points (b"1,2 3,4"),  IResult::Done (&b""[..], vec! [(1.0, 2.0), (3.0, 4.0)]));
-        assert_eq! (list_of_points (b"1,2 -3,4"),  IResult::Done (&b""[..], vec! [(1.0, 2.0), (-3.0, 4.0)]));
-        assert_eq! (list_of_points (b"1,2,-3,4"),  IResult::Done (&b""[..], vec! [(1.0, 2.0), (-3.0, 4.0)]));
+        assert_eq! (list_of_points (b"1 2"),      Ok (vec! [(1.0, 2.0)]));
+        assert_eq! (list_of_points (b"1 2 3 4"),  Ok (vec! [(1.0, 2.0), (3.0, 4.0)]));
+        assert_eq! (list_of_points (b"1,2,3,4"),  Ok (vec! [(1.0, 2.0), (3.0, 4.0)]));
+        assert_eq! (list_of_points (b"1,2 3,4"),  Ok (vec! [(1.0, 2.0), (3.0, 4.0)]));
+        assert_eq! (list_of_points (b"1,2 -3,4"), Ok (vec! [(1.0, 2.0), (-3.0, 4.0)]));
+        assert_eq! (list_of_points (b"1,2,-3,4"), Ok (vec! [(1.0, 2.0), (-3.0, 4.0)]));
     }
 
     #[test]
     fn errors_on_invalid_list_of_points () {
-        let result = list_of_points (b"-1-2-3-4");
-        match result {
-            IResult::Error (_) => { },
-            _ => { panic! ("{:?} should be an invalid list-of-points", result); }
-        }
-
-        let result = list_of_points (b"1 2-3,-4");
-        match result {
-            IResult::Error (_) => { },
-            _ => { panic! ("{:?} should be an invalid list-of-points", result); }
-        }
+        assert! (list_of_points (b"-1-2-3-4").is_err ());
+        assert! (list_of_points (b"1 2-3,-4").is_err ());
     }
 
     #[test]
@@ -233,8 +260,8 @@ mod tests {
         assert_eq! (angle_degrees ("1rad"),     Ok (180.0 / PI));
         assert_eq! (angle_degrees ("-400grad"), Ok (-360.0));
 
-        assert_eq! (angle_degrees (""), Err (ParseAngleError));
-        assert_eq! (angle_degrees ("foo"), Err (ParseAngleError));
-        assert_eq! (angle_degrees ("300foo"), Err (ParseAngleError));
+        assert! (angle_degrees ("").is_err ());
+        assert! (angle_degrees ("foo").is_err ());
+        assert! (angle_degrees ("300foo").is_err ());
     }
 }

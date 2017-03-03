@@ -14,6 +14,7 @@ use drawing_ctx;
 
 use handle::RsvgHandle;
 
+use parsers::ParseError;
 use property_bag::RsvgPropertyBag;
 
 use state::RsvgState;
@@ -38,41 +39,57 @@ pub trait NodeTrait: Downcast {
 impl_downcast! (NodeTrait);
 
 #[derive(Debug)]
-pub struct AttributeError {
-    attr_name: &'static str,
-    error: Box<error::Error + Send + Sync>
+pub enum AttributeError {
+    // parse error
+    Parse (ParseError),
+
+    // invalid value
+    Value (String)
 }
 
 #[derive(Debug)]
-pub enum Error {
-    // parse error in an attribute's value
-    AttributeParse (AttributeError),
+pub struct Error {
+    attr_name: &'static str,
+    err:       AttributeError
+}
 
-    // attribute with an invalid value
-    AttributeValue (AttributeError),
+impl Error {
+    pub fn parse_error (attr_name: &'static str, error: ParseError) -> Error {
+        Error {
+            attr_name: attr_name,
+            err: AttributeError::Parse (error)
+        }
+    }
+
+    pub fn value_error (attr_name: &'static str, description: String) -> Error {
+        Error {
+            attr_name: attr_name,
+            err: AttributeError::Value (description)
+        }
+    }
 }
 
 impl error::Error for Error {
     fn description (&self) -> &str {
-        match *self {
-            Error::AttributeParse (_) => "parse error for attribute value",
-            Error::AttributeValue (_) => "invalid attribute value"
+        match self.err {
+            AttributeError::Parse (ref n) => &n.description,
+            AttributeError::Value (_) => &"invalid attribute value"
         }
     }
 }
 
 impl fmt::Display for Error {
     fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Error::AttributeParse (ref ae) => write! (f,
-                                                      "error parsing value for attribute \"{}\": {}",
-                                                      ae.attr_name,
-                                                      ae.error),
+        match self.err {
+            AttributeError::Parse (ref n) => write! (f,
+                                                     "error parsing value for attribute \"{}\": {}",
+                                                     self.attr_name,
+                                                     n.display),
 
-            Error::AttributeValue (ref ae) => write! (f,
-                                                      "invalid value for attribute \"{}\": {}",
-                                                      ae.attr_name,
-                                                      ae.error)
+            AttributeError::Value (ref s) => write! (f,
+                                                     "invalid value for attribute \"{}\": {}",
+                                                     self.attr_name,
+                                                     s)
         }
     }
 }
