@@ -1,5 +1,6 @@
 extern crate libc;
 
+use std::fmt;
 use std::error;
 use std::rc::Rc;
 use std::rc::Weak;
@@ -44,11 +45,36 @@ pub struct AttributeError {
 
 #[derive(Debug)]
 pub enum Error {
-    // parse error in an attribute
+    // parse error in an attribute's value
     AttributeParse (AttributeError),
 
     // attribute with an invalid value
     AttributeValue (AttributeError),
+}
+
+impl error::Error for Error {
+    fn description (&self) -> &str {
+        match *self {
+            Error::AttributeParse (_) => "parse error for attribute value",
+            Error::AttributeValue (_) => "invalid attribute value"
+        }
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::AttributeParse (ref ae) => write! (f,
+                                                      "error parsing value for attribute \"{}\": {}",
+                                                      ae.attr_name,
+                                                      ae.error),
+
+            Error::AttributeValue (ref ae) => write! (f,
+                                                      "invalid value for attribute \"{}\": {}",
+                                                      ae.attr_name,
+                                                      ae.error)
+        }
+    }
 }
 
 // After creating/parsing a Node, it will be in a success or an error state.
