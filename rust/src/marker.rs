@@ -212,7 +212,7 @@ impl NodeMarker {
 }
 
 impl NodeTrait for NodeMarker {
-    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         self.units.set (property_bag::lookup_and_parse (pbag, "markerUnits"));
 
         self.ref_x.set (property_bag::lookup_length (pbag, "refX", LengthDir::Horizontal));
@@ -226,6 +226,8 @@ impl NodeTrait for NodeMarker {
         self.orient.set (property_bag::lookup_and_parse (pbag, "orient"));
         self.aspect.set (property_bag::lookup_and_parse (pbag, "preserveAspectRatio"));
         self.vbox.set   (property_bag::lookup_and_parse (pbag, "viewBox"));
+
+        Ok (())
     }
 
     fn draw (&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {

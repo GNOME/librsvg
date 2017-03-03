@@ -19,8 +19,10 @@ struct CNode {
 }
 
 impl NodeTrait for CNode {
-    fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+    fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         unsafe { (self.set_atts_fn) (node as *const RsvgNode, self.c_node_impl, handle, pbag); }
+
+        Ok (())
     }
 
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {

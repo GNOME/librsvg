@@ -30,7 +30,7 @@ pub type RsvgNode = Rc<Node>;
 pub enum RsvgCNodeImpl {}
 
 pub trait NodeTrait: Downcast {
-    fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag);
+    fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult;
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
     fn get_c_impl (&self) -> *const RsvgCNodeImpl;
 }
@@ -193,7 +193,7 @@ impl Node {
     }
 
     pub fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
-        self.node_impl.set_atts (node, handle, pbag);
+        *self.result.borrow_mut () = self.node_impl.set_atts (node, handle, pbag);
     }
 
     pub fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
@@ -377,7 +377,8 @@ mod tests {
     struct TestNodeImpl {}
 
     impl NodeTrait for TestNodeImpl {
-        fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, _: *const RsvgPropertyBag) {
+        fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, _: *const RsvgPropertyBag) -> NodeResult {
+            Ok (())
         }
 
         fn draw (&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {

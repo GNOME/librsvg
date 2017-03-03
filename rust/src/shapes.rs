@@ -86,7 +86,7 @@ impl NodePath {
 }
 
 impl NodeTrait for NodePath {
-    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         if let Some (value) = property_bag::lookup (pbag, "d") {
             let mut builder = self.builder.borrow_mut ();
 
@@ -95,6 +95,8 @@ impl NodeTrait for NodePath {
                 // path is OK per the spec
             }
         }
+
+        Ok (())
     }
 
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
@@ -129,7 +131,7 @@ impl NodePoly {
 }
 
 impl NodeTrait for NodePoly {
-    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         // support for svg < 1.0 which used verts
         if let Some (value) = property_bag::lookup (pbag, "verts").or (property_bag::lookup (pbag, "points")) {
             let result = parsers::list_of_points (value.trim ().as_bytes ()).to_full_result ();
@@ -145,6 +147,8 @@ impl NodeTrait for NodePoly {
                 }
             }
         }
+
+        Ok (())
     }
 
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
@@ -193,11 +197,13 @@ impl NodeLine {
 }
 
 impl NodeTrait for NodeLine {
-    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         self.x1.set (property_bag::lookup_length (pbag, "x1", LengthDir::Horizontal));
         self.y1.set (property_bag::lookup_length (pbag, "y1", LengthDir::Vertical));
         self.x2.set (property_bag::lookup_length (pbag, "x2", LengthDir::Horizontal));
         self.y2.set (property_bag::lookup_length (pbag, "y2", LengthDir::Vertical));
+
+        Ok (())
     }
 
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
@@ -248,7 +254,7 @@ impl NodeRect {
 }
 
 impl NodeTrait for NodeRect {
-    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         self.x.set (property_bag::lookup_length (pbag, "x", LengthDir::Horizontal));
         self.y.set (property_bag::lookup_length (pbag, "y", LengthDir::Vertical));
         self.w.set (property_bag::lookup_length (pbag, "width", LengthDir::Horizontal));
@@ -271,6 +277,8 @@ impl NodeTrait for NodeRect {
         } else {
             self.ry.set (None);
         }
+
+        Ok (())
     }
 
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
@@ -436,10 +444,12 @@ impl NodeCircle {
 }
 
 impl NodeTrait for NodeCircle {
-    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         self.cx.set (property_bag::lookup_length (pbag, "cx", LengthDir::Horizontal));
         self.cy.set (property_bag::lookup_length (pbag, "cy", LengthDir::Vertical));
         self.r.set  (property_bag::lookup_length (pbag, "r", LengthDir::Both));
+
+        Ok (())
     }
 
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
@@ -476,11 +486,13 @@ impl NodeEllipse {
 }
 
 impl NodeTrait for NodeEllipse {
-    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         self.cx.set (property_bag::lookup_length (pbag, "cx", LengthDir::Horizontal));
         self.cy.set (property_bag::lookup_length (pbag, "cy", LengthDir::Vertical));
         self.rx.set (property_bag::lookup_length (pbag, "rx", LengthDir::Horizontal));
         self.ry.set (property_bag::lookup_length (pbag, "ry", LengthDir::Vertical));
+
+        Ok (())
     }
 
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
