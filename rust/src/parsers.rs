@@ -10,6 +10,12 @@ pub struct ParseError {
     pub display: String
 }
 
+impl ParseError {
+    pub fn new (msg: &str) -> ParseError {
+        ParseError { display: msg.to_string () }
+    }
+}
+
 /*
 impl<'a> From<IError<&'a [u8]>> for NomError {
     fn from (e: IError<&[u8]>) -> NomError {
@@ -68,11 +74,11 @@ pub fn angle_degrees (s: &str) -> Result <f64, ParseError> {
                 b"grad" => Ok (value * 360.0 / 400.0),
                 b"rad"  => Ok (value * 180.0 / PI),
                 b""     => Ok (value),
-                _       => Err (ParseError { display: "expected (\"deg\", \"rad\", \"grad\")? after number".to_string () })
+                _       => Err (ParseError::new ("expected (\"deg\", \"rad\", \"grad\")? after number"))
             }
         },
 
-        _ => Err (ParseError { display: "expected a number".to_string () })
+        _ => Err (ParseError::new ("expected a number"))
     }
 }
 
@@ -116,10 +122,10 @@ named! (list_of_points_impl<Vec<(f64, f64)>>,
 pub fn list_of_points (string: &[u8]) -> Result <Vec<(f64, f64)>, ParseError> {
     list_of_points_impl (string)
         .to_full_result ()
-        .map_err (|_| ParseError { display: "invalid syntax for list of points".to_string () })
+        .map_err (|_| ParseError::new ("invalid syntax for list of points"))
     /*
-        .map_err (|e| match e { IError::Error (err) => ParseError { display: format! ("{}", err) },
-                                _ => ParseError { display: "incomplete list of points".to_string () }
+        .map_err (|e| match e { IError::Error (err) => ParseError::new (format! ("{}", err)),
+                                _ => ParseError::new ("incomplete list of points")
         })
      */
 }
