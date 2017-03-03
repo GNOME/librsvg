@@ -4,6 +4,7 @@ extern crate libc;
 
 use drawing_ctx;
 use drawing_ctx::*;
+use error::*;
 use handle::RsvgHandle;
 use length::*;
 use marker;
@@ -144,7 +145,7 @@ impl NodeTrait for NodePoly {
                         break;
                     },
 
-                    Err (e) => { return Err (Error::parse_error (name, e)); }
+                    Err (e) => { return Err (NodeError::parse_error (name, e)); }
                 }
             }
         }

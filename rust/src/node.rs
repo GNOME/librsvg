@@ -1,7 +1,5 @@
 extern crate libc;
 
-use std::fmt;
-use std::error;
 use std::rc::Rc;
 use std::rc::Weak;
 use std::cell::RefCell;
@@ -14,10 +12,11 @@ use drawing_ctx;
 
 use handle::RsvgHandle;
 
-use parsers::ParseError;
 use property_bag::RsvgPropertyBag;
 
 use state::RsvgState;
+
+use error::*;
 
 /* A *const RsvgNode is just a pointer for the C code's benefit: it
  * points to an  Rc<Node>, which is our refcounted Rust representation
@@ -38,62 +37,6 @@ pub trait NodeTrait: Downcast {
 
 impl_downcast! (NodeTrait);
 
-#[derive(Debug)]
-pub enum AttributeError {
-    // parse error
-    Parse (ParseError),
-
-    // invalid value
-    Value (String)
-}
-
-#[derive(Debug)]
-pub struct Error {
-    attr_name: &'static str,
-    err:       AttributeError
-}
-
-impl Error {
-    pub fn parse_error (attr_name: &'static str, error: ParseError) -> Error {
-        Error {
-            attr_name: attr_name,
-            err: AttributeError::Parse (error)
-        }
-    }
-
-    pub fn value_error (attr_name: &'static str, description: String) -> Error {
-        Error {
-            attr_name: attr_name,
-            err: AttributeError::Value (description)
-        }
-    }
-}
-
-impl error::Error for Error {
-    fn description (&self) -> &str {
-        match self.err {
-            AttributeError::Parse (ref n) => &n.description,
-            AttributeError::Value (_) => &"invalid attribute value"
-        }
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.err {
-            AttributeError::Parse (ref n) => write! (f,
-                                                     "error parsing value for attribute \"{}\": {}",
-                                                     self.attr_name,
-                                                     n.display),
-
-            AttributeError::Value (ref s) => write! (f,
-                                                     "invalid value for attribute \"{}\": {}",
-                                                     self.attr_name,
-                                                     s)
-        }
-    }
-}
-
 // After creating/parsing a Node, it will be in a success or an error state.
 // We represent this with a Result, aliased as a NodeResult.  There is no
 // extra information for the Ok case; all the interesting stuff is in the
@@ -111,10 +54,10 @@ impl fmt::Display for Error {
 // defined.
 //
 // Alternatively, we could try to parse/validate all the attributes
-// that come in an element and build up a Vec<Error>.  However, we
+// that come in an element and build up a Vec<NodeError>.  However, we
 // don't do this now.  Doing that may be more useful for an SVG
 // validator, not a renderer like librsvg is.
-pub type NodeResult = Result<(), Error>;
+pub type NodeResult = Result<(), NodeError>;
 
 pub struct Node {
     node_type:     NodeType,

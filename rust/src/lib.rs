@@ -102,6 +102,7 @@ mod aspect_ratio;
 mod bbox;
 mod cnode;
 mod drawing_ctx;
+mod error;
 mod handle;
 mod gradient;
 mod length;
