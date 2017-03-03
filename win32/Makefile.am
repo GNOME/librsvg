@@ -28,4 +28,7 @@ EXTRA_DIST = \
 	introspection-msvc.mak	\
 	detectenv-msvc.mak	\
 	rsvg-rust.mak		\
+	pc_base.py		\
+	replace.py		\
+	rsvgpc.py		\
 	$(GENERATED_ITEMS)
