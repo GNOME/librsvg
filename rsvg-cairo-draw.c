@@ -361,11 +361,15 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     PangoGravity gravity = pango_context_get_gravity (pango_layout_get_context (layout));
     double rotation;
 
+    pango_layout_get_extents (layout, &ink, NULL);
+
+    if (ink.width == 0 || ink.height == 0) {
+        return;
+    }
+
     cairo_set_antialias (render->cr, state->text_rendering_type);
 
     _set_rsvg_affine (render, &state->affine);
-
-    pango_layout_get_extents (layout, &ink, NULL);
 
     rsvg_bbox_init (&bbox, &state->affine);
     if (PANGO_GRAVITY_IS_VERTICAL (gravity)) {
