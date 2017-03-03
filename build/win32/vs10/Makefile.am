@@ -28,8 +28,9 @@ rsvg-install.props: $(top_srcdir)/build/win32/vs10/rsvg-install.propsin rsvg.vs1
 	-$(RM) $(top_builddir)/build/win32/vs11/rsvg-install.props
 	-$(RM) $(top_builddir)/build/win32/vs12/rsvg-install.props
 	-$(RM) $(top_builddir)/build/win32/vs14/rsvg-install.props
+	-$(RM) $(top_builddir)/build/win32/vs15/rsvg-install.props
 	$(CPP) -P - <$(top_srcdir)/build/win32/vs10/rsvg-install.propsin >$@
-	rm rsvg.vs10.headers
+	$(RM) rsvg.vs10.headers
 
 math.h: $(top_srcdir)/build/win32/vs9/math.h
 	cp $< $@
