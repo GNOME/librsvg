@@ -5,6 +5,18 @@
 	Name="rsvgversionpathsprops"
 	>
 	<UserMacro
+		Name="RsvgMajorVersion"
+		Value="@LIBRSVG_MAJOR_VERSION@"
+	/>
+	<UserMacro
+		Name="RsvgMinorVersion"
+		Value="@LIBRSVG_MINOR_VERSION@"
+	/>
+	<UserMacro
+		Name="RsvgMicroVersion"
+		Value="@LIBRSVG_MICRO_VERSION@"
+	/>
+	<UserMacro
 		Name="ApiVersion"
 		Value="2.0"
 	/>
