@@ -197,7 +197,9 @@ impl Node {
     }
 
     pub fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
-        self.node_impl.draw (node, draw_ctx, dominate);
+        if self.result.borrow ().is_ok () {
+            self.node_impl.draw (node, draw_ctx, dominate);
+        }
     }
 
     pub fn get_c_impl (&self) -> *const RsvgCNodeImpl {
