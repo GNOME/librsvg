@@ -3,6 +3,9 @@
   <ImportGroup Label="PropertySheets">
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
+    <RsvgMajorVersion>@LIBRSVG_MAJOR_VERSION@</RsvgMajorVersion>
+    <RsvgMinorVersion>@LIBRSVG_MINOR_VERSION@</RsvgMinorVersion>
+    <RsvgMicroVersion>@LIBRSVG_MICRO_VERSION@</RsvgMicroVersion>
     <ApiVersion>2.0</ApiVersion>
     <VSVer>10</VSVer>
     <GlibEtcInstallRoot>$(SolutionDir)\..\..\..\..\vs$(VSVer)\$(Platform)</GlibEtcInstallRoot>
@@ -20,6 +23,15 @@
   </PropertyGroup>
   <ItemDefinitionGroup />
   <ItemGroup>
+    <BuildMacro Include="RsvgMajorVersion">
+      <Value>$(RsvgMajorVersion)</Value>
+    </BuildMacro>
+    <BuildMacro Include="RsvgMinorVersion">
+      <Value>$(RsvgMinorVersion)</Value>
+    </BuildMacro>
+    <BuildMacro Include="RsvgMicroVersion">
+      <Value>$(RsvgMicroVersion)</Value>
+    </BuildMacro>
     <BuildMacro Include="ApiVersion">
       <Value>$(ApiVersion)</Value>
     </BuildMacro>
