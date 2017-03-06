@@ -68,6 +68,46 @@
 	<References>
 	</References>
 	<Files>
+		<Filter
+			Name="Resource Files"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
+			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
+			>
+			<File RelativePath="..\rsvgpc.py">
+				<FileConfiguration Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Generating .pc files..."
+						CommandLine="$(RsvgGenPC)"
+						Outputs="..\librsvg-2.0.pc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Generating .pc files..."
+						CommandLine="$(RsvgGenPC)"
+						Outputs="..\librsvg-2.0.pc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration Name="Debug|x64">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Generating .pc files..."
+						CommandLine="$(RsvgGenPC)"
+						Outputs="..\librsvg-2.0.pc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration Name="Release|x64">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Generating .pc files..."
+						CommandLine="$(RsvgGenPC)"
+						Outputs="..\librsvg-2.0.pc"
+					/>
+				</FileConfiguration>
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>

@@ -25,10 +25,16 @@ mkdir $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders&#x0D;&#x0A;
 copy $(SolutionDir)$(ConfigurationName)\$(PlatformName)\bin\rsvg-$(ApiVersion).lib $(CopyDir)\lib&#x0D;&#x0A;
 copy $(SolutionDir)$(ConfigurationName)\$(PlatformName)\bin\libpixbufloader-svg.dll $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders&#x0D;&#x0A;
 copy $(SolutionDir)$(ConfigurationName)\$(PlatformName)\bin\libpixbufloader-svg.pdb $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders&#x0D;&#x0A;
+
+if exist ..\librsvg-$(ApiVersion).pc copy ..\librsvg-$(ApiVersion).pc $(CopyDir)\lib\pkgconfig&#x0D;&#x0A;
 		      "
 	/>
 	<UserMacro
 		Name="RsvgPostInstall"
 		Value="$(GlibEtcInstallRoot)\bin\gdk-pixbuf-query-loaders.exe &gt; $(CopyDir)\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache"
+	/>
+	<UserMacro
+		Name="RsvgGenPC"
+		Value="(if not exist $(CopyDir) mkdir $(CopyDir)) &amp; (if exist $(PythonPath)\python.exe $(PythonPath)\python.exe ..\rsvgpc.py --prefix=$(CopyDir) --version=$(RsvgMajorVersion).$(RsvgMinorVersion).$(RsvgMicroVersion))"
 	/>
 </VisualStudioPropertySheet>
