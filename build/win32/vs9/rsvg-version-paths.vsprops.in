@@ -62,4 +62,8 @@
 		Name="RsvgDllSuffix"
 		Value="$(RsvgSeparateVSDllSuffix)"
 	/>
+	<UserMacro
+		Name="PythonPath"
+		Value="c:\python27"
+	/>
 </VisualStudioPropertySheet>

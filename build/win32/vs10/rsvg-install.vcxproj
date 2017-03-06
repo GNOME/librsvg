@@ -75,18 +75,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CustomBuild Include="placeholder">
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Copying Build Results...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(RsvgDoInstall)$(RsvgPostInstall)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">placeholder;%(Outputs)</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Copying Build Results...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(RsvgDoInstall)$(RsvgPostInstall)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">placeholder;%(Outputs)</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Copying Build Results...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(RsvgDoInstall)$(RsvgPostInstall)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">placeholder;%(Outputs)</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Copying Build Results...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(RsvgDoInstall)$(RsvgPostInstall)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">placeholder;%(Outputs)</Outputs>
+      <Message Condition="'$(Configuration)'=='Debug'">Copying Build Results...</Message>
+      <AdditionalInputs Condition="'$(Configuration)'=='Debug'">$(RsvgPCFiles)</AdditionalInputs>
+      <Command Condition="'$(Configuration)'=='Debug'">$(RsvgDoInstall)$(RsvgPostInstall)</Command>
+      <Outputs Condition="'$(Configuration)'=='Debug'">install_placeholder;%(Outputs)</Outputs>
+      <Message Condition="'$(Configuration)'=='Release'">Copying Build Results...</Message>
+      <AdditionalInputs Condition="'$(Configuration)'=='Release'">$(RsvgPCFiles)</AdditionalInputs>
+      <Command Condition="'$(Configuration)'=='Release'">$(RsvgDoInstall)$(RsvgPostInstall)</Command>
+      <Outputs Condition="'$(Configuration)'=='Release'">install_placeholder;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\librsvg.pc.in">
+      <Message Condition="'$(Configuration)'=='Debug'">Generating .pc file...</Message>
+      <Command Condition="'$(Configuration)'=='Debug'">$(RsvgGenPC)</Command>
+      <Outputs Condition="'$(Configuration)'=='Debug'">$(RsvgPCFiles);%(Outputs)</Outputs>
+      <Message Condition="'$(Configuration)'=='Release'">Generating .pc file...</Message>
+      <Command Condition="'$(Configuration)'=='Release'">$(RsvgGenPC)</Command>
+      <Outputs Condition="'$(Configuration)'=='Release'">$(RsvgPCFiles);%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
