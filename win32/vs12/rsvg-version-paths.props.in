@@ -17,6 +17,7 @@
     <RsvgSeparateVSDllSuffix>-$(ApiVersion)-vs$(VSVer)</RsvgSeparateVSDllSuffix>
     <RsvgDllPrefix>$(RsvgSeparateVSDllPrefix)</RsvgDllPrefix>
     <RsvgDllSuffix>$(RsvgSeparateVSDllSuffix)</RsvgDllSuffix>
+    <PythonPath>c:\python34</PythonPath>
   </PropertyGroup>
   <PropertyGroup>
     <_PropertySheetDisplayName>rsvgversionpathsprops</_PropertySheetDisplayName>
@@ -64,6 +65,9 @@
     </BuildMacro>
     <BuildMacro Include="RsvgDllSuffix">
       <Value>$(RsvgDllSuffix)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PythonPath">
+      <Value>$(PythonPath)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>
