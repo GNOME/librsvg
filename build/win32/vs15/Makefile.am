@@ -18,9 +18,9 @@ EXTRA_DIST =    \
 
 DISTCLEANFILES = $(EXTRA_DIST)
 
-MSVC_VER = 14
+MSVC_VER = 15
 MSVC_FORMAT_VER = 12
-MSVC_VER_LONG = 14
+MSVC_VER_LONG = 15
 MSVC_TOOLSET = 141
 
 include $(top_srcdir)/build/Makefile-newvs.am
