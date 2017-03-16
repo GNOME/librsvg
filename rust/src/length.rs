@@ -8,6 +8,7 @@ use self::glib::translate::*;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use parsers;
+use parsers::ParseError;
 
 /* Keep this in sync with ../../rsvg-private.h:LengthUnit */
 #[repr(C)]
@@ -95,11 +96,13 @@ pub extern fn rsvg_length_parse (string: *const libc::c_char, dir: LengthDir) ->
  * inside RsvgLength::normalize(), when it needs to know to what the
  * length refers.
  */
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct ParseLengthError;
+
+fn make_err () -> ParseError {
+    ParseError::new ("expected length: number(\"em\" | \"ex\" | \"px\" | \"in\" | \"cm\" | \"mm\" | \"pt\" | \"pc\" | \"%\")?")
+}
 
 impl RsvgLength {
-    pub fn parse (string: &str, dir: LengthDir) -> Result <RsvgLength, ParseLengthError> {
+    pub fn parse (string: &str, dir: LengthDir) -> Result <RsvgLength, ParseError> {
         let r = parsers::number_and_units (string.as_bytes ()).to_full_result ();
 
         match r {
@@ -142,10 +145,11 @@ impl RsvgLength {
                                             unit:   LengthUnit::Default,
                                             dir:    dir }),
 
-                    _ => Err (ParseLengthError)
+                    _ => Err (make_err ())
                 }
             },
 
+            // FIXME: why are the following in Length?  They should be in FontSize
             _ => match string {
                 "larger" => Ok (RsvgLength { length: 0.0,
                                              unit:   LengthUnit::RelativeLarger,
@@ -165,7 +169,7 @@ impl RsvgLength {
                                                unit:   LengthUnit::Inch,
                                                dir:    dir }),
 
-                _ => Err (ParseLengthError)
+                _ => Err (make_err ())
             }
         }
     }

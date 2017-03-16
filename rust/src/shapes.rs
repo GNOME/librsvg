@@ -265,7 +265,6 @@ impl NodeTrait for NodeRect {
         let v = property_bag::lookup (pbag, "rx");
         if let Some (val) = v {
             let rlength = RsvgLength::parse (&val, LengthDir::Horizontal);
-            rlength.map (|v| Some (v)).unwrap_or (None);
             self.rx.set (rlength.map (|v| Some (v)).unwrap_or (None));
         } else {
             self.rx.set (None);
@@ -274,7 +273,6 @@ impl NodeTrait for NodeRect {
         let v = property_bag::lookup (pbag, "ry");
         if let Some (val) = v {
             let rlength = RsvgLength::parse (&val, LengthDir::Vertical);
-            rlength.map (|v| Some (v)).unwrap_or (None);
             self.ry.set (rlength.map (|v| Some (v)).unwrap_or (None));
         } else {
             self.ry.set (None);
