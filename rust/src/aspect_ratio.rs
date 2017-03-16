@@ -20,8 +20,9 @@ extern crate glib;
 
 use self::glib::translate::*;
 
-use std::fmt;
 use std::str::FromStr;
+
+use parsers::ParseError;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum FitMode {
@@ -254,10 +255,14 @@ enum ParseState {
     Finished
 }
 
-impl FromStr for AspectRatio {
-    type Err = ParseAspectRatioError;
+fn make_err () -> ParseError {
+    ParseError::new ("expected \"[defer] <align> [meet | slice]\"")
+}
 
-    fn from_str(s: &str) -> Result<AspectRatio, ParseAspectRatioError> {
+impl FromStr for AspectRatio {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> Result<AspectRatio, ParseError> {
         let mut defer = false;
         let mut align: Align = Default::default ();
         let mut fit_mode = FitMode::Meet;
@@ -275,7 +280,7 @@ impl FromStr for AspectRatio {
                         align = parsed_align;
                         state = ParseState::Fit;
                     } else {
-                        return Err(ParseAspectRatioError);
+                        return Err(make_err ());
                     }
                 },
 
@@ -284,7 +289,7 @@ impl FromStr for AspectRatio {
                         align = parsed_align;
                         state = ParseState::Fit;
                     } else {
-                        return Err(ParseAspectRatioError);
+                        return Err(make_err ());
                     }
                 },
 
@@ -293,12 +298,12 @@ impl FromStr for AspectRatio {
                         fit_mode = parsed_fit;
                         state = ParseState::Finished;
                     } else {
-                        return Err(ParseAspectRatioError);
+                        return Err(make_err ());
                     }
                 },
 
                 _ => {
-                    return Err(ParseAspectRatioError);
+                    return Err(make_err ());
                 }
             }
         }
@@ -308,7 +313,7 @@ impl FromStr for AspectRatio {
         // of the following states:
         match state {
             ParseState::Fit | ParseState::Finished => {},
-            _ => { return Err(ParseAspectRatioError); }
+            _ => { return Err(make_err ()); }
         }
 
         Ok (AspectRatio {
@@ -323,15 +328,6 @@ impl FromStr for AspectRatio {
                 }
             }
         })
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ParseAspectRatioError;
-
-impl fmt::Display for ParseAspectRatioError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        "provided string did not match `[defer] <align> [meet | slice]`".fmt (f)
     }
 }
 
@@ -374,21 +370,21 @@ mod tests {
 
     #[test]
     fn parsing_invalid_strings_yields_error () {
-        assert_eq! (AspectRatio::from_str (""), Err(ParseAspectRatioError));
+        assert! (AspectRatio::from_str ("").is_err ());
 
-        assert_eq! (AspectRatio::from_str ("defer"), Err(ParseAspectRatioError));
+        assert! (AspectRatio::from_str ("defer").is_err ());
 
-        assert_eq! (AspectRatio::from_str ("defer foo"), Err(ParseAspectRatioError));
+        assert! (AspectRatio::from_str ("defer foo").is_err ());
 
-        assert_eq! (AspectRatio::from_str ("defer xmidymid"), Err(ParseAspectRatioError));
+        assert! (AspectRatio::from_str ("defer xmidymid").is_err ());
 
-        assert_eq! (AspectRatio::from_str ("defer XmidYmid foo"), Err(ParseAspectRatioError));
+        assert! (AspectRatio::from_str ("defer XmidYmid foo").is_err ());
 
-        assert_eq! (AspectRatio::from_str ("xmidymid"), Err(ParseAspectRatioError));
+        assert! (AspectRatio::from_str ("xmidymid").is_err ());
 
-        assert_eq! (AspectRatio::from_str ("XmidYmid foo"), Err(ParseAspectRatioError));
+        assert! (AspectRatio::from_str ("XmidYmid foo").is_err ());
 
-        assert_eq! (AspectRatio::from_str ("defer XmidYmid meet foo"), Err(ParseAspectRatioError));
+        assert! (AspectRatio::from_str ("defer XmidYmid meet foo").is_err ());
     }
 
     #[test]

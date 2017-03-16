@@ -5,7 +5,9 @@ use std::str::FromStr;
 
 use self::glib::translate::*;
 
+use error::*;
 use length::*;
+use parsers::ParseError;
 
 pub enum RsvgPropertyBag {}
 
@@ -51,5 +53,17 @@ pub fn lookup_length (pbag: *const RsvgPropertyBag, key: &str, length_dir: Lengt
         RsvgLength::parse (&v, length_dir).unwrap_or (RsvgLength::default ())
     } else {
         RsvgLength::default ()
+    }
+}
+
+pub fn parse_or_default<T> (pbag: *const RsvgPropertyBag, key: &'static str) -> Result <T, NodeError>
+    where T: Default + FromStr<Err = ParseError>
+{
+    let value = lookup (pbag, key);
+
+    if let Some (v) = value {
+        T::from_str (&v).map_err (|e| NodeError::parse_error (key, e))
+    } else {
+        Ok (T::default ())
     }
 }
