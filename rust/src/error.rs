@@ -14,28 +14,28 @@ pub enum AttributeError {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodeError {
-    attr_name: &'static str,
+    attr_name: String,
     err:       AttributeError
 }
 
 impl NodeError {
-    pub fn parse_error (attr_name: &'static str, error: ParseError) -> NodeError {
+    pub fn parse_error (attr_name: &str, error: ParseError) -> NodeError {
         NodeError {
-            attr_name: attr_name,
+            attr_name: attr_name.to_string (),
             err: AttributeError::Parse (error)
         }
     }
 
-    pub fn value_error (attr_name: &'static str, description: String) -> NodeError {
+    pub fn value_error (attr_name: &str, description: String) -> NodeError {
         NodeError {
-            attr_name: attr_name,
+            attr_name: attr_name.to_string (),
             err: AttributeError::Value (description)
         }
     }
 
-    pub fn attribute_error (attr_name: &'static str, error: AttributeError) -> NodeError {
+    pub fn attribute_error (attr_name: &str, error: AttributeError) -> NodeError {
         NodeError {
-            attr_name: attr_name,
+            attr_name: attr_name.to_string (),
             err: error
         }
     }
