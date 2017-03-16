@@ -1,4 +1,5 @@
 extern crate libc;
+extern crate glib;
 
 use std::rc::Rc;
 use std::rc::Weak;
@@ -17,6 +18,9 @@ use property_bag::RsvgPropertyBag;
 use state::RsvgState;
 
 use error::*;
+use parsers::ParseError;
+
+use self::glib::translate::*;
 
 /* A *const RsvgNode is just a pointer for the C code's benefit: it
  * points to an  Rc<Node>, which is our refcounted Rust representation
@@ -160,6 +164,10 @@ impl Node {
         if self.result.borrow ().is_ok () {
             self.node_impl.draw (node, draw_ctx, dominate);
         }
+    }
+
+    pub fn set_error (&self, error: NodeError) {
+        *self.result.borrow_mut () = Err (error);
     }
 
     pub fn get_c_impl (&self) -> *const RsvgCNodeImpl {
@@ -308,6 +316,23 @@ pub extern fn rsvg_node_draw (raw_node: *const RsvgNode, draw_ctx: *const RsvgDr
     let node: &RsvgNode = unsafe { & *raw_node };
 
     node.draw (node, draw_ctx, dominate);
+}
+
+#[no_mangle]
+pub extern fn rsvg_node_set_attribute_parse_error (raw_node:    *const RsvgNode,
+                                                   attr_name:   *const libc::c_char,
+                                                   description: *const libc::c_char)
+{
+    assert! (!raw_node.is_null ());
+    let node: &RsvgNode = unsafe { & *raw_node };
+
+    assert! (!attr_name.is_null ());
+    assert! (!description.is_null ());
+
+    unsafe {
+        node.set_error (NodeError::parse_error (&String::from_glib_none (attr_name),
+                                                ParseError::new (&String::from_glib_none (description))));
+    }
 }
 
 type NodeForeachChild = unsafe extern "C" fn (node: *const RsvgNode, data: *const libc::c_void) -> bool;

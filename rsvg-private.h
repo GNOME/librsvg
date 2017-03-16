@@ -395,6 +395,10 @@ void rsvg_node_set_atts (RsvgNode *node, RsvgHandle *handle, RsvgPropertyBag *at
 G_GNUC_INTERNAL
 void rsvg_node_draw (RsvgNode *node, RsvgDrawingCtx *draw, int dominate);
 
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+void rsvg_node_set_attribute_parse_error (RsvgNode *node, const char *attr_name, const char *description);
+
 /* Used to iterate among a node's children with rsvg_node_foreach_child().
  * If this caller-supplied function returns FALSE, iteration will stop.
  * Otherwise, iteration will continue to the next child node.
