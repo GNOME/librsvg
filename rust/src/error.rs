@@ -3,7 +3,7 @@ use std::error;
 
 use parsers::ParseError;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum AttributeError {
     // parse error
     Parse (ParseError),
@@ -12,7 +12,7 @@ pub enum AttributeError {
     Value (String)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NodeError {
     attr_name: &'static str,
     err:       AttributeError
@@ -66,23 +66,15 @@ impl From<ParseError> for AttributeError {
 }
 
 pub fn is_parse_error<T> (r: &Result<T, AttributeError>) -> bool {
-    if r.is_err () {
-        match r.unwrap_err () {
-            AttributeError::Parse (_) => true,
-            _ => false
-        }
-    } else {
-        false
+    match *r {
+        Err (AttributeError::Parse (_)) => true,
+        _ => false
     }
 }
 
 pub fn is_value_error<T> (r: &Result<T, AttributeError>) -> bool {
-    if r.is_err () {
-        match r.unwrap_err () {
-            AttributeError::Value (_) => true,
-            _ => false
-        }
-    } else {
-        false
+    match *r {
+        Err (AttributeError::Value (_)) => true,
+        _ => false
     }
 }
