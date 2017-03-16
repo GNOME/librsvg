@@ -227,7 +227,7 @@ void rsvg_parse_style	    (RsvgHandle * ctx, RsvgState * state, const char *str)
 G_GNUC_INTERNAL
 void rsvg_parse_cssbuffer   (RsvgHandle * ctx, const char *buff, size_t buflen);
 G_GNUC_INTERNAL
-void rsvg_parse_style_attrs (RsvgHandle * ctx, RsvgState * state, const char *tag,
+void rsvg_parse_style_attrs (RsvgHandle *ctx, RsvgNode *node, const char *tag,
                              const char *klazz, const char *id, RsvgPropertyBag * atts);
 
 G_GNUC_INTERNAL

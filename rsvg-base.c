@@ -396,7 +396,7 @@ node_set_atts (RsvgNode * node, RsvgHandle * ctx, const NodeCreator *creator, Rs
             else
                 klazz = NULL;
 
-            rsvg_parse_style_attrs (ctx, rsvg_node_get_state (node), creator->element_name, klazz, id, atts);
+            rsvg_parse_style_attrs (ctx, node, creator->element_name, klazz, id, atts);
         }
     }
 }

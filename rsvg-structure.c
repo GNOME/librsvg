@@ -256,7 +256,7 @@ _rsvg_node_svg_apply_atts (RsvgNode *node, RsvgNodeSvg *svg, RsvgHandle *ctx)
             klazz = value;
         if ((value = rsvg_property_bag_lookup (svg->atts, "id")))
             id = value;
-        rsvg_parse_style_attrs (ctx, rsvg_node_get_state (node), "svg", klazz, id, svg->atts);
+        rsvg_parse_style_attrs (ctx, node, "svg", klazz, id, svg->atts);
     }
 }
 

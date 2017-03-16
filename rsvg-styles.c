@@ -1482,7 +1482,7 @@ rsvg_lookup_apply_css_style (RsvgHandle * ctx, const char *target, RsvgState * s
 /**
  * rsvg_parse_style_attrs:
  * @ctx: Rsvg context.
- * @state: Rsvg state
+ * @node: Rsvg node whose state should be modified
  * @tag: (nullable): The SVG tag we're processing (eg: circle, ellipse), optionally %NULL
  * @klazz: (nullable): The space delimited class list, optionally %NULL
  * @atts: Attributes in SAX style.
@@ -1491,14 +1491,17 @@ rsvg_lookup_apply_css_style (RsvgHandle * ctx, const char *target, RsvgState * s
  * stack.
  **/
 void
-rsvg_parse_style_attrs (RsvgHandle * ctx,
-                        RsvgState * state,
+rsvg_parse_style_attrs (RsvgHandle *ctx,
+                        RsvgNode *node,
                         const char *tag, const char *klazz, const char *id, RsvgPropertyBag * atts)
 {
     int i = 0, j = 0;
     char *target = NULL;
     gboolean found = FALSE;
     GString *klazz_list = NULL;
+    RsvgState *state;
+
+    state = rsvg_node_get_state (node);
 
     if (rsvg_property_bag_size (atts) > 0)
         rsvg_parse_style_pairs (ctx, state, atts);
