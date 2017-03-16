@@ -37,7 +37,7 @@ impl NodeError {
 impl error::Error for NodeError {
     fn description (&self) -> &str {
         match self.err {
-            AttributeError::Parse (ref n) => &"parse error",
+            AttributeError::Parse (_) => &"parse error",
             AttributeError::Value (_) => &"invalid attribute value"
         }
     }
