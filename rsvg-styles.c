@@ -1438,7 +1438,7 @@ rsvg_parse_transform (cairo_matrix_t *dst, const char *src)
  *
  * Parses the transform attribute in @str and applies it to @state.
  **/
-static void
+G_GNUC_WARN_UNUSED_RESULT static gboolean
 rsvg_parse_transform_attr (RsvgHandle * ctx, RsvgState * state, const char *str)
 {
     cairo_matrix_t affine;
@@ -1446,6 +1446,9 @@ rsvg_parse_transform_attr (RsvgHandle * ctx, RsvgState * state, const char *str)
     if (rsvg_parse_transform (&affine, str)) {
         cairo_matrix_multiply (&state->personal_affine, &affine, &state->personal_affine);
         cairo_matrix_multiply (&state->affine, &affine, &state->affine);
+        return TRUE;
+    } else {
+        return FALSE;
     }
 }
 
@@ -1585,8 +1588,14 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
 
         if ((value = rsvg_property_bag_lookup (atts, "style")) != NULL)
             rsvg_parse_style (ctx, state, value);
-        if ((value = rsvg_property_bag_lookup (atts, "transform")) != NULL)
-            rsvg_parse_transform_attr (ctx, state, value);
+
+        if ((value = rsvg_property_bag_lookup (atts, "transform")) != NULL) {
+            if (!rsvg_parse_transform_attr (ctx, state, value)) {
+                rsvg_node_set_attribute_parse_error (node,
+                                                     "transform",
+                                                     "Invalid transformation");
+            }
+        }
     }
 }
 
