@@ -1,6 +1,5 @@
 extern crate cairo;
 
-use std::fmt;
 use std::str::FromStr;
 
 use error::*;
@@ -63,7 +62,6 @@ impl FromStr for RsvgViewBox {
 mod tests {
     use super::*;
     use std::str::FromStr;
-    use error::*;
 
     #[test]
     fn parses_valid_viewboxes () {
