@@ -23,6 +23,7 @@ use self::glib::translate::*;
 use std::str::FromStr;
 
 use parsers::ParseError;
+use error::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum FitMode {
@@ -255,14 +256,14 @@ enum ParseState {
     Finished
 }
 
-fn make_err () -> ParseError {
-    ParseError::new ("expected \"[defer] <align> [meet | slice]\"")
+fn make_err () -> AttributeError {
+    AttributeError::Parse (ParseError::new ("expected \"[defer] <align> [meet | slice]\""))
 }
 
 impl FromStr for AspectRatio {
-    type Err = ParseError;
+    type Err = AttributeError;
 
-    fn from_str(s: &str) -> Result<AspectRatio, ParseError> {
+    fn from_str(s: &str) -> Result<AspectRatio, AttributeError> {
         let mut defer = false;
         let mut align: Align = Default::default ();
         let mut fit_mode = FitMode::Meet;

@@ -32,6 +32,13 @@ impl NodeError {
             err: AttributeError::Value (description)
         }
     }
+
+    pub fn attribute_error (attr_name: &'static str, error: AttributeError) -> NodeError {
+        NodeError {
+            attr_name: attr_name,
+            err: error
+        }
+    }
 }
 
 impl error::Error for NodeError {

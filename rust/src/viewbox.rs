@@ -3,6 +3,8 @@ extern crate cairo;
 use std::fmt;
 use std::str::FromStr;
 
+use error::*;
+use parsers::ParseError;
 use parsers;
 
 /* Keep this in sync with rsvg-private.h:RsvgViewBox */
@@ -31,30 +33,10 @@ impl Default for RsvgViewBox {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseViewBoxError {
-    NegativeWidthOrHeight, // In "x y w h", w and h must be nonnegative
-    Error                  // General parsing error
-}
-
-impl fmt::Display for ParseViewBoxError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ParseViewBoxError::NegativeWidthOrHeight => {
-                "width and height must not be negative".fmt (f)
-            },
-
-            ParseViewBoxError::Error => {
-                "string does not match 'x [,] y [,] w [,] h'".fmt (f)
-            }
-        }
-    }
-}
-
 impl FromStr for RsvgViewBox {
-    type Err = ParseViewBoxError;
+    type Err = AttributeError;
 
-    fn from_str (s: &str) -> Result<RsvgViewBox, ParseViewBoxError> {
+    fn from_str (s: &str) -> Result<RsvgViewBox, AttributeError> {
         let result = parsers::view_box (s.trim ().as_bytes ()).to_full_result ();
 
         match result {
@@ -66,12 +48,12 @@ impl FromStr for RsvgViewBox {
                                                                height: h },
                                       active: true })
                 } else {
-                    Err (ParseViewBoxError::NegativeWidthOrHeight)
+                    Err (AttributeError::Value ("width and height must not be negative".to_string ()))
                 }
             },
 
             Err (_) => {
-                Err (ParseViewBoxError::Error)
+                Err (AttributeError::Parse (ParseError::new ("string does not match 'x [,] y [,] w [,] h'")))
             }
         }
     }
@@ -81,6 +63,7 @@ impl FromStr for RsvgViewBox {
 mod tests {
     use super::*;
     use std::str::FromStr;
+    use error::*;
 
     #[test]
     fn parses_valid_viewboxes () {
@@ -101,16 +84,12 @@ mod tests {
 
     #[test]
     fn parsing_invalid_viewboxes_yields_error () {
-        assert_eq! (RsvgViewBox::from_str (""),
-                    Err (ParseViewBoxError::Error));
+        assert! (is_parse_error (&RsvgViewBox::from_str ("")));
 
-        assert_eq! (RsvgViewBox::from_str (" 1,2,-3,-4 "),
-                    Err (ParseViewBoxError::NegativeWidthOrHeight));
+        assert! (is_value_error (&RsvgViewBox::from_str (" 1,2,-3,-4 ")));
 
-        assert_eq! (RsvgViewBox::from_str ("qwerasdfzxcv"),
-                    Err (ParseViewBoxError::Error));
+        assert! (is_parse_error (&RsvgViewBox::from_str ("qwerasdfzxcv")));
 
-        assert_eq! (RsvgViewBox::from_str (" 1 2 3 4   5"),
-                    Err (ParseViewBoxError::Error));
+        assert! (is_parse_error (&RsvgViewBox::from_str (" 1 2 3 4   5")));
     }
 }

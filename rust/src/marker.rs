@@ -225,7 +225,7 @@ impl NodeTrait for NodeMarker {
 
         self.orient.set (property_bag::lookup_and_parse (pbag, "orient"));
         self.aspect.set (property_bag::lookup_and_parse (pbag, "preserveAspectRatio"));
-        self.vbox.set   (property_bag::lookup_and_parse (pbag, "viewBox"));
+        self.vbox.set   (property_bag::parse_or_default (pbag, "viewBox")?);
         self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio")?);
 
         Ok (())

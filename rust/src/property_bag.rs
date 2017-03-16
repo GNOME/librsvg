@@ -57,12 +57,12 @@ pub fn lookup_length (pbag: *const RsvgPropertyBag, key: &str, length_dir: Lengt
 }
 
 pub fn parse_or_default<T> (pbag: *const RsvgPropertyBag, key: &'static str) -> Result <T, NodeError>
-    where T: Default + FromStr<Err = ParseError>
+    where T: Default + FromStr<Err = AttributeError>
 {
     let value = lookup (pbag, key);
 
     if let Some (v) = value {
-        T::from_str (&v).map_err (|e| NodeError::parse_error (key, e))
+        T::from_str (&v).map_err (|e| NodeError::attribute_error (key, e))
     } else {
         Ok (T::default ())
     }

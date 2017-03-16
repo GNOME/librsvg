@@ -9,6 +9,7 @@ use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use parsers;
 use parsers::ParseError;
+use error::*;
 
 /* Keep this in sync with ../../rsvg-private.h:LengthUnit */
 #[repr(C)]
@@ -97,12 +98,12 @@ pub extern fn rsvg_length_parse (string: *const libc::c_char, dir: LengthDir) ->
  * length refers.
  */
 
-fn make_err () -> ParseError {
-    ParseError::new ("expected length: number(\"em\" | \"ex\" | \"px\" | \"in\" | \"cm\" | \"mm\" | \"pt\" | \"pc\" | \"%\")?")
+fn make_err () -> AttributeError {
+    AttributeError::Parse (ParseError::new ("expected length: number(\"em\" | \"ex\" | \"px\" | \"in\" | \"cm\" | \"mm\" | \"pt\" | \"pc\" | \"%\")?"))
 }
 
 impl RsvgLength {
-    pub fn parse (string: &str, dir: LengthDir) -> Result <RsvgLength, ParseError> {
+    pub fn parse (string: &str, dir: LengthDir) -> Result <RsvgLength, AttributeError> {
         let r = parsers::number_and_units (string.as_bytes ()).to_full_result ();
 
         match r {
@@ -390,6 +391,23 @@ mod tests {
             }
 
         }
+    }
 
+    #[test]
+    fn empty_length_yields_error () {
+        assert! (is_parse_error (&RsvgLength::parse ("", LengthDir::Both)));
+    }
+
+    #[test]
+    fn invalid_unit_yields_error () {
+        assert! (is_parse_error (&RsvgLength::parse ("8furlong", LengthDir::Both)));
+    }
+
+    #[test]
+    fn invalid_font_size_yields_error () {
+        // FIXME: this is intended to test the (absence of) the "larger" et al values.
+        // Since they really be in FontSize, not RsvgLength, we should remember
+        // to move this test to that type later.
+        assert! (is_parse_error (&RsvgLength::parse ("furlong", LengthDir::Both)));
     }
 }
