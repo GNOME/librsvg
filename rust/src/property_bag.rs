@@ -44,15 +44,13 @@ pub fn lookup_and_parse<T: Default + FromStr> (pbag: *const RsvgPropertyBag, key
     }
 }
 
-pub fn lookup_length (pbag: *const RsvgPropertyBag, key: &str, length_dir: LengthDir) -> RsvgLength {
+pub fn length_or_default (pbag: *const RsvgPropertyBag, key: &'static str, length_dir: LengthDir) -> Result <RsvgLength, NodeError> {
     let value = lookup (pbag, key);
 
     if let Some (v) = value {
-
-        // FIXME: Error is discarded here.  Figure out a way to propagate it upstream.
-        RsvgLength::parse (&v, length_dir).unwrap_or (RsvgLength::default ())
+        RsvgLength::parse (&v, length_dir).map_err (|e| NodeError::attribute_error (key, e))
     } else {
-        RsvgLength::default ()
+        Ok (RsvgLength::default ())
     }
 }
 

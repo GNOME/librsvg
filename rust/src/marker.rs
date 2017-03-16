@@ -215,8 +215,8 @@ impl NodeTrait for NodeMarker {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         self.units.set (property_bag::lookup_and_parse (pbag, "markerUnits"));
 
-        self.ref_x.set (property_bag::lookup_length (pbag, "refX", LengthDir::Horizontal));
-        self.ref_y.set (property_bag::lookup_length (pbag, "refY", LengthDir::Vertical));
+        self.ref_x.set (property_bag::length_or_default (pbag, "refX", LengthDir::Horizontal)?);
+        self.ref_y.set (property_bag::length_or_default (pbag, "refY", LengthDir::Vertical)?);
 
         self.width.set (property_bag::lookup (pbag, "markerWidth").map_or (NodeMarker::get_default_size (),
                                                                            |v| RsvgLength::parse (&v, LengthDir::Horizontal).unwrap_or (NodeMarker::get_default_size ())));
