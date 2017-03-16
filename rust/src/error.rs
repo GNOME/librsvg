@@ -59,3 +59,30 @@ impl fmt::Display for NodeError {
     }
 }
 
+impl From<ParseError> for AttributeError {
+    fn from (pe: ParseError) -> AttributeError {
+        AttributeError::Parse (pe)
+    }
+}
+
+pub fn is_parse_error<T> (r: &Result<T, AttributeError>) -> bool {
+    if r.is_err () {
+        match r.unwrap_err () {
+            AttributeError::Parse (_) => true,
+            _ => false
+        }
+    } else {
+        false
+    }
+}
+
+pub fn is_value_error<T> (r: &Result<T, AttributeError>) -> bool {
+    if r.is_err () {
+        match r.unwrap_err () {
+            AttributeError::Value (_) => true,
+            _ => false
+        }
+    } else {
+        false
+    }
+}
