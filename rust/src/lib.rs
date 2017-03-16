@@ -8,11 +8,6 @@ extern crate nom;
 extern crate downcast_rs;
 
 pub use aspect_ratio::{
-    FitMode,
-    AlignMode,
-    Align,
-    AspectRatio,
-    ParseAspectRatioError,
     rsvg_aspect_ratio_parse,
     rsvg_aspect_ratio_compute
 };
