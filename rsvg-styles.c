@@ -25,6 +25,7 @@
 */
 #include "config.h"
 
+#include <errno.h>
 #include <string.h>
 #include <math.h>
 
@@ -1305,16 +1306,18 @@ ccss_import_style (CRDocHandler * a_this,
    working draft dated 1999-07-06, section 8.5. Return TRUE on
    success. */
 gboolean
-rsvg_parse_transform (cairo_matrix_t *dst, const char *src)
+rsvg_parse_transform (cairo_matrix_t *out_matrix, const char *src)
 {
+    cairo_matrix_t dst;
     int idx;
     char keyword[32];
     double args[6];
     int n_args;
     guint key_len;
     cairo_matrix_t affine;
+    cairo_matrix_t inverse;
 
-    cairo_matrix_init_identity (dst);
+    cairo_matrix_init_identity (&dst);
 
     idx = 0;
     while (src[idx]) {
@@ -1358,7 +1361,11 @@ rsvg_parse_transform (cairo_matrix_t *dst, const char *src)
             if (g_ascii_isdigit (c) || c == '+' || c == '-' || c == '.') {
                 if (n_args == sizeof (args) / sizeof (args[0]))
                     return FALSE;       /* too many args */
+
                 args[n_args] = g_ascii_strtod (src + idx, &end_ptr);
+                if (errno == ERANGE)
+                    return FALSE; /* overflow / underflow */
+
                 idx = end_ptr - src;
 
                 while (g_ascii_isspace (src[idx]))
@@ -1380,42 +1387,42 @@ rsvg_parse_transform (cairo_matrix_t *dst, const char *src)
                 return FALSE;
 
             cairo_matrix_init (&affine, args[0], args[1], args[2], args[3], args[4], args[5]);
-            cairo_matrix_multiply (dst, &affine, dst);
+            cairo_matrix_multiply (&dst, &affine, &dst);
         } else if (!strcmp (keyword, "translate")) {
             if (n_args == 1)
                 args[1] = 0;
             else if (n_args != 2)
                 return FALSE;
             cairo_matrix_init_translate (&affine, args[0], args[1]);
-            cairo_matrix_multiply (dst, &affine, dst);
+            cairo_matrix_multiply (&dst, &affine, &dst);
         } else if (!strcmp (keyword, "scale")) {
             if (n_args == 1)
                 args[1] = args[0];
             else if (n_args != 2)
                 return FALSE;
             cairo_matrix_init_scale (&affine, args[0], args[1]);
-            cairo_matrix_multiply (dst, &affine, dst);
+            cairo_matrix_multiply (&dst, &affine, &dst);
         } else if (!strcmp (keyword, "rotate")) {
             if (n_args == 1) {
 
                 cairo_matrix_init_rotate (&affine, args[0] * M_PI / 180.);
-                cairo_matrix_multiply (dst, &affine, dst);
+                cairo_matrix_multiply (&dst, &affine, &dst);
             } else if (n_args == 3) {
                 cairo_matrix_init_translate (&affine, args[1], args[2]);
-                cairo_matrix_multiply (dst, &affine, dst);
+                cairo_matrix_multiply (&dst, &affine, &dst);
 
                 cairo_matrix_init_rotate (&affine, args[0] * M_PI / 180.);
-                cairo_matrix_multiply (dst, &affine, dst);
+                cairo_matrix_multiply (&dst, &affine, &dst);
 
                 cairo_matrix_init_translate (&affine, -args[1], -args[2]);
-                cairo_matrix_multiply (dst, &affine, dst);
+                cairo_matrix_multiply (&dst, &affine, &dst);
             } else
                 return FALSE;
         } else if (!strcmp (keyword, "skewX")) {
             if (n_args != 1)
                 return FALSE;
             _rsvg_cairo_matrix_init_shear (&affine, args[0]);
-            cairo_matrix_multiply (dst, &affine, dst);
+            cairo_matrix_multiply (&dst, &affine, &dst);
         } else if (!strcmp (keyword, "skewY")) {
             if (n_args != 1)
                 return FALSE;
@@ -1423,10 +1430,17 @@ rsvg_parse_transform (cairo_matrix_t *dst, const char *src)
             /* transpose the affine, given that we know [1] is zero */
             affine.yx = affine.xy;
             affine.xy = 0.;
-            cairo_matrix_multiply (dst, &affine, dst);
+            cairo_matrix_multiply (&dst, &affine, &dst);
         } else
             return FALSE;       /* unknown keyword */
     }
+
+    inverse = dst;
+    if (cairo_matrix_invert (&inverse) != CAIRO_STATUS_SUCCESS) {
+        return FALSE; /* we got passed an invalid matrix */
+    }
+
+    *out_matrix = dst;
     return TRUE;
 }
 
