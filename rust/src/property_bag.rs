@@ -27,23 +27,6 @@ pub fn lookup (pbag: *const RsvgPropertyBag, key: &str) -> Option<String> {
     }
 }
 
-pub fn lookup_and_parse<T: Default + FromStr> (pbag: *const RsvgPropertyBag, key: &str) -> T {
-    let value = lookup (pbag, key);
-
-    if let Some (v) = value {
-        let result = T::from_str (&v);
-
-        if let Ok (r) = result {
-            r
-        } else {
-            // FIXME: Error is discarded here.  Figure out a way to propagate it upstream.
-            T::default ()
-        }
-    } else {
-        T::default ()
-    }
-}
-
 pub fn length_or_default (pbag: *const RsvgPropertyBag, key: &'static str, length_dir: LengthDir) -> Result <RsvgLength, NodeError> {
     let value = lookup (pbag, key);
 
