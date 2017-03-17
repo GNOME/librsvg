@@ -111,6 +111,7 @@ impl NodeMarker {
     }
 
     fn render (&self,
+               node:           &RsvgNode,
                c_node:         *const RsvgNode,
                draw_ctx:       *const RsvgDrawingCtx,
                xpos:           f64,
@@ -181,8 +182,7 @@ impl NodeMarker {
             }
         }
 
-        let marker_node: &RsvgNode = unsafe { & *c_node };
-        marker_node.draw_children (draw_ctx, -1); // dominate=-1 so it won't reinherit state / push a layer
+        node.draw_children (draw_ctx, -1); // dominate=-1 so it won't reinherit state / push a layer
 
         drawing_ctx::pop_discrete_layer (draw_ctx);
 
@@ -587,7 +587,7 @@ fn emit_marker_by_name (draw_ctx:       *const RsvgDrawingCtx,
 
     let node: &RsvgNode = unsafe { & *c_node };
 
-    node.with_impl (|marker: &NodeMarker| marker.render (c_node, draw_ctx, xpos, ypos, computed_angle, line_width));
+    node.with_impl (|marker: &NodeMarker| marker.render (node, c_node, draw_ctx, xpos, ypos, computed_angle, line_width));
 
     drawing_ctx::release_node (draw_ctx, c_node);
 }
