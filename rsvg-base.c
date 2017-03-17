@@ -252,7 +252,7 @@ typedef struct {
  * Lines in comments are elements that we don't support.
  */
 static const NodeCreator node_creators[] = {
-    { "a",                   TRUE,  rsvg_new_group },    /* treat anchors as groups for now */
+    { "a",                   TRUE,  rsvg_node_group_new },    /* treat anchors as groups for now */
     /* "altGlyph",           TRUE,  */
     /* "altGlyphDef",        FALSE, */
     /* "altGlyphItem",       FALSE, */
@@ -265,7 +265,7 @@ static const NodeCreator node_creators[] = {
     /* "color-profile",      FALSE, */
     { "conicalGradient",     TRUE,  rsvg_new_radial_gradient },
     /* "cursor",             FALSE, */
-    { "defs",                TRUE,  rsvg_new_defs },
+    { "defs",                TRUE,  rsvg_node_defs_new },
     /* "desc",               TRUE,  */
     { "ellipse",             TRUE,  rsvg_node_ellipse_new },
     { "feBlend",             TRUE,  rsvg_new_filter_primitive_blend },
@@ -300,7 +300,7 @@ static const NodeCreator node_creators[] = {
     /* "font-face-src",      FALSE, */
     /* "font-face-uri",      FALSE, */
     /* "foreignObject",      TRUE,  */
-    { "g",                   TRUE,  rsvg_new_group },
+    { "g",                   TRUE,  rsvg_node_group_new },
     /* "glyph",              TRUE,  */
     /* "glyphRef",           TRUE,  */
     /* "hkern",              FALSE, */
@@ -312,7 +312,7 @@ static const NodeCreator node_creators[] = {
     /* "metadata",           FALSE, */
     /* "missing-glyph",      TRUE,  */
     /* "mpath"               FALSE, */
-    { "multiImage",          FALSE, rsvg_new_switch }, /* hack to make multiImage sort-of work */
+    { "multiImage",          FALSE, rsvg_node_switch_new }, /* hack to make multiImage sort-of work */
     { "path",                TRUE,  rsvg_node_path_new },
     { "pattern",             TRUE,  rsvg_new_pattern },
     { "polygon",             TRUE,  rsvg_node_polygon_new },
@@ -323,10 +323,10 @@ static const NodeCreator node_creators[] = {
     /* "set",                FALSE, */
     { "stop",                TRUE,  rsvg_new_stop },
     /* "style",              FALSE, */
-    { "subImage",            FALSE, rsvg_new_group },
+    { "subImage",            FALSE, rsvg_node_group_new },
     { "subImageRef",         FALSE, rsvg_new_image },
     { "svg",                 TRUE,  rsvg_new_svg },
-    { "switch",              TRUE,  rsvg_new_switch },
+    { "switch",              TRUE,  rsvg_node_switch_new },
     { "symbol",              TRUE,  rsvg_new_symbol },
     { "text",                TRUE,  rsvg_new_text },
     /* "textPath",           TRUE,  */
@@ -341,7 +341,7 @@ static const NodeCreator node_creators[] = {
 /* hack for bug 401115. whenever we encounter a node we don't understand, push it into a group.
  * this will allow us to handle things like conditionals properly.
  */
-static const NodeCreator default_node_creator = { NULL, TRUE, rsvg_new_group };
+static const NodeCreator default_node_creator = { NULL, TRUE, rsvg_node_group_new };
 
 /* Used from bsearch() */
 static int

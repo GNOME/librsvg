@@ -42,12 +42,18 @@ G_GNUC_INTERNAL
 RsvgNode *rsvg_new_symbol (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_svg (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_defs (const char *element_name, RsvgNode *parent);
+RsvgNode *rsvg_node_group_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_group (const char *element_name, RsvgNode *parent);
+RsvgNode *rsvg_node_defs_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_switch (const char *element_name, RsvgNode *parent);
+RsvgNode *rsvg_node_switch_new (const char *element_name, RsvgNode *parent);
 
 typedef struct _RsvgNodeSvg RsvgNodeSvg;
 

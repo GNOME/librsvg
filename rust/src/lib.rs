@@ -90,6 +90,13 @@ pub use shapes::{
     rsvg_node_polyline_new,
     rsvg_node_rect_new,
 };
+
+pub use structure::{
+    rsvg_node_group_new,
+    rsvg_node_defs_new,
+    rsvg_node_switch_new,
+};
+
 pub use viewbox::{
     RsvgViewBox
 };
@@ -112,5 +119,6 @@ mod pattern;
 mod property_bag;
 mod state;
 mod shapes;
+mod structure;
 mod util;
 mod viewbox;

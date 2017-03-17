@@ -34,13 +34,8 @@
 
 #include <stdio.h>
 
-typedef struct _RsvgNodeGroup RsvgNodeGroup;
 typedef struct _RsvgNodeUse RsvgNodeUse;
 typedef struct _RsvgNodeSymbol RsvgNodeSymbol;
-
-struct _RsvgNodeGroup {
-    int dummy; /* just to avoid having an empty struct */
-};
 
 struct _RsvgNodeSymbol {
     guint32 preserve_aspect_ratio;
@@ -62,42 +57,6 @@ draw_child (RsvgNode *node, gpointer data)
     rsvg_drawing_ctx_draw_node_from_stack (ctx, node, 0);
 
     return TRUE;
-}
-
-static void
-rsvg_group_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
-{
-    /* nothing */
-}
-
-static void
-rsvg_group_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
-{
-    rsvg_node_draw_children (node, ctx, dominate);
-}
-
-static void
-rsvg_group_free (gpointer impl)
-{
-    RsvgNodeGroup *group = impl;
-
-    g_free (group);
-}
-
-RsvgNode *
-rsvg_new_group (const char *element_name, RsvgNode *parent)
-{
-    RsvgNodeGroup *group;
-
-    group = g_new0 (RsvgNodeGroup, 1);
-
-    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_GROUP,
-                                parent,
-                                rsvg_state_new (),
-                                group,
-                                rsvg_group_set_atts,
-                                rsvg_group_draw,
-                                rsvg_group_free);
 }
 
 static void
@@ -441,69 +400,4 @@ rsvg_new_symbol (const char *element_name, RsvgNode *parent)
                                 rsvg_node_symbol_set_atts,
                                 rsvg_node_symbol_draw,
                                 rsvg_node_symbol_free);
-}
-
-static void
-rsvg_defs_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
-{
-    /* nothing */
-}
-
-RsvgNode *
-rsvg_new_defs (const char *element_name, RsvgNode *parent)
-{
-    RsvgNodeGroup *group;
-
-    group = g_new0 (RsvgNodeGroup, 1);
-
-    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_DEFS,
-                                parent,
-                                rsvg_state_new (),
-                                group,
-                                rsvg_group_set_atts,
-                                rsvg_defs_draw,
-                                rsvg_group_free);
-}
-
-static gboolean
-draw_child_if_cond_true_and_stop (RsvgNode *node, gpointer data)
-{
-    RsvgDrawingCtx *ctx;
-
-    ctx = data;
-
-    if (rsvg_node_get_state (node)->cond_true) {
-        rsvg_drawing_ctx_draw_node_from_stack (ctx, node, 0);
-
-        return FALSE;
-    } else {
-        return TRUE;
-    }
-}
-
-static void
-rsvg_node_switch_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
-{
-    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), dominate);
-
-    rsvg_push_discrete_layer (ctx);
-
-    rsvg_node_foreach_child (node, draw_child_if_cond_true_and_stop, ctx);
-
-    rsvg_pop_discrete_layer (ctx);
-}
-
-RsvgNode *
-rsvg_new_switch (const char *element_name, RsvgNode *parent)
-{
-    RsvgNodeGroup *group;
-
-    group = g_new0 (RsvgNodeGroup, 1);
-    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_SWITCH,
-                                parent,
-                                rsvg_state_new (),
-                                group,
-                                rsvg_group_set_atts,
-                                rsvg_node_switch_draw,
-                                rsvg_group_free);
 }
