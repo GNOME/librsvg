@@ -1578,12 +1578,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         }
 
         g_assert (sself != NULL);
-        sself = rsvg_node_ref (sself);
-
-        while (sself != NULL) {
-            draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, sself);
-            sself = rsvg_node_get_parent (sself);
-        }
+        rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, sself);
 
         rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0);
         bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
@@ -1671,13 +1666,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
         goto bail;
 
     g_assert (node != NULL);
-
-    node = rsvg_node_ref (node);
-
-    while (node != NULL) {
-        draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, node);
-        node = rsvg_node_get_parent (node);
-    }
+    rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, node);
 
     rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0);
     bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
@@ -2311,6 +2300,19 @@ rsvg_drawing_ctx_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
   g_return_if_fail (ctx->acquired_nodes->data == node);
 
   ctx->acquired_nodes = g_slist_remove (ctx->acquired_nodes, node);
+}
+
+void
+rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, RsvgNode *node)
+{
+    if (node) {
+        node = rsvg_node_ref (node);
+
+        while (node != NULL) {
+            draw_ctx->drawsub_stack = g_slist_prepend (draw_ctx->drawsub_stack, node);
+            node = rsvg_node_get_parent (node);
+        }
+    }
 }
 
 void

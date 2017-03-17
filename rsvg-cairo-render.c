@@ -232,14 +232,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
     if (!draw)
         return FALSE;
 
-    if (drawsub) {
-        drawsub = rsvg_node_ref (drawsub);
-
-        while (drawsub != NULL) {
-            draw->drawsub_stack = g_slist_prepend (draw->drawsub_stack, drawsub);
-            drawsub = rsvg_node_get_parent (drawsub);
-        }
-    }
+    rsvg_drawing_ctx_add_node_and_ancestors_to_stack (draw, drawsub);
 
     cairo_save (cr);
 
