@@ -181,6 +181,26 @@ impl Node {
             panic! ("could not downcast");
         }
     }
+
+    pub fn draw_children (&self, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+        if dominate != -1 {
+            drawing_ctx::state_reinherit_top (draw_ctx, self.state, dominate);
+
+            drawing_ctx::push_discrete_layer (draw_ctx);
+        }
+
+        for child in &*self.children.borrow () {
+            let boxed_child = box_node (child.clone ());
+
+            drawing_ctx::draw_node_from_stack (draw_ctx, boxed_child, 0);
+
+            rsvg_node_unref (boxed_child);
+        }
+
+        if dominate != -1 {
+            drawing_ctx::pop_discrete_layer (draw_ctx);
+        }
+    }
 }
 
 // Sigh, rsvg_state_free() is only available if we are being linked into
