@@ -75,8 +75,6 @@ extern "C" {
 
     fn rsvg_cairo_get_cairo_context (draw_ctx: *const RsvgDrawingCtx) -> *mut cairo_sys::cairo_t;
     fn rsvg_cairo_set_cairo_context (draw_ctx: *const RsvgDrawingCtx, cr: *const cairo_sys::cairo_t);
-
-    fn _rsvg_node_draw_children (node: *const RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: libc::c_int);
 }
 
 pub fn get_dpi (draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
@@ -221,11 +219,5 @@ pub fn state_push (draw_ctx: *const RsvgDrawingCtx) {
 pub fn state_pop (draw_ctx: *const RsvgDrawingCtx) {
     unsafe {
         rsvg_state_pop (draw_ctx);
-    }
-}
-
-pub fn node_draw_children (draw_ctx: *const RsvgDrawingCtx, c_node: *const RsvgNode, dominate: libc::c_int) {
-    unsafe {
-        _rsvg_node_draw_children (c_node, draw_ctx, dominate);
     }
 }

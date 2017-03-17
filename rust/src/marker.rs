@@ -181,7 +181,8 @@ impl NodeMarker {
             }
         }
 
-        drawing_ctx::node_draw_children (draw_ctx, c_node, -1); // dominate=-1 so it won't reinherit state / push a layer
+        let marker_node: &RsvgNode = unsafe { & *c_node };
+        marker_node.draw_children (draw_ctx, -1); // dominate=-1 so it won't reinherit state / push a layer
 
         drawing_ctx::pop_discrete_layer (draw_ctx);
 

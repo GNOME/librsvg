@@ -59,9 +59,6 @@ struct _RsvgNodeSvg {
 };
 
 G_GNUC_INTERNAL
-void _rsvg_node_draw_children   (RsvgNode *node, RsvgDrawingCtx * ctx, int dominate);
-
-G_GNUC_INTERNAL
 void _rsvg_node_svg_apply_atts  (RsvgNode *node, RsvgNodeSvg *svg, RsvgHandle * ctx);
 
 G_END_DECLS

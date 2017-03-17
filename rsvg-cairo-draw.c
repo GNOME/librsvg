@@ -694,7 +694,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx
     }
 
     rsvg_state_push (ctx);
-    _rsvg_node_draw_children (node_mask, ctx, 0);
+    rsvg_node_draw_children (node_mask, ctx, 0);
     rsvg_state_pop (ctx);
 
     if (self->contentunits == objectBoundingBox) {

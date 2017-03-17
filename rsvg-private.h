@@ -410,6 +410,11 @@ typedef gboolean (* RsvgNodeForeachChildFn) (RsvgNode *node, gpointer data);
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
 void rsvg_node_foreach_child (RsvgNode *node, RsvgNodeForeachChildFn fn, gpointer data);
+/* generic function for drawing all of the children of a particular node */
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+void rsvg_node_draw_children (RsvgNode *node, RsvgDrawingCtx *ctx, int dominate);
 
 struct _RsvgNodeChars {
     GString *contents;

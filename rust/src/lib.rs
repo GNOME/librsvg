@@ -57,6 +57,7 @@ pub use node::{
     rsvg_node_draw,
     rsvg_node_set_attribute_parse_error,
     rsvg_node_foreach_child,
+    rsvg_node_draw_children,
 };
 
 pub use path_builder::{

@@ -353,7 +353,8 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     drawing_ctx::set_current_state_affine (draw_ctx, caffine);
 
     // Draw everything
-    drawing_ctx::node_draw_children (draw_ctx, pattern.c_node, 2);
+    let pattern_node: &RsvgNode = unsafe { & *pattern.c_node };
+    pattern_node.draw_children (draw_ctx, 2);
 
     // Return to the original coordinate system and rendering context
 

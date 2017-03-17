@@ -376,6 +376,14 @@ pub extern fn rsvg_node_foreach_child (raw_node: *const RsvgNode, func: NodeFore
     }
 }
 
+#[no_mangle]
+pub extern fn rsvg_node_draw_children (raw_node: *const RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    assert! (!raw_node.is_null ());
+    let node: &RsvgNode = unsafe { & *raw_node };
+
+    node.draw_children (draw_ctx, dominate);
+}
+
 #[cfg(test)]
 mod tests {
     use std::rc::Rc;

@@ -64,22 +64,6 @@ draw_child (RsvgNode *node, gpointer data)
     return TRUE;
 }
 
-/* generic function for drawing all of the children of a particular node */
-void
-_rsvg_node_draw_children (RsvgNode *node, RsvgDrawingCtx *ctx, int dominate)
-{
-    if (dominate != -1) {
-        rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), dominate);
-
-        rsvg_push_discrete_layer (ctx);
-    }
-
-    rsvg_node_foreach_child (node, draw_child, ctx);
-
-    if (dominate != -1)
-        rsvg_pop_discrete_layer (ctx);
-}
-
 static void
 rsvg_group_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
@@ -89,7 +73,7 @@ rsvg_group_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgProp
 static void
 rsvg_group_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
 {
-    _rsvg_node_draw_children (node, ctx, dominate);
+    rsvg_node_draw_children (node, ctx, dominate);
 }
 
 static void
@@ -353,7 +337,7 @@ rsvg_node_use_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int domi
         }
 
         rsvg_state_push (ctx);
-        _rsvg_node_draw_children (child, ctx, 1);
+        rsvg_node_draw_children (child, ctx, 1);
         rsvg_state_pop (ctx);
         rsvg_pop_discrete_layer (ctx);
         if (symbol->vbox.active)
