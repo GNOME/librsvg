@@ -50,6 +50,10 @@ extern "C" {
                                            w: f64,
                                            h: f64);
 
+    fn rsvg_drawing_ctx_draw_node_from_stack (draw_ctx: *const RsvgDrawingCtx,
+                                              node:     *const RsvgNode,
+                                              dominate: i32);
+
     fn rsvg_current_state (draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState;
     fn rsvg_state_new () -> *mut RsvgState;
     fn rsvg_state_reinit (state: *mut RsvgState);
@@ -180,6 +184,12 @@ pub fn add_clipping_rect (draw_ctx: *const RsvgDrawingCtx,
                           w: f64,
                           h: f64) {
     unsafe { rsvg_drawing_ctx_add_clipping_rect (draw_ctx, x, y, w, h); }
+}
+
+pub fn draw_node_from_stack (draw_ctx: *const RsvgDrawingCtx,
+                             node:     *const RsvgNode,
+                             dominate: i32) {
+    unsafe { rsvg_drawing_ctx_draw_node_from_stack (draw_ctx, node, dominate); }
 }
 
 pub fn get_current_state (draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState {
