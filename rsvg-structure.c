@@ -52,35 +52,6 @@ struct _RsvgNodeUse {
     RsvgLength x, y, w, h;
 };
 
-void
-rsvg_node_draw_from_stack (RsvgNode *node, RsvgDrawingCtx * ctx, int dominate)
-{
-    RsvgState *state;
-    GSList *stacksave;
-
-    stacksave = ctx->drawsub_stack;
-    if (stacksave) {
-        RsvgNode *stack_node = stacksave->data;
-
-        if (!rsvg_node_is_same (stack_node, node))
-            return;
-
-        ctx->drawsub_stack = stacksave->next;
-    }
-
-    state = rsvg_node_get_state (node);
-
-    if (state->visible) {
-        rsvg_state_push (ctx);
-
-        rsvg_node_draw (node, ctx, dominate);
-
-        rsvg_state_pop (ctx);
-    }
-
-    ctx->drawsub_stack = stacksave;
-}
-
 static gboolean
 draw_child (RsvgNode *node, gpointer data)
 {
@@ -88,7 +59,7 @@ draw_child (RsvgNode *node, gpointer data)
 
     ctx = data;
 
-    rsvg_node_draw_from_stack (node, ctx, 0);
+    rsvg_drawing_ctx_draw_node_from_stack (ctx, node, 0);
 
     return TRUE;
 }
@@ -350,7 +321,7 @@ rsvg_node_use_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int domi
         cairo_matrix_multiply (&state->affine, &affine, &state->affine);
 
         rsvg_push_discrete_layer (ctx);
-        rsvg_node_draw_from_stack (child, ctx, 1);
+        rsvg_drawing_ctx_draw_node_from_stack (ctx, child, 1);
         rsvg_pop_discrete_layer (ctx);
     } else {
         RsvgNodeSymbol *symbol = rsvg_rust_cnode_get_impl (child);
@@ -518,7 +489,7 @@ draw_child_if_cond_true_and_stop (RsvgNode *node, gpointer data)
     ctx = data;
 
     if (rsvg_node_get_state (node)->cond_true) {
-        rsvg_node_draw_from_stack (node, ctx, 0);
+        rsvg_drawing_ctx_draw_node_from_stack (ctx, node, 0);
 
         return FALSE;
     } else {

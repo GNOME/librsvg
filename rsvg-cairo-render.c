@@ -241,7 +241,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     cairo_save (cr);
 
-    rsvg_node_draw_from_stack (handle->priv->treebase, draw, 0);
+    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0);
 
     cairo_restore (cr);
 

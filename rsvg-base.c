@@ -1585,7 +1585,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
             sself = rsvg_node_get_parent (sself);
         }
 
-        rsvg_node_draw_from_stack (handle->priv->treebase, draw, 0);
+        rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0);
         bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
         rsvg_drawing_ctx_free (draw);
@@ -1679,7 +1679,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
         node = rsvg_node_get_parent (node);
     }
 
-    rsvg_node_draw_from_stack (handle->priv->treebase, draw, 0);
+    rsvg_drawing_ctx_draw_node_from_stack (draw, handle->priv->treebase, 0);
     bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
     rsvg_drawing_ctx_free (draw);
@@ -2311,6 +2311,35 @@ rsvg_drawing_ctx_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
   g_return_if_fail (ctx->acquired_nodes->data == node);
 
   ctx->acquired_nodes = g_slist_remove (ctx->acquired_nodes, node);
+}
+
+void
+rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx, RsvgNode *node, int dominate)
+{
+    RsvgState *state;
+    GSList *stacksave;
+
+    stacksave = ctx->drawsub_stack;
+    if (stacksave) {
+        RsvgNode *stack_node = stacksave->data;
+
+        if (!rsvg_node_is_same (stack_node, node))
+            return;
+
+        ctx->drawsub_stack = stacksave->next;
+    }
+
+    state = rsvg_node_get_state (node);
+
+    if (state->visible) {
+        rsvg_state_push (ctx);
+
+        rsvg_node_draw (node, ctx, dominate);
+
+        rsvg_state_pop (ctx);
+    }
+
+    ctx->drawsub_stack = stacksave;
 }
 
 cairo_matrix_t
