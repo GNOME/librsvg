@@ -252,6 +252,9 @@ void rsvg_state_reconstruct	(RsvgState * state, RsvgNode * current);
 G_GNUC_INTERNAL
 gboolean rsvg_state_is_overflow (RsvgState *state);
 
+G_GNUC_INTERNAL
+gboolean rsvg_state_get_cond_true (RsvgState *state);
+
 G_END_DECLS
 
 #endif                          /* RSVG_STYLES_H */
