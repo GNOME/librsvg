@@ -112,6 +112,7 @@ mod gradient;
 mod length;
 mod marker;
 mod node;
+mod paint_server;
 mod parsers;
 mod path_builder;
 mod path_parser;
