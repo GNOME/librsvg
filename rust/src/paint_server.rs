@@ -23,6 +23,12 @@ impl FromStr for PaintServerUnits {
     }
 }
 
+impl Default for PaintServerUnits {
+    fn default () -> PaintServerUnits {
+        PaintServerUnits::ObjectBoundingBox
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
