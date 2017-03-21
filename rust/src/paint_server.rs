@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use error::*;
 use parsers::ParseError;
 
 /// Defines the units to be used for scaling paint servers, per the [svg specification].
@@ -12,13 +13,13 @@ pub enum PaintServerUnits {
 }
 
 impl FromStr for PaintServerUnits {
-    type Err = ParseError;
+    type Err = AttributeError;
 
-    fn from_str (s: &str) -> Result<PaintServerUnits, ParseError> {
+    fn from_str (s: &str) -> Result<PaintServerUnits, AttributeError> {
         match s {
             "userSpaceOnUse"    => Ok (PaintServerUnits::UserSpaceOnUse),
             "objectBoundingBox" => Ok (PaintServerUnits::ObjectBoundingBox),
-            _                   => Err (ParseError::new ("expected 'userSpaceOnUse' or 'objectBoundingBox'"))
+            _                   => Err (AttributeError::Parse (ParseError::new ("expected 'userSpaceOnUse' or 'objectBoundingBox'")))
         }
     }
 }
