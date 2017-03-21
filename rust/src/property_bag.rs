@@ -27,24 +27,50 @@ pub fn lookup (pbag: *const RsvgPropertyBag, key: &str) -> Option<String> {
     }
 }
 
-pub fn length_or_default (pbag: *const RsvgPropertyBag, key: &'static str, length_dir: LengthDir) -> Result <RsvgLength, NodeError> {
+pub fn length_or_none (pbag: *const RsvgPropertyBag, key: &'static str, length_dir: LengthDir) -> Result <Option<RsvgLength>, NodeError> {
     let value = lookup (pbag, key);
 
     if let Some (v) = value {
-        RsvgLength::parse (&v, length_dir).map_err (|e| NodeError::attribute_error (key, e))
+        RsvgLength::parse (&v, length_dir).map (|l| Some (l))
+            .map_err (|e| NodeError::attribute_error (key, e))
     } else {
-        Ok (RsvgLength::default ())
+        Ok (None)
+    }
+}
+
+pub fn length_or_default (pbag: *const RsvgPropertyBag, key: &'static str, length_dir: LengthDir) -> Result <RsvgLength, NodeError> {
+    let r = length_or_none (pbag, key, length_dir);
+
+    match r {
+        Ok (Some (v)) => Ok (v),
+        Ok (None)     => Ok (RsvgLength::default ()),
+        Err (e)       => Err (e)
+    }
+}
+
+pub fn parse_or_none<T> (pbag: *const RsvgPropertyBag, key: &'static str) -> Result <Option<T>, NodeError>
+    where T: Default + FromStr<Err = AttributeError>
+{
+    let value = lookup (pbag, key);
+
+    match value {
+        Some (v) => {
+            T::from_str (&v).map (|v| Some (v))
+                .map_err (|e| NodeError::attribute_error (key, e))
+        },
+
+        None => Ok (None)
     }
 }
 
 pub fn parse_or_default<T> (pbag: *const RsvgPropertyBag, key: &'static str) -> Result <T, NodeError>
     where T: Default + FromStr<Err = AttributeError>
 {
-    let value = lookup (pbag, key);
+    let r = parse_or_none::<T> (pbag, key);
 
-    if let Some (v) = value {
-        T::from_str (&v).map_err (|e| NodeError::attribute_error (key, e))
-    } else {
-        Ok (T::default ())
+    match r {
+        Ok (Some (v)) => Ok (v),
+        Ok (None)     => Ok (T::default ()),
+        Err (e)       => Err (e)
     }
 }
