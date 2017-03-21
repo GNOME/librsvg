@@ -11,6 +11,7 @@ use length::*;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use node::*;
+use paint_server::*;
 
 use bbox::*;
 use util::*;
@@ -35,6 +36,25 @@ pub struct Pattern {
 
     // We just use c_node to see if the C implementation has children
     pub c_node:                *const RsvgNode
+}
+
+// A pattern's patternUnits attribute (in our Pattern::units field) defines the coordinate
+// system relative to the x/y/width/height of the Pattern.  However, patterns also
+// have a patternContentUnits attribute, which refers to the pattern's contents (i.e. the
+// objects which it references.  We define PatternContentUnits as a newtype, so that
+// it can have its own default value, different from the one in PaintServerUnits.
+struct PatternContentUnits(PaintServerUnits);
+
+impl From<PaintServerUnits> for PatternContentUnits {
+    fn from (units: PaintServerUnits) -> PatternContentUnits {
+        PatternContentUnits(units)
+    }
+}
+
+impl Default for PatternContentUnits {
+    fn default () -> PatternContentUnits {
+        PatternContentUnits (PaintServerUnits::UserSpaceOnUse)
+    }
 }
 
 extern "C" {
