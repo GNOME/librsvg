@@ -23,7 +23,7 @@ use self::cairo::SurfacePattern;
 use self::cairo::Pattern as CairoPattern;
 
 pub struct Pattern {
-    pub obj_bbox:              Option<bool>,
+    pub units:                 Option<PaintServerUnits>,
     pub obj_cbbox:             Option<bool>,
     pub vbox:                  Option<RsvgViewBox>,
     pub preserve_aspect_ratio: Option<AspectRatio>,
@@ -97,7 +97,7 @@ macro_rules! fallback_to (
 
 impl Pattern {
     fn is_resolved (&self) -> bool {
-        self.obj_bbox.is_some () &&
+        self.units.is_some () &&
             self.obj_cbbox.is_some () &&
             self.vbox.is_some () &&
             self.preserve_aspect_ratio.is_some () &&
@@ -112,7 +112,7 @@ impl Pattern {
     fn resolve_from_defaults (&mut self) {
         /* These are per the spec */
 
-        fallback_to! (self.obj_bbox,              Some (true));
+        fallback_to! (self.units,                 Some (PaintServerUnits::default ()));
         fallback_to! (self.obj_cbbox,             Some (false));
         fallback_to! (self.vbox,                  Some (RsvgViewBox::new_inactive ()));
         fallback_to! (self.preserve_aspect_ratio, Some (AspectRatio::default ()));
@@ -130,7 +130,7 @@ impl Pattern {
     }
 
     fn resolve_from_fallback (&mut self, fallback: &Pattern) {
-        fallback_to! (self.obj_bbox,              fallback.obj_bbox);
+        fallback_to! (self.units,                 fallback.units);
         fallback_to! (self.obj_cbbox,             fallback.obj_cbbox);
         fallback_to! (self.vbox,                  fallback.vbox);
         fallback_to! (self.preserve_aspect_ratio, fallback.preserve_aspect_ratio);
@@ -151,7 +151,7 @@ impl Pattern {
 impl Clone for Pattern {
     fn clone (&self) -> Self {
         Pattern {
-            obj_bbox:              self.obj_bbox,
+            units:                 self.units,
             obj_cbbox:             self.obj_cbbox,
             vbox:                  self.vbox,
             preserve_aspect_ratio: self.preserve_aspect_ratio,
@@ -235,6 +235,14 @@ impl FallbackSource for NodeFallbackSource {
     }
 }
 
+fn paint_server_units_from_bool (v: bool) -> PaintServerUnits {
+    if v {
+        PaintServerUnits::ObjectBoundingBox
+    } else {
+        PaintServerUnits::UserSpaceOnUse
+    }
+}
+
 fn set_pattern_on_draw_context (pattern: &Pattern,
                                 draw_ctx: *mut RsvgDrawingCtx,
                                 bbox:     &RsvgBbox) -> bool {
@@ -244,13 +252,13 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
         return false;
     }
 
-    let obj_bbox              = pattern.obj_bbox.unwrap ();
+    let units                 = pattern.units.unwrap ();
     let obj_cbbox             = pattern.obj_cbbox.unwrap ();
     let pattern_affine        = pattern.affine.unwrap ();
     let vbox                  = pattern.vbox.unwrap ();
     let preserve_aspect_ratio = pattern.preserve_aspect_ratio.unwrap ();
 
-    if obj_bbox {
+    if units == PaintServerUnits::ObjectBoundingBox {
         drawing_ctx::push_view_box (draw_ctx, 1.0, 1.0);
     }
 
@@ -259,7 +267,7 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     let pattern_width  = pattern.width.unwrap ().normalize (draw_ctx);
     let pattern_height = pattern.height.unwrap ().normalize (draw_ctx);
 
-    if obj_bbox {
+    if units == PaintServerUnits::ObjectBoundingBox {
         drawing_ctx::pop_view_box (draw_ctx);
     }
 
@@ -268,12 +276,16 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     let bbwscale: f64;
     let bbhscale: f64;
 
-    if obj_bbox {
-        bbwscale = bbox.rect.width;
-        bbhscale = bbox.rect.height;
-    } else {
-        bbwscale = 1.0;
-        bbhscale = 1.0;
+    match units {
+        PaintServerUnits::ObjectBoundingBox => {
+            bbwscale = bbox.rect.width;
+            bbhscale = bbox.rect.height;
+        },
+
+        PaintServerUnits::UserSpaceOnUse => {
+            bbwscale = 1.0;
+            bbhscale = 1.0;
+        }
     }
 
     let taffine = cairo::Matrix::multiply (&pattern_affine, &drawing_ctx::get_current_state_affine (draw_ctx));
@@ -298,11 +310,15 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     let mut affine: cairo::Matrix = cairo::Matrix::identity ();
 
     // Create the pattern coordinate system
-    if obj_bbox {
-        affine.translate (bbox.rect.x + pattern_x * bbox.rect.width,
-                          bbox.rect.y + pattern_y * bbox.rect.height);
-    } else {
-        affine.translate (pattern_x, pattern_y);
+    match units {
+        PaintServerUnits::ObjectBoundingBox => {
+            affine.translate (bbox.rect.x + pattern_x * bbox.rect.width,
+                              bbox.rect.y + pattern_y * bbox.rect.height);
+        },
+
+        PaintServerUnits::UserSpaceOnUse => {
+            affine.translate (pattern_x, pattern_y);
+        }
     }
 
     // Apply the pattern transform
@@ -420,7 +436,7 @@ pub unsafe extern fn pattern_new (x: *const RsvgLength,
     let my_width     = { if width.is_null ()  { None } else { Some (*width) } };
     let my_height    = { if height.is_null () { None } else { Some (*height) } };
 
-    let my_obj_bbox  = { if obj_bbox.is_null ()  { None } else { Some (*obj_bbox) } };
+    let my_units     = { if obj_bbox.is_null ()  { None } else { Some (paint_server_units_from_bool (*obj_bbox)) } };
     let my_obj_cbbox = { if obj_cbbox.is_null () { None } else { Some (*obj_cbbox) } };
     let my_vbox      = { if vbox.is_null ()      { None } else { Some (*vbox) } };
 
@@ -431,7 +447,7 @@ pub unsafe extern fn pattern_new (x: *const RsvgLength,
     let my_fallback_name = { if fallback_name.is_null () { None } else { Some (String::from_glib_none (fallback_name)) } };
 
     let pattern = Pattern {
-        obj_bbox:              my_obj_bbox,
+        units:                 my_units,
         obj_cbbox:             my_obj_cbbox,
         vbox:                  my_vbox,
         preserve_aspect_ratio: my_preserve_aspect_ratio,
