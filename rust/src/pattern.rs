@@ -3,17 +3,22 @@ extern crate cairo;
 extern crate cairo_sys;
 extern crate glib;
 
+use std::cell::RefCell;
+use std::str::FromStr;
 use self::glib::translate::*;
 
 use aspect_ratio::*;
-use length::*;
-
+use bbox::*;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
+use error::*;
+use handle::RsvgHandle;
+use length::*;
 use node::*;
 use paint_server::*;
-
-use bbox::*;
+use parsers::ParseError;
+use property_bag;
+use property_bag::*;
 use util::*;
 use viewbox::*;
 
