@@ -58,6 +58,14 @@ impl Default for PatternContentUnits {
     }
 }
 
+impl FromStr for PatternContentUnits {
+    type Err = AttributeError;
+
+    fn from_str (s: &str) -> Result<PatternContentUnits, AttributeError> {
+        Ok (PatternContentUnits::from (PaintServerUnits::from_str (s)?))
+    }
+}
+
 extern "C" {
     fn rsvg_pattern_node_to_rust_pattern (node: *const RsvgNode) -> *mut Pattern;
 }
