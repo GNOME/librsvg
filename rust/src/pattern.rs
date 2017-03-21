@@ -24,7 +24,7 @@ use self::cairo::Pattern as CairoPattern;
 
 pub struct Pattern {
     pub units:                 Option<PaintServerUnits>,
-    pub obj_cbbox:             Option<bool>,
+    pub content_units:         Option<PatternContentUnits>,
     pub vbox:                  Option<RsvgViewBox>,
     pub preserve_aspect_ratio: Option<AspectRatio>,
     pub affine:                Option<cairo::Matrix>,
@@ -43,7 +43,8 @@ pub struct Pattern {
 // have a patternContentUnits attribute, which refers to the pattern's contents (i.e. the
 // objects which it references.  We define PatternContentUnits as a newtype, so that
 // it can have its own default value, different from the one in PaintServerUnits.
-struct PatternContentUnits(PaintServerUnits);
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct PatternContentUnits(PaintServerUnits);
 
 impl From<PaintServerUnits> for PatternContentUnits {
     fn from (units: PaintServerUnits) -> PatternContentUnits {
@@ -98,7 +99,7 @@ macro_rules! fallback_to (
 impl Pattern {
     fn is_resolved (&self) -> bool {
         self.units.is_some () &&
-            self.obj_cbbox.is_some () &&
+            self.content_units.is_some () &&
             self.vbox.is_some () &&
             self.preserve_aspect_ratio.is_some () &&
             self.affine.is_some () &&
@@ -113,7 +114,7 @@ impl Pattern {
         /* These are per the spec */
 
         fallback_to! (self.units,                 Some (PaintServerUnits::default ()));
-        fallback_to! (self.obj_cbbox,             Some (false));
+        fallback_to! (self.content_units,         Some (PatternContentUnits::default ()));
         fallback_to! (self.vbox,                  Some (RsvgViewBox::new_inactive ()));
         fallback_to! (self.preserve_aspect_ratio, Some (AspectRatio::default ()));
         fallback_to! (self.affine,                Some (cairo::Matrix::identity ()));
@@ -131,7 +132,7 @@ impl Pattern {
 
     fn resolve_from_fallback (&mut self, fallback: &Pattern) {
         fallback_to! (self.units,                 fallback.units);
-        fallback_to! (self.obj_cbbox,             fallback.obj_cbbox);
+        fallback_to! (self.content_units,         fallback.content_units);
         fallback_to! (self.vbox,                  fallback.vbox);
         fallback_to! (self.preserve_aspect_ratio, fallback.preserve_aspect_ratio);
         fallback_to! (self.affine,                fallback.affine);
@@ -152,7 +153,7 @@ impl Clone for Pattern {
     fn clone (&self) -> Self {
         Pattern {
             units:                 self.units,
-            obj_cbbox:             self.obj_cbbox,
+            content_units:         self.content_units,
             vbox:                  self.vbox,
             preserve_aspect_ratio: self.preserve_aspect_ratio,
             affine:                self.affine,
@@ -253,7 +254,7 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     }
 
     let units                 = pattern.units.unwrap ();
-    let obj_cbbox             = pattern.obj_cbbox.unwrap ();
+    let content_units         = pattern.content_units.unwrap ();
     let pattern_affine        = pattern.affine.unwrap ();
     let vbox                  = pattern.vbox.unwrap ();
     let preserve_aspect_ratio = pattern.preserve_aspect_ratio.unwrap ();
@@ -328,7 +329,7 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
 
     let pushed_view_box: bool;
 
-        // Create the pattern contents coordinate system
+    // Create the pattern contents coordinate system
     if vbox.active {
         // If there is a vbox, use that
         let (mut x, mut y, w, h) = preserve_aspect_ratio.compute (vbox.rect.width,
@@ -350,7 +351,7 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
 
         drawing_ctx::push_view_box (draw_ctx, vbox.rect.width, vbox.rect.height);
         pushed_view_box = true;
-    } else if obj_cbbox {
+    } else if content_units == PatternContentUnits (PaintServerUnits::ObjectBoundingBox) {
         // If coords are in terms of the bounding box, use them
 
         caffine = cairo::Matrix::identity ();
@@ -436,9 +437,9 @@ pub unsafe extern fn pattern_new (x: *const RsvgLength,
     let my_width     = { if width.is_null ()  { None } else { Some (*width) } };
     let my_height    = { if height.is_null () { None } else { Some (*height) } };
 
-    let my_units     = { if obj_bbox.is_null ()  { None } else { Some (paint_server_units_from_bool (*obj_bbox)) } };
-    let my_obj_cbbox = { if obj_cbbox.is_null () { None } else { Some (*obj_cbbox) } };
-    let my_vbox      = { if vbox.is_null ()      { None } else { Some (*vbox) } };
+    let my_units         = { if obj_bbox.is_null ()  { None } else { Some (paint_server_units_from_bool (*obj_bbox)) } };
+    let my_content_units = { if obj_cbbox.is_null () { None } else { Some (PatternContentUnits (paint_server_units_from_bool (*obj_cbbox))) } };
+    let my_vbox          = { if vbox.is_null ()      { None } else { Some (*vbox) } };
 
     let my_affine    = { if affine.is_null () { None } else { Some (*affine) } };
 
@@ -448,7 +449,7 @@ pub unsafe extern fn pattern_new (x: *const RsvgLength,
 
     let pattern = Pattern {
         units:                 my_units,
-        obj_cbbox:             my_obj_cbbox,
+        content_units:         my_content_units,
         vbox:                  my_vbox,
         preserve_aspect_ratio: my_preserve_aspect_ratio,
         affine:                my_affine,
