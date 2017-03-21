@@ -231,7 +231,7 @@ void rsvg_parse_style_attrs (RsvgHandle *ctx, RsvgNode *node, const char *tag,
                              const char *klazz, const char *id, RsvgPropertyBag * atts);
 
 G_GNUC_INTERNAL
-gboolean rsvg_parse_transform   (cairo_matrix_t *matrix, const char *src);
+gboolean rsvg_parse_transform   (cairo_matrix_t *matrix, const char *src) G_GNUC_WARN_UNUSED_RESULT;
 
 G_GNUC_INTERNAL
 RsvgState *rsvg_state_parent    (RsvgState * state);

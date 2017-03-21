@@ -326,8 +326,13 @@ rsvg_linear_gradient_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle
     g_free (grad->fallback);
     grad->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
     if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
-        rsvg_parse_transform (&grad->affine, value);
-        grad->hastransform = TRUE;
+        if (rsvg_parse_transform (&grad->affine, value)) {
+            grad->hastransform = TRUE;
+        } else {
+            rsvg_node_set_attribute_parse_error (node,
+                                                 "gradientTransform",
+                                                 "Invalid transformation");
+        }
     }
     if ((value = rsvg_property_bag_lookup (atts, "gradientUnits"))) {
         if (!strcmp (value, "userSpaceOnUse"))
@@ -405,8 +410,13 @@ rsvg_radial_gradient_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle
     g_free (grad->fallback);
     grad->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
     if ((value = rsvg_property_bag_lookup (atts, "gradientTransform"))) {
-        rsvg_parse_transform (&grad->affine, value);
-        grad->hastransform = TRUE;
+        if (rsvg_parse_transform (&grad->affine, value)) {
+            grad->hastransform = TRUE;
+        } else {
+            rsvg_node_set_attribute_parse_error (node,
+                                                 "gradientTransform",
+                                                 "Invalid transformation");
+        }
     }
     if ((value = rsvg_property_bag_lookup (atts, "spreadMethod"))) {
         if (!strcmp (value, "pad"))
@@ -485,8 +495,13 @@ rsvg_pattern_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPr
     g_free (pattern->fallback);
     pattern->fallback = g_strdup (rsvg_property_bag_lookup (atts, "xlink:href"));
     if ((value = rsvg_property_bag_lookup (atts, "patternTransform"))) {
-        rsvg_parse_transform (&pattern->affine, value);
-        pattern->hastransform = TRUE;
+        if (rsvg_parse_transform (&pattern->affine, value)) {
+            pattern->hastransform = TRUE;
+        } else {
+            rsvg_node_set_attribute_parse_error (node,
+                                                 "patternTransform",
+                                                 "Invalid transformation");
+        }
     }
     if ((value = rsvg_property_bag_lookup (atts, "patternUnits"))) {
         if (!strcmp (value, "userSpaceOnUse"))
