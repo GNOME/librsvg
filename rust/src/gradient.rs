@@ -10,6 +10,7 @@ use length::*;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use node::RsvgNode;
+use paint_server::*;
 
 use bbox::*;
 
@@ -28,7 +29,7 @@ pub struct ColorStop {
  * represent these possibly-missing attributes as Option<foo>.
  */
 pub struct GradientCommon {
-    pub obj_bbox: Option<bool>,
+    pub units:    Option<PaintServerUnits>,
     pub affine:   Option<cairo::Matrix>,
     pub spread:   Option<cairo::enums::Extend>,
     pub fallback: Option<String>,
@@ -82,13 +83,13 @@ macro_rules! fallback_to (
 );
 
 impl GradientCommon {
-    fn new (obj_bbox: Option<bool>,
+    fn new (units:    Option<PaintServerUnits>,
             affine:   Option<cairo::Matrix>,
             spread:   Option<cairo::enums::Extend>,
             fallback: Option<String>,
             stops:    Option<Vec<ColorStop>>) -> GradientCommon {
         GradientCommon {
-            obj_bbox: obj_bbox,
+            units:    units,
             affine:   affine,
             spread:   spread,
             fallback: fallback,
@@ -105,7 +106,7 @@ impl GradientCommon {
     }
 
     fn is_resolved (&self) -> bool {
-        self.obj_bbox.is_some() &&
+        self.units.is_some() &&
             self.affine.is_some () &&
             self.spread.is_some () &&
             self.stops.is_some ()
@@ -114,19 +115,19 @@ impl GradientCommon {
     fn resolve_from_defaults (&mut self) {
         /* These are per the spec */
 
-        fallback_to! (self.obj_bbox, Some (true));
-        fallback_to! (self.affine,   Some (cairo::Matrix::identity ()));
-        fallback_to! (self.spread,   Some (cairo::enums::Extend::Pad));
-        fallback_to! (self.stops,    Some (Vec::<ColorStop>::new ())); // empty array of color stops
+        fallback_to! (self.units,  Some (PaintServerUnits::default ()));
+        fallback_to! (self.affine, Some (cairo::Matrix::identity ()));
+        fallback_to! (self.spread, Some (cairo::enums::Extend::Pad));
+        fallback_to! (self.stops,  Some (Vec::<ColorStop>::new ())); // empty array of color stops
 
         self.fallback = None;
     }
 
     fn resolve_from_fallback (&mut self, fallback: &GradientCommon) {
-        fallback_to! (self.obj_bbox, fallback.obj_bbox);
-        fallback_to! (self.affine,   fallback.affine);
-        fallback_to! (self.spread,   fallback.spread);
-        fallback_to! (self.stops,    fallback.clone_stops ());
+        fallback_to! (self.units,  fallback.units);
+        fallback_to! (self.affine, fallback.affine);
+        fallback_to! (self.spread, fallback.spread);
+        fallback_to! (self.stops,  fallback.clone_stops ());
 
         self.fallback = clone_fallback_name (&fallback.fallback);
     }
@@ -158,7 +159,7 @@ impl GradientCommon {
 impl Clone for GradientCommon {
     fn clone (&self) -> Self {
         GradientCommon {
-            obj_bbox: self.obj_bbox,
+            units:    self.units,
             affine:   self.affine,
             spread:   self.spread,
             fallback: clone_fallback_name (&self.fallback),
@@ -368,9 +369,9 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient> (gradient: &Gradie
 
     let mut affine = gradient.common.affine.unwrap ();
 
-    let obj_bbox = gradient.common.obj_bbox.unwrap ();
+    let units = gradient.common.units.unwrap ();
 
-    if obj_bbox {
+    if units == PaintServerUnits::ObjectBoundingBox {
         let bbox_matrix = cairo::Matrix::new (bbox.rect.width, 0.0,
                                               0.0, bbox.rect.height,
                                               bbox.rect.x, bbox.rect.y);
@@ -392,9 +393,9 @@ fn set_linear_gradient_on_pattern (gradient: &Gradient,
                                    opacity:  u8)
 {
     if let GradientVariant::Linear { x1, y1, x2, y2 } = gradient.variant {
-        let obj_bbox = gradient.common.obj_bbox.unwrap ();
+        let units = gradient.common.units.unwrap ();
 
-        if obj_bbox {
+        if units == PaintServerUnits::ObjectBoundingBox {
             drawing_ctx::push_view_box (draw_ctx, 1.0, 1.0);
         }
 
@@ -403,7 +404,7 @@ fn set_linear_gradient_on_pattern (gradient: &Gradient,
                                                       x2.as_ref ().unwrap ().normalize (draw_ctx),
                                                       y2.as_ref ().unwrap ().normalize (draw_ctx));
 
-        if obj_bbox {
+        if units == PaintServerUnits::ObjectBoundingBox {
             drawing_ctx::pop_view_box (draw_ctx);
         }
 
@@ -472,9 +473,9 @@ fn set_radial_gradient_on_pattern (gradient: &Gradient,
                                    bbox:     &RsvgBbox,
                                    opacity:  u8) {
     if let GradientVariant::Radial { cx, cy, r, fx, fy } = gradient.variant {
-        let obj_bbox = gradient.common.obj_bbox.unwrap ();
+        let units = gradient.common.units.unwrap ();
 
-        if obj_bbox {
+        if units == PaintServerUnits::ObjectBoundingBox {
             drawing_ctx::push_view_box (draw_ctx, 1.0, 1.0);
         }
 
@@ -488,7 +489,7 @@ fn set_radial_gradient_on_pattern (gradient: &Gradient,
 
         let mut pattern = cairo::RadialGradient::new (new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
 
-        if obj_bbox {
+        if units == PaintServerUnits::ObjectBoundingBox {
             drawing_ctx::pop_view_box (draw_ctx);
         }
 
@@ -513,10 +514,15 @@ fn set_pattern_on_draw_context (gradient: &Gradient,
             set_radial_gradient_on_pattern (gradient, draw_ctx, bbox, opacity);
         }
     }
-
-
 }
 
+fn paint_server_units_from_bool (v: bool) -> PaintServerUnits {
+    if v {
+        PaintServerUnits::ObjectBoundingBox
+    } else {
+        PaintServerUnits::UserSpaceOnUse
+    }
+}
 
 /* All the arguments are pointers because they are in fact optional in
  * SVG.  We turn the arguments into Option<foo>: NULL into None, and
@@ -531,7 +537,7 @@ pub unsafe extern fn gradient_linear_new (x1: *const RsvgLength,
                                           affine: *const cairo::Matrix,
                                           spread: *const cairo::enums::Extend,
                                           fallback_name: *const libc::c_char) -> *mut Gradient {
-    let my_obj_bbox      = { if obj_bbox.is_null ()      { None } else { Some (*obj_bbox) } };
+    let my_units         = { if obj_bbox.is_null ()      { None } else { Some (paint_server_units_from_bool (*obj_bbox)) } };
     let my_affine        = { if affine.is_null ()        { None } else { Some (*affine) } };
     let my_spread        = { if spread.is_null ()        { None } else { Some (*spread) } };
     let my_fallback_name = { if fallback_name.is_null () { None } else { Some (String::from_glib_none (fallback_name)) } };
@@ -541,7 +547,7 @@ pub unsafe extern fn gradient_linear_new (x1: *const RsvgLength,
     let my_x2 = { if x2.is_null () { None } else { Some (*x2) } };
     let my_y2 = { if y2.is_null () { None } else { Some (*y2) } };
 
-    let gradient = Gradient::new (GradientCommon::new (my_obj_bbox, my_affine, my_spread, my_fallback_name, None),
+    let gradient = Gradient::new (GradientCommon::new (my_units, my_affine, my_spread, my_fallback_name, None),
                                   GradientVariant::Linear { x1: my_x1,
                                                             y1: my_y1,
                                                             x2: my_x2,
@@ -562,7 +568,7 @@ pub unsafe extern fn gradient_radial_new (cx: *const RsvgLength,
                                           affine: *const cairo::Matrix,
                                           spread: *const cairo::enums::Extend,
                                           fallback_name: *const libc::c_char) -> *mut Gradient {
-    let my_obj_bbox      = { if obj_bbox.is_null ()      { None } else { Some (*obj_bbox) } };
+    let my_units         = { if obj_bbox.is_null ()      { None } else { Some (paint_server_units_from_bool (*obj_bbox)) } };
     let my_affine        = { if affine.is_null ()        { None } else { Some (*affine) } };
     let my_spread        = { if spread.is_null ()        { None } else { Some (*spread) } };
     let my_fallback_name = { if fallback_name.is_null () { None } else { Some (String::from_glib_none (fallback_name)) } };
@@ -573,7 +579,7 @@ pub unsafe extern fn gradient_radial_new (cx: *const RsvgLength,
     let my_fx = { if fx.is_null () { None } else { Some (*fx) } };
     let my_fy = { if fy.is_null () { None } else { Some (*fy) } };
 
-    let gradient = Gradient::new (GradientCommon::new (my_obj_bbox, my_affine, my_spread, my_fallback_name, None),
+    let gradient = Gradient::new (GradientCommon::new (my_units, my_affine, my_spread, my_fallback_name, None),
                                   GradientVariant::Radial { cx: my_cx,
                                                             cy: my_cy,
                                                             r:  my_r,
