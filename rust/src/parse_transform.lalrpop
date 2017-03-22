@@ -12,13 +12,28 @@ use pt::cairo::MatrixTrait;
 
 grammar;
 
-pub Transform: cairo::Matrix = {
+pub TransformList: cairo::Matrix = {
+    // Note that the grammar in https://www.w3.org/TR/SVG/coords.html#TransformAttribute
+    // has this:
+    //
+    //   transforms:
+    //     transform
+    //     | transform comma-wsp+ transforms
+    //
+    // I think the "comma-wsp+" should really be "comma-wsp" as in the
+    // rest of the SVG grammar.  Here we will use our usual "comma?" and
+    // hope that the SVG test suite catches errors in our grammar.
+    <a: TransformList> comma? <b: Transform> => cairo::Matrix::multiply (&b, &a),
+    Transform
+};
+
+Transform: cairo::Matrix = {
     Matrix,
-//    Translate,
-//    Scale,
-//    Rotate,
-//    SkewX,
-//    SkewY
+    Translate,
+    Scale,
+    Rotate,
+    SkewX,
+    SkewY
 };
 
 pub Matrix: cairo::Matrix = "matrix" "(" <Num> comma? <Num> comma? <Num> comma? <Num> comma? <Num> comma? <Num> ")" =>

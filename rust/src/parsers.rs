@@ -372,4 +372,21 @@ mod parse_transform_tests {
     fn parses_skew_y () {
         assert_eq! (parse_SkewY ("skewY (30)").unwrap (), make_skew_y_matrix (30.0));
     }
+
+    #[test]
+    fn parses_transform_list () {
+        let t = cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, 20.0, 30.0);
+        let s = cairo::Matrix::new (10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
+        let r = make_rotation_matrix (30.0, 10.0, 10.0);
+
+        assert_eq! (parse_TransformList ("scale(10)rotate(30, 10, 10)").unwrap (),
+                    cairo::Matrix::multiply (&r, &s));
+
+        assert_eq! (parse_TransformList ("translate(20, 30), scale (10)").unwrap (),
+                    cairo::Matrix::multiply (&s, &t));
+
+        let a = cairo::Matrix::multiply (&s, &t);
+        assert_eq! (parse_TransformList ("translate(20, 30), scale (10) rotate (30 10 10)").unwrap (),
+                    cairo::Matrix::multiply (&r, &a));
+    }
 }
