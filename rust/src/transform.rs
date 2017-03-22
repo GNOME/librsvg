@@ -1,3 +1,5 @@
+extern crate lalrpop_util;
+
 extern crate cairo;
 use self::cairo::MatrixTrait;
 
@@ -5,8 +7,86 @@ use std::f64::consts::*;
 
 use parse_transform::*;
 
+use error::*;
+use parsers::ParseError;
+
+pub fn parse_transform (s: &str) -> Result <cairo::Matrix, AttributeError> {
+    let r = parse_TransformList (s);
+
+    match r {
+        Ok (m) => {
+            m.try_invert ().map (|_| m)
+                .map_err (|_| AttributeError::Value ("invalid transformation matrix".to_string ()))
+        },
+
+        Err (e) => {
+            Err (AttributeError::Parse (ParseError::new (format! ("{:?}", e))))
+        }
+    }
+}
+
+fn make_rotation_matrix (angle_degrees: f64, tx: f64, ty: f64) -> cairo::Matrix {
+    let angle = angle_degrees * PI / 180.0;
+
+    let mut m = cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, tx, ty);
+
+    let mut r = cairo::Matrix::identity ();
+    r.rotate (angle);
+    m = cairo::Matrix::multiply (&r, &m);
+
+    m = cairo::Matrix::multiply (&cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -tx, -ty), &m);
+    m
+}
+
 #[cfg(test)]
-mod parse_transform_tests {
+mod test {
+    use super::*;
+
+    #[test]
+    fn parses_valid_transform () {
+        let t = cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, 20.0, 30.0);
+        let s = cairo::Matrix::new (10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
+        let r = make_rotation_matrix (30.0, 10.0, 10.0);
+
+        let a = cairo::Matrix::multiply (&s, &t);
+        assert_eq! (parse_transform ("translate(20, 30), scale (10) rotate (30 10 10)").unwrap (),
+                    cairo::Matrix::multiply (&r, &a));
+    }
+
+    #[test]
+    fn syntax_error_yields_parse_error () {
+        match parse_transform ("foo") {
+            Err (AttributeError::Parse (_)) => {},
+            _ => { panic! (); }
+        }
+
+        match parse_transform ("matrix (1 2 3 4 5)") {
+            Err (AttributeError::Parse (_)) => {},
+            _ => { panic! (); }
+        }
+    }
+
+    #[test]
+    fn invalid_transform_yields_value_error () {
+        match parse_transform ("matrix (0 0 0 0 0 0)") {
+            Err (AttributeError::Value (_)) => {},
+            _ => { panic! (); }
+        }
+
+        match parse_transform ("scale (0), translate (10, 10)") {
+            Err (AttributeError::Value (_)) => {},
+            _ => { panic! (); }
+        }
+
+        match parse_transform ("scale (0), skewX (90)") {
+            Err (AttributeError::Value (_)) => {},
+            _ => { panic! (); }
+        }
+    }
+}
+
+#[cfg(test)]
+mod parser_tests {
     use super::*;
 
     #[test]
@@ -62,19 +142,6 @@ mod parse_transform_tests {
 
         assert_eq! (parse_Scale ("scale(-1)").unwrap (),
                     cairo::Matrix::new (-1.0, 0.0, 0.0, -1.0, 0.0, 0.0));
-    }
-
-    fn make_rotation_matrix (angle_degrees: f64, tx: f64, ty: f64) -> cairo::Matrix {
-        let angle = angle_degrees * PI / 180.0;
-
-        let mut m = cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, tx, ty);
-
-        let mut r = cairo::Matrix::identity ();
-        r.rotate (angle);
-        m = cairo::Matrix::multiply (&r, &m);
-
-        m = cairo::Matrix::multiply (&cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -tx, -ty), &m);
-        m
     }
 
     #[test]
