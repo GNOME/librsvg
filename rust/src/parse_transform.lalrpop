@@ -19,6 +19,11 @@ pub Transform: cairo::Matrix = {
 pub Matrix: cairo::Matrix = "matrix" "(" <Num> comma? <Num> comma? <Num> comma? <Num> comma? <Num> comma? <Num> ")" =>
     cairo::Matrix::new (<>);
 
+pub Translate: cairo::Matrix = {
+    "translate" "(" <Num> ")" => cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, <>, 0.0),
+    "translate" "(" <Num> comma? <Num> ")" => cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, <>)
+};
+
 pub Num: f64 = <s:r"[+-]?([0-9]*\.[0-9]+|[0-9]+(\.[0-9]*)?)([Ee][+-]?[0-9]+)?"> =>
     f64::from_str (s).unwrap ();
 

@@ -304,4 +304,16 @@ mod parse_transform_tests {
         assert_eq! (parse_Matrix ("matrix (1,2.25,-3.25e2,4 5 6)").unwrap (),
                     cairo::Matrix::new (1.0, 2.25, -325.0, 4.0, 5.0, 6.0));
     }
+
+    #[test]
+    fn parses_translate () {
+        assert_eq! (parse_Translate ("translate(-1 -2)").unwrap (),
+                    cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -1.0, -2.0));
+
+        assert_eq! (parse_Translate ("translate(-1, -2)").unwrap (),
+                    cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -1.0, -2.0));
+
+        assert_eq! (parse_Translate ("translate(-1)").unwrap (),
+                    cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -1.0, 0.0));
+    }
 }
