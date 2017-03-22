@@ -348,4 +348,28 @@ mod parse_transform_tests {
         assert_eq! (parse_Rotate ("rotate (30,-1,-2)").unwrap (), make_rotation_matrix (30.0, -1.0, -2.0));
         assert_eq! (parse_Rotate ("rotate (30, -1, -2)").unwrap (), make_rotation_matrix (30.0, -1.0, -2.0));
     }
+
+    fn make_skew_x_matrix (angle_degrees: f64) -> cairo::Matrix {
+        let a = angle_degrees * PI / 180.0;
+        cairo::Matrix::new (1.0,      0.0,
+                            a.tan (), 1.0,
+                            0.0, 0.0)
+    }
+
+    fn make_skew_y_matrix (angle_degrees: f64) -> cairo::Matrix {
+        let mut m = make_skew_x_matrix (angle_degrees);
+        m.yx = m.xy;
+        m.xy = 0.0;
+        m
+    }
+
+    #[test]
+    fn parses_skew_x () {
+        assert_eq! (parse_SkewX ("skewX (30)").unwrap (), make_skew_x_matrix (30.0));
+    }
+
+    #[test]
+    fn parses_skew_y () {
+        assert_eq! (parse_SkewY ("skewY (30)").unwrap (), make_skew_y_matrix (30.0));
+    }
 }
