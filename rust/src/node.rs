@@ -152,6 +152,13 @@ impl Node {
         self.state
     }
 
+    pub fn get_parent (&self) -> Option<Rc<Node>> {
+        match self.parent {
+            None => None,
+            Some (ref weak_node) => Some (weak_node.upgrade ().unwrap ())
+        }
+    }
+
     pub fn add_child (&self, child: &Rc<Node>) {
         self.children.borrow_mut ().push (child.clone ());
     }
@@ -253,12 +260,11 @@ pub extern fn rsvg_node_get_parent (raw_node: *const RsvgNode) -> *const RsvgNod
     assert! (!raw_node.is_null ());
     let node: &RsvgNode = unsafe { & *raw_node };
 
-    match node.parent {
+    match node.get_parent () {
         None => { ptr::null () }
 
-        Some (ref weak_node) => {
-            let strong_node = weak_node.upgrade ().unwrap ();
-            box_node (strong_node)
+        Some (node) => {
+            box_node (node)
         }
     }
 }
