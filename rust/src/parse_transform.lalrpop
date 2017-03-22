@@ -1,4 +1,8 @@
 //-*- rust -*-
+//
+// This parser is for the "transform" attribute in SVG.
+// Its operataion and grammar are described here:
+// https://www.w3.org/TR/SVG/coords.html#TransformAttribute
 
 use std::str::FromStr;
 
