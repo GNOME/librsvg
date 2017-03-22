@@ -1524,9 +1524,10 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     cairo_t *cr;
     cairo_surface_t *target;
     RsvgDrawingCtx *draw;
-    RsvgNodeSvg *root = NULL;
     RsvgNode *sself = NULL;
     RsvgBbox bbox;
+    RsvgLength root_width, root_height;
+    RsvgViewBox root_vbox;
 
     gboolean handle_subelement = TRUE;
 
@@ -1551,13 +1552,15 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         return FALSE;
 
     g_assert (rsvg_node_get_type (handle->priv->treebase) == RSVG_NODE_TYPE_SVG);
-    root = rsvg_rust_cnode_get_impl (handle->priv->treebase);
 
     bbox.rect.x = bbox.rect.y = 0;
     bbox.rect.width = bbox.rect.height = 1;
 
+    rsvg_node_svg_get_size (handle->priv->treebase, &root_width, &root_height);
+    root_vbox = rsvg_node_svg_get_view_box (handle->priv->treebase);
+
     if (!id) {
-        if ((root->w.unit == LENGTH_UNIT_PERCENT || root->h.unit == LENGTH_UNIT_PERCENT) && !root->vbox.active)
+        if ((root_width.unit == LENGTH_UNIT_PERCENT || root_height.unit == LENGTH_UNIT_PERCENT) && !root_vbox.active)
             handle_subelement = TRUE;
         else
             handle_subelement = FALSE;
@@ -1590,12 +1593,12 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         dimension_data->width = bbox.rect.width;
         dimension_data->height = bbox.rect.height;
     } else {
-        bbox.rect.width = root->vbox.rect.width;
-        bbox.rect.height = root->vbox.rect.height;
+        bbox.rect.width = root_vbox.rect.width;
+        bbox.rect.height = root_vbox.rect.height;
 
-        dimension_data->width = (int) (rsvg_length_hand_normalize (&root->w, handle->priv->dpi_x,
+        dimension_data->width = (int) (rsvg_length_hand_normalize (&root_width, handle->priv->dpi_x,
                                                                    bbox.rect.width, 12) + 0.5);
-        dimension_data->height = (int) (rsvg_length_hand_normalize (&root->h, handle->priv->dpi_y,
+        dimension_data->height = (int) (rsvg_length_hand_normalize (&root_height, handle->priv->dpi_y,
                                                                     bbox.rect.height, 12) + 0.5);
     }
 

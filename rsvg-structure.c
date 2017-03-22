@@ -47,6 +47,13 @@ struct _RsvgNodeUse {
     RsvgLength x, y, w, h;
 };
 
+struct _RsvgNodeSvg {
+    guint32 preserve_aspect_ratio;
+    RsvgLength x, y, w, h;
+    RsvgViewBox vbox;
+    RsvgPropertyBag *atts;
+};
+
 static gboolean
 draw_child (RsvgNode *node, gpointer data)
 {
@@ -159,6 +166,29 @@ rsvg_node_svg_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgP
      * to be applied later.
      */
     svg->atts = rsvg_property_bag_dup (atts);
+}
+
+void
+rsvg_node_svg_get_size (RsvgNode *node, RsvgLength *out_width, RsvgLength *out_height)
+{
+    RsvgNodeSvg *svg;
+
+    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_SVG);
+    svg = rsvg_rust_cnode_get_impl (node);
+
+    *out_width  = svg->w;
+    *out_height = svg->h;
+}
+
+RsvgViewBox
+rsvg_node_svg_get_view_box (RsvgNode *node)
+{
+    RsvgNodeSvg *svg;
+
+    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_SVG);
+    svg = rsvg_rust_cnode_get_impl (node);
+
+    return svg->vbox;
 }
 
 void

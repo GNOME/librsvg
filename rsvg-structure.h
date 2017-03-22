@@ -57,12 +57,11 @@ RsvgNode *rsvg_node_switch_new (const char *element_name, RsvgNode *parent);
 
 typedef struct _RsvgNodeSvg RsvgNodeSvg;
 
-struct _RsvgNodeSvg {
-    guint32 preserve_aspect_ratio;
-    RsvgLength x, y, w, h;
-    RsvgViewBox vbox;
-    RsvgPropertyBag *atts;
-};
+G_GNUC_INTERNAL
+void rsvg_node_svg_get_size (RsvgNode *node, RsvgLength *out_width, RsvgLength *out_height);
+
+G_GNUC_INTERNAL
+RsvgViewBox rsvg_node_svg_get_view_box (RsvgNode *node);
 
 G_GNUC_INTERNAL
 void _rsvg_node_svg_apply_atts  (RsvgNode *node, RsvgNodeSvg *svg, RsvgHandle * ctx);
