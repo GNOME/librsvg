@@ -925,7 +925,7 @@ rsvg_parse_style_pair (RsvgState * state,
 }
 
 static void
-rsvg_lookup_parse_style_pair (RsvgHandle * ctx, RsvgState * state,
+rsvg_lookup_parse_style_pair (RsvgState * state,
                               const char *key, RsvgPropertyBag * atts)
 {
     const char *value;
@@ -938,51 +938,51 @@ rsvg_lookup_parse_style_pair (RsvgHandle * ctx, RsvgState * state,
 void
 rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * atts)
 {
-    rsvg_lookup_parse_style_pair (ctx, state, "baseline-shift", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "clip-path", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "clip-rule", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "color", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "direction", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "display", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "enable-background", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "comp-op", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "fill", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "fill-opacity", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "fill-rule", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "filter", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "flood-color", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "flood-opacity", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "font-family", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "font-size", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "font-stretch", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "font-style", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "font-variant", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "font-weight", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "marker-end", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "mask", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "marker-mid", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "marker-start", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "opacity", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "overflow", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "shape-rendering", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "stop-color", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "stop-opacity", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "stroke", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "stroke-dasharray", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "stroke-dashoffset", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "stroke-linecap", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "stroke-linejoin", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "stroke-miterlimit", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "stroke-opacity", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "stroke-width", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "text-anchor", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "text-decoration", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "unicode-bidi", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "letter-spacing", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "visibility", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "writing-mode", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "xml:lang", atts);
-    rsvg_lookup_parse_style_pair (ctx, state, "xml:space", atts);
+    rsvg_lookup_parse_style_pair (state, "baseline-shift", atts);
+    rsvg_lookup_parse_style_pair (state, "clip-path", atts);
+    rsvg_lookup_parse_style_pair (state, "clip-rule", atts);
+    rsvg_lookup_parse_style_pair (state, "color", atts);
+    rsvg_lookup_parse_style_pair (state, "direction", atts);
+    rsvg_lookup_parse_style_pair (state, "display", atts);
+    rsvg_lookup_parse_style_pair (state, "enable-background", atts);
+    rsvg_lookup_parse_style_pair (state, "comp-op", atts);
+    rsvg_lookup_parse_style_pair (state, "fill", atts);
+    rsvg_lookup_parse_style_pair (state, "fill-opacity", atts);
+    rsvg_lookup_parse_style_pair (state, "fill-rule", atts);
+    rsvg_lookup_parse_style_pair (state, "filter", atts);
+    rsvg_lookup_parse_style_pair (state, "flood-color", atts);
+    rsvg_lookup_parse_style_pair (state, "flood-opacity", atts);
+    rsvg_lookup_parse_style_pair (state, "font-family", atts);
+    rsvg_lookup_parse_style_pair (state, "font-size", atts);
+    rsvg_lookup_parse_style_pair (state, "font-stretch", atts);
+    rsvg_lookup_parse_style_pair (state, "font-style", atts);
+    rsvg_lookup_parse_style_pair (state, "font-variant", atts);
+    rsvg_lookup_parse_style_pair (state, "font-weight", atts);
+    rsvg_lookup_parse_style_pair (state, "marker-end", atts);
+    rsvg_lookup_parse_style_pair (state, "mask", atts);
+    rsvg_lookup_parse_style_pair (state, "marker-mid", atts);
+    rsvg_lookup_parse_style_pair (state, "marker-start", atts);
+    rsvg_lookup_parse_style_pair (state, "opacity", atts);
+    rsvg_lookup_parse_style_pair (state, "overflow", atts);
+    rsvg_lookup_parse_style_pair (state, "shape-rendering", atts);
+    rsvg_lookup_parse_style_pair (state, "stop-color", atts);
+    rsvg_lookup_parse_style_pair (state, "stop-opacity", atts);
+    rsvg_lookup_parse_style_pair (state, "stroke", atts);
+    rsvg_lookup_parse_style_pair (state, "stroke-dasharray", atts);
+    rsvg_lookup_parse_style_pair (state, "stroke-dashoffset", atts);
+    rsvg_lookup_parse_style_pair (state, "stroke-linecap", atts);
+    rsvg_lookup_parse_style_pair (state, "stroke-linejoin", atts);
+    rsvg_lookup_parse_style_pair (state, "stroke-miterlimit", atts);
+    rsvg_lookup_parse_style_pair (state, "stroke-opacity", atts);
+    rsvg_lookup_parse_style_pair (state, "stroke-width", atts);
+    rsvg_lookup_parse_style_pair (state, "text-anchor", atts);
+    rsvg_lookup_parse_style_pair (state, "text-decoration", atts);
+    rsvg_lookup_parse_style_pair (state, "unicode-bidi", atts);
+    rsvg_lookup_parse_style_pair (state, "letter-spacing", atts);
+    rsvg_lookup_parse_style_pair (state, "visibility", atts);
+    rsvg_lookup_parse_style_pair (state, "writing-mode", atts);
+    rsvg_lookup_parse_style_pair (state, "xml:lang", atts);
+    rsvg_lookup_parse_style_pair (state, "xml:space", atts);
 
     {
         /* TODO: this conditional behavior isn't quite correct, and i'm not sure it should reside here */
