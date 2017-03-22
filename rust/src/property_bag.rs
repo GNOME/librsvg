@@ -14,6 +14,8 @@ pub enum RsvgPropertyBag {}
 extern "C" {
     fn rsvg_property_bag_size (pbag: *const RsvgPropertyBag) -> libc::c_uint;
     fn rsvg_property_bag_lookup (pbag: *const RsvgPropertyBag, key: *const libc::c_char) -> *const libc::c_char;
+    fn rsvg_property_bag_dup (pbag: *const RsvgPropertyBag) -> *mut RsvgPropertyBag;
+    fn rsvg_property_bag_free (pbag: *mut RsvgPropertyBag);
 }
 
 pub fn get_size (pbag: *const RsvgPropertyBag) -> usize {
@@ -24,6 +26,18 @@ pub fn lookup (pbag: *const RsvgPropertyBag, key: &str) -> Option<String> {
     unsafe {
         let c_value = rsvg_property_bag_lookup (pbag, key.to_glib_none ().0);
         from_glib_none (c_value)
+    }
+}
+
+pub fn dup (pbag: *const RsvgPropertyBag) -> *mut RsvgPropertyBag {
+    unsafe {
+        rsvg_property_bag_dup (pbag)
+    }
+}
+
+pub fn free (pbag: *mut RsvgPropertyBag) {
+    unsafe {
+        rsvg_property_bag_free (pbag);
     }
 }
 
