@@ -48,6 +48,16 @@ pub fn length_or_default (pbag: *const RsvgPropertyBag, key: &'static str, lengt
     }
 }
 
+pub fn length_or_value (pbag: *const RsvgPropertyBag, key: &'static str, length_dir: LengthDir, length_str: &str) -> Result <RsvgLength, NodeError> {
+    let r = length_or_none (pbag, key, length_dir);
+
+    match r {
+        Ok (Some (v)) => Ok (v),
+        Ok (None)     => Ok (RsvgLength::parse (length_str, length_dir).unwrap ()),
+        Err (e)       => Err (e)
+    }
+}
+
 pub fn parse_or_none<T> (pbag: *const RsvgPropertyBag, key: &'static str) -> Result <Option<T>, NodeError>
     where T: Default + FromStr<Err = AttributeError>
 {
@@ -71,6 +81,18 @@ pub fn parse_or_default<T> (pbag: *const RsvgPropertyBag, key: &'static str) -> 
     match r {
         Ok (Some (v)) => Ok (v),
         Ok (None)     => Ok (T::default ()),
+        Err (e)       => Err (e)
+    }
+}
+
+pub fn parse_or_value<T> (pbag: *const RsvgPropertyBag, key: &'static str, value: T) -> Result <T, NodeError>
+    where T: Default + FromStr<Err = AttributeError> + Copy
+{
+    let r = parse_or_none::<T> (pbag, key);
+
+    match r {
+        Ok (Some (v)) => Ok (v),
+        Ok (None)     => Ok (value),
         Err (e)       => Err (e)
     }
 }
