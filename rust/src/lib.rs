@@ -97,6 +97,10 @@ pub use structure::{
     rsvg_node_switch_new,
 };
 
+pub use transform::{
+    rsvg_parse_transform,
+};
+
 pub use viewbox::{
     RsvgViewBox
 };

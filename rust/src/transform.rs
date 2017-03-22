@@ -1,7 +1,10 @@
 extern crate lalrpop_util;
+extern crate glib;
+extern crate libc;
 
 extern crate cairo;
 use self::cairo::MatrixTrait;
+use self::glib::translate::*;
 
 use std::f64::consts::*;
 
@@ -36,6 +39,27 @@ fn make_rotation_matrix (angle_degrees: f64, tx: f64, ty: f64) -> cairo::Matrix 
 
     m = cairo::Matrix::multiply (&cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -tx, -ty), &m);
     m
+}
+
+#[no_mangle]
+pub fn rsvg_parse_transform (out_matrix: *mut cairo::Matrix, s: *const libc::c_char) -> bool {
+    assert! (!out_matrix.is_null ());
+    assert! (!s.is_null ());
+
+    let string = unsafe { String::from_glib_none (s) };
+    let matrix: &mut cairo::Matrix = unsafe { &mut *out_matrix };
+
+    match parse_transform (&string) {
+        Ok (m) => {
+            *matrix = m;
+            true
+        },
+
+        Err (_) => {
+            *matrix = cairo::Matrix::identity ();
+            false
+        }
+    }
 }
 
 #[cfg(test)]
