@@ -1,8 +1,12 @@
+extern crate cairo;
+
 use nom::{IResult, double, is_alphabetic};
 use std::str;
 use std::f64::consts::*;
 
 use parse_transform::*;
+
+use self::cairo::MatrixTrait;
 
 // I don't know how to copy a nom::IError for long-term storage
 // (i.e. when it can no longer reference the &[u8]).  So, we explode a
@@ -268,6 +272,8 @@ mod tests {
 
 #[cfg(test)]
 mod parse_transform_tests {
+    use super::*;
+
     #[test]
     fn parses_numbers () {
         assert_eq! (parse_Num ("0"),          Ok (0.0));
@@ -285,5 +291,17 @@ mod parse_transform_tests {
         assert_eq! (parse_Num ("123.45E2"),   Ok (12345.0));
         assert_eq! (parse_Num ("-123.25e-2"), Ok (-1.2325));
         assert_eq! (parse_Num ("123.25E-2"),  Ok (1.2325));
+    }
+
+    #[test]
+    fn parses_matrix () {
+        assert_eq! (parse_Matrix ("matrix (1 2 3 4 5 6)").unwrap (),
+                    cairo::Matrix::new (1.0, 2.0, 3.0, 4.0, 5.0, 6.0));
+
+        assert_eq! (parse_Matrix ("matrix (1,2,3,4 5 6)").unwrap (),
+                    cairo::Matrix::new (1.0, 2.0, 3.0, 4.0, 5.0, 6.0));
+
+        assert_eq! (parse_Matrix ("matrix (1,2.25,-3.25e2,4 5 6)").unwrap (),
+                    cairo::Matrix::new (1.0, 2.25, -325.0, 4.0, 5.0, 6.0));
     }
 }

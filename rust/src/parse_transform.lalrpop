@@ -2,6 +2,24 @@
 
 use std::str::FromStr;
 
+use pt::cairo;
+use pt::cairo::MatrixTrait;
+
 grammar;
 
-pub Num: f64 = <s:r"[+-]?([0-9]*\.[0-9]+|[0-9]+(\.[0-9]*)?)([Ee][+-]?[0-9]+)?"> => f64::from_str (s).unwrap ();
+pub Transform: cairo::Matrix = {
+    Matrix,
+//    Translate,
+//    Scale,
+//    Rotate,
+//    SkewX,
+//    SkewY
+};
+
+pub Matrix: cairo::Matrix = "matrix" "(" <Num> comma? <Num> comma? <Num> comma? <Num> comma? <Num> comma? <Num> ")" =>
+    cairo::Matrix::new (<>);
+
+pub Num: f64 = <s:r"[+-]?([0-9]*\.[0-9]+|[0-9]+(\.[0-9]*)?)([Ee][+-]?[0-9]+)?"> =>
+    f64::from_str (s).unwrap ();
+
+comma: () = ",";
