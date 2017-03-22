@@ -123,5 +123,6 @@ mod property_bag;
 mod state;
 mod shapes;
 mod structure;
+mod transform;
 mod util;
 mod viewbox;
