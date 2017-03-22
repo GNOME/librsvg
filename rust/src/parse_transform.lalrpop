@@ -4,6 +4,7 @@
 // Its operataion and grammar are described here:
 // https://www.w3.org/TR/SVG/coords.html#TransformAttribute
 
+use std::f64::consts::*;
 use std::str::FromStr;
 
 use pt::cairo;
@@ -31,6 +32,24 @@ pub Translate: cairo::Matrix = {
 pub Scale: cairo::Matrix = {
     "scale" "(" <Num> ")" => cairo::Matrix::new (<>, 0.0, 0.0, <>, 0.0, 0.0),
     "scale" "(" <sx: Num> comma? <sy: Num> ")" => cairo::Matrix::new (sx, 0.0, 0.0, sy, 0.0, 0.0),
+};
+
+pub Rotate: cairo::Matrix = {
+    "rotate" "(" <angle: Num> ")" => {
+        let a = angle * PI / 180.0;
+        let (s, c) = a.sin_cos ();
+        cairo::Matrix::new (c, s, -s, c, 0.0, 0.0)
+    },
+
+    "rotate" "(" <angle: Num> comma? <tx: Num> comma? <ty: Num> ")" => {
+        let a = angle * PI / 180.0;
+        let (s, c) = a.sin_cos ();
+        let mut m = cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, tx, ty);
+
+        m = cairo::Matrix::multiply (&cairo::Matrix::new (c, s, -s, c, 0.0, 0.0), &m);
+        m = cairo::Matrix::multiply (&cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -tx, -ty), &m);
+        m
+    }
 };
 
 pub Num: f64 = <s:r"[+-]?([0-9]*\.[0-9]+|[0-9]+(\.[0-9]*)?)([Ee][+-]?[0-9]+)?"> =>

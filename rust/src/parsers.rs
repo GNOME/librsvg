@@ -328,4 +328,24 @@ mod parse_transform_tests {
         assert_eq! (parse_Scale ("scale(-1)").unwrap (),
                     cairo::Matrix::new (-1.0, 0.0, 0.0, -1.0, 0.0, 0.0));
     }
+
+    fn make_rotation_matrix (angle_degrees: f64, tx: f64, ty: f64) -> cairo::Matrix {
+        let angle = angle_degrees * PI / 180.0;
+
+        let mut m = cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, tx, ty);
+
+        let mut r = cairo::Matrix::identity ();
+        r.rotate (angle);
+        m = cairo::Matrix::multiply (&r, &m);
+
+        m = cairo::Matrix::multiply (&cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -tx, -ty), &m);
+        m
+    }
+
+    #[test]
+    fn parses_rotate () {
+        assert_eq! (parse_Rotate ("rotate (30)").unwrap (), make_rotation_matrix (30.0, 0.0, 0.0));
+        assert_eq! (parse_Rotate ("rotate (30,-1,-2)").unwrap (), make_rotation_matrix (30.0, -1.0, -2.0));
+        assert_eq! (parse_Rotate ("rotate (30, -1, -2)").unwrap (), make_rotation_matrix (30.0, -1.0, -2.0));
+    }
 }
