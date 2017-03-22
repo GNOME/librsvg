@@ -510,8 +510,7 @@ rsvg_state_inherit (RsvgState * dst, const RsvgState * src)
 
 /* Parse a CSS2 style argument, setting the SVG context attributes. */
 static void
-rsvg_parse_style_pair (RsvgHandle * ctx,
-                       RsvgState * state,
+rsvg_parse_style_pair (RsvgState * state,
                        const gchar * name,
                        const gchar * value,
                        gboolean important)
@@ -932,7 +931,7 @@ rsvg_lookup_parse_style_pair (RsvgHandle * ctx, RsvgState * state,
     const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, key)) != NULL)
-        rsvg_parse_style_pair (ctx, state, key, value, FALSE);
+        rsvg_parse_style_pair (state, key, value, FALSE);
 }
 
 /* take a pair of the form (fill="#ff00ff") and parse it as a style */
@@ -1062,7 +1061,7 @@ rsvg_parse_style (RsvgHandle * ctx, RsvgState * state, const char *str)
             g_strfreev(split_list);
 
             if (parse_style_value (second_value, &style_value, &important))
-                rsvg_parse_style_pair (ctx, state,
+                rsvg_parse_style_pair (state,
                                        g_strstrip (first_value),
                                        style_value,
                                        important);
@@ -1318,7 +1317,7 @@ static void
 apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
 {
     StylesData *data = (StylesData *) user_data;
-    rsvg_parse_style_pair (data->ctx, data->state, key, value->value, value->important);
+    rsvg_parse_style_pair (data->state, key, value->value, value->important);
 }
 
 static gboolean
