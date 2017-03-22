@@ -936,7 +936,7 @@ rsvg_lookup_parse_style_pair (RsvgState * state,
 
 /* take a pair of the form (fill="#ff00ff") and parse it as a style */
 void
-rsvg_parse_style_pairs (RsvgHandle * ctx, RsvgState * state, RsvgPropertyBag * atts)
+rsvg_parse_style_pairs (RsvgState * state, RsvgPropertyBag * atts)
 {
     rsvg_lookup_parse_style_pair (state, "baseline-shift", atts);
     rsvg_lookup_parse_style_pair (state, "clip-path", atts);
@@ -1363,7 +1363,7 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
     state = rsvg_node_get_state (node);
 
     if (rsvg_property_bag_size (atts) > 0)
-        rsvg_parse_style_pairs (ctx, state, atts);
+        rsvg_parse_style_pairs (state, atts);
 
     /* Try to properly support all of the following, including inheritance:
      * *

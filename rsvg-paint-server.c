@@ -217,7 +217,7 @@ rsvg_stop_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPrope
     if ((value = rsvg_property_bag_lookup (atts, "style")))
         rsvg_parse_style (handle, state, value);
 
-    rsvg_parse_style_pairs (handle, state, atts);
+    rsvg_parse_style_pairs (state, atts);
 
     inherited_state = rsvg_state_new ();
     rsvg_state_reconstruct (inherited_state, node);
