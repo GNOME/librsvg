@@ -114,6 +114,7 @@ mod marker;
 mod node;
 mod paint_server;
 mod parsers;
+mod parse_transform;
 mod path_builder;
 mod path_parser;
 mod pattern;

@@ -2,6 +2,7 @@
 name = "rsvg_internals"
 version = "0.0.1"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
+build = "build.rs"
 
 [dependencies]
 libc = "0.2"
@@ -31,6 +32,15 @@ features = ["verbose-errors"]
 [dependencies.downcast-rs]
 git = "https://github.com/marcianx/downcast-rs"
 version = "1.0.0"
+
+[dependencies.regex]
+version = "0.2.1"
+
+[dependencies.lalrpop-util]
+version = "0.12.5"
+
+[build-dependencies.lalrpop]
+version = "0.12.5"
 
 [lib]
 name = "rsvg_internals"

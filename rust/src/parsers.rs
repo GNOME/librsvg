@@ -2,6 +2,8 @@ use nom::{IResult, double, is_alphabetic};
 use std::str;
 use std::f64::consts::*;
 
+use parse_transform::*;
+
 // I don't know how to copy a nom::IError for long-term storage
 // (i.e. when it can no longer reference the &[u8]).  So, we explode a
 // nom::IError into a simple error struct that can be passed around.
@@ -261,5 +263,27 @@ mod tests {
         assert! (angle_degrees ("").is_err ());
         assert! (angle_degrees ("foo").is_err ());
         assert! (angle_degrees ("300foo").is_err ());
+    }
+}
+
+#[cfg(test)]
+mod parse_transform_tests {
+    #[test]
+    fn parses_numbers () {
+        assert_eq! (parse_Num ("0"),          Ok (0.0));
+        assert_eq! (parse_Num ("12345"),      Ok (12345.0));
+        assert_eq! (parse_Num ("-123"),       Ok (-123.0));
+        assert_eq! (parse_Num ("-123.25"),    Ok (-123.25));
+        assert_eq! (parse_Num ("123.25"),     Ok (123.25));
+        assert_eq! (parse_Num ("-.25"),       Ok (-0.25));
+        assert_eq! (parse_Num (".25"),        Ok (0.25));
+        assert_eq! (parse_Num ("-25."),       Ok (-25.0));
+        assert_eq! (parse_Num ("25."),        Ok (25.0));
+        assert_eq! (parse_Num ("22.5e1"),     Ok (225.0));
+        assert_eq! (parse_Num ("-22.5e1"),    Ok (-225.0));
+        assert_eq! (parse_Num ("-123.45e2"),  Ok (-12345.0));
+        assert_eq! (parse_Num ("123.45E2"),   Ok (12345.0));
+        assert_eq! (parse_Num ("-123.25e-2"), Ok (-1.2325));
+        assert_eq! (parse_Num ("123.25E-2"),  Ok (1.2325));
     }
 }

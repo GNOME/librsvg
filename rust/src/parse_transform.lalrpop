@@ -1,0 +1,7 @@
+//-*- rust -*-
+
+use std::str::FromStr;
+
+grammar;
+
+pub Num: f64 = <s:r"[+-]?([0-9]*\.[0-9]+|[0-9]+(\.[0-9]*)?)([Ee][+-]?[0-9]+)?"> => f64::from_str (s).unwrap ();
