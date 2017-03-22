@@ -40,8 +40,6 @@ G_GNUC_INTERNAL
 RsvgNode *rsvg_new_use (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_symbol (const char *element_name, RsvgNode *parent);
-G_GNUC_INTERNAL
-RsvgNode *rsvg_new_svg (const char *element_name, RsvgNode *parent);
 
 /* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
@@ -55,16 +53,21 @@ RsvgNode *rsvg_node_defs_new (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_switch_new (const char *element_name, RsvgNode *parent);
 
-typedef struct _RsvgNodeSvg RsvgNodeSvg;
+/* Implemented in rust/src/structure.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_svg_new (const char *element_name, RsvgNode *parent);
 
+/* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
 void rsvg_node_svg_get_size (RsvgNode *node, RsvgLength *out_width, RsvgLength *out_height);
 
+/* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
 RsvgViewBox rsvg_node_svg_get_view_box (RsvgNode *node);
 
+/* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
-void _rsvg_node_svg_apply_atts  (RsvgNode *node, RsvgNodeSvg *svg, RsvgHandle * ctx);
+void rsvg_node_svg_apply_atts (RsvgNode *node, RsvgHandle *handle);
 
 G_END_DECLS
 

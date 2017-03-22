@@ -325,7 +325,7 @@ static const NodeCreator node_creators[] = {
     /* "style",              FALSE, */
     { "subImage",            FALSE, rsvg_node_group_new },
     { "subImageRef",         FALSE, rsvg_new_image },
-    { "svg",                 TRUE,  rsvg_new_svg },
+    { "svg",                 TRUE,  rsvg_node_svg_new },
     { "switch",              TRUE,  rsvg_node_switch_new },
     { "symbol",              TRUE,  rsvg_new_symbol },
     { "text",                TRUE,  rsvg_new_text },
@@ -843,12 +843,8 @@ rsvg_end_element (void *data, const xmlChar * xmlname)
 
         /* FIXMEchpe: shouldn't this check that currentnode == treebase or sth like that? */
         if (ctx->priv->treebase && !strcmp (name, "svg")) {
-            RsvgNodeSvg *svg;
-
             g_assert (rsvg_node_get_type (ctx->priv->treebase) == RSVG_NODE_TYPE_SVG);
-            svg = rsvg_rust_cnode_get_impl (ctx->priv->treebase);
-
-            _rsvg_node_svg_apply_atts (ctx->priv->treebase, svg, ctx);
+            rsvg_node_svg_apply_atts (ctx->priv->treebase, ctx);
         }
     }
 }

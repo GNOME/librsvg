@@ -95,6 +95,10 @@ pub use structure::{
     rsvg_node_group_new,
     rsvg_node_defs_new,
     rsvg_node_switch_new,
+    rsvg_node_svg_new,
+    rsvg_node_svg_get_size,
+    rsvg_node_svg_get_view_box,
+    rsvg_node_svg_apply_atts,
 };
 
 pub use transform::{
