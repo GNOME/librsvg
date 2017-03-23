@@ -281,40 +281,6 @@ rsvg_css_parse_opacity (const char *str)
 }
 
 /*
-  <angle>: An angle value is a <number>  optionally followed immediately with 
-  an angle unit identifier. Angle unit identifiers are:
-
-    * deg: degrees
-    * grad: grads
-    * rad: radians
-
-    For properties defined in [CSS2], an angle unit identifier must be provided.
-    For SVG-specific attributes and properties, the angle unit identifier is 
-    optional. If not provided, the angle value is assumed to be in degrees.
-*/
-double
-rsvg_css_parse_angle (const char *str)
-{
-    double degrees;
-    char *end_ptr;
-
-    degrees = g_ascii_strtod (str, &end_ptr);
-
-    /* todo: error condition - figure out how to best represent it */
-    if ((degrees == -HUGE_VAL || degrees == HUGE_VAL) && (ERANGE == errno))
-        return 0.0;
-
-    if (end_ptr) {
-        if (!strcmp (end_ptr, "rad"))
-            return degrees * 180. / G_PI;
-        else if (!strcmp (end_ptr, "grad"))
-            return degrees * 360. / 400.;
-    }
-
-    return degrees;
-}
-
-/*
   <frequency>: Frequency values are used with aural properties. The normative 
   definition of frequency values can be found in [CSS2-AURAL]. A frequency 
   value is a <number> immediately followed by a frequency unit identifier. 
