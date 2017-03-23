@@ -10,6 +10,7 @@ use std::ptr;
 use aspect_ratio::*;
 use drawing_ctx::RsvgDrawingCtx;
 use drawing_ctx;
+use error::*;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
@@ -135,6 +136,13 @@ impl NodeSvg {
     }
 }
 
+fn length_is_negative (length: &RsvgLength) -> bool {
+    // This is more or less a hack.  We don't care about a correct
+    // normalization; we just need to know if it would be negative.
+    // So, we pass bogus values just to be able to normalize.
+    length.hand_normalize (1.0, 1.0, 1.0) < 0.0
+}
+
 impl NodeTrait for NodeSvg {
     fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio")?);
@@ -146,8 +154,19 @@ impl NodeTrait for NodeSvg {
             self.y.set (property_bag::length_or_default (pbag, "y", LengthDir::Vertical)?);
         }
 
-        self.w.set (property_bag::length_or_value (pbag, "width", LengthDir::Horizontal, "100%")?);
-        self.h.set (property_bag::length_or_value (pbag, "height", LengthDir::Vertical, "100%")?);
+        let w = property_bag::length_or_value (pbag, "width", LengthDir::Horizontal, "100%")?;
+        if length_is_negative (&w) {
+            return Err (NodeError::value_error ("width", "Must not be negative"));
+        } else {
+            self.w.set (w);
+        }
+
+        let h = property_bag::length_or_value (pbag, "height", LengthDir::Vertical, "100%")?;
+        if length_is_negative (&h) {
+            return Err (NodeError::value_error ("height", "Must not be negative"));
+        } else {
+            self.h.set (h);
+        }
 
         self.vbox.set (property_bag::parse_or_default (pbag, "viewBox")?);
 
@@ -163,6 +182,12 @@ impl NodeTrait for NodeSvg {
         let ny = self.y.get ().normalize (draw_ctx);
         let nw = self.w.get ().normalize (draw_ctx);
         let nh = self.h.get ().normalize (draw_ctx);
+
+        // width or height set to 0 disables rendering of the element
+        // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
+        if double_equals (nw, 0.0) || double_equals (nh, 0.0) {
+            return;
+        }
 
         drawing_ctx::state_reinherit_top (draw_ctx, node.get_state (), dominate);
 
