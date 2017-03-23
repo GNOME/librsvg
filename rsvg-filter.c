@@ -4361,11 +4361,11 @@ rsvg_node_light_source_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *hand
     const char *value;
 
     if ((value = rsvg_property_bag_lookup (atts, "azimuth")))
-        data->azimuth = rsvg_css_parse_angle (value) / 180.0 * M_PI;
+        data->azimuth = g_ascii_strtod (value, NULL) / 180.0 * M_PI;
     if ((value = rsvg_property_bag_lookup (atts, "elevation")))
-        data->elevation = rsvg_css_parse_angle (value) / 180.0 * M_PI;
+        data->elevation = g_ascii_strtod (value, NULL) / 180.0 * M_PI;
     if ((value = rsvg_property_bag_lookup (atts, "limitingConeAngle")))
-        data->limitingconeAngle = rsvg_css_parse_angle (value) / 180.0 * M_PI;
+        data->limitingconeAngle = g_ascii_strtod (value, NULL) / 180.0 * M_PI;
     if ((value = rsvg_property_bag_lookup (atts, "x")))
         data->x = data->pointsAtX = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
     if ((value = rsvg_property_bag_lookup (atts, "y")))
