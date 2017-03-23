@@ -36,17 +36,17 @@ Transform: cairo::Matrix = {
     SkewY
 };
 
-pub Matrix: cairo::Matrix = "matrix" "(" <Num> comma? <Num> comma? <Num> comma? <Num> comma? <Num> comma? <Num> ")" =>
+pub Matrix: cairo::Matrix = "matrix" "(" <Num> <Num2> <Num2> <Num2> <Num2> <Num2> ")" =>
     cairo::Matrix::new (<>);
 
 pub Translate: cairo::Matrix = {
     "translate" "(" <Num> ")" => cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, <>, 0.0),
-    "translate" "(" <Num> comma? <Num> ")" => cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, <>)
+    "translate" "(" <Num> <Num2> ")" => cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, <>)
 };
 
 pub Scale: cairo::Matrix = {
     "scale" "(" <Num> ")" => cairo::Matrix::new (<>, 0.0, 0.0, <>, 0.0, 0.0),
-    "scale" "(" <sx: Num> comma? <sy: Num> ")" => cairo::Matrix::new (sx, 0.0, 0.0, sy, 0.0, 0.0),
+    "scale" "(" <sx: Num> <sy: Num2> ")" => cairo::Matrix::new (sx, 0.0, 0.0, sy, 0.0, 0.0),
 };
 
 pub Rotate: cairo::Matrix = {
@@ -56,7 +56,7 @@ pub Rotate: cairo::Matrix = {
         cairo::Matrix::new (c, s, -s, c, 0.0, 0.0)
     },
 
-    "rotate" "(" <angle: Num> comma? <tx: Num> comma? <ty: Num> ")" => {
+    "rotate" "(" <angle: Num> <tx: Num2> <ty: Num2> ")" => {
         let a = angle * PI / 180.0;
         let (s, c) = a.sin_cos ();
         let mut m = cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, tx, ty);
@@ -83,6 +83,10 @@ pub SkewY: cairo::Matrix = {
                             0.0,  1.0,
                             0.0, 0.0)
     }
+};
+
+pub Num2: f64 = {
+    comma? <Num>
 };
 
 pub Num: f64 = <s:r"[+-]?([0-9]*\.[0-9]+|[0-9]+(\.[0-9]*)?)([Ee][+-]?[0-9]+)?"> =>
