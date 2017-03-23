@@ -180,7 +180,7 @@ is_svg_or_subdir (GFile *file)
     result = FALSE;
 
     basename = g_file_get_basename (file);
-    ignore = g_str_has_prefix (basename, "ignore");
+    ignore = g_str_has_prefix (basename, "ignore") || strcmp (basename, "resources") == 0;
 
     if (ignore)
 	goto out;

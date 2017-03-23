@@ -62,7 +62,7 @@
           <rect x="10" width="10" height="20" fill="rgb(0,128,0)"/>
         </g>
         <use id="usedUse" xlink:href="#usedRect"/>
-        <image id="usedImage" xlink:href="images/20x20.png" width="20" height="20"/>
+        <image id="usedImage" xlink:href="resources/20x20.png" width="20" height="20"/>
         <text id="usedText">Text</text>
       </g>
     </defs>
