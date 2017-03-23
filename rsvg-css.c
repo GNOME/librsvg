@@ -309,33 +309,6 @@ rsvg_css_parse_frequency (const char *str)
     return f_hz;
 }
 
-/*
-  <time>: A time value is a <number> immediately followed by a time unit 
-  identifier. Time unit identifiers are:
-  
-  * ms: milliseconds
-  * s: seconds
-  
-  Time values are used in CSS properties and may not be negative.
-*/
-double
-rsvg_css_parse_time (const char *str)
-{
-    double ms;
-    char *end_ptr;
-
-    ms = g_ascii_strtod (str, &end_ptr);
-
-    /* todo: error condition - figure out how to best represent it */
-    if ((ms == -HUGE_VAL || ms == HUGE_VAL) && (ERANGE == errno))
-        return 0.0;
-
-    if (end_ptr && !strcmp (end_ptr, "s"))
-        return ms * 1000.;
-
-    return ms;
-}
-
 PangoStyle
 rsvg_css_parse_font_style (const char *str, gboolean * inherit)
 {
