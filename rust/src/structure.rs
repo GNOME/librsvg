@@ -226,8 +226,11 @@ impl NodeTrait for NodeSvg {
 
 impl Drop for NodeSvg {
     fn drop (&mut self) {
-        property_bag::free (self.atts.get ());
-        self.atts.set (ptr::null_mut ());
+        let pbag = self.atts.get ();
+
+        if !pbag.is_null () {
+            property_bag::free (pbag);
+        }
     }
 }
 
@@ -307,14 +310,17 @@ pub extern fn rsvg_node_svg_apply_atts (raw_node: *const RsvgNode, handle: *cons
 
     node.with_impl (|svg: &NodeSvg| {
         let pbag = svg.atts.get ();
-        let class = property_bag::lookup (pbag, "class");
-        let id = property_bag::lookup (pbag, "id");
 
-        unsafe { rsvg_parse_style_attrs (handle,
-                                         raw_node,
-                                         str::to_glib_none ("svg").0,
-                                         class.map_or (ptr::null (), |s| String::to_glib_none (&s).0),
-                                         id.map_or (ptr::null (), |s| String::to_glib_none (&s).0),
-                                         pbag); }
+        if !pbag.is_null () {
+            let class = property_bag::lookup (pbag, "class");
+            let id = property_bag::lookup (pbag, "id");
+
+            unsafe { rsvg_parse_style_attrs (handle,
+                                             raw_node,
+                                             str::to_glib_none ("svg").0,
+                                             class.map_or (ptr::null (), |s| String::to_glib_none (&s).0),
+                                             id.map_or (ptr::null (), |s| String::to_glib_none (&s).0),
+                                             pbag); }
+        }
     });
 }
