@@ -26,10 +26,10 @@ impl NodeError {
         }
     }
 
-    pub fn value_error (attr_name: &str, description: String) -> NodeError {
+    pub fn value_error (attr_name: &str, description: &str) -> NodeError {
         NodeError {
             attr_name: attr_name.to_string (),
-            err: AttributeError::Value (description)
+            err: AttributeError::Value (description.to_string ())
         }
     }
 
