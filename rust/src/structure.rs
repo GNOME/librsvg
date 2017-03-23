@@ -182,14 +182,11 @@ impl NodeTrait for NodeSvg {
             let (x, y, w, h) = self.preserve_aspect_ratio.get ().compute (vbox.rect.width, vbox.rect.height,
                                                                           nx, ny, nw, nh);
 
-            let affine = cairo::Matrix::new (w / vbox.rect.width,
-                                             0.0,
-                                             0.0,
-                                             h / vbox.rect.height,
-                                             x - vbox.rect.x * w / vbox.rect.width,
-                                             y - vbox.rect.y * h / vbox.rect.height);
-
-            drawing_ctx::set_current_state_affine (draw_ctx, cairo::Matrix::multiply (&affine, &affine_old));
+            let mut affine = affine_old;
+            affine.translate (x, y);
+            affine.scale (w / vbox.rect.width, h / vbox.rect.height);
+            affine.translate (-vbox.rect.x, -vbox.rect.y);
+            drawing_ctx::set_current_state_affine (draw_ctx, affine);
 
             drawing_ctx::push_view_box (draw_ctx, vbox.rect.width, vbox.rect.height);
         } else {
