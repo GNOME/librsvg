@@ -280,35 +280,6 @@ rsvg_css_parse_opacity (const char *str)
     return (guint) floor (opacity * 255. + 0.5);
 }
 
-/*
-  <frequency>: Frequency values are used with aural properties. The normative 
-  definition of frequency values can be found in [CSS2-AURAL]. A frequency 
-  value is a <number> immediately followed by a frequency unit identifier. 
-  Frequency unit identifiers are:
-
-    * Hz: Hertz
-    * kHz: kilo Hertz
-
-    Frequency values may not be negative.
-*/
-double
-rsvg_css_parse_frequency (const char *str)
-{
-    double f_hz;
-    char *end_ptr;
-
-    f_hz = g_ascii_strtod (str, &end_ptr);
-
-    /* todo: error condition - figure out how to best represent it */
-    if ((f_hz == -HUGE_VAL || f_hz == HUGE_VAL) && (ERANGE == errno))
-        return 0.0;
-
-    if (end_ptr && !strcmp (end_ptr, "kHz"))
-        return f_hz * 1000.;
-
-    return f_hz;
-}
-
 PangoStyle
 rsvg_css_parse_font_style (const char *str, gboolean * inherit)
 {

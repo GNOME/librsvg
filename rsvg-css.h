@@ -72,8 +72,6 @@ int	    rsvg_css_parse_aspect_ratio	    (const char *str);
 G_GNUC_INTERNAL
 guint       rsvg_css_parse_opacity	    (const char *str);
 G_GNUC_INTERNAL
-double      rsvg_css_parse_frequency    (const char *str);
-G_GNUC_INTERNAL
 PangoStyle   rsvg_css_parse_font_style      (const char *str, gboolean * inherit);
 G_GNUC_INTERNAL
 PangoVariant rsvg_css_parse_font_variant    (const char *str, gboolean * inherit);
