@@ -159,6 +159,20 @@ impl Node {
         }
     }
 
+    pub fn is_ancestor (ancestor: Rc<Node>, descendant: Rc<Node>) -> bool {
+        let mut desc = Some (descendant.clone ());
+
+        while let Some (ref d) = desc.clone () {
+            if rc_node_ptr_eq (&ancestor, d) {
+                return true;
+            }
+
+            desc = d.get_parent ();
+        }
+
+        false
+    }
+
     pub fn add_child (&self, child: &Rc<Node>) {
         self.children.borrow_mut ().push (child.clone ());
     }
@@ -473,5 +487,33 @@ mod tests {
 
         rsvg_node_unref (ref1);
         rsvg_node_unref (ref2);
+    }
+
+    #[test]
+    fn node_is_its_own_ancestor () {
+        let node = Rc::new (Node::new (NodeType::Path,
+                                       None,
+                                       ptr::null_mut (),
+                                       Box::new (TestNodeImpl {})));
+
+        assert! (Node::is_ancestor (node.clone (), node.clone ()));
+    }
+
+    #[test]
+    fn node_is_ancestor_of_child () {
+        let node = Rc::new (Node::new (NodeType::Path,
+                                       None,
+                                       ptr::null_mut (),
+                                       Box::new (TestNodeImpl {})));
+
+        let child = Rc::new (Node::new (NodeType::Path,
+                                        Some (Rc::downgrade (&node)),
+                                        ptr::null_mut (),
+                                        Box::new (TestNodeImpl {})));
+
+        node.add_child (&child);
+
+        assert! (Node::is_ancestor (node.clone (), child.clone ()));
+        assert! (!Node::is_ancestor (child.clone (), node.clone ()));
     }
 }
