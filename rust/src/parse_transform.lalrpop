@@ -10,6 +10,7 @@ use std::str::FromStr;
 use pt::cairo;
 use pt::cairo::MatrixTrait;
 
+#[LALR]
 grammar;
 
 pub TransformList: cairo::Matrix = {
@@ -21,9 +22,9 @@ pub TransformList: cairo::Matrix = {
     //     | transform comma-wsp+ transforms
     //
     // I think the "comma-wsp+" should really be "comma-wsp" as in the
-    // rest of the SVG grammar.  Here we will use our usual "comma?" and
+    // rest of the SVG grammar.  Here we will use our usual "maybe_comma" and
     // hope that the SVG test suite catches errors in our grammar.
-    <a: TransformList> comma? <b: Transform> => cairo::Matrix::multiply (&b, &a),
+    <a: TransformList> maybe_comma <b: Transform> => cairo::Matrix::multiply (&b, &a),
     Transform
 };
 
@@ -36,17 +37,17 @@ Transform: cairo::Matrix = {
     SkewY
 };
 
-pub Matrix: cairo::Matrix = "matrix" "(" <Num> <Num2> <Num2> <Num2> <Num2> <Num2> ")" =>
+pub Matrix: cairo::Matrix = "matrix" "(" <Num> maybe_comma <Num> maybe_comma <Num> maybe_comma <Num> maybe_comma <Num> maybe_comma <Num> ")" =>
     cairo::Matrix::new (<>);
 
 pub Translate: cairo::Matrix = {
     "translate" "(" <Num> ")" => cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, <>, 0.0),
-    "translate" "(" <Num> <Num2> ")" => cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, <>)
+    "translate" "(" <Num> maybe_comma <Num> ")" => cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, <>)
 };
 
 pub Scale: cairo::Matrix = {
     "scale" "(" <Num> ")" => cairo::Matrix::new (<>, 0.0, 0.0, <>, 0.0, 0.0),
-    "scale" "(" <sx: Num> <sy: Num2> ")" => cairo::Matrix::new (sx, 0.0, 0.0, sy, 0.0, 0.0),
+    "scale" "(" <sx: Num> maybe_comma <sy: Num> ")" => cairo::Matrix::new (sx, 0.0, 0.0, sy, 0.0, 0.0),
 };
 
 pub Rotate: cairo::Matrix = {
@@ -56,7 +57,7 @@ pub Rotate: cairo::Matrix = {
         cairo::Matrix::new (c, s, -s, c, 0.0, 0.0)
     },
 
-    "rotate" "(" <angle: Num> <tx: Num2> <ty: Num2> ")" => {
+    "rotate" "(" <angle: Num> maybe_comma <tx: Num> maybe_comma <ty: Num> ")" => {
         let a = angle * PI / 180.0;
         let (s, c) = a.sin_cos ();
         let mut m = cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, tx, ty);
@@ -85,11 +86,7 @@ pub SkewY: cairo::Matrix = {
     }
 };
 
-pub Num2: f64 = {
-    comma? <Num>
-};
-
 pub Num: f64 = <s:r"[+-]?([0-9]*\.[0-9]+|[0-9]+(\.[0-9]*)?)([Ee][+-]?[0-9]+)?"> =>
     f64::from_str (s).unwrap ();
 
-comma: () = ",";
+maybe_comma: () = ","?;
