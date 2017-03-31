@@ -52,6 +52,9 @@ doc/version.xml
 doc/xml/
 gdk-pixbuf-loader/gdk-pixbuf.loaders
 gdk-pixbuf-loader/rsvg-loader
+rust/*~
+rust/src/*~
+rust/src/parse_transform.rs
 tests/dimensions
 tests/pdiff/perceptualdiff
 tests/rsvg-test
