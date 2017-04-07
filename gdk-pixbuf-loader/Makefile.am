@@ -78,8 +78,17 @@ install-data-hook:
 	  echo "***" ; \
 	fi
 
+thumbnailerdir = $(datadir)/thumbnailers/
+thumbnailer_DATA = librsvg.thumbnailer
+librsvg.thumbnailer: librsvg.thumbnailer.in
+	$(AM_V_GEN) $(SED) -e "s|\@bindir\@|$(bindir)|" \
+	$< > $@
+
+EXTRA_DIST = librsvg.thumbnailer.in
+
 CLEANFILES = \
 	gdk-pixbuf.loaders \
+	$(thumbnailer_DATA) \
 	$(NULL)
 
 DISTCLEANFILES = \
