@@ -1,3 +1,10 @@
+Version 2.40.17
+- bgo#778666 - Use our own thumbnailer specification file, so
+  gnome-desktop-thumbnailer can generate thumbnails outside of the
+  calling process (Jeremy Bicha).
+- Removed some redundant code.
+- Windows build fixes - Chun-wei Fan.
+
 Version 2.40.16
 - Chun-wei Fan added support for building the introspection files under MSVC.
 - Fixed bgo#760262 - Make the zooming options in rsvg-convert(1) work again
