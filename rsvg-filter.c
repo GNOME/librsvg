@@ -1902,7 +1902,7 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node, RsvgFilterPrimitive 
     int width, height;
     cairo_surface_t *output, *in;
     RsvgIRect boundarys;
-    gfloat sdx, sdy;
+    gdouble sdx, sdy;
     RsvgFilterPrimitiveOutput op;
     cairo_t *cr;
 
@@ -1922,8 +1922,8 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node, RsvgFilterPrimitive 
     }
 
     /* scale the SD values */
-    sdx = gaussian->sdx * ctx->paffine.xx;
-    sdy = gaussian->sdy * ctx->paffine.yy;
+    sdx = fabs (gaussian->sdx * ctx->paffine.xx);
+    sdy = fabs (gaussian->sdy * ctx->paffine.yy);
 
     gaussian_blur_surface (in, output, sdx, sdy);
 
