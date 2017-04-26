@@ -999,22 +999,6 @@ pub fn parse_path_into_builder (path_str: &str, builder: &mut RsvgPathBuilder) -
     }
 }
 
-#[no_mangle]
-pub extern fn rsvg_path_parser_from_str_into_builder (path_str: *const libc::c_char) -> *mut RsvgPathBuilder {
-    let mut builder = RsvgPathBuilder::new ();
-    let my_path_str = unsafe { &String::from_glib_none (path_str) };
-
-    {
-        let mut parser = PathParser::new (&mut builder, my_path_str);
-        parser.parse ();
-        /* FIXME: we aren't passing errors back to the caller. */
-    }
-
-    let boxed_builder = Box::new (builder);
-
-    Box::into_raw (boxed_builder)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

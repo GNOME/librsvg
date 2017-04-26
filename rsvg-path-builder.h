@@ -40,44 +40,7 @@ G_BEGIN_DECLS
 typedef struct _RsvgPathBuilder RsvgPathBuilder;
 
 G_GNUC_INTERNAL
-RsvgPathBuilder *rsvg_path_builder_new (void);
-
-G_GNUC_INTERNAL
-void rsvg_path_builder_destroy (RsvgPathBuilder *builder);
-
-G_GNUC_INTERNAL
-void rsvg_path_builder_move_to (RsvgPathBuilder *builder,
-                                double x,
-                                double y);
-G_GNUC_INTERNAL
-void rsvg_path_builder_line_to (RsvgPathBuilder *builder,
-                                double x,
-                                double y);
-G_GNUC_INTERNAL
-void rsvg_path_builder_curve_to (RsvgPathBuilder *builder,
-                                 double x1,
-                                 double y1,
-                                 double x2,
-                                 double y2,
-                                 double x3,
-                                 double y3);
-
-G_GNUC_INTERNAL
-void rsvg_path_builder_arc (RsvgPathBuilder *builder,
-                            double x1, double y1,
-                            double rx, double ry,
-                            double x_axis_rotation,
-                            gboolean large_arc_flag, gboolean sweep_flag,
-                            double x2, double y2);
-
-G_GNUC_INTERNAL
-void rsvg_path_builder_close_path (RsvgPathBuilder *builder);
-
-G_GNUC_INTERNAL
 void rsvg_path_builder_add_to_cairo_context (RsvgPathBuilder *builder, cairo_t *cr);
-
-G_GNUC_INTERNAL
-RsvgPathBuilder *rsvg_path_parser_from_str_into_builder (const char *path_str);
 
 G_END_DECLS
 
