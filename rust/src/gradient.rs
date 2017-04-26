@@ -1,6 +1,7 @@
 extern crate libc;
 extern crate cairo;
 extern crate cairo_sys;
+extern crate glib_sys;
 extern crate glib;
 
 use self::glib::translate::*;
@@ -516,8 +517,8 @@ fn set_pattern_on_draw_context (gradient: &Gradient,
     }
 }
 
-fn paint_server_units_from_bool (v: bool) -> PaintServerUnits {
-    if v {
+fn paint_server_units_from_gboolean (v: glib_sys::gboolean) -> PaintServerUnits {
+    if from_glib (v) {
         PaintServerUnits::ObjectBoundingBox
     } else {
         PaintServerUnits::UserSpaceOnUse
@@ -533,11 +534,11 @@ pub unsafe extern fn gradient_linear_new (x1: *const RsvgLength,
                                           y1: *const RsvgLength,
                                           x2: *const RsvgLength,
                                           y2: *const RsvgLength,
-                                          obj_bbox: *const bool,
+                                          obj_bbox: *const glib_sys::gboolean,
                                           affine: *const cairo::Matrix,
                                           spread: *const cairo::enums::Extend,
                                           fallback_name: *const libc::c_char) -> *mut Gradient {
-    let my_units         = { if obj_bbox.is_null ()      { None } else { Some (paint_server_units_from_bool (*obj_bbox)) } };
+    let my_units         = { if obj_bbox.is_null ()      { None } else { Some (paint_server_units_from_gboolean (*obj_bbox)) } };
     let my_affine        = { if affine.is_null ()        { None } else { Some (*affine) } };
     let my_spread        = { if spread.is_null ()        { None } else { Some (*spread) } };
     let my_fallback_name = { if fallback_name.is_null () { None } else { Some (String::from_glib_none (fallback_name)) } };
@@ -564,11 +565,11 @@ pub unsafe extern fn gradient_radial_new (cx: *const RsvgLength,
                                           r:  *const RsvgLength,
                                           fx: *const RsvgLength,
                                           fy: *const RsvgLength,
-                                          obj_bbox: *const bool,
+                                          obj_bbox: *const glib_sys::gboolean,
                                           affine: *const cairo::Matrix,
                                           spread: *const cairo::enums::Extend,
                                           fallback_name: *const libc::c_char) -> *mut Gradient {
-    let my_units         = { if obj_bbox.is_null ()      { None } else { Some (paint_server_units_from_bool (*obj_bbox)) } };
+    let my_units         = { if obj_bbox.is_null ()      { None } else { Some (paint_server_units_from_gboolean (*obj_bbox)) } };
     let my_affine        = { if affine.is_null ()        { None } else { Some (*affine) } };
     let my_spread        = { if spread.is_null ()        { None } else { Some (*spread) } };
     let my_fallback_name = { if fallback_name.is_null () { None } else { Some (String::from_glib_none (fallback_name)) } };
