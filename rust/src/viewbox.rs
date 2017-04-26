@@ -1,4 +1,5 @@
 extern crate cairo;
+extern crate glib;
 
 use std::str::FromStr;
 
@@ -6,12 +7,14 @@ use error::*;
 use parsers::ParseError;
 use parsers;
 
+use glib::translate::*;
+
 /* Keep this in sync with rsvg-private.h:RsvgViewBox */
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct RsvgViewBox {
     pub rect:   cairo::Rectangle,
-    pub active: bool
+    pub active: glib::ffi::gboolean
 }
 
 impl RsvgViewBox {
