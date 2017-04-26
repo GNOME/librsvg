@@ -7,6 +7,7 @@ dependencies = [
  "cairo-sys-rs 0.3.2 (git+https://github.com/federicomenaquintero/cairo.git)",
  "downcast-rs 1.0.0 (git+https://github.com/marcianx/downcast-rs)",
  "glib 0.1.1 (git+https://github.com/gtk-rs/glib)",
+ "glib-sys 0.3.2 (git+https://github.com/gtk-rs/sys)",
  "lalrpop 0.12.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "lalrpop-util 0.12.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.21 (registry+https://github.com/rust-lang/crates.io-index)",

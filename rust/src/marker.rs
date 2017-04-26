@@ -141,7 +141,7 @@ impl NodeMarker {
 
         let vbox = self.vbox.get ();
 
-        if vbox.active {
+        if vbox.is_active () {
             let (_, _, w, h) = self.aspect.get ().compute (vbox.rect.width, vbox.rect.height,
                                                            0.0, 0.0,
                                                            marker_width, marker_height);
@@ -167,7 +167,7 @@ impl NodeMarker {
         let state = drawing_ctx::get_current_state (draw_ctx);
 
         if !drawing_ctx::state_is_overflow (state) {
-            if vbox.active {
+            if vbox.is_active () {
                 drawing_ctx::add_clipping_rect (draw_ctx,
                                                 vbox.rect.x,
                                                 vbox.rect.y,
@@ -188,7 +188,7 @@ impl NodeMarker {
 
         drawing_ctx::state_pop (draw_ctx);
 
-        if vbox.active {
+        if vbox.is_active () {
             drawing_ctx::pop_view_box (draw_ctx);
         }
     }

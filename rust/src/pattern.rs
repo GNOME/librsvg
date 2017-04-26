@@ -343,7 +343,7 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     let pushed_view_box: bool;
 
     // Create the pattern contents coordinate system
-    if vbox.active {
+    if vbox.is_active () {
         // If there is a vbox, use that
         let (mut x, mut y, w, h) = preserve_aspect_ratio.compute (vbox.rect.width,
                                                                   vbox.rect.height,

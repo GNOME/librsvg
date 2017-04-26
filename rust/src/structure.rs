@@ -197,7 +197,7 @@ impl NodeTrait for NodeSvg {
 
         let vbox = self.vbox.get ();
 
-        if vbox.active {
+        if vbox.is_active () {
             // viewBox width==0 or height==0 disables rendering of the element
             // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
             if double_equals (vbox.rect.width, 0.0) || double_equals (vbox.rect.height, 0.0) {

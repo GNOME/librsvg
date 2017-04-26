@@ -26,6 +26,10 @@ git = "https://github.com/federicomenaquintero/cairo.git"
 git = "https://github.com/gtk-rs/glib"
 version = "0.1.1"
 
+[dependencies.glib-sys]
+git = "https://github.com/gtk-rs/sys"
+version = "0.3.2"
+
 [dependencies.nom]
 #git = "https://github.com/Geal/nom"
 git = "https://github.com/federicomenaquintero/nom.git"

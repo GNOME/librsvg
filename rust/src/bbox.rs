@@ -1,13 +1,22 @@
 extern crate cairo;
+extern crate glib_sys;
+extern crate glib;
 
 use self::cairo::MatrixTrait;
+use self::glib::translate::*;
 
 /* Keep this in sync with ../../rsvg-private.h:RsvgBbox */
 #[repr(C)]
 pub struct RsvgBbox {
     pub rect:   cairo::Rectangle,
     pub affine: cairo::Matrix,
-    pub virgin: bool
+    virgin:     glib_sys::gboolean
+}
+
+impl RsvgBbox {
+    pub fn is_virgin (&self) -> bool {
+        from_glib (self.virgin)
+    }
 }
 
 #[no_mangle]
@@ -17,7 +26,7 @@ pub extern fn rsvg_bbox_init (raw_bbox: *mut RsvgBbox, raw_matrix: *const cairo:
 
     let bbox: &mut RsvgBbox = unsafe { &mut (*raw_bbox) };
 
-    bbox.virgin = true;
+    bbox.virgin = true.to_glib ();
     bbox.affine = unsafe { *raw_matrix };
 }
 
@@ -29,7 +38,7 @@ pub extern fn rsvg_bbox_insert (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox
     let dst: &mut RsvgBbox = unsafe { &mut (*raw_dst) };
     let src: &RsvgBbox = unsafe { &*raw_src };
 
-    if src.virgin {
+    if src.is_virgin () {
         return;
     }
 
@@ -38,7 +47,7 @@ pub extern fn rsvg_bbox_insert (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox
     let mut xmax: f64;
     let mut ymax: f64;
 
-    if !dst.virgin {
+    if !dst.is_virgin () {
         xmin = dst.rect.x;
         ymin = dst.rect.y;
         xmax = dst.rect.x + dst.rect.width;
@@ -68,12 +77,12 @@ pub extern fn rsvg_bbox_insert (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox
         let x: f64  = affine.xx * rx + affine.xy * ry + affine.x0;
         let y: f64  = affine.yx * rx + affine.yy * ry + affine.y0;
 
-        if dst.virgin {
+        if dst.is_virgin () {
             xmin = x;
             xmax = x;
             ymin = y;
             ymax = y;
-            dst.virgin = false;
+            dst.virgin = false.to_glib ();
         } else {
             if x < xmin { xmin = x; }
             if x > xmax { xmax = x; }
@@ -96,7 +105,7 @@ pub extern fn rsvg_bbox_clip (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox) 
     let dst: &mut RsvgBbox = unsafe { &mut (*raw_dst) };
     let src: &RsvgBbox = unsafe { &*raw_src };
 
-    if src.virgin {
+    if src.is_virgin () {
         return;
     }
 
@@ -105,7 +114,7 @@ pub extern fn rsvg_bbox_clip (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox) 
     let mut xmax: f64;
     let mut ymax: f64;
 
-    if !dst.virgin {
+    if !dst.is_virgin () {
         xmin = dst.rect.x + dst.rect.width;
         ymin = dst.rect.y + dst.rect.height;
         xmax = dst.rect.x;
@@ -129,12 +138,12 @@ pub extern fn rsvg_bbox_clip (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox) 
         let x = affine.xx * rx + affine.xy * ry + affine.x0;
         let y = affine.yx * rx + affine.yy * ry + affine.y0;
 
-        if dst.virgin {
+        if dst.is_virgin () {
             xmin = x;
             xmax = x;
             ymin = y;
             ymax = y;
-            dst.virgin = false;
+            dst.virgin = false.to_glib ();
         } else {
             if x < xmin { xmin = x; }
             if x > xmax { xmax = x; }
