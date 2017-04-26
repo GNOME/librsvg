@@ -1,4 +1,5 @@
 extern crate lalrpop_util;
+extern crate glib_sys;
 extern crate glib;
 extern crate libc;
 
@@ -42,7 +43,7 @@ fn make_rotation_matrix (angle_degrees: f64, tx: f64, ty: f64) -> cairo::Matrix 
 }
 
 #[no_mangle]
-pub fn rsvg_parse_transform (out_matrix: *mut cairo::Matrix, s: *const libc::c_char) -> bool {
+pub fn rsvg_parse_transform (out_matrix: *mut cairo::Matrix, s: *const libc::c_char) -> glib_sys::gboolean {
     assert! (!out_matrix.is_null ());
     assert! (!s.is_null ());
 
@@ -52,12 +53,12 @@ pub fn rsvg_parse_transform (out_matrix: *mut cairo::Matrix, s: *const libc::c_c
     match parse_transform (&string) {
         Ok (m) => {
             *matrix = m;
-            true
+            true.to_glib ()
         },
 
         Err (_) => {
             *matrix = cairo::Matrix::identity ();
-            false
+            false.to_glib ()
         }
     }
 }
