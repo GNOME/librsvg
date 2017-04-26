@@ -1,6 +1,7 @@
 extern crate libc;
 extern crate cairo;
 extern crate cairo_sys;
+extern crate glib_sys;
 extern crate glib;
 
 use std::cell::RefCell;
@@ -249,8 +250,8 @@ impl FallbackSource for NodeFallbackSource {
     }
 }
 
-fn paint_server_units_from_bool (v: bool) -> PaintServerUnits {
-    if v {
+fn paint_server_units_from_gboolean (v: glib_sys::gboolean) -> PaintServerUnits {
+    if from_glib (v) {
         PaintServerUnits::ObjectBoundingBox
     } else {
         PaintServerUnits::UserSpaceOnUse
@@ -436,8 +437,8 @@ pub unsafe extern fn pattern_new (x: *const RsvgLength,
                                   y: *const RsvgLength,
                                   width: *const RsvgLength,
                                   height: *const RsvgLength,
-                                  obj_bbox: *const bool,
-                                  obj_cbbox: *const bool,
+                                  obj_bbox: *const glib_sys::gboolean,
+                                  obj_cbbox: *const glib_sys::gboolean,
                                   vbox: *const RsvgViewBox,
                                   affine: *const cairo::Matrix,
                                   preserve_aspect_ratio: *const u32,
@@ -450,8 +451,8 @@ pub unsafe extern fn pattern_new (x: *const RsvgLength,
     let my_width     = { if width.is_null ()  { None } else { Some (*width) } };
     let my_height    = { if height.is_null () { None } else { Some (*height) } };
 
-    let my_units         = { if obj_bbox.is_null ()  { None } else { Some (paint_server_units_from_bool (*obj_bbox)) } };
-    let my_content_units = { if obj_cbbox.is_null () { None } else { Some (PatternContentUnits (paint_server_units_from_bool (*obj_cbbox))) } };
+    let my_units         = { if obj_bbox.is_null ()  { None } else { Some (paint_server_units_from_gboolean (*obj_bbox)) } };
+    let my_content_units = { if obj_cbbox.is_null () { None } else { Some (PatternContentUnits (paint_server_units_from_gboolean (*obj_cbbox))) } };
     let my_vbox          = { if vbox.is_null ()      { None } else { Some (*vbox) } };
 
     let my_affine    = { if affine.is_null () { None } else { Some (*affine) } };
@@ -489,7 +490,7 @@ pub unsafe extern fn pattern_destroy (raw_pattern: *mut Pattern) {
 #[no_mangle]
 pub extern fn pattern_resolve_fallbacks_and_set_pattern (raw_pattern: *mut Pattern,
                                                          draw_ctx:    *mut RsvgDrawingCtx,
-                                                         bbox:        RsvgBbox) -> bool {
+                                                         bbox:        RsvgBbox) -> glib_sys::gboolean {
     assert! (!raw_pattern.is_null ());
     let pattern: &mut Pattern = unsafe { &mut (*raw_pattern) };
 
@@ -499,5 +500,5 @@ pub extern fn pattern_resolve_fallbacks_and_set_pattern (raw_pattern: *mut Patte
 
     set_pattern_on_draw_context (&resolved,
                                  draw_ctx,
-                                 &bbox)
+                                 &bbox).to_glib ()
 }
