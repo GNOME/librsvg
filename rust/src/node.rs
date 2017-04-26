@@ -1,4 +1,5 @@
 extern crate libc;
+extern crate glib_sys;
 extern crate glib;
 
 use std::rc::Rc;
@@ -311,8 +312,8 @@ fn rc_node_ptr_eq<T: ?Sized> (this: &Rc<T>, other: &Rc<T>) -> bool {
 }
 
 #[no_mangle]
-pub extern fn rsvg_node_is_same (raw_node1: *const RsvgNode, raw_node2: *const RsvgNode) -> bool {
-    if raw_node1.is_null () && raw_node2.is_null () {
+pub extern fn rsvg_node_is_same (raw_node1: *const RsvgNode, raw_node2: *const RsvgNode) -> glib_sys::gboolean {
+    let is_same = if raw_node1.is_null () && raw_node2.is_null () {
         true
     } else if !raw_node1.is_null () && !raw_node2.is_null () {
         let node1: &RsvgNode = unsafe { & *raw_node1 };
@@ -321,7 +322,9 @@ pub extern fn rsvg_node_is_same (raw_node1: *const RsvgNode, raw_node2: *const R
         rc_node_ptr_eq (node1, node2)
     } else {
         false
-    }
+    };
+
+    is_same.to_glib ()
 }
 
 #[no_mangle]
@@ -375,7 +378,7 @@ pub extern fn rsvg_node_set_attribute_parse_error (raw_node:    *const RsvgNode,
     }
 }
 
-type NodeForeachChild = unsafe extern "C" fn (node: *const RsvgNode, data: *const libc::c_void) -> bool;
+type NodeForeachChild = unsafe extern "C" fn (node: *const RsvgNode, data: *const libc::c_void) -> glib_sys::gboolean;
 
 #[no_mangle]
 pub extern fn rsvg_node_foreach_child (raw_node: *const RsvgNode, func: NodeForeachChild, data: *const libc::c_void)
@@ -386,7 +389,7 @@ pub extern fn rsvg_node_foreach_child (raw_node: *const RsvgNode, func: NodeFore
     for child in &*node.children.borrow () {
         let boxed_child = box_node (child.clone ());
 
-        let next = unsafe { func (boxed_child, data) };
+        let next: bool = unsafe { from_glib (func (boxed_child, data)) };
 
         rsvg_node_unref (boxed_child);
 
@@ -461,7 +464,7 @@ mod tests {
 
         let ref2 = rsvg_node_ref (ref1);
 
-        assert! (rsvg_node_is_same (ref1, ref2));
+        assert! (rsvg_node_is_same (ref1, ref2) == true.to_glib ());
 
         rsvg_node_unref (ref1);
         rsvg_node_unref (ref2);
@@ -470,20 +473,20 @@ mod tests {
     #[test]
     fn different_nodes_have_different_pointers () {
         let node1 = Rc::new (Node::new (NodeType::Path,
-                                       None,
-                                       ptr::null_mut (),
-                                       Box::new (TestNodeImpl {})));
+                                        None,
+                                        ptr::null_mut (),
+                                        Box::new (TestNodeImpl {})));
 
         let ref1 = box_node (node1);
 
         let node2 = Rc::new (Node::new (NodeType::Path,
-                                       None,
-                                       ptr::null_mut (),
-                                       Box::new (TestNodeImpl {})));
+                                        None,
+                                        ptr::null_mut (),
+                                        Box::new (TestNodeImpl {})));
 
         let ref2 = box_node (node2);
 
-        assert! (!rsvg_node_is_same (ref1, ref2));
+        assert! (rsvg_node_is_same (ref1, ref2) == false.to_glib ());
 
         rsvg_node_unref (ref1);
         rsvg_node_unref (ref2);
