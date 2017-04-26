@@ -12,14 +12,9 @@ use parsers::ParseError;
 pub enum RsvgPropertyBag {}
 
 extern "C" {
-    fn rsvg_property_bag_size (pbag: *const RsvgPropertyBag) -> libc::c_uint;
     fn rsvg_property_bag_lookup (pbag: *const RsvgPropertyBag, key: *const libc::c_char) -> *const libc::c_char;
     fn rsvg_property_bag_dup (pbag: *const RsvgPropertyBag) -> *mut RsvgPropertyBag;
     fn rsvg_property_bag_free (pbag: *mut RsvgPropertyBag);
-}
-
-pub fn get_size (pbag: *const RsvgPropertyBag) -> usize {
-    unsafe { rsvg_property_bag_size (pbag) as usize }
 }
 
 pub fn lookup (pbag: *const RsvgPropertyBag, key: &str) -> Option<String> {
