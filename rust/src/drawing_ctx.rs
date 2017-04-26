@@ -1,3 +1,4 @@
+extern crate glib_sys;
 extern crate glib;
 extern crate cairo;
 extern crate cairo_sys;
@@ -58,8 +59,8 @@ extern "C" {
     fn rsvg_state_new () -> *mut RsvgState;
     fn rsvg_state_reinit (state: *mut RsvgState);
     fn rsvg_state_reconstruct (state: *mut RsvgState, node: *const RsvgNode);
-    fn rsvg_state_is_overflow (state: *const RsvgState) -> bool;
-    fn rsvg_state_get_cond_true (state: *const RsvgState) -> bool;
+    fn rsvg_state_is_overflow (state: *const RsvgState) -> glib_sys::gboolean;
+    fn rsvg_state_get_cond_true (state: *const RsvgState) -> glib_sys::gboolean;
 
     fn rsvg_state_push (draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_state_pop (draw_ctx: *const RsvgDrawingCtx);
@@ -208,11 +209,11 @@ pub fn state_reconstruct (state: *mut RsvgState, node: *const RsvgNode) {
 }
 
 pub fn state_is_overflow (state: *const RsvgState) -> bool {
-    unsafe { rsvg_state_is_overflow (state) }
+    unsafe { from_glib (rsvg_state_is_overflow (state)) }
 }
 
 pub fn state_get_cond_true (state: *const RsvgState) -> bool {
-    unsafe { rsvg_state_get_cond_true (state) }
+    unsafe { from_glib (rsvg_state_get_cond_true (state)) }
 }
 
 pub fn state_push (draw_ctx: *const RsvgDrawingCtx) {
