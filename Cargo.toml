@@ -1,0 +1,33 @@
+[package]
+name = "rsvg"
+version = "0.1.0"
+authors = ["selaux"]
+categories = ["api-bindings", "svg"]
+description = "Rust bindings for the Rsvg library"
+repository = "https://github.com/selaux/rsvg-rs"
+license = "LGPL"
+
+keywords = ["svg", "gtk-rs", "gnome"]
+
+[lib]
+name = "rsvg"
+
+[dependencies]
+libc = "0.2"
+bitflags = "0.5"
+
+[dependencies.rsvg-sys]
+path = "./rsvg-sys"
+version = "0.3.2"
+
+[dependencies.glib]
+git = "https://github.com/gtk-rs/glib"
+version = "0.1.1"
+
+[dependencies.glib-sys]
+git = "https://github.com/gtk-rs/sys"
+version = "0.3.2"
+
+[dependencies.gobject-sys]
+git = "https://github.com/gtk-rs/sys"
+version = "0.3.2"

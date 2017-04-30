@@ -1,0 +1,19 @@
+[options]
+work_mode = "sys"
+library = "Rsvg"
+version = "2.0"
+min_cfg_version = "2.40"
+external_libraries = [
+   "GLib",
+   "GObject",
+   "Gio",
+   "Atk",
+   "GdkPixbuf",
+   "Gdk",
+   "Pango",
+   "Cairo",
+]
+
+ignore = [
+   "xlib.Window",
+]

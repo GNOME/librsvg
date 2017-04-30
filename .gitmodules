@@ -1,0 +1,6 @@
+[submodule "gir-files"]
+	path = gir-files
+	url = git@github.com:selaux/gir-files.git
+[submodule "gir"]
+	path = gir
+	url = git@github.com:gtk-rs/gir.git

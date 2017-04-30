@@ -1,0 +1,15 @@
+[options]
+girs_dir = "gir-files"
+library = "Rsvg"
+version = "2.0"
+min_cfg_version = "2.40"
+target_path = "."
+work_mode = "normal"
+generate_safety_asserts = false
+deprecate_by_min_version = true
+
+generate = [
+    "Rsvg.Error",
+    "Rsvg.Handle",
+    "Rsvg.HandleFlags"
+]
