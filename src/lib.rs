@@ -10,6 +10,10 @@ extern crate gdk_pixbuf;
 extern crate bitflags;
 extern crate libc;
 
+pub use glib::{
+    Error
+};
+
 mod auto;
 pub use auto::*;
 
@@ -42,5 +46,12 @@ mod tests {
         let handle = super::Handle::new();
 
         handle.get_pixbuf();
+    }
+
+    #[test]
+    fn it_should_return_an_error_when_loading_non_existing_file() {
+        let handle = super::Handle::new_from_file("unknown.svg");
+
+        assert!(handle.is_err());
     }
 }

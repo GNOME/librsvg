@@ -4,9 +4,6 @@
 mod handle;
 pub use self::handle::Handle;
 
-mod enums;
-pub use self::enums::Error;
-
 mod flags;
 pub use self::flags::HandleFlags;
 pub use self::flags::HANDLE_FLAGS_NONE;

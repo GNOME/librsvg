@@ -9,7 +9,6 @@ generate_safety_asserts = false
 deprecate_by_min_version = true
 
 generate = [
-    "Rsvg.Error",
     "Rsvg.HandleFlags"
 ]
 
@@ -17,7 +16,8 @@ manual = [
     "Rsvg.DimensionData",
     "Rsvg.PositionData",
     "cairo.Context",
-    "GdkPixbuf.Pixbuf"
+    "GdkPixbuf.Pixbuf",
+    "GLib.Error"
 ]
 
 [[object]]

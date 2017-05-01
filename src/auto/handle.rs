@@ -2,6 +2,7 @@
 // DO NOT EDIT
 
 use DimensionData;
+use Error;
 use HandleFlags;
 use PositionData;
 use cairo;
@@ -11,6 +12,7 @@ use glib::Value;
 use glib::translate::*;
 use gobject_ffi;
 use std::mem::transmute;
+use std::ptr;
 
 glib_wrapper! {
     pub struct Handle(Object<ffi::RsvgHandle>);
@@ -27,19 +29,23 @@ impl Handle {
         }
     }
 
-    //pub fn new_from_data(data: /*Unimplemented*/&CArray TypeId { ns_id: 0, id: 3 }, data_len: /*Unimplemented*/Fundamental: Size, error: /*Ignored*/Option<Error>) -> Handle {
+    //pub fn new_from_data(data: /*Unimplemented*/&CArray TypeId { ns_id: 0, id: 3 }, data_len: /*Unimplemented*/Fundamental: Size) -> Result<Handle, Error> {
     //    unsafe { TODO: call ffi::rsvg_handle_new_from_data() }
     //}
 
-    //pub fn new_from_file(file_name: &str, error: /*Ignored*/Option<Error>) -> Handle {
-    //    unsafe { TODO: call ffi::rsvg_handle_new_from_file() }
-    //}
+    pub fn new_from_file(file_name: &str) -> Result<Handle, Error> {
+        unsafe {
+            let mut error = ptr::null_mut();
+            let ret = ffi::rsvg_handle_new_from_file(file_name.to_glib_none().0, &mut error);
+            if error.is_null() { Ok(from_glib_full(ret)) } else { Err(from_glib_full(error)) }
+        }
+    }
 
-    //pub fn new_from_gfile_sync<'a, P: IsA</*Ignored*/gio::File>, Q: Into<Option<&'a /*Ignored*/gio::Cancellable>>>(file: &P, flags: HandleFlags, cancellable: Q, error: /*Ignored*/Option<Error>) -> Handle {
+    //pub fn new_from_gfile_sync<'a, P: IsA</*Ignored*/gio::File>, Q: Into<Option<&'a /*Ignored*/gio::Cancellable>>>(file: &P, flags: HandleFlags, cancellable: Q) -> Result<Handle, Error> {
     //    unsafe { TODO: call ffi::rsvg_handle_new_from_gfile_sync() }
     //}
 
-    //pub fn new_from_stream_sync<'a, 'b, P: IsA</*Ignored*/gio::InputStream>, Q: IsA</*Ignored*/gio::File> + 'a, R: Into<Option<&'a Q>>, S: Into<Option<&'b /*Ignored*/gio::Cancellable>>>(input_stream: &P, base_file: R, flags: HandleFlags, cancellable: S, error: /*Ignored*/Option<Error>) -> Handle {
+    //pub fn new_from_stream_sync<'a, 'b, P: IsA</*Ignored*/gio::InputStream>, Q: IsA</*Ignored*/gio::File> + 'a, R: Into<Option<&'a Q>>, S: Into<Option<&'b /*Ignored*/gio::Cancellable>>>(input_stream: &P, base_file: R, flags: HandleFlags, cancellable: S) -> Result<Handle, Error> {
     //    unsafe { TODO: call ffi::rsvg_handle_new_from_stream_sync() }
     //}
 
@@ -49,9 +55,13 @@ impl Handle {
         }
     }
 
-    //pub fn close(&self, error: /*Ignored*/Option<Error>) -> bool {
-    //    unsafe { TODO: call ffi::rsvg_handle_close() }
-    //}
+    pub fn close(&self) -> Result<(), Error> {
+        unsafe {
+            let mut error = ptr::null_mut();
+            let _ = ffi::rsvg_handle_close(self.to_glib_none().0, &mut error);
+            if error.is_null() { Ok(()) } else { Err(from_glib_full(error)) }
+        }
+    }
 
     pub fn get_base_uri(&self) -> Option<String> {
         unsafe {
@@ -105,7 +115,7 @@ impl Handle {
         }
     }
 
-    //pub fn read_stream_sync<'a, P: IsA</*Ignored*/gio::InputStream>, Q: Into<Option<&'a /*Ignored*/gio::Cancellable>>>(&self, stream: &P, cancellable: Q, error: /*Ignored*/Option<Error>) -> bool {
+    //pub fn read_stream_sync<'a, P: IsA</*Ignored*/gio::InputStream>, Q: Into<Option<&'a /*Ignored*/gio::Cancellable>>>(&self, stream: &P, cancellable: Q) -> Result<(), Error> {
     //    unsafe { TODO: call ffi::rsvg_handle_read_stream_sync() }
     //}
 
@@ -145,7 +155,7 @@ impl Handle {
         }
     }
 
-    //pub fn write(&self, buf: /*Unimplemented*/&CArray TypeId { ns_id: 0, id: 3 }, count: /*Unimplemented*/Fundamental: Size, error: /*Ignored*/Option<Error>) -> bool {
+    //pub fn write(&self, buf: /*Unimplemented*/&CArray TypeId { ns_id: 0, id: 3 }, count: /*Unimplemented*/Fundamental: Size) -> Result<(), Error> {
     //    unsafe { TODO: call ffi::rsvg_handle_write() }
     //}
 

@@ -2,53 +2,5 @@
 // DO NOT EDIT
 
 use ffi;
-use glib_ffi;
-use glib::error::ErrorDomain;
 use glib::translate::*;
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub enum Error {
-    Failed,
-    #[doc(hidden)]
-    __Nonexhaustive(()),
-}
-
-#[doc(hidden)]
-impl ToGlib for Error {
-    type GlibType = ffi::RsvgError;
-
-    fn to_glib(&self) -> ffi::RsvgError {
-        match *self {
-            Error::Failed => ffi::RSVG_ERROR_FAILED,
-            Error::__Nonexhaustive(_) => panic!(),
-        }
-    }
-}
-
-#[doc(hidden)]
-impl FromGlib<ffi::RsvgError> for Error {
-    fn from_glib(value: ffi::RsvgError) -> Self {
-        match value {
-            ffi::RSVG_ERROR_FAILED => Error::Failed,
-            _ => Error::__Nonexhaustive(()),
-        }
-    }
-}
-
-impl ErrorDomain for Error {
-    fn domain() -> glib_ffi::GQuark {
-        unsafe { ffi::rsvg_error_quark() }
-    }
-
-    fn code(self) -> i32 {
-        self.to_glib() as i32
-    }
-
-    fn from(code: i32) -> Option<Self> {
-        match code {
-            x if x == ffi::RSVG_ERROR_FAILED as i32 => Some(Error::Failed),
-            _ => Some(Error::Failed),
-        }
-    }
-}
 
