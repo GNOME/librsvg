@@ -6,6 +6,7 @@ use HandleFlags;
 use PositionData;
 use cairo;
 use ffi;
+use gdk_pixbuf;
 use glib::Value;
 use glib::translate::*;
 use gobject_ffi;
@@ -76,13 +77,19 @@ impl Handle {
         }
     }
 
-    //pub fn get_pixbuf(&self) -> /*Ignored*/Option<gdk_pixbuf::Pixbuf> {
-    //    unsafe { TODO: call ffi::rsvg_handle_get_pixbuf() }
-    //}
+    pub fn get_pixbuf(&self) -> Option<gdk_pixbuf::Pixbuf> {
+        unsafe {
+            from_glib_full(ffi::rsvg_handle_get_pixbuf(self.to_glib_none().0))
+        }
+    }
 
-    //pub fn get_pixbuf_sub<'a, P: Into<Option<&'a str>>>(&self, id: P) -> /*Ignored*/Option<gdk_pixbuf::Pixbuf> {
-    //    unsafe { TODO: call ffi::rsvg_handle_get_pixbuf_sub() }
-    //}
+    pub fn get_pixbuf_sub<'a, P: Into<Option<&'a str>>>(&self, id: P) -> Option<gdk_pixbuf::Pixbuf> {
+        let id = id.into();
+        let id = id.to_glib_none().0;
+        unsafe {
+            from_glib_full(ffi::rsvg_handle_get_pixbuf_sub(self.to_glib_none().0, id))
+        }
+    }
 
     pub fn get_position_sub(&self, id: &str) -> Option<PositionData> {
         unsafe {

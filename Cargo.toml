@@ -16,10 +16,6 @@ name = "rsvg"
 libc = "0.2"
 bitflags = "0.5"
 
-[dependencies.rsvg-sys]
-path = "./rsvg-sys"
-version = "0.3.2"
-
 [dependencies.glib]
 git = "https://github.com/gtk-rs/glib"
 version = "0.1.1"
@@ -27,6 +23,14 @@ version = "0.1.1"
 [dependencies.cairo-rs]
 git = "https://github.com/gtk-rs/cairo"
 version = "0.1.1"
+
+[dependencies.gdk-pixbuf]
+git = "https://github.com/gtk-rs/gdk-pixbuf"
+version = "0.1.1"
+
+[dependencies.rsvg-sys]
+path = "./rsvg-sys"
+version = "0.3.2"
 
 [dependencies.glib-sys]
 git = "https://github.com/gtk-rs/sys"

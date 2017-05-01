@@ -16,7 +16,8 @@ generate = [
 manual = [
     "Rsvg.DimensionData",
     "Rsvg.PositionData",
-    "cairo.Context"
+    "cairo.Context",
+    "GdkPixbuf.Pixbuf"
 ]
 
 [[object]]

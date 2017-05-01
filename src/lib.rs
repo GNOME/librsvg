@@ -5,6 +5,7 @@ extern crate gobject_sys as gobject_ffi;
 #[macro_use]
 extern crate glib;
 extern crate cairo;
+extern crate gdk_pixbuf;
 #[macro_use]
 extern crate bitflags;
 extern crate libc;
@@ -34,5 +35,12 @@ mod tests {
         let handle = super::Handle::new();
 
         handle.render_cairo(&context);
+    }
+
+    #[test]
+    fn it_should_be_possible_to_render_to_gdk_pixbuf_without_throwing() {
+        let handle = super::Handle::new();
+
+        handle.get_pixbuf();
     }
 }
