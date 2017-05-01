@@ -10,11 +10,20 @@ deprecate_by_min_version = true
 
 generate = [
     "Rsvg.Error",
-    "Rsvg.Handle",
     "Rsvg.HandleFlags"
 ]
 
 manual = [
     "Rsvg.DimensionData",
-    "Rsvg.PositionData"
+    "Rsvg.PositionData",
+    "cairo.Context"
 ]
+
+[[object]]
+name = "Rsvg.Handle"
+status = "generate"
+    [[object.function]]
+    pattern = "render_cairo(_sub)?"
+        [[object.function.parameter]]
+        name = "cr"
+        const = true

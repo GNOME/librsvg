@@ -4,6 +4,7 @@ extern crate gobject_sys as gobject_ffi;
 
 #[macro_use]
 extern crate glib;
+extern crate cairo;
 #[macro_use]
 extern crate bitflags;
 extern crate libc;
@@ -24,5 +25,14 @@ mod tests {
 
         assert_eq!(handle.get_dimensions(), super::DimensionData { width: 0, height: 0, em: 0.0, ex: 0.0 });
         assert_eq!(handle.get_position_sub("#unknownid"), None);
+    }
+
+    #[test]
+    fn it_should_be_possible_to_render_to_cairo_context_without_throwing() {
+        let surface = super::cairo::ImageSurface::create(super::cairo::Format::Rgb24, 500, 500);
+        let context = super::cairo::Context::new(&surface);
+        let handle = super::Handle::new();
+
+        handle.render_cairo(&context);
     }
 }

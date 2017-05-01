@@ -4,6 +4,7 @@
 use DimensionData;
 use HandleFlags;
 use PositionData;
+use cairo;
 use ffi;
 use glib::Value;
 use glib::translate::*;
@@ -101,13 +102,19 @@ impl Handle {
     //    unsafe { TODO: call ffi::rsvg_handle_read_stream_sync() }
     //}
 
-    //pub fn render_cairo(&self, cr: /*Ignored*/&mut cairo::Context) -> bool {
-    //    unsafe { TODO: call ffi::rsvg_handle_render_cairo() }
-    //}
+    pub fn render_cairo(&self, cr: &cairo::Context) -> bool {
+        unsafe {
+            from_glib(ffi::rsvg_handle_render_cairo(self.to_glib_none().0, mut_override(cr.to_glib_none().0)))
+        }
+    }
 
-    //pub fn render_cairo_sub<'a, P: Into<Option<&'a str>>>(&self, cr: /*Ignored*/&mut cairo::Context, id: P) -> bool {
-    //    unsafe { TODO: call ffi::rsvg_handle_render_cairo_sub() }
-    //}
+    pub fn render_cairo_sub<'a, P: Into<Option<&'a str>>>(&self, cr: &cairo::Context, id: P) -> bool {
+        let id = id.into();
+        let id = id.to_glib_none().0;
+        unsafe {
+            from_glib(ffi::rsvg_handle_render_cairo_sub(self.to_glib_none().0, mut_override(cr.to_glib_none().0), id))
+        }
+    }
 
     //pub fn set_base_gfile<P: IsA</*Ignored*/gio::File>>(&self, base_file: &P) {
     //    unsafe { TODO: call ffi::rsvg_handle_set_base_gfile() }
