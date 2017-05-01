@@ -17,7 +17,7 @@ fn find() -> Result<(), Error> {
     let package_name = "librsvg-2.0";
     let shared_libs = ["rsvg-2"];
     let version = {
-        "2.40"
+        "2.36"
     };
 
     if let Ok(lib_dir) = env::var("GTK_LIB_DIR") {

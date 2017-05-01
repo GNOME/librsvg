@@ -2,7 +2,7 @@
 work_mode = "sys"
 library = "Rsvg"
 version = "2.0"
-min_cfg_version = "2.40"
+min_cfg_version = "2.36"
 external_libraries = [
    "GLib",
    "GObject",

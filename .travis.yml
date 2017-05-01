@@ -1,0 +1,11 @@
+dist: trusty
+language: rust
+rust:
+  - nightly
+  - beta
+  - stable
+addons:
+  apt:
+    packages:
+      - libgtk-3-dev
+      - librsvg2-dev
