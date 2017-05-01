@@ -13,3 +13,8 @@ generate = [
     "Rsvg.Handle",
     "Rsvg.HandleFlags"
 ]
+
+manual = [
+    "Rsvg.DimensionData",
+    "Rsvg.PositionData"
+]
