@@ -16,6 +16,10 @@ name = "rsvg"
 libc = "0.2"
 bitflags = "0.5"
 
+[dev-dependencies]
+image = "0.13.0"
+imageproc = "0.8.0"
+
 [dependencies.glib]
 git = "https://github.com/gtk-rs/glib"
 version = "0.1.1"
@@ -23,6 +27,7 @@ version = "0.1.1"
 [dependencies.cairo-rs]
 git = "https://github.com/gtk-rs/cairo"
 version = "0.1.1"
+features = ["png"]
 
 [dependencies.gdk-pixbuf]
 git = "https://github.com/gtk-rs/gdk-pixbuf"
