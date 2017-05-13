@@ -30,7 +30,6 @@ mod tests {
     extern crate image;
 
     use self::image::GenericImage;
-    use std::env;
 
     fn get_fixture_path(fixture: &str) -> String {
         return format!("./test-fixtures/{}", fixture);
