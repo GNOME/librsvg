@@ -28,3 +28,11 @@ status = "generate"
         [[object.function.parameter]]
         name = "cr"
         const = true
+
+    [[object.function]]
+        name = "get_base_uri"
+        ignore = true
+
+    [[object.property]]
+        name = "base-uri"
+        ignore = true

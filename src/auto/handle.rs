@@ -63,12 +63,6 @@ impl Handle {
         }
     }
 
-    pub fn get_base_uri(&self) -> Option<String> {
-        unsafe {
-            from_glib_none(ffi::rsvg_handle_get_base_uri(self.to_glib_none().0))
-        }
-    }
-
     pub fn get_dimensions(&self) -> DimensionData {
         unsafe {
             let mut dimension_data = DimensionData::uninitialized();
