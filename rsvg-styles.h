@@ -254,6 +254,9 @@ G_GNUC_INTERNAL
 gboolean rsvg_state_is_overflow (RsvgState *state);
 
 G_GNUC_INTERNAL
+gboolean rsvg_state_has_overflow (RsvgState *state);
+
+G_GNUC_INTERNAL
 gboolean rsvg_state_get_cond_true (RsvgState *state);
 
 G_END_DECLS

@@ -1648,6 +1648,11 @@ gboolean rsvg_state_is_overflow (RsvgState *state)
     return state->overflow;
 }
 
+gboolean rsvg_state_has_overflow (RsvgState *state)
+{
+    return state->has_overflow;
+}
+
 gboolean rsvg_state_get_cond_true (RsvgState *state)
 {
     return state->cond_true;

@@ -60,6 +60,7 @@ extern "C" {
     fn rsvg_state_reinit (state: *mut RsvgState);
     fn rsvg_state_reconstruct (state: *mut RsvgState, node: *const RsvgNode);
     fn rsvg_state_is_overflow (state: *const RsvgState) -> glib_sys::gboolean;
+    fn rsvg_state_has_overflow (state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_cond_true (state: *const RsvgState) -> glib_sys::gboolean;
 
     fn rsvg_state_push (draw_ctx: *const RsvgDrawingCtx);
@@ -210,6 +211,10 @@ pub fn state_reconstruct (state: *mut RsvgState, node: *const RsvgNode) {
 
 pub fn state_is_overflow (state: *const RsvgState) -> bool {
     unsafe { from_glib (rsvg_state_is_overflow (state)) }
+}
+
+pub fn state_has_overflow (state: *const RsvgState) -> bool {
+    unsafe { from_glib (rsvg_state_has_overflow (state)) }
 }
 
 pub fn state_get_cond_true (state: *const RsvgState) -> bool {
