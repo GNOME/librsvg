@@ -327,13 +327,13 @@ static const NodeCreator node_creators[] = {
     { "subImageRef",         FALSE, rsvg_new_image },
     { "svg",                 TRUE,  rsvg_node_svg_new },
     { "switch",              TRUE,  rsvg_node_switch_new },
-    { "symbol",              TRUE,  rsvg_new_symbol },
+    { "symbol",              TRUE,  rsvg_node_symbol_new },
     { "text",                TRUE,  rsvg_new_text },
     /* "textPath",           TRUE,  */
     /* "title",              TRUE,  */
     { "tref",                TRUE,  rsvg_new_tref },
     { "tspan",               TRUE,  rsvg_new_tspan },
-    { "use",                 TRUE,  rsvg_new_use },
+    { "use",                 TRUE,  rsvg_node_use_new },
     /* "view",               FALSE, */
     /* "vkern",              FALSE, */
 };

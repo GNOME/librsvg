@@ -84,10 +84,12 @@ pub use structure::{
     rsvg_node_group_new,
     rsvg_node_defs_new,
     rsvg_node_switch_new,
+    rsvg_node_symbol_new,
     rsvg_node_svg_new,
     rsvg_node_svg_get_size,
     rsvg_node_svg_get_view_box,
     rsvg_node_svg_apply_atts,
+    rsvg_node_use_new,
 };
 
 pub use transform::{

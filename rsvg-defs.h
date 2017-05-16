@@ -32,6 +32,7 @@
 #include <glib.h>
 
 #include "rsvg.h"
+#include "rsvg-private.h"
 
 G_BEGIN_DECLS 
 

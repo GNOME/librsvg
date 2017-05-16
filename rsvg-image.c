@@ -35,6 +35,7 @@
 #include <errno.h>
 #include "rsvg-css.h"
 #include "rsvg-io.h"
+#include "rsvg-styles.h"
 
 cairo_surface_t *
 rsvg_cairo_surface_new_from_href (RsvgHandle *handle,

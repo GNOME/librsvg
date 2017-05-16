@@ -41,7 +41,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	rsvg-mask.c		\
 	rsvg-mask.h		\
 	rsvg-shapes.h		\
-	rsvg-structure.c	\
 	rsvg-structure.h	\
 	rsvg-styles.c		\
 	rsvg-styles.h		\
@@ -76,21 +75,22 @@ RUST_SOURCES =					\
 	rust/src/cnode.rs			\
 	rust/src/drawing_ctx.rs			\
 	rust/src/error.rs			\
-	rust/src/handle.rs			\
 	rust/src/gradient.rs			\
+	rust/src/handle.rs			\
 	rust/src/length.rs			\
+	rust/src/lib.rs				\
 	rust/src/marker.rs			\
 	rust/src/node.rs			\
 	rust/src/paint_server.rs		\
-	rust/src/pt.rs				\
 	rust/src/parsers.rs			\
 	rust/src/parse_transform.lalrpop	\
 	rust/src/path_builder.rs		\
 	rust/src/path_parser.rs			\
 	rust/src/pattern.rs			\
 	rust/src/property_bag.rs		\
-	rust/src/state.rs			\
+	rust/src/pt.rs				\
 	rust/src/shapes.rs			\
+	rust/src/state.rs			\
 	rust/src/structure.rs			\
 	rust/src/transform.rs			\
 	rust/src/util.rs			\

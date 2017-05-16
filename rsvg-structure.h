@@ -31,15 +31,8 @@
 #define RSVG_STRUCTURE_H
 
 #include "rsvg-private.h"
-#include "rsvg-defs.h"
-#include "rsvg-styles.h"
 
 G_BEGIN_DECLS 
-
-G_GNUC_INTERNAL
-RsvgNode *rsvg_new_use (const char *element_name, RsvgNode *parent);
-G_GNUC_INTERNAL
-RsvgNode *rsvg_new_symbol (const char *element_name, RsvgNode *parent);
 
 /* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
@@ -56,6 +49,14 @@ RsvgNode *rsvg_node_switch_new (const char *element_name, RsvgNode *parent);
 /* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_svg_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/structure.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_use_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/structure.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_symbol_new (const char *element_name, RsvgNode *parent);
 
 /* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
