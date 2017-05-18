@@ -1,5 +1,5 @@
-/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-/* vim: set sw=4 sts=4 ts=4 expandtab: */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 expandtab: */
 /*
    rsvg-path-builder.h: Hold SVG paths to replay them to a cairo_t later
 
