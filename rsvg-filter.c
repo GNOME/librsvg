@@ -621,7 +621,7 @@ rsvg_filter_store_output (GString * name, RsvgFilterPrimitiveOutput result, Rsvg
 
     cairo_surface_destroy (ctx->lastresult.surface);
 
-    store = g_new (RsvgFilterPrimitiveOutput, 1);
+    store = g_new0 (RsvgFilterPrimitiveOutput, 1);
     *store = result;
 
     if (name->str[0] != '\0') {
@@ -1369,7 +1369,7 @@ box_blur_line (gint box_width, gint even_offset,
                       kernel; it's the pixel to remove from the accumulator. */
     gint  *ac;     /* Accumulator for each channel                           */
 
-    ac = g_new (gint, bpp);
+    ac = g_new0 (gint, bpp);
 
     /* The algorithm differs for even and odd-sized kernels.
      * With the output at the center,
@@ -1515,7 +1515,7 @@ make_gaussian_convolution_matrix (gdouble radius, gdouble **out_matrix, gint *ou
     if (matrix_len <= 0)
         matrix_len = 1;
 
-    matrix = g_new (gdouble, matrix_len);
+    matrix = g_new0 (gdouble, matrix_len);
 
     /* Fill the matrix by doing numerical integration approximation
      * from -2*std_dev to 2*std_dev, sampling 50 points per pixel.
@@ -1802,7 +1802,7 @@ gaussian_blur_surface (cairo_surface_t *in,
             box_width = compute_box_blur_width (sx);
 
             /* twice the size so we can have "two" scratch rows */
-            row_buffer = g_new (guchar, width * bpp * 2);
+            row_buffer = g_new0 (guchar, width * bpp * 2);
             row1 = row_buffer;
             row2 = row_buffer + width * bpp;
         } else
@@ -1854,7 +1854,7 @@ gaussian_blur_surface (cairo_surface_t *in,
         int x;
 
         /* twice the size so we can have the source pixels and the blurred pixels */
-        col_buffer = g_new (guchar, height * bpp * 2);
+        col_buffer = g_new0 (guchar, height * bpp * 2);
         col1 = col_buffer;
         col2 = col_buffer + height * bpp;
 
@@ -2377,7 +2377,7 @@ rsvg_filter_primitive_color_matrix_set_atts (RsvgNode *node, gpointer impl, Rsvg
     if ((value = rsvg_property_bag_lookup (atts, "values"))) {
         unsigned int i;
         double *temp = rsvg_css_parse_number_list (value, &listlen);
-        filter->KernelMatrix = g_new (int, listlen);
+        filter->KernelMatrix = g_new0 (int, listlen);
         for (i = 0; i < listlen; i++)
             filter->KernelMatrix[i] = temp[i] * 255.;
         g_free (temp);
@@ -2739,7 +2739,7 @@ rsvg_node_component_transfer_function_set_atts (RsvgNode *node, gpointer impl, R
         unsigned int i;
         double *temp = rsvg_css_parse_number_list (value,
                                                    &data->nbTableValues);
-        data->tableValues = g_new (gint, data->nbTableValues);
+        data->tableValues = g_new0 (gint, data->nbTableValues);
         for (i = 0; i < data->nbTableValues; i++)
             data->tableValues[i] = temp[i] * 255.;
         g_free (temp);

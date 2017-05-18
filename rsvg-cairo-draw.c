@@ -809,7 +809,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     render->cr_stack = g_list_prepend (render->cr_stack, render->cr);
     render->cr = child_cr;
 
-    bbox = g_new (RsvgBbox, 1);
+    bbox = g_new0 (RsvgBbox, 1);
     *bbox = render->bbox;
     render->bb_stack = g_list_prepend (render->bb_stack, bbox);
     rsvg_bbox_init (&render->bbox, &state->affine);

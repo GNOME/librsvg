@@ -142,7 +142,7 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
     if (data.width == 0 || data.height == 0)
         return NULL;
 
-    draw = g_new (RsvgDrawingCtx, 1);
+    draw = g_new0 (RsvgDrawingCtx, 1);
 
     cairo_get_matrix (cr, &affine);
 
@@ -170,6 +170,7 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
     draw->vb.rect.width = data.em;
     draw->vb.rect.height = data.ex;
     draw->pango_context = NULL;
+    draw->vb_stack = NULL;
     draw->drawsub_stack = NULL;
     draw->acquired_nodes = NULL;
     draw->is_testing = handle->priv->is_testing;

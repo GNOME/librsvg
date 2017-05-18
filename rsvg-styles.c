@@ -66,7 +66,7 @@ style_value_data_new (const gchar *value, gboolean important)
 {
     StyleValueData *ret;
 
-    ret = g_new (StyleValueData, 1);
+    ret = g_new0 (StyleValueData, 1);
     ret->value = g_strdup (value);
     ret->important = important;
 
@@ -282,7 +282,7 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
     dst->styles = g_hash_table_ref (src->styles);
 
     if (src->dash.n_dash > 0) {
-        dst->dash.dash = g_new (gdouble, src->dash.n_dash);
+        dst->dash.dash = g_new0 (gdouble, src->dash.n_dash);
         for (i = 0; i < src->dash.n_dash; i++)
             dst->dash.dash[i] = src->dash.dash[i];
     }
@@ -409,7 +409,7 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         if (dst->has_dash)
             g_free (dst->dash.dash);
 
-        dst->dash.dash = g_new (gdouble, src->dash.n_dash);
+        dst->dash.dash = g_new0 (gdouble, src->dash.n_dash);
         dst->dash.n_dash = src->dash.n_dash;
         for (i = 0; i < src->dash.n_dash; i++)
             dst->dash.dash[i] = src->dash.dash[i];
@@ -897,7 +897,7 @@ rsvg_parse_style_pair (RsvgState * state,
 
                 is_even = (n_dashes % 2 == 0);
                 state->dash.n_dash = (is_even ? n_dashes : n_dashes * 2);
-                state->dash.dash = g_new (double, state->dash.n_dash);
+                state->dash.dash = g_new0 (double, state->dash.n_dash);
 
                 /* TODO: handle negative value == error case */
 
@@ -1328,7 +1328,7 @@ rsvg_lookup_apply_css_style (RsvgHandle * ctx, const char *target, RsvgState * s
     styles = g_hash_table_lookup (ctx->priv->css_props, target);
 
     if (styles != NULL) {
-        StylesData *data = g_new (StylesData, 1);
+        StylesData *data = g_new0 (StylesData, 1);
         data->ctx = ctx;
         data->state = state;
         g_hash_table_foreach (styles, (GHFunc) apply_style, data);

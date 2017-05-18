@@ -40,7 +40,7 @@ struct _RsvgDefs {
 RsvgDefs *
 rsvg_defs_new (RsvgHandle *handle)
 {
-    RsvgDefs *result = g_new (RsvgDefs, 1);
+    RsvgDefs *result = g_new0 (RsvgDefs, 1);
 
     result->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) rsvg_node_unref);
     result->externs =

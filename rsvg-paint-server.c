@@ -39,11 +39,11 @@
 static RsvgPaintServer *
 rsvg_paint_server_solid (guint32 argb)
 {
-    RsvgPaintServer *result = g_new (RsvgPaintServer, 1);
+    RsvgPaintServer *result = g_new0 (RsvgPaintServer, 1);
 
     result->refcnt = 1;
     result->type = RSVG_PAINT_SERVER_SOLID;
-    result->core.color = g_new (RsvgSolidColor, 1);
+    result->core.color = g_new0 (RsvgSolidColor, 1);
     result->core.color->argb = argb;
     result->core.color->currentcolor = FALSE;
 
@@ -53,11 +53,11 @@ rsvg_paint_server_solid (guint32 argb)
 static RsvgPaintServer *
 rsvg_paint_server_solid_current_color (void)
 {
-    RsvgPaintServer *result = g_new (RsvgPaintServer, 1);
+    RsvgPaintServer *result = g_new0 (RsvgPaintServer, 1);
 
     result->refcnt = 1;
     result->type = RSVG_PAINT_SERVER_SOLID;
-    result->core.color = g_new (RsvgSolidColor, 1);
+    result->core.color = g_new0 (RsvgSolidColor, 1);
     result->core.color->currentcolor = TRUE;
 
     return result;
@@ -66,7 +66,7 @@ rsvg_paint_server_solid_current_color (void)
 static RsvgPaintServer *
 rsvg_paint_server_iri (char *iri, gboolean has_alternate, RsvgSolidColor alternate)
 {
-    RsvgPaintServer *result = g_new (RsvgPaintServer, 1);
+    RsvgPaintServer *result = g_new0 (RsvgPaintServer, 1);
 
     result->refcnt = 1;
     result->type = RSVG_PAINT_SERVER_IRI;

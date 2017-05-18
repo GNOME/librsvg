@@ -110,7 +110,7 @@ rsvg_new_clip_path (const char *element_name, RsvgNode *parent)
 {
     RsvgClipPath *clip_path;
 
-    clip_path = g_new (RsvgClipPath, 1);
+    clip_path = g_new0 (RsvgClipPath, 1);
     clip_path->units = userSpaceOnUse;
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_CLIP_PATH,

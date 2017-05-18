@@ -2425,7 +2425,7 @@ rsvg_render_free (RsvgRender * render)
 void
 rsvg_drawing_ctx_push_view_box (RsvgDrawingCtx * ctx, double w, double h)
 {
-    RsvgViewBox *vb = g_new (RsvgViewBox, 1);
+    RsvgViewBox *vb = g_new0 (RsvgViewBox, 1);
     *vb = ctx->vb;
     ctx->vb_stack = g_slist_prepend (ctx->vb_stack, vb);
     ctx->vb.rect.width = w;

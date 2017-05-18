@@ -473,7 +473,7 @@ rsvg_css_parse_list (const char *in_str, guint * out_list_len)
     if (string_list) {
         GSList *slist;
 
-        string_array = g_new (gchar *, n + 1);
+        string_array = g_new0 (gchar *, n + 1);
 
         string_array[n--] = NULL;
         for (slist = string_list; slist; slist = slist->next)
@@ -500,7 +500,7 @@ rsvg_css_parse_number_list (const char *in_str, guint * out_list_len)
     if (!(string_array && len))
         return NULL;
 
-    output = g_new (gdouble, len);
+    output = g_new0 (gdouble, len);
 
     /* TODO: some error checking */
     for (i = 0; i < len; i++)
