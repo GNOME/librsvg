@@ -104,6 +104,7 @@ pub use viewbox::{
 mod aspect_ratio;
 mod bbox;
 mod cnode;
+mod color;
 mod drawing_ctx;
 mod error;
 mod handle;
