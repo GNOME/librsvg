@@ -8,6 +8,11 @@ build = "build.rs"
 libc = "0.2"
 bitflags = ""
 
+[dependencies.cssparser]
+git = "https://github.com/servo/rust-cssparser"
+version = "0.13.5"
+tag = "v0.13.5"
+
 [dependencies.cairo-sys-rs]
 #git = "https://github.com/gtk-rs/cairo.git"
 git = "https://github.com/federicomenaquintero/cairo.git"

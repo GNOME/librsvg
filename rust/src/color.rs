@@ -3,6 +3,8 @@ use std::str::FromStr;
 use parsers::ParseError;
 use error::*;
 
+use ::cssparser;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct RawColor {
     pub argb: u32
@@ -32,57 +34,10 @@ impl FromStr for RawColor {
     type Err = AttributeError;
 
     fn from_str (s: &str) -> Result<RawColor, AttributeError> {
-        if s.starts_with ('#') {
-            return parse_hex (s[1..].as_bytes ()).or (Err (
-                AttributeError::Parse (ParseError::new ("expected one of #rrggbbaa, #rrggbb, #rgba, #rgb"))))
+        match cssparser::Color::parse (&mut cssparser::Parser::new (s)) {
+            Ok (cssparser::Color::RGBA (rgba)) => Ok (RawColor::new_argb (rgba.alpha, rgba.red, rgba.green, rgba.blue)),
+            _ => Err (AttributeError::Parse (ParseError::new ("invalid color specification")))
         }
-
-        Err (AttributeError::Parse (ParseError::new ("invalid color specification")))
-    }
-}
-
-fn hex_digit (c: u8) -> Result<u8, ()> {
-    match c {
-        b'0'...b'9' => Ok (c - b'0'),
-        b'A'...b'F' => Ok (c - b'A' + 10),
-        b'a'...b'f' => Ok (c - b'a' + 10),
-        _ => Err (())
-    }
-}
-
-fn parse_hex (s: &[u8]) -> Result<RawColor, ()> {
-    match s.len () {
-        8 => {
-            // #rrggbbaa -> 0xaarrggbb
-            Ok (RawColor::new_argb (hex_digit (s[6])? * 16 + hex_digit (s[7])?,
-                                    hex_digit (s[0])? * 16 + hex_digit (s[1])?,
-                                    hex_digit (s[2])? * 16 + hex_digit (s[3])?,
-                                    hex_digit (s[4])? * 16 + hex_digit (s[5])?))
-        },
-
-        6 => {
-            // #rrggbb -> 0xffrrggbb
-            Ok (RawColor::new_rgb (hex_digit (s[0])? * 16 + hex_digit (s[1])?,
-                                   hex_digit (s[2])? * 16 + hex_digit (s[3])?,
-                                   hex_digit (s[4])? * 16 + hex_digit (s[5])?))
-        },
-
-        4 => {
-            // #rgba -> 0xaarrggbb
-            Ok (RawColor::new_argb (hex_digit (s[3])? * 0x11,
-                                    hex_digit (s[0])? * 0x11,
-                                    hex_digit (s[1])? * 0x11,
-                                    hex_digit (s[2])? * 0x11))
-        },
-
-        3 => {
-            // #rgb -> 0xffrrggbb
-            Ok (RawColor::new_rgb (hex_digit (s[0])? * 0x11,
-                                   hex_digit (s[1])? * 0x11,
-                                   hex_digit (s[2])? * 0x11))
-        }
-
-        _ => Err (())
     }
 }
 
@@ -97,6 +52,20 @@ mod tests {
         assert_eq! (RawColor::from_str ("#10fa20").unwrap (),   RawColor::new_rgb  (0x10, 0xfa, 0x20));
         assert_eq! (RawColor::from_str ("#abcd").unwrap (),     RawColor::new_argb (0xdd, 0xaa, 0xbb, 0xcc));
         assert_eq! (RawColor::from_str ("#123").unwrap (),      RawColor::new_rgb  (0x11, 0x22, 0x33));
+    }
+
+    #[test]
+    fn parses_color_keywords () {
+        assert_eq! (RawColor::from_str ("red").unwrap (),  RawColor::new_rgb (0xff, 0x00, 0x00));
+        assert_eq! (RawColor::from_str ("lime").unwrap (), RawColor::new_rgb (0x00, 0xff, 0x00));
+        assert_eq! (RawColor::from_str ("blue").unwrap (), RawColor::new_rgb (0x00, 0x00, 0xff));
+    }
+
+    #[test]
+    fn parses_color_functions () {
+        assert_eq! (RawColor::from_str ("rgb(255, 0, 0)").unwrap (), RawColor::new_rgb (0xff, 0x00, 0x00));
+        assert_eq! (RawColor::from_str ("rgb(0, 255, 0)").unwrap (), RawColor::new_rgb (0x00, 0xff, 0x00));
+        assert_eq! (RawColor::from_str ("rgb(0, 0, 255)").unwrap (), RawColor::new_rgb (0x00, 0x00, 0xff));
     }
 
     #[test]

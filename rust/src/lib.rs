@@ -7,6 +7,8 @@ extern crate nom;
 #[macro_use]
 extern crate downcast_rs;
 
+extern crate cssparser;
+
 pub use aspect_ratio::{
     rsvg_aspect_ratio_parse,
     rsvg_aspect_ratio_compute
