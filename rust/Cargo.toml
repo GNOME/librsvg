@@ -55,3 +55,6 @@ version = "0.12.5"
 [lib]
 name = "rsvg_internals"
 crate-type = ["staticlib"]
+
+[profile.release]
+lto = true
