@@ -106,19 +106,19 @@ else
 CARGO_RELEASE_ARGS=--release
 endif
 
-RUST_LIB=@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a
+RUST_LIB=@abs_top_builddir@/rust/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a
 
 check-local:
 	cd $(srcdir)/rust && \
-	CARGO_TARGET_DIR=@abs_top_builddir@/target cargo test
+	CARGO_TARGET_DIR=@abs_top_builddir@/rust/target cargo test
 
 clean-local:
 	cd $(top_srcdir)/rust && \
-	CARGO_TARGET_DIR=@abs_top_builddir@/target cargo clean
+	CARGO_TARGET_DIR=@abs_top_builddir@/rust/target cargo clean
 
-@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a: $(RUST_SOURCES)
+@abs_top_builddir@/rust/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a: $(RUST_SOURCES)
 	cd $(top_srcdir)/rust && \
-	CARGO_TARGET_DIR=@abs_top_builddir@/target cargo build --verbose $(CARGO_RELEASE_ARGS)
+	CARGO_TARGET_DIR=@abs_top_builddir@/rust/target cargo build --verbose $(CARGO_RELEASE_ARGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
