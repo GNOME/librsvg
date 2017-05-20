@@ -5,7 +5,7 @@ dependencies = [
  "bitflags 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cairo-rs 0.1.1 (git+https://github.com/federicomenaquintero/cairo.git)",
  "cairo-sys-rs 0.3.2 (git+https://github.com/federicomenaquintero/cairo.git)",
- "cssparser 0.13.5 (git+https://github.com/servo/rust-cssparser?tag=v0.13.5)",
+ "cssparser 0.14.0 (git+https://github.com/servo/rust-cssparser)",
  "downcast-rs 1.0.0 (git+https://github.com/marcianx/downcast-rs)",
  "glib 0.1.1 (git+https://github.com/gtk-rs/glib)",
  "glib-sys 0.3.2 (git+https://github.com/gtk-rs/sys)",
@@ -99,13 +99,13 @@ dependencies = [
 
 [[package]]
 name = "cssparser"
-version = "0.13.5"
-source = "git+https://github.com/servo/rust-cssparser?tag=v0.13.5#fc0bdcd1845e3aa616c3bdd15127aed259b87cb8"
+version = "0.14.0"
+source = "git+https://github.com/servo/rust-cssparser#0a70d228aca1f60b1d838bbe4b471bfa9c6bb557"
 dependencies = [
- "cssparser-macros 0.3.0 (git+https://github.com/servo/rust-cssparser?tag=v0.13.5)",
+ "cssparser-macros 0.3.0 (git+https://github.com/servo/rust-cssparser)",
  "matches 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "phf 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)",
- "procedural-masquerade 0.1.2 (git+https://github.com/servo/rust-cssparser?tag=v0.13.5)",
+ "procedural-masquerade 0.1.2 (git+https://github.com/servo/rust-cssparser)",
  "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -113,10 +113,10 @@ dependencies = [
 [[package]]
 name = "cssparser-macros"
 version = "0.3.0"
-source = "git+https://github.com/servo/rust-cssparser?tag=v0.13.5#fc0bdcd1845e3aa616c3bdd15127aed259b87cb8"
+source = "git+https://github.com/servo/rust-cssparser#0a70d228aca1f60b1d838bbe4b471bfa9c6bb557"
 dependencies = [
  "phf_codegen 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)",
- "procedural-masquerade 0.1.2 (git+https://github.com/servo/rust-cssparser?tag=v0.13.5)",
+ "procedural-masquerade 0.1.2 (git+https://github.com/servo/rust-cssparser)",
  "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -332,7 +332,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "procedural-masquerade"
 version = "0.1.2"
-source = "git+https://github.com/servo/rust-cssparser?tag=v0.13.5#fc0bdcd1845e3aa616c3bdd15127aed259b87cb8"
+source = "git+https://github.com/servo/rust-cssparser#0a70d228aca1f60b1d838bbe4b471bfa9c6bb557"
 
 [[package]]
 name = "quote"
@@ -518,8 +518,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum c_vec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0059f5a658f62a4bd3937a7addc52ccfda144b75cce7a92b187e528629cdc507"
 "checksum cairo-rs 0.1.1 (git+https://github.com/federicomenaquintero/cairo.git)" = "<none>"
 "checksum cairo-sys-rs 0.3.2 (git+https://github.com/federicomenaquintero/cairo.git)" = "<none>"
-"checksum cssparser 0.13.5 (git+https://github.com/servo/rust-cssparser?tag=v0.13.5)" = "<none>"
-"checksum cssparser-macros 0.3.0 (git+https://github.com/servo/rust-cssparser?tag=v0.13.5)" = "<none>"
+"checksum cssparser 0.14.0 (git+https://github.com/servo/rust-cssparser)" = "<none>"
+"checksum cssparser-macros 0.3.0 (git+https://github.com/servo/rust-cssparser)" = "<none>"
 "checksum diff 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)" = "0a515461b6c8c08419850ced27bc29e86166dcdcde8fbe76f8b1f0589bb49472"
 "checksum docopt 0.6.86 (registry+https://github.com/rust-lang/crates.io-index)" = "4a7ef30445607f6fc8720f0a0a2c7442284b629cf0d049286860fae23e71c4d9"
 "checksum downcast-rs 1.0.0 (git+https://github.com/marcianx/downcast-rs)" = "<none>"
@@ -545,7 +545,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum phf_generator 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)" = "6b07ffcc532ccc85e3afc45865469bf5d9e4ef5bfcf9622e3cfe80c2d275ec03"
 "checksum phf_shared 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)" = "07e24b0ca9643bdecd0632f2b3da6b1b89bbb0030e0b992afc1113b23a7bc2f2"
 "checksum pkg-config 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "3a8b4c6b8165cd1a1cd4b9b120978131389f64bdaf456435caa41e630edba903"
-"checksum procedural-masquerade 0.1.2 (git+https://github.com/servo/rust-cssparser?tag=v0.13.5)" = "<none>"
+"checksum procedural-masquerade 0.1.2 (git+https://github.com/servo/rust-cssparser)" = "<none>"
 "checksum quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "7a6e920b65c65f10b2ae65c831a81a073a89edd28c7cce89475bff467ab4167a"
 "checksum rand 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "022e0636ec2519ddae48154b028864bdce4eaf7d35226ab8e65c611be97b189d"
 "checksum regex 0.1.80 (registry+https://github.com/rust-lang/crates.io-index)" = "4fd4ace6a8cf7860714a2c2280d6c1f7e6a413486c13298bbc86fd3da019402f"

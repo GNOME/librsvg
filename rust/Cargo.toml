@@ -10,8 +10,7 @@ bitflags = ""
 
 [dependencies.cssparser]
 git = "https://github.com/servo/rust-cssparser"
-version = "0.13.5"
-tag = "v0.13.5"
+version = "0.14.0"
 
 [dependencies.cairo-sys-rs]
 #git = "https://github.com/gtk-rs/cairo.git"
