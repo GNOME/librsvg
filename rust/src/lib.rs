@@ -1,3 +1,6 @@
+extern crate libc;
+extern crate glib;
+
 #[macro_use]
 extern crate bitflags;
 
@@ -27,6 +30,11 @@ pub use cnode::{
 };
 
 pub use color::{
+    AllowCurrentColor,
+    AllowInherit,
+    ColorKind,
+    ColorSpec,
+    rsvg_css_parse_color
 };
 
 pub use gradient::{
