@@ -26,6 +26,9 @@ pub use cnode::{
     rsvg_rust_cnode_get_impl
 };
 
+pub use color::{
+};
+
 pub use gradient::{
     gradient_linear_new,
     gradient_radial_new,

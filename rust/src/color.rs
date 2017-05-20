@@ -5,6 +5,45 @@ use error::*;
 
 use ::cssparser;
 
+// Keep this in sync with rsvg-css.h:RsvgCssColorKind
+#[repr(C)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ColorKind {
+    Inherit,
+    CurrentColor,
+    ARGB,
+    ParseError
+}
+
+// Keep this in sync with rsvg-css.h:RsvgCssColorSpec
+#[repr(C)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct ColorSpec {
+    kind: ColorKind,
+    argb: u32
+}
+
+impl From<cssparser::Color> for ColorSpec {
+    fn from (color: cssparser::Color) -> ColorSpec {
+        match color {
+            cssparser::Color::CurrentColor =>
+                ColorSpec {
+                    kind: ColorKind::CurrentColor,
+                    argb: 0
+                },
+
+            cssparser::Color::RGBA (rgba) =>
+                ColorSpec {
+                    kind: ColorKind::ARGB,
+                    argb: ((rgba.alpha as u32) << 24 |
+                           (rgba.red as u32)   << 16 |
+                           (rgba.green as u32) << 8  |
+                           (rgba.blue as u32))
+                }
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct RawColor {
     pub argb: u32
@@ -79,5 +118,39 @@ mod tests {
     fn invalid_colors_yield_error () {
         assert! (RawColor::from_str ("").is_err ());
         assert! (RawColor::from_str ("foo").is_err ());
+    }
+
+    fn make_color (a: u8, r: u8, g: u8, b: u8) -> cssparser::Color {
+        cssparser::Color::RGBA (cssparser::RGBA::new (r, g, b, a))
+    }
+
+    fn make_color_spec (a: u8, r: u8, g: u8, b: u8) -> ColorSpec {
+        ColorSpec {
+            kind: ColorKind::ARGB,
+            argb: ((a as u32) << 24 |
+                   (r as u32) << 16 |
+                   (g as u32) << 8  |
+                   (b as u32))
+        }
+    }
+
+    fn make_color_spec_current_color () -> ColorSpec {
+        ColorSpec {
+            kind: ColorKind::CurrentColor,
+            argb: 0
+        }
+    }
+
+    #[test]
+    fn color_spec_from_css_color () {
+        assert_eq! (ColorSpec::from (make_color (255, 0, 0, 0)), make_color_spec (255, 0, 0, 0));
+        assert_eq! (ColorSpec::from (make_color (0, 255, 0, 0)), make_color_spec (0, 255, 0, 0));
+        assert_eq! (ColorSpec::from (make_color (0, 0, 255, 0)), make_color_spec (0, 0, 255, 0));
+        assert_eq! (ColorSpec::from (make_color (0, 0, 0, 255)), make_color_spec (0, 0, 0, 255));
+    }
+
+    #[test]
+    fn color_spec_from_css_current_color () {
+        assert_eq! (ColorSpec::from (cssparser::Color::CurrentColor), make_color_spec_current_color ());
     }
 }
