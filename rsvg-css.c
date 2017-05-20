@@ -142,126 +142,15 @@ _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx)
     return shift;
 }
 
-static gint
-rsvg_css_clip_rgb_percent (const char *s, double max)
-{
-    double value;
-    char *end;
-
-    value = g_ascii_strtod (s, &end);
-
-    if (*end == '%') {
-        value = CLAMP (value, 0, 100) / 100.0;
-    }
-    else {
-        value = CLAMP (value, 0, max) / max;
-    }
-    
-    return (gint) floor (value * 255 + 0.5);
-}
-
-/* pack 3 [0,255] ints into one 32 bit one */
-#define PACK_RGBA(r,g,b,a) (((a) << 24) | ((r) << 16) | ((g) << 8) | (b))
-#define PACK_RGB(r,g,b) PACK_RGBA(r, g, b, 255)
-
-/**
- * rsvg_css_parse_color:
- * @str: string to parse
- * @inherit: whether to inherit
- *
- * Parse a CSS2 color specifier, return RGB value
- *
- * Returns: and RGB value
+/* This is defined like this so that we can export the Rust function... just for
+ * the benefit of rsvg-convert.c
  */
-guint32
-rsvg_css_parse_color (const char *str, gboolean * inherit)
+RsvgCssColorSpec rsvg_css_parse_color_ (const char       *str,
+                                        AllowInherit      allow_inherit,
+                                        AllowCurrentColor allow_current_color)
 {
-    gint val = 0;
-
-    SETINHERIT ();
-
-    if (str[0] == '#') {
-        int i;
-        for (i = 1; str[i]; i++) {
-            int hexval;
-            if (str[i] >= '0' && str[i] <= '9')
-                hexval = str[i] - '0';
-            else if (str[i] >= 'A' && str[i] <= 'F')
-                hexval = str[i] - 'A' + 10;
-            else if (str[i] >= 'a' && str[i] <= 'f')
-                hexval = str[i] - 'a' + 10;
-            else
-                break;
-            val = (val << 4) + hexval;
-        }
-        /* handle #rgb case */
-        if (i == 4) {
-            val = ((val & 0xf00) << 8) | ((val & 0x0f0) << 4) | (val & 0x00f);
-            val |= val << 4;
-        }
-
-        val |= 0xff000000; /* opaque */
-    }
-    else if (g_str_has_prefix (str, "rgb")) {
-        gint r, g, b, a;
-        gboolean has_alpha;
-        guint nb_toks;
-        char **toks;
-
-        r = g = b = 0;
-        a = 255;
-
-        if (str[3] == 'a') {
-            /* "rgba" */
-            has_alpha = TRUE;
-            str += 4;
-        }
-        else {
-            /* "rgb" */
-            has_alpha = FALSE;
-            str += 3;
-        }
-
-        str = strchr (str, '(');
-        if (str == NULL)
-          return val;
-
-        toks = rsvg_css_parse_list (str + 1, &nb_toks);
-
-        if (toks) {
-            if (nb_toks == (has_alpha ? 4 : 3)) {
-                r = rsvg_css_clip_rgb_percent (toks[0], 255.0);
-                g = rsvg_css_clip_rgb_percent (toks[1], 255.0);
-                b = rsvg_css_clip_rgb_percent (toks[2], 255.0);
-                if (has_alpha)
-                    a = rsvg_css_clip_rgb_percent (toks[3], 1.0);
-                else
-                    a = 255;
-            }
-
-            g_strfreev (toks);
-        }
-
-        val = PACK_RGBA (r, g, b, a);
-    } else if (!strcmp (str, "inherit"))
-        UNSETINHERIT ();
-    else {
-        CRRgb rgb;
-
-        if (cr_rgb_set_from_name (&rgb, (const guchar *) str) == CR_OK) {
-            val = PACK_RGB (rgb.red, rgb.green, rgb.blue);
-        } else {
-            /* default to opaque black on failed lookup */
-            UNSETINHERIT ();
-            val = PACK_RGB (0, 0, 0);
-        }
-    }
-
-    return val;
+    return rsvg_css_parse_color (str, allow_inherit, allow_current_color);
 }
-
-#undef PACK_RGB
-#undef PACK_RGBA
 
 guint
 rsvg_css_parse_opacity (const char *str)

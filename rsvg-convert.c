@@ -372,7 +372,15 @@ main (int argc, char **argv)
 
         // Set background color
         if (background_color_str && g_ascii_strcasecmp(background_color_str, "none") != 0) {
-            background_color = rsvg_css_parse_color(background_color_str, FALSE);
+            RsvgCssColorSpec spec;
+
+            spec = rsvg_css_parse_color_ (background_color_str, ALLOW_INHERIT_NO, ALLOW_CURRENT_COLOR_NO);
+            if (spec.kind == RSVG_CSS_COLOR_SPEC_ARGB) {
+                background_color = spec.argb;
+            } else {
+                g_printerr (_("Invalid color specification."));
+                exit (1);
+            }
 
             cairo_set_source_rgb (
                 cr, 

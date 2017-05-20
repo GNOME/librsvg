@@ -81,17 +81,34 @@ rsvg_paint_server_iri (char *iri, gboolean has_alternate, RsvgSolidColor alterna
 static gboolean
 parse_current_color_or_argb (const char *str, RsvgSolidColor *dest)
 {
-    if (!strcmp (str, "currentColor")) {
-        dest->currentcolor = TRUE;
-        dest->argb = 0;
-        return TRUE;
-    } else {
-        gboolean parsed;
-
+    if (!strcmp (str, "none")) {
         dest->currentcolor = FALSE;
-        dest->argb = rsvg_css_parse_color (str, &parsed);
+        dest->argb = 0;
+        return FALSE;
+    } else {
+        RsvgCssColorSpec spec;
 
-        return parsed;
+        spec = rsvg_css_parse_color (str, ALLOW_INHERIT_NO, ALLOW_CURRENT_COLOR_YES);
+        switch (spec.kind) {
+        case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
+            dest->currentcolor = TRUE;
+            dest->argb = 0;
+            return TRUE;
+
+        case RSVG_CSS_COLOR_SPEC_ARGB:
+            dest->currentcolor = FALSE;
+            dest->argb = spec.argb;
+            return TRUE;
+
+        case RSVG_CSS_COLOR_PARSE_ERROR:
+            dest->currentcolor = FALSE;
+            dest->argb = 0;
+            return FALSE;
+
+        default:
+            g_assert_not_reached ();
+            return FALSE;
+        }
     }
 }
 
@@ -110,7 +127,6 @@ rsvg_paint_server_parse (gboolean *inherit, const char *str)
 {
     char *name;
     const char *rest;
-    guint32 argb;
 
     if (inherit != NULL)
         *inherit = TRUE;
@@ -130,18 +146,30 @@ rsvg_paint_server_parse (gboolean *inherit, const char *str)
         has_alternate = parse_current_color_or_argb (rest, &alternate);
 
         return rsvg_paint_server_iri (name, has_alternate, alternate);
-    } else if (!strcmp (str, "inherit")) {
-        /* Do the fallback to black here; don't let the caller do it via inheritance */
-        if (inherit != NULL)
-            *inherit = FALSE;
-        return rsvg_paint_server_solid (0);
-    } else if (!strcmp (str, "currentColor")) {
-        RsvgPaintServer *ps;
-        ps = rsvg_paint_server_solid_current_color ();
-        return ps;
     } else {
-        argb = rsvg_css_parse_color (str, inherit);
-        return rsvg_paint_server_solid (argb);
+        RsvgCssColorSpec spec;
+
+        spec = rsvg_css_parse_color (str, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
+        switch (spec.kind) {
+        case RSVG_CSS_COLOR_SPEC_INHERIT:
+            /* FIXME: this is incorrect; we should inherit the paint server */
+            if (inherit != NULL)
+                *inherit = FALSE;
+            return rsvg_paint_server_solid (0);
+
+        case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
+            return rsvg_paint_server_solid_current_color ();
+
+        case RSVG_CSS_COLOR_SPEC_ARGB:
+            return rsvg_paint_server_solid (spec.argb);
+
+        case RSVG_CSS_COLOR_PARSE_ERROR:
+            return NULL;
+
+        default:
+            g_assert_not_reached ();
+            return NULL;
+        }
     }
 }
 

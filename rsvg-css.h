@@ -48,10 +48,42 @@ G_BEGIN_DECLS
 #define RSVG_ASPECT_RATIO_SLICE (1 << 30)
 #define RSVG_ASPECT_RATIO_DEFER (1 << 31)
 
+/* Keep this in sync with rust/src/color.rs:ColorKind */
+typedef enum {
+    RSVG_CSS_COLOR_SPEC_INHERIT,
+    RSVG_CSS_COLOR_SPEC_CURRENT_COLOR,
+    RSVG_CSS_COLOR_SPEC_ARGB,
+    RSVG_CSS_COLOR_PARSE_ERROR
+} RsvgCssColorKind;
+
+/* Keep this in sync with rust/src/color.rs:RsvgCssColor */
+typedef struct {
+    RsvgCssColorKind kind;
+    guint32 argb; /* only valid if kind == RSVG_CSS_COLOR_SPEC_ARGB */
+} RsvgCssColorSpec;
+
+typedef enum {
+    ALLOW_INHERIT_NO,
+    ALLOW_INHERIT_YES,
+} AllowInherit;
+
+typedef enum {
+    ALLOW_CURRENT_COLOR_NO,
+    ALLOW_CURRENT_COLOR_YES
+} AllowCurrentColor;
+
 /* This one is semi-public for mis-use in rsvg-convert */
-guint32	    rsvg_css_parse_color        (const char *str, gboolean * inherit);
+RsvgCssColorSpec rsvg_css_parse_color_ (const char       *str,
+                                        AllowInherit      allow_inherit,
+                                        AllowCurrentColor allow_current_color);
 
 #ifdef RSVG_COMPILATION
+
+/* Implemented in rust/src/color.rs */
+G_GNUC_INTERNAL
+RsvgCssColorSpec rsvg_css_parse_color (const char       *str,
+                                       AllowInherit      allow_inherit,
+                                       AllowCurrentColor allow_current_color);
 
 /* This is implemented in rust/src/aspect_ratio.rs */
 G_GNUC_INTERNAL

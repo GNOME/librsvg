@@ -73,6 +73,7 @@ RUST_SOURCES =					\
 	rust/src/aspect_ratio.rs		\
 	rust/src/bbox.rs			\
 	rust/src/cnode.rs			\
+	rust/src/color.rs			\
 	rust/src/drawing_ctx.rs			\
 	rust/src/error.rs			\
 	rust/src/gradient.rs			\
