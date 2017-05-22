@@ -176,24 +176,6 @@ _set_source_rsvg_solid_color (RsvgDrawingCtx * ctx,
     cairo_set_source_rgba (cr, r, g, b, a);
 }
 
-static gboolean
-_set_source_rsvg_pattern (RsvgDrawingCtx *ctx,
-                          RsvgNode *node,
-                          RsvgBbox bbox)
-{
-    Pattern *pattern;
-    gboolean result;
-
-    pattern = rsvg_pattern_node_to_rust_pattern (node);
-    g_assert (pattern != NULL);
-
-    result = pattern_resolve_fallbacks_and_set_pattern (pattern, ctx, bbox);
-
-    pattern_destroy (pattern);
-
-    return result;
-}
-
 /* note: _set_source_rsvg_paint_server does not change cairo's CTM */
 static gboolean
 _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
@@ -221,7 +203,7 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
             _set_source_rsvg_radial_gradient (ctx, node, opacity, bbox);
             had_paint_server = TRUE;
         } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_PATTERN) {
-            if (_set_source_rsvg_pattern (ctx, node, bbox)) {
+            if (pattern_resolve_fallbacks_and_set_pattern (node, ctx, bbox)) {
                 had_paint_server = TRUE;
             } else {
                 use_alternate = TRUE;

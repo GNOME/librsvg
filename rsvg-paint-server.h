@@ -36,7 +36,6 @@ typedef struct _RsvgGradientStop RsvgGradientStop;
 typedef struct _RsvgGradientStops RsvgGradientStops;
 typedef struct _RsvgLinearGradient RsvgLinearGradient;
 typedef struct _RsvgRadialGradient RsvgRadialGradient;
-typedef struct _RsvgPattern RsvgPattern;
 typedef struct _RsvgSolidColor RsvgSolidColor;
 
 typedef struct _RsvgPaintServer RsvgPaintServer;
@@ -126,56 +125,15 @@ void gradient_resolve_fallbacks_and_set_pattern (Gradient       *gradient,
 G_GNUC_INTERNAL
 Gradient *rsvg_gradient_node_to_rust_gradient (RsvgNode *node);
 
-struct _RsvgPattern {
-    gboolean obj_cbbox;
-    gboolean obj_bbox;
-    cairo_matrix_t affine; /* user space to actual at time of gradient def */
-    RsvgLength x, y, width, height;
-    RsvgViewBox vbox;
-    guint32 preserve_aspect_ratio;
-    int hasx:1;
-    int hasy:1;
-    int hasvbox:1;
-    int haswidth:1;
-    int hasheight:1;
-    int hasaspect:1;
-    int hascbox:1;
-    int hasbbox:1;
-    int hastransform:1;
-    char *fallback;
-};
-
-/* This is a Rust pattern from rust/src/pattern.rs */
-typedef struct _Pattern Pattern;
+/* Implemented in rust/src/pattern.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_pattern_new (const char *element_name, RsvgNode *parent);
 
 /* Implemented in rust/src/pattern.rs */
 G_GNUC_INTERNAL
-Pattern *
-pattern_new (RsvgLength     *x,
-             RsvgLength     *y,
-             RsvgLength     *width,
-             RsvgLength     *height,
-             gboolean       *obj_bbox,
-             gboolean       *obj_cbbox,
-             RsvgViewBox    *vbox,
-             cairo_matrix_t *affine,
-             guint32        *preserve_aspect_ratio,
-             const char     *fallback_name,
-             RsvgNode       *node);
-
-/* Implemented in rust/src/pattern.rs */
-G_GNUC_INTERNAL
-void pattern_destroy (Pattern *pattern);
-
-/* Implemented in rust/src/pattern.rs */
-G_GNUC_INTERNAL
-gboolean pattern_resolve_fallbacks_and_set_pattern (Pattern        *pattern,
+gboolean pattern_resolve_fallbacks_and_set_pattern (RsvgNode       *node,
                                                     RsvgDrawingCtx *draw_ctx,
                                                     RsvgBbox        bbox);
-
-G_GNUC_INTERNAL
-Pattern *rsvg_pattern_node_to_rust_pattern (RsvgNode *node);
-
 
 struct _RsvgSolidColor {
     gboolean currentcolor;
@@ -223,8 +181,6 @@ G_GNUC_INTERNAL
 RsvgNode *rsvg_new_radial_gradient  (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_stop	        (const char *element_name, RsvgNode *parent);
-G_GNUC_INTERNAL
-RsvgNode *rsvg_new_pattern      (const char *element_name, RsvgNode *parent);
 
 
 G_END_DECLS

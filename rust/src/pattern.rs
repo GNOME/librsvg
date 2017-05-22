@@ -5,6 +5,7 @@ extern crate glib_sys;
 extern crate glib;
 
 use std::cell::RefCell;
+use std::rc::*;
 use std::str::FromStr;
 use self::glib::translate::*;
 
@@ -17,7 +18,6 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use paint_server::*;
-use parsers::ParseError;
 use property_bag;
 use property_bag::*;
 use util::*;
@@ -28,6 +28,7 @@ use self::cairo::enums::*;
 use self::cairo::SurfacePattern;
 use self::cairo::Pattern as CairoPattern;
 
+#[derive(Clone)]
 pub struct Pattern {
     pub units:                 Option<PaintServerUnits>,
     pub content_units:         Option<PatternContentUnits>,
@@ -40,8 +41,26 @@ pub struct Pattern {
     pub width:                 Option<RsvgLength>,
     pub height:                Option<RsvgLength>,
 
-    // We just use c_node to see if the C implementation has children
-    pub c_node:                *const RsvgNode
+    // Point back to our corresponding node, or to the fallback node which has children
+    pub node:                  Option<Weak<Node>>
+}
+
+impl Default for Pattern {
+    fn default () -> Pattern {
+        Pattern {
+            units:                 None,
+            content_units:         None,
+            vbox:                  None,
+            preserve_aspect_ratio: None,
+            affine:                None,
+            fallback:              None,
+            x:                     None,
+            y:                     None,
+            width:                 None,
+            height:                None,
+            node:                  None
+        }
+    }
 }
 
 // A pattern's patternUnits attribute (in our Pattern::units field) defines the coordinate
@@ -72,18 +91,15 @@ impl FromStr for PatternContentUnits {
     }
 }
 
-extern "C" {
-    fn rsvg_pattern_node_to_rust_pattern (node: *const RsvgNode) -> *mut Pattern;
-}
+fn node_has_children (node: &Option<Weak<Node>>) -> bool {
+    match *node {
+        None => false,
 
-fn pattern_node_has_children (raw_node: *const RsvgNode) -> bool {
-    assert! (!raw_node.is_null ());
-    let node: &RsvgNode = unsafe { & *raw_node };
-
-    if node.get_type () == NodeType::Pattern {
-        node.children.borrow ().len () > 0
-    } else {
-        false
+        Some (ref weak) => {
+            let ref strong_node = weak.clone ().upgrade ().unwrap ();
+            let has_children = strong_node.children.borrow ().len () > 0;
+            has_children
+        }
     }
 }
 
@@ -121,7 +137,7 @@ impl Pattern {
             self.y.is_some () &&
             self.width.is_some () &&
             self.height.is_some () &&
-            pattern_node_has_children (self.c_node)
+            node_has_children (&self.node)
     }
 
     fn resolve_from_defaults (&mut self) {
@@ -140,8 +156,9 @@ impl Pattern {
 
         self.fallback = None;
 
-        // We don't resolve the children here - instead, we'll just
-        // NOP if there are no children at drawing time.
+        if !node_has_children (&self.node) {
+            self.node = None;
+        }
     }
 
     fn resolve_from_fallback (&mut self, fallback: &Pattern) {
@@ -155,48 +172,76 @@ impl Pattern {
         fallback_to! (self.width,                 fallback.width);
         fallback_to! (self.height,                fallback.height);
 
-        self.fallback = clone_fallback_name (&fallback.fallback);
+        self.fallback = fallback.fallback.clone ();
 
-        if !pattern_node_has_children (self.c_node) {
-            self.c_node = fallback.c_node;
+        if !node_has_children (&self.node) {
+            self.node = fallback.node.clone ();
         }
     }
 }
 
-impl Clone for Pattern {
-    fn clone (&self) -> Self {
-        Pattern {
-            units:                 self.units,
-            content_units:         self.content_units,
-            vbox:                  self.vbox,
-            preserve_aspect_ratio: self.preserve_aspect_ratio,
-            affine:                self.affine,
-            fallback:              clone_fallback_name (&self.fallback),
-            x:                     self.x,
-            y:                     self.y,
-            width:                 self.width,
-            height:                self.height,
-            c_node:                self.c_node
+struct NodePattern {
+    pattern: RefCell<Pattern>
+}
+
+impl NodePattern {
+    fn new () -> NodePattern {
+        NodePattern {
+            pattern: RefCell::new (Pattern::default ())
         }
+    }
+}
+
+impl NodeTrait for NodePattern {
+    fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
+        let mut p = self.pattern.borrow_mut ();
+
+        p.node = Some (Rc::downgrade (node));
+
+        p.units         = property_bag::parse_or_none (pbag, "patternUnits")?;
+        p.content_units = property_bag::parse_or_none (pbag, "patternContentUnits")?;
+        p.vbox          = property_bag::parse_or_none (pbag, "viewBox")?;
+
+        p.preserve_aspect_ratio = property_bag::parse_or_none (pbag, "preserveAspectRatio")?;
+
+        p.affine = property_bag::transform_or_none (pbag, "patternTransform")?;
+
+        p.fallback = property_bag::lookup (pbag, "xlink:href");
+
+        p.x      = property_bag::length_or_none (pbag, "x", LengthDir::Horizontal)?;
+        p.y      = property_bag::length_or_none (pbag, "y", LengthDir::Vertical)?;
+        p.width  = property_bag::length_or_none (pbag, "width", LengthDir::Horizontal)?;
+        p.height = property_bag::length_or_none (pbag, "height", LengthDir::Vertical)?;
+
+        Ok (())
+    }
+
+    fn draw (&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
+        // nothing; paint servers are handled specially
+    }
+
+    fn get_c_impl (&self) -> *const RsvgCNodeImpl {
+        unreachable! ();
     }
 }
 
 trait FallbackSource {
-    fn get_fallback (&mut self, name: &str) -> Option<Box<Pattern>>;
+    fn get_fallback (&mut self, name: &str) -> Option<RsvgNode>;
 }
 
 fn resolve_pattern (pattern: &Pattern, fallback_source: &mut FallbackSource) -> Pattern {
     let mut result = pattern.clone ();
 
     while !result.is_resolved () {
-        let mut opt_fallback: Option<Box<Pattern>> = None;
+        let mut opt_fallback: Option<RsvgNode> = None;
 
         if let Some (ref fallback_name) = result.fallback {
             opt_fallback = fallback_source.get_fallback (&**fallback_name);
         }
 
-        if let Some (fallback_pattern) = opt_fallback {
-            result.resolve_from_fallback (&*fallback_pattern);
+        if let Some (fallback_node) = opt_fallback {
+            fallback_node.with_impl (|i: &NodePattern|
+                                     result.resolve_from_fallback (&*i.pattern.borrow ()));
         } else {
             result.resolve_from_defaults ();
             break;
@@ -229,32 +274,18 @@ impl Drop for NodeFallbackSource {
 }
 
 impl FallbackSource for NodeFallbackSource {
-    fn get_fallback (&mut self, name: &str) -> Option<Box<Pattern>> {
-        let fallback_node = drawing_ctx::acquire_node (self.draw_ctx, name);
+    fn get_fallback (&mut self, name: &str) -> Option<RsvgNode> {
+        let raw_fallback_node = drawing_ctx::acquire_node_of_type (self.draw_ctx, name, NodeType::Pattern);
 
-        if fallback_node.is_null () {
+        if raw_fallback_node.is_null () {
             return None;
         }
 
-        self.acquired_nodes.push (fallback_node);
+        self.acquired_nodes.push (raw_fallback_node);
 
-        let raw_fallback_pattern = unsafe { rsvg_pattern_node_to_rust_pattern (fallback_node) };
+        let fallback_node: &RsvgNode = unsafe { & *raw_fallback_node };
 
-        if raw_fallback_pattern.is_null () {
-            return None;
-        }
-
-        let fallback_pattern = unsafe { Box::from_raw (raw_fallback_pattern) };
-
-        return Some (fallback_pattern);
-    }
-}
-
-fn paint_server_units_from_gboolean (v: glib_sys::gboolean) -> PaintServerUnits {
-    if from_glib (v) {
-        PaintServerUnits::ObjectBoundingBox
-    } else {
-        PaintServerUnits::UserSpaceOnUse
+        Some (fallback_node.clone ())
     }
 }
 
@@ -263,7 +294,7 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
                                 bbox:     &RsvgBbox) -> bool {
     assert! (pattern.is_resolved ());
 
-    if !pattern_node_has_children (pattern.c_node) {
+    if !node_has_children (&pattern.node) {
         return false;
     }
 
@@ -404,7 +435,7 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     drawing_ctx::set_current_state_affine (draw_ctx, caffine);
 
     // Draw everything
-    let pattern_node: &RsvgNode = unsafe { & *pattern.c_node };
+    let pattern_node = pattern.node.clone ().unwrap ().upgrade ().unwrap ();
     pattern_node.draw_children (draw_ctx, 2);
 
     // Return to the original coordinate system and rendering context
@@ -432,73 +463,38 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     true
 }
 
-#[no_mangle]
-pub unsafe extern fn pattern_new (x: *const RsvgLength,
-                                  y: *const RsvgLength,
-                                  width: *const RsvgLength,
-                                  height: *const RsvgLength,
-                                  obj_bbox: *const glib_sys::gboolean,
-                                  obj_cbbox: *const glib_sys::gboolean,
-                                  vbox: *const RsvgViewBox,
-                                  affine: *const cairo::Matrix,
-                                  preserve_aspect_ratio: *const u32,
-                                  fallback_name: *const libc::c_char,
-                                  c_node: *const RsvgNode) -> *mut Pattern {
-    assert! (!c_node.is_null ());
-
-    let my_x         = { if x.is_null ()      { None } else { Some (*x) } };
-    let my_y         = { if y.is_null ()      { None } else { Some (*y) } };
-    let my_width     = { if width.is_null ()  { None } else { Some (*width) } };
-    let my_height    = { if height.is_null () { None } else { Some (*height) } };
-
-    let my_units         = { if obj_bbox.is_null ()  { None } else { Some (paint_server_units_from_gboolean (*obj_bbox)) } };
-    let my_content_units = { if obj_cbbox.is_null () { None } else { Some (PatternContentUnits (paint_server_units_from_gboolean (*obj_cbbox))) } };
-    let my_vbox          = { if vbox.is_null ()      { None } else { Some (*vbox) } };
-
-    let my_affine    = { if affine.is_null () { None } else { Some (*affine) } };
-
-    let my_preserve_aspect_ratio = { if preserve_aspect_ratio.is_null () { None } else { Some (AspectRatio::from_u32 (*preserve_aspect_ratio)) } };
-
-    let my_fallback_name = { if fallback_name.is_null () { None } else { Some (String::from_glib_none (fallback_name)) } };
-
-    let pattern = Pattern {
-        units:                 my_units,
-        content_units:         my_content_units,
-        vbox:                  my_vbox,
-        preserve_aspect_ratio: my_preserve_aspect_ratio,
-        affine:                my_affine,
-        fallback:              my_fallback_name,
-        x:                     my_x,
-        y:                     my_y,
-        width:                 my_width,
-        height:                my_height,
-        c_node:                c_node
-    };
-
-    let boxed_pattern = Box::new (pattern);
-
-    Box::into_raw (boxed_pattern)
-}
-
-#[no_mangle]
-pub unsafe extern fn pattern_destroy (raw_pattern: *mut Pattern) {
-    assert! (!raw_pattern.is_null ());
-
-    let _ = Box::from_raw (raw_pattern);
-}
-
-#[no_mangle]
-pub extern fn pattern_resolve_fallbacks_and_set_pattern (raw_pattern: *mut Pattern,
-                                                         draw_ctx:    *mut RsvgDrawingCtx,
-                                                         bbox:        RsvgBbox) -> glib_sys::gboolean {
-    assert! (!raw_pattern.is_null ());
-    let pattern: &mut Pattern = unsafe { &mut (*raw_pattern) };
-
+fn resolve_fallbacks_and_set_pattern (pattern:  &Pattern,
+                                      draw_ctx: *mut RsvgDrawingCtx,
+                                      bbox:     RsvgBbox) -> bool {
     let mut fallback_source = NodeFallbackSource::new (draw_ctx);
 
     let resolved = resolve_pattern (pattern, &mut fallback_source);
 
-    set_pattern_on_draw_context (&resolved,
-                                 draw_ctx,
-                                 &bbox).to_glib ()
+    set_pattern_on_draw_context (&resolved, draw_ctx, &bbox)
+}
+
+#[no_mangle]
+pub extern fn rsvg_node_pattern_new (_: *const libc::c_char, raw_parent: *const RsvgNode) -> *const RsvgNode {
+    boxed_node_new (NodeType::Pattern,
+                    raw_parent,
+                    Box::new (NodePattern::new ()))
+}
+
+#[no_mangle]
+pub extern fn pattern_resolve_fallbacks_and_set_pattern (raw_node: *const RsvgNode,
+                                                         draw_ctx: *mut RsvgDrawingCtx,
+                                                         bbox:     RsvgBbox) -> glib_sys::gboolean {
+    assert! (!raw_node.is_null ());
+    let node: &RsvgNode = unsafe { & *raw_node };
+
+    assert! (node.get_type () == NodeType::Pattern);
+
+    let mut did_set_pattern = false;
+
+    node.with_impl (|node_pattern: &NodePattern| {
+        let pattern = &*node_pattern.pattern.borrow ();
+        did_set_pattern = resolve_fallbacks_and_set_pattern (pattern, draw_ctx, bbox);
+    });
+
+    did_set_pattern.to_glib ()
 }

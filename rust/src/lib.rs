@@ -1,5 +1,6 @@
 extern crate libc;
 extern crate glib;
+extern crate cairo;
 
 #[macro_use]
 extern crate bitflags;
@@ -78,8 +79,7 @@ pub use path_builder::{
 };
 
 pub use pattern::{
-    pattern_new,
-    pattern_destroy,
+    rsvg_node_pattern_new,
     pattern_resolve_fallbacks_and_set_pattern,
 };
 

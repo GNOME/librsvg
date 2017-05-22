@@ -314,7 +314,7 @@ static const NodeCreator node_creators[] = {
     /* "mpath"               FALSE, */
     { "multiImage",          FALSE, rsvg_node_switch_new }, /* hack to make multiImage sort-of work */
     { "path",                TRUE,  rsvg_node_path_new },
-    { "pattern",             TRUE,  rsvg_new_pattern },
+    { "pattern",             TRUE,  rsvg_node_pattern_new },
     { "polygon",             TRUE,  rsvg_node_polygon_new },
     { "polyline",            TRUE,  rsvg_node_polyline_new },
     { "radialGradient",      TRUE,  rsvg_new_radial_gradient },
