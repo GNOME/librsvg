@@ -4,10 +4,13 @@ extern crate glib;
 use std::str::FromStr;
 
 use self::glib::translate::*;
+use ::cairo;
+use ::cairo::MatrixTrait;
 
 use error::*;
 use length::*;
 use parsers::ParseError;
+use transform::*;
 
 pub enum RsvgPropertyBag {}
 
@@ -103,5 +106,15 @@ pub fn parse_or_value<T> (pbag: *const RsvgPropertyBag, key: &'static str, value
         Ok (Some (v)) => Ok (v),
         Ok (None)     => Ok (value),
         Err (e)       => Err (e)
+    }
+}
+
+pub fn transform_or_none (pbag: *const RsvgPropertyBag, key: &'static str) -> Result <Option<cairo::Matrix>, NodeError> {
+    if let Some (s) = lookup (pbag, key) {
+        parse_transform (&s)
+            .map (|v| Some (v))
+            .map_err (|e| NodeError::attribute_error (key, e))
+    } else {
+        Ok (None)
     }
 }
