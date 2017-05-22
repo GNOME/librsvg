@@ -558,11 +558,14 @@ pub extern fn rsvg_node_svg_apply_atts (raw_node: *const RsvgNode, handle: *cons
             let class = property_bag::lookup (pbag, "class");
             let id = property_bag::lookup (pbag, "id");
 
+            let c_class = class.to_glib_none ();
+            let c_id = id.to_glib_none ();
+
             unsafe { rsvg_parse_style_attrs (handle,
                                              raw_node,
                                              str::to_glib_none ("svg").0,
-                                             class.map_or (ptr::null (), |s| String::to_glib_none (&s).0),
-                                             id.map_or (ptr::null (), |s| String::to_glib_none (&s).0),
+                                             c_class.0,
+                                             c_id.0,
                                              pbag); }
         }
     });
