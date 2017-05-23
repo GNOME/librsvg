@@ -104,8 +104,6 @@ rsvg_state_init (RsvgState * state)
     state->miter_limit = 4;
     state->cap = CAIRO_LINE_CAP_BUTT;
     state->join = CAIRO_LINE_JOIN_MITER;
-    state->stop_color = 0x00;
-    state->stop_color_mode = STOP_COLOR_UNSPECIFIED;
     state->stop_opacity = 0xff;
     state->stop_opacity_mode = STOP_OPACITY_UNSPECIFIED;
     state->fill_rule = CAIRO_FILL_RULE_WINDING;
@@ -340,8 +338,9 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     if (function (dst->has_join, src->has_join))
         dst->join = src->join;
     if (function (dst->has_stop_color, src->has_stop_color)) {
-        dst->stop_color = src->stop_color;
-        dst->stop_color_mode = src->stop_color_mode;
+        if (dst->stop_color.kind == RSVG_CSS_COLOR_SPEC_INHERIT) {
+            dst->stop_color = src->stop_color;
+        }
     }
     if (function (dst->has_stop_opacity, src->has_stop_opacity)) {
         dst->stop_opacity = src->stop_opacity;
@@ -840,34 +839,8 @@ rsvg_parse_style_pair (RsvgState * state,
 	state->has_letter_spacing = TRUE;
 	state->letter_spacing = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
     } else if (g_str_equal (name, "stop-color")) {
-        RsvgCssColorSpec spec;
-
-        spec = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
-        switch (spec.kind) {
-        case RSVG_CSS_COLOR_SPEC_INHERIT:
-            state->stop_color_mode = STOP_COLOR_INHERIT;
-            state->has_stop_color = FALSE;
-            break;
-
-        case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
-            state->stop_color_mode= STOP_COLOR_CURRENT_COLOR;
-            state->has_flood_color = TRUE;
-            break;
-
-        case RSVG_CSS_COLOR_SPEC_ARGB:
-            state->stop_color = spec.argb;
-            state->stop_color_mode = STOP_COLOR_SPECIFIED;
-            state->has_stop_color = TRUE;
-            break;
-
-        case RSVG_CSS_COLOR_PARSE_ERROR:
-            /* FIXME: no error handling */
-            state->has_stop_color = FALSE;
-            break;
-
-        default:
-            g_assert_not_reached ();
-        }
+        state->has_stop_color = TRUE;
+        state->stop_color = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
     } else if (g_str_equal (name, "stop-opacity")) {
         state->has_stop_opacity = TRUE;
         if (g_str_equal (value, "inherit")) {

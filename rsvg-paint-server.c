@@ -250,25 +250,49 @@ rsvg_stop_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPrope
     inherited_state = rsvg_state_new ();
     rsvg_state_reconstruct (inherited_state, node);
 
-    switch (state->stop_color_mode) {
-    case STOP_COLOR_UNSPECIFIED:
-        color = 0x0;
-        break;
+    if (state->has_stop_color) {
+        switch (state->stop_color.kind) {
+        case RSVG_CSS_COLOR_SPEC_INHERIT:
+            switch (inherited_state->stop_color.kind) {
+            case RSVG_CSS_COLOR_SPEC_INHERIT:
+                color = 0;
+                break;
 
-    case STOP_COLOR_SPECIFIED:
-        color = state->stop_color & 0x00ffffff;
-        break;
+            case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
+                color = inherited_state->current_color;
+                break;
 
-    case STOP_COLOR_INHERIT:
-        color = inherited_state->stop_color;
-        break;
+            case RSVG_CSS_COLOR_SPEC_ARGB:
+                color = inherited_state->stop_color.argb;
+                break;
 
-    case STOP_COLOR_CURRENT_COLOR:
-        color = inherited_state->current_color;
-        break;
+            case RSVG_CSS_COLOR_PARSE_ERROR:
+                color = 0;
+                break;
 
-    default:
-        g_assert_not_reached ();
+            default:
+                g_assert_not_reached ();
+                return;
+            }
+            break;
+
+        case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
+            color = inherited_state->current_color;
+            break;
+
+        case RSVG_CSS_COLOR_SPEC_ARGB:
+            color = state->stop_color.argb & 0x00ffffff;
+            break;
+
+        case RSVG_CSS_COLOR_PARSE_ERROR:
+            color = 0;
+            break;
+
+        default:
+            g_assert_not_reached ();
+            return;
+        }
+    } else {
         color = 0;
     }
 

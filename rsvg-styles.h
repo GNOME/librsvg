@@ -29,10 +29,10 @@
 
 #include <cairo.h>
 #include "rsvg.h"
+#include "rsvg-css.h"
 #include "rsvg-paint-server.h"
 
 #include <libxml/SAX.h>
-#include <pango/pango.h>
 
 G_BEGIN_DECLS 
 
@@ -154,9 +154,8 @@ struct _RsvgState {
 
     guint text_offset;
 
-    guint32 stop_color;         /* rgb */
+    RsvgCssColorSpec stop_color;         /* rgb */
     gboolean has_stop_color;
-    StopColor stop_color_mode;
     gint stop_opacity;          /* 0..255 */
     gboolean has_stop_opacity;
     StopOpacity stop_opacity_mode;
