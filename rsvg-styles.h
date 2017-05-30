@@ -73,13 +73,6 @@ struct _RsvgVpathDash {
 };
 
 typedef enum {
-    STOP_COLOR_UNSPECIFIED,
-    STOP_COLOR_SPECIFIED,
-    STOP_COLOR_INHERIT,
-    STOP_COLOR_CURRENT_COLOR
-} StopColor;
-
-typedef enum {
     STOP_OPACITY_UNSPECIFIED,
     STOP_OPACITY_SPECIFIED,
     STOP_OPACITY_INHERIT
