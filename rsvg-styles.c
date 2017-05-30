@@ -1689,26 +1689,36 @@ rsvg_state_reconstruct (RsvgState *state, RsvgNode *current)
     rsvg_state_inherit (state, rsvg_node_get_state (current));
 }
 
-gboolean rsvg_state_is_overflow (RsvgState *state)
+gboolean
+rsvg_state_is_overflow (RsvgState *state)
 {
     return state->overflow;
 }
 
-gboolean rsvg_state_has_overflow (RsvgState *state)
+gboolean
+rsvg_state_has_overflow (RsvgState *state)
 {
     return state->has_overflow;
 }
 
-gboolean rsvg_state_get_cond_true (RsvgState *state)
+gboolean
+rsvg_state_get_cond_true (RsvgState *state)
 {
     return state->cond_true;
 }
 
-RsvgCssColorSpec *rsvg_state_get_stop_color (RsvgState *state)
+RsvgCssColorSpec *
+rsvg_state_get_stop_color (RsvgState *state)
 {
     if (state->has_stop_color) {
         return &state->stop_color;
     } else {
         return NULL;
     }
+}
+
+guint32
+rsvg_state_get_current_color (RsvgState *state)
+{
+    return state->current_color;
 }

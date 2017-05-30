@@ -64,6 +64,7 @@ extern "C" {
     fn rsvg_state_has_overflow (state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_cond_true (state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_stop_color (state: *const RsvgState) -> *const ColorSpec;
+    fn rsvg_state_get_current_color (state: *const RsvgState) -> u32;
 
     fn rsvg_state_push (draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_state_pop (draw_ctx: *const RsvgDrawingCtx);
@@ -244,5 +245,11 @@ pub fn state_get_stop_color (state: *const RsvgState) -> Option<ColorSpec> {
         } else {
             Some (*spec_ptr)
         }
+    }
+}
+
+pub fn state_get_current_color (state: *const RsvgState) -> u32 {
+    unsafe {
+        rsvg_state_get_current_color (state)
     }
 }
