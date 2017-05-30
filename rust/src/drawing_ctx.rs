@@ -6,6 +6,7 @@ extern crate libc;
 
 use self::glib::translate::*;
 
+use color::*;
 use node::RsvgNode;
 use node::NodeType;
 use path_builder::RsvgPathBuilder;
@@ -62,6 +63,7 @@ extern "C" {
     fn rsvg_state_is_overflow (state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_has_overflow (state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_cond_true (state: *const RsvgState) -> glib_sys::gboolean;
+    fn rsvg_state_get_stop_color (state: *const RsvgState) -> *const ColorSpec;
 
     fn rsvg_state_push (draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_state_pop (draw_ctx: *const RsvgDrawingCtx);
@@ -230,5 +232,17 @@ pub fn state_push (draw_ctx: *const RsvgDrawingCtx) {
 pub fn state_pop (draw_ctx: *const RsvgDrawingCtx) {
     unsafe {
         rsvg_state_pop (draw_ctx);
+    }
+}
+
+pub fn state_get_stop_color (state: *const RsvgState) -> Option<ColorSpec> {
+    unsafe {
+        let spec_ptr = rsvg_state_get_stop_color (state);
+
+        if spec_ptr.is_null () {
+            None
+        } else {
+            Some (*spec_ptr)
+        }
     }
 }

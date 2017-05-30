@@ -1703,3 +1703,12 @@ gboolean rsvg_state_get_cond_true (RsvgState *state)
 {
     return state->cond_true;
 }
+
+RsvgCssColorSpec *rsvg_state_get_stop_color (RsvgState *state)
+{
+    if (state->has_stop_color) {
+        return &state->stop_color;
+    } else {
+        return NULL;
+    }
+}
