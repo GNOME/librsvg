@@ -51,45 +51,6 @@
 #define SETINHERIT() G_STMT_START {if (inherit != NULL) *inherit = TRUE;} G_STMT_END
 #define UNSETINHERIT() G_STMT_START {if (inherit != NULL) *inherit = FALSE;} G_STMT_END
 
-/**
- * rsvg_css_parse_vbox:
- * @vbox: The CSS viewBox
- * @x : The X output
- * @y: The Y output
- * @w: The Width output
- * @h: The Height output
- *
- * Returns: 
- */
-RsvgViewBox
-rsvg_css_parse_vbox (const char *vbox)
-{
-    RsvgViewBox vb;
-    gdouble *list;
-    guint list_len;
-    vb.active = FALSE;
-
-    vb.rect.x = vb.rect.y = 0;
-    vb.rect.width = vb.rect.height = 0;
-
-    list = rsvg_css_parse_number_list (vbox, &list_len);
-
-    if (!(list && list_len))
-        return vb;
-    else if (list_len != 4) {
-        g_free (list);
-        return vb;
-    } else {
-        vb.rect.x = list[0];
-        vb.rect.y = list[1];
-        vb.rect.width = list[2];
-        vb.rect.height = list[3];
-        vb.active = TRUE;
-
-        g_free (list);
-        return vb;
-    }
-}
 
 /* Recursive evaluation of all parent elements regarding absolute font size */
 static double

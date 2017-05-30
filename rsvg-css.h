@@ -113,8 +113,7 @@ G_GNUC_INTERNAL
 PangoStretch rsvg_css_parse_font_stretch    (const char *str, gboolean * inherit);
 G_GNUC_INTERNAL
 const char  *rsvg_css_parse_font_family	    (const char *str, gboolean * inherit);
-G_GNUC_INTERNAL
-RsvgViewBox	  rsvg_css_parse_vbox           (const char *vbox);
+
 G_GNUC_INTERNAL
 void          rsvg_css_parse_number_optional_number	(const char *str, double *x, double *y);
 G_GNUC_INTERNAL
