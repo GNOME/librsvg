@@ -297,15 +297,15 @@ rsvg_stop_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPrope
     }
 
     if (state->has_stop_opacity) {
-        switch (state->stop_opacity_mode) {
+        switch (state->stop_opacity.kind) {
         case STOP_OPACITY_SPECIFIED:
-            opacity = state->stop_opacity;
+            opacity = state->stop_opacity.opacity;
             break;
 
         case STOP_OPACITY_INHERIT:
-            switch (inherited_state->stop_opacity_mode) {
+            switch (inherited_state->stop_opacity.kind) {
             case STOP_OPACITY_SPECIFIED:
-                opacity = inherited_state->stop_opacity;
+                opacity = inherited_state->stop_opacity.opacity;
                 break;
 
             case STOP_OPACITY_INHERIT:
