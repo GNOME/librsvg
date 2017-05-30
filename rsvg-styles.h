@@ -73,7 +73,6 @@ struct _RsvgVpathDash {
 };
 
 typedef enum {
-    STOP_OPACITY_UNSPECIFIED,
     STOP_OPACITY_SPECIFIED,
     STOP_OPACITY_INHERIT
 } StopOpacity;

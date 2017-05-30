@@ -104,8 +104,17 @@ rsvg_state_init (RsvgState * state)
     state->miter_limit = 4;
     state->cap = CAIRO_LINE_CAP_BUTT;
     state->join = CAIRO_LINE_JOIN_MITER;
-    state->stop_opacity = 0xff;
-    state->stop_opacity_mode = STOP_OPACITY_UNSPECIFIED;
+
+    /* The following two start as INHERIT, even though has_stop_color and
+     * has_stop_opacity get initialized to FALSE below.  This is so that the
+     * first pass of rsvg_state_inherit_run(), called from
+     * rsvg_state_reconstruct() from the "stop" element code, will correctly
+     * initialize the destination state from the toplevel element.
+     *
+     */
+    state->stop_color.kind = RSVG_CSS_COLOR_SPEC_INHERIT;
+    state->stop_opacity_mode = STOP_OPACITY_INHERIT;
+
     state->fill_rule = CAIRO_FILL_RULE_WINDING;
     state->clip_rule = CAIRO_FILL_RULE_WINDING;
     state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
@@ -343,8 +352,10 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         }
     }
     if (function (dst->has_stop_opacity, src->has_stop_opacity)) {
-        dst->stop_opacity = src->stop_opacity;
-        dst->stop_opacity_mode = src->stop_opacity_mode;
+        if (dst->stop_opacity_mode == STOP_OPACITY_INHERIT) {
+            dst->stop_opacity = src->stop_opacity;
+            dst->stop_opacity_mode = src->stop_opacity_mode;
+        }
     }
     if (function (dst->has_cond, src->has_cond))
         dst->cond_true = src->cond_true;
@@ -844,7 +855,6 @@ rsvg_parse_style_pair (RsvgState * state,
     } else if (g_str_equal (name, "stop-opacity")) {
         state->has_stop_opacity = TRUE;
         if (g_str_equal (value, "inherit")) {
-            state->has_stop_opacity = FALSE;
             state->stop_opacity_mode = STOP_OPACITY_INHERIT;
         } else {
             state->stop_opacity = rsvg_css_parse_opacity (value);

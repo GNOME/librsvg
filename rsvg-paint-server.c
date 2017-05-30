@@ -296,22 +296,34 @@ rsvg_stop_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPrope
         color = 0;
     }
 
-    switch (state->stop_opacity_mode) {
-    case STOP_OPACITY_UNSPECIFIED:
+    if (state->has_stop_opacity) {
+        switch (state->stop_opacity_mode) {
+        case STOP_OPACITY_SPECIFIED:
+            opacity = state->stop_opacity;
+            break;
+
+        case STOP_OPACITY_INHERIT:
+            switch (inherited_state->stop_opacity_mode) {
+            case STOP_OPACITY_SPECIFIED:
+                opacity = inherited_state->stop_opacity;
+                break;
+
+            case STOP_OPACITY_INHERIT:
+                opacity = 0xff;
+                break;
+
+            default:
+                g_assert_not_reached ();
+                return;
+            }
+            break;
+
+        default:
+            g_assert_not_reached ();
+            return;
+        }
+    } else {
         opacity = 0xff;
-        break;
-
-    case STOP_OPACITY_SPECIFIED:
-        opacity = state->stop_opacity;
-        break;
-
-    case STOP_OPACITY_INHERIT:
-        opacity = inherited_state->stop_opacity;
-        break;
-
-    default:
-        g_assert_not_reached ();
-        opacity = 0;
     }
 
     stop->rgba = (color << 8) | opacity;
