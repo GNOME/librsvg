@@ -125,6 +125,7 @@ mod gradient;
 mod length;
 mod marker;
 mod node;
+mod opacity;
 mod paint_server;
 mod pt;
 mod parsers;
