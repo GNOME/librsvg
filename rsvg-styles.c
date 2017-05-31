@@ -1746,6 +1746,16 @@ rsvg_state_get_stop_color (RsvgState *state)
     }
 }
 
+RsvgOpacitySpec *
+rsvg_state_get_stop_opacity (RsvgState *state)
+{
+    if (state->has_stop_opacity) {
+        return &state->stop_opacity;
+    } else {
+        return NULL;
+    }
+}
+
 guint32
 rsvg_state_get_current_color (RsvgState *state)
 {

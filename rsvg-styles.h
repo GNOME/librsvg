@@ -245,6 +245,9 @@ G_GNUC_INTERNAL
 RsvgCssColorSpec *rsvg_state_get_stop_color (RsvgState *state);
 
 G_GNUC_INTERNAL
+RsvgOpacitySpec *rsvg_state_get_stop_opacity (RsvgState *state);
+
+G_GNUC_INTERNAL
 guint32 rsvg_state_get_current_color (RsvgState *state);
 
 G_END_DECLS
