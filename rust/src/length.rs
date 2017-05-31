@@ -41,8 +41,8 @@ pub enum LengthDir {
 #[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct RsvgLength {
-    length: f64,
-    unit: LengthUnit,
+    pub length: f64,
+    pub unit: LengthUnit,
     dir: LengthDir
 }
 
