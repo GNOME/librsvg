@@ -60,6 +60,7 @@ extern "C" {
 
     fn rsvg_current_state (draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState;
     fn rsvg_state_new () -> *mut RsvgState;
+    fn rsvg_state_free (state: *mut RsvgState);
     fn rsvg_state_reinit (state: *mut RsvgState);
     fn rsvg_state_reconstruct (state: *mut RsvgState, node: *const RsvgNode);
     fn rsvg_state_is_overflow (state: *const RsvgState) -> glib_sys::gboolean;
@@ -205,6 +206,10 @@ pub fn get_current_state (draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState {
 
 pub fn state_new () -> *mut RsvgState {
     unsafe { rsvg_state_new () }
+}
+
+pub fn state_free (state: *mut RsvgState) {
+    unsafe { rsvg_state_free (state); }
 }
 
 pub fn state_reinit (state: *mut RsvgState) {
