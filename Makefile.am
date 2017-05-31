@@ -93,6 +93,7 @@ RUST_SOURCES =					\
 	rust/src/pt.rs				\
 	rust/src/shapes.rs			\
 	rust/src/state.rs			\
+	rust/src/stop.rs			\
 	rust/src/structure.rs			\
 	rust/src/transform.rs			\
 	rust/src/util.rs			\

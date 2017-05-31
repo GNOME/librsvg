@@ -99,6 +99,10 @@ pub use shapes::{
     rsvg_node_rect_new,
 };
 
+pub use stop::{
+    rsvg_node_stop_new
+};
+
 pub use structure::{
     rsvg_node_group_new,
     rsvg_node_defs_new,
@@ -141,6 +145,7 @@ mod path_parser;
 mod pattern;
 mod property_bag;
 mod state;
+mod stop;
 mod shapes;
 mod structure;
 mod transform;
