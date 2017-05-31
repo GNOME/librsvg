@@ -85,6 +85,25 @@ impl Color {
             }
         }
     }
+
+    pub fn from_color_spec (spec: &ColorSpec) -> Result <Color, AttributeError> {
+        match *spec {
+            ColorSpec { kind: ColorKind::Inherit, .. }      => Ok (Color::Inherit),
+
+            ColorSpec { kind: ColorKind::CurrentColor, .. } => Ok (Color::CurrentColor),
+
+            ColorSpec { kind: ColorKind::ARGB, argb } => Ok (Color::RGBA (rgba_from_argb (argb))),
+
+            ColorSpec { kind: ColorKind::ParseError, .. } => Err (AttributeError::Parse (ParseError::new ("parse error")))
+        }
+    }
+}
+
+fn rgba_from_argb (argb: u32) -> cssparser::RGBA {
+    cssparser::RGBA::new (((argb & 0x00ff0000) >> 16) as u8,
+                          ((argb & 0x0000ff00) >> 8) as u8,
+                          ((argb & 0x000000ff) as u8),
+                          ((argb & 0xff000000) >> 24) as u8)
 }
 
 impl From<cssparser::Color> for Color {
@@ -206,5 +225,25 @@ mod tests {
     fn yields_error_on_disallowed_inherit () {
         assert_eq! (ColorSpec::from (Color::parse ("inherit", AllowInherit::No, AllowCurrentColor::Yes)),
                     make_error ());
+    }
+
+    fn test_roundtrip (s: &str) {
+        let result = Color::parse (s, AllowInherit::Yes, AllowCurrentColor::Yes);
+        let result2 = result.clone ();
+        let spec = ColorSpec::from (result2);
+
+        if result.is_ok () {
+            assert_eq! (Color::from_color_spec (&spec), result);
+        } else {
+            assert! (Color::from_color_spec (&spec).is_err ());
+        }
+    }
+
+    #[test]
+    fn roundtrips () {
+        test_roundtrip ("inherit");
+        test_roundtrip ("currentColor");
+        test_roundtrip ("#aabbccdd");
+        test_roundtrip ("papadzul");
     }
 }
