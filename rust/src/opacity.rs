@@ -59,7 +59,7 @@ impl From<Result<Opacity, AttributeError>> for OpacitySpec {
     }
 }
 
-fn opacity_to_u8 (val: f64) -> u8 {
+pub fn opacity_to_u8 (val: f64) -> u8 {
     (val * 255.0 + 0.5).floor () as u8
 }
 
