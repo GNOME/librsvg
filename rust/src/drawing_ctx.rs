@@ -7,6 +7,8 @@ extern crate libc;
 use self::glib::translate::*;
 
 use color::*;
+use error::*;
+use opacity::*;
 use node::RsvgNode;
 use node::NodeType;
 use path_builder::RsvgPathBuilder;
@@ -236,14 +238,14 @@ pub fn state_pop (draw_ctx: *const RsvgDrawingCtx) {
     }
 }
 
-pub fn state_get_stop_color (state: *const RsvgState) -> Option<ColorSpec> {
+pub fn state_get_stop_color (state: *const RsvgState) -> Result<Option<Color>, AttributeError> {
     unsafe {
         let spec_ptr = rsvg_state_get_stop_color (state);
 
         if spec_ptr.is_null () {
-            None
+            Ok (None)
         } else {
-            Some (*spec_ptr)
+            Color::from_color_spec (&*spec_ptr).map (|color| Some (color))
         }
     }
 }
