@@ -268,8 +268,8 @@ pub fn state_get_stop_opacity (state: *const RsvgState) -> Result<Option<Opacity
     }
 }
 
-pub fn state_get_current_color (state: *const RsvgState) -> u32 {
-    unsafe {
-        rsvg_state_get_current_color (state)
-    }
+pub fn state_get_current_color (state: *const RsvgState) -> Color {
+    let argb = unsafe { rsvg_state_get_current_color (state) };
+
+    Color::from (argb)
 }

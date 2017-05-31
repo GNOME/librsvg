@@ -115,6 +115,12 @@ impl From<cssparser::Color> for Color {
     }
 }
 
+impl From<u32> for Color {
+    fn from (argb: u32) -> Color {
+        Color::RGBA (rgba_from_argb (argb))
+    }
+}
+
 impl From<Result<Color, AttributeError>> for ColorSpec {
     fn from (result: Result<Color, AttributeError>) -> ColorSpec {
         match result {
@@ -245,5 +251,11 @@ mod tests {
         test_roundtrip ("currentColor");
         test_roundtrip ("#aabbccdd");
         test_roundtrip ("papadzul");
+    }
+
+    #[test]
+    fn from_argb () {
+        assert_eq! (Color::from (0xaabbccdd),
+                    Color::RGBA (cssparser::RGBA::new (0xbb, 0xcc, 0xdd, 0xaa)));
     }
 }
