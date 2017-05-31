@@ -100,6 +100,18 @@ impl FromStr for Opacity {
     }
 }
 
+impl Opacity {
+    pub fn from_opacity_spec (spec: &OpacitySpec) -> Result <Opacity, AttributeError> {
+        match *spec {
+            OpacitySpec { kind: OpacityKind::Inherit, .. }      => Ok (Opacity::Inherit),
+
+            OpacitySpec { kind: OpacityKind::Specified, opacity } => Ok (Opacity::Specified (opacity as f64 / 255.0)),
+
+            OpacitySpec { kind: OpacityKind::ParseError, .. } => Err (AttributeError::Parse (ParseError::new ("parse error")))
+        }
+    }
+}
+
 #[no_mangle]
 pub extern fn rsvg_css_parse_opacity (string: *const libc::c_char) -> OpacitySpec {
     let s = unsafe { String::from_glib_none (string) };
@@ -163,5 +175,25 @@ mod tests {
         assert_eq! (parse ("foo"),
                     OpacitySpec { kind: OpacityKind::ParseError,
                                   opacity: 0 });
+    }
+
+    fn test_roundtrip (s: &str) {
+        let result = Opacity::from_str (s);
+        let result2 = result.clone ();
+        let spec = OpacitySpec::from (result2);
+
+        if result.is_ok () {
+            assert_eq! (Opacity::from_opacity_spec (&spec), result);
+        } else {
+            assert! (Opacity::from_opacity_spec (&spec).is_err ());
+        }
+    }
+
+    #[test]
+    fn roundtrips () {
+        test_roundtrip ("inherit");
+        test_roundtrip ("0");
+        test_roundtrip ("1.0");
+        test_roundtrip ("chilaquil");
     }
 }
