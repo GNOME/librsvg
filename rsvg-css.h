@@ -85,6 +85,23 @@ RsvgCssColorSpec rsvg_css_parse_color (const char       *str,
                                        AllowInherit      allow_inherit,
                                        AllowCurrentColor allow_current_color);
 
+/* Keep this in sync with rust/src/opacity.rs:OpacityKind */
+typedef enum {
+    RSVG_OPACITY_INHERIT,
+    RSVG_OPACITY_SPECIFIED,
+    RSVG_OPACITY_PARSE_ERROR
+} RsvgOpacityKind;
+
+/* Keep this in sync with rust/src/opacity.rs:OpacitySpec */
+typedef struct {
+    RsvgOpacityKind kind;
+    guint8 opacity; /* 0..255; only valid if kind == RSVG_OPACITY_SPECIFIED */
+} RsvgOpacitySpec;
+
+/* This is implemented in rust/src/opacity.rs */
+G_GNUC_INTERNAL
+RsvgOpacitySpec rsvg_css_parse_opacity (const char *str);
+
 /* This is implemented in rust/src/aspect_ratio.rs */
 G_GNUC_INTERNAL
 guint32 rsvg_aspect_ratio_parse (const char *str);
@@ -101,8 +118,6 @@ void rsvg_aspect_ratio_compute (guint32 aspect,
 
 G_GNUC_INTERNAL
 int	    rsvg_css_parse_aspect_ratio	    (const char *str);
-G_GNUC_INTERNAL
-guint       rsvg_css_parse_opacity	    (const char *str);
 G_GNUC_INTERNAL
 PangoStyle   rsvg_css_parse_font_style      (const char *str, gboolean * inherit);
 G_GNUC_INTERNAL

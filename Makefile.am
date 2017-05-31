@@ -82,6 +82,7 @@ RUST_SOURCES =					\
 	rust/src/lib.rs				\
 	rust/src/marker.rs			\
 	rust/src/node.rs			\
+	rust/src/opacity.rs			\
 	rust/src/paint_server.rs		\
 	rust/src/parsers.rs			\
 	rust/src/parse_transform.lalrpop	\

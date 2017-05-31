@@ -62,8 +62,6 @@ typedef enum {
     RSVG_ENABLE_BACKGROUND_NEW
 } RsvgEnableBackgroundType;
 
-/* enums and data structures are ABI compatible with libart */
-
 typedef struct _RsvgVpathDash RsvgVpathDash;
 
 struct _RsvgVpathDash {
@@ -71,18 +69,6 @@ struct _RsvgVpathDash {
     int n_dash;
     double *dash;
 };
-
-typedef enum {
-    RSVG_OPACITY_INHERIT,
-    RSVG_OPACITY_SPECIFIED
-} RsvgOpacityKind;
-
-typedef struct {
-    RsvgOpacityKind kind;
-    guint8 opacity; /* 0..255; only valid if kind == RSVG_OPACITY_SPECIFIED */
-} RsvgOpacitySpec;
-
-/* end libart theft... */
 
 struct _RsvgState {
     RsvgState *parent;

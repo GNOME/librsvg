@@ -113,23 +113,6 @@ RsvgCssColorSpec rsvg_css_parse_color_ (const char       *str,
     return rsvg_css_parse_color (str, allow_inherit, allow_current_color);
 }
 
-guint
-rsvg_css_parse_opacity (const char *str)
-{
-    char *end_ptr = NULL;
-    double opacity;
-
-    opacity = g_ascii_strtod (str, &end_ptr);
-
-    if (((opacity == -HUGE_VAL || opacity == HUGE_VAL) && (ERANGE == errno)) ||
-        *end_ptr != '\0')
-        opacity = 1.;
-
-    opacity = CLAMP (opacity, 0., 1.);
-
-    return (guint) floor (opacity * 255. + 0.5);
-}
-
 PangoStyle
 rsvg_css_parse_font_style (const char *str, gboolean * inherit)
 {

@@ -2,16 +2,65 @@
 /// https://www.w3.org/TR/SVG/masking.html#OpacityProperty
 
 use ::cssparser::{Parser, Token, NumericValue};
+use ::libc;
 
 use std::str::FromStr;
+
+use ::glib::translate::*;
 
 use parsers::ParseError;
 use error::*;
 
+// Keep this in sync with rsvg-css.h:RsvgOpacityKind
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum OpacityKind {
+    Inherit,
+    Specified,
+    ParseError
+}
+
+// Keep this in sync with rsvg-css.h:RsvgOpacitySpec
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct OpacitySpec {
+    kind: OpacityKind,
+    opacity: u8
+}
+
+// This is the Rust version of the above
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Opacity {
     Inherit,
     Specified (f64)
+}
+
+impl From<Result<Opacity, AttributeError>> for OpacitySpec {
+    fn from (result: Result<Opacity, AttributeError>) -> OpacitySpec {
+        match result {
+            Ok (Opacity::Inherit) =>
+                OpacitySpec {
+                    kind: OpacityKind::Inherit,
+                    opacity: 0
+                },
+
+            Ok (Opacity::Specified (val)) =>
+                OpacitySpec {
+                    kind: OpacityKind::Specified,
+                    opacity: opacity_to_u8 (val)
+                },
+
+            _ =>
+                OpacitySpec {
+                    kind: OpacityKind::ParseError,
+                    opacity: 0
+                }
+        }
+    }
+}
+
+fn opacity_to_u8 (val: f64) -> u8 {
+    (val * 255.0 + 0.5).floor () as u8
 }
 
 impl FromStr for Opacity {
@@ -51,6 +100,13 @@ impl FromStr for Opacity {
     }
 }
 
+#[no_mangle]
+pub extern fn rsvg_css_parse_opacity (string: *const libc::c_char) -> OpacitySpec {
+    let s = unsafe { String::from_glib_none (string) };
+
+    OpacitySpec::from (Opacity::from_str (&s))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -85,5 +141,27 @@ mod tests {
     fn errors_on_extra_input () {
         assert! (is_parse_error (&Opacity::from_str ("inherit a million dollars")));
         assert! (is_parse_error (&Opacity::from_str ("0.0foo")));
+    }
+
+    fn parse (s: &str) -> OpacitySpec {
+        rsvg_css_parse_opacity (s.to_glib_none ().0)
+    }
+
+    #[test]
+    fn converts_result_to_opacity_spec () {
+        assert_eq! (parse ("inherit"),
+                    OpacitySpec { kind: OpacityKind::Inherit,
+                                  opacity: 0 });
+
+        assert_eq! (parse ("0"),
+                    OpacitySpec { kind: OpacityKind::Specified,
+                                  opacity: 0 });
+        assert_eq! (parse ("1"),
+                    OpacitySpec { kind: OpacityKind::Specified,
+                                  opacity: 255 });
+
+        assert_eq! (parse ("foo"),
+                    OpacitySpec { kind: OpacityKind::ParseError,
+                                  opacity: 0 });
     }
 }

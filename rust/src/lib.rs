@@ -74,6 +74,12 @@ pub use node::{
     rsvg_node_draw_children,
 };
 
+pub use opacity::{
+    OpacityKind,
+    OpacitySpec,
+    rsvg_css_parse_opacity
+};
+
 pub use path_builder::{
     rsvg_path_builder_add_to_cairo_context
 };

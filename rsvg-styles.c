@@ -560,9 +560,17 @@ rsvg_parse_style_pair (RsvgState * state,
         default:
             g_assert_not_reached ();
         }
-    } else if (g_str_equal (name, "opacity"))
-        state->opacity = rsvg_css_parse_opacity (value);
-    else if (g_str_equal (name, "flood-color")) {
+    } else if (g_str_equal (name, "opacity")) {
+        RsvgOpacitySpec spec;
+
+        spec = rsvg_css_parse_opacity (value);
+        if (spec.kind == RSVG_OPACITY_SPECIFIED) {
+            state->opacity = spec.opacity;
+        } else {
+            state->opacity = 0;
+            /* FIXME: handle INHERIT and PARSE_ERROR */
+        }
+    } else if (g_str_equal (name, "flood-color")) {
         RsvgCssColorSpec spec;
 
         spec = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
@@ -591,7 +599,16 @@ rsvg_parse_style_pair (RsvgState * state,
             g_assert_not_reached ();
         }
     } else if (g_str_equal (name, "flood-opacity")) {
-        state->flood_opacity = rsvg_css_parse_opacity (value);
+        RsvgOpacitySpec spec;
+
+        spec = rsvg_css_parse_opacity (value);
+        if (spec.kind == RSVG_OPACITY_SPECIFIED) {
+            state->flood_opacity = spec.opacity;
+        } else {
+            state->flood_opacity = 0;
+            /* FIXME: handle INHERIT and PARSE_ERROR */
+        }
+
         state->has_flood_opacity = TRUE;
     } else if (g_str_equal (name, "filter")) {
         g_free (state->filter);
@@ -708,7 +725,16 @@ rsvg_parse_style_pair (RsvgState * state,
             rsvg_paint_server_parse (&state->has_fill_server, value);
         rsvg_paint_server_unref (fill);
     } else if (g_str_equal (name, "fill-opacity")) {
-        state->fill_opacity = rsvg_css_parse_opacity (value);
+        RsvgOpacitySpec spec;
+
+        spec = rsvg_css_parse_opacity (value);
+        if (spec.kind == RSVG_OPACITY_SPECIFIED) {
+            state->fill_opacity = spec.opacity;
+        } else {
+            state->fill_opacity = 0;
+            /* FIXME: handle INHERIT and PARSE_ERROR */
+        }
+
         state->has_fill_opacity = TRUE;
     } else if (g_str_equal (name, "fill-rule")) {
         state->has_fill_rule = TRUE;
@@ -747,7 +773,16 @@ rsvg_parse_style_pair (RsvgState * state,
         else
             g_warning (_("unknown line cap style %s\n"), value);
     } else if (g_str_equal (name, "stroke-opacity")) {
-        state->stroke_opacity = rsvg_css_parse_opacity (value);
+        RsvgOpacitySpec spec;
+
+        spec = rsvg_css_parse_opacity (value);
+        if (spec.kind == RSVG_OPACITY_SPECIFIED) {
+            state->stroke_opacity = spec.opacity;
+        } else {
+            state->stroke_opacity = 0;
+            /* FIXME: handle INHERIT and PARSE_ERROR */
+        }
+
         state->has_stroke_opacity = TRUE;
     } else if (g_str_equal (name, "stroke-linejoin")) {
         state->has_join = TRUE;
@@ -852,13 +887,8 @@ rsvg_parse_style_pair (RsvgState * state,
         state->has_stop_color = TRUE;
         state->stop_color = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
     } else if (g_str_equal (name, "stop-opacity")) {
+        state->stop_opacity = rsvg_css_parse_opacity (value);
         state->has_stop_opacity = TRUE;
-        if (g_str_equal (value, "inherit")) {
-            state->stop_opacity.kind = RSVG_OPACITY_INHERIT;
-        } else {
-            state->stop_opacity.kind = RSVG_OPACITY_SPECIFIED;
-            state->stop_opacity.opacity = rsvg_css_parse_opacity (value);
-        }
     } else if (g_str_equal (name, "marker-start")) {
         g_free (state->startMarker);
         state->startMarker = rsvg_get_url_string (value, NULL);
