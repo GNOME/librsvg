@@ -66,6 +66,7 @@ extern "C" {
     fn rsvg_state_has_overflow (state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_cond_true (state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_stop_color (state: *const RsvgState) -> *const ColorSpec;
+    fn rsvg_state_get_stop_opacity (state: *const RsvgState) -> *const OpacitySpec;
     fn rsvg_state_get_current_color (state: *const RsvgState) -> u32;
 
     fn rsvg_state_push (draw_ctx: *const RsvgDrawingCtx);
@@ -246,6 +247,18 @@ pub fn state_get_stop_color (state: *const RsvgState) -> Result<Option<Color>, A
             Ok (None)
         } else {
             Color::from_color_spec (&*spec_ptr).map (|color| Some (color))
+        }
+    }
+}
+
+pub fn state_get_stop_opacity (state: *const RsvgState) -> Result<Option<Opacity>, AttributeError> {
+    unsafe {
+        let opacity_ptr = rsvg_state_get_stop_opacity (state);
+
+        if opacity_ptr.is_null () {
+            Ok (None)
+        } else {
+            Opacity::from_opacity_spec (&*opacity_ptr).map (|opacity| Some (opacity))
         }
     }
 }
