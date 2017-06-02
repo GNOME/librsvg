@@ -28,6 +28,14 @@ impl NodeStop {
             rgba: Cell::new (0)
         }
     }
+
+    pub fn get_offset (&self) -> f64 {
+        self.offset.get ()
+    }
+
+    pub fn get_rgba (&self) -> u32 {
+        self.rgba.get ()
+    }
 }
 
 impl NodeTrait for NodeStop {
