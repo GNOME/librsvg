@@ -137,7 +137,6 @@ mod marker;
 mod node;
 mod opacity;
 mod paint_server;
-mod pt;
 mod parsers;
 mod parse_transform;
 mod path_builder;

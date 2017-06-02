@@ -90,7 +90,6 @@ RUST_SOURCES =					\
 	rust/src/path_parser.rs			\
 	rust/src/pattern.rs			\
 	rust/src/property_bag.rs		\
-	rust/src/pt.rs				\
 	rust/src/shapes.rs			\
 	rust/src/state.rs			\
 	rust/src/stop.rs			\
