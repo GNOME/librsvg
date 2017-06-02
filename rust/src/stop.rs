@@ -16,7 +16,7 @@ use property_bag;
 use property_bag::*;
 use state::RsvgState;
 
-struct NodeStop {
+pub struct NodeStop {
     offset: Cell<f64>,
     rgba: Cell<u32>
 }
@@ -148,7 +148,7 @@ impl NodeTrait for NodeStop {
         Ok (())
     }
 
-    fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    fn draw (&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
         // nothing; paint servers are handled specially
     }
 

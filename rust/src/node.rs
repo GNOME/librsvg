@@ -192,6 +192,10 @@ impl Node {
         *self.result.borrow_mut () = Err (error);
     }
 
+    pub fn get_result (&self) -> NodeResult {
+        self.result.borrow ().clone ()
+    }
+
     pub fn get_c_impl (&self) -> *const RsvgCNodeImpl {
         self.node_impl.get_c_impl ()
     }

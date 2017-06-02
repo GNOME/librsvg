@@ -42,7 +42,7 @@ pub use gradient::{
     gradient_linear_new,
     gradient_radial_new,
     gradient_destroy,
-    gradient_add_color_stop,
+    gradient_add_color_stops_from_node,
     gradient_resolve_fallbacks_and_set_pattern
 };
 

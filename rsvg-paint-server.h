@@ -32,8 +32,6 @@
 
 G_BEGIN_DECLS 
 
-typedef struct _RsvgGradientStop RsvgGradientStop;
-typedef struct _RsvgGradientStops RsvgGradientStops;
 typedef struct _RsvgLinearGradient RsvgLinearGradient;
 typedef struct _RsvgRadialGradient RsvgRadialGradient;
 typedef struct _RsvgSolidColor RsvgSolidColor;
@@ -41,12 +39,6 @@ typedef struct _RsvgSolidColor RsvgSolidColor;
 typedef struct _RsvgPaintServer RsvgPaintServer;
 
 typedef struct _RsvgPSCtx RsvgPSCtx;
-
-struct _RsvgGradientStop {
-    double offset;
-    guint32 rgba;
-    gboolean is_valid;
-};
 
 struct _RsvgLinearGradient {
     gboolean obj_bbox;
@@ -111,9 +103,8 @@ void gradient_destroy (Gradient *gradient);
 
 /* Implemented in rust/src/gradient.rs */
 G_GNUC_INTERNAL
-void gradient_add_color_stop (Gradient *gradient,
-                              double    offset,
-                              guint32   rgba);
+void gradient_add_color_stops_from_node (Gradient *gradient,
+                                         RsvgNode *node);
 
 /* Implemented in rust/src/gradient.rs */
 G_GNUC_INTERNAL
@@ -179,8 +170,10 @@ G_GNUC_INTERNAL
 RsvgNode *rsvg_new_linear_gradient  (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_radial_gradient  (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/stop.rs */
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_stop	        (const char *element_name, RsvgNode *parent);
+RsvgNode *rsvg_node_stop_new (const char *element_name, RsvgNode *parent);
 
 
 G_END_DECLS

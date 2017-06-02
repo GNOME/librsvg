@@ -321,7 +321,7 @@ static const NodeCreator node_creators[] = {
     { "rect",                TRUE,  rsvg_node_rect_new },
     /* "script",             FALSE, */
     /* "set",                FALSE, */
-    { "stop",                TRUE,  rsvg_new_stop },
+    { "stop",                TRUE,  rsvg_node_stop_new },
     /* "style",              FALSE, */
     { "subImage",            FALSE, rsvg_node_group_new },
     { "subImageRef",         FALSE, rsvg_new_image },

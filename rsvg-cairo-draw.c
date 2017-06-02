@@ -42,33 +42,6 @@
 #include <pango/pangocairo.h>
 #include <pango/pangofc-fontmap.h>
 
-static gboolean
-add_color_stop_to_gradient (RsvgNode *node, gpointer data)
-{
-    Gradient *gradient = data;
-    RsvgGradientStop *stop;
-
-    if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_STOP)
-        return TRUE; /* just ignore this node */
-
-    stop = rsvg_rust_cnode_get_impl (node);
-
-    if (!stop->is_valid) {
-        /* Don't add any more stops. */
-        return FALSE;
-    }
-
-    gradient_add_color_stop (gradient, stop->offset, stop->rgba);
-
-    return TRUE;
-}
-
-static void
-add_color_stops_to_gradient (Gradient *gradient, RsvgNode *node)
-{
-    rsvg_node_foreach_child (node, add_color_stop_to_gradient, gradient);
-}
-
 static Gradient *
 linear_gradient_to_rust (RsvgNode *node)
 {
@@ -87,7 +60,7 @@ linear_gradient_to_rust (RsvgNode *node)
                                     linear->hasspread ? &linear->spread : NULL,
                                     linear->fallback);
 
-    add_color_stops_to_gradient (gradient, node);
+    gradient_add_color_stops_from_node (gradient, node);
 
     return gradient;
 }
@@ -111,7 +84,7 @@ radial_gradient_to_rust (RsvgNode *node)
                                     radial->hasspread ? &radial->spread : NULL,
                                     radial->fallback);
 
-    add_color_stops_to_gradient (gradient, node);
+    gradient_add_color_stops_from_node (gradient, node);
 
     return gradient;
 }

@@ -6,15 +6,13 @@ extern crate glib;
 
 use self::glib::translate::*;
 
-use length::*;
-
+use bbox::*;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
-use node::RsvgNode;
+use length::*;
+use node::*;
 use paint_server::*;
-
-use bbox::*;
-
+use stop::*;
 use util::*;
 
 use self::cairo::MatrixTrait;
@@ -600,14 +598,27 @@ pub unsafe extern fn gradient_destroy (raw_gradient: *mut Gradient) {
 }
 
 #[no_mangle]
-pub extern fn gradient_add_color_stop (raw_gradient: *mut Gradient,
-                                       offset:       f64,
-                                       rgba:         u32) {
+pub extern fn gradient_add_color_stops_from_node (raw_gradient: *mut Gradient,
+                                                  raw_node:     *const RsvgNode) {
     assert! (!raw_gradient.is_null ());
+    assert! (!raw_node.is_null ());
 
     let gradient: &mut Gradient = unsafe { &mut (*raw_gradient) };
+    let node: &RsvgNode = unsafe { & *raw_node };
 
-    gradient.add_color_stop (offset, rgba);
+    for child in &*node.children.borrow () {
+        if child.get_type () != NodeType::Stop {
+            continue; // just ignore this child; we are only interested in gradient stops
+        }
+
+        if child.get_result ().is_err () {
+            break; // don't add any more stops
+        }
+
+        child.with_impl (|stop: &NodeStop| {
+            gradient.add_color_stop (stop.get_offset (), stop.get_rgba ());
+        });
+    }
 }
 
 #[no_mangle]
