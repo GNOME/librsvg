@@ -348,11 +348,13 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->join = src->join;
     if (function (dst->has_stop_color, src->has_stop_color)) {
         if (dst->stop_color.kind == RSVG_CSS_COLOR_SPEC_INHERIT) {
+            dst->has_stop_color = TRUE;
             dst->stop_color = src->stop_color;
         }
     }
     if (function (dst->has_stop_opacity, src->has_stop_opacity)) {
         if (dst->stop_opacity.kind == RSVG_OPACITY_INHERIT) {
+            dst->has_stop_opacity = TRUE;
             dst->stop_opacity = src->stop_opacity;
         }
     }
