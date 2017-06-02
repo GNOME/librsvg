@@ -6,8 +6,6 @@ use std::str::Chars;
 use std::iter::Enumerate;
 use path_builder::*;
 
-use self::glib::translate::*;
-
 extern crate cairo;
 
 struct PathParser<'external> {

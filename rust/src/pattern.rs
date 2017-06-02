@@ -1,13 +1,15 @@
-extern crate libc;
-extern crate cairo;
-extern crate cairo_sys;
-extern crate glib_sys;
-extern crate glib;
+use ::cairo;
+use ::cairo::MatrixTrait;
+use ::cairo::enums::*;
+use ::cairo::SurfacePattern;
+use ::cairo::Pattern as CairoPattern;
+use ::glib_sys;
+use ::glib::translate::*;
+use ::libc;
 
 use std::cell::RefCell;
 use std::rc::*;
 use std::str::FromStr;
-use self::glib::translate::*;
 
 use aspect_ratio::*;
 use bbox::*;
@@ -22,11 +24,6 @@ use property_bag;
 use property_bag::*;
 use util::*;
 use viewbox::*;
-
-use self::cairo::MatrixTrait;
-use self::cairo::enums::*;
-use self::cairo::SurfacePattern;
-use self::cairo::Pattern as CairoPattern;
 
 #[derive(Clone)]
 pub struct Pattern {

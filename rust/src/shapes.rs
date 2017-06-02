@@ -1,6 +1,7 @@
+use ::libc;
+
 use std::cell::RefCell;
 use std::cell::Cell;
-extern crate libc;
 
 use drawing_ctx;
 use drawing_ctx::*;

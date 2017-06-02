@@ -1,8 +1,6 @@
-extern crate glib;
-extern crate cairo;
-extern crate libc;
-
-use self::glib::translate::*;
+use ::cairo::MatrixTrait;
+use ::glib::translate::*;
+use ::libc;
 
 use std::cell::RefCell;
 use std::cell::Cell;
@@ -19,9 +17,6 @@ use property_bag;
 use property_bag::*;
 use util::*;
 use viewbox::*;
-
-use self::cairo::MatrixTrait;
-
 
 /***** NodeGroup *****/
 

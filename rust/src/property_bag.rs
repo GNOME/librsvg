@@ -1,15 +1,11 @@
-extern crate libc;
-extern crate glib;
+use ::cairo;
+use ::glib::translate::*;
+use ::libc;
 
 use std::str::FromStr;
 
-use self::glib::translate::*;
-use ::cairo;
-use ::cairo::MatrixTrait;
-
 use error::*;
 use length::*;
-use parsers::ParseError;
 use transform::*;
 
 pub enum RsvgPropertyBag {}

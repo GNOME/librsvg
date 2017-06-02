@@ -1,27 +1,20 @@
-extern crate libc;
-extern crate glib_sys;
-extern crate glib;
+use ::downcast_rs::*;
+use ::glib_sys;
+use ::glib::translate::*;
+use ::libc;
 
 use std::rc::Rc;
 use std::rc::Weak;
 use std::cell::RefCell;
 use std::ptr;
 
-use downcast_rs::*;
-
 use drawing_ctx::RsvgDrawingCtx;
 use drawing_ctx;
-
-use handle::RsvgHandle;
-
-use property_bag::RsvgPropertyBag;
-
-use state::RsvgState;
-
 use error::*;
+use handle::RsvgHandle;
 use parsers::ParseError;
-
-use self::glib::translate::*;
+use property_bag::RsvgPropertyBag;
+use state::RsvgState;
 
 /* A *const RsvgNode is just a pointer for the C code's benefit: it
  * points to an  Rc<Node>, which is our refcounted Rust representation

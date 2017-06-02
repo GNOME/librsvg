@@ -1,10 +1,7 @@
-extern crate glib;
-extern crate libc;
-extern crate cairo;
-extern crate cairo_sys;
-
-use self::glib::translate::*;
-use self::cairo::MatrixTrait;
+use ::cairo;
+use ::cairo::MatrixTrait;
+use ::glib::translate::*;
+use ::libc;
 
 use std::cell::Cell;
 use std::f64::consts::*;

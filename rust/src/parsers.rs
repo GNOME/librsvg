@@ -1,6 +1,5 @@
-extern crate cairo;
+use ::nom::{IResult, double, is_alphabetic};
 
-use nom::{IResult, double, is_alphabetic};
 use std::str;
 use std::f64::consts::*;
 

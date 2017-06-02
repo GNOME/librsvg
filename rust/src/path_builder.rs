@@ -1,7 +1,8 @@
-use std::f64;
+use ::cairo;
+use ::cairo_sys;
 
-extern crate cairo;
-extern crate cairo_sys;
+use std::f64;
+use std::f64::consts::*;
 
 #[repr(C)]
 pub struct RsvgPathBuilder {
@@ -79,7 +80,7 @@ impl RsvgPathBuilder {
         }
 
         /* X-axis */
-        f = x_axis_rotation * f64::consts::PI / 180.0;
+        f = x_axis_rotation * PI / 180.0;
         sinf = f.sin ();
         cosf = f.cos ();
 
@@ -157,14 +158,14 @@ impl RsvgPathBuilder {
         }
 
         if is_sweep && delta_theta < 0.0 {
-            delta_theta += f64::consts::PI * 2.0;
+            delta_theta += PI * 2.0;
         } else if !is_sweep && delta_theta > 0.0 {
-            delta_theta -= f64::consts::PI * 2.0;
+            delta_theta -= PI * 2.0;
         }
 
         /* Now draw the arc */
 
-        n_segs = (delta_theta / (f64::consts::PI * 0.5 + 0.001)).abs ().ceil () as i32;
+        n_segs = (delta_theta / (PI * 0.5 + 0.001)).abs ().ceil () as i32;
         let n_segs_dbl = n_segs as f64;
 
         for i in 0 .. n_segs {
@@ -193,7 +194,7 @@ impl RsvgPathBuilder {
         let sinf: f64;
         let cosf: f64;
 
-        f = x_axis_rotation * f64::consts::PI / 180.0;
+        f = x_axis_rotation * PI / 180.0;
         sinf = f.sin ();
         cosf = f.cos ();
 

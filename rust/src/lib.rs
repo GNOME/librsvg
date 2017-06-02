@@ -1,17 +1,17 @@
-extern crate libc;
-extern crate glib;
 extern crate cairo;
+extern crate cairo_sys;
+extern crate cssparser;
+extern crate glib;
+extern crate glib_sys;
+extern crate lalrpop_util;
+extern crate libc;
 
 #[macro_use]
 extern crate bitflags;
-
-#[macro_use]
-extern crate nom;
-
 #[macro_use]
 extern crate downcast_rs;
-
-extern crate cssparser;
+#[macro_use]
+extern crate nom;
 
 pub use aspect_ratio::{
     rsvg_aspect_ratio_parse,

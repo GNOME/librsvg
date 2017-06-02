@@ -1,6 +1,6 @@
-extern crate cairo;
-extern crate glib_sys;
-extern crate glib;
+use ::cairo;
+use ::glib_sys;
+use ::glib;
 
 use self::cairo::MatrixTrait;
 use self::glib::translate::*;

@@ -1,11 +1,9 @@
-extern crate lalrpop_util;
-extern crate glib_sys;
-extern crate glib;
-extern crate libc;
+use ::cairo;
+use ::cairo::MatrixTrait;
+use ::glib::translate::*;
+use ::glib_sys;
+use ::libc;
 
-extern crate cairo;
-use self::cairo::MatrixTrait;
-use self::glib::translate::*;
 
 use std::f64::consts::*;
 

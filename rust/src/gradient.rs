@@ -1,10 +1,7 @@
-extern crate libc;
-extern crate cairo;
-extern crate cairo_sys;
-extern crate glib_sys;
-extern crate glib;
-
-use self::glib::translate::*;
+use ::cairo;
+use ::glib_sys;
+use ::glib::translate::*;
+use ::libc;
 
 use bbox::*;
 use drawing_ctx;

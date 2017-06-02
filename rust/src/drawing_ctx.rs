@@ -1,10 +1,8 @@
-extern crate glib_sys;
-extern crate glib;
-extern crate cairo;
-extern crate cairo_sys;
-extern crate libc;
-
-use self::glib::translate::*;
+use ::cairo;
+use ::cairo_sys;
+use ::glib_sys;
+use ::glib::translate::*;
+use ::libc;
 
 use color::*;
 use error::*;

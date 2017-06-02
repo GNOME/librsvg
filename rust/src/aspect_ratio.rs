@@ -15,10 +15,8 @@
 //! [`AspectRatio`]: struct.AspectRatio.html
 //! [spec]: https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
-extern crate libc;
-extern crate glib;
-
-use self::glib::translate::*;
+use ::libc;
+use ::glib::translate::*;
 
 use std::str::FromStr;
 
