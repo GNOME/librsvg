@@ -27,7 +27,7 @@ pub struct ColorStop {
 pub struct GradientCommon {
     pub units:    Option<PaintServerUnits>,
     pub affine:   Option<cairo::Matrix>,
-    pub spread:   Option<cairo::enums::Extend>,
+    pub spread:   Option<PaintServerSpread>,
     pub fallback: Option<String>,
     pub stops:    Option<Vec<ColorStop>>
 }
@@ -81,7 +81,7 @@ macro_rules! fallback_to (
 impl GradientCommon {
     fn new (units:    Option<PaintServerUnits>,
             affine:   Option<cairo::Matrix>,
-            spread:   Option<cairo::enums::Extend>,
+            spread:   Option<PaintServerSpread>,
             fallback: Option<String>,
             stops:    Option<Vec<ColorStop>>) -> GradientCommon {
         GradientCommon {
@@ -113,7 +113,7 @@ impl GradientCommon {
 
         fallback_to! (self.units,  Some (PaintServerUnits::default ()));
         fallback_to! (self.affine, Some (cairo::Matrix::identity ()));
-        fallback_to! (self.spread, Some (cairo::enums::Extend::Pad));
+        fallback_to! (self.spread, Some (PaintServerSpread::default ()));
         fallback_to! (self.stops,  Some (Vec::<ColorStop>::new ())); // empty array of color stops
 
         self.fallback = None;
@@ -376,7 +376,7 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient> (gradient: &Gradie
 
     affine.invert ();
     pattern.set_matrix (affine);
-    pattern.set_extend (gradient.common.spread.unwrap ());
+    pattern.set_extend (gradient.common.spread.unwrap ().0);
 
     gradient.add_color_stops_to_pattern (pattern, opacity);
 
@@ -535,7 +535,7 @@ pub unsafe extern fn gradient_linear_new (x1: *const RsvgLength,
                                           fallback_name: *const libc::c_char) -> *mut Gradient {
     let my_units         = { if obj_bbox.is_null ()      { None } else { Some (paint_server_units_from_gboolean (*obj_bbox)) } };
     let my_affine        = { if affine.is_null ()        { None } else { Some (*affine) } };
-    let my_spread        = { if spread.is_null ()        { None } else { Some (*spread) } };
+    let my_spread        = { if spread.is_null ()        { None } else { Some (PaintServerSpread (*spread)) } };
     let my_fallback_name = { if fallback_name.is_null () { None } else { Some (String::from_glib_none (fallback_name)) } };
 
     let my_x1 = { if x1.is_null () { None } else { Some (*x1) } };
@@ -566,7 +566,7 @@ pub unsafe extern fn gradient_radial_new (cx: *const RsvgLength,
                                           fallback_name: *const libc::c_char) -> *mut Gradient {
     let my_units         = { if obj_bbox.is_null ()      { None } else { Some (paint_server_units_from_gboolean (*obj_bbox)) } };
     let my_affine        = { if affine.is_null ()        { None } else { Some (*affine) } };
-    let my_spread        = { if spread.is_null ()        { None } else { Some (*spread) } };
+    let my_spread        = { if spread.is_null ()        { None } else { Some (PaintServerSpread (*spread)) } };
     let my_fallback_name = { if fallback_name.is_null () { None } else { Some (String::from_glib_none (fallback_name)) } };
 
     let my_cx = { if cx.is_null () { None } else { Some (*cx) } };

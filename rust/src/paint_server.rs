@@ -1,3 +1,5 @@
+use ::cairo;
+
 use std::str::FromStr;
 
 use error::*;
@@ -30,6 +32,29 @@ impl Default for PaintServerUnits {
     }
 }
 
+// We define this as a newtype so we can impl FromStr on it
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct PaintServerSpread (pub cairo::enums::Extend);
+
+impl FromStr for PaintServerSpread {
+    type Err = AttributeError;
+
+    fn from_str (s: &str) -> Result <PaintServerSpread, AttributeError> {
+        match s {
+            "pad"     => Ok (PaintServerSpread (cairo::enums::Extend::Pad)),
+            "reflect" => Ok (PaintServerSpread (cairo::enums::Extend::Reflect)),
+            "repeat"  => Ok (PaintServerSpread (cairo::enums::Extend::Repeat)),
+            _         => Err (AttributeError::Parse (ParseError::new ("expected 'pad' | 'reflect' | 'repeat'")))
+        }
+    }
+}
+
+impl Default for PaintServerSpread {
+    fn default () -> PaintServerSpread {
+        PaintServerSpread (cairo::enums::Extend::Pad)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -45,5 +70,19 @@ mod tests {
     fn parses_paint_server_units () {
         assert_eq! (PaintServerUnits::from_str ("userSpaceOnUse"), Ok (PaintServerUnits::UserSpaceOnUse));
         assert_eq! (PaintServerUnits::from_str ("objectBoundingBox"), Ok (PaintServerUnits::ObjectBoundingBox));
+    }
+
+    #[test]
+    fn parses_spread_method () {
+        assert_eq! (PaintServerSpread::from_str ("pad"),
+                    Ok (PaintServerSpread (cairo::enums::Extend::Pad)));
+
+        assert_eq! (PaintServerSpread::from_str ("reflect"),
+                    Ok (PaintServerSpread (cairo::enums::Extend::Reflect)));
+
+        assert_eq! (PaintServerSpread::from_str ("repeat"),
+                    Ok (PaintServerSpread (cairo::enums::Extend::Repeat)));
+
+        assert! (PaintServerSpread::from_str ("foobar").is_err ());
     }
 }
