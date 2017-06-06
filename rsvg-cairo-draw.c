@@ -42,93 +42,6 @@
 #include <pango/pangocairo.h>
 #include <pango/pangofc-fontmap.h>
 
-static Gradient *
-linear_gradient_to_rust (RsvgNode *node)
-{
-    RsvgLinearGradient *linear;
-    Gradient *gradient;
-
-    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT);
-    linear = rsvg_rust_cnode_get_impl (node);
-
-    gradient = gradient_linear_new (linear->hasx1 ? &linear->x1 : NULL,
-                                    linear->hasy1 ? &linear->y1 : NULL,
-                                    linear->hasx2 ? &linear->x2 : NULL,
-                                    linear->hasy2 ? &linear->y2 : NULL,
-                                    linear->hasbbox ? &linear->obj_bbox : NULL,
-                                    linear->hastransform ? &linear->affine : NULL,
-                                    linear->hasspread ? &linear->spread : NULL,
-                                    linear->fallback);
-
-    gradient_add_color_stops_from_node (gradient, node);
-
-    return gradient;
-}
-
-static Gradient *
-radial_gradient_to_rust (RsvgNode *node)
-{
-    RsvgRadialGradient *radial;
-    Gradient *gradient;
-
-    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT);
-    radial = rsvg_rust_cnode_get_impl (node);
-
-    gradient = gradient_radial_new (radial->hascx ? &radial->cx : NULL,
-                                    radial->hascy ? &radial->cy : NULL,
-                                    radial->hasr  ? &radial->r  : NULL,
-                                    radial->hasfx ? &radial->fx : NULL,
-                                    radial->hasfy ? &radial->fy : NULL,
-                                    radial->hasbbox ? &radial->obj_bbox : NULL,
-                                    radial->hastransform ? &radial->affine : NULL,
-                                    radial->hasspread ? &radial->spread : NULL,
-                                    radial->fallback);
-
-    gradient_add_color_stops_from_node (gradient, node);
-
-    return gradient;
-}
-
-Gradient *
-rsvg_gradient_node_to_rust_gradient (RsvgNode *node)
-{
-    if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
-        return linear_gradient_to_rust (node);
-    } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
-        return radial_gradient_to_rust (node);
-    } else {
-        return NULL;
-    }
-}
-
-static void
-_set_source_rsvg_linear_gradient (RsvgDrawingCtx *ctx,
-                                  RsvgNode *node,
-                                  guint8 opacity, RsvgBbox bbox)
-{
-    Gradient *gradient;
-
-    gradient = linear_gradient_to_rust (node);
-
-    gradient_resolve_fallbacks_and_set_pattern (gradient, ctx, opacity, bbox);
-
-    gradient_destroy (gradient);
-}
-
-static void
-_set_source_rsvg_radial_gradient (RsvgDrawingCtx * ctx,
-                                  RsvgNode *node,
-                                  guint8 opacity, RsvgBbox bbox)
-{
-    Gradient *gradient;
-
-    gradient = radial_gradient_to_rust (node);
-
-    gradient_resolve_fallbacks_and_set_pattern (gradient, ctx, opacity, bbox);
-
-    gradient_destroy (gradient);
-}
-
 static void
 _set_source_rsvg_solid_color (RsvgDrawingCtx * ctx,
                               RsvgSolidColor * color, guint8 opacity, guint32 current_color)
@@ -169,12 +82,13 @@ _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
         node = rsvg_drawing_ctx_acquire_node (ctx, ps->core.iri->iri_str);
         if (node == NULL) {
             use_alternate = TRUE;
-        } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT) {
-            _set_source_rsvg_linear_gradient (ctx, node, opacity, bbox);
-            had_paint_server = TRUE;
-        } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
-            _set_source_rsvg_radial_gradient (ctx, node, opacity, bbox);
-            had_paint_server = TRUE;
+        } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT
+                   || rsvg_node_get_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
+            if (gradient_resolve_fallbacks_and_set_pattern (node, ctx, opacity, bbox)) {
+                had_paint_server = TRUE;
+            } else {
+                use_alternate = TRUE;
+            }
         } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_PATTERN) {
             if (pattern_resolve_fallbacks_and_set_pattern (node, ctx, bbox)) {
                 had_paint_server = TRUE;

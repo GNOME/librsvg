@@ -39,10 +39,8 @@ pub use color::{
 };
 
 pub use gradient::{
-    gradient_linear_new,
-    gradient_radial_new,
-    gradient_destroy,
-    gradient_add_color_stops_from_node,
+    rsvg_node_linear_gradient_new,
+    rsvg_node_radial_gradient_new,
     gradient_resolve_fallbacks_and_set_pattern
 };
 

@@ -263,7 +263,7 @@ static const NodeCreator node_creators[] = {
     { "circle",              TRUE,  rsvg_node_circle_new },
     { "clipPath",            TRUE,  rsvg_new_clip_path },
     /* "color-profile",      FALSE, */
-    { "conicalGradient",     TRUE,  rsvg_new_radial_gradient },
+    { "conicalGradient",     TRUE,  rsvg_node_radial_gradient_new },
     /* "cursor",             FALSE, */
     { "defs",                TRUE,  rsvg_node_defs_new },
     /* "desc",               TRUE,  */
@@ -306,7 +306,7 @@ static const NodeCreator node_creators[] = {
     /* "hkern",              FALSE, */
     { "image",               TRUE,  rsvg_new_image },
     { "line",                TRUE,  rsvg_node_line_new },
-    { "linearGradient",      TRUE,  rsvg_new_linear_gradient },
+    { "linearGradient",      TRUE,  rsvg_node_linear_gradient_new },
     { "marker",              TRUE,  rsvg_node_marker_new },
     { "mask",                TRUE,  rsvg_new_mask },
     /* "metadata",           FALSE, */
@@ -317,7 +317,7 @@ static const NodeCreator node_creators[] = {
     { "pattern",             TRUE,  rsvg_node_pattern_new },
     { "polygon",             TRUE,  rsvg_node_polygon_new },
     { "polyline",            TRUE,  rsvg_node_polyline_new },
-    { "radialGradient",      TRUE,  rsvg_new_radial_gradient },
+    { "radialGradient",      TRUE,  rsvg_node_radial_gradient_new },
     { "rect",                TRUE,  rsvg_node_rect_new },
     /* "script",             FALSE, */
     /* "set",                FALSE, */

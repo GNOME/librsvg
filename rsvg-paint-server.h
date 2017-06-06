@@ -32,90 +32,24 @@
 
 G_BEGIN_DECLS 
 
-typedef struct _RsvgLinearGradient RsvgLinearGradient;
-typedef struct _RsvgRadialGradient RsvgRadialGradient;
 typedef struct _RsvgSolidColor RsvgSolidColor;
 
 typedef struct _RsvgPaintServer RsvgPaintServer;
 
-typedef struct _RsvgPSCtx RsvgPSCtx;
-
-struct _RsvgLinearGradient {
-    gboolean obj_bbox;
-    cairo_matrix_t affine; /* user space to actual at time of gradient def */
-    cairo_extend_t spread;
-    RsvgLength x1, y1, x2, y2;
-    gboolean hasx1;
-    gboolean hasy1;
-    gboolean hasx2;
-    gboolean hasy2;
-    gboolean hasbbox;
-    gboolean hastransform;
-    gboolean hasspread;
-    char *fallback;
-};
-
-struct _RsvgRadialGradient {
-    gboolean obj_bbox;
-    cairo_matrix_t affine; /* user space to actual at time of gradient def */
-    cairo_extend_t spread;
-    RsvgLength cx, cy, r, fx, fy;
-    gboolean hascx;
-    gboolean hascy;
-    gboolean hasr;
-    gboolean hasfx;
-    gboolean hasfy;
-    gboolean hasbbox;
-    gboolean hastransform;
-    gboolean hasspread;
-    char *fallback;
-};
-
-/* This is a Rust gradient from rust/src/gradient.rs */
-typedef struct _Gradient Gradient;
+/* Implemented in rust/src/gradient.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_linear_gradient_new (const char *element_name, RsvgNode *parent);
 
 /* Implemented in rust/src/gradient.rs */
 G_GNUC_INTERNAL
-Gradient *gradient_linear_new (RsvgLength     *x1,
-                               RsvgLength     *y1,
-                               RsvgLength     *x2,
-                               RsvgLength     *y2,
-                               gboolean       *obj_bbox,
-                               cairo_matrix_t *affine,
-                               cairo_extend_t *extend,
-                               const char     *fallback_name);
+RsvgNode *rsvg_node_radial_gradient_new (const char *element_name, RsvgNode *parent);
 
 /* Implemented in rust/src/gradient.rs */
 G_GNUC_INTERNAL
-Gradient *gradient_radial_new (RsvgLength     *cx,
-                               RsvgLength     *cy,
-                               RsvgLength     *r,
-                               RsvgLength     *fx,
-                               RsvgLength     *fy,
-                               gboolean       *obj_bbox,
-                               cairo_matrix_t *affine,
-                               cairo_extend_t *extend,
-                               const char     *fallback_name);
-
-/* Implemented in rust/src/gradient.rs */
-G_GNUC_INTERNAL
-void gradient_destroy (Gradient *gradient);
-
-/* Implemented in rust/src/gradient.rs */
-G_GNUC_INTERNAL
-void gradient_add_color_stops_from_node (Gradient *gradient,
-                                         RsvgNode *node);
-
-/* Implemented in rust/src/gradient.rs */
-G_GNUC_INTERNAL
-void gradient_resolve_fallbacks_and_set_pattern (Gradient       *gradient,
-                                                 RsvgDrawingCtx *draw_ctx,
-                                                 guint8          opacity,
-                                                 RsvgBbox        bbox);
-
-G_GNUC_INTERNAL
-Gradient *rsvg_gradient_node_to_rust_gradient (RsvgNode *node);
-
+gboolean gradient_resolve_fallbacks_and_set_pattern (RsvgNode       *node,
+                                                     RsvgDrawingCtx *draw_ctx,
+                                                     guint8          opacity,
+                                                     RsvgBbox        bbox);
 /* Implemented in rust/src/pattern.rs */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_pattern_new (const char *element_name, RsvgNode *parent);
