@@ -29,6 +29,7 @@ pub struct ColorStop {
  * ones can be inherited from the gradient referenced by its "fallback" IRI.  We
  * represent these possibly-missing attributes as Option<foo>.
  */
+#[derive(Clone)]
 pub struct GradientCommon {
     pub units:    Option<PaintServerUnits>,
     pub affine:   Option<cairo::Matrix>,
@@ -55,6 +56,7 @@ pub enum GradientVariant {
     }
 }
 
+#[derive(Clone)]
 pub struct Gradient {
     pub common: GradientCommon,
     pub variant: GradientVariant
@@ -151,18 +153,6 @@ impl GradientCommon {
                                     rgba:   rgba });
         } else {
             unreachable! ();
-        }
-    }
-}
-
-impl Clone for GradientCommon {
-    fn clone (&self) -> Self {
-        GradientCommon {
-            units:    self.units,
-            affine:   self.affine,
-            spread:   self.spread,
-            fallback: clone_fallback_name (&self.fallback),
-            stops:    self.clone_stops ()
         }
     }
 }
@@ -289,15 +279,6 @@ impl Gradient {
     }
 }
 
-impl Clone for Gradient {
-    fn clone (&self) -> Self {
-        Gradient {
-            common: self.common.clone (),
-            variant: self.variant
-        }
-    }
-}
-
 trait FallbackSource {
     fn get_fallback (&mut self, name: &str) -> Option<RsvgNode>;
 }
@@ -314,9 +295,7 @@ fn resolve_gradient (gradient: &Gradient, fallback_source: &mut FallbackSource) 
 
         if let Some (fallback_node) = opt_fallback {
             fallback_node.with_impl (|i: &NodeGradient| {
-                let mut fallback_gradient = i.gradient.borrow ().clone ();
-                fallback_gradient.add_color_stops_from_node (&fallback_node);
-
+                let fallback_gradient = i.get_gradient_with_color_stops_from_node (&fallback_node);
                 result.resolve_from_fallback (&fallback_gradient)
             });
         } else {
@@ -562,6 +541,12 @@ impl NodeGradient {
             })
         }
     }
+
+    fn get_gradient_with_color_stops_from_node (&self, node: &RsvgNode) -> Gradient {
+        let mut gradient = self.gradient.borrow ().clone ();
+        gradient.add_color_stops_from_node (node);
+        gradient
+    }
 }
 
 impl NodeTrait for NodeGradient {
@@ -651,9 +636,7 @@ pub extern fn gradient_resolve_fallbacks_and_set_pattern (raw_node:     *const R
     let mut did_set_gradient = false;
 
     node.with_impl (|node_gradient: &NodeGradient| {
-        let mut gradient = node_gradient.gradient.borrow ().clone ();
-        gradient.add_color_stops_from_node (node);
-
+        let gradient = node_gradient.get_gradient_with_color_stops_from_node (&node);
         did_set_gradient = resolve_fallbacks_and_set_pattern (&gradient, draw_ctx, opacity, bbox);
     });
 
