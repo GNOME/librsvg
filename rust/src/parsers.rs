@@ -1,3 +1,4 @@
+use ::cssparser::{Parser, Token, BasicParseError};
 use ::nom::{IResult, double, is_alphabetic};
 
 use std::str;
@@ -14,6 +15,12 @@ pub struct ParseError {
 impl ParseError {
     pub fn new<T: AsRef<str>> (msg: T) -> ParseError {
         ParseError { display: msg.as_ref ().to_string () }
+    }
+}
+
+impl<'a> From<BasicParseError<'a>> for ParseError {
+    fn from (_: BasicParseError) -> ParseError {
+        ParseError::new ("parse error")
     }
 }
 
@@ -113,6 +120,33 @@ named! (pub coordinate_pair<(f64, f64)>,
                    y: double        >>
                    (x, y)));
 
+// number-optional-number
+//
+// https://www.w3.org/TR/SVG/types.html#DataTypeNumberOptionalNumber
+
+pub fn number_optional_number (s: &str) -> Result <(f64, f64), ParseError> {
+    let mut parser = Parser::new (s);
+
+    let x = parser.expect_number ()? as f64;
+
+    if !parser.is_exhausted () {
+        let position = parser.position ();
+
+        match parser.next ()? {
+            Token::Comma => {},
+            _ => parser.reset (position)
+        };
+
+        let y = parser.expect_number ()? as f64;
+
+        parser.expect_exhausted ()?;
+
+        Ok ((x, y))
+    } else {
+        Ok ((x, x))
+    }
+}
+
 // Parse a list-of-points as for polyline and polygon elements
 // https://www.w3.org/TR/SVG/shapes.html#PointsBNF
 
@@ -203,6 +237,28 @@ mod tests {
             IResult::Incomplete (_) => { },
             _ => { panic! ("{:?} should be an incomplete coordinate-pair", result); }
         }
+    }
+
+    #[test]
+    fn parses_number_optional_number () {
+        assert_eq! (number_optional_number ("1, 2"), Ok ((1.0, 2.0)));
+        assert_eq! (number_optional_number ("1 2"),  Ok ((1.0, 2.0)));
+        assert_eq! (number_optional_number ("1"),    Ok ((1.0, 1.0)));
+
+        assert_eq! (number_optional_number ("-1, -2"), Ok ((-1.0, -2.0)));
+        assert_eq! (number_optional_number ("-1 -2"),  Ok ((-1.0, -2.0)));
+        assert_eq! (number_optional_number ("-1"),     Ok ((-1.0, -1.0)));
+    }
+
+    #[test]
+    fn invalid_number_optional_number () {
+        assert! (number_optional_number ("").is_err ());
+        assert! (number_optional_number ("1x").is_err ());
+        assert! (number_optional_number ("x1").is_err ());
+        assert! (number_optional_number ("1 x").is_err ());
+        assert! (number_optional_number ("1 , x").is_err ());
+        assert! (number_optional_number ("1 , 2x").is_err ());
+        assert! (number_optional_number ("1 2 x").is_err ());
     }
 
     #[test]
