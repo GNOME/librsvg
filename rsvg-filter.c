@@ -1281,12 +1281,20 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode *node, gpointer impl, R
         filter->divisor = atof (value);
     if ((value = rsvg_property_bag_lookup (atts, "order"))) {
         double tempx, tempy;
-        rsvg_css_parse_number_optional_number (value, &tempx, &tempy);
-        filter->orderx = MAX (tempx, G_MAXINT);
-        filter->ordery = MAX (tempy, G_MAXINT);
+        if (rsvg_css_parse_number_optional_number (value, &tempx, &tempy)) {
+            filter->orderx = MAX (tempx, G_MAXINT);
+            filter->ordery = MAX (tempy, G_MAXINT);
+        } else {
+            rsvg_node_set_attribute_parse_error (node, "order", "expected number-optional-number");
+            return;
+        }
     }
-    if ((value = rsvg_property_bag_lookup (atts, "kernelUnitLength")))
-        rsvg_css_parse_number_optional_number (value, &filter->dx, &filter->dy);
+    if ((value = rsvg_property_bag_lookup (atts, "kernelUnitLength"))) {
+        if (!rsvg_css_parse_number_optional_number (value, &filter->dx, &filter->dy)) {
+            rsvg_node_set_attribute_parse_error (node, "kernelUnitLength", "expected number-optional-number");
+            return;
+        }
+    }
 
     if ((value = rsvg_property_bag_lookup (atts, "kernelMatrix")))
         filter->KernelMatrix = rsvg_css_parse_number_list (value, &listlen);
@@ -1964,8 +1972,12 @@ rsvg_filter_primitive_gaussian_blur_set_atts (RsvgNode *node, gpointer impl, Rsv
 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "stdDeviation")))
-        rsvg_css_parse_number_optional_number (value, &filter->sdx, &filter->sdy);
+    if ((value = rsvg_property_bag_lookup (atts, "stdDeviation"))) {
+        if (!rsvg_css_parse_number_optional_number (value, &filter->sdx, &filter->sdy)) {
+            rsvg_node_set_attribute_parse_error (node, "stdDeviation", "expected number-optional-number");
+            return;
+        }
+    }
 }
 
 RsvgNode *
@@ -2913,8 +2925,12 @@ rsvg_filter_primitive_erode_set_atts (RsvgNode *node, gpointer impl, RsvgHandle 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
     if ((value = rsvg_property_bag_lookup (atts, "radius"))) {
-        rsvg_css_parse_number_optional_number (value, &filter->rx, &filter->ry);
+        if (!rsvg_css_parse_number_optional_number (value, &filter->rx, &filter->ry)) {
+            rsvg_node_set_attribute_parse_error (node, "radius", "expected number-optional-number");
+            return;
+        }
     }
+
     if ((value = rsvg_property_bag_lookup (atts, "operator"))) {
         if (!strcmp (value, "erode"))
             filter->mode = 0;
@@ -3763,8 +3779,13 @@ rsvg_filter_primitive_turbulence_set_atts (RsvgNode *node, gpointer impl, RsvgHa
 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "baseFrequency")))
-        rsvg_css_parse_number_optional_number (value, &filter->fBaseFreqX, &filter->fBaseFreqY);
+    if ((value = rsvg_property_bag_lookup (atts, "baseFrequency"))) {
+        if (!rsvg_css_parse_number_optional_number (value, &filter->fBaseFreqX, &filter->fBaseFreqY)) {
+            rsvg_node_set_attribute_parse_error (node, "baseFrequency", "expected number-optional-number");
+            return;
+        }
+    }
+
     if ((value = rsvg_property_bag_lookup (atts, "numOctaves")))
         filter->nNumOctaves = atoi (value);
     if ((value = rsvg_property_bag_lookup (atts, "seed")))
