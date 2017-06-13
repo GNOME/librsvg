@@ -347,25 +347,6 @@ rsvg_css_parse_number_list (const char *in_str, guint * out_list_len)
     return output;
 }
 
-void
-rsvg_css_parse_number_optional_number (const char *str, double *x, double *y)
-{
-    char *endptr;
-
-    /* TODO: some error checking */
-
-    *x = g_ascii_strtod (str, &endptr);
-
-    if (endptr && *endptr != '\0')
-        while (g_ascii_isspace (*endptr) && *endptr)
-            endptr++;
-
-    if (endptr && *endptr)
-        *y = g_ascii_strtod (endptr, NULL);
-    else
-        *y = *x;
-}
-
 gboolean
 rsvg_css_parse_overflow (const char *str, gboolean * inherit)
 {

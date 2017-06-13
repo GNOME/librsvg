@@ -1,4 +1,7 @@
+use ::libc;
 use ::cssparser::{Parser, Token, BasicParseError};
+use ::glib::translate::*;
+use ::glib_sys;
 use ::nom::{IResult, double, is_alphabetic};
 
 use std::str;
@@ -146,6 +149,36 @@ pub fn number_optional_number (s: &str) -> Result <(f64, f64), ParseError> {
         Ok ((x, x))
     }
 }
+
+#[no_mangle]
+pub extern fn rsvg_css_parse_number_optional_number (s: *const libc::c_char,
+                                                     out_x: *mut f64,
+                                                     out_y: *mut f64) -> glib_sys::gboolean {
+    assert! (!s.is_null ());
+    assert! (!out_x.is_null ());
+    assert! (!out_y.is_null ());
+
+    let string = unsafe { String::from_glib_none (s) };
+
+    match number_optional_number (&string) {
+        Ok ((x, y)) => {
+            unsafe {
+                *out_x = x;
+                *out_y = y;
+            }
+            true
+        },
+
+        Err (_) => {
+            unsafe {
+                *out_x = 0.0;
+                *out_y = 0.0;
+            }
+            false
+        }
+    }.to_glib ()
+}
+
 
 // Parse a list-of-points as for polyline and polygon elements
 // https://www.w3.org/TR/SVG/shapes.html#PointsBNF

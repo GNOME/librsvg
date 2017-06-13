@@ -78,6 +78,10 @@ pub use opacity::{
     rsvg_css_parse_opacity
 };
 
+pub use parsers::{
+    rsvg_css_parse_number_optional_number
+};
+
 pub use path_builder::{
     rsvg_path_builder_add_to_cairo_context
 };
