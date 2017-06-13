@@ -4,7 +4,6 @@ use ::glib::translate::*;
 use ::glib_sys;
 use ::libc;
 
-
 use std::f64::consts::*;
 
 use parse_transform::*;
@@ -41,7 +40,7 @@ fn make_rotation_matrix (angle_degrees: f64, tx: f64, ty: f64) -> cairo::Matrix 
 }
 
 #[no_mangle]
-pub fn rsvg_parse_transform (out_matrix: *mut cairo::Matrix, s: *const libc::c_char) -> glib_sys::gboolean {
+pub extern fn rsvg_parse_transform (out_matrix: *mut cairo::Matrix, s: *const libc::c_char) -> glib_sys::gboolean {
     assert! (!out_matrix.is_null ());
     assert! (!s.is_null ());
 
