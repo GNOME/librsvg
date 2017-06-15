@@ -1,9 +1,6 @@
-dist: trusty
-language: rust
-rust:
-  - nightly
-  - beta
-  - stable
+language: nix
+script:
+  - nix-shell --pure --run "cargo test"
 addons:
   apt:
     packages:
