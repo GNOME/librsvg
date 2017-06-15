@@ -2,12 +2,11 @@
 name = "rsvg"
 version = "0.1.3"
 authors = ["selaux"]
-categories = ["api-bindings", "svg"]
 description = "Rust bindings for the Rsvg library"
 repository = "https://github.com/selaux/rsvg-rs"
 license = "MIT"
 
-keywords = ["rsvg", "svg", "gtk-rs", "gnome", "gtk"]
+keywords = ["rsvg", "svg", "gtk-rs"]
 include = ["src/**/*", "Cargo.toml"]
 
 [lib]

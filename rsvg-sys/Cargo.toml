@@ -21,3 +21,7 @@ build = "build.rs"
 links = "rsvg"
 name = "rsvg-sys"
 version = "0.3.4"
+authors = ["selaux"]
+description = "Rust bindings for the Rsvg library (ffi)"
+repository = "https://github.com/selaux/rsvg-rs"
+license = "MIT"
