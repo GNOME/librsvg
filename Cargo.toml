@@ -8,6 +8,7 @@ repository = "https://github.com/selaux/rsvg-rs"
 license = "LGPL"
 
 keywords = ["svg", "gtk-rs", "gnome"]
+include = ["src/**/*", "Cargo.toml"]
 
 [lib]
 name = "rsvg"
