@@ -5,7 +5,7 @@ authors = ["selaux"]
 categories = ["api-bindings", "svg"]
 description = "Rust bindings for the Rsvg library"
 repository = "https://github.com/selaux/rsvg-rs"
-license = "LGPL"
+license = "MIT"
 
 keywords = ["svg", "gtk-rs", "gnome"]
 include = ["src/**/*", "Cargo.toml"]
