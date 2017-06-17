@@ -201,6 +201,50 @@ pub fn list_of_points (string: &[u8]) -> Result <Vec<(f64, f64)>, ParseError> {
 named! (pub separated_numbers<Vec<f64>>,
         separated_list! (comma_wsp, double));
 
+// Lists of number values
+
+pub enum ListLength {
+    Exact (usize),
+    Maximum (usize)
+}
+
+#[derive(Debug, PartialEq)]
+pub enum NumberListError {
+    IncorrectNumberOfElements,
+    Parse (ParseError)
+}
+
+fn number_list (s: &str, length: ListLength) -> Result <Vec<f64>, NumberListError> {
+    let n;
+
+    match length {
+        ListLength::Exact (l)   => { assert! (l > 0); n = l; }
+        ListLength::Maximum (l) => { assert! (l > 0); n = l; }
+    }
+
+    let mut parser = Parser::new (s);
+
+    let mut v = Vec::<f64>::with_capacity (n);
+
+    for i in 0..n {
+        v.push (parser.expect_number ().map_err (|_| NumberListError::Parse (ParseError::new ("expected number")))? as f64);
+
+        if i != n - 1 {
+            let _ = parser.try (|p| p.expect_comma ());
+        }
+
+        if parser.is_exhausted () {
+            if let ListLength::Maximum (_) = length {
+                break;
+            }
+        }
+    }
+
+    parser.expect_exhausted ().map_err (|_| NumberListError::IncorrectNumberOfElements)?;
+
+    Ok(v)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -351,5 +395,40 @@ mod tests {
         assert! (angle_degrees ("").is_err ());
         assert! (angle_degrees ("foo").is_err ());
         assert! (angle_degrees ("300foo").is_err ());
+    }
+
+    #[test]
+    fn parses_number_list () {
+        assert_eq! (number_list ("5", ListLength::Exact (1)),
+                    Ok (vec! [5.0]));
+
+        assert_eq! (number_list ("1 2 3 4", ListLength::Exact (4)),
+                    Ok (vec! [1.0, 2.0, 3.0, 4.0]));
+
+        assert_eq! (number_list ("5", ListLength::Maximum (1)),
+                    Ok (vec! [5.0]));
+
+        assert_eq! (number_list ("1.0, -2.5", ListLength::Maximum (2)),
+                    Ok (vec! [1.0, -2.5]));
+
+        assert_eq! (number_list ("5 6", ListLength::Maximum (3)),
+                    Ok (vec! [5.0, 6.0]));
+    }
+
+    #[test]
+    fn errors_on_invalid_number_list () {
+        // empty
+        assert! (number_list ("", ListLength::Exact (1)).is_err ());
+
+        // too many
+        assert! (number_list ("1 2", ListLength::Exact (1)).is_err ());
+        assert! (number_list ("1,2,3", ListLength::Maximum (2)).is_err ());
+
+        // extra token
+        assert! (number_list ("1,", ListLength::Exact (1)).is_err ());
+
+        // too few
+        assert! (number_list ("1", ListLength::Exact (2)).is_err ());
+        assert! (number_list ("1 2", ListLength::Exact (3)).is_err ());
     }
 }
