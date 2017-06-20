@@ -1247,7 +1247,6 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode *node, gpointer impl, R
 {
     RsvgFilterPrimitiveConvolveMatrix *filter = impl;
     gint i, j;
-    guint listlen = 0;
     const char *value;
     gboolean has_target_x, has_target_y;
 
@@ -1279,16 +1278,29 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode *node, gpointer impl, R
     }
     if ((value = rsvg_property_bag_lookup (atts, "divisor")))
         filter->divisor = atof (value);
+
     if ((value = rsvg_property_bag_lookup (atts, "order"))) {
         double tempx, tempy;
-        if (rsvg_css_parse_number_optional_number (value, &tempx, &tempy)) {
-            filter->orderx = MAX (tempx, G_MAXINT);
-            filter->ordery = MAX (tempy, G_MAXINT);
+        if (rsvg_css_parse_number_optional_number (value, &tempx, &tempy)
+            && tempx >= 1.0 && tempy <= 100.0
+            && tempy >= 1.0 && tempy <= 100.0) {
+            filter->orderx = (int) tempx;
+            filter->ordery = (int) tempy;
+            g_assert (filter->orderx >= 1);
+            g_assert (filter->ordery >= 1);
+
+#define SIZE_OVERFLOWS(a,b) (G_UNLIKELY ((b) > 0 && (a) > G_MAXSIZE / (b)))
+
+            if (SIZE_OVERFLOWS (filter->orderx, filter->ordery)) {
+                rsvg_node_set_attribute_parse_error (node, "order", "number of kernelMatrix elements would be too big");
+                return;
+            }
         } else {
-            rsvg_node_set_attribute_parse_error (node, "order", "expected number-optional-number");
+            rsvg_node_set_attribute_parse_error (node, "order", "invalid size for convolve matrix");
             return;
         }
     }
+
     if ((value = rsvg_property_bag_lookup (atts, "kernelUnitLength"))) {
         if (!rsvg_css_parse_number_optional_number (value, &filter->dx, &filter->dy)) {
             rsvg_node_set_attribute_parse_error (node, "kernelUnitLength", "expected number-optional-number");
@@ -1296,8 +1308,23 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode *node, gpointer impl, R
         }
     }
 
-    if ((value = rsvg_property_bag_lookup (atts, "kernelMatrix")))
-        filter->KernelMatrix = rsvg_css_parse_number_list (value, &listlen);
+    if ((value = rsvg_property_bag_lookup (atts, "kernelMatrix"))) {
+        gsize num_elems;
+        gsize got_num_elems;
+
+        num_elems = filter->orderx * filter->ordery;
+
+        if (!rsvg_css_parse_number_list (value,
+                                         NUMBER_LIST_LENGTH_EXACT,
+                                         num_elems,
+                                         &filter->KernelMatrix,
+                                         &got_num_elems)) {
+            rsvg_node_set_attribute_parse_error (node, "kernelMatrix", "expected a matrix of numbers");
+            return;
+        }
+
+        g_assert (num_elems == got_num_elems);
+    }
 
     if ((value = rsvg_property_bag_lookup (atts, "edgeMode"))) {
         if (!strcmp (value, "wrap"))
@@ -1307,9 +1334,6 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode *node, gpointer impl, R
         else
             filter->edgemode = 0;
     }
-
-    if ((gint64) listlen != (gint64) filter->orderx * filter->ordery)
-        filter->orderx = filter->ordery = 0;
 
     if (filter->divisor == 0) {
         for (j = 0; j < filter->orderx; j++)
@@ -2374,7 +2398,7 @@ rsvg_filter_primitive_color_matrix_set_atts (RsvgNode *node, gpointer impl, Rsvg
 {
     RsvgFilterPrimitiveColorMatrix *filter = impl;
     gint type;
-    guint listlen = 0;
+    gsize listlen = 0;
     const char *value;
 
     type = 0;
@@ -2388,7 +2412,16 @@ rsvg_filter_primitive_color_matrix_set_atts (RsvgNode *node, gpointer impl, Rsvg
 
     if ((value = rsvg_property_bag_lookup (atts, "values"))) {
         unsigned int i;
-        double *temp = rsvg_css_parse_number_list (value, &listlen);
+        double *temp;
+        if (!rsvg_css_parse_number_list (value,
+                                         NUMBER_LIST_LENGTH_MAXIMUM,
+                                         20,
+                                         &temp,
+                                         &listlen)) {
+            rsvg_node_set_attribute_parse_error (node, "values", "invalid number list");
+            return;
+        }
+
         filter->KernelMatrix = g_new0 (int, listlen);
         for (i = 0; i < listlen; i++)
             filter->KernelMatrix[i] = temp[i] * 255.;
@@ -2504,7 +2537,7 @@ typedef struct _RsvgFilterPrimitiveComponentTransfer
 struct _RsvgNodeComponentTransferFunc {
     ComponentTransferFunc function;
     gint *tableValues;
-    guint nbTableValues;
+    gsize nbTableValues;
     gint slope;
     gint intercept;
     gint amplitude;
@@ -2747,10 +2780,19 @@ rsvg_node_component_transfer_function_set_atts (RsvgNode *node, gpointer impl, R
         else if (!strcmp (value, "gamma"))
             data->function = gamma_component_transfer_func;
     }
+
     if ((value = rsvg_property_bag_lookup (atts, "tableValues"))) {
         unsigned int i;
-        double *temp = rsvg_css_parse_number_list (value,
-                                                   &data->nbTableValues);
+        double *temp;
+        if (!rsvg_css_parse_number_list (value,
+                                         NUMBER_LIST_LENGTH_MAXIMUM,
+                                         256,
+                                         &temp,
+                                         &data->nbTableValues)) {
+            rsvg_node_set_attribute_parse_error (node, "tableValues", "invalid number list");
+            return;
+        }
+
         data->tableValues = g_new0 (gint, data->nbTableValues);
         for (i = 0; i < data->nbTableValues; i++)
             data->tableValues[i] = temp[i] * 255.;

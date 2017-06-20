@@ -318,20 +318,28 @@ rsvg_css_parse_list (const char *in_str, guint * out_list_len)
     return string_array;
 }
 
-gdouble *
-rsvg_css_parse_number_list (const char *in_str, guint * out_list_len)
+gboolean
+rsvg_css_parse_number_list (const char       *in_str,
+                            NumberListLength nlength,
+                            gsize            size,
+                            gdouble          **out_list,
+                            gsize            *out_list_len)
 {
     gchar **string_array;
     gdouble *output;
     guint len, i;
 
-    if (out_list_len)
-        *out_list_len = 0;
+    *out_list = NULL;
+    *out_list_len = 0;
 
     string_array = rsvg_css_parse_list (in_str, &len);
 
     if (!(string_array && len))
-        return NULL;
+        return FALSE;
+
+    if ((nlength == NUMBER_LIST_LENGTH_EXACT && (gsize) len != size)
+        || (nlength == NUMBER_LIST_LENGTH_MAXIMUM && (gsize) len > size))
+        return FALSE;
 
     output = g_new0 (gdouble, len);
 
@@ -341,10 +349,11 @@ rsvg_css_parse_number_list (const char *in_str, guint * out_list_len)
 
     g_strfreev (string_array);
 
-    if (out_list_len != NULL)
-        *out_list_len = len;
+    *out_list_len = len;
 
-    return output;
+    *out_list = output;
+
+    return TRUE;
 }
 
 gboolean

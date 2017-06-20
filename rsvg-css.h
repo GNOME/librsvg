@@ -133,8 +133,20 @@ gboolean rsvg_css_parse_number_optional_number (const char *str, double *out_x, 
 
 G_GNUC_INTERNAL
 gchar       **rsvg_css_parse_list           (const char *in_str, guint * out_list_len);
+
+/* Keep in sync with rust/src/parsers.rs:NumberListLength */
+typedef enum {
+    NUMBER_LIST_LENGTH_EXACT,
+    NUMBER_LIST_LENGTH_MAXIMUM
+} NumberListLength;
+
 G_GNUC_INTERNAL
-gdouble	     *rsvg_css_parse_number_list    (const char *in_str, guint * out_list_len);
+gboolean rsvg_css_parse_number_list (const char      *in_str,
+                                     NumberListLength nlength,
+                                     gsize            size,
+                                     gdouble         **out_list,
+                                     gsize           *out_list_len);
+
 G_GNUC_INTERNAL
 gboolean      rsvg_css_parse_overflow       (const char *str, gboolean * inherit);
 G_GNUC_INTERNAL
