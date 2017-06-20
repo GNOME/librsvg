@@ -286,9 +286,7 @@ pub extern fn rsvg_css_parse_number_list (in_str:   *const libc::c_char,
 
             let mut array = unsafe { slice::from_raw_parts_mut (c_array, num_elems) };
 
-            for (i, v) in number_list.into_iter ().enumerate () {
-                array[i] = v;
-            }
+            array.copy_from_slice (&number_list);
 
             unsafe {
                 *out_list = c_array;
