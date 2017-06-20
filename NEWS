@@ -1,3 +1,7 @@
+Version 2.41.1
+- The feConvolveMatrix filter primitive wasn't being rendered at all;
+  now it works.
+
 Version 2.41.0
 - The big news is that parts of librsvg are now implemented in the
   Rust programming language, instead of C.  The public API remains
