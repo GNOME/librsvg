@@ -420,6 +420,12 @@ mod tests {
         // empty
         assert! (number_list ("", ListLength::Exact (1)).is_err ());
 
+        // garbage
+        assert! (number_list ("foo", ListLength::Exact (1)).is_err ());
+        assert! (number_list ("1foo", ListLength::Exact (2)).is_err ());
+        assert! (number_list ("1 foo", ListLength::Exact (2)).is_err ());
+        assert! (number_list ("1,foo", ListLength::Exact (2)).is_err ());
+
         // too many
         assert! (number_list ("1 2", ListLength::Exact (1)).is_err ());
         assert! (number_list ("1,2,3", ListLength::Maximum (2)).is_err ());
