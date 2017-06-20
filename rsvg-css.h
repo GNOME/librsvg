@@ -140,11 +140,12 @@ typedef enum {
     NUMBER_LIST_LENGTH_MAXIMUM
 } NumberListLength;
 
+/* Implemented in rust/src/parsers.rs */
 G_GNUC_INTERNAL
 gboolean rsvg_css_parse_number_list (const char      *in_str,
                                      NumberListLength nlength,
                                      gsize            size,
-                                     gdouble         **out_list,
+                                     gdouble        **out_list,
                                      gsize           *out_list_len);
 
 G_GNUC_INTERNAL

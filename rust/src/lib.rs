@@ -79,6 +79,7 @@ pub use opacity::{
 };
 
 pub use parsers::{
+    rsvg_css_parse_number_list,
     rsvg_css_parse_number_optional_number
 };
 

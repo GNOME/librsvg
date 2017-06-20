@@ -4,8 +4,11 @@ use ::glib::translate::*;
 use ::glib_sys;
 use ::nom::{IResult, double, is_alphabetic};
 
-use std::str;
 use std::f64::consts::*;
+use std::mem;
+use std::ptr;
+use std::slice;
+use std::str;
 
 // I don't know how to copy a nom::IError for long-term storage
 // (i.e. when it can no longer reference the &[u8]).  So, we explode a
@@ -243,6 +246,66 @@ fn number_list (s: &str, length: ListLength) -> Result <Vec<f64>, NumberListErro
     parser.expect_exhausted ().map_err (|_| NumberListError::IncorrectNumberOfElements)?;
 
     Ok(v)
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum NumberListLength {
+    Exact,
+    Maximum
+}
+
+#[no_mangle]
+pub extern fn rsvg_css_parse_number_list (in_str:   *const libc::c_char,
+                                          nlength:  NumberListLength,
+                                          size:     libc::size_t,
+                                          out_list: *mut *const libc::c_double,
+                                          out_list_length: *mut libc::size_t) -> glib_sys::gboolean {
+    assert! (!in_str.is_null ());
+    assert! (!out_list.is_null ());
+    assert! (!out_list_length.is_null ());
+
+    let length = match nlength {
+        NumberListLength::Exact   => ListLength::Exact (size),
+        NumberListLength::Maximum => ListLength::Maximum (size)
+    };
+
+    let s = unsafe { String::from_glib_none (in_str) };
+
+    let result = number_list (&s, length);
+
+    match result {
+        Ok (number_list) => {
+            let num_elems = number_list.len ();
+
+            let c_array = unsafe {
+                glib_sys::g_malloc_n (num_elems,
+                                      mem::size_of::<libc::c_double> ())
+                    as *mut libc::c_double
+            };
+
+            let mut array = unsafe { slice::from_raw_parts_mut (c_array, num_elems) };
+
+            for (i, v) in number_list.into_iter ().enumerate () {
+                array[i] = v;
+            }
+
+            unsafe {
+                *out_list = c_array;
+                *out_list_length = num_elems;
+            }
+
+            true
+        },
+
+        Err (_) => {
+            unsafe {
+                *out_list = ptr::null ();
+                *out_list_length = 0;
+            }
+            false
+        }
+    }.to_glib ()
 }
 
 #[cfg(test)]

@@ -319,44 +319,6 @@ rsvg_css_parse_list (const char *in_str, guint * out_list_len)
 }
 
 gboolean
-rsvg_css_parse_number_list (const char       *in_str,
-                            NumberListLength nlength,
-                            gsize            size,
-                            gdouble          **out_list,
-                            gsize            *out_list_len)
-{
-    gchar **string_array;
-    gdouble *output;
-    guint len, i;
-
-    *out_list = NULL;
-    *out_list_len = 0;
-
-    string_array = rsvg_css_parse_list (in_str, &len);
-
-    if (!(string_array && len))
-        return FALSE;
-
-    if ((nlength == NUMBER_LIST_LENGTH_EXACT && (gsize) len != size)
-        || (nlength == NUMBER_LIST_LENGTH_MAXIMUM && (gsize) len > size))
-        return FALSE;
-
-    output = g_new0 (gdouble, len);
-
-    /* TODO: some error checking */
-    for (i = 0; i < len; i++)
-        output[i] = g_ascii_strtod (string_array[i], NULL);
-
-    g_strfreev (string_array);
-
-    *out_list_len = len;
-
-    *out_list = output;
-
-    return TRUE;
-}
-
-gboolean
 rsvg_css_parse_overflow (const char *str, gboolean * inherit)
 {
     SETINHERIT ();
