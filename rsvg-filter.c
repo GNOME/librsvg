@@ -1094,6 +1094,12 @@ rsvg_new_filter_primitive_blend (const char *element_name, RsvgNode *parent)
 
 typedef struct _RsvgFilterPrimitiveConvolveMatrix RsvgFilterPrimitiveConvolveMatrix;
 
+typedef enum {
+    EDGE_MODE_DUPLICATE,
+    EDGE_MODE_WRAP,
+    EDGE_MODE_NONE
+} EdgeMode;
+
 struct _RsvgFilterPrimitiveConvolveMatrix {
     RsvgFilterPrimitive super;
     double *KernelMatrix;
@@ -1103,7 +1109,7 @@ struct _RsvgFilterPrimitiveConvolveMatrix {
     double bias;
     gint targetx, targety;
     gboolean preservealpha;
-    gint edgemode;
+    EdgeMode edgemode;
 };
 
 static void
@@ -1161,17 +1167,17 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgNode *node, RsvgFilterPrimitiv
 
     output_pixels = cairo_image_surface_get_data (output);
 
-    for (y = boundarys.y0; y < boundarys.y1; y++)
+    for (y = boundarys.y0; y < boundarys.y1; y++) {
         for (x = boundarys.x0; x < boundarys.x1; x++) {
             for (umch = 0; umch < 3 + !convolve->preservealpha; umch++) {
                 ch = ctx->channelmap[umch];
                 sum = 0;
-                for (i = 0; i < convolve->ordery; i++)
+                for (i = 0; i < convolve->ordery; i++) {
                     for (j = 0; j < convolve->orderx; j++) {
                         int alpha;
                         sx = x - targetx + j * dx;
                         sy = y - targety + i * dy;
-                        if (convolve->edgemode == 0) {
+                        if (convolve->edgemode == EDGE_MODE_DUPLICATE) {
                             if (sx < boundarys.x0)
                                 sx = boundarys.x0;
                             if (sx >= boundarys.x1)
@@ -1180,17 +1186,20 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgNode *node, RsvgFilterPrimitiv
                                 sy = boundarys.y0;
                             if (sy >= boundarys.y1)
                                 sy = boundarys.y1 - 1;
-                        } else if (convolve->edgemode == 1) {
+                        } else if (convolve->edgemode == EDGE_MODE_WRAP) {
                             if (sx < boundarys.x0 || (sx >= boundarys.x1))
                                 sx = boundarys.x0 + (sx - boundarys.x0) %
                                     (boundarys.x1 - boundarys.x0);
                             if (sy < boundarys.y0 || (sy >= boundarys.y1))
                                 sy = boundarys.y0 + (sy - boundarys.y0) %
                                     (boundarys.y1 - boundarys.y0);
-                        } else if (convolve->edgemode == 2)
+                        } else if (convolve->edgemode == EDGE_MODE_NONE) {
                             if (sx < boundarys.x0 || (sx >= boundarys.x1) ||
                                 sy < boundarys.y0 || (sy >= boundarys.y1))
                                 continue;
+                        } else {
+                            g_assert_not_reached ();
+                        }
 
                         kx = convolve->orderx - j - 1;
                         ky = convolve->ordery - i - 1;
@@ -1204,6 +1213,8 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgNode *node, RsvgFilterPrimitiv
                         kval = convolve->KernelMatrix[kx + ky * convolve->orderx];
                         sum += (double) sval *kval;
                     }
+                }
+
                 tempresult = sum / convolve->divisor + convolve->bias;
 
                 if (tempresult > 255)
@@ -1223,6 +1234,7 @@ rsvg_filter_primitive_convolve_matrix_render (RsvgNode *node, RsvgFilterPrimitiv
                     output_pixels[4 * x + y * rowstride + ctx->channelmap[3]] / 255;
             }
         }
+    }
 
     cairo_surface_mark_dirty (output);
 
@@ -1327,12 +1339,16 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode *node, gpointer impl, R
     }
 
     if ((value = rsvg_property_bag_lookup (atts, "edgeMode"))) {
-        if (!strcmp (value, "wrap"))
-            filter->edgemode = 1;
-        else if (!strcmp (value, "none"))
-            filter->edgemode = 2;
-        else
-            filter->edgemode = 0;
+        if (!strcmp (value, "duplicate")) {
+            filter->edgemode = EDGE_MODE_DUPLICATE;
+        } else if (!strcmp (value, "wrap")) {
+            filter->edgemode = EDGE_MODE_WRAP;
+        } else if (!strcmp (value, "none")) {
+            filter->edgemode = EDGE_MODE_NONE;
+        } else {
+            rsvg_node_set_attribute_parse_error (node, "edgeMode", "expected 'duplicate' | 'wrap' | 'none'");
+            return;
+        }
     }
 
     if (filter->divisor == 0) {
@@ -1366,7 +1382,7 @@ rsvg_new_filter_primitive_convolve_matrix (const char *element_name, RsvgNode *p
     filter->dx = 0;
     filter->dy = 0;
     filter->preservealpha = FALSE;
-    filter->edgemode = 0;
+    filter->edgemode = EDGE_MODE_DUPLICATE;
     filter->super.render = rsvg_filter_primitive_convolve_matrix_render;
 
     return rsvg_rust_cnode_new (RSVG_NODE_TYPE_FILTER_PRIMITIVE_CONVOLVE_MATRIX,
