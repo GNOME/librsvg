@@ -8,16 +8,16 @@ Do you want to render non-animated SVGs to a Cairo surface with a
 minimal, no-nonsense API?  Librsvg may be adequate for you.
 
 There is a code of conduct for contributors to librsvg; please see the
-file code_of_conduct.md.
+file `code_of_conduct.md`.
 
 For information on how to report bugs, or how to contribute to librsvg
-in general, please see the file CONTRIBUTING.md.
+in general, please see the file `CONTRIBUTING.md`.
 
 Goals of librsvg
 ----------------
 
 Librsvg aims to be a low-footprint library for rendering SVG images.
-It is used primarily in the GNOME project (www.gnome.org) to render
+It is used primarily in the [GNOME project](https://www.gnome.org) to render
 SVG icons and vector images that appear on the desktop.  It is also
 used in Wikimedia to render the SVG images that appear in Wikipedia,
 so that even old web browsers can display them.
