@@ -1417,6 +1417,8 @@ box_blur_line (gint box_width, gint even_offset,
                       kernel; it's the pixel to remove from the accumulator. */
     gint  *ac;     /* Accumulator for each channel                           */
 
+    g_assert (box_width > 0);
+
     ac = g_new0 (gint, bpp);
 
     /* The algorithm differs for even and odd-sized kernels.
@@ -1774,7 +1776,6 @@ gaussian_blur_surface (cairo_surface_t *in,
                        gdouble sx,
                        gdouble sy)
 {
-    gboolean use_box_blur;
     gint width, height;
     cairo_format_t in_format, out_format;
     gint in_stride;
@@ -1818,14 +1819,6 @@ gaussian_blur_surface (cairo_surface_t *in,
     if (sy < 0.0)
         sy = 0.0;
 
-    /* For small radiuses, use a true gaussian kernel; otherwise use three box blurs with
-     * clever offsets.
-     */
-    if (sx < 10.0 && sy < 10.0)
-        use_box_blur = FALSE;
-    else
-        use_box_blur = TRUE;
-
     /* Bail out by just copying? */
     if ((sx == 0.0 && sy == 0.0)
         || sx > 1000 || sy > 1000) {
@@ -1845,6 +1838,15 @@ gaussian_blur_surface (cairo_surface_t *in,
         int y;
         guchar *row_buffer = NULL;
         guchar *row1, *row2;
+        gboolean use_box_blur;
+
+        /* For small radiuses, use a true gaussian kernel; otherwise use three box blurs with
+         * clever offsets.
+         */
+        if (sx < 10.0)
+            use_box_blur = FALSE;
+        else
+            use_box_blur = TRUE;
 
         if (use_box_blur) {
             box_width = compute_box_blur_width (sx);
@@ -1900,6 +1902,15 @@ gaussian_blur_surface (cairo_surface_t *in,
         guchar *col_buffer;
         guchar *col1, *col2;
         int x;
+        gboolean use_box_blur;
+
+        /* For small radiuses, use a true gaussian kernel; otherwise use three box blurs with
+         * clever offsets.
+         */
+        if (sy < 10.0)
+            use_box_blur = FALSE;
+        else
+            use_box_blur = TRUE;
 
         /* twice the size so we can have the source pixels and the blurred pixels */
         col_buffer = g_new0 (guchar, height * bpp * 2);
