@@ -4866,6 +4866,11 @@ rsvg_filter_primitive_tile_render (RsvgFilterPrimitive * self, RsvgFilterContext
     in = input.surface;
     boundarys = input.bounds;
 
+    if ((boundarys.x0 >= boundarys.x1) || (boundarys.y0 >= boundarys.y1)) {
+        cairo_surface_destroy (in);
+        return;
+    }
+
     cairo_surface_flush (in);
 
     in_pixels = cairo_image_surface_get_data (in);
