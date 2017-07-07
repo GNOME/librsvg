@@ -723,7 +723,6 @@ rsvg_filter_get_bg (RsvgFilterContext * ctx)
     return ctx->bg_surface;
 }
 
-/* FIXMEchpe: proper return value and out param! */
 /**
  * rsvg_filter_get_result:
  * @name: The name of the surface
@@ -769,24 +768,21 @@ rsvg_filter_get_result (GString * name, RsvgFilterContext * ctx)
         return output;
     }
 
-    /* g_warning (_("%s not found\n"), name->str); */
-
-    output = ctx->lastresult;
-    cairo_surface_reference (output.surface);
+    output.surface = NULL;
     return output;
 }
 
-/**
- * rsvg_filter_get_in:
- * @name:
- * @ctx:
- *
- * Returns: (transfer full) (nullable): a new #cairo_surface_t, or %NULL
- */
 static cairo_surface_t *
 rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
 {
-    return rsvg_filter_get_result (name, ctx).surface;
+    cairo_surface_t *surface;
+
+    surface = rsvg_filter_get_result (name, ctx).surface;
+    if (surface == NULL || cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+        return NULL;
+    }
+
+    return surface;
 }
 
 static void
