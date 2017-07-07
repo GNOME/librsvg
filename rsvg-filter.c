@@ -1963,16 +1963,13 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node, RsvgFilterPrimitive 
 
     boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    op = rsvg_filter_get_result (primitive->in, ctx);
-    in = op.surface;
+    in = rsvg_filter_get_in (primitive->in, ctx);
+    if (in == NULL) {
+        return;
+    }
 
     width = cairo_image_surface_get_width (in);
     height = cairo_image_surface_get_height (in);
-
-    if (width == 0 || height == 0) {
-        cairo_surface_destroy (in);
-        return;
-    }
 
     output = _rsvg_image_surface_new (width, height);
 
@@ -4946,6 +4943,10 @@ rsvg_filter_primitive_tile_render (RsvgNode *node, RsvgFilterPrimitive *primitiv
 
     input = rsvg_filter_get_result (primitive->in, ctx);
     in = input.surface;
+    if (in == NULL) {
+        return;
+    }
+
     boundarys = input.bounds;
 
     if ((boundarys.x0 >= boundarys.x1) || (boundarys.y0 >= boundarys.y1)) {
