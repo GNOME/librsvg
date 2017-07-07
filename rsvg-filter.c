@@ -1973,6 +1973,11 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node, RsvgFilterPrimitive 
     width = cairo_image_surface_get_width (in);
     height = cairo_image_surface_get_height (in);
 
+    if (width == 0 || height == 0) {
+        cairo_surface_destroy (in);
+        return;
+    }
+
     output = _rsvg_image_surface_new (width, height);
 
     if (output == NULL) {
