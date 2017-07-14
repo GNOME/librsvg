@@ -47,7 +47,7 @@ respectively.
 
 # Tests and test fixtures
 
-## Image-based reference tests for rsvg-test.c
+## Image-based reference tests for `rsvg-test.c`
 
 These will load, parse, and render an SVG, and compare the results
 against a reference PNG image.
@@ -170,7 +170,9 @@ generated.  However, they are done in such a way that objects tend not
 to be pixel-aligned.  For example, many tests have a rectangular frame
 around the whole viewport, defined like this:
 
-  <rect id="test-frame" x="1" y="1" width="478" height="358" fill="none" stroke="#000000"/>
+```
+<rect id="test-frame" x="1" y="1" width="478" height="358" fill="none" stroke="#000000"/>
+```
 
 This specifies no stroke with, so it uses 1 by default.  The desired
 effect is "stroke this rectangle with a 1-pixel wide line".
@@ -201,13 +203,13 @@ from a secondary SVG).
 
 In any case, look at the results by hand, and compare them by eye to
 the official reference image.  If the thing being tested looks
-correct, and just the outlines are fuzzy --- and also it is just the
-actual font shapes that are different --- then the test is probably
+correct, and just the outlines are fuzzy — and also it is just the
+actual font shapes that are different — then the test is probably
 correct.  Follow the procedure as in "Regenerating reference images"
 listed above in order to have a reference image suitable for librsvg.
 
 
-## Crash tests for crash.c
+## Crash tests for `crash.c`
 
 These load and parse an SVG, and ensure that there are no errors in
 the process.  Note that this does *not* render the images.
@@ -218,7 +220,7 @@ files, load them, and ensure that no GError was produced while loading
 each file.
 
 
-## Style tests for styles.c
+## Style tests for `styles.c`
 
 These load and parse an SVG, ask librsvg to fetch an SVG object by its
 id, and ensure that the object has certain style properties with
