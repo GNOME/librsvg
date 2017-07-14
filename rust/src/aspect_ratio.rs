@@ -6,7 +6,7 @@
 //! [`AspectRatio`] implements `FromStr`, so it can be parsed easily:
 //!
 //! ```
-//! assert_eq! (AspectRatio::from_str ("XmidYmid"),
+//! assert_eq! (AspectRatio::from_str ("xMidYMid"),
 //!             Ok (AspectRatio { defer: false,
 //!                               align: Align::Aligned { align: AlignMode::XmidYmid,
 //!                                                       fit: FitMode::Meet } }));
@@ -226,15 +226,15 @@ bitflags! {
 fn parse_align_mode (s: &str) -> Option<Align> {
     match s {
         "none"     => { Some (Align::None) },
-        "XminYmin" => { Some (Align::Aligned { align: AlignMode::XminYmin, fit: FitMode::Meet } ) },
-        "XmidYmin" => { Some (Align::Aligned { align: AlignMode::XmidYmin, fit: FitMode::Meet } ) },
-        "XmaxYmin" => { Some (Align::Aligned { align: AlignMode::XmaxYmin, fit: FitMode::Meet } ) },
-        "XminYmid" => { Some (Align::Aligned { align: AlignMode::XminYmid, fit: FitMode::Meet } ) },
-        "XmidYmid" => { Some (Align::Aligned { align: AlignMode::XmidYmid, fit: FitMode::Meet } ) },
-        "XmaxYmid" => { Some (Align::Aligned { align: AlignMode::XmaxYmid, fit: FitMode::Meet } ) },
-        "XminYmax" => { Some (Align::Aligned { align: AlignMode::XminYmax, fit: FitMode::Meet } ) },
-        "XmidYmax" => { Some (Align::Aligned { align: AlignMode::XmidYmax, fit: FitMode::Meet } ) },
-        "XmaxYmax" => { Some (Align::Aligned { align: AlignMode::XmaxYmax, fit: FitMode::Meet } ) },
+        "xMinYMin" => { Some (Align::Aligned { align: AlignMode::XminYmin, fit: FitMode::Meet } ) },
+        "xMidYMin" => { Some (Align::Aligned { align: AlignMode::XmidYmin, fit: FitMode::Meet } ) },
+        "xMaxYMin" => { Some (Align::Aligned { align: AlignMode::XmaxYmin, fit: FitMode::Meet } ) },
+        "xMinYMid" => { Some (Align::Aligned { align: AlignMode::XminYmid, fit: FitMode::Meet } ) },
+        "xMidYMid" => { Some (Align::Aligned { align: AlignMode::XmidYmid, fit: FitMode::Meet } ) },
+        "xMaxYMid" => { Some (Align::Aligned { align: AlignMode::XmaxYmid, fit: FitMode::Meet } ) },
+        "xMinYMax" => { Some (Align::Aligned { align: AlignMode::XminYmax, fit: FitMode::Meet } ) },
+        "xMidYMax" => { Some (Align::Aligned { align: AlignMode::XmidYmax, fit: FitMode::Meet } ) },
+        "xMaxYMax" => { Some (Align::Aligned { align: AlignMode::XmaxYmax, fit: FitMode::Meet } ) },
         _          => { None }
     }
 }
@@ -377,13 +377,13 @@ mod tests {
 
         assert! (AspectRatio::from_str ("defer xmidymid").is_err ());
 
-        assert! (AspectRatio::from_str ("defer XmidYmid foo").is_err ());
+        assert! (AspectRatio::from_str ("defer xMidYMid foo").is_err ());
 
         assert! (AspectRatio::from_str ("xmidymid").is_err ());
 
-        assert! (AspectRatio::from_str ("XmidYmid foo").is_err ());
+        assert! (AspectRatio::from_str ("xMidYMid foo").is_err ());
 
-        assert! (AspectRatio::from_str ("defer XmidYmid meet foo").is_err ());
+        assert! (AspectRatio::from_str ("defer xMidYMid meet foo").is_err ());
     }
 
     #[test]
@@ -392,27 +392,27 @@ mod tests {
                     Ok (AspectRatio { defer: true,
                                       align: Align::None }));
 
-        assert_eq! (AspectRatio::from_str ("XmidYmid"),
+        assert_eq! (AspectRatio::from_str ("xMidYMid"),
                     Ok (AspectRatio { defer: false,
                                       align: Align::Aligned { align: AlignMode::XmidYmid,
                                                               fit: FitMode::Meet } }));
         
-        assert_eq! (AspectRatio::from_str ("defer XmidYmid"),
+        assert_eq! (AspectRatio::from_str ("defer xMidYMid"),
                     Ok (AspectRatio { defer: true,
                                       align: Align::Aligned { align: AlignMode::XmidYmid,
                                                               fit: FitMode::Meet } }));
         
-        assert_eq! (AspectRatio::from_str ("defer XminYmax"),
+        assert_eq! (AspectRatio::from_str ("defer xMinYMax"),
                     Ok (AspectRatio { defer: true,
                                       align: Align::Aligned { align: AlignMode::XminYmax,
                                                               fit: FitMode::Meet } }));
         
-        assert_eq! (AspectRatio::from_str ("defer XmaxYmid meet"),
+        assert_eq! (AspectRatio::from_str ("defer xMaxYMid meet"),
                     Ok (AspectRatio { defer: true,
                                       align: Align::Aligned { align: AlignMode::XmaxYmid,
                                                               fit: FitMode::Meet } }));
         
-        assert_eq! (AspectRatio::from_str ("defer XminYmax slice"),
+        assert_eq! (AspectRatio::from_str ("defer xMinYMax slice"),
                     Ok (AspectRatio { defer: true,
                                       align: Align::Aligned { align: AlignMode::XminYmax,
                                                               fit: FitMode::Slice } }));
@@ -426,39 +426,39 @@ mod tests {
 
     #[test]
     fn conversion_to_u32_roundtrips () {
-        test_roundtrip ("defer XmidYmid");
-        test_roundtrip ("defer XminYmax slice");
-        test_roundtrip ("XmaxYmax meet");
-        test_roundtrip ("XminYmid slice");
+        test_roundtrip ("defer xMidYMid");
+        test_roundtrip ("defer xMinYMax slice");
+        test_roundtrip ("xMaxYMax meet");
+        test_roundtrip ("xMinYMid slice");
     }
 
     #[test]
     fn aligns () {
-        assert_eq! (AspectRatio::from_str ("XminYmin meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 0.1, 1.0));
-        assert_eq! (AspectRatio::from_str ("XminYmin slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 10.0, 100.0));
+        assert_eq! (AspectRatio::from_str ("xMinYMin meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("xMinYMin slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 10.0, 100.0));
 
-        assert_eq! (AspectRatio::from_str ("XminYmid meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 0.1, 1.0));
-        assert_eq! (AspectRatio::from_str ("XminYmid slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -49.5, 10.0, 100.0));
+        assert_eq! (AspectRatio::from_str ("xMinYMid meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("xMinYMid slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -49.5, 10.0, 100.0));
 
-        assert_eq! (AspectRatio::from_str ("XminYmax meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 0.1, 1.0));
-        assert_eq! (AspectRatio::from_str ("XminYmax slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -99.0, 10.0, 100.0));
+        assert_eq! (AspectRatio::from_str ("xMinYMax meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("xMinYMax slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -99.0, 10.0, 100.0));
 
-        assert_eq! (AspectRatio::from_str ("XmidYmin meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (4.95, 0.0, 0.1, 1.0));
-        assert_eq! (AspectRatio::from_str ("XmidYmin slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 10.0, 100.0));
+        assert_eq! (AspectRatio::from_str ("xMidYMin meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (4.95, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("xMidYMin slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 10.0, 100.0));
 
-        assert_eq! (AspectRatio::from_str ("XmidYmid meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (4.95, 0.0, 0.1, 1.0));
-        assert_eq! (AspectRatio::from_str ("XmidYmid slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -49.5, 10.0, 100.0));
+        assert_eq! (AspectRatio::from_str ("xMidYMid meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (4.95, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("xMidYMid slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -49.5, 10.0, 100.0));
 
-        assert_eq! (AspectRatio::from_str ("XmidYmax meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (4.95, 0.0, 0.1, 1.0));
-        assert_eq! (AspectRatio::from_str ("XmidYmax slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -99.0, 10.0, 100.0));
+        assert_eq! (AspectRatio::from_str ("xMidYMax meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (4.95, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("xMidYMax slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -99.0, 10.0, 100.0));
 
-        assert_eq! (AspectRatio::from_str ("XmaxYmin meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (9.9, 0.0, 0.1, 1.0));
-        assert_eq! (AspectRatio::from_str ("XmaxYmin slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 10.0, 100.0));
+        assert_eq! (AspectRatio::from_str ("xMaxYMin meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (9.9, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("xMaxYMin slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, 0.0, 10.0, 100.0));
 
-        assert_eq! (AspectRatio::from_str ("XmaxYmid meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (9.9, 0.0, 0.1, 1.0));
-        assert_eq! (AspectRatio::from_str ("XmaxYmid slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -49.5, 10.0, 100.0));
+        assert_eq! (AspectRatio::from_str ("xMaxYMid meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (9.9, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("xMaxYMid slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -49.5, 10.0, 100.0));
 
-        assert_eq! (AspectRatio::from_str ("XmaxYmax meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (9.9, 0.0, 0.1, 1.0));
-        assert_eq! (AspectRatio::from_str ("XmaxYmax slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -99.0, 10.0, 100.0));
+        assert_eq! (AspectRatio::from_str ("xMaxYMax meet").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (9.9, 0.0, 0.1, 1.0));
+        assert_eq! (AspectRatio::from_str ("xMaxYMax slice").unwrap().compute (1.0, 10.0, 0.0, 0.0, 10.0, 1.0), (0.0, -99.0, 10.0, 100.0));
     }
 }
