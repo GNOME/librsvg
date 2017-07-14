@@ -69,6 +69,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	$(NULL)
 
 RUST_SOURCES =					\
+	rust/build.rs				\
 	rust/Cargo.toml				\
 	rust/src/aspect_ratio.rs		\
 	rust/src/bbox.rs			\
