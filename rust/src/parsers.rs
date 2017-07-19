@@ -190,8 +190,8 @@ named! (list_of_points_impl<Vec<(f64, f64)>>,
         terminated! (separated_list! (comma_wsp, coordinate_pair),
                      eof! ()));
 
-pub fn list_of_points (string: &[u8]) -> Result <Vec<(f64, f64)>, ParseError> {
-    list_of_points_impl (string)
+pub fn list_of_points (string: &str) -> Result <Vec<(f64, f64)>, ParseError> {
+    list_of_points_impl (string.as_bytes ())
         .to_full_result ()
         .map_err (|_| ParseError::new ("invalid syntax for list of points"))
     /*
@@ -424,18 +424,18 @@ mod tests {
     #[test]
     fn parses_list_of_points () {
         // FIXME: we are missing optional whitespace at the beginning and end of the list
-        assert_eq! (list_of_points (b"1 2"),      Ok (vec! [(1.0, 2.0)]));
-        assert_eq! (list_of_points (b"1 2 3 4"),  Ok (vec! [(1.0, 2.0), (3.0, 4.0)]));
-        assert_eq! (list_of_points (b"1,2,3,4"),  Ok (vec! [(1.0, 2.0), (3.0, 4.0)]));
-        assert_eq! (list_of_points (b"1,2 3,4"),  Ok (vec! [(1.0, 2.0), (3.0, 4.0)]));
-        assert_eq! (list_of_points (b"1,2 -3,4"), Ok (vec! [(1.0, 2.0), (-3.0, 4.0)]));
-        assert_eq! (list_of_points (b"1,2,-3,4"), Ok (vec! [(1.0, 2.0), (-3.0, 4.0)]));
+        assert_eq! (list_of_points ("1 2"),      Ok (vec! [(1.0, 2.0)]));
+        assert_eq! (list_of_points ("1 2 3 4"),  Ok (vec! [(1.0, 2.0), (3.0, 4.0)]));
+        assert_eq! (list_of_points ("1,2,3,4"),  Ok (vec! [(1.0, 2.0), (3.0, 4.0)]));
+        assert_eq! (list_of_points ("1,2 3,4"),  Ok (vec! [(1.0, 2.0), (3.0, 4.0)]));
+        assert_eq! (list_of_points ("1,2 -3,4"), Ok (vec! [(1.0, 2.0), (-3.0, 4.0)]));
+        assert_eq! (list_of_points ("1,2,-3,4"), Ok (vec! [(1.0, 2.0), (-3.0, 4.0)]));
     }
 
     #[test]
     fn errors_on_invalid_list_of_points () {
-        assert! (list_of_points (b"-1-2-3-4").is_err ());
-        assert! (list_of_points (b"1 2-3,-4").is_err ());
+        assert! (list_of_points ("-1-2-3-4").is_err ());
+        assert! (list_of_points ("1 2-3,-4").is_err ());
     }
 
     #[test]

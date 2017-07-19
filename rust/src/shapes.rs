@@ -138,7 +138,7 @@ impl NodeTrait for NodePoly {
 
         for name in vec! ["verts", "points"] {
             if let Some (value) = property_bag::lookup (pbag, name) {
-                let result = parsers::list_of_points (value.trim ().as_bytes ());
+                let result = parsers::list_of_points (value.trim ());
 
                 match result {
                     Ok (v) => {
