@@ -50,7 +50,7 @@ impl FromStr for RsvgViewBox {
     type Err = AttributeError;
 
     fn from_str (s: &str) -> Result<RsvgViewBox, AttributeError> {
-        let result = parsers::view_box (s.trim ().as_bytes ()).to_full_result ();
+        let result = parsers::view_box (s.trim ());
 
         match result {
             Ok ((x, y, w, h)) => {
@@ -65,8 +65,8 @@ impl FromStr for RsvgViewBox {
                 }
             },
 
-            Err (_) => {
-                Err (AttributeError::Parse (ParseError::new ("string does not match 'x [,] y [,] w [,] h'")))
+            Err (e) => {
+                Err (AttributeError::Parse (e))
             }
         }
     }

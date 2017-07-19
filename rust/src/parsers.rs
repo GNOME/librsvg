@@ -111,7 +111,7 @@ pub fn angle_degrees (s: &str) -> Result <f64, ParseError> {
 //
 // Where w and h must be nonnegative.
 
-named! (pub view_box<(f64, f64, f64, f64)>,
+named! (parse_view_box<(f64, f64, f64, f64)>,
         ws! (do_parse! (x: double    >>
                         opt! (comma) >>
                         y: double    >>
@@ -121,6 +121,11 @@ named! (pub view_box<(f64, f64, f64, f64)>,
                         h: double    >>
                         eof! ()      >>
                         (x, y, w, h))));
+
+pub fn view_box (s: &str) -> Result <(f64, f64, f64, f64), ParseError> {
+    parse_view_box (s.as_bytes ()).to_full_result ()
+        .map_err (|_| ParseError::new ("string does not match 'x [,] y [,] w [,] h'"))
+}
 
 // Coordinate pairs, separated by optional (whitespace-and/or comma)
 //
@@ -318,16 +323,11 @@ mod tests {
 
     #[test]
     fn parses_view_box () {
-        assert_eq! (view_box (b"1 2 3 4"), IResult::Done (&b""[..], (1.0, 2.0, 3.0, 4.0)));
-        assert_eq! (view_box (b"1,2,3 4"), IResult::Done (&b""[..], (1.0, 2.0, 3.0, 4.0)));
-        assert_eq! (view_box (b" 1,2,3 4 "), IResult::Done (&b""[..], (1.0, 2.0, 3.0, 4.0)));
+        assert_eq! (view_box ("1 2 3 4"), Ok ((1.0, 2.0, 3.0, 4.0)));
+        assert_eq! (view_box ("1,2,3 4"), Ok ((1.0, 2.0, 3.0, 4.0)));
+        assert_eq! (view_box (" 1,2,3 4 "), Ok ((1.0, 2.0, 3.0, 4.0)));
 
-        let result = view_box (b"1 2 3 4 5");
-
-        match result {
-            IResult::Error (_) => { },
-            _ => { panic! ("{:?} should be an invalid viewBox", result); }
-        }
+        assert! (view_box ("1 2 3 4 5").is_err ());
     }
 
     #[test]
