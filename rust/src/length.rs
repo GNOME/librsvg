@@ -102,47 +102,47 @@ fn make_err () -> AttributeError {
 
 impl RsvgLength {
     pub fn parse (string: &str, dir: LengthDir) -> Result <RsvgLength, AttributeError> {
-        let r = parsers::number_and_units (string.as_bytes ()).to_full_result ();
+        let r = parsers::number_and_units (string);
 
         match r {
             Ok ((value, unit)) => {
                 match unit {
-                    b"%" => Ok (RsvgLength { length: value * 0.01, // normalize to [0, 1]
-                                             unit:   LengthUnit::Percent,
+                    "%" => Ok (RsvgLength { length: value * 0.01, // normalize to [0, 1]
+                                            unit:   LengthUnit::Percent,
+                                            dir:    dir }),
+
+                    "em" => Ok (RsvgLength { length: value,
+                                             unit:   LengthUnit::FontEm,
                                              dir:    dir }),
 
-                    b"em" => Ok (RsvgLength { length: value,
-                                              unit:   LengthUnit::FontEm,
-                                              dir:    dir }),
+                    "ex" => Ok (RsvgLength { length: value,
+                                             unit:   LengthUnit::FontEx,
+                                             dir:    dir }),
 
-                    b"ex" => Ok (RsvgLength { length: value,
-                                              unit:   LengthUnit::FontEx,
-                                              dir:    dir }),
+                    "pt" => Ok (RsvgLength { length: value / POINTS_PER_INCH,
+                                             unit:   LengthUnit::Inch,
+                                             dir:    dir }),
 
-                    b"pt" => Ok (RsvgLength { length: value / POINTS_PER_INCH,
-                                              unit:   LengthUnit::Inch,
-                                              dir:    dir }),
+                    "in" => Ok (RsvgLength { length: value,
+                                             unit:   LengthUnit::Inch,
+                                             dir:    dir }),
 
-                    b"in" => Ok (RsvgLength { length: value,
-                                              unit:   LengthUnit::Inch,
-                                              dir:    dir }),
+                    "cm" => Ok (RsvgLength { length: value / CM_PER_INCH,
+                                             unit:   LengthUnit::Inch,
+                                             dir:    dir }),
 
-                    b"cm" => Ok (RsvgLength { length: value / CM_PER_INCH,
-                                              unit:   LengthUnit::Inch,
-                                              dir:    dir }),
+                    "mm" => Ok (RsvgLength { length: value / MM_PER_INCH,
+                                             unit:   LengthUnit::Inch,
+                                             dir:    dir }),
 
-                    b"mm" => Ok (RsvgLength { length: value / MM_PER_INCH,
-                                              unit:   LengthUnit::Inch,
-                                              dir:    dir }),
+                    "pc" => Ok (RsvgLength { length: value / PICA_PER_INCH,
+                                             unit:   LengthUnit::Inch,
+                                             dir:    dir }),
 
-                    b"pc" => Ok (RsvgLength { length: value / PICA_PER_INCH,
-                                              unit:   LengthUnit::Inch,
-                                              dir:    dir }),
-
-                    b"px" |
-                    b"" => Ok (RsvgLength { length: value,
-                                            unit:   LengthUnit::Default,
-                                            dir:    dir }),
+                    "px" |
+                    "" => Ok (RsvgLength { length: value,
+                                           unit:   LengthUnit::Default,
+                                           dir:    dir }),
 
                     _ => Err (make_err ())
                 }

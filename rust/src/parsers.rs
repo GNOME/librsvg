@@ -74,20 +74,26 @@ fn is_alphabetic_or_dash (c: u8) -> bool {
      is_alphabetic (c) || c == '-' as u8 || c == '%' as u8
 }
 
-named! (pub number_and_units<(f64, &[u8])>,
+named! (parse_number_and_units<(f64, &[u8])>,
         tuple! (double,
                 take_while! (is_alphabetic_or_dash)));
 
+pub fn number_and_units (s: &str) -> Result <(f64, &str), ParseError> {
+    parse_number_and_units (s.as_bytes ()).to_full_result ()
+        .map (|(v, slice)| (v, str::from_utf8 (slice).unwrap ()))
+        .map_err (|_| ParseError::new ("expected number and symbol"))
+}
+
 pub fn angle_degrees (s: &str) -> Result <f64, ParseError> {
-    let r = number_and_units (s.as_bytes ()).to_full_result ();
+    let r = number_and_units (s);
 
     match r {
         Ok ((value, unit)) => {
             match unit {
-                b"deg"  => Ok (value),
-                b"grad" => Ok (value * 360.0 / 400.0),
-                b"rad"  => Ok (value * 180.0 / PI),
-                b""     => Ok (value),
+                "deg"  => Ok (value),
+                "grad" => Ok (value * 360.0 / 400.0),
+                "rad"  => Ok (value * 180.0 / PI),
+                ""     => Ok (value),
                 _       => Err (ParseError::new ("expected (\"deg\", \"rad\", \"grad\")? after number"))
             }
         },
@@ -440,9 +446,9 @@ mod tests {
 
     #[test]
     fn parses_number_and_units () {
-        assert_eq! (number_and_units (b"-1"), IResult::Done (&b""[..], (-1.0, &b""[..])));
-        assert_eq! (number_and_units (b"0x"), IResult::Done (&b""[..], (0.0, &b"x"[..])));
-        assert_eq! (number_and_units (b"-55.5x-large"), IResult::Done (&b""[..], (-55.5, &b"x-large"[..])));
+        assert_eq! (number_and_units ("-1"), Ok ((-1.0, "")));
+        assert_eq! (number_and_units ("0x"), Ok ((0.0, "x")));
+        assert_eq! (number_and_units ("-55.5x-large"), Ok ((-55.5, "x-large")));
     }
 
     #[test]
