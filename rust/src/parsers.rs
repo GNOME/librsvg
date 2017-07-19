@@ -449,6 +449,8 @@ mod tests {
         assert_eq! (number_and_units ("-1"), Ok ((-1.0, "")));
         assert_eq! (number_and_units ("0x"), Ok ((0.0, "x")));
         assert_eq! (number_and_units ("-55.5x-large"), Ok ((-55.5, "x-large")));
+        assert_eq! (number_and_units ("10%"), Ok ((10.0, "%")));
+        assert_eq! (number_and_units ("10em"), Ok ((10.0, "em")));
     }
 
     #[test]
