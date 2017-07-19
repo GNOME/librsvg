@@ -1,8 +1,8 @@
 use ::libc;
-use ::cssparser::{Parser, Token, BasicParseError};
+use ::cssparser::{Parser, Token, BasicParseError, NumericValue};
 use ::glib::translate::*;
 use ::glib_sys;
-use ::nom::{IResult, double, is_alphabetic};
+use ::nom::{IResult, double};
 
 use std::f64::consts::*;
 use std::mem;
@@ -70,36 +70,31 @@ named! (comma_wsp,
 //
 // Returns an f64 angle in degrees
 
-fn is_alphabetic_or_dash (c: u8) -> bool {
-     is_alphabetic (c) || c == '-' as u8 || c == '%' as u8
-}
-
-named! (parse_number_and_units<(f64, &[u8])>,
-        tuple! (double,
-                take_while! (is_alphabetic_or_dash)));
-
-pub fn number_and_units (s: &str) -> Result <(f64, &str), ParseError> {
-    parse_number_and_units (s.as_bytes ()).to_full_result ()
-        .map (|(v, slice)| (v, str::from_utf8 (slice).unwrap ()))
-        .map_err (|_| ParseError::new ("expected number and symbol"))
-}
-
 pub fn angle_degrees (s: &str) -> Result <f64, ParseError> {
-    let r = number_and_units (s);
+    let mut parser = Parser::new (s);
 
-    match r {
-        Ok ((value, unit)) => {
-            match unit {
+    let token = parser.next ()
+        .map_err (|_| ParseError::new ("expected angle"))?;
+
+    match token {
+        Token::Number (NumericValue { value, .. }) => Ok (value as f64),
+
+        Token::Dimension (NumericValue { value, .. }, cow) => {
+            let value = value as f64;
+
+            match cow.as_ref () {
                 "deg"  => Ok (value),
                 "grad" => Ok (value * 360.0 / 400.0),
                 "rad"  => Ok (value * 180.0 / PI),
-                ""     => Ok (value),
-                _       => Err (ParseError::new ("expected (\"deg\", \"rad\", \"grad\")? after number"))
+                _      => Err (ParseError::new ("expected angle"))
             }
         },
 
-        _ => Err (ParseError::new ("expected a number"))
-    }
+        _ => Err (ParseError::new ("expected angle"))
+    }.and_then (|r|
+                parser.expect_exhausted ()
+                .map (|_| r)
+                .map_err (|_| ParseError::new ("expected angle")))
 }
 
 // Parse a viewBox attribute
@@ -442,15 +437,6 @@ mod tests {
     fn errors_on_invalid_list_of_points () {
         assert! (list_of_points ("-1-2-3-4").is_err ());
         assert! (list_of_points ("1 2-3,-4").is_err ());
-    }
-
-    #[test]
-    fn parses_number_and_units () {
-        assert_eq! (number_and_units ("-1"), Ok ((-1.0, "")));
-        assert_eq! (number_and_units ("0x"), Ok ((0.0, "x")));
-        assert_eq! (number_and_units ("-55.5x-large"), Ok ((-55.5, "x-large")));
-        assert_eq! (number_and_units ("10%"), Ok ((10.0, "%")));
-        assert_eq! (number_and_units ("10em"), Ok ((10.0, "em")));
     }
 
     #[test]
