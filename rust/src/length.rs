@@ -1,3 +1,4 @@
+use ::cssparser::{Parser, Token, NumericValue, PercentageValue};
 use ::glib::translate::*;
 use ::libc;
 
@@ -5,7 +6,6 @@ use std::f64::consts::*;
 
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
-use parsers;
 use parsers::ParseError;
 use error::*;
 
@@ -102,15 +102,24 @@ fn make_err () -> AttributeError {
 
 impl RsvgLength {
     pub fn parse (string: &str, dir: LengthDir) -> Result <RsvgLength, AttributeError> {
-        let r = parsers::number_and_units (string);
+        let mut parser = Parser::new (string);
 
-        match r {
-            Ok ((value, unit)) => {
-                match unit {
-                    "%" => Ok (RsvgLength { length: value * 0.01, // normalize to [0, 1]
-                                            unit:   LengthUnit::Percent,
-                                            dir:    dir }),
+        let token = parser.next ()
+            .map_err (|_| AttributeError::Parse (ParseError::new ("expected number and optional symbol, or number and percentage")))?;
 
+        match token {
+            Token::Number (NumericValue { value, .. }) => Ok (RsvgLength { length: value as f64,
+                                                                           unit:   LengthUnit::Default,
+                                                                           dir:    dir }),
+
+            Token::Percentage (PercentageValue { unit_value, .. }) => Ok (RsvgLength { length: unit_value as f64,
+                                                                                       unit:   LengthUnit::Percent,
+                                                                                       dir:    dir }),
+
+            Token::Dimension (NumericValue { value, .. }, cow) => {
+                let value = value as f64;
+
+                match cow.as_ref () {
                     "em" => Ok (RsvgLength { length: value,
                                              unit:   LengthUnit::FontEm,
                                              dir:    dir }),
@@ -139,17 +148,16 @@ impl RsvgLength {
                                              unit:   LengthUnit::Inch,
                                              dir:    dir }),
 
-                    "px" |
-                    "" => Ok (RsvgLength { length: value,
-                                           unit:   LengthUnit::Default,
-                                           dir:    dir }),
+                    "px" => Ok (RsvgLength { length: value,
+                                             unit:   LengthUnit::Default,
+                                             dir:    dir }),
 
                     _ => Err (make_err ())
                 }
             },
 
             // FIXME: why are the following in Length?  They should be in FontSize
-            _ => match string {
+            Token::Ident (cow) => match cow.as_ref () {
                 "larger" => Ok (RsvgLength { length: 0.0,
                                              unit:   LengthUnit::RelativeLarger,
                                              dir:    dir }),
@@ -164,13 +172,18 @@ impl RsvgLength {
                 "medium" |
                 "large" |
                 "x-large" |
-                "xx-large" => Ok (RsvgLength { length: compute_named_size (string),
+                "xx-large" => Ok (RsvgLength { length: compute_named_size (&*string),
                                                unit:   LengthUnit::Inch,
                                                dir:    dir }),
 
                 _ => Err (make_err ())
-            }
-        }
+            },
+
+            _ => Err (make_err ())
+        }.and_then (|r|
+                    parser.expect_exhausted ()
+                    .map (|_| r)
+                    .map_err (|_| make_err ()))
     }
 
     pub fn normalize (&self, draw_ctx: *const RsvgDrawingCtx) -> f64 {
@@ -324,9 +337,9 @@ mod tests {
                         unit:   LengthUnit::Inch,
                         dir:    LengthDir::Both }));
 
-        assert_eq! (RsvgLength::parse ("-25.4cm", LengthDir::Both),
+        assert_eq! (RsvgLength::parse ("-254cm", LengthDir::Both),
                     Ok (RsvgLength {
-                        length: -10.0,
+                        length: -100.0,
                         unit:   LengthUnit::Inch,
                         dir:    LengthDir::Both }));
 
