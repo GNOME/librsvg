@@ -126,7 +126,7 @@ named! (pub view_box<(f64, f64, f64, f64)>,
 //
 // All of these yield (1, -2): "1 -2", "1, -2", "1-2"
 
-named! (pub coordinate_pair<(f64, f64)>,
+named! (coordinate_pair<(f64, f64)>,
         do_parse! (x: double        >>
                    opt! (comma_wsp) >>
                    y: double        >>
