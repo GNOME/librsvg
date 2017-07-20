@@ -1,3 +1,11 @@
+Version 2.40.18
+- bgo#783835 - CVE-2017-11464 - Fix division-by-zero in the Gaussian
+  blur code.
+- Fix other cases of division-by-zero on fuzzed SVG files.
+- Don't crash on invalid transformation matrices.
+- Support Visual Studio 2017; generate .pc files for Meson on Windows -
+  Chun-wei Fan.
+
 Version 2.40.17
 - bgo#778666 - Use our own thumbnailer specification file, so
   gnome-desktop-thumbnailer can generate thumbnails outside of the
