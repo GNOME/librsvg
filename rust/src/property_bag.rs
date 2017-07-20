@@ -67,7 +67,7 @@ pub fn length_or_value (pbag: *const RsvgPropertyBag, key: &'static str, length_
 }
 
 pub fn parse_or_none<T> (pbag: *const RsvgPropertyBag, key: &'static str) -> Result <Option<T>, NodeError>
-    where T: Default + FromStr<Err = AttributeError>
+    where T: FromStr<Err = AttributeError>
 {
     let value = lookup (pbag, key);
 
