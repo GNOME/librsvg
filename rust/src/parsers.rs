@@ -97,29 +97,8 @@ pub fn angle_degrees (s: &str) -> Result <f64, ParseError> {
                 .map_err (|_| ParseError::new ("expected angle")))
 }
 
-// Parse a viewBox attribute
-// https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
-//
-// viewBox: double [,] double [,] double [,] double [,]
-//
-// x, y, w, h
-//
-// Where w and h must be nonnegative.
-
-named! (parse_view_box<(f64, f64, f64, f64)>,
-        ws! (do_parse! (x: double    >>
-                        opt! (comma) >>
-                        y: double    >>
-                        opt! (comma) >>
-                        w: double    >>
-                        opt! (comma) >>
-                        h: double    >>
-                        eof! ()      >>
-                        (x, y, w, h))));
-
-pub fn view_box (s: &str) -> Result <(f64, f64, f64, f64), ParseError> {
-    parse_view_box (s.as_bytes ()).to_full_result ()
-        .map_err (|_| ParseError::new ("string does not match 'x [,] y [,] w [,] h'"))
+fn optional_comma (parser: &mut Parser) {
+    let _ = parser.try (|p| p.expect_comma ());
 }
 
 // Coordinate pairs, separated by optional (whitespace-and/or comma)
@@ -223,7 +202,7 @@ pub enum NumberListError {
     Parse (ParseError)
 }
 
-fn number_list (s: &str, length: ListLength) -> Result <Vec<f64>, NumberListError> {
+pub fn number_list (s: &str, length: ListLength) -> Result <Vec<f64>, NumberListError> {
     let n;
 
     match length {
@@ -239,7 +218,7 @@ fn number_list (s: &str, length: ListLength) -> Result <Vec<f64>, NumberListErro
         v.push (parser.expect_number ().map_err (|_| NumberListError::Parse (ParseError::new ("expected number")))? as f64);
 
         if i != n - 1 {
-            let _ = parser.try (|p| p.expect_comma ());
+            optional_comma (&mut parser);
         }
 
         if parser.is_exhausted () {
@@ -315,15 +294,6 @@ pub extern fn rsvg_css_parse_number_list (in_str:   *const libc::c_char,
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn parses_view_box () {
-        assert_eq! (view_box ("1 2 3 4"), Ok ((1.0, 2.0, 3.0, 4.0)));
-        assert_eq! (view_box ("1,2,3 4"), Ok ((1.0, 2.0, 3.0, 4.0)));
-        assert_eq! (view_box (" 1,2,3 4 "), Ok ((1.0, 2.0, 3.0, 4.0)));
-
-        assert! (view_box ("1 2 3 4 5").is_err ());
-    }
 
     #[test]
     fn parses_coordinate_pairs () {
@@ -479,6 +449,7 @@ mod tests {
         assert! (number_list ("foo", ListLength::Exact (1)).is_err ());
         assert! (number_list ("1foo", ListLength::Exact (2)).is_err ());
         assert! (number_list ("1 foo", ListLength::Exact (2)).is_err ());
+        assert! (number_list ("1 foo 2", ListLength::Exact (2)).is_err ());
         assert! (number_list ("1,foo", ListLength::Exact (2)).is_err ());
 
         // too many

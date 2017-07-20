@@ -5,8 +5,8 @@ use ::glib;
 use std::str::FromStr;
 
 use error::*;
-use parsers::ParseError;
 use parsers;
+use parsers::{ListLength, ParseError};
 
 use self::glib::translate::*;
 
@@ -49,25 +49,28 @@ impl Default for RsvgViewBox {
 impl FromStr for RsvgViewBox {
     type Err = AttributeError;
 
+    // Parse a viewBox attribute
+    // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
+    //
+    // viewBox: double [,] double [,] double [,] double [,]
+    //
+    // x, y, w, h
+    //
+    // Where w and h must be nonnegative.
     fn from_str (s: &str) -> Result<RsvgViewBox, AttributeError> {
-        let result = parsers::view_box (s.trim ());
+        let v = parsers::number_list (s, ListLength::Exact (4))
+            .map_err (|_| ParseError::new ("string does not match 'x [,] y [,] w [,] h'"))?;
 
-        match result {
-            Ok ((x, y, w, h)) => {
-                if w >= 0.0 && h >= 0.0 {
-                    Ok (RsvgViewBox::new (cairo::Rectangle { x: x,
-                                                             y: y,
-                                                             width: w,
-                                                             height: h },
-                                          true))
-                } else {
-                    Err (AttributeError::Value ("width and height must not be negative".to_string ()))
-                }
-            },
+        let (x, y, w, h) = (v[0], v[1], v[2], v[3]);
 
-            Err (e) => {
-                Err (AttributeError::Parse (e))
-            }
+        if w >= 0.0 && h >= 0.0 {
+            Ok (RsvgViewBox::new (cairo::Rectangle { x: x,
+                                                     y: y,
+                                                     width: w,
+                                                     height: h },
+                                  true))
+        } else {
+            Err (AttributeError::Value ("width and height must not be negative".to_string ()))
         }
     }
 }
@@ -103,5 +106,7 @@ mod tests {
         assert! (is_parse_error (&RsvgViewBox::from_str ("qwerasdfzxcv")));
 
         assert! (is_parse_error (&RsvgViewBox::from_str (" 1 2 3 4   5")));
+
+        assert! (is_parse_error (&RsvgViewBox::from_str (" 1 2 foo 3 4")));
     }
 }
