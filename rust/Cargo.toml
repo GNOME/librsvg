@@ -34,11 +34,6 @@ version = "0.1.1"
 git = "https://github.com/gtk-rs/sys"
 version = "0.3.2"
 
-[dependencies.nom]
-#git = "https://github.com/Geal/nom"
-git = "https://github.com/federicomenaquintero/nom.git"
-features = ["verbose-errors"]
-
 [dependencies.downcast-rs]
 git = "https://github.com/marcianx/downcast-rs"
 version = "1.0.0"

@@ -10,8 +10,6 @@ extern crate libc;
 extern crate bitflags;
 #[macro_use]
 extern crate downcast_rs;
-#[macro_use]
-extern crate nom;
 
 pub use aspect_ratio::{
     rsvg_aspect_ratio_parse,
