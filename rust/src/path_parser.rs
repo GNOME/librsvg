@@ -8,12 +8,12 @@ use path_builder::*;
 
 extern crate cairo;
 
-struct PathParser<'external> {
-    chars_enumerator: Enumerate<Chars<'external>>,
+struct PathParser<'b> {
+    chars_enumerator: Enumerate<Chars<'b>>,
     lookahead: Option <char>, /* None if we are in EOF */
     current_pos: usize,
 
-    builder: &'external mut RsvgPathBuilder,
+    builder: &'b mut RsvgPathBuilder,
 
     error_message: &'static str,
     has_error: bool,
@@ -66,8 +66,8 @@ struct PathParser<'external> {
  *     M.1-2,3E2-4
  *     M 0.1 -2 300 -4
  */
-impl<'external> PathParser<'external> {
-    fn new (builder: &'external mut RsvgPathBuilder, path_str: &'external str) -> PathParser<'external> {
+impl<'b> PathParser<'b> {
+    fn new (builder: &'b mut RsvgPathBuilder, path_str: &'b str) -> PathParser<'b> {
         PathParser {
             chars_enumerator: path_str.chars ().enumerate (),
             lookahead: None,
