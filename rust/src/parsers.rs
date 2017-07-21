@@ -2,7 +2,6 @@ use ::libc;
 use ::cssparser::{Parser, Token, BasicParseError, NumericValue};
 use ::glib::translate::*;
 use ::glib_sys;
-use ::nom::{IResult, double};
 
 use std::f64::consts::*;
 use std::mem;
@@ -10,9 +9,6 @@ use std::ptr;
 use std::slice;
 use std::str;
 
-// I don't know how to copy a nom::IError for long-term storage
-// (i.e. when it can no longer reference the &[u8]).  So, we explode a
-// nom::IError into a simple error struct that can be passed around.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParseError {
     pub display: String
@@ -29,39 +25,6 @@ impl<'a> From<BasicParseError<'a>> for ParseError {
         ParseError::new ("parse error")
     }
 }
-
-/*
-impl<'a> From<IError<&'a [u8]>> for NomError {
-    fn from (e: IError<&[u8]>) -> NomError {
-        match e {
-            IError::Error (err) => NomError { display: format! ("{}", err) },
-
-            IError::Incomplete (_) => NomError { display: "incomplete data".to_string () }
-        }
-    }
-}
-*/
-
-fn is_whitespace (c: u8) -> bool {
-    match c as char {
-        ' ' | '\t' | '\r' | '\n' => true,
-        _ => false
-    }
-}
-
-// comma-wsp:
-//     (wsp+ comma? wsp*) | (comma wsp*)
-
-named! (comma, complete! (tag! (",")));
-named! (wsp, recognize! (take_while1! (is_whitespace)));
-named! (wsp_opt, recognize! (take_while! (is_whitespace)));
-
-named! (comma_wsp,
-    alt! (recognize! (tuple! (comma,
-                              wsp_opt))
-          | recognize! (tuple! (wsp,
-                                opt! (comma),
-                                wsp_opt))));
 
 // angle:
 // https://www.w3.org/TR/SVG/types.html#DataTypeAngle
@@ -101,15 +64,6 @@ fn optional_comma (parser: &mut Parser) {
     let _ = parser.try (|p| p.expect_comma ());
 }
 
-// Coordinate pairs, separated by optional (whitespace-and/or comma)
-//
-// All of these yield (1, -2): "1 -2", "1, -2", "1-2"
-
-named! (coordinate_pair<(f64, f64)>,
-        do_parse! (x: double        >>
-                   opt! (comma_wsp) >>
-                   y: double        >>
-                   (x, y)));
 
 // number-optional-number
 //
@@ -171,23 +125,32 @@ pub extern fn rsvg_css_parse_number_optional_number (s: *const libc::c_char,
 // Parse a list-of-points as for polyline and polygon elements
 // https://www.w3.org/TR/SVG/shapes.html#PointsBNF
 
-named! (list_of_points_impl<Vec<(f64, f64)>>,
-        terminated! (separated_list! (comma_wsp, coordinate_pair),
-                     eof! ()));
-
 pub fn list_of_points (string: &str) -> Result <Vec<(f64, f64)>, ParseError> {
-    list_of_points_impl (string.as_bytes ())
-        .to_full_result ()
-        .map_err (|_| ParseError::new ("invalid syntax for list of points"))
-    /*
-        .map_err (|e| match e { IError::Error (err) => ParseError::new (format! ("{}", err)),
-                                _ => ParseError::new ("incomplete list of points")
-        })
-     */
-}
+    let mut parser = Parser::new (string);
 
-named! (pub separated_numbers<Vec<f64>>,
-        separated_list! (comma_wsp, double));
+    let mut v = Vec::new ();
+
+    loop {
+        let x = parser.expect_number ()? as f64;
+
+        optional_comma (&mut parser);
+
+        let y = parser.expect_number ()? as f64;
+
+        v.push ((x, y));
+
+        if parser.is_exhausted () {
+            break;
+        }
+
+        match parser.next_including_whitespace () {
+            Ok (Token::WhiteSpace(_)) => (),
+            _ => optional_comma (&mut parser)
+        }
+    }
+
+    Ok (v)
+}
 
 // Lists of number values
 
@@ -296,59 +259,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_coordinate_pairs () {
-        assert_eq! (coordinate_pair (b"1 2"),    IResult::Done (&b""[..], (1.0, 2.0)));
-        assert_eq! (coordinate_pair (b"1-2"),    IResult::Done (&b""[..], (1.0, -2.0)));
-        assert_eq! (coordinate_pair (b"1,2"),    IResult::Done (&b""[..], (1.0, 2.0)));
-        assert_eq! (coordinate_pair (b"1, 2"),   IResult::Done (&b""[..], (1.0, 2.0)));
-        assert_eq! (coordinate_pair (b"1 ,2"),   IResult::Done (&b""[..], (1.0, 2.0)));
-        assert_eq! (coordinate_pair (b"1 , 2"),  IResult::Done (&b""[..], (1.0, 2.0)));
-        assert_eq! (coordinate_pair (b"1 -2"),   IResult::Done (&b""[..], (1.0, -2.0)));
-        assert_eq! (coordinate_pair (b"1,-2"),   IResult::Done (&b""[..], (1.0, -2.0)));
-        assert_eq! (coordinate_pair (b"1, -2"),  IResult::Done (&b""[..], (1.0, -2.0)));
-        assert_eq! (coordinate_pair (b"1 , -2"), IResult::Done (&b""[..], (1.0, -2.0)));
-    }
-
-    #[test]
-    fn detects_incomplete_coordinate_pair () {
-        let result = coordinate_pair (b"1");
-        match result {
-            IResult::Incomplete (_) => { },
-            _ => { panic! ("{:?} should be an incomplete coordinate-pair", result); }
-        }
-
-        let result = coordinate_pair (b"1,");
-        match result {
-            IResult::Incomplete (_) => { },
-            _ => { panic! ("{:?} should be an incomplete coordinate-pair", result); }
-        }
-
-        let result = coordinate_pair (b"1, ");
-        match result {
-            IResult::Incomplete (_) => { },
-            _ => { panic! ("{:?} should be an incomplete coordinate-pair", result); }
-        }
-
-        let result = coordinate_pair (b"1-");
-        match result {
-            IResult::Incomplete (_) => { },
-            _ => { panic! ("{:?} should be an incomplete coordinate-pair", result); }
-        }
-
-        let result = coordinate_pair (b"1,-");
-        match result {
-            IResult::Incomplete (_) => { },
-            _ => { panic! ("{:?} should be an incomplete coordinate-pair", result); }
-        }
-
-        let result = coordinate_pair (b"-1 -");
-        match result {
-            IResult::Incomplete (_) => { },
-            _ => { panic! ("{:?} should be an incomplete coordinate-pair", result); }
-        }
-    }
-
-    #[test]
     fn parses_number_optional_number () {
         assert_eq! (number_optional_number ("1, 2"), Ok ((1.0, 2.0)));
         assert_eq! (number_optional_number ("1 2"),  Ok ((1.0, 2.0)));
@@ -371,31 +281,8 @@ mod tests {
     }
 
     #[test]
-    fn parses_comma_wsp () {
-        assert_eq! (comma_wsp (b" , "), IResult::Done (&b""[..], &b" , "[..]));
-        assert_eq! (comma_wsp (b","),   IResult::Done (&b""[..], &b","[..]));
-        assert_eq! (comma_wsp (b" "),   IResult::Done (&b""[..], &b" "[..]));
-        assert_eq! (comma_wsp (b", "),  IResult::Done (&b""[..], &b", "[..]));
-        assert_eq! (comma_wsp (b" ,"),  IResult::Done (&b""[..], &b" ,"[..]));
-    }
-
-    #[test]
-    fn parses_separated_numbers () {
-        assert_eq! (separated_numbers (b"1 2 3 4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
-        assert_eq! (separated_numbers (b"1,2,3,4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
-        assert_eq! (separated_numbers (b"1 ,2 ,3 ,4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
-        assert_eq! (separated_numbers (b"1  ,2  ,3  ,4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
-        assert_eq! (separated_numbers (b"1, 2, 3, 4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
-        assert_eq! (separated_numbers (b"1,  2,  3,  4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
-        assert_eq! (separated_numbers (b"1 , 2 , 3 , 4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
-        assert_eq! (separated_numbers (b"1  , 2  , 3  , 4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
-        assert_eq! (separated_numbers (b"1  ,  2  ,  3  ,  4"), IResult::Done (&b""[..], vec! [1.0, 2.0, 3.0, 4.0]));
-    }
-
-    #[test]
     fn parses_list_of_points () {
-        // FIXME: we are missing optional whitespace at the beginning and end of the list
-        assert_eq! (list_of_points ("1 2"),      Ok (vec! [(1.0, 2.0)]));
+        assert_eq! (list_of_points (" 1 2 "),      Ok (vec! [(1.0, 2.0)]));
         assert_eq! (list_of_points ("1 2 3 4"),  Ok (vec! [(1.0, 2.0), (3.0, 4.0)]));
         assert_eq! (list_of_points ("1,2,3,4"),  Ok (vec! [(1.0, 2.0), (3.0, 4.0)]));
         assert_eq! (list_of_points ("1,2 3,4"),  Ok (vec! [(1.0, 2.0), (3.0, 4.0)]));
