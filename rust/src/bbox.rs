@@ -1,6 +1,5 @@
 use ::cairo;
 use ::glib_sys;
-use ::glib;
 
 use glib::translate::*;
 use cairo::MatrixTrait;
