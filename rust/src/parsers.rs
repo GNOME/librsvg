@@ -1,5 +1,5 @@
 use ::libc;
-use ::cssparser::{Parser, Token, BasicParseError, NumericValue};
+use ::cssparser::{Parser, ParserInput, Token, BasicParseError};
 use ::glib::translate::*;
 use ::glib_sys;
 
@@ -34,18 +34,19 @@ impl<'a> From<BasicParseError<'a>> for ParseError {
 // Returns an f64 angle in degrees
 
 pub fn angle_degrees (s: &str) -> Result <f64, ParseError> {
-    let mut parser = Parser::new (s);
+    let mut input = ParserInput::new (s);
+    let mut parser = Parser::new (&mut input);
 
     let token = parser.next ()
         .map_err (|_| ParseError::new ("expected angle"))?;
 
-    match token {
-        Token::Number (NumericValue { value, .. }) => Ok (value as f64),
+    match *token {
+        Token::Number { value, .. } => Ok (value as f64),
 
-        Token::Dimension (NumericValue { value, .. }, cow) => {
+        Token::Dimension { value, unit, .. } => {
             let value = value as f64;
 
-            match cow.as_ref () {
+            match unit.as_ref () {
                 "deg"  => Ok (value),
                 "grad" => Ok (value * 360.0 / 400.0),
                 "rad"  => Ok (value * 180.0 / PI),
@@ -70,14 +71,15 @@ fn optional_comma (parser: &mut Parser) {
 // https://www.w3.org/TR/SVG/types.html#DataTypeNumberOptionalNumber
 
 pub fn number_optional_number (s: &str) -> Result <(f64, f64), ParseError> {
-    let mut parser = Parser::new (s);
+    let mut input = ParserInput::new (s);
+    let mut parser = Parser::new (&mut input);
 
     let x = parser.expect_number ()? as f64;
 
     if !parser.is_exhausted () {
         let position = parser.position ();
 
-        match parser.next ()? {
+        match *parser.next ()? {
             Token::Comma => {},
             _ => parser.reset (position)
         };
@@ -126,7 +128,8 @@ pub extern fn rsvg_css_parse_number_optional_number (s: *const libc::c_char,
 // https://www.w3.org/TR/SVG/shapes.html#PointsBNF
 
 pub fn list_of_points (string: &str) -> Result <Vec<(f64, f64)>, ParseError> {
-    let mut parser = Parser::new (string);
+    let mut input = ParserInput::new (string);
+    let mut parser = Parser::new (&mut input);
 
     let mut v = Vec::new ();
 
@@ -144,7 +147,7 @@ pub fn list_of_points (string: &str) -> Result <Vec<(f64, f64)>, ParseError> {
         }
 
         match parser.next_including_whitespace () {
-            Ok (Token::WhiteSpace(_)) => (),
+            Ok (&Token::WhiteSpace(_)) => (),
             _ => optional_comma (&mut parser)
         }
     }
@@ -173,7 +176,8 @@ pub fn number_list (s: &str, length: ListLength) -> Result <Vec<f64>, NumberList
         ListLength::Maximum (l) => { assert! (l > 0); n = l; }
     }
 
-    let mut parser = Parser::new (s);
+    let mut input = ParserInput::new (s);
+    let mut parser = Parser::new (&mut input);
 
     let mut v = Vec::<f64>::with_capacity (n);
 

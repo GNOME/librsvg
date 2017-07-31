@@ -1,7 +1,7 @@
 /// Struct to represent an inheritable opacity property
 /// https://www.w3.org/TR/SVG/masking.html#OpacityProperty
 
-use ::cssparser::{Parser, Token, NumericValue};
+use ::cssparser::{Parser, ParserInput, Token};
 use ::libc;
 
 use std::str::FromStr;
@@ -67,11 +67,12 @@ impl FromStr for Opacity {
     type Err = AttributeError;
 
     fn from_str (s: &str) -> Result<Opacity, AttributeError> {
-        let mut parser = Parser::new (s);
+        let mut input = ParserInput::new (s);
+        let mut parser = Parser::new (&mut input);
 
         let token = parser.next ();
         let result = match token {
-            Ok (Token::Ident (value)) => {
+            Ok (&Token::Ident (value)) => {
                 if value == "inherit" {
                     Ok (Opacity::Inherit)
                 } else {
@@ -79,7 +80,7 @@ impl FromStr for Opacity {
                 }
             },
 
-            Ok (Token::Number (NumericValue { value, .. })) => {
+            Ok (&Token::Number { value, .. }) => {
                 if value < 0.0 {
                     Ok (Opacity::Specified (0.0))
                 } else if value > 1.0 {

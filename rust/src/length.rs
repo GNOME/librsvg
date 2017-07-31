@@ -1,4 +1,4 @@
-use ::cssparser::{Parser, Token, NumericValue, PercentageValue};
+use ::cssparser::{Parser, ParserInput, Token};
 use ::glib::translate::*;
 use ::libc;
 
@@ -102,24 +102,25 @@ fn make_err () -> AttributeError {
 
 impl RsvgLength {
     pub fn parse (string: &str, dir: LengthDir) -> Result <RsvgLength, AttributeError> {
-        let mut parser = Parser::new (string);
+        let mut input = ParserInput::new (string);
+        let mut parser = Parser::new (&mut input);
 
         let token = parser.next ()
             .map_err (|_| AttributeError::Parse (ParseError::new ("expected number and optional symbol, or number and percentage")))?;
 
-        match token {
-            Token::Number (NumericValue { value, .. }) => Ok (RsvgLength { length: value as f64,
+        match *token {
+            Token::Number { value, .. } => Ok (RsvgLength { length: value as f64,
                                                                            unit:   LengthUnit::Default,
                                                                            dir:    dir }),
 
-            Token::Percentage (PercentageValue { unit_value, .. }) => Ok (RsvgLength { length: unit_value as f64,
+            Token::Percentage { unit_value, .. } => Ok (RsvgLength { length: unit_value as f64,
                                                                                        unit:   LengthUnit::Percent,
                                                                                        dir:    dir }),
 
-            Token::Dimension (NumericValue { value, .. }, cow) => {
+            Token::Dimension { value, unit, .. } => {
                 let value = value as f64;
 
-                match cow.as_ref () {
+                match unit.as_ref () {
                     "em" => Ok (RsvgLength { length: value,
                                              unit:   LengthUnit::FontEm,
                                              dir:    dir }),

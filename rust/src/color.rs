@@ -70,7 +70,8 @@ impl Color {
                 Err (AttributeError::Value ("inherit is not allowed here".to_string ()))
             }
         } else {
-            match cssparser::Color::parse (&mut cssparser::Parser::new (s)) {
+            let mut input = cssparser::ParserInput::new (s);
+            match cssparser::Color::parse (&mut cssparser::Parser::new (&mut input)) {
                 Ok (cssparser::Color::CurrentColor) => {
                     if allow_current_color == AllowCurrentColor::Yes {
                         Ok (Color::CurrentColor)
