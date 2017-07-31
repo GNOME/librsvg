@@ -37,28 +37,31 @@ pub fn angle_degrees (s: &str) -> Result <f64, ParseError> {
     let mut input = ParserInput::new (s);
     let mut parser = Parser::new (&mut input);
 
-    let token = parser.next ()
-        .map_err (|_| ParseError::new ("expected angle"))?;
+    let angle = {
+        let token = parser.next ()
+            .map_err (|_| ParseError::new ("expected angle"))?;
 
-    match token {
-        &Token::Number { value, .. } => Ok (value as f64),
+        match token {
+            &Token::Number { value, .. } => value as f64,
 
-        &Token::Dimension { value, ref unit, .. } => {
-            let value = value as f64;
+            &Token::Dimension { value, ref unit, .. } => {
+                let value = value as f64;
 
-            match unit.as_ref () {
-                "deg"  => Ok (value),
-                "grad" => Ok (value * 360.0 / 400.0),
-                "rad"  => Ok (value * 180.0 / PI),
-                _      => Err (ParseError::new ("expected angle"))
-            }
-        },
+                match unit.as_ref () {
+                    "deg"  => value,
+                    "grad" => value * 360.0 / 400.0,
+                    "rad"  => value * 180.0 / PI,
+                    _      => return Err (ParseError::new ("expected angle"))
+                }
+            },
 
-        _ => Err (ParseError::new ("expected angle"))
-    }.and_then (|r|
-                parser.expect_exhausted ()
-                .map (|_| r)
-                .map_err (|_| ParseError::new ("expected angle")))
+            _ => return Err (ParseError::new ("expected angle"))
+        }
+    };
+    
+    parser.expect_exhausted ().map_err (|_| ParseError::new ("expected angle"))?;
+
+    Ok (angle)
 }
 
 fn optional_comma (parser: &mut Parser) {
