@@ -78,16 +78,16 @@ impl FromStr for Opacity {
             let token = parser.next ()
                 .map_err (|_| make_err ())?;
 
-            match token {
-                &Token::Ident (ref value) => {
-                    if value.as_ref () == "inherit" {
+            match *token {
+                Token::Ident (ref cow) => {
+                    if cow.as_ref () == "inherit" {
                         Opacity::Inherit
                     } else {
                         return Err (make_err ());
                     }
                 },
 
-                &Token::Number { value, .. } => {
+                Token::Number { value, .. } => {
                     if value < 0.0 {
                         Opacity::Specified (0.0)
                     } else if value > 1.0 {

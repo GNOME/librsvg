@@ -109,16 +109,16 @@ impl RsvgLength {
             let token = parser.next ()
                 .map_err (|_| AttributeError::Parse (ParseError::new ("expected number and optional symbol, or number and percentage")))?;
 
-            match token {
-                &Token::Number { value, .. } => RsvgLength { length: value as f64,
-                                                             unit:   LengthUnit::Default,
-                                                             dir:    dir },
+            match *token {
+                Token::Number { value, .. } => RsvgLength { length: value as f64,
+                                                            unit:   LengthUnit::Default,
+                                                            dir:    dir },
 
-                &Token::Percentage { unit_value, .. } => RsvgLength { length: unit_value as f64,
-                                                                      unit:   LengthUnit::Percent,
-                                                                      dir:    dir },
+                Token::Percentage { unit_value, .. } => RsvgLength { length: unit_value as f64,
+                                                                     unit:   LengthUnit::Percent,
+                                                                     dir:    dir },
 
-                &Token::Dimension { value, ref unit, .. } => {
+                Token::Dimension { value, ref unit, .. } => {
                     let value = value as f64;
 
                     match unit.as_ref () {
@@ -159,7 +159,7 @@ impl RsvgLength {
                 },
 
                 // FIXME: why are the following in Length?  They should be in FontSize
-                &Token::Ident (ref cow) => match cow.as_ref () {
+                Token::Ident (ref cow) => match cow.as_ref () {
                     "larger" => RsvgLength { length: 0.0,
                                              unit:   LengthUnit::RelativeLarger,
                                              dir:    dir },
