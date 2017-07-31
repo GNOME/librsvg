@@ -10,13 +10,11 @@ bitflags = ""
 glib = "^0.1.3"
 glib-sys = "^0.3.4"
 cairo = ""
+cairo-sys-rs = ""
 downcast-rs = "^1.0.0"
 regex = "^0.2.1"
 lalrpop-util = "^0.12.5"
-
-[dependencies.cssparser]
-git = "https://github.com/servo/rust-cssparser"
-version = "0.18.2"
+cssparser = "^0.18.2"
 
 #[dependencies.cairo-sys-rs]
 #git = "https://github.com/federicomenaquintero/cairo.git"
