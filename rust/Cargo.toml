@@ -13,15 +13,15 @@ git = "https://github.com/servo/rust-cssparser"
 version = "0.14.0"
 
 [dependencies.cairo-sys-rs]
-#git = "https://github.com/gtk-rs/cairo.git"
-git = "https://github.com/federicomenaquintero/cairo.git"
+git = "https://github.com/gtk-rs/cairo.git"
+#git = "https://github.com/federicomenaquintero/cairo.git"
 #branch = "matrix-try-invert"
 #git = "file:///home/federico/src/gtk-rs/cairo"
 #features = ["png"]
 
 [dependencies.cairo-rs]
-#git = "https://github.com/gtk-rs/cairo.git"
-git = "https://github.com/federicomenaquintero/cairo.git"
+git = "https://github.com/gtk-rs/cairo.git"
+#git = "https://github.com/federicomenaquintero/cairo.git"
 #branch = "matrix-try-invert"
 #git = "file:///home/federico/src/gtk-rs/cairo"
 #features = ["png"]
