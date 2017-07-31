@@ -1,10 +1,11 @@
-use ::cairo::MatrixTrait;
 use ::glib::translate::*;
 use ::libc;
 
 use std::cell::RefCell;
 use std::cell::Cell;
 use std::ptr;
+
+use cairo::MatrixTrait;
 
 use aspect_ratio::*;
 use drawing_ctx::RsvgDrawingCtx;

@@ -1,10 +1,12 @@
 use ::cairo;
-use ::cairo::MatrixTrait;
 use ::glib::translate::*;
 use ::glib_sys;
 use ::libc;
 
 use std::f64::consts::*;
+
+use cairo::Matrix;
+use cairo::MatrixTrait;
 
 use parse_transform::*;
 

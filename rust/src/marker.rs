@@ -1,11 +1,12 @@
 use ::cairo;
-use ::cairo::MatrixTrait;
 use ::glib::translate::*;
 use ::libc;
 
 use std::cell::Cell;
 use std::f64::consts::*;
 use std::str::FromStr;
+
+use cairo::MatrixTrait;
 
 use aspect_ratio::*;
 use drawing_ctx;

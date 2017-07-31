@@ -1,8 +1,4 @@
 use ::cairo;
-use ::cairo::MatrixTrait;
-use ::cairo::enums::*;
-use ::cairo::SurfacePattern;
-use ::cairo::Pattern as CairoPattern;
 use ::glib_sys;
 use ::glib::translate::*;
 use ::libc;
@@ -10,6 +6,9 @@ use ::libc;
 use std::cell::RefCell;
 use std::rc::*;
 use std::str::FromStr;
+
+use cairo::MatrixTrait;
+use cairo::Pattern as CairoPattern;
 
 use aspect_ratio::*;
 use bbox::*;
@@ -422,7 +421,7 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     let cr_save = drawing_ctx::get_cairo_context (draw_ctx);
     drawing_ctx::state_push (draw_ctx);
 
-    let surface = cr_save.get_target ().create_similar (Content::ColorAlpha, pw, ph);
+    let surface = cr_save.get_target ().create_similar (cairo::Content::ColorAlpha, pw, ph);
 
     let cr_pattern = cairo::Context::new (&surface);
 
@@ -446,14 +445,14 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
 
     // Set the final surface as a Cairo pattern into the Cairo context
 
-    let surface_pattern = SurfacePattern::create (&surface);
-    surface_pattern.set_extend (Extend::Repeat);
+    let surface_pattern = cairo::SurfacePattern::create (&surface);
+    surface_pattern.set_extend (cairo::Extend::Repeat);
 
     let mut matrix = affine;
     matrix.invert ();
 
     surface_pattern.set_matrix (matrix);
-    surface_pattern.set_filter (Filter::Best);
+    surface_pattern.set_filter (cairo::Filter::Best);
 
     cr_save.set_source (&surface_pattern);
 

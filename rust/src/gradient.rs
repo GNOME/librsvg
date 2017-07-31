@@ -5,6 +5,8 @@ use ::libc;
 
 use std::cell::RefCell;
 
+use cairo::MatrixTrait;
+
 use bbox::*;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
@@ -17,7 +19,6 @@ use property_bag::*;
 use stop::*;
 use util::*;
 
-use self::cairo::MatrixTrait;
 
 #[derive(Copy, Clone)]
 pub struct ColorStop {

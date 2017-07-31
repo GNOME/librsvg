@@ -8,7 +8,8 @@ use std::f64::consts::*;
 use std::str::FromStr;
 
 use ::cairo;
-use ::cairo::MatrixTrait;
+use cairo::Matrix;
+use cairo::MatrixTrait;
 
 #[LALR]
 grammar;

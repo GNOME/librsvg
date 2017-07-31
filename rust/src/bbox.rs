@@ -2,8 +2,8 @@ use ::cairo;
 use ::glib_sys;
 use ::glib;
 
-use self::cairo::MatrixTrait;
-use self::glib::translate::*;
+use glib::translate::*;
+use cairo::MatrixTrait;
 
 /* Keep this in sync with ../../rsvg-private.h:RsvgBbox */
 #[repr(C)]
