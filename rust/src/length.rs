@@ -105,88 +105,89 @@ impl RsvgLength {
         let mut input = ParserInput::new (string);
         let mut parser = Parser::new (&mut input);
 
-        let token = parser.next ()
-            .map_err (|_| AttributeError::Parse (ParseError::new ("expected number and optional symbol, or number and percentage")))?;
+        let length = {
+            let token = parser.next ()
+                .map_err (|_| AttributeError::Parse (ParseError::new ("expected number and optional symbol, or number and percentage")))?;
 
-        match token {
-            &Token::Number { value, .. } => Ok (RsvgLength { length: value as f64,
-                                                                           unit:   LengthUnit::Default,
-                                                                           dir:    dir }),
+            match token {
+                &Token::Number { value, .. } => RsvgLength { length: value as f64,
+                                                             unit:   LengthUnit::Default,
+                                                             dir:    dir },
 
-            &Token::Percentage { unit_value, .. } => Ok (RsvgLength { length: unit_value as f64,
-                                                                                       unit:   LengthUnit::Percent,
-                                                                                       dir:    dir }),
+                &Token::Percentage { unit_value, .. } => RsvgLength { length: unit_value as f64,
+                                                                      unit:   LengthUnit::Percent,
+                                                                      dir:    dir },
 
-            &Token::Dimension { value, ref unit, .. } => {
-                let value = value as f64;
+                &Token::Dimension { value, ref unit, .. } => {
+                    let value = value as f64;
 
-                match unit.as_ref () {
-                    "em" => Ok (RsvgLength { length: value,
+                    match unit.as_ref () {
+                        "em" => RsvgLength { length: value,
                                              unit:   LengthUnit::FontEm,
-                                             dir:    dir }),
+                                             dir:    dir },
 
-                    "ex" => Ok (RsvgLength { length: value,
+                        "ex" => RsvgLength { length: value,
                                              unit:   LengthUnit::FontEx,
-                                             dir:    dir }),
+                                             dir:    dir },
 
-                    "pt" => Ok (RsvgLength { length: value / POINTS_PER_INCH,
+                        "pt" => RsvgLength { length: value / POINTS_PER_INCH,
                                              unit:   LengthUnit::Inch,
-                                             dir:    dir }),
+                                             dir:    dir },
 
-                    "in" => Ok (RsvgLength { length: value,
+                        "in" => RsvgLength { length: value,
                                              unit:   LengthUnit::Inch,
-                                             dir:    dir }),
+                                             dir:    dir },
 
-                    "cm" => Ok (RsvgLength { length: value / CM_PER_INCH,
+                        "cm" => RsvgLength { length: value / CM_PER_INCH,
                                              unit:   LengthUnit::Inch,
-                                             dir:    dir }),
+                                             dir:    dir },
 
-                    "mm" => Ok (RsvgLength { length: value / MM_PER_INCH,
+                        "mm" => RsvgLength { length: value / MM_PER_INCH,
                                              unit:   LengthUnit::Inch,
-                                             dir:    dir }),
+                                             dir:    dir },
 
-                    "pc" => Ok (RsvgLength { length: value / PICA_PER_INCH,
+                        "pc" => RsvgLength { length: value / PICA_PER_INCH,
                                              unit:   LengthUnit::Inch,
-                                             dir:    dir }),
+                                             dir:    dir },
 
-                    "px" => Ok (RsvgLength { length: value,
+                        "px" => RsvgLength { length: value,
                                              unit:   LengthUnit::Default,
-                                             dir:    dir }),
+                                             dir:    dir },
 
-                    _ => return Err (make_err ());
-                }
-            },
+                        _ => return Err (make_err ())
+                    }
+                },
 
-            // FIXME: why are the following in Length?  They should be in FontSize
-            &Token::Ident (ref cow) => match cow.as_ref () {
-                "larger" => Ok (RsvgLength { length: 0.0,
+                // FIXME: why are the following in Length?  They should be in FontSize
+                &Token::Ident (ref cow) => match cow.as_ref () {
+                    "larger" => RsvgLength { length: 0.0,
                                              unit:   LengthUnit::RelativeLarger,
-                                             dir:    dir }),
+                                             dir:    dir },
 
-                "smaller" => Ok (RsvgLength { length: 0.0,
+                    "smaller" => RsvgLength { length: 0.0,
                                               unit:  LengthUnit::RelativeSmaller,
-                                              dir:   dir }),
+                                              dir:   dir },
 
-                "xx-small" |
-                "x-small" |
-                "small" |
-                "medium" |
-                "large" |
-                "x-large" |
-                "xx-large" => Ok (RsvgLength { length: compute_named_size (&*string),
+                    "xx-small" |
+                    "x-small" |
+                    "small" |
+                    "medium" |
+                    "large" |
+                    "x-large" |
+                    "xx-large" => RsvgLength { length: compute_named_size (&*string),
                                                unit:   LengthUnit::Inch,
-                                               dir:    dir }),
+                                               dir:    dir },
 
-                _ => return Err (make_err ());
-            },
+                    _ => return Err (make_err ())
+                },
 
-            _ => return Err (make_err ());
+                _ => return Err (make_err ())
+            }
         };
 
-        .and_then (|r|
-                    parser.expect_exhausted ()
-                    .map (|_| r)
-                    .map_err (|_| make_err ()))
+        parser.expect_exhausted ().map_err (|_| make_err ())?;
+
+        Ok (length)
     }
 
     pub fn normalize (&self, draw_ctx: *const RsvgDrawingCtx) -> f64 {
