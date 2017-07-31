@@ -207,18 +207,18 @@ impl Default for AspectRatio {
 }
 
 bitflags! {
-    flags AspectRatioFlags: u32 {
-        const XMIN_YMIN = (1 << 0),
-        const XMID_YMIN = (1 << 1),
-        const XMAX_YMIN = (1 << 2),
-        const XMIN_YMID = (1 << 3),
-        const XMID_YMID = (1 << 4),
-        const XMAX_YMID = (1 << 5),
-        const XMIN_YMAX = (1 << 6),
-        const XMID_YMAX = (1 << 7),
-        const XMAX_YMAX = (1 << 8),
-        const SLICE = (1 << 30),
-        const DEFER = (1 << 31)
+    struct AspectRatioFlags: u32 {
+        const XMIN_YMIN = (1 << 0);
+        const XMID_YMIN = (1 << 1);
+        const XMAX_YMIN = (1 << 2);
+        const XMIN_YMID = (1 << 3);
+        const XMID_YMID = (1 << 4);
+        const XMAX_YMID = (1 << 5);
+        const XMIN_YMAX = (1 << 6);
+        const XMID_YMAX = (1 << 7);
+        const XMAX_YMAX = (1 << 8);
+        const SLICE = (1 << 30);
+        const DEFER = (1 << 31);
     }
 }
 
