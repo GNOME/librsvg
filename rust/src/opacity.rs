@@ -72,8 +72,8 @@ impl FromStr for Opacity {
 
         let token = parser.next ();
         let result = match token {
-            Ok (&Token::Ident (value)) => {
-                if value == "inherit" {
+            Ok (&Token::Ident (ref value)) => {
+                if value.as_ref () == "inherit" {
                     Ok (Opacity::Inherit)
                 } else {
                     Err (())

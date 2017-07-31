@@ -108,16 +108,16 @@ impl RsvgLength {
         let token = parser.next ()
             .map_err (|_| AttributeError::Parse (ParseError::new ("expected number and optional symbol, or number and percentage")))?;
 
-        match *token {
-            Token::Number { value, .. } => Ok (RsvgLength { length: value as f64,
+        match token {
+            &Token::Number { value, .. } => Ok (RsvgLength { length: value as f64,
                                                                            unit:   LengthUnit::Default,
                                                                            dir:    dir }),
 
-            Token::Percentage { unit_value, .. } => Ok (RsvgLength { length: unit_value as f64,
+            &Token::Percentage { unit_value, .. } => Ok (RsvgLength { length: unit_value as f64,
                                                                                        unit:   LengthUnit::Percent,
                                                                                        dir:    dir }),
 
-            Token::Dimension { value, unit, .. } => {
+            &Token::Dimension { value, ref unit, .. } => {
                 let value = value as f64;
 
                 match unit.as_ref () {
@@ -153,12 +153,12 @@ impl RsvgLength {
                                              unit:   LengthUnit::Default,
                                              dir:    dir }),
 
-                    _ => Err (make_err ())
+                    _ => return Err (make_err ());
                 }
             },
 
             // FIXME: why are the following in Length?  They should be in FontSize
-            Token::Ident (cow) => match cow.as_ref () {
+            &Token::Ident (ref cow) => match cow.as_ref () {
                 "larger" => Ok (RsvgLength { length: 0.0,
                                              unit:   LengthUnit::RelativeLarger,
                                              dir:    dir }),
@@ -177,11 +177,13 @@ impl RsvgLength {
                                                unit:   LengthUnit::Inch,
                                                dir:    dir }),
 
-                _ => Err (make_err ())
+                _ => return Err (make_err ());
             },
 
-            _ => Err (make_err ())
-        }.and_then (|r|
+            _ => return Err (make_err ());
+        };
+
+        .and_then (|r|
                     parser.expect_exhausted ()
                     .map (|_| r)
                     .map_err (|_| make_err ()))

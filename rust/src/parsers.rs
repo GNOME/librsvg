@@ -40,10 +40,10 @@ pub fn angle_degrees (s: &str) -> Result <f64, ParseError> {
     let token = parser.next ()
         .map_err (|_| ParseError::new ("expected angle"))?;
 
-    match *token {
-        Token::Number { value, .. } => Ok (value as f64),
+    match token {
+        &Token::Number { value, .. } => Ok (value as f64),
 
-        Token::Dimension { value, unit, .. } => {
+        &Token::Dimension { value, ref unit, .. } => {
             let value = value as f64;
 
             match unit.as_ref () {
