@@ -7,26 +7,34 @@ build = "build.rs"
 [dependencies]
 libc = "0.2"
 bitflags = "^0.9.1"
-glib = "^0.1.3"
-glib-sys = "^0.3.4"
-cairo-rs = "^0.1.3"
-cairo-sys-rs = "^0.3.4"
+#glib = "^0.1.3"
+#glib-sys = "^0.3.4"
 downcast-rs = "^1.0.0"
 regex = "^0.2.1"
 lalrpop-util = "^0.12.5"
 cssparser = "^0.18.2"
 
-#[dependencies.cairo-sys-rs]
+[dependencies.cairo-sys-rs]
+git = "https://github.com/gtk-rs/cairo.git"
+branch = "master"
 #git = "https://github.com/federicomenaquintero/cairo.git"
 #branch = "matrix-try-invert"
 #git = "file:///home/federico/src/gtk-rs/cairo"
 #features = ["png"]
 
-#[dependencies.cairo-rs]
-#git = "https://github.com/federicomenaquintero/cairo.git"
-#branch = "matrix-try-invert"
+[dependencies.cairo-rs]
+git = "https://github.com/gtk-rs/cairo.git"
+branch = "master"
 #git = "file:///home/federico/src/gtk-rs/cairo"
 #features = ["png"]
+
+[dependencies.glib]
+git = "https://github.com/gtk-rs/glib.git"
+branch = "master"
+
+[dependencies.glib-sys]
+git = "https://github.com/gtk-rs/sys"
+branch = "master"
 
 [build-dependencies.lalrpop]
 version = "0.12.5"
