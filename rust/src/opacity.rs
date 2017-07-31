@@ -63,6 +63,10 @@ pub fn opacity_to_u8 (val: f64) -> u8 {
     (val * 255.0 + 0.5).floor () as u8
 }
 
+fn make_err () -> AttributeError {
+    AttributeError::Parse (ParseError::new ("expected 'inherit' or number"))
+}
+
 impl FromStr for Opacity {
     type Err = AttributeError;
 
@@ -70,34 +74,36 @@ impl FromStr for Opacity {
         let mut input = ParserInput::new (s);
         let mut parser = Parser::new (&mut input);
 
-        let token = parser.next ();
-        let result = match token {
-            Ok (&Token::Ident (ref value)) => {
-                if value.as_ref () == "inherit" {
-                    Ok (Opacity::Inherit)
-                } else {
-                    Err (())
-                }
-            },
+        let opacity = {
+            let token = parser.next ()
+                .map_err (|_| make_err ())?;
 
-            Ok (&Token::Number { value, .. }) => {
-                if value < 0.0 {
-                    Ok (Opacity::Specified (0.0))
-                } else if value > 1.0 {
-                    Ok (Opacity::Specified (1.0))
-                } else {
-                    Ok (Opacity::Specified (value as f64))
-                }
-            },
+            match token {
+                &Token::Ident (ref value) => {
+                    if value.as_ref () == "inherit" {
+                        Opacity::Inherit
+                    } else {
+                        return Err (make_err ());
+                    }
+                },
 
-            _ => Err (())
+                &Token::Number { value, .. } => {
+                    if value < 0.0 {
+                        Opacity::Specified (0.0)
+                    } else if value > 1.0 {
+                        Opacity::Specified (1.0)
+                    } else {
+                        Opacity::Specified (value as f64)
+                    }
+                },
+
+                _ => return Err (make_err ())
+            }
         };
 
-        result.and_then (|opacity|
-                         parser.expect_exhausted ()
-                         .map (|_| opacity)
-                         .map_err (|_| ()))
-            .map_err (|_| AttributeError::Parse (ParseError::new ("expected 'inherit' or number")))
+        parser.expect_exhausted ().map_err (|_| make_err ())?;
+
+        Ok (opacity)
     }
 }
 
