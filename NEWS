@@ -1,3 +1,8 @@
+Version 2.40.19
+- bgo#777833 - Fix memory leaks when an RsvgHandle is disposed before
+  being closed (Philip Withnall).
+- bgo#782098 - Don't pass deprecated options to gtk-doc (Ting-Wei Lan).
+
 Version 2.40.18
 - bgo#783835 - CVE-2017-11464 - Fix division-by-zero in the Gaussian
   blur code.
