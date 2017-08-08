@@ -612,7 +612,6 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
         /* xml */
         GInputStream *stream;
         GError *err = NULL;
-        xmlDocPtr xml_doc;
         xmlParserCtxtPtr xml_parser;
         xmlParserInputBufferPtr buffer;
         xmlParserInputPtr input;
@@ -632,16 +631,14 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
         if (xmlPushInput (xml_parser, input) < 0) {
             g_clear_error (&err);
             xmlFreeInputStream (input);
-            xmlFreeParserCtxt (xml_parser);
+
+            xml_parser = rsvg_free_xml_parser_and_doc (xml_parser);
             goto fallback;
         }
 
         (void) xmlParseDocument (xml_parser);
 
-        xml_doc = xml_parser->myDoc;
-        xmlFreeParserCtxt (xml_parser);
-        if (xml_doc)
-            xmlFreeDoc (xml_doc);
+        xml_parser = rsvg_free_xml_parser_and_doc (xml_parser);
 
         g_clear_error (&err);
     }
@@ -1202,21 +1199,16 @@ rsvg_handle_close_impl (RsvgHandle * handle, GError ** error)
     handle->priv->error = &real_error;
 
     if (handle->priv->ctxt != NULL) {
-        xmlDocPtr xml_doc;
         int result;
-
-        xml_doc = handle->priv->ctxt->myDoc;
 
         result = xmlParseChunk (handle->priv->ctxt, "", 0, TRUE);
         if (result != 0) {
             rsvg_set_error (error, handle->priv->ctxt);
-            xmlFreeParserCtxt (handle->priv->ctxt);
-            xmlFreeDoc (xml_doc);
+            handle->priv->ctxt = rsvg_free_xml_parser_and_doc (handle->priv->ctxt);
             return FALSE;
         }
 
-        xmlFreeParserCtxt (handle->priv->ctxt);
-        xmlFreeDoc (xml_doc);
+        handle->priv->ctxt = rsvg_free_xml_parser_and_doc (handle->priv->ctxt);
     }
 
     handle->priv->finished = TRUE;
@@ -1825,7 +1817,6 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     xmlParserInputBufferPtr buffer;
     xmlParserInputPtr input;
     int result;
-    xmlDocPtr doc;
     GError *err = NULL;
     gboolean res = FALSE;
     const guchar *buf;
@@ -1884,11 +1875,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
         goto out;
     }
 
-    doc = priv->ctxt->myDoc;
-    xmlFreeParserCtxt (priv->ctxt);
-    priv->ctxt = NULL;
-
-    xmlFreeDoc (doc);
+    priv->ctxt = rsvg_free_xml_parser_and_doc (priv->ctxt);
 
     priv->finished = TRUE;
 
