@@ -1,6 +1,46 @@
 Version 2.41.1
 - The feConvolveMatrix filter primitive wasn't being rendered at all;
   now it works.
+- Pattern specifications can now have a fallback color, per the spec -
+  https://www.w3.org/TR/SVG/painting.html#SpecifyingPaint
+- Tests now use a very basic form of reproducible font rendering.
+  This means that "make check" should pass even if you have a custom
+  Fontconfig setup.
+- Fixed recursive fallbacks in gradients.
+- Per the spec, we now don't render elements which have invalid
+  attributes.
+- Fixed bgo#776932 - Don't crash on elements with an invalid
+  "transform" attribute.
+- Fixed bgo#777155 - Ignore patterns that have close-to-zero dimensions.
+- Fixed bgo#776297 - Don't render markers for rect / circle elements;
+  fix marker angles in some cases (Massimo).
+- Fixed bgo#777834 - Don't crash when rendering text with empty
+  extents.
+- Fixed bgo#634324 - Gaussian blur with negative-scaling
+  transformation was being rendered incorrectly.
+- Fixed bgo#783835 - Don't divide by zero in Gaussian blurs
+- Fixed division by zero in feTile filter when the input surface is
+  empty.
+- Fixed bgo#779489 - Link to pangoft2 as required.
+- Don't crash in filters when one of them yields an invalid surface
+  for an intermediate result.
+- Update for bgo#778666 - Use our own thumbnailer specification file
+  (Jeremy Bicha).
+- Fixed bgo#782098 - Don't pass deprecated options to gtkdoc-scangobj
+  (Ting-Wei Lan).
+- Fixed bgo#777833 - Various memory leaks (Philip Withnall, Federico Mena)
+- Fix parsing of "azimuth", "elevation", "limitingConeAngle" for
+  filter effects.
+- Fixed a few cases of uninitialized struct fields.
+- Code converted to Rust: preserveAspectRatio attribute, viewBox
+  attribute, core Node structure, path/line/rect/circle/ellipse basic
+  shapes, group/defs/switch/svg/use/symbol structural elements, pattern element
+  and pattern fallbacks, marker rendering, various parsers, error
+  propagation from parsers, gradient stops, gradient element, 
+- Added a bunch of new test cases for the new features and the
+  code converted to Rust.
+- Windows build: support building with Fontconfig; support Visual
+  Studio 2017; generate .pc files upon install (Chun-wei Fan)
 
 Version 2.41.0
 - The big news is that parts of librsvg are now implemented in the
