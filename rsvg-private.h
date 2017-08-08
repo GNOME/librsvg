@@ -128,13 +128,22 @@ typedef enum {
 
 #define RSVG_LOAD_POLICY_DEFAULT (RSVG_LOAD_POLICY_STRICT)
 
+/* Reading state for an RsvgHandle */
+typedef enum {
+    RSVG_HANDLE_STATE_START,
+    RSVG_HANDLE_STATE_READING,
+    RSVG_HANDLE_STATE_CLOSED_OK,
+    RSVG_HANDLE_STATE_CLOSED_ERROR
+} RsvgHandleState;
+
 struct RsvgHandlePrivate {
     RsvgHandleFlags flags;
+
+    RsvgHandleState state;
 
     RsvgLoadPolicy load_policy;
 
     gboolean is_disposed;
-    gboolean is_closed;
 
     RsvgSizeFunc size_func;
     gpointer user_data;
@@ -173,11 +182,8 @@ struct RsvgHandlePrivate {
     gchar *base_uri;
     GFile *base_gfile;
 
-    gboolean finished;
-
     gboolean in_loop;		/* see get_dimension() */
 
-    gboolean first_write;
     GInputStream *data_input_stream; /* for rsvg_handle_write of svgz data */
 };
 
