@@ -104,6 +104,8 @@ free_nodes (RsvgHandle *self)
 {
     int i;
 
+    g_assert (self->priv->all_nodes != NULL);
+
     for (i = 0; i < self->priv->all_nodes->len; i++) {
         RsvgNode *node;
 
