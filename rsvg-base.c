@@ -2443,3 +2443,23 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
     g_free (uri);
     return stream;
 }
+
+/* Frees the ctxt and its ctxt->myDoc - libxml2 doesn't free them together
+ * http://xmlsoft.org/html/libxml-parser.html#xmlFreeParserCtxt
+ *
+ * Returns NULL.
+ */
+xmlParserCtxtPtr
+rsvg_free_xml_parser_and_doc (xmlParserCtxtPtr ctxt)
+{
+    if (ctxt) {
+        if (ctxt->myDoc) {
+            xmlFreeDoc (ctxt->myDoc);
+            ctxt->myDoc = NULL;
+        }
+
+        xmlFreeParserCtxt (ctxt);
+    }
+
+    return NULL;
+}

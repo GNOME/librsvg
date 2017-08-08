@@ -421,6 +421,9 @@ GInputStream *_rsvg_handle_acquire_stream (RsvgHandle *handle,
                                            char **content_type,
                                            GError **error);
 
+G_GNUC_INTERNAL
+xmlParserCtxtPtr rsvg_free_xml_parser_and_doc (xmlParserCtxtPtr ctxt) G_GNUC_WARN_UNUSED_RESULT;
+
 
 #define rsvg_return_if_fail(expr, error)    G_STMT_START{			\
      if G_LIKELY(expr) { } else                                     \
