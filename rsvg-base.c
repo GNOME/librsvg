@@ -1347,8 +1347,6 @@ rsvg_handle_close_impl (RsvgHandle * handle, GError ** error)
 {
     GError *real_error = NULL;
 
-	handle->priv->is_closed = TRUE;
-
     handle->priv->error = &real_error;
 
     if (handle->priv->ctxt != NULL) {
@@ -1366,7 +1364,6 @@ rsvg_handle_close_impl (RsvgHandle * handle, GError ** error)
 
     free_element_name_stack (handle);
 
-    handle->priv->finished = TRUE;
     handle->priv->error = NULL;
 
     if (real_error != NULL) {
@@ -1874,10 +1871,13 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
     rsvg_return_val_if_fail (handle, FALSE, error);
     priv = handle->priv;
 
-    rsvg_return_val_if_fail (!priv->is_closed, FALSE, error);
+    rsvg_return_val_if_fail (priv->state == RSVG_HANDLE_STATE_START
+                             || priv->state == RSVG_HANDLE_STATE_READING,
+                             FALSE,
+                             error);
 
-    if (priv->first_write) {
-        priv->first_write = FALSE;
+    if (priv->state == RSVG_HANDLE_STATE_START) {
+        priv->state = RSVG_HANDLE_STATE_READING;
 
         /* test for GZ marker. todo: store the first 2 bytes in the odd circumstance that someone calls
          * write() in 1 byte increments */
@@ -1910,12 +1910,16 @@ gboolean
 rsvg_handle_close (RsvgHandle * handle, GError ** error)
 {
     RsvgHandlePrivate *priv;
+    gboolean result;
 
     rsvg_return_val_if_fail (handle, FALSE, error);
     priv = handle->priv;
 
-    if (priv->is_closed)
-          return TRUE;
+    if (priv->state == RSVG_HANDLE_STATE_CLOSED_OK
+        || priv->state == RSVG_HANDLE_STATE_CLOSED_ERROR) {
+        /* closing is idempotent */
+        return TRUE;
+    }
 
     if (priv->data_input_stream) {
         gboolean ret;
@@ -1927,7 +1931,15 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
         return ret;
     }
 
-    return rsvg_handle_close_impl (handle, error);
+    result = rsvg_handle_close_impl (handle, error);
+
+    if (result) {
+        priv->state = RSVG_HANDLE_STATE_CLOSED_OK;
+    } else {
+        priv->state = RSVG_HANDLE_STATE_CLOSED_ERROR;
+    }
+
+    return result;
 }
 
 /**
@@ -1974,6 +1986,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     stream = g_buffered_input_stream_new (stream);
     if (g_buffered_input_stream_fill (G_BUFFERED_INPUT_STREAM (stream), 2, cancellable, error) != 2) {
         g_object_unref (stream);
+        priv->state = RSVG_HANDLE_STATE_CLOSED_ERROR;
         return FALSE;
     }
     buf = g_buffered_input_stream_peek_buffer (G_BUFFERED_INPUT_STREAM (stream), NULL);
@@ -2019,8 +2032,6 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 
     priv->ctxt = rsvg_free_xml_parser_and_doc (priv->ctxt);
 
-    priv->finished = TRUE;
-
     res = TRUE;
 
   out:
@@ -2029,6 +2040,12 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 
     priv->error = NULL;
     g_clear_object (&priv->cancellable);
+
+    if (res) {
+        priv->state = RSVG_HANDLE_STATE_CLOSED_OK;
+    } else {
+        priv->state = RSVG_HANDLE_STATE_CLOSED_ERROR;
+    }
 
     return res;
 }

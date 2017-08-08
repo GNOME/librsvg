@@ -218,7 +218,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     g_return_val_if_fail (handle != NULL, FALSE);
 
-    if (!handle->priv->finished)
+    if (handle->priv->state != RSVG_HANDLE_STATE_CLOSED_OK)
         return FALSE;
 
     if (id && *id)

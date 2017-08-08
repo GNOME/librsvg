@@ -68,6 +68,7 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, RSVG_TYPE_HANDLE, RsvgHandlePrivate);
 
     self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
+    self->priv->state = RSVG_HANDLE_STATE_START;
     self->priv->all_nodes = g_ptr_array_new ();
     self->priv->defs = rsvg_defs_new (self);
     self->priv->handler_nest = 0;
@@ -88,9 +89,7 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv->treebase = NULL;
     self->priv->element_name_stack = NULL;
 
-    self->priv->finished = FALSE;
     self->priv->data_input_stream = NULL;
-    self->priv->first_write = TRUE;
     self->priv->cancellable = NULL;
 
     self->priv->is_disposed = FALSE;
