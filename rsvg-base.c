@@ -1888,11 +1888,11 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
         goto out;
     }
 
-    priv->ctxt = rsvg_free_xml_parser_and_doc (priv->ctxt);
-
     res = TRUE;
 
   out:
+
+    priv->ctxt = rsvg_free_xml_parser_and_doc (priv->ctxt);
 
     g_object_unref (stream);
 
