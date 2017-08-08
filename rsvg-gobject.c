@@ -88,7 +88,7 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv->treebase = NULL;
     self->priv->element_name_stack = NULL;
 
-    self->priv->finished = 0;
+    self->priv->finished = FALSE;
     self->priv->data_input_stream = NULL;
     self->priv->first_write = TRUE;
     self->priv->cancellable = NULL;
