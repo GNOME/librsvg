@@ -23,7 +23,7 @@ DOC_MAIN_SGML_FILE = $(DOC_MODULE)-docs.xml
 DOC_SOURCE_DIR = ..
 
 # Extra options to pass to gtkdoc-scangobj. Not normally needed.
-SCANGOBJ_OPTIONS = --nogtkinit --type-init-func="g_type_init ()"
+SCANGOBJ_OPTIONS = --type-init-func="g_type_init ()"
 
 # Extra options to supply to gtkdoc-scan.
 # e.g. SCAN_OPTIONS=--deprecated-guards="GTK_DISABLE_DEPRECATED"
@@ -96,7 +96,7 @@ HTML_IMAGES =
 # Extra SGML files that are included by $(DOC_MAIN_SGML_FILE).
 # e.g. content_files=running.sgml building.sgml changes-2.0.sgml
 content_files = \
- 	version.xml
+	version.xml
 
 # SGML files where gtk-doc abbrevations (#GtkWidget) are expanded
 # These files must be listed here *and* in content_files
