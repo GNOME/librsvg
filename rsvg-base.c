@@ -1623,6 +1623,9 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     g_return_val_if_fail (handle, FALSE);
     g_return_val_if_fail (position_data, FALSE);
 
+    if (!handle->priv->treebase)
+        return FALSE;
+
     /* Short-cut when no id is given. */
     if (NULL == id || '\0' == *id) {
         position_data->x = 0;
@@ -1642,9 +1645,6 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
         position_data->y = 0;
         return TRUE;
     }
-
-    if (!handle->priv->treebase)
-        return FALSE;
 
     target = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 1, 1);
     cr = cairo_create  (target);
