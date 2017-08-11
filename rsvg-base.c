@@ -411,28 +411,27 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
     g_assert (creator != NULL && creator->create_fn != NULL);
 
     newnode = creator->create_fn (name, ctx->priv->currentnode);
+    g_assert (newnode != NULL);
 
-    if (newnode) {
-        g_assert (rsvg_node_get_type (newnode) != RSVG_NODE_TYPE_INVALID);
+    g_assert (rsvg_node_get_type (newnode) != RSVG_NODE_TYPE_INVALID);
 
-        push_element_name (ctx, name);
+    push_element_name (ctx, name);
 
-        add_node_to_handle (ctx, newnode);
-        register_node_in_defs (ctx, newnode, atts);
+    add_node_to_handle (ctx, newnode);
+    register_node_in_defs (ctx, newnode, atts);
 
-        if (ctx->priv->currentnode) {
-            rsvg_node_add_child (ctx->priv->currentnode, newnode);
-            ctx->priv->currentnode = rsvg_node_unref (ctx->priv->currentnode);
-        } else if (rsvg_node_get_type (newnode) == RSVG_NODE_TYPE_SVG) {
-            ctx->priv->treebase = rsvg_node_ref (newnode);
-        }
-
-        ctx->priv->currentnode = rsvg_node_ref (newnode);
-
-        node_set_atts (newnode, ctx, creator, atts);
-
-        newnode = rsvg_node_unref (newnode);
+    if (ctx->priv->currentnode) {
+        rsvg_node_add_child (ctx->priv->currentnode, newnode);
+        ctx->priv->currentnode = rsvg_node_unref (ctx->priv->currentnode);
+    } else if (rsvg_node_get_type (newnode) == RSVG_NODE_TYPE_SVG) {
+        ctx->priv->treebase = rsvg_node_ref (newnode);
     }
+
+    ctx->priv->currentnode = rsvg_node_ref (newnode);
+
+    node_set_atts (newnode, ctx, creator, atts);
+
+    newnode = rsvg_node_unref (newnode);
 }
 
 /* extra (title, desc, metadata) */
