@@ -182,7 +182,20 @@ rsvg_start_style (RsvgHandle * ctx, RsvgPropertyBag *atts)
     handler->ctx = ctx;
 
     handler->style = g_string_new (NULL);
-    handler->is_text_css = type && g_ascii_strcasecmp (type, "text/css") == 0;
+
+    /* FIXME: See these:
+     *
+     * https://www.w3.org/TR/SVG/styling.html#StyleElementTypeAttribute
+     * https://www.w3.org/TR/SVG/styling.html#ContentStyleTypeAttribute
+     *
+     * If the "type" attribute is not present, we should fallback to the
+     * "contentStyleType" attribute of the svg element, which in turn
+     * defaults to "text/css".
+     *
+     * See where is_text_css is used to see where we parse the contents
+     * of the style element.
+     */
+    handler->is_text_css = (type == NULL) || (g_ascii_strcasecmp (type, "text/css") == 0);
 
     handler->parent = (RsvgSaxHandlerDefs *) ctx->priv->handler;
     ctx->priv->handler = &handler->super;
