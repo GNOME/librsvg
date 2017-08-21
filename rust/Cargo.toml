@@ -15,26 +15,30 @@ lalrpop-util = "^0.12.5"
 cssparser = "^0.18.2"
 
 [dependencies.cairo-sys-rs]
-git = "https://github.com/gtk-rs/cairo.git"
-branch = "master"
+version = "0.4.0"
+#git = "https://github.com/gtk-rs/cairo.git"
+#branch = "master"
 #git = "https://github.com/federicomenaquintero/cairo.git"
 #branch = "matrix-try-invert"
 #git = "file:///home/federico/src/gtk-rs/cairo"
 #features = ["png"]
 
 [dependencies.cairo-rs]
-git = "https://github.com/gtk-rs/cairo.git"
-branch = "master"
+version = "0.2.0"
+#git = "https://github.com/gtk-rs/cairo.git"
+#branch = "master"
 #git = "file:///home/federico/src/gtk-rs/cairo"
 #features = ["png"]
 
 [dependencies.glib]
-git = "https://github.com/gtk-rs/glib.git"
-branch = "master"
+version = "0.3.0"
+#git = "https://github.com/gtk-rs/glib.git"
+#branch = "master"
 
 [dependencies.glib-sys]
-git = "https://github.com/gtk-rs/sys"
-branch = "master"
+version = "0.4.0"
+#git = "https://github.com/gtk-rs/sys"
+#branch = "master"
 
 [build-dependencies.lalrpop]
 version = "0.12.5"
