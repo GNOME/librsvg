@@ -1003,8 +1003,8 @@ mod tests {
 
     extern crate cairo;
 
-    fn path_segment_vectors_are_equal (a: &Vec<cairo::PathSegment>,
-                                       b: &Vec<cairo::PathSegment>) -> bool {
+    fn path_command_vectors_are_equal (a: &Vec<PathCommand>,
+                                       b: &Vec<PathCommand>) -> bool {
 
         if a.len() != b.len () {
             return false;
@@ -1019,8 +1019,8 @@ mod tests {
         loop {
             if let Some ((seg1, seg2)) = iter.next () {
                 match *seg1 {
-                    cairo::PathSegment::MoveTo ((x, y)) => {
-                        if let cairo::PathSegment::MoveTo ((ox, oy)) = *seg2 {
+                    PathCommand::MoveTo (x, y) => {
+                        if let PathCommand::MoveTo (ox, oy) = *seg2 {
                             if (x, y) != (ox, oy) {
                                 return false;
                             }
@@ -1029,8 +1029,8 @@ mod tests {
                         }
                     },
 
-                    cairo::PathSegment::LineTo ((x, y)) => {
-                        if let cairo::PathSegment::LineTo ((ox, oy)) = *seg2 {
+                    PathCommand::LineTo (x, y) => {
+                        if let PathCommand::LineTo (ox, oy) = *seg2 {
                             if (x, y) != (ox, oy) {
                                 return false;
                             }
@@ -1039,8 +1039,8 @@ mod tests {
                         }
                     },
 
-                    cairo::PathSegment::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
-                        if let cairo::PathSegment::CurveTo ((ox2, oy2), (ox3, oy3), (ox4, oy4)) = *seg2 {
+                    PathCommand::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
+                        if let PathCommand::CurveTo ((ox2, oy2), (ox3, oy3), (ox4, oy4)) = *seg2 {
                             if (ox2, oy2, ox3, oy3, ox4, oy4) != (x2, y2, x3, y3, x4, y4) {
                                 return false;
                             }
@@ -1049,8 +1049,8 @@ mod tests {
                         }
                     },
 
-                    cairo::PathSegment::ClosePath => {
-                        if let cairo::PathSegment::ClosePath = *seg2 {
+                    PathCommand::ClosePath => {
+                        if let PathCommand::ClosePath = *seg2 {
                             /* okay */
                         } else {
                             return false;
@@ -1092,33 +1092,33 @@ mod tests {
     }
 
     fn test_parser (path_str: &str,
-                    expected_segments: &Vec<cairo::PathSegment>) {
+                    expected_commands: &Vec<PathCommand>) {
         let builder = parse_path (path_str);
-        let segments = builder.get_path_segments ();
+        let commands = builder.get_path_commands ();
 
-        assert! (path_segment_vectors_are_equal (expected_segments, segments));
+        assert! (path_command_vectors_are_equal (expected_commands, commands));
     }
 
-    fn moveto (x: f64, y: f64) -> cairo::PathSegment {
-        cairo::PathSegment::MoveTo ((x, y))
+    fn moveto (x: f64, y: f64) -> PathCommand {
+        PathCommand::MoveTo (x, y)
     }
 
-    fn lineto (x: f64, y: f64) -> cairo::PathSegment {
-        cairo::PathSegment::LineTo ((x, y))
+    fn lineto (x: f64, y: f64) -> PathCommand {
+        PathCommand::LineTo (x, y)
     }
 
-    fn curveto (x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) -> cairo::PathSegment {
-        cairo::PathSegment::CurveTo ((x2, y2), (x3, y3), (x4, y4))
+    fn curveto (x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) -> PathCommand {
+        PathCommand::CurveTo ((x2, y2), (x3, y3), (x4, y4))
     }
 
-    fn closepath () -> cairo::PathSegment {
-        cairo::PathSegment::ClosePath
+    fn closepath () -> PathCommand {
+        PathCommand::ClosePath
     }
 
     #[test]
     fn handles_empty_data () {
         test_parser ("",
-                     &Vec::<cairo::PathSegment>::new ());
+                     &Vec::<PathCommand>::new ());
     }
 
     #[test]

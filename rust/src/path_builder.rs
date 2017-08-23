@@ -13,36 +13,36 @@ pub enum PathCommand {
 
 #[repr(C)]
 pub struct RsvgPathBuilder {
-    path_segments: Vec<cairo::PathSegment>,
+    path_commands: Vec<PathCommand>,
 }
 
 impl RsvgPathBuilder {
     pub fn new () -> RsvgPathBuilder {
         let builder = RsvgPathBuilder {
-            path_segments: Vec::new ()
+            path_commands: Vec::new ()
         };
 
         builder
     }
 
     pub fn move_to (&mut self, x: f64, y: f64) {
-        self.path_segments.push (cairo::PathSegment::MoveTo ((x, y)));
+        self.path_commands.push (PathCommand::MoveTo (x, y));
     }
 
     pub fn line_to (&mut self, x: f64, y: f64) {
-        self.path_segments.push (cairo::PathSegment::LineTo ((x, y)));
+        self.path_commands.push (PathCommand::LineTo (x, y));
     }
 
     pub fn curve_to (&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
-        self.path_segments.push (cairo::PathSegment::CurveTo ((x2, y2), (x3, y3), (x4, y4)));
+        self.path_commands.push (PathCommand::CurveTo ((x2, y2), (x3, y3), (x4, y4)));
     }
 
     pub fn close_path (&mut self) {
-        self.path_segments.push (cairo::PathSegment::ClosePath);
+        self.path_commands.push (PathCommand::ClosePath);
     }
 
-    pub fn get_path_segments (&self) -> &Vec<cairo::PathSegment> {
-        &self.path_segments
+    pub fn get_path_commands (&self) -> &Vec<PathCommand> {
+        &self.path_commands
     }
 
     /**
@@ -240,23 +240,23 @@ pub extern fn rsvg_path_builder_add_to_cairo_context (raw_builder: *mut RsvgPath
     let builder: &mut RsvgPathBuilder = unsafe { &mut (*raw_builder) };
 
     unsafe {
-        let path_segments = builder.get_path_segments ();
+        let path_commands = builder.get_path_commands ();
 
-        for s in path_segments {
+        for s in path_commands {
             match *s {
-                cairo::PathSegment::MoveTo ((x, y)) => {
+                PathCommand::MoveTo (x, y) => {
                     cairo_sys::cairo_move_to (cr, x, y);
                 },
 
-                cairo::PathSegment::LineTo ((x, y)) => {
+                PathCommand::LineTo (x, y) => {
                     cairo_sys::cairo_line_to (cr, x, y);
                 },
 
-                cairo::PathSegment::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
+                PathCommand::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
                     cairo_sys::cairo_curve_to (cr, x2, y2, x3, y3, x4, y4);
                 },
 
-                cairo::PathSegment::ClosePath => {
+                PathCommand::ClosePath => {
                     cairo_sys::cairo_close_path (cr);
                 }
             }

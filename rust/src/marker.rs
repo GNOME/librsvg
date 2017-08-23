@@ -308,12 +308,12 @@ pub fn path_builder_to_segments (builder: &RsvgPathBuilder) -> Vec<Segment> {
     segments = Vec::new ();
     state = SegmentState::Initial;
 
-    for cairo_segment in builder.get_path_segments () {
+    for path_command in builder.get_path_commands () {
         last_x = cur_x;
         last_y = cur_y;
 
-        match *cairo_segment {
-            cairo::PathSegment::MoveTo ((x, y)) => {
+        match *path_command {
+            PathCommand::MoveTo (x, y) => {
                 cur_x = x;
                 cur_y = y;
 
@@ -353,7 +353,7 @@ pub fn path_builder_to_segments (builder: &RsvgPathBuilder) -> Vec<Segment> {
                 }
             },
 
-            cairo::PathSegment::LineTo ((x, y)) => {
+            PathCommand::LineTo (x, y) => {
                 cur_x = x;
                 cur_y = y;
 
@@ -362,7 +362,7 @@ pub fn path_builder_to_segments (builder: &RsvgPathBuilder) -> Vec<Segment> {
                 state = SegmentState::InSubpath;
             },
 
-            cairo::PathSegment::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
+            PathCommand::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
                 cur_x = x4;
                 cur_y = y4;
 
@@ -371,7 +371,7 @@ pub fn path_builder_to_segments (builder: &RsvgPathBuilder) -> Vec<Segment> {
                 state = SegmentState::InSubpath;
             },
 
-            cairo::PathSegment::ClosePath => {
+            PathCommand::ClosePath => {
                 cur_x = subpath_start_x;
                 cur_y = subpath_start_y;
 
