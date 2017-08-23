@@ -10,7 +10,9 @@ use ffi;
 use gdk_pixbuf;
 use glib::Value;
 use glib::translate::*;
+use glib_ffi;
 use gobject_ffi;
+use std::mem;
 use std::mem::transmute;
 use std::ptr;
 
