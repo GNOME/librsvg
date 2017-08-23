@@ -4,6 +4,7 @@ use ::cairo_sys;
 use std::f64;
 use std::f64::consts::*;
 
+#[derive(Debug, PartialEq)]
 pub enum PathCommand {
     MoveTo (f64, f64),
     LineTo (f64, f64),
@@ -41,7 +42,7 @@ impl RsvgPathBuilder {
         self.path_commands.push (PathCommand::ClosePath);
     }
 
-    pub fn get_path_commands (&self) -> &Vec<PathCommand> {
+    pub fn get_path_commands (&self) -> &[PathCommand] {
         &self.path_commands
     }
 

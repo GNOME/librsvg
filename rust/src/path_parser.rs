@@ -1003,68 +1003,6 @@ mod tests {
 
     extern crate cairo;
 
-    fn path_command_vectors_are_equal (a: &Vec<PathCommand>,
-                                       b: &Vec<PathCommand>) -> bool {
-
-        if a.len() != b.len () {
-            return false;
-        }
-
-        if a.len () == 0 && b.len () == 0 {
-            return true;
-        }
-
-        let mut iter = a.iter().zip (b);
-
-        loop {
-            if let Some ((seg1, seg2)) = iter.next () {
-                match *seg1 {
-                    PathCommand::MoveTo (x, y) => {
-                        if let PathCommand::MoveTo (ox, oy) = *seg2 {
-                            if (x, y) != (ox, oy) {
-                                return false;
-                            }
-                        } else {
-                            return false;
-                        }
-                    },
-
-                    PathCommand::LineTo (x, y) => {
-                        if let PathCommand::LineTo (ox, oy) = *seg2 {
-                            if (x, y) != (ox, oy) {
-                                return false;
-                            }
-                        } else {
-                            return false;
-                        }
-                    },
-
-                    PathCommand::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
-                        if let PathCommand::CurveTo ((ox2, oy2), (ox3, oy3), (ox4, oy4)) = *seg2 {
-                            if (ox2, oy2, ox3, oy3, ox4, oy4) != (x2, y2, x3, y3, x4, y4) {
-                                return false;
-                            }
-                        } else {
-                            return false;
-                        }
-                    },
-
-                    PathCommand::ClosePath => {
-                        if let PathCommand::ClosePath = *seg2 {
-                            /* okay */
-                        } else {
-                            return false;
-                        }
-                    }
-                }
-            } else {
-                break;
-            }
-        }
-
-        true
-    }
-
     fn print_error (error: &ParseError, path_str: &str) {
         let prefix = "Error in \"";
 
@@ -1092,11 +1030,11 @@ mod tests {
     }
 
     fn test_parser (path_str: &str,
-                    expected_commands: &Vec<PathCommand>) {
+                    expected_commands: &[PathCommand]) {
         let builder = parse_path (path_str);
         let commands = builder.get_path_commands ();
 
-        assert! (path_command_vectors_are_equal (expected_commands, commands));
+        assert_eq! (expected_commands, commands);
     }
 
     fn moveto (x: f64, y: f64) -> PathCommand {
