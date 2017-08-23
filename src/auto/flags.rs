@@ -5,10 +5,10 @@ use ffi;
 use glib::translate::*;
 
 bitflags! {
-    pub flags HandleFlags: u32 {
-        const HANDLE_FLAGS_NONE = 0,
-        const HANDLE_FLAG_UNLIMITED = 1,
-        const HANDLE_FLAG_KEEP_IMAGE_DATA = 2,
+    pub struct HandleFlags: u32 {
+        const HANDLE_FLAGS_NONE = 0;
+        const HANDLE_FLAG_UNLIMITED = 1;
+        const HANDLE_FLAG_KEEP_IMAGE_DATA = 2;
     }
 }
 

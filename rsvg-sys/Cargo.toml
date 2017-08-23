@@ -2,7 +2,7 @@
 pkg-config = "0.3.7"
 
 [dependencies]
-bitflags = "0.8"
+bitflags = "0.9"
 libc = "0.2"
 atk-sys = "0.4.0"
 cairo-sys-rs = "0.4.0"

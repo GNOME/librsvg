@@ -36,10 +36,10 @@ pub const LIBRSVG_VERSION: *const c_char = b"2.40.16\0" as *const u8 as *const c
 // Flags
 bitflags! {
     #[repr(C)]
-    pub flags RsvgHandleFlags: c_uint {
-        const RSVG_HANDLE_FLAGS_NONE = 0,
-        const RSVG_HANDLE_FLAG_UNLIMITED = 1,
-        const RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA = 2,
+    pub struct RsvgHandleFlags: c_uint {
+        const RSVG_HANDLE_FLAGS_NONE = 0;
+        const RSVG_HANDLE_FLAG_UNLIMITED = 1;
+        const RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA = 2;
     }
 }
 
