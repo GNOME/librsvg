@@ -10,6 +10,10 @@ extern crate gdk_pixbuf;
 extern crate bitflags;
 extern crate libc;
 
+macro_rules! callback_guard {
+    () => ()
+}
+
 pub use glib::Error;
 
 mod auto;
@@ -29,6 +33,7 @@ extern crate imageproc;
 mod tests {
     extern crate image;
 
+    use super::HandleExt;
     use self::image::GenericImage;
 
     fn get_fixture_path(fixture: &str) -> String {
@@ -39,7 +44,7 @@ mod tests {
     fn it_should_be_possible_to_create_new_handle_and_write_manually_to_it() {
         let mut handle = super::Handle::new();
 
-        handle.write(r#"<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="50" height="50"></svg>"#).unwrap();
+        handle.write(r#"<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="50" height="50"></svg>"#.as_bytes()).unwrap();
         handle.close().unwrap();
 
         assert_eq!(handle.get_dimensions(), super::DimensionData { width: 50, height: 50, em: 50.0, ex: 50.0 });
@@ -70,7 +75,7 @@ mod tests {
         let expected = image::open(get_fixture_path("mysvg.svg.png")).unwrap();
         let handle = super::Handle::new_from_file(&svg_path).unwrap();
         let dimensions = handle.get_dimensions();
-        let surface = super::cairo::ImageSurface::create(super::cairo::Format::ARgb32, dimensions.width, dimensions.height);
+        let surface = super::cairo::ImageSurface::create(super::cairo::Format::ARgb32, dimensions.width, dimensions.height).unwrap();
         let context = super::cairo::Context::new(&surface);
         let mut png_data: Vec<u8> = vec!();
 
