@@ -42,7 +42,7 @@ mod tests {
 
     #[test]
     fn it_should_be_possible_to_create_new_handle_and_write_manually_to_it() {
-        let mut handle = super::Handle::new();
+        let handle = super::Handle::new();
 
         handle.write(r#"<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="50" height="50"></svg>"#.as_bytes()).unwrap();
         handle.close().unwrap();
@@ -59,6 +59,15 @@ mod tests {
         assert_eq!(handle.get_dimensions(), super::DimensionData { width: 50, height: 50, em: 50.0, ex: 50.0 });
         assert_eq!(handle.get_position_sub("#unknownid"), None);
     }
+
+    #[test]
+        fn it_should_be_possible_to_load_svg_from_slice() {
+            let svg = r#"<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="50" height="50"></svg>"#;
+            let handle = super::Handle::new_from_data(svg.as_bytes()).unwrap();
+
+            assert_eq!(handle.get_dimensions(), super::DimensionData { width: 50, height: 50, em: 50.0, ex: 50.0 });
+            assert_eq!(handle.get_position_sub("#unknownid"), None);
+        }
 
     #[test]
     fn it_should_be_possible_to_load_svg_from_file() {
