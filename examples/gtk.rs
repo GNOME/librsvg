@@ -9,6 +9,7 @@ use gtk::DrawingArea;
 
 use cairo::Context;
 use rsvg::Handle;
+use rsvg::HandleExt;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
