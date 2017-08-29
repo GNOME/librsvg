@@ -5,6 +5,15 @@ use std::f64;
 use std::f64::consts::*;
 
 #[derive(Debug, PartialEq)]
+pub struct LargeArc(pub bool);
+
+#[derive(Debug, PartialEq)]
+pub enum Sweep {
+    Negative,
+    Positive
+}
+
+#[derive(Debug, PartialEq)]
 pub enum PathCommand {
     MoveTo (f64, f64),
     LineTo (f64, f64),
@@ -50,16 +59,16 @@ impl RsvgPathBuilder {
      * x1/y1: starting coordinates
      * rx/ry: radiuses before rotation
      * x_axis_rotation: Rotation angle for axes, in degrees
-     * is_large_arc: false for arc length <= 180, true for arc >= 180
-     * is_sweep: false for negative angle, true for positive angle
+     * large_arc: false for arc length <= 180, true for arc >= 180
+     * sweep: negative or positive angle
      * x2/y2: ending coordinates
      */
     pub fn arc (&mut self,
                 x1: f64, y1: f64,
                 mut rx: f64, mut ry: f64,
                 x_axis_rotation: f64,
-                is_large_arc: bool,
-                is_sweep: bool,
+                large_arc: LargeArc,
+                sweep: Sweep,
                 x2: f64, y2: f64) {
         /* See Appendix F.6 Elliptical arc implementation notes
         http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes */
@@ -86,6 +95,10 @@ impl RsvgPathBuilder {
         if x1 == x2 && y1 == y2 {
             return;
         }
+
+        let is_positive_sweep = sweep == Sweep::Positive;
+
+        let is_large_arc = large_arc.0;
 
         /* X-axis */
         f = x_axis_rotation * PI / 180.0;
@@ -122,7 +135,7 @@ impl RsvgPathBuilder {
         }
 
         k1 = ((rx * rx * ry * ry) / k1 - 1.0).abs ().sqrt ();
-        if is_sweep == is_large_arc {
+        if is_positive_sweep == is_large_arc {
             k1 = -k1;
         }
 
@@ -165,9 +178,9 @@ impl RsvgPathBuilder {
             delta_theta = -delta_theta;
         }
 
-        if is_sweep && delta_theta < 0.0 {
+        if is_positive_sweep && delta_theta < 0.0 {
             delta_theta += PI * 2.0;
-        } else if !is_sweep && delta_theta > 0.0 {
+        } else if !is_positive_sweep && delta_theta > 0.0 {
             delta_theta -= PI * 2.0;
         }
 

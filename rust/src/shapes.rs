@@ -394,25 +394,25 @@ impl NodeTrait for NodeRect {
             builder.line_to (top_x2, top_y);
 
             builder.arc (top_x2, top_y,
-                         rx, ry, 0.0, false, true,
+                         rx, ry, 0.0, LargeArc (false), Sweep::Positive,
                          right_x, right_y1);
 
             builder.line_to (right_x, right_y2);
 
             builder.arc (right_x, right_y2,
-                         rx, ry, 0.0, false, true,
+                         rx, ry, 0.0, LargeArc (false), Sweep::Positive,
                          bottom_x2, bottom_y);
 
             builder.line_to (bottom_x1, bottom_y);
 
             builder.arc (bottom_x1, bottom_y,
-                         rx, ry, 0.0, false, true,
+                         rx, ry, 0.0, LargeArc (false), Sweep::Positive,
                          left_x, left_y2);
 
             builder.line_to (left_x, left_y1);
 
             builder.arc (left_x, left_y1,
-                         rx, ry, 0.0, false, true,
+                         rx, ry, 0.0, LargeArc (false), Sweep::Positive,
                          top_x1, top_y);
 
             builder.close_path ();

@@ -369,7 +369,7 @@ impl<'b> PathParser<'b> {
         self.builder.curve_to (x2, y2, x3, y3, x4, y4);
     }
 
-    fn emit_arc (&mut self, rx: f64, ry: f64, x_axis_rotation: f64, large_arc: bool, sweep: bool, x: f64, y: f64) {
+    fn emit_arc (&mut self, rx: f64, ry: f64, x_axis_rotation: f64, large_arc: LargeArc, sweep: Sweep, x: f64, y: f64) {
         let (start_x, start_y) = (self.current_x, self.current_y);
 
         self.set_current_point (x, y);
@@ -905,8 +905,15 @@ impl<'b> PathParser<'b> {
                         if let Some (large_arc_flag) = self.flag () {
                             assert! (self.optional_comma_whitespace ());
 
+                            let large_arc = LargeArc (large_arc_flag);
+
                             if let Some (sweep_flag) = self.flag () {
                                 assert! (self.optional_comma_whitespace ());
+
+                                let sweep = match sweep_flag {
+                                    false => Sweep::Negative,
+                                    true => Sweep::Positive
+                                };
 
                                 if let Some ((mut x, mut y)) = self.coordinate_pair () {
                                     if !absolute {
@@ -914,7 +921,7 @@ impl<'b> PathParser<'b> {
                                         y += self.current_y;
                                     }
 
-                                    self.emit_arc (rx, ry, x_axis_rotation, large_arc_flag, sweep_flag, x, y);
+                                    self.emit_arc (rx, ry, x_axis_rotation, large_arc, sweep, x, y);
 
                                     self.whitespace ();
 
