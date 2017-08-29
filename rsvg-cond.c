@@ -34,12 +34,13 @@
 #include <stdlib.h>
 #include <locale.h>
 
+/* Keep these sorted alphabetically!  These are used with bsearch() */
 static const char *implemented_features[] = {
-    "http://www.w3.org/TR/SVG11/feature#BasicText",
     "http://www.w3.org/TR/SVG11/feature#BasicFilter",
     "http://www.w3.org/TR/SVG11/feature#BasicGraphicsAttribute",
     "http://www.w3.org/TR/SVG11/feature#BasicPaintAttribute",
     "http://www.w3.org/TR/SVG11/feature#BasicStructure",
+    "http://www.w3.org/TR/SVG11/feature#BasicText",
     "http://www.w3.org/TR/SVG11/feature#ConditionalProcessing",
     "http://www.w3.org/TR/SVG11/feature#ContainerAttribute",
     "http://www.w3.org/TR/SVG11/feature#Filter",
@@ -49,11 +50,11 @@ static const char *implemented_features[] = {
     "http://www.w3.org/TR/SVG11/feature#Mask",
     "http://www.w3.org/TR/SVG11/feature#OpacityAttribute",
     "http://www.w3.org/TR/SVG11/feature#Pattern",
+    "http://www.w3.org/TR/SVG11/feature#SVG",
+    "http://www.w3.org/TR/SVG11/feature#SVG-static",
     "http://www.w3.org/TR/SVG11/feature#Shape",
     "http://www.w3.org/TR/SVG11/feature#Structure",
     "http://www.w3.org/TR/SVG11/feature#Style",
-    "http://www.w3.org/TR/SVG11/feature#SVG",
-    "http://www.w3.org/TR/SVG11/feature#SVG-static",
     "http://www.w3.org/TR/SVG11/feature#View",
     "org.w3c.svg.static"        /* deprecated SVG 1.0 feature string */
 };
