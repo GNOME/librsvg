@@ -317,9 +317,11 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
     else if (!strcmp (name, "tref"))
         newnode = rsvg_new_tref ();
     else {
-		/* hack for bug 401115. whenever we encounter a node we don't understand, push it into a group. 
-		   this will allow us to handle things like conditionals properly. */
-		newnode = rsvg_new_group ();
+        /* Whenever we encounter a node we don't understand, represent it as a defs.
+         * This is like a group, but it doesn't do any rendering of children.  The
+         * effect is that we will ignore all children of unknown elements.
+         */
+		newnode = rsvg_new_defs ();
 	}
 
     if (newnode) {
