@@ -1987,6 +1987,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     GError *err = NULL;
     gboolean res = FALSE;
     const guchar *buf;
+    gssize num_read;
 
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (G_IS_INPUT_STREAM (stream), FALSE);
@@ -1997,9 +1998,17 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 
     /* detect zipped streams */
     stream = g_buffered_input_stream_new (stream);
-    if (g_buffered_input_stream_fill (G_BUFFERED_INPUT_STREAM (stream), 2, cancellable, error) != 2) {
+    num_read = g_buffered_input_stream_fill (G_BUFFERED_INPUT_STREAM (stream), 2, cancellable, error);
+    if (num_read < 2) {
         g_object_unref (stream);
         priv->state = RSVG_HANDLE_STATE_CLOSED_ERROR;
+        if (num_read < 0) {
+            g_assert (error == NULL || *error != NULL);
+        } else {
+            g_set_error (error, rsvg_error_quark (), RSVG_ERROR_FAILED,
+                         _("Input file is too short"));
+        }
+
         return FALSE;
     }
     buf = g_buffered_input_stream_peek_buffer (G_BUFFERED_INPUT_STREAM (stream), NULL);
