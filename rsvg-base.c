@@ -351,10 +351,11 @@ static const NodeCreator node_creators[] = {
     /* "vkern",              FALSE, */
 };
 
-/* hack for bug 401115. whenever we encounter a node we don't understand, push it into a group.
- * this will allow us to handle things like conditionals properly.
+/* Whenever we encounter a node we don't understand, represent it as a defs.
+ * This is like a group, but it doesn't do any rendering of children.  The
+ * effect is that we will ignore all children of unknown elements.
  */
-static const NodeCreator default_node_creator = { NULL, TRUE, rsvg_node_group_new };
+static const NodeCreator default_node_creator = { NULL, TRUE, rsvg_node_defs_new };
 
 /* Used from bsearch() */
 static int
