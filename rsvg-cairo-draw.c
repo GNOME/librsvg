@@ -422,6 +422,8 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
                                        bbox, rsvg_current_state (ctx)->current_color);
         if (rotation != 0.)
             cairo_rotate (render->cr, -rotation);
+
+        pango_cairo_update_layout (render->cr, layout);
         pango_cairo_show_layout (render->cr, layout);
         cairo_restore (render->cr);
     }
@@ -439,6 +441,8 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
 
         if (rotation != 0.)
             cairo_rotate (render->cr, -rotation);
+
+        pango_cairo_update_layout (render->cr, layout);
         pango_cairo_layout_path (render->cr, layout);
 
         cairo_set_line_width (render->cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, 'h'));
