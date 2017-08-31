@@ -33,7 +33,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "rsvg.h"
+#include "rsvg-private.h"
 #include "rsvg-defs.h"
 #include "rsvg-cairo.h"
 #include "rsvg-cairo-draw.h"

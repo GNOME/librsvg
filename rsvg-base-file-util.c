@@ -25,9 +25,8 @@
 */
 
 #include "config.h"
-#include "rsvg.h"
-#include "rsvg-io.h"
 #include "rsvg-private.h"
+#include "rsvg-io.h"
 
 static gboolean
 rsvg_handle_fill_with_data (RsvgHandle * handle,

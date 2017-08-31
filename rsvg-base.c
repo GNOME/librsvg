@@ -27,9 +27,8 @@
 #include "config.h"
 #define _GNU_SOURCE 1
 
-#include "rsvg.h"
-#include "rsvg-compat.h"
 #include "rsvg-private.h"
+#include "rsvg-compat.h"
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"

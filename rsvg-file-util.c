@@ -34,7 +34,6 @@
  */
 
 #include "config.h"
-#include "rsvg.h"
 #include "rsvg-private.h"
 #include "rsvg-io.h"
 #include "rsvg-size-callback.h"

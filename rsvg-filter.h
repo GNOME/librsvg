@@ -26,8 +26,7 @@
 #ifndef RSVG_FILTER_H
 #define RSVG_FILTER_H
 
-#include "rsvg.h"
-#include "rsvg-defs.h"
+#include "rsvg-private.h"
 
 G_BEGIN_DECLS 
 

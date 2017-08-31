@@ -29,7 +29,6 @@
 #include <string.h>
 #include <math.h>
 
-#include "rsvg.h"
 #include "rsvg-private.h"
 #include "rsvg-filter.h"
 #include "rsvg-css.h"
