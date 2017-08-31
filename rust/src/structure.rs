@@ -336,23 +336,27 @@ impl NodeTrait for NodeUse {
 
         let nx = self.x.get ().normalize (draw_ctx);
         let ny = self.y.get ().normalize (draw_ctx);
-        let nw = self.w.get ().map (|l| l.normalize (draw_ctx));
-        let nh = self.h.get ().map (|l| l.normalize (draw_ctx));
+
+        // If attributes ‘width’ and/or ‘height’ are not specified,
+        // [...] use values of '100%' for these attributes.
+        // From https://www.w3.org/TR/SVG/struct.html#UseElement in
+        // "If the ‘use’ element references a ‘symbol’ element"
+        
+        let nw = self.w.get ().unwrap_or (RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap ())
+            .normalize (draw_ctx);
+        let nh = self.h.get ().unwrap_or (RsvgLength::parse ("100%", LengthDir::Vertical).unwrap ())
+            .normalize (draw_ctx);
 
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
-        if let Some (w) = nw {
-            if double_equals (w, 0.0) {
-                drawing_ctx::release_node (draw_ctx, raw_child);
-                return;
-            }
+        if double_equals (nw, 0.0) {
+            drawing_ctx::release_node (draw_ctx, raw_child);
+            return;
         }
-
-        if let Some (h) = nh {
-            if double_equals (h, 0.0) {
-                drawing_ctx::release_node (draw_ctx, raw_child);
-                return;
-            }
+        
+        if double_equals (nh, 0.0) {
+            drawing_ctx::release_node (draw_ctx, raw_child);
+            return;
         }
 
         drawing_ctx::state_reinherit_top (draw_ctx, node.get_state (), dominate);
@@ -374,12 +378,6 @@ impl NodeTrait for NodeUse {
                 let vbox = symbol.vbox.get ();
 
                 if vbox.is_active () {
-                    // If attributes ‘width’ and/or ‘height’ are not specified, [...] use values of '100%' for these attributes.
-                    // From https://www.w3.org/TR/SVG/struct.html#UseElement in "If the ‘use’ element references a ‘symbol’ element"
-
-                    let nw = nw.unwrap_or (RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap ().normalize (draw_ctx));
-                    let nh = nh.unwrap_or (RsvgLength::parse ("100%", LengthDir::Vertical).unwrap ().normalize (draw_ctx));
-
                     let (x, y, w, h) = symbol.preserve_aspect_ratio.get ().compute (vbox.rect.width, vbox.rect.height,
                                                                                     nx, ny, nw, nh);
 
