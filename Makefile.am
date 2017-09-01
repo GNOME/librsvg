@@ -109,6 +109,11 @@ else
 CARGO_RELEASE_ARGS=--release
 endif
 
+CARGO_VERBOSE = $(cargo_verbose_$(V))
+cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
+cargo_verbose_0 =
+cargo_verbose_1 = --verbose
+
 RUST_LIB=@abs_top_builddir@/rust/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a
 
 check-local:
@@ -127,7 +132,7 @@ dist-hook:
 
 @abs_top_builddir@/rust/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a: $(RUST_SOURCES)
 	cd $(top_srcdir)/rust && \
-	CARGO_TARGET_DIR=@abs_top_builddir@/rust/target cargo build $(CARGO_RELEASE_ARGS)
+	CARGO_TARGET_DIR=@abs_top_builddir@/rust/target cargo build $(CARGO_VERBOSE) $(CARGO_RELEASE_ARGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
