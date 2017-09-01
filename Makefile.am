@@ -127,7 +127,7 @@ dist-hook:
 
 @abs_top_builddir@/rust/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a: $(RUST_SOURCES)
 	cd $(top_srcdir)/rust && \
-	CARGO_TARGET_DIR=@abs_top_builddir@/rust/target cargo build --verbose $(CARGO_RELEASE_ARGS)
+	CARGO_TARGET_DIR=@abs_top_builddir@/rust/target cargo build $(CARGO_RELEASE_ARGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
