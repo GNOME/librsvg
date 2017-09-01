@@ -200,7 +200,7 @@ impl NodeTrait for NodePattern {
 
         p.units         = property_bag::parse_or_none (pbag, "patternUnits")?;
         p.content_units = property_bag::parse_or_none (pbag, "patternContentUnits")?;
-        p.vbox          = property_bag::parse_or_none (pbag, "viewBox")?.map (|v| Some(v)).or (None);
+        p.vbox          = property_bag::parse_or_none (pbag, "viewBox")?.map (Some).or (None);
 
         p.preserve_aspect_ratio = property_bag::parse_or_none (pbag, "preserveAspectRatio")?;
 
