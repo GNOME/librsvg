@@ -115,7 +115,7 @@ struct NodeSvg {
     y:                     Cell<RsvgLength>,
     w:                     Cell<RsvgLength>,
     h:                     Cell<RsvgLength>,
-    vbox:                  Cell<RsvgViewBox>,
+    vbox:                  Cell<Option<ViewBox>>,
     atts:                  Cell<*mut RsvgPropertyBag>
 }
 
@@ -127,7 +127,7 @@ impl NodeSvg {
             y:                     Cell::new (RsvgLength::parse ("0", LengthDir::Vertical).unwrap ()),
             w:                     Cell::new (RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap ()),
             h:                     Cell::new (RsvgLength::parse ("100%", LengthDir::Vertical).unwrap ()),
-            vbox:                  Cell::new (RsvgViewBox::default ()),
+            vbox:                  Cell::new (None),
             atts:                  Cell::new (ptr::null_mut ())
         }
     }
@@ -165,7 +165,7 @@ impl NodeTrait for NodeSvg {
             self.h.set (h);
         }
 
-        self.vbox.set (property_bag::parse_or_default (pbag, "viewBox")?);
+        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox")?);
 
         // The "style" sub-element is not loaded yet here, so we need
         // to store other attributes to be applied later.
@@ -192,25 +192,23 @@ impl NodeTrait for NodeSvg {
 
         let affine_old = drawing_ctx::get_current_state_affine (draw_ctx);
 
-        let vbox = self.vbox.get ();
-
-        if vbox.is_active () {
+        if let Some (vbox) = self.vbox.get () {
             // viewBox width==0 or height==0 disables rendering of the element
             // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
-            if double_equals (vbox.rect.width, 0.0) || double_equals (vbox.rect.height, 0.0) {
+            if double_equals (vbox.0.width, 0.0) || double_equals (vbox.0.height, 0.0) {
                 return;
             }
 
-            let (x, y, w, h) = self.preserve_aspect_ratio.get ().compute (vbox.rect.width, vbox.rect.height,
+            let (x, y, w, h) = self.preserve_aspect_ratio.get ().compute (vbox.0.width, vbox.0.height,
                                                                           nx, ny, nw, nh);
 
             let mut affine = affine_old;
             affine.translate (x, y);
-            affine.scale (w / vbox.rect.width, h / vbox.rect.height);
-            affine.translate (-vbox.rect.x, -vbox.rect.y);
+            affine.scale (w / vbox.0.width, h / vbox.0.height);
+            affine.translate (-vbox.0.x, -vbox.0.y);
             drawing_ctx::set_current_state_affine (draw_ctx, affine);
 
-            drawing_ctx::push_view_box (draw_ctx, vbox.rect.width, vbox.rect.height);
+            drawing_ctx::push_view_box (draw_ctx, vbox.0.width, vbox.0.height);
         } else {
             let mut affine = affine_old;
             affine.translate (nx, ny);
@@ -375,25 +373,23 @@ impl NodeTrait for NodeUse {
             drawing_ctx::pop_discrete_layer (draw_ctx);
         } else {
             child.with_impl (|symbol: &NodeSymbol| {
-                let vbox = symbol.vbox.get ();
-
-                if vbox.is_active () {
-                    let (x, y, w, h) = symbol.preserve_aspect_ratio.get ().compute (vbox.rect.width, vbox.rect.height,
+                if let Some (vbox) = symbol.vbox.get () {
+                    let (x, y, w, h) = symbol.preserve_aspect_ratio.get ().compute (vbox.0.width, vbox.0.height,
                                                                                     nx, ny, nw, nh);
 
                     let mut affine = drawing_ctx::get_current_state_affine (draw_ctx);
                     affine.translate (x, y);
-                    affine.scale (w / vbox.rect.width, h / vbox.rect.height);
-                    affine.translate (-vbox.rect.x, -vbox.rect.y);
+                    affine.scale (w / vbox.0.width, h / vbox.0.height);
+                    affine.translate (-vbox.0.x, -vbox.0.y);
                     drawing_ctx::set_current_state_affine (draw_ctx, affine);
 
-                    drawing_ctx::push_view_box (draw_ctx, vbox.rect.width, vbox.rect.height);
+                    drawing_ctx::push_view_box (draw_ctx, vbox.0.width, vbox.0.height);
 
                     drawing_ctx::push_discrete_layer (draw_ctx);
 
                     if !drawing_ctx::state_is_overflow (state) || (!drawing_ctx::state_has_overflow (state)
                                                                    && drawing_ctx::state_is_overflow (child.get_state ())) {
-                        drawing_ctx::add_clipping_rect (draw_ctx, vbox.rect.x, vbox.rect.y, vbox.rect.width, vbox.rect.height);
+                        drawing_ctx::add_clipping_rect (draw_ctx, vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
                     }
                 } else {
                     let mut affine = drawing_ctx::get_current_state_affine (draw_ctx);
@@ -410,7 +406,7 @@ impl NodeTrait for NodeUse {
                 drawing_ctx::state_pop (draw_ctx);
                 drawing_ctx::pop_discrete_layer (draw_ctx);
 
-                if vbox.is_active () {
+                if let Some (_) = symbol.vbox.get () {
                     drawing_ctx::pop_view_box (draw_ctx);
                 }
             });
@@ -428,14 +424,14 @@ impl NodeTrait for NodeUse {
 
 struct NodeSymbol {
     preserve_aspect_ratio: Cell<AspectRatio>,
-    vbox:                  Cell<RsvgViewBox>
+    vbox:                  Cell<Option<ViewBox>>
 }
 
 impl NodeSymbol {
     fn new () -> NodeSymbol {
         NodeSymbol {
             preserve_aspect_ratio: Cell::new (AspectRatio::default ()),
-            vbox:                  Cell::new (RsvgViewBox::default ())
+            vbox:                  Cell::new (None)
         }
     }
 }
@@ -443,7 +439,7 @@ impl NodeSymbol {
 impl NodeTrait for NodeSymbol {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio")?);
-        self.vbox.set (property_bag::parse_or_default (pbag, "viewBox")?);
+        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox")?);
 
         Ok (())
     }
@@ -522,13 +518,13 @@ pub extern fn rsvg_node_svg_get_view_box (raw_node: *const RsvgNode) -> RsvgView
     assert! (!raw_node.is_null ());
     let node: &RsvgNode = unsafe { & *raw_node };
 
-    let mut vbox = RsvgViewBox::default ();
+    let mut vbox: Option<ViewBox> = None;
 
     node.with_impl (|svg: &NodeSvg| {
         vbox = svg.vbox.get ();
     });
 
-    vbox
+    RsvgViewBox::from (vbox)
 }
 
 extern "C" {

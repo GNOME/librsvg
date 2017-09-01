@@ -86,7 +86,7 @@ struct NodeMarker {
     height: Cell<RsvgLength>,
     orient: Cell<MarkerOrient>,
     aspect: Cell<AspectRatio>,
-    vbox:   Cell<RsvgViewBox>
+    vbox:   Cell<Option<ViewBox>>
 }
 
 impl NodeMarker {
@@ -99,7 +99,7 @@ impl NodeMarker {
             height: Cell::new (NodeMarker::get_default_size ()),
             orient: Cell::new (MarkerOrient::default ()),
             aspect: Cell::new (AspectRatio::default ()),
-            vbox:   Cell::new (RsvgViewBox::default ())
+            vbox:   Cell::new (None)
         }
     }
 
@@ -137,16 +137,14 @@ impl NodeMarker {
             affine.scale (line_width, line_width);
         }
 
-        let vbox = self.vbox.get ();
-
-        if vbox.is_active () {
-            let (_, _, w, h) = self.aspect.get ().compute (vbox.rect.width, vbox.rect.height,
+        if let Some (vbox) = self.vbox.get () {
+            let (_, _, w, h) = self.aspect.get ().compute (vbox.0.width, vbox.0.height,
                                                            0.0, 0.0,
                                                            marker_width, marker_height);
 
-            affine.scale (w / vbox.rect.width, h / vbox.rect.height);
+            affine.scale (w / vbox.0.width, h / vbox.0.height);
 
-            drawing_ctx::push_view_box (draw_ctx, vbox.rect.width, vbox.rect.height);
+            drawing_ctx::push_view_box (draw_ctx, vbox.0.width, vbox.0.height);
         }
 
         affine.translate (-self.ref_x.get ().normalize (draw_ctx),
@@ -165,12 +163,12 @@ impl NodeMarker {
         let state = drawing_ctx::get_current_state (draw_ctx);
 
         if !drawing_ctx::state_is_overflow (state) {
-            if vbox.is_active () {
+            if let Some (vbox) = self.vbox.get () {
                 drawing_ctx::add_clipping_rect (draw_ctx,
-                                                vbox.rect.x,
-                                                vbox.rect.y,
-                                                vbox.rect.width,
-                                                vbox.rect.height);
+                                                vbox.0.x,
+                                                vbox.0.y,
+                                                vbox.0.width,
+                                                vbox.0.height);
             } else {
                 drawing_ctx::add_clipping_rect (draw_ctx,
                                                 0.0,
@@ -186,7 +184,7 @@ impl NodeMarker {
 
         drawing_ctx::state_pop (draw_ctx);
 
-        if vbox.is_active () {
+        if let Some (_) = self.vbox.get () {
             drawing_ctx::pop_view_box (draw_ctx);
         }
     }
@@ -206,7 +204,7 @@ impl NodeTrait for NodeMarker {
 
         self.orient.set (property_bag::parse_or_default (pbag, "orient")?);
         self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio")?);
-        self.vbox.set   (property_bag::parse_or_default (pbag, "viewBox")?);
+        self.vbox.set   (property_bag::parse_or_none (pbag, "viewBox")?);
         self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio")?);
 
         Ok (())

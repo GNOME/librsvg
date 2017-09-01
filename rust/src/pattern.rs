@@ -28,7 +28,11 @@ use viewbox::*;
 pub struct Pattern {
     pub units:                 Option<PaintServerUnits>,
     pub content_units:         Option<PatternContentUnits>,
-    pub vbox:                  Option<RsvgViewBox>,
+    // This Option<Option<ViewBox>> is a bit strange.  We want a field
+    // with value None to mean, "this field isn't resolved yet".  However,
+    // the vbox can very well be *not* specified in the SVG file.
+    // In that case, the fully resolved pattern will have a .vbox=Some(None) value.
+    pub vbox:                  Option<Option<ViewBox>>,
     pub preserve_aspect_ratio: Option<AspectRatio>,
     pub affine:                Option<cairo::Matrix>,
     pub fallback:              Option<String>,
@@ -141,7 +145,7 @@ impl Pattern {
 
         fallback_to! (self.units,                 Some (PaintServerUnits::default ()));
         fallback_to! (self.content_units,         Some (PatternContentUnits::default ()));
-        fallback_to! (self.vbox,                  Some (RsvgViewBox::new_inactive ()));
+        fallback_to! (self.vbox,                  Some (None));
         fallback_to! (self.preserve_aspect_ratio, Some (AspectRatio::default ()));
         fallback_to! (self.affine,                Some (cairo::Matrix::identity ()));
 
@@ -196,7 +200,7 @@ impl NodeTrait for NodePattern {
 
         p.units         = property_bag::parse_or_none (pbag, "patternUnits")?;
         p.content_units = property_bag::parse_or_none (pbag, "patternContentUnits")?;
-        p.vbox          = property_bag::parse_or_none (pbag, "viewBox")?;
+        p.vbox          = property_bag::parse_or_none (pbag, "viewBox")?.map (|v| Some(v)).or (None);
 
         p.preserve_aspect_ratio = property_bag::parse_or_none (pbag, "preserveAspectRatio")?;
 
@@ -371,26 +375,26 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     let pushed_view_box: bool;
 
     // Create the pattern contents coordinate system
-    if vbox.is_active () {
+    if let Some (vbox) = vbox {
         // If there is a vbox, use that
-        let (mut x, mut y, w, h) = preserve_aspect_ratio.compute (vbox.rect.width,
-                                                                  vbox.rect.height,
+        let (mut x, mut y, w, h) = preserve_aspect_ratio.compute (vbox.0.width,
+                                                                  vbox.0.height,
                                                                   0.0,
                                                                   0.0,
                                                                   pattern_width * bbwscale,
                                                                   pattern_height * bbhscale);
 
-        x -= vbox.rect.x * w / vbox.rect.width;
-        y -= vbox.rect.y * h / vbox.rect.height;
+        x -= vbox.0.x * w / vbox.0.width;
+        y -= vbox.0.y * h / vbox.0.height;
 
-        caffine = cairo::Matrix::new (w / vbox.rect.width,
+        caffine = cairo::Matrix::new (w / vbox.0.width,
                                       0.0,
                                       0.0,
-                                      h / vbox.rect.height,
+                                      h / vbox.0.height,
                                       x,
                                       y);
 
-        drawing_ctx::push_view_box (draw_ctx, vbox.rect.width, vbox.rect.height);
+        drawing_ctx::push_view_box (draw_ctx, vbox.0.width, vbox.0.height);
         pushed_view_box = true;
     } else if content_units == PatternContentUnits (PaintServerUnits::ObjectBoundingBox) {
         // If coords are in terms of the bounding box, use them
