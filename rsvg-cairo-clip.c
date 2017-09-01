@@ -115,7 +115,7 @@ rsvg_cairo_clip_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, dou
 }
 
 static RsvgRender *
-rsvg_cairo_clip_render_new (cairo_t * cr, RsvgCairoRender *parent)
+rsvg_cairo_clip_render_new (cairo_t *cr, RsvgCairoRender *parent)
 {
     RsvgCairoClipRender *clip_render = g_new0 (RsvgCairoClipRender, 1);
     RsvgCairoRender *cairo_render = &clip_render->super;
@@ -127,14 +127,27 @@ rsvg_cairo_clip_render_new (cairo_t * cr, RsvgCairoRender *parent)
     render->free = rsvg_cairo_clip_render_free;
     render->create_pango_context = rsvg_cairo_create_pango_context;
     render->render_pango_layout = rsvg_cairo_render_pango_layout;
-    render->render_surface = rsvg_cairo_clip_render_surface;
     render->render_path_builder = rsvg_cairo_clip_render_path_builder;
+    render->render_surface = rsvg_cairo_clip_render_surface;
     render->pop_discrete_layer = rsvg_cairo_clip_pop_discrete_layer;
     render->push_discrete_layer = rsvg_cairo_clip_push_discrete_layer;
     render->add_clipping_rect = rsvg_cairo_clip_add_clipping_rect;
     render->get_surface_of_node = NULL;
+
     cairo_render->initial_cr = parent->cr;
-    cairo_render->cr = cr;
+    cairo_render->cr         = cr;
+    cairo_render->width      = parent->width;
+    cairo_render->height     = parent->height;
+    cairo_render->offset_x   = parent->offset_x;
+    cairo_render->offset_y   = parent->offset_y;
+    cairo_render->cr_stack   = NULL;
+    cairo_render->bbox       = parent->bbox;
+    cairo_render->bb_stack   = NULL;
+
+    /* We don't copy or ref the following two; we just share them */
+    cairo_render->font_config_for_testing = parent->font_config_for_testing;
+    cairo_render->font_map_for_testing    = parent->font_map_for_testing;
+
     clip_render->parent = parent;
 
     return render;
@@ -144,14 +157,18 @@ void
 rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox)
 {
     RsvgClipPath *clip;
+    RsvgCairoClipRender *clip_render;
     RsvgCairoRender *save = RSVG_CAIRO_RENDER (ctx->render);
     cairo_matrix_t affinesave;
     RsvgState *clip_path_state;
+    cairo_t *cr;
 
     g_assert (rsvg_node_get_type (node_clip_path) == RSVG_NODE_TYPE_CLIP_PATH);
     clip = rsvg_rust_cnode_get_impl (node_clip_path);
 
-    ctx->render = rsvg_cairo_clip_render_new (save->cr, save);
+    cr = save->cr;
+    clip_render = RSVG_CAIRO_CLIP_RENDER (rsvg_cairo_clip_render_new (cr, save));
+    ctx->render = &clip_render->super.super;
 
     clip_path_state = rsvg_node_get_state (node_clip_path);
 
@@ -176,7 +193,11 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox
     if (clip->units == objectBoundingBox)
         clip_path_state->affine = affinesave;
 
+    g_assert (clip_render->super.cr_stack == NULL);
+    g_assert (clip_render->super.bb_stack == NULL);
+    g_assert (clip_render->super.surfaces_stack == NULL);
+
     g_free (ctx->render);
-    cairo_clip (save->cr);
+    cairo_clip (cr);
     ctx->render = &save->super;
 }
