@@ -182,10 +182,8 @@ impl NodeMarker {
 
         node.draw_children (draw_ctx, -1); // dominate=-1 so it won't reinherit state / push a layer
 
-        drawing_ctx::pop_discrete_layer (draw_ctx);
-
         drawing_ctx::state_pop (draw_ctx);
-
+        drawing_ctx::pop_discrete_layer (draw_ctx);
         drawing_ctx::pop_view_box (draw_ctx);
     }
 }
