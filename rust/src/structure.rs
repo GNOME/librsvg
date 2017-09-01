@@ -397,6 +397,7 @@ impl NodeTrait for NodeUse {
                     drawing_ctx::set_current_state_affine (draw_ctx, affine);
 
                     drawing_ctx::push_discrete_layer (draw_ctx);
+                    drawing_ctx::push_view_box (draw_ctx, nw, nh);
                 }
 
                 drawing_ctx::state_push (draw_ctx);
@@ -406,9 +407,7 @@ impl NodeTrait for NodeUse {
                 drawing_ctx::state_pop (draw_ctx);
                 drawing_ctx::pop_discrete_layer (draw_ctx);
 
-                if let Some (_) = symbol.vbox.get () {
-                    drawing_ctx::pop_view_box (draw_ctx);
-                }
+                drawing_ctx::pop_view_box (draw_ctx);
             });
         }
 
