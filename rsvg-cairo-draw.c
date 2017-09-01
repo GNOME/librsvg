@@ -490,6 +490,19 @@ rsvg_cairo_render_path (RsvgDrawingCtx * ctx, const cairo_path_t *path)
        _rendering_ time speedups, are these rather expensive operations
        really needed here? */
 
+    /* FIXME: See https://www.w3.org/TR/SVG/coords.html#ObjectBoundingBox for
+     * discussion on how to compute bounding boxes to be used for viewports and
+     * clipping.  It looks like we should be using cairo_path_extents() for
+     * that, not cairo_fill_extents().
+     *
+     * We may need to maintain *two* sets of bounding boxes - one for
+     * viewports/clipping, and one for user applications like a
+     * rsvg_compute_ink_rect() function in the future.
+     *
+     * See https://bugzilla.gnome.org/show_bug.cgi?id=760112 for discussion of a
+     * public API to get the ink rectangle.
+     */
+
     /* Bounding box for fill
      *
      * Unlike the case for stroke, for fills we always compute the bounding box.
