@@ -35,6 +35,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <pango/pangocairo.h>
 
 typedef struct RsvgCairoClipRender RsvgCairoClipRender;
 
@@ -58,6 +59,31 @@ rsvg_cairo_clip_apply_affine (RsvgCairoClipRender *render, cairo_matrix_t *affin
                        affine->x0 + (nest ? 0 : render->parent->offset_x),
                        affine->y0 + (nest ? 0 : render->parent->offset_y));
     cairo_set_matrix (cairo_render->cr, &matrix);
+}
+
+static void
+rsvg_cairo_clip_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, double x, double y)
+{
+    RsvgCairoClipRender *render = RSVG_CAIRO_CLIP_RENDER (ctx->render);
+    RsvgCairoRender *cairo_render = &render->super;
+    cairo_matrix_t affine;
+    PangoGravity gravity = pango_context_get_gravity (pango_layout_get_context (layout));
+    double rotation;
+
+    affine = ctx->state->affine;
+    rsvg_cairo_clip_apply_affine (render, &affine);
+
+    rotation = pango_gravity_to_rotation (gravity);
+
+    cairo_save (cairo_render->cr);
+    cairo_move_to (cairo_render->cr, x, y);
+    if (rotation != 0.)
+        cairo_rotate (cairo_render->cr, -rotation);
+
+    pango_cairo_update_layout (cairo_render->cr, layout);
+    pango_cairo_layout_path (cairo_render->cr, layout);
+
+    cairo_restore (cairo_render->cr);
 }
 
 static void
@@ -123,7 +149,7 @@ rsvg_cairo_clip_render_new (cairo_t *cr, RsvgCairoRender *parent)
     render->type = RSVG_RENDER_TYPE_CAIRO_CLIP;
     render->free = rsvg_cairo_clip_render_free;
     render->create_pango_context = rsvg_cairo_create_pango_context;
-    render->render_pango_layout = rsvg_cairo_render_pango_layout;
+    render->render_pango_layout = rsvg_cairo_clip_render_pango_layout;
     render->render_path = rsvg_cairo_clip_render_path;
     render->render_surface = rsvg_cairo_clip_render_surface;
     render->pop_discrete_layer = rsvg_cairo_clip_pop_discrete_layer;
