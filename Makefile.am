@@ -100,7 +100,8 @@ RUST_SOURCES =					\
 	rust/src/viewbox.rs
 
 RUST_EXTRA = 					\
-	rust/Cargo.lock
+	rust/Cargo.lock				\
+	rust/cargo-vendor-config
 
 if DEBUG_RELEASE
 CARGO_RELEASE_ARGS=
@@ -117,6 +118,12 @@ check-local:
 clean-local:
 	cd $(top_srcdir)/rust && \
 	CARGO_TARGET_DIR=@abs_top_builddir@/rust/target cargo clean
+
+dist-hook:
+	(cd $(distdir)/rust && \
+	cargo vendor -q && \
+	mkdir .cargo && \
+	cp cargo-vendor-config .cargo/config)
 
 @abs_top_builddir@/rust/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a: $(RUST_SOURCES)
 	cd $(top_srcdir)/rust && \

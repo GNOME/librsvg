@@ -1,0 +1,11 @@
+# This is used after `cargo vendor` is run from `make dist`.
+#
+# In the distributed tarball, this file should end up in
+# rust/.cargo/config
+
+[source.crates-io]
+registry = 'https://github.com/rust-lang/crates.io-index'
+replace-with = 'vendored-sources'
+
+[source.vendored-sources]
+directory = './vendor'
