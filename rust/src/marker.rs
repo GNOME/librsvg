@@ -145,6 +145,8 @@ impl NodeMarker {
             affine.scale (w / vbox.0.width, h / vbox.0.height);
 
             drawing_ctx::push_view_box (draw_ctx, vbox.0.width, vbox.0.height);
+        } else {
+            drawing_ctx::push_view_box (draw_ctx, marker_width, marker_height);
         }
 
         affine.translate (-self.ref_x.get ().normalize (draw_ctx),
@@ -184,9 +186,7 @@ impl NodeMarker {
 
         drawing_ctx::state_pop (draw_ctx);
 
-        if let Some (_) = self.vbox.get () {
-            drawing_ctx::pop_view_box (draw_ctx);
-        }
+        drawing_ctx::pop_view_box (draw_ctx);
     }
 }
 
