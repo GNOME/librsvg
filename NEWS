@@ -9,6 +9,11 @@ Version 2.41.1
 - Fixed recursive fallbacks in gradients.
 - Per the spec, we now don't render elements which have invalid
   attributes.
+- Windows build: support building with Fontconfig; support Visual
+  Studio 2017; generate .pc files upon install (Chun-wei Fan)
+- Fixed bgo#621088 - Text elements can now be used as clipping paths.
+- Fixed bgo#587721 - Fix rendering of text elements with transformations
+  (Massimo)
 - Fixed bgo#776932 - Don't crash on elements with an invalid
   "transform" attribute.
 - Fixed bgo#777155 - Ignore patterns that have close-to-zero dimensions.
@@ -29,8 +34,14 @@ Version 2.41.1
 - Fixed bgo#782098 - Don't pass deprecated options to gtkdoc-scangobj
   (Ting-Wei Lan).
 - Fixed bgo#777833 - Various memory leaks (Philip Withnall, Federico Mena)
+- Fixed bgo#786372 - Use the correct default for the style element's
+  "type" attribute.
+- Fixed bgo#634514 - Don't render unknown elements and their children.
 - Fix parsing of "azimuth", "elevation", "limitingConeAngle" for
   filter effects.
+- Fixed bgo#785276 - Don't crash on empty or single-byte files.
+- Made the <switch> element work; SVG feature names were being
+  tested incorrectly.
 - Fixed a few cases of uninitialized struct fields.
 - Code converted to Rust: preserveAspectRatio attribute, viewBox
   attribute, core Node structure, path/line/rect/circle/ellipse basic
@@ -39,8 +50,12 @@ Version 2.41.1
   propagation from parsers, gradient stops, gradient element, 
 - Added a bunch of new test cases for the new features and the
   code converted to Rust.
-- Windows build: support building with Fontconfig; support Visual
-  Studio 2017; generate .pc files upon install (Chun-wei Fan)
+- We now require cairo-rs 0.2.0
+- We now require lalrpop 0.13.1
+- The librsvg tarball now comes with the Rust dependencies embedded
+  using "cargo vendor".  Linux distros can replace these dependencies
+  with their own versions using the infrastructure described in
+  http://doc.crates.io/source-replacement.html
 
 Version 2.41.0
 - The big news is that parts of librsvg are now implemented in the
