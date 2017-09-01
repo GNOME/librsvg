@@ -112,7 +112,7 @@ rsvg_cairo_clip_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, dou
 }
 
 static RsvgRender *
-rsvg_cairo_clip_render_new (cairo_t * cr, RsvgCairoRender *parent)
+rsvg_cairo_clip_render_new (cairo_t *cr, RsvgCairoRender *parent)
 {
     RsvgCairoClipRender *clip_render = g_new0 (RsvgCairoClipRender, 1);
     RsvgCairoRender *cairo_render = &clip_render->super;
@@ -124,14 +124,23 @@ rsvg_cairo_clip_render_new (cairo_t * cr, RsvgCairoRender *parent)
     render->free = rsvg_cairo_clip_render_free;
     render->create_pango_context = rsvg_cairo_create_pango_context;
     render->render_pango_layout = rsvg_cairo_render_pango_layout;
-    render->render_surface = rsvg_cairo_clip_render_surface;
     render->render_path = rsvg_cairo_clip_render_path;
+    render->render_surface = rsvg_cairo_clip_render_surface;
     render->pop_discrete_layer = rsvg_cairo_clip_pop_discrete_layer;
     render->push_discrete_layer = rsvg_cairo_clip_push_discrete_layer;
     render->add_clipping_rect = rsvg_cairo_clip_add_clipping_rect;
     render->get_surface_of_node = NULL;
+
     cairo_render->initial_cr = parent->cr;
-    cairo_render->cr = cr;
+    cairo_render->cr         = cr;
+    cairo_render->width      = parent->width;
+    cairo_render->height     = parent->height;
+    cairo_render->offset_x   = parent->offset_x;
+    cairo_render->offset_y   = parent->offset_y;
+    cairo_render->cr_stack   = NULL;
+    cairo_render->bbox       = parent->bbox;
+    cairo_render->bb_stack   = NULL;
+
     clip_render->parent = parent;
 
     return render;
@@ -140,10 +149,14 @@ rsvg_cairo_clip_render_new (cairo_t * cr, RsvgCairoRender *parent)
 void
 rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox)
 {
+    RsvgCairoClipRender *clip_render;
     RsvgCairoRender *save = RSVG_CAIRO_RENDER (ctx->render);
+    cairo_t *cr;
     cairo_matrix_t affinesave;
 
-    ctx->render = rsvg_cairo_clip_render_new (save->cr, save);
+    cr = save->cr;
+    clip_render = RSVG_CAIRO_CLIP_RENDER (rsvg_cairo_clip_render_new (cr, save));
+    ctx->render = &clip_render->super.super;
 
     /* Horribly dirty hack to have the bbox premultiplied to everything */
     if (clip->units == objectBoundingBox) {
@@ -166,7 +179,11 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox)
     if (clip->units == objectBoundingBox)
         clip->super.state->affine = affinesave;
 
+    g_assert (clip_render->super.cr_stack == NULL);
+    g_assert (clip_render->super.bb_stack == NULL);
+    g_assert (clip_render->super.surfaces_stack == NULL);
+
     g_free (ctx->render);
-    cairo_clip (save->cr);
+    cairo_clip (cr);
     ctx->render = &save->super;
 }
