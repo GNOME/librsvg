@@ -151,19 +151,13 @@ impl NodeTrait for NodeSvg {
             self.y.set (property_bag::length_or_default (pbag, "y", LengthDir::Vertical)?);
         }
 
-        let w = property_bag::length_or_value (pbag, "width", LengthDir::Horizontal, "100%")?;
-        if length_is_negative (&w) {
-            return Err (NodeError::value_error ("width", "Must not be negative"));
-        } else {
-            self.w.set (w);
-        }
+        self.w.set (property_bag::length_or_value (pbag, "width", LengthDir::Horizontal, "100%")
+                    .and_then (|l| l.check_nonnegative ()
+                               .map_err (|e| NodeError::attribute_error ("width", e)))?);
 
-        let h = property_bag::length_or_value (pbag, "height", LengthDir::Vertical, "100%")?;
-        if length_is_negative (&h) {
-            return Err (NodeError::value_error ("height", "Must not be negative"));
-        } else {
-            self.h.set (h);
-        }
+        self.h.set (property_bag::length_or_value (pbag, "height", LengthDir::Vertical, "100%")
+                    .and_then (|l| l.check_nonnegative ()
+                               .map_err (|e| NodeError::attribute_error ("height", e)))?);
 
         self.vbox.set (property_bag::parse_or_none (pbag, "viewBox")?);
 
