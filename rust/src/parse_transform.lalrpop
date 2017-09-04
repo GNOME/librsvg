@@ -37,20 +37,20 @@ Transform: cairo::Matrix = {
     SkewY
 };
 
-pub Matrix: cairo::Matrix = "matrix" "(" <Num> maybe_comma <Num> maybe_comma <Num> maybe_comma <Num> maybe_comma <Num> maybe_comma <Num> ")" =>
+Matrix: cairo::Matrix = "matrix" "(" <Num> maybe_comma <Num> maybe_comma <Num> maybe_comma <Num> maybe_comma <Num> maybe_comma <Num> ")" =>
     cairo::Matrix::new (<>);
 
-pub Translate: cairo::Matrix = {
+Translate: cairo::Matrix = {
     "translate" "(" <Num> ")" => cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, <>, 0.0),
     "translate" "(" <Num> maybe_comma <Num> ")" => cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, <>)
 };
 
-pub Scale: cairo::Matrix = {
+Scale: cairo::Matrix = {
     "scale" "(" <Num> ")" => cairo::Matrix::new (<>, 0.0, 0.0, <>, 0.0, 0.0),
     "scale" "(" <sx: Num> maybe_comma <sy: Num> ")" => cairo::Matrix::new (sx, 0.0, 0.0, sy, 0.0, 0.0),
 };
 
-pub Rotate: cairo::Matrix = {
+Rotate: cairo::Matrix = {
     "rotate" "(" <angle: Num> ")" => {
         let a = angle * PI / 180.0;
         let (s, c) = a.sin_cos ();
@@ -68,7 +68,7 @@ pub Rotate: cairo::Matrix = {
     }
 };
 
-pub SkewX: cairo::Matrix = {
+SkewX: cairo::Matrix = {
     "skewX" "(" <angle: Num> ")" => {
         let a = angle * PI / 180.0;
         cairo::Matrix::new (1.0,      0.0,
@@ -77,7 +77,7 @@ pub SkewX: cairo::Matrix = {
     }
 };
 
-pub SkewY: cairo::Matrix = {
+SkewY: cairo::Matrix = {
     "skewY" "(" <angle: Num> ")" => {
         let a = angle * PI / 180.0;
         cairo::Matrix::new (1.0,  a.tan (),
