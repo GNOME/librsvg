@@ -346,10 +346,12 @@ impl NodeTrait for NodeUse {
             affine.translate (nx, ny);
             drawing_ctx::set_current_state_affine (draw_ctx, affine);
 
-            let boxed_child = box_node (child.clone ());
-
             drawing_ctx::push_discrete_layer (draw_ctx);
+
+            let boxed_child = box_node (child.clone ());
             drawing_ctx::draw_node_from_stack (draw_ctx, boxed_child, 1);
+            rsvg_node_unref (boxed_child);
+
             drawing_ctx::pop_discrete_layer (draw_ctx);
         } else {
             child.with_impl (|symbol: &NodeSymbol| {

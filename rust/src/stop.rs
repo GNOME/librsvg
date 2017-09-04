@@ -81,7 +81,9 @@ impl NodeTrait for NodeStop {
         }
 
         let inherited_state = drawing_ctx::state_new ();
-        drawing_ctx::state_reconstruct (inherited_state, box_node (node.clone ()));
+        let boxed_node = box_node (node.clone ());
+        drawing_ctx::state_reconstruct (inherited_state, boxed_node);
+        rsvg_node_unref (boxed_node);
 
         let mut color_rgba: cssparser::RGBA;
 
