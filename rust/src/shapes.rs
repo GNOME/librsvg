@@ -448,7 +448,10 @@ impl NodeTrait for NodeCircle {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         self.cx.set (property_bag::length_or_default (pbag, "cx", LengthDir::Horizontal)?);
         self.cy.set (property_bag::length_or_default (pbag, "cy", LengthDir::Vertical)?);
-        self.r.set  (property_bag::length_or_default (pbag, "r", LengthDir::Both)?);
+
+        self.r.set  (property_bag::length_or_default (pbag, "r", LengthDir::Both)
+                     .and_then (|l| l.check_nonnegative ()
+                                .map_err (|e| NodeError::attribute_error ("r", e)))?);
 
         Ok (())
     }
@@ -490,8 +493,14 @@ impl NodeTrait for NodeEllipse {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         self.cx.set (property_bag::length_or_default (pbag, "cx", LengthDir::Horizontal)?);
         self.cy.set (property_bag::length_or_default (pbag, "cy", LengthDir::Vertical)?);
-        self.rx.set (property_bag::length_or_default (pbag, "rx", LengthDir::Horizontal)?);
-        self.ry.set (property_bag::length_or_default (pbag, "ry", LengthDir::Vertical)?);
+
+        self.rx.set (property_bag::length_or_default (pbag, "rx", LengthDir::Horizontal)
+                     .and_then (|l| l.check_nonnegative ()
+                                .map_err (|e| NodeError::attribute_error ("rx", e)))?);
+
+        self.ry.set (property_bag::length_or_default (pbag, "ry", LengthDir::Vertical)
+                     .and_then (|l| l.check_nonnegative ()
+                                .map_err (|e| NodeError::attribute_error ("ry", e)))?);
 
         Ok (())
     }
