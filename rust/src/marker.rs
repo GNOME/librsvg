@@ -95,17 +95,17 @@ impl NodeMarker {
             units:  Cell::new (MarkerUnits::default ()),
             ref_x:  Cell::new (RsvgLength::default ()),
             ref_y:  Cell::new (RsvgLength::default ()),
-            width:  Cell::new (NodeMarker::get_default_size (LengthDir::Horizontal)),
-            height: Cell::new (NodeMarker::get_default_size (LengthDir::Vertical)),
+            width:  Cell::new (RsvgLength::parse (NodeMarker::get_default_size (), LengthDir::Horizontal).unwrap ()),
+            height: Cell::new (RsvgLength::parse (NodeMarker::get_default_size (), LengthDir::Vertical).unwrap ()),
             orient: Cell::new (MarkerOrient::default ()),
             aspect: Cell::new (AspectRatio::default ()),
             vbox:   Cell::new (None)
         }
     }
 
-    fn get_default_size (dir: LengthDir) -> RsvgLength {
+    fn get_default_size () -> &'static str {
         // per the spec
-        RsvgLength::parse ("3", dir).unwrap ()
+        "3"
     }
 
     fn render (&self,
@@ -195,10 +195,17 @@ impl NodeTrait for NodeMarker {
         self.ref_x.set (property_bag::length_or_default (pbag, "refX", LengthDir::Horizontal)?);
         self.ref_y.set (property_bag::length_or_default (pbag, "refY", LengthDir::Vertical)?);
 
-        self.width.set (property_bag::lookup (pbag, "markerWidth").map_or (NodeMarker::get_default_size (LengthDir::Horizontal),
-                                                                           |v| RsvgLength::parse (&v, LengthDir::Horizontal).unwrap_or (NodeMarker::get_default_size (LengthDir::Horizontal))));
-        self.height.set (property_bag::lookup (pbag, "markerHeight").map_or (NodeMarker::get_default_size (LengthDir::Vertical),
-                                                                             |v| RsvgLength::parse (&v, LengthDir::Vertical).unwrap_or (NodeMarker::get_default_size (LengthDir::Vertical))));
+        self.width.set (property_bag::length_or_value (pbag, "markerWidth",
+                                                       LengthDir::Horizontal,
+                                                       NodeMarker::get_default_size ())?
+                        .check_nonnegative ()
+                        .map_err (|e| NodeError::attribute_error ("markerWidth", e))?);
+
+        self.height.set (property_bag::length_or_value (pbag, "markerHeight",
+                                                        LengthDir::Vertical,
+                                                        NodeMarker::get_default_size ())?
+                        .check_nonnegative ()
+                        .map_err (|e| NodeError::attribute_error ("markerHeight", e))?);
 
         self.orient.set (property_bag::parse_or_default (pbag, "orient")?);
         self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio")?);
@@ -795,7 +802,6 @@ mod parser_tests {
 mod directionality_tests {
     use std::f64::consts::*;
     use super::*;
-    extern crate cairo;
 
     fn test_bisection_angle (expected: f64,
                              incoming_vx: f64,
