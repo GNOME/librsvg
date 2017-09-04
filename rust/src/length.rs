@@ -190,6 +190,14 @@ impl RsvgLength {
         Ok (length)
     }
 
+    pub fn check_nonnegative (&self) -> Result <RsvgLength, AttributeError> {
+        if self.length >= 0.0 {
+            Ok (*self)
+        } else {
+            Err (AttributeError::Value ("value must be non-negative".to_string ()))
+        }
+    }
+
     pub fn normalize (&self, draw_ctx: *const RsvgDrawingCtx) -> f64 {
         match self.unit {
             LengthUnit::Default => {
@@ -424,5 +432,11 @@ mod tests {
         // Since they really be in FontSize, not RsvgLength, we should remember
         // to move this test to that type later.
         assert! (is_parse_error (&RsvgLength::parse ("furlong", LengthDir::Both)));
+    }
+
+    #[test]
+    fn check_nonnegative_works () {
+        assert! (RsvgLength::parse ("0", LengthDir::Both).and_then (|l| l.check_nonnegative ()).is_ok ());
+        assert! (RsvgLength::parse ("-10", LengthDir::Both).and_then (|l| l.check_nonnegative ()).is_err ());
     }
 }
