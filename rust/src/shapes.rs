@@ -263,21 +263,8 @@ impl NodeTrait for NodeRect {
         self.w.set (property_bag::length_or_default (pbag, "width", LengthDir::Horizontal)?);
         self.h.set (property_bag::length_or_default (pbag, "height", LengthDir::Vertical)?);
 
-        let v = property_bag::lookup (pbag, "rx");
-        if let Some (val) = v {
-            let rlength = RsvgLength::parse (&val, LengthDir::Horizontal);
-            self.rx.set (rlength.map (|v| Some (v)).unwrap_or (None));
-        } else {
-            self.rx.set (None);
-        }
-
-        let v = property_bag::lookup (pbag, "ry");
-        if let Some (val) = v {
-            let rlength = RsvgLength::parse (&val, LengthDir::Vertical);
-            self.ry.set (rlength.map (|v| Some (v)).unwrap_or (None));
-        } else {
-            self.ry.set (None);
-        }
+        self.rx.set (property_bag::length_or_none (pbag, "rx", LengthDir::Horizontal)?);
+        self.ry.set (property_bag::length_or_none (pbag, "ry", LengthDir::Vertical)?);
 
         Ok (())
     }
