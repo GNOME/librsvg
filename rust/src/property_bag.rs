@@ -82,15 +82,9 @@ pub fn parse_or_none<T> (pbag: *const RsvgPropertyBag, key: &'static str) -> Res
 }
 
 pub fn parse_or_default<T> (pbag: *const RsvgPropertyBag, key: &'static str) -> Result <T, NodeError>
-    where T: Default + FromStr<Err = AttributeError>
+    where T: Default + FromStr<Err = AttributeError> + Copy
 {
-    let r = parse_or_none::<T> (pbag, key);
-
-    match r {
-        Ok (Some (v)) => Ok (v),
-        Ok (None)     => Ok (T::default ()),
-        Err (e)       => Err (e)
-    }
+    parse_or_value (pbag, key, T::default ())
 }
 
 pub fn parse_or_value<T> (pbag: *const RsvgPropertyBag, key: &'static str, value: T) -> Result <T, NodeError>
