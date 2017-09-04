@@ -7,8 +7,7 @@
 use std::f64::consts::*;
 use std::str::FromStr;
 
-use ::cairo;
-use cairo::Matrix;
+use cairo;
 use cairo::MatrixTrait;
 
 #[LALR]

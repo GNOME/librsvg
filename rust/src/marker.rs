@@ -1147,7 +1147,6 @@ mod directionality_tests {
 #[cfg(test)]
 mod marker_tests {
     use super::*;
-    extern crate cairo;
 
     #[test]
     fn emits_for_open_subpath () {

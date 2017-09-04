@@ -1,12 +1,7 @@
-extern crate libc;
-extern crate glib;
-
 use std::str;
 use std::str::Chars;
 use std::iter::Enumerate;
 use path_builder::*;
-
-extern crate cairo;
 
 struct PathParser<'b> {
     chars_enumerator: Enumerate<Chars<'b>>,
@@ -1007,8 +1002,6 @@ pub fn parse_path_into_builder (path_str: &str, builder: &mut RsvgPathBuilder) -
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    extern crate cairo;
 
     fn print_error (error: &ParseError, path_str: &str) {
         let prefix = "Error in \"";

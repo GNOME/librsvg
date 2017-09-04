@@ -3,7 +3,6 @@ extern crate cairo_sys;
 extern crate cssparser;
 extern crate glib;
 extern crate glib_sys;
-extern crate lalrpop_util;
 extern crate libc;
 
 #[macro_use]

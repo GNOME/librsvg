@@ -1,4 +1,3 @@
-use ::cairo;
 use ::cairo_sys;
 
 use std::f64;
