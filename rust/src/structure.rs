@@ -133,13 +133,6 @@ impl NodeSvg {
     }
 }
 
-fn length_is_negative (length: &RsvgLength) -> bool {
-    // This is more or less a hack.  We don't care about a correct
-    // normalization; we just need to know if it would be negative.
-    // So, we pass bogus values just to be able to normalize.
-    length.hand_normalize (1.0, 1.0, 1.0) < 0.0
-}
-
 impl NodeTrait for NodeSvg {
     fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio")?);
@@ -275,34 +268,27 @@ impl NodeTrait for NodeUse {
         self.y.set (property_bag::length_or_default (pbag, "y", LengthDir::Vertical)?);
 
         let opt_w = property_bag::length_or_none (pbag, "width", LengthDir::Horizontal)?;
-        match opt_w {
+        self.w.set (match opt_w {
             Some (w) => {
-                if length_is_negative (&w) {
-                    return Err (NodeError::value_error ("width", "Must not be negative"));
-                } else {
-                    self.w.set (Some (w));
-                }
+                Some (w.check_nonnegative ().map_err (|e| NodeError::attribute_error ("width", e))?)
             },
 
             None => {
-                self.w.set (None);
+                None
             }
-        }
+        });
 
         let opt_h = property_bag::length_or_none (pbag, "height", LengthDir::Vertical)?;
-        match opt_h {
+        let h = match opt_h {
             Some (h) => {
-                if length_is_negative (&h) {
-                    return Err (NodeError::value_error ("height", "Must not be negative"));
-                } else {
-                    self.h.set (Some (h));
-                }
+                Some (h.check_nonnegative ().map_err (|e| NodeError::attribute_error ("height", e))?)
             },
 
             None => {
-                self.h.set (None);
+                None
             }
-        }
+        };
+        self.h.set (h);
 
         Ok (())
     }
