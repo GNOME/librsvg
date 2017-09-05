@@ -209,10 +209,10 @@ impl NodeTrait for NodePattern {
 
         p.fallback = property_bag::lookup (pbag, "xlink:href");
 
-        p.x      = property_bag::length_or_none (pbag, "x", LengthDir::Horizontal)?;
-        p.y      = property_bag::length_or_none (pbag, "y", LengthDir::Vertical)?;
-        p.width  = property_bag::length_or_none (pbag, "width", LengthDir::Horizontal)?;
-        p.height = property_bag::length_or_none (pbag, "height", LengthDir::Vertical)?;
+        p.x      = property_bag::parse_or_none (pbag, "x", LengthDir::Horizontal)?;
+        p.y      = property_bag::parse_or_none (pbag, "y", LengthDir::Vertical)?;
+        p.width  = property_bag::parse_or_none (pbag, "width", LengthDir::Horizontal)?;
+        p.height = property_bag::parse_or_none (pbag, "height", LengthDir::Vertical)?;
 
         Ok (())
     }

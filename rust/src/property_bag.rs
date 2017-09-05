@@ -34,37 +34,6 @@ pub fn free (pbag: *mut RsvgPropertyBag) {
     }
 }
 
-pub fn length_or_none (pbag: *const RsvgPropertyBag, key: &'static str, length_dir: LengthDir) -> Result <Option<RsvgLength>, NodeError> {
-    let value = lookup (pbag, key);
-
-    if let Some (v) = value {
-        RsvgLength::parse (&v, length_dir).map (|l| Some (l))
-            .map_err (|e| NodeError::attribute_error (key, e))
-    } else {
-        Ok (None)
-    }
-}
-
-pub fn length_or_default (pbag: *const RsvgPropertyBag, key: &'static str, length_dir: LengthDir) -> Result <RsvgLength, NodeError> {
-    let r = length_or_none (pbag, key, length_dir);
-
-    match r {
-        Ok (Some (v)) => Ok (v),
-        Ok (None)     => Ok (RsvgLength::default ()),
-        Err (e)       => Err (e)
-    }
-}
-
-pub fn length_or_value (pbag: *const RsvgPropertyBag, key: &'static str, length_dir: LengthDir, length_str: &str) -> Result <RsvgLength, NodeError> {
-    let r = length_or_none (pbag, key, length_dir);
-
-    match r {
-        Ok (Some (v)) => Ok (v),
-        Ok (None)     => Ok (RsvgLength::parse (length_str, length_dir).unwrap ()),
-        Err (e)       => Err (e)
-    }
-}
-
 pub fn parse_or_none<T> (pbag: *const RsvgPropertyBag, key: &'static str, data: <T as Parse>::Data) -> Result <Option<T>, NodeError>
     where T: Parse<Err = AttributeError>
 {

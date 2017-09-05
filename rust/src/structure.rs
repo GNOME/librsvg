@@ -141,15 +141,15 @@ impl NodeTrait for NodeSvg {
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
         if node.get_parent ().is_some () {
-            self.x.set (property_bag::length_or_default (pbag, "x", LengthDir::Horizontal)?);
-            self.y.set (property_bag::length_or_default (pbag, "y", LengthDir::Vertical)?);
+            self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal)?);
+            self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical)?);
         }
 
-        self.w.set (property_bag::length_or_value (pbag, "width", LengthDir::Horizontal, "100%")
+        self.w.set (property_bag::parse_or_value (pbag, "width", LengthDir::Horizontal, RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap ())
                     .and_then (|l| l.check_nonnegative ()
                                .map_err (|e| NodeError::attribute_error ("width", e)))?);
 
-        self.h.set (property_bag::length_or_value (pbag, "height", LengthDir::Vertical, "100%")
+        self.h.set (property_bag::parse_or_value (pbag, "height", LengthDir::Vertical, RsvgLength::parse ("100%", LengthDir::Vertical).unwrap ())
                     .and_then (|l| l.check_nonnegative ()
                                .map_err (|e| NodeError::attribute_error ("height", e)))?);
 
@@ -265,10 +265,10 @@ impl NodeTrait for NodeUse {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         *self.link.borrow_mut () = property_bag::lookup (pbag, "xlink:href");
 
-        self.x.set (property_bag::length_or_default (pbag, "x", LengthDir::Horizontal)?);
-        self.y.set (property_bag::length_or_default (pbag, "y", LengthDir::Vertical)?);
+        self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal)?);
+        self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical)?);
 
-        let opt_w = property_bag::length_or_none (pbag, "width", LengthDir::Horizontal)?;
+        let opt_w: Option<RsvgLength> = property_bag::parse_or_none (pbag, "width", LengthDir::Horizontal)?;
         self.w.set (match opt_w {
             Some (w) => {
                 Some (w.check_nonnegative ().map_err (|e| NodeError::attribute_error ("width", e))?)
@@ -279,7 +279,7 @@ impl NodeTrait for NodeUse {
             }
         });
 
-        let opt_h = property_bag::length_or_none (pbag, "height", LengthDir::Vertical)?;
+        let opt_h: Option<RsvgLength> = property_bag::parse_or_none (pbag, "height", LengthDir::Vertical)?;
         let h = match opt_h {
             Some (h) => {
                 Some (h.check_nonnegative ().map_err (|e| NodeError::attribute_error ("height", e))?)

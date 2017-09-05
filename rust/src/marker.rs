@@ -97,17 +97,17 @@ impl NodeMarker {
             units:  Cell::new (MarkerUnits::default ()),
             ref_x:  Cell::new (RsvgLength::default ()),
             ref_y:  Cell::new (RsvgLength::default ()),
-            width:  Cell::new (RsvgLength::parse (NodeMarker::get_default_size (), LengthDir::Horizontal).unwrap ()),
-            height: Cell::new (RsvgLength::parse (NodeMarker::get_default_size (), LengthDir::Vertical).unwrap ()),
+            width:  Cell::new (NodeMarker::get_default_size (LengthDir::Horizontal)),
+            height: Cell::new (NodeMarker::get_default_size (LengthDir::Vertical)),
             orient: Cell::new (MarkerOrient::default ()),
             aspect: Cell::new (AspectRatio::default ()),
             vbox:   Cell::new (None)
         }
     }
 
-    fn get_default_size () -> &'static str {
+    fn get_default_size (dir: LengthDir) -> RsvgLength {
         // per the spec
-        "3"
+        RsvgLength::parse ("3", dir).unwrap()
     }
 
     fn render (&self,
@@ -194,20 +194,20 @@ impl NodeTrait for NodeMarker {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         self.units.set (property_bag::parse_or_default (pbag, "markerUnits", ())?);
 
-        self.ref_x.set (property_bag::length_or_default (pbag, "refX", LengthDir::Horizontal)?);
-        self.ref_y.set (property_bag::length_or_default (pbag, "refY", LengthDir::Vertical)?);
+        self.ref_x.set (property_bag::parse_or_default (pbag, "refX", LengthDir::Horizontal)?);
+        self.ref_y.set (property_bag::parse_or_default (pbag, "refY", LengthDir::Vertical)?);
 
-        self.width.set (property_bag::length_or_value (pbag, "markerWidth",
-                                                       LengthDir::Horizontal,
-                                                       NodeMarker::get_default_size ())?
+        self.width.set (property_bag::parse_or_value (pbag, "markerWidth",
+                                                      LengthDir::Horizontal,
+                                                      NodeMarker::get_default_size (LengthDir::Horizontal))?
                         .check_nonnegative ()
                         .map_err (|e| NodeError::attribute_error ("markerWidth", e))?);
 
-        self.height.set (property_bag::length_or_value (pbag, "markerHeight",
-                                                        LengthDir::Vertical,
-                                                        NodeMarker::get_default_size ())?
-                        .check_nonnegative ()
-                        .map_err (|e| NodeError::attribute_error ("markerHeight", e))?);
+        self.height.set (property_bag::parse_or_value (pbag, "markerHeight",
+                                                       LengthDir::Vertical,
+                                                       NodeMarker::get_default_size (LengthDir::Vertical))?
+                         .check_nonnegative ()
+                         .map_err (|e| NodeError::attribute_error ("markerHeight", e))?);
 
         self.orient.set (property_bag::parse_or_default (pbag, "orient", ())?);
         self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", ())?);

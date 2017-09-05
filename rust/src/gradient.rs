@@ -568,20 +568,20 @@ impl NodeTrait for NodeGradient {
         match node.get_type () {
             NodeType::LinearGradient => {
                 g.variant = GradientVariant::Linear {
-                    x1: property_bag::length_or_none (pbag, "x1", LengthDir::Horizontal)?,
-                    y1: property_bag::length_or_none (pbag, "y1", LengthDir::Vertical)?,
-                    x2: property_bag::length_or_none (pbag, "x2", LengthDir::Horizontal)?,
-                    y2: property_bag::length_or_none (pbag, "y2", LengthDir::Vertical)?
+                    x1: property_bag::parse_or_none (pbag, "x1", LengthDir::Horizontal)?,
+                    y1: property_bag::parse_or_none (pbag, "y1", LengthDir::Vertical)?,
+                    x2: property_bag::parse_or_none (pbag, "x2", LengthDir::Horizontal)?,
+                    y2: property_bag::parse_or_none (pbag, "y2", LengthDir::Vertical)?
                 };
             },
 
             NodeType::RadialGradient => {
                 g.variant = GradientVariant::Radial {
-                    cx: property_bag::length_or_none (pbag, "cx", LengthDir::Horizontal)?,
-                    cy: property_bag::length_or_none (pbag, "cy", LengthDir::Vertical)?,
-                    r:  property_bag::length_or_none (pbag, "r",  LengthDir::Both)?,
-                    fx: property_bag::length_or_none (pbag, "fx", LengthDir::Horizontal)?,
-                    fy: property_bag::length_or_none (pbag, "fy", LengthDir::Vertical)?
+                    cx: property_bag::parse_or_none (pbag, "cx", LengthDir::Horizontal)?,
+                    cy: property_bag::parse_or_none (pbag, "cy", LengthDir::Vertical)?,
+                    r:  property_bag::parse_or_none (pbag, "r",  LengthDir::Both)?,
+                    fx: property_bag::parse_or_none (pbag, "fx", LengthDir::Horizontal)?,
+                    fy: property_bag::parse_or_none (pbag, "fy", LengthDir::Vertical)?
                 };
             },
 

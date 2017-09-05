@@ -40,7 +40,7 @@ impl NodeStop {
 
 impl NodeTrait for NodeStop {
     fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        let offset_length = property_bag::length_or_default (pbag, "offset", LengthDir::Both)?;
+        let offset_length: RsvgLength = property_bag::parse_or_default (pbag, "offset", LengthDir::Both)?;
         match offset_length.unit {
             LengthUnit::Default |
             LengthUnit::Percent => {
