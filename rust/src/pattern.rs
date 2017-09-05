@@ -199,20 +199,20 @@ impl NodeTrait for NodePattern {
 
         p.node = Some (Rc::downgrade (node));
 
-        p.units         = property_bag::parse_or_none (pbag, "patternUnits", ())?;
-        p.content_units = property_bag::parse_or_none (pbag, "patternContentUnits", ())?;
-        p.vbox          = property_bag::parse_or_none (pbag, "viewBox", ())?.map (Some).or (None);
+        p.units         = property_bag::parse_or_none (pbag, "patternUnits", (), None)?;
+        p.content_units = property_bag::parse_or_none (pbag, "patternContentUnits", (), None)?;
+        p.vbox          = property_bag::parse_or_none (pbag, "viewBox", (), None)?.map (Some).or (None);
 
-        p.preserve_aspect_ratio = property_bag::parse_or_none (pbag, "preserveAspectRatio", ())?;
+        p.preserve_aspect_ratio = property_bag::parse_or_none (pbag, "preserveAspectRatio", (), None)?;
 
-        p.affine = property_bag::parse_or_none (pbag, "patternTransform", ())?;
+        p.affine = property_bag::parse_or_none (pbag, "patternTransform", (), None)?;
 
         p.fallback = property_bag::lookup (pbag, "xlink:href");
 
-        p.x      = property_bag::parse_or_none (pbag, "x", LengthDir::Horizontal)?;
-        p.y      = property_bag::parse_or_none (pbag, "y", LengthDir::Vertical)?;
-        p.width  = property_bag::parse_or_none (pbag, "width", LengthDir::Horizontal)?;
-        p.height = property_bag::parse_or_none (pbag, "height", LengthDir::Vertical)?;
+        p.x      = property_bag::parse_or_none (pbag, "x", LengthDir::Horizontal, None)?;
+        p.y      = property_bag::parse_or_none (pbag, "y", LengthDir::Vertical, None)?;
+        p.width  = property_bag::parse_or_none (pbag, "width", LengthDir::Horizontal, None)?;
+        p.height = property_bag::parse_or_none (pbag, "height", LengthDir::Vertical, None)?;
 
         Ok (())
     }

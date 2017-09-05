@@ -201,10 +201,10 @@ impl NodeLine {
 
 impl NodeTrait for NodeLine {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        self.x1.set (property_bag::parse_or_default (pbag, "x1", LengthDir::Horizontal)?);
-        self.y1.set (property_bag::parse_or_default (pbag, "y1", LengthDir::Vertical)?);
-        self.x2.set (property_bag::parse_or_default (pbag, "x2", LengthDir::Horizontal)?);
-        self.y2.set (property_bag::parse_or_default (pbag, "y2", LengthDir::Vertical)?);
+        self.x1.set (property_bag::parse_or_default (pbag, "x1", LengthDir::Horizontal, None)?);
+        self.y1.set (property_bag::parse_or_default (pbag, "y1", LengthDir::Vertical, None)?);
+        self.x2.set (property_bag::parse_or_default (pbag, "x2", LengthDir::Horizontal, None)?);
+        self.y2.set (property_bag::parse_or_default (pbag, "y2", LengthDir::Vertical, None)?);
 
         Ok (())
     }
@@ -258,13 +258,13 @@ impl NodeRect {
 
 impl NodeTrait for NodeRect {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal)?);
-        self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical)?);
-        self.w.set (property_bag::parse_or_default (pbag, "width", LengthDir::Horizontal)?);
-        self.h.set (property_bag::parse_or_default (pbag, "height", LengthDir::Vertical)?);
+        self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal, None)?);
+        self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical, None)?);
+        self.w.set (property_bag::parse_or_default (pbag, "width", LengthDir::Horizontal, None)?);
+        self.h.set (property_bag::parse_or_default (pbag, "height", LengthDir::Vertical, None)?);
 
-        self.rx.set (property_bag::parse_or_none (pbag, "rx", LengthDir::Horizontal)?);
-        self.ry.set (property_bag::parse_or_none (pbag, "ry", LengthDir::Vertical)?);
+        self.rx.set (property_bag::parse_or_none (pbag, "rx", LengthDir::Horizontal, None)?);
+        self.ry.set (property_bag::parse_or_none (pbag, "ry", LengthDir::Vertical, None)?);
 
         Ok (())
     }
@@ -433,10 +433,10 @@ impl NodeCircle {
 
 impl NodeTrait for NodeCircle {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        self.cx.set (property_bag::parse_or_default (pbag, "cx", LengthDir::Horizontal)?);
-        self.cy.set (property_bag::parse_or_default (pbag, "cy", LengthDir::Vertical)?);
+        self.cx.set (property_bag::parse_or_default (pbag, "cx", LengthDir::Horizontal, None)?);
+        self.cy.set (property_bag::parse_or_default (pbag, "cy", LengthDir::Vertical, None)?);
 
-        self.r.set  (property_bag::parse_or_default (pbag, "r", LengthDir::Both)
+        self.r.set  (property_bag::parse_or_default (pbag, "r", LengthDir::Both, None)
                      .and_then (|l: RsvgLength| l.check_nonnegative ()
                                 .map_err (|e| NodeError::attribute_error ("r", e)))?);
 
@@ -478,14 +478,14 @@ impl NodeEllipse {
 
 impl NodeTrait for NodeEllipse {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        self.cx.set (property_bag::parse_or_default (pbag, "cx", LengthDir::Horizontal)?);
-        self.cy.set (property_bag::parse_or_default (pbag, "cy", LengthDir::Vertical)?);
+        self.cx.set (property_bag::parse_or_default (pbag, "cx", LengthDir::Horizontal, None)?);
+        self.cy.set (property_bag::parse_or_default (pbag, "cy", LengthDir::Vertical, None)?);
 
-        self.rx.set (property_bag::parse_or_default (pbag, "rx", LengthDir::Horizontal)
+        self.rx.set (property_bag::parse_or_default (pbag, "rx", LengthDir::Horizontal, None)
                      .and_then (|l: RsvgLength| l.check_nonnegative ()
                                 .map_err (|e| NodeError::attribute_error ("rx", e)))?);
 
-        self.ry.set (property_bag::parse_or_default (pbag, "ry", LengthDir::Vertical)
+        self.ry.set (property_bag::parse_or_default (pbag, "ry", LengthDir::Vertical, None)
                      .and_then (|l: RsvgLength| l.check_nonnegative ()
                                 .map_err (|e| NodeError::attribute_error ("ry", e)))?);
 

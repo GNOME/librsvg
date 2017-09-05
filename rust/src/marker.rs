@@ -192,27 +192,29 @@ impl NodeMarker {
 
 impl NodeTrait for NodeMarker {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        self.units.set (property_bag::parse_or_default (pbag, "markerUnits", ())?);
+        self.units.set (property_bag::parse_or_default (pbag, "markerUnits", (), None)?);
 
-        self.ref_x.set (property_bag::parse_or_default (pbag, "refX", LengthDir::Horizontal)?);
-        self.ref_y.set (property_bag::parse_or_default (pbag, "refY", LengthDir::Vertical)?);
+        self.ref_x.set (property_bag::parse_or_default (pbag, "refX", LengthDir::Horizontal, None)?);
+        self.ref_y.set (property_bag::parse_or_default (pbag, "refY", LengthDir::Vertical, None)?);
 
         self.width.set (property_bag::parse_or_value (pbag, "markerWidth",
                                                       LengthDir::Horizontal,
-                                                      NodeMarker::get_default_size (LengthDir::Horizontal))?
+                                                      NodeMarker::get_default_size (LengthDir::Horizontal),
+                                                      None)?
                         .check_nonnegative ()
                         .map_err (|e| NodeError::attribute_error ("markerWidth", e))?);
 
         self.height.set (property_bag::parse_or_value (pbag, "markerHeight",
                                                        LengthDir::Vertical,
-                                                       NodeMarker::get_default_size (LengthDir::Vertical))?
+                                                       NodeMarker::get_default_size (LengthDir::Vertical),
+                                                       None)?
                          .check_nonnegative ()
                          .map_err (|e| NodeError::attribute_error ("markerHeight", e))?);
 
-        self.orient.set (property_bag::parse_or_default (pbag, "orient", ())?);
-        self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", ())?);
-        self.vbox.set   (property_bag::parse_or_none (pbag, "viewBox", ())?);
-        self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", ())?);
+        self.orient.set (property_bag::parse_or_default (pbag, "orient", (), None)?);
+        self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
+        self.vbox.set   (property_bag::parse_or_none (pbag, "viewBox", (), None)?);
+        self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
 
         Ok (())
     }

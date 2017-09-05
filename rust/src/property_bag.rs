@@ -32,31 +32,48 @@ pub fn free (pbag: *mut RsvgPropertyBag) {
     }
 }
 
-pub fn parse_or_none<T> (pbag: *const RsvgPropertyBag, key: &'static str, data: <T as Parse>::Data) -> Result <Option<T>, NodeError>
-    where T: Parse<Err = AttributeError>
+pub fn parse_or_none<T> (pbag: *const RsvgPropertyBag,
+                         key: &'static str,
+                         data: <T as Parse>::Data,
+                         validate: Option<fn(T) -> Result<T, AttributeError>>) -> Result <Option<T>, NodeError>
+    where T: Parse<Err = AttributeError> + Copy
 {
     let value = lookup (pbag, key);
 
     match value {
         Some (v) => {
-            T::parse (&v, data).map (|v| Some (v))
+            T::parse (&v, data)
+                .and_then (|v|
+                           if let Some(validate) = validate {
+                               validate(v)
+                                   .map(|v| Some(v))
+                           } else {
+                               Ok(Some(v))
+                           })
                 .map_err (|e| NodeError::attribute_error (key, e))
         },
 
-        None => Ok (None)
+        None => Ok(None)
     }
 }
 
-pub fn parse_or_default<T> (pbag: *const RsvgPropertyBag, key: &'static str, data: <T as Parse>::Data) -> Result <T, NodeError>
+pub fn parse_or_default<T> (pbag: *const RsvgPropertyBag,
+                            key: &'static str,
+                            data: <T as Parse>::Data,
+                            validate: Option<fn(T) -> Result<T, AttributeError>>) -> Result <T, NodeError>
     where T: Default + Parse<Err = AttributeError> + Copy
 {
-    parse_or_value (pbag, key, data, T::default ())
+    parse_or_value (pbag, key, data, T::default (), validate)
 }
 
-pub fn parse_or_value<T> (pbag: *const RsvgPropertyBag, key: &'static str, data: <T as Parse>::Data, value: T) -> Result <T, NodeError>
-    where T: Default + Parse<Err = AttributeError> + Copy
+pub fn parse_or_value<T> (pbag: *const RsvgPropertyBag,
+                          key: &'static str,
+                          data: <T as Parse>::Data,
+                          value: T,
+                          validate: Option<fn(T) -> Result<T, AttributeError>>) -> Result <T, NodeError>
+    where T: Parse<Err = AttributeError> + Copy
 {
-    let r = parse_or_none::<T> (pbag, key, data);
+    let r = parse_or_none (pbag, key, data, validate);
 
     match r {
         Ok (Some (v)) => Ok (v),

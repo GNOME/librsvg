@@ -136,24 +136,32 @@ impl NodeSvg {
 
 impl NodeTrait for NodeSvg {
     fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", ())?);
+        self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
 
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
         if node.get_parent ().is_some () {
-            self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal)?);
-            self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical)?);
+            self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal, None)?);
+            self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical, None)?);
         }
 
-        self.w.set (property_bag::parse_or_value (pbag, "width", LengthDir::Horizontal, RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap ())
+        self.w.set (property_bag::parse_or_value (pbag,
+                                                  "width",
+                                                  LengthDir::Horizontal,
+                                                  RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap (),
+                                                  None)
                     .and_then (|l| l.check_nonnegative ()
                                .map_err (|e| NodeError::attribute_error ("width", e)))?);
 
-        self.h.set (property_bag::parse_or_value (pbag, "height", LengthDir::Vertical, RsvgLength::parse ("100%", LengthDir::Vertical).unwrap ())
+        self.h.set (property_bag::parse_or_value (pbag,
+                                                  "height",
+                                                  LengthDir::Vertical,
+                                                  RsvgLength::parse ("100%", LengthDir::Vertical).unwrap (),
+                                                  None)
                     .and_then (|l| l.check_nonnegative ()
                                .map_err (|e| NodeError::attribute_error ("height", e)))?);
 
-        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox", ())?);
+        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox", (), None)?);
 
         // The "style" sub-element is not loaded yet here, so we need
         // to store other attributes to be applied later.
@@ -265,10 +273,10 @@ impl NodeTrait for NodeUse {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         *self.link.borrow_mut () = property_bag::lookup (pbag, "xlink:href");
 
-        self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal)?);
-        self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical)?);
+        self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal, None)?);
+        self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical, None)?);
 
-        let opt_w: Option<RsvgLength> = property_bag::parse_or_none (pbag, "width", LengthDir::Horizontal)?;
+        let opt_w: Option<RsvgLength> = property_bag::parse_or_none (pbag, "width", LengthDir::Horizontal, None)?;
         self.w.set (match opt_w {
             Some (w) => {
                 Some (w.check_nonnegative ().map_err (|e| NodeError::attribute_error ("width", e))?)
@@ -279,7 +287,7 @@ impl NodeTrait for NodeUse {
             }
         });
 
-        let opt_h: Option<RsvgLength> = property_bag::parse_or_none (pbag, "height", LengthDir::Vertical)?;
+        let opt_h: Option<RsvgLength> = property_bag::parse_or_none (pbag, "height", LengthDir::Vertical, None)?;
         let h = match opt_h {
             Some (h) => {
                 Some (h.check_nonnegative ().map_err (|e| NodeError::attribute_error ("height", e))?)
@@ -420,8 +428,8 @@ impl NodeSymbol {
 
 impl NodeTrait for NodeSymbol {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", ())?);
-        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox", ())?);
+        self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
+        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox", (), None)?);
 
         Ok (())
     }

@@ -10,6 +10,7 @@ use cairo::MatrixTrait;
 use bbox::*;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
+use error::*;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
@@ -557,9 +558,9 @@ impl NodeTrait for NodeGradient {
 
         // Attributes common to linear and radial gradients
 
-        g.common.units    = property_bag::parse_or_none (pbag, "gradientUnits", ())?;
-        g.common.affine   = property_bag::parse_or_none (pbag, "gradientTransform", ())?;
-        g.common.spread   = property_bag::parse_or_none (pbag, "spreadMethod", ())?;
+        g.common.units    = property_bag::parse_or_none (pbag, "gradientUnits", (), None)?;
+        g.common.affine   = property_bag::parse_or_none (pbag, "gradientTransform", (), None)?;
+        g.common.spread   = property_bag::parse_or_none (pbag, "spreadMethod", (), None)?;
         g.common.fallback = property_bag::lookup (pbag, "xlink:href");
 
         // Attributes specific to each gradient type.  The defaults mandated by the spec
@@ -568,20 +569,20 @@ impl NodeTrait for NodeGradient {
         match node.get_type () {
             NodeType::LinearGradient => {
                 g.variant = GradientVariant::Linear {
-                    x1: property_bag::parse_or_none (pbag, "x1", LengthDir::Horizontal)?,
-                    y1: property_bag::parse_or_none (pbag, "y1", LengthDir::Vertical)?,
-                    x2: property_bag::parse_or_none (pbag, "x2", LengthDir::Horizontal)?,
-                    y2: property_bag::parse_or_none (pbag, "y2", LengthDir::Vertical)?
+                    x1: property_bag::parse_or_none (pbag, "x1", LengthDir::Horizontal, None)?,
+                    y1: property_bag::parse_or_none (pbag, "y1", LengthDir::Vertical, None)?,
+                    x2: property_bag::parse_or_none (pbag, "x2", LengthDir::Horizontal, None)?,
+                    y2: property_bag::parse_or_none (pbag, "y2", LengthDir::Vertical, None)?
                 };
             },
 
             NodeType::RadialGradient => {
                 g.variant = GradientVariant::Radial {
-                    cx: property_bag::parse_or_none (pbag, "cx", LengthDir::Horizontal)?,
-                    cy: property_bag::parse_or_none (pbag, "cy", LengthDir::Vertical)?,
-                    r:  property_bag::parse_or_none (pbag, "r",  LengthDir::Both)?,
-                    fx: property_bag::parse_or_none (pbag, "fx", LengthDir::Horizontal)?,
-                    fy: property_bag::parse_or_none (pbag, "fy", LengthDir::Vertical)?
+                    cx: property_bag::parse_or_none (pbag, "cx", LengthDir::Horizontal, None)?,
+                    cy: property_bag::parse_or_none (pbag, "cy", LengthDir::Vertical, None)?,
+                    r:  property_bag::parse_or_none (pbag, "r",  LengthDir::Both, None)?,
+                    fx: property_bag::parse_or_none (pbag, "fx", LengthDir::Horizontal, None)?,
+                    fy: property_bag::parse_or_none (pbag, "fy", LengthDir::Vertical, None)?
                 };
             },
 
