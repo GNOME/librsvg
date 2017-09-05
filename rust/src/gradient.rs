@@ -557,7 +557,7 @@ impl NodeTrait for NodeGradient {
         // Attributes common to linear and radial gradients
 
         g.common.units    = property_bag::parse_or_none (pbag, "gradientUnits", ())?;
-        g.common.affine   = property_bag::transform_or_none (pbag, "gradientTransform")?;
+        g.common.affine   = property_bag::parse_or_none (pbag, "gradientTransform", ())?;
         g.common.spread   = property_bag::parse_or_none (pbag, "spreadMethod", ())?;
         g.common.fallback = property_bag::lookup (pbag, "xlink:href");
 

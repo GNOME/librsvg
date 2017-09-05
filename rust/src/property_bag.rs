@@ -97,13 +97,3 @@ pub fn parse_or_value<T> (pbag: *const RsvgPropertyBag, key: &'static str, data:
         Err (e)       => Err (e)
     }
 }
-
-pub fn transform_or_none (pbag: *const RsvgPropertyBag, key: &'static str) -> Result <Option<cairo::Matrix>, NodeError> {
-    if let Some (s) = lookup (pbag, key) {
-        parse_transform (&s)
-            .map (|v| Some (v))
-            .map_err (|e| NodeError::attribute_error (key, e))
-    } else {
-        Ok (None)
-    }
-}

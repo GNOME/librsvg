@@ -205,7 +205,7 @@ impl NodeTrait for NodePattern {
 
         p.preserve_aspect_ratio = property_bag::parse_or_none (pbag, "preserveAspectRatio", ())?;
 
-        p.affine = property_bag::transform_or_none (pbag, "patternTransform")?;
+        p.affine = property_bag::parse_or_none (pbag, "patternTransform", ())?;
 
         p.fallback = property_bag::lookup (pbag, "xlink:href");
 

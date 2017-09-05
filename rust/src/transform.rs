@@ -3,6 +3,7 @@ use ::glib::translate::*;
 use ::glib_sys;
 use ::libc;
 
+#[cfg(test)]
 use std::f64::consts::*;
 
 use cairo::MatrixTrait;
@@ -11,6 +12,16 @@ use parse_transform::*;
 
 use error::*;
 use parsers::ParseError;
+use parsers::Parse;
+
+impl Parse for cairo::Matrix {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse (s: &str, _: ()) -> Result<cairo::Matrix, AttributeError> {
+        parse_transform (s)
+    }
+}
 
 pub fn parse_transform (s: &str) -> Result <cairo::Matrix, AttributeError> {
     let r = parse_TransformList (s);
@@ -27,6 +38,7 @@ pub fn parse_transform (s: &str) -> Result <cairo::Matrix, AttributeError> {
     }
 }
 
+#[cfg(test)]
 fn make_rotation_matrix (angle_degrees: f64, tx: f64, ty: f64) -> cairo::Matrix {
     let angle = angle_degrees * PI / 180.0;
 
