@@ -12,6 +12,7 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use opacity::*;
+use parsers::Parse;
 use property_bag;
 use property_bag::*;
 use state::RsvgState;
@@ -38,27 +39,33 @@ impl NodeStop {
     }
 }
 
+fn validate_offset(length: RsvgLength) -> Result<RsvgLength, AttributeError> {
+    match length.unit {
+        LengthUnit::Default |
+        LengthUnit::Percent => {
+            let mut offset = length.length;
+
+            if offset < 0.0 {
+                offset = 0.0;
+            } else if offset > 1.0 {
+                offset = 1.0;
+            }
+
+            Ok(RsvgLength::new(offset, LengthUnit::Default, LengthDir::Both))
+        },
+
+        _ => {
+            Err (AttributeError::Value ("stop offset must be in default or percent units".to_string()))
+        }
+    }
+}
+
 impl NodeTrait for NodeStop {
     fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        let offset_length: RsvgLength = property_bag::parse_or_default (pbag, "offset", LengthDir::Both, None)?;
-        match offset_length.unit {
-            LengthUnit::Default |
-            LengthUnit::Percent => {
-                let mut offset = offset_length.length;
-
-                if offset < 0.0 {
-                    offset = 0.0;
-                } else if offset > 1.0 {
-                    offset = 1.0;
-                }
-
-                self.offset.set (offset);
-            },
-
-            _ => {
-                return Err (NodeError::value_error ("offset", "stop offset must be in default or percent units"));
-            }
-        }
+        let length = property_bag::parse_or_default (pbag, "offset", LengthDir::Both,
+                                                     Some(validate_offset))?;
+        assert! (length.unit == LengthUnit::Default || length.unit == LengthUnit::Percent);
+        self.offset.set (length.length);
 
         let state = node.get_state ();
 
