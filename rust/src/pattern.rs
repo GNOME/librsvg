@@ -5,7 +5,6 @@ use ::libc;
 
 use std::cell::RefCell;
 use std::rc::*;
-use std::str::FromStr;
 
 use cairo::MatrixTrait;
 use cairo::Pattern as CairoPattern;
@@ -19,6 +18,7 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use paint_server::*;
+use parsers::Parse;
 use property_bag;
 use property_bag::*;
 use util::*;
@@ -83,11 +83,12 @@ impl Default for PatternContentUnits {
     }
 }
 
-impl FromStr for PatternContentUnits {
+impl Parse for PatternContentUnits {
+    type Data = ();
     type Err = AttributeError;
 
-    fn from_str (s: &str) -> Result<PatternContentUnits, AttributeError> {
-        Ok (PatternContentUnits::from (PaintServerUnits::from_str (s)?))
+    fn parse (s: &str, _: ()) -> Result<PatternContentUnits, AttributeError> {
+        Ok (PatternContentUnits::from (PaintServerUnits::parse (s, ())?))
     }
 }
 
@@ -198,11 +199,11 @@ impl NodeTrait for NodePattern {
 
         p.node = Some (Rc::downgrade (node));
 
-        p.units         = property_bag::parse_or_none (pbag, "patternUnits")?;
-        p.content_units = property_bag::parse_or_none (pbag, "patternContentUnits")?;
-        p.vbox          = property_bag::parse_or_none (pbag, "viewBox")?.map (Some).or (None);
+        p.units         = property_bag::parse_or_none (pbag, "patternUnits", ())?;
+        p.content_units = property_bag::parse_or_none (pbag, "patternContentUnits", ())?;
+        p.vbox          = property_bag::parse_or_none (pbag, "viewBox", ())?.map (Some).or (None);
 
-        p.preserve_aspect_ratio = property_bag::parse_or_none (pbag, "preserveAspectRatio")?;
+        p.preserve_aspect_ratio = property_bag::parse_or_none (pbag, "preserveAspectRatio", ())?;
 
         p.affine = property_bag::transform_or_none (pbag, "patternTransform")?;
 

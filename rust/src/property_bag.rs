@@ -2,11 +2,10 @@ use ::cairo;
 use ::glib::translate::*;
 use ::libc;
 
-use std::str::FromStr;
-
 use error::*;
 use length::*;
 use transform::*;
+use parsers::Parse;
 
 pub enum RsvgPropertyBag {}
 
@@ -66,14 +65,14 @@ pub fn length_or_value (pbag: *const RsvgPropertyBag, key: &'static str, length_
     }
 }
 
-pub fn parse_or_none<T> (pbag: *const RsvgPropertyBag, key: &'static str) -> Result <Option<T>, NodeError>
-    where T: FromStr<Err = AttributeError>
+pub fn parse_or_none<T> (pbag: *const RsvgPropertyBag, key: &'static str, data: <T as Parse>::Data) -> Result <Option<T>, NodeError>
+    where T: Parse<Err = AttributeError>
 {
     let value = lookup (pbag, key);
 
     match value {
         Some (v) => {
-            T::from_str (&v).map (|v| Some (v))
+            T::parse (&v, data).map (|v| Some (v))
                 .map_err (|e| NodeError::attribute_error (key, e))
         },
 
@@ -81,16 +80,16 @@ pub fn parse_or_none<T> (pbag: *const RsvgPropertyBag, key: &'static str) -> Res
     }
 }
 
-pub fn parse_or_default<T> (pbag: *const RsvgPropertyBag, key: &'static str) -> Result <T, NodeError>
-    where T: Default + FromStr<Err = AttributeError> + Copy
+pub fn parse_or_default<T> (pbag: *const RsvgPropertyBag, key: &'static str, data: <T as Parse>::Data) -> Result <T, NodeError>
+    where T: Default + Parse<Err = AttributeError> + Copy
 {
-    parse_or_value (pbag, key, T::default ())
+    parse_or_value (pbag, key, data, T::default ())
 }
 
-pub fn parse_or_value<T> (pbag: *const RsvgPropertyBag, key: &'static str, value: T) -> Result <T, NodeError>
-    where T: Default + FromStr<Err = AttributeError> + Copy
+pub fn parse_or_value<T> (pbag: *const RsvgPropertyBag, key: &'static str, data: <T as Parse>::Data, value: T) -> Result <T, NodeError>
+    where T: Default + Parse<Err = AttributeError> + Copy
 {
-    let r = parse_or_none::<T> (pbag, key);
+    let r = parse_or_none::<T> (pbag, key, data);
 
     match r {
         Ok (Some (v)) => Ok (v),

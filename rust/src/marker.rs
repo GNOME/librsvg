@@ -4,7 +4,6 @@ use ::libc;
 
 use std::cell::Cell;
 use std::f64::consts::*;
-use std::str::FromStr;
 
 use cairo::MatrixTrait;
 
@@ -17,6 +16,7 @@ use length::*;
 use node::*;
 use path_builder::*;
 use parsers;
+use parsers::Parse;
 use parsers::ParseError;
 use property_bag;
 use property_bag::*;
@@ -37,10 +37,11 @@ impl Default for MarkerUnits {
     }
 }
 
-impl FromStr for MarkerUnits {
+impl Parse for MarkerUnits {
+    type Data = ();
     type Err = AttributeError;
 
-    fn from_str (s: &str) -> Result <MarkerUnits, AttributeError> {
+    fn parse (s: &str, _: ()) -> Result <MarkerUnits, AttributeError> {
         match s {
             "userSpaceOnUse" => Ok (MarkerUnits::UserSpaceOnUse),
             "strokeWidth"    => Ok (MarkerUnits::StrokeWidth),
@@ -63,10 +64,11 @@ impl Default for MarkerOrient {
     }
 }
 
-impl FromStr for MarkerOrient {
+impl Parse for MarkerOrient {
+    type Data = ();
     type Err = AttributeError;
 
-    fn from_str (s: &str) -> Result <MarkerOrient, AttributeError> {
+    fn parse (s: &str, _: ()) -> Result <MarkerOrient, AttributeError> {
         match s {
             "auto" => Ok (MarkerOrient::Auto),
             _      => parsers::angle_degrees (s)
@@ -190,7 +192,7 @@ impl NodeMarker {
 
 impl NodeTrait for NodeMarker {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        self.units.set (property_bag::parse_or_default (pbag, "markerUnits")?);
+        self.units.set (property_bag::parse_or_default (pbag, "markerUnits", ())?);
 
         self.ref_x.set (property_bag::length_or_default (pbag, "refX", LengthDir::Horizontal)?);
         self.ref_y.set (property_bag::length_or_default (pbag, "refY", LengthDir::Vertical)?);
@@ -207,10 +209,10 @@ impl NodeTrait for NodeMarker {
                         .check_nonnegative ()
                         .map_err (|e| NodeError::attribute_error ("markerHeight", e))?);
 
-        self.orient.set (property_bag::parse_or_default (pbag, "orient")?);
-        self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio")?);
-        self.vbox.set   (property_bag::parse_or_none (pbag, "viewBox")?);
-        self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio")?);
+        self.orient.set (property_bag::parse_or_default (pbag, "orient", ())?);
+        self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", ())?);
+        self.vbox.set   (property_bag::parse_or_none (pbag, "viewBox", ())?);
+        self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", ())?);
 
         Ok (())
     }
@@ -769,32 +771,32 @@ mod parser_tests {
 
     #[test]
     fn parsing_invalid_marker_units_yields_error () {
-        assert! (is_parse_error (&MarkerUnits::from_str ("").map_err (|e| AttributeError::from (e))));
-        assert! (is_parse_error (&MarkerUnits::from_str ("foo").map_err (|e| AttributeError::from (e))));
+        assert! (is_parse_error (&MarkerUnits::parse ("", ()).map_err (|e| AttributeError::from (e))));
+        assert! (is_parse_error (&MarkerUnits::parse ("foo", ()).map_err (|e| AttributeError::from (e))));
     }
 
     #[test]
     fn parses_marker_units () {
-        assert_eq! (MarkerUnits::from_str ("userSpaceOnUse"), Ok (MarkerUnits::UserSpaceOnUse));
-        assert_eq! (MarkerUnits::from_str ("strokeWidth"),    Ok (MarkerUnits::StrokeWidth));
+        assert_eq! (MarkerUnits::parse ("userSpaceOnUse", ()), Ok (MarkerUnits::UserSpaceOnUse));
+        assert_eq! (MarkerUnits::parse ("strokeWidth", ()),    Ok (MarkerUnits::StrokeWidth));
     }
 
     #[test]
     fn parsing_invalid_marker_orient_yields_error () {
-        assert! (is_parse_error (&MarkerOrient::from_str ("").map_err (|e| AttributeError::from (e))));
-        assert! (is_parse_error (&MarkerOrient::from_str ("blah").map_err (|e| AttributeError::from (e))));
-        assert! (is_parse_error (&MarkerOrient::from_str ("45blah").map_err (|e| AttributeError::from (e))));
+        assert! (is_parse_error (&MarkerOrient::parse ("", ()).map_err (|e| AttributeError::from (e))));
+        assert! (is_parse_error (&MarkerOrient::parse ("blah", ()).map_err (|e| AttributeError::from (e))));
+        assert! (is_parse_error (&MarkerOrient::parse ("45blah", ()).map_err (|e| AttributeError::from (e))));
     }
 
     #[test]
     fn parses_marker_orient () {
-        assert_eq! (MarkerOrient::from_str ("auto"), Ok (MarkerOrient::Auto));
+        assert_eq! (MarkerOrient::parse ("auto", ()), Ok (MarkerOrient::Auto));
 
-        assert_eq! (MarkerOrient::from_str ("0"), Ok (MarkerOrient::Degrees (0.0)));
-        assert_eq! (MarkerOrient::from_str ("180"), Ok (MarkerOrient::Degrees (180.0)));
-        assert_eq! (MarkerOrient::from_str ("180deg"), Ok (MarkerOrient::Degrees (180.0)));
-        assert_eq! (MarkerOrient::from_str ("-400grad"), Ok (MarkerOrient::Degrees (-360.0)));
-        assert_eq! (MarkerOrient::from_str ("1rad"), Ok (MarkerOrient::Degrees (180.0 / PI)));
+        assert_eq! (MarkerOrient::parse ("0", ()), Ok (MarkerOrient::Degrees (0.0)));
+        assert_eq! (MarkerOrient::parse ("180", ()), Ok (MarkerOrient::Degrees (180.0)));
+        assert_eq! (MarkerOrient::parse ("180deg", ()), Ok (MarkerOrient::Degrees (180.0)));
+        assert_eq! (MarkerOrient::parse ("-400grad", ()), Ok (MarkerOrient::Degrees (-360.0)));
+        assert_eq! (MarkerOrient::parse ("1rad", ()), Ok (MarkerOrient::Degrees (180.0 / PI)));
     }
 }
 

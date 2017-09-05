@@ -26,6 +26,13 @@ impl<'a> From<BasicParseError<'a>> for ParseError {
     }
 }
 
+pub trait Parse: Sized {
+    type Data;
+    type Err;
+
+    fn parse (s: &str, data: Self::Data) -> Result<Self, Self::Err>;
+}
+
 // angle:
 // https://www.w3.org/TR/SVG/types.html#DataTypeAngle
 //

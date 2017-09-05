@@ -135,7 +135,7 @@ impl NodeSvg {
 
 impl NodeTrait for NodeSvg {
     fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio")?);
+        self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", ())?);
 
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
@@ -152,7 +152,7 @@ impl NodeTrait for NodeSvg {
                     .and_then (|l| l.check_nonnegative ()
                                .map_err (|e| NodeError::attribute_error ("height", e)))?);
 
-        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox")?);
+        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox", ())?);
 
         // The "style" sub-element is not loaded yet here, so we need
         // to store other attributes to be applied later.
@@ -419,8 +419,8 @@ impl NodeSymbol {
 
 impl NodeTrait for NodeSymbol {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio")?);
-        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox")?);
+        self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", ())?);
+        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox", ())?);
 
         Ok (())
     }

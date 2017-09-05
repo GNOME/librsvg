@@ -2,10 +2,9 @@ use ::cairo;
 use ::glib_sys;
 use ::glib;
 
-use std::str::FromStr;
-
 use error::*;
 use parsers;
+use parsers::Parse;
 use parsers::{ListLength, ParseError};
 
 use self::glib::translate::*;
@@ -40,7 +39,8 @@ impl From<Option<ViewBox>> for RsvgViewBox {
     }
 }
 
-impl FromStr for ViewBox {
+impl Parse for ViewBox {
+    type Data = ();
     type Err = AttributeError;
 
     // Parse a viewBox attribute
@@ -51,7 +51,7 @@ impl FromStr for ViewBox {
     // x, y, w, h
     //
     // Where w and h must be nonnegative.
-    fn from_str (s: &str) -> Result<ViewBox, AttributeError> {
+    fn parse (s: &str, _: ()) -> Result<ViewBox, AttributeError> {
         let v = parsers::number_list (s, ListLength::Exact (4))
             .map_err (|_| ParseError::new ("string does not match 'x [,] y [,] w [,] h'"))?;
 
@@ -71,17 +71,16 @@ impl FromStr for ViewBox {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str::FromStr;
 
     #[test]
     fn parses_valid_viewboxes () {
-        assert_eq! (ViewBox::from_str ("  1 2 3 4"),
+        assert_eq! (ViewBox::parse ("  1 2 3 4", ()),
                     Ok (ViewBox (cairo::Rectangle { x: 1.0,
                                                     y: 2.0,
                                                     width: 3.0,
                                                     height: 4.0 })));
 
-        assert_eq! (ViewBox::from_str (" -1.5 -2.5e1,34,56e2  "),
+        assert_eq! (ViewBox::parse (" -1.5 -2.5e1,34,56e2  ", ()),
                     Ok (ViewBox (cairo::Rectangle { x: -1.5,
                                                     y: -25.0,
                                                     width: 34.0,
@@ -90,14 +89,14 @@ mod tests {
 
     #[test]
     fn parsing_invalid_viewboxes_yields_error () {
-        assert! (is_parse_error (&ViewBox::from_str ("")));
+        assert! (is_parse_error (&ViewBox::parse ("", ())));
 
-        assert! (is_value_error (&ViewBox::from_str (" 1,2,-3,-4 ")));
+        assert! (is_value_error (&ViewBox::parse (" 1,2,-3,-4 ", ())));
 
-        assert! (is_parse_error (&ViewBox::from_str ("qwerasdfzxcv")));
+        assert! (is_parse_error (&ViewBox::parse ("qwerasdfzxcv", ())));
 
-        assert! (is_parse_error (&ViewBox::from_str (" 1 2 3 4   5")));
+        assert! (is_parse_error (&ViewBox::parse (" 1 2 3 4   5", ())));
 
-        assert! (is_parse_error (&ViewBox::from_str (" 1 2 foo 3 4")));
+        assert! (is_parse_error (&ViewBox::parse (" 1 2 foo 3 4", ())));
     }
 }
