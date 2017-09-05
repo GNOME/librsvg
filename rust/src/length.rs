@@ -6,6 +6,7 @@ use std::f64::consts::*;
 
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
+use parsers::Parse;
 use parsers::ParseError;
 use error::*;
 
@@ -100,8 +101,11 @@ fn make_err () -> AttributeError {
     AttributeError::Parse (ParseError::new ("expected length: number(\"em\" | \"ex\" | \"px\" | \"in\" | \"cm\" | \"mm\" | \"pt\" | \"pc\" | \"%\")?"))
 }
 
-impl RsvgLength {
-    pub fn parse (string: &str, dir: LengthDir) -> Result <RsvgLength, AttributeError> {
+impl Parse for RsvgLength {
+    type Data = LengthDir;
+    type Err = AttributeError;
+
+    fn parse (string: &str, dir: LengthDir) -> Result <RsvgLength, AttributeError> {
         let mut input = ParserInput::new (string);
         let mut parser = Parser::new (&mut input);
 
@@ -189,7 +193,9 @@ impl RsvgLength {
 
         Ok (length)
     }
+}
 
+impl RsvgLength {
     pub fn check_nonnegative (&self) -> Result <RsvgLength, AttributeError> {
         if self.length >= 0.0 {
             Ok (*self)

@@ -14,6 +14,7 @@ use error::*;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
+use parsers::Parse;
 use property_bag;
 use property_bag::*;
 use util::*;
