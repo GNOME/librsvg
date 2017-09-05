@@ -196,9 +196,9 @@ impl Parse for RsvgLength {
 }
 
 impl RsvgLength {
-    pub fn check_nonnegative (&self) -> Result <RsvgLength, AttributeError> {
+    pub fn check_nonnegative (self) -> Result <RsvgLength, AttributeError> {
         if self.length >= 0.0 {
-            Ok (*self)
+            Ok (self)
         } else {
             Err (AttributeError::Value ("value must be non-negative".to_string ()))
         }
