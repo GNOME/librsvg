@@ -3,6 +3,7 @@ use ::libc;
 
 use ::glib::translate::*;
 
+use parsers::Parse;
 use parsers::ParseError;
 use error::*;
 
@@ -61,8 +62,11 @@ pub enum Color {
     RGBA (cssparser::RGBA)
 }
 
-impl Color {
-    pub fn parse (s: &str, allow_inherit: AllowInherit, allow_current_color: AllowCurrentColor) -> Result<Color, AttributeError> {
+impl Parse for Color {
+    type Data = (AllowInherit, AllowCurrentColor);
+    type Err = AttributeError;
+
+    fn parse (s: &str, (allow_inherit, allow_current_color): (AllowInherit, AllowCurrentColor)) -> Result<Color, AttributeError> {
         if s == "inherit" {
             if allow_inherit == AllowInherit::Yes {
                 Ok (Color::Inherit)
@@ -87,6 +91,9 @@ impl Color {
         }
     }
 
+}
+
+impl Color {
     pub fn from_color_spec (spec: &ColorSpec) -> Result <Color, AttributeError> {
         match *spec {
             ColorSpec { kind: ColorKind::Inherit, .. }      => Ok (Color::Inherit),
@@ -161,7 +168,7 @@ pub extern fn rsvg_css_parse_color (string: *const libc::c_char,
                                     allow_current_color: AllowCurrentColor) -> ColorSpec {
     let s = unsafe { String::from_glib_none (string) };
 
-    ColorSpec::from (Color::parse (&s, allow_inherit, allow_current_color))
+    ColorSpec::from (Color::parse (&s, (allow_inherit, allow_current_color)))
 }
 
 #[cfg(test)]
@@ -169,7 +176,7 @@ mod tests {
     use super::*;
 
     fn parse (s: &str) -> ColorSpec {
-        // ColorSpec::from (Color::parse (s, AllowInherit::Yes, AllowCurrentColor::Yes))
+        // ColorSpec::from (Color::parse (s, (AllowInherit::Yes, AllowCurrentColor::Yes)))
         rsvg_css_parse_color (s.to_glib_none ().0, AllowInherit::Yes, AllowCurrentColor::Yes)
     }
 
@@ -224,18 +231,18 @@ mod tests {
 
     #[test]
     fn yields_error_on_disallowed_current_color () {
-        assert_eq! (ColorSpec::from (Color::parse ("currentColor", AllowInherit::Yes, AllowCurrentColor::No)),
+        assert_eq! (ColorSpec::from (Color::parse ("currentColor", (AllowInherit::Yes, AllowCurrentColor::No))),
                     make_error ());
     }
 
     #[test]
     fn yields_error_on_disallowed_inherit () {
-        assert_eq! (ColorSpec::from (Color::parse ("inherit", AllowInherit::No, AllowCurrentColor::Yes)),
+        assert_eq! (ColorSpec::from (Color::parse ("inherit", (AllowInherit::No, AllowCurrentColor::Yes))),
                     make_error ());
     }
 
     fn test_roundtrip (s: &str) {
-        let result = Color::parse (s, AllowInherit::Yes, AllowCurrentColor::Yes);
+        let result = Color::parse (s, (AllowInherit::Yes, AllowCurrentColor::Yes));
         let result2 = result.clone ();
         let spec = ColorSpec::from (result2);
 
