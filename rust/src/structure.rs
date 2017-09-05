@@ -149,17 +149,13 @@ impl NodeTrait for NodeSvg {
                                                   "width",
                                                   LengthDir::Horizontal,
                                                   RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap (),
-                                                  None)
-                    .and_then (|l| l.check_nonnegative ()
-                               .map_err (|e| NodeError::attribute_error ("width", e)))?);
+                                                  Some(RsvgLength::check_nonnegative))?);
 
         self.h.set (property_bag::parse_or_value (pbag,
                                                   "height",
                                                   LengthDir::Vertical,
                                                   RsvgLength::parse ("100%", LengthDir::Vertical).unwrap (),
-                                                  None)
-                    .and_then (|l| l.check_nonnegative ()
-                               .map_err (|e| NodeError::attribute_error ("height", e)))?);
+                                                  Some(RsvgLength::check_nonnegative))?);
 
         self.vbox.set (property_bag::parse_or_none (pbag, "viewBox", (), None)?);
 
@@ -276,28 +272,11 @@ impl NodeTrait for NodeUse {
         self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal, None)?);
         self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical, None)?);
 
-        let opt_w: Option<RsvgLength> = property_bag::parse_or_none (pbag, "width", LengthDir::Horizontal, None)?;
-        self.w.set (match opt_w {
-            Some (w) => {
-                Some (w.check_nonnegative ().map_err (|e| NodeError::attribute_error ("width", e))?)
-            },
+        self.w.set (property_bag::parse_or_none (pbag, "width", LengthDir::Horizontal,
+                                                 Some(RsvgLength::check_nonnegative))?);
 
-            None => {
-                None
-            }
-        });
-
-        let opt_h: Option<RsvgLength> = property_bag::parse_or_none (pbag, "height", LengthDir::Vertical, None)?;
-        let h = match opt_h {
-            Some (h) => {
-                Some (h.check_nonnegative ().map_err (|e| NodeError::attribute_error ("height", e))?)
-            },
-
-            None => {
-                None
-            }
-        };
-        self.h.set (h);
+        self.h.set (property_bag::parse_or_none (pbag, "height", LengthDir::Vertical,
+                                                 Some(RsvgLength::check_nonnegative))?);
 
         Ok (())
     }

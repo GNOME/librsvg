@@ -436,9 +436,8 @@ impl NodeTrait for NodeCircle {
         self.cx.set (property_bag::parse_or_default (pbag, "cx", LengthDir::Horizontal, None)?);
         self.cy.set (property_bag::parse_or_default (pbag, "cy", LengthDir::Vertical, None)?);
 
-        self.r.set  (property_bag::parse_or_default (pbag, "r", LengthDir::Both, None)
-                     .and_then (|l: RsvgLength| l.check_nonnegative ()
-                                .map_err (|e| NodeError::attribute_error ("r", e)))?);
+        self.r.set  (property_bag::parse_or_default (pbag, "r", LengthDir::Both,
+                                                     Some(RsvgLength::check_nonnegative))?);
 
         Ok (())
     }
@@ -481,13 +480,11 @@ impl NodeTrait for NodeEllipse {
         self.cx.set (property_bag::parse_or_default (pbag, "cx", LengthDir::Horizontal, None)?);
         self.cy.set (property_bag::parse_or_default (pbag, "cy", LengthDir::Vertical, None)?);
 
-        self.rx.set (property_bag::parse_or_default (pbag, "rx", LengthDir::Horizontal, None)
-                     .and_then (|l: RsvgLength| l.check_nonnegative ()
-                                .map_err (|e| NodeError::attribute_error ("rx", e)))?);
+        self.rx.set (property_bag::parse_or_default (pbag, "rx", LengthDir::Horizontal,
+                                                     Some(RsvgLength::check_nonnegative))?);
 
-        self.ry.set (property_bag::parse_or_default (pbag, "ry", LengthDir::Vertical, None)
-                     .and_then (|l: RsvgLength| l.check_nonnegative ()
-                                .map_err (|e| NodeError::attribute_error ("ry", e)))?);
+        self.ry.set (property_bag::parse_or_default (pbag, "ry", LengthDir::Vertical,
+                                                     Some(RsvgLength::check_nonnegative))?);
 
         Ok (())
     }

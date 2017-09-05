@@ -200,16 +200,12 @@ impl NodeTrait for NodeMarker {
         self.width.set (property_bag::parse_or_value (pbag, "markerWidth",
                                                       LengthDir::Horizontal,
                                                       NodeMarker::get_default_size (LengthDir::Horizontal),
-                                                      None)?
-                        .check_nonnegative ()
-                        .map_err (|e| NodeError::attribute_error ("markerWidth", e))?);
+                                                      Some(RsvgLength::check_nonnegative))?);
 
         self.height.set (property_bag::parse_or_value (pbag, "markerHeight",
                                                        LengthDir::Vertical,
                                                        NodeMarker::get_default_size (LengthDir::Vertical),
-                                                       None)?
-                         .check_nonnegative ()
-                         .map_err (|e| NodeError::attribute_error ("markerHeight", e))?);
+                                                       Some(RsvgLength::check_nonnegative))?);
 
         self.orient.set (property_bag::parse_or_default (pbag, "orient", (), None)?);
         self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
