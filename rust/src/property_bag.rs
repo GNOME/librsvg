@@ -3,8 +3,6 @@ use ::glib::translate::*;
 use ::libc;
 
 use error::*;
-use length::*;
-use transform::*;
 use parsers::Parse;
 
 pub enum RsvgPropertyBag {}
