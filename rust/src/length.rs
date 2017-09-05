@@ -196,6 +196,14 @@ impl Parse for RsvgLength {
 }
 
 impl RsvgLength {
+    pub fn new(l: f64, unit: LengthUnit, dir: LengthDir) -> RsvgLength {
+        RsvgLength {
+            length: l,
+            unit: unit,
+            dir: dir
+        }
+    }
+
     pub fn check_nonnegative (self) -> Result <RsvgLength, AttributeError> {
         if self.length >= 0.0 {
             Ok (self)
@@ -302,94 +310,58 @@ mod tests {
     #[test]
     fn parses_default () {
         assert_eq! (RsvgLength::parse ("42", LengthDir::Horizontal),
-                    Ok (RsvgLength {
-                        length: 42.0,
-                        unit:   LengthUnit::Default,
-                        dir:    LengthDir::Horizontal}));
+                    Ok (RsvgLength::new(42.0, LengthUnit::Default, LengthDir::Horizontal)));
 
         assert_eq! (RsvgLength::parse ("-42px", LengthDir::Horizontal),
-                    Ok (RsvgLength {
-                        length: -42.0,
-                        unit:   LengthUnit::Default,
-                        dir:    LengthDir::Horizontal}));
+                    Ok (RsvgLength::new(-42.0, LengthUnit::Default, LengthDir::Horizontal)));
     }
 
     #[test]
     fn parses_percent () {
         assert_eq! (RsvgLength::parse ("50.0%", LengthDir::Horizontal),
-                    Ok (RsvgLength {
-                        length: 0.5,
-                        unit:   LengthUnit::Percent,
-                        dir:    LengthDir::Horizontal}));
+                    Ok (RsvgLength::new(0.5, LengthUnit::Percent, LengthDir::Horizontal)));
     }
 
     #[test]
     fn parses_font_em () {
         assert_eq! (RsvgLength::parse ("22.5em", LengthDir::Vertical),
-                    Ok (RsvgLength {
-                        length: 22.5,
-                        unit:   LengthUnit::FontEm,
-                        dir:    LengthDir::Vertical }));
+                    Ok (RsvgLength::new(22.5, LengthUnit::FontEm, LengthDir::Vertical)));
     }
 
     #[test]
     fn parses_font_ex () {
         assert_eq! (RsvgLength::parse ("22.5ex", LengthDir::Vertical),
-                    Ok (RsvgLength {
-                        length: 22.5,
-                        unit:   LengthUnit::FontEx,
-                        dir:    LengthDir::Vertical }));
+                    Ok (RsvgLength::new(22.5, LengthUnit::FontEx, LengthDir::Vertical)));
     }
 
     #[test]
     fn parses_physical_units () {
         assert_eq! (RsvgLength::parse ("72pt", LengthDir::Both),
-                    Ok (RsvgLength {
-                        length: 1.0,
-                        unit:   LengthUnit::Inch,
-                        dir:    LengthDir::Both }));
+                    Ok (RsvgLength::new(1.0, LengthUnit::Inch, LengthDir::Both)));
 
         assert_eq! (RsvgLength::parse ("-22.5in", LengthDir::Both),
-                    Ok (RsvgLength {
-                        length: -22.5,
-                        unit:   LengthUnit::Inch,
-                        dir:    LengthDir::Both }));
+                    Ok (RsvgLength::new(-22.5, LengthUnit::Inch, LengthDir::Both)));
 
         assert_eq! (RsvgLength::parse ("-254cm", LengthDir::Both),
-                    Ok (RsvgLength {
-                        length: -100.0,
-                        unit:   LengthUnit::Inch,
-                        dir:    LengthDir::Both }));
+                    Ok (RsvgLength::new(-100.0, LengthUnit::Inch, LengthDir::Both)));
 
         assert_eq! (RsvgLength::parse ("254mm", LengthDir::Both),
-                    Ok (RsvgLength {
-                        length: 10.0,
-                        unit:   LengthUnit::Inch,
-                        dir:    LengthDir::Both }));
+                    Ok (RsvgLength::new(10.0, LengthUnit::Inch, LengthDir::Both)));
 
         assert_eq! (RsvgLength::parse ("60pc", LengthDir::Both),
-                    Ok (RsvgLength {
-                        length: 10.0,
-                        unit:   LengthUnit::Inch,
-                        dir:    LengthDir::Both }));
+                    Ok (RsvgLength::new(10.0, LengthUnit::Inch, LengthDir::Both)));
     }
 
     #[test]
     fn parses_relative_larger () {
         assert_eq! (RsvgLength::parse ("larger", LengthDir::Vertical),
-                    Ok (RsvgLength {
-                        length: 0.0,
-                        unit:   LengthUnit::RelativeLarger,
-                        dir:    LengthDir::Vertical }));
+                    Ok (RsvgLength::new(0.0, LengthUnit::RelativeLarger, LengthDir::Vertical)));
     }
 
     #[test]
     fn parses_relative_smaller () {
         assert_eq! (RsvgLength::parse ("smaller", LengthDir::Vertical),
-                    Ok (RsvgLength {
-                        length: 0.0,
-                        unit:   LengthUnit::RelativeSmaller,
-                        dir:    LengthDir::Vertical }));
+                    Ok (RsvgLength::new(0.0, LengthUnit::RelativeSmaller, LengthDir::Vertical)));
     }
 
     #[test]
