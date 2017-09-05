@@ -73,11 +73,5 @@ pub fn parse_or_value<T> (pbag: *const RsvgPropertyBag,
                           validate: Option<fn(T) -> Result<T, AttributeError>>) -> Result <T, NodeError>
     where T: Parse<Err = AttributeError> + Copy
 {
-    let r = parse_or_none (pbag, key, data, validate);
-
-    match r {
-        Ok (Some (v)) => Ok (v),
-        Ok (None)     => Ok (value),
-        Err (e)       => Err (e)
-    }
+    Ok (parse_or_none (pbag, key, data, validate)?.unwrap_or (value))
 }
