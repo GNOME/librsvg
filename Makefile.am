@@ -220,6 +220,8 @@ if OS_WIN32
 rsvg_view_3_LDFLAGS += -mwindows
 endif # OS_WIN32
 
+dist_doc_DATA = README.md
+
 EXTRA_DIST =				\
 	$(RUST_SOURCES)			\
 	$(RUST_EXTRA)			\
