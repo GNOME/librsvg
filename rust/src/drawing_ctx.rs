@@ -80,6 +80,12 @@ extern "C" {
 
     fn rsvg_render_path_builder (draw_ctx: *const RsvgDrawingCtx,
                                  builder: *const RsvgPathBuilder);
+    fn rsvg_render_surface (draw_ctx: *const RsvgDrawingCtx,
+                            surface: *const cairo_sys::cairo_surface_t,
+                            x: f64,
+                            y: f64,
+                            w: f64,
+                            h: f64);
 
     fn rsvg_cairo_get_cairo_context (draw_ctx: *const RsvgDrawingCtx) -> *mut cairo_sys::cairo_t;
     fn rsvg_cairo_set_cairo_context (draw_ctx: *const RsvgDrawingCtx, cr: *const cairo_sys::cairo_t);
@@ -152,6 +158,15 @@ pub fn pop_discrete_layer (draw_ctx: *const RsvgDrawingCtx) {
 pub fn render_path_builder (draw_ctx: *const RsvgDrawingCtx,
                             builder: &RsvgPathBuilder) {
     unsafe { rsvg_render_path_builder (draw_ctx, builder); }
+}
+
+pub fn render_surface (draw_ctx: *const RsvgDrawingCtx,
+                       surface: &cairo::ImageSurface,
+                       x: f64,
+                       y: f64,
+                       w: f64,
+                       h: f64) {
+    unsafe { rsvg_render_surface (draw_ctx, surface.to_raw_none(), x, y, w, h); }
 }
 
 pub fn get_cairo_context (draw_ctx: *const RsvgDrawingCtx) -> cairo::Context {
