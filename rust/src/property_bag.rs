@@ -1,4 +1,3 @@
-use ::cairo;
 use ::glib::translate::*;
 use ::libc;
 

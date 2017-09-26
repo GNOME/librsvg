@@ -10,7 +10,6 @@ use cairo::MatrixTrait;
 use bbox::*;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
-use error::*;
 use handle::RsvgHandle;
 use length::*;
 use node::*;

@@ -10,7 +10,6 @@ use cairo::MatrixTrait;
 use aspect_ratio::*;
 use drawing_ctx::RsvgDrawingCtx;
 use drawing_ctx;
-use error::*;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
