@@ -50,6 +50,10 @@ pub use length::{
     rsvg_length_hand_normalize,
 };
 
+pub use image::{
+    rsvg_node_image_new,
+};
+
 pub use marker::{
     rsvg_node_marker_new,
 };
@@ -132,6 +136,7 @@ mod drawing_ctx;
 mod error;
 mod gradient;
 mod handle;
+mod image;
 mod length;
 mod marker;
 mod node;

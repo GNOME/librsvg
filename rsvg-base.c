@@ -316,7 +316,7 @@ static const NodeCreator node_creators[] = {
     /* "glyph",              TRUE,  */
     /* "glyphRef",           TRUE,  */
     /* "hkern",              FALSE, */
-    { "image",               TRUE,  rsvg_new_image },
+    { "image",               TRUE,  rsvg_node_image_new },
     { "line",                TRUE,  rsvg_node_line_new },
     { "linearGradient",      TRUE,  rsvg_node_linear_gradient_new },
     { "marker",              TRUE,  rsvg_node_marker_new },
@@ -336,7 +336,7 @@ static const NodeCreator node_creators[] = {
     { "stop",                TRUE,  rsvg_node_stop_new },
     /* "style",              FALSE, */
     { "subImage",            FALSE, rsvg_node_group_new },
-    { "subImageRef",         FALSE, rsvg_new_image },
+    { "subImageRef",         FALSE, rsvg_node_image_new },
     { "svg",                 TRUE,  rsvg_node_svg_new },
     { "switch",              TRUE,  rsvg_node_switch_new },
     { "symbol",              TRUE,  rsvg_node_symbol_new },

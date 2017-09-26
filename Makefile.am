@@ -79,6 +79,7 @@ RUST_SOURCES =					\
 	rust/src/error.rs			\
 	rust/src/gradient.rs			\
 	rust/src/handle.rs			\
+	rust/src/image.rs			\
 	rust/src/length.rs			\
 	rust/src/lib.rs				\
 	rust/src/marker.rs			\
