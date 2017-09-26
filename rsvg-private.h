@@ -496,6 +496,9 @@ G_GNUC_INTERNAL
 cairo_surface_t *rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
 
 G_GNUC_INTERNAL
+cairo_surface_t *rsvg_cairo_surface_new_from_href (RsvgHandle *handle, const char *href, GError ** error);
+
+G_GNUC_INTERNAL
 void rsvg_drawing_ctx_free (RsvgDrawingCtx * handle);
 
 /* Implemented in rust/src/bbox.rs */

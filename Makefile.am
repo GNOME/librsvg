@@ -26,8 +26,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	rsvg-compat.h		\
 	rsvg-defs.c 		\
 	rsvg-defs.h 		\
-	rsvg-image.c		\
-	rsvg-image.h		\
 	rsvg-io.c		\
 	rsvg-io.h		\
 	rsvg-paint-server.c 	\

@@ -58,6 +58,10 @@ RsvgNode *rsvg_node_use_new (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_symbol_new (const char *element_name, RsvgNode *parent);
 
+/* Implemented in rust/src/image.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_image_new (const char *element_name, RsvgNode *parent);
+
 /* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
 void rsvg_node_svg_get_size (RsvgNode *node, RsvgLength *out_width, RsvgLength *out_height);

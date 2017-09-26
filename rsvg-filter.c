@@ -28,7 +28,6 @@
 #include "rsvg-private.h"
 #include "rsvg-filter.h"
 #include "rsvg-styles.h"
-#include "rsvg-image.h"
 #include "rsvg-css.h"
 #include "rsvg-cairo-render.h"
 

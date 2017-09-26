@@ -30,7 +30,6 @@
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"
-#include "rsvg-image.h"
 #include "rsvg-text.h"
 #include "rsvg-filter.h"
 #include "rsvg-mask.h"

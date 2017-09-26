@@ -28,7 +28,6 @@
 #include "rsvg-defs.h"
 #include "rsvg-paint-server.h"
 #include "rsvg-styles.h"
-#include "rsvg-image.h"
 
 #include <glib.h>
 #include <string.h>

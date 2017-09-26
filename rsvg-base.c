@@ -33,7 +33,6 @@
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"
 #include "rsvg-structure.h"
-#include "rsvg-image.h"
 #include "rsvg-io.h"
 #include "rsvg-text.h"
 #include "rsvg-filter.h"
@@ -2439,6 +2438,82 @@ cairo_surface_t *
 rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h)
 {
     return ctx->render->get_surface_of_node (ctx, drawable, w, h);
+}
+
+cairo_surface_t *
+rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
+                                  const char *href,
+                                  GError **error)
+{
+    char *data;
+    gsize data_len;
+    char *mime_type = NULL;
+    GdkPixbufLoader *loader = NULL;
+    GdkPixbuf *pixbuf = NULL;
+    cairo_surface_t *surface = NULL;
+
+    data = _rsvg_handle_acquire_data (handle, href, &mime_type, &data_len, error);
+    if (data == NULL)
+        return NULL;
+
+    if (mime_type) {
+        loader = gdk_pixbuf_loader_new_with_mime_type (mime_type, error);
+    } else {
+        loader = gdk_pixbuf_loader_new ();
+    }
+
+    if (loader == NULL)
+        goto out;
+
+    if (!gdk_pixbuf_loader_write (loader, (guchar *) data, data_len, error)) {
+        gdk_pixbuf_loader_close (loader, NULL);
+        goto out;
+    }
+
+    if (!gdk_pixbuf_loader_close (loader, error))
+        goto out;
+
+    pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
+
+    if (!pixbuf) {
+        g_set_error (error,
+                     GDK_PIXBUF_ERROR,
+                     GDK_PIXBUF_ERROR_FAILED,
+                      _("Failed to load image '%s': reason not known, probably a corrupt image file"),
+                      href);
+        goto out;
+    }
+
+    surface = rsvg_cairo_surface_from_pixbuf (pixbuf);
+
+    if (mime_type == NULL) {
+        /* Try to get the information from the loader */
+        GdkPixbufFormat *format;
+        char **mime_types;
+
+        if ((format = gdk_pixbuf_loader_get_format (loader)) != NULL) {
+            mime_types = gdk_pixbuf_format_get_mime_types (format);
+
+            if (mime_types != NULL)
+                mime_type = g_strdup (mime_types[0]);
+            g_strfreev (mime_types);
+        }
+    }
+
+    if ((handle->priv->flags & RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA) != 0 &&
+        mime_type != NULL &&
+        cairo_surface_set_mime_data (surface, mime_type, (guchar *) data,
+                                     data_len, g_free, data) == CAIRO_STATUS_SUCCESS) {
+        data = NULL; /* transferred to the surface */
+    }
+
+  out:
+    if (loader)
+        g_object_unref (loader);
+    g_free (mime_type);
+    g_free (data);
+
+    return surface;
 }
 
 void
