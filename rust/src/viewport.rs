@@ -15,7 +15,7 @@ pub fn draw_in_viewport<F>(vx: f64, vy: f64, vw: f64, vh: f64,
                            mut affine: cairo::Matrix,
                            draw_ctx: *const RsvgDrawingCtx,
                            draw_fn: F)
-    where F: FnOnce(cairo::Matrix)
+    where F: FnOnce()
 {
     // width or height set to 0 disables rendering of the element
     // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
@@ -59,7 +59,7 @@ pub fn draw_in_viewport<F>(vx: f64, vy: f64, vw: f64, vh: f64,
 
     drawing_ctx::set_current_state_affine(draw_ctx, affine);
 
-    draw_fn(affine);
+    draw_fn();
 
     drawing_ctx::pop_discrete_layer(draw_ctx);
     drawing_ctx::pop_view_box(draw_ctx);

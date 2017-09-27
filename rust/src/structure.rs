@@ -182,7 +182,7 @@ impl NodeTrait for NodeSvg {
                          self.preserve_aspect_ratio.get(),
                          drawing_ctx::get_current_state_affine(draw_ctx),
                          draw_ctx,
-                         |affine| {
+                         || {
                              drawing_ctx::state_push(draw_ctx);
                              node.draw_children(draw_ctx, -1); // dominate==-1 so it won't reinherit or push a layer
                              drawing_ctx::state_pop(draw_ctx);
@@ -310,7 +310,7 @@ impl NodeTrait for NodeUse {
                                  symbol.preserve_aspect_ratio.get(),
                                  drawing_ctx::get_current_state_affine(draw_ctx),
                                  draw_ctx,
-                                 |affine| {
+                                 || {
                                      drawing_ctx::state_push(draw_ctx);
                                      child.draw_children(draw_ctx, 1);
                                      drawing_ctx::state_pop(draw_ctx);
