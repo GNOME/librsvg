@@ -276,16 +276,11 @@ impl NodeTrait for NodeUse {
 
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
-        if double_equals (nw, 0.0) {
+        if double_equals (nw, 0.0) || double_equals (nh, 0.0) {
             drawing_ctx::release_node (draw_ctx, raw_child);
             return;
         }
         
-        if double_equals (nh, 0.0) {
-            drawing_ctx::release_node (draw_ctx, raw_child);
-            return;
-        }
-
         drawing_ctx::state_reinherit_top (draw_ctx, node.get_state (), dominate);
 
         let state = drawing_ctx::get_current_state (draw_ctx);
@@ -337,7 +332,6 @@ impl NodeTrait for NodeUse {
 
                 drawing_ctx::state_pop (draw_ctx);
                 drawing_ctx::pop_discrete_layer (draw_ctx);
-
                 drawing_ctx::pop_view_box (draw_ctx);
             });
         }
