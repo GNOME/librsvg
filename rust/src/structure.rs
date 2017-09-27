@@ -299,40 +299,22 @@ impl NodeTrait for NodeUse {
             drawing_ctx::pop_discrete_layer (draw_ctx);
         } else {
             child.with_impl (|symbol: &NodeSymbol| {
-                if let Some (vbox) = symbol.vbox.get () {
-                    let (x, y, w, h) = symbol.preserve_aspect_ratio.get ().compute (vbox.0.width, vbox.0.height,
-                                                                                    nx, ny, nw, nh);
+                let do_clip = !drawing_ctx::state_is_overflow (state)
+                    || (!drawing_ctx::state_has_overflow (state)
+                        && drawing_ctx::state_is_overflow (child.get_state ()));
 
-                    let mut affine = drawing_ctx::get_current_state_affine (draw_ctx);
-                    affine.translate (x, y);
-                    affine.scale (w / vbox.0.width, h / vbox.0.height);
-                    affine.translate (-vbox.0.x, -vbox.0.y);
-                    drawing_ctx::set_current_state_affine (draw_ctx, affine);
-
-                    drawing_ctx::push_view_box (draw_ctx, vbox.0.width, vbox.0.height);
-
-                    drawing_ctx::push_discrete_layer (draw_ctx);
-
-                    if !drawing_ctx::state_is_overflow (state) || (!drawing_ctx::state_has_overflow (state)
-                                                                   && drawing_ctx::state_is_overflow (child.get_state ())) {
-                        drawing_ctx::add_clipping_rect (draw_ctx, vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
-                    }
-                } else {
-                    let mut affine = drawing_ctx::get_current_state_affine (draw_ctx);
-                    affine.translate (nx, ny);
-                    drawing_ctx::set_current_state_affine (draw_ctx, affine);
-
-                    drawing_ctx::push_discrete_layer (draw_ctx);
-                    drawing_ctx::push_view_box (draw_ctx, nw, nh);
-                }
-
-                drawing_ctx::state_push (draw_ctx);
-
-                child.draw_children (draw_ctx, 1);
-
-                drawing_ctx::state_pop (draw_ctx);
-                drawing_ctx::pop_discrete_layer (draw_ctx);
-                drawing_ctx::pop_view_box (draw_ctx);
+                draw_in_viewport(nx, ny, nw, nh,
+                                 true,
+                                 do_clip,
+                                 symbol.vbox.get(),
+                                 symbol.preserve_aspect_ratio.get(),
+                                 drawing_ctx::get_current_state_affine(draw_ctx),
+                                 draw_ctx,
+                                 |affine| {
+                                     drawing_ctx::state_push(draw_ctx);
+                                     child.draw_children(draw_ctx, 1);
+                                     drawing_ctx::state_pop(draw_ctx);
+                                 });
             });
         }
 
