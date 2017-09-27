@@ -176,6 +176,7 @@ impl NodeTrait for NodeSvg {
         let do_clip = !drawing_ctx::state_is_overflow (state) && node.get_parent ().is_some ();
 
         draw_in_viewport(nx, ny, nw, nh,
+                         false,
                          do_clip,
                          self.vbox.get(),
                          self.preserve_aspect_ratio.get(),

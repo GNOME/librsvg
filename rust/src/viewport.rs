@@ -8,6 +8,7 @@ use util::*;
 use viewbox::*;
 
 pub fn draw_in_viewport<F>(vx: f64, vy: f64, vw: f64, vh: f64,
+                           clip_before_layer_push: bool,
                            do_clip: bool,
                            vbox: Option<ViewBox>,
                            preserve_aspect_ratio: AspectRatio,
@@ -40,6 +41,10 @@ pub fn draw_in_viewport<F>(vx: f64, vy: f64, vw: f64, vh: f64,
         affine.translate(-vbox.0.x, -vbox.0.y);
 
         vbox_size = (vbox.0.width, vbox.0.height);
+
+        if clip_before_layer_push && do_clip {
+            drawing_ctx::add_clipping_rect(draw_ctx, vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
+        }
     } else {
         affine.translate(vx, vy);
         vbox_size = (vw, vh);
@@ -48,7 +53,7 @@ pub fn draw_in_viewport<F>(vx: f64, vy: f64, vw: f64, vh: f64,
     drawing_ctx::push_view_box(draw_ctx, vbox_size.0, vbox_size.1);
     drawing_ctx::push_discrete_layer(draw_ctx);
 
-    if do_clip {
+    if !clip_before_layer_push && do_clip {
         drawing_ctx::add_clipping_rect(draw_ctx, vx, vy, vw, vh);
     }
 
