@@ -183,7 +183,6 @@ impl NodeTrait for NodeSvg {
                          draw_ctx,
                          |affine| {
                              drawing_ctx::state_push(draw_ctx);
-                             drawing_ctx::set_current_state_affine(draw_ctx, affine);
                              node.draw_children(draw_ctx, -1); // dominate==-1 so it won't reinherit or push a layer
                              drawing_ctx::state_pop(draw_ctx);
                          });
