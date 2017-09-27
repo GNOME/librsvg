@@ -18,6 +18,7 @@ use property_bag;
 use property_bag::*;
 use util::*;
 use viewbox::*;
+use viewport::draw_in_viewport;
 
 /***** NodeGroup *****/
 
@@ -171,60 +172,21 @@ impl NodeTrait for NodeSvg {
         let nw = self.w.get ().normalize (draw_ctx);
         let nh = self.h.get ().normalize (draw_ctx);
 
-        // width or height set to 0 disables rendering of the element
-        // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
-        if double_equals (nw, 0.0) || double_equals (nh, 0.0) {
-            return;
-        }
-
-        drawing_ctx::state_reinherit_top (draw_ctx, node.get_state (), dominate);
-
         let state = drawing_ctx::get_current_state (draw_ctx);
+        let do_clip = !drawing_ctx::state_is_overflow (state) && node.get_parent ().is_some ();
 
-        let affine_old = drawing_ctx::get_current_state_affine (draw_ctx);
-
-        if let Some (vbox) = self.vbox.get () {
-            // viewBox width==0 or height==0 disables rendering of the element
-            // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
-            if double_equals (vbox.0.width, 0.0) || double_equals (vbox.0.height, 0.0) {
-                return;
-            }
-
-            let (x, y, w, h) = self.preserve_aspect_ratio.get ().compute (vbox.0.width, vbox.0.height,
-                                                                          nx, ny, nw, nh);
-
-            let mut affine = affine_old;
-            affine.translate (x, y);
-            affine.scale (w / vbox.0.width, h / vbox.0.height);
-            affine.translate (-vbox.0.x, -vbox.0.y);
-            drawing_ctx::set_current_state_affine (draw_ctx, affine);
-
-            drawing_ctx::push_view_box (draw_ctx, vbox.0.width, vbox.0.height);
-        } else {
-            let mut affine = affine_old;
-            affine.translate (nx, ny);
-
-            drawing_ctx::set_current_state_affine (draw_ctx, affine);
-            drawing_ctx::push_view_box (draw_ctx, nw, nh);
-        }
-
-        let affine_new = drawing_ctx::get_current_state_affine (draw_ctx);
-
-        drawing_ctx::push_discrete_layer (draw_ctx);
-
-        // Bounding box addition must be AFTER the discrete layer
-        // push, which must be AFTER the transformation happens.
-
-        if !drawing_ctx::state_is_overflow (state) && node.get_parent ().is_some () {
-            drawing_ctx::set_current_state_affine (draw_ctx, affine_old);
-            drawing_ctx::add_clipping_rect (draw_ctx, nx, ny, nw, nh);
-            drawing_ctx::set_current_state_affine (draw_ctx, affine_new);
-        }
-
-        node.draw_children (draw_ctx, -1); // dominate==-1 so it won't reinherit or push a layer
-
-        drawing_ctx::pop_discrete_layer (draw_ctx);
-        drawing_ctx::pop_view_box (draw_ctx);
+        draw_in_viewport(nx, ny, nw, nh,
+                         do_clip,
+                         self.vbox.get(),
+                         self.preserve_aspect_ratio.get(),
+                         drawing_ctx::get_current_state_affine(draw_ctx),
+                         draw_ctx,
+                         |affine| {
+                             drawing_ctx::state_push(draw_ctx);
+                             drawing_ctx::set_current_state_affine(draw_ctx, affine);
+                             node.draw_children(draw_ctx, -1); // dominate==-1 so it won't reinherit or push a layer
+                             drawing_ctx::state_pop(draw_ctx);
+                         });
     }
 
     fn get_c_impl (&self) -> *const RsvgCNodeImpl {

@@ -96,7 +96,8 @@ RUST_SOURCES =					\
 	rust/src/structure.rs			\
 	rust/src/transform.rs			\
 	rust/src/util.rs			\
-	rust/src/viewbox.rs
+	rust/src/viewbox.rs			\
+	rust/src/viewport.rs
 
 RUST_EXTRA = 					\
 	rust/Cargo.lock				\
