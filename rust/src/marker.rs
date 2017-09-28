@@ -22,6 +22,7 @@ use property_bag;
 use property_bag::*;
 use util::*;
 use viewbox::*;
+use viewport::draw_in_viewport;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
 
@@ -121,10 +122,8 @@ impl NodeMarker {
         let marker_width = self.width.get ().normalize (draw_ctx);
         let marker_height = self.height.get ().normalize (draw_ctx);
 
-        let mut affine = cairo::Matrix::identity ();
+        let mut affine = drawing_ctx::get_current_state_affine (draw_ctx);
         affine.translate (xpos, ypos);
-
-        affine = cairo::Matrix::multiply (&affine, &drawing_ctx::get_current_state_affine (draw_ctx));
 
         let rotation = match self.orient.get () {
             MarkerOrient::Auto =>        computed_angle,
