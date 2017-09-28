@@ -200,7 +200,7 @@ mod tests {
     }
 
     #[test]
-    fn clip_after_layer_push() {
+    fn clip_to_viewport() {
         let mut affine = cairo::Matrix::identity();
         affine.scale(0.20, 0.20);
 
@@ -229,7 +229,7 @@ mod tests {
     }
 
     #[test]
-    fn clip_before_layer_push() {
+    fn clip_to_vbox() {
         let mut affine = cairo::Matrix::identity();
         affine.translate(10.0, 10.0);
         affine.scale(0.40, 0.40);
