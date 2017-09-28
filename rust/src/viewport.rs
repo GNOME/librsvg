@@ -98,6 +98,11 @@ fn in_viewport<F>(ctx: &mut ViewportCtx,
         // the preserveAspectRatio attribute is only used if viewBox is specified
         // https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
+        if double_equals(vbox.0.width, 0.0) || double_equals(vbox.0.height, 0.0) {
+            // Width or height of 0 for the viewBox disables rendering of the element
+            // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
+            return;
+        }
         let (x, y, w, h) = preserve_aspect_ratio.compute(vbox.0.width, vbox.0.height,
                                                          vx, vy, vw, vh);
 
