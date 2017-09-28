@@ -18,7 +18,7 @@ use property_bag;
 use property_bag::*;
 use util::*;
 use viewbox::*;
-use viewport::draw_in_viewport;
+use viewport::{ClipMode,draw_in_viewport};
 
 /***** NodeGroup *****/
 
@@ -176,7 +176,7 @@ impl NodeTrait for NodeSvg {
         let do_clip = !drawing_ctx::state_is_overflow (state) && node.get_parent ().is_some ();
 
         draw_in_viewport(nx, ny, nw, nh,
-                         false,
+                         ClipMode::ClipToViewport,
                          do_clip,
                          self.vbox.get(),
                          self.preserve_aspect_ratio.get(),
@@ -304,7 +304,7 @@ impl NodeTrait for NodeUse {
                         && drawing_ctx::state_is_overflow (child.get_state ()));
 
                 draw_in_viewport(nx, ny, nw, nh,
-                                 true,
+                                 ClipMode::ClipToVbox,
                                  do_clip,
                                  symbol.vbox.get(),
                                  symbol.preserve_aspect_ratio.get(),

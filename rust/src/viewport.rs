@@ -7,8 +7,14 @@ use drawing_ctx::RsvgDrawingCtx;
 use util::*;
 use viewbox::*;
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum ClipMode {
+    ClipToViewport,
+    ClipToVbox
+}
+
 pub fn draw_in_viewport<F>(vx: f64, vy: f64, vw: f64, vh: f64,
-                           clip_before_layer_push: bool,
+                           clip_mode: ClipMode,
                            do_clip: bool,
                            vbox: Option<ViewBox>,
                            preserve_aspect_ratio: AspectRatio,
@@ -21,7 +27,7 @@ pub fn draw_in_viewport<F>(vx: f64, vy: f64, vw: f64, vh: f64,
 
     in_viewport(&mut ctx,
                 vx, vy, vw, vh,
-                clip_before_layer_push,
+                clip_mode,
                 do_clip,
                 vbox,
                 preserve_aspect_ratio,
@@ -68,7 +74,7 @@ impl ViewportCtx for RsvgDrawingCtxWrapper {
 
 fn in_viewport<F>(ctx: &mut ViewportCtx,
                   vx: f64, vy: f64, vw: f64, vh: f64,
-                  clip_before_layer_push: bool,
+                  clip_mode: ClipMode,
                   do_clip: bool,
                   vbox: Option<ViewBox>,
                   preserve_aspect_ratio: AspectRatio,
@@ -86,7 +92,7 @@ fn in_viewport<F>(ctx: &mut ViewportCtx,
         return;
     }
 
-    let vbox_size;
+    let old_affine = affine;
 
     if let Some(vbox) = vbox {
         // the preserveAspectRatio attribute is only used if viewBox is specified
@@ -99,24 +105,28 @@ fn in_viewport<F>(ctx: &mut ViewportCtx,
         affine.scale(w / vbox.0.width, h / vbox.0.height);
         affine.translate(-vbox.0.x, -vbox.0.y);
 
-        vbox_size = (vbox.0.width, vbox.0.height);
+        ctx.set_affine(affine);
 
-        if clip_before_layer_push && do_clip {
+        ctx.push_view_box(vbox.0.width, vbox.0.height);
+
+        ctx.push_discrete_layer();
+
+        if do_clip && clip_mode == ClipMode::ClipToVbox {
             ctx.add_clipping_rect(vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
         }
     } else {
         affine.translate(vx, vy);
-        vbox_size = (vw, vh);
+        ctx.set_affine(affine);
+
+        ctx.push_view_box(vw, vh);
+        ctx.push_discrete_layer();
     }
 
-    ctx.push_view_box(vbox_size.0, vbox_size.1);
-    ctx.push_discrete_layer();
-
-    if !clip_before_layer_push && do_clip {
+    if do_clip && clip_mode == ClipMode::ClipToViewport {
+        ctx.set_affine(old_affine);
         ctx.add_clipping_rect(vx, vy, vw, vh);
+        ctx.set_affine(affine);
     }
-
-    ctx.set_affine(affine);
 
     draw_fn();
 
@@ -164,7 +174,7 @@ mod tests {
     }
 
     fn call_in_viewport(vx: f64, vy: f64, vw: f64, vh: f64,
-                        clip_before_layer_push: bool,
+                        clip_mode: ClipMode,
                         do_clip: bool,
                         vbox: Option<ViewBox>,
                         preserve_aspect_ratio: AspectRatio,
@@ -172,7 +182,7 @@ mod tests {
                         ctx: &mut Ctx) {
         in_viewport(ctx,
                     vx, vy, vw, vh,
-                    clip_before_layer_push,
+                    clip_mode,
                     do_clip,
                     vbox,
                     preserve_aspect_ratio,
@@ -200,7 +210,7 @@ mod tests {
         };
 
         call_in_viewport(10.0, 10.0, 10.0, 10.0,
-                         false,
+                         ClipMode::ClipToViewport,
                          true,
                          Some(ViewBox(cairo::Rectangle {
                              x: 50.0,
@@ -230,7 +240,7 @@ mod tests {
         };
 
         call_in_viewport(10.0, 10.0, 20.0, 20.0,
-                         true,
+                         ClipMode::ClipToVbox,
                          true,
                          Some(ViewBox(cairo::Rectangle {
                              x: 0.0,
