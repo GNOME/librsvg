@@ -20,6 +20,14 @@ pub struct RsvgViewBox {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ViewBox(pub cairo::Rectangle);
 
+impl ViewBox {
+    pub fn new(x: f64, y: f64, w: f64, h: f64) -> ViewBox {
+        assert!(w >= 0.0 && h >= 0.0, "width and height must not be negative");
+
+        ViewBox(cairo::Rectangle { x: x, y: y, width: w, height: h })
+    }
+}
+
 impl From<Option<ViewBox>> for RsvgViewBox {
     fn from(v: Option<ViewBox>) -> RsvgViewBox {
         if let Some(vb) = v {
@@ -75,16 +83,10 @@ mod tests {
     #[test]
     fn parses_valid_viewboxes () {
         assert_eq! (ViewBox::parse ("  1 2 3 4", ()),
-                    Ok (ViewBox (cairo::Rectangle { x: 1.0,
-                                                    y: 2.0,
-                                                    width: 3.0,
-                                                    height: 4.0 })));
+                    Ok (ViewBox::new(1.0, 2.0, 3.0, 4.0)));
 
         assert_eq! (ViewBox::parse (" -1.5 -2.5e1,34,56e2  ", ()),
-                    Ok (ViewBox (cairo::Rectangle { x: -1.5,
-                                                    y: -25.0,
-                                                    width: 34.0,
-                                                    height: 5600.0 })));
+                    Ok (ViewBox::new(-1.5, -25.0, 34.0, 5600.0)));
     }
 
     #[test]
