@@ -103,6 +103,10 @@ fn in_viewport<F>(ctx: &mut ViewportCtx,
             // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
             return;
         }
+
+        ctx.push_view_box(vbox.0.width, vbox.0.height);
+        ctx.push_discrete_layer();
+
         let (x, y, w, h) = preserve_aspect_ratio.compute(vbox.0.width, vbox.0.height,
                                                          vx, vy, vw, vh);
 
@@ -112,19 +116,15 @@ fn in_viewport<F>(ctx: &mut ViewportCtx,
 
         ctx.set_affine(affine);
 
-        ctx.push_view_box(vbox.0.width, vbox.0.height);
-
-        ctx.push_discrete_layer();
-
         if do_clip && clip_mode == ClipMode::ClipToVbox {
             ctx.add_clipping_rect(vbox.0.x, vbox.0.y, vbox.0.width, vbox.0.height);
         }
     } else {
-        affine.translate(vx, vy);
-        ctx.set_affine(affine);
-
         ctx.push_view_box(vw, vh);
         ctx.push_discrete_layer();
+
+        affine.translate(vx, vy);
+        ctx.set_affine(affine);
     }
 
     if do_clip && clip_mode == ClipMode::ClipToViewport {
