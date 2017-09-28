@@ -126,12 +126,10 @@ impl NodeMarker {
 
         affine = cairo::Matrix::multiply (&affine, &drawing_ctx::get_current_state_affine (draw_ctx));
 
-        let rotation: f64;
-
-        match self.orient.get () {
-            MarkerOrient::Auto =>        { rotation = computed_angle; },
-            MarkerOrient::Degrees (d) => { rotation = d * PI / 180.0; }
-        }
+        let rotation = match self.orient.get () {
+            MarkerOrient::Auto =>        computed_angle,
+            MarkerOrient::Degrees (d) => d * PI / 180.0,
+        };
 
         affine.rotate (rotation);
 
