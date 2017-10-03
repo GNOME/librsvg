@@ -1905,6 +1905,7 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
 
     rsvg_return_val_if_fail (priv->state == RSVG_HANDLE_STATE_START
                              || priv->state == RSVG_HANDLE_STATE_EXPECTING_GZ_1
+                             || priv->state == RSVG_HANDLE_STATE_READING_COMPRESSED
                              || priv->state == RSVG_HANDLE_STATE_READING,
                              FALSE,
                              error);
@@ -1925,7 +1926,7 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
 
         case RSVG_HANDLE_STATE_EXPECTING_GZ_1:
             if (buf[0] == GZ_MAGIC_1) {
-                priv->state = RSVG_HANDLE_STATE_READING;
+                priv->state = RSVG_HANDLE_STATE_READING_COMPRESSED;
                 create_compressed_input_stream (handle);
                 buf++;
                 count--;
@@ -1936,15 +1937,13 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
 
             break;
 
+        case RSVG_HANDLE_STATE_READING_COMPRESSED:
+            g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (priv->compressed_input_stream),
+                                            g_memdup (buf, count), count, (GDestroyNotify) g_free);
+            return TRUE;
+
         case RSVG_HANDLE_STATE_READING:
-            if (priv->compressed_input_stream) {
-                g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (priv->compressed_input_stream),
-                                                g_memdup (buf, count), count, (GDestroyNotify) g_free);
-                return TRUE;
-            } else {
-                return rsvg_handle_write_impl (handle, buf, count, error);
-            }
-            break;
+            return rsvg_handle_write_impl (handle, buf, count, error);
 
         default:
             g_assert_not_reached ();
@@ -1980,7 +1979,7 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
         return TRUE;
     }
 
-    if (priv->compressed_input_stream) {
+    if (priv->state == RSVG_HANDLE_STATE_READING_COMPRESSED) {
         gboolean ret;
 
         ret = rsvg_handle_read_stream_sync (handle, priv->compressed_input_stream, NULL, error);
