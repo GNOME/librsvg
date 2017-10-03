@@ -9,12 +9,18 @@
 #include "rsvg-compat.h"
 #include "test-utils.h"
 
+typedef struct {
+    const char *test_name;
+    const char *fixture;
+    size_t buf_size;
+} TestData;
+
 static void
-load_one_byte_at_a_time (gconstpointer data)
+load_n_bytes_at_a_time (gconstpointer data)
 {
-    const char *fixture = data;
-    char *filename = g_build_filename (test_utils_get_test_data_path (), fixture, NULL);
-    guchar buf[1];
+    const TestData *fixture_data = data;
+    char *filename = g_build_filename (test_utils_get_test_data_path (), fixture_data->fixture, NULL);
+    guchar *buf = g_new (guchar, fixture_data->buf_size);
     gboolean done;
 
     RsvgHandle *handle;
@@ -30,7 +36,7 @@ load_one_byte_at_a_time (gconstpointer data)
     do {
         size_t num_read;
 
-        num_read = fread (buf, 1, 1, file);
+        num_read = fread (buf, 1, fixture_data->buf_size, file);
 
         if (num_read > 0) {
             g_assert (rsvg_handle_write (handle, buf, num_read, NULL) != FALSE);
@@ -46,18 +52,28 @@ load_one_byte_at_a_time (gconstpointer data)
     g_assert (rsvg_handle_close (handle, NULL) != FALSE);
 
     g_object_unref (handle);
+
+    g_free (buf);
 }
+
+static TestData tests[] = {
+    { "/load-one-byte-at-a-time", "loading/gnome-cool.svg", 1 },
+    { "/load-compressed-one-byte-at-a-time", "loading/gnome-cool.svgz", 1 },
+    { "/load-compressed-two-bytes-at-a-time", "loading/gnome-cool.svgz", 2 } /* to test reading the entire gzip header */
+};
 
 int
 main (int argc, char **argv)
 {
     int result;
+    int i;
 
     RSVG_G_TYPE_INIT;
     g_test_init (&argc, &argv, NULL);
 
-    g_test_add_data_func ("/load-one-byte-at-a-time", "loading/gnome-cool.svg", load_one_byte_at_a_time);
-    g_test_add_data_func ("/load-compressed-one-byte-at-a-time", "loading/gnome-cool.svgz", load_one_byte_at_a_time);
+    for (i = 0; i < G_N_ELEMENTS (tests); i++) {
+        g_test_add_data_func (tests[i].test_name, &tests[i], load_n_bytes_at_a_time);
+    }
 
     result = g_test_run ();
 
