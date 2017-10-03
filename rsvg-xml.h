@@ -27,7 +27,6 @@ G_BEGIN_DECLS
 
 xmlParserInputBufferPtr _rsvg_xml_input_buffer_new_from_stream (GInputStream   *stream,
                                                                 GCancellable   *cancellable,
-                                                                xmlCharEncoding enc,
                                                                 GError        **error);
 
 G_END_DECLS

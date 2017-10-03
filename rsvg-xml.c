@@ -74,7 +74,6 @@ context_close (RsvgXmlInputStreamContext *context)
 xmlParserInputBufferPtr
 _rsvg_xml_input_buffer_new_from_stream (GInputStream   *stream,
                                         GCancellable   *cancellable,
-                                        xmlCharEncoding enc,
                                         GError        **error)
 
 {
@@ -92,5 +91,5 @@ _rsvg_xml_input_buffer_new_from_stream (GInputStream   *stream,
     return xmlParserInputBufferCreateIO ((xmlInputReadCallback) context_read,
                                          (xmlInputCloseCallback) context_close,
                                          context,
-                                         enc);
+                                         XML_CHAR_ENCODING_NONE);
 }
