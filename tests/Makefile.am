@@ -1,12 +1,12 @@
 include $(top_srcdir)/glib-tap.mk
 
-test_programs = \
+test_programs =		\
+	loading		\
 	rsvg-test	\
 	crash		\
 	styles		\
 	render-crash	\
-	dimensions	\
-	loading
+	dimensions
 
 # Removed "styles" from the above; it is broken right now
 
