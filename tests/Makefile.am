@@ -4,7 +4,8 @@ test_programs = \
 	rsvg-test	\
 	crash		\
 	render-crash	\
-	dimensions
+	dimensions	\
+	loading
 
 # Removed "styles" from the above; it is broken right now
 
@@ -30,6 +31,10 @@ styles_SOURCES = \
 
 dimensions_SOURCES = \
 	dimensions.c	\
+	$(test_utils_common_sources)
+
+loading_SOURCES =		 	\
+	loading.c			\
 	$(test_utils_common_sources)
 
 LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
