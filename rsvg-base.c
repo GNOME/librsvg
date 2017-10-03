@@ -1724,6 +1724,24 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
 #define GZ_MAGIC_0 ((guchar) 0x1f)
 #define GZ_MAGIC_1 ((guchar) 0x8b)
 
+/* Creates handle->priv->compressed_input_stream and adds the gzip header data
+ * to it.  We implicitly consume the header data from the caller in
+ * rsvg_handle_write(); that's why we add it back here.
+ */
+static void
+create_compressed_input_stream (RsvgHandle *handle)
+{
+    RsvgHandlePrivate *priv = handle->priv;
+
+    static const guchar gz_magic[2] = { GZ_MAGIC_0, GZ_MAGIC_1 };
+
+    g_assert (priv->compressed_input_stream == NULL);
+
+    priv->compressed_input_stream = g_memory_input_stream_new ();
+    g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (priv->compressed_input_stream),
+                                    gz_magic, 2, NULL);
+}
+
 /**
  * rsvg_handle_write:
  * @handle: an #RsvgHandle
@@ -1769,13 +1787,8 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
 
         case RSVG_HANDLE_STATE_EXPECTING_GZ_1:
             if (buf[0] == GZ_MAGIC_1) {
-                static const guchar gz_magic[2] = { GZ_MAGIC_0, GZ_MAGIC_1 };
-
-                priv->compressed_input_stream = g_memory_input_stream_new ();
-                g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (priv->compressed_input_stream),
-                                                gz_magic, 2, NULL);
-
                 priv->state = RSVG_HANDLE_STATE_READING;
+                create_compressed_input_stream (handle);
                 buf++;
                 count--;
             } else {
