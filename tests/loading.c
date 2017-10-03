@@ -28,8 +28,12 @@ load_one_byte_at_a_time (gconstpointer data)
     done = FALSE;
 
     do {
-        if (fread (buf, 1, 1, file) == 1) {
-            g_assert (rsvg_handle_write (handle, buf, 1, NULL) != FALSE);
+        size_t num_read;
+
+        num_read = fread (buf, 1, 1, file);
+
+        if (num_read > 0) {
+            g_assert (rsvg_handle_write (handle, buf, num_read, NULL) != FALSE);
         } else {
             g_assert (ferror (file) == 0);
 
@@ -53,6 +57,7 @@ main (int argc, char **argv)
     g_test_init (&argc, &argv, NULL);
 
     g_test_add_data_func ("/load-one-byte-at-a-time", "loading/gnome-cool.svg", load_one_byte_at_a_time);
+    g_test_add_data_func ("/load-compressed-one-byte-at-a-time", "loading/gnome-cool.svgz", load_one_byte_at_a_time);
 
     result = g_test_run ();
 

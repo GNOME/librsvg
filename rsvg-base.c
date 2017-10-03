@@ -1748,27 +1748,58 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
     priv = handle->priv;
 
     rsvg_return_val_if_fail (priv->state == RSVG_HANDLE_STATE_START
+                             || priv->state == RSVG_HANDLE_STATE_EXPECTING_GZ_1
                              || priv->state == RSVG_HANDLE_STATE_READING,
                              FALSE,
                              error);
 
-    if (priv->state == RSVG_HANDLE_STATE_START) {
-        priv->state = RSVG_HANDLE_STATE_READING;
+    while (count > 0) {
+        switch (priv->state) {
+        case RSVG_HANDLE_STATE_START:
+            if (buf[0] == GZ_MAGIC_0) {
+                priv->state = RSVG_HANDLE_STATE_EXPECTING_GZ_1;
+                buf++;
+                count--;
+            } else {
+                priv->state = RSVG_HANDLE_STATE_READING;
+                return rsvg_handle_write_impl (handle, buf, count, error);
+            }
 
-        /* test for GZ marker. todo: store the first 2 bytes in the odd circumstance that someone calls
-         * write() in 1 byte increments */
-        if ((count >= 2) && (buf[0] == GZ_MAGIC_0) && (buf[1] == GZ_MAGIC_1)) {
-            priv->data_input_stream = g_memory_input_stream_new ();
+            break;
+
+        case RSVG_HANDLE_STATE_EXPECTING_GZ_1:
+            if (buf[0] == GZ_MAGIC_1) {
+                static const guchar gz_magic[2] = { GZ_MAGIC_0, GZ_MAGIC_1 };
+
+                priv->data_input_stream = g_memory_input_stream_new ();
+                g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (priv->data_input_stream), gz_magic, 2, NULL);
+
+                priv->state = RSVG_HANDLE_STATE_READING;
+                buf++;
+                count--;
+            } else {
+                priv->state = RSVG_HANDLE_STATE_READING;
+                return rsvg_handle_write_impl (handle, buf, count, error);
+            }
+
+            break;
+
+        case RSVG_HANDLE_STATE_READING:
+            if (priv->data_input_stream) {
+                g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (priv->data_input_stream),
+                                                g_memdup (buf, count), count, (GDestroyNotify) g_free);
+                return TRUE;
+            } else {
+                return rsvg_handle_write_impl (handle, buf, count, error);
+            }
+            break;
+
+        default:
+            g_assert_not_reached ();
         }
     }
 
-    if (priv->data_input_stream) {
-        g_memory_input_stream_add_data ((GMemoryInputStream *) priv->data_input_stream,
-                                        g_memdup (buf, count), count, (GDestroyNotify) g_free);
-        return TRUE;
-    }
-
-    return rsvg_handle_write_impl (handle, buf, count, error);
+    return TRUE;
 }
 
 /**
