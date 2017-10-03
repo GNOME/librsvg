@@ -1909,8 +1909,9 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
             if (buf[0] == GZ_MAGIC_1) {
                 static const guchar gz_magic[2] = { GZ_MAGIC_0, GZ_MAGIC_1 };
 
-                priv->data_input_stream = g_memory_input_stream_new ();
-                g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (priv->data_input_stream), gz_magic, 2, NULL);
+                priv->compressed_input_stream = g_memory_input_stream_new ();
+                g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (priv->compressed_input_stream),
+                                                gz_magic, 2, NULL);
 
                 priv->state = RSVG_HANDLE_STATE_READING;
                 buf++;
@@ -1923,8 +1924,8 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
             break;
 
         case RSVG_HANDLE_STATE_READING:
-            if (priv->data_input_stream) {
-                g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (priv->data_input_stream),
+            if (priv->compressed_input_stream) {
+                g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (priv->compressed_input_stream),
                                                 g_memdup (buf, count), count, (GDestroyNotify) g_free);
                 return TRUE;
             } else {
@@ -1966,12 +1967,12 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
         return TRUE;
     }
 
-    if (priv->data_input_stream) {
+    if (priv->compressed_input_stream) {
         gboolean ret;
 
-        ret = rsvg_handle_read_stream_sync (handle, priv->data_input_stream, NULL, error);
-        g_object_unref (priv->data_input_stream);
-        priv->data_input_stream = NULL;
+        ret = rsvg_handle_read_stream_sync (handle, priv->compressed_input_stream, NULL, error);
+        g_object_unref (priv->compressed_input_stream);
+        priv->compressed_input_stream = NULL;
 
         return ret;
     }
