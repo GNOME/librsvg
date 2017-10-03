@@ -582,6 +582,11 @@ rsvg_set_xml_parse_options(xmlParserCtxtPtr xml_parser,
     }
 
     xmlCtxtUseOptions (xml_parser, options);
+
+    /* if false, external entities work, but internal ones don't. if true, internal entities
+       work, but external ones don't. favor internal entities, in order to not cause a
+       regression */
+    xml_parser->replaceEntities = TRUE;
 }
 
 /* http://www.w3.org/TR/xinclude/ */
@@ -1168,11 +1173,6 @@ create_xml_push_parser_ctxt (RsvgHandle *handle)
         handle->priv->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0,
                                                       rsvg_handle_get_base_uri (handle));
         rsvg_set_xml_parse_options(handle->priv->ctxt, handle);
-
-        /* if false, external entities work, but internal ones don't. if true, internal entities
-           work, but external ones don't. favor internal entities, in order to not cause a
-           regression */
-        handle->priv->ctxt->replaceEntities = TRUE;
     }
 }
 
