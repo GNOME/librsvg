@@ -33,7 +33,7 @@ dnl ===========================================================================
 
 GLIB_REQUIRED=2.12.0
 GIO_REQUIRED=2.24.0
-LIBXML_REQUIRED=2.7.0
+LIBXML_REQUIRED=2.9.0
 CAIRO_REQUIRED=1.2.0
 PANGOCAIRO_REQUIRED=1.32.6
 GDK_PIXBUF_REQUIRED=2.20

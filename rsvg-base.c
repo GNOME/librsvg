@@ -569,20 +569,19 @@ rsvg_xinclude_handler_end (RsvgSaxHandler * self, const char *name)
 }
 
 static void
-_rsvg_set_xml_parse_options(xmlParserCtxtPtr xml_parser,
-                            RsvgHandle *ctx)
+rsvg_set_xml_parse_options(xmlParserCtxtPtr xml_parser,
+                           RsvgHandle *ctx)
 {
-    xml_parser->options |= XML_PARSE_NONET;
+    int options;
+
+    options = (XML_PARSE_NONET |
+               XML_PARSE_BIG_LINES);
 
     if (ctx->priv->flags & RSVG_HANDLE_FLAG_UNLIMITED) {
-#if LIBXML_VERSION > 20632
-        xml_parser->options |= XML_PARSE_HUGE;
-#endif
+        options |= XML_PARSE_HUGE;
     }
 
-#if LIBXML_VERSION > 20800
-    xml_parser->options |= XML_PARSE_BIG_LINES;
-#endif
+    xmlCtxtUseOptions (xml_parser, options);
 }
 
 /* http://www.w3.org/TR/xinclude/ */
@@ -636,7 +635,7 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
             goto fallback;
 
         xml_parser = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, ctx, NULL, 0, NULL);
-        _rsvg_set_xml_parse_options(xml_parser, ctx);
+        rsvg_set_xml_parse_options(xml_parser, ctx);
 
         buffer = _rsvg_xml_input_buffer_new_from_stream (stream, NULL /* cancellable */, XML_CHAR_ENCODING_NONE, &err);
         g_object_unref (stream);
@@ -1168,7 +1167,7 @@ create_xml_push_parser_ctxt (RsvgHandle *handle)
     if (handle->priv->ctxt == NULL) {
         handle->priv->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0,
                                                       rsvg_handle_get_base_uri (handle));
-        _rsvg_set_xml_parse_options(handle->priv->ctxt, handle);
+        rsvg_set_xml_parse_options(handle->priv->ctxt, handle);
 
         /* if false, external entities work, but internal ones don't. if true, internal entities
            work, but external ones don't. favor internal entities, in order to not cause a
