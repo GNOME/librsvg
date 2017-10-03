@@ -57,9 +57,9 @@ load_n_bytes_at_a_time (gconstpointer data)
 }
 
 static TestData tests[] = {
-    { "/load-one-byte-at-a-time", "loading/gnome-cool.svg", 1 },
-    { "/load-compressed-one-byte-at-a-time", "loading/gnome-cool.svgz", 1 },
-    { "/load-compressed-two-bytes-at-a-time", "loading/gnome-cool.svgz", 2 } /* to test reading the entire gzip header */
+    { "/loading/one-byte-at-a-time", "loading/gnome-cool.svg", 1 },
+    { "/loading/compressed-one-byte-at-a-time", "loading/gnome-cool.svgz", 1 },
+    { "/loading/compressed-two-bytes-at-a-time", "loading/gnome-cool.svgz", 2 } /* to test reading the entire gzip header */
 };
 
 int
