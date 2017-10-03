@@ -1721,6 +1721,9 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
     handle->priv->user_data_destroy = user_data_destroy;
 }
 
+#define GZ_MAGIC_0 ((guchar) 0x1f)
+#define GZ_MAGIC_1 ((guchar) 0x8b)
+
 /**
  * rsvg_handle_write:
  * @handle: an #RsvgHandle
@@ -1754,7 +1757,7 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
 
         /* test for GZ marker. todo: store the first 2 bytes in the odd circumstance that someone calls
          * write() in 1 byte increments */
-        if ((count >= 2) && (buf[0] == (guchar) 0x1f) && (buf[1] == (guchar) 0x8b)) {
+        if ((count >= 2) && (buf[0] == GZ_MAGIC_0) && (buf[1] == GZ_MAGIC_1)) {
             priv->data_input_stream = g_memory_input_stream_new ();
         }
     }
@@ -1872,7 +1875,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
         return FALSE;
     }
     buf = g_buffered_input_stream_peek_buffer (G_BUFFERED_INPUT_STREAM (stream), NULL);
-    if ((buf[0] == 0x1f) && (buf[1] == 0x8b)) {
+    if ((buf[0] == GZ_MAGIC_0) && (buf[1] == GZ_MAGIC_1)) {
         GConverter *converter;
         GInputStream *conv_stream;
 
