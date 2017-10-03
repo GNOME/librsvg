@@ -1844,6 +1844,12 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
     if (priv->state == RSVG_HANDLE_STATE_READING_COMPRESSED) {
         gboolean ret;
 
+        /* FIXME: when using rsvg_handle_write()/rsvg_handle_close(), as opposed to using the
+         * stream functions, for compressed SVGs we buffer the whole compressed file in memory
+         * and *then* uncompress/parse it here.
+         *
+         * We should make it so that the incoming data is decompressed and parsed on the fly.
+         */
         ret = rsvg_handle_read_stream_sync (handle, priv->compressed_input_stream, NULL, error);
         g_object_unref (priv->compressed_input_stream);
         priv->compressed_input_stream = NULL;
