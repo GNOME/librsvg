@@ -3,22 +3,32 @@ include $(top_srcdir)/glib-tap.mk
 test_programs = \
 	rsvg-test	\
 	crash		\
-	styles
+	styles		\
+	render-crash	\
+	dimensions	\
+	loading
+
+# Removed "styles" from the above; it is broken right now
+
+test_utils_common_sources = \
+	test-utils.c	\
+	test-utils.h
 
 rsvg_test_SOURCES = \
 	rsvg-test.c	\
-	test-utils.c	\
-	test-utils.h
+	$(test_utils_common_sources)
 
 crash_SOURCES = \
 	crash.c		\
-	test-utils.c	\
-	test-utils.h
+	$(test_utils_common_sources)
 
 styles_SOURCES = \
 	styles.c	\
-	test-utils.c	\
-	test-utils.h
+	$(test_utils_common_sources)
+
+loading_SOURCES =		 	\
+	loading.c			\
+	$(test_utils_common_sources)
 
 LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
 	$(LIBRSVG_LIBS)							\
