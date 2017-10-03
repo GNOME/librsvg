@@ -185,7 +185,7 @@ struct RsvgHandlePrivate {
 
     gboolean in_loop;		/* see get_dimension() */
 
-    GInputStream *data_input_stream; /* for rsvg_handle_write of svgz data */
+    GInputStream *compressed_input_stream; /* for rsvg_handle_write of svgz data */
 };
 
 typedef struct {

@@ -88,7 +88,7 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv->currentnode = NULL;
     self->priv->treebase = NULL;
 
-    self->priv->data_input_stream = NULL;
+    self->priv->compressed_input_stream = NULL;
     self->priv->cancellable = NULL;
 
     self->priv->is_disposed = FALSE;
@@ -127,9 +127,9 @@ rsvg_handle_dispose (GObject *instance)
         g_object_unref (self->priv->base_gfile);
         self->priv->base_gfile = NULL;
     }
-    if (self->priv->data_input_stream) {
-        g_object_unref (self->priv->data_input_stream);
-        self->priv->data_input_stream = NULL;
+    if (self->priv->compressed_input_stream) {
+        g_object_unref (self->priv->compressed_input_stream);
+        self->priv->compressed_input_stream = NULL;
     }
 
     g_clear_object (&self->priv->cancellable);
