@@ -748,7 +748,7 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
         xml_parser = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, ctx, NULL, 0, NULL);
         rsvg_set_xml_parse_options(xml_parser, ctx);
 
-        buffer = _rsvg_xml_input_buffer_new_from_stream (stream, NULL /* cancellable */, XML_CHAR_ENCODING_NONE, &err);
+        buffer = _rsvg_xml_input_buffer_new_from_stream (stream, NULL /* cancellable */, &err);
         g_object_unref (stream);
 
         input = xmlNewIOInputStream (xml_parser, buffer /* adopts */, XML_CHAR_ENCODING_NONE);
@@ -2078,7 +2078,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     priv->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
     create_xml_push_parser_ctxt (handle);
 
-    buffer = _rsvg_xml_input_buffer_new_from_stream (stream, cancellable, XML_CHAR_ENCODING_NONE, &err);
+    buffer = _rsvg_xml_input_buffer_new_from_stream (stream, cancellable, &err);
     input = xmlNewIOInputStream (priv->ctxt, buffer, XML_CHAR_ENCODING_NONE);
 
     if (xmlPushInput (priv->ctxt, input) < 0) {
