@@ -119,6 +119,11 @@ impl NodeMarker {
         let marker_width = self.width.get ().normalize (draw_ctx);
         let marker_height = self.height.get ().normalize (draw_ctx);
 
+        if double_equals(marker_width, 0.0) || double_equals(marker_height, 0.0) {
+            // markerWidth or markerHeight set to 0 disables rendering of the element
+            // https://www.w3.org/TR/SVG/painting.html#MarkerWidthAttribute
+            return;
+        }
         let mut affine = drawing_ctx::get_current_state_affine (draw_ctx);
         affine.translate (xpos, ypos);
 
