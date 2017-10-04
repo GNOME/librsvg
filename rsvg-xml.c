@@ -1,3 +1,5 @@
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 expandtab: */
 /*
  * Copyright © 2010 Christian Persch
  *
@@ -19,6 +21,7 @@
 
 #include "config.h"
 
+#include "rsvg-private.h"
 #include "rsvg-xml.h"
 
 typedef struct {
@@ -29,10 +32,11 @@ typedef struct {
 
 /* this should use gsize, but libxml2 is borked */
 static int
-context_read (RsvgXmlInputStreamContext *context,
+context_read (void *data,
               char *buffer,
               int   len)
 {
+    RsvgXmlInputStreamContext *context = data;
     gssize n_read;
 
     if (*(context->error))
@@ -48,8 +52,9 @@ context_read (RsvgXmlInputStreamContext *context,
 }
 
 static int
-context_close (RsvgXmlInputStreamContext *context)
+context_close (void *data)
 {
+    RsvgXmlInputStreamContext *context = data;
     gboolean ret;
 
     /* Don't overwrite a previous error */
@@ -64,20 +69,14 @@ context_close (RsvgXmlInputStreamContext *context)
     return ret ? 0 : -1;
 }
 
-/**
- * _rsvg_xml_input_buffer_new_from_stream:
- * @context: a #xmlParserCtxtPtr
- * @input_stream: a #GInputStream
- *
- * Returns: a new #xmlParserInputPtr wrapping @input_stream
- */
-xmlParserInputBufferPtr
-_rsvg_xml_input_buffer_new_from_stream (GInputStream   *stream,
-                                        GCancellable   *cancellable,
-                                        GError        **error)
-
+xmlParserCtxtPtr rsvg_create_xml_parser_from_stream (xmlSAXHandlerPtr sax,
+						     void            *sax_user_data,
+						     GInputStream    *stream,
+						     GCancellable    *cancellable,
+						     GError          **error)
 {
     RsvgXmlInputStreamContext *context;
+    xmlParserCtxtPtr parser;
 
     g_return_val_if_fail (G_IS_INPUT_STREAM (stream), NULL);
     g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
@@ -88,8 +87,18 @@ _rsvg_xml_input_buffer_new_from_stream (GInputStream   *stream,
     context->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
     context->error = error;
 
-    return xmlParserInputBufferCreateIO ((xmlInputReadCallback) context_read,
-                                         (xmlInputCloseCallback) context_close,
-                                         context,
-                                         XML_CHAR_ENCODING_NONE);
+    parser = xmlCreateIOParserCtxt (sax,
+                                    sax_user_data,
+                                    context_read,
+                                    context_close,
+                                    context,
+                                    XML_CHAR_ENCODING_NONE);
+
+    if (!parser) {
+        g_set_error (error, rsvg_error_quark (), 0, _("Error creating XML parser"));
+
+        /* on error, xmlCreateIOParserCtxt() frees our context via the context_close function */
+    }
+
+    return parser;
 }
