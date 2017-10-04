@@ -644,31 +644,25 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
         GInputStream *stream;
         GError *err = NULL;
         xmlParserCtxtPtr xml_parser;
-        xmlParserInputBufferPtr buffer;
-        xmlParserInputPtr input;
 
         stream = _rsvg_handle_acquire_stream (ctx, href, NULL, NULL);
         if (stream == NULL)
             goto fallback;
 
-        xml_parser = create_xml_parser (ctx, NULL);
+        xml_parser = rsvg_create_xml_parser_from_stream (&rsvgSAXHandlerStruct,
+                                                         ctx,
+                                                         stream,
+                                                         NULL, /* cancellable */
+                                                         &err);
+        rsvg_set_xml_parse_options (xml_parser, ctx);
 
-        buffer = _rsvg_xml_input_buffer_new_from_stream (stream, NULL /* cancellable */, &err);
         g_object_unref (stream);
 
-        input = xmlNewIOInputStream (xml_parser, buffer /* adopts */, XML_CHAR_ENCODING_NONE);
-
-        if (xmlPushInput (xml_parser, input) < 0) {
-            g_clear_error (&err);
-            xmlFreeInputStream (input);
+        if (xml_parser) {
+            (void) xmlParseDocument (xml_parser);
 
             xml_parser = rsvg_free_xml_parser_and_doc (xml_parser);
-            goto fallback;
         }
-
-        (void) xmlParseDocument (xml_parser);
-
-        xml_parser = rsvg_free_xml_parser_and_doc (xml_parser);
 
         g_clear_error (&err);
     }
@@ -1898,8 +1892,6 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
                               GError      **error)
 {
     RsvgHandlePrivate *priv;
-    xmlParserInputBufferPtr buffer;
-    xmlParserInputPtr input;
     int result;
     GError *err = NULL;
     gboolean res = FALSE;
@@ -1947,14 +1939,18 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     priv->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
 
     g_assert (handle->priv->ctxt == NULL);
-    handle->priv->ctxt = create_xml_parser (handle, rsvg_handle_get_base_uri (handle));
+    handle->priv->ctxt = rsvg_create_xml_parser_from_stream (&rsvgSAXHandlerStruct,
+                                                             handle,
+                                                             stream,
+                                                             cancellable,
+                                                             &err);
+    rsvg_set_xml_parse_options (handle->priv->ctxt, handle);
 
-    buffer = _rsvg_xml_input_buffer_new_from_stream (stream, cancellable, &err);
-    input = xmlNewIOInputStream (priv->ctxt, buffer, XML_CHAR_ENCODING_NONE);
+    if (!handle->priv->ctxt) {
+        if (err) {
+            g_propagate_error (error, err);
+        }
 
-    if (xmlPushInput (priv->ctxt, input) < 0) {
-        rsvg_set_error (error, priv->ctxt);
-        xmlFreeInputStream (input);
         goto out;
     }
 

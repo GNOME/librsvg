@@ -1,3 +1,5 @@
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* vim: set sw=4 sts=4 expandtab: */
 /*
  * Copyright © 2010 Christian Persch
  *
@@ -25,9 +27,12 @@
 
 G_BEGIN_DECLS
 
-xmlParserInputBufferPtr _rsvg_xml_input_buffer_new_from_stream (GInputStream   *stream,
-                                                                GCancellable   *cancellable,
-                                                                GError        **error);
+G_GNUC_INTERNAL
+xmlParserCtxtPtr rsvg_create_xml_parser_from_stream (xmlSAXHandlerPtr sax,
+						     void            *sax_user_data,
+						     GInputStream    *stream,
+						     GCancellable    *cancellable,
+						     GError         **error);
 
 G_END_DECLS
 
