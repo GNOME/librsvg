@@ -177,6 +177,8 @@ AC_SUBST([gdk_pixbuf_cache_file])
 
 AM_CONDITIONAL([ENABLE_PIXBUF_LOADER],[test "$enable_pixbuf_loader" = "yes"])
 
+AM_CONDITIONAL(CROSS_COMPILING, test $cross_compiling = yes)
+
 ##########################################################
 # Check for -Bsymbolic-functions linker flag used to avoid
 # intra-library PLT jumps, if available.
