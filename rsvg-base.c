@@ -590,8 +590,8 @@ rsvg_set_xml_parse_options(xmlParserCtxtPtr xml_parser,
 }
 
 static xmlParserCtxtPtr
-create_xml_parser (RsvgHandle *handle,
-                   const char *base_uri)
+create_xml_push_parser (RsvgHandle *handle,
+                        const char *base_uri)
 {
     xmlParserCtxtPtr parser;
 
@@ -1182,7 +1182,7 @@ rsvg_handle_write_impl (RsvgHandle * handle, const guchar * buf, gsize count, GE
     handle->priv->error = &real_error;
 
     if (handle->priv->ctxt == NULL) {
-        handle->priv->ctxt = create_xml_parser (handle, rsvg_handle_get_base_uri (handle));
+        handle->priv->ctxt = create_xml_push_parser (handle, rsvg_handle_get_base_uri (handle));
     }
 
     result = xmlParseChunk (handle->priv->ctxt, (char *) buf, count, 0);
