@@ -5,7 +5,6 @@ test_programs =		\
 	rsvg-test	\
 	crash		\
 	styles		\
-	render-crash	\
 	dimensions
 
 # Removed "styles" from the above; it is broken right now
@@ -24,6 +23,10 @@ crash_SOURCES = \
 
 styles_SOURCES = \
 	styles.c	\
+	$(test_utils_common_sources)
+
+dimensions_SOURCES = \
+	dimensions.c	\
 	$(test_utils_common_sources)
 
 loading_SOURCES =		 	\
