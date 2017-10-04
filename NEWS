@@ -7,6 +7,8 @@ Version 2.40.19
 - bgo#786372 - Fix the default for the "type" attribute of the <style> element.
 - bgo#785276 - Don't crash on single-byte files.
 - bgo#634514: Don't render unknown elements and their sub-elements.
+- bgo#777155 - Ignore patterns that have close-to-zero dimensions.
+- bgo#634324 - Fix Gaussian blurs with negative scaling.
 - Fix the <switch> element; it wasn't working at all.
 - Fix loading when rsvg_handle_write() is called one byte at a time.
 - bgo#787895 - Fix incorrect usage of libxml2.  Thanks to Nick Wellnhofer
