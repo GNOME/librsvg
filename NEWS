@@ -11,6 +11,10 @@ Version 2.40.19
 - Fix loading when rsvg_handle_write() is called one byte at a time.
 - bgo#787895 - Fix incorrect usage of libxml2.  Thanks to Nick Wellnhofer
   for advice on this.
+- Backported the test suite machinery from the master branch (Chun-wei Fan,
+  Federico Mena).
+- We now require Pango 1.38.0 or later (released in 2015).
+- We now require libxml2 2.9.0 or later (released in 2012).
 
 Version 2.40.18
 - bgo#783835 - CVE-2017-11464 - Fix division-by-zero in the Gaussian
