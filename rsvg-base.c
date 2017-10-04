@@ -1326,14 +1326,6 @@ rsvg_set_error (GError **error, xmlParserCtxtPtr ctxt)
     }
 }
 
-static void
-create_xml_push_parser_ctxt (RsvgHandle *handle)
-{
-    if (handle->priv->ctxt == NULL) {
-        handle->priv->ctxt = create_xml_parser (handle, rsvg_handle_get_base_uri (handle));
-    }
-}
-
 static gboolean
 rsvg_handle_write_impl (RsvgHandle * handle, const guchar * buf, gsize count, GError ** error)
 {
@@ -1343,7 +1335,10 @@ rsvg_handle_write_impl (RsvgHandle * handle, const guchar * buf, gsize count, GE
     rsvg_return_val_if_fail (handle != NULL, FALSE, error);
 
     handle->priv->error = &real_error;
-    create_xml_push_parser_ctxt (handle);
+
+    if (handle->priv->ctxt == NULL) {
+        handle->priv->ctxt = create_xml_parser (handle, rsvg_handle_get_base_uri (handle));
+    }
 
     result = xmlParseChunk (handle->priv->ctxt, (char *) buf, count, 0);
     if (result != 0) {
@@ -1996,6 +1991,7 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
          *
          * We should make it so that the incoming data is decompressed and parsed on the fly.
          */
+        priv->state = RSVG_HANDLE_STATE_START;
         ret = rsvg_handle_read_stream_sync (handle, priv->compressed_input_stream, NULL, error);
         g_object_unref (priv->compressed_input_stream);
         priv->compressed_input_stream = NULL;
@@ -2055,6 +2051,8 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 
     priv = handle->priv;
 
+    g_return_val_if_fail (priv->state == RSVG_HANDLE_STATE_START, FALSE);
+
     /* detect zipped streams */
     stream = g_buffered_input_stream_new (stream);
     num_read = g_buffered_input_stream_fill (G_BUFFERED_INPUT_STREAM (stream), 2, cancellable, error);
@@ -2085,7 +2083,9 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 
     priv->error = &err;
     priv->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
-    create_xml_push_parser_ctxt (handle);
+
+    g_assert (handle->priv->ctxt == NULL);
+    handle->priv->ctxt = create_xml_parser (handle, rsvg_handle_get_base_uri (handle));
 
     buffer = _rsvg_xml_input_buffer_new_from_stream (stream, cancellable, &err);
     input = xmlNewIOInputStream (priv->ctxt, buffer, XML_CHAR_ENCODING_NONE);
