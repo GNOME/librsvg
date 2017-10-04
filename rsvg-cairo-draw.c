@@ -27,6 +27,8 @@
             Carl Worth <cworth@cworth.org>
 */
 
+#include "config.h"
+
 #include "rsvg-cairo-draw.h"
 #include "rsvg-cairo-render.h"
 #include "rsvg-cairo-clip.h"
@@ -364,6 +366,7 @@ _set_rsvg_affine (RsvgCairoRender * render, cairo_matrix_t *affine)
     cairo_set_matrix (cr, &matrix);
 }
 
+#ifdef HAVE_PANGOFT2
 static cairo_font_options_t *
 get_font_options_for_testing (void)
 {
@@ -405,15 +408,17 @@ create_font_config_for_testing (RsvgCairoRender *render)
 static PangoFontMap *
 get_font_map_for_testing (RsvgCairoRender *render)
 {
-    PangoFontMap *font_map;
-
     create_font_config_for_testing (render);
 
-    font_map = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
-    pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (font_map), render->font_config_for_testing);
+    if (!render->font_map_for_testing) {
+        render->font_map_for_testing = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
+        pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (render->font_map_for_testing),
+                                      render->font_config_for_testing);
+    }
 
-    return font_map;
+    return render->font_map_for_testing;
 }
+#endif
 
 PangoContext *
 rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
@@ -422,20 +427,26 @@ rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
     PangoContext *context;
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
 
+#ifdef HAVE_PANGOFT2
     if (ctx->is_testing) {
         fontmap = get_font_map_for_testing (render);
     } else {
+#endif
         fontmap = pango_cairo_font_map_get_default ();
+#ifdef HAVE_PANGOFT2
     }
+#endif
 
     context = pango_font_map_create_context (fontmap);
     pango_cairo_update_context (render->cr, context);
 
     pango_cairo_context_set_resolution (context, ctx->dpi_y);
 
+#ifdef HAVE_PANGOFT2
     if (ctx->is_testing) {
         set_font_options_for_testing (context);
     }
+#endif
 
     return context;
 }
@@ -450,7 +461,7 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     PangoGravity gravity = pango_context_get_gravity (pango_layout_get_context (layout));
     double rotation;
 
-    pango_layout_get_extents (layout, &ink, NULL);
+    pango_layout_get_extents(layout, &ink, NULL);
 
     if (ink.width == 0 || ink.height == 0) {
         return;

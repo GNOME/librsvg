@@ -35,7 +35,7 @@ GLIB_REQUIRED=2.12.0
 GIO_REQUIRED=2.24.0
 LIBXML_REQUIRED=2.9.0
 CAIRO_REQUIRED=1.2.0
-PANGOCAIRO_REQUIRED=1.32.6
+PANGO_REQUIRED=1.38.0
 GDK_PIXBUF_REQUIRED=2.20
 GTK3_REQUIRED=3.10.0
 CROCO_REQUIRED=0.6.1
@@ -102,7 +102,8 @@ PKG_CHECK_MODULES(LIBRSVG, \
 	glib-2.0 >= $GLIB_REQUIRED \
 	gio-2.0 >= $GIO_REQUIRED \
 	libxml-2.0 >= $LIBXML_REQUIRED \
-	pangocairo >= $PANGOCAIRO_REQUIRED \
+	pangocairo >= $PANGO_REQUIRED \
+	pangoft2 >= $PANGO_REQUIRED \
 	cairo >= $CAIRO_REQUIRED \
 	cairo-png >= $CAIRO_REQUIRED
         libcroco-0.6 >= $CROCO_REQUIRED)
@@ -257,6 +258,23 @@ glib_DEFUN([GLIB_LC_MESSAGES],
   fi])
 
 GLIB_LC_MESSAGES
+
+dnl ===========================================================================
+
+# Check for pangoft2 and fontconfig, which is optional on Windows
+
+PKG_CHECK_MODULES([PANGOFT2],[pangoft2 >= $PANGO_REQUIRED],[have_pangoft2=yes],[have_pangoft2=no])
+PKG_CHECK_MODULES([FONTCONFIG],[fontconfig],[have_fontconfig=yes],[have_fontconfig=no])
+
+if test "x$native_win32" != "xyes"; then
+  if test "x$have_pangoft2" != "xyes" -o "x$have_fontconfig" != "xyes"; then
+    AC_MSG_ERROR([pangoft2 and fontconfig are required for non-Windows platforms.])
+  fi
+fi
+
+if test "x$have_pangoft2" = "xyes" -a "x$have_fontconfig" = "xyes"; then
+  AC_DEFINE(HAVE_PANGOFT2, 1, [Have the pangoft2 library])
+fi
 
 dnl ===========================================================================
 

@@ -25,6 +25,8 @@
    Caleb Moore <c.moore@student.unsw.edu.au>
 */
 
+#include "config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <glib.h>
@@ -46,10 +48,17 @@ rsvg_cairo_render_free (RsvgRender * self)
 
     /* TODO */
 
+#ifdef HAVE_PANGOFT2
     if (me->font_config_for_testing) {
         FcConfigDestroy (me->font_config_for_testing);
         me->font_config_for_testing = NULL;
     }
+
+    if (me->font_map_for_testing) {
+        g_object_unref (me->font_map_for_testing);
+        me->font_map_for_testing = NULL;
+    }
+#endif
 
     g_free (me);
 }
@@ -78,7 +87,11 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
     cairo_render->cr_stack = NULL;
     cairo_render->bb_stack = NULL;
     cairo_render->surfaces_stack = NULL;
+
+#ifdef HAVE_PANGOFT2
     cairo_render->font_config_for_testing = NULL;
+    cairo_render->font_map_for_testing = NULL;
+#endif
 
     return cairo_render;
 }
