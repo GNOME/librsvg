@@ -707,6 +707,26 @@ create_xml_push_parser (RsvgHandle *handle,
     return parser;
 }
 
+static xmlParserCtxtPtr
+create_xml_stream_parser (RsvgHandle    *handle,
+                          GInputStream  *stream,
+                          GCancellable  *cancellable,
+                          GError       **error)
+{
+    xmlParserCtxtPtr parser;
+
+    parser = rsvg_create_xml_parser_from_stream (&rsvgSAXHandlerStruct,
+                                                 handle,
+                                                 stream,
+                                                 cancellable,
+                                                 error);
+    if (parser) {
+        rsvg_set_xml_parse_options (parser, handle);
+    }
+
+    return parser;
+}
+
 /* http://www.w3.org/TR/xinclude/ */
 static void
 rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
@@ -755,12 +775,10 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
         if (stream == NULL)
             goto fallback;
 
-        xml_parser = rsvg_create_xml_parser_from_stream (&rsvgSAXHandlerStruct,
-                                                         ctx,
-                                                         stream,
-                                                         NULL, /* cancellable */
-                                                         &err);
-        rsvg_set_xml_parse_options (xml_parser, ctx);
+        xml_parser = create_xml_stream_parser (ctx,
+                                               stream,
+                                               NULL, /* cancellable */
+                                               &err);
 
         g_object_unref (stream);
 
@@ -2077,12 +2095,10 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     priv->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
 
     g_assert (handle->priv->ctxt == NULL);
-    handle->priv->ctxt = rsvg_create_xml_parser_from_stream (&rsvgSAXHandlerStruct,
-                                                             handle,
-                                                             stream,
-                                                             cancellable,
-                                                             &err);
-    rsvg_set_xml_parse_options (handle->priv->ctxt, handle);
+    handle->priv->ctxt = create_xml_stream_parser (handle,
+                                                   stream,
+                                                   cancellable,
+                                                   &err);
 
     if (!handle->priv->ctxt) {
         if (err) {
