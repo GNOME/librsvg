@@ -695,6 +695,18 @@ rsvg_set_xml_parse_options(xmlParserCtxtPtr xml_parser,
     xml_parser->replaceEntities = TRUE;
 }
 
+static xmlParserCtxtPtr
+create_xml_parser (RsvgHandle *handle,
+                   const char *base_uri)
+{
+    xmlParserCtxtPtr parser;
+
+    parser = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0, base_uri);
+    rsvg_set_xml_parse_options (parser, handle);
+
+    return parser;
+}
+
 /* http://www.w3.org/TR/xinclude/ */
 static void
 rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
@@ -745,8 +757,7 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
         if (stream == NULL)
             goto fallback;
 
-        xml_parser = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, ctx, NULL, 0, NULL);
-        rsvg_set_xml_parse_options(xml_parser, ctx);
+        xml_parser = create_xml_parser (ctx, NULL);
 
         buffer = _rsvg_xml_input_buffer_new_from_stream (stream, NULL /* cancellable */, &err);
         g_object_unref (stream);
@@ -1319,9 +1330,7 @@ static void
 create_xml_push_parser_ctxt (RsvgHandle *handle)
 {
     if (handle->priv->ctxt == NULL) {
-        handle->priv->ctxt = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, handle, NULL, 0,
-                                                      rsvg_handle_get_base_uri (handle));
-        rsvg_set_xml_parse_options(handle->priv->ctxt, handle);
+        handle->priv->ctxt = create_xml_parser (handle, rsvg_handle_get_base_uri (handle));
     }
 }
 
