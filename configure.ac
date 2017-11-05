@@ -262,6 +262,9 @@ else
 fi
 AM_CONDITIONAL([DEBUG_RELEASE], [test "x$debug_release" = "xyes"])
 
+if test "x$cross_compiling" = "xyes" ; then
+	RUST_TARGET_SUBDIR="$host/$RUST_TARGET_SUBDIR"
+fi
 AC_SUBST([RUST_TARGET_SUBDIR])
 
 dnl ===========================================================================
