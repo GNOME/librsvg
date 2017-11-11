@@ -210,6 +210,8 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         rsvg_state_push (ctx);
         rsvg_node_draw (child, ctx, 1);
         rsvg_state_pop (ctx);
+
+        rsvg_release_node (ctx, child);
         rsvg_pop_discrete_layer (ctx);
     } else {
         RsvgNodeSymbol *symbol = (RsvgNodeSymbol *) child;
@@ -246,9 +248,9 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
         rsvg_pop_discrete_layer (ctx);
         if (symbol->vbox.active)
             _rsvg_pop_view_box (ctx);
-    }
 
-    rsvg_release_node (ctx, child);
+        rsvg_release_node (ctx, child);
+    }
 }
 
 static void
