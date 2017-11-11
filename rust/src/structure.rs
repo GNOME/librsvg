@@ -296,6 +296,7 @@ impl NodeTrait for NodeUse {
             drawing_ctx::draw_node_from_stack (draw_ctx, boxed_child, 1);
             rsvg_node_unref (boxed_child);
 
+            drawing_ctx::release_node (draw_ctx, raw_child);
             drawing_ctx::pop_discrete_layer (draw_ctx);
         } else {
             child.with_impl (|symbol: &NodeSymbol| {
@@ -316,9 +317,9 @@ impl NodeTrait for NodeUse {
                                      drawing_ctx::state_pop(draw_ctx);
                                  });
             });
-        }
 
-        drawing_ctx::release_node (draw_ctx, raw_child);
+            drawing_ctx::release_node (draw_ctx, raw_child);
+        }
     }
 
     fn get_c_impl (&self) -> *const RsvgCNodeImpl {
