@@ -1,0 +1,4 @@
+option('tools', type : 'boolean', value : true,
+       description : 'build miscellaneous tools')
+option('pixbuf-loader', type : 'boolean', value : true,
+       description : 'build GdkPixbuf loader')
