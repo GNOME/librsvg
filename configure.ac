@@ -121,8 +121,6 @@ PKG_CHECK_MODULES(LIBRSVG, \
 
 PKG_CHECK_MODULES([GTHREAD],[gthread-2.0 >= $GLIB_REQUIRED])
 
-PKG_CHECK_MODULES([GMODULE],[gmodule-2.0])
-
 case "$host" in
   *-*-mingw*)
     PKG_CHECK_MODULES([RSVG_CONVERT],[gio-2.0 gio-windows-2.0 gdk-pixbuf-2.0 cairo pangocairo])
