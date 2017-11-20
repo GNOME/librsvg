@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<chapter>
+  <title>Overview of Librsvg's API</title>
+
+  <para>
+    Librsvg's API is divided into two main parts:  one for loading SVG
+    data and one for rendering it.  In the <emphasis>loading
+    stage</emphasis>, you create an RsvgHandle object from SVG data,
+    which can come from a file or from a stream of bytes.  In the
+    <emphasis>rendering stage</emphasis>, you take an RsvgHandle and ask
+    it to render itself to a Cairo context.
+  </para>
+
+  <formalpara>
+    <title>Loading</title>
+
+    <para>
+      RsvgHandle is an object that represents SVG data in memory.
+      Your program creates an RsvgHandle from an SVG file, or from a
+      memory buffer that contains SVG data, or in the most general
+      form, from a GIO stream that will provide SVG data.  At this
+      stage you can get either I/O errors or parsing errors.  If
+      loading completes successfully, the RsvgHandle will be ready for
+      rendering.
+    </para>
+  </formalpara>
+
+  <formalpara>
+    <title>Rendering</title>
+
+    <para>
+      Once you have a loaded RsvgHandle, you can render it to a Cairo
+      context any number of times, or to different Cairo contexts, as
+      needed.
+    </para>
+  </formalpara>
+</chapter>
