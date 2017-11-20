@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE book
+[
+  <!ENTITY version SYSTEM "version.xml">
+]>
 <book xmlns="http://docbook.org/ns/docbook"
       xmlns:xi="http://www.w3.org/2001/XInclude"
       xmlns:xlink="http://www.w3.org/1999/xlink"
       version="5.1">
   <!--
     Copyright © 2009, 2010 Christian Persch
+    Copyright © 2017 Federico Mena Quintero
 
     Permission is granted to copy, distribute and/or modify this document
     under the terms of the GNU General Public License, Version 2
@@ -14,10 +19,10 @@
     A copy of the license is included in the COPYING file.
     -->
   <info>
-    <title>RSVG Libary Reference Manual</title>
+    <title>Librsvg Reference Manual</title>
     <releaseinfo>
-      For RSVG version 2.41.2
-.
+      For librsvg version &version;
+
       The latest version of this documentation can be found on-line at the
       <link xlink:href="http://library.gnome.org/devel/rsvg/index.html" role="online-location">GNOME Library</link>.
     </releaseinfo>
@@ -36,6 +41,11 @@
     <copyright>
       <year>2010</year>
       <holder>Christian Persch</holder>
+    </copyright>
+
+    <copyright>
+      <year>2017</year>
+      <holder>Federico Mena Quintero</holder>
     </copyright>
 
     <legalnotice>
@@ -64,8 +74,49 @@
     <title>API Reference</title>
     <partintro>
       <para>
-        The GNOME SVG Library (RSVG) is library for rendering SVG and SVGZ files.
+        Librsvg is a library for rendering Scalable Vector Graphics 1.1
+        files (<link
+        xlink:href="https://www.w3.org/TR/SVG/">SVG 1.1</link>).
+        Specifically, it can take non-animated, non-scripted SVG data
+        and render it into a <link
+        xlink:href="https://www.cairographics.org/">Cairo</link>
+        surface.  Normally this means an in-memory raster surface, but
+        it could also be any of the other surface types that Cairo
+        supports.
       </para>
+
+      <para>
+	Librsvg supports many of the graphic features in the <link
+	xlink:href="https://www.w3.org/TR/SVG/">SVG 1.1
+	specification</link>.  The main features of SVG 1.1 that
+	librsvg does not support are the following:
+      </para>
+
+      <itemizedlist>
+	<listitem>
+	  <para>
+	    Scripting or animation - Librsvg reads SVG data and
+	    renders it to a static image.  There is no provision to
+	    execute scripts that may control animation parameters.
+	  </para>
+	</listitem>
+
+	<listitem>
+	  <para>
+	    Access to the DOM - Librsvg creates an internal
+	    representation of the SVG data, but it does not provide
+	    outside access to the resulting Document Object Model
+	    (DOM).
+	  </para>
+	</listitem>
+
+	<listitem>
+	  <para>
+	    SVG fonts - Instead, librsvg relies on the system's fonts,
+	    particularly those that are available through Cairo/Pango.
+	  </para>
+	</listitem>
+      </itemizedlist>
     </partintro>
 
     <xi:include href="xml/rsvg-handle.xml"/>
