@@ -51,6 +51,7 @@ doc/tmpl/rsvg.sgml.bak
 doc/version.xml
 doc/xml/
 gdk-pixbuf-loader/gdk-pixbuf.loaders
+gdk-pixbuf-loader/librsvg.thumbnailer
 gdk-pixbuf-loader/rsvg-loader
 rust/*~
 rust/src/*~
@@ -66,3 +67,5 @@ tools/test-memory
 Rsvg-2.0.gir
 Rsvg-2.0.typelib
 librsvg-2.0.vapi
+librsvg-*.tar.xz
+librsvg-*.tar.bz2

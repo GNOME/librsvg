@@ -23,16 +23,92 @@
 
 /**
  * SECTION: rsvg-handle
- * @short_description: Create and manipulate SVG objects
+ * @short_description: Loads SVG data into memory.
  *
- * librsvg is a component used within software applications to enable
- * support for SVG-format scalable graphics. In contrast to raster
- * formats, scalable vector graphics provide users and artists a way
- * to create, view, and provide imagery that is not limited to the
- * pixel or dot density that an output device is capable of.
+ * This is the main entry point into the librsvg library.  An RsvgHandle is an
+ * object that represents SVG data in memory.  Your program creates an
+ * RsvgHandle from an SVG file, or from a memory buffer that contains SVG data,
+ * or in the most general form, from a #GInputStream that will provide SVG data.
  *
- * Many software developers use the librsvg library to render
- * SVG graphics. It is lightweight and portable.
+ * Librsvg supports reading <link
+ * xlink:href="https://www.w3.org/TR/SVG/">SVG 1.1</link> data.  It also
+ * supports SVGZ files, which is just an SVG stream compressed with the GZIP
+ * algorithm.
+ *
+ * # The "base file" and resolving references to external files
+ *
+ * When you load an SVG, librsvg needs to know the location of the "base file"
+ * for it.  This is so that librsvg can determine the location of referenced
+ * entities.  For example, say you have an SVG in <filename>/foo/bar/foo.svg</filename>
+ * and that it has an image element like this:
+ *
+ * |[
+ * <image xlink:href="resources/foo.png" .../>
+ * ]|
+ *
+ * In this case, librsvg needs to know the location of the toplevel
+ * <filename>/foo/bar/foo.svg</filename> so that it can generate the appropriate
+ * reference to <filename>/foo/bar/resources/foo.png</filename>.
+ *
+ * ## Security and locations of referenced files
+ *
+ * When processing an SVG, librsvg will only load referenced files if they are
+ * in the same directory as the base file, or in a subdirectory of it.  That is,
+ * if the base file is <filename>/foo/bar/baz.svg</filename>, then librsvg will
+ * only try to load referenced files (from SVG's "image" element, for example,
+ * or from content included through XML entities) if those files are in
+ * <filename>/foo/bar/*</filename> or in
+ * <filename>/foo/bar/*<!-- -->/.../*</filename>.  This is so that malicious
+ * SVG files cannot include files that are in a directory above.
+ *
+ * # Loading an SVG with GIO
+ *
+ * If you have a #GFile that stands for an SVG file, you can simply call
+ * rsvg_handle_new_from_gfile_sync() to load an RsvgHandle from it.
+ *
+ * Alternatively, if you have a #GInputStream, you can use
+ * rsvg_handle_new_from_stream_sync().
+ *
+ * Both of those methods allow specifying a #GCancellable, so the loading
+ * process can be cancelled from another thread.
+ *
+ * # Loading an SVG without GIO
+ *
+ * You can load an RsvgHandle from a simple filename or URI with
+ * rsvg_handle_new_from_file().  Note that this is a blocking operation; there
+ * is no way to cancel it if loading a remote URI takes a long time.
+ *
+ * Alternatively, you can create an empty RsvgHandle with rsvg_handle_new() or
+ * rsvg_handle_new_with_flags().  The first function is equivalent to using
+ * #RSVG_HANDLE_FLAGS_NONE on the second one.  These functions give you back an
+ * empty RsvgHandle, which is ready for you to feed it SVG data.  You can do
+ * this with rsvg_handle_write() and rsvg_handle_close().
+ *
+ * # Resolution of the rendered image (dots per inch, or DPI)
+ *
+ * SVG images can contain dimensions like "<literal>5 cm</literal>" or
+ * "<literal>2 pt</literal>" that must be converted from physical units
+ * into device units.  To do this, librsvg needs to know the actual dots per
+ * inch (DPI) of your target device.
+ *
+ * The recommended way to set the DPI is to use rsvg_handle_set_dpi() or
+ * rsvg_handle_set_dpi_x_y() on an RsvgHandle before rendering it.
+ *
+ * Alternatively, you can use rsvg_set_default_dpi() or
+ * rsvg_set_default_dpi_x_y() <emphasis>before</emphasis> creating any
+ * RsvgHandle objects.  These functions will make RsvgHandle objects created
+ * afterwards to have the default DPI value you specified.
+ *
+ * # Rendering
+ *
+ * The preferred way to render an already-loaded RsvgHandle is to use
+ * rsvg_handle_render_cairo().  Please see its documentation for details.
+ *
+ * Alternatively, you can use rsvg_handle_get_pixbuf() to directly obtain a
+ * #GdkPixbuf with the rendered image.  This is simple, but it does not let you
+ * control the size at which the SVG will be rendered.  It will just be rendered
+ * at the size which rsvg_handle_get_dimensions() would return, which depends on
+ * the dimensions that librsvg is able to compute from the SVG data.
  */
 
 #include "config.h"
@@ -71,7 +147,7 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv->all_nodes = g_ptr_array_new ();
     self->priv->defs = rsvg_defs_new (self);
     self->priv->handler_nest = 0;
-    self->priv->entities = g_hash_table_new_full (g_str_hash, 
+    self->priv->entities = g_hash_table_new_full (g_str_hash,
                                                   g_str_equal,
                                                   g_free,
                                                   (GDestroyNotify) xmlFreeNode);
@@ -249,9 +325,9 @@ rsvg_handle_class_init (RsvgHandleClass * klass)
 
     /**
      * RsvgHandle:flags:
-     * 
+     *
      * Flags from #RsvgHandleFlags.
-     * 
+     *
      * Since: 2.36
      */
     g_object_class_install_property (gobject_class,
@@ -377,7 +453,7 @@ rsvg_handle_free (RsvgHandle * handle)
  * handle can be used for dynamically loading an image.  You need to feed it
  * data using @rsvg_handle_write, then call @rsvg_handle_close when done.
  * Afterwords, you can render it using Cairo or get a GdkPixbuf from it. When
- * finished, free with g_object_unref(). No more than one image can be loaded 
+ * finished, free with g_object_unref(). No more than one image can be loaded
  * with one handle.
  *
  * Returns: A new #RsvgHandle
@@ -396,13 +472,13 @@ rsvg_handle_new (void)
  * Creates a new #RsvgHandle with flags @flags.
  *
  * Returns: (transfer full): a new #RsvgHandle
- * 
+ *
  * Since: 2.36
  **/
 RsvgHandle *
 rsvg_handle_new_with_flags (RsvgHandleFlags flags)
 {
-    return g_object_new (RSVG_TYPE_HANDLE, 
+    return g_object_new (RSVG_TYPE_HANDLE,
                          "flags", flags,
                          NULL);
 }
