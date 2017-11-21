@@ -29,9 +29,12 @@
     <title>Rendering</title>
 
     <para>
-      Once you have a loaded RsvgHandle, you can render it to a Cairo
-      context any number of times, or to different Cairo contexts, as
-      needed.
+      Once you have an SVG image loaded into an RsvgHandle, you can
+      render it to a Cairo context any number of times, or to
+      different Cairo contexts, as needed.  As a convenience, you can
+      pick a single element in the SVG by its "id" attribute and
+      render only that element; this is so that sub-elements can be
+      extracted conveniently out of a larger SVG.
     </para>
   </formalpara>
 </chapter>
