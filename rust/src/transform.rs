@@ -145,45 +145,45 @@ mod parser_tests {
 
     #[test]
     fn parses_matrix () {
-        assert_eq! (parse_TransformList ("matrix (1 2 3 4 5 6)").unwrap (),
+        assert_eq! (parse_transform ("matrix (1 2 3 4 5 6)").unwrap (),
                     cairo::Matrix::new (1.0, 2.0, 3.0, 4.0, 5.0, 6.0));
 
-        assert_eq! (parse_TransformList ("matrix (1,2,3,4 5 6)").unwrap (),
+        assert_eq! (parse_transform ("matrix (1,2,3,4 5 6)").unwrap (),
                     cairo::Matrix::new (1.0, 2.0, 3.0, 4.0, 5.0, 6.0));
 
-        assert_eq! (parse_TransformList ("matrix (1,2.25,-3.25e2,4 5 6)").unwrap (),
+        assert_eq! (parse_transform ("matrix (1,2.25,-3.25e2,4 5 6)").unwrap (),
                     cairo::Matrix::new (1.0, 2.25, -325.0, 4.0, 5.0, 6.0));
     }
 
     #[test]
     fn parses_translate () {
-        assert_eq! (parse_TransformList ("translate(-1 -2)").unwrap (),
+        assert_eq! (parse_transform ("translate(-1 -2)").unwrap (),
                     cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -1.0, -2.0));
 
-        assert_eq! (parse_TransformList ("translate(-1, -2)").unwrap (),
+        assert_eq! (parse_transform ("translate(-1, -2)").unwrap (),
                     cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -1.0, -2.0));
 
-        assert_eq! (parse_TransformList ("translate(-1)").unwrap (),
+        assert_eq! (parse_transform ("translate(-1)").unwrap (),
                     cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -1.0, 0.0));
     }
 
     #[test]
     fn parses_scale () {
-        assert_eq! (parse_TransformList ("scale(-1 -2)").unwrap (),
+        assert_eq! (parse_transform ("scale(-1 -2)").unwrap (),
                     cairo::Matrix::new (-1.0, 0.0, 0.0, -2.0, 0.0, 0.0));
 
-        assert_eq! (parse_TransformList ("scale(-1, -2)").unwrap (),
+        assert_eq! (parse_transform ("scale(-1, -2)").unwrap (),
                     cairo::Matrix::new (-1.0, 0.0, 0.0, -2.0, 0.0, 0.0));
 
-        assert_eq! (parse_TransformList ("scale(-1)").unwrap (),
+        assert_eq! (parse_transform ("scale(-1)").unwrap (),
                     cairo::Matrix::new (-1.0, 0.0, 0.0, -1.0, 0.0, 0.0));
     }
 
     #[test]
     fn parses_rotate () {
-        assert_eq! (parse_TransformList ("rotate (30)").unwrap (), make_rotation_matrix (30.0, 0.0, 0.0));
-        assert_eq! (parse_TransformList ("rotate (30,-1,-2)").unwrap (), make_rotation_matrix (30.0, -1.0, -2.0));
-        assert_eq! (parse_TransformList ("rotate (30, -1, -2)").unwrap (), make_rotation_matrix (30.0, -1.0, -2.0));
+        assert_eq! (parse_transform ("rotate (30)").unwrap (), make_rotation_matrix (30.0, 0.0, 0.0));
+        assert_eq! (parse_transform ("rotate (30,-1,-2)").unwrap (), make_rotation_matrix (30.0, -1.0, -2.0));
+        assert_eq! (parse_transform ("rotate (30, -1, -2)").unwrap (), make_rotation_matrix (30.0, -1.0, -2.0));
     }
 
     fn make_skew_x_matrix (angle_degrees: f64) -> cairo::Matrix {
@@ -202,12 +202,12 @@ mod parser_tests {
 
     #[test]
     fn parses_skew_x () {
-        assert_eq! (parse_TransformList ("skewX (30)").unwrap (), make_skew_x_matrix (30.0));
+        assert_eq! (parse_transform ("skewX (30)").unwrap (), make_skew_x_matrix (30.0));
     }
 
     #[test]
     fn parses_skew_y () {
-        assert_eq! (parse_TransformList ("skewY (30)").unwrap (), make_skew_y_matrix (30.0));
+        assert_eq! (parse_transform ("skewY (30)").unwrap (), make_skew_y_matrix (30.0));
     }
 
     #[test]
@@ -216,14 +216,14 @@ mod parser_tests {
         let s = cairo::Matrix::new (10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
         let r = make_rotation_matrix (30.0, 10.0, 10.0);
 
-        assert_eq! (parse_TransformList ("scale(10)rotate(30, 10, 10)").unwrap (),
+        assert_eq! (parse_transform ("scale(10)rotate(30, 10, 10)").unwrap (),
                     cairo::Matrix::multiply (&r, &s));
 
-        assert_eq! (parse_TransformList ("translate(20, 30), scale (10)").unwrap (),
+        assert_eq! (parse_transform ("translate(20, 30), scale (10)").unwrap (),
                     cairo::Matrix::multiply (&s, &t));
 
         let a = cairo::Matrix::multiply (&s, &t);
-        assert_eq! (parse_TransformList ("translate(20, 30), scale (10) rotate (30 10 10)").unwrap (),
+        assert_eq! (parse_transform ("translate(20, 30), scale (10) rotate (30 10 10)").unwrap (),
                     cairo::Matrix::multiply (&r, &a));
     }
 }
