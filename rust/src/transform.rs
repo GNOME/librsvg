@@ -7,8 +7,7 @@ use ::libc;
 use std::f64::consts::*;
 
 use cairo::MatrixTrait;
-
-use parse_transform::*;
+use cssparser::{Parser, ParserInput, Token, BasicParseError};
 
 use error::*;
 use parsers::ParseError;
@@ -23,6 +22,49 @@ impl Parse for cairo::Matrix {
     }
 }
 
+pub fn parse_transform(s: &str) -> Result<cairo::Matrix, AttributeError> {
+    let mut input = ParserInput::new(s);
+    let mut parser = Parser::new(&mut input);
+
+    let xform = parser.expect_ident_cloned()?;
+    let _ = parser.expect_parenthesis_block()?;
+
+    match xform.as_ref() {
+        "matrix"    => parse_matrix_args(&mut parser),
+        "translate" => parse_translate_args(&mut parser),
+        "scale"     => parse_scale_args(&mut parser),
+        "rotate"    => parse_rotate_args(&mut parser),
+        "skewX"     => parse_skewX_args(&mut parser),
+        "skewY"     => parse_skewY_args(&mut parser),
+        _           => Err(AttributeError::from(ParseError::new("expected matrix|translate|scale|rotate|skewX|skewY"))),
+    }
+}
+
+fn parse_matrix_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+    unimplemented!();
+}
+
+fn parse_translate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+    unimplemented!();
+}
+
+fn parse_scale_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+    unimplemented!();
+}
+
+fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+    unimplemented!();
+}
+
+fn parse_skewX_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+    unimplemented!();
+}
+
+fn parse_skewY_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+    unimplemented!();
+}
+
+/*
 pub fn parse_transform (s: &str) -> Result <cairo::Matrix, AttributeError> {
     let r = parse_TransformList (s);
 
@@ -37,6 +79,7 @@ pub fn parse_transform (s: &str) -> Result <cairo::Matrix, AttributeError> {
         }
     }
 }
+*/
 
 #[cfg(test)]
 fn make_rotation_matrix (angle_degrees: f64, tx: f64, ty: f64) -> cairo::Matrix {
