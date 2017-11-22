@@ -22,19 +22,43 @@ impl Parse for cairo::Matrix {
 }
 
 pub fn parse_transform(s: &str) -> Result<cairo::Matrix, AttributeError> {
+    let matrix = parse_transform_list(s)?;
+
+    matrix.try_invert ().map (|_| matrix)
+        .map_err (|_| AttributeError::Value ("invalid transformation matrix".to_string ()))
+}
+
+fn parse_transform_list(s: &str) -> Result<cairo::Matrix, AttributeError> {
     let mut input = ParserInput::new(s);
     let mut parser = Parser::new(&mut input);
 
+    let mut matrix = cairo::Matrix::identity();
+
+    loop {
+        let m = parse_transform_command(&mut parser)?;
+        matrix = cairo::Matrix::multiply(&m, &matrix);
+
+        if parser.is_exhausted() {
+            break;
+        }
+
+        optional_comma(&mut parser);
+    }
+
+    Ok(matrix)
+}
+
+fn parse_transform_command(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
     let xform = parser.expect_ident_cloned()?;
     let _ = parser.expect_parenthesis_block()?;
 
     match xform.as_ref() {
-        "matrix"    => parse_matrix_args(&mut parser),
-        "translate" => parse_translate_args(&mut parser),
-        "scale"     => parse_scale_args(&mut parser),
-        "rotate"    => parse_rotate_args(&mut parser),
-        "skewX"     => parse_skewX_args(&mut parser),
-        "skewY"     => parse_skewY_args(&mut parser),
+        "matrix"    => parse_matrix_args(parser),
+        "translate" => parse_translate_args(parser),
+        "scale"     => parse_scale_args(parser),
+        "rotate"    => parse_rotate_args(parser),
+        "skewX"     => parse_skewX_args(parser),
+        "skewY"     => parse_skewY_args(parser),
         _           => Err(AttributeError::from(ParseError::new("expected matrix|translate|scale|rotate|skewX|skewY"))),
     }
 }
