@@ -7,11 +7,10 @@ use ::libc;
 use std::f64::consts::*;
 
 use cairo::MatrixTrait;
-use cssparser::{Parser, ParserInput, Token, BasicParseError};
+use cssparser::{self, Parser, ParserInput};
 
 use error::*;
-use parsers::ParseError;
-use parsers::Parse;
+use parsers::{ParseError, Parse, optional_comma};
 
 impl Parse for cairo::Matrix {
     type Data = ();
@@ -41,7 +40,27 @@ pub fn parse_transform(s: &str) -> Result<cairo::Matrix, AttributeError> {
 }
 
 fn parse_matrix_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
-    unimplemented!();
+    parser.parse_nested_block(|p| {
+        let xx = p.expect_number()? as f64;
+        optional_comma(p);
+
+        let yx = p.expect_number()? as f64;
+        optional_comma(p);
+
+        let xy = p.expect_number()? as f64;
+        optional_comma(p);
+
+        let yy = p.expect_number()? as f64;
+        optional_comma(p);
+
+        let x0 = p.expect_number()? as f64;
+        optional_comma(p);
+
+        let y0 = p.expect_number()? as f64;
+
+        Ok(cairo::Matrix::new(xx, yx, xy, yy, x0, y0))
+    }).map_err(cssparser::ParseError::<()>::basic)
+        .map_err(|e| AttributeError::from(e))
 }
 
 fn parse_translate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {

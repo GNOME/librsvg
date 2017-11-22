@@ -71,7 +71,7 @@ pub fn angle_degrees (s: &str) -> Result <f64, ParseError> {
     Ok (angle)
 }
 
-fn optional_comma (parser: &mut Parser) {
+pub fn optional_comma (parser: &mut Parser) {
     let _ = parser.try (|p| p.expect_comma ());
 }
 
