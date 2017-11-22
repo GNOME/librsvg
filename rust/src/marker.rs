@@ -1,4 +1,3 @@
-use ::cairo;
 use ::glib::translate::*;
 use ::libc;
 
@@ -22,7 +21,6 @@ use property_bag;
 use property_bag::*;
 use util::*;
 use viewbox::*;
-use viewport::draw_in_viewport;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
 

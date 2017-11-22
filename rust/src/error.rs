@@ -72,6 +72,7 @@ impl From<ParseError> for AttributeError {
     }
 }
 
+#[cfg(test)]
 pub fn is_parse_error<T> (r: &Result<T, AttributeError>) -> bool {
     match *r {
         Err (AttributeError::Parse (_)) => true,
@@ -79,6 +80,7 @@ pub fn is_parse_error<T> (r: &Result<T, AttributeError>) -> bool {
     }
 }
 
+#[cfg(test)]
 pub fn is_value_error<T> (r: &Result<T, AttributeError>) -> bool {
     match *r {
         Err (AttributeError::Value (_)) => true,

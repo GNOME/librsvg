@@ -246,7 +246,7 @@ pub extern fn rsvg_css_parse_number_list (in_str:   *const libc::c_char,
                     as *mut libc::c_double
             };
 
-            let mut array = unsafe { slice::from_raw_parts_mut (c_array, num_elems) };
+            let array = unsafe { slice::from_raw_parts_mut (c_array, num_elems) };
 
             array.copy_from_slice (&number_list);
 

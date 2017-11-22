@@ -166,7 +166,7 @@ impl NodeTrait for NodeSvg {
         Ok (())
     }
 
-    fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, _dominate: i32) {
         let nx = self.x.get ().normalize (draw_ctx);
         let ny = self.y.get ().normalize (draw_ctx);
         let nw = self.w.get ().normalize (draw_ctx);
