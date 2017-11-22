@@ -125,25 +125,6 @@ mod parser_tests {
     use super::*;
 
     #[test]
-    fn parses_numbers () {
-        assert_eq! (parse_Num ("0"),          Ok (0.0));
-        assert_eq! (parse_Num ("12345"),      Ok (12345.0));
-        assert_eq! (parse_Num ("-123"),       Ok (-123.0));
-        assert_eq! (parse_Num ("-123.25"),    Ok (-123.25));
-        assert_eq! (parse_Num ("123.25"),     Ok (123.25));
-        assert_eq! (parse_Num ("-.25"),       Ok (-0.25));
-        assert_eq! (parse_Num (".25"),        Ok (0.25));
-        assert_eq! (parse_Num ("-25."),       Ok (-25.0));
-        assert_eq! (parse_Num ("25."),        Ok (25.0));
-        assert_eq! (parse_Num ("22.5e1"),     Ok (225.0));
-        assert_eq! (parse_Num ("-22.5e1"),    Ok (-225.0));
-        assert_eq! (parse_Num ("-123.45e2"),  Ok (-12345.0));
-        assert_eq! (parse_Num ("123.45E2"),   Ok (12345.0));
-        assert_eq! (parse_Num ("-123.25e-2"), Ok (-1.2325));
-        assert_eq! (parse_Num ("123.25E-2"),  Ok (1.2325));
-    }
-
-    #[test]
     fn parses_matrix () {
         assert_eq! (parse_transform ("matrix (1 2 3 4 5 6)").unwrap (),
                     cairo::Matrix::new (1.0, 2.0, 3.0, 4.0, 5.0, 6.0));
