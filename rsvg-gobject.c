@@ -57,8 +57,8 @@
  * if the base file is <filename>/foo/bar/baz.svg</filename>, then librsvg will
  * only try to load referenced files (from SVG's "image" element, for example,
  * or from content included through XML entities) if those files are in
- * <filename>/foo/bar/*</filename> or in
- * <filename>/foo/bar/*<!-- -->/.../*</filename>.  This is so that malicious
+ * <filename>/foo/bar/<!-- -->*</filename> or in
+ * <filename>/foo/bar/<!-- -->*<!-- -->/.../<!-- -->*</filename>.  This is so that malicious
  * SVG files cannot include files that are in a directory above.
  *
  * # Loading an SVG with GIO
