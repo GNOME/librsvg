@@ -41,6 +41,8 @@ it is not absolutely required.  Please be careful of publishing SVG
 images that you don't want other people to see; the bug tracker is a
 public resource and attachments are visible to everyone.
 
+You can also [browse the existing bugs][bugs-browse].
+
 ## Feature requests
 
 Librsvg aims to be a small and relatively simple SVG rendering
@@ -74,4 +76,5 @@ If you need to add new tests (you should, for new features, or for
 things that we weren't testing!), or for additional information on how
 the test suite works, please see the file `tests/README.md`.
 
-[gitlab](https://gitlab.gnome.org/)
+[gitlab]: https://gitlab.gnome.org/
+[bugs-browse]: https://bugzilla.gnome.org/page.cgi?id=browse.html&product=librsvg

@@ -1,10 +1,11 @@
 Librsvg
 =======
 
-This is librsvg - A small SVG rendering library associated with the
-[GNOME Project][gnome].  It renders SVG files to [Cairo][cairo]
-surfaces.  Cairo is the 2D, antialiased drawing library that GNOME
-uses to draw things to the screen or to generate output for printing.
+This is librsvg - A small library to render Scalable Vector Graphics
+([SVG][svg]), associated with the [GNOME Project][gnome].  It renders
+SVG files to [Cairo][cairo] surfaces.  Cairo is the 2D, antialiased
+drawing library that GNOME uses to draw things to the screen or to
+generate output for printing.
 
 Do you want to render non-animated SVGs to a Cairo surface with a
 minimal, no-nonsense API?  Librsvg may be adequate for you.
@@ -25,7 +26,7 @@ provide a good bug report.
 in the [desktop-devel-list][d-d-l] mailing list.
 
 **Programming languages:** There are bindings for librsvg in
-programming languages other than C:  FIXME: include links to the
+programming languages other than C.  FIXME: include links to the
 various bindings.
 
 Contributing to librsvg's development
@@ -35,7 +36,7 @@ There is a code of conduct for contributors to librsvg; please see the
 file [`code_of_conduct.md`][coc].
 
 For information on how to report bugs, or how to contribute to librsvg
-in general, please see the file `CONTRIBUTING.md`.
+in general, please see the file [`CONTRIBUTING.md`][contributing].
 
 Goals of librsvg
 ----------------
@@ -77,15 +78,16 @@ existing API of librsvg, we would love to know about it!
 Maintainers
 -----------
 
-The maintainer of librsvg is [Federico Mena Quintero].  You can [mail
+The maintainer of librsvg is [Federico Mena Quintero][federico].  You can [mail
 me][mail] for any other questions you have about librsvg.
 
+[svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 [gnome]: https://www.gnome.org/
 [cairo]: https://www.cairographics.org/
 [coc]: code-of-conduct.md
 [docs]: https://developer.gnome.org/rsvg/stable/
 [mail]: mailto:federico@gnome.org
-[bugs]: http://bugzilla.gnome.org/enter_bug.cgi?product=librsvg
+[bugs]: https://bugzilla.gnome.org/page.cgi?id=browse.html&product=librsvg
 [contributing]: CONTRIBUTING.md
 [reporting-bugs]: CONTRIBUTING.md#reporting-bugs
 [d-d-l]: https://mail.gnome.org/mailman/listinfo/desktop-devel-list
