@@ -15,20 +15,20 @@ name = "rsvg"
 [dependencies]
 libc = "0.2"
 bitflags = "0.9"
-glib = "0.3.0"
-glib-sys = "0.4.0"
-gobject-sys = "0.4.0"
-gdk-pixbuf = "0.2.0"
+glib = "0.4.0"
+glib-sys = "0.5.0"
+gobject-sys = "0.5.0"
+gdk-pixbuf = "0.3.0"
 
 [dev-dependencies]
 image = "0.13.0"
 imageproc = "0.8.0"
-gtk = "0.2.0"
+gtk = "0.3.0"
 
 [dependencies.cairo-rs]
-version = "0.2.0"
+version = "0.3.0"
 features = ["png"]
 
 [dependencies.rsvg-sys]
-version = "0.4.0"
+version = "0.5.0"
 path = "./rsvg-sys"
