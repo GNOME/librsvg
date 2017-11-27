@@ -8,7 +8,7 @@ drawing library that GNOME uses to draw things to the screen or to
 generate output for printing.
 
 Do you want to render non-animated SVGs to a Cairo surface with a
-minimal, no-nonsense API?  Librsvg may be adequate for you.
+minimal API?  Librsvg may be adequate for you.
 
 Using librsvg
 -------------
@@ -25,9 +25,10 @@ provide a good bug report.
 **Asking questions:** Feel free to ask questions about using librsvg
 in the [desktop-devel-list][d-d-l] mailing list.
 
-**Programming languages:** There are bindings for librsvg in
-programming languages other than C.  FIXME: include links to the
-various bindings.
+**Programming languages:** Librsvg exports its API through [GObject
+Introspection][gi].  This way, it is available in many programming
+languages other than C.  Please see your language binding's
+documentation for information on how to load the `Rsvg` namespace.
 
 Contributing to librsvg's development
 -------------------------------------
@@ -42,19 +43,16 @@ Goals of librsvg
 ----------------
 
 Librsvg aims to be a low-footprint library for rendering SVG images.
-It is used primarily in the [GNOME project](https://www.gnome.org) to render
-SVG icons and vector images that appear on the desktop.  It is also
-used in Wikimedia to render the SVG images that appear in Wikipedia,
-so that even old web browsers can display them.
+It is used primarily in the [GNOME project](https://www.gnome.org) to
+render SVG icons and vector images that appear on the desktop.  It is
+also used in Wikimedia to render the SVG images that appear in
+Wikipedia, so that even old web browsers can display them.  Many
+projects which casually need to render static SVG images use librsvg.
 
 We aim to be a "render this SVG for me, quickly, and with a minimal
-API" kind of library.  The SVG specification is huge, and definitely
-contains features that are not frequently used in the Real World, if
-at all.
+API" kind of library.
 
-Feature additions will be considered on a case-by-case basis.  Extra
-points if you provide a proof-of-concept patch, and an example of the
-situation in which you encountered that missing feature!
+Feature additions will be considered on a case-by-case basis.
 
 Non-goals of librsvg
 --------------------
@@ -63,10 +61,10 @@ We don't aim to:
 
 * Implement every single SVG feature that is in the spec.
 
-* Implement external access to the SVG's DOM.
+* Implement scripting or external access to the SVG's DOM.
 
 * Implement support for CSS-based animations (but if you can think of
-  a nice API to do this, we'd be glad to know!)
+  a nice API to do this, we would be glad to know!)
 
 * Replace the industrial-strength SVG rendering machinery in modern
   web browsers.
@@ -78,8 +76,8 @@ existing API of librsvg, we would love to know about it!
 Maintainers
 -----------
 
-The maintainer of librsvg is [Federico Mena Quintero][federico].  You can [mail
-me][mail] for any other questions you have about librsvg.
+The maintainer of librsvg is [Federico Mena Quintero][federico].  You
+can [mail me][mail] for any other questions you have about librsvg.
 
 [svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 [gnome]: https://www.gnome.org/
@@ -88,6 +86,7 @@ me][mail] for any other questions you have about librsvg.
 [docs]: https://developer.gnome.org/rsvg/stable/
 [mail]: mailto:federico@gnome.org
 [bugs]: https://bugzilla.gnome.org/page.cgi?id=browse.html&product=librsvg
+[gi]: https://wiki.gnome.org/Projects/GObjectIntrospection
 [contributing]: CONTRIBUTING.md
 [reporting-bugs]: CONTRIBUTING.md#reporting-bugs
 [d-d-l]: https://mail.gnome.org/mailman/listinfo/desktop-devel-list
