@@ -74,7 +74,7 @@ directory; the `rsvg-test` program will recursively look inside
 `fixtures/reftests` for all SVG files, render them, and compare them to
 the `-ref.png` reference images.
 
-**Ignoring tests: ** SVG test files or entire subdirectories in
+**Ignoring tests:** SVG test files or entire subdirectories in
 `fixtures/reftests` whose names begin with "`ignore`" will be skipped from
 the tests.  That is, anything that matches "`fixtures/reftests/ignore*`"
 will not be included in the tests.  You can use this to skip a few

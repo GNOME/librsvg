@@ -10,7 +10,7 @@ contributing to librsvg, and we appreciate all of them.
 * [Pull requests](#pull-requests)
 
 There is a **code of conduct** for contributors to librsvg; please see the
-file `code_of_conduct.md`.
+file `[code_of_conduct.md][coc]`.
 
 ## Source repository
 
@@ -84,6 +84,7 @@ If you need to add new tests (you should, for new features, or for
 things that we weren't testing!), or for additional information on how
 the test suite works, please see the file [`tests/README.md`][tests-readme].
 
+[coc]: code-of-conduct.md
 [gitlab]: https://gitlab.gnome.org/
 [bugs-browse]: https://bugzilla.gnome.org/page.cgi?id=browse.html&product=librsvg
 [mail]: mailto:federico@gnome.org
