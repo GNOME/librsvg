@@ -9,7 +9,7 @@ contributing to librsvg, and we appreciate all of them.
 * [Feature requests](#feature-requests)
 * [Pull requests](#pull-requests)
 
-There is a code of conduct for contributors to librsvg; please see the
+There is a **code of conduct** for contributors to librsvg; please see the
 file `code_of_conduct.md`.
 
 ## Source repository
@@ -29,6 +29,9 @@ https://github.com/GNOME/librsvg
 Note that we don't do bug tracking in the Github mirror; see the next
 section.
 
+If you need to publish a branch, feel free to do it at any
+publically-accessible Git hosting service.
+
 ## Reporting bugs
 
 Please report bugs at http://bugzilla.gnome.org/enter_bug.cgi?product=librsvg
@@ -37,9 +40,10 @@ If you want to report a rendering bug, or a missing SVG feature,
 please provide an example SVG file as an attachment to your bug
 report.  It really helps if you can minimize the SVG to only the
 elements required to reproduce the bug or see the missing feature, but
-it is not absolutely required.  Please be careful of publishing SVG
-images that you don't want other people to see; the bug tracker is a
-public resource and attachments are visible to everyone.
+it is not absolutely required.  **Please be careful** of publishing
+SVG images that you don't want other people to see, or images whose
+copyright does not allow redistribution; the bug tracker is a public
+resource and attachments are visible to everyone.
 
 You can also [browse the existing bugs][bugs-browse].
 
@@ -59,22 +63,28 @@ with a sample SVG file.
 
 ## Pull requests
 
-You may upload a forked version of librsvg
-to [GNOME's Gitlab instance][gitlab], and create a pull request there.
+You may upload a forked version of librsvg to [GNOME's Gitlab
+instance][gitlab], or any other publically-accesible Git hosting
+service.
 
-Although all of `git.gnome.org`'s modules are mirrored at Github, we
-don't support pull requests from there.  Apologies for the
-inconvenience - we do this to promote the use of free software,
-including web-based services.  Please use [GNOME's Gitlab][gitlab] instead.
+For technical reasons, the maintainers of librsvg do not get
+automatically notified if you submit a pull request through Github.
+[Please mail the maintainer][mail] directly if you have a pull request
+there or a branch that you would like to contribute.
 
-Please make sure that the test suite passes with the changes in your
-branch.  The easiest way to run all the tests is to go to librsvg's
-toplevel directory and run `make check`.  This will run both the small
-unit tests and the black box tests in the `librsvg/tests` directory.
+Alternatively, you can use [GNOME's Gitlab][gitlab] instead.
+
+**Test suite:** Please make sure that the test suite passes with the
+changes in your branch.  The easiest way to run all the tests is to go
+to librsvg's toplevel directory and run `make check`.  This will run
+both the small unit tests and the black box tests in the
+`librsvg/tests` directory.
 
 If you need to add new tests (you should, for new features, or for
 things that we weren't testing!), or for additional information on how
-the test suite works, please see the file `tests/README.md`.
+the test suite works, please see the file [`tests/README.md`][tests-readme].
 
 [gitlab]: https://gitlab.gnome.org/
 [bugs-browse]: https://bugzilla.gnome.org/page.cgi?id=browse.html&product=librsvg
+[mail]: mailto:federico@gnome.org
+[tests-readme]: tests/README.md
