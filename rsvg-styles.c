@@ -700,7 +700,7 @@ rsvg_parse_style_pair (RsvgState * state,
         state->has_visible = TRUE;
         if (g_str_equal (value, "none"))
             state->visible = FALSE;
-        else if (!g_str_equal (value, "inherit") != 0)
+        else if (!g_str_equal (value, "inherit"))
             state->visible = TRUE;
         else
             state->has_visible = FALSE;
@@ -708,7 +708,7 @@ rsvg_parse_style_pair (RsvgState * state,
         state->has_space_preserve = TRUE;
         if (g_str_equal (value, "default"))
             state->space_preserve = FALSE;
-        else if (!g_str_equal (value, "preserve") == 0)
+        else if (g_str_equal (value, "preserve"))
             state->space_preserve = TRUE;
         else
             state->space_preserve = FALSE;
@@ -716,7 +716,7 @@ rsvg_parse_style_pair (RsvgState * state,
         state->has_visible = TRUE;
         if (g_str_equal (value, "visible"))
             state->visible = TRUE;
-        else if (!g_str_equal (value, "inherit") != 0)
+        else if (!g_str_equal (value, "inherit"))
             state->visible = FALSE;     /* collapse or hidden */
         else
             state->has_visible = FALSE;
