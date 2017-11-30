@@ -13,6 +13,13 @@ minimal API?  Librsvg may be adequate for you.
 Using librsvg
 -------------
 
+**Compiling:** Librsvg uses a mostly normal [autotools] setup.  You
+may run into some peculiarities due to the Rust internals library if
+you are **cross-compiling** or if you are in a **build system with no
+network access**, or if you are **building binary packages from a
+librsvg tarball**.  In those cases, please refer to the
+[`COMPILING.md`][compiling] file.
+
 **Documentation:** You can read the [documentation for librsvg][docs] at
 developer.gnome.org.  Please [tell us][mail] if you don't find
 something there that you need.
@@ -83,6 +90,8 @@ can [mail me][mail] for any other questions you have about librsvg.
 [gnome]: https://www.gnome.org/
 [cairo]: https://www.cairographics.org/
 [coc]: code-of-conduct.md
+[autotools]: https://autotools.io/index.html
+[compiling]: COMPILING.md
 [docs]: https://developer.gnome.org/rsvg/stable/
 [mail]: mailto:federico@gnome.org
 [bugs]: https://bugzilla.gnome.org/page.cgi?id=browse.html&product=librsvg
