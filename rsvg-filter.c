@@ -972,7 +972,7 @@ rsvg_filter_blend (RsvgFilterPrimitiveBlendMode mode,
                     cr = bca + bcb - 2 * bca * bcb;
                     break;
                 case difference:
-                    cr = abs (bca - bcb);
+                    cr = fabs (bca - bcb);
                     break;
                 }
                 cr *= 255.0;
