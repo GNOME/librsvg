@@ -7,6 +7,7 @@ use parsers::ParseError;
 /// Defines the units to be used for scaling paint servers, per the [svg specification].
 ///
 /// [svg spec]: https://www.w3.org/TR/SVG/pservers.html
+#[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum PaintServerUnits {
     UserSpaceOnUse,

@@ -272,7 +272,7 @@ static const NodeCreator node_creators[] = {
     /* "animateMotion",      FALSE, */
     /* "animateTransform",   FALSE, */
     { "circle",              TRUE,  rsvg_node_circle_new },
-    { "clipPath",            TRUE,  rsvg_new_clip_path },
+    { "clipPath",            TRUE,  rsvg_node_clip_path_new },
     /* "color-profile",      FALSE, */
     { "conicalGradient",     TRUE,  rsvg_node_radial_gradient_new },
     /* "cursor",             FALSE, */

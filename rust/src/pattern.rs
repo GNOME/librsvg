@@ -69,7 +69,7 @@ impl Default for Pattern {
 // objects which it references.  We define PatternContentUnits as a newtype, so that
 // it can have its own default value, different from the one in PaintServerUnits.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct PatternContentUnits(PaintServerUnits);
+pub struct PatternContentUnits(pub PaintServerUnits);
 
 impl From<PaintServerUnits> for PatternContentUnits {
     fn from (units: PaintServerUnits) -> PatternContentUnits {

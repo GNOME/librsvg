@@ -22,6 +22,11 @@ pub use bbox::{
     rsvg_bbox_clip
 };
 
+pub use clip_path::{
+    rsvg_node_clip_path_new,
+    rsvg_node_clip_path_get_units
+};
+
 pub use cnode::{
     rsvg_rust_cnode_new,
     rsvg_rust_cnode_get_impl
@@ -130,6 +135,7 @@ pub use viewbox::{
 
 mod aspect_ratio;
 mod bbox;
+mod clip_path;
 mod cnode;
 mod color;
 mod drawing_ctx;
