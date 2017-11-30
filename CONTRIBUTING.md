@@ -10,7 +10,7 @@ contributing to librsvg, and we appreciate all of them.
 * [Pull requests](#pull-requests)
 
 There is a **code of conduct** for contributors to librsvg; please see the
-file `[code_of_conduct.md][coc]`.
+file [`code_of_conduct.md`][coc].
 
 ## Source repository
 
