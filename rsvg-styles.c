@@ -704,7 +704,7 @@ rsvg_parse_style_pair (RsvgState * state,
             state->visible = TRUE;
         else
             state->has_visible = FALSE;
-	} else if (g_str_equal (name, "xml:space")) {
+    } else if (g_str_equal (name, "xml:space")) {
         state->has_space_preserve = TRUE;
         if (g_str_equal (value, "default"))
             state->space_preserve = FALSE;
