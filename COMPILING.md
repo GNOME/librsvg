@@ -11,10 +11,10 @@ There are generic compilation/installation instructions in the
 [`INSTALL`][install] file, which comes from Autotools.  The following
 explains librsvg's peculiarities.
 
-* [Verbosity]
-* [Debug or release builds]
-* [Cross-compilation]
-* [Building with no network access]
+* [Verbosity](#verbosity)
+* [Debug or release builds](#debug-or-release-builds)
+* [Cross-compilation](#cross-compilation)
+* [Building with no network access](#building-with-no-network-access)
 
 # Verbosity
 
