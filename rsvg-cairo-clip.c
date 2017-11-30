@@ -182,15 +182,15 @@ rsvg_cairo_clip_render_new (cairo_t *cr, RsvgCairoRender *parent)
 void
 rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox)
 {
-    RsvgClipPath *clip;
     RsvgCairoClipRender *clip_render;
     RsvgCairoRender *save = RSVG_CAIRO_RENDER (ctx->render);
     cairo_matrix_t affinesave;
     RsvgState *clip_path_state;
     cairo_t *cr;
+    RsvgCoordUnits clip_units;
 
     g_assert (rsvg_node_get_type (node_clip_path) == RSVG_NODE_TYPE_CLIP_PATH);
-    clip = rsvg_rust_cnode_get_impl (node_clip_path);
+    clip_units = rsvg_node_clip_path_get_units (node_clip_path);
 
     cr = save->cr;
     clip_render = RSVG_CAIRO_CLIP_RENDER (rsvg_cairo_clip_render_new (cr, save));
@@ -199,7 +199,7 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox
     clip_path_state = rsvg_node_get_state (node_clip_path);
 
     /* Horribly dirty hack to have the bbox premultiplied to everything */
-    if (clip->units == objectBoundingBox) {
+    if (clip_units == objectBoundingBox) {
         cairo_matrix_t bbtransform;
         cairo_matrix_init (&bbtransform,
                            bbox->rect.width,
@@ -216,7 +216,7 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox
     rsvg_node_draw_children (node_clip_path, ctx, 0);
     rsvg_state_pop (ctx);
 
-    if (clip->units == objectBoundingBox)
+    if (clip_units == objectBoundingBox)
         clip_path_state->affine = affinesave;
 
     g_assert (clip_render->super.cr_stack == NULL);

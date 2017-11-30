@@ -655,9 +655,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
         RsvgNode *node;
         node = rsvg_drawing_ctx_acquire_node_of_type (ctx, rsvg_current_state (ctx)->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
         if (node) {
-            RsvgClipPath *clip_path = rsvg_rust_cnode_get_impl (node);
-
-            switch (clip_path->units) {
+            switch (rsvg_node_clip_path_get_units (node)) {
             case userSpaceOnUse:
                 rsvg_cairo_clip (ctx, node, NULL);
                 break;
@@ -733,9 +731,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
         RsvgNode *node;
         node = rsvg_drawing_ctx_acquire_node_of_type (ctx, rsvg_current_state (ctx)->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
         if (node) {
-            RsvgClipPath *cp = rsvg_rust_cnode_get_impl (node);
-
-            if (cp->units == objectBoundingBox) {
+            if (rsvg_node_clip_path_get_units (node) == objectBoundingBox) {
                 lateclip = node;
             } else {
                 rsvg_drawing_ctx_release_node (ctx, node);

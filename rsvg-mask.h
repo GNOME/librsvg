@@ -48,14 +48,11 @@ struct _RsvgMask {
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_mask	    (const char *element_name, RsvgNode *node);
 
-typedef struct _RsvgClipPath RsvgClipPath;
-
-struct _RsvgClipPath {
-    RsvgCoordUnits units;
-};
-
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_clip_path	(const char *element_name, RsvgNode *node);
+
+G_GNUC_INTERNAL
+RsvgCoordUnits rsvg_node_clip_path_get_units (RsvgNode *node);
 
 G_END_DECLS
 #endif

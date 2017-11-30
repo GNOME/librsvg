@@ -284,7 +284,8 @@ typedef struct {
 } RsvgBbox;
 
 typedef enum {
-    objectBoundingBox, userSpaceOnUse
+    objectBoundingBox,
+    userSpaceOnUse
 } RsvgCoordUnits;
 
 /* Keep this in sync with rust/src/node.rs:NodeType */

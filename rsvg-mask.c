@@ -85,6 +85,12 @@ rsvg_new_mask (const char *element_name, RsvgNode *parent)
                                 g_free);
 }
 
+typedef struct _RsvgClipPath RsvgClipPath;
+
+struct _RsvgClipPath {
+    RsvgCoordUnits units;
+};
+
 static void
 rsvg_clip_path_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
@@ -120,4 +126,15 @@ rsvg_new_clip_path (const char *element_name, RsvgNode *parent)
                                 rsvg_clip_path_set_atts,
                                 rsvg_clip_path_draw,
                                 g_free); 
+}
+
+RsvgCoordUnits
+rsvg_node_clip_path_get_units (RsvgNode *node)
+{
+    RsvgClipPath *clip_path;
+
+    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CLIP_PATH);
+
+    clip_path = rsvg_rust_cnode_get_impl (node);
+    return clip_path->units;
 }
