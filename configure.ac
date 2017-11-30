@@ -188,8 +188,6 @@ AC_SUBST([gdk_pixbuf_cache_file])
 
 AM_CONDITIONAL([ENABLE_PIXBUF_LOADER],[test "$enable_pixbuf_loader" = "yes"])
 
-AM_CONDITIONAL(CROSS_COMPILING, test $cross_compiling = yes)
-
 ##########################################################
 # Check for -Bsymbolic-functions linker flag used to avoid
 # intra-library PLT jumps, if available.
@@ -262,6 +260,7 @@ else
 fi
 AM_CONDITIONAL([DEBUG_RELEASE], [test "x$debug_release" = "xyes"])
 
+AM_CONDITIONAL(CROSS_COMPILING, test $cross_compiling = yes)
 if test "x$cross_compiling" = "xyes" ; then
 	RUST_TARGET_SUBDIR="$host/$RUST_TARGET_SUBDIR"
 fi
