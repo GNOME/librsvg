@@ -88,12 +88,15 @@ make
 
 Automated build systems generally avoid network access so that they
 can compile from known-good sources, instead of pulling random updates
-from the net every time.
+from the net every time.  However, normally Cargo likes to download
+dependencies when it first compiles a Rust project.
 
 We use [`cargo vendor`][cargo-vendor] to ship librsvg release tarballs
 with the source code for Rust dependencies **embedded within the
 tarball**.  If you unpack a librsvg tarball, these sources will appear
-in the `rust/vendor` subdirectory.
+in the `rust/vendor` subdirectory.  If you build librsvg from a
+tarball, instead of git, it should not need to access the network to
+download extra sources at all.
 
 Build systems can use [Cargo's source replacement
 mechanism][cargo-source-replacement] to override the location of the
