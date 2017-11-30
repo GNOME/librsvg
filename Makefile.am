@@ -119,14 +119,15 @@ cargo_verbose_0 =
 cargo_verbose_1 = --verbose
 
 RUST_LIB=@abs_top_builddir@/rust/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a
+CARGO_TARGET_DIR=@abs_top_builddir@/rust/target
 
 check-local:
 	cd $(srcdir)/rust && \
-	CARGO_TARGET_DIR=@abs_top_builddir@/rust/target cargo test
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) cargo test
 
 clean-local:
 	cd $(top_srcdir)/rust && \
-	CARGO_TARGET_DIR=@abs_top_builddir@/rust/target cargo clean
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) clean
 
 dist-hook:
 	(cd $(distdir)/rust && \
@@ -138,7 +139,7 @@ $(RUST_LIB): $(RUST_SOURCES)
 	+cd $(top_srcdir)/rust &&						\
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
-	CARGO_TARGET_DIR=@abs_top_builddir@/rust/target				\
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
 	cargo build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
