@@ -84,7 +84,7 @@ If you need to add new tests (you should, for new features, or for
 things that we weren't testing!), or for additional information on how
 the test suite works, please see the file [`tests/README.md`][tests-readme].
 
-[coc]: code-of-conduct.md
+[coc]: code_of_conduct.md
 [gitlab]: https://gitlab.gnome.org/
 [bugs-browse]: https://bugzilla.gnome.org/page.cgi?id=browse.html&product=librsvg
 [mail]: mailto:federico@gnome.org
