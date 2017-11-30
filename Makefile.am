@@ -135,8 +135,11 @@ dist-hook:
 	cp cargo-vendor-config .cargo/config)
 
 $(RUST_LIB): $(RUST_SOURCES)
-	+cd $(top_srcdir)/rust && PKG_CONFIG_ALLOW_CROSS=1 PKG_CONFIG='$(PKG_CONFIG)' \
-	CARGO_TARGET_DIR=@abs_top_builddir@/rust/target cargo build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
+	+cd $(top_srcdir)/rust &&						\
+	PKG_CONFIG_ALLOW_CROSS=1						\
+	PKG_CONFIG='$(PKG_CONFIG)'						\
+	CARGO_TARGET_DIR=@abs_top_builddir@/rust/target				\
+	cargo build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
