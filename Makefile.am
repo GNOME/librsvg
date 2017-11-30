@@ -127,7 +127,7 @@ check-local:
 
 clean-local:
 	cd $(top_srcdir)/rust && \
-	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) clean
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) cargo clean
 
 dist-hook:
 	(cd $(distdir)/rust && \
