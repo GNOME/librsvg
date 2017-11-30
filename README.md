@@ -89,7 +89,7 @@ can [mail me][mail] for any other questions you have about librsvg.
 [svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 [gnome]: https://www.gnome.org/
 [cairo]: https://www.cairographics.org/
-[coc]: code-of-conduct.md
+[coc]: code_of_conduct.md
 [autotools]: https://autotools.io/index.html
 [compiling]: COMPILING.md
 [docs]: https://developer.gnome.org/rsvg/stable/
