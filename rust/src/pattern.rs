@@ -11,22 +11,23 @@ use cairo::Pattern as CairoPattern;
 
 use aspect_ratio::*;
 use bbox::*;
+use coord_units::CoordUnits;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
-use error::*;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use paint_server::*;
-use parsers::Parse;
 use property_bag;
 use property_bag::*;
 use util::*;
 use viewbox::*;
 
+coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
+coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);
+
 #[derive(Clone)]
-pub struct Pattern {
-    pub units:                 Option<CoordUnits>,
+ struct Pattern {
+    pub units:                 Option<PatternUnits>,
     pub content_units:         Option<PatternContentUnits>,
     // This Option<Option<ViewBox>> is a bit strange.  We want a field
     // with value None to mean, "this field isn't resolved yet".  However,
@@ -60,35 +61,6 @@ impl Default for Pattern {
             height:                None,
             node:                  None
         }
-    }
-}
-
-// A pattern's patternUnits attribute (in our Pattern::units field) defines the coordinate
-// system relative to the x/y/width/height of the Pattern.  However, patterns also
-// have a patternContentUnits attribute, which refers to the pattern's contents (i.e. the
-// objects which it references.  We define PatternContentUnits as a newtype, so that
-// it can have its own default value, different from the one in CoordUnits.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct PatternContentUnits(pub CoordUnits);
-
-impl From<CoordUnits> for PatternContentUnits {
-    fn from (units: CoordUnits) -> PatternContentUnits {
-        PatternContentUnits(units)
-    }
-}
-
-impl Default for PatternContentUnits {
-    fn default () -> PatternContentUnits {
-        PatternContentUnits (CoordUnits::UserSpaceOnUse)
-    }
-}
-
-impl Parse for PatternContentUnits {
-    type Data = ();
-    type Err = AttributeError;
-
-    fn parse (s: &str, _: ()) -> Result<PatternContentUnits, AttributeError> {
-        Ok (PatternContentUnits::from (CoordUnits::parse (s, ())?))
     }
 }
 
@@ -144,7 +116,7 @@ impl Pattern {
     fn resolve_from_defaults (&mut self) {
         /* These are per the spec */
 
-        fallback_to! (self.units,                 Some (CoordUnits::default ()));
+        fallback_to! (self.units,                 Some (PatternUnits::default ()));
         fallback_to! (self.content_units,         Some (PatternContentUnits::default ()));
         fallback_to! (self.vbox,                  Some (None));
         fallback_to! (self.preserve_aspect_ratio, Some (AspectRatio::default ()));
@@ -305,7 +277,7 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     let vbox                  = pattern.vbox.unwrap ();
     let preserve_aspect_ratio = pattern.preserve_aspect_ratio.unwrap ();
 
-    if units == CoordUnits::ObjectBoundingBox {
+    if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
         drawing_ctx::push_view_box (draw_ctx, 1.0, 1.0);
     }
 
@@ -314,7 +286,7 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     let pattern_width  = pattern.width.unwrap ().normalize (draw_ctx);
     let pattern_height = pattern.height.unwrap ().normalize (draw_ctx);
 
-    if units == CoordUnits::ObjectBoundingBox {
+    if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
         drawing_ctx::pop_view_box (draw_ctx);
     }
 
@@ -324,12 +296,12 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     let bbhscale: f64;
 
     match units {
-        CoordUnits::ObjectBoundingBox => {
+        PatternUnits(CoordUnits::ObjectBoundingBox) => {
             bbwscale = bbox.rect.width;
             bbhscale = bbox.rect.height;
         },
 
-        CoordUnits::UserSpaceOnUse => {
+        PatternUnits(CoordUnits::UserSpaceOnUse) => {
             bbwscale = 1.0;
             bbhscale = 1.0;
         }
@@ -358,12 +330,12 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
 
     // Create the pattern coordinate system
     match units {
-        CoordUnits::ObjectBoundingBox => {
+        PatternUnits(CoordUnits::ObjectBoundingBox) => {
             affine.translate (bbox.rect.x + pattern_x * bbox.rect.width,
                               bbox.rect.y + pattern_y * bbox.rect.height);
         },
 
-        CoordUnits::UserSpaceOnUse => {
+        PatternUnits(CoordUnits::UserSpaceOnUse) => {
             affine.translate (pattern_x, pattern_y);
         }
     }

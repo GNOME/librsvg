@@ -133,6 +133,9 @@ pub use viewbox::{
 };
 
 
+#[macro_use]
+mod coord_units;
+
 mod aspect_ratio;
 mod bbox;
 mod clip_path;

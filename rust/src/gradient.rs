@@ -8,6 +8,7 @@ use std::cell::RefCell;
 use cairo::MatrixTrait;
 
 use bbox::*;
+use coord_units::CoordUnits;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use handle::RsvgHandle;
@@ -22,18 +23,20 @@ use util::*;
 
 
 #[derive(Copy, Clone)]
-pub struct ColorStop {
+struct ColorStop {
     pub offset: f64,
     pub rgba:   u32
 }
+
+coord_units!(GradientUnits, CoordUnits::ObjectBoundingBox);
 
 /* Any of the attributes in gradient elements may be omitted.  In turn, the missing
  * ones can be inherited from the gradient referenced by its "fallback" IRI.  We
  * represent these possibly-missing attributes as Option<foo>.
  */
 #[derive(Clone)]
-pub struct GradientCommon {
-    pub units:    Option<CoordUnits>,
+struct GradientCommon {
+    pub units:    Option<GradientUnits>,
     pub affine:   Option<cairo::Matrix>,
     pub spread:   Option<PaintServerSpread>,
     pub fallback: Option<String>,
@@ -41,7 +44,7 @@ pub struct GradientCommon {
 }
 
 #[derive(Copy, Clone)]
-pub enum GradientVariant {
+enum GradientVariant {
     Linear {
         x1: Option<RsvgLength>,
         y1: Option<RsvgLength>,
@@ -59,7 +62,7 @@ pub enum GradientVariant {
 }
 
 #[derive(Clone)]
-pub struct Gradient {
+struct Gradient {
     pub common: GradientCommon,
     pub variant: GradientVariant
 }
@@ -118,7 +121,7 @@ impl GradientCommon {
     fn resolve_from_defaults (&mut self) {
         /* These are per the spec */
 
-        fallback_to! (self.units,  Some (CoordUnits::default ()));
+        fallback_to! (self.units,  Some (GradientUnits::default ()));
         fallback_to! (self.affine, Some (cairo::Matrix::identity ()));
         fallback_to! (self.spread, Some (PaintServerSpread::default ()));
         fallback_to! (self.stops,  Some (Vec::<ColorStop>::new ())); // empty array of color stops
@@ -362,7 +365,7 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient> (gradient: &Gradie
 
     let units = gradient.common.units.unwrap ();
 
-    if units == CoordUnits::ObjectBoundingBox {
+    if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
         let bbox_matrix = cairo::Matrix::new (bbox.rect.width, 0.0,
                                               0.0, bbox.rect.height,
                                               bbox.rect.x, bbox.rect.y);
@@ -385,7 +388,7 @@ fn set_linear_gradient_on_pattern (gradient: &Gradient,
     if let GradientVariant::Linear { x1, y1, x2, y2 } = gradient.variant {
         let units = gradient.common.units.unwrap ();
 
-        if units == CoordUnits::ObjectBoundingBox {
+        if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
             drawing_ctx::push_view_box (draw_ctx, 1.0, 1.0);
         }
 
@@ -394,7 +397,7 @@ fn set_linear_gradient_on_pattern (gradient: &Gradient,
                                                       x2.as_ref ().unwrap ().normalize (draw_ctx),
                                                       y2.as_ref ().unwrap ().normalize (draw_ctx));
 
-        if units == CoordUnits::ObjectBoundingBox {
+        if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
             drawing_ctx::pop_view_box (draw_ctx);
         }
 
@@ -467,7 +470,7 @@ fn set_radial_gradient_on_pattern (gradient: &Gradient,
     if let GradientVariant::Radial { cx, cy, r, fx, fy } = gradient.variant {
         let units = gradient.common.units.unwrap ();
 
-        if units == CoordUnits::ObjectBoundingBox {
+        if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
             drawing_ctx::push_view_box (draw_ctx, 1.0, 1.0);
         }
 
@@ -481,7 +484,7 @@ fn set_radial_gradient_on_pattern (gradient: &Gradient,
 
         let mut pattern = cairo::RadialGradient::new (new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
 
-        if units == CoordUnits::ObjectBoundingBox {
+        if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
             drawing_ctx::pop_view_box (draw_ctx);
         }
 

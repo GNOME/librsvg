@@ -74,6 +74,7 @@ RUST_SOURCES =					\
 	rust/src/clip_path.rs			\
 	rust/src/cnode.rs			\
 	rust/src/color.rs			\
+	rust/src/coord_units.rs			\
 	rust/src/drawing_ctx.rs			\
 	rust/src/error.rs			\
 	rust/src/gradient.rs			\
