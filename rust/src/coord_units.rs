@@ -80,4 +80,14 @@ mod tests {
         assert_eq! (MyUnits::parse ("userSpaceOnUse", ()), Ok (MyUnits(CoordUnits::UserSpaceOnUse)));
         assert_eq! (MyUnits::parse ("objectBoundingBox", ()), Ok (MyUnits(CoordUnits::ObjectBoundingBox)));
     }
+
+    #[test]
+    fn has_correct_default() {
+        assert_eq!(MyUnits::default(), MyUnits(CoordUnits::ObjectBoundingBox));
+    }
+
+    #[test]
+    fn converts_to_coord_units() {
+        assert_eq!(CoordUnits::from(MyUnits(CoordUnits::ObjectBoundingBox)), CoordUnits::ObjectBoundingBox);
+    }
 }
