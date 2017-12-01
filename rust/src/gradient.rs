@@ -33,7 +33,7 @@ pub struct ColorStop {
  */
 #[derive(Clone)]
 pub struct GradientCommon {
-    pub units:    Option<PaintServerUnits>,
+    pub units:    Option<CoordUnits>,
     pub affine:   Option<cairo::Matrix>,
     pub spread:   Option<PaintServerSpread>,
     pub fallback: Option<String>,
@@ -118,7 +118,7 @@ impl GradientCommon {
     fn resolve_from_defaults (&mut self) {
         /* These are per the spec */
 
-        fallback_to! (self.units,  Some (PaintServerUnits::default ()));
+        fallback_to! (self.units,  Some (CoordUnits::default ()));
         fallback_to! (self.affine, Some (cairo::Matrix::identity ()));
         fallback_to! (self.spread, Some (PaintServerSpread::default ()));
         fallback_to! (self.stops,  Some (Vec::<ColorStop>::new ())); // empty array of color stops
@@ -362,7 +362,7 @@ fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient> (gradient: &Gradie
 
     let units = gradient.common.units.unwrap ();
 
-    if units == PaintServerUnits::ObjectBoundingBox {
+    if units == CoordUnits::ObjectBoundingBox {
         let bbox_matrix = cairo::Matrix::new (bbox.rect.width, 0.0,
                                               0.0, bbox.rect.height,
                                               bbox.rect.x, bbox.rect.y);
@@ -385,7 +385,7 @@ fn set_linear_gradient_on_pattern (gradient: &Gradient,
     if let GradientVariant::Linear { x1, y1, x2, y2 } = gradient.variant {
         let units = gradient.common.units.unwrap ();
 
-        if units == PaintServerUnits::ObjectBoundingBox {
+        if units == CoordUnits::ObjectBoundingBox {
             drawing_ctx::push_view_box (draw_ctx, 1.0, 1.0);
         }
 
@@ -394,7 +394,7 @@ fn set_linear_gradient_on_pattern (gradient: &Gradient,
                                                       x2.as_ref ().unwrap ().normalize (draw_ctx),
                                                       y2.as_ref ().unwrap ().normalize (draw_ctx));
 
-        if units == PaintServerUnits::ObjectBoundingBox {
+        if units == CoordUnits::ObjectBoundingBox {
             drawing_ctx::pop_view_box (draw_ctx);
         }
 
@@ -467,7 +467,7 @@ fn set_radial_gradient_on_pattern (gradient: &Gradient,
     if let GradientVariant::Radial { cx, cy, r, fx, fy } = gradient.variant {
         let units = gradient.common.units.unwrap ();
 
-        if units == PaintServerUnits::ObjectBoundingBox {
+        if units == CoordUnits::ObjectBoundingBox {
             drawing_ctx::push_view_box (draw_ctx, 1.0, 1.0);
         }
 
@@ -481,7 +481,7 @@ fn set_radial_gradient_on_pattern (gradient: &Gradient,
 
         let mut pattern = cairo::RadialGradient::new (new_fx, new_fy, 0.0, n_cx, n_cy, n_r);
 
-        if units == PaintServerUnits::ObjectBoundingBox {
+        if units == CoordUnits::ObjectBoundingBox {
             drawing_ctx::pop_view_box (draw_ctx);
         }
 

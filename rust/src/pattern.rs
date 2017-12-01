@@ -26,7 +26,7 @@ use viewbox::*;
 
 #[derive(Clone)]
 pub struct Pattern {
-    pub units:                 Option<PaintServerUnits>,
+    pub units:                 Option<CoordUnits>,
     pub content_units:         Option<PatternContentUnits>,
     // This Option<Option<ViewBox>> is a bit strange.  We want a field
     // with value None to mean, "this field isn't resolved yet".  However,
@@ -67,19 +67,19 @@ impl Default for Pattern {
 // system relative to the x/y/width/height of the Pattern.  However, patterns also
 // have a patternContentUnits attribute, which refers to the pattern's contents (i.e. the
 // objects which it references.  We define PatternContentUnits as a newtype, so that
-// it can have its own default value, different from the one in PaintServerUnits.
+// it can have its own default value, different from the one in CoordUnits.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct PatternContentUnits(pub PaintServerUnits);
+pub struct PatternContentUnits(pub CoordUnits);
 
-impl From<PaintServerUnits> for PatternContentUnits {
-    fn from (units: PaintServerUnits) -> PatternContentUnits {
+impl From<CoordUnits> for PatternContentUnits {
+    fn from (units: CoordUnits) -> PatternContentUnits {
         PatternContentUnits(units)
     }
 }
 
 impl Default for PatternContentUnits {
     fn default () -> PatternContentUnits {
-        PatternContentUnits (PaintServerUnits::UserSpaceOnUse)
+        PatternContentUnits (CoordUnits::UserSpaceOnUse)
     }
 }
 
@@ -88,7 +88,7 @@ impl Parse for PatternContentUnits {
     type Err = AttributeError;
 
     fn parse (s: &str, _: ()) -> Result<PatternContentUnits, AttributeError> {
-        Ok (PatternContentUnits::from (PaintServerUnits::parse (s, ())?))
+        Ok (PatternContentUnits::from (CoordUnits::parse (s, ())?))
     }
 }
 
@@ -144,7 +144,7 @@ impl Pattern {
     fn resolve_from_defaults (&mut self) {
         /* These are per the spec */
 
-        fallback_to! (self.units,                 Some (PaintServerUnits::default ()));
+        fallback_to! (self.units,                 Some (CoordUnits::default ()));
         fallback_to! (self.content_units,         Some (PatternContentUnits::default ()));
         fallback_to! (self.vbox,                  Some (None));
         fallback_to! (self.preserve_aspect_ratio, Some (AspectRatio::default ()));
@@ -305,7 +305,7 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     let vbox                  = pattern.vbox.unwrap ();
     let preserve_aspect_ratio = pattern.preserve_aspect_ratio.unwrap ();
 
-    if units == PaintServerUnits::ObjectBoundingBox {
+    if units == CoordUnits::ObjectBoundingBox {
         drawing_ctx::push_view_box (draw_ctx, 1.0, 1.0);
     }
 
@@ -314,7 +314,7 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     let pattern_width  = pattern.width.unwrap ().normalize (draw_ctx);
     let pattern_height = pattern.height.unwrap ().normalize (draw_ctx);
 
-    if units == PaintServerUnits::ObjectBoundingBox {
+    if units == CoordUnits::ObjectBoundingBox {
         drawing_ctx::pop_view_box (draw_ctx);
     }
 
@@ -324,12 +324,12 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
     let bbhscale: f64;
 
     match units {
-        PaintServerUnits::ObjectBoundingBox => {
+        CoordUnits::ObjectBoundingBox => {
             bbwscale = bbox.rect.width;
             bbhscale = bbox.rect.height;
         },
 
-        PaintServerUnits::UserSpaceOnUse => {
+        CoordUnits::UserSpaceOnUse => {
             bbwscale = 1.0;
             bbhscale = 1.0;
         }
@@ -358,12 +358,12 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
 
     // Create the pattern coordinate system
     match units {
-        PaintServerUnits::ObjectBoundingBox => {
+        CoordUnits::ObjectBoundingBox => {
             affine.translate (bbox.rect.x + pattern_x * bbox.rect.width,
                               bbox.rect.y + pattern_y * bbox.rect.height);
         },
 
-        PaintServerUnits::UserSpaceOnUse => {
+        CoordUnits::UserSpaceOnUse => {
             affine.translate (pattern_x, pattern_y);
         }
     }
@@ -397,7 +397,7 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
 
         drawing_ctx::push_view_box (draw_ctx, vbox.0.width, vbox.0.height);
         pushed_view_box = true;
-    } else if content_units == PatternContentUnits (PaintServerUnits::ObjectBoundingBox) {
+    } else if content_units == PatternContentUnits (CoordUnits::ObjectBoundingBox) {
         // If coords are in terms of the bounding box, use them
 
         caffine = cairo::Matrix::identity ();

@@ -7,29 +7,31 @@ use parsers::ParseError;
 /// Defines the units to be used for scaling paint servers, per the [svg specification].
 ///
 /// [svg spec]: https://www.w3.org/TR/SVG/pservers.html
+///
+/// Keep in sync with rsvg-private.h:RsvgCoordUnits
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum PaintServerUnits {
+pub enum CoordUnits {
     UserSpaceOnUse,
     ObjectBoundingBox
 }
 
-impl Parse for PaintServerUnits {
+impl Parse for CoordUnits {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse (s: &str, _: ()) -> Result<PaintServerUnits, AttributeError> {
+    fn parse (s: &str, _: ()) -> Result<CoordUnits, AttributeError> {
         match s {
-            "userSpaceOnUse"    => Ok (PaintServerUnits::UserSpaceOnUse),
-            "objectBoundingBox" => Ok (PaintServerUnits::ObjectBoundingBox),
+            "userSpaceOnUse"    => Ok (CoordUnits::UserSpaceOnUse),
+            "objectBoundingBox" => Ok (CoordUnits::ObjectBoundingBox),
             _                   => Err (AttributeError::Parse (ParseError::new ("expected 'userSpaceOnUse' or 'objectBoundingBox'")))
         }
     }
 }
 
-impl Default for PaintServerUnits {
-    fn default () -> PaintServerUnits {
-        PaintServerUnits::ObjectBoundingBox
+impl Default for CoordUnits {
+    fn default () -> CoordUnits {
+        CoordUnits::ObjectBoundingBox
     }
 }
 
@@ -62,14 +64,14 @@ mod tests {
 
     #[test]
     fn parsing_invalid_strings_yields_error () {
-        assert! (PaintServerUnits::parse ("", ()).is_err ());
-        assert! (PaintServerUnits::parse ("foo", ()).is_err ());
+        assert! (CoordUnits::parse ("", ()).is_err ());
+        assert! (CoordUnits::parse ("foo", ()).is_err ());
     }
 
     #[test]
     fn parses_paint_server_units () {
-        assert_eq! (PaintServerUnits::parse ("userSpaceOnUse", ()), Ok (PaintServerUnits::UserSpaceOnUse));
-        assert_eq! (PaintServerUnits::parse ("objectBoundingBox", ()), Ok (PaintServerUnits::ObjectBoundingBox));
+        assert_eq! (CoordUnits::parse ("userSpaceOnUse", ()), Ok (CoordUnits::UserSpaceOnUse));
+        assert_eq! (CoordUnits::parse ("objectBoundingBox", ()), Ok (CoordUnits::ObjectBoundingBox));
     }
 
     #[test]

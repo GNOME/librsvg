@@ -4,7 +4,7 @@ use std::cell::Cell;
 use drawing_ctx::RsvgDrawingCtx;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode, boxed_node_new};
-use paint_server::PaintServerUnits;
+use paint_server::CoordUnits;
 use pattern::PatternContentUnits;
 use property_bag::{self, RsvgPropertyBag};
 
@@ -17,7 +17,7 @@ struct NodeClipPath {
 impl NodeClipPath {
     fn new() -> NodeClipPath {
         NodeClipPath {
-            units: Cell::new(PatternContentUnits::from(PaintServerUnits::UserSpaceOnUse))
+            units: Cell::new(PatternContentUnits::from(CoordUnits::UserSpaceOnUse))
         }
     }
 }
@@ -46,7 +46,7 @@ pub extern fn rsvg_node_clip_path_new(_: *const libc::c_char, raw_parent: *const
 }
 
 #[no_mangle]
-pub extern fn rsvg_node_clip_path_get_units(raw_node: *const RsvgNode) -> PaintServerUnits {
+pub extern fn rsvg_node_clip_path_get_units(raw_node: *const RsvgNode) -> CoordUnits {
     assert! (!raw_node.is_null ());
     let node: &RsvgNode = unsafe { & *raw_node };
 
