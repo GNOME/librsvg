@@ -2665,14 +2665,16 @@ rsvg_return_if_fail_warning (const char *pretty_function, const char *expression
     g_set_error (error, RSVG_ERROR, 0, _("%s: assertion `%s' failed"), pretty_function, expression);
 }
 
-static gboolean
-_rsvg_handle_allow_load (GFile      *base_gfile,
-                         const char *uri,
-                         GError **error)
+gboolean
+rsvg_allow_load (GFile       *base_gfile,
+                 const char  *uri,
+                 GError     **error)
 {
     GFile *base;
     char *path, *dir;
     char *scheme = NULL, *cpath = NULL, *cdir = NULL;
+
+    g_assert (error == NULL || *error == NULL);
 
     scheme = g_uri_parse_scheme (uri);
 
@@ -2787,7 +2789,7 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
 
     uri = _rsvg_handle_resolve_uri (handle, url);
 
-    if (_rsvg_handle_allow_load (priv->base_gfile, uri, error)) {
+    if (rsvg_allow_load (priv->base_gfile, uri, error)) {
         data = _rsvg_io_acquire_data (uri,
                                       rsvg_handle_get_base_uri (handle),
                                       content_type,
@@ -2814,7 +2816,7 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
 
     uri = _rsvg_handle_resolve_uri (handle, url);
 
-    if (_rsvg_handle_allow_load (priv->base_gfile, uri, error)) {
+    if (rsvg_allow_load (priv->base_gfile, uri, error)) {
         stream = _rsvg_io_acquire_stream (uri,
                                           rsvg_handle_get_base_uri (handle),
                                           content_type,

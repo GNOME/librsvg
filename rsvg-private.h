@@ -562,6 +562,11 @@ void rsvg_return_if_fail_warning (const char *pretty_function,
                                   const char *expression, GError ** error);
 
 G_GNUC_INTERNAL
+gboolean rsvg_allow_load (GFile       *base_gfile,
+                          const char  *uri,
+                          GError     **error);
+
+G_GNUC_INTERNAL
 char *_rsvg_handle_acquire_data (RsvgHandle *handle,
                                  const char *uri,
                                  char **content_type,
