@@ -386,7 +386,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "rsvg_internals"
 version = "0.0.1"
 dependencies = [
- "bitflags 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "cairo-rs 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cairo-sys-rs 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cssparser 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",

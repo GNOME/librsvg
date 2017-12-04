@@ -35,19 +35,6 @@
 
 G_BEGIN_DECLS
 
-#define RSVG_ASPECT_RATIO_NONE (0)
-#define RSVG_ASPECT_RATIO_XMIN_YMIN (1 << 0)
-#define RSVG_ASPECT_RATIO_XMID_YMIN (1 << 1)
-#define RSVG_ASPECT_RATIO_XMAX_YMIN (1 << 2)
-#define RSVG_ASPECT_RATIO_XMIN_YMID (1 << 3)
-#define RSVG_ASPECT_RATIO_XMID_YMID (1 << 4)
-#define RSVG_ASPECT_RATIO_XMAX_YMID (1 << 5)
-#define RSVG_ASPECT_RATIO_XMIN_YMAX (1 << 6)
-#define RSVG_ASPECT_RATIO_XMID_YMAX (1 << 7)
-#define RSVG_ASPECT_RATIO_XMAX_YMAX (1 << 8)
-#define RSVG_ASPECT_RATIO_SLICE (1 << 30)
-#define RSVG_ASPECT_RATIO_DEFER (1 << 31)
-
 /* Keep this in sync with rust/src/color.rs:ColorKind */
 typedef enum {
     RSVG_CSS_COLOR_SPEC_INHERIT,
@@ -101,20 +88,6 @@ typedef struct {
 /* This is implemented in rust/src/opacity.rs */
 G_GNUC_INTERNAL
 RsvgOpacitySpec rsvg_css_parse_opacity (const char *str);
-
-/* This is implemented in rust/src/aspect_ratio.rs */
-G_GNUC_INTERNAL
-guint32 rsvg_aspect_ratio_parse (const char *str);
-
-/* This is implemented in rust/src/aspect_ratio.rs */
-G_GNUC_INTERNAL
-void rsvg_aspect_ratio_compute (guint32 aspect,
-                                double object_width,
-                                double object_height,
-                                double *dest_x,
-                                double *dest_y,
-                                double *dest_width,
-                                double *dest_height);
 
 G_GNUC_INTERNAL
 PangoStyle   rsvg_css_parse_font_style      (const char *str, gboolean * inherit);

@@ -3,10 +3,8 @@
 //! This module handles preserveAspectRatio values [per the SVG specification][spec].
 //! We have an [`AspectRatio`] struct which encapsulates such a value.
 //!
-//! [`AspectRatio`] implements `FromStr`, so it can be parsed easily:
-//!
 //! ```
-//! assert_eq! (AspectRatio::from_str ("xMidYMid"),
+//! assert_eq! (AspectRatio::parse ("xMidYMid", ()),
 //!             Ok (AspectRatio { defer: false,
 //!                               align: Align::Aligned { align: AlignMode::XmidYmid,
 //!                                                       fit: FitMode::Meet } }));
@@ -14,9 +12,6 @@
 //!
 //! [`AspectRatio`]: struct.AspectRatio.html
 //! [spec]: https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
-
-use ::libc;
-use ::glib::translate::*;
 
 use parsers::Parse;
 use parsers::ParseError;
@@ -71,75 +66,6 @@ fn align_1d (a: Align1D, dest_pos: f64, dest_size: f64, obj_size: f64) -> f64 {
 }
 
 impl AspectRatio {
-    pub fn from_u32 (val: u32) -> AspectRatio {
-        let val = AspectRatioFlags::from_bits (val).unwrap ();
-
-        let defer = val.contains (DEFER);
-
-        let mut aligned: bool = true;
-
-        let align: AlignMode = {
-            if val.contains (XMIN_YMIN)      { AlignMode::XminYmin }
-            else if val.contains (XMID_YMIN) { AlignMode::XmidYmin }
-            else if val.contains (XMAX_YMIN) { AlignMode::XmaxYmin }
-            else if val.contains (XMIN_YMID) { AlignMode::XminYmid }
-            else if val.contains (XMID_YMID) { AlignMode::XmidYmid }
-            else if val.contains (XMAX_YMID) { AlignMode::XmaxYmid }
-            else if val.contains (XMIN_YMAX) { AlignMode::XminYmax }
-            else if val.contains (XMID_YMAX) { AlignMode::XmidYmax }
-            else if val.contains (XMAX_YMAX) { AlignMode::XmaxYmax }
-            else {
-                aligned = false;
-                AlignMode::XmidYmid
-            }
-        };
-
-        let fit: FitMode = if val.contains(SLICE) { FitMode::Slice } else { FitMode::Meet };
-
-        AspectRatio {
-            defer: defer,
-            align: if aligned {
-                Align::Aligned {
-                    align: align,
-                    fit: fit
-                }
-            } else {
-                Align::None
-            }
-        }
-    }
-
-    pub fn to_u32 (&self) -> u32 {
-        let mut val = AspectRatioFlags::empty ();
-
-        if self.defer { val = val | DEFER; }
-
-        match self.align {
-            Align::None => { },
-
-            Align::Aligned { align, fit } => {
-                match align {
-                    AlignMode::XminYmin => { val = val | XMIN_YMIN; },
-                    AlignMode::XmidYmin => { val = val | XMID_YMIN; },
-                    AlignMode::XmaxYmin => { val = val | XMAX_YMIN; },
-                    AlignMode::XminYmid => { val = val | XMIN_YMID; },
-                    AlignMode::XmidYmid => { val = val | XMID_YMID; },
-                    AlignMode::XmaxYmid => { val = val | XMAX_YMID; },
-                    AlignMode::XminYmax => { val = val | XMIN_YMAX; },
-                    AlignMode::XmidYmax => { val = val | XMID_YMAX; },
-                    AlignMode::XmaxYmax => { val = val | XMAX_YMAX; },
-                }
-
-                match fit {
-                    FitMode::Meet  => { },
-                    FitMode::Slice => { val = val | SLICE; }
-                }
-            }
-        }
-
-        val.bits ()
-    }
-
     pub fn compute (&self,
                     object_width: f64,
                     object_height: f64,
@@ -204,23 +130,6 @@ impl Default for AspectRatio {
         }
     }
 }
-
-bitflags! {
-    struct AspectRatioFlags: u32 {
-        const XMIN_YMIN = (1 << 0);
-        const XMID_YMIN = (1 << 1);
-        const XMAX_YMIN = (1 << 2);
-        const XMIN_YMID = (1 << 3);
-        const XMID_YMID = (1 << 4);
-        const XMAX_YMID = (1 << 5);
-        const XMIN_YMAX = (1 << 6);
-        const XMID_YMAX = (1 << 7);
-        const XMAX_YMAX = (1 << 8);
-        const SLICE = (1 << 30);
-        const DEFER = (1 << 31);
-    }
-}
-
 
 fn parse_align_mode (s: &str) -> Option<Align> {
     match s {
@@ -330,38 +239,6 @@ impl Parse for AspectRatio {
     }
 }
 
-#[no_mangle]
-pub extern fn rsvg_aspect_ratio_parse (c_str: *const libc::c_char) -> u32 {
-    let my_str = unsafe { &String::from_glib_none (c_str) };
-    let parsed = AspectRatio::parse (my_str, ());
-
-    match parsed {
-        Ok (aspect_ratio) => { aspect_ratio.to_u32 () },
-        Err (_) => {
-            // We can't propagate the error here, so just return a default value
-            let a: AspectRatio = Default::default ();
-            a.to_u32 ()
-        }
-    }
-}
-
-#[no_mangle]
-pub extern fn rsvg_aspect_ratio_compute (aspect: u32,
-                                         object_width: f64,
-                                         object_height: f64,
-                                         dest_x: *mut f64,
-                                         dest_y: *mut f64,
-                                         dest_width: *mut f64,
-                                         dest_height: *mut f64) {
-    unsafe {
-        let (x, y, w, h) = AspectRatio::from_u32 (aspect).compute (object_width, object_height, *dest_x, *dest_y, *dest_width, *dest_height);
-        *dest_x = x;
-        *dest_y = y;
-        *dest_width = w;
-        *dest_height = h;
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -415,20 +292,6 @@ mod tests {
                     Ok (AspectRatio { defer: true,
                                       align: Align::Aligned { align: AlignMode::XminYmax,
                                                               fit: FitMode::Slice } }));
-    }
-
-    fn test_roundtrip (s: &str) {
-        let a = AspectRatio::parse (s, ()).unwrap ();
-
-        assert_eq! (AspectRatio::from_u32 (a.to_u32 ()), a);
-    }
-
-    #[test]
-    fn conversion_to_u32_roundtrips () {
-        test_roundtrip ("defer xMidYMid");
-        test_roundtrip ("defer xMinYMax slice");
-        test_roundtrip ("xMaxYMax meet");
-        test_roundtrip ("xMinYMid slice");
     }
 
     #[test]

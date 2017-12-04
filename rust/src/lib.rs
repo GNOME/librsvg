@@ -6,14 +6,7 @@ extern crate glib_sys;
 extern crate libc;
 
 #[macro_use]
-extern crate bitflags;
-#[macro_use]
 extern crate downcast_rs;
-
-pub use aspect_ratio::{
-    rsvg_aspect_ratio_parse,
-    rsvg_aspect_ratio_compute
-};
 
 pub use bbox::{
     RsvgBbox,
