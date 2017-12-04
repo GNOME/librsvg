@@ -67,10 +67,10 @@ uri_decoded_copy (const char *part,
 #define BASE64_INDICATOR_LEN (sizeof (";base64") - 1)
 
 static char *
-rsvg_acquire_data_data (const char *uri,
-                        char **out_mime_type,
-                        gsize *out_len,
-                        GError **error)
+rsvg_decode_data_uri (const char *uri,
+                      char **out_mime_type,
+                      gsize *out_len,
+                      GError **error)
 {
     const char *comma, *start, *end;
     char *mime_type;
@@ -313,7 +313,7 @@ _rsvg_io_acquire_data (const char *href,
         len = &llen;
 
     if (strncmp (href, "data:", 5) == 0)
-      return rsvg_acquire_data_data (href, mime_type, len, error);
+      return rsvg_decode_data_uri (href, mime_type, len, error);
 
     if ((data = rsvg_acquire_file_data (href, base_uri, mime_type, len, cancellable, NULL)))
       return data;
@@ -342,7 +342,7 @@ _rsvg_io_acquire_stream (const char *href,
     }
 
     if (strncmp (href, "data:", 5) == 0) {
-        if (!(data = rsvg_acquire_data_data (href, mime_type, &len, error)))
+        if (!(data = rsvg_decode_data_uri (href, mime_type, &len, error)))
             return NULL;
 
         return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
