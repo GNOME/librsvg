@@ -39,7 +39,7 @@ RsvgNode    *rsvg_new_tspan	    (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_tref	    (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
-char	    *rsvg_make_valid_utf8   (const char *str, int len);
+char	    *rsvg_make_valid_utf8   (const char *str, gssize len);
 
 G_END_DECLS
 

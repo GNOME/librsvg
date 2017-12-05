@@ -52,11 +52,11 @@ struct _RsvgNodeTref {
 };
 
 char *
-rsvg_make_valid_utf8 (const char *str, int len)
+rsvg_make_valid_utf8 (const char *str, gssize len)
 {
     GString *string;
     const char *remainder, *invalid;
-    int remaining_bytes, valid_bytes;
+    gssize remaining_bytes, valid_bytes;
 
     string = NULL;
     remainder = str;
