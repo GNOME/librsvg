@@ -1206,13 +1206,12 @@ rsvg_path_is_uri (char const *path)
     return (p[0] == ':' && p[1] == '/' && p[2] == '/');
 }
 
-gchar *
+static gchar *
 rsvg_get_base_uri_from_filename (const gchar * filename)
 {
     gchar *current_dir;
     gchar *absolute_filename;
     gchar *base_uri;
-
 
     if (g_path_is_absolute (filename))
         return g_filename_to_uri (filename, NULL, NULL);
@@ -2665,15 +2664,16 @@ rsvg_return_if_fail_warning (const char *pretty_function, const char *expression
     g_set_error (error, RSVG_ERROR, 0, _("%s: assertion `%s' failed"), pretty_function, expression);
 }
 
-static gboolean
-_rsvg_handle_allow_load (RsvgHandle *handle,
-                         const char *uri,
-                         GError **error)
+gboolean
+rsvg_allow_load (GFile       *base_gfile,
+                 const char  *uri,
+                 GError     **error)
 {
-    RsvgHandlePrivate *priv = handle->priv;
     GFile *base;
     char *path, *dir;
     char *scheme = NULL, *cpath = NULL, *cdir = NULL;
+
+    g_assert (error == NULL || *error == NULL);
 
     scheme = g_uri_parse_scheme (uri);
 
@@ -2686,11 +2686,11 @@ _rsvg_handle_allow_load (RsvgHandle *handle,
         goto allow;
 
     /* No base to compare to? */
-    if (priv->base_gfile == NULL)
+    if (base_gfile == NULL)
         goto deny;
 
     /* Deny loads from differing URI schemes */
-    if (!g_file_has_uri_scheme (priv->base_gfile, scheme))
+    if (!g_file_has_uri_scheme (base_gfile, scheme))
         goto deny;
 
     /* resource: is allowed to load anything from other resources */
@@ -2701,7 +2701,7 @@ _rsvg_handle_allow_load (RsvgHandle *handle,
     if (!g_str_equal (scheme, "file"))
         goto deny;
 
-    base = g_file_get_parent (priv->base_gfile);
+    base = g_file_get_parent (base_gfile);
     if (base == NULL)
         goto deny;
 
@@ -2746,9 +2746,9 @@ _rsvg_handle_allow_load (RsvgHandle *handle,
     return FALSE;
 }
 
-static char *
-_rsvg_handle_resolve_uri (RsvgHandle *handle,
-                          const char *uri)
+char *
+rsvg_handle_resolve_uri (RsvgHandle *handle,
+                         const char *uri)
 {
     RsvgHandlePrivate *priv = handle->priv;
     char *scheme, *resolved_uri;
@@ -2782,12 +2782,13 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
                            gsize *len,
                            GError **error)
 {
+    RsvgHandlePrivate *priv = handle->priv;
     char *uri;
     char *data;
 
-    uri = _rsvg_handle_resolve_uri (handle, url);
+    uri = rsvg_handle_resolve_uri (handle, url);
 
-    if (_rsvg_handle_allow_load (handle, uri, error)) {
+    if (rsvg_allow_load (priv->base_gfile, uri, error)) {
         data = _rsvg_io_acquire_data (uri,
                                       rsvg_handle_get_base_uri (handle),
                                       content_type,
@@ -2808,12 +2809,13 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
                              char **content_type,
                              GError **error)
 {
+    RsvgHandlePrivate *priv = handle->priv;
     char *uri;
     GInputStream *stream;
 
-    uri = _rsvg_handle_resolve_uri (handle, url);
+    uri = rsvg_handle_resolve_uri (handle, url);
 
-    if (_rsvg_handle_allow_load (handle, uri, error)) {
+    if (rsvg_allow_load (priv->base_gfile, uri, error)) {
         stream = _rsvg_io_acquire_stream (uri,
                                           rsvg_handle_get_base_uri (handle),
                                           content_type,

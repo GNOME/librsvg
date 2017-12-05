@@ -451,8 +451,6 @@ GdkPixbuf *rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
                                                  const char *base_uri, GError ** error);
 G_GNUC_INTERNAL
 gboolean     rsvg_eval_switch_attributes	(RsvgPropertyBag * atts, gboolean * p_has_cond);
-G_GNUC_INTERNAL
-gchar       *rsvg_get_base_uri_from_filename    (const gchar * file_name);
 
 G_GNUC_INTERNAL
 void rsvg_pop_discrete_layer    (RsvgDrawingCtx * ctx);
@@ -560,6 +558,15 @@ char *rsvg_get_url_string (const char *str, const char **out_rest);
 G_GNUC_INTERNAL
 void rsvg_return_if_fail_warning (const char *pretty_function,
                                   const char *expression, GError ** error);
+
+G_GNUC_INTERNAL
+char *rsvg_handle_resolve_uri (RsvgHandle *handle,
+                               const char *uri);
+
+G_GNUC_INTERNAL
+gboolean rsvg_allow_load (GFile       *base_gfile,
+                          const char  *uri,
+                          GError     **error);
 
 G_GNUC_INTERNAL
 char *_rsvg_handle_acquire_data (RsvgHandle *handle,

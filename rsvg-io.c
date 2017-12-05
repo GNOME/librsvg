@@ -1,3 +1,4 @@
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /*
    Copyright (C) 2000 Eazel, Inc.
    Copyright (C) 2002, 2003, 2004, 2005 Dom Lachowicz <cinamod@hotmail.com>
@@ -66,11 +67,10 @@ uri_decoded_copy (const char *part,
 #define BASE64_INDICATOR_LEN (sizeof (";base64") - 1)
 
 static char *
-rsvg_acquire_data_data (const char *uri,
-                        const char *base_uri, 
-                        char **out_mime_type,
-                        gsize *out_len,
-                        GError **error)
+rsvg_decode_data_uri (const char *uri,
+                      char **out_mime_type,
+                      gsize *out_len,
+                      GError **error)
 {
     const char *comma, *start, *end;
     char *mime_type;
@@ -124,56 +124,32 @@ rsvg_acquire_data_data (const char *uri,
     return data;
 }
 
-gchar *
-_rsvg_io_get_file_path (const gchar * filename,
-                        const gchar * base_uri)
-{
-    gchar *absolute_filename;
-
-    if (g_file_test (filename, G_FILE_TEST_EXISTS) || g_path_is_absolute (filename)) {
-        absolute_filename = g_strdup (filename);
-    } else {
-        gchar *tmpcdir;
-        gchar *base_filename;
-
-        if (base_uri) {
-            base_filename = g_filename_from_uri (base_uri, NULL, NULL);
-            if (base_filename != NULL) {
-                tmpcdir = g_path_get_dirname (base_filename);
-                g_free (base_filename);
-            } else 
-                return NULL;
-        } else
-            tmpcdir = g_get_current_dir ();
-
-        absolute_filename = g_build_filename (tmpcdir, filename, NULL);
-        g_free (tmpcdir);
-    }
-
-    return absolute_filename;
-}
-
 static char *
-rsvg_acquire_file_data (const char *filename,
-                        const char *base_uri,
+rsvg_acquire_file_data (const char *uri,
                         char **out_mime_type,
                         gsize *out_len,
                         GCancellable *cancellable,
                         GError **error)
 {
+    GFile *file;
     gchar *path, *data;
     gsize len;
     char *content_type;
 
-    rsvg_return_val_if_fail (filename != NULL, NULL, error);
+    rsvg_return_val_if_fail (uri != NULL, NULL, error);
     g_assert (out_len != NULL);
 
-    path = _rsvg_io_get_file_path (filename, base_uri);
-    if (path == NULL)
+    file = g_file_new_for_uri (uri);
+    path = g_file_get_path (file);
+
+    if (path == NULL) {
+        g_object_unref (file);
         return NULL;
+    }
 
     if (!g_file_get_contents (path, &data, &len, error)) {
         g_free (path);
+        g_object_unref (file);
         return NULL;
     }
 
@@ -184,6 +160,7 @@ rsvg_acquire_file_data (const char *filename,
     }
 
     g_free (path);
+    g_object_unref (file);
 
     *out_len = len;
     return data;
@@ -313,9 +290,9 @@ _rsvg_io_acquire_data (const char *href,
         len = &llen;
 
     if (strncmp (href, "data:", 5) == 0)
-      return rsvg_acquire_data_data (href, NULL, mime_type, len, error);
+      return rsvg_decode_data_uri (href, mime_type, len, error);
 
-    if ((data = rsvg_acquire_file_data (href, base_uri, mime_type, len, cancellable, NULL)))
+    if ((data = rsvg_acquire_file_data (href, mime_type, len, cancellable, NULL)))
       return data;
 
     if ((data = rsvg_acquire_gvfs_data (href, base_uri, mime_type, len, cancellable, error)))
@@ -342,13 +319,13 @@ _rsvg_io_acquire_stream (const char *href,
     }
 
     if (strncmp (href, "data:", 5) == 0) {
-        if (!(data = rsvg_acquire_data_data (href, NULL, mime_type, &len, error)))
+        if (!(data = rsvg_decode_data_uri (href, mime_type, &len, error)))
             return NULL;
 
         return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
     }
 
-    if ((data = rsvg_acquire_file_data (href, base_uri, mime_type, &len, cancellable, NULL)))
+    if ((data = rsvg_acquire_file_data (href, mime_type, &len, cancellable, NULL)))
       return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
 
     if ((stream = rsvg_acquire_gvfs_stream (href, base_uri, mime_type, cancellable, error)))
