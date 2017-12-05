@@ -2479,9 +2479,9 @@ rsvg_allow_load (GFile       *base_gfile,
     return FALSE;
 }
 
-static char *
-_rsvg_handle_resolve_uri (RsvgHandle *handle,
-                          const char *uri)
+char *
+rsvg_handle_resolve_uri (RsvgHandle *handle,
+                         const char *uri)
 {
     RsvgHandlePrivate *priv = handle->priv;
     char *scheme, *resolved_uri;
@@ -2519,7 +2519,7 @@ _rsvg_handle_acquire_data (RsvgHandle *handle,
     char *uri;
     char *data;
 
-    uri = _rsvg_handle_resolve_uri (handle, url);
+    uri = rsvg_handle_resolve_uri (handle, url);
 
     if (rsvg_allow_load (priv->base_gfile, uri, error)) {
         data = _rsvg_io_acquire_data (uri,
@@ -2546,7 +2546,7 @@ _rsvg_handle_acquire_stream (RsvgHandle *handle,
     char *uri;
     GInputStream *stream;
 
-    uri = _rsvg_handle_resolve_uri (handle, url);
+    uri = rsvg_handle_resolve_uri (handle, url);
 
     if (rsvg_allow_load (priv->base_gfile, uri, error)) {
         stream = _rsvg_io_acquire_stream (uri,
