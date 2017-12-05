@@ -616,10 +616,8 @@ typedef struct _RsvgSaxHandlerXinclude {
     gboolean in_fallback;
 } RsvgSaxHandlerXinclude;
 
-static void
- rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts);
-static void
- rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len);
+static void rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts);
+static void rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, gssize len);
 
 static void
 rsvg_xinclude_handler_free (RsvgSaxHandler * self)
@@ -904,6 +902,27 @@ rsvg_node_chars_free (gpointer impl)
     g_free (self);
 }
 
+static void
+rsvg_node_chars_append (RsvgNode *node,
+                        const char *text,
+                        gssize len)
+{
+    RsvgNodeChars *chars;
+
+    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
+    chars = rsvg_rust_cnode_get_impl (node);
+
+    if (!g_utf8_validate (text, len, NULL)) {
+        char *utf8;
+
+        utf8 = rsvg_make_valid_utf8 (text, len);
+        g_string_append (chars->contents, utf8);
+        g_free (utf8);
+    } else {
+        g_string_append_len (chars->contents, text, len);
+    }
+}
+
 static RsvgNode *
 rsvg_new_node_chars (const char *text,
                      int len,
@@ -911,28 +930,26 @@ rsvg_new_node_chars (const char *text,
 {
     RsvgNodeChars *self;
     RsvgState *state;
+    RsvgNode *node;
 
     self = g_new0 (RsvgNodeChars, 1);
 
-    if (!g_utf8_validate (text, len, NULL)) {
-        char *utf8;
-        utf8 = rsvg_make_valid_utf8 (text, len);
-        self->contents = g_string_new (utf8);
-        g_free (utf8);
-    } else {
-        self->contents = g_string_new_len (text, len);
-    }
+    self->contents = g_string_new (NULL);
 
     state = rsvg_state_new ();
     state->cond_true = FALSE;
 
-    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_CHARS,
+    node = rsvg_rust_cnode_new (RSVG_NODE_TYPE_CHARS,
                                 parent,
                                 state,
                                 self,
                                 rsvg_node_chars_set_atts,
                                 rsvg_node_chars_draw,
                                 rsvg_node_chars_free);
+
+    rsvg_node_chars_append (node, text, len);
+
+    return node;
 }
 
 static gboolean
@@ -952,7 +969,7 @@ find_last_chars_node (RsvgNode *node, gpointer data)
 }
 
 static void
-rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
+rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, gssize len)
 {
     RsvgNode *node;
 
@@ -962,8 +979,6 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
     if (ctx->priv->currentnode) {
         RsvgNodeType type = rsvg_node_get_type (ctx->priv->currentnode);
         if (type == RSVG_NODE_TYPE_TSPAN || type == RSVG_NODE_TYPE_TEXT) {
-            RsvgNodeChars *self;
-
             /* find the last CHARS node in the text or tspan node, so that we
                can coalesce the text, and thus avoid screwing up the Pango layouts */
             node = NULL;
@@ -973,16 +988,7 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, int len)
 
             if (node) {
                 g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
-                self = rsvg_rust_cnode_get_impl (node);
-
-                if (!g_utf8_validate ((char *) ch, len, NULL)) {
-                    char *utf8;
-                    utf8 = rsvg_make_valid_utf8 ((char *) ch, len);
-                    g_string_append (self->contents, utf8);
-                    g_free (utf8);
-                } else {
-                    g_string_append_len (self->contents, (char *)ch, len);
-                }
+                rsvg_node_chars_append (node, (const char *) ch, len);
 
                 node = rsvg_node_unref (node);
                 return;
