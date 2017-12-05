@@ -88,11 +88,22 @@ rsvg_handle_new_from_file (const gchar * file_name, GError ** error)
     char *data;
     gsize data_len;
     RsvgHandle *handle = NULL;
+    GFile *file;
 
     rsvg_return_val_if_fail (file_name != NULL, NULL, error);
 
-    base_uri = rsvg_get_base_uri_from_filename (file_name);
-    data = _rsvg_io_acquire_data (file_name, base_uri, NULL, &data_len, NULL, error);
+    file = g_file_new_for_path (file_name);
+    base_uri = g_file_get_uri (file);
+    if (!base_uri) {
+        g_set_error (error,
+                     G_IO_ERROR,
+                     G_IO_ERROR_FAILED,
+                     _("Cannot obtain URI from '%s'"), file_name);
+        g_object_unref (file);
+        return NULL;
+    }
+
+    data = _rsvg_io_acquire_data (base_uri, base_uri, NULL, &data_len, NULL, error);
 
     if (data) {
         handle = rsvg_handle_new ();
