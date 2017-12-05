@@ -186,10 +186,19 @@ draw_text_child (RsvgNode *node, gpointer data)
     closure = data;
 
     if (type == RSVG_NODE_TYPE_CHARS) {
-        RsvgNodeChars *chars = rsvg_rust_cnode_get_impl (node);
-        GString *str = _rsvg_text_chomp (rsvg_current_state (closure->ctx), chars->contents, closure->lastwasspace);
-        rsvg_text_render_text (closure->ctx, str->str, closure->x, closure->y);
-        g_string_free (str, TRUE);
+        const char *chars_str;
+        gsize chars_len;
+        GString *string;
+        GString *chomped;
+
+        rsvg_node_chars_get_string (node, &chars_str, &chars_len);
+        string = g_string_new_len (chars_str, chars_len);
+
+        chomped = _rsvg_text_chomp (rsvg_current_state (closure->ctx), string, closure->lastwasspace);
+        g_string_free (string, TRUE);
+
+        rsvg_text_render_text (closure->ctx, chomped->str, closure->x, closure->y);
+        g_string_free (chomped, TRUE);
     } else {
         if (closure->usetextonly) {
             _rsvg_node_text_type_children (node,
@@ -288,10 +297,19 @@ compute_child_length (RsvgNode *node, gpointer data)
     rsvg_state_reinherit_top (closure->ctx, rsvg_node_get_state (node), 0);
 
     if (type == RSVG_NODE_TYPE_CHARS) {
-        RsvgNodeChars *chars = rsvg_rust_cnode_get_impl (node);
-        GString *str = _rsvg_text_chomp (rsvg_current_state (closure->ctx), chars->contents, closure->lastwasspace);
-        *closure->length += rsvg_text_length_text_as_string (closure->ctx, str->str);
-        g_string_free (str, TRUE);
+        const char *chars_str;
+        gsize chars_len;
+        GString *string;
+        GString *chomped;
+
+        rsvg_node_chars_get_string (node, &chars_str, &chars_len);
+        string = g_string_new_len (chars_str, chars_len);
+
+        chomped = _rsvg_text_chomp (rsvg_current_state (closure->ctx), string, closure->lastwasspace);
+        g_string_free (string, TRUE);
+
+        *closure->length += rsvg_text_length_text_as_string (closure->ctx, chomped->str);
+        g_string_free (chomped, TRUE);
     } else {
         if (closure->usetextonly) {
             done = _rsvg_node_text_length_children (node,

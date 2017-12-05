@@ -882,6 +882,10 @@ rsvg_end_element (void *data, const xmlChar * xmlname)
     }
 }
 
+typedef struct {
+    GString *contents;
+} RsvgNodeChars;
+
 static void
 rsvg_node_chars_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag * atts)
 {
@@ -945,6 +949,18 @@ rsvg_new_node_chars (RsvgNode *parent)
                                 rsvg_node_chars_free);
 
     return node;
+}
+
+void
+rsvg_node_chars_get_string (RsvgNode *node, const char **out_str, gsize *out_len)
+{
+    RsvgNodeChars *chars;
+
+    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
+    chars = rsvg_rust_cnode_get_impl (node);
+
+    *out_str = chars->contents->str;
+    *out_len = chars->contents->len;
 }
 
 static gboolean

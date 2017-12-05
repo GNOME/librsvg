@@ -53,7 +53,6 @@ typedef struct _RsvgState RsvgState;
 typedef struct _RsvgDefs RsvgDefs;
 typedef struct _RsvgNode RsvgNode;
 typedef struct _RsvgFilter RsvgFilter;
-typedef struct _RsvgNodeChars RsvgNodeChars;
 
 /* prepare for gettext */
 #ifndef _
@@ -425,9 +424,8 @@ void rsvg_node_foreach_child (RsvgNode *node, RsvgNodeForeachChildFn fn, gpointe
 G_GNUC_INTERNAL
 void rsvg_node_draw_children (RsvgNode *node, RsvgDrawingCtx *ctx, int dominate);
 
-struct _RsvgNodeChars {
-    GString *contents;
-};
+G_GNUC_INTERNAL
+void rsvg_node_chars_get_string (RsvgNode *node, const char **out_str, gsize *out_len);
 
 typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
 
