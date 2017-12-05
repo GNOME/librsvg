@@ -1057,13 +1057,12 @@ rsvg_path_is_uri (char const *path)
     return (p[0] == ':' && p[1] == '/' && p[2] == '/');
 }
 
-gchar *
+static gchar *
 rsvg_get_base_uri_from_filename (const gchar * filename)
 {
     gchar *current_dir;
     gchar *absolute_filename;
     gchar *base_uri;
-
 
     if (g_path_is_absolute (filename))
         return g_filename_to_uri (filename, NULL, NULL);

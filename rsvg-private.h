@@ -363,8 +363,7 @@ GdkPixbuf *rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
                                                  const char *base_uri, GError ** error);
 G_GNUC_INTERNAL
 gboolean     rsvg_eval_switch_attributes	(RsvgPropertyBag * atts, gboolean * p_has_cond);
-G_GNUC_INTERNAL
-gchar       *rsvg_get_base_uri_from_filename    (const gchar * file_name);
+
 G_GNUC_INTERNAL
 void rsvg_pop_discrete_layer    (RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
