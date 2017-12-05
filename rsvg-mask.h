@@ -35,18 +35,29 @@
 
 G_BEGIN_DECLS 
 
-typedef RsvgCoordUnits RsvgMaskUnits;
 
 typedef struct _RsvgMask RsvgMask;
 
-struct _RsvgMask {
-    RsvgLength x, y, width, height;
-    RsvgMaskUnits maskunits;
-    RsvgMaskUnits contentunits;
-};
-
 G_GNUC_INTERNAL
 RsvgNode *rsvg_new_mask	    (const char *element_name, RsvgNode *node);
+
+G_GNUC_INTERNAL
+RsvgLength rsvg_node_mask_get_x (RsvgMask *mask);
+
+G_GNUC_INTERNAL
+RsvgLength rsvg_node_mask_get_y (RsvgMask *mask);
+
+G_GNUC_INTERNAL
+RsvgLength rsvg_node_mask_get_width (RsvgMask *mask);
+
+G_GNUC_INTERNAL
+RsvgLength rsvg_node_mask_get_height (RsvgMask *mask);
+
+G_GNUC_INTERNAL
+RsvgCoordUnits rsvg_node_mask_get_units (RsvgMask *mask);
+
+G_GNUC_INTERNAL
+RsvgCoordUnits rsvg_node_mask_get_content_units (RsvgMask *mask);
 
 /* Implemented in rust/src/clip_path.rs */
 G_GNUC_INTERNAL

@@ -29,6 +29,12 @@
 #include "rsvg-css.h"
 #include <string.h>
 
+struct _RsvgMask {
+    RsvgLength x, y, width, height;
+    RsvgMaskUnits maskunits;
+    RsvgMaskUnits contentunits;
+};
+
 static void
 rsvg_mask_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
 {
@@ -83,4 +89,40 @@ rsvg_new_mask (const char *element_name, RsvgNode *parent)
                                 rsvg_mask_set_atts,
                                 rsvg_mask_draw,
                                 g_free);
+}
+
+RsvgLength
+rsvg_node_mask_get_x (RsvgMask *mask)
+{
+    return mask->x;
+}
+
+RsvgLength
+rsvg_node_mask_get_y (RsvgMask *mask)
+{
+    return mask->y;
+}
+
+RsvgLength
+rsvg_node_mask_get_width (RsvgMask *mask)
+{
+    return mask->width;
+}
+
+RsvgLength
+rsvg_node_mask_get_height (RsvgMask *mask)
+{
+    return mask->height;
+}
+
+RsvgCoordUnits
+rsvg_node_mask_get_units (RsvgMask *mask)
+{
+    return mask->maskunits;
+}
+
+RsvgCoordUnits
+rsvg_node_mask_get_content_units (RsvgMask *mask)
+{
+    return mask->contentunits;
 }
