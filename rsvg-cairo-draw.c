@@ -530,10 +530,10 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx
     cairo_matrix_t affinesave;
     double sx, sy, sw, sh;
     gboolean nest = cr != render->initial_cr;
-    RsvgMask *self;
+    RsvgMask *mask;
 
     g_assert (rsvg_node_get_type (node_mask) == RSVG_NODE_TYPE_MASK);
-    self = rsvg_rust_cnode_get_impl (node_mask);
+    mask = rsvg_rust_cnode_get_impl (node_mask);
 
     surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
     if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
@@ -544,22 +544,22 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx
     pixels = cairo_image_surface_get_data (surface);
     rowstride = cairo_image_surface_get_stride (surface);
 
-    if (self->maskunits == objectBoundingBox)
+    if (mask->maskunits == objectBoundingBox)
         rsvg_drawing_ctx_push_view_box (ctx, 1, 1);
 
-    sx = rsvg_length_normalize (&self->x, ctx);
-    sy = rsvg_length_normalize (&self->y, ctx);
-    sw = rsvg_length_normalize (&self->width, ctx);
-    sh = rsvg_length_normalize (&self->height, ctx);
+    sx = rsvg_length_normalize (&mask->x, ctx);
+    sy = rsvg_length_normalize (&mask->y, ctx);
+    sw = rsvg_length_normalize (&mask->width, ctx);
+    sh = rsvg_length_normalize (&mask->height, ctx);
 
-    if (self->maskunits == objectBoundingBox)
+    if (mask->maskunits == objectBoundingBox)
         rsvg_drawing_ctx_pop_view_box (ctx);
 
     mask_cr = cairo_create (surface);
     save_cr = render->cr;
     render->cr = mask_cr;
 
-    if (self->maskunits == objectBoundingBox)
+    if (mask->maskunits == objectBoundingBox)
         rsvg_cairo_add_clipping_rect (ctx,
                                       sx * bbox->rect.width + bbox->rect.x,
                                       sy * bbox->rect.height + bbox->rect.y,
@@ -569,7 +569,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx
         rsvg_cairo_add_clipping_rect (ctx, sx, sy, sw, sh);
 
     /* Horribly dirty hack to have the bbox premultiplied to everything */
-    if (self->contentunits == objectBoundingBox) {
+    if (mask->contentunits == objectBoundingBox) {
         cairo_matrix_t bbtransform;
         RsvgState *mask_state;
 
@@ -592,7 +592,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx
     rsvg_node_draw_children (node_mask, ctx, 0);
     rsvg_state_pop (ctx);
 
-    if (self->contentunits == objectBoundingBox) {
+    if (mask->contentunits == objectBoundingBox) {
         RsvgState *mask_state;
 
         rsvg_drawing_ctx_pop_view_box (ctx);
