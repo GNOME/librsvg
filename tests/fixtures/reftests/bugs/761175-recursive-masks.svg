@@ -1,0 +1,50 @@
+<svg version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" stroke-linecap="round" stroke-linejoin="round" fill-rule="evenodd" width="321.00" height="27.00" viewBox="0 0 6420 540">
+	<metadata>
+		<rdf:RDF>
+			<rdf:Description>
+				<dc:description>MSS/MilX-Export to SVG</dc:description>
+				<dc:publisher>gs-soft AG</dc:publisher>
+			</rdf:Description>
+		</rdf:RDF>
+	</metadata>
+	<defs>
+		<style type="text/css">
+			<![CDATA[
+			.Pen0 {fill:none;stroke:black;stroke-width:42;}
+			.Pen1 {fill:none;stroke:black;stroke-width:44;}
+			]]>
+		</style>
+		<mask id="Mask_ClipObj0_ex_ClipObj1" maskUnits="userSpaceOnUse" x="0" y="0" width="6420" height="540">
+			<g>
+				<use xlink:href="#ClipObj0" fill="white"/>
+				<use xlink:href="#ClipObj1" fill="black"/>
+			</g>
+		</mask>
+		<g id="ClipObj0_ex_ClipObj1">
+			<use xlink:href="#ClipObj0" mask="url(#Mask_ClipObj0_ex_ClipObj1)"/>
+		</g>
+		<mask id="Region0" maskUnits="userSpaceOnUse" x="0" y="0" width="6420" height="540" fill-rule="nonzero">
+			<use xlink:href="#ClipObj0_ex_ClipObj1" fill="white"/>
+		</mask>
+		<mask id="Region1" maskUnits="userSpaceOnUse" x="0" y="0" width="6420" height="540" fill-rule="nonzero">
+			<use xlink:href="#ClipObj0" fill="white"/>
+		</mask>
+		<rect id="ClipObj0" x="0" y="0" width="6420" height="540"/>
+		<polygon id="ClipObj1" points="2760,20 3660,20 3660,500 2760,500"/>
+		<g id="Block1">
+			<g transform="matrix(0.068 0 0 0.068 2 2)">
+				<polyline points="480,0 300,300" class="Pen1"/>
+			</g>
+		</g>
+	</defs>
+	<g mask="url(#Region0)">
+		<g transform="matrix(1.66667 0 0 1.66667 0 0)">
+			<polyline points="30,156 3810,156" class="Pen0"/>
+		</g>
+	</g>
+	<g mask="url(#Region1)">
+		<g transform="matrix(19.529 0 0 19.1333 2751.67 21.6667)">
+			<use xlink:href="#Block1"/>
+		</g>
+	</g>
+</svg>
