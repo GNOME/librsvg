@@ -690,7 +690,7 @@ rsvg_text_layout_new (RsvgDrawingCtx * ctx, const char *text)
     return layout;
 }
 
-void
+static void
 rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdouble * y)
 {
     PangoContext *context;
