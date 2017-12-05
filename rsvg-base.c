@@ -966,7 +966,7 @@ find_last_chars_node (RsvgNode *node, gpointer data)
 static void
 rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, gssize len)
 {
-    RsvgNode *node;
+    RsvgNode *node = NULL;
 
     if (!ch || !len)
         return;
@@ -976,28 +976,23 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, gssize len)
         if (type == RSVG_NODE_TYPE_TSPAN || type == RSVG_NODE_TYPE_TEXT) {
             /* find the last CHARS node in the text or tspan node, so that we
                can coalesce the text, and thus avoid screwing up the Pango layouts */
-            node = NULL;
             rsvg_node_foreach_child (ctx->priv->currentnode,
                                      find_last_chars_node,
                                      &node);
-
-            if (node) {
-                g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
-                rsvg_node_chars_append (node, (const char *) ch, len);
-
-                node = rsvg_node_unref (node);
-                return;
-            }
         }
     }
 
-    node = rsvg_new_node_chars (ctx->priv->currentnode);
+    if (!node) {
+        node = rsvg_new_node_chars (ctx->priv->currentnode);
+        add_node_to_handle (ctx, node);
+
+        if (ctx->priv->currentnode)
+            rsvg_node_add_child (ctx->priv->currentnode, node);
+    } else {
+        g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
+    }
+
     rsvg_node_chars_append (node, (const char *) ch, len);
-
-    add_node_to_handle (ctx, node);
-
-    if (ctx->priv->currentnode)
-        rsvg_node_add_child (ctx->priv->currentnode, node);
 
     node = rsvg_node_unref (node);
 }
