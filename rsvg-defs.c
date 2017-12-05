@@ -52,52 +52,50 @@ rsvg_defs_new (RsvgHandle *handle)
     return result;
 }
 
-static int
-rsvg_defs_load_extern (const RsvgDefs * defs, const char *name)
+static RsvgHandle *
+rsvg_defs_load_extern (const RsvgDefs * defs, const char *uri)
 {
-    RsvgHandle *handle;
-    gchar *filename, *base_uri;
+    RsvgHandle *handle = NULL;
     char *data;
     gsize data_len;
-    gboolean rv;
 
-    filename = _rsvg_io_get_file_path (name, rsvg_handle_get_base_uri (defs->ctx));
-
-    data = _rsvg_handle_acquire_data (defs->ctx, name, NULL, &data_len, NULL);
+    data = _rsvg_handle_acquire_data (defs->ctx, uri, NULL, &data_len, NULL);
 
     if (data) {
         handle = rsvg_handle_new ();
+        rsvg_handle_set_base_uri (handle, uri);
 
-        base_uri = rsvg_get_base_uri_from_filename (filename);
-        rsvg_handle_set_base_uri (handle, base_uri);
-        g_free (base_uri);
-
-        rv = rsvg_handle_write (handle, (guchar *) data, data_len, NULL);
-        rv = rsvg_handle_close (handle, NULL) && rv;
-        if (rv) {
-            g_hash_table_insert (defs->externs, g_strdup (name), handle);
+        if (rsvg_handle_write (handle, (guchar *) data, data_len, NULL)
+            && rsvg_handle_close (handle, NULL)) {
+            g_hash_table_insert (defs->externs, g_strdup (uri), handle);
+        } else {
+            g_object_unref (handle);
+            handle = NULL;
         }
 
         g_free (data);
     }
 
-    g_free (filename);
-    return 0;
+    return handle;
 }
 
 static RsvgNode *
-rsvg_defs_extern_lookup (const RsvgDefs * defs, const char *filename, const char *name)
+rsvg_defs_extern_lookup (const RsvgDefs * defs, const char *possibly_relative_uri, const char *name)
 {
-    RsvgHandle *file;
-    file = (RsvgHandle *) g_hash_table_lookup (defs->externs, filename);
-    if (file == NULL) {
-        if (rsvg_defs_load_extern (defs, filename))
-            return NULL;
-        file = (RsvgHandle *) g_hash_table_lookup (defs->externs, filename);
+    RsvgHandle *handle;
+    char *uri;
+
+    uri = rsvg_handle_resolve_uri (defs->ctx, possibly_relative_uri);
+    if (!uri)
+        return NULL;
+
+    handle = (RsvgHandle *) g_hash_table_lookup (defs->externs, uri);
+    if (handle == NULL) {
+        handle = rsvg_defs_load_extern (defs, uri);
     }
 
-    if (file != NULL)
-        return g_hash_table_lookup (file->priv->defs->hash, name);
+    if (handle != NULL)
+        return g_hash_table_lookup (handle->priv->defs->hash, name);
     else
         return NULL;
 }
