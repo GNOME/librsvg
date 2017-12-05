@@ -924,16 +924,13 @@ rsvg_node_chars_append (RsvgNode *node,
 }
 
 static RsvgNode *
-rsvg_new_node_chars (const char *text,
-                     int len,
-                     RsvgNode *parent)
+rsvg_new_node_chars (RsvgNode *parent)
 {
     RsvgNodeChars *self;
     RsvgState *state;
     RsvgNode *node;
 
     self = g_new0 (RsvgNodeChars, 1);
-
     self->contents = g_string_new (NULL);
 
     state = rsvg_state_new ();
@@ -946,8 +943,6 @@ rsvg_new_node_chars (const char *text,
                                 rsvg_node_chars_set_atts,
                                 rsvg_node_chars_draw,
                                 rsvg_node_chars_free);
-
-    rsvg_node_chars_append (node, text, len);
 
     return node;
 }
@@ -996,7 +991,8 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, gssize len)
         }
     }
 
-    node = rsvg_new_node_chars ((char *) ch, len, ctx->priv->currentnode);
+    node = rsvg_new_node_chars (ctx->priv->currentnode);
+    rsvg_node_chars_append (node, (const char *) ch, len);
 
     add_node_to_handle (ctx, node);
 
