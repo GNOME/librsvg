@@ -26,10 +26,6 @@
 #include <glib.h>
 #include <gio/gio.h>
 
-G_GNUC_INTERNAL
-gchar *_rsvg_io_get_file_path (const gchar *filename, 
-                               const gchar *basedir);
-
 char *_rsvg_io_acquire_data (const char *uri,
 			     const char *base_uri,
 			     char **mime_type,

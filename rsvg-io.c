@@ -325,7 +325,7 @@ _rsvg_io_acquire_stream (const char *href,
         return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
     }
 
-    if ((data = rsvg_acquire_file_data (href, base_uri, mime_type, &len, cancellable, NULL)))
+    if ((data = rsvg_acquire_file_data (href, mime_type, &len, cancellable, NULL)))
       return g_memory_input_stream_new_from_data (data, len, (GDestroyNotify) g_free);
 
     if ((stream = rsvg_acquire_gvfs_stream (href, base_uri, mime_type, cancellable, error)))
