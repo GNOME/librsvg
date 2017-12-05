@@ -518,7 +518,7 @@ rsvg_cairo_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr)
 }
 
 static void
-rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx, RsvgBbox *bbox)
+rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, RsvgBbox *bbox)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_surface_t *surface;
@@ -531,12 +531,10 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx
     RsvgLength mask_x, mask_y, mask_w, mask_h;
     double sx, sy, sw, sh;
     gboolean nest = cr != render->initial_cr;
-    RsvgMask *mask;
     RsvgCoordUnits mask_units;
     RsvgCoordUnits content_units;
 
-    g_assert (rsvg_node_get_type (node_mask) == RSVG_NODE_TYPE_MASK);
-    mask = rsvg_rust_cnode_get_impl (node_mask);
+    g_assert (rsvg_node_get_type (mask) == RSVG_NODE_TYPE_MASK);
 
     surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
     if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
@@ -592,7 +590,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx
                            bbox->rect.x,
                            bbox->rect.y);
 
-        mask_state = rsvg_node_get_state (node_mask);
+        mask_state = rsvg_node_get_state (mask);
 
         affinesave = mask_state->affine;
         cairo_matrix_multiply (&mask_state->affine, &bbtransform, &mask_state->affine);
@@ -600,7 +598,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx
     }
 
     rsvg_state_push (ctx);
-    rsvg_node_draw_children (node_mask, ctx, 0);
+    rsvg_node_draw_children (mask, ctx, 0);
     rsvg_state_pop (ctx);
 
     if (content_units == objectBoundingBox) {
@@ -608,7 +606,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *node_mask, RsvgDrawingCtx *ctx
 
         rsvg_drawing_ctx_pop_view_box (ctx);
 
-        mask_state = rsvg_node_get_state (node_mask);
+        mask_state = rsvg_node_get_state (mask);
         mask_state->affine = affinesave;
     }
 

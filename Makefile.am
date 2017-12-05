@@ -36,7 +36,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	rsvg-filter.c		\
 	rsvg-filter.h		\
 	rsvg-marker.h		\
-	rsvg-mask.c		\
 	rsvg-mask.h		\
 	rsvg-shapes.h		\
 	rsvg-structure.h	\
@@ -83,6 +82,7 @@ RUST_SOURCES =					\
 	rust/src/length.rs			\
 	rust/src/lib.rs				\
 	rust/src/marker.rs			\
+	rust/src/mask.rs			\
 	rust/src/node.rs			\
 	rust/src/opacity.rs			\
 	rust/src/paint_server.rs		\

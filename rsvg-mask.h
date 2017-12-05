@@ -35,29 +35,33 @@
 
 G_BEGIN_DECLS 
 
-
-typedef struct _RsvgMask RsvgMask;
-
+/* Implemented in rust/src/mask.rs */
 G_GNUC_INTERNAL
-RsvgNode *rsvg_new_mask	    (const char *element_name, RsvgNode *node);
+RsvgNode *rsvg_node_mask_new (const char *element_name, RsvgNode *node);
 
+/* Implemented in rust/src/mask.rs */
 G_GNUC_INTERNAL
-RsvgLength rsvg_node_mask_get_x (RsvgMask *mask);
+RsvgLength rsvg_node_mask_get_x (RsvgNode *node);
 
+/* Implemented in rust/src/mask.rs */
 G_GNUC_INTERNAL
-RsvgLength rsvg_node_mask_get_y (RsvgMask *mask);
+RsvgLength rsvg_node_mask_get_y (RsvgNode *node);
 
+/* Implemented in rust/src/mask.rs */
 G_GNUC_INTERNAL
-RsvgLength rsvg_node_mask_get_width (RsvgMask *mask);
+RsvgLength rsvg_node_mask_get_width (RsvgNode *node);
 
+/* Implemented in rust/src/mask.rs */
 G_GNUC_INTERNAL
-RsvgLength rsvg_node_mask_get_height (RsvgMask *mask);
+RsvgLength rsvg_node_mask_get_height (RsvgNode *node);
 
+/* Implemented in rust/src/mask.rs */
 G_GNUC_INTERNAL
-RsvgCoordUnits rsvg_node_mask_get_units (RsvgMask *mask);
+RsvgCoordUnits rsvg_node_mask_get_units (RsvgNode *node);
 
+/* Implemented in rust/src/mask.rs */
 G_GNUC_INTERNAL
-RsvgCoordUnits rsvg_node_mask_get_content_units (RsvgMask *mask);
+RsvgCoordUnits rsvg_node_mask_get_content_units (RsvgNode *node);
 
 /* Implemented in rust/src/clip_path.rs */
 G_GNUC_INTERNAL

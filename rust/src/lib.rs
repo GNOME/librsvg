@@ -56,6 +56,16 @@ pub use marker::{
     rsvg_node_marker_new,
 };
 
+pub use mask::{
+    rsvg_node_mask_new,
+    rsvg_node_mask_get_x,
+    rsvg_node_mask_get_y,
+    rsvg_node_mask_get_width,
+    rsvg_node_mask_get_height,
+    rsvg_node_mask_get_units,
+    rsvg_node_mask_get_content_units,
+};
+
 pub use node::{
     rsvg_node_get_type,
     rsvg_node_get_parent,
@@ -141,6 +151,7 @@ mod handle;
 mod image;
 mod length;
 mod marker;
+mod mask;
 mod node;
 mod opacity;
 mod paint_server;
