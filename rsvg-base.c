@@ -950,29 +950,41 @@ find_last_chars_child (RsvgNode *node)
     return child;
 }
 
+static RsvgNode *
+add_new_chars_child_to_current_node (RsvgHandle *ctx)
+{
+    RsvgNode *node;
+
+    node = rsvg_node_chars_new (ctx->priv->currentnode);
+    add_node_to_handle (ctx, node);
+
+    if (ctx->priv->currentnode) {
+        rsvg_node_add_child (ctx->priv->currentnode, node);
+    }
+
+    return node;
+}
+
 static void
 rsvg_characters_impl (RsvgHandle *ctx, const char *ch, gssize len)
 {
     RsvgNode *node = NULL;
 
-    if (!ch || !len)
+    if (!ch || !len) {
         return;
+    }
 
-    if (!node_is_text_or_tspan (ctx->priv->currentnode))
+    if (!node_is_text_or_tspan (ctx->priv->currentnode)) {
         return;
+    }
 
     node = find_last_chars_child (ctx->priv->currentnode);
 
     if (!node) {
-        node = rsvg_node_chars_new (ctx->priv->currentnode);
-        add_node_to_handle (ctx, node);
-
-        if (ctx->priv->currentnode)
-            rsvg_node_add_child (ctx->priv->currentnode, node);
-    } else {
-        g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
+        node = add_new_chars_child_to_current_node (ctx);
     }
 
+    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
     rsvg_node_chars_append (node, ch, len);
 
     node = rsvg_node_unref (node);
