@@ -1145,7 +1145,7 @@ rsvg_set_error (GError **error, xmlParserCtxtPtr ctxt)
 }
 
 static gboolean
-rsvg_handle_write_impl (RsvgHandle * handle, const guchar * buf, gsize count, GError ** error)
+write_impl (RsvgHandle * handle, const guchar * buf, gsize count, GError ** error)
 {
     GError *real_error = NULL;
     int result;
@@ -1325,7 +1325,7 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
                 count--;
             } else {
                 priv->state = RSVG_HANDLE_STATE_READING;
-                return rsvg_handle_write_impl (handle, buf, count, error);
+                return write_impl (handle, buf, count, error);
             }
 
             break;
@@ -1338,7 +1338,7 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
                 count--;
             } else {
                 priv->state = RSVG_HANDLE_STATE_READING;
-                return rsvg_handle_write_impl (handle, buf, count, error);
+                return write_impl (handle, buf, count, error);
             }
 
             break;
@@ -1349,7 +1349,7 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
             return TRUE;
 
         case RSVG_HANDLE_STATE_READING:
-            return rsvg_handle_write_impl (handle, buf, count, error);
+            return write_impl (handle, buf, count, error);
 
         default:
             g_assert_not_reached ();
