@@ -42,7 +42,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	rsvg-file-util.c	\
 	rsvg-filter.c		\
 	rsvg-filter.h		\
-	rsvg-gobject.c		\
+	rsvg-handle.c		\
 	rsvg-io.c		\
 	rsvg-io.h		\
 	rsvg-marker.h		\
