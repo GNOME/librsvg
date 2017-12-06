@@ -480,7 +480,7 @@ rsvg_extra_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len
 
     if (!g_utf8_validate ((char *) ch, len, NULL)) {
         char *utf8;
-        utf8 = rsvg_make_valid_utf8 ((char *) ch, len);
+        utf8 = g_utf8_make_valid (ch, len);
         g_string_append (z->string, utf8);
         g_free (utf8);
     } else {

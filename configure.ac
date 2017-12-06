@@ -38,7 +38,7 @@ AC_SUBST([LIBRSVG_MICRO_VERSION],[rsvg_micro_version])
 
 dnl ===========================================================================
 
-GLIB_REQUIRED=2.12.0
+GLIB_REQUIRED=2.52.0
 GIO_REQUIRED=2.24.0
 LIBXML_REQUIRED=2.9.0
 CAIRO_REQUIRED=1.2.0
