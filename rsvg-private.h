@@ -225,8 +225,8 @@ struct RsvgRender {
 
     void (*free) (RsvgRender * self);
 
-    PangoContext    *(*create_pango_context)    (RsvgDrawingCtx * ctx);
-    void             (*render_pango_layout)	    (RsvgDrawingCtx * ctx, PangoLayout *layout,
+    PangoContext    *(*get_pango_context)       (RsvgDrawingCtx * ctx);
+    void             (*render_pango_layout)	(RsvgDrawingCtx * ctx, PangoLayout *layout,
                                                  double x, double y);
     void             (*render_path_builder)     (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder);
     void             (*render_surface)          (RsvgDrawingCtx * ctx, cairo_surface_t *surface,

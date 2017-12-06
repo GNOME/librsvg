@@ -186,7 +186,7 @@ get_font_map_for_testing (RsvgCairoRender *render)
 #endif
 
 PangoContext *
-rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
+rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
 {
     PangoFontMap *fontmap;
     PangoContext *context;

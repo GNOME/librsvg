@@ -73,7 +73,7 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
 
     cairo_render->super.type = RSVG_RENDER_TYPE_CAIRO;
     cairo_render->super.free = rsvg_cairo_render_free;
-    cairo_render->super.create_pango_context = rsvg_cairo_create_pango_context;
+    cairo_render->super.get_pango_context = rsvg_cairo_get_pango_context;
     cairo_render->super.render_pango_layout = rsvg_cairo_render_pango_layout;
     cairo_render->super.render_surface = rsvg_cairo_render_surface;
     cairo_render->super.render_path_builder = rsvg_cairo_render_path_builder;

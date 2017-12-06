@@ -151,7 +151,7 @@ rsvg_cairo_clip_render_new (cairo_t *cr, RsvgCairoRender *parent)
 
     render->type = RSVG_RENDER_TYPE_CAIRO_CLIP;
     render->free = rsvg_cairo_clip_render_free;
-    render->create_pango_context = rsvg_cairo_create_pango_context;
+    render->get_pango_context = rsvg_cairo_get_pango_context;
     render->render_pango_layout = rsvg_cairo_clip_render_pango_layout;
     render->render_path_builder = rsvg_cairo_clip_render_path_builder;
     render->render_surface = rsvg_cairo_clip_render_surface;

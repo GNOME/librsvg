@@ -677,7 +677,7 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
     if (state->font_size.length == 0)
         return;
 
-    context = ctx->render->create_pango_context (ctx);
+    context = ctx->render->get_pango_context (ctx);
     layout = rsvg_text_create_layout (ctx, text, context);
     pango_layout_get_size (layout, &w, &h);
     iter = pango_layout_get_iter (layout);
@@ -709,7 +709,7 @@ measure_text (RsvgDrawingCtx * ctx, const char *text)
     gdouble scaled_width;
 
     if (ctx->pango_context == NULL)
-        ctx->pango_context = ctx->render->create_pango_context (ctx);
+        ctx->pango_context = ctx->render->get_pango_context (ctx);
 
     layout = rsvg_text_create_layout (ctx, text, ctx->pango_context);
 
