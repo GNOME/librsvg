@@ -226,12 +226,12 @@ length_from_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
                   gboolean usetextonly);
 
 static gboolean
-_rsvg_node_text_length_tspan (RsvgNode *node,
-                              RsvgNodeText *self,
-                              RsvgDrawingCtx *ctx,
-                              gdouble *x,
-                              gboolean *lastwasspace,
-                              gboolean usetextonly);
+length_from_tspan (RsvgNode *node,
+                   RsvgNodeText *self,
+                   RsvgDrawingCtx *ctx,
+                   gdouble *x,
+                   gboolean *lastwasspace,
+                   gboolean usetextonly);
 
 static gdouble rsvg_text_length_text_as_string (RsvgDrawingCtx * ctx, const char *text);
 
@@ -280,12 +280,12 @@ compute_child_length (RsvgNode *node, gpointer data)
         } else {
             if (type == RSVG_NODE_TYPE_TSPAN) {
                 RsvgNodeText *tspan = rsvg_rust_cnode_get_impl (node);
-                done = _rsvg_node_text_length_tspan (node,
-                                                     tspan,
-                                                     closure->ctx,
-                                                     closure->length,
-                                                     closure->lastwasspace,
-                                                     closure->usetextonly);
+                done = length_from_tspan (node,
+                                          tspan,
+                                          closure->ctx,
+                                          closure->length,
+                                          closure->lastwasspace,
+                                          closure->usetextonly);
             } else if (type == RSVG_NODE_TYPE_TREF) {
                 RsvgNodeTref *tref = rsvg_rust_cnode_get_impl (node);
                 done = length_from_tref (tref,
@@ -428,12 +428,12 @@ _rsvg_node_text_type_tspan (RsvgNode *node, RsvgNodeText *self, RsvgDrawingCtx *
 }
 
 static gboolean
-_rsvg_node_text_length_tspan (RsvgNode *node,
-                              RsvgNodeText *self,
-                              RsvgDrawingCtx *ctx,
-                              gdouble *length,
-                              gboolean *lastwasspace,
-                              gboolean usetextonly)
+length_from_tspan (RsvgNode *node,
+                   RsvgNodeText *self,
+                   RsvgDrawingCtx *ctx,
+                   gdouble *length,
+                   gboolean *lastwasspace,
+                   gboolean usetextonly)
 {
     if (self->x_specified || self->y_specified)
         return TRUE;
