@@ -117,19 +117,29 @@ rsvg_node_text_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, Rsvg
 static void rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdouble * y);
 
 static void
-draw_from_children (RsvgNode * self, RsvgDrawingCtx * ctx,
-                    gdouble * x, gdouble * y, gboolean * lastwasspace,
-                    gboolean usetextonly);
+draw_from_children (RsvgNode       *self,
+                    RsvgDrawingCtx *ctx,
+                    gdouble        *x,
+                    gdouble        *y,
+                    gboolean       *lastwasspace,
+                    gboolean        usetextonly);
 
 static void
-draw_tspan (RsvgNode *node, RsvgNodeText *self, RsvgDrawingCtx *ctx,
-            gdouble *x, gdouble *y, gboolean *lastwasspace,
-            gboolean usetextonly);
+draw_tspan (RsvgNode       *node,
+            RsvgNodeText   *self,
+            RsvgDrawingCtx *ctx,
+            gdouble        *x,
+            gdouble        *y,
+            gboolean       *lastwasspace,
+            gboolean        usetextonly);
 
 static void
-draw_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
-           gdouble * x, gdouble * y, gboolean * lastwasspace,
-           gboolean usetextonly);
+draw_tref (RsvgNodeTref   *self,
+           RsvgDrawingCtx *ctx,
+           gdouble        *x,
+           gdouble        *y,
+           gboolean       *lastwasspace,
+           gboolean        usetextonly);
 
 typedef struct {
     RsvgDrawingCtx *ctx;
@@ -196,9 +206,12 @@ draw_text_child (RsvgNode *node, gpointer data)
 
 /* This function is responsible of selecting render for a text element including its children and giving it the drawing context */
 static void
-draw_from_children (RsvgNode * self, RsvgDrawingCtx * ctx,
-                    gdouble * x, gdouble * y, gboolean * lastwasspace,
-                    gboolean usetextonly)
+draw_from_children (RsvgNode       *self,
+                    RsvgDrawingCtx *ctx,
+                    gdouble        *x,
+                    gdouble        *y,
+                    gboolean       *lastwasspace,
+                    gboolean        usetextonly)
 {
     DrawTextClosure closure;
 
@@ -383,9 +396,13 @@ rsvg_new_text (const char *element_name, RsvgNode *parent)
 }
 
 static void
-draw_tspan (RsvgNode *node, RsvgNodeText *self, RsvgDrawingCtx *ctx,
-            gdouble *x, gdouble *y, gboolean *lastwasspace,
-            gboolean usetextonly)
+draw_tspan (RsvgNode       *node,
+            RsvgNodeText   *self,
+            RsvgDrawingCtx *ctx,
+            gdouble        *x,
+            gdouble        *y,
+            gboolean       *lastwasspace,
+            gboolean        usetextonly)
 {
     double dx, dy, length = 0;
 
@@ -483,9 +500,12 @@ rsvg_new_tspan (const char *element_name, RsvgNode *parent)
 }
 
 static void
-draw_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
-           gdouble * x, gdouble * y, gboolean * lastwasspace,
-           gboolean usetextonly)
+draw_tref (RsvgNodeTref   *self,
+           RsvgDrawingCtx *ctx,
+           gdouble        *x,
+           gdouble        *y,
+           gboolean       *lastwasspace,
+           gboolean        usetextonly)
 {
     RsvgNode *link;
 
