@@ -172,7 +172,6 @@ draw_text_child (RsvgNode *node, gpointer data)
         } else {
             if (type == RSVG_NODE_TYPE_TSPAN) {
                 RsvgNodeText *tspan = rsvg_rust_cnode_get_impl (node);
-                rsvg_state_push (closure->ctx);
                 _rsvg_node_text_type_tspan (node,
                                             tspan,
                                             closure->ctx,
@@ -180,7 +179,6 @@ draw_text_child (RsvgNode *node, gpointer data)
                                             closure->y,
                                             closure->lastwasspace,
                                             closure->usetextonly);
-                rsvg_state_pop (closure->ctx);
             } else if (type == RSVG_NODE_TYPE_TREF) {
                 RsvgNodeTref *tref = rsvg_rust_cnode_get_impl (node);
                 _rsvg_node_text_type_tref (tref,
@@ -387,6 +385,8 @@ _rsvg_node_text_type_tspan (RsvgNode *node, RsvgNodeText *self, RsvgDrawingCtx *
 {
     double dx, dy, length = 0;
 
+    rsvg_state_push (ctx);
+
     rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), 0);
 
     dx = rsvg_length_normalize (&self->dx, ctx);
@@ -423,6 +423,8 @@ _rsvg_node_text_type_tspan (RsvgNode *node, RsvgNodeText *self, RsvgDrawingCtx *
     }
     *y += dy;
     _rsvg_node_text_type_children (node, ctx, x, y, lastwasspace, usetextonly);
+
+    rsvg_state_pop (ctx);
 }
 
 static gboolean
