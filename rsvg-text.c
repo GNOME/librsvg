@@ -250,7 +250,7 @@ length_from_tspan (RsvgNode       *node,
                    gboolean       *lastwasspace,
                    gboolean        usetextonly);
 
-static gdouble rsvg_text_length_text_as_string (RsvgDrawingCtx * ctx, const char *text);
+static gdouble measure_text (RsvgDrawingCtx * ctx, const char *text);
 
 typedef struct {
     RsvgDrawingCtx *ctx;
@@ -285,7 +285,7 @@ compute_child_length (RsvgNode *node, gpointer data)
         chomped = _rsvg_text_chomp (rsvg_current_state (closure->ctx), string, closure->lastwasspace);
         g_string_free (string, TRUE);
 
-        *closure->length += rsvg_text_length_text_as_string (closure->ctx, chomped->str);
+        *closure->length += measure_text (closure->ctx, chomped->str);
         g_string_free (chomped, TRUE);
     } else {
         if (closure->usetextonly) {
@@ -702,7 +702,7 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
 }
 
 static gdouble
-rsvg_text_length_text_as_string (RsvgDrawingCtx * ctx, const char *text)
+measure_text (RsvgDrawingCtx * ctx, const char *text)
 {
     PangoLayout *layout;
     gint width;
