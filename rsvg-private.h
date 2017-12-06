@@ -119,7 +119,7 @@ struct RsvgSaxHandler {
     void (*free) (RsvgSaxHandler * self);
     void (*start_element) (RsvgSaxHandler * self, const char *name, RsvgPropertyBag * atts);
     void (*end_element) (RsvgSaxHandler * self, const char *name);
-    void (*characters) (RsvgSaxHandler * self, const char *ch, int len);
+    void (*characters) (RsvgSaxHandler * self, const char *ch, gssize len);
 };
 
 /* Reading state for an RsvgHandle */

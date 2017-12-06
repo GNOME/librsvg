@@ -139,7 +139,7 @@ rsvg_style_handler_free (RsvgSaxHandler * self)
 }
 
 static void
-rsvg_style_handler_characters (RsvgSaxHandler * self, const char *ch, int len)
+rsvg_style_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len)
 {
     RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
     g_string_append_len (z->style, ch, len);
@@ -465,7 +465,7 @@ rsvg_extra_handler_free (RsvgSaxHandler * self)
 }
 
 static void
-rsvg_extra_handler_characters (RsvgSaxHandler * self, const char *ch, int len)
+rsvg_extra_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len)
 {
     RsvgSaxHandlerExtra *z = (RsvgSaxHandlerExtra *) self;
 
@@ -616,8 +616,8 @@ typedef struct _RsvgSaxHandlerXinclude {
     gboolean in_fallback;
 } RsvgSaxHandlerXinclude;
 
-static void rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts);
-static void rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, gssize len);
+static void rsvg_start_xinclude (RsvgHandle *ctx, RsvgPropertyBag *atts);
+static void rsvg_characters_impl (RsvgHandle *ctx, const char *ch, gssize len);
 
 static void
 rsvg_xinclude_handler_free (RsvgSaxHandler * self)
@@ -626,12 +626,12 @@ rsvg_xinclude_handler_free (RsvgSaxHandler * self)
 }
 
 static void
-rsvg_xinclude_handler_characters (RsvgSaxHandler * self, const char *ch, int len)
+rsvg_xinclude_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len)
 {
     RsvgSaxHandlerXinclude *z = (RsvgSaxHandlerXinclude *) self;
 
     if (z->in_fallback) {
-        rsvg_characters_impl (z->ctx, (const xmlChar *) ch, len);
+        rsvg_characters_impl (z->ctx, ch, len);
     }
 }
 
@@ -760,7 +760,7 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
             data_len = text_data_len;
         }
 
-        rsvg_characters_impl (ctx, (xmlChar *) data, data_len);
+        rsvg_characters_impl (ctx, data, data_len);
 
         g_free (data);
     } else {
@@ -905,7 +905,7 @@ find_last_chars_node (RsvgNode *node, gpointer data)
 }
 
 static void
-rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, gssize len)
+rsvg_characters_impl (RsvgHandle *ctx, const char *ch, gssize len)
 {
     RsvgNode *node = NULL;
 
@@ -933,7 +933,7 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, gssize len)
         g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
     }
 
-    rsvg_node_chars_append (node, (const char *) ch, len);
+    rsvg_node_chars_append (node, ch, len);
 
     node = rsvg_node_unref (node);
 }
@@ -948,7 +948,7 @@ rsvg_characters (void *data, const xmlChar * ch, int len)
         return;
     }
 
-    rsvg_characters_impl (ctx, ch, len);
+    rsvg_characters_impl (ctx, (const char *) ch, len);
 }
 
 static xmlEntityPtr
