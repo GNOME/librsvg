@@ -929,8 +929,12 @@ find_last_chars_node_foreach (RsvgNode *node, gpointer data)
     return TRUE;
 }
 
+/* Finds the last chars child inside a given @node to which new characters can
+ * be appended.  @node can be null; in this case we'll return NULL as we didn't
+ * find any children.
+ */
 static RsvgNode *
-find_last_chars_child_in_text_or_tspan (RsvgNode *node)
+find_last_chars_child (RsvgNode *node)
 {
     RsvgNode *child = NULL;
 
@@ -957,9 +961,7 @@ rsvg_characters_impl (RsvgHandle *ctx, const char *ch, gssize len)
     if (!node_is_text_or_tspan (ctx->priv->currentnode))
         return;
 
-    if (ctx->priv->currentnode) {
-        node = find_last_chars_child_in_text_or_tspan (ctx->priv->currentnode);
-    }
+    node = find_last_chars_child (ctx->priv->currentnode);
 
     if (!node) {
         node = rsvg_node_chars_new (ctx->priv->currentnode);
