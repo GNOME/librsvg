@@ -117,9 +117,9 @@ rsvg_node_text_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, Rsvg
 static void rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdouble * y);
 
 static void
-_rsvg_node_text_type_children (RsvgNode * self, RsvgDrawingCtx * ctx,
-                               gdouble * x, gdouble * y, gboolean * lastwasspace,
-                               gboolean usetextonly);
+draw_from_children (RsvgNode * self, RsvgDrawingCtx * ctx,
+                    gdouble * x, gdouble * y, gboolean * lastwasspace,
+                    gboolean usetextonly);
 
 static void
 _rsvg_node_text_type_tspan (RsvgNode *node, RsvgNodeText *self, RsvgDrawingCtx *ctx,
@@ -163,12 +163,12 @@ draw_text_child (RsvgNode *node, gpointer data)
         g_string_free (chomped, TRUE);
     } else {
         if (closure->usetextonly) {
-            _rsvg_node_text_type_children (node,
-                                           closure->ctx,
-                                           closure->x,
-                                           closure->y,
-                                           closure->lastwasspace,
-                                           closure->usetextonly);
+            draw_from_children (node,
+                                closure->ctx,
+                                closure->x,
+                                closure->y,
+                                closure->lastwasspace,
+                                closure->usetextonly);
         } else {
             if (type == RSVG_NODE_TYPE_TSPAN) {
                 RsvgNodeText *tspan = rsvg_rust_cnode_get_impl (node);
@@ -196,9 +196,9 @@ draw_text_child (RsvgNode *node, gpointer data)
 
 /* This function is responsible of selecting render for a text element including its children and giving it the drawing context */
 static void
-_rsvg_node_text_type_children (RsvgNode * self, RsvgDrawingCtx * ctx,
-                               gdouble * x, gdouble * y, gboolean * lastwasspace,
-                               gboolean usetextonly)
+draw_from_children (RsvgNode * self, RsvgDrawingCtx * ctx,
+                    gdouble * x, gdouble * y, gboolean * lastwasspace,
+                    gboolean usetextonly)
 {
     DrawTextClosure closure;
 
@@ -362,7 +362,7 @@ rsvg_node_text_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dom
     y += dy;
 
     lastwasspace = TRUE;
-    _rsvg_node_text_type_children (node, ctx, &x, &y, &lastwasspace, FALSE);
+    draw_from_children (node, ctx, &x, &y, &lastwasspace, FALSE);
 }
 
 RsvgNode *
@@ -426,7 +426,7 @@ _rsvg_node_text_type_tspan (RsvgNode *node, RsvgNodeText *self, RsvgDrawingCtx *
         }
     }
     *y += dy;
-    _rsvg_node_text_type_children (node, ctx, x, y, lastwasspace, usetextonly);
+    draw_from_children (node, ctx, x, y, lastwasspace, usetextonly);
 
     rsvg_state_pop (ctx);
 }
@@ -495,7 +495,7 @@ _rsvg_node_text_type_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
     if (link == NULL)
       return;
 
-    _rsvg_node_text_type_children (link, ctx, x, y, lastwasspace, TRUE);
+    draw_from_children (link, ctx, x, y, lastwasspace, TRUE);
 
     rsvg_drawing_ctx_release_node (ctx, link);
 }
