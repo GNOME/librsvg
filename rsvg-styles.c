@@ -1737,6 +1737,12 @@ rsvg_state_get_cond_true (RsvgState *state)
     return state->cond_true;
 }
 
+void
+rsvg_state_set_cond_true (RsvgState *state, gboolean cond_true)
+{
+    state->cond_true = cond_true;
+}
+
 RsvgCssColorSpec *
 rsvg_state_get_stop_color (RsvgState *state)
 {

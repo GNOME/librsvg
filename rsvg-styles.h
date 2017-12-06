@@ -242,6 +242,9 @@ G_GNUC_INTERNAL
 gboolean rsvg_state_get_cond_true (RsvgState *state);
 
 G_GNUC_INTERNAL
+void rsvg_state_set_cond_true (RsvgState *state, gboolean cond_true);
+
+G_GNUC_INTERNAL
 RsvgCssColorSpec *rsvg_state_get_stop_color (RsvgState *state);
 
 G_GNUC_INTERNAL
