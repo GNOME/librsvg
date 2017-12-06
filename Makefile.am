@@ -20,54 +20,54 @@ enum_sources = \
 BUILT_SOURCES += $(enum_sources)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
+	librsvg-enum-types.c	\
+	librsvg-enum-types.h	\
 	librsvg-features.c 	\
+	librsvg-features.h 	\
+	rsvg-base-file-util.c 	\
+	rsvg-base.c		\
+	rsvg-cairo-clip.c	\
+	rsvg-cairo-clip.h	\
+	rsvg-cairo-draw.c	\
+	rsvg-cairo-draw.h	\
+	rsvg-cairo-render.c	\
+	rsvg-cairo-render.h	\
+	rsvg-cairo.h		\
+	rsvg-compat.h		\
+	rsvg-cond.c		\
 	rsvg-css.c 		\
 	rsvg-css.h 		\
-	rsvg-compat.h		\
 	rsvg-defs.c 		\
 	rsvg-defs.h 		\
+	rsvg-file-util.c	\
+	rsvg-filter.c		\
+	rsvg-filter.h		\
+	rsvg-gobject.c		\
 	rsvg-io.c		\
 	rsvg-io.h		\
+	rsvg-marker.h		\
+	rsvg-mask.h		\
 	rsvg-paint-server.c 	\
 	rsvg-paint-server.h 	\
 	rsvg-path-builder.h	\
 	rsvg-private.h 		\
-	rsvg-base-file-util.c 	\
-	rsvg-filter.c		\
-	rsvg-filter.h		\
-	rsvg-marker.h		\
-	rsvg-mask.h		\
 	rsvg-shapes.h		\
+	rsvg-size-callback.c	\
+	rsvg-size-callback.h	\
 	rsvg-structure.h	\
 	rsvg-styles.c		\
 	rsvg-styles.h		\
 	rsvg-text.c		\
 	rsvg-text.h		\
-	rsvg-cond.c		\
-	rsvg-base.c		\
-	librsvg-enum-types.c	\
-	rsvg-cairo-draw.c	\
-	rsvg-cairo-draw.h	\
-	rsvg-cairo-render.c	\
-	rsvg-cairo-render.h	\
-	rsvg-cairo-clip.h	\
-	rsvg-cairo-clip.c	\
-	rsvg.c			\
-	rsvg-gobject.c		\
-	rsvg-file-util.c	\
-	rsvg-size-callback.c	\
-	rsvg-size-callback.h	\
 	rsvg-xml.c		\
 	rsvg-xml.h		\
+	rsvg.c			\
 	rsvg.h			\
-	rsvg-cairo.h		\
-	librsvg-features.h 	\
-	librsvg-enum-types.h	\
 	$(NULL)
 
 RUST_SOURCES =					\
-	rust/build.rs				\
 	rust/Cargo.toml				\
+	rust/build.rs				\
 	rust/src/aspect_ratio.rs		\
 	rust/src/bbox.rs			\
 	rust/src/chars.rs			\
@@ -87,8 +87,8 @@ RUST_SOURCES =					\
 	rust/src/node.rs			\
 	rust/src/opacity.rs			\
 	rust/src/paint_server.rs		\
-	rust/src/parsers.rs			\
 	rust/src/parse_transform.lalrpop	\
+	rust/src/parsers.rs			\
 	rust/src/path_builder.rs		\
 	rust/src/path_parser.rs			\
 	rust/src/pattern.rs			\
