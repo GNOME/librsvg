@@ -122,9 +122,9 @@ draw_from_children (RsvgNode * self, RsvgDrawingCtx * ctx,
                     gboolean usetextonly);
 
 static void
-_rsvg_node_text_type_tspan (RsvgNode *node, RsvgNodeText *self, RsvgDrawingCtx *ctx,
-                            gdouble *x, gdouble *y, gboolean *lastwasspace,
-                            gboolean usetextonly);
+draw_tspan (RsvgNode *node, RsvgNodeText *self, RsvgDrawingCtx *ctx,
+            gdouble *x, gdouble *y, gboolean *lastwasspace,
+            gboolean usetextonly);
 
 static void
 _rsvg_node_text_type_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
@@ -172,13 +172,13 @@ draw_text_child (RsvgNode *node, gpointer data)
         } else {
             if (type == RSVG_NODE_TYPE_TSPAN) {
                 RsvgNodeText *tspan = rsvg_rust_cnode_get_impl (node);
-                _rsvg_node_text_type_tspan (node,
-                                            tspan,
-                                            closure->ctx,
-                                            closure->x,
-                                            closure->y,
-                                            closure->lastwasspace,
-                                            closure->usetextonly);
+                draw_tspan (node,
+                            tspan,
+                            closure->ctx,
+                            closure->x,
+                            closure->y,
+                            closure->lastwasspace,
+                            closure->usetextonly);
             } else if (type == RSVG_NODE_TYPE_TREF) {
                 RsvgNodeTref *tref = rsvg_rust_cnode_get_impl (node);
                 _rsvg_node_text_type_tref (tref,
@@ -383,9 +383,9 @@ rsvg_new_text (const char *element_name, RsvgNode *parent)
 }
 
 static void
-_rsvg_node_text_type_tspan (RsvgNode *node, RsvgNodeText *self, RsvgDrawingCtx *ctx,
-                            gdouble *x, gdouble *y, gboolean *lastwasspace,
-                            gboolean usetextonly)
+draw_tspan (RsvgNode *node, RsvgNodeText *self, RsvgDrawingCtx *ctx,
+            gdouble *x, gdouble *y, gboolean *lastwasspace,
+            gboolean usetextonly)
 {
     double dx, dy, length = 0;
 
