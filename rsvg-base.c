@@ -1175,7 +1175,7 @@ write_impl (RsvgHandle * handle, const guchar * buf, gsize count, GError ** erro
 }
 
 static gboolean
-rsvg_handle_close_impl (RsvgHandle * handle, GError ** error)
+close_impl (RsvgHandle * handle, GError ** error)
 {
     GError *real_error = NULL;
 
@@ -1402,7 +1402,7 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
         return ret;
     }
 
-    result = rsvg_handle_close_impl (handle, error);
+    result = close_impl (handle, error);
 
     if (result) {
         priv->state = RSVG_HANDLE_STATE_CLOSED_OK;
