@@ -587,22 +587,6 @@ rsvg_new_tref (const char *element_name, RsvgNode *parent)
                                 rsvg_node_tref_free);
 }
 
-typedef struct _RsvgTextLayout RsvgTextLayout;
-
-struct _RsvgTextLayout {
-    PangoLayout *layout;
-    RsvgDrawingCtx *ctx;
-    TextAnchor anchor;
-    gdouble x, y;
-};
-
-static void
-rsvg_text_layout_free (RsvgTextLayout * layout)
-{
-    g_object_unref (layout->layout);
-    g_free (layout);
-}
-
 static PangoLayout *
 rsvg_text_create_layout (RsvgDrawingCtx * ctx, const char *text, PangoContext * context)
 {
@@ -677,28 +661,6 @@ rsvg_text_create_layout (RsvgDrawingCtx * ctx, const char *text, PangoContext * 
     return layout;
 }
 
-
-static RsvgTextLayout *
-rsvg_text_layout_new (RsvgDrawingCtx * ctx, const char *text)
-{
-    RsvgState *state;
-    RsvgTextLayout *layout;
-
-    state = rsvg_current_state (ctx);
-
-    if (ctx->pango_context == NULL)
-        ctx->pango_context = ctx->render->create_pango_context (ctx);
-
-    layout = g_new0 (RsvgTextLayout, 1);
-
-    layout->layout = rsvg_text_create_layout (ctx, text, ctx->pango_context);
-    layout->ctx = ctx;
-
-    layout->anchor = state->text_anchor;
-
-    return layout;
-}
-
 static void
 rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdouble * y)
 {
@@ -740,26 +702,21 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
 }
 
 static gdouble
-rsvg_text_layout_width (RsvgTextLayout * layout)
-{
-    gint width;
-
-    pango_layout_get_size (layout->layout, &width, NULL);
-
-    return width / (double)PANGO_SCALE;
-}
-
-static gdouble
 rsvg_text_length_text_as_string (RsvgDrawingCtx * ctx, const char *text)
 {
-    RsvgTextLayout *layout;
-    gdouble x;
+    PangoLayout *layout;
+    gint width;
+    gdouble scaled_width;
 
-    layout = rsvg_text_layout_new (ctx, text);
-    layout->x = layout->y = 0;
+    if (ctx->pango_context == NULL)
+        ctx->pango_context = ctx->render->create_pango_context (ctx);
 
-    x = rsvg_text_layout_width (layout);
+    layout = rsvg_text_create_layout (ctx, text, ctx->pango_context);
 
-    rsvg_text_layout_free (layout);
-    return x;
+    pango_layout_get_size (layout, &width, NULL);
+    scaled_width = width / (double)PANGO_SCALE;
+
+    g_object_unref (layout);
+
+    return scaled_width;
 }
