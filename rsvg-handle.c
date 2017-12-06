@@ -482,3 +482,91 @@ rsvg_handle_new_with_flags (RsvgHandleFlags flags)
                          "flags", flags,
                          NULL);
 }
+
+/**
+ * rsvg_handle_new_from_gfile_sync:
+ * @file: a #GFile
+ * @flags: flags from #RsvgHandleFlags
+ * @cancellable: (allow-none): a #GCancellable, or %NULL
+ * @error: (allow-none): a location to store a #GError, or %NULL
+ *
+ * Creates a new #RsvgHandle for @file.
+ *
+ * If @cancellable is not %NULL, then the operation can be cancelled by
+ * triggering the cancellable object from another thread. If the
+ * operation was cancelled, the error %G_IO_ERROR_CANCELLED will be
+ * returned.
+ *
+ * Returns: a new #RsvgHandle on success, or %NULL with @error filled in
+ *
+ * Since: 2.32
+ */
+RsvgHandle *
+rsvg_handle_new_from_gfile_sync (GFile          *file,
+                                 RsvgHandleFlags flags,
+                                 GCancellable   *cancellable,
+                                 GError        **error)
+{
+    RsvgHandle *handle;
+    GFileInputStream *stream;
+
+    g_return_val_if_fail (G_IS_FILE (file), NULL);
+    g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
+    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
+
+    stream = g_file_read (file, cancellable, error);
+    if (stream == NULL)
+        return NULL;
+
+    handle = rsvg_handle_new_from_stream_sync (G_INPUT_STREAM (stream), file,
+                                               flags, cancellable, error);
+    g_object_unref (stream);
+
+    return handle;
+}
+
+/**
+ * rsvg_handle_new_from_stream_sync:
+ * @input_stream: a #GInputStream
+ * @base_file: (allow-none): a #GFile, or %NULL
+ * @flags: flags from #RsvgHandleFlags
+ * @cancellable: (allow-none): a #GCancellable, or %NULL
+ * @error: (allow-none): a location to store a #GError, or %NULL
+ *
+ * Creates a new #RsvgHandle for @stream.
+ *
+ * If @cancellable is not %NULL, then the operation can be cancelled by
+ * triggering the cancellable object from another thread. If the
+ * operation was cancelled, the error %G_IO_ERROR_CANCELLED will be
+ * returned.
+ *
+ * Returns: a new #RsvgHandle on success, or %NULL with @error filled in
+ *
+ * Since: 2.32
+ */
+RsvgHandle *
+rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
+                                  GFile          *base_file,
+                                  RsvgHandleFlags flags,
+                                  GCancellable    *cancellable,
+                                  GError         **error)
+{
+    RsvgHandle *handle;
+
+    g_return_val_if_fail (G_IS_INPUT_STREAM (input_stream), NULL);
+    g_return_val_if_fail (base_file == NULL || G_IS_FILE (base_file), NULL);
+    g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
+    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
+
+    handle = rsvg_handle_new_with_flags (flags);
+
+    if (base_file)
+        rsvg_handle_set_base_gfile (handle, base_file);
+
+    if (!rsvg_handle_read_stream_sync (handle, input_stream, cancellable, error)) {
+        g_object_unref (handle);
+        return NULL;
+    }
+
+    return handle;
+}
