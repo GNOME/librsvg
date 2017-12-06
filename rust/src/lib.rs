@@ -15,6 +15,12 @@ pub use bbox::{
     rsvg_bbox_clip
 };
 
+pub use chars::{
+    rsvg_node_chars_new,
+    rsvg_node_chars_append,
+    rsvg_node_chars_get_string,
+};
+
 pub use clip_path::{
     rsvg_node_clip_path_new,
     rsvg_node_clip_path_get_units
@@ -141,6 +147,7 @@ mod coord_units;
 
 mod aspect_ratio;
 mod bbox;
+mod chars;
 mod clip_path;
 mod cnode;
 mod color;

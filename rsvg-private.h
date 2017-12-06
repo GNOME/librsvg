@@ -424,6 +424,7 @@ void rsvg_node_foreach_child (RsvgNode *node, RsvgNodeForeachChildFn fn, gpointe
 G_GNUC_INTERNAL
 void rsvg_node_draw_children (RsvgNode *node, RsvgDrawingCtx *ctx, int dominate);
 
+/* Implemented in rust/src/chars.rs */
 G_GNUC_INTERNAL
 void rsvg_node_chars_get_string (RsvgNode *node, const char **out_str, gsize *out_len);
 

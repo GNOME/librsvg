@@ -882,86 +882,11 @@ rsvg_end_element (void *data, const xmlChar * xmlname)
     }
 }
 
-typedef struct {
-    GString *contents;
-} RsvgNodeChars;
+/* Implemented in rust/src/chars.rs */
+extern RsvgNode *rsvg_node_chars_new(RsvgNode *parent);
 
-static void
-rsvg_node_chars_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag * atts)
-{
-    /* nothing */
-}
-
-static void
-rsvg_node_chars_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
-{
-    /* nothing */
-}
-
-static void
-rsvg_node_chars_free (gpointer impl)
-{
-    RsvgNodeChars *self = impl;
-    g_string_free (self->contents, TRUE);
-    g_free (self);
-}
-
-static void
-rsvg_node_chars_append (RsvgNode *node,
-                        const char *text,
-                        gssize len)
-{
-    RsvgNodeChars *chars;
-
-    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
-    chars = rsvg_rust_cnode_get_impl (node);
-
-    if (!g_utf8_validate (text, len, NULL)) {
-        char *utf8;
-
-        utf8 = rsvg_make_valid_utf8 (text, len);
-        g_string_append (chars->contents, utf8);
-        g_free (utf8);
-    } else {
-        g_string_append_len (chars->contents, text, len);
-    }
-}
-
-static RsvgNode *
-rsvg_new_node_chars (RsvgNode *parent)
-{
-    RsvgNodeChars *self;
-    RsvgState *state;
-    RsvgNode *node;
-
-    self = g_new0 (RsvgNodeChars, 1);
-    self->contents = g_string_new (NULL);
-
-    state = rsvg_state_new ();
-    state->cond_true = FALSE;
-
-    node = rsvg_rust_cnode_new (RSVG_NODE_TYPE_CHARS,
-                                parent,
-                                state,
-                                self,
-                                rsvg_node_chars_set_atts,
-                                rsvg_node_chars_draw,
-                                rsvg_node_chars_free);
-
-    return node;
-}
-
-void
-rsvg_node_chars_get_string (RsvgNode *node, const char **out_str, gsize *out_len)
-{
-    RsvgNodeChars *chars;
-
-    g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
-    chars = rsvg_rust_cnode_get_impl (node);
-
-    *out_str = chars->contents->str;
-    *out_len = chars->contents->len;
-}
+/* Implemented in rust/src/chars.rs */
+extern void rsvg_node_chars_append (RsvgNode *node, const char *text, gssize len);
 
 static gboolean
 find_last_chars_node (RsvgNode *node, gpointer data)
@@ -999,7 +924,7 @@ rsvg_characters_impl (RsvgHandle * ctx, const xmlChar * ch, gssize len)
     }
 
     if (!node) {
-        node = rsvg_new_node_chars (ctx->priv->currentnode);
+        node = rsvg_node_chars_new (ctx->priv->currentnode);
         add_node_to_handle (ctx, node);
 
         if (ctx->priv->currentnode)
