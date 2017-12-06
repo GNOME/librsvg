@@ -889,7 +889,7 @@ extern RsvgNode *rsvg_node_chars_new(RsvgNode *parent);
 extern void rsvg_node_chars_append (RsvgNode *node, const char *text, gssize len);
 
 static gboolean
-find_last_chars_node (RsvgNode *node, gpointer data)
+find_last_chars_node_foreach (RsvgNode *node, gpointer data)
 {
     RsvgNode **dest;
 
@@ -898,10 +898,40 @@ find_last_chars_node (RsvgNode *node, gpointer data)
     if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS) {
         *dest = rsvg_node_ref (node);
     } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_TSPAN) {
-        *dest = rsvg_node_unref (*dest); /* Discard the last chars node we found */
+        /* If we have
+         *   <text>
+         *     First                        (1)
+         *     <tspan>foo bar</tspan>
+         *     Second                       (2)
+         *   </text>
+         *
+         * Then we want (1) to go into a chars node.  However, the "foo bar" tspan will go
+         * into its own node.  When we read (2), we want it to go into a *new* chars node,
+         * not the one from (1).  So, here we discard the last chars node we found if
+         * we run into a tspan.
+         */
+        *dest = rsvg_node_unref (*dest);
     }
 
     return TRUE;
+}
+
+static RsvgNode *
+find_last_chars_child_in_text_or_tspan (RsvgNode *node)
+{
+    RsvgNodeType type = rsvg_node_get_type (node);
+    RsvgNode *child = NULL;
+
+    if (type == RSVG_NODE_TYPE_TSPAN || type == RSVG_NODE_TYPE_TEXT) {
+        /* find the last CHARS node in the text or tspan node, so that we can
+         * coalesce the text, and thus avoid screwing up the Pango layouts.
+         */
+        rsvg_node_foreach_child (node,
+                                 find_last_chars_node_foreach,
+                                 &child);
+    }
+
+    return child;
 }
 
 static void
@@ -913,14 +943,7 @@ rsvg_characters_impl (RsvgHandle *ctx, const char *ch, gssize len)
         return;
 
     if (ctx->priv->currentnode) {
-        RsvgNodeType type = rsvg_node_get_type (ctx->priv->currentnode);
-        if (type == RSVG_NODE_TYPE_TSPAN || type == RSVG_NODE_TYPE_TEXT) {
-            /* find the last CHARS node in the text or tspan node, so that we
-               can coalesce the text, and thus avoid screwing up the Pango layouts */
-            rsvg_node_foreach_child (ctx->priv->currentnode,
-                                     find_last_chars_node,
-                                     &node);
-        }
+        node = find_last_chars_child_in_text_or_tspan (ctx->priv->currentnode);
     }
 
     if (!node) {
