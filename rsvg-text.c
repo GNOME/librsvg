@@ -216,22 +216,26 @@ _rsvg_node_text_type_children (RsvgNode * self, RsvgDrawingCtx * ctx,
 }
 
 static gboolean
-compute_length_from_children (RsvgNode * self, RsvgDrawingCtx * ctx,
-                              gdouble * length, gboolean * lastwasspace,
-                              gboolean usetextonly);
+compute_length_from_children (RsvgNode       *self,
+                              RsvgDrawingCtx *ctx,
+                              gdouble        *length,
+                              gboolean       *lastwasspace,
+                              gboolean        usetextonly);
 
 static gboolean
-length_from_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
-                  gdouble * x, gboolean * lastwasspace,
-                  gboolean usetextonly);
+length_from_tref (RsvgNodeTref   *self,
+                  RsvgDrawingCtx *ctx,
+                  gdouble        *x,
+                  gboolean       *lastwasspace,
+                  gboolean        usetextonly);
 
 static gboolean
-length_from_tspan (RsvgNode *node,
-                   RsvgNodeText *self,
+length_from_tspan (RsvgNode       *node,
+                   RsvgNodeText   *self,
                    RsvgDrawingCtx *ctx,
-                   gdouble *x,
-                   gboolean *lastwasspace,
-                   gboolean usetextonly);
+                   gdouble        *x,
+                   gboolean       *lastwasspace,
+                   gboolean        usetextonly);
 
 static gdouble rsvg_text_length_text_as_string (RsvgDrawingCtx * ctx, const char *text);
 
@@ -428,12 +432,12 @@ _rsvg_node_text_type_tspan (RsvgNode *node, RsvgNodeText *self, RsvgDrawingCtx *
 }
 
 static gboolean
-length_from_tspan (RsvgNode *node,
-                   RsvgNodeText *self,
+length_from_tspan (RsvgNode       *node,
+                   RsvgNodeText   *self,
                    RsvgDrawingCtx *ctx,
-                   gdouble *length,
-                   gboolean *lastwasspace,
-                   gboolean usetextonly)
+                   gdouble        *length,
+                   gboolean       *lastwasspace,
+                   gboolean        usetextonly)
 {
     if (self->x_specified || self->y_specified)
         return TRUE;
@@ -497,8 +501,11 @@ _rsvg_node_text_type_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx,
 }
 
 static gboolean
-length_from_tref (RsvgNodeTref * self, RsvgDrawingCtx * ctx, gdouble * x,
-                  gboolean * lastwasspace, gboolean usetextonly)
+length_from_tref (RsvgNodeTref   *self,
+                  RsvgDrawingCtx *ctx,
+                  gdouble        *x,
+                  gboolean       *lastwasspace,
+                  gboolean        usetextonly)
 {
     gboolean result;
     RsvgNode *link;
