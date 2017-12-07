@@ -60,41 +60,6 @@ struct _RsvgNodeTref {
     char *link;
 };
 
-static GString *
-_rsvg_text_chomp (RsvgState *state, GString * in, gboolean * lastwasspace)
-{
-    GString *out;
-    guint i;
-    out = g_string_new (in->str);
-
-    if (!state->space_preserve) {
-        for (i = 0; i < out->len;) {
-            if (out->str[i] == '\n')
-                g_string_erase (out, i, 1);
-            else
-                i++;
-        }
-
-        for (i = 0; i < out->len; i++)
-            if (out->str[i] == '\t')
-                out->str[i] = ' ';
-
-        for (i = 0; i < out->len;) {
-            if (out->str[i] == ' ' && *lastwasspace)
-                g_string_erase (out, i, 1);
-            else {
-                if (out->str[i] == ' ')
-                    *lastwasspace = TRUE;
-                else
-                    *lastwasspace = FALSE;
-                i++;
-            }
-        }
-    }
-
-    return out;
-}
-
 static void
 set_text_common_atts (RsvgNodeText *text, RsvgPropertyBag *atts)
 {
@@ -158,6 +123,18 @@ typedef struct {
     gboolean usetextonly;
 } DrawTextClosure;
 
+static XmlSpace
+xml_space_from_current_state (RsvgDrawingCtx *ctx)
+{
+    RsvgState *state = rsvg_current_state (ctx);
+
+    if (state->space_preserve) {
+        return XML_SPACE_PRESERVE;
+    } else {
+        return XML_SPACE_DEFAULT;
+    }
+}
+
 static gboolean
 draw_text_child (RsvgNode *node, gpointer data)
 {
@@ -170,16 +147,16 @@ draw_text_child (RsvgNode *node, gpointer data)
         const char *chars_str;
         gsize chars_len;
         GString *string;
-        GString *chomped;
+        char *chomped;
 
         rsvg_node_chars_get_string (node, &chars_str, &chars_len);
         string = g_string_new_len (chars_str, chars_len);
 
-        chomped = _rsvg_text_chomp (rsvg_current_state (closure->ctx), string, closure->lastwasspace);
+        chomped = rsvg_xml_space_normalize (xml_space_from_current_state (closure->ctx), string->str);
         g_string_free (string, TRUE);
 
-        rsvg_text_render_text (closure->ctx, chomped->str, closure->x, closure->y);
-        g_string_free (chomped, TRUE);
+        rsvg_text_render_text (closure->ctx, chomped, closure->x, closure->y);
+        g_free (chomped);
     } else {
         if (closure->usetextonly) {
             draw_from_children (node,
@@ -286,16 +263,16 @@ compute_child_length (RsvgNode *node, gpointer data)
         const char *chars_str;
         gsize chars_len;
         GString *string;
-        GString *chomped;
+        char *chomped;
 
         rsvg_node_chars_get_string (node, &chars_str, &chars_len);
         string = g_string_new_len (chars_str, chars_len);
 
-        chomped = _rsvg_text_chomp (rsvg_current_state (closure->ctx), string, closure->lastwasspace);
+        chomped = rsvg_xml_space_normalize (xml_space_from_current_state (closure->ctx), string->str);
         g_string_free (string, TRUE);
 
-        *closure->length += measure_text (closure->ctx, chomped->str);
-        g_string_free (chomped, TRUE);
+        *closure->length += measure_text (closure->ctx, chomped);
+        g_free (chomped);
     } else {
         if (closure->usetextonly) {
             done = compute_length_from_children (node,
