@@ -53,17 +53,15 @@ fn normalize_default(s: &str) -> String {
 }
 
 fn normalize_preserve(s: &str) -> String {
-    let mut result = String::new();
+    s.chars()
+        .map(|ch| {
+            match ch {
+                '\n' | '\t' => ' ',
 
-    for ch in s.chars() {
-        match ch {
-            '\n' | '\t' => result.push(' '),
-
-            _ => result.push(ch),
-        }
-    }
-
-    result
+                c => c
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]
