@@ -159,7 +159,10 @@ static void
 create_font_config_for_testing (RsvgCairoRender *render)
 {
     const char *font_paths[] = {
-        SRCDIR "/tests/resources/LiberationSans-Regular.ttf",
+        SRCDIR "/tests/resources/Roboto-Regular.ttf",
+        SRCDIR "/tests/resources/Roboto-Italic.ttf",
+        SRCDIR "/tests/resources/Roboto-Bold.ttf",
+        SRCDIR "/tests/resources/Roboto-BoldItalic.ttf",
     };
 
     int i;
