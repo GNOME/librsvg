@@ -158,15 +158,21 @@ set_font_options_for_testing (PangoContext *context)
 static void
 create_font_config_for_testing (RsvgCairoRender *render)
 {
-    const char *font_path = SRCDIR "/tests/resources/LiberationSans-Regular.ttf";
+    const char *font_paths[] = {
+        SRCDIR "/tests/resources/LiberationSans-Regular.ttf",
+    };
+
+    int i;
 
     if (render->font_config_for_testing != NULL)
         return;
 
     render->font_config_for_testing = FcConfigCreate ();
 
-    if (!FcConfigAppFontAddFile (render->font_config_for_testing, (const FcChar8 *) font_path)) {
-        g_error ("Could not load font file \"%s\" for tests; aborting", font_path);
+    for (i = 0; i < G_N_ELEMENTS(font_paths); i++) {
+        if (!FcConfigAppFontAddFile (render->font_config_for_testing, (const FcChar8 *) font_paths[i])) {
+            g_error ("Could not load font file \"%s\" for tests; aborting", font_paths[i]);
+        }
     }
 }
 
