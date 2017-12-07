@@ -16,6 +16,14 @@ pub fn xml_space_normalize(mode: XmlSpace, s: &str) -> String {
     }
 }
 
+// From https://www.w3.org/TR/SVG/text.html#WhiteSpace
+//
+// When xml:space="default", the SVG user agent will do the following
+// using a copy of the original character data content. First, it will
+// remove all newline characters. Then it will convert all tab
+// characters into space characters. Then, it will strip off all
+// leading and trailing space characters. Then, all contiguous space
+// characters will be consolidated.
 fn normalize_default(s: &str) -> String {
     #[derive(PartialEq)]
     enum State {
@@ -52,6 +60,16 @@ fn normalize_default(s: &str) -> String {
     result
 }
 
+// From https://www.w3.org/TR/SVG/text.html#WhiteSpace
+//
+// When xml:space="preserve", the SVG user agent will do the following
+// using a copy of the original character data content. It will
+// convert all newline and tab characters into space characters. Then,
+// it will draw all space characters, including leading, trailing and
+// multiple contiguous space characters. Thus, when drawn with
+// xml:space="preserve", the string "a   b" (three spaces between "a"
+// and "b") will produce a larger separation between "a" and "b" than
+// "a b" (one space between "a" and "b").
 fn normalize_preserve(s: &str) -> String {
     s.chars()
         .map(|ch| {
