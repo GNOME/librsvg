@@ -29,39 +29,13 @@ pub fn xml_space_normalize(mode: XmlSpace, s: &str) -> String {
 // leading and trailing space characters. Then, all contiguous space
 // characters will be consolidated.
 fn normalize_default(s: &str) -> String {
-    #[derive(PartialEq)]
-    enum State {
-        SpacesAtStart,
-        NonSpace,
-        SpacesAtMiddle
-    }
-
-    let mut result = String::new();
-    let mut state = State::SpacesAtStart;
-
-    for ch in s.chars() {
-        match ch {
-            '\n' => continue,
-            '\t' | ' ' => {
-                match state {
-                    State::SpacesAtStart  => continue,
-                    State::NonSpace       => { state = State::SpacesAtMiddle; },
-                    State::SpacesAtMiddle => continue,
-                }
-            },
-
-            _ => {
-                if state == State::SpacesAtMiddle {
-                    result.push(' ');
-                }
-
-                result.push(ch);
-                state = State::NonSpace;
-            }
-        }
-    }
-
-    result
+    s.chars()
+        .filter(|ch| *ch != '\n')
+        .collect::<String>()
+        .split(|ch| ch == ' ' || ch == '\t')
+        .filter(|s| s.len() > 0)
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 // From https://www.w3.org/TR/SVG/text.html#WhiteSpace
