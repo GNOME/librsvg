@@ -95,7 +95,6 @@ draw_from_children (RsvgNode       *self,
                     RsvgDrawingCtx *ctx,
                     gdouble        *x,
                     gdouble        *y,
-                    gboolean       *lastwasspace,
                     gboolean        usetextonly);
 
 static void
@@ -104,7 +103,6 @@ draw_tspan (RsvgNode       *node,
             RsvgDrawingCtx *ctx,
             gdouble        *x,
             gdouble        *y,
-            gboolean       *lastwasspace,
             gboolean        usetextonly);
 
 static void
@@ -112,14 +110,12 @@ draw_tref (RsvgNodeTref   *self,
            RsvgDrawingCtx *ctx,
            gdouble        *x,
            gdouble        *y,
-           gboolean       *lastwasspace,
            gboolean        usetextonly);
 
 typedef struct {
     RsvgDrawingCtx *ctx;
     gdouble *x;
     gdouble *y;
-    gboolean *lastwasspace;
     gboolean usetextonly;
 } DrawTextClosure;
 
@@ -163,7 +159,6 @@ draw_text_child (RsvgNode *node, gpointer data)
                                 closure->ctx,
                                 closure->x,
                                 closure->y,
-                                closure->lastwasspace,
                                 closure->usetextonly);
         } else {
             if (type == RSVG_NODE_TYPE_TSPAN) {
@@ -173,7 +168,6 @@ draw_text_child (RsvgNode *node, gpointer data)
                             closure->ctx,
                             closure->x,
                             closure->y,
-                            closure->lastwasspace,
                             closure->usetextonly);
             } else if (type == RSVG_NODE_TYPE_TREF) {
                 RsvgNodeTref *tref = rsvg_rust_cnode_get_impl (node);
@@ -181,7 +175,6 @@ draw_text_child (RsvgNode *node, gpointer data)
                            closure->ctx,
                            closure->x,
                            closure->y,
-                           closure->lastwasspace,
                            closure->usetextonly);
             }
         }
@@ -196,7 +189,6 @@ draw_from_children (RsvgNode       *self,
                     RsvgDrawingCtx *ctx,
                     gdouble        *x,
                     gdouble        *y,
-                    gboolean       *lastwasspace,
                     gboolean        usetextonly)
 {
     DrawTextClosure closure;
@@ -206,7 +198,6 @@ draw_from_children (RsvgNode       *self,
     closure.ctx = ctx;
     closure.x = x;
     closure.y = y;
-    closure.lastwasspace = lastwasspace;
     closure.usetextonly = usetextonly;
 
     rsvg_node_foreach_child (self, draw_text_child, &closure);
@@ -218,14 +209,12 @@ static gboolean
 compute_length_from_children (RsvgNode       *self,
                               RsvgDrawingCtx *ctx,
                               gdouble        *length,
-                              gboolean       *lastwasspace,
                               gboolean        usetextonly);
 
 static gboolean
 length_from_tref (RsvgNodeTref   *self,
                   RsvgDrawingCtx *ctx,
                   gdouble        *x,
-                  gboolean       *lastwasspace,
                   gboolean        usetextonly);
 
 static gboolean
@@ -233,7 +222,6 @@ length_from_tspan (RsvgNode       *node,
                    RsvgNodeText   *self,
                    RsvgDrawingCtx *ctx,
                    gdouble        *x,
-                   gboolean       *lastwasspace,
                    gboolean        usetextonly);
 
 static gdouble measure_text (RsvgDrawingCtx * ctx, const char *text);
@@ -241,7 +229,6 @@ static gdouble measure_text (RsvgDrawingCtx * ctx, const char *text);
 typedef struct {
     RsvgDrawingCtx *ctx;
     gdouble *length;
-    gboolean *lastwasspace;
     gboolean usetextonly;
     gboolean done;
 } ChildrenLengthClosure;
@@ -278,7 +265,6 @@ compute_child_length (RsvgNode *node, gpointer data)
             done = compute_length_from_children (node,
                                                  closure->ctx,
                                                  closure->length,
-                                                 closure->lastwasspace,
                                                  closure->usetextonly);
         } else {
             if (type == RSVG_NODE_TYPE_TSPAN) {
@@ -287,14 +273,12 @@ compute_child_length (RsvgNode *node, gpointer data)
                                           tspan,
                                           closure->ctx,
                                           closure->length,
-                                          closure->lastwasspace,
                                           closure->usetextonly);
             } else if (type == RSVG_NODE_TYPE_TREF) {
                 RsvgNodeTref *tref = rsvg_rust_cnode_get_impl (node);
                 done = length_from_tref (tref,
                                          closure->ctx,
                                          closure->length,
-                                         closure->lastwasspace,
                                          closure->usetextonly);
             }
         }
@@ -307,15 +291,15 @@ compute_child_length (RsvgNode *node, gpointer data)
 }
 
 static gboolean
-compute_length_from_children (RsvgNode * self, RsvgDrawingCtx * ctx,
-                              gdouble * length, gboolean * lastwasspace,
-                              gboolean usetextonly)
+compute_length_from_children (RsvgNode       *self,
+                              RsvgDrawingCtx *ctx,
+                              gdouble        *length,
+                              gboolean        usetextonly)
 {
     ChildrenLengthClosure closure;
 
     closure.ctx = ctx;
     closure.length = length;
-    closure.lastwasspace = lastwasspace;
     closure.usetextonly = usetextonly;
     closure.done = FALSE;
 
@@ -330,7 +314,6 @@ rsvg_node_text_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dom
 {
     RsvgNodeText *text = impl;
     double x, y, dx, dy, length = 0;
-    gboolean lastwasspace = TRUE;
 
     rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), dominate);
 
@@ -340,7 +323,7 @@ rsvg_node_text_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dom
     dy = rsvg_length_normalize (&text->dy, ctx);
 
     if (rsvg_current_state (ctx)->text_anchor != TEXT_ANCHOR_START) {
-        compute_length_from_children (node, ctx, &length, &lastwasspace, FALSE);
+        compute_length_from_children (node, ctx, &length, FALSE);
         if (rsvg_current_state (ctx)->text_anchor == TEXT_ANCHOR_MIDDLE)
             length /= 2;
     }
@@ -360,8 +343,7 @@ rsvg_node_text_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dom
     x += dx;
     y += dy;
 
-    lastwasspace = TRUE;
-    draw_from_children (node, ctx, &x, &y, &lastwasspace, FALSE);
+    draw_from_children (node, ctx, &x, &y, FALSE);
 }
 
 RsvgNode *
@@ -387,7 +369,6 @@ draw_tspan (RsvgNode       *node,
             RsvgDrawingCtx *ctx,
             gdouble        *x,
             gdouble        *y,
-            gboolean       *lastwasspace,
             gboolean        usetextonly)
 {
     double dx, dy, length = 0;
@@ -400,8 +381,7 @@ draw_tspan (RsvgNode       *node,
     dy = rsvg_length_normalize (&self->dy, ctx);
 
     if (rsvg_current_state (ctx)->text_anchor != TEXT_ANCHOR_START) {
-        gboolean lws = *lastwasspace;
-        compute_length_from_children (node, ctx, &length, &lws, usetextonly);
+        compute_length_from_children (node, ctx, &length, usetextonly);
         if (rsvg_current_state (ctx)->text_anchor == TEXT_ANCHOR_MIDDLE)
             length /= 2;
     }
@@ -429,7 +409,7 @@ draw_tspan (RsvgNode       *node,
         }
     }
     *y += dy;
-    draw_from_children (node, ctx, x, y, lastwasspace, usetextonly);
+    draw_from_children (node, ctx, x, y, usetextonly);
 
     rsvg_state_pop (ctx);
 }
@@ -439,7 +419,6 @@ length_from_tspan (RsvgNode       *node,
                    RsvgNodeText   *self,
                    RsvgDrawingCtx *ctx,
                    gdouble        *length,
-                   gboolean       *lastwasspace,
                    gboolean        usetextonly)
 {
     if (self->x_specified || self->y_specified)
@@ -450,8 +429,7 @@ length_from_tspan (RsvgNode       *node,
     else
         *length += rsvg_length_normalize (&self->dx, ctx);
 
-    return compute_length_from_children (node, ctx, length,
-                                         lastwasspace, usetextonly);
+    return compute_length_from_children (node, ctx, length, usetextonly);
 }
 
 static void
@@ -490,7 +468,6 @@ draw_tref (RsvgNodeTref   *self,
            RsvgDrawingCtx *ctx,
            gdouble        *x,
            gdouble        *y,
-           gboolean       *lastwasspace,
            gboolean        usetextonly)
 {
     RsvgNode *link;
@@ -501,7 +478,7 @@ draw_tref (RsvgNodeTref   *self,
     if (link == NULL)
       return;
 
-    draw_from_children (link, ctx, x, y, lastwasspace, TRUE);
+    draw_from_children (link, ctx, x, y, TRUE);
 
     rsvg_drawing_ctx_release_node (ctx, link);
 }
@@ -510,7 +487,6 @@ static gboolean
 length_from_tref (RsvgNodeTref   *self,
                   RsvgDrawingCtx *ctx,
                   gdouble        *x,
-                  gboolean       *lastwasspace,
                   gboolean        usetextonly)
 {
     gboolean result;
@@ -522,7 +498,7 @@ length_from_tref (RsvgNodeTref   *self,
     if (link == NULL)
       return FALSE;
 
-    result = compute_length_from_children (link, ctx, x, lastwasspace, TRUE);
+    result = compute_length_from_children (link, ctx, x, TRUE);
 
     rsvg_drawing_ctx_release_node (ctx, link);
 
