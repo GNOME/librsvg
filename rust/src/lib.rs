@@ -169,6 +169,7 @@ mod path_parser;
 mod pattern;
 mod property_bag;
 mod shapes;
+mod space;
 mod state;
 mod stop;
 mod structure;

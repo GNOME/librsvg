@@ -94,6 +94,7 @@ RUST_SOURCES =					\
 	rust/src/pattern.rs			\
 	rust/src/property_bag.rs		\
 	rust/src/shapes.rs			\
+	rust/src/space.rs			\
 	rust/src/state.rs			\
 	rust/src/stop.rs			\
 	rust/src/structure.rs			\
