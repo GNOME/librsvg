@@ -36,6 +36,15 @@
 /* what we use for text rendering depends on what cairo has to offer */
 #include <pango/pangocairo.h>
 
+/* Keep in sync with rust/src/space.rs:XmlSpace */
+typedef enum {
+    XML_SPACE_DEFAULT,
+    XML_SPACE_PRESERVE
+} XmlSpace;
+
+/* Implemented in rust/src/space.rs */
+extern char *rsvg_xml_space_normalize (XmlSpace mode, const char *s);
+
 typedef struct _RsvgNodeText RsvgNodeText;
 
 struct _RsvgNodeText {

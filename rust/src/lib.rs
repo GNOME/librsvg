@@ -117,6 +117,10 @@ pub use shapes::{
     rsvg_node_rect_new,
 };
 
+pub use space::{
+    rsvg_xml_space_normalize,
+};
+
 pub use stop::{
     rsvg_node_stop_new
 };

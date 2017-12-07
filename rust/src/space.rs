@@ -1,3 +1,7 @@
+use libc;
+use glib::translate::*;
+
+#[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum XmlSpace {
     Default,
@@ -80,6 +84,13 @@ fn normalize_preserve(s: &str) -> String {
             }
         })
         .collect()
+}
+
+#[no_mangle]
+pub extern fn rsvg_xml_space_normalize(mode: XmlSpace, s: *const libc::c_char) -> *const libc::c_char {
+    let rs = unsafe { String::from_glib_none (s) };
+
+    xml_space_normalize(mode, &rs).to_glib_full()
 }
 
 #[cfg(test)]
