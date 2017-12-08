@@ -1,3 +1,30 @@
+Version 2.41.2
+- We now require glib 2.52.0.
+- bgo#787895 - Fix mis-use of libxml2.  Thanks to Nick Wellnhofer for
+  the guidance.
+- bgo#761175 - Allow masks and clips to reuse a node being drawn.
+- Fix xml:space normalization, per the spec.
+- Don't access the file system when deciding whether to load a remote
+  file with a UNC path for a paint server (i.e. don't try to load it at all).
+- We now support cross-compilation of the Rust code (David Michael).
+  See COMPILING.md for details.
+- Fixed bugs from Coverity runs (Philip Withnall).
+- Vastly improved README.md, new COMPILING.md, improved CONTRIBUTING.md.
+- Markers now have the correct default size per the SVG spec.
+- Visual Studio: We now use HIGHENTROPYVA linker option on x64 builds,
+  to enhance the security of built binaries (Chun-wei Fan).
+- Cargo is now verbose as well if you use "make V=1".
+- Fixed some memory leaks.
+- Don't render elements that establish a viewport if their viewBox
+  size is 0, per the spec.
+- SVG elements ported to Rust: image, clipPath, mask, character data in elements.
+- Fixed loading files one byte at a time.
+- Reference documentation is now DocBook 5.1.
+- Reference docs now have an overview of the library.
+- Distribute README.md in the tarball properly.
+- Expanded the test suite.
+- Lots of internal refactoring.
+
 Version 2.41.1
 - The feConvolveMatrix filter primitive wasn't being rendered at all;
   now it works.
