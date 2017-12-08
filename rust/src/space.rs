@@ -32,8 +32,8 @@ fn normalize_default(s: &str) -> String {
     s.chars()
         .filter(|ch| *ch != '\n')
         .collect::<String>()
-        .split(|ch| ch == ' ' || ch == '\t')
-        .filter(|s| s.len() > 0)
+        // split at whitespace, also trims whitespace.
+        .split_whitespace()
         .collect::<Vec<_>>()
         .join(" ")
 }
