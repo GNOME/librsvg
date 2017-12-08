@@ -240,7 +240,6 @@ EXTRA_DIST =				\
 	librsvg.doap			\
 	AUTHORS				\
 	NEWS				\
-	TODO				\
 	COPYING.LIB 			\
 	librsvg-zip.in 			\
 	gtk-doc.make			\
