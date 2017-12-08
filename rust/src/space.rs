@@ -1,6 +1,7 @@
 use libc;
 use glib::translate::*;
 use itertools::Itertools;
+use std::borrow::Cow;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -29,7 +30,8 @@ pub fn xml_space_normalize(mode: XmlSpace, s: &str) -> String {
 // characters into space characters. Then, it will strip off all
 // leading and trailing space characters. Then, all contiguous space
 // characters will be consolidated.
-fn normalize_default(s: &str) -> String {
+fn normalize_default<'a, S: Into<Cow<'a, str>>>(s: S) -> String {
+    let s = s.into();
     s.chars()
         .filter(|ch| *ch != '\n')
         .collect::<String>()
@@ -48,7 +50,8 @@ fn normalize_default(s: &str) -> String {
 // xml:space="preserve", the string "a   b" (three spaces between "a"
 // and "b") will produce a larger separation between "a" and "b" than
 // "a b" (one space between "a" and "b").
-fn normalize_preserve(s: &str) -> String {
+fn normalize_preserve<'a, S: Into<Cow<'a, str>>>(s: S) -> String {
+    let s = s.into();
     let s = s.replace("\n", " ");
     s.replace("\t", " ")
 }
