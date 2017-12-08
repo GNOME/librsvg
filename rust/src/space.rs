@@ -32,12 +32,23 @@ pub fn xml_space_normalize(mode: XmlSpace, s: &str) -> String {
 // characters will be consolidated.
 fn normalize_default<'a, S: Into<Cow<'a, str>>>(s: S) -> String {
     let s = s.into();
-    s.chars()
+    s.trim()
+        .chars()
         .filter(|ch| *ch != '\n')
+        .map(|ch| {
+            match ch {
+                '\t' => ' ',
+                c => c
+            }
+        })
+        .coalesce(|current, next| {
+            if current == ' ' && next == ' ' {
+                Ok(' ')
+            } else {
+                Err((current, next))
+            }
+        })
         .collect::<String>()
-        // split at whitespace, also trims whitespace.
-        .split_whitespace()
-        .join(" ")
 }
 
 // From https://www.w3.org/TR/SVG/text.html#WhiteSpace
@@ -77,8 +88,8 @@ mod tests {
     fn xml_space_default() {
         assert_eq!(xml_space_normalize(XmlSpace::Default, "\n    WS example\n    indented lines\n  "),
                    "WS example indented lines");
-        assert_eq!(xml_space_normalize(XmlSpace::Default, "\n  \t  \tWS \t\t\texample\n  \t  indented lines\t\t  \n  "),
-                   "WS example indented lines");
+        assert_eq!(xml_space_normalize(XmlSpace::Default, "\n  \t  \tWS \t\t\texample\n  \t  indented liines\t\t  \n  "),
+                   "WS example indented liines");
 
         assert_eq!(xml_space_normalize(XmlSpace::Default, "\nWS example\nnon-indented lines\n  "),
                    "WS examplenon-indented lines");
