@@ -1,5 +1,6 @@
 use libc;
 use glib::translate::*;
+use itertools::Itertools;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -34,7 +35,6 @@ fn normalize_default(s: &str) -> String {
         .collect::<String>()
         // split at whitespace, also trims whitespace.
         .split_whitespace()
-        .collect::<Vec<_>>()
         .join(" ")
 }
 
