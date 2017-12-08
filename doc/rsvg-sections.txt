@@ -94,6 +94,4 @@ LIBRSVG_HAVE_SVGZ
 LIBRSVG_HAVE_CSS
 LIBRSVG_CHECK_FEATURE
 librsvg_version
-librsvg_preinit
-librsvg_postinit
 </SECTION>

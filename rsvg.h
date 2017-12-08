@@ -65,11 +65,6 @@ typedef enum {
 #define RSVG_ERROR (rsvg_error_quark ())
 GQuark rsvg_error_quark (void) G_GNUC_CONST;
 
-/**
- * RsvgHandle:
- *
- * The #RsvgHandle is an object representing the parsed form of a SVG
- */
 typedef struct _RsvgHandle RsvgHandle;
 typedef struct RsvgHandlePrivate RsvgHandlePrivate;
 typedef struct _RsvgHandleClass RsvgHandleClass;
@@ -80,7 +75,7 @@ typedef struct _RsvgPositionData RsvgPositionData;
  * RsvgHandleClass:
  * @parent: parent class
  *
- * Class structure for #RsvgHandle
+ * Class structure for #RsvgHandle.
  */
 struct _RsvgHandleClass {
     GObjectClass parent;
@@ -89,6 +84,12 @@ struct _RsvgHandleClass {
     gpointer _abi_padding[15];
 };
 
+/**
+ * RsvgHandle:
+ * @parent: parent instance
+ *
+ * Lets you load SVG data and render it.
+ */
 struct _RsvgHandle {
     GObject parent;
 
@@ -219,7 +220,7 @@ void rsvg_handle_free (RsvgHandle * handle);
  * Deprecated: Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
  * See the documentation for rsvg_handle_set_size_callback() for an example.
  */
-typedef /* RSVG_DEPRECATED */ void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
+/* RSVG_DEPRECATED */ typedef void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
 
 RSVG_DEPRECATED
 void rsvg_handle_set_size_callback (RsvgHandle * handle,

@@ -68,25 +68,26 @@ EXTRA_HFILES =
 
 # Header files to ignore when scanning. Use base file name, no paths
 # e.g. IGNORE_HFILES=gtkdebug.h gtkintl.h
-IGNORE_HFILES = \
-	config.h \
-	rsvg-bpath-util.h \
-	rsvg-cairo-clip.h \
-	rsvg-cairo-draw.h \
-	rsvg-cairo-render.h \
-	rsvg-css.h \
-	rsvg-defs.h \
-	rsvg-filter.h \
-	rsvg-image.h \
-	rsvg-marker.h \
-	rsvg-mask.h \
-	rsvg-paint-server.h \
-	rsvg-path.h \
-	rsvg-private.h \
-	rsvg-shapes.h \
-	rsvg-structure.h \
-	rsvg-styles.h \
-	rsvg-text.h \
+IGNORE_HFILES =			\
+	config.h		\
+	rsvg-cairo-clip.h	\
+	rsvg-cairo-draw.h	\
+	rsvg-cairo-render.h	\
+	rsvg-compat.h		\
+	rsvg-css.h		\
+	rsvg-defs.h		\
+	rsvg-filter.h		\
+	rsvg-io.h		\
+	rsvg-marker.h		\
+	rsvg-mask.h		\
+	rsvg-paint-server.h	\
+	rsvg-path-builder.h	\
+	rsvg-private.h		\
+	rsvg-shapes.h		\
+	rsvg-size-callback.h	\
+	rsvg-structure.h	\
+	rsvg-styles.h		\
+	rsvg-text.h		\
 	rsvg-xml.h
 
 # Images to copy into HTML directory.
