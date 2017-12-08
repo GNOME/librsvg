@@ -62,7 +62,7 @@ sub-library in debug mode.
 
 If you need to cross-compile librsvg, specify the `--host=TRIPLE` to
 the `configure` script as usual with Autotools.  This will cause
-librsvg's build scripts to automatically pass `--host=TRIPLE` to
+librsvg's build scripts to automatically pass `--target=TRIPLE` to
 `cargo`.
 
 Note, however, that Rust may support different targets than the C
@@ -70,20 +70,29 @@ compiler on your system.  Rust's supported targets can be found in the
 [`rust/src/librustc_back/target`][rust-target-dir] in the Rust
 compiler's source code.
 
+You can check Jorge Aparicio's [guide on cross-compilation for
+Rust][rust-cross] for more details.
+
 ## Cross-compiling to a target not supported by Rust out of the box
 
 When building with a target that is not supported out of the box by
-Rust, you will have to create a target JSON definition file and set
-the environment variable `RUST_TARGET_PATH` to its directory when
-building librsvg.
+Rust, you have to do this:
+
+1. Create a [target JSON definition file][target-json].
+
+2. Set the environment variable `RUST_TARGET_PATH` to its directory
+   for the `make` command.
+   
+Example:
 
 ```sh
 cd /my/target/definition
 echo "JSON goes here" > MYMACHINE-VENDOR-OS.json
 cd /source/tree/for/librsvg
-RUST_TARGET_PATH=/my/target/definition ./configure --host=MYMACHINE-VENDOR-OS
-make
+./configure --host=MYMACHINE-VENDOR-OS
+make RUST_TARGET_PATH=/my/target/definition
 ```
+
 # Building with no network access
 
 Automated build systems generally avoid network access so that they
@@ -112,3 +121,5 @@ unpacked tarball.  Your build system can patch this file as needed.
 [rust-target-dir]: https://github.com/rust-lang/rust/tree/master/src/librustc_back/target
 [cargo-vendor]: https://crates.io/crates/cargo-vendor
 [cargo-source-replacement]: http://doc.crates.io/source-replacement.html
+[rust-cross]: https://github.com/japaric/rust-cross
+[target-json]: https://github.com/japaric/rust-cross#target-specification-files
