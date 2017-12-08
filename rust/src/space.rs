@@ -32,9 +32,7 @@ pub fn xml_space_normalize(mode: XmlSpace, s: &str) -> String {
 // characters will be consolidated.
 fn normalize_default<'a, S: Into<Cow<'a, str>>>(s: S) -> String {
     let s = s.into();
-    s.chars()
-        .filter(|ch| *ch != '\n')
-        .collect::<String>()
+    s.replace('\n', "")
         // split at whitespace, also trims whitespace.
         .split_whitespace()
         .join(" ")
@@ -52,8 +50,8 @@ fn normalize_default<'a, S: Into<Cow<'a, str>>>(s: S) -> String {
 // "a b" (one space between "a" and "b").
 fn normalize_preserve<'a, S: Into<Cow<'a, str>>>(s: S) -> String {
     let s = s.into();
-    let s = s.replace("\n", " ");
-    s.replace("\t", " ")
+    let s = s.replace('\n', " ");
+    s.replace('\t', " ")
 }
 
 #[no_mangle]
