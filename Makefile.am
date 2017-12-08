@@ -232,7 +232,11 @@ if OS_WIN32
 rsvg_view_3_LDFLAGS += -mwindows
 endif # OS_WIN32
 
-dist_doc_DATA = README.md
+dist_doc_DATA =				\
+	COMPILING.md			\
+	CONTRIBUTING.md			\
+	README.md			\
+	code_of_conduct.md
 
 EXTRA_DIST =				\
 	$(RUST_SOURCES)			\
