@@ -49,15 +49,8 @@ fn normalize_default(s: &str) -> String {
 // and "b") will produce a larger separation between "a" and "b" than
 // "a b" (one space between "a" and "b").
 fn normalize_preserve(s: &str) -> String {
-    s.chars()
-        .map(|ch| {
-            match ch {
-                '\n' | '\t' => ' ',
-
-                c => c
-            }
-        })
-        .collect()
+    let s = s.replace("\n", " ");
+    s.replace("\t", " ")
 }
 
 #[no_mangle]
