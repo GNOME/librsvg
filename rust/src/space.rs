@@ -35,18 +35,13 @@ fn normalize_default<'a, S: Into<Cow<'a, str>>>(s: S) -> String {
     s.trim()
         .chars()
         .filter(|ch| *ch != '\n')
-        .map(|ch| {
-            match ch {
-                '\t' => ' ',
-                c => c
-            }
+        .map(|ch| match ch {
+            '\t' => ' ',
+            c => c,
         })
-        .coalesce(|current, next| {
-            if current == ' ' && next == ' ' {
-                Ok(' ')
-            } else {
-                Err((current, next))
-            }
+        .coalesce(|current, next| match (current, next) {
+            (' ', ' ') | (' ', '\t') => Ok(' '),
+            (_, _) => Err((current, next)),
         })
         .collect::<String>()
 }
@@ -88,11 +83,14 @@ mod tests {
     fn xml_space_default() {
         assert_eq!(xml_space_normalize(XmlSpace::Default, "\n    WS example\n    indented lines\n  "),
                    "WS example indented lines");
-        assert_eq!(xml_space_normalize(XmlSpace::Default, "\n  \t  \tWS \t\t\texample\n  \t  indented liines\t\t  \n  "),
-                   "WS example indented liines");
-
+        assert_eq!(xml_space_normalize(XmlSpace::Default, "\n  \t  \tWS \t\t\texample\n  \t  indented lines\t\t  \n  "),
+                   "WS example indented lines");
+        assert_eq!(xml_space_normalize(XmlSpace::Default, "\n  \t  \tWS \t\t\texample\n  \t  duplicate letters\t\t  \n  "),
+                   "WS example duplicate letters");
         assert_eq!(xml_space_normalize(XmlSpace::Default, "\nWS example\nnon-indented lines\n  "),
                    "WS examplenon-indented lines");
+        assert_eq!(xml_space_normalize(XmlSpace::Default, "\nWS example\tnon-indented lines\n  "),
+                   "WS example non-indented lines");
     }
 
     #[test]
@@ -101,6 +99,7 @@ mod tests {
                    "     WS example     indented lines   ");
         assert_eq!(xml_space_normalize(XmlSpace::Preserve, "\n  \t  \tWS \t\t\texample\n  \t  indented lines\t\t  \n  "),
                    "       WS    example      indented lines       ");
-
+        assert_eq!(xml_space_normalize(XmlSpace::Preserve, "\n  \t  \tWS \t\t\texample\n  \t  duplicate letters\t\t  \n  "),
+                   "       WS    example      duplicate letters       ");
     }
 }
