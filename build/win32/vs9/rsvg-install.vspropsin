@@ -35,6 +35,10 @@ if exist ..\librsvg-$(ApiVersion).pc copy ..\librsvg-$(ApiVersion).pc $(CopyDir)
 	/>
 	<UserMacro
 		Name="RsvgGenPC"
-		Value="(if not exist $(CopyDir) mkdir $(CopyDir)) &amp; (if exist $(PythonPath)\python.exe $(PythonPath)\python.exe ..\rsvgpc.py --prefix=$(CopyDir) --version=$(RsvgMajorVersion).$(RsvgMinorVersion).$(RsvgMicroVersion))"
+		Value="(if not exist $(CopyDir) mkdir $(CopyDir)) &amp; (if exist $(PythonDir)\python.exe $(PythonDir)\python.exe ..\rsvgpc.py --prefix=$(CopyDir) --version=$(RsvgMajorVersion).$(RsvgMinorVersion).$(RsvgMicroVersion))"
+	/>
+	<UserMacro
+		Name="RsvgGenPCX64"
+		Value="(if not exist $(CopyDir) mkdir $(CopyDir)) &amp; (if exist $(PythonDirX64)\python.exe $(PythonDirX64)\python.exe ..\rsvgpc.py --prefix=$(CopyDir) --version=$(RsvgMajorVersion).$(RsvgMinorVersion).$(RsvgMicroVersion))"
 	/>
 </VisualStudioPropertySheet>

@@ -63,7 +63,11 @@
 		Value="$(RsvgSeparateVSDllSuffix)"
 	/>
 	<UserMacro
-		Name="PythonPath"
+		Name="PythonDir"
 		Value="c:\python27"
+	/>
+	<UserMacro
+		Name="PythonDirX64"
+		Value="$(PythonDir).x64"
 	/>
 </VisualStudioPropertySheet>

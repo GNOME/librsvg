@@ -94,7 +94,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Generating .pc files..."
-						CommandLine="$(RsvgGenPC)"
+						CommandLine="$(RsvgGenPCX64)"
 						Outputs="..\librsvg-2.0.pc"
 					/>
 				</FileConfiguration>
@@ -102,7 +102,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Generating .pc files..."
-						CommandLine="$(RsvgGenPC)"
+						CommandLine="$(RsvgGenPCX64)"
 						Outputs="..\librsvg-2.0.pc"
 					/>
 				</FileConfiguration>

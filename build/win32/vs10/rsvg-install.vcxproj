@@ -85,12 +85,10 @@
       <Outputs Condition="'$(Configuration)'=='Release'">install_placeholder;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\..\..\librsvg.pc.in">
-      <Message Condition="'$(Configuration)'=='Debug'">Generating .pc file...</Message>
-      <Command Condition="'$(Configuration)'=='Debug'">$(RsvgGenPC)</Command>
-      <Outputs Condition="'$(Configuration)'=='Debug'">$(RsvgPCFiles);%(Outputs)</Outputs>
-      <Message Condition="'$(Configuration)'=='Release'">Generating .pc file...</Message>
-      <Command Condition="'$(Configuration)'=='Release'">$(RsvgGenPC)</Command>
-      <Outputs Condition="'$(Configuration)'=='Release'">$(RsvgPCFiles);%(Outputs)</Outputs>
+      <Message>Generating .pc file...</Message>
+      <Command Condition="'$(Platform)'=='Win32'">$(RsvgGenPC)</Command>
+      <Command Condition="'$(Platform)'=='x64'">$(RsvgGenPCX64)</Command>
+      <Outputs>$(RsvgPCFiles);%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
