@@ -11,6 +11,10 @@
     <Gtk3IncPath>$(GlibEtcInstallRoot)\include\gtk-3.0;$(GlibEtcInstallRoot)\include\atk-1.0;$(LibRsvgIncPath)</Gtk3IncPath>
     <Gtk3Libs>gtk-3.0.lib;gdk-3.0.lib</Gtk3Libs>
     <RsvgPixbufLoaderCFlags>GDK_PIXBUF_ENABLE_BACKEND;G_LOG_DOMAIN="libpixbufloader-svg"</RsvgPixbufLoaderCFlags>
+    <RsvgIntrospectNMakeCmd>cd ..
+set VCInstallDir=$(VCInstallDir)
+nmake -f rsvg-introspection-msvc.mak CFG=$(Configuration) PREFIX=$(GlibEtcInstallRoot)</RsvgIntrospectNMakeCmd>
+    <RsvgIntrospectBuiltFiles>$(SolutionDir)\..\Rsvg-2.0.gir;$(SolutionDir)\..\Rsvg-2.0.typelib</RsvgIntrospectBuiltFiles>
   </PropertyGroup>
   <PropertyGroup>
     <_PropertySheetDisplayName>rsvgbuilddefinesprops</_PropertySheetDisplayName>
@@ -52,6 +56,12 @@
     </BuildMacro>
     <BuildMacro Include="RsvgPixbufLoaderCFlags">
       <Value>$(RsvgPixbufLoaderCFlags)</Value>
+    </BuildMacro>
+    <BuildMacro Include="RsvgIntrospectNMakeCmd">
+      <Value>$(RsvgIntrospectNMakeCmd)</Value>
+    </BuildMacro>
+    <BuildMacro Include="RsvgIntrospectBuiltFiles">
+      <Value>$(RsvgIntrospectBuiltFiles)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>

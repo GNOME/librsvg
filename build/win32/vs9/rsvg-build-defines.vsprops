@@ -47,4 +47,12 @@
 		Name="RsvgPixbufLoaderCFlags"
 		Value="GDK_PIXBUF_ENABLE_BACKEND;G_LOG_DOMAIN=\&quot;libpixbufloader-svg\&quot;"
 	/>
+	<UserMacro
+		Name="RsvgIntrospectNMakeCmd"
+		Value="cd ..&#x0D;&#x0A;set VCInstallDir=$(VCInstallDir)&#x0D;&#x0A;nmake -f rsvg-introspection-msvc.mak CFG=$(ConfigurationName) PREFIX=$(GlibEtcInstallRoot)"
+	/>
+	<UserMacro
+		Name="RsvgIntrospectBuiltFiles"
+		Value="$(SolutionDir)\..\Rsvg-2.0.gir;$(SolutionDir)\..\Rsvg-2.0.typelib"
+	/>
 </VisualStudioPropertySheet>

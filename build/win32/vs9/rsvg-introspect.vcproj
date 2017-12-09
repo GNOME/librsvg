@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioProject
+	ProjectType="Visual C++"
+	Version="9.00"
+	Name="rsvg-introspect"
+	ProjectGUID="{E827A7D5-EA7A-4239-91A3-5EC76A0E7249}"
+	Keyword="MakeFileProj"
+	TargetFrameworkVersion="196613"
+	>
+	<Platforms>
+		<Platform
+			Name="Win32"
+		/>
+		<Platform
+			Name="x64"
+		/>
+	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
+	<Configurations>
+		<Configuration
+			Name="Debug|Win32"
+			ConfigurationType="0"
+			InheritedPropertySheets=".\rsvg-build-defines.vsprops"
+			>
+			<Tool
+				Name="VCNMakeTool"
+				BuildCommandLine="$(RsvgIntrospectNMakeCmd) $(IntrospectPythonParam) install-introspection"
+				ReBuildCommandLine="$(RsvgIntrospectNMakeCmd) $(IntrospectPythonParam) clean install-introspection"
+				CleanCommandLine="$(RsvgIntrospectNMakeCmd) $(IntrospectPythonParam) clean"
+				Output="$(RsvgIntrospectBuiltFiles)"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|x64"
+			ConfigurationType="0"
+			InheritedPropertySheets=".\rsvg-build-defines.vsprops"
+			>
+			<Tool
+				Name="VCNMakeTool"
+				BuildCommandLine="$(RsvgIntrospectNMakeCmd) $(IntrospectPythonParamX64) install-introspection"
+				ReBuildCommandLine="$(RsvgIntrospectNMakeCmd) $(IntrospectPythonParamX64) clean install-introspection"
+				CleanCommandLine="$(RsvgIntrospectNMakeCmd) $(IntrospectPythonParamX64) clean"
+				Output="$(RsvgIntrospectBuiltFiles)"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			ConfigurationType="0"
+			InheritedPropertySheets=".\rsvg-build-defines.vsprops"
+			CharacterSet="2"
+			DeleteExtensionsOnClean=""
+			>
+			<Tool
+				Name="VCNMakeTool"
+				BuildCommandLine="$(RsvgIntrospectNMakeCmd) $(IntrospectPythonParam) install-introspection"
+				ReBuildCommandLine="$(RsvgIntrospectNMakeCmd) $(IntrospectPythonParam) clean install-introspection"
+				CleanCommandLine="$(RsvgIntrospectNMakeCmd) $(IntrospectPythonParam) clean"
+				Output="$(RsvgIntrospectBuiltFiles)"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			ConfigurationType="0"
+			InheritedPropertySheets=".\rsvg-build-defines.vsprops"
+			>
+			<Tool
+				Name="VCNMakeTool"
+				BuildCommandLine="$(RsvgIntrospectNMakeCmd) $(IntrospectPythonParamX64) install-introspection"
+				ReBuildCommandLine="$(RsvgIntrospectNMakeCmd) $(IntrospectPythonParamX64) clean install-introspection"
+				CleanCommandLine="$(RsvgIntrospectNMakeCmd) $(IntrospectPythonParamX64) clean"
+				Output="$(RsvgIntrospectBuiltFiles)"
+			/>
+		</Configuration>
+	</Configurations>
+</VisualStudioProject>

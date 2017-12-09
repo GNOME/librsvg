@@ -26,6 +26,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rsvg-install", "rsvg-instal
 		{2C4FC5FD-1CF0-47F9-83FC-A129EE313C1E} = {2C4FC5FD-1CF0-47F9-83FC-A129EE313C1E}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rsvg-introspect", "rsvg-introspect.vcproj", "{E827A7D5-EA7A-4239-91A3-5EC76A0E7249}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C416ED91-E000-49D3-9617-CCC473E08EAE} = {C416ED91-E000-49D3-9617-CCC473E08EAE}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -74,6 +79,10 @@ Global
 		{C416ED91-E000-49D3-9617-CCC473E08EAE}.Release|Win32.Build.0 = Release|Win32
 		{C416ED91-E000-49D3-9617-CCC473E08EAE}.Release|x64.ActiveCfg = Release|x64
 		{C416ED91-E000-49D3-9617-CCC473E08EAE}.Release|x64.Build.0 = Release|x64
+		{E827A7D5-EA7A-4239-91A3-5EC76A0E7249}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E827A7D5-EA7A-4239-91A3-5EC76A0E7249}.Release|Win32.ActiveCfg = Release|Win32
+		{E827A7D5-EA7A-4239-91A3-5EC76A0E7249}.Debug|x64.ActiveCfg = Debug|x64
+		{E827A7D5-EA7A-4239-91A3-5EC76A0E7249}.Release|x64.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

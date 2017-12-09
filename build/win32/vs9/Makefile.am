@@ -13,6 +13,7 @@ EXTRA_DIST =	\
 	rsvg.vcprojin			\
 	rsvg-convert.vcprojin		\
 	rsvg-install.vcproj		\
+	rsvg-introspect.vcproj		\
 	rsvg-view-3.vcproj		\
 	README.txt			\
 	math.h				\
