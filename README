@@ -1,11 +1,37 @@
 Librsvg
 =======
 
-This is librsvg - A small SVG rendering library associated with the
-GNOME Project.
+This is librsvg - A small library to render Scalable Vector Graphics
+(SVG), associated with the GNOME Project.  It renders SVG files to
+Cairo surfaces.  Cairo is the 2D, antialiased drawing library that
+GNOME uses to draw things to the screen or to generate output for
+printing.
 
 Do you want to render non-animated SVGs to a Cairo surface with a
-minimal, no-nonsense API?  Librsvg may be adequate for you.
+minimal API?  Librsvg may be adequate for you.
+
+LIBRSVG 2.40.X IS DEPRECATED!
+-----------------------------
+
+You are looking at the 2.40.x series in librsvg, which is implemented
+in the C programming language.  This release series is no longer
+maintained!
+
+As of December 2017, we are in the process of porting the internals of
+librsvg from C to Rust.  The public Application Programming Interface
+(API) and Application Binary Interface (ABI) of librsvg remain
+identical in the Rust version:  it is a **drop-in replacement** for the
+version you are looking at.
+
+**We strongly recommend that you update to the new version of librsvg,
+as it has security fixes, lots of bug fixes, and ongoing development.**
+
+From the outside, the only difference is that librsvg is now much more
+trustworthy when run against untrusted SVG files.
+
+From the inside, the new codebase is just much nicer to work on!  If
+you want to contribute to librsvg, please look at that version
+instead.  You can find it at https://gitlab.gnome.org/GNOME/librsvg
 
 There is a code of conduct for contributors to librsvg; please see the
 file code_of_conduct.md.
@@ -23,35 +49,9 @@ it is not absolutely required.  Please be careful of publishing SVG
 images that you don't want other people to see; the bug tracker is a
 public resource and attachments are visible to everyone.
 
-Goals of librsvg
-----------------
+Maintainers
+-----------
 
-Librsvg aims to be a low-footprint library for rendering SVG images.
-It is used primarily in the GNOME project (www.gnome.org) to render
-SVG icons and vector images that appear on the desktop.  It is also
-used in Wikimedia to render the SVG images that appear in Wikipedia,
-so that even old web browsers can display them.
-
-We aim to be a "render this SVG for me, quickly, and with a minimal
-API" kind of library.  The SVG specification is huge, and definitely
-contains features that are not frequently used in the Real World, if
-at all.
-
-Feature additions will be considered on a case-by-case basis.  Extra
-points if you provide a proof-of-concept patch, and an example of the
-situation in which you encountered that missing feature!
-
-Non-goals of librsvg
---------------------
-
-We don't aim to:
-
-* Implement every single SVG feature that is in the spec.
-
-* Implement external access to the SVG's DOM.
-
-* Implement support for CSS-based animations (but if you can think of
-  a nice API to do this, we'd be glad to know!)
-
-* Replace the industrial-strength SVG rendering machinery in modern
-  web browsers.
+The maintainer of librsvg is Federico Mena Quintero
+<federico@gnome.org>.  You can mail me for any other questions you
+have about librsvg.
