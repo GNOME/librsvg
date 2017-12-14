@@ -534,6 +534,9 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_set_current_state_affine (RsvgDrawingCtx *ctx, cairo_matrix_t *affine);
 
 G_GNUC_INTERNAL
+PangoContext *rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx);
+
+G_GNUC_INTERNAL
 double _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx);
 
 /* Implemented in rust/src/length.rs */

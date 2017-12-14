@@ -1792,6 +1792,12 @@ rsvg_drawing_ctx_set_current_state_affine (RsvgDrawingCtx *ctx, cairo_matrix_t *
         rsvg_current_state (ctx)->affine = *affine;
 }
 
+PangoContext *
+rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx)
+{
+    return draw_ctx->render->get_pango_context (draw_ctx);
+}
+
 void
 rsvg_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 {

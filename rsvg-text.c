@@ -562,7 +562,7 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
 
     state = rsvg_current_state (ctx);
 
-    context = ctx->render->get_pango_context (ctx);
+    context = rsvg_drawing_ctx_get_pango_context (ctx);
 
     if (state->lang)
         pango_context_set_language (context, pango_language_from_string (state->lang));
