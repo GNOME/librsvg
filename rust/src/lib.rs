@@ -4,6 +4,7 @@ extern crate cssparser;
 extern crate glib;
 extern crate glib_sys;
 extern crate libc;
+extern crate itertools;
 
 #[macro_use]
 extern crate downcast_rs;
