@@ -1768,3 +1768,9 @@ rsvg_state_get_current_color (RsvgState *state)
 {
     return state->current_color;
 }
+
+const char *
+rsvg_state_get_language (RsvgState *state)
+{
+    return state->lang;
+}

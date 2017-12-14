@@ -253,6 +253,10 @@ RsvgOpacitySpec *rsvg_state_get_stop_opacity (RsvgState *state);
 G_GNUC_INTERNAL
 guint32 rsvg_state_get_current_color (RsvgState *state);
 
+G_GNUC_INTERNAL
+const char *rsvg_state_get_language (RsvgState *state);
+
+
 G_END_DECLS
 
 #endif                          /* RSVG_STYLES_H */

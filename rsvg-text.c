@@ -559,13 +559,15 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
     PangoAttrList *attr_list;
     PangoAttribute *attribute;
     double dpi_y;
+    const char *lang;
 
     state = rsvg_current_state (ctx);
 
     context = rsvg_drawing_ctx_get_pango_context (ctx);
 
-    if (state->lang)
-        pango_context_set_language (context, pango_language_from_string (state->lang));
+    lang = rsvg_state_get_language (state);
+    if (lang)
+        pango_context_set_language (context, pango_language_from_string (lang));
 
     if (state->unicode_bidi == UNICODE_BIDI_OVERRIDE || state->unicode_bidi == UNICODE_BIDI_EMBED)
         pango_context_set_base_dir (context, state->text_dir);
