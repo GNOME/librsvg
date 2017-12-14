@@ -1,8 +1,10 @@
-use ::cairo;
-use ::cairo_sys;
-use ::glib_sys;
-use ::glib::translate::*;
-use ::libc;
+use cairo;
+use cairo_sys;
+use glib_sys;
+use glib::translate::*;
+use libc;
+use pango_sys;
+use pango;
 
 use color::*;
 use error::*;
@@ -45,6 +47,8 @@ extern "C" {
 
     fn rsvg_drawing_ctx_set_current_state_affine (draw_ctx: *const RsvgDrawingCtx,
                                                   affine:   *const cairo::Matrix);
+
+    fn rsvg_drawing_ctx_get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> *mut pango_sys::PangoContext;
 
     fn rsvg_drawing_ctx_add_clipping_rect (draw_ctx: *const RsvgDrawingCtx,
                                            x: f64,
@@ -197,6 +201,12 @@ pub fn get_current_state_affine (draw_ctx: *const RsvgDrawingCtx) -> cairo::Matr
 pub fn set_current_state_affine (draw_ctx: *const RsvgDrawingCtx, affine: cairo::Matrix) {
     unsafe {
         rsvg_drawing_ctx_set_current_state_affine (draw_ctx, &affine);
+    }
+}
+
+pub fn get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> pango::Context {
+    unsafe {
+        from_glib_full(rsvg_drawing_ctx_get_pango_context(draw_ctx))
     }
 }
 
