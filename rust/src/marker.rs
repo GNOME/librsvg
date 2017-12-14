@@ -1173,7 +1173,7 @@ mod marker_tests {
 
     #[test]
     #[ignore]
-    // https://bugzilla.gnome.org/show_bug.cgi?id=777854
+    // https://gitlab.gnome.org/GNOME/librsvg/issues/161
     fn emits_for_closed_subpath () {
         let mut builder = RsvgPathBuilder::new ();
         builder.move_to (0.0, 0.0);

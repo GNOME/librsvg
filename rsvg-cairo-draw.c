@@ -358,7 +358,7 @@ rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
      * viewports/clipping, and one for user applications like a
      * rsvg_compute_ink_rect() function in the future.
      *
-     * See https://bugzilla.gnome.org/show_bug.cgi?id=760112 for discussion of a
+     * See https://gitlab.gnome.org/GNOME/librsvg/issues/128 for discussion of a
      * public API to get the ink rectangle.
      */
 
