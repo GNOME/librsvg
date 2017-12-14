@@ -550,9 +550,10 @@ rsvg_new_tref (const char *element_name, RsvgNode *parent)
 }
 
 static PangoLayout *
-rsvg_text_create_layout (RsvgDrawingCtx * ctx, const char *text, PangoContext * context)
+rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
 {
     RsvgState *state;
+    PangoContext *context;
     PangoFontDescription *font_desc;
     PangoLayout *layout;
     PangoAttrList *attr_list;
@@ -560,6 +561,8 @@ rsvg_text_create_layout (RsvgDrawingCtx * ctx, const char *text, PangoContext * 
     double dpi_y;
 
     state = rsvg_current_state (ctx);
+
+    context = ctx->render->get_pango_context (ctx);
 
     if (state->lang)
         pango_context_set_language (context, pango_language_from_string (state->lang));
@@ -620,13 +623,14 @@ rsvg_text_create_layout (RsvgDrawingCtx * ctx, const char *text, PangoContext * 
     pango_layout_set_alignment (layout, (state->text_dir == PANGO_DIRECTION_LTR) ?
                                 PANGO_ALIGN_LEFT : PANGO_ALIGN_RIGHT);
 
+    g_object_unref (context);
+
     return layout;
 }
 
 static void
 rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdouble * y)
 {
-    PangoContext *context;
     PangoLayout *layout;
     PangoLayoutIter *iter;
     RsvgState *state;
@@ -639,8 +643,7 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
     if (state->font_size.length == 0)
         return;
 
-    context = ctx->render->get_pango_context (ctx);
-    layout = rsvg_text_create_layout (ctx, text, context);
+    layout = rsvg_text_create_layout (ctx, text);
     pango_layout_get_size (layout, &w, &h);
     iter = pango_layout_get_iter (layout);
     offset = pango_layout_iter_get_baseline (iter) / (double) PANGO_SCALE;
@@ -660,26 +663,21 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
         *x += w / (double)PANGO_SCALE;
 
     g_object_unref (layout);
-    g_object_unref (context);
 }
 
 static gdouble
 measure_text (RsvgDrawingCtx * ctx, const char *text)
 {
-    PangoContext *context;
     PangoLayout *layout;
     gint width;
     gdouble scaled_width;
 
-    context = ctx->render->get_pango_context (ctx);
-
-    layout = rsvg_text_create_layout (ctx, text, context);
+    layout = rsvg_text_create_layout (ctx, text);
 
     pango_layout_get_size (layout, &width, NULL);
     scaled_width = width / (double)PANGO_SCALE;
 
     g_object_unref (layout);
-    g_object_unref (context);
 
     return scaled_width;
 }
