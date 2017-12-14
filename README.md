@@ -94,7 +94,7 @@ can [mail me][mail] for any other questions you have about librsvg.
 [compiling]: COMPILING.md
 [docs]: https://developer.gnome.org/rsvg/stable/
 [mail]: mailto:federico@gnome.org
-[bugs]: https://bugzilla.gnome.org/page.cgi?id=browse.html&product=librsvg
+[bugs]: https://gitlab.gnome.org/GNOME/librsvg/issues
 [gi]: https://wiki.gnome.org/Projects/GObjectIntrospection
 [contributing]: CONTRIBUTING.md
 [reporting-bugs]: CONTRIBUTING.md#reporting-bugs
