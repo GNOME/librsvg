@@ -5,6 +5,8 @@ extern crate glib;
 extern crate glib_sys;
 extern crate libc;
 extern crate itertools;
+extern crate pango;
+extern crate pango_sys;
 
 #[macro_use]
 extern crate downcast_rs;
