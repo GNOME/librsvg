@@ -557,7 +557,6 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
     PangoFontDescription *font_desc;
     PangoLayout *layout;
     PangoAttrList *attr_list;
-    PangoAttribute *attribute;
     double dpi_y;
     const char *lang;
     UnicodeBidi unicode_bidi;
@@ -599,23 +598,17 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
 
     attr_list = pango_attr_list_new ();
     letter_spacing = rsvg_state_get_letter_spacing (state);
-    attribute = pango_attr_letter_spacing_new (rsvg_length_normalize (&letter_spacing, ctx) * PANGO_SCALE);
-    attribute->start_index = 0;
-    attribute->end_index = G_MAXINT;
-    pango_attr_list_insert (attr_list, attribute);
+    pango_attr_list_insert (attr_list,
+                            pango_attr_letter_spacing_new (rsvg_length_normalize (&letter_spacing, ctx) * PANGO_SCALE));
 
     if (state->has_font_decor && text) {
         if (state->font_decor & TEXT_UNDERLINE) {
-            attribute = pango_attr_underline_new (PANGO_UNDERLINE_SINGLE);
-            attribute->start_index = 0;
-            attribute->end_index = -1;
-            pango_attr_list_insert (attr_list, attribute);
+            pango_attr_list_insert (attr_list,
+                                    pango_attr_underline_new (PANGO_UNDERLINE_SINGLE));
         }
 	if (state->font_decor & TEXT_STRIKE) {
-            attribute = pango_attr_strikethrough_new (TRUE);
-            attribute->start_index = 0;
-            attribute->end_index = -1;
-            pango_attr_list_insert (attr_list, attribute);
+            pango_attr_list_insert (attr_list,
+                                    pango_attr_strikethrough_new (TRUE));
 	}
     }
 
