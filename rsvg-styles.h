@@ -36,6 +36,7 @@
 
 G_BEGIN_DECLS 
 
+/* Keep in sync with rust/src/state.rs:TextDecoration */
 typedef struct {
     gboolean overline;
     gboolean underline;
