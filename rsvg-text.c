@@ -619,10 +619,10 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
     pango_layout_set_attributes (layout, attr_list);
     pango_attr_list_unref (attr_list);
 
-    pango_layout_set_text (layout, text, -1);
-
     pango_layout_set_alignment (layout, (rsvg_state_get_text_dir (state) == PANGO_DIRECTION_LTR) ?
                                 PANGO_ALIGN_LEFT : PANGO_ALIGN_RIGHT);
+
+    pango_layout_set_text (layout, text, -1);
 
     g_object_unref (context);
 
