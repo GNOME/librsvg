@@ -549,85 +549,8 @@ rsvg_new_tref (const char *element_name, RsvgNode *parent)
                                 rsvg_node_tref_free);
 }
 
-static PangoLayout *
-rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
-{
-    RsvgState *state;
-    PangoContext *context;
-    PangoFontDescription *font_desc;
-    PangoLayout *layout;
-    PangoAttrList *attr_list;
-    double dpi_y;
-    const char *lang;
-    UnicodeBidi unicode_bidi;
-    RsvgLength letter_spacing;
-    const TextDecoration *font_decor;
-
-    g_assert (text != NULL);
-
-    state = rsvg_current_state (ctx);
-
-    context = rsvg_drawing_ctx_get_pango_context (ctx);
-
-    lang = rsvg_state_get_language (state);
-    if (lang)
-        pango_context_set_language (context, pango_language_from_string (lang));
-
-    unicode_bidi = rsvg_state_get_unicode_bidi (state);
-    if (unicode_bidi == UNICODE_BIDI_OVERRIDE || unicode_bidi == UNICODE_BIDI_EMBED)
-        pango_context_set_base_dir (context,
-                                    rsvg_state_get_text_dir (state));
-
-    if (PANGO_GRAVITY_IS_VERTICAL (rsvg_state_get_text_gravity (state)))
-        pango_context_set_base_gravity (context, rsvg_state_get_text_gravity (state));
-
-    font_desc = pango_font_description_copy (pango_context_get_font_description (context));
-
-    if (rsvg_state_get_font_family (state))
-        pango_font_description_set_family (font_desc, rsvg_state_get_font_family (state));
-
-    pango_font_description_set_style (font_desc, rsvg_state_get_font_style (state));
-    pango_font_description_set_variant (font_desc, rsvg_state_get_font_variant (state));
-    pango_font_description_set_weight (font_desc, rsvg_state_get_font_weight (state));
-    pango_font_description_set_stretch (font_desc, rsvg_state_get_font_stretch (state));
-
-    rsvg_drawing_ctx_get_dpi (ctx, NULL, &dpi_y);
-    pango_font_description_set_size (font_desc,
-                                     rsvg_drawing_ctx_get_normalized_font_size (ctx) * PANGO_SCALE / dpi_y * 72);
-
-    layout = pango_layout_new (context);
-    pango_layout_set_font_description (layout, font_desc);
-    pango_font_description_free (font_desc);
-
-    attr_list = pango_attr_list_new ();
-    letter_spacing = rsvg_state_get_letter_spacing (state);
-    pango_attr_list_insert (attr_list,
-                            pango_attr_letter_spacing_new (rsvg_length_normalize (&letter_spacing, ctx) * PANGO_SCALE));
-
-    font_decor = rsvg_state_get_font_decor (state);
-    if (font_decor) {
-        if (font_decor->underline) {
-            pango_attr_list_insert (attr_list,
-                                    pango_attr_underline_new (PANGO_UNDERLINE_SINGLE));
-        }
-	if (font_decor->strike) {
-            pango_attr_list_insert (attr_list,
-                                    pango_attr_strikethrough_new (TRUE));
-	}
-    }
-
-    pango_layout_set_attributes (layout, attr_list);
-    pango_attr_list_unref (attr_list);
-
-    pango_layout_set_alignment (layout, (rsvg_state_get_text_dir (state) == PANGO_DIRECTION_LTR) ?
-                                PANGO_ALIGN_LEFT : PANGO_ALIGN_RIGHT);
-
-    pango_layout_set_text (layout, text, -1);
-
-    g_object_unref (context);
-
-    return layout;
-}
+/* Defined in rust/src/text.rs */
+extern PangoLayout *rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text);
 
 static void
 rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdouble * y)

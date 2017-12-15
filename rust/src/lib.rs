@@ -140,6 +140,10 @@ pub use structure::{
     rsvg_node_use_new,
 };
 
+pub use text::{
+    rsvg_text_create_layout,
+};
+
 pub use transform::{
     rsvg_parse_transform,
 };
@@ -180,6 +184,7 @@ mod space;
 mod state;
 mod stop;
 mod structure;
+mod text;
 mod transform;
 mod util;
 mod viewbox;
