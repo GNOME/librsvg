@@ -1786,3 +1786,39 @@ rsvg_state_get_text_dir (RsvgState *state)
 {
     return state->text_dir;
 }
+
+PangoGravity
+rsvg_state_get_text_gravity (RsvgState *state)
+{
+    return state->text_gravity;
+}
+
+const char *
+rsvg_state_get_font_family (RsvgState *state)
+{
+    return state->font_family;
+}
+
+PangoStyle
+rsvg_state_get_font_style (RsvgState *state)
+{
+    return state->font_style;
+}
+
+PangoVariant
+rsvg_state_get_font_variant (RsvgState *state)
+{
+    return state->font_variant;
+}
+
+PangoWeight
+rsvg_state_get_font_weight (RsvgState *state)
+{
+    return state->font_weight;
+}
+
+PangoStretch
+rsvg_state_get_font_stretch (RsvgState *state)
+{
+    return state->font_stretch;
+}

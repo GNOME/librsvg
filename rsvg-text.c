@@ -575,18 +575,18 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
         pango_context_set_base_dir (context,
                                     rsvg_state_get_text_dir (state));
 
-    if (PANGO_GRAVITY_IS_VERTICAL (state->text_gravity))
-        pango_context_set_base_gravity (context, state->text_gravity);
+    if (PANGO_GRAVITY_IS_VERTICAL (rsvg_state_get_text_gravity (state)))
+        pango_context_set_base_gravity (context, rsvg_state_get_text_gravity (state));
 
     font_desc = pango_font_description_copy (pango_context_get_font_description (context));
 
-    if (state->font_family)
-        pango_font_description_set_family_static (font_desc, state->font_family);
+    if (rsvg_state_get_font_family (state))
+        pango_font_description_set_family (font_desc, rsvg_state_get_font_family (state));
 
-    pango_font_description_set_style (font_desc, state->font_style);
-    pango_font_description_set_variant (font_desc, state->font_variant);
-    pango_font_description_set_weight (font_desc, state->font_weight);
-    pango_font_description_set_stretch (font_desc, state->font_stretch);
+    pango_font_description_set_style (font_desc, rsvg_state_get_font_style (state));
+    pango_font_description_set_variant (font_desc, rsvg_state_get_font_variant (state));
+    pango_font_description_set_weight (font_desc, rsvg_state_get_font_weight (state));
+    pango_font_description_set_stretch (font_desc, rsvg_state_get_font_stretch (state));
 
     rsvg_drawing_ctx_get_dpi (ctx, NULL, &dpi_y);
     pango_font_description_set_size (font_desc,
@@ -641,6 +641,7 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
     RsvgState *state;
     gint w, h;
     double offset_x, offset_y, offset;
+    PangoGravity gravity;
 
     state = rsvg_current_state (ctx);
 
@@ -653,7 +654,10 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
     iter = pango_layout_get_iter (layout);
     offset = pango_layout_iter_get_baseline (iter) / (double) PANGO_SCALE;
     offset += _rsvg_css_accumulate_baseline_shift (state, ctx);
-    if (PANGO_GRAVITY_IS_VERTICAL (state->text_gravity)) {
+
+    gravity = rsvg_state_get_text_gravity (state);
+
+    if (PANGO_GRAVITY_IS_VERTICAL (gravity)) {
         offset_x = -offset;
         offset_y = 0;
     } else {
@@ -662,7 +666,7 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
     }
     pango_layout_iter_free (iter);
     ctx->render->render_pango_layout (ctx, layout, *x - offset_x, *y - offset_y);
-    if (PANGO_GRAVITY_IS_VERTICAL (state->text_gravity))
+    if (PANGO_GRAVITY_IS_VERTICAL (gravity))
         *y += w / (double)PANGO_SCALE;
     else
         *x += w / (double)PANGO_SCALE;

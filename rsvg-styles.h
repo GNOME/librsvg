@@ -263,6 +263,25 @@ UnicodeBidi rsvg_state_get_unicode_bidi (RsvgState *state);
 G_GNUC_INTERNAL
 PangoDirection rsvg_state_get_text_dir (RsvgState *state);
 
+G_GNUC_INTERNAL
+PangoGravity rsvg_state_get_text_gravity (RsvgState *state);
+
+G_GNUC_INTERNAL
+const char *rsvg_state_get_font_family (RsvgState *state);
+
+G_GNUC_INTERNAL
+PangoStyle rsvg_state_get_font_style (RsvgState *state);
+
+G_GNUC_INTERNAL
+PangoVariant rsvg_state_get_font_variant (RsvgState *state);
+
+G_GNUC_INTERNAL
+PangoWeight rsvg_state_get_font_weight (RsvgState *state);
+
+G_GNUC_INTERNAL
+PangoStretch rsvg_state_get_font_stretch (RsvgState *state);
+
+
 G_END_DECLS
 
 #endif                          /* RSVG_STYLES_H */
