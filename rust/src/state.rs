@@ -43,10 +43,9 @@ pub fn get_text_gravity(state: *const RsvgState) -> pango::Gravity {
     unsafe { from_glib(rsvg_state_get_text_gravity(state)) }
 }
 
-pub fn get_font_family(state: *const RsvgState) -> String {
+pub fn get_font_family(state: *const RsvgState) -> Option<String> {
     unsafe { from_glib_none(rsvg_state_get_font_family(state)) }
 }
-
 
 pub fn get_font_style(state: *const RsvgState) -> pango::Style {
     unsafe { from_glib(rsvg_state_get_font_style(state)) }
