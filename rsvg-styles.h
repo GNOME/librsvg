@@ -51,6 +51,7 @@ typedef enum {
     TEXT_ANCHOR_END
 } TextAnchor;
 
+/* Keep in sync with rust/src/state.c:UnicodeBidi */
 typedef enum {
     UNICODE_BIDI_NORMAL = 0,
     UNICODE_BIDI_EMBED = 1,
@@ -256,6 +257,11 @@ guint32 rsvg_state_get_current_color (RsvgState *state);
 G_GNUC_INTERNAL
 const char *rsvg_state_get_language (RsvgState *state);
 
+G_GNUC_INTERNAL
+UnicodeBidi rsvg_state_get_unicode_bidi (RsvgState *state);
+
+G_GNUC_INTERNAL
+PangoDirection rsvg_state_get_text_dir (RsvgState *state);
 
 G_END_DECLS
 

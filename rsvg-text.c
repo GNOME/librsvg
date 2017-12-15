@@ -560,6 +560,7 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
     PangoAttribute *attribute;
     double dpi_y;
     const char *lang;
+    UnicodeBidi unicode_bidi;
 
     state = rsvg_current_state (ctx);
 
@@ -569,8 +570,10 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
     if (lang)
         pango_context_set_language (context, pango_language_from_string (lang));
 
-    if (state->unicode_bidi == UNICODE_BIDI_OVERRIDE || state->unicode_bidi == UNICODE_BIDI_EMBED)
-        pango_context_set_base_dir (context, state->text_dir);
+    unicode_bidi = rsvg_state_get_unicode_bidi (state);
+    if (unicode_bidi == UNICODE_BIDI_OVERRIDE || unicode_bidi == UNICODE_BIDI_EMBED)
+        pango_context_set_base_dir (context,
+                                    rsvg_state_get_text_dir (state));
 
     if (PANGO_GRAVITY_IS_VERTICAL (state->text_gravity))
         pango_context_set_base_gravity (context, state->text_gravity);
@@ -622,7 +625,7 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
     else
         pango_layout_set_text (layout, NULL, 0);
 
-    pango_layout_set_alignment (layout, (state->text_dir == PANGO_DIRECTION_LTR) ?
+    pango_layout_set_alignment (layout, (rsvg_state_get_text_dir (state) == PANGO_DIRECTION_LTR) ?
                                 PANGO_ALIGN_LEFT : PANGO_ALIGN_RIGHT);
 
     g_object_unref (context);

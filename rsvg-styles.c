@@ -1774,3 +1774,15 @@ rsvg_state_get_language (RsvgState *state)
 {
     return state->lang;
 }
+
+UnicodeBidi
+rsvg_state_get_unicode_bidi (RsvgState *state)
+{
+    return state->unicode_bidi;
+}
+
+PangoDirection
+rsvg_state_get_text_dir (RsvgState *state)
+{
+    return state->text_dir;
+}
