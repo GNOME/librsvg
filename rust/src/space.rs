@@ -38,7 +38,7 @@ fn normalize_default(s: &str) -> String {
             c => c,
         })
         .coalesce(|current, next| match (current, next) {
-            (' ', ' ') | (' ', '\t') => Ok(' '),
+            (' ', ' ') => Ok(' '),
             (_, _) => Err((current, next)),
         })
         .collect::<String>()
