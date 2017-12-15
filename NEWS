@@ -1,3 +1,20 @@
+Version 2.40.20
+- Except for emergencies, this will be the LAST RELEASE of the
+  librsvg-2.40.x series.  We are moving to 2.41, which is vastly
+  improved over the 2.40 series.  The API/ABI there remain unchaged,
+  so we strongly encourage you to upgrade your sources and binaries to
+  librsvg-2.41.x.
+- bgo#761175 - Allow masks and clips to reuse a node being drawn.
+- Don't access the file system when deciding whether to load a remote
+  file with a UNC path for a paint server (i.e. don't try to load it at all).
+- Vistual Studio: fixed and integrated introspection builds, so
+  introspection data is built directly from the Visual Studio project
+  (Chun-wei Fan).
+- Visual Studio: We now use HIGHENTROPYVA linker option on x64 builds,
+  to enhance the security of built binaries (Chun-wei Fan).
+- Fix generation of Vala bindings when compiling in read-only source
+  directories (Emmanuele Bassi).
+
 Version 2.40.19
 - bgo#621088: Using text objects as clipping paths is now supported.
 - bgo#587721: Fix rendering of text elements with transformations (Massimo).
