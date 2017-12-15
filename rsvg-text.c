@@ -562,6 +562,8 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
     UnicodeBidi unicode_bidi;
     RsvgLength letter_spacing;
 
+    g_assert (text != NULL);
+
     state = rsvg_current_state (ctx);
 
     context = rsvg_drawing_ctx_get_pango_context (ctx);
@@ -601,7 +603,7 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
     pango_attr_list_insert (attr_list,
                             pango_attr_letter_spacing_new (rsvg_length_normalize (&letter_spacing, ctx) * PANGO_SCALE));
 
-    if (state->has_font_decor && text) {
+    if (state->has_font_decor) {
         if (state->font_decor & TEXT_UNDERLINE) {
             pango_attr_list_insert (attr_list,
                                     pango_attr_underline_new (PANGO_UNDERLINE_SINGLE));
@@ -615,10 +617,7 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
     pango_layout_set_attributes (layout, attr_list);
     pango_attr_list_unref (attr_list);
 
-    if (text)
-        pango_layout_set_text (layout, text, -1);
-    else
-        pango_layout_set_text (layout, NULL, 0);
+    pango_layout_set_text (layout, text, -1);
 
     pango_layout_set_alignment (layout, (rsvg_state_get_text_dir (state) == PANGO_DIRECTION_LTR) ?
                                 PANGO_ALIGN_LEFT : PANGO_ALIGN_RIGHT);
