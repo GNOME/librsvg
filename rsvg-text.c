@@ -561,6 +561,7 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
     double dpi_y;
     const char *lang;
     UnicodeBidi unicode_bidi;
+    RsvgLength letter_spacing;
 
     state = rsvg_current_state (ctx);
 
@@ -597,7 +598,8 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
     pango_font_description_free (font_desc);
 
     attr_list = pango_attr_list_new ();
-    attribute = pango_attr_letter_spacing_new (rsvg_length_normalize (&state->letter_spacing, ctx) * PANGO_SCALE);
+    letter_spacing = rsvg_state_get_letter_spacing (state);
+    attribute = pango_attr_letter_spacing_new (rsvg_length_normalize (&letter_spacing, ctx) * PANGO_SCALE);
     attribute->start_index = 0;
     attribute->end_index = G_MAXINT;
     pango_attr_list_insert (attr_list, attribute);

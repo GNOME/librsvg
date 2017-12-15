@@ -281,6 +281,8 @@ PangoWeight rsvg_state_get_font_weight (RsvgState *state);
 G_GNUC_INTERNAL
 PangoStretch rsvg_state_get_font_stretch (RsvgState *state);
 
+G_GNUC_INTERNAL
+RsvgLength rsvg_state_get_letter_spacing (RsvgState *state);
 
 G_END_DECLS
 

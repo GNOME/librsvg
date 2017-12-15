@@ -1822,3 +1822,10 @@ rsvg_state_get_font_stretch (RsvgState *state)
 {
     return state->font_stretch;
 }
+
+RsvgLength
+rsvg_state_get_letter_spacing (RsvgState *state)
+{
+    return state->letter_spacing;
+}
+
