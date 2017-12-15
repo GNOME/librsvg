@@ -281,6 +281,9 @@ PangoStretch rsvg_state_get_font_stretch (RsvgState *state);
 G_GNUC_INTERNAL
 RsvgLength rsvg_state_get_letter_spacing (RsvgState *state);
 
+G_GNUC_INTERNAL
+const TextDecoration *rsvg_state_get_font_decor (RsvgState *state);
+
 G_END_DECLS
 
 #endif                          /* RSVG_STYLES_H */

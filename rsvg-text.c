@@ -561,6 +561,7 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
     const char *lang;
     UnicodeBidi unicode_bidi;
     RsvgLength letter_spacing;
+    const TextDecoration *font_decor;
 
     g_assert (text != NULL);
 
@@ -603,12 +604,13 @@ rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text)
     pango_attr_list_insert (attr_list,
                             pango_attr_letter_spacing_new (rsvg_length_normalize (&letter_spacing, ctx) * PANGO_SCALE));
 
-    if (state->has_font_decor) {
-        if (state->font_decor.underline) {
+    font_decor = rsvg_state_get_font_decor (state);
+    if (font_decor) {
+        if (font_decor->underline) {
             pango_attr_list_insert (attr_list,
                                     pango_attr_underline_new (PANGO_UNDERLINE_SINGLE));
         }
-	if (state->font_decor.strike) {
+	if (font_decor->strike) {
             pango_attr_list_insert (attr_list,
                                     pango_attr_strikethrough_new (TRUE));
 	}

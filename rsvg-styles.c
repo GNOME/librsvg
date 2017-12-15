@@ -1831,3 +1831,12 @@ rsvg_state_get_letter_spacing (RsvgState *state)
     return state->letter_spacing;
 }
 
+const TextDecoration *
+rsvg_state_get_font_decor (RsvgState *state)
+{
+    if (state->has_font_decor) {
+        return &state->font_decor;
+    } else {
+        return NULL;
+    }
+}
