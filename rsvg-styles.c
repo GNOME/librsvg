@@ -818,14 +818,16 @@ rsvg_parse_style_pair (RsvgState * state,
     } else if (g_str_equal (name, "text-decoration")) {
         if (g_str_equal (value, "inherit")) {
             state->has_font_decor = FALSE;
-            state->font_decor = TEXT_NORMAL;
+            state->font_decor.overline = FALSE;
+            state->font_decor.underline = FALSE;
+            state->font_decor.strike = FALSE;
         } else {
             if (strstr (value, "underline"))
-                state->font_decor |= TEXT_UNDERLINE;
+                state->font_decor.underline = TRUE;
             if (strstr (value, "overline"))
-                state->font_decor |= TEXT_OVERLINE;
+                state->font_decor.overline = TRUE;
             if (strstr (value, "strike") || strstr (value, "line-through"))     /* strike though or line-through */
-                state->font_decor |= TEXT_STRIKE;
+                state->font_decor.strike = TRUE;
             state->has_font_decor = TRUE;
         }
     } else if (g_str_equal (name, "direction")) {

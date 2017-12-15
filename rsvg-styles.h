@@ -36,14 +36,11 @@
 
 G_BEGIN_DECLS 
 
-typedef int TextDecoration;
-
-enum {
-    TEXT_NORMAL = 0x00,
-    TEXT_OVERLINE = 0x01,
-    TEXT_UNDERLINE = 0x02,
-    TEXT_STRIKE = 0x04
-};
+typedef struct {
+    gboolean overline;
+    gboolean underline;
+    gboolean strike;
+} TextDecoration;
 
 typedef enum {
     TEXT_ANCHOR_START,
