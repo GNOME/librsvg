@@ -261,8 +261,8 @@ librsvg-$(RSVG_API_VERSION).vapi: Rsvg-$(RSVG_API_VERSION).gir
 VAPIGEN_VAPIS = librsvg-$(RSVG_API_VERSION).vapi
 
 librsvg_@RSVG_API_VERSION_U@_vapi_DEPS = gio-2.0 cairo
-librsvg_@RSVG_API_VERSION_U@_vapi_METADATADIRS = $(srcdir)
-librsvg_@RSVG_API_VERSION_U@_vapi_FILES = Rsvg-$(RSVG_API_VERSION).gir Rsvg-$(RSVG_API_VERSION)-custom.vala
+librsvg_@RSVG_API_VERSION_U@_vapi_METADATADIRS = $(top_srcdir)
+librsvg_@RSVG_API_VERSION_U@_vapi_FILES = $(top_builddir)/Rsvg-$(RSVG_API_VERSION).gir $(top_srcdir)/Rsvg-$(RSVG_API_VERSION)-custom.vala
 
 vapidir = $(datadir)/vala/vapi
 vapi_DATA = $(VAPIGEN_VAPIS)
