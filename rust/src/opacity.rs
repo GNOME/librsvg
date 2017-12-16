@@ -1,5 +1,5 @@
 /// Struct to represent an inheritable opacity property
-/// https://www.w3.org/TR/SVG/masking.html#OpacityProperty
+/// <https://www.w3.org/TR/SVG/masking.html#OpacityProperty>
 
 use ::cssparser::{Parser, ParserInput, Token};
 use ::libc;

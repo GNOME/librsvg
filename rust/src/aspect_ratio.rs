@@ -1,6 +1,6 @@
-//! Handling of preserveAspectRatio values
+//! Handling of `preserveAspectRatio` values
 //!
-//! This module handles preserveAspectRatio values [per the SVG specification][spec].
+//! This module handles `preserveAspectRatio` values [per the SVG specification][spec].
 //! We have an [`AspectRatio`] struct which encapsulates such a value.
 //!
 //! ```

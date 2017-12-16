@@ -13,7 +13,7 @@ pub enum XmlSpace {
 ///
 /// Normalizes a string as it comes out of the XML parser's handler
 /// for character data according to the SVG rules in
-/// https://www.w3.org/TR/SVG/text.html#WhiteSpace
+/// <https://www.w3.org/TR/SVG/text.html#WhiteSpace>
 pub fn xml_space_normalize(mode: XmlSpace, s: &str) -> String {
     match mode {
         XmlSpace::Default => normalize_default(s),
