@@ -641,7 +641,7 @@ pub extern fn gradient_resolve_fallbacks_and_set_pattern (raw_node:     *const R
     let mut did_set_gradient = false;
 
     node.with_impl (|node_gradient: &NodeGradient| {
-        let gradient = node_gradient.get_gradient_with_color_stops_from_node (&node);
+        let gradient = node_gradient.get_gradient_with_color_stops_from_node (node);
         did_set_gradient = resolve_fallbacks_and_set_pattern (&gradient, draw_ctx, opacity, bbox);
     });
 

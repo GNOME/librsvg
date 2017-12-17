@@ -749,7 +749,7 @@ fn emit_markers_for_path_builder<E> (builder: &RsvgPathBuilder,
             Segment::LineOrCurve { .. } => {
                 let (_, incoming_vx, incoming_vy) = find_incoming_directionality_backwards (&segments, segments.len () - 1);
 
-                emit_marker (&segment, MarkerEndpoint::End, MarkerType::End, angle_from_vector (incoming_vx, incoming_vy), emit_fn);
+                emit_marker (segment, MarkerEndpoint::End, MarkerType::End, angle_from_vector (incoming_vx, incoming_vy), emit_fn);
             },
 
             _ => { }

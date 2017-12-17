@@ -107,7 +107,7 @@ impl NodeTrait for NodeImage {
                                                f64::from(surface.get_height()),
                                                x, y, w, h);
 
-            drawing_ctx::render_surface(draw_ctx, &surface, x, y, w, h);
+            drawing_ctx::render_surface(draw_ctx, surface, x, y, w, h);
 
             drawing_ctx::pop_discrete_layer(draw_ctx);
         }

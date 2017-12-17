@@ -108,10 +108,10 @@ impl Color {
 }
 
 fn rgba_from_argb (argb: u32) -> cssparser::RGBA {
-    cssparser::RGBA::new (((argb & 0x00ff0000) >> 16) as u8,
-                          ((argb & 0x0000ff00) >> 8) as u8,
-                          ((argb & 0x000000ff) as u8),
-                          ((argb & 0xff000000) >> 24) as u8)
+    cssparser::RGBA::new (((argb & 0x00ff_0000) >> 16) as u8,
+                          ((argb & 0x0000_ff00) >> 8) as u8,
+                          ((argb & 0x0000_00ff) as u8),
+                          ((argb & 0xff00_0000) >> 24) as u8)
 }
 
 impl From<cssparser::Color> for Color {
