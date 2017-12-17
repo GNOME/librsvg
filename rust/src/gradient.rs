@@ -144,11 +144,11 @@ impl GradientCommon {
         }
 
         if let Some (ref mut stops) = self.stops {
-            let mut last_offset: f64 = 0.0;
-
-            if !stops.is_empty() {
-                last_offset = stops[stops.len () - 1].offset;
-            }
+            let last_offset: f64 = if !stops.is_empty() {
+                stops[stops.len () - 1].offset
+            } else {
+                0.0
+            };
 
             if last_offset > offset {
                 offset = last_offset;
