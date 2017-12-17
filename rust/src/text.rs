@@ -15,7 +15,7 @@ fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
 }
 
 fn to_pango_units(v: f64) -> i32 {
-    (v * pango::SCALE as f64) as i32
+    (v * f64::from(pango::SCALE)) as i32
 }
 
 fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::Layout {

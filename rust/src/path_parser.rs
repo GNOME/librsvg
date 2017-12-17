@@ -219,7 +219,7 @@ impl<'b> PathParser<'b> {
             /* Integer part */
 
             while self.lookahead_is_digit (&mut c) {
-                value = value * 10.0 + char_to_digit (c) as f64;
+                value = value * 10.0 + f64::from(char_to_digit (c));
 
                 assert! (self.match_char (c));
             }
@@ -233,7 +233,7 @@ impl<'b> PathParser<'b> {
 
                 while self.lookahead_is_digit (&mut c) {
                     fraction = fraction / 10.0;
-                    value += fraction * char_to_digit (c) as f64;
+                    value += fraction * f64::from(char_to_digit (c));
 
                     assert! (self.match_char (c));
                 }
@@ -254,7 +254,7 @@ impl<'b> PathParser<'b> {
 
                 if self.lookahead_is_digit (&mut c) {
                     while self.lookahead_is_digit (&mut c) {
-                        exponent = exponent * 10.0 + char_to_digit (c) as f64;
+                        exponent = exponent * 10.0 + f64::from(char_to_digit (c));
 
                         assert! (self.match_char (c));
                     }

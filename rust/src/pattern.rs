@@ -323,8 +323,8 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
         return false;
     }
 
-    scwscale = pw as f64 / scaled_width;
-    schscale = ph as f64 / scaled_height;
+    scwscale = f64::from(pw) / scaled_width;
+    schscale = f64::from(ph) / scaled_height;
 
     let mut affine: cairo::Matrix = cairo::Matrix::identity ();
 

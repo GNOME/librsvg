@@ -276,10 +276,10 @@ impl Gradient {
         for stop in stops {
             let rgba = stop.rgba;
             pattern.add_color_stop_rgba (stop.offset,
-                                         ((rgba >> 24) & 0xff) as f64 / 255.0,
-                                         ((rgba >> 16) & 0xff) as f64 / 255.0,
-                                         ((rgba >> 8) & 0xff) as f64 / 255.0,
-                                         (((rgba >> 0) & 0xff) * opacity as u32) as f64 / 255.0 / 255.0);
+                                         (f64::from((rgba >> 24) & 0xff)) / 255.0,
+                                         (f64::from((rgba >> 16) & 0xff))  / 255.0,
+                                         (f64::from((rgba >> 8) & 0xff))  / 255.0,
+                                         f64::from(((rgba >> 0) & 0xff) * u32::from(opacity)) / 255.0 / 255.0);
         }
     }
 }

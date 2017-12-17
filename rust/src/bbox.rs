@@ -71,8 +71,8 @@ pub extern fn rsvg_bbox_insert (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox
      * the width/height to the first point src.rect.(x, y).
      */
     for i in 0..4 {
-        let rx: f64 = src.rect.x + src.rect.width * (i % 2) as f64;
-        let ry: f64 = src.rect.y + src.rect.height * (i / 2) as f64;
+        let rx: f64 = src.rect.x + src.rect.width * f64::from(i % 2);
+        let ry: f64 = src.rect.y + src.rect.height * f64::from(i / 2);
         let x: f64  = affine.xx * rx + affine.xy * ry + affine.x0;
         let y: f64  = affine.yx * rx + affine.yy * ry + affine.y0;
 
@@ -132,8 +132,8 @@ pub extern fn rsvg_bbox_clip (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox) 
 
     /* This is a trick.  See rsvg_bbox_insert() for a description of how it works. */
     for i in 0..4 {
-        let rx: f64 = src.rect.x + src.rect.width * (i % 2) as f64;
-        let ry: f64 = src.rect.y + src.rect.height * (i / 2) as f64;
+        let rx: f64 = src.rect.x + src.rect.width * f64::from(i % 2);
+        let ry: f64 = src.rect.y + src.rect.height * f64::from(i / 2);
         let x = affine.xx * rx + affine.xy * ry + affine.x0;
         let y = affine.yx * rx + affine.yy * ry + affine.y0;
 

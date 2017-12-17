@@ -147,10 +147,10 @@ impl From<Result<Color, AttributeError>> for ColorSpec {
             Ok (Color::RGBA (rgba)) =>
                 ColorSpec {
                     kind: ColorKind::ARGB,
-                    argb: ((rgba.alpha as u32) << 24 |
-                           (rgba.red as u32)   << 16 |
-                           (rgba.green as u32) << 8  |
-                           (rgba.blue as u32))
+                    argb: (u32::from(rgba.alpha) << 24 |
+                           u32::from(rgba.red)   << 16 |
+                           u32::from(rgba.green) << 8  |
+                           u32::from(rgba.blue))
                 },
 
             _ =>

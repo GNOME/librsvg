@@ -103,8 +103,8 @@ impl NodeTrait for NodeImage {
                 }
             }
 
-            let (x, y, w, h) = aspect.compute (surface.get_width() as f64,
-                                               surface.get_height() as f64,
+            let (x, y, w, h) = aspect.compute (f64::from(surface.get_width()),
+                                               f64::from(surface.get_height()),
                                                x, y, w, h);
 
             drawing_ctx::render_surface(draw_ctx, &surface, x, y, w, h);

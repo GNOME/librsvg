@@ -200,16 +200,16 @@ impl RsvgLength {
                 .map_err (|_| AttributeError::Parse (ParseError::new ("expected number and optional symbol, or number and percentage")))?;
 
             match *token {
-                Token::Number { value, .. } => RsvgLength { length: value as f64,
+                Token::Number { value, .. } => RsvgLength { length: f64::from(value),
                                                             unit:   LengthUnit::Default,
                                                             dir:    dir },
 
-                Token::Percentage { unit_value, .. } => RsvgLength { length: unit_value as f64,
+                Token::Percentage { unit_value, .. } => RsvgLength { length: f64::from(unit_value),
                                                                      unit:   LengthUnit::Percent,
                                                                      dir:    dir },
 
                 Token::Dimension { value, ref unit, .. } => {
-                    let value = value as f64;
+                    let value = f64::from(value);
 
                     match unit.as_ref () {
                         "em" => RsvgLength { length: value,

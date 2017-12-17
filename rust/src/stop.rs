@@ -166,10 +166,10 @@ impl NodeTrait for NodeStop {
 }
 
 fn u32_from_rgba (rgba: cssparser::RGBA) -> u32 {
-    ((rgba.red as u32) << 24) |
-    ((rgba.green as u32) << 16) |
-    ((rgba.blue as u32) << 8) |
-    (rgba.alpha as u32)
+    (u32::from(rgba.red) << 24) |
+    (u32::from(rgba.green) << 16) |
+    (u32::from(rgba.blue) << 8) |
+    u32::from(rgba.alpha)
 }
 
 extern "C" {

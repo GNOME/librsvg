@@ -93,7 +93,7 @@ impl FromStr for Opacity {
                     } else if value > 1.0 {
                         Opacity::Specified (1.0)
                     } else {
-                        Opacity::Specified (value as f64)
+                        Opacity::Specified (f64::from(value))
                     }
                 },
 
@@ -112,7 +112,7 @@ impl Opacity {
         match *spec {
             OpacitySpec { kind: OpacityKind::Inherit, .. }      => Ok (Opacity::Inherit),
 
-            OpacitySpec { kind: OpacityKind::Specified, opacity } => Ok (Opacity::Specified (opacity as f64 / 255.0)),
+            OpacitySpec { kind: OpacityKind::Specified, opacity } => Ok (Opacity::Specified (f64::from(opacity) / 255.0)),
 
             OpacitySpec { kind: OpacityKind::ParseError, .. } => Err (AttributeError::Parse (ParseError::new ("parse error")))
         }
