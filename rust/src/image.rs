@@ -93,13 +93,8 @@ impl NodeTrait for NodeImage {
             let aspect = self.aspect.get();
 
             if !drawing_ctx::state_is_overflow(state) {
-                match aspect.align {
-                    Align::Aligned { align: _,
-                                     fit: FitMode::Slice } => {
-                        drawing_ctx::add_clipping_rect(draw_ctx, x, y, w, h);
-                    },
-
-                    _ => ()
+                if let Align::Aligned {fit: FitMode::Slice, ..} = aspect.align {
+                    drawing_ctx::add_clipping_rect(draw_ctx, x, y, w, h);
                 }
             }
 

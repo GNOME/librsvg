@@ -177,6 +177,7 @@ mod mask;
 mod node;
 mod opacity;
 mod paint_server;
+#[cfg_attr(feature = "cargo-clippy", allow(clippy))]
 mod parse_transform;
 mod parsers;
 mod path_builder;

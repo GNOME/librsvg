@@ -381,17 +381,9 @@ pub fn path_builder_to_segments (builder: &RsvgPathBuilder) -> Vec<Segment> {
         }
     }
 
-    match state {
-        SegmentState::NewSubpath => {
-            /* Output a lone point if we started a subpath with a
-             * moveto command, but there are no subsequent commands.
-             */
-            segments.push (make_degenerate (cur_x, cur_y));
-        },
-
-        _ => {
-        }
-    }
+    if let SegmentState::NewSubpath = state {
+        segments.push (make_degenerate (cur_x, cur_y));
+    };
 
     segments
 }
@@ -672,21 +664,17 @@ fn emit_markers_for_path_builder<E> (builder: &RsvgPathBuilder,
     for (i, segment) in segments.iter ().enumerate () {
         match *segment {
             Segment::Degenerate { .. } => {
-                match subpath_state {
-                    SubpathState::InSubpath => {
-                        assert! (i > 0);
+                if let SubpathState::InSubpath = subpath_state {
+                    assert! (i > 0);
 
-                        /* Got a lone point after a subpath; render the subpath's end marker first */
+                    /* Got a lone point after a subpath; render the subpath's end marker first */
 
-                        let (_, incoming_vx, incoming_vy) = find_incoming_directionality_backwards (&segments, i - 1);
-                        emit_marker (&segments[i - 1],
-                                     MarkerEndpoint::End,
-                                     MarkerType::End,
-                                     angle_from_vector (incoming_vx, incoming_vy),
-                                     emit_fn);
-                    },
-
-                    _ => { }
+                    let (_, incoming_vx, incoming_vy) = find_incoming_directionality_backwards (&segments, i - 1);
+                    emit_marker (&segments[i - 1],
+                                    MarkerEndpoint::End,
+                                    MarkerType::End,
+                                    angle_from_vector (incoming_vx, incoming_vy),
+                                    emit_fn);
                 }
 
                 /* Render marker for the lone point; no directionality */
@@ -743,16 +731,12 @@ fn emit_markers_for_path_builder<E> (builder: &RsvgPathBuilder,
 
     /* Finally, render the last point */
 
-    if segments.len() > 0 {
+    if !segments.is_empty() {
         let segment = &segments[segments.len() - 1];
-        match *segment {
-            Segment::LineOrCurve { .. } => {
-                let (_, incoming_vx, incoming_vy) = find_incoming_directionality_backwards (&segments, segments.len () - 1);
+        if let Segment::LineOrCurve{ .. } = *segment {
+            let (_, incoming_vx, incoming_vy) = find_incoming_directionality_backwards (&segments, segments.len () - 1);
 
-                emit_marker (segment, MarkerEndpoint::End, MarkerType::End, angle_from_vector (incoming_vx, incoming_vy), emit_fn);
-            },
-
-            _ => { }
+            emit_marker (segment, MarkerEndpoint::End, MarkerType::End, angle_from_vector (incoming_vx, incoming_vy), emit_fn);
         }
     }
 }

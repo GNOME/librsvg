@@ -146,7 +146,7 @@ impl GradientCommon {
         if let Some (ref mut stops) = self.stops {
             let mut last_offset: f64 = 0.0;
 
-            if stops.len () > 0 {
+            if !stops.is_empty() {
                 last_offset = stops[stops.len () - 1].offset;
             }
 

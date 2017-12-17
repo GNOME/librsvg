@@ -905,9 +905,10 @@ impl<'b> PathParser<'b> {
                             if let Some (sweep_flag) = self.flag () {
                                 assert! (self.optional_comma_whitespace ());
 
-                                let sweep = match sweep_flag {
-                                    false => Sweep::Negative,
-                                    true => Sweep::Positive
+                                let sweep = if sweep_flag {
+                                    Sweep::Positive
+                                } else {
+                                    Sweep::Negative
                                 };
 
                                 if let Some ((mut x, mut y)) = self.coordinate_pair () {
