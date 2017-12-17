@@ -232,7 +232,7 @@ impl<'b> PathParser<'b> {
                 let mut c: char = ' ';
 
                 while self.lookahead_is_digit (&mut c) {
-                    fraction = fraction / 10.0;
+                    fraction /= 10.0;
                     value += fraction * f64::from(char_to_digit (c));
 
                     assert! (self.match_char (c));

@@ -176,9 +176,9 @@ impl Parse for AspectRatio {
         let mut fit_mode = FitMode::Meet;
 
         let mut state = ParseState::Defer;
-        let mut iter = s.split_whitespace ();
 
-        while let Some (v) = iter.next () {
+        for v in s.split_whitespace () {
+    
             match state {
                 ParseState::Defer => {
                     if v == "defer" {

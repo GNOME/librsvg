@@ -277,7 +277,7 @@ pub fn state_get_stop_color (state: *const RsvgState) -> Result<Option<Color>, A
         if spec_ptr.is_null () {
             Ok (None)
         } else {
-            Color::from_color_spec (&*spec_ptr).map (|color| Some (color))
+            Color::from_color_spec (&*spec_ptr).map (Some)
         }
     }
 }
@@ -289,7 +289,7 @@ pub fn state_get_stop_opacity (state: *const RsvgState) -> Result<Option<Opacity
         if opacity_ptr.is_null () {
             Ok (None)
         } else {
-            Opacity::from_opacity_spec (&*opacity_ptr).map (|opacity| Some (opacity))
+            Opacity::from_opacity_spec (&*opacity_ptr).map (Some)
         }
     }
 }

@@ -92,7 +92,7 @@ impl NodeTrait for NodePath {
         if let Some (value) = property_bag::lookup (pbag, "d") {
             let mut builder = self.builder.borrow_mut ();
 
-            if let Err (_) = path_parser::parse_path_into_builder (&value, &mut *builder) {
+            if path_parser::parse_path_into_builder (&value, &mut *builder).is_err() {
                 // FIXME: we don't propagate errors upstream, but creating a partial
                 // path is OK per the spec
             }

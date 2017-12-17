@@ -71,8 +71,8 @@ impl Parse for MarkerOrient {
         match s {
             "auto" => Ok (MarkerOrient::Auto),
             _      => parsers::angle_degrees (s)
-                .map (|degrees| MarkerOrient::Degrees (degrees) )
-                .map_err (|e| AttributeError::Parse (e))
+                .map (MarkerOrient::Degrees)
+                .map_err (AttributeError::Parse)
         }
     }
 }
