@@ -210,7 +210,7 @@ impl GradientVariant {
     fn resolve_from_fallback (&mut self, fallback: &GradientVariant) {
         match *self {
             GradientVariant::Linear { ref mut x1, ref mut y1, ref mut x2, ref mut y2 } => {
-                if let &GradientVariant::Linear { x1: x1f, y1: y1f, x2: x2f, y2: y2f } = fallback {
+                if let GradientVariant::Linear { x1: x1f, y1: y1f, x2: x2f, y2: y2f } = *fallback {
                     fallback_to! (*x1, x1f);
                     fallback_to! (*y1, y1f);
                     fallback_to! (*x2, x2f);
@@ -219,7 +219,7 @@ impl GradientVariant {
             },
 
             GradientVariant::Radial { ref mut cx, ref mut cy, ref mut r, ref mut fx, ref mut fy } => {
-                if let &GradientVariant::Radial { cx: cxf, cy: cyf, r: rf, fx: fxf, fy: fyf } = fallback {
+                if let GradientVariant::Radial { cx: cxf, cy: cyf, r: rf, fx: fxf, fy: fyf } = *fallback {
                     fallback_to! (*cx, cxf);
                     fallback_to! (*cy, cyf);
                     fallback_to! (*r,  rf);

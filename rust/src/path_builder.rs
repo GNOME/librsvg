@@ -25,11 +25,17 @@ pub struct RsvgPathBuilder {
     path_commands: Vec<PathCommand>,
 }
 
-impl RsvgPathBuilder {
-    pub fn new () -> RsvgPathBuilder {
+impl Default for RsvgPathBuilder {
+    fn default() -> RsvgPathBuilder {
         RsvgPathBuilder {
             path_commands: Vec::new ()
         }
+    }
+}
+
+impl RsvgPathBuilder {
+    pub fn new () -> RsvgPathBuilder {
+        RsvgPathBuilder::default()
     }
 
     pub fn move_to (&mut self, x: f64, y: f64) {
