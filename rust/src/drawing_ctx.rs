@@ -178,9 +178,7 @@ pub fn get_cairo_context (draw_ctx: *const RsvgDrawingCtx) -> cairo::Context {
     unsafe {
         let raw_cr = rsvg_cairo_get_cairo_context (draw_ctx);
 
-        let cr = cairo::Context::from_glib_none (raw_cr);
-
-        cr
+        cairo::Context::from_glib_none (raw_cr)
     }
 }
 

@@ -90,9 +90,9 @@ impl<'b> PathParser<'b> {
     fn parse (&mut self) -> bool {
         self.getchar ();
 
-        return self.optional_whitespace () &&
+        self.optional_whitespace () &&
             self.moveto_drawto_command_groups () &&
-            self.optional_whitespace ();
+            self.optional_whitespace ()
     }
 
     fn getchar (&mut self) {
@@ -272,11 +272,11 @@ impl<'b> PathParser<'b> {
 
     fn flag (&mut self) -> Option <bool> {
         if self.match_char ('0') {
-            return Some (false);
+            Some (false)
         } else if self.match_char ('1') {
-            return Some (true);
+            Some (true)
         } else {
-            return None;
+            None
         }
     }
 
@@ -464,8 +464,8 @@ impl<'b> PathParser<'b> {
 
     fn moveto_drawto_command_group (&mut self, is_initial_moveto: bool) -> bool {
         if self.moveto (is_initial_moveto) {
-            return self.optional_whitespace () &&
-                self.optional_drawto_commands ();
+            self.optional_whitespace () &&
+                self.optional_drawto_commands ()
         } else {
             false
         }
@@ -500,7 +500,7 @@ impl<'b> PathParser<'b> {
     }
 
     fn drawto_command (&mut self) -> bool {
-        return self.close_path () ||
+        self.close_path () ||
             self.line_to () ||
             self.horizontal_line_to () ||
             self.vertical_line_to () ||
@@ -508,7 +508,7 @@ impl<'b> PathParser<'b> {
             self.smooth_curve_to () ||
             self.quadratic_bezier_curve_to () ||
             self.smooth_quadratic_bezier_curve_to () ||
-            self.elliptical_arc ();
+            self.elliptical_arc ()
     }
 
     fn close_path (&mut self) -> bool {

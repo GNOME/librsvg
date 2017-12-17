@@ -70,8 +70,7 @@ fn node_has_children (node: &Option<Weak<Node>>) -> bool {
 
         Some (ref weak) => {
             let ref strong_node = weak.clone ().upgrade ().unwrap ();
-            let has_children = strong_node.children.borrow ().len () > 0;
-            has_children
+            return strong_node.children.borrow ().len () > 0;
         }
     }
 }

@@ -82,7 +82,7 @@ pub extern fn rsvg_length_parse (string: *const libc::c_char, dir: LengthDir) ->
     let my_string = unsafe { &String::from_glib_none (string) };
 
     // FIXME: this ignores errors; propagate them upstream
-    RsvgLength::parse (my_string, dir).unwrap_or (RsvgLength::default ())
+    RsvgLength::parse (my_string, dir).unwrap_or_else(|_| {RsvgLength::default ()})
 }
 
 /* https://www.w3.org/TR/SVG/types.html#DataTypeLength
@@ -286,7 +286,7 @@ fn viewport_percentage (x: f64, y: f64) -> f64 {
      * percentage is calculated as the specified percentage of
      * sqrt((actual-width)**2 + (actual-height)**2))/sqrt(2)."
      */
-    return (x * x + y * y).sqrt () / SQRT_2;
+    (x * x + y * y).sqrt () / SQRT_2
 }
 
 #[no_mangle]

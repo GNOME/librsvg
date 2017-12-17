@@ -349,7 +349,7 @@ impl FallbackSource for NodeFallbackSource {
 
         self.acquired_nodes.push (fallback_node);
 
-        return Some (node.clone ());
+        Some (node.clone ())
     }
 }
 

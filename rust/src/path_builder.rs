@@ -27,11 +27,9 @@ pub struct RsvgPathBuilder {
 
 impl RsvgPathBuilder {
     pub fn new () -> RsvgPathBuilder {
-        let builder = RsvgPathBuilder {
+        RsvgPathBuilder {
             path_commands: Vec::new ()
-        };
-
-        builder
+        }
     }
 
     pub fn move_to (&mut self, x: f64, y: f64) {
