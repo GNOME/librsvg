@@ -88,7 +88,7 @@ impl NodeTrait for NodeSwitch {
 
         drawing_ctx::push_discrete_layer (draw_ctx);
 
-        for child in &*node.children.borrow () {
+        node.foreach_child(|child| {
             if drawing_ctx::state_get_cond_true (child.get_state ()) {
                 let boxed_child = box_node (child.clone ());
 
@@ -96,9 +96,11 @@ impl NodeTrait for NodeSwitch {
 
                 rsvg_node_unref (boxed_child);
 
-                break;
+                false // just draw this child
+            } else {
+                true
             }
-        }
+        });
 
         drawing_ctx::pop_discrete_layer (draw_ctx);
     }

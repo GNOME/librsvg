@@ -249,19 +249,21 @@ impl Gradient {
     fn add_color_stops_from_node (&mut self, node: &RsvgNode) {
         assert! (node.get_type () == NodeType::LinearGradient || node.get_type () == NodeType::RadialGradient);
 
-        for child in &*node.children.borrow () {
+        node.foreach_child(|child| {
             if child.get_type () != NodeType::Stop {
-                continue; // just ignore this child; we are only interested in gradient stops
+                return true; // just ignore this child; we are only interested in gradient stops
             }
 
             if child.get_result ().is_err () {
-                break; // don't add any more stops
+                return false; // don't add any more stops
             }
 
             child.with_impl (|stop: &NodeStop| {
                 self.add_color_stop (stop.get_offset (), stop.get_rgba ());
             });
-        }
+
+            true
+        });
     }
 
     fn add_color_stop (&mut self, offset: f64, rgba: u32) {

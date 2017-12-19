@@ -57,12 +57,12 @@ impl_downcast! (NodeTrait);
 pub type NodeResult = Result<(), NodeError>;
 
 pub struct Node {
-    node_type:     NodeType,
-    parent:        Option<Weak<Node>>,       // optional; weak ref to parent
-    pub children:  RefCell<Vec<Rc<Node>>>,   // strong references to children
-    state:         *mut RsvgState,
-    result:        RefCell <NodeResult>,
-    node_impl:     Box<NodeTrait>
+    node_type: NodeType,
+    parent:    Option<Weak<Node>>,       // optional; weak ref to parent
+    children:  RefCell<Vec<Rc<Node>>>,   // strong references to children
+    state:     *mut RsvgState,
+    result:    RefCell <NodeResult>,
+    node_impl: Box<NodeTrait>
 }
 
 /* Keep this in sync with rsvg-private.h:RsvgNodeType */
@@ -222,8 +222,8 @@ impl Node {
         }
     }
 
-    pub fn foreach_child<F>(&self, f: F)
-        where F: Fn(Rc<Node>) -> bool
+    pub fn foreach_child<F>(&self, mut f: F)
+        where F: FnMut(Rc<Node>) -> bool
     {
         for c in &*self.children.borrow() {
             let next = f(c.clone());
@@ -231,6 +231,10 @@ impl Node {
                 break;
             }
         }
+    }
+
+    pub fn has_children(&self) -> bool {
+        self.children.borrow().len() > 0
     }
 }
 
