@@ -1799,6 +1799,15 @@ rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx)
 }
 
 void
+rsvg_drawing_ctx_render_pango_layout (RsvgDrawingCtx *draw_ctx,
+                                      PangoLayout *layout,
+                                      double x,
+                                      double y)
+{
+    draw_ctx->render->render_pango_layout (draw_ctx, layout, x, y);
+}
+
+void
 rsvg_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 {
     ctx->render->render_path_builder (ctx, builder);
