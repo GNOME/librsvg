@@ -3,8 +3,7 @@ use ::glib_sys;
 use ::glib::translate::*;
 use ::libc;
 
-use std::rc::Rc;
-use std::rc::Weak;
+use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 use std::ptr;
 
@@ -208,16 +207,29 @@ impl Node {
             drawing_ctx::push_discrete_layer (draw_ctx);
         }
 
-        for child in &*self.children.borrow () {
+        self.foreach_child(|child| {
             let boxed_child = box_node (child.clone ());
 
             drawing_ctx::draw_node_from_stack (draw_ctx, boxed_child, 0);
 
             rsvg_node_unref (boxed_child);
-        }
+
+            true
+        });
 
         if dominate != -1 {
             drawing_ctx::pop_discrete_layer (draw_ctx);
+        }
+    }
+
+    pub fn foreach_child<F>(&self, f: F)
+        where F: Fn(Rc<Node>) -> bool
+    {
+        for c in &*self.children.borrow() {
+            let next = f(c.clone());
+            if !next {
+                break;
+            }
         }
     }
 }
@@ -383,17 +395,15 @@ pub extern fn rsvg_node_foreach_child (raw_node: *const RsvgNode, func: NodeFore
     assert! (!raw_node.is_null ());
     let node: &RsvgNode = unsafe { & *raw_node };
 
-    for child in &*node.children.borrow () {
+    node.foreach_child(|child| {
         let boxed_child = box_node (child.clone ());
 
         let next: bool = unsafe { from_glib (func (boxed_child, data)) };
 
         rsvg_node_unref (boxed_child);
 
-        if !next {
-            break;
-        }
-    }
+        next
+    });
 }
 
 #[no_mangle]
