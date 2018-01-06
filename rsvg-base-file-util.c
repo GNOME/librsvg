@@ -116,6 +116,7 @@ rsvg_handle_new_from_file (const gchar * file_name, GError ** error)
     }
 
     g_free (base_uri);
+    g_object_unref (file);
 
     return handle;
 }
