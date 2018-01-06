@@ -82,3 +82,33 @@ that is "in error".  However, most implementations simply seem to
 ignore erroneous elements instead of completely stopping rendering,
 and we do the same in librsvg.
 
+## Element attributes and specified/computed values
+
+Some HTML or SVG engines like Gecko / Servo make a very clear
+distinction between "specified values" and "computed values" for
+element attributes.  Currently librsvg doesn't have a clear
+distinction.
+
+Unspecified attributes cause librsvg to use defaults, some as per the
+spec, and some (erroneously) as values that seemed to make sense at
+the time of implementation.  Please help us find these and make them
+spec-compliant!
+
+For specified attributes, sometimes the set_atts() methods will
+validate the values and resolve them to their final computed form, and
+sometimes they will just store them as they come in the SVG data.  The
+computed or actually used values will be generated at rendering time.
+
+# Rendering
+
+The public `rsvg_handle_render_cairo()` and `rsvg_handle_cairo_sub()`
+functions initiate a rendering process; the first function just calls
+the second one with the root element of the SVG.
+
+This second function creates `RsvgDrawingCtx`, which contains the
+rendering state.  This structure gets passed around into all the
+rendering functions.  It carries the vtable for rendering in the
+`render` field, the CSS state for the node being rendered in the
+`state` field, and other values which are changed as rendering
+progresses.
+
