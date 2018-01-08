@@ -807,12 +807,11 @@ rsvg_handle_get_dimensions (RsvgHandle * handle, RsvgDimensionData * dimension_d
  * rsvg_handle_get_dimensions_sub:
  * @handle: A #RsvgHandle
  * @dimension_data: (out): A place to store the SVG's size
- * @id: (nullable): An element's id within the SVG, or %NULL to get
- *   the dimension of the whole SVG.  For example, if you have a layer
- *   called "layer1" for that you want to get the dimension, pass
- *   "#layer1" as the id.
+ * @id: (nullable): An element's id within the SVG, starting with "##", for
+ * example, "##layer1"; or %NULL to use the whole SVG.
  *
- * Get the size of a subelement of the SVG file. Do not call from within the size_func callback, because an infinite loop will occur.
+ * Get the size of a subelement of the SVG file. Do not call from within the
+ * size_func callback, because an infinite loop will occur.
  *
  * Since: 2.22
  */
@@ -914,9 +913,8 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
  * rsvg_handle_get_position_sub:
  * @handle: A #RsvgHandle
  * @position_data: (out): A place to store the SVG fragment's position.
- * @id: An element's id within the SVG.
- * For example, if you have a layer called "layer1" for that you want to get
- * the position, pass "##layer1" as the id.
+ * @id: (nullable): An element's id within the SVG, starting with "##", for
+ * example, "##layer1"; or %NULL to use the whole SVG.
  *
  * Get the position of a subelement of the SVG file. Do not call from within
  * the size_func callback, because an infinite loop will occur.
@@ -1000,7 +998,7 @@ bail:
 /**
  * rsvg_handle_has_sub:
  * @handle: a #RsvgHandle
- * @id: an element's id within the SVG
+ * @id: an element's id within the SVG, starting with "##", for example, "##layer1".
  *
  * Checks whether the element @id exists in the SVG document.
  *
