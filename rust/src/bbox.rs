@@ -41,22 +41,14 @@ pub extern fn rsvg_bbox_insert (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox
         return;
     }
 
-    let mut xmin: f64;
-    let mut ymin: f64;
-    let mut xmax: f64;
-    let mut ymax: f64;
-
-    if !dst.is_virgin () {
-        xmin = dst.rect.x;
-        ymin = dst.rect.y;
-        xmax = dst.rect.x + dst.rect.width;
-        ymax = dst.rect.y + dst.rect.height;
+    let (mut xmin, mut ymin, mut xmax, mut ymax) = if !dst.is_virgin () {
+        (dst.rect.x,
+         dst.rect.y,
+         (dst.rect.x + dst.rect.width),
+         (dst.rect.y + dst.rect.height))
     } else {
-        xmin = 0.0;
-        ymin = 0.0;
-        xmax = 0.0;
-        ymax = 0.0;
-    }
+        (0.0, 0.0, 0.0, 0.0)
+    };
 
     let mut affine = dst.affine;
 
@@ -71,8 +63,8 @@ pub extern fn rsvg_bbox_insert (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox
      * the width/height to the first point src.rect.(x, y).
      */
     for i in 0..4 {
-        let rx: f64 = src.rect.x + src.rect.width * (i % 2) as f64;
-        let ry: f64 = src.rect.y + src.rect.height * (i / 2) as f64;
+        let rx: f64 = src.rect.x + src.rect.width * f64::from(i % 2);
+        let ry: f64 = src.rect.y + src.rect.height * f64::from(i / 2);
         let x: f64  = affine.xx * rx + affine.xy * ry + affine.x0;
         let y: f64  = affine.yx * rx + affine.yy * ry + affine.y0;
 
@@ -108,22 +100,14 @@ pub extern fn rsvg_bbox_clip (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox) 
         return;
     }
 
-    let mut xmin: f64;
-    let mut ymin: f64;
-    let mut xmax: f64;
-    let mut ymax: f64;
-
-    if !dst.is_virgin () {
-        xmin = dst.rect.x + dst.rect.width;
-        ymin = dst.rect.y + dst.rect.height;
-        xmax = dst.rect.x;
-        ymax = dst.rect.y;
+    let (mut xmin, mut ymin, mut xmax, mut ymax) = if !dst.is_virgin () {
+        ((dst.rect.x + dst.rect.width),
+         (dst.rect.y + dst.rect.height),
+         dst.rect.x,
+         dst.rect.y)
     } else {
-        xmin = 0.0;
-        ymin = 0.0;
-        xmax = 0.0;
-        ymax = 0.0;
-    }
+        (0.0, 0.0, 0.0, 0.0)
+    };
 
     let mut affine = dst.affine;
 
@@ -132,8 +116,8 @@ pub extern fn rsvg_bbox_clip (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox) 
 
     /* This is a trick.  See rsvg_bbox_insert() for a description of how it works. */
     for i in 0..4 {
-        let rx: f64 = src.rect.x + src.rect.width * (i % 2) as f64;
-        let ry: f64 = src.rect.y + src.rect.height * (i / 2) as f64;
+        let rx: f64 = src.rect.x + src.rect.width * f64::from(i % 2);
+        let ry: f64 = src.rect.y + src.rect.height * f64::from(i / 2);
         let x = affine.xx * rx + affine.xy * ry + affine.x0;
         let y = affine.yx * rx + affine.yy * ry + affine.y0;
 

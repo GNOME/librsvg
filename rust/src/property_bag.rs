@@ -45,7 +45,7 @@ pub fn parse_or_none<T> (pbag: *const RsvgPropertyBag,
                 .and_then (|v|
                            if let Some(validate) = validate {
                                validate(v)
-                                   .map(|v| Some(v))
+                                   .map(Some)
                            } else {
                                Ok(Some(v))
                            })

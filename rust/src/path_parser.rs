@@ -90,9 +90,9 @@ impl<'b> PathParser<'b> {
     fn parse (&mut self) -> bool {
         self.getchar ();
 
-        return self.optional_whitespace () &&
+        self.optional_whitespace () &&
             self.moveto_drawto_command_groups () &&
-            self.optional_whitespace ();
+            self.optional_whitespace ()
     }
 
     fn getchar (&mut self) {
@@ -219,7 +219,7 @@ impl<'b> PathParser<'b> {
             /* Integer part */
 
             while self.lookahead_is_digit (&mut c) {
-                value = value * 10.0 + char_to_digit (c) as f64;
+                value = value * 10.0 + f64::from(char_to_digit (c));
 
                 assert! (self.match_char (c));
             }
@@ -232,8 +232,8 @@ impl<'b> PathParser<'b> {
                 let mut c: char = ' ';
 
                 while self.lookahead_is_digit (&mut c) {
-                    fraction = fraction / 10.0;
-                    value += fraction * char_to_digit (c) as f64;
+                    fraction /= 10.0;
+                    value += fraction * f64::from(char_to_digit (c));
 
                     assert! (self.match_char (c));
                 }
@@ -254,7 +254,7 @@ impl<'b> PathParser<'b> {
 
                 if self.lookahead_is_digit (&mut c) {
                     while self.lookahead_is_digit (&mut c) {
-                        exponent = exponent * 10.0 + char_to_digit (c) as f64;
+                        exponent = exponent * 10.0 + f64::from(char_to_digit (c));
 
                         assert! (self.match_char (c));
                     }
@@ -272,11 +272,11 @@ impl<'b> PathParser<'b> {
 
     fn flag (&mut self) -> Option <bool> {
         if self.match_char ('0') {
-            return Some (false);
+            Some (false)
         } else if self.match_char ('1') {
-            return Some (true);
+            Some (true)
         } else {
-            return None;
+            None
         }
     }
 
@@ -446,14 +446,12 @@ impl<'b> PathParser<'b> {
 
     fn moveto (&mut self, is_initial_moveto: bool) -> bool {
         if self.lookahead_is ('M') || self.lookahead_is ('m') {
-            let absolute: bool;
-
-            if self.match_char ('M') {
-                absolute = true;
+            let absolute = if self.match_char ('M') {
+                true
             } else {
                 assert! (self.match_char ('m'));
-                absolute = false;
-            }
+                false
+            };
 
             return self.optional_whitespace () &&
                 self.moveto_argument_sequence (absolute, is_initial_moveto);
@@ -464,8 +462,8 @@ impl<'b> PathParser<'b> {
 
     fn moveto_drawto_command_group (&mut self, is_initial_moveto: bool) -> bool {
         if self.moveto (is_initial_moveto) {
-            return self.optional_whitespace () &&
-                self.optional_drawto_commands ();
+            self.optional_whitespace () &&
+                self.optional_drawto_commands ()
         } else {
             false
         }
@@ -500,7 +498,7 @@ impl<'b> PathParser<'b> {
     }
 
     fn drawto_command (&mut self) -> bool {
-        return self.close_path () ||
+        self.close_path () ||
             self.line_to () ||
             self.horizontal_line_to () ||
             self.vertical_line_to () ||
@@ -508,7 +506,7 @@ impl<'b> PathParser<'b> {
             self.smooth_curve_to () ||
             self.quadratic_bezier_curve_to () ||
             self.smooth_quadratic_bezier_curve_to () ||
-            self.elliptical_arc ();
+            self.elliptical_arc ()
     }
 
     fn close_path (&mut self) -> bool {
@@ -522,14 +520,12 @@ impl<'b> PathParser<'b> {
 
     fn line_to (&mut self) -> bool {
         if self.lookahead_is ('L') || self.lookahead_is ('l') {
-            let absolute: bool;
-
-            if self.match_char ('L') {
-                absolute = true;
+            let absolute = if self.match_char ('L') {
+                true
             } else {
                 assert! (self.match_char ('l'));
-                absolute = false;
-            }
+                false
+            };
 
             self.optional_whitespace ();
 
@@ -574,14 +570,12 @@ impl<'b> PathParser<'b> {
 
     fn horizontal_line_to (&mut self) -> bool {
         if self.lookahead_is ('H') || self.lookahead_is ('h') {
-            let absolute: bool;
-
-            if self.match_char ('H') {
-                absolute = true;
+            let absolute = if self.match_char ('H') {
+                true
             } else {
                 assert! (self.match_char ('h'));
-                absolute = false;
-            }
+                false
+            };
 
             self.optional_whitespace ();
 
@@ -626,14 +620,12 @@ impl<'b> PathParser<'b> {
 
     fn vertical_line_to (&mut self) -> bool {
         if self.lookahead_is ('V') || self.lookahead_is ('v') {
-            let absolute: bool;
-
-            if self.match_char ('V') {
-                absolute = true;
+            let absolute = if self.match_char ('V') {
+                true
             } else {
                 assert! (self.match_char ('v'));
-                absolute = false;
-            }
+                false
+            };
 
             self.optional_whitespace ();
 
@@ -731,14 +723,12 @@ impl<'b> PathParser<'b> {
 
     fn curve_to (&mut self) -> bool {
         if self.lookahead_is ('C') || self.lookahead_is ('c') {
-            let absolute: bool;
-
-            if self.match_char ('C') {
-                absolute = true;
+            let absolute = if self.match_char ('C') {
+                true
             } else {
                 assert! (self.match_char ('c'));
-                absolute = false;
-            }
+                false
+            };
 
             self.optional_whitespace ();
 
@@ -754,14 +744,12 @@ impl<'b> PathParser<'b> {
 
     fn smooth_curve_to (&mut self) -> bool {
         if self.lookahead_is ('S') || self.lookahead_is ('s') {
-            let absolute: bool;
-
-            if self.match_char ('S') {
-                absolute = true;
+            let absolute = if self.match_char ('S') {
+                true
             } else {
                 assert! (self.match_char ('s'));
-                absolute = false;
-            }
+                false
+            };
 
             self.optional_whitespace ();
 
@@ -813,14 +801,12 @@ impl<'b> PathParser<'b> {
 
     fn quadratic_bezier_curve_to (&mut self) -> bool {
         if self.lookahead_is ('Q') || self.lookahead_is ('q') {
-            let absolute: bool;
-
-            if self.match_char ('Q') {
-                absolute = true;
+            let absolute = if self.match_char ('Q') {
+                true
             } else {
                 assert! (self.match_char ('q'));
-                absolute = false;
-            }
+                false
+            };
 
             self.optional_whitespace ();
 
@@ -867,14 +853,12 @@ impl<'b> PathParser<'b> {
 
     fn smooth_quadratic_bezier_curve_to (&mut self) -> bool {
         if self.lookahead_is ('T') || self.lookahead_is ('t') {
-            let absolute: bool;
-
-            if self.match_char ('T') {
-                absolute = true;
+            let absolute = if self.match_char ('T') {
+                true
             } else {
                 assert! (self.match_char ('t'));
-                absolute = false;
-            }
+                false
+            };
 
             self.optional_whitespace ();
 
@@ -905,9 +889,10 @@ impl<'b> PathParser<'b> {
                             if let Some (sweep_flag) = self.flag () {
                                 assert! (self.optional_comma_whitespace ());
 
-                                let sweep = match sweep_flag {
-                                    false => Sweep::Negative,
-                                    true => Sweep::Positive
+                                let sweep = if sweep_flag {
+                                    Sweep::Positive
+                                } else {
+                                    Sweep::Negative
                                 };
 
                                 if let Some ((mut x, mut y)) = self.coordinate_pair () {
@@ -957,14 +942,12 @@ impl<'b> PathParser<'b> {
 
     fn elliptical_arc (&mut self) -> bool {
         if self.lookahead_is ('A') || self.lookahead_is ('a') {
-            let absolute: bool;
-
-            if self.match_char ('A') {
-                absolute = true;
+            let absolute = if self.match_char ('A') {
+                true
             } else {
                 assert! (self.match_char ('a'));
-                absolute = false;
-            }
+                false
+            };
 
             self.optional_whitespace ();
 

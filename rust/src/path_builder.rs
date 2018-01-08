@@ -25,13 +25,17 @@ pub struct RsvgPathBuilder {
     path_commands: Vec<PathCommand>,
 }
 
+impl Default for RsvgPathBuilder {
+    fn default() -> RsvgPathBuilder {
+        RsvgPathBuilder {
+            path_commands: Vec::new ()
+        }
+    }
+}
+
 impl RsvgPathBuilder {
     pub fn new () -> RsvgPathBuilder {
-        let builder = RsvgPathBuilder {
-            path_commands: Vec::new ()
-        };
-
-        builder
+        RsvgPathBuilder::default()
     }
 
     pub fn move_to (&mut self, x: f64, y: f64) {
@@ -186,12 +190,12 @@ impl RsvgPathBuilder {
         /* Now draw the arc */
 
         n_segs = (delta_theta / (PI * 0.5 + 0.001)).abs ().ceil () as i32;
-        let n_segs_dbl = n_segs as f64;
+        let n_segs_dbl = f64::from(n_segs);
 
         for i in 0 .. n_segs {
             self.arc_segment (cx, cy,
-                              theta1 + i as f64 * delta_theta / n_segs_dbl,
-                              theta1 + (i + 1) as f64 * delta_theta / n_segs_dbl,
+                              theta1 + f64::from(i)  * delta_theta / n_segs_dbl,
+                              theta1 + f64::from(i + 1) * delta_theta / n_segs_dbl,
                               rx, ry,
                               x_axis_rotation);
         }

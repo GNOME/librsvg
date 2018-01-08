@@ -92,7 +92,7 @@ impl NodeTrait for NodePath {
         if let Some (value) = property_bag::lookup (pbag, "d") {
             let mut builder = self.builder.borrow_mut ();
 
-            if let Err (_) = path_parser::parse_path_into_builder (&value, &mut *builder) {
+            if path_parser::parse_path_into_builder (&value, &mut *builder).is_err() {
                 // FIXME: we don't propagate errors upstream, but creating a partial
                 // path is OK per the spec
             }
@@ -136,7 +136,7 @@ impl NodeTrait for NodePoly {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         // support for svg < 1.0 which used verts
 
-        for name in vec! ["verts", "points"] {
+        for name in &["verts", "points"] {
             if let Some (value) = property_bag::lookup (pbag, name) {
                 let result = parsers::list_of_points (value.trim ());
 

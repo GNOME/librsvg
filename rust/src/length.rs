@@ -82,7 +82,7 @@ pub extern fn rsvg_length_parse (string: *const libc::c_char, dir: LengthDir) ->
     let my_string = unsafe { &String::from_glib_none (string) };
 
     // FIXME: this ignores errors; propagate them upstream
-    RsvgLength::parse (my_string, dir).unwrap_or (RsvgLength::default ())
+    RsvgLength::parse (my_string, dir).unwrap_or_else(|_| {RsvgLength::default ()})
 }
 
 /* https://www.w3.org/TR/SVG/types.html#DataTypeLength
@@ -200,16 +200,16 @@ impl RsvgLength {
                 .map_err (|_| AttributeError::Parse (ParseError::new ("expected number and optional symbol, or number and percentage")))?;
 
             match *token {
-                Token::Number { value, .. } => RsvgLength { length: value as f64,
+                Token::Number { value, .. } => RsvgLength { length: f64::from(value),
                                                             unit:   LengthUnit::Default,
                                                             dir:    dir },
 
-                Token::Percentage { unit_value, .. } => RsvgLength { length: unit_value as f64,
+                Token::Percentage { unit_value, .. } => RsvgLength { length: f64::from(unit_value),
                                                                      unit:   LengthUnit::Percent,
                                                                      dir:    dir },
 
                 Token::Dimension { value, ref unit, .. } => {
-                    let value = value as f64;
+                    let value = f64::from(value);
 
                     match unit.as_ref () {
                         "em" => RsvgLength { length: value,
@@ -286,7 +286,7 @@ fn viewport_percentage (x: f64, y: f64) -> f64 {
      * percentage is calculated as the specified percentage of
      * sqrt((actual-width)**2 + (actual-height)**2))/sqrt(2)."
      */
-    return (x * x + y * y).sqrt () / SQRT_2;
+    (x * x + y * y).sqrt () / SQRT_2
 }
 
 #[no_mangle]

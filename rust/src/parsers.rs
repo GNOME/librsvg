@@ -49,10 +49,10 @@ pub fn angle_degrees (s: &str) -> Result <f64, ParseError> {
             .map_err (|_| ParseError::new ("expected angle"))?;
 
         match *token {
-            Token::Number { value, .. } => value as f64,
+            Token::Number { value, .. } => f64::from(value),
 
             Token::Dimension { value, ref unit, .. } => {
-                let value = value as f64;
+                let value = f64::from(value);
 
                 match unit.as_ref () {
                     "deg"  => value,
@@ -84,7 +84,7 @@ pub fn number_optional_number (s: &str) -> Result <(f64, f64), ParseError> {
     let mut input = ParserInput::new (s);
     let mut parser = Parser::new (&mut input);
 
-    let x = parser.expect_number ()? as f64;
+    let x = f64::from(parser.expect_number ()?);
 
     if !parser.is_exhausted () {
         let position = parser.position ();
@@ -94,7 +94,7 @@ pub fn number_optional_number (s: &str) -> Result <(f64, f64), ParseError> {
             _ => parser.reset (position)
         };
 
-        let y = parser.expect_number ()? as f64;
+        let y = f64::from(parser.expect_number ()?);
 
         parser.expect_exhausted ()?;
 
@@ -144,11 +144,11 @@ pub fn list_of_points (string: &str) -> Result <Vec<(f64, f64)>, ParseError> {
     let mut v = Vec::new ();
 
     loop {
-        let x = parser.expect_number ()? as f64;
+        let x = f64::from(parser.expect_number ()?);
 
         optional_comma (&mut parser);
 
-        let y = parser.expect_number ()? as f64;
+        let y = f64::from(parser.expect_number ()?);
 
         v.push ((x, y));
 
@@ -192,7 +192,7 @@ pub fn number_list (s: &str, length: ListLength) -> Result <Vec<f64>, NumberList
     let mut v = Vec::<f64>::with_capacity (n);
 
     for i in 0..n {
-        v.push (parser.expect_number ().map_err (|_| NumberListError::Parse (ParseError::new ("expected number")))? as f64);
+        v.push (f64::from(parser.expect_number ().map_err (|_| NumberListError::Parse (ParseError::new ("expected number")))?));
 
         if i != n - 1 {
             optional_comma (&mut parser);

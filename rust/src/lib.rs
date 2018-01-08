@@ -1,3 +1,7 @@
+#![cfg_attr(feature = "cargo-clippy", allow(clone_on_ref_ptr))]
+#![cfg_attr(feature = "cargo-clippy", allow(not_unsafe_ptr_arg_deref))]
+#![cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+
 extern crate cairo;
 extern crate cairo_sys;
 extern crate cssparser;
@@ -173,6 +177,7 @@ mod mask;
 mod node;
 mod opacity;
 mod paint_server;
+#[cfg_attr(feature = "cargo-clippy", allow(clippy))]
 mod parse_transform;
 mod parsers;
 mod path_builder;

@@ -144,11 +144,11 @@ impl GradientCommon {
         }
 
         if let Some (ref mut stops) = self.stops {
-            let mut last_offset: f64 = 0.0;
-
-            if stops.len () > 0 {
-                last_offset = stops[stops.len () - 1].offset;
-            }
+            let last_offset: f64 = if !stops.is_empty() {
+                stops[stops.len () - 1].offset
+            } else {
+                0.0
+            };
 
             if last_offset > offset {
                 offset = last_offset;
@@ -210,7 +210,7 @@ impl GradientVariant {
     fn resolve_from_fallback (&mut self, fallback: &GradientVariant) {
         match *self {
             GradientVariant::Linear { ref mut x1, ref mut y1, ref mut x2, ref mut y2 } => {
-                if let &GradientVariant::Linear { x1: x1f, y1: y1f, x2: x2f, y2: y2f } = fallback {
+                if let GradientVariant::Linear { x1: x1f, y1: y1f, x2: x2f, y2: y2f } = *fallback {
                     fallback_to! (*x1, x1f);
                     fallback_to! (*y1, y1f);
                     fallback_to! (*x2, x2f);
@@ -219,7 +219,7 @@ impl GradientVariant {
             },
 
             GradientVariant::Radial { ref mut cx, ref mut cy, ref mut r, ref mut fx, ref mut fy } => {
-                if let &GradientVariant::Radial { cx: cxf, cy: cyf, r: rf, fx: fxf, fy: fyf } = fallback {
+                if let GradientVariant::Radial { cx: cxf, cy: cyf, r: rf, fx: fxf, fy: fyf } = *fallback {
                     fallback_to! (*cx, cxf);
                     fallback_to! (*cy, cyf);
                     fallback_to! (*r,  rf);
@@ -278,10 +278,10 @@ impl Gradient {
         for stop in stops {
             let rgba = stop.rgba;
             pattern.add_color_stop_rgba (stop.offset,
-                                         ((rgba >> 24) & 0xff) as f64 / 255.0,
-                                         ((rgba >> 16) & 0xff) as f64 / 255.0,
-                                         ((rgba >> 8) & 0xff) as f64 / 255.0,
-                                         (((rgba >> 0) & 0xff) * opacity as u32) as f64 / 255.0 / 255.0);
+                                         (f64::from((rgba >> 24) & 0xff)) / 255.0,
+                                         (f64::from((rgba >> 16) & 0xff))  / 255.0,
+                                         (f64::from((rgba >> 8) & 0xff))  / 255.0,
+                                         f64::from(((rgba >> 0) & 0xff) * u32::from(opacity)) / 255.0 / 255.0);
         }
     }
 }
@@ -351,7 +351,7 @@ impl FallbackSource for NodeFallbackSource {
 
         self.acquired_nodes.push (fallback_node);
 
-        return Some (node.clone ());
+        Some (node.clone ())
     }
 }
 
@@ -643,7 +643,7 @@ pub extern fn gradient_resolve_fallbacks_and_set_pattern (raw_node:     *const R
     let mut did_set_gradient = false;
 
     node.with_impl (|node_gradient: &NodeGradient| {
-        let gradient = node_gradient.get_gradient_with_color_stops_from_node (&node);
+        let gradient = node_gradient.get_gradient_with_color_stops_from_node (node);
         did_set_gradient = resolve_fallbacks_and_set_pattern (&gradient, draw_ctx, opacity, bbox);
     });
 

@@ -108,10 +108,10 @@ impl Color {
 }
 
 fn rgba_from_argb (argb: u32) -> cssparser::RGBA {
-    cssparser::RGBA::new (((argb & 0x00ff0000) >> 16) as u8,
-                          ((argb & 0x0000ff00) >> 8) as u8,
-                          ((argb & 0x000000ff) as u8),
-                          ((argb & 0xff000000) >> 24) as u8)
+    cssparser::RGBA::new (((argb & 0x00ff_0000) >> 16) as u8,
+                          ((argb & 0x0000_ff00) >> 8) as u8,
+                          ((argb & 0x0000_00ff) as u8),
+                          ((argb & 0xff00_0000) >> 24) as u8)
 }
 
 impl From<cssparser::Color> for Color {
@@ -147,10 +147,10 @@ impl From<Result<Color, AttributeError>> for ColorSpec {
             Ok (Color::RGBA (rgba)) =>
                 ColorSpec {
                     kind: ColorKind::ARGB,
-                    argb: ((rgba.alpha as u32) << 24 |
-                           (rgba.red as u32)   << 16 |
-                           (rgba.green as u32) << 8  |
-                           (rgba.blue as u32))
+                    argb: (u32::from(rgba.alpha) << 24 |
+                           u32::from(rgba.red)   << 16 |
+                           u32::from(rgba.green) << 8  |
+                           u32::from(rgba.blue))
                 },
 
             _ =>

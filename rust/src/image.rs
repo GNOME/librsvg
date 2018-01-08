@@ -93,21 +93,16 @@ impl NodeTrait for NodeImage {
             let aspect = self.aspect.get();
 
             if !drawing_ctx::state_is_overflow(state) {
-                match aspect.align {
-                    Align::Aligned { align: _,
-                                     fit: FitMode::Slice } => {
-                        drawing_ctx::add_clipping_rect(draw_ctx, x, y, w, h);
-                    },
-
-                    _ => ()
+                if let Align::Aligned {fit: FitMode::Slice, ..} = aspect.align {
+                    drawing_ctx::add_clipping_rect(draw_ctx, x, y, w, h);
                 }
             }
 
-            let (x, y, w, h) = aspect.compute (surface.get_width() as f64,
-                                               surface.get_height() as f64,
+            let (x, y, w, h) = aspect.compute (f64::from(surface.get_width()),
+                                               f64::from(surface.get_height()),
                                                x, y, w, h);
 
-            drawing_ctx::render_surface(draw_ctx, &surface, x, y, w, h);
+            drawing_ctx::render_surface(draw_ctx, surface, x, y, w, h);
 
             drawing_ctx::pop_discrete_layer(draw_ctx);
         }

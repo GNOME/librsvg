@@ -183,9 +183,7 @@ pub fn get_cairo_context (draw_ctx: *const RsvgDrawingCtx) -> cairo::Context {
     unsafe {
         let raw_cr = rsvg_cairo_get_cairo_context (draw_ctx);
 
-        let cr = cairo::Context::from_glib_none (raw_cr);
-
-        cr
+        cairo::Context::from_glib_none (raw_cr)
     }
 }
 
@@ -293,7 +291,7 @@ pub fn state_get_stop_color (state: *const RsvgState) -> Result<Option<Color>, A
         if spec_ptr.is_null () {
             Ok (None)
         } else {
-            Color::from_color_spec (&*spec_ptr).map (|color| Some (color))
+            Color::from_color_spec (&*spec_ptr).map (Some)
         }
     }
 }
@@ -305,7 +303,7 @@ pub fn state_get_stop_opacity (state: *const RsvgState) -> Result<Option<Opacity
         if opacity_ptr.is_null () {
             Ok (None)
         } else {
-            Opacity::from_opacity_spec (&*opacity_ptr).map (|opacity| Some (opacity))
+            Opacity::from_opacity_spec (&*opacity_ptr).map (Some)
         }
     }
 }
