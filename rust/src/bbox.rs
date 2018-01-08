@@ -42,7 +42,10 @@ pub extern fn rsvg_bbox_insert (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox
     }
 
     let (mut xmin, mut ymin, mut xmax, mut ymax) = if !dst.is_virgin () {
-        (dst.rect.y, dst.rect.y, (dst.rect.x + dst.rect.width), (dst.rect.y + dst.rect.height))
+        (dst.rect.x,
+         dst.rect.y,
+         (dst.rect.x + dst.rect.width),
+         (dst.rect.y + dst.rect.height))
     } else {
         (0.0, 0.0, 0.0, 0.0)
     };
@@ -98,7 +101,10 @@ pub extern fn rsvg_bbox_clip (raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbox) 
     }
 
     let (mut xmin, mut ymin, mut xmax, mut ymax) = if !dst.is_virgin () {
-        ((dst.rect.x + dst.rect.width), (dst.rect.y + dst.rect.height), dst.rect.x, dst.rect.y)
+        ((dst.rect.x + dst.rect.width),
+         (dst.rect.y + dst.rect.height),
+         dst.rect.x,
+         dst.rect.y)
     } else {
         (0.0, 0.0, 0.0, 0.0)
     };
