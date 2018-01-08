@@ -1,3 +1,12 @@
+Version 2.42.0
+- Fix a memory leak in rsvg_handle_new_from_file() (Lovell Fuller).
+- Optimize the xml:space normalization function (Jordan Petridis).
+- gitlab#179 - fix a runtime warning in the feMergeNode code.
+- gitlab#175 - Clarify documentation about the rsvg_*_sub() APIs.
+- Stylistic fixes from cargo-clippy (Jordan Petridis).
+- Port the Pango glue code to Rust.
+- New ARCHITECTURE.md with a description of librsvg's internals.
+
 Version 2.41.2
 - We now require glib 2.52.0.
 - bgo#787895 - Fix mis-use of libxml2.  Thanks to Nick Wellnhofer for
