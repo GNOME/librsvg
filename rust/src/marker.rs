@@ -382,6 +382,8 @@ pub fn path_builder_to_segments (builder: &RsvgPathBuilder) -> Vec<Segment> {
     }
 
     if let SegmentState::NewSubpath = state {
+        // Output a lone point if we started a subpath with a moveto
+        // command, but there are no subsequent commands.
         segments.push (make_degenerate (cur_x, cur_y));
     };
 
