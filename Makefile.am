@@ -98,6 +98,7 @@ RUST_SOURCES =					\
 	rust/src/state.rs			\
 	rust/src/stop.rs			\
 	rust/src/structure.rs			\
+	rust/src/text.rs			\
 	rust/src/transform.rs			\
 	rust/src/util.rs			\
 	rust/src/viewbox.rs			\
