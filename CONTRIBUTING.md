@@ -66,7 +66,7 @@ with a sample SVG file.
 
 ### Creating a merge request
 
-You may created a forked version of librsvg in [GNOME's Gitlab
+You may create a forked version of librsvg in [GNOME's Gitlab
 instance][gitlab], or any other publically-accesible Git hosting
 service.  You can register an account there, or log in with your
 account from other OAuth services.
