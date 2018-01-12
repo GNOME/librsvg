@@ -4,7 +4,9 @@ stages:
   - test
 
 before_script:
-  - dnf install -y gcc automake autoconf libtool gettext itstool
+  - dnf install -y gcc rust cargo
+                   automake autoconf libtool gettext itstool
+                   gtk-doc
                    redhat-rpm-config git
                    gtk3-devel
                    gobject-introspection-devel
