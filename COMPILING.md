@@ -21,8 +21,8 @@ explains librsvg's peculiarities.
 By default the compilation process is quiet, and it just tells you
 which files it is compiling.
 
-If you wish to see the full compilation command lines, use "`make
-V=1`" instead of plain "`make`".
+If you wish to see the full compilation command lines, use "`make V=1`"
+instead of plain "`make`".
 
 # Debug or release builds
 
