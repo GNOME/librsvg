@@ -23,3 +23,9 @@ test:
   script:
     - ./autogen.sh --enable-debug
     - make check
+
+  artifacts:
+    when: on_failure
+    paths:
+      - /tmp/*.png
+      - tests/*.log
