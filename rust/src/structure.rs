@@ -168,11 +168,13 @@ impl NodeTrait for NodeSvg {
         Ok (())
     }
 
-    fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, _dominate: i32) {
+    fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
         let nx = self.x.get ().normalize (draw_ctx);
         let ny = self.y.get ().normalize (draw_ctx);
         let nw = self.w.get ().normalize (draw_ctx);
         let nh = self.h.get ().normalize (draw_ctx);
+
+        drawing_ctx::state_reinherit_top (draw_ctx, node.get_state (), dominate);
 
         let state = drawing_ctx::get_current_state (draw_ctx);
         let do_clip = !drawing_ctx::state_is_overflow (state) && node.get_parent ().is_some ();
