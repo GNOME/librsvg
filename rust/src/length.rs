@@ -109,89 +109,11 @@ impl Parse for RsvgLength {
         let mut input = ParserInput::new (string);
         let mut parser = Parser::new (&mut input);
 
-        let length = {
-            let token = parser.next ()
-                .map_err (|_| AttributeError::Parse (ParseError::new ("expected number and optional symbol, or number and percentage")))?;
-
-            match *token {
-                Token::Number { value, .. } => RsvgLength { length: value as f64,
-                                                            unit:   LengthUnit::Default,
-                                                            dir:    dir },
-
-                Token::Percentage { unit_value, .. } => RsvgLength { length: unit_value as f64,
-                                                                     unit:   LengthUnit::Percent,
-                                                                     dir:    dir },
-
-                Token::Dimension { value, ref unit, .. } => {
-                    let value = value as f64;
-
-                    match unit.as_ref () {
-                        "em" => RsvgLength { length: value,
-                                             unit:   LengthUnit::FontEm,
-                                             dir:    dir },
-
-                        "ex" => RsvgLength { length: value,
-                                             unit:   LengthUnit::FontEx,
-                                             dir:    dir },
-
-                        "pt" => RsvgLength { length: value / POINTS_PER_INCH,
-                                             unit:   LengthUnit::Inch,
-                                             dir:    dir },
-
-                        "in" => RsvgLength { length: value,
-                                             unit:   LengthUnit::Inch,
-                                             dir:    dir },
-
-                        "cm" => RsvgLength { length: value / CM_PER_INCH,
-                                             unit:   LengthUnit::Inch,
-                                             dir:    dir },
-
-                        "mm" => RsvgLength { length: value / MM_PER_INCH,
-                                             unit:   LengthUnit::Inch,
-                                             dir:    dir },
-
-                        "pc" => RsvgLength { length: value / PICA_PER_INCH,
-                                             unit:   LengthUnit::Inch,
-                                             dir:    dir },
-
-                        "px" => RsvgLength { length: value,
-                                             unit:   LengthUnit::Default,
-                                             dir:    dir },
-
-                        _ => return Err (make_err ())
-                    }
-                },
-
-                // FIXME: why are the following in Length?  They should be in FontSize
-                Token::Ident (ref cow) => match cow.as_ref () {
-                    "larger" => RsvgLength { length: 0.0,
-                                             unit:   LengthUnit::RelativeLarger,
-                                             dir:    dir },
-
-                    "smaller" => RsvgLength { length: 0.0,
-                                              unit:  LengthUnit::RelativeSmaller,
-                                              dir:   dir },
-
-                    "xx-small" |
-                    "x-small" |
-                    "small" |
-                    "medium" |
-                    "large" |
-                    "x-large" |
-                    "xx-large" => RsvgLength { length: compute_named_size (&*string),
-                                               unit:   LengthUnit::Inch,
-                                               dir:    dir },
-
-                    _ => return Err (make_err ())
-                },
-
-                _ => return Err (make_err ())
-            }
-        };
+        let length = RsvgLength::from_cssparser(&mut parser, dir)?;
 
         parser.expect_exhausted ().map_err (|_| make_err ())?;
 
-        Ok (length)
+        Ok(length)
     }
 }
 
@@ -269,6 +191,91 @@ impl RsvgLength {
 
             _ => { 0.0 }
         }
+    }
+
+    fn from_cssparser(parser: &mut Parser, dir: LengthDir) -> Result <RsvgLength, AttributeError> {
+
+        let length = {
+            let token = parser.next ()
+                .map_err (|_| AttributeError::Parse (ParseError::new ("expected number and optional symbol, or number and percentage")))?;
+
+            match *token {
+                Token::Number { value, .. } => RsvgLength { length: value as f64,
+                                                            unit:   LengthUnit::Default,
+                                                            dir:    dir },
+
+                Token::Percentage { unit_value, .. } => RsvgLength { length: unit_value as f64,
+                                                                     unit:   LengthUnit::Percent,
+                                                                     dir:    dir },
+
+                Token::Dimension { value, ref unit, .. } => {
+                    let value = value as f64;
+
+                    match unit.as_ref () {
+                        "em" => RsvgLength { length: value,
+                                             unit:   LengthUnit::FontEm,
+                                             dir:    dir },
+
+                        "ex" => RsvgLength { length: value,
+                                             unit:   LengthUnit::FontEx,
+                                             dir:    dir },
+
+                        "pt" => RsvgLength { length: value / POINTS_PER_INCH,
+                                             unit:   LengthUnit::Inch,
+                                             dir:    dir },
+
+                        "in" => RsvgLength { length: value,
+                                             unit:   LengthUnit::Inch,
+                                             dir:    dir },
+
+                        "cm" => RsvgLength { length: value / CM_PER_INCH,
+                                             unit:   LengthUnit::Inch,
+                                             dir:    dir },
+
+                        "mm" => RsvgLength { length: value / MM_PER_INCH,
+                                             unit:   LengthUnit::Inch,
+                                             dir:    dir },
+
+                        "pc" => RsvgLength { length: value / PICA_PER_INCH,
+                                             unit:   LengthUnit::Inch,
+                                             dir:    dir },
+
+                        "px" => RsvgLength { length: value,
+                                             unit:   LengthUnit::Default,
+                                             dir:    dir },
+
+                        _ => return Err (make_err ())
+                    }
+                },
+
+                // FIXME: why are the following in Length?  They should be in FontSize
+                Token::Ident (ref cow) => match cow.as_ref () {
+                    "larger" => RsvgLength { length: 0.0,
+                                             unit:   LengthUnit::RelativeLarger,
+                                             dir:    dir },
+
+                    "smaller" => RsvgLength { length: 0.0,
+                                              unit:  LengthUnit::RelativeSmaller,
+                                              dir:   dir },
+
+                    "xx-small" |
+                    "x-small" |
+                    "small" |
+                    "medium" |
+                    "large" |
+                    "x-large" |
+                    "xx-large" => RsvgLength { length: compute_named_size (cow),
+                                               unit:   LengthUnit::Inch,
+                                               dir:    dir },
+
+                    _ => return Err (make_err ())
+                },
+
+                _ => return Err (make_err ())
+            }
+        };
+
+        Ok (length)
     }
 }
 

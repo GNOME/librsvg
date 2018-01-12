@@ -1,11 +1,11 @@
 m4_define([rsvg_major_version],[2])
 m4_define([rsvg_minor_version],[41])
-m4_define([rsvg_micro_version],[2])
+m4_define([rsvg_micro_version],[3])
 m4_define([rsvg_extra_version],[])
 m4_define([rsvg_version],[rsvg_major_version.rsvg_minor_version.rsvg_micro_version()rsvg_extra_version])
 m4_define([rsvg_lt_version_info],m4_eval(rsvg_major_version + rsvg_minor_version):rsvg_micro_version:rsvg_minor_version)
 
-AC_INIT([RSVG],[rsvg_version],[https://bugzilla.gnome.org/enter_bug.cgi?product=librsvg],[librsvg])
+AC_INIT([RSVG],[rsvg_version],[https://gitlab.gnome.org/GNOME/librsvg/issues],[librsvg])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([rsvg.h])

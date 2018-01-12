@@ -87,8 +87,12 @@ As of 2016/Nov/03 we have an informal organization of these files:
   by one as librsvg starts implementing the features.
 
 * `fixtures/reftests/bugs/*.svg` - Tests for particular bug numbers.
-  Please use the bug number from Bugzilla, like `123456.svg`, and the
-  corresponding `123456-ref.png` for the known-good reference image.
+  Please use the bug number from Gitlab, like `1234.svg`, and the
+  corresponding `1234-ref.png` for the known-good reference image.
+  
+  **Note:** Librsvg migrated from git.gnome.org and bugzilla.gnome.org
+  to gitlab.gnome.org.  Bug numbers in Bugzilla were around 6 digits
+  in length; in Gitlab, they are small numbers.
 
 * `fixtures/reftests/*.svg` - Tests for special situations
   that arose during development.

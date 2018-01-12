@@ -1,5 +1,6 @@
 use libc;
 use glib::translate::*;
+use itertools::Itertools;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -29,13 +30,18 @@ pub fn xml_space_normalize(mode: XmlSpace, s: &str) -> String {
 // leading and trailing space characters. Then, all contiguous space
 // characters will be consolidated.
 fn normalize_default(s: &str) -> String {
-    s.chars()
+    s.trim()
+        .chars()
         .filter(|ch| *ch != '\n')
+        .map(|ch| match ch {
+            '\t' => ' ',
+            c => c,
+        })
+        .coalesce(|current, next| match (current, next) {
+            (' ', ' ') | (' ', '\t') => Ok(' '),
+            (_, _) => Err((current, next)),
+        })
         .collect::<String>()
-        .split(|ch| ch == ' ' || ch == '\t')
-        .filter(|s| s.len() > 0)
-        .collect::<Vec<_>>()
-        .join(" ")
 }
 
 // From https://www.w3.org/TR/SVG/text.html#WhiteSpace
@@ -77,9 +83,12 @@ mod tests {
                    "WS example indented lines");
         assert_eq!(xml_space_normalize(XmlSpace::Default, "\n  \t  \tWS \t\t\texample\n  \t  indented lines\t\t  \n  "),
                    "WS example indented lines");
-
+        assert_eq!(xml_space_normalize(XmlSpace::Default, "\n  \t  \tWS \t\t\texample\n  \t  duplicate letters\t\t  \n  "),
+                   "WS example duplicate letters");
         assert_eq!(xml_space_normalize(XmlSpace::Default, "\nWS example\nnon-indented lines\n  "),
                    "WS examplenon-indented lines");
+        assert_eq!(xml_space_normalize(XmlSpace::Default, "\nWS example\tnon-indented lines\n  "),
+                   "WS example non-indented lines");
     }
 
     #[test]
@@ -88,6 +97,7 @@ mod tests {
                    "     WS example     indented lines   ");
         assert_eq!(xml_space_normalize(XmlSpace::Preserve, "\n  \t  \tWS \t\t\texample\n  \t  indented lines\t\t  \n  "),
                    "       WS    example      indented lines       ");
-
+        assert_eq!(xml_space_normalize(XmlSpace::Preserve, "\n  \t  \tWS \t\t\texample\n  \t  duplicate letters\t\t  \n  "),
+                   "       WS    example      duplicate letters       ");
     }
 }

@@ -20,7 +20,7 @@ DOC_MAIN_SGML_FILE = $(DOC_MODULE)-docs.xml
 # gtk-doc will search all .c & .h files beneath here for inline comments
 # documenting the functions and macros.
 # e.g. DOC_SOURCE_DIR=../../../gtk
-DOC_SOURCE_DIR = ..
+DOC_SOURCE_DIR = $(abs_top_srcdir)
 
 # Extra options to pass to gtkdoc-scangobj. Not normally needed.
 SCANGOBJ_OPTIONS = --type-init-func="g_type_init ()"
@@ -31,7 +31,7 @@ SCAN_OPTIONS = --deprecated-guards="RSVG_DISABLE_DEPRECATED"
 
 # Extra options to supply to gtkdoc-mkdb.
 # e.g. MKDB_OPTIONS=--sgml-mode --output-format=xml
-MKDB_OPTIONS = --sgml-mode --output-format=xml --name-space=rsvg
+MKDB_OPTIONS = --xml-mode --output-format=xml --name-space=rsvg
 
 # Extra options to supply to gtkdoc-mktmpl
 # e.g. MKTMPL_OPTIONS=--only-section-tmpl
@@ -68,25 +68,26 @@ EXTRA_HFILES =
 
 # Header files to ignore when scanning. Use base file name, no paths
 # e.g. IGNORE_HFILES=gtkdebug.h gtkintl.h
-IGNORE_HFILES = \
-	config.h \
-	rsvg-bpath-util.h \
-	rsvg-cairo-clip.h \
-	rsvg-cairo-draw.h \
-	rsvg-cairo-render.h \
-	rsvg-css.h \
-	rsvg-defs.h \
-	rsvg-filter.h \
-	rsvg-image.h \
-	rsvg-marker.h \
-	rsvg-mask.h \
-	rsvg-paint-server.h \
-	rsvg-path.h \
-	rsvg-private.h \
-	rsvg-shapes.h \
-	rsvg-structure.h \
-	rsvg-styles.h \
-	rsvg-text.h \
+IGNORE_HFILES =			\
+	config.h		\
+	rsvg-cairo-clip.h	\
+	rsvg-cairo-draw.h	\
+	rsvg-cairo-render.h	\
+	rsvg-compat.h		\
+	rsvg-css.h		\
+	rsvg-defs.h		\
+	rsvg-filter.h		\
+	rsvg-io.h		\
+	rsvg-marker.h		\
+	rsvg-mask.h		\
+	rsvg-paint-server.h	\
+	rsvg-path-builder.h	\
+	rsvg-private.h		\
+	rsvg-shapes.h		\
+	rsvg-size-callback.h	\
+	rsvg-structure.h	\
+	rsvg-styles.h		\
+	rsvg-text.h		\
 	rsvg-xml.h
 
 # Images to copy into HTML directory.

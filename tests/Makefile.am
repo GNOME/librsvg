@@ -1,5 +1,8 @@
 include $(top_srcdir)/glib-tap.mk
 
+EXTRA_DIST +=		\
+	README.md
+
 test_programs =		\
 	loading		\
 	rsvg-test	\
