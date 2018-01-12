@@ -67,7 +67,7 @@ Each image-based reference test uses two files: `foo.svg` and
 `foo-ref.png`.  The test harness will render `foo.svg` and compare the
 results to `foo-ref.png`.  Currently we assume a pixel-perfect match.
 If there are differences in the output, the test will fail; see
-"[Examining failed reference tests][#examining-failed-reference-tests]" below.
+"[Examining failed reference tests](#examining-failed-reference-tests)" below.
 
 These files can go anywhere under the `fixtures/reftests`
 directory; the `rsvg-test` program will recursively look inside
@@ -136,8 +136,8 @@ It is up to you to decide what to do next:
   with respect to the `foo-ref.png` reference image is that
   antialiased edges look different, or font rendering is slightly
   different due to the font-rendering machinery in your system, you
-  can just regenerate the test image.  See "[Regenerating reference
-  images][#regenerating-reference-images]" below.
+  can just regenerate the test image.  See 
+  "[Regenerating reference images](#regenerating-reference-images)" below.
 
 * If the `foo-out.png` image is obviously wrong when compared to the
   `foo-ref.png` reference, you can [file a bug][bug].  You can wait
@@ -187,7 +187,7 @@ around the whole viewport, defined like this:
 <rect id="test-frame" x="1" y="1" width="478" height="358" fill="none" stroke="#000000"/>
 ```
 
-This specifies no stroke with, so it uses 1 by default.  The desired
+This specifies no stroke width, so it uses 1 by default.  The desired
 effect is "stroke this rectangle with a 1-pixel wide line".
 
 However, notice that the (x, y) coordinates of the rect are (1, 1).
@@ -218,9 +218,9 @@ In any case, look at the results by hand, and compare them by eye to
 the official reference image.  If the thing being tested looks
 correct, and just the outlines are fuzzy — and also it is just the
 actual font shapes that are different — then the test is probably
-correct.  Follow the procedure as in "[Regenerating reference
-images][#regenerating-reference-images]" listed above in order to have
-a reference image suitable for librsvg.
+correct.  Follow the procedure as in
+"[Regenerating reference images](#regenerating-reference-images)"
+listed above in order to have a reference image suitable for librsvg.
 
 
 ## Loading tests for `loading.c`

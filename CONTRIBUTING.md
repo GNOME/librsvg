@@ -7,7 +7,7 @@ contributing to librsvg, and we appreciate all of them.
 * [Source repository](#source-code)
 * [Reporting bugs](#reporting-bugs)
 * [Feature requests](#feature-requests)
-* [Pull requests](#pull-requests)
+* [Merge requests](#merge-requests)
 
 There is a **code of conduct** for contributors to librsvg; please see the
 file [`code_of_conduct.md`][coc].
@@ -62,9 +62,11 @@ directed there.
 It is especially helpful if you file bug for a feature request along
 with a sample SVG file.
 
-## Merge requests / pull requests
+## Merge requests
 
-You may created a forked version of librsvg in [GNOME's Gitlab
+### Creating a merge request
+
+You may create a forked version of librsvg in [GNOME's Gitlab
 instance][gitlab], or any other publically-accesible Git hosting
 service.  You can register an account there, or log in with your
 account from other OAuth services.
@@ -79,18 +81,36 @@ mirror in Github.  [Please mail the maintainer][mail] directly if you
 have a pull request there or a branch that you would like to
 contribute.
 
-**Test suite:** Please make sure that the test suite passes with the
-changes in your branch.  The easiest way to run all the tests is to go
-to librsvg's toplevel directory and run `make check`.  This will run
-both the small unit tests and the black box tests in the
-`librsvg/tests` directory.
+### Test suite
+
+Please make sure that the test suite passes with the changes in your
+branch.  The easiest way to run all the tests is to go to librsvg's
+toplevel directory and run `make check`.  This will run both the small
+unit tests and the black box tests in the `librsvg/tests` directory.
 
 If you need to add new tests (you should, for new features, or for
 things that we weren't testing!), or for additional information on how
-the test suite works, please see the file [`tests/README.md`][tests-readme].
+the test suite works, please see the file
+[`tests/README.md`][tests-readme].
+
+### Working on the source
+
+Librvg uses an autotools setup, which is described in detail [in this
+blog post][blog].
+
+If you need to **add a new source file**, you need to do it in the
+toplevel [`Makefile.am`][toplevel-makefile].  *Note that this is for
+both C and Rust sources*, since `make(1)` needs to know when a Rust
+file changed so it can call `cargo` as appropriate.
+
+It is perfectly fine to [ask the maintainer][mail] if you have
+questions about the Autotools setup; it's a tricky bit of machinery,
+and we are glad to help.
 
 [coc]: code_of_conduct.md
 [gitlab]: https://gitlab.gnome.org/GNOME/librsvg
 [bugs-browse]: https://gitlab.gnome.org/GNOME/librsvg/issues
 [mail]: mailto:federico@gnome.org
 [tests-readme]: tests/README.md
+[blog]: https://people.gnome.org/~federico/blog/librsvg-build-infrastructure.html
+[toplevel-makefile]: Makefile.am

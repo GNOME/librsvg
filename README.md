@@ -80,6 +80,54 @@ Of course, [contributions are welcome][contributing].  In particular,
 if you find nice ways of doing the above while still maintaining the
 existing API of librsvg, we would love to know about it!
 
+Who uses librsvg?
+-----------------
+
+Librsvg is part of the [GNOME platform][platform].  Inside GNOME,
+librsvg takes multiple roles:
+
+* Loads SVGs from the generic gdk-pixbuf loader infrastructure, so any
+  application which uses gdk-pixbuf can load SVGs as if they were
+  raster images.
+
+* Loads SVG icons for the desktop.
+
+* Creates SVG thumbnails for the file manager.
+
+* Loads SVGs within GNOME's default image viewer, Eye of Gnome.
+
+Outside of GNOME's core:
+
+* GNOME games (chess, five-or-more, etc. to draw game pieces)
+
+* GIMP
+
+* GCompris
+
+* Claws-mail
+
+* Darktable
+
+* Mate-panel
+
+* Evas/Enlightenment
+
+* Emacs
+
+* ImageMagick
+
+* Wikipedia, to render SVGs as raster images for old browsers.
+  *Special thanks to Wikimedia for providing excellent bug reports.*
+
+
+Presentations on librsvg
+------------------------
+
+"[Replacing C library code with Rust: What I learned with
+librsvg][guadec-presentation]" was presented at GUADEC 2017.  It gives
+a little history of librsvg, and how/why it is being ported to Rust
+from C.
+
 Maintainers
 -----------
 
@@ -100,3 +148,5 @@ can [mail me][mail] for any other questions you have about librsvg.
 [reporting-bugs]: CONTRIBUTING.md#reporting-bugs
 [d-d-l]: https://mail.gnome.org/mailman/listinfo/desktop-devel-list
 [federico]: https://people.gnome.org/~federico/
+[platform]: https://developer.gnome.org/
+[guadec-presentation]: https://people.gnome.org/~federico/blog/docs/fmq-porting-c-to-rust.pdf
