@@ -119,6 +119,15 @@ Outside of GNOME's core:
 * Wikipedia, to render SVGs as raster images for old browsers.
   *Special thanks to Wikimedia for providing excellent bug reports.*
 
+
+Presentations on librsvg
+------------------------
+
+"[Replacing C library code with Rust: What I learned with
+librsvg][guadec-presentation]" was presented at GUADEC 2017.  It gives
+a little history of librsvg, and how/why it is being ported to Rust
+from C.
+
 Maintainers
 -----------
 
@@ -140,3 +149,4 @@ can [mail me][mail] for any other questions you have about librsvg.
 [d-d-l]: https://mail.gnome.org/mailman/listinfo/desktop-devel-list
 [federico]: https://people.gnome.org/~federico/
 [platform]: https://developer.gnome.org/
+[guadec-presentation]: https://people.gnome.org/~federico/blog/docs/fmq-porting-c-to-rust.pdf
