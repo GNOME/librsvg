@@ -1,0 +1,17 @@
+image: fedora:27
+
+stages:
+  - test
+
+before_script:
+  - dnf install -y gcc automake autoconf libtool gettext itstool
+                   redhat-rpm-config git
+                   gtk3-devel
+                   gobject-introspection-devel
+                   libxml2-devel
+
+test:
+  stage: test
+  script:
+    - ./autogen.sh --enable-debug
+    - make check
