@@ -15,7 +15,7 @@ before_script:
                    libcroco-devel
                    cairo-devel
                    pango-devel
-                   gdk-pixbuf-devel
+                   gdk-pixbuf2-devel
                    gtk3-devel
 
 test:
