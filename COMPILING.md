@@ -7,6 +7,10 @@ of how librsvg integrates Cargo and Rust into its autotools setup are
 described in [this blog post][blog], although hopefully you will not
 need to refer to it.
 
+It is perfectly fine to [ask the maintainer][mail] if you have
+questions about the Autotools setup; it's a tricky bit of machinery,
+and we are glad to help.
+
 There are generic compilation/installation instructions in the
 [`INSTALL`][install] file, which comes from Autotools.  The following
 explains librsvg's peculiarities.
@@ -117,6 +121,7 @@ unpacked tarball.  Your build system can patch this file as needed.
 
 [autotools]: https://autotools.io/index.html
 [blog]: https://people.gnome.org/~federico/blog/librsvg-build-infrastructure.html
+[mail]: mailto:federico@gnome.org
 [install]: INSTALL
 [rust-target-dir]: https://github.com/rust-lang/rust/tree/master/src/librustc_back/target
 [cargo-vendor]: https://crates.io/crates/cargo-vendor
