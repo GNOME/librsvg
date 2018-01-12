@@ -1,0 +1,31 @@
+# -*- indent-tabs-mode: nil -*-
+
+image: opensuse:tumbleweed
+
+stages:
+  - test
+
+before_script:
+  - zypper install -y gcc rust rust-std cargo make
+                   automake autoconf libtool gettext itstool
+                   gtk-doc
+                   git
+                   gobject-introspection-devel
+                   libxml2-devel
+                   libcroco-devel
+                   cairo-devel
+                   pango-devel
+                   gdk-pixbuf-devel
+                   gtk3-devel
+
+test:
+  stage: test
+  script:
+    - ./autogen.sh --enable-debug
+    - make check
+
+  artifacts:
+    when: on_failure
+    paths:
+      - /tmp/*.png
+      - tests/*.log
