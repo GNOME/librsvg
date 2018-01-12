@@ -1,21 +1,21 @@
 # -*- indent-tabs-mode: nil -*-
 
-image: fedora:27
+image: opensuse:tumbleweed
 
 stages:
   - test
 
 before_script:
-  - dnf install -y gcc rust cargo
+  - zypper install -y gcc rust cargo
                    automake autoconf libtool gettext itstool
                    gtk-doc
-                   redhat-rpm-config git
+                   git
                    gobject-introspection-devel
                    libxml2-devel
                    libcroco-devel
                    cairo-devel
                    pango-devel
-                   gdk-pixbuf2-devel
+                   gdk-pixbuf-devel
                    gtk3-devel
 
 test:
