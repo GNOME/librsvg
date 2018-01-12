@@ -183,7 +183,7 @@ around the whole viewport, defined like this:
 <rect id="test-frame" x="1" y="1" width="478" height="358" fill="none" stroke="#000000"/>
 ```
 
-This specifies no stroke with, so it uses 1 by default.  The desired
+This specifies no stroke width, so it uses 1 by default.  The desired
 effect is "stroke this rectangle with a 1-pixel wide line".
 
 However, notice that the (x, y) coordinates of the rect are (1, 1).
