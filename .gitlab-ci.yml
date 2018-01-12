@@ -1,3 +1,5 @@
+# -*- indent-tabs-mode: nil -*-
+
 image: fedora:27
 
 stages:
@@ -8,9 +10,13 @@ before_script:
                    automake autoconf libtool gettext itstool
                    gtk-doc
                    redhat-rpm-config git
-                   gtk3-devel
                    gobject-introspection-devel
                    libxml2-devel
+                   libcroco-devel
+                   cairo-devel
+                   pango-devel
+                   gdk-pixbuf-devel
+                   gtk3-devel
 
 test:
   stage: test
