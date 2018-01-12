@@ -6,7 +6,7 @@ stages:
   - test
 
 before_script:
-  - zypper install -y gcc rust cargo
+  - zypper install -y gcc rust cargo make
                    automake autoconf libtool gettext itstool
                    gtk-doc
                    git
