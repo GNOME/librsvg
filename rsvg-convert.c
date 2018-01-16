@@ -44,6 +44,7 @@
 #ifdef G_OS_WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <fcntl.h>
 
 #include <gio/gwin32inputstream.h>
 #endif
@@ -211,6 +212,11 @@ main (int argc, char **argv)
 
         g_free (output);
     }
+#ifdef G_OS_WIN32
+    else {
+        setmode (fileno (stdout), O_BINARY);
+    }
+#endif   
 
     if (args)
         while (args[n_args] != NULL)
