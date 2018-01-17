@@ -12,6 +12,8 @@
     <Gtk3IncPath>$(GlibEtcInstallRoot)\include\gtk-3.0;$(GlibEtcInstallRoot)\include\atk-1.0;$(LibRsvgIncPath)</Gtk3IncPath>
     <Gtk3Libs>gtk-3.0.lib;gdk-3.0.lib</Gtk3Libs>
     <RsvgPixbufLoaderCFlags>GDK_PIXBUF_ENABLE_BACKEND;G_LOG_DOMAIN="libpixbufloader-svg"</RsvgPixbufLoaderCFlags>
+    <RustTargetArch Condition="'$(Platform)' == 'x64'">x86_64</RustTargetArch>
+    <RustTargetArch Condition="'$(Platform)' == 'Win32'">i686</RustTargetArch>
     <RsvgRustNMakeCmd>
 cd ..
 set VCInstallDir=$(VCInstallDir)
@@ -60,6 +62,9 @@ nmake -f rsvg-rust.mak CFG=$(Configuration)</RsvgRustNMakeCmd>
     </BuildMacro>
     <BuildMacro Include="RsvgRustNMakeCmd">
       <Value>$(RsvgRustNMakeCmd)</Value>
+    </BuildMacro>
+    <BuildMacro Include="RustTargetArch">
+      <Value>$(RustTargetArch)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>

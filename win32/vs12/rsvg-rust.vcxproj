@@ -71,25 +71,25 @@
     <NMakeBuildCommandLine>$(RsvgRustNMakeCmd)</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>$(RsvgRustNMakeCmd) clean all</NMakeReBuildCommandLine>
     <NMakeCleanCommandLine>$(RsvgRustNMakeCmd) clean</NMakeCleanCommandLine>
-    <NMakeOutput>$(SolutionDir)\$(Configuration)\$(Platform)\obj\rsvg_internals\$(Configuration)\rsvg_internals.lib</NMakeOutput>
+    <NMakeOutput>$(SolutionDir)\$(Configuration)\$(Platform)\obj\rsvg_internals\$(RustTargetArch)-pc-windows-msvc\$(Configuration)\rsvg_internals.lib</NMakeOutput>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <NMakeBuildCommandLine>$(RsvgRustNMakeCmd)</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>$(RsvgRustNMakeCmd) clean all</NMakeReBuildCommandLine>
     <NMakeCleanCommandLine>$(RsvgRustNMakeCmd) clean</NMakeCleanCommandLine>
-    <NMakeOutput>$(SolutionDir)\$(Configuration)\$(Platform)\obj\rsvg_internals\$(Configuration)\rsvg_internals.lib</NMakeOutput>
+    <NMakeOutput>$(SolutionDir)\$(Configuration)\$(Platform)\obj\rsvg_internals\$(RustTargetArch)-pc-windows-msvc\$(Configuration)\rsvg_internals.lib</NMakeOutput>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <NMakeBuildCommandLine>$(RsvgRustNMakeCmd)</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>$(RsvgRustNMakeCmd) clean all</NMakeReBuildCommandLine>
     <NMakeCleanCommandLine>$(RsvgRustNMakeCmd) clean</NMakeCleanCommandLine>
-    <NMakeOutput>$(SolutionDir)\$(Configuration)\$(Platform)\obj\rsvg_internals\$(Configuration)\rsvg_internals.lib</NMakeOutput>
+    <NMakeOutput>$(SolutionDir)\$(Configuration)\$(Platform)\obj\rsvg_internals\$(RustTargetArch)-pc-windows-msvc\$(Configuration)\rsvg_internals.lib</NMakeOutput>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <NMakeBuildCommandLine>$(RsvgRustNMakeCmd)</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>$(RsvgRustNMakeCmd) clean all</NMakeReBuildCommandLine>
     <NMakeCleanCommandLine>$(RsvgRustNMakeCmd) clean</NMakeCleanCommandLine>
-    <NMakeOutput>$(SolutionDir)\$(Configuration)\$(Platform)\obj\rsvg_internals\$(Configuration)\rsvg_internals.lib</NMakeOutput>
+    <NMakeOutput>$(SolutionDir)\$(Configuration)\$(Platform)\obj\rsvg_internals\$(RustTargetArch)-pc-windows-msvc\$(Configuration)\rsvg_internals.lib</NMakeOutput>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
