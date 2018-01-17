@@ -41,7 +41,9 @@
 #include <string.h>
 
 #include <pango/pangocairo.h>
+#ifdef HAVE_PANGO_FT2
 #include <pango/pangofc-fontmap.h>
+#endif
 
 static void
 _set_source_rsvg_solid_color (RsvgDrawingCtx * ctx,
