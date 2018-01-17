@@ -30,7 +30,7 @@ rsvg_handle_render_cairo
 rsvg_handle_render_cairo_sub
 
 /* rsvg-css.h---semi-public for rsvg-convert */
-rsvg_css_parse_color
+rsvg_css_parse_color_
 
 /* librsvg-enum-types.h */
 rsvg_error_get_type
