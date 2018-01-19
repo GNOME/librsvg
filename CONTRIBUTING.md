@@ -107,6 +107,20 @@ It is perfectly fine to [ask the maintainer][maintainer] if you have
 questions about the Autotools setup; it's a tricky bit of machinery,
 and we are glad to help.
 
+### Testing changes
+
+The most direct way to test a change is to have an example SVG file
+that exercises the code you want to test.  Then you can rebuild
+librsvg, and run this:
+
+```
+cd /src/librsvg
+libtool --mode=execute ./rsvg-convert -o foo.png foo.svg
+```
+
+Then you can view the resulting `foo.png` image.  Alternatively, you
+can use `./rsvg-view-3` for a quick-and-dirty SVG viewer.
+
 [coc]: code_of_conduct.md
 [gitlab]: https://gitlab.gnome.org/GNOME/librsvg
 [bugs-browse]: https://gitlab.gnome.org/GNOME/librsvg/issues
