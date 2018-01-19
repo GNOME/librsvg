@@ -77,7 +77,7 @@ requests (or pull requests) if your fork is in
 
 For technical reasons, the maintainers of librsvg do not get
 automatically notified if you submit a pull request through the GNOME
-mirror in Github.  [Please mail the maintainer][mail] directly if you
+mirror in Github.  [Please contact the maintainer][maintainer] directly if you
 have a pull request there or a branch that you would like to
 contribute.
 
@@ -103,14 +103,34 @@ toplevel [`Makefile.am`][toplevel-makefile].  *Note that this is for
 both C and Rust sources*, since `make(1)` needs to know when a Rust
 file changed so it can call `cargo` as appropriate.
 
-It is perfectly fine to [ask the maintainer][mail] if you have
+It is perfectly fine to [ask the maintainer][maintainer] if you have
 questions about the Autotools setup; it's a tricky bit of machinery,
 and we are glad to help.
+
+### Testing changes
+
+The most direct way to test a change is to have an example SVG file
+that exercises the code you want to test.  Then you can rebuild
+librsvg, and run this:
+
+```
+cd /src/librsvg
+libtool --mode=execute ./rsvg-convert -o foo.png foo.svg
+```
+
+Then you can view the resulting `foo.png` image.  Alternatively, you
+can use `./rsvg-view-3` for a quick-and-dirty SVG viewer.
+
+**Please update the test suite** with a suitable example file once you
+have things working (or before even writing code, if you like
+test-driven development), so we can avoid regressions later.  The test
+suite is documented in [`tests/README.md`][tests-readme].
 
 [coc]: code_of_conduct.md
 [gitlab]: https://gitlab.gnome.org/GNOME/librsvg
 [bugs-browse]: https://gitlab.gnome.org/GNOME/librsvg/issues
-[mail]: mailto:federico@gnome.org
+[maintainer]: README.md#maintainers
 [tests-readme]: tests/README.md
 [blog]: https://people.gnome.org/~federico/blog/librsvg-build-infrastructure.html
 [toplevel-makefile]: Makefile.am
+[tests-readme]: tests/README.md

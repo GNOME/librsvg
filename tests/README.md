@@ -30,8 +30,31 @@ These are all "black box tests": they run the library with its public
 API, and test the results.  They do not test the library's internals;
 just the output.
 
+
+Unit tests
+----------
+
 Additionally, the library's source code has smaller unit tests for
 particular sections of the code.
+
+**It is better to catch errors early**, in the unit tests, if
+possible.  The test suite in this directory is for black box tests,
+which run the library as a normal program would use it.
+
+* **What should be in a unit test** - a small test of an algorithm; a
+  check for computed values given some starting values; checks for
+  edge cases.
+
+* **What should be in these black-box tests** - rendering tests that
+  exercise a particular part of the code; CSS cascading tests; images
+  that expose bugs and that we want to avoid regressing on later.
+
+For example, there are unit tests of the path data parser (the `<path
+d="M10 10 L20 20 ...">` element and its `d` attribute, to ensure that
+the parser handles all the path commands and catches errors
+appropriately.  Correspondingly, there are a bunch of black-box tests
+that exercise particular features of path rendering ("does this
+actually draw a line, or an arc?").
 
 
 Running the test suite
@@ -144,7 +167,7 @@ It is up to you to decide what to do next:
   until someone fixes it, or try to [fix the bug yourself][pull-requests]!
 
 * Any other situation of course deserves attention.  Feel free to [ask
-  the maintainers][mail] about it; even if you figure out the problem
+  the maintainers][maintainer] about it; even if you figure out the problem
   yourself, a failed test almost always indicates a problem that is
   not just on your end.
 
@@ -269,4 +292,4 @@ corresponding object IDs and values to be tested for are in the
 [gtest]: https://developer.gnome.org/glib/stable/glib-Testing.html
 [bug]: ../CONTRIBUTING.md#reporting-bugs
 [pull-requests]: ../CONTRIBUTING.md#pull-requests
-[mail]: mailto:federico@gnome.org
+[maintainer]: README.md#maintainers
