@@ -30,8 +30,31 @@ These are all "black box tests": they run the library with its public
 API, and test the results.  They do not test the library's internals;
 just the output.
 
+
+Unit tests
+----------
+
 Additionally, the library's source code has smaller unit tests for
 particular sections of the code.
+
+**It is better to catch errors early**, in the unit tests, if
+possible.  The test suite in this directory is for black box tests,
+which run the library as a normal program would use it.
+
+* **What should be in a unit test** - a small test of an algorithm; a
+  check for computed values given some starting values; checks for
+  edge cases.
+
+* **What should be in these black-box tests** - rendering tests that
+  exercise a particular part of the code; CSS cascading tests; images
+  that expose bugs and that we want to avoid regressing on later.
+
+For example, there are unit tests of the path data parser (the `<path
+d="M10 10 L20 20 ...">` element and its `d` attribute, to ensure that
+the parser handles all the path commands and catches errors
+appropriately.  Correspondingly, there are a bunch of black-box tests
+that exercise particular features of path rendering ("does this
+actually draw a line, or an arc?").
 
 
 Running the test suite

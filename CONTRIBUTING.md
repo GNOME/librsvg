@@ -121,6 +121,11 @@ libtool --mode=execute ./rsvg-convert -o foo.png foo.svg
 Then you can view the resulting `foo.png` image.  Alternatively, you
 can use `./rsvg-view-3` for a quick-and-dirty SVG viewer.
 
+**Please update the test suite** with a suitable example file once you
+have things working (or before even writing code, if you like
+test-driven development), so we can avoid regressions later.  The test
+suite is documented in [`tests/README.md`][tests-readme].
+
 [coc]: code_of_conduct.md
 [gitlab]: https://gitlab.gnome.org/GNOME/librsvg
 [bugs-browse]: https://gitlab.gnome.org/GNOME/librsvg/issues
@@ -128,3 +133,4 @@ can use `./rsvg-view-3` for a quick-and-dirty SVG viewer.
 [tests-readme]: tests/README.md
 [blog]: https://people.gnome.org/~federico/blog/librsvg-build-infrastructure.html
 [toplevel-makefile]: Makefile.am
+[tests-readme]: tests/README.md
