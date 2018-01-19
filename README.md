@@ -131,8 +131,18 @@ from C.
 Maintainers
 -----------
 
-The maintainer of librsvg is [Federico Mena Quintero][federico].  You
-can [mail me][mail] for any other questions you have about librsvg.
+The maintainer of librsvg is [Federico Mena Quintero][federico].  Feel
+free to contact me for any questions you may have about librsvg, both
+its usage and its development.  You can contact me in the following
+ways:
+
+* [Mail me][mail] at federico@gnome.org.
+
+* IRC: I am `federico` on `irc.gnome.org` in the `#rust` or
+  `#gnome-hackers` channels.  I'm there most weekdays (Mon-Fri)
+  starting at about UTC 14:00 (that's 08:00 my time; I am in the UTC-6
+  timezone).  If this is not a convenient time for you, feel free to
+  [mail me][mail] and we can arrange a time.
 
 [svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 [gnome]: https://www.gnome.org/

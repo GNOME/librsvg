@@ -144,7 +144,7 @@ It is up to you to decide what to do next:
   until someone fixes it, or try to [fix the bug yourself][pull-requests]!
 
 * Any other situation of course deserves attention.  Feel free to [ask
-  the maintainers][mail] about it; even if you figure out the problem
+  the maintainers][maintainer] about it; even if you figure out the problem
   yourself, a failed test almost always indicates a problem that is
   not just on your end.
 
@@ -269,4 +269,4 @@ corresponding object IDs and values to be tested for are in the
 [gtest]: https://developer.gnome.org/glib/stable/glib-Testing.html
 [bug]: ../CONTRIBUTING.md#reporting-bugs
 [pull-requests]: ../CONTRIBUTING.md#pull-requests
-[mail]: mailto:federico@gnome.org
+[maintainer]: README.md#maintainers

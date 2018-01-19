@@ -77,7 +77,7 @@ requests (or pull requests) if your fork is in
 
 For technical reasons, the maintainers of librsvg do not get
 automatically notified if you submit a pull request through the GNOME
-mirror in Github.  [Please mail the maintainer][mail] directly if you
+mirror in Github.  [Please contact the maintainer][maintainer] directly if you
 have a pull request there or a branch that you would like to
 contribute.
 
@@ -103,14 +103,14 @@ toplevel [`Makefile.am`][toplevel-makefile].  *Note that this is for
 both C and Rust sources*, since `make(1)` needs to know when a Rust
 file changed so it can call `cargo` as appropriate.
 
-It is perfectly fine to [ask the maintainer][mail] if you have
+It is perfectly fine to [ask the maintainer][maintainer] if you have
 questions about the Autotools setup; it's a tricky bit of machinery,
 and we are glad to help.
 
 [coc]: code_of_conduct.md
 [gitlab]: https://gitlab.gnome.org/GNOME/librsvg
 [bugs-browse]: https://gitlab.gnome.org/GNOME/librsvg/issues
-[mail]: mailto:federico@gnome.org
+[maintainer]: README.md#maintainers
 [tests-readme]: tests/README.md
 [blog]: https://people.gnome.org/~federico/blog/librsvg-build-infrastructure.html
 [toplevel-makefile]: Makefile.am
