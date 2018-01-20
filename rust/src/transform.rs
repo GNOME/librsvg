@@ -115,7 +115,17 @@ fn parse_translate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeE
 }
 
 fn parse_scale_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
-    unimplemented!();
+    parser.parse_nested_block(|p| {
+        let x = p.expect_number()?;
+
+        let y = p.try(|p| -> Result<f32, CssParseError<()>> {
+            optional_comma(p);
+            Ok(p.expect_number()?)
+        }).unwrap_or(x);
+
+        Ok(cairo::Matrix::new(x as f64, 0.0, 0.0, y as f64, 0.0, 0.0))
+    }).map_err(CssParseError::<()>::basic)
+        .map_err(|e| AttributeError::from(e))
 }
 
 fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
@@ -263,16 +273,15 @@ mod parser_tests {
     }
 
     #[test]
-    #[ignore]
-    fn parses_scale () {
+    fn parses_scale() {
+        assert_eq! (parse_transform ("scale (-1)").unwrap (),
+                    cairo::Matrix::new (-1.0, 0.0, 0.0, -1.0, 0.0, 0.0));
+
         assert_eq! (parse_transform ("scale(-1 -2)").unwrap (),
                     cairo::Matrix::new (-1.0, 0.0, 0.0, -2.0, 0.0, 0.0));
 
         assert_eq! (parse_transform ("scale(-1, -2)").unwrap (),
                     cairo::Matrix::new (-1.0, 0.0, 0.0, -2.0, 0.0, 0.0));
-
-        assert_eq! (parse_transform ("scale(-1)").unwrap (),
-                    cairo::Matrix::new (-1.0, 0.0, 0.0, -1.0, 0.0, 0.0));
     }
 
     #[test]
@@ -280,7 +289,7 @@ mod parser_tests {
     fn parses_rotate () {
         assert_eq! (parse_transform ("rotate (30)").unwrap (), make_rotation_matrix (30.0, 0.0, 0.0));
         assert_eq! (parse_transform ("rotate (30,-1,-2)").unwrap (), make_rotation_matrix (30.0, -1.0, -2.0));
-        assert_eq! (parse_transform ("rotate (30, -1, -2)").unwrap (), make_rotation_matrix (30.0, -1.0, -2.0));
+        assert_eq! (parse_transform ("rotate(30, -1, -2)").unwrap (), make_rotation_matrix (30.0, -1.0, -2.0));
     }
 
     fn make_skew_x_matrix (angle_degrees: f64) -> cairo::Matrix {
