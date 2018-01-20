@@ -87,11 +87,11 @@ pub fn number_optional_number (s: &str) -> Result <(f64, f64), ParseError> {
     let x = parser.expect_number ()? as f64;
 
     if !parser.is_exhausted () {
-        let position = parser.position ();
+        let state = parser.state ();
 
         match *parser.next ()? {
             Token::Comma => {},
-            _ => parser.reset (position)
+            _ => parser.reset (&state)
         };
 
         let y = parser.expect_number ()? as f64;
