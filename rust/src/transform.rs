@@ -70,8 +70,8 @@ fn parse_transform_function(name: &str, parser: &mut Parser) -> Result<cairo::Ma
         "translate" => parse_translate_args(parser),
         "scale"     => parse_scale_args(parser),
         "rotate"    => parse_rotate_args(parser),
-        "skewX"     => parse_skewX_args(parser),
-        "skewY"     => parse_skewY_args(parser),
+        "skewX"     => parse_skewx_args(parser),
+        "skewY"     => parse_skewy_args(parser),
         _           => Err(make_expected_function_error()),
     }
 }
@@ -151,12 +151,24 @@ fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeErro
         .map_err(|e| AttributeError::from(e))
 }
 
-fn parse_skewX_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
-    unimplemented!();
+fn parse_skewx_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+    parser.parse_nested_block(|p| {
+        let a = p.expect_number()? as f64 * PI / 180.0;
+        Ok(cairo::Matrix::new (1.0,      0.0,
+                               a.tan (), 1.0,
+                               0.0, 0.0))
+    }).map_err(CssParseError::<()>::basic)
+        .map_err(|e| AttributeError::from(e))
 }
 
-fn parse_skewY_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
-    unimplemented!();
+fn parse_skewy_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
+    parser.parse_nested_block(|p| {
+        let a = p.expect_number()? as f64 * PI / 180.0;
+        Ok(cairo::Matrix::new (1.0,  a.tan (),
+                               0.0,  1.0,
+                               0.0, 0.0))
+    }).map_err(CssParseError::<()>::basic)
+        .map_err(|e| AttributeError::from(e))
 }
 
 /*
@@ -325,13 +337,11 @@ mod parser_tests {
     }
 
     #[test]
-    #[ignore]
     fn parses_skew_x () {
         assert_eq! (parse_transform ("skewX (30)").unwrap (), make_skew_x_matrix (30.0));
     }
 
     #[test]
-    #[ignore]
     fn parses_skew_y () {
         assert_eq! (parse_transform ("skewY (30)").unwrap (), make_skew_y_matrix (30.0));
     }
