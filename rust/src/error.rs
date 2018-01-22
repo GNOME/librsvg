@@ -1,6 +1,8 @@
 use std::fmt;
 use std::error;
 
+use cssparser::{BasicParseError};
+
 use parsers::ParseError;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -69,6 +71,12 @@ impl fmt::Display for NodeError {
 impl From<ParseError> for AttributeError {
     fn from (pe: ParseError) -> AttributeError {
         AttributeError::Parse (pe)
+    }
+}
+
+impl<'a> From<BasicParseError<'a>> for AttributeError {
+    fn from (e: BasicParseError) -> AttributeError {
+        AttributeError::from(ParseError::from(e))
     }
 }
 

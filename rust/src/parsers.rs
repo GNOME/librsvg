@@ -71,7 +71,7 @@ pub fn angle_degrees (s: &str) -> Result <f64, ParseError> {
     Ok (angle)
 }
 
-fn optional_comma (parser: &mut Parser) {
+pub fn optional_comma (parser: &mut Parser) {
     let _ = parser.try (|p| p.expect_comma ());
 }
 
@@ -87,11 +87,11 @@ pub fn number_optional_number (s: &str) -> Result <(f64, f64), ParseError> {
     let x = f64::from(parser.expect_number ()?);
 
     if !parser.is_exhausted () {
-        let position = parser.position ();
+        let state = parser.state ();
 
         match *parser.next ()? {
             Token::Comma => {},
-            _ => parser.reset (position)
+            _ => parser.reset (&state)
         };
 
         let y = f64::from(parser.expect_number ()?);

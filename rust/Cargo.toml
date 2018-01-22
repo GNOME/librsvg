@@ -2,17 +2,15 @@
 name = "rsvg_internals"
 version = "0.0.1"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
-build = "build.rs"
 
 [dependencies]
 libc = "0.2"
 downcast-rs = "^1.0.0"
 regex = "^0.2.1"
-lalrpop-util = "0.13.1"
-cssparser = "^0.18.2"
 itertools = "0.7.4"
 pango = "0.3.0"
 pango-sys = "0.5.0"
+cssparser = "^0.22.1"
 
 [dependencies.cairo-sys-rs]
 version = "0.5.0"
@@ -39,9 +37,6 @@ version = "0.4.0"
 version = "0.5.0"
 #git = "https://github.com/gtk-rs/sys"
 #branch = "master"
-
-[build-dependencies.lalrpop]
-version = "0.13.1"
 
 [lib]
 name = "rsvg_internals"
