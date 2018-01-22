@@ -228,7 +228,6 @@ mod test {
     use super::*;
 
     #[test]
-    #[ignore]
     fn parses_valid_transform () {
         let t = cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, 20.0, 30.0);
         let s = cairo::Matrix::new (10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
@@ -247,16 +246,18 @@ mod test {
     }
 
     #[test]
-    #[ignore]
     fn syntax_error_yields_parse_error () {
         assert_parse_error("foo");
         assert_parse_error("matrix (1 2 3 4 5)");
         assert_parse_error("translate(1 2 3 4 5)");
         assert_parse_error("translate (1,)");
+        assert_parse_error("scale (1,)");
+        assert_parse_error("skewX (1,2)");
+        assert_parse_error("skewY ()");
+        assert_parse_error("skewY");
     }
 
     #[test]
-    #[ignore]
     fn invalid_transform_yields_value_error () {
         match parse_transform ("matrix (0 0 0 0 0 0)") {
             Err (AttributeError::Value (_)) => {},
@@ -347,7 +348,6 @@ mod parser_tests {
     }
 
     #[test]
-    #[ignore]
     fn parses_transform_list () {
         let t = cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, 20.0, 30.0);
         let s = cairo::Matrix::new (10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
