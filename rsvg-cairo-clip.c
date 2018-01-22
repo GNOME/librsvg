@@ -171,8 +171,10 @@ rsvg_cairo_clip_render_new (cairo_t *cr, RsvgCairoRender *parent)
     cairo_render->bb_stack   = NULL;
 
     /* We don't copy or ref the following two; we just share them */
+#ifdef HAVE_PANGO_FT2
     cairo_render->font_config_for_testing = parent->font_config_for_testing;
     cairo_render->font_map_for_testing    = parent->font_map_for_testing;
+#endif
 
     clip_render->parent = parent;
 
