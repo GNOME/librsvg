@@ -20,6 +20,10 @@ impl Parse for cairo::Matrix {
     }
 }
 
+// This parser is for the "transform" attribute in SVG.
+// Its operataion and grammar are described here:
+// https://www.w3.org/TR/SVG/coords.html#TransformAttribute
+
 pub fn parse_transform(s: &str) -> Result<cairo::Matrix, AttributeError> {
     let matrix = parse_transform_list(s)?;
 
