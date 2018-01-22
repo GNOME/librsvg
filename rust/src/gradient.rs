@@ -625,6 +625,10 @@ fn resolve_fallbacks_and_set_pattern (gradient: &Gradient,
                                       bbox:     RsvgBbox) -> bool {
     let mut fallback_source = NodeFallbackSource::new (draw_ctx);
 
+    if bbox.is_empty() {
+        return true
+    }
+
     let resolved = resolve_gradient (gradient, &mut fallback_source);
 
     set_pattern_on_draw_context (&resolved, draw_ctx, opacity, &bbox)

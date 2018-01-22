@@ -3,6 +3,7 @@ use ::glib_sys;
 
 use glib::translate::*;
 use cairo::MatrixTrait;
+use util::*;
 
 /* Keep this in sync with ../../rsvg-private.h:RsvgBbox */
 #[repr(C)]
@@ -15,6 +16,10 @@ pub struct RsvgBbox {
 impl RsvgBbox {
     pub fn is_virgin (&self) -> bool {
         from_glib (self.virgin)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        from_glib(self.virgin) || double_equals(self.rect.width, 0.0) || double_equals(self.rect.height, 0.0)
     }
 }
 
