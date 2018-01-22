@@ -3,7 +3,6 @@ use ::glib::translate::*;
 use ::glib_sys;
 use ::libc;
 
-#[cfg(test)]
 use std::f64::consts::*;
 
 use cairo::MatrixTrait;
@@ -129,7 +128,27 @@ fn parse_scale_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError
 }
 
 fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
-    unimplemented!();
+    parser.parse_nested_block(|p| {
+        let angle = p.expect_number()? as f64 * PI / 180.0;
+        let (s, c) = angle.sin_cos();
+
+        let (tx, ty) = p.try(|p| -> Result<_, CssParseError<()>> {
+            optional_comma(p);
+            let tx = p.expect_number()? as f64;
+
+            optional_comma(p);
+            let ty = p.expect_number()? as f64;
+
+            Ok((tx, ty))
+        }).unwrap_or((0.0, 0.0));
+
+        let mut m = cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, tx, ty);
+
+        m = cairo::Matrix::multiply (&cairo::Matrix::new (c, s, -s, c, 0.0, 0.0), &m);
+        m = cairo::Matrix::multiply (&cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -tx, -ty), &m);
+        Ok(m)
+    }).map_err(CssParseError::<()>::basic)
+        .map_err(|e| AttributeError::from(e))
 }
 
 fn parse_skewX_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
@@ -285,7 +304,6 @@ mod parser_tests {
     }
 
     #[test]
-    #[ignore]
     fn parses_rotate () {
         assert_eq! (parse_transform ("rotate (30)").unwrap (), make_rotation_matrix (30.0, 0.0, 0.0));
         assert_eq! (parse_transform ("rotate (30,-1,-2)").unwrap (), make_rotation_matrix (30.0, -1.0, -2.0));
