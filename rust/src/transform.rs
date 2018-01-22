@@ -176,23 +176,6 @@ fn parse_skewy_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError
         .map_err(|e| AttributeError::from(e))
 }
 
-/*
-pub fn parse_transform (s: &str) -> Result <cairo::Matrix, AttributeError> {
-    let r = parse_TransformList (s);
-
-    match r {
-        Ok (m) => {
-            m.try_invert ().map (|_| m)
-                .map_err (|_| AttributeError::Value ("invalid transformation matrix".to_string ()))
-        },
-
-        Err (e) => {
-            Err (AttributeError::Parse (ParseError::new (format! ("{:?}", e))))
-        }
-    }
-}
-*/
-
 #[cfg(test)]
 fn make_rotation_matrix (angle_degrees: f64, tx: f64, ty: f64) -> cairo::Matrix {
     let angle = angle_degrees * PI / 180.0;
