@@ -104,9 +104,10 @@ fn parse_translate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeE
     parser.parse_nested_block(|p| {
         let tx = p.expect_number()?;
 
-        optional_comma(p);
-
-        let ty = p.expect_number()?;
+        let ty = p.try(|p| -> Result<f32, CssParseError<()>> {
+            optional_comma(p);
+            Ok(p.expect_number()?)
+        }).unwrap_or(0.0);
 
         Ok(cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, tx as f64, ty as f64))
     }).map_err(CssParseError::<()>::basic)
@@ -297,11 +298,11 @@ mod parser_tests {
         assert_eq! (parse_transform ("translate(-1 -2)").unwrap (),
                     cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -1.0, -2.0));
 
-        // assert_eq! (parse_transform ("translate(-1, -2)").unwrap (),
-        //             cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -1.0, -2.0));
+        assert_eq! (parse_transform ("translate(-1, -2)").unwrap (),
+                    cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -1.0, -2.0));
 
-        // assert_eq! (parse_transform ("translate(-1)").unwrap (),
-        //             cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -1.0, 0.0));
+        assert_eq! (parse_transform ("translate(-1)").unwrap (),
+                    cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -1.0, 0.0));
     }
 
     #[test]
