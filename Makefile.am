@@ -67,7 +67,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	$(NULL)
 
 RUST_SOURCES =					\
-	rust/build.rs				\
 	rust/Cargo.toml				\
 	rust/src/aspect_ratio.rs		\
 	rust/src/bbox.rs			\
@@ -85,7 +84,6 @@ RUST_SOURCES =					\
 	rust/src/opacity.rs			\
 	rust/src/paint_server.rs		\
 	rust/src/parsers.rs			\
-	rust/src/parse_transform.lalrpop	\
 	rust/src/path_builder.rs		\
 	rust/src/path_parser.rs			\
 	rust/src/pattern.rs			\
