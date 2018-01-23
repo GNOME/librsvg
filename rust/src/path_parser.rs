@@ -878,13 +878,13 @@ fn char_to_digit (c: char) -> i32 {
     c as i32 - '0' as i32
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ErrorKind {
     UnexpectedToken,
     UnexpectedEof
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ParseError {
     pub position: usize,
     pub kind: ErrorKind
@@ -915,39 +915,35 @@ pub fn parse_path_into_builder (path_str: &str, builder: &mut RsvgPathBuilder) -
 mod tests {
     use super::*;
 
-    fn print_error (error: &ParseError, path_str: &str) {
-        let prefix = "Error in \"";
-
-        println! ("");
-        println! ("{}{}\"", prefix, path_str);
-
-        for _ in 0 .. (prefix.len() + error.position) {
-            print! (" ");
-        }
-
-        println! ("^ {}", error);
+    fn find_error_pos(s: &str) -> Option<usize> {
+        s.find('^')
     }
 
-    fn parse_path (path_str: &str) -> RsvgPathBuilder {
-        let mut builder = RsvgPathBuilder::new ();
-
-        let result = parse_path_into_builder (path_str, &mut builder);
-
-        if let Err (e) = result {
-            print_error (&e, path_str);
+    fn make_parse_result(error_pos_str: &str, error_kind: Option<ErrorKind>) -> Result<(), ParseError> {
+        if let Some(pos) = find_error_pos(error_pos_str) {
+            Err(ParseError {
+                position: pos,
+                kind: error_kind.unwrap()
+            })
+        } else {
+            assert!(error_kind.is_none());
+            Ok(())
         }
-
-        builder
     }
 
     fn test_parser (path_str: &str,
-                    _error_pos_str: &str,
+                    error_pos_str: &str,
                     expected_commands: &[PathCommand],
-                    _expected_error_kind: Option<ErrorKind>) {
-        let builder = parse_path (path_str);
+                    expected_error_kind: Option<ErrorKind>) {
+        let expected_result = make_parse_result(error_pos_str, expected_error_kind);
+
+        let mut builder = RsvgPathBuilder::new();
+        let result = parse_path_into_builder (path_str, &mut builder);
+
         let commands = builder.get_path_commands ();
 
-        assert_eq! (expected_commands, commands);
+        assert_eq!(expected_commands, commands);
+        assert_eq!(expected_result, result);
     }
 
     fn moveto (x: f64, y: f64) -> PathCommand {
