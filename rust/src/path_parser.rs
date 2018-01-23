@@ -1630,4 +1630,17 @@ mod tests {
                           lineto(20.0, 20.0)],
                     Some(ErrorKind::UnexpectedEof));
     }
+
+    #[test]
+    fn horizontal_lineto_args() {
+        test_parser("M10-20H",
+                    "       ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10-20H,",
+                    "       ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedToken));
+    }
 }
