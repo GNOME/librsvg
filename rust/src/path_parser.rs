@@ -130,13 +130,10 @@ impl<'b> PathParser<'b> {
                         break;
                     }
                 }
-
             }
-
-            return Ok(());
-        } else {
-            Err(self.error(ErrorKind::UnexpectedEof))
         }
+
+        Ok(())
     }
 
     fn optional_whitespace (&mut self) -> Result<(), ParseError> {
