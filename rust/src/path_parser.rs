@@ -1853,4 +1853,24 @@ mod tests {
                      ],
                      Some(ErrorKind::UnexpectedEof));
     }
+
+    #[test]
+    fn smooth_quadratic_bezier_curveto_args() {
+        test_parser("M10-20T1",
+                    "        ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20T1,",
+                    "         ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser ("M10 20 T30 40,",
+                     "              ^",
+                     &vec! [
+                         moveto (10.0, 20.0),
+                         curveto (10.0, 20.0, 50.0 / 3.0, 80.0 / 3.0, 30.0, 40.0)
+                     ],
+                     Some(ErrorKind::UnexpectedEof));
+    }
 }
