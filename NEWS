@@ -1,3 +1,20 @@
+Version 2.42.1
+- gitlab#182 - Parse the transform attribute in a faster/simpler way.
+  We now use rust-cssparser instead of lalrpop.  This is especially
+  noticeable on SVGs with lots of "transform" attributes.
+- gitlab#187 - Don't crash when setting a gradient on a zero-sized object.
+- gitlab#184 - (Windows) Don't use PangoFT2 if not available (Chun-wei Fan).
+- gitlab#181 - Inherit attributes in the <svg> element properly.
+- gitlab#160 - rsvg-convert - fix error reporting when reading from
+  stdin (Phlip Withnall).
+- gitlab#152 - Fix detection of image type in "data:" URIs when they
+  don't specify a MIME type (Andreas Smas).
+- gitlab#117 - (Windows) rsvg-convert - Set stdout to O_BINARY
+  (Bakhtiar Hasmanan).
+- gitlab#133 - More stringent parsing of path data; better tests.
+- (Windows/MSVC) Fix linking of the Rust internals library (Chun-wei Fan).
+- Fix typos and links in the .md files.
+
 Version 2.42.0
 - Fix a memory leak in rsvg_handle_new_from_file() (Lovell Fuller).
 - Optimize the xml:space normalization function (Jordan Petridis).
