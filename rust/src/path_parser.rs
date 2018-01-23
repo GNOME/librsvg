@@ -1616,4 +1616,18 @@ mod tests {
                           closepath()],
                     Some(ErrorKind::UnexpectedToken));
     }
+
+    #[test]
+    fn lineto_args() {
+        test_parser("M10-20L10",
+                    "         ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M 10,10 L 20,20,30",
+                    "                  ^",
+                    &vec![moveto(10.0, 10.0),
+                          lineto(20.0, 20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+    }
 }
