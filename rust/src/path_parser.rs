@@ -1873,4 +1873,82 @@ mod tests {
                      ],
                      Some(ErrorKind::UnexpectedEof));
     }
+
+    #[test]
+    fn elliptical_arc_args() {
+        test_parser("M10-20A1",
+                    "        ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20A1,",
+                    "         ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10-20A1 2",
+                    "          ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20A1 2,",
+                    "           ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10-20A1 2 3",
+                    "            ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20A1 2 3,",
+                    "             ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10-20A1 2 3 4",
+                    "             ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedToken));
+
+        test_parser("M10-20A1 2 3 1",
+                    "              ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20A1 2 3,1,",
+                    "               ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10-20A1 2 3 1 5",
+                    "               ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedToken));
+
+        test_parser("M10-20A1 2 3 1 1",
+                    "                ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20A1 2 3,1,1,",
+                    "                 ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10-20A1 2 3 1 1 6",
+                    "                  ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20A1 2 3,1,1,6,",
+                    "                   ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        /* FIXME: we don't test the arc results, because
+         * we don't know what segments will be computed by PathBuilder::arc().
+         * Maybe we need to represent arcs as native path builder segments,
+         * and only explode them to Cairo curves at rendering time.
+         */
+        // test_parser("M10-20A1 2 3,1,1,6,7,",
+        //             "                     ^",
+        //             &vec![moveto(10.0, -20.0)
+        //                   arc(...)],
+        //             Some(ErrorKind::UnexpectedEof));
+    }
 }
