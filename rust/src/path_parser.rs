@@ -1617,6 +1617,11 @@ mod tests {
 
     #[test]
     fn moveto_implicit_lineto_args() {
+        test_parser("M10-20,",
+                    "       ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
         test_parser("M10-20-30",
                     "         ^",
                     &vec![moveto(10.0, -20.0)],
@@ -1655,6 +1660,12 @@ mod tests {
                     &vec![moveto(10.0, 10.0),
                           lineto(20.0, 20.0)],
                     Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M 10,10 L 20,20,",
+                    "                ^",
+                    &vec![moveto(10.0, 10.0),
+                          lineto(20.0, 20.0)],
+                    Some(ErrorKind::UnexpectedEof));
     }
 
     #[test]
@@ -1668,6 +1679,13 @@ mod tests {
                     "       ^",
                     &vec![moveto(10.0, -20.0)],
                     Some(ErrorKind::UnexpectedToken));
+
+        test_parser("M10-20H30,",
+                    "          ^",
+                    &vec![moveto(10.0, -20.0),
+                          lineto(30.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+    }
 
     #[test]
     fn vertical_lineto_args() {
