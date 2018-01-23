@@ -1169,21 +1169,21 @@ mod tests {
 
     #[test]
     fn handles_single_moveto () {
-        test_parser ("M 10 20",
+        test_parser ("M 10 20 ",
                      "",
                      &vec![
                          moveto (10.0, 20.0)
                      ],
                      None);
 
-        test_parser ("M10,20",
+        test_parser ("M10,20  ",
                      "",
                      &vec![
                          moveto (10.0, 20.0)
                      ],
                      None);
 
-        test_parser ("M10 20",
+        test_parser ("M10 20   ",
                      "",
                      &vec![
                          moveto (10.0, 20.0)
