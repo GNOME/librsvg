@@ -7,8 +7,8 @@ use path_builder::*;
 
 struct PathParser<'b> {
     chars_enumerator: Enumerate<Chars<'b>>,
-    lookahead: Option <char>, /* None if we are in EOF */
-    current_pos: usize,
+    lookahead: Option<char>, /* None if we are in EOF */
+    current_pos: Option<usize>, /* None if the string hasn't been scanned */
 
     builder: &'b mut RsvgPathBuilder,
 
@@ -65,7 +65,7 @@ impl<'b> PathParser<'b> {
         PathParser {
             chars_enumerator: path_str.chars ().enumerate (),
             lookahead: None,
-            current_pos: 0,
+            current_pos: None,
 
             builder: builder,
 
@@ -92,16 +92,22 @@ impl<'b> PathParser<'b> {
 
     fn getchar (&mut self) {
         if let Some ((pos, c)) = self.chars_enumerator.next () {
-            self.lookahead = Some (c);
-            self.current_pos = pos;
+            self.lookahead = Some(c);
+            self.current_pos = Some(pos);
         } else {
+            // We got to EOF; make current_pos point to the position after the last char in the string
             self.lookahead = None;
+            if self.current_pos.is_none() {
+                self.current_pos = Some(0);
+            } else {
+                self.current_pos = Some(self.current_pos.unwrap() + 1);
+            }
         }
     }
 
     fn error(&self, kind: ErrorKind) -> ParseError {
         ParseError {
-            position: self.current_pos,
+            position: self.current_pos.unwrap(),
             kind: kind
         }
     }
@@ -143,8 +149,10 @@ impl<'b> PathParser<'b> {
 
     fn optional_comma_whitespace (&mut self) -> Result<(), ParseError> {
         self.optional_whitespace()?;
-        self.match_char (',');
-        self.optional_whitespace()?;
+        if self.lookahead_is(',') {
+            self.match_char (',');
+            self.optional_whitespace()?;
+        }
         Ok(())
     }
 
@@ -252,8 +260,10 @@ impl<'b> PathParser<'b> {
             }
 
             Ok (value * 10.0f64.powf (exponent * exponent_sign))
-        } else {
+        } else if self.lookahead.is_some() {
             Err(self.error(ErrorKind::UnexpectedToken))
+        } else {
+            Err(self.error(ErrorKind::UnexpectedEof))
         }
     }
 
@@ -262,8 +272,10 @@ impl<'b> PathParser<'b> {
             Ok(false)
         } else if self.match_char ('1') {
             Ok(true)
-        } else {
+        } else if self.lookahead.is_some() {
             Err(self.error(ErrorKind::UnexpectedToken))
+        } else {
+            Err(self.error(ErrorKind::UnexpectedEof))
         }
     }
 
@@ -1527,5 +1539,13 @@ mod tests {
                     "  ^",
                     &vec![],
                     Some(ErrorKind::UnexpectedToken));
+    }
+
+    #[test]
+    fn moveto_args() {
+        test_parser("M10",
+                    "   ^",
+                    &vec![],
+                    Some(ErrorKind::UnexpectedEof));
     }
 }
