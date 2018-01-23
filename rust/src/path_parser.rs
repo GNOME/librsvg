@@ -1811,4 +1811,46 @@ mod tests {
                           curveto(10.0, -20.0, 1.0, 2.0, 3.0, 4.0)],
                     Some(ErrorKind::UnexpectedEof));
     }
+
+    #[test]
+    fn quadratic_bezier_curveto_args() {
+        test_parser("M10-20Q1",
+                    "        ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20Q1,",
+                    "         ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10-20Q1 2",
+                    "          ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20Q1,2,",
+                    "           ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10-20Q1 2 3",
+                    "            ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20Q1,2,3",
+                    "            ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20Q1,2,3,",
+                    "             ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser ("M10 20 Q30 40 50 60,",
+                     "                    ^",
+                     &vec![
+                         moveto  (10.0, 20.0),
+                         curveto (70.0 / 3.0, 100.0 / 3.0, 110.0 / 3.0, 140.0 / 3.0, 50.0, 60.0)
+                     ],
+                     Some(ErrorKind::UnexpectedEof));
+    }
 }
