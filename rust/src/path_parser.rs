@@ -1771,4 +1771,44 @@ mod tests {
                           curveto(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)],
                     Some(ErrorKind::UnexpectedEof));
     }
+
+    #[test]
+    fn smooth_curveto_args() {
+        test_parser("M10-20S1",
+                    "        ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20S1,",
+                    "         ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10-20S1 2",
+                    "          ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20S1,2,",
+                    "           ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10-20S1 2 3",
+                    "            ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20S1,2,3",
+                    "            ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+        test_parser("M10-20S1,2,3,",
+                    "             ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10-20S1,2,3,4,",
+                    "               ^",
+                    &vec![moveto(10.0, -20.0),
+                          curveto(10.0, -20.0, 1.0, 2.0, 3.0, 4.0)],
+                    Some(ErrorKind::UnexpectedEof));
+    }
 }
