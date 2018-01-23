@@ -76,13 +76,13 @@ fn render_ellipse (cx: f64,
 /***** NodePath *****/
 
 struct NodePath {
-    builder: RefCell<RsvgPathBuilder>
+    builder: RefCell<Option<RsvgPathBuilder>>
 }
 
 impl NodePath {
     fn new () -> NodePath {
         NodePath {
-            builder: RefCell::new (RsvgPathBuilder::new ())
+            builder: RefCell::new (None)
         }
     }
 }
@@ -90,19 +90,23 @@ impl NodePath {
 impl NodeTrait for NodePath {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
         if let Some (value) = property_bag::lookup (pbag, "d") {
-            let mut builder = self.builder.borrow_mut ();
+            let mut builder = RsvgPathBuilder::new ();
 
-            if path_parser::parse_path_into_builder (&value, &mut *builder).is_err() {
+            if path_parser::parse_path_into_builder (&value, &mut builder).is_err() {
                 // FIXME: we don't propagate errors upstream, but creating a partial
                 // path is OK per the spec
             }
+
+            *self.builder.borrow_mut() = Some(builder);
         }
 
         Ok (())
     }
 
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
-        render_path_builder (&*self.builder.borrow (), draw_ctx, node.get_state (), dominate, true);
+        if let Some(ref builder) = *self.builder.borrow() {
+            render_path_builder (builder, draw_ctx, node.get_state (), dominate, true);
+        }
     }
 
     fn get_c_impl (&self) -> *const RsvgCNodeImpl {
