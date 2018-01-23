@@ -10,9 +10,6 @@ struct PathParser<'b> {
 
     builder: &'b mut RsvgPathBuilder,
 
-    error_message: &'static str,
-    has_error: bool,
-
     /* Current point; adjusted at every command */
     current_x: f64,
     current_y: f64,
@@ -70,9 +67,6 @@ impl<'b> PathParser<'b> {
 
             builder: builder,
 
-            error_message: "",
-            has_error: false,
-
             current_x: 0.0,
             current_y: 0.0,
 
@@ -87,12 +81,11 @@ impl<'b> PathParser<'b> {
         }
     }
 
-    fn parse (&mut self) -> bool {
+    fn parse (&mut self) -> Result<(), ParseError> {
         self.getchar ();
 
-        self.optional_whitespace () &&
-            self.moveto_drawto_command_groups () &&
-            self.optional_whitespace ()
+        self.optional_whitespace()?;
+        self.moveto_drawto_command_groups()
     }
 
     fn getchar (&mut self) {
@@ -105,10 +98,11 @@ impl<'b> PathParser<'b> {
         }
     }
 
-    fn error (&mut self, message: &'static str) -> bool {
-        self.error_message = message;
-        self.has_error = true;
-        false
+    fn error(&self, message: &'static str) -> ParseError {
+        ParseError {
+            position: self.current_pos,
+            message: message
+        }
     }
 
     fn match_char (&mut self, c: char) -> bool {
@@ -122,7 +116,7 @@ impl<'b> PathParser<'b> {
         false
     }
 
-    fn whitespace (&mut self) -> bool {
+    fn whitespace (&mut self) -> Result<(), ParseError> {
         if let Some (c) = self.lookahead {
             if c.is_whitespace () {
                 assert! (self.match_char (c));
@@ -136,25 +130,24 @@ impl<'b> PathParser<'b> {
                     }
                 }
 
-                return true;
-            } else {
-                return false;
             }
+
+            return Ok(());
         }
 
-        false
+        Err(self.error("Unexpected end of data"))
     }
 
-    fn optional_whitespace (&mut self) -> bool {
-        self.whitespace ();
-        true
+    fn optional_whitespace (&mut self) -> Result<(), ParseError> {
+        let _ = self.whitespace();
+        Ok(())
     }
 
-    fn optional_comma_whitespace (&mut self) -> bool {
-        assert! (self.optional_whitespace ());
+    fn optional_comma_whitespace (&mut self) -> Result<(), ParseError> {
+        self.optional_whitespace()?;
         self.match_char (',');
-        assert! (self.optional_whitespace ());
-        true
+        self.optional_whitespace()?;
+        Ok(())
     }
 
     fn lookahead_is (&self, c: char) -> bool {
@@ -178,33 +171,30 @@ impl<'b> PathParser<'b> {
         false
     }
 
-    fn number (&mut self) -> Option <f64> {
-        let mut has_sign: bool;
+    fn lookahead_is_start_of_number(&mut self) -> bool {
+        let mut c = ' ';
+        self.lookahead_is_digit(&mut c) ||
+            self.lookahead_is('.') ||
+            self.lookahead_is('+') ||
+            self.lookahead_is('-')
+    }
+
+    fn number (&mut self) -> Result<f64, ParseError> {
         let mut sign: f64;
 
-        has_sign = false;
         sign = 1.0;
 
         if self.match_char ('+') {
             sign = 1.0;
-            has_sign = true;
         } else if self.match_char ('-') {
             sign = -1.0;
-            has_sign = true;
         }
 
-        if let Some (num) = self.nonnegative_number () {
-            return Some (num * sign);
-        } else {
-            if has_sign {
-                self.error ("Expected number after sign");
-            }
-
-            None
-        }
+        let num = self.nonnegative_number()?;
+        Ok(num * sign)
     }
 
-    fn nonnegative_number (&mut self) -> Option<f64> {
+    fn nonnegative_number (&mut self) -> Result<f64, ParseError> {
         let mut value: f64;
         let mut exponent_sign: f64;
         let mut exponent: f64;
@@ -259,40 +249,32 @@ impl<'b> PathParser<'b> {
                         assert! (self.match_char (c));
                     }
                 } else {
-                    self.error ("Expected digits for exponent");
-                    return None;
+                    return Err(self.error("Expected digits for exponent"));
                 }
             }
 
-            Some (value * 10.0f64.powf (exponent * exponent_sign))
+            Ok (value * 10.0f64.powf (exponent * exponent_sign))
         } else {
-            None
+            Err(self.error("Expected number"))
         }
     }
 
-    fn flag (&mut self) -> Option <bool> {
+    fn flag (&mut self) -> Result<bool, ParseError> {
         if self.match_char ('0') {
-            Some (false)
+            Ok(false)
         } else if self.match_char ('1') {
-            Some (true)
+            Ok(true)
         } else {
-            None
+            Err(self.error("Expected flag"))
         }
     }
 
-    fn coordinate_pair (&mut self) -> Option<(f64, f64)> {
-        if let Some (num1) = self.number () {
-            assert! (self.optional_comma_whitespace ());
+    fn coordinate_pair (&mut self) -> Result<(f64, f64), ParseError> {
+        let a = self.number()?;
+        self.optional_comma_whitespace()?;
+        let b = self.number()?;
 
-            if let Some (num2) = self.number () {
-                return Some ((num1, num2));
-            } else {
-                self.error ("Expected second coordinate of coordinate pair");
-                return None
-            }
-        }
-
-        None
+        Ok((a, b))
     }
 
     fn set_current_point (&mut self, x: f64, y: f64) {
@@ -384,8 +366,10 @@ impl<'b> PathParser<'b> {
         self.builder.close_path ();
     }
 
-    fn lineto_argument_sequence (&mut self, absolute: bool) -> bool {
-        if let Some ((mut x, mut y)) = self.coordinate_pair () {
+    fn lineto_argument_sequence (&mut self, absolute: bool) -> Result<(), ParseError> {
+        loop {
+            let (mut x, mut y) = self.coordinate_pair()?;
+
             if !absolute {
                 x += self.current_x;
                 y += self.current_y;
@@ -393,58 +377,51 @@ impl<'b> PathParser<'b> {
 
             self.emit_line_to (x, y);
 
-            self.whitespace ();
+            self.whitespace()?;
 
             if self.lookahead_is (',') {
                 assert! (self.match_char (','));
-                assert! (self.optional_whitespace ());
-
-                if !self.lineto_argument_sequence (absolute) {
-                    self.error ("Expected coordinate pair after comma");
-                    return false;
-                }
-            }
-
-            self.lineto_argument_sequence (absolute);
-            true
-        } else {
-            false
-        }
-    }
-
-    fn moveto_argument_sequence (&mut self, absolute: bool, is_initial_moveto: bool) -> bool {
-        if let Some ((mut x, mut y)) = self.coordinate_pair () {
-            if is_initial_moveto {
-                self.emit_move_to (x, y);
+                self.optional_whitespace()?;
             } else {
-                if !absolute {
-                    x += self.current_x;
-                    y += self.current_y;
-                }
-
-                self.emit_move_to (x, y);
-            }
-
-            self.whitespace ();
-
-            if self.lookahead_is (',') {
-                assert! (self.match_char (','));
-                assert! (self.optional_whitespace ());
-
-                if !self.lineto_argument_sequence (absolute) {
-                    self.error ("Expected coordinate pair after comma");
-                    return false;
+                if !self.lookahead_is_start_of_number() {
+                    break;
                 }
             }
+        }
 
-            self.lineto_argument_sequence (absolute);
-            true
+        Ok(())
+    }
+
+    fn moveto_argument_sequence (&mut self, absolute: bool, is_initial_moveto: bool) -> Result<(), ParseError> {
+        let (mut x, mut y) = self.coordinate_pair ()?;
+
+        if is_initial_moveto {
+            self.emit_move_to (x, y);
         } else {
-            self.error ("Expected coordinate pair after moveto")
+            if !absolute {
+                x += self.current_x;
+                y += self.current_y;
+            }
+
+            self.emit_move_to (x, y);
+        }
+
+        self.whitespace()?;
+
+        if self.lookahead_is (',') {
+            assert! (self.match_char (','));
+            self.optional_whitespace()?;
+            self.lineto_argument_sequence(absolute)
+        } else {
+            if self.lookahead_is_start_of_number() {
+                self.lineto_argument_sequence(absolute)
+            } else {
+                Ok(())
+            }
         }
     }
 
-    fn moveto (&mut self, is_initial_moveto: bool) -> bool {
+    fn moveto (&mut self, is_initial_moveto: bool) -> Result<(), ParseError> {
         if self.lookahead_is ('M') || self.lookahead_is ('m') {
             let absolute = if self.match_char ('M') {
                 true
@@ -453,72 +430,66 @@ impl<'b> PathParser<'b> {
                 false
             };
 
-            return self.optional_whitespace () &&
-                self.moveto_argument_sequence (absolute, is_initial_moveto);
-        }
-
-        false
-    }
-
-    fn moveto_drawto_command_group (&mut self, is_initial_moveto: bool) -> bool {
-        if self.moveto (is_initial_moveto) {
-            self.optional_whitespace () &&
-                self.optional_drawto_commands ()
+            self.optional_whitespace()?;
+            self.moveto_argument_sequence(absolute, is_initial_moveto)
         } else {
-            false
+            Err(self.error("Expected M or m command"))
         }
     }
 
-    fn moveto_drawto_command_groups (&mut self) -> bool {
-        if self.moveto_drawto_command_group (true) {
-            loop {
-                self.optional_whitespace ();
-                if !self.moveto_drawto_command_group (false) {
-                    break;
-                }
-            }
+    fn moveto_drawto_command_group (&mut self, is_initial_moveto: bool) -> Result<(), ParseError> {
+        self.moveto(is_initial_moveto)?;
+        self.optional_whitespace()?;
 
-            true
-        } else {
-            self.error ("Expected moveto command")
-        }
+        self.optional_drawto_commands().map(|_| ())
     }
 
-    fn optional_drawto_commands (&mut self) -> bool {
-        if self.drawto_command () {
-            loop {
-                self.optional_whitespace ();
-                if !self.drawto_command () {
-                    break;
-                }
+    fn moveto_drawto_command_groups(&mut self) -> Result<(), ParseError> {
+        let mut initial = true;
+
+        loop {
+            self.moveto_drawto_command_group(initial)?;
+            initial = false;
+
+            self.optional_whitespace()?;
+            if self.lookahead.is_none() {
+                break;
             }
         }
 
-        true
+        Ok(())
     }
 
-    fn drawto_command (&mut self) -> bool {
-        self.close_path () ||
-            self.line_to () ||
-            self.horizontal_line_to () ||
-            self.vertical_line_to () ||
-            self.curve_to () ||
-            self.smooth_curve_to () ||
-            self.quadratic_bezier_curve_to () ||
-            self.smooth_quadratic_bezier_curve_to () ||
-            self.elliptical_arc ()
+    fn optional_drawto_commands (&mut self) -> Result<bool, ParseError> {
+        while self.drawto_command()? {
+            self.optional_whitespace()?;
+        }
+
+        Ok(false)
     }
 
-    fn close_path (&mut self) -> bool {
+    fn drawto_command (&mut self) -> Result<bool, ParseError> {
+        Ok(self.close_path()?                       ||
+           self.line_to()?                          ||
+           self.horizontal_line_to()?               ||
+           self.vertical_line_to()?                 ||
+           self.curve_to()?                         ||
+           self.smooth_curve_to()?                  ||
+           self.quadratic_bezier_curve_to()?        ||
+           self.smooth_quadratic_bezier_curve_to()? ||
+           self.elliptical_arc()?)
+    }
+
+    fn close_path (&mut self) -> Result<bool, ParseError> {
         if self.match_char ('Z') || self.match_char ('z') {
             self.emit_close_path ();
-            true
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
 
-    fn line_to (&mut self) -> bool {
+    fn line_to (&mut self) -> Result<bool, ParseError> {
         if self.lookahead_is ('L') || self.lookahead_is ('l') {
             let absolute = if self.match_char ('L') {
                 true
@@ -527,20 +498,19 @@ impl<'b> PathParser<'b> {
                 false
             };
 
-            self.optional_whitespace ();
+            self.optional_whitespace()?;
 
-            if self.lineto_argument_sequence (absolute) {
-                return true;
-            } else {
-                return self.error ("Expected coordinate pair after lineto");
-            }
+            self.lineto_argument_sequence(absolute)?;
+            Ok(true)
+        } else {
+            Ok(false)
         }
-
-        false
     }
 
-    fn horizontal_lineto_argument_sequence (&mut self, absolute: bool) -> bool {
-        if let Some (mut x) = self.number () {
+    fn horizontal_lineto_argument_sequence (&mut self, absolute: bool) -> Result<(), ParseError> {
+        loop {
+            let mut x = self.number()?;
+
             if !absolute {
                 x += self.current_x;
             }
@@ -549,26 +519,22 @@ impl<'b> PathParser<'b> {
 
             self.emit_line_to (x, y);
 
-            self.whitespace ();
+            self.whitespace()?;
 
             if self.lookahead_is (',') {
                 assert! (self.match_char (','));
-                assert! (self.optional_whitespace ());
-
-                if !self.horizontal_lineto_argument_sequence (absolute) {
-                    self.error ("Expected offset after comma");
-                    return false;
+                self.optional_whitespace()?;
+            } else {
+                if !self.lookahead_is_start_of_number() {
+                    break;
                 }
             }
-
-            self.horizontal_lineto_argument_sequence (absolute);
-            true
-        } else {
-            false
         }
+
+        Ok(())
     }
 
-    fn horizontal_line_to (&mut self) -> bool {
+    fn horizontal_line_to (&mut self) -> Result<bool, ParseError> {
         if self.lookahead_is ('H') || self.lookahead_is ('h') {
             let absolute = if self.match_char ('H') {
                 true
@@ -577,48 +543,43 @@ impl<'b> PathParser<'b> {
                 false
             };
 
-            self.optional_whitespace ();
+            self.optional_whitespace()?;
 
-            if self.horizontal_lineto_argument_sequence (absolute) {
-                return true;
-            } else {
-                return self.error ("Expected offset after horizontal lineto");
-            }
+            self.horizontal_lineto_argument_sequence(absolute)?;
+            Ok(true)
+        } else {
+            Ok(false)
         }
-
-        false
     }
 
-    fn vertical_lineto_argument_sequence (&mut self, absolute: bool) -> bool {
-        if let Some (mut y) = self.number () {
-            let x = self.current_x;
+    fn vertical_lineto_argument_sequence (&mut self, absolute: bool) -> Result<(), ParseError> {
+        loop {
+            let mut y = self.number()?;
 
             if !absolute {
                 y += self.current_y;
             }
 
+            let x = self.current_x;
+
             self.emit_line_to (x, y);
 
-            self.whitespace ();
+            self.whitespace()?;
 
             if self.lookahead_is (',') {
                 assert! (self.match_char (','));
-                assert! (self.optional_whitespace ());
-
-                if !self.vertical_lineto_argument_sequence (absolute) {
-                    self.error ("Expected offset after comma");
-                    return false;
+                self.optional_whitespace()?;
+            } else {
+                if !self.lookahead_is_start_of_number() {
+                    break;
                 }
             }
-
-            self.vertical_lineto_argument_sequence (absolute);
-            true
-        } else {
-            false
         }
+
+        Ok(())
     }
 
-    fn vertical_line_to (&mut self) -> bool {
+    fn vertical_line_to (&mut self) -> Result<bool, ParseError> {
         if self.lookahead_is ('V') || self.lookahead_is ('v') {
             let absolute = if self.match_char ('V') {
                 true
@@ -627,101 +588,89 @@ impl<'b> PathParser<'b> {
                 false
             };
 
-            self.optional_whitespace ();
+            self.optional_whitespace()?;
 
-            if self.vertical_lineto_argument_sequence (absolute) {
-                return true;
-            } else {
-                return self.error ("Expected offset after vertical lineto");
-            }
-        }
-
-        false
-    }
-
-    fn curveto_argument_sequence (&mut self, absolute: bool) -> bool {
-        if let Some ((mut x2, mut y2)) = self.coordinate_pair () {
-            assert! (self.optional_comma_whitespace ());
-
-            if let Some ((mut x3, mut y3)) = self.coordinate_pair () {
-                assert! (self.optional_comma_whitespace ());
-
-                if let Some ((mut x4, mut y4)) = self.coordinate_pair () {
-                    if !absolute {
-                        x2 += self.current_x;
-                        y2 += self.current_y;
-                        x3 += self.current_x;
-                        y3 += self.current_y;
-                        x4 += self.current_x;
-                        y4 += self.current_y;
-                    }
-                    self.emit_curve_to (x2, y2, x3, y3, x4, y4);
-
-                    self.whitespace ();
-
-                    if self.lookahead_is (',') {
-                        assert! (self.match_char (','));
-                        assert! (self.optional_whitespace ());
-
-                        if !self.curveto_argument_sequence (absolute) {
-                            self.error ("Expected coordinate pair after comma");
-                            return false;
-                        }
-                    }
-
-                    self.curveto_argument_sequence (absolute);
-                    return true;
-                } else {
-                    return self.error ("Expected third coordinate pair for curveto");
-                }
-            } else {
-                return self.error ("Expected second coordinate pair for curveto");
-            }
+            self.vertical_lineto_argument_sequence(absolute)?;
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
 
-    fn smooth_curveto_argument_sequence (&mut self, absolute: bool) -> bool {
-        if let Some ((mut x3, mut y3)) = self.coordinate_pair () {
-            assert! (self.optional_comma_whitespace ());
+    fn curveto_argument_sequence (&mut self, absolute: bool) -> Result<(), ParseError> {
+        loop {
+            let (mut x2, mut y2) = self.coordinate_pair()?;
 
-            if let Some ((mut x4, mut y4)) = self.coordinate_pair () {
-                if !absolute {
-                    x3 += self.current_x;
-                    y3 += self.current_y;
-                    x4 += self.current_x;
-                    y4 += self.current_y;
-                }
+            self.optional_comma_whitespace()?;
 
-                let (x2, y2) = (self.current_x + self.current_x - self.cubic_reflection_x,
-                                self.current_y + self.current_y - self.cubic_reflection_y);
+            let (mut x3, mut y3) = self.coordinate_pair()?;
 
-                self.emit_curve_to (x2, y2, x3, y3, x4, y4);
+            self.optional_comma_whitespace()?;
 
-                self.whitespace ();
+            let (mut x4, mut y4) = self.coordinate_pair()?;
 
-                if self.lookahead_is (',') {
-                    assert! (self.match_char (','));
-                    assert! (self.optional_whitespace ());
-
-                    if !self.smooth_curveto_argument_sequence (absolute) {
-                        self.error ("Expected coordinate pair after comma");
-                        return false;
-                    }
-                }
-
-                self.smooth_curveto_argument_sequence (absolute);
-                return true;
-            } else {
-                return self.error ("Expected second coordinate pair for smooth curveto");
+            if !absolute {
+                x2 += self.current_x;
+                y2 += self.current_y;
+                x3 += self.current_x;
+                y3 += self.current_y;
+                x4 += self.current_x;
+                y4 += self.current_y;
             }
-        } else {
-            false
+
+            self.emit_curve_to (x2, y2, x3, y3, x4, y4);
+
+            self.whitespace()?;
+
+            if self.lookahead_is (',') {
+                assert! (self.match_char (','));
+                self.optional_whitespace()?;
+            } else {
+                if !self.lookahead_is_start_of_number() {
+                    break;
+                }
+            }
         }
+
+        Ok(())
     }
 
-    fn curve_to (&mut self) -> bool {
+    fn smooth_curveto_argument_sequence (&mut self, absolute: bool) -> Result<(), ParseError> {
+        loop {
+            let (mut x3, mut y3) = self.coordinate_pair()?;
+
+            self.optional_comma_whitespace()?;
+
+            let (mut x4, mut y4) = self.coordinate_pair()?;
+
+            if !absolute {
+                x3 += self.current_x;
+                y3 += self.current_y;
+                x4 += self.current_x;
+                y4 += self.current_y;
+            }
+
+            let (x2, y2) = (self.current_x + self.current_x - self.cubic_reflection_x,
+                            self.current_y + self.current_y - self.cubic_reflection_y);
+
+            self.emit_curve_to (x2, y2, x3, y3, x4, y4);
+
+            self.whitespace()?;
+
+            if self.lookahead_is (',') {
+                assert! (self.match_char (','));
+                self.optional_whitespace()?;
+            } else {
+                if !self.lookahead_is_start_of_number() {
+                    break;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn curve_to (&mut self) -> Result<bool, ParseError> {
         if self.lookahead_is ('C') || self.lookahead_is ('c') {
             let absolute = if self.match_char ('C') {
                 true
@@ -730,19 +679,16 @@ impl<'b> PathParser<'b> {
                 false
             };
 
-            self.optional_whitespace ();
+            self.optional_whitespace()?;
 
-            if self.curveto_argument_sequence (absolute) {
-                return true;
-            } else {
-                return self.error ("Expected coordinate pair after curveto");
-            }
+            self.curveto_argument_sequence(absolute)?;
+            Ok(true)
+        } else {
+            Ok(false)
         }
-
-        false
     }
 
-    fn smooth_curve_to (&mut self) -> bool {
+    fn smooth_curve_to (&mut self) -> Result<bool, ParseError> {
         if self.lookahead_is ('S') || self.lookahead_is ('s') {
             let absolute = if self.match_char ('S') {
                 true
@@ -751,55 +697,48 @@ impl<'b> PathParser<'b> {
                 false
             };
 
-            self.optional_whitespace ();
+            self.optional_whitespace()?;
 
-            if self.smooth_curveto_argument_sequence (absolute) {
-                return true;
-            } else {
-                return self.error ("Expected coordinate pair after smooth curveto");
-            }
-        }
-
-        false
-    }
-
-    fn quadratic_curveto_argument_sequence (&mut self, absolute: bool) -> bool {
-        if let Some ((mut a, mut b)) = self.coordinate_pair () {
-            assert! (self.optional_comma_whitespace ());
-
-            if let Some ((mut c, mut d)) = self.coordinate_pair () {
-                if !absolute {
-                    a += self.current_x;
-                    b += self.current_y;
-                    c += self.current_x;
-                    d += self.current_y;
-                }
-
-                self.emit_quadratic_curve_to (a, b, c, d);
-
-                self.whitespace ();
-
-                if self.lookahead_is (',') {
-                    assert! (self.match_char (','));
-                    assert! (self.optional_whitespace ());
-
-                    if !self.quadratic_curveto_argument_sequence (absolute) {
-                        self.error ("Expected coordinate pair after comma");
-                        return false;
-                    }
-                }
-
-                self.quadratic_curveto_argument_sequence (absolute);
-                return true;
-            } else {
-                return self.error ("Expected second coordinate pair for quadratic curveto");
-            }
+            self.smooth_curveto_argument_sequence(absolute)?;
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
 
-    fn quadratic_bezier_curve_to (&mut self) -> bool {
+    fn quadratic_curveto_argument_sequence (&mut self, absolute: bool) -> Result<(), ParseError> {
+        loop {
+            let (mut a, mut b) = self.coordinate_pair()?;
+
+            self.optional_comma_whitespace()?;
+
+            let (mut c, mut d) = self.coordinate_pair()?;
+
+            if !absolute {
+                a += self.current_x;
+                b += self.current_y;
+                c += self.current_x;
+                d += self.current_y;
+            }
+
+            self.emit_quadratic_curve_to (a, b, c, d);
+
+            self.whitespace()?;
+
+            if self.lookahead_is (',') {
+                assert! (self.match_char (','));
+                self.optional_whitespace()?;
+            } else {
+                if !self.lookahead_is_start_of_number() {
+                    break;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn quadratic_bezier_curve_to (&mut self) -> Result<bool, ParseError> {
         if self.lookahead_is ('Q') || self.lookahead_is ('q') {
             let absolute = if self.match_char ('Q') {
                 true
@@ -808,20 +747,19 @@ impl<'b> PathParser<'b> {
                 false
             };
 
-            self.optional_whitespace ();
+            self.optional_whitespace()?;
 
-            if self.quadratic_curveto_argument_sequence (absolute) {
-                return true;
-            } else {
-                return self.error ("Expected coordinate pair after quadratic curveto");
-            }
+            self.quadratic_curveto_argument_sequence (absolute)?;
+            Ok(true)
+        } else {
+            Ok(false)
         }
-
-        false
     }
 
-    fn smooth_quadratic_curveto_argument_sequence (&mut self, absolute: bool) -> bool {
-        if let Some ((mut c, mut d)) = self.coordinate_pair () {
+    fn smooth_quadratic_curveto_argument_sequence (&mut self, absolute: bool) -> Result<(), ParseError> {
+        loop {
+            let (mut c, mut d) = self.coordinate_pair()?;
+
             if !absolute {
                 c += self.current_x;
                 d += self.current_y;
@@ -832,26 +770,22 @@ impl<'b> PathParser<'b> {
 
             self.emit_quadratic_curve_to (a, b, c, d);
 
-            self.whitespace ();
+            self.whitespace()?;
 
             if self.lookahead_is (',') {
                 assert! (self.match_char (','));
-                assert! (self.optional_whitespace ());
-
-                if !self.smooth_quadratic_curveto_argument_sequence (absolute) {
-                    self.error ("Expected coordinate pair after comma");
-                    return false;
+                self.optional_whitespace()?;
+            } else {
+                if !self.lookahead_is_start_of_number() {
+                    break;
                 }
             }
-
-            self.smooth_quadratic_curveto_argument_sequence (absolute);
-            true
-        } else {
-            false
         }
+
+        Ok(())
     }
 
-    fn smooth_quadratic_bezier_curve_to (&mut self) -> bool {
+    fn smooth_quadratic_bezier_curve_to (&mut self) -> Result<bool, ParseError> {
         if self.lookahead_is ('T') || self.lookahead_is ('t') {
             let absolute = if self.match_char ('T') {
                 true
@@ -860,87 +794,66 @@ impl<'b> PathParser<'b> {
                 false
             };
 
-            self.optional_whitespace ();
+            self.optional_whitespace()?;
 
-            if self.smooth_quadratic_curveto_argument_sequence (absolute) {
-                return true;
-            } else {
-                return self.error ("Expected coordinate pair after smooth quadratic curveto");
-            }
-        }
-
-        false
-    }
-
-    fn elliptical_arc_argument_sequence (&mut self, absolute: bool) -> bool {
-        if let Some (rx) = self.nonnegative_number () {
-            assert! (self.optional_comma_whitespace ());
-
-            if let Some (ry) = self.nonnegative_number () {
-                assert! (self.optional_comma_whitespace ());
-
-                if let Some (x_axis_rotation) = self.number () {
-                    if self.match_char (',') || self.optional_whitespace () {
-                        if let Some (large_arc_flag) = self.flag () {
-                            assert! (self.optional_comma_whitespace ());
-
-                            let large_arc = LargeArc (large_arc_flag);
-
-                            if let Some (sweep_flag) = self.flag () {
-                                assert! (self.optional_comma_whitespace ());
-
-                                let sweep = if sweep_flag {
-                                    Sweep::Positive
-                                } else {
-                                    Sweep::Negative
-                                };
-
-                                if let Some ((mut x, mut y)) = self.coordinate_pair () {
-                                    if !absolute {
-                                        x += self.current_x;
-                                        y += self.current_y;
-                                    }
-
-                                    self.emit_arc (rx, ry, x_axis_rotation, large_arc, sweep, x, y);
-
-                                    self.whitespace ();
-
-                                    if self.lookahead_is (',') {
-                                        assert! (self.match_char (','));
-                                        assert! (self.optional_whitespace ());
-
-                                        if !self.elliptical_arc_argument_sequence (absolute) {
-                                            self.error ("Expected x-radius after comma");
-                                            return false;
-                                        }
-                                    }
-
-                                    self.elliptical_arc_argument_sequence (absolute);
-                                    return true;
-                                } else {
-                                    return self.error ("Expected destination coordinate pair for elliptical arc");
-                                }
-                            } else {
-                                return self.error ("Expected sweep-flag for elliptical arc");
-                            }
-                        } else {
-                            return self.error ("Expected large-arc-flag for elliptical arc");
-                        }
-                    } else {
-                        unreachable! ();
-                    }
-                } else {
-                    return self.error ("Expected x-axis-rotation for elliptical arc");
-                }
-            } else {
-                return self.error ("Expected nonnegative y-radius for elliptical arc");
-            }
+            self.smooth_quadratic_curveto_argument_sequence(absolute)?;
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
 
-    fn elliptical_arc (&mut self) -> bool {
+    fn elliptical_arc_argument_sequence (&mut self, absolute: bool) -> Result<(), ParseError> {
+        loop {
+            let rx = self.nonnegative_number()?;
+
+            self.optional_comma_whitespace()?;
+
+            let ry = self.nonnegative_number()?;
+
+            self.optional_comma_whitespace()?;
+
+            let x_axis_rotation = self.number()?;
+
+            self.optional_comma_whitespace()?;
+
+            let large_arc = LargeArc (self.flag()?);
+
+            self.optional_comma_whitespace()?;
+
+            let sweep = if self.flag()? {
+                Sweep::Positive
+            } else {
+                Sweep::Negative
+            };
+
+            self.optional_comma_whitespace()?;
+
+            let (mut x, mut y) = self.coordinate_pair()?;
+
+            if !absolute {
+                x += self.current_x;
+                y += self.current_y;
+            }
+
+            self.emit_arc (rx, ry, x_axis_rotation, large_arc, sweep, x, y);
+
+            self.whitespace()?;
+
+            if self.lookahead_is (',') {
+                assert! (self.match_char (','));
+                self.optional_whitespace()?;
+            } else {
+                if !self.lookahead_is_start_of_number() {
+                    break;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn elliptical_arc (&mut self) -> Result<bool, ParseError> {
         if self.lookahead_is ('A') || self.lookahead_is ('a') {
             let absolute = if self.match_char ('A') {
                 true
@@ -949,16 +862,13 @@ impl<'b> PathParser<'b> {
                 false
             };
 
-            self.optional_whitespace ();
+            self.optional_whitespace()?;
 
-            if self.elliptical_arc_argument_sequence (absolute) {
-                return true;
-            } else {
-                return self.error ("Expected nonnegative x-radius for elliptical arc");
-            }
+            self.elliptical_arc_argument_sequence(absolute)?;
+            Ok(true)
+        } else {
+            Ok(false)
         }
-
-        false
     }
 }
 
@@ -974,12 +884,7 @@ pub struct ParseError {
 pub fn parse_path_into_builder (path_str: &str, builder: &mut RsvgPathBuilder) -> Result <(), ParseError> {
     let mut parser = PathParser::new (builder, path_str);
 
-    if parser.parse () {
-        Ok (())
-    } else {
-        Err (ParseError { position: parser.current_pos,
-                          message: parser.error_message })
-    }
+    parser.parse()
 }
 
 #[cfg(test)]
@@ -1277,7 +1182,7 @@ mod tests {
 
     #[test]
     fn handles_relative_moveto_lineto_lineto_abs_lineto () {
-        test_parser ("m10 20 30 40,l30,40,50 60L200,300",
+        test_parser ("m10 20 30 40l30,40,50 60L200,300",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (40.0, 60.0),
