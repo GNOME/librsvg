@@ -1668,5 +1668,23 @@ mod tests {
                     "       ^",
                     &vec![moveto(10.0, -20.0)],
                     Some(ErrorKind::UnexpectedToken));
+
+    #[test]
+    fn vertical_lineto_args() {
+        test_parser("M10-20v",
+                    "       ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10-20v,",
+                    "       ^",
+                    &vec![moveto(10.0, -20.0)],
+                    Some(ErrorKind::UnexpectedToken));
+
+        test_parser("M10-20v30,",
+                    "          ^",
+                    &vec![moveto(10.0, -20.0),
+                          lineto(10.0, 10.0)],
+                    Some(ErrorKind::UnexpectedEof));
     }
 }
