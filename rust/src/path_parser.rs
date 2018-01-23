@@ -96,7 +96,6 @@ impl<'b> PathParser<'b> {
             self.current_pos = pos;
         } else {
             self.lookahead = None;
-            self.current_pos += 1; /* this is EOF; point just past the end the string */
         }
     }
 
