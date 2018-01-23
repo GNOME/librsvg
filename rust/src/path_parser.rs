@@ -196,11 +196,6 @@ impl<'b> PathParser<'b> {
             sign = -1.0;
         }
 
-        let num = self.nonnegative_number()?;
-        Ok(num * sign)
-    }
-
-    fn nonnegative_number (&mut self) -> Result<f64, ParseError> {
         let mut value: f64;
         let mut exponent_sign: f64;
         let mut exponent: f64;
@@ -261,7 +256,7 @@ impl<'b> PathParser<'b> {
                 }
             }
 
-            Ok (value * 10.0f64.powf (exponent * exponent_sign))
+            Ok (sign * value * 10.0f64.powf (exponent * exponent_sign))
         } else if self.lookahead.is_some() {
             Err(self.error(ErrorKind::UnexpectedToken))
         } else {
@@ -819,11 +814,11 @@ impl<'b> PathParser<'b> {
 
     fn elliptical_arc_argument_sequence (&mut self, absolute: bool) -> Result<(), ParseError> {
         loop {
-            let rx = self.nonnegative_number()?;
+            let rx = self.number()?.abs();
 
             self.optional_comma_whitespace()?;
 
-            let ry = self.nonnegative_number()?;
+            let ry = self.number()?.abs();
 
             self.optional_comma_whitespace()?;
 
