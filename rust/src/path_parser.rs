@@ -1584,13 +1584,33 @@ mod tests {
 
     #[test]
     fn moveto_args() {
+        test_parser("M",
+                    " ^",
+                    &vec![],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M,",
+                    " ^",
+                    &vec![],
+                    Some(ErrorKind::UnexpectedToken));
+
         test_parser("M10",
                     "   ^",
                     &vec![],
                     Some(ErrorKind::UnexpectedEof));
 
+        test_parser("M10,",
+                    "    ^",
+                    &vec![],
+                    Some(ErrorKind::UnexpectedEof));
+
         test_parser("M10x",
                     "   ^",
+                    &vec![],
+                    Some(ErrorKind::UnexpectedToken));
+
+        test_parser("M10,x",
+                    "    ^",
                     &vec![],
                     Some(ErrorKind::UnexpectedToken));
     }
@@ -1611,6 +1631,12 @@ mod tests {
     #[test]
     fn closepath_no_args() {
         test_parser("M10-20z10",
+                    "       ^",
+                    &vec![moveto(10.0, -20.0),
+                          closepath()],
+                    Some(ErrorKind::UnexpectedToken));
+
+        test_parser("M10-20z,",
                     "       ^",
                     &vec![moveto(10.0, -20.0),
                           closepath()],
