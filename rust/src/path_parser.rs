@@ -1607,4 +1607,13 @@ mod tests {
                     &vec![moveto(10.0, -20.0)],
                     Some(ErrorKind::UnexpectedToken));
     }
+
+    #[test]
+    fn closepath_no_args() {
+        test_parser("M10-20z10",
+                    "       ^",
+                    &vec![moveto(10.0, -20.0),
+                          closepath()],
+                    Some(ErrorKind::UnexpectedToken));
+    }
 }
