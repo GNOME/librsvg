@@ -254,8 +254,10 @@ impl<'b> PathParser<'b> {
 
                         assert! (self.match_char (c));
                     }
-                } else {
+                } else if self.lookahead.is_some() {
                     return Err(self.error(ErrorKind::UnexpectedToken));
+                } else {
+                    return Err(self.error(ErrorKind::UnexpectedEof));
                 }
             }
 
@@ -1051,6 +1053,45 @@ mod tests {
                          moveto (-1010.0, -0.00020)
                      ],
                      None);
+    }
+
+    #[test]
+    fn detects_bogus_numbers() {
+        test_parser("M+",
+                    "  ^",
+                    &vec![],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M-",
+                    "  ^",
+                    &vec![],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M+x",
+                    "  ^",
+                    &vec![],
+                    Some(ErrorKind::UnexpectedToken));
+
+        test_parser("M10e",
+                    "    ^",
+                    &vec![],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10ex",
+                    "    ^",
+                    &vec![],
+                    Some(ErrorKind::UnexpectedToken));
+
+        test_parser("M10e-",
+                    "     ^",
+                    &vec![],
+                    Some(ErrorKind::UnexpectedEof));
+
+        test_parser("M10e+x",
+                    "     ^",
+                    &vec![],
+                    Some(ErrorKind::UnexpectedToken));
+
     }
 
     #[test]
