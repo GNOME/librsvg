@@ -941,7 +941,9 @@ mod tests {
     }
 
     fn test_parser (path_str: &str,
-                    expected_commands: &[PathCommand]) {
+                    _error_pos_str: &str,
+                    expected_commands: &[PathCommand],
+                    _expected_error_kind: Option<ErrorKind>) {
         let builder = parse_path (path_str);
         let commands = builder.get_path_commands ();
 
@@ -967,426 +969,547 @@ mod tests {
     #[test]
     fn handles_empty_data () {
         test_parser ("",
-                     &Vec::<PathCommand>::new ());
+                     "^",
+                     &Vec::<PathCommand>::new (),
+                     Some(ErrorKind::UnexpectedEof));
     }
 
     #[test]
     fn handles_numbers () {
         test_parser ("M 10 20",
+                     "",
                      &vec![
                          moveto (10.0, 20.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M -10 -20",
+                     "",
                      &vec![
                          moveto (-10.0, -20.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M .10 0.20",
+                     "",
                      &vec![
                          moveto (0.10, 0.20)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M -.10 -0.20",
+                     "",
                      &vec![
                          moveto (-0.10, -0.20)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M-.10-0.20",
+                     "",
                      &vec![
                          moveto (-0.10, -0.20)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M.10.20",
+                     "",
                      &vec![
                          moveto (0.10, 0.20)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M .10E1 .20e-4",
+                     "",
                      &vec![
                          moveto (1.0, 0.000020)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M-.10E1-.20",
+                     "",
                      &vec![
                          moveto (-1.0, -0.20)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M10.10E2 -0.20e3",
+                     "",
                      &vec![
                          moveto (1010.0, -200.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M-10.10E2-0.20e-3",
+                     "",
                      &vec![
                          moveto (-1010.0, -0.00020)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_numbers_with_comma () {
         test_parser ("M 10, 20",
+                     "",
                      &vec![
                          moveto (10.0, 20.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M -10,-20",
+                     "",
                      &vec![
                          moveto (-10.0, -20.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M.10    ,    0.20",
+                     "",
                      &vec![
                          moveto (0.10, 0.20)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M -.10, -0.20   ",
+                     "",
                      &vec![
                          moveto (-0.10, -0.20)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M-.10-0.20",
+                     "",
                      &vec![
                          moveto (-0.10, -0.20)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M.10.20",
+                     "",
                      &vec![
                          moveto (0.10, 0.20)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M .10E1,.20e-4",
+                     "",
                      &vec![
                          moveto (1.0, 0.000020)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M-.10E-2,-.20",
+                     "",
                      &vec![
                          moveto (-0.0010, -0.20)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M10.10E2,-0.20e3",
+                     "",
                      &vec![
                          moveto (1010.0, -200.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M-10.10E2,-0.20e-3",
+                     "",
                      &vec![
                          moveto (-1010.0, -0.00020)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_single_moveto () {
         test_parser ("M 10 20",
+                     "",
                      &vec![
                          moveto (10.0, 20.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M10,20",
+                     "",
                      &vec![
                          moveto (10.0, 20.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M10 20",
+                     "",
                      &vec![
                          moveto (10.0, 20.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("    M10,20     ",
+                     "",
                      &vec![
                          moveto (10.0, 20.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_relative_moveto () {
         test_parser ("m10 20",
+                     "",
                      &vec![
                          moveto (10.0, 20.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_absolute_moveto_with_implicit_lineto () {
         test_parser ("M10 20 30 40",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (30.0, 40.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M10,20,30,40",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (30.0, 40.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M.1-2,3E2-4",
+                     "",
                      &vec![
                          moveto (0.1, -2.0),
                          lineto (300.0, -4.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_relative_moveto_with_implicit_lineto () {
         test_parser ("m10 20 30 40",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (40.0, 60.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_absolute_moveto_with_implicit_linetos () {
         test_parser ("M10,20 30,40,50 60",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (30.0, 40.0),
                          lineto (50.0, 60.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_relative_moveto_with_implicit_linetos () {
         test_parser ("m10 20 30 40 50 60",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (40.0, 60.0),
                          lineto (90.0, 120.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_absolute_moveto_moveto () {
         test_parser ("M10 20 M 30 40",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          moveto (30.0, 40.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_relative_moveto_moveto () {
         test_parser ("m10 20 m 30 40",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          moveto (40.0, 60.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_relative_moveto_lineto_moveto () {
         test_parser ("m10 20 30 40 m 50 60",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (40.0, 60.0),
                          moveto (90.0, 120.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_absolute_moveto_lineto () {
         test_parser ("M10 20 L30,40",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (30.0, 40.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_relative_moveto_lineto () {
         test_parser ("m10 20 l30,40",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (40.0, 60.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_relative_moveto_lineto_lineto_abs_lineto () {
         test_parser ("m10 20 30 40l30,40,50 60L200,300",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (40.0, 60.0),
                          lineto (70.0, 100.0),
                          lineto (120.0, 160.0),
                          lineto (200.0, 300.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_horizontal_lineto () {
         test_parser ("M10 20 H30",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (30.0, 20.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M10 20 H30 40",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (30.0, 20.0),
                          lineto (40.0, 20.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M10 20 H30,40-50",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (30.0, 20.0),
                          lineto (40.0, 20.0),
                          lineto (-50.0, 20.0),
-                     ]);
+                     ],
+                     None);
 
         test_parser ("m10 20 h30,40-50",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (40.0, 20.0),
                          lineto (80.0, 20.0),
                          lineto (30.0, 20.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_vertical_lineto () {
         test_parser ("M10 20 V30",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (10.0, 30.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M10 20 V30 40",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (10.0, 30.0),
                          lineto (10.0, 40.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M10 20 V30,40-50",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (10.0, 30.0),
                          lineto (10.0, 40.0),
                          lineto (10.0, -50.0),
-                     ]);
+                     ],
+                     None);
 
         test_parser ("m10 20 v30,40-50",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (10.0, 50.0),
                          lineto (10.0, 90.0),
                          lineto (10.0, 40.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_curveto () {
         test_parser ("M10 20 C 30,40 50 60-70,80",
+                     "",
                      &vec![
                          moveto  (10.0, 20.0),
                          curveto (30.0, 40.0, 50.0, 60.0, -70.0, 80.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M10 20 C 30,40 50 60-70,80,90 100,110 120,130,140",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          curveto (30.0, 40.0, 50.0, 60.0, -70.0, 80.0),
                          curveto (90.0, 100.0, 110.0, 120.0, 130.0, 140.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("m10 20 c 30,40 50 60-70,80,90 100,110 120,130,140",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          curveto (40.0, 60.0, 60.0, 80.0, -60.0, 100.0),
                          curveto (30.0, 200.0, 50.0, 220.0, 70.0, 240.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("m10 20 c 30,40 50 60-70,80,90 100,110 120,130,140",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          curveto (40.0, 60.0, 60.0, 80.0, -60.0, 100.0),
                          curveto (30.0, 200.0, 50.0, 220.0, 70.0, 240.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_smooth_curveto () {
         test_parser ("M10 20 S 30,40-50,60",
+                     "",
                      &vec![
                          moveto  (10.0, 20.0),
                          curveto (10.0, 20.0, 30.0, 40.0, -50.0, 60.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M10 20 S 30,40 50 60-70,80,90 100",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          curveto (10.0, 20.0, 30.0, 40.0, 50.0, 60.0),
                          curveto (70.0, 80.0, -70.0, 80.0, 90.0, 100.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("m10 20 s 30,40 50 60-70,80,90 100,110 120",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          curveto (10.0, 20.0, 40.0, 60.0, 60.0, 80.0),
                          curveto (80.0, 100.0, -10.0, 160.0, 150.0, 180.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_quadratic_curveto () {
         test_parser ("M10 20 Q30 40 50 60",
+                     "",
                      &vec![
                          moveto  (10.0, 20.0),
                          curveto (70.0 / 3.0, 100.0 / 3.0, 110.0 / 3.0, 140.0 / 3.0, 50.0, 60.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M10 20 Q30 40 50 60,70,80-90 100",
+                     "",
                      &vec![
                          moveto  (10.0, 20.0),
                          curveto (70.0 / 3.0, 100.0 / 3.0, 110.0 / 3.0, 140.0 / 3.0, 50.0, 60.0),
                          curveto (190.0 / 3.0, 220.0 / 3.0, 50.0 / 3.0, 260.0 / 3.0, -90.0, 100.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("m10 20 q 30,40 50 60-70,80 90 100",
+                     "",
                      &vec![
                          moveto  (10.0, 20.0),
                          curveto (90.0 / 3.0, 140.0 / 3.0, 140.0 / 3.0, 200.0 / 3.0, 60.0, 80.0),
                          curveto (40.0 / 3.0, 400.0 / 3.0, 130.0 / 3.0, 500.0 / 3.0, 150.0, 180.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_smooth_quadratic_curveto () {
         test_parser ("M10 20 T30 40",
+                     "",
                      &vec! [
                          moveto (10.0, 20.0),
                          curveto (10.0, 20.0, 50.0 / 3.0, 80.0 / 3.0, 30.0, 40.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("M10 20 Q30 40 50 60 T70 80",
+                     "",
                      &vec! [
                          moveto  (10.0, 20.0),
                          curveto (70.0 / 3.0, 100.0 / 3.0, 110.0 / 3.0, 140.0 / 3.0, 50.0, 60.0),
                          curveto (190.0 / 3.0, 220.0 / 3.0, 70.0, 80.0, 70.0, 80.0)
-                     ]);
+                     ],
+                     None);
 
         test_parser ("m10 20 q 30,40 50 60t-70,80",
+                     "",
                      &vec! [
                          moveto  (10.0, 20.0),
                          curveto (90.0 / 3.0, 140.0 / 3.0, 140.0 / 3.0, 200.0 / 3.0, 60.0, 80.0),
                          curveto (220.0 / 3.0, 280.0 / 3.0, 50.0, 120.0, -10.0, 160.0)
-                     ]);
+                     ],
+                     None);
     }
 
     #[test]
     fn handles_close_path () {
         test_parser ("M10 20 Z",
+                     "",
                      &vec! [
                          moveto (10.0, 20.0),
                          closepath ()
-                     ]);
+                     ],
+                     None);
 
         test_parser ("m10 20 30 40 m 50 60 70 80 90 100z",
+                     "",
                      &vec![
                          moveto (10.0, 20.0),
                          lineto (40.0, 60.0),
@@ -1394,7 +1517,8 @@ mod tests {
                          lineto (160.0, 200.0),
                          lineto (250.0, 300.0),
                          closepath ()
-                     ]);
+                     ],
+                     None);
     }
 
     /* FIXME: we don't have a handles_arc() because
