@@ -430,8 +430,10 @@ impl<'b> PathParser<'b> {
 
             self.optional_whitespace()?;
             self.moveto_argument_sequence(absolute, is_initial_moveto)
-        } else {
+        } else if self.lookahead.is_some() {
             Err(self.error(ErrorKind::UnexpectedToken))
+        } else {
+            Err(self.error(ErrorKind::UnexpectedEof))
         }
     }
 
