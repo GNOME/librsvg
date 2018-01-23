@@ -1520,4 +1520,12 @@ mod tests {
      * Maybe we need to represent arcs as native path builder segments,
      * and only explode them to Cairo curves at rendering time.
      */
+
+    #[test]
+    fn first_command_must_be_moveto() {
+        test_parser("  L10 20",
+                    "  ^",
+                    &vec![],
+                    Some(ErrorKind::UnexpectedToken));
+    }
 }
