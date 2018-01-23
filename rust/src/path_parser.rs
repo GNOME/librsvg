@@ -1,3 +1,5 @@
+use std::error::Error;
+use std::fmt::{self, Display, Formatter};
 use std::str;
 use std::str::Chars;
 use std::iter::Enumerate;
@@ -98,10 +100,10 @@ impl<'b> PathParser<'b> {
         }
     }
 
-    fn error(&self, message: &'static str) -> ParseError {
+    fn error(&self, kind: ErrorKind) -> ParseError {
         ParseError {
             position: self.current_pos,
-            message: message
+            kind: kind
         }
     }
 
@@ -133,9 +135,9 @@ impl<'b> PathParser<'b> {
             }
 
             return Ok(());
+        } else {
+            Err(self.error(ErrorKind::UnexpectedEof))
         }
-
-        Err(self.error("Unexpected end of data"))
     }
 
     fn optional_whitespace (&mut self) -> Result<(), ParseError> {
@@ -249,13 +251,13 @@ impl<'b> PathParser<'b> {
                         assert! (self.match_char (c));
                     }
                 } else {
-                    return Err(self.error("Expected digits for exponent"));
+                    return Err(self.error(ErrorKind::UnexpectedToken));
                 }
             }
 
             Ok (value * 10.0f64.powf (exponent * exponent_sign))
         } else {
-            Err(self.error("Expected number"))
+            Err(self.error(ErrorKind::UnexpectedToken))
         }
     }
 
@@ -265,7 +267,7 @@ impl<'b> PathParser<'b> {
         } else if self.match_char ('1') {
             Ok(true)
         } else {
-            Err(self.error("Expected flag"))
+            Err(self.error(ErrorKind::UnexpectedToken))
         }
     }
 
@@ -433,7 +435,7 @@ impl<'b> PathParser<'b> {
             self.optional_whitespace()?;
             self.moveto_argument_sequence(absolute, is_initial_moveto)
         } else {
-            Err(self.error("Expected M or m command"))
+            Err(self.error(ErrorKind::UnexpectedToken))
         }
     }
 
@@ -876,9 +878,31 @@ fn char_to_digit (c: char) -> i32 {
     c as i32 - '0' as i32
 }
 
+#[derive(Debug)]
+pub enum ErrorKind {
+    UnexpectedToken,
+    UnexpectedEof
+}
+
+#[derive(Debug)]
 pub struct ParseError {
-    position: usize,
-    message: &'static str
+    pub position: usize,
+    pub kind: ErrorKind
+}
+
+impl Error for ParseError {
+    fn description(&self) -> &str {
+        match self.kind {
+            ErrorKind::UnexpectedToken => "unexpected token",
+            ErrorKind::UnexpectedEof   => "unexpected end of data"
+        }
+    }
+}
+
+impl Display for ParseError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "error at position {}: {}", self.position, self.description())
+    }
 }
 
 pub fn parse_path_into_builder (path_str: &str, builder: &mut RsvgPathBuilder) -> Result <(), ParseError> {
@@ -901,8 +925,7 @@ mod tests {
             print! (" ");
         }
 
-        println! ("^ pos {}", error.position);
-        println! ("{}", error.message);
+        println! ("^ {}", error);
     }
 
     fn parse_path (path_str: &str) -> RsvgPathBuilder {
