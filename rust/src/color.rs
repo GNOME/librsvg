@@ -6,6 +6,7 @@ use ::glib::translate::*;
 use parsers::Parse;
 use parsers::ParseError;
 use error::*;
+use util::utf8_cstr;
 
 // There are two quirks here:
 //
@@ -166,9 +167,9 @@ impl From<Result<Color, AttributeError>> for ColorSpec {
 pub extern fn rsvg_css_parse_color (string: *const libc::c_char,
                                     allow_inherit: AllowInherit,
                                     allow_current_color: AllowCurrentColor) -> ColorSpec {
-    let s = unsafe { String::from_glib_none (string) };
+    let s = unsafe { utf8_cstr(string) };
 
-    ColorSpec::from (Color::parse (&s, (allow_inherit, allow_current_color)))
+    ColorSpec::from (Color::parse (s, (allow_inherit, allow_current_color)))
 }
 
 #[cfg(test)]
