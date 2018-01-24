@@ -1,43 +1,72 @@
-use ::glib::translate::*;
-use ::libc;
+use glib::translate::*;
+use libc;
+use std::ffi::CStr;
 
 use error::*;
 use parsers::Parse;
 
-pub enum RsvgPropertyBag {}
+pub type FfiRsvgPropertyBag = *mut libc::c_void;
+
+pub enum PropertyBag {
+    Borrowed(FfiRsvgPropertyBag),
+    Owned(FfiRsvgPropertyBag)
+}
 
 extern "C" {
-    fn rsvg_property_bag_lookup (pbag: *const RsvgPropertyBag, key: *const libc::c_char) -> *const libc::c_char;
-    fn rsvg_property_bag_dup (pbag: *const RsvgPropertyBag) -> *mut RsvgPropertyBag;
-    fn rsvg_property_bag_free (pbag: *mut RsvgPropertyBag);
+    fn rsvg_property_bag_lookup (pbag: FfiRsvgPropertyBag, key: *const libc::c_char) -> *const libc::c_char;
+    fn rsvg_property_bag_dup (pbag: FfiRsvgPropertyBag) -> FfiRsvgPropertyBag;
+    fn rsvg_property_bag_free (pbag: FfiRsvgPropertyBag);
 }
 
-pub fn lookup (pbag: *const RsvgPropertyBag, key: &str) -> Option<String> {
-    unsafe {
-        let c_value = rsvg_property_bag_lookup (pbag, key.to_glib_none ().0);
-        from_glib_none (c_value)
+impl PropertyBag {
+    pub fn new(ffi: FfiRsvgPropertyBag) -> PropertyBag {
+        PropertyBag::Borrowed(ffi)
+    }
+
+    pub fn ffi(&self) -> FfiRsvgPropertyBag {
+        match self {
+            &PropertyBag::Borrowed(ffi) => ffi,
+            &PropertyBag::Owned(ffi) => ffi
+        }
+    }
+
+    pub fn dup(&self) -> PropertyBag {
+        unsafe {
+            PropertyBag::Owned(rsvg_property_bag_dup(self.ffi()))
+        }
+    }
+
+    pub fn lookup(&self, key: &str) -> Option<&str> {
+        let ffi = self.ffi();
+
+        unsafe {
+            let c_value = rsvg_property_bag_lookup (ffi, key.to_glib_none ().0);
+            if c_value.is_null() {
+                None
+            } else {
+                // we can unwrap because libxml2 already validated this for UTF-8
+                Some(CStr::from_ptr(c_value).to_str().unwrap())
+            }
+        }
     }
 }
 
-pub fn dup (pbag: *const RsvgPropertyBag) -> *mut RsvgPropertyBag {
-    unsafe {
-        rsvg_property_bag_dup (pbag)
+impl Drop for PropertyBag {
+    fn drop(&mut self) {
+        match *self {
+            PropertyBag::Borrowed(_) => (),
+            PropertyBag::Owned(ffi) => unsafe { rsvg_property_bag_free(ffi) }
+        }
     }
 }
 
-pub fn free (pbag: *mut RsvgPropertyBag) {
-    unsafe {
-        rsvg_property_bag_free (pbag);
-    }
-}
-
-pub fn parse_or_none<T> (pbag: *const RsvgPropertyBag,
-                         key: &'static str,
+pub fn parse_or_none<T> (pbag: &PropertyBag,
+                         key: &str,
                          data: <T as Parse>::Data,
                          validate: Option<fn(T) -> Result<T, AttributeError>>) -> Result <Option<T>, NodeError>
     where T: Parse<Err = AttributeError> + Copy
 {
-    let value = lookup (pbag, key);
+    let value = pbag.lookup(key);
 
     match value {
         Some (v) => {
@@ -56,8 +85,8 @@ pub fn parse_or_none<T> (pbag: *const RsvgPropertyBag,
     }
 }
 
-pub fn parse_or_default<T> (pbag: *const RsvgPropertyBag,
-                            key: &'static str,
+pub fn parse_or_default<T> (pbag: &PropertyBag,
+                            key: &str,
                             data: <T as Parse>::Data,
                             validate: Option<fn(T) -> Result<T, AttributeError>>) -> Result <T, NodeError>
     where T: Default + Parse<Err = AttributeError> + Copy
@@ -65,8 +94,8 @@ pub fn parse_or_default<T> (pbag: *const RsvgPropertyBag,
     parse_or_value (pbag, key, data, T::default (), validate)
 }
 
-pub fn parse_or_value<T> (pbag: *const RsvgPropertyBag,
-                          key: &'static str,
+pub fn parse_or_value<T> (pbag: &PropertyBag,
+                          key: &str,
                           data: <T as Parse>::Data,
                           value: T,
                           validate: Option<fn(T) -> Result<T, AttributeError>>) -> Result <T, NodeError>

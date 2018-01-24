@@ -1,12 +1,12 @@
 use drawing_ctx::RsvgDrawingCtx;
 use handle::*;
 use node::*;
-use property_bag::RsvgPropertyBag;
+use property_bag::{FfiRsvgPropertyBag, PropertyBag};
 use state::RsvgState;
 
 use std::rc::*;
 
-type CNodeSetAtts = unsafe extern "C" fn (node: *const RsvgNode, node_impl: *const RsvgCNodeImpl, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag);
+type CNodeSetAtts = unsafe extern "C" fn (node: *const RsvgNode, node_impl: *const RsvgCNodeImpl, handle: *const RsvgHandle, pbag: FfiRsvgPropertyBag);
 type CNodeDraw = unsafe extern "C" fn (node: *const RsvgNode, node_impl: *const RsvgCNodeImpl, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
 type CNodeFree = unsafe extern "C" fn (node_impl: *const RsvgCNodeImpl);
 
@@ -19,8 +19,8 @@ struct CNode {
 }
 
 impl NodeTrait for CNode {
-    fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        unsafe { (self.set_atts_fn) (node as *const RsvgNode, self.c_node_impl, handle, pbag); }
+    fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+        unsafe { (self.set_atts_fn) (node as *const RsvgNode, self.c_node_impl, handle, pbag.ffi()); }
 
         Ok (())
     }

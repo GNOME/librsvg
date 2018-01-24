@@ -3,7 +3,6 @@ use ::libc;
 
 use std::cell::RefCell;
 use std::cell::Cell;
-use std::ptr;
 
 use cairo::MatrixTrait;
 
@@ -14,8 +13,7 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use parsers::Parse;
-use property_bag;
-use property_bag::*;
+use property_bag::{self, FfiRsvgPropertyBag, PropertyBag};
 use util::*;
 use viewbox::*;
 use viewport::{ClipMode,draw_in_viewport};
@@ -31,7 +29,7 @@ impl NodeGroup {
 }
 
 impl NodeTrait for NodeGroup {
-    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, _: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
         Ok (())
     }
 
@@ -55,7 +53,7 @@ impl NodeDefs {
 }
 
 impl NodeTrait for NodeDefs {
-    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, _: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
         Ok (())
     }
 
@@ -79,7 +77,7 @@ impl NodeSwitch {
 }
 
 impl NodeTrait for NodeSwitch {
-    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, _: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
         Ok (())
     }
 
@@ -119,7 +117,7 @@ struct NodeSvg {
     w:                     Cell<RsvgLength>,
     h:                     Cell<RsvgLength>,
     vbox:                  Cell<Option<ViewBox>>,
-    atts:                  Cell<*mut RsvgPropertyBag>
+    atts:                  RefCell<Option<PropertyBag>>
 }
 
 impl NodeSvg {
@@ -131,13 +129,13 @@ impl NodeSvg {
             w:                     Cell::new (RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap ()),
             h:                     Cell::new (RsvgLength::parse ("100%", LengthDir::Vertical).unwrap ()),
             vbox:                  Cell::new (None),
-            atts:                  Cell::new (ptr::null_mut ())
+            atts:                  RefCell::new(None)
         }
     }
 }
 
 impl NodeTrait for NodeSvg {
-    fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
 
         // x & y attributes have no effect on outermost svg
@@ -163,7 +161,7 @@ impl NodeTrait for NodeSvg {
 
         // The "style" sub-element is not loaded yet here, so we need
         // to store other attributes to be applied later.
-        self.atts.set (property_bag::dup (pbag));
+        *self.atts.borrow_mut() = Some(pbag.dup());
 
         Ok (())
     }
@@ -198,16 +196,6 @@ impl NodeTrait for NodeSvg {
     }
 }
 
-impl Drop for NodeSvg {
-    fn drop (&mut self) {
-        let pbag = self.atts.get ();
-
-        if !pbag.is_null () {
-            property_bag::free (pbag);
-        }
-    }
-}
-
 /***** NodeUse *****/
 
 struct NodeUse {
@@ -231,8 +219,8 @@ impl NodeUse {
 }
 
 impl NodeTrait for NodeUse {
-    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
-        *self.link.borrow_mut () = property_bag::lookup (pbag, "xlink:href");
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+        *self.link.borrow_mut () = pbag.lookup("xlink:href").map(|s| s.to_owned());
 
         self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal, None)?);
         self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical, None)?);
@@ -348,7 +336,7 @@ impl NodeSymbol {
 }
 
 impl NodeTrait for NodeSymbol {
-    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
         self.vbox.set (property_bag::parse_or_none (pbag, "viewBox", (), None)?);
 
@@ -444,7 +432,7 @@ extern "C" {
                                tag:    *const libc::c_char,
                                class:  *const libc::c_char,
                                id:     *const libc::c_char,
-                               pbag:   *const RsvgPropertyBag);
+                               pbag:   FfiRsvgPropertyBag);
 }
 
 #[no_mangle]
@@ -453,11 +441,9 @@ pub extern fn rsvg_node_svg_apply_atts (raw_node: *const RsvgNode, handle: *cons
     let node: &RsvgNode = unsafe { & *raw_node };
 
     node.with_impl (|svg: &NodeSvg| {
-        let pbag = svg.atts.get ();
-
-        if !pbag.is_null () {
-            let class = property_bag::lookup (pbag, "class");
-            let id = property_bag::lookup (pbag, "id");
+        if let Some(pbag) = svg.atts.borrow().as_ref() {
+            let class = pbag.lookup("class");
+            let id = pbag.lookup("id");
 
             let c_class = class.to_glib_none ();
             let c_id = id.to_glib_none ();
@@ -467,7 +453,7 @@ pub extern fn rsvg_node_svg_apply_atts (raw_node: *const RsvgNode, handle: *cons
                                              str::to_glib_none ("svg").0,
                                              c_class.0,
                                              c_id.0,
-                                             pbag); }
+                                             pbag.ffi()); }
         }
     });
 }

@@ -14,8 +14,7 @@ use aspect_ratio::*;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use property_bag;
-use property_bag::RsvgPropertyBag;
+use property_bag::{self, PropertyBag};
 
 struct NodeImage {
     aspect:  Cell<AspectRatio>,
@@ -40,7 +39,7 @@ impl NodeImage {
 }
 
 impl NodeTrait for NodeImage {
-    fn set_atts (&self, _: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts (&self, _: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal, None)?);
         self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical, None)?);
         self.w.set (property_bag::parse_or_default (pbag, "width", LengthDir::Horizontal,
@@ -49,11 +48,11 @@ impl NodeTrait for NodeImage {
                                                     Some(RsvgLength::check_nonnegative))?);
         self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
 
-        let mut href = property_bag::lookup (pbag, "xlink:href");
+        let mut href = pbag.lookup("xlink:href");
 
         if href.is_none() {
             // "path" is used by some older adobe illustrator versions
-            href = property_bag::lookup (pbag, "path");
+            href = pbag.lookup("path");
         }
 
         if let Some(href) = href {

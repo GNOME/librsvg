@@ -17,8 +17,7 @@ use drawing_ctx::RsvgDrawingCtx;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use property_bag;
-use property_bag::*;
+use property_bag::{self, PropertyBag};
 use util::*;
 use viewbox::*;
 
@@ -165,7 +164,7 @@ impl NodePattern {
 }
 
 impl NodeTrait for NodePattern {
-    fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         let mut p = self.pattern.borrow_mut ();
 
         p.node = Some (Rc::downgrade (node));
@@ -178,7 +177,7 @@ impl NodeTrait for NodePattern {
 
         p.affine = property_bag::parse_or_none (pbag, "patternTransform", (), None)?;
 
-        p.fallback = property_bag::lookup (pbag, "xlink:href");
+        p.fallback = pbag.lookup("xlink:href").map(|s| s.to_owned());
 
         p.x      = property_bag::parse_or_none (pbag, "x", LengthDir::Horizontal, None)?;
         p.y      = property_bag::parse_or_none (pbag, "y", LengthDir::Vertical, None)?;

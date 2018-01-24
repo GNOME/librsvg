@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode, boxed_node_new, rsvg_node_get_state};
-use property_bag::RsvgPropertyBag;
+use property_bag::PropertyBag;
 
 /// Container for XML character data.
 ///
@@ -50,7 +50,7 @@ impl NodeChars {
 }
 
 impl NodeTrait for NodeChars {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
         Ok(())
     }
 

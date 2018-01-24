@@ -5,7 +5,7 @@ use drawing_ctx::RsvgDrawingCtx;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode, boxed_node_new};
 use coord_units::CoordUnits;
-use property_bag::{self, RsvgPropertyBag};
+use property_bag::{self, PropertyBag};
 
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
 
@@ -22,7 +22,7 @@ impl NodeClipPath {
 }
 
 impl NodeTrait for NodeClipPath {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         self.units.set(property_bag::parse_or_default(pbag, "clipPathUnits", (), None)?);
 
         Ok(())
