@@ -295,22 +295,46 @@ fn viewport_percentage (x: f64, y: f64) -> f64 {
 //     DashArray(&str)
 // }
 
+// This does not handle "inherit" or "none" state, the calle should be responsible for that.
 fn parse_length_list(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
-    let dashes: Vec<&str> = s.split(',')
+    if s.is_empty() {
+        return Err(AttributeError::Value("invalid syntax".into()));
+    }
+
+    // Values can be comma or whitespace separated.
+    // TODO: merge list here
+    let mut dashes: Vec<&str> = s.split(',')
         .flat_map(|slice| slice.split_whitespace())
         .filter(|c| !c.is_empty())
         .collect();
 
-    println!("{:?}", dashes);
-    let list: Vec<_> = dashes.into_iter()
-        .map(|d| RsvgLength::parse(d.into(), LengthDir::Both).unwrap())
+    // If the lenght of dashes is not even repeat them.
+    // TODO: this could be done without extra allocations
+    if !(dashes.len() % 2 == 0) {
+        let len = dashes.len();
+        dashes = dashes.into_iter().cycle().take(2 * len).collect();
+    }
+
+    let list: Result<Vec<_>, _> = dashes.into_iter()
+        .map(|d| RsvgLength::parse(d.into(), LengthDir::Both))
         .collect();
 
-    println!("{:?}", list);
+    let list = list?;
+    // Get the sum of all values
+    let sum = list.iter()
+        .map(|l| l.length as i64)
+        .fold(0, |sum, num| sum + num);
+
+    // If its 0 ignore the dash-array
+    if sum == 0 {
+        return Err(AttributeError::Value("invalid syntax".into()));
+    }
+
     Ok(list)
 }
 
 #[test]
+// TODO: add more test cases
 fn test_parses_length_list() {
     let expected =  vec![
        RsvgLength::parse("1", LengthDir::Both).unwrap(),
@@ -319,7 +343,27 @@ fn test_parses_length_list() {
        RsvgLength::parse("4%", LengthDir::Both).unwrap()
    ];
 
+    let even =  vec![
+       RsvgLength::parse("1", LengthDir::Both).unwrap(),
+       RsvgLength::parse("2in", LengthDir::Both).unwrap(),
+       RsvgLength::parse("3", LengthDir::Both).unwrap(),
+       RsvgLength::parse("1", LengthDir::Both).unwrap(),
+       RsvgLength::parse("2in", LengthDir::Both).unwrap(),
+       RsvgLength::parse("3", LengthDir::Both).unwrap(),
+   ];
+
     assert_eq!(parse_length_list("1 2in,3 4%").unwrap(), expected);
+    assert_eq!(parse_length_list("1 2in,3").unwrap(), even);
+
+    // Empty dash_array
+    assert!(parse_length_list("").is_err());
+    // TODO:
+    // syntax error dash_array
+    // assert!(parse_length_list("syntax error").is_err());
+    // another syntax error dash_array
+    // assert!(parse_length_list("10px, syntax error").is_err());
+    // another syntax error dash_array
+    // assert!(parse_length_list("10 syntax error").is_err());
 }
 
 #[no_mangle]
