@@ -5,6 +5,7 @@ use pango_sys;
 
 use drawing_ctx::{self, RsvgDrawingCtx};
 use state::{self, UnicodeBidi};
+use util::utf8_cstr;
 
 // FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() / PANGO_GRAVITY_IS_IMPROPER()?
 fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
@@ -95,8 +96,8 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 pub extern fn rsvg_text_create_layout(draw_ctx: *const RsvgDrawingCtx,
                                       text: *const libc::c_char) -> *const pango_sys::PangoLayout {
     assert!(!text.is_null());
-    let s = unsafe { String::from_glib_none(text) };
-    let layout = create_pango_layout(draw_ctx, &s);
+    let s = unsafe { utf8_cstr(text) };
+    let layout = create_pango_layout(draw_ctx, s);
 
     layout.to_glib_full()
 }

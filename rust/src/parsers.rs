@@ -9,6 +9,8 @@ use std::ptr;
 use std::slice;
 use std::str;
 
+use util::utf8_cstr;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParseError {
     pub display: String
@@ -112,9 +114,9 @@ pub extern fn rsvg_css_parse_number_optional_number (s: *const libc::c_char,
     assert! (!out_x.is_null ());
     assert! (!out_y.is_null ());
 
-    let string = unsafe { String::from_glib_none (s) };
+    let string = unsafe { utf8_cstr(s) };
 
-    match number_optional_number (&string) {
+    match number_optional_number (string) {
         Ok ((x, y)) => {
             unsafe {
                 *out_x = x;
@@ -232,7 +234,7 @@ pub extern fn rsvg_css_parse_number_list (in_str:   *const libc::c_char,
         NumberListLength::Maximum => ListLength::Maximum (size)
     };
 
-    let s = unsafe { String::from_glib_none (in_str) };
+    let s = unsafe { utf8_cstr(in_str) };
 
     let result = number_list (&s, length);
 

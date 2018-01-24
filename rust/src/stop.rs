@@ -12,8 +12,7 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use opacity::*;
-use property_bag;
-use property_bag::*;
+use property_bag::{self, FfiRsvgPropertyBag, PropertyBag};
 use state::RsvgState;
 
 pub struct NodeStop {
@@ -60,7 +59,7 @@ fn validate_offset(length: RsvgLength) -> Result<RsvgLength, AttributeError> {
 }
 
 impl NodeTrait for NodeStop {
-    fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         let length = property_bag::parse_or_default (pbag, "offset", LengthDir::Both,
                                                      Some(validate_offset))?;
         assert! (length.unit == LengthUnit::Default || length.unit == LengthUnit::Percent);
@@ -76,14 +75,14 @@ impl NodeTrait for NodeStop {
         // Should we resolve the stop-color / stop-opacity at
         // rendering time?
 
-        if let Some (v) = property_bag::lookup (pbag, "style") {
+        if let Some (v) = pbag.lookup("style") {
             unsafe {
                 rsvg_parse_style (handle, state, v.to_glib_none ().0);
             }
         }
 
         unsafe {
-            rsvg_parse_style_pairs (state, pbag);
+            rsvg_parse_style_pairs (state, pbag.ffi());
         }
 
         let inherited_state = drawing_ctx::state_new ();
@@ -173,7 +172,7 @@ fn u32_from_rgba (rgba: cssparser::RGBA) -> u32 {
 }
 
 extern "C" {
-    fn rsvg_parse_style_pairs (state: *mut RsvgState, pbag: *const RsvgPropertyBag);
+    fn rsvg_parse_style_pairs (state: *mut RsvgState, pbag: FfiRsvgPropertyBag);
     fn rsvg_parse_style (handle: *const RsvgHandle, state: *mut RsvgState, string: *const libc::c_char);
 }
 

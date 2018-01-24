@@ -1,11 +1,12 @@
 use libc;
 use std;
 use std::cell::RefCell;
+use std::str;
 
 use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode, boxed_node_new, rsvg_node_get_state};
-use property_bag::RsvgPropertyBag;
+use property_bag::PropertyBag;
 
 /// Container for XML character data.
 ///
@@ -50,7 +51,7 @@ impl NodeChars {
 }
 
 impl NodeTrait for NodeChars {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
         Ok(())
     }
 
@@ -85,16 +86,13 @@ pub extern fn rsvg_node_chars_append(raw_node: *const RsvgNode,
     assert!(!text.is_null());
     assert!(len >= 0);
 
-    // We don't use from_glib to convert the text here, since we are
-    // not sure that it actually is valid UTF-8.  We can't use CStr
-    // because we are not getting passed nul-terminated data.  We'll
-    // do this by hand instead.
-
+    // libxml2 already validated the incoming string as UTF-8.  Note that
+    // it is *not* nul-terminated; this is why we create a byte slice first.
     let bytes = unsafe { std::slice::from_raw_parts(text as *const u8, len as usize) };
-    let utf8 = String::from_utf8_lossy(bytes);
+    let utf8 = unsafe { str::from_utf8_unchecked(bytes) };
 
     node.with_impl(|chars: &NodeChars| {
-        chars.append(&utf8);
+        chars.append(utf8);
     });
 }
 

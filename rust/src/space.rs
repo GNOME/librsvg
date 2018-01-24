@@ -1,6 +1,7 @@
 use libc;
 use glib::translate::*;
 use itertools::Itertools;
+use util::utf8_cstr;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -68,9 +69,9 @@ fn normalize_preserve(s: &str) -> String {
 
 #[no_mangle]
 pub extern fn rsvg_xml_space_normalize(mode: XmlSpace, s: *const libc::c_char) -> *const libc::c_char {
-    let rs = unsafe { String::from_glib_none (s) };
+    let rs = unsafe { utf8_cstr(s) };
 
-    xml_space_normalize(mode, &rs).to_glib_full()
+    xml_space_normalize(mode, rs).to_glib_full()
 }
 
 #[cfg(test)]

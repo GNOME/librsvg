@@ -7,7 +7,7 @@ use handle::RsvgHandle;
 use length::{RsvgLength, LengthDir};
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode, boxed_node_new};
 use parsers::Parse;
-use property_bag::{self, RsvgPropertyBag};
+use property_bag::{self, PropertyBag};
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
@@ -46,7 +46,7 @@ impl NodeMask {
 }
 
 impl NodeTrait for NodeMask {
-    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         self.x.set(property_bag::parse_or_value(pbag, "x",
                                                 LengthDir::Horizontal,
                                                 NodeMask::get_default_pos(LengthDir::Horizontal),

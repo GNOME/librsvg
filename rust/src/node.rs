@@ -12,7 +12,7 @@ use drawing_ctx;
 use error::*;
 use handle::RsvgHandle;
 use parsers::ParseError;
-use property_bag::RsvgPropertyBag;
+use property_bag::{FfiRsvgPropertyBag, PropertyBag};
 use state::RsvgState;
 
 /* A *const RsvgNode is just a pointer for the C code's benefit: it
@@ -27,7 +27,7 @@ pub type RsvgNode = Rc<Node>;
 pub enum RsvgCNodeImpl {}
 
 pub trait NodeTrait: Downcast {
-    fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult;
+    fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult;
     fn draw (&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
     fn get_c_impl (&self) -> *const RsvgCNodeImpl;
 }
@@ -170,7 +170,7 @@ impl Node {
         self.children.borrow_mut ().push (child.clone ());
     }
 
-    pub fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+    pub fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) {
         *self.result.borrow_mut () = self.node_impl.set_atts (node, handle, pbag);
     }
 
@@ -359,11 +359,15 @@ pub extern fn rsvg_node_add_child (raw_node: *mut RsvgNode, raw_child: *const Rs
 }
 
 #[no_mangle]
-pub extern fn rsvg_node_set_atts (raw_node: *mut RsvgNode, handle: *const RsvgHandle, pbag: *const RsvgPropertyBag) {
+pub extern fn rsvg_node_set_atts (raw_node: *mut RsvgNode,
+                                  handle: *const RsvgHandle,
+                                  ffi_pbag: FfiRsvgPropertyBag) {
     assert! (!raw_node.is_null ());
     let node: &RsvgNode = unsafe { & *raw_node };
 
-    node.set_atts (node, handle, pbag);
+    let pbag = PropertyBag::new(ffi_pbag);
+
+    node.set_atts (node, handle, &pbag);
 }
 
 #[no_mangle]
@@ -423,14 +427,13 @@ mod tests {
     use std::rc::Rc;
     use drawing_ctx::RsvgDrawingCtx;
     use handle::RsvgHandle;
-    use property_bag::RsvgPropertyBag;
     use super::*;
     use std::ptr;
 
     struct TestNodeImpl {}
 
     impl NodeTrait for TestNodeImpl {
-        fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, _: *const RsvgPropertyBag) -> NodeResult {
+        fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, _: &PropertyBag) -> NodeResult {
             Ok (())
         }
 

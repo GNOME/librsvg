@@ -6,10 +6,9 @@ use ::libc;
 
 use std::str::FromStr;
 
-use ::glib::translate::*;
-
 use parsers::ParseError;
 use error::*;
+use util::utf8_cstr;
 
 // Keep this in sync with rsvg-css.h:RsvgOpacityKind
 #[repr(C)]
@@ -121,15 +120,16 @@ impl Opacity {
 
 #[no_mangle]
 pub extern fn rsvg_css_parse_opacity (string: *const libc::c_char) -> OpacitySpec {
-    let s = unsafe { String::from_glib_none (string) };
+    let s = unsafe { utf8_cstr(string) };
 
-    OpacitySpec::from (Opacity::from_str (&s))
+    OpacitySpec::from(Opacity::from_str(s))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::str::FromStr;
+    use glib::translate::*;
 
     #[test]
     fn parses_inherit () {

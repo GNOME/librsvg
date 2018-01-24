@@ -16,8 +16,7 @@ use length::*;
 use node::*;
 use paint_server::*;
 use parsers::Parse;
-use property_bag;
-use property_bag::*;
+use property_bag::{self, PropertyBag};
 use stop::*;
 use util::*;
 
@@ -557,7 +556,7 @@ impl NodeGradient {
 }
 
 impl NodeTrait for NodeGradient {
-    fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         let mut g = self.gradient.borrow_mut ();
 
         // Attributes common to linear and radial gradients
@@ -565,7 +564,7 @@ impl NodeTrait for NodeGradient {
         g.common.units    = property_bag::parse_or_none (pbag, "gradientUnits", (), None)?;
         g.common.affine   = property_bag::parse_or_none (pbag, "gradientTransform", (), None)?;
         g.common.spread   = property_bag::parse_or_none (pbag, "spreadMethod", (), None)?;
-        g.common.fallback = property_bag::lookup (pbag, "xlink:href");
+        g.common.fallback = pbag.lookup("xlink:href").map(|s| s.to_owned());
 
         // Attributes specific to each gradient type.  The defaults mandated by the spec
         // are in GradientVariant::resolve_from_defaults()

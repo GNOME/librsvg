@@ -17,8 +17,7 @@ use path_builder::*;
 use parsers;
 use parsers::Parse;
 use parsers::ParseError;
-use property_bag;
-use property_bag::*;
+use property_bag::{self, PropertyBag};
 use util::*;
 use viewbox::*;
 
@@ -187,7 +186,7 @@ impl NodeMarker {
 }
 
 impl NodeTrait for NodeMarker {
-    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: *const RsvgPropertyBag) -> NodeResult {
+    fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         self.units.set (property_bag::parse_or_default (pbag, "markerUnits", (), None)?);
 
         self.ref_x.set (property_bag::parse_or_default (pbag, "refX", LengthDir::Horizontal, None)?);
@@ -568,7 +567,7 @@ fn emit_marker_by_name (draw_ctx:       *const RsvgDrawingCtx,
         return;
     }
 
-    let name = unsafe { String::from_glib_none (marker_name) };
+    let name = unsafe { utf8_cstr(marker_name) };
 
     let c_node = drawing_ctx::acquire_node_of_type (draw_ctx, &name, NodeType::Marker);
 

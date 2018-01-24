@@ -9,6 +9,7 @@ use drawing_ctx::RsvgDrawingCtx;
 use parsers::Parse;
 use parsers::ParseError;
 use error::*;
+use util::utf8_cstr;
 
 /* Keep this in sync with ../../rsvg-private.h:LengthUnit */
 #[repr(C)]
@@ -79,7 +80,7 @@ fn compute_named_size (name: &str) -> f64 {
 
 #[no_mangle]
 pub extern fn rsvg_length_parse (string: *const libc::c_char, dir: LengthDir) -> RsvgLength {
-    let my_string = unsafe { &String::from_glib_none (string) };
+    let my_string = unsafe { utf8_cstr(string) };
 
     // FIXME: this ignores errors; propagate them upstream
     RsvgLength::parse (my_string, dir).unwrap_or_else(|_| {RsvgLength::default ()})
