@@ -4,9 +4,8 @@
 use ::cssparser::{Parser, ParserInput, Token};
 use ::libc;
 
+use std::ffi::CStr;
 use std::str::FromStr;
-
-use ::glib::translate::*;
 
 use parsers::ParseError;
 use error::*;
@@ -121,15 +120,17 @@ impl Opacity {
 
 #[no_mangle]
 pub extern fn rsvg_css_parse_opacity (string: *const libc::c_char) -> OpacitySpec {
-    let s = unsafe { String::from_glib_none (string) };
+    // we can unwrap because libxml2 already validated this for UTF-8
+    let s = unsafe { CStr::from_ptr(string).to_str().unwrap() };
 
-    OpacitySpec::from (Opacity::from_str (&s))
+    OpacitySpec::from(Opacity::from_str(s))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::str::FromStr;
+    use glib::translate::*;
 
     #[test]
     fn parses_inherit () {
