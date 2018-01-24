@@ -10,6 +10,7 @@ use cssparser::{Parser, ParserInput, Token, ParseError as CssParseError};
 
 use error::*;
 use parsers::{Parse, ParseError, optional_comma};
+use util::utf8_cstr;
 
 impl Parse for cairo::Matrix {
     type Data = ();
@@ -195,10 +196,10 @@ pub extern fn rsvg_parse_transform (out_matrix: *mut cairo::Matrix, s: *const li
     assert! (!out_matrix.is_null ());
     assert! (!s.is_null ());
 
-    let string = unsafe { String::from_glib_none (s) };
+    let string = unsafe { utf8_cstr(s) };
     let matrix: &mut cairo::Matrix = unsafe { &mut *out_matrix };
 
-    match parse_transform (&string) {
+    match parse_transform (string) {
         Ok (m) => {
             *matrix = m;
             true.to_glib ()
