@@ -234,7 +234,7 @@ pub extern fn rsvg_css_parse_number_list (in_str:   *const libc::c_char,
         NumberListLength::Maximum => ListLength::Maximum (size)
     };
 
-    let s = unsafe { String::from_glib_none (in_str) };
+    let s = unsafe { utf8_cstr(in_str) };
 
     let result = number_list (&s, length);
 
