@@ -290,6 +290,39 @@ fn viewport_percentage (x: f64, y: f64) -> f64 {
     (x * x + y * y).sqrt () / SQRT_2
 }
 
+// enum DashState {
+//     None,
+//     Inhereted,
+//     DashArray(&str)
+// }
+
+fn parse_length_list(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
+    let dashes: Vec<&str> = s.split(',')
+        .flat_map(|slice| slice.split_whitespace())
+        .filter(|c| !c.is_empty())
+        .collect();
+
+    println!("{:?}", dashes);
+    let list: Vec<_> = dashes.into_iter()
+        .map(|d| RsvgLength::parse(d.into(), LengthDir::Both).unwrap())
+        .collect();
+
+    println!("{:?}", list);
+    Ok(list)
+}
+
+#[test]
+fn test_parses_length_list() {
+    let expected =  vec![
+       RsvgLength::parse("1", LengthDir::Both).unwrap(),
+       RsvgLength::parse("2in", LengthDir::Both).unwrap(),
+       RsvgLength::parse("3", LengthDir::Both).unwrap(),
+       RsvgLength::parse("4%", LengthDir::Both).unwrap()
+   ];
+
+    assert_eq!(parse_length_list("1 2in,3 4%").unwrap(), expected);
+}
+
 #[no_mangle]
 pub extern fn rsvg_length_normalize (raw_length: *const RsvgLength, draw_ctx: *const RsvgDrawingCtx) -> f64 {
     assert! (!raw_length.is_null ());
