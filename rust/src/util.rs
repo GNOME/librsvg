@@ -1,6 +1,7 @@
 use libc;
 
 use std::ffi::CStr;
+use std::str;
 
 // In paint servers (patterns, gradients, etc.), we have an
 // Option<String> for fallback names.  This is a utility function to
@@ -28,5 +29,5 @@ pub fn double_equals (a: f64, b: f64) -> bool {
 pub unsafe fn utf8_cstr<'a>(s: *const libc::c_char) -> &'a str {
     assert!(!s.is_null());
 
-    CStr::from_ptr(s).to_str().unwrap()
+    str::from_utf8_unchecked(CStr::from_ptr(s).to_bytes())
 }
