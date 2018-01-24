@@ -749,7 +749,20 @@ fn emit_markers_for_path_builder<E> (builder: &RsvgPathBuilder,
             Segment::LineOrCurve { .. } => {
                 let (_, incoming_vx, incoming_vy) = find_incoming_directionality_backwards (&segments, segments.len () - 1);
 
-                emit_marker (&segment, MarkerEndpoint::End, MarkerType::End, angle_from_vector (incoming_vx, incoming_vy), emit_fn);
+                let angle = {
+                    match builder.get_path_commands ()[segments.len()] {
+                        PathCommand::ClosePath => {
+                            let (_, outgoing_vx, outgoing_vy) = find_outgoing_directionality_forwards (&segments, 0);
+                            bisect_angles (angle_from_vector (incoming_vx, incoming_vy), angle_from_vector (outgoing_vx, outgoing_vy))
+                        },
+
+                        _ => {
+                            angle_from_vector (incoming_vx, incoming_vy)
+                        }
+                    }
+                };
+
+                emit_marker (&segment, MarkerEndpoint::End, MarkerType::End, angle, emit_fn);
             },
 
             _ => { }
@@ -1172,8 +1185,6 @@ mod marker_tests {
     }
 
     #[test]
-    #[ignore]
-    // https://gitlab.gnome.org/GNOME/librsvg/issues/161
     fn emits_for_closed_subpath () {
         let mut builder = RsvgPathBuilder::new ();
         builder.move_to (0.0, 0.0);
