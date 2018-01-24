@@ -4,11 +4,11 @@
 use ::cssparser::{Parser, ParserInput, Token};
 use ::libc;
 
-use std::ffi::CStr;
 use std::str::FromStr;
 
 use parsers::ParseError;
 use error::*;
+use util::utf8_cstr;
 
 // Keep this in sync with rsvg-css.h:RsvgOpacityKind
 #[repr(C)]
@@ -120,8 +120,7 @@ impl Opacity {
 
 #[no_mangle]
 pub extern fn rsvg_css_parse_opacity (string: *const libc::c_char) -> OpacitySpec {
-    // we can unwrap because libxml2 already validated this for UTF-8
-    let s = unsafe { CStr::from_ptr(string).to_str().unwrap() };
+    let s = unsafe { utf8_cstr(string) };
 
     OpacitySpec::from(Opacity::from_str(s))
 }

@@ -1,9 +1,9 @@
 use glib::translate::*;
 use libc;
-use std::ffi::CStr;
 
 use error::*;
 use parsers::Parse;
+use util::utf8_cstr;
 
 pub type FfiRsvgPropertyBag = *mut libc::c_void;
 
@@ -44,8 +44,7 @@ impl PropertyBag {
             if c_value.is_null() {
                 None
             } else {
-                // we can unwrap because libxml2 already validated this for UTF-8
-                Some(CStr::from_ptr(c_value).to_str().unwrap())
+                Some(utf8_cstr(c_value))
             }
         }
     }
