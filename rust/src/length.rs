@@ -289,14 +289,23 @@ fn viewport_percentage (x: f64, y: f64) -> f64 {
     (x * x + y * y).sqrt () / SQRT_2
 }
 
-// enum DashState {
-//     None,
-//     Inhereted,
-//     DashArray(&str)
-// }
+#[derive(Debug)]
+enum DashState {
+    None,
+    Inherit,
+    Array(Result<Vec<RsvgLength>, AttributeError>),
+}
 
-// This does not handle "inherit" or "none" state, the calle should be responsible for that.
-fn parse_length_list(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
+fn parse_length_list(s: &str) -> DashState {
+    match s {
+    "inherit" => DashState::Inherit,
+    "none" => DashState::None,
+    _ => DashState::Array(parse_dash_array(s)),
+    }
+}
+
+// This does not handle "inherit" or "none" state, the caller is responsible for that.
+fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
     if s.is_empty() {
         return Err(AttributeError::Value("invalid syntax".into()));
     }
@@ -332,80 +341,6 @@ fn parse_length_list(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
     Ok(dashes)
 }
 
-#[test]
-// TODO: add more test cases
-fn test_parses_length_list() {
-    // helper to cut down boilderplate
-    let length_parse = |s| { RsvgLength::parse(s, LengthDir::Both).unwrap() };
-
-    let expected =  vec![
-       length_parse("1"),
-       length_parse("2in"),
-       length_parse("3"),
-       length_parse("4%")
-   ];
-
-    let even =  vec![
-       length_parse("1"),
-       length_parse("2in"),
-       length_parse("3"),
-       length_parse("1"),
-       length_parse("2in"),
-       length_parse("3"),
-   ];
-
-   let sample_1 = vec![length_parse("10"), length_parse("6")];
-   let sample_2 = vec![
-       length_parse("5"),
-       length_parse("5"),
-       length_parse("20"),
-       length_parse("5"),
-       length_parse("5"),
-       length_parse("20"),
-   ];
-
-   let sample_3 = vec![
-       length_parse("10px"),
-       length_parse("20px"),
-       length_parse("20px"),
-       length_parse("10px"),
-       length_parse("20px"),
-       length_parse("20px"),
-   ];
-
-   let sample_4 = vec![
-       length_parse("25"),
-       length_parse("5"),
-       length_parse("5"),
-       length_parse("5"),
-   ];
-
-   let sample_5 = vec![length_parse("3.1415926"), length_parse("8")];
-   let sample_6 = vec![length_parse("5"), length_parse("3.14")];
-   let sample_7 = vec![length_parse("2"), length_parse("2")];
-
-    assert_eq!(parse_length_list("1 2in,3 4%").unwrap(), expected);
-    assert_eq!(parse_length_list("1 2in,3").unwrap(), even);
-    assert_eq!(parse_length_list("10,6").unwrap(), sample_1);
-    assert_eq!(parse_length_list("5,5,20").unwrap(), sample_2);
-    assert_eq!(parse_length_list("10px 20px 20px").unwrap(), sample_3);
-    assert_eq!(parse_length_list("25  5 , 5 5").unwrap(), sample_4);
-    assert_eq!(parse_length_list("3.1415926,8").unwrap(), sample_5);
-    assert_eq!(parse_length_list("5, 3.14").unwrap(), sample_6);
-    assert_eq!(parse_length_list("2").unwrap(), sample_7);
-
-    // Empty dash_array
-    assert!(parse_length_list("").is_err());
-    assert!(parse_length_list("0").is_err());
-    assert!(parse_length_list("15 -10 -5").is_err());
-    // TODO:
-    // syntax error dash_array
-    // assert!(parse_length_list("syntax error").is_err());
-    // another syntax error dash_array
-    // assert!(parse_length_list("10px, syntax error").is_err());
-    // another syntax error dash_array
-    // assert!(parse_length_list("10 syntax error").is_err());
-}
 
 #[no_mangle]
 pub extern fn rsvg_length_normalize (raw_length: *const RsvgLength, draw_ctx: *const RsvgDrawingCtx) -> f64 {
@@ -541,5 +476,89 @@ mod tests {
     fn check_nonnegative_works () {
         assert! (RsvgLength::parse ("0", LengthDir::Both).and_then (|l| l.check_nonnegative ()).is_ok ());
         assert! (RsvgLength::parse ("-10", LengthDir::Both).and_then (|l| l.check_nonnegative ()).is_err ());
+    }
+
+    #[test]
+    fn parses_length_list() {
+        use std::mem::discriminant;
+
+        // https://doc.rust-lang.org/std/mem/fn.discriminant.html
+        assert_eq!(discriminant(&parse_length_list("none")), discriminant(&DashState::None));
+        assert_eq!(discriminant(&parse_length_list("inherit")), discriminant(&DashState::Inherit));
+        assert_eq!(discriminant(&parse_length_list("10, 5")), discriminant(&DashState::Array(parse_dash_array("10, 5"))));
+    }
+
+    #[test]
+    fn parses_dash_array() {
+        // helper to cut down boilderplate
+        let length_parse = |s| { RsvgLength::parse(s, LengthDir::Both).unwrap() };
+
+        let expected =  vec![
+           length_parse("1"),
+           length_parse("2in"),
+           length_parse("3"),
+           length_parse("4%")
+       ];
+
+        let even =  vec![
+           length_parse("1"),
+           length_parse("2in"),
+           length_parse("3"),
+           length_parse("1"),
+           length_parse("2in"),
+           length_parse("3"),
+       ];
+
+       let sample_1 = vec![length_parse("10"), length_parse("6")];
+       let sample_2 = vec![
+           length_parse("5"),
+           length_parse("5"),
+           length_parse("20"),
+           length_parse("5"),
+           length_parse("5"),
+           length_parse("20"),
+       ];
+
+       let sample_3 = vec![
+           length_parse("10px"),
+           length_parse("20px"),
+           length_parse("20px"),
+           length_parse("10px"),
+           length_parse("20px"),
+           length_parse("20px"),
+       ];
+
+       let sample_4 = vec![
+           length_parse("25"),
+           length_parse("5"),
+           length_parse("5"),
+           length_parse("5"),
+       ];
+
+       let sample_5 = vec![length_parse("3.1415926"), length_parse("8")];
+       let sample_6 = vec![length_parse("5"), length_parse("3.14")];
+       let sample_7 = vec![length_parse("2"), length_parse("2")];
+
+        assert_eq!(parse_dash_array("1 2in,3 4%").unwrap(), expected);
+        assert_eq!(parse_dash_array("1 2in,3").unwrap(), even);
+        assert_eq!(parse_dash_array("10,6").unwrap(), sample_1);
+        assert_eq!(parse_dash_array("5,5,20").unwrap(), sample_2);
+        assert_eq!(parse_dash_array("10px 20px 20px").unwrap(), sample_3);
+        assert_eq!(parse_dash_array("25  5 , 5 5").unwrap(), sample_4);
+        assert_eq!(parse_dash_array("3.1415926,8").unwrap(), sample_5);
+        assert_eq!(parse_dash_array("5, 3.14").unwrap(), sample_6);
+        assert_eq!(parse_dash_array("2").unwrap(), sample_7);
+
+        // Empty dash_array
+        assert!(parse_dash_array("").is_err());
+        assert!(parse_dash_array("0").is_err());
+        assert!(parse_dash_array("15 -10 -5").is_err());
+        // TODO:
+        // syntax error dash_array
+        // assert!(parse_dash_array("syntax error").is_err());
+        // another syntax error dash_array
+        // assert!(parse_dash_array("10px, syntax error").is_err());
+        // another syntax error dash_array
+        // assert!(parse_dash_array("10 syntax error").is_err());
     }
 }
