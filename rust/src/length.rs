@@ -302,11 +302,17 @@ fn parse_length_list(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
     }
 
     // Values can be comma or whitespace separated.
-    // TODO: merge list here
-    let mut dashes: Vec<&str> = s.split(',')
+    let mut dashes = s.split(',') // split at comma
+        // split at whitespace
         .flat_map(|slice| slice.split_whitespace())
+        // filter out empty strings("")
         .filter(|c| !c.is_empty())
-        .collect();
+        // parse it into an RsvgLength
+        .map(|d| RsvgLength::parse(d.into(), LengthDir::Both))
+        // collect into a Result<Vec<T>, E>.
+        // it will short-circuit iteslf upon the first error encountered
+        // like if you returned from a for-loop
+        .collect::<Result<Vec<_>, _>>()?;
 
     // If the lenght of dashes is not even repeat them.
     // TODO: this could be done without extra allocations
@@ -315,22 +321,18 @@ fn parse_length_list(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
         dashes = dashes.into_iter().cycle().take(2 * len).collect();
     }
 
-    let list: Result<Vec<_>, _> = dashes.into_iter()
-        .map(|d| RsvgLength::parse(d.into(), LengthDir::Both))
-        .collect();
-
-    let list = list?;
     // Get the sum of all values
-    let sum = list.iter()
+    // TODO: write test
+    let sum: i64 = dashes.iter()
         .map(|l| l.length as i64)
-        .fold(0, |sum, num| sum + num);
+        .sum();
 
     // If its 0 ignore the dash-array
     if sum == 0 {
         return Err(AttributeError::Value("invalid syntax".into()));
     }
 
-    Ok(list)
+    Ok(dashes)
 }
 
 #[test]
