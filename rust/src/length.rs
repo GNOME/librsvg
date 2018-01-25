@@ -323,10 +323,7 @@ fn parse_length_list(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
     }
 
     // Get the sum of all values
-    // TODO: write test
-    let sum: i64 = dashes.iter()
-        .map(|l| l.length as i64)
-        .sum();
+    let sum: i64 = dashes.iter().map(|l| l.length as i64).sum();
 
     // If its 0 ignore the dash-array
     if sum == 0 {
@@ -339,27 +336,69 @@ fn parse_length_list(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
 #[test]
 // TODO: add more test cases
 fn test_parses_length_list() {
+    // helper to cut down boilderplate
+    let length_parse = |s| { RsvgLength::parse(s, LengthDir::Both).unwrap() };
+
     let expected =  vec![
-       RsvgLength::parse("1", LengthDir::Both).unwrap(),
-       RsvgLength::parse("2in", LengthDir::Both).unwrap(),
-       RsvgLength::parse("3", LengthDir::Both).unwrap(),
-       RsvgLength::parse("4%", LengthDir::Both).unwrap()
+       length_parse("1"),
+       length_parse("2in"),
+       length_parse("3"),
+       length_parse("4%")
    ];
 
     let even =  vec![
-       RsvgLength::parse("1", LengthDir::Both).unwrap(),
-       RsvgLength::parse("2in", LengthDir::Both).unwrap(),
-       RsvgLength::parse("3", LengthDir::Both).unwrap(),
-       RsvgLength::parse("1", LengthDir::Both).unwrap(),
-       RsvgLength::parse("2in", LengthDir::Both).unwrap(),
-       RsvgLength::parse("3", LengthDir::Both).unwrap(),
+       length_parse("1"),
+       length_parse("2in"),
+       length_parse("3"),
+       length_parse("1"),
+       length_parse("2in"),
+       length_parse("3"),
    ];
+
+   let sample_1 = vec![length_parse("10"), length_parse("6")];
+   let sample_2 = vec![
+       length_parse("5"),
+       length_parse("5"),
+       length_parse("20"),
+       length_parse("5"),
+       length_parse("5"),
+       length_parse("20"),
+   ];
+
+   let sample_3 = vec![
+       length_parse("10px"),
+       length_parse("20px"),
+       length_parse("20px"),
+       length_parse("10px"),
+       length_parse("20px"),
+       length_parse("20px"),
+   ];
+
+   let sample_4 = vec![
+       length_parse("25"),
+       length_parse("5"),
+       length_parse("5"),
+       length_parse("5"),
+   ];
+
+   let sample_5 = vec![length_parse("3.1415926"), length_parse("8")];
+   let sample_6 = vec![length_parse("5"), length_parse("3.14")];
+   let sample_7 = vec![length_parse("2"), length_parse("2")];
 
     assert_eq!(parse_length_list("1 2in,3 4%").unwrap(), expected);
     assert_eq!(parse_length_list("1 2in,3").unwrap(), even);
+    assert_eq!(parse_length_list("10,6").unwrap(), sample_1);
+    assert_eq!(parse_length_list("5,5,20").unwrap(), sample_2);
+    assert_eq!(parse_length_list("10px 20px 20px").unwrap(), sample_3);
+    assert_eq!(parse_length_list("25  5 , 5 5").unwrap(), sample_4);
+    assert_eq!(parse_length_list("3.1415926,8").unwrap(), sample_5);
+    assert_eq!(parse_length_list("5, 3.14").unwrap(), sample_6);
+    assert_eq!(parse_length_list("2").unwrap(), sample_7);
 
     // Empty dash_array
     assert!(parse_length_list("").is_err());
+    assert!(parse_length_list("0").is_err());
+    assert!(parse_length_list("15 -10 -5").is_err());
     // TODO:
     // syntax error dash_array
     // assert!(parse_length_list("syntax error").is_err());
