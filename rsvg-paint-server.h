@@ -100,11 +100,6 @@ void                 rsvg_paint_server_ref      (RsvgPaintServer * ps);
 G_GNUC_INTERNAL
 void                 rsvg_paint_server_unref    (RsvgPaintServer * ps);
 
-G_GNUC_INTERNAL
-RsvgNode *rsvg_new_linear_gradient  (const char *element_name, RsvgNode *parent);
-G_GNUC_INTERNAL
-RsvgNode *rsvg_new_radial_gradient  (const char *element_name, RsvgNode *parent);
-
 /* Implemented in rust/src/stop.rs */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_stop_new (const char *element_name, RsvgNode *parent);
