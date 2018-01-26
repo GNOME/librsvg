@@ -198,11 +198,11 @@ impl<'b> PathParser<'b> {
 
         let mut value: f64;
         let mut exponent_sign: f64;
-        let mut exponent: f64;
+        let mut exponent: Option<f64>;
 
         value = 0.0;
         exponent_sign = 1.0;
-        exponent = 0.0;
+        exponent = None;
 
         let mut c: char = ' ';
 
@@ -244,11 +244,15 @@ impl<'b> PathParser<'b> {
                 let mut c: char = ' ';
 
                 if self.lookahead_is_digit (&mut c) {
+                    let mut exp = 0.0;
+
                     while self.lookahead_is_digit (&mut c) {
-                        exponent = exponent * 10.0 + f64::from(char_to_digit (c));
+                        exp = exp * 10.0 + f64::from(char_to_digit (c));
 
                         assert! (self.match_char (c));
                     }
+
+                    exponent = Some(exp);
                 } else if self.lookahead.is_some() {
                     return Err(self.error(ErrorKind::UnexpectedToken));
                 } else {
@@ -256,7 +260,11 @@ impl<'b> PathParser<'b> {
                 }
             }
 
-            Ok (sign * value * 10.0f64.powf (exponent * exponent_sign))
+            if let Some(exp) = exponent {
+                Ok (sign * value * 10.0f64.powf (exp * exponent_sign))
+            } else {
+                Ok (sign * value)
+            }
         } else if self.lookahead.is_some() {
             Err(self.error(ErrorKind::UnexpectedToken))
         } else {
