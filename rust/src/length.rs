@@ -318,8 +318,6 @@ fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
     let dashes = s.split(',') // split at comma
         // split at whitespace
         .flat_map(|slice| slice.split_whitespace())
-        // filter out empty strings("")
-        .filter(|c| !c.is_empty())
         // parse it into an RsvgLength
         .map(|d| RsvgLength::parse(d.into(), LengthDir::Both))
         // collect into a Result<Vec<T>, E>.
