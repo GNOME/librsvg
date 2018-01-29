@@ -426,7 +426,7 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     }
 
     if (function (dst->has_dashoffset, src->has_dashoffset)) {
-        dst->dash.offset = src->dash.offset;
+        dst->dash_offset = src->dash_offset;
     }
 
     if (inherituninheritables) {
@@ -927,9 +927,9 @@ rsvg_parse_style_pair (RsvgState * state,
         state->miter_limit = g_ascii_strtod (value, NULL);
     } else if (g_str_equal (name, "stroke-dashoffset")) {
         state->has_dashoffset = TRUE;
-        state->dash.offset = rsvg_length_parse (value, LENGTH_DIR_BOTH);
-        if (state->dash.offset.length < 0.)
-            state->dash.offset.length = 0.;
+        state->dash_offset = rsvg_length_parse (value, LENGTH_DIR_BOTH);
+        if (state->dash_offset.length < 0.)
+            state->dash_offset.length = 0.;
     } else if (g_str_equal (name, "shape-rendering")) {
         state->has_shape_rendering_type = TRUE;
 

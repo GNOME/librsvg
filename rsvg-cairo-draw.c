@@ -238,7 +238,7 @@ setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgState *state)
     cairo_set_line_cap (cr, (cairo_line_cap_t) state->cap);
     cairo_set_line_join (cr, (cairo_line_join_t) state->join);
     cairo_set_dash (cr, state->dash.dash, state->dash.n_dash,
-                    rsvg_length_normalize (&state->dash.offset, ctx));
+                    rsvg_length_normalize (&state->dash_offset, ctx));
 }
 
 void
