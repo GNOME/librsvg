@@ -291,28 +291,32 @@ fn viewport_percentage (x: f64, y: f64) -> f64 {
 }
 
 #[derive(Debug)]
-enum DashState {
+enum StrokeDasharray {
     None,
     Inherit,
-    Array(Result<Vec<RsvgLength>, AttributeError>),
+    Dasharray(Vec<RsvgLength>),
 }
 
-fn parse_length_list(s: &str) -> DashState {
+fn parse_stroke_dash_array(s: &str) -> Result<StrokeDasharray, AttributeError> {
+    let s = s.trim();
+
     match s {
-    "inherit" => DashState::Inherit,
-    "none" => DashState::None,
-    _ => DashState::Array(parse_dash_array(s)),
+        "inherit" => Ok(StrokeDasharray::Inherit),
+        "none" => Ok(StrokeDasharray::None),
+        _ => Ok(StrokeDasharray::Dasharray(parse_dash_array(s)?)),
     }
 }
 
 // This does not handle "inherit" or "none" state, the caller is responsible for that.
 fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
+    let s = s.trim();
+
     if s.is_empty() {
-        return Err(AttributeError::Parse(ParseError::new("Empty String")));
+        return Err(AttributeError::Parse(ParseError::new("empty string")));
     }
 
     // Values can be comma or whitespace separated.
-    s.split(',') // split at comma
+    let dashes = s.split(',') // split at comma
         // split at whitespace
         .flat_map(|slice| slice.split_whitespace())
         // filter out empty strings("")
@@ -322,7 +326,14 @@ fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
         // collect into a Result<Vec<T>, E>.
         // it will short-circuit iteslf upon the first error encountered
         // like if you returned from a for-loop
-        .collect::<Result<Vec<_>, _>>()
+        .collect::<Result<Vec<_>, _>>()?;
+
+    // This can occure when input is something like ",,,"
+    if dashes.is_empty() {
+        return Err(AttributeError::Parse(ParseError::new("parse error")));
+    }
+
+    Ok(dashes)
 }
 
 
@@ -463,13 +474,14 @@ mod tests {
     }
 
     #[test]
-    fn parses_length_list() {
+    fn parses_stroke_dasharray() {
         use std::mem::discriminant;
 
         // https://doc.rust-lang.org/std/mem/fn.discriminant.html
-        assert_eq!(discriminant(&parse_length_list("none")), discriminant(&DashState::None));
-        assert_eq!(discriminant(&parse_length_list("inherit")), discriminant(&DashState::Inherit));
-        assert_eq!(discriminant(&parse_length_list("10, 5")), discriminant(&DashState::Array(parse_dash_array("10, 5"))));
+        assert_eq!(discriminant(&parse_stroke_dash_array("none").unwrap()), discriminant(&StrokeDasharray::None));
+        assert_eq!(discriminant(&parse_stroke_dash_array("inherit").unwrap()), discriminant(&StrokeDasharray::Inherit));
+        assert_eq!(discriminant(&parse_stroke_dash_array("10, 5").unwrap()), discriminant(&StrokeDasharray::Dasharray(parse_dash_array("10, 5").unwrap())));
+        assert!(parse_stroke_dash_array("").is_err());
     }
 
     #[test]
@@ -518,13 +530,11 @@ mod tests {
         assert_eq!(parse_dash_array("2").unwrap(), sample_7);
 
         // Empty dash_array
-        assert!(parse_dash_array("").is_err());
-        // TODO:
-        // syntax error dash_array
-        // assert!(parse_dash_array("syntax error").is_err());
-        // another syntax error dash_array
-        // assert!(parse_dash_array("10px, syntax error").is_err());
-        // another syntax error dash_array
-        // assert!(parse_dash_array("10 syntax error").is_err());
+        assert_eq!(parse_dash_array(""), Err(AttributeError::Parse(ParseError::new("empty string"))));
+        assert_eq!(parse_dash_array("\t  \n     "), Err(AttributeError::Parse(ParseError::new("empty string"))));
+        assert!(parse_dash_array(",,,").is_err());
+        // No trailling commas allowed, parse error
+        // println!("{:?}", parse_dash_array("10,"));
+        // assert!(parse_dash_array("10,").is_err());
     }
 }
