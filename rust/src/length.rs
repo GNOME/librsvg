@@ -315,6 +315,13 @@ fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
         return Err(AttributeError::Parse(ParseError::new("empty string")));
     }
 
+    // Read the last character, if it's a comma return an Error.
+    if let Some(c) = s.chars().last() {
+        if c == ',' {
+            return Err(AttributeError::Parse(ParseError::new("trailling comma")));
+        }
+    }
+
     // Values can be comma or whitespace separated.
     let dashes = s.split(',') // split at comma
         // split at whitespace
@@ -532,7 +539,6 @@ mod tests {
         assert_eq!(parse_dash_array("\t  \n     "), Err(AttributeError::Parse(ParseError::new("empty string"))));
         assert!(parse_dash_array(",,,").is_err());
         // No trailling commas allowed, parse error
-        // println!("{:?}", parse_dash_array("10,"));
-        // assert!(parse_dash_array("10,").is_err());
+        assert!(parse_dash_array("10,").is_err());
     }
 }
