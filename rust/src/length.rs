@@ -308,11 +308,11 @@ fn parse_length_list(s: &str) -> DashState {
 // This does not handle "inherit" or "none" state, the caller is responsible for that.
 fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
     if s.is_empty() {
-        return Err(AttributeError::Value("invalid syntax".into()));
+        return Err(AttributeError::Parse(ParseError::new("Empty String")));
     }
 
     // Values can be comma or whitespace separated.
-    let mut dashes = s.split(',') // split at comma
+    s.split(',') // split at comma
         // split at whitespace
         .flat_map(|slice| slice.split_whitespace())
         // filter out empty strings("")
@@ -322,24 +322,7 @@ fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
         // collect into a Result<Vec<T>, E>.
         // it will short-circuit iteslf upon the first error encountered
         // like if you returned from a for-loop
-        .collect::<Result<Vec<_>, _>>()?;
-
-    // If the lenght of dashes is not even repeat them.
-    // TODO: this could be done without extra allocations
-    if !(dashes.len() % 2 == 0) {
-        let len = dashes.len();
-        dashes = dashes.into_iter().cycle().take(2 * len).collect();
-    }
-
-    // Get the sum of all values
-    let sum: i64 = dashes.iter().map(|l| l.length as i64).sum();
-
-    // If its 0 ignore the dash-array
-    if sum == 0 {
-        return Err(AttributeError::Value("invalid syntax".into()));
-    }
-
-    Ok(dashes)
+        .collect::<Result<Vec<_>, _>>()
 }
 
 
@@ -501,29 +484,14 @@ mod tests {
            length_parse("4%")
        ];
 
-        let even =  vec![
-           length_parse("1"),
-           length_parse("2in"),
-           length_parse("3"),
-           length_parse("1"),
-           length_parse("2in"),
-           length_parse("3"),
-       ];
-
        let sample_1 = vec![length_parse("10"), length_parse("6")];
        let sample_2 = vec![
-           length_parse("5"),
-           length_parse("5"),
-           length_parse("20"),
            length_parse("5"),
            length_parse("5"),
            length_parse("20"),
        ];
 
        let sample_3 = vec![
-           length_parse("10px"),
-           length_parse("20px"),
-           length_parse("20px"),
            length_parse("10px"),
            length_parse("20px"),
            length_parse("20px"),
@@ -538,10 +506,9 @@ mod tests {
 
        let sample_5 = vec![length_parse("3.1415926"), length_parse("8")];
        let sample_6 = vec![length_parse("5"), length_parse("3.14")];
-       let sample_7 = vec![length_parse("2"), length_parse("2")];
+       let sample_7 = vec![length_parse("2")];
 
         assert_eq!(parse_dash_array("1 2in,3 4%").unwrap(), expected);
-        assert_eq!(parse_dash_array("1 2in,3").unwrap(), even);
         assert_eq!(parse_dash_array("10,6").unwrap(), sample_1);
         assert_eq!(parse_dash_array("5,5,20").unwrap(), sample_2);
         assert_eq!(parse_dash_array("10px 20px 20px").unwrap(), sample_3);
@@ -552,8 +519,6 @@ mod tests {
 
         // Empty dash_array
         assert!(parse_dash_array("").is_err());
-        assert!(parse_dash_array("0").is_err());
-        assert!(parse_dash_array("15 -10 -5").is_err());
         // TODO:
         // syntax error dash_array
         // assert!(parse_dash_array("syntax error").is_err());
