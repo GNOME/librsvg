@@ -64,7 +64,6 @@ typedef enum {
 typedef struct _RsvgVpathDash RsvgVpathDash;
 
 struct _RsvgVpathDash {
-    RsvgLength offset;
     int n_dash;
     double *dash;
 };
@@ -154,6 +153,7 @@ struct _RsvgState {
     RsvgVpathDash dash;
     gboolean has_dash;
     gboolean has_dashoffset;
+    RsvgLength dash_offset;
 
     guint32 current_color;
     gboolean has_current_color;
