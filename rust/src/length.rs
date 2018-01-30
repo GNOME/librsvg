@@ -1,8 +1,11 @@
-use ::cssparser::{Parser, ParserInput, Token};
-use ::glib::translate::*;
-use ::libc;
+use cssparser::{Parser, ParserInput, Token};
+use glib_sys;
+use glib::translate::*;
+use libc;
 
 use std::f64::consts::*;
+use std::mem;
+use std::ptr;
 
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
@@ -289,6 +292,23 @@ fn viewport_percentage (x: f64, y: f64) -> f64 {
     (x * x + y * y).sqrt () / SQRT_2
 }
 
+// Keep in sync with rsvg-styles.h:RsvgStrokeDasharrayKind
+#[repr(C)]
+pub enum RsvgStrokeDasharrayKind {
+    None,
+    Inherit,
+    Dashes,
+    Error
+}
+
+// Keep in sync with rsvg-styles.h:RsvgStrokeDasharray
+#[repr(C)]
+pub struct RsvgStrokeDasharray {
+    pub kind: RsvgStrokeDasharrayKind,
+    pub num_dashes: usize,
+    pub dashes: *mut RsvgLength
+}
+
 #[derive(Debug)]
 enum StrokeDasharray {
     None,
@@ -360,6 +380,45 @@ pub extern fn rsvg_length_hand_normalize (raw_length: *const RsvgLength,
     let length: &RsvgLength = unsafe { &*raw_length };
 
     length.hand_normalize (pixels_per_inch, width_or_height, font_size)
+}
+
+#[no_mangle]
+pub extern fn rsvg_parse_stroke_dasharray(string: *const libc::c_char) -> RsvgStrokeDasharray {
+    let my_string = unsafe { &String::from_glib_none (string) };
+
+    match parse_stroke_dash_array(my_string) {
+        Ok(StrokeDasharray::None) => RsvgStrokeDasharray {
+            kind: RsvgStrokeDasharrayKind::None,
+            num_dashes: 0,
+            dashes: ptr::null_mut()
+        },
+
+        Ok(StrokeDasharray::Inherit) => RsvgStrokeDasharray {
+            kind: RsvgStrokeDasharrayKind::Inherit,
+            num_dashes: 0,
+            dashes: ptr::null_mut()
+        },
+
+        Ok(StrokeDasharray::Dasharray(ref v)) => RsvgStrokeDasharray {
+            kind: RsvgStrokeDasharrayKind::Dashes,
+            num_dashes: v.len(),
+            dashes: to_c_array(&v)
+        },
+
+        Err(_) => RsvgStrokeDasharray {
+            kind: RsvgStrokeDasharrayKind::Error,
+            num_dashes: 0,
+            dashes: ptr::null_mut()
+        }
+    }
+}
+
+fn to_c_array<T>(v: &[T]) -> *mut T {
+    unsafe {
+        let res = glib_sys::g_malloc(mem::size_of::<T>() * v.len()) as *mut T;
+        ptr::copy_nonoverlapping(v.as_ptr(), res, v.len());
+        res
+    }
 }
 
 #[cfg(test)]
