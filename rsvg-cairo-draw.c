@@ -234,6 +234,7 @@ static void
 set_stroke_dasharray(cairo_t *cr, RsvgDrawingCtx *ctx, RsvgStrokeDasharray *dash, RsvgLength *dash_offset)
 {
     double *dashes;
+    double total_length;
     int i;
 
     switch (dash->kind) {
@@ -248,15 +249,22 @@ set_stroke_dasharray(cairo_t *cr, RsvgDrawingCtx *ctx, RsvgStrokeDasharray *dash
 
     case RSVG_STROKE_DASHARRAY_DASHES:
         dashes = g_new(double, dash->num_dashes);
+        total_length = 0.0;
 
         for (i = 0; i < dash->num_dashes; i++) {
             dashes[i] = rsvg_length_normalize(&dash->dashes[i], ctx);
+            total_length += dashes[i];
         }
 
-        cairo_set_dash (cr,
-                        dashes,
-                        dash->num_dashes,
-                        rsvg_length_normalize (dash_offset, ctx));
+        if (total_length > 0.0) {
+            cairo_set_dash (cr,
+                            dashes,
+                            dash->num_dashes,
+                            rsvg_length_normalize (dash_offset, ctx));
+        } else {
+            cairo_set_dash (cr, NULL, 0, 0.0);
+        }
+
         g_free(dashes);
         break;
 
