@@ -64,8 +64,8 @@ typedef enum {
 typedef struct _RsvgVpathDash RsvgVpathDash;
 
 struct _RsvgVpathDash {
-    int n_dash;
-    double *dash;
+    gsize num_dashes;
+    double *dashes;
 };
 
 struct _RsvgState {
