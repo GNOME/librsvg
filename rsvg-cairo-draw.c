@@ -231,14 +231,51 @@ rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
 }
 
 static void
+set_stroke_dasharray(cairo_t *cr, RsvgDrawingCtx *ctx, RsvgStrokeDasharray *dash, RsvgLength *dash_offset)
+{
+    double *dashes;
+    int i;
+
+    switch (dash->kind) {
+    case RSVG_STROKE_DASHARRAY_NONE:
+        cairo_set_dash (cr, NULL, 0, 0.0);
+        break;
+
+    case RSVG_STROKE_DASHARRAY_INHERIT:
+        /* FIXME: do inheritance in the caller */
+        cairo_set_dash (cr, NULL, 0, 0.0);
+        break;
+
+    case RSVG_STROKE_DASHARRAY_DASHES:
+        dashes = g_new(double, dash->num_dashes);
+
+        for (i = 0; i < dash->num_dashes; i++) {
+            dashes[i] = rsvg_length_normalize(&dash->dashes[i], ctx);
+        }
+
+        cairo_set_dash (cr,
+                        dashes,
+                        dash->num_dashes,
+                        rsvg_length_normalize (dash_offset, ctx));
+        g_free(dashes);
+        break;
+
+    case RSVG_STROKE_DASHARRAY_ERROR:
+    default:
+        g_assert_not_reached ();
+        break;
+    }
+}
+
+static void
 setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgState *state)
 {
     cairo_set_line_width (cr, rsvg_get_normalized_stroke_width (ctx));
     cairo_set_miter_limit (cr, state->miter_limit);
     cairo_set_line_cap (cr, (cairo_line_cap_t) state->cap);
     cairo_set_line_join (cr, (cairo_line_join_t) state->join);
-    cairo_set_dash (cr, state->dash.dashes, state->dash.num_dashes,
-                    rsvg_length_normalize (&state->dash_offset, ctx));
+
+    set_stroke_dasharray(cr, ctx, &state->dash, &state->dash_offset);
 }
 
 void
