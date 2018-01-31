@@ -2,6 +2,7 @@ use cssparser::{Parser, ParserInput, Token};
 use glib_sys;
 use glib::translate::*;
 use libc;
+use regex::Regex;
 
 use std::f64::consts::*;
 use std::mem;
@@ -342,8 +343,15 @@ fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
         }
     }
 
+    // TODO: Use lazy static to avoid constructing the regex on each function call.
+    let commas = Regex::new(r",\s*,").unwrap();
+
+    if commas.is_match(s) {
+        return Err(AttributeError::Parse(ParseError::new("expected number, found comma")));
+    }
+
     // Values can be comma or whitespace separated.
-    let dashes = s.split(',') // split at comma
+    s.split(',') // split at comma
         // split at whitespace
         .flat_map(|slice| slice.split_whitespace())
         // parse it into an RsvgLength
@@ -351,14 +359,7 @@ fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
         // collect into a Result<Vec<T>, E>.
         // it will short-circuit iteslf upon the first error encountered
         // like if you returned from a for-loop
-        .collect::<Result<Vec<_>, _>>()?;
-
-    // This can occure when input is something like ",,,"
-    if dashes.is_empty() {
-        return Err(AttributeError::Parse(ParseError::new("parse error")));
-    }
-
-    Ok(dashes)
+        .collect::<Result<Vec<_>, _>>()
 }
 
 
@@ -599,5 +600,7 @@ mod tests {
         assert!(parse_dash_array(",,,").is_err());
         // No trailling commas allowed, parse error
         assert!(parse_dash_array("10,").is_err());
+        // A comma should be followed by a number
+        assert!(parse_dash_array("20,,10").is_err());
     }
 }
