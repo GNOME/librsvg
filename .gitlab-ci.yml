@@ -24,11 +24,11 @@ test:
     - ./autogen.sh --enable-debug
     - make check
   after_script:
-    - mkdir test_artifacts
+    - mkdir png_artifacts
     - cp /tmp/*.png png_artifacts
 
   artifacts:
     when: on_failure
     paths:
       - tests/*.log
-      - png_artifacts/
+      - png_artifacts
