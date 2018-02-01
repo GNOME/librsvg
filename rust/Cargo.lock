@@ -283,6 +283,7 @@ dependencies = [
  "glib 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "glib-sys 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.7.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.36 (registry+https://github.com/rust-lang/crates.io-index)",
  "pango 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pango-sys 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -330,6 +330,11 @@ fn parse_stroke_dash_array(s: &str) -> Result<StrokeDasharray, AttributeError> {
 
 // This does not handle "inherit" or "none" state, the caller is responsible for that.
 fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
+    lazy_static!{
+        // The unwrap here is fine AS LONG the regex query is valid.
+        static ref COMMAS: Regex = Regex::new(r",\s*,").unwrap();
+    };
+
     let s = s.trim();
 
     if s.is_empty() {
@@ -343,10 +348,8 @@ fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
         }
     }
 
-    // TODO: Use lazy static to avoid constructing the regex on each function call.
-    let commas = Regex::new(r",\s*,").unwrap();
-
-    if commas.is_match(s) {
+    // Commas must be followed by a value.
+    if COMMAS.is_match(s) {
         return Err(AttributeError::Parse(ParseError::new("expected number, found comma")));
     }
 
@@ -598,6 +601,7 @@ mod tests {
         assert_eq!(parse_dash_array(""), Err(AttributeError::Parse(ParseError::new("empty string"))));
         assert_eq!(parse_dash_array("\t  \n     "), Err(AttributeError::Parse(ParseError::new("empty string"))));
         assert!(parse_dash_array(",,,").is_err());
+        assert!(parse_dash_array("10,  \t, 20 \n").is_err());
         // No trailling commas allowed, parse error
         assert!(parse_dash_array("10,").is_err());
         // A comma should be followed by a number
