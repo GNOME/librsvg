@@ -1378,6 +1378,8 @@ rsvg_new_filter_primitive_convolve_matrix (const char *element_name, RsvgNode *p
     filter->super.result = g_string_new ("none");
     filter->KernelMatrix = NULL;
     filter->divisor = 0;
+    filter->orderx = 3; /* https://www.w3.org/TR/SVG/filters.html#feConvolveMatrixElementOrderAttribute */
+    filter->ordery = 3;
     filter->bias = 0;
     filter->dx = 0;
     filter->dy = 0;
