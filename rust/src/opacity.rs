@@ -1,8 +1,8 @@
 /// Struct to represent an inheritable opacity property
 /// <https://www.w3.org/TR/SVG/masking.html#OpacityProperty>
 
-use ::cssparser::{Parser, ParserInput, Token};
-use ::libc;
+use cssparser::{Parser, ParserInput, Token};
+use libc;
 
 use std::str::FromStr;
 

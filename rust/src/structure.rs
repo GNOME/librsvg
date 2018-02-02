@@ -1,5 +1,5 @@
-use ::glib::translate::*;
-use ::libc;
+use glib::translate::*;
+use libc;
 
 use std::cell::RefCell;
 use std::cell::Cell;

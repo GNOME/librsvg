@@ -1,4 +1,4 @@
-use ::cairo;
+use cairo;
 
 use error::*;
 use parsers::Parse;

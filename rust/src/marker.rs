@@ -1,5 +1,4 @@
-use ::glib::translate::*;
-use ::libc;
+use libc;
 
 use std::cell::Cell;
 use std::f64::consts::*;

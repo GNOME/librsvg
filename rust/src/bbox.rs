@@ -1,5 +1,5 @@
-use ::cairo;
-use ::glib_sys;
+use cairo;
+use glib_sys;
 
 use glib::translate::*;
 use cairo::MatrixTrait;

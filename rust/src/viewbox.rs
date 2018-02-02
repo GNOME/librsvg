@@ -1,6 +1,6 @@
-use ::cairo;
-use ::glib_sys;
-use ::glib;
+use cairo;
+use glib_sys;
+use glib;
 
 use error::*;
 use parsers;

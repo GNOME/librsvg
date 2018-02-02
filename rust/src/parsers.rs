@@ -1,7 +1,7 @@
-use ::libc;
-use ::cssparser::{Parser, ParserInput, Token, BasicParseError};
-use ::glib::translate::*;
-use ::glib_sys;
+use libc;
+use cssparser::{Parser, ParserInput, Token, BasicParseError};
+use glib::translate::*;
+use glib_sys;
 
 use std::f64::consts::*;
 use std::mem;

@@ -1,4 +1,4 @@
-use ::cairo_sys;
+use cairo_sys;
 
 use std::f64;
 use std::f64::consts::*;

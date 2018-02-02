@@ -1,7 +1,7 @@
-use ::cairo;
-use ::glib_sys;
-use ::glib::translate::*;
-use ::libc;
+use cairo;
+use glib_sys;
+use glib::translate::*;
+use libc;
 
 use std::cell::RefCell;
 use std::rc::*;

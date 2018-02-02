@@ -1,7 +1,5 @@
-use ::cssparser;
-use ::libc;
-
-use ::glib::translate::*;
+use cssparser;
+use libc;
 
 use parsers::Parse;
 use parsers::ParseError;
@@ -175,6 +173,7 @@ pub extern fn rsvg_css_parse_color (string: *const libc::c_char,
 #[cfg(test)]
 mod tests {
     use super::*;
+    use glib::translate::*;
 
     fn parse (s: &str) -> ColorSpec {
         // ColorSpec::from (Color::parse (s, (AllowInherit::Yes, AllowCurrentColor::Yes)))

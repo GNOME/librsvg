@@ -1,6 +1,6 @@
-use ::libc;
-use ::cssparser;
-use ::glib::translate::*;
+use libc;
+use cssparser;
+use glib::translate::*;
 
 use std::cell::Cell;
 

@@ -1,7 +1,7 @@
-use ::downcast_rs::*;
-use ::glib_sys;
-use ::glib::translate::*;
-use ::libc;
+use downcast_rs::*;
+use glib_sys;
+use glib::translate::*;
+use libc;
 
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;

@@ -1,7 +1,7 @@
-use ::cairo;
-use ::glib::translate::*;
-use ::glib_sys;
-use ::libc;
+use cairo;
+use glib::translate::*;
+use glib_sys;
+use libc;
 
 use std::f64::consts::*;
 
