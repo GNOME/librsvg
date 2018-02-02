@@ -239,6 +239,39 @@ read_png (const char *test_name)
   return surface;
 }
 
+static cairo_surface_t *
+extract_rectangle (cairo_surface_t *source,
+		   int x,
+		   int y,
+		   int w,
+		   int h)
+{
+    cairo_surface_t *dest;
+    cairo_t *cr;
+
+    dest = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, w, h);
+    cr = cairo_create (dest);
+    cairo_set_source_surface (cr, source, -x, -y);
+
+    cairo_paint (cr);
+    cairo_destroy (cr);
+
+    return dest;
+}
+
+// https://gitlab.gnome.org/GNOME/librsvg/issues/91
+//
+// We were computing some offsets incorrectly if the initial transformation matrix
+// passed to rsvg_handle_render_cairo() was not the identity matrix.  So,
+// we create a surface with a "frame" around the destination for the image,
+// and then only consider the pixels inside the frame.  This will require us
+// to have a non-identity transformation (i.e. a translation matrix), which
+// will test for this bug.
+//
+// The frame size is meant to be a ridiculous number to simulate an arbitrary
+// offset.
+#define FRAME_SIZE 47
+
 static void
 rsvg_cairo_check (gconstpointer data)
 {
@@ -246,6 +279,8 @@ rsvg_cairo_check (gconstpointer data)
     RsvgHandle *rsvg;
     RsvgDimensionData dimensions;
     cairo_t *cr;
+    cairo_t *cr2;
+    cairo_surface_t *render_surface;
     cairo_surface_t *surface_a, *surface_b, *surface_diff;
     buffer_diff_result_t result;
     char *test_file_base;
@@ -266,10 +301,21 @@ rsvg_cairo_check (gconstpointer data)
     rsvg_handle_get_dimensions (rsvg, &dimensions);
     g_assert (dimensions.width > 0);
     g_assert (dimensions.height > 0);
-    surface_a = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-					    dimensions.width, dimensions.height);
-    cr = cairo_create (surface_a);
+
+    render_surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+						 dimensions.width + 2 * FRAME_SIZE,
+						 dimensions.height + 2 * FRAME_SIZE);
+    cr = cairo_create (render_surface);
+    cairo_translate (cr, FRAME_SIZE, FRAME_SIZE);
     rsvg_handle_render_cairo (rsvg, cr);
+
+    surface_a = extract_rectangle (render_surface,
+				   FRAME_SIZE,
+				   FRAME_SIZE,
+				   dimensions.width,
+				   dimensions.height);
+    cairo_surface_destroy (render_surface);
+
     save_image (surface_a, test_file_base, "-out.png");
 
     surface_b = read_png (test_file_base);
