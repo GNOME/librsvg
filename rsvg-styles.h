@@ -61,13 +61,18 @@ typedef enum {
     RSVG_ENABLE_BACKGROUND_NEW
 } RsvgEnableBackgroundType;
 
-typedef struct _RsvgVpathDash RsvgVpathDash;
+typedef enum {
+    RSVG_STROKE_DASHARRAY_NONE,
+    RSVG_STROKE_DASHARRAY_INHERIT,
+    RSVG_STROKE_DASHARRAY_DASHES,
+    RSVG_STROKE_DASHARRAY_ERROR
+} RsvgStrokeDasharrayKind;
 
-struct _RsvgVpathDash {
-    RsvgLength offset;
-    int n_dash;
-    double *dash;
-};
+typedef struct {
+    RsvgStrokeDasharrayKind kind;
+    gsize num_dashes;
+    RsvgLength *dashes;
+} RsvgStrokeDasharray;
 
 struct _RsvgState {
     RsvgState *parent;
@@ -151,8 +156,9 @@ struct _RsvgState {
     gboolean has_cond;
     gboolean cond_true;
 
-    RsvgVpathDash dash;
+    RsvgStrokeDasharray dash;
     gboolean has_dash;
+    RsvgLength dash_offset;
     gboolean has_dashoffset;
 
     guint32 current_color;

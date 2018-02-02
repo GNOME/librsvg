@@ -232,10 +232,10 @@ rsvg_state_finalize (RsvgState * state)
     rsvg_paint_server_unref (state->stroke);
     state->stroke = NULL;
 
-    if (state->dash.n_dash != 0) {
-        g_free (state->dash.dash);
-        state->dash.n_dash = 0;
-        state->dash.dash = NULL;
+    if (state->dash.num_dashes != 0) {
+        g_free (state->dash.dashes);
+        state->dash.num_dashes = 0;
+        state->dash.dashes = NULL;
     }
 
     if (state->styles) {
@@ -287,10 +287,10 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 
     dst->styles = g_hash_table_ref (src->styles);
 
-    if (src->dash.n_dash > 0) {
-        dst->dash.dash = g_new0 (gdouble, src->dash.n_dash);
-        for (i = 0; i < src->dash.n_dash; i++)
-            dst->dash.dash[i] = src->dash.dash[i];
+    if (src->dash.num_dashes > 0) {
+        dst->dash.dashes = g_new0 (RsvgLength, src->dash.num_dashes);
+        for (i = 0; i < src->dash.num_dashes; i++)
+            dst->dash.dashes[i] = src->dash.dashes[i];
     }
 }
 
@@ -415,18 +415,18 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->lang = g_strdup (src->lang);
     }
 
-    if (src->dash.n_dash > 0 && (function (dst->has_dash, src->has_dash))) {
+    if (src->dash.num_dashes > 0 && (function (dst->has_dash, src->has_dash))) {
         if (dst->has_dash)
-            g_free (dst->dash.dash);
+            g_free (dst->dash.dashes);
 
-        dst->dash.dash = g_new0 (gdouble, src->dash.n_dash);
-        dst->dash.n_dash = src->dash.n_dash;
-        for (i = 0; i < src->dash.n_dash; i++)
-            dst->dash.dash[i] = src->dash.dash[i];
+        dst->dash.dashes = g_new0 (RsvgLength, src->dash.num_dashes);
+        dst->dash.num_dashes = src->dash.num_dashes;
+        for (i = 0; i < src->dash.num_dashes; i++)
+            dst->dash.dashes[i] = src->dash.dashes[i];
     }
 
     if (function (dst->has_dashoffset, src->has_dashoffset)) {
-        dst->dash.offset = src->dash.offset;
+        dst->dash_offset = src->dash_offset;
     }
 
     if (inherituninheritables) {
@@ -517,6 +517,9 @@ rsvg_state_inherit (RsvgState * dst, const RsvgState * src)
 {
     rsvg_state_inherit_run (dst, src, inheritfunction, 1);
 }
+
+/* Defined in rust/src/length.rs */
+extern RsvgStrokeDasharray rsvg_parse_stroke_dasharray(const char *str);
 
 /* Parse a CSS2 style argument, setting the SVG context attributes. */
 static void
@@ -927,9 +930,9 @@ rsvg_parse_style_pair (RsvgState * state,
         state->miter_limit = g_ascii_strtod (value, NULL);
     } else if (g_str_equal (name, "stroke-dashoffset")) {
         state->has_dashoffset = TRUE;
-        state->dash.offset = rsvg_length_parse (value, LENGTH_DIR_BOTH);
-        if (state->dash.offset.length < 0.)
-            state->dash.offset.length = 0.;
+        state->dash_offset = rsvg_length_parse (value, LENGTH_DIR_BOTH);
+        if (state->dash_offset.length < 0.)
+            state->dash_offset.length = 0.;
     } else if (g_str_equal (name, "shape-rendering")) {
         state->has_shape_rendering_type = TRUE;
 
@@ -956,49 +959,7 @@ rsvg_parse_style_pair (RsvgState * state,
 
     } else if (g_str_equal (name, "stroke-dasharray")) {
         state->has_dash = TRUE;
-        if (g_str_equal (value, "none")) {
-            if (state->dash.n_dash != 0) {
-                /* free any cloned dash data */
-                g_free (state->dash.dash);
-                state->dash.dash = NULL;
-                state->dash.n_dash = 0;
-            }
-        } else {
-            gchar **dashes = g_strsplit (value, ",", -1);
-            if (NULL != dashes) {
-                gint n_dashes, i;
-                gboolean is_even = FALSE;
-                gdouble total = 0;
-
-                /* count the #dashes */
-                for (n_dashes = 0; dashes[n_dashes] != NULL; n_dashes++);
-
-                is_even = (n_dashes % 2 == 0);
-                state->dash.n_dash = (is_even ? n_dashes : n_dashes * 2);
-                state->dash.dash = g_new0 (double, state->dash.n_dash);
-
-                /* TODO: handle negative value == error case */
-
-                /* the even and base case */
-                for (i = 0; i < n_dashes; i++) {
-                    state->dash.dash[i] = g_ascii_strtod (dashes[i], NULL);
-                    total += state->dash.dash[i];
-                }
-                /* if an odd number of dashes is found, it gets repeated */
-                if (!is_even)
-                    for (; i < state->dash.n_dash; i++)
-                        state->dash.dash[i] = state->dash.dash[i - n_dashes];
-
-                g_strfreev (dashes);
-                /* If the dashes add up to 0, then it should 
-                   be ignored */
-                if (total == 0) {
-                    g_free (state->dash.dash);
-                    state->dash.dash = NULL;
-                    state->dash.n_dash = 0;
-                }
-            }
-        }
+        state->dash = rsvg_parse_stroke_dasharray (value);
     }
 }
 

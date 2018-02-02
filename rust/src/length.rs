@@ -1,8 +1,12 @@
-use ::cssparser::{Parser, ParserInput, Token};
-use ::glib::translate::*;
-use ::libc;
+use cssparser::{Parser, ParserInput, Token};
+use glib_sys;
+use glib::translate::*;
+use libc;
+use regex::Regex;
 
 use std::f64::consts::*;
+use std::mem;
+use std::ptr;
 
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
@@ -290,6 +294,77 @@ fn viewport_percentage (x: f64, y: f64) -> f64 {
     (x * x + y * y).sqrt () / SQRT_2
 }
 
+// Keep in sync with rsvg-styles.h:RsvgStrokeDasharrayKind
+#[repr(C)]
+pub enum RsvgStrokeDasharrayKind {
+    None,
+    Inherit,
+    Dashes,
+    Error
+}
+
+// Keep in sync with rsvg-styles.h:RsvgStrokeDasharray
+#[repr(C)]
+pub struct RsvgStrokeDasharray {
+    pub kind: RsvgStrokeDasharrayKind,
+    pub num_dashes: usize,
+    pub dashes: *mut RsvgLength
+}
+
+#[derive(Debug)]
+enum StrokeDasharray {
+    None,
+    Inherit,
+    Dasharray(Vec<RsvgLength>),
+}
+
+fn parse_stroke_dash_array(s: &str) -> Result<StrokeDasharray, AttributeError> {
+    let s = s.trim();
+
+    match s {
+        "inherit" => Ok(StrokeDasharray::Inherit),
+        "none" => Ok(StrokeDasharray::None),
+        _ => Ok(StrokeDasharray::Dasharray(parse_dash_array(s)?)),
+    }
+}
+
+// This does not handle "inherit" or "none" state, the caller is responsible for that.
+fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
+    lazy_static!{
+        // The unwrap here is fine AS LONG the regex query is valid.
+        static ref COMMAS: Regex = Regex::new(r",\s*,").unwrap();
+    };
+
+    let s = s.trim();
+
+    if s.is_empty() {
+        return Err(AttributeError::Parse(ParseError::new("empty string")));
+    }
+
+    // Read the last character, if it's a comma return an Error.
+    if let Some(c) = s.chars().last() {
+        if c == ',' {
+            return Err(AttributeError::Parse(ParseError::new("trailing comma")));
+        }
+    }
+
+    // Commas must be followed by a value.
+    if COMMAS.is_match(s) {
+        return Err(AttributeError::Parse(ParseError::new("expected number, found comma")));
+    }
+
+    // Values can be comma or whitespace separated.
+    s.split(',') // split at comma
+        // split at whitespace
+        .flat_map(|slice| slice.split_whitespace())
+        // parse it into an RsvgLength
+        .map(|d| RsvgLength::parse(d.into(), LengthDir::Both))
+        // collect into a Result<Vec<T>, E>.
+        // it will short-circuit iteslf upon the first error encountered
+        // like if you returned from a for-loop
+        .collect::<Result<Vec<_>, _>>()
+}
+
 #[no_mangle]
 pub extern fn rsvg_length_normalize (raw_length: *const RsvgLength, draw_ctx: *const RsvgDrawingCtx) -> f64 {
     assert! (!raw_length.is_null ());
@@ -309,6 +384,45 @@ pub extern fn rsvg_length_hand_normalize (raw_length: *const RsvgLength,
     let length: &RsvgLength = unsafe { &*raw_length };
 
     length.hand_normalize (pixels_per_inch, width_or_height, font_size)
+}
+
+#[no_mangle]
+pub extern fn rsvg_parse_stroke_dasharray(string: *const libc::c_char) -> RsvgStrokeDasharray {
+    let my_string = unsafe { &String::from_glib_none (string) };
+
+    match parse_stroke_dash_array(my_string) {
+        Ok(StrokeDasharray::None) => RsvgStrokeDasharray {
+            kind: RsvgStrokeDasharrayKind::None,
+            num_dashes: 0,
+            dashes: ptr::null_mut()
+        },
+
+        Ok(StrokeDasharray::Inherit) => RsvgStrokeDasharray {
+            kind: RsvgStrokeDasharrayKind::Inherit,
+            num_dashes: 0,
+            dashes: ptr::null_mut()
+        },
+
+        Ok(StrokeDasharray::Dasharray(ref v)) => RsvgStrokeDasharray {
+            kind: RsvgStrokeDasharrayKind::Dashes,
+            num_dashes: v.len(),
+            dashes: to_c_array(&v)
+        },
+
+        Err(_) => RsvgStrokeDasharray {
+            kind: RsvgStrokeDasharrayKind::Error,
+            num_dashes: 0,
+            dashes: ptr::null_mut()
+        }
+    }
+}
+
+fn to_c_array<T>(v: &[T]) -> *mut T {
+    unsafe {
+        let res = glib_sys::g_malloc(mem::size_of::<T>() * v.len()) as *mut T;
+        ptr::copy_nonoverlapping(v.as_ptr(), res, v.len());
+        res
+    }
 }
 
 #[cfg(test)]
@@ -424,5 +538,72 @@ mod tests {
     fn check_nonnegative_works () {
         assert! (RsvgLength::parse ("0", LengthDir::Both).and_then (|l| l.check_nonnegative ()).is_ok ());
         assert! (RsvgLength::parse ("-10", LengthDir::Both).and_then (|l| l.check_nonnegative ()).is_err ());
+    }
+
+    #[test]
+    fn parses_stroke_dasharray() {
+        use std::mem::discriminant;
+
+        // https://doc.rust-lang.org/std/mem/fn.discriminant.html
+        assert_eq!(discriminant(&parse_stroke_dash_array("none").unwrap()), discriminant(&StrokeDasharray::None));
+        assert_eq!(discriminant(&parse_stroke_dash_array("inherit").unwrap()), discriminant(&StrokeDasharray::Inherit));
+        assert_eq!(discriminant(&parse_stroke_dash_array("10, 5").unwrap()), discriminant(&StrokeDasharray::Dasharray(parse_dash_array("10, 5").unwrap())));
+        assert!(parse_stroke_dash_array("").is_err());
+    }
+
+    #[test]
+    fn parses_dash_array() {
+        // helper to cut down boilderplate
+        let length_parse = |s| { RsvgLength::parse(s, LengthDir::Both).unwrap() };
+
+        let expected =  vec![
+            length_parse("1"),
+            length_parse("2in"),
+            length_parse("3"),
+            length_parse("4%")
+        ];
+
+        let sample_1 = vec![length_parse("10"), length_parse("6")];
+        let sample_2 = vec![
+            length_parse("5"),
+            length_parse("5"),
+            length_parse("20"),
+        ];
+
+        let sample_3 = vec![
+            length_parse("10px"),
+            length_parse("20px"),
+            length_parse("20px"),
+        ];
+
+        let sample_4 = vec![
+            length_parse("25"),
+            length_parse("5"),
+            length_parse("5"),
+            length_parse("5"),
+        ];
+
+        let sample_5 = vec![length_parse("3.1415926"), length_parse("8")];
+        let sample_6 = vec![length_parse("5"), length_parse("3.14")];
+        let sample_7 = vec![length_parse("2")];
+
+        assert_eq!(parse_dash_array("1 2in,3 4%").unwrap(), expected);
+        assert_eq!(parse_dash_array("10,6").unwrap(), sample_1);
+        assert_eq!(parse_dash_array("5,5,20").unwrap(), sample_2);
+        assert_eq!(parse_dash_array("10px 20px 20px").unwrap(), sample_3);
+        assert_eq!(parse_dash_array("25  5 , 5 5").unwrap(), sample_4);
+        assert_eq!(parse_dash_array("3.1415926,8").unwrap(), sample_5);
+        assert_eq!(parse_dash_array("5, 3.14").unwrap(), sample_6);
+        assert_eq!(parse_dash_array("2").unwrap(), sample_7);
+
+        // Empty dash_array
+        assert_eq!(parse_dash_array(""), Err(AttributeError::Parse(ParseError::new("empty string"))));
+        assert_eq!(parse_dash_array("\t  \n     "), Err(AttributeError::Parse(ParseError::new("empty string"))));
+        assert!(parse_dash_array(",,,").is_err());
+        assert!(parse_dash_array("10,  \t, 20 \n").is_err());
+        // No trailling commas allowed, parse error
+        assert!(parse_dash_array("10,").is_err());
+        // A comma should be followed by a number
+        assert!(parse_dash_array("20,,10").is_err());
     }
 }
