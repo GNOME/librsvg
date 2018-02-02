@@ -1,6 +1,8 @@
 Version 2.42.2
 - gitlab#193 - Don't crash when feConvolveMatrix doesn't specify
   orderx/ordery attributes.
+- gitlab#136 - Parse stroke-dasharray property correctly.  This code
+  is in Rust now; yay! (Jordan Petridis).
 - Don't render markers if they are zero-sized, per the spec.
 - Performance: eliminate a bunch of string copies during parsing.
 - Update rust-cssparser to 0.23 (Igor Gnatenko).
