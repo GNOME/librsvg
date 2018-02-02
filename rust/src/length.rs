@@ -344,7 +344,7 @@ fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
     // Read the last character, if it's a comma return an Error.
     if let Some(c) = s.chars().last() {
         if c == ',' {
-            return Err(AttributeError::Parse(ParseError::new("trailling comma")));
+            return Err(AttributeError::Parse(ParseError::new("trailing comma")));
         }
     }
 
@@ -364,7 +364,6 @@ fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
         // like if you returned from a for-loop
         .collect::<Result<Vec<_>, _>>()
 }
-
 
 #[no_mangle]
 pub extern fn rsvg_length_normalize (raw_length: *const RsvgLength, draw_ctx: *const RsvgDrawingCtx) -> f64 {
@@ -558,35 +557,35 @@ mod tests {
         let length_parse = |s| { RsvgLength::parse(s, LengthDir::Both).unwrap() };
 
         let expected =  vec![
-           length_parse("1"),
-           length_parse("2in"),
-           length_parse("3"),
-           length_parse("4%")
-       ];
+            length_parse("1"),
+            length_parse("2in"),
+            length_parse("3"),
+            length_parse("4%")
+        ];
 
-       let sample_1 = vec![length_parse("10"), length_parse("6")];
-       let sample_2 = vec![
-           length_parse("5"),
-           length_parse("5"),
-           length_parse("20"),
-       ];
+        let sample_1 = vec![length_parse("10"), length_parse("6")];
+        let sample_2 = vec![
+            length_parse("5"),
+            length_parse("5"),
+            length_parse("20"),
+        ];
 
-       let sample_3 = vec![
-           length_parse("10px"),
-           length_parse("20px"),
-           length_parse("20px"),
-       ];
+        let sample_3 = vec![
+            length_parse("10px"),
+            length_parse("20px"),
+            length_parse("20px"),
+        ];
 
-       let sample_4 = vec![
-           length_parse("25"),
-           length_parse("5"),
-           length_parse("5"),
-           length_parse("5"),
-       ];
+        let sample_4 = vec![
+            length_parse("25"),
+            length_parse("5"),
+            length_parse("5"),
+            length_parse("5"),
+        ];
 
-       let sample_5 = vec![length_parse("3.1415926"), length_parse("8")];
-       let sample_6 = vec![length_parse("5"), length_parse("3.14")];
-       let sample_7 = vec![length_parse("2")];
+        let sample_5 = vec![length_parse("3.1415926"), length_parse("8")];
+        let sample_6 = vec![length_parse("5"), length_parse("3.14")];
+        let sample_7 = vec![length_parse("2")];
 
         assert_eq!(parse_dash_array("1 2in,3 4%").unwrap(), expected);
         assert_eq!(parse_dash_array("10,6").unwrap(), sample_1);
