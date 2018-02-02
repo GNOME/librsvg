@@ -10,7 +10,7 @@ contributing to librsvg, and we appreciate all of them.
 * [Merge requests](#merge-requests)
 
 There is a **code of conduct** for contributors to librsvg; please see the
-file [`code_of_conduct.md`][coc].
+file [`code-of-conduct.md`][coc].
 
 ## Source repository
 
@@ -126,7 +126,7 @@ have things working (or before even writing code, if you like
 test-driven development), so we can avoid regressions later.  The test
 suite is documented in [`tests/README.md`][tests-readme].
 
-[coc]: code_of_conduct.md
+[coc]: code-of-conduct.md
 [gitlab]: https://gitlab.gnome.org/GNOME/librsvg
 [bugs-browse]: https://gitlab.gnome.org/GNOME/librsvg/issues
 [maintainer]: README.md#maintainers

@@ -234,7 +234,7 @@ dist_doc_DATA =				\
 	COMPILING.md			\
 	CONTRIBUTING.md			\
 	README.md			\
-	code_of_conduct.md
+	code-of-conduct.md
 
 EXTRA_DIST =				\
 	$(RUST_SOURCES)			\

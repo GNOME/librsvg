@@ -41,7 +41,7 @@ Contributing to librsvg's development
 -------------------------------------
 
 There is a code of conduct for contributors to librsvg; please see the
-file [`code_of_conduct.md`][coc].
+file [`code-of-conduct.md`][coc].
 
 For information on how to report bugs, or how to contribute to librsvg
 in general, please see the file [`CONTRIBUTING.md`][contributing].
@@ -147,7 +147,7 @@ ways:
 [svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 [gnome]: https://www.gnome.org/
 [cairo]: https://www.cairographics.org/
-[coc]: code_of_conduct.md
+[coc]: code-of-conduct.md
 [autotools]: https://autotools.io/index.html
 [compiling]: COMPILING.md
 [docs]: https://developer.gnome.org/rsvg/stable/
