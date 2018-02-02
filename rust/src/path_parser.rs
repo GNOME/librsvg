@@ -1022,6 +1022,13 @@ mod tests {
                      ],
                      None);
 
+        test_parser ("M10.5.50",
+                     "",
+                     &vec![
+                         moveto (10.5, 0.50)
+                     ],
+                     None);
+
         test_parser ("M.10.20",
                      "",
                      &vec![
