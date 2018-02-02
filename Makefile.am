@@ -61,7 +61,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	rsvg-text.h		\
 	rsvg-xml.c		\
 	rsvg-xml.h		\
-	rsvg.c			\
 	rsvg.h			\
 	$(NULL)
 
