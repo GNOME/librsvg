@@ -126,19 +126,28 @@ rsvg_pixbuf_from_file_with_size_data (const gchar * file_name,
     GdkPixbuf *pixbuf;
     char *data;
     gsize data_len;
-    GString *base_uri = g_string_new (file_name);
+    GFile *file;
+    gchar *base_uri;
 
-    data = _rsvg_io_acquire_data (file_name, base_uri->str, NULL, &data_len, NULL, error);
+    file = g_file_new_for_path (file_name);
+    base_uri = g_file_get_uri (file);
+    if (!base_uri) {
+        g_object_unref (file);
+        return NULL;
+    }
+
+    data = _rsvg_io_acquire_data (base_uri, base_uri, NULL, &data_len, NULL, error);
 
     if (data) {
         pixbuf = rsvg_pixbuf_from_stdio_file_with_size_data (data, data_len,
-                                                             cb_data, base_uri->str, error);
+                                                             cb_data, base_uri, error);
         g_free (data);
     } else {
         pixbuf = NULL;
     }
 
-    g_string_free (base_uri, TRUE);
+    g_free (base_uri);
+    g_object_unref (file);
 
     return pixbuf;
 }
