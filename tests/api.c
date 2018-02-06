@@ -70,8 +70,8 @@ get_test_filename () {
                              NULL);
 }
 
-#define EXAMPLE_WIDTH 123
-#define EXAMPLE_HEIGHT 456
+#define EXAMPLE_WIDTH 100
+#define EXAMPLE_HEIGHT 400
 
 #define XZOOM 2
 #define YZOOM 3
@@ -81,13 +81,13 @@ get_test_filename () {
 
 #define EXAMPLE_ONE_X 0
 #define EXAMPLE_ONE_Y 0
-#define EXAMPLE_ONE_W 123
-#define EXAMPLE_ONE_H 228
+#define EXAMPLE_ONE_W 100
+#define EXAMPLE_ONE_H 200
 
 #define EXAMPLE_TWO_X 0
-#define EXAMPLE_TWO_Y 228
-#define EXAMPLE_TWO_W 123
-#define EXAMPLE_TWO_H 228
+#define EXAMPLE_TWO_Y 200
+#define EXAMPLE_TWO_W 100
+#define EXAMPLE_TWO_H 200
 
 static GdkPixbuf *
 pixbuf_from_file (const char *filename, GError **error)
