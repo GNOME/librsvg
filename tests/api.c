@@ -14,7 +14,6 @@
 rsvg_handle_get_dimensions
 rsvg_handle_get_dimensions_sub
 rsvg_handle_get_position_sub
-rsvg_handle_get_pixbuf_sub
 rsvg_handle_get_base_uri
 rsvg_handle_set_base_uri
 rsvg_handle_set_size_callback
@@ -394,6 +393,31 @@ handle_get_pixbuf (void)
     g_object_unref (handle);
 }
 
+static void
+handle_get_pixbuf_sub (void)
+{
+    char *filename = get_test_filename ("example.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    GdkPixbuf *pixbuf = rsvg_handle_get_pixbuf_sub (handle, EXAMPLE_ONE_ID);
+    g_assert (pixbuf != NULL);
+
+    /* Note that rsvg_handle_get_pixbuf_sub() creates a surface the size of the
+     * whole SVG, not just the size of the sub-element.
+     */
+    g_assert_cmpint (gdk_pixbuf_get_width (pixbuf), ==, EXAMPLE_WIDTH);
+    g_assert_cmpint (gdk_pixbuf_get_height (pixbuf), ==, EXAMPLE_HEIGHT);
+
+    g_object_unref (pixbuf);
+    g_object_unref (handle);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -417,6 +441,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/handle_read_stream_sync", handle_read_stream_sync);
     g_test_add_func ("/api/handle_has_sub", handle_has_sub);
     g_test_add_func ("/api/handle_get_pixbuf", handle_get_pixbuf);
+    g_test_add_func ("/api/handle_get_pixbuf_sub", handle_get_pixbuf_sub);
 
     return g_test_run ();
 }
