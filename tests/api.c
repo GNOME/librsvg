@@ -41,7 +41,6 @@ rsvg_set_default_dpi
 rsvg_set_default_dpi_x_y
 rsvg_handle_set_dpi
 rsvg_handle_set_dpi_x_y
-rsvg_pixbuf_from_file_at_zoom
 rsvg_pixbuf_from_file_at_size
 rsvg_pixbuf_from_file_at_max_size
 rsvg_pixbuf_from_file_at_zoom_with_max
@@ -104,6 +103,22 @@ pixbuf_from_file (void)
     g_object_unref (pixbuf);
 }
 
+static void
+pixbuf_from_file_at_zoom (void)
+{
+    char *filename = get_test_filename ();
+    GError *error = NULL;
+    GdkPixbuf *pixbuf = rsvg_pixbuf_from_file_at_zoom (filename, 2.0, 3.0, &error);
+    g_free (filename);
+
+    g_assert (pixbuf != NULL);
+    g_assert (error == NULL);
+    g_assert (gdk_pixbuf_get_width (pixbuf) == EXAMPLE_WIDTH * 2.0);
+    g_assert (gdk_pixbuf_get_height (pixbuf) == EXAMPLE_HEIGHT * 3.0);
+
+    g_object_unref (pixbuf);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -111,6 +126,7 @@ main (int argc, char **argv)
 
     g_test_add_func ("/api/handle_has_gtype", handle_has_gtype);
     g_test_add_func ("/api/pixbuf_from_file", pixbuf_from_file);
+    g_test_add_func ("/api/pixbuf_from_file_at_zoom", pixbuf_from_file_at_zoom);
 
     return g_test_run ();
 }
