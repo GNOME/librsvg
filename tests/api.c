@@ -73,6 +73,9 @@ get_test_filename () {
 #define EXAMPLE_WIDTH 123
 #define EXAMPLE_HEIGHT 456
 
+#define XZOOM 2
+#define YZOOM 3
+
 #define EXAMPLE_ONE_ID "one"
 #define EXAMPLE_TWO_ID "two"
 
@@ -86,50 +89,54 @@ get_test_filename () {
 #define EXAMPLE_TWO_W 123
 #define EXAMPLE_TWO_H 228
 
-static void
-pixbuf_from_file (void)
+static GdkPixbuf *
+pixbuf_from_file (const char *filename, GError **error)
 {
-    char *filename = get_test_filename ();
-    GError *error = NULL;
-    GdkPixbuf *pixbuf = rsvg_pixbuf_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert (pixbuf != NULL);
-    g_assert (error == NULL);
-    g_assert (gdk_pixbuf_get_width (pixbuf) == EXAMPLE_WIDTH);
-    g_assert (gdk_pixbuf_get_height (pixbuf) == EXAMPLE_HEIGHT);
-
-    g_object_unref (pixbuf);
+    return rsvg_pixbuf_from_file (filename, error);
 }
 
-static void
-pixbuf_from_file_at_zoom (void)
+static GdkPixbuf *
+pixbuf_from_file_at_zoom (const char *filename, GError **error)
 {
-    char *filename = get_test_filename ();
-    GError *error = NULL;
-    GdkPixbuf *pixbuf = rsvg_pixbuf_from_file_at_zoom (filename, 2.0, 3.0, &error);
-    g_free (filename);
-
-    g_assert (pixbuf != NULL);
-    g_assert (error == NULL);
-    g_assert (gdk_pixbuf_get_width (pixbuf) == EXAMPLE_WIDTH * 2.0);
-    g_assert (gdk_pixbuf_get_height (pixbuf) == EXAMPLE_HEIGHT * 3.0);
-
-    g_object_unref (pixbuf);
+    return rsvg_pixbuf_from_file_at_zoom (filename, (double) XZOOM, (double) YZOOM, error);
 }
 
-static void
-pixbuf_from_file_at_size (void)
+static GdkPixbuf *
+pixbuf_from_file_at_size (const char *filename, GError **error)
 {
+    return rsvg_pixbuf_from_file_at_size (filename, EXAMPLE_WIDTH * XZOOM, EXAMPLE_HEIGHT * YZOOM, error);
+}
+
+typedef GdkPixbuf *(* PixbufCreateFn) (const char *filename, GError **error);
+
+typedef struct {
+    const char *test_name;
+    PixbufCreateFn pixbuf_create_fn;
+    int expected_width;
+    int expected_height;
+} PixbufTest;
+
+static const PixbufTest pixbuf_tests[] = {
+    { "/api/pixbuf_from_file",         pixbuf_from_file,         EXAMPLE_WIDTH, EXAMPLE_HEIGHT },
+    { "/api/pixbuf_from_file_at_zoom", pixbuf_from_file_at_zoom, EXAMPLE_WIDTH * XZOOM, EXAMPLE_HEIGHT * YZOOM },
+    { "/api/pixbuf_from_file_at_size", pixbuf_from_file_at_size, EXAMPLE_WIDTH * XZOOM, EXAMPLE_HEIGHT * YZOOM },
+};
+
+static void
+test_pixbuf (gconstpointer data) {
+    const PixbufTest *test = data;
+
     char *filename = get_test_filename ();
     GError *error = NULL;
-    GdkPixbuf *pixbuf = rsvg_pixbuf_from_file_at_size (filename, EXAMPLE_WIDTH * 2, EXAMPLE_HEIGHT * 3, &error);
+
+    GdkPixbuf *pixbuf = test->pixbuf_create_fn (filename, &error);
+
     g_free (filename);
 
     g_assert (pixbuf != NULL);
     g_assert (error == NULL);
-    g_assert (gdk_pixbuf_get_width (pixbuf) == EXAMPLE_WIDTH * 2);
-    g_assert (gdk_pixbuf_get_height (pixbuf) == EXAMPLE_HEIGHT * 3);
+    g_assert (gdk_pixbuf_get_width (pixbuf) == test->expected_width);
+    g_assert (gdk_pixbuf_get_height (pixbuf) == test->expected_height);
 
     g_object_unref (pixbuf);
 }
@@ -137,12 +144,15 @@ pixbuf_from_file_at_size (void)
 int
 main (int argc, char **argv)
 {
+    int i;
+
     g_test_init (&argc, &argv, NULL);
 
+    for (i = 0; i < G_N_ELEMENTS (pixbuf_tests); i++) {
+        g_test_add_data_func (pixbuf_tests[i].test_name, &pixbuf_tests[i], test_pixbuf);
+    }
+
     g_test_add_func ("/api/handle_has_gtype", handle_has_gtype);
-    g_test_add_func ("/api/pixbuf_from_file", pixbuf_from_file);
-    g_test_add_func ("/api/pixbuf_from_file_at_zoom", pixbuf_from_file_at_zoom);
-    g_test_add_func ("/api/pixbuf_from_file_at_size", pixbuf_from_file_at_size);
 
     return g_test_run ();
 }
