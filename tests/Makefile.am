@@ -58,6 +58,7 @@ INCLUDES = -I$(srcdir) 							\
 
 dist_installed_test_data =						\
 	$(wildcard $(srcdir)/resources/*)				\
+	$(wildcard $(srcdir)/fixtures/api/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.png)			\
 	$(wildcard $(srcdir)/fixtures/loading/*)			\
