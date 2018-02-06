@@ -33,10 +33,6 @@ rsvg_handle_render_cairo
 rsvg_handle_set_base_gfile
 rsvg_handle_write
 rsvg_handle_read_stream_sync
-rsvg_set_default_dpi
-rsvg_set_default_dpi_x_y
-rsvg_handle_set_dpi
-rsvg_handle_set_dpi_x_y
 rsvg_handle_get_title
 rsvg_handle_get_desc
 rsvg_handle_get_metadata
@@ -192,6 +188,46 @@ noops (void)
     g_assert (rsvg_cleanup != NULL); /* shouldn't call this one! */
 }
 
+static void
+set_dpi (void)
+{
+    char *filename = get_test_filename ("dpi.svg");
+    GError *error = NULL;
+    RsvgHandle *handle;
+
+    /* Get dimensions at default DPI */
+
+    RsvgDimensionData dim_100_dpi;
+    RsvgDimensionData dim_200_300_dpi;
+
+    /* Set 100 DPI */
+
+    handle = rsvg_handle_new_from_file (filename, &error);
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    rsvg_handle_set_dpi (handle, 100.0);
+    rsvg_handle_get_dimensions (handle, &dim_100_dpi);
+    g_assert_cmpint (dim_100_dpi.width,  ==, 100);
+    g_assert_cmpint (dim_100_dpi.height, ==, 400);
+    g_object_unref (handle);
+
+    /* Set 200x300 DPI */
+
+    handle = rsvg_handle_new_from_file (filename, &error);
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    rsvg_handle_set_dpi_x_y (handle, 200.0, 300.0);
+    rsvg_handle_get_dimensions (handle, &dim_200_300_dpi);
+    g_object_unref (handle);
+
+    /* Check! */
+
+    g_assert_cmpint (dim_100_dpi.width * 2,  ==, dim_200_300_dpi.width);
+    g_assert_cmpint (dim_100_dpi.height * 3, ==, dim_200_300_dpi.height);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -205,6 +241,7 @@ main (int argc, char **argv)
 
     g_test_add_func ("/api/handle_has_gtype", handle_has_gtype);
     g_test_add_func ("/api/noops", noops);
+    g_test_add_func ("/api/set_dpi", set_dpi);
 
     return g_test_run ();
 }
