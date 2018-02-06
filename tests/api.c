@@ -22,7 +22,6 @@ rsvg_handle_set_size_callback
 rsvg_handle_has_sub
 rsvg_handle_internal_set_testing
 rsvg_handle_new_with_flags
-rsvg_handle_new_from_stream_sync
 rsvg_handle_render_cairo
 rsvg_handle_render_cairo_sub
 rsvg_handle_set_base_gfile
@@ -306,6 +305,35 @@ handle_new_from_gfile_sync (void)
     g_object_unref (handle);
     g_object_unref (file);
 }
+
+static void
+handle_new_from_stream_sync (void)
+{
+    char *filename = get_test_filename ("dpi.svg");
+    GError *error = NULL;
+    GFile *file = g_file_new_for_path (filename);
+    g_assert (file != NULL);
+
+    g_free (filename);
+
+    GFileInputStream *stream = g_file_read (file, NULL, &error);
+    g_assert (stream != NULL);
+    g_assert (error == NULL);
+
+    RsvgHandle *handle = rsvg_handle_new_from_stream_sync (G_INPUT_STREAM (stream),
+                                                           file,
+                                                           RSVG_HANDLE_FLAGS_NONE,
+                                                           NULL,
+                                                           &error);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    g_object_unref (handle);
+    g_object_unref (file);
+    g_object_unref (stream);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -325,6 +353,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/handle_write_close_free", handle_write_close_free);
     g_test_add_func ("/api/handle_new_from_data", handle_new_from_data);
     g_test_add_func ("/api/handle_new_from_gfile_sync", handle_new_from_gfile_sync);
+    g_test_add_func ("/api/handle_new_from_stream_sync", handle_new_from_stream_sync);
 
     return g_test_run ();
 }
