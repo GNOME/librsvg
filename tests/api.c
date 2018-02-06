@@ -57,10 +57,10 @@ handle_has_gtype (void)
 }
 
 static char *
-get_test_filename () {
+get_test_filename (const char *basename) {
     return g_build_filename (test_utils_get_test_data_path (),
                              "api",
-                             "example.svg",
+                             basename,
                              NULL);
 }
 
@@ -168,7 +168,7 @@ static void
 test_pixbuf (gconstpointer data) {
     const PixbufTest *test = data;
 
-    char *filename = get_test_filename ();
+    char *filename = get_test_filename ("example.svg");
     GError *error = NULL;
 
     GdkPixbuf *pixbuf = test->pixbuf_create_fn (filename, &error);
