@@ -11,8 +11,6 @@
 #include "test-utils.h"
 
 /*
-rsvg_handle_free
-rsvg_handle_close
 rsvg_handle_get_dimensions
 rsvg_handle_get_dimensions_sub
 rsvg_handle_get_position_sub
@@ -23,19 +21,17 @@ rsvg_handle_set_base_uri
 rsvg_handle_set_size_callback
 rsvg_handle_has_sub
 rsvg_handle_internal_set_testing
-rsvg_handle_new_from_file
 rsvg_handle_new_from_gfile_sync
 rsvg_handle_new_with_flags
 rsvg_handle_new_from_stream_sync
 rsvg_handle_new_from_data
 rsvg_handle_render_cairo
+rsvg_handle_render_cairo_sub
 rsvg_handle_set_base_gfile
-rsvg_handle_write
 rsvg_handle_read_stream_sync
 rsvg_handle_get_title
 rsvg_handle_get_desc
 rsvg_handle_get_metadata
-rsvg_handle_render_cairo_sub
 */
 
 static void
@@ -244,6 +240,33 @@ auto_generated (void)
     g_assert_cmpstr (q.type_name, ==, "RsvgHandleFlags");
 }
 
+static void
+handle_write_close_free (void)
+{
+    char *filename = get_test_filename ("dpi.svg");
+    char *data;
+    gsize length;
+    gsize i;
+    GError *error = NULL;
+
+    g_assert (g_file_get_contents (filename, &data, &length, &error));
+    g_assert (data != NULL);
+    g_assert (error == NULL);
+
+    RsvgHandle *handle = rsvg_handle_new ();
+
+    for (i = 0; i < length; i++) {
+        g_assert (rsvg_handle_write (handle, (guchar *) &data[i], 1, &error));
+        g_assert (error == NULL);
+    }
+
+    g_assert (rsvg_handle_close (handle, &error));
+    g_assert (error == NULL);
+
+    rsvg_handle_free (handle);
+    g_free (data);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -260,6 +283,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/set_dpi", set_dpi);
     g_test_add_func ("/api/error_quark", error_quark);
     g_test_add_func ("/api/auto_generated", auto_generated);
+    g_test_add_func ("/api/handle_write_close_free", handle_write_close_free);
 
     return g_test_run ();
 }
