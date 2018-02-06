@@ -88,10 +88,18 @@ rsvg_handle_new_from_file (const gchar * file_name, GError ** error)
     gsize data_len;
     RsvgHandle *handle = NULL;
     GFile *file;
+    char *scheme;
 
     rsvg_return_val_if_fail (file_name != NULL, NULL, error);
 
-    file = g_file_new_for_path (file_name);
+    scheme = g_uri_parse_scheme (file_name);
+    if (scheme) {
+        file = g_file_new_for_uri (file_name);
+        g_free (scheme);
+    } else {
+        file = g_file_new_for_path (file_name);
+    }
+
     base_uri = g_file_get_uri (file);
     if (!base_uri) {
         g_set_error (error,

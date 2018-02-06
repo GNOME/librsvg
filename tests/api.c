@@ -257,6 +257,31 @@ handle_write_close_free (void)
 }
 
 static void
+handle_new_from_file (void)
+{
+    char *filename = get_test_filename ("dpi.svg");
+    char *uri = g_strconcat ("file://", filename, NULL);
+
+    RsvgHandle *handle;
+    GError *error = NULL;
+
+    /* rsvg_handle_new_from_file() can take both filenames and URIs */
+
+    handle = rsvg_handle_new_from_file (filename, &error);
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+    g_object_unref (handle);
+
+    handle = rsvg_handle_new_from_file (uri, &error);
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+    g_object_unref (handle);
+
+    g_free (filename);
+    g_free (uri);
+}
+
+static void
 handle_new_from_data (void)
 {
     char *filename = get_test_filename ("dpi.svg");
@@ -457,6 +482,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/error_quark", error_quark);
     g_test_add_func ("/api/auto_generated", auto_generated);
     g_test_add_func ("/api/handle_write_close_free", handle_write_close_free);
+    g_test_add_func ("/api/handle_new_from_file", handle_new_from_file);
     g_test_add_func ("/api/handle_new_from_data", handle_new_from_data);
     g_test_add_func ("/api/handle_new_from_gfile_sync", handle_new_from_gfile_sync);
     g_test_add_func ("/api/handle_new_from_stream_sync", handle_new_from_stream_sync);
