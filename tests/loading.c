@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <glib.h>
 #include "rsvg.h"
-#include "rsvg-compat.h"
 #include "test-utils.h"
 
 typedef struct {
@@ -68,7 +67,6 @@ main (int argc, char **argv)
     int result;
     int i;
 
-    RSVG_G_TYPE_INIT;
     g_test_init (&argc, &argv, NULL);
 
     for (i = 0; i < G_N_ELEMENTS (tests); i++) {

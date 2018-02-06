@@ -32,7 +32,6 @@
 #include "rsvg.h"
 #include "rsvg-private.h"
 #include "rsvg-tools-main.h"
-#include "rsvg-compat.h"
 
 static gboolean
 read_contents (const gchar *file_name, guint8 **contents, gsize *length)
@@ -127,8 +126,6 @@ rsvg_tools_main (int *argc, char ***argv)
         g_printerr (_("Must specify a SVG file\n"));
         exit (EXIT_FAILURE);
     }
-
-    RSVG_G_TYPE_INIT;
 
     for (j = 0; j < n_args; j++) {
         if (!read_contents (args[j], &contents, &length))

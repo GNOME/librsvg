@@ -36,7 +36,6 @@
 #include <string.h>
 
 #include "rsvg.h"
-#include "rsvg-compat.h"
 
 #include "test-utils.h"
 
@@ -360,7 +359,6 @@ main (int argc, char **argv)
 {
     int result;
 
-    RSVG_G_TYPE_INIT;
     g_test_init (&argc, &argv, NULL);
 
     rsvg_set_default_dpi_x_y (72, 72);

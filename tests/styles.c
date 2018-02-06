@@ -2,7 +2,6 @@
 
 #include <glib.h>
 #include "rsvg.h"
-#include "rsvg-compat.h"
 #include "rsvg-private.h"
 #include "rsvg-defs.h"
 #include "rsvg-styles.h"
@@ -115,7 +114,6 @@ main (int argc, char *argv[])
     gint i;
     int result;
 
-    RSVG_G_TYPE_INIT;
     g_test_init (&argc, &argv, NULL);
 
     for (i = 0; i < n_fixtures; i++)

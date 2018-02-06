@@ -28,7 +28,6 @@
 #define _GNU_SOURCE 1
 
 #include "rsvg-private.h"
-#include "rsvg-compat.h"
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"
@@ -1589,14 +1588,14 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 /**
  * rsvg_init:
  *
- * Initializes librsvg
+ * This function does nothing.
+ *
  * Since: 2.9
- * Deprecated: 2.36: Use g_type_init()
+ * Deprecated: 2.36: There is no need to initialize librsvg.
  **/
 void
 rsvg_init (void)
 {
-    RSVG_G_TYPE_INIT;
 }
 
 /**
@@ -1605,7 +1604,7 @@ rsvg_init (void)
  * This function does nothing.
  *
  * Since: 2.9
- * Deprecated: 2.36
+ * Deprecated: 2.36: There is no need to de-initialize librsvg.
  **/
 void
 rsvg_term (void)
