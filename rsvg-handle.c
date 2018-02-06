@@ -87,17 +87,11 @@
  * # Resolution of the rendered image (dots per inch, or DPI)
  *
  * SVG images can contain dimensions like "<literal>5 cm</literal>" or
- * "<literal>2 pt</literal>" that must be converted from physical units
- * into device units.  To do this, librsvg needs to know the actual dots per
- * inch (DPI) of your target device.
- *
- * The recommended way to set the DPI is to use rsvg_handle_set_dpi() or
- * rsvg_handle_set_dpi_x_y() on an RsvgHandle before rendering it.
- *
- * Alternatively, you can use rsvg_set_default_dpi() or
- * rsvg_set_default_dpi_x_y() <emphasis>before</emphasis> creating any
- * RsvgHandle objects.  These functions will make RsvgHandle objects created
- * afterwards to have the default DPI value you specified.
+ * "<literal>2 pt</literal>" that must be converted from physical units into
+ * device units.  To do this, librsvg needs to know the actual dots per inch
+ * (DPI) of your target device.  You can call rsvg_handle_set_dpi() or
+ * rsvg_handle_set_dpi_x_y() on an RsvgHandle to set the DPI before rendering
+ * it.
  *
  * # Rendering
  *
