@@ -128,7 +128,10 @@ struct _RsvgPositionData {
 
 void rsvg_cleanup (void);
 
+RSVG_DEPRECATED
 void rsvg_set_default_dpi	(double dpi);
+
+RSVG_DEPRECATED
 void rsvg_set_default_dpi_x_y	(double dpi_x, double dpi_y);
 
 void rsvg_handle_set_dpi	(RsvgHandle * handle, double dpi);

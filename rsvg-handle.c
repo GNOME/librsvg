@@ -87,17 +87,11 @@
  * # Resolution of the rendered image (dots per inch, or DPI)
  *
  * SVG images can contain dimensions like "<literal>5 cm</literal>" or
- * "<literal>2 pt</literal>" that must be converted from physical units
- * into device units.  To do this, librsvg needs to know the actual dots per
- * inch (DPI) of your target device.
- *
- * The recommended way to set the DPI is to use rsvg_handle_set_dpi() or
- * rsvg_handle_set_dpi_x_y() on an RsvgHandle before rendering it.
- *
- * Alternatively, you can use rsvg_set_default_dpi() or
- * rsvg_set_default_dpi_x_y() <emphasis>before</emphasis> creating any
- * RsvgHandle objects.  These functions will make RsvgHandle objects created
- * afterwards to have the default DPI value you specified.
+ * "<literal>2 pt</literal>" that must be converted from physical units into
+ * device units.  To do this, librsvg needs to know the actual dots per inch
+ * (DPI) of your target device.  You can call rsvg_handle_set_dpi() or
+ * rsvg_handle_set_dpi_x_y() on an RsvgHandle to set the DPI before rendering
+ * it.
  *
  * # Rendering
  *
@@ -1024,13 +1018,19 @@ rsvg_handle_has_sub (RsvgHandle * handle,
  * @id: (nullable): An element's id within the SVG, starting with "##", for
  * example, "##layer1"; or %NULL to use the whole SVG.
  *
- * Returns the pixbuf loaded by @handle.  The pixbuf returned will be reffed, so
- * the caller of this function must assume that ref.  If insufficient data has
- * been read to create the pixbuf, or an error occurred in loading, then %NULL
- * will be returned.  Note that the pixbuf may not be complete until
- * @rsvg_handle_close has been called.
+ * Creates a #GdkPixbuf the same size as the entire SVG loaded into @handle, but
+ * only renders the sub-element that has the specified @id (and all its
+ * sub-sub-elements recursively).  If @id is #NULL, this function renders the
+ * whole SVG.
  *
- * Returns: (transfer full) (nullable): the pixbuf loaded by @handle, or %NULL.
+ * If you need to render an image which is only big enough to fit a particular
+ * sub-element of the SVG, consider using rsvg_handle_render_cairo_sub(), upon a
+ * surface that is just the size returned by rsvg_handle_get_dimensions_sub().
+ * You will need to offset the rendering by the amount returned in
+ * rsvg_handle_get_position_sub().
+ *
+ * Returns: (transfer full) (nullable): a pixbuf, or %NULL if an error occurs
+ * during rendering.
  *
  * Since: 2.14
  **/

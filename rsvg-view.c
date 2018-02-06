@@ -29,8 +29,6 @@
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
-#include "rsvg-compat.h"
-
 #if 0 // defined (G_OS_UNIX)
 #include <gio/gunixinputstream.h>
 #endif
@@ -638,8 +636,6 @@ main (int argc, char **argv)
 	/* Set the locale so that UTF-8 filenames work */
     setlocale(LC_ALL, "");
 
-    RSVG_G_TYPE_INIT;
-
     info.window = NULL;
     info.popup_menu = NULL;
 
@@ -668,7 +664,13 @@ main (int argc, char **argv)
         return 1;
     }
 
-    rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
+    if (dpi_x <= 0.0) {
+        dpi_x = 90.0;
+    }
+
+    if (dpi_y <= 0.0) {
+        dpi_y = 90.0;
+    }
 
     if (unlimited)
         flags |= RSVG_HANDLE_FLAG_UNLIMITED;
@@ -722,6 +724,7 @@ main (int argc, char **argv)
         return 1;
     }
 
+    rsvg_handle_set_dpi_x_y (info.handle, dpi_x, dpi_y);
     rsvg_handle_get_dimensions (info.handle, &info.dimensions);
 
     if (width != -1) {

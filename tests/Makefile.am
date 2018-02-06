@@ -4,6 +4,7 @@ EXTRA_DIST +=		\
 	README.md
 
 test_programs =		\
+	api		\
 	loading		\
 	rsvg-test	\
 	crash		\
@@ -15,6 +16,10 @@ test_programs =		\
 test_utils_common_sources = \
 	test-utils.c	\
 	test-utils.h
+
+api_SOURCES = 		\
+	api.c		\
+	$(test_utils_common_sources)
 
 rsvg_test_SOURCES = \
 	rsvg-test.c	\
@@ -53,6 +58,7 @@ INCLUDES = -I$(srcdir) 							\
 
 dist_installed_test_data =						\
 	$(wildcard $(srcdir)/resources/*)				\
+	$(wildcard $(srcdir)/fixtures/api/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.png)			\
 	$(wildcard $(srcdir)/fixtures/loading/*)			\

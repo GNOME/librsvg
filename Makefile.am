@@ -33,7 +33,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	rsvg-cairo-render.c	\
 	rsvg-cairo-render.h	\
 	rsvg-cairo.h		\
-	rsvg-compat.h		\
 	rsvg-cond.c		\
 	rsvg-css.c 		\
 	rsvg-css.h 		\

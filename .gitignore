@@ -59,8 +59,11 @@ rust/src/*~
 rust/src/parse_transform.rs
 tests/dimensions
 tests/pdiff/perceptualdiff
-tests/rsvg-test
+tests/api
 tests/crash
+tests/loading
+tests/render-crash
+tests/rsvg-test
 tests/styles
 tests/*.log
 tests/*.trs

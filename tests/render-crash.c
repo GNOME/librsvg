@@ -2,7 +2,6 @@
 
 #include <glib.h>
 #include "rsvg.h"
-#include "rsvg-compat.h"
 #include "test-utils.h"
 
 static void
@@ -39,7 +38,6 @@ main (int argc, char *argv[])
     GFile *base, *crash;
     int result;
 
-    RSVG_G_TYPE_INIT;
     g_test_init (&argc, &argv, NULL);
 
     if (argc < 2) {

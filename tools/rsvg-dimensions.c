@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <glib.h>
 #include <rsvg.h>
-#include "rsvg-compat.h"
 
 static void
 show_help (GOptionContext *context)
@@ -40,8 +39,6 @@ main (int	  argc,
         { G_OPTION_REMAINING, 0, G_OPTION_FLAG_FILENAME, G_OPTION_ARG_FILENAME_ARRAY, &filenames, NULL, "[FILE...]" },
         { NULL }
     };
-
-    RSVG_G_TYPE_INIT;
 
     context = NULL;
     fragment = NULL;

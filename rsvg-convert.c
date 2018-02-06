@@ -51,7 +51,6 @@
 
 #include "rsvg-css.h"
 #include "rsvg.h"
-#include "rsvg-compat.h"
 #include "rsvg-size-callback.h"
 
 #ifdef CAIRO_HAS_PS_SURFACE
@@ -184,8 +183,6 @@ main (int argc, char **argv)
     /* Set the locale so that UTF-8 filenames work */
     setlocale(LC_ALL, "");
 
-    RSVG_G_TYPE_INIT;
-
     g_option_context = g_option_context_new (_("- SVG Converter"));
     g_option_context_add_main_entries (g_option_context, options_table, NULL);
     g_option_context_set_help_enabled (g_option_context, TRUE);
@@ -233,6 +230,14 @@ main (int argc, char **argv)
         exit (1);
     }
 
+    if (dpi_x <= 0.0) {
+        dpi_x = 90.0;
+    }
+
+    if (dpi_y <= 0.0) {
+        dpi_y = 90.0;
+    }
+
     if (format != NULL &&
         (g_str_equal (format, "ps") || g_str_equal (format, "eps") || g_str_equal (format, "pdf")) &&
         !no_keep_image_data)
@@ -240,8 +245,6 @@ main (int argc, char **argv)
 
     if (zoom != 1.0)
         x_zoom = y_zoom = zoom;
-
-    rsvg_set_default_dpi_x_y (dpi_x, dpi_y);
 
     if (unlimited)
         flags |= RSVG_HANDLE_FLAG_UNLIMITED;
@@ -288,6 +291,10 @@ main (int argc, char **argv)
             g_printerr ("\n");
             exit (1);
         }
+
+        g_assert (rsvg != NULL);
+
+        rsvg_handle_set_dpi_x_y (rsvg, dpi_x, dpi_y);
 
         export_lookup_id = get_lookup_id_from_command_line (export_id);
         if (export_lookup_id != NULL

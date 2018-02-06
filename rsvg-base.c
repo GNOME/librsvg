@@ -28,7 +28,6 @@
 #define _GNU_SOURCE 1
 
 #include "rsvg-private.h"
-#include "rsvg-compat.h"
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"
@@ -1280,11 +1279,15 @@ rsvg_drawing_ctx_free (RsvgDrawingCtx * handle)
  * rsvg_set_default_dpi:
  * @dpi: Dots Per Inch (aka Pixels Per Inch)
  *
- * Sets the DPI for the all future outgoing pixbufs. Common values are
- * 75, 90, and 300 DPI. Passing a number <= 0 to @dpi will
- * reset the DPI to whatever the default value happens to be.
+ * Do not use this function.  Create an #RsvgHandle and call
+ * rsvg_handle_set_dpi() on it instead.
  *
  * Since: 2.8
+ *
+ * Deprecated: 2.42.3: This function used to set a global default DPI.  However,
+ * it only worked if it was called before any #RsvgHandle objects had been
+ * created; it would not work after that.  To avoid global mutable state, please
+ * use rsvg_handle_set_dpi() instead.
  */
 void
 rsvg_set_default_dpi (double dpi)
@@ -1297,11 +1300,15 @@ rsvg_set_default_dpi (double dpi)
  * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
- * Sets the DPI for the all future outgoing pixbufs. Common values are
- * 75, 90, and 300 DPI. Passing a number <= 0 to @dpi will
- * reset the DPI to whatever the default value happens to be.
+ * Do not use this function.  Create an #RsvgHandle and call
+ * rsvg_handle_set_dpi_x_y() on it instead.
  *
  * Since: 2.8
+ *
+ * Deprecated: 2.42.3: This function used to set a global default DPI.  However,
+ * it only worked if it was called before any #RsvgHandle objects had been
+ * created; it would not work after that.  To avoid global mutable state, please
+ * use rsvg_handle_set_dpi() instead.
  */
 void
 rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y)
@@ -1589,14 +1596,14 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 /**
  * rsvg_init:
  *
- * Initializes librsvg
+ * This function does nothing.
+ *
  * Since: 2.9
- * Deprecated: 2.36: Use g_type_init()
+ * Deprecated: 2.36: There is no need to initialize librsvg.
  **/
 void
 rsvg_init (void)
 {
-    RSVG_G_TYPE_INIT;
 }
 
 /**
@@ -1605,7 +1612,7 @@ rsvg_init (void)
  * This function does nothing.
  *
  * Since: 2.9
- * Deprecated: 2.36
+ * Deprecated: 2.36: There is no need to de-initialize librsvg.
  **/
 void
 rsvg_term (void)
