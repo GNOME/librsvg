@@ -11,10 +11,6 @@
 #include "test-utils.h"
 
 /*
-RSVG_G_TYPE_INIT
-rsvg_init
-rsvg_term
-rsvg_cleanup
 rsvg_error_quark
 rsvg_handle_free
 rsvg_handle_close
@@ -187,6 +183,15 @@ test_pixbuf (gconstpointer data) {
     g_object_unref (pixbuf);
 }
 
+static void
+noops (void)
+{
+    /* Just to test that these functions are present in the binary, I guess */
+    rsvg_init ();
+    rsvg_term ();
+    g_assert (rsvg_cleanup != NULL); /* shouldn't call this one! */
+}
+
 int
 main (int argc, char **argv)
 {
@@ -199,6 +204,7 @@ main (int argc, char **argv)
     }
 
     g_test_add_func ("/api/handle_has_gtype", handle_has_gtype);
+    g_test_add_func ("/api/noops", noops);
 
     return g_test_run ();
 }
