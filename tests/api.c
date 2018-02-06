@@ -41,7 +41,6 @@ rsvg_set_default_dpi
 rsvg_set_default_dpi_x_y
 rsvg_handle_set_dpi
 rsvg_handle_set_dpi_x_y
-rsvg_pixbuf_from_file_at_max_size
 rsvg_pixbuf_from_file_at_zoom_with_max
 rsvg_handle_get_title
 rsvg_handle_get_desc
@@ -76,6 +75,9 @@ get_test_filename () {
 #define XZOOM 2
 #define YZOOM 3
 
+#define MAX_WIDTH 10
+#define MAX_HEIGHT 40
+
 #define EXAMPLE_ONE_ID "one"
 #define EXAMPLE_TWO_ID "two"
 
@@ -107,6 +109,12 @@ pixbuf_from_file_at_size (const char *filename, GError **error)
     return rsvg_pixbuf_from_file_at_size (filename, EXAMPLE_WIDTH * XZOOM, EXAMPLE_HEIGHT * YZOOM, error);
 }
 
+static GdkPixbuf *
+pixbuf_from_file_at_max_size (const char *filename, GError **error)
+{
+    return rsvg_pixbuf_from_file_at_max_size (filename, MAX_WIDTH, MAX_HEIGHT, error);
+}
+
 typedef GdkPixbuf *(* PixbufCreateFn) (const char *filename, GError **error);
 
 typedef struct {
@@ -117,9 +125,10 @@ typedef struct {
 } PixbufTest;
 
 static const PixbufTest pixbuf_tests[] = {
-    { "/api/pixbuf_from_file",         pixbuf_from_file,         EXAMPLE_WIDTH, EXAMPLE_HEIGHT },
-    { "/api/pixbuf_from_file_at_zoom", pixbuf_from_file_at_zoom, EXAMPLE_WIDTH * XZOOM, EXAMPLE_HEIGHT * YZOOM },
-    { "/api/pixbuf_from_file_at_size", pixbuf_from_file_at_size, EXAMPLE_WIDTH * XZOOM, EXAMPLE_HEIGHT * YZOOM },
+    { "/api/pixbuf_from_file",             pixbuf_from_file,             EXAMPLE_WIDTH, EXAMPLE_HEIGHT },
+    { "/api/pixbuf_from_file_at_zoom",     pixbuf_from_file_at_zoom,     EXAMPLE_WIDTH * XZOOM, EXAMPLE_HEIGHT * YZOOM },
+    { "/api/pixbuf_from_file_at_size",     pixbuf_from_file_at_size,     EXAMPLE_WIDTH * XZOOM, EXAMPLE_HEIGHT * YZOOM },
+    { "/api/pixbuf_from_file_at_max_size", pixbuf_from_file_at_max_size, MAX_WIDTH, MAX_HEIGHT },
 };
 
 static void
