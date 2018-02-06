@@ -36,9 +36,6 @@ rsvg_handle_get_title
 rsvg_handle_get_desc
 rsvg_handle_get_metadata
 rsvg_handle_render_cairo_sub
-
-RSVG_TYPE_ERROR -> rsvg_error_get_type
-RSVG_TYPE_HANDLE_FLAGS -> rsvg_handle_flags_get_type
 */
 
 static void
@@ -233,6 +230,20 @@ error_quark (void)
     g_assert_cmpint (rsvg_error_quark(), !=, 0);
 }
 
+static void
+auto_generated (void)
+{
+    GTypeQuery q;
+
+    g_type_query (RSVG_TYPE_ERROR, &q);
+    g_assert (G_TYPE_IS_ENUM (q.type));
+    g_assert_cmpstr (q.type_name, ==, "RsvgError");
+
+    g_type_query (RSVG_TYPE_HANDLE_FLAGS, &q);
+    g_assert (G_TYPE_IS_FLAGS (q.type));
+    g_assert_cmpstr (q.type_name, ==, "RsvgHandleFlags");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -248,6 +259,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/noops", noops);
     g_test_add_func ("/api/set_dpi", set_dpi);
     g_test_add_func ("/api/error_quark", error_quark);
+    g_test_add_func ("/api/auto_generated", auto_generated);
 
     return g_test_run ();
 }
