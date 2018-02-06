@@ -11,9 +11,6 @@
 #include "test-utils.h"
 
 /*
-rsvg_handle_get_dimensions
-rsvg_handle_get_dimensions_sub
-rsvg_handle_get_position_sub
 rsvg_handle_get_base_uri
 rsvg_handle_set_base_uri
 rsvg_handle_set_size_callback
@@ -417,6 +414,32 @@ handle_get_pixbuf_sub (void)
     g_object_unref (handle);
 }
 
+static void
+dimensions_and_position (void)
+{
+    char *filename = get_test_filename ("example.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    RsvgDimensionData dim;
+
+    g_assert (rsvg_handle_get_dimensions_sub (handle, &dim, EXAMPLE_TWO_ID));
+    g_assert_cmpint (dim.width,  ==, EXAMPLE_TWO_W);
+    g_assert_cmpint (dim.height, ==, EXAMPLE_TWO_H);
+
+    RsvgPositionData pos;
+    g_assert (rsvg_handle_get_position_sub (handle, &pos, EXAMPLE_TWO_ID));
+    g_assert_cmpint (pos.x, ==, EXAMPLE_TWO_X);
+    g_assert_cmpint (pos.y, ==, EXAMPLE_TWO_Y);
+
+    g_object_unref (handle);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -441,6 +464,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/handle_has_sub", handle_has_sub);
     g_test_add_func ("/api/handle_get_pixbuf", handle_get_pixbuf);
     g_test_add_func ("/api/handle_get_pixbuf_sub", handle_get_pixbuf_sub);
+    g_test_add_func ("/api/dimensions_and_position", dimensions_and_position);
 
     return g_test_run ();
 }
