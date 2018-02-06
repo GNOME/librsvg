@@ -18,7 +18,6 @@ rsvg_handle_get_base_uri
 rsvg_handle_set_base_uri
 rsvg_handle_set_size_callback
 rsvg_handle_internal_set_testing
-rsvg_handle_new_with_flags
 rsvg_handle_render_cairo
 rsvg_handle_render_cairo_sub
 rsvg_handle_set_base_gfile
@@ -246,7 +245,7 @@ handle_write_close_free (void)
     g_assert (data != NULL);
     g_assert (error == NULL);
 
-    RsvgHandle *handle = rsvg_handle_new ();
+    RsvgHandle *handle = rsvg_handle_new_with_flags (RSVG_HANDLE_FLAGS_NONE);
 
     for (i = 0; i < length; i++) {
         g_assert (rsvg_handle_write (handle, (guchar *) &data[i], 1, &error));
