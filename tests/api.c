@@ -11,7 +11,6 @@
 #include "test-utils.h"
 
 /*
-rsvg_error_quark
 rsvg_handle_free
 rsvg_handle_close
 rsvg_handle_get_dimensions
@@ -228,6 +227,12 @@ set_dpi (void)
     g_assert_cmpint (dim_100_dpi.height * 3, ==, dim_200_300_dpi.height);
 }
 
+static void
+error_quark (void)
+{
+    g_assert_cmpint (rsvg_error_quark(), !=, 0);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -242,6 +247,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/handle_has_gtype", handle_has_gtype);
     g_test_add_func ("/api/noops", noops);
     g_test_add_func ("/api/set_dpi", set_dpi);
+    g_test_add_func ("/api/error_quark", error_quark);
 
     return g_test_run ();
 }
