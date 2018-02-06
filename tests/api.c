@@ -135,8 +135,8 @@ test_pixbuf (gconstpointer data) {
 
     g_assert (pixbuf != NULL);
     g_assert (error == NULL);
-    g_assert (gdk_pixbuf_get_width (pixbuf) == test->expected_width);
-    g_assert (gdk_pixbuf_get_height (pixbuf) == test->expected_height);
+    g_assert_cmpint (gdk_pixbuf_get_width (pixbuf), ==, test->expected_width);
+    g_assert_cmpint (gdk_pixbuf_get_height (pixbuf), ==, test->expected_height);
 
     g_object_unref (pixbuf);
 }
