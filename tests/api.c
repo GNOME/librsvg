@@ -24,7 +24,6 @@ rsvg_handle_internal_set_testing
 rsvg_handle_new_from_gfile_sync
 rsvg_handle_new_with_flags
 rsvg_handle_new_from_stream_sync
-rsvg_handle_new_from_data
 rsvg_handle_render_cairo
 rsvg_handle_render_cairo_sub
 rsvg_handle_set_base_gfile
@@ -267,6 +266,26 @@ handle_write_close_free (void)
     g_free (data);
 }
 
+static void
+handle_new_from_data (void)
+{
+    char *filename = get_test_filename ("dpi.svg");
+    char *data;
+    gsize length;
+    GError *error = NULL;
+
+    g_assert (g_file_get_contents (filename, &data, &length, &error));
+    g_assert (data != NULL);
+    g_assert (error == NULL);
+
+    RsvgHandle *handle = rsvg_handle_new_from_data ((guint8 *) data, length, &error);
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    g_object_unref (handle);
+    g_free (data);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -284,6 +303,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/error_quark", error_quark);
     g_test_add_func ("/api/auto_generated", auto_generated);
     g_test_add_func ("/api/handle_write_close_free", handle_write_close_free);
+    g_test_add_func ("/api/handle_new_from_data", handle_new_from_data);
 
     return g_test_run ();
 }
