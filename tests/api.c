@@ -14,12 +14,10 @@
 rsvg_handle_get_dimensions
 rsvg_handle_get_dimensions_sub
 rsvg_handle_get_position_sub
-rsvg_handle_get_pixbuf
 rsvg_handle_get_pixbuf_sub
 rsvg_handle_get_base_uri
 rsvg_handle_set_base_uri
 rsvg_handle_set_size_callback
-rsvg_handle_has_sub
 rsvg_handle_internal_set_testing
 rsvg_handle_new_with_flags
 rsvg_handle_render_cairo
@@ -60,8 +58,8 @@ get_test_filename (const char *basename) {
 #define MAX_ZOOMED_WIDTH 20
 #define MAX_ZOOMED_HEIGHT 120
 
-#define EXAMPLE_ONE_ID "one"
-#define EXAMPLE_TWO_ID "two"
+#define EXAMPLE_ONE_ID "#one"
+#define EXAMPLE_TWO_ID "#two"
 
 #define EXAMPLE_ONE_X 0
 #define EXAMPLE_ONE_Y 0
@@ -357,6 +355,45 @@ handle_read_stream_sync (void)
     g_object_unref (stream);
 }
 
+static void
+handle_has_sub (void)
+{
+    char *filename = get_test_filename ("example.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    g_assert (rsvg_handle_has_sub (handle, EXAMPLE_ONE_ID));
+    g_assert (rsvg_handle_has_sub (handle, EXAMPLE_TWO_ID));
+    g_assert (!rsvg_handle_has_sub (handle, "#foo"));
+}
+
+static void
+handle_get_pixbuf (void)
+{
+    char *filename = get_test_filename ("example.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert (handle != NULL);
+    g_assert (error == NULL);
+
+    GdkPixbuf *pixbuf = rsvg_handle_get_pixbuf (handle);
+    g_assert (pixbuf != NULL);
+
+    g_assert_cmpint (gdk_pixbuf_get_width (pixbuf), ==, EXAMPLE_WIDTH);
+    g_assert_cmpint (gdk_pixbuf_get_height (pixbuf), ==, EXAMPLE_HEIGHT);
+
+    g_object_unref (pixbuf);
+    g_object_unref (handle);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -378,6 +415,8 @@ main (int argc, char **argv)
     g_test_add_func ("/api/handle_new_from_gfile_sync", handle_new_from_gfile_sync);
     g_test_add_func ("/api/handle_new_from_stream_sync", handle_new_from_stream_sync);
     g_test_add_func ("/api/handle_read_stream_sync", handle_read_stream_sync);
+    g_test_add_func ("/api/handle_has_sub", handle_has_sub);
+    g_test_add_func ("/api/handle_get_pixbuf", handle_get_pixbuf);
 
     return g_test_run ();
 }
