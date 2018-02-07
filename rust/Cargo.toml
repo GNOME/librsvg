@@ -2,6 +2,10 @@
 name = "rsvg_internals"
 version = "0.0.1"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
+build = "build.rs"
+
+[build-dependencies]
+phf_codegen = "0.7.21"
 
 [dependencies]
 libc = "0.2"
@@ -12,6 +16,7 @@ pango = "0.3.0"
 pango-sys = "0.5.0"
 cssparser = "0.23"
 lazy_static = "1.0.0"
+phf = "0.7.21"
 
 [dependencies.cairo-sys-rs]
 version = "0.5.0"

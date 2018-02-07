@@ -173,6 +173,7 @@ pub use viewbox::{
 mod coord_units;
 
 mod aspect_ratio;
+mod attributes;
 mod bbox;
 mod chars;
 mod clip_path;

@@ -64,7 +64,9 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 
 RUST_SOURCES =					\
 	rust/Cargo.toml				\
+	rust/build.rs				\
 	rust/src/aspect_ratio.rs		\
+	rust/src/attributes.rs			\
 	rust/src/bbox.rs			\
 	rust/src/chars.rs			\
 	rust/src/clip_path.rs			\
