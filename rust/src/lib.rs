@@ -19,6 +19,10 @@ extern crate lazy_static;
 #[macro_use]
 extern crate downcast_rs;
 
+pub use attributes::{
+    rsvg_attribute_from_name,
+};
+
 pub use bbox::{
     RsvgBbox,
     rsvg_bbox_init,
