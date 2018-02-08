@@ -3,7 +3,6 @@ extern crate phf;
 use glib_sys;
 use glib::translate::*;
 use libc;
-use std::mem;
 use std::str::FromStr;
 
 use util::utf8_cstr;
@@ -37,6 +36,7 @@ pub extern fn rsvg_attribute_from_name(raw_name: *const libc::c_char,
 
 #[cfg(test)]
 mod tests {
+    use std::mem;
     use super::*;
 
     #[test]
