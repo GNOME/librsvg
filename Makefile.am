@@ -24,6 +24,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	librsvg-enum-types.h	\
 	librsvg-features.c 	\
 	librsvg-features.h 	\
+	rsvg-attributes.h	\
 	rsvg-base-file-util.c 	\
 	rsvg-base.c		\
 	rsvg-cairo-clip.c	\
