@@ -45,79 +45,13 @@
 #include <pango/pangofc-fontmap.h>
 #endif
 
-static void
-_set_source_rsvg_solid_color (RsvgDrawingCtx * ctx,
-                              RsvgSolidColor * color, guint8 opacity, guint32 current_color)
-{
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    cairo_t *cr = render->cr;
-    guint32 argb = color->argb;
-    double r, g, b, a;
-
-    if (color->currentcolor)
-        argb = current_color;
-
-    r = ((argb >> 16) & 0xff) / 255.0;
-    g = ((argb >>  8) & 0xff) / 255.0;
-    b = ((argb >>  0) & 0xff) / 255.0;
-    a =  (argb >> 24) / 255.0 * (opacity / 255.0);
-
-    cairo_set_source_rgba (cr, r, g, b, a);
-}
-
-/* note: _set_source_rsvg_paint_server does not change cairo's CTM */
-static gboolean
-_set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
-                               RsvgPaintServer * ps,
-                               guint8 opacity,
-                               RsvgBbox bbox,
-                               guint32 current_color)
-{
-    RsvgNode *node;
-    gboolean had_paint_server;
-    gboolean use_alternate;
-
-    had_paint_server = FALSE;
-
-    switch (ps->type) {
-    case RSVG_PAINT_SERVER_IRI:
-        use_alternate = FALSE;
-
-        node = rsvg_drawing_ctx_acquire_node (ctx, ps->core.iri->iri_str);
-        if (node == NULL) {
-            use_alternate = TRUE;
-        } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LINEAR_GRADIENT
-                   || rsvg_node_get_type (node) == RSVG_NODE_TYPE_RADIAL_GRADIENT) {
-            if (gradient_resolve_fallbacks_and_set_pattern (node, ctx, opacity, bbox)) {
-                had_paint_server = TRUE;
-            } else {
-                use_alternate = TRUE;
-            }
-        } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_PATTERN) {
-            if (pattern_resolve_fallbacks_and_set_pattern (node, ctx, bbox)) {
-                had_paint_server = TRUE;
-            } else {
-                use_alternate = TRUE;
-            }
-        }
-
-        if (use_alternate) {
-            if (ps->core.iri->has_alternate) {
-                _set_source_rsvg_solid_color (ctx, &ps->core.iri->alternate, opacity, current_color);
-                had_paint_server = TRUE;
-            }
-        }
-
-        rsvg_drawing_ctx_release_node (ctx, node);
-        break;
-    case RSVG_PAINT_SERVER_SOLID:
-        _set_source_rsvg_solid_color (ctx, ps->core.color, opacity, current_color);
-        had_paint_server = TRUE;
-        break;
-    }
-
-    return had_paint_server;
-}
+/* Implemented in rust/src/paint_server.rs */
+G_GNUC_INTERNAL
+gboolean _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
+                                        RsvgPaintServer * ps,
+                                        guint8 opacity,
+                                        RsvgBbox bbox,
+                                        guint32 current_color);
 
 static void
 _set_rsvg_affine (RsvgCairoRender * render, cairo_matrix_t *affine)
