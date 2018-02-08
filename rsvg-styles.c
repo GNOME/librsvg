@@ -1501,16 +1501,11 @@ rsvg_parse_transform_attr (RsvgState *state, const char *str)
     }
 }
 
-typedef struct _StylesData {
-    RsvgHandle *handle;
-    RsvgState *state;
-} StylesData;
-
 static void
 apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
 {
-    StylesData *data = (StylesData *) user_data;
-    rsvg_parse_style_pair (data->state, key, value->value, value->important);
+    RsvgState *state = user_data;
+    rsvg_parse_style_pair (state, key, value->value, value->important);
 }
 
 static gboolean
@@ -1521,11 +1516,7 @@ rsvg_lookup_apply_css_style (RsvgHandle *handle, const char *target, RsvgState *
     styles = g_hash_table_lookup (handle->priv->css_props, target);
 
     if (styles != NULL) {
-        StylesData *data = g_new0 (StylesData, 1);
-        data->handle = handle;
-        data->state = state;
-        g_hash_table_foreach (styles, (GHFunc) apply_style, data);
-        g_free (data);
+        g_hash_table_foreach (styles, (GHFunc) apply_style, state);
         return TRUE;
     }
     return FALSE;
