@@ -68,7 +68,7 @@ impl NodeTrait for NodeStop {
         let state = node.get_state ();
 
         // FIXME: this is the only place where rsvg_parse_style() and
-        // rsvg_parse_style_pairs() are called outside of the
+        // rsvg_parse_presentation_attributes() are called outside of the
         // rsvg-base.c machinery.  That one indirectly calls them via
         // rsvg_parse_style_attrs().
         //
@@ -82,7 +82,7 @@ impl NodeTrait for NodeStop {
         }
 
         unsafe {
-            rsvg_parse_style_pairs (state, pbag.ffi());
+            rsvg_parse_presentation_attributes (state, pbag.ffi());
         }
 
         let inherited_state = drawing_ctx::state_new ();
@@ -172,8 +172,8 @@ fn u32_from_rgba (rgba: cssparser::RGBA) -> u32 {
 }
 
 extern "C" {
-    fn rsvg_parse_style_pairs(state: *mut RsvgState, pbag: FfiRsvgPropertyBag);
-    fn rsvg_parse_style(state: *mut RsvgState, string: *const libc::c_char);
+    fn rsvg_parse_presentation_attributes (state: *mut RsvgState, pbag: FfiRsvgPropertyBag);
+    fn rsvg_parse_style (state: *mut RsvgState, string: *const libc::c_char);
 }
 
 #[no_mangle]

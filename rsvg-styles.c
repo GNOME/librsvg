@@ -1172,7 +1172,7 @@ atts_enumerate_cb (const char *key, const char *value, gpointer data)
 
 /* take a pair of the form (fill="#ff00ff") and parse it as a style */
 void
-rsvg_parse_style_pairs (RsvgState * state, RsvgPropertyBag * atts)
+rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
 {
     rsvg_property_bag_enumerate (atts,
                                  atts_enumerate_cb,
@@ -1547,7 +1547,7 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
     state = rsvg_node_get_state (node);
 
     if (rsvg_property_bag_size (atts) > 0)
-        rsvg_parse_style_pairs (state, atts);
+        rsvg_parse_presentation_attributes (state, atts);
 
     /* Try to properly support all of the following, including inheritance:
      * *
