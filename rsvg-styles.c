@@ -522,12 +522,18 @@ rsvg_state_inherit (RsvgState * dst, const RsvgState * src)
 /* Defined in rust/src/length.rs */
 extern RsvgStrokeDasharray rsvg_parse_stroke_dasharray(const char *str);
 
+typedef enum {
+    PAIR_SOURCE_STYLE,
+    PAIR_SOURCE_PRESENTATION_ATTRIBUTE
+} PairSource;
+
 /* Parse a CSS2 style argument, setting the SVG context attributes. */
 static void
 rsvg_parse_style_pair (RsvgState * state,
                        const gchar * name,
                        const gchar * value,
-                       gboolean important)
+                       gboolean important,
+                       PairSource source)
 {
     StyleValueData *data;
     RsvgAttribute attr;
@@ -1080,22 +1086,28 @@ rsvg_parse_style_pair (RsvgState * state,
 
     case RSVG_ATTRIBUTE_MARKER:
     {
-        if (!state->has_startMarker) {
-            g_free (state->startMarker);
-            state->startMarker = rsvg_get_url_string (value, NULL);
-            state->has_startMarker = TRUE;
-        }
+        /* FIXME: ugly special case.  "marker" is a shorthand property, and can
+         * only be used in a CSS style (or style attribute in an SVG element),
+         * not as a presentation attribute.
+         */
+        if (source == PAIR_SOURCE_STYLE) {
+            if (!state->has_startMarker) {
+                g_free (state->startMarker);
+                state->startMarker = rsvg_get_url_string (value, NULL);
+                state->has_startMarker = TRUE;
+            }
 
-        if (!state->has_middleMarker) {
-            g_free (state->middleMarker);
-            state->middleMarker = rsvg_get_url_string (value, NULL);
-            state->has_middleMarker = TRUE;
-        }
+            if (!state->has_middleMarker) {
+                g_free (state->middleMarker);
+                state->middleMarker = rsvg_get_url_string (value, NULL);
+                state->has_middleMarker = TRUE;
+            }
 
-        if (!state->has_endMarker) {
-            g_free (state->endMarker);
-            state->endMarker = rsvg_get_url_string (value, NULL);
-            state->has_endMarker = TRUE;
+            if (!state->has_endMarker) {
+                g_free (state->endMarker);
+                state->endMarker = rsvg_get_url_string (value, NULL);
+                state->has_endMarker = TRUE;
+            }
         }
     }
     break;
@@ -1166,7 +1178,7 @@ atts_enumerate_cb (const char *key, const char *value, gpointer data)
 {
     RsvgState *state = data;
 
-    rsvg_parse_style_pair (state, key, value, FALSE);
+    rsvg_parse_style_pair (state, key, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
 }
 
 
@@ -1258,7 +1270,8 @@ rsvg_parse_style (RsvgState *state, const char *str)
                 rsvg_parse_style_pair (state,
                                        g_strstrip (first_value),
                                        style_value,
-                                       important);
+                                       important,
+                                       PAIR_SOURCE_STYLE);
             g_free (style_value);
             g_free (second_value);
         }
@@ -1505,7 +1518,7 @@ static void
 apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
 {
     RsvgState *state = user_data;
-    rsvg_parse_style_pair (state, key, value->value, value->important);
+    rsvg_parse_style_pair (state, key, value->value, value->important, PAIR_SOURCE_STYLE);
 }
 
 static gboolean
