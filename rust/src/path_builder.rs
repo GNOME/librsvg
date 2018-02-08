@@ -1,4 +1,6 @@
 use cairo_sys;
+use cairo;
+use glib::translate::*;
 
 use std::f64;
 use std::f64::consts::*;
@@ -29,6 +31,28 @@ impl Default for RsvgPathBuilder {
     fn default() -> RsvgPathBuilder {
         RsvgPathBuilder {
             path_commands: Vec::new ()
+        }
+    }
+}
+
+impl PathCommand {
+    fn to_cairo(&self, cr: &cairo::Context) {
+        match *self {
+            PathCommand::MoveTo(x, y) => {
+                cr.move_to(x, y);
+            },
+
+            PathCommand::LineTo(x, y) => {
+                cr.line_to(x, y);
+            },
+
+            PathCommand::CurveTo((x2, y2), (x3, y3), (x4, y4)) => {
+                cr.curve_to(x2, y2, x3, y3, x4, y4);
+            },
+
+            PathCommand::ClosePath => {
+                cr.close_path();
+            }
         }
     }
 }
@@ -238,6 +262,12 @@ impl RsvgPathBuilder {
                        xc + cosf * x3 - sinf * y3,
                        yc + sinf * x3 + cosf * y3);
     }
+
+    fn to_cairo(&self, cr: &cairo::Context) {
+        for s in &self.path_commands {
+            s.to_cairo(cr);
+        }
+    }
 }
 
 fn clamp (val: f64, low: f64, high: f64) -> f64 {
@@ -251,32 +281,12 @@ fn clamp (val: f64, low: f64, high: f64) -> f64 {
 }
 
 #[no_mangle]
-pub extern fn rsvg_path_builder_add_to_cairo_context (raw_builder: *mut RsvgPathBuilder, cr: *mut cairo_sys::cairo_t) {
+pub extern fn rsvg_path_builder_add_to_cairo_context (raw_builder: *mut RsvgPathBuilder,
+                                                      raw_cr: *mut cairo_sys::cairo_t) {
     assert! (!raw_builder.is_null ());
+    assert! (!raw_cr.is_null ());
 
     let builder: &mut RsvgPathBuilder = unsafe { &mut (*raw_builder) };
-
-    unsafe {
-        let path_commands = builder.get_path_commands ();
-
-        for s in path_commands {
-            match *s {
-                PathCommand::MoveTo (x, y) => {
-                    cairo_sys::cairo_move_to (cr, x, y);
-                },
-
-                PathCommand::LineTo (x, y) => {
-                    cairo_sys::cairo_line_to (cr, x, y);
-                },
-
-                PathCommand::CurveTo ((x2, y2), (x3, y3), (x4, y4)) => {
-                    cairo_sys::cairo_curve_to (cr, x2, y2, x3, y3, x4, y4);
-                },
-
-                PathCommand::ClosePath => {
-                    cairo_sys::cairo_close_path (cr);
-                }
-            }
-        }
-    }
+    let cr = unsafe { cairo::Context::from_glib_none(raw_cr) };
+    builder.to_cairo(&cr);
 }
