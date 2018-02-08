@@ -1162,64 +1162,21 @@ rsvg_parse_style_pair (RsvgState * state,
 }
 
 static void
-rsvg_lookup_parse_style_pair (RsvgState * state,
-                              const char *key, RsvgPropertyBag * atts)
+atts_enumerate_cb (const char *key, const char *value, gpointer data)
 {
-    const char *value;
+    RsvgState *state = data;
 
-    if ((value = rsvg_property_bag_lookup (atts, key)) != NULL)
-        rsvg_parse_style_pair (state, key, value, FALSE);
+    rsvg_parse_style_pair (state, key, value, FALSE);
 }
+
 
 /* take a pair of the form (fill="#ff00ff") and parse it as a style */
 void
 rsvg_parse_style_pairs (RsvgState * state, RsvgPropertyBag * atts)
 {
-    rsvg_lookup_parse_style_pair (state, "baseline-shift", atts);
-    rsvg_lookup_parse_style_pair (state, "clip-path", atts);
-    rsvg_lookup_parse_style_pair (state, "clip-rule", atts);
-    rsvg_lookup_parse_style_pair (state, "color", atts);
-    rsvg_lookup_parse_style_pair (state, "direction", atts);
-    rsvg_lookup_parse_style_pair (state, "display", atts);
-    rsvg_lookup_parse_style_pair (state, "enable-background", atts);
-    rsvg_lookup_parse_style_pair (state, "comp-op", atts);
-    rsvg_lookup_parse_style_pair (state, "fill", atts);
-    rsvg_lookup_parse_style_pair (state, "fill-opacity", atts);
-    rsvg_lookup_parse_style_pair (state, "fill-rule", atts);
-    rsvg_lookup_parse_style_pair (state, "filter", atts);
-    rsvg_lookup_parse_style_pair (state, "flood-color", atts);
-    rsvg_lookup_parse_style_pair (state, "flood-opacity", atts);
-    rsvg_lookup_parse_style_pair (state, "font-family", atts);
-    rsvg_lookup_parse_style_pair (state, "font-size", atts);
-    rsvg_lookup_parse_style_pair (state, "font-stretch", atts);
-    rsvg_lookup_parse_style_pair (state, "font-style", atts);
-    rsvg_lookup_parse_style_pair (state, "font-variant", atts);
-    rsvg_lookup_parse_style_pair (state, "font-weight", atts);
-    rsvg_lookup_parse_style_pair (state, "marker-end", atts);
-    rsvg_lookup_parse_style_pair (state, "mask", atts);
-    rsvg_lookup_parse_style_pair (state, "marker-mid", atts);
-    rsvg_lookup_parse_style_pair (state, "marker-start", atts);
-    rsvg_lookup_parse_style_pair (state, "opacity", atts);
-    rsvg_lookup_parse_style_pair (state, "overflow", atts);
-    rsvg_lookup_parse_style_pair (state, "shape-rendering", atts);
-    rsvg_lookup_parse_style_pair (state, "stop-color", atts);
-    rsvg_lookup_parse_style_pair (state, "stop-opacity", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-dasharray", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-dashoffset", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-linecap", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-linejoin", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-miterlimit", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-opacity", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-width", atts);
-    rsvg_lookup_parse_style_pair (state, "text-anchor", atts);
-    rsvg_lookup_parse_style_pair (state, "text-decoration", atts);
-    rsvg_lookup_parse_style_pair (state, "unicode-bidi", atts);
-    rsvg_lookup_parse_style_pair (state, "letter-spacing", atts);
-    rsvg_lookup_parse_style_pair (state, "visibility", atts);
-    rsvg_lookup_parse_style_pair (state, "writing-mode", atts);
-    rsvg_lookup_parse_style_pair (state, "xml:lang", atts);
-    rsvg_lookup_parse_style_pair (state, "xml:space", atts);
+    rsvg_property_bag_enumerate (atts,
+                                 atts_enumerate_cb,
+                                 state);
 
     {
         /* TODO: this conditional behavior isn't quite correct, and i'm not sure it should reside here */
