@@ -1744,15 +1744,12 @@ get_column (guchar *column_data,
             gint x)
 {
     gint y;
-    gint c;
-
+    guchar *src = src_data + (x * bpp);
     for (y = 0; y < height; y++) {
-        guchar *src = src_data + y * src_stride + x * bpp;
-
-        for (c = 0; c < bpp; c++)
-            column_data[c] = src[c];
+        memcpy (column_data, src, bpp * sizeof (guchar));
 
         column_data += bpp;
+        src += src_stride;
     }
 }
 
@@ -1760,15 +1757,12 @@ static void
 put_column (guchar *column_data, guchar *dest_data, gint dest_stride, gint bpp, gint height, gint x)
 {
     gint y;
-    gint c;
-
+    guchar *dst = dest_data + (x * bpp);
     for (y = 0; y < height; y++) {
-        guchar *dst = dest_data + y * dest_stride + x * bpp;
-
-        for (c = 0; c < bpp; c++)
-            dst[c] = column_data[c];
+        memcpy (dst, column_data, bpp * sizeof(guchar));
 
         column_data += bpp;
+        dst += dest_stride;
     }
 }
 
