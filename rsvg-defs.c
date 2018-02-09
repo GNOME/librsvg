@@ -34,7 +34,7 @@
 struct _RsvgDefs {
     GHashTable *hash;
     GHashTable *externs;
-    RsvgHandle *ctx;
+    RsvgHandle *handle;
 };
 
 RsvgDefs *
@@ -45,7 +45,7 @@ rsvg_defs_new (RsvgHandle *handle)
     result->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) rsvg_node_unref);
     result->externs =
         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_object_unref);
-    result->ctx = handle; /* no need to take a ref here */
+    result->handle = handle; /* no need to take a ref here */
 
     return result;
 }
@@ -57,7 +57,7 @@ rsvg_defs_load_extern (const RsvgDefs * defs, const char *uri)
     char *data;
     gsize data_len;
 
-    data = _rsvg_handle_acquire_data (defs->ctx, uri, NULL, &data_len, NULL);
+    data = _rsvg_handle_acquire_data (defs->handle, uri, NULL, &data_len, NULL);
 
     if (data) {
         handle = rsvg_handle_new ();
@@ -83,7 +83,7 @@ rsvg_defs_extern_lookup (const RsvgDefs * defs, const char *possibly_relative_ur
     RsvgHandle *handle;
     char *uri;
 
-    uri = rsvg_handle_resolve_uri (defs->ctx, possibly_relative_uri);
+    uri = rsvg_handle_resolve_uri (defs->handle, possibly_relative_uri);
     if (!uri)
         return NULL;
 

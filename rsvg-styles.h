@@ -212,9 +212,9 @@ void rsvg_parse_style_pairs (RsvgState * state, RsvgPropertyBag * atts);
 G_GNUC_INTERNAL
 void rsvg_parse_style	    (RsvgState *state, const char *str);
 G_GNUC_INTERNAL
-void rsvg_parse_cssbuffer   (RsvgHandle * ctx, const char *buff, size_t buflen);
+void rsvg_parse_cssbuffer   (RsvgHandle *handle, const char *buff, size_t buflen);
 G_GNUC_INTERNAL
-void rsvg_parse_style_attrs (RsvgHandle *ctx, RsvgNode *node, const char *tag,
+void rsvg_parse_style_attrs (RsvgHandle *handle, RsvgNode *node, const char *tag,
                              const char *klazz, const char *id, RsvgPropertyBag * atts);
 
 /* Implemented in rust/src/transform.rs */

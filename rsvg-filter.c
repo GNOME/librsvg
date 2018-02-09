@@ -3905,7 +3905,7 @@ typedef struct _RsvgFilterPrimitiveImage RsvgFilterPrimitiveImage;
 
 struct _RsvgFilterPrimitiveImage {
     RsvgFilterPrimitive super;
-    RsvgHandle *ctx;
+    RsvgHandle *handle;
     GString *href;
 };
 
@@ -3956,7 +3956,7 @@ rsvg_filter_primitive_image_render_ext (RsvgFilterPrimitive *self, RsvgFilterCon
     if (width == 0 || height == 0)
         return NULL;
 
-    img = rsvg_cairo_surface_new_from_href (image->ctx,
+    img = rsvg_cairo_surface_new_from_href (image->handle,
                                             image->href->str,
                                             NULL);
     if (!img)
@@ -4066,7 +4066,7 @@ rsvg_filter_primitive_image_set_atts (RsvgNode *node, gpointer impl, RsvgHandle 
     RsvgFilterPrimitiveImage *filter = impl;
     const char *value;
 
-    filter->ctx = handle;
+    filter->handle = handle;
 
     if ((value = rsvg_property_bag_lookup (atts, "in")))
         g_string_assign (filter->super.in, value);

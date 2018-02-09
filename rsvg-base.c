@@ -100,20 +100,20 @@ static gboolean rsvgSAXHandlerStructInited = FALSE;
 
 typedef struct _RsvgSaxHandlerDefs {
     RsvgSaxHandler super;
-    RsvgHandle *ctx;
+    RsvgHandle *handle;
 } RsvgSaxHandlerDefs;
 
 typedef struct _RsvgSaxHandlerStyle {
     RsvgSaxHandler super;
     RsvgSaxHandlerDefs *parent;
-    RsvgHandle *ctx;
+    RsvgHandle *handle;
     GString *style;
     gboolean is_text_css;
 } RsvgSaxHandlerStyle;
 
 typedef struct {
     RsvgSaxHandler super;
-    RsvgHandle *ctx;
+    RsvgHandle *handle;
     const char *name;
     GString *string;
     GString **stringptr;
@@ -128,10 +128,10 @@ static void
 rsvg_style_handler_free (RsvgSaxHandler * self)
 {
     RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
-    RsvgHandle *ctx = z->ctx;
+    RsvgHandle *handle = z->handle;
 
     if (z->is_text_css)
-        rsvg_parse_cssbuffer (ctx, z->style->str, z->style->len);
+        rsvg_parse_cssbuffer (handle, z->style->str, z->style->len);
 
     g_string_free (z->style, TRUE);
     g_free (z);
@@ -153,19 +153,19 @@ static void
 rsvg_style_handler_end (RsvgSaxHandler * self, const char *name)
 {
     RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
-    RsvgHandle *ctx = z->ctx;
+    RsvgHandle *handle = z->handle;
     RsvgSaxHandler *prev = &z->parent->super;
 
     if (!strcmp (name, "style")) {
-        if (ctx->priv->handler != NULL) {
-            ctx->priv->handler->free (ctx->priv->handler);
-            ctx->priv->handler = prev;
+        if (handle->priv->handler != NULL) {
+            handle->priv->handler->free (handle->priv->handler);
+            handle->priv->handler = prev;
         }
     }
 }
 
 static void
-rsvg_start_style (RsvgHandle * ctx, RsvgPropertyBag *atts)
+rsvg_start_style (RsvgHandle *handle, RsvgPropertyBag *atts)
 {
     RsvgSaxHandlerStyle *handler = g_new0 (RsvgSaxHandlerStyle, 1);
     const char *type;
@@ -176,7 +176,7 @@ rsvg_start_style (RsvgHandle * ctx, RsvgPropertyBag *atts)
     handler->super.characters = rsvg_style_handler_characters;
     handler->super.start_element = rsvg_style_handler_start;
     handler->super.end_element = rsvg_style_handler_end;
-    handler->ctx = ctx;
+    handler->handle = handle;
 
     handler->style = g_string_new (NULL);
 
@@ -194,42 +194,42 @@ rsvg_start_style (RsvgHandle * ctx, RsvgPropertyBag *atts)
      */
     handler->is_text_css = (type == NULL) || (g_ascii_strcasecmp (type, "text/css") == 0);
 
-    handler->parent = (RsvgSaxHandlerDefs *) ctx->priv->handler;
-    ctx->priv->handler = &handler->super;
+    handler->parent = (RsvgSaxHandlerDefs *) handle->priv->handler;
+    handle->priv->handler = &handler->super;
 }
 
 static void
-add_node_to_handle (RsvgHandle *ctx, RsvgNode *node)
+add_node_to_handle (RsvgHandle *handle, RsvgNode *node)
 {
-    g_assert (ctx != NULL);
+    g_assert (handle != NULL);
     g_assert (node != NULL);
 
-    g_ptr_array_add (ctx->priv->all_nodes, rsvg_node_ref (node));
+    g_ptr_array_add (handle->priv->all_nodes, rsvg_node_ref (node));
 }
 
 static void
-register_node_in_defs (RsvgHandle *ctx, RsvgNode *node, RsvgPropertyBag *atts)
+register_node_in_defs (RsvgHandle *handle, RsvgNode *node, RsvgPropertyBag *atts)
 {
     const char *id;
 
     id = rsvg_property_bag_lookup (atts, "id");
     if (id) {
-        rsvg_defs_register_node_by_id (ctx->priv->defs, id, node);
+        rsvg_defs_register_node_by_id (handle->priv->defs, id, node);
     }
 }
 
 static void
-push_element_name (RsvgHandle *ctx, const char *name)
+push_element_name (RsvgHandle *handle, const char *name)
 {
     /* libxml holds on to the name while parsing; we won't dup the name here */
-    ctx->priv->element_name_stack = g_slist_prepend (ctx->priv->element_name_stack, (void *) name);
+    handle->priv->element_name_stack = g_slist_prepend (handle->priv->element_name_stack, (void *) name);
 }
 
 static gboolean
-topmost_element_name_is (RsvgHandle *ctx, const char *name)
+topmost_element_name_is (RsvgHandle *handle, const char *name)
 {
-    if (ctx->priv->element_name_stack) {
-        const char *name_in_stack = ctx->priv->element_name_stack->data;
+    if (handle->priv->element_name_stack) {
+        const char *name_in_stack = handle->priv->element_name_stack->data;
 
         return strcmp (name, name_in_stack) == 0;
     } else
@@ -237,16 +237,17 @@ topmost_element_name_is (RsvgHandle *ctx, const char *name)
 }
 
 static void
-pop_element_name (RsvgHandle *ctx)
+pop_element_name (RsvgHandle *handle)
 {
-    ctx->priv->element_name_stack = g_slist_delete_link (ctx->priv->element_name_stack, ctx->priv->element_name_stack);
+    handle->priv->element_name_stack = g_slist_delete_link (handle->priv->element_name_stack,
+                                                            handle->priv->element_name_stack);
 }
 
 static void
-free_element_name_stack (RsvgHandle *ctx)
+free_element_name_stack (RsvgHandle *handle)
 {
-    g_slist_free (ctx->priv->element_name_stack);
-    ctx->priv->element_name_stack = NULL;
+    g_slist_free (handle->priv->element_name_stack);
+    handle->priv->element_name_stack = NULL;
 }
 
 typedef RsvgNode *(* CreateNodeFn) (const char *element_name, RsvgNode *parent);
@@ -387,13 +388,13 @@ get_node_creator_for_element_name (const char *name)
 }
 
 static void
-node_set_atts (RsvgNode * node, RsvgHandle * ctx, const NodeCreator *creator, RsvgPropertyBag * atts)
+node_set_atts (RsvgNode * node, RsvgHandle *handle, const NodeCreator *creator, RsvgPropertyBag * atts)
 {
     if (rsvg_property_bag_size (atts) > 0) {
         const char *id;
         const char *klazz;
 
-        rsvg_node_set_atts (node, ctx, atts);
+        rsvg_node_set_atts (node, handle, atts);
 
         /* The "svg" node is special; it will load its id/class
          * attributes until the end, when rsvg_end_element() calls
@@ -407,13 +408,13 @@ node_set_atts (RsvgNode * node, RsvgHandle * ctx, const NodeCreator *creator, Rs
             else
                 klazz = NULL;
 
-            rsvg_parse_style_attrs (ctx, node, creator->element_name, klazz, id, atts);
+            rsvg_parse_style_attrs (handle, node, creator->element_name, klazz, id, atts);
         }
     }
 }
 
 static void
-rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag * atts)
+rsvg_standard_element_start (RsvgHandle *handle, const char *name, RsvgPropertyBag * atts)
 {
     const NodeCreator *creator;
     RsvgNode *newnode = NULL;
@@ -421,26 +422,26 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
     creator = get_node_creator_for_element_name (name);
     g_assert (creator != NULL && creator->create_fn != NULL);
 
-    newnode = creator->create_fn (name, ctx->priv->currentnode);
+    newnode = creator->create_fn (name, handle->priv->currentnode);
     g_assert (newnode != NULL);
 
     g_assert (rsvg_node_get_type (newnode) != RSVG_NODE_TYPE_INVALID);
 
-    push_element_name (ctx, name);
+    push_element_name (handle, name);
 
-    add_node_to_handle (ctx, newnode);
-    register_node_in_defs (ctx, newnode, atts);
+    add_node_to_handle (handle, newnode);
+    register_node_in_defs (handle, newnode, atts);
 
-    if (ctx->priv->currentnode) {
-        rsvg_node_add_child (ctx->priv->currentnode, newnode);
-        ctx->priv->currentnode = rsvg_node_unref (ctx->priv->currentnode);
+    if (handle->priv->currentnode) {
+        rsvg_node_add_child (handle->priv->currentnode, newnode);
+        handle->priv->currentnode = rsvg_node_unref (handle->priv->currentnode);
     } else if (rsvg_node_get_type (newnode) == RSVG_NODE_TYPE_SVG) {
-        ctx->priv->treebase = rsvg_node_ref (newnode);
+        handle->priv->treebase = rsvg_node_ref (newnode);
     }
 
-    ctx->priv->currentnode = rsvg_node_ref (newnode);
+    handle->priv->currentnode = rsvg_node_ref (newnode);
 
-    node_set_atts (newnode, ctx, creator, atts);
+    node_set_atts (newnode, handle, creator, atts);
 
     newnode = rsvg_node_unref (newnode);
 }
@@ -496,24 +497,24 @@ static void
 rsvg_extra_handler_end (RsvgSaxHandler * self, const char *name)
 {
     RsvgSaxHandlerExtra *z = (RsvgSaxHandlerExtra *) self;
-    RsvgHandle *ctx = z->ctx;
+    RsvgHandle *handle = z->handle;
 
     if (!strcmp (name, z->name)) {
-        if (ctx->priv->handler != NULL) {
-            ctx->priv->handler->free (ctx->priv->handler);
-            ctx->priv->handler = NULL;
+        if (handle->priv->handler != NULL) {
+            handle->priv->handler->free (handle->priv->handler);
+            handle->priv->handler = NULL;
         }
     }
 }
 
 static RsvgSaxHandlerExtra *
-rsvg_start_extra (RsvgHandle * ctx,
+rsvg_start_extra (RsvgHandle *handle,
                   const char *name,
                   GString **stringptr)
 {
     RsvgSaxHandlerExtra *handler = g_new0 (RsvgSaxHandlerExtra, 1);
-    RsvgNode *treebase = ctx->priv->treebase;
-    RsvgNode *currentnode = ctx->priv->currentnode;
+    RsvgNode *treebase = handle->priv->treebase;
+    RsvgNode *currentnode = handle->priv->currentnode;
     gboolean do_care;
 
     /* only parse <extra> for the <svg> node.
@@ -526,12 +527,12 @@ rsvg_start_extra (RsvgHandle * ctx,
     handler->super.characters = rsvg_extra_handler_characters;
     handler->super.start_element = rsvg_extra_handler_start;
     handler->super.end_element = rsvg_extra_handler_end;
-    handler->ctx = ctx;
+    handler->handle = handle;
     handler->name = name; /* interned */
     handler->string = do_care ? g_string_new (NULL) : NULL;
     handler->stringptr = do_care ? stringptr : NULL;
 
-    ctx->priv->handler = &handler->super;
+    handle->priv->handler = &handler->super;
 
     return handler;
 }
@@ -539,9 +540,9 @@ rsvg_start_extra (RsvgHandle * ctx,
 /* start desc */
 
 static void
-rsvg_start_desc (RsvgHandle * ctx)
+rsvg_start_desc (RsvgHandle *handle)
 {
-    rsvg_start_extra (ctx, "desc", &ctx->priv->desc);
+    rsvg_start_extra (handle, "desc", &handle->priv->desc);
 }
 
 /* end desc */
@@ -549,9 +550,9 @@ rsvg_start_desc (RsvgHandle * ctx)
 /* start title */
 
 static void
-rsvg_start_title (RsvgHandle * ctx)
+rsvg_start_title (RsvgHandle *handle)
 {
-    rsvg_start_extra (ctx, "title", &ctx->priv->title);
+    rsvg_start_extra (handle, "title", &handle->priv->title);
 }
 
 /* end title */
@@ -594,9 +595,9 @@ rsvg_metadata_handler_end (RsvgSaxHandler * self, const char *name)
 }
 
 static void
-rsvg_start_metadata (RsvgHandle * ctx)
+rsvg_start_metadata (RsvgHandle *handle)
 {
-    RsvgSaxHandlerMetadata *handler = rsvg_start_extra (ctx, "metadata", &ctx->priv->metadata);
+    RsvgSaxHandlerMetadata *handler = rsvg_start_extra (handle, "metadata", &handle->priv->metadata);
 
     handler->super.start_element = rsvg_metadata_handler_start;
     handler->super.end_element = rsvg_metadata_handler_end;
@@ -610,13 +611,13 @@ typedef struct _RsvgSaxHandlerXinclude {
     RsvgSaxHandler super;
 
     RsvgSaxHandler *prev_handler;
-    RsvgHandle *ctx;
+    RsvgHandle *handle;
     gboolean success;
     gboolean in_fallback;
 } RsvgSaxHandlerXinclude;
 
-static void rsvg_start_xinclude (RsvgHandle *ctx, RsvgPropertyBag *atts);
-static void rsvg_characters_impl (RsvgHandle *ctx, const char *ch, gssize len);
+static void rsvg_start_xinclude (RsvgHandle *handle, RsvgPropertyBag *atts);
+static void rsvg_characters_impl (RsvgHandle *handle, const char *ch, gssize len);
 
 static void
 rsvg_xinclude_handler_free (RsvgSaxHandler * self)
@@ -630,7 +631,7 @@ rsvg_xinclude_handler_characters (RsvgSaxHandler * self, const char *ch, gssize 
     RsvgSaxHandlerXinclude *z = (RsvgSaxHandlerXinclude *) self;
 
     if (z->in_fallback) {
-        rsvg_characters_impl (z->ctx, ch, len);
+        rsvg_characters_impl (z->handle, ch, len);
     }
 }
 
@@ -642,9 +643,9 @@ rsvg_xinclude_handler_start (RsvgSaxHandler * self, const char *name, RsvgProper
     if (!z->success) {
         if (z->in_fallback) {
             if (!strcmp (name, "xi:include"))
-                rsvg_start_xinclude (z->ctx, atts);
+                rsvg_start_xinclude (z->handle, atts);
             else
-                rsvg_standard_element_start (z->ctx, (const char *) name, atts);
+                rsvg_standard_element_start (z->handle, (const char *) name, atts);
         } else if (!strcmp (name, "xi:fallback")) {
             z->in_fallback = TRUE;
         }
@@ -655,15 +656,15 @@ static void
 rsvg_xinclude_handler_end (RsvgSaxHandler * self, const char *name)
 {
     RsvgSaxHandlerXinclude *z = (RsvgSaxHandlerXinclude *) self;
-    RsvgHandle *ctx = z->ctx;
+    RsvgHandle *handle = z->handle;
 
     if (!strcmp (name, "include") || !strcmp (name, "xi:include")) {
-        if (ctx->priv->handler != NULL) {
+        if (handle->priv->handler != NULL) {
             RsvgSaxHandler *previous_handler;
 
             previous_handler = z->prev_handler;
-            ctx->priv->handler->free (ctx->priv->handler);
-            ctx->priv->handler = previous_handler;
+            handle->priv->handler->free (handle->priv->handler);
+            handle->priv->handler = previous_handler;
         }
     } else if (z->in_fallback) {
         if (!strcmp (name, "xi:fallback"))
@@ -673,14 +674,14 @@ rsvg_xinclude_handler_end (RsvgSaxHandler * self, const char *name)
 
 static void
 rsvg_set_xml_parse_options(xmlParserCtxtPtr xml_parser,
-                           RsvgHandle *ctx)
+                           RsvgHandle *handle)
 {
     int options;
 
     options = (XML_PARSE_NONET |
                XML_PARSE_BIG_LINES);
 
-    if (ctx->priv->flags & RSVG_HANDLE_FLAG_UNLIMITED) {
+    if (handle->priv->flags & RSVG_HANDLE_FLAG_UNLIMITED) {
         options |= XML_PARSE_HUGE;
     }
 
@@ -726,7 +727,7 @@ create_xml_stream_parser (RsvgHandle    *handle,
 
 /* http://www.w3.org/TR/xinclude/ */
 static void
-rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
+rsvg_start_xinclude (RsvgHandle *handle, RsvgPropertyBag * atts)
 {
     RsvgSaxHandlerXinclude *handler;
     const char *href, *parse;
@@ -742,7 +743,7 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
         gsize data_len;
         const char *encoding;
 
-        data = _rsvg_handle_acquire_data (ctx, href, NULL, &data_len, NULL);
+        data = _rsvg_handle_acquire_data (handle, href, NULL, &data_len, NULL);
         if (data == NULL)
             goto fallback;
 
@@ -759,7 +760,7 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
             data_len = text_data_len;
         }
 
-        rsvg_characters_impl (ctx, data, data_len);
+        rsvg_characters_impl (handle, data, data_len);
 
         g_free (data);
     } else {
@@ -768,11 +769,11 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
         GError *err = NULL;
         xmlParserCtxtPtr xml_parser;
 
-        stream = _rsvg_handle_acquire_stream (ctx, href, NULL, NULL);
+        stream = _rsvg_handle_acquire_stream (handle, href, NULL, NULL);
         if (stream == NULL)
             goto fallback;
 
-        xml_parser = create_xml_stream_parser (ctx,
+        xml_parser = create_xml_stream_parser (handle,
                                                stream,
                                                NULL, /* cancellable */
                                                &err);
@@ -799,11 +800,11 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
     handler->super.characters = rsvg_xinclude_handler_characters;
     handler->super.start_element = rsvg_xinclude_handler_start;
     handler->super.end_element = rsvg_xinclude_handler_end;
-    handler->prev_handler = ctx->priv->handler;
-    handler->ctx = ctx;
+    handler->prev_handler = handle->priv->handler;
+    handler->handle = handle;
     handler->success = success;
 
-    ctx->priv->handler = &handler->super;
+    handle->priv->handler = &handler->super;
 }
 
 /* end xinclude */
@@ -812,14 +813,14 @@ static void
 rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
 {
     RsvgPropertyBag *bag;
-    RsvgHandle *ctx = (RsvgHandle *) data;
+    RsvgHandle *handle = (RsvgHandle *) data;
 
     bag = rsvg_property_bag_new ((const char **) atts);
 
-    if (ctx->priv->handler) {
-        ctx->priv->handler_nest++;
-        if (ctx->priv->handler->start_element != NULL)
-            ctx->priv->handler->start_element (ctx->priv->handler, (const char *) name, bag);
+    if (handle->priv->handler) {
+        handle->priv->handler_nest++;
+        if (handle->priv->handler->start_element != NULL)
+            handle->priv->handler->start_element (handle->priv->handler, (const char *) name, bag);
     } else {
         const char *tempname;
         for (tempname = (const char *) name; *tempname != '\0'; tempname++)
@@ -827,17 +828,17 @@ rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
                 name = (const xmlChar *) (tempname + 1);
 
         if (!strcmp ((const char *) name, "style"))
-            rsvg_start_style (ctx, bag);
+            rsvg_start_style (handle, bag);
         else if (!strcmp ((const char *) name, "title"))
-            rsvg_start_title (ctx);
+            rsvg_start_title (handle);
         else if (!strcmp ((const char *) name, "desc"))
-            rsvg_start_desc (ctx);
+            rsvg_start_desc (handle);
         else if (!strcmp ((const char *) name, "metadata"))
-            rsvg_start_metadata (ctx);
+            rsvg_start_metadata (handle);
         else if (!strcmp ((const char *) name, "include"))      /* xi:include */
-            rsvg_start_xinclude (ctx, bag);
+            rsvg_start_xinclude (handle, bag);
         else
-            rsvg_standard_element_start (ctx, (const char *) name, bag);
+            rsvg_standard_element_start (handle, (const char *) name, bag);
     }
 
     rsvg_property_bag_free (bag);
@@ -846,37 +847,37 @@ rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
 static void
 rsvg_end_element (void *data, const xmlChar * xmlname)
 {
-    RsvgHandle *ctx = (RsvgHandle *) data;
+    RsvgHandle *handle = (RsvgHandle *) data;
     const char *name = (const char *) xmlname;
 
-    if (ctx->priv->handler_nest > 0 && ctx->priv->handler != NULL) {
-        if (ctx->priv->handler->end_element != NULL)
-            ctx->priv->handler->end_element (ctx->priv->handler, name);
-        ctx->priv->handler_nest--;
+    if (handle->priv->handler_nest > 0 && handle->priv->handler != NULL) {
+        if (handle->priv->handler->end_element != NULL)
+            handle->priv->handler->end_element (handle->priv->handler, name);
+        handle->priv->handler_nest--;
     } else {
         const char *tempname;
         for (tempname = name; *tempname != '\0'; tempname++)
             if (*tempname == ':')
                 name = tempname + 1;
 
-        if (ctx->priv->handler != NULL) {
-            ctx->priv->handler->free (ctx->priv->handler);
-            ctx->priv->handler = NULL;
+        if (handle->priv->handler != NULL) {
+            handle->priv->handler->free (handle->priv->handler);
+            handle->priv->handler = NULL;
         }
 
-        if (ctx->priv->currentnode && topmost_element_name_is (ctx, name)) {
+        if (handle->priv->currentnode && topmost_element_name_is (handle, name)) {
             RsvgNode *parent;
 
-            parent = rsvg_node_get_parent (ctx->priv->currentnode);
-            ctx->priv->currentnode = rsvg_node_unref (ctx->priv->currentnode);
-            ctx->priv->currentnode = parent;
-            pop_element_name (ctx);
+            parent = rsvg_node_get_parent (handle->priv->currentnode);
+            handle->priv->currentnode = rsvg_node_unref (handle->priv->currentnode);
+            handle->priv->currentnode = parent;
+            pop_element_name (handle);
         }
 
         /* FIXMEchpe: shouldn't this check that currentnode == treebase or sth like that? */
-        if (ctx->priv->treebase && !strcmp (name, "svg")) {
-            g_assert (rsvg_node_get_type (ctx->priv->treebase) == RSVG_NODE_TYPE_SVG);
-            rsvg_node_svg_apply_atts (ctx->priv->treebase, ctx);
+        if (handle->priv->treebase && !strcmp (name, "svg")) {
+            g_assert (rsvg_node_get_type (handle->priv->treebase) == RSVG_NODE_TYPE_SVG);
+            rsvg_node_svg_apply_atts (handle->priv->treebase, handle);
         }
     }
 }
@@ -950,22 +951,22 @@ find_last_chars_child (RsvgNode *node)
 }
 
 static RsvgNode *
-add_new_chars_child_to_current_node (RsvgHandle *ctx)
+add_new_chars_child_to_current_node (RsvgHandle *handle)
 {
     RsvgNode *node;
 
-    node = rsvg_node_chars_new (ctx->priv->currentnode);
-    add_node_to_handle (ctx, node);
+    node = rsvg_node_chars_new (handle->priv->currentnode);
+    add_node_to_handle (handle, node);
 
-    if (ctx->priv->currentnode) {
-        rsvg_node_add_child (ctx->priv->currentnode, node);
+    if (handle->priv->currentnode) {
+        rsvg_node_add_child (handle->priv->currentnode, node);
     }
 
     return node;
 }
 
 static void
-rsvg_characters_impl (RsvgHandle *ctx, const char *ch, gssize len)
+rsvg_characters_impl (RsvgHandle *handle, const char *ch, gssize len)
 {
     RsvgNode *node = NULL;
 
@@ -973,14 +974,14 @@ rsvg_characters_impl (RsvgHandle *ctx, const char *ch, gssize len)
         return;
     }
 
-    if (!node_is_text_or_tspan (ctx->priv->currentnode)) {
+    if (!node_is_text_or_tspan (handle->priv->currentnode)) {
         return;
     }
 
-    node = find_last_chars_child (ctx->priv->currentnode);
+    node = find_last_chars_child (handle->priv->currentnode);
 
     if (!node) {
-        node = add_new_chars_child_to_current_node (ctx);
+        node = add_new_chars_child_to_current_node (handle);
     }
 
     g_assert (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS);
@@ -992,23 +993,23 @@ rsvg_characters_impl (RsvgHandle *ctx, const char *ch, gssize len)
 static void
 rsvg_characters (void *data, const xmlChar * ch, int len)
 {
-    RsvgHandle *ctx = (RsvgHandle *) data;
+    RsvgHandle *handle = (RsvgHandle *) data;
 
-    if (ctx->priv->handler && ctx->priv->handler->characters != NULL) {
-        ctx->priv->handler->characters (ctx->priv->handler, (const char *) ch, len);
+    if (handle->priv->handler && handle->priv->handler->characters != NULL) {
+        handle->priv->handler->characters (handle->priv->handler, (const char *) ch, len);
         return;
     }
 
-    rsvg_characters_impl (ctx, (const char *) ch, len);
+    rsvg_characters_impl (handle, (const char *) ch, len);
 }
 
 static xmlEntityPtr
 rsvg_get_entity (void *data, const xmlChar * name)
 {
-    RsvgHandle *ctx = (RsvgHandle *) data;
+    RsvgHandle *handle = (RsvgHandle *) data;
     xmlEntityPtr entity;
 
-    entity = g_hash_table_lookup (ctx->priv->entities, name);
+    entity = g_hash_table_lookup (handle->priv->entities, name);
 
     return entity;
 }
@@ -1017,28 +1018,28 @@ static void
 rsvg_entity_decl (void *data, const xmlChar * name, int type,
                   const xmlChar * publicId, const xmlChar * systemId, xmlChar * content)
 {
-    RsvgHandle *ctx = (RsvgHandle *) data;
-    GHashTable *entities = ctx->priv->entities;
+    RsvgHandle *handle = (RsvgHandle *) data;
+    GHashTable *entities = handle->priv->entities;
     xmlEntityPtr entity;
     xmlChar *resolvedSystemId = NULL, *resolvedPublicId = NULL;
 
     if (systemId)
-        resolvedSystemId = xmlBuildRelativeURI (systemId, (xmlChar*) rsvg_handle_get_base_uri (ctx));
+        resolvedSystemId = xmlBuildRelativeURI (systemId, (xmlChar*) rsvg_handle_get_base_uri (handle));
     else if (publicId)
-        resolvedPublicId = xmlBuildRelativeURI (publicId, (xmlChar*) rsvg_handle_get_base_uri (ctx));
+        resolvedPublicId = xmlBuildRelativeURI (publicId, (xmlChar*) rsvg_handle_get_base_uri (handle));
 
     if (type == XML_EXTERNAL_PARAMETER_ENTITY && !content) {
         char *entity_data;
         gsize entity_data_len;
 
         if (systemId)
-            entity_data = _rsvg_handle_acquire_data (ctx,
+            entity_data = _rsvg_handle_acquire_data (handle,
                                                      (const char *) systemId,
                                                      NULL,
                                                      &entity_data_len,
                                                      NULL);
         else if (publicId)
-            entity_data = _rsvg_handle_acquire_data (ctx,
+            entity_data = _rsvg_handle_acquire_data (handle,
                                                      (const char *) publicId,
                                                      NULL,
                                                      &entity_data_len,
@@ -1061,21 +1062,21 @@ rsvg_entity_decl (void *data, const xmlChar * name, int type,
 }
 
 static void
-rsvg_unparsed_entity_decl (void *ctx,
+rsvg_unparsed_entity_decl (void *handle,
                            const xmlChar * name,
                            const xmlChar * publicId,
                            const xmlChar * systemId, const xmlChar * notationName)
 {
-    rsvg_entity_decl (ctx, name, XML_INTERNAL_GENERAL_ENTITY, publicId, systemId, NULL);
+    rsvg_entity_decl (handle, name, XML_INTERNAL_GENERAL_ENTITY, publicId, systemId, NULL);
 }
 
 static xmlEntityPtr
 rsvg_get_parameter_entity (void *data, const xmlChar * name)
 {
-    RsvgHandle *ctx = (RsvgHandle *) data;
+    RsvgHandle *handle = (RsvgHandle *) data;
     xmlEntityPtr entity;
 
-    entity = g_hash_table_lookup (ctx->priv->entities, name);
+    entity = g_hash_table_lookup (handle->priv->entities, name);
 
     return entity;
 }
@@ -1093,10 +1094,10 @@ rsvg_error_cb (void *data, const char *msg, ...)
 }
 
 static void
-rsvg_processing_instruction (void *ctx, const xmlChar * target, const xmlChar * data)
+rsvg_processing_instruction (void *user_data, const xmlChar * target, const xmlChar * data)
 {
     /* http://www.w3.org/TR/xml-stylesheet/ */
-    RsvgHandle *handle = (RsvgHandle *) ctx;
+    RsvgHandle *handle = user_data;
 
     if (!strcmp ((const char *) target, "xml-stylesheet")) {
         RsvgPropertyBag *atts;

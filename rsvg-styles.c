@@ -1113,21 +1113,21 @@ rsvg_parse_style (RsvgState *state, const char *str)
 }
 
 static void
-rsvg_css_define_style (RsvgHandle * ctx,
-                       const gchar * selector,
-                       const gchar * style_name,
-                       const gchar * style_value,
+rsvg_css_define_style (RsvgHandle *handle,
+                       const gchar *selector,
+                       const gchar *style_name,
+                       const gchar *style_value,
                        gboolean important)
 {
     GHashTable *styles;
     gboolean need_insert = FALSE;
 
     /* push name/style pair into HT */
-    styles = g_hash_table_lookup (ctx->priv->css_props, selector);
+    styles = g_hash_table_lookup (handle->priv->css_props, selector);
     if (styles == NULL) {
         styles = g_hash_table_new_full (g_str_hash, g_str_equal,
                                         g_free, (GDestroyNotify) style_value_data_free);
-        g_hash_table_insert (ctx->priv->css_props, (gpointer) g_strdup (selector), styles);
+        g_hash_table_insert (handle->priv->css_props, (gpointer) g_strdup (selector), styles);
         need_insert = TRUE;
     } else {
         StyleValueData *current_value;
@@ -1143,14 +1143,14 @@ rsvg_css_define_style (RsvgHandle * ctx,
 }
 
 typedef struct _CSSUserData {
-    RsvgHandle *ctx;
+    RsvgHandle *handle;
     CRSelector *selector;
 } CSSUserData;
 
 static void
-css_user_data_init (CSSUserData * user_data, RsvgHandle * ctx)
+css_user_data_init (CSSUserData *user_data, RsvgHandle *handle)
 {
-    user_data->ctx = ctx;
+    user_data->handle = handle;
     user_data->selector = NULL;
 }
 
@@ -1201,7 +1201,7 @@ ccss_property (CRDocHandler * a_handler, CRString * a_name, CRTerm * a_expr, gbo
                     len = cr_string_peek_raw_str_len (a_name);
                     style_name = g_strndup (name, len);
                     style_value = (gchar *)cr_term_to_string (a_expr);
-                    rsvg_css_define_style (user_data->ctx,
+                    rsvg_css_define_style (user_data->handle,
                                            selector,
                                            style_name,
                                            style_value,
@@ -1259,7 +1259,7 @@ init_sac_handler (CRDocHandler * a_handler)
 }
 
 void
-rsvg_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
+rsvg_parse_cssbuffer (RsvgHandle *handle, const char *buff, size_t buflen)
 {
     CRParser *parser = NULL;
     CRDocHandler *css_handler = NULL;
@@ -1271,7 +1271,7 @@ rsvg_parse_cssbuffer (RsvgHandle * ctx, const char *buff, size_t buflen)
     css_handler = cr_doc_handler_new ();
     init_sac_handler (css_handler);
 
-    css_user_data_init (&user_data, ctx);
+    css_user_data_init (&user_data, handle);
     css_handler->app_data = &user_data;
 
     /* TODO: fix libcroco to take in const strings */
@@ -1307,7 +1307,7 @@ ccss_import_style (CRDocHandler * a_this,
     if (a_uri == NULL)
         return;
 
-    stylesheet_data = _rsvg_handle_acquire_data (user_data->ctx,
+    stylesheet_data = _rsvg_handle_acquire_data (user_data->handle,
                                                  cr_string_peek_raw_str (a_uri),
                                                  &mime_type,
                                                  &stylesheet_data_len,
@@ -1320,21 +1320,20 @@ ccss_import_style (CRDocHandler * a_this,
         return;
     }
 
-    rsvg_parse_cssbuffer (user_data->ctx, stylesheet_data, stylesheet_data_len);
+    rsvg_parse_cssbuffer (user_data->handle, stylesheet_data, stylesheet_data_len);
     g_free (stylesheet_data);
     g_free (mime_type);
 }
 
 /**
  * rsvg_parse_transform_attr:
- * @ctx: Rsvg context.
  * @state: State in which to apply the transform.
  * @str: String containing transform.
  *
  * Parses the transform attribute in @str and applies it to @state.
  **/
 G_GNUC_WARN_UNUSED_RESULT static gboolean
-rsvg_parse_transform_attr (RsvgHandle * ctx, RsvgState * state, const char *str)
+rsvg_parse_transform_attr (RsvgState *state, const char *str)
 {
     cairo_matrix_t affine;
 
@@ -1348,7 +1347,7 @@ rsvg_parse_transform_attr (RsvgHandle * ctx, RsvgState * state, const char *str)
 }
 
 typedef struct _StylesData {
-    RsvgHandle *ctx;
+    RsvgHandle *handle;
     RsvgState *state;
 } StylesData;
 
@@ -1360,15 +1359,15 @@ apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
 }
 
 static gboolean
-rsvg_lookup_apply_css_style (RsvgHandle * ctx, const char *target, RsvgState * state)
+rsvg_lookup_apply_css_style (RsvgHandle *handle, const char *target, RsvgState * state)
 {
     GHashTable *styles;
 
-    styles = g_hash_table_lookup (ctx->priv->css_props, target);
+    styles = g_hash_table_lookup (handle->priv->css_props, target);
 
     if (styles != NULL) {
         StylesData *data = g_new0 (StylesData, 1);
-        data->ctx = ctx;
+        data->handle = handle;
         data->state = state;
         g_hash_table_foreach (styles, (GHFunc) apply_style, data);
         g_free (data);
@@ -1379,7 +1378,7 @@ rsvg_lookup_apply_css_style (RsvgHandle * ctx, const char *target, RsvgState * s
 
 /**
  * rsvg_parse_style_attrs:
- * @ctx: Rsvg context.
+ * @handle: Rsvg handle.
  * @node: Rsvg node whose state should be modified
  * @tag: (nullable): The SVG tag we're processing (eg: circle, ellipse), optionally %NULL
  * @klazz: (nullable): The space delimited class list, optionally %NULL
@@ -1389,7 +1388,7 @@ rsvg_lookup_apply_css_style (RsvgHandle * ctx, const char *target, RsvgState * s
  * stack.
  **/
 void
-rsvg_parse_style_attrs (RsvgHandle *ctx,
+rsvg_parse_style_attrs (RsvgHandle *handle,
                         RsvgNode *node,
                         const char *tag, const char *klazz, const char *id, RsvgPropertyBag * atts)
 {
@@ -1416,11 +1415,11 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
      */
 
     /* * */
-    rsvg_lookup_apply_css_style (ctx, "*", state);
+    rsvg_lookup_apply_css_style (handle, "*", state);
 
     /* tag */
     if (tag != NULL) {
-        rsvg_lookup_apply_css_style (ctx, tag, state);
+        rsvg_lookup_apply_css_style (handle, tag, state);
     }
 
     if (klazz != NULL) {
@@ -1438,27 +1437,27 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
             /* tag.class#id */
             if (tag != NULL && klazz_list->len != 1 && id != NULL) {
                 target = g_strdup_printf ("%s%s#%s", tag, klazz_list->str, id);
-                found = found || rsvg_lookup_apply_css_style (ctx, target, state);
+                found = found || rsvg_lookup_apply_css_style (handle, target, state);
                 g_free (target);
             }
 
             /* class#id */
             if (klazz_list->len != 1 && id != NULL) {
                 target = g_strdup_printf ("%s#%s", klazz_list->str, id);
-                found = found || rsvg_lookup_apply_css_style (ctx, target, state);
+                found = found || rsvg_lookup_apply_css_style (handle, target, state);
                 g_free (target);
             }
 
             /* tag.class */
             if (tag != NULL && klazz_list->len != 1) {
                 target = g_strdup_printf ("%s%s", tag, klazz_list->str);
-                found = found || rsvg_lookup_apply_css_style (ctx, target, state);
+                found = found || rsvg_lookup_apply_css_style (handle, target, state);
                 g_free (target);
             }
 
             /* didn't find anything more specific, just apply the class style */
             if (!found) {
-                found = found || rsvg_lookup_apply_css_style (ctx, klazz_list->str, state);
+                found = found || rsvg_lookup_apply_css_style (handle, klazz_list->str, state);
             }
             g_string_free (klazz_list, TRUE);
         }
@@ -1467,14 +1466,14 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
     /* #id */
     if (id != NULL) {
         target = g_strdup_printf ("#%s", id);
-        rsvg_lookup_apply_css_style (ctx, target, state);
+        rsvg_lookup_apply_css_style (handle, target, state);
         g_free (target);
     }
 
     /* tag#id */
     if (tag != NULL && id != NULL) {
         target = g_strdup_printf ("%s#%s", tag, id);
-        rsvg_lookup_apply_css_style (ctx, target, state);
+        rsvg_lookup_apply_css_style (handle, target, state);
         g_free (target);
     }
 
@@ -1485,7 +1484,7 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
             rsvg_parse_style (state, value);
 
         if ((value = rsvg_property_bag_lookup (atts, "transform")) != NULL) {
-            if (!rsvg_parse_transform_attr (ctx, state, value)) {
+            if (!rsvg_parse_transform_attr (state, value)) {
                 rsvg_node_set_attribute_parse_error (node,
                                                      "transform",
                                                      "Invalid transformation");
