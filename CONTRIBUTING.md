@@ -126,6 +126,20 @@ have things working (or before even writing code, if you like
 test-driven development), so we can avoid regressions later.  The test
 suite is documented in [`tests/README.md`][tests-readme].
 
+### Testing performance-related changes
+
+You can use the [rsvg-bench] tool to benchmark librsvg.  It lets you
+run a benchmarking program **on an already-installed librsvg
+library**.  For example, you can ask rsvg-bench to render one or more
+SVGs hundreds of times in a row, so you can take accurate timings or
+run a sampling profiler and get enough samples.
+
+**Why is rsvg-bench not integrated in librsvg's sources?**  Because
+rsvg-bench depends on the [rsvg-rs] Rust bindings, and these are
+shipped outside of librsvg.  This requires you to first install
+librsvg, and then compile rsvg-bench.  We aim to make this easier in
+the future.  Of course all help is appreciated!
+
 [coc]: code-of-conduct.md
 [gitlab]: https://gitlab.gnome.org/GNOME/librsvg
 [bugs-browse]: https://gitlab.gnome.org/GNOME/librsvg/issues
@@ -134,3 +148,5 @@ suite is documented in [`tests/README.md`][tests-readme].
 [blog]: https://people.gnome.org/~federico/blog/librsvg-build-infrastructure.html
 [toplevel-makefile]: Makefile.am
 [tests-readme]: tests/README.md
+[rsvg-bench]: https://gitlab.gnome.org/federico/rsvg-bench
+[rsvg-rs]: https://github.com/selaux/rsvg-rs
