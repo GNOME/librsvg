@@ -59,7 +59,7 @@ fn validate_offset(length: RsvgLength) -> Result<RsvgLength, AttributeError> {
 }
 
 impl NodeTrait for NodeStop {
-    fn set_atts (&self, node: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+    fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         let length = property_bag::parse_or_default (pbag, "offset", LengthDir::Both,
                                                      Some(validate_offset))?;
         assert! (length.unit == LengthUnit::Default || length.unit == LengthUnit::Percent);
@@ -77,7 +77,7 @@ impl NodeTrait for NodeStop {
 
         if let Some (v) = pbag.lookup("style") {
             unsafe {
-                rsvg_parse_style (handle, state, v.to_glib_none ().0);
+                rsvg_parse_style (state, v.to_glib_none ().0);
             }
         }
 
@@ -172,8 +172,8 @@ fn u32_from_rgba (rgba: cssparser::RGBA) -> u32 {
 }
 
 extern "C" {
-    fn rsvg_parse_style_pairs (state: *mut RsvgState, pbag: FfiRsvgPropertyBag);
-    fn rsvg_parse_style (handle: *const RsvgHandle, state: *mut RsvgState, string: *const libc::c_char);
+    fn rsvg_parse_style_pairs(state: *mut RsvgState, pbag: FfiRsvgPropertyBag);
+    fn rsvg_parse_style(state: *mut RsvgState, string: *const libc::c_char);
 }
 
 #[no_mangle]

@@ -210,7 +210,7 @@ void rsvg_state_free_all    (RsvgState * state);
 G_GNUC_INTERNAL
 void rsvg_parse_style_pairs (RsvgState * state, RsvgPropertyBag * atts);
 G_GNUC_INTERNAL
-void rsvg_parse_style	    (RsvgHandle * ctx, RsvgState * state, const char *str);
+void rsvg_parse_style	    (RsvgState *state, const char *str);
 G_GNUC_INTERNAL
 void rsvg_parse_cssbuffer   (RsvgHandle * ctx, const char *buff, size_t buflen);
 G_GNUC_INTERNAL

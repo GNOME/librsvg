@@ -1069,7 +1069,7 @@ parse_style_value (const gchar *string, gchar **value, gboolean *important)
    implementation will happen later.
 */
 void
-rsvg_parse_style (RsvgHandle * ctx, RsvgState * state, const char *str)
+rsvg_parse_style (RsvgState *state, const char *str)
 {
     gchar **styles;
     guint i;
@@ -1482,7 +1482,7 @@ rsvg_parse_style_attrs (RsvgHandle *ctx,
         const char *value;
 
         if ((value = rsvg_property_bag_lookup (atts, "style")) != NULL)
-            rsvg_parse_style (ctx, state, value);
+            rsvg_parse_style (state, value);
 
         if ((value = rsvg_property_bag_lookup (atts, "transform")) != NULL) {
             if (!rsvg_parse_transform_attr (ctx, state, value)) {
