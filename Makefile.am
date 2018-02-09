@@ -64,40 +64,40 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 
 RUST_SOURCES =					\
 	rust/Cargo.toml				\
-	rust/src/aspect_ratio.rs		\
-	rust/src/bbox.rs			\
-	rust/src/chars.rs			\
-	rust/src/clip_path.rs			\
-	rust/src/cnode.rs			\
-	rust/src/color.rs			\
-	rust/src/coord_units.rs			\
-	rust/src/drawing_ctx.rs			\
-	rust/src/error.rs			\
-	rust/src/gradient.rs			\
-	rust/src/handle.rs			\
-	rust/src/image.rs			\
-	rust/src/length.rs			\
-	rust/src/lib.rs				\
-	rust/src/marker.rs			\
-	rust/src/mask.rs			\
-	rust/src/node.rs			\
-	rust/src/opacity.rs			\
-	rust/src/paint_server.rs		\
-	rust/src/parsers.rs			\
-	rust/src/path_builder.rs		\
-	rust/src/path_parser.rs			\
-	rust/src/pattern.rs			\
-	rust/src/property_bag.rs		\
-	rust/src/shapes.rs			\
-	rust/src/space.rs			\
-	rust/src/state.rs			\
-	rust/src/stop.rs			\
-	rust/src/structure.rs			\
-	rust/src/text.rs			\
-	rust/src/transform.rs			\
-	rust/src/util.rs			\
-	rust/src/viewbox.rs			\
-	rust/src/viewport.rs
+	rust/rsvg_internals/src/aspect_ratio.rs		\
+	rust/rsvg_internals/src/bbox.rs			\
+	rust/rsvg_internals/src/chars.rs		\
+	rust/rsvg_internals/src/clip_path.rs		\
+	rust/rsvg_internals/src/cnode.rs		\
+	rust/rsvg_internals/src/color.rs		\
+	rust/rsvg_internals/src/coord_units.rs		\
+	rust/rsvg_internals/src/drawing_ctx.rs		\
+	rust/rsvg_internals/src/error.rs		\
+	rust/rsvg_internals/src/gradient.rs		\
+	rust/rsvg_internals/src/handle.rs		\
+	rust/rsvg_internals/src/image.rs		\
+	rust/rsvg_internals/src/length.rs		\
+	rust/rsvg_internals/src/lib.rs			\
+	rust/rsvg_internals/src/marker.rs		\
+	rust/rsvg_internals/src/mask.rs			\
+	rust/rsvg_internals/src/node.rs			\
+	rust/rsvg_internals/src/opacity.rs		\
+	rust/rsvg_internals/src/paint_server.rs		\
+	rust/rsvg_internals/src/parsers.rs		\
+	rust/rsvg_internals/src/path_builder.rs		\
+	rust/rsvg_internals/src/path_parser.rs		\
+	rust/rsvg_internals/src/pattern.rs		\
+	rust/rsvg_internals/src/property_bag.rs		\
+	rust/rsvg_internals/src/shapes.rs		\
+	rust/rsvg_internals/src/space.rs		\
+	rust/rsvg_internals/src/state.rs		\
+	rust/rsvg_internals/src/stop.rs			\
+	rust/rsvg_internals/src/structure.rs		\
+	rust/rsvg_internals/src/text.rs			\
+	rust/rsvg_internals/src/transform.rs		\
+	rust/rsvg_internals/src/util.rs			\
+	rust/rsvg_internals/src/viewbox.rs		\
+	rust/rsvg_internals/src/viewport.rs
 
 RUST_EXTRA = 					\
 	rust/Cargo.lock				\
