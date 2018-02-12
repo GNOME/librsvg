@@ -513,8 +513,8 @@ inheritfunction (int dst, int src)
     return src;
 }
 
-void
-rsvg_state_inherit (RsvgState * dst, const RsvgState * src)
+static void
+state_inherit (RsvgState * dst, const RsvgState * src)
 {
     rsvg_state_inherit_run (dst, src, inheritfunction, 1);
 }
@@ -1837,7 +1837,7 @@ rsvg_state_reconstruct (RsvgState *state, RsvgNode *current)
 
     currents_parent = rsvg_node_unref (currents_parent);
 
-    rsvg_state_inherit (state, rsvg_node_get_state (current));
+    state_inherit (state, rsvg_node_get_state (current));
 }
 
 gboolean
