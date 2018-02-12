@@ -130,6 +130,14 @@ pub use pattern::{
     pattern_resolve_fallbacks_and_set_pattern,
 };
 
+pub use property_bag::{
+    rsvg_property_bag_enumerate,
+    rsvg_property_bag_free,
+    rsvg_property_bag_lookup,
+    rsvg_property_bag_new,
+    rsvg_property_bag_size,
+};
+
 pub use shapes::{
     rsvg_node_circle_new,
     rsvg_node_ellipse_new,

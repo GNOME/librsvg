@@ -12,7 +12,7 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use opacity::*;
-use property_bag::{self, FfiRsvgPropertyBag, PropertyBag};
+use property_bag::{self, PropertyBag};
 use state::RsvgState;
 
 pub struct NodeStop {
@@ -172,7 +172,7 @@ fn u32_from_rgba (rgba: cssparser::RGBA) -> u32 {
 }
 
 extern "C" {
-    fn rsvg_parse_presentation_attributes (state: *mut RsvgState, pbag: FfiRsvgPropertyBag);
+    fn rsvg_parse_presentation_attributes (state: *mut RsvgState, pbag: *const PropertyBag);
     fn rsvg_parse_style (state: *mut RsvgState, string: *const libc::c_char);
 }
 

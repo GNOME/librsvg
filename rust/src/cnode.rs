@@ -1,12 +1,12 @@
 use drawing_ctx::RsvgDrawingCtx;
 use handle::*;
 use node::*;
-use property_bag::{FfiRsvgPropertyBag, PropertyBag};
+use property_bag::PropertyBag;
 use state::RsvgState;
 
 use std::rc::*;
 
-type CNodeSetAtts = unsafe extern "C" fn (node: *const RsvgNode, node_impl: *const RsvgCNodeImpl, handle: *const RsvgHandle, pbag: FfiRsvgPropertyBag);
+type CNodeSetAtts = unsafe extern "C" fn (node: *const RsvgNode, node_impl: *const RsvgCNodeImpl, handle: *const RsvgHandle, pbag: *const PropertyBag);
 type CNodeDraw = unsafe extern "C" fn (node: *const RsvgNode, node_impl: *const RsvgCNodeImpl, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
 type CNodeFree = unsafe extern "C" fn (node_impl: *const RsvgCNodeImpl);
 

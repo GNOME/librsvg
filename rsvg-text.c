@@ -81,7 +81,7 @@ set_text_common_atts (RsvgNodeText *text, RsvgPropertyBag *atts)
 
 
 static void
-rsvg_node_text_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_node_text_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgNodeText *text = impl;
 
@@ -433,7 +433,7 @@ length_from_tspan (RsvgNode       *node,
 }
 
 static void
-rsvg_node_tspan_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_node_tspan_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgNodeText *text = impl;
 
@@ -515,7 +515,7 @@ rsvg_node_tref_free (gpointer impl)
 }
 
 static void
-rsvg_node_tref_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_node_tref_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgNodeTref *text = impl;
     const char *value;

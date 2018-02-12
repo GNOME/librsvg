@@ -790,7 +790,7 @@ rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
 }
 
 static void
-rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilter *filter = impl;
     const char *value;
@@ -1041,7 +1041,7 @@ rsvg_filter_primitive_blend_free (gpointer impl)
 }
 
 static void
-rsvg_filter_primitive_blend_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_blend_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveBlend *filter = impl;
     const char *value;
@@ -1255,7 +1255,7 @@ rsvg_filter_primitive_convolve_matrix_free (gpointer impl)
 }
 
 static void
-rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveConvolveMatrix *filter = impl;
     gint i, j;
@@ -2009,7 +2009,7 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node, RsvgFilterPrimitive 
 }
 
 static void
-rsvg_filter_primitive_gaussian_blur_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_gaussian_blur_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveGaussianBlur *filter = impl;
     const char *value;
@@ -2134,7 +2134,7 @@ rsvg_filter_primitive_offset_render (RsvgNode *node, RsvgFilterPrimitive *primit
 }
 
 static void
-rsvg_filter_primitive_offset_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag * atts)
+rsvg_filter_primitive_offset_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveOffset *filter = impl;
     const char *value;
@@ -2240,7 +2240,7 @@ rsvg_filter_primitive_merge_render (RsvgNode *node, RsvgFilterPrimitive *primiti
 }
 
 static void
-rsvg_filter_primitive_merge_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_merge_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveMerge *filter = impl;
     const char *value;
@@ -2270,7 +2270,7 @@ rsvg_new_filter_primitive_merge (const char *element_name, RsvgNode *parent)
 }
 
 static void
-rsvg_filter_primitive_merge_node_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_merge_node_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitive *primitive = impl;
     const char *value;
@@ -2419,7 +2419,7 @@ rsvg_filter_primitive_color_matrix_free (gpointer impl)
 }
 
 static void
-rsvg_filter_primitive_color_matrix_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_color_matrix_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveColorMatrix *filter = impl;
     gint type;
@@ -2755,7 +2755,7 @@ rsvg_filter_primitive_component_transfer_render (RsvgNode *node, RsvgFilterPrimi
 }
 
 static void
-rsvg_filter_primitive_component_transfer_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_component_transfer_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveComponentTransfer *filter = impl;
     const char *value;
@@ -2788,7 +2788,7 @@ rsvg_new_filter_primitive_component_transfer (const char *element_name, RsvgNode
 }
 
 static void
-rsvg_node_component_transfer_function_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_node_component_transfer_function_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgNodeComponentTransferFunc *data = impl;
     const char *value;
@@ -2979,7 +2979,7 @@ rsvg_filter_primitive_erode_render (RsvgNode *node, RsvgFilterPrimitive *primiti
 }
 
 static void
-rsvg_filter_primitive_erode_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_erode_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveErode *filter = impl;
     const char *value;
@@ -3184,7 +3184,7 @@ rsvg_filter_primitive_composite_free (gpointer impl)
 }
 
 static void
-rsvg_filter_primitive_composite_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_composite_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveComposite *filter = impl;
     const char *value;
@@ -3301,7 +3301,7 @@ rsvg_filter_primitive_flood_render (RsvgNode *node, RsvgFilterPrimitive *primiti
 }
 
 static void
-rsvg_filter_primitive_flood_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_flood_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitive *filter = impl;
     const char *value;
@@ -3472,7 +3472,7 @@ rsvg_filter_primitive_displacement_map_free (gpointer impl)
 }
 
 static void
-rsvg_filter_primitive_displacement_map_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_displacement_map_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveDisplacementMap *filter = impl;
     const char *value;
@@ -3834,7 +3834,7 @@ rsvg_filter_primitive_turbulence_render (RsvgNode *node, RsvgFilterPrimitive *pr
 }
 
 static void
-rsvg_filter_primitive_turbulence_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_turbulence_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveTurbulence *filter = impl;
     const char *value;
@@ -4055,7 +4055,7 @@ rsvg_filter_primitive_image_free (gpointer impl)
 }
 
 static void
-rsvg_filter_primitive_image_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_image_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveImage *filter = impl;
     const char *value;
@@ -4443,7 +4443,7 @@ get_light_color (RsvgNodeLightSource * source, vector3 color,
 
 
 static void
-rsvg_node_light_source_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_node_light_source_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgNodeLightSource *data = impl;
     const char *value;
@@ -4645,7 +4645,7 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgFilterPrimiti
 }
 
 static void
-rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveDiffuseLighting *filter = impl;
     const char *value;
@@ -4835,7 +4835,7 @@ rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgFilterPrimit
 }
 
 static void
-rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveSpecularLighting *filter = impl;
     const char *value;
@@ -4987,7 +4987,7 @@ rsvg_filter_primitive_tile_render (RsvgNode *node, RsvgFilterPrimitive *primitiv
 }
 
 static void
-rsvg_filter_primitive_tile_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_tile_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveTile *filter = impl;
     const char *value;

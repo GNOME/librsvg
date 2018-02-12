@@ -13,7 +13,7 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use parsers::Parse;
-use property_bag::{self, FfiRsvgPropertyBag, PropertyBag};
+use property_bag::{self, OwnedPropertyBag, PropertyBag};
 use util::*;
 use viewbox::*;
 use viewport::{ClipMode,draw_in_viewport};
@@ -117,7 +117,7 @@ struct NodeSvg {
     w:                     Cell<RsvgLength>,
     h:                     Cell<RsvgLength>,
     vbox:                  Cell<Option<ViewBox>>,
-    atts:                  RefCell<Option<PropertyBag>>
+    pbag:                  RefCell<Option<OwnedPropertyBag>>
 }
 
 impl NodeSvg {
@@ -129,7 +129,7 @@ impl NodeSvg {
             w:                     Cell::new (RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap ()),
             h:                     Cell::new (RsvgLength::parse ("100%", LengthDir::Vertical).unwrap ()),
             vbox:                  Cell::new (None),
-            atts:                  RefCell::new(None)
+            pbag:                  RefCell::new(None)
         }
     }
 }
@@ -161,7 +161,7 @@ impl NodeTrait for NodeSvg {
 
         // The "style" sub-element is not loaded yet here, so we need
         // to store other attributes to be applied later.
-        *self.atts.borrow_mut() = Some(pbag.dup());
+        *self.pbag.borrow_mut() = Some(pbag.to_owned());
 
         Ok (())
     }
@@ -432,7 +432,7 @@ extern "C" {
                                tag:    *const libc::c_char,
                                class:  *const libc::c_char,
                                id:     *const libc::c_char,
-                               pbag:   FfiRsvgPropertyBag);
+                               pbag:   *const PropertyBag);
 }
 
 #[no_mangle]
@@ -441,7 +441,9 @@ pub extern fn rsvg_node_svg_apply_atts (raw_node: *const RsvgNode, handle: *cons
     let node: &RsvgNode = unsafe { & *raw_node };
 
     node.with_impl (|svg: &NodeSvg| {
-        if let Some(pbag) = svg.atts.borrow().as_ref() {
+        if let Some(owned_pbag) = svg.pbag.borrow().as_ref() {
+            let pbag = PropertyBag::from_owned(&owned_pbag);
+
             let class = pbag.lookup("class");
             let id = pbag.lookup("id");
 

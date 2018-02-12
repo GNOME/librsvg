@@ -145,7 +145,7 @@ rsvg_style_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len
 }
 
 static void
-rsvg_style_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag * atts)
+rsvg_style_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts)
 {
 }
 
@@ -388,7 +388,7 @@ get_node_creator_for_element_name (const char *name)
 }
 
 static void
-node_set_atts (RsvgNode * node, RsvgHandle *handle, const NodeCreator *creator, RsvgPropertyBag * atts)
+node_set_atts (RsvgNode * node, RsvgHandle *handle, const NodeCreator *creator, RsvgPropertyBag atts)
 {
     if (rsvg_property_bag_size (atts) > 0) {
         const char *id;
@@ -482,7 +482,7 @@ rsvg_extra_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len
 }
 
 static void
-rsvg_extra_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag * atts)
+rsvg_extra_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts)
 {
 }
 
@@ -560,7 +560,7 @@ rsvg_metadata_props_enumerate (const char *key, const char *value, gpointer user
 }
 
 static void
-rsvg_metadata_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag * atts)
+rsvg_metadata_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts)
 {
     RsvgSaxHandlerMetadata *z = (RsvgSaxHandlerMetadata *) self;
 
@@ -629,7 +629,7 @@ rsvg_xinclude_handler_characters (RsvgSaxHandler * self, const char *ch, gssize 
 }
 
 static void
-rsvg_xinclude_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag * atts)
+rsvg_xinclude_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts)
 {
     RsvgSaxHandlerXinclude *z = (RsvgSaxHandlerXinclude *) self;
 
@@ -805,7 +805,7 @@ rsvg_start_xinclude (RsvgHandle *handle, RsvgPropertyBag * atts)
 static void
 rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
 {
-    RsvgPropertyBag *bag;
+    RsvgPropertyBag bag;
     RsvgHandle *handle = (RsvgHandle *) data;
 
     bag = rsvg_property_bag_new ((const char **) atts);
