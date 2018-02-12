@@ -457,8 +457,8 @@ reinheritfunction (int dst, int src)
     return 0;
 }
 
-void
-rsvg_state_reinherit (RsvgState * dst, const RsvgState * src)
+static void
+state_reinherit (RsvgState * dst, const RsvgState * src)
 {
     rsvg_state_inherit_run (dst, src, reinheritfunction, 0);
 }
@@ -1763,7 +1763,7 @@ rsvg_state_push (RsvgDrawingCtx * ctx)
     data = rsvg_state_new ();
 
     if (baseon) {
-        rsvg_state_reinherit (data, baseon);
+        state_reinherit (data, baseon);
         data->affine = baseon->affine;
         data->parent = baseon;
     }
@@ -1815,7 +1815,7 @@ rsvg_state_reinherit_top (RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
             if (dominate)
                 state_dominate (current, parent);
             else
-                rsvg_state_reinherit (current, parent);
+                state_reinherit (current, parent);
             cairo_matrix_multiply (&current->affine,
                                    &current->affine,
                                    &parent->affine);
