@@ -143,19 +143,21 @@ impl NodePoly {
 
 impl NodeTrait for NodePoly {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        // support for svg < 1.0 which used verts
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                // support for svg < 1.0 which used verts
 
-        for name in &["verts", "points"] {
-            if let Some (value) = pbag.lookup(name) {
-                let result = parsers::list_of_points (value.trim ());
+                if attr == Attribute::Points || attr == Attribute::Verts {
+                    let result = parsers::list_of_points (value.trim ());
 
-                match result {
-                    Ok (v) => {
-                        *self.points.borrow_mut () = Some (v);
-                        break;
-                    },
+                    match result {
+                        Ok (v) => {
+                            *self.points.borrow_mut () = Some (v);
+                            break;
+                        },
 
-                    Err (e) => { return Err (NodeError::parse_error (name, e)); }
+                        Err (e) => { return Err (NodeError::parse_error (key, e)); }
+                    }
                 }
             }
         }
