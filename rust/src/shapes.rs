@@ -2,7 +2,9 @@ use libc;
 
 use std::cell::RefCell;
 use std::cell::Cell;
+use std::str::FromStr;
 
+use attributes::Attribute;
 use drawing_ctx;
 use drawing_ctx::*;
 use error::*;
@@ -88,15 +90,19 @@ impl NodePath {
 
 impl NodeTrait for NodePath {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        if let Some (value) = pbag.lookup("d") {
-            let mut builder = RsvgPathBuilder::new ();
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                if attr == Attribute::D {
+                    let mut builder = RsvgPathBuilder::new ();
 
-            if path_parser::parse_path_into_builder (&value, &mut builder).is_err() {
-                // FIXME: we don't propagate errors upstream, but creating a partial
-                // path is OK per the spec
+                    if path_parser::parse_path_into_builder (&value, &mut builder).is_err() {
+                        // FIXME: we don't propagate errors upstream, but creating a partial
+                        // path is OK per the spec
+                    }
+
+                    *self.builder.borrow_mut() = Some(builder);
+                }
             }
-
-            *self.builder.borrow_mut() = Some(builder);
         }
 
         Ok (())

@@ -26,6 +26,7 @@ fn generate_phf_of_svg_attributes() {
         ( "clip-rule",          "ClipRule" ),
         ( "color",              "Color" ),
         ( "comp-op",            "CompOp" ),
+        ( "d",                  "D" ),
         ( "diffuseConstant",    "DiffuseConstant" ),
         ( "direction",          "Direction" ),
         ( "display",            "Display" ),
