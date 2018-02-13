@@ -13,10 +13,7 @@ pub struct PropertyBag<'a>(HashMap<&'a CStr, &'a CStr>);
 
 pub struct OwnedPropertyBag(HashMap<CString, CString>);
 
-pub struct PropertyBagIter<'a> {
-    pbag: &'a PropertyBag<'a>,
-    iter: hash_map::Iter<'a, &'a CStr, &'a CStr>
-}
+pub struct PropertyBagIter<'a>(hash_map::Iter<'a, &'a CStr, &'a CStr>);
 
 impl<'a> PropertyBag<'a> {
     pub unsafe fn new_from_key_value_pairs(pairs: *const *const libc::c_char) -> PropertyBag<'a> {
@@ -91,10 +88,7 @@ impl<'a> PropertyBag<'a> {
     }
 
     pub fn iter(&self) -> PropertyBagIter {
-        PropertyBagIter {
-            pbag: self,
-            iter: self.0.iter()
-        }
+        PropertyBagIter(self.0.iter())
     }
 }
 
@@ -102,7 +96,7 @@ impl<'a> Iterator for PropertyBagIter<'a> {
     type Item = (&'a str, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(k, v)| (k.to_str().unwrap(), v.to_str().unwrap()))
+        self.0.next().map(|(k, v)| (k.to_str().unwrap(), v.to_str().unwrap()))
     }
 }
 
