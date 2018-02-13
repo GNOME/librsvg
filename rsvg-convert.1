@@ -1,3 +1,4 @@
+.\" -*- fill-column:100 -*-
 .TH rsvg-convert 1
 .SH NAME
 rsvg-convert \- turn SVG files into raster images.
@@ -6,50 +7,66 @@ rsvg-convert \- turn SVG files into raster images.
 [options] in.svg > out.png
 .I ""
 .SH DESCRIPTION
-Converts SVG images into PNG raster images, PDF, PS, or SVG vector images, or dumps of Cairo XML or recording surfaces.
+Converts SVG images into PNG raster images, PDF, PS, or SVG vector images, or dumps of Cairo XML or
+recording surfaces.
 .SS OPTIONS
 .TP
 .I "\-d \-\-dpi-x number"
-Set the X resolution of the image in pixels per inch. RSVG's current default is 90dpi
+Set the X resolution of the image in pixels per inch.  RSVG's current default is 90 DPI.
 .TP
 .I "\-p \-\-dpi-y number"
-Set the Y resolution of the image in pixels per inch. RSVG's current default is 90dpi
+Set the Y resolution of the image in pixels per inch.  RSVG's current default is 90 DPI.
 .TP
 .I "\-x \-\-x\-zoom number"
-X Zoom factor, as a percentage. If unspecified, 1.0 is used as the default.
+X Zoom factor, as a percentage.  If unspecified, 1.0 is used as the default.
 .TP
 .I "\-y \-\-y\-zoom number"
-Y Zoom factor, as a percentage. If unspecified, 1.0 is used as the default.
+Y Zoom factor, as a percentage.  If unspecified, 1.0 is used as the default.
 .TP
-.I "\-z \-\-\-zoom number"
-Zoom factor, as a percentage. If unspecified, 1.0 is used as the default.
+.I "\-z \-\-zoom number"
+Zoom factor, as a percentage.  If unspecified, 1.0 is used as the default.
 .TP
 .I "\-w \-\-width integer"
-Specify how wide you wish the image to be. If unspecified, the natural width of the image is used as the default.
+Specify how wide you wish the image to be.  If unspecified, the natural width of the image is used
+as the default.
 .TP
 .I "\-h \-\-height integer"
-Specify how tall you wish the image to be. If unspecified, the natural height of the image is used as the default.
+Specify how tall you wish the image to be.  If unspecified, the natural height of the image is used
+as the default.
 .TP
 .I "\-f \-\-format [png, pdf, ps, svg, xml, recording]"
-Specify the output format you wish the image to be saved in. If unspecified, PNG is used as the default.
+Specify the output format you wish the image to be saved in.  If unspecified, PNG is used as the
+default.
 .TP
 .I "\-o \-\-output filename"
-Specify the output filename. If unspecified, outputs to stdout.
+Specify the output filename.  If unspecified, outputs to stdout.
 .TP
 .I "\-a \-\-keep-aspect-ratio"
-Specify that the aspect ratio is to be preserved. If unspecified, aspect ratio will not be preserved.
+Specify that the aspect ratio is to be preserved.  If unspecified, aspect ratio will not be
+preserved.
 .TP
 .I "\-b \-\-background-color [black, white, #abccee, #aaa...]"
-Specify the background color. If unspecified, none is used as the default.
+Specify the background color.  If unspecified, none is used as the default.
 .TP
 .I "\-\-base-uri uri"
-Specify the base URI for SVG files. If unspecified, none is used as the default.
+Specify the base URI for SVG files.  If unspecified, none is used as the default.
 .TP
 .I "\-v \-\-version"
 Display what version of rsvg this is.
+.SH ENVIRONMENT VARIABLES
+.TP
+.I "SOURCE_DATE_EPOCH"
+If the selected output format is PDF, this variable can be used to control the CreationDate in the
+PDF file.  This is useful for reproducible output.  The environment variable must be set to a
+decimal number corresponding to a UNIX timestamp, defined as the number of seconds, excluding leap
+seconds, since 01 Jan 1970 00:00:00 UTC.  The specification for this can be found at
+https://reproducible-builds.org/specs/source-date-epoch/
 .SH MORE INFORMATION
 https://wiki.gnome.org/Projects/LibRsvg
+
 http://www.w3.org/TR/SVG11/
+
 http://www.gnome.org/
 .SH "AUTHORS"
-Dom Lachowicz (cinamod@hotmail.com), Caleb Moore (c.moore@student.unsw.edu.au), Federico Mena-Quintero (federico@gnome.org), and a host of others.
+Dom Lachowicz (cinamod@hotmail.com), Caleb Moore (c.moore@student.unsw.edu.au), Federico
+Mena-Quintero (federico@gnome.org), and a host of others.
