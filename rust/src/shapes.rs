@@ -12,7 +12,7 @@ use handle::RsvgHandle;
 use length::*;
 use marker;
 use node::*;
-use parsers;
+use parsers::{self, parse};
 use path_builder::*;
 use path_parser;
 use property_bag::{self, PropertyBag};
@@ -212,10 +212,17 @@ impl NodeLine {
 
 impl NodeTrait for NodeLine {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.x1.set (property_bag::parse_or_default (pbag, "x1", LengthDir::Horizontal, None)?);
-        self.y1.set (property_bag::parse_or_default (pbag, "y1", LengthDir::Vertical, None)?);
-        self.x2.set (property_bag::parse_or_default (pbag, "x2", LengthDir::Horizontal, None)?);
-        self.y2.set (property_bag::parse_or_default (pbag, "y2", LengthDir::Vertical, None)?);
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                match attr {
+                    Attribute::X1 => self.x1.set(parse("x1", value, LengthDir::Horizontal, None)?),
+                    Attribute::Y1 => self.y1.set(parse("y1", value, LengthDir::Vertical, None)?),
+                    Attribute::X2 => self.x2.set(parse("x2", value, LengthDir::Horizontal, None)?),
+                    Attribute::Y2 => self.y2.set(parse("y2", value, LengthDir::Vertical, None)?),
+                    _ => ()
+                }
+            }
+        }
 
         Ok (())
     }
