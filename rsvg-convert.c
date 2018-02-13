@@ -30,9 +30,11 @@
 
 #include "config.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include <locale.h>
 #include <glib/gi18n.h>
 #include <gio/gio.h>
@@ -142,6 +144,13 @@ main (int argc, char **argv)
     char *export_lookup_id;
     double unscaled_width, unscaled_height;
     int scaled_width, scaled_height;
+
+    char buffer[25];
+    char *endptr;
+    char *source_date_epoch;
+    time_t now;
+    struct tm *build_time;
+    unsigned long long epoch;
 
 #ifdef G_OS_WIN32
     HANDLE handle;
@@ -349,9 +358,42 @@ main (int argc, char **argv)
                 surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
                                                       scaled_width, scaled_height);
 #ifdef CAIRO_HAS_PDF_SURFACE
-            else if (!strcmp (format, "pdf"))
+            else if (!strcmp (format, "pdf")) {
                 surface = cairo_pdf_surface_create_for_stream (rsvg_cairo_write_func, output_file,
                                                                scaled_width, scaled_height);
+                source_date_epoch = getenv("SOURCE_DATE_EPOCH");
+                if (source_date_epoch) {
+                    errno = 0;
+                    epoch = strtoull(source_date_epoch, &endptr, 10);
+                    if ((errno == ERANGE && (epoch == ULLONG_MAX || epoch == 0))
+                            || (errno != 0 && epoch == 0)) {
+                        g_printerr (_("Environment variable $SOURCE_DATE_EPOCH: strtoull: %s\n"),
+                                    strerror(errno));
+                        exit (1);
+                    }
+                    if (endptr == source_date_epoch) {
+                        g_printerr (_("Environment variable $SOURCE_DATE_EPOCH: No digits were found: %s\n"),
+                                    endptr);
+                        exit (1);
+                    }
+                    if (*endptr != '\0') {
+                        g_printerr (_("Environment variable $SOURCE_DATE_EPOCH: Trailing garbage: %s\n"),
+                                    endptr);
+                        exit (1);
+                    }
+                    if (epoch > ULONG_MAX) {
+                        g_printerr (_("Environment variable $SOURCE_DATE_EPOCH: value must be smaller than or equal to %lu but was found to be: %llu \n"),
+                                    ULONG_MAX, epoch);
+                        exit (1);
+                    }
+                    now = (time_t) epoch;
+                    build_time = gmtime(&now);
+                    g_assert (strftime (buffer, sizeof (buffer), "%Y-%m-%dT%H:%M:%S%z", build_time));
+                    cairo_pdf_surface_set_metadata (surface,
+                                                    CAIRO_PDF_METADATA_CREATE_DATE,
+                                                    buffer);
+                }
+            }
 #endif
 #ifdef CAIRO_HAS_PS_SURFACE
             else if (!strcmp (format, "ps") || !strcmp (format, "eps")){
