@@ -28,20 +28,20 @@ explains librsvg's peculiarities.
 ### openSUSE based systems:
 
 ```sh
-zypper install -y gcc rust rust-std cargo make \\
-automake autoconf libtool gettext itstool git \\
-gtk-doc gobject-introspection-devel gtk3-devel \\
-libxml2-devel libcroco-devel cairo-devel \\
-pango-devel gdk-pixbuf-devel 
+zypper install -y gcc rust rust-std cargo make \
+automake autoconf libtool gettext itstool git \
+gtk-doc gobject-introspection-devel gtk3-devel \
+libxml2-devel libcroco-devel cairo-devel \
+pango-devel gdk-pixbuf-devel
 ```
 
 ### Fedora based systems:
 
 ```sh
-dnf install -y gcc rust rust-std-static cargo make \\
-automake autoconf libtool gettext itstool \\
-gdk-pixbuf2-devel gobject-introspection-devel \\
-gtk-doc git redhat-rpm-config  gtk3-devel \\
+dnf install -y gcc rust rust-std-static cargo make \
+automake autoconf libtool gettext itstool \
+gdk-pixbuf2-devel gobject-introspection-devel \
+gtk-doc git redhat-rpm-config  gtk3-devel \
 libxml2-devel libcroco-devel cairo-devel pango-devel
 ```
 
