@@ -89,6 +89,8 @@ fn generate_phf_of_svg_attributes() {
         ( "requiredExtensions", "RequiredExtensions" ),
         ( "requiredFeatures",   "RequiredFeatures" ),
         ( "result",             "Result" ),
+        ( "rx",                 "Rx" ),
+        ( "ry",                 "Ry" ),
         ( "scale",              "Scale" ),
         ( "seed",               "Seed" ),
         ( "shape-rendering",    "ShapeRendering" ),

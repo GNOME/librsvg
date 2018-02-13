@@ -276,13 +276,27 @@ impl NodeRect {
 
 impl NodeTrait for NodeRect {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal, None)?);
-        self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical, None)?);
-        self.w.set (property_bag::parse_or_default (pbag, "width", LengthDir::Horizontal, None)?);
-        self.h.set (property_bag::parse_or_default (pbag, "height", LengthDir::Vertical, None)?);
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                match attr {
+                    Attribute::X      => self.x.set (parse ("x", value, LengthDir::Horizontal, None)?),
+                    Attribute::Y      => self.y.set (parse ("y", value, LengthDir::Vertical, None)?),
+                    Attribute::Width  => self.w.set (parse ("width", value, LengthDir::Horizontal,
+                                                            Some(RsvgLength::check_nonnegative))?),
+                    Attribute::Height => self.h.set (parse ("height", value, LengthDir::Vertical,
+                                                            Some(RsvgLength::check_nonnegative))?),
 
-        self.rx.set (property_bag::parse_or_none (pbag, "rx", LengthDir::Horizontal, None)?);
-        self.ry.set (property_bag::parse_or_none (pbag, "ry", LengthDir::Vertical, None)?);
+                    Attribute::Rx => self.rx.set (parse ("rx", value, LengthDir::Horizontal,
+                                                         Some(RsvgLength::check_nonnegative))
+                                                  .map(Some)?),
+                    Attribute::Ry => self.ry.set (parse ("ry", value, LengthDir::Vertical,
+                                                         Some(RsvgLength::check_nonnegative))
+                                                  .map(Some)?),
+
+                    _ => (),
+                }
+            }
+        }
 
         Ok (())
     }
