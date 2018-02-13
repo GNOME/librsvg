@@ -1,3 +1,16 @@
+Version 2.42.3
+- gitlab#91 - Fix rendering of masks and clips when the initial
+  transformation has a translation component (Massimo).
+- gitlab#161 - Fix the marker angle for the last vertex of closed
+  paths (Juraj Fiala).
+- gitlab#198 - Make rsvg_pixbuf_from_file() and its derived functions
+  work again.  Now we have tests for the whole public API.
+- gitlab#143 - Minor optimizations for Gaussian blurs (Timm Bäder).
+- rsvg-convert now supports SOURCE_DATE_EPOCH per
+  https://reproducible-builds.org/specs/source-date-epoch/ to generate
+  reproducible output for PDFs (Chris Lamb).
+- Code moved to Rust: SVG paint servers (Dmitry Kontsevoy).
+
 Version 2.42.2
 - gitlab#193 - Don't crash when feConvolveMatrix doesn't specify
   orderx/ordery attributes.
