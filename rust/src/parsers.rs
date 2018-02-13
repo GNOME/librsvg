@@ -9,6 +9,7 @@ use std::ptr;
 use std::slice;
 use std::str;
 
+use error::{AttributeError, NodeError};
 use util::utf8_cstr;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -33,6 +34,29 @@ pub trait Parse: Sized {
     type Err;
 
     fn parse (s: &str, data: Self::Data) -> Result<Self, Self::Err>;
+}
+
+/// Parses a `value` string into a type `T` with an optional validation function.
+///
+/// Some value types need some extra `data` to be parsed.  This
+/// corresponds to the `<T as Parse>::Data` associated type.  For
+/// example, an `RsvgLength` has an associated `type Data =
+/// LengthDir`, so to parse a length value, you could specify
+/// `LengthDir::Horizontal` for `data`, for example.
+pub fn parse<T>(key: &str,
+                value: &str,
+                data: <T as Parse>::Data,
+                validate: Option<fn(T) -> Result<T, AttributeError>>) -> Result <T, NodeError>
+    where T: Parse<Err = AttributeError> + Copy
+{
+    T::parse (value, data)
+        .and_then (|v|
+                   if let Some(validate) = validate {
+                       validate(v)
+                   } else {
+                       Ok(v)
+                   })
+        .map_err (|e| NodeError::attribute_error (key, e))
 }
 
 // angle:
