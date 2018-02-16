@@ -173,28 +173,46 @@ impl GradientVariant {
         }
     }
 
+    fn default_linear() -> Self {
+        // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
+
+        GradientVariant::Linear {
+            x1: Some(RsvgLength::parse("0%", LengthDir::Horizontal).unwrap()),
+            y1: Some(RsvgLength::parse("0%", LengthDir::Vertical).unwrap()),
+            x2: Some(RsvgLength::parse("100%", LengthDir::Horizontal).unwrap()),
+            y2: Some(RsvgLength::parse("0%", LengthDir::Vertical).unwrap()),
+        }
+    }
+
+    fn default_radial() -> Self {
+        // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
+
+        GradientVariant::Radial {
+            cx: Some(RsvgLength::parse("50%", LengthDir::Horizontal).unwrap()),
+            cy: Some(RsvgLength::parse("50%", LengthDir::Vertical).unwrap()),
+            r:  Some(RsvgLength::parse("50%", LengthDir::Both).unwrap()),
+
+            fx: None,
+            fy: None,
+        }
+    }
+
     fn resolve_from_defaults (&mut self) {
         /* These are per the spec */
 
         match *self {
-            // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
-            GradientVariant::Linear { ref mut x1, ref mut y1, ref mut x2, ref mut y2 } => {
-                fallback_to! (*x1, Some (RsvgLength::parse ("0%", LengthDir::Horizontal).unwrap ()));
-                fallback_to! (*y1, Some (RsvgLength::parse ("0%", LengthDir::Vertical).unwrap ()));
-                fallback_to! (*x2, Some (RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap ()));
-                fallback_to! (*y2, Some (RsvgLength::parse ("0%", LengthDir::Vertical).unwrap ()));
+            GradientVariant::Linear { .. } =>
+                self.resolve_from_fallback(&GradientVariant::default_linear()),
+
+            GradientVariant::Radial { .. } => {
+                self.resolve_from_fallback(&GradientVariant::default_radial());
             },
+        }
 
-            // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
-            GradientVariant::Radial { ref mut cx, ref mut cy, ref mut r, ref mut fx, ref mut fy } => {
-                fallback_to! (*cx, Some (RsvgLength::parse ("50%", LengthDir::Horizontal).unwrap ()));
-                fallback_to! (*cy, Some (RsvgLength::parse ("50%", LengthDir::Vertical).unwrap ()));
-                fallback_to! (*r,  Some (RsvgLength::parse ("50%", LengthDir::Both).unwrap ()));
-
-                /* fx and fy fall back to the presentational value of cx and cy */
-                fallback_to! (*fx, *cx);
-                fallback_to! (*fy, *cy);
-            }
+        if let &mut GradientVariant::Radial { cx, cy, ref mut fx, ref mut fy, .. } = self {
+            // fx and fy fall back to the presentational value of cx and cy
+            fallback_to!(*fx, cx);
+            fallback_to!(*fy, cy);
         }
     }
 
