@@ -69,9 +69,9 @@ struct Gradient {
 impl Default for GradientCommon {
     fn default () -> GradientCommon {
         GradientCommon {
-            units:    None,
-            affine:   None,
-            spread:   None,
+            units:    Some(GradientUnits::default()),
+            affine:   Some(cairo::Matrix::identity()),
+            spread:   Some(PaintServerSpread::default()),
             fallback: None,
             stops:    None,
         }
@@ -113,19 +113,11 @@ impl GradientCommon {
     fn is_resolved (&self) -> bool {
         self.units.is_some() &&
             self.affine.is_some () &&
-            self.spread.is_some () &&
-            self.stops.is_some ()
+            self.spread.is_some ()
     }
 
     fn resolve_from_defaults (&mut self) {
-        /* These are per the spec */
-
-        fallback_to! (self.units,  Some (GradientUnits::default ()));
-        fallback_to! (self.affine, Some (cairo::Matrix::identity ()));
-        fallback_to! (self.spread, Some (PaintServerSpread::default ()));
-        fallback_to! (self.stops,  Some (Vec::<ColorStop>::new ())); // empty array of color stops
-
-        self.fallback = None;
+        self.resolve_from_fallback(&GradientCommon::default());
     }
 
     fn resolve_from_fallback (&mut self, fallback: &GradientCommon) {
@@ -272,15 +264,15 @@ impl Gradient {
     fn add_color_stops_to_pattern (&self,
                                    pattern:  &mut cairo::Gradient,
                                    opacity:  u8) {
-        let stops = self.common.stops.as_ref ().unwrap ();
-
-        for stop in stops {
-            let rgba = stop.rgba;
-            pattern.add_color_stop_rgba (stop.offset,
-                                         (f64::from((rgba >> 24) & 0xff)) / 255.0,
-                                         (f64::from((rgba >> 16) & 0xff))  / 255.0,
-                                         (f64::from((rgba >> 8) & 0xff))  / 255.0,
-                                         f64::from(((rgba >> 0) & 0xff) * u32::from(opacity)) / 255.0 / 255.0);
+        if let Some(stops) = self.common.stops.as_ref () {
+            for stop in stops {
+                let rgba = stop.rgba;
+                pattern.add_color_stop_rgba (stop.offset,
+                                             (f64::from((rgba >> 24) & 0xff)) / 255.0,
+                                             (f64::from((rgba >> 16) & 0xff))  / 255.0,
+                                             (f64::from((rgba >> 8) & 0xff))  / 255.0,
+                                             f64::from(((rgba >> 0) & 0xff) * u32::from(opacity)) / 255.0 / 255.0);
+            }
         }
     }
 }
