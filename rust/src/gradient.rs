@@ -4,9 +4,11 @@ use glib::translate::*;
 use libc;
 
 use std::cell::RefCell;
+use std::str::FromStr;
 
 use cairo::MatrixTrait;
 
+use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
 use drawing_ctx;
@@ -15,8 +17,8 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use paint_server::*;
-use parsers::Parse;
-use property_bag::{self, PropertyBag};
+use parsers::{Parse, parse};
+use property_bag::PropertyBag;
 use stop::*;
 use util::*;
 
@@ -567,35 +569,72 @@ impl NodeGradient {
 
 impl NodeTrait for NodeGradient {
     fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        let mut g = self.gradient.borrow_mut ();
+        let mut g = self.gradient.borrow_mut();
 
-        // Attributes common to linear and radial gradients
+        let mut x1 = RsvgLength::default();
+        let mut y1 = RsvgLength::default();
+        let mut x2 = RsvgLength::default();
+        let mut y2 = RsvgLength::default();
 
-        g.common.units    = property_bag::parse_or_none (pbag, "gradientUnits", (), None)?;
-        g.common.affine   = property_bag::parse_or_none (pbag, "gradientTransform", (), None)?;
-        g.common.spread   = property_bag::parse_or_none (pbag, "spreadMethod", (), None)?;
-        g.common.fallback = pbag.lookup("xlink:href").map(|s| s.to_owned());
+        let mut cx = RsvgLength::default();
+        let mut cy = RsvgLength::default();
+        let mut r  = RsvgLength::default();
+        let mut fx = RsvgLength::default();
+        let mut fy = RsvgLength::default();
 
-        // Attributes specific to each gradient type.  The defaults mandated by the spec
-        // are in GradientVariant::resolve_from_defaults()
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                match attr {
+                    // Attributes common to linear and radial gradients
+
+                    Attribute::GradientUnits =>
+                        g.common.units = Some(parse("gradientUnits", value, (), None)?),
+
+                    Attribute::GradientTransform =>
+                        g.common.affine = Some(parse("gradientTransform", value, (), None)?),
+
+                    Attribute::SpreadMethod =>
+                        g.common.spread = Some(parse("spreadMethod", value, (), None)?),
+
+                    Attribute::XlinkHref =>
+                        g.common.fallback = Some(value.to_owned()),
+
+                    // Attributes specific to each gradient type.  The defaults mandated by the spec
+                    // are in GradientVariant::resolve_from_defaults()
+
+                    Attribute::X1 => x1 = parse("x1", value, LengthDir::Horizontal, None)?,
+                    Attribute::Y1 => y1 = parse("y1", value, LengthDir::Vertical, None)?,
+                    Attribute::X2 => x2 = parse("x2", value, LengthDir::Horizontal, None)?,
+                    Attribute::Y2 => y2 = parse("y2", value, LengthDir::Vertical, None)?,
+
+                    Attribute::Cx => cx = parse("cx", value, LengthDir::Horizontal, None)?,
+                    Attribute::Cy => cy = parse("cy", value, LengthDir::Vertical, None)?,
+                    Attribute::R  => r  = parse("r",  value, LengthDir::Both, None)?,
+                    Attribute::Fx => fx = parse("fx", value, LengthDir::Horizontal, None)?,
+                    Attribute::Fy => fy = parse("fy", value, LengthDir::Vertical, None)?,
+
+                    _ => (),
+                }
+            }
+        }
 
         match node.get_type () {
             NodeType::LinearGradient => {
                 g.variant = GradientVariant::Linear {
-                    x1: property_bag::parse_or_none (pbag, "x1", LengthDir::Horizontal, None)?,
-                    y1: property_bag::parse_or_none (pbag, "y1", LengthDir::Vertical, None)?,
-                    x2: property_bag::parse_or_none (pbag, "x2", LengthDir::Horizontal, None)?,
-                    y2: property_bag::parse_or_none (pbag, "y2", LengthDir::Vertical, None)?
+                    x1: Some(x1),
+                    y1: Some(y1),
+                    x2: Some(x2),
+                    y2: Some(y2),
                 };
             },
 
             NodeType::RadialGradient => {
                 g.variant = GradientVariant::Radial {
-                    cx: property_bag::parse_or_none (pbag, "cx", LengthDir::Horizontal, None)?,
-                    cy: property_bag::parse_or_none (pbag, "cy", LengthDir::Vertical, None)?,
-                    r:  property_bag::parse_or_none (pbag, "r",  LengthDir::Both, None)?,
-                    fx: property_bag::parse_or_none (pbag, "fx", LengthDir::Horizontal, None)?,
-                    fy: property_bag::parse_or_none (pbag, "fy", LengthDir::Vertical, None)?
+                    cx: Some(cx),
+                    cy: Some(cy),
+                    r:  Some(r),
+                    fx: Some(fx),
+                    fy: Some(fy),
                 };
             },
 
