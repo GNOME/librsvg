@@ -38,14 +38,16 @@ AC_SUBST([LIBRSVG_MICRO_VERSION],[rsvg_micro_version])
 
 dnl ===========================================================================
 
-GLIB_REQUIRED=2.52.0
-GIO_REQUIRED=2.24.0
-LIBXML_REQUIRED=2.9.0
 CAIRO_REQUIRED=1.15.4
-PANGO_REQUIRED=1.38.0
-GDK_PIXBUF_REQUIRED=2.20
-GTK3_REQUIRED=3.10.0
 CROCO_REQUIRED=0.6.1
+dnl This corresponds to Freetype2 2.8
+FREETYPE2_REQUIRED=20.0.14
+GDK_PIXBUF_REQUIRED=2.20
+GIO_REQUIRED=2.24.0
+GLIB_REQUIRED=2.52.0
+GTK3_REQUIRED=3.10.0
+LIBXML_REQUIRED=2.9.0
+PANGO_REQUIRED=1.38.0
 
 dnl ===========================================================================
 
@@ -108,15 +110,16 @@ dnl ===========================================================================
 GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`
 AC_SUBST(GLIB_MKENUMS)
 
-PKG_CHECK_MODULES(LIBRSVG, \
+PKG_CHECK_MODULES(LIBRSVG,                     \
+	cairo >= $CAIRO_REQUIRED               \
+	cairo-png >= $CAIRO_REQUIRED           \
+	freetype2 >= $FREETYPE2_REQUIRED       \
 	gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED \
-	glib-2.0 >= $GLIB_REQUIRED \
-	gio-2.0 >= $GIO_REQUIRED \
-	libxml-2.0 >= $LIBXML_REQUIRED \
-	pangocairo >= $PANGO_REQUIRED \
-	pangoft2 >= $PANGO_REQUIRED \
-	cairo >= $CAIRO_REQUIRED \
-	cairo-png >= $CAIRO_REQUIRED
+	gio-2.0 >= $GIO_REQUIRED               \
+	glib-2.0 >= $GLIB_REQUIRED             \
+	libxml-2.0 >= $LIBXML_REQUIRED         \
+	pangocairo >= $PANGO_REQUIRED          \
+	pangoft2 >= $PANGO_REQUIRED            \
         libcroco-0.6 >= $CROCO_REQUIRED)
 
 PKG_CHECK_MODULES([GTHREAD],[gthread-2.0 >= $GLIB_REQUIRED])
