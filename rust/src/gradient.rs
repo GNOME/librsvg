@@ -571,16 +571,16 @@ impl NodeTrait for NodeGradient {
     fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         let mut g = self.gradient.borrow_mut();
 
-        let mut x1 = RsvgLength::default();
-        let mut y1 = RsvgLength::default();
-        let mut x2 = RsvgLength::default();
-        let mut y2 = RsvgLength::default();
+        let mut x1 = None;
+        let mut y1 = None;
+        let mut x2 = None;
+        let mut y2 = None;
 
-        let mut cx = RsvgLength::default();
-        let mut cy = RsvgLength::default();
-        let mut r  = RsvgLength::default();
-        let mut fx = RsvgLength::default();
-        let mut fy = RsvgLength::default();
+        let mut cx = None;
+        let mut cy = None;
+        let mut r  = None;
+        let mut fx = None;
+        let mut fy = None;
 
         for (key, value) in pbag.iter() {
             if let Ok(attr) = Attribute::from_str(key) {
@@ -602,16 +602,16 @@ impl NodeTrait for NodeGradient {
                     // Attributes specific to each gradient type.  The defaults mandated by the spec
                     // are in GradientVariant::resolve_from_defaults()
 
-                    Attribute::X1 => x1 = parse("x1", value, LengthDir::Horizontal, None)?,
-                    Attribute::Y1 => y1 = parse("y1", value, LengthDir::Vertical, None)?,
-                    Attribute::X2 => x2 = parse("x2", value, LengthDir::Horizontal, None)?,
-                    Attribute::Y2 => y2 = parse("y2", value, LengthDir::Vertical, None)?,
+                    Attribute::X1 => x1 = Some(parse("x1", value, LengthDir::Horizontal, None)?),
+                    Attribute::Y1 => y1 = Some(parse("y1", value, LengthDir::Vertical, None)?),
+                    Attribute::X2 => x2 = Some(parse("x2", value, LengthDir::Horizontal, None)?),
+                    Attribute::Y2 => y2 = Some(parse("y2", value, LengthDir::Vertical, None)?),
 
-                    Attribute::Cx => cx = parse("cx", value, LengthDir::Horizontal, None)?,
-                    Attribute::Cy => cy = parse("cy", value, LengthDir::Vertical, None)?,
-                    Attribute::R  => r  = parse("r",  value, LengthDir::Both, None)?,
-                    Attribute::Fx => fx = parse("fx", value, LengthDir::Horizontal, None)?,
-                    Attribute::Fy => fy = parse("fy", value, LengthDir::Vertical, None)?,
+                    Attribute::Cx => cx = Some(parse("cx", value, LengthDir::Horizontal, None)?),
+                    Attribute::Cy => cy = Some(parse("cy", value, LengthDir::Vertical, None)?),
+                    Attribute::R  => r  = Some(parse("r",  value, LengthDir::Both, None)?),
+                    Attribute::Fx => fx = Some(parse("fx", value, LengthDir::Horizontal, None)?),
+                    Attribute::Fy => fy = Some(parse("fy", value, LengthDir::Vertical, None)?),
 
                     _ => (),
                 }
@@ -621,20 +621,20 @@ impl NodeTrait for NodeGradient {
         match node.get_type () {
             NodeType::LinearGradient => {
                 g.variant = GradientVariant::Linear {
-                    x1: Some(x1),
-                    y1: Some(y1),
-                    x2: Some(x2),
-                    y2: Some(y2),
+                    x1: x1,
+                    y1: y1,
+                    x2: x2,
+                    y2: y2,
                 };
             },
 
             NodeType::RadialGradient => {
                 g.variant = GradientVariant::Radial {
-                    cx: Some(cx),
-                    cy: Some(cy),
-                    r:  Some(r),
-                    fx: Some(fx),
-                    fy: Some(fy),
+                    cx: cx,
+                    cy: cy,
+                    r:  r,
+                    fx: fx,
+                    fy: fy,
                 };
             },
 
