@@ -231,16 +231,25 @@ impl NodeUse {
 
 impl NodeTrait for NodeUse {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        *self.link.borrow_mut () = pbag.lookup("xlink:href").map(|s| s.to_owned());
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                match attr {
+                    Attribute::XlinkHref => *self.link.borrow_mut() = Some(value.to_owned()),
 
-        self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal, None)?);
-        self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical, None)?);
+                    Attribute::X         => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
+                    Attribute::Y         => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
 
-        self.w.set (property_bag::parse_or_none (pbag, "width", LengthDir::Horizontal,
-                                                 Some(RsvgLength::check_nonnegative))?);
+                    Attribute::Width     => self.w.set(parse("width", value, LengthDir::Horizontal,
+                                                             Some(RsvgLength::check_nonnegative))
+                                                       .map(Some)?),
+                    Attribute::Height    => self.h.set(parse("height", value, LengthDir::Vertical,
+                                                             Some(RsvgLength::check_nonnegative))
+                                                       .map(Some)?),
 
-        self.h.set (property_bag::parse_or_none (pbag, "height", LengthDir::Vertical,
-                                                 Some(RsvgLength::check_nonnegative))?);
+                    _ => (),
+                }
+            }
+        }
 
         Ok (())
     }
