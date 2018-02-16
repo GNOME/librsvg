@@ -75,7 +75,7 @@ impl Default for GradientCommon {
             affine:   Some(cairo::Matrix::identity()),
             spread:   Some(PaintServerSpread::default()),
             fallback: None,
-            stops:    None,
+            stops:    Some(Vec::<ColorStop>::new()),
         }
     }
 }
@@ -104,6 +104,16 @@ macro_rules! fallback_to (
 );
 
 impl GradientCommon {
+    fn unresolved() -> GradientCommon {
+        GradientCommon {
+            units:    None,
+            affine:   None,
+            spread:   None,
+            fallback: None,
+            stops:    None,
+        }
+    }
+
     fn clone_stops (&self) -> Option<Vec<ColorStop>> {
         if let Some (ref stops) = self.stops {
             Some (stops.clone ())
@@ -115,7 +125,8 @@ impl GradientCommon {
     fn is_resolved (&self) -> bool {
         self.units.is_some() &&
             self.affine.is_some () &&
-            self.spread.is_some ()
+            self.spread.is_some () &&
+            self.stops.is_some()
     }
 
     fn resolve_from_defaults (&mut self) {
@@ -156,6 +167,25 @@ impl GradientCommon {
 }
 
 impl GradientVariant {
+    fn unresolved_linear() -> Self {
+        GradientVariant::Linear {
+            x1: None,
+            y1: None,
+            x2: None,
+            y2: None,
+        }
+    }
+
+    fn unresolved_radial() -> Self {
+        GradientVariant::Radial {
+            cx: None,
+            cy: None,
+            r:  None,
+            fx: None,
+            fy: None,
+        }
+    }
+
     fn is_resolved (&self) -> bool {
         match *self {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
@@ -534,13 +564,8 @@ impl NodeGradient {
     fn new_linear () -> NodeGradient {
         NodeGradient {
             gradient: RefCell::new (Gradient {
-                common: GradientCommon::default (),
-                variant: GradientVariant::Linear {
-                    x1: None,
-                    y1: None,
-                    x2: None,
-                    y2: None
-                }
+                common: GradientCommon::unresolved (),
+                variant: GradientVariant::unresolved_linear(),
             })
         }
     }
@@ -548,14 +573,8 @@ impl NodeGradient {
     fn new_radial () -> NodeGradient {
         NodeGradient {
             gradient: RefCell::new (Gradient {
-                common: GradientCommon::default (),
-                variant: GradientVariant::Radial {
-                    cx: None,
-                    cy: None,
-                    r:  None,
-                    fx: None,
-                    fy: None
-                }
+                common: GradientCommon::unresolved (),
+                variant: GradientVariant::unresolved_radial(),
             })
         }
     }
