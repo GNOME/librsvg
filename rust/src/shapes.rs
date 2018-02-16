@@ -15,7 +15,7 @@ use node::*;
 use parsers::{self, parse};
 use path_builder::*;
 use path_parser;
-use property_bag::{self, PropertyBag};
+use property_bag::PropertyBag;
 use state::RsvgState;
 
 fn render_path_builder (builder:  &RsvgPathBuilder,
@@ -516,14 +516,21 @@ impl NodeEllipse {
 
 impl NodeTrait for NodeEllipse {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.cx.set (property_bag::parse_or_default (pbag, "cx", LengthDir::Horizontal, None)?);
-        self.cy.set (property_bag::parse_or_default (pbag, "cy", LengthDir::Vertical, None)?);
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                match attr {
+                    Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal, None)?),
+                    Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
 
-        self.rx.set (property_bag::parse_or_default (pbag, "rx", LengthDir::Horizontal,
-                                                     Some(RsvgLength::check_nonnegative))?);
+                    Attribute::Rx => self.rx.set(parse("rx", value, LengthDir::Horizontal,
+                                                       Some(RsvgLength::check_nonnegative))?),
+                    Attribute::Ry => self.ry.set(parse("ry", value, LengthDir::Vertical,
+                                                       Some(RsvgLength::check_nonnegative))?),
 
-        self.ry.set (property_bag::parse_or_default (pbag, "ry", LengthDir::Vertical,
-                                                     Some(RsvgLength::check_nonnegative))?);
+                    _ => (),
+                }
+            }
+        }
 
         Ok (())
     }
