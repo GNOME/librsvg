@@ -465,11 +465,18 @@ impl NodeCircle {
 
 impl NodeTrait for NodeCircle {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.cx.set (property_bag::parse_or_default (pbag, "cx", LengthDir::Horizontal, None)?);
-        self.cy.set (property_bag::parse_or_default (pbag, "cy", LengthDir::Vertical, None)?);
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                match attr {
+                    Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal, None)?),
+                    Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
+                    Attribute::R  => self.r.set (parse("r",  value, LengthDir::Both,
+                                                       Some(RsvgLength::check_nonnegative))?),
 
-        self.r.set  (property_bag::parse_or_default (pbag, "r", LengthDir::Both,
-                                                     Some(RsvgLength::check_nonnegative))?);
+                    _ => (),
+                }
+            }
+        }
 
         Ok (())
     }
