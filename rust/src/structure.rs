@@ -3,16 +3,18 @@ use libc;
 
 use std::cell::RefCell;
 use std::cell::Cell;
+use std::str::FromStr;
 
 use cairo::MatrixTrait;
 
 use aspect_ratio::*;
+use attributes::Attribute;
 use drawing_ctx::RsvgDrawingCtx;
 use drawing_ctx;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use parsers::Parse;
+use parsers::{Parse, parse};
 use property_bag::{self, OwnedPropertyBag, PropertyBag};
 use util::*;
 use viewbox::*;
@@ -136,28 +138,37 @@ impl NodeSvg {
 
 impl NodeTrait for NodeSvg {
     fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
-
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
-        if node.get_parent ().is_some () {
-            self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal, None)?);
-            self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical, None)?);
+        let is_inner_svg = node.get_parent().is_some();
+
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                match attr {
+                    Attribute::PreserveAspectRatio =>
+                        self.preserve_aspect_ratio.set(parse("preserveAspectRatio", value, (), None)?),
+
+                    Attribute::X => if is_inner_svg {
+                        self.x.set(parse("x", value, LengthDir::Horizontal, None)?);
+                    },
+
+                    Attribute::Y => if is_inner_svg {
+                        self.y.set(parse("y", value, LengthDir::Vertical, None)?);
+                    },
+
+                    Attribute::Width => self.w.set(parse("width", value, LengthDir::Horizontal,
+                                                         Some(RsvgLength::check_nonnegative))?),
+
+                    Attribute::Height => self.h.set(parse("height", value, LengthDir::Vertical,
+                                                          Some(RsvgLength::check_nonnegative))?),
+
+                    Attribute::ViewBox => self.vbox.set(parse("viewBox", value, (), None)
+                                                        .map(Some)?),
+
+                    _ => (),
+                }
+            }
         }
-
-        self.w.set (property_bag::parse_or_value (pbag,
-                                                  "width",
-                                                  LengthDir::Horizontal,
-                                                  RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap (),
-                                                  Some(RsvgLength::check_nonnegative))?);
-
-        self.h.set (property_bag::parse_or_value (pbag,
-                                                  "height",
-                                                  LengthDir::Vertical,
-                                                  RsvgLength::parse ("100%", LengthDir::Vertical).unwrap (),
-                                                  Some(RsvgLength::check_nonnegative))?);
-
-        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox", (), None)?);
 
         // The "style" sub-element is not loaded yet here, so we need
         // to store other attributes to be applied later.
