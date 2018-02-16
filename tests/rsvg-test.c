@@ -278,7 +278,6 @@ rsvg_cairo_check (gconstpointer data)
     RsvgHandle *rsvg;
     RsvgDimensionData dimensions;
     cairo_t *cr;
-    cairo_t *cr2;
     cairo_surface_t *render_surface;
     cairo_surface_t *surface_a, *surface_b, *surface_diff;
     buffer_diff_result_t result;
