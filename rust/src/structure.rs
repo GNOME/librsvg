@@ -15,7 +15,7 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use parsers::{Parse, parse};
-use property_bag::{self, OwnedPropertyBag, PropertyBag};
+use property_bag::{OwnedPropertyBag, PropertyBag};
 use util::*;
 use viewbox::*;
 use viewport::{ClipMode,draw_in_viewport};
@@ -357,8 +357,19 @@ impl NodeSymbol {
 
 impl NodeTrait for NodeSymbol {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
-        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox", (), None)?);
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                match attr {
+                    Attribute::PreserveAspectRatio =>
+                        self.preserve_aspect_ratio.set(parse("preserveAspectRatio", value, (), None)?),
+
+                    Attribute::ViewBox => self.vbox.set(parse("viewBox", value, (), None)
+                                                        .map(Some)?),
+
+                    _ => (),
+                }
+            }
+        }
 
         Ok (())
     }
