@@ -2,10 +2,12 @@ use libc;
 
 use std::cell::Cell;
 use std::f64::consts::*;
+use std::str::FromStr;
 
 use cairo::MatrixTrait;
 
 use aspect_ratio::*;
+use attributes::Attribute;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use error::*;
@@ -14,9 +16,9 @@ use length::*;
 use node::*;
 use path_builder::*;
 use parsers;
-use parsers::Parse;
+use parsers::{Parse, parse};
 use parsers::ParseError;
-use property_bag::{self, PropertyBag};
+use property_bag::PropertyBag;
 use util::*;
 use viewbox::*;
 
@@ -191,25 +193,39 @@ impl NodeMarker {
 
 impl NodeTrait for NodeMarker {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.units.set (property_bag::parse_or_default (pbag, "markerUnits", (), None)?);
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                match attr {
+                    Attribute::MarkerUnits =>
+                        self.units.set(parse("markerUnits", value, (), None)?),
 
-        self.ref_x.set (property_bag::parse_or_default (pbag, "refX", LengthDir::Horizontal, None)?);
-        self.ref_y.set (property_bag::parse_or_default (pbag, "refY", LengthDir::Vertical, None)?);
+                    Attribute::RefX =>
+                        self.ref_x.set(parse("refX", value, LengthDir::Horizontal, None)?),
 
-        self.width.set (property_bag::parse_or_value (pbag, "markerWidth",
-                                                      LengthDir::Horizontal,
-                                                      NodeMarker::get_default_size (LengthDir::Horizontal),
-                                                      Some(RsvgLength::check_nonnegative))?);
+                    Attribute::RefY =>
+                        self.ref_y.set(parse("refY", value, LengthDir::Vertical, None)?),
 
-        self.height.set (property_bag::parse_or_value (pbag, "markerHeight",
-                                                       LengthDir::Vertical,
-                                                       NodeMarker::get_default_size (LengthDir::Vertical),
-                                                       Some(RsvgLength::check_nonnegative))?);
+                    Attribute::MarkerWidth =>
+                        self.width.set(parse("markerWidth", value, LengthDir::Horizontal,
+                                             Some(RsvgLength::check_nonnegative))?),
 
-        self.orient.set (property_bag::parse_or_default (pbag, "orient", (), None)?);
-        self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
-        self.vbox.set   (property_bag::parse_or_none (pbag, "viewBox", (), None)?);
-        self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
+                    Attribute::MarkerHeight =>
+                        self.height.set(parse("markerHeight", value, LengthDir::Vertical,
+                                              Some(RsvgLength::check_nonnegative))?),
+
+                    Attribute::Orient =>
+                        self.orient.set(parse("orient", value, (), None)?),
+
+                    Attribute::PreserveAspectRatio =>
+                        self.aspect.set(parse("preserveAspectRatio", value, (), None)?),
+
+                    Attribute::ViewBox =>
+                        self.vbox.set(Some(parse("viewBox", value, (), None)?)),
+
+                    _ => (),
+                }
+            }
+        }
 
         Ok (())
     }
