@@ -100,6 +100,22 @@ macro_rules! fallback_to (
 );
 
 impl Pattern {
+    fn unresolved() -> Pattern {
+        Pattern {
+            units:                 None,
+            content_units:         None,
+            vbox:                  None,
+            preserve_aspect_ratio: None,
+            affine:                None,
+            fallback:              None,
+            x:                     None,
+            y:                     None,
+            width:                 None,
+            height:                None,
+            node:                  None,
+        }
+    }
+
     fn is_resolved (&self) -> bool {
         self.units.is_some () &&
             self.content_units.is_some () &&
@@ -147,7 +163,7 @@ struct NodePattern {
 impl NodePattern {
     fn new () -> NodePattern {
         NodePattern {
-            pattern: RefCell::new (Pattern::default ())
+            pattern: RefCell::new (Pattern::unresolved ())
         }
     }
 }
