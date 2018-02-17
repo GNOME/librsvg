@@ -78,6 +78,8 @@ fn generate_phf_of_svg_attributes() {
         ( "marker-mid",         "MarkerMid" ),
         ( "marker-start",       "MarkerStart" ),
         ( "mask",               "Mask" ),
+        ( "maskContentUnits",   "MaskContentUnits" ),
+        ( "maskUnits",          "MaskUnits" ),
         ( "mode",               "Mode" ),
         ( "numOctaves",         "NumOctaves" ),
         ( "offset",             "Offset" ),
