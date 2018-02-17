@@ -6,9 +6,6 @@ use std::ffi::{CStr, CString};
 use std::ops::Deref;
 use std::ptr;
 
-use error::*;
-use parsers::Parse;
-
 pub struct PropertyBag<'a>(HashMap<&'a CStr, &'a CStr>);
 
 pub struct OwnedPropertyBag(HashMap<CString, CString>);
@@ -144,50 +141,6 @@ pub extern fn rsvg_property_bag_lookup(pbag: *const PropertyBag,
             None => ptr::null()
         }
     }
-}
-
-pub fn parse_or_none<T> (pbag: &PropertyBag,
-                         key: &str,
-                         data: <T as Parse>::Data,
-                         validate: Option<fn(T) -> Result<T, AttributeError>>) -> Result <Option<T>, NodeError>
-    where T: Parse<Err = AttributeError> + Copy
-{
-    let value = pbag.lookup(key);
-
-    match value {
-        Some (v) => {
-            T::parse (&v, data)
-                .and_then (|v|
-                           if let Some(validate) = validate {
-                               validate(v)
-                                   .map(Some)
-                           } else {
-                               Ok(Some(v))
-                           })
-                .map_err (|e| NodeError::attribute_error (key, e))
-        },
-
-        None => Ok(None)
-    }
-}
-
-pub fn parse_or_default<T> (pbag: &PropertyBag,
-                            key: &str,
-                            data: <T as Parse>::Data,
-                            validate: Option<fn(T) -> Result<T, AttributeError>>) -> Result <T, NodeError>
-    where T: Default + Parse<Err = AttributeError> + Copy
-{
-    parse_or_value (pbag, key, data, T::default (), validate)
-}
-
-pub fn parse_or_value<T> (pbag: &PropertyBag,
-                          key: &str,
-                          data: <T as Parse>::Data,
-                          value: T,
-                          validate: Option<fn(T) -> Result<T, AttributeError>>) -> Result <T, NodeError>
-    where T: Parse<Err = AttributeError> + Copy
-{
-    Ok (parse_or_none (pbag, key, data, validate)?.unwrap_or (value))
 }
 
 #[cfg(test)]
