@@ -5,11 +5,13 @@ use libc;
 
 use std::cell::RefCell;
 use std::rc::*;
+use std::str::FromStr;
 
 use cairo::MatrixTrait;
 use cairo::Pattern as CairoPattern;
 
 use aspect_ratio::*;
+use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
 use drawing_ctx;
@@ -17,7 +19,8 @@ use drawing_ctx::RsvgDrawingCtx;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use property_bag::{self, PropertyBag};
+use parsers::parse;
+use property_bag::PropertyBag;
 use util::*;
 use viewbox::*;
 
@@ -174,20 +177,45 @@ impl NodeTrait for NodePattern {
 
         p.node = Some (Rc::downgrade (node));
 
-        p.units         = property_bag::parse_or_none (pbag, "patternUnits", (), None)?;
-        p.content_units = property_bag::parse_or_none (pbag, "patternContentUnits", (), None)?;
-        p.vbox          = property_bag::parse_or_none (pbag, "viewBox", (), None)?.map (Some).or (None);
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                match attr {
+                    Attribute::PatternUnits =>
+                        p.units = Some(parse("patternUnits", value, (), None)?),
 
-        p.preserve_aspect_ratio = property_bag::parse_or_none (pbag, "preserveAspectRatio", (), None)?;
+                    Attribute::PatternContentUnits =>
+                        p.content_units = Some(parse("patternContentUnits", value, (), None)?),
 
-        p.affine = property_bag::parse_or_none (pbag, "patternTransform", (), None)?;
+                    Attribute::ViewBox =>
+                        p.vbox = Some(Some(parse("viewBox", value, (), None)?)),
 
-        p.fallback = pbag.lookup("xlink:href").map(|s| s.to_owned());
+                    Attribute::PreserveAspectRatio =>
+                        p.preserve_aspect_ratio = Some(parse("preserveAspectRatio", value, (), None)?),
 
-        p.x      = property_bag::parse_or_none (pbag, "x", LengthDir::Horizontal, None)?;
-        p.y      = property_bag::parse_or_none (pbag, "y", LengthDir::Vertical, None)?;
-        p.width  = property_bag::parse_or_none (pbag, "width", LengthDir::Horizontal, None)?;
-        p.height = property_bag::parse_or_none (pbag, "height", LengthDir::Vertical, None)?;
+                    Attribute::PatternTransform =>
+                        p.affine = Some(parse("patternTransform", value, (), None)?),
+
+                    Attribute::XlinkHref =>
+                        p.fallback = Some(value.to_owned()),
+
+                    Attribute::X =>
+                        p.x = Some(parse("x", value, LengthDir::Horizontal, None)?),
+
+                    Attribute::Y =>
+                        p.y = Some(parse("y", value, LengthDir::Vertical, None)?),
+
+                    Attribute::Width =>
+                        p.width = Some(parse("width", value, LengthDir::Horizontal,
+                                             Some(RsvgLength::check_nonnegative))?),
+
+                    Attribute::Height =>
+                        p.height = Some(parse("height", value, LengthDir::Vertical,
+                                              Some(RsvgLength::check_nonnegative))?),
+
+                    _ => (),
+                }
+            }
+        }
 
         Ok (())
     }
