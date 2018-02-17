@@ -6,15 +6,18 @@ use glib::translate::*;
 use glib_sys;
 use std::cell::{Cell, RefCell};
 use std::ptr;
+use std::str::FromStr;
 
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 
 use aspect_ratio::*;
+use attributes::Attribute;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use property_bag::{self, PropertyBag};
+use parsers::parse;
+use property_bag::PropertyBag;
 
 struct NodeImage {
     aspect:  Cell<AspectRatio>,
@@ -40,37 +43,43 @@ impl NodeImage {
 
 impl NodeTrait for NodeImage {
     fn set_atts (&self, _: &RsvgNode, handle: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal, None)?);
-        self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical, None)?);
-        self.w.set (property_bag::parse_or_default (pbag, "width", LengthDir::Horizontal,
-                                                    Some(RsvgLength::check_nonnegative))?);
-        self.h.set (property_bag::parse_or_default (pbag, "height", LengthDir::Vertical,
-                                                    Some(RsvgLength::check_nonnegative))?);
-        self.aspect.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                match attr {
+                    Attribute::X =>      self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
+                    Attribute::Y =>      self.y.set(parse("y", value, LengthDir::Vertical, None)?),
+                    Attribute::Width =>  self.w.set(parse("width", value,  LengthDir::Horizontal,
+                                                         Some(RsvgLength::check_nonnegative))?),
+                    Attribute::Height => self.h.set(parse("height", value, LengthDir::Vertical,
+                                                          Some(RsvgLength::check_nonnegative))?),
 
-        let mut href = pbag.lookup("xlink:href");
+                    Attribute::PreserveAspectRatio =>
+                        self.aspect.set(parse("preserveAspectRatio", value, (), None)?),
 
-        if href.is_none() {
-            // "path" is used by some older adobe illustrator versions
-            href = pbag.lookup("path");
-        }
+                    Attribute::XlinkHref |
+                    Attribute::Path => {
+                        // "path" is used by some older Adobe Illustrator versions
 
-        if let Some(href) = href {
-            extern "C" { fn rsvg_cairo_surface_new_from_href
-                         (handle: *const RsvgHandle,
-                          href:   *const libc::c_char,
-                          error:  *mut *mut glib_sys::GError) -> *mut cairo_sys::cairo_surface_t;
-            }
+                        extern "C" { fn rsvg_cairo_surface_new_from_href
+                                     (handle: *const RsvgHandle,
+                                      href:   *const libc::c_char,
+                                      error:  *mut *mut glib_sys::GError) -> *mut cairo_sys::cairo_surface_t;
+                        }
 
-            let mut error = ptr::null_mut();
+                        let mut error = ptr::null_mut();
 
-            let raw_surface = unsafe { rsvg_cairo_surface_new_from_href (handle,
-                                                                         href.to_glib_none().0,
-                                                                         &mut error) };
-            if !raw_surface.is_null() {
-                *self.surface.borrow_mut() = Some(unsafe { cairo::ImageSurface::from_raw_full (raw_surface).unwrap() });
-            } else {
-                let _: glib::Error = unsafe { from_glib_full(error) }; // FIXME: we should note that the image couldn't be loaded
+                        let raw_surface = unsafe { rsvg_cairo_surface_new_from_href (handle,
+                                                                                     value.to_glib_none().0,
+                                                                                     &mut error) };
+                        if !raw_surface.is_null() {
+                            *self.surface.borrow_mut() = Some(unsafe { cairo::ImageSurface::from_raw_full (raw_surface).unwrap() });
+                        } else {
+                            let _: glib::Error = unsafe { from_glib_full(error) }; // FIXME: we should note that the image couldn't be loaded
+                        }
+                    },
+
+                    _ => (),
+                }
             }
         }
 

@@ -86,6 +86,7 @@ fn generate_phf_of_svg_attributes() {
         ( "order",              "Order" ),
         ( "overflow",           "Overflow" ),
         ( "parse",              "Parse" ),
+        ( "path",               "Path" ),
         ( "patternContentUnits", "PatternContentUnits" ),
         ( "patternTransform",   "PatternTransform" ),
         ( "patternUnits",       "PatternUnits" ),
