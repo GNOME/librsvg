@@ -1,11 +1,14 @@
 use libc;
 use std::cell::Cell;
+use std::str::FromStr;
 
+use attributes::Attribute;
 use drawing_ctx::RsvgDrawingCtx;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode, boxed_node_new};
 use coord_units::CoordUnits;
-use property_bag::{self, PropertyBag};
+use parsers::parse;
+use property_bag::PropertyBag;
 
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
 
@@ -23,7 +26,16 @@ impl NodeClipPath {
 
 impl NodeTrait for NodeClipPath {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.units.set(property_bag::parse_or_default(pbag, "clipPathUnits", (), None)?);
+        for (key, value) in pbag.iter() {
+            if let Ok(attr) = Attribute::from_str(key) {
+                match attr {
+                    Attribute::ClipPathUnits =>
+                        self.units.set(parse("clipPathUnits", value, (), None)?),
+
+                    _ => (),
+                }
+            }
+        }
 
         Ok(())
     }

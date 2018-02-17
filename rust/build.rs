@@ -24,6 +24,7 @@ fn generate_phf_of_svg_attributes() {
         ( "class",              "Class" ),
         ( "clip-path",          "ClipPath" ),
         ( "clip-rule",          "ClipRule" ),
+        ( "clipPathUnits",      "ClipPathUnits" ),
         ( "color",              "Color" ),
         ( "comp-op",            "CompOp" ),
         ( "cx",                 "Cx" ),
