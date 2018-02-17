@@ -47,17 +47,19 @@ coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);
 
 impl Default for Pattern {
     fn default () -> Pattern {
+        // These are per the spec
+
         Pattern {
-            units:                 None,
-            content_units:         None,
-            vbox:                  None,
-            preserve_aspect_ratio: None,
-            affine:                None,
+            units:                 Some(PatternUnits::default()),
+            content_units:         Some(PatternContentUnits::default()),
+            vbox:                  Some(None),
+            preserve_aspect_ratio: Some(AspectRatio::default()),
+            affine:                Some(cairo::Matrix::identity()),
             fallback:              None,
-            x:                     None,
-            y:                     None,
-            width:                 None,
-            height:                None,
+            x:                     Some(RsvgLength::default()),
+            y:                     Some(RsvgLength::default()),
+            width:                 Some(RsvgLength::default()),
+            height:                Some(RsvgLength::default()),
             node:                  None
         }
     }
@@ -112,20 +114,7 @@ impl Pattern {
     }
 
     fn resolve_from_defaults (&mut self) {
-        /* These are per the spec */
-
-        fallback_to! (self.units,                 Some (PatternUnits::default ()));
-        fallback_to! (self.content_units,         Some (PatternContentUnits::default ()));
-        fallback_to! (self.vbox,                  Some (None));
-        fallback_to! (self.preserve_aspect_ratio, Some (AspectRatio::default ()));
-        fallback_to! (self.affine,                Some (cairo::Matrix::identity ()));
-
-        fallback_to! (self.x,                     Some (RsvgLength::default ()));
-        fallback_to! (self.y,                     Some (RsvgLength::default ()));
-        fallback_to! (self.width,                 Some (RsvgLength::default ()));
-        fallback_to! (self.height,                Some (RsvgLength::default ()));
-
-        self.fallback = None;
+        self.resolve_from_fallback(&Pattern::default());
 
         if !node_has_children (&self.node) {
             self.node = None;
