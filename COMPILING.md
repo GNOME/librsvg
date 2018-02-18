@@ -25,14 +25,17 @@ explains librsvg's peculiarities.
 * Gtk+ >= 3.10
 * Rust >= "Compiler version here"
 
-### openSUSE based systems:
+### Debian/Ubuntu based systems:
+librsvg can not be built in ubuntu 16.04, due to some of the dependancies provided being old.
+
+The following was only tested on ubuntu 18.04, plese provide feedback if it works on other platforms.
 
 ```sh
-zypper install -y gcc rust rust-std cargo make \
-automake autoconf libtool gettext itstool git \
-gtk-doc gobject-introspection-devel gtk3-devel \
-libxml2-devel libcroco-devel cairo-devel \
-pango-devel gdk-pixbuf-devel
+apt install -y gcc rustc cargo cargo make \
+automake autoconf libtool gettext itstool \
+libgdk-pixbuf2.0 gobject-introspection \
+gtk-doc-tools git  libgtk-3-dev \
+libxml2-dev libcroco3-dev libcairo2-dev libpango1.0-dev
 ```
 
 ### Fedora based systems:
@@ -45,10 +48,15 @@ gtk-doc git redhat-rpm-config  gtk3-devel \
 libxml2-devel libcroco-devel cairo-devel pango-devel
 ```
 
-**Note about testing on Fedora:**
+### openSUSE based systems:
 
-Currently 17 of the tests run with `make check` will fail, this is a known issue.
-For more information please relate to [#197](https://gitlab.gnome.org/GNOME/librsvg/issues/197).
+```sh
+zypper install -y gcc rust rust-std cargo make \
+automake autoconf libtool gettext itstool git \
+gtk-doc gobject-introspection-devel gtk3-devel \
+libxml2-devel libcroco-devel cairo-devel \
+pango-devel gdk-pixbuf-devel
+```
 
 # Verbosity
 
