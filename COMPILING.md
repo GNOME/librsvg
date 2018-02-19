@@ -31,9 +31,9 @@ librsvg can not be built in ubuntu 16.04, due to some of the dependancies provid
 The following was only tested on ubuntu 18.04, plese provide feedback if it works on other platforms.
 
 ```sh
-apt install -y gcc rustc cargo cargo make \
+apt install -y gcc rustc cargo make \
 automake autoconf libtool gettext itstool \
-libgdk-pixbuf2.0 gobject-introspection \
+libgdk-pixbuf2.0-dev libgirepository1.0-dev \
 gtk-doc-tools git  libgtk-3-dev \
 libxml2-dev libcroco3-dev libcairo2-dev libpango1.0-dev
 ```
