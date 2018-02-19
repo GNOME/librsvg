@@ -478,14 +478,7 @@ rsvg_extra_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len
     if (!ch || !len)
         return;
 
-    if (!g_utf8_validate ((char *) ch, len, NULL)) {
-        char *utf8;
-        utf8 = g_utf8_make_valid (ch, len);
-        g_string_append (z->string, utf8);
-        g_free (utf8);
-    } else {
-        g_string_append_len (z->string, (char *) ch, len);
-    }
+    g_string_append_len (z->string, ch, len);
 }
 
 static void
