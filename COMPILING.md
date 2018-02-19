@@ -23,15 +23,20 @@ explains librsvg's peculiarities.
 # Building Enviroment Depenancies:
 
 * Gtk+ >= 3.10
-* Rust >= "Compiler version here"
+* Rust >= "1.21"
 
-### Debian/Ubuntu based systems:
+### Ubuntu based systems:
+librsvg can not be built in debian stable due to and old version of `glib`.
 librsvg can not be built in ubuntu 16.04, due to some of the dependancies provided being old.
 
-The following was only tested on ubuntu 18.04, plese provide feedback if it works on other platforms.
+**Building on 18.04:**
+
+Currently you will need to install `rustc` and `cargo` with [rustup.rs](https://rustup.rs)
+due to the `rustc` package provided from the ubuntu repo being old. This should not be the case
+once 18.04 is release.
 
 ```sh
-apt install -y gcc rustc cargo make \
+apt install -y gcc make \
 automake autoconf libtool gettext itstool \
 libgdk-pixbuf2.0-dev libgirepository1.0-dev \
 gtk-doc-tools git  libgtk-3-dev \
