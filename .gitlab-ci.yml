@@ -2,6 +2,7 @@
 
 stages:
   - test
+  - lint
 
 .test_template: &distro_test
   stage: test
@@ -57,3 +58,29 @@ opensuse:test:
       - schedules
       - tags
       - web
+
+# Configure and run rustfmt on nightly
+# Exits and builds fails if on bad format
+rustfmt:
+  image: "rustlang/rust:nightly"
+  stage: lint
+  variables:
+    CFG_RELEASE_CHANNEL: "nightly"
+  script:
+  - rustc --version && cargo --version
+  - cd rust/
+  - cargo install rustfmt-nightly --force
+  - cargo fmt --all -- --write-mode=diff
+  when: manual
+
+# Configure and run clippy on nightly
+# Only fails on errors atm.
+clippy:
+  image: "rustlang/rust:nightly"
+  stage: lint
+  script:
+  - rustc --version && cargo --version
+  - cd rust/
+  - cargo install clippy --force
+  - cargo clippy --all
+  when: manual
