@@ -701,11 +701,10 @@ fn resolve_fallbacks_and_set_pattern (gradient: &Gradient,
     set_pattern_on_draw_context (&resolved, draw_ctx, opacity, &bbox)
 }
 
-#[no_mangle]
-pub extern fn gradient_resolve_fallbacks_and_set_pattern (raw_node:     *const RsvgNode,
-                                                          draw_ctx:     *mut RsvgDrawingCtx,
-                                                          opacity:      u8,
-                                                          bbox:         RsvgBbox) -> glib_sys::gboolean {
+pub fn gradient_resolve_fallbacks_and_set_pattern (raw_node:     *const RsvgNode,
+                                                   draw_ctx:     *mut RsvgDrawingCtx,
+                                                   opacity:      u8,
+                                                   bbox:         RsvgBbox) -> glib_sys::gboolean {
     assert! (!raw_node.is_null ());
     let node: &RsvgNode = unsafe { & *raw_node };
 

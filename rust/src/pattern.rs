@@ -484,10 +484,9 @@ pub extern fn rsvg_node_pattern_new (_: *const libc::c_char, raw_parent: *const 
                     Box::new (NodePattern::new ()))
 }
 
-#[no_mangle]
-pub extern fn pattern_resolve_fallbacks_and_set_pattern (raw_node: *const RsvgNode,
-                                                         draw_ctx: *mut RsvgDrawingCtx,
-                                                         bbox:     RsvgBbox) -> glib_sys::gboolean {
+pub fn pattern_resolve_fallbacks_and_set_pattern (raw_node: *const RsvgNode,
+                                                  draw_ctx: *mut RsvgDrawingCtx,
+                                                  bbox:     RsvgBbox) -> glib_sys::gboolean {
     assert! (!raw_node.is_null ());
     let node: &RsvgNode = unsafe { & *raw_node };
 

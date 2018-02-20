@@ -11,10 +11,10 @@ use bbox::RsvgBbox;
 use color::Color;
 use drawing_ctx;
 use error::*;
-use gradient::gradient_resolve_fallbacks_and_set_pattern;
+use gradient;
 use node::NodeType;
 use parsers::{Parse, ParseError};
-use pattern::pattern_resolve_fallbacks_and_set_pattern;
+use pattern;
 use util::utf8_cstr;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -229,14 +229,14 @@ pub extern "C" fn _set_source_rsvg_paint_server(
                 if node.get_type() == NodeType::LinearGradient ||
                     node.get_type() == NodeType::RadialGradient
                 {
-                    had_paint_server = gradient_resolve_fallbacks_and_set_pattern(
+                    had_paint_server = gradient::gradient_resolve_fallbacks_and_set_pattern(
                         node_ptr,
                         c_ctx,
                         opacity,
                         c_bbox,
                     ).to_bool();
                 } else if node.get_type() == NodeType::Pattern {
-                    had_paint_server = pattern_resolve_fallbacks_and_set_pattern(node_ptr, c_ctx, c_bbox).to_bool();
+                    had_paint_server = pattern::pattern_resolve_fallbacks_and_set_pattern(node_ptr, c_ctx, c_bbox).to_bool();
                 }
             }
 

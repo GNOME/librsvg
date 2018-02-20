@@ -57,7 +57,6 @@ pub use color::{
 pub use gradient::{
     rsvg_node_linear_gradient_new,
     rsvg_node_radial_gradient_new,
-    gradient_resolve_fallbacks_and_set_pattern
 };
 
 pub use length::{
@@ -127,7 +126,6 @@ pub use path_builder::{
 
 pub use pattern::{
     rsvg_node_pattern_new,
-    pattern_resolve_fallbacks_and_set_pattern,
 };
 
 pub use property_bag::{
