@@ -1,6 +1,4 @@
 use cairo;
-use glib_sys;
-use glib::translate::*;
 use libc;
 
 use std::cell::RefCell;
@@ -701,13 +699,10 @@ fn resolve_fallbacks_and_set_pattern (gradient: &Gradient,
     set_pattern_on_draw_context (&resolved, draw_ctx, opacity, &bbox)
 }
 
-pub fn gradient_resolve_fallbacks_and_set_pattern (raw_node:     *const RsvgNode,
-                                                   draw_ctx:     *mut RsvgDrawingCtx,
-                                                   opacity:      u8,
-                                                   bbox:         RsvgBbox) -> glib_sys::gboolean {
-    assert! (!raw_node.is_null ());
-    let node: &RsvgNode = unsafe { & *raw_node };
-
+pub fn gradient_resolve_fallbacks_and_set_pattern (node:     &RsvgNode,
+                                                   draw_ctx: *mut RsvgDrawingCtx,
+                                                   opacity:  u8,
+                                                   bbox:     RsvgBbox) -> bool {
     assert! (node.get_type () == NodeType::LinearGradient || node.get_type () == NodeType::RadialGradient);
 
     let mut did_set_gradient = false;
@@ -717,5 +712,5 @@ pub fn gradient_resolve_fallbacks_and_set_pattern (raw_node:     *const RsvgNode
         did_set_gradient = resolve_fallbacks_and_set_pattern (&gradient, draw_ctx, opacity, bbox);
     });
 
-    did_set_gradient.to_glib ()
+    did_set_gradient
 }

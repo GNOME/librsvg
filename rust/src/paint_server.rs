@@ -230,11 +230,11 @@ pub extern "C" fn _set_source_rsvg_paint_server(
                     node.get_type() == NodeType::RadialGradient
                 {
                     had_paint_server = gradient::gradient_resolve_fallbacks_and_set_pattern(
-                        node_ptr,
+                        node,
                         c_ctx,
                         opacity,
                         c_bbox,
-                    ).to_bool();
+                    );
                 } else if node.get_type() == NodeType::Pattern {
                     had_paint_server = pattern::pattern_resolve_fallbacks_and_set_pattern(node, c_ctx, c_bbox);
                 }
