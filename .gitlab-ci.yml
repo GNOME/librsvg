@@ -3,9 +3,9 @@
 stages:
   - test
   - lint
+  - distro_test
 
 .test_template: &distro_test
-  stage: test
   script:
     - rustc --version && cargo --version
     - ./autogen.sh --enable-debug
@@ -20,9 +20,18 @@ stages:
       - tests/*.log
       - png_artifacts
 
+.deb_template: &deb_deps
+  before_script:
+    - apt install -y gcc make rustc cargo \
+                  automake autoconf libtool gettext itstool \
+                  libgdk-pixbuf2.0-dev libgirepository1.0-dev \
+                  gtk-doc-tools git  libgtk-3-dev \
+                  libxml2-dev libcroco3-dev libcairo2-dev libpango1.0-dev
+
 
 fedora:test:
   image: fedora:latest
+  stage: test
   before_script:
     - dnf install -y gcc rust rust-std-static cargo make
                      automake autoconf libtool gettext itstool
@@ -37,8 +46,10 @@ fedora:test:
                      gtk3-devel
   <<: *distro_test
 
-opensuse:test:
+
+opensuse:tumbleweed:
   image: opensuse:tumbleweed
+  stage: distro_test
   before_script:
     - zypper install -y gcc rust rust-std cargo make
                      automake autoconf libtool gettext itstool
@@ -59,6 +70,33 @@ opensuse:test:
       - tags
       - web
 
+debian:testing:
+  image: debian:testing
+  stage: distro_test
+  <<: *deb_deps
+  <<: *distro_test
+  only:
+    refs:
+      - master
+      - schedules
+      - tags
+      - web
+
+# TODO: Enable this when ubuntu update it's rustc package
+# https://launchpad.net/ubuntu/+source/rustc/1.23.0+dfsg1+llvm-0ubuntu2
+# ubuntu:18.04:
+#   image: ubuntu:18.04
+#   stage: distro_test
+#   <<: *deb_deps
+#   <<: *distro_test
+#   only:
+#     refs:
+#       - master
+#       - schedules
+#       - tags
+#       - web
+
+
 # Configure and run rustfmt on nightly
 # Exits and builds fails if on bad format
 rustfmt:
@@ -72,6 +110,7 @@ rustfmt:
   - cargo install rustfmt-nightly --force
   - cargo fmt --all -- --write-mode=diff
   when: manual
+
 
 # Configure and run clippy on nightly
 # Only fails on errors atm.
