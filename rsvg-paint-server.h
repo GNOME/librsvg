@@ -42,21 +42,9 @@ RsvgNode *rsvg_node_linear_gradient_new (const char *element_name, RsvgNode *par
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_radial_gradient_new (const char *element_name, RsvgNode *parent);
 
-/* Implemented in rust/src/gradient.rs */
-G_GNUC_INTERNAL
-gboolean gradient_resolve_fallbacks_and_set_pattern (RsvgNode       *node,
-                                                     RsvgDrawingCtx *draw_ctx,
-                                                     guint8          opacity,
-                                                     RsvgBbox        bbox);
 /* Implemented in rust/src/pattern.rs */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_pattern_new (const char *element_name, RsvgNode *parent);
-
-/* Implemented in rust/src/pattern.rs */
-G_GNUC_INTERNAL
-gboolean pattern_resolve_fallbacks_and_set_pattern (RsvgNode       *node,
-                                                    RsvgDrawingCtx *draw_ctx,
-                                                    RsvgBbox        bbox);
 
 /* Create a new paint server based on a specification string. */
 /* Implemented in rust/src/paint_server.rs */
