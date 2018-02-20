@@ -1535,6 +1535,40 @@ rsvg_lookup_apply_css_style (RsvgHandle *handle, const char *target, RsvgState *
     return FALSE;
 }
 
+struct parse_style_and_transform_closure {
+    RsvgState *state;
+    RsvgNode *node;
+};
+
+static void
+parse_style_and_transform (const char *key, const char *value, gpointer data)
+{
+    RsvgAttribute attr;
+    RsvgNode *node = data;
+    RsvgState *state = rsvg_node_get_state (node);
+
+    if (!rsvg_attribute_from_name (key, &attr)) {
+        return;
+    }
+
+    switch (attr) {
+    case RSVG_ATTRIBUTE_STYLE:
+        rsvg_parse_style (state, value);
+        break;
+
+    case RSVG_ATTRIBUTE_TRANSFORM:
+        if (!rsvg_parse_transform_attr (state, value)) {
+            rsvg_node_set_attribute_parse_error (node,
+                                                 "transform",
+                                                 "Invalid transformation");
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
 /**
  * rsvg_parse_style_attrs:
  * @handle: Rsvg handle.
@@ -1636,20 +1670,9 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
         g_free (target);
     }
 
-    if (rsvg_property_bag_size (atts) > 0) {
-        const char *value;
-
-        if ((value = rsvg_property_bag_lookup (atts, "style")) != NULL)
-            rsvg_parse_style (state, value);
-
-        if ((value = rsvg_property_bag_lookup (atts, "transform")) != NULL) {
-            if (!rsvg_parse_transform_attr (state, value)) {
-                rsvg_node_set_attribute_parse_error (node,
-                                                     "transform",
-                                                     "Invalid transformation");
-            }
-        }
-    }
+    rsvg_property_bag_enumerate (atts,
+                                 parse_style_and_transform,
+                                 node);
 }
 
 RsvgState *
