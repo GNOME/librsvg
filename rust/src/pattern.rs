@@ -1,6 +1,4 @@
 use cairo;
-use glib_sys;
-use glib::translate::*;
 use libc;
 
 use std::cell::RefCell;
@@ -484,12 +482,9 @@ pub extern fn rsvg_node_pattern_new (_: *const libc::c_char, raw_parent: *const 
                     Box::new (NodePattern::new ()))
 }
 
-pub fn pattern_resolve_fallbacks_and_set_pattern (raw_node: *const RsvgNode,
+pub fn pattern_resolve_fallbacks_and_set_pattern (node: &RsvgNode,
                                                   draw_ctx: *mut RsvgDrawingCtx,
-                                                  bbox:     RsvgBbox) -> glib_sys::gboolean {
-    assert! (!raw_node.is_null ());
-    let node: &RsvgNode = unsafe { & *raw_node };
-
+                                                  bbox:     RsvgBbox) -> bool {
     assert! (node.get_type () == NodeType::Pattern);
 
     let mut did_set_pattern = false;
@@ -499,5 +494,5 @@ pub fn pattern_resolve_fallbacks_and_set_pattern (raw_node: *const RsvgNode,
         did_set_pattern = resolve_fallbacks_and_set_pattern (pattern, draw_ctx, bbox);
     });
 
-    did_set_pattern.to_glib ()
+    did_set_pattern
 }
