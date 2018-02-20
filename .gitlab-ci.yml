@@ -22,6 +22,7 @@ stages:
 
 .deb_template: &deb_deps
   before_script:
+    - apt update -yqq
     - apt install -y gcc make rustc cargo \
                   automake autoconf libtool gettext itstool \
                   libgdk-pixbuf2.0-dev libgirepository1.0-dev \
