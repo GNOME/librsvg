@@ -4381,20 +4381,38 @@ static void
 rsvg_filter_primitive_image_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveImage *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
     filter->handle = handle;
 
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
-    if ((value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
-        filter->href = g_string_new (NULL);
-        g_string_assign (filter->href, value);
+    filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        case RSVG_ATTRIBUTE_XLINK_HREF:
+            filter->href = g_string_new (NULL);
+            g_string_assign (filter->href, value);
+            break;
+
+        default:
+            break;
+        }
     }
 
-    filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
