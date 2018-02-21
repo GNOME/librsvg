@@ -2414,11 +2414,26 @@ static void
 rsvg_filter_primitive_merge_node_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitive *primitive = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    /* see bug 145149 - sodipodi generates bad SVG... */
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (primitive->in, value);
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            /* see bug 145149 - sodipodi generates bad SVG... */
+            g_string_assign (primitive->in, value);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 static void
