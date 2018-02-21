@@ -10,7 +10,7 @@ pub struct PropertyBag<'a>(HashMap<&'a CStr, &'a CStr>);
 
 pub struct OwnedPropertyBag(HashMap<CString, CString>);
 
-pub struct PropertyBagIter<'a>(hash_map::Iter<'a, &'a CStr, &'a CStr>);
+pub struct PropertyBagIter<'a>(PropertyBagCStrIter<'a>);
 
 pub struct PropertyBagCStrIter<'a>(hash_map::Iter<'a, &'a CStr, &'a CStr>);
 
@@ -87,7 +87,7 @@ impl<'a> PropertyBag<'a> {
     }
 
     pub fn iter(&self) -> PropertyBagIter {
-        PropertyBagIter(self.0.iter())
+        PropertyBagIter(self.cstr_iter())
     }
 
     pub fn cstr_iter(&self) -> PropertyBagCStrIter {
