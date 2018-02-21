@@ -442,10 +442,6 @@ void                 rsvg_property_bag_free      (RsvgPropertyBag bag);
 G_GNUC_INTERNAL
 const char          *rsvg_property_bag_lookup    (RsvgPropertyBag bag, const char *key);
 
-/* Implemented in rust/src/property_bag.rs */
-G_GNUC_INTERNAL
-guint                rsvg_property_bag_size	     (RsvgPropertyBag bag);
-
 typedef struct RsvgPropertyBagIter *RsvgPropertyBagIter;
 
 /* Implemented in rust/src/property_bag.rs */

@@ -120,15 +120,6 @@ pub extern fn rsvg_property_bag_free(pbag: *mut PropertyBag) {
 }
 
 #[no_mangle]
-pub extern fn rsvg_property_bag_size(pbag: *const PropertyBag) -> libc::c_uint {
-    unsafe {
-        let pbag = &*pbag;
-
-        pbag.len() as libc::c_uint
-    }
-}
-
-#[no_mangle]
 pub extern fn rsvg_property_bag_lookup(pbag: *const PropertyBag,
                                        raw_key: *const libc::c_char) -> *const libc::c_char {
     unsafe {

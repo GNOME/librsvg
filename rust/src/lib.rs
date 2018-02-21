@@ -135,7 +135,6 @@ pub use property_bag::{
     rsvg_property_bag_iter_next,
     rsvg_property_bag_lookup,
     rsvg_property_bag_new,
-    rsvg_property_bag_size,
 };
 
 pub use shapes::{
