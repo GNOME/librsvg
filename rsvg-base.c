@@ -263,7 +263,7 @@ typedef struct {
  * Lines in comments are elements that we don't support.
  */
 static const NodeCreator node_creators[] = {
-    { "a",                   TRUE,  rsvg_node_group_new },    /* treat anchors as groups for now */
+    { "a",                   TRUE,  rsvg_node_link_new },
     /* "altGlyph",           TRUE,  */
     /* "altGlyphDef",        FALSE, */
     /* "altGlyphItem",       FALSE, */

@@ -99,6 +99,7 @@ pub enum NodeType {
     TRef,
     TSpan,
     Use,
+    Link,
 
     /* Filter primitives */
     FilterPrimitiveFirst,              /* just a marker; not a valid type */

@@ -319,6 +319,7 @@ typedef enum {
     RSVG_NODE_TYPE_TREF,
     RSVG_NODE_TYPE_TSPAN,
     RSVG_NODE_TYPE_USE,
+    RSVG_NODE_TYPE_LINK,
 
     /* Filter primitives */
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_FIRST,              /* just a marker; not a valid type */
