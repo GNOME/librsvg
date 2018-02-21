@@ -219,17 +219,6 @@ add_node_to_handle (RsvgHandle *handle, RsvgNode *node)
 }
 
 static void
-register_node_in_defs (RsvgHandle *handle, RsvgNode *node, RsvgPropertyBag *atts)
-{
-    const char *id;
-
-    id = rsvg_property_bag_lookup (atts, "id");
-    if (id) {
-        rsvg_defs_register_node_by_id (handle->priv->defs, id, node);
-    }
-}
-
-static void
 push_element_name (RsvgHandle *handle, const char *name)
 {
     /* libxml holds on to the name while parsing; we won't dup the name here */
@@ -404,7 +393,11 @@ node_set_atts (RsvgNode * node, RsvgHandle *handle, const NodeCreator *creator, 
     const char *id;
     const char *klazz;
 
-    register_node_in_defs (handle, node, atts);
+    id = rsvg_property_bag_lookup (atts, "id");
+    if (id) {
+        rsvg_defs_register_node_by_id (handle->priv->defs, id, node);
+    }
+
     rsvg_node_set_atts (node, handle, atts);
 
     /* The "svg" node is special; it will load its id/class
@@ -412,8 +405,6 @@ node_set_atts (RsvgNode * node, RsvgHandle *handle, const NodeCreator *creator, 
      * _rsvg_node_svg_apply_atts()
      */
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_SVG) {
-        id = rsvg_property_bag_lookup (atts, "id");
-
         if (creator->supports_class_attribute)
             klazz = rsvg_property_bag_lookup (atts, "class");
         else
