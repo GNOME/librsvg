@@ -3,7 +3,6 @@ use libc;
 
 use std::cell::RefCell;
 use std::cell::Cell;
-use std::str::FromStr;
 
 use cairo::MatrixTrait;
 
@@ -142,31 +141,29 @@ impl NodeTrait for NodeSvg {
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
         let is_inner_svg = node.get_parent().is_some();
 
-        for (key, value) in pbag.iter() {
-            if let Ok(attr) = Attribute::from_str(key) {
-                match attr {
-                    Attribute::PreserveAspectRatio =>
-                        self.preserve_aspect_ratio.set(parse("preserveAspectRatio", value, (), None)?),
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::PreserveAspectRatio =>
+                    self.preserve_aspect_ratio.set(parse("preserveAspectRatio", value, (), None)?),
 
-                    Attribute::X => if is_inner_svg {
-                        self.x.set(parse("x", value, LengthDir::Horizontal, None)?);
-                    },
+                Attribute::X => if is_inner_svg {
+                    self.x.set(parse("x", value, LengthDir::Horizontal, None)?);
+                },
 
-                    Attribute::Y => if is_inner_svg {
-                        self.y.set(parse("y", value, LengthDir::Vertical, None)?);
-                    },
+                Attribute::Y => if is_inner_svg {
+                    self.y.set(parse("y", value, LengthDir::Vertical, None)?);
+                },
 
-                    Attribute::Width => self.w.set(parse("width", value, LengthDir::Horizontal,
-                                                         Some(RsvgLength::check_nonnegative))?),
+                Attribute::Width => self.w.set(parse("width", value, LengthDir::Horizontal,
+                                                     Some(RsvgLength::check_nonnegative))?),
 
-                    Attribute::Height => self.h.set(parse("height", value, LengthDir::Vertical,
-                                                          Some(RsvgLength::check_nonnegative))?),
+                Attribute::Height => self.h.set(parse("height", value, LengthDir::Vertical,
+                                                      Some(RsvgLength::check_nonnegative))?),
 
-                    Attribute::ViewBox => self.vbox.set(parse("viewBox", value, (), None)
-                                                        .map(Some)?),
+                Attribute::ViewBox => self.vbox.set(parse("viewBox", value, (), None)
+                                                    .map(Some)?),
 
-                    _ => (),
-                }
+                _ => (),
             }
         }
 
@@ -231,23 +228,21 @@ impl NodeUse {
 
 impl NodeTrait for NodeUse {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        for (key, value) in pbag.iter() {
-            if let Ok(attr) = Attribute::from_str(key) {
-                match attr {
-                    Attribute::XlinkHref => *self.link.borrow_mut() = Some(value.to_owned()),
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::XlinkHref => *self.link.borrow_mut() = Some(value.to_owned()),
 
-                    Attribute::X         => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
-                    Attribute::Y         => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
+                Attribute::X         => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
+                Attribute::Y         => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
 
-                    Attribute::Width     => self.w.set(parse("width", value, LengthDir::Horizontal,
-                                                             Some(RsvgLength::check_nonnegative))
-                                                       .map(Some)?),
-                    Attribute::Height    => self.h.set(parse("height", value, LengthDir::Vertical,
-                                                             Some(RsvgLength::check_nonnegative))
-                                                       .map(Some)?),
+                Attribute::Width     => self.w.set(parse("width", value, LengthDir::Horizontal,
+                                                         Some(RsvgLength::check_nonnegative))
+                                                   .map(Some)?),
+                Attribute::Height    => self.h.set(parse("height", value, LengthDir::Vertical,
+                                                         Some(RsvgLength::check_nonnegative))
+                                                   .map(Some)?),
 
-                    _ => (),
-                }
+                _ => (),
             }
         }
 
@@ -357,17 +352,15 @@ impl NodeSymbol {
 
 impl NodeTrait for NodeSymbol {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        for (key, value) in pbag.iter() {
-            if let Ok(attr) = Attribute::from_str(key) {
-                match attr {
-                    Attribute::PreserveAspectRatio =>
-                        self.preserve_aspect_ratio.set(parse("preserveAspectRatio", value, (), None)?),
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::PreserveAspectRatio =>
+                    self.preserve_aspect_ratio.set(parse("preserveAspectRatio", value, (), None)?),
 
-                    Attribute::ViewBox => self.vbox.set(parse("viewBox", value, (), None)
-                                                        .map(Some)?),
+                Attribute::ViewBox => self.vbox.set(parse("viewBox", value, (), None)
+                                                    .map(Some)?),
 
-                    _ => (),
-                }
+                _ => (),
             }
         }
 
@@ -475,8 +468,8 @@ pub extern fn rsvg_node_svg_apply_atts (raw_node: *const RsvgNode, handle: *cons
         if let Some(owned_pbag) = svg.pbag.borrow().as_ref() {
             let pbag = PropertyBag::from_owned(&owned_pbag);
 
-            let class = pbag.lookup("class");
-            let id = pbag.lookup("id");
+            let class = pbag.lookup("class").map(|(_, v)| v);
+            let id = pbag.lookup("id").map(|(_, v)| v);
 
             let c_class = class.to_glib_none ();
             let c_id = id.to_glib_none ();

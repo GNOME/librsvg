@@ -3,7 +3,6 @@ use libc;
 
 use std::cell::RefCell;
 use std::rc::*;
-use std::str::FromStr;
 
 use cairo::MatrixTrait;
 use cairo::Pattern as CairoPattern;
@@ -175,43 +174,41 @@ impl NodeTrait for NodePattern {
 
         p.node = Some (Rc::downgrade (node));
 
-        for (key, value) in pbag.iter() {
-            if let Ok(attr) = Attribute::from_str(key) {
-                match attr {
-                    Attribute::PatternUnits =>
-                        p.units = Some(parse("patternUnits", value, (), None)?),
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::PatternUnits =>
+                    p.units = Some(parse("patternUnits", value, (), None)?),
 
-                    Attribute::PatternContentUnits =>
-                        p.content_units = Some(parse("patternContentUnits", value, (), None)?),
+                Attribute::PatternContentUnits =>
+                    p.content_units = Some(parse("patternContentUnits", value, (), None)?),
 
-                    Attribute::ViewBox =>
-                        p.vbox = Some(Some(parse("viewBox", value, (), None)?)),
+                Attribute::ViewBox =>
+                    p.vbox = Some(Some(parse("viewBox", value, (), None)?)),
 
-                    Attribute::PreserveAspectRatio =>
-                        p.preserve_aspect_ratio = Some(parse("preserveAspectRatio", value, (), None)?),
+                Attribute::PreserveAspectRatio =>
+                    p.preserve_aspect_ratio = Some(parse("preserveAspectRatio", value, (), None)?),
 
-                    Attribute::PatternTransform =>
-                        p.affine = Some(parse("patternTransform", value, (), None)?),
+                Attribute::PatternTransform =>
+                    p.affine = Some(parse("patternTransform", value, (), None)?),
 
-                    Attribute::XlinkHref =>
-                        p.fallback = Some(value.to_owned()),
+                Attribute::XlinkHref =>
+                    p.fallback = Some(value.to_owned()),
 
-                    Attribute::X =>
-                        p.x = Some(parse("x", value, LengthDir::Horizontal, None)?),
+                Attribute::X =>
+                    p.x = Some(parse("x", value, LengthDir::Horizontal, None)?),
 
-                    Attribute::Y =>
-                        p.y = Some(parse("y", value, LengthDir::Vertical, None)?),
+                Attribute::Y =>
+                    p.y = Some(parse("y", value, LengthDir::Vertical, None)?),
 
-                    Attribute::Width =>
-                        p.width = Some(parse("width", value, LengthDir::Horizontal,
-                                             Some(RsvgLength::check_nonnegative))?),
+                Attribute::Width =>
+                    p.width = Some(parse("width", value, LengthDir::Horizontal,
+                                         Some(RsvgLength::check_nonnegative))?),
 
-                    Attribute::Height =>
-                        p.height = Some(parse("height", value, LengthDir::Vertical,
-                                              Some(RsvgLength::check_nonnegative))?),
+                Attribute::Height =>
+                    p.height = Some(parse("height", value, LengthDir::Vertical,
+                                          Some(RsvgLength::check_nonnegative))?),
 
-                    _ => (),
-                }
+                _ => (),
             }
         }
 

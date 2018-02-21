@@ -8,14 +8,17 @@ use std::collections::hash_map;
 use std::ffi::{CStr, CString};
 use std::ops::Deref;
 use std::ptr;
+use std::str::FromStr;
 
-pub struct PropertyBag<'a>(HashMap<&'a CStr, &'a CStr>);
+use attributes::Attribute;
 
-pub struct OwnedPropertyBag(HashMap<CString, CString>);
+pub struct PropertyBag<'a>(HashMap<&'a CStr, (Attribute, &'a CStr)>);
+
+pub struct OwnedPropertyBag(HashMap<CString, (Attribute, CString)>);
 
 pub struct PropertyBagIter<'a>(PropertyBagCStrIter<'a>);
 
-pub struct PropertyBagCStrIter<'a>(hash_map::Iter<'a, &'a CStr, &'a CStr>);
+pub struct PropertyBagCStrIter<'a>(hash_map::Iter<'a, &'a CStr, (Attribute, &'a CStr)>);
 
 impl<'a> PropertyBag<'a> {
     pub unsafe fn new_from_key_value_pairs(pairs: *const *const libc::c_char) -> PropertyBag<'a> {
@@ -32,7 +35,11 @@ impl<'a> PropertyBag<'a> {
                     let key_str = CStr::from_ptr(key);
                     let val_str = CStr::from_ptr(val);
 
-                    map.insert(key_str, val_str);
+                    // We silently drop unknown attributes.  New attributes should be added in
+                    // build.rs.
+                    if let Ok(attr) = Attribute::from_str(key_str.to_str().unwrap()) {
+                        map.insert(key_str, (attr, val_str));
+                    }
                 } else {
                     break;
                 }
@@ -47,18 +54,18 @@ impl<'a> PropertyBag<'a> {
     pub fn from_owned(owned: &OwnedPropertyBag) -> PropertyBag {
         let mut map = HashMap::new();
 
-        for (k, v) in &owned.0 {
-            map.insert(k.deref(), v.deref());
+        for (k, &(a, ref v)) in &owned.0 {
+            map.insert(k.deref(), (a, v.deref()));
         }
 
         PropertyBag(map)
     }
 
     pub fn to_owned(&self) -> OwnedPropertyBag {
-        let mut map = HashMap::<CString, CString>::new();
+        let mut map = HashMap::<CString, (Attribute, CString)>::new();
 
-        for (k, v) in &self.0 {
-            map.insert((*k).to_owned(), (*v).to_owned());
+        for (k, &(a, v)) in &self.0 {
+            map.insert((*k).to_owned(), (a, (*v).to_owned()));
         }
 
         OwnedPropertyBag(map)
@@ -72,13 +79,13 @@ impl<'a> PropertyBag<'a> {
         self.0.len()
     }
 
-    pub fn lookup_cstr(&self, key: &CStr) -> Option<&CStr> {
-        self.0.get(key).map(|v| *v)
+    pub fn lookup_cstr(&self, key: &CStr) -> Option<(Attribute, &CStr)> {
+        self.0.get(key).map(|&(a, v)| (a, v))
     }
 
-    pub fn lookup(&self, key: &str) -> Option<&str> {
+    pub fn lookup(&self, key: &str) -> Option<(Attribute, &str)> {
         let k = CString::new(key).unwrap();
-        self.lookup_cstr(&k).map(|v| v.to_str().unwrap())
+        self.lookup_cstr(&k).map(|(a, v)| (a, v.to_str().unwrap()))
     }
 
     pub fn iter(&self) -> PropertyBagIter {
@@ -91,18 +98,18 @@ impl<'a> PropertyBag<'a> {
 }
 
 impl<'a> Iterator for PropertyBagIter<'a> {
-    type Item = (&'a str, &'a str);
+    type Item = (&'a str, Attribute, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, v)| (k.to_str().unwrap(), v.to_str().unwrap()))
+        self.0.next().map(|(k, a, v)| (k.to_str().unwrap(), a, v.to_str().unwrap()))
     }
 }
 
 impl<'a> Iterator for PropertyBagCStrIter<'a> {
-    type Item = (&'a CStr, &'a CStr);
+    type Item = (&'a CStr, Attribute, &'a CStr);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, v)| (*k, *v))
+        self.0.next().map(|(k, &(a, v))| (*k, a, v))
     }
 }
 
@@ -126,7 +133,7 @@ pub extern fn rsvg_property_bag_lookup(pbag: *const PropertyBag,
         let pbag = &*pbag;
         let key = CStr::from_ptr(raw_key);
         match pbag.lookup_cstr(key) {
-            Some(v) => v.as_ptr(),
+            Some((_, v)) => v.as_ptr(),
             None => ptr::null()
         }
     }
@@ -149,7 +156,7 @@ pub extern fn rsvg_property_bag_iter_next(iter: *mut PropertyBagCStrIter,
     assert!(!iter.is_null());
     let iter = unsafe { &mut *iter };
 
-    if let Some((key, val)) = iter.next() {
+    if let Some((key, _, val)) = iter.next() {
         unsafe {
             *out_key = key.as_ptr();
             *out_value = val.as_ptr();
@@ -186,9 +193,9 @@ mod tests {
     #[test]
     fn property_bag_lookups_and_iters() {
         let pairs = [
-            CString::new("alpha").unwrap(),
+            CString::new("rx").unwrap(),
             CString::new("1").unwrap(),
-            CString::new("beta").unwrap(),
+            CString::new("ry").unwrap(),
             CString::new("2").unwrap(),
         ];
 
@@ -202,33 +209,37 @@ mod tests {
 
         let pbag = unsafe { PropertyBag::new_from_key_value_pairs(v.as_ptr()) };
 
-        assert_eq!(pbag.lookup("alpha"), Some("1"));
-        assert_eq!(pbag.lookup("beta"), Some("2"));
-        assert_eq!(pbag.lookup("gamma"), None);
+        assert_eq!(pbag.lookup("rx"), Some((Attribute::Rx, "1")));
+        assert_eq!(pbag.lookup("ry"), Some((Attribute::Ry, "2")));
+        assert_eq!(pbag.lookup("stdDeviation"), None);
 
-        let mut had_alpha: bool = false;
-        let mut had_beta: bool = false;
+        let mut had_rx: bool = false;
+        let mut had_ry: bool = false;
 
-        for (k, v) in pbag.iter() {
-            if k == "alpha" {
+        for (k, a, v) in pbag.iter() {
+            if k == "rx" {
+                assert!(a == Attribute::Rx);
                 assert!(v == "1");
-                had_alpha = true;
-            } else if k == "beta" {
+                had_rx = true;
+            } else if k == "ry" {
+                assert!(a == Attribute::Ry);
                 assert!(v == "2");
-                had_beta = true;
+                had_ry = true;
+            } else {
+                unreachable!();
             }
         }
 
-        assert!(had_alpha);
-        assert!(had_beta);
+        assert!(had_rx);
+        assert!(had_ry);
     }
 
     #[test]
     fn property_bag_can_iterate_from_c() {
         let pairs = [
-            CString::new("alpha").unwrap(),
+            CString::new("rx").unwrap(),
             CString::new("1").unwrap(),
-            CString::new("beta").unwrap(),
+            CString::new("ry").unwrap(),
             CString::new("2").unwrap(),
         ];
 
@@ -242,8 +253,8 @@ mod tests {
 
         let pbag = unsafe { PropertyBag::new_from_key_value_pairs(v.as_ptr()) };
 
-        let mut had_alpha: bool = false;
-        let mut had_beta: bool = false;
+        let mut had_rx: bool = false;
+        let mut had_ry: bool = false;
 
         let iter = rsvg_property_bag_iter_begin(&pbag as *const PropertyBag);
 
@@ -256,18 +267,18 @@ mod tests {
             let k = unsafe { CStr::from_ptr(key).to_str().unwrap() };
             let v = unsafe { CStr::from_ptr(val).to_str().unwrap() };
 
-            if k == "alpha" {
+            if k == "rx" {
                 assert!(v == "1");
-                had_alpha = true;
-            } else if k == "beta" {
+                had_rx = true;
+            } else if k == "ry" {
                 assert!(v == "2");
-                had_beta = true;
+                had_ry = true;
             }
         }
 
         rsvg_property_bag_iter_end(iter);
 
-        assert!(had_alpha);
-        assert!(had_beta);
+        assert!(had_rx);
+        assert!(had_ry);
     }
 }

@@ -2,7 +2,6 @@ use libc;
 
 use std::cell::Cell;
 use std::f64::consts::*;
-use std::str::FromStr;
 
 use cairo::MatrixTrait;
 
@@ -193,37 +192,35 @@ impl NodeMarker {
 
 impl NodeTrait for NodeMarker {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        for (key, value) in pbag.iter() {
-            if let Ok(attr) = Attribute::from_str(key) {
-                match attr {
-                    Attribute::MarkerUnits =>
-                        self.units.set(parse("markerUnits", value, (), None)?),
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::MarkerUnits =>
+                    self.units.set(parse("markerUnits", value, (), None)?),
 
-                    Attribute::RefX =>
-                        self.ref_x.set(parse("refX", value, LengthDir::Horizontal, None)?),
+                Attribute::RefX =>
+                    self.ref_x.set(parse("refX", value, LengthDir::Horizontal, None)?),
 
-                    Attribute::RefY =>
-                        self.ref_y.set(parse("refY", value, LengthDir::Vertical, None)?),
+                Attribute::RefY =>
+                    self.ref_y.set(parse("refY", value, LengthDir::Vertical, None)?),
 
-                    Attribute::MarkerWidth =>
-                        self.width.set(parse("markerWidth", value, LengthDir::Horizontal,
-                                             Some(RsvgLength::check_nonnegative))?),
+                Attribute::MarkerWidth =>
+                    self.width.set(parse("markerWidth", value, LengthDir::Horizontal,
+                                         Some(RsvgLength::check_nonnegative))?),
 
-                    Attribute::MarkerHeight =>
-                        self.height.set(parse("markerHeight", value, LengthDir::Vertical,
-                                              Some(RsvgLength::check_nonnegative))?),
+                Attribute::MarkerHeight =>
+                    self.height.set(parse("markerHeight", value, LengthDir::Vertical,
+                                          Some(RsvgLength::check_nonnegative))?),
 
-                    Attribute::Orient =>
-                        self.orient.set(parse("orient", value, (), None)?),
+                Attribute::Orient =>
+                    self.orient.set(parse("orient", value, (), None)?),
 
-                    Attribute::PreserveAspectRatio =>
-                        self.aspect.set(parse("preserveAspectRatio", value, (), None)?),
+                Attribute::PreserveAspectRatio =>
+                    self.aspect.set(parse("preserveAspectRatio", value, (), None)?),
 
-                    Attribute::ViewBox =>
-                        self.vbox.set(Some(parse("viewBox", value, (), None)?)),
+                Attribute::ViewBox =>
+                    self.vbox.set(Some(parse("viewBox", value, (), None)?)),
 
-                    _ => (),
-                }
+                _ => (),
             }
         }
 

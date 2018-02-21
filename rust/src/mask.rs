@@ -1,6 +1,5 @@
 use libc;
 use std::cell::Cell;
-use std::str::FromStr;
 
 use attributes::Attribute;
 use coord_units::CoordUnits;
@@ -49,24 +48,22 @@ impl NodeMask {
 
 impl NodeTrait for NodeMask {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        for (key, value) in pbag.iter() {
-            if let Ok(attr) = Attribute::from_str(key) {
-                match attr {
-                    Attribute::X =>      self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
-                    Attribute::Y =>      self.y.set(parse("y", value, LengthDir::Vertical, None)?),
-                    Attribute::Width =>  self.width.set(parse("width", value, LengthDir::Horizontal,
-                                                              Some(RsvgLength::check_nonnegative))?),
-                    Attribute::Height => self.height.set(parse("height", value, LengthDir::Vertical,
-                                                               Some(RsvgLength::check_nonnegative))?),
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::X =>      self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
+                Attribute::Y =>      self.y.set(parse("y", value, LengthDir::Vertical, None)?),
+                Attribute::Width =>  self.width.set(parse("width", value, LengthDir::Horizontal,
+                                                          Some(RsvgLength::check_nonnegative))?),
+                Attribute::Height => self.height.set(parse("height", value, LengthDir::Vertical,
+                                                           Some(RsvgLength::check_nonnegative))?),
 
-                    Attribute::MaskUnits =>
-                        self.units.set(parse("maskUnits", value, (), None)?),
+                Attribute::MaskUnits =>
+                    self.units.set(parse("maskUnits", value, (), None)?),
 
-                    Attribute::MaskContentUnits =>
-                        self.content_units.set(parse("maskContentUnits", value, (), None)?),
+                Attribute::MaskContentUnits =>
+                    self.content_units.set(parse("maskContentUnits", value, (), None)?),
 
-                    _ => (),
-                }
+                _ => (),
             }
         }
 

@@ -2,7 +2,6 @@ use libc;
 
 use std::cell::RefCell;
 use std::cell::Cell;
-use std::str::FromStr;
 
 use attributes::Attribute;
 use drawing_ctx;
@@ -90,18 +89,16 @@ impl NodePath {
 
 impl NodeTrait for NodePath {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        for (key, value) in pbag.iter() {
-            if let Ok(attr) = Attribute::from_str(key) {
-                if attr == Attribute::D {
-                    let mut builder = RsvgPathBuilder::new ();
+        for (_key, attr, value) in pbag.iter() {
+            if attr == Attribute::D {
+                let mut builder = RsvgPathBuilder::new ();
 
-                    if path_parser::parse_path_into_builder (&value, &mut builder).is_err() {
-                        // FIXME: we don't propagate errors upstream, but creating a partial
-                        // path is OK per the spec
-                    }
-
-                    *self.builder.borrow_mut() = Some(builder);
+                if path_parser::parse_path_into_builder (&value, &mut builder).is_err() {
+                    // FIXME: we don't propagate errors upstream, but creating a partial
+                    // path is OK per the spec
                 }
+
+                *self.builder.borrow_mut() = Some(builder);
             }
         }
 
@@ -143,21 +140,19 @@ impl NodePoly {
 
 impl NodeTrait for NodePoly {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        for (key, value) in pbag.iter() {
-            if let Ok(attr) = Attribute::from_str(key) {
-                // support for svg < 1.0 which used verts
+        for (key, attr, value) in pbag.iter() {
+            // support for svg < 1.0 which used verts
 
-                if attr == Attribute::Points || attr == Attribute::Verts {
-                    let result = parsers::list_of_points (value.trim ());
+            if attr == Attribute::Points || attr == Attribute::Verts {
+                let result = parsers::list_of_points (value.trim ());
 
-                    match result {
-                        Ok (v) => {
-                            *self.points.borrow_mut () = Some (v);
-                            break;
-                        },
+                match result {
+                    Ok (v) => {
+                        *self.points.borrow_mut () = Some (v);
+                        break;
+                    },
 
-                        Err (e) => { return Err (NodeError::parse_error (key, e)); }
-                    }
+                    Err (e) => { return Err (NodeError::parse_error (key, e)); }
                 }
             }
         }
@@ -212,15 +207,13 @@ impl NodeLine {
 
 impl NodeTrait for NodeLine {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        for (key, value) in pbag.iter() {
-            if let Ok(attr) = Attribute::from_str(key) {
-                match attr {
-                    Attribute::X1 => self.x1.set(parse("x1", value, LengthDir::Horizontal, None)?),
-                    Attribute::Y1 => self.y1.set(parse("y1", value, LengthDir::Vertical, None)?),
-                    Attribute::X2 => self.x2.set(parse("x2", value, LengthDir::Horizontal, None)?),
-                    Attribute::Y2 => self.y2.set(parse("y2", value, LengthDir::Vertical, None)?),
-                    _ => ()
-                }
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::X1 => self.x1.set(parse("x1", value, LengthDir::Horizontal, None)?),
+                Attribute::Y1 => self.y1.set(parse("y1", value, LengthDir::Vertical, None)?),
+                Attribute::X2 => self.x2.set(parse("x2", value, LengthDir::Horizontal, None)?),
+                Attribute::Y2 => self.y2.set(parse("y2", value, LengthDir::Vertical, None)?),
+                _ => ()
             }
         }
 
@@ -276,25 +269,23 @@ impl NodeRect {
 
 impl NodeTrait for NodeRect {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        for (key, value) in pbag.iter() {
-            if let Ok(attr) = Attribute::from_str(key) {
-                match attr {
-                    Attribute::X      => self.x.set (parse ("x", value, LengthDir::Horizontal, None)?),
-                    Attribute::Y      => self.y.set (parse ("y", value, LengthDir::Vertical, None)?),
-                    Attribute::Width  => self.w.set (parse ("width", value, LengthDir::Horizontal,
-                                                            Some(RsvgLength::check_nonnegative))?),
-                    Attribute::Height => self.h.set (parse ("height", value, LengthDir::Vertical,
-                                                            Some(RsvgLength::check_nonnegative))?),
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::X      => self.x.set (parse ("x", value, LengthDir::Horizontal, None)?),
+                Attribute::Y      => self.y.set (parse ("y", value, LengthDir::Vertical, None)?),
+                Attribute::Width  => self.w.set (parse ("width", value, LengthDir::Horizontal,
+                                                        Some(RsvgLength::check_nonnegative))?),
+                Attribute::Height => self.h.set (parse ("height", value, LengthDir::Vertical,
+                                                        Some(RsvgLength::check_nonnegative))?),
 
-                    Attribute::Rx => self.rx.set (parse ("rx", value, LengthDir::Horizontal,
-                                                         Some(RsvgLength::check_nonnegative))
-                                                  .map(Some)?),
-                    Attribute::Ry => self.ry.set (parse ("ry", value, LengthDir::Vertical,
-                                                         Some(RsvgLength::check_nonnegative))
-                                                  .map(Some)?),
+                Attribute::Rx => self.rx.set (parse ("rx", value, LengthDir::Horizontal,
+                                                     Some(RsvgLength::check_nonnegative))
+                                              .map(Some)?),
+                Attribute::Ry => self.ry.set (parse ("ry", value, LengthDir::Vertical,
+                                                     Some(RsvgLength::check_nonnegative))
+                                              .map(Some)?),
 
-                    _ => (),
-                }
+                _ => (),
             }
         }
 
@@ -465,16 +456,14 @@ impl NodeCircle {
 
 impl NodeTrait for NodeCircle {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        for (key, value) in pbag.iter() {
-            if let Ok(attr) = Attribute::from_str(key) {
-                match attr {
-                    Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal, None)?),
-                    Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
-                    Attribute::R  => self.r.set (parse("r",  value, LengthDir::Both,
-                                                       Some(RsvgLength::check_nonnegative))?),
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal, None)?),
+                Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
+                Attribute::R  => self.r.set (parse("r",  value, LengthDir::Both,
+                                                   Some(RsvgLength::check_nonnegative))?),
 
-                    _ => (),
-                }
+                _ => (),
             }
         }
 
@@ -516,19 +505,17 @@ impl NodeEllipse {
 
 impl NodeTrait for NodeEllipse {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        for (key, value) in pbag.iter() {
-            if let Ok(attr) = Attribute::from_str(key) {
-                match attr {
-                    Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal, None)?),
-                    Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal, None)?),
+                Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
 
-                    Attribute::Rx => self.rx.set(parse("rx", value, LengthDir::Horizontal,
-                                                       Some(RsvgLength::check_nonnegative))?),
-                    Attribute::Ry => self.ry.set(parse("ry", value, LengthDir::Vertical,
-                                                       Some(RsvgLength::check_nonnegative))?),
+                Attribute::Rx => self.rx.set(parse("rx", value, LengthDir::Horizontal,
+                                                   Some(RsvgLength::check_nonnegative))?),
+                Attribute::Ry => self.ry.set(parse("ry", value, LengthDir::Vertical,
+                                                   Some(RsvgLength::check_nonnegative))?),
 
-                    _ => (),
-                }
+                _ => (),
             }
         }
 
