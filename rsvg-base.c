@@ -390,26 +390,43 @@ get_node_creator_for_element_name (const char *name)
 static void
 node_set_atts (RsvgNode * node, RsvgHandle *handle, const NodeCreator *creator, RsvgPropertyBag atts)
 {
-    const char *id;
-    const char *klazz;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
+    const char *value;
 
-    id = rsvg_property_bag_lookup (atts, "id");
-    if (id) {
-        rsvg_defs_register_node_by_id (handle->priv->defs, id, node);
+    const char *id = NULL;
+    const char *klazz = NULL;
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_ID:
+            id = value;
+            rsvg_defs_register_node_by_id (handle->priv->defs, id, node);
+            break;
+
+        case RSVG_ATTRIBUTE_CLASS:
+            if (creator->supports_class_attribute) {
+                klazz = value;
+            }
+            break;
+
+        default:
+            break;
+        }
     }
+
+    rsvg_property_bag_iter_end (iter);
 
     rsvg_node_set_atts (node, handle, atts);
 
     /* The "svg" node is special; it will load its id/class
      * attributes until the end, when rsvg_end_element() calls
-     * _rsvg_node_svg_apply_atts()
+     * rsvg_node_svg_apply_atts()
      */
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_SVG) {
-        if (creator->supports_class_attribute)
-            klazz = rsvg_property_bag_lookup (atts, "class");
-        else
-            klazz = NULL;
-
         rsvg_parse_style_attrs (handle, node, creator->element_name, klazz, id, atts);
     }
 }
