@@ -63,20 +63,39 @@ struct _RsvgNodeTref {
 static void
 set_text_common_atts (RsvgNodeText *text, RsvgPropertyBag *atts)
 {
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "x"))) {
-        text->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-        text->x_specified = TRUE;
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_X:
+            text->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+            text->x_specified = TRUE;
+            break;
+
+        case RSVG_ATTRIBUTE_Y:
+            text->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+            text->y_specified = TRUE;
+            break;
+
+        case RSVG_ATTRIBUTE_DX:
+            text->dx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+            break;
+
+        case RSVG_ATTRIBUTE_DY:
+            text->dy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+            break;
+
+        default:
+            break;
+        }
     }
-    if ((value = rsvg_property_bag_lookup (atts, "y"))) {
-        text->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-        text->y_specified = TRUE;
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "dx")))
-        text->dx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-    if ((value = rsvg_property_bag_lookup (atts, "dy")))
-        text->dy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 
@@ -518,12 +537,21 @@ static void
 rsvg_node_tref_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgNodeTref *text = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
-        g_free (text->link);
-        text->link = g_strdup (value);
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        if (attr == RSVG_ATTRIBUTE_XLINK_HREF) {
+            g_free (text->link);
+            text->link = g_strdup (value);
+        }
     }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 static void
