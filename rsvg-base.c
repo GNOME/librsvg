@@ -553,16 +553,12 @@ rsvg_start_title (RsvgHandle *handle)
 /* start metadata */
 
 static void
-rsvg_metadata_props_enumerate (const char *key, const char *value, gpointer user_data)
-{
-    GString *metadata = (GString *) user_data;
-    g_string_append_printf (metadata, "%s=\"%s\" ", key, value);
-}
-
-static void
 rsvg_metadata_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts)
 {
     RsvgSaxHandlerMetadata *z = (RsvgSaxHandlerMetadata *) self;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    const char *value;
 
     rsvg_extra_handler_start (self, name, atts);
 
@@ -570,7 +566,15 @@ rsvg_metadata_handler_start (RsvgSaxHandler * self, const char *name, RsvgProper
         return;
 
     g_string_append_printf (z->string, "<%s ", name);
-    rsvg_property_bag_enumerate (atts, rsvg_metadata_props_enumerate, z->string);
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &value)) {
+        g_string_append_printf (z->string, "%s=\"%s\" ", key, value);
+    }
+
+    rsvg_property_bag_iter_end (iter);
+
     g_string_append (z->string, ">\n");
 }
 
