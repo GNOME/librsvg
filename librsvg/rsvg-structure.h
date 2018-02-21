@@ -38,6 +38,10 @@ G_BEGIN_DECLS
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_group_new (const char *element_name, RsvgNode *parent);
 
+/* Implemented in rust/src/link.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_link_new (const char *element_name, RsvgNode *parent);
+
 /* Implemented in rust/src/structure.rs */
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_defs_new (const char *element_name, RsvgNode *parent);
