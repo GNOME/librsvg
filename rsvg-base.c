@@ -123,7 +123,6 @@ typedef struct {
 /* hide this fact from the general public */
 typedef RsvgSaxHandlerExtra RsvgSaxHandlerTitle;
 typedef RsvgSaxHandlerExtra RsvgSaxHandlerDesc;
-typedef RsvgSaxHandlerExtra RsvgSaxHandlerMetadata;
 
 static void
 rsvg_style_handler_free (RsvgSaxHandler * self)
@@ -456,7 +455,7 @@ rsvg_standard_element_start (RsvgHandle *handle, const char *name, RsvgPropertyB
     newnode = rsvg_node_unref (newnode);
 }
 
-/* extra (title, desc, metadata) */
+/* extra (title, desc) */
 
 static void
 rsvg_extra_handler_free (RsvgSaxHandler * self)
@@ -559,59 +558,6 @@ rsvg_start_title (RsvgHandle *handle)
 }
 
 /* end title */
-
-/* start metadata */
-
-static void
-rsvg_metadata_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts)
-{
-    RsvgSaxHandlerMetadata *z = (RsvgSaxHandlerMetadata *) self;
-    RsvgPropertyBagIter *iter;
-    const char *key;
-    RsvgAttribute attr;
-    const char *value;
-
-    rsvg_extra_handler_start (self, name, atts);
-
-    if (!z->string)
-        return;
-
-    g_string_append_printf (z->string, "<%s ", name);
-
-    iter = rsvg_property_bag_iter_begin (atts);
-
-    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
-        g_string_append_printf (z->string, "%s=\"%s\" ", key, value);
-    }
-
-    rsvg_property_bag_iter_end (iter);
-
-    g_string_append (z->string, ">\n");
-}
-
-static void
-rsvg_metadata_handler_end (RsvgSaxHandler * self, const char *name)
-{
-    RsvgSaxHandlerMetadata *z = (RsvgSaxHandlerMetadata *) self;
-
-    if (strcmp (name, z->name) != 0) {
-        if (z->string)
-            g_string_append_printf (z->string, "</%s>\n", name);
-    } else {
-        rsvg_extra_handler_end (self, name);
-    }
-}
-
-static void
-rsvg_start_metadata (RsvgHandle *handle)
-{
-    RsvgSaxHandlerMetadata *handler = rsvg_start_extra (handle, "metadata", &handle->priv->metadata);
-
-    handler->super.start_element = rsvg_metadata_handler_start;
-    handler->super.end_element = rsvg_metadata_handler_end;
-}
-
-/* end metadata */
 
 /* start xinclude */
 
@@ -841,8 +787,6 @@ rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
             rsvg_start_title (handle);
         else if (!strcmp ((const char *) name, "desc"))
             rsvg_start_desc (handle);
-        else if (!strcmp ((const char *) name, "metadata"))
-            rsvg_start_metadata (handle);
         else if (!strcmp ((const char *) name, "include"))      /* xi:include */
             rsvg_start_xinclude (handle, bag);
         else
