@@ -28,6 +28,7 @@
 #define _GNU_SOURCE 1
 
 #include "rsvg-private.h"
+#include "rsvg-attributes.h"
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
 #include "rsvg-shapes.h"
@@ -168,9 +169,9 @@ static void
 rsvg_start_style (RsvgHandle *handle, RsvgPropertyBag *atts)
 {
     RsvgSaxHandlerStyle *handler = g_new0 (RsvgSaxHandlerStyle, 1);
-    const char *type;
-
-    type = rsvg_property_bag_lookup (atts, "type");
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    const char *value;
 
     handler->super.free = rsvg_style_handler_free;
     handler->super.characters = rsvg_style_handler_characters;
@@ -179,6 +180,9 @@ rsvg_start_style (RsvgHandle *handle, RsvgPropertyBag *atts)
     handler->handle = handle;
 
     handler->style = g_string_new (NULL);
+
+    handler->parent = (RsvgSaxHandlerDefs *) handle->priv->handler;
+    handle->priv->handler = &handler->super;
 
     /* FIXME: See these:
      *
@@ -192,10 +196,23 @@ rsvg_start_style (RsvgHandle *handle, RsvgPropertyBag *atts)
      * See where is_text_css is used to see where we parse the contents
      * of the style element.
      */
-    handler->is_text_css = (type == NULL) || (g_ascii_strcasecmp (type, "text/css") == 0);
+    handler->is_text_css = TRUE;
 
-    handler->parent = (RsvgSaxHandlerDefs *) handle->priv->handler;
-    handle->priv->handler = &handler->super;
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &value)) {
+        RsvgAttribute attr;
+
+        if (!rsvg_attribute_from_name (key, &attr)) {
+            continue;
+        }
+
+        if (attr == RSVG_ATTRIBUTE_TYPE) {
+            handler->is_text_css = (g_ascii_strcasecmp (value, "text/css") == 0);
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 static void
