@@ -404,6 +404,7 @@ node_set_atts (RsvgNode * node, RsvgHandle *handle, const NodeCreator *creator, 
     const char *id;
     const char *klazz;
 
+    register_node_in_defs (handle, node, atts);
     rsvg_node_set_atts (node, handle, atts);
 
     /* The "svg" node is special; it will load its id/class
@@ -439,7 +440,6 @@ rsvg_standard_element_start (RsvgHandle *handle, const char *name, RsvgPropertyB
     push_element_name (handle, name);
 
     add_node_to_handle (handle, newnode);
-    register_node_in_defs (handle, newnode, atts);
 
     if (handle->priv->currentnode) {
         rsvg_node_add_child (handle->priv->currentnode, newnode);
