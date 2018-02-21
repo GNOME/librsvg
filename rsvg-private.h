@@ -446,12 +446,6 @@ const char          *rsvg_property_bag_lookup    (RsvgPropertyBag bag, const cha
 G_GNUC_INTERNAL
 guint                rsvg_property_bag_size	     (RsvgPropertyBag bag);
 
-/* Implemented in rust/src/property_bag.rs */
-G_GNUC_INTERNAL
-void                 rsvg_property_bag_enumerate (RsvgPropertyBag bag,
-                                                  RsvgPropertyBagEnumFunc func,
-                                                  gpointer user_data);
-
 typedef struct RsvgPropertyBagIter *RsvgPropertyBagIter;
 
 /* Implemented in rust/src/property_bag.rs */

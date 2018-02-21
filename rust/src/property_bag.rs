@@ -81,14 +81,6 @@ impl<'a> PropertyBag<'a> {
         self.lookup_cstr(&k).map(|v| v.to_str().unwrap())
     }
 
-    pub fn enumerate(&self,
-                 enum_fn: fn (key: *const libc::c_char, val: *const libc::c_char, data: *const libc::c_void),
-                 data: *const libc::c_void) {
-        for (k, v) in &self.0 {
-            enum_fn(k.as_ptr(), v.as_ptr(), data);
-        }
-    }
-
     pub fn iter(&self) -> PropertyBagIter {
         PropertyBagIter(self.cstr_iter())
     }
@@ -133,17 +125,6 @@ pub extern fn rsvg_property_bag_size(pbag: *const PropertyBag) -> libc::c_uint {
         let pbag = &*pbag;
 
         pbag.len() as libc::c_uint
-    }
-}
-
-#[no_mangle]
-pub extern fn rsvg_property_bag_enumerate(pbag: *const PropertyBag,
-                                          enum_fn: fn (key: *const libc::c_char, val: *const libc::c_char, data: *const libc::c_void),
-                                          data: *const libc::c_void) {
-    unsafe {
-        let pbag = &*pbag;
-
-        pbag.enumerate(enum_fn, data);
     }
 }
 

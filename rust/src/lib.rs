@@ -129,7 +129,6 @@ pub use pattern::{
 };
 
 pub use property_bag::{
-    rsvg_property_bag_enumerate,
     rsvg_property_bag_free,
     rsvg_property_bag_iter_begin,
     rsvg_property_bag_iter_end,
