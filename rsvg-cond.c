@@ -173,27 +173,25 @@ rsvg_eval_switch_attributes (RsvgPropertyBag * atts, gboolean * p_has_cond)
     gboolean permitted = TRUE;
     gboolean has_cond = FALSE;
 
-    if (atts && rsvg_property_bag_size (atts)) {
-        const char *value;
+    const char *value;
 
-        if ((value = rsvg_property_bag_lookup (atts, "requiredFeatures"))) {
-            permitted =
-                rsvg_cond_fulfills_requirement (value, implemented_features,
-                                                nb_implemented_features);
-            has_cond = TRUE;
-        }
+    if ((value = rsvg_property_bag_lookup (atts, "requiredFeatures"))) {
+        permitted =
+            rsvg_cond_fulfills_requirement (value, implemented_features,
+                                            nb_implemented_features);
+        has_cond = TRUE;
+    }
 
-        if (permitted && (value = rsvg_property_bag_lookup (atts, "requiredExtensions"))) {
-            permitted =
-                rsvg_cond_fulfills_requirement (value, implemented_extensions,
-                                                nb_implemented_extensions);
-            has_cond = TRUE;
-        }
+    if (permitted && (value = rsvg_property_bag_lookup (atts, "requiredExtensions"))) {
+        permitted =
+            rsvg_cond_fulfills_requirement (value, implemented_extensions,
+                                            nb_implemented_extensions);
+        has_cond = TRUE;
+    }
 
-        if (permitted && (value = rsvg_property_bag_lookup (atts, "systemLanguage"))) {
-            permitted = rsvg_cond_parse_system_language (value);
-            has_cond = TRUE;
-        }
+    if (permitted && (value = rsvg_property_bag_lookup (atts, "systemLanguage"))) {
+        permitted = rsvg_cond_parse_system_language (value);
+        has_cond = TRUE;
     }
 
     if (p_has_cond)
