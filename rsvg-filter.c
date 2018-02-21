@@ -117,24 +117,41 @@ rsvg_filter_primitive_free (gpointer impl)
 static void
 filter_primitive_set_x_y_width_height_atts (RsvgFilterPrimitive *prim, RsvgPropertyBag *atts)
 {
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "x"))) {
-        prim->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-        prim->x_specified = TRUE;
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_X:
+            prim->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+            prim->x_specified = TRUE;
+            break;
+
+        case RSVG_ATTRIBUTE_Y:
+            prim->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+            prim->y_specified = TRUE;
+            break;
+
+        case RSVG_ATTRIBUTE_WIDTH:
+            prim->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+            prim->width_specified = TRUE;
+            break;
+
+        case RSVG_ATTRIBUTE_HEIGHT:
+            prim->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+            prim->height_specified = TRUE;
+            break;
+
+        default:
+            break;
+        }
     }
-    if ((value = rsvg_property_bag_lookup (atts, "y"))) {
-        prim->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-        prim->y_specified = TRUE;
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "width"))) {
-        prim->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-        prim->width_specified = TRUE;
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "height"))) {
-        prim->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-        prim->height_specified = TRUE;
-    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 static void
