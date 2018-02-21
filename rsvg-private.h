@@ -451,6 +451,23 @@ G_GNUC_INTERNAL
 void                 rsvg_property_bag_enumerate (RsvgPropertyBag bag,
                                                   RsvgPropertyBagEnumFunc func,
                                                   gpointer user_data);
+
+typedef struct RsvgPropertyBagIter *RsvgPropertyBagIter;
+
+/* Implemented in rust/src/property_bag.rs */
+G_GNUC_INTERNAL
+RsvgPropertyBagIter *rsvg_property_bag_iter_begin (RsvgPropertyBag bag);
+
+/* Implemented in rust/src/property_bag.rs */
+G_GNUC_INTERNAL
+gboolean rsvg_property_bag_iter_next (RsvgPropertyBagIter *iter,
+                                      const char **out_key,
+                                      const char **out_value);
+
+/* Implemented in rust/src/property_bag.rs */
+G_GNUC_INTERNAL
+void rsvg_property_bag_iter_end (RsvgPropertyBagIter *iter);
+
 /* for some reason this one's public... */
 GdkPixbuf *rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
                                                  size_t len,

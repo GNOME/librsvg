@@ -1,5 +1,8 @@
 use libc;
 
+use glib_sys;
+use glib::translate::*;
+
 use std::collections::HashMap;
 use std::collections::hash_map;
 use std::ffi::{CStr, CString};
@@ -157,10 +160,50 @@ pub extern fn rsvg_property_bag_lookup(pbag: *const PropertyBag,
     }
 }
 
+#[no_mangle]
+pub extern fn rsvg_property_bag_iter_begin(pbag: *const PropertyBag) -> *mut PropertyBagCStrIter {
+    assert!(!pbag.is_null());
+    let pbag = unsafe { &*pbag };
+
+    Box::into_raw(Box::new(pbag.cstr_iter()))
+}
+
+#[no_mangle]
+pub extern fn rsvg_property_bag_iter_next(iter: *mut PropertyBagCStrIter,
+                                          out_key: *mut *const libc::c_char,
+                                          out_value: *mut *const libc::c_char)
+                                          -> glib_sys::gboolean
+{
+    assert!(!iter.is_null());
+    let iter = unsafe { &mut *iter };
+
+    if let Some((key, val)) = iter.next() {
+        unsafe {
+            *out_key = key.as_ptr();
+            *out_value = val.as_ptr();
+        }
+        true.to_glib()
+    } else {
+        unsafe {
+            *out_key = ptr::null();
+            *out_value = ptr::null();
+        }
+        false.to_glib()
+    }
+}
+
+#[no_mangle]
+pub extern fn rsvg_property_bag_iter_end(iter: *mut PropertyBagCStrIter) {
+    assert!(!iter.is_null());
+
+    unsafe { Box::from_raw(iter) };
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::ffi::CString;
+    use std::mem;
 
     #[test]
     fn empty_property_bag() {
@@ -194,13 +237,63 @@ mod tests {
         let mut had_alpha: bool = false;
         let mut had_beta: bool = false;
 
-        for (k, _) in pbag.iter() {
+        for (k, v) in pbag.iter() {
             if k == "alpha" {
+                assert!(v == "1");
                 had_alpha = true;
             } else if k == "beta" {
+                assert!(v == "2");
                 had_beta = true;
             }
         }
+
+        assert!(had_alpha);
+        assert!(had_beta);
+    }
+
+    #[test]
+    fn property_bag_can_iterate_from_c() {
+        let pairs = [
+            CString::new("alpha").unwrap(),
+            CString::new("1").unwrap(),
+            CString::new("beta").unwrap(),
+            CString::new("2").unwrap(),
+        ];
+
+        let mut v = Vec::new();
+
+        for x in &pairs {
+            v.push(x.as_ptr() as *const libc::c_char);
+        }
+
+        v.push(ptr::null());
+
+        let pbag = unsafe { PropertyBag::new_from_key_value_pairs(v.as_ptr()) };
+
+        let mut had_alpha: bool = false;
+        let mut had_beta: bool = false;
+
+        let iter = rsvg_property_bag_iter_begin(&pbag as *const PropertyBag);
+
+        let mut key = unsafe { mem::uninitialized() };
+        let mut val = unsafe { mem::uninitialized() };
+
+        while from_glib(rsvg_property_bag_iter_next(iter,
+                                                    &mut key as *mut _,
+                                                    &mut val as *mut _)) {
+            let k = unsafe { CStr::from_ptr(key).to_str().unwrap() };
+            let v = unsafe { CStr::from_ptr(val).to_str().unwrap() };
+
+            if k == "alpha" {
+                assert!(v == "1");
+                had_alpha = true;
+            } else if k == "beta" {
+                assert!(v == "2");
+                had_beta = true;
+            }
+        }
+
+        rsvg_property_bag_iter_end(iter);
 
         assert!(had_alpha);
         assert!(had_beta);
