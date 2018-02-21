@@ -529,14 +529,14 @@ typedef enum {
 
 /* Parse a CSS2 style argument, setting the SVG context attributes. */
 static void
-rsvg_parse_style_pair (RsvgState * state,
-                       const gchar * name,
-                       const gchar * value,
+rsvg_parse_style_pair (RsvgState *state,
+                       const gchar *name,
+                       RsvgAttribute attr,
+                       const gchar *value,
                        gboolean important,
                        PairSource source)
 {
     StyleValueData *data;
-    RsvgAttribute attr;
 
     data = g_hash_table_lookup (state->styles, name);
     if (data && data->important && !important)
@@ -548,10 +548,6 @@ rsvg_parse_style_pair (RsvgState * state,
     g_hash_table_insert (state->styles,
                          (gpointer) g_strdup (name),
                          (gpointer) style_value_data_new (value, important));
-
-    if (!rsvg_attribute_from_name (name, &attr)) {
-        return;
-    }
 
     switch (attr) {
     case RSVG_ATTRIBUTE_COLOR:
@@ -1184,7 +1180,13 @@ rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
     iter = rsvg_property_bag_iter_begin (atts);
 
     while (rsvg_property_bag_iter_next (iter, &key, &value)) {
-        rsvg_parse_style_pair (state, key, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
+        RsvgAttribute attr;
+
+        if (!rsvg_attribute_from_name (key, &attr)) {
+            continue;
+        }
+
+        rsvg_parse_style_pair (state, key, attr, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
     }
 
     rsvg_property_bag_iter_end (iter);
@@ -1265,12 +1267,21 @@ rsvg_parse_style (RsvgState *state, const char *str)
             second_value = g_strjoinv(NULL, split_list);
             g_strfreev(split_list);
 
-            if (parse_style_value (second_value, &style_value, &important))
-                rsvg_parse_style_pair (state,
-                                       g_strstrip (first_value),
-                                       style_value,
-                                       important,
-                                       PAIR_SOURCE_STYLE);
+            if (parse_style_value (second_value, &style_value, &important)) {
+                RsvgAttribute attr;
+
+                g_strstrip (first_value);
+
+                if (rsvg_attribute_from_name (first_value, &attr)) {
+                    rsvg_parse_style_pair (state,
+                                           first_value,
+                                           attr,
+                                           style_value,
+                                           important,
+                                           PAIR_SOURCE_STYLE);
+                }
+            }
+
             g_free (style_value);
             g_free (second_value);
         }
@@ -1517,7 +1528,11 @@ static void
 apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
 {
     RsvgState *state = user_data;
-    rsvg_parse_style_pair (state, key, value->value, value->important, PAIR_SOURCE_STYLE);
+    RsvgAttribute attr;
+
+    if (rsvg_attribute_from_name (key, &attr)) {
+        rsvg_parse_style_pair (state, key, attr, value->value, value->important, PAIR_SOURCE_STYLE);
+    }
 }
 
 static gboolean
