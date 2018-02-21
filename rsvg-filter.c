@@ -2580,45 +2580,62 @@ rsvg_filter_primitive_color_matrix_set_atts (RsvgNode *node, gpointer impl, Rsvg
     RsvgFilterPrimitiveColorMatrix *filter = impl;
     gint type;
     gsize listlen = 0;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
     type = 0;
 
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
-
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "values"))) {
-        unsigned int i;
-        double *temp;
-        if (!rsvg_css_parse_number_list (value,
-                                         NUMBER_LIST_LENGTH_MAXIMUM,
-                                         20,
-                                         &temp,
-                                         &listlen)) {
-            rsvg_node_set_attribute_parse_error (node, "values", "invalid number list");
-            return;
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        case RSVG_ATTRIBUTE_VALUES: {
+            unsigned int i;
+            double *temp;
+            if (!rsvg_css_parse_number_list (value,
+                                             NUMBER_LIST_LENGTH_MAXIMUM,
+                                             20,
+                                             &temp,
+                                             &listlen)) {
+                rsvg_node_set_attribute_parse_error (node, "values", "invalid number list");
+                goto out;
+            }
+
+            filter->KernelMatrix = g_new0 (int, listlen);
+            for (i = 0; i < listlen; i++)
+                filter->KernelMatrix[i] = temp[i] * 255.;
+            g_free (temp);
+            break;
         }
 
-        filter->KernelMatrix = g_new0 (int, listlen);
-        for (i = 0; i < listlen; i++)
-            filter->KernelMatrix[i] = temp[i] * 255.;
-        g_free (temp);
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "type"))) {
-        if (!strcmp (value, "matrix"))
-            type = 0;
-        else if (!strcmp (value, "saturate"))
-            type = 1;
-        else if (!strcmp (value, "hueRotate"))
-            type = 2;
-        else if (!strcmp (value, "luminanceToAlpha"))
-            type = 3;
-        else
-            type = 0;
+        case RSVG_ATTRIBUTE_TYPE:
+            if (!strcmp (value, "matrix"))
+                type = 0;
+            else if (!strcmp (value, "saturate"))
+                type = 1;
+            else if (!strcmp (value, "hueRotate"))
+                type = 2;
+            else if (!strcmp (value, "luminanceToAlpha"))
+                type = 3;
+            else
+                type = 0;
+            break;
+
+        default:
+            break;
+        }
     }
 
     if (type == 0) {
@@ -2682,6 +2699,9 @@ rsvg_filter_primitive_color_matrix_set_atts (RsvgNode *node, gpointer impl, Rsvg
     } else {
         g_assert_not_reached ();
     }
+
+out:
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
