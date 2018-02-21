@@ -1561,8 +1561,7 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
 
     state = rsvg_node_get_state (node);
 
-    if (rsvg_property_bag_size (atts) > 0)
-        rsvg_parse_presentation_attributes (state, atts);
+    rsvg_parse_presentation_attributes (state, atts);
 
     /* Try to properly support all of the following, including inheritance:
      * *
