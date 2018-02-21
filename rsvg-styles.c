@@ -1535,40 +1535,6 @@ rsvg_lookup_apply_css_style (RsvgHandle *handle, const char *target, RsvgState *
     return FALSE;
 }
 
-struct parse_style_and_transform_closure {
-    RsvgState *state;
-    RsvgNode *node;
-};
-
-static void
-parse_style_and_transform (const char *key, const char *value, gpointer data)
-{
-    RsvgAttribute attr;
-    RsvgNode *node = data;
-    RsvgState *state = rsvg_node_get_state (node);
-
-    if (!rsvg_attribute_from_name (key, &attr)) {
-        return;
-    }
-
-    switch (attr) {
-    case RSVG_ATTRIBUTE_STYLE:
-        rsvg_parse_style (state, value);
-        break;
-
-    case RSVG_ATTRIBUTE_TRANSFORM:
-        if (!rsvg_parse_transform_attr (state, value)) {
-            rsvg_node_set_attribute_parse_error (node,
-                                                 "transform",
-                                                 "Invalid transformation");
-        }
-        break;
-
-    default:
-        break;
-    }
-}
-
 /**
  * rsvg_parse_style_attrs:
  * @handle: Rsvg handle.
@@ -1590,6 +1556,9 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
     gboolean found = FALSE;
     GString *klazz_list = NULL;
     RsvgState *state;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    const char *value;
 
     state = rsvg_node_get_state (node);
 
@@ -1670,9 +1639,34 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
         g_free (target);
     }
 
-    rsvg_property_bag_enumerate (atts,
-                                 parse_style_and_transform,
-                                 node);
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &value)) {
+        RsvgAttribute attr;
+
+        if (!rsvg_attribute_from_name (key, &attr)) {
+            continue;
+        }
+
+        switch (attr) {
+        case RSVG_ATTRIBUTE_STYLE:
+            rsvg_parse_style (state, value);
+            break;
+
+        case RSVG_ATTRIBUTE_TRANSFORM:
+            if (!rsvg_parse_transform_attr (state, value)) {
+                rsvg_node_set_attribute_parse_error (node,
+                                                     "transform",
+                                                     "Invalid transformation");
+            }
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgState *
