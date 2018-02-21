@@ -2934,14 +2934,31 @@ static void
 rsvg_filter_primitive_component_transfer_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveComponentTransfer *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
