@@ -810,28 +810,51 @@ static void
 rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilter *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "filterUnits"))) {
-        if (!strcmp (value, "userSpaceOnUse"))
-            filter->filterunits = userSpaceOnUse;
-        else
-            filter->filterunits = objectBoundingBox;
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_FILTER_UNITS:
+            if (!strcmp (value, "userSpaceOnUse"))
+                filter->filterunits = userSpaceOnUse;
+            else
+                filter->filterunits = objectBoundingBox;
+            break;
+
+        case RSVG_ATTRIBUTE_PRIMITIVE_UNITS:
+            if (!strcmp (value, "objectBoundingBox"))
+                filter->primitiveunits = objectBoundingBox;
+            else
+                filter->primitiveunits = userSpaceOnUse;
+            break;
+
+        case RSVG_ATTRIBUTE_X:
+            filter->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+            break;
+
+        case RSVG_ATTRIBUTE_Y:
+            filter->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+            break;
+
+        case RSVG_ATTRIBUTE_WIDTH:
+            filter->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+            break;
+
+        case RSVG_ATTRIBUTE_HEIGHT:
+            filter->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+            break;
+
+        default:
+            break;
+        }
     }
-    if ((value = rsvg_property_bag_lookup (atts, "primitiveUnits"))) {
-        if (!strcmp (value, "objectBoundingBox"))
-            filter->primitiveunits = objectBoundingBox;
-        else
-            filter->primitiveunits = userSpaceOnUse;
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "x")))
-        filter->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-    if ((value = rsvg_property_bag_lookup (atts, "y")))
-        filter->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-    if ((value = rsvg_property_bag_lookup (atts, "width")))
-        filter->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-    if ((value = rsvg_property_bag_lookup (atts, "height")))
-        filter->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 static void
