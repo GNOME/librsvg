@@ -81,6 +81,7 @@ RUST_SOURCES =					\
 	rust/src/image.rs			\
 	rust/src/length.rs			\
 	rust/src/lib.rs				\
+	rust/src/link.rs			\
 	rust/src/marker.rs			\
 	rust/src/mask.rs			\
 	rust/src/node.rs			\

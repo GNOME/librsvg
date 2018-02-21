@@ -83,6 +83,7 @@ pub enum NodeType {
     LightSource,
     Line,
     LinearGradient,
+    Link,
     Marker,
     Mask,
     Path,

@@ -73,6 +73,10 @@ pub use image::{
     rsvg_node_image_new,
 };
 
+pub use link::{
+    rsvg_node_link_new,
+};
+
 pub use marker::{
     rsvg_node_marker_new,
 };
@@ -195,6 +199,7 @@ mod gradient;
 mod handle;
 mod image;
 mod length;
+mod link;
 mod marker;
 mod mask;
 mod node;
