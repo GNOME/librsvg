@@ -3563,12 +3563,27 @@ static void
 rsvg_filter_primitive_flood_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitive *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->result, value);
-
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->result, value);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
