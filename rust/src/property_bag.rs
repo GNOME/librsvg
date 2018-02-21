@@ -150,15 +150,17 @@ pub extern fn rsvg_property_bag_iter_begin(pbag: *const PropertyBag) -> *mut Pro
 #[no_mangle]
 pub extern fn rsvg_property_bag_iter_next(iter: *mut PropertyBagCStrIter,
                                           out_key: *mut *const libc::c_char,
+                                          out_attr: *mut Attribute,
                                           out_value: *mut *const libc::c_char)
                                           -> glib_sys::gboolean
 {
     assert!(!iter.is_null());
     let iter = unsafe { &mut *iter };
 
-    if let Some((key, _, val)) = iter.next() {
+    if let Some((key, attr, val)) = iter.next() {
         unsafe {
             *out_key = key.as_ptr();
+            *out_attr = attr;
             *out_value = val.as_ptr();
         }
         true.to_glib()
@@ -259,18 +261,22 @@ mod tests {
         let iter = rsvg_property_bag_iter_begin(&pbag as *const PropertyBag);
 
         let mut key = unsafe { mem::uninitialized() };
+        let mut att = unsafe { mem::uninitialized() };
         let mut val = unsafe { mem::uninitialized() };
 
         while from_glib(rsvg_property_bag_iter_next(iter,
                                                     &mut key as *mut _,
+                                                    &mut att as *mut _,
                                                     &mut val as *mut _)) {
             let k = unsafe { CStr::from_ptr(key).to_str().unwrap() };
             let v = unsafe { CStr::from_ptr(val).to_str().unwrap() };
 
             if k == "rx" {
+                assert!(att == Attribute::Rx);
                 assert!(v == "1");
                 had_rx = true;
             } else if k == "ry" {
+                assert!(att == Attribute::Ry);
                 assert!(v == "2");
                 had_ry = true;
             }

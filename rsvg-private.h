@@ -30,6 +30,7 @@
 #include <cairo.h>
 
 #include "rsvg.h"
+#include "rsvg-attributes.h"
 #include "rsvg-path-builder.h"
 
 #include <libxml/SAX.h>
@@ -452,6 +453,7 @@ RsvgPropertyBagIter *rsvg_property_bag_iter_begin (RsvgPropertyBag bag);
 G_GNUC_INTERNAL
 gboolean rsvg_property_bag_iter_next (RsvgPropertyBagIter *iter,
                                       const char **out_key,
+                                      RsvgAttribute *out_attr,
                                       const char **out_value);
 
 /* Implemented in rust/src/property_bag.rs */

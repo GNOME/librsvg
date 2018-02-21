@@ -171,6 +171,7 @@ rsvg_start_style (RsvgHandle *handle, RsvgPropertyBag *atts)
     RsvgSaxHandlerStyle *handler = g_new0 (RsvgSaxHandlerStyle, 1);
     RsvgPropertyBagIter *iter;
     const char *key;
+    RsvgAttribute attr;
     const char *value;
 
     handler->super.free = rsvg_style_handler_free;
@@ -200,13 +201,7 @@ rsvg_start_style (RsvgHandle *handle, RsvgPropertyBag *atts)
 
     iter = rsvg_property_bag_iter_begin (atts);
 
-    while (rsvg_property_bag_iter_next (iter, &key, &value)) {
-        RsvgAttribute attr;
-
-        if (!rsvg_attribute_from_name (key, &attr)) {
-            continue;
-        }
-
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
         if (attr == RSVG_ATTRIBUTE_TYPE) {
             handler->is_text_css = (g_ascii_strcasecmp (value, "text/css") == 0);
         }
@@ -573,6 +568,7 @@ rsvg_metadata_handler_start (RsvgSaxHandler * self, const char *name, RsvgProper
     RsvgSaxHandlerMetadata *z = (RsvgSaxHandlerMetadata *) self;
     RsvgPropertyBagIter *iter;
     const char *key;
+    RsvgAttribute attr;
     const char *value;
 
     rsvg_extra_handler_start (self, name, atts);
@@ -584,7 +580,7 @@ rsvg_metadata_handler_start (RsvgSaxHandler * self, const char *name, RsvgProper
 
     iter = rsvg_property_bag_iter_begin (atts);
 
-    while (rsvg_property_bag_iter_next (iter, &key, &value)) {
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
         g_string_append_printf (z->string, "%s=\"%s\" ", key, value);
     }
 

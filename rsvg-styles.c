@@ -1175,17 +1175,12 @@ rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
 {
     RsvgPropertyBagIter *iter;
     const char *key;
+    RsvgAttribute attr;
     const char *value;
 
     iter = rsvg_property_bag_iter_begin (atts);
 
-    while (rsvg_property_bag_iter_next (iter, &key, &value)) {
-        RsvgAttribute attr;
-
-        if (!rsvg_attribute_from_name (key, &attr)) {
-            continue;
-        }
-
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
         rsvg_parse_style_pair (state, key, attr, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
     }
 
@@ -1572,6 +1567,7 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
     RsvgState *state;
     RsvgPropertyBagIter *iter;
     const char *key;
+    RsvgAttribute attr;
     const char *value;
 
     state = rsvg_node_get_state (node);
@@ -1654,13 +1650,7 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
 
     iter = rsvg_property_bag_iter_begin (atts);
 
-    while (rsvg_property_bag_iter_next (iter, &key, &value)) {
-        RsvgAttribute attr;
-
-        if (!rsvg_attribute_from_name (key, &attr)) {
-            continue;
-        }
-
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
         switch (attr) {
         case RSVG_ATTRIBUTE_STYLE:
             rsvg_parse_style (state, value);
