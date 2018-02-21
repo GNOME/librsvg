@@ -1173,22 +1173,21 @@ rsvg_parse_style_pair (RsvgState * state,
     }
 }
 
-static void
-atts_enumerate_cb (const char *key, const char *value, gpointer data)
-{
-    RsvgState *state = data;
-
-    rsvg_parse_style_pair (state, key, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
-}
-
-
 /* take a pair of the form (fill="#ff00ff") and parse it as a style */
 void
 rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
 {
-    rsvg_property_bag_enumerate (atts,
-                                 atts_enumerate_cb,
-                                 state);
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    const char *value;
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &value)) {
+        rsvg_parse_style_pair (state, key, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
+    }
+
+    rsvg_property_bag_iter_end (iter);
 
     {
         /* TODO: this conditional behavior isn't quite correct, and i'm not sure it should reside here */
