@@ -3749,23 +3749,47 @@ static void
 rsvg_filter_primitive_displacement_map_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveDisplacementMap *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "in2")))
-        g_string_assign (filter->in2, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "xChannelSelector")))
-        filter->xChannelSelector = (value)[0];
-    if ((value = rsvg_property_bag_lookup (atts, "yChannelSelector")))
-        filter->yChannelSelector = (value)[0];
-    if ((value = rsvg_property_bag_lookup (atts, "scale")))
-        filter->scale = g_ascii_strtod (value, NULL);
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_IN2:
+            g_string_assign (filter->in2, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        case RSVG_ATTRIBUTE_X_CHANNEL_SELECTOR:
+            filter->xChannelSelector = (value)[0];
+            break;
+
+        case RSVG_ATTRIBUTE_Y_CHANNEL_SELECTOR:
+            filter->yChannelSelector = (value)[0];
+            break;
+
+        case RSVG_ATTRIBUTE_SCALE:
+            filter->scale = g_ascii_strtod (value, NULL);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
