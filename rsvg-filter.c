@@ -4135,30 +4135,55 @@ static void
 rsvg_filter_primitive_turbulence_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveTurbulence *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "baseFrequency"))) {
-        if (!rsvg_css_parse_number_optional_number (value, &filter->fBaseFreqX, &filter->fBaseFreqY)) {
-            rsvg_node_set_attribute_parse_error (node, "baseFrequency", "expected number-optional-number");
-            return;
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        case RSVG_ATTRIBUTE_BASE_FREQUENCY:
+            if (!rsvg_css_parse_number_optional_number (value, &filter->fBaseFreqX, &filter->fBaseFreqY)) {
+                rsvg_node_set_attribute_parse_error (node, "baseFrequency", "expected number-optional-number");
+                goto out;
+            }
+            break;
+
+        case RSVG_ATTRIBUTE_NUM_OCTAVES:
+            filter->nNumOctaves = atoi (value);
+            break;
+
+        case RSVG_ATTRIBUTE_SEED:
+            filter->seed = atoi (value);
+            break;
+
+        case RSVG_ATTRIBUTE_STITCH_TILES:
+            filter->bDoStitching = (!strcmp (value, "stitch"));
+            break;
+
+        case RSVG_ATTRIBUTE_TYPE:
+            filter->bFractalSum = (!strcmp (value, "fractalNoise"));
+            break;
+
+        default:
+            break;
         }
     }
 
-    if ((value = rsvg_property_bag_lookup (atts, "numOctaves")))
-        filter->nNumOctaves = atoi (value);
-    if ((value = rsvg_property_bag_lookup (atts, "seed")))
-        filter->seed = atoi (value);
-    if ((value = rsvg_property_bag_lookup (atts, "stitchTiles")))
-        filter->bDoStitching = (!strcmp (value, "stitch"));
-    if ((value = rsvg_property_bag_lookup (atts, "type")))
-        filter->bFractalSum = (!strcmp (value, "fractalNoise"));
+out:
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
