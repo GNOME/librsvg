@@ -50,11 +50,6 @@ extern "C" {
 
     fn rsvg_drawing_ctx_get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> *mut pango_sys::PangoContext;
 
-    fn rsvg_drawing_ctx_render_pango_layout(draw_ctx: *const RsvgDrawingCtx,
-                                            layout: *const pango_sys::PangoLayout,
-                                            x: f64,
-                                            y: f64);
-
     fn rsvg_drawing_ctx_add_clipping_rect (draw_ctx: *const RsvgDrawingCtx,
                                            x: f64,
                                            y: f64,
@@ -210,15 +205,6 @@ pub fn set_current_state_affine (draw_ctx: *const RsvgDrawingCtx, affine: cairo:
 pub fn get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> pango::Context {
     unsafe {
         from_glib_full(rsvg_drawing_ctx_get_pango_context(draw_ctx))
-    }
-}
-
-pub fn render_pango_layout(draw_ctx: *const RsvgDrawingCtx,
-                           layout: pango::Layout,
-                           x: f64,
-                           y: f64) {
-    unsafe {
-        rsvg_drawing_ctx_render_pango_layout(draw_ctx, layout.to_glib_none().0, x, y);
     }
 }
 
