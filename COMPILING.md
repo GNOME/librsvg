@@ -16,6 +16,7 @@ There are generic compilation/installation instructions in the
 explains librsvg's peculiarities.
 
 * [Installing dependencies for building](#installing-dependencies-for-building)
+* [Basic compilation instructions](#basic-compilation-instructions)
 * [Verbosity](#verbosity)
 * [Debug or release builds](#debug-or-release-builds)
 * [Cross-compilation](#cross-compilation)
@@ -97,6 +98,28 @@ automake autoconf libtool gettext itstool git \
 gtk-doc gobject-introspection-devel gtk3-devel \
 libxml2-devel libcroco-devel cairo-devel \
 pango-devel gdk-pixbuf-devel
+```
+
+# Basic compilation instructions
+
+If you are compiling a tarball:
+
+```sh
+./configure
+make
+make install
+```
+
+See the [`INSTALL`][install] file for details on options you can pass
+to the `configure` script to select where to install the compiled
+library.
+
+If you are compiling from a git checkout:
+
+```sh
+./autogen.sh
+make
+make install
 ```
 
 # Verbosity
