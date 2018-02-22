@@ -397,11 +397,10 @@ impl<'b> PathParser<'b> {
             if self.lookahead_is (',') {
                 assert! (self.match_char (','));
                 self.optional_whitespace()?;
-            } else {
-                if !self.lookahead_is_start_of_number() {
-                    break;
-                }
+            } else if !self.lookahead_is_start_of_number() {
+                break;
             }
+
         }
 
         Ok(())
@@ -427,12 +426,10 @@ impl<'b> PathParser<'b> {
             assert! (self.match_char (','));
             self.optional_whitespace()?;
             self.lineto_argument_sequence(absolute)
+        } else if self.lookahead_is_start_of_number() {
+            self.lineto_argument_sequence(absolute)
         } else {
-            if self.lookahead_is_start_of_number() {
-                self.lineto_argument_sequence(absolute)
-            } else {
-                Ok(())
-            }
+            Ok(())
         }
     }
 
@@ -541,10 +538,8 @@ impl<'b> PathParser<'b> {
             if self.lookahead_is (',') {
                 assert! (self.match_char (','));
                 self.optional_whitespace()?;
-            } else {
-                if !self.lookahead_is_start_of_number() {
-                    break;
-                }
+            } else if !self.lookahead_is_start_of_number() {
+                break;
             }
         }
 
@@ -586,10 +581,8 @@ impl<'b> PathParser<'b> {
             if self.lookahead_is (',') {
                 assert! (self.match_char (','));
                 self.optional_whitespace()?;
-            } else {
-                if !self.lookahead_is_start_of_number() {
-                    break;
-                }
+            } else if !self.lookahead_is_start_of_number() {
+                break;
             }
         }
 
@@ -642,10 +635,8 @@ impl<'b> PathParser<'b> {
             if self.lookahead_is (',') {
                 assert! (self.match_char (','));
                 self.optional_whitespace()?;
-            } else {
-                if !self.lookahead_is_start_of_number() {
-                    break;
-                }
+            } else if !self.lookahead_is_start_of_number() {
+                break;
             }
         }
 
@@ -677,10 +668,8 @@ impl<'b> PathParser<'b> {
             if self.lookahead_is (',') {
                 assert! (self.match_char (','));
                 self.optional_whitespace()?;
-            } else {
-                if !self.lookahead_is_start_of_number() {
-                    break;
-                }
+            } else if !self.lookahead_is_start_of_number() {
+                break;
             }
         }
 
@@ -745,10 +734,8 @@ impl<'b> PathParser<'b> {
             if self.lookahead_is (',') {
                 assert! (self.match_char (','));
                 self.optional_whitespace()?;
-            } else {
-                if !self.lookahead_is_start_of_number() {
-                    break;
-                }
+            } else if !self.lookahead_is_start_of_number() {
+                break;
             }
         }
 
@@ -792,10 +779,8 @@ impl<'b> PathParser<'b> {
             if self.lookahead_is (',') {
                 assert! (self.match_char (','));
                 self.optional_whitespace()?;
-            } else {
-                if !self.lookahead_is_start_of_number() {
-                    break;
-                }
+            } else if !self.lookahead_is_start_of_number() {
+                break;
             }
         }
 
@@ -860,10 +845,8 @@ impl<'b> PathParser<'b> {
             if self.lookahead_is (',') {
                 assert! (self.match_char (','));
                 self.optional_whitespace()?;
-            } else {
-                if !self.lookahead_is_start_of_number() {
-                    break;
-                }
+            } else if !self.lookahead_is_start_of_number() {
+                break;
             }
         }
 
