@@ -1066,34 +1066,57 @@ rsvg_processing_instruction (void *user_data, const xmlChar * target, const xmlC
         xml_atts = rsvg_css_parse_xml_attribute_string ((const char *) data);
 
         if (xml_atts) {
+            const char *alternate = NULL;
+            const char *type = NULL;
+            const char *href = NULL;
+            RsvgPropertyBagIter *iter;
+            const char *key;
+            RsvgAttribute attr;
             const char *value;
 
             atts = rsvg_property_bag_new ((const char **) xml_atts);
-            value = rsvg_property_bag_lookup (atts, "alternate");
-            if (!value || !value[0] || (strcmp (value, "no") != 0)) {
-                value = rsvg_property_bag_lookup (atts, "type");
-                if (value && strcmp (value, "text/css") == 0) {
-                    value = rsvg_property_bag_lookup (atts, "href");
-                    if (value && value[0]) {
-                        char *style_data;
-                        gsize style_data_len;
-                        char *mime_type = NULL;
 
-                        style_data = _rsvg_handle_acquire_data (handle,
-                                                                value,
-                                                                &mime_type,
-                                                                &style_data_len,
-                                                                NULL);
-                        if (style_data &&
-                            mime_type &&
-                            strcmp (mime_type, "text/css") == 0) {
-                            rsvg_parse_cssbuffer (handle, style_data, style_data_len);
-                        }
+            iter = rsvg_property_bag_iter_begin (atts);
 
-                        g_free (mime_type);
-                        g_free (style_data);
-                    }
+            while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+                switch (attr) {
+                case RSVG_ATTRIBUTE_ALTERNATE:
+                    alternate = value;
+                    break;
+
+                case RSVG_ATTRIBUTE_TYPE:
+                    type = value;
+                    break;
+
+                case RSVG_ATTRIBUTE_HREF:
+                    href = value;
+                    break;
+
+                default:
+                    break;
                 }
+            }
+
+            if ((!alternate || strcmp (alternate, "no") != 0)
+                && type && strcmp (type, "text/css") == 0
+                && href) {
+                char *style_data;
+                gsize style_data_len;
+                char *mime_type = NULL;
+
+                style_data = _rsvg_handle_acquire_data (handle,
+                                                        href,
+                                                        &mime_type,
+                                                        &style_data_len,
+                                                        NULL);
+                if (style_data &&
+                    mime_type &&
+                    strcmp (mime_type, "text/css") == 0) {
+                    rsvg_parse_cssbuffer (handle, style_data, style_data_len);
+                }
+
+                g_free (mime_type);
+                g_free (style_data);
             }
 
             rsvg_property_bag_free (atts);
