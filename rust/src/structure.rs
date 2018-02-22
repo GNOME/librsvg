@@ -468,8 +468,18 @@ pub extern fn rsvg_node_svg_apply_atts (raw_node: *const RsvgNode, handle: *cons
         if let Some(owned_pbag) = svg.pbag.borrow().as_ref() {
             let pbag = PropertyBag::from_owned(&owned_pbag);
 
-            let class = pbag.lookup("class").map(|(_, v)| v);
-            let id = pbag.lookup("id").map(|(_, v)| v);
+            let mut class = None;
+            let mut id = None;
+
+            for (_key, attr, value) in pbag.iter() {
+                match attr {
+                    Attribute::Class => class = Some(value),
+
+                    Attribute::Id => id = Some(value),
+
+                    _ => (),
+                }
+            }
 
             let c_class = class.to_glib_none ();
             let c_id = id.to_glib_none ();
