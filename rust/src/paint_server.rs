@@ -59,7 +59,7 @@ impl PaintServer {
                 alternate: PaintServer::parse_fallback(input),
             })
         } else {
-            PaintServer::parse_color(input).map(|color| PaintServer::SolidColor(color))
+            PaintServer::parse_color(input).map(PaintServer::SolidColor)
         }
     }
 
@@ -71,8 +71,8 @@ impl PaintServer {
         } else {
             input
                 .try(|i| cssparser::Color::parse(i))
-                .map(|c| Color::from(c))
-                .map_err(|e| AttributeError::from(e))
+                .map(Color::from)
+                .map_err(AttributeError::from)
         }
     }
 
