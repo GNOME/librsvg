@@ -5,10 +5,10 @@ use glib::translate::*;
 use std::f64;
 use std::f64::consts::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct LargeArc(pub bool);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Sweep {
     Negative,
     Positive
