@@ -358,7 +358,7 @@ fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
         // split at whitespace
         .flat_map(|slice| slice.split_whitespace())
         // parse it into an RsvgLength
-        .map(|d| RsvgLength::parse(d.into(), LengthDir::Both))
+        .map(|d| RsvgLength::parse(d, LengthDir::Both))
         // collect into a Result<Vec<T>, E>.
         // it will short-circuit iteslf upon the first error encountered
         // like if you returned from a for-loop
