@@ -3,22 +3,22 @@ use libc;
 use glib_sys;
 use glib::translate::*;
 
-use std::collections::HashMap;
-use std::collections::hash_map;
 use std::ffi::{CStr, CString};
 use std::ops::Deref;
 use std::ptr;
+use std::slice;
 use std::str::{self, FromStr};
 
 use attributes::Attribute;
 
-pub struct PropertyBag<'a>(HashMap<&'a CStr, (Attribute, &'a CStr)>);
+// We store (key, attribute, value)
+pub struct PropertyBag<'a>(Vec<(&'a CStr, Attribute, &'a CStr)>);
 
-pub struct OwnedPropertyBag(HashMap<CString, (Attribute, CString)>);
+pub struct OwnedPropertyBag(Vec<(CString, Attribute, CString)>);
 
 pub struct PropertyBagIter<'a>(PropertyBagCStrIter<'a>);
 
-pub struct PropertyBagCStrIter<'a>(hash_map::Iter<'a, &'a CStr, (Attribute, &'a CStr)>);
+pub struct PropertyBagCStrIter<'a>(slice::Iter<'a, (&'a CStr, Attribute, &'a CStr)>);
 
 trait Utf8CStrToStr {
     fn to_str_utf8(&self) -> &str;
@@ -34,8 +34,27 @@ impl Utf8CStrToStr for CStr {
 }
 
 impl<'a> PropertyBag<'a> {
+    /// Creates an iterable `PropertyBag` from a C array of borrowed C strings.
+    ///
+    /// With libxml2's SAX parser, the caller's callback for "element start"
+    /// gets passed a `xmlChar **` of attribute/value pairs.  Even indices
+    /// in the array are pointers to attribute names; odd indices are
+    /// pointers to attribute values.  The array terminates with a NULL
+    /// element in an even index.
+    ///
+    /// This function is unsafe because the caller must guarantee the following:
+    ///
+    /// * `pairs` is a valid pointer, or NULL for an empty array
+    ///
+    /// * `pairs` has key/value pairs and is NULL terminated
+    ///
+    /// * Both keys and values are valid UTF-8, nul-terminated C strings
+    ///
+    /// The lifetime of the `PropertyBag` should be considered the same as the lifetime of the
+    /// `pairs` array, as the property bag does not copy the strings - it directly stores pointers
+    /// into that array's strings.
     pub unsafe fn new_from_key_value_pairs(pairs: *const *const libc::c_char) -> PropertyBag<'a> {
-        let mut map = HashMap::new();
+        let mut array = Vec::new();
 
         if !pairs.is_null() {
             let mut i = 0;
@@ -51,7 +70,7 @@ impl<'a> PropertyBag<'a> {
                     // We silently drop unknown attributes.  New attributes should be added in
                     // build.rs.
                     if let Ok(attr) = Attribute::from_str(key_str.to_str_utf8()) {
-                        map.insert(key_str, (attr, val_str));
+                        array.push((key_str, attr, val_str));
                     }
                 } else {
                     break;
@@ -61,27 +80,27 @@ impl<'a> PropertyBag<'a> {
             }
         }
 
-        PropertyBag(map)
+        PropertyBag(array)
     }
 
     pub fn from_owned(owned: &OwnedPropertyBag) -> PropertyBag {
-        let mut map = HashMap::new();
+        let mut array = Vec::new();
 
-        for (k, &(a, ref v)) in &owned.0 {
-            map.insert(k.deref(), (a, v.deref()));
+        for &(ref k, a, ref v) in &owned.0 {
+            array.push((k.deref(), a, v.deref()));
         }
 
-        PropertyBag(map)
+        PropertyBag(array)
     }
 
     pub fn to_owned(&self) -> OwnedPropertyBag {
-        let mut map = HashMap::<CString, (Attribute, CString)>::new();
+        let mut array = Vec::<(CString, Attribute, CString)>::new();
 
-        for (k, &(a, v)) in &self.0 {
-            map.insert((*k).to_owned(), (a, (*v).to_owned()));
+        for &(ref k, a, ref v) in &self.0 {
+            array.push(((*k).to_owned(), a, (*v).to_owned()));
         }
 
-        OwnedPropertyBag(map)
+        OwnedPropertyBag(array)
     }
 
     pub fn ffi(&self) -> *const PropertyBag {
@@ -113,7 +132,7 @@ impl<'a> Iterator for PropertyBagCStrIter<'a> {
     type Item = (&'a CStr, Attribute, &'a CStr);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, &(a, v))| (*k, a, v))
+        self.0.next().map(|&(k, a, v)| (k, a, v))
     }
 }
 
