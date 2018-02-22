@@ -37,6 +37,7 @@ AC_SUBST([LIBRSVG_MINOR_VERSION],[rsvg_minor_version])
 AC_SUBST([LIBRSVG_MICRO_VERSION],[rsvg_micro_version])
 
 dnl ===========================================================================
+dnl Please update COMPILING.md with version numbers if these change
 
 CAIRO_REQUIRED=1.15.4
 CROCO_REQUIRED=0.6.1

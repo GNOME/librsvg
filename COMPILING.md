@@ -15,54 +15,81 @@ There are generic compilation/installation instructions in the
 [`INSTALL`][install] file, which comes from Autotools.  The following
 explains librsvg's peculiarities.
 
+* [Installing dependencies for building](#installing-dependencies-for-building)
 * [Verbosity](#verbosity)
 * [Debug or release builds](#debug-or-release-builds)
 * [Cross-compilation](#cross-compilation)
 * [Building with no network access](#building-with-no-network-access)
 
-# Building Enviroment Depenancies:
+# Installing dependencies for building
 
-* Gtk+ >= 3.10
-* Rust >= "1.21"
+To compile librsvg, you need the following packages installed.  The
+minimum version is listed here; you may use a newer version instead.
 
-### Debian based systems:
-librsvg can not be built in `debian stable` and `ubuntu 16.04`, due to some of the dependancies provided being old.
+**Compilers:**
 
-**Build depenancies on Debian Testing:**
+* a C compiler and `make` tool; we recommend GNU `make`.
+* rust 1.21
+* cargo
+
+**Mandatory dependencies:**
+
+* Cairo 1.15.4 with PNG support
+* Freetype2 2.8.0
+* Libcroco 0.6.1
+* Gdk-pixbuf 2.20.0
+* GIO 2.24.0
+* GObject-Introspection 0.10.8
+* Libxml2 2.9.0
+* Pango 1.38.0
+
+**Optional dependencies:**
+
+* GTK+ 3.10.0 if you want the `rsvg-view-3` program
+
+The following sections describe how to install these dependencies on
+several systems.
+
+### Debian based systems
+
+As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
+`ubuntu 16.04`, as they have packages that are too old.
+
+**Build dependencies on Debian Testing:**
 
 ```sh
-apt install -y gcc make rustc cargo \
+apt-get install -y gcc make rustc cargo \
 automake autoconf libtool gettext itstool \
 libgdk-pixbuf2.0-dev libgirepository1.0-dev \
-gtk-doc-tools git  libgtk-3-dev \
+gtk-doc-tools git libgtk-3-dev \
 libxml2-dev libcroco3-dev libcairo2-dev libpango1.0-dev
 ```
 
-**Build dependancies Ubuntu on 18.04 or newer:**
+**Build dependencies on Ubuntu 18.04 or newer:**
 
-Currently you will need to install `rustc` and `cargo` with [rustup.rs](https://rustup.rs)
-due to the `rustc` package provided from the ubuntu repo being old. This should not be the case
-once 18.04 is release.
+As of 2018/Feb/22 you will need to install `rustc` and `cargo` with
+[rustup.rs](https://rustup.rs), as the `rustc` package from Ubuntu is
+too old.  Please follow the instructions there to install Rust and Cargo.
 
 ```sh
-apt install -y gcc make \
+apt-get install -y gcc make \
 automake autoconf libtool gettext itstool \
 libgdk-pixbuf2.0-dev libgirepository1.0-dev \
-gtk-doc-tools git  libgtk-3-dev \
+gtk-doc-tools git libgtk-3-dev \
 libxml2-dev libcroco3-dev libcairo2-dev libpango1.0-dev
 ```
 
-### Fedora based systems:
+### Fedora based systems
 
 ```sh
 dnf install -y gcc rust rust-std-static cargo make \
 automake autoconf libtool gettext itstool \
 gdk-pixbuf2-devel gobject-introspection-devel \
-gtk-doc git redhat-rpm-config  gtk3-devel \
+gtk-doc git redhat-rpm-config gtk3-devel \
 libxml2-devel libcroco-devel cairo-devel pango-devel
 ```
 
-### openSUSE based systems:
+### openSUSE based systems
 
 ```sh
 zypper install -y gcc rust rust-std cargo make \
@@ -138,7 +165,7 @@ Rust, you have to do this:
 
 2. Set the environment variable `RUST_TARGET_PATH` to its directory
    for the `make` command.
-   
+
 Example:
 
 ```sh
