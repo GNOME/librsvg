@@ -8,7 +8,7 @@ use std::collections::hash_map;
 use std::ffi::{CStr, CString};
 use std::ops::Deref;
 use std::ptr;
-use std::str::FromStr;
+use std::str::{self, FromStr};
 
 use attributes::Attribute;
 
@@ -19,6 +19,19 @@ pub struct OwnedPropertyBag(HashMap<CString, (Attribute, CString)>);
 pub struct PropertyBagIter<'a>(PropertyBagCStrIter<'a>);
 
 pub struct PropertyBagCStrIter<'a>(hash_map::Iter<'a, &'a CStr, (Attribute, &'a CStr)>);
+
+trait Utf8CStrToStr {
+    fn to_str_utf8(&self) -> &str;
+}
+
+impl Utf8CStrToStr for CStr {
+    fn to_str_utf8(&self) -> &str {
+        // We can *only* do this when the CStr comes from a C string that was validated
+        // as UTF-8 on the C side of things.  In our case, the C strings from libxml2 and
+        // are valid UTF-8.
+        unsafe { str::from_utf8_unchecked(self.to_bytes()) }
+    }
+}
 
 impl<'a> PropertyBag<'a> {
     pub unsafe fn new_from_key_value_pairs(pairs: *const *const libc::c_char) -> PropertyBag<'a> {
@@ -37,7 +50,7 @@ impl<'a> PropertyBag<'a> {
 
                     // We silently drop unknown attributes.  New attributes should be added in
                     // build.rs.
-                    if let Ok(attr) = Attribute::from_str(key_str.to_str().unwrap()) {
+                    if let Ok(attr) = Attribute::from_str(key_str.to_str_utf8()) {
                         map.insert(key_str, (attr, val_str));
                     }
                 } else {
@@ -92,7 +105,7 @@ impl<'a> Iterator for PropertyBagIter<'a> {
     type Item = (&'a str, Attribute, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, a, v)| (k.to_str().unwrap(), a, v.to_str().unwrap()))
+        self.0.next().map(|(k, a, v)| (k.to_str_utf8(), a, v.to_str_utf8()))
     }
 }
 
@@ -242,8 +255,8 @@ mod tests {
                                                     &mut key as *mut _,
                                                     &mut att as *mut _,
                                                     &mut val as *mut _)) {
-            let k = unsafe { CStr::from_ptr(key).to_str().unwrap() };
-            let v = unsafe { CStr::from_ptr(val).to_str().unwrap() };
+            let k = unsafe { CStr::from_ptr(key).to_str_utf8() };
+            let v = unsafe { CStr::from_ptr(val).to_str_utf8() };
 
             if k == "rx" {
                 assert!(att == Attribute::Rx);
