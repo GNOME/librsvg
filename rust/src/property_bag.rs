@@ -79,15 +79,6 @@ impl<'a> PropertyBag<'a> {
         self.0.len()
     }
 
-    pub fn lookup_cstr(&self, key: &CStr) -> Option<(Attribute, &CStr)> {
-        self.0.get(key).map(|&(a, v)| (a, v))
-    }
-
-    pub fn lookup(&self, key: &str) -> Option<(Attribute, &str)> {
-        let k = CString::new(key).unwrap();
-        self.lookup_cstr(&k).map(|(a, v)| (a, v.to_str().unwrap()))
-    }
-
     pub fn iter(&self) -> PropertyBagIter {
         PropertyBagIter(self.cstr_iter())
     }
@@ -123,19 +114,6 @@ pub extern fn rsvg_property_bag_new<'a>(atts: *const *const libc::c_char) -> *co
 pub extern fn rsvg_property_bag_free(pbag: *mut PropertyBag) {
     unsafe {
         let _ = Box::from_raw(pbag);
-    }
-}
-
-#[no_mangle]
-pub extern fn rsvg_property_bag_lookup(pbag: *const PropertyBag,
-                                       raw_key: *const libc::c_char) -> *const libc::c_char {
-    unsafe {
-        let pbag = &*pbag;
-        let key = CStr::from_ptr(raw_key);
-        match pbag.lookup_cstr(key) {
-            Some((_, v)) => v.as_ptr(),
-            None => ptr::null()
-        }
     }
 }
 
@@ -193,7 +171,7 @@ mod tests {
     }
 
     #[test]
-    fn property_bag_lookups_and_iters() {
+    fn property_bag_iters() {
         let pairs = [
             CString::new("rx").unwrap(),
             CString::new("1").unwrap(),
@@ -210,10 +188,6 @@ mod tests {
         v.push(ptr::null());
 
         let pbag = unsafe { PropertyBag::new_from_key_value_pairs(v.as_ptr()) };
-
-        assert_eq!(pbag.lookup("rx"), Some((Attribute::Rx, "1")));
-        assert_eq!(pbag.lookup("ry"), Some((Attribute::Ry, "2")));
-        assert_eq!(pbag.lookup("stdDeviation"), None);
 
         let mut had_rx: bool = false;
         let mut had_ry: bool = false;
