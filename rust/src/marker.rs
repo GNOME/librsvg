@@ -567,7 +567,7 @@ fn bisect_angles (incoming: f64, outgoing: f64) -> f64 {
 }
 
 // From SVG's marker-start, marker-mid, marker-end properties
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 enum MarkerType {
     Start,
     Middle,
@@ -608,6 +608,7 @@ fn get_marker_name_from_drawing_ctx (draw_ctx:    *const RsvgDrawingCtx,
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
 enum MarkerEndpoint {
     Start,
     End
