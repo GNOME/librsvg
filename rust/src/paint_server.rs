@@ -233,10 +233,10 @@ pub extern "C" fn _set_source_rsvg_paint_server(
                         node,
                         c_ctx,
                         opacity,
-                        c_bbox,
+                        &c_bbox,
                     );
                 } else if node.get_type() == NodeType::Pattern {
-                    had_paint_server = pattern::pattern_resolve_fallbacks_and_set_pattern(node, c_ctx, c_bbox);
+                    had_paint_server = pattern::pattern_resolve_fallbacks_and_set_pattern(node, c_ctx, &c_bbox);
                 }
             }
 

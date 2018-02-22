@@ -684,7 +684,7 @@ pub extern fn rsvg_node_radial_gradient_new (_: *const libc::c_char, raw_parent:
 fn resolve_fallbacks_and_set_pattern (gradient: &Gradient,
                                       draw_ctx: *mut RsvgDrawingCtx,
                                       opacity:  u8,
-                                      bbox:     RsvgBbox) -> bool {
+                                      bbox:     &RsvgBbox) -> bool {
     let mut fallback_source = NodeFallbackSource::new (draw_ctx);
 
     if bbox.is_empty() {
@@ -699,14 +699,14 @@ fn resolve_fallbacks_and_set_pattern (gradient: &Gradient,
 pub fn gradient_resolve_fallbacks_and_set_pattern (node:     &RsvgNode,
                                                    draw_ctx: *mut RsvgDrawingCtx,
                                                    opacity:  u8,
-                                                   bbox:     RsvgBbox) -> bool {
+                                                   bbox:     &RsvgBbox) -> bool {
     assert! (node.get_type () == NodeType::LinearGradient || node.get_type () == NodeType::RadialGradient);
 
     let mut did_set_gradient = false;
 
     node.with_impl (|node_gradient: &NodeGradient| {
         let gradient = node_gradient.get_gradient_with_color_stops_from_node (node);
-        did_set_gradient = resolve_fallbacks_and_set_pattern (&gradient, draw_ctx, opacity, bbox);
+        did_set_gradient = resolve_fallbacks_and_set_pattern (&gradient, draw_ctx, opacity, &bbox);
     });
 
     did_set_gradient

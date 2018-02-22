@@ -464,12 +464,12 @@ fn set_pattern_on_draw_context (pattern: &Pattern,
 
 fn resolve_fallbacks_and_set_pattern (pattern:  &Pattern,
                                       draw_ctx: *mut RsvgDrawingCtx,
-                                      bbox:     RsvgBbox) -> bool {
+                                      bbox:     &RsvgBbox) -> bool {
     let mut fallback_source = NodeFallbackSource::new (draw_ctx);
 
     let resolved = resolve_pattern (pattern, &mut fallback_source);
 
-    set_pattern_on_draw_context (&resolved, draw_ctx, &bbox)
+    set_pattern_on_draw_context (&resolved, draw_ctx, bbox)
 }
 
 #[no_mangle]
@@ -481,7 +481,7 @@ pub extern fn rsvg_node_pattern_new (_: *const libc::c_char, raw_parent: *const 
 
 pub fn pattern_resolve_fallbacks_and_set_pattern (node: &RsvgNode,
                                                   draw_ctx: *mut RsvgDrawingCtx,
-                                                  bbox:     RsvgBbox) -> bool {
+                                                  bbox: &RsvgBbox) -> bool {
     assert! (node.get_type () == NodeType::Pattern);
 
     let mut did_set_pattern = false;

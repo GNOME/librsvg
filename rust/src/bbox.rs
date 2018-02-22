@@ -7,6 +7,7 @@ use util::*;
 
 /* Keep this in sync with ../../rsvg-private.h:RsvgBbox */
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct RsvgBbox {
     pub rect:   cairo::Rectangle,
     pub affine: cairo::Matrix,
