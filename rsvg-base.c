@@ -692,68 +692,91 @@ static void
 rsvg_start_xinclude (RsvgHandle *handle, RsvgPropertyBag * atts)
 {
     RsvgSaxHandlerXinclude *handler;
-    const char *href, *parse;
+    const char *href = NULL;
+    const char *parse = NULL;
+    const char *encoding = NULL;
     gboolean success = FALSE;
 
-    href = rsvg_property_bag_lookup (atts, "href");
-    if (href == NULL)
-        goto fallback;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
+    const char *value;
 
-    parse = rsvg_property_bag_lookup (atts, "parse");
-    if (parse && !strcmp (parse, "text")) {
-        char *data;
-        gsize data_len;
-        const char *encoding;
+    iter = rsvg_property_bag_iter_begin (atts);
 
-        data = _rsvg_handle_acquire_data (handle, href, NULL, &data_len, NULL);
-        if (data == NULL)
-            goto fallback;
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_HREF:
+            href = value;
+            break;
 
-        encoding = rsvg_property_bag_lookup (atts, "encoding");
-        if (encoding && g_ascii_strcasecmp (encoding, "UTF-8") != 0) {
-            char *text_data;
-            gsize text_data_len;
+        case RSVG_ATTRIBUTE_PARSE:
+            parse = value;
+            break;
 
-            text_data = g_convert (data, data_len, "utf-8", encoding, NULL,
-                                   &text_data_len, NULL);
-            g_free (data);
+        case RSVG_ATTRIBUTE_ENCODING:
+            encoding = value;
+            break;
 
-            data = text_data;
-            data_len = text_data_len;
+        default:
+            break;
         }
-
-        rsvg_characters_impl (handle, data, data_len);
-
-        g_free (data);
-    } else {
-        /* xml */
-        GInputStream *stream;
-        GError *err = NULL;
-        xmlParserCtxtPtr xml_parser;
-
-        stream = _rsvg_handle_acquire_stream (handle, href, NULL, NULL);
-        if (stream == NULL)
-            goto fallback;
-
-        xml_parser = create_xml_stream_parser (handle,
-                                               stream,
-                                               NULL, /* cancellable */
-                                               &err);
-
-        g_object_unref (stream);
-
-        if (xml_parser) {
-            (void) xmlParseDocument (xml_parser);
-
-            xml_parser = rsvg_free_xml_parser_and_doc (xml_parser);
-        }
-
-        g_clear_error (&err);
     }
 
-    success = TRUE;
+    rsvg_property_bag_iter_end (iter);
 
-  fallback:
+    if (href) {
+        if (parse && !strcmp (parse, "text")) {
+            char *data;
+            gsize data_len;
+
+            data = _rsvg_handle_acquire_data (handle, href, NULL, &data_len, NULL);
+            if (data) {
+                if (encoding && g_ascii_strcasecmp (encoding, "UTF-8") != 0) {
+                    char *text_data;
+                    gsize text_data_len;
+
+                    text_data = g_convert (data, data_len, "utf-8", encoding, NULL,
+                                           &text_data_len, NULL);
+                    g_free (data);
+
+                    data = text_data;
+                    data_len = text_data_len;
+                }
+
+                rsvg_characters_impl (handle, data, data_len);
+
+                g_free (data);
+
+                success = TRUE;
+            }
+        } else {
+            /* xml */
+            GInputStream *stream;
+            GError *err = NULL;
+            xmlParserCtxtPtr xml_parser;
+
+            stream = _rsvg_handle_acquire_stream (handle, href, NULL, NULL);
+            if (stream) {
+                xml_parser = create_xml_stream_parser (handle,
+                                                       stream,
+                                                       NULL, /* cancellable */
+                                                       &err);
+
+                g_object_unref (stream);
+
+                if (xml_parser) {
+                    (void) xmlParseDocument (xml_parser);
+
+                    xml_parser = rsvg_free_xml_parser_and_doc (xml_parser);
+                }
+
+                g_clear_error (&err);
+
+                success = TRUE;
+            }
+        }
+    }
 
     /* needed to handle xi:fallback */
     handler = g_new0 (RsvgSaxHandlerXinclude, 1);
