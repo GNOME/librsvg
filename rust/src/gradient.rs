@@ -238,7 +238,7 @@ impl GradientVariant {
             },
         }
 
-        if let &mut GradientVariant::Radial { cx, cy, ref mut fx, ref mut fy, .. } = self {
+        if let GradientVariant::Radial { cx, cy, ref mut fx, ref mut fy, .. } = *self {
             // fx and fy fall back to the presentational value of cx and cy
             fallback_to!(*fx, cx);
             fallback_to!(*fy, cy);
