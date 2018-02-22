@@ -586,7 +586,7 @@ fn emit_marker_by_name (draw_ctx:       *const RsvgDrawingCtx,
 
     let name = unsafe { utf8_cstr(marker_name) };
 
-    let c_node = drawing_ctx::acquire_node_of_type (draw_ctx, &name, NodeType::Marker);
+    let c_node = drawing_ctx::acquire_node_of_type (draw_ctx, name, NodeType::Marker);
 
     if c_node.is_null () {
         return;

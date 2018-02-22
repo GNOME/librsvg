@@ -406,7 +406,7 @@ pub extern fn rsvg_parse_stroke_dasharray(string: *const libc::c_char) -> RsvgSt
         Ok(StrokeDasharray::Dasharray(ref v)) => RsvgStrokeDasharray {
             kind: RsvgStrokeDasharrayKind::Dashes,
             num_dashes: v.len(),
-            dashes: to_c_array(&v)
+            dashes: to_c_array(v)
         },
 
         Err(_) => RsvgStrokeDasharray {
