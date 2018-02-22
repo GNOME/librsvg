@@ -318,7 +318,7 @@ impl Gradient {
                                              (f64::from((rgba >> 24) & 0xff)) / 255.0,
                                              (f64::from((rgba >> 16) & 0xff))  / 255.0,
                                              (f64::from((rgba >> 8) & 0xff))  / 255.0,
-                                             f64::from(((rgba >> 0) & 0xff) * u32::from(opacity)) / 255.0 / 255.0);
+                                             f64::from((rgba & 0xff) * u32::from(opacity)) / 255.0 / 255.0);
             }
         }
     }
