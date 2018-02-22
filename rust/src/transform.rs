@@ -83,22 +83,22 @@ fn parse_transform_function(name: &str, parser: &mut Parser) -> Result<cairo::Ma
 
 fn parse_matrix_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
     parser.parse_nested_block(|p| {
-        let xx = p.expect_number()? as f64;
+        let xx = f64::from(p.expect_number()?);
         optional_comma(p);
 
-        let yx = p.expect_number()? as f64;
+        let yx = f64::from(p.expect_number()?);
         optional_comma(p);
 
-        let xy = p.expect_number()? as f64;
+        let xy = f64::from(p.expect_number()?);
         optional_comma(p);
 
-        let yy = p.expect_number()? as f64;
+        let yy = f64::from(p.expect_number()?);
         optional_comma(p);
 
-        let x0 = p.expect_number()? as f64;
+        let x0 = f64::from(p.expect_number()?);
         optional_comma(p);
 
-        let y0 = p.expect_number()? as f64;
+        let y0 = f64::from(p.expect_number()?);
 
         Ok(cairo::Matrix::new(xx, yx, xy, yy, x0, y0))
     }).map_err(CssParseError::<()>::basic)
@@ -107,43 +107,43 @@ fn parse_matrix_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeErro
 
 fn parse_translate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
     parser.parse_nested_block(|p| {
-        let tx = p.expect_number()?;
+        let tx = f64::from(p.expect_number()?);
 
-        let ty = p.try(|p| -> Result<f32, CssParseError<()>> {
+        let ty = f64::from(p.try(|p| -> Result<f32, CssParseError<()>> {
             optional_comma(p);
             Ok(p.expect_number()?)
-        }).unwrap_or(0.0);
+        }).unwrap_or(0.0));
 
-        Ok(cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, tx as f64, ty as f64))
+        Ok(cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, tx, ty))
     }).map_err(CssParseError::<()>::basic)
         .map_err(|e| AttributeError::from(e))
 }
 
 fn parse_scale_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
     parser.parse_nested_block(|p| {
-        let x = p.expect_number()?;
+        let x = f64::from(p.expect_number()?);
 
         let y = p.try(|p| -> Result<f32, CssParseError<()>> {
             optional_comma(p);
             Ok(p.expect_number()?)
-        }).unwrap_or(x);
+        }).map(f64::from).unwrap_or(x);
 
-        Ok(cairo::Matrix::new(x as f64, 0.0, 0.0, y as f64, 0.0, 0.0))
+        Ok(cairo::Matrix::new(x, 0.0, 0.0, y, 0.0, 0.0))
     }).map_err(CssParseError::<()>::basic)
         .map_err(|e| AttributeError::from(e))
 }
 
 fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
     parser.parse_nested_block(|p| {
-        let angle = p.expect_number()? as f64 * PI / 180.0;
+        let angle = f64::from(p.expect_number()?) * PI / 180.0;
         let (s, c) = angle.sin_cos();
 
         let (tx, ty) = p.try(|p| -> Result<_, CssParseError<()>> {
             optional_comma(p);
-            let tx = p.expect_number()? as f64;
+            let tx = f64::from(p.expect_number()?);
 
             optional_comma(p);
-            let ty = p.expect_number()? as f64;
+            let ty = f64::from(p.expect_number()?);
 
             Ok((tx, ty))
         }).unwrap_or((0.0, 0.0));
@@ -159,7 +159,7 @@ fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeErro
 
 fn parse_skewx_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
     parser.parse_nested_block(|p| {
-        let a = p.expect_number()? as f64 * PI / 180.0;
+        let a = f64::from(p.expect_number()?) * PI / 180.0;
         Ok(cairo::Matrix::new (1.0,      0.0,
                                a.tan (), 1.0,
                                0.0, 0.0))
@@ -169,7 +169,7 @@ fn parse_skewx_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError
 
 fn parse_skewy_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
     parser.parse_nested_block(|p| {
-        let a = p.expect_number()? as f64 * PI / 180.0;
+        let a = f64::from(p.expect_number()?) * PI / 180.0;
         Ok(cairo::Matrix::new (1.0,  a.tan (),
                                0.0,  1.0,
                                0.0, 0.0))
