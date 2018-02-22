@@ -199,16 +199,12 @@ G_GNUC_INTERNAL
 void rsvg_state_reinit      (RsvgState * state);
 G_GNUC_INTERNAL
 void rsvg_state_clone       (RsvgState * dst, const RsvgState * src);
-G_GNUC_INTERNAL
-void rsvg_state_inherit     (RsvgState * dst, const RsvgState * src);
-G_GNUC_INTERNAL
-void rsvg_state_reinherit   (RsvgState * dst, const RsvgState * src);
 
 G_GNUC_INTERNAL
 void rsvg_state_free_all    (RsvgState * state);
 
 G_GNUC_INTERNAL
-void rsvg_parse_style_pairs (RsvgState * state, RsvgPropertyBag * atts);
+void rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts);
 G_GNUC_INTERNAL
 void rsvg_parse_style	    (RsvgState *state, const char *str);
 G_GNUC_INTERNAL

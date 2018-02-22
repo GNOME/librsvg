@@ -3,6 +3,7 @@ use libc;
 use std::cell::RefCell;
 use std::cell::Cell;
 
+use attributes::Attribute;
 use drawing_ctx;
 use drawing_ctx::*;
 use error::*;
@@ -10,10 +11,10 @@ use handle::RsvgHandle;
 use length::*;
 use marker;
 use node::*;
-use parsers;
+use parsers::{self, parse};
 use path_builder::*;
 use path_parser;
-use property_bag::{self, PropertyBag};
+use property_bag::PropertyBag;
 use state::RsvgState;
 
 fn render_path_builder (builder:  &RsvgPathBuilder,
@@ -88,15 +89,17 @@ impl NodePath {
 
 impl NodeTrait for NodePath {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        if let Some (value) = pbag.lookup("d") {
-            let mut builder = RsvgPathBuilder::new ();
+        for (_key, attr, value) in pbag.iter() {
+            if attr == Attribute::D {
+                let mut builder = RsvgPathBuilder::new ();
 
-            if path_parser::parse_path_into_builder (&value, &mut builder).is_err() {
-                // FIXME: we don't propagate errors upstream, but creating a partial
-                // path is OK per the spec
+                if path_parser::parse_path_into_builder (&value, &mut builder).is_err() {
+                    // FIXME: we don't propagate errors upstream, but creating a partial
+                    // path is OK per the spec
+                }
+
+                *self.builder.borrow_mut() = Some(builder);
             }
-
-            *self.builder.borrow_mut() = Some(builder);
         }
 
         Ok (())
@@ -137,10 +140,10 @@ impl NodePoly {
 
 impl NodeTrait for NodePoly {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        // support for svg < 1.0 which used verts
+        for (key, attr, value) in pbag.iter() {
+            // support for svg < 1.0 which used verts
 
-        for name in &["verts", "points"] {
-            if let Some (value) = pbag.lookup(name) {
+            if attr == Attribute::Points || attr == Attribute::Verts {
                 let result = parsers::list_of_points (value.trim ());
 
                 match result {
@@ -149,7 +152,7 @@ impl NodeTrait for NodePoly {
                         break;
                     },
 
-                    Err (e) => { return Err (NodeError::parse_error (name, e)); }
+                    Err (e) => { return Err (NodeError::parse_error (key, e)); }
                 }
             }
         }
@@ -204,10 +207,15 @@ impl NodeLine {
 
 impl NodeTrait for NodeLine {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.x1.set (property_bag::parse_or_default (pbag, "x1", LengthDir::Horizontal, None)?);
-        self.y1.set (property_bag::parse_or_default (pbag, "y1", LengthDir::Vertical, None)?);
-        self.x2.set (property_bag::parse_or_default (pbag, "x2", LengthDir::Horizontal, None)?);
-        self.y2.set (property_bag::parse_or_default (pbag, "y2", LengthDir::Vertical, None)?);
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::X1 => self.x1.set(parse("x1", value, LengthDir::Horizontal, None)?),
+                Attribute::Y1 => self.y1.set(parse("y1", value, LengthDir::Vertical, None)?),
+                Attribute::X2 => self.x2.set(parse("x2", value, LengthDir::Horizontal, None)?),
+                Attribute::Y2 => self.y2.set(parse("y2", value, LengthDir::Vertical, None)?),
+                _ => ()
+            }
+        }
 
         Ok (())
     }
@@ -261,13 +269,25 @@ impl NodeRect {
 
 impl NodeTrait for NodeRect {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal, None)?);
-        self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical, None)?);
-        self.w.set (property_bag::parse_or_default (pbag, "width", LengthDir::Horizontal, None)?);
-        self.h.set (property_bag::parse_or_default (pbag, "height", LengthDir::Vertical, None)?);
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::X      => self.x.set (parse ("x", value, LengthDir::Horizontal, None)?),
+                Attribute::Y      => self.y.set (parse ("y", value, LengthDir::Vertical, None)?),
+                Attribute::Width  => self.w.set (parse ("width", value, LengthDir::Horizontal,
+                                                        Some(RsvgLength::check_nonnegative))?),
+                Attribute::Height => self.h.set (parse ("height", value, LengthDir::Vertical,
+                                                        Some(RsvgLength::check_nonnegative))?),
 
-        self.rx.set (property_bag::parse_or_none (pbag, "rx", LengthDir::Horizontal, None)?);
-        self.ry.set (property_bag::parse_or_none (pbag, "ry", LengthDir::Vertical, None)?);
+                Attribute::Rx => self.rx.set (parse ("rx", value, LengthDir::Horizontal,
+                                                     Some(RsvgLength::check_nonnegative))
+                                              .map(Some)?),
+                Attribute::Ry => self.ry.set (parse ("ry", value, LengthDir::Vertical,
+                                                     Some(RsvgLength::check_nonnegative))
+                                              .map(Some)?),
+
+                _ => (),
+            }
+        }
 
         Ok (())
     }
@@ -436,11 +456,16 @@ impl NodeCircle {
 
 impl NodeTrait for NodeCircle {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.cx.set (property_bag::parse_or_default (pbag, "cx", LengthDir::Horizontal, None)?);
-        self.cy.set (property_bag::parse_or_default (pbag, "cy", LengthDir::Vertical, None)?);
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal, None)?),
+                Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
+                Attribute::R  => self.r.set (parse("r",  value, LengthDir::Both,
+                                                   Some(RsvgLength::check_nonnegative))?),
 
-        self.r.set  (property_bag::parse_or_default (pbag, "r", LengthDir::Both,
-                                                     Some(RsvgLength::check_nonnegative))?);
+                _ => (),
+            }
+        }
 
         Ok (())
     }
@@ -480,14 +505,19 @@ impl NodeEllipse {
 
 impl NodeTrait for NodeEllipse {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.cx.set (property_bag::parse_or_default (pbag, "cx", LengthDir::Horizontal, None)?);
-        self.cy.set (property_bag::parse_or_default (pbag, "cy", LengthDir::Vertical, None)?);
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal, None)?),
+                Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
 
-        self.rx.set (property_bag::parse_or_default (pbag, "rx", LengthDir::Horizontal,
-                                                     Some(RsvgLength::check_nonnegative))?);
+                Attribute::Rx => self.rx.set(parse("rx", value, LengthDir::Horizontal,
+                                                   Some(RsvgLength::check_nonnegative))?),
+                Attribute::Ry => self.ry.set(parse("ry", value, LengthDir::Vertical,
+                                                   Some(RsvgLength::check_nonnegative))?),
 
-        self.ry.set (property_bag::parse_or_default (pbag, "ry", LengthDir::Vertical,
-                                                     Some(RsvgLength::check_nonnegative))?);
+                _ => (),
+            }
+        }
 
         Ok (())
     }

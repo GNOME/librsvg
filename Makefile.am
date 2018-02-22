@@ -24,6 +24,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	librsvg-enum-types.h	\
 	librsvg-features.c 	\
 	librsvg-features.h 	\
+	rsvg-attributes.h	\
 	rsvg-base-file-util.c 	\
 	rsvg-base.c		\
 	rsvg-cairo-clip.c	\
@@ -64,7 +65,9 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 
 RUST_SOURCES =					\
 	rust/Cargo.toml				\
+	rust/build.rs				\
 	rust/src/aspect_ratio.rs		\
+	rust/src/attributes.rs			\
 	rust/src/bbox.rs			\
 	rust/src/chars.rs			\
 	rust/src/clip_path.rs			\

@@ -1,12 +1,11 @@
 use cairo;
-use glib_sys;
-use glib::translate::*;
 use libc;
 
 use std::cell::RefCell;
 
 use cairo::MatrixTrait;
 
+use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
 use drawing_ctx;
@@ -15,8 +14,8 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use paint_server::*;
-use parsers::Parse;
-use property_bag::{self, PropertyBag};
+use parsers::{Parse, parse};
+use property_bag::PropertyBag;
 use stop::*;
 use util::*;
 
@@ -69,11 +68,11 @@ struct Gradient {
 impl Default for GradientCommon {
     fn default () -> GradientCommon {
         GradientCommon {
-            units:    None,
-            affine:   None,
-            spread:   None,
+            units:    Some(GradientUnits::default()),
+            affine:   Some(cairo::Matrix::identity()),
+            spread:   Some(PaintServerSpread::default()),
             fallback: None,
-            stops:    None,
+            stops:    Some(Vec::<ColorStop>::new()),
         }
     }
 }
@@ -102,6 +101,16 @@ macro_rules! fallback_to (
 );
 
 impl GradientCommon {
+    fn unresolved() -> GradientCommon {
+        GradientCommon {
+            units:    None,
+            affine:   None,
+            spread:   None,
+            fallback: None,
+            stops:    None,
+        }
+    }
+
     fn clone_stops (&self) -> Option<Vec<ColorStop>> {
         if let Some (ref stops) = self.stops {
             Some (stops.clone ())
@@ -114,18 +123,11 @@ impl GradientCommon {
         self.units.is_some() &&
             self.affine.is_some () &&
             self.spread.is_some () &&
-            self.stops.is_some ()
+            self.stops.is_some()
     }
 
     fn resolve_from_defaults (&mut self) {
-        /* These are per the spec */
-
-        fallback_to! (self.units,  Some (GradientUnits::default ()));
-        fallback_to! (self.affine, Some (cairo::Matrix::identity ()));
-        fallback_to! (self.spread, Some (PaintServerSpread::default ()));
-        fallback_to! (self.stops,  Some (Vec::<ColorStop>::new ())); // empty array of color stops
-
-        self.fallback = None;
+        self.resolve_from_fallback(&GradientCommon::default());
     }
 
     fn resolve_from_fallback (&mut self, fallback: &GradientCommon) {
@@ -162,6 +164,25 @@ impl GradientCommon {
 }
 
 impl GradientVariant {
+    fn unresolved_linear() -> Self {
+        GradientVariant::Linear {
+            x1: None,
+            y1: None,
+            x2: None,
+            y2: None,
+        }
+    }
+
+    fn unresolved_radial() -> Self {
+        GradientVariant::Radial {
+            cx: None,
+            cy: None,
+            r:  None,
+            fx: None,
+            fy: None,
+        }
+    }
+
     fn is_resolved (&self) -> bool {
         match *self {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
@@ -181,28 +202,46 @@ impl GradientVariant {
         }
     }
 
+    fn default_linear() -> Self {
+        // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
+
+        GradientVariant::Linear {
+            x1: Some(RsvgLength::parse("0%", LengthDir::Horizontal).unwrap()),
+            y1: Some(RsvgLength::parse("0%", LengthDir::Vertical).unwrap()),
+            x2: Some(RsvgLength::parse("100%", LengthDir::Horizontal).unwrap()),
+            y2: Some(RsvgLength::parse("0%", LengthDir::Vertical).unwrap()),
+        }
+    }
+
+    fn default_radial() -> Self {
+        // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
+
+        GradientVariant::Radial {
+            cx: Some(RsvgLength::parse("50%", LengthDir::Horizontal).unwrap()),
+            cy: Some(RsvgLength::parse("50%", LengthDir::Vertical).unwrap()),
+            r:  Some(RsvgLength::parse("50%", LengthDir::Both).unwrap()),
+
+            fx: None,
+            fy: None,
+        }
+    }
+
     fn resolve_from_defaults (&mut self) {
         /* These are per the spec */
 
         match *self {
-            // https://www.w3.org/TR/SVG/pservers.html#LinearGradients
-            GradientVariant::Linear { ref mut x1, ref mut y1, ref mut x2, ref mut y2 } => {
-                fallback_to! (*x1, Some (RsvgLength::parse ("0%", LengthDir::Horizontal).unwrap ()));
-                fallback_to! (*y1, Some (RsvgLength::parse ("0%", LengthDir::Vertical).unwrap ()));
-                fallback_to! (*x2, Some (RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap ()));
-                fallback_to! (*y2, Some (RsvgLength::parse ("0%", LengthDir::Vertical).unwrap ()));
+            GradientVariant::Linear { .. } =>
+                self.resolve_from_fallback(&GradientVariant::default_linear()),
+
+            GradientVariant::Radial { .. } => {
+                self.resolve_from_fallback(&GradientVariant::default_radial());
             },
+        }
 
-            // https://www.w3.org/TR/SVG/pservers.html#RadialGradients
-            GradientVariant::Radial { ref mut cx, ref mut cy, ref mut r, ref mut fx, ref mut fy } => {
-                fallback_to! (*cx, Some (RsvgLength::parse ("50%", LengthDir::Horizontal).unwrap ()));
-                fallback_to! (*cy, Some (RsvgLength::parse ("50%", LengthDir::Vertical).unwrap ()));
-                fallback_to! (*r,  Some (RsvgLength::parse ("50%", LengthDir::Both).unwrap ()));
-
-                /* fx and fy fall back to the presentational value of cx and cy */
-                fallback_to! (*fx, *cx);
-                fallback_to! (*fy, *cy);
-            }
+        if let &mut GradientVariant::Radial { cx, cy, ref mut fx, ref mut fy, .. } = self {
+            // fx and fy fall back to the presentational value of cx and cy
+            fallback_to!(*fx, cx);
+            fallback_to!(*fy, cy);
         }
     }
 
@@ -272,15 +311,15 @@ impl Gradient {
     fn add_color_stops_to_pattern (&self,
                                    pattern:  &mut cairo::Gradient,
                                    opacity:  u8) {
-        let stops = self.common.stops.as_ref ().unwrap ();
-
-        for stop in stops {
-            let rgba = stop.rgba;
-            pattern.add_color_stop_rgba (stop.offset,
-                                         (f64::from((rgba >> 24) & 0xff)) / 255.0,
-                                         (f64::from((rgba >> 16) & 0xff))  / 255.0,
-                                         (f64::from((rgba >> 8) & 0xff))  / 255.0,
-                                         f64::from(((rgba >> 0) & 0xff) * u32::from(opacity)) / 255.0 / 255.0);
+        if let Some(stops) = self.common.stops.as_ref () {
+            for stop in stops {
+                let rgba = stop.rgba;
+                pattern.add_color_stop_rgba (stop.offset,
+                                             (f64::from((rgba >> 24) & 0xff)) / 255.0,
+                                             (f64::from((rgba >> 16) & 0xff))  / 255.0,
+                                             (f64::from((rgba >> 8) & 0xff))  / 255.0,
+                                             f64::from(((rgba >> 0) & 0xff) * u32::from(opacity)) / 255.0 / 255.0);
+            }
         }
     }
 }
@@ -522,13 +561,8 @@ impl NodeGradient {
     fn new_linear () -> NodeGradient {
         NodeGradient {
             gradient: RefCell::new (Gradient {
-                common: GradientCommon::default (),
-                variant: GradientVariant::Linear {
-                    x1: None,
-                    y1: None,
-                    x2: None,
-                    y2: None
-                }
+                common: GradientCommon::unresolved (),
+                variant: GradientVariant::unresolved_linear(),
             })
         }
     }
@@ -536,14 +570,8 @@ impl NodeGradient {
     fn new_radial () -> NodeGradient {
         NodeGradient {
             gradient: RefCell::new (Gradient {
-                common: GradientCommon::default (),
-                variant: GradientVariant::Radial {
-                    cx: None,
-                    cy: None,
-                    r:  None,
-                    fx: None,
-                    fy: None
-                }
+                common: GradientCommon::unresolved (),
+                variant: GradientVariant::unresolved_radial(),
             })
         }
     }
@@ -557,35 +585,70 @@ impl NodeGradient {
 
 impl NodeTrait for NodeGradient {
     fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        let mut g = self.gradient.borrow_mut ();
+        let mut g = self.gradient.borrow_mut();
 
-        // Attributes common to linear and radial gradients
+        let mut x1 = None;
+        let mut y1 = None;
+        let mut x2 = None;
+        let mut y2 = None;
 
-        g.common.units    = property_bag::parse_or_none (pbag, "gradientUnits", (), None)?;
-        g.common.affine   = property_bag::parse_or_none (pbag, "gradientTransform", (), None)?;
-        g.common.spread   = property_bag::parse_or_none (pbag, "spreadMethod", (), None)?;
-        g.common.fallback = pbag.lookup("xlink:href").map(|s| s.to_owned());
+        let mut cx = None;
+        let mut cy = None;
+        let mut r  = None;
+        let mut fx = None;
+        let mut fy = None;
 
-        // Attributes specific to each gradient type.  The defaults mandated by the spec
-        // are in GradientVariant::resolve_from_defaults()
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                // Attributes common to linear and radial gradients
+
+                Attribute::GradientUnits =>
+                    g.common.units = Some(parse("gradientUnits", value, (), None)?),
+
+                Attribute::GradientTransform =>
+                    g.common.affine = Some(parse("gradientTransform", value, (), None)?),
+
+                Attribute::SpreadMethod =>
+                    g.common.spread = Some(parse("spreadMethod", value, (), None)?),
+
+                Attribute::XlinkHref =>
+                    g.common.fallback = Some(value.to_owned()),
+
+                // Attributes specific to each gradient type.  The defaults mandated by the spec
+                // are in GradientVariant::resolve_from_defaults()
+
+                Attribute::X1 => x1 = Some(parse("x1", value, LengthDir::Horizontal, None)?),
+                Attribute::Y1 => y1 = Some(parse("y1", value, LengthDir::Vertical, None)?),
+                Attribute::X2 => x2 = Some(parse("x2", value, LengthDir::Horizontal, None)?),
+                Attribute::Y2 => y2 = Some(parse("y2", value, LengthDir::Vertical, None)?),
+
+                Attribute::Cx => cx = Some(parse("cx", value, LengthDir::Horizontal, None)?),
+                Attribute::Cy => cy = Some(parse("cy", value, LengthDir::Vertical, None)?),
+                Attribute::R  => r  = Some(parse("r",  value, LengthDir::Both, None)?),
+                Attribute::Fx => fx = Some(parse("fx", value, LengthDir::Horizontal, None)?),
+                Attribute::Fy => fy = Some(parse("fy", value, LengthDir::Vertical, None)?),
+
+                _ => (),
+            }
+        }
 
         match node.get_type () {
             NodeType::LinearGradient => {
                 g.variant = GradientVariant::Linear {
-                    x1: property_bag::parse_or_none (pbag, "x1", LengthDir::Horizontal, None)?,
-                    y1: property_bag::parse_or_none (pbag, "y1", LengthDir::Vertical, None)?,
-                    x2: property_bag::parse_or_none (pbag, "x2", LengthDir::Horizontal, None)?,
-                    y2: property_bag::parse_or_none (pbag, "y2", LengthDir::Vertical, None)?
+                    x1: x1,
+                    y1: y1,
+                    x2: x2,
+                    y2: y2,
                 };
             },
 
             NodeType::RadialGradient => {
                 g.variant = GradientVariant::Radial {
-                    cx: property_bag::parse_or_none (pbag, "cx", LengthDir::Horizontal, None)?,
-                    cy: property_bag::parse_or_none (pbag, "cy", LengthDir::Vertical, None)?,
-                    r:  property_bag::parse_or_none (pbag, "r",  LengthDir::Both, None)?,
-                    fx: property_bag::parse_or_none (pbag, "fx", LengthDir::Horizontal, None)?,
-                    fy: property_bag::parse_or_none (pbag, "fy", LengthDir::Vertical, None)?
+                    cx: cx,
+                    cy: cy,
+                    r:  r,
+                    fx: fx,
+                    fy: fy,
                 };
             },
 
@@ -633,14 +696,10 @@ fn resolve_fallbacks_and_set_pattern (gradient: &Gradient,
     set_pattern_on_draw_context (&resolved, draw_ctx, opacity, &bbox)
 }
 
-#[no_mangle]
-pub extern fn gradient_resolve_fallbacks_and_set_pattern (raw_node:     *const RsvgNode,
-                                                          draw_ctx:     *mut RsvgDrawingCtx,
-                                                          opacity:      u8,
-                                                          bbox:         RsvgBbox) -> glib_sys::gboolean {
-    assert! (!raw_node.is_null ());
-    let node: &RsvgNode = unsafe { & *raw_node };
-
+pub fn gradient_resolve_fallbacks_and_set_pattern (node:     &RsvgNode,
+                                                   draw_ctx: *mut RsvgDrawingCtx,
+                                                   opacity:  u8,
+                                                   bbox:     RsvgBbox) -> bool {
     assert! (node.get_type () == NodeType::LinearGradient || node.get_type () == NodeType::RadialGradient);
 
     let mut did_set_gradient = false;
@@ -650,5 +709,5 @@ pub extern fn gradient_resolve_fallbacks_and_set_pattern (raw_node:     *const R
         did_set_gradient = resolve_fallbacks_and_set_pattern (&gradient, draw_ctx, opacity, bbox);
     });
 
-    did_set_gradient.to_glib ()
+    did_set_gradient
 }

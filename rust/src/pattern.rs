@@ -1,6 +1,4 @@
 use cairo;
-use glib_sys;
-use glib::translate::*;
 use libc;
 
 use std::cell::RefCell;
@@ -10,6 +8,7 @@ use cairo::MatrixTrait;
 use cairo::Pattern as CairoPattern;
 
 use aspect_ratio::*;
+use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
 use drawing_ctx;
@@ -17,7 +16,8 @@ use drawing_ctx::RsvgDrawingCtx;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use property_bag::{self, PropertyBag};
+use parsers::parse;
+use property_bag::PropertyBag;
 use util::*;
 use viewbox::*;
 
@@ -47,17 +47,19 @@ coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);
 
 impl Default for Pattern {
     fn default () -> Pattern {
+        // These are per the spec
+
         Pattern {
-            units:                 None,
-            content_units:         None,
-            vbox:                  None,
-            preserve_aspect_ratio: None,
-            affine:                None,
+            units:                 Some(PatternUnits::default()),
+            content_units:         Some(PatternContentUnits::default()),
+            vbox:                  Some(None),
+            preserve_aspect_ratio: Some(AspectRatio::default()),
+            affine:                Some(cairo::Matrix::identity()),
             fallback:              None,
-            x:                     None,
-            y:                     None,
-            width:                 None,
-            height:                None,
+            x:                     Some(RsvgLength::default()),
+            y:                     Some(RsvgLength::default()),
+            width:                 Some(RsvgLength::default()),
+            height:                Some(RsvgLength::default()),
             node:                  None
         }
     }
@@ -98,6 +100,22 @@ macro_rules! fallback_to (
 );
 
 impl Pattern {
+    fn unresolved() -> Pattern {
+        Pattern {
+            units:                 None,
+            content_units:         None,
+            vbox:                  None,
+            preserve_aspect_ratio: None,
+            affine:                None,
+            fallback:              None,
+            x:                     None,
+            y:                     None,
+            width:                 None,
+            height:                None,
+            node:                  None,
+        }
+    }
+
     fn is_resolved (&self) -> bool {
         self.units.is_some () &&
             self.content_units.is_some () &&
@@ -112,20 +130,7 @@ impl Pattern {
     }
 
     fn resolve_from_defaults (&mut self) {
-        /* These are per the spec */
-
-        fallback_to! (self.units,                 Some (PatternUnits::default ()));
-        fallback_to! (self.content_units,         Some (PatternContentUnits::default ()));
-        fallback_to! (self.vbox,                  Some (None));
-        fallback_to! (self.preserve_aspect_ratio, Some (AspectRatio::default ()));
-        fallback_to! (self.affine,                Some (cairo::Matrix::identity ()));
-
-        fallback_to! (self.x,                     Some (RsvgLength::default ()));
-        fallback_to! (self.y,                     Some (RsvgLength::default ()));
-        fallback_to! (self.width,                 Some (RsvgLength::default ()));
-        fallback_to! (self.height,                Some (RsvgLength::default ()));
-
-        self.fallback = None;
+        self.resolve_from_fallback(&Pattern::default());
 
         if !node_has_children (&self.node) {
             self.node = None;
@@ -158,7 +163,7 @@ struct NodePattern {
 impl NodePattern {
     fn new () -> NodePattern {
         NodePattern {
-            pattern: RefCell::new (Pattern::default ())
+            pattern: RefCell::new (Pattern::unresolved ())
         }
     }
 }
@@ -169,20 +174,43 @@ impl NodeTrait for NodePattern {
 
         p.node = Some (Rc::downgrade (node));
 
-        p.units         = property_bag::parse_or_none (pbag, "patternUnits", (), None)?;
-        p.content_units = property_bag::parse_or_none (pbag, "patternContentUnits", (), None)?;
-        p.vbox          = property_bag::parse_or_none (pbag, "viewBox", (), None)?.map (Some).or (None);
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::PatternUnits =>
+                    p.units = Some(parse("patternUnits", value, (), None)?),
 
-        p.preserve_aspect_ratio = property_bag::parse_or_none (pbag, "preserveAspectRatio", (), None)?;
+                Attribute::PatternContentUnits =>
+                    p.content_units = Some(parse("patternContentUnits", value, (), None)?),
 
-        p.affine = property_bag::parse_or_none (pbag, "patternTransform", (), None)?;
+                Attribute::ViewBox =>
+                    p.vbox = Some(Some(parse("viewBox", value, (), None)?)),
 
-        p.fallback = pbag.lookup("xlink:href").map(|s| s.to_owned());
+                Attribute::PreserveAspectRatio =>
+                    p.preserve_aspect_ratio = Some(parse("preserveAspectRatio", value, (), None)?),
 
-        p.x      = property_bag::parse_or_none (pbag, "x", LengthDir::Horizontal, None)?;
-        p.y      = property_bag::parse_or_none (pbag, "y", LengthDir::Vertical, None)?;
-        p.width  = property_bag::parse_or_none (pbag, "width", LengthDir::Horizontal, None)?;
-        p.height = property_bag::parse_or_none (pbag, "height", LengthDir::Vertical, None)?;
+                Attribute::PatternTransform =>
+                    p.affine = Some(parse("patternTransform", value, (), None)?),
+
+                Attribute::XlinkHref =>
+                    p.fallback = Some(value.to_owned()),
+
+                Attribute::X =>
+                    p.x = Some(parse("x", value, LengthDir::Horizontal, None)?),
+
+                Attribute::Y =>
+                    p.y = Some(parse("y", value, LengthDir::Vertical, None)?),
+
+                Attribute::Width =>
+                    p.width = Some(parse("width", value, LengthDir::Horizontal,
+                                         Some(RsvgLength::check_nonnegative))?),
+
+                Attribute::Height =>
+                    p.height = Some(parse("height", value, LengthDir::Vertical,
+                                          Some(RsvgLength::check_nonnegative))?),
+
+                _ => (),
+            }
+        }
 
         Ok (())
     }
@@ -451,13 +479,9 @@ pub extern fn rsvg_node_pattern_new (_: *const libc::c_char, raw_parent: *const 
                     Box::new (NodePattern::new ()))
 }
 
-#[no_mangle]
-pub extern fn pattern_resolve_fallbacks_and_set_pattern (raw_node: *const RsvgNode,
-                                                         draw_ctx: *mut RsvgDrawingCtx,
-                                                         bbox:     RsvgBbox) -> glib_sys::gboolean {
-    assert! (!raw_node.is_null ());
-    let node: &RsvgNode = unsafe { & *raw_node };
-
+pub fn pattern_resolve_fallbacks_and_set_pattern (node: &RsvgNode,
+                                                  draw_ctx: *mut RsvgDrawingCtx,
+                                                  bbox:     RsvgBbox) -> bool {
     assert! (node.get_type () == NodeType::Pattern);
 
     let mut did_set_pattern = false;
@@ -467,5 +491,5 @@ pub extern fn pattern_resolve_fallbacks_and_set_pattern (raw_node: *const RsvgNo
         did_set_pattern = resolve_fallbacks_and_set_pattern (pattern, draw_ctx, bbox);
     });
 
-    did_set_pattern.to_glib ()
+    did_set_pattern
 }

@@ -12,7 +12,7 @@ use drawing_ctx;
 use error::*;
 use handle::RsvgHandle;
 use parsers::ParseError;
-use property_bag::{FfiRsvgPropertyBag, PropertyBag};
+use property_bag::PropertyBag;
 use state::RsvgState;
 
 /* A *const RsvgNode is just a pointer for the C code's benefit: it
@@ -361,13 +361,14 @@ pub extern fn rsvg_node_add_child (raw_node: *mut RsvgNode, raw_child: *const Rs
 #[no_mangle]
 pub extern fn rsvg_node_set_atts (raw_node: *mut RsvgNode,
                                   handle: *const RsvgHandle,
-                                  ffi_pbag: FfiRsvgPropertyBag) {
-    assert! (!raw_node.is_null ());
+                                  pbag: *const PropertyBag) {
+    assert!(!raw_node.is_null());
+    assert!(!pbag.is_null());
+
     let node: &RsvgNode = unsafe { & *raw_node };
+    let pbag = unsafe { &*pbag };
 
-    let pbag = PropertyBag::new(ffi_pbag);
-
-    node.set_atts (node, handle, &pbag);
+    node.set_atts(node, handle, &pbag);
 }
 
 #[no_mangle]

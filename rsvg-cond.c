@@ -170,34 +170,46 @@ rsvg_cond_parse_system_language (const char *value)
 gboolean
 rsvg_eval_switch_attributes (RsvgPropertyBag * atts, gboolean * p_has_cond)
 {
-    gboolean permitted = TRUE;
+    gboolean required_features_ok = TRUE;
+    gboolean required_extensions_ok = TRUE;
+    gboolean system_language_ok = TRUE;
     gboolean has_cond = FALSE;
 
-    if (atts && rsvg_property_bag_size (atts)) {
-        const char *value;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
+    const char *value;
 
-        if ((value = rsvg_property_bag_lookup (atts, "requiredFeatures"))) {
-            permitted =
-                rsvg_cond_fulfills_requirement (value, implemented_features,
-                                                nb_implemented_features);
-            has_cond = TRUE;
-        }
+    iter = rsvg_property_bag_iter_begin (atts);
 
-        if (permitted && (value = rsvg_property_bag_lookup (atts, "requiredExtensions"))) {
-            permitted =
-                rsvg_cond_fulfills_requirement (value, implemented_extensions,
-                                                nb_implemented_extensions);
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_REQUIRED_FEATURES:
+            required_features_ok = rsvg_cond_fulfills_requirement (value, implemented_features,
+                                                                   nb_implemented_features);
             has_cond = TRUE;
-        }
+            break;
 
-        if (permitted && (value = rsvg_property_bag_lookup (atts, "systemLanguage"))) {
-            permitted = rsvg_cond_parse_system_language (value);
+        case RSVG_ATTRIBUTE_REQUIRED_EXTENSIONS:
+            required_extensions_ok = rsvg_cond_fulfills_requirement (value, implemented_extensions,
+                                                                     nb_implemented_extensions);
             has_cond = TRUE;
+            break;
+
+        case RSVG_ATTRIBUTE_SYSTEM_LANGUAGE:
+            system_language_ok = rsvg_cond_parse_system_language (value);
+            has_cond = TRUE;
+            break;
+
+        default:
+            break;
         }
     }
+
+    rsvg_property_bag_iter_end (iter);
 
     if (p_has_cond)
         *p_has_cond = has_cond;
 
-    return permitted;
+    return required_features_ok && required_extensions_ok && system_language_ok;
 }

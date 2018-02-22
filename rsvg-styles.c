@@ -29,6 +29,7 @@
 #include <string.h>
 #include <math.h>
 
+#include "rsvg-attributes.h"
 #include "rsvg-private.h"
 #include "rsvg-filter.h"
 #include "rsvg-css.h"
@@ -456,8 +457,8 @@ reinheritfunction (int dst, int src)
     return 0;
 }
 
-void
-rsvg_state_reinherit (RsvgState * dst, const RsvgState * src)
+static void
+state_reinherit (RsvgState * dst, const RsvgState * src)
 {
     rsvg_state_inherit_run (dst, src, reinheritfunction, 0);
 }
@@ -512,8 +513,8 @@ inheritfunction (int dst, int src)
     return src;
 }
 
-void
-rsvg_state_inherit (RsvgState * dst, const RsvgState * src)
+static void
+state_inherit (RsvgState * dst, const RsvgState * src)
 {
     rsvg_state_inherit_run (dst, src, inheritfunction, 1);
 }
@@ -521,12 +522,19 @@ rsvg_state_inherit (RsvgState * dst, const RsvgState * src)
 /* Defined in rust/src/length.rs */
 extern RsvgStrokeDasharray rsvg_parse_stroke_dasharray(const char *str);
 
+typedef enum {
+    PAIR_SOURCE_STYLE,
+    PAIR_SOURCE_PRESENTATION_ATTRIBUTE
+} PairSource;
+
 /* Parse a CSS2 style argument, setting the SVG context attributes. */
 static void
-rsvg_parse_style_pair (RsvgState * state,
-                       const gchar * name,
-                       const gchar * value,
-                       gboolean important)
+rsvg_parse_style_pair (RsvgState *state,
+                       const gchar *name,
+                       RsvgAttribute attr,
+                       const gchar *value,
+                       gboolean important,
+                       PairSource source)
 {
     StyleValueData *data;
 
@@ -541,7 +549,9 @@ rsvg_parse_style_pair (RsvgState * state,
                          (gpointer) g_strdup (name),
                          (gpointer) style_value_data_new (value, important));
 
-    if (g_str_equal (name, "color")) {
+    switch (attr) {
+    case RSVG_ATTRIBUTE_COLOR:
+    {
         RsvgCssColorSpec spec;
 
         spec = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_NO);
@@ -564,7 +574,11 @@ rsvg_parse_style_pair (RsvgState * state,
         default:
             g_assert_not_reached ();
         }
-    } else if (g_str_equal (name, "opacity")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_OPACITY:
+    {
         RsvgOpacitySpec spec;
 
         spec = rsvg_css_parse_opacity (value);
@@ -574,7 +588,11 @@ rsvg_parse_style_pair (RsvgState * state,
             state->opacity = 0;
             /* FIXME: handle INHERIT and PARSE_ERROR */
         }
-    } else if (g_str_equal (name, "flood-color")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_FLOOD_COLOR:
+    {
         RsvgCssColorSpec spec;
 
         spec = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
@@ -602,7 +620,11 @@ rsvg_parse_style_pair (RsvgState * state,
         default:
             g_assert_not_reached ();
         }
-    } else if (g_str_equal (name, "flood-opacity")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_FLOOD_OPACITY:
+    {
         RsvgOpacitySpec spec;
 
         spec = rsvg_css_parse_opacity (value);
@@ -614,13 +636,25 @@ rsvg_parse_style_pair (RsvgState * state,
         }
 
         state->has_flood_opacity = TRUE;
-    } else if (g_str_equal (name, "filter")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_FILTER:
+    {
         g_free (state->filter);
         state->filter = rsvg_get_url_string (value, NULL);
-    } else if (g_str_equal (name, "mask")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_MASK:
+    {
         g_free (state->mask);
         state->mask = rsvg_get_url_string (value, NULL);
-    } else if (g_str_equal (name, "baseline-shift")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_BASELINE_SHIFT:
+    {
         /* These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
          * see sp_style_merge_baseline_shift_from_parent()
          */
@@ -636,19 +670,35 @@ rsvg_parse_style_pair (RsvgState * state,
         } else {
           g_warning ("value \'%s\' for attribute \'baseline-shift\' is not supported; only 'sub', 'super', and 'baseline' are supported\n", value);
         }
-    } else if (g_str_equal (name, "clip-path")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_CLIP_PATH:
+    {
         g_free (state->clip_path);
         state->clip_path = rsvg_get_url_string (value, NULL);
-    } else if (g_str_equal (name, "overflow")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_OVERFLOW:
+    {
         if (!g_str_equal (value, "inherit")) {
             state->overflow = rsvg_css_parse_overflow (value, &state->has_overflow);
         }
-    } else if (g_str_equal (name, "enable-background")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_ENABLE_BACKGROUND:
+    {
         if (g_str_equal (value, "new"))
             state->enable_background = RSVG_ENABLE_BACKGROUND_NEW;
         else
             state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
-    } else if (g_str_equal (name, "comp-op")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_COMP_OP:
+    {
         if (g_str_equal (value, "clear"))
             state->comp_op = CAIRO_OPERATOR_CLEAR;
         else if (g_str_equal (value, "src"))
@@ -699,7 +749,11 @@ rsvg_parse_style_pair (RsvgState * state,
             state->comp_op = CAIRO_OPERATOR_EXCLUSION;
         else
             state->comp_op = CAIRO_OPERATOR_OVER;
-    } else if (g_str_equal (name, "display")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_DISPLAY:
+    {
         state->has_visible = TRUE;
         if (g_str_equal (value, "none"))
             state->visible = FALSE;
@@ -707,7 +761,11 @@ rsvg_parse_style_pair (RsvgState * state,
             state->visible = TRUE;
         else
             state->has_visible = FALSE;
-    } else if (g_str_equal (name, "xml:space")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_XML_SPACE:
+    {
         state->has_space_preserve = TRUE;
         if (g_str_equal (value, "default"))
             state->space_preserve = FALSE;
@@ -715,7 +773,11 @@ rsvg_parse_style_pair (RsvgState * state,
             state->space_preserve = TRUE;
         else
             state->space_preserve = FALSE;
-    } else if (g_str_equal (name, "visibility")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_VISIBILITY:
+    {
         state->has_visible = TRUE;
         if (g_str_equal (value, "visible"))
             state->visible = TRUE;
@@ -723,12 +785,20 @@ rsvg_parse_style_pair (RsvgState * state,
             state->visible = FALSE;     /* collapse or hidden */
         else
             state->has_visible = FALSE;
-    } else if (g_str_equal (name, "fill")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_FILL:
+    {
         RsvgPaintServer *fill = state->fill;
         state->fill =
             rsvg_paint_server_parse (&state->has_fill_server, value);
         rsvg_paint_server_unref (fill);
-    } else if (g_str_equal (name, "fill-opacity")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_FILL_OPACITY:
+    {
         RsvgOpacitySpec spec;
 
         spec = rsvg_css_parse_opacity (value);
@@ -740,7 +810,11 @@ rsvg_parse_style_pair (RsvgState * state,
         }
 
         state->has_fill_opacity = TRUE;
-    } else if (g_str_equal (name, "fill-rule")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_FILL_RULE:
+    {
         state->has_fill_rule = TRUE;
         if (g_str_equal (value, "nonzero"))
             state->fill_rule = CAIRO_FILL_RULE_WINDING;
@@ -748,7 +822,11 @@ rsvg_parse_style_pair (RsvgState * state,
             state->fill_rule = CAIRO_FILL_RULE_EVEN_ODD;
         else
             state->has_fill_rule = FALSE;
-    } else if (g_str_equal (name, "clip-rule")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_CLIP_RULE:
+    {
         state->has_clip_rule = TRUE;
         if (g_str_equal (value, "nonzero"))
             state->clip_rule = CAIRO_FILL_RULE_WINDING;
@@ -756,17 +834,29 @@ rsvg_parse_style_pair (RsvgState * state,
             state->clip_rule = CAIRO_FILL_RULE_EVEN_ODD;
         else
             state->has_clip_rule = FALSE;
-    } else if (g_str_equal (name, "stroke")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_STROKE:
+    {
         RsvgPaintServer *stroke = state->stroke;
 
         state->stroke =
             rsvg_paint_server_parse (&state->has_stroke_server, value);
 
         rsvg_paint_server_unref (stroke);
-    } else if (g_str_equal (name, "stroke-width")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_STROKE_WIDTH:
+    {
         state->stroke_width = rsvg_length_parse (value, LENGTH_DIR_BOTH);
         state->has_stroke_width = TRUE;
-    } else if (g_str_equal (name, "stroke-linecap")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_STROKE_LINECAP:
+    {
         state->has_cap = TRUE;
         if (g_str_equal (value, "butt"))
             state->cap = CAIRO_LINE_CAP_BUTT;
@@ -776,7 +866,11 @@ rsvg_parse_style_pair (RsvgState * state,
             state->cap = CAIRO_LINE_CAP_SQUARE;
         else
             g_warning (_("unknown line cap style %s\n"), value);
-    } else if (g_str_equal (name, "stroke-opacity")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_STROKE_OPACITY:
+    {
         RsvgOpacitySpec spec;
 
         spec = rsvg_css_parse_opacity (value);
@@ -788,7 +882,11 @@ rsvg_parse_style_pair (RsvgState * state,
         }
 
         state->has_stroke_opacity = TRUE;
-    } else if (g_str_equal (name, "stroke-linejoin")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_STROKE_LINEJOIN:
+    {
         state->has_join = TRUE;
         if (g_str_equal (value, "miter"))
             state->join = CAIRO_LINE_JOIN_MITER;
@@ -798,27 +896,59 @@ rsvg_parse_style_pair (RsvgState * state,
             state->join = CAIRO_LINE_JOIN_BEVEL;
         else
             g_warning (_("unknown line join style %s\n"), value);
-    } else if (g_str_equal (name, "font-size")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_FONT_SIZE:
+    {
         state->font_size = rsvg_length_parse (value, LENGTH_DIR_BOTH);
         state->has_font_size = TRUE;
-    } else if (g_str_equal (name, "font-family")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_FONT_FAMILY:
+    {
         char *save = g_strdup (rsvg_css_parse_font_family (value, &state->has_font_family));
         g_free (state->font_family);
         state->font_family = save;
-    } else if (g_str_equal (name, "xml:lang")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_XML_LANG:
+    {
         char *save = g_strdup (value);
         g_free (state->lang);
         state->lang = save;
         state->has_lang = TRUE;
-    } else if (g_str_equal (name, "font-style")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_FONT_STYLE:
+    {
         state->font_style = rsvg_css_parse_font_style (value, &state->has_font_style);
-    } else if (g_str_equal (name, "font-variant")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_FONT_VARIANT:
+    {
         state->font_variant = rsvg_css_parse_font_variant (value, &state->has_font_variant);
-    } else if (g_str_equal (name, "font-weight")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_FONT_WEIGHT:
+    {
         state->font_weight = rsvg_css_parse_font_weight (value, &state->has_font_weight);
-    } else if (g_str_equal (name, "font-stretch")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_FONT_STRETCH:
+    {
         state->font_stretch = rsvg_css_parse_font_stretch (value, &state->has_font_stretch);
-    } else if (g_str_equal (name, "text-decoration")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_TEXT_DECORATION:
+    {
         if (g_str_equal (value, "inherit")) {
             state->has_font_decor = FALSE;
             state->font_decor.overline = FALSE;
@@ -833,7 +963,11 @@ rsvg_parse_style_pair (RsvgState * state,
                 state->font_decor.strike = TRUE;
             state->has_font_decor = TRUE;
         }
-    } else if (g_str_equal (name, "direction")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_DIRECTION:
+    {
         state->has_text_dir = TRUE;
         if (g_str_equal (value, "inherit")) {
             state->text_dir = PANGO_DIRECTION_LTR;
@@ -842,7 +976,11 @@ rsvg_parse_style_pair (RsvgState * state,
             state->text_dir = PANGO_DIRECTION_RTL;
         else                    /* ltr */
             state->text_dir = PANGO_DIRECTION_LTR;
-    } else if (g_str_equal (name, "unicode-bidi")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_UNICODE_BIDI:
+    {
         state->has_unicode_bidi = TRUE;
         if (g_str_equal (value, "inherit")) {
             state->unicode_bidi = UNICODE_BIDI_NORMAL;
@@ -853,7 +991,11 @@ rsvg_parse_style_pair (RsvgState * state,
             state->unicode_bidi = UNICODE_BIDI_OVERRIDE;
         else                    /* normal */
             state->unicode_bidi = UNICODE_BIDI_NORMAL;
-    } else if (g_str_equal (name, "writing-mode")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_WRITING_MODE:
+    {
         /* TODO: these aren't quite right... */
 
         state->has_text_dir = TRUE;
@@ -873,7 +1015,11 @@ rsvg_parse_style_pair (RsvgState * state,
             state->text_dir = PANGO_DIRECTION_LTR;
             state->text_gravity = PANGO_GRAVITY_EAST;
         }
-    } else if (g_str_equal (name, "text-anchor")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_TEXT_ANCHOR:
+    {
         state->has_text_anchor = TRUE;
         if (g_str_equal (value, "inherit")) {
             state->text_anchor = TEXT_ANCHOR_START;
@@ -886,54 +1032,100 @@ rsvg_parse_style_pair (RsvgState * state,
             else if (strstr (value, "end"))
                 state->text_anchor = TEXT_ANCHOR_END;
         }
-    } else if (g_str_equal (name, "letter-spacing")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_LETTER_SPACING:
+    {
 	state->has_letter_spacing = TRUE;
 	state->letter_spacing = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-    } else if (g_str_equal (name, "stop-color")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_STOP_COLOR:
+    {
         state->has_stop_color = TRUE;
         state->stop_color = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
-    } else if (g_str_equal (name, "stop-opacity")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_STOP_OPACITY:
+    {
         state->stop_opacity = rsvg_css_parse_opacity (value);
         state->has_stop_opacity = TRUE;
-    } else if (g_str_equal (name, "marker-start")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_MARKER_START:
+    {
         g_free (state->startMarker);
         state->startMarker = rsvg_get_url_string (value, NULL);
         state->has_startMarker = TRUE;
-    } else if (g_str_equal (name, "marker-mid")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_MARKER_MID:
+    {
         g_free (state->middleMarker);
         state->middleMarker = rsvg_get_url_string (value, NULL);
         state->has_middleMarker = TRUE;
-    } else if (g_str_equal (name, "marker-end")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_MARKER_END:
+    {
         g_free (state->endMarker);
         state->endMarker = rsvg_get_url_string (value, NULL);
         state->has_endMarker = TRUE;
-    } else if (g_str_equal (name, "marker")) {
-        if (!state->has_startMarker) {
-            g_free (state->startMarker);
-            state->startMarker = rsvg_get_url_string (value, NULL);
-            state->has_startMarker = TRUE;
-        }
+    }
+    break;
 
-        if (!state->has_middleMarker) {
-            g_free (state->middleMarker);
-            state->middleMarker = rsvg_get_url_string (value, NULL);
-            state->has_middleMarker = TRUE;
-        }
+    case RSVG_ATTRIBUTE_MARKER:
+    {
+        /* FIXME: ugly special case.  "marker" is a shorthand property, and can
+         * only be used in a CSS style (or style attribute in an SVG element),
+         * not as a presentation attribute.
+         */
+        if (source == PAIR_SOURCE_STYLE) {
+            if (!state->has_startMarker) {
+                g_free (state->startMarker);
+                state->startMarker = rsvg_get_url_string (value, NULL);
+                state->has_startMarker = TRUE;
+            }
 
-        if (!state->has_endMarker) {
-            g_free (state->endMarker);
-            state->endMarker = rsvg_get_url_string (value, NULL);
-            state->has_endMarker = TRUE;
+            if (!state->has_middleMarker) {
+                g_free (state->middleMarker);
+                state->middleMarker = rsvg_get_url_string (value, NULL);
+                state->has_middleMarker = TRUE;
+            }
+
+            if (!state->has_endMarker) {
+                g_free (state->endMarker);
+                state->endMarker = rsvg_get_url_string (value, NULL);
+                state->has_endMarker = TRUE;
+            }
         }
-    } else if (g_str_equal (name, "stroke-miterlimit")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_STROKE_MITERLIMIT:
+    {
         state->has_miter_limit = TRUE;
         state->miter_limit = g_ascii_strtod (value, NULL);
-    } else if (g_str_equal (name, "stroke-dashoffset")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_STROKE_DASHOFFSET:
+    {
         state->has_dashoffset = TRUE;
         state->dash_offset = rsvg_length_parse (value, LENGTH_DIR_BOTH);
         if (state->dash_offset.length < 0.)
             state->dash_offset.length = 0.;
-    } else if (g_str_equal (name, "shape-rendering")) {
+    }
+    break;
+
+    case RSVG_ATTRIBUTE_SHAPE_RENDERING:
+    {
         state->has_shape_rendering_type = TRUE;
 
         if (g_str_equal (value, "auto") || g_str_equal (value, "default"))
@@ -944,8 +1136,11 @@ rsvg_parse_style_pair (RsvgState * state,
             state->shape_rendering_type = SHAPE_RENDERING_CRISP_EDGES;
         else if (g_str_equal (value, "geometricPrecision"))
             state->shape_rendering_type = SHAPE_RENDERING_GEOMETRIC_PRECISION;
+    }
+    break;
 
-    } else if (g_str_equal (name, "text-rendering")) {
+    case RSVG_ATTRIBUTE_TEXT_RENDERING:
+    {
         state->has_text_rendering_type = TRUE;
 
         if (g_str_equal (value, "auto") || g_str_equal (value, "default"))
@@ -956,72 +1151,40 @@ rsvg_parse_style_pair (RsvgState * state,
             state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_LEGIBILITY;
         else if (g_str_equal (value, "geometricPrecision"))
             state->text_rendering_type = TEXT_RENDERING_GEOMETRIC_PRECISION;
+    }
+    break;
 
-    } else if (g_str_equal (name, "stroke-dasharray")) {
+    case RSVG_ATTRIBUTE_STROKE_DASHARRAY:
+    {
         state->has_dash = TRUE;
         state->dash = rsvg_parse_stroke_dasharray (value);
     }
-}
+    break;
 
-static void
-rsvg_lookup_parse_style_pair (RsvgState * state,
-                              const char *key, RsvgPropertyBag * atts)
-{
-    const char *value;
-
-    if ((value = rsvg_property_bag_lookup (atts, key)) != NULL)
-        rsvg_parse_style_pair (state, key, value, FALSE);
+    default:
+        /* Maybe it's an attribute not parsed here, but in the node
+         * implementations.
+         */
+        break;
+    }
 }
 
 /* take a pair of the form (fill="#ff00ff") and parse it as a style */
 void
-rsvg_parse_style_pairs (RsvgState * state, RsvgPropertyBag * atts)
+rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
 {
-    rsvg_lookup_parse_style_pair (state, "baseline-shift", atts);
-    rsvg_lookup_parse_style_pair (state, "clip-path", atts);
-    rsvg_lookup_parse_style_pair (state, "clip-rule", atts);
-    rsvg_lookup_parse_style_pair (state, "color", atts);
-    rsvg_lookup_parse_style_pair (state, "direction", atts);
-    rsvg_lookup_parse_style_pair (state, "display", atts);
-    rsvg_lookup_parse_style_pair (state, "enable-background", atts);
-    rsvg_lookup_parse_style_pair (state, "comp-op", atts);
-    rsvg_lookup_parse_style_pair (state, "fill", atts);
-    rsvg_lookup_parse_style_pair (state, "fill-opacity", atts);
-    rsvg_lookup_parse_style_pair (state, "fill-rule", atts);
-    rsvg_lookup_parse_style_pair (state, "filter", atts);
-    rsvg_lookup_parse_style_pair (state, "flood-color", atts);
-    rsvg_lookup_parse_style_pair (state, "flood-opacity", atts);
-    rsvg_lookup_parse_style_pair (state, "font-family", atts);
-    rsvg_lookup_parse_style_pair (state, "font-size", atts);
-    rsvg_lookup_parse_style_pair (state, "font-stretch", atts);
-    rsvg_lookup_parse_style_pair (state, "font-style", atts);
-    rsvg_lookup_parse_style_pair (state, "font-variant", atts);
-    rsvg_lookup_parse_style_pair (state, "font-weight", atts);
-    rsvg_lookup_parse_style_pair (state, "marker-end", atts);
-    rsvg_lookup_parse_style_pair (state, "mask", atts);
-    rsvg_lookup_parse_style_pair (state, "marker-mid", atts);
-    rsvg_lookup_parse_style_pair (state, "marker-start", atts);
-    rsvg_lookup_parse_style_pair (state, "opacity", atts);
-    rsvg_lookup_parse_style_pair (state, "overflow", atts);
-    rsvg_lookup_parse_style_pair (state, "shape-rendering", atts);
-    rsvg_lookup_parse_style_pair (state, "stop-color", atts);
-    rsvg_lookup_parse_style_pair (state, "stop-opacity", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-dasharray", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-dashoffset", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-linecap", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-linejoin", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-miterlimit", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-opacity", atts);
-    rsvg_lookup_parse_style_pair (state, "stroke-width", atts);
-    rsvg_lookup_parse_style_pair (state, "text-anchor", atts);
-    rsvg_lookup_parse_style_pair (state, "text-decoration", atts);
-    rsvg_lookup_parse_style_pair (state, "unicode-bidi", atts);
-    rsvg_lookup_parse_style_pair (state, "letter-spacing", atts);
-    rsvg_lookup_parse_style_pair (state, "visibility", atts);
-    rsvg_lookup_parse_style_pair (state, "writing-mode", atts);
-    rsvg_lookup_parse_style_pair (state, "xml:lang", atts);
-    rsvg_lookup_parse_style_pair (state, "xml:space", atts);
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
+    const char *value;
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        rsvg_parse_style_pair (state, key, attr, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
+    }
+
+    rsvg_property_bag_iter_end (iter);
 
     {
         /* TODO: this conditional behavior isn't quite correct, and i'm not sure it should reside here */
@@ -1099,11 +1262,21 @@ rsvg_parse_style (RsvgState *state, const char *str)
             second_value = g_strjoinv(NULL, split_list);
             g_strfreev(split_list);
 
-            if (parse_style_value (second_value, &style_value, &important))
-                rsvg_parse_style_pair (state,
-                                       g_strstrip (first_value),
-                                       style_value,
-                                       important);
+            if (parse_style_value (second_value, &style_value, &important)) {
+                RsvgAttribute attr;
+
+                g_strstrip (first_value);
+
+                if (rsvg_attribute_from_name (first_value, &attr)) {
+                    rsvg_parse_style_pair (state,
+                                           first_value,
+                                           attr,
+                                           style_value,
+                                           important,
+                                           PAIR_SOURCE_STYLE);
+                }
+            }
+
             g_free (style_value);
             g_free (second_value);
         }
@@ -1346,16 +1519,15 @@ rsvg_parse_transform_attr (RsvgState *state, const char *str)
     }
 }
 
-typedef struct _StylesData {
-    RsvgHandle *handle;
-    RsvgState *state;
-} StylesData;
-
 static void
 apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
 {
-    StylesData *data = (StylesData *) user_data;
-    rsvg_parse_style_pair (data->state, key, value->value, value->important);
+    RsvgState *state = user_data;
+    RsvgAttribute attr;
+
+    if (rsvg_attribute_from_name (key, &attr)) {
+        rsvg_parse_style_pair (state, key, attr, value->value, value->important, PAIR_SOURCE_STYLE);
+    }
 }
 
 static gboolean
@@ -1366,11 +1538,7 @@ rsvg_lookup_apply_css_style (RsvgHandle *handle, const char *target, RsvgState *
     styles = g_hash_table_lookup (handle->priv->css_props, target);
 
     if (styles != NULL) {
-        StylesData *data = g_new0 (StylesData, 1);
-        data->handle = handle;
-        data->state = state;
-        g_hash_table_foreach (styles, (GHFunc) apply_style, data);
-        g_free (data);
+        g_hash_table_foreach (styles, (GHFunc) apply_style, state);
         return TRUE;
     }
     return FALSE;
@@ -1397,11 +1565,14 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
     gboolean found = FALSE;
     GString *klazz_list = NULL;
     RsvgState *state;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
+    const char *value;
 
     state = rsvg_node_get_state (node);
 
-    if (rsvg_property_bag_size (atts) > 0)
-        rsvg_parse_style_pairs (state, atts);
+    rsvg_parse_presentation_attributes (state, atts);
 
     /* Try to properly support all of the following, including inheritance:
      * *
@@ -1477,20 +1648,28 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
         g_free (target);
     }
 
-    if (rsvg_property_bag_size (atts) > 0) {
-        const char *value;
+    iter = rsvg_property_bag_iter_begin (atts);
 
-        if ((value = rsvg_property_bag_lookup (atts, "style")) != NULL)
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_STYLE:
             rsvg_parse_style (state, value);
+            break;
 
-        if ((value = rsvg_property_bag_lookup (atts, "transform")) != NULL) {
+        case RSVG_ATTRIBUTE_TRANSFORM:
             if (!rsvg_parse_transform_attr (state, value)) {
                 rsvg_node_set_attribute_parse_error (node,
                                                      "transform",
                                                      "Invalid transformation");
             }
+            break;
+
+        default:
+            break;
         }
     }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgState *
@@ -1517,83 +1696,6 @@ rsvg_state_free_all (RsvgState * state)
     }
 }
 
-/**
- * rsvg_property_bag_new:
- * @atts: (array zero-terminated=1): list of alternating attributes
- *   and values
- * 
- * The property bag will NOT copy the attributes and values. If you need
- * to store them for later, use rsvg_property_bag_dup().
- * 
- * Returns: (transfer full): a new property bag
- */
-RsvgPropertyBag *
-rsvg_property_bag_new (const char **atts)
-{
-    RsvgPropertyBag *bag;
-    int i;
-
-    bag = g_hash_table_new (g_str_hash, g_str_equal);
-
-    if (atts != NULL) {
-        for (i = 0; atts[i] != NULL; i += 2)
-            g_hash_table_insert (bag, (gpointer) atts[i], (gpointer) atts[i + 1]);
-    }
-
-    return bag;
-}
-
-/**
- * rsvg_property_bag_dup:
- * @bag: property bag to duplicate
- * 
- * Returns a copy of @bag that owns the attributes and values.
- * 
- * Returns: (transfer full): a new property bag
- */
-RsvgPropertyBag *
-rsvg_property_bag_dup (RsvgPropertyBag * bag)
-{
-    RsvgPropertyBag *dup;
-    GHashTableIter iter;
-    gpointer key, value;
-
-    dup = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-
-    g_hash_table_iter_init (&iter, bag);
-    while (g_hash_table_iter_next (&iter, &key, &value))
-      g_hash_table_insert (dup, 
-                           (gpointer) g_strdup ((char *) key),
-                           (gpointer) g_strdup ((char *) value));
-
-    return dup;
-}
-
-void
-rsvg_property_bag_free (RsvgPropertyBag * bag)
-{
-    g_hash_table_unref (bag);
-}
-
-const char *
-rsvg_property_bag_lookup (RsvgPropertyBag * bag, const char *key)
-{
-    return (const char *) g_hash_table_lookup (bag, (gconstpointer) key);
-}
-
-guint
-rsvg_property_bag_size (RsvgPropertyBag * bag)
-{
-    return g_hash_table_size (bag);
-}
-
-void
-rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPropertyBagEnumFunc func,
-                             gpointer user_data)
-{
-    g_hash_table_foreach (bag, (GHFunc) func, user_data);
-}
-
 void
 rsvg_state_push (RsvgDrawingCtx * ctx)
 {
@@ -1604,7 +1706,7 @@ rsvg_state_push (RsvgDrawingCtx * ctx)
     data = rsvg_state_new ();
 
     if (baseon) {
-        rsvg_state_reinherit (data, baseon);
+        state_reinherit (data, baseon);
         data->affine = baseon->affine;
         data->parent = baseon;
     }
@@ -1656,7 +1758,7 @@ rsvg_state_reinherit_top (RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
             if (dominate)
                 state_dominate (current, parent);
             else
-                rsvg_state_reinherit (current, parent);
+                state_reinherit (current, parent);
             cairo_matrix_multiply (&current->affine,
                                    &current->affine,
                                    &parent->affine);
@@ -1678,7 +1780,7 @@ rsvg_state_reconstruct (RsvgState *state, RsvgNode *current)
 
     currents_parent = rsvg_node_unref (currents_parent);
 
-    rsvg_state_inherit (state, rsvg_node_get_state (current));
+    state_inherit (state, rsvg_node_get_state (current));
 }
 
 gboolean

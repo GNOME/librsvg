@@ -1,13 +1,14 @@
 use libc;
 use std::cell::Cell;
 
+use attributes::Attribute;
 use coord_units::CoordUnits;
 use drawing_ctx::RsvgDrawingCtx;
 use handle::RsvgHandle;
 use length::{RsvgLength, LengthDir};
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode, boxed_node_new};
-use parsers::Parse;
-use property_bag::{self, PropertyBag};
+use parsers::{Parse, parse};
+use property_bag::PropertyBag;
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
@@ -47,26 +48,24 @@ impl NodeMask {
 
 impl NodeTrait for NodeMask {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.x.set(property_bag::parse_or_value(pbag, "x",
-                                                LengthDir::Horizontal,
-                                                NodeMask::get_default_pos(LengthDir::Horizontal),
-                                                None)?);
-        self.y.set(property_bag::parse_or_value(pbag, "y",
-                                                LengthDir::Vertical,
-                                                NodeMask::get_default_pos(LengthDir::Vertical),
-                                                None)?);
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::X =>      self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
+                Attribute::Y =>      self.y.set(parse("y", value, LengthDir::Vertical, None)?),
+                Attribute::Width =>  self.width.set(parse("width", value, LengthDir::Horizontal,
+                                                          Some(RsvgLength::check_nonnegative))?),
+                Attribute::Height => self.height.set(parse("height", value, LengthDir::Vertical,
+                                                           Some(RsvgLength::check_nonnegative))?),
 
-        self.width.set (property_bag::parse_or_value (pbag, "width",
-                                                      LengthDir::Horizontal,
-                                                      NodeMask::get_default_size(LengthDir::Horizontal),
-                                                      Some(RsvgLength::check_nonnegative))?);
-        self.height.set (property_bag::parse_or_value (pbag, "height",
-                                                      LengthDir::Vertical,
-                                                      NodeMask::get_default_size(LengthDir::Vertical),
-                                                      Some(RsvgLength::check_nonnegative))?);
+                Attribute::MaskUnits =>
+                    self.units.set(parse("maskUnits", value, (), None)?),
 
-        self.units.set(property_bag::parse_or_default(pbag, "maskUnits", (), None)?);
-        self.content_units.set(property_bag::parse_or_default(pbag, "maskContentUnits", (), None)?);
+                Attribute::MaskContentUnits =>
+                    self.content_units.set(parse("maskContentUnits", value, (), None)?),
+
+                _ => (),
+            }
+        }
 
         Ok(())
     }

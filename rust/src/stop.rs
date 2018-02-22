@@ -4,6 +4,7 @@ use glib::translate::*;
 
 use std::cell::Cell;
 
+use attributes::Attribute;
 use color::*;
 use drawing_ctx;
 use drawing_ctx::*;
@@ -12,7 +13,8 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use opacity::*;
-use property_bag::{self, FfiRsvgPropertyBag, PropertyBag};
+use parsers::parse;
+use property_bag::PropertyBag;
 use state::RsvgState;
 
 pub struct NodeStop {
@@ -60,29 +62,36 @@ fn validate_offset(length: RsvgLength) -> Result<RsvgLength, AttributeError> {
 
 impl NodeTrait for NodeStop {
     fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        let length = property_bag::parse_or_default (pbag, "offset", LengthDir::Both,
-                                                     Some(validate_offset))?;
-        assert! (length.unit == LengthUnit::Default || length.unit == LengthUnit::Percent);
-        self.offset.set (length.length);
-
         let state = node.get_state ();
 
-        // FIXME: this is the only place where rsvg_parse_style() and
-        // rsvg_parse_style_pairs() are called outside of the
-        // rsvg-base.c machinery.  That one indirectly calls them via
-        // rsvg_parse_style_attrs().
-        //
-        // Should we resolve the stop-color / stop-opacity at
-        // rendering time?
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::Offset => {
+                    let length = parse("offset", value, LengthDir::Both, Some(validate_offset))?;
+                    assert! (length.unit == LengthUnit::Default || length.unit == LengthUnit::Percent);
+                    self.offset.set (length.length);
+                },
 
-        if let Some (v) = pbag.lookup("style") {
-            unsafe {
-                rsvg_parse_style (state, v.to_glib_none ().0);
+                Attribute::Style => {
+                    // FIXME: this is the only place where rsvg_parse_style() and
+                    // rsvg_parse_presentation_attributes() are called outside of the
+                    // rsvg-base.c machinery.  That one indirectly calls them via
+                    // rsvg_parse_style_attrs().
+                    //
+                    // Should we resolve the stop-color / stop-opacity at
+                    // rendering time?
+
+                    unsafe {
+                        rsvg_parse_style (state, value.to_glib_none ().0);
+                    }
+                },
+
+                _ => (),
             }
         }
 
         unsafe {
-            rsvg_parse_style_pairs (state, pbag.ffi());
+            rsvg_parse_presentation_attributes (state, pbag.ffi());
         }
 
         let inherited_state = drawing_ctx::state_new ();
@@ -172,8 +181,8 @@ fn u32_from_rgba (rgba: cssparser::RGBA) -> u32 {
 }
 
 extern "C" {
-    fn rsvg_parse_style_pairs(state: *mut RsvgState, pbag: FfiRsvgPropertyBag);
-    fn rsvg_parse_style(state: *mut RsvgState, string: *const libc::c_char);
+    fn rsvg_parse_presentation_attributes (state: *mut RsvgState, pbag: *const PropertyBag);
+    fn rsvg_parse_style (state: *mut RsvgState, string: *const libc::c_char);
 }
 
 #[no_mangle]

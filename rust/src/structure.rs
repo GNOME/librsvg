@@ -7,13 +7,14 @@ use std::cell::Cell;
 use cairo::MatrixTrait;
 
 use aspect_ratio::*;
+use attributes::Attribute;
 use drawing_ctx::RsvgDrawingCtx;
 use drawing_ctx;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
-use parsers::Parse;
-use property_bag::{self, FfiRsvgPropertyBag, PropertyBag};
+use parsers::{Parse, parse};
+use property_bag::{OwnedPropertyBag, PropertyBag};
 use util::*;
 use viewbox::*;
 use viewport::{ClipMode,draw_in_viewport};
@@ -117,7 +118,7 @@ struct NodeSvg {
     w:                     Cell<RsvgLength>,
     h:                     Cell<RsvgLength>,
     vbox:                  Cell<Option<ViewBox>>,
-    atts:                  RefCell<Option<PropertyBag>>
+    pbag:                  RefCell<Option<OwnedPropertyBag>>
 }
 
 impl NodeSvg {
@@ -129,39 +130,46 @@ impl NodeSvg {
             w:                     Cell::new (RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap ()),
             h:                     Cell::new (RsvgLength::parse ("100%", LengthDir::Vertical).unwrap ()),
             vbox:                  Cell::new (None),
-            atts:                  RefCell::new(None)
+            pbag:                  RefCell::new(None)
         }
     }
 }
 
 impl NodeTrait for NodeSvg {
     fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
-
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
-        if node.get_parent ().is_some () {
-            self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal, None)?);
-            self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical, None)?);
+        let is_inner_svg = node.get_parent().is_some();
+
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::PreserveAspectRatio =>
+                    self.preserve_aspect_ratio.set(parse("preserveAspectRatio", value, (), None)?),
+
+                Attribute::X => if is_inner_svg {
+                    self.x.set(parse("x", value, LengthDir::Horizontal, None)?);
+                },
+
+                Attribute::Y => if is_inner_svg {
+                    self.y.set(parse("y", value, LengthDir::Vertical, None)?);
+                },
+
+                Attribute::Width => self.w.set(parse("width", value, LengthDir::Horizontal,
+                                                     Some(RsvgLength::check_nonnegative))?),
+
+                Attribute::Height => self.h.set(parse("height", value, LengthDir::Vertical,
+                                                      Some(RsvgLength::check_nonnegative))?),
+
+                Attribute::ViewBox => self.vbox.set(parse("viewBox", value, (), None)
+                                                    .map(Some)?),
+
+                _ => (),
+            }
         }
-
-        self.w.set (property_bag::parse_or_value (pbag,
-                                                  "width",
-                                                  LengthDir::Horizontal,
-                                                  RsvgLength::parse ("100%", LengthDir::Horizontal).unwrap (),
-                                                  Some(RsvgLength::check_nonnegative))?);
-
-        self.h.set (property_bag::parse_or_value (pbag,
-                                                  "height",
-                                                  LengthDir::Vertical,
-                                                  RsvgLength::parse ("100%", LengthDir::Vertical).unwrap (),
-                                                  Some(RsvgLength::check_nonnegative))?);
-
-        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox", (), None)?);
 
         // The "style" sub-element is not loaded yet here, so we need
         // to store other attributes to be applied later.
-        *self.atts.borrow_mut() = Some(pbag.dup());
+        *self.pbag.borrow_mut() = Some(pbag.to_owned());
 
         Ok (())
     }
@@ -220,16 +228,23 @@ impl NodeUse {
 
 impl NodeTrait for NodeUse {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        *self.link.borrow_mut () = pbag.lookup("xlink:href").map(|s| s.to_owned());
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::XlinkHref => *self.link.borrow_mut() = Some(value.to_owned()),
 
-        self.x.set (property_bag::parse_or_default (pbag, "x", LengthDir::Horizontal, None)?);
-        self.y.set (property_bag::parse_or_default (pbag, "y", LengthDir::Vertical, None)?);
+                Attribute::X         => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
+                Attribute::Y         => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
 
-        self.w.set (property_bag::parse_or_none (pbag, "width", LengthDir::Horizontal,
-                                                 Some(RsvgLength::check_nonnegative))?);
+                Attribute::Width     => self.w.set(parse("width", value, LengthDir::Horizontal,
+                                                         Some(RsvgLength::check_nonnegative))
+                                                   .map(Some)?),
+                Attribute::Height    => self.h.set(parse("height", value, LengthDir::Vertical,
+                                                         Some(RsvgLength::check_nonnegative))
+                                                   .map(Some)?),
 
-        self.h.set (property_bag::parse_or_none (pbag, "height", LengthDir::Vertical,
-                                                 Some(RsvgLength::check_nonnegative))?);
+                _ => (),
+            }
+        }
 
         Ok (())
     }
@@ -337,8 +352,17 @@ impl NodeSymbol {
 
 impl NodeTrait for NodeSymbol {
     fn set_atts (&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        self.preserve_aspect_ratio.set (property_bag::parse_or_default (pbag, "preserveAspectRatio", (), None)?);
-        self.vbox.set (property_bag::parse_or_none (pbag, "viewBox", (), None)?);
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::PreserveAspectRatio =>
+                    self.preserve_aspect_ratio.set(parse("preserveAspectRatio", value, (), None)?),
+
+                Attribute::ViewBox => self.vbox.set(parse("viewBox", value, (), None)
+                                                    .map(Some)?),
+
+                _ => (),
+            }
+        }
 
         Ok (())
     }
@@ -432,7 +456,7 @@ extern "C" {
                                tag:    *const libc::c_char,
                                class:  *const libc::c_char,
                                id:     *const libc::c_char,
-                               pbag:   FfiRsvgPropertyBag);
+                               pbag:   *const PropertyBag);
 }
 
 #[no_mangle]
@@ -441,9 +465,21 @@ pub extern fn rsvg_node_svg_apply_atts (raw_node: *const RsvgNode, handle: *cons
     let node: &RsvgNode = unsafe { & *raw_node };
 
     node.with_impl (|svg: &NodeSvg| {
-        if let Some(pbag) = svg.atts.borrow().as_ref() {
-            let class = pbag.lookup("class");
-            let id = pbag.lookup("id");
+        if let Some(owned_pbag) = svg.pbag.borrow().as_ref() {
+            let pbag = PropertyBag::from_owned(&owned_pbag);
+
+            let mut class = None;
+            let mut id = None;
+
+            for (_key, attr, value) in pbag.iter() {
+                match attr {
+                    Attribute::Class => class = Some(value),
+
+                    Attribute::Id => id = Some(value),
+
+                    _ => (),
+                }
+            }
 
             let c_class = class.to_glib_none ();
             let c_id = id.to_glib_none ();

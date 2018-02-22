@@ -117,24 +117,41 @@ rsvg_filter_primitive_free (gpointer impl)
 static void
 filter_primitive_set_x_y_width_height_atts (RsvgFilterPrimitive *prim, RsvgPropertyBag *atts)
 {
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "x"))) {
-        prim->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-        prim->x_specified = TRUE;
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_X:
+            prim->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+            prim->x_specified = TRUE;
+            break;
+
+        case RSVG_ATTRIBUTE_Y:
+            prim->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+            prim->y_specified = TRUE;
+            break;
+
+        case RSVG_ATTRIBUTE_WIDTH:
+            prim->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+            prim->width_specified = TRUE;
+            break;
+
+        case RSVG_ATTRIBUTE_HEIGHT:
+            prim->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+            prim->height_specified = TRUE;
+            break;
+
+        default:
+            break;
+        }
     }
-    if ((value = rsvg_property_bag_lookup (atts, "y"))) {
-        prim->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-        prim->y_specified = TRUE;
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "width"))) {
-        prim->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-        prim->width_specified = TRUE;
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "height"))) {
-        prim->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-        prim->height_specified = TRUE;
-    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 static void
@@ -790,31 +807,54 @@ rsvg_filter_get_in (GString * name, RsvgFilterContext * ctx)
 }
 
 static void
-rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilter *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "filterUnits"))) {
-        if (!strcmp (value, "userSpaceOnUse"))
-            filter->filterunits = userSpaceOnUse;
-        else
-            filter->filterunits = objectBoundingBox;
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_FILTER_UNITS:
+            if (!strcmp (value, "userSpaceOnUse"))
+                filter->filterunits = userSpaceOnUse;
+            else
+                filter->filterunits = objectBoundingBox;
+            break;
+
+        case RSVG_ATTRIBUTE_PRIMITIVE_UNITS:
+            if (!strcmp (value, "objectBoundingBox"))
+                filter->primitiveunits = objectBoundingBox;
+            else
+                filter->primitiveunits = userSpaceOnUse;
+            break;
+
+        case RSVG_ATTRIBUTE_X:
+            filter->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+            break;
+
+        case RSVG_ATTRIBUTE_Y:
+            filter->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+            break;
+
+        case RSVG_ATTRIBUTE_WIDTH:
+            filter->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+            break;
+
+        case RSVG_ATTRIBUTE_HEIGHT:
+            filter->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+            break;
+
+        default:
+            break;
+        }
     }
-    if ((value = rsvg_property_bag_lookup (atts, "primitiveUnits"))) {
-        if (!strcmp (value, "objectBoundingBox"))
-            filter->primitiveunits = objectBoundingBox;
-        else
-            filter->primitiveunits = userSpaceOnUse;
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "x")))
-        filter->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-    if ((value = rsvg_property_bag_lookup (atts, "y")))
-        filter->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-    if ((value = rsvg_property_bag_lookup (atts, "width")))
-        filter->width = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-    if ((value = rsvg_property_bag_lookup (atts, "height")))
-        filter->height = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 static void
@@ -1041,31 +1081,51 @@ rsvg_filter_primitive_blend_free (gpointer impl)
 }
 
 static void
-rsvg_filter_primitive_blend_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_blend_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveBlend *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "mode"))) {
-        if (!strcmp (value, "multiply"))
-            filter->mode = multiply;
-        else if (!strcmp (value, "screen"))
-            filter->mode = screen;
-        else if (!strcmp (value, "darken"))
-            filter->mode = darken;
-        else if (!strcmp (value, "lighten"))
-            filter->mode = lighten;
-        else
-            filter->mode = normal;
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "in2")))
-        g_string_assign (filter->in2, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
-
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_MODE:
+            if (!strcmp (value, "multiply"))
+                filter->mode = multiply;
+            else if (!strcmp (value, "screen"))
+                filter->mode = screen;
+            else if (!strcmp (value, "darken"))
+                filter->mode = darken;
+            else if (!strcmp (value, "lighten"))
+                filter->mode = lighten;
+            else
+                filter->mode = normal;
+            break;
+
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_IN2:
+            g_string_assign (filter->in2, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -1255,99 +1315,123 @@ rsvg_filter_primitive_convolve_matrix_free (gpointer impl)
 }
 
 static void
-rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveConvolveMatrix *filter = impl;
     gint i, j;
-    const char *value;
     gboolean has_target_x, has_target_y;
+
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
+    const char *value;
 
     has_target_x = 0;
     has_target_y = 0;
 
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
-
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "targetX"))) {
-        has_target_x = 1;
-        filter->targetx = atoi (value);
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "targetY"))) {
-        has_target_y = 1;
-        filter->targety = atoi (value);
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "bias")))
-        filter->bias = atof (value);
-    if ((value = rsvg_property_bag_lookup (atts, "preserveAlpha"))) {
-        if (!strcmp (value, "true"))
-            filter->preservealpha = TRUE;
-        else
-            filter->preservealpha = FALSE;
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "divisor")))
-        filter->divisor = atof (value);
+    iter = rsvg_property_bag_iter_begin (atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "order"))) {
-        double tempx, tempy;
-        if (rsvg_css_parse_number_optional_number (value, &tempx, &tempy)
-            && tempx >= 1.0 && tempy <= 100.0
-            && tempy >= 1.0 && tempy <= 100.0) {
-            filter->orderx = (int) tempx;
-            filter->ordery = (int) tempy;
-            g_assert (filter->orderx >= 1);
-            g_assert (filter->ordery >= 1);
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        case RSVG_ATTRIBUTE_TARGET_X:
+            has_target_x = 1;
+            filter->targetx = atoi (value);
+            break;
+
+        case RSVG_ATTRIBUTE_TARGET_Y:
+            has_target_y = 1;
+            filter->targety = atoi (value);
+            break;
+
+        case RSVG_ATTRIBUTE_BIAS:
+            filter->bias = atof (value);
+            break;
+
+        case RSVG_ATTRIBUTE_PRESERVE_ALPHA:
+            if (!strcmp (value, "true"))
+                filter->preservealpha = TRUE;
+            else
+                filter->preservealpha = FALSE;
+            break;
+
+        case RSVG_ATTRIBUTE_DIVISOR:
+            filter->divisor = atof (value);
+            break;
+
+        case RSVG_ATTRIBUTE_ORDER: {
+            double tempx, tempy;
+            if (rsvg_css_parse_number_optional_number (value, &tempx, &tempy)
+                && tempx >= 1.0 && tempy <= 100.0
+                && tempy >= 1.0 && tempy <= 100.0) {
+                filter->orderx = (int) tempx;
+                filter->ordery = (int) tempy;
+                g_assert (filter->orderx >= 1);
+                g_assert (filter->ordery >= 1);
 
 #define SIZE_OVERFLOWS(a,b) (G_UNLIKELY ((b) > 0 && (a) > G_MAXSIZE / (b)))
 
-            if (SIZE_OVERFLOWS (filter->orderx, filter->ordery)) {
-                rsvg_node_set_attribute_parse_error (node, "order", "number of kernelMatrix elements would be too big");
-                return;
+                if (SIZE_OVERFLOWS (filter->orderx, filter->ordery)) {
+                    rsvg_node_set_attribute_parse_error (node, "order", "number of kernelMatrix elements would be too big");
+                    goto out;
+                }
+            } else {
+                rsvg_node_set_attribute_parse_error (node, "order", "invalid size for convolve matrix");
+                goto out;
             }
-        } else {
-            rsvg_node_set_attribute_parse_error (node, "order", "invalid size for convolve matrix");
-            return;
-        }
-    }
-
-    if ((value = rsvg_property_bag_lookup (atts, "kernelUnitLength"))) {
-        if (!rsvg_css_parse_number_optional_number (value, &filter->dx, &filter->dy)) {
-            rsvg_node_set_attribute_parse_error (node, "kernelUnitLength", "expected number-optional-number");
-            return;
-        }
-    }
-
-    if ((value = rsvg_property_bag_lookup (atts, "kernelMatrix"))) {
-        gsize num_elems;
-        gsize got_num_elems;
-
-        num_elems = filter->orderx * filter->ordery;
-
-        if (!rsvg_css_parse_number_list (value,
-                                         NUMBER_LIST_LENGTH_EXACT,
-                                         num_elems,
-                                         &filter->KernelMatrix,
-                                         &got_num_elems)) {
-            rsvg_node_set_attribute_parse_error (node, "kernelMatrix", "expected a matrix of numbers");
-            return;
+            break;
         }
 
-        g_assert (num_elems == got_num_elems);
-    }
+        case RSVG_ATTRIBUTE_KERNEL_UNIT_LENGTH:
+            if (!rsvg_css_parse_number_optional_number (value, &filter->dx, &filter->dy)) {
+                rsvg_node_set_attribute_parse_error (node, "kernelUnitLength", "expected number-optional-number");
+                goto out;
+            }
+            break;
 
-    if ((value = rsvg_property_bag_lookup (atts, "edgeMode"))) {
-        if (!strcmp (value, "duplicate")) {
-            filter->edgemode = EDGE_MODE_DUPLICATE;
-        } else if (!strcmp (value, "wrap")) {
-            filter->edgemode = EDGE_MODE_WRAP;
-        } else if (!strcmp (value, "none")) {
-            filter->edgemode = EDGE_MODE_NONE;
-        } else {
-            rsvg_node_set_attribute_parse_error (node, "edgeMode", "expected 'duplicate' | 'wrap' | 'none'");
-            return;
+        case RSVG_ATTRIBUTE_KERNEL_MATRIX: {
+            gsize num_elems;
+            gsize got_num_elems;
+
+            num_elems = filter->orderx * filter->ordery;
+
+            if (!rsvg_css_parse_number_list (value,
+                                             NUMBER_LIST_LENGTH_EXACT,
+                                             num_elems,
+                                             &filter->KernelMatrix,
+                                             &got_num_elems)) {
+                rsvg_node_set_attribute_parse_error (node, "kernelMatrix", "expected a matrix of numbers");
+                goto out;
+            }
+
+            g_assert (num_elems == got_num_elems);
+            break;
+        }
+
+        case RSVG_ATTRIBUTE_EDGE_MODE:
+            if (!strcmp (value, "duplicate")) {
+                filter->edgemode = EDGE_MODE_DUPLICATE;
+            } else if (!strcmp (value, "wrap")) {
+                filter->edgemode = EDGE_MODE_WRAP;
+            } else if (!strcmp (value, "none")) {
+                filter->edgemode = EDGE_MODE_NONE;
+            } else {
+                rsvg_node_set_attribute_parse_error (node, "edgeMode", "expected 'duplicate' | 'wrap' | 'none'");
+                goto out;
+            }
+            break;
+
+        default:
+            break;
         }
     }
 
@@ -1366,6 +1450,10 @@ rsvg_filter_primitive_convolve_matrix_set_atts (RsvgNode *node, gpointer impl, R
     if (!has_target_y) {
         filter->targety = floor (filter->ordery / 2);
     }
+
+out:
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -2009,24 +2097,42 @@ rsvg_filter_primitive_gaussian_blur_render (RsvgNode *node, RsvgFilterPrimitive 
 }
 
 static void
-rsvg_filter_primitive_gaussian_blur_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_gaussian_blur_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveGaussianBlur *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "stdDeviation"))) {
-        if (!rsvg_css_parse_number_optional_number (value, &filter->sdx, &filter->sdy)) {
-            rsvg_node_set_attribute_parse_error (node, "stdDeviation", "expected number-optional-number");
-            return;
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        case RSVG_ATTRIBUTE_STD_DEVIATION:
+            if (!rsvg_css_parse_number_optional_number (value, &filter->sdx, &filter->sdy)) {
+                rsvg_node_set_attribute_parse_error (node, "stdDeviation", "expected number-optional-number");
+                goto out;
+            }
+            break;
+
+        default:
+            break;
         }
     }
+
+out:
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -2134,22 +2240,42 @@ rsvg_filter_primitive_offset_render (RsvgNode *node, RsvgFilterPrimitive *primit
 }
 
 static void
-rsvg_filter_primitive_offset_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag * atts)
+rsvg_filter_primitive_offset_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveOffset *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "dx")))
-        filter->dx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-    if ((value = rsvg_property_bag_lookup (atts, "dy")))
-        filter->dy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        case RSVG_ATTRIBUTE_DX:
+            filter->dx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+            break;
+
+        case RSVG_ATTRIBUTE_DY:
+            filter->dy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -2240,15 +2366,30 @@ rsvg_filter_primitive_merge_render (RsvgNode *node, RsvgFilterPrimitive *primiti
 }
 
 static void
-rsvg_filter_primitive_merge_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_merge_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveMerge *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
-
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -2270,14 +2411,29 @@ rsvg_new_filter_primitive_merge (const char *element_name, RsvgNode *parent)
 }
 
 static void
-rsvg_filter_primitive_merge_node_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_merge_node_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitive *primitive = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    /* see bug 145149 - sodipodi generates bad SVG... */
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (primitive->in, value);
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            /* see bug 145149 - sodipodi generates bad SVG... */
+            g_string_assign (primitive->in, value);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 static void
@@ -2419,50 +2575,67 @@ rsvg_filter_primitive_color_matrix_free (gpointer impl)
 }
 
 static void
-rsvg_filter_primitive_color_matrix_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_color_matrix_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveColorMatrix *filter = impl;
     gint type;
     gsize listlen = 0;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
     type = 0;
 
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
-
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "values"))) {
-        unsigned int i;
-        double *temp;
-        if (!rsvg_css_parse_number_list (value,
-                                         NUMBER_LIST_LENGTH_MAXIMUM,
-                                         20,
-                                         &temp,
-                                         &listlen)) {
-            rsvg_node_set_attribute_parse_error (node, "values", "invalid number list");
-            return;
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        case RSVG_ATTRIBUTE_VALUES: {
+            unsigned int i;
+            double *temp;
+            if (!rsvg_css_parse_number_list (value,
+                                             NUMBER_LIST_LENGTH_MAXIMUM,
+                                             20,
+                                             &temp,
+                                             &listlen)) {
+                rsvg_node_set_attribute_parse_error (node, "values", "invalid number list");
+                goto out;
+            }
+
+            filter->KernelMatrix = g_new0 (int, listlen);
+            for (i = 0; i < listlen; i++)
+                filter->KernelMatrix[i] = temp[i] * 255.;
+            g_free (temp);
+            break;
         }
 
-        filter->KernelMatrix = g_new0 (int, listlen);
-        for (i = 0; i < listlen; i++)
-            filter->KernelMatrix[i] = temp[i] * 255.;
-        g_free (temp);
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "type"))) {
-        if (!strcmp (value, "matrix"))
-            type = 0;
-        else if (!strcmp (value, "saturate"))
-            type = 1;
-        else if (!strcmp (value, "hueRotate"))
-            type = 2;
-        else if (!strcmp (value, "luminanceToAlpha"))
-            type = 3;
-        else
-            type = 0;
+        case RSVG_ATTRIBUTE_TYPE:
+            if (!strcmp (value, "matrix"))
+                type = 0;
+            else if (!strcmp (value, "saturate"))
+                type = 1;
+            else if (!strcmp (value, "hueRotate"))
+                type = 2;
+            else if (!strcmp (value, "luminanceToAlpha"))
+                type = 3;
+            else
+                type = 0;
+            break;
+
+        default:
+            break;
+        }
     }
 
     if (type == 0) {
@@ -2526,6 +2699,9 @@ rsvg_filter_primitive_color_matrix_set_atts (RsvgNode *node, gpointer impl, Rsvg
     } else {
         g_assert_not_reached ();
     }
+
+out:
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -2755,17 +2931,34 @@ rsvg_filter_primitive_component_transfer_render (RsvgNode *node, RsvgFilterPrimi
 }
 
 static void
-rsvg_filter_primitive_component_transfer_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_component_transfer_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveComponentTransfer *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -2788,56 +2981,77 @@ rsvg_new_filter_primitive_component_transfer (const char *element_name, RsvgNode
 }
 
 static void
-rsvg_node_component_transfer_function_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_node_component_transfer_function_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgNodeComponentTransferFunc *data = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "type"))) {
-        if (!strcmp (value, "identity"))
-            data->function = identity_component_transfer_func;
-        else if (!strcmp (value, "table"))
-            data->function = table_component_transfer_func;
-        else if (!strcmp (value, "discrete"))
-            data->function = discrete_component_transfer_func;
-        else if (!strcmp (value, "linear"))
-            data->function = linear_component_transfer_func;
-        else if (!strcmp (value, "gamma"))
-            data->function = gamma_component_transfer_func;
-    }
+    iter = rsvg_property_bag_iter_begin (atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "tableValues"))) {
-        unsigned int i;
-        double *temp;
-        if (!rsvg_css_parse_number_list (value,
-                                         NUMBER_LIST_LENGTH_MAXIMUM,
-                                         256,
-                                         &temp,
-                                         &data->nbTableValues)) {
-            rsvg_node_set_attribute_parse_error (node, "tableValues", "invalid number list");
-            return;
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_TYPE:
+            if (!strcmp (value, "identity"))
+                data->function = identity_component_transfer_func;
+            else if (!strcmp (value, "table"))
+                data->function = table_component_transfer_func;
+            else if (!strcmp (value, "discrete"))
+                data->function = discrete_component_transfer_func;
+            else if (!strcmp (value, "linear"))
+                data->function = linear_component_transfer_func;
+            else if (!strcmp (value, "gamma"))
+                data->function = gamma_component_transfer_func;
+            break;
+
+        case RSVG_ATTRIBUTE_TABLE_VALUES: {
+            unsigned int i;
+            double *temp;
+            if (!rsvg_css_parse_number_list (value,
+                                             NUMBER_LIST_LENGTH_MAXIMUM,
+                                             256,
+                                             &temp,
+                                             &data->nbTableValues)) {
+                rsvg_node_set_attribute_parse_error (node, "tableValues", "invalid number list");
+                goto out;
+            }
+
+            data->tableValues = g_new0 (gint, data->nbTableValues);
+            for (i = 0; i < data->nbTableValues; i++)
+                data->tableValues[i] = temp[i] * 255.;
+            g_free (temp);
+            break;
         }
 
-        data->tableValues = g_new0 (gint, data->nbTableValues);
-        for (i = 0; i < data->nbTableValues; i++)
-            data->tableValues[i] = temp[i] * 255.;
-        g_free (temp);
+        case RSVG_ATTRIBUTE_SLOPE:
+            data->slope = g_ascii_strtod (value, NULL) * 255.;
+            break;
+
+        case RSVG_ATTRIBUTE_INTERCEPT:
+            data->intercept = g_ascii_strtod (value, NULL) * 255.;
+            break;
+
+        case RSVG_ATTRIBUTE_AMPLITUDE:
+            data->amplitude = g_ascii_strtod (value, NULL) * 255.;
+            break;
+
+        case RSVG_ATTRIBUTE_EXPONENT:
+            data->exponent = g_ascii_strtod (value, NULL);
+            break;
+
+        case RSVG_ATTRIBUTE_OFFSET:
+            data->offset = g_ascii_strtod (value, NULL) * 255.;
+            break;
+
+        default:
+            break;
+        }
     }
-    if ((value = rsvg_property_bag_lookup (atts, "slope"))) {
-        data->slope = g_ascii_strtod (value, NULL) * 255.;
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "intercept"))) {
-        data->intercept = g_ascii_strtod (value, NULL) * 255.;
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "amplitude"))) {
-        data->amplitude = g_ascii_strtod (value, NULL) * 255.;
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "exponent"))) {
-        data->exponent = g_ascii_strtod (value, NULL);
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "offset"))) {
-        data->offset = g_ascii_strtod (value, NULL) * 255.;
-    }
+
+out:
+    rsvg_property_bag_iter_end (iter);
 }
 
 static void
@@ -2979,31 +3193,49 @@ rsvg_filter_primitive_erode_render (RsvgNode *node, RsvgFilterPrimitive *primiti
 }
 
 static void
-rsvg_filter_primitive_erode_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_erode_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveErode *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "radius"))) {
-        if (!rsvg_css_parse_number_optional_number (value, &filter->rx, &filter->ry)) {
-            rsvg_node_set_attribute_parse_error (node, "radius", "expected number-optional-number");
-            return;
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RADIUS:
+            if (!rsvg_css_parse_number_optional_number (value, &filter->rx, &filter->ry)) {
+                rsvg_node_set_attribute_parse_error (node, "radius", "expected number-optional-number");
+                goto out;
+            }
+            break;
+
+        case RSVG_ATTRIBUTE_OPERATOR:
+            if (!strcmp (value, "erode"))
+                filter->mode = 0;
+            else if (!strcmp (value, "dilate"))
+                filter->mode = 1;
+            break;
+
+        default:
+            break;
         }
     }
 
-    if ((value = rsvg_property_bag_lookup (atts, "operator"))) {
-        if (!strcmp (value, "erode"))
-            filter->mode = 0;
-        else if (!strcmp (value, "dilate"))
-            filter->mode = 1;
-    }
+out:
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -3184,42 +3416,69 @@ rsvg_filter_primitive_composite_free (gpointer impl)
 }
 
 static void
-rsvg_filter_primitive_composite_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_composite_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveComposite *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "operator"))) {
-        if (!strcmp (value, "in"))
-            filter->mode = COMPOSITE_MODE_IN;
-        else if (!strcmp (value, "out"))
-            filter->mode = COMPOSITE_MODE_OUT;
-        else if (!strcmp (value, "atop"))
-            filter->mode = COMPOSITE_MODE_ATOP;
-        else if (!strcmp (value, "xor"))
-            filter->mode = COMPOSITE_MODE_XOR;
-        else if (!strcmp (value, "arithmetic"))
-            filter->mode = COMPOSITE_MODE_ARITHMETIC;
-        else
-            filter->mode = COMPOSITE_MODE_OVER;
-    }
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "in2")))
-        g_string_assign (filter->in2, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "k1")))
-        filter->k1 = g_ascii_strtod (value, NULL) * 255.;
-    if ((value = rsvg_property_bag_lookup (atts, "k2")))
-        filter->k2 = g_ascii_strtod (value, NULL) * 255.;
-    if ((value = rsvg_property_bag_lookup (atts, "k3")))
-        filter->k3 = g_ascii_strtod (value, NULL) * 255.;
-    if ((value = rsvg_property_bag_lookup (atts, "k4")))
-        filter->k4 = g_ascii_strtod (value, NULL) * 255.;
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_OPERATOR:
+            if (!strcmp (value, "in"))
+                filter->mode = COMPOSITE_MODE_IN;
+            else if (!strcmp (value, "out"))
+                filter->mode = COMPOSITE_MODE_OUT;
+            else if (!strcmp (value, "atop"))
+                filter->mode = COMPOSITE_MODE_ATOP;
+            else if (!strcmp (value, "xor"))
+                filter->mode = COMPOSITE_MODE_XOR;
+            else if (!strcmp (value, "arithmetic"))
+                filter->mode = COMPOSITE_MODE_ARITHMETIC;
+            else
+                filter->mode = COMPOSITE_MODE_OVER;
+            break;
+
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_IN2:
+            g_string_assign (filter->in2, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        case RSVG_ATTRIBUTE_K1:
+            filter->k1 = g_ascii_strtod (value, NULL) * 255.;
+            break;
+
+        case RSVG_ATTRIBUTE_K2:
+            filter->k2 = g_ascii_strtod (value, NULL) * 255.;
+            break;
+
+        case RSVG_ATTRIBUTE_K3:
+            filter->k3 = g_ascii_strtod (value, NULL) * 255.;
+            break;
+
+        case RSVG_ATTRIBUTE_K4:
+            filter->k4 = g_ascii_strtod (value, NULL) * 255.;
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -3301,15 +3560,30 @@ rsvg_filter_primitive_flood_render (RsvgNode *node, RsvgFilterPrimitive *primiti
 }
 
 static void
-rsvg_filter_primitive_flood_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_flood_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitive *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->result, value);
-
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->result, value);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -3472,26 +3746,50 @@ rsvg_filter_primitive_displacement_map_free (gpointer impl)
 }
 
 static void
-rsvg_filter_primitive_displacement_map_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_displacement_map_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveDisplacementMap *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "in2")))
-        g_string_assign (filter->in2, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "xChannelSelector")))
-        filter->xChannelSelector = (value)[0];
-    if ((value = rsvg_property_bag_lookup (atts, "yChannelSelector")))
-        filter->yChannelSelector = (value)[0];
-    if ((value = rsvg_property_bag_lookup (atts, "scale")))
-        filter->scale = g_ascii_strtod (value, NULL);
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_IN2:
+            g_string_assign (filter->in2, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        case RSVG_ATTRIBUTE_X_CHANNEL_SELECTOR:
+            filter->xChannelSelector = (value)[0];
+            break;
+
+        case RSVG_ATTRIBUTE_Y_CHANNEL_SELECTOR:
+            filter->yChannelSelector = (value)[0];
+            break;
+
+        case RSVG_ATTRIBUTE_SCALE:
+            filter->scale = g_ascii_strtod (value, NULL);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -3834,33 +4132,58 @@ rsvg_filter_primitive_turbulence_render (RsvgNode *node, RsvgFilterPrimitive *pr
 }
 
 static void
-rsvg_filter_primitive_turbulence_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_turbulence_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveTurbulence *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "baseFrequency"))) {
-        if (!rsvg_css_parse_number_optional_number (value, &filter->fBaseFreqX, &filter->fBaseFreqY)) {
-            rsvg_node_set_attribute_parse_error (node, "baseFrequency", "expected number-optional-number");
-            return;
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        case RSVG_ATTRIBUTE_BASE_FREQUENCY:
+            if (!rsvg_css_parse_number_optional_number (value, &filter->fBaseFreqX, &filter->fBaseFreqY)) {
+                rsvg_node_set_attribute_parse_error (node, "baseFrequency", "expected number-optional-number");
+                goto out;
+            }
+            break;
+
+        case RSVG_ATTRIBUTE_NUM_OCTAVES:
+            filter->nNumOctaves = atoi (value);
+            break;
+
+        case RSVG_ATTRIBUTE_SEED:
+            filter->seed = atoi (value);
+            break;
+
+        case RSVG_ATTRIBUTE_STITCH_TILES:
+            filter->bDoStitching = (!strcmp (value, "stitch"));
+            break;
+
+        case RSVG_ATTRIBUTE_TYPE:
+            filter->bFractalSum = (!strcmp (value, "fractalNoise"));
+            break;
+
+        default:
+            break;
         }
     }
 
-    if ((value = rsvg_property_bag_lookup (atts, "numOctaves")))
-        filter->nNumOctaves = atoi (value);
-    if ((value = rsvg_property_bag_lookup (atts, "seed")))
-        filter->seed = atoi (value);
-    if ((value = rsvg_property_bag_lookup (atts, "stitchTiles")))
-        filter->bDoStitching = (!strcmp (value, "stitch"));
-    if ((value = rsvg_property_bag_lookup (atts, "type")))
-        filter->bFractalSum = (!strcmp (value, "fractalNoise"));
+out:
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -4055,23 +4378,41 @@ rsvg_filter_primitive_image_free (gpointer impl)
 }
 
 static void
-rsvg_filter_primitive_image_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_image_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveImage *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
     filter->handle = handle;
 
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
-    if ((value = rsvg_property_bag_lookup (atts, "xlink:href"))) {
-        filter->href = g_string_new (NULL);
-        g_string_assign (filter->href, value);
+    filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        case RSVG_ATTRIBUTE_XLINK_HREF:
+            filter->href = g_string_new (NULL);
+            g_string_assign (filter->href, value);
+            break;
+
+        default:
+            break;
+        }
     }
 
-    filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -4443,31 +4784,64 @@ get_light_color (RsvgNodeLightSource * source, vector3 color,
 
 
 static void
-rsvg_node_light_source_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_node_light_source_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgNodeLightSource *data = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "azimuth")))
-        data->azimuth = g_ascii_strtod (value, NULL) / 180.0 * M_PI;
-    if ((value = rsvg_property_bag_lookup (atts, "elevation")))
-        data->elevation = g_ascii_strtod (value, NULL) / 180.0 * M_PI;
-    if ((value = rsvg_property_bag_lookup (atts, "limitingConeAngle")))
-        data->limitingconeAngle = g_ascii_strtod (value, NULL) / 180.0 * M_PI;
-    if ((value = rsvg_property_bag_lookup (atts, "x")))
-        data->x = data->pointsAtX = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-    if ((value = rsvg_property_bag_lookup (atts, "y")))
-        data->y = data->pointsAtX = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-    if ((value = rsvg_property_bag_lookup (atts, "z")))
-        data->z = data->pointsAtX = rsvg_length_parse (value, LENGTH_DIR_BOTH);
-    if ((value = rsvg_property_bag_lookup (atts, "pointsAtX")))
-        data->pointsAtX = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-    if ((value = rsvg_property_bag_lookup (atts, "pointsAtY")))
-        data->pointsAtY = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-    if ((value = rsvg_property_bag_lookup (atts, "pointsAtZ")))
-        data->pointsAtZ = rsvg_length_parse (value, LENGTH_DIR_BOTH);
-    if ((value = rsvg_property_bag_lookup (atts, "specularExponent")))
-        data->specularExponent = g_ascii_strtod (value, NULL);
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_AZIMUTH:
+            data->azimuth = g_ascii_strtod (value, NULL) / 180.0 * M_PI;
+            break;
+
+        case RSVG_ATTRIBUTE_ELEVATION:
+            data->elevation = g_ascii_strtod (value, NULL) / 180.0 * M_PI;
+            break;
+
+        case RSVG_ATTRIBUTE_LIMITING_CONE_ANGLE:
+            data->limitingconeAngle = g_ascii_strtod (value, NULL) / 180.0 * M_PI;
+            break;
+
+        case RSVG_ATTRIBUTE_X:
+            data->x = data->pointsAtX = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+            break;
+
+        case RSVG_ATTRIBUTE_Y:
+            data->y = data->pointsAtX = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+            break;
+
+        case RSVG_ATTRIBUTE_Z:
+            data->z = data->pointsAtX = rsvg_length_parse (value, LENGTH_DIR_BOTH);
+            break;
+
+        case RSVG_ATTRIBUTE_POINTS_AT_X:
+            data->pointsAtX = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
+            break;
+
+        case RSVG_ATTRIBUTE_POINTS_AT_Y:
+            data->pointsAtY = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
+            break;
+
+        case RSVG_ATTRIBUTE_POINTS_AT_Z:
+            data->pointsAtZ = rsvg_length_parse (value, LENGTH_DIR_BOTH);
+            break;
+
+        case RSVG_ATTRIBUTE_SPECULAR_EXPONENT:
+            data->specularExponent = g_ascii_strtod (value, NULL);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -4645,55 +5019,79 @@ rsvg_filter_primitive_diffuse_lighting_render (RsvgNode *node, RsvgFilterPrimiti
 }
 
 static void
-rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_diffuse_lighting_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveDiffuseLighting *filter = impl;
-    const char *value;
     RsvgState *state;
-
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
+    const char *value;
 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "kernelUnitLength")))
-        rsvg_css_parse_number_optional_number (value, &filter->dx, &filter->dy);
+    iter = rsvg_property_bag_iter_begin (atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "lighting-color"))) {
-        RsvgCssColorSpec spec;
-
-        spec = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
-
-        switch (spec.kind) {
-        case RSVG_CSS_COLOR_SPEC_INHERIT:
-            /* FIXME: we should inherit; see how stop-color is handled in rsvg-styles.c */
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
             break;
 
-        case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
-            state = rsvg_state_new ();
-            rsvg_state_reconstruct (state, node);
-            filter->lightingcolor = state->current_color;
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
             break;
 
-        case RSVG_CSS_COLOR_SPEC_ARGB:
-            filter->lightingcolor = spec.argb;
+        case RSVG_ATTRIBUTE_KERNEL_UNIT_LENGTH:
+            rsvg_css_parse_number_optional_number (value, &filter->dx, &filter->dy);
             break;
 
-        case RSVG_CSS_COLOR_PARSE_ERROR:
-            rsvg_node_set_attribute_parse_error (node, "lighting-color", "Invalid color");
+        case RSVG_ATTRIBUTE_LIGHTING_COLOR: {
+            RsvgCssColorSpec spec;
+
+            spec = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
+
+            switch (spec.kind) {
+            case RSVG_CSS_COLOR_SPEC_INHERIT:
+                /* FIXME: we should inherit; see how stop-color is handled in rsvg-styles.c */
+                break;
+
+            case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
+                state = rsvg_state_new ();
+                rsvg_state_reconstruct (state, node);
+                filter->lightingcolor = state->current_color;
+                break;
+
+            case RSVG_CSS_COLOR_SPEC_ARGB:
+                filter->lightingcolor = spec.argb;
+                break;
+
+            case RSVG_CSS_COLOR_PARSE_ERROR:
+                rsvg_node_set_attribute_parse_error (node, "lighting-color", "Invalid color");
+                goto out;
+
+            default:
+                g_assert_not_reached ();
+            }
+
+            break;
+        }
+
+        case RSVG_ATTRIBUTE_DIFFUSE_CONSTANT:
+            filter->diffuseConstant = g_ascii_strtod (value, NULL);
+            break;
+
+        case RSVG_ATTRIBUTE_SURFACE_SCALE:
+            filter->surfaceScale = g_ascii_strtod (value, NULL);
             break;
 
         default:
-            g_assert_not_reached ();
+            break;
         }
     }
 
-    if ((value = rsvg_property_bag_lookup (atts, "diffuseConstant")))
-        filter->diffuseConstant = g_ascii_strtod (value, NULL);
-    if ((value = rsvg_property_bag_lookup (atts, "surfaceScale")))
-        filter->surfaceScale = g_ascii_strtod (value, NULL);
+out:
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -4835,54 +5233,79 @@ rsvg_filter_primitive_specular_lighting_render (RsvgNode *node, RsvgFilterPrimit
 }
 
 static void
-rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_specular_lighting_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveSpecularLighting *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
-
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
 
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
 
-    if ((value = rsvg_property_bag_lookup (atts, "lighting-color"))) {
-        RsvgCssColorSpec spec;
-        RsvgState *state;
+    iter = rsvg_property_bag_iter_begin (atts);
 
-        spec = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
-
-        switch (spec.kind) {
-        case RSVG_CSS_COLOR_SPEC_INHERIT:
-            /* FIXME: we should inherit; see how stop-color is handled in rsvg-styles.c */
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
             break;
 
-        case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
-            state = rsvg_state_new ();
-            rsvg_state_reconstruct (state, node);
-            filter->lightingcolor = state->current_color;
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
             break;
 
-        case RSVG_CSS_COLOR_SPEC_ARGB:
-            filter->lightingcolor = spec.argb;
+        case RSVG_ATTRIBUTE_LIGHTING_COLOR: {
+            RsvgCssColorSpec spec;
+            RsvgState *state;
+
+            spec = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
+
+            switch (spec.kind) {
+            case RSVG_CSS_COLOR_SPEC_INHERIT:
+                /* FIXME: we should inherit; see how stop-color is handled in rsvg-styles.c */
+                break;
+
+            case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
+                state = rsvg_state_new ();
+                rsvg_state_reconstruct (state, node);
+                filter->lightingcolor = state->current_color;
+                break;
+
+            case RSVG_CSS_COLOR_SPEC_ARGB:
+                filter->lightingcolor = spec.argb;
+                break;
+
+            case RSVG_CSS_COLOR_PARSE_ERROR:
+                rsvg_node_set_attribute_parse_error (node, "lighting-color", "Invalid color");
+                goto out;
+
+            default:
+                g_assert_not_reached ();
+            }
+
+            break;
+        }
+
+        case RSVG_ATTRIBUTE_SPECULAR_CONSTANT:
+            filter->specularConstant = g_ascii_strtod (value, NULL);
             break;
 
-        case RSVG_CSS_COLOR_PARSE_ERROR:
-            rsvg_node_set_attribute_parse_error (node, "lighting-color", "Invalid color");
+        case RSVG_ATTRIBUTE_SPECULAR_EXPONENT:
+            filter->specularExponent = g_ascii_strtod (value, NULL);
+            break;
+
+        case RSVG_ATTRIBUTE_SURFACE_SCALE:
+            filter->surfaceScale = g_ascii_strtod (value, NULL);
             break;
 
         default:
-            g_assert_not_reached ();
+            break;
         }
     }
 
-    if ((value = rsvg_property_bag_lookup (atts, "specularConstant")))
-        filter->specularConstant = g_ascii_strtod (value, NULL);
-    if ((value = rsvg_property_bag_lookup (atts, "specularExponent")))
-        filter->specularExponent = g_ascii_strtod (value, NULL);
-    if ((value = rsvg_property_bag_lookup (atts, "surfaceScale")))
-        filter->surfaceScale = g_ascii_strtod (value, NULL);
+out:
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *
@@ -4987,17 +5410,34 @@ rsvg_filter_primitive_tile_render (RsvgNode *node, RsvgFilterPrimitive *primitiv
 }
 
 static void
-rsvg_filter_primitive_tile_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *atts)
+rsvg_filter_primitive_tile_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
 {
     RsvgFilterPrimitiveTile *filter = impl;
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
     const char *value;
 
-    if ((value = rsvg_property_bag_lookup (atts, "in")))
-        g_string_assign (filter->super.in, value);
-    if ((value = rsvg_property_bag_lookup (atts, "result")))
-        g_string_assign (filter->super.result, value);
-
     filter_primitive_set_x_y_width_height_atts ((RsvgFilterPrimitive *) filter, atts);
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_IN:
+            g_string_assign (filter->super.in, value);
+            break;
+
+        case RSVG_ATTRIBUTE_RESULT:
+            g_string_assign (filter->super.result, value);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
 }
 
 RsvgNode *

@@ -19,6 +19,10 @@ extern crate lazy_static;
 #[macro_use]
 extern crate downcast_rs;
 
+pub use attributes::{
+    rsvg_attribute_from_name,
+};
+
 pub use bbox::{
     RsvgBbox,
     rsvg_bbox_init,
@@ -53,7 +57,6 @@ pub use color::{
 pub use gradient::{
     rsvg_node_linear_gradient_new,
     rsvg_node_radial_gradient_new,
-    gradient_resolve_fallbacks_and_set_pattern
 };
 
 pub use length::{
@@ -123,7 +126,14 @@ pub use path_builder::{
 
 pub use pattern::{
     rsvg_node_pattern_new,
-    pattern_resolve_fallbacks_and_set_pattern,
+};
+
+pub use property_bag::{
+    rsvg_property_bag_free,
+    rsvg_property_bag_iter_begin,
+    rsvg_property_bag_iter_end,
+    rsvg_property_bag_iter_next,
+    rsvg_property_bag_new,
 };
 
 pub use shapes::{
@@ -173,6 +183,7 @@ pub use viewbox::{
 mod coord_units;
 
 mod aspect_ratio;
+mod attributes;
 mod bbox;
 mod chars;
 mod clip_path;

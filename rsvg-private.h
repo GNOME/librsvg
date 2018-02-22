@@ -30,6 +30,7 @@
 #include <cairo.h>
 
 #include "rsvg.h"
+#include "rsvg-attributes.h"
 #include "rsvg-path-builder.h"
 
 #include <libxml/SAX.h>
@@ -48,7 +49,7 @@ G_BEGIN_DECLS
 typedef struct RsvgSaxHandler RsvgSaxHandler;
 typedef struct RsvgDrawingCtx RsvgDrawingCtx;
 typedef struct RsvgRender RsvgRender;
-typedef GHashTable RsvgPropertyBag;
+typedef void   *RsvgPropertyBag;
 typedef struct _RsvgState RsvgState;
 typedef struct _RsvgDefs RsvgDefs;
 typedef struct _RsvgNode RsvgNode;
@@ -117,7 +118,7 @@ typedef struct _RsvgFilter RsvgFilter;
 
 struct RsvgSaxHandler {
     void (*free) (RsvgSaxHandler * self);
-    void (*start_element) (RsvgSaxHandler * self, const char *name, RsvgPropertyBag * atts);
+    void (*start_element) (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts);
     void (*end_element) (RsvgSaxHandler * self, const char *name);
     void (*characters) (RsvgSaxHandler * self, const char *ch, gssize len);
 };
@@ -175,7 +176,6 @@ struct RsvgHandlePrivate {
 
     GString *title;
     GString *desc;
-    GString *metadata;
 
     gchar *base_uri;
     GFile *base_gfile;
@@ -342,7 +342,7 @@ typedef enum {
     RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST                /* just a marker; not a valid type */
 } RsvgNodeType;
 
-typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag *pbag);
+typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag pbag);
 typedef void (* CNodeDraw) (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate);
 typedef void (* CNodeFree) (gpointer impl);
 
@@ -397,7 +397,7 @@ void rsvg_node_add_child (RsvgNode *node, RsvgNode *child);
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
-void rsvg_node_set_atts (RsvgNode *node, RsvgHandle *handle, RsvgPropertyBag *atts);
+void rsvg_node_set_atts (RsvgNode *node, RsvgHandle *handle, RsvgPropertyBag atts);
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
@@ -430,19 +430,31 @@ void rsvg_node_chars_get_string (RsvgNode *node, const char **out_str, gsize *ou
 
 typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
 
+/* Implemented in rust/src/property_bag.rs */
 G_GNUC_INTERNAL
-RsvgPropertyBag	    *rsvg_property_bag_new       (const char **atts);
+RsvgPropertyBag	    rsvg_property_bag_new       (const char **atts);
+
+/* Implemented in rust/src/property_bag.rs */
 G_GNUC_INTERNAL
-RsvgPropertyBag	    *rsvg_property_bag_dup       (RsvgPropertyBag * bag);
+void                 rsvg_property_bag_free      (RsvgPropertyBag bag);
+
+typedef struct RsvgPropertyBagIter *RsvgPropertyBagIter;
+
+/* Implemented in rust/src/property_bag.rs */
 G_GNUC_INTERNAL
-void                 rsvg_property_bag_free      (RsvgPropertyBag * bag);
+RsvgPropertyBagIter *rsvg_property_bag_iter_begin (RsvgPropertyBag bag);
+
+/* Implemented in rust/src/property_bag.rs */
 G_GNUC_INTERNAL
-const char          *rsvg_property_bag_lookup    (RsvgPropertyBag * bag, const char *key);
+gboolean rsvg_property_bag_iter_next (RsvgPropertyBagIter *iter,
+                                      const char **out_key,
+                                      RsvgAttribute *out_attr,
+                                      const char **out_value);
+
+/* Implemented in rust/src/property_bag.rs */
 G_GNUC_INTERNAL
-guint                rsvg_property_bag_size	     (RsvgPropertyBag * bag);
-G_GNUC_INTERNAL
-void                 rsvg_property_bag_enumerate (RsvgPropertyBag * bag, RsvgPropertyBagEnumFunc func,
-                                                  gpointer user_data);
+void rsvg_property_bag_iter_end (RsvgPropertyBagIter *iter);
+
 /* for some reason this one's public... */
 GdkPixbuf *rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
                                                  size_t len,

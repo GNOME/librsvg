@@ -219,8 +219,6 @@ rsvg_handle_dispose (GObject *instance)
         g_string_free (self->priv->title, TRUE);
     if (self->priv->desc)
         g_string_free (self->priv->desc, TRUE);
-    if (self->priv->metadata)
-        g_string_free (self->priv->metadata, TRUE);
     if (self->priv->base_uri)
         g_free (self->priv->base_uri);
 
@@ -703,10 +701,7 @@ rsvg_handle_get_base_uri (RsvgHandle * handle)
  * rsvg_handle_get_metadata:
  * @handle: An #RsvgHandle
  *
- * Returns the SVG's metadata in UTF-8 or %NULL. You must make a copy
- * of this metadata if you wish to use it after @handle has been freed.
- *
- * Returns: (nullable): The SVG's title
+ * Returns: (nullable): This function always returns #NULL.
  *
  * Since: 2.9
  *
@@ -717,10 +712,7 @@ rsvg_handle_get_metadata (RsvgHandle * handle)
 {
     g_return_val_if_fail (handle, NULL);
 
-    if (handle->priv->metadata)
-        return handle->priv->metadata->str;
-    else
-        return NULL;
+    return NULL;
 }
 
 /**
