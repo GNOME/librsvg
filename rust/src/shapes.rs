@@ -93,7 +93,7 @@ impl NodeTrait for NodePath {
             if attr == Attribute::D {
                 let mut builder = RsvgPathBuilder::new ();
 
-                if path_parser::parse_path_into_builder (&value, &mut builder).is_err() {
+                if path_parser::parse_path_into_builder (value, &mut builder).is_err() {
                     // FIXME: we don't propagate errors upstream, but creating a partial
                     // path is OK per the spec
                 }

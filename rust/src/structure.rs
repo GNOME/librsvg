@@ -466,7 +466,7 @@ pub extern fn rsvg_node_svg_apply_atts (raw_node: *const RsvgNode, handle: *cons
 
     node.with_impl (|svg: &NodeSvg| {
         if let Some(owned_pbag) = svg.pbag.borrow().as_ref() {
-            let pbag = PropertyBag::from_owned(&owned_pbag);
+            let pbag = PropertyBag::from_owned(owned_pbag);
 
             let mut class = None;
             let mut id = None;

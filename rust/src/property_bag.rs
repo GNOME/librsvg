@@ -96,7 +96,7 @@ impl<'a> PropertyBag<'a> {
     pub fn to_owned(&self) -> OwnedPropertyBag {
         let mut array = Vec::<(CString, Attribute, CString)>::new();
 
-        for &(ref k, a, ref v) in &self.0 {
+        for &(k, a, v) in &self.0 {
             array.push(((*k).to_owned(), a, (*v).to_owned()));
         }
 
