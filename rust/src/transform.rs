@@ -102,7 +102,7 @@ fn parse_matrix_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeErro
 
         Ok(cairo::Matrix::new(xx, yx, xy, yy, x0, y0))
     }).map_err(CssParseError::<()>::basic)
-        .map_err(|e| AttributeError::from(e))
+        .map_err(AttributeError::from)
 }
 
 fn parse_translate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
@@ -116,7 +116,7 @@ fn parse_translate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeE
 
         Ok(cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, tx, ty))
     }).map_err(CssParseError::<()>::basic)
-        .map_err(|e| AttributeError::from(e))
+        .map_err(AttributeError::from)
 }
 
 fn parse_scale_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
@@ -130,7 +130,7 @@ fn parse_scale_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError
 
         Ok(cairo::Matrix::new(x, 0.0, 0.0, y, 0.0, 0.0))
     }).map_err(CssParseError::<()>::basic)
-        .map_err(|e| AttributeError::from(e))
+        .map_err(AttributeError::from)
 }
 
 fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
@@ -154,7 +154,7 @@ fn parse_rotate_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeErro
         m = cairo::Matrix::multiply (&cairo::Matrix::new (1.0, 0.0, 0.0, 1.0, -tx, -ty), &m);
         Ok(m)
     }).map_err(CssParseError::<()>::basic)
-        .map_err(|e| AttributeError::from(e))
+        .map_err(AttributeError::from)
 }
 
 fn parse_skewx_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
@@ -164,7 +164,7 @@ fn parse_skewx_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError
                                a.tan (), 1.0,
                                0.0, 0.0))
     }).map_err(CssParseError::<()>::basic)
-        .map_err(|e| AttributeError::from(e))
+        .map_err(AttributeError::from)
 }
 
 fn parse_skewy_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError> {
@@ -174,7 +174,7 @@ fn parse_skewy_args(parser: &mut Parser) -> Result<cairo::Matrix, AttributeError
                                0.0,  1.0,
                                0.0, 0.0))
     }).map_err(CssParseError::<()>::basic)
-        .map_err(|e| AttributeError::from(e))
+        .map_err(AttributeError::from)
 }
 
 #[cfg(test)]
