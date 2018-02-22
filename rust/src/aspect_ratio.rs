@@ -51,6 +51,7 @@ pub struct AspectRatio {
     pub align: Align
 }
 
+#[derive(Debug, Copy, Clone)]
 enum Align1D {
     Min,
     Mid,
