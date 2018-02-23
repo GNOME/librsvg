@@ -1,15 +1,33 @@
 Version 2.42.3
+- gitlab#204 - New feature: If an SVG has an <a> link element, we now
+  generate the corresponding link when outputting to a Cairo PDF
+  surface.  If you use rsvg-convert(1) with PDF output, <a> links in
+  the SVG will work in the PDF (Dmitry Kontsevoy).
+- New feature: rsvg-convert now supports SOURCE_DATE_EPOCH per
+  https://reproducible-builds.org/specs/source-date-epoch/ to generate
+  reproducible output for PDFs (Chris Lamb).
+- gitlab#197 - New requirement: We now require Freetype2 2.9.0, which
+  fixes font rendering bugs.  The test reference PNGs have been
+  regenerated with this version.  You may see changes in font
+  rendering as a result of this updated requirement.
 - gitlab#91 - Fix rendering of masks and clips when the initial
   transformation has a translation component (Massimo).
 - gitlab#161 - Fix the marker angle for the last vertex of closed
   paths (Juraj Fiala).
-- gitlab#198 - Make rsvg_pixbuf_from_file() and its derived functions
-  work again.  Now we have tests for the whole public API.
+- gitlab#198 - Fix: Make rsvg_pixbuf_from_file() and its derived
+  functions work again.  Now we have tests for the whole public API.
 - gitlab#143 - Minor optimizations for Gaussian blurs (Timm Bäder).
-- rsvg-convert now supports SOURCE_DATE_EPOCH per
-  https://reproducible-builds.org/specs/source-date-epoch/ to generate
-  reproducible output for PDFs (Chris Lamb).
-- Code moved to Rust: SVG paint servers (Dmitry Kontsevoy).
+- gitlab#201 - Minor speedups in the code to parse SVG attributes.
+- COMPILING.md now lists our build dependencies, and has command lines
+  which you can use on openSUSE/Fedora/Debian/Ubuntu to set up a
+  development environment for librsvg (Jordan Petridis).
+- Code moved to Rust: SVG paint servers (Dmitry Kontsevoy), SVG
+  attribute parsing.
+- We now use a Cargo workspace internally, to move more things to Rust
+  (Jordan Petridis, Chun-wei Fan).
+- Special thanks in this release to Jordan Petridis for MAJOR
+  improvements to our Continuous Integration infrastructure, the
+  repository structure, and updates to the compilation documentation.
 
 Version 2.42.2
 - gitlab#193 - Don't crash when feConvolveMatrix doesn't specify
