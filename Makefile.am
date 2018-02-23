@@ -63,48 +63,49 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg.h				\
 	$(NULL)
 
-RUST_SOURCES =						\
-	rust/Cargo.toml					\
-	rust/rsvg_internals/build.rs			\
-	rust/rsvg_internals/src/aspect_ratio.rs		\
-	rust/rsvg_internals/src/attributes.rs		\
-	rust/rsvg_internals/src/bbox.rs			\
-	rust/rsvg_internals/src/chars.rs		\
-	rust/rsvg_internals/src/clip_path.rs		\
-	rust/rsvg_internals/src/cnode.rs		\
-	rust/rsvg_internals/src/color.rs		\
-	rust/rsvg_internals/src/coord_units.rs		\
-	rust/rsvg_internals/src/drawing_ctx.rs		\
-	rust/rsvg_internals/src/error.rs		\
-	rust/rsvg_internals/src/gradient.rs		\
-	rust/rsvg_internals/src/handle.rs		\
-	rust/rsvg_internals/src/image.rs		\
-	rust/rsvg_internals/src/length.rs		\
-	rust/rsvg_internals/src/lib.rs			\
-	rust/rsvg_internals/src/marker.rs		\
-	rust/rsvg_internals/src/mask.rs			\
-	rust/rsvg_internals/src/node.rs			\
-	rust/rsvg_internals/src/opacity.rs		\
-	rust/rsvg_internals/src/paint_server.rs		\
-	rust/rsvg_internals/src/parsers.rs		\
-	rust/rsvg_internals/src/path_builder.rs		\
-	rust/rsvg_internals/src/path_parser.rs		\
-	rust/rsvg_internals/src/pattern.rs		\
-	rust/rsvg_internals/src/property_bag.rs		\
-	rust/rsvg_internals/src/shapes.rs		\
-	rust/rsvg_internals/src/space.rs		\
-	rust/rsvg_internals/src/state.rs		\
-	rust/rsvg_internals/src/stop.rs			\
-	rust/rsvg_internals/src/structure.rs		\
-	rust/rsvg_internals/src/text.rs			\
-	rust/rsvg_internals/src/transform.rs		\
-	rust/rsvg_internals/src/util.rs			\
-	rust/rsvg_internals/src/viewbox.rs		\
-	rust/rsvg_internals/src/viewport.rs
+RUST_SRC =					\
+	Cargo.toml				\
+	rsvg_internals/Cargo.toml		\
+	rsvg_internals/build.rs			\
+	rsvg_internals/src/aspect_ratio.rs	\
+	rsvg_internals/src/attributes.rs	\
+	rsvg_internals/src/bbox.rs		\
+	rsvg_internals/src/chars.rs		\
+	rsvg_internals/src/clip_path.rs		\
+	rsvg_internals/src/cnode.rs		\
+	rsvg_internals/src/color.rs		\
+	rsvg_internals/src/coord_units.rs	\
+	rsvg_internals/src/drawing_ctx.rs	\
+	rsvg_internals/src/error.rs		\
+	rsvg_internals/src/gradient.rs		\
+	rsvg_internals/src/handle.rs		\
+	rsvg_internals/src/image.rs		\
+	rsvg_internals/src/length.rs		\
+	rsvg_internals/src/lib.rs		\
+	rsvg_internals/src/marker.rs		\
+	rsvg_internals/src/mask.rs		\
+	rsvg_internals/src/node.rs		\
+	rsvg_internals/src/opacity.rs		\
+	rsvg_internals/src/paint_server.rs	\
+	rsvg_internals/src/parsers.rs		\
+	rsvg_internals/src/path_builder.rs	\
+	rsvg_internals/src/path_parser.rs	\
+	rsvg_internals/src/pattern.rs		\
+	rsvg_internals/src/property_bag.rs	\
+	rsvg_internals/src/shapes.rs		\
+	rsvg_internals/src/space.rs		\
+	rsvg_internals/src/state.rs		\
+	rsvg_internals/src/stop.rs		\
+	rsvg_internals/src/structure.rs		\
+	rsvg_internals/src/text.rs		\
+	rsvg_internals/src/transform.rs		\
+	rsvg_internals/src/util.rs		\
+	rsvg_internals/src/viewbox.rs		\
+	rsvg_internals/src/viewport.rs
 
 RUST_EXTRA = 					\
-	rust/Cargo.lock				\
-	rust/cargo-vendor-config
+	Cargo.lock				\
+	cargo-vendor-config
 
 if DEBUG_RELEASE
 CARGO_RELEASE_ARGS=
@@ -121,25 +122,25 @@ cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
 cargo_verbose_0 =
 cargo_verbose_1 = --verbose
 
-RUST_LIB=@abs_top_builddir@/rust/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a
-CARGO_TARGET_DIR=@abs_top_builddir@/rust/target
+RUST_LIB=@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a
+CARGO_TARGET_DIR=@abs_top_builddir@/target
 
 check-local:
-	cd $(srcdir)/rust && \
+	cd $(srcdir) && \
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) cargo test
 
 clean-local:
-	cd $(top_srcdir)/rust && \
+	cd $(top_srcdir) && \
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) cargo clean
 
 dist-hook:
-	(cd $(distdir)/rust && \
+	(cd $(distdir) && \
 	cargo vendor -q && \
 	mkdir .cargo && \
 	cp cargo-vendor-config .cargo/config)
 
-$(RUST_LIB): $(RUST_SOURCES)
-	+cd $(top_srcdir)/rust/rsvg_internals &&				\
+$(RUST_LIB): $(RUST_SRC)
+	+cd $(top_srcdir)/rsvg_internals &&					\
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
@@ -238,7 +239,7 @@ dist_doc_DATA =				\
 	code-of-conduct.md
 
 EXTRA_DIST =				\
-	$(RUST_SOURCES)			\
+	$(RUST_SRC)			\
 	$(RUST_EXTRA)			\
 	librsvg.doap			\
 	AUTHORS				\
