@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "rsvg.h"
+#include "librsvg/rsvg.h"
 
 #include "test-utils.h"
 

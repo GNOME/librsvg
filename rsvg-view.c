@@ -18,8 +18,8 @@
  */
 
 #include "config.h"
-#include "rsvg-private.h"
-#include "rsvg-size-callback.h"
+#include "librsvg/rsvg-private.h"
+#include "librsvg/rsvg-size-callback.h"
 
 #include <stdio.h>
 #include <stdlib.h>

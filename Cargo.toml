@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "rsvg_internals",
+]
+
+[profile.release]
+lto = true

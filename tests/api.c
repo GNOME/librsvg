@@ -7,7 +7,7 @@
 #include <glib.h>
 
 #define RSVG_DISABLE_DEPRECATION_WARNINGS /* so we can test deprecated API */
-#include "rsvg.h"
+#include "librsvg/rsvg.h"
 #include "test-utils.h"
 
 /*

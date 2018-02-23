@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 #include <glib.h>
-#include "rsvg.h"
+#include "librsvg/rsvg.h"
 #include "test-utils.h"
 
 typedef struct {

@@ -1,11 +1,11 @@
 /* vim: set ts=4 nowrap ai expandtab sw=4: */
 
 #include <glib.h>
-#include "rsvg.h"
-#include "rsvg-private.h"
-#include "rsvg-defs.h"
-#include "rsvg-styles.h"
-#include "rsvg-paint-server.h"
+#include "librsvg/rsvg.h"
+#include "librsvg/rsvg-private.h"
+#include "librsvg/rsvg-defs.h"
+#include "librsvg/rsvg-styles.h"
+#include "librsvg/rsvg-paint-server.h"
 #include "test-utils.h"
 
 union Expected {

@@ -33,9 +33,9 @@ render_crash_SOURCES = \
 	render-crash.c	\
 	$(test_utils_common_sources)
 
-styles_SOURCES = \
-	styles.c	\
-	$(test_utils_common_sources)
+# styles_SOURCES = \
+# 	styles.c	\
+# 	$(test_utils_common_sources)
 
 dimensions_SOURCES = \
 	dimensions.c	\
@@ -49,12 +49,13 @@ LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
 	$(LIBRSVG_LIBS)							\
 	$(LIBM)
 
-INCLUDES = -I$(srcdir) 							\
-	   -I$(top_srcdir)						\
-	   -DTEST_DATA_DIR="\"$(srcdir)\""				\
-	   -DTEST_SRC_DIR="\"$(PWD)\""					\
-	   -DTOP_SRC_DIR="\"$(top_srcdir)\""				\
-	  $(LIBRSVG_CFLAGS)
+AM_CPPFLAGS =					\
+	-I$(srcdir) 				\
+	-I$(top_srcdir)				\
+	-DTEST_DATA_DIR="\"$(srcdir)\""		\
+	-DTEST_SRC_DIR="\"$(PWD)\""		\
+	-DTOP_SRC_DIR="\"$(top_srcdir)\""	\
+	$(LIBRSVG_CFLAGS)
 
 dist_installed_test_data =						\
 	$(wildcard $(srcdir)/resources/*)				\
