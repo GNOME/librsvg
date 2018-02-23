@@ -8,6 +8,5 @@ external_libraries = [
    "GObject",
    "Gio",
    "GdkPixbuf",
-   "Pango",
    "Cairo",
 ]
