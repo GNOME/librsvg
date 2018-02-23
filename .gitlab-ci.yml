@@ -10,6 +10,7 @@ stages:
     - rustc --version && cargo --version
     - ./autogen.sh --enable-debug
     - make check
+
   after_script:
     - mkdir png_artifacts
     - cp /tmp/*.png png_artifacts
@@ -20,6 +21,11 @@ stages:
       - tests/*.log
       - png_artifacts
 
+  cache:
+      paths:
+        - target/
+        - cargo/
+
 # .deb_template: &deb_deps
 #   before_script:
 #     - apt update -yqq
@@ -28,7 +34,6 @@ stages:
 #                   libgdk-pixbuf2.0-dev libgirepository1.0-dev
 #                   gtk-doc-tools git libgtk-3-dev rustc cargo
 #                   libxml2-dev libcroco3-dev libcairo2-dev libpango1.0-dev
-
 
 fedora:test:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
