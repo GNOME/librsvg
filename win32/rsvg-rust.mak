@@ -38,7 +38,7 @@ vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals\$(RUST_TARGET)-pc-windows-msvc\$(CF
 	@set CARGO_TARGET_DIR=..\win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals
 	@set GTK_LIB_DIR=..\..\vs$(VSVER)\$(PLAT)\lib;$(LIB)
 	$(RUSTUP_CMD)
-	@cd ..\rust
+	@cd ..\rsvg_internals
 	$(CARGO_CMD) --verbose
 	@cd ..\win32\vs$(VSVER)
 	@set GTK_LIB_DIR=
@@ -46,7 +46,7 @@ vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals\$(RUST_TARGET)-pc-windows-msvc\$(CF
 
 clean:
 	@set CARGO_TARGET_DIR=..\win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals
-	@cd ..\rust
+	@cd ..
 	@$(CARGO) clean
 	@cd ..\win32\vs$(VSVER)
 	@set CARGO_TARGET_DIR=
