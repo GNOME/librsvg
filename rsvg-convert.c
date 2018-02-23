@@ -51,9 +51,9 @@
 #include <gio/gwin32inputstream.h>
 #endif
 
-#include "rsvg-css.h"
-#include "rsvg.h"
-#include "rsvg-size-callback.h"
+#include "librsvg/rsvg-css.h"
+#include "librsvg/rsvg.h"
+#include "librsvg/rsvg-size-callback.h"
 
 #ifdef CAIRO_HAS_PS_SURFACE
 #include <cairo-ps.h>

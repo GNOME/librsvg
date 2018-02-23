@@ -10,57 +10,57 @@ if HAVE_GTK_3
 bin_PROGRAMS += rsvg-view-3
 endif
 
-headers = \
-	rsvg.h	\
-	rsvg-cairo.h
+headers =			\
+	librsvg/rsvg.h		\
+	librsvg/rsvg-cairo.h
 
-enum_sources = \
-	librsvg-enum-types.h	\
-	librsvg-enum-types.c
+enum_sources = 				\
+	librsvg/librsvg-enum-types.h	\
+	librsvg/librsvg-enum-types.c
 BUILT_SOURCES += $(enum_sources)
 
-librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
-	librsvg-enum-types.c	\
-	librsvg-enum-types.h	\
-	librsvg-features.c 	\
-	librsvg-features.h 	\
-	rsvg-attributes.h	\
-	rsvg-base-file-util.c 	\
-	rsvg-base.c		\
-	rsvg-cairo-clip.c	\
-	rsvg-cairo-clip.h	\
-	rsvg-cairo-draw.c	\
-	rsvg-cairo-draw.h	\
-	rsvg-cairo-render.c	\
-	rsvg-cairo-render.h	\
-	rsvg-cairo.h		\
-	rsvg-cond.c		\
-	rsvg-css.c 		\
-	rsvg-css.h 		\
-	rsvg-defs.c 		\
-	rsvg-defs.h 		\
-	rsvg-file-util.c	\
-	rsvg-filter.c		\
-	rsvg-filter.h		\
-	rsvg-handle.c		\
-	rsvg-io.c		\
-	rsvg-io.h		\
-	rsvg-marker.h		\
-	rsvg-mask.h		\
-	rsvg-paint-server.h 	\
-	rsvg-path-builder.h	\
-	rsvg-private.h 		\
-	rsvg-shapes.h		\
-	rsvg-size-callback.c	\
-	rsvg-size-callback.h	\
-	rsvg-structure.h	\
-	rsvg-styles.c		\
-	rsvg-styles.h		\
-	rsvg-text.c		\
-	rsvg-text.h		\
-	rsvg-xml.c		\
-	rsvg-xml.h		\
-	rsvg.h			\
+librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
+	librsvg/librsvg-enum-types.c		\
+	librsvg/librsvg-enum-types.h		\
+	librsvg/librsvg-features.c 		\
+	librsvg/librsvg-features.h 		\
+	librsvg/rsvg-attributes.h		\
+	librsvg/rsvg-base-file-util.c 		\
+	librsvg/rsvg-base.c			\
+	librsvg/rsvg-cairo-clip.c		\
+	librsvg/rsvg-cairo-clip.h		\
+	librsvg/rsvg-cairo-draw.c		\
+	librsvg/rsvg-cairo-draw.h		\
+	librsvg/rsvg-cairo-render.c		\
+	librsvg/rsvg-cairo-render.h		\
+	librsvg/rsvg-cairo.h			\
+	librsvg/rsvg-cond.c			\
+	librsvg/rsvg-css.c 			\
+	librsvg/rsvg-css.h 			\
+	librsvg/rsvg-defs.c 			\
+	librsvg/rsvg-defs.h 			\
+	librsvg/rsvg-file-util.c		\
+	librsvg/rsvg-filter.c			\
+	librsvg/rsvg-filter.h			\
+	librsvg/rsvg-handle.c			\
+	librsvg/rsvg-io.c			\
+	librsvg/rsvg-io.h			\
+	librsvg/rsvg-marker.h			\
+	librsvg/rsvg-mask.h			\
+	librsvg/rsvg-paint-server.h 		\
+	librsvg/rsvg-path-builder.h		\
+	librsvg/rsvg-private.h 			\
+	librsvg/rsvg-shapes.h			\
+	librsvg/rsvg-size-callback.c		\
+	librsvg/rsvg-size-callback.h		\
+	librsvg/rsvg-structure.h		\
+	librsvg/rsvg-styles.c			\
+	librsvg/rsvg-styles.h			\
+	librsvg/rsvg-text.c			\
+	librsvg/rsvg-text.h			\
+	librsvg/rsvg-xml.c			\
+	librsvg/rsvg-xml.h			\
+	librsvg/rsvg.h				\
 	$(NULL)
 
 RUST_SOURCES =						\
@@ -173,17 +173,17 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
 	$(RUST_LIB)
 
 librsvgincdir = $(includedir)/librsvg-$(RSVG_API_VERSION)/librsvg
-librsvginc_HEADERS = 	\
-	$(headers)	\
-	librsvg-features.h \
-	librsvg-enum-types.h
+librsvginc_HEADERS =			\
+	$(headers)			\
+	librsvg/librsvg-features.h	\
+	librsvg/librsvg-enum-types.h
 
 dist_man_MANS = rsvg-convert.1
 
-rsvg_convert_SOURCES = \
-	rsvg-convert.c \
-	rsvg-size-callback.c \
-	rsvg-size-callback.h \
+rsvg_convert_SOURCES =			\
+	rsvg-convert.c			\
+	librsvg/rsvg-size-callback.c	\
+	librsvg/rsvg-size-callback.h	\
 	$(NULL)
 
 rsvg_convert_CPPFLAGS = \
@@ -203,9 +203,9 @@ rsvg_convert_LDADD = \
 	$(RSVG_CONVERT_LIBS) \
 	$(LIBM)
 
-rsvg_view_3_SOURCES = \
-	rsvg-view.c \
-	rsvg-size-callback.h
+rsvg_view_3_SOURCES =			\
+	rsvg-view.c			\
+	librsvg/rsvg-size-callback.h
 
 rsvg_view_3_CPPFLAGS = \
 	-I$(top_srcdir) 			\
@@ -265,33 +265,33 @@ CLEANFILES = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librsvg-$(RSVG_API_VERSION).pc
 
-librsvg-enum-types.h: s-enum-types-h
+librsvg/librsvg-enum-types.h: librsvg/s-enum-types-h
 	@true
 
-s-enum-types-h: $(headers) Makefile
+librsvg/s-enum-types-h: $(headers) Makefile
 	$(AM_V_GEN) ( cd $(srcdir) && $(GLIB_MKENUMS) \
 			--fhead "#if !defined (__RSVG_RSVG_H_INSIDE__) && !defined (RSVG_COMPILATION)\n#warning \"Including <librsvg/librsvg-enum-types.h> directly is deprecated.\"\n#endif\n\n#ifndef __LIBRSVG_ENUM_TYPES_H__\n#define __LIBRSVG_ENUM_TYPES_H__\n\n#include <glib-object.h>\n\nG_BEGIN_DECLS\n" \
 			--fprod "/* enumerations from \"@filename@\" */\n" \
 			--vhead "GType @enum_name@_get_type (void);\n#define RSVG_TYPE_@ENUMSHORT@ (@enum_name@_get_type())\n" 	\
 			--ftail "G_END_DECLS\n\n#endif /* __LIBRSVG_ENUM_TYPES_H__ */" \
-		$(headers) ) > tmp-librsvg-enum-types.h \
-	&& (cmp -s tmp-librsvg-enum-types.h librsvg-enum-types.h || cp tmp-librsvg-enum-types.h librsvg-enum-types.h ) \
-	&& rm -f tmp-librsvg-enum-types.h	\
+		$(headers) ) > librsvg/tmp-librsvg-enum-types.h \
+	&& (cmp -s librsvg/tmp-librsvg-enum-types.h librsvg/librsvg-enum-types.h || cp librsvg/tmp-librsvg-enum-types.h librsvg/librsvg-enum-types.h ) \
+	&& rm -f librsvg/tmp-librsvg-enum-types.h	\
 	&& echo timestamp > $(@F)
 
-librsvg-enum-types.c: s-enum-types-c librsvg-enum-types.h
+librsvg/librsvg-enum-types.c: librsvg/s-enum-types-c librsvg/librsvg-enum-types.h
 	@true
 
-s-enum-types-c: $(headers) Makefile
+librsvg/s-enum-types-c: $(headers) Makefile
 	$(AM_V_GEN) ( cd $(srcdir) && $(GLIB_MKENUMS) \
 			--fhead "#include \"rsvg.h\"" \
 			--fprod "\n/* enumerations from \"@filename@\" */" \
 			--vhead "GType\n@enum_name@_get_type (void)\n{\n  static GType etype = 0;\n  if (etype == 0) {\n    static const G@Type@Value values[] = {" 	\
 			--vprod "      { @VALUENAME@, \"@VALUENAME@\", \"@valuenick@\" }," \
 			--vtail "      { 0, NULL, NULL }\n    };\n    etype = g_@type@_register_static (\"@EnumName@\", values);\n  }\n  return etype;\n}\n" \
-		$(headers) ) > tmp-librsvg-enum-types.c \
-	&& (cmp -s tmp-librsvg-enum-types.c librsvg-enum-types.c || cp tmp-librsvg-enum-types.c librsvg-enum-types.c ) \
-	&& rm -f tmp-librsvg-enum-types.c \
+		$(headers) ) > librsvg/tmp-librsvg-enum-types.c \
+	&& (cmp -s librsvg/tmp-librsvg-enum-types.c librsvg/librsvg-enum-types.c || cp librsvg/tmp-librsvg-enum-types.c librsvg/librsvg-enum-types.c ) \
+	&& rm -f librsvg/tmp-librsvg-enum-types.c \
 	&& echo timestamp > $(@F)
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc

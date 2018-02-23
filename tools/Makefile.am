@@ -7,7 +7,7 @@ noinst_LTLIBRARIES = 			\
 	librsvg_tools_main.la
 endif
 
-INCLUDES =				\
+AM_CPPFLAGS =				\
 	-I$(top_srcdir) 		\
 	-I$(top_builddir) 		\
 	$(LIBRSVG_CFLAGS) 		\

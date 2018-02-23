@@ -2,7 +2,7 @@
 /* vim: set ts=4 nowrap ai expandtab sw=4: */
 
 #include <glib.h>
-#include "rsvg.h"
+#include "librsvg/rsvg.h"
 #include "test-utils.h"
 
 static void

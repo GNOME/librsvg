@@ -8,10 +8,10 @@ m4_define([rsvg_lt_version_info],m4_eval(rsvg_major_version + rsvg_minor_version
 AC_INIT([RSVG],[rsvg_version],[https://gitlab.gnome.org/GNOME/librsvg/issues],[librsvg])
 
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_SRCDIR([rsvg.h])
+AC_CONFIG_SRCDIR([librsvg/rsvg.h])
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_INIT_AUTOMAKE([1.9 foreign no-dist-gzip dist-xz tar-ustar])
+AM_INIT_AUTOMAKE([1.9 foreign no-dist-gzip dist-xz tar-ustar subdir-objects])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AM_MAINTAINER_MODE([enable])
@@ -331,7 +331,7 @@ AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_LDFLAGS])
 
 AC_CONFIG_FILES([
-librsvg-features.h
+librsvg/librsvg-features.h
 Makefile
 librsvg-zip
 gdk-pixbuf-loader/Makefile
