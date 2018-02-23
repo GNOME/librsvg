@@ -107,7 +107,6 @@ rustfmt:
     CFG_RELEASE_CHANNEL: "nightly"
   script:
   - rustc --version && cargo --version
-  - cd rust/
   - cargo install rustfmt-nightly --force
   - cargo fmt --all -- --write-mode=diff
   when: manual
@@ -126,7 +125,6 @@ clippy:
 
   script:
   - rustc --version && cargo --version
-  - cd rust/
   - cargo install clippy --force
   - cargo clippy --all
   when: manual
