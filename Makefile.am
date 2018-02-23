@@ -361,7 +361,7 @@ MSVCPROJS = rsvg rsvg-convert
 
 rsvg_FILES = $(librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES)
 rsvg_EXCLUDES = dummy
-rsvg_HEADERS_DIR = $(librsvgincdir)
+rsvg_HEADERS_DIR = $(includedir)/librsvg-$(RSVG_API_VERSION)
 rsvg_HEADERS_INST = $(librsvginc_HEADERS)
 
 rsvg_HEADERS_EXCLUDES = dummy
