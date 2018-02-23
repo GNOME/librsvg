@@ -1,6 +1,6 @@
 GIR = gir/target/bin/gir
 GIR_SRC = gir/Cargo.toml gir/Cargo.lock gir/build.rs $(shell find gir/src -name '*.rs')
-GIR_FILES = gir-files/Gtk-3.0.gir
+GIR_FILES = gir-files/Rsvg-2.0.gir
 GIR_SYS = $(rsvg-sys/Gir.toml=rsvg-sys/src/lib.rs)
 
 # Run `gir` generating the bindings
