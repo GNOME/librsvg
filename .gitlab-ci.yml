@@ -7,6 +7,9 @@ stages:
 
 .test_template: &distro_test
   script:
+    # Only stuff inside the repo directory can be cached
+    # Override the CARGO_HOME variable to force it location
+    - export CARGO_HOME=".cargo_cache/"
     - rustc --version && cargo --version
     - ./autogen.sh --enable-debug
     - make check
@@ -22,9 +25,11 @@ stages:
       - png_artifacts
 
   cache:
+      # Each job will have it's own cache
+      key: "$CI_JOB_NAME"
       paths:
         - target/
-        - ${HOME}/.cargo/
+        - .cargo_cache/
 
 # .deb_template: &deb_deps
 #   before_script:
