@@ -311,7 +311,7 @@ pub struct RsvgStrokeDasharray {
     pub dashes: *mut RsvgLength
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum StrokeDasharray {
     None,
     Inherit,
@@ -542,12 +542,10 @@ mod tests {
 
     #[test]
     fn parses_stroke_dasharray() {
-        use std::mem::discriminant;
-
-        // https://doc.rust-lang.org/std/mem/fn.discriminant.html
-        assert_eq!(discriminant(&parse_stroke_dash_array("none").unwrap()), discriminant(&StrokeDasharray::None));
-        assert_eq!(discriminant(&parse_stroke_dash_array("inherit").unwrap()), discriminant(&StrokeDasharray::Inherit));
-        assert_eq!(discriminant(&parse_stroke_dash_array("10, 5").unwrap()), discriminant(&StrokeDasharray::Dasharray(parse_dash_array("10, 5").unwrap())));
+        assert_eq!(parse_stroke_dash_array("none").unwrap(), StrokeDasharray::None);
+        assert_eq!(parse_stroke_dash_array("inherit").unwrap(), StrokeDasharray::Inherit);
+        assert_eq!(parse_stroke_dash_array("10, 5").unwrap(),
+                   StrokeDasharray::Dasharray(parse_dash_array("10, 5").unwrap()));
         assert!(parse_stroke_dash_array("").is_err());
     }
 
