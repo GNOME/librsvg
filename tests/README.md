@@ -66,7 +66,7 @@ tests and the black box tests in this `librsvg/tests` directory.
 
 If you want to run just the black box tests, go into this
 `librsvg/tests` directory and run `make check`.  If you want to run
-the unit tests, go to `librsvg/rust` and run `cargo test`.
+the unit tests, go to `librsvg/rsvg_internals` and run `cargo test`.
 
 Those commands will yield exit code 0 if all the tests pass, or
 nonzero if some tests fail.
