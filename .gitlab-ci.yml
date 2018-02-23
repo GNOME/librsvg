@@ -31,20 +31,8 @@ stages:
 
 
 fedora:test:
-  image: fedora:latest
+  image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: test
-  before_script:
-    - dnf install -y gcc rust rust-std-static cargo make
-                     automake autoconf libtool gettext itstool
-                     gtk-doc
-                     git redhat-rpm-config
-                     gobject-introspection-devel
-                     libxml2-devel
-                     libcroco-devel
-                     cairo-devel
-                     pango-devel
-                     gdk-pixbuf2-devel
-                     gtk3-devel
   <<: *distro_test
 
 
