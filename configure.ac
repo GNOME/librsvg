@@ -366,4 +366,5 @@ librsvg-$VERSION
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
         GTK+ $GTK3_REQUIRED or later:           ${have_gtk_3}
 	Build miscellaneous tools:      ${build_misc_tools}
+	Build HTML documentation:       ${enable_gtk_doc}
 "
