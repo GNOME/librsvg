@@ -70,6 +70,7 @@ mod tests {
         }
 
     #[test]
+    #[ignore]
     fn it_should_be_possible_to_load_svg_from_file() {
         let svg_path = get_fixture_path("mysvg.svg");
         let handle = super::Handle::new_from_file(&svg_path).unwrap();
@@ -79,6 +80,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn it_should_be_possible_to_render_to_cairo_context() {
         let svg_path = get_fixture_path("mysvg.svg");
         let expected = image::open(get_fixture_path("mysvg.svg.png")).unwrap();
@@ -98,6 +100,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn it_should_be_possible_to_render_to_gdk_pixbuf_without_throwing() {
         let svg_path = get_fixture_path("mysvg.svg");
         let expected = image::open(get_fixture_path("mysvg.svg.png")).unwrap();
