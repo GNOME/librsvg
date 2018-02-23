@@ -8,10 +8,7 @@ extern crate libc;
 extern crate glib_sys as glib;
 extern crate gobject_sys as gobject;
 extern crate gio_sys as gio;
-extern crate atk_sys as atk;
 extern crate gdk_pixbuf_sys as gdk_pixbuf;
-extern crate gdk_sys as gdk;
-extern crate pango_sys as pango;
 extern crate cairo_sys as cairo;
 
 #[allow(unused_imports)]
