@@ -46,7 +46,7 @@ vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals\$(RUST_TARGET)-pc-windows-msvc\$(CF
 
 clean:
 	@set CARGO_TARGET_DIR=..\win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_internals
-	@cd ..
+	@cd ..\rsvg_internals
 	@$(CARGO) clean
 	@cd ..\win32\vs$(VSVER)
 	@set CARGO_TARGET_DIR=
