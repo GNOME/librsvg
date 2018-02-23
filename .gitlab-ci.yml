@@ -35,6 +35,15 @@ fedora:test:
   stage: test
   <<: *distro_test
 
+fedora:rawhide:
+  image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
+  stage: test
+  <<: *distro_test
+  only:
+    - master
+    - schedules
+    - tags
+    - web
 
 opensuse:tumbleweed:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/opensuse:tumbleweed
