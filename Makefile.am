@@ -307,7 +307,7 @@ DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
 
 -include $(INTROSPECTION_MAKEFILE)
 
-INTROSPECTION_GIRS = Rsvg-@RSVG_API_VERSION@.gir
+INTROSPECTION_GIR = Rsvg-@RSVG_API_VERSION@.gir
 INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir) --symbol-prefix=rsvg --symbol-prefix=librsvg
 INTROSPECTION_COMPILER_ARGS = --includedir=$(srcdir)
 
@@ -335,10 +335,10 @@ Rsvg_@RSVG_API_VERSION_U@_gir_LIBS = librsvg-@RSVG_API_MAJOR_VERSION@.la
 Rsvg_@RSVG_API_VERSION_U@_gir_SCANNERFLAGS = --c-include="librsvg/rsvg.h"
 
 girdir = $(datadir)/gir-1.0
-nodist_gir_DATA = $(INTROSPECTION_GIRS)
+nodist_gir_DATA = $(INTROSPECTION_GIR)
 
 typelibsdir = $(libdir)/girepository-1.0
-nodist_typelibs_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
+nodist_typelibs_DATA = $(INTROSPECTION_GIR:.gir=.typelib)
 
 CLEANFILES += $(nodist_gir_DATA) $(nodist_typelibs_DATA)
 
@@ -383,7 +383,7 @@ MSVCPROJ_GENERATED = \
 	$(top_builddir)/win32/vs12/rsvg.vcxproj		\
 	$(top_builddir)/win32/vs12/rsvg-convert.vcxproj
 
-MSVC_INTROSPECT_GIRS = $(INTROSPECTION_GIRS)
+MSVC_INTROSPECT_GIRS = $(INTROSPECTION_GIR)
 
 INTROSPECTION_INTERMEDIATE_ITEMS = \
 	$(top_builddir)/win32/Rsvg-@RSVG_API_VERSION@.gir.msvc.introspect		\
