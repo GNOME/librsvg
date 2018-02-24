@@ -1,0 +1,3 @@
+[submodule "gir"]
+	path = gir
+	url = git@github.com:gtk-rs/gir.git
