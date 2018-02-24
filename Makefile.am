@@ -426,6 +426,13 @@ GIR = $(RUST_BINARIES_DIR)/gir
 # $(GIR_SRC):
 # 	git submodule update --init
 
+$(GIR): $(GIR_SRC)
+	+cd $(top_srcdir)/gir &&						\
+	PKG_CONFIG_ALLOW_CROSS=1						\
+	PKG_CONFIG='$(PKG_CONFIG)'						\
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
+	cargo build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
+
 # ---------- rsvg-rs binding ----------
 
 RS_BINDING_LIB=$(RUST_BINARIES_DIR)/librsvg_rs.rlib
