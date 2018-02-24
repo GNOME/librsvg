@@ -848,6 +848,10 @@ rsvg_end_element (void *data, const xmlChar * xmlname)
             handle->priv->handler = NULL;
         }
 
+        if (handle->priv->currentnode && rsvg_node_get_type (handle->priv->currentnode) == RSVG_NODE_TYPE_SVG) {
+            rsvg_node_svg_apply_atts (handle->priv->currentnode, handle);
+        }
+
         if (handle->priv->currentnode && topmost_element_name_is (handle, name)) {
             RsvgNode *parent;
 
@@ -855,12 +859,6 @@ rsvg_end_element (void *data, const xmlChar * xmlname)
             handle->priv->currentnode = rsvg_node_unref (handle->priv->currentnode);
             handle->priv->currentnode = parent;
             pop_element_name (handle);
-        }
-
-        /* FIXMEchpe: shouldn't this check that currentnode == treebase or sth like that? */
-        if (handle->priv->treebase && !strcmp (name, "svg")) {
-            g_assert (rsvg_node_get_type (handle->priv->treebase) == RSVG_NODE_TYPE_SVG);
-            rsvg_node_svg_apply_atts (handle->priv->treebase, handle);
         }
     }
 }
