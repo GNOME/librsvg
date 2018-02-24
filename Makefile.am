@@ -452,7 +452,7 @@ RS_BINDING_SOURCES=			\
 	rsvg-rs/src/position_data.rs
 
 # Build the binding
-$(RS_BINDING_LIB): $(RS_BINDING_GIR) $(RS_BINDING_SOURCES)
+$(RS_BINDING_LIB): $(RS_BINDING_GIR) $(RS_BINDING_SOURCES) $(GIR)
 	+cd $(top_srcdir)/rsvg-rs &&						\
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
