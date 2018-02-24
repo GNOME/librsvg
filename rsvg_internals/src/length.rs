@@ -173,9 +173,10 @@ impl RsvgLength {
                 }
             },
 
-            // FIXME: these are pending: https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
             LengthUnit::RelativeLarger |
-            LengthUnit::RelativeSmaller => { 0.0 }
+            LengthUnit::RelativeSmaller => {
+                drawing_ctx::get_normalized_font_size (draw_ctx)
+            },
         }
     }
 
