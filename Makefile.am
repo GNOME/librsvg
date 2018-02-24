@@ -405,6 +405,21 @@ $(MSVCPROJ_GENERATED): $(top_builddir)/win32/vs12/rsvg.vs12.headers
 
 EXTRA_DIST += $(MSVCPROJ_GENERATED)
 
+# ---------- gir tool from gtk-rs ----------
+
+GIR_SRC=			\
+	gir/LICENSE		\
+	gir/build.rs		\
+	gir/Cargo.toml		\
+	gir/Gir_Gio.toml	\
+	gir/README.md		\
+	gir/Gir_Gtk.toml	\
+	gir/Cargo.lock		\
+	$(shell find gir/src -name '*.rs')
+# do we need to run find(1) in gir/tests as well?
+
+EXTRA_DIST += $(GIR_SRC)
+
 # ---------- rsvg-rs binding ----------
 
 RS_BINDING_LIB=@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/librsvg_rs.rlib
