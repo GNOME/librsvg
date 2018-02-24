@@ -405,7 +405,33 @@ $(MSVCPROJ_GENERATED): $(top_builddir)/win32/vs12/rsvg.vs12.headers
 
 EXTRA_DIST += $(MSVCPROJ_GENERATED)
 
-# ChangeLog generation
+# ---------- rsvg-rs binding ----------
+
+RS_BINDING_LIB=@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/librsvg_rs.rlib
+
+RS_BINDING_GIR=rsvg-rs/$(INTROSPECTION_GIR)
+
+# Copy the generated .gir into rsvg-rs so it can be used as a standalone crate
+$(RS_BINDING_GIR): $(INTROSPECTION_GIR)
+	cp $(INTROSPECTION_GIR) $(RS_BINDING_GIR)
+
+RS_BINDING_SOURCES=			\
+	rsvg-rs/Cargo.toml		\
+	rsvg-rs/Gir.toml		\
+	rsvg-rs/src/dimension_data.rs	\
+	rsvg-rs/src/handle.rs		\
+	rsvg-rs/src/lib.rs		\
+	rsvg-rs/src/position_data.rs
+
+# Build the binding
+$(RS_BINDING_LIB): $(RS_BINDING_GIR) $(RS_BINDING_SOURCES)
+	+cd $(top_srcdir)/rsvg-rs &&						\
+	PKG_CONFIG_ALLOW_CROSS=1						\
+	PKG_CONFIG='$(PKG_CONFIG)'						\
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
+	cargo build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
+
+# ---------- ChangeLog generation ----------
 
 ChangeLog:
 	$(AM_V_GEN) if test -d $(top_srcdir)/.git; then \
