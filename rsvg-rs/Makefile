@@ -1,26 +1,20 @@
-GIR = gir/target/bin/gir
-GIR_SRC = gir/Cargo.toml gir/Cargo.lock gir/build.rs $(shell find gir/src -name '*.rs')
-GIR_FILES = gir-files/Rsvg-2.0.gir
+GIR = target/gir/bin/gir
+GIR_FILES_DIR = $(shell pkg-config --variable girdir gobject-introspection-1.0)
+GIR_FILES = $(GIR_FILES_DIR)/Rsvg-2.0.gir
 SYS_FILES = rsvg-sys/src/lib.rs
 
 src/auto/mod.rs : Gir.toml $(GIR) $(GIR_FILES) $(SYS_FILES)
-	$(GIR) -c Gir.toml
+	$(GIR) -c Gir.toml -d $(GIR_FILES_DIR)
 
 .PHONY: clean
 clean:
-	rm -rf src/auto
-	rm -rf $(SYS_FILES)
+	rm -rf src/auto $(SYS_FILES)
 
 $(SYS_FILES): rsvg-sys/Gir.toml $(GIR) $(GIR_FILES)
-	$(GIR) -c $< -o $(abspath rsvg-sys) -d gir-files
+	$(GIR) -c $< -o $(abspath rsvg-sys) -d $(GIR_FILES_DIR)
 
-$(GIR) : $(GIR_SRC)
-	rm -f gir/target/bin/gir
-	cargo install --path gir --root gir/target
-	rm -f gir/target/.crates.toml
-
-$(GIR_SRC) $(GIR_FILES) :
-	git submodule update --init
+$(GIR) :
+	cargo install --root target/gir --git https://github.com/gtk-rs/gir --rev d50d839ceaed9cc5eabac729dbc161c295306270 gir
 
 .PHONY: gir
 gir : src/auto/mod.rs
