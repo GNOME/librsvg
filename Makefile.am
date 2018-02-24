@@ -3,12 +3,18 @@ SUBDIRS = . gdk-pixbuf-loader tests tools doc win32
 NULL =
 BUILT_SOURCES =
 
+# ---------- Products of the build, to be installed ----------
+
+# the main library
 lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
 
+# programs
 bin_PROGRAMS = rsvg-convert
 if HAVE_GTK_3
 bin_PROGRAMS += rsvg-view-3
 endif
+
+# ---------- librsvg library ----------
 
 headers =			\
 	librsvg/rsvg.h		\
@@ -297,7 +303,8 @@ librsvg/s-enum-types-c: $(headers) Makefile
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
 
-if HAVE_INTROSPECTION
+# ---------- GObject Introspection ----------
+
 -include $(INTROSPECTION_MAKEFILE)
 
 INTROSPECTION_GIRS = Rsvg-@RSVG_API_VERSION@.gir
@@ -335,6 +342,8 @@ nodist_typelibs_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
 
 CLEANFILES += $(nodist_gir_DATA) $(nodist_typelibs_DATA)
 
+# ---------- Vala binding ----------
+
 if ENABLE_VAPIGEN
 include $(VAPIGEN_MAKEFILE)
 
@@ -352,8 +361,6 @@ vapi_DATA = $(VAPIGEN_VAPIS)
 CLEANFILES += $(VAPIGEN_VAPIS)
 
 endif # ENABLE_VAPIGEN
-
-endif # HAVE_INTROSPECTION
 
 # ------------------- MSVC Build Items ----------------
 
@@ -376,8 +383,6 @@ MSVCPROJ_GENERATED = \
 	$(top_builddir)/win32/vs12/rsvg.vcxproj		\
 	$(top_builddir)/win32/vs12/rsvg-convert.vcxproj
 
-if HAVE_INTROSPECTION
-
 MSVC_INTROSPECT_GIRS = $(INTROSPECTION_GIRS)
 
 INTROSPECTION_INTERMEDIATE_ITEMS = \
@@ -395,7 +400,6 @@ Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_SCANNERFLAGS = $(Rsvg_@RSVG_API_VERSION_U@_gi
 MSVCPROJ_GENERATED += $(INTROSPECTION_INTERMEDIATE_ITEMS)
 
 include $(top_srcdir)/win32/Makefile.msvc-introspection
-endif # HAVE_INTROSPECTION
 
 $(MSVCPROJ_GENERATED): $(top_builddir)/win32/vs12/rsvg.vs12.headers
 
