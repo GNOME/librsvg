@@ -592,10 +592,6 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
 
     state = rsvg_current_state (ctx);
 
-    /* Do not render the text if the font size is zero. See bug #581491. */
-    if (state->font_size.length == 0)
-        return;
-
     layout = rsvg_text_create_layout (ctx, text);
     pango_layout_get_size (layout, &w, &h);
     iter = pango_layout_get_iter (layout);
