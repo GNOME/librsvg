@@ -1,8 +1,12 @@
 Version 2.42.3
+- gitlab#205 - The configure script now checks for Rust 1.20.0 -
+  previously this minimum requirement was not well-defined.
 - gitlab#204 - New feature: If an SVG has an <a> link element, we now
   generate the corresponding link when outputting to a Cairo PDF
   surface.  If you use rsvg-convert(1) with PDF output, <a> links in
   the SVG will work in the PDF (Dmitry Kontsevoy).
+- gitlab#108 - New feature: support font-size:larger and font-size:smaller
+  relative sizes.
 - New feature: rsvg-convert now supports SOURCE_DATE_EPOCH per
   https://reproducible-builds.org/specs/source-date-epoch/ to generate
   reproducible output for PDFs (Chris Lamb).
@@ -12,6 +16,8 @@ Version 2.42.3
   rendering as a result of this updated requirement.
 - gitlab#91 - Fix rendering of masks and clips when the initial
   transformation has a translation component (Massimo).
+- gitlab#112 - Fix: apply style attributes for all SVG elements, not just
+  for the toplevel one.
 - gitlab#161 - Fix the marker angle for the last vertex of closed
   paths (Juraj Fiala).
 - gitlab#198 - Fix: Make rsvg_pixbuf_from_file() and its derived
