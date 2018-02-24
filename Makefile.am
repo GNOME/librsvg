@@ -421,6 +421,11 @@ GIR_SRC=			\
 
 EXTRA_DIST += $(GIR_SRC)
 
+GIR = $(RUST_BINARIES_DIR)/gir
+
+# $(GIR_SRC):
+# 	git submodule update --init
+
 # ---------- rsvg-rs binding ----------
 
 RS_BINDING_LIB=$(RUST_BINARIES_DIR)/librsvg_rs.rlib
