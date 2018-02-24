@@ -128,8 +128,9 @@ cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
 cargo_verbose_0 =
 cargo_verbose_1 = --verbose
 
-RUST_LIB=@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a
 CARGO_TARGET_DIR=@abs_top_builddir@/target
+RUST_BINARIES_DIR=$(CARGO_TARGET_DIR)/@RUST_TARGET_SUBDIR@
+RUST_LIB=$(RUST_BINARIES_DIR)/librsvg_internals.a
 
 check-local:
 	cd $(srcdir) && \
@@ -422,7 +423,7 @@ EXTRA_DIST += $(GIR_SRC)
 
 # ---------- rsvg-rs binding ----------
 
-RS_BINDING_LIB=@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/librsvg_rs.rlib
+RS_BINDING_LIB=$(RUST_BINARIES_DIR)/librsvg_rs.rlib
 
 RS_BINDING_GIR=rsvg-rs/$(INTROSPECTION_GIR)
 
