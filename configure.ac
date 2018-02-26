@@ -216,7 +216,7 @@ AM_CONDITIONAL([ENABLE_PIXBUF_LOADER],[test "$enable_pixbuf_loader" = "yes"])
 AC_ARG_ENABLE([Bsymbolic],
   [AS_HELP_STRING([--disable-Bsymbolic],
                   [disable linking with -Bsymbolic])],
-  [],[enable_Bsymbolic=yes])
+  [enable_Bsymbolic=no],[enable_Bsymbolic=auto])
 
 BSYMBOLIC_LDFLAG=
 if test "$enable_Bsymbolic" != "no"; then
