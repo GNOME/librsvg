@@ -31,6 +31,32 @@ stages:
         - target/
         - .cargo_cache/
 
+.test_template: &distro_test_release
+  script:
+    # Only stuff inside the repo directory can be cached
+    # Override the CARGO_HOME variable to force it location
+    - export CARGO_HOME=".cargo_cache/"
+    - rustc --version && cargo --version
+    - ./autogen.sh
+    - make check
+
+  after_script:
+    - mkdir png_artifacts
+    - cp /tmp/*.png png_artifacts
+
+  artifacts:
+    when: on_failure
+    paths:
+      - tests/*.log
+      - png_artifacts
+
+  cache:
+      # Each job will have it's own cache
+      key: "$CI_JOB_NAME"
+      paths:
+        - target/
+        - .cargo_cache/
+
 # .deb_template: &deb_deps
 #   before_script:
 #     - apt update -yqq
@@ -44,6 +70,11 @@ fedora:test:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: test
   <<: *distro_test
+
+fedora:test_release:
+  image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
+  stage: test
+  <<: *distro_test_release
 
 fedora:rawhide:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
