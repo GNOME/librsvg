@@ -1,26 +1,28 @@
-GIR = gir/target/bin/gir
-GIR_SRC = gir/Cargo.toml gir/Cargo.lock gir/build.rs $(shell find gir/src -name '*.rs')
-GIR_FILES = gir-files/Rsvg-2.0.gir
+RUSTDOC_STRIPPER = target/rustdoc-stripper/bin/rustdoc-stripper
+GIR = target/gir/bin/gir
+GIR_FILES = $(shell pkg-config --variable girdir gobject-introspection-1.0)
 SYS_FILES = rsvg-sys/src/lib.rs
+DOCS = vendor.md
 
-src/auto/mod.rs : Gir.toml $(GIR) $(GIR_FILES) $(SYS_FILES)
-	$(GIR) -c Gir.toml
+src/auto/mod.rs : Gir.toml $(GIR) $(RUSTDOC_STRIPPER) $(GIR_FILES) $(SYS_FILES) $(DOCS)
+	$(GIR) -c Gir.toml -d $(GIR_FILES)
+	$(RUSTDOC_STRIPPER) -g -o $(DOCS) -d src/auto
+
+$(DOCS): Gir.toml $(GIR) $(GIR_FILES)
+	$(GIR) -c $< -d $(GIR_FILES) -m doc
 
 .PHONY: clean
 clean:
-	rm -rf src/auto
-	rm -rf $(SYS_FILES)
+	rm -rf src/auto $(SYS_FILES) $(DOCS)
 
 $(SYS_FILES): rsvg-sys/Gir.toml $(GIR) $(GIR_FILES)
-	$(GIR) -c $< -o $(abspath rsvg-sys) -d gir-files
+	$(GIR) -c $< -o $(abspath rsvg-sys) -d $(GIR_FILES)
 
-$(GIR) : $(GIR_SRC)
-	rm -f gir/target/bin/gir
-	cargo install --path gir --root gir/target
-	rm -f gir/target/.crates.toml
+$(RUSTDOC_STRIPPER) :
+	cargo install --root target/rustdoc-stripper rustdoc-stripper --version "0.1.5"
 
-$(GIR_SRC) $(GIR_FILES) :
-	git submodule update --init
+$(GIR) :
+	cargo install --root target/gir --git https://github.com/gtk-rs/gir --rev d50d839ceaed9cc5eabac729dbc161c295306270 gir
 
 .PHONY: gir
 gir : src/auto/mod.rs
