@@ -6,10 +6,17 @@ stages:
   - distro_test
 
 .test_template: &distro_test
-  script:
+  before_script:
+    # CCache Config
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
+    - export CC="ccache gcc"
+
     # Only stuff inside the repo directory can be cached
     # Override the CARGO_HOME variable to force it location
     - export CARGO_HOME=".cargo_cache/"
+  script:
     - rustc --version && cargo --version
     - ./autogen.sh --enable-debug
     - make check
@@ -30,12 +37,20 @@ stages:
       paths:
         - target/
         - .cargo_cache/
+	- ccache/
 
 .test_template: &distro_test_release
-  script:
+  before_script:
+    # CCache Config
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
+    - export CC="ccache gcc"
+
     # Only stuff inside the repo directory can be cached
     # Override the CARGO_HOME variable to force it location
     - export CARGO_HOME=".cargo_cache/"
+  script:
     - rustc --version && cargo --version
     - ./autogen.sh
     - make check
@@ -56,6 +71,7 @@ stages:
       paths:
         - target/
         - .cargo_cache/
+	- ccache/
 
 # .deb_template: &deb_deps
 #   before_script:
@@ -114,11 +130,10 @@ debian:testing:
 #   <<: *deb_deps
 #   <<: *distro_test
 #   only:
-#     refs:
-#       - master
-#       - schedules
-#       - tags
-#       - web
+#     - master
+#     - schedules
+#     - tags
+#     - web
 
 
 # Configure and run rustfmt on nightly
