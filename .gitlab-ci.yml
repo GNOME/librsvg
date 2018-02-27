@@ -40,7 +40,7 @@ stages:
       - .cargo_cache/
       - ccache/
 
-.test_template: &distro_test_release
+.test_template_release: &distro_test_release
   before_script:
     # CCache Config
     - mkdir -p ccache
