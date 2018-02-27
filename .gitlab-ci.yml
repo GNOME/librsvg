@@ -3,8 +3,9 @@
 stages:
   - test
   - lint
-  - cross_distro
-  - cross_distro_release
+  - cross_distro_amd64
+  - cross_distro_amd64_release
+  - cross_distro_i386
 
 .test_template: &distro_test
   before_script:
@@ -67,12 +68,12 @@ fedora:test_release:
   <<: *distro_test
 
 
-# CROSS DISTRO TEST STAGE
+# CROSS DISTRO AMD64 TEST STAGE
 #######################################################################
 
 fedora:rawhide:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
-  stage: cross_distro
+  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest
+  stage: cross_distro_amd64
   before_script:
     - export LIBRSVG_DEBUG="yes"
   <<: *distro_test
@@ -83,8 +84,8 @@ fedora:rawhide:
     - web
 
 opensuse:tumbleweed:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/opensuse:tumbleweed
-  stage: cross_distro
+  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed
+  stage: cross_distro_amd64
   before_script:
     - export LIBRSVG_DEBUG="yes"
   <<: *distro_test
@@ -95,8 +96,8 @@ opensuse:tumbleweed:
     - web
 
 debian:testing:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/debian:testing
-  stage: cross_distro
+  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing
+  stage: cross_distro_amd64
   before_script:
     - export LIBRSVG_DEBUG="yes"
   <<: *distro_test
@@ -120,12 +121,12 @@ debian:testing:
 #     - web
 
 
-# CROSS DISTRO RELEASE TEST STAGE
+# CROSS DISTRO RELEASE AMD64 TEST STAGE
 #######################################################################
 
 fedora:rawhide_release:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
-  stage: cross_distro_release
+  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest
+  stage: cross_distro_amd64_release
   before_script:
     - export LIBRSVG_DEBUG="no"
   <<: *distro_test
@@ -135,8 +136,8 @@ fedora:rawhide_release:
     - web
 
 opensuse:tumbleweed_release:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/opensuse:tumbleweed
-  stage: cross_distro_release
+  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed
+  stage: cross_distro_amd64_release
   before_script:
     - export LIBRSVG_DEBUG="no"
   <<: *distro_test
@@ -146,10 +147,24 @@ opensuse:tumbleweed_release:
     - web
 
 debian:testing_release:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/debian:testing
-  stage: cross_distro_release
+  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing
+  stage: cross_distro_amd64_release
   before_script:
     - export LIBRSVG_DEBUG="no"
+  <<: *distro_test
+  only:
+    - schedules
+    - tags
+    - web
+
+# CROSS DISTRO i386
+#######################################################################
+
+debian:testing_i386:
+  image: registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing
+  stage: cross_distro_i386
+  before_script:
+    - export LIBRSVG_DEBUG="yes"
   <<: *distro_test
   only:
     - schedules
