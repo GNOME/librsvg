@@ -19,40 +19,6 @@ stages:
     - export CARGO_HOME=".cargo_cache/"
   script:
     - rustc --version && cargo --version
-    - ./autogen.sh --enable-debug
-    - make check
-
-  after_script:
-    - mkdir png_artifacts
-    - cp /tmp/*.png png_artifacts
-
-  artifacts:
-    when: on_failure
-    paths:
-      - tests/*.log
-      - png_artifacts
-
-  cache:
-      # Each job will have it's own cache
-    key: "$CI_JOB_NAME"
-    paths:
-      - target/
-      - .cargo_cache/
-      - ccache/
-
-.test_template_release: &distro_test_release
-  before_script:
-    # CCache Config
-    - mkdir -p ccache
-    - export CCACHE_BASEDIR=${PWD}
-    - export CCACHE_DIR=${PWD}/ccache
-    - export CC="ccache gcc"
-
-    # Only stuff inside the repo directory can be cached
-    # Override the CARGO_HOME variable to force it location
-    - export CARGO_HOME=".cargo_cache/"
-  script:
-    - rustc --version && cargo --version
     - ./autogen.sh
     - make check
 
@@ -89,12 +55,16 @@ stages:
 fedora:test:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: test
+  before_script:
+    - export LIBRSVG_DEBUG="yes"
   <<: *distro_test
 
 fedora:test_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: test
-  <<: *distro_test_release
+  before_script:
+    - export LIBRSVG_DEBUG="no"
+  <<: *distro_test
 
 
 # CROSS DISTRO TEST STAGE
@@ -103,6 +73,8 @@ fedora:test_release:
 fedora:rawhide:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: cross_distro
+  before_script:
+    - export LIBRSVG_DEBUG="yes"
   <<: *distro_test
   only:
     - master
@@ -113,6 +85,8 @@ fedora:rawhide:
 opensuse:tumbleweed:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/opensuse:tumbleweed
   stage: cross_distro
+  before_script:
+    - export LIBRSVG_DEBUG="yes"
   <<: *distro_test
   only:
     - master
@@ -123,6 +97,8 @@ opensuse:tumbleweed:
 debian:testing:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/debian:testing
   stage: cross_distro
+  before_script:
+    - export LIBRSVG_DEBUG="yes"
   <<: *distro_test
   only:
     - master
@@ -150,7 +126,9 @@ debian:testing:
 fedora:rawhide_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: cross_distro_release
-  <<: *distro_test_release
+  before_script:
+    - export LIBRSVG_DEBUG="no"
+  <<: *distro_test
   only:
     - schedules
     - tags
@@ -159,7 +137,9 @@ fedora:rawhide_release:
 opensuse:tumbleweed_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/opensuse:tumbleweed
   stage: cross_distro_release
-  <<: *distro_test_release
+  before_script:
+    - export LIBRSVG_DEBUG="no"
+  <<: *distro_test
   only:
     - schedules
     - tags
@@ -168,7 +148,9 @@ opensuse:tumbleweed_release:
 debian:testing_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/debian:testing
   stage: cross_distro_release
-  <<: *distro_test_release
+  before_script:
+    - export LIBRSVG_DEBUG="no"
+  <<: *distro_test
   only:
     - schedules
     - tags
