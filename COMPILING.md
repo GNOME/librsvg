@@ -100,6 +100,33 @@ libxml2-devel libcroco-devel cairo-devel \
 pango-devel gdk-pixbuf-devel
 ```
 
+### macOS systems
+
+Dependencies may be installed using [Homebrew](https://brew.sh) or another
+package manager.
+
+```sh
+brew install cairo gdk-pixbuf glib libcroco pango \
+gobject-introspection rust
+
+export PKG_CONFIG_PATH="`brew --prefix`/lib/pkgconfig:\
+`brew --prefix libffi`/lib/pkgconfig:\
+/usr/lib/pkgconfig"
+export ARCHFLAGS="-arch x86_64"
+```
+
+Note that `PKG_CONFIG_PATH` must be manually set to include Homebrew's libffi,
+as the system libffi is too old but Homebrew does not install it in a public
+location by default.
+
+Currently, cairo 1.15.4 or later must also be installed manually, as the
+Homebrew package is for the older stable release. This may require adding
+it to `PKG_CONFIG_PATH` as well if you do not install it in `/usr/local`.
+
+Setting `ARCHFLAGS` is required if gobject-introspection is using the system
+Python provided by Apple, as on Homebrew.
+
+
 # Basic compilation instructions
 
 If you are compiling a tarball:
