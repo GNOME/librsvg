@@ -289,12 +289,7 @@ AC_SUBST([RUST_TARGET_SUBDIR])
 dnl ===========================================================================
 dnl Build introspectable bindings
 
-# No automagic please!
-if test -z "$enable_introspection"; then
-  enable_introspection=yes
-fi
-
-GOBJECT_INTROSPECTION_CHECK([0.10.8])
+GOBJECT_INTROSPECTION_REQUIRE([0.10.8])
 
 # Vala bindings
 VAPIGEN_CHECK([0.17.1.26],,,[no])
@@ -378,7 +373,6 @@ librsvg-$VERSION
 
         Debugging information for Rust: ${debug_release}
 
-	Build introspectable bindings:  ${found_introspection}
 	Build Vala bindings:            ${enable_vala}
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
         GTK+ $GTK3_REQUIRED or later:           ${have_gtk_3}

@@ -1,0 +1,38 @@
+[options]
+girs_dir = "gir-files"
+library = "Rsvg"
+version = "2.0"
+min_cfg_version = "2.36"
+target_path = "."
+work_mode = "normal"
+generate_safety_asserts = false
+deprecate_by_min_version = true
+
+generate = [
+    "Rsvg.HandleFlags"
+]
+
+manual = [
+    "Rsvg.DimensionData",
+    "Rsvg.PositionData",
+    "cairo.Context",
+    "GdkPixbuf.Pixbuf",
+    "GLib.Error"
+]
+
+[[object]]
+name = "Rsvg.Handle"
+status = "generate"
+    [[object.function]]
+    pattern = "render_cairo(_sub)?"
+        [[object.function.parameter]]
+        name = "cr"
+        const = true
+
+    [[object.function]]
+        name = "get_base_uri"
+        ignore = true
+
+    [[object.property]]
+        name = "base-uri"
+        ignore = true

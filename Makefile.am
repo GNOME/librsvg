@@ -3,12 +3,18 @@ SUBDIRS = . gdk-pixbuf-loader tests tools doc win32
 NULL =
 BUILT_SOURCES =
 
+# ---------- Products of the build, to be installed ----------
+
+# the main library
 lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
 
+# programs
 bin_PROGRAMS = rsvg-convert
 if HAVE_GTK_3
 bin_PROGRAMS += rsvg-view-3
 endif
+
+# ---------- librsvg library ----------
 
 headers =			\
 	librsvg/rsvg.h		\
@@ -123,8 +129,9 @@ cargo_verbose_ = $(cargo_verbose_$(AM_DEFAULT_VERBOSITY))
 cargo_verbose_0 =
 cargo_verbose_1 = --verbose
 
-RUST_LIB=@abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/librsvg_internals.a
 CARGO_TARGET_DIR=@abs_top_builddir@/target
+RUST_BINARIES_DIR=$(CARGO_TARGET_DIR)/@RUST_TARGET_SUBDIR@
+RUST_LIB=$(RUST_BINARIES_DIR)/librsvg_internals.a
 
 check-local:
 	cd $(srcdir) && \
@@ -298,10 +305,11 @@ librsvg/s-enum-types-c: $(headers) Makefile
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
 
-if HAVE_INTROSPECTION
+# ---------- GObject Introspection ----------
+
 -include $(INTROSPECTION_MAKEFILE)
 
-INTROSPECTION_GIRS = Rsvg-@RSVG_API_VERSION@.gir
+INTROSPECTION_GIR = Rsvg-@RSVG_API_VERSION@.gir
 INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir) --symbol-prefix=rsvg --symbol-prefix=librsvg
 INTROSPECTION_COMPILER_ARGS = --includedir=$(srcdir)
 
@@ -329,12 +337,14 @@ Rsvg_@RSVG_API_VERSION_U@_gir_LIBS = librsvg-@RSVG_API_MAJOR_VERSION@.la
 Rsvg_@RSVG_API_VERSION_U@_gir_SCANNERFLAGS = --c-include="librsvg/rsvg.h"
 
 girdir = $(datadir)/gir-1.0
-nodist_gir_DATA = $(INTROSPECTION_GIRS)
+nodist_gir_DATA = $(INTROSPECTION_GIR)
 
 typelibsdir = $(libdir)/girepository-1.0
-nodist_typelibs_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
+nodist_typelibs_DATA = $(INTROSPECTION_GIR:.gir=.typelib)
 
 CLEANFILES += $(nodist_gir_DATA) $(nodist_typelibs_DATA)
+
+# ---------- Vala binding ----------
 
 if ENABLE_VAPIGEN
 include $(VAPIGEN_MAKEFILE)
@@ -353,8 +363,6 @@ vapi_DATA = $(VAPIGEN_VAPIS)
 CLEANFILES += $(VAPIGEN_VAPIS)
 
 endif # ENABLE_VAPIGEN
-
-endif # HAVE_INTROSPECTION
 
 # ------------------- MSVC Build Items ----------------
 
@@ -377,9 +385,7 @@ MSVCPROJ_GENERATED = \
 	$(top_builddir)/win32/vs12/rsvg.vcxproj		\
 	$(top_builddir)/win32/vs12/rsvg-convert.vcxproj
 
-if HAVE_INTROSPECTION
-
-MSVC_INTROSPECT_GIRS = $(INTROSPECTION_GIRS)
+MSVC_INTROSPECT_GIRS = $(INTROSPECTION_GIR)
 
 INTROSPECTION_INTERMEDIATE_ITEMS = \
 	$(top_builddir)/win32/Rsvg-@RSVG_API_VERSION@.gir.msvc.introspect		\
@@ -396,13 +402,65 @@ Rsvg_@RSVG_API_VERSION_U@_gir_MSVC_SCANNERFLAGS = $(Rsvg_@RSVG_API_VERSION_U@_gi
 MSVCPROJ_GENERATED += $(INTROSPECTION_INTERMEDIATE_ITEMS)
 
 include $(top_srcdir)/win32/Makefile.msvc-introspection
-endif # HAVE_INTROSPECTION
 
 $(MSVCPROJ_GENERATED): $(top_builddir)/win32/vs12/rsvg.vs12.headers
 
 EXTRA_DIST += $(MSVCPROJ_GENERATED)
 
-# ChangeLog generation
+# ---------- gir tool from gtk-rs ----------
+
+GIR_SRC=			\
+	gir/LICENSE		\
+	gir/build.rs		\
+	gir/Cargo.toml		\
+	gir/Gir_Gio.toml	\
+	gir/README.md		\
+	gir/Gir_Gtk.toml	\
+	gir/Cargo.lock		\
+	$(shell find gir/src -name '*.rs')
+# do we need to run find(1) in gir/tests as well?
+
+EXTRA_DIST += $(GIR_SRC)
+
+GIR = $(RUST_BINARIES_DIR)/gir
+
+# $(GIR_SRC):
+# 	git submodule update --init
+
+$(GIR): $(GIR_SRC)
+	+cd $(top_srcdir)/gir &&						\
+	PKG_CONFIG_ALLOW_CROSS=1						\
+	PKG_CONFIG='$(PKG_CONFIG)'						\
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
+	cargo build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
+
+# ---------- rsvg-rs binding ----------
+
+RS_BINDING_LIB=$(RUST_BINARIES_DIR)/librsvg_rs.rlib
+
+RS_BINDING_GIR=rsvg-rs/$(INTROSPECTION_GIR)
+
+# Copy the generated .gir into rsvg-rs so it can be used as a standalone crate
+$(RS_BINDING_GIR): $(INTROSPECTION_GIR)
+	cp $(INTROSPECTION_GIR) $(RS_BINDING_GIR)
+
+RS_BINDING_SOURCES=			\
+	rsvg-rs/Cargo.toml		\
+	rsvg-rs/Gir.toml		\
+	rsvg-rs/src/dimension_data.rs	\
+	rsvg-rs/src/handle.rs		\
+	rsvg-rs/src/lib.rs		\
+	rsvg-rs/src/position_data.rs
+
+# Build the binding
+$(RS_BINDING_LIB): $(RS_BINDING_GIR) $(RS_BINDING_SOURCES) $(GIR)
+	+cd $(top_srcdir)/rsvg-rs &&						\
+	PKG_CONFIG_ALLOW_CROSS=1						\
+	PKG_CONFIG='$(PKG_CONFIG)'						\
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
+	cargo build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
+
+# ---------- ChangeLog generation ----------
 
 ChangeLog:
 	$(AM_V_GEN) if test -d $(top_srcdir)/.git; then \
