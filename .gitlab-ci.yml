@@ -33,11 +33,11 @@ stages:
 
   cache:
       # Each job will have it's own cache
-      key: "$CI_JOB_NAME"
-      paths:
-        - target/
-        - .cargo_cache/
-	- ccache/
+    key: "$CI_JOB_NAME"
+    paths:
+      - target/
+      - .cargo_cache/
+      - ccache/
 
 .test_template: &distro_test_release
   before_script:
@@ -66,12 +66,12 @@ stages:
       - png_artifacts
 
   cache:
-      # Each job will have it's own cache
-      key: "$CI_JOB_NAME"
-      paths:
-        - target/
-        - .cargo_cache/
-	- ccache/
+    # Each job will have it's own cache
+    key: "$CI_JOB_NAME"
+    paths:
+      - target/
+      - .cargo_cache/
+      - ccache/
 
 # .deb_template: &deb_deps
 #   before_script:
