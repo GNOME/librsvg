@@ -268,7 +268,15 @@ AC_ARG_ENABLE(debug,
               AC_HELP_STRING([--enable-debug],
                              [Build Rust code with debugging information [default=no]]),
               [debug_release=$enableval],
-	      [debug_release=no])
+	      [
+	        if test "x$LIBRSVG_DEBUG" == "x"; then
+		  debug_release="no"
+		elif test "x$LIBRSVG_DEBUG" = "xyes"; then
+		  debug_release="yes"
+		elif test "x$LIBRSVG_DEBUG" = "xno"; then
+		  debug_release="no"
+		fi
+	      ])
 
 AC_MSG_CHECKING(whether to build Rust code with debugging information)
 if test "x$debug_release" = "xyes" ; then

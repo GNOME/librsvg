@@ -168,8 +168,11 @@ that you want to pass to the C compiler.
 
 ## Controlling debug or release mode for Rust
 
-For the Rust part of librsvg, we have an `--enable-debug` flag that
-you can pass to the `configure` script.  When enabled, the Rust
+* With a `configure` option: `--enable-debug` or `--disable-debug`
+* With an environment variable: `LIBRSVG_DEBUG=yes` or `LIBRSVG_DEBUG=no`
+
+For the Rust part of librsvg, we have a flag that
+you can pass at `configure` time.  When enabled, the Rust
 sub-library will have debugging information and no compiler
 optimizations.  *This flag is off by default:* if the flag is not
 specified, the Rust sub-library will be built in release mode (no
@@ -187,9 +190,13 @@ life easier to binary distributions.  Librsvg's build scripts will add
 `--release` to the Cargo command line by default.
 
 Developers can request a debug build of the Rust sub-library by
-passing `--enable-debug` to the `configure` script.  This will omit
-the `--release` option from Cargo, so that it will build the Rust
-sub-library in debug mode.
+passing `--enable-debug` to the `configure` script, or by setting the
+`LIBRSVG_DEBUG=yes` environment variable before calling `configure`.
+This will omit the `--release` option from Cargo, so that it will
+build the Rust sub-library in debug mode.
+
+In case both the environment variable and the command-line option are
+specified, the command-line option overrides the env var.
 
 # Cross-compilation
 
