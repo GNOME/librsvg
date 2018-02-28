@@ -1,13 +1,13 @@
-use libc;
 use glib::translate::*;
 use itertools::Itertools;
+use libc;
 use util::utf8_cstr;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum XmlSpace {
     Default,
-    Preserve
+    Preserve,
 }
 
 /// Implements `xml:space` handling per the SVG spec
@@ -18,7 +18,7 @@ pub enum XmlSpace {
 pub fn xml_space_normalize(mode: XmlSpace, s: &str) -> String {
     match mode {
         XmlSpace::Default => normalize_default(s),
-        XmlSpace::Preserve => normalize_preserve(s)
+        XmlSpace::Preserve => normalize_preserve(s),
     }
 }
 
@@ -31,18 +31,17 @@ pub fn xml_space_normalize(mode: XmlSpace, s: &str) -> String {
 // leading and trailing space characters. Then, all contiguous space
 // characters will be consolidated.
 fn normalize_default(s: &str) -> String {
-    s.trim()
-        .chars()
-        .filter(|ch| *ch != '\n')
-        .map(|ch| match ch {
-            '\t' => ' ',
-            c => c,
-        })
-        .coalesce(|current, next| match (current, next) {
-            (' ', ' ') => Ok(' '),
-            (_, _) => Err((current, next)),
-        })
-        .collect::<String>()
+    s.trim().chars()
+     .filter(|ch| *ch != '\n')
+     .map(|ch| match ch {
+              '\t' => ' ',
+              c => c,
+          })
+     .coalesce(|current, next| match (current, next) {
+                   (' ', ' ') => Ok(' '),
+                   (_, _) => Err((current, next)),
+               })
+     .collect::<String>()
 }
 
 // From https://www.w3.org/TR/SVG/text.html#WhiteSpace
@@ -56,19 +55,18 @@ fn normalize_default(s: &str) -> String {
 // and "b") will produce a larger separation between "a" and "b" than
 // "a b" (one space between "a" and "b").
 fn normalize_preserve(s: &str) -> String {
-    s.chars()
-        .map(|ch| {
-            match ch {
-                '\n' | '\t' => ' ',
+    s.chars().map(|ch| match ch {
+              '\n' | '\t' => ' ',
 
-                c => c
-            }
-        })
-        .collect()
+              c => c,
+          })
+     .collect()
 }
 
 #[no_mangle]
-pub extern fn rsvg_xml_space_normalize(mode: XmlSpace, s: *const libc::c_char) -> *const libc::c_char {
+pub extern "C" fn rsvg_xml_space_normalize(mode: XmlSpace,
+                                           s: *const libc::c_char)
+                                           -> *const libc::c_char {
     let rs = unsafe { utf8_cstr(s) };
 
     xml_space_normalize(mode, rs).to_glib_full()
@@ -80,9 +78,12 @@ mod tests {
 
     #[test]
     fn xml_space_default() {
-        assert_eq!(xml_space_normalize(XmlSpace::Default, "\n    WS example\n    indented lines\n  "),
+        assert_eq!(xml_space_normalize(XmlSpace::Default,
+                                       "\n    WS example\n    indented lines\n  "),
                    "WS example indented lines");
-        assert_eq!(xml_space_normalize(XmlSpace::Default, "\n  \t  \tWS \t\t\texample\n  \t  indented lines\t\t  \n  "),
+        assert_eq!(xml_space_normalize(XmlSpace::Default,
+                                       "\n  \t  \tWS \t\t\texample\n  \t  indented lines\t\t  \
+                                        \n  "),
                    "WS example indented lines");
         assert_eq!(xml_space_normalize(XmlSpace::Default, "\n  \t  \tWS \t\t\texample\n  \t  duplicate letters\t\t  \n  "),
                    "WS example duplicate letters");
@@ -94,9 +95,12 @@ mod tests {
 
     #[test]
     fn xml_space_preserve() {
-        assert_eq!(xml_space_normalize(XmlSpace::Preserve, "\n    WS example\n    indented lines\n  "),
+        assert_eq!(xml_space_normalize(XmlSpace::Preserve,
+                                       "\n    WS example\n    indented lines\n  "),
                    "     WS example     indented lines   ");
-        assert_eq!(xml_space_normalize(XmlSpace::Preserve, "\n  \t  \tWS \t\t\texample\n  \t  indented lines\t\t  \n  "),
+        assert_eq!(xml_space_normalize(XmlSpace::Preserve,
+                                       "\n  \t  \tWS \t\t\texample\n  \t  indented lines\t\t  \
+                                        \n  "),
                    "       WS    example      indented lines       ");
         assert_eq!(xml_space_normalize(XmlSpace::Preserve, "\n  \t  \tWS \t\t\texample\n  \t  duplicate letters\t\t  \n  "),
                    "       WS    example      duplicate letters       ");
