@@ -33,8 +33,15 @@ pub use color::{rsvg_css_parse_color, AllowCurrentColor, AllowInherit, ColorKind
 
 pub use gradient::{rsvg_node_linear_gradient_new, rsvg_node_radial_gradient_new};
 
-pub use length::{rsvg_length_hand_normalize, rsvg_length_normalize, rsvg_length_parse,
-                 rsvg_parse_stroke_dasharray, LengthDir, LengthUnit, RsvgLength};
+pub use length::{
+    rsvg_length_hand_normalize,
+    rsvg_length_normalize,
+    rsvg_length_parse,
+    rsvg_parse_stroke_dasharray,
+    LengthDir,
+    LengthUnit,
+    RsvgLength,
+};
 
 pub use image::rsvg_node_image_new;
 
@@ -42,19 +49,39 @@ pub use link::rsvg_node_link_new;
 
 pub use marker::rsvg_node_marker_new;
 
-pub use mask::{rsvg_node_mask_get_content_units, rsvg_node_mask_get_height,
-               rsvg_node_mask_get_units, rsvg_node_mask_get_width, rsvg_node_mask_get_x,
-               rsvg_node_mask_get_y, rsvg_node_mask_new};
+pub use mask::{
+    rsvg_node_mask_get_content_units,
+    rsvg_node_mask_get_height,
+    rsvg_node_mask_get_units,
+    rsvg_node_mask_get_width,
+    rsvg_node_mask_get_x,
+    rsvg_node_mask_get_y,
+    rsvg_node_mask_new,
+};
 
-pub use node::{rsvg_node_add_child, rsvg_node_draw, rsvg_node_draw_children,
-               rsvg_node_foreach_child, rsvg_node_get_parent, rsvg_node_get_state,
-               rsvg_node_get_type, rsvg_node_is_same, rsvg_node_ref,
-               rsvg_node_set_attribute_parse_error, rsvg_node_set_atts, rsvg_node_unref};
+pub use node::{
+    rsvg_node_add_child,
+    rsvg_node_draw,
+    rsvg_node_draw_children,
+    rsvg_node_foreach_child,
+    rsvg_node_get_parent,
+    rsvg_node_get_state,
+    rsvg_node_get_type,
+    rsvg_node_is_same,
+    rsvg_node_ref,
+    rsvg_node_set_attribute_parse_error,
+    rsvg_node_set_atts,
+    rsvg_node_unref,
+};
 
 pub use opacity::{rsvg_css_parse_opacity, OpacityKind, OpacitySpec};
 
-pub use paint_server::{_set_source_rsvg_paint_server, rsvg_paint_server_parse,
-                       rsvg_paint_server_ref, rsvg_paint_server_unref};
+pub use paint_server::{
+    _set_source_rsvg_paint_server,
+    rsvg_paint_server_parse,
+    rsvg_paint_server_ref,
+    rsvg_paint_server_unref,
+};
 
 pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
 
@@ -62,21 +89,39 @@ pub use path_builder::rsvg_path_builder_add_to_cairo_context;
 
 pub use pattern::rsvg_node_pattern_new;
 
-pub use property_bag::{rsvg_property_bag_free, rsvg_property_bag_iter_begin,
-                       rsvg_property_bag_iter_end, rsvg_property_bag_iter_next,
-                       rsvg_property_bag_new};
+pub use property_bag::{
+    rsvg_property_bag_free,
+    rsvg_property_bag_iter_begin,
+    rsvg_property_bag_iter_end,
+    rsvg_property_bag_iter_next,
+    rsvg_property_bag_new,
+};
 
-pub use shapes::{rsvg_node_circle_new, rsvg_node_ellipse_new, rsvg_node_line_new,
-                 rsvg_node_path_new, rsvg_node_polygon_new, rsvg_node_polyline_new,
-                 rsvg_node_rect_new};
+pub use shapes::{
+    rsvg_node_circle_new,
+    rsvg_node_ellipse_new,
+    rsvg_node_line_new,
+    rsvg_node_path_new,
+    rsvg_node_polygon_new,
+    rsvg_node_polyline_new,
+    rsvg_node_rect_new,
+};
 
 pub use space::rsvg_xml_space_normalize;
 
 pub use stop::rsvg_node_stop_new;
 
-pub use structure::{rsvg_node_defs_new, rsvg_node_group_new, rsvg_node_svg_apply_atts,
-                    rsvg_node_svg_get_size, rsvg_node_svg_get_view_box, rsvg_node_svg_new,
-                    rsvg_node_switch_new, rsvg_node_symbol_new, rsvg_node_use_new};
+pub use structure::{
+    rsvg_node_defs_new,
+    rsvg_node_group_new,
+    rsvg_node_svg_apply_atts,
+    rsvg_node_svg_get_size,
+    rsvg_node_svg_get_view_box,
+    rsvg_node_svg_new,
+    rsvg_node_switch_new,
+    rsvg_node_symbol_new,
+    rsvg_node_use_new,
+};
 
 pub use text::rsvg_text_create_layout;
 
