@@ -1,6 +1,6 @@
-use libc;
 use cssparser;
 use glib::translate::*;
+use libc;
 
 use std::cell::Cell;
 
@@ -19,23 +19,21 @@ use state::RsvgState;
 
 pub struct NodeStop {
     offset: Cell<f64>,
-    rgba: Cell<u32>
+    rgba: Cell<u32>,
 }
 
 impl NodeStop {
-    fn new () -> NodeStop {
-        NodeStop {
-            offset: Cell::new (0.0),
-            rgba: Cell::new (0)
-        }
+    fn new() -> NodeStop {
+        NodeStop { offset: Cell::new(0.0),
+                   rgba: Cell::new(0), }
     }
 
-    pub fn get_offset (&self) -> f64 {
-        self.offset.get ()
+    pub fn get_offset(&self) -> f64 {
+        self.offset.get()
     }
 
-    pub fn get_rgba (&self) -> u32 {
-        self.rgba.get ()
+    pub fn get_rgba(&self) -> u32 {
+        self.rgba.get()
     }
 }
 
@@ -61,16 +59,17 @@ fn validate_offset(length: RsvgLength) -> Result<RsvgLength, AttributeError> {
 }
 
 impl NodeTrait for NodeStop {
-    fn set_atts (&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
-        let state = node.get_state ();
+    fn set_atts(&self, node: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+        let state = node.get_state();
 
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::Offset => {
                     let length = parse("offset", value, LengthDir::Both, Some(validate_offset))?;
-                    assert! (length.unit == LengthUnit::Default || length.unit == LengthUnit::Percent);
-                    self.offset.set (length.length);
-                },
+                    assert!(length.unit == LengthUnit::Default
+                            || length.unit == LengthUnit::Percent);
+                    self.offset.set(length.length);
+                }
 
                 Attribute::Style => {
                     // FIXME: this is the only place where rsvg_parse_style() and
@@ -82,22 +81,22 @@ impl NodeTrait for NodeStop {
                     // rendering time?
 
                     unsafe {
-                        rsvg_parse_style (state, value.to_glib_none ().0);
+                        rsvg_parse_style(state, value.to_glib_none().0);
                     }
-                },
+                }
 
                 _ => (),
             }
         }
 
         unsafe {
-            rsvg_parse_presentation_attributes (state, pbag.ffi());
+            rsvg_parse_presentation_attributes(state, pbag.ffi());
         }
 
-        let inherited_state = drawing_ctx::state_new ();
-        let boxed_node = box_node (node.clone ());
-        drawing_ctx::state_reconstruct (inherited_state, boxed_node);
-        rsvg_node_unref (boxed_node);
+        let inherited_state = drawing_ctx::state_new();
+        let boxed_node = box_node(node.clone());
+        drawing_ctx::state_reconstruct(inherited_state, boxed_node);
+        rsvg_node_unref(boxed_node);
 
         let mut color_rgba: cssparser::RGBA;
 
@@ -105,37 +104,37 @@ impl NodeTrait for NodeStop {
             .map_err (|e| NodeError::attribute_error ("stop-color", e))?;
 
         match stop_color {
-            None => color_rgba = cssparser::RGBA::transparent (),
+            None => color_rgba = cssparser::RGBA::transparent(),
 
-            Some (Color::Inherit) => {
+            Some(Color::Inherit) => {
                 let inherited_stop_color = drawing_ctx::state_get_stop_color (inherited_state)
                     .map_err (|e| NodeError::attribute_error ("stop-color", e))?;
 
                 match inherited_stop_color {
-                    None => unreachable! (),
+                    None => unreachable!(),
 
-                    Some (Color::Inherit) => color_rgba = cssparser::RGBA::transparent (),
-                    Some (Color::CurrentColor) => {
-                        let color = drawing_ctx::state_get_current_color (inherited_state);
+                    Some(Color::Inherit) => color_rgba = cssparser::RGBA::transparent(),
+                    Some(Color::CurrentColor) => {
+                        let color = drawing_ctx::state_get_current_color(inherited_state);
                         match color {
-                            Color::RGBA (rgba) => color_rgba = rgba,
-                            _ => unreachable! ()
+                            Color::RGBA(rgba) => color_rgba = rgba,
+                            _ => unreachable!(),
                         }
-                    },
-                    
-                    Some (Color::RGBA (rgba)) => color_rgba = rgba
-                }
-            },
+                    }
 
-            Some (Color::CurrentColor) => {
-                let color = drawing_ctx::state_get_current_color (inherited_state);
-                match color {
-                    Color::RGBA (rgba) => color_rgba = rgba,
-                    _ => unreachable! ()
+                    Some(Color::RGBA(rgba)) => color_rgba = rgba,
                 }
             }
 
-            Some (Color::RGBA (rgba)) => color_rgba = rgba
+            Some(Color::CurrentColor) => {
+                let color = drawing_ctx::state_get_current_color(inherited_state);
+                match color {
+                    Color::RGBA(rgba) => color_rgba = rgba,
+                    _ => unreachable!(),
+                }
+            }
+
+            Some(Color::RGBA(rgba)) => color_rgba = rgba,
         }
 
         let stop_opacity = drawing_ctx::state_get_stop_opacity (state)
@@ -144,50 +143,48 @@ impl NodeTrait for NodeStop {
         match stop_opacity {
             None => color_rgba.alpha = 0xff,
 
-            Some (Opacity::Inherit) => {
+            Some(Opacity::Inherit) => {
                 let inherited_opacity = drawing_ctx::state_get_stop_opacity (inherited_state)
                     .map_err (|e| NodeError::attribute_error ("stop-opacity", e))?;
 
                 match inherited_opacity {
-                    Some (Opacity::Specified (opacity)) => color_rgba.alpha = opacity_to_u8 (opacity),
-                    _ => color_rgba.alpha = 0xff
+                    Some(Opacity::Specified(opacity)) => color_rgba.alpha = opacity_to_u8(opacity),
+                    _ => color_rgba.alpha = 0xff,
                 }
-            },
+            }
 
-            Some (Opacity::Specified (opacity)) => color_rgba.alpha = opacity_to_u8 (opacity)
+            Some(Opacity::Specified(opacity)) => color_rgba.alpha = opacity_to_u8(opacity),
         }
 
-        self.rgba.set (u32_from_rgba (color_rgba));
+        self.rgba.set(u32_from_rgba(color_rgba));
 
-        drawing_ctx::state_free (inherited_state);
+        drawing_ctx::state_free(inherited_state);
 
-        Ok (())
+        Ok(())
     }
 
-    fn draw (&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
+    fn draw(&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
         // nothing; paint servers are handled specially
     }
 
-    fn get_c_impl (&self) -> *const RsvgCNodeImpl {
-        unreachable! ();
+    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
+        unreachable!();
     }
 }
 
-fn u32_from_rgba (rgba: cssparser::RGBA) -> u32 {
-    (u32::from(rgba.red) << 24) |
-    (u32::from(rgba.green) << 16) |
-    (u32::from(rgba.blue) << 8) |
-    u32::from(rgba.alpha)
+fn u32_from_rgba(rgba: cssparser::RGBA) -> u32 {
+    (u32::from(rgba.red) << 24) | (u32::from(rgba.green) << 16) | (u32::from(rgba.blue) << 8)
+    | u32::from(rgba.alpha)
 }
 
 extern "C" {
-    fn rsvg_parse_presentation_attributes (state: *mut RsvgState, pbag: *const PropertyBag);
-    fn rsvg_parse_style (state: *mut RsvgState, string: *const libc::c_char);
+    fn rsvg_parse_presentation_attributes(state: *mut RsvgState, pbag: *const PropertyBag);
+    fn rsvg_parse_style(state: *mut RsvgState, string: *const libc::c_char);
 }
 
 #[no_mangle]
-pub extern fn rsvg_node_stop_new (_: *const libc::c_char, raw_parent: *const RsvgNode) -> *const RsvgNode {
-    boxed_node_new (NodeType::Stop,
-                    raw_parent,
-                    Box::new (NodeStop::new ()))
+pub extern "C" fn rsvg_node_stop_new(_: *const libc::c_char,
+                                     raw_parent: *const RsvgNode)
+                                     -> *const RsvgNode {
+    boxed_node_new(NodeType::Stop, raw_parent, Box::new(NodeStop::new()))
 }

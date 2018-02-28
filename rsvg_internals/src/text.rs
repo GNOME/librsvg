@@ -1,5 +1,5 @@
-use libc;
 use glib::translate::*;
+use libc;
 use pango::{self, ContextExt, LayoutExt};
 use pango_sys;
 
@@ -7,11 +7,12 @@ use drawing_ctx::{self, RsvgDrawingCtx};
 use state::{self, UnicodeBidi};
 use util::utf8_cstr;
 
-// FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() / PANGO_GRAVITY_IS_IMPROPER()?
+// FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() /
+// PANGO_GRAVITY_IS_IMPROPER()?
 fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
     match gravity {
         pango::Gravity::East | pango::Gravity::West => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -32,9 +33,9 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
     match unicode_bidi {
         UnicodeBidi::Override | UnicodeBidi::Embed => {
             pango_context.set_base_dir(state::get_text_dir(state));
-        },
+        }
 
-        _ => ()
+        _ => (),
     }
 
     let gravity = state::get_text_gravity(state);
@@ -54,7 +55,8 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
     font_desc.set_stretch(state::get_font_stretch(state));
 
     let (_, dpi_y) = drawing_ctx::get_dpi(draw_ctx);
-    font_desc.set_size(to_pango_units(drawing_ctx::get_normalized_font_size(draw_ctx) / dpi_y * 72.0));
+    font_desc.set_size(to_pango_units(drawing_ctx::get_normalized_font_size(draw_ctx) / dpi_y
+                                      * 72.0));
 
     let layout = pango::Layout::new(&pango_context);
     layout.set_font_description(&font_desc);
@@ -68,24 +70,20 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 
     if let Some(font_decor) = state::get_font_decor(state) {
         if font_decor.underline {
-            attr_list.insert(pango::Attribute::new_underline(pango::Underline::Single)
-                             .unwrap());
+            attr_list.insert(pango::Attribute::new_underline(pango::Underline::Single).unwrap());
         }
 
         if font_decor.strike {
-            attr_list.insert(pango::Attribute::new_strikethrough(true)
-                             .unwrap());
+            attr_list.insert(pango::Attribute::new_strikethrough(true).unwrap());
         }
     }
 
     layout.set_attributes(&attr_list);
 
-    layout.set_alignment(
-        match state::get_text_dir(state) {
-            pango::Direction::Ltr => pango::Alignment::Left,
-            _                     => pango::Alignment::Right,
-        }
-    );
+    layout.set_alignment(match state::get_text_dir(state) {
+                             pango::Direction::Ltr => pango::Alignment::Left,
+                             _ => pango::Alignment::Right,
+                         });
 
     layout.set_text(text);
 
@@ -93,8 +91,9 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 }
 
 #[no_mangle]
-pub extern fn rsvg_text_create_layout(draw_ctx: *const RsvgDrawingCtx,
-                                      text: *const libc::c_char) -> *const pango_sys::PangoLayout {
+pub extern "C" fn rsvg_text_create_layout(draw_ctx: *const RsvgDrawingCtx,
+                                          text: *const libc::c_char)
+                                          -> *const pango_sys::PangoLayout {
     assert!(!text.is_null());
     let s = unsafe { utf8_cstr(text) };
     let layout = create_pango_layout(draw_ctx, s);
