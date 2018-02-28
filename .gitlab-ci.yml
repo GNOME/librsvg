@@ -4,7 +4,6 @@ stages:
   - test
   - lint
   - cross_distro_amd64
-  - cross_distro_amd64_release
   - cross_distro_i386
 
 .test_template: &distro_test
@@ -126,7 +125,7 @@ debian:testing:
 
 fedora:rawhide_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest
-  stage: cross_distro_amd64_release
+  stage: cross_distro_amd64
   before_script:
     - export LIBRSVG_DEBUG="no"
   <<: *distro_test
@@ -137,7 +136,7 @@ fedora:rawhide_release:
 
 opensuse:tumbleweed_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed
-  stage: cross_distro_amd64_release
+  stage: cross_distro_amd64
   before_script:
     - export LIBRSVG_DEBUG="no"
   <<: *distro_test
@@ -148,7 +147,7 @@ opensuse:tumbleweed_release:
 
 debian:testing_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing
-  stage: cross_distro_amd64_release
+  stage: cross_distro_amd64
   before_script:
     - export LIBRSVG_DEBUG="no"
   <<: *distro_test
