@@ -19,7 +19,7 @@ use util::*;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
-/***** NodeGroup **** * * * * **/
+/***** NodeGroup **** * * * * * * * * * * **/
 
 struct NodeGroup();
 
@@ -43,7 +43,7 @@ impl NodeTrait for NodeGroup {
     }
 }
 
-/***** NodeDefs **** * * * * **/
+/***** NodeDefs **** * * * * * * * * * * **/
 
 struct NodeDefs();
 
@@ -67,7 +67,7 @@ impl NodeTrait for NodeDefs {
     }
 }
 
-/***** NodeSwitch **** * * * * **/
+/***** NodeSwitch **** * * * * * * * * * * **/
 
 struct NodeSwitch();
 
@@ -109,7 +109,7 @@ impl NodeTrait for NodeSwitch {
     }
 }
 
-/***** NodeSvg **** * * * * **/
+/***** NodeSvg **** * * * * * * * * * * **/
 
 struct NodeSvg {
     preserve_aspect_ratio: Cell<AspectRatio>,
@@ -217,7 +217,7 @@ impl NodeTrait for NodeSvg {
     }
 }
 
-/***** NodeUse **** * * * * **/
+/***** NodeUse **** * * * * * * * * * * **/
 
 struct NodeUse {
     link: RefCell<Option<String>>,
@@ -351,7 +351,7 @@ impl NodeTrait for NodeUse {
     }
 }
 
-/***** NodeSymbol **** * * * * **/
+/***** NodeSymbol **** * * * * * * * * * * **/
 
 struct NodeSymbol {
     preserve_aspect_ratio: Cell<AspectRatio>,
@@ -391,7 +391,7 @@ impl NodeTrait for NodeSymbol {
     }
 }
 
-/***** C Prototypes **** * * * * **/
+/***** C Prototypes **** * * * * * * * * * * **/
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_group_new(_: *const libc::c_char,

@@ -813,7 +813,7 @@ fn emit_markers_for_path_builder<E>(builder: &RsvgPathBuilder, emit_fn: &mut E)
     }
 }
 
-/******************** Tests ******************* * * * * **/
+/******************** Tests ******************* * * * * * * * * * * **/
 
 #[cfg(test)]
 mod parser_tests {
