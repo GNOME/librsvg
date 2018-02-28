@@ -85,7 +85,7 @@ fn render_ellipse(cx: f64,
     render_path_builder(&builder, draw_ctx, node.get_state(), dominate, false);
 }
 
-/***** NodePath **** * * * * **/
+/***** NodePath **** * * * * * * * * * * **/
 
 struct NodePath {
     builder: RefCell<Option<RsvgPathBuilder>>,
@@ -126,7 +126,7 @@ impl NodeTrait for NodePath {
     }
 }
 
-/***** NodePoly **** * * * * **/
+/***** NodePoly **** * * * * * * * * * * **/
 
 #[derive(Debug, PartialEq)]
 enum PolyKind {
@@ -195,7 +195,7 @@ impl NodeTrait for NodePoly {
     }
 }
 
-/***** NodeLine **** * * * * **/
+/***** NodeLine **** * * * * * * * * * * **/
 
 struct NodeLine {
     x1: Cell<RsvgLength>,
@@ -247,7 +247,7 @@ impl NodeTrait for NodeLine {
     }
 }
 
-/***** NodeRect **** * * * * **/
+/***** NodeRect **** * * * * * * * * * * **/
 
 struct NodeRect {
     // x, y, width, height
@@ -442,7 +442,7 @@ impl NodeTrait for NodeRect {
     }
 }
 
-/***** NodeCircle **** * * * * **/
+/***** NodeCircle **** * * * * * * * * * * **/
 
 struct NodeCircle {
     cx: Cell<RsvgLength>,
@@ -491,7 +491,7 @@ impl NodeTrait for NodeCircle {
     }
 }
 
-/***** NodeEllipse **** * * * * **/
+/***** NodeEllipse **** * * * * * * * * * * **/
 
 struct NodeEllipse {
     cx: Cell<RsvgLength>,
@@ -550,7 +550,7 @@ impl NodeTrait for NodeEllipse {
     }
 }
 
-/***** C Prototypes **** * * * * **/
+/***** C Prototypes **** * * * * * * * * * * **/
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_path_new(_: *const libc::c_char,
