@@ -21,10 +21,8 @@ impl Parse for CoordUnits {
         match s {
             "userSpaceOnUse" => Ok(CoordUnits::UserSpaceOnUse),
             "objectBoundingBox" => Ok(CoordUnits::ObjectBoundingBox),
-            _ => {
-                Err(AttributeError::Parse(ParseError::new("expected 'userSpaceOnUse' or \
-                                                           'objectBoundingBox'")))
-            }
+            _ => Err(AttributeError::Parse(ParseError::new("expected 'userSpaceOnUse' or \
+                                                            'objectBoundingBox'"))),
         }
     }
 }

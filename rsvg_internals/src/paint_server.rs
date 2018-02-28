@@ -29,11 +29,9 @@ impl Parse for PaintServerSpread {
             "pad" => Ok(PaintServerSpread(cairo::enums::Extend::Pad)),
             "reflect" => Ok(PaintServerSpread(cairo::enums::Extend::Reflect)),
             "repeat" => Ok(PaintServerSpread(cairo::enums::Extend::Repeat)),
-            _ => {
-                Err(AttributeError::Parse(ParseError::new("expected 'pad' | \
-                                                           'reflect' | \
-                                                           'repeat'")))
-            }
+            _ => Err(AttributeError::Parse(ParseError::new("expected 'pad' | \
+                                                            'reflect' | \
+                                                            'repeat'"))),
         }
     }
 }

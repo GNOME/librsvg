@@ -81,14 +81,13 @@ impl RsvgPathBuilder {
         &self.path_commands
     }
 
-    /** * * * * * * * * * * **/
+    /// * * * * * * * * * * *
     // x1/y1: starting coordinates
     // rx/ry: radiuses before rotation
     // x_axis_rotation: Rotation angle for axes, in degrees
     // large_arc: false for arc length <= 180, true for arc >= 180
     // sweep: negative or positive angle
     // x2/y2: ending coordinates
-    //
     pub fn arc(&mut self,
                x1: f64,
                y1: f64,
@@ -99,9 +98,8 @@ impl RsvgPathBuilder {
                sweep: Sweep,
                x2: f64,
                y2: f64) {
-        /* See Appendix F.6 Elliptical arc implementation notes
-        http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes */
-
+        // See Appendix F.6 Elliptical arc implementation notes
+        // http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
         let f: f64;
         let sinf: f64;
         let cosf: f64;
@@ -129,7 +127,7 @@ impl RsvgPathBuilder {
 
         let is_large_arc = large_arc.0;
 
-        /* X-axis */
+        // X-axis
         f = x_axis_rotation * PI / 180.0;
         sinf = f.sin();
         cosf = f.cos();
@@ -137,8 +135,8 @@ impl RsvgPathBuilder {
         rx = rx.abs();
         ry = ry.abs();
 
-        /* Check the radius against floading point underflow.
-        See http://bugs.debian.org/508443 */
+        // Check the radius against floading point underflow.
+        // See http://bugs.debian.org/508443
         if (rx < f64::EPSILON) || (ry < f64::EPSILON) {
             self.line_to(x2, y2);
             return;
@@ -156,8 +154,7 @@ impl RsvgPathBuilder {
             ry *= gamma.sqrt();
         }
 
-        /* Compute the center */
-
+        // Compute the center
         k1 = rx * rx * y1_ * y1_ + ry * ry * x1_ * x1_;
         if k1 == 0.0 {
             return;
@@ -174,8 +171,7 @@ impl RsvgPathBuilder {
         cx = cosf * cx_ - sinf * cy_ + (x1 + x2) / 2.0;
         cy = sinf * cx_ + cosf * cy_ + (y1 + y2) / 2.0;
 
-        /* Compute start angle */
-
+        // Compute start angle
         k1 = (x1_ - cx_) / rx;
         k2 = (y1_ - cy_) / ry;
         k3 = (-x1_ - cx_) / rx;
@@ -193,8 +189,7 @@ impl RsvgPathBuilder {
             theta1 = -theta1;
         }
 
-        /* Compute delta_theta */
-
+        // Compute delta_theta
         k5 = ((k1 * k1 + k2 * k2) * (k3 * k3 + k4 * k4)).abs().sqrt();
         if k5 == 0.0 {
             return;
@@ -213,8 +208,7 @@ impl RsvgPathBuilder {
             delta_theta -= PI * 2.0;
         }
 
-        /* Now draw the arc */
-
+        // Now draw the arc
         n_segs = (delta_theta / (PI * 0.5 + 0.001)).abs().ceil() as i32;
         let n_segs_dbl = f64::from(n_segs);
 

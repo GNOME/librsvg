@@ -7,37 +7,33 @@ use std::str::Chars;
 
 struct PathParser<'b> {
     chars_enumerator: Enumerate<Chars<'b>>,
-    lookahead: Option<char>,    /* None if we are in EOF */
-    current_pos: Option<usize>, /* None if the string hasn't been scanned */
+    lookahead: Option<char>,    // None if we are in EOF
+    current_pos: Option<usize>, // None if the string hasn't been scanned
 
     builder: &'b mut RsvgPathBuilder,
 
-    /* Current point; adjusted at every command */
+    // Current point; adjusted at every command
     current_x: f64,
     current_y: f64,
 
-    /* Last control point from previous cubic curve command, used to reflect
-     * the new control point for smooth cubic curve commands.
-     */
+    // Last control point from previous cubic curve command, used to reflect
+    // the new control point for smooth cubic curve commands.
     cubic_reflection_x: f64,
     cubic_reflection_y: f64,
 
-    /* Last control point from previous quadratic curve command, used to reflect
-     * the new control point for smooth quadratic curve commands.
-     */
+    // Last control point from previous quadratic curve command, used to reflect
+    // the new control point for smooth quadratic curve commands.
     quadratic_reflection_x: f64,
     quadratic_reflection_y: f64,
 
-    /* Start point of current subpath (i.e. position of last moveto);
-     * used for closepath.
-     */
+    // Start point of current subpath (i.e. position of last moveto);
+    // used for closepath.
     subpath_start_x: f64,
     subpath_start_y: f64,
 }
 
-/* This is a recursive descent parser for path data in SVG files,
- * as specified in https://www.w3.org/TR/SVG/paths.html#PathDataBNF */
-//
+// This is a recursive descent parser for path data in SVG files,
+// as specified in https://www.w3.org/TR/SVG/paths.html#PathDataBNF
 // Some peculiarities:
 //
 // - SVG allows optional commas inside coordiante pairs, and between
@@ -59,7 +55,6 @@ struct PathParser<'b> {
 //
 //     M.1-2,3E2-4
 //     M 0.1 -2 300 -4
-//
 impl<'b> PathParser<'b> {
     fn new(builder: &'b mut RsvgPathBuilder, path_str: &'b str) -> PathParser<'b> {
         PathParser { chars_enumerator: path_str.chars().enumerate(),
@@ -202,16 +197,14 @@ impl<'b> PathParser<'b> {
         let mut c: char = ' ';
 
         if self.lookahead_is_digit(&mut c) || self.lookahead_is('.') {
-            /* Integer part */
-
+            // Integer part
             while self.lookahead_is_digit(&mut c) {
                 value = value * 10.0 + f64::from(char_to_digit(c));
 
                 assert!(self.match_char(c));
             }
 
-            /* Fractional part */
-
+            // Fractional part
             if self.match_char('.') {
                 let mut fraction: f64 = 1.0;
 
@@ -226,16 +219,14 @@ impl<'b> PathParser<'b> {
             }
 
             if self.match_char('E') || self.match_char('e') {
-                /* exponent sign */
-
+                // exponent sign
                 if self.match_char('+') {
                     exponent_sign = 1.0;
                 } else if self.match_char('-') {
                     exponent_sign = -1.0;
                 }
 
-                /* exponent */
-
+                // exponent
                 let mut c: char = ' ';
 
                 if self.lookahead_is_digit(&mut c) {
@@ -342,8 +333,7 @@ impl<'b> PathParser<'b> {
     }
 
     fn emit_quadratic_curve_to(&mut self, a: f64, b: f64, c: f64, d: f64) {
-        /* raise quadratic Bézier to cubic */
-
+        // raise quadratic Bézier to cubic
         let x2 = (self.current_x + 2.0 * a) / 3.0;
         let y2 = (self.current_y + 2.0 * b) / 3.0;
         let x4 = c;
@@ -1368,12 +1358,10 @@ mod tests {
                     None);
     }
 
-    /* FIXME: we don't have a handles_arc() because
-     * we don't know what segments will be computed by PathBuilder::arc().
-     * Maybe we need to represent arcs as native path builder segments,
-     * and only explode them to Cairo curves at rendering time.
-     */
-
+    // FIXME: we don't have a handles_arc() because
+    // we don't know what segments will be computed by PathBuilder::arc().
+    // Maybe we need to represent arcs as native path builder segments,
+    // and only explode them to Cairo curves at rendering time.
     #[test]
     fn first_command_must_be_moveto() {
         test_parser("  L10 20", "  ^", &vec![], Some(ErrorKind::UnexpectedToken));
@@ -1713,11 +1701,11 @@ mod tests {
                     &vec![moveto(10.0, -20.0)],
                     Some(ErrorKind::UnexpectedEof));
 
-        /* FIXME: we don't test the arc results, because
-         * we don't know what segments will be computed by PathBuilder::arc().
-         * Maybe we need to represent arcs as native path builder segments,
-         * and only explode them to Cairo curves at rendering time.
-         */
+        // FIXME: we don't test the arc results, because
+        // we don't know what segments will be computed by PathBuilder::arc().
+        // Maybe we need to represent arcs as native path builder segments,
+        // and only explode them to Cairo curves at rendering time.
+        //
         // test_parser("M10-20A1 2 3,1,1,6,7,",
         //             "                     ^",
         //             &vec![moveto(10.0, -20.0)

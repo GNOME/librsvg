@@ -50,18 +50,14 @@ impl NodeTrait for NodeMask {
             match attr {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
                 Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
-                Attribute::Width => {
-                    self.width.set(parse("width",
-                                         value,
-                                         LengthDir::Horizontal,
-                                         Some(RsvgLength::check_nonnegative))?)
-                }
-                Attribute::Height => {
-                    self.height.set(parse("height",
-                                          value,
-                                          LengthDir::Vertical,
-                                          Some(RsvgLength::check_nonnegative))?)
-                }
+                Attribute::Width => self.width.set(parse("width",
+                                                         value,
+                                                         LengthDir::Horizontal,
+                                                         Some(RsvgLength::check_nonnegative))?),
+                Attribute::Height => self.height.set(parse("height",
+                                                           value,
+                                                           LengthDir::Vertical,
+                                                           Some(RsvgLength::check_nonnegative))?),
 
                 Attribute::MaskUnits => self.units.set(parse("maskUnits", value, (), None)?),
 

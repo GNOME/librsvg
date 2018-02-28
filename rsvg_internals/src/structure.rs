@@ -19,8 +19,7 @@ use util::*;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
-/***** NodeGroup **** * * * * * * * * * * **/
-
+// ************ NodeGroup ************
 struct NodeGroup();
 
 impl NodeGroup {
@@ -43,8 +42,7 @@ impl NodeTrait for NodeGroup {
     }
 }
 
-/***** NodeDefs **** * * * * * * * * * * **/
-
+// ************ NodeDefs ************
 struct NodeDefs();
 
 impl NodeDefs {
@@ -67,8 +65,7 @@ impl NodeTrait for NodeDefs {
     }
 }
 
-/***** NodeSwitch **** * * * * * * * * * * **/
-
+// ************ NodeSwitch ************
 struct NodeSwitch();
 
 impl NodeSwitch {
@@ -109,8 +106,7 @@ impl NodeTrait for NodeSwitch {
     }
 }
 
-/***** NodeSvg **** * * * * * * * * * * **/
-
+// ************ NodeSvg ************
 struct NodeSvg {
     preserve_aspect_ratio: Cell<AspectRatio>,
     x: Cell<RsvgLength>,
@@ -157,19 +153,15 @@ impl NodeTrait for NodeSvg {
                     }
                 }
 
-                Attribute::Width => {
-                    self.w.set(parse("width",
-                                     value,
-                                     LengthDir::Horizontal,
-                                     Some(RsvgLength::check_nonnegative))?)
-                }
+                Attribute::Width => self.w.set(parse("width",
+                                                     value,
+                                                     LengthDir::Horizontal,
+                                                     Some(RsvgLength::check_nonnegative))?),
 
-                Attribute::Height => {
-                    self.h.set(parse("height",
-                                     value,
-                                     LengthDir::Vertical,
-                                     Some(RsvgLength::check_nonnegative))?)
-                }
+                Attribute::Height => self.h.set(parse("height",
+                                                      value,
+                                                      LengthDir::Vertical,
+                                                      Some(RsvgLength::check_nonnegative))?),
 
                 Attribute::ViewBox => self.vbox.set(parse("viewBox", value, (), None).map(Some)?),
 
@@ -217,8 +209,7 @@ impl NodeTrait for NodeSvg {
     }
 }
 
-/***** NodeUse **** * * * * * * * * * * **/
-
+// ************ NodeUse ************
 struct NodeUse {
     link: RefCell<Option<String>>,
     x: Cell<RsvgLength>,
@@ -351,8 +342,7 @@ impl NodeTrait for NodeUse {
     }
 }
 
-/***** NodeSymbol **** * * * * * * * * * * **/
-
+// ************ NodeSymbol ************
 struct NodeSymbol {
     preserve_aspect_ratio: Cell<AspectRatio>,
     vbox: Cell<Option<ViewBox>>,
@@ -391,8 +381,7 @@ impl NodeTrait for NodeSymbol {
     }
 }
 
-/***** C Prototypes **** * * * * * * * * * * **/
-
+// ************ C Prototypes ************
 #[no_mangle]
 pub extern "C" fn rsvg_node_group_new(_: *const libc::c_char,
                                       raw_parent: *const RsvgNode)

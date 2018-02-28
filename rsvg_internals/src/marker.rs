@@ -22,7 +22,6 @@ use util::*;
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
-
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum MarkerUnits {
     UserSpaceOnUse,
@@ -43,16 +42,13 @@ impl Parse for MarkerUnits {
         match s {
             "userSpaceOnUse" => Ok(MarkerUnits::UserSpaceOnUse),
             "strokeWidth" => Ok(MarkerUnits::StrokeWidth),
-            _ => {
-                Err(AttributeError::Parse(ParseError::new("expected \"userSpaceOnUse\" or \
-                                                           \"strokeWidth\"")))
-            }
+            _ => Err(AttributeError::Parse(ParseError::new("expected \"userSpaceOnUse\" or \
+                                                            \"strokeWidth\""))),
         }
     }
 }
 
 // orient attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
-
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum MarkerOrient {
     Auto,
@@ -72,16 +68,13 @@ impl Parse for MarkerOrient {
     fn parse(s: &str, _: ()) -> Result<MarkerOrient, AttributeError> {
         match s {
             "auto" => Ok(MarkerOrient::Auto),
-            _ => {
-                parsers::angle_degrees(s).map(MarkerOrient::Degrees)
-                                         .map_err(AttributeError::Parse)
-            }
+            _ => parsers::angle_degrees(s).map(MarkerOrient::Degrees)
+                                          .map_err(AttributeError::Parse),
         }
     }
 }
 
 // NodeMarker
-
 struct NodeMarker {
     units: Cell<MarkerUnits>,
     ref_x: Cell<RsvgLength>,
@@ -202,19 +195,15 @@ impl NodeTrait for NodeMarker {
 
                 Attribute::RefY => self.ref_y.set(parse("refY", value, LengthDir::Vertical, None)?),
 
-                Attribute::MarkerWidth => {
-                    self.width.set(parse("markerWidth",
-                                         value,
-                                         LengthDir::Horizontal,
-                                         Some(RsvgLength::check_nonnegative))?)
-                }
+                Attribute::MarkerWidth => self.width.set(parse("markerWidth",
+                                                         value,
+                                                         LengthDir::Horizontal,
+                                                         Some(RsvgLength::check_nonnegative))?),
 
-                Attribute::MarkerHeight => {
-                    self.height.set(parse("markerHeight",
-                                          value,
-                                          LengthDir::Vertical,
-                                          Some(RsvgLength::check_nonnegative))?)
-                }
+                Attribute::MarkerHeight => self.height.set(parse("markerHeight",
+                                                          value,
+                                                          LengthDir::Vertical,
+                                                          Some(RsvgLength::check_nonnegative))?),
 
                 Attribute::Orient => self.orient.set(parse("orient", value, (), None)?),
 
@@ -248,7 +237,6 @@ pub extern "C" fn rsvg_node_marker_new(_: *const libc::c_char,
 }
 
 // Machinery to figure out marker orientations
-
 #[derive(Debug, PartialEq)]
 pub enum Segment {
     Degenerate {
@@ -276,8 +264,7 @@ enum SegmentState {
     ClosedSubpath,
 }
 
-/* This converts a cairo_path_t into a list of curveto-like segments.  Each segment can be: */
-//
+// This converts a cairo_path_t into a list of curveto-like segments.  Each segment can be:
 // 1. Segment::Degenerate => the segment is actually a single point (x, y)
 //
 // 2. Segment::LineOrCurve => either a lineto or a curveto (or the effective lineto that results
@@ -292,8 +279,6 @@ enum SegmentState {
 //    The tangent at the end point is given by the vector (P4 - P3).
 // The tangents also work if the segment refers to a lineto (they will both just point in the
 // same direction).
-//
-
 fn make_degenerate(x: f64, y: f64) -> Segment {
     Segment::Degenerate { x, y }
 }
@@ -345,33 +330,29 @@ pub fn path_builder_to_segments(builder: &RsvgPathBuilder) -> Vec<Segment> {
 
                 match state {
                     SegmentState::Initial | SegmentState::InSubpath => {
-                        /* Ignore the very first moveto in a sequence (Initial state), or if we
-                         * were already drawing within a subpath, start
-                         * a new subpath.
-                         */
+                        // Ignore the very first moveto in a sequence (Initial state), or if we
+                        // were already drawing within a subpath, start
+                        // a new subpath.
                         state = SegmentState::NewSubpath;
                     }
 
                     SegmentState::NewSubpath => {
-                        /* We had just begun a new subpath (i.e. from a moveto) and we got
-                         * another moveto?  Output a stray point for the
-                         * previous moveto.
-                         */
+                        // We had just begun a new subpath (i.e. from a moveto) and we got
+                        // another moveto?  Output a stray point for the
+                        // previous moveto.
                         segments.push(make_degenerate(last_x, last_y));
                         state = SegmentState::NewSubpath;
                     }
 
                     SegmentState::ClosedSubpath => {
-                        /* Cairo outputs a moveto after every closepath, so that subsequent
-                         * lineto/curveto commands will start at the closed vertex. */
-                        //
+                        // Cairo outputs a moveto after every closepath, so that subsequent
+                        // lineto/curveto commands will start at the closed vertex.
                         // We don't want to actually emit a point (a degenerate segment) in that
                         // artificial-moveto case.
                         //
                         // We'll reset to the Initial state so that a subsequent "real" moveto will
                         // be handled as the beginning of a new subpath, or a degenerate point, as
                         // usual.
-                        //
                         state = SegmentState::Initial;
                     }
                 }
@@ -419,12 +400,11 @@ fn points_equal(x1: f64, y1: f64, x2: f64, y2: f64) -> bool {
     double_equals(x1, x2) && double_equals(y1, y2)
 }
 
-/* If the segment has directionality, returns two vectors (v1x, v1y, v2x, v2y); otherwise,
- * returns None.  The vectors are the tangents at the beginning and at the end of the segment,
- * respectively.  A segment does not have directionality if it is degenerate (i.e. a single
- * point) or a zero-length segment, i.e. where all four control points are coincident (the first
- * and last control points may coincide, but the others may define a loop - thus nonzero length)
- */
+// If the segment has directionality, returns two vectors (v1x, v1y, v2x, v2y); otherwise,
+// returns None.  The vectors are the tangents at the beginning and at the end of the segment,
+// respectively.  A segment does not have directionality if it is degenerate (i.e. a single
+// point) or a zero-length segment, i.e. where all four control points are coincident (the first
+// and last control points may coincide, but the others may define a loop - thus nonzero length)
 fn get_segment_directionalities(segment: &Segment) -> Option<(f64, f64, f64, f64)> {
     match *segment {
         Segment::Degenerate { .. } => None,
@@ -463,8 +443,7 @@ fn get_segment_directionalities(segment: &Segment) -> Option<(f64, f64, f64, f64
     }
 }
 
-/* The SVG spec 1.1 says http://www.w3.org/TR/SVG/implnote.html#PathElementImplementationNotes */
-//
+// The SVG spec 1.1 says http://www.w3.org/TR/SVG/implnote.html#PathElementImplementationNotes
 // Certain line-capping and line-joining situations and markers
 // require that a path segment have directionality at its start and
 // end points. Zero-length path segments have no directionality. In
@@ -488,27 +467,27 @@ fn get_segment_directionalities(segment: &Segment) -> Option<(f64, f64, f64, f64
 // directionality. Otherwise, set the directionality for the path
 // segment's start and end points to align with the positive x-axis
 // in user space.
-//
 fn find_incoming_directionality_backwards(segments: &[Segment],
                                           start_index: usize)
                                           -> (bool, f64, f64) {
-    /* "go backwards ... within the current subpath until ... segment which has directionality
-     * at its end point" */
-
+    // "go backwards ... within the current subpath until ... segment which has directionality
+    // at its end point"
     for segment in segments[..start_index + 1].iter().rev() {
         match *segment {
             Segment::Degenerate { .. } => {
-                return (false, 0.0, 0.0); /* reached the beginning of the subpath as we ran into a standalone point */
+                return (false, 0.0, 0.0); // reached the beginning of the subpath as we ran into a standalone point
             }
 
-            Segment::LineOrCurve { .. } => match get_segment_directionalities(segment) {
-                Some((_, _, v2x, v2y)) => {
-                    return (true, v2x, v2y);
+            Segment::LineOrCurve { .. } => {
+                match get_segment_directionalities(segment) {
+                    Some((_, _, v2x, v2y)) => {
+                        return (true, v2x, v2y);
+                    }
+                    None => {
+                        continue;
+                    }
                 }
-                None => {
-                    continue;
-                }
-            },
+            }
         }
     }
 
@@ -518,23 +497,24 @@ fn find_incoming_directionality_backwards(segments: &[Segment],
 fn find_outgoing_directionality_forwards(segments: &[Segment],
                                          start_index: usize)
                                          -> (bool, f64, f64) {
-    /* "go forwards ... within the current subpath until ... segment which has directionality at
-     * its start point" */
-
+    // "go forwards ... within the current subpath until ... segment which has directionality at
+    // its start point"
     for segment in &segments[start_index..] {
         match *segment {
             Segment::Degenerate { .. } => {
-                return (false, 0.0, 0.0); /* reached the end of a subpath as we ran into a standalone point */
+                return (false, 0.0, 0.0); // reached the end of a subpath as we ran into a standalone point
             }
 
-            Segment::LineOrCurve { .. } => match get_segment_directionalities(segment) {
-                Some((v1x, v1y, _, _)) => {
-                    return (true, v1x, v1y);
+            Segment::LineOrCurve { .. } => {
+                match get_segment_directionalities(segment) {
+                    Some((v1x, v1y, _, _)) => {
+                        return (true, v1x, v1y);
+                    }
+                    None => {
+                        continue;
+                    }
                 }
-                None => {
-                    continue;
-                }
-            },
+            }
         }
     }
 
@@ -645,12 +625,10 @@ fn emit_marker<E>(segment: &Segment,
     let (x, y) = match *segment {
         Segment::Degenerate { x, y } => (x, y),
 
-        Segment::LineOrCurve { x1, y1, x4, y4, .. } => {
-            match endpoint {
-                MarkerEndpoint::Start => (x1, y1),
-                MarkerEndpoint::End => (x4, y4),
-            }
-        }
+        Segment::LineOrCurve { x1, y1, x4, y4, .. } => match endpoint {
+            MarkerEndpoint::Start => (x1, y1),
+            MarkerEndpoint::End => (x4, y4),
+        },
     };
 
     emit_fn(marker_type, x, y, orient);
@@ -700,7 +678,7 @@ fn emit_markers_for_path_builder<E>(builder: &RsvgPathBuilder, emit_fn: &mut E)
         InSubpath,
     };
 
-    /* Convert the path to a list of segments and bare points */
+    // Convert the path to a list of segments and bare points
     let segments = path_builder_to_segments(builder);
 
     let mut subpath_state = SubpathState::NoSubpath;
@@ -711,8 +689,7 @@ fn emit_markers_for_path_builder<E>(builder: &RsvgPathBuilder, emit_fn: &mut E)
                 if let SubpathState::InSubpath = subpath_state {
                     assert!(i > 0);
 
-                    /* Got a lone point after a subpath; render the subpath's end marker first */
-
+                    // Got a lone point after a subpath; render the subpath's end marker first
                     let (_, incoming_vx, incoming_vy) =
                         find_incoming_directionality_backwards(&segments, i - 1);
                     emit_marker(&segments[i - 1],
@@ -722,7 +699,7 @@ fn emit_markers_for_path_builder<E>(builder: &RsvgPathBuilder, emit_fn: &mut E)
                                 emit_fn);
                 }
 
-                /* Render marker for the lone point; no directionality */
+                // Render marker for the lone point; no directionality
                 emit_marker(segment,
                             MarkerEndpoint::Start,
                             MarkerType::Middle,
@@ -733,8 +710,7 @@ fn emit_markers_for_path_builder<E>(builder: &RsvgPathBuilder, emit_fn: &mut E)
             }
 
             Segment::LineOrCurve { .. } => {
-                /* Not a degenerate segment */
-
+                // Not a degenerate segment
                 match subpath_state {
                     SubpathState::NoSubpath => {
                         let (_, outgoing_vx, outgoing_vy) =
@@ -785,8 +761,7 @@ fn emit_markers_for_path_builder<E>(builder: &RsvgPathBuilder, emit_fn: &mut E)
         }
     }
 
-    /* Finally, render the last point */
-
+    // Finally, render the last point
     if !segments.is_empty() {
         let segment = &segments[segments.len() - 1];
         if let Segment::LineOrCurve { .. } = *segment {
@@ -813,8 +788,7 @@ fn emit_markers_for_path_builder<E>(builder: &RsvgPathBuilder, emit_fn: &mut E)
     }
 }
 
-/******************** Tests ******************* * * * * * * * * * * **/
-
+// ************************************  Tests ************************************
 #[cfg(test)]
 mod parser_tests {
     use super::*;
@@ -933,7 +907,7 @@ mod directionality_tests {
         assert_eq!(expected_segments, segments);
     }
 
-    /* Single open path; the easy case */
+    // Single open path; the easy case
 
     fn setup_open_path() -> RsvgPathBuilder {
         let mut builder = RsvgPathBuilder::new();
@@ -953,7 +927,7 @@ mod directionality_tests {
         test_path_builder_to_segments(&setup_open_path(), expected_segments);
     }
 
-    /* Multiple open subpaths */
+    // Multiple open subpaths
 
     fn setup_multiple_open_subpaths() -> RsvgPathBuilder {
         let mut builder = RsvgPathBuilder::new();
@@ -982,7 +956,7 @@ mod directionality_tests {
         test_path_builder_to_segments(&setup_multiple_open_subpaths(), expected_segments);
     }
 
-    /* Closed subpath; must have a line segment back to the first point */
+    // Closed subpath; must have a line segment back to the first point
 
     fn setup_closed_subpath() -> RsvgPathBuilder {
         let mut builder = RsvgPathBuilder::new();
@@ -1004,9 +978,9 @@ mod directionality_tests {
         test_path_builder_to_segments(&setup_closed_subpath(), expected_segments);
     }
 
-    /* Multiple closed subpaths; each must have a line segment back to their
-     * initial points, with no degenerate segments between subpaths.
-     */
+    // Multiple closed subpaths; each must have a line segment back to their
+    // initial points, with no degenerate segments between subpaths.
+    // 
 
     fn setup_multiple_closed_subpaths() -> RsvgPathBuilder {
         let mut builder = RsvgPathBuilder::new();
@@ -1039,9 +1013,9 @@ mod directionality_tests {
         test_path_builder_to_segments(&setup_multiple_closed_subpaths(), expected_segments);
     }
 
-    /* A lineto follows the first closed subpath, with no moveto to start the second subpath.
-     * The lineto must start at the first point of the first subpath.
-     */
+    // A lineto follows the first closed subpath, with no moveto to start the second subpath.
+    // The lineto must start at the first point of the first subpath.
+    // 
 
     fn setup_no_moveto_after_closepath() -> RsvgPathBuilder {
         let mut builder = RsvgPathBuilder::new();
@@ -1066,41 +1040,40 @@ mod directionality_tests {
         test_path_builder_to_segments(&setup_no_moveto_after_closepath(), expected_segments);
     }
 
-    /* Sequence of moveto; should generate degenerate points.
-     *
-     * This test is not enabled right now!  We create the
-     * path fixtures with Cairo, and Cairo compresses
-     * sequences of moveto into a single one.  So, we can't
-     * really test this, as we don't get the fixture we want.
-     *
-     * Eventually we'll probably have to switch librsvg to
-     * its own internal path representation which should
-     * allow for unelided path commands, and which should
-     * only build a cairo_path_t for the final rendering step.
-
-    fn setup_sequence_of_moveto () -> RsvgPathBuilder {
-        let mut builder = RsvgPathBuilder::new ();
-
-        builder.move_to (10.0, 10.0);
-        builder.move_to (20.0, 20.0);
-        builder.move_to (30.0, 30.0);
-        builder.move_to (40.0, 40.0);
-
-        builder
-    }
-
-    #[test]
-    fn path_to_segments_handles_sequence_of_moveto () {
-        let expected_segments: Vec<Segment> = vec! [
-            degenerate (10.0, 10.0),
-            degenerate (20.0, 20.0),
-            degenerate (30.0, 30.0),
-            degenerate (40.0, 40.0)
-        ];
-
-        test_path_builder_to_segments (&setup_sequence_of_moveto (), expected_segments);
-    }
-     */
+    // Sequence of moveto; should generate degenerate points.
+    // This test is not enabled right now!  We create the
+    // path fixtures with Cairo, and Cairo compresses
+    // sequences of moveto into a single one.  So, we can't
+    // really test this, as we don't get the fixture we want.
+    //
+    // Eventually we'll probably have to switch librsvg to
+    // its own internal path representation which should
+    // allow for unelided path commands, and which should
+    // only build a cairo_path_t for the final rendering step.
+    //
+    // fn setup_sequence_of_moveto () -> RsvgPathBuilder {
+    // let mut builder = RsvgPathBuilder::new ();
+    //
+    // builder.move_to (10.0, 10.0);
+    // builder.move_to (20.0, 20.0);
+    // builder.move_to (30.0, 30.0);
+    // builder.move_to (40.0, 40.0);
+    //
+    // builder
+    // }
+    //
+    // #[test]
+    // fn path_to_segments_handles_sequence_of_moveto () {
+    // let expected_segments: Vec<Segment> = vec! [
+    // degenerate (10.0, 10.0),
+    // degenerate (20.0, 20.0),
+    // degenerate (30.0, 30.0),
+    // degenerate (40.0, 40.0)
+    // ];
+    //
+    // test_path_builder_to_segments (&setup_sequence_of_moveto (), expected_segments);
+    // }
+    // 
 
     #[test]
     fn degenerate_segment_has_no_directionality() {

@@ -27,10 +27,9 @@ struct ColorStop {
 
 coord_units!(GradientUnits, CoordUnits::ObjectBoundingBox);
 
-/* Any of the attributes in gradient elements may be omitted.  In turn, the missing
- * ones can be inherited from the gradient referenced by its "fallback" IRI.  We
- * represent these possibly-missing attributes as Option<foo>.
- */
+// Any of the attributes in gradient elements may be omitted.  In turn, the missing
+// ones can be inherited from the gradient referenced by its "fallback" IRI.  We
+// represent these possibly-missing attributes as Option<foo>.
 #[derive(Clone)]
 struct GradientCommon {
     pub units: Option<GradientUnits>,
@@ -208,8 +207,7 @@ impl GradientVariant {
     }
 
     fn resolve_from_defaults(&mut self) {
-        /* These are per the spec */
-
+        // These are per the spec
         match *self {
             GradientVariant::Linear { .. } => {
                 self.resolve_from_fallback(&GradientVariant::default_linear())
@@ -455,10 +453,9 @@ fn set_linear_gradient_on_pattern(gradient: &Gradient,
     true
 }
 
-/* SVG defines radial gradients as being inside a circle (cx, cy, radius).  The
- * gradient projects out from a focus point (fx, fy), which is assumed to be
- * inside the circle, to the edge of the circle. */
-//
+// SVG defines radial gradients as being inside a circle (cx, cy, radius).  The
+// gradient projects out from a focus point (fx, fy), which is assumed to be
+// inside the circle, to the edge of the circle.
 // The description of https://www.w3.org/TR/SVG/pservers.html#RadialGradientElement
 // states:
 //
@@ -468,40 +465,37 @@ fn set_linear_gradient_on_pattern(gradient: &Gradient,
 // defined by ‘cx’, ‘cy’ and ‘r’.
 //
 // So, let's do that!
-//
 fn fix_focus_point(mut fx: f64, mut fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64) {
-    /* Easy case first: the focus point is inside the circle */
+    // Easy case first: the focus point is inside the circle
 
     if (fx - cx) * (fx - cx) + (fy - cy) * (fy - cy) <= radius * radius {
         return (fx, fy);
     }
 
-    /* Hard case: focus point is outside the circle. */
-    //
+    // Hard case: focus point is outside the circle.
     // First, translate everything to the origin.
-    //
 
     fx -= cx;
     fy -= cy;
 
-    /* Find the vector from the origin to (fx, fy) */
+    // Find the vector from the origin to (fx, fy)
 
     let mut vx = fx;
     let mut vy = fy;
 
-    /* Find the vector's magnitude */
+    // Find the vector's magnitude
 
     let mag = (vx * vx + vy * vy).sqrt();
 
-    /* Normalize the vector to have a magnitude equal to radius; (vx, vy) will now be on the
-     * edge of the circle */
+    // Normalize the vector to have a magnitude equal to radius; (vx, vy) will now be on the
+    // edge of the circle
 
     let scale = mag / radius;
 
     vx /= scale;
     vy /= scale;
 
-    /* Translate back to (cx, cy) and we are done! */
+    // Translate back to (cx, cy) and we are done!
 
     (vx + cx, vy + cy)
 }

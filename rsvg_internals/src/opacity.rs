@@ -36,20 +36,14 @@ pub enum Opacity {
 impl From<Result<Opacity, AttributeError>> for OpacitySpec {
     fn from(result: Result<Opacity, AttributeError>) -> OpacitySpec {
         match result {
-            Ok(Opacity::Inherit) => {
-                OpacitySpec { kind: OpacityKind::Inherit,
-                              opacity: 0, }
-            }
+            Ok(Opacity::Inherit) => OpacitySpec { kind: OpacityKind::Inherit,
+                                                  opacity: 0, },
 
-            Ok(Opacity::Specified(val)) => {
-                OpacitySpec { kind: OpacityKind::Specified,
-                              opacity: opacity_to_u8(val), }
-            }
+            Ok(Opacity::Specified(val)) => OpacitySpec { kind: OpacityKind::Specified,
+                                                         opacity: opacity_to_u8(val), },
 
-            _ => {
-                OpacitySpec { kind: OpacityKind::ParseError,
-                              opacity: 0, }
-            }
+            _ => OpacitySpec { kind: OpacityKind::ParseError,
+                               opacity: 0, },
         }
     }
 }

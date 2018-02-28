@@ -136,27 +136,20 @@ impl From<u32> for Color {
 impl From<Result<Color, AttributeError>> for ColorSpec {
     fn from(result: Result<Color, AttributeError>) -> ColorSpec {
         match result {
-            Ok(Color::Inherit) => {
-                ColorSpec { kind: ColorKind::Inherit,
-                            argb: 0, }
-            }
+            Ok(Color::Inherit) => ColorSpec { kind: ColorKind::Inherit,
+                                              argb: 0, },
 
-            Ok(Color::CurrentColor) => {
-                ColorSpec { kind: ColorKind::CurrentColor,
-                            argb: 0, }
-            }
+            Ok(Color::CurrentColor) => ColorSpec { kind: ColorKind::CurrentColor,
+                                                   argb: 0, },
 
-            Ok(Color::RGBA(rgba)) => {
-                ColorSpec { kind: ColorKind::ARGB,
-                            argb: (u32::from(rgba.alpha) << 24 | u32::from(rgba.red) << 16
-                                   | u32::from(rgba.green) << 8
-                                   | u32::from(rgba.blue)), }
-            }
+            Ok(Color::RGBA(rgba)) => ColorSpec { kind: ColorKind::ARGB,
+                                                 argb: (u32::from(rgba.alpha) << 24
+                                                        | u32::from(rgba.red) << 16
+                                                        | u32::from(rgba.green) << 8
+                                                        | u32::from(rgba.blue)), },
 
-            _ => {
-                ColorSpec { kind: ColorKind::ParseError,
-                            argb: 0, }
-            }
+            _ => ColorSpec { kind: ColorKind::ParseError,
+                             argb: 0, },
         }
     }
 }

@@ -15,15 +15,13 @@ use parsers::ParseError;
 use property_bag::PropertyBag;
 use state::RsvgState;
 
-/* A *const RsvgNode is just a pointer for the C code's benefit: it
- * points to an  Rc<Node>, which is our refcounted Rust representation
- * of nodes.
- */
+// A *const RsvgNode is just a pointer for the C code's benefit: it
+// points to an  Rc<Node>, which is our refcounted Rust representation
+// of nodes.
 pub type RsvgNode = Rc<Node>;
 
-/* A *const RsvgCNodeImpl is just an opaque pointer to the C code's
- * struct for a particular node type.
- */
+// A *const RsvgCNodeImpl is just an opaque pointer to the C code's
+// struct for a particular node type.
 pub enum RsvgCNodeImpl {}
 
 pub trait NodeTrait: Downcast {
@@ -69,7 +67,7 @@ pub struct Node {
     node_impl: Box<NodeTrait>,
 }
 
-/* Keep this in sync with rsvg-private.h:RsvgNodeType */
+// Keep this in sync with rsvg-private.h:RsvgNodeType
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum NodeType {
@@ -105,8 +103,8 @@ pub enum NodeType {
     TSpan,
     Use,
 
-    /* Filter primitives */
-    FilterPrimitiveFirst, /* just a marker; not a valid type */
+    // Filter primitives
+    FilterPrimitiveFirst, // just a marker; not a valid type
     FilterPrimitiveBlend,
     FilterPrimitiveColorMatrix,
     FilterPrimitiveComponentTransfer,
@@ -124,7 +122,7 @@ pub enum NodeType {
     FilterPrimitiveSpecularLighting,
     FilterPrimitiveTile,
     FilterPrimitiveTurbulence,
-    FilterPrimitiveLast, /* just a marker; not a valid type */
+    FilterPrimitiveLast, // just a marker; not a valid type
 }
 
 impl Node {
@@ -321,7 +319,6 @@ pub extern "C" fn rsvg_node_unref(raw_node: *mut RsvgNode) -> *mut RsvgNode {
 // See https://github.com/rust-lang/rust/issues/36497 - this is what
 // added Rc::ptr_eq(), but we don't want to depend on unstable Rust
 // just yet.
-
 fn rc_node_ptr_eq<T: ?Sized>(this: &Rc<T>, other: &Rc<T>) -> bool {
     let this_ptr: *const T = &**this;
     let other_ptr: *const T = &**other;

@@ -38,7 +38,6 @@ fn render_ellipse(cx: f64,
                   draw_ctx: *const RsvgDrawingCtx,
                   dominate: i32) {
     // Per the spec, rx and ry must be nonnegative
-
     if rx <= 0.0 || ry <= 0.0 {
         return;
     }
@@ -47,7 +46,6 @@ fn render_ellipse(cx: f64,
     let arc_magic: f64 = 0.5522847498;
 
     // approximate an ellipse using 4 Bézier curves
-
     let mut builder = RsvgPathBuilder::new();
 
     builder.move_to(cx + rx, cy);
@@ -85,8 +83,7 @@ fn render_ellipse(cx: f64,
     render_path_builder(&builder, draw_ctx, node.get_state(), dominate, false);
 }
 
-/***** NodePath **** * * * * * * * * * * **/
-
+// ************ NodePath ************
 struct NodePath {
     builder: RefCell<Option<RsvgPathBuilder>>,
 }
@@ -126,8 +123,7 @@ impl NodeTrait for NodePath {
     }
 }
 
-/***** NodePoly **** * * * * * * * * * * **/
-
+// ************ NodePoly ************
 #[derive(Debug, PartialEq)]
 enum PolyKind {
     Open,
@@ -150,7 +146,6 @@ impl NodeTrait for NodePoly {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (key, attr, value) in pbag.iter() {
             // support for svg < 1.0 which used verts
-
             if attr == Attribute::Points || attr == Attribute::Verts {
                 let result = parsers::list_of_points(value.trim());
 
@@ -195,8 +190,7 @@ impl NodeTrait for NodePoly {
     }
 }
 
-/***** NodeLine **** * * * * * * * * * * **/
-
+// ************ NodeLine ************
 struct NodeLine {
     x1: Cell<RsvgLength>,
     y1: Cell<RsvgLength>,
@@ -247,8 +241,7 @@ impl NodeTrait for NodeLine {
     }
 }
 
-/***** NodeRect **** * * * * * * * * * * **/
-
+// ************ NodeRect ************
 struct NodeRect {
     // x, y, width, height
     x: Cell<RsvgLength>,
@@ -360,8 +353,7 @@ impl NodeTrait for NodeRect {
         let mut builder = RsvgPathBuilder::new();
 
         if rx == 0.0 {
-            /* Easy case, no rounded corners */
-
+            // Easy case, no rounded corners
             builder.move_to(x, y);
             builder.line_to(x + w, y);
             builder.line_to(x + w, y + h);
@@ -442,8 +434,7 @@ impl NodeTrait for NodeRect {
     }
 }
 
-/***** NodeCircle **** * * * * * * * * * * **/
-
+// ************ NodeCircle ************
 struct NodeCircle {
     cx: Cell<RsvgLength>,
     cy: Cell<RsvgLength>,
@@ -464,12 +455,10 @@ impl NodeTrait for NodeCircle {
             match attr {
                 Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal, None)?),
                 Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
-                Attribute::R => {
-                    self.r.set(parse("r",
-                                     value,
-                                     LengthDir::Both,
-                                     Some(RsvgLength::check_nonnegative))?)
-                }
+                Attribute::R => self.r.set(parse("r",
+                                                 value,
+                                                 LengthDir::Both,
+                                                 Some(RsvgLength::check_nonnegative))?),
 
                 _ => (),
             }
@@ -491,8 +480,7 @@ impl NodeTrait for NodeCircle {
     }
 }
 
-/***** NodeEllipse **** * * * * * * * * * * **/
-
+// ************ NodeEllipse ************
 struct NodeEllipse {
     cx: Cell<RsvgLength>,
     cy: Cell<RsvgLength>,
@@ -516,18 +504,14 @@ impl NodeTrait for NodeEllipse {
                 Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal, None)?),
                 Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
 
-                Attribute::Rx => {
-                    self.rx.set(parse("rx",
-                                      value,
-                                      LengthDir::Horizontal,
-                                      Some(RsvgLength::check_nonnegative))?)
-                }
-                Attribute::Ry => {
-                    self.ry.set(parse("ry",
-                                      value,
-                                      LengthDir::Vertical,
-                                      Some(RsvgLength::check_nonnegative))?)
-                }
+                Attribute::Rx => self.rx.set(parse("rx",
+                                                   value,
+                                                   LengthDir::Horizontal,
+                                                   Some(RsvgLength::check_nonnegative))?),
+                Attribute::Ry => self.ry.set(parse("ry",
+                                                   value,
+                                                   LengthDir::Vertical,
+                                                   Some(RsvgLength::check_nonnegative))?),
 
                 _ => (),
             }
@@ -550,8 +534,7 @@ impl NodeTrait for NodeEllipse {
     }
 }
 
-/***** C Prototypes **** * * * * * * * * * * **/
-
+// ************ C Prototypes ************
 #[no_mangle]
 pub extern "C" fn rsvg_node_path_new(_: *const libc::c_char,
                                      raw_parent: *const RsvgNode)

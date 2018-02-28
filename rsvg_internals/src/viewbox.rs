@@ -9,7 +9,7 @@ use parsers::Parse;
 
 use self::glib::translate::*;
 
-/* Keep this in sync with rsvg-private.h:RsvgViewBox */
+// Keep this in sync with rsvg-private.h:RsvgViewBox
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct RsvgViewBox {

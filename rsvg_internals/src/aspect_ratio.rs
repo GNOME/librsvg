@@ -160,42 +160,24 @@ impl Default for AspectRatio {
 fn parse_align_mode(s: &str) -> Option<Align> {
     match s {
         "none" => Some(Align::None),
-        "xMinYMin" => {
-            Some(Align::Aligned { align: AlignMode::XminYmin,
-                                  fit: FitMode::Meet, })
-        }
-        "xMidYMin" => {
-            Some(Align::Aligned { align: AlignMode::XmidYmin,
-                                  fit: FitMode::Meet, })
-        }
-        "xMaxYMin" => {
-            Some(Align::Aligned { align: AlignMode::XmaxYmin,
-                                  fit: FitMode::Meet, })
-        }
-        "xMinYMid" => {
-            Some(Align::Aligned { align: AlignMode::XminYmid,
-                                  fit: FitMode::Meet, })
-        }
-        "xMidYMid" => {
-            Some(Align::Aligned { align: AlignMode::XmidYmid,
-                                  fit: FitMode::Meet, })
-        }
-        "xMaxYMid" => {
-            Some(Align::Aligned { align: AlignMode::XmaxYmid,
-                                  fit: FitMode::Meet, })
-        }
-        "xMinYMax" => {
-            Some(Align::Aligned { align: AlignMode::XminYmax,
-                                  fit: FitMode::Meet, })
-        }
-        "xMidYMax" => {
-            Some(Align::Aligned { align: AlignMode::XmidYmax,
-                                  fit: FitMode::Meet, })
-        }
-        "xMaxYMax" => {
-            Some(Align::Aligned { align: AlignMode::XmaxYmax,
-                                  fit: FitMode::Meet, })
-        }
+        "xMinYMin" => Some(Align::Aligned { align: AlignMode::XminYmin,
+                                            fit: FitMode::Meet, }),
+        "xMidYMin" => Some(Align::Aligned { align: AlignMode::XmidYmin,
+                                            fit: FitMode::Meet, }),
+        "xMaxYMin" => Some(Align::Aligned { align: AlignMode::XmaxYmin,
+                                            fit: FitMode::Meet, }),
+        "xMinYMid" => Some(Align::Aligned { align: AlignMode::XminYmid,
+                                            fit: FitMode::Meet, }),
+        "xMidYMid" => Some(Align::Aligned { align: AlignMode::XmidYmid,
+                                            fit: FitMode::Meet, }),
+        "xMaxYMid" => Some(Align::Aligned { align: AlignMode::XmaxYmid,
+                                            fit: FitMode::Meet, }),
+        "xMinYMax" => Some(Align::Aligned { align: AlignMode::XminYmax,
+                                            fit: FitMode::Meet, }),
+        "xMidYMax" => Some(Align::Aligned { align: AlignMode::XmidYmax,
+                                            fit: FitMode::Meet, }),
+        "xMaxYMax" => Some(Align::Aligned { align: AlignMode::XmaxYmax,
+                                            fit: FitMode::Meet, }),
         _ => None,
     }
 }
@@ -281,10 +263,8 @@ impl Parse for AspectRatio {
         Ok(AspectRatio { defer,
                          align: match align {
                              Align::None => Align::None,
-                             Align::Aligned { align, .. } => {
-                                 Align::Aligned { align,
-                                                  fit: fit_mode, }
-                             }
+                             Align::Aligned { align, .. } => Align::Aligned { align,
+                                                                              fit: fit_mode, },
                          }, })
     }
 }
