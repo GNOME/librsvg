@@ -166,10 +166,24 @@ debian:testing_i386:
     - export LIBRSVG_DEBUG="yes"
   <<: *distro_test
   only:
+    - master
     - schedules
     - tags
     - web
 
+# CROSS DISTRO RELEASE i386
+#######################################################################
+
+debian:testing_release_i386:
+  image: registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing
+  stage: cross_distro_i386
+  before_script:
+    - export LIBRSVG_DEBUG="no"
+  <<: *distro_test
+  only:
+    - schedules
+    - tags
+    - web
 
 # LINT STAGE
 #######################################################################
