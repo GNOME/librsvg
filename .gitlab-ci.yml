@@ -209,17 +209,13 @@ debian:testing_release_i386:
 #######################################################################
 
 # Configure and run rustfmt on nightly
-# Exits and builds fails if on bad format
+# Exits and builds fails on bad format
 rustfmt:
   image: $RUSTFMT_NIGHTLY
   stage: lint
-  variables:
-    CFG_RELEASE_CHANNEL: "nightly"
   script:
     - rustc --version && cargo --version
-    - cargo install rustfmt-nightly --force
     - cargo fmt --all -- --write-mode=diff
-  when: manual
 
 
 # Configure and run clippy on nightly
