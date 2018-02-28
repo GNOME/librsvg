@@ -15,7 +15,7 @@ use parsers::Parse;
 use parsers::ParseError;
 use util::utf8_cstr;
 
-/* Keep this in sync with ../../rsvg-private.h:LengthUnit */
+// Keep this in sync with ../../rsvg-private.h:LengthUnit
 #[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthUnit {
@@ -28,7 +28,7 @@ pub enum LengthUnit {
     RelativeSmaller,
 }
 
-/* Keep this in sync with ../../rsvg-private.h:LengthDir */
+// Keep this in sync with ../../rsvg-private.h:LengthDir
 #[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthDir {
@@ -37,11 +37,11 @@ pub enum LengthDir {
     Both,
 }
 
-/* This is *not* an opaque struct; it is actually visible to the C code.  It is so
- * that the remaining C code can create RsvgLength values as part of existing
- * structures or objects, without allocations on the heap.
- */
-/* Keep this in sync with ../../rsvg-private.h:RsvgLength */
+// This is *not* an opaque struct; it is actually visible to the C code.  It is so
+// that the remaining C code can create RsvgLength values as part of existing
+// structures or objects, without allocations on the heap.
+//
+// Keep this in sync with ../../rsvg-private.h:RsvgLength
 #[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct RsvgLength {
@@ -104,9 +104,8 @@ pub extern "C" fn rsvg_length_parse(string: *const libc::c_char, dir: LengthDir)
     RsvgLength::parse(my_string, dir).unwrap_or_else(|_| RsvgLength::default())
 }
 
-/* https://www.w3.org/TR/SVG/types.html#DataTypeLength
- * https://www.w3.org/TR/2008/REC-CSS2-20080411/syndata.html#length-units */
-//
+// https://www.w3.org/TR/SVG/types.html#DataTypeLength
+// https://www.w3.org/TR/2008/REC-CSS2-20080411/syndata.html#length-units
 // Lengths have units.  When they need to be need resolved to
 // units in the user's coordinate system, some unit types
 // need to know if they are horizontal/vertical/both.  For example,
@@ -114,7 +113,6 @@ pub extern "C" fn rsvg_length_parse(string: *const libc::c_char, dir: LengthDir)
 // viewport's width.  In this case, the @dir argument is used
 // inside RsvgLength::normalize(), when it needs to know to what the
 // length refers.
-//
 
 fn make_err() -> AttributeError {
     AttributeError::Parse(ParseError::new("expected length: number(\"em\" | \"ex\" | \"px\" | \
@@ -214,99 +212,72 @@ impl RsvgLength {
                 .map_err (|_| AttributeError::Parse (ParseError::new ("expected number and optional symbol, or number and percentage")))?;
 
             match *token {
-                Token::Number { value, .. } => {
-                    RsvgLength { length: f64::from(value),
-                                 unit: LengthUnit::Default,
-                                 dir, }
-                }
+                Token::Number { value, .. } => RsvgLength { length: f64::from(value),
+                                                            unit: LengthUnit::Default,
+                                                            dir, },
 
-                Token::Percentage { unit_value, .. } => {
-                    RsvgLength { length: f64::from(unit_value),
-                                 unit: LengthUnit::Percent,
-                                 dir, }
-                }
+                Token::Percentage { unit_value, .. } => RsvgLength { length:
+                                                                         f64::from(unit_value),
+                                                                     unit: LengthUnit::Percent,
+                                                                     dir, },
 
                 Token::Dimension { value, ref unit, .. } => {
                     let value = f64::from(value);
 
                     match unit.as_ref() {
-                        "em" => {
-                            RsvgLength { length: value,
-                                         unit: LengthUnit::FontEm,
-                                         dir, }
-                        }
+                        "em" => RsvgLength { length: value,
+                                             unit: LengthUnit::FontEm,
+                                             dir, },
 
-                        "ex" => {
-                            RsvgLength { length: value,
-                                         unit: LengthUnit::FontEx,
-                                         dir, }
-                        }
+                        "ex" => RsvgLength { length: value,
+                                             unit: LengthUnit::FontEx,
+                                             dir, },
 
-                        "pt" => {
-                            RsvgLength { length: value / POINTS_PER_INCH,
-                                         unit: LengthUnit::Inch,
-                                         dir, }
-                        }
+                        "pt" => RsvgLength { length: value / POINTS_PER_INCH,
+                                             unit: LengthUnit::Inch,
+                                             dir, },
 
-                        "in" => {
-                            RsvgLength { length: value,
-                                         unit: LengthUnit::Inch,
-                                         dir, }
-                        }
+                        "in" => RsvgLength { length: value,
+                                             unit: LengthUnit::Inch,
+                                             dir, },
 
-                        "cm" => {
-                            RsvgLength { length: value / CM_PER_INCH,
-                                         unit: LengthUnit::Inch,
-                                         dir, }
-                        }
+                        "cm" => RsvgLength { length: value / CM_PER_INCH,
+                                             unit: LengthUnit::Inch,
+                                             dir, },
 
-                        "mm" => {
-                            RsvgLength { length: value / MM_PER_INCH,
-                                         unit: LengthUnit::Inch,
-                                         dir, }
-                        }
+                        "mm" => RsvgLength { length: value / MM_PER_INCH,
+                                             unit: LengthUnit::Inch,
+                                             dir, },
 
-                        "pc" => {
-                            RsvgLength { length: value / PICA_PER_INCH,
-                                         unit: LengthUnit::Inch,
-                                         dir, }
-                        }
+                        "pc" => RsvgLength { length: value / PICA_PER_INCH,
+                                             unit: LengthUnit::Inch,
+                                             dir, },
 
-                        "px" => {
-                            RsvgLength { length: value,
-                                         unit: LengthUnit::Default,
-                                         dir, }
-                        }
+                        "px" => RsvgLength { length: value,
+                                             unit: LengthUnit::Default,
+                                             dir, },
 
                         _ => return Err(make_err()),
                     }
                 }
 
                 // FIXME: why are the following in Length?  They should be in FontSize
-                Token::Ident(ref cow) => {
-                    match cow.as_ref() {
-                        "larger" => {
-                            RsvgLength { length: 0.0,
-                                         unit: LengthUnit::RelativeLarger,
-                                         dir, }
-                        }
+                Token::Ident(ref cow) => match cow.as_ref() {
+                    "larger" => RsvgLength { length: 0.0,
+                                             unit: LengthUnit::RelativeLarger,
+                                             dir, },
 
-                        "smaller" => {
-                            RsvgLength { length: 0.0,
-                                         unit: LengthUnit::RelativeSmaller,
-                                         dir, }
-                        }
+                    "smaller" => RsvgLength { length: 0.0,
+                                              unit: LengthUnit::RelativeSmaller,
+                                              dir, },
 
-                        "xx-small" | "x-small" | "small" | "medium" | "large" | "x-large"
-                        | "xx-large" => {
-                            RsvgLength { length: compute_named_size(cow),
-                                         unit: LengthUnit::Inch,
-                                         dir, }
-                        }
+                    "xx-small" | "x-small" | "small" | "medium" | "large" | "x-large"
+                    | "xx-large" => RsvgLength { length: compute_named_size(cow),
+                                                 unit: LengthUnit::Inch,
+                                                 dir, },
 
-                        _ => return Err(make_err()),
-                    }
-                }
+                    _ => return Err(make_err()),
+                },
 
                 _ => return Err(make_err()),
             }
@@ -317,12 +288,10 @@ impl RsvgLength {
 }
 
 fn viewport_percentage(x: f64, y: f64) -> f64 {
-    /* https://www.w3.org/TR/SVG/coords.html#Units */
-    //
+    // https://www.w3.org/TR/SVG/coords.html#Units
     // "For any other length value expressed as a percentage of the viewport, the
     // percentage is calculated as the specified percentage of
     // sqrt((actual-width)**2 + (actual-height)**2))/sqrt(2)."
-    //
     (x * x + y * y).sqrt() / SQRT_2
 }
 
@@ -426,17 +395,14 @@ pub extern "C" fn rsvg_parse_stroke_dasharray(string: *const libc::c_char) -> Rs
     let my_string = unsafe { &String::from_glib_none(string) };
 
     match parse_stroke_dash_array(my_string) {
-        Ok(StrokeDasharray::None) => {
-            RsvgStrokeDasharray { kind: RsvgStrokeDasharrayKind::None,
-                                  num_dashes: 0,
-                                  dashes: ptr::null_mut(), }
-        }
+        Ok(StrokeDasharray::None) => RsvgStrokeDasharray { kind: RsvgStrokeDasharrayKind::None,
+                                                           num_dashes: 0,
+                                                           dashes: ptr::null_mut(), },
 
-        Ok(StrokeDasharray::Inherit) => {
-            RsvgStrokeDasharray { kind: RsvgStrokeDasharrayKind::Inherit,
-                                  num_dashes: 0,
-                                  dashes: ptr::null_mut(), }
-        }
+        Ok(StrokeDasharray::Inherit) => RsvgStrokeDasharray { kind:
+                                                                  RsvgStrokeDasharrayKind::Inherit,
+                                                              num_dashes: 0,
+                                                              dashes: ptr::null_mut(), },
 
         Ok(StrokeDasharray::Dasharray(ref v)) => {
             RsvgStrokeDasharray { kind: RsvgStrokeDasharrayKind::Dashes,
@@ -444,11 +410,9 @@ pub extern "C" fn rsvg_parse_stroke_dasharray(string: *const libc::c_char) -> Rs
                                   dashes: to_c_array(v), }
         }
 
-        Err(_) => {
-            RsvgStrokeDasharray { kind: RsvgStrokeDasharrayKind::Error,
-                                  num_dashes: 0,
-                                  dashes: ptr::null_mut(), }
-        }
+        Err(_) => RsvgStrokeDasharray { kind: RsvgStrokeDasharrayKind::Error,
+                                        num_dashes: 0,
+                                        dashes: ptr::null_mut(), },
     }
 }
 

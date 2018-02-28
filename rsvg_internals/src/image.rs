@@ -44,18 +44,14 @@ impl NodeTrait for NodeImage {
             match attr {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
                 Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
-                Attribute::Width => {
-                    self.w.set(parse("width",
-                                     value,
-                                     LengthDir::Horizontal,
-                                     Some(RsvgLength::check_nonnegative))?)
-                }
-                Attribute::Height => {
-                    self.h.set(parse("height",
-                                     value,
-                                     LengthDir::Vertical,
-                                     Some(RsvgLength::check_nonnegative))?)
-                }
+                Attribute::Width => self.w.set(parse("width",
+                                                     value,
+                                                     LengthDir::Horizontal,
+                                                     Some(RsvgLength::check_nonnegative))?),
+                Attribute::Height => self.h.set(parse("height",
+                                                      value,
+                                                      LengthDir::Vertical,
+                                                      Some(RsvgLength::check_nonnegative))?),
 
                 Attribute::PreserveAspectRatio => {
                     self.aspect.set(parse("preserveAspectRatio", value, (), None)?)

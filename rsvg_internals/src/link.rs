@@ -114,8 +114,7 @@ impl CairoTagging for cairo::Context {
     }
 }
 
-/***** C Prototypes **** * * * * * * * * * * **/
-
+// ****************** C Prototypes  ******************
 #[no_mangle]
 pub extern "C" fn rsvg_node_link_new(_: *const libc::c_char,
                                      raw_parent: *const RsvgNode)

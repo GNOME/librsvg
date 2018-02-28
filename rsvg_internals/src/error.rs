@@ -49,17 +49,13 @@ impl error::Error for NodeError {
 impl fmt::Display for NodeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.err {
-            AttributeError::Parse(ref n) => {
-                write!(f,
-                       "error parsing value for attribute \"{}\": {}",
-                       self.attr_name, n.display)
-            }
+            AttributeError::Parse(ref n) => write!(f,
+                                                   "error parsing value for attribute \"{}\": {}",
+                                                   self.attr_name, n.display),
 
-            AttributeError::Value(ref s) => {
-                write!(f,
-                       "invalid value for attribute \"{}\": {}",
-                       self.attr_name, s)
-            }
+            AttributeError::Value(ref s) => write!(f,
+                                                   "invalid value for attribute \"{}\": {}",
+                                                   self.attr_name, s),
         }
     }
 }

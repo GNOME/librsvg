@@ -5,7 +5,7 @@ use cairo::MatrixTrait;
 use glib::translate::*;
 use util::*;
 
-/* Keep this in sync with ../../rsvg-private.h:RsvgBbox */
+// Keep this in sync with ../../rsvg-private.h:RsvgBbox
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct RsvgBbox {
@@ -59,13 +59,12 @@ pub extern "C" fn rsvg_bbox_insert(raw_dst: *mut RsvgBbox, raw_src: *const RsvgB
     affine.invert(); // this will panic!() if it's not invertible... should we check on our own?
     affine = cairo::Matrix::multiply(&src.affine, &affine);
 
-    /* This is a trick.  We want to transform each of the corners of
-     * the rectangle defined by src.rect with the affine
-     * transformation, and get the bounding box of all the four
-     * resulting points.  The modulus and division accomplish this by
-     * running through all the combinations of adding or not adding
-     * the width/height to the first point src.rect.(x, y).
-     */
+    // This is a trick.  We want to transform each of the corners of
+    // the rectangle defined by src.rect with the affine
+    // transformation, and get the bounding box of all the four
+    // resulting points.  The modulus and division accomplish this by
+    // running through all the combinations of adding or not adding
+    // the width/height to the first point src.rect.(x, y).
     for i in 0..4 {
         let rx: f64 = src.rect.x + src.rect.width * f64::from(i % 2);
         let ry: f64 = src.rect.y + src.rect.height * f64::from(i / 2);
@@ -123,7 +122,7 @@ pub extern "C" fn rsvg_bbox_clip(raw_dst: *mut RsvgBbox, raw_src: *const RsvgBbo
     affine.invert();
     affine = cairo::Matrix::multiply(&src.affine, &affine);
 
-    /* This is a trick.  See rsvg_bbox_insert() for a description of how it works. */
+    // This is a trick.  See rsvg_bbox_insert() for a description of how it works.
     for i in 0..4 {
         let rx: f64 = src.rect.x + src.rect.width * f64::from(i % 2);
         let ry: f64 = src.rect.y + src.rect.height * f64::from(i / 2);
