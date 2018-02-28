@@ -81,7 +81,7 @@ impl RsvgPathBuilder {
         &self.path_commands
     }
 
-    /** * * * * **/
+    /** * * * * * * **/
     // x1/y1: starting coordinates
     // rx/ry: radiuses before rotation
     // x_axis_rotation: Rotation angle for axes, in degrees
