@@ -55,15 +55,15 @@ stages:
 fedora:test:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: test
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
 
 fedora:test_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: test
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
 
 
@@ -73,8 +73,8 @@ fedora:test_release:
 fedora:rawhide:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest
   stage: cross_distro_amd64
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
     - librsvg-2.42
@@ -86,8 +86,8 @@ fedora:rawhide:
 opensuse:tumbleweed:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed
   stage: cross_distro_amd64
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
     - librsvg-2.42
@@ -99,8 +99,8 @@ opensuse:tumbleweed:
 debian:testing:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing
   stage: cross_distro_amd64
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
     - librsvg-2.42
@@ -129,8 +129,8 @@ debian:testing:
 fedora:rawhide_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest
   stage: cross_distro_amd64
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
   only:
     - librsvg-2.42
@@ -141,8 +141,8 @@ fedora:rawhide_release:
 opensuse:tumbleweed_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed
   stage: cross_distro_amd64
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
   only:
     - librsvg-2.42
@@ -153,8 +153,8 @@ opensuse:tumbleweed_release:
 debian:testing_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing
   stage: cross_distro_amd64
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
   only:
     - librsvg-2.42
@@ -168,8 +168,8 @@ debian:testing_release:
 debian:testing_i386:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing
   stage: cross_distro_i386
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
     - librsvg-2.42
@@ -184,8 +184,8 @@ debian:testing_i386:
 debian:testing_release_i386:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing
   stage: cross_distro_i386
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
   only:
     - librsvg-2.42
