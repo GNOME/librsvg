@@ -333,12 +333,15 @@ rsvg_cairo_check (gconstpointer data)
                         width_a, height_a, width_b, height_b); 
     }
     else {
+        /* https://gitlab.gnome.org/GNOME/librsvg/issues/178 */
+	const unsigned int MAX_DIFF = sizeof (long) == 8 ? 0 : 10;
+
 	surface_diff = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
 						   dimensions.width, dimensions.height);
 
 	compare_surfaces (surface_a, surface_b, surface_diff, &result);
 
-	if (result.pixels_changed && result.max_diff > 1) {
+	if (result.pixels_changed && result.max_diff > MAX_DIFF) {
             g_test_fail ();
             save_image (surface_diff, test_file_base, "-diff.png");
 	}
