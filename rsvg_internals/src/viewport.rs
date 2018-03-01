@@ -224,14 +224,14 @@ mod tests {
     #[test]
     fn clip_to_viewport() {
         let mut affine = cairo::Matrix::identity();
-        affine.scale(0.20, 0.20);
+        affine.scale(0.25, 0.25);
 
         let mut ctx = Ctx {
             view_box_size: None,
             clipping_rect: None,
             affine: None,
 
-            expected_view_box_size: Some((50.0, 50.0)),
+            expected_view_box_size: Some((40.0, 40.0)),
             expected_clipping_rect: Some((10.0, 10.0, 10.0, 10.0)),
             expected_affine: Some(affine),
         };
@@ -244,10 +244,10 @@ mod tests {
             ClipMode::ClipToViewport,
             true,
             Some(ViewBox(cairo::Rectangle {
-                x: 50.0,
-                y: 50.0,
-                width: 50.0,
-                height: 50.0,
+                x: 40.0,
+                y: 40.0,
+                width: 40.0,
+                height: 40.0,
             })),
             AspectRatio::parse("xMidYMid meet", ()).unwrap(),
             cairo::Matrix::identity(),
