@@ -25,11 +25,12 @@ pub type RsvgNode = Rc<Node>;
 pub enum RsvgCNodeImpl {}
 
 pub trait NodeTrait: Downcast {
-    fn set_atts(&self,
-                node: &RsvgNode,
-                handle: *const RsvgHandle,
-                pbag: &PropertyBag)
-                -> NodeResult;
+    fn set_atts(
+        &self,
+        node: &RsvgNode,
+        handle: *const RsvgHandle,
+        pbag: &PropertyBag,
+    ) -> NodeResult;
     fn draw(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
     fn get_c_impl(&self) -> *const RsvgCNodeImpl;
 }
@@ -126,17 +127,20 @@ pub enum NodeType {
 }
 
 impl Node {
-    pub fn new(node_type: NodeType,
-               parent: Option<Weak<Node>>,
-               state: *mut RsvgState,
-               node_impl: Box<NodeTrait>)
-               -> Node {
-        Node { node_type,
-               parent,
-               children: RefCell::new(Vec::new()),
-               state,
-               result: RefCell::new(Ok(())),
-               node_impl, }
+    pub fn new(
+        node_type: NodeType,
+        parent: Option<Weak<Node>>,
+        state: *mut RsvgState,
+        node_impl: Box<NodeTrait>,
+    ) -> Node {
+        Node {
+            node_type,
+            parent,
+            children: RefCell::new(Vec::new()),
+            state,
+            result: RefCell::new(Ok(())),
+            node_impl,
+        }
     }
 
     pub fn get_type(&self) -> NodeType {
@@ -210,14 +214,14 @@ impl Node {
         }
 
         self.foreach_child(|child| {
-                               let boxed_child = box_node(child.clone());
+            let boxed_child = box_node(child.clone());
 
-                               drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0);
+            drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0);
 
-                               rsvg_node_unref(boxed_child);
+            rsvg_node_unref(boxed_child);
 
-                               true
-                           });
+            true
+        });
 
         if dominate != -1 {
             drawing_ctx::pop_discrete_layer(draw_ctx);
@@ -225,7 +229,8 @@ impl Node {
     }
 
     pub fn foreach_child<F>(&self, mut f: F)
-        where F: FnMut(Rc<Node>) -> bool
+    where
+        F: FnMut(Rc<Node>) -> bool,
     {
         for c in &*self.children.borrow() {
             let next = f(c.clone());
@@ -265,14 +270,17 @@ pub fn node_ptr_to_weak(raw_parent: *const RsvgNode) -> Option<Weak<Node>> {
     }
 }
 
-pub fn boxed_node_new(node_type: NodeType,
-                      raw_parent: *const RsvgNode,
-                      node_impl: Box<NodeTrait>)
-                      -> *mut RsvgNode {
-    box_node(Rc::new(Node::new(node_type,
-                               node_ptr_to_weak(raw_parent),
-                               drawing_ctx::state_new(),
-                               node_impl)))
+pub fn boxed_node_new(
+    node_type: NodeType,
+    raw_parent: *const RsvgNode,
+    node_impl: Box<NodeTrait>,
+) -> *mut RsvgNode {
+    box_node(Rc::new(Node::new(
+        node_type,
+        node_ptr_to_weak(raw_parent),
+        drawing_ctx::state_new(),
+        node_impl,
+    )))
 }
 
 #[no_mangle]
@@ -326,9 +334,10 @@ fn rc_node_ptr_eq<T: ?Sized>(this: &Rc<T>, other: &Rc<T>) -> bool {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_is_same(raw_node1: *const RsvgNode,
-                                    raw_node2: *const RsvgNode)
-                                    -> glib_sys::gboolean {
+pub extern "C" fn rsvg_node_is_same(
+    raw_node1: *const RsvgNode,
+    raw_node2: *const RsvgNode,
+) -> glib_sys::gboolean {
     let is_same = if raw_node1.is_null() && raw_node2.is_null() {
         true
     } else if !raw_node1.is_null() && !raw_node2.is_null() {
@@ -362,9 +371,11 @@ pub extern "C" fn rsvg_node_add_child(raw_node: *mut RsvgNode, raw_child: *const
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_set_atts(raw_node: *mut RsvgNode,
-                                     handle: *const RsvgHandle,
-                                     pbag: *const PropertyBag) {
+pub extern "C" fn rsvg_node_set_atts(
+    raw_node: *mut RsvgNode,
+    handle: *const RsvgHandle,
+    pbag: *const PropertyBag,
+) {
     assert!(!raw_node.is_null());
     assert!(!pbag.is_null());
 
@@ -375,9 +386,11 @@ pub extern "C" fn rsvg_node_set_atts(raw_node: *mut RsvgNode,
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_draw(raw_node: *const RsvgNode,
-                                 draw_ctx: *const RsvgDrawingCtx,
-                                 dominate: i32) {
+pub extern "C" fn rsvg_node_draw(
+    raw_node: *const RsvgNode,
+    draw_ctx: *const RsvgDrawingCtx,
+    dominate: i32,
+) {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
@@ -385,9 +398,11 @@ pub extern "C" fn rsvg_node_draw(raw_node: *const RsvgNode,
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_set_attribute_parse_error(raw_node: *const RsvgNode,
-                                                      attr_name: *const libc::c_char,
-                                                      description: *const libc::c_char) {
+pub extern "C" fn rsvg_node_set_attribute_parse_error(
+    raw_node: *const RsvgNode,
+    attr_name: *const libc::c_char,
+    description: *const libc::c_char,
+) {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
@@ -395,8 +410,10 @@ pub extern "C" fn rsvg_node_set_attribute_parse_error(raw_node: *const RsvgNode,
     assert!(!description.is_null());
 
     unsafe {
-        node.set_error (NodeError::parse_error (&String::from_glib_none (attr_name),
-                                                ParseError::new (&String::from_glib_none (description))));
+        node.set_error(NodeError::parse_error(
+            &String::from_glib_none(attr_name),
+            ParseError::new(&String::from_glib_none(description)),
+        ));
     }
 }
 
@@ -404,27 +421,31 @@ type NodeForeachChild =
     unsafe extern "C" fn(node: *const RsvgNode, data: *const libc::c_void) -> glib_sys::gboolean;
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_foreach_child(raw_node: *const RsvgNode,
-                                          func: NodeForeachChild,
-                                          data: *const libc::c_void) {
+pub extern "C" fn rsvg_node_foreach_child(
+    raw_node: *const RsvgNode,
+    func: NodeForeachChild,
+    data: *const libc::c_void,
+) {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
     node.foreach_child(|child| {
-                           let boxed_child = box_node(child.clone());
+        let boxed_child = box_node(child.clone());
 
-                           let next: bool = unsafe { from_glib(func(boxed_child, data)) };
+        let next: bool = unsafe { from_glib(func(boxed_child, data)) };
 
-                           rsvg_node_unref(boxed_child);
+        rsvg_node_unref(boxed_child);
 
-                           next
-                       });
+        next
+    });
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_draw_children(raw_node: *const RsvgNode,
-                                          draw_ctx: *const RsvgDrawingCtx,
-                                          dominate: i32) {
+pub extern "C" fn rsvg_node_draw_children(
+    raw_node: *const RsvgNode,
+    draw_ctx: *const RsvgDrawingCtx,
+    dominate: i32,
+) {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
@@ -455,10 +476,12 @@ mod tests {
 
     #[test]
     fn node_refs_and_unrefs() {
-        let node = Rc::new(Node::new(NodeType::Path,
-                                     None,
-                                     ptr::null_mut(),
-                                     Box::new(TestNodeImpl {})));
+        let node = Rc::new(Node::new(
+            NodeType::Path,
+            None,
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
 
         let ref1 = box_node(node);
 
@@ -477,10 +500,12 @@ mod tests {
 
     #[test]
     fn reffed_node_is_same_as_original_node() {
-        let node = Rc::new(Node::new(NodeType::Path,
-                                     None,
-                                     ptr::null_mut(),
-                                     Box::new(TestNodeImpl {})));
+        let node = Rc::new(Node::new(
+            NodeType::Path,
+            None,
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
 
         let ref1 = box_node(node);
 
@@ -494,17 +519,21 @@ mod tests {
 
     #[test]
     fn different_nodes_have_different_pointers() {
-        let node1 = Rc::new(Node::new(NodeType::Path,
-                                      None,
-                                      ptr::null_mut(),
-                                      Box::new(TestNodeImpl {})));
+        let node1 = Rc::new(Node::new(
+            NodeType::Path,
+            None,
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
 
         let ref1 = box_node(node1);
 
-        let node2 = Rc::new(Node::new(NodeType::Path,
-                                      None,
-                                      ptr::null_mut(),
-                                      Box::new(TestNodeImpl {})));
+        let node2 = Rc::new(Node::new(
+            NodeType::Path,
+            None,
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
 
         let ref2 = box_node(node2);
 
@@ -516,25 +545,31 @@ mod tests {
 
     #[test]
     fn node_is_its_own_ancestor() {
-        let node = Rc::new(Node::new(NodeType::Path,
-                                     None,
-                                     ptr::null_mut(),
-                                     Box::new(TestNodeImpl {})));
+        let node = Rc::new(Node::new(
+            NodeType::Path,
+            None,
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
 
         assert!(Node::is_ancestor(node.clone(), node.clone()));
     }
 
     #[test]
     fn node_is_ancestor_of_child() {
-        let node = Rc::new(Node::new(NodeType::Path,
-                                     None,
-                                     ptr::null_mut(),
-                                     Box::new(TestNodeImpl {})));
+        let node = Rc::new(Node::new(
+            NodeType::Path,
+            None,
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
 
-        let child = Rc::new(Node::new(NodeType::Path,
-                                      Some(Rc::downgrade(&node)),
-                                      ptr::null_mut(),
-                                      Box::new(TestNodeImpl {})));
+        let child = Rc::new(Node::new(
+            NodeType::Path,
+            Some(Rc::downgrade(&node)),
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
 
         node.add_child(&child);
 

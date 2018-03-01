@@ -22,18 +22,24 @@ pub struct NodeError {
 
 impl NodeError {
     pub fn parse_error(attr_name: &str, error: ParseError) -> NodeError {
-        NodeError { attr_name: attr_name.to_string(),
-                    err: AttributeError::Parse(error), }
+        NodeError {
+            attr_name: attr_name.to_string(),
+            err: AttributeError::Parse(error),
+        }
     }
 
     pub fn value_error(attr_name: &str, description: &str) -> NodeError {
-        NodeError { attr_name: attr_name.to_string(),
-                    err: AttributeError::Value(description.to_string()), }
+        NodeError {
+            attr_name: attr_name.to_string(),
+            err: AttributeError::Value(description.to_string()),
+        }
     }
 
     pub fn attribute_error(attr_name: &str, error: AttributeError) -> NodeError {
-        NodeError { attr_name: attr_name.to_string(),
-                    err: error, }
+        NodeError {
+            attr_name: attr_name.to_string(),
+            err: error,
+        }
     }
 }
 
@@ -49,13 +55,17 @@ impl error::Error for NodeError {
 impl fmt::Display for NodeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.err {
-            AttributeError::Parse(ref n) => write!(f,
-                                                   "error parsing value for attribute \"{}\": {}",
-                                                   self.attr_name, n.display),
+            AttributeError::Parse(ref n) => write!(
+                f,
+                "error parsing value for attribute \"{}\": {}",
+                self.attr_name, n.display
+            ),
 
-            AttributeError::Value(ref s) => write!(f,
-                                                   "invalid value for attribute \"{}\": {}",
-                                                   self.attr_name, s),
+            AttributeError::Value(ref s) => write!(
+                f,
+                "invalid value for attribute \"{}\": {}",
+                self.attr_name, s
+            ),
         }
     }
 }

@@ -177,7 +177,10 @@ fn generate_phf_of_svg_attributes() {
 
     writeln!(&mut file, "}}").unwrap();
 
-    writeln!(&mut file, "static ATTRIBUTES: phf::Map<&'static str, Attribute> = ").unwrap();
+    writeln!(
+        &mut file,
+        "static ATTRIBUTES: phf::Map<&'static str, Attribute> = "
+    ).unwrap();
 
     let mut map = phf_codegen::Map::new();
     map.phf_path("phf");

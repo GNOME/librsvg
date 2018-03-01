@@ -36,14 +36,20 @@ pub enum Opacity {
 impl From<Result<Opacity, AttributeError>> for OpacitySpec {
     fn from(result: Result<Opacity, AttributeError>) -> OpacitySpec {
         match result {
-            Ok(Opacity::Inherit) => OpacitySpec { kind: OpacityKind::Inherit,
-                                                  opacity: 0, },
+            Ok(Opacity::Inherit) => OpacitySpec {
+                kind: OpacityKind::Inherit,
+                opacity: 0,
+            },
 
-            Ok(Opacity::Specified(val)) => OpacitySpec { kind: OpacityKind::Specified,
-                                                         opacity: opacity_to_u8(val), },
+            Ok(Opacity::Specified(val)) => OpacitySpec {
+                kind: OpacityKind::Specified,
+                opacity: opacity_to_u8(val),
+            },
 
-            _ => OpacitySpec { kind: OpacityKind::ParseError,
-                               opacity: 0, },
+            _ => OpacitySpec {
+                kind: OpacityKind::ParseError,
+                opacity: 0,
+            },
         }
     }
 }
@@ -98,14 +104,20 @@ impl FromStr for Opacity {
 impl Opacity {
     pub fn from_opacity_spec(spec: &OpacitySpec) -> Result<Opacity, AttributeError> {
         match *spec {
-            OpacitySpec { kind: OpacityKind::Inherit,
-                          .. } => Ok(Opacity::Inherit),
+            OpacitySpec {
+                kind: OpacityKind::Inherit,
+                ..
+            } => Ok(Opacity::Inherit),
 
-            OpacitySpec { kind: OpacityKind::Specified,
-                          opacity, } => Ok(Opacity::Specified(f64::from(opacity) / 255.0)),
+            OpacitySpec {
+                kind: OpacityKind::Specified,
+                opacity,
+            } => Ok(Opacity::Specified(f64::from(opacity) / 255.0)),
 
-            OpacitySpec { kind: OpacityKind::ParseError,
-                          .. } => Err(AttributeError::Parse(ParseError::new("parse error"))),
+            OpacitySpec {
+                kind: OpacityKind::ParseError,
+                ..
+            } => Err(AttributeError::Parse(ParseError::new("parse error"))),
         }
     }
 }
@@ -150,7 +162,9 @@ mod tests {
 
     #[test]
     fn errors_on_extra_input() {
-        assert!(is_parse_error(&Opacity::from_str("inherit a million dollars")));
+        assert!(is_parse_error(&Opacity::from_str(
+            "inherit a million dollars"
+        )));
         assert!(is_parse_error(&Opacity::from_str("0.0foo")));
     }
 
@@ -160,20 +174,36 @@ mod tests {
 
     #[test]
     fn converts_result_to_opacity_spec() {
-        assert_eq!(parse("inherit"),
-                   OpacitySpec { kind: OpacityKind::Inherit,
-                                 opacity: 0, });
+        assert_eq!(
+            parse("inherit"),
+            OpacitySpec {
+                kind: OpacityKind::Inherit,
+                opacity: 0,
+            }
+        );
 
-        assert_eq!(parse("0"),
-                   OpacitySpec { kind: OpacityKind::Specified,
-                                 opacity: 0, });
-        assert_eq!(parse("1"),
-                   OpacitySpec { kind: OpacityKind::Specified,
-                                 opacity: 255, });
+        assert_eq!(
+            parse("0"),
+            OpacitySpec {
+                kind: OpacityKind::Specified,
+                opacity: 0,
+            }
+        );
+        assert_eq!(
+            parse("1"),
+            OpacitySpec {
+                kind: OpacityKind::Specified,
+                opacity: 255,
+            }
+        );
 
-        assert_eq!(parse("foo"),
-                   OpacitySpec { kind: OpacityKind::ParseError,
-                                 opacity: 0, });
+        assert_eq!(
+            parse("foo"),
+            OpacitySpec {
+                kind: OpacityKind::ParseError,
+                opacity: 0,
+            }
+        );
     }
 
     fn test_roundtrip(s: &str) {

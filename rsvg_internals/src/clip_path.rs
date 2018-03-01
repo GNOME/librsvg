@@ -17,7 +17,9 @@ struct NodeClipPath {
 
 impl NodeClipPath {
     fn new() -> NodeClipPath {
-        NodeClipPath { units: Cell::new(ClipPathUnits::default()), }
+        NodeClipPath {
+            units: Cell::new(ClipPathUnits::default()),
+        }
     }
 }
 
@@ -46,12 +48,15 @@ impl NodeTrait for NodeClipPath {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_clip_path_new(_: *const libc::c_char,
-                                          raw_parent: *const RsvgNode)
-                                          -> *const RsvgNode {
-    boxed_node_new(NodeType::ClipPath,
-                   raw_parent,
-                   Box::new(NodeClipPath::new()))
+pub extern "C" fn rsvg_node_clip_path_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::ClipPath,
+        raw_parent,
+        Box::new(NodeClipPath::new()),
+    )
 }
 
 #[no_mangle]
@@ -62,8 +67,8 @@ pub extern "C" fn rsvg_node_clip_path_get_units(raw_node: *const RsvgNode) -> Co
     let mut units = ClipPathUnits::default();
 
     node.with_impl(|clip_path: &NodeClipPath| {
-                       units = clip_path.units.get();
-                   });
+        units = clip_path.units.get();
+    });
 
     CoordUnits::from(units)
 }

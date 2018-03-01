@@ -65,14 +65,17 @@ impl Parse for Color {
     type Data = (AllowInherit, AllowCurrentColor);
     type Err = AttributeError;
 
-    fn parse(s: &str,
-             (allow_inherit, allow_current_color): (AllowInherit, AllowCurrentColor))
-             -> Result<Color, AttributeError> {
+    fn parse(
+        s: &str,
+        (allow_inherit, allow_current_color): (AllowInherit, AllowCurrentColor),
+    ) -> Result<Color, AttributeError> {
         if s == "inherit" {
             if allow_inherit == AllowInherit::Yes {
                 Ok(Color::Inherit)
             } else {
-                Err(AttributeError::Value("inherit is not allowed here".to_string()))
+                Err(AttributeError::Value(
+                    "inherit is not allowed here".to_string(),
+                ))
             }
         } else {
             let mut input = cssparser::ParserInput::new(s);
@@ -81,13 +84,17 @@ impl Parse for Color {
                     if allow_current_color == AllowCurrentColor::Yes {
                         Ok(Color::CurrentColor)
                     } else {
-                        Err(AttributeError::Value("currentColor is not allowed here".to_string()))
+                        Err(AttributeError::Value(
+                            "currentColor is not allowed here".to_string(),
+                        ))
                     }
                 }
 
                 Ok(csscolor) => Ok(Color::from(csscolor)),
 
-                _ => Err(AttributeError::Parse(ParseError::new("invalid syntax for color"))),
+                _ => Err(AttributeError::Parse(ParseError::new(
+                    "invalid syntax for color",
+                ))),
             }
         }
     }
@@ -96,26 +103,36 @@ impl Parse for Color {
 impl Color {
     pub fn from_color_spec(spec: &ColorSpec) -> Result<Color, AttributeError> {
         match *spec {
-            ColorSpec { kind: ColorKind::Inherit,
-                        .. } => Ok(Color::Inherit),
+            ColorSpec {
+                kind: ColorKind::Inherit,
+                ..
+            } => Ok(Color::Inherit),
 
-            ColorSpec { kind: ColorKind::CurrentColor,
-                        .. } => Ok(Color::CurrentColor),
+            ColorSpec {
+                kind: ColorKind::CurrentColor,
+                ..
+            } => Ok(Color::CurrentColor),
 
-            ColorSpec { kind: ColorKind::ARGB,
-                        argb, } => Ok(Color::RGBA(rgba_from_argb(argb))),
+            ColorSpec {
+                kind: ColorKind::ARGB,
+                argb,
+            } => Ok(Color::RGBA(rgba_from_argb(argb))),
 
-            ColorSpec { kind: ColorKind::ParseError,
-                        .. } => Err(AttributeError::Parse(ParseError::new("parse error"))),
+            ColorSpec {
+                kind: ColorKind::ParseError,
+                ..
+            } => Err(AttributeError::Parse(ParseError::new("parse error"))),
         }
     }
 }
 
 fn rgba_from_argb(argb: u32) -> cssparser::RGBA {
-    cssparser::RGBA::new(((argb & 0x00ff_0000) >> 16) as u8,
-                         ((argb & 0x0000_ff00) >> 8) as u8,
-                         (argb & 0x0000_00ff) as u8,
-                         ((argb & 0xff00_0000) >> 24) as u8)
+    cssparser::RGBA::new(
+        ((argb & 0x00ff_0000) >> 16) as u8,
+        ((argb & 0x0000_ff00) >> 8) as u8,
+        (argb & 0x0000_00ff) as u8,
+        ((argb & 0xff00_0000) >> 24) as u8,
+    )
 }
 
 impl From<cssparser::Color> for Color {
@@ -136,29 +153,36 @@ impl From<u32> for Color {
 impl From<Result<Color, AttributeError>> for ColorSpec {
     fn from(result: Result<Color, AttributeError>) -> ColorSpec {
         match result {
-            Ok(Color::Inherit) => ColorSpec { kind: ColorKind::Inherit,
-                                              argb: 0, },
+            Ok(Color::Inherit) => ColorSpec {
+                kind: ColorKind::Inherit,
+                argb: 0,
+            },
 
-            Ok(Color::CurrentColor) => ColorSpec { kind: ColorKind::CurrentColor,
-                                                   argb: 0, },
+            Ok(Color::CurrentColor) => ColorSpec {
+                kind: ColorKind::CurrentColor,
+                argb: 0,
+            },
 
-            Ok(Color::RGBA(rgba)) => ColorSpec { kind: ColorKind::ARGB,
-                                                 argb: (u32::from(rgba.alpha) << 24
-                                                        | u32::from(rgba.red) << 16
-                                                        | u32::from(rgba.green) << 8
-                                                        | u32::from(rgba.blue)), },
+            Ok(Color::RGBA(rgba)) => ColorSpec {
+                kind: ColorKind::ARGB,
+                argb: (u32::from(rgba.alpha) << 24 | u32::from(rgba.red) << 16
+                    | u32::from(rgba.green) << 8 | u32::from(rgba.blue)),
+            },
 
-            _ => ColorSpec { kind: ColorKind::ParseError,
-                             argb: 0, },
+            _ => ColorSpec {
+                kind: ColorKind::ParseError,
+                argb: 0,
+            },
         }
     }
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_css_parse_color(string: *const libc::c_char,
-                                       allow_inherit: AllowInherit,
-                                       allow_current_color: AllowCurrentColor)
-                                       -> ColorSpec {
+pub extern "C" fn rsvg_css_parse_color(
+    string: *const libc::c_char,
+    allow_inherit: AllowInherit,
+    allow_current_color: AllowCurrentColor,
+) -> ColorSpec {
     let s = unsafe { utf8_cstr(string) };
 
     ColorSpec::from(Color::parse(s, (allow_inherit, allow_current_color)))
@@ -171,63 +195,111 @@ mod tests {
 
     fn parse(s: &str) -> ColorSpec {
         // ColorSpec::from (Color::parse (s, (AllowInherit::Yes, AllowCurrentColor::Yes)))
-        rsvg_css_parse_color(s.to_glib_none().0,
-                             AllowInherit::Yes,
-                             AllowCurrentColor::Yes)
+        rsvg_css_parse_color(
+            s.to_glib_none().0,
+            AllowInherit::Yes,
+            AllowCurrentColor::Yes,
+        )
     }
 
     #[test]
     fn parses_hash_hex_colors() {
-        assert_eq!(parse("#AB10fa20"),
-                   ColorSpec { kind: ColorKind::ARGB,
-                               argb: 0x20ab10fa, });
-        assert_eq!(parse("#10fa20"),
-                   ColorSpec { kind: ColorKind::ARGB,
-                               argb: 0xff10fa20, });
-        assert_eq!(parse("#abcd"),
-                   ColorSpec { kind: ColorKind::ARGB,
-                               argb: 0xddaabbcc, });
-        assert_eq!(parse("#123"),
-                   ColorSpec { kind: ColorKind::ARGB,
-                               argb: 0xff112233, });
+        assert_eq!(
+            parse("#AB10fa20"),
+            ColorSpec {
+                kind: ColorKind::ARGB,
+                argb: 0x20ab10fa,
+            }
+        );
+        assert_eq!(
+            parse("#10fa20"),
+            ColorSpec {
+                kind: ColorKind::ARGB,
+                argb: 0xff10fa20,
+            }
+        );
+        assert_eq!(
+            parse("#abcd"),
+            ColorSpec {
+                kind: ColorKind::ARGB,
+                argb: 0xddaabbcc,
+            }
+        );
+        assert_eq!(
+            parse("#123"),
+            ColorSpec {
+                kind: ColorKind::ARGB,
+                argb: 0xff112233,
+            }
+        );
     }
 
     #[test]
     fn parses_color_keywords() {
-        assert_eq!(parse("red"),
-                   ColorSpec { kind: ColorKind::ARGB,
-                               argb: 0xffff0000, });
-        assert_eq!(parse("lime"),
-                   ColorSpec { kind: ColorKind::ARGB,
-                               argb: 0xff00ff00, });
-        assert_eq!(parse("blue"),
-                   ColorSpec { kind: ColorKind::ARGB,
-                               argb: 0xff0000ff, });
+        assert_eq!(
+            parse("red"),
+            ColorSpec {
+                kind: ColorKind::ARGB,
+                argb: 0xffff0000,
+            }
+        );
+        assert_eq!(
+            parse("lime"),
+            ColorSpec {
+                kind: ColorKind::ARGB,
+                argb: 0xff00ff00,
+            }
+        );
+        assert_eq!(
+            parse("blue"),
+            ColorSpec {
+                kind: ColorKind::ARGB,
+                argb: 0xff0000ff,
+            }
+        );
     }
 
     #[test]
     fn parses_color_functions() {
-        assert_eq!(parse("rgb(255, 0, 0)"),
-                   ColorSpec { kind: ColorKind::ARGB,
-                               argb: 0xffff0000, });
-        assert_eq!(parse("rgb(0, 255, 0)"),
-                   ColorSpec { kind: ColorKind::ARGB,
-                               argb: 0xff00ff00, });
-        assert_eq!(parse("rgb(0, 0, 255)"),
-                   ColorSpec { kind: ColorKind::ARGB,
-                               argb: 0xff0000ff, });
+        assert_eq!(
+            parse("rgb(255, 0, 0)"),
+            ColorSpec {
+                kind: ColorKind::ARGB,
+                argb: 0xffff0000,
+            }
+        );
+        assert_eq!(
+            parse("rgb(0, 255, 0)"),
+            ColorSpec {
+                kind: ColorKind::ARGB,
+                argb: 0xff00ff00,
+            }
+        );
+        assert_eq!(
+            parse("rgb(0, 0, 255)"),
+            ColorSpec {
+                kind: ColorKind::ARGB,
+                argb: 0xff0000ff,
+            }
+        );
     }
 
     #[test]
     fn parses_current_color() {
-        assert_eq!(parse("currentColor"),
-                   ColorSpec { kind: ColorKind::CurrentColor,
-                               argb: 0, });
+        assert_eq!(
+            parse("currentColor"),
+            ColorSpec {
+                kind: ColorKind::CurrentColor,
+                argb: 0,
+            }
+        );
     }
 
     fn make_error() -> ColorSpec {
-        ColorSpec { kind: ColorKind::ParseError,
-                    argb: 0, }
+        ColorSpec {
+            kind: ColorKind::ParseError,
+            argb: 0,
+        }
     }
 
     #[test]
@@ -247,16 +319,24 @@ mod tests {
 
     #[test]
     fn yields_error_on_disallowed_current_color() {
-        assert_eq!(ColorSpec::from(Color::parse("currentColor",
-                                                (AllowInherit::Yes, AllowCurrentColor::No))),
-                   make_error());
+        assert_eq!(
+            ColorSpec::from(Color::parse(
+                "currentColor",
+                (AllowInherit::Yes, AllowCurrentColor::No)
+            )),
+            make_error()
+        );
     }
 
     #[test]
     fn yields_error_on_disallowed_inherit() {
-        assert_eq!(ColorSpec::from(Color::parse("inherit",
-                                                (AllowInherit::No, AllowCurrentColor::Yes))),
-                   make_error());
+        assert_eq!(
+            ColorSpec::from(Color::parse(
+                "inherit",
+                (AllowInherit::No, AllowCurrentColor::Yes)
+            )),
+            make_error()
+        );
     }
 
     fn test_roundtrip(s: &str) {
@@ -281,7 +361,9 @@ mod tests {
 
     #[test]
     fn from_argb() {
-        assert_eq!(Color::from(0xaabbccdd),
-                   Color::RGBA(cssparser::RGBA::new(0xbb, 0xcc, 0xdd, 0xaa)));
+        assert_eq!(
+            Color::from(0xaabbccdd),
+            Color::RGBA(cssparser::RGBA::new(0xbb, 0xcc, 0xdd, 0xaa))
+        );
     }
 }

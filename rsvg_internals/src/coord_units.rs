@@ -21,8 +21,9 @@ impl Parse for CoordUnits {
         match s {
             "userSpaceOnUse" => Ok(CoordUnits::UserSpaceOnUse),
             "objectBoundingBox" => Ok(CoordUnits::ObjectBoundingBox),
-            _ => Err(AttributeError::Parse(ParseError::new("expected 'userSpaceOnUse' or \
-                                                            'objectBoundingBox'"))),
+            _ => Err(AttributeError::Parse(ParseError::new(
+                "expected 'userSpaceOnUse' or 'objectBoundingBox'",
+            ))),
         }
     }
 }
@@ -78,10 +79,14 @@ mod tests {
 
     #[test]
     fn parses_paint_server_units() {
-        assert_eq!(MyUnits::parse("userSpaceOnUse", ()),
-                   Ok(MyUnits(CoordUnits::UserSpaceOnUse)));
-        assert_eq!(MyUnits::parse("objectBoundingBox", ()),
-                   Ok(MyUnits(CoordUnits::ObjectBoundingBox)));
+        assert_eq!(
+            MyUnits::parse("userSpaceOnUse", ()),
+            Ok(MyUnits(CoordUnits::UserSpaceOnUse))
+        );
+        assert_eq!(
+            MyUnits::parse("objectBoundingBox", ()),
+            Ok(MyUnits(CoordUnits::ObjectBoundingBox))
+        );
     }
 
     #[test]
@@ -91,7 +96,9 @@ mod tests {
 
     #[test]
     fn converts_to_coord_units() {
-        assert_eq!(CoordUnits::from(MyUnits(CoordUnits::ObjectBoundingBox)),
-                   CoordUnits::ObjectBoundingBox);
+        assert_eq!(
+            CoordUnits::from(MyUnits(CoordUnits::ObjectBoundingBox)),
+            CoordUnits::ObjectBoundingBox
+        );
     }
 }
