@@ -55,8 +55,9 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
     font_desc.set_stretch(state::get_font_stretch(state));
 
     let (_, dpi_y) = drawing_ctx::get_dpi(draw_ctx);
-    font_desc.set_size(to_pango_units(drawing_ctx::get_normalized_font_size(draw_ctx) / dpi_y
-                                      * 72.0));
+    font_desc.set_size(to_pango_units(
+        drawing_ctx::get_normalized_font_size(draw_ctx) / dpi_y * 72.0,
+    ));
 
     let layout = pango::Layout::new(&pango_context);
     layout.set_font_description(&font_desc);
@@ -64,9 +65,10 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
     let attr_list = pango::AttrList::new();
 
     attr_list.insert(
-        pango::Attribute::new_letter_spacing(
-            to_pango_units(state::get_letter_spacing(state).normalize(draw_ctx))
-        ).unwrap());
+        pango::Attribute::new_letter_spacing(to_pango_units(
+            state::get_letter_spacing(state).normalize(draw_ctx),
+        )).unwrap(),
+    );
 
     if let Some(font_decor) = state::get_font_decor(state) {
         if font_decor.underline {
@@ -81,9 +83,9 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
     layout.set_attributes(&attr_list);
 
     layout.set_alignment(match state::get_text_dir(state) {
-                             pango::Direction::Ltr => pango::Alignment::Left,
-                             _ => pango::Alignment::Right,
-                         });
+        pango::Direction::Ltr => pango::Alignment::Left,
+        _ => pango::Alignment::Right,
+    });
 
     layout.set_text(text);
 
@@ -91,9 +93,10 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_text_create_layout(draw_ctx: *const RsvgDrawingCtx,
-                                          text: *const libc::c_char)
-                                          -> *const pango_sys::PangoLayout {
+pub extern "C" fn rsvg_text_create_layout(
+    draw_ctx: *const RsvgDrawingCtx,
+    text: *const libc::c_char,
+) -> *const pango_sys::PangoLayout {
     assert!(!text.is_null());
     let s = unsafe { utf8_cstr(text) };
     let layout = create_pango_layout(draw_ctx, s);

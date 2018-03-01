@@ -33,9 +33,11 @@ pub struct FontDecor {
 
 impl From<TextDecoration> for FontDecor {
     fn from(td: TextDecoration) -> FontDecor {
-        FontDecor { overline: from_glib(td.overline),
-                    underline: from_glib(td.underline),
-                    strike: from_glib(td.strike), }
+        FontDecor {
+            overline: from_glib(td.overline),
+            underline: from_glib(td.underline),
+            strike: from_glib(td.strike),
+        }
     }
 }
 

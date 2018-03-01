@@ -29,9 +29,9 @@ impl Parse for PaintServerSpread {
             "pad" => Ok(PaintServerSpread(cairo::enums::Extend::Pad)),
             "reflect" => Ok(PaintServerSpread(cairo::enums::Extend::Reflect)),
             "repeat" => Ok(PaintServerSpread(cairo::enums::Extend::Repeat)),
-            _ => Err(AttributeError::Parse(ParseError::new("expected 'pad' | \
-                                                            'reflect' | \
-                                                            'repeat'"))),
+            _ => Err(AttributeError::Parse(ParseError::new(
+                "expected 'pad' | 'reflect' | 'repeat'",
+            ))),
         }
     }
 }
@@ -52,11 +52,14 @@ pub enum PaintServer {
 }
 
 impl PaintServer {
-    pub fn parse_input<'i, 't>(input: &mut cssparser::Parser<'i, 't>)
-                               -> Result<Self, AttributeError> {
+    pub fn parse_input<'i, 't>(
+        input: &mut cssparser::Parser<'i, 't>,
+    ) -> Result<Self, AttributeError> {
         if let Ok(url) = input.try(|i| i.expect_url()) {
-            Ok(PaintServer::Iri { iri: String::from(url.as_ref()),
-                                  alternate: PaintServer::parse_fallback(input), })
+            Ok(PaintServer::Iri {
+                iri: String::from(url.as_ref()),
+                alternate: PaintServer::parse_fallback(input),
+            })
         } else {
             PaintServer::parse_color(input).map(PaintServer::SolidColor)
         }
@@ -65,28 +68,32 @@ impl PaintServer {
     fn parse_color<'i, 't>(input: &mut cssparser::Parser<'i, 't>) -> Result<Color, AttributeError> {
         if input.try(|i| i.expect_ident_matching("inherit")).is_ok() {
             Ok(Color::Inherit)
-        } else if input.try(|i| i.expect_ident_matching("currentColor"))
-                       .is_ok()
+        } else if input
+            .try(|i| i.expect_ident_matching("currentColor"))
+            .is_ok()
         {
             Ok(Color::CurrentColor)
         } else {
-            input.try(|i| cssparser::Color::parse(i))
-                 .map(Color::from)
-                 .map_err(AttributeError::from)
+            input
+                .try(|i| cssparser::Color::parse(i))
+                .map(Color::from)
+                .map_err(AttributeError::from)
         }
     }
 
     fn parse_fallback<'i, 't>(input: &mut cssparser::Parser<'i, 't>) -> Option<Color> {
         if input.try(|i| i.expect_ident_matching("none")).is_ok() {
             None
-        } else if input.try(|i| i.expect_ident_matching("currentColor"))
-                       .is_ok()
+        } else if input
+            .try(|i| i.expect_ident_matching("currentColor"))
+            .is_ok()
         {
             Some(Color::CurrentColor)
         } else {
-            input.try(|i| cssparser::Color::parse(i))
-                 .ok()
-                 .map(|i| Color::from(i))
+            input
+                .try(|i| cssparser::Color::parse(i))
+                .ok()
+                .map(|i| Color::from(i))
         }
     }
 }
@@ -101,10 +108,12 @@ impl Parse for PaintServer {
     }
 }
 
-fn _set_source_rsvg_solid_color(ctx: *mut drawing_ctx::RsvgDrawingCtx,
-                                color: &Color,
-                                opacity: u8,
-                                current_color: u32) {
+fn _set_source_rsvg_solid_color(
+    ctx: *mut drawing_ctx::RsvgDrawingCtx,
+    color: &Color,
+    opacity: u8,
+    current_color: u32,
+) {
     let rgba_color = match *color {
         Color::RGBA(rgba) => Some(rgba),
         Color::CurrentColor => {
@@ -119,11 +128,12 @@ fn _set_source_rsvg_solid_color(ctx: *mut drawing_ctx::RsvgDrawingCtx,
     };
 
     if let Some(rgba) = rgba_color {
-        drawing_ctx::get_cairo_context(ctx).set_source_rgba(f64::from(rgba.red_f32()),
-                                                            f64::from(rgba.green_f32()),
-                                                            f64::from(rgba.blue_f32()),
-                                                            f64::from(rgba.alpha_f32())
-                                                            * (f64::from(opacity) / 255.0));
+        drawing_ctx::get_cairo_context(ctx).set_source_rgba(
+            f64::from(rgba.red_f32()),
+            f64::from(rgba.green_f32()),
+            f64::from(rgba.blue_f32()),
+            f64::from(rgba.alpha_f32()) * (f64::from(opacity) / 255.0),
+        );
     }
 }
 
@@ -134,9 +144,10 @@ fn _set_source_rsvg_solid_color(ctx: *mut drawing_ctx::RsvgDrawingCtx,
 ///
 /// * `str` - The SVG paint specification string to parse.
 #[no_mangle]
-pub extern "C" fn rsvg_paint_server_parse(inherit: *mut glib_sys::gboolean,
-                                          str: *const libc::c_char)
-                                          -> *const PaintServer {
+pub extern "C" fn rsvg_paint_server_parse(
+    inherit: *mut glib_sys::gboolean,
+    str: *const libc::c_char,
+) -> *const PaintServer {
     if !inherit.is_null() {
         unsafe {
             *inherit = true.to_glib();
@@ -154,10 +165,12 @@ pub extern "C" fn rsvg_paint_server_parse(inherit: *mut glib_sys::gboolean,
                 }
             }
 
-            *color = Color::RGBA(cssparser::RGBA { red: 0,
-                                                   green: 0,
-                                                   blue: 0,
-                                                   alpha: 255, });
+            *color = Color::RGBA(cssparser::RGBA {
+                red: 0,
+                green: 0,
+                blue: 0,
+                alpha: 255,
+            });
         }
     }
 
@@ -201,12 +214,13 @@ pub extern "C" fn rsvg_paint_server_unref(paint_server: *const PaintServer) {
 }
 
 #[no_mangle]
-pub extern "C" fn _set_source_rsvg_paint_server(c_ctx: *mut drawing_ctx::RsvgDrawingCtx,
-                                                c_ps: *const PaintServer,
-                                                opacity: u8,
-                                                c_bbox: RsvgBbox,
-                                                current_color: u32)
-                                                -> glib_sys::gboolean {
+pub extern "C" fn _set_source_rsvg_paint_server(
+    c_ctx: *mut drawing_ctx::RsvgDrawingCtx,
+    c_ps: *const PaintServer,
+    opacity: u8,
+    c_bbox: RsvgBbox,
+    current_color: u32,
+) -> glib_sys::gboolean {
     assert!(!c_ctx.is_null());
     assert!(!c_ps.is_null());
 
@@ -214,21 +228,24 @@ pub extern "C" fn _set_source_rsvg_paint_server(c_ctx: *mut drawing_ctx::RsvgDra
     let mut had_paint_server = false;
 
     match *ps {
-        PaintServer::Iri { ref iri,
-                           ref alternate, } => {
+        PaintServer::Iri {
+            ref iri,
+            ref alternate,
+        } => {
             let node_ptr = drawing_ctx::acquire_node(c_ctx, iri.as_str());
 
             if !node_ptr.is_null() {
                 let node = unsafe { &*node_ptr };
 
                 if node.get_type() == NodeType::LinearGradient
-                   || node.get_type() == NodeType::RadialGradient
+                    || node.get_type() == NodeType::RadialGradient
                 {
-                    had_paint_server =
-                        gradient::gradient_resolve_fallbacks_and_set_pattern(node,
-                                                                             c_ctx,
-                                                                             opacity,
-                                                                             &c_bbox);
+                    had_paint_server = gradient::gradient_resolve_fallbacks_and_set_pattern(
+                        node,
+                        c_ctx,
+                        opacity,
+                        &c_bbox,
+                    );
                 } else if node.get_type() == NodeType::Pattern {
                     had_paint_server =
                         pattern::pattern_resolve_fallbacks_and_set_pattern(node, c_ctx, &c_bbox);
@@ -236,10 +253,12 @@ pub extern "C" fn _set_source_rsvg_paint_server(c_ctx: *mut drawing_ctx::RsvgDra
             }
 
             if !had_paint_server && alternate.is_some() {
-                _set_source_rsvg_solid_color(c_ctx,
-                                             alternate.as_ref().unwrap(),
-                                             opacity,
-                                             current_color);
+                _set_source_rsvg_solid_color(
+                    c_ctx,
+                    alternate.as_ref().unwrap(),
+                    opacity,
+                    current_color,
+                );
                 had_paint_server = true;
             }
 
@@ -261,55 +280,91 @@ mod tests {
 
     #[test]
     fn parses_spread_method() {
-        assert_eq!(PaintServerSpread::parse("pad", ()),
-                   Ok(PaintServerSpread(cairo::enums::Extend::Pad)));
+        assert_eq!(
+            PaintServerSpread::parse("pad", ()),
+            Ok(PaintServerSpread(cairo::enums::Extend::Pad))
+        );
 
-        assert_eq!(PaintServerSpread::parse("reflect", ()),
-                   Ok(PaintServerSpread(cairo::enums::Extend::Reflect)));
+        assert_eq!(
+            PaintServerSpread::parse("reflect", ()),
+            Ok(PaintServerSpread(cairo::enums::Extend::Reflect))
+        );
 
-        assert_eq!(PaintServerSpread::parse("repeat", ()),
-                   Ok(PaintServerSpread(cairo::enums::Extend::Repeat)));
+        assert_eq!(
+            PaintServerSpread::parse("repeat", ()),
+            Ok(PaintServerSpread(cairo::enums::Extend::Repeat))
+        );
 
         assert!(PaintServerSpread::parse("foobar", ()).is_err());
     }
 
     #[test]
     fn parses_solid_color() {
-        assert_eq!(PaintServer::parse("rgb(255, 128, 64, 0.5)", ()),
-                   Ok(PaintServer::SolidColor(Color::from(0x80ff8040))));
+        assert_eq!(
+            PaintServer::parse("rgb(255, 128, 64, 0.5)", ()),
+            Ok(PaintServer::SolidColor(Color::from(0x80ff8040)))
+        );
 
-        assert_eq!(PaintServer::parse("inherit", ()),
-                   Ok(PaintServer::SolidColor(Color::Inherit)));
+        assert_eq!(
+            PaintServer::parse("inherit", ()),
+            Ok(PaintServer::SolidColor(Color::Inherit))
+        );
 
-        assert_eq!(PaintServer::parse("currentColor", ()),
-                   Ok(PaintServer::SolidColor(Color::CurrentColor)));
+        assert_eq!(
+            PaintServer::parse("currentColor", ()),
+            Ok(PaintServer::SolidColor(Color::CurrentColor))
+        );
     }
 
     #[test]
     fn parses_iri() {
-        assert_eq!(PaintServer::parse("url(#link)", ()),
-                   Ok(PaintServer::Iri { iri: "#link".to_string(),
-                                         alternate: None, }));
+        assert_eq!(
+            PaintServer::parse("url(#link)", ()),
+            Ok(PaintServer::Iri {
+                iri: "#link".to_string(),
+                alternate: None,
+            })
+        );
 
-        assert_eq!(PaintServer::parse("url(#link) none", ()),
-                   Ok(PaintServer::Iri { iri: "#link".to_string(),
-                                         alternate: None, }));
+        assert_eq!(
+            PaintServer::parse("url(#link) none", ()),
+            Ok(PaintServer::Iri {
+                iri: "#link".to_string(),
+                alternate: None,
+            })
+        );
 
-        assert_eq!(PaintServer::parse("url(#link) #ff8040", ()),
-                   Ok(PaintServer::Iri { iri: "#link".to_string(),
-                                         alternate: Some(Color::from(0xffff8040)), }));
+        assert_eq!(
+            PaintServer::parse("url(#link) #ff8040", ()),
+            Ok(PaintServer::Iri {
+                iri: "#link".to_string(),
+                alternate: Some(Color::from(0xffff8040)),
+            })
+        );
 
-        assert_eq!(PaintServer::parse("url(#link) rgb(255, 128, 64, 0.5)", ()),
-                   Ok(PaintServer::Iri { iri: "#link".to_string(),
-                                         alternate: Some(Color::from(0x80ff8040)), }));
+        assert_eq!(
+            PaintServer::parse("url(#link) rgb(255, 128, 64, 0.5)", ()),
+            Ok(PaintServer::Iri {
+                iri: "#link".to_string(),
+                alternate: Some(Color::from(0x80ff8040)),
+            })
+        );
 
-        assert_eq!(PaintServer::parse("url(#link) currentColor", ()),
-                   Ok(PaintServer::Iri { iri: "#link".to_string(),
-                                         alternate: Some(Color::CurrentColor), }));
+        assert_eq!(
+            PaintServer::parse("url(#link) currentColor", ()),
+            Ok(PaintServer::Iri {
+                iri: "#link".to_string(),
+                alternate: Some(Color::CurrentColor),
+            })
+        );
 
-        assert_eq!(PaintServer::parse("url(#link) inherit", ()),
-                   Ok(PaintServer::Iri { iri: "#link".to_string(),
-                                         alternate: None, }));
+        assert_eq!(
+            PaintServer::parse("url(#link) inherit", ()),
+            Ok(PaintServer::Iri {
+                iri: "#link".to_string(),
+                alternate: None,
+            })
+        );
     }
 
     #[test]

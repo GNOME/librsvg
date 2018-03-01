@@ -19,7 +19,9 @@ pub struct ParseError {
 
 impl ParseError {
     pub fn new<T: AsRef<str>>(msg: T) -> ParseError {
-        ParseError { display: msg.as_ref().to_string(), }
+        ParseError {
+            display: msg.as_ref().to_string(),
+        }
     }
 }
 
@@ -43,21 +45,24 @@ pub trait Parse: Sized {
 /// example, an `RsvgLength` has an associated `type Data =
 /// LengthDir`, so to parse a length value, you could specify
 /// `LengthDir::Horizontal` for `data`, for example.
-pub fn parse<T>(key: &str,
-                value: &str,
-                data: <T as Parse>::Data,
-                validate: Option<fn(T) -> Result<T, AttributeError>>)
-                -> Result<T, NodeError>
-    where T: Parse<Err = AttributeError> + Copy
+pub fn parse<T>(
+    key: &str,
+    value: &str,
+    data: <T as Parse>::Data,
+    validate: Option<fn(T) -> Result<T, AttributeError>>,
+) -> Result<T, NodeError>
+where
+    T: Parse<Err = AttributeError> + Copy,
 {
-    T::parse(value, data).and_then(|v| {
-                                       if let Some(validate) = validate {
-                                           validate(v)
-                                       } else {
-                                           Ok(v)
-                                       }
-                                   })
-                         .map_err(|e| NodeError::attribute_error(key, e))
+    T::parse(value, data)
+        .and_then(|v| {
+            if let Some(validate) = validate {
+                validate(v)
+            } else {
+                Ok(v)
+            }
+        })
+        .map_err(|e| NodeError::attribute_error(key, e))
 }
 
 // angle:
@@ -72,13 +77,16 @@ pub fn angle_degrees(s: &str) -> Result<f64, ParseError> {
     let mut parser = Parser::new(&mut input);
 
     let angle = {
-        let token = parser.next()
-                          .map_err(|_| ParseError::new("expected angle"))?;
+        let token = parser
+            .next()
+            .map_err(|_| ParseError::new("expected angle"))?;
 
         match *token {
             Token::Number { value, .. } => f64::from(value),
 
-            Token::Dimension { value, ref unit, .. } => {
+            Token::Dimension {
+                value, ref unit, ..
+            } => {
                 let value = f64::from(value);
 
                 match unit.as_ref() {
@@ -93,8 +101,9 @@ pub fn angle_degrees(s: &str) -> Result<f64, ParseError> {
         }
     };
 
-    parser.expect_exhausted()
-          .map_err(|_| ParseError::new("expected angle"))?;
+    parser
+        .expect_exhausted()
+        .map_err(|_| ParseError::new("expected angle"))?;
 
     Ok(angle)
 }
@@ -132,10 +141,11 @@ pub fn number_optional_number(s: &str) -> Result<(f64, f64), ParseError> {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_css_parse_number_optional_number(s: *const libc::c_char,
-                                                        out_x: *mut f64,
-                                                        out_y: *mut f64)
-                                                        -> glib_sys::gboolean {
+pub extern "C" fn rsvg_css_parse_number_optional_number(
+    s: *const libc::c_char,
+    out_x: *mut f64,
+    out_y: *mut f64,
+) -> glib_sys::gboolean {
     assert!(!s.is_null());
     assert!(!out_x.is_null());
     assert!(!out_y.is_null());
@@ -225,7 +235,9 @@ pub fn number_list(s: &str, length: ListLength) -> Result<Vec<f64>, NumberListEr
     let mut v = Vec::<f64>::with_capacity(n);
 
     for i in 0..n {
-        v.push (f64::from(parser.expect_number ().map_err (|_| NumberListError::Parse (ParseError::new ("expected number")))?));
+        v.push(f64::from(parser.expect_number().map_err(|_| {
+            NumberListError::Parse(ParseError::new("expected number"))
+        })?));
 
         if i != n - 1 {
             optional_comma(&mut parser);
@@ -238,8 +250,9 @@ pub fn number_list(s: &str, length: ListLength) -> Result<Vec<f64>, NumberListEr
         }
     }
 
-    parser.expect_exhausted()
-          .map_err(|_| NumberListError::IncorrectNumberOfElements)?;
+    parser
+        .expect_exhausted()
+        .map_err(|_| NumberListError::IncorrectNumberOfElements)?;
 
     Ok(v)
 }
@@ -252,12 +265,13 @@ pub enum NumberListLength {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_css_parse_number_list(in_str: *const libc::c_char,
-                                             nlength: NumberListLength,
-                                             size: libc::size_t,
-                                             out_list: *mut *const libc::c_double,
-                                             out_list_length: *mut libc::size_t)
-                                             -> glib_sys::gboolean {
+pub extern "C" fn rsvg_css_parse_number_list(
+    in_str: *const libc::c_char,
+    nlength: NumberListLength,
+    size: libc::size_t,
+    out_list: *mut *const libc::c_double,
+    out_list_length: *mut libc::size_t,
+) -> glib_sys::gboolean {
     assert!(!in_str.is_null());
     assert!(!out_list.is_null());
     assert!(!out_list_length.is_null());
@@ -277,7 +291,7 @@ pub extern "C" fn rsvg_css_parse_number_list(in_str: *const libc::c_char,
 
             let c_array = unsafe {
                 glib_sys::g_malloc_n(num_elems, mem::size_of::<libc::c_double>())
-                as *mut libc::c_double
+                    as *mut libc::c_double
             };
 
             let array = unsafe { slice::from_raw_parts_mut(c_array, num_elems) };
@@ -334,10 +348,14 @@ mod tests {
         assert_eq!(list_of_points("1 2 3 4"), Ok(vec![(1.0, 2.0), (3.0, 4.0)]));
         assert_eq!(list_of_points("1,2,3,4"), Ok(vec![(1.0, 2.0), (3.0, 4.0)]));
         assert_eq!(list_of_points("1,2 3,4"), Ok(vec![(1.0, 2.0), (3.0, 4.0)]));
-        assert_eq!(list_of_points("1,2 -3,4"),
-                   Ok(vec![(1.0, 2.0), (-3.0, 4.0)]));
-        assert_eq!(list_of_points("1,2,-3,4"),
-                   Ok(vec![(1.0, 2.0), (-3.0, 4.0)]));
+        assert_eq!(
+            list_of_points("1,2 -3,4"),
+            Ok(vec![(1.0, 2.0), (-3.0, 4.0)])
+        );
+        assert_eq!(
+            list_of_points("1,2,-3,4"),
+            Ok(vec![(1.0, 2.0), (-3.0, 4.0)])
+        );
     }
 
     #[test]
@@ -363,16 +381,22 @@ mod tests {
     fn parses_number_list() {
         assert_eq!(number_list("5", ListLength::Exact(1)), Ok(vec![5.0]));
 
-        assert_eq!(number_list("1 2 3 4", ListLength::Exact(4)),
-                   Ok(vec![1.0, 2.0, 3.0, 4.0]));
+        assert_eq!(
+            number_list("1 2 3 4", ListLength::Exact(4)),
+            Ok(vec![1.0, 2.0, 3.0, 4.0])
+        );
 
         assert_eq!(number_list("5", ListLength::Maximum(1)), Ok(vec![5.0]));
 
-        assert_eq!(number_list("1.0, -2.5", ListLength::Maximum(2)),
-                   Ok(vec![1.0, -2.5]));
+        assert_eq!(
+            number_list("1.0, -2.5", ListLength::Maximum(2)),
+            Ok(vec![1.0, -2.5])
+        );
 
-        assert_eq!(number_list("5 6", ListLength::Maximum(3)),
-                   Ok(vec![5.0, 6.0]));
+        assert_eq!(
+            number_list("5 6", ListLength::Maximum(3)),
+            Ok(vec![5.0, 6.0])
+        );
     }
 
     #[test]

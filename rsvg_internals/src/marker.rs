@@ -42,8 +42,9 @@ impl Parse for MarkerUnits {
         match s {
             "userSpaceOnUse" => Ok(MarkerUnits::UserSpaceOnUse),
             "strokeWidth" => Ok(MarkerUnits::StrokeWidth),
-            _ => Err(AttributeError::Parse(ParseError::new("expected \"userSpaceOnUse\" or \
-                                                            \"strokeWidth\""))),
+            _ => Err(AttributeError::Parse(ParseError::new(
+                "expected \"userSpaceOnUse\" or \"strokeWidth\"",
+            ))),
         }
     }
 }
@@ -68,8 +69,9 @@ impl Parse for MarkerOrient {
     fn parse(s: &str, _: ()) -> Result<MarkerOrient, AttributeError> {
         match s {
             "auto" => Ok(MarkerOrient::Auto),
-            _ => parsers::angle_degrees(s).map(MarkerOrient::Degrees)
-                                          .map_err(AttributeError::Parse),
+            _ => parsers::angle_degrees(s)
+                .map(MarkerOrient::Degrees)
+                .map_err(AttributeError::Parse),
         }
     }
 }
@@ -88,14 +90,16 @@ struct NodeMarker {
 
 impl NodeMarker {
     fn new() -> NodeMarker {
-        NodeMarker { units: Cell::new(MarkerUnits::default()),
-                     ref_x: Cell::new(RsvgLength::default()),
-                     ref_y: Cell::new(RsvgLength::default()),
-                     width: Cell::new(NodeMarker::get_default_size(LengthDir::Horizontal)),
-                     height: Cell::new(NodeMarker::get_default_size(LengthDir::Vertical)),
-                     orient: Cell::new(MarkerOrient::default()),
-                     aspect: Cell::new(AspectRatio::default()),
-                     vbox: Cell::new(None), }
+        NodeMarker {
+            units: Cell::new(MarkerUnits::default()),
+            ref_x: Cell::new(RsvgLength::default()),
+            ref_y: Cell::new(RsvgLength::default()),
+            width: Cell::new(NodeMarker::get_default_size(LengthDir::Horizontal)),
+            height: Cell::new(NodeMarker::get_default_size(LengthDir::Vertical)),
+            orient: Cell::new(MarkerOrient::default()),
+            aspect: Cell::new(AspectRatio::default()),
+            vbox: Cell::new(None),
+        }
     }
 
     fn get_default_size(dir: LengthDir) -> RsvgLength {
@@ -103,14 +107,16 @@ impl NodeMarker {
         RsvgLength::parse("3", dir).unwrap()
     }
 
-    fn render(&self,
-              node: &RsvgNode,
-              c_node: *const RsvgNode,
-              draw_ctx: *const RsvgDrawingCtx,
-              xpos: f64,
-              ypos: f64,
-              computed_angle: f64,
-              line_width: f64) {
+    fn render(
+        &self,
+        node: &RsvgNode,
+        c_node: *const RsvgNode,
+        draw_ctx: *const RsvgDrawingCtx,
+        xpos: f64,
+        ypos: f64,
+        computed_angle: f64,
+        line_width: f64,
+    ) {
         let marker_width = self.width.get().normalize(draw_ctx);
         let marker_height = self.height.get().normalize(draw_ctx);
 
@@ -134,12 +140,14 @@ impl NodeMarker {
         }
 
         if let Some(vbox) = self.vbox.get() {
-            let (_, _, w, h) = self.aspect.get().compute(vbox.0.width,
-                                                         vbox.0.height,
-                                                         0.0,
-                                                         0.0,
-                                                         marker_width,
-                                                         marker_height);
+            let (_, _, w, h) = self.aspect.get().compute(
+                vbox.0.width,
+                vbox.0.height,
+                0.0,
+                0.0,
+                marker_width,
+                marker_height,
+            );
 
             affine.scale(w / vbox.0.width, h / vbox.0.height);
 
@@ -150,8 +158,10 @@ impl NodeMarker {
             drawing_ctx::push_discrete_layer(draw_ctx);
         }
 
-        affine.translate(-self.ref_x.get().normalize(draw_ctx),
-                         -self.ref_y.get().normalize(draw_ctx));
+        affine.translate(
+            -self.ref_x.get().normalize(draw_ctx),
+            -self.ref_y.get().normalize(draw_ctx),
+        );
 
         drawing_ctx::state_push(draw_ctx);
 
@@ -165,11 +175,13 @@ impl NodeMarker {
 
         if !drawing_ctx::state_is_overflow(state) {
             if let Some(vbox) = self.vbox.get() {
-                drawing_ctx::add_clipping_rect(draw_ctx,
-                                               vbox.0.x,
-                                               vbox.0.y,
-                                               vbox.0.width,
-                                               vbox.0.height);
+                drawing_ctx::add_clipping_rect(
+                    draw_ctx,
+                    vbox.0.x,
+                    vbox.0.y,
+                    vbox.0.width,
+                    vbox.0.height,
+                );
             } else {
                 drawing_ctx::add_clipping_rect(draw_ctx, 0.0, 0.0, marker_width, marker_height);
             }
@@ -190,25 +202,32 @@ impl NodeTrait for NodeMarker {
                 Attribute::MarkerUnits => self.units.set(parse("markerUnits", value, (), None)?),
 
                 Attribute::RefX => {
-                    self.ref_x.set(parse("refX", value, LengthDir::Horizontal, None)?)
+                    self.ref_x
+                        .set(parse("refX", value, LengthDir::Horizontal, None)?)
                 }
 
-                Attribute::RefY => self.ref_y.set(parse("refY", value, LengthDir::Vertical, None)?),
+                Attribute::RefY => self.ref_y
+                    .set(parse("refY", value, LengthDir::Vertical, None)?),
 
-                Attribute::MarkerWidth => self.width.set(parse("markerWidth",
-                                                         value,
-                                                         LengthDir::Horizontal,
-                                                         Some(RsvgLength::check_nonnegative))?),
+                Attribute::MarkerWidth => self.width.set(parse(
+                    "markerWidth",
+                    value,
+                    LengthDir::Horizontal,
+                    Some(RsvgLength::check_nonnegative),
+                )?),
 
-                Attribute::MarkerHeight => self.height.set(parse("markerHeight",
-                                                          value,
-                                                          LengthDir::Vertical,
-                                                          Some(RsvgLength::check_nonnegative))?),
+                Attribute::MarkerHeight => self.height.set(parse(
+                    "markerHeight",
+                    value,
+                    LengthDir::Vertical,
+                    Some(RsvgLength::check_nonnegative),
+                )?),
 
                 Attribute::Orient => self.orient.set(parse("orient", value, (), None)?),
 
                 Attribute::PreserveAspectRatio => {
-                    self.aspect.set(parse("preserveAspectRatio", value, (), None)?)
+                    self.aspect
+                        .set(parse("preserveAspectRatio", value, (), None)?)
                 }
 
                 Attribute::ViewBox => self.vbox.set(Some(parse("viewBox", value, (), None)?)),
@@ -230,9 +249,10 @@ impl NodeTrait for NodeMarker {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_marker_new(_: *const libc::c_char,
-                                       raw_parent: *const RsvgNode)
-                                       -> *const RsvgNode {
+pub extern "C" fn rsvg_node_marker_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Marker, raw_parent, Box::new(NodeMarker::new()))
 }
 
@@ -284,14 +304,16 @@ fn make_degenerate(x: f64, y: f64) -> Segment {
 }
 
 fn make_curve(x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) -> Segment {
-    Segment::LineOrCurve { x1,
-                           y1,
-                           x2,
-                           y2,
-                           x3,
-                           y3,
-                           x4,
-                           y4, }
+    Segment::LineOrCurve {
+        x1,
+        y1,
+        x2,
+        y2,
+        x3,
+        y3,
+        x4,
+        y4,
+    }
 }
 
 fn make_line(x1: f64, y1: f64, x2: f64, y2: f64) -> Segment {
@@ -409,14 +431,16 @@ fn get_segment_directionalities(segment: &Segment) -> Option<(f64, f64, f64, f64
     match *segment {
         Segment::Degenerate { .. } => None,
 
-        Segment::LineOrCurve { x1,
-                               y1,
-                               x2,
-                               y2,
-                               x3,
-                               y3,
-                               x4,
-                               y4, } => {
+        Segment::LineOrCurve {
+            x1,
+            y1,
+            x2,
+            y2,
+            x3,
+            y3,
+            x4,
+            y4,
+        } => {
             let coincide_1_and_2 = points_equal(x1, y1, x2, y2);
             let coincide_1_and_3 = points_equal(x1, y1, x3, y3);
             let coincide_1_and_4 = points_equal(x1, y1, x4, y4);
@@ -467,9 +491,10 @@ fn get_segment_directionalities(segment: &Segment) -> Option<(f64, f64, f64, f64
 // directionality. Otherwise, set the directionality for the path
 // segment's start and end points to align with the positive x-axis
 // in user space.
-fn find_incoming_directionality_backwards(segments: &[Segment],
-                                          start_index: usize)
-                                          -> (bool, f64, f64) {
+fn find_incoming_directionality_backwards(
+    segments: &[Segment],
+    start_index: usize,
+) -> (bool, f64, f64) {
     // "go backwards ... within the current subpath until ... segment which has directionality
     // at its end point"
     for segment in segments[..start_index + 1].iter().rev() {
@@ -478,25 +503,24 @@ fn find_incoming_directionality_backwards(segments: &[Segment],
                 return (false, 0.0, 0.0); // reached the beginning of the subpath as we ran into a standalone point
             }
 
-            Segment::LineOrCurve { .. } => {
-                match get_segment_directionalities(segment) {
-                    Some((_, _, v2x, v2y)) => {
-                        return (true, v2x, v2y);
-                    }
-                    None => {
-                        continue;
-                    }
+            Segment::LineOrCurve { .. } => match get_segment_directionalities(segment) {
+                Some((_, _, v2x, v2y)) => {
+                    return (true, v2x, v2y);
                 }
-            }
+                None => {
+                    continue;
+                }
+            },
         }
     }
 
     (false, 0.0, 0.0)
 }
 
-fn find_outgoing_directionality_forwards(segments: &[Segment],
-                                         start_index: usize)
-                                         -> (bool, f64, f64) {
+fn find_outgoing_directionality_forwards(
+    segments: &[Segment],
+    start_index: usize,
+) -> (bool, f64, f64) {
     // "go forwards ... within the current subpath until ... segment which has directionality at
     // its start point"
     for segment in &segments[start_index..] {
@@ -505,16 +529,14 @@ fn find_outgoing_directionality_forwards(segments: &[Segment],
                 return (false, 0.0, 0.0); // reached the end of a subpath as we ran into a standalone point
             }
 
-            Segment::LineOrCurve { .. } => {
-                match get_segment_directionalities(segment) {
-                    Some((v1x, v1y, _, _)) => {
-                        return (true, v1x, v1y);
-                    }
-                    None => {
-                        continue;
-                    }
+            Segment::LineOrCurve { .. } => match get_segment_directionalities(segment) {
+                Some((v1x, v1y, _, _)) => {
+                    return (true, v1x, v1y);
                 }
-            }
+                None => {
+                    continue;
+                }
+            },
         }
     }
 
@@ -566,12 +588,14 @@ enum MarkerType {
     End,
 }
 
-fn emit_marker_by_name(draw_ctx: *const RsvgDrawingCtx,
-                       marker_name: *const libc::c_char,
-                       xpos: f64,
-                       ypos: f64,
-                       computed_angle: f64,
-                       line_width: f64) {
+fn emit_marker_by_name(
+    draw_ctx: *const RsvgDrawingCtx,
+    marker_name: *const libc::c_char,
+    xpos: f64,
+    ypos: f64,
+    computed_angle: f64,
+    line_width: f64,
+) {
     if marker_name.is_null() {
         return;
     }
@@ -587,21 +611,24 @@ fn emit_marker_by_name(draw_ctx: *const RsvgDrawingCtx,
     let node: &RsvgNode = unsafe { &*c_node };
 
     node.with_impl(|marker: &NodeMarker| {
-                       marker.render(node,
-                                     c_node,
-                                     draw_ctx,
-                                     xpos,
-                                     ypos,
-                                     computed_angle,
-                                     line_width)
-                   });
+        marker.render(
+            node,
+            c_node,
+            draw_ctx,
+            xpos,
+            ypos,
+            computed_angle,
+            line_width,
+        )
+    });
 
     drawing_ctx::release_node(draw_ctx, c_node);
 }
 
-fn get_marker_name_from_drawing_ctx(draw_ctx: *const RsvgDrawingCtx,
-                                    marker_type: MarkerType)
-                                    -> *const libc::c_char {
+fn get_marker_name_from_drawing_ctx(
+    draw_ctx: *const RsvgDrawingCtx,
+    marker_type: MarkerType,
+) -> *const libc::c_char {
     match marker_type {
         MarkerType::Start => unsafe { rsvg_get_start_marker(draw_ctx) },
         MarkerType::Middle => unsafe { rsvg_get_middle_marker(draw_ctx) },
@@ -615,12 +642,14 @@ enum MarkerEndpoint {
     End,
 }
 
-fn emit_marker<E>(segment: &Segment,
-                  endpoint: MarkerEndpoint,
-                  marker_type: MarkerType,
-                  orient: f64,
-                  emit_fn: &mut E)
-    where E: FnMut(MarkerType, f64, f64, f64)
+fn emit_marker<E>(
+    segment: &Segment,
+    endpoint: MarkerEndpoint,
+    marker_type: MarkerType,
+    orient: f64,
+    emit_fn: &mut E,
+) where
+    E: FnMut(MarkerType, f64, f64, f64),
 {
     let (x, y) = match *segment {
         Segment::Degenerate { x, y } => (x, y),
@@ -644,8 +673,8 @@ extern "C" {
 
 fn drawing_ctx_has_markers(draw_ctx: *const RsvgDrawingCtx) -> bool {
     (!get_marker_name_from_drawing_ctx(draw_ctx, MarkerType::Start).is_null()
-     || !get_marker_name_from_drawing_ctx(draw_ctx, MarkerType::Middle).is_null()
-     || !get_marker_name_from_drawing_ctx(draw_ctx, MarkerType::End).is_null())
+        || !get_marker_name_from_drawing_ctx(draw_ctx, MarkerType::Middle).is_null()
+        || !get_marker_name_from_drawing_ctx(draw_ctx, MarkerType::End).is_null())
 }
 
 pub fn render_markers_for_path_builder(builder: &RsvgPathBuilder, draw_ctx: *const RsvgDrawingCtx) {
@@ -659,19 +688,24 @@ pub fn render_markers_for_path_builder(builder: &RsvgPathBuilder, draw_ctx: *con
         return;
     }
 
-    emit_markers_for_path_builder (builder,
-                                   &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
-                                       emit_marker_by_name (draw_ctx,
-                                                            get_marker_name_from_drawing_ctx (draw_ctx, marker_type),
-                                                            x,
-                                                            y,
-                                                            computed_angle,
-                                                            linewidth);
-                                   });
+    emit_markers_for_path_builder(
+        builder,
+        &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
+            emit_marker_by_name(
+                draw_ctx,
+                get_marker_name_from_drawing_ctx(draw_ctx, marker_type),
+                x,
+                y,
+                computed_angle,
+                linewidth,
+            );
+        },
+    );
 }
 
 fn emit_markers_for_path_builder<E>(builder: &RsvgPathBuilder, emit_fn: &mut E)
-    where E: FnMut(MarkerType, f64, f64, f64)
+where
+    E: FnMut(MarkerType, f64, f64, f64),
 {
     enum SubpathState {
         NoSubpath,
@@ -692,19 +726,23 @@ fn emit_markers_for_path_builder<E>(builder: &RsvgPathBuilder, emit_fn: &mut E)
                     // Got a lone point after a subpath; render the subpath's end marker first
                     let (_, incoming_vx, incoming_vy) =
                         find_incoming_directionality_backwards(&segments, i - 1);
-                    emit_marker(&segments[i - 1],
-                                MarkerEndpoint::End,
-                                MarkerType::End,
-                                angle_from_vector(incoming_vx, incoming_vy),
-                                emit_fn);
+                    emit_marker(
+                        &segments[i - 1],
+                        MarkerEndpoint::End,
+                        MarkerType::End,
+                        angle_from_vector(incoming_vx, incoming_vy),
+                        emit_fn,
+                    );
                 }
 
                 // Render marker for the lone point; no directionality
-                emit_marker(segment,
-                            MarkerEndpoint::Start,
-                            MarkerType::Middle,
-                            0.0,
-                            emit_fn);
+                emit_marker(
+                    segment,
+                    MarkerEndpoint::Start,
+                    MarkerType::Middle,
+                    0.0,
+                    emit_fn,
+                );
 
                 subpath_state = SubpathState::NoSubpath;
             }
@@ -715,11 +753,13 @@ fn emit_markers_for_path_builder<E>(builder: &RsvgPathBuilder, emit_fn: &mut E)
                     SubpathState::NoSubpath => {
                         let (_, outgoing_vx, outgoing_vy) =
                             find_outgoing_directionality_forwards(&segments, i);
-                        emit_marker(segment,
-                                    MarkerEndpoint::Start,
-                                    MarkerType::Start,
-                                    angle_from_vector(outgoing_vx, outgoing_vy),
-                                    emit_fn);
+                        emit_marker(
+                            segment,
+                            MarkerEndpoint::Start,
+                            MarkerType::Start,
+                            angle_from_vector(outgoing_vx, outgoing_vy),
+                            emit_fn,
+                        );
 
                         subpath_state = SubpathState::InSubpath;
                     }
@@ -750,11 +790,13 @@ fn emit_markers_for_path_builder<E>(builder: &RsvgPathBuilder, emit_fn: &mut E)
                             angle = 0.0;
                         }
 
-                        emit_marker(segment,
-                                    MarkerEndpoint::Start,
-                                    MarkerType::Middle,
-                                    angle,
-                                    emit_fn);
+                        emit_marker(
+                            segment,
+                            MarkerEndpoint::Start,
+                            MarkerType::Middle,
+                            angle,
+                            emit_fn,
+                        );
                     }
                 }
             }
@@ -772,18 +814,22 @@ fn emit_markers_for_path_builder<E>(builder: &RsvgPathBuilder, emit_fn: &mut E)
                 if let PathCommand::ClosePath = builder.get_path_commands()[segments.len()] {
                     let (_, outgoing_vx, outgoing_vy) =
                         find_outgoing_directionality_forwards(&segments, 0);
-                    bisect_angles(angle_from_vector(incoming_vx, incoming_vy),
-                                  angle_from_vector(outgoing_vx, outgoing_vy))
+                    bisect_angles(
+                        angle_from_vector(incoming_vx, incoming_vy),
+                        angle_from_vector(outgoing_vx, outgoing_vy),
+                    )
                 } else {
                     angle_from_vector(incoming_vx, incoming_vy)
                 }
             };
 
-            emit_marker(segment,
-                        MarkerEndpoint::End,
-                        MarkerType::End,
-                        angle,
-                        emit_fn);
+            emit_marker(
+                segment,
+                MarkerEndpoint::End,
+                MarkerType::End,
+                angle,
+                emit_fn,
+            );
         }
     }
 }
@@ -796,26 +842,32 @@ mod parser_tests {
     #[test]
     fn parsing_invalid_marker_units_yields_error() {
         assert!(is_parse_error(&MarkerUnits::parse("", ()).map_err(|e| AttributeError::from(e))));
-        assert!(is_parse_error(&MarkerUnits::parse("foo", ()).map_err(|e| {
-                                                                          AttributeError::from(e)
-                                                                      })));
+        assert!(
+            is_parse_error(&MarkerUnits::parse("foo", ()).map_err(|e| AttributeError::from(e)))
+        );
     }
 
     #[test]
     fn parses_marker_units() {
-        assert_eq!(MarkerUnits::parse("userSpaceOnUse", ()),
-                   Ok(MarkerUnits::UserSpaceOnUse));
-        assert_eq!(MarkerUnits::parse("strokeWidth", ()),
-                   Ok(MarkerUnits::StrokeWidth));
+        assert_eq!(
+            MarkerUnits::parse("userSpaceOnUse", ()),
+            Ok(MarkerUnits::UserSpaceOnUse)
+        );
+        assert_eq!(
+            MarkerUnits::parse("strokeWidth", ()),
+            Ok(MarkerUnits::StrokeWidth)
+        );
     }
 
     #[test]
     fn parsing_invalid_marker_orient_yields_error() {
         assert!(is_parse_error(&MarkerOrient::parse("", ()).map_err(|e| AttributeError::from(e))));
-        assert!(is_parse_error(&MarkerOrient::parse("blah", ()).map_err(|e| {
-                                                                            AttributeError::from(e)
-                                                                        })));
-        assert! (is_parse_error (&MarkerOrient::parse ("45blah", ()).map_err (|e| AttributeError::from (e))));
+        assert!(
+            is_parse_error(&MarkerOrient::parse("blah", ()).map_err(|e| AttributeError::from(e)))
+        );
+        assert!(
+            is_parse_error(&MarkerOrient::parse("45blah", ()).map_err(|e| AttributeError::from(e)))
+        );
     }
 
     #[test]
@@ -823,14 +875,22 @@ mod parser_tests {
         assert_eq!(MarkerOrient::parse("auto", ()), Ok(MarkerOrient::Auto));
 
         assert_eq!(MarkerOrient::parse("0", ()), Ok(MarkerOrient::Degrees(0.0)));
-        assert_eq!(MarkerOrient::parse("180", ()),
-                   Ok(MarkerOrient::Degrees(180.0)));
-        assert_eq!(MarkerOrient::parse("180deg", ()),
-                   Ok(MarkerOrient::Degrees(180.0)));
-        assert_eq!(MarkerOrient::parse("-400grad", ()),
-                   Ok(MarkerOrient::Degrees(-360.0)));
-        assert_eq!(MarkerOrient::parse("1rad", ()),
-                   Ok(MarkerOrient::Degrees(180.0 / PI)));
+        assert_eq!(
+            MarkerOrient::parse("180", ()),
+            Ok(MarkerOrient::Degrees(180.0))
+        );
+        assert_eq!(
+            MarkerOrient::parse("180deg", ()),
+            Ok(MarkerOrient::Degrees(180.0))
+        );
+        assert_eq!(
+            MarkerOrient::parse("-400grad", ()),
+            Ok(MarkerOrient::Degrees(-360.0))
+        );
+        assert_eq!(
+            MarkerOrient::parse("1rad", ()),
+            Ok(MarkerOrient::Degrees(180.0 / PI))
+        );
     }
 }
 
@@ -839,13 +899,17 @@ mod directionality_tests {
     use super::*;
     use std::f64::consts::*;
 
-    fn test_bisection_angle(expected: f64,
-                            incoming_vx: f64,
-                            incoming_vy: f64,
-                            outgoing_vx: f64,
-                            outgoing_vy: f64) {
-        let bisected = super::bisect_angles(super::angle_from_vector(incoming_vx, incoming_vy),
-                                            super::angle_from_vector(outgoing_vx, outgoing_vy));
+    fn test_bisection_angle(
+        expected: f64,
+        incoming_vx: f64,
+        incoming_vy: f64,
+        outgoing_vx: f64,
+        outgoing_vy: f64,
+    ) {
+        let bisected = super::bisect_angles(
+            super::angle_from_vector(incoming_vx, incoming_vy),
+            super::angle_from_vector(outgoing_vx, outgoing_vy),
+        );
         assert!(double_equals(expected, bisected));
     }
 
@@ -946,12 +1010,13 @@ mod directionality_tests {
 
     #[test]
     fn path_to_segments_handles_multiple_open_subpaths() {
-        let expected_segments: Vec<Segment> =
-            vec![line(10.0, 10.0, 20.0, 10.0),
-                 line(20.0, 10.0, 20.0, 20.0),
-                 line(30.0, 30.0, 40.0, 30.0),
-                 curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
-                 line(70.0, 70.0, 80.0, 90.0)];
+        let expected_segments: Vec<Segment> = vec![
+            line(10.0, 10.0, 20.0, 10.0),
+            line(20.0, 10.0, 20.0, 20.0),
+            line(30.0, 30.0, 40.0, 30.0),
+            curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
+            line(70.0, 70.0, 80.0, 90.0),
+        ];
 
         test_path_builder_to_segments(&setup_multiple_open_subpaths(), expected_segments);
     }
@@ -971,9 +1036,11 @@ mod directionality_tests {
 
     #[test]
     fn path_to_segments_handles_closed_subpath() {
-        let expected_segments: Vec<Segment> = vec![line(10.0, 10.0, 20.0, 10.0),
-                                                   line(20.0, 10.0, 20.0, 20.0),
-                                                   line(20.0, 20.0, 10.0, 10.0)];
+        let expected_segments: Vec<Segment> = vec![
+            line(10.0, 10.0, 20.0, 10.0),
+            line(20.0, 10.0, 20.0, 20.0),
+            line(20.0, 20.0, 10.0, 10.0),
+        ];
 
         test_path_builder_to_segments(&setup_closed_subpath(), expected_segments);
     }
@@ -1001,14 +1068,15 @@ mod directionality_tests {
 
     #[test]
     fn path_to_segments_handles_multiple_closed_subpaths() {
-        let expected_segments: Vec<Segment> =
-            vec![line(10.0, 10.0, 20.0, 10.0),
-                 line(20.0, 10.0, 20.0, 20.0),
-                 line(20.0, 20.0, 10.0, 10.0),
-                 line(30.0, 30.0, 40.0, 30.0),
-                 curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
-                 line(70.0, 70.0, 80.0, 90.0),
-                 line(80.0, 90.0, 30.0, 30.0)];
+        let expected_segments: Vec<Segment> = vec![
+            line(10.0, 10.0, 20.0, 10.0),
+            line(20.0, 10.0, 20.0, 20.0),
+            line(20.0, 20.0, 10.0, 10.0),
+            line(30.0, 30.0, 40.0, 30.0),
+            curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
+            line(70.0, 70.0, 80.0, 90.0),
+            line(80.0, 90.0, 30.0, 30.0),
+        ];
 
         test_path_builder_to_segments(&setup_multiple_closed_subpaths(), expected_segments);
     }
@@ -1032,10 +1100,12 @@ mod directionality_tests {
 
     #[test]
     fn path_to_segments_handles_no_moveto_after_closepath() {
-        let expected_segments: Vec<Segment> = vec![line(10.0, 10.0, 20.0, 10.0),
-                                                   line(20.0, 10.0, 20.0, 20.0),
-                                                   line(20.0, 20.0, 10.0, 10.0),
-                                                   line(10.0, 10.0, 40.0, 30.0)];
+        let expected_segments: Vec<Segment> = vec![
+            line(10.0, 10.0, 20.0, 10.0),
+            line(20.0, 10.0, 20.0, 20.0),
+            line(20.0, 20.0, 10.0, 10.0),
+            line(10.0, 10.0, 40.0, 30.0),
+        ];
 
         test_path_builder_to_segments(&setup_no_moveto_after_closepath(), expected_segments);
     }
@@ -1096,7 +1166,8 @@ mod directionality_tests {
     #[test]
     fn curve_has_directionality() {
         let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities (&curve (1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 20.0, 33.0)).unwrap ();
+            super::get_segment_directionalities(&curve(1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 20.0, 33.0))
+                .unwrap();
         assert_eq!((2.0, 3.0), (v1x, v1y));
         assert_eq!((12.0, 20.0), (v2x, v2y));
     }
@@ -1104,30 +1175,37 @@ mod directionality_tests {
     #[test]
     fn curves_with_loops_and_coincident_ends_have_directionality() {
         let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities (&curve (1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0)).unwrap ();
+            super::get_segment_directionalities(&curve(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0))
+                .unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-4.0, -4.0), (v2x, v2y));
 
         let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities (&curve (1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0)).unwrap ();
+            super::get_segment_directionalities(&curve(1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0))
+                .unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-2.0, -2.0), (v2x, v2y));
 
         let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities (&curve (1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0)).unwrap ();
+            super::get_segment_directionalities(&curve(1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0))
+                .unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-2.0, -2.0), (v2x, v2y));
     }
 
     #[test]
     fn curve_with_coincident_control_points_has_no_directionality() {
-        assert! (super::get_segment_directionalities (&curve (1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0)).is_none ());
+        assert!(
+            super::get_segment_directionalities(&curve(1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0))
+                .is_none()
+        );
     }
 
     #[test]
     fn curve_with_123_coincident_has_directionality() {
         let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities (&curve (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 40.0)).unwrap ();
+            super::get_segment_directionalities(&curve(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 40.0))
+                .unwrap();
         assert_eq!((20.0, 40.0), (v1x, v1y));
         assert_eq!((20.0, 40.0), (v2x, v2y));
     }
@@ -1135,7 +1213,8 @@ mod directionality_tests {
     #[test]
     fn curve_with_234_coincident_has_directionality() {
         let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities (&curve (20.0, 40.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)).unwrap ();
+            super::get_segment_directionalities(&curve(20.0, 40.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+                .unwrap();
 
         assert_eq!((-20.0, -40.0), (v1x, v1y));
         assert_eq!((-20.0, -40.0), (v2x, v2y));
@@ -1143,8 +1222,16 @@ mod directionality_tests {
 
     #[test]
     fn curve_with_12_34_coincident_has_directionality() {
-        let (v1x, v1y, v2x, v2y) =
-            super::get_segment_directionalities (&curve (20.0, 40.0, 20.0, 40.0, 60.0, 70.0, 60.0, 70.0)).unwrap ();
+        let (v1x, v1y, v2x, v2y) = super::get_segment_directionalities(&curve(
+            20.0,
+            40.0,
+            20.0,
+            40.0,
+            60.0,
+            70.0,
+            60.0,
+            70.0,
+        )).unwrap();
 
         assert_eq!((40.0, 30.0), (v1x, v1y));
         assert_eq!((40.0, 30.0), (v2x, v2y));
@@ -1165,16 +1252,22 @@ mod marker_tests {
 
         let mut v = Vec::new();
 
-        emit_markers_for_path_builder (&builder,
-                                       &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
-                                           v.push ((marker_type, x, y, computed_angle));
-                                       });
+        emit_markers_for_path_builder(
+            &builder,
+            &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
+                v.push((marker_type, x, y, computed_angle));
+            },
+        );
 
-        assert_eq!(v,
-                   vec![(MarkerType::Start, 0.0, 0.0, 0.0),
-                        (MarkerType::Middle, 1.0, 0.0, angle_from_vector(1.0, 1.0)),
-                        (MarkerType::Middle, 1.0, 1.0, angle_from_vector(-1.0, 1.0)),
-                        (MarkerType::End, 0.0, 1.0, angle_from_vector(-1.0, 0.0))]);
+        assert_eq!(
+            v,
+            vec![
+                (MarkerType::Start, 0.0, 0.0, 0.0),
+                (MarkerType::Middle, 1.0, 0.0, angle_from_vector(1.0, 1.0)),
+                (MarkerType::Middle, 1.0, 1.0, angle_from_vector(-1.0, 1.0)),
+                (MarkerType::End, 0.0, 1.0, angle_from_vector(-1.0, 0.0)),
+            ]
+        );
     }
 
     #[test]
@@ -1188,16 +1281,22 @@ mod marker_tests {
 
         let mut v = Vec::new();
 
-        emit_markers_for_path_builder (&builder,
-                                       &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
-                                           v.push ((marker_type, x, y, computed_angle));
-                                       });
+        emit_markers_for_path_builder(
+            &builder,
+            &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
+                v.push((marker_type, x, y, computed_angle));
+            },
+        );
 
-        assert_eq!(v,
-                   vec![(MarkerType::Start, 0.0, 0.0, 0.0),
-                        (MarkerType::Middle, 1.0, 0.0, angle_from_vector(1.0, 1.0)),
-                        (MarkerType::Middle, 1.0, 1.0, angle_from_vector(-1.0, 1.0)),
-                        (MarkerType::Middle, 0.0, 1.0, angle_from_vector(-1.0, -1.0)),
-                        (MarkerType::End, 0.0, 0.0, angle_from_vector(1.0, -1.0))]);
+        assert_eq!(
+            v,
+            vec![
+                (MarkerType::Start, 0.0, 0.0, 0.0),
+                (MarkerType::Middle, 1.0, 0.0, angle_from_vector(1.0, 1.0)),
+                (MarkerType::Middle, 1.0, 1.0, angle_from_vector(-1.0, 1.0)),
+                (MarkerType::Middle, 0.0, 1.0, angle_from_vector(-1.0, -1.0)),
+                (MarkerType::End, 0.0, 0.0, angle_from_vector(1.0, -1.0)),
+            ]
+        );
     }
 }

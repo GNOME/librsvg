@@ -19,7 +19,9 @@ struct NodeLink {
 
 impl NodeLink {
     fn new() -> NodeLink {
-        NodeLink { link: RefCell::new(None), }
+        NodeLink {
+            link: RefCell::new(None),
+        }
     }
 }
 
@@ -44,13 +46,11 @@ impl NodeTrait for NodeLink {
 
             let attributes = link.as_ref().map(|i| format!("uri='{}'", escape_value(i)));
 
-            drawing_ctx::get_cairo_context(draw_ctx).with_tag(CAIRO_TAG_LINK,
-                                                              attributes.as_ref()
-                                                                        .map(|i| i.as_str()),
-                                                              || {
-                                                                  node.draw_children(draw_ctx,
-                                                                                     dominate)
-                                                              })
+            drawing_ctx::get_cairo_context(draw_ctx).with_tag(
+                CAIRO_TAG_LINK,
+                attributes.as_ref().map(|i| i.as_str()),
+                || node.draw_children(draw_ctx, dominate),
+            )
         } else {
             node.draw_children(draw_ctx, dominate)
         }
@@ -77,9 +77,11 @@ fn escape_value(value: &str) -> Cow<str> {
 }
 
 extern "C" {
-    fn cairo_tag_begin(cr: *mut cairo_sys::cairo_t,
-                       tag_name: *const libc::c_char,
-                       attibutes: *const libc::c_char);
+    fn cairo_tag_begin(
+        cr: *mut cairo_sys::cairo_t,
+        tag_name: *const libc::c_char,
+        attibutes: *const libc::c_char,
+    );
     fn cairo_tag_end(cr: *mut cairo_sys::cairo_t, tag_name: *const libc::c_char);
 }
 
@@ -88,7 +90,8 @@ trait CairoTagging {
     fn tag_begin(&self, tag_name: &str, attributes: Option<&str>);
     fn tag_end(&self, tag_name: &str);
     fn with_tag<U, T>(&self, tag_name: &str, attributes: Option<&str>, f: U) -> T
-        where U: Fn() -> T
+    where
+        U: Fn() -> T,
     {
         self.tag_begin(tag_name, attributes);
         let result = f();
@@ -101,9 +104,11 @@ trait CairoTagging {
 impl CairoTagging for cairo::Context {
     fn tag_begin(&self, tag_name: &str, attributes: Option<&str>) {
         unsafe {
-            cairo_tag_begin(self.to_glib_none().0,
-                            tag_name.to_glib_none().0,
-                            attributes.to_glib_none().0);
+            cairo_tag_begin(
+                self.to_glib_none().0,
+                tag_name.to_glib_none().0,
+                attributes.to_glib_none().0,
+            );
         }
     }
 
@@ -116,8 +121,9 @@ impl CairoTagging for cairo::Context {
 
 // ****************** C Prototypes  ******************
 #[no_mangle]
-pub extern "C" fn rsvg_node_link_new(_: *const libc::c_char,
-                                     raw_parent: *const RsvgNode)
-                                     -> *const RsvgNode {
+pub extern "C" fn rsvg_node_link_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Link, raw_parent, Box::new(NodeLink::new()))
 }
