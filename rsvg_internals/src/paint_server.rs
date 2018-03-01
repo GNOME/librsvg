@@ -93,7 +93,7 @@ impl PaintServer {
             input
                 .try(|i| cssparser::Color::parse(i))
                 .ok()
-                .map(|i| Color::from(i))
+                .map(Color::from)
         }
     }
 }
