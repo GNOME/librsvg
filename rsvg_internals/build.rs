@@ -14,6 +14,7 @@ fn generate_phf_of_svg_attributes() {
     // (attribute name, Rust enum value)
     //
     // Keep this in sync with rsvg-attributes.h
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     let attribute_defs = [
         ( "alternate",          "Alternate" ),
         ( "amplitude",          "Amplitude" ),
@@ -173,10 +174,13 @@ fn generate_phf_of_svg_attributes() {
     for &(_, valname) in attribute_defs.iter() {
         writeln!(&mut file, "    {},", valname).unwrap();
     }
-    
+
     writeln!(&mut file, "}}").unwrap();
 
-    writeln!(&mut file, "static ATTRIBUTES: phf::Map<&'static str, Attribute> = ").unwrap();
+    writeln!(
+        &mut file,
+        "static ATTRIBUTES: phf::Map<&'static str, Attribute> = "
+    ).unwrap();
 
     let mut map = phf_codegen::Map::new();
     map.phf_path("phf");
