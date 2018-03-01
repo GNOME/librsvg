@@ -55,15 +55,15 @@ stages:
 fedora:test:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: test
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
 
 fedora:test_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: test
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
 
 
@@ -73,8 +73,8 @@ fedora:test_release:
 fedora:rawhide:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: cross_distro
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
     - master
@@ -85,8 +85,8 @@ fedora:rawhide:
 opensuse:tumbleweed:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/opensuse:tumbleweed
   stage: cross_distro
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
     - master
@@ -97,8 +97,8 @@ opensuse:tumbleweed:
 debian:testing:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/debian:testing
   stage: cross_distro
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
     - master
@@ -126,8 +126,8 @@ debian:testing:
 fedora:rawhide_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: cross_distro_release
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
   only:
     - schedules
@@ -137,8 +137,8 @@ fedora:rawhide_release:
 opensuse:tumbleweed_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/opensuse:tumbleweed
   stage: cross_distro_release
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
   only:
     - schedules
@@ -148,8 +148,8 @@ opensuse:tumbleweed_release:
 debian:testing_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/debian:testing
   stage: cross_distro_release
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
   only:
     - schedules
