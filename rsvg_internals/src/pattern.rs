@@ -70,7 +70,7 @@ fn node_has_children(node: &Option<Weak<Node>>) -> bool {
         None => false,
 
         Some(ref weak) => {
-            let ref strong_node = weak.clone().upgrade().unwrap();
+            let strong_node = &weak.clone().upgrade().unwrap();
             strong_node.has_children()
         }
     }

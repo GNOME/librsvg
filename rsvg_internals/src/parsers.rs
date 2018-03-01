@@ -283,7 +283,7 @@ pub extern "C" fn rsvg_css_parse_number_list(
 
     let s = unsafe { utf8_cstr(in_str) };
 
-    let result = number_list(&s, length);
+    let result = number_list(s, length);
 
     match result {
         Ok(number_list) => {

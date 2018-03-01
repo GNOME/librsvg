@@ -382,7 +382,7 @@ pub extern "C" fn rsvg_node_set_atts(
     let node: &RsvgNode = unsafe { &*raw_node };
     let pbag = unsafe { &*pbag };
 
-    node.set_atts(node, handle, &pbag);
+    node.set_atts(node, handle, pbag);
 }
 
 #[no_mangle]
