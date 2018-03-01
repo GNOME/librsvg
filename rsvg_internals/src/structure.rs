@@ -85,18 +85,18 @@ impl NodeTrait for NodeSwitch {
         drawing_ctx::push_discrete_layer(draw_ctx);
 
         node.foreach_child(|child| {
-                               if drawing_ctx::state_get_cond_true(child.get_state()) {
-                                   let boxed_child = box_node(child.clone());
+            if drawing_ctx::state_get_cond_true(child.get_state()) {
+                let boxed_child = box_node(child.clone());
 
-                                   drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0);
+                drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0);
 
-                                   rsvg_node_unref(boxed_child);
+                rsvg_node_unref(boxed_child);
 
-                                   false // just draw this child
-                               } else {
-                                   true
-                               }
-                           });
+                false // just draw this child
+            } else {
+                true
+            }
+        });
 
         drawing_ctx::pop_discrete_layer(draw_ctx);
     }
@@ -119,13 +119,15 @@ struct NodeSvg {
 
 impl NodeSvg {
     fn new() -> NodeSvg {
-        NodeSvg { preserve_aspect_ratio: Cell::new(AspectRatio::default()),
-                  x: Cell::new(RsvgLength::parse("0", LengthDir::Horizontal).unwrap()),
-                  y: Cell::new(RsvgLength::parse("0", LengthDir::Vertical).unwrap()),
-                  w: Cell::new(RsvgLength::parse("100%", LengthDir::Horizontal).unwrap()),
-                  h: Cell::new(RsvgLength::parse("100%", LengthDir::Vertical).unwrap()),
-                  vbox: Cell::new(None),
-                  pbag: RefCell::new(None), }
+        NodeSvg {
+            preserve_aspect_ratio: Cell::new(AspectRatio::default()),
+            x: Cell::new(RsvgLength::parse("0", LengthDir::Horizontal).unwrap()),
+            y: Cell::new(RsvgLength::parse("0", LengthDir::Vertical).unwrap()),
+            w: Cell::new(RsvgLength::parse("100%", LengthDir::Horizontal).unwrap()),
+            h: Cell::new(RsvgLength::parse("100%", LengthDir::Vertical).unwrap()),
+            vbox: Cell::new(None),
+            pbag: RefCell::new(None),
+        }
     }
 }
 
@@ -138,7 +140,8 @@ impl NodeTrait for NodeSvg {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::PreserveAspectRatio => {
-                    self.preserve_aspect_ratio.set(parse("preserveAspectRatio", value, (), None)?)
+                    self.preserve_aspect_ratio
+                        .set(parse("preserveAspectRatio", value, (), None)?)
                 }
 
                 Attribute::X => {
@@ -153,15 +156,19 @@ impl NodeTrait for NodeSvg {
                     }
                 }
 
-                Attribute::Width => self.w.set(parse("width",
-                                                     value,
-                                                     LengthDir::Horizontal,
-                                                     Some(RsvgLength::check_nonnegative))?),
+                Attribute::Width => self.w.set(parse(
+                    "width",
+                    value,
+                    LengthDir::Horizontal,
+                    Some(RsvgLength::check_nonnegative),
+                )?),
 
-                Attribute::Height => self.h.set(parse("height",
-                                                      value,
-                                                      LengthDir::Vertical,
-                                                      Some(RsvgLength::check_nonnegative))?),
+                Attribute::Height => self.h.set(parse(
+                    "height",
+                    value,
+                    LengthDir::Vertical,
+                    Some(RsvgLength::check_nonnegative),
+                )?),
 
                 Attribute::ViewBox => self.vbox.set(parse("viewBox", value, (), None).map(Some)?),
 
@@ -187,21 +194,23 @@ impl NodeTrait for NodeSvg {
         let state = drawing_ctx::get_current_state(draw_ctx);
         let do_clip = !drawing_ctx::state_is_overflow(state) && node.get_parent().is_some();
 
-        draw_in_viewport(nx,
-                         ny,
-                         nw,
-                         nh,
-                         ClipMode::ClipToViewport,
-                         do_clip,
-                         self.vbox.get(),
-                         self.preserve_aspect_ratio.get(),
-                         drawing_ctx::get_current_state_affine(draw_ctx),
-                         draw_ctx,
-                         || {
-                             drawing_ctx::state_push(draw_ctx);
-                             node.draw_children(draw_ctx, -1); // dominate==-1 so it won't reinherit or push a layer
-                             drawing_ctx::state_pop(draw_ctx);
-                         });
+        draw_in_viewport(
+            nx,
+            ny,
+            nw,
+            nh,
+            ClipMode::ClipToViewport,
+            do_clip,
+            self.vbox.get(),
+            self.preserve_aspect_ratio.get(),
+            drawing_ctx::get_current_state_affine(draw_ctx),
+            draw_ctx,
+            || {
+                drawing_ctx::state_push(draw_ctx);
+                node.draw_children(draw_ctx, -1); // dominate==-1 so it won't reinherit or push a layer
+                drawing_ctx::state_pop(draw_ctx);
+            },
+        );
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
@@ -220,11 +229,13 @@ struct NodeUse {
 
 impl NodeUse {
     fn new() -> NodeUse {
-        NodeUse { link: RefCell::new(None),
-                  x: Cell::new(RsvgLength::default()),
-                  y: Cell::new(RsvgLength::default()),
-                  w: Cell::new(None),
-                  h: Cell::new(None), }
+        NodeUse {
+            link: RefCell::new(None),
+            x: Cell::new(RsvgLength::default()),
+            y: Cell::new(RsvgLength::default()),
+            w: Cell::new(None),
+            h: Cell::new(None),
+        }
     }
 }
 
@@ -234,15 +245,21 @@ impl NodeTrait for NodeUse {
             match attr {
                 Attribute::XlinkHref => *self.link.borrow_mut() = Some(value.to_owned()),
 
-                Attribute::X         => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
-                Attribute::Y         => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
+                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
+                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
 
-                Attribute::Width     => self.w.set(parse("width", value, LengthDir::Horizontal,
-                                                         Some(RsvgLength::check_nonnegative))
-                                                   .map(Some)?),
-                Attribute::Height    => self.h.set(parse("height", value, LengthDir::Vertical,
-                                                         Some(RsvgLength::check_nonnegative))
-                                                   .map(Some)?),
+                Attribute::Width => self.w.set(parse(
+                    "width",
+                    value,
+                    LengthDir::Horizontal,
+                    Some(RsvgLength::check_nonnegative),
+                ).map(Some)?),
+                Attribute::Height => self.h.set(parse(
+                    "height",
+                    value,
+                    LengthDir::Vertical,
+                    Some(RsvgLength::check_nonnegative),
+                ).map(Some)?),
 
                 _ => (),
             }
@@ -278,12 +295,14 @@ impl NodeTrait for NodeUse {
         // From https://www.w3.org/TR/SVG/struct.html#UseElement in
         // "If the ‘use’ element references a ‘symbol’ element"
 
-        let nw = self.w.get()
-                     .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Horizontal).unwrap())
-                     .normalize(draw_ctx);
-        let nh = self.h.get()
-                     .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Vertical).unwrap())
-                     .normalize(draw_ctx);
+        let nw = self.w
+            .get()
+            .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Horizontal).unwrap())
+            .normalize(draw_ctx);
+        let nh = self.h
+            .get()
+            .unwrap_or_else(|| RsvgLength::parse("100%", LengthDir::Vertical).unwrap())
+            .normalize(draw_ctx);
 
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
@@ -311,27 +330,28 @@ impl NodeTrait for NodeUse {
             drawing_ctx::pop_discrete_layer(draw_ctx);
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
-                                let do_clip =
-                                    !drawing_ctx::state_is_overflow(state)
-                                    || (!drawing_ctx::state_has_overflow(state)
-                                        && drawing_ctx::state_is_overflow(child.get_state()));
+                let do_clip = !drawing_ctx::state_is_overflow(state)
+                    || (!drawing_ctx::state_has_overflow(state)
+                        && drawing_ctx::state_is_overflow(child.get_state()));
 
-                                draw_in_viewport(nx,
-                                                 ny,
-                                                 nw,
-                                                 nh,
-                                                 ClipMode::ClipToVbox,
-                                                 do_clip,
-                                                 symbol.vbox.get(),
-                                                 symbol.preserve_aspect_ratio.get(),
-                                                 drawing_ctx::get_current_state_affine(draw_ctx),
-                                                 draw_ctx,
-                                                 || {
-                                                     drawing_ctx::state_push(draw_ctx);
-                                                     child.draw_children(draw_ctx, 1);
-                                                     drawing_ctx::state_pop(draw_ctx);
-                                                 });
-                            });
+                draw_in_viewport(
+                    nx,
+                    ny,
+                    nw,
+                    nh,
+                    ClipMode::ClipToVbox,
+                    do_clip,
+                    symbol.vbox.get(),
+                    symbol.preserve_aspect_ratio.get(),
+                    drawing_ctx::get_current_state_affine(draw_ctx),
+                    draw_ctx,
+                    || {
+                        drawing_ctx::state_push(draw_ctx);
+                        child.draw_children(draw_ctx, 1);
+                        drawing_ctx::state_pop(draw_ctx);
+                    },
+                );
+            });
 
             drawing_ctx::release_node(draw_ctx, raw_child);
         }
@@ -350,8 +370,10 @@ struct NodeSymbol {
 
 impl NodeSymbol {
     fn new() -> NodeSymbol {
-        NodeSymbol { preserve_aspect_ratio: Cell::new(AspectRatio::default()),
-                     vbox: Cell::new(None), }
+        NodeSymbol {
+            preserve_aspect_ratio: Cell::new(AspectRatio::default()),
+            vbox: Cell::new(None),
+        }
     }
 }
 
@@ -360,7 +382,8 @@ impl NodeTrait for NodeSymbol {
         for (_key, attr, value) in pbag.iter() {
             match attr {
                 Attribute::PreserveAspectRatio => {
-                    self.preserve_aspect_ratio.set(parse("preserveAspectRatio", value, (), None)?)
+                    self.preserve_aspect_ratio
+                        .set(parse("preserveAspectRatio", value, (), None)?)
                 }
 
                 Attribute::ViewBox => self.vbox.set(parse("viewBox", value, (), None).map(Some)?),
@@ -383,51 +406,59 @@ impl NodeTrait for NodeSymbol {
 
 // ************ C Prototypes ************
 #[no_mangle]
-pub extern "C" fn rsvg_node_group_new(_: *const libc::c_char,
-                                      raw_parent: *const RsvgNode)
-                                      -> *const RsvgNode {
+pub extern "C" fn rsvg_node_group_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Group, raw_parent, Box::new(NodeGroup::new()))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_defs_new(_: *const libc::c_char,
-                                     raw_parent: *const RsvgNode)
-                                     -> *const RsvgNode {
+pub extern "C" fn rsvg_node_defs_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Defs, raw_parent, Box::new(NodeDefs::new()))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_switch_new(_: *const libc::c_char,
-                                       raw_parent: *const RsvgNode)
-                                       -> *const RsvgNode {
+pub extern "C" fn rsvg_node_switch_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Switch, raw_parent, Box::new(NodeSwitch::new()))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_svg_new(_: *const libc::c_char,
-                                    raw_parent: *const RsvgNode)
-                                    -> *const RsvgNode {
+pub extern "C" fn rsvg_node_svg_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Svg, raw_parent, Box::new(NodeSvg::new()))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_use_new(_: *const libc::c_char,
-                                    raw_parent: *const RsvgNode)
-                                    -> *const RsvgNode {
+pub extern "C" fn rsvg_node_use_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Use, raw_parent, Box::new(NodeUse::new()))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_symbol_new(_: *const libc::c_char,
-                                       raw_parent: *const RsvgNode)
-                                       -> *const RsvgNode {
+pub extern "C" fn rsvg_node_symbol_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Symbol, raw_parent, Box::new(NodeSymbol::new()))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_svg_get_size(raw_node: *const RsvgNode,
-                                         out_width: *mut RsvgLength,
-                                         out_height: *mut RsvgLength) {
+pub extern "C" fn rsvg_node_svg_get_size(
+    raw_node: *const RsvgNode,
+    out_width: *mut RsvgLength,
+    out_height: *mut RsvgLength,
+) {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
@@ -435,9 +466,9 @@ pub extern "C" fn rsvg_node_svg_get_size(raw_node: *const RsvgNode,
     assert!(!out_height.is_null());
 
     node.with_impl(|svg: &NodeSvg| unsafe {
-                       *out_width = svg.w.get();
-                       *out_height = svg.h.get();
-                   });
+        *out_width = svg.w.get();
+        *out_height = svg.h.get();
+    });
 }
 
 #[no_mangle]
@@ -448,19 +479,21 @@ pub extern "C" fn rsvg_node_svg_get_view_box(raw_node: *const RsvgNode) -> RsvgV
     let mut vbox: Option<ViewBox> = None;
 
     node.with_impl(|svg: &NodeSvg| {
-                       vbox = svg.vbox.get();
-                   });
+        vbox = svg.vbox.get();
+    });
 
     RsvgViewBox::from(vbox)
 }
 
 extern "C" {
-    fn rsvg_parse_style_attrs(handle: *const RsvgHandle,
-                              node: *const RsvgNode,
-                              tag: *const libc::c_char,
-                              class: *const libc::c_char,
-                              id: *const libc::c_char,
-                              pbag: *const PropertyBag);
+    fn rsvg_parse_style_attrs(
+        handle: *const RsvgHandle,
+        node: *const RsvgNode,
+        tag: *const libc::c_char,
+        class: *const libc::c_char,
+        id: *const libc::c_char,
+        pbag: *const PropertyBag,
+    );
 }
 
 #[no_mangle]
@@ -469,33 +502,35 @@ pub extern "C" fn rsvg_node_svg_apply_atts(raw_node: *const RsvgNode, handle: *c
     let node: &RsvgNode = unsafe { &*raw_node };
 
     node.with_impl(|svg: &NodeSvg| {
-                       if let Some(owned_pbag) = svg.pbag.borrow().as_ref() {
-                           let pbag = PropertyBag::from_owned(owned_pbag);
+        if let Some(owned_pbag) = svg.pbag.borrow().as_ref() {
+            let pbag = PropertyBag::from_owned(owned_pbag);
 
-                           let mut class = None;
-                           let mut id = None;
+            let mut class = None;
+            let mut id = None;
 
-                           for (_key, attr, value) in pbag.iter() {
-                               match attr {
-                                   Attribute::Class => class = Some(value),
+            for (_key, attr, value) in pbag.iter() {
+                match attr {
+                    Attribute::Class => class = Some(value),
 
-                                   Attribute::Id => id = Some(value),
+                    Attribute::Id => id = Some(value),
 
-                                   _ => (),
-                               }
-                           }
+                    _ => (),
+                }
+            }
 
-                           let c_class = class.to_glib_none();
-                           let c_id = id.to_glib_none();
+            let c_class = class.to_glib_none();
+            let c_id = id.to_glib_none();
 
-                           unsafe {
-                               rsvg_parse_style_attrs(handle,
-                                                      raw_node,
-                                                      str::to_glib_none("svg").0,
-                                                      c_class.0,
-                                                      c_id.0,
-                                                      pbag.ffi());
-                           }
-                       }
-                   });
+            unsafe {
+                rsvg_parse_style_attrs(
+                    handle,
+                    raw_node,
+                    str::to_glib_none("svg").0,
+                    c_class.0,
+                    c_id.0,
+                    pbag.ffi(),
+                );
+            }
+        }
+    });
 }

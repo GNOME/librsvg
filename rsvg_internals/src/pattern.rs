@@ -49,17 +49,19 @@ impl Default for Pattern {
     fn default() -> Pattern {
         // These are per the spec
 
-        Pattern { units: Some(PatternUnits::default()),
-                  content_units: Some(PatternContentUnits::default()),
-                  vbox: Some(None),
-                  preserve_aspect_ratio: Some(AspectRatio::default()),
-                  affine: Some(cairo::Matrix::identity()),
-                  fallback: None,
-                  x: Some(RsvgLength::default()),
-                  y: Some(RsvgLength::default()),
-                  width: Some(RsvgLength::default()),
-                  height: Some(RsvgLength::default()),
-                  node: None, }
+        Pattern {
+            units: Some(PatternUnits::default()),
+            content_units: Some(PatternContentUnits::default()),
+            vbox: Some(None),
+            preserve_aspect_ratio: Some(AspectRatio::default()),
+            affine: Some(cairo::Matrix::identity()),
+            fallback: None,
+            x: Some(RsvgLength::default()),
+            y: Some(RsvgLength::default()),
+            width: Some(RsvgLength::default()),
+            height: Some(RsvgLength::default()),
+            node: None,
+        }
     }
 }
 
@@ -99,24 +101,26 @@ macro_rules! fallback_to (
 
 impl Pattern {
     fn unresolved() -> Pattern {
-        Pattern { units: None,
-                  content_units: None,
-                  vbox: None,
-                  preserve_aspect_ratio: None,
-                  affine: None,
-                  fallback: None,
-                  x: None,
-                  y: None,
-                  width: None,
-                  height: None,
-                  node: None, }
+        Pattern {
+            units: None,
+            content_units: None,
+            vbox: None,
+            preserve_aspect_ratio: None,
+            affine: None,
+            fallback: None,
+            x: None,
+            y: None,
+            width: None,
+            height: None,
+            node: None,
+        }
     }
 
     fn is_resolved(&self) -> bool {
         self.units.is_some() && self.content_units.is_some() && self.vbox.is_some()
-        && self.preserve_aspect_ratio.is_some() && self.affine.is_some() && self.x.is_some()
-        && self.y.is_some() && self.width.is_some() && self.height.is_some()
-        && node_has_children(&self.node)
+            && self.preserve_aspect_ratio.is_some() && self.affine.is_some()
+            && self.x.is_some() && self.y.is_some() && self.width.is_some()
+            && self.height.is_some() && node_has_children(&self.node)
     }
 
     fn resolve_from_defaults(&mut self) {
@@ -152,7 +156,9 @@ struct NodePattern {
 
 impl NodePattern {
     fn new() -> NodePattern {
-        NodePattern { pattern: RefCell::new(Pattern::unresolved()), }
+        NodePattern {
+            pattern: RefCell::new(Pattern::unresolved()),
+        }
     }
 }
 
@@ -187,17 +193,21 @@ impl NodeTrait for NodePattern {
                 Attribute::Y => p.y = Some(parse("y", value, LengthDir::Vertical, None)?),
 
                 Attribute::Width => {
-                    p.width = Some(parse("width",
-                                         value,
-                                         LengthDir::Horizontal,
-                                         Some(RsvgLength::check_nonnegative))?)
+                    p.width = Some(parse(
+                        "width",
+                        value,
+                        LengthDir::Horizontal,
+                        Some(RsvgLength::check_nonnegative),
+                    )?)
                 }
 
                 Attribute::Height => {
-                    p.height = Some(parse("height",
-                                          value,
-                                          LengthDir::Vertical,
-                                          Some(RsvgLength::check_nonnegative))?)
+                    p.height = Some(parse(
+                        "height",
+                        value,
+                        LengthDir::Vertical,
+                        Some(RsvgLength::check_nonnegative),
+                    )?)
                 }
 
                 _ => (),
@@ -231,9 +241,8 @@ fn resolve_pattern(pattern: &Pattern, fallback_source: &mut FallbackSource) -> P
         }
 
         if let Some(fallback_node) = opt_fallback {
-            fallback_node.with_impl(|i: &NodePattern| {
-                                        result.resolve_from_fallback(&*i.pattern.borrow())
-                                    });
+            fallback_node
+                .with_impl(|i: &NodePattern| result.resolve_from_fallback(&*i.pattern.borrow()));
         } else {
             result.resolve_from_defaults();
             break;
@@ -250,8 +259,10 @@ struct NodeFallbackSource {
 
 impl NodeFallbackSource {
     fn new(draw_ctx: *mut RsvgDrawingCtx) -> NodeFallbackSource {
-        NodeFallbackSource { draw_ctx,
-                             acquired_nodes: Vec::<*mut RsvgNode>::new(), }
+        NodeFallbackSource {
+            draw_ctx,
+            acquired_nodes: Vec::<*mut RsvgNode>::new(),
+        }
     }
 }
 
@@ -280,10 +291,11 @@ impl FallbackSource for NodeFallbackSource {
     }
 }
 
-fn set_pattern_on_draw_context(pattern: &Pattern,
-                               draw_ctx: *mut RsvgDrawingCtx,
-                               bbox: &RsvgBbox)
-                               -> bool {
+fn set_pattern_on_draw_context(
+    pattern: &Pattern,
+    draw_ctx: *mut RsvgDrawingCtx,
+    bbox: &RsvgBbox,
+) -> bool {
     assert!(pattern.is_resolved());
 
     if !node_has_children(&pattern.node) {
@@ -326,8 +338,10 @@ fn set_pattern_on_draw_context(pattern: &Pattern,
         }
     }
 
-    let taffine = cairo::Matrix::multiply(&pattern_affine,
-                                          &drawing_ctx::get_current_state_affine(draw_ctx));
+    let taffine = cairo::Matrix::multiply(
+        &pattern_affine,
+        &drawing_ctx::get_current_state_affine(draw_ctx),
+    );
 
     let mut scwscale = (taffine.xx * taffine.xx + taffine.xy * taffine.xy).sqrt();
     let mut schscale = (taffine.yx * taffine.yx + taffine.yy * taffine.yy).sqrt();
@@ -350,8 +364,10 @@ fn set_pattern_on_draw_context(pattern: &Pattern,
     // Create the pattern coordinate system
     match units {
         PatternUnits(CoordUnits::ObjectBoundingBox) => {
-            affine.translate(bbox.rect.x + pattern_x * bbox.rect.width,
-                             bbox.rect.y + pattern_y * bbox.rect.height);
+            affine.translate(
+                bbox.rect.x + pattern_x * bbox.rect.width,
+                bbox.rect.y + pattern_y * bbox.rect.height,
+            );
         }
 
         PatternUnits(CoordUnits::UserSpaceOnUse) => {
@@ -369,12 +385,14 @@ fn set_pattern_on_draw_context(pattern: &Pattern,
     // Create the pattern contents coordinate system
     if let Some(vbox) = vbox {
         // If there is a vbox, use that
-        let (mut x, mut y, w, h) = preserve_aspect_ratio.compute(vbox.0.width,
-                                                                 vbox.0.height,
-                                                                 0.0,
-                                                                 0.0,
-                                                                 pattern_width * bbwscale,
-                                                                 pattern_height * bbhscale);
+        let (mut x, mut y, w, h) = preserve_aspect_ratio.compute(
+            vbox.0.width,
+            vbox.0.height,
+            0.0,
+            0.0,
+            pattern_width * bbwscale,
+            pattern_height * bbhscale,
+        );
 
         x -= vbox.0.x * w / vbox.0.width;
         y -= vbox.0.y * h / vbox.0.height;
@@ -412,8 +430,9 @@ fn set_pattern_on_draw_context(pattern: &Pattern,
     let cr_save = drawing_ctx::get_cairo_context(draw_ctx);
     drawing_ctx::state_push(draw_ctx);
 
-    let surface = cr_save.get_target()
-                         .create_similar(cairo::Content::ColorAlpha, pw, ph);
+    let surface = cr_save
+        .get_target()
+        .create_similar(cairo::Content::ColorAlpha, pw, ph);
 
     let cr_pattern = cairo::Context::new(&surface);
 
@@ -451,10 +470,11 @@ fn set_pattern_on_draw_context(pattern: &Pattern,
     true
 }
 
-fn resolve_fallbacks_and_set_pattern(pattern: &Pattern,
-                                     draw_ctx: *mut RsvgDrawingCtx,
-                                     bbox: &RsvgBbox)
-                                     -> bool {
+fn resolve_fallbacks_and_set_pattern(
+    pattern: &Pattern,
+    draw_ctx: *mut RsvgDrawingCtx,
+    bbox: &RsvgBbox,
+) -> bool {
     let mut fallback_source = NodeFallbackSource::new(draw_ctx);
 
     let resolved = resolve_pattern(pattern, &mut fallback_source);
@@ -463,24 +483,26 @@ fn resolve_fallbacks_and_set_pattern(pattern: &Pattern,
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_pattern_new(_: *const libc::c_char,
-                                        raw_parent: *const RsvgNode)
-                                        -> *const RsvgNode {
+pub extern "C" fn rsvg_node_pattern_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Pattern, raw_parent, Box::new(NodePattern::new()))
 }
 
-pub fn pattern_resolve_fallbacks_and_set_pattern(node: &RsvgNode,
-                                                 draw_ctx: *mut RsvgDrawingCtx,
-                                                 bbox: &RsvgBbox)
-                                                 -> bool {
+pub fn pattern_resolve_fallbacks_and_set_pattern(
+    node: &RsvgNode,
+    draw_ctx: *mut RsvgDrawingCtx,
+    bbox: &RsvgBbox,
+) -> bool {
     assert!(node.get_type() == NodeType::Pattern);
 
     let mut did_set_pattern = false;
 
     node.with_impl(|node_pattern: &NodePattern| {
-                       let pattern = &*node_pattern.pattern.borrow();
-                       did_set_pattern = resolve_fallbacks_and_set_pattern(pattern, draw_ctx, bbox);
-                   });
+        let pattern = &*node_pattern.pattern.borrow();
+        did_set_pattern = resolve_fallbacks_and_set_pattern(pattern, draw_ctx, bbox);
+    });
 
     did_set_pattern
 }

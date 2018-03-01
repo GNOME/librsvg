@@ -30,7 +30,9 @@ pub struct RsvgPathBuilder {
 
 impl Default for RsvgPathBuilder {
     fn default() -> RsvgPathBuilder {
-        RsvgPathBuilder { path_commands: Vec::new(), }
+        RsvgPathBuilder {
+            path_commands: Vec::new(),
+        }
     }
 }
 
@@ -70,7 +72,8 @@ impl RsvgPathBuilder {
     }
 
     pub fn curve_to(&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
-        self.path_commands.push(PathCommand::CurveTo((x2, y2), (x3, y3), (x4, y4)));
+        self.path_commands
+            .push(PathCommand::CurveTo((x2, y2), (x3, y3), (x4, y4)));
     }
 
     pub fn close_path(&mut self) {
@@ -88,16 +91,18 @@ impl RsvgPathBuilder {
     // large_arc: false for arc length <= 180, true for arc >= 180
     // sweep: negative or positive angle
     // x2/y2: ending coordinates
-    pub fn arc(&mut self,
-               x1: f64,
-               y1: f64,
-               mut rx: f64,
-               mut ry: f64,
-               x_axis_rotation: f64,
-               large_arc: LargeArc,
-               sweep: Sweep,
-               x2: f64,
-               y2: f64) {
+    pub fn arc(
+        &mut self,
+        x1: f64,
+        y1: f64,
+        mut rx: f64,
+        mut ry: f64,
+        x_axis_rotation: f64,
+        large_arc: LargeArc,
+        sweep: Sweep,
+        x2: f64,
+        y2: f64,
+    ) {
         // See Appendix F.6 Elliptical arc implementation notes
         // http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
         let f: f64;
@@ -213,24 +218,28 @@ impl RsvgPathBuilder {
         let n_segs_dbl = f64::from(n_segs);
 
         for i in 0..n_segs {
-            self.arc_segment(cx,
-                             cy,
-                             theta1 + f64::from(i) * delta_theta / n_segs_dbl,
-                             theta1 + f64::from(i + 1) * delta_theta / n_segs_dbl,
-                             rx,
-                             ry,
-                             x_axis_rotation);
+            self.arc_segment(
+                cx,
+                cy,
+                theta1 + f64::from(i) * delta_theta / n_segs_dbl,
+                theta1 + f64::from(i + 1) * delta_theta / n_segs_dbl,
+                rx,
+                ry,
+                x_axis_rotation,
+            );
         }
     }
 
-    fn arc_segment(&mut self,
-                   xc: f64,
-                   yc: f64,
-                   th0: f64,
-                   th1: f64,
-                   rx: f64,
-                   ry: f64,
-                   x_axis_rotation: f64) {
+    fn arc_segment(
+        &mut self,
+        xc: f64,
+        yc: f64,
+        th0: f64,
+        th1: f64,
+        rx: f64,
+        ry: f64,
+        x_axis_rotation: f64,
+    ) {
         let x1: f64;
         let y1: f64;
         let x2: f64;
@@ -256,12 +265,14 @@ impl RsvgPathBuilder {
         x2 = x3 + rx * (t * th1.sin());
         y2 = y3 + ry * (-t * th1.cos());
 
-        self.curve_to(xc + cosf * x1 - sinf * y1,
-                      yc + sinf * x1 + cosf * y1,
-                      xc + cosf * x2 - sinf * y2,
-                      yc + sinf * x2 + cosf * y2,
-                      xc + cosf * x3 - sinf * y3,
-                      yc + sinf * x3 + cosf * y3);
+        self.curve_to(
+            xc + cosf * x1 - sinf * y1,
+            yc + sinf * x1 + cosf * y1,
+            xc + cosf * x2 - sinf * y2,
+            yc + sinf * x2 + cosf * y2,
+            xc + cosf * x3 - sinf * y3,
+            yc + sinf * x3 + cosf * y3,
+        );
     }
 
     fn to_cairo(&self, cr: &cairo::Context) {
@@ -282,8 +293,10 @@ fn clamp(val: f64, low: f64, high: f64) -> f64 {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_path_builder_add_to_cairo_context(raw_builder: *mut RsvgPathBuilder,
-                                                         raw_cr: *mut cairo_sys::cairo_t) {
+pub extern "C" fn rsvg_path_builder_add_to_cairo_context(
+    raw_builder: *mut RsvgPathBuilder,
+    raw_cr: *mut cairo_sys::cairo_t,
+) {
     assert!(!raw_builder.is_null());
     assert!(!raw_cr.is_null());
 

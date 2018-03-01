@@ -17,11 +17,13 @@ use path_parser;
 use property_bag::PropertyBag;
 use state::RsvgState;
 
-fn render_path_builder(builder: &RsvgPathBuilder,
-                       draw_ctx: *const RsvgDrawingCtx,
-                       state: *mut RsvgState,
-                       dominate: i32,
-                       render_markers: bool) {
+fn render_path_builder(
+    builder: &RsvgPathBuilder,
+    draw_ctx: *const RsvgDrawingCtx,
+    state: *mut RsvgState,
+    dominate: i32,
+    render_markers: bool,
+) {
     drawing_ctx::state_reinherit_top(draw_ctx, state, dominate);
     drawing_ctx::render_path_builder(draw_ctx, builder);
 
@@ -30,13 +32,15 @@ fn render_path_builder(builder: &RsvgPathBuilder,
     }
 }
 
-fn render_ellipse(cx: f64,
-                  cy: f64,
-                  rx: f64,
-                  ry: f64,
-                  node: &RsvgNode,
-                  draw_ctx: *const RsvgDrawingCtx,
-                  dominate: i32) {
+fn render_ellipse(
+    cx: f64,
+    cy: f64,
+    rx: f64,
+    ry: f64,
+    node: &RsvgNode,
+    draw_ctx: *const RsvgDrawingCtx,
+    dominate: i32,
+) {
     // Per the spec, rx and ry must be nonnegative
     if rx <= 0.0 || ry <= 0.0 {
         return;
@@ -50,33 +54,41 @@ fn render_ellipse(cx: f64,
 
     builder.move_to(cx + rx, cy);
 
-    builder.curve_to(cx + rx,
-                     cy - arc_magic * ry,
-                     cx + arc_magic * rx,
-                     cy - ry,
-                     cx,
-                     cy - ry);
+    builder.curve_to(
+        cx + rx,
+        cy - arc_magic * ry,
+        cx + arc_magic * rx,
+        cy - ry,
+        cx,
+        cy - ry,
+    );
 
-    builder.curve_to(cx - arc_magic * rx,
-                     cy - ry,
-                     cx - rx,
-                     cy - arc_magic * ry,
-                     cx - rx,
-                     cy);
+    builder.curve_to(
+        cx - arc_magic * rx,
+        cy - ry,
+        cx - rx,
+        cy - arc_magic * ry,
+        cx - rx,
+        cy,
+    );
 
-    builder.curve_to(cx - rx,
-                     cy + arc_magic * ry,
-                     cx - arc_magic * rx,
-                     cy + ry,
-                     cx,
-                     cy + ry);
+    builder.curve_to(
+        cx - rx,
+        cy + arc_magic * ry,
+        cx - arc_magic * rx,
+        cy + ry,
+        cx,
+        cy + ry,
+    );
 
-    builder.curve_to(cx + arc_magic * rx,
-                     cy + ry,
-                     cx + rx,
-                     cy + arc_magic * ry,
-                     cx + rx,
-                     cy);
+    builder.curve_to(
+        cx + arc_magic * rx,
+        cy + ry,
+        cx + rx,
+        cy + arc_magic * ry,
+        cx + rx,
+        cy,
+    );
 
     builder.close_path();
 
@@ -90,7 +102,9 @@ struct NodePath {
 
 impl NodePath {
     fn new() -> NodePath {
-        NodePath { builder: RefCell::new(None), }
+        NodePath {
+            builder: RefCell::new(None),
+        }
     }
 }
 
@@ -137,8 +151,10 @@ struct NodePoly {
 
 impl NodePoly {
     fn new(kind: PolyKind) -> NodePoly {
-        NodePoly { points: RefCell::new(None),
-                   kind, }
+        NodePoly {
+            points: RefCell::new(None),
+            kind,
+        }
     }
 }
 
@@ -200,10 +216,12 @@ struct NodeLine {
 
 impl NodeLine {
     fn new() -> NodeLine {
-        NodeLine { x1: Cell::new(RsvgLength::default()),
-                   y1: Cell::new(RsvgLength::default()),
-                   x2: Cell::new(RsvgLength::default()),
-                   y2: Cell::new(RsvgLength::default()), }
+        NodeLine {
+            x1: Cell::new(RsvgLength::default()),
+            y1: Cell::new(RsvgLength::default()),
+            x2: Cell::new(RsvgLength::default()),
+            y2: Cell::new(RsvgLength::default()),
+        }
     }
 }
 
@@ -211,9 +229,11 @@ impl NodeTrait for NodeLine {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X1 => self.x1.set(parse("x1", value, LengthDir::Horizontal, None)?),
+                Attribute::X1 => self.x1
+                    .set(parse("x1", value, LengthDir::Horizontal, None)?),
                 Attribute::Y1 => self.y1.set(parse("y1", value, LengthDir::Vertical, None)?),
-                Attribute::X2 => self.x2.set(parse("x2", value, LengthDir::Horizontal, None)?),
+                Attribute::X2 => self.x2
+                    .set(parse("x2", value, LengthDir::Horizontal, None)?),
                 Attribute::Y2 => self.y2.set(parse("y2", value, LengthDir::Vertical, None)?),
                 _ => (),
             }
@@ -256,13 +276,15 @@ struct NodeRect {
 
 impl NodeRect {
     fn new() -> NodeRect {
-        NodeRect { x: Cell::new(RsvgLength::default()),
-                   y: Cell::new(RsvgLength::default()),
-                   w: Cell::new(RsvgLength::default()),
-                   h: Cell::new(RsvgLength::default()),
+        NodeRect {
+            x: Cell::new(RsvgLength::default()),
+            y: Cell::new(RsvgLength::default()),
+            w: Cell::new(RsvgLength::default()),
+            h: Cell::new(RsvgLength::default()),
 
-                   rx: Cell::new(None),
-                   ry: Cell::new(None), }
+            rx: Cell::new(None),
+            ry: Cell::new(None),
+        }
     }
 }
 
@@ -270,19 +292,33 @@ impl NodeTrait for NodeRect {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X      => self.x.set (parse ("x", value, LengthDir::Horizontal, None)?),
-                Attribute::Y      => self.y.set (parse ("y", value, LengthDir::Vertical, None)?),
-                Attribute::Width  => self.w.set (parse ("width", value, LengthDir::Horizontal,
-                                                        Some(RsvgLength::check_nonnegative))?),
-                Attribute::Height => self.h.set (parse ("height", value, LengthDir::Vertical,
-                                                        Some(RsvgLength::check_nonnegative))?),
+                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
+                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
+                Attribute::Width => self.w.set(parse(
+                    "width",
+                    value,
+                    LengthDir::Horizontal,
+                    Some(RsvgLength::check_nonnegative),
+                )?),
+                Attribute::Height => self.h.set(parse(
+                    "height",
+                    value,
+                    LengthDir::Vertical,
+                    Some(RsvgLength::check_nonnegative),
+                )?),
 
-                Attribute::Rx => self.rx.set (parse ("rx", value, LengthDir::Horizontal,
-                                                     Some(RsvgLength::check_nonnegative))
-                                              .map(Some)?),
-                Attribute::Ry => self.ry.set (parse ("ry", value, LengthDir::Vertical,
-                                                     Some(RsvgLength::check_nonnegative))
-                                              .map(Some)?),
+                Attribute::Rx => self.rx.set(parse(
+                    "rx",
+                    value,
+                    LengthDir::Horizontal,
+                    Some(RsvgLength::check_nonnegative),
+                ).map(Some)?),
+                Attribute::Ry => self.ry.set(parse(
+                    "ry",
+                    value,
+                    LengthDir::Vertical,
+                    Some(RsvgLength::check_nonnegative),
+                ).map(Some)?),
 
                 _ => (),
             }
@@ -443,9 +479,11 @@ struct NodeCircle {
 
 impl NodeCircle {
     fn new() -> NodeCircle {
-        NodeCircle { cx: Cell::new(RsvgLength::default()),
-                     cy: Cell::new(RsvgLength::default()),
-                     r: Cell::new(RsvgLength::default()), }
+        NodeCircle {
+            cx: Cell::new(RsvgLength::default()),
+            cy: Cell::new(RsvgLength::default()),
+            r: Cell::new(RsvgLength::default()),
+        }
     }
 }
 
@@ -453,12 +491,15 @@ impl NodeTrait for NodeCircle {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal, None)?),
+                Attribute::Cx => self.cx
+                    .set(parse("cx", value, LengthDir::Horizontal, None)?),
                 Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
-                Attribute::R => self.r.set(parse("r",
-                                                 value,
-                                                 LengthDir::Both,
-                                                 Some(RsvgLength::check_nonnegative))?),
+                Attribute::R => self.r.set(parse(
+                    "r",
+                    value,
+                    LengthDir::Both,
+                    Some(RsvgLength::check_nonnegative),
+                )?),
 
                 _ => (),
             }
@@ -490,10 +531,12 @@ struct NodeEllipse {
 
 impl NodeEllipse {
     fn new() -> NodeEllipse {
-        NodeEllipse { cx: Cell::new(RsvgLength::default()),
-                      cy: Cell::new(RsvgLength::default()),
-                      rx: Cell::new(RsvgLength::default()),
-                      ry: Cell::new(RsvgLength::default()), }
+        NodeEllipse {
+            cx: Cell::new(RsvgLength::default()),
+            cy: Cell::new(RsvgLength::default()),
+            rx: Cell::new(RsvgLength::default()),
+            ry: Cell::new(RsvgLength::default()),
+        }
     }
 }
 
@@ -501,17 +544,22 @@ impl NodeTrait for NodeEllipse {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::Cx => self.cx.set(parse("cx", value, LengthDir::Horizontal, None)?),
+                Attribute::Cx => self.cx
+                    .set(parse("cx", value, LengthDir::Horizontal, None)?),
                 Attribute::Cy => self.cy.set(parse("cy", value, LengthDir::Vertical, None)?),
 
-                Attribute::Rx => self.rx.set(parse("rx",
-                                                   value,
-                                                   LengthDir::Horizontal,
-                                                   Some(RsvgLength::check_nonnegative))?),
-                Attribute::Ry => self.ry.set(parse("ry",
-                                                   value,
-                                                   LengthDir::Vertical,
-                                                   Some(RsvgLength::check_nonnegative))?),
+                Attribute::Rx => self.rx.set(parse(
+                    "rx",
+                    value,
+                    LengthDir::Horizontal,
+                    Some(RsvgLength::check_nonnegative),
+                )?),
+                Attribute::Ry => self.ry.set(parse(
+                    "ry",
+                    value,
+                    LengthDir::Vertical,
+                    Some(RsvgLength::check_nonnegative),
+                )?),
 
                 _ => (),
             }
@@ -536,54 +584,65 @@ impl NodeTrait for NodeEllipse {
 
 // ************ C Prototypes ************
 #[no_mangle]
-pub extern "C" fn rsvg_node_path_new(_: *const libc::c_char,
-                                     raw_parent: *const RsvgNode)
-                                     -> *const RsvgNode {
+pub extern "C" fn rsvg_node_path_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Path, raw_parent, Box::new(NodePath::new()))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_polygon_new(_: *const libc::c_char,
-                                        raw_parent: *const RsvgNode)
-                                        -> *const RsvgNode {
-    boxed_node_new(NodeType::Path,
-                   raw_parent,
-                   Box::new(NodePoly::new(PolyKind::Closed)))
+pub extern "C" fn rsvg_node_polygon_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Path,
+        raw_parent,
+        Box::new(NodePoly::new(PolyKind::Closed)),
+    )
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_polyline_new(_: *const libc::c_char,
-                                         raw_parent: *const RsvgNode)
-                                         -> *const RsvgNode {
-    boxed_node_new(NodeType::Path,
-                   raw_parent,
-                   Box::new(NodePoly::new(PolyKind::Open)))
+pub extern "C" fn rsvg_node_polyline_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
+    boxed_node_new(
+        NodeType::Path,
+        raw_parent,
+        Box::new(NodePoly::new(PolyKind::Open)),
+    )
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_line_new(_: *const libc::c_char,
-                                     raw_parent: *const RsvgNode)
-                                     -> *const RsvgNode {
+pub extern "C" fn rsvg_node_line_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Line, raw_parent, Box::new(NodeLine::new()))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_rect_new(_: *const libc::c_char,
-                                     raw_parent: *const RsvgNode)
-                                     -> *const RsvgNode {
+pub extern "C" fn rsvg_node_rect_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Rect, raw_parent, Box::new(NodeRect::new()))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_circle_new(_: *const libc::c_char,
-                                       raw_parent: *const RsvgNode)
-                                       -> *const RsvgNode {
+pub extern "C" fn rsvg_node_circle_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Circle, raw_parent, Box::new(NodeCircle::new()))
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_ellipse_new(_: *const libc::c_char,
-                                        raw_parent: *const RsvgNode)
-                                        -> *const RsvgNode {
+pub extern "C" fn rsvg_node_ellipse_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Ellipse, raw_parent, Box::new(NodeEllipse::new()))
 }

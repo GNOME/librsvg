@@ -18,9 +18,10 @@ impl FromStr for Attribute {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_attribute_from_name(raw_name: *const libc::c_char,
-                                           out_attr: *mut Attribute)
-                                           -> glib_sys::gboolean {
+pub extern "C" fn rsvg_attribute_from_name(
+    raw_name: *const libc::c_char,
+    out_attr: *mut Attribute,
+) -> glib_sys::gboolean {
     let name = unsafe { utf8_cstr(raw_name) };
 
     match Attribute::from_str(name) {
@@ -53,8 +54,10 @@ mod tests {
     #[test]
     fn c_attribute_from_name() {
         let mut a: Attribute = unsafe { mem::uninitialized() };
-        let res: bool =
-            from_glib(rsvg_attribute_from_name("width".to_glib_none().0, &mut a as *mut Attribute));
+        let res: bool = from_glib(rsvg_attribute_from_name(
+            "width".to_glib_none().0,
+            &mut a as *mut Attribute,
+        ));
         assert!(res);
         assert_eq!(a, Attribute::Width);
     }
@@ -62,8 +65,10 @@ mod tests {
     #[test]
     fn invalid_c_attribute_from_name() {
         let mut a: Attribute = unsafe { mem::uninitialized() };
-        let res: bool = from_glib(rsvg_attribute_from_name("foobar".to_glib_none().0,
-                                                           &mut a as *mut Attribute));
+        let res: bool = from_glib(rsvg_attribute_from_name(
+            "foobar".to_glib_none().0,
+            &mut a as *mut Attribute,
+        ));
         assert!(!res);
     }
 }

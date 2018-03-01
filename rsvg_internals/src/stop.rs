@@ -24,8 +24,10 @@ pub struct NodeStop {
 
 impl NodeStop {
     fn new() -> NodeStop {
-        NodeStop { offset: Cell::new(0.0),
-                   rgba: Cell::new(0), }
+        NodeStop {
+            offset: Cell::new(0.0),
+            rgba: Cell::new(0),
+        }
     }
 
     pub fn get_offset(&self) -> f64 {
@@ -39,8 +41,7 @@ impl NodeStop {
 
 fn validate_offset(length: RsvgLength) -> Result<RsvgLength, AttributeError> {
     match length.unit {
-        LengthUnit::Default |
-        LengthUnit::Percent => {
+        LengthUnit::Default | LengthUnit::Percent => {
             let mut offset = length.length;
 
             if offset < 0.0 {
@@ -49,12 +50,16 @@ fn validate_offset(length: RsvgLength) -> Result<RsvgLength, AttributeError> {
                 offset = 1.0;
             }
 
-            Ok(RsvgLength::new(offset, LengthUnit::Default, LengthDir::Both))
-        },
-
-        _ => {
-            Err (AttributeError::Value ("stop offset must be in default or percent units".to_string()))
+            Ok(RsvgLength::new(
+                offset,
+                LengthUnit::Default,
+                LengthDir::Both,
+            ))
         }
+
+        _ => Err(AttributeError::Value(
+            "stop offset must be in default or percent units".to_string(),
+        )),
     }
 }
 
@@ -66,8 +71,9 @@ impl NodeTrait for NodeStop {
             match attr {
                 Attribute::Offset => {
                     let length = parse("offset", value, LengthDir::Both, Some(validate_offset))?;
-                    assert!(length.unit == LengthUnit::Default
-                            || length.unit == LengthUnit::Percent);
+                    assert!(
+                        length.unit == LengthUnit::Default || length.unit == LengthUnit::Percent
+                    );
                     self.offset.set(length.length);
                 }
 
@@ -100,15 +106,15 @@ impl NodeTrait for NodeStop {
 
         let mut color_rgba: cssparser::RGBA;
 
-        let stop_color = drawing_ctx::state_get_stop_color (state)
-            .map_err (|e| NodeError::attribute_error ("stop-color", e))?;
+        let stop_color = drawing_ctx::state_get_stop_color(state)
+            .map_err(|e| NodeError::attribute_error("stop-color", e))?;
 
         match stop_color {
             None => color_rgba = cssparser::RGBA::transparent(),
 
             Some(Color::Inherit) => {
-                let inherited_stop_color = drawing_ctx::state_get_stop_color (inherited_state)
-                    .map_err (|e| NodeError::attribute_error ("stop-color", e))?;
+                let inherited_stop_color = drawing_ctx::state_get_stop_color(inherited_state)
+                    .map_err(|e| NodeError::attribute_error("stop-color", e))?;
 
                 match inherited_stop_color {
                     None => unreachable!(),
@@ -137,15 +143,15 @@ impl NodeTrait for NodeStop {
             Some(Color::RGBA(rgba)) => color_rgba = rgba,
         }
 
-        let stop_opacity = drawing_ctx::state_get_stop_opacity (state)
-            .map_err (|e| NodeError::attribute_error ("stop-opacity", e))?;
+        let stop_opacity = drawing_ctx::state_get_stop_opacity(state)
+            .map_err(|e| NodeError::attribute_error("stop-opacity", e))?;
 
         match stop_opacity {
             None => color_rgba.alpha = 0xff,
 
             Some(Opacity::Inherit) => {
-                let inherited_opacity = drawing_ctx::state_get_stop_opacity (inherited_state)
-                    .map_err (|e| NodeError::attribute_error ("stop-opacity", e))?;
+                let inherited_opacity = drawing_ctx::state_get_stop_opacity(inherited_state)
+                    .map_err(|e| NodeError::attribute_error("stop-opacity", e))?;
 
                 match inherited_opacity {
                     Some(Opacity::Specified(opacity)) => color_rgba.alpha = opacity_to_u8(opacity),
@@ -174,7 +180,7 @@ impl NodeTrait for NodeStop {
 
 fn u32_from_rgba(rgba: cssparser::RGBA) -> u32 {
     (u32::from(rgba.red) << 24) | (u32::from(rgba.green) << 16) | (u32::from(rgba.blue) << 8)
-    | u32::from(rgba.alpha)
+        | u32::from(rgba.alpha)
 }
 
 extern "C" {
@@ -183,8 +189,9 @@ extern "C" {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_stop_new(_: *const libc::c_char,
-                                     raw_parent: *const RsvgNode)
-                                     -> *const RsvgNode {
+pub extern "C" fn rsvg_node_stop_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
     boxed_node_new(NodeType::Stop, raw_parent, Box::new(NodeStop::new()))
 }
