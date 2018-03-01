@@ -725,7 +725,7 @@ fn resolve_fallbacks_and_set_pattern(
 
     let resolved = resolve_gradient(gradient, &mut fallback_source);
 
-    set_pattern_on_draw_context(&resolved, draw_ctx, opacity, &bbox)
+    set_pattern_on_draw_context(&resolved, draw_ctx, opacity, bbox)
 }
 
 pub fn gradient_resolve_fallbacks_and_set_pattern(
@@ -742,7 +742,7 @@ pub fn gradient_resolve_fallbacks_and_set_pattern(
 
     node.with_impl(|node_gradient: &NodeGradient| {
         let gradient = node_gradient.get_gradient_with_color_stops_from_node(node);
-        did_set_gradient = resolve_fallbacks_and_set_pattern(&gradient, draw_ctx, opacity, &bbox);
+        did_set_gradient = resolve_fallbacks_and_set_pattern(&gradient, draw_ctx, opacity, bbox);
     });
 
     did_set_gradient
