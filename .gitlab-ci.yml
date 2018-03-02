@@ -29,7 +29,7 @@ stages:
 
     # Only stuff inside the repo directory can be cached
     # Override the CARGO_HOME variable to force it location
-    - export CARGO_HOME="${PWD}/cargo_cache"
+    - export CARGO_HOME="${PWD}/.cargo_cache"
   script:
     - rustc --version && cargo --version
     - ./autogen.sh --enable-gtk-doc --enable-vala
