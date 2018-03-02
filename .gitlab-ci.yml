@@ -162,8 +162,8 @@ debian:testing_release:
 debian:testing_i386:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing
   stage: cross_distro_i386
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
     - master
@@ -177,8 +177,8 @@ debian:testing_i386:
 debian:testing_release_i386:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing
   stage: cross_distro_i386
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
   only:
     - schedules
@@ -195,6 +195,7 @@ rustfmt:
   stage: lint
   script:
     - rustc --version && cargo --version
+    - cargo fmt -- -V
     - cargo fmt --all -- --write-mode=diff
 
 
