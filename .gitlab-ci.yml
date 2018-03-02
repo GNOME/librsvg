@@ -195,6 +195,7 @@ rustfmt:
   stage: lint
   script:
     - rustc --version && cargo --version
+    - cargo fmt -- -V
     - cargo fmt --all -- --write-mode=diff
 
 
