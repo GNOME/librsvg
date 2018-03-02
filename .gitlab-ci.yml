@@ -32,7 +32,7 @@ stages:
     - export CARGO_HOME="${PWD}/.cargo_cache"
   script:
     - rustc --version && cargo --version
-    - ./autogen.sh
+    - ./autogen.sh --enable-gtk-doc --enable-vala
     - make check
 
   after_script:
