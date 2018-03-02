@@ -33,8 +33,10 @@ stages:
       - png_artifacts
 
   cache:
-    # Each job will have it's own cache
-    key: "$CI_JOB_NAME"
+    # JOB_NAME - Each job will have it's own cache
+    # COMMIT_REF_SLUG = Lowercase name of the branch
+    # ^ Keep diffrerent caches for each branch
+    key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
     paths:
       - target/
       - .cargo_cache/
