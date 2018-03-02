@@ -226,29 +226,33 @@ mod tests {
         let mut affine = cairo::Matrix::identity();
         affine.scale(0.25, 0.25);
 
-        let mut ctx = Ctx { view_box_size: None,
-                            clipping_rect: None,
-                            affine: None,
-                            expected_view_box_size: Some((40.0, 40.0)),
-                            expected_clipping_rect: Some((10.0, 10.0, 10.0, 10.0)),
-                            expected_affine: Some(affine)
+        let mut ctx = Ctx {
+            view_box_size: None,
+            clipping_rect: None,
+            affine: None,
+
+            expected_view_box_size: Some((40.0, 40.0)),
+            expected_clipping_rect: Some((10.0, 10.0, 10.0, 10.0)),
+            expected_affine: Some(affine),
         };
 
-        call_in_viewport(10.0,
-                         10.0,
-                         10.0,
-                         10.0,
-                         ClipMode::ClipToViewport,
-                         true,
-                         Some(ViewBox(cairo::Rectangle {
-                             x: 40.0,
-                             y: 40.0,
-                             width: 40.0,
-                             height: 40.0,
-                         })),
-                         AspectRatio::parse("xMidYMid meet", ()).unwrap(),
-                         cairo::Matrix::identity(),
-                         &mut ctx);
+        call_in_viewport(
+            10.0,
+            10.0,
+            10.0,
+            10.0,
+            ClipMode::ClipToViewport,
+            true,
+            Some(ViewBox(cairo::Rectangle {
+                x: 40.0,
+                y: 40.0,
+                width: 40.0,
+                height: 40.0,
+            })),
+            AspectRatio::parse("xMidYMid meet", ()).unwrap(),
+            cairo::Matrix::identity(),
+            &mut ctx,
+        );
     }
 
     #[test]

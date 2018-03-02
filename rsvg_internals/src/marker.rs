@@ -1047,7 +1047,7 @@ mod directionality_tests {
 
     // Multiple closed subpaths; each must have a line segment back to their
     // initial points, with no degenerate segments between subpaths.
-    // 
+    //
 
     fn setup_multiple_closed_subpaths() -> RsvgPathBuilder {
         let mut builder = RsvgPathBuilder::new();
@@ -1083,7 +1083,7 @@ mod directionality_tests {
 
     // A lineto follows the first closed subpath, with no moveto to start the second subpath.
     // The lineto must start at the first point of the first subpath.
-    // 
+    //
 
     fn setup_no_moveto_after_closepath() -> RsvgPathBuilder {
         let mut builder = RsvgPathBuilder::new();
@@ -1143,7 +1143,7 @@ mod directionality_tests {
     //
     // test_path_builder_to_segments (&setup_sequence_of_moveto (), expected_segments);
     // }
-    // 
+    //
 
     #[test]
     fn degenerate_segment_has_no_directionality() {
