@@ -31,7 +31,7 @@ stages:
     - export CARGO_HOME=".cargo_cache/"
   script:
     - rustc --version && cargo --version
-    - ./autogen.sh --enable-gtk-doc
+    - ./autogen.sh --enable-gtk-doc --enable-vala
     - make check
 
   after_script:
