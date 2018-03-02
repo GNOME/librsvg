@@ -22,13 +22,14 @@ stages:
   before_script:
     # CCache Config
     - mkdir -p ccache
+    - mkdir -p .cargo_cache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
     - export CC="ccache gcc"
 
     # Only stuff inside the repo directory can be cached
     # Override the CARGO_HOME variable to force it location
-    - export CARGO_HOME=".cargo_cache/"
+    - export CARGO_HOME="${PWD}/cargo_cache"
   script:
     - rustc --version && cargo --version
     - ./autogen.sh --enable-gtk-doc --enable-vala
