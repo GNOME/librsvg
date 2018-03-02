@@ -10,34 +10,44 @@ use viewbox::*;
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum ClipMode {
     ClipToViewport,
-    ClipToVbox
+    ClipToVbox,
 }
 
-pub fn draw_in_viewport<F>(vx: f64, vy: f64, vw: f64, vh: f64,
-                           clip_mode: ClipMode,
-                           do_clip: bool,
-                           vbox: Option<ViewBox>,
-                           preserve_aspect_ratio: AspectRatio,
-                           affine: cairo::Matrix,
-                           draw_ctx: *const RsvgDrawingCtx,
-                           draw_fn: F)
-    where F: FnOnce()
+pub fn draw_in_viewport<F>(
+    vx: f64,
+    vy: f64,
+    vw: f64,
+    vh: f64,
+    clip_mode: ClipMode,
+    do_clip: bool,
+    vbox: Option<ViewBox>,
+    preserve_aspect_ratio: AspectRatio,
+    affine: cairo::Matrix,
+    draw_ctx: *const RsvgDrawingCtx,
+    draw_fn: F,
+) where
+    F: FnOnce(),
 {
     let mut ctx = RsvgDrawingCtxWrapper(draw_ctx);
 
-    in_viewport(&mut ctx,
-                vx, vy, vw, vh,
-                clip_mode,
-                do_clip,
-                vbox,
-                preserve_aspect_ratio,
-                affine,
-                draw_fn);
+    in_viewport(
+        &mut ctx,
+        vx,
+        vy,
+        vw,
+        vh,
+        clip_mode,
+        do_clip,
+        vbox,
+        preserve_aspect_ratio,
+        affine,
+        draw_fn,
+    );
 }
 
 trait ViewportCtx {
     fn push_view_box(&mut self, width: f64, height: f64);
-    fn pop_view_box(&mut self, );
+    fn pop_view_box(&mut self);
     fn push_discrete_layer(&mut self);
     fn pop_discrete_layer(&mut self);
     fn add_clipping_rect(&mut self, x: f64, y: f64, w: f64, h: f64);
@@ -72,15 +82,20 @@ impl ViewportCtx for RsvgDrawingCtxWrapper {
     }
 }
 
-fn in_viewport<F>(ctx: &mut ViewportCtx,
-                  vx: f64, vy: f64, vw: f64, vh: f64,
-                  clip_mode: ClipMode,
-                  do_clip: bool,
-                  vbox: Option<ViewBox>,
-                  preserve_aspect_ratio: AspectRatio,
-                  mut affine: cairo::Matrix,
-                  draw_fn: F)
-    where F: FnOnce()
+fn in_viewport<F>(
+    ctx: &mut ViewportCtx,
+    vx: f64,
+    vy: f64,
+    vw: f64,
+    vh: f64,
+    clip_mode: ClipMode,
+    do_clip: bool,
+    vbox: Option<ViewBox>,
+    preserve_aspect_ratio: AspectRatio,
+    mut affine: cairo::Matrix,
+    draw_fn: F,
+) where
+    F: FnOnce(),
 {
     // width or height set to 0 disables rendering of the element
     // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
@@ -107,8 +122,8 @@ fn in_viewport<F>(ctx: &mut ViewportCtx,
         ctx.push_view_box(vbox.0.width, vbox.0.height);
         ctx.push_discrete_layer();
 
-        let (x, y, w, h) = preserve_aspect_ratio.compute(vbox.0.width, vbox.0.height,
-                                                         vx, vy, vw, vh);
+        let (x, y, w, h) =
+            preserve_aspect_ratio.compute(vbox.0.width, vbox.0.height, vx, vy, vw, vh);
 
         affine.translate(x, y);
         affine.scale(w / vbox.0.width, h / vbox.0.height);
@@ -148,11 +163,11 @@ mod tests {
     struct Ctx {
         pub view_box_size: Option<(f64, f64)>,
         pub clipping_rect: Option<(f64, f64, f64, f64)>,
-        pub affine:        Option<cairo::Matrix>,
+        pub affine: Option<cairo::Matrix>,
 
         pub expected_view_box_size: Option<(f64, f64)>,
         pub expected_clipping_rect: Option<(f64, f64, f64, f64)>,
-        pub expected_affine:        Option<cairo::Matrix>,
+        pub expected_affine: Option<cairo::Matrix>,
     }
 
     impl ViewportCtx for Ctx {
@@ -160,14 +175,11 @@ mod tests {
             self.view_box_size = Some((width, height));
         }
 
-        fn pop_view_box(&mut self) {
-        }
+        fn pop_view_box(&mut self) {}
 
-        fn push_discrete_layer(&mut self) {
-        }
+        fn push_discrete_layer(&mut self) {}
 
-        fn pop_discrete_layer(&mut self) {
-        }
+        fn pop_discrete_layer(&mut self) {}
 
         fn add_clipping_rect(&mut self, x: f64, y: f64, w: f64, h: f64) {
             self.clipping_rect = Some((x, y, w, h));
@@ -178,21 +190,31 @@ mod tests {
         }
     }
 
-    fn call_in_viewport(vx: f64, vy: f64, vw: f64, vh: f64,
-                        clip_mode: ClipMode,
-                        do_clip: bool,
-                        vbox: Option<ViewBox>,
-                        preserve_aspect_ratio: AspectRatio,
-                        affine: cairo::Matrix,
-                        ctx: &mut Ctx) {
-        in_viewport(ctx,
-                    vx, vy, vw, vh,
-                    clip_mode,
-                    do_clip,
-                    vbox,
-                    preserve_aspect_ratio,
-                    affine,
-                    || ());
+    fn call_in_viewport(
+        vx: f64,
+        vy: f64,
+        vw: f64,
+        vh: f64,
+        clip_mode: ClipMode,
+        do_clip: bool,
+        vbox: Option<ViewBox>,
+        preserve_aspect_ratio: AspectRatio,
+        affine: cairo::Matrix,
+        ctx: &mut Ctx,
+    ) {
+        in_viewport(
+            ctx,
+            vx,
+            vy,
+            vw,
+            vh,
+            clip_mode,
+            do_clip,
+            vbox,
+            preserve_aspect_ratio,
+            affine,
+            || (),
+        );
 
         assert_eq!(ctx.view_box_size, ctx.expected_view_box_size);
         assert_eq!(ctx.clipping_rect, ctx.expected_clipping_rect);
@@ -207,25 +229,30 @@ mod tests {
         let mut ctx = Ctx {
             view_box_size: None,
             clipping_rect: None,
-            affine:        None,
+            affine: None,
 
             expected_view_box_size: Some((40.0, 40.0)),
             expected_clipping_rect: Some((10.0, 10.0, 10.0, 10.0)),
-            expected_affine: Some(affine)
+            expected_affine: Some(affine),
         };
 
-        call_in_viewport(10.0, 10.0, 10.0, 10.0,
-                         ClipMode::ClipToViewport,
-                         true,
-                         Some(ViewBox(cairo::Rectangle {
-                             x: 40.0,
-                             y: 40.0,
-                             width: 40.0,
-                             height: 40.0,
-                         })),
-                         AspectRatio::parse("xMidYMid meet", ()).unwrap(),
-                         cairo::Matrix::identity(),
-                         &mut ctx);
+        call_in_viewport(
+            10.0,
+            10.0,
+            10.0,
+            10.0,
+            ClipMode::ClipToViewport,
+            true,
+            Some(ViewBox(cairo::Rectangle {
+                x: 40.0,
+                y: 40.0,
+                width: 40.0,
+                height: 40.0,
+            })),
+            AspectRatio::parse("xMidYMid meet", ()).unwrap(),
+            cairo::Matrix::identity(),
+            &mut ctx,
+        );
     }
 
     #[test]
@@ -237,24 +264,29 @@ mod tests {
         let mut ctx = Ctx {
             view_box_size: None,
             clipping_rect: None,
-            affine:        None,
+            affine: None,
 
             expected_view_box_size: Some((50.0, 50.0)),
             expected_clipping_rect: Some((0.0, 0.0, 50.0, 50.0)),
-            expected_affine: Some(affine)
+            expected_affine: Some(affine),
         };
 
-        call_in_viewport(10.0, 10.0, 20.0, 20.0,
-                         ClipMode::ClipToVbox,
-                         true,
-                         Some(ViewBox(cairo::Rectangle {
-                             x: 0.0,
-                             y: 0.0,
-                             width: 50.0,
-                             height: 50.0,
-                         })),
-                         AspectRatio::parse("xMidYMid meet", ()).unwrap(),
-                         cairo::Matrix::identity(),
-                         &mut ctx);
+        call_in_viewport(
+            10.0,
+            10.0,
+            20.0,
+            20.0,
+            ClipMode::ClipToVbox,
+            true,
+            Some(ViewBox(cairo::Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: 50.0,
+                height: 50.0,
+            })),
+            AspectRatio::parse("xMidYMid meet", ()).unwrap(),
+            cairo::Matrix::identity(),
+            &mut ctx,
+        );
     }
 }

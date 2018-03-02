@@ -3,9 +3,9 @@ use cairo_sys;
 use glib::translate::*;
 use libc;
 
+use regex::{Captures, Regex};
 use std::borrow::Cow;
 use std::cell::RefCell;
-use regex::{Regex, Captures};
 
 use attributes::Attribute;
 use drawing_ctx::{self, RsvgDrawingCtx};
@@ -19,7 +19,9 @@ struct NodeLink {
 
 impl NodeLink {
     fn new() -> NodeLink {
-        NodeLink { link: RefCell::new(None) }
+        NodeLink {
+            link: RefCell::new(None),
+        }
     }
 }
 
@@ -65,14 +67,13 @@ fn escape_value(value: &str) -> Cow<str> {
         static ref REGEX: Regex = Regex::new(r"['\\]").unwrap();
     }
 
-    REGEX.replace_all(
-        value,
-        |caps: &Captures| match caps.get(0).unwrap().as_str() {
+    REGEX.replace_all(value, |caps: &Captures| {
+        match caps.get(0).unwrap().as_str() {
             "'" => "\\'".to_owned(),
             "\\" => "\\\\".to_owned(),
             _ => unreachable!(),
-        },
-    )
+        }
+    })
 }
 
 extern "C" {
@@ -118,8 +119,7 @@ impl CairoTagging for cairo::Context {
     }
 }
 
-/***** C Prototypes *****/
-
+// ****************** C Prototypes  ******************
 #[no_mangle]
 pub extern "C" fn rsvg_node_link_new(
     _: *const libc::c_char,
