@@ -53,14 +53,14 @@ stages:
 ########################################################################
 
 fedora:test:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
+  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest
   stage: test
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
 
 fedora:test_release:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
+  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest
   stage: test
   variables:
     LIBRSVG_DEBUG: "no"
