@@ -1,5 +1,17 @@
 # -*- indent-tabs-mode: nil -*-
 
+variables:
+  # Docker images for various distros and architectures
+
+  AMD64_FEDORA_LATEST:       "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest"
+  AMD64_OPENSUSE_TUMBLEWEED: "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed"
+  AMD64_DEBIAN_TESTING:      "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing"
+
+  I386_DEBIAN_TESTING:       "registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing"
+
+  RUSTFMT_NIGHTLY:           "registry.gitlab.com/alatiera/rustfmt-oci-image/rustfmt:nightly"
+  RUST_NIGHTLY:              "rustlang/rust:nightly"
+
 stages:
   - test
   - lint
@@ -56,14 +68,14 @@ stages:
 ########################################################################
 
 fedora:test:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest
+  image: $AMD64_FEDORA_LATEST
   stage: test
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
 
 fedora:test_release:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest
+  image: $AMD64_FEDORA_LATEST
   stage: test
   variables:
     LIBRSVG_DEBUG: "no"
@@ -74,7 +86,7 @@ fedora:test_release:
 #######################################################################
 
 fedora:rawhide:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest
+  image: $AMD64_FEDORA_LATEST
   stage: cross_distro_amd64
   variables:
     LIBRSVG_DEBUG: "yes"
@@ -86,7 +98,7 @@ fedora:rawhide:
     - web
 
 opensuse:tumbleweed:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed
+  image: $AMD64_OPENSUSE_TUMBLEWEED
   stage: cross_distro_amd64
   variables:
     LIBRSVG_DEBUG: "yes"
@@ -98,7 +110,7 @@ opensuse:tumbleweed:
     - web
 
 debian:testing:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing
+  image: $AMD64_DEBIAN_TESTING
   stage: cross_distro_amd64
   variables:
     LIBRSVG_DEBUG: "yes"
@@ -127,7 +139,7 @@ debian:testing:
 #######################################################################
 
 fedora:rawhide_release:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest
+  image: $AMD64_FEDORA_LATEST
   stage: cross_distro_amd64
   variables:
     LIBRSVG_DEBUG: "no"
@@ -138,7 +150,7 @@ fedora:rawhide_release:
     - web
 
 opensuse:tumbleweed_release:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed
+  image: $AMD64_OPENSUSE_TUMBLEWEED
   stage: cross_distro_amd64
   variables:
     LIBRSVG_DEBUG: "no"
@@ -149,7 +161,7 @@ opensuse:tumbleweed_release:
     - web
 
 debian:testing_release:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing
+  image: $DEBIAN_TESTING
   stage: cross_distro_amd64
   variables:
     LIBRSVG_DEBUG: "no"
@@ -163,7 +175,7 @@ debian:testing_release:
 #######################################################################
 
 debian:testing_i386:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing
+  image: $I386_DEBIAN_TESTING
   stage: cross_distro_i386
   variables:
     LIBRSVG_DEBUG: "yes"
@@ -178,7 +190,7 @@ debian:testing_i386:
 #######################################################################
 
 debian:testing_release_i386:
-  image: registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing
+  image: $I386_DEBIAN_TESTING
   stage: cross_distro_i386
   variables:
     LIBRSVG_DEBUG: "no"
@@ -194,7 +206,7 @@ debian:testing_release_i386:
 # Configure and run rustfmt on nightly
 # Exits and builds fails on bad format
 rustfmt:
-  image: registry.gitlab.com/alatiera/rustfmt-oci-image/rustfmt:nightly
+  image: $RUSTFMT_NIGHTLY
   stage: lint
   script:
     - rustc --version && cargo --version
@@ -204,7 +216,7 @@ rustfmt:
 # Configure and run clippy on nightly
 # Only fails on errors atm.
 clippy:
-  image: "rustlang/rust:nightly"
+  image: $RUST_NIGHTLY
   stage: lint
   before_script:
     - apt update -yqq
