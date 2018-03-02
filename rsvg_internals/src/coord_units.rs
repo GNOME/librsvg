@@ -38,7 +38,7 @@ impl Parse for CoordUnits {
 /// specified `$default` value.
 #[macro_export]
 macro_rules! coord_units {
-    ($name:ident, $default:expr) => {
+    ($name: ident, $default: expr) => {
         #[derive(Debug, Copy, Clone, PartialEq, Eq)]
         struct $name(CoordUnits);
 
@@ -62,7 +62,7 @@ macro_rules! coord_units {
                 Ok($name($crate::coord_units::CoordUnits::parse(s, ())?))
             }
         }
-    }
+    };
 }
 
 #[cfg(test)]
