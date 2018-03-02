@@ -10,13 +10,14 @@ stages:
   before_script:
     # CCache Config
     - mkdir -p ccache
+    - mkdir -p .cargo_cache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
     - export CC="ccache gcc"
 
     # Only stuff inside the repo directory can be cached
     # Override the CARGO_HOME variable to force it location
-    - export CARGO_HOME=".cargo_cache/"
+    - export CARGO_HOME="${PWD}/cargo_cache"
   script:
     - rustc --version && cargo --version
     - ./autogen.sh
@@ -33,8 +34,10 @@ stages:
       - png_artifacts
 
   cache:
-    # Each job will have it's own cache
-    key: "$CI_JOB_NAME"
+    # JOB_NAME - Each job will have it's own cache
+    # COMMIT_REF_SLUG = Lowercase name of the branch
+    # ^ Keep diffrerent caches for each branch
+    key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
     paths:
       - target/
       - .cargo_cache/
@@ -55,15 +58,15 @@ stages:
 fedora:test:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: test
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
 
 fedora:test_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/fedora:latest
   stage: test
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
 
 
@@ -73,8 +76,8 @@ fedora:test_release:
 fedora:rawhide:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest
   stage: cross_distro_amd64
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
     - master
@@ -85,8 +88,8 @@ fedora:rawhide:
 opensuse:tumbleweed:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed
   stage: cross_distro_amd64
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
     - master
@@ -97,8 +100,8 @@ opensuse:tumbleweed:
 debian:testing:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing
   stage: cross_distro_amd64
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
     - master
@@ -126,8 +129,8 @@ debian:testing:
 fedora:rawhide_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest
   stage: cross_distro_amd64
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
   only:
     - schedules
@@ -137,8 +140,8 @@ fedora:rawhide_release:
 opensuse:tumbleweed_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed
   stage: cross_distro_amd64
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
   only:
     - schedules
@@ -148,8 +151,8 @@ opensuse:tumbleweed_release:
 debian:testing_release:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing
   stage: cross_distro_amd64
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
   only:
     - schedules
@@ -162,8 +165,8 @@ debian:testing_release:
 debian:testing_i386:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing
   stage: cross_distro_i386
-  before_script:
-    - export LIBRSVG_DEBUG="yes"
+  variables:
+    LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
     - master
@@ -177,8 +180,8 @@ debian:testing_i386:
 debian:testing_release_i386:
   image: registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing
   stage: cross_distro_i386
-  before_script:
-    - export LIBRSVG_DEBUG="no"
+  variables:
+    LIBRSVG_DEBUG: "no"
   <<: *distro_test
   only:
     - schedules
@@ -189,17 +192,13 @@ debian:testing_release_i386:
 #######################################################################
 
 # Configure and run rustfmt on nightly
-# Exits and builds fails if on bad format
+# Exits and builds fails on bad format
 rustfmt:
-  image: "rustlang/rust:nightly"
+  image: registry.gitlab.com/alatiera/rustfmt-oci-image/rustfmt:nightly
   stage: lint
-  variables:
-    CFG_RELEASE_CHANNEL: "nightly"
   script:
     - rustc --version && cargo --version
-    - cargo install rustfmt-nightly --force
     - cargo fmt --all -- --write-mode=diff
-  when: manual
 
 
 # Configure and run clippy on nightly

@@ -10,18 +10,20 @@ use parsers::{Parse, ParseError};
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CoordUnits {
     UserSpaceOnUse,
-    ObjectBoundingBox
+    ObjectBoundingBox,
 }
 
 impl Parse for CoordUnits {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse (s: &str, _: ()) -> Result<CoordUnits, AttributeError> {
+    fn parse(s: &str, _: ()) -> Result<CoordUnits, AttributeError> {
         match s {
-            "userSpaceOnUse"    => Ok (CoordUnits::UserSpaceOnUse),
-            "objectBoundingBox" => Ok (CoordUnits::ObjectBoundingBox),
-            _                   => Err (AttributeError::Parse (ParseError::new ("expected 'userSpaceOnUse' or 'objectBoundingBox'")))
+            "userSpaceOnUse" => Ok(CoordUnits::UserSpaceOnUse),
+            "objectBoundingBox" => Ok(CoordUnits::ObjectBoundingBox),
+            _ => Err(AttributeError::Parse(ParseError::new(
+                "expected 'userSpaceOnUse' or 'objectBoundingBox'",
+            ))),
         }
     }
 }
@@ -36,7 +38,7 @@ impl Parse for CoordUnits {
 /// specified `$default` value.
 #[macro_export]
 macro_rules! coord_units {
-    ($name:ident, $default:expr) => {
+    ($name: ident, $default: expr) => {
         #[derive(Debug, Copy, Clone, PartialEq, Eq)]
         struct $name(CoordUnits);
 
@@ -60,7 +62,7 @@ macro_rules! coord_units {
                 Ok($name($crate::coord_units::CoordUnits::parse(s, ())?))
             }
         }
-    }
+    };
 }
 
 #[cfg(test)]
@@ -70,15 +72,21 @@ mod tests {
     coord_units!(MyUnits, CoordUnits::ObjectBoundingBox);
 
     #[test]
-    fn parsing_invalid_strings_yields_error () {
-        assert! (MyUnits::parse ("", ()).is_err ());
-        assert! (MyUnits::parse ("foo", ()).is_err ());
+    fn parsing_invalid_strings_yields_error() {
+        assert!(MyUnits::parse("", ()).is_err());
+        assert!(MyUnits::parse("foo", ()).is_err());
     }
 
     #[test]
-    fn parses_paint_server_units () {
-        assert_eq! (MyUnits::parse ("userSpaceOnUse", ()), Ok (MyUnits(CoordUnits::UserSpaceOnUse)));
-        assert_eq! (MyUnits::parse ("objectBoundingBox", ()), Ok (MyUnits(CoordUnits::ObjectBoundingBox)));
+    fn parses_paint_server_units() {
+        assert_eq!(
+            MyUnits::parse("userSpaceOnUse", ()),
+            Ok(MyUnits(CoordUnits::UserSpaceOnUse))
+        );
+        assert_eq!(
+            MyUnits::parse("objectBoundingBox", ()),
+            Ok(MyUnits(CoordUnits::ObjectBoundingBox))
+        );
     }
 
     #[test]
@@ -88,6 +96,9 @@ mod tests {
 
     #[test]
     fn converts_to_coord_units() {
-        assert_eq!(CoordUnits::from(MyUnits(CoordUnits::ObjectBoundingBox)), CoordUnits::ObjectBoundingBox);
+        assert_eq!(
+            CoordUnits::from(MyUnits(CoordUnits::ObjectBoundingBox)),
+            CoordUnits::ObjectBoundingBox
+        );
     }
 }
