@@ -1,11 +1,11 @@
 use cairo;
 use cssparser;
-use glib_sys;
 use glib::translate::*;
+use glib_sys;
 use libc;
 
-use std::rc::Rc;
 use std::ptr;
+use std::rc::Rc;
 
 use bbox::RsvgBbox;
 use color::Color;
@@ -18,25 +18,27 @@ use pattern;
 use util::utf8_cstr;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct PaintServerSpread (pub cairo::enums::Extend);
+pub struct PaintServerSpread(pub cairo::enums::Extend);
 
 impl Parse for PaintServerSpread {
     type Data = ();
     type Err = AttributeError;
 
-    fn parse (s: &str, _: ()) -> Result <PaintServerSpread, AttributeError> {
+    fn parse(s: &str, _: ()) -> Result<PaintServerSpread, AttributeError> {
         match s {
-            "pad"     => Ok (PaintServerSpread (cairo::enums::Extend::Pad)),
-            "reflect" => Ok (PaintServerSpread (cairo::enums::Extend::Reflect)),
-            "repeat"  => Ok (PaintServerSpread (cairo::enums::Extend::Repeat)),
-            _         => Err (AttributeError::Parse (ParseError::new ("expected 'pad' | 'reflect' | 'repeat'")))
+            "pad" => Ok(PaintServerSpread(cairo::enums::Extend::Pad)),
+            "reflect" => Ok(PaintServerSpread(cairo::enums::Extend::Reflect)),
+            "repeat" => Ok(PaintServerSpread(cairo::enums::Extend::Repeat)),
+            _ => Err(AttributeError::Parse(ParseError::new(
+                "expected 'pad' | 'reflect' | 'repeat'",
+            ))),
         }
     }
 }
 
 impl Default for PaintServerSpread {
-    fn default () -> PaintServerSpread {
-        PaintServerSpread (cairo::enums::Extend::Pad)
+    fn default() -> PaintServerSpread {
+        PaintServerSpread(cairo::enums::Extend::Pad)
     }
 }
 
@@ -66,7 +68,10 @@ impl PaintServer {
     fn parse_color<'i, 't>(input: &mut cssparser::Parser<'i, 't>) -> Result<Color, AttributeError> {
         if input.try(|i| i.expect_ident_matching("inherit")).is_ok() {
             Ok(Color::Inherit)
-        } else if input.try(|i| i.expect_ident_matching("currentColor")).is_ok() {
+        } else if input
+            .try(|i| i.expect_ident_matching("currentColor"))
+            .is_ok()
+        {
             Ok(Color::CurrentColor)
         } else {
             input
@@ -79,12 +84,16 @@ impl PaintServer {
     fn parse_fallback<'i, 't>(input: &mut cssparser::Parser<'i, 't>) -> Option<Color> {
         if input.try(|i| i.expect_ident_matching("none")).is_ok() {
             None
-        } else if input.try(|i| i.expect_ident_matching("currentColor")).is_ok() {
+        } else if input
+            .try(|i| i.expect_ident_matching("currentColor"))
+            .is_ok()
+        {
             Some(Color::CurrentColor)
         } else {
-            input.try(|i| cssparser::Color::parse(i)).ok().map(|i| {
-                Color::from(i)
-            })
+            input
+                .try(|i| cssparser::Color::parse(i))
+                .ok()
+                .map(Color::from)
         }
     }
 }
@@ -106,16 +115,16 @@ fn _set_source_rsvg_solid_color(
     current_color: u32,
 ) {
     let rgba_color = match *color {
-        Color::RGBA(rgba)   => Some(rgba),
+        Color::RGBA(rgba) => Some(rgba),
         Color::CurrentColor => {
             if let Color::RGBA(rgba) = Color::from(current_color) {
                 Some(rgba)
             } else {
                 None
             }
-        },
+        }
 
-        _  => None
+        _ => None,
     };
 
     if let Some(rgba) = rgba_color {
@@ -123,7 +132,7 @@ fn _set_source_rsvg_solid_color(
             f64::from(rgba.red_f32()),
             f64::from(rgba.green_f32()),
             f64::from(rgba.blue_f32()),
-            f64::from(rgba.alpha_f32()) * (f64::from(opacity) / 255.0)
+            f64::from(rgba.alpha_f32()) * (f64::from(opacity) / 255.0),
         );
     }
 }
@@ -139,7 +148,6 @@ pub extern "C" fn rsvg_paint_server_parse(
     inherit: *mut glib_sys::gboolean,
     str: *const libc::c_char,
 ) -> *const PaintServer {
-
     if !inherit.is_null() {
         unsafe {
             *inherit = true.to_glib();
@@ -157,14 +165,17 @@ pub extern "C" fn rsvg_paint_server_parse(
                 }
             }
 
-            *color = Color::RGBA(
-                cssparser::RGBA{red: 0, green: 0, blue: 0, alpha: 255}
-            );
+            *color = Color::RGBA(cssparser::RGBA {
+                red: 0,
+                green: 0,
+                blue: 0,
+                alpha: 255,
+            });
         }
     }
 
     match paint_server {
-        Ok(m)  => Rc::into_raw(Rc::new(m)),
+        Ok(m) => Rc::into_raw(Rc::new(m)),
         Err(_) => ptr::null_mut(),
     }
 }
@@ -226,8 +237,8 @@ pub extern "C" fn _set_source_rsvg_paint_server(
             if !node_ptr.is_null() {
                 let node = unsafe { &*node_ptr };
 
-                if node.get_type() == NodeType::LinearGradient ||
-                    node.get_type() == NodeType::RadialGradient
+                if node.get_type() == NodeType::LinearGradient
+                    || node.get_type() == NodeType::RadialGradient
                 {
                     had_paint_server = gradient::gradient_resolve_fallbacks_and_set_pattern(
                         node,
@@ -236,7 +247,8 @@ pub extern "C" fn _set_source_rsvg_paint_server(
                         &c_bbox,
                     );
                 } else if node.get_type() == NodeType::Pattern {
-                    had_paint_server = pattern::pattern_resolve_fallbacks_and_set_pattern(node, c_ctx, &c_bbox);
+                    had_paint_server =
+                        pattern::pattern_resolve_fallbacks_and_set_pattern(node, c_ctx, &c_bbox);
                 }
             }
 
@@ -246,12 +258,12 @@ pub extern "C" fn _set_source_rsvg_paint_server(
                     alternate.as_ref().unwrap(),
                     opacity,
                     current_color,
-                    );
+                );
                 had_paint_server = true;
             }
 
             drawing_ctx::release_node(c_ctx, node_ptr);
-        },
+        }
 
         PaintServer::SolidColor(color) => {
             _set_source_rsvg_solid_color(c_ctx, &color, opacity, current_color);
@@ -267,17 +279,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_spread_method () {
-        assert_eq! (PaintServerSpread::parse ("pad", ()),
-                    Ok (PaintServerSpread (cairo::enums::Extend::Pad)));
+    fn parses_spread_method() {
+        assert_eq!(
+            PaintServerSpread::parse("pad", ()),
+            Ok(PaintServerSpread(cairo::enums::Extend::Pad))
+        );
 
-        assert_eq! (PaintServerSpread::parse ("reflect", ()),
-                    Ok (PaintServerSpread (cairo::enums::Extend::Reflect)));
+        assert_eq!(
+            PaintServerSpread::parse("reflect", ()),
+            Ok(PaintServerSpread(cairo::enums::Extend::Reflect))
+        );
 
-        assert_eq! (PaintServerSpread::parse ("repeat", ()),
-                    Ok (PaintServerSpread (cairo::enums::Extend::Repeat)));
+        assert_eq!(
+            PaintServerSpread::parse("repeat", ()),
+            Ok(PaintServerSpread(cairo::enums::Extend::Repeat))
+        );
 
-        assert! (PaintServerSpread::parse ("foobar", ()).is_err ());
+        assert!(PaintServerSpread::parse("foobar", ()).is_err());
     }
 
     #[test]

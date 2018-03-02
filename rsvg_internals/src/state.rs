@@ -1,6 +1,6 @@
-use libc;
 use glib::translate::*;
 use glib_sys;
+use libc;
 use pango;
 use pango_sys;
 
@@ -20,45 +20,43 @@ pub enum UnicodeBidi {
 #[repr(C)]
 #[derive(Copy, Clone)]
 struct TextDecoration {
-    overline:  glib_sys::gboolean,
+    overline: glib_sys::gboolean,
     underline: glib_sys::gboolean,
-    strike:    glib_sys::gboolean
+    strike: glib_sys::gboolean,
 }
 
 pub struct FontDecor {
-    pub overline:  bool,
+    pub overline: bool,
     pub underline: bool,
-    pub strike:    bool,
+    pub strike: bool,
 }
 
 impl From<TextDecoration> for FontDecor {
     fn from(td: TextDecoration) -> FontDecor {
         FontDecor {
-            overline:  from_glib(td.overline),
+            overline: from_glib(td.overline),
             underline: from_glib(td.underline),
-            strike:    from_glib(td.strike),
+            strike: from_glib(td.strike),
         }
     }
 }
 
 extern "C" {
-    fn rsvg_state_get_language       (state: *const RsvgState) -> *const libc::c_char;
-    fn rsvg_state_get_unicode_bidi   (state: *const RsvgState) -> UnicodeBidi;
-    fn rsvg_state_get_text_dir       (state: *const RsvgState) -> pango_sys::PangoDirection;
-    fn rsvg_state_get_text_gravity   (state: *const RsvgState) -> pango_sys::PangoGravity;
-    fn rsvg_state_get_font_family    (state: *const RsvgState) -> *const libc::c_char;
-    fn rsvg_state_get_font_style     (state: *const RsvgState) -> pango_sys::PangoStyle;
-    fn rsvg_state_get_font_variant   (state: *const RsvgState) -> pango_sys::PangoVariant;
-    fn rsvg_state_get_font_weight    (state: *const RsvgState) -> pango_sys::PangoWeight;
-    fn rsvg_state_get_font_stretch   (state: *const RsvgState) -> pango_sys::PangoStretch;
-    fn rsvg_state_get_letter_spacing (state: *const RsvgState) -> RsvgLength;
-    fn rsvg_state_get_font_decor     (state: *const RsvgState) -> *const TextDecoration;
+    fn rsvg_state_get_language(state: *const RsvgState) -> *const libc::c_char;
+    fn rsvg_state_get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi;
+    fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
+    fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
+    fn rsvg_state_get_font_family(state: *const RsvgState) -> *const libc::c_char;
+    fn rsvg_state_get_font_style(state: *const RsvgState) -> pango_sys::PangoStyle;
+    fn rsvg_state_get_font_variant(state: *const RsvgState) -> pango_sys::PangoVariant;
+    fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
+    fn rsvg_state_get_font_stretch(state: *const RsvgState) -> pango_sys::PangoStretch;
+    fn rsvg_state_get_letter_spacing(state: *const RsvgState) -> RsvgLength;
+    fn rsvg_state_get_font_decor(state: *const RsvgState) -> *const TextDecoration;
 }
 
 pub fn get_language(state: *const RsvgState) -> Option<String> {
-    unsafe {
-        from_glib_none(rsvg_state_get_language(state))
-    }
+    unsafe { from_glib_none(rsvg_state_get_language(state)) }
 }
 
 pub fn get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi {
