@@ -161,7 +161,7 @@ opensuse:tumbleweed_release:
     - web
 
 debian:testing_release:
-  image: $DEBIAN_TESTING
+  image: $AMD64_DEBIAN_TESTING
   stage: cross_distro_amd64
   variables:
     LIBRSVG_DEBUG: "no"
