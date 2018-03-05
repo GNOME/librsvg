@@ -24,9 +24,15 @@ Version 2.42.3
   functions work again.  Now we have tests for the whole public API.
 - gitlab#143 - Minor optimizations for Gaussian blurs (Timm Bäder).
 - gitlab#201 - Minor speedups in the code to parse SVG attributes.
+- gitlab#178 - Fix some tests that failed on 32-bit machines.
 - COMPILING.md now lists our build dependencies, and has command lines
-  which you can use on openSUSE/Fedora/Debian/Ubuntu to set up a
-  development environment for librsvg (Jordan Petridis).
+  which you can use on openSUSE/Fedora/Debian/Ubuntu/MacOS to set up a
+  development environment for librsvg (Jordan Petridis, Brion Vibber).
+- gitlab#211 - Running the configure script on MacOS now works and
+  doesn't try to use -Bsymbolic for linking (Brion Vibber).
+- gitlab#In addtion to --enable-debug/--disable-debug to control the Rust
+  compilation, now you can use an environment variable
+  LIBRSVG_DEBUG=yes / LIBRSVG_DEBUG=no if you wish.
 - Code moved to Rust: SVG paint servers (Dmitry Kontsevoy), SVG
   attribute parsing.
 - We now use a Cargo workspace internally, to move more things to Rust
@@ -34,6 +40,7 @@ Version 2.42.3
 - Special thanks in this release to Jordan Petridis for MAJOR
   improvements to our Continuous Integration infrastructure, the
   repository structure, and updates to the compilation documentation.
+  Also for setting up 32-bit builds for continuous integration.
 
 Version 2.42.2
 - gitlab#193 - Don't crash when feConvolveMatrix doesn't specify

@@ -100,7 +100,7 @@ libxml2-devel libcroco-devel cairo-devel \
 pango-devel gdk-pixbuf-devel
 ```
 
-### macOS systems
+### MacOS systems
 
 Dependencies may be installed using [Homebrew](https://brew.sh) or another
 package manager.
