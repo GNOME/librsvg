@@ -5,6 +5,7 @@
 extern crate cairo;
 extern crate cairo_sys;
 extern crate cssparser;
+extern crate float_cmp;
 extern crate glib;
 extern crate glib_sys;
 extern crate itertools;
