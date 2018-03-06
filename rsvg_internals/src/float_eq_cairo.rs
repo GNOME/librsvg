@@ -36,6 +36,29 @@ impl FixedEqCairo for f64 {
     }
 }
 
+/// Checks whether two floating-point numbers are approximately equal,
+/// considering Cairo's limitations on numeric representation.
+///
+/// Cairo uses fixed-point numbers internally.  We implement this
+/// trait for `f64`, so that two numbers can be considered "close
+/// enough to equal" if their absolute difference is smaller than the
+/// smallest fixed-point fraction that Cairo can represent.
+///
+/// Note that this trait is reliable even if the given numbers are
+/// outside of the range that Cairo's fixed-point numbers can
+/// represent.
+pub trait ApproxEqCairo {
+    fn approx_eq_cairo(&self, other: &Self) -> bool;
+}
+
+impl ApproxEqCairo for f64 {
+    fn approx_eq_cairo(&self, other: &f64) -> bool {
+        let abs_diff = (self - other).abs();
+        let cairo_smallest_fraction = 1.0 / f64::from(1 << CAIRO_FIXED_FRAC_BITS);
+        abs_diff < cairo_smallest_fraction
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -47,5 +70,11 @@ mod tests {
         assert!(1.0_f64.fixed_eq_cairo(&1.001953125_f64)); // 1 + 1/512 - cairo rounds to 1
 
         assert!(!1.0_f64.fixed_eq_cairo(&1.00390625_f64)); // 1 + 1/256 - cairo can represent it
+    }
+
+    #[test]
+    fn numbers_approx_equal() {
+        assert!(0.0_f64.approx_eq_cairo(&0.001953125_f64)); // 1/512
+        assert!(1.0_f64.approx_eq_cairo(&1.001953125_f64)); // 1 + 1/512
     }
 }
