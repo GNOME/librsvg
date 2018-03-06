@@ -128,7 +128,7 @@ CARGO_TARGET_DIR=@abs_top_builddir@/target
 
 check-local:
 	cd $(srcdir) && \
-	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) cargo test
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR) cargo test $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
 
 clean-local:
 	cd $(top_srcdir) && \
