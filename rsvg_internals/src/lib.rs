@@ -143,6 +143,7 @@ mod cnode;
 mod color;
 mod drawing_ctx;
 mod error;
+mod float_eq_cairo;
 mod gradient;
 mod handle;
 mod image;
