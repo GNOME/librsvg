@@ -3,7 +3,8 @@ use glib_sys;
 
 use cairo::MatrixTrait;
 use glib::translate::*;
-use util::*;
+
+use float_eq_cairo::ApproxEqCairo;
 
 // Keep this in sync with ../../rsvg-private.h:RsvgBbox
 #[repr(C)]
@@ -20,8 +21,8 @@ impl RsvgBbox {
     }
 
     pub fn is_empty(&self) -> bool {
-        from_glib(self.virgin) || double_equals(self.rect.width, 0.0)
-            || double_equals(self.rect.height, 0.0)
+        from_glib(self.virgin) || self.rect.width.approx_eq_cairo(&0.0)
+            || self.rect.height.approx_eq_cairo(&0.0)
     }
 }
 
