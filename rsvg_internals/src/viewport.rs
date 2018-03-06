@@ -2,9 +2,8 @@ use cairo;
 use cairo::MatrixTrait;
 
 use aspect_ratio::AspectRatio;
-use drawing_ctx;
-use drawing_ctx::RsvgDrawingCtx;
-use util::*;
+use drawing_ctx::{self, RsvgDrawingCtx};
+use float_eq_cairo::ApproxEqCairo;
 use viewbox::*;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -103,7 +102,7 @@ fn in_viewport<F>(
     // https://www.w3.org/TR/SVG/struct.html#ImageElementWidthAttribute
     // https://www.w3.org/TR/SVG/painting.html#MarkerWidthAttribute
 
-    if double_equals(vw, 0.0) || double_equals(vh, 0.0) {
+    if vw.approx_eq_cairo(&0.0) || vh.approx_eq_cairo(&0.0) {
         return;
     }
 
@@ -113,7 +112,7 @@ fn in_viewport<F>(
         // the preserveAspectRatio attribute is only used if viewBox is specified
         // https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
-        if double_equals(vbox.0.width, 0.0) || double_equals(vbox.0.height, 0.0) {
+        if vbox.0.width.approx_eq_cairo(&0.0) || vbox.0.height.approx_eq_cairo(&0.0) {
             // Width or height of 0 for the viewBox disables rendering of the element
             // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
             return;
