@@ -5,6 +5,8 @@ use glib::translate::*;
 use std::f64;
 use std::f64::consts::*;
 
+use float_eq_cairo::ApproxEqCairo;
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct LargeArc(pub bool);
 
@@ -124,7 +126,7 @@ impl RsvgPathBuilder {
         let mut k5: f64;
         let n_segs: i32;
 
-        if x1 == x2 && y1 == y2 {
+        if x1.approx_eq_cairo(&x2) && y1.approx_eq_cairo(&y2) {
             return;
         }
 
@@ -140,9 +142,10 @@ impl RsvgPathBuilder {
         rx = rx.abs();
         ry = ry.abs();
 
-        // Check the radius against floading point underflow.
+        // A bit further down we divide by the square of the radii.  Check
+        // that we won't divide by zero.
         // See http://bugs.debian.org/508443
-        if (rx < f64::EPSILON) || (ry < f64::EPSILON) {
+        if ((rx * rx) < f64::EPSILON) || ((ry * ry) < f64::EPSILON) {
             self.line_to(x2, y2);
             return;
         }
@@ -161,7 +164,7 @@ impl RsvgPathBuilder {
 
         // Compute the center
         k1 = rx * rx * y1_ * y1_ + ry * ry * x1_ * x1_;
-        if k1 == 0.0 {
+        if k1.approx_eq_cairo(&0.0) {
             return;
         }
 
@@ -183,7 +186,7 @@ impl RsvgPathBuilder {
         k4 = (-y1_ - cy_) / ry;
 
         k5 = (k1 * k1 + k2 * k2).abs().sqrt();
-        if k5 == 0.0 {
+        if k5.approx_eq_cairo(&0.0) {
             return;
         }
 
@@ -196,7 +199,7 @@ impl RsvgPathBuilder {
 
         // Compute delta_theta
         k5 = ((k1 * k1 + k2 * k2) * (k3 * k3 + k4 * k4)).abs().sqrt();
-        if k5 == 0.0 {
+        if k5.approx_eq_cairo(&0.0) {
             return;
         }
 
@@ -303,4 +306,26 @@ pub extern "C" fn rsvg_path_builder_add_to_cairo_context(
     let builder: &mut RsvgPathBuilder = unsafe { &mut (*raw_builder) };
     let cr = unsafe { cairo::Context::from_glib_none(raw_cr) };
     builder.to_cairo(&cr);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn survives_degenerate_arcs() {
+        let mut builder = RsvgPathBuilder::new();
+        builder.move_to(0.0, 0.0);
+        builder.arc(
+            0.0,
+            0.0,
+            f64::EPSILON, // deliberately close to 0 to try to trigger division by 0
+            f64::EPSILON,
+            0.0,
+            LargeArc(true),
+            Sweep::Positive,
+            1.0,
+            1.0,
+        );
+    }
 }
