@@ -10,6 +10,7 @@ use attributes::Attribute;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
 use error::*;
+use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
@@ -18,7 +19,7 @@ use parsers::{parse, Parse};
 use parsers::ParseError;
 use path_builder::*;
 use property_bag::PropertyBag;
-use util::*;
+use util::utf8_cstr;
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -120,7 +121,7 @@ impl NodeMarker {
         let marker_width = self.width.get().normalize(draw_ctx);
         let marker_height = self.height.get().normalize(draw_ctx);
 
-        if double_equals(marker_width, 0.0) || double_equals(marker_height, 0.0) {
+        if marker_width.approx_eq_cairo(&0.0) || marker_height.approx_eq_cairo(&0.0) {
             // markerWidth or markerHeight set to 0 disables rendering of the element
             // https://www.w3.org/TR/SVG/painting.html#MarkerWidthAttribute
             return;
@@ -419,7 +420,7 @@ pub fn path_builder_to_segments(builder: &RsvgPathBuilder) -> Vec<Segment> {
 }
 
 fn points_equal(x1: f64, y1: f64, x2: f64, y2: f64) -> bool {
-    double_equals(x1, x2) && double_equals(y1, y2)
+    x1.approx_eq_cairo(&x2) && y1.approx_eq_cairo(&y2)
 }
 
 // If the segment has directionality, returns two vectors (v1x, v1y, v2x, v2y); otherwise,
@@ -897,7 +898,8 @@ mod parser_tests {
 #[cfg(test)]
 mod directionality_tests {
     use super::*;
-    use std::f64::consts::*;
+    use float_cmp::ApproxEq;
+    use std::f64;
 
     fn test_bisection_angle(
         expected: f64,
@@ -910,7 +912,7 @@ mod directionality_tests {
             super::angle_from_vector(incoming_vx, incoming_vy),
             super::angle_from_vector(outgoing_vx, outgoing_vy),
         );
-        assert!(double_equals(expected, bisected));
+        assert!(expected.approx_eq(&bisected, 2.0 * PI * f64::EPSILON, 1));
     }
 
     #[test]
