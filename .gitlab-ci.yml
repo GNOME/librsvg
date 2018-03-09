@@ -15,8 +15,7 @@ variables:
 stages:
   - test
   - lint
-  - cross_distro_amd64
-  - cross_distro_i386
+  - cross_distro
 
 .test_template: &distro_test
   before_script:
@@ -87,7 +86,7 @@ fedora:test_release:
 
 fedora:rawhide:
   image: $AMD64_FEDORA_LATEST
-  stage: cross_distro_amd64
+  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
@@ -100,7 +99,7 @@ fedora:rawhide:
 
 opensuse:tumbleweed:
   image: $AMD64_OPENSUSE_TUMBLEWEED
-  stage: cross_distro_amd64
+  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
@@ -113,7 +112,7 @@ opensuse:tumbleweed:
 
 debian:testing:
   image: $AMD64_DEBIAN_TESTING
-  stage: cross_distro_amd64
+  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
@@ -143,7 +142,7 @@ debian:testing:
 
 fedora:rawhide_release:
   image: $AMD64_FEDORA_LATEST
-  stage: cross_distro_amd64
+  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "no"
   <<: *distro_test
@@ -155,7 +154,7 @@ fedora:rawhide_release:
 
 opensuse:tumbleweed_release:
   image: $AMD64_OPENSUSE_TUMBLEWEED
-  stage: cross_distro_amd64
+  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "no"
   <<: *distro_test
@@ -167,7 +166,7 @@ opensuse:tumbleweed_release:
 
 debian:testing_release:
   image: $AMD64_DEBIAN_TESTING
-  stage: cross_distro_amd64
+  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "no"
   <<: *distro_test
@@ -182,7 +181,7 @@ debian:testing_release:
 
 debian:testing_i386:
   image: $I386_DEBIAN_TESTING
-  stage: cross_distro_i386
+  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
@@ -198,7 +197,7 @@ debian:testing_i386:
 
 debian:testing_release_i386:
   image: $I386_DEBIAN_TESTING
-  stage: cross_distro_i386
+  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "no"
   <<: *distro_test
