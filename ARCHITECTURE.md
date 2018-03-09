@@ -112,3 +112,44 @@ rendering functions.  It carries the vtable for rendering in the
 `state` field, and other values which are changed as rendering
 progresses.
 
+# Comparing floating-point numbers
+
+Librsvg sometimes needs to compute things like "are these points
+equal?" or "did this computed result equal this test reference
+number?".
+
+We use `f64` numbers in Rust, and `double` numbers in C, for all
+computations on real numbers.  These types cannot be simply compared
+with `==` effectively, since it doesn't work when the numbers are
+slightly different due to numerical inaccuracies.
+
+Similarly, we don't `assert_eq!(a, b)` for floating-point numbers.
+
+Most of the time we are dealing with coordinates which will get passed
+to Cairo.  In turn, Cairo converts them from doubles to a fixed-point
+representation (as of March 2018, Cairo uses 24.8 fixnums with 24 bits of
+integral part and 8 bits of fractional part).
+
+So, we can consider two numbers to be "equal" if they would be represented
+as the same fixed-point value by Cairo.  Librsvg implements this in
+the [`ApproxEqCairo` trait][ApproxEqCairo] trait.  You can use it like
+this:
+
+```rust
+use float_eq_cairo::ApproxEqCairo; // bring the trait into scope
+
+let a: f64 = ...;
+let b: f64 = ...;
+
+if a.approx_eq_cairo(&b) { // not a == b
+    ... // equal!
+}
+
+assert!(1.0_f64.approx_eq_cairo(&1.001953125_f64)); // 1 + 1/512 - cairo rounds to 1
+```
+
+As of March 2018 this is not implemented for the C code; the hope is
+that we will move all that code to Rust and we'll be able to do this
+kind of approximate comparisons there.
+
+[ApproxEqCairo]: rsvg_internals/src/float_eq_cairo.rs
