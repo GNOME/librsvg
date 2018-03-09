@@ -2,6 +2,7 @@ use cairo;
 use libc;
 
 use std::cell::RefCell;
+use std::f64;
 use std::rc::*;
 
 use cairo::MatrixTrait;
@@ -13,12 +14,12 @@ use bbox::*;
 use coord_units::CoordUnits;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
+use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
-use util::*;
 use viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
@@ -352,7 +353,7 @@ fn set_pattern_on_draw_context(
     let scaled_width = pattern_width * bbwscale;
     let scaled_height = pattern_height * bbhscale;
 
-    if scaled_width.abs() < DBL_EPSILON || scaled_height.abs() < DBL_EPSILON || pw < 1 || ph < 1 {
+    if scaled_width.abs() < f64::EPSILON || scaled_height.abs() < f64::EPSILON || pw < 1 || ph < 1 {
         return false;
     }
 
@@ -414,7 +415,7 @@ fn set_pattern_on_draw_context(
         pushed_view_box = false;
     }
 
-    if scwscale != 1.0 || schscale != 1.0 {
+    if !scwscale.approx_eq_cairo(&1.0) || !schscale.approx_eq_cairo(&1.0) {
         let mut scalematrix = cairo::Matrix::identity();
         scalematrix.scale(scwscale, schscale);
         caffine = cairo::Matrix::multiply(&caffine, &scalematrix);

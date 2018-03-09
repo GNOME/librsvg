@@ -107,6 +107,10 @@ It is perfectly fine to [ask the maintainer][maintainer] if you have
 questions about the Autotools setup; it's a tricky bit of machinery,
 and we are glad to help.
 
+Please read the file [`ARCHITECTURE.md`][arch]; this describes the
+overall flow of the source code, so hopefully it will be easier for
+you to navigate.
+
 ### Testing changes
 
 The most direct way to test a change is to have an example SVG file
@@ -150,3 +154,4 @@ the future.  Of course all help is appreciated!
 [tests-readme]: tests/README.md
 [rsvg-bench]: https://gitlab.gnome.org/federico/rsvg-bench
 [rsvg-rs]: https://github.com/selaux/rsvg-rs
+[arch]: ARCHITECTURE.md

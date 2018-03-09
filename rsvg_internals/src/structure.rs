@@ -10,12 +10,12 @@ use aspect_ratio::*;
 use attributes::Attribute;
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
+use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
 use node::*;
 use parsers::{parse, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
-use util::*;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -306,7 +306,7 @@ impl NodeTrait for NodeUse {
 
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
-        if double_equals(nw, 0.0) || double_equals(nh, 0.0) {
+        if nw.approx_eq_cairo(&0.0) || nh.approx_eq_cairo(&0.0) {
             drawing_ctx::release_node(draw_ctx, raw_child);
             return;
         }
