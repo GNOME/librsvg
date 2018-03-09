@@ -1,3 +1,5 @@
+use float_cmp::ApproxEq;
+
 // The following are copied from cairo/src/{cairo-fixed-private.h, cairo-fixed-type-private.h}
 
 const CAIRO_FIXED_FRAC_BITS: u64 = 8;
@@ -46,16 +48,17 @@ impl FixedEqCairo for f64 {
 ///
 /// Note that this trait is reliable even if the given numbers are
 /// outside of the range that Cairo's fixed-point numbers can
-/// represent.
-pub trait ApproxEqCairo {
+/// represent.  In that case, we check for the absolute difference,
+/// and finally allow a difference of 1 unit-in-the-last-place (ULP)
+/// for very large f64 values.
+pub trait ApproxEqCairo: ApproxEq {
     fn approx_eq_cairo(&self, other: &Self) -> bool;
 }
 
 impl ApproxEqCairo for f64 {
     fn approx_eq_cairo(&self, other: &f64) -> bool {
-        let abs_diff = (self - other).abs();
         let cairo_smallest_fraction = 1.0 / f64::from(1 << CAIRO_FIXED_FRAC_BITS);
-        abs_diff < cairo_smallest_fraction
+        self.approx_eq(other, cairo_smallest_fraction, 1)
     }
 }
 
@@ -74,7 +77,45 @@ mod tests {
 
     #[test]
     fn numbers_approx_equal() {
-        assert!(0.0_f64.approx_eq_cairo(&0.001953125_f64)); // 1/512
-        assert!(1.0_f64.approx_eq_cairo(&1.001953125_f64)); // 1 + 1/512
+        // 0 == 1/256 - cairo can represent it, so not equal
+        assert!(!0.0_f64.approx_eq_cairo(&0.00390635_f64));
+
+        // 1 == 1 + 1/256 - cairo can represent it, so not equal
+        assert!(!1.0_f64.approx_eq_cairo(&1.00390635_f64));
+
+        // 0 == 1/256 - cairo can represent it, so not equal
+        assert!(!0.0_f64.approx_eq_cairo(&-0.00390635_f64));
+
+        // 1 == 1 - 1/256 - cairo can represent it, so not equal
+        assert!(!1.0_f64.approx_eq_cairo(&0.99609365_f64));
+
+        // 0 == 1/512 - cairo approximates to 0, so equal
+        assert!(0.0_f64.approx_eq_cairo(&0.001953125_f64));
+
+        // 1 == 1 + 1/512 - cairo approximates to 1, so equal
+        assert!(1.0_f64.approx_eq_cairo(&1.001953125_f64));
+
+        // 0 == -1/512 - cairo approximates to 0, so equal
+        assert!(0.0_f64.approx_eq_cairo(&-0.001953125_f64));
+
+        // 1 == 1 - 1/512 - cairo approximates to 1, so equal
+        assert!(1.0_f64.approx_eq_cairo(&0.998046875_f64));
+
+        // This is 2^53 compared to (2^53 + 2).  When represented as
+        // f64, they are 1 unit-in-the-last-place (ULP) away from each
+        // other, since the mantissa has 53 bits (52 bits plus 1
+        // "hidden" bit).  The first number is an exact double, and
+        // the second one is the next biggest double.  We consider a
+        // difference of 1 ULP to mean that numbers are "equal", to
+        // account for slight imprecision in floating-point
+        // calculations.  Most of the time, for small values, we will
+        // be using the cairo_smallest_fraction from the
+        // implementation of approx_eq_cairo() above.  For large
+        // values, we want the ULPs.
+        //
+        // In the second assertion, we compare 2^53 with (2^53 + 4).  Those are
+        // 2 ULPs away, and we don't consider them equal.
+        assert!(9_007_199_254_740_992.0.approx_eq_cairo(&9_007_199_254_740_994.0));
+        assert!(!9_007_199_254_740_992.0.approx_eq_cairo(&9_007_199_254_740_996.0));
     }
 }
