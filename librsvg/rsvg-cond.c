@@ -123,19 +123,16 @@ rsvg_cond_parse_system_language (const char *value)
 
     if (elems && nb_elems) {
         const gchar * const *languages;
-        const gchar *lang = NULL;
 
         languages = g_get_language_names ();
 
-        if (languages)
-            lang = languages[0];
-
-        if (lang) {
-            guint i;
+        if (languages) {
+            guint i, j;
 
             for (i = 0; (i < nb_elems) && !permitted; i++) {
-                if (rsvg_locale_compare (lang, elems[i]))
-                    permitted = TRUE;
+                for (j = 0; languages[j] && !permitted; j++) {
+                    permitted = rsvg_locale_compare (languages[j], elems[i]);
+                }
             }
         }
 
