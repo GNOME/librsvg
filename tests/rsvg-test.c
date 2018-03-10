@@ -362,6 +362,9 @@ main (int argc, char **argv)
 {
     int result;
 
+    /* For systemLanguage attribute tests */
+    g_setenv ("LANGUAGE", "de:en_US", TRUE);
+
     g_test_init (&argc, &argv, NULL);
 
     if (argc < 2) {
