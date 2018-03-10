@@ -111,10 +111,10 @@ impl NodeTrait for NodeImage {
             let aspect = self.aspect.get();
 
             if !drawing_ctx::state_is_overflow(state) {
-                if let Align::Aligned {
+                if let Some(Align {
                     fit: FitMode::Slice,
                     ..
-                } = aspect.align
+                }) = aspect.align
                 {
                     drawing_ctx::add_clipping_rect(draw_ctx, x, y, w, h);
                 }
