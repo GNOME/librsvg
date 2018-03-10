@@ -122,37 +122,21 @@ rsvg_cond_parse_system_language (const char *value)
     elems = rsvg_css_parse_list (value, &nb_elems);
 
     if (elems && nb_elems) {
-        guint i;
-        gchar *locale = NULL;
+        const gchar * const *languages;
+        const gchar *lang = NULL;
 
-#if defined(G_OS_WIN32)
-        if (!locale)
-            locale = g_win32_getlocale ();
-#endif
+        languages = g_get_language_names ();
 
-        if (!locale)
-            locale = g_strdup (g_getenv ("LANG"));
+        if (languages)
+            lang = languages[0];
 
-#if defined(HAVE_LC_MESSAGES)
-        if (!locale)
-            locale = g_strdup (setlocale (LC_MESSAGES, NULL));
-#endif
+        if (lang) {
+            guint i;
 
-        if (!locale)
-            locale = g_strdup (setlocale (LC_ALL, NULL));
-
-        if (!locale || strcmp (locale, "C") == 0) {
-            g_free (locale);
-            locale = g_strdup ("en");
-        }
-
-        if (locale) {
             for (i = 0; (i < nb_elems) && !permitted; i++) {
-                if (rsvg_locale_compare (locale, elems[i]))
+                if (rsvg_locale_compare (lang, elems[i]))
                     permitted = TRUE;
             }
-
-            g_free (locale);
         }
 
         g_strfreev (elems);
