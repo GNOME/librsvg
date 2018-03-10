@@ -117,16 +117,13 @@ rsvg_cond_parse_system_language (const char *value)
 {
     guint nb_elems = 0;
     char **elems;
-    gboolean permitted = TRUE;
+    gboolean permitted = FALSE;
 
     elems = rsvg_css_parse_list (value, &nb_elems);
 
     if (elems && nb_elems) {
         guint i;
         gchar *locale = NULL;
-
-        /* we're required to be pessimistic until we hit a language we recognize */
-        permitted = FALSE;
 
 #if defined(G_OS_WIN32)
         if (!locale)
@@ -159,8 +156,7 @@ rsvg_cond_parse_system_language (const char *value)
         }
 
         g_strfreev (elems);
-    } else
-        permitted = FALSE;
+    }
 
     return permitted;
 }
