@@ -150,6 +150,32 @@ pub fn pop_view_box(draw_ctx: *const RsvgDrawingCtx) {
     }
 }
 
+pub fn get_acquired_node(draw_ctx: *const RsvgDrawingCtx, url: &str) -> Option<AcquiredNode> {
+    let raw_node = unsafe { rsvg_drawing_ctx_acquire_node(draw_ctx, str::to_glib_none(url).0) };
+
+    if raw_node.is_null() {
+        None
+    } else {
+        Some(AcquiredNode(draw_ctx, raw_node))
+    }
+}
+
+pub fn get_acquired_node_of_type(
+    draw_ctx: *const RsvgDrawingCtx,
+    url: &str,
+    node_type: NodeType,
+) -> Option<AcquiredNode> {
+    let raw_node = unsafe {
+        rsvg_drawing_ctx_acquire_node_of_type(draw_ctx, str::to_glib_none(url).0, node_type)
+    };
+
+    if raw_node.is_null() {
+        None
+    } else {
+        Some(AcquiredNode(draw_ctx, raw_node))
+    }
+}
+
 pub fn acquire_node(draw_ctx: *const RsvgDrawingCtx, url: &str) -> *mut RsvgNode {
     unsafe { rsvg_drawing_ctx_acquire_node(draw_ctx, str::to_glib_none(url).0) }
 }
@@ -331,4 +357,18 @@ pub fn state_get_current_color(state: *const RsvgState) -> Color {
     let argb = unsafe { rsvg_state_get_current_color(state) };
 
     Color::from(argb)
+}
+
+pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);
+
+impl Drop for AcquiredNode {
+    fn drop(&mut self) {
+        release_node(self.0, self.1);
+    }
+}
+
+impl AcquiredNode {
+    pub fn get(&self) -> RsvgNode {
+        unsafe { (*self.1).clone() }
+    }
 }
