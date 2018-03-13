@@ -408,6 +408,7 @@ impl FallbackSource for NodeFallbackSource {
         if !(node.get_type() == NodeType::LinearGradient
             || node.get_type() == NodeType::RadialGradient)
         {
+            drawing_ctx::release_node(self.draw_ctx, fallback_node);
             return None;
         }
 
