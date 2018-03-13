@@ -111,7 +111,6 @@ impl NodeMarker {
     fn render(
         &self,
         node: &RsvgNode,
-        c_node: *const RsvgNode,
         draw_ctx: *const RsvgDrawingCtx,
         xpos: f64,
         ypos: f64,
@@ -168,7 +167,7 @@ impl NodeMarker {
 
         let state = drawing_ctx::get_current_state(draw_ctx);
         drawing_ctx::state_reinit(state);
-        drawing_ctx::state_reconstruct(state, c_node);
+        drawing_ctx::state_reconstruct(state, node as *const RsvgNode);
 
         drawing_ctx::set_current_state_affine(draw_ctx, affine);
 
@@ -614,7 +613,6 @@ fn emit_marker_by_name(
     node.with_impl(|marker: &NodeMarker| {
         marker.render(
             node,
-            c_node,
             draw_ctx,
             xpos,
             ypos,
