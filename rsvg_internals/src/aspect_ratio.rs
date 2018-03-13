@@ -3,13 +3,14 @@
 //! This module handles `preserveAspectRatio` values [per the SVG specification][spec].
 //! We have an [`AspectRatio`] struct which encapsulates such a value.
 //!
-//! ```
+//! ```ignore
 //! assert_eq!(
 //!     AspectRatio::parse("xMidYMid", ()),
 //!     Ok(AspectRatio {
 //!         defer: false,
 //!         align: Some(Align {
-//!             align: AlignMode::XmidYmid,
+//!             x: Align1D::Mid,
+//!             y: Align1D::Mid,
 //!             fit: FitMode::Meet,
 //!         }),
 //!     })
@@ -36,46 +37,33 @@ enum FitMode {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum AlignMode {
-    XminYmin,
-    XmidYmin,
-    XmaxYmin,
-    XminYmid,
-    XmidYmid,
-    XmaxYmid,
-    XminYmax,
-    XmidYmax,
-    XmaxYmax,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct Align {
-    align: AlignMode,
+    x: Align1D,
+    y: Align1D,
     fit: FitMode,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum Align1D {
     Min,
     Mid,
     Max,
 }
 
-fn align_1d(a: Align1D, dest_pos: f64, dest_size: f64, obj_size: f64) -> f64 {
-    match a {
-        Align1D::Min => dest_pos,
-        Align1D::Mid => dest_pos + (dest_size - obj_size) / 2.0,
-        Align1D::Max => dest_pos + dest_size - obj_size,
+impl Align1D {
+    fn compute(self, dest_pos: f64, dest_size: f64, obj_size: f64) -> f64 {
+        match self {
+            Align1D::Min => dest_pos,
+            Align1D::Mid => dest_pos + (dest_size - obj_size) / 2.0,
+            Align1D::Max => dest_pos + dest_size - obj_size,
+        }
     }
 }
 
 impl AspectRatio {
     pub fn is_slice(&self) -> bool {
         match self.align {
-            Some(Align {
-                fit: FitMode::Slice,
-                ..
-            }) => true,
+            Some(Align { fit: FitMode::Slice, .. }) => true,
 
             _ => false,
         }
@@ -93,67 +81,19 @@ impl AspectRatio {
         match self.align {
             None => (dest_x, dest_y, dest_width, dest_height),
 
-            Some(Align { align, fit }) => {
+            Some(Align { x, y, fit }) => {
                 let w_factor = dest_width / object_width;
                 let h_factor = dest_height / object_height;
-                let factor: f64;
-
-                match fit {
-                    FitMode::Meet => {
-                        factor = w_factor.min(h_factor);
-                    }
-                    FitMode::Slice => {
-                        factor = w_factor.max(h_factor);
-                    }
-                }
+                let factor = match fit {
+                    FitMode::Meet => w_factor.min(h_factor),
+                    FitMode::Slice => w_factor.max(h_factor),
+                };
 
                 let w = object_width * factor;
                 let h = object_height * factor;
 
-                let xalign: Align1D;
-                let yalign: Align1D;
-
-                match align {
-                    AlignMode::XminYmin => {
-                        xalign = Align1D::Min;
-                        yalign = Align1D::Min;
-                    }
-                    AlignMode::XminYmid => {
-                        xalign = Align1D::Min;
-                        yalign = Align1D::Mid;
-                    }
-                    AlignMode::XminYmax => {
-                        xalign = Align1D::Min;
-                        yalign = Align1D::Max;
-                    }
-                    AlignMode::XmidYmin => {
-                        xalign = Align1D::Mid;
-                        yalign = Align1D::Min;
-                    }
-                    AlignMode::XmidYmid => {
-                        xalign = Align1D::Mid;
-                        yalign = Align1D::Mid;
-                    }
-                    AlignMode::XmidYmax => {
-                        xalign = Align1D::Mid;
-                        yalign = Align1D::Max;
-                    }
-                    AlignMode::XmaxYmin => {
-                        xalign = Align1D::Max;
-                        yalign = Align1D::Min;
-                    }
-                    AlignMode::XmaxYmid => {
-                        xalign = Align1D::Max;
-                        yalign = Align1D::Mid;
-                    }
-                    AlignMode::XmaxYmax => {
-                        xalign = Align1D::Max;
-                        yalign = Align1D::Max;
-                    }
-                }
-
-                let xpos = align_1d(xalign, dest_x, dest_width, w);
-                let ypos = align_1d(yalign, dest_y, dest_height, h);
+                let xpos = x.compute(dest_x, dest_width, w);
+                let ypos = y.compute(dest_y, dest_height, h);
 
                 (xpos, ypos, w, h)
             }
@@ -165,39 +105,64 @@ impl Default for AspectRatio {
     fn default() -> AspectRatio {
         AspectRatio {
             defer: false,
-            align: Some(Align {
-                align: AlignMode::XmidYmid,
-                fit: FitMode::Meet,
-            }),
+            align: Some(Align::default()),
         }
     }
 }
 
-fn parse_align(s: &str) -> Result<Option<AlignMode>, AttributeError> {
-    match s {
-        "none" => Ok(None),
-
-        "xMinYMin" => Ok(Some(AlignMode::XminYmin)),
-        "xMidYMin" => Ok(Some(AlignMode::XmidYmin)),
-        "xMaxYMin" => Ok(Some(AlignMode::XmaxYmin)),
-
-        "xMinYMid" => Ok(Some(AlignMode::XminYmid)),
-        "xMidYMid" => Ok(Some(AlignMode::XmidYmid)),
-        "xMaxYMid" => Ok(Some(AlignMode::XmaxYmid)),
-
-        "xMinYMax" => Ok(Some(AlignMode::XminYmax)),
-        "xMidYMax" => Ok(Some(AlignMode::XmidYmax)),
-        "xMaxYMax" => Ok(Some(AlignMode::XmaxYmax)),
-
-        _ => Err(make_err()),
+impl Default for FitMode {
+    fn default() -> FitMode {
+        FitMode::Meet
     }
 }
 
-fn parse_fit_mode(s: &str) -> Result<FitMode, AttributeError> {
-    match s {
-        "meet" => Ok(FitMode::Meet),
-        "slice" => Ok(FitMode::Slice),
-        _ => Err(make_err()),
+impl Default for Align {
+    fn default() -> Align {
+        Align {
+            x: Align1D::Mid,
+            y: Align1D::Mid,
+            fit: FitMode::default(),
+        }
+    }
+}
+
+impl Align {
+    fn parse(s: &str) -> Result<Option<Align>, AttributeError> {
+        match s {
+            "none" => Ok(None),
+
+            "xMinYMin" => Ok(Some((Align1D::Min, Align1D::Min))),
+            "xMidYMin" => Ok(Some((Align1D::Mid, Align1D::Min))),
+            "xMaxYMin" => Ok(Some((Align1D::Max, Align1D::Min))),
+
+            "xMinYMid" => Ok(Some((Align1D::Min, Align1D::Mid))),
+            "xMidYMid" => Ok(Some((Align1D::Mid, Align1D::Mid))),
+            "xMaxYMid" => Ok(Some((Align1D::Max, Align1D::Mid))),
+
+            "xMinYMax" => Ok(Some((Align1D::Min, Align1D::Max))),
+            "xMidYMax" => Ok(Some((Align1D::Mid, Align1D::Max))),
+            "xMaxYMax" => Ok(Some((Align1D::Max, Align1D::Max))),
+
+            _ => Err(make_err()),
+        }.map(|xy| {
+            xy.map(|(x, y)| {
+                Align {
+                    x,
+                    y,
+                    fit: FitMode::default(),
+                }
+            })
+        })
+    }
+}
+
+impl FitMode {
+    fn parse(s: &str) -> Result<FitMode, AttributeError> {
+        match s {
+            "meet" => Ok(FitMode::Meet),
+            "slice" => Ok(FitMode::Slice),
+            _ => Err(make_err()),
+        }
     }
 }
 
@@ -220,7 +185,7 @@ impl Parse for AspectRatio {
 
     fn parse(s: &str, _: ()) -> Result<AspectRatio, AttributeError> {
         let mut defer = false;
-        let mut align = Some(AlignMode::XmidYmid);
+        let mut align = Some(Align::default());
         let mut fit_mode = FitMode::Meet;
 
         let mut state = ParseState::Defer;
@@ -232,18 +197,18 @@ impl Parse for AspectRatio {
                         defer = true;
                         state = ParseState::Align;
                     } else {
-                        align = parse_align(v)?;
+                        align = Align::parse(v)?;
                         state = ParseState::Fit;
                     }
                 }
 
                 ParseState::Align => {
-                    align = parse_align(v)?;
+                    align = Align::parse(v)?;
                     state = ParseState::Fit;
                 }
 
                 ParseState::Fit => {
-                    fit_mode = parse_fit_mode(v)?;
+                    fit_mode = FitMode::parse(v)?;
                     state = ParseState::Finished;
                 }
 
@@ -267,8 +232,9 @@ impl Parse for AspectRatio {
             defer,
             align: match align {
                 None => None,
-                Some(align_mode) => Some(Align {
-                    align: align_mode,
+                Some(Align { x, y, .. }) => Some(Align {
+                    x,
+                    y,
                     fit: fit_mode,
                 }),
             },
@@ -314,7 +280,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: false,
                 align: Some(Align {
-                    align: AlignMode::XmidYmid,
+                    x: Align1D::Mid,
+                    y: Align1D::Mid,
                     fit: FitMode::Meet,
                 }),
             })
@@ -325,7 +292,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
-                    align: AlignMode::XmidYmid,
+                    x: Align1D::Mid,
+                    y: Align1D::Mid,
                     fit: FitMode::Meet,
                 }),
             })
@@ -336,7 +304,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
-                    align: AlignMode::XminYmax,
+                    x: Align1D::Min,
+                    y: Align1D::Max,
                     fit: FitMode::Meet,
                 }),
             })
@@ -347,7 +316,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
-                    align: AlignMode::XmaxYmid,
+                    x: Align1D::Max,
+                    y: Align1D::Mid,
                     fit: FitMode::Meet,
                 }),
             })
@@ -358,7 +328,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
-                    align: AlignMode::XminYmax,
+                    x: Align1D::Min,
+                    y: Align1D::Max,
                     fit: FitMode::Slice,
                 }),
             })
@@ -374,7 +345,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (0.0, 0.0, 0.1, 1.0)
         );
@@ -385,7 +356,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (0.0, 0.0, 10.0, 100.0)
         );
@@ -397,7 +368,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (0.0, 0.0, 0.1, 1.0)
         );
@@ -408,7 +379,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (0.0, -49.5, 10.0, 100.0)
         );
@@ -420,7 +391,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (0.0, 0.0, 0.1, 1.0)
         );
@@ -431,7 +402,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (0.0, -99.0, 10.0, 100.0)
         );
@@ -443,7 +414,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (4.95, 0.0, 0.1, 1.0)
         );
@@ -454,7 +425,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (0.0, 0.0, 10.0, 100.0)
         );
@@ -466,7 +437,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (4.95, 0.0, 0.1, 1.0)
         );
@@ -477,7 +448,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (0.0, -49.5, 10.0, 100.0)
         );
@@ -489,7 +460,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (4.95, 0.0, 0.1, 1.0)
         );
@@ -500,7 +471,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (0.0, -99.0, 10.0, 100.0)
         );
@@ -512,7 +483,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (9.9, 0.0, 0.1, 1.0)
         );
@@ -523,7 +494,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (0.0, 0.0, 10.0, 100.0)
         );
@@ -535,7 +506,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (9.9, 0.0, 0.1, 1.0)
         );
@@ -546,7 +517,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (0.0, -49.5, 10.0, 100.0)
         );
@@ -558,7 +529,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (9.9, 0.0, 0.1, 1.0)
         );
@@ -569,7 +540,7 @@ mod tests {
                 0.0,
                 0.0,
                 10.0,
-                1.0
+                1.0,
             ),
             (0.0, -99.0, 10.0, 100.0)
         );
