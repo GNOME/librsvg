@@ -1,0 +1,3 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="10" width="90" height="90" fill="none" stroke="black" stroke-dasharray="20,40,-20"/>
+</svg>

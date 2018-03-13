@@ -172,6 +172,9 @@ set_stroke_dasharray(cairo_t *cr, RsvgDrawingCtx *ctx, RsvgStrokeDasharray *dash
     int i;
 
     switch (dash->kind) {
+    case RSVG_STROKE_DASHARRAY_ERROR:
+        /* fall through */
+        /* FIXME: we should not get an erroneous dasharray here, but the style parsing code does not currently handle errors */
     case RSVG_STROKE_DASHARRAY_NONE:
         cairo_set_dash (cr, NULL, 0, 0.0);
         break;
@@ -202,7 +205,6 @@ set_stroke_dasharray(cairo_t *cr, RsvgDrawingCtx *ctx, RsvgStrokeDasharray *dash
         g_free(dashes);
         break;
 
-    case RSVG_STROKE_DASHARRAY_ERROR:
     default:
         g_assert_not_reached ();
         break;
