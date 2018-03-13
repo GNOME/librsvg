@@ -400,7 +400,8 @@ fn parse_dash_array(s: &str) -> Result<Vec<RsvgLength>, AttributeError> {
         // split at whitespace
         .flat_map(|slice| slice.split_whitespace())
         // parse it into an RsvgLength
-        .map(|d| RsvgLength::parse(d, LengthDir::Both))
+        .map(|d| RsvgLength::parse(d, LengthDir::Both)
+             .and_then(|l| l.check_nonnegative()))
         // collect into a Result<Vec<T>, E>.
         // it will short-circuit iteslf upon the first error encountered
         // like if you returned from a for-loop
@@ -705,6 +706,14 @@ mod tests {
         assert_eq!(parse_dash_array("3.1415926,8").unwrap(), sample_5);
         assert_eq!(parse_dash_array("5, 3.14").unwrap(), sample_6);
         assert_eq!(parse_dash_array("2").unwrap(), sample_7);
+
+        // Negative numbers
+        assert_eq!(
+            parse_dash_array("20,40,-20"),
+            Err(AttributeError::Value(String::from(
+                "value must be non-negative"
+            )))
+        );
 
         // Empty dash_array
         assert_eq!(
