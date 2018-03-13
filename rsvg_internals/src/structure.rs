@@ -281,9 +281,10 @@ impl NodeTrait for NodeUse {
         }
 
         let child: &RsvgNode = unsafe { &*raw_child };
+        drawing_ctx::release_node(draw_ctx, raw_child);
+
         if Node::is_ancestor(node.clone(), child.clone()) {
             // or, if we're <use>'ing ourselves
-            drawing_ctx::release_node(draw_ctx, raw_child);
             return;
         }
 
@@ -326,7 +327,6 @@ impl NodeTrait for NodeUse {
             drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 1);
             rsvg_node_unref(boxed_child);
 
-            drawing_ctx::release_node(draw_ctx, raw_child);
             drawing_ctx::pop_discrete_layer(draw_ctx);
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
@@ -352,8 +352,6 @@ impl NodeTrait for NodeUse {
                     },
                 );
             });
-
-            drawing_ctx::release_node(draw_ctx, raw_child);
         }
     }
 
