@@ -8,8 +8,7 @@ use cairo::MatrixTrait;
 use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
-use drawing_ctx;
-use drawing_ctx::RsvgDrawingCtx;
+use drawing_ctx::{self, AcquiredNode, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use length::*;
 use node::*;
@@ -376,45 +375,42 @@ fn resolve_gradient(gradient: &Gradient, fallback_source: &mut FallbackSource) -
 
 struct NodeFallbackSource {
     draw_ctx: *mut RsvgDrawingCtx,
-    acquired_nodes: Vec<*mut RsvgNode>,
+    acquired_nodes: Vec<AcquiredNode>,
 }
 
 impl NodeFallbackSource {
     fn new(draw_ctx: *mut RsvgDrawingCtx) -> NodeFallbackSource {
         NodeFallbackSource {
             draw_ctx,
-            acquired_nodes: Vec::<*mut RsvgNode>::new(),
+            acquired_nodes: Vec::new(),
         }
     }
 }
 
+// Vec does not guarantee the order in which elements are dropped.
+// Here, we really want them to be dropped in the reverse order in
+// which we inserted them.
 impl Drop for NodeFallbackSource {
     fn drop(&mut self) {
-        while let Some(node) = self.acquired_nodes.pop() {
-            drawing_ctx::release_node(self.draw_ctx, node);
-        }
+        while let Some(_) = self.acquired_nodes.pop() {}
     }
 }
 
 impl FallbackSource for NodeFallbackSource {
     fn get_fallback(&mut self, name: &str) -> Option<RsvgNode> {
-        let fallback_node = drawing_ctx::acquire_node(self.draw_ctx, name);
+        drawing_ctx::get_acquired_node(self.draw_ctx, name).and_then(|acquired| {
+            let node = acquired.get();
 
-        if fallback_node.is_null() {
-            return None;
-        }
+            if node.get_type() == NodeType::LinearGradient
+                || node.get_type() == NodeType::RadialGradient
+            {
+                self.acquired_nodes.push(acquired);
 
-        let node: &RsvgNode = unsafe { &*fallback_node };
-        if !(node.get_type() == NodeType::LinearGradient
-            || node.get_type() == NodeType::RadialGradient)
-        {
-            drawing_ctx::release_node(self.draw_ctx, fallback_node);
-            return None;
-        }
-
-        self.acquired_nodes.push(fallback_node);
-
-        Some(node.clone())
+                Some(node)
+            } else {
+                None
+            }
+        })
     }
 }
 
