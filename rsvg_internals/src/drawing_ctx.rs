@@ -176,24 +176,6 @@ pub fn get_acquired_node_of_type(
     }
 }
 
-pub fn acquire_node(draw_ctx: *const RsvgDrawingCtx, url: &str) -> *mut RsvgNode {
-    unsafe { rsvg_drawing_ctx_acquire_node(draw_ctx, str::to_glib_none(url).0) }
-}
-
-pub fn acquire_node_of_type(
-    draw_ctx: *const RsvgDrawingCtx,
-    url: &str,
-    node_type: NodeType,
-) -> *mut RsvgNode {
-    unsafe { rsvg_drawing_ctx_acquire_node_of_type(draw_ctx, str::to_glib_none(url).0, node_type) }
-}
-
-pub fn release_node(draw_ctx: *const RsvgDrawingCtx, node: *mut RsvgNode) {
-    unsafe {
-        rsvg_drawing_ctx_release_node(draw_ctx, node);
-    }
-}
-
 pub fn state_reinherit_top(draw_ctx: *const RsvgDrawingCtx, state: *mut RsvgState, dominate: i32) {
     unsafe {
         rsvg_state_reinherit_top(draw_ctx, state, dominate);
@@ -363,7 +345,9 @@ pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);
 
 impl Drop for AcquiredNode {
     fn drop(&mut self) {
-        release_node(self.0, self.1);
+        unsafe {
+            rsvg_drawing_ctx_release_node(self.0, self.1);
+        }
     }
 }
 
