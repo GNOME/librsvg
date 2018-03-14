@@ -8,10 +8,10 @@
 //!     AspectRatio::parse("xMidYMid", ()),
 //!     Ok(AspectRatio {
 //!         defer: false,
-//!         align: Align::Aligned {
+//!         align: Some(Align {
 //!             align: AlignMode::XmidYmid,
 //!             fit: FitMode::Meet,
-//!         },
+//!         }),
 //!     })
 //! );
 //! ```
@@ -24,13 +24,19 @@ use parsers::Parse;
 use parsers::ParseError;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum FitMode {
+pub struct AspectRatio {
+    defer: bool,
+    align: Option<Align>,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum FitMode {
     Meet,
     Slice,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum AlignMode {
+enum AlignMode {
     XminYmin,
     XmidYmin,
     XmaxYmin,
@@ -43,15 +49,9 @@ pub enum AlignMode {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Align {
-    None,
-    Aligned { align: AlignMode, fit: FitMode },
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct AspectRatio {
-    pub defer: bool,
-    pub align: Align,
+struct Align {
+    align: AlignMode,
+    fit: FitMode,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -70,6 +70,17 @@ fn align_1d(a: Align1D, dest_pos: f64, dest_size: f64, obj_size: f64) -> f64 {
 }
 
 impl AspectRatio {
+    pub fn is_slice(&self) -> bool {
+        match self.align {
+            Some(Align {
+                fit: FitMode::Slice,
+                ..
+            }) => true,
+
+            _ => false
+        }
+    }
+
     pub fn compute(
         &self,
         object_width: f64,
@@ -80,9 +91,9 @@ impl AspectRatio {
         dest_height: f64,
     ) -> (f64, f64, f64, f64) {
         match self.align {
-            Align::None => (dest_x, dest_y, dest_width, dest_height),
+            None => (dest_x, dest_y, dest_width, dest_height),
 
-            Align::Aligned { align, fit } => {
+            Some(Align { align, fit }) => {
                 let w_factor = dest_width / object_width;
                 let h_factor = dest_height / object_height;
                 let factor: f64;
@@ -150,72 +161,43 @@ impl AspectRatio {
     }
 }
 
-impl Default for Align {
-    fn default() -> Align {
-        Align::Aligned {
-            align: AlignMode::XmidYmid,
-            fit: FitMode::Meet,
-        }
-    }
-}
-
 impl Default for AspectRatio {
     fn default() -> AspectRatio {
         AspectRatio {
             defer: false,
-            align: Default::default(),
+            align: Some(Align {
+                align: AlignMode::XmidYmid,
+                fit: FitMode::Meet,
+            }),
         }
     }
 }
 
-fn parse_align_mode(s: &str) -> Option<Align> {
+fn parse_align(s: &str) -> Result<Option<AlignMode>, AttributeError> {
     match s {
-        "none" => Some(Align::None),
-        "xMinYMin" => Some(Align::Aligned {
-            align: AlignMode::XminYmin,
-            fit: FitMode::Meet,
-        }),
-        "xMidYMin" => Some(Align::Aligned {
-            align: AlignMode::XmidYmin,
-            fit: FitMode::Meet,
-        }),
-        "xMaxYMin" => Some(Align::Aligned {
-            align: AlignMode::XmaxYmin,
-            fit: FitMode::Meet,
-        }),
-        "xMinYMid" => Some(Align::Aligned {
-            align: AlignMode::XminYmid,
-            fit: FitMode::Meet,
-        }),
-        "xMidYMid" => Some(Align::Aligned {
-            align: AlignMode::XmidYmid,
-            fit: FitMode::Meet,
-        }),
-        "xMaxYMid" => Some(Align::Aligned {
-            align: AlignMode::XmaxYmid,
-            fit: FitMode::Meet,
-        }),
-        "xMinYMax" => Some(Align::Aligned {
-            align: AlignMode::XminYmax,
-            fit: FitMode::Meet,
-        }),
-        "xMidYMax" => Some(Align::Aligned {
-            align: AlignMode::XmidYmax,
-            fit: FitMode::Meet,
-        }),
-        "xMaxYMax" => Some(Align::Aligned {
-            align: AlignMode::XmaxYmax,
-            fit: FitMode::Meet,
-        }),
-        _ => None,
+        "none" => Ok(None),
+
+        "xMinYMin" => Ok(Some(AlignMode::XminYmin)),
+        "xMidYMin" => Ok(Some(AlignMode::XmidYmin)),
+        "xMaxYMin" => Ok(Some(AlignMode::XmaxYmin)),
+
+        "xMinYMid" => Ok(Some(AlignMode::XminYmid)),
+        "xMidYMid" => Ok(Some(AlignMode::XmidYmid)),
+        "xMaxYMid" => Ok(Some(AlignMode::XmaxYmid)),
+
+        "xMinYMax" => Ok(Some(AlignMode::XminYmax)),
+        "xMidYMax" => Ok(Some(AlignMode::XmidYmax)),
+        "xMaxYMax" => Ok(Some(AlignMode::XmaxYmax)),
+
+        _ => Err(make_err()),
     }
 }
 
-fn parse_fit_mode(s: &str) -> Option<FitMode> {
+fn parse_fit_mode(s: &str) -> Result<FitMode, AttributeError> {
     match s {
-        "meet" => Some(FitMode::Meet),
-        "slice" => Some(FitMode::Slice),
-        _ => None,
+        "meet" => Ok(FitMode::Meet),
+        "slice" => Ok(FitMode::Slice),
+        _ => Err(make_err()),
     }
 }
 
@@ -238,7 +220,7 @@ impl Parse for AspectRatio {
 
     fn parse(s: &str, _: ()) -> Result<AspectRatio, AttributeError> {
         let mut defer = false;
-        let mut align: Align = Default::default();
+        let mut align = Some(AlignMode::XmidYmid);
         let mut fit_mode = FitMode::Meet;
 
         let mut state = ParseState::Defer;
@@ -249,31 +231,21 @@ impl Parse for AspectRatio {
                     if v == "defer" {
                         defer = true;
                         state = ParseState::Align;
-                    } else if let Some(parsed_align) = parse_align_mode(v) {
-                        align = parsed_align;
-                        state = ParseState::Fit;
                     } else {
-                        return Err(make_err());
+                        align = parse_align(v)?;
+                        state = ParseState::Fit;
                     }
-                }
+                },
 
                 ParseState::Align => {
-                    if let Some(parsed_align) = parse_align_mode(v) {
-                        align = parsed_align;
-                        state = ParseState::Fit;
-                    } else {
-                        return Err(make_err());
-                    }
-                }
+                    align = parse_align(v)?;
+                    state = ParseState::Fit;
+                },
 
                 ParseState::Fit => {
-                    if let Some(parsed_fit) = parse_fit_mode(v) {
-                        fit_mode = parsed_fit;
-                        state = ParseState::Finished;
-                    } else {
-                        return Err(make_err());
-                    }
-                }
+                    fit_mode = parse_fit_mode(v)?;
+                    state = ParseState::Finished;
+                },
 
                 _ => {
                     return Err(make_err());
@@ -294,11 +266,11 @@ impl Parse for AspectRatio {
         Ok(AspectRatio {
             defer,
             align: match align {
-                Align::None => Align::None,
-                Align::Aligned { align, .. } => Align::Aligned {
-                    align,
+                None => None,
+                Some(align_mode) => Some(Align {
+                    align: align_mode,
                     fit: fit_mode,
-                },
+                }),
             },
         })
     }
@@ -333,7 +305,7 @@ mod tests {
             AspectRatio::parse("defer none", ()),
             Ok(AspectRatio {
                 defer: true,
-                align: Align::None,
+                align: None,
             })
         );
 
@@ -341,10 +313,10 @@ mod tests {
             AspectRatio::parse("xMidYMid", ()),
             Ok(AspectRatio {
                 defer: false,
-                align: Align::Aligned {
+                align: Some(Align {
                     align: AlignMode::XmidYmid,
                     fit: FitMode::Meet,
-                },
+                }),
             })
         );
 
@@ -352,10 +324,10 @@ mod tests {
             AspectRatio::parse("defer xMidYMid", ()),
             Ok(AspectRatio {
                 defer: true,
-                align: Align::Aligned {
+                align: Some(Align {
                     align: AlignMode::XmidYmid,
                     fit: FitMode::Meet,
-                },
+                }),
             })
         );
 
@@ -363,10 +335,10 @@ mod tests {
             AspectRatio::parse("defer xMinYMax", ()),
             Ok(AspectRatio {
                 defer: true,
-                align: Align::Aligned {
+                align: Some(Align {
                     align: AlignMode::XminYmax,
                     fit: FitMode::Meet,
-                },
+                }),
             })
         );
 
@@ -374,10 +346,10 @@ mod tests {
             AspectRatio::parse("defer xMaxYMid meet", ()),
             Ok(AspectRatio {
                 defer: true,
-                align: Align::Aligned {
+                align: Some(Align {
                     align: AlignMode::XmaxYmid,
                     fit: FitMode::Meet,
-                },
+                }),
             })
         );
 
@@ -385,10 +357,10 @@ mod tests {
             AspectRatio::parse("defer xMinYMax slice", ()),
             Ok(AspectRatio {
                 defer: true,
-                align: Align::Aligned {
+                align: Some(Align {
                     align: AlignMode::XminYmax,
                     fit: FitMode::Slice,
-                },
+                }),
             })
         );
     }
