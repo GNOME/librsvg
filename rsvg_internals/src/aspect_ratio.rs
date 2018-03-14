@@ -179,7 +179,7 @@ impl Default for AspectRatio {
     }
 }
 
-fn parse_align_mode(s: &str) -> Result<Option<Align>, ()> {
+fn parse_align_mode(s: &str) -> Result<Option<Align>, AttributeError> {
     match s {
         "none" => Ok(None),
         "xMinYMin" => Ok(Some(Align {
@@ -218,15 +218,15 @@ fn parse_align_mode(s: &str) -> Result<Option<Align>, ()> {
             align: AlignMode::XmaxYmax,
             fit: FitMode::Meet,
         })),
-        _ => Err(()), // FIXME: Proper error type
+        _ => Err(make_err()),
     }
 }
 
-fn parse_fit_mode(s: &str) -> Option<FitMode> {
+fn parse_fit_mode(s: &str) -> Result<FitMode, AttributeError> {
     match s {
-        "meet" => Some(FitMode::Meet),
-        "slice" => Some(FitMode::Slice),
-        _ => None,
+        "meet" => Ok(FitMode::Meet),
+        "slice" => Ok(FitMode::Slice),
+        _ => Err(make_err()),
     }
 }
 
@@ -260,31 +260,21 @@ impl Parse for AspectRatio {
                     if v == "defer" {
                         defer = true;
                         state = ParseState::Align;
-                    } else if let Ok(parsed_align) = parse_align_mode(v) {
-                        align = parsed_align;
-                        state = ParseState::Fit;
                     } else {
-                        return Err(make_err());
+                        align = parse_align_mode(v)?;
+                        state = ParseState::Fit;
                     }
-                }
+                },
 
                 ParseState::Align => {
-                    if let Ok(parsed_align) = parse_align_mode(v) {
-                        align = parsed_align;
-                        state = ParseState::Fit;
-                    } else {
-                        return Err(make_err());
-                    }
-                }
+                    align = parse_align_mode(v)?;
+                    state = ParseState::Fit;
+                },
 
                 ParseState::Fit => {
-                    if let Some(parsed_fit) = parse_fit_mode(v) {
-                        fit_mode = parsed_fit;
-                        state = ParseState::Finished;
-                    } else {
-                        return Err(make_err());
-                    }
-                }
+                    fit_mode = parse_fit_mode(v)?;
+                    state = ParseState::Finished;
+                },
 
                 _ => {
                     return Err(make_err());
