@@ -70,6 +70,17 @@ fn align_1d(a: Align1D, dest_pos: f64, dest_size: f64, obj_size: f64) -> f64 {
 }
 
 impl AspectRatio {
+    pub fn is_slice(&self) -> bool {
+        match self.align {
+            Some(Align {
+                fit: FitMode::Slice,
+                ..
+            }) => true,
+
+            _ => false
+        }
+    }
+
     pub fn compute(
         &self,
         object_width: f64,
