@@ -77,7 +77,7 @@ impl AspectRatio {
                 ..
             }) => true,
 
-            _ => false
+            _ => false,
         }
     }
 
@@ -235,17 +235,17 @@ impl Parse for AspectRatio {
                         align = parse_align(v)?;
                         state = ParseState::Fit;
                     }
-                },
+                }
 
                 ParseState::Align => {
                     align = parse_align(v)?;
                     state = ParseState::Fit;
-                },
+                }
 
                 ParseState::Fit => {
                     fit_mode = parse_fit_mode(v)?;
                     state = ParseState::Finished;
-                },
+                }
 
                 _ => {
                     return Err(make_err());
