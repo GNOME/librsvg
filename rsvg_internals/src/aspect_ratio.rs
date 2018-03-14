@@ -45,6 +45,12 @@ struct Align {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+struct AlignXY {
+    x: Align1D,
+    y: Align1D,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum Align1D {
     Min,
     Mid,
@@ -64,7 +70,10 @@ impl Align1D {
 impl AspectRatio {
     pub fn is_slice(&self) -> bool {
         match self.align {
-            Some(Align { fit: FitMode::Slice, .. }) => true,
+            Some(Align {
+                fit: FitMode::Slice,
+                ..
+            }) => true,
 
             _ => false,
         }
@@ -104,23 +113,21 @@ impl AspectRatio {
     fn parse_input<'i, 't>(p: &mut Parser<'i, 't>) -> Result<AspectRatio, ()> {
         let defer = p.try(|p| p.expect_ident_matching("defer")).is_ok();
 
-        let mut align = p.try(|p| {
-            p.expect_ident().map_err(|_| ()).and_then(
-                |ident| Align::parse(ident),
-            )
+        let align_xy = p.try(|p| {
+            p.expect_ident()
+                .map_err(|_| ())
+                .and_then(|ident| AlignXY::parse(ident))
         })?;
 
-        let fit_mode = p.try(|p| {
-            p.expect_ident().map_err(|_| ()).and_then(|ident| {
-                FitMode::parse(ident)
-            })
-        });
+        let fit = p.try(|p| {
+            p.expect_ident()
+                .map_err(|_| ())
+                .and_then(|ident| FitMode::parse(ident))
+        }).unwrap_or(FitMode::default());
 
         p.expect_exhausted().map_err(|_| ())?;
 
-        if let Some(Align { ref mut fit, .. }) = align {
-            *fit = fit_mode.unwrap_or(FitMode::default());
-        }
+        let align = align_xy.map(|AlignXY { x: x, y: y }| Align { x, y, fit });
 
         Ok(AspectRatio { defer, align })
     }
@@ -151,35 +158,27 @@ impl Default for Align {
     }
 }
 
-impl Align {
-    fn parse(s: &str) -> Result<Option<Align>, ()> {
-        let xy = match s {
+impl AlignXY {
+    fn parse(s: &str) -> Result<Option<AlignXY>, ()> {
+        use self::Align1D::*;
+
+        match s {
             "none" => Ok(None),
 
-            "xMinYMin" => Ok(Some((Align1D::Min, Align1D::Min))),
-            "xMidYMin" => Ok(Some((Align1D::Mid, Align1D::Min))),
-            "xMaxYMin" => Ok(Some((Align1D::Max, Align1D::Min))),
+            "xMinYMin" => Ok(Some(AlignXY { x: Min, y: Min })),
+            "xMidYMin" => Ok(Some(AlignXY { x: Mid, y: Min })),
+            "xMaxYMin" => Ok(Some(AlignXY { x: Max, y: Min })),
 
-            "xMinYMid" => Ok(Some((Align1D::Min, Align1D::Mid))),
-            "xMidYMid" => Ok(Some((Align1D::Mid, Align1D::Mid))),
-            "xMaxYMid" => Ok(Some((Align1D::Max, Align1D::Mid))),
+            "xMinYMid" => Ok(Some(AlignXY { x: Min, y: Mid })),
+            "xMidYMid" => Ok(Some(AlignXY { x: Mid, y: Mid })),
+            "xMaxYMid" => Ok(Some(AlignXY { x: Max, y: Mid })),
 
-            "xMinYMax" => Ok(Some((Align1D::Min, Align1D::Max))),
-            "xMidYMax" => Ok(Some((Align1D::Mid, Align1D::Max))),
-            "xMaxYMax" => Ok(Some((Align1D::Max, Align1D::Max))),
+            "xMinYMax" => Ok(Some(AlignXY { x: Min, y: Max })),
+            "xMidYMax" => Ok(Some(AlignXY { x: Mid, y: Max })),
+            "xMaxYMax" => Ok(Some(AlignXY { x: Max, y: Max })),
 
             _ => Err(()),
-        }?;
-
-        let align = xy.map(|(x, y)| {
-            Align {
-                x,
-                y,
-                fit: FitMode::default(),
-            }
-        });
-
-        Ok(align)
+        }
     }
 }
 
