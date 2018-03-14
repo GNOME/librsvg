@@ -345,21 +345,33 @@ impl Gradient {
     }
 }
 
-trait FallbackSource {
-    fn get_fallback(&mut self, name: &str) -> Option<RsvgNode>;
+fn acquire_gradient(draw_ctx: *mut RsvgDrawingCtx, name: &str) -> Option<AcquiredNode> {
+    drawing_ctx::get_acquired_node(draw_ctx, name)
+        .and_then(|acquired| {  // FIXME: replace with .filter() once Option.filter() becomes stable
+            let node = acquired.get();
+            if node.get_type() == NodeType::LinearGradient
+                || node.get_type() == NodeType::RadialGradient
+            {
+                Some(acquired)
+            } else {
+                None
+            }
+        })
 }
 
-fn resolve_gradient(gradient: &Gradient, fallback_source: &mut FallbackSource) -> Gradient {
+fn resolve_gradient(gradient: &Gradient, draw_ctx: *mut RsvgDrawingCtx) -> Gradient {
     let mut result = gradient.clone();
 
     while !result.is_resolved() {
-        let mut opt_fallback: Option<RsvgNode> = None;
+        let mut opt_fallback: Option<AcquiredNode> = None;
 
         if let Some(ref fallback_name) = result.common.fallback {
-            opt_fallback = fallback_source.get_fallback(&**fallback_name);
+            opt_fallback = acquire_gradient(draw_ctx, fallback_name);
         }
 
-        if let Some(fallback_node) = opt_fallback {
+        if let Some(fallback_acquired) = opt_fallback {
+            let fallback_node = fallback_acquired.get();
+
             fallback_node.with_impl(|i: &NodeGradient| {
                 let fallback_gradient = i.get_gradient_with_color_stops_from_node(&fallback_node);
                 result.resolve_from_fallback(&fallback_gradient)
@@ -371,47 +383,6 @@ fn resolve_gradient(gradient: &Gradient, fallback_source: &mut FallbackSource) -
     }
 
     result
-}
-
-struct NodeFallbackSource {
-    draw_ctx: *mut RsvgDrawingCtx,
-    acquired_nodes: Vec<AcquiredNode>,
-}
-
-impl NodeFallbackSource {
-    fn new(draw_ctx: *mut RsvgDrawingCtx) -> NodeFallbackSource {
-        NodeFallbackSource {
-            draw_ctx,
-            acquired_nodes: Vec::new(),
-        }
-    }
-}
-
-// Vec does not guarantee the order in which elements are dropped.
-// Here, we really want them to be dropped in the reverse order in
-// which we inserted them.
-impl Drop for NodeFallbackSource {
-    fn drop(&mut self) {
-        while let Some(_) = self.acquired_nodes.pop() {}
-    }
-}
-
-impl FallbackSource for NodeFallbackSource {
-    fn get_fallback(&mut self, name: &str) -> Option<RsvgNode> {
-        drawing_ctx::get_acquired_node(self.draw_ctx, name).and_then(|acquired| {
-            let node = acquired.get();
-
-            if node.get_type() == NodeType::LinearGradient
-                || node.get_type() == NodeType::RadialGradient
-            {
-                self.acquired_nodes.push(acquired);
-
-                Some(node)
-            } else {
-                None
-            }
-        })
-    }
 }
 
 fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
@@ -714,13 +685,11 @@ fn resolve_fallbacks_and_set_pattern(
     opacity: u8,
     bbox: &RsvgBbox,
 ) -> bool {
-    let mut fallback_source = NodeFallbackSource::new(draw_ctx);
-
     if bbox.is_empty() {
         return true;
     }
 
-    let resolved = resolve_gradient(gradient, &mut fallback_source);
+    let resolved = resolve_gradient(gradient, draw_ctx);
 
     set_pattern_on_draw_context(&resolved, draw_ctx, opacity, bbox)
 }
