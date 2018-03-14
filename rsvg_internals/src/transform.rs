@@ -41,12 +41,12 @@ fn parse_transform_list(s: &str) -> Result<cairo::Matrix, AttributeError> {
     let mut matrix = cairo::Matrix::identity();
 
     loop {
-        let m = parse_transform_command(&mut parser)?;
-        matrix = cairo::Matrix::multiply(&m, &matrix);
-
         if parser.is_exhausted() {
             break;
         }
+
+        let m = parse_transform_command(&mut parser)?;
+        matrix = cairo::Matrix::multiply(&m, &matrix);
 
         optional_comma(&mut parser);
     }
@@ -417,5 +417,10 @@ mod parser_tests {
             parse_transform("translate(20, 30), scale (10) rotate (30 10 10)").unwrap(),
             cairo::Matrix::multiply(&r, &a)
         );
+    }
+
+    #[test]
+    fn parses_empty() {
+        assert_eq!(parse_transform("").unwrap(), cairo::Matrix::identity());
     }
 }
