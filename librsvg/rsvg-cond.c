@@ -117,50 +117,27 @@ rsvg_cond_parse_system_language (const char *value)
 {
     guint nb_elems = 0;
     char **elems;
-    gboolean permitted = TRUE;
+    gboolean permitted = FALSE;
 
     elems = rsvg_css_parse_list (value, &nb_elems);
 
     if (elems && nb_elems) {
-        guint i;
-        gchar *locale = NULL;
+        const gchar * const *languages;
 
-        /* we're required to be pessimistic until we hit a language we recognize */
-        permitted = FALSE;
+        languages = g_get_language_names ();
 
-#if defined(G_OS_WIN32)
-        if (!locale)
-            locale = g_win32_getlocale ();
-#endif
+        if (languages) {
+            guint i, j;
 
-        if (!locale)
-            locale = g_strdup (g_getenv ("LANG"));
-
-#if defined(HAVE_LC_MESSAGES)
-        if (!locale)
-            locale = g_strdup (setlocale (LC_MESSAGES, NULL));
-#endif
-
-        if (!locale)
-            locale = g_strdup (setlocale (LC_ALL, NULL));
-
-        if (!locale || strcmp (locale, "C") == 0) {
-            g_free (locale);
-            locale = g_strdup ("en");
-        }
-
-        if (locale) {
             for (i = 0; (i < nb_elems) && !permitted; i++) {
-                if (rsvg_locale_compare (locale, elems[i]))
-                    permitted = TRUE;
+                for (j = 0; languages[j] && !permitted; j++) {
+                    permitted = rsvg_locale_compare (languages[j], elems[i]);
+                }
             }
-
-            g_free (locale);
         }
 
         g_strfreev (elems);
-    } else
-        permitted = FALSE;
+    }
 
     return permitted;
 }

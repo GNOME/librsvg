@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="10" height="10">
+  <switch allowReorder="yes" id="switch1">
+    <rect systemLanguage="it" fill="chartreuse" id="rect1" width="10" height="10" />
+    <rect systemLanguage="en" fill="tomato" id="rect2" width="10" height="10" />
+    <rect fill="blue" id="rect3" width="10" height="10" />
+  </switch>
+</svg>
