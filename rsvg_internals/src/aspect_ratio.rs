@@ -20,6 +20,7 @@
 //! [`AspectRatio`]: struct.AspectRatio.html
 //! [spec]: https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
+use cssparser::{Parser, ParserInput};
 use error::*;
 use parsers::Parse;
 use parsers::ParseError;
@@ -99,6 +100,30 @@ impl AspectRatio {
             }
         }
     }
+
+    fn parse_input<'i, 't>(p: &mut Parser<'i, 't>) -> Result<AspectRatio, ()> {
+        let defer = p.try(|p| p.expect_ident_matching("defer")).is_ok();
+
+        let mut align = p.try(|p| {
+            p.expect_ident().map_err(|_| ()).and_then(
+                |ident| Align::parse(ident),
+            )
+        })?;
+
+        let fit_mode = p.try(|p| {
+            p.expect_ident().map_err(|_| ()).and_then(|ident| {
+                FitMode::parse(ident)
+            })
+        });
+
+        p.expect_exhausted().map_err(|_| ())?;
+
+        if let Some(Align { ref mut fit, .. }) = align {
+            *fit = fit_mode.unwrap_or(FitMode::default());
+        }
+
+        Ok(AspectRatio { defer, align })
+    }
 }
 
 impl Default for AspectRatio {
@@ -127,8 +152,8 @@ impl Default for Align {
 }
 
 impl Align {
-    fn parse(s: &str) -> Result<Option<Align>, AttributeError> {
-        match s {
+    fn parse(s: &str) -> Result<Option<Align>, ()> {
+        let xy = match s {
             "none" => Ok(None),
 
             "xMinYMin" => Ok(Some((Align1D::Min, Align1D::Min))),
@@ -143,40 +168,29 @@ impl Align {
             "xMidYMax" => Ok(Some((Align1D::Mid, Align1D::Max))),
             "xMaxYMax" => Ok(Some((Align1D::Max, Align1D::Max))),
 
-            _ => Err(make_err()),
-        }.map(|xy| {
-            xy.map(|(x, y)| {
-                Align {
-                    x,
-                    y,
-                    fit: FitMode::default(),
-                }
-            })
-        })
+            _ => Err(()),
+        }?;
+
+        let align = xy.map(|(x, y)| {
+            Align {
+                x,
+                y,
+                fit: FitMode::default(),
+            }
+        });
+
+        Ok(align)
     }
 }
 
 impl FitMode {
-    fn parse(s: &str) -> Result<FitMode, AttributeError> {
+    fn parse(s: &str) -> Result<FitMode, ()> {
         match s {
             "meet" => Ok(FitMode::Meet),
             "slice" => Ok(FitMode::Slice),
-            _ => Err(make_err()),
+            _ => Err(()),
         }
     }
-}
-
-enum ParseState {
-    Defer,
-    Align,
-    Fit,
-    Finished,
-}
-
-fn make_err() -> AttributeError {
-    AttributeError::Parse(ParseError::new(
-        "expected \"[defer] <align> [meet | slice]\"",
-    ))
 }
 
 impl Parse for AspectRatio {
@@ -184,60 +198,11 @@ impl Parse for AspectRatio {
     type Err = AttributeError;
 
     fn parse(s: &str, _: ()) -> Result<AspectRatio, AttributeError> {
-        let mut defer = false;
-        let mut align = Some(Align::default());
-        let mut fit_mode = FitMode::Meet;
-
-        let mut state = ParseState::Defer;
-
-        for v in s.split_whitespace() {
-            match state {
-                ParseState::Defer => {
-                    if v == "defer" {
-                        defer = true;
-                        state = ParseState::Align;
-                    } else {
-                        align = Align::parse(v)?;
-                        state = ParseState::Fit;
-                    }
-                }
-
-                ParseState::Align => {
-                    align = Align::parse(v)?;
-                    state = ParseState::Fit;
-                }
-
-                ParseState::Fit => {
-                    fit_mode = FitMode::parse(v)?;
-                    state = ParseState::Finished;
-                }
-
-                _ => {
-                    return Err(make_err());
-                }
-            }
-        }
-
-        // The string must match "[defer] <align> [meet | slice]".
-        // Since the meet|slice is optional, we can end up in either
-        // of the following states:
-        match state {
-            ParseState::Fit | ParseState::Finished => {}
-            _ => {
-                return Err(make_err());
-            }
-        }
-
-        Ok(AspectRatio {
-            defer,
-            align: match align {
-                None => None,
-                Some(Align { x, y, .. }) => Some(Align {
-                    x,
-                    y,
-                    fit: fit_mode,
-                }),
-            },
+        let mut input = ParserInput::new(s);
+        AspectRatio::parse_input(&mut Parser::new(&mut input)).map_err(|_| {
+            AttributeError::Parse(ParseError::new(
+                "expected \"[defer] <align> [meet | slice]\"",
+            ))
         })
     }
 }
