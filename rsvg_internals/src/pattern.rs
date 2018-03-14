@@ -41,7 +41,9 @@ struct Pattern {
     pub width: Option<RsvgLength>,
     pub height: Option<RsvgLength>,
 
-    // Point back to our corresponding node, or to the fallback node which has children
+    // Point back to our corresponding node, or to the fallback node which has children.
+    // If the value is None, it means we are fully resolved and didn't find any children
+    // among the fallbacks.
     pub node: Option<Weak<Node>>,
 }
 
@@ -61,17 +63,6 @@ impl Default for Pattern {
             width: Some(RsvgLength::default()),
             height: Some(RsvgLength::default()),
             node: None,
-        }
-    }
-}
-
-fn node_has_children(node: &Option<Weak<Node>>) -> bool {
-    match *node {
-        None => false,
-
-        Some(ref weak) => {
-            let strong_node = &weak.clone().upgrade().unwrap();
-            strong_node.has_children()
         }
     }
 }
@@ -120,15 +111,22 @@ impl Pattern {
         self.units.is_some() && self.content_units.is_some() && self.vbox.is_some()
             && self.preserve_aspect_ratio.is_some() && self.affine.is_some()
             && self.x.is_some() && self.y.is_some() && self.width.is_some()
-            && self.height.is_some() && node_has_children(&self.node)
+            && self.height.is_some() && self.children_are_resolved()
+    }
+
+    fn children_are_resolved(&self) -> bool {
+        if let Some(ref weak) = self.node {
+            let strong_node = &weak.clone().upgrade().unwrap();
+            strong_node.has_children()
+        } else {
+            // We are an empty pattern; there is nothing further that
+            // can be resolved for children.
+            true
+        }
     }
 
     fn resolve_from_defaults(&mut self) {
         self.resolve_from_fallback(&Pattern::default());
-
-        if !node_has_children(&self.node) {
-            self.node = None;
-        }
     }
 
     fn resolve_from_fallback(&mut self, fallback: &Pattern) {
@@ -144,8 +142,12 @@ impl Pattern {
 
         self.fallback = fallback.fallback.clone();
 
-        if !node_has_children(&self.node) {
-            self.node = fallback.node.clone();
+        if !self.children_are_resolved() {
+            if fallback.node.is_some() {
+                self.node = fallback.node.clone();
+            } else {
+                self.node = None;
+            }
         }
     }
 }
@@ -259,7 +261,9 @@ fn set_pattern_on_draw_context(
 ) -> bool {
     assert!(pattern.is_resolved());
 
-    if !node_has_children(&pattern.node) {
+    if pattern.node.is_none() {
+        // This means we didn't find any children among the fallbacks,
+        // so there is nothing to render.
         return false;
     }
 
@@ -464,4 +468,17 @@ pub fn pattern_resolve_fallbacks_and_set_pattern(
     });
 
     did_set_pattern
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pattern_resolved_from_defaults_is_really_resolved() {
+        let mut pat = Pattern::unresolved();
+
+        pat.resolve_from_defaults();
+        assert!(pat.is_resolved());
+    }
 }
