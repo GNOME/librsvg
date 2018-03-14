@@ -275,13 +275,13 @@ impl NodeTrait for NodeUse {
             return;
         }
 
-        let raw_child = drawing_ctx::acquire_node(draw_ctx, link.as_ref().unwrap());
-        if raw_child.is_null() {
+        let child = if let Some(acquired) =
+            drawing_ctx::get_acquired_node(draw_ctx, link.as_ref().unwrap())
+        {
+            acquired.get()
+        } else {
             return;
-        }
-
-        let child: &RsvgNode = unsafe { &*raw_child };
-        drawing_ctx::release_node(draw_ctx, raw_child);
+        };
 
         if Node::is_ancestor(node.clone(), child.clone()) {
             // or, if we're <use>'ing ourselves
@@ -308,7 +308,6 @@ impl NodeTrait for NodeUse {
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
         if nw.approx_eq_cairo(&0.0) || nh.approx_eq_cairo(&0.0) {
-            drawing_ctx::release_node(draw_ctx, raw_child);
             return;
         }
 
