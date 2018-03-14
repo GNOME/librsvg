@@ -24,13 +24,19 @@ use parsers::Parse;
 use parsers::ParseError;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum FitMode {
+pub struct AspectRatio {
+    defer: bool,
+    align: Option<Align>,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum FitMode {
     Meet,
     Slice,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum AlignMode {
+enum AlignMode {
     XminYmin,
     XmidYmin,
     XmaxYmin,
@@ -43,15 +49,9 @@ pub enum AlignMode {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Align {
+struct Align {
     align: AlignMode,
-    pub fit: FitMode,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct AspectRatio {
-    pub defer: bool,
-    pub align: Option<Align>,
+    fit: FitMode,
 }
 
 #[derive(Debug, Copy, Clone)]
