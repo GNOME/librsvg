@@ -346,40 +346,41 @@ impl Gradient {
 }
 
 fn acquire_gradient(draw_ctx: *mut RsvgDrawingCtx, name: &str) -> Option<AcquiredNode> {
-    drawing_ctx::get_acquired_node(draw_ctx, name)
-        .and_then(|acquired| {  // FIXME: replace with .filter() once Option.filter() becomes stable
-            let node = acquired.get();
-            if node.get_type() == NodeType::LinearGradient
-                || node.get_type() == NodeType::RadialGradient
-            {
-                Some(acquired)
-            } else {
-                None
-            }
-        })
+    drawing_ctx::get_acquired_node(draw_ctx, name).and_then(|acquired| {
+        // FIXME: replace with .filter() once Option.filter() becomes stable
+        let node = acquired.get();
+        if node.get_type() == NodeType::LinearGradient
+            || node.get_type() == NodeType::RadialGradient
+        {
+            Some(acquired)
+        } else {
+            None
+        }
+    })
 }
 
 fn resolve_gradient(gradient: &Gradient, draw_ctx: *mut RsvgDrawingCtx) -> Gradient {
     let mut result = gradient.clone();
 
     while !result.is_resolved() {
-        let mut opt_fallback: Option<AcquiredNode> = None;
+        result
+            .common
+            .fallback
+            .as_ref()
+            .and_then(|fallback_name| acquire_gradient(draw_ctx, fallback_name))
+            .and_then(|acquired| {
+                let fallback_node = acquired.get();
 
-        if let Some(ref fallback_name) = result.common.fallback {
-            opt_fallback = acquire_gradient(draw_ctx, fallback_name);
-        }
-
-        if let Some(fallback_acquired) = opt_fallback {
-            let fallback_node = fallback_acquired.get();
-
-            fallback_node.with_impl(|i: &NodeGradient| {
-                let fallback_gradient = i.get_gradient_with_color_stops_from_node(&fallback_node);
-                result.resolve_from_fallback(&fallback_gradient)
+                fallback_node.with_impl(|i: &NodeGradient| {
+                    let fallback_grad = i.get_gradient_with_color_stops_from_node(&fallback_node);
+                    result.resolve_from_fallback(&fallback_grad)
+                });
+                Some(())
+            })
+            .or_else(|| {
+                result.resolve_from_defaults();
+                Some(())
             });
-        } else {
-            result.resolve_from_defaults();
-            break;
-        }
     }
 
     result
@@ -712,4 +713,20 @@ pub fn gradient_resolve_fallbacks_and_set_pattern(
     });
 
     did_set_gradient
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn gradient_resolved_from_defaults_is_really_resolved() {
+        let mut gradient = Gradient {
+            common: GradientCommon::unresolved(),
+            variant: GradientVariant::unresolved_linear(),
+        };
+
+        gradient.resolve_from_defaults();
+        assert!(gradient.is_resolved());
+    }
 }
