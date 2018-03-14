@@ -161,20 +161,14 @@ impl AspectRatio {
     }
 }
 
-impl Default for Align {
-    fn default() -> Self {
-        Align {
-            align: AlignMode::XmidYmid,
-            fit: FitMode::Meet,
-        }
-    }
-}
-
 impl Default for AspectRatio {
     fn default() -> AspectRatio {
         AspectRatio {
             defer: false,
-            align: Some(Align::default()),
+            align: Some(Align {
+                align: AlignMode::XmidYmid,
+                fit: FitMode::Meet,
+            }),
         }
     }
 }
