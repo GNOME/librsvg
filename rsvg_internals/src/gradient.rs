@@ -8,8 +8,7 @@ use cairo::MatrixTrait;
 use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
-use drawing_ctx;
-use drawing_ctx::RsvgDrawingCtx;
+use drawing_ctx::{self, AcquiredNode, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use length::*;
 use node::*;
@@ -346,75 +345,45 @@ impl Gradient {
     }
 }
 
-trait FallbackSource {
-    fn get_fallback(&mut self, name: &str) -> Option<RsvgNode>;
+fn acquire_gradient(draw_ctx: *mut RsvgDrawingCtx, name: &str) -> Option<AcquiredNode> {
+    drawing_ctx::get_acquired_node(draw_ctx, name).and_then(|acquired| {
+        // FIXME: replace with .filter() once Option.filter() becomes stable
+        let node = acquired.get();
+        if node.get_type() == NodeType::LinearGradient
+            || node.get_type() == NodeType::RadialGradient
+        {
+            Some(acquired)
+        } else {
+            None
+        }
+    })
 }
 
-fn resolve_gradient(gradient: &Gradient, fallback_source: &mut FallbackSource) -> Gradient {
+fn resolve_gradient(gradient: &Gradient, draw_ctx: *mut RsvgDrawingCtx) -> Gradient {
     let mut result = gradient.clone();
 
     while !result.is_resolved() {
-        let mut opt_fallback: Option<RsvgNode> = None;
+        result
+            .common
+            .fallback
+            .as_ref()
+            .and_then(|fallback_name| acquire_gradient(draw_ctx, fallback_name))
+            .and_then(|acquired| {
+                let fallback_node = acquired.get();
 
-        if let Some(ref fallback_name) = result.common.fallback {
-            opt_fallback = fallback_source.get_fallback(&**fallback_name);
-        }
-
-        if let Some(fallback_node) = opt_fallback {
-            fallback_node.with_impl(|i: &NodeGradient| {
-                let fallback_gradient = i.get_gradient_with_color_stops_from_node(&fallback_node);
-                result.resolve_from_fallback(&fallback_gradient)
+                fallback_node.with_impl(|i: &NodeGradient| {
+                    let fallback_grad = i.get_gradient_with_color_stops_from_node(&fallback_node);
+                    result.resolve_from_fallback(&fallback_grad)
+                });
+                Some(())
+            })
+            .or_else(|| {
+                result.resolve_from_defaults();
+                Some(())
             });
-        } else {
-            result.resolve_from_defaults();
-            break;
-        }
     }
 
     result
-}
-
-struct NodeFallbackSource {
-    draw_ctx: *mut RsvgDrawingCtx,
-    acquired_nodes: Vec<*mut RsvgNode>,
-}
-
-impl NodeFallbackSource {
-    fn new(draw_ctx: *mut RsvgDrawingCtx) -> NodeFallbackSource {
-        NodeFallbackSource {
-            draw_ctx,
-            acquired_nodes: Vec::<*mut RsvgNode>::new(),
-        }
-    }
-}
-
-impl Drop for NodeFallbackSource {
-    fn drop(&mut self) {
-        while let Some(node) = self.acquired_nodes.pop() {
-            drawing_ctx::release_node(self.draw_ctx, node);
-        }
-    }
-}
-
-impl FallbackSource for NodeFallbackSource {
-    fn get_fallback(&mut self, name: &str) -> Option<RsvgNode> {
-        let fallback_node = drawing_ctx::acquire_node(self.draw_ctx, name);
-
-        if fallback_node.is_null() {
-            return None;
-        }
-
-        let node: &RsvgNode = unsafe { &*fallback_node };
-        if !(node.get_type() == NodeType::LinearGradient
-            || node.get_type() == NodeType::RadialGradient)
-        {
-            return None;
-        }
-
-        self.acquired_nodes.push(fallback_node);
-
-        Some(node.clone())
-    }
 }
 
 fn set_common_on_pattern<P: cairo::Pattern + cairo::Gradient>(
@@ -717,13 +686,11 @@ fn resolve_fallbacks_and_set_pattern(
     opacity: u8,
     bbox: &RsvgBbox,
 ) -> bool {
-    let mut fallback_source = NodeFallbackSource::new(draw_ctx);
-
     if bbox.is_empty() {
         return true;
     }
 
-    let resolved = resolve_gradient(gradient, &mut fallback_source);
+    let resolved = resolve_gradient(gradient, draw_ctx);
 
     set_pattern_on_draw_context(&resolved, draw_ctx, opacity, bbox)
 }
@@ -746,4 +713,20 @@ pub fn gradient_resolve_fallbacks_and_set_pattern(
     });
 
     did_set_gradient
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn gradient_resolved_from_defaults_is_really_resolved() {
+        let mut gradient = Gradient {
+            common: GradientCommon::unresolved(),
+            variant: GradientVariant::unresolved_linear(),
+        };
+
+        gradient.resolve_from_defaults();
+        assert!(gradient.is_resolved());
+    }
 }

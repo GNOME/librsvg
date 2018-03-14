@@ -111,7 +111,6 @@ impl NodeMarker {
     fn render(
         &self,
         node: &RsvgNode,
-        c_node: *const RsvgNode,
         draw_ctx: *const RsvgDrawingCtx,
         xpos: f64,
         ypos: f64,
@@ -168,7 +167,7 @@ impl NodeMarker {
 
         let state = drawing_ctx::get_current_state(draw_ctx);
         drawing_ctx::state_reinit(state);
-        drawing_ctx::state_reconstruct(state, c_node);
+        drawing_ctx::state_reconstruct(state, node as *const RsvgNode);
 
         drawing_ctx::set_current_state_affine(draw_ctx, affine);
 
@@ -603,27 +602,14 @@ fn emit_marker_by_name(
 
     let name = unsafe { utf8_cstr(marker_name) };
 
-    let c_node = drawing_ctx::acquire_node_of_type(draw_ctx, name, NodeType::Marker);
+    if let Some(acquired) = drawing_ctx::get_acquired_node_of_type(draw_ctx, name, NodeType::Marker)
+    {
+        let node = acquired.get();
 
-    if c_node.is_null() {
-        return;
+        node.with_impl(|marker: &NodeMarker| {
+            marker.render(&node, draw_ctx, xpos, ypos, computed_angle, line_width)
+        });
     }
-
-    let node: &RsvgNode = unsafe { &*c_node };
-
-    node.with_impl(|marker: &NodeMarker| {
-        marker.render(
-            node,
-            c_node,
-            draw_ctx,
-            xpos,
-            ypos,
-            computed_angle,
-            line_width,
-        )
-    });
-
-    drawing_ctx::release_node(draw_ctx, c_node);
 }
 
 fn get_marker_name_from_drawing_ctx(
@@ -993,8 +979,6 @@ mod directionality_tests {
         test_path_builder_to_segments(&setup_open_path(), expected_segments);
     }
 
-    // Multiple open subpaths
-
     fn setup_multiple_open_subpaths() -> RsvgPathBuilder {
         let mut builder = RsvgPathBuilder::new();
 
@@ -1024,7 +1008,6 @@ mod directionality_tests {
     }
 
     // Closed subpath; must have a line segment back to the first point
-
     fn setup_closed_subpath() -> RsvgPathBuilder {
         let mut builder = RsvgPathBuilder::new();
 
@@ -1049,8 +1032,6 @@ mod directionality_tests {
 
     // Multiple closed subpaths; each must have a line segment back to their
     // initial points, with no degenerate segments between subpaths.
-    //
-
     fn setup_multiple_closed_subpaths() -> RsvgPathBuilder {
         let mut builder = RsvgPathBuilder::new();
 
@@ -1085,8 +1066,6 @@ mod directionality_tests {
 
     // A lineto follows the first closed subpath, with no moveto to start the second subpath.
     // The lineto must start at the first point of the first subpath.
-    //
-
     fn setup_no_moveto_after_closepath() -> RsvgPathBuilder {
         let mut builder = RsvgPathBuilder::new();
 
@@ -1145,7 +1124,6 @@ mod directionality_tests {
     //
     // test_path_builder_to_segments (&setup_sequence_of_moveto (), expected_segments);
     // }
-    //
 
     #[test]
     fn degenerate_segment_has_no_directionality() {

@@ -12,8 +12,7 @@ use aspect_ratio::*;
 use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
-use drawing_ctx;
-use drawing_ctx::RsvgDrawingCtx;
+use drawing_ctx::{self, RsvgDrawingCtx};
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
@@ -42,7 +41,9 @@ struct Pattern {
     pub width: Option<RsvgLength>,
     pub height: Option<RsvgLength>,
 
-    // Point back to our corresponding node, or to the fallback node which has children
+    // Point back to our corresponding node, or to the fallback node which has children.
+    // If the value is None, it means we are fully resolved and didn't find any children
+    // among the fallbacks.
     pub node: Option<Weak<Node>>,
 }
 
@@ -62,17 +63,6 @@ impl Default for Pattern {
             width: Some(RsvgLength::default()),
             height: Some(RsvgLength::default()),
             node: None,
-        }
-    }
-}
-
-fn node_has_children(node: &Option<Weak<Node>>) -> bool {
-    match *node {
-        None => false,
-
-        Some(ref weak) => {
-            let strong_node = &weak.clone().upgrade().unwrap();
-            strong_node.has_children()
         }
     }
 }
@@ -121,15 +111,22 @@ impl Pattern {
         self.units.is_some() && self.content_units.is_some() && self.vbox.is_some()
             && self.preserve_aspect_ratio.is_some() && self.affine.is_some()
             && self.x.is_some() && self.y.is_some() && self.width.is_some()
-            && self.height.is_some() && node_has_children(&self.node)
+            && self.height.is_some() && self.children_are_resolved()
+    }
+
+    fn children_are_resolved(&self) -> bool {
+        if let Some(ref weak) = self.node {
+            let strong_node = &weak.clone().upgrade().unwrap();
+            strong_node.has_children()
+        } else {
+            // We are an empty pattern; there is nothing further that
+            // can be resolved for children.
+            true
+        }
     }
 
     fn resolve_from_defaults(&mut self) {
         self.resolve_from_fallback(&Pattern::default());
-
-        if !node_has_children(&self.node) {
-            self.node = None;
-        }
     }
 
     fn resolve_from_fallback(&mut self, fallback: &Pattern) {
@@ -145,8 +142,12 @@ impl Pattern {
 
         self.fallback = fallback.fallback.clone();
 
-        if !node_has_children(&self.node) {
-            self.node = fallback.node.clone();
+        if !self.children_are_resolved() {
+            if fallback.node.is_some() {
+                self.node = fallback.node.clone();
+            } else {
+                self.node = None;
+            }
         }
     }
 }
@@ -227,69 +228,29 @@ impl NodeTrait for NodePattern {
     }
 }
 
-trait FallbackSource {
-    fn get_fallback(&mut self, name: &str) -> Option<RsvgNode>;
-}
-
-fn resolve_pattern(pattern: &Pattern, fallback_source: &mut FallbackSource) -> Pattern {
+fn resolve_pattern(pattern: &Pattern, draw_ctx: *mut RsvgDrawingCtx) -> Pattern {
     let mut result = pattern.clone();
 
     while !result.is_resolved() {
-        let mut opt_fallback: Option<RsvgNode> = None;
-
-        if let Some(ref fallback_name) = result.fallback {
-            opt_fallback = fallback_source.get_fallback(&**fallback_name);
-        }
-
-        if let Some(fallback_node) = opt_fallback {
-            fallback_node
-                .with_impl(|i: &NodePattern| result.resolve_from_fallback(&*i.pattern.borrow()));
-        } else {
-            result.resolve_from_defaults();
-            break;
-        }
+        result
+            .fallback
+            .as_ref()
+            .and_then(|fallback_name| {
+                drawing_ctx::get_acquired_node_of_type(draw_ctx, &fallback_name, NodeType::Pattern)
+            })
+            .and_then(|acquired| {
+                acquired.get().with_impl(|i: &NodePattern| {
+                    result.resolve_from_fallback(&*i.pattern.borrow())
+                });
+                Some(())
+            })
+            .or_else(|| {
+                result.resolve_from_defaults();
+                Some(())
+            });
     }
 
     result
-}
-
-struct NodeFallbackSource {
-    draw_ctx: *mut RsvgDrawingCtx,
-    acquired_nodes: Vec<*mut RsvgNode>,
-}
-
-impl NodeFallbackSource {
-    fn new(draw_ctx: *mut RsvgDrawingCtx) -> NodeFallbackSource {
-        NodeFallbackSource {
-            draw_ctx,
-            acquired_nodes: Vec::<*mut RsvgNode>::new(),
-        }
-    }
-}
-
-impl Drop for NodeFallbackSource {
-    fn drop(&mut self) {
-        while let Some(node) = self.acquired_nodes.pop() {
-            drawing_ctx::release_node(self.draw_ctx, node);
-        }
-    }
-}
-
-impl FallbackSource for NodeFallbackSource {
-    fn get_fallback(&mut self, name: &str) -> Option<RsvgNode> {
-        let raw_fallback_node =
-            drawing_ctx::acquire_node_of_type(self.draw_ctx, name, NodeType::Pattern);
-
-        if raw_fallback_node.is_null() {
-            return None;
-        }
-
-        self.acquired_nodes.push(raw_fallback_node);
-
-        let fallback_node: &RsvgNode = unsafe { &*raw_fallback_node };
-
-        Some(fallback_node.clone())
-    }
 }
 
 fn set_pattern_on_draw_context(
@@ -299,7 +260,9 @@ fn set_pattern_on_draw_context(
 ) -> bool {
     assert!(pattern.is_resolved());
 
-    if !node_has_children(&pattern.node) {
+    if pattern.node.is_none() {
+        // This means we didn't find any children among the fallbacks,
+        // so there is nothing to render.
         return false;
     }
 
@@ -476,9 +439,7 @@ fn resolve_fallbacks_and_set_pattern(
     draw_ctx: *mut RsvgDrawingCtx,
     bbox: &RsvgBbox,
 ) -> bool {
-    let mut fallback_source = NodeFallbackSource::new(draw_ctx);
-
-    let resolved = resolve_pattern(pattern, &mut fallback_source);
+    let resolved = resolve_pattern(pattern, draw_ctx);
 
     set_pattern_on_draw_context(&resolved, draw_ctx, bbox)
 }
@@ -506,4 +467,17 @@ pub fn pattern_resolve_fallbacks_and_set_pattern(
     });
 
     did_set_pattern
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pattern_resolved_from_defaults_is_really_resolved() {
+        let mut pat = Pattern::unresolved();
+
+        pat.resolve_from_defaults();
+        assert!(pat.is_resolved());
+    }
 }

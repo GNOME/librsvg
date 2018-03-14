@@ -232,23 +232,21 @@ pub extern "C" fn _set_source_rsvg_paint_server(
             ref iri,
             ref alternate,
         } => {
-            let node_ptr = drawing_ctx::acquire_node(c_ctx, iri.as_str());
-
-            if !node_ptr.is_null() {
-                let node = unsafe { &*node_ptr };
+            if let Some(acquired) = drawing_ctx::get_acquired_node(c_ctx, iri.as_str()) {
+                let node = acquired.get();
 
                 if node.get_type() == NodeType::LinearGradient
                     || node.get_type() == NodeType::RadialGradient
                 {
                     had_paint_server = gradient::gradient_resolve_fallbacks_and_set_pattern(
-                        node,
+                        &node,
                         c_ctx,
                         opacity,
                         &c_bbox,
                     );
                 } else if node.get_type() == NodeType::Pattern {
                     had_paint_server =
-                        pattern::pattern_resolve_fallbacks_and_set_pattern(node, c_ctx, &c_bbox);
+                        pattern::pattern_resolve_fallbacks_and_set_pattern(&node, c_ctx, &c_bbox);
                 }
             }
 
@@ -261,8 +259,6 @@ pub extern "C" fn _set_source_rsvg_paint_server(
                 );
                 had_paint_server = true;
             }
-
-            drawing_ctx::release_node(c_ctx, node_ptr);
         }
 
         PaintServer::SolidColor(color) => {
