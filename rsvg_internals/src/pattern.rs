@@ -12,7 +12,7 @@ use aspect_ratio::*;
 use attributes::Attribute;
 use bbox::*;
 use coord_units::CoordUnits;
-use drawing_ctx::{self, RsvgDrawingCtx, AcquiredNode};
+use drawing_ctx::{self, RsvgDrawingCtx};
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
 use length::*;
@@ -226,26 +226,23 @@ impl NodeTrait for NodePattern {
     }
 }
 
-trait FallbackSource {
-    fn get_fallback(&mut self, name: &str) -> Option<RsvgNode>;
-}
-
-fn resolve_pattern(pattern: &Pattern, fallback_source: &mut FallbackSource) -> Pattern {
+fn resolve_pattern(pattern: &Pattern, draw_ctx: *mut RsvgDrawingCtx) -> Pattern {
     let mut result = pattern.clone();
 
     while !result.is_resolved() {
-        if let Some(_) = result
-            .fallback
+        if let Some(_) = result.fallback
             .as_ref()
-            .and_then(|fallback_name| {
-                drawing_ctx::get_acquired_node_of_type(draw_ctx, &fallback_name, NodeType::Pattern)
-            })
+            .and_then(|fallback_name|
+                      drawing_ctx::get_acquired_node_of_type(draw_ctx,
+                                                             &fallback_name,
+                                                             NodeType::Pattern))
             .and_then(|acquired| {
-                acquired.get().with_impl(|i: &NodePattern| {
-                    result.resolve_from_fallback(&*i.pattern.borrow())
-                });
+                acquired
+                    .get()
+                    .with_impl(|i: &NodePattern| result.resolve_from_fallback(&*i.pattern.borrow()));
                 Some(())
-            }) {
+            })
+        {
         } else {
             result.resolve_from_defaults();
             break;
@@ -253,41 +250,6 @@ fn resolve_pattern(pattern: &Pattern, fallback_source: &mut FallbackSource) -> P
     }
 
     result
-}
-
-struct NodeFallbackSource {
-    draw_ctx: *mut RsvgDrawingCtx,
-    acquired_nodes: Vec<AcquiredNode>,
-}
-
-impl NodeFallbackSource {
-    fn new(draw_ctx: *mut RsvgDrawingCtx) -> NodeFallbackSource {
-        NodeFallbackSource {
-            draw_ctx,
-            acquired_nodes: Vec::new(),
-        }
-    }
-}
-
-// Vec does not guarantee the order in which elements are dropped.
-// Here, we really want them to be dropped in the reverse order in
-// which we inserted them.
-impl Drop for NodeFallbackSource {
-    fn drop(&mut self) {
-        while let Some(_) = self.acquired_nodes.pop() {
-        }
-    }
-}
-
-impl FallbackSource for NodeFallbackSource {
-    fn get_fallback(&mut self, name: &str) -> Option<RsvgNode> {
-        drawing_ctx::get_acquired_node_of_type(self.draw_ctx, name, NodeType::Pattern)
-            .map(|acquired| {
-                let node = acquired.get();
-                self.acquired_nodes.push(acquired);
-                node
-            })
-    }
 }
 
 fn set_pattern_on_draw_context(
@@ -474,9 +436,7 @@ fn resolve_fallbacks_and_set_pattern(
     draw_ctx: *mut RsvgDrawingCtx,
     bbox: &RsvgBbox,
 ) -> bool {
-    let mut fallback_source = NodeFallbackSource::new(draw_ctx);
-
-    let resolved = resolve_pattern(pattern, &mut fallback_source);
+    let resolved = resolve_pattern(pattern, draw_ctx);
 
     set_pattern_on_draw_context(&resolved, draw_ctx, bbox)
 }
