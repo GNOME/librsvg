@@ -342,7 +342,7 @@ pub enum StrokeDasharray {
 }
 
 impl StrokeDasharray {
-    fn set_on_cairo(
+    pub fn set_on_cairo(
         &self,
         draw_ctx: *const RsvgDrawingCtx,
         cr: &cairo::Context,
@@ -465,20 +465,6 @@ pub extern "C" fn rsvg_stroke_dasharray_clone(dash: *const StrokeDasharray) -> *
 #[no_mangle]
 pub extern "C" fn rsvg_stroke_dasharray_free(dash: *mut StrokeDasharray) {
     unsafe { Box::from_raw(dash); }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_stroke_dasharray_set_on_cairo(dash: *const StrokeDasharray,
-                                                     draw_ctx: *const RsvgDrawingCtx,
-                                                     cr: *mut cairo_sys::cairo_t,
-                                                     offset: &RsvgLength) {
-    let dash = if dash.is_null() {
-        &StrokeDasharray::None
-    } else {
-        unsafe { &*dash }
-    };
-
-    dash.set_on_cairo(draw_ctx, unsafe { &cairo::Context::from_glib_none(cr) }, offset);
 }
 
 #[cfg(test)]
