@@ -302,15 +302,15 @@ rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 
     cr = render->cr;
 
-    cairo_set_antialias (cr, state->shape_rendering_type);
-
     rsvg_cairo_render_set_affine (render, &state->affine);
-
-    setup_cr_for_stroke (cr, ctx, state);
 
     cairo_set_fill_rule (cr, state->fill_rule);
 
     rsvg_path_builder_add_to_cairo_context (builder, cr);
+
+    cairo_set_antialias (cr, state->shape_rendering_type);
+
+    setup_cr_for_stroke (cr, ctx, state);
 
     rsvg_bbox_init (&bbox, &state->affine);
 
