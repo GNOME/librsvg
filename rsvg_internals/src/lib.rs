@@ -62,6 +62,10 @@ pub use mask::{
 
 pub use node::{
     rsvg_node_add_child,
+    rsvg_node_children_iter_begin,
+    rsvg_node_children_iter_end,
+    rsvg_node_children_iter_next,
+    rsvg_node_children_iter_next_back,
     rsvg_node_draw,
     rsvg_node_draw_children,
     rsvg_node_foreach_child,
