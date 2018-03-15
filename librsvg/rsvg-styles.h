@@ -240,7 +240,19 @@ G_GNUC_INTERNAL
 gboolean rsvg_state_has_overflow (RsvgState *state);
 
 G_GNUC_INTERNAL
+guint8 rsvg_state_get_stroke_opacity (RsvgState *state);
+
+G_GNUC_INTERNAL
 RsvgLength rsvg_state_get_stroke_width (RsvgState *state);
+
+G_GNUC_INTERNAL
+double rsvg_state_get_miter_limit (RsvgState *state);
+
+G_GNUC_INTERNAL
+cairo_line_cap_t rsvg_state_get_line_cap (RsvgState *state);
+
+G_GNUC_INTERNAL
+cairo_line_join_t rsvg_state_get_line_join (RsvgState *state);
 
 G_GNUC_INTERNAL
 gboolean rsvg_state_get_cond_true (RsvgState *state);
@@ -295,6 +307,9 @@ cairo_fill_rule_t rsvg_state_get_clip_rule (RsvgState *state);
 
 G_GNUC_INTERNAL
 cairo_fill_rule_t rsvg_state_get_fill_rule (RsvgState *state);
+
+G_GNUC_INTERNAL
+cairo_antialias_t rsvg_state_get_shape_rendering_type (RsvgState *state);
 
 G_END_DECLS
 

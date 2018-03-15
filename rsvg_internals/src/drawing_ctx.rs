@@ -94,6 +94,7 @@ extern "C" {
     fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const ColorSpec;
     fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const OpacitySpec;
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
+    fn rsvg_state_get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias;
 
     fn rsvg_state_push(draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_state_pop(draw_ctx: *const RsvgDrawingCtx);
@@ -371,6 +372,12 @@ pub fn state_get_current_color(state: *const RsvgState) -> Color {
     let argb = unsafe { rsvg_state_get_current_color(state) };
 
     Color::from(argb)
+}
+
+pub fn get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias {
+    unsafe {
+        rsvg_state_get_shape_rendering_type(state)
+    }
 }
 
 pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);
