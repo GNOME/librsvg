@@ -1795,10 +1795,34 @@ rsvg_state_has_overflow (RsvgState *state)
     return state->has_overflow;
 }
 
+guint8
+rsvg_state_get_stroke_opacity (RsvgState *state)
+{
+    return state->stroke_opacity;
+}
+
 RsvgLength
 rsvg_state_get_stroke_width (RsvgState *state)
 {
     return state->stroke_width;
+}
+
+double
+rsvg_state_get_miter_limit (RsvgState *state)
+{
+    return state->miter_limit;
+}
+
+cairo_line_cap_t
+rsvg_state_get_line_cap (RsvgState *state)
+{
+    return state->cap;
+}
+
+cairo_line_join_t
+rsvg_state_get_line_join (RsvgState *state)
+{
+    return state->join;
 }
 
 gboolean
@@ -1921,3 +1945,8 @@ rsvg_state_get_fill_rule (RsvgState *state)
     return state->fill_rule;
 }
 
+cairo_antialias_t
+rsvg_state_get_shape_rendering_type (RsvgState *state)
+{
+    return state->shape_rendering_type;
+}
