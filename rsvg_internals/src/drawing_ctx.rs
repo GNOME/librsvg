@@ -375,9 +375,7 @@ pub fn state_get_current_color(state: *const RsvgState) -> Color {
 }
 
 pub fn get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias {
-    unsafe {
-        rsvg_state_get_shape_rendering_type(state)
-    }
+    unsafe { rsvg_state_get_shape_rendering_type(state) }
 }
 
 pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);
