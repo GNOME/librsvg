@@ -302,17 +302,11 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     }
 }
 
-static void
-stroke_and_fill (cairo_t *cr, RsvgDrawingCtx *ctx)
+static RsvgBbox
+compute_bbox_from_stroke_and_fill (cairo_t *cr, RsvgState *state)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    RsvgState *state = rsvg_current_state (ctx);
     RsvgBbox bbox;
     double backup_tolerance;
-
-    cairo_set_antialias (cr, state->shape_rendering_type);
-
-    setup_cr_for_stroke (cr, ctx, state);
 
     rsvg_bbox_init (&bbox, &state->affine);
 
@@ -366,6 +360,26 @@ stroke_and_fill (cairo_t *cr, RsvgDrawingCtx *ctx)
 
     cairo_set_tolerance (cr, backup_tolerance);
 
+    return bbox;
+}
+
+static void
+stroke_and_fill (cairo_t *cr, RsvgDrawingCtx *ctx)
+{
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+    RsvgState *state = rsvg_current_state (ctx);
+    RsvgBbox bbox;
+
+    cairo_set_antialias (cr, state->shape_rendering_type);
+
+    setup_cr_for_stroke (cr, ctx, state);
+
+    bbox = compute_bbox_from_stroke_and_fill (cr, state);
+
+    /* Update the bbox in the rendering context.  Below, we actually set the fill/stroke
+     * patterns on the cairo_t.  That process requires the rendering context to have
+     * an updated bbox; for example, for the coordinate system in patterns.
+     */
     rsvg_bbox_insert (&render->bbox, &bbox);
 
     if (state->fill != NULL) {
