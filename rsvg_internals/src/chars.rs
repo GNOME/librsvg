@@ -7,6 +7,7 @@ use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode, boxed_node_new, rsvg_node_get_state};
 use property_bag::PropertyBag;
+use state;
 
 /// Container for XML character data.
 ///
@@ -71,7 +72,7 @@ pub extern fn rsvg_node_chars_new(raw_parent: *const RsvgNode) -> *const RsvgNod
                               Box::new(NodeChars::new()));
 
     let state = rsvg_node_get_state(node);
-    drawing_ctx::state_set_cond_true(state, false);
+    state::set_cond_true(state, false);
 
     node
 }

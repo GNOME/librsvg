@@ -11,7 +11,6 @@ use color::*;
 use error::*;
 use node::NodeType;
 use node::RsvgNode;
-use opacity::*;
 use path_builder::RsvgPathBuilder;
 use state::RsvgState;
 
@@ -83,18 +82,6 @@ extern "C" {
     );
 
     fn rsvg_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState;
-    fn rsvg_state_new() -> *mut RsvgState;
-    fn rsvg_state_free(state: *mut RsvgState);
-    fn rsvg_state_reinit(state: *mut RsvgState);
-    fn rsvg_state_reconstruct(state: *mut RsvgState, node: *const RsvgNode);
-    fn rsvg_state_is_overflow(state: *const RsvgState) -> glib_sys::gboolean;
-    fn rsvg_state_has_overflow(state: *const RsvgState) -> glib_sys::gboolean;
-    fn rsvg_state_get_cond_true(state: *const RsvgState) -> glib_sys::gboolean;
-    fn rsvg_state_set_cond_true(state: *const RsvgState, cond_true: glib_sys::gboolean);
-    fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const ColorSpec;
-    fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const OpacitySpec;
-    fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
-    fn rsvg_state_get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias;
 
     fn rsvg_state_push(draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_state_pop(draw_ctx: *const RsvgDrawingCtx);
@@ -292,46 +279,6 @@ pub fn get_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState {
     unsafe { rsvg_current_state(draw_ctx) }
 }
 
-pub fn state_new() -> *mut RsvgState {
-    unsafe { rsvg_state_new() }
-}
-
-pub fn state_free(state: *mut RsvgState) {
-    unsafe {
-        rsvg_state_free(state);
-    }
-}
-
-pub fn state_reinit(state: *mut RsvgState) {
-    unsafe {
-        rsvg_state_reinit(state);
-    }
-}
-
-pub fn state_reconstruct(state: *mut RsvgState, node: *const RsvgNode) {
-    unsafe {
-        rsvg_state_reconstruct(state, node);
-    }
-}
-
-pub fn state_is_overflow(state: *const RsvgState) -> bool {
-    unsafe { from_glib(rsvg_state_is_overflow(state)) }
-}
-
-pub fn state_has_overflow(state: *const RsvgState) -> bool {
-    unsafe { from_glib(rsvg_state_has_overflow(state)) }
-}
-
-pub fn state_get_cond_true(state: *const RsvgState) -> bool {
-    unsafe { from_glib(rsvg_state_get_cond_true(state)) }
-}
-
-pub fn state_set_cond_true(state: *const RsvgState, cond_true: bool) {
-    unsafe {
-        rsvg_state_set_cond_true(state, cond_true.to_glib());
-    }
-}
-
 pub fn state_push(draw_ctx: *const RsvgDrawingCtx) {
     unsafe {
         rsvg_state_push(draw_ctx);
@@ -342,40 +289,6 @@ pub fn state_pop(draw_ctx: *const RsvgDrawingCtx) {
     unsafe {
         rsvg_state_pop(draw_ctx);
     }
-}
-
-pub fn state_get_stop_color(state: *const RsvgState) -> Result<Option<Color>, AttributeError> {
-    unsafe {
-        let spec_ptr = rsvg_state_get_stop_color(state);
-
-        if spec_ptr.is_null() {
-            Ok(None)
-        } else {
-            Color::from_color_spec(&*spec_ptr).map(Some)
-        }
-    }
-}
-
-pub fn state_get_stop_opacity(state: *const RsvgState) -> Result<Option<Opacity>, AttributeError> {
-    unsafe {
-        let opacity_ptr = rsvg_state_get_stop_opacity(state);
-
-        if opacity_ptr.is_null() {
-            Ok(None)
-        } else {
-            Opacity::from_opacity_spec(&*opacity_ptr).map(Some)
-        }
-    }
-}
-
-pub fn state_get_current_color(state: *const RsvgState) -> Color {
-    let argb = unsafe { rsvg_state_get_current_color(state) };
-
-    Color::from(argb)
-}
-
-pub fn get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias {
-    unsafe { rsvg_state_get_shape_rendering_type(state) }
 }
 
 pub struct AcquiredNode(*const RsvgDrawingCtx, *mut RsvgNode);

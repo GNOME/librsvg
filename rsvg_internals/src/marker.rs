@@ -167,14 +167,14 @@ impl NodeMarker {
         drawing_ctx::state_push(draw_ctx);
 
         let state = drawing_ctx::get_current_state(draw_ctx);
-        drawing_ctx::state_reinit(state);
-        drawing_ctx::state_reconstruct(state, node as *const RsvgNode);
+        state::reinit(state);
+        state::reconstruct(state, node as *const RsvgNode);
 
         drawing_ctx::set_current_state_affine(draw_ctx, affine);
 
         let state = drawing_ctx::get_current_state(draw_ctx);
 
-        if !drawing_ctx::state_is_overflow(state) {
+        if !state::is_overflow(state) {
             if let Some(vbox) = self.vbox.get() {
                 drawing_ctx::add_clipping_rect(
                     draw_ctx,
