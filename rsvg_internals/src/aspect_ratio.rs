@@ -45,12 +45,6 @@ struct Align {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-struct AlignXY {
-    x: Align1D,
-    y: Align1D,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum Align1D {
     Min,
     Mid,
@@ -116,7 +110,7 @@ impl AspectRatio {
         let align_xy = p.try(|p| {
             p.expect_ident()
                 .map_err(|_| ())
-                .and_then(|ident| AlignXY::parse(ident))
+                .and_then(|ident| Align::parse_xy(ident))
         })?;
 
         let fit = p.try(|p| {
@@ -127,7 +121,7 @@ impl AspectRatio {
 
         p.expect_exhausted().map_err(|_| ())?;
 
-        let align = align_xy.map(|AlignXY { x: x, y: y }| Align { x, y, fit });
+        let align = align_xy.map(|(x, y)| Align { x, y, fit });
 
         Ok(AspectRatio { defer, align })
     }
@@ -158,24 +152,24 @@ impl Default for Align {
     }
 }
 
-impl AlignXY {
-    fn parse(s: &str) -> Result<Option<AlignXY>, ()> {
+impl Align {
+    fn parse_xy(s: &str) -> Result<Option<(Align1D, Align1D)>, ()> {
         use self::Align1D::*;
 
         match s {
             "none" => Ok(None),
 
-            "xMinYMin" => Ok(Some(AlignXY { x: Min, y: Min })),
-            "xMidYMin" => Ok(Some(AlignXY { x: Mid, y: Min })),
-            "xMaxYMin" => Ok(Some(AlignXY { x: Max, y: Min })),
+            "xMinYMin" => Ok(Some((Min, Min))),
+            "xMidYMin" => Ok(Some((Mid, Min))),
+            "xMaxYMin" => Ok(Some((Max, Min))),
 
-            "xMinYMid" => Ok(Some(AlignXY { x: Min, y: Mid })),
-            "xMidYMid" => Ok(Some(AlignXY { x: Mid, y: Mid })),
-            "xMaxYMid" => Ok(Some(AlignXY { x: Max, y: Mid })),
+            "xMinYMid" => Ok(Some((Min, Mid))),
+            "xMidYMid" => Ok(Some((Mid, Mid))),
+            "xMaxYMid" => Ok(Some((Max, Mid))),
 
-            "xMinYMax" => Ok(Some(AlignXY { x: Min, y: Max })),
-            "xMidYMax" => Ok(Some(AlignXY { x: Mid, y: Max })),
-            "xMaxYMax" => Ok(Some(AlignXY { x: Max, y: Max })),
+            "xMinYMax" => Ok(Some((Min, Max))),
+            "xMidYMax" => Ok(Some((Mid, Max))),
+            "xMaxYMax" => Ok(Some((Max, Max))),
 
             _ => Err(()),
         }
