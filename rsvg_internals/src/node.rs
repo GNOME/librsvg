@@ -72,6 +72,7 @@ pub struct Node {
 pub struct Children<'a> {
     children: Ref<'a, Vec<Rc<Node>>>,
     index: usize,
+    reverse_index: usize,
 }
 
 // Keep this in sync with rsvg-private.h:RsvgNodeType
@@ -293,7 +294,12 @@ pub fn boxed_node_new(
 
 impl<'a> Children<'a> {
     fn new(children: Ref<'a, Vec<Rc<Node>>>) -> Self {
-        Self { children, index: 0 }
+        let len = children.len();
+        Self {
+            children,
+            index: 0,
+            reverse_index: len,
+        }
     }
 }
 
@@ -301,7 +307,7 @@ impl<'a> Iterator for Children<'a> {
     type Item = Rc<Node>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index == self.children.len() {
+        if self.index == self.reverse_index {
             return None;
         }
 
@@ -311,8 +317,19 @@ impl<'a> Iterator for Children<'a> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let count = self.children.len() - self.index;
+        let count = self.reverse_index - self.index;
         (count, Some(count))
+    }
+}
+
+impl<'a> DoubleEndedIterator for Children<'a> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.index == self.reverse_index {
+            return None;
+        }
+
+        self.reverse_index -= 1;
+        Some(self.children[self.reverse_index].clone())
     }
 }
 
