@@ -55,6 +55,12 @@ extern "C" {
         affine: *const cairo::Matrix,
     );
 
+    fn rsvg_drawing_ctx_set_affine_on_cr(
+        draw_ctx: *const RsvgDrawingCtx,
+        cr: *mut cairo_sys::cairo_t,
+        affine: *const cairo::Matrix,
+    );
+
     fn rsvg_drawing_ctx_get_pango_context(
         draw_ctx: *const RsvgDrawingCtx,
     ) -> *mut pango_sys::PangoContext;
@@ -239,6 +245,20 @@ pub fn get_current_state_affine(draw_ctx: *const RsvgDrawingCtx) -> cairo::Matri
 pub fn set_current_state_affine(draw_ctx: *const RsvgDrawingCtx, affine: cairo::Matrix) {
     unsafe {
         rsvg_drawing_ctx_set_current_state_affine(draw_ctx, &affine);
+    }
+}
+
+pub fn set_affine_on_cr(
+    draw_ctx: *const RsvgDrawingCtx,
+    cr: &cairo::Context,
+    affine: &cairo::Matrix,
+) {
+    unsafe {
+        rsvg_drawing_ctx_set_affine_on_cr(
+            draw_ctx,
+            cr.to_glib_none().0,
+            affine as *const cairo::Matrix,
+        );
     }
 }
 
