@@ -72,6 +72,7 @@ pub struct Node {
 pub struct Children<'a> {
     children: Ref<'a, Vec<Rc<Node>>>,
     index: usize,
+    reverse_index: usize,
 }
 
 // Keep this in sync with rsvg-private.h:RsvgNodeType
@@ -232,18 +233,6 @@ impl Node {
         }
     }
 
-    pub fn foreach_child<F>(&self, mut f: F)
-    where
-        F: FnMut(Rc<Node>) -> bool,
-    {
-        for child in self.children() {
-            let next = f(child);
-            if !next {
-                break;
-            }
-        }
-    }
-
     pub fn children(&self) -> Children {
         Children::new(self.children.borrow())
     }
@@ -293,7 +282,12 @@ pub fn boxed_node_new(
 
 impl<'a> Children<'a> {
     fn new(children: Ref<'a, Vec<Rc<Node>>>) -> Self {
-        Self { children, index: 0 }
+        let len = children.len();
+        Self {
+            children,
+            index: 0,
+            reverse_index: len,
+        }
     }
 }
 
@@ -301,7 +295,7 @@ impl<'a> Iterator for Children<'a> {
     type Item = Rc<Node>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index == self.children.len() {
+        if self.index == self.reverse_index {
             return None;
         }
 
@@ -311,8 +305,19 @@ impl<'a> Iterator for Children<'a> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let count = self.children.len() - self.index;
+        let count = self.reverse_index - self.index;
         (count, Some(count))
+    }
+}
+
+impl<'a> DoubleEndedIterator for Children<'a> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.index == self.reverse_index {
+            return None;
+        }
+
+        self.reverse_index -= 1;
+        Some(self.children[self.reverse_index].clone())
     }
 }
 
@@ -453,27 +458,65 @@ pub extern "C" fn rsvg_node_set_attribute_parse_error(
     }
 }
 
-type NodeForeachChild =
-    unsafe extern "C" fn(node: *const RsvgNode, data: *const libc::c_void) -> glib_sys::gboolean;
-
+// This should really return Children<'a> where 'a is the lifetime of raw_node,
+// but raw pointers don't have lifetimes so there's not much we can do.
 #[no_mangle]
-pub extern "C" fn rsvg_node_foreach_child(
+pub extern "C" fn rsvg_node_children_iter_begin<'a>(
     raw_node: *const RsvgNode,
-    func: NodeForeachChild,
-    data: *const libc::c_void,
-) {
+) -> *mut Children<'a> {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
-    node.foreach_child(|child| {
-        let boxed_child = box_node(child.clone());
+    Box::into_raw(Box::new(node.children()))
+}
 
-        let next: bool = unsafe { from_glib(func(boxed_child, data)) };
+#[no_mangle]
+pub extern "C" fn rsvg_node_children_iter_end(iter: *mut Children) {
+    assert!(!iter.is_null());
 
-        rsvg_node_unref(boxed_child);
+    unsafe { Box::from_raw(iter) };
+}
 
-        next
-    });
+#[no_mangle]
+pub extern "C" fn rsvg_node_children_iter_next(
+    iter: *mut Children,
+    out_child: *mut *mut RsvgNode,
+) -> glib_sys::gboolean {
+    assert!(!iter.is_null());
+
+    let iter = unsafe { &mut *iter };
+    if let Some(child) = iter.next() {
+        unsafe {
+            *out_child = box_node(child);
+        }
+        true.to_glib()
+    } else {
+        unsafe {
+            *out_child = ptr::null_mut();
+        }
+        false.to_glib()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_node_children_iter_next_back(
+    iter: *mut Children,
+    out_child: *mut *mut RsvgNode,
+) -> glib_sys::gboolean {
+    assert!(!iter.is_null());
+
+    let iter = unsafe { &mut *iter };
+    if let Some(child) = iter.next_back() {
+        unsafe {
+            *out_child = box_node(child);
+        }
+        true.to_glib()
+    } else {
+        unsafe {
+            *out_child = ptr::null_mut();
+        }
+        false.to_glib()
+    }
 }
 
 #[no_mangle]
@@ -493,7 +536,7 @@ mod tests {
     use super::*;
     use drawing_ctx::RsvgDrawingCtx;
     use handle::RsvgHandle;
-    use std::ptr;
+    use std::{mem, ptr};
     use std::rc::Rc;
 
     struct TestNodeImpl {}
@@ -611,5 +654,92 @@ mod tests {
 
         assert!(Node::is_ancestor(node.clone(), child.clone()));
         assert!(!Node::is_ancestor(child.clone(), node.clone()));
+    }
+
+    #[test]
+    fn node_children_iterator() {
+        let node = Rc::new(Node::new(
+            NodeType::Path,
+            None,
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
+
+        let child = Rc::new(Node::new(
+            NodeType::Path,
+            Some(Rc::downgrade(&node)),
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
+
+        let second_child = Rc::new(Node::new(
+            NodeType::Path,
+            Some(Rc::downgrade(&node)),
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
+
+        node.add_child(&child);
+        node.add_child(&second_child);
+
+        let mut children = node.children();
+
+        let c = children.next();
+        assert!(c.is_some());
+        let c = c.unwrap();
+        assert!(rc_node_ptr_eq(&c, &child));
+
+        let c = children.next_back();
+        assert!(c.is_some());
+        let c = c.unwrap();
+        assert!(rc_node_ptr_eq(&c, &second_child));
+
+        assert!(children.next().is_none());
+        assert!(children.next_back().is_none());
+    }
+
+    #[test]
+    fn node_children_iterator_c() {
+        let node = Rc::new(Node::new(
+            NodeType::Path,
+            None,
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
+
+        let child = Rc::new(Node::new(
+            NodeType::Path,
+            Some(Rc::downgrade(&node)),
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
+
+        let second_child = Rc::new(Node::new(
+            NodeType::Path,
+            Some(Rc::downgrade(&node)),
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
+
+        node.add_child(&child);
+        node.add_child(&second_child);
+
+        let iter = rsvg_node_children_iter_begin(&node);
+        let mut c = unsafe { mem::uninitialized() };
+
+        let result: bool = from_glib(rsvg_node_children_iter_next(iter, &mut c));
+        assert_eq!(result, true);
+        assert!(rc_node_ptr_eq(unsafe { &*c }, &child));
+        rsvg_node_unref(c);
+
+        let result: bool = from_glib(rsvg_node_children_iter_next_back(iter, &mut c));
+        assert_eq!(result, true);
+        assert!(rc_node_ptr_eq(unsafe { &*c }, &second_child));
+        rsvg_node_unref(c);
+
+        let result: bool = from_glib(rsvg_node_children_iter_next(iter, &mut c));
+        assert_eq!(result, false);
+        let result: bool = from_glib(rsvg_node_children_iter_next_back(iter, &mut c));
+        assert_eq!(result, false);
     }
 }
