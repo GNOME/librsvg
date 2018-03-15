@@ -70,6 +70,9 @@ void rsvg_cairo_render_set_affine (RsvgCairoRender *render, cairo_matrix_t *affi
 G_GNUC_INTERNAL
 RsvgDrawingCtx *rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle);
 
+G_GNUC_INTERNAL
+void rsvg_draw_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder, gboolean clipping);
+
 G_END_DECLS
 
 #endif

@@ -287,26 +287,13 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     }
 }
 
-
-
-void
-rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
+static void
+stroke_and_fill (cairo_t *cr, RsvgDrawingCtx *ctx)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state = rsvg_current_state (ctx);
-    cairo_t *cr;
     RsvgBbox bbox;
     double backup_tolerance;
-
-    rsvg_cairo_push_discrete_layer (ctx);
-
-    cr = render->cr;
-
-    rsvg_cairo_render_set_affine (render, &state->affine);
-
-    rsvg_path_builder_add_to_cairo_context (builder, cr);
-
-    cairo_set_fill_rule (cr, state->fill_rule);
 
     cairo_set_antialias (cr, state->shape_rendering_type);
 
@@ -390,8 +377,41 @@ rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
     }
 
     cairo_new_path (cr); /* clear the path in case stroke == fill == NULL; otherwise we leave it around from computing the bounding box */
+}
 
-    rsvg_cairo_pop_discrete_layer (ctx);
+void
+rsvg_draw_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder, gboolean clipping)
+{
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+    RsvgState *state;
+    cairo_t *cr;
+
+    if (!clipping) {
+        rsvg_cairo_push_discrete_layer (ctx);
+    }
+
+    state = rsvg_current_state (ctx);
+    cr = render->cr;
+
+    rsvg_cairo_render_set_affine (render, &state->affine);
+
+    rsvg_path_builder_add_to_cairo_context (builder, cr);
+
+    if (clipping) {
+        cairo_set_fill_rule (cr, state->clip_rule);
+    } else {
+        cairo_set_fill_rule (cr, state->fill_rule);
+
+        stroke_and_fill (cr, ctx);
+
+        rsvg_cairo_pop_discrete_layer (ctx);
+    }
+}
+
+void
+rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
+{
+    rsvg_draw_path_builder (ctx, builder, FALSE);
 }
 
 void

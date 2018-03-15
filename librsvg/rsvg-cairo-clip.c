@@ -77,18 +77,7 @@ rsvg_cairo_clip_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout,
 static void
 rsvg_cairo_clip_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 {
-    RsvgCairoClipRender *render = RSVG_CAIRO_CLIP_RENDER (ctx->render);
-    RsvgCairoRender *cairo_render = &render->super;
-    RsvgState *state = rsvg_current_state (ctx);
-    cairo_t *cr;
-
-    cr = cairo_render->cr;
-
-    rsvg_cairo_render_set_affine (cairo_render, &state->affine);
-
-    rsvg_path_builder_add_to_cairo_context (builder, cr);
-
-    cairo_set_fill_rule (cr, rsvg_current_state (ctx)->clip_rule);
+    rsvg_draw_path_builder (ctx, builder, TRUE);
 }
 
 static void
