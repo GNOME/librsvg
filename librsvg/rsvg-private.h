@@ -209,6 +209,13 @@ struct RsvgDrawingCtx {
     gboolean is_testing;
 };
 
+/* Keep this in sync with rust/src/bbox.rs:RsvgBbox */
+typedef struct {
+    cairo_rectangle_t rect;
+    cairo_matrix_t affine;
+    gboolean virgin;
+} RsvgBbox;
+
 /*Abstract base class for context for our backends (one as yet)*/
 
 typedef enum {
@@ -225,19 +232,20 @@ struct RsvgRender {
 
     void (*free) (RsvgRender * self);
 
-    void             (*set_affine_on_cr)        (RsvgDrawingCtx * ctx, cairo_t *cr, cairo_matrix_t *affine);
-    PangoContext    *(*get_pango_context)       (RsvgDrawingCtx * ctx);
-    void             (*render_pango_layout)	(RsvgDrawingCtx * ctx, PangoLayout *layout,
+    void             (*set_affine_on_cr)        (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix_t *affine);
+    PangoContext    *(*get_pango_context)       (RsvgDrawingCtx *ctx);
+    void             (*render_pango_layout)	(RsvgDrawingCtx *ctx, PangoLayout *layout,
                                                  double x, double y);
-    void             (*render_path_builder)     (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder);
-    void             (*render_surface)          (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
+    void             (*render_path_builder)     (RsvgDrawingCtx *ctx, RsvgPathBuilder *builder);
+    void             (*render_surface)          (RsvgDrawingCtx *ctx, cairo_surface_t *surface,
                                                  double x, double y, double w, double h);
-    void             (*pop_discrete_layer)      (RsvgDrawingCtx * ctx);
-    void             (*push_discrete_layer)     (RsvgDrawingCtx * ctx);
-    void             (*add_clipping_rect)       (RsvgDrawingCtx * ctx, double x, double y,
+    void             (*pop_discrete_layer)      (RsvgDrawingCtx *ctx);
+    void             (*push_discrete_layer)     (RsvgDrawingCtx *ctx);
+    void             (*add_clipping_rect)       (RsvgDrawingCtx *ctx, double x, double y,
                                                  double w, double h);
-    cairo_surface_t *(*get_surface_of_node)     (RsvgDrawingCtx * ctx, RsvgNode * drawable,
+    cairo_surface_t *(*get_surface_of_node)     (RsvgDrawingCtx *ctx, RsvgNode * drawable,
                                                  double w, double h);
+    void             (*insert_bbox)             (RsvgDrawingCtx *ctx, RsvgBbox *bbox);
 };
 
 static inline RsvgRender *
@@ -275,13 +283,6 @@ typedef struct {
     LengthUnit unit;
     LengthDir dir;
 } RsvgLength;
-
-/* Keep this in sync with rust/src/bbox.rs:RsvgBbox */
-typedef struct {
-    cairo_rectangle_t rect;
-    cairo_matrix_t affine;
-    gboolean virgin;
-} RsvgBbox;
 
 typedef enum {
     userSpaceOnUse,
@@ -518,6 +519,9 @@ G_GNUC_INTERNAL
 GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
+
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox);
 
 G_GNUC_INTERNAL
 cairo_surface_t *rsvg_cairo_surface_new_from_href (RsvgHandle *handle, const char *href, GError ** error);

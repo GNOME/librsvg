@@ -63,6 +63,9 @@ G_GNUC_INTERNAL
 cairo_surface_t*rsvg_cairo_get_surface_of_node  (RsvgDrawingCtx *ctx, RsvgNode *drawable, 
                                                  double width, double height);
 
+G_GNUC_INTERNAL
+void rsvg_cairo_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox);
+
 G_END_DECLS
 
 #endif /*RSVG_CAIRO_DRAW_H */

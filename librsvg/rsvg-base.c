@@ -1877,6 +1877,12 @@ rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, d
     return ctx->render->get_surface_of_node (ctx, drawable, w, h);
 }
 
+void
+rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
+{
+    draw_ctx->render->insert_bbox (draw_ctx, bbox);
+}
+
 cairo_surface_t *
 rsvg_cairo_surface_new_from_href (RsvgHandle *handle,
                                   const char *href,
