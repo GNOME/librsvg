@@ -408,6 +408,26 @@ void rsvg_node_draw (RsvgNode *node, RsvgDrawingCtx *draw, int dominate);
 G_GNUC_INTERNAL
 void rsvg_node_set_attribute_parse_error (RsvgNode *node, const char *attr_name, const char *description);
 
+typedef struct RsvgNodeChildrenIter *RsvgNodeChildrenIter;
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+RsvgNodeChildrenIter *rsvg_node_children_iter_begin (RsvgNode *node);
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+gboolean rsvg_node_children_iter_next (RsvgNodeChildrenIter *iter,
+                                       RsvgNode **out_child);
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+gboolean rsvg_node_children_iter_next_back (RsvgNodeChildrenIter *iter,
+                                            RsvgNode **out_child);
+
+/* Implemented in rust/src/node.rs */
+G_GNUC_INTERNAL
+void rsvg_node_children_iter_end (RsvgNodeChildrenIter *iter);
+
 /* Used to iterate among a node's children with rsvg_node_foreach_child().
  * If this caller-supplied function returns FALSE, iteration will stop.
  * Otherwise, iteration will continue to the next child node.
