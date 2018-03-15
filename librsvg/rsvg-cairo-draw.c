@@ -308,6 +308,8 @@ rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 
     setup_cr_for_stroke (cr, ctx, state);
 
+    cairo_set_fill_rule (cr, state->fill_rule);
+
     rsvg_path_builder_add_to_cairo_context (builder, cr);
 
     rsvg_bbox_init (&bbox, &state->affine);
@@ -365,8 +367,6 @@ rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
     rsvg_bbox_insert (&render->bbox, &bbox);
 
     if (state->fill != NULL) {
-        cairo_set_fill_rule (cr, state->fill_rule);
-
         if (_set_source_rsvg_paint_server (ctx,
                                            state->fill,
                                            state->fill_opacity,
