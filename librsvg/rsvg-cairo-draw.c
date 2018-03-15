@@ -164,22 +164,8 @@ rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
     return context;
 }
 
-
-static void
-setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgState *state)
-{
-    cairo_set_line_width (cr, rsvg_length_normalize(&state->stroke_width, ctx));
-    cairo_set_miter_limit (cr, state->miter_limit);
-    cairo_set_line_cap (cr, (cairo_line_cap_t) state->cap);
-    cairo_set_line_join (cr, (cairo_line_join_t) state->join);
-
-    extern void rsvg_stroke_dasharray_set_on_cairo(RsvgStrokeDasharray *dash,
-                                                   RsvgDrawingCtx *draw_ctx,
-                                                   cairo_t *cr,
-                                                   RsvgLength *dash_offset);
-
-    rsvg_stroke_dasharray_set_on_cairo(state->dash, ctx, cr, &state->dash_offset);
-}
+/* Defined in rsvg_internals/src/draw.rs */
+extern void rsvg_setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgState *state);
 
 void
 rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, double x, double y)
@@ -252,7 +238,7 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
             pango_cairo_update_layout (render->cr, layout);
             pango_cairo_layout_path (render->cr, layout);
 
-            setup_cr_for_stroke (render->cr, ctx, state);
+            rsvg_setup_cr_for_stroke (render->cr, ctx, state);
 
             cairo_stroke (render->cr);
         }
@@ -330,7 +316,7 @@ stroke_and_fill (cairo_t *cr, RsvgDrawingCtx *ctx)
 
     cairo_set_antialias (cr, state->shape_rendering_type);
 
-    setup_cr_for_stroke (cr, ctx, state);
+    rsvg_setup_cr_for_stroke (cr, ctx, state);
 
     bbox = compute_bbox_from_stroke_and_fill (cr, state);
 
