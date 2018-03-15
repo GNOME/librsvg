@@ -304,9 +304,9 @@ rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 
     rsvg_cairo_render_set_affine (render, &state->affine);
 
-    cairo_set_fill_rule (cr, state->fill_rule);
-
     rsvg_path_builder_add_to_cairo_context (builder, cr);
+
+    cairo_set_fill_rule (cr, state->fill_rule);
 
     cairo_set_antialias (cr, state->shape_rendering_type);
 

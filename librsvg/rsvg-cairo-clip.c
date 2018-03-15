@@ -86,9 +86,9 @@ rsvg_cairo_clip_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *buil
 
     rsvg_cairo_render_set_affine (cairo_render, &state->affine);
 
-    cairo_set_fill_rule (cr, rsvg_current_state (ctx)->clip_rule);
-
     rsvg_path_builder_add_to_cairo_context (builder, cr);
+
+    cairo_set_fill_rule (cr, rsvg_current_state (ctx)->clip_rule);
 }
 
 static void
