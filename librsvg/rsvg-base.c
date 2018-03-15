@@ -1795,6 +1795,12 @@ rsvg_drawing_ctx_set_current_state_affine (RsvgDrawingCtx *ctx, cairo_matrix_t *
         rsvg_current_state (ctx)->affine = *affine;
 }
 
+void
+rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, cairo_matrix_t *affine)
+{
+    draw_ctx->render->set_affine_on_cr (draw_ctx, cr, affine);
+}
+
 PangoContext *
 rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx)
 {

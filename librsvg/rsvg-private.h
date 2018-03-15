@@ -225,6 +225,7 @@ struct RsvgRender {
 
     void (*free) (RsvgRender * self);
 
+    void             (*set_affine_on_cr)        (RsvgDrawingCtx * ctx, cairo_t *cr, cairo_matrix_t *affine);
     PangoContext    *(*get_pango_context)       (RsvgDrawingCtx * ctx);
     void             (*render_pango_layout)	(RsvgDrawingCtx * ctx, PangoLayout *layout,
                                                  double x, double y);
@@ -555,6 +556,9 @@ cairo_matrix_t rsvg_drawing_ctx_get_current_state_affine (RsvgDrawingCtx *ctx);
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_set_current_state_affine (RsvgDrawingCtx *ctx, cairo_matrix_t *affine);
+
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, cairo_matrix_t *affine);
 
 G_GNUC_INTERNAL
 PangoContext *rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx);
