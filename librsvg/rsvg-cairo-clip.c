@@ -59,7 +59,7 @@ rsvg_cairo_clip_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout,
     double rotation;
 
     affine = rsvg_drawing_ctx_get_current_state_affine (ctx);
-    rsvg_cairo_render_set_affine (cairo_render, &affine);
+    rsvg_cairo_render_set_affine_on_cr (cairo_render, cairo_render->cr, &affine);
 
     rotation = pango_gravity_to_rotation (gravity);
 

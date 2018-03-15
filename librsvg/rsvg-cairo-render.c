@@ -42,9 +42,8 @@
 #include "rsvg-structure.h"
 
 void
-rsvg_cairo_render_set_affine (RsvgCairoRender *render, cairo_matrix_t *affine)
+rsvg_cairo_render_set_affine_on_cr (RsvgCairoRender *render, cairo_t *cr, cairo_matrix_t *affine)
 {
-    cairo_t *cr = render->cr;
     gboolean nest = cr != render->initial_cr;
     cairo_matrix_t matrix;
 
