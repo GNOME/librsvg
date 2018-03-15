@@ -6,6 +6,7 @@ use libc;
 use pango;
 use pango_sys;
 
+use bbox::RsvgBbox;
 use color::*;
 use error::*;
 use node::NodeType;
@@ -72,6 +73,8 @@ extern "C" {
         w: f64,
         h: f64,
     );
+
+    fn rsvg_drawing_ctx_insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: *const RsvgBbox);
 
     fn rsvg_drawing_ctx_draw_node_from_stack(
         draw_ctx: *const RsvgDrawingCtx,
@@ -269,6 +272,12 @@ pub fn get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> pango::Context {
 pub fn add_clipping_rect(draw_ctx: *const RsvgDrawingCtx, x: f64, y: f64, w: f64, h: f64) {
     unsafe {
         rsvg_drawing_ctx_add_clipping_rect(draw_ctx, x, y, w, h);
+    }
+}
+
+pub fn insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: &RsvgBbox) {
+    unsafe {
+        rsvg_drawing_ctx_insert_bbox(draw_ctx, bbox as *const _);
     }
 }
 
