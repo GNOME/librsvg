@@ -219,15 +219,13 @@ impl Node {
             drawing_ctx::push_discrete_layer(draw_ctx);
         }
 
-        self.foreach_child(|child| {
+        for child in self.children() {
             let boxed_child = box_node(child.clone());
 
             drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0);
 
             rsvg_node_unref(boxed_child);
-
-            true
-        });
+        }
 
         if dominate != -1 {
             drawing_ctx::pop_discrete_layer(draw_ctx);
@@ -238,8 +236,8 @@ impl Node {
     where
         F: FnMut(Rc<Node>) -> bool,
     {
-        for c in &*self.children.borrow() {
-            let next = f(c.clone());
+        for child in self.children() {
+            let next = f(child);
             if !next {
                 break;
             }
