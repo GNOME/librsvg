@@ -1902,3 +1902,16 @@ rsvg_state_get_font_decor (RsvgState *state)
         return NULL;
     }
 }
+
+cairo_fill_rule_t
+rsvg_state_get_clip_rule (RsvgState *state)
+{
+    return state->clip_rule;
+}
+
+cairo_fill_rule_t
+rsvg_state_get_fill_rule (RsvgState *state)
+{
+    return state->fill_rule;
+}
+

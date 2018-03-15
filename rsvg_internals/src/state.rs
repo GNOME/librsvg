@@ -1,3 +1,4 @@
+use cairo;
 use glib::translate::*;
 use glib_sys;
 use libc;
@@ -53,6 +54,8 @@ extern "C" {
     fn rsvg_state_get_font_stretch(state: *const RsvgState) -> pango_sys::PangoStretch;
     fn rsvg_state_get_letter_spacing(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_font_decor(state: *const RsvgState) -> *const TextDecoration;
+    fn rsvg_state_get_clip_rule(state: *const RsvgState) -> cairo::FillRule;
+    fn rsvg_state_get_fill_rule(state: *const RsvgState) -> cairo::FillRule;
 }
 
 pub fn get_language(state: *const RsvgState) -> Option<String> {
@@ -104,4 +107,12 @@ pub fn get_font_decor(state: *const RsvgState) -> Option<FontDecor> {
             Some(FontDecor::from(*td))
         }
     }
+}
+
+pub fn get_clip_rule(state: *const RsvgState) -> cairo::FillRule {
+    unsafe { rsvg_state_get_clip_rule(state) }
+}
+
+pub fn get_fill_rule(state: *const RsvgState) -> cairo::FillRule {
+    unsafe { rsvg_state_get_fill_rule(state) }
 }

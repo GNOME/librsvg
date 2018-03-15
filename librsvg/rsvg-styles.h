@@ -90,9 +90,9 @@ struct _RsvgState {
     gboolean has_fill_server;
     guint8 fill_opacity;        /* 0..255 */
     gboolean has_fill_opacity;
-    gint fill_rule;
+    cairo_fill_rule_t fill_rule;
     gboolean has_fill_rule;
-    gint clip_rule;
+    cairo_fill_rule_t clip_rule;
     gboolean has_clip_rule;
 
     gboolean overflow;
@@ -286,6 +286,12 @@ RsvgLength rsvg_state_get_letter_spacing (RsvgState *state);
 
 G_GNUC_INTERNAL
 const TextDecoration *rsvg_state_get_font_decor (RsvgState *state);
+
+G_GNUC_INTERNAL
+cairo_fill_rule_t rsvg_state_get_clip_rule (RsvgState *state);
+
+G_GNUC_INTERNAL
+cairo_fill_rule_t rsvg_state_get_fill_rule (RsvgState *state);
 
 G_END_DECLS
 
