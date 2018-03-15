@@ -356,7 +356,8 @@ pub extern "C" fn rsvg_node_unref(raw_node: *mut RsvgNode) -> *mut RsvgNode {
         let _ = unsafe { Box::from_raw(raw_node) };
     }
 
-    ptr::null_mut() // so the caller can do "node = rsvg_node_unref (node);" and lose access to the node
+    // so the caller can do "node = rsvg_node_unref (node);" and lose access to the node
+    ptr::null_mut()
 }
 
 // See https://github.com/rust-lang/rust/issues/36497 - this is what
