@@ -278,7 +278,7 @@ impl RsvgPathBuilder {
         );
     }
 
-    fn to_cairo(&self, cr: &cairo::Context) {
+    pub fn to_cairo(&self, cr: &cairo::Context) {
         for s in &self.path_commands {
             s.to_cairo(cr);
         }
