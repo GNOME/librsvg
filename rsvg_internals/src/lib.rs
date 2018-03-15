@@ -147,6 +147,7 @@ mod chars;
 mod clip_path;
 mod cnode;
 mod color;
+mod draw;
 mod drawing_ctx;
 mod error;
 mod float_eq_cairo;
