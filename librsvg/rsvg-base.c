@@ -1811,13 +1811,14 @@ rsvg_drawing_ctx_render_pango_layout (RsvgDrawingCtx *draw_ctx,
 }
 
 void
-rsvg_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
+rsvg_drawing_ctx_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 {
     ctx->render->render_path_builder (ctx, builder);
 }
 
 void
-rsvg_render_surface (RsvgDrawingCtx * ctx, cairo_surface_t *surface, double x, double y, double w, double h)
+rsvg_drawing_ctx_render_surface (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
+                                 double x, double y, double w, double h)
 {
     /* surface must be a cairo image surface */
     g_return_if_fail (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE);
