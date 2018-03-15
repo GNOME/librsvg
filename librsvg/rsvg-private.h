@@ -500,9 +500,6 @@ void rsvg_drawing_ctx_render_surface (RsvgDrawingCtx * ctx, cairo_surface_t *sur
                                       double x, double y, double w, double h);
 
 G_GNUC_INTERNAL
-double rsvg_get_normalized_stroke_width (RsvgDrawingCtx *ctx);
-
-G_GNUC_INTERNAL
 const char *rsvg_get_start_marker (RsvgDrawingCtx *ctx);
 G_GNUC_INTERNAL
 const char *rsvg_get_middle_marker (RsvgDrawingCtx *ctx);

@@ -43,6 +43,7 @@ impl From<TextDecoration> for FontDecor {
 }
 
 extern "C" {
+    fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_language(state: *const RsvgState) -> *const libc::c_char;
     fn rsvg_state_get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
@@ -56,6 +57,10 @@ extern "C" {
     fn rsvg_state_get_font_decor(state: *const RsvgState) -> *const TextDecoration;
     fn rsvg_state_get_clip_rule(state: *const RsvgState) -> cairo::FillRule;
     fn rsvg_state_get_fill_rule(state: *const RsvgState) -> cairo::FillRule;
+}
+
+pub fn get_stroke_width(state: *const RsvgState) -> RsvgLength {
+    unsafe { rsvg_state_get_stroke_width(state) }
 }
 
 pub fn get_language(state: *const RsvgState) -> Option<String> {
