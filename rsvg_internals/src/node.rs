@@ -3,7 +3,7 @@ use glib::translate::*;
 use glib_sys;
 use libc;
 
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::ptr;
 use std::rc::{Rc, Weak};
 
@@ -66,6 +66,12 @@ pub struct Node {
     state: *mut RsvgState,
     result: RefCell<NodeResult>,
     node_impl: Box<NodeTrait>,
+}
+
+// An iterator over the Node's children
+pub struct Children<'a> {
+    children: Ref<'a, Vec<Rc<Node>>>,
+    index: usize,
 }
 
 // Keep this in sync with rsvg-private.h:RsvgNodeType
@@ -240,6 +246,10 @@ impl Node {
         }
     }
 
+    pub fn children(&self) -> Children {
+        Children::new(self.children.borrow())
+    }
+
     pub fn has_children(&self) -> bool {
         self.children.borrow().len() > 0
     }
@@ -282,6 +292,33 @@ pub fn boxed_node_new(
         node_impl,
     )))
 }
+
+impl<'a> Children<'a> {
+    fn new(children: Ref<'a, Vec<Rc<Node>>>) -> Self {
+        Self { children, index: 0 }
+    }
+}
+
+impl<'a> Iterator for Children<'a> {
+    type Item = Rc<Node>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index == self.children.len() {
+            return None;
+        }
+
+        let item = self.children[self.index].clone();
+        self.index += 1;
+        Some(item)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let count = self.children.len() - self.index;
+        (count, Some(count))
+    }
+}
+
+impl<'a> ExactSizeIterator for Children<'a> {}
 
 #[no_mangle]
 pub extern "C" fn rsvg_node_get_type(raw_node: *const RsvgNode) -> NodeType {
