@@ -260,7 +260,7 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     if (state->fill) {
         cairo_save (render->cr);
         cairo_move_to (render->cr, x, y);
-        rsvg_bbox_insert (&render->bbox, &bbox);
+        rsvg_drawing_ctx_insert_bbox (ctx, &bbox);
 
         if (_set_source_rsvg_paint_server (ctx,
                                            state->fill,
@@ -280,7 +280,7 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     if (state->stroke) {
         cairo_save (render->cr);
         cairo_move_to (render->cr, x, y);
-        rsvg_bbox_insert (&render->bbox, &bbox);
+        rsvg_drawing_ctx_insert_bbox (ctx, &bbox);
 
         if (_set_source_rsvg_paint_server (ctx,
                                            state->stroke,
@@ -366,7 +366,6 @@ compute_bbox_from_stroke_and_fill (cairo_t *cr, RsvgState *state)
 static void
 stroke_and_fill (cairo_t *cr, RsvgDrawingCtx *ctx)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state = rsvg_current_state (ctx);
     RsvgBbox bbox;
 
@@ -380,7 +379,7 @@ stroke_and_fill (cairo_t *cr, RsvgDrawingCtx *ctx)
      * patterns on the cairo_t.  That process requires the rendering context to have
      * an updated bbox; for example, for the coordinate system in patterns.
      */
-    rsvg_bbox_insert (&render->bbox, &bbox);
+    rsvg_drawing_ctx_insert_bbox (ctx, &bbox);
 
     if (state->fill != NULL) {
         if (_set_source_rsvg_paint_server (ctx,
@@ -502,7 +501,7 @@ rsvg_cairo_render_surface (RsvgDrawingCtx *ctx,
 
     cairo_paint (render->cr);
 
-    rsvg_bbox_insert (&render->bbox, &bbox);
+    rsvg_drawing_ctx_insert_bbox (ctx, &bbox);
 }
 
 cairo_t *
@@ -889,6 +888,14 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
     ctx->render = (RsvgRender *) save_render;
 
     return surface;
+}
+
+void
+rsvg_cairo_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
+{
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (draw_ctx->render);
+
+    rsvg_bbox_insert (&render->bbox, bbox);
 }
 
 cairo_surface_t *
