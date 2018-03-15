@@ -1,3 +1,4 @@
+use cairo;
 use cssparser::{Parser, ParserInput, Token};
 use glib::translate::*;
 use glib_sys;
@@ -352,10 +353,39 @@ pub struct RsvgStrokeDasharray {
 }
 
 #[derive(Debug, PartialEq)]
-enum StrokeDasharray {
+pub enum StrokeDasharray {
     None,
     Inherit,
     Dasharray(Vec<RsvgLength>),
+}
+
+impl StrokeDasharray {
+    pub fn set_on_cairo(
+        &self,
+        draw_ctx: *const RsvgDrawingCtx,
+        cr: &cairo::Context,
+        offset: &RsvgLength,
+    ) {
+        match *self {
+            StrokeDasharray::None | StrokeDasharray::Inherit => {
+                // FIXME: for inheritance, do it in the caller
+                cr.set_dash(&[], 0.0);
+            }
+
+            StrokeDasharray::Dasharray(ref dashes) => {
+                let normalized_dashes: Vec<f64> =
+                    dashes.iter().map(|l| l.normalize(draw_ctx)).collect();
+
+                let total_length = normalized_dashes.iter().fold(0.0, |acc, &len| acc + len);
+
+                if total_length > 0.0 {
+                    cr.set_dash(&normalized_dashes, offset.normalize(draw_ctx));
+                } else {
+                    cr.set_dash(&[], 0.0);
+                }
+            }
+        }
+    }
 }
 
 fn parse_stroke_dash_array(s: &str) -> Result<StrokeDasharray, AttributeError> {
