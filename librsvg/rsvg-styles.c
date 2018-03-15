@@ -40,6 +40,11 @@
 
 #include <libcroco/libcroco.h>
 
+/* Defined in rust/src/length.rs */
+extern RsvgStrokeDasharray *rsvg_parse_stroke_dasharray(const char *str);
+extern RsvgStrokeDasharray *rsvg_stroke_dasharray_clone(RsvgStrokeDasharray *dash);
+extern void rsvg_stroke_dasharray_free(RsvgStrokeDasharray *dash);
+
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
 enum {
@@ -233,10 +238,9 @@ rsvg_state_finalize (RsvgState * state)
     rsvg_paint_server_unref (state->stroke);
     state->stroke = NULL;
 
-    if (state->dash.num_dashes != 0) {
-        g_free (state->dash.dashes);
-        state->dash.num_dashes = 0;
-        state->dash.dashes = NULL;
+    if (state->dash) {
+        rsvg_stroke_dasharray_free (state->dash);
+        state->dash = NULL;
     }
 
     if (state->styles) {
@@ -268,7 +272,6 @@ typedef int (*InheritanceFunction) (int dst, int src);
 void
 rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 {
-    gint i;
     RsvgState *parent = dst->parent;
 
     rsvg_state_finalize (dst);
@@ -288,10 +291,8 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 
     dst->styles = g_hash_table_ref (src->styles);
 
-    if (src->dash.num_dashes > 0) {
-        dst->dash.dashes = g_new0 (RsvgLength, src->dash.num_dashes);
-        for (i = 0; i < src->dash.num_dashes; i++)
-            dst->dash.dashes[i] = src->dash.dashes[i];
+    if (src->dash) {
+        dst->dash = rsvg_stroke_dasharray_clone (src->dash);
     }
 }
 
@@ -306,8 +307,6 @@ static void
 rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
                         const InheritanceFunction function, const gboolean inherituninheritables)
 {
-    gint i;
-
     if (function (dst->has_baseline_shift, src->has_baseline_shift))
         dst->baseline_shift = src->baseline_shift;
     if (function (dst->has_current_color, src->has_current_color))
@@ -416,14 +415,15 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->lang = g_strdup (src->lang);
     }
 
-    if (src->dash.num_dashes > 0 && (function (dst->has_dash, src->has_dash))) {
-        if (dst->has_dash)
-            g_free (dst->dash.dashes);
+    if (function (dst->has_dash, src->has_dash)) {
+        if (dst->dash) {
+            rsvg_stroke_dasharray_free (dst->dash);
+            dst->dash = NULL;
+        }
 
-        dst->dash.dashes = g_new0 (RsvgLength, src->dash.num_dashes);
-        dst->dash.num_dashes = src->dash.num_dashes;
-        for (i = 0; i < src->dash.num_dashes; i++)
-            dst->dash.dashes[i] = src->dash.dashes[i];
+        if (src->dash) {
+            dst->dash = rsvg_stroke_dasharray_clone (src->dash);
+        }
     }
 
     if (function (dst->has_dashoffset, src->has_dashoffset)) {
@@ -518,9 +518,6 @@ state_inherit (RsvgState * dst, const RsvgState * src)
 {
     rsvg_state_inherit_run (dst, src, inheritfunction, 1);
 }
-
-/* Defined in rust/src/length.rs */
-extern RsvgStrokeDasharray rsvg_parse_stroke_dasharray(const char *str);
 
 typedef enum {
     PAIR_SOURCE_STYLE,
@@ -1156,8 +1153,15 @@ rsvg_parse_style_pair (RsvgState *state,
 
     case RSVG_ATTRIBUTE_STROKE_DASHARRAY:
     {
-        state->has_dash = TRUE;
-        state->dash = rsvg_parse_stroke_dasharray (value);
+        /* FIXME: the following returns NULL on error; find a way to propagate
+         * errors from here.
+         */
+        RsvgStrokeDasharray *dash = rsvg_parse_stroke_dasharray (value);
+
+        if (dash) {
+            state->has_dash = TRUE;
+            state->dash = dash;
+        }
     }
     break;
 
@@ -1855,6 +1859,12 @@ rsvg_state_get_stop_opacity (RsvgState *state)
     } else {
         return NULL;
     }
+}
+
+RsvgStrokeDasharray *
+rsvg_state_get_stroke_dasharray (RsvgState *state)
+{
+    return state->dash;
 }
 
 guint32
