@@ -491,10 +491,11 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_draw_node_from_stack            (RsvgDrawingCtx *ctx, RsvgNode *node, int dominate);
 
 G_GNUC_INTERNAL
-void rsvg_render_path_builder   (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder);
+void rsvg_drawing_ctx_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder);
+
 G_GNUC_INTERNAL
-void rsvg_render_surface        (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
-                                 double x, double y, double w, double h);
+void rsvg_drawing_ctx_render_surface (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
+                                      double x, double y, double w, double h);
 
 G_GNUC_INTERNAL
 double rsvg_get_normalized_stroke_width (RsvgDrawingCtx *ctx);

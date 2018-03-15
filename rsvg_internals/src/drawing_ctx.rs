@@ -98,8 +98,11 @@ extern "C" {
     fn rsvg_push_discrete_layer(draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx);
 
-    fn rsvg_render_path_builder(draw_ctx: *const RsvgDrawingCtx, builder: *const RsvgPathBuilder);
-    fn rsvg_render_surface(
+    fn rsvg_drawing_ctx_render_path_builder(
+        draw_ctx: *const RsvgDrawingCtx,
+        builder: *const RsvgPathBuilder,
+    );
+    fn rsvg_drawing_ctx_render_surface(
         draw_ctx: *const RsvgDrawingCtx,
         surface: *const cairo_sys::cairo_surface_t,
         x: f64,
@@ -196,7 +199,7 @@ pub fn pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx) {
 
 pub fn render_path_builder(draw_ctx: *const RsvgDrawingCtx, builder: &RsvgPathBuilder) {
     unsafe {
-        rsvg_render_path_builder(draw_ctx, builder);
+        rsvg_drawing_ctx_render_path_builder(draw_ctx, builder);
     }
 }
 
@@ -209,7 +212,7 @@ pub fn render_surface(
     h: f64,
 ) {
     unsafe {
-        rsvg_render_surface(draw_ctx, surface.to_raw_none(), x, y, w, h);
+        rsvg_drawing_ctx_render_surface(draw_ctx, surface.to_raw_none(), x, y, w, h);
     }
 }
 
