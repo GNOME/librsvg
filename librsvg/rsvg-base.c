@@ -882,34 +882,6 @@ node_is_text_or_tspan (RsvgNode *node)
     return type == RSVG_NODE_TYPE_TEXT || type == RSVG_NODE_TYPE_TSPAN;
 }
 
-static gboolean
-find_last_chars_node_foreach (RsvgNode *node, gpointer data)
-{
-    RsvgNode **dest;
-
-    dest = data;
-
-    if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_CHARS) {
-        *dest = rsvg_node_ref (node);
-    } else if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_TSPAN) {
-        /* If we have
-         *   <text>
-         *     First                        (1)
-         *     <tspan>foo bar</tspan>
-         *     Second                       (2)
-         *   </text>
-         *
-         * Then we want (1) to go into a chars node.  However, the "foo bar" tspan will go
-         * into its own node.  When we read (2), we want it to go into a *new* chars node,
-         * not the one from (1).  So, here we discard the last chars node we found if
-         * we run into a tspan.
-         */
-        *dest = rsvg_node_unref (*dest);
-    }
-
-    return TRUE;
-}
-
 /* Finds the last chars child inside a given @node to which new characters can
  * be appended.  @node can be null; in this case we'll return NULL as we didn't
  * find any children.
@@ -919,13 +891,32 @@ find_last_chars_child (RsvgNode *node)
 {
     RsvgNode *child = NULL;
 
+    RsvgNode *temp;
+    RsvgNodeChildrenIter *iter;
+
     if (node_is_text_or_tspan (node)) {
         /* find the last CHARS node in the text or tspan node, so that we can
          * coalesce the text, and thus avoid screwing up the Pango layouts.
          */
-        rsvg_node_foreach_child (node,
-                                 find_last_chars_node_foreach,
-                                 &child);
+        iter = rsvg_node_children_iter_begin (node);
+
+        while (rsvg_node_children_iter_next_back (iter, &temp)) {
+            /* If a tspan node is encountered before any chars node
+             * (which means there's a tspan node after any chars nodes,
+             * because this is backwards iteration), return NULL.
+             */
+            if (rsvg_node_get_type (temp) == RSVG_NODE_TYPE_TSPAN) {
+                temp = rsvg_node_unref (temp);
+                break;
+            } else if (rsvg_node_get_type (temp) == RSVG_NODE_TYPE_CHARS) {
+                child = temp;
+                break;
+            } else {
+                temp = rsvg_node_unref (temp);
+            }
+        }
+
+        rsvg_node_children_iter_end (iter);
     }
 
     return child;
