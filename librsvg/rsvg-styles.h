@@ -260,6 +260,9 @@ G_GNUC_INTERNAL
 RsvgStrokeDasharray *rsvg_state_get_stroke_dasharray (RsvgState *state);
 
 G_GNUC_INTERNAL
+RsvgLength rsvg_state_get_dash_offset (RsvgState *state);
+
+G_GNUC_INTERNAL
 guint32 rsvg_state_get_current_color (RsvgState *state);
 
 G_GNUC_INTERNAL

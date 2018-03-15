@@ -1867,6 +1867,12 @@ rsvg_state_get_stroke_dasharray (RsvgState *state)
     return state->dash;
 }
 
+RsvgLength
+rsvg_state_get_dash_offset (RsvgState *state)
+{
+    return state->dash_offset;
+}
+
 guint32
 rsvg_state_get_current_color (RsvgState *state)
 {

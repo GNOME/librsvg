@@ -7,7 +7,7 @@ use pango_sys;
 
 use color::{Color, ColorSpec};
 use error::*;
-use length::RsvgLength;
+use length::{RsvgLength, StrokeDasharray};
 use node::RsvgNode;
 use opacity::{Opacity, OpacitySpec};
 
@@ -57,6 +57,8 @@ extern "C" {
     fn rsvg_state_set_cond_true(state: *const RsvgState, cond_true: glib_sys::gboolean);
     fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const ColorSpec;
     fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const OpacitySpec;
+    fn rsvg_state_get_stroke_dasharray(state: *const RsvgState) -> *const StrokeDasharray;
+    fn rsvg_state_get_dash_offset(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
     fn rsvg_state_get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias;
 
@@ -142,6 +144,20 @@ pub fn get_stop_opacity(state: *const RsvgState) -> Result<Option<Opacity>, Attr
             Opacity::from_opacity_spec(&*opacity_ptr).map(Some)
         }
     }
+}
+
+pub fn get_stroke_dasharray<'a>(state: *const RsvgState) -> Option<&'a StrokeDasharray> {
+    let dash = unsafe { rsvg_state_get_stroke_dasharray(state) };
+
+    if dash.is_null() {
+        None
+    } else {
+        unsafe { Some(&*dash) }
+    }
+}
+
+pub fn get_dash_offset(state: *const RsvgState) -> RsvgLength {
+    unsafe { rsvg_state_get_dash_offset(state) }
 }
 
 pub fn get_current_color(state: *const RsvgState) -> Color {
