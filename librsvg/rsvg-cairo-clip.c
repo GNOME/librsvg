@@ -59,7 +59,7 @@ rsvg_cairo_clip_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout,
     double rotation;
 
     affine = rsvg_drawing_ctx_get_current_state_affine (ctx);
-    rsvg_cairo_render_set_affine_on_cr (cairo_render, cairo_render->cr, &affine);
+    rsvg_drawing_ctx_set_affine_on_cr (ctx, cairo_render->cr, &affine);
 
     rotation = pango_gravity_to_rotation (gravity);
 
@@ -125,6 +125,7 @@ rsvg_cairo_clip_render_new (cairo_t *cr, RsvgCairoRender *parent)
 
     render->type = RSVG_RENDER_TYPE_CAIRO_CLIP;
     render->free = rsvg_cairo_clip_render_free;
+    render->set_affine_on_cr = rsvg_cairo_set_affine_on_cr;
     render->get_pango_context = rsvg_cairo_get_pango_context;
     render->render_pango_layout = rsvg_cairo_clip_render_pango_layout;
     render->render_path_builder = rsvg_cairo_clip_render_path_builder;
