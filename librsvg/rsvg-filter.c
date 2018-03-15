@@ -555,19 +555,15 @@ node_is_filter_primitive (RsvgNode *node)
     return type > RSVG_NODE_TYPE_FILTER_PRIMITIVE_FIRST && type < RSVG_NODE_TYPE_FILTER_PRIMITIVE_LAST;
 }
 
-static gboolean
-render_child_if_filter_primitive (RsvgNode *node, gpointer data)
+static void
+render_child_if_filter_primitive (RsvgNode *node, RsvgFilterContext *filter_ctx)
 {
-    RsvgFilterContext *filter_ctx = data;
-
     if (node_is_filter_primitive (node)) {
         RsvgFilterPrimitive *primitive;
 
         primitive = rsvg_rust_cnode_get_impl (node);
         rsvg_filter_primitive_render (node, primitive, filter_ctx);
     }
-
-    return TRUE;
 }
 
 /**
@@ -591,6 +587,8 @@ rsvg_filter_render (RsvgNode *filter_node,
 {
     RsvgFilter *filter;
     RsvgFilterContext *ctx;
+    RsvgNodeChildrenIter *iter;
+    RsvgNode *child;
     guint i;
     cairo_surface_t *output;
 
@@ -615,7 +613,14 @@ rsvg_filter_render (RsvgNode *filter_node,
     for (i = 0; i < 4; i++)
         ctx->channelmap[i] = channelmap[i] - '0';
 
-    rsvg_node_foreach_child (filter_node, render_child_if_filter_primitive, ctx);
+    iter = rsvg_node_children_iter_begin (filter_node);
+
+    while (rsvg_node_children_iter_next (iter, &child)) {
+        render_child_if_filter_primitive (child, ctx);
+        child = rsvg_node_unref (child);
+    }
+
+    rsvg_node_children_iter_end (iter);
 
     output = ctx->lastresult.surface;
 
@@ -2308,61 +2313,63 @@ struct _RsvgFilterPrimitiveMerge {
     RsvgFilterPrimitive super;
 };
 
-struct merge_render_closure {
-    cairo_surface_t *output;
-    RsvgIRect boundarys;
-    RsvgFilterContext *ctx;
-};
-
-static gboolean
-merge_render_child (RsvgNode *node, gpointer data)
+static void
+merge_render_child(RsvgNode          *node,
+                   cairo_surface_t   *output,
+                   RsvgIRect          boundarys,
+                   RsvgFilterContext *ctx)
 {
-    struct merge_render_closure *closure = data;
     RsvgFilterPrimitive *fp;
     cairo_surface_t *in;
 
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_FILTER_PRIMITIVE_MERGE_NODE)
-        return TRUE;
+        return;
 
     fp = rsvg_rust_cnode_get_impl (node);
 
-    in = rsvg_filter_get_in (fp->in, closure->ctx);
+    in = rsvg_filter_get_in (fp->in, ctx);
     if (in == NULL)
-        return TRUE;
+        return;
 
     rsvg_alpha_blt (in,
-                    closure->boundarys.x0,
-                    closure->boundarys.y0,
-                    closure->boundarys.x1 - closure->boundarys.x0,
-                    closure->boundarys.y1 - closure->boundarys.y0,
-                    closure->output,
-                    closure->boundarys.x0,
-                    closure->boundarys.y0);
+                    boundarys.x0,
+                    boundarys.y0,
+                    boundarys.x1 - boundarys.x0,
+                    boundarys.y1 - boundarys.y0,
+                    output,
+                    boundarys.x0,
+                    boundarys.y0);
 
     cairo_surface_destroy (in);
-
-    return TRUE;
 }
 
 static void
 rsvg_filter_primitive_merge_render (RsvgNode *node, RsvgFilterPrimitive *primitive, RsvgFilterContext *ctx)
 {
-    struct merge_render_closure closure;
+    RsvgNodeChildrenIter *iter;
+    RsvgNode *child;
+    RsvgIRect boundarys;
+    cairo_surface_t *output;
 
-    closure.boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
+    boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
 
-    closure.output = _rsvg_image_surface_new (ctx->width, ctx->height);
-    if (closure.output == NULL) {
+    output = _rsvg_image_surface_new (ctx->width, ctx->height);
+    if (output == NULL) {
         return;
     }
 
-    closure.ctx = ctx;
+    iter = rsvg_node_children_iter_begin (node);
 
-    rsvg_node_foreach_child (node, merge_render_child, &closure);
+    while (rsvg_node_children_iter_next (iter, &child)) {
+        merge_render_child (child, output, boundarys, ctx);
+        child = rsvg_node_unref (child);
+    }
 
-    rsvg_filter_store_result (primitive->result, closure.output, ctx);
+    rsvg_node_children_iter_end (iter);
 
-    cairo_surface_destroy (closure.output);
+    rsvg_filter_store_result (primitive->result, output, ctx);
+
+    cairo_surface_destroy (output);
 }
 
 static void
@@ -2826,14 +2833,13 @@ struct component_transfer_closure {
     RsvgFilterContext *ctx;
 };
 
-static gboolean
-component_transfer_render_child (RsvgNode *node, gpointer data)
+static void
+component_transfer_render_child (RsvgNode *node, struct component_transfer_closure *closure)
 {
-    struct component_transfer_closure *closure = data;
     RsvgNodeComponentTransferFunc *f;
 
     if (rsvg_node_get_type (node) != RSVG_NODE_TYPE_COMPONENT_TRANFER_FUNCTION)
-        return TRUE;
+        return;
 
     f = rsvg_rust_cnode_get_impl (node);
 
@@ -2843,7 +2849,7 @@ component_transfer_render_child (RsvgNode *node, gpointer data)
         closure->set_func = TRUE;
     }
 
-    return TRUE;
+    return;
 }
 
 static void
@@ -2857,6 +2863,8 @@ rsvg_filter_primitive_component_transfer_render (RsvgNode *node, RsvgFilterPrimi
     guchar *in_pixels;
     guchar *output_pixels;
     cairo_surface_t *output, *in;
+    RsvgNodeChildrenIter *iter;
+    RsvgNode *child;
     struct component_transfer_closure closure;
 
     boundarys = rsvg_filter_primitive_get_bounds (primitive, ctx);
@@ -2868,7 +2876,14 @@ rsvg_filter_primitive_component_transfer_render (RsvgNode *node, RsvgFilterPrimi
         closure.channel = "rgba"[c]; /* see rsvg_new_node_component_transfer_function() for where these chars come from */
         closure.set_func = FALSE;
 
-        rsvg_node_foreach_child (node, component_transfer_render_child, &closure);
+        iter = rsvg_node_children_iter_begin (node);
+
+        while (rsvg_node_children_iter_next (iter, &child)) {
+            component_transfer_render_child (child, &closure);
+            child = rsvg_node_unref (child);
+        }
+
+        rsvg_node_children_iter_end (iter);
 
         if (!closure.set_func)
             closure.functions[ctx->channelmap[c]] = identity_component_transfer_func;
@@ -4886,37 +4901,32 @@ struct _RsvgFilterPrimitiveDiffuseLighting {
     guint32 lightingcolor;
 };
 
-struct find_light_source_closure {
-    RsvgNode *found_node;
-};
-
-static gboolean
-is_light_source (RsvgNode *node, gpointer data)
-{
-    struct find_light_source_closure *closure = data;
-
-    if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
-        closure->found_node = rsvg_node_ref (node);
-    }
-
-    return TRUE;
-}
-
 static RsvgNodeLightSource *
 find_light_source_in_children (RsvgNode *node)
 {
-    struct find_light_source_closure closure;
+    RsvgNodeChildrenIter *iter;
+    RsvgNode *child;
     RsvgNodeLightSource *source;
 
-    closure.found_node = NULL;
-    rsvg_node_foreach_child (node, is_light_source, &closure);
-    if (closure.found_node == NULL)
+    iter = rsvg_node_children_iter_begin (node);
+
+    while (rsvg_node_children_iter_next (iter, &child)) {
+        if (rsvg_node_get_type (node) == RSVG_NODE_TYPE_LIGHT_SOURCE) {
+            break;
+        }
+
+        child = rsvg_node_unref (child);
+    }
+
+    rsvg_node_children_iter_end (iter);
+
+    if (child == NULL)
         return NULL;
 
-    g_assert (rsvg_node_get_type (closure.found_node) == RSVG_NODE_TYPE_LIGHT_SOURCE);
+    g_assert (rsvg_node_get_type (child) == RSVG_NODE_TYPE_LIGHT_SOURCE);
 
-    source = rsvg_rust_cnode_get_impl (closure.found_node);
-    closure.found_node = rsvg_node_unref (closure.found_node);
+    source = rsvg_rust_cnode_get_impl (child);
+    child = rsvg_node_unref (child);
 
     return source;
 }
