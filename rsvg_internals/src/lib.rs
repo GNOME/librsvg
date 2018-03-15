@@ -68,7 +68,6 @@ pub use node::{
     rsvg_node_children_iter_next_back,
     rsvg_node_draw,
     rsvg_node_draw_children,
-    rsvg_node_foreach_child,
     rsvg_node_get_parent,
     rsvg_node_get_state,
     rsvg_node_get_type,
