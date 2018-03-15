@@ -629,4 +629,46 @@ mod tests {
         assert!(Node::is_ancestor(node.clone(), child.clone()));
         assert!(!Node::is_ancestor(child.clone(), node.clone()));
     }
+
+    #[test]
+    fn node_children_iterator() {
+        let node = Rc::new(Node::new(
+            NodeType::Path,
+            None,
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
+
+        let child = Rc::new(Node::new(
+            NodeType::Path,
+            Some(Rc::downgrade(&node)),
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
+
+        let second_child = Rc::new(Node::new(
+            NodeType::Path,
+            Some(Rc::downgrade(&node)),
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
+
+        node.add_child(&child);
+        node.add_child(&second_child);
+
+        let mut children = node.children();
+
+        let c = children.next();
+        assert!(c.is_some());
+        let c = c.unwrap();
+        assert!(rc_node_ptr_eq(&c, &child));
+
+        let c = children.next_back();
+        assert!(c.is_some());
+        let c = c.unwrap();
+        assert!(rc_node_ptr_eq(&c, &second_child));
+
+        assert!(children.next().is_none());
+        assert!(children.next_back().is_none());
+    }
 }
