@@ -493,6 +493,67 @@ pub extern "C" fn rsvg_node_foreach_child(
     });
 }
 
+// This should really return Children<'a> where 'a is the lifetime of raw_node,
+// but raw pointers don't have lifetimes so there's not much we can do.
+#[no_mangle]
+pub extern "C" fn rsvg_node_children_iter_begin<'a>(
+    raw_node: *const RsvgNode,
+) -> *mut Children<'a> {
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    Box::into_raw(Box::new(node.children()))
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_node_children_iter_end(iter: *mut Children) {
+    assert!(!iter.is_null());
+
+    unsafe { Box::from_raw(iter) };
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_node_children_iter_next(
+    iter: *mut Children,
+    out_child: *mut *mut RsvgNode,
+) -> glib_sys::gboolean {
+    assert!(!iter.is_null());
+
+    let iter = unsafe { &mut *iter };
+    if let Some(child) = iter.next() {
+        unsafe {
+            *out_child = box_node(child);
+        }
+        true.to_glib()
+    } else {
+        unsafe {
+            *out_child = ptr::null_mut();
+        }
+        false.to_glib()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_node_children_iter_next_back(
+    iter: *mut Children,
+    out_child: *mut *mut RsvgNode,
+) -> glib_sys::gboolean {
+    assert!(!iter.is_null());
+
+    let iter = unsafe { &mut *iter };
+    if let Some(child) = iter.next_back() {
+        unsafe {
+            *out_child = box_node(child);
+        }
+        true.to_glib()
+    } else {
+        unsafe {
+            *out_child = ptr::null_mut();
+        }
+        false.to_glib()
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn rsvg_node_draw_children(
     raw_node: *const RsvgNode,
@@ -510,7 +571,7 @@ mod tests {
     use super::*;
     use drawing_ctx::RsvgDrawingCtx;
     use handle::RsvgHandle;
-    use std::ptr;
+    use std::{mem, ptr};
     use std::rc::Rc;
 
     struct TestNodeImpl {}
@@ -670,5 +731,50 @@ mod tests {
 
         assert!(children.next().is_none());
         assert!(children.next_back().is_none());
+    }
+
+    #[test]
+    fn node_children_iterator_c() {
+        let node = Rc::new(Node::new(
+            NodeType::Path,
+            None,
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
+
+        let child = Rc::new(Node::new(
+            NodeType::Path,
+            Some(Rc::downgrade(&node)),
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
+
+        let second_child = Rc::new(Node::new(
+            NodeType::Path,
+            Some(Rc::downgrade(&node)),
+            ptr::null_mut(),
+            Box::new(TestNodeImpl {}),
+        ));
+
+        node.add_child(&child);
+        node.add_child(&second_child);
+
+        let iter = rsvg_node_children_iter_begin(&node);
+        let mut c = unsafe { mem::uninitialized() };
+
+        let result: bool = from_glib(rsvg_node_children_iter_next(iter, &mut c));
+        assert_eq!(result, true);
+        assert!(rc_node_ptr_eq(unsafe { &*c }, &child));
+        rsvg_node_unref(c);
+
+        let result: bool = from_glib(rsvg_node_children_iter_next_back(iter, &mut c));
+        assert_eq!(result, true);
+        assert!(rc_node_ptr_eq(unsafe { &*c }, &second_child));
+        rsvg_node_unref(c);
+
+        let result: bool = from_glib(rsvg_node_children_iter_next(iter, &mut c));
+        assert_eq!(result, false);
+        let result: bool = from_glib(rsvg_node_children_iter_next_back(iter, &mut c));
+        assert_eq!(result, false);
     }
 }
