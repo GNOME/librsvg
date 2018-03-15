@@ -1,12 +1,11 @@
 use cairo;
+use cairo_sys;
 use cssparser::{Parser, ParserInput, Token};
 use glib::translate::*;
-use glib_sys;
 use libc;
 use regex::Regex;
 
 use std::f64::consts::*;
-use std::mem;
 use std::ptr;
 
 use drawing_ctx;
@@ -335,24 +334,7 @@ fn viewport_percentage(x: f64, y: f64) -> f64 {
     (x * x + y * y).sqrt() / SQRT_2
 }
 
-// Keep in sync with rsvg-styles.h:RsvgStrokeDasharrayKind
-#[repr(C)]
-pub enum RsvgStrokeDasharrayKind {
-    None,
-    Inherit,
-    Dashes,
-    Error,
-}
-
-// Keep in sync with rsvg-styles.h:RsvgStrokeDasharray
-#[repr(C)]
-pub struct RsvgStrokeDasharray {
-    pub kind: RsvgStrokeDasharrayKind,
-    pub num_dashes: usize,
-    pub dashes: *mut RsvgLength,
-}
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum StrokeDasharray {
     None,
     Inherit,
@@ -360,7 +342,7 @@ pub enum StrokeDasharray {
 }
 
 impl StrokeDasharray {
-    pub fn set_on_cairo(
+    fn set_on_cairo(
         &self,
         draw_ctx: *const RsvgDrawingCtx,
         cr: &cairo::Context,
@@ -465,42 +447,38 @@ pub extern "C" fn rsvg_length_hand_normalize(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_parse_stroke_dasharray(string: *const libc::c_char) -> RsvgStrokeDasharray {
+pub extern "C" fn rsvg_parse_stroke_dasharray(string: *const libc::c_char) -> *const StrokeDasharray {
     let my_string = unsafe { &String::from_glib_none(string) };
 
     match parse_stroke_dash_array(my_string) {
-        Ok(StrokeDasharray::None) => RsvgStrokeDasharray {
-            kind: RsvgStrokeDasharrayKind::None,
-            num_dashes: 0,
-            dashes: ptr::null_mut(),
-        },
+        Ok(dash) => Box::into_raw(Box::new(dash)),
 
-        Ok(StrokeDasharray::Inherit) => RsvgStrokeDasharray {
-            kind: RsvgStrokeDasharrayKind::Inherit,
-            num_dashes: 0,
-            dashes: ptr::null_mut(),
-        },
-
-        Ok(StrokeDasharray::Dasharray(ref v)) => RsvgStrokeDasharray {
-            kind: RsvgStrokeDasharrayKind::Dashes,
-            num_dashes: v.len(),
-            dashes: to_c_array(v),
-        },
-
-        Err(_) => RsvgStrokeDasharray {
-            kind: RsvgStrokeDasharrayKind::Error,
-            num_dashes: 0,
-            dashes: ptr::null_mut(),
-        },
+        Err(_) => ptr::null(),
     }
 }
 
-fn to_c_array<T>(v: &[T]) -> *mut T {
-    unsafe {
-        let res = glib_sys::g_malloc(mem::size_of::<T>() * v.len()) as *mut T;
-        ptr::copy_nonoverlapping(v.as_ptr(), res, v.len());
-        res
-    }
+#[no_mangle]
+pub extern "C" fn rsvg_stroke_dasharray_clone(dash: *const StrokeDasharray) -> *mut StrokeDasharray {
+    unsafe { Box::into_raw(Box::new((*dash).clone())) }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_stroke_dasharray_free(dash: *mut StrokeDasharray) {
+    unsafe { Box::from_raw(dash); }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_stroke_dasharray_set_on_cairo(dash: *const StrokeDasharray,
+                                                     draw_ctx: *const RsvgDrawingCtx,
+                                                     cr: *mut cairo_sys::cairo_t,
+                                                     offset: &RsvgLength) {
+    let dash = if dash.is_null() {
+        &StrokeDasharray::None
+    } else {
+        unsafe { &*dash }
+    };
+
+    dash.set_on_cairo(draw_ctx, unsafe { &cairo::Context::from_glib_none(cr) }, offset);
 }
 
 #[cfg(test)]

@@ -164,52 +164,6 @@ rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
     return context;
 }
 
-static void
-set_stroke_dasharray(cairo_t *cr, RsvgDrawingCtx *ctx, RsvgStrokeDasharray *dash, RsvgLength *dash_offset)
-{
-    double *dashes;
-    double total_length;
-    int i;
-
-    switch (dash->kind) {
-    case RSVG_STROKE_DASHARRAY_ERROR:
-        /* fall through */
-        /* FIXME: we should not get an erroneous dasharray here, but the style parsing code does not currently handle errors */
-    case RSVG_STROKE_DASHARRAY_NONE:
-        cairo_set_dash (cr, NULL, 0, 0.0);
-        break;
-
-    case RSVG_STROKE_DASHARRAY_INHERIT:
-        /* FIXME: do inheritance in the caller */
-        cairo_set_dash (cr, NULL, 0, 0.0);
-        break;
-
-    case RSVG_STROKE_DASHARRAY_DASHES:
-        dashes = g_new(double, dash->num_dashes);
-        total_length = 0.0;
-
-        for (i = 0; i < dash->num_dashes; i++) {
-            dashes[i] = rsvg_length_normalize(&dash->dashes[i], ctx);
-            total_length += dashes[i];
-        }
-
-        if (total_length > 0.0) {
-            cairo_set_dash (cr,
-                            dashes,
-                            dash->num_dashes,
-                            rsvg_length_normalize (dash_offset, ctx));
-        } else {
-            cairo_set_dash (cr, NULL, 0, 0.0);
-        }
-
-        g_free(dashes);
-        break;
-
-    default:
-        g_assert_not_reached ();
-        break;
-    }
-}
 
 static void
 setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgState *state)
@@ -219,7 +173,12 @@ setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgState *state)
     cairo_set_line_cap (cr, (cairo_line_cap_t) state->cap);
     cairo_set_line_join (cr, (cairo_line_join_t) state->join);
 
-    set_stroke_dasharray(cr, ctx, &state->dash, &state->dash_offset);
+    extern void rsvg_stroke_dasharray_set_on_cairo(RsvgStrokeDasharray *dash,
+                                                   RsvgDrawingCtx *draw_ctx,
+                                                   cairo_t *cr,
+                                                   RsvgLength *dash_offset);
+
+    rsvg_stroke_dasharray_set_on_cairo(state->dash, ctx, cr, &state->dash_offset);
 }
 
 void
