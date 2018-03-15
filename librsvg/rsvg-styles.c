@@ -1795,6 +1795,12 @@ rsvg_state_has_overflow (RsvgState *state)
     return state->has_overflow;
 }
 
+RsvgLength
+rsvg_state_get_stroke_width (RsvgState *state)
+{
+    return state->stroke_width;
+}
+
 gboolean
 rsvg_state_get_cond_true (RsvgState *state)
 {
