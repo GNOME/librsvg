@@ -428,17 +428,6 @@ gboolean rsvg_node_children_iter_next_back (RsvgNodeChildrenIter *iter,
 G_GNUC_INTERNAL
 void rsvg_node_children_iter_end (RsvgNodeChildrenIter *iter);
 
-/* Used to iterate among a node's children with rsvg_node_foreach_child().
- * If this caller-supplied function returns FALSE, iteration will stop.
- * Otherwise, iteration will continue to the next child node.
- *
- * Keep this in sync with rust/src/node.rs:NodeForeachChild
- */
-typedef gboolean (* RsvgNodeForeachChildFn) (RsvgNode *node, gpointer data);
-
-/* Implemented in rust/src/node.rs */
-G_GNUC_INTERNAL
-void rsvg_node_foreach_child (RsvgNode *node, RsvgNodeForeachChildFn fn, gpointer data);
 /* generic function for drawing all of the children of a particular node */
 
 /* Implemented in rust/src/node.rs */

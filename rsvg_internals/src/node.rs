@@ -233,18 +233,6 @@ impl Node {
         }
     }
 
-    pub fn foreach_child<F>(&self, mut f: F)
-    where
-        F: FnMut(Rc<Node>) -> bool,
-    {
-        for child in self.children() {
-            let next = f(child);
-            if !next {
-                break;
-            }
-        }
-    }
-
     pub fn children(&self) -> Children {
         Children::new(self.children.borrow())
     }
@@ -468,29 +456,6 @@ pub extern "C" fn rsvg_node_set_attribute_parse_error(
             ParseError::new(&String::from_glib_none(description)),
         ));
     }
-}
-
-type NodeForeachChild =
-    unsafe extern "C" fn(node: *const RsvgNode, data: *const libc::c_void) -> glib_sys::gboolean;
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_foreach_child(
-    raw_node: *const RsvgNode,
-    func: NodeForeachChild,
-    data: *const libc::c_void,
-) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    node.foreach_child(|child| {
-        let boxed_child = box_node(child.clone());
-
-        let next: bool = unsafe { from_glib(func(boxed_child, data)) };
-
-        rsvg_node_unref(boxed_child);
-
-        next
-    });
 }
 
 // This should really return Children<'a> where 'a is the lifetime of raw_node,
