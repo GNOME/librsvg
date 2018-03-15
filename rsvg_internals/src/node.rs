@@ -13,7 +13,7 @@ use error::*;
 use handle::RsvgHandle;
 use parsers::ParseError;
 use property_bag::PropertyBag;
-use state::RsvgState;
+use state::{self, RsvgState};
 
 // A *const RsvgNode is just a pointer for the C code's benefit: it
 // points to an  Rc<Node>, which is our refcounted Rust representation
@@ -275,7 +275,7 @@ pub fn boxed_node_new(
     box_node(Rc::new(Node::new(
         node_type,
         node_ptr_to_weak(raw_parent),
-        drawing_ctx::state_new(),
+        state::new(),
         node_impl,
     )))
 }
