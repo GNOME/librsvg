@@ -53,21 +53,6 @@ gboolean _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
                                         RsvgBbox bbox,
                                         guint32 current_color);
 
-static void
-_set_rsvg_affine (RsvgCairoRender * render, cairo_matrix_t *affine)
-{
-    cairo_t * cr = render->cr;
-    cairo_matrix_t matrix;
-    gboolean nest = cr != render->initial_cr;
-
-    cairo_matrix_init (&matrix,
-                       affine->xx, affine->yx,
-                       affine->xy, affine->yy,
-                       affine->x0 + (nest ? 0 : render->offset_x),
-                       affine->y0 + (nest ? 0 : render->offset_y));
-    cairo_set_matrix (cr, &matrix);
-}
-
 #ifdef HAVE_PANGOFT2
 static cairo_font_options_t *
 get_font_options_for_testing (void)
@@ -240,7 +225,7 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
 
     cairo_set_antialias (render->cr, state->text_rendering_type);
 
-    _set_rsvg_affine (render, &state->affine);
+    rsvg_cairo_render_set_affine (render, &state->affine);
 
     rsvg_bbox_init (&bbox, &state->affine);
     if (PANGO_GRAVITY_IS_VERTICAL (gravity)) {
@@ -319,7 +304,7 @@ rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 
     cairo_set_antialias (cr, state->shape_rendering_type);
 
-    _set_rsvg_affine (render, &state->affine);
+    rsvg_cairo_render_set_affine (render, &state->affine);
 
     setup_cr_for_stroke (cr, ctx, state);
 
@@ -441,7 +426,7 @@ rsvg_cairo_render_surface (RsvgDrawingCtx *ctx,
     bbox.rect.height = h;
     bbox.virgin = 0;
 
-    _set_rsvg_affine (render, &state->affine);
+    rsvg_cairo_render_set_affine (render, &state->affine);
     cairo_scale (render->cr, w / dwidth, h / dheight);
     src_x *= dwidth / w;
     src_y *= dheight / h;
@@ -818,7 +803,7 @@ rsvg_cairo_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_t *cr = render->cr;
 
-    _set_rsvg_affine (render, &rsvg_current_state (ctx)->affine);
+    rsvg_cairo_render_set_affine (render, &rsvg_current_state (ctx)->affine);
 
     cairo_rectangle (cr, x, y, w, h);
     cairo_clip (cr);

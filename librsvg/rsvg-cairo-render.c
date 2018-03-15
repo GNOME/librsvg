@@ -41,6 +41,21 @@
 #include "rsvg-styles.h"
 #include "rsvg-structure.h"
 
+void
+rsvg_cairo_render_set_affine (RsvgCairoRender *render, cairo_matrix_t *affine)
+{
+    cairo_t *cr = render->cr;
+    gboolean nest = cr != render->initial_cr;
+    cairo_matrix_t matrix;
+
+    cairo_matrix_init (&matrix,
+                       affine->xx, affine->yx,
+                       affine->xy, affine->yy,
+                       affine->x0 + (nest ? 0 : render->offset_x),
+                       affine->y0 + (nest ? 0 : render->offset_y));
+    cairo_set_matrix (cr, &matrix);
+}
+
 static void
 rsvg_cairo_render_free (RsvgRender * self)
 {
