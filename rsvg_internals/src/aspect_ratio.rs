@@ -31,10 +31,25 @@ pub struct AspectRatio {
     align: Option<Align>,
 }
 
+impl Default for AspectRatio {
+    fn default() -> AspectRatio {
+        AspectRatio {
+            defer: false,
+            align: Some(Align::default()),
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum FitMode {
     Meet,
     Slice,
+}
+
+impl Default for FitMode {
+    fn default() -> FitMode {
+        FitMode::Meet
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -42,6 +57,16 @@ struct Align {
     x: Align1D,
     y: Align1D,
     fit: FitMode,
+}
+
+impl Default for Align {
+    fn default() -> Align {
+        Align {
+            x: Align1D::Mid,
+            y: Align1D::Mid,
+            fit: FitMode::default(),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -124,31 +149,6 @@ impl AspectRatio {
         let align = align_xy.map(|(x, y)| Align { x, y, fit });
 
         Ok(AspectRatio { defer, align })
-    }
-}
-
-impl Default for AspectRatio {
-    fn default() -> AspectRatio {
-        AspectRatio {
-            defer: false,
-            align: Some(Align::default()),
-        }
-    }
-}
-
-impl Default for FitMode {
-    fn default() -> FitMode {
-        FitMode::Meet
-    }
-}
-
-impl Default for Align {
-    fn default() -> Align {
-        Align {
-            x: Align1D::Mid,
-            y: Align1D::Mid,
-            fit: FitMode::default(),
-        }
     }
 }
 
