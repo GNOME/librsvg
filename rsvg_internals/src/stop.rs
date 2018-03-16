@@ -6,8 +6,7 @@ use std::cell::Cell;
 
 use attributes::Attribute;
 use color::*;
-use drawing_ctx;
-use drawing_ctx::*;
+use drawing_ctx::RsvgDrawingCtx;
 use error::*;
 use handle::RsvgHandle;
 use length::*;
