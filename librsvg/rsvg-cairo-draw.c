@@ -184,10 +184,6 @@ rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, doub
         return;
     }
 
-    cairo_set_antialias (cr, state->text_rendering_type);
-
-    rsvg_drawing_ctx_set_affine_on_cr (ctx, cr, &state->affine);
-
     rsvg_bbox_init (&bbox, &state->affine);
     if (PANGO_GRAVITY_IS_VERTICAL (gravity)) {
         bbox.rect.x = x + (ink.x - ink.height) / (double)PANGO_SCALE;
@@ -202,11 +198,18 @@ rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, doub
     }
     bbox.virgin = 0;
 
+    if (state->fill || state->stroke) {
+        rsvg_drawing_ctx_insert_bbox (ctx, &bbox);
+    }
+
+    cairo_set_antialias (cr, state->text_rendering_type);
+
+    rsvg_drawing_ctx_set_affine_on_cr (ctx, cr, &state->affine);
+
     rotation = pango_gravity_to_rotation (gravity);
     if (state->fill) {
         cairo_save (cr);
         cairo_move_to (cr, x, y);
-        rsvg_drawing_ctx_insert_bbox (ctx, &bbox);
 
         if (rsvg_set_source_rsvg_paint_server (ctx,
                                                state->fill,
@@ -226,7 +229,6 @@ rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, doub
     if (state->stroke) {
         cairo_save (cr);
         cairo_move_to (cr, x, y);
-        rsvg_drawing_ctx_insert_bbox (ctx, &bbox);
 
         if (rsvg_set_source_rsvg_paint_server (ctx,
                                                state->stroke,
