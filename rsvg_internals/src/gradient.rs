@@ -308,19 +308,17 @@ impl Gradient {
                 || node.get_type() == NodeType::RadialGradient
         );
 
-        for child in node.children() {
-            if child.get_type() != NodeType::Stop {
-                continue; // just ignore this child; we are only interested in gradient stops
-            }
-
-            if child.get_result().is_err() {
-                break; // don't add any more stops
-            }
-
-            child.with_impl(|stop: &NodeStop| {
-                self.add_color_stop(stop.get_offset(), stop.get_rgba());
+        node.children()
+             .into_iter()
+             // just ignore this child; we are only interested in gradient stops
+             .filter(|child| child.get_type() == NodeType::Stop)
+             // don't add any more stops, Eq to break in for-loop
+             .take_while(|child| child.get_result().is_ok())
+             .for_each(|child| {
+                child.with_impl(|stop: &NodeStop| {
+                    self.add_color_stop(stop.get_offset(), stop.get_rgba());
+                })
             });
-        }
     }
 
     fn add_color_stop(&mut self, offset: f64, rgba: u32) {
