@@ -319,7 +319,7 @@ mod tests {
             Ok(PaintServer::Iri {
                 iri: "#link".to_string(),
                 alternate: None,
-            })
+            },)
         );
 
         assert_eq!(
@@ -327,7 +327,7 @@ mod tests {
             Ok(PaintServer::Iri {
                 iri: "#link".to_string(),
                 alternate: None,
-            })
+            },)
         );
 
         assert_eq!(
@@ -335,7 +335,7 @@ mod tests {
             Ok(PaintServer::Iri {
                 iri: "#link".to_string(),
                 alternate: Some(Color::from(0xffff8040)),
-            })
+            },)
         );
 
         assert_eq!(
@@ -343,7 +343,7 @@ mod tests {
             Ok(PaintServer::Iri {
                 iri: "#link".to_string(),
                 alternate: Some(Color::from(0x80ff8040)),
-            })
+            },)
         );
 
         assert_eq!(
@@ -351,7 +351,7 @@ mod tests {
             Ok(PaintServer::Iri {
                 iri: "#link".to_string(),
                 alternate: Some(Color::CurrentColor),
-            })
+            },)
         );
 
         assert_eq!(
@@ -359,7 +359,7 @@ mod tests {
             Ok(PaintServer::Iri {
                 iri: "#link".to_string(),
                 alternate: None,
-            })
+            },)
         );
     }
 
