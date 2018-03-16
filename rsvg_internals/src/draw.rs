@@ -6,20 +6,14 @@ use glib_sys;
 use bbox::RsvgBbox;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use length::StrokeDasharray;
+use paint_server;
 use path_builder::RsvgPathBuilder;
 use state::{self, RsvgState};
-/*
-#[no_mangle]
-pub extern "C" fn rsvg_draw_path_builder(draw_ctx: *mut RsvgDrawingCtx,
-                                         raw_builder: *const RsvgPathBuilder,
-                                         clipping: glib_sys::gboolean)
+
+pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx,
+                         builder: &RsvgPathBuilder,
+                         clipping: bool)
 {
-    assert!(!draw_ctx.is_null());
-    assert!(!raw_builder.is_null());
-
-    let builder = unsafe { &*raw_builder };
-    let clipping: bool = from_glib(clipping);
-
     if !clipping {
         drawing_ctx::push_discrete_layer(draw_ctx);
     }
@@ -52,9 +46,42 @@ fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
 
     let bbox = compute_bbox_from_stroke_and_fill(cr, state);
 
-    FIXME
+    // Update the bbox in the rendering context.  Below, we actually set the fill/stroke
+    // patterns on the cairo_t.  That process requires the rendering context to have
+    // an updated bbox; for example, for the coordinate system in patterns.
+    drawing_ctx::insert_bbox(draw_ctx, &bbox);
+
+    let fill = state::get_fill(state);
+    let stroke = state::get_stroke(state);
+
+    if let Some(fill) = fill {
+        if paint_server::_set_source_rsvg_paint_server (draw_ctx,
+                                                        fill,
+                                                        state::get_fill_opacity(state),
+                                                        &bbox,
+                                                        state::get_current_color(state)) {
+            if stroke.is_some() {
+                cr.fill_preserve();
+            } else {
+                cr.fill();
+            }
+        }
+    }
+
+    if let Some(stroke) = stroke {
+        if paint_server::_set_source_rsvg_paint_server (draw_ctx,
+                                                        stroke,
+                                                        state::get_stroke_opacity(state),
+                                                        &bbox,
+                                                        state::get_current_color(state)) {
+            cr.stroke();
+        }
+    }
+
+    // clear the path in case stroke == fill == None; otherwise 
+    // we leave it around from computing the bounding box
+    cr.new_path();
 }
-*/
 
 fn setup_cr_for_stroke(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, state: *mut RsvgState)
 {
@@ -138,18 +165,24 @@ fn compute_bbox_from_stroke_and_fill(cr: &cairo::Context, state: *mut RsvgState)
 }
 
 #[no_mangle]
+pub extern "C" fn rsvg_draw_path_builder(draw_ctx: *mut RsvgDrawingCtx,
+                                         raw_builder: *const RsvgPathBuilder,
+                                         clipping: glib_sys::gboolean)
+{
+    assert!(!draw_ctx.is_null());
+    assert!(!raw_builder.is_null());
+
+    let builder = unsafe { &*raw_builder };
+    let clipping: bool = from_glib(clipping);
+
+    draw_path_builder(draw_ctx, builder, clipping);
+}
+
+#[no_mangle]
 pub extern "C" fn rsvg_setup_cr_for_stroke(cr: *mut cairo_sys::cairo_t,
                                            draw_ctx: *mut RsvgDrawingCtx,
                                            state: *mut RsvgState) {
     let cr = unsafe { cairo::Context::from_glib_none(cr) };
 
     setup_cr_for_stroke(&cr, draw_ctx, state);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_compute_bbox_from_stroke_and_fill(cr: *mut cairo_sys::cairo_t,
-                                                         state: *mut RsvgState) -> RsvgBbox {
-    let cr = unsafe { cairo::Context::from_glib_none(cr) };
-
-    compute_bbox_from_stroke_and_fill(&cr, state)
 }

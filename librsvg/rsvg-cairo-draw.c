@@ -166,7 +166,7 @@ rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
 
 /* Defined in rsvg_internals/src/draw.rs */
 extern void rsvg_setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgState *state);
-extern RsvgBbox rsvg_compute_bbox_from_stroke_and_fill (cairo_t *cr, RsvgState *state);
+extern void rsvg_draw_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder, gboolean clipping);
 
 void
 rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, double x, double y)
@@ -245,79 +245,6 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
         }
 
         cairo_restore (render->cr);
-    }
-}
-
-static void
-stroke_and_fill (cairo_t *cr, RsvgDrawingCtx *ctx)
-{
-    RsvgState *state = rsvg_current_state (ctx);
-    RsvgBbox bbox;
-
-    cairo_set_antialias (cr, state->shape_rendering_type);
-
-    rsvg_setup_cr_for_stroke (cr, ctx, state);
-
-    bbox = rsvg_compute_bbox_from_stroke_and_fill (cr, state);
-
-    /* Update the bbox in the rendering context.  Below, we actually set the fill/stroke
-     * patterns on the cairo_t.  That process requires the rendering context to have
-     * an updated bbox; for example, for the coordinate system in patterns.
-     */
-    rsvg_drawing_ctx_insert_bbox (ctx, &bbox);
-
-    if (state->fill != NULL) {
-        if (_set_source_rsvg_paint_server (ctx,
-                                           state->fill,
-                                           state->fill_opacity,
-                                           bbox,
-                                           state->current_color)) {
-            if (state->stroke != NULL)
-                cairo_fill_preserve (cr);
-            else
-                cairo_fill (cr);
-        }
-    }
-
-    if (state->stroke != NULL) {
-        if (_set_source_rsvg_paint_server (ctx,
-                                           state->stroke,
-                                           state->stroke_opacity,
-                                           bbox,
-                                           state->current_color)) {
-            cairo_stroke (cr);
-        }
-    }
-
-    cairo_new_path (cr); /* clear the path in case stroke == fill == NULL; otherwise we leave it around from computing the bounding box */
-}
-
-void
-rsvg_draw_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder, gboolean clipping)
-{
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    RsvgState *state;
-    cairo_t *cr;
-
-    if (!clipping) {
-        rsvg_cairo_push_discrete_layer (ctx);
-    }
-
-    state = rsvg_current_state (ctx);
-    cr = render->cr;
-
-    rsvg_drawing_ctx_set_affine_on_cr (ctx, cr, &state->affine);
-
-    rsvg_path_builder_add_to_cairo_context (builder, cr);
-
-    if (clipping) {
-        cairo_set_fill_rule (cr, state->clip_rule);
-    } else {
-        cairo_set_fill_rule (cr, state->fill_rule);
-
-        stroke_and_fill (cr, ctx);
-
-        rsvg_cairo_pop_discrete_layer (ctx);
     }
 }
 
