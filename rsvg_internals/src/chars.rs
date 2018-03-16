@@ -3,7 +3,7 @@ use std;
 use std::cell::RefCell;
 use std::str;
 
-use drawing_ctx::{self, RsvgDrawingCtx};
+use drawing_ctx::RsvgDrawingCtx;
 use handle::RsvgHandle;
 use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode, boxed_node_new, rsvg_node_get_state};
 use property_bag::PropertyBag;

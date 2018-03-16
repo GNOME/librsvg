@@ -1,14 +1,11 @@
 use cairo;
 use cairo_sys;
 use glib::translate::*;
-use glib_sys;
 use libc;
 use pango;
 use pango_sys;
 
 use bbox::RsvgBbox;
-use color::*;
-use error::*;
 use node::NodeType;
 use node::RsvgNode;
 use path_builder::RsvgPathBuilder;

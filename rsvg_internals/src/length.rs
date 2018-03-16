@@ -1,5 +1,4 @@
 use cairo;
-use cairo_sys;
 use cssparser::{Parser, ParserInput, Token};
 use glib::translate::*;
 use libc;
