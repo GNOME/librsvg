@@ -6,8 +6,7 @@ use std::cell::Cell;
 
 use attributes::Attribute;
 use color::*;
-use drawing_ctx;
-use drawing_ctx::*;
+use drawing_ctx::RsvgDrawingCtx;
 use error::*;
 use handle::RsvgHandle;
 use length::*;
@@ -15,7 +14,7 @@ use node::*;
 use opacity::*;
 use parsers::parse;
 use property_bag::PropertyBag;
-use state::RsvgState;
+use state::{self, RsvgState};
 
 pub struct NodeStop {
     offset: Cell<f64>,
@@ -99,21 +98,21 @@ impl NodeTrait for NodeStop {
             rsvg_parse_presentation_attributes(state, pbag.ffi());
         }
 
-        let inherited_state = drawing_ctx::state_new();
+        let inherited_state = state::new();
         let boxed_node = box_node(node.clone());
-        drawing_ctx::state_reconstruct(inherited_state, boxed_node);
+        state::reconstruct(inherited_state, boxed_node);
         rsvg_node_unref(boxed_node);
 
         let mut color_rgba: cssparser::RGBA;
 
-        let stop_color = drawing_ctx::state_get_stop_color(state)
-            .map_err(|e| NodeError::attribute_error("stop-color", e))?;
+        let stop_color =
+            state::get_stop_color(state).map_err(|e| NodeError::attribute_error("stop-color", e))?;
 
         match stop_color {
             None => color_rgba = cssparser::RGBA::transparent(),
 
             Some(Color::Inherit) => {
-                let inherited_stop_color = drawing_ctx::state_get_stop_color(inherited_state)
+                let inherited_stop_color = state::get_stop_color(inherited_state)
                     .map_err(|e| NodeError::attribute_error("stop-color", e))?;
 
                 match inherited_stop_color {
@@ -121,7 +120,7 @@ impl NodeTrait for NodeStop {
 
                     Some(Color::Inherit) => color_rgba = cssparser::RGBA::transparent(),
                     Some(Color::CurrentColor) => {
-                        let color = drawing_ctx::state_get_current_color(inherited_state);
+                        let color = state::get_current_color(inherited_state);
                         match color {
                             Color::RGBA(rgba) => color_rgba = rgba,
                             _ => unreachable!(),
@@ -133,7 +132,7 @@ impl NodeTrait for NodeStop {
             }
 
             Some(Color::CurrentColor) => {
-                let color = drawing_ctx::state_get_current_color(inherited_state);
+                let color = state::get_current_color(inherited_state);
                 match color {
                     Color::RGBA(rgba) => color_rgba = rgba,
                     _ => unreachable!(),
@@ -143,14 +142,14 @@ impl NodeTrait for NodeStop {
             Some(Color::RGBA(rgba)) => color_rgba = rgba,
         }
 
-        let stop_opacity = drawing_ctx::state_get_stop_opacity(state)
+        let stop_opacity = state::get_stop_opacity(state)
             .map_err(|e| NodeError::attribute_error("stop-opacity", e))?;
 
         match stop_opacity {
             None => color_rgba.alpha = 0xff,
 
             Some(Opacity::Inherit) => {
-                let inherited_opacity = drawing_ctx::state_get_stop_opacity(inherited_state)
+                let inherited_opacity = state::get_stop_opacity(inherited_state)
                     .map_err(|e| NodeError::attribute_error("stop-opacity", e))?;
 
                 match inherited_opacity {
@@ -164,7 +163,7 @@ impl NodeTrait for NodeStop {
 
         self.rgba.set(u32_from_rgba(color_rgba));
 
-        drawing_ctx::state_free(inherited_state);
+        state::free(inherited_state);
 
         Ok(())
     }

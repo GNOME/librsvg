@@ -12,6 +12,7 @@ extern crate itertools;
 extern crate libc;
 extern crate pango;
 extern crate pango_sys;
+extern crate pangocairo;
 extern crate regex;
 
 #[macro_use]
@@ -32,6 +33,8 @@ pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
 
 pub use color::{rsvg_css_parse_color, AllowCurrentColor, AllowInherit, ColorKind, ColorSpec};
 
+pub use draw::{rsvg_draw_pango_layout, rsvg_draw_path_builder};
+
 pub use gradient::{rsvg_node_linear_gradient_new, rsvg_node_radial_gradient_new};
 
 pub use length::{
@@ -39,6 +42,8 @@ pub use length::{
     rsvg_length_normalize,
     rsvg_length_parse,
     rsvg_parse_stroke_dasharray,
+    rsvg_stroke_dasharray_clone,
+    rsvg_stroke_dasharray_free,
     LengthDir,
     LengthUnit,
     RsvgLength,
@@ -81,10 +86,10 @@ pub use node::{
 pub use opacity::{rsvg_css_parse_opacity, OpacityKind, OpacitySpec};
 
 pub use paint_server::{
-    _set_source_rsvg_paint_server,
     rsvg_paint_server_parse,
     rsvg_paint_server_ref,
     rsvg_paint_server_unref,
+    rsvg_set_source_rsvg_paint_server,
 };
 
 pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
@@ -144,6 +149,7 @@ mod chars;
 mod clip_path;
 mod cnode;
 mod color;
+mod draw;
 mod drawing_ctx;
 mod error;
 mod float_eq_cairo;

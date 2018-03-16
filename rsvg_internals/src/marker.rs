@@ -12,13 +12,14 @@ use drawing_ctx::RsvgDrawingCtx;
 use error::*;
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
-use length::*;
+use length::{LengthDir, RsvgLength};
 use node::*;
 use parsers;
 use parsers::{parse, Parse};
 use parsers::ParseError;
 use path_builder::*;
 use property_bag::PropertyBag;
+use state;
 use util::utf8_cstr;
 use viewbox::*;
 
@@ -166,14 +167,14 @@ impl NodeMarker {
         drawing_ctx::state_push(draw_ctx);
 
         let state = drawing_ctx::get_current_state(draw_ctx);
-        drawing_ctx::state_reinit(state);
-        drawing_ctx::state_reconstruct(state, node as *const RsvgNode);
+        state::reinit(state);
+        state::reconstruct(state, node as *const RsvgNode);
 
         drawing_ctx::set_current_state_affine(draw_ctx, affine);
 
         let state = drawing_ctx::get_current_state(draw_ctx);
 
-        if !drawing_ctx::state_is_overflow(state) {
+        if !state::is_overflow(state) {
             if let Some(vbox) = self.vbox.get() {
                 drawing_ctx::add_clipping_rect(
                     draw_ctx,
@@ -651,8 +652,6 @@ fn emit_marker<E>(
 }
 
 extern "C" {
-    fn rsvg_get_normalized_stroke_width(draw_ctx: *const RsvgDrawingCtx) -> f64;
-
     fn rsvg_get_start_marker(draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
     fn rsvg_get_middle_marker(draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
     fn rsvg_get_end_marker(draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
@@ -665,9 +664,11 @@ fn drawing_ctx_has_markers(draw_ctx: *const RsvgDrawingCtx) -> bool {
 }
 
 pub fn render_markers_for_path_builder(builder: &RsvgPathBuilder, draw_ctx: *const RsvgDrawingCtx) {
-    let linewidth: f64 = unsafe { rsvg_get_normalized_stroke_width(draw_ctx) };
+    let state = drawing_ctx::get_current_state(draw_ctx);
 
-    if linewidth == 0.0 {
+    let line_width = state::get_stroke_width(state).normalize(draw_ctx);
+
+    if line_width.approx_eq_cairo(&0.0) {
         return;
     }
 
@@ -684,7 +685,7 @@ pub fn render_markers_for_path_builder(builder: &RsvgPathBuilder, draw_ctx: *con
                 x,
                 y,
                 computed_angle,
-                linewidth,
+                line_width,
             );
         },
     );

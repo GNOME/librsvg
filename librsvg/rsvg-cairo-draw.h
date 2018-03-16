@@ -33,6 +33,9 @@
 G_BEGIN_DECLS 
 
 G_GNUC_INTERNAL
+void rsvg_cairo_set_affine_on_cr (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix_t *affine);
+
+G_GNUC_INTERNAL
 PangoContext    *rsvg_cairo_get_pango_context    (RsvgDrawingCtx *ctx);
 G_GNUC_INTERNAL
 void         rsvg_cairo_render_pango_layout	    (RsvgDrawingCtx *ctx, PangoLayout *layout, 
@@ -59,6 +62,9 @@ void         rsvg_cairo_add_clipping_rect       (RsvgDrawingCtx *ctx,
 G_GNUC_INTERNAL
 cairo_surface_t*rsvg_cairo_get_surface_of_node  (RsvgDrawingCtx *ctx, RsvgNode *drawable, 
                                                  double width, double height);
+
+G_GNUC_INTERNAL
+void rsvg_cairo_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox);
 
 G_END_DECLS
 

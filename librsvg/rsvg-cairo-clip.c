@@ -50,60 +50,15 @@ struct RsvgCairoClipRender {
 #define RSVG_CAIRO_CLIP_RENDER(render) (_RSVG_RENDER_CIC ((render), RSVG_RENDER_TYPE_CAIRO_CLIP, RsvgCairoClipRender))
 
 static void
-rsvg_cairo_clip_apply_affine (RsvgCairoClipRender *render, cairo_matrix_t *affine)
+rsvg_cairo_clip_render_pango_layout (RsvgDrawingCtx *ctx, PangoLayout * layout, double x, double y)
 {
-    RsvgCairoRender *cairo_render = &render->super;
-    cairo_matrix_t matrix;
-    gboolean nest = cairo_render->cr != cairo_render->initial_cr;
-
-    cairo_matrix_init (&matrix,
-                       affine->xx, affine->yx,
-                       affine->xy, affine->yy,
-                       affine->x0 + (nest ? 0 : render->parent->offset_x),
-                       affine->y0 + (nest ? 0 : render->parent->offset_y));
-    cairo_set_matrix (cairo_render->cr, &matrix);
+    rsvg_draw_pango_layout (ctx, layout, x, y, TRUE);
 }
 
 static void
-rsvg_cairo_clip_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, double x, double y)
+rsvg_cairo_clip_render_path_builder (RsvgDrawingCtx *ctx, RsvgPathBuilder *builder)
 {
-    RsvgCairoClipRender *render = RSVG_CAIRO_CLIP_RENDER (ctx->render);
-    RsvgCairoRender *cairo_render = &render->super;
-    cairo_matrix_t affine;
-    PangoGravity gravity = pango_context_get_gravity (pango_layout_get_context (layout));
-    double rotation;
-
-    affine = rsvg_drawing_ctx_get_current_state_affine (ctx);
-    rsvg_cairo_clip_apply_affine (render, &affine);
-
-    rotation = pango_gravity_to_rotation (gravity);
-
-    cairo_save (cairo_render->cr);
-    cairo_move_to (cairo_render->cr, x, y);
-    if (rotation != 0.)
-        cairo_rotate (cairo_render->cr, -rotation);
-
-    pango_cairo_update_layout (cairo_render->cr, layout);
-    pango_cairo_layout_path (cairo_render->cr, layout);
-
-    cairo_restore (cairo_render->cr);
-}
-
-static void
-rsvg_cairo_clip_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
-{
-    RsvgCairoClipRender *render = RSVG_CAIRO_CLIP_RENDER (ctx->render);
-    RsvgCairoRender *cairo_render = &render->super;
-    RsvgState *state = rsvg_current_state (ctx);
-    cairo_t *cr;
-
-    cr = cairo_render->cr;
-
-    rsvg_cairo_clip_apply_affine (render, &state->affine);
-
-    cairo_set_fill_rule (cr, rsvg_current_state (ctx)->clip_rule);
-
-    rsvg_path_builder_add_to_cairo_context (builder, cr);
+    rsvg_draw_path_builder (ctx, builder, TRUE);
 }
 
 static void
@@ -151,6 +106,7 @@ rsvg_cairo_clip_render_new (cairo_t *cr, RsvgCairoRender *parent)
 
     render->type = RSVG_RENDER_TYPE_CAIRO_CLIP;
     render->free = rsvg_cairo_clip_render_free;
+    render->set_affine_on_cr = rsvg_cairo_set_affine_on_cr;
     render->get_pango_context = rsvg_cairo_get_pango_context;
     render->render_pango_layout = rsvg_cairo_clip_render_pango_layout;
     render->render_path_builder = rsvg_cairo_clip_render_path_builder;
@@ -159,6 +115,7 @@ rsvg_cairo_clip_render_new (cairo_t *cr, RsvgCairoRender *parent)
     render->push_discrete_layer = rsvg_cairo_clip_push_discrete_layer;
     render->add_clipping_rect = rsvg_cairo_clip_add_clipping_rect;
     render->get_surface_of_node = NULL;
+    render->insert_bbox = rsvg_cairo_insert_bbox;
 
     cairo_render->initial_cr = parent->initial_cr;
     cairo_render->cr         = cr;

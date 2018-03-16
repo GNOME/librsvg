@@ -1795,6 +1795,12 @@ rsvg_drawing_ctx_set_current_state_affine (RsvgDrawingCtx *ctx, cairo_matrix_t *
         rsvg_current_state (ctx)->affine = *affine;
 }
 
+void
+rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, cairo_matrix_t *affine)
+{
+    draw_ctx->render->set_affine_on_cr (draw_ctx, cr, affine);
+}
+
 PangoContext *
 rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx)
 {
@@ -1811,28 +1817,20 @@ rsvg_drawing_ctx_render_pango_layout (RsvgDrawingCtx *draw_ctx,
 }
 
 void
-rsvg_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
+rsvg_drawing_ctx_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 {
     ctx->render->render_path_builder (ctx, builder);
 }
 
 void
-rsvg_render_surface (RsvgDrawingCtx * ctx, cairo_surface_t *surface, double x, double y, double w, double h)
+rsvg_drawing_ctx_render_surface (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
+                                 double x, double y, double w, double h)
 {
     /* surface must be a cairo image surface */
     g_return_if_fail (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE);
 
     ctx->render->render_surface (ctx, surface, x, y, w, h);
 }
-
-double
-rsvg_get_normalized_stroke_width (RsvgDrawingCtx *ctx)
-{
-    RsvgState *state = rsvg_current_state (ctx);
-
-    return rsvg_length_normalize (&state->stroke_width, ctx);
-}
-
 
 const char *
 rsvg_get_start_marker (RsvgDrawingCtx *ctx)
@@ -1868,6 +1866,12 @@ cairo_surface_t *
 rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h)
 {
     return ctx->render->get_surface_of_node (ctx, drawable, w, h);
+}
+
+void
+rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
+{
+    draw_ctx->render->insert_bbox (draw_ctx, bbox);
 }
 
 cairo_surface_t *

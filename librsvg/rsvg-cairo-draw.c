@@ -45,20 +45,20 @@
 #include <pango/pangofc-fontmap.h>
 #endif
 
-/* Implemented in rust/src/paint_server.rs */
+/* Implemented in rsvg_internals/src/paint_server.rs */
 G_GNUC_INTERNAL
-gboolean _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
-                                        RsvgPaintServer * ps,
-                                        guint8 opacity,
-                                        RsvgBbox bbox,
-                                        guint32 current_color);
+gboolean rsvg_set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
+                                            RsvgPaintServer * ps,
+                                            guint8 opacity,
+                                            RsvgBbox bbox,
+                                            guint32 current_color);
 
-static void
-_set_rsvg_affine (RsvgCairoRender * render, cairo_matrix_t *affine)
+void
+rsvg_cairo_set_affine_on_cr (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix_t *affine)
 {
-    cairo_t * cr = render->cr;
-    cairo_matrix_t matrix;
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     gboolean nest = cr != render->initial_cr;
+    cairo_matrix_t matrix;
 
     cairo_matrix_init (&matrix,
                        affine->xx, affine->yx,
@@ -164,249 +164,16 @@ rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
     return context;
 }
 
-static void
-set_stroke_dasharray(cairo_t *cr, RsvgDrawingCtx *ctx, RsvgStrokeDasharray *dash, RsvgLength *dash_offset)
-{
-    double *dashes;
-    double total_length;
-    int i;
-
-    switch (dash->kind) {
-    case RSVG_STROKE_DASHARRAY_ERROR:
-        /* fall through */
-        /* FIXME: we should not get an erroneous dasharray here, but the style parsing code does not currently handle errors */
-    case RSVG_STROKE_DASHARRAY_NONE:
-        cairo_set_dash (cr, NULL, 0, 0.0);
-        break;
-
-    case RSVG_STROKE_DASHARRAY_INHERIT:
-        /* FIXME: do inheritance in the caller */
-        cairo_set_dash (cr, NULL, 0, 0.0);
-        break;
-
-    case RSVG_STROKE_DASHARRAY_DASHES:
-        dashes = g_new(double, dash->num_dashes);
-        total_length = 0.0;
-
-        for (i = 0; i < dash->num_dashes; i++) {
-            dashes[i] = rsvg_length_normalize(&dash->dashes[i], ctx);
-            total_length += dashes[i];
-        }
-
-        if (total_length > 0.0) {
-            cairo_set_dash (cr,
-                            dashes,
-                            dash->num_dashes,
-                            rsvg_length_normalize (dash_offset, ctx));
-        } else {
-            cairo_set_dash (cr, NULL, 0, 0.0);
-        }
-
-        g_free(dashes);
-        break;
-
-    default:
-        g_assert_not_reached ();
-        break;
-    }
-}
-
-static void
-setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgState *state)
-{
-    cairo_set_line_width (cr, rsvg_get_normalized_stroke_width (ctx));
-    cairo_set_miter_limit (cr, state->miter_limit);
-    cairo_set_line_cap (cr, (cairo_line_cap_t) state->cap);
-    cairo_set_line_join (cr, (cairo_line_join_t) state->join);
-
-    set_stroke_dasharray(cr, ctx, &state->dash, &state->dash_offset);
-}
-
 void
-rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, double x, double y)
+rsvg_cairo_render_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, double y)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    RsvgState *state = rsvg_current_state (ctx);
-    PangoRectangle ink;
-    RsvgBbox bbox;
-    PangoGravity gravity = pango_context_get_gravity (pango_layout_get_context (layout));
-    double rotation;
-
-    pango_layout_get_extents(layout, &ink, NULL);
-
-    if (ink.width == 0 || ink.height == 0) {
-        return;
-    }
-
-    cairo_set_antialias (render->cr, state->text_rendering_type);
-
-    _set_rsvg_affine (render, &state->affine);
-
-    rsvg_bbox_init (&bbox, &state->affine);
-    if (PANGO_GRAVITY_IS_VERTICAL (gravity)) {
-        bbox.rect.x = x + (ink.x - ink.height) / (double)PANGO_SCALE;
-        bbox.rect.y = y + ink.y / (double)PANGO_SCALE;
-        bbox.rect.width = ink.height / (double)PANGO_SCALE;
-        bbox.rect.height = ink.width / (double)PANGO_SCALE;
-    } else {
-        bbox.rect.x = x + ink.x / (double)PANGO_SCALE;
-        bbox.rect.y = y + ink.y / (double)PANGO_SCALE;
-        bbox.rect.width = ink.width / (double)PANGO_SCALE;
-        bbox.rect.height = ink.height / (double)PANGO_SCALE;
-    }
-    bbox.virgin = 0;
-
-    rotation = pango_gravity_to_rotation (gravity);
-    if (state->fill) {
-        cairo_save (render->cr);
-        cairo_move_to (render->cr, x, y);
-        rsvg_bbox_insert (&render->bbox, &bbox);
-
-        if (_set_source_rsvg_paint_server (ctx,
-                                           state->fill,
-                                           state->fill_opacity,
-                                           bbox,
-                                           state->current_color)) {
-            if (rotation != 0.)
-                cairo_rotate (render->cr, -rotation);
-
-            pango_cairo_update_layout (render->cr, layout);
-            pango_cairo_show_layout (render->cr, layout);
-        }
-
-        cairo_restore (render->cr);
-    }
-
-    if (state->stroke) {
-        cairo_save (render->cr);
-        cairo_move_to (render->cr, x, y);
-        rsvg_bbox_insert (&render->bbox, &bbox);
-
-        if (_set_source_rsvg_paint_server (ctx,
-                                           state->stroke,
-                                           state->stroke_opacity,
-                                           bbox,
-                                           state->current_color)) {
-            if (rotation != 0.)
-                cairo_rotate (render->cr, -rotation);
-
-            pango_cairo_update_layout (render->cr, layout);
-            pango_cairo_layout_path (render->cr, layout);
-
-            setup_cr_for_stroke (render->cr, ctx, state);
-
-            cairo_stroke (render->cr);
-        }
-
-        cairo_restore (render->cr);
-    }
+    rsvg_draw_pango_layout (ctx, layout, x, y, FALSE);
 }
-
-
 
 void
 rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
 {
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    RsvgState *state = rsvg_current_state (ctx);
-    cairo_t *cr;
-    RsvgBbox bbox;
-    double backup_tolerance;
-
-    rsvg_cairo_push_discrete_layer (ctx);
-
-    cr = render->cr;
-
-    cairo_set_antialias (cr, state->shape_rendering_type);
-
-    _set_rsvg_affine (render, &state->affine);
-
-    setup_cr_for_stroke (cr, ctx, state);
-
-    rsvg_path_builder_add_to_cairo_context (builder, cr);
-
-    rsvg_bbox_init (&bbox, &state->affine);
-
-    backup_tolerance = cairo_get_tolerance (cr);
-    cairo_set_tolerance (cr, 1.0);
-    /* dropping the precision of cairo's bezier subdivision, yielding 2x
-       _rendering_ time speedups, are these rather expensive operations
-       really needed here? */
-
-    /* FIXME: See https://www.w3.org/TR/SVG/coords.html#ObjectBoundingBox for
-     * discussion on how to compute bounding boxes to be used for viewports and
-     * clipping.  It looks like we should be using cairo_path_extents() for
-     * that, not cairo_fill_extents().
-     *
-     * We may need to maintain *two* sets of bounding boxes - one for
-     * viewports/clipping, and one for user applications like a
-     * rsvg_compute_ink_rect() function in the future.
-     *
-     * See https://gitlab.gnome.org/GNOME/librsvg/issues/128 for discussion of a
-     * public API to get the ink rectangle.
-     */
-
-    /* Bounding box for fill
-     *
-     * Unlike the case for stroke, for fills we always compute the bounding box.
-     * In GNOME we have SVGs for symbolic icons where each icon has a bounding
-     * rectangle with no fill and no stroke, and inside it there are the actual
-     * paths for the icon's shape.  We need to be able to compute the bounding
-     * rectangle's extents, even when it has no fill nor stroke.
-     */
-    {
-        RsvgBbox fb;
-        rsvg_bbox_init (&fb, &state->affine);
-        cairo_fill_extents (cr, &fb.rect.x, &fb.rect.y, &fb.rect.width, &fb.rect.height);
-        fb.rect.width -= fb.rect.x;
-        fb.rect.height -= fb.rect.y;
-        fb.virgin = 0;
-        rsvg_bbox_insert (&bbox, &fb);
-    }
-
-    /* Bounding box for stroke */
-    if (state->stroke != NULL) {
-        RsvgBbox sb;
-        rsvg_bbox_init (&sb, &state->affine);
-        cairo_stroke_extents (cr, &sb.rect.x, &sb.rect.y, &sb.rect.width, &sb.rect.height);
-        sb.rect.width -= sb.rect.x;
-        sb.rect.height -= sb.rect.y;
-        sb.virgin = 0;
-        rsvg_bbox_insert (&bbox, &sb);
-    }
-
-    cairo_set_tolerance (cr, backup_tolerance);
-
-    rsvg_bbox_insert (&render->bbox, &bbox);
-
-    if (state->fill != NULL) {
-        cairo_set_fill_rule (cr, state->fill_rule);
-
-        if (_set_source_rsvg_paint_server (ctx,
-                                           state->fill,
-                                           state->fill_opacity,
-                                           bbox,
-                                           state->current_color)) {
-            if (state->stroke != NULL)
-                cairo_fill_preserve (cr);
-            else
-                cairo_fill (cr);
-        }
-    }
-
-    if (state->stroke != NULL) {
-        if (_set_source_rsvg_paint_server (ctx,
-                                           state->stroke,
-                                           state->stroke_opacity,
-                                           bbox,
-                                           state->current_color)) {
-            cairo_stroke (cr);
-        }
-    }
-
-    cairo_new_path (cr); /* clear the path in case stroke == fill == NULL; otherwise we leave it around from computing the bounding box */
-
-    rsvg_cairo_pop_discrete_layer (ctx);
+    rsvg_draw_path_builder (ctx, builder, FALSE);
 }
 
 void
@@ -441,7 +208,7 @@ rsvg_cairo_render_surface (RsvgDrawingCtx *ctx,
     bbox.rect.height = h;
     bbox.virgin = 0;
 
-    _set_rsvg_affine (render, &state->affine);
+    rsvg_drawing_ctx_set_affine_on_cr (ctx, render->cr, &state->affine);
     cairo_scale (render->cr, w / dwidth, h / dheight);
     src_x *= dwidth / w;
     src_y *= dheight / h;
@@ -468,7 +235,7 @@ rsvg_cairo_render_surface (RsvgDrawingCtx *ctx,
 
     cairo_paint (render->cr);
 
-    rsvg_bbox_insert (&render->bbox, &bbox);
+    rsvg_drawing_ctx_insert_bbox (ctx, &bbox);
 }
 
 cairo_t *
@@ -818,7 +585,7 @@ rsvg_cairo_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_t *cr = render->cr;
 
-    _set_rsvg_affine (render, &rsvg_current_state (ctx)->affine);
+    rsvg_drawing_ctx_set_affine_on_cr (ctx, cr, &rsvg_current_state (ctx)->affine);
 
     cairo_rectangle (cr, x, y, w, h);
     cairo_clip (cr);
@@ -855,6 +622,14 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
     ctx->render = (RsvgRender *) save_render;
 
     return surface;
+}
+
+void
+rsvg_cairo_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
+{
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (draw_ctx->render);
+
+    rsvg_bbox_insert (&render->bbox, bbox);
 }
 
 cairo_surface_t *

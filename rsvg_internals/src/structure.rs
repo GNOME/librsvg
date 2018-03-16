@@ -16,6 +16,7 @@ use length::*;
 use node::*;
 use parsers::{parse, Parse};
 use property_bag::{OwnedPropertyBag, PropertyBag};
+use state;
 use viewbox::*;
 use viewport::{draw_in_viewport, ClipMode};
 
@@ -85,7 +86,7 @@ impl NodeTrait for NodeSwitch {
         drawing_ctx::push_discrete_layer(draw_ctx);
 
         for child in node.children() {
-            if drawing_ctx::state_get_cond_true(child.get_state()) {
+            if state::get_cond_true(child.get_state()) {
                 let boxed_child = box_node(child.clone());
 
                 drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0);
@@ -190,7 +191,7 @@ impl NodeTrait for NodeSvg {
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
 
         let state = drawing_ctx::get_current_state(draw_ctx);
-        let do_clip = !drawing_ctx::state_is_overflow(state) && node.get_parent().is_some();
+        let do_clip = !state::is_overflow(state) && node.get_parent().is_some();
 
         draw_in_viewport(
             nx,
@@ -327,9 +328,8 @@ impl NodeTrait for NodeUse {
             drawing_ctx::pop_discrete_layer(draw_ctx);
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
-                let do_clip = !drawing_ctx::state_is_overflow(state)
-                    || (!drawing_ctx::state_has_overflow(state)
-                        && drawing_ctx::state_is_overflow(child.get_state()));
+                let do_clip = !state::is_overflow(state)
+                    || (!state::has_overflow(state) && state::is_overflow(child.get_state()));
 
                 draw_in_viewport(
                     nx,

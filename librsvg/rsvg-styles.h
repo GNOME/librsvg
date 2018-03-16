@@ -61,18 +61,8 @@ typedef enum {
     RSVG_ENABLE_BACKGROUND_NEW
 } RsvgEnableBackgroundType;
 
-typedef enum {
-    RSVG_STROKE_DASHARRAY_NONE,
-    RSVG_STROKE_DASHARRAY_INHERIT,
-    RSVG_STROKE_DASHARRAY_DASHES,
-    RSVG_STROKE_DASHARRAY_ERROR
-} RsvgStrokeDasharrayKind;
-
-typedef struct {
-    RsvgStrokeDasharrayKind kind;
-    gsize num_dashes;
-    RsvgLength *dashes;
-} RsvgStrokeDasharray;
+/* Opaque; defined in rsvg_internals/src/length.rs */
+typedef struct RsvgStrokeDasharray RsvgStrokeDasharray;
 
 struct _RsvgState {
     RsvgState *parent;
@@ -90,9 +80,9 @@ struct _RsvgState {
     gboolean has_fill_server;
     guint8 fill_opacity;        /* 0..255 */
     gboolean has_fill_opacity;
-    gint fill_rule;
+    cairo_fill_rule_t fill_rule;
     gboolean has_fill_rule;
-    gint clip_rule;
+    cairo_fill_rule_t clip_rule;
     gboolean has_clip_rule;
 
     gboolean overflow;
@@ -156,7 +146,7 @@ struct _RsvgState {
     gboolean has_cond;
     gboolean cond_true;
 
-    RsvgStrokeDasharray dash;
+    RsvgStrokeDasharray *dash;
     gboolean has_dash;
     RsvgLength dash_offset;
     gboolean has_dashoffset;
@@ -234,10 +224,31 @@ G_GNUC_INTERNAL
 void rsvg_state_reconstruct	(RsvgState * state, RsvgNode * current);
 
 G_GNUC_INTERNAL
+cairo_matrix_t rsvg_state_get_affine (RsvgState *state);
+
+G_GNUC_INTERNAL
 gboolean rsvg_state_is_overflow (RsvgState *state);
 
 G_GNUC_INTERNAL
 gboolean rsvg_state_has_overflow (RsvgState *state);
+
+G_GNUC_INTERNAL
+RsvgPaintServer *rsvg_state_get_stroke (RsvgState *state);
+
+G_GNUC_INTERNAL
+guint8 rsvg_state_get_stroke_opacity (RsvgState *state);
+
+G_GNUC_INTERNAL
+RsvgLength rsvg_state_get_stroke_width (RsvgState *state);
+
+G_GNUC_INTERNAL
+double rsvg_state_get_miter_limit (RsvgState *state);
+
+G_GNUC_INTERNAL
+cairo_line_cap_t rsvg_state_get_line_cap (RsvgState *state);
+
+G_GNUC_INTERNAL
+cairo_line_join_t rsvg_state_get_line_join (RsvgState *state);
 
 G_GNUC_INTERNAL
 gboolean rsvg_state_get_cond_true (RsvgState *state);
@@ -250,6 +261,12 @@ RsvgCssColorSpec *rsvg_state_get_stop_color (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgOpacitySpec *rsvg_state_get_stop_opacity (RsvgState *state);
+
+G_GNUC_INTERNAL
+RsvgStrokeDasharray *rsvg_state_get_stroke_dasharray (RsvgState *state);
+
+G_GNUC_INTERNAL
+RsvgLength rsvg_state_get_dash_offset (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint32 rsvg_state_get_current_color (RsvgState *state);
@@ -286,6 +303,24 @@ RsvgLength rsvg_state_get_letter_spacing (RsvgState *state);
 
 G_GNUC_INTERNAL
 const TextDecoration *rsvg_state_get_font_decor (RsvgState *state);
+
+G_GNUC_INTERNAL
+cairo_fill_rule_t rsvg_state_get_clip_rule (RsvgState *state);
+
+G_GNUC_INTERNAL
+RsvgPaintServer *rsvg_state_get_fill (RsvgState *state);
+
+G_GNUC_INTERNAL
+guint8 rsvg_state_get_fill_opacity (RsvgState *state);
+
+G_GNUC_INTERNAL
+cairo_fill_rule_t rsvg_state_get_fill_rule (RsvgState *state);
+
+G_GNUC_INTERNAL
+cairo_antialias_t rsvg_state_get_shape_rendering_type (RsvgState *state);
+
+G_GNUC_INTERNAL
+cairo_antialias_t rsvg_state_get_text_rendering_type (RsvgState *state);
 
 G_END_DECLS
 
