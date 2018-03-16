@@ -1,5 +1,4 @@
 use cairo;
-use cairo_sys;
 use glib::translate::*;
 use glib_sys;
 use pango::{self, ContextExt, LayoutExt};
@@ -8,10 +7,12 @@ use pangocairo;
 
 use bbox::RsvgBbox;
 use drawing_ctx::{self, RsvgDrawingCtx};
+use float_eq_cairo::ApproxEqCairo;
 use length::StrokeDasharray;
 use paint_server;
 use path_builder::RsvgPathBuilder;
 use state::{self, RsvgState};
+use text;
 
 pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &RsvgPathBuilder, clipping: bool) {
     if !clipping {
@@ -170,6 +171,141 @@ fn compute_bbox_from_stroke_and_fill(cr: &cairo::Context, state: *mut RsvgState)
     bbox
 }
 
+pub fn draw_pango_layout(
+    draw_ctx: *mut RsvgDrawingCtx,
+    layout: &pango::Layout,
+    x: f64,
+    y: f64,
+    clipping: bool,
+) {
+    let state = drawing_ctx::get_current_state(draw_ctx);
+    let state_affine = &state::get_affine(state);
+    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    let gravity = layout.get_context().unwrap().get_gravity();
+
+    let (ink, _) = layout.get_extents();
+
+    if ink.width == 0 || ink.height == 0 {
+        return;
+    }
+
+    let bbox = compute_text_bbox(&ink, x, y, state_affine, gravity);
+
+    let fill = state::get_fill(state);
+    let stroke = state::get_stroke(state);
+
+    if !clipping && (fill.is_some() || stroke.is_some()) {
+        drawing_ctx::insert_bbox(draw_ctx, &bbox);
+    }
+
+    cr.set_antialias(state::get_text_rendering_type(state));
+
+    setup_cr_for_stroke(&cr, draw_ctx, state);
+
+    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, state_affine);
+
+    let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
+
+    cr.save();
+    cr.move_to(x, y);
+    if !rotation.approx_eq_cairo(&0.0) {
+        cr.rotate(-rotation);
+    }
+
+    if !clipping {
+        if let Some(fill) = fill {
+            if paint_server::_set_source_rsvg_paint_server(
+                draw_ctx,
+                fill,
+                state::get_fill_opacity(state),
+                &bbox,
+                state::get_current_color(state),
+            ) {
+                pangocairo::functions::update_layout(&cr, layout);
+                pangocairo::functions::show_layout(&cr, layout);
+            }
+        }
+    }
+
+    let need_layout_path;
+
+    if clipping {
+        need_layout_path = true;
+    } else {
+        need_layout_path = stroke.is_some()
+            && paint_server::_set_source_rsvg_paint_server(
+                draw_ctx,
+                stroke.unwrap(),
+                state::get_stroke_opacity(state),
+                &bbox,
+                state::get_current_color(state),
+            );
+    }
+
+    if need_layout_path {
+        pangocairo::functions::update_layout(&cr, layout);
+        pangocairo::functions::layout_path(&cr, layout);
+
+        if !clipping {
+            cr.stroke();
+        }
+    }
+
+    cr.restore();
+}
+
+fn compute_text_bbox(
+    ink: &pango::Rectangle,
+    x: f64,
+    y: f64,
+    affine: &cairo::Matrix,
+    gravity: pango::Gravity,
+) -> RsvgBbox {
+    let pango_scale = f64::from(pango::SCALE);
+
+    let mut bbox = RsvgBbox::new(affine);
+
+    let ink_x = f64::from(ink.x);
+    let ink_y = f64::from(ink.y);
+    let ink_width = f64::from(ink.width);
+    let ink_height = f64::from(ink.height);
+
+    if text::gravity_is_vertical(gravity) {
+        bbox.set_rect(&cairo::Rectangle {
+            x: x + (ink_x - ink_height) / pango_scale,
+            y: y + ink_y / pango_scale,
+            width: ink_height / pango_scale,
+            height: ink_width / pango_scale,
+        });
+    } else {
+        bbox.set_rect(&cairo::Rectangle {
+            x: x + ink_x / pango_scale,
+            y: y + ink_y / pango_scale,
+            width: ink_width / pango_scale,
+            height: ink_height / pango_scale,
+        });
+    }
+
+    bbox
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_draw_pango_layout(
+    draw_ctx: *mut RsvgDrawingCtx,
+    layout: *mut pango_sys::PangoLayout,
+    x: f64,
+    y: f64,
+    clipping: glib_sys::gboolean,
+) {
+    assert!(!draw_ctx.is_null());
+    assert!(!layout.is_null());
+
+    let layout = unsafe { from_glib_none(layout) };
+    let clipping: bool = from_glib(clipping);
+
+    draw_pango_layout(draw_ctx, &layout, x, y, clipping);
+}
+
 #[no_mangle]
 pub extern "C" fn rsvg_draw_path_builder(
     draw_ctx: *mut RsvgDrawingCtx,
@@ -183,15 +319,4 @@ pub extern "C" fn rsvg_draw_path_builder(
     let clipping: bool = from_glib(clipping);
 
     draw_path_builder(draw_ctx, builder, clipping);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_setup_cr_for_stroke(
-    cr: *mut cairo_sys::cairo_t,
-    draw_ctx: *mut RsvgDrawingCtx,
-    state: *mut RsvgState,
-) {
-    let cr = unsafe { cairo::Context::from_glib_none(cr) };
-
-    setup_cr_for_stroke(&cr, draw_ctx, state);
 }
