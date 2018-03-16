@@ -8,6 +8,11 @@ dependencies = [
 
 [[package]]
 name = "bitflags"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "bitflags"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
@@ -212,6 +217,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "pangocairo"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "bitflags 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cairo-rs 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cairo-sys-rs 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "glib 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "glib-sys 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gobject-sys 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.39 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pango 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pango-sys 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pangocairo-sys 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "pangocairo-sys"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "bitflags 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cairo-sys-rs 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "glib-sys 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.39 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pango-sys 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pkg-config 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "phf"
 version = "0.7.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -332,6 +367,7 @@ dependencies = [
  "libc 0.2.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "pango 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pango-sys 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pangocairo 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "phf 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "phf_codegen 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -443,6 +479,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [metadata]
 "checksum aho-corasick 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)" = "d6531d44de723825aa81398a6415283229725a00fa30713812ab9323faa82fc4"
+"checksum bitflags 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4efd02e230a02e18f92fc2735f44597385ed02ad8f831e7c1c1156ee5e1ab3a5"
 "checksum bitflags 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b3c30d3802dfb7281680d6285f2ccdaa8c2d8fee41f93805dba5c4cf50dc23cf"
 "checksum c_vec 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "6237ac5a4b1e81c213c24c6437964c61e646df910a914b4ab1487b46df20bd13"
 "checksum cairo-rs 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b6b5695f59fd036fe5741bc5a4eb20c78fbe42256e3b08a2af26bbcbe8070bf3"
@@ -468,6 +505,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum num-traits 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "0b3c2bd9b9d21e48e956b763c9f37134dc62d9e95da6edb3f672cacb6caf3cd3"
 "checksum pango 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3e81c404ab81ea7ea2fc2431a0a7672507b80e4b8bf4b41eac3fc83cc665104e"
 "checksum pango-sys 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "34f34a1be107fe16abb2744e0e206bee4b3b07460b5fddd3009a6aaf60bd69ab"
+"checksum pangocairo 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "41a8620ece55098d741bacf4d3aa52398f85ce83cfe0d8f670fa11de88f52c40"
+"checksum pangocairo-sys 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e34ec010b38a2a6dafdf3d86ffe1251a0ae759208ec85f78c66c0445481bd5a8"
 "checksum phf 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)" = "cb325642290f28ee14d8c6201159949a872f220c62af6e110a56ea914fbe42fc"
 "checksum phf_codegen 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)" = "d62594c0bb54c464f633175d502038177e90309daf2e0158be42ed5f023ce88f"
 "checksum phf_generator 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)" = "6b07ffcc532ccc85e3afc45865469bf5d9e4ef5bfcf9622e3cfe80c2d275ec03"

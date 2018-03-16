@@ -12,6 +12,7 @@ extern crate itertools;
 extern crate libc;
 extern crate pango;
 extern crate pango_sys;
+extern crate pangocairo;
 extern crate regex;
 
 #[macro_use]
