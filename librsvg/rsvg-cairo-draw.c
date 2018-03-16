@@ -169,7 +169,7 @@ extern void rsvg_setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgStat
 extern void rsvg_draw_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder, gboolean clipping);
 
 void
-rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, double x, double y)
+rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, double y, gboolean clipping)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state = rsvg_current_state (ctx);
@@ -246,6 +246,12 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
 
         cairo_restore (render->cr);
     }
+}
+
+void
+rsvg_cairo_render_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, double y)
+{
+    rsvg_draw_pango_layout (ctx, layout, x, y, FALSE);
 }
 
 void
