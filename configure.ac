@@ -80,15 +80,12 @@ AS_IF(test x$RUSTC = xno,
 
 dnl Minimum version of rustc that we support
 MINIMUM_RUST_MAJOR=1
-MINIMUM_RUST_MINOR=20
+MINIMUM_RUST_MINOR=21
 
 rust_version=`rustc --version`
 version=`echo "$rust_version" | sed -e 's/^rustc //g'`
 major=`echo "$version" | cut -d. -f1`
 minor=`echo "$version" | cut -d. -f2`
-
-MINIMUM_RUST_MAJOR=1
-MINIMUM_RUST_MINOR=20
 
 AS_IF(test "$major" -lt "$MINIMUM_RUST_MAJOR" -o "$minor" -lt "$MINIMUM_RUST_MINOR",
     AC_MSG_ERROR([librsvg needs at rustc version at least $MINIMUM_RUST_MAJOR.$MINIMUM_RUST_MINOR])
