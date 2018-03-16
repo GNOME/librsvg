@@ -10,6 +10,7 @@ use error::*;
 use length::{RsvgLength, StrokeDasharray};
 use node::RsvgNode;
 use opacity::{Opacity, OpacitySpec};
+use paint_server::PaintServer;
 
 pub enum RsvgState {}
 
@@ -63,6 +64,7 @@ extern "C" {
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
     fn rsvg_state_get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias;
 
+    fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_miter_limit(state: *const RsvgState) -> f64;
@@ -173,6 +175,18 @@ pub fn get_current_color(state: *const RsvgState) -> Color {
 
 pub fn get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias {
     unsafe { rsvg_state_get_shape_rendering_type(state) }
+}
+
+pub fn get_stroke<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
+    unsafe {
+        let ps = rsvg_state_get_stroke(state);
+
+        if ps.is_null() {
+            None
+        } else {
+            Some(&*ps)
+        }
+    }
 }
 
 pub fn get_stroke_opacity(state: *const RsvgState) -> u8 {
