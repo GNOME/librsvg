@@ -2,6 +2,9 @@ use cairo;
 use cairo_sys;
 use glib::translate::*;
 use glib_sys;
+use pango::{self, ContextExt, LayoutExt};
+use pango_sys;
+use pangocairo;
 
 use bbox::RsvgBbox;
 use drawing_ctx::{self, RsvgDrawingCtx};
