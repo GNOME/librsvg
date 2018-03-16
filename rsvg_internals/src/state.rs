@@ -51,6 +51,7 @@ extern "C" {
     fn rsvg_state_free(state: *mut RsvgState);
     fn rsvg_state_reinit(state: *mut RsvgState);
     fn rsvg_state_reconstruct(state: *mut RsvgState, node: *const RsvgNode);
+    fn rsvg_state_get_affine(state: *const RsvgState) -> cairo::Matrix;
     fn rsvg_state_is_overflow(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_has_overflow(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_cond_true(state: *const RsvgState) -> glib_sys::gboolean;
@@ -102,6 +103,10 @@ pub fn reconstruct(state: *mut RsvgState, node: *const RsvgNode) {
     unsafe {
         rsvg_state_reconstruct(state, node);
     }
+}
+
+pub fn get_affine(state: *const RsvgState) -> cairo::Matrix {
+    unsafe { rsvg_state_get_affine(state) }
 }
 
 pub fn is_overflow(state: *const RsvgState) -> bool {
