@@ -9,8 +9,8 @@
 //!     Ok(AspectRatio {
 //!         defer: false,
 //!         align: Some(Align {
-//!             x: Align1D::Mid,
-//!             y: Align1D::Mid,
+//!             x: X(Align1D::Mid),
+//!             y: Y(Align1D::Mid),
 //!             fit: FitMode::Meet,
 //!         }),
 //!     })
@@ -24,6 +24,7 @@ use cssparser::{Parser, ParserInput};
 use error::*;
 use parsers::Parse;
 use parsers::ParseError;
+use std::ops::Deref;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct AspectRatio {
@@ -54,16 +55,16 @@ impl Default for FitMode {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct Align {
-    x: Align1D,
-    y: Align1D,
+    x: X,
+    y: Y,
     fit: FitMode,
 }
 
 impl Default for Align {
     fn default() -> Align {
         Align {
-            x: Align1D::Mid,
-            y: Align1D::Mid,
+            x: X(Align1D::Mid),
+            y: Y(Align1D::Mid),
             fit: FitMode::default(),
         }
     }
@@ -74,6 +75,27 @@ enum Align1D {
     Min,
     Mid,
     Max,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+struct X(Align1D);
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+struct Y(Align1D);
+
+impl Deref for X {
+    type Target = Align1D;
+
+    fn deref(&self) -> &Align1D {
+        &self.0
+    }
+}
+
+impl Deref for Y {
+    type Target = Align1D;
+
+    fn deref(&self) -> &Align1D {
+        &self.0
+    }
 }
 
 impl Align1D {
@@ -153,23 +175,23 @@ impl AspectRatio {
 }
 
 impl Align {
-    fn parse_xy(s: &str) -> Result<Option<(Align1D, Align1D)>, ()> {
+    fn parse_xy(s: &str) -> Result<Option<(X, Y)>, ()> {
         use self::Align1D::*;
 
         match s {
             "none" => Ok(None),
 
-            "xMinYMin" => Ok(Some((Min, Min))),
-            "xMidYMin" => Ok(Some((Mid, Min))),
-            "xMaxYMin" => Ok(Some((Max, Min))),
+            "xMinYMin" => Ok(Some((X(Min), Y(Min)))),
+            "xMidYMin" => Ok(Some((X(Mid), Y(Min)))),
+            "xMaxYMin" => Ok(Some((X(Max), Y(Min)))),
 
-            "xMinYMid" => Ok(Some((Min, Mid))),
-            "xMidYMid" => Ok(Some((Mid, Mid))),
-            "xMaxYMid" => Ok(Some((Max, Mid))),
+            "xMinYMid" => Ok(Some((X(Min), Y(Mid)))),
+            "xMidYMid" => Ok(Some((X(Mid), Y(Mid)))),
+            "xMaxYMid" => Ok(Some((X(Max), Y(Mid)))),
 
-            "xMinYMax" => Ok(Some((Min, Max))),
-            "xMidYMax" => Ok(Some((Mid, Max))),
-            "xMaxYMax" => Ok(Some((Max, Max))),
+            "xMinYMax" => Ok(Some((X(Min), Y(Max)))),
+            "xMidYMax" => Ok(Some((X(Mid), Y(Max)))),
+            "xMaxYMax" => Ok(Some((X(Max), Y(Max)))),
 
             _ => Err(()),
         }
@@ -231,8 +253,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: false,
                 align: Some(Align {
-                    x: Align1D::Mid,
-                    y: Align1D::Mid,
+                    x: X(Align1D::Mid),
+                    y: Y(Align1D::Mid),
                     fit: FitMode::Meet,
                 }),
             })
@@ -243,8 +265,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
-                    x: Align1D::Mid,
-                    y: Align1D::Mid,
+                    x: X(Align1D::Mid),
+                    y: Y(Align1D::Mid),
                     fit: FitMode::Meet,
                 }),
             })
@@ -255,8 +277,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
-                    x: Align1D::Min,
-                    y: Align1D::Max,
+                    x: X(Align1D::Min),
+                    y: Y(Align1D::Max),
                     fit: FitMode::Meet,
                 }),
             })
@@ -267,8 +289,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
-                    x: Align1D::Max,
-                    y: Align1D::Mid,
+                    x: X(Align1D::Max),
+                    y: Y(Align1D::Mid),
                     fit: FitMode::Meet,
                 }),
             })
@@ -279,8 +301,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
-                    x: Align1D::Min,
-                    y: Align1D::Max,
+                    x: X(Align1D::Min),
+                    y: Y(Align1D::Max),
                     fit: FitMode::Slice,
                 }),
             })
