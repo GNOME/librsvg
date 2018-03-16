@@ -9,8 +9,8 @@
 //!     Ok(AspectRatio {
 //!         defer: false,
 //!         align: Some(Align {
-//!             x: Align1D::Mid,
-//!             y: Align1D::Mid,
+//!             x: X(Align1D::Mid),
+//!             y: Y(Align1D::Mid),
 //!             fit: FitMode::Meet,
 //!         }),
 //!     })
@@ -24,11 +24,21 @@ use cssparser::{Parser, ParserInput};
 use error::*;
 use parsers::Parse;
 use parsers::ParseError;
+use std::ops::Deref;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct AspectRatio {
     defer: bool,
     align: Option<Align>,
+}
+
+impl Default for AspectRatio {
+    fn default() -> AspectRatio {
+        AspectRatio {
+            defer: false,
+            align: Some(Align::default()),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -37,17 +47,27 @@ enum FitMode {
     Slice,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-struct Align {
-    x: Align1D,
-    y: Align1D,
-    fit: FitMode,
+impl Default for FitMode {
+    fn default() -> FitMode {
+        FitMode::Meet
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-struct AlignXY {
-    x: Align1D,
-    y: Align1D,
+struct Align {
+    x: X,
+    y: Y,
+    fit: FitMode,
+}
+
+impl Default for Align {
+    fn default() -> Align {
+        Align {
+            x: X(Align1D::Mid),
+            y: Y(Align1D::Mid),
+            fit: FitMode::default(),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -55,6 +75,27 @@ enum Align1D {
     Min,
     Mid,
     Max,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+struct X(Align1D);
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+struct Y(Align1D);
+
+impl Deref for X {
+    type Target = Align1D;
+
+    fn deref(&self) -> &Align1D {
+        &self.0
+    }
+}
+
+impl Deref for Y {
+    type Target = Align1D;
+
+    fn deref(&self) -> &Align1D {
+        &self.0
+    }
 }
 
 impl Align1D {
@@ -116,7 +157,7 @@ impl AspectRatio {
         let align_xy = p.try(|p| {
             p.expect_ident()
                 .map_err(|_| ())
-                .and_then(|ident| AlignXY::parse(ident))
+                .and_then(|ident| Align::parse_xy(ident))
         })?;
 
         let fit = p.try(|p| {
@@ -127,55 +168,30 @@ impl AspectRatio {
 
         p.expect_exhausted().map_err(|_| ())?;
 
-        let align = align_xy.map(|AlignXY { x: x, y: y }| Align { x, y, fit });
+        let align = align_xy.map(|(x, y)| Align { x, y, fit });
 
         Ok(AspectRatio { defer, align })
     }
 }
 
-impl Default for AspectRatio {
-    fn default() -> AspectRatio {
-        AspectRatio {
-            defer: false,
-            align: Some(Align::default()),
-        }
-    }
-}
-
-impl Default for FitMode {
-    fn default() -> FitMode {
-        FitMode::Meet
-    }
-}
-
-impl Default for Align {
-    fn default() -> Align {
-        Align {
-            x: Align1D::Mid,
-            y: Align1D::Mid,
-            fit: FitMode::default(),
-        }
-    }
-}
-
-impl AlignXY {
-    fn parse(s: &str) -> Result<Option<AlignXY>, ()> {
+impl Align {
+    fn parse_xy(s: &str) -> Result<Option<(X, Y)>, ()> {
         use self::Align1D::*;
 
         match s {
             "none" => Ok(None),
 
-            "xMinYMin" => Ok(Some(AlignXY { x: Min, y: Min })),
-            "xMidYMin" => Ok(Some(AlignXY { x: Mid, y: Min })),
-            "xMaxYMin" => Ok(Some(AlignXY { x: Max, y: Min })),
+            "xMinYMin" => Ok(Some((X(Min), Y(Min)))),
+            "xMidYMin" => Ok(Some((X(Mid), Y(Min)))),
+            "xMaxYMin" => Ok(Some((X(Max), Y(Min)))),
 
-            "xMinYMid" => Ok(Some(AlignXY { x: Min, y: Mid })),
-            "xMidYMid" => Ok(Some(AlignXY { x: Mid, y: Mid })),
-            "xMaxYMid" => Ok(Some(AlignXY { x: Max, y: Mid })),
+            "xMinYMid" => Ok(Some((X(Min), Y(Mid)))),
+            "xMidYMid" => Ok(Some((X(Mid), Y(Mid)))),
+            "xMaxYMid" => Ok(Some((X(Max), Y(Mid)))),
 
-            "xMinYMax" => Ok(Some(AlignXY { x: Min, y: Max })),
-            "xMidYMax" => Ok(Some(AlignXY { x: Mid, y: Max })),
-            "xMaxYMax" => Ok(Some(AlignXY { x: Max, y: Max })),
+            "xMinYMax" => Ok(Some((X(Min), Y(Max)))),
+            "xMidYMax" => Ok(Some((X(Mid), Y(Max)))),
+            "xMaxYMax" => Ok(Some((X(Max), Y(Max)))),
 
             _ => Err(()),
         }
@@ -213,19 +229,12 @@ mod tests {
     #[test]
     fn parsing_invalid_strings_yields_error() {
         assert!(AspectRatio::parse("", ()).is_err());
-
         assert!(AspectRatio::parse("defer", ()).is_err());
-
         assert!(AspectRatio::parse("defer foo", ()).is_err());
-
         assert!(AspectRatio::parse("defer xmidymid", ()).is_err());
-
         assert!(AspectRatio::parse("defer xMidYMid foo", ()).is_err());
-
         assert!(AspectRatio::parse("xmidymid", ()).is_err());
-
         assert!(AspectRatio::parse("xMidYMid foo", ()).is_err());
-
         assert!(AspectRatio::parse("defer xMidYMid meet foo", ()).is_err());
     }
 
@@ -244,8 +253,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: false,
                 align: Some(Align {
-                    x: Align1D::Mid,
-                    y: Align1D::Mid,
+                    x: X(Align1D::Mid),
+                    y: Y(Align1D::Mid),
                     fit: FitMode::Meet,
                 },),
             },)
@@ -256,8 +265,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
-                    x: Align1D::Mid,
-                    y: Align1D::Mid,
+                    x: X(Align1D::Mid),
+                    y: Y(Align1D::Mid),
                     fit: FitMode::Meet,
                 },),
             },)
@@ -268,8 +277,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
-                    x: Align1D::Min,
-                    y: Align1D::Max,
+                    x: X(Align1D::Min),
+                    y: Y(Align1D::Max),
                     fit: FitMode::Meet,
                 },),
             },)
@@ -280,8 +289,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
-                    x: Align1D::Max,
-                    y: Align1D::Mid,
+                    x: X(Align1D::Max),
+                    y: Y(Align1D::Mid),
                     fit: FitMode::Meet,
                 },),
             },)
@@ -292,8 +301,8 @@ mod tests {
             Ok(AspectRatio {
                 defer: true,
                 align: Some(Align {
-                    x: Align1D::Min,
-                    y: Align1D::Max,
+                    x: X(Align1D::Min),
+                    y: Y(Align1D::Max),
                     fit: FitMode::Slice,
                 },),
             },)
@@ -302,211 +311,77 @@ mod tests {
 
     #[test]
     fn aligns() {
-        assert_eq!(
-            AspectRatio::parse("xMinYMin meet", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (0.0, 0.0, 0.1, 1.0)
-        );
-        assert_eq!(
-            AspectRatio::parse("xMinYMin slice", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (0.0, 0.0, 10.0, 100.0)
-        );
+        let foo = AspectRatio::parse("xMinYMin meet", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (0.0, 0.0, 0.1, 1.0));
 
-        assert_eq!(
-            AspectRatio::parse("xMinYMid meet", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (0.0, 0.0, 0.1, 1.0)
-        );
-        assert_eq!(
-            AspectRatio::parse("xMinYMid slice", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (0.0, -49.5, 10.0, 100.0)
-        );
+        let foo = AspectRatio::parse("xMinYMin slice", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (0.0, 0.0, 10.0, 100.0));
 
-        assert_eq!(
-            AspectRatio::parse("xMinYMax meet", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (0.0, 0.0, 0.1, 1.0)
-        );
-        assert_eq!(
-            AspectRatio::parse("xMinYMax slice", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (0.0, -99.0, 10.0, 100.0)
-        );
+        let foo = AspectRatio::parse("xMinYMid meet", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (0.0, 0.0, 0.1, 1.0));
 
-        assert_eq!(
-            AspectRatio::parse("xMidYMin meet", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (4.95, 0.0, 0.1, 1.0)
-        );
-        assert_eq!(
-            AspectRatio::parse("xMidYMin slice", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (0.0, 0.0, 10.0, 100.0)
-        );
+        let foo = AspectRatio::parse("xMinYMid slice", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
 
-        assert_eq!(
-            AspectRatio::parse("xMidYMid meet", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (4.95, 0.0, 0.1, 1.0)
-        );
-        assert_eq!(
-            AspectRatio::parse("xMidYMid slice", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (0.0, -49.5, 10.0, 100.0)
-        );
+        assert_eq!(foo, (0.0, -49.5, 10.0, 100.0));
 
-        assert_eq!(
-            AspectRatio::parse("xMidYMax meet", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (4.95, 0.0, 0.1, 1.0)
-        );
-        assert_eq!(
-            AspectRatio::parse("xMidYMax slice", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (0.0, -99.0, 10.0, 100.0)
-        );
+        let foo = AspectRatio::parse("xMinYMax meet", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (0.0, 0.0, 0.1, 1.0));
 
-        assert_eq!(
-            AspectRatio::parse("xMaxYMin meet", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (9.9, 0.0, 0.1, 1.0)
-        );
-        assert_eq!(
-            AspectRatio::parse("xMaxYMin slice", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (0.0, 0.0, 10.0, 100.0)
-        );
+        let foo = AspectRatio::parse("xMinYMax slice", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (0.0, -99.0, 10.0, 100.0));
 
-        assert_eq!(
-            AspectRatio::parse("xMaxYMid meet", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (9.9, 0.0, 0.1, 1.0)
-        );
-        assert_eq!(
-            AspectRatio::parse("xMaxYMid slice", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (0.0, -49.5, 10.0, 100.0)
-        );
+        let foo = AspectRatio::parse("xMidYMin meet", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (4.95, 0.0, 0.1, 1.0));
 
-        assert_eq!(
-            AspectRatio::parse("xMaxYMax meet", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (9.9, 0.0, 0.1, 1.0)
-        );
-        assert_eq!(
-            AspectRatio::parse("xMaxYMax slice", ()).unwrap().compute(
-                1.0,
-                10.0,
-                0.0,
-                0.0,
-                10.0,
-                1.0,
-            ),
-            (0.0, -99.0, 10.0, 100.0)
-        );
+        let foo = AspectRatio::parse("xMidYMin slice", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (0.0, 0.0, 10.0, 100.0));
+
+        let foo = AspectRatio::parse("xMidYMid meet", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (4.95, 0.0, 0.1, 1.0));
+
+        let foo = AspectRatio::parse("xMidYMid slice", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (0.0, -49.5, 10.0, 100.0));
+
+        let foo = AspectRatio::parse("xMidYMax meet", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (4.95, 0.0, 0.1, 1.0));
+
+        let foo = AspectRatio::parse("xMidYMax slice", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (0.0, -99.0, 10.0, 100.0));
+
+        let foo = AspectRatio::parse("xMaxYMin meet", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (9.9, 0.0, 0.1, 1.0));
+
+        let foo = AspectRatio::parse("xMaxYMin slice", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (0.0, 0.0, 10.0, 100.0));
+
+        let foo = AspectRatio::parse("xMaxYMid meet", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (9.9, 0.0, 0.1, 1.0));
+
+        let foo = AspectRatio::parse("xMaxYMid slice", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (0.0, -49.5, 10.0, 100.0));
+
+        let foo = AspectRatio::parse("xMaxYMax meet", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (9.9, 0.0, 0.1, 1.0));
+
+        let foo = AspectRatio::parse("xMaxYMax slice", ()).unwrap();
+        let foo = foo.compute(1.0, 10.0, 0.0, 0.0, 10.0, 1.0);
+        assert_eq!(foo, (0.0, -99.0, 10.0, 100.0));
     }
 }
