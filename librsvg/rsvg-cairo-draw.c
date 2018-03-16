@@ -222,15 +222,14 @@ rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, doub
     if (state->fill) {
         cairo_save (cr);
         cairo_move_to (cr, x, y);
+        if (rotation != 0.)
+            cairo_rotate (cr, -rotation);
 
         if (rsvg_set_source_rsvg_paint_server (ctx,
                                                state->fill,
                                                state->fill_opacity,
                                                bbox,
                                                state->current_color)) {
-            if (rotation != 0.)
-                cairo_rotate (cr, -rotation);
-
             pango_cairo_update_layout (cr, layout);
             pango_cairo_show_layout (cr, layout);
         }
@@ -241,15 +240,14 @@ rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, doub
     if (state->stroke) {
         cairo_save (cr);
         cairo_move_to (cr, x, y);
+        if (rotation != 0.)
+            cairo_rotate (cr, -rotation);
 
         if (rsvg_set_source_rsvg_paint_server (ctx,
                                                state->stroke,
                                                state->stroke_opacity,
                                                bbox,
                                                state->current_color)) {
-            if (rotation != 0.)
-                cairo_rotate (cr, -rotation);
-
             pango_cairo_update_layout (cr, layout);
             pango_cairo_layout_path (cr, layout);
 
