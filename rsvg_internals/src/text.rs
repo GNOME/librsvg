@@ -9,7 +9,7 @@ use util::utf8_cstr;
 
 // FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() /
 // PANGO_GRAVITY_IS_IMPROPER()?
-fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
+pub fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
     match gravity {
         pango::Gravity::East | pango::Gravity::West => true,
         _ => false,
