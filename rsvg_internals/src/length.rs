@@ -447,7 +447,9 @@ pub extern "C" fn rsvg_length_hand_normalize(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_parse_stroke_dasharray(string: *const libc::c_char) -> *const StrokeDasharray {
+pub extern "C" fn rsvg_parse_stroke_dasharray(
+    string: *const libc::c_char,
+) -> *const StrokeDasharray {
     let my_string = unsafe { &String::from_glib_none(string) };
 
     match parse_stroke_dash_array(my_string) {
@@ -458,13 +460,17 @@ pub extern "C" fn rsvg_parse_stroke_dasharray(string: *const libc::c_char) -> *c
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_stroke_dasharray_clone(dash: *const StrokeDasharray) -> *mut StrokeDasharray {
+pub extern "C" fn rsvg_stroke_dasharray_clone(
+    dash: *const StrokeDasharray,
+) -> *mut StrokeDasharray {
     unsafe { Box::into_raw(Box::new((*dash).clone())) }
 }
 
 #[no_mangle]
 pub extern "C" fn rsvg_stroke_dasharray_free(dash: *mut StrokeDasharray) {
-    unsafe { Box::from_raw(dash); }
+    unsafe {
+        Box::from_raw(dash);
+    }
 }
 
 #[cfg(test)]

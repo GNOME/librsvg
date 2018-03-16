@@ -329,8 +329,7 @@ impl NodeTrait for NodeUse {
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
                 let do_clip = !state::is_overflow(state)
-                    || (!state::has_overflow(state)
-                        && state::is_overflow(child.get_state()));
+                    || (!state::has_overflow(state) && state::is_overflow(child.get_state()));
 
                 draw_in_viewport(
                     nx,
