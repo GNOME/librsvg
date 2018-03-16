@@ -199,6 +199,7 @@ rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, doub
     RsvgBbox bbox;
     PangoGravity gravity = pango_context_get_gravity (pango_layout_get_context (layout));
     double rotation;
+    gboolean need_layout_path;
 
     pango_layout_get_extents(layout, &ink, NULL);
 
@@ -225,26 +226,36 @@ rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, doub
     if (rotation != 0.)
         cairo_rotate (cr, -rotation);
 
-    if (state->fill &&
-        rsvg_set_source_rsvg_paint_server (ctx,
-                                           state->fill,
-                                           state->fill_opacity,
-                                           bbox,
-                                           state->current_color)) {
-        pango_cairo_update_layout (cr, layout);
-        pango_cairo_show_layout (cr, layout);
+    if (!clipping) {
+        if (state->fill &&
+            rsvg_set_source_rsvg_paint_server (ctx,
+                                               state->fill,
+                                               state->fill_opacity,
+                                               bbox,
+                                               state->current_color)) {
+            pango_cairo_update_layout (cr, layout);
+            pango_cairo_show_layout (cr, layout);
+        }
     }
 
-    if (state->stroke &&
-        rsvg_set_source_rsvg_paint_server (ctx,
-                                           state->stroke,
-                                           state->stroke_opacity,
-                                           bbox,
-                                           state->current_color)) {
+    if (clipping) {
+        need_layout_path = TRUE;
+    } else {
+        need_layout_path = state->stroke &&
+            rsvg_set_source_rsvg_paint_server (ctx,
+                                               state->stroke,
+                                               state->stroke_opacity,
+                                               bbox,
+                                               state->current_color);
+    }
+
+    if (need_layout_path) {
         pango_cairo_update_layout (cr, layout);
         pango_cairo_layout_path (cr, layout);
 
-        cairo_stroke (cr);
+        if (!clipping) {
+            cairo_stroke (cr);
+        }
     }
 
     cairo_restore (cr);
