@@ -219,12 +219,13 @@ rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, doub
     rsvg_drawing_ctx_set_affine_on_cr (ctx, cr, &state->affine);
 
     rotation = pango_gravity_to_rotation (gravity);
-    if (state->fill) {
-        cairo_save (cr);
-        cairo_move_to (cr, x, y);
-        if (rotation != 0.)
-            cairo_rotate (cr, -rotation);
 
+    cairo_save (cr);
+    cairo_move_to (cr, x, y);
+    if (rotation != 0.)
+        cairo_rotate (cr, -rotation);
+
+    if (state->fill) {
         if (rsvg_set_source_rsvg_paint_server (ctx,
                                                state->fill,
                                                state->fill_opacity,
@@ -233,16 +234,9 @@ rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, doub
             pango_cairo_update_layout (cr, layout);
             pango_cairo_show_layout (cr, layout);
         }
-
-        cairo_restore (cr);
     }
 
     if (state->stroke) {
-        cairo_save (cr);
-        cairo_move_to (cr, x, y);
-        if (rotation != 0.)
-            cairo_rotate (cr, -rotation);
-
         if (rsvg_set_source_rsvg_paint_server (ctx,
                                                state->stroke,
                                                state->stroke_opacity,
@@ -253,9 +247,9 @@ rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, doub
 
             cairo_stroke (cr);
         }
-
-        cairo_restore (cr);
     }
+
+    cairo_restore (cr);
 }
 
 void
