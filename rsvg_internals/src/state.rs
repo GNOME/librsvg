@@ -82,6 +82,8 @@ extern "C" {
     fn rsvg_state_get_letter_spacing(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_font_decor(state: *const RsvgState) -> *const TextDecoration;
     fn rsvg_state_get_clip_rule(state: *const RsvgState) -> cairo::FillRule;
+    fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
+    fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_fill_rule(state: *const RsvgState) -> cairo::FillRule;
 }
 
@@ -262,6 +264,22 @@ pub fn get_font_decor(state: *const RsvgState) -> Option<FontDecor> {
 
 pub fn get_clip_rule(state: *const RsvgState) -> cairo::FillRule {
     unsafe { rsvg_state_get_clip_rule(state) }
+}
+
+pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
+    unsafe {
+        let ps = rsvg_state_get_fill(state);
+
+        if ps.is_null() {
+            None
+        } else {
+            Some(&*ps)
+        }
+    }
+}
+
+pub fn get_fill_opacity(state: *const RsvgState) -> u8 {
+    unsafe { rsvg_state_get_fill_opacity(state) }
 }
 
 pub fn get_fill_rule(state: *const RsvgState) -> cairo::FillRule {
