@@ -63,6 +63,7 @@ extern "C" {
     fn rsvg_state_get_dash_offset(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
     fn rsvg_state_get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias;
+    fn rsvg_state_get_text_rendering_type(state: *const RsvgState) -> cairo::Antialias;
 
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
@@ -177,6 +178,10 @@ pub fn get_current_color(state: *const RsvgState) -> Color {
 
 pub fn get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias {
     unsafe { rsvg_state_get_shape_rendering_type(state) }
+}
+
+pub fn get_text_rendering_type(state: *const RsvgState) -> cairo::Antialias {
+    unsafe { rsvg_state_get_text_rendering_type(state) }
 }
 
 pub fn get_stroke<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {

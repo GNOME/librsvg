@@ -1990,3 +1990,9 @@ rsvg_state_get_shape_rendering_type (RsvgState *state)
 {
     return state->shape_rendering_type;
 }
+
+cairo_antialias_t
+rsvg_state_get_text_rendering_type (RsvgState *state)
+{
+    return state->text_rendering_type;
+}
