@@ -45,13 +45,13 @@
 #include <pango/pangofc-fontmap.h>
 #endif
 
-/* Implemented in rust/src/paint_server.rs */
+/* Implemented in rsvg_internals/src/paint_server.rs */
 G_GNUC_INTERNAL
-gboolean _set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
-                                        RsvgPaintServer * ps,
-                                        guint8 opacity,
-                                        RsvgBbox bbox,
-                                        guint32 current_color);
+gboolean rsvg_set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
+                                            RsvgPaintServer * ps,
+                                            guint8 opacity,
+                                            RsvgBbox bbox,
+                                            guint32 current_color);
 
 void
 rsvg_cairo_set_affine_on_cr (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix_t *affine)
@@ -208,11 +208,11 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
         cairo_move_to (render->cr, x, y);
         rsvg_drawing_ctx_insert_bbox (ctx, &bbox);
 
-        if (_set_source_rsvg_paint_server (ctx,
-                                           state->fill,
-                                           state->fill_opacity,
-                                           bbox,
-                                           state->current_color)) {
+        if (rsvg_set_source_rsvg_paint_server (ctx,
+                                               state->fill,
+                                               state->fill_opacity,
+                                               bbox,
+                                               state->current_color)) {
             if (rotation != 0.)
                 cairo_rotate (render->cr, -rotation);
 
@@ -228,11 +228,11 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
         cairo_move_to (render->cr, x, y);
         rsvg_drawing_ctx_insert_bbox (ctx, &bbox);
 
-        if (_set_source_rsvg_paint_server (ctx,
-                                           state->stroke,
-                                           state->stroke_opacity,
-                                           bbox,
-                                           state->current_color)) {
+        if (rsvg_set_source_rsvg_paint_server (ctx,
+                                               state->stroke,
+                                               state->stroke_opacity,
+                                               bbox,
+                                               state->current_color)) {
             if (rotation != 0.)
                 cairo_rotate (render->cr, -rotation);
 

@@ -112,12 +112,12 @@ fn _set_source_rsvg_solid_color(
     ctx: *mut drawing_ctx::RsvgDrawingCtx,
     color: &Color,
     opacity: u8,
-    current_color: u32,
+    current_color: Color,
 ) {
     let rgba_color = match *color {
         Color::RGBA(rgba) => Some(rgba),
         Color::CurrentColor => {
-            if let Color::RGBA(rgba) = Color::from(current_color) {
+            if let Color::RGBA(rgba) = current_color {
                 Some(rgba)
             } else {
                 None
@@ -213,18 +213,13 @@ pub extern "C" fn rsvg_paint_server_unref(paint_server: *const PaintServer) {
     unsafe { Rc::from_raw(paint_server) };
 }
 
-#[no_mangle]
-pub extern "C" fn _set_source_rsvg_paint_server(
+pub fn _set_source_rsvg_paint_server(
     c_ctx: *mut drawing_ctx::RsvgDrawingCtx,
-    c_ps: *const PaintServer,
+    ps: &PaintServer,
     opacity: u8,
-    c_bbox: RsvgBbox,
-    current_color: u32,
-) -> glib_sys::gboolean {
-    assert!(!c_ctx.is_null());
-    assert!(!c_ps.is_null());
-
-    let ps = unsafe { &*c_ps };
+    bbox: &RsvgBbox,
+    current_color: Color,
+) -> bool {
     let mut had_paint_server = false;
 
     match *ps {
@@ -242,11 +237,11 @@ pub extern "C" fn _set_source_rsvg_paint_server(
                         &node,
                         c_ctx,
                         opacity,
-                        &c_bbox,
+                        bbox,
                     );
                 } else if node.get_type() == NodeType::Pattern {
                     had_paint_server =
-                        pattern::pattern_resolve_fallbacks_and_set_pattern(&node, c_ctx, &c_bbox);
+                        pattern::pattern_resolve_fallbacks_and_set_pattern(&node, c_ctx, bbox);
                 }
             }
 
@@ -267,7 +262,23 @@ pub extern "C" fn _set_source_rsvg_paint_server(
         }
     };
 
-    had_paint_server.to_glib()
+    had_paint_server
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_set_source_rsvg_paint_server(
+    c_ctx: *mut drawing_ctx::RsvgDrawingCtx,
+    c_ps: *const PaintServer,
+    opacity: u8,
+    bbox: RsvgBbox,
+    current_color: u32,
+) -> glib_sys::gboolean {
+    assert!(!c_ctx.is_null());
+    assert!(!c_ps.is_null());
+
+    let ps = unsafe { &*c_ps };
+
+    _set_source_rsvg_paint_server(c_ctx, ps, opacity, &bbox, Color::from(current_color)).to_glib()
 }
 
 #[cfg(test)]
