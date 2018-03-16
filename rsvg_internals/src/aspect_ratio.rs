@@ -236,7 +236,7 @@ mod tests {
             Ok(AspectRatio {
                 defer: true,
                 align: None,
-            })
+            },)
         );
 
         assert_eq!(
@@ -247,8 +247,8 @@ mod tests {
                     x: Align1D::Mid,
                     y: Align1D::Mid,
                     fit: FitMode::Meet,
-                }),
-            })
+                },),
+            },)
         );
 
         assert_eq!(
@@ -259,8 +259,8 @@ mod tests {
                     x: Align1D::Mid,
                     y: Align1D::Mid,
                     fit: FitMode::Meet,
-                }),
-            })
+                },),
+            },)
         );
 
         assert_eq!(
@@ -271,8 +271,8 @@ mod tests {
                     x: Align1D::Min,
                     y: Align1D::Max,
                     fit: FitMode::Meet,
-                }),
-            })
+                },),
+            },)
         );
 
         assert_eq!(
@@ -283,8 +283,8 @@ mod tests {
                     x: Align1D::Max,
                     y: Align1D::Mid,
                     fit: FitMode::Meet,
-                }),
-            })
+                },),
+            },)
         );
 
         assert_eq!(
@@ -295,8 +295,8 @@ mod tests {
                     x: Align1D::Min,
                     y: Align1D::Max,
                     fit: FitMode::Slice,
-                }),
-            })
+                },),
+            },)
         );
     }
 
