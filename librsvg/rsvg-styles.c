@@ -1967,6 +1967,18 @@ rsvg_state_get_clip_rule (RsvgState *state)
     return state->clip_rule;
 }
 
+RsvgPaintServer *
+rsvg_state_get_fill (RsvgState *state)
+{
+    return state->fill;
+}
+
+guint8
+rsvg_state_get_fill_opacity (RsvgState *state)
+{
+    return state->fill_opacity;
+}
+
 cairo_fill_rule_t
 rsvg_state_get_fill_rule (RsvgState *state)
 {
