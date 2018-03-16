@@ -168,6 +168,28 @@ rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
 extern void rsvg_setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgState *state);
 extern void rsvg_draw_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder, gboolean clipping);
 
+static RsvgBbox
+compute_text_bbox (PangoRectangle *ink, double x, double y, cairo_matrix_t *affine, PangoGravity gravity)
+{
+    RsvgBbox bbox;
+
+    rsvg_bbox_init (&bbox, affine);
+    if (PANGO_GRAVITY_IS_VERTICAL (gravity)) {
+        bbox.rect.x = x + (ink->x - ink->height) / (double)PANGO_SCALE;
+        bbox.rect.y = y + ink->y / (double)PANGO_SCALE;
+        bbox.rect.width = ink->height / (double)PANGO_SCALE;
+        bbox.rect.height = ink->width / (double)PANGO_SCALE;
+    } else {
+        bbox.rect.x = x + ink->x / (double)PANGO_SCALE;
+        bbox.rect.y = y + ink->y / (double)PANGO_SCALE;
+        bbox.rect.width = ink->width / (double)PANGO_SCALE;
+        bbox.rect.height = ink->height / (double)PANGO_SCALE;
+    }
+    bbox.virgin = 0;
+
+    return bbox;
+}
+
 void
 rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, double y, gboolean clipping)
 {
@@ -184,21 +206,9 @@ rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, doub
         return;
     }
 
-    rsvg_bbox_init (&bbox, &state->affine);
-    if (PANGO_GRAVITY_IS_VERTICAL (gravity)) {
-        bbox.rect.x = x + (ink.x - ink.height) / (double)PANGO_SCALE;
-        bbox.rect.y = y + ink.y / (double)PANGO_SCALE;
-        bbox.rect.width = ink.height / (double)PANGO_SCALE;
-        bbox.rect.height = ink.width / (double)PANGO_SCALE;
-    } else {
-        bbox.rect.x = x + ink.x / (double)PANGO_SCALE;
-        bbox.rect.y = y + ink.y / (double)PANGO_SCALE;
-        bbox.rect.width = ink.width / (double)PANGO_SCALE;
-        bbox.rect.height = ink.height / (double)PANGO_SCALE;
-    }
-    bbox.virgin = 0;
+    bbox = compute_text_bbox (&ink, x, y, &state->affine, gravity);
 
-    if (state->fill || state->stroke) {
+    if (!clipping && (state->fill || state->stroke)) {
         rsvg_drawing_ctx_insert_bbox (ctx, &bbox);
     }
 
