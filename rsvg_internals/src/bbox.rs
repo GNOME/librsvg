@@ -39,6 +39,11 @@ impl RsvgBbox {
             || self.rect.height.approx_eq_cairo(&0.0)
     }
 
+    pub fn set_rect(&mut self, r: &cairo::Rectangle) {
+        self.rect = *r;
+        self.virgin = false.to_glib();
+    }
+
     pub fn insert(&mut self, src: &RsvgBbox) {
         if src.is_virgin() {
             return;
