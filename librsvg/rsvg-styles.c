@@ -1787,6 +1787,12 @@ rsvg_state_reconstruct (RsvgState *state, RsvgNode *current)
     state_inherit (state, rsvg_node_get_state (current));
 }
 
+cairo_matrix_t
+rsvg_state_get_affine (RsvgState *state)
+{
+    return state->affine;
+}
+
 gboolean
 rsvg_state_is_overflow (RsvgState *state)
 {
