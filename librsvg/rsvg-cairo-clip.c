@@ -50,32 +50,13 @@ struct RsvgCairoClipRender {
 #define RSVG_CAIRO_CLIP_RENDER(render) (_RSVG_RENDER_CIC ((render), RSVG_RENDER_TYPE_CAIRO_CLIP, RsvgCairoClipRender))
 
 static void
-rsvg_cairo_clip_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, double x, double y)
+rsvg_cairo_clip_render_pango_layout (RsvgDrawingCtx *ctx, PangoLayout * layout, double x, double y)
 {
-    RsvgCairoClipRender *render = RSVG_CAIRO_CLIP_RENDER (ctx->render);
-    RsvgCairoRender *cairo_render = &render->super;
-    cairo_matrix_t affine;
-    PangoGravity gravity = pango_context_get_gravity (pango_layout_get_context (layout));
-    double rotation;
-
-    affine = rsvg_drawing_ctx_get_current_state_affine (ctx);
-    rsvg_drawing_ctx_set_affine_on_cr (ctx, cairo_render->cr, &affine);
-
-    rotation = pango_gravity_to_rotation (gravity);
-
-    cairo_save (cairo_render->cr);
-    cairo_move_to (cairo_render->cr, x, y);
-    if (rotation != 0.)
-        cairo_rotate (cairo_render->cr, -rotation);
-
-    pango_cairo_update_layout (cairo_render->cr, layout);
-    pango_cairo_layout_path (cairo_render->cr, layout);
-
-    cairo_restore (cairo_render->cr);
+    rsvg_draw_pango_layout (ctx, layout, x, y, TRUE);
 }
 
 static void
-rsvg_cairo_clip_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
+rsvg_cairo_clip_render_path_builder (RsvgDrawingCtx *ctx, RsvgPathBuilder *builder)
 {
     rsvg_draw_path_builder (ctx, builder, TRUE);
 }
