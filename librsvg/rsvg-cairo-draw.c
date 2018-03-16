@@ -166,6 +166,7 @@ rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
 
 /* Defined in rsvg_internals/src/draw.rs */
 extern void rsvg_setup_cr_for_stroke (cairo_t *cr, RsvgDrawingCtx *ctx, RsvgState *state);
+extern RsvgBbox rsvg_compute_bbox_from_stroke_and_fill (cairo_t *cr, RsvgState *state);
 
 void
 rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, double x, double y)
@@ -247,67 +248,6 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     }
 }
 
-static RsvgBbox
-compute_bbox_from_stroke_and_fill (cairo_t *cr, RsvgState *state)
-{
-    RsvgBbox bbox;
-    double backup_tolerance;
-
-    rsvg_bbox_init (&bbox, &state->affine);
-
-    backup_tolerance = cairo_get_tolerance (cr);
-    cairo_set_tolerance (cr, 1.0);
-    /* dropping the precision of cairo's bezier subdivision, yielding 2x
-       _rendering_ time speedups, are these rather expensive operations
-       really needed here? */
-
-    /* FIXME: See https://www.w3.org/TR/SVG/coords.html#ObjectBoundingBox for
-     * discussion on how to compute bounding boxes to be used for viewports and
-     * clipping.  It looks like we should be using cairo_path_extents() for
-     * that, not cairo_fill_extents().
-     *
-     * We may need to maintain *two* sets of bounding boxes - one for
-     * viewports/clipping, and one for user applications like a
-     * rsvg_compute_ink_rect() function in the future.
-     *
-     * See https://gitlab.gnome.org/GNOME/librsvg/issues/128 for discussion of a
-     * public API to get the ink rectangle.
-     */
-
-    /* Bounding box for fill
-     *
-     * Unlike the case for stroke, for fills we always compute the bounding box.
-     * In GNOME we have SVGs for symbolic icons where each icon has a bounding
-     * rectangle with no fill and no stroke, and inside it there are the actual
-     * paths for the icon's shape.  We need to be able to compute the bounding
-     * rectangle's extents, even when it has no fill nor stroke.
-     */
-    {
-        RsvgBbox fb;
-        rsvg_bbox_init (&fb, &state->affine);
-        cairo_fill_extents (cr, &fb.rect.x, &fb.rect.y, &fb.rect.width, &fb.rect.height);
-        fb.rect.width -= fb.rect.x;
-        fb.rect.height -= fb.rect.y;
-        fb.virgin = 0;
-        rsvg_bbox_insert (&bbox, &fb);
-    }
-
-    /* Bounding box for stroke */
-    if (state->stroke != NULL) {
-        RsvgBbox sb;
-        rsvg_bbox_init (&sb, &state->affine);
-        cairo_stroke_extents (cr, &sb.rect.x, &sb.rect.y, &sb.rect.width, &sb.rect.height);
-        sb.rect.width -= sb.rect.x;
-        sb.rect.height -= sb.rect.y;
-        sb.virgin = 0;
-        rsvg_bbox_insert (&bbox, &sb);
-    }
-
-    cairo_set_tolerance (cr, backup_tolerance);
-
-    return bbox;
-}
-
 static void
 stroke_and_fill (cairo_t *cr, RsvgDrawingCtx *ctx)
 {
@@ -318,7 +258,7 @@ stroke_and_fill (cairo_t *cr, RsvgDrawingCtx *ctx)
 
     rsvg_setup_cr_for_stroke (cr, ctx, state);
 
-    bbox = compute_bbox_from_stroke_and_fill (cr, state);
+    bbox = rsvg_compute_bbox_from_stroke_and_fill (cr, state);
 
     /* Update the bbox in the rendering context.  Below, we actually set the fill/stroke
      * patterns on the cairo_t.  That process requires the rendering context to have

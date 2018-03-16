@@ -33,6 +33,7 @@ pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
 pub use color::{rsvg_css_parse_color, AllowCurrentColor, AllowInherit, ColorKind, ColorSpec};
 
 pub use draw::{
+    rsvg_compute_bbox_from_stroke_and_fill,
     rsvg_setup_cr_for_stroke,
 };
 
