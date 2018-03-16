@@ -214,6 +214,8 @@ rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, doub
 
     cairo_set_antialias (cr, state->text_rendering_type);
 
+    rsvg_setup_cr_for_stroke (cr, ctx, state);
+
     rsvg_drawing_ctx_set_affine_on_cr (ctx, cr, &state->affine);
 
     rotation = pango_gravity_to_rotation (gravity);
@@ -250,8 +252,6 @@ rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, doub
 
             pango_cairo_update_layout (cr, layout);
             pango_cairo_layout_path (cr, layout);
-
-            rsvg_setup_cr_for_stroke (cr, ctx, state);
 
             cairo_stroke (cr);
         }
