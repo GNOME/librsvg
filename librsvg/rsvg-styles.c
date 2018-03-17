@@ -1173,6 +1173,53 @@ rsvg_parse_style_pair (RsvgState *state,
     }
 }
 
+/* returns TRUE if this element should be processed according to <switch> semantics
+   http://www.w3.org/TR/SVG/struct.html#SwitchElement */
+static gboolean
+rsvg_eval_switch_attributes (RsvgPropertyBag * atts, gboolean * p_has_cond)
+{
+    gboolean required_features_ok = TRUE;
+    gboolean required_extensions_ok = TRUE;
+    gboolean system_language_ok = TRUE;
+    gboolean has_cond = FALSE;
+
+    RsvgPropertyBagIter *iter;
+    const char *key;
+    RsvgAttribute attr;
+    const char *value;
+
+    iter = rsvg_property_bag_iter_begin (atts);
+
+    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        switch (attr) {
+        case RSVG_ATTRIBUTE_REQUIRED_FEATURES:
+            required_features_ok = rsvg_cond_check_required_features (value);
+            has_cond = TRUE;
+            break;
+
+        case RSVG_ATTRIBUTE_REQUIRED_EXTENSIONS:
+            required_extensions_ok = rsvg_cond_check_required_extensions (value);
+            has_cond = TRUE;
+            break;
+
+        case RSVG_ATTRIBUTE_SYSTEM_LANGUAGE:
+            system_language_ok = rsvg_cond_check_system_language (value);
+            has_cond = TRUE;
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    rsvg_property_bag_iter_end (iter);
+
+    if (p_has_cond)
+        *p_has_cond = has_cond;
+
+    return required_features_ok && required_extensions_ok && system_language_ok;
+}
+
 /* take a pair of the form (fill="#ff00ff") and parse it as a style */
 void
 rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
