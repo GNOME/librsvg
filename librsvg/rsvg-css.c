@@ -254,44 +254,6 @@ rsvg_css_parse_font_family (const char *str, gboolean * inherit)
         return str;
 }
 
-#if !defined(HAVE_STRTOK_R)
-
-static char *
-strtok_r (char *s, const char *delim, char **last)
-{
-    char *p;
-
-    if (s == NULL)
-        s = *last;
-
-    if (s == NULL)
-        return NULL;
-
-    while (*s && strchr (delim, *s))
-        s++;
-
-    if (*s == '\0') {
-        *last = NULL;
-        return NULL;
-    }
-
-    p = s;
-    while (*p && !strchr (delim, *p))
-        p++;
-
-    if (*p == '\0')
-        *last = NULL;
-    else {
-        *p = '\0';
-        p++;
-        *last = p;
-    }
-
-    return s;
-}
-
-#endif                          /* !HAVE_STRTOK_R */
-
 gboolean
 rsvg_css_parse_overflow (const char *str, gboolean * inherit)
 {
