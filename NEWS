@@ -1,3 +1,18 @@
+Version 2.42.4
+- Fix: elements with systemLanguage attributes without variants now
+  work better (Paolo Borelli).
+- gitlab#227 - Fix: we now catch negative values in stroke-dasharray
+  properties instead of leaving the cairo_t in an error state.
+- gitlab#228 - Fix: empty transform attribute now correctly yields an
+  identity transform (Dmitry Kontsevoy).
+- Fix possible crash on invalid gradient references.
+- Make robust against patterns and gradients with no children.
+- Lots of code cleanups and refactorings (Jordan Petridis, Dmitry
+  Kontsevoy, Ivan Molodetskikh).
+- Code moved to Rust: low-level path and PangoLayout drawing.
+- New Rust dependencies: float_cmp, pangocairo crates.
+- We now require Rust 1.21 or later.
+
 Version 2.42.3
 - gitlab#205 - The configure script now checks for Rust 1.20.0 -
   previously this minimum requirement was not well-defined.
