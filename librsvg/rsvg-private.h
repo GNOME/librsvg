@@ -472,8 +472,18 @@ GdkPixbuf *rsvg_pixbuf_from_data_with_size_data (const guchar * buff,
                                                  size_t len,
                                                  gpointer data,
                                                  const char *base_uri, GError ** error);
+
+/* Implemented in rust/src/cond.rs */
 G_GNUC_INTERNAL
-gboolean     rsvg_eval_switch_attributes	(RsvgPropertyBag * atts, gboolean * p_has_cond);
+gboolean rsvg_cond_check_required_features (const char *value);
+
+/* Implemented in rust/src/cond.rs */
+G_GNUC_INTERNAL
+gboolean rsvg_cond_check_required_extensions (const char *value);
+
+/* Implemented in rust/src/cond.rs */
+G_GNUC_INTERNAL
+gboolean rsvg_cond_check_system_language (const char *value);
 
 G_GNUC_INTERNAL
 void rsvg_pop_discrete_layer    (RsvgDrawingCtx * ctx);
