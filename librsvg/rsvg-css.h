@@ -104,9 +104,6 @@ const char  *rsvg_css_parse_font_family	    (const char *str, gboolean * inherit
 G_GNUC_INTERNAL
 gboolean rsvg_css_parse_number_optional_number (const char *str, double *out_x, double *out_y);
 
-G_GNUC_INTERNAL
-gchar       **rsvg_css_parse_list           (const char *in_str, guint * out_list_len);
-
 /* Keep in sync with rust/src/parsers.rs:NumberListLength */
 typedef enum {
     NUMBER_LIST_LENGTH_EXACT,
