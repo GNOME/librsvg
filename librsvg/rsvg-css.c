@@ -292,51 +292,6 @@ strtok_r (char *s, const char *delim, char **last)
 
 #endif                          /* !HAVE_STRTOK_R */
 
-gchar **
-rsvg_css_parse_list (const char *in_str, guint * out_list_len)
-{
-    char *ptr, *tok;
-    char *str;
-
-    guint n = 0;
-    GSList *string_list = NULL;
-    gchar **string_array = NULL;
-
-    str = g_strdup (in_str);
-    tok = strtok_r (str, ", \t", &ptr);
-    if (tok != NULL) {
-        if (strcmp (tok, " ") != 0) {
-            string_list = g_slist_prepend (string_list, g_strdup (tok));
-            n++;
-        }
-
-        while ((tok = strtok_r (NULL, ", \t", &ptr)) != NULL) {
-            if (strcmp (tok, " ") != 0) {
-                string_list = g_slist_prepend (string_list, g_strdup (tok));
-                n++;
-            }
-        }
-    }
-    g_free (str);
-
-    if (out_list_len)
-        *out_list_len = n;
-
-    if (string_list) {
-        GSList *slist;
-
-        string_array = g_new0 (gchar *, n + 1);
-
-        string_array[n--] = NULL;
-        for (slist = string_list; slist; slist = slist->next)
-            string_array[n--] = (gchar *) slist->data;
-
-        g_slist_free (string_list);
-    }
-
-    return string_array;
-}
-
 gboolean
 rsvg_css_parse_overflow (const char *str, gboolean * inherit)
 {
