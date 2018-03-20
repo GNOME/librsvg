@@ -10,7 +10,7 @@ variables:
   I386_DEBIAN_TESTING:       "registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing"
 
   RUSTFMT_NIGHTLY:           "registry.gitlab.com/alatiera/rustfmt-oci-image/rustfmt:nightly"
-  RUST_NIGHTLY:              "rustlang/rust:nightly"
+  CLIPPY_NIGHTLY:            "registry.gitlab.com/alatiera/librsvg-oci-images/clippy:nightly"
 
 stages:
   - test
@@ -215,14 +215,8 @@ rustfmt:
 # Configure and run clippy on nightly
 # Only fails on errors atm.
 clippy:
-  image: $RUST_NIGHTLY
+  image: $CLIPPY_NIGHTLY
   stage: lint
-  before_script:
-    - apt update -yqq
-    - apt-get install -yqq --no-install-recommends libgdk-pixbuf2.0-dev
-                      libgirepository1.0-dev gtk-doc-tools git  libgtk-3-dev
-                      libxml2-dev libcroco3-dev libcairo2-dev libpango1.0-dev
-
   script:
     - rustc --version && cargo --version
     - cargo install clippy --force
