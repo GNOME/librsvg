@@ -6,6 +6,7 @@ variables:
   AMD64_FEDORA_LATEST:       "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest"
   AMD64_OPENSUSE_TUMBLEWEED: "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed"
   AMD64_DEBIAN_TESTING:      "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing"
+  AMD64_UBUNTU_DEVEL:      "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/ubuntu:devel"
 
   I386_DEBIAN_TESTING:       "registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing"
 
@@ -53,15 +54,6 @@ stages:
       - target/
       - .cargo_cache/
       - ccache/
-
-# .deb_template: &deb_deps
-#   before_script:
-#     - apt update -yqq
-#     - apt-get install -yqq gcc make
-#                   automake autoconf libtool gettext itstool
-#                   libgdk-pixbuf2.0-dev libgirepository1.0-dev
-#                   gtk-doc-tools git libgtk-3-dev rustc cargo
-#                   libxml2-dev libcroco3-dev libcairo2-dev libpango1.0-dev
 
 # TEST STAGE
 ########################################################################
@@ -121,11 +113,10 @@ debian:testing:
     - web
 
 # TODO: Enable this when ubuntu update it's rustc package
-# https://launchpad.net/ubuntu/+source/rustc/1.23.0+dfsg1+llvm-0ubuntu2
+# https://gitlab.gnome.org/GNOME/librsvg/issues/213
 # ubuntu:18.04:
-#   image: ubuntu:18.04
+#   image: $AMD64_UBUNTU_DEVEL
 #   stage: cross_distro
-#   <<: *deb_deps
 #   <<: *distro_test
 #   only:
 #     - master
