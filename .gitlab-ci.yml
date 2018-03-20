@@ -95,13 +95,6 @@ fedora:test:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
 
-fedora:test_release:
-  image: $AMD64_FEDORA_LATEST
-  stage: test
-  variables:
-    LIBRSVG_DEBUG: "no"
-  <<: *distro_test
-
 # STAGE 1 LINTS
 ########################################################################
 
@@ -171,6 +164,14 @@ debian:testing_i386:
 
 # STAGE 3 CROSS DISTRO TESTS
 #######################################################################
+
+fedora:test_release:
+  image: $AMD64_FEDORA_LATEST
+  stage: test
+  variables:
+    LIBRSVG_DEBUG: "no"
+  <<: *distro_test
+  <<: *stage_3
 
 fedora:rawhide_release:
   image: $AMD64_FEDORA_RAWHIDE
