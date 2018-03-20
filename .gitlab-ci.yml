@@ -4,6 +4,7 @@ variables:
   # Docker images for various distros and architectures
 
   AMD64_FEDORA_LATEST:       "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest"
+  AMD64_FEDORA_RAWHIDE:       "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:rawhide"
   AMD64_OPENSUSE_TUMBLEWEED: "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed"
   AMD64_DEBIAN_TESTING:      "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing"
   AMD64_UBUNTU_DEVEL:      "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/ubuntu:devel"
@@ -77,7 +78,7 @@ fedora:test_release:
 #######################################################################
 
 fedora:rawhide:
-  image: $AMD64_FEDORA_LATEST
+  image: $AMD64_FEDORA_RAWHIDE
   stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "yes"
@@ -132,7 +133,7 @@ debian:testing:
 #######################################################################
 
 fedora:rawhide_release:
-  image: $AMD64_FEDORA_LATEST
+  image: $AMD64_FEDORA_RAWHIDE
   stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "no"
