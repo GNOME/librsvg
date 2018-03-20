@@ -56,7 +56,36 @@ stages:
       - .cargo_cache/
       - ccache/
 
-# TEST STAGE
+
+# Jobs that are marked with stage_1 will be run on every commit, across every
+# fork and branch. This only serves as documentation since it's equivelant to
+# ommiting only: key. Thus why stage_1 jobs might not be marked.
+.test_stage_1: &stage_1
+  only: {}
+
+# Jobs that are marked as stage 2 will be run for every commit
+# at GNOME/librsvg/master too. Ideal targets for this stage are
+# debug cross_distro tests, and debug cross_arch tests to avoid
+# breakign i386 and arm builds again.
+.test_stage_2: &stage_2
+  only:
+    # When branching a stable branch,
+    # update the following line from master to branch's name.
+    - master@GNOME/librsvg
+    - schedules
+    - tags
+    - web
+
+# Jobs that are marked as stage 3 will only run on scheduled pipelines.
+# Ideal targets for this stage are expensive task, that only need to be run
+# on a regular time interval. Ex testing all the gcc/rustc version that we target
+.test_stage_3: &stage_3
+  only:
+    - schedules
+    - tags
+    - web
+
+# STAGE 1 TESTS
 ########################################################################
 
 fedora:test:
@@ -73,126 +102,8 @@ fedora:test_release:
     LIBRSVG_DEBUG: "no"
   <<: *distro_test
 
-
-# CROSS DISTRO AMD64 TEST STAGE
-#######################################################################
-
-fedora:rawhide:
-  image: $AMD64_FEDORA_RAWHIDE
-  stage: cross_distro
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *distro_test
-  only:
-    - master@GNOME/librsvg
-    - schedules
-    - tags
-    - web
-
-opensuse:tumbleweed:
-  image: $AMD64_OPENSUSE_TUMBLEWEED
-  stage: cross_distro
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *distro_test
-  only:
-    - master@GNOME/librsvg
-    - schedules
-    - tags
-    - web
-
-debian:testing:
-  image: $AMD64_DEBIAN_TESTING
-  stage: cross_distro
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *distro_test
-  only:
-    - master@GNOME/librsvg
-    - schedules
-    - tags
-    - web
-
-# TODO: Enable this when ubuntu update it's rustc package
-# https://gitlab.gnome.org/GNOME/librsvg/issues/213
-# ubuntu:18.04:
-#   image: $AMD64_UBUNTU_DEVEL
-#   stage: cross_distro
-#   <<: *distro_test
-#   only:
-#     - master@GNOME/librsvg
-#     - schedules
-#     - tags
-#     - web
-
-
-# CROSS DISTRO RELEASE AMD64 TEST STAGE
-#######################################################################
-
-fedora:rawhide_release:
-  image: $AMD64_FEDORA_RAWHIDE
-  stage: cross_distro
-  variables:
-    LIBRSVG_DEBUG: "no"
-  <<: *distro_test
-  only:
-    - schedules
-    - tags
-    - web
-
-opensuse:tumbleweed_release:
-  image: $AMD64_OPENSUSE_TUMBLEWEED
-  stage: cross_distro
-  variables:
-    LIBRSVG_DEBUG: "no"
-  <<: *distro_test
-  only:
-    - schedules
-    - tags
-    - web
-
-debian:testing_release:
-  image: $AMD64_DEBIAN_TESTING
-  stage: cross_distro
-  variables:
-    LIBRSVG_DEBUG: "no"
-  <<: *distro_test
-  only:
-    - schedules
-    - tags
-    - web
-
-# CROSS DISTRO i386
-#######################################################################
-
-debian:testing_i386:
-  image: $I386_DEBIAN_TESTING
-  stage: cross_distro
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *distro_test
-  only:
-    - master@GNOME/librsvg
-    - schedules
-    - tags
-    - web
-
-# CROSS DISTRO RELEASE i386
-#######################################################################
-
-debian:testing_release_i386:
-  image: $I386_DEBIAN_TESTING
-  stage: cross_distro
-  variables:
-    LIBRSVG_DEBUG: "no"
-  <<: *distro_test
-  only:
-    - schedules
-    - tags
-    - web
-
-# LINT STAGE
-#######################################################################
+# STAGE 1 LINTS
+########################################################################
 
 # Configure and run rustfmt on nightly
 # Exits and builds fails on bad format
@@ -214,3 +125,81 @@ clippy:
     - cargo install clippy --force
     - cargo clippy --all
   when: manual
+
+# STAGE 2 CROSS DISTRO TESTS
+#######################################################################
+
+fedora:rawhide:
+  image: $AMD64_FEDORA_RAWHIDE
+  stage: cross_distro
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *distro_test
+  <<: *stage_2
+
+opensuse:tumbleweed:
+  image: $AMD64_OPENSUSE_TUMBLEWEED
+  stage: cross_distro
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *distro_test
+  <<: *stage_2
+
+debian:testing:
+  image: $AMD64_DEBIAN_TESTING
+  stage: cross_distro
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *distro_test
+  <<: *stage_2
+
+# TODO: Enable this when ubuntu update it's rustc package
+# https://gitlab.gnome.org/GNOME/librsvg/issues/213
+# ubuntu:18.04:
+#   image: $AMD64_UBUNTU_DEVEL
+#   stage: cross_distro
+#   <<: *distro_test
+#   <<: *stage_2
+
+debian:testing_i386:
+  image: $I386_DEBIAN_TESTING
+  stage: cross_distro
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *distro_test
+  <<: *stage_2
+
+# STAGE 3 CROSS DISTRO TESTS
+#######################################################################
+
+fedora:rawhide_release:
+  image: $AMD64_FEDORA_RAWHIDE
+  stage: cross_distro
+  variables:
+    LIBRSVG_DEBUG: "no"
+  <<: *distro_test
+  <<: *stage_3
+
+opensuse:tumbleweed_release:
+  image: $AMD64_OPENSUSE_TUMBLEWEED
+  stage: cross_distro
+  variables:
+    LIBRSVG_DEBUG: "no"
+  <<: *distro_test
+  <<: *stage_3
+
+debian:testing_release:
+  image: $AMD64_DEBIAN_TESTING
+  stage: cross_distro
+  variables:
+    LIBRSVG_DEBUG: "no"
+  <<: *distro_test
+  <<: *stage_3
+
+debian:testing_release_i386:
+  image: $I386_DEBIAN_TESTING
+  stage: cross_distro
+  variables:
+    LIBRSVG_DEBUG: "no"
+  <<: *distro_test
+  <<: *stage_3
