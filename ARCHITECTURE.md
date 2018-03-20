@@ -42,7 +42,7 @@ During its lifetime, an `RsvgHandle` can be in either of two stages:
 
 * Rendering - the SVG is finished loading.  The caller can then render
   the image as many times as it wants to Cairo contexts.
-  
+
 ## Loading SVG data
 
 The following happens in `rsvg_handle_read_stream_sync()`:
@@ -50,7 +50,7 @@ The following happens in `rsvg_handle_read_stream_sync()`:
 * The function peeks the first bytes of the stream to see if it is
   compressed with gzip.  In that case, it plugs a
   `g_zlib_decompressor_new()` to the use-supplied stream.
-  
+
 * The function creates an XML parser for the stream.  The SAX parser's
   callbacks are functions that create DOM-like objects within the
   `RsvgHandle`.  The most important callback is
@@ -101,7 +101,7 @@ computed or actually used values will be generated at rendering time.
 
 # Rendering
 
-The public `rsvg_handle_render_cairo()` and `rsvg_handle_cairo_sub()`
+The public `rsvg_handle_render_cairo()` and `rsvg_handle_render_cairo_sub()`
 functions initiate a rendering process; the first function just calls
 the second one with the root element of the SVG.
 
@@ -111,6 +111,46 @@ rendering functions.  It carries the vtable for rendering in the
 `render` field, the CSS state for the node being rendered in the
 `state` field, and other values which are changed as rendering
 progresses.
+
+## CSS cascading
+
+For historical reasons, librsvg does the CSS cascade *and* rendering
+in a single traversal of the tree of nodes.  This is somewhat awkward,
+and in the future we hope to move to a Servo-like model where CSS is
+cascaded and sizes are resolved before rendering.
+
+Rendering starts at `rsvg_handle_render_cairo_sub()`.  It calls
+`rsvg_cairo_new_drawing_ctx()`, which creates an `RsvgDrawingCtx` with
+a default `state`:  this is the default CSS state per
+`rsvg_state_init()` (in reality that state carries an affine
+transformation already set up for this rendering pass; we can ignore
+it for now).
+
+Then, `rsvg_handle_render_cairo_sub()` starts the recursive drawing
+process by calling
+`rsvg_drawing_ctx_draw_node_from_stack()`, starting at the tree root
+(`handle->priv->treebase`).  In turn, that function creates a
+temporary `state` struct by calling `rsvg_state_push()`, calls
+`rsvg_node_draw()` on the current node, and destroys the temporary
+`state` struct with `rsvg_state_pop()`.
+
+Each node draws itself in the following way:
+
+* It resolves relative lengths from the size of current viewport by calling
+  `length.normalize()` on each length value.  The size of the current
+  viewport is maintained as a stack of `RsvgBbox` structures (it
+  stands for "bounding box").
+
+* It calls drawing_ctx::state_reinherit_top() with the node's own
+  `state` field.  This causes the temporary state in the `draw_ctx` to
+  obtain the final cascaded CSS values.
+
+* It calls the low-level rendering functions like
+  `drawing_ctx::render_path_builder()` or
+  `drawing_ctx::render_pango_layout()`.  These functions translate the
+  values from the `state` in the `draw_ctx` into Cairo values, they
+  configure the `cairo::Context`, and call actual Cairo functions to
+  draw paths/text/etc.
 
 # Comparing floating-point numbers
 
