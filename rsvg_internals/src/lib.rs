@@ -33,6 +33,12 @@ pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
 
 pub use color::{rsvg_css_parse_color, AllowCurrentColor, AllowInherit, ColorKind, ColorSpec};
 
+pub use cond::{
+    rsvg_cond_check_required_extensions,
+    rsvg_cond_check_required_features,
+    rsvg_cond_check_system_language,
+};
+
 pub use draw::{rsvg_draw_pango_layout, rsvg_draw_path_builder};
 
 pub use gradient::{rsvg_node_linear_gradient_new, rsvg_node_radial_gradient_new};
@@ -149,6 +155,7 @@ mod chars;
 mod clip_path;
 mod cnode;
 mod color;
+mod cond;
 mod draw;
 mod drawing_ctx;
 mod error;
