@@ -84,7 +84,7 @@ fedora:rawhide:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
-    - master
+    - master@GNOME/librsvg
     - schedules
     - tags
     - web
@@ -96,7 +96,7 @@ opensuse:tumbleweed:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
-    - master
+    - master@GNOME/librsvg
     - schedules
     - tags
     - web
@@ -108,7 +108,7 @@ debian:testing:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
-    - master
+    - master@GNOME/librsvg
     - schedules
     - tags
     - web
@@ -120,7 +120,7 @@ debian:testing:
 #   stage: cross_distro
 #   <<: *distro_test
 #   only:
-#     - master
+#     - master@GNOME/librsvg
 #     - schedules
 #     - tags
 #     - web
@@ -172,7 +172,7 @@ debian:testing_i386:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   only:
-    - master
+    - master@GNOME/librsvg
     - schedules
     - tags
     - web
