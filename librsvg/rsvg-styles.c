@@ -40,6 +40,8 @@
 
 #include <libcroco/libcroco.h>
 
+typedef int (*InheritanceFunction) (gboolean dst_has_prop, gboolean src_has_prop);
+
 /* Defined in rust/src/length.rs */
 extern RsvgStrokeDasharray *rsvg_parse_stroke_dasharray(const char *str);
 extern RsvgStrokeDasharray *rsvg_stroke_dasharray_clone(RsvgStrokeDasharray *dash);
@@ -52,6 +54,7 @@ extern State *rsvg_state_rust_new(void);
 extern void rsvg_state_rust_free(State *state);
 extern State *rsvg_state_rust_clone(State *state);
 extern void rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value);
+extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn);
 
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
@@ -282,8 +285,6 @@ rsvg_state_reinit (RsvgState * state)
     state->parent = parent;
 }
 
-typedef int (*InheritanceFunction) (int dst, int src);
-
 void
 rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 {
@@ -447,6 +448,8 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->dash_offset = src->dash_offset;
     }
 
+    rsvg_state_rust_inherit_run (dst->state_rust, src->state_rust, function);
+
     if (inherituninheritables) {
         g_free (dst->clip_path);
         dst->clip_path = g_strdup (src->clip_path);
@@ -467,7 +470,7 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
 */
 
 static int
-reinheritfunction (int dst, int src)
+reinheritfunction (gboolean dst, gboolean src)
 {
     if (!dst)
         return 1;
@@ -490,7 +493,7 @@ state_reinherit (RsvgState * dst, const RsvgState * src)
 */
 
 static int
-dominatefunction (int dst, int src)
+dominatefunction (gboolean dst, gboolean src)
 {
     if (!dst || src)
         return 1;
@@ -506,7 +509,7 @@ state_dominate (RsvgState * dst, const RsvgState * src)
 /* copy everything inheritable from the src to the dst */
 
 static int
-clonefunction (int dst, int src)
+clonefunction (gboolean dst, gboolean src)
 {
     return 1;
 }
@@ -525,7 +528,7 @@ state_override (RsvgState * dst, const RsvgState * src)
 */
 
 static int
-inheritfunction (int dst, int src)
+inheritfunction (gboolean dst, gboolean src)
 {
     return src;
 }

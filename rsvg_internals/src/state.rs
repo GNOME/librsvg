@@ -1,7 +1,7 @@
 use cairo;
 use glib::translate::*;
 use glib_sys;
-use libc;
+use libc::{self, c_int};
 use pango;
 use pango_sys;
 
@@ -424,5 +424,22 @@ pub extern "C" fn rsvg_state_rust_parse_style_pair(
 
     match state.parse_style_pair(attr, value) {
         _ => (), // FIXME: propagate errors
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_inherit_run(
+    dst: *mut State,
+    src: *const State,
+    inherit_fn: extern "C" fn (glib_sys::gboolean, glib_sys::gboolean) -> c_int,
+) {
+    assert!(!dst.is_null());
+    assert!(!src.is_null());
+
+    unsafe {
+        let dst = &mut *dst;
+        let src = &*src;
+
+        }
     }
 }
