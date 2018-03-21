@@ -125,7 +125,6 @@ extern "C" {
     fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_miter_limit(state: *const RsvgState) -> f64;
     fn rsvg_state_get_line_cap(state: *const RsvgState) -> cairo::LineCap;
-    fn rsvg_state_get_line_join(state: *const RsvgState) -> cairo::LineJoin;
     fn rsvg_state_get_language(state: *const RsvgState) -> *const libc::c_char;
     fn rsvg_state_get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
@@ -267,10 +266,6 @@ pub fn get_miter_limit(state: *const RsvgState) -> f64 {
 
 pub fn get_line_cap(state: *const RsvgState) -> cairo::LineCap {
     unsafe { rsvg_state_get_line_cap(state) }
-}
-
-pub fn get_line_join(state: *const RsvgState) -> cairo::LineJoin {
-    unsafe { rsvg_state_get_line_join(state) }
 }
 
 pub fn get_language(state: *const RsvgState) -> Option<String> {
