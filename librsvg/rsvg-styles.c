@@ -51,6 +51,7 @@ extern StrokeLinejoinResult rsvg_stroke_linejoin_parse(const char *s);
 extern State *rsvg_state_rust_new(void);
 extern void rsvg_state_rust_free(State *state);
 extern State *rsvg_state_rust_clone(State *state);
+extern void rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value);
 
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
@@ -1189,9 +1190,10 @@ rsvg_parse_style_pair (RsvgState *state,
     break;
 
     default:
-        /* Maybe it's an attribute not parsed here, but in the node
-         * implementations.
-         */
+        /* FIXME: report errors upstream */
+        rsvg_state_rust_parse_style_pair(state->state_rust,
+                                         attr,
+                                         value);
         break;
     }
 }

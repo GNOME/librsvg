@@ -5,13 +5,14 @@ use libc;
 use pango;
 use pango_sys;
 
+use attributes::Attribute;
 use color::{Color, ColorSpec};
 use error::*;
 use length::{RsvgLength, StrokeDasharray};
 use node::RsvgNode;
 use opacity::{Opacity, OpacitySpec};
 use paint_server::PaintServer;
-use parsers::Parse;
+use parsers::{Parse, ParseError};
 use util::utf8_cstr;
 
 pub enum RsvgState {}
@@ -27,6 +28,18 @@ impl Default for State {
         State {
             join: Default::default(),
             has_join: false,
+        }
+    }
+}
+
+impl State {
+    fn parse_style_pair(&mut self, attr: Attribute, value: &str) -> Result<(), AttributeError> {
+        match attr {
+            _ => {
+                // Maybe it's an attribute not parsed here, but in the
+                // node implementations.
+                Ok(())
+            },
         }
     }
 }
@@ -395,4 +408,21 @@ pub extern "C" fn rsvg_state_rust_clone(state: *const State) -> *mut State {
     assert!(!state.is_null());
 
     unsafe { Box::into_raw(Box::new((*state).clone())) }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_parse_style_pair(
+    state: *mut State,
+    attr: Attribute,
+    value: *const libc::c_char,
+) {
+    assert!(!state.is_null());
+    assert!(!value.is_null());
+
+    let state = unsafe { &mut *state };
+    let value = unsafe { utf8_cstr(value) };
+
+    match state.parse_style_pair(attr, value) {
+        _ => (), // FIXME: propagate errors
+    }
 }
