@@ -337,28 +337,28 @@ impl Default for StrokeLinejoin {
 
 impl Parse for StrokeLinejoin {
     type Data = ();
-    type Err = ();
+    type Err = AttributeError;
 
-    fn parse(s: &str, _: Self::Data) -> Result<StrokeLinejoin, ()> {
+    fn parse(s: &str, _: Self::Data) -> Result<StrokeLinejoin, AttributeError> {
         match s.trim() {
             "miter" => Ok(StrokeLinejoin::Miter),
             "round" => Ok(StrokeLinejoin::Round),
             "bevel" => Ok(StrokeLinejoin::Bevel),
             "inherit" => Ok(StrokeLinejoin::Inherit),
-            _ => Err(()),
+            _ => Err(AttributeError::from(ParseError::new("expected miter|round|bevel|inherit"))),
         }
     }
 }
 
-impl From<Result<StrokeLinejoin, ()>> for StrokeLinejoinResult {
-    fn from(v: Result<StrokeLinejoin, ()>) -> StrokeLinejoinResult {
+impl From<Result<StrokeLinejoin, AttributeError>> for StrokeLinejoinResult {
+    fn from(v: Result<StrokeLinejoin, AttributeError>) -> StrokeLinejoinResult {
         match v {
             Ok(j) => StrokeLinejoinResult {
                 valid: true.to_glib(),
                 linejoin: j,
             },
 
-            Err(()) => StrokeLinejoinResult {
+            Err(_) => StrokeLinejoinResult {
                 valid: false.to_glib(),
                 linejoin: StrokeLinejoin::default(),
             },
