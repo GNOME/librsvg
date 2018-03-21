@@ -7,9 +7,10 @@ variables:
   AMD64_FEDORA_RAWHIDE:      "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:rawhide"
   AMD64_OPENSUSE_TUMBLEWEED: "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed"
   AMD64_DEBIAN_TESTING:      "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing"
-  AMD64_UBUNTU_DEVEL:        "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/ubuntu:devel"
+  AMD64_UBUNTU_BIONIC:       "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/ubuntu:18.04"
 
   I386_DEBIAN_TESTING:       "registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing"
+  I386_UBUNTU_BIONIC:        "registry.gitlab.com/alatiera/librsvg-oci-images/i386/ubuntu:1804"
 
   RUSTC_1_21:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.21"
   RUSTC_1_22:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.22"
@@ -137,7 +138,6 @@ clippy:
 
 fedora:rawhide:
   image: $AMD64_FEDORA_RAWHIDE
-  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
@@ -145,7 +145,6 @@ fedora:rawhide:
 
 opensuse:tumbleweed:
   image: $AMD64_OPENSUSE_TUMBLEWEED
-  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
@@ -153,23 +152,25 @@ opensuse:tumbleweed:
 
 debian:testing:
   image: $AMD64_DEBIAN_TESTING
-  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
   <<: *stage_2
 
-# TODO: Enable this when ubuntu update it's rustc package
-# https://gitlab.gnome.org/GNOME/librsvg/issues/213
-# ubuntu:18.04:
-#   image: $AMD64_UBUNTU_DEVEL
-#   stage: cross_distro
-#   <<: *distro_test
-#   <<: *stage_2
+ubuntu:18.04:
+  image: $AMD64_UBUNTU_BIONIC
+  <<: *distro_test
+  <<: *stage_2
 
-debian:testing_i386:
+debian_i386:testing:
   image: $I386_DEBIAN_TESTING
-  stage: cross_distro
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *distro_test
+  <<: *stage_2
+
+ubuntu_i386:18.04:
+  image: $I386_UBUNTU_BIONIC
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
@@ -188,7 +189,6 @@ fedora:test_release:
 
 fedora:rawhide_release:
   image: $AMD64_FEDORA_RAWHIDE
-  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "no"
   <<: *distro_test
@@ -196,7 +196,6 @@ fedora:rawhide_release:
 
 opensuse:tumbleweed_release:
   image: $AMD64_OPENSUSE_TUMBLEWEED
-  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "no"
   <<: *distro_test
@@ -204,7 +203,6 @@ opensuse:tumbleweed_release:
 
 debian:testing_release:
   image: $AMD64_DEBIAN_TESTING
-  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "no"
   <<: *distro_test
@@ -212,7 +210,6 @@ debian:testing_release:
 
 debian:testing_release_i386:
   image: $I386_DEBIAN_TESTING
-  stage: cross_distro
   variables:
     LIBRSVG_DEBUG: "no"
   <<: *distro_test
