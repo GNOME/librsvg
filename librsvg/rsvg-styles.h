@@ -61,6 +61,20 @@ typedef enum {
     RSVG_ENABLE_BACKGROUND_NEW
 } RsvgEnableBackgroundType;
 
+/* Keep in sync with rsvg_internals/src/state.rs:StrokeLinejoin */
+typedef enum {
+    STROKE_LINEJOIN_MITER,
+    STROKE_LINEJOIN_ROUND,
+    STROKE_LINEJOIN_BEVEL,
+    STROKE_LINEJOIN_INHERIT
+} StrokeLinejoin;
+
+/* Keep in sync with rsvg_internals/src/state.rs:StrokeLinejoinResult */
+typedef struct {
+    gboolean valid;
+    StrokeLinejoin linejoin;
+} StrokeLinejoinResult;
+
 /* Opaque; defined in rsvg_internals/src/length.rs */
 typedef struct RsvgStrokeDasharray RsvgStrokeDasharray;
 
@@ -99,7 +113,7 @@ struct _RsvgState {
 
     cairo_line_cap_t cap;
     gboolean has_cap;
-    cairo_line_join_t join;
+    StrokeLinejoin join;
     gboolean has_join;
 
     RsvgLength font_size;
@@ -248,7 +262,7 @@ G_GNUC_INTERNAL
 cairo_line_cap_t rsvg_state_get_line_cap (RsvgState *state);
 
 G_GNUC_INTERNAL
-cairo_line_join_t rsvg_state_get_line_join (RsvgState *state);
+StrokeLinejoin rsvg_state_get_line_join (RsvgState *state);
 
 G_GNUC_INTERNAL
 gboolean rsvg_state_get_cond_true (RsvgState *state);

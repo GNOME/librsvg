@@ -11,6 +11,8 @@ use length::{RsvgLength, StrokeDasharray};
 use node::RsvgNode;
 use opacity::{Opacity, OpacitySpec};
 use paint_server::PaintServer;
+use parsers::Parse;
+use util::utf8_cstr;
 
 pub enum RsvgState {}
 
@@ -289,4 +291,68 @@ pub fn get_fill_opacity(state: *const RsvgState) -> u8 {
 
 pub fn get_fill_rule(state: *const RsvgState) -> cairo::FillRule {
     unsafe { rsvg_state_get_fill_rule(state) }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub enum StrokeLinejoin {
+    Miter,
+    Round,
+    Bevel,
+    Inherit,
+}
+
+#[repr(C)]
+pub struct StrokeLinejoinResult {
+    valid: glib_sys::gboolean,
+    linejoin: StrokeLinejoin,
+}
+
+impl Default for StrokeLinejoin {
+    fn default() -> StrokeLinejoin {
+        StrokeLinejoin::Miter
+    }
+}
+
+impl Parse for StrokeLinejoin {
+    type Data = ();
+    type Err = ();
+
+    fn parse(s: &str, _: Self::Data) -> Result<StrokeLinejoin, ()> {
+        match s.trim() {
+            "miter" => Ok(StrokeLinejoin::Miter),
+            "round" => Ok(StrokeLinejoin::Round),
+            "bevel" => Ok(StrokeLinejoin::Bevel),
+            "inherit" => Ok(StrokeLinejoin::Inherit),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<Result<StrokeLinejoin, ()>> for StrokeLinejoinResult {
+    fn from(v: Result<StrokeLinejoin, ()>) -> StrokeLinejoinResult {
+        match v {
+            Ok(j) => StrokeLinejoinResult {
+                valid: true.to_glib(),
+                linejoin: j,
+            },
+
+            Err(()) => StrokeLinejoinResult {
+                valid: false.to_glib(),
+                linejoin: StrokeLinejoin::default(),
+            },
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_stroke_linejoin_get_default() -> StrokeLinejoin {
+    StrokeLinejoin::default()
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_stroke_linejoin_parse(s: *const libc::c_char) -> StrokeLinejoinResult {
+    let s = unsafe { utf8_cstr(s) };
+
+    StrokeLinejoinResult::from(StrokeLinejoin::parse(s, ()))
 }

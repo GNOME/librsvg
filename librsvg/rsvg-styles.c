@@ -524,6 +524,10 @@ typedef enum {
     PAIR_SOURCE_PRESENTATION_ATTRIBUTE
 } PairSource;
 
+/* Defined in rsvg_internals/src/state.rs */
+extern StrokeLinejoin rsvg_stroke_linejoin_get_default(void);
+extern StrokeLinejoinResult rsvg_stroke_linejoin_parse(const char *s);
+
 /* Parse a CSS2 style argument, setting the SVG context attributes. */
 static void
 rsvg_parse_style_pair (RsvgState *state,
@@ -884,15 +888,22 @@ rsvg_parse_style_pair (RsvgState *state,
 
     case RSVG_ATTRIBUTE_STROKE_LINEJOIN:
     {
-        state->has_join = TRUE;
-        if (g_str_equal (value, "miter"))
-            state->join = CAIRO_LINE_JOIN_MITER;
-        else if (g_str_equal (value, "round"))
-            state->join = CAIRO_LINE_JOIN_ROUND;
-        else if (g_str_equal (value, "bevel"))
-            state->join = CAIRO_LINE_JOIN_BEVEL;
-        else
-            g_warning (_("unknown line join style %s\n"), value);
+        StrokeLinejoinResult result = rsvg_stroke_linejoin_parse(value);
+
+        if (result.valid) {
+            if (result.linejoin == STROKE_LINEJOIN_INHERIT) {
+                /* FIXME: handle INHERIT */
+                state->has_join = FALSE;
+                state->join = rsvg_stroke_linejoin_get_default ();
+            } else {
+                state->has_join = TRUE;
+                state->join = result.linejoin;
+            }
+        } else {
+            /* FIXME: do error handling */
+            state->has_join = FALSE;
+            state->join = rsvg_stroke_linejoin_get_default ();
+        }
     }
     break;
 
@@ -1882,7 +1893,7 @@ rsvg_state_get_line_cap (RsvgState *state)
     return state->cap;
 }
 
-cairo_line_join_t
+StrokeLinejoin
 rsvg_state_get_line_join (RsvgState *state)
 {
     return state->join;

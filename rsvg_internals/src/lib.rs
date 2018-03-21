@@ -124,6 +124,8 @@ pub use shapes::{
 
 pub use space::rsvg_xml_space_normalize;
 
+pub use state::{rsvg_stroke_linejoin_get_default, rsvg_stroke_linejoin_parse};
+
 pub use stop::rsvg_node_stop_new;
 
 pub use structure::{
