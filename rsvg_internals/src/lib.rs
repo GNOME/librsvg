@@ -127,8 +127,8 @@ pub use space::rsvg_xml_space_normalize;
 pub use state::{
     rsvg_state_rust_clone,
     rsvg_state_rust_free,
-    rsvg_state_rust_new,
     rsvg_state_rust_inherit_run,
+    rsvg_state_rust_new,
     rsvg_state_rust_parse_style_pair,
 };
 

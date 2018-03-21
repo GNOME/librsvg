@@ -41,13 +41,13 @@ impl State {
                         self.join = StrokeLinejoin::default();
                         self.has_join = false;
                         Ok(())
-                    },
+                    }
 
                     Ok(j) => {
                         self.join = j;
                         self.has_join = true;
                         Ok(())
-                    },
+                    }
 
                     Err(e) => {
                         self.join = StrokeLinejoin::default();
@@ -61,7 +61,7 @@ impl State {
                 // Maybe it's an attribute not parsed here, but in the
                 // node implementations.
                 Ok(())
-            },
+            }
         }
     }
 }
@@ -349,19 +349,12 @@ pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
     unsafe { &mut *rsvg_state_get_state_rust(state) }
 }
 
-#[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub enum StrokeLinejoin {
     Miter,
     Round,
     Bevel,
     Inherit,
-}
-
-#[repr(C)]
-pub struct StrokeLinejoinResult {
-    valid: glib_sys::gboolean,
-    linejoin: StrokeLinejoin,
 }
 
 impl Default for StrokeLinejoin {
@@ -380,23 +373,10 @@ impl Parse for StrokeLinejoin {
             "round" => Ok(StrokeLinejoin::Round),
             "bevel" => Ok(StrokeLinejoin::Bevel),
             "inherit" => Ok(StrokeLinejoin::Inherit),
-            _ => Err(AttributeError::from(ParseError::new("expected miter|round|bevel|inherit"))),
-        }
-    }
-}
 
-impl From<Result<StrokeLinejoin, AttributeError>> for StrokeLinejoinResult {
-    fn from(v: Result<StrokeLinejoin, AttributeError>) -> StrokeLinejoinResult {
-        match v {
-            Ok(j) => StrokeLinejoinResult {
-                valid: true.to_glib(),
-                linejoin: j,
-            },
-
-            Err(_) => StrokeLinejoinResult {
-                valid: false.to_glib(),
-                linejoin: StrokeLinejoin::default(),
-            },
+            _ => Err(AttributeError::from(ParseError::new(
+                "expected miter|round|bevel|inherit",
+            ))),
         }
     }
 }
@@ -410,7 +390,9 @@ pub extern "C" fn rsvg_state_rust_new() -> *mut State {
 pub extern "C" fn rsvg_state_rust_free(state: *mut State) {
     assert!(!state.is_null());
 
-    unsafe { Box::from_raw(state); }
+    unsafe {
+        Box::from_raw(state);
+    }
 }
 
 #[no_mangle]
@@ -441,7 +423,7 @@ pub extern "C" fn rsvg_state_rust_parse_style_pair(
 pub extern "C" fn rsvg_state_rust_inherit_run(
     dst: *mut State,
     src: *const State,
-    inherit_fn: extern "C" fn (glib_sys::gboolean, glib_sys::gboolean) -> glib_sys::gboolean,
+    inherit_fn: extern "C" fn(glib_sys::gboolean, glib_sys::gboolean) -> glib_sys::gboolean,
 ) {
     assert!(!dst.is_null());
     assert!(!src.is_null());
