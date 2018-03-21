@@ -10,7 +10,7 @@ variables:
   AMD64_UBUNTU_BIONIC:       "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/ubuntu:18.04"
 
   I386_DEBIAN_TESTING:       "registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing"
-  I386_UBUNTU_BIONIC:        "registry.gitlab.com/alatiera/librsvg-oci-images/i386/ubuntu:1804"
+  I386_UBUNTU_BIONIC:        "registry.gitlab.com/alatiera/librsvg-oci-images/i386/ubuntu:18.04"
 
   RUSTC_1_21:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.21"
   RUSTC_1_22:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.22"
