@@ -69,6 +69,10 @@ appropriate subclass of an `RsvgNode` object, hooks the node to the
 DOM tree, and tells the node to set its attributes from the key/value
 pairs.
 
+*Through this document we may use **node** and **element**
+interchangeably:* a node is the struct we use to represent an SVG/XML
+element.
+
 While a node sets its key/value pairs in its `set_atts()` method, it
 may encounter an invalid value, for example, a negative width where
 only nonnegative ones are allowed.  In this case the element may
@@ -151,6 +155,34 @@ Each node draws itself in the following way:
   values from the `state` in the `draw_ctx` into Cairo values, they
   configure the `cairo::Context`, and call actual Cairo functions to
   draw paths/text/etc.
+
+### What about referenced nodes which have a different cascade?
+
+Sometimes, though, the node being considered in the recursive
+traversal has to refer to some other node.  For example, a shape like
+a `rect`angle may reference a `linearGradient` for its `fill`
+attribute.  In this case, the `rect`'s cascaded values will contain
+things like its fill opacity, or its stroke width and color.  However,
+the `linearGradient` has cascaded values that come from its own place
+in the element tree, not from the `rect` that references it (multiple
+objects may reference the same gradient; in each case, the gradient
+has its own cascade derived only from its ancestors).
+
+In such cases, the code that needs to resolve the referenced node's
+CSS properties needs to do this:
+
+* Create a temporary `state` with `rsvg_state_new()`, or grab the
+  temporary `draw_ctx.get_state()`.
+  
+* Call `state::reconstruct(state, node)`.  This will walk the tree
+  from the root directly down to the node, reconstructing the CSS
+  cascade state for *that* node.
+  
+This is a rather ugly special case for elements that are referenced
+outside the "normal" recursion used for rendering.  We hope to move to
+a model where all CSS properties are cascaded first, then bounding
+boxes are propagated, and finally all rendering can happen in a single
+pass in a fully-resolved tree.
 
 # Comparing floating-point numbers
 
