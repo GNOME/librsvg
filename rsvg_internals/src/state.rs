@@ -67,6 +67,9 @@ impl State {
 }
 
 // Keep in sync with rsvg-styles.h:UnicodeBidi
+// FIXME: these are not constructed in the Rust code yet, but they are in C.  Remove this
+// when that code is moved to Rust.
+#[allow(dead_code)]
 #[repr(C)]
 pub enum UnicodeBidi {
     Normal,
@@ -99,6 +102,7 @@ impl From<TextDecoration> for FontDecor {
     }
 }
 
+#[allow(improper_ctypes)]
 extern "C" {
     fn rsvg_state_new() -> *mut RsvgState;
     fn rsvg_state_free(state: *mut RsvgState);
@@ -116,7 +120,6 @@ extern "C" {
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
     fn rsvg_state_get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias;
     fn rsvg_state_get_text_rendering_type(state: *const RsvgState) -> cairo::Antialias;
-
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;

@@ -182,6 +182,7 @@ fn u32_from_rgba(rgba: cssparser::RGBA) -> u32 {
         | u32::from(rgba.alpha)
 }
 
+#[allow(improper_ctypes)]
 extern "C" {
     fn rsvg_parse_presentation_attributes(state: *mut RsvgState, pbag: *const PropertyBag);
     fn rsvg_parse_style(state: *mut RsvgState, string: *const libc::c_char);

@@ -13,6 +13,7 @@ use state::RsvgState;
 
 pub enum RsvgDrawingCtx {}
 
+#[allow(improper_ctypes)]
 extern "C" {
     fn rsvg_drawing_ctx_get_dpi(
         draw_ctx: *const RsvgDrawingCtx,

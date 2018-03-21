@@ -480,6 +480,7 @@ pub extern "C" fn rsvg_node_svg_get_view_box(raw_node: *const RsvgNode) -> RsvgV
     RsvgViewBox::from(vbox)
 }
 
+#[allow(improper_ctypes)]
 extern "C" {
     fn rsvg_parse_style_attrs(
         handle: *const RsvgHandle,
