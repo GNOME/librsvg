@@ -419,6 +419,14 @@ pub extern "C" fn rsvg_state_rust_parse_style_pair(
     }
 }
 
+fn inherit_from_src(
+    inherit_fn: extern "C" fn(glib_sys::gboolean, glib_sys::gboolean) -> glib_sys::gboolean,
+    dst: bool,
+    src: bool,
+) -> bool {
+    from_glib(inherit_fn(dst.to_glib(), src.to_glib()))
+}
+
 #[no_mangle]
 pub extern "C" fn rsvg_state_rust_inherit_run(
     dst: *mut State,
@@ -432,7 +440,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
         let dst = &mut *dst;
         let src = &*src;
 
-        if from_glib(inherit_fn(dst.has_join.to_glib(), src.has_join.to_glib())) {
+        if inherit_from_src(inherit_fn, dst.has_join, src.has_join) {
             dst.join = src.join;
         }
     }
