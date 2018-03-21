@@ -45,6 +45,13 @@ extern RsvgStrokeDasharray *rsvg_parse_stroke_dasharray(const char *str);
 extern RsvgStrokeDasharray *rsvg_stroke_dasharray_clone(RsvgStrokeDasharray *dash);
 extern void rsvg_stroke_dasharray_free(RsvgStrokeDasharray *dash);
 
+/* Defined in rsvg_internals/src/state.rs */
+extern StrokeLinejoin rsvg_stroke_linejoin_get_default(void);
+extern StrokeLinejoinResult rsvg_stroke_linejoin_parse(const char *s);
+extern State *rsvg_state_rust_new(void);
+extern void rsvg_state_rust_free(State *state);
+extern State *rsvg_state_rust_clone(State *state);
+
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
 enum {
@@ -192,6 +199,8 @@ rsvg_state_init (RsvgState * state)
 
     state->styles = g_hash_table_new_full (g_str_hash, g_str_equal,
                                            g_free, (GDestroyNotify) style_value_data_free);
+
+    state->state_rust = rsvg_state_rust_new();
 }
 
 RsvgState *
@@ -247,6 +256,11 @@ rsvg_state_finalize (RsvgState * state)
         g_hash_table_unref (state->styles);
         state->styles = NULL;
     }
+
+    if (state->state_rust) {
+        rsvg_state_rust_free (state->state_rust);
+        state->state_rust = NULL;
+    }
 }
 
 void
@@ -294,6 +308,8 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
     if (src->dash) {
         dst->dash = rsvg_stroke_dasharray_clone (src->dash);
     }
+
+    dst->state_rust = rsvg_state_rust_clone(src->state_rust);
 }
 
 /*
@@ -523,10 +539,6 @@ typedef enum {
     PAIR_SOURCE_STYLE,
     PAIR_SOURCE_PRESENTATION_ATTRIBUTE
 } PairSource;
-
-/* Defined in rsvg_internals/src/state.rs */
-extern StrokeLinejoin rsvg_stroke_linejoin_get_default(void);
-extern StrokeLinejoinResult rsvg_stroke_linejoin_parse(const char *s);
 
 /* Parse a CSS2 style argument, setting the SVG context attributes. */
 static void

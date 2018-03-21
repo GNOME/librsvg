@@ -16,6 +16,21 @@ use util::utf8_cstr;
 
 pub enum RsvgState {}
 
+#[derive(Clone)]
+pub struct State {
+    join: StrokeLinejoin,
+    has_join: bool,
+}
+
+impl Default for State {
+    fn default() -> State {
+        State {
+            join: Default::default(),
+            has_join: false,
+        }
+    }
+}
+
 // Keep in sync with rsvg-styles.h:UnicodeBidi
 #[repr(C)]
 pub enum UnicodeBidi {
@@ -355,4 +370,23 @@ pub extern "C" fn rsvg_stroke_linejoin_parse(s: *const libc::c_char) -> StrokeLi
     let s = unsafe { utf8_cstr(s) };
 
     StrokeLinejoinResult::from(StrokeLinejoin::parse(s, ()))
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_new() -> *mut State {
+    Box::into_raw(Box::new(State::default()))
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_free(state: *mut State) {
+    assert!(!state.is_null());
+
+    unsafe { Box::from_raw(state); }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_clone(state: *const State) -> *mut State {
+    assert!(!state.is_null());
+
+    unsafe { Box::into_raw(Box::new((*state).clone())) }
 }

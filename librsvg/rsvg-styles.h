@@ -78,6 +78,9 @@ typedef struct {
 /* Opaque; defined in rsvg_internals/src/length.rs */
 typedef struct RsvgStrokeDasharray RsvgStrokeDasharray;
 
+/* Opaque; defined in rsvg_internals/src/state.rs */
+typedef struct State State;
+
 struct _RsvgState {
     RsvgState *parent;
     cairo_matrix_t affine;
@@ -191,6 +194,8 @@ struct _RsvgState {
     gboolean has_text_rendering_type;
 
     GHashTable *styles;
+
+    State *state_rust;
 };
 
 G_GNUC_INTERNAL
