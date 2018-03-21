@@ -7,6 +7,9 @@ use parsers::Parse;
 use std::marker::PhantomData;
 use util::utf8_cstr;
 
+#[allow(unused_imports)]
+use std::ascii::AsciiExt;
+
 use self::glib::translate::*;
 
 // No extensions at the moment.
