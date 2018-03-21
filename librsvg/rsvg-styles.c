@@ -116,7 +116,6 @@ rsvg_state_init (RsvgState * state)
     state->stroke_opacity = 0xff;
     state->stroke_width = rsvg_length_parse ("1", LENGTH_DIR_BOTH);
     state->miter_limit = 4;
-    state->cap = CAIRO_LINE_CAP_BUTT;
 
     /* The following two start as INHERIT, even though has_stop_color and
      * has_stop_opacity get initialized to FALSE below.  This is so that the
@@ -167,7 +166,6 @@ rsvg_state_init (RsvgState * state)
     state->has_stroke_opacity = FALSE;
     state->has_stroke_width = FALSE;
     state->has_miter_limit = FALSE;
-    state->has_cap = FALSE;
     state->has_dash = FALSE;
     state->has_dashoffset = FALSE;
     state->has_visible = FALSE;
@@ -355,8 +353,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->stroke_width = src->stroke_width;
     if (function (dst->has_miter_limit, src->has_miter_limit))
         dst->miter_limit = src->miter_limit;
-    if (function (dst->has_cap, src->has_cap))
-        dst->cap = src->cap;
     if (function (dst->has_stop_color, src->has_stop_color)) {
         if (dst->stop_color.kind == RSVG_CSS_COLOR_SPEC_INHERIT) {
             dst->has_stop_color = TRUE;
@@ -863,20 +859,6 @@ rsvg_parse_style_pair (RsvgState *state,
     {
         state->stroke_width = rsvg_length_parse (value, LENGTH_DIR_BOTH);
         state->has_stroke_width = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_STROKE_LINECAP:
-    {
-        state->has_cap = TRUE;
-        if (g_str_equal (value, "butt"))
-            state->cap = CAIRO_LINE_CAP_BUTT;
-        else if (g_str_equal (value, "round"))
-            state->cap = CAIRO_LINE_CAP_ROUND;
-        else if (g_str_equal (value, "square"))
-            state->cap = CAIRO_LINE_CAP_SQUARE;
-        else
-            g_warning (_("unknown line cap style %s\n"), value);
     }
     break;
 
@@ -1875,12 +1857,6 @@ double
 rsvg_state_get_miter_limit (RsvgState *state)
 {
     return state->miter_limit;
-}
-
-cairo_line_cap_t
-rsvg_state_get_line_cap (RsvgState *state)
-{
-    return state->cap;
 }
 
 gboolean

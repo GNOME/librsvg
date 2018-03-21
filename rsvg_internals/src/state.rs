@@ -21,6 +21,9 @@ pub enum RsvgState {}
 pub struct State {
     pub join: StrokeLinejoin,
     has_join: bool,
+
+    pub cap: StrokeLinecap,
+    has_cap: bool,
 }
 
 impl Default for State {
@@ -28,6 +31,9 @@ impl Default for State {
         State {
             join: Default::default(),
             has_join: false,
+
+            cap: Default::default(),
+            has_cap: false,
         }
     }
 }
@@ -52,6 +58,28 @@ impl State {
                     Err(e) => {
                         self.join = StrokeLinejoin::default();
                         self.has_join = false; // FIXME - propagate errors instead of defaulting
+                        Err(e)
+                    }
+                }
+            }
+
+            Attribute::StrokeLinecap => {
+                match StrokeLinecap::parse(value, ()) {
+                    Ok(StrokeLinecap::Inherit) => {
+                        self.cap = StrokeLinecap::default();
+                        self.has_cap = false;
+                        Ok(())
+                    }
+
+                    Ok(c) => {
+                        self.cap = c;
+                        self.has_cap = true;
+                        Ok(())
+                    }
+
+                    Err(e) => {
+                        self.cap = Default::default();
+                        self.has_cap = false; // FIXME - propagate errors instead of defaulting
                         Err(e)
                     }
                 }
@@ -124,7 +152,6 @@ extern "C" {
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_miter_limit(state: *const RsvgState) -> f64;
-    fn rsvg_state_get_line_cap(state: *const RsvgState) -> cairo::LineCap;
     fn rsvg_state_get_language(state: *const RsvgState) -> *const libc::c_char;
     fn rsvg_state_get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
@@ -264,10 +291,6 @@ pub fn get_miter_limit(state: *const RsvgState) -> f64 {
     unsafe { rsvg_state_get_miter_limit(state) }
 }
 
-pub fn get_line_cap(state: *const RsvgState) -> cairo::LineCap {
-    unsafe { rsvg_state_get_line_cap(state) }
-}
-
 pub fn get_language(state: *const RsvgState) -> Option<String> {
     unsafe { from_glib_none(rsvg_state_get_language(state)) }
 }
@@ -347,6 +370,8 @@ pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
     unsafe { &mut *rsvg_state_get_state_rust(state) }
 }
 
+// StrokeLineJoin ----------------------------------------
+
 #[derive(Debug, Copy, Clone)]
 pub enum StrokeLinejoin {
     Miter,
@@ -378,6 +403,42 @@ impl Parse for StrokeLinejoin {
         }
     }
 }
+
+// StrokeLinecap ----------------------------------------
+
+#[derive(Debug, Copy, Clone)]
+pub enum StrokeLinecap {
+    Butt,
+    Round,
+    Square,
+    Inherit,
+}
+
+impl Default for StrokeLinecap {
+    fn default() -> StrokeLinecap {
+        StrokeLinecap::Butt
+    }
+}
+
+impl Parse for StrokeLinecap {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(s: &str, _: Self::Data) -> Result<StrokeLinecap, AttributeError> {
+        match s.trim() {
+            "butt" => Ok(StrokeLinecap::Butt),
+            "round" => Ok(StrokeLinecap::Round),
+            "square" => Ok(StrokeLinecap::Square),
+            "inherit" => Ok(StrokeLinecap::Inherit),
+
+            _ => Err(AttributeError::from(ParseError::new(
+                "expected butt|round|square|inherit",
+            ))),
+        }
+    }
+}
+
+// Rust State API for consumption from C ----------------------------------------
 
 #[no_mangle]
 pub extern "C" fn rsvg_state_rust_new() -> *mut State {
@@ -440,6 +501,10 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
 
         if inherit_from_src(inherit_fn, dst.has_join, src.has_join) {
             dst.join = src.join;
+        }
+
+        if inherit_from_src(inherit_fn, dst.has_cap, src.has_cap) {
+            dst.cap = src.cap;
         }
     }
 }

@@ -100,9 +100,6 @@ struct _RsvgState {
     double miter_limit;
     gboolean has_miter_limit;
 
-    cairo_line_cap_t cap;
-    gboolean has_cap;
-
     RsvgLength font_size;
     gboolean has_font_size;
     char *font_family;
@@ -246,9 +243,6 @@ RsvgLength rsvg_state_get_stroke_width (RsvgState *state);
 
 G_GNUC_INTERNAL
 double rsvg_state_get_miter_limit (RsvgState *state);
-
-G_GNUC_INTERNAL
-cairo_line_cap_t rsvg_state_get_line_cap (RsvgState *state);
 
 G_GNUC_INTERNAL
 gboolean rsvg_state_get_cond_true (RsvgState *state);

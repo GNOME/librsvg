@@ -11,7 +11,7 @@ use float_eq_cairo::ApproxEqCairo;
 use length::StrokeDasharray;
 use paint_server;
 use path_builder::RsvgPathBuilder;
-use state::{self, RsvgState, StrokeLinejoin};
+use state::{self, RsvgState, StrokeLinecap, StrokeLinejoin};
 use text;
 
 pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &RsvgPathBuilder, clipping: bool) {
@@ -99,10 +99,21 @@ impl From<StrokeLinejoin> for cairo::LineJoin {
     }
 }
 
+impl From<StrokeLinecap> for cairo::LineCap {
+    fn from(j: StrokeLinecap) -> cairo::LineCap {
+        match j {
+            StrokeLinecap::Butt => cairo::LineCap::Butt,
+            StrokeLinecap::Round => cairo::LineCap::Round,
+            StrokeLinecap::Square => cairo::LineCap::Square,
+            StrokeLinecap::Inherit => unreachable!(),
+        }
+    }
+}
+
 fn setup_cr_for_stroke(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, state: *mut RsvgState) {
     cr.set_line_width(state::get_stroke_width(state).normalize(draw_ctx));
     cr.set_miter_limit(state::get_miter_limit(state));
-    cr.set_line_cap(state::get_line_cap(state));
+    cr.set_line_cap(cairo::LineCap::from(state::get_state_rust(state).cap));
     cr.set_line_join(cairo::LineJoin::from(state::get_state_rust(state).join));
 
     let dash = state::get_stroke_dasharray(state);
