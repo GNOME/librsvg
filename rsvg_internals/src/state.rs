@@ -19,7 +19,7 @@ pub enum RsvgState {}
 
 #[derive(Clone)]
 pub struct State {
-    join: StrokeLinejoin,
+    pub join: StrokeLinejoin,
     has_join: bool,
 }
 
@@ -35,6 +35,28 @@ impl Default for State {
 impl State {
     fn parse_style_pair(&mut self, attr: Attribute, value: &str) -> Result<(), AttributeError> {
         match attr {
+            Attribute::StrokeLinejoin => {
+                match StrokeLinejoin::parse(value, ()) {
+                    Ok(StrokeLinejoin::Inherit) => {
+                        self.join = StrokeLinejoin::default();
+                        self.has_join = false;
+                        Ok(())
+                    },
+
+                    Ok(j) => {
+                        self.join = j;
+                        self.has_join = true;
+                        Ok(())
+                    },
+
+                    Err(e) => {
+                        self.join = StrokeLinejoin::default();
+                        self.has_join = false; // FIXME - propagate errors instead of defaulting
+                        Err(e)
+                    }
+                }
+            }
+
             _ => {
                 // Maybe it's an attribute not parsed here, but in the
                 // node implementations.
@@ -380,18 +402,6 @@ impl From<Result<StrokeLinejoin, AttributeError>> for StrokeLinejoinResult {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_stroke_linejoin_get_default() -> StrokeLinejoin {
-    StrokeLinejoin::default()
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_stroke_linejoin_parse(s: *const libc::c_char) -> StrokeLinejoinResult {
-    let s = unsafe { utf8_cstr(s) };
-
-    StrokeLinejoinResult::from(StrokeLinejoin::parse(s, ()))
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_state_rust_new() -> *mut State {
     Box::into_raw(Box::new(State::default()))
 }
@@ -440,6 +450,8 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
         let dst = &mut *dst;
         let src = &*src;
 
+        if inherit_fn(dst.has_join.to_glib(), src.has_join.to_glib()) != 0 {
+            dst.join = src.join;
         }
     }
 }

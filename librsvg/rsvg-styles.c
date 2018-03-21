@@ -48,8 +48,6 @@ extern RsvgStrokeDasharray *rsvg_stroke_dasharray_clone(RsvgStrokeDasharray *das
 extern void rsvg_stroke_dasharray_free(RsvgStrokeDasharray *dash);
 
 /* Defined in rsvg_internals/src/state.rs */
-extern StrokeLinejoin rsvg_stroke_linejoin_get_default(void);
-extern StrokeLinejoinResult rsvg_stroke_linejoin_parse(const char *s);
 extern State *rsvg_state_rust_new(void);
 extern void rsvg_state_rust_free(State *state);
 extern State *rsvg_state_rust_clone(State *state);
@@ -119,7 +117,6 @@ rsvg_state_init (RsvgState * state)
     state->stroke_width = rsvg_length_parse ("1", LENGTH_DIR_BOTH);
     state->miter_limit = 4;
     state->cap = CAIRO_LINE_CAP_BUTT;
-    state->join = CAIRO_LINE_JOIN_MITER;
 
     /* The following two start as INHERIT, even though has_stop_color and
      * has_stop_opacity get initialized to FALSE below.  This is so that the
@@ -171,7 +168,6 @@ rsvg_state_init (RsvgState * state)
     state->has_stroke_width = FALSE;
     state->has_miter_limit = FALSE;
     state->has_cap = FALSE;
-    state->has_join = FALSE;
     state->has_dash = FALSE;
     state->has_dashoffset = FALSE;
     state->has_visible = FALSE;
@@ -361,8 +357,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->miter_limit = src->miter_limit;
     if (function (dst->has_cap, src->has_cap))
         dst->cap = src->cap;
-    if (function (dst->has_join, src->has_join))
-        dst->join = src->join;
     if (function (dst->has_stop_color, src->has_stop_color)) {
         if (dst->stop_color.kind == RSVG_CSS_COLOR_SPEC_INHERIT) {
             dst->has_stop_color = TRUE;
@@ -899,27 +893,6 @@ rsvg_parse_style_pair (RsvgState *state,
         }
 
         state->has_stroke_opacity = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_STROKE_LINEJOIN:
-    {
-        StrokeLinejoinResult result = rsvg_stroke_linejoin_parse(value);
-
-        if (result.valid) {
-            if (result.linejoin == STROKE_LINEJOIN_INHERIT) {
-                /* FIXME: handle INHERIT */
-                state->has_join = FALSE;
-                state->join = rsvg_stroke_linejoin_get_default ();
-            } else {
-                state->has_join = TRUE;
-                state->join = result.linejoin;
-            }
-        } else {
-            /* FIXME: do error handling */
-            state->has_join = FALSE;
-            state->join = rsvg_stroke_linejoin_get_default ();
-        }
     }
     break;
 
@@ -1908,12 +1881,6 @@ cairo_line_cap_t
 rsvg_state_get_line_cap (RsvgState *state)
 {
     return state->cap;
-}
-
-StrokeLinejoin
-rsvg_state_get_line_join (RsvgState *state)
-{
-    return state->join;
 }
 
 gboolean

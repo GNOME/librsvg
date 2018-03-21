@@ -103,7 +103,7 @@ fn setup_cr_for_stroke(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, state
     cr.set_line_width(state::get_stroke_width(state).normalize(draw_ctx));
     cr.set_miter_limit(state::get_miter_limit(state));
     cr.set_line_cap(state::get_line_cap(state));
-    cr.set_line_join(cairo::LineJoin::from(state::get_line_join(state)));
+    cr.set_line_join(cairo::LineJoin::from(state::get_state_rust(state).join));
 
     let dash = state::get_stroke_dasharray(state);
 

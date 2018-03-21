@@ -130,8 +130,6 @@ pub use state::{
     rsvg_state_rust_new,
     rsvg_state_rust_inherit_run,
     rsvg_state_rust_parse_style_pair,
-    rsvg_stroke_linejoin_get_default,
-    rsvg_stroke_linejoin_parse,
 };
 
 pub use stop::rsvg_node_stop_new;
