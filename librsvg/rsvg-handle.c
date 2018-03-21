@@ -72,6 +72,18 @@
  * Both of those methods allow specifying a #GCancellable, so the loading
  * process can be cancelled from another thread.
  *
+ * ## Loading an SVG from memory
+ *
+ * If you already have SVG data in memory, you can create a memory input stream
+ * with g_memory_input_stream_new_from_data() and feed that to
+ * rsvg_handle_new_from_stream_sync().  This lets you specify the appropriate
+ * flags, for example #RSVG_HANDLE_FLAG_UNLIMITED if your input data is very
+ * large.
+ *
+ * Note that in this case, it is important that you specify the base_file for
+ * the in-memory SVG data.  Librsvg uses the base_file to resolve links to
+ * external content, like raster images.
+ *
  * # Loading an SVG without GIO
  *
  * You can load an RsvgHandle from a simple filename or URI with
