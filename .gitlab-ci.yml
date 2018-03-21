@@ -1,15 +1,20 @@
 # -*- indent-tabs-mode: nil -*-
 
 variables:
-  # Docker images for various distros and architectures
+  # Container(OCI) images for various distros and architectures and compilers
 
   AMD64_FEDORA_LATEST:       "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:latest"
-  AMD64_FEDORA_RAWHIDE:       "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:rawhide"
+  AMD64_FEDORA_RAWHIDE:      "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/fedora:rawhide"
   AMD64_OPENSUSE_TUMBLEWEED: "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/opensuse:tumbleweed"
   AMD64_DEBIAN_TESTING:      "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/debian:testing"
-  AMD64_UBUNTU_DEVEL:      "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/ubuntu:devel"
+  AMD64_UBUNTU_DEVEL:        "registry.gitlab.com/alatiera/librsvg-oci-images/amd64/ubuntu:devel"
 
   I386_DEBIAN_TESTING:       "registry.gitlab.com/alatiera/librsvg-oci-images/i386/debian:testing"
+
+  RUSTC_1_21:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.21"
+  RUSTC_1_22:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.22"
+  RUSTC_1_23:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.23"
+  RUSTC_1_24:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.24"
 
   RUSTFMT_NIGHTLY:           "registry.gitlab.com/alatiera/rustfmt-oci-image/rustfmt:nightly"
   CLIPPY_NIGHTLY:            "registry.gitlab.com/alatiera/librsvg-oci-images/clippy:nightly"
@@ -18,8 +23,9 @@ stages:
   - test
   - lint
   - cross_distro
+  - rustc
 
-.test_template: &distro_test
+.test_template: &test
   before_script:
     # CCache Config
     - mkdir -p ccache
@@ -56,6 +62,13 @@ stages:
       - .cargo_cache/
       - ccache/
 
+.distro_template: &distro_test
+    stage: cross_distro
+    <<: *test
+
+.rustc_template: &rustc
+    stage: rustc
+    <<: *test
 
 # Jobs that are marked with stage_1 will be run on every commit, across every
 # fork and branch. This only serves as documentation since it's equivelant to
@@ -93,7 +106,7 @@ fedora:test:
   stage: test
   variables:
     LIBRSVG_DEBUG: "yes"
-  <<: *distro_test
+  <<: *test
 
 # STAGE 1 LINTS
 ########################################################################
@@ -203,4 +216,35 @@ debian:testing_release_i386:
   variables:
     LIBRSVG_DEBUG: "no"
   <<: *distro_test
+  <<: *stage_3
+
+# STAGE 3 RUSTC TESTS
+#######################################################################
+
+rustc:1_21:
+  image: $RUSTC_1_21
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *rustc
+  <<: *stage_3
+
+rustc:1_22:
+  image: $RUSTC_1_22
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *rustc
+  <<: *stage_3
+
+rustc:1_23:
+  image: $RUSTC_1_23
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *rustc
+  <<: *stage_3
+
+rustc:1_24:
+  image: $RUSTC_1_24
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *rustc
   <<: *stage_3
