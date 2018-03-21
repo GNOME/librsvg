@@ -341,6 +341,9 @@ cairo_antialias_t rsvg_state_get_shape_rendering_type (RsvgState *state);
 G_GNUC_INTERNAL
 cairo_antialias_t rsvg_state_get_text_rendering_type (RsvgState *state);
 
+G_GNUC_INTERNAL
+State *rsvg_state_get_state_rust (RsvgState *state);
+
 G_END_DECLS
 
 #endif                          /* RSVG_STYLES_H */

@@ -2066,3 +2066,9 @@ rsvg_state_get_text_rendering_type (RsvgState *state)
 {
     return state->text_rendering_type;
 }
+
+State *
+rsvg_state_get_state_rust (RsvgState *state)
+{
+    return state->state_rust;
+}
