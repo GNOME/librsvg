@@ -40,7 +40,7 @@
 
 #include <libcroco/libcroco.h>
 
-typedef int (*InheritanceFunction) (gboolean dst_has_prop, gboolean src_has_prop);
+typedef gboolean (*InheritanceFunction) (gboolean dst_has_prop, gboolean src_has_prop);
 
 /* Defined in rust/src/length.rs */
 extern RsvgStrokeDasharray *rsvg_parse_stroke_dasharray(const char *str);
@@ -463,12 +463,12 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
   which it should be inherited from 
 */
 
-static int
+static gboolean
 reinheritfunction (gboolean dst, gboolean src)
 {
     if (!dst)
-        return 1;
-    return 0;
+        return TRUE;
+    return FALSE;
 }
 
 static void
@@ -486,12 +486,12 @@ state_reinherit (RsvgState * dst, const RsvgState * src)
   in use tags 
 */
 
-static int
+static gboolean
 dominatefunction (gboolean dst, gboolean src)
 {
     if (!dst || src)
-        return 1;
-    return 0;
+        return TRUE;
+    return FALSE;
 }
 
 static void
@@ -502,10 +502,10 @@ state_dominate (RsvgState * dst, const RsvgState * src)
 
 /* copy everything inheritable from the src to the dst */
 
-static int
+static gboolean
 clonefunction (gboolean dst, gboolean src)
 {
-    return 1;
+    return TRUE;
 }
 
 static void
@@ -521,7 +521,7 @@ state_override (RsvgState * dst, const RsvgState * src)
   rather than the context underneath.
 */
 
-static int
+static gboolean
 inheritfunction (gboolean dst, gboolean src)
 {
     return src;
