@@ -372,71 +372,27 @@ pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
 
 // StrokeLineJoin ----------------------------------------
 
-#[derive(Debug, Copy, Clone)]
-pub enum StrokeLinejoin {
-    Miter,
-    Round,
-    Bevel,
-    Inherit,
-}
+make_ident_property!(
+    StrokeLinejoin,
+    default: Miter,
 
-impl Default for StrokeLinejoin {
-    fn default() -> StrokeLinejoin {
-        StrokeLinejoin::Miter
-    }
-}
-
-impl Parse for StrokeLinejoin {
-    type Data = ();
-    type Err = AttributeError;
-
-    fn parse(s: &str, _: Self::Data) -> Result<StrokeLinejoin, AttributeError> {
-        match s.trim() {
-            "miter" => Ok(StrokeLinejoin::Miter),
-            "round" => Ok(StrokeLinejoin::Round),
-            "bevel" => Ok(StrokeLinejoin::Bevel),
-            "inherit" => Ok(StrokeLinejoin::Inherit),
-
-            _ => Err(AttributeError::from(ParseError::new(
-                "expected miter|round|bevel|inherit",
-            ))),
-        }
-    }
-}
+    "miter" => Miter,
+    "round" => Round,
+    "bevel" => Bevel,
+    "inherit" => Inherit,
+);
 
 // StrokeLinecap ----------------------------------------
 
-#[derive(Debug, Copy, Clone)]
-pub enum StrokeLinecap {
-    Butt,
-    Round,
-    Square,
-    Inherit,
-}
+make_ident_property!(
+    StrokeLinecap,
+    default: Butt,
 
-impl Default for StrokeLinecap {
-    fn default() -> StrokeLinecap {
-        StrokeLinecap::Butt
-    }
-}
-
-impl Parse for StrokeLinecap {
-    type Data = ();
-    type Err = AttributeError;
-
-    fn parse(s: &str, _: Self::Data) -> Result<StrokeLinecap, AttributeError> {
-        match s.trim() {
-            "butt" => Ok(StrokeLinecap::Butt),
-            "round" => Ok(StrokeLinecap::Round),
-            "square" => Ok(StrokeLinecap::Square),
-            "inherit" => Ok(StrokeLinecap::Inherit),
-
-            _ => Err(AttributeError::from(ParseError::new(
-                "expected butt|round|square|inherit",
-            ))),
-        }
-    }
-}
+    "butt" => Butt,
+    "round" => Round,
+    "square" => Square,
+    "inherit" => Inherit,
+);
 
 // Rust State API for consumption from C ----------------------------------------
 

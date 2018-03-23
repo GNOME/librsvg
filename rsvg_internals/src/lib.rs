@@ -155,6 +155,9 @@ pub use viewbox::RsvgViewBox;
 #[macro_use]
 mod coord_units;
 
+#[macro_use]
+mod property_macros;
+
 mod aspect_ratio;
 mod attributes;
 mod bbox;
