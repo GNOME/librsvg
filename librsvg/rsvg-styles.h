@@ -83,8 +83,6 @@ struct _RsvgState {
     gboolean has_fill_server;
     guint8 fill_opacity;        /* 0..255 */
     gboolean has_fill_opacity;
-    cairo_fill_rule_t fill_rule;
-    gboolean has_fill_rule;
     cairo_fill_rule_t clip_rule;
     gboolean has_clip_rule;
 
@@ -306,9 +304,6 @@ RsvgPaintServer *rsvg_state_get_fill (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint8 rsvg_state_get_fill_opacity (RsvgState *state);
-
-G_GNUC_INTERNAL
-cairo_fill_rule_t rsvg_state_get_fill_rule (RsvgState *state);
 
 G_GNUC_INTERNAL
 cairo_antialias_t rsvg_state_get_shape_rendering_type (RsvgState *state);

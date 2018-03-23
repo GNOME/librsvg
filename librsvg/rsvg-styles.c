@@ -127,7 +127,6 @@ rsvg_state_init (RsvgState * state)
     state->stop_color.kind = RSVG_CSS_COLOR_SPEC_INHERIT;
     state->stop_opacity.kind = RSVG_OPACITY_INHERIT;
 
-    state->fill_rule = CAIRO_FILL_RULE_WINDING;
     state->clip_rule = CAIRO_FILL_RULE_WINDING;
     state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
     state->comp_op = CAIRO_OPERATOR_OVER;
@@ -160,7 +159,6 @@ rsvg_state_init (RsvgState * state)
     state->has_flood_opacity = FALSE;
     state->has_fill_server = FALSE;
     state->has_fill_opacity = FALSE;
-    state->has_fill_rule = FALSE;
     state->has_clip_rule = FALSE;
     state->has_stroke_server = FALSE;
     state->has_stroke_opacity = FALSE;
@@ -335,8 +333,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     }
     if (function (dst->has_fill_opacity, src->has_fill_opacity))
         dst->fill_opacity = src->fill_opacity;
-    if (function (dst->has_fill_rule, src->has_fill_rule))
-        dst->fill_rule = src->fill_rule;
     if (function (dst->has_clip_rule, src->has_clip_rule))
         dst->clip_rule = src->clip_rule;
     if (function (dst->overflow, src->overflow))
@@ -817,18 +813,6 @@ rsvg_parse_style_pair (RsvgState *state,
         }
 
         state->has_fill_opacity = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_FILL_RULE:
-    {
-        state->has_fill_rule = TRUE;
-        if (g_str_equal (value, "nonzero"))
-            state->fill_rule = CAIRO_FILL_RULE_WINDING;
-        else if (g_str_equal (value, "evenodd"))
-            state->fill_rule = CAIRO_FILL_RULE_EVEN_ODD;
-        else
-            state->has_fill_rule = FALSE;
     }
     break;
 
@@ -1995,12 +1979,6 @@ guint8
 rsvg_state_get_fill_opacity (RsvgState *state)
 {
     return state->fill_opacity;
-}
-
-cairo_fill_rule_t
-rsvg_state_get_fill_rule (RsvgState *state)
-{
-    return state->fill_rule;
 }
 
 cairo_antialias_t

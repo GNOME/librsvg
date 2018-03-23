@@ -11,7 +11,7 @@ use float_eq_cairo::ApproxEqCairo;
 use length::StrokeDasharray;
 use paint_server;
 use path_builder::RsvgPathBuilder;
-use state::{self, RsvgState, StrokeLinecap, StrokeLinejoin};
+use state::{self, FillRule, RsvgState, StrokeLinecap, StrokeLinejoin};
 use text;
 
 pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &RsvgPathBuilder, clipping: bool) {
@@ -30,7 +30,9 @@ pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &RsvgPathBuilde
     if clipping {
         cr.set_fill_rule(state::get_clip_rule(state));
     } else {
-        cr.set_fill_rule(state::get_fill_rule(state));
+        cr.set_fill_rule(cairo::FillRule::from(
+            state::get_state_rust(state).fill_rule,
+        ));
 
         stroke_and_fill(&cr, draw_ctx);
 
@@ -106,6 +108,16 @@ impl From<StrokeLinecap> for cairo::LineCap {
             StrokeLinecap::Round => cairo::LineCap::Round,
             StrokeLinecap::Square => cairo::LineCap::Square,
             StrokeLinecap::Inherit => unreachable!(),
+        }
+    }
+}
+
+impl From<FillRule> for cairo::FillRule {
+    fn from(f: FillRule) -> cairo::FillRule {
+        match f {
+            FillRule::NonZero => cairo::FillRule::Winding,
+            FillRule::EvenOdd => cairo::FillRule::EvenOdd,
+            FillRule::Inherit => unreachable!(),
         }
     }
 }

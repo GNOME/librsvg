@@ -24,6 +24,9 @@ pub struct State {
 
     pub cap: StrokeLinecap,
     has_cap: bool,
+
+    pub fill_rule: FillRule,
+    has_fill_rule: bool,
 }
 
 impl Default for State {
@@ -34,6 +37,9 @@ impl Default for State {
 
             cap: Default::default(),
             has_cap: false,
+
+            fill_rule: Default::default(),
+            has_fill_rule: false,
         }
     }
 }
@@ -80,6 +86,28 @@ impl State {
                     Err(e) => {
                         self.cap = Default::default();
                         self.has_cap = false; // FIXME - propagate errors instead of defaulting
+                        Err(e)
+                    }
+                }
+            }
+
+            Attribute::FillRule => {
+                match FillRule::parse(value, ()) {
+                    Ok(FillRule::Inherit) => {
+                        self.fill_rule = FillRule::default();
+                        self.has_fill_rule = false;
+                        Ok(())
+                    }
+
+                    Ok(f) => {
+                        self.fill_rule = f;
+                        self.has_fill_rule = true;
+                        Ok(())
+                    }
+
+                    Err(e) => {
+                        self.fill_rule = Default::default();
+                        self.has_fill_rule = false; // FIXME - propagate errors instead of defaulting
                         Err(e)
                     }
                 }
@@ -166,7 +194,6 @@ extern "C" {
     fn rsvg_state_get_clip_rule(state: *const RsvgState) -> cairo::FillRule;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
-    fn rsvg_state_get_fill_rule(state: *const RsvgState) -> cairo::FillRule;
 
     fn rsvg_state_get_state_rust(state: *const RsvgState) -> *mut State;
 }
@@ -362,10 +389,6 @@ pub fn get_fill_opacity(state: *const RsvgState) -> u8 {
     unsafe { rsvg_state_get_fill_opacity(state) }
 }
 
-pub fn get_fill_rule(state: *const RsvgState) -> cairo::FillRule {
-    unsafe { rsvg_state_get_fill_rule(state) }
-}
-
 pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
     unsafe { &mut *rsvg_state_get_state_rust(state) }
 }
@@ -391,6 +414,17 @@ make_ident_property!(
     "butt" => Butt,
     "round" => Round,
     "square" => Square,
+    "inherit" => Inherit,
+);
+
+// FillRule ----------------------------------------
+
+make_ident_property!(
+    FillRule,
+    default: NonZero,
+
+    "nonzero" => NonZero,
+    "evenodd" => EvenOdd,
     "inherit" => Inherit,
 );
 
@@ -461,6 +495,10 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
 
         if inherit_from_src(inherit_fn, dst.has_cap, src.has_cap) {
             dst.cap = src.cap;
+        }
+
+        if inherit_from_src(inherit_fn, dst.has_fill_rule, src.has_fill_rule) {
+            dst.fill_rule = src.fill_rule;
         }
     }
 }
