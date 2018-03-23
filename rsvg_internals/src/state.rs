@@ -17,7 +17,16 @@ use util::utf8_cstr;
 
 pub enum RsvgState {}
 
-#[derive(Clone)]
+/// Holds the state of CSS properties
+///
+/// This is used for various purposes:
+///
+/// * Immutably, to store the attributes of element nodes after parsing.
+/// * Mutably, during cascading/rendering.
+///
+/// Each property should have its own data type, and implement
+/// `Default` and `parsers::Parse`.
+#[derive(Default, Clone)]
 pub struct State {
     pub join: StrokeLinejoin,
     has_join: bool,
@@ -27,21 +36,6 @@ pub struct State {
 
     pub fill_rule: FillRule,
     has_fill_rule: bool,
-}
-
-impl Default for State {
-    fn default() -> State {
-        State {
-            join: Default::default(),
-            has_join: false,
-
-            cap: Default::default(),
-            has_cap: false,
-
-            fill_rule: Default::default(),
-            has_fill_rule: false,
-        }
-    }
 }
 
 impl State {
