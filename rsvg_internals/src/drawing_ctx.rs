@@ -92,6 +92,12 @@ extern "C" {
     fn rsvg_push_discrete_layer(draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx);
 
+    fn rsvg_drawing_ctx_render_pango_layout(
+        draw_ctx: *const RsvgDrawingCtx,
+        layout: *const pango_sys::PangoLayout,
+        x: f64,
+        y: f64,
+    );
     fn rsvg_drawing_ctx_render_path_builder(
         draw_ctx: *const RsvgDrawingCtx,
         builder: *const RsvgPathBuilder,
@@ -188,6 +194,17 @@ pub fn push_discrete_layer(draw_ctx: *const RsvgDrawingCtx) {
 pub fn pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx) {
     unsafe {
         rsvg_pop_discrete_layer(draw_ctx);
+    }
+}
+
+pub fn render_pango_layout(
+    draw_ctx: *const RsvgDrawingCtx,
+    layout: &pango::Layout,
+    x: f64,
+    y: f64,
+) {
+    unsafe {
+        rsvg_drawing_ctx_render_pango_layout(draw_ctx, layout.to_glib_none().0, x, y);
     }
 }
 

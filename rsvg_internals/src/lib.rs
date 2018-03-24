@@ -139,8 +139,8 @@ pub use structure::{
 };
 
 pub use text::{
-    rsvg_text_create_layout,
     rsvg_text_measure,
+    rsvg_text_render,
 };
 
 pub use transform::rsvg_parse_transform;
