@@ -92,6 +92,13 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
     layout
 }
 
+fn measure_text(draw_ctx: *const RsvgDrawingCtx, text: &str) -> f64 {
+    let layout = create_pango_layout(draw_ctx, text);
+    let (width, _) = layout.get_size();
+
+    f64::from(width) / f64::from(pango::SCALE)
+}
+
 #[no_mangle]
 pub extern "C" fn rsvg_text_create_layout(
     draw_ctx: *const RsvgDrawingCtx,
@@ -102,4 +109,15 @@ pub extern "C" fn rsvg_text_create_layout(
     let layout = create_pango_layout(draw_ctx, s);
 
     layout.to_glib_full()
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_text_measure(
+    draw_ctx: *const RsvgDrawingCtx,
+    text: *const libc::c_char,
+) -> libc::c_double {
+    assert!(!text.is_null());
+    let s = unsafe { utf8_cstr(text) };
+
+    measure_text(draw_ctx, s)
 }

@@ -45,6 +45,10 @@ typedef enum {
 /* Implemented in rust/src/space.rs */
 extern char *rsvg_xml_space_normalize (XmlSpace mode, const char *s);
 
+/* Implemented in rust/src/text.rs */
+extern PangoLayout *rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text);
+extern double rsvg_text_measure (RsvgDrawingCtx *ctx, const char *text);
+
 typedef struct _RsvgNodeText RsvgNodeText;
 
 struct _RsvgNodeText {
@@ -238,8 +242,6 @@ length_from_tspan (RsvgNode       *node,
                    gdouble        *x,
                    gboolean        usetextonly);
 
-static gdouble measure_text (RsvgDrawingCtx * ctx, const char *text);
-
 static gboolean
 compute_child_length (RsvgNode       *node,
                       RsvgDrawingCtx *ctx,
@@ -266,7 +268,7 @@ compute_child_length (RsvgNode       *node,
         chomped = rsvg_xml_space_normalize (xml_space_from_current_state (ctx), string->str);
         g_string_free (string, TRUE);
 
-        *length += measure_text (ctx, chomped);
+        *length += rsvg_text_measure (ctx, chomped);
         g_free (chomped);
     } else {
         if (usetextonly) {
@@ -573,9 +575,6 @@ rsvg_new_tref (const char *element_name, RsvgNode *parent)
                                 rsvg_node_tref_free);
 }
 
-/* Defined in rust/src/text.rs */
-extern PangoLayout *rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text);
-
 static void
 rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdouble * y)
 {
@@ -613,19 +612,3 @@ rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdou
     g_object_unref (layout);
 }
 
-static gdouble
-measure_text (RsvgDrawingCtx * ctx, const char *text)
-{
-    PangoLayout *layout;
-    gint width;
-    gdouble scaled_width;
-
-    layout = rsvg_text_create_layout (ctx, text);
-
-    pango_layout_get_size (layout, &width, NULL);
-    scaled_width = width / (double)PANGO_SCALE;
-
-    g_object_unref (layout);
-
-    return scaled_width;
-}
