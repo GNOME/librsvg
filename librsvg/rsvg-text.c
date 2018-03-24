@@ -46,8 +46,8 @@ typedef enum {
 extern char *rsvg_xml_space_normalize (XmlSpace mode, const char *s);
 
 /* Implemented in rust/src/text.rs */
-extern PangoLayout *rsvg_text_create_layout (RsvgDrawingCtx *ctx, const char *text);
 extern double rsvg_text_measure (RsvgDrawingCtx *ctx, const char *text);
+extern void rsvg_text_render (RsvgDrawingCtx * ctx, const char *text, double *x, double *y);
 
 typedef struct _RsvgNodeText RsvgNodeText;
 
@@ -111,8 +111,6 @@ rsvg_node_text_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, Rsvg
     set_text_common_atts (text, atts);
 }
 
-static void rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdouble * y);
-
 static void
 draw_from_children (RsvgNode       *self,
                     RsvgDrawingCtx *ctx,
@@ -168,7 +166,7 @@ draw_text_child (RsvgNode       *node,
         chomped = rsvg_xml_space_normalize (xml_space_from_current_state (ctx), string->str);
         g_string_free (string, TRUE);
 
-        rsvg_text_render_text (ctx, chomped, x, y);
+        rsvg_text_render (ctx, chomped, x, y);
         g_free (chomped);
     } else {
         if (usetextonly) {
@@ -574,41 +572,3 @@ rsvg_new_tref (const char *element_name, RsvgNode *parent)
                                 rsvg_node_tref_draw,
                                 rsvg_node_tref_free);
 }
-
-static void
-rsvg_text_render_text (RsvgDrawingCtx * ctx, const char *text, gdouble * x, gdouble * y)
-{
-    PangoLayout *layout;
-    PangoLayoutIter *iter;
-    RsvgState *state;
-    gint w, h;
-    double offset_x, offset_y, offset;
-    PangoGravity gravity;
-
-    state = rsvg_current_state (ctx);
-
-    layout = rsvg_text_create_layout (ctx, text);
-    pango_layout_get_size (layout, &w, &h);
-    iter = pango_layout_get_iter (layout);
-    offset = pango_layout_iter_get_baseline (iter) / (double) PANGO_SCALE;
-    offset += _rsvg_css_accumulate_baseline_shift (state, ctx);
-
-    gravity = rsvg_state_get_text_gravity (state);
-
-    if (PANGO_GRAVITY_IS_VERTICAL (gravity)) {
-        offset_x = -offset;
-        offset_y = 0;
-    } else {
-        offset_x = 0;
-        offset_y = offset;
-    }
-    pango_layout_iter_free (iter);
-    rsvg_drawing_ctx_render_pango_layout (ctx, layout, *x - offset_x, *y - offset_y);
-    if (PANGO_GRAVITY_IS_VERTICAL (gravity))
-        *y += w / (double)PANGO_SCALE;
-    else
-        *x += w / (double)PANGO_SCALE;
-
-    g_object_unref (layout);
-}
-
