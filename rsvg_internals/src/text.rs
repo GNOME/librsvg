@@ -30,6 +30,81 @@ extern "C" {
     );
 }
 
+struct NodeText {
+    x: Cell<RsvgLength>,
+    y: Cell<RsvgLength>,
+    dx: Cell<RsvgLength>,
+    dy: Cell<RsvgLength>,
+}
+
+impl NodeText {
+    fn new() -> NodeText {
+        NodeText {
+            x: Cell::new(RsvgLength::default()),
+            y: Cell::new(RsvgLength::default()),
+            dx: Cell::new(RsvgLength::default()),
+            dy: Cell::new(RsvgLength::default()),
+        }
+    }
+}
+
+impl NodeTrait for NodeText {
+    fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
+                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
+                Attribute::Dx => self.dx
+                    .set(parse("dx", value, LengthDir::Horizontal, None)?),
+                Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical, None)?),
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
+
+    fn draw(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+        drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
+
+        let mut x = self.x.get().normalize(draw_ctx);
+        let mut y = self.y.get().normalize(draw_ctx);
+        let mut dx = self.dx.get().normalize(draw_ctx);
+        let mut dy = self.dy.get().normalize(draw_ctx);
+
+        let state = drawing_ctx::get_current_state(draw_ctx);
+        let anchor = state::get_state_rust(state).text_anchor;
+        let gravity = state::get_text_gravity(state);
+
+        let offset = anchor_offset(node, draw_ctx, anchor, false);
+
+        if chars::gravity_is_vertical(gravity) {
+            y -= offset;
+            dy = match anchor {
+                TextAnchor::Start => dy,
+                TextAnchor::Middle => dy / 2f64,
+                _ => 0f64,
+            }
+        } else {
+            x -= offset;
+            dx = match anchor {
+                TextAnchor::Start => dx,
+                TextAnchor::Middle => dx / 2f64,
+                _ => 0f64,
+            }
+        }
+
+        x += dx;
+        y += dy;
+
+        render_children(node, draw_ctx, &mut x, &mut y, false);
+    }
+
+    fn get_c_impl(&self) -> *const RsvgCNodeImpl {
+        unreachable!();
+    }
+}
+
 struct NodeTRef {
     link: RefCell<Option<String>>,
 }
@@ -262,6 +337,14 @@ fn render_children(
     unsafe {
         rsvg_text_render_children(node as *const RsvgNode, draw_ctx, x, y, textonly.to_glib())
     };
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_node_text_new(
+    _: *const libc::c_char,
+    raw_parent: *const RsvgNode,
+) -> *const RsvgNode {
+    boxed_node_new(NodeType::Text, raw_parent, Box::new(NodeText::new()))
 }
 
 #[no_mangle]

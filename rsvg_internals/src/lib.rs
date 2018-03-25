@@ -153,6 +153,7 @@ pub use structure::{
 };
 
 pub use text::{
+    rsvg_node_text_new,
     rsvg_node_tref_new,
     rsvg_node_tref_measure,
     rsvg_node_tref_render,

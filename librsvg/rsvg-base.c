@@ -34,7 +34,6 @@
 #include "rsvg-shapes.h"
 #include "rsvg-structure.h"
 #include "rsvg-io.h"
-#include "rsvg-text.h"
 #include "rsvg-filter.h"
 #include "rsvg-mask.h"
 #include "rsvg-marker.h"
@@ -339,7 +338,7 @@ static const NodeCreator node_creators[] = {
     { "svg",                 TRUE,  rsvg_node_svg_new },
     { "switch",              TRUE,  rsvg_node_switch_new },
     { "symbol",              TRUE,  rsvg_node_symbol_new },
-    { "text",                TRUE,  rsvg_new_text },
+    { "text",                TRUE,  rsvg_node_text_new },
     /* "textPath",           TRUE,  */
     /* "title",              TRUE,  */
     { "tref",                TRUE,  rsvg_node_tref_new },
