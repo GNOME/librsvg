@@ -1955,6 +1955,12 @@ rsvg_state_get_letter_spacing (RsvgState *state)
     return state->letter_spacing;
 }
 
+TextAnchor
+rsvg_state_get_text_anchor (RsvgState *state)
+{
+    return state->text_anchor;
+}
+
 const TextDecoration *
 rsvg_state_get_font_decor (RsvgState *state)
 {
