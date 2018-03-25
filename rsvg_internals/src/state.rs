@@ -604,11 +604,3 @@ pub extern "C" fn rsvg_state_rust_set_affine(state: *mut State, affine: cairo::M
         state.affine = affine;
     }
 }
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_rust_get_text_anchor(state: *const State) -> TextAnchor {
-    unsafe {
-        let state = &*state;
-        state.text_anchor
-    }
-}

@@ -43,13 +43,6 @@ typedef struct {
     gboolean strike;
 } TextDecoration;
 
-/* Keep in sync with rust/src/state.rs:TextAnchor */
-typedef enum {
-    TEXT_ANCHOR_START,
-    TEXT_ANCHOR_MIDDLE,
-    TEXT_ANCHOR_END
-} TextAnchor;
-
 /* Keep in sync with rust/src/state.c:UnicodeBidi */
 typedef enum {
     UNICODE_BIDI_NORMAL = 0,
@@ -286,9 +279,6 @@ PangoWeight rsvg_state_get_font_weight (RsvgState *state);
 
 G_GNUC_INTERNAL
 PangoStretch rsvg_state_get_font_stretch (RsvgState *state);
-
-G_GNUC_INTERNAL
-TextAnchor rsvg_state_get_text_anchor (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgLength rsvg_state_get_letter_spacing (RsvgState *state);

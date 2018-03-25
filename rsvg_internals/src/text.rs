@@ -8,7 +8,7 @@ use chars;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use length::*;
-use node::{NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode, boxed_node_new};
+use node::{boxed_node_new, NodeResult, NodeTrait, NodeType, RsvgCNodeImpl, RsvgNode};
 use parsers::parse;
 use property_bag::PropertyBag;
 use state::{self, TextAnchor};
@@ -54,7 +54,8 @@ impl NodeTrait for NodeText {
             match attr {
                 Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None)?),
                 Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None)?),
-                Attribute::Dx => self.dx.set(parse("dx", value, LengthDir::Horizontal, None)?),
+                Attribute::Dx => self.dx
+                    .set(parse("dx", value, LengthDir::Horizontal, None)?),
                 Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical, None)?),
                 _ => (),
             }
@@ -76,14 +77,14 @@ impl NodeTrait for NodeText {
 
         let mut length = 0f64;
         match anchor {
-            TextAnchor::Start => {},
+            TextAnchor::Start => {}
             TextAnchor::Middle => {
                 measure_children(node, draw_ctx, &mut length, false);
                 length /= 2f64;
-            },
+            }
             _ => {
                 measure_children(node, draw_ctx, &mut length, false);
-            },
+            }
         }
 
         let gravity = state::get_text_gravity(state);
@@ -116,13 +117,13 @@ impl NodeTrait for NodeText {
 }
 
 struct NodeTRef {
-    link: RefCell<Option<String>>
+    link: RefCell<Option<String>>,
 }
 
 impl NodeTRef {
     fn new() -> NodeTRef {
         NodeTRef {
-            link: RefCell::new(Default::default())
+            link: RefCell::new(Default::default()),
         }
     }
 
@@ -133,14 +134,13 @@ impl NodeTRef {
             return false;
         }
 
-        let done = if let Some(acquired) =
-            drawing_ctx::get_acquired_node(draw_ctx, l.as_ref().unwrap())
-        {
-            let c = acquired.get();
-            measure_children(&c, draw_ctx, length, true)
-        } else {
-            false
-        };
+        let done =
+            if let Some(acquired) = drawing_ctx::get_acquired_node(draw_ctx, l.as_ref().unwrap()) {
+                let c = acquired.get();
+                measure_children(&c, draw_ctx, length, true)
+            } else {
+                false
+            };
 
         done
     }
@@ -152,9 +152,7 @@ impl NodeTRef {
             return;
         }
 
-        if let Some(acquired) =
-            drawing_ctx::get_acquired_node(draw_ctx, l.as_ref().unwrap())
-        {
+        if let Some(acquired) = drawing_ctx::get_acquired_node(draw_ctx, l.as_ref().unwrap()) {
             let c = acquired.get();
             render_children(&c, draw_ctx, x, y, true)
         }
@@ -204,7 +202,7 @@ impl NodeTSpan {
         node: &RsvgNode,
         draw_ctx: *const RsvgDrawingCtx,
         length: &mut f64,
-        usetextonly: bool
+        usetextonly: bool,
     ) -> bool {
         if self.x.get().is_none() || self.y.get().is_none() {
             return true;
@@ -227,7 +225,7 @@ impl NodeTSpan {
         draw_ctx: *const RsvgDrawingCtx,
         x: &mut f64,
         y: &mut f64,
-        usetextonly: bool
+        usetextonly: bool,
     ) {
         drawing_ctx::state_push(draw_ctx);
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
@@ -240,14 +238,14 @@ impl NodeTSpan {
 
         let mut length = 0f64;
         match anchor {
-            TextAnchor::Start => {},
+            TextAnchor::Start => {}
             TextAnchor::Middle => {
                 measure_children(node, draw_ctx, &mut length, usetextonly);
                 length /= 2f64;
-            },
+            }
             _ => {
                 measure_children(node, draw_ctx, &mut length, usetextonly);
-            },
+            }
         }
 
         let gravity = state::get_text_gravity(state);
@@ -288,9 +286,12 @@ impl NodeTrait for NodeTSpan {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             match attr {
-                Attribute::X => self.x.set(parse("x", value, LengthDir::Horizontal, None).map(Some)?),
-                Attribute::Y => self.y.set(parse("y", value, LengthDir::Vertical, None).map(Some)?),
-                Attribute::Dx => self.dx.set(parse("dx", value, LengthDir::Horizontal, None)?),
+                Attribute::X => self.x
+                    .set(parse("x", value, LengthDir::Horizontal, None).map(Some)?),
+                Attribute::Y => self.y
+                    .set(parse("y", value, LengthDir::Vertical, None).map(Some)?),
+                Attribute::Dx => self.dx
+                    .set(parse("dx", value, LengthDir::Horizontal, None)?),
                 Attribute::Dy => self.dy.set(parse("dy", value, LengthDir::Vertical, None)?),
                 _ => (),
             }
@@ -308,13 +309,33 @@ impl NodeTrait for NodeTSpan {
     }
 }
 
-fn measure_children(node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, length: &mut f64, textonly: bool) -> bool {
-    let done = unsafe { rsvg_text_measure_children(node as *const RsvgNode, draw_ctx, length, textonly.to_glib()) };
+fn measure_children(
+    node: &RsvgNode,
+    draw_ctx: *const RsvgDrawingCtx,
+    length: &mut f64,
+    textonly: bool,
+) -> bool {
+    let done = unsafe {
+        rsvg_text_measure_children(
+            node as *const RsvgNode,
+            draw_ctx,
+            length,
+            textonly.to_glib(),
+        )
+    };
     from_glib(done)
 }
 
-fn render_children(node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, x: &mut f64, y: &mut f64, textonly: bool) {
-    unsafe { rsvg_text_render_children(node as *const RsvgNode, draw_ctx, x, y, textonly.to_glib()) };
+fn render_children(
+    node: &RsvgNode,
+    draw_ctx: *const RsvgDrawingCtx,
+    x: &mut f64,
+    y: &mut f64,
+    textonly: bool,
+) {
+    unsafe {
+        rsvg_text_render_children(node as *const RsvgNode, draw_ctx, x, y, textonly.to_glib())
+    };
 }
 
 #[no_mangle]
@@ -339,8 +360,8 @@ pub extern "C" fn rsvg_node_tref_measure(
     draw_ctx: *const RsvgDrawingCtx,
     raw_length: *mut libc::c_double,
 ) -> glib_sys::gboolean {
-    assert! (!raw_node.is_null ());
-    let node: &RsvgNode = unsafe { & *raw_node };
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
 
     assert!(!raw_length.is_null());
     let length: &mut f64 = unsafe { &mut *raw_length };
@@ -360,8 +381,8 @@ pub extern "C" fn rsvg_node_tref_render(
     raw_x: *mut libc::c_double,
     raw_y: *mut libc::c_double,
 ) {
-    assert! (!raw_node.is_null ());
-    let node: &RsvgNode = unsafe { & *raw_node };
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
 
     assert!(!raw_x.is_null());
     assert!(!raw_y.is_null());
@@ -388,13 +409,13 @@ pub extern "C" fn rsvg_node_tspan_measure(
     raw_length: *mut libc::c_double,
     usetextonly: glib_sys::gboolean,
 ) -> glib_sys::gboolean {
-    assert! (!raw_node.is_null ());
-    let node: &RsvgNode = unsafe { & *raw_node };
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
 
     assert!(!raw_length.is_null());
     let length: &mut f64 = unsafe { &mut *raw_length };
 
-    let textonly : bool = from_glib(usetextonly);
+    let textonly: bool = from_glib(usetextonly);
 
     let mut done = false;
     node.with_impl(|tspan: &NodeTSpan| {
@@ -412,15 +433,15 @@ pub extern "C" fn rsvg_node_tspan_render(
     raw_y: *mut libc::c_double,
     usetextonly: glib_sys::gboolean,
 ) {
-    assert! (!raw_node.is_null ());
-    let node: &RsvgNode = unsafe { & *raw_node };
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
 
     assert!(!raw_x.is_null());
     assert!(!raw_y.is_null());
     let x: &mut f64 = unsafe { &mut *raw_x };
     let y: &mut f64 = unsafe { &mut *raw_y };
 
-    let textonly : bool = from_glib(usetextonly);
+    let textonly: bool = from_glib(usetextonly);
 
     node.with_impl(|tspan: &NodeTSpan| {
         tspan.render(&node, draw_ctx, x, y, textonly);
