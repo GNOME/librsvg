@@ -28,6 +28,7 @@ macro_rules! make_ident_property {
      default: $default: ident,
      $($str_prop: expr => $variant: ident,)+
     ) => {
+        #[repr(C)]
         #[derive(Debug, Copy, Clone)]
         pub enum $name {
             $($variant),+
