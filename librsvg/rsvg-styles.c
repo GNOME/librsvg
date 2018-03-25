@@ -99,10 +99,13 @@ style_value_data_free (StyleValueData *value)
 static void
 rsvg_state_init (RsvgState * state)
 {
+    cairo_matrix_t identity;
+
     memset (state, 0, sizeof (RsvgState));
 
     state->parent = NULL;
-    cairo_matrix_init_identity (&state->affine);
+    cairo_matrix_init_identity (&identity);
+    rsvg_state_set_affine (state, identity);
     state->mask = NULL;
     state->opacity = 0xff;
     state->baseline_shift = 0.;
@@ -1528,7 +1531,9 @@ rsvg_parse_transform_attr (RsvgState *state, const char *str)
     cairo_matrix_t affine;
 
     if (rsvg_parse_transform (&affine, str)) {
-        cairo_matrix_multiply (&state->affine, &affine, &state->affine);
+        cairo_matrix_t state_affine = rsvg_state_get_affine (state);
+        cairo_matrix_multiply (&state_affine, &affine, &state_affine);
+        rsvg_state_set_affine (state, state_affine);
         return TRUE;
     } else {
         return FALSE;
@@ -1723,7 +1728,7 @@ rsvg_state_push (RsvgDrawingCtx * ctx)
 
     if (baseon) {
         state_reinherit (data, baseon);
-        data->affine = baseon->affine;
+        rsvg_state_set_affine (data, rsvg_state_get_affine (baseon));
         data->parent = baseon;
     }
 
@@ -1769,15 +1774,24 @@ rsvg_state_reinherit_top (RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
         state_override (current, state);
     } else {
         RsvgState *parent= rsvg_state_parent (current);
+        cairo_matrix_t current_affine;
+        cairo_matrix_t parent_affine;
+
         rsvg_state_clone (current, state);
         if (parent) {
             if (dominate)
                 state_dominate (current, parent);
             else
                 state_reinherit (current, parent);
-            cairo_matrix_multiply (&current->affine,
-                                   &current->affine,
-                                   &parent->affine);
+
+            current_affine = rsvg_state_get_affine (current);
+            parent_affine = rsvg_state_get_affine (parent);
+
+            cairo_matrix_multiply (&current_affine,
+                                   &current_affine,
+                                   &parent_affine);
+
+            rsvg_state_set_affine (current, current_affine);
         }
     }
 }
@@ -1803,6 +1817,12 @@ cairo_matrix_t
 rsvg_state_get_affine (RsvgState *state)
 {
     return state->affine;
+}
+
+void
+rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine)
+{
+    state->affine = affine;
 }
 
 gboolean

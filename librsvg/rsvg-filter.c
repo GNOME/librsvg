@@ -312,13 +312,13 @@ rsvg_filter_fix_coordinate_system (RsvgFilterContext * ctx, RsvgState * state, R
     ctx->width = cairo_image_surface_get_width (ctx->source_surface);
     ctx->height = cairo_image_surface_get_height (ctx->source_surface);
 
-    ctx->affine = state->affine;
+    ctx->affine = rsvg_state_get_affine (state);
     if (ctx->filter->filterunits == objectBoundingBox) {
         cairo_matrix_t affine;
         cairo_matrix_init (&affine, width, 0, 0, height, x, y);
         cairo_matrix_multiply (&ctx->affine, &affine, &ctx->affine);
     }
-    ctx->paffine = state->affine;
+    ctx->paffine = rsvg_state_get_affine (state);
     if (ctx->filter->primitiveunits == objectBoundingBox) {
         cairo_matrix_t affine;
         cairo_matrix_init (&affine, width, 0, 0, height, x, y);
@@ -4255,7 +4255,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitiveImage *image, RsvgFilt
     if (!drawable)
         return NULL;
 
-    rsvg_current_state (ctx)->affine = context->paffine;
+    rsvg_drawing_ctx_set_current_state_affine (ctx, &context->paffine);
 
     result = rsvg_get_surface_of_node (ctx, drawable, context->width, context->height);
 

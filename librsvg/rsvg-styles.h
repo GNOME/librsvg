@@ -224,6 +224,9 @@ G_GNUC_INTERNAL
 cairo_matrix_t rsvg_state_get_affine (RsvgState *state);
 
 G_GNUC_INTERNAL
+void rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine);
+
+G_GNUC_INTERNAL
 gboolean rsvg_state_is_overflow (RsvgState *state);
 
 G_GNUC_INTERNAL

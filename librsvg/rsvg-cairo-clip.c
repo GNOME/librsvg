@@ -167,16 +167,18 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox
                            bbox->rect.height,
                            bbox->rect.x,
                            bbox->rect.y);
-        affinesave = clip_path_state->affine;
-        cairo_matrix_multiply (&clip_path_state->affine, &bbtransform, &clip_path_state->affine);
+        affinesave = rsvg_state_get_affine (clip_path_state);
+        cairo_matrix_multiply (&bbtransform, &bbtransform, &affinesave);
+        rsvg_state_set_affine (clip_path_state, bbtransform);
     }
 
     rsvg_state_push (ctx);
     rsvg_node_draw_children (node_clip_path, ctx, 0);
     rsvg_state_pop (ctx);
 
-    if (clip_units == objectBoundingBox)
-        clip_path_state->affine = affinesave;
+    if (clip_units == objectBoundingBox) {
+        rsvg_state_set_affine (clip_path_state, affinesave);
+    }
 
     g_assert (clip_render->super.cr_stack == NULL);
     g_assert (clip_render->super.bb_stack == NULL);

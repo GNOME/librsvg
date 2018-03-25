@@ -145,6 +145,7 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
     RsvgCairoRender *render;
     RsvgState *state;
     cairo_matrix_t affine;
+    cairo_matrix_t state_affine;
     double bbx0, bby0, bbx1, bby1;
 
     rsvg_handle_get_dimensions (handle, &data);
@@ -187,20 +188,24 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
     rsvg_state_push (draw);
     state = rsvg_current_state (draw);
 
+    state_affine = rsvg_state_get_affine (state);
+
     /* apply cairo transformation to our affine transform */
-    cairo_matrix_multiply (&state->affine, &affine, &state->affine);
+    cairo_matrix_multiply (&state_affine, &affine, &state_affine);
 
     /* scale according to size set by size_func callback */
     cairo_matrix_init_scale (&affine, data.width / data.em, data.height / data.ex);
-    cairo_matrix_multiply (&state->affine, &affine, &state->affine);
+    cairo_matrix_multiply (&state_affine, &affine, &state_affine);
 
     /* adjust transform so that the corner of the bounding box above is
      * at (0,0) - we compensate for this in _set_rsvg_affine() in
      * rsvg-cairo-render.c and a few other places */
-    state->affine.x0 -= render->offset_x;
-    state->affine.y0 -= render->offset_y;
+    state_affine.x0 -= render->offset_x;
+    state_affine.y0 -= render->offset_y;
 
-    rsvg_bbox_init (&((RsvgCairoRender *) draw->render)->bbox, &state->affine);
+    rsvg_bbox_init (&((RsvgCairoRender *) draw->render)->bbox, &state_affine);
+
+    rsvg_state_set_affine (state, state_affine);
 
     return draw;
 }

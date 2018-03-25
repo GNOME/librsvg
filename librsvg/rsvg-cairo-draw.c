@@ -190,6 +190,7 @@ rsvg_cairo_render_surface (RsvgDrawingCtx *ctx,
     int width, height;
     double dwidth, dheight;
     RsvgBbox bbox;
+    cairo_matrix_t affine;
 
     if (surface == NULL)
         return;
@@ -201,14 +202,15 @@ rsvg_cairo_render_surface (RsvgDrawingCtx *ctx,
     if (width == 0 || height == 0)
         return;
 
-    rsvg_bbox_init (&bbox, &state->affine);
+    affine = rsvg_state_get_affine (state);
+    rsvg_bbox_init (&bbox, &affine);
     bbox.rect.x = src_x;
     bbox.rect.y = src_y;
     bbox.rect.width = w;
     bbox.rect.height = h;
     bbox.virgin = 0;
 
-    rsvg_drawing_ctx_set_affine_on_cr (ctx, render->cr, &state->affine);
+    rsvg_drawing_ctx_set_affine_on_cr (ctx, render->cr, &affine);
     cairo_scale (render->cr, w / dwidth, h / dheight);
     src_x *= dwidth / w;
     src_y *= dheight / h;
@@ -347,8 +349,9 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
 
         mask_state = rsvg_node_get_state (mask);
 
-        affinesave = mask_state->affine;
-        cairo_matrix_multiply (&mask_state->affine, &bbtransform, &mask_state->affine);
+        affinesave = rsvg_state_get_affine (mask_state);
+        cairo_matrix_multiply (&bbtransform, &bbtransform, &affinesave);
+        rsvg_state_set_affine (mask_state, bbtransform);
         rsvg_drawing_ctx_push_view_box (ctx, 1, 1);
     }
 
@@ -362,7 +365,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
         rsvg_drawing_ctx_pop_view_box (ctx);
 
         mask_state = rsvg_node_get_state (mask);
-        mask_state->affine = affinesave;
+        rsvg_state_set_affine (mask_state, affinesave);
     }
 
     render->cr = save_cr;
@@ -414,6 +417,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     RsvgBbox *bbox;
     RsvgState *state = rsvg_current_state (ctx);
     gboolean lateclip = FALSE;
+    cairo_matrix_t affine;
 
     if (rsvg_current_state (ctx)->clip_path) {
         RsvgNode *node;
@@ -469,7 +473,9 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     bbox = g_new0 (RsvgBbox, 1);
     *bbox = render->bbox;
     render->bb_stack = g_list_prepend (render->bb_stack, bbox);
-    rsvg_bbox_init (&render->bbox, &state->affine);
+
+    affine = rsvg_state_get_affine (state);
+    rsvg_bbox_init (&render->bbox, &affine);
 }
 
 void
@@ -584,8 +590,10 @@ rsvg_cairo_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_t *cr = render->cr;
+    cairo_matrix_t affine;
 
-    rsvg_drawing_ctx_set_affine_on_cr (ctx, cr, &rsvg_current_state (ctx)->affine);
+    affine = rsvg_state_get_affine (rsvg_current_state (ctx));
+    rsvg_drawing_ctx_set_affine_on_cr (ctx, cr, &affine);
 
     cairo_rectangle (cr, x, y, w, h);
     cairo_clip (cr);
