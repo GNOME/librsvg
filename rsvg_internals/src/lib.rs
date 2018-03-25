@@ -152,6 +152,12 @@ pub use structure::{
     rsvg_node_use_new,
 };
 
+pub use text::{
+    rsvg_node_tref_new,
+    rsvg_node_tref_measure,
+    rsvg_node_tref_render,
+};
+
 pub use transform::rsvg_parse_transform;
 
 pub use viewbox::RsvgViewBox;
@@ -195,6 +201,7 @@ mod space;
 mod state;
 mod stop;
 mod structure;
+mod text;
 mod transform;
 mod util;
 mod viewbox;
