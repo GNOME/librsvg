@@ -28,13 +28,8 @@
 
 #include "rsvg-private.h"
 #include "rsvg-styles.h"
-#include "rsvg-text.h"
 #include "rsvg-css.h"
-
 #include "rsvg-shapes.h"
-
-/* what we use for text rendering depends on what cairo has to offer */
-#include <pango/pangocairo.h>
 
 /* Implemented in rust/src/chars.rs */
 extern double rsvg_node_chars_measure (RsvgNode *node, RsvgDrawingCtx *ctx);
@@ -45,62 +40,6 @@ extern gboolean rsvg_node_tref_measure (RsvgNode *node, RsvgDrawingCtx *ctx, dou
 extern void rsvg_node_tref_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y);
 extern gboolean rsvg_node_tspan_measure (RsvgNode *node, RsvgDrawingCtx *ctx, double *length, gboolean usetextonly);
 extern void rsvg_node_tspan_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y, gboolean usetextonly);
-
-typedef struct _RsvgNodeText RsvgNodeText;
-
-struct _RsvgNodeText {
-    RsvgLength x, y;
-    gboolean x_specified;
-    gboolean y_specified;
-    RsvgLength dx, dy;
-};
-
-static void
-set_text_common_atts (RsvgNodeText *text, RsvgPropertyBag *atts)
-{
-    RsvgPropertyBagIter *iter;
-    const char *key;
-    RsvgAttribute attr;
-    const char *value;
-
-    iter = rsvg_property_bag_iter_begin (atts);
-
-    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
-        switch (attr) {
-        case RSVG_ATTRIBUTE_X:
-            text->x = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-            text->x_specified = TRUE;
-            break;
-
-        case RSVG_ATTRIBUTE_Y:
-            text->y = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-            text->y_specified = TRUE;
-            break;
-
-        case RSVG_ATTRIBUTE_DX:
-            text->dx = rsvg_length_parse (value, LENGTH_DIR_HORIZONTAL);
-            break;
-
-        case RSVG_ATTRIBUTE_DY:
-            text->dy = rsvg_length_parse (value, LENGTH_DIR_VERTICAL);
-            break;
-
-        default:
-            break;
-        }
-    }
-
-    rsvg_property_bag_iter_end (iter);
-}
-
-
-static void
-rsvg_node_text_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
-{
-    RsvgNodeText *text = impl;
-
-    set_text_common_atts (text, atts);
-}
 
 void
 rsvg_text_render_children (RsvgNode       *self,
@@ -221,61 +160,4 @@ rsvg_text_measure_children (RsvgNode       *self,
     rsvg_node_children_iter_end (iter);
 
     return done;
-}
-
-static void
-rsvg_node_text_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
-{
-    RsvgNodeText *text = impl;
-    double x, y, dx, dy, length = 0;
-    TextAnchor anchor;
-
-    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), dominate);
-
-    x = rsvg_length_normalize (&text->x, ctx);
-    y = rsvg_length_normalize (&text->y, ctx);
-    dx = rsvg_length_normalize (&text->dx, ctx);
-    dy = rsvg_length_normalize (&text->dy, ctx);
-
-    anchor = rsvg_state_get_text_anchor (rsvg_current_state (ctx));
-
-    if (anchor != TEXT_ANCHOR_START) {
-        rsvg_text_measure_children (node, ctx, &length, FALSE);
-        if (anchor == TEXT_ANCHOR_MIDDLE)
-            length /= 2;
-    }
-    if (PANGO_GRAVITY_IS_VERTICAL (rsvg_current_state (ctx)->text_gravity)) {
-        y -= length;
-        if (anchor == TEXT_ANCHOR_MIDDLE)
-            dy /= 2;
-        else if (anchor == TEXT_ANCHOR_END)
-            dy = 0;
-    } else {
-        x -= length;
-        if (anchor == TEXT_ANCHOR_MIDDLE)
-            dx /= 2;
-        else if (anchor == TEXT_ANCHOR_END)
-            dx = 0;
-    }
-    x += dx;
-    y += dy;
-
-    rsvg_text_render_children (node, ctx, &x, &y, FALSE);
-}
-
-RsvgNode *
-rsvg_new_text (const char *element_name, RsvgNode *parent)
-{
-    RsvgNodeText *text;
-
-    text = g_new0 (RsvgNodeText, 1);
-    text->x = text->y = text->dx = text->dy = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
-
-    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_TEXT,
-                                parent,
-                                rsvg_state_new (),
-                                text,
-                                rsvg_node_text_set_atts,
-                                rsvg_node_text_draw,
-                                g_free);                                
 }
