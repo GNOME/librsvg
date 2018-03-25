@@ -25,7 +25,12 @@ pub use attributes::rsvg_attribute_from_name;
 
 pub use bbox::{rsvg_bbox_clip, rsvg_bbox_init, rsvg_bbox_insert, RsvgBbox};
 
-pub use chars::{rsvg_node_chars_append, rsvg_node_chars_get_string, rsvg_node_chars_new};
+pub use chars::{
+    rsvg_node_chars_append,
+    rsvg_node_chars_measure,
+    rsvg_node_chars_new,
+    rsvg_node_chars_render,
+};
 
 pub use clip_path::{rsvg_node_clip_path_get_units, rsvg_node_clip_path_new};
 
@@ -146,8 +151,6 @@ pub use structure::{
     rsvg_node_use_new,
 };
 
-pub use text::{rsvg_text_measure, rsvg_text_render};
-
 pub use transform::rsvg_parse_transform;
 
 pub use viewbox::RsvgViewBox;
@@ -191,7 +194,6 @@ mod space;
 mod state;
 mod stop;
 mod structure;
-mod text;
 mod transform;
 mod util;
 mod viewbox;
