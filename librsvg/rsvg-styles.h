@@ -134,9 +134,6 @@ struct _RsvgState {
     gboolean visible;
     gboolean has_visible;
 
-    gboolean space_preserve;
-    gboolean has_space_preserve;
-
     gboolean has_cond;
     gboolean cond_true;
 
@@ -266,9 +263,6 @@ guint32 rsvg_state_get_current_color (RsvgState *state);
 
 G_GNUC_INTERNAL
 const char *rsvg_state_get_language (RsvgState *state);
-
-G_GNUC_INTERNAL
-gboolean rsvg_state_get_space_preserve (RsvgState *state);
 
 G_GNUC_INTERNAL
 UnicodeBidi rsvg_state_get_unicode_bidi (RsvgState *state);
