@@ -6,13 +6,13 @@ use pango_sys;
 use pangocairo;
 
 use bbox::RsvgBbox;
+use chars;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use float_eq_cairo::ApproxEqCairo;
 use length::StrokeDasharray;
 use paint_server;
 use path_builder::RsvgPathBuilder;
 use state::{self, FillRule, RsvgState, StrokeLinecap, StrokeLinejoin};
-use text;
 
 pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &RsvgPathBuilder, clipping: bool) {
     if !clipping {
@@ -304,7 +304,7 @@ fn compute_text_bbox(
     let ink_width = f64::from(ink.width);
     let ink_height = f64::from(ink.height);
 
-    if text::gravity_is_vertical(gravity) {
+    if chars::gravity_is_vertical(gravity) {
         bbox.set_rect(&cairo::Rectangle {
             x: x + (ink_x - ink_height) / pango_scale,
             y: y + ink_y / pango_scale,

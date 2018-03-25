@@ -36,9 +36,9 @@
 /* what we use for text rendering depends on what cairo has to offer */
 #include <pango/pangocairo.h>
 
-/* Implemented in rust/src/text.rs */
-extern double rsvg_text_measure (RsvgDrawingCtx *ctx, const char *text);
-extern void rsvg_text_render (RsvgDrawingCtx * ctx, const char *text, double *x, double *y);
+/* Implemented in rust/src/chars.rs */
+extern double rsvg_node_chars_measure (RsvgNode *node, RsvgDrawingCtx *ctx);
+extern void rsvg_node_chars_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y);
 
 typedef struct _RsvgNodeText RsvgNodeText;
 
@@ -134,11 +134,7 @@ draw_text_child (RsvgNode       *node,
     RsvgNodeType type = rsvg_node_get_type (node);
 
     if (type == RSVG_NODE_TYPE_CHARS) {
-        char *text = rsvg_node_chars_get_string (node);
-
-        rsvg_text_render (ctx, text, x, y);
-
-        g_free(text);
+        rsvg_node_chars_render (node, ctx, x, y);
     } else {
         if (usetextonly) {
             draw_from_children (node,
@@ -226,11 +222,7 @@ compute_child_length (RsvgNode       *node,
     rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), 0);
 
     if (type == RSVG_NODE_TYPE_CHARS) {
-        char *text = rsvg_node_chars_get_string (node);
-
-        *length += rsvg_text_measure (ctx, text);
-
-        g_free(text);
+        *length += rsvg_node_chars_measure (node, ctx);
     } else {
         if (usetextonly) {
             done = compute_length_from_children (node,
@@ -285,7 +277,6 @@ compute_length_from_children (RsvgNode       *self,
 
     return done;
 }
-
 
 static void
 rsvg_node_text_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
