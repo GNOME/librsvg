@@ -26,7 +26,7 @@ pub enum RsvgState {}
 ///
 /// Each property should have its own data type, and implement
 /// `Default` and `parsers::Parse`.
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct State {
     pub join: StrokeLinejoin,
     has_join: bool,
@@ -39,6 +39,19 @@ pub struct State {
 }
 
 impl State {
+    fn new() -> State {
+        State {
+            join: Default::default(),
+            has_join: Default::default(),
+
+            cap: Default::default(),
+            has_cap: Default::default(),
+
+            fill_rule: Default::default(),
+            has_fill_rule: Default::default(),
+        }
+    }
+
     fn parse_style_pair(&mut self, attr: Attribute, value: &str) -> Result<(), AttributeError> {
         match attr {
             Attribute::StrokeLinejoin => {
@@ -426,7 +439,7 @@ make_ident_property!(
 
 #[no_mangle]
 pub extern "C" fn rsvg_state_rust_new() -> *mut State {
-    Box::into_raw(Box::new(State::default()))
+    Box::into_raw(Box::new(State::new()))
 }
 
 #[no_mangle]
