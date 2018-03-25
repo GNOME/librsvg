@@ -1,11 +1,16 @@
-use glib::translate::*;
 use libc;
 use pango::{self, ContextExt, LayoutExt};
-use pango_sys;
 
 use drawing_ctx::{self, RsvgDrawingCtx};
-use state::{self, UnicodeBidi};
+use state::{self, RsvgState, UnicodeBidi};
 use util::utf8_cstr;
+
+extern "C" {
+    fn _rsvg_css_accumulate_baseline_shift(
+        state: *mut RsvgState,
+        draw_ctx: *const RsvgDrawingCtx,
+    ) -> libc::c_double;
+}
 
 // FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() /
 // PANGO_GRAVITY_IS_IMPROPER()?
@@ -92,14 +97,58 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
     layout
 }
 
+fn measure_text(draw_ctx: *const RsvgDrawingCtx, text: &str) -> f64 {
+    let layout = create_pango_layout(draw_ctx, text);
+    let (width, _) = layout.get_size();
+
+    f64::from(width) / f64::from(pango::SCALE)
+}
+
+fn render_text(draw_ctx: *const RsvgDrawingCtx, text: &str, x: &mut f64, y: &mut f64) {
+    let state = drawing_ctx::get_current_state(draw_ctx);
+
+    let layout = create_pango_layout(draw_ctx, text);
+    let (width, _) = layout.get_size();
+    let mut offset = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
+
+    unsafe {
+        offset += _rsvg_css_accumulate_baseline_shift(state, draw_ctx);
+    }
+
+    let gravity = state::get_text_gravity(state);
+    if gravity_is_vertical(gravity) {
+        drawing_ctx::render_pango_layout(draw_ctx, &layout, *x + offset, *y);
+        *y += f64::from(width) / f64::from(pango::SCALE);
+    } else {
+        drawing_ctx::render_pango_layout(draw_ctx, &layout, *x, *y - offset);
+        *x += f64::from(width) / f64::from(pango::SCALE);
+    }
+}
+
 #[no_mangle]
-pub extern "C" fn rsvg_text_create_layout(
+pub extern "C" fn rsvg_text_measure(
     draw_ctx: *const RsvgDrawingCtx,
     text: *const libc::c_char,
-) -> *const pango_sys::PangoLayout {
+) -> libc::c_double {
     assert!(!text.is_null());
     let s = unsafe { utf8_cstr(text) };
-    let layout = create_pango_layout(draw_ctx, s);
 
-    layout.to_glib_full()
+    measure_text(draw_ctx, s)
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_text_render(
+    draw_ctx: *const RsvgDrawingCtx,
+    text: *const libc::c_char,
+    raw_x: *mut libc::c_double,
+    raw_y: *mut libc::c_double,
+) {
+    assert!(!text.is_null());
+    assert!(!raw_x.is_null());
+    assert!(!raw_y.is_null());
+    let s = unsafe { utf8_cstr(text) };
+    let x: &mut f64 = unsafe { &mut *raw_x };
+    let y: &mut f64 = unsafe { &mut *raw_y };
+
+    render_text(draw_ctx, s, x, y)
 }
