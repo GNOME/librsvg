@@ -121,8 +121,7 @@ static void
 draw_tref (RsvgNodeTref   *self,
            RsvgDrawingCtx *ctx,
            gdouble        *x,
-           gdouble        *y,
-           gboolean        usetextonly);
+           gdouble        *y);
 
 static void
 draw_text_child (RsvgNode       *node,
@@ -145,19 +144,10 @@ draw_text_child (RsvgNode       *node,
         } else {
             if (type == RSVG_NODE_TYPE_TSPAN) {
                 RsvgNodeText *tspan = rsvg_rust_cnode_get_impl (node);
-                draw_tspan (node,
-                            tspan,
-                            ctx,
-                            x,
-                            y,
-                            usetextonly);
+                draw_tspan (node, tspan, ctx, x, y, usetextonly);
             } else if (type == RSVG_NODE_TYPE_TREF) {
                 RsvgNodeTref *tref = rsvg_rust_cnode_get_impl (node);
-                draw_tref (tref,
-                           ctx,
-                           x,
-                           y,
-                           usetextonly);
+                draw_tref (tref, ctx, x, y);
             }
         }
     }
@@ -197,8 +187,7 @@ compute_length_from_children (RsvgNode       *self,
 static gboolean
 length_from_tref (RsvgNodeTref   *self,
                   RsvgDrawingCtx *ctx,
-                  gdouble        *x,
-                  gboolean        usetextonly);
+                  gdouble        *x);
 
 static gboolean
 length_from_tspan (RsvgNode       *node,
@@ -232,17 +221,10 @@ compute_child_length (RsvgNode       *node,
         } else {
             if (type == RSVG_NODE_TYPE_TSPAN) {
                 RsvgNodeText *tspan = rsvg_rust_cnode_get_impl (node);
-                done = length_from_tspan (node,
-                                          tspan,
-                                          ctx,
-                                          length,
-                                          usetextonly);
+                done = length_from_tspan (node, tspan, ctx, length, usetextonly);
             } else if (type == RSVG_NODE_TYPE_TREF) {
                 RsvgNodeTref *tref = rsvg_rust_cnode_get_impl (node);
-                done = length_from_tref (tref,
-                                         ctx,
-                                         length,
-                                         usetextonly);
+                done = length_from_tref (tref, ctx, length);
             }
         }
     }
@@ -436,8 +418,7 @@ static void
 draw_tref (RsvgNodeTref   *self,
            RsvgDrawingCtx *ctx,
            gdouble        *x,
-           gdouble        *y,
-           gboolean        usetextonly)
+           gdouble        *y)
 {
     RsvgNode *link;
 
@@ -455,8 +436,7 @@ draw_tref (RsvgNodeTref   *self,
 static gboolean
 length_from_tref (RsvgNodeTref   *self,
                   RsvgDrawingCtx *ctx,
-                  gdouble        *x,
-                  gboolean        usetextonly)
+                  gdouble        *x)
 {
     gboolean result;
     RsvgNode *link;
