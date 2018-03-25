@@ -138,9 +138,9 @@ fn setup_cr_for_stroke(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, state
 }
 
 fn compute_bbox_from_stroke_and_fill(cr: &cairo::Context, state: *mut RsvgState) -> RsvgBbox {
-    let state_affine = &state::get_affine(state);
+    let rstate = state::get_state_rust(state);
 
-    let mut bbox = RsvgBbox::new(state_affine);
+    let mut bbox = RsvgBbox::new(&rstate.affine);
 
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
@@ -169,7 +169,7 @@ fn compute_bbox_from_stroke_and_fill(cr: &cairo::Context, state: *mut RsvgState)
     // rectangle's extents, even when it has no fill nor stroke.
 
     {
-        let mut fb = RsvgBbox::new(state_affine);
+        let mut fb = RsvgBbox::new(&rstate.affine);
 
         let (x, y, w, h) = cr.fill_extents();
 
@@ -186,7 +186,7 @@ fn compute_bbox_from_stroke_and_fill(cr: &cairo::Context, state: *mut RsvgState)
     // Bounding box for stroke
 
     if state::get_stroke(state).is_some() {
-        let mut sb = RsvgBbox::new(state_affine);
+        let mut sb = RsvgBbox::new(&rstate.affine);
 
         let (x, y, w, h) = cr.stroke_extents();
 
@@ -213,7 +213,7 @@ pub fn draw_pango_layout(
     clipping: bool,
 ) {
     let state = drawing_ctx::get_current_state(draw_ctx);
-    let state_affine = &state::get_affine(state);
+    let rust_state = state::get_state_rust(state);
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
     let gravity = layout.get_context().unwrap().get_gravity();
 
@@ -223,7 +223,7 @@ pub fn draw_pango_layout(
         return;
     }
 
-    let bbox = compute_text_bbox(&ink, x, y, state_affine, gravity);
+    let bbox = compute_text_bbox(&ink, x, y, &rust_state.affine, gravity);
 
     let fill = state::get_fill(state);
     let stroke = state::get_stroke(state);
@@ -236,7 +236,7 @@ pub fn draw_pango_layout(
 
     setup_cr_for_stroke(&cr, draw_ctx, state);
 
-    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, state_affine);
+    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &rust_state.affine);
 
     let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
 

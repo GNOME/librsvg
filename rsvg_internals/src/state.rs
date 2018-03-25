@@ -1,4 +1,4 @@
-use cairo;
+use cairo::{self, MatrixTrait};
 use glib::translate::*;
 use glib_sys;
 use libc;
@@ -28,6 +28,8 @@ pub enum RsvgState {}
 /// `Default` and `parsers::Parse`.
 #[derive(Clone)]
 pub struct State {
+    pub affine: cairo::Matrix,
+
     pub join: StrokeLinejoin,
     has_join: bool,
 
@@ -41,6 +43,8 @@ pub struct State {
 impl State {
     fn new() -> State {
         State {
+            affine: cairo::Matrix::identity(),
+
             join: Default::default(),
             has_join: Default::default(),
 
@@ -171,7 +175,6 @@ extern "C" {
     fn rsvg_state_free(state: *mut RsvgState);
     fn rsvg_state_reinit(state: *mut RsvgState);
     fn rsvg_state_reconstruct(state: *mut RsvgState, node: *const RsvgNode);
-    fn rsvg_state_get_affine(state: *const RsvgState) -> cairo::Matrix;
     fn rsvg_state_is_overflow(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_has_overflow(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_cond_true(state: *const RsvgState) -> glib_sys::gboolean;
@@ -225,10 +228,6 @@ pub fn reconstruct(state: *mut RsvgState, node: *const RsvgNode) {
     unsafe {
         rsvg_state_reconstruct(state, node);
     }
-}
-
-pub fn get_affine(state: *const RsvgState) -> cairo::Matrix {
-    unsafe { rsvg_state_get_affine(state) }
 }
 
 pub fn is_overflow(state: *const RsvgState) -> bool {
@@ -507,5 +506,21 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
         if inherit_from_src(inherit_fn, dst.has_fill_rule, src.has_fill_rule) {
             dst.fill_rule = src.fill_rule;
         }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_affine(state: *const State) -> cairo::Matrix {
+    unsafe {
+        let state = &*state;
+        state.affine
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_set_affine(state: *mut State, affine: cairo::Matrix) {
+    unsafe {
+        let state = &mut *state;
+        state.affine = affine;
     }
 }

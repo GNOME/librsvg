@@ -51,6 +51,8 @@ extern void rsvg_stroke_dasharray_free(RsvgStrokeDasharray *dash);
 extern State *rsvg_state_rust_new(void);
 extern void rsvg_state_rust_free(State *state);
 extern State *rsvg_state_rust_clone(State *state);
+extern cairo_matrix_t rsvg_state_rust_get_affine(State *state);
+extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 extern void rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value);
 extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn);
 
@@ -99,13 +101,10 @@ style_value_data_free (StyleValueData *value)
 static void
 rsvg_state_init (RsvgState * state)
 {
-    cairo_matrix_t identity;
-
     memset (state, 0, sizeof (RsvgState));
 
     state->parent = NULL;
-    cairo_matrix_init_identity (&identity);
-    rsvg_state_set_affine (state, identity);
+
     state->mask = NULL;
     state->opacity = 0xff;
     state->baseline_shift = 0.;
@@ -1816,13 +1815,13 @@ rsvg_state_reconstruct (RsvgState *state, RsvgNode *current)
 cairo_matrix_t
 rsvg_state_get_affine (RsvgState *state)
 {
-    return state->affine;
+    return rsvg_state_rust_get_affine (state->state_rust);
 }
 
 void
 rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine)
 {
-    state->affine = affine;
+    rsvg_state_rust_set_affine (state->state_rust, affine);
 }
 
 gboolean

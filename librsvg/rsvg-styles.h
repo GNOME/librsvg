@@ -69,7 +69,6 @@ typedef struct State State;
 
 struct _RsvgState {
     RsvgState *parent;
-    cairo_matrix_t affine;
 
     char *filter;
     char *mask;
