@@ -82,6 +82,10 @@ void rsvg_node_svg_apply_atts (RsvgNode *node, RsvgHandle *handle);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_tref_new (const char *element_name, RsvgNode *parent);
 
+/* Implemented in rust/src/text.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_tspan_new (const char *element_name, RsvgNode *parent);
+
 G_END_DECLS
 
 #endif                          /* RSVG_STRUCTURE_H */
