@@ -36,8 +36,6 @@ G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_text	    (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode    *rsvg_new_tspan	    (const char *element_name, RsvgNode *parent);
-G_GNUC_INTERNAL
-RsvgNode    *rsvg_new_tref	    (const char *element_name, RsvgNode *parent);
 
 G_END_DECLS
 
