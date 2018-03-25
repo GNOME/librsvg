@@ -55,7 +55,6 @@ extern cairo_matrix_t rsvg_state_rust_get_affine(State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 extern void rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value);
 extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn);
-extern TextAnchor rsvg_state_rust_get_text_anchor(State *state);
 
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
@@ -1933,12 +1932,6 @@ RsvgLength
 rsvg_state_get_letter_spacing (RsvgState *state)
 {
     return state->letter_spacing;
-}
-
-TextAnchor
-rsvg_state_get_text_anchor (RsvgState *state)
-{
-    return rsvg_state_rust_get_text_anchor (state->state_rust);
 }
 
 const TextDecoration *
