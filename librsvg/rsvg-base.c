@@ -343,7 +343,7 @@ static const NodeCreator node_creators[] = {
     /* "textPath",           TRUE,  */
     /* "title",              TRUE,  */
     { "tref",                TRUE,  rsvg_node_tref_new },
-    { "tspan",               TRUE,  rsvg_new_tspan },
+    { "tspan",               TRUE,  rsvg_node_tspan_new },
     { "use",                 TRUE,  rsvg_node_use_new },
     /* "view",               FALSE, */
     /* "vkern",              FALSE, */
