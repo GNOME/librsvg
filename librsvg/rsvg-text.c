@@ -43,6 +43,8 @@ extern void rsvg_node_chars_render (RsvgNode *node, RsvgDrawingCtx * ctx, double
 /* Implemented in rust/src/text.rs */
 extern gboolean rsvg_node_tref_measure (RsvgNode *node, RsvgDrawingCtx *ctx, double *length);
 extern void rsvg_node_tref_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y);
+extern gboolean rsvg_node_tspan_measure (RsvgNode *node, RsvgDrawingCtx *ctx, double *length, gboolean usetextonly);
+extern void rsvg_node_tspan_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y, gboolean usetextonly);
 
 typedef struct _RsvgNodeText RsvgNodeText;
 
@@ -108,14 +110,6 @@ rsvg_text_render_children (RsvgNode       *self,
                            gboolean        usetextonly);
 
 static void
-draw_tspan (RsvgNode       *node,
-            RsvgNodeText   *self,
-            RsvgDrawingCtx *ctx,
-            gdouble        *x,
-            gdouble        *y,
-            gboolean        usetextonly);
-
-static void
 draw_text_child (RsvgNode       *node,
                  RsvgDrawingCtx *ctx,
                  gdouble        *x,
@@ -131,8 +125,7 @@ draw_text_child (RsvgNode       *node,
             rsvg_text_render_children (node, ctx, x, y, usetextonly);
         } else {
             if (type == RSVG_NODE_TYPE_TSPAN) {
-                RsvgNodeText *tspan = rsvg_rust_cnode_get_impl (node);
-                draw_tspan (node, tspan, ctx, x, y, usetextonly);
+                rsvg_node_tspan_render (node, ctx, x, y, usetextonly);
             } else if (type == RSVG_NODE_TYPE_TREF) {
                 rsvg_node_tref_render (node, ctx, x, y);
             }
@@ -172,13 +165,6 @@ rsvg_text_measure_children (RsvgNode       *self,
                             gboolean        usetextonly);
 
 static gboolean
-length_from_tspan (RsvgNode       *node,
-                   RsvgNodeText   *self,
-                   RsvgDrawingCtx *ctx,
-                   gdouble        *x,
-                   gboolean        usetextonly);
-
-static gboolean
 compute_child_length (RsvgNode       *node,
                       RsvgDrawingCtx *ctx,
                       gdouble        *length,
@@ -199,8 +185,7 @@ compute_child_length (RsvgNode       *node,
             done = rsvg_text_measure_children (node, ctx, length, usetextonly);
         } else {
             if (type == RSVG_NODE_TYPE_TSPAN) {
-                RsvgNodeText *tspan = rsvg_rust_cnode_get_impl (node);
-                done = length_from_tspan (node, tspan, ctx, length, usetextonly);
+                done = rsvg_node_tspan_measure (node, ctx, length, usetextonly);
             } else if (type == RSVG_NODE_TYPE_TREF) {
                 done = rsvg_node_tref_measure (node, ctx, length);
             }
@@ -293,107 +278,4 @@ rsvg_new_text (const char *element_name, RsvgNode *parent)
                                 rsvg_node_text_set_atts,
                                 rsvg_node_text_draw,
                                 g_free);                                
-}
-
-static void
-draw_tspan (RsvgNode       *node,
-            RsvgNodeText   *self,
-            RsvgDrawingCtx *ctx,
-            gdouble        *x,
-            gdouble        *y,
-            gboolean        usetextonly)
-{
-    double dx, dy, length = 0;
-    TextAnchor anchor;
-
-    rsvg_state_push (ctx);
-
-    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), 0);
-
-    dx = rsvg_length_normalize (&self->dx, ctx);
-    dy = rsvg_length_normalize (&self->dy, ctx);
-
-    anchor = rsvg_state_get_text_anchor (rsvg_current_state (ctx));
-
-    if (anchor != TEXT_ANCHOR_START) {
-        rsvg_text_measure_children (node, ctx, &length, usetextonly);
-        if (anchor == TEXT_ANCHOR_MIDDLE)
-            length /= 2;
-    }
-
-    if (self->x_specified) {
-        *x = rsvg_length_normalize (&self->x, ctx);
-        if (!PANGO_GRAVITY_IS_VERTICAL (rsvg_current_state (ctx)->text_gravity)) {
-            *x -= length;
-            if (anchor == TEXT_ANCHOR_MIDDLE)
-                dx /= 2;
-            else if (anchor == TEXT_ANCHOR_END)
-                dx = 0;
-        }
-    }
-    *x += dx;
-
-    if (self->y_specified) {
-        *y = rsvg_length_normalize (&self->y, ctx);
-        if (PANGO_GRAVITY_IS_VERTICAL (rsvg_current_state (ctx)->text_gravity)) {
-            *y -= length;
-            if (anchor == TEXT_ANCHOR_MIDDLE)
-                dy /= 2;
-            else if (anchor == TEXT_ANCHOR_END)
-                dy = 0;
-        }
-    }
-    *y += dy;
-    rsvg_text_render_children (node, ctx, x, y, usetextonly);
-
-    rsvg_state_pop (ctx);
-}
-
-static gboolean
-length_from_tspan (RsvgNode       *node,
-                   RsvgNodeText   *self,
-                   RsvgDrawingCtx *ctx,
-                   gdouble        *length,
-                   gboolean        usetextonly)
-{
-    if (self->x_specified || self->y_specified)
-        return TRUE;
-
-    if (PANGO_GRAVITY_IS_VERTICAL (rsvg_current_state (ctx)->text_gravity))
-        *length += rsvg_length_normalize (&self->dy, ctx);
-    else
-        *length += rsvg_length_normalize (&self->dx, ctx);
-
-    return rsvg_text_measure_children (node, ctx, length, usetextonly);
-}
-
-static void
-rsvg_node_tspan_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
-{
-    RsvgNodeText *text = impl;
-
-    set_text_common_atts (text, atts);
-}
-
-static void
-rsvg_node_tspan_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
-{
-    /* nothing */
-}
-
-RsvgNode *
-rsvg_new_tspan (const char *element_name, RsvgNode *parent)
-{
-    RsvgNodeText *text;
-
-    text = g_new0 (RsvgNodeText, 1);
-    text->dx = text->dy = rsvg_length_parse ("0", LENGTH_DIR_BOTH);
-
-    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_TSPAN,
-                                parent,
-                                rsvg_state_new (),
-                                text,
-                                rsvg_node_tspan_set_atts,
-                                rsvg_node_tspan_draw,
-                                g_free);
 }
