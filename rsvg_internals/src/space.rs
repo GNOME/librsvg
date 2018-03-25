@@ -1,14 +1,5 @@
-use glib::translate::*;
 use itertools::Itertools;
-use libc;
-use util::utf8_cstr;
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum XmlSpace {
-    Default,
-    Preserve,
-}
+use state::XmlSpace;
 
 /// Implements `xml:space` handling per the SVG spec
 ///

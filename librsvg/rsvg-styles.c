@@ -408,9 +408,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->font_family = g_strdup (src->font_family);
     }
 
-    if (function (dst->has_space_preserve, src->has_space_preserve))
-        dst->space_preserve = src->space_preserve;
-
     if (function (dst->has_visible, src->has_visible))
         dst->visible = src->visible;
 
@@ -765,18 +762,6 @@ rsvg_parse_style_pair (RsvgState *state,
             state->visible = TRUE;
         else
             state->has_visible = FALSE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_XML_SPACE:
-    {
-        state->has_space_preserve = TRUE;
-        if (g_str_equal (value, "default"))
-            state->space_preserve = FALSE;
-        else if (g_str_equal (value, "preserve"))
-            state->space_preserve = TRUE;
-        else
-            state->space_preserve = FALSE;
     }
     break;
 
@@ -1914,12 +1899,6 @@ const char *
 rsvg_state_get_language (RsvgState *state)
 {
     return state->lang;
-}
-
-gboolean
-rsvg_state_get_space_preserve (RsvgState *state)
-{
-    return state->space_preserve;
 }
 
 UnicodeBidi

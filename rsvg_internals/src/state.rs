@@ -13,7 +13,6 @@ use node::RsvgNode;
 use opacity::{Opacity, OpacitySpec};
 use paint_server::PaintServer;
 use parsers::{Parse, ParseError};
-use space::XmlSpace;
 use util::utf8_cstr;
 
 pub enum RsvgState {}
@@ -39,6 +38,9 @@ pub struct State {
 
     pub fill_rule: FillRule,
     has_fill_rule: bool,
+
+    pub xml_space: XmlSpace,
+    has_xml_space: bool,
 }
 
 impl State {
@@ -54,6 +56,9 @@ impl State {
 
             fill_rule: Default::default(),
             has_fill_rule: Default::default(),
+
+            xml_space: Default::default(),
+            has_xml_space: Default::default(),
         }
     }
 
@@ -120,6 +125,28 @@ impl State {
                     Err(e) => {
                         self.fill_rule = Default::default();
                         self.has_fill_rule = false; // FIXME - propagate errors instead of defaulting
+                        Err(e)
+                    }
+                }
+            }
+
+            Attribute::XmlSpace => {
+                match XmlSpace::parse(value, ()) {
+                    Ok(XmlSpace::Default) => {
+                        self.xml_space = XmlSpace::default();
+                        self.has_xml_space = false;
+                        Ok(())
+                    }
+
+                    Ok(s) => {
+                        self.xml_space = s;
+                        self.has_xml_space = true;
+                        Ok(())
+                    }
+
+                    Err(e) => {
+                        self.xml_space = Default::default();
+                        self.has_xml_space = false; // FIXME - propagate errors instead of defaulting
                         Err(e)
                     }
                 }
@@ -192,7 +219,6 @@ extern "C" {
     fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_miter_limit(state: *const RsvgState) -> f64;
     fn rsvg_state_get_language(state: *const RsvgState) -> *const libc::c_char;
-    fn rsvg_state_get_space_preserve(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
@@ -326,11 +352,6 @@ pub fn get_miter_limit(state: *const RsvgState) -> f64 {
     unsafe { rsvg_state_get_miter_limit(state) }
 }
 
-pub fn get_xml_space(state: *const RsvgState) -> XmlSpace {
-    let preserve = unsafe { from_glib(rsvg_state_get_space_preserve(state)) };
-    if preserve { XmlSpace::Preserve } else { XmlSpace::Default }
-}
-
 pub fn get_language(state: *const RsvgState) -> Option<String> {
     unsafe { from_glib_none(rsvg_state_get_language(state)) }
 }
@@ -441,6 +462,16 @@ make_ident_property!(
     "inherit" => Inherit,
 );
 
+// XmlSpace ----------------------------------------
+
+make_ident_property!(
+    XmlSpace,
+    default: Default,
+
+    "default" => Default,
+    "preserve" => Preserve,
+);
+
 // Rust State API for consumption from C ----------------------------------------
 
 #[no_mangle]
@@ -512,6 +543,10 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
 
         if inherit_from_src(inherit_fn, dst.has_fill_rule, src.has_fill_rule) {
             dst.fill_rule = src.fill_rule;
+        }
+
+        if inherit_from_src(inherit_fn, dst.has_xml_space, src.has_xml_space) {
+            dst.xml_space = src.xml_space;
         }
     }
 }
