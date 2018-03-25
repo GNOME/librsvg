@@ -41,6 +41,9 @@ pub struct State {
 
     pub xml_space: XmlSpace,
     has_xml_space: bool,
+
+    pub text_anchor: TextAnchor,
+    has_text_anchor: bool,
 }
 
 impl State {
@@ -59,6 +62,9 @@ impl State {
 
             xml_space: Default::default(),
             has_xml_space: Default::default(),
+
+            text_anchor: Default::default(),
+            has_text_anchor: Default::default(),
         }
     }
 
@@ -147,6 +153,28 @@ impl State {
                     Err(e) => {
                         self.xml_space = Default::default();
                         self.has_xml_space = false; // FIXME - propagate errors instead of defaulting
+                        Err(e)
+                    }
+                }
+            }
+
+            Attribute::TextAnchor => {
+                match TextAnchor::parse(value, ()) {
+                    Ok(TextAnchor::Start) => {
+                        self.text_anchor = TextAnchor::default();
+                        self.has_text_anchor = false;
+                        Ok(())
+                    }
+
+                    Ok(a) => {
+                        self.text_anchor = a;
+                        self.has_text_anchor = true;
+                        Ok(())
+                    }
+
+                    Err(e) => {
+                        self.text_anchor = Default::default();
+                        self.has_text_anchor = false; // FIXME - propagate errors instead of defaulting
                         Err(e)
                     }
                 }
@@ -472,6 +500,18 @@ make_ident_property!(
     "preserve" => Preserve,
 );
 
+// TextAnchor --------------------------------------
+
+make_ident_property!(
+    TextAnchor,
+    default: Start,
+
+    "start" => Start,
+    "middle" => Middle,
+    "end" => End,
+    "inherit" => Inherit,
+);
+
 // Rust State API for consumption from C ----------------------------------------
 
 #[no_mangle]
@@ -545,8 +585,12 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
             dst.fill_rule = src.fill_rule;
         }
 
-        if inherit_from_src(inherit_fn, dst.has_xml_space, src.has_xml_space) {
-            dst.xml_space = src.xml_space;
+        if inherit_from_src(inherit_fn, dst.has_text_anchor, src.has_text_anchor) {
+            dst.text_anchor = src.text_anchor;
+        }
+
+        if inherit_from_src(inherit_fn, dst.has_text_anchor, src.has_text_anchor) {
+            dst.text_anchor = src.text_anchor;
         }
     }
 }
@@ -564,5 +608,13 @@ pub extern "C" fn rsvg_state_rust_set_affine(state: *mut State, affine: cairo::M
     unsafe {
         let state = &mut *state;
         state.affine = affine;
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_text_anchor(state: *const State) -> TextAnchor {
+    unsafe {
+        let state = &*state;
+        state.text_anchor
     }
 }

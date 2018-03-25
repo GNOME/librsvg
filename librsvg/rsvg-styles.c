@@ -55,6 +55,7 @@ extern cairo_matrix_t rsvg_state_rust_get_affine(State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 extern void rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value);
 extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn);
+extern TextAnchor rsvg_state_rust_get_text_anchor(State *state);
 
 #define RSVG_DEFAULT_FONT "Times New Roman"
 
@@ -144,7 +145,6 @@ rsvg_state_init (RsvgState * state)
     state->text_dir = PANGO_DIRECTION_LTR;
     state->text_gravity = PANGO_GRAVITY_SOUTH;
     state->unicode_bidi = UNICODE_BIDI_NORMAL;
-    state->text_anchor = TEXT_ANCHOR_START;
     state->letter_spacing = rsvg_length_parse ("0.0", LENGTH_DIR_HORIZONTAL);
     state->visible = TRUE;
     state->cond_true = TRUE;
@@ -182,7 +182,6 @@ rsvg_state_init (RsvgState * state)
     state->has_text_dir = FALSE;
     state->has_text_gravity = FALSE;
     state->has_unicode_bidi = FALSE;
-    state->has_text_anchor = FALSE;
     state->has_letter_spacing = FALSE;
     state->has_startMarker = FALSE;
     state->has_middleMarker = FALSE;
@@ -382,8 +381,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->text_gravity = src->text_gravity;
     if (function (dst->has_unicode_bidi, src->has_unicode_bidi))
         dst->unicode_bidi = src->unicode_bidi;
-    if (function (dst->has_text_anchor, src->has_text_anchor))
-        dst->text_anchor = src->text_anchor;
     if (function (dst->has_letter_spacing, src->has_letter_spacing))
         dst->letter_spacing = src->letter_spacing;
     if (function (dst->has_startMarker, src->has_startMarker)) {
@@ -963,23 +960,6 @@ rsvg_parse_style_pair (RsvgState *state,
         } else if (g_str_equal (value, "tb-rl") || g_str_equal (value, "tb")) {
             state->text_dir = PANGO_DIRECTION_LTR;
             state->text_gravity = PANGO_GRAVITY_EAST;
-        }
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_TEXT_ANCHOR:
-    {
-        state->has_text_anchor = TRUE;
-        if (g_str_equal (value, "inherit")) {
-            state->text_anchor = TEXT_ANCHOR_START;
-            state->has_text_anchor = FALSE;
-        } else {
-            if (strstr (value, "start"))
-                state->text_anchor = TEXT_ANCHOR_START;
-            else if (strstr (value, "middle"))
-                state->text_anchor = TEXT_ANCHOR_MIDDLE;
-            else if (strstr (value, "end"))
-                state->text_anchor = TEXT_ANCHOR_END;
         }
     }
     break;
@@ -1953,6 +1933,12 @@ RsvgLength
 rsvg_state_get_letter_spacing (RsvgState *state)
 {
     return state->letter_spacing;
+}
+
+TextAnchor
+rsvg_state_get_text_anchor (RsvgState *state)
+{
+    return rsvg_state_rust_get_text_anchor (state->state_rust);
 }
 
 const TextDecoration *
