@@ -122,8 +122,6 @@ pub use shapes::{
     rsvg_node_rect_new,
 };
 
-pub use space::rsvg_xml_space_normalize;
-
 pub use state::{
     rsvg_state_rust_clone,
     rsvg_state_rust_free,

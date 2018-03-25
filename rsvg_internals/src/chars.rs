@@ -1,6 +1,8 @@
 use libc;
+use glib::translate::*;
 use std;
 use std::cell::RefCell;
+use std::ptr;
 use std::str;
 
 use drawing_ctx::RsvgDrawingCtx;
@@ -98,20 +100,15 @@ pub extern fn rsvg_node_chars_append(raw_node: *const RsvgNode,
 }
 
 #[no_mangle]
-pub extern fn rsvg_node_chars_get_string(raw_node: *const RsvgNode,
-                                         out_str: *mut *const libc::c_char,
-                                         out_len: *mut usize) {
+pub extern fn rsvg_node_chars_get_string(raw_node: *const RsvgNode) -> *const libc::c_char {
     assert! (!raw_node.is_null ());
     let node: &RsvgNode = unsafe { & *raw_node };
 
-    assert!(!out_str.is_null());
-    assert!(!out_len.is_null());
-
+    let mut res = ptr::null();
     node.with_impl(|chars: &NodeChars| {
         let s = chars.string.borrow();
-        unsafe {
-            *out_str = s.as_ptr() as *const libc::c_char;
-            *out_len = s.len();
-        }
+        res = s.to_glib_full();
     });
+
+    res
 }

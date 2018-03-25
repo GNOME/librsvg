@@ -65,16 +65,6 @@ fn normalize_preserve(s: &str) -> String {
         .collect()
 }
 
-#[no_mangle]
-pub extern "C" fn rsvg_xml_space_normalize(
-    mode: XmlSpace,
-    s: *const libc::c_char,
-) -> *const libc::c_char {
-    let rs = unsafe { utf8_cstr(s) };
-
-    xml_space_normalize(mode, rs).to_glib_full()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

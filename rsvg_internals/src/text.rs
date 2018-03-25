@@ -2,6 +2,7 @@ use libc;
 use pango::{self, ContextExt, LayoutExt};
 
 use drawing_ctx::{self, RsvgDrawingCtx};
+use space::xml_space_normalize;
 use state::{self, RsvgState, UnicodeBidi};
 use util::utf8_cstr;
 
@@ -92,7 +93,8 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
         _ => pango::Alignment::Right,
     });
 
-    layout.set_text(text);
+    let t = xml_space_normalize(state::get_xml_space(state), text);
+    layout.set_text(&t);
 
     layout
 }

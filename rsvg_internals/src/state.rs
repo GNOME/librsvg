@@ -13,6 +13,7 @@ use node::RsvgNode;
 use opacity::{Opacity, OpacitySpec};
 use paint_server::PaintServer;
 use parsers::{Parse, ParseError};
+use space::XmlSpace;
 use util::utf8_cstr;
 
 pub enum RsvgState {}
@@ -191,6 +192,7 @@ extern "C" {
     fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_miter_limit(state: *const RsvgState) -> f64;
     fn rsvg_state_get_language(state: *const RsvgState) -> *const libc::c_char;
+    fn rsvg_state_get_space_preserve(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
@@ -322,6 +324,11 @@ pub fn get_stroke_width(state: *const RsvgState) -> RsvgLength {
 
 pub fn get_miter_limit(state: *const RsvgState) -> f64 {
     unsafe { rsvg_state_get_miter_limit(state) }
+}
+
+pub fn get_xml_space(state: *const RsvgState) -> XmlSpace {
+    let preserve = unsafe { from_glib(rsvg_state_get_space_preserve(state)) };
+    if preserve { XmlSpace::Preserve } else { XmlSpace::Default }
 }
 
 pub fn get_language(state: *const RsvgState) -> Option<String> {

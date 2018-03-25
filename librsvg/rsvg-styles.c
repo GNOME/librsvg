@@ -1916,6 +1916,12 @@ rsvg_state_get_language (RsvgState *state)
     return state->lang;
 }
 
+gboolean
+rsvg_state_get_space_preserve (RsvgState *state)
+{
+    return state->space_preserve;
+}
+
 UnicodeBidi
 rsvg_state_get_unicode_bidi (RsvgState *state)
 {

@@ -36,15 +36,6 @@
 /* what we use for text rendering depends on what cairo has to offer */
 #include <pango/pangocairo.h>
 
-/* Keep in sync with rust/src/space.rs:XmlSpace */
-typedef enum {
-    XML_SPACE_DEFAULT,
-    XML_SPACE_PRESERVE
-} XmlSpace;
-
-/* Implemented in rust/src/space.rs */
-extern char *rsvg_xml_space_normalize (XmlSpace mode, const char *s);
-
 /* Implemented in rust/src/text.rs */
 extern double rsvg_text_measure (RsvgDrawingCtx *ctx, const char *text);
 extern void rsvg_text_render (RsvgDrawingCtx * ctx, const char *text, double *x, double *y);
@@ -133,18 +124,6 @@ draw_tref (RsvgNodeTref   *self,
            gdouble        *y,
            gboolean        usetextonly);
 
-static XmlSpace
-xml_space_from_current_state (RsvgDrawingCtx *ctx)
-{
-    RsvgState *state = rsvg_current_state (ctx);
-
-    if (state->space_preserve) {
-        return XML_SPACE_PRESERVE;
-    } else {
-        return XML_SPACE_DEFAULT;
-    }
-}
-
 static void
 draw_text_child (RsvgNode       *node,
                  RsvgDrawingCtx *ctx,
@@ -155,19 +134,11 @@ draw_text_child (RsvgNode       *node,
     RsvgNodeType type = rsvg_node_get_type (node);
 
     if (type == RSVG_NODE_TYPE_CHARS) {
-        const char *chars_str;
-        gsize chars_len;
-        GString *string;
-        char *chomped;
+        char *text = rsvg_node_chars_get_string (node);
 
-        rsvg_node_chars_get_string (node, &chars_str, &chars_len);
-        string = g_string_new_len (chars_str, chars_len);
+        rsvg_text_render (ctx, text, x, y);
 
-        chomped = rsvg_xml_space_normalize (xml_space_from_current_state (ctx), string->str);
-        g_string_free (string, TRUE);
-
-        rsvg_text_render (ctx, chomped, x, y);
-        g_free (chomped);
+        g_free(text);
     } else {
         if (usetextonly) {
             draw_from_children (node,
@@ -255,19 +226,11 @@ compute_child_length (RsvgNode       *node,
     rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), 0);
 
     if (type == RSVG_NODE_TYPE_CHARS) {
-        const char *chars_str;
-        gsize chars_len;
-        GString *string;
-        char *chomped;
+        char *text = rsvg_node_chars_get_string (node);
 
-        rsvg_node_chars_get_string (node, &chars_str, &chars_len);
-        string = g_string_new_len (chars_str, chars_len);
+        *length += rsvg_text_measure (ctx, text);
 
-        chomped = rsvg_xml_space_normalize (xml_space_from_current_state (ctx), string->str);
-        g_string_free (string, TRUE);
-
-        *length += rsvg_text_measure (ctx, chomped);
-        g_free (chomped);
+        g_free(text);
     } else {
         if (usetextonly) {
             done = compute_length_from_children (node,
