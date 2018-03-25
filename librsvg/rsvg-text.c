@@ -40,6 +40,10 @@
 extern double rsvg_node_chars_measure (RsvgNode *node, RsvgDrawingCtx *ctx);
 extern void rsvg_node_chars_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y);
 
+/* Implemented in rust/src/text.rs */
+extern gboolean rsvg_node_tref_measure (RsvgNode *node, RsvgDrawingCtx *ctx, double *length);
+extern void rsvg_node_tref_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y);
+
 typedef struct _RsvgNodeText RsvgNodeText;
 
 struct _RsvgNodeText {
@@ -47,12 +51,6 @@ struct _RsvgNodeText {
     gboolean x_specified;
     gboolean y_specified;
     RsvgLength dx, dy;
-};
-
-typedef struct _RsvgNodeTref RsvgNodeTref;
-
-struct _RsvgNodeTref {
-    char *link;
 };
 
 static void
@@ -118,12 +116,6 @@ draw_tspan (RsvgNode       *node,
             gboolean        usetextonly);
 
 static void
-draw_tref (RsvgNodeTref   *self,
-           RsvgDrawingCtx *ctx,
-           gdouble        *x,
-           gdouble        *y);
-
-static void
 draw_text_child (RsvgNode       *node,
                  RsvgDrawingCtx *ctx,
                  gdouble        *x,
@@ -142,8 +134,7 @@ draw_text_child (RsvgNode       *node,
                 RsvgNodeText *tspan = rsvg_rust_cnode_get_impl (node);
                 draw_tspan (node, tspan, ctx, x, y, usetextonly);
             } else if (type == RSVG_NODE_TYPE_TREF) {
-                RsvgNodeTref *tref = rsvg_rust_cnode_get_impl (node);
-                draw_tref (tref, ctx, x, y);
+                rsvg_node_tref_render (node, ctx, x, y);
             }
         }
     }
@@ -181,11 +172,6 @@ rsvg_text_measure_children (RsvgNode       *self,
                             gboolean        usetextonly);
 
 static gboolean
-length_from_tref (RsvgNodeTref   *self,
-                  RsvgDrawingCtx *ctx,
-                  gdouble        *x);
-
-static gboolean
 length_from_tspan (RsvgNode       *node,
                    RsvgNodeText   *self,
                    RsvgDrawingCtx *ctx,
@@ -216,8 +202,7 @@ compute_child_length (RsvgNode       *node,
                 RsvgNodeText *tspan = rsvg_rust_cnode_get_impl (node);
                 done = length_from_tspan (node, tspan, ctx, length, usetextonly);
             } else if (type == RSVG_NODE_TYPE_TREF) {
-                RsvgNodeTref *tref = rsvg_rust_cnode_get_impl (node);
-                done = length_from_tref (tref, ctx, length);
+                done = rsvg_node_tref_measure (node, ctx, length);
             }
         }
     }
@@ -411,97 +396,4 @@ rsvg_new_tspan (const char *element_name, RsvgNode *parent)
                                 rsvg_node_tspan_set_atts,
                                 rsvg_node_tspan_draw,
                                 g_free);
-}
-
-static void
-draw_tref (RsvgNodeTref   *self,
-           RsvgDrawingCtx *ctx,
-           gdouble        *x,
-           gdouble        *y)
-{
-    RsvgNode *link;
-
-    if (self->link == NULL)
-      return;
-    link = rsvg_drawing_ctx_acquire_node (ctx, self->link);
-    if (link == NULL)
-      return;
-
-    rsvg_text_render_children (link, ctx, x, y, TRUE);
-
-    rsvg_drawing_ctx_release_node (ctx, link);
-}
-
-static gboolean
-length_from_tref (RsvgNodeTref   *self,
-                  RsvgDrawingCtx *ctx,
-                  gdouble        *x)
-{
-    gboolean result;
-    RsvgNode *link;
-
-    if (self->link == NULL)
-      return FALSE;
-    link = rsvg_drawing_ctx_acquire_node (ctx, self->link);
-    if (link == NULL)
-      return FALSE;
-
-    result = rsvg_text_measure_children (link, ctx, x, TRUE);
-
-    rsvg_drawing_ctx_release_node (ctx, link);
-
-    return result;
-}
-
-static void
-rsvg_node_tref_free (gpointer impl)
-{
-    RsvgNodeTref *self = impl;
-
-    g_free (self->link);
-    g_free (self);
-}
-
-static void
-rsvg_node_tref_set_atts (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag atts)
-{
-    RsvgNodeTref *text = impl;
-    RsvgPropertyBagIter *iter;
-    const char *key;
-    RsvgAttribute attr;
-    const char *value;
-
-    iter = rsvg_property_bag_iter_begin (atts);
-
-    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
-        if (attr == RSVG_ATTRIBUTE_XLINK_HREF) {
-            g_free (text->link);
-            text->link = g_strdup (value);
-        }
-    }
-
-    rsvg_property_bag_iter_end (iter);
-}
-
-static void
-rsvg_node_tref_draw (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate)
-{
-    /* nothing */
-}
-
-RsvgNode *
-rsvg_new_tref (const char *element_name, RsvgNode *parent)
-{
-    RsvgNodeTref *text;
-
-    text = g_new0 (RsvgNodeTref, 1);
-    text->link = NULL;
-
-    return rsvg_rust_cnode_new (RSVG_NODE_TYPE_TREF,
-                                parent,
-                                rsvg_state_new (),
-                                text,
-                                rsvg_node_tref_set_atts,
-                                rsvg_node_tref_draw,
-                                rsvg_node_tref_free);
 }
