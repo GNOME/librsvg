@@ -103,7 +103,6 @@ rsvg_state_init (RsvgState * state)
 
     state->parent = NULL;
     cairo_matrix_init_identity (&state->affine);
-    cairo_matrix_init_identity (&state->personal_affine);
     state->mask = NULL;
     state->opacity = 0xff;
     state->baseline_shift = 0.;
@@ -1529,7 +1528,6 @@ rsvg_parse_transform_attr (RsvgState *state, const char *str)
     cairo_matrix_t affine;
 
     if (rsvg_parse_transform (&affine, str)) {
-        cairo_matrix_multiply (&state->personal_affine, &affine, &state->personal_affine);
         cairo_matrix_multiply (&state->affine, &affine, &state->affine);
         return TRUE;
     } else {
