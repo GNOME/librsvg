@@ -43,6 +43,7 @@ typedef struct {
     gboolean strike;
 } TextDecoration;
 
+/* Keep in sync with rust/src/state.rs:TextAnchor */
 typedef enum {
     TEXT_ANCHOR_START,
     TEXT_ANCHOR_MIDDLE,
@@ -118,8 +119,6 @@ struct _RsvgState {
     gboolean has_text_gravity;
     UnicodeBidi unicode_bidi;
     gboolean has_unicode_bidi;
-    TextAnchor text_anchor;
-    gboolean has_text_anchor;
     RsvgLength letter_spacing;
     gboolean has_letter_spacing;
 
