@@ -495,33 +495,31 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     assert!(!dst.is_null());
     assert!(!src.is_null());
 
-    unsafe {
-        let dst = &mut *dst;
-        let src = &*src;
+    let dst = unsafe { &mut *dst };
+    let src = unsafe { &*src };
 
-        if inherit_from_src(inherit_fn, dst.join.is_some(), src.join.is_some()) {
-            dst.join = src.join;
-        }
+    if inherit_from_src(inherit_fn, dst.join.is_some(), src.join.is_some()) {
+        dst.join = src.join;
+    }
 
-        if inherit_from_src(inherit_fn, dst.cap.is_some(), src.cap.is_some()) {
-            dst.cap = src.cap;
-        }
+    if inherit_from_src(inherit_fn, dst.cap.is_some(), src.cap.is_some()) {
+        dst.cap = src.cap;
+    }
 
-        if inherit_from_src(inherit_fn, dst.fill_rule.is_some(), src.fill_rule.is_some()) {
-            dst.fill_rule = src.fill_rule;
-        }
+    if inherit_from_src(inherit_fn, dst.fill_rule.is_some(), src.fill_rule.is_some()) {
+        dst.fill_rule = src.fill_rule;
+    }
 
-        if inherit_from_src(inherit_fn, dst.xml_space.is_some(), src.xml_space.is_some()) {
-            dst.xml_space = src.xml_space;
-        }
+    if inherit_from_src(inherit_fn, dst.xml_space.is_some(), src.xml_space.is_some()) {
+        dst.xml_space = src.xml_space;
+    }
 
-        if inherit_from_src(
-            inherit_fn,
-            dst.text_anchor.is_some(),
-            src.text_anchor.is_some(),
-        ) {
-            dst.text_anchor = src.text_anchor;
-        }
+    if inherit_from_src(
+        inherit_fn,
+        dst.text_anchor.is_some(),
+        src.text_anchor.is_some(),
+    ) {
+        dst.text_anchor = src.text_anchor;
     }
 }
 
