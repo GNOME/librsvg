@@ -862,10 +862,10 @@ rsvg_end_element (void *data, const xmlChar * xmlname)
     }
 }
 
-/* Implemented in rust/src/chars.rs */
+/* Implemented in rust/src/text.rs */
 extern RsvgNode *rsvg_node_chars_new(RsvgNode *parent);
 
-/* Implemented in rust/src/chars.rs */
+/* Implemented in rust/src/text.rs */
 extern void rsvg_node_chars_append (RsvgNode *node, const char *text, gssize len);
 
 static gboolean
