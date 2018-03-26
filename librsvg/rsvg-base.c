@@ -34,7 +34,6 @@
 #include "rsvg-shapes.h"
 #include "rsvg-structure.h"
 #include "rsvg-io.h"
-#include "rsvg-text.h"
 #include "rsvg-filter.h"
 #include "rsvg-mask.h"
 #include "rsvg-marker.h"
@@ -339,11 +338,11 @@ static const NodeCreator node_creators[] = {
     { "svg",                 TRUE,  rsvg_node_svg_new },
     { "switch",              TRUE,  rsvg_node_switch_new },
     { "symbol",              TRUE,  rsvg_node_symbol_new },
-    { "text",                TRUE,  rsvg_new_text },
+    { "text",                TRUE,  rsvg_node_text_new },
     /* "textPath",           TRUE,  */
     /* "title",              TRUE,  */
-    { "tref",                TRUE,  rsvg_new_tref },
-    { "tspan",               TRUE,  rsvg_new_tspan },
+    { "tref",                TRUE,  rsvg_node_tref_new },
+    { "tspan",               TRUE,  rsvg_node_tspan_new },
     { "use",                 TRUE,  rsvg_node_use_new },
     /* "view",               FALSE, */
     /* "vkern",              FALSE, */
@@ -863,10 +862,10 @@ rsvg_end_element (void *data, const xmlChar * xmlname)
     }
 }
 
-/* Implemented in rust/src/chars.rs */
+/* Implemented in rust/src/text.rs */
 extern RsvgNode *rsvg_node_chars_new(RsvgNode *parent);
 
-/* Implemented in rust/src/chars.rs */
+/* Implemented in rust/src/text.rs */
 extern void rsvg_node_chars_append (RsvgNode *node, const char *text, gssize len);
 
 static gboolean

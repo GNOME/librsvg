@@ -38,6 +38,12 @@ pub struct State {
 
     pub fill_rule: FillRule,
     has_fill_rule: bool,
+
+    pub xml_space: XmlSpace,
+    has_xml_space: bool,
+
+    pub text_anchor: TextAnchor,
+    has_text_anchor: bool,
 }
 
 impl State {
@@ -53,6 +59,12 @@ impl State {
 
             fill_rule: Default::default(),
             has_fill_rule: Default::default(),
+
+            xml_space: Default::default(),
+            has_xml_space: Default::default(),
+
+            text_anchor: Default::default(),
+            has_text_anchor: Default::default(),
         }
     }
 
@@ -119,6 +131,44 @@ impl State {
                     Err(e) => {
                         self.fill_rule = Default::default();
                         self.has_fill_rule = false; // FIXME - propagate errors instead of defaulting
+                        Err(e)
+                    }
+                }
+            }
+
+            Attribute::XmlSpace => {
+                match XmlSpace::parse(value, ()) {
+                    Ok(s) => {
+                        self.xml_space = s;
+                        self.has_xml_space = true;
+                        Ok(())
+                    }
+
+                    Err(e) => {
+                        self.xml_space = Default::default();
+                        self.has_xml_space = false; // FIXME - propagate errors instead of defaulting
+                        Err(e)
+                    }
+                }
+            }
+
+            Attribute::TextAnchor => {
+                match TextAnchor::parse(value, ()) {
+                    Ok(TextAnchor::Inherit) => {
+                        self.text_anchor = TextAnchor::default();
+                        self.has_text_anchor = false;
+                        Ok(())
+                    }
+
+                    Ok(a) => {
+                        self.text_anchor = a;
+                        self.has_text_anchor = true;
+                        Ok(())
+                    }
+
+                    Err(e) => {
+                        self.text_anchor = Default::default();
+                        self.has_text_anchor = false; // FIXME - propagate errors instead of defaulting
                         Err(e)
                     }
                 }
@@ -434,6 +484,28 @@ make_ident_property!(
     "inherit" => Inherit,
 );
 
+// XmlSpace ----------------------------------------
+
+make_ident_property!(
+    XmlSpace,
+    default: Default,
+
+    "default" => Default,
+    "preserve" => Preserve,
+);
+
+// TextAnchor --------------------------------------
+
+make_ident_property!(
+    TextAnchor,
+    default: Start,
+
+    "start" => Start,
+    "middle" => Middle,
+    "end" => End,
+    "inherit" => Inherit,
+);
+
 // Rust State API for consumption from C ----------------------------------------
 
 #[no_mangle]
@@ -505,6 +577,14 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
 
         if inherit_from_src(inherit_fn, dst.has_fill_rule, src.has_fill_rule) {
             dst.fill_rule = src.fill_rule;
+        }
+
+        if inherit_from_src(inherit_fn, dst.has_xml_space, src.has_xml_space) {
+            dst.xml_space = src.xml_space;
+        }
+
+        if inherit_from_src(inherit_fn, dst.has_text_anchor, src.has_text_anchor) {
+            dst.text_anchor = src.text_anchor;
         }
     }
 }

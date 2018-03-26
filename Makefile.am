@@ -55,8 +55,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg-structure.h		\
 	librsvg/rsvg-styles.c			\
 	librsvg/rsvg-styles.h			\
-	librsvg/rsvg-text.c			\
-	librsvg/rsvg-text.h			\
 	librsvg/rsvg-xml.c			\
 	librsvg/rsvg-xml.h			\
 	librsvg/rsvg.h				\
@@ -69,7 +67,6 @@ RUST_SRC =					\
 	rsvg_internals/src/aspect_ratio.rs	\
 	rsvg_internals/src/attributes.rs	\
 	rsvg_internals/src/bbox.rs		\
-	rsvg_internals/src/chars.rs		\
 	rsvg_internals/src/clip_path.rs		\
 	rsvg_internals/src/cnode.rs		\
 	rsvg_internals/src/color.rs		\

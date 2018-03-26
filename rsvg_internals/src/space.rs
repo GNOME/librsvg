@@ -1,14 +1,5 @@
-use glib::translate::*;
 use itertools::Itertools;
-use libc;
-use util::utf8_cstr;
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum XmlSpace {
-    Default,
-    Preserve,
-}
+use state::XmlSpace;
 
 /// Implements `xml:space` handling per the SVG spec
 ///
@@ -63,16 +54,6 @@ fn normalize_preserve(s: &str) -> String {
             c => c,
         })
         .collect()
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_xml_space_normalize(
-    mode: XmlSpace,
-    s: *const libc::c_char,
-) -> *const libc::c_char {
-    let rs = unsafe { utf8_cstr(s) };
-
-    xml_space_normalize(mode, rs).to_glib_full()
 }
 
 #[cfg(test)]

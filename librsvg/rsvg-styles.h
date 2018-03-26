@@ -43,12 +43,6 @@ typedef struct {
     gboolean strike;
 } TextDecoration;
 
-typedef enum {
-    TEXT_ANCHOR_START,
-    TEXT_ANCHOR_MIDDLE,
-    TEXT_ANCHOR_END
-} TextAnchor;
-
 /* Keep in sync with rust/src/state.c:UnicodeBidi */
 typedef enum {
     UNICODE_BIDI_NORMAL = 0,
@@ -118,8 +112,6 @@ struct _RsvgState {
     gboolean has_text_gravity;
     UnicodeBidi unicode_bidi;
     gboolean has_unicode_bidi;
-    TextAnchor text_anchor;
-    gboolean has_text_anchor;
     RsvgLength letter_spacing;
     gboolean has_letter_spacing;
 
@@ -133,9 +125,6 @@ struct _RsvgState {
 
     gboolean visible;
     gboolean has_visible;
-
-    gboolean space_preserve;
-    gboolean has_space_preserve;
 
     gboolean has_cond;
     gboolean cond_true;

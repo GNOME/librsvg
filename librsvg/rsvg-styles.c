@@ -144,7 +144,6 @@ rsvg_state_init (RsvgState * state)
     state->text_dir = PANGO_DIRECTION_LTR;
     state->text_gravity = PANGO_GRAVITY_SOUTH;
     state->unicode_bidi = UNICODE_BIDI_NORMAL;
-    state->text_anchor = TEXT_ANCHOR_START;
     state->letter_spacing = rsvg_length_parse ("0.0", LENGTH_DIR_HORIZONTAL);
     state->visible = TRUE;
     state->cond_true = TRUE;
@@ -182,7 +181,6 @@ rsvg_state_init (RsvgState * state)
     state->has_text_dir = FALSE;
     state->has_text_gravity = FALSE;
     state->has_unicode_bidi = FALSE;
-    state->has_text_anchor = FALSE;
     state->has_letter_spacing = FALSE;
     state->has_startMarker = FALSE;
     state->has_middleMarker = FALSE;
@@ -382,8 +380,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->text_gravity = src->text_gravity;
     if (function (dst->has_unicode_bidi, src->has_unicode_bidi))
         dst->unicode_bidi = src->unicode_bidi;
-    if (function (dst->has_text_anchor, src->has_text_anchor))
-        dst->text_anchor = src->text_anchor;
     if (function (dst->has_letter_spacing, src->has_letter_spacing))
         dst->letter_spacing = src->letter_spacing;
     if (function (dst->has_startMarker, src->has_startMarker)) {
@@ -407,9 +403,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         g_free (dst->font_family);      /* font_family is always set to something */
         dst->font_family = g_strdup (src->font_family);
     }
-
-    if (function (dst->has_space_preserve, src->has_space_preserve))
-        dst->space_preserve = src->space_preserve;
 
     if (function (dst->has_visible, src->has_visible))
         dst->visible = src->visible;
@@ -768,18 +761,6 @@ rsvg_parse_style_pair (RsvgState *state,
     }
     break;
 
-    case RSVG_ATTRIBUTE_XML_SPACE:
-    {
-        state->has_space_preserve = TRUE;
-        if (g_str_equal (value, "default"))
-            state->space_preserve = FALSE;
-        else if (g_str_equal (value, "preserve"))
-            state->space_preserve = TRUE;
-        else
-            state->space_preserve = FALSE;
-    }
-    break;
-
     case RSVG_ATTRIBUTE_VISIBILITY:
     {
         state->has_visible = TRUE;
@@ -978,23 +959,6 @@ rsvg_parse_style_pair (RsvgState *state,
         } else if (g_str_equal (value, "tb-rl") || g_str_equal (value, "tb")) {
             state->text_dir = PANGO_DIRECTION_LTR;
             state->text_gravity = PANGO_GRAVITY_EAST;
-        }
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_TEXT_ANCHOR:
-    {
-        state->has_text_anchor = TRUE;
-        if (g_str_equal (value, "inherit")) {
-            state->text_anchor = TEXT_ANCHOR_START;
-            state->has_text_anchor = FALSE;
-        } else {
-            if (strstr (value, "start"))
-                state->text_anchor = TEXT_ANCHOR_START;
-            else if (strstr (value, "middle"))
-                state->text_anchor = TEXT_ANCHOR_MIDDLE;
-            else if (strstr (value, "end"))
-                state->text_anchor = TEXT_ANCHOR_END;
         }
     }
     break;

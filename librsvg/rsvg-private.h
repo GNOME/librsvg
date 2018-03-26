@@ -436,10 +436,6 @@ void rsvg_node_children_iter_end (RsvgNodeChildrenIter *iter);
 G_GNUC_INTERNAL
 void rsvg_node_draw_children (RsvgNode *node, RsvgDrawingCtx *ctx, int dominate);
 
-/* Implemented in rust/src/chars.rs */
-G_GNUC_INTERNAL
-void rsvg_node_chars_get_string (RsvgNode *node, const char **out_str, gsize *out_len);
-
 typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
 
 /* Implemented in rust/src/property_bag.rs */

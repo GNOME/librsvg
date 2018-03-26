@@ -25,8 +25,6 @@ pub use attributes::rsvg_attribute_from_name;
 
 pub use bbox::{rsvg_bbox_clip, rsvg_bbox_init, rsvg_bbox_insert, RsvgBbox};
 
-pub use chars::{rsvg_node_chars_append, rsvg_node_chars_get_string, rsvg_node_chars_new};
-
 pub use clip_path::{rsvg_node_clip_path_get_units, rsvg_node_clip_path_new};
 
 pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
@@ -122,8 +120,6 @@ pub use shapes::{
     rsvg_node_rect_new,
 };
 
-pub use space::rsvg_xml_space_normalize;
-
 pub use state::{
     rsvg_state_rust_clone,
     rsvg_state_rust_free,
@@ -148,7 +144,13 @@ pub use structure::{
     rsvg_node_use_new,
 };
 
-pub use text::{rsvg_text_measure, rsvg_text_render};
+pub use text::{
+    rsvg_node_chars_append,
+    rsvg_node_chars_new,
+    rsvg_node_text_new,
+    rsvg_node_tref_new,
+    rsvg_node_tspan_new,
+};
 
 pub use transform::rsvg_parse_transform;
 
@@ -163,8 +165,6 @@ mod property_macros;
 mod aspect_ratio;
 mod attributes;
 mod bbox;
-#[cfg_attr(rustfmt, rustfmt_skip)]
-mod chars;
 mod clip_path;
 mod cnode;
 mod color;
