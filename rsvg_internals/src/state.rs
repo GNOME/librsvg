@@ -64,102 +64,57 @@ impl State {
 
     fn parse_style_pair(&mut self, attr: Attribute, value: &str) -> Result<(), AttributeError> {
         match attr {
-            Attribute::StrokeLinejoin => {
-                match StrokeLinejoin::parse(value, ()) {
-                    Ok(StrokeLinejoin::Inherit) => {
-                        self.join = None;
-                        Ok(())
-                    }
-
-                    Ok(j) => {
-                        self.join = Some(j);
-                        Ok(())
-                    }
-
-                    Err(e) => {
-                        self.join = None; // FIXME - propagate errors instead of defaulting
-                        Err(e)
-                    }
+            Attribute::StrokeLinejoin => match StrokeLinejoin::parse(value, ())? {
+                StrokeLinejoin::Inherit => {
+                    self.join = None;
                 }
-            }
 
-            Attribute::StrokeLinecap => {
-                match StrokeLinecap::parse(value, ()) {
-                    Ok(StrokeLinecap::Inherit) => {
-                        self.cap = None;
-                        Ok(())
-                    }
-
-                    Ok(c) => {
-                        self.cap = Some(c);
-                        Ok(())
-                    }
-
-                    Err(e) => {
-                        self.cap = None; // FIXME - propagate errors instead of defaulting
-                        Err(e)
-                    }
+                v => {
+                    self.join = Some(v);
                 }
-            }
+            },
 
-            Attribute::FillRule => {
-                match FillRule::parse(value, ()) {
-                    Ok(FillRule::Inherit) => {
-                        self.fill_rule = None;
-                        Ok(())
-                    }
-
-                    Ok(f) => {
-                        self.fill_rule = Some(f);
-                        Ok(())
-                    }
-
-                    Err(e) => {
-                        self.fill_rule = None; // FIXME - propagate errors instead of defaulting
-                        Err(e)
-                    }
+            Attribute::StrokeLinecap => match StrokeLinecap::parse(value, ())? {
+                StrokeLinecap::Inherit => {
+                    self.cap = None;
                 }
-            }
+
+                v => {
+                    self.cap = Some(v);
+                }
+            },
+
+            Attribute::FillRule => match FillRule::parse(value, ())? {
+                FillRule::Inherit => {
+                    self.fill_rule = None;
+                }
+
+                v => {
+                    self.fill_rule = Some(v);
+                }
+            },
 
             Attribute::XmlSpace => {
-                match XmlSpace::parse(value, ()) {
-                    Ok(s) => {
-                        self.xml_space = Some(s);
-                        Ok(())
-                    }
-
-                    Err(e) => {
-                        self.xml_space = None; // FIXME - propagate errors instead of defaulting
-                        Err(e)
-                    }
-                }
+                self.xml_space = Some(XmlSpace::parse(value, ())?);
             }
 
-            Attribute::TextAnchor => {
-                match TextAnchor::parse(value, ()) {
-                    Ok(TextAnchor::Inherit) => {
-                        self.text_anchor = None;
-                        Ok(())
-                    }
-
-                    Ok(a) => {
-                        self.text_anchor = Some(a);
-                        Ok(())
-                    }
-
-                    Err(e) => {
-                        self.text_anchor = None; // FIXME - propagate errors instead of defaulting
-                        Err(e)
-                    }
+            Attribute::TextAnchor => match TextAnchor::parse(value, ())? {
+                TextAnchor::Inherit => {
+                    self.text_anchor = None;
                 }
-            }
+
+                v => {
+                    self.text_anchor = Some(v);
+                }
+            },
 
             _ => {
                 // Maybe it's an attribute not parsed here, but in the
                 // node implementations.
-                Ok(())
             }
         }
+
+        Ok(())
     }
 }
 
