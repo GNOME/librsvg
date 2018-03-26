@@ -96,7 +96,6 @@ impl From<StrokeLinejoin> for cairo::LineJoin {
             StrokeLinejoin::Miter => cairo::LineJoin::Miter,
             StrokeLinejoin::Round => cairo::LineJoin::Round,
             StrokeLinejoin::Bevel => cairo::LineJoin::Bevel,
-            StrokeLinejoin::Inherit => unreachable!(),
         }
     }
 }
@@ -107,7 +106,6 @@ impl From<StrokeLinecap> for cairo::LineCap {
             StrokeLinecap::Butt => cairo::LineCap::Butt,
             StrokeLinecap::Round => cairo::LineCap::Round,
             StrokeLinecap::Square => cairo::LineCap::Square,
-            StrokeLinecap::Inherit => unreachable!(),
         }
     }
 }
@@ -117,7 +115,6 @@ impl From<FillRule> for cairo::FillRule {
         match f {
             FillRule::NonZero => cairo::FillRule::Winding,
             FillRule::EvenOdd => cairo::FillRule::EvenOdd,
-            FillRule::Inherit => unreachable!(),
         }
     }
 }

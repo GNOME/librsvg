@@ -389,7 +389,6 @@ make_ident_property!(
     "miter" => Miter,
     "round" => Round,
     "bevel" => Bevel,
-    "inherit" => Inherit,
 );
 
 // StrokeLinecap ----------------------------------------
@@ -402,7 +401,6 @@ make_ident_property!(
     "butt" => Butt,
     "round" => Round,
     "square" => Square,
-    "inherit" => Inherit,
 );
 
 // FillRule ----------------------------------------
@@ -414,7 +412,6 @@ make_ident_property!(
 
     "nonzero" => NonZero,
     "evenodd" => EvenOdd,
-    "inherit" => Inherit,
 );
 
 // XmlSpace ----------------------------------------
@@ -438,7 +435,6 @@ make_ident_property!(
     "start" => Start,
     "middle" => Middle,
     "end" => End,
-    "inherit" => Inherit,
 );
 
 // Rust State API for consumption from C ----------------------------------------

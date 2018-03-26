@@ -17,7 +17,6 @@ pub trait Property {
 /// "miter" => Miter,
 /// "round" => Round,
 /// "bevel" => Bevel,
-/// "inherit" => Inherit,
 /// );
 /// ```
 ///
