@@ -42,8 +42,7 @@ pub struct State {
 
     pub xml_space: Option<XmlSpace>,
 
-    pub text_anchor: TextAnchor,
-    has_text_anchor: bool,
+    pub text_anchor: Option<TextAnchor>,
 }
 
 impl State {
@@ -60,7 +59,6 @@ impl State {
             xml_space: Default::default(),
 
             text_anchor: Default::default(),
-            has_text_anchor: Default::default(),
         }
     }
 
@@ -140,20 +138,17 @@ impl State {
             Attribute::TextAnchor => {
                 match TextAnchor::parse(value, ()) {
                     Ok(TextAnchor::Inherit) => {
-                        self.text_anchor = TextAnchor::default();
-                        self.has_text_anchor = false;
+                        self.text_anchor = None;
                         Ok(())
                     }
 
                     Ok(a) => {
-                        self.text_anchor = a;
-                        self.has_text_anchor = true;
+                        self.text_anchor = Some(a);
                         Ok(())
                     }
 
                     Err(e) => {
-                        self.text_anchor = Default::default();
-                        self.has_text_anchor = false; // FIXME - propagate errors instead of defaulting
+                        self.text_anchor = None; // FIXME - propagate errors instead of defaulting
                         Err(e)
                     }
                 }
@@ -568,7 +563,11 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
             dst.xml_space = src.xml_space;
         }
 
-        if inherit_from_src(inherit_fn, dst.has_text_anchor, src.has_text_anchor) {
+        if inherit_from_src(
+            inherit_fn,
+            dst.text_anchor.is_some(),
+            src.text_anchor.is_some(),
+        ) {
             dst.text_anchor = src.text_anchor;
         }
     }

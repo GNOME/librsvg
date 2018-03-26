@@ -155,7 +155,7 @@ impl NodeTrait for NodeText {
         let mut dy = self.dy.get().normalize(draw_ctx);
 
         let state = drawing_ctx::get_current_state(draw_ctx);
-        let anchor = state::get_state_rust(state).text_anchor;
+        let anchor = state::get_state_rust(state).text_anchor.unwrap_or_default();
         let gravity = state::get_text_gravity(state);
 
         let offset = anchor_offset(node, draw_ctx, anchor, false);
@@ -305,7 +305,7 @@ impl NodeTSpan {
         let mut dy = self.dy.get().normalize(draw_ctx);
 
         let state = drawing_ctx::get_current_state(draw_ctx);
-        let anchor = state::get_state_rust(state).text_anchor;
+        let anchor = state::get_state_rust(state).text_anchor.unwrap_or_default();
         let gravity = state::get_text_gravity(state);
 
         let offset = anchor_offset(node, draw_ctx, anchor, usetextonly);
