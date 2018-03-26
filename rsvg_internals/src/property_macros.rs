@@ -1,3 +1,7 @@
+pub trait Property {
+    fn inherits_automatically() -> bool;
+}
+
 /// Generates a property definition that simply parses strings to enum variants
 ///
 /// This can be used for properties with simple symbol-based values.
@@ -26,6 +30,7 @@
 macro_rules! make_ident_property {
     ($name: ident,
      default: $default: ident,
+     inherits_automatically: $inherits_automatically: expr,
      $($str_prop: expr => $variant: ident,)+
     ) => {
         #[repr(C)]
@@ -37,6 +42,12 @@ macro_rules! make_ident_property {
         impl Default for $name {
             fn default() -> $name {
                 $name::$default
+            }
+        }
+
+        impl ::property_macros::Property for $name {
+            fn inherits_automatically() -> bool {
+                $inherits_automatically
             }
         }
 

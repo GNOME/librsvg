@@ -389,6 +389,7 @@ pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
 make_ident_property!(
     StrokeLinejoin,
     default: Miter,
+    inherits_automatically: true,
 
     "miter" => Miter,
     "round" => Round,
@@ -401,6 +402,7 @@ make_ident_property!(
 make_ident_property!(
     StrokeLinecap,
     default: Butt,
+    inherits_automatically: true,
 
     "butt" => Butt,
     "round" => Round,
@@ -413,6 +415,7 @@ make_ident_property!(
 make_ident_property!(
     FillRule,
     default: NonZero,
+    inherits_automatically: true,
 
     "nonzero" => NonZero,
     "evenodd" => EvenOdd,
@@ -424,6 +427,7 @@ make_ident_property!(
 make_ident_property!(
     XmlSpace,
     default: Default,
+    inherits_automatically: true,
 
     "default" => Default,
     "preserve" => Preserve,
@@ -434,6 +438,7 @@ make_ident_property!(
 make_ident_property!(
     TextAnchor,
     default: Start,
+    inherits_automatically: true,
 
     "start" => Start,
     "middle" => Middle,
