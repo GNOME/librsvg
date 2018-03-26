@@ -18,13 +18,6 @@ use space::xml_space_normalize;
 use state::{self, RsvgState, TextAnchor, UnicodeBidi};
 
 extern "C" {
-    fn rsvg_text_measure_children(
-        raw_node: *const RsvgNode,
-        draw_ctx: *const RsvgDrawingCtx,
-        raw_length: *mut libc::c_double,
-        usetextonly: glib_sys::gboolean,
-    ) -> glib_sys::gboolean;
-
     fn rsvg_text_render_children(
         raw_node: *const RsvgNode,
         draw_ctx: *const RsvgDrawingCtx,
@@ -77,12 +70,12 @@ impl NodeChars {
         self.string.borrow_mut().push_str(s);
     }
 
-    fn measure(&self, draw_ctx: *const RsvgDrawingCtx) -> f64 {
+    fn measure(&self, draw_ctx: *const RsvgDrawingCtx, length: &mut f64) {
         let s = self.string.borrow();
         let layout = create_pango_layout(draw_ctx, &s);
         let (width, _) = layout.get_size();
 
-        f64::from(width) / f64::from(pango::SCALE)
+        *length = f64::from(width) / f64::from(pango::SCALE);
     }
 
     fn render(&self, draw_ctx: *const RsvgDrawingCtx, x: &mut f64, y: &mut f64) {
@@ -493,16 +486,52 @@ fn measure_children(
     length: &mut f64,
     textonly: bool,
 ) -> bool {
-    let done = unsafe {
-        rsvg_text_measure_children(
-            node as *const RsvgNode,
-            draw_ctx,
-            length,
-            textonly.to_glib(),
-        )
-    };
+    let mut done = false;
 
-    from_glib(done)
+    for child in node.children() {
+        done = measure_child(&child, draw_ctx, length, textonly);
+        if done {
+            break;
+        }
+    }
+
+    done
+}
+
+fn measure_child(
+    node: &RsvgNode,
+    draw_ctx: *const RsvgDrawingCtx,
+    length: &mut f64,
+    textonly: bool,
+) -> bool {
+    let mut done = false;
+
+    drawing_ctx::state_push(draw_ctx);
+    drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
+
+    match (node.get_type(), textonly) {
+        (NodeType::Chars, _) => {
+            node.with_impl(|chars: &NodeChars| chars.measure(draw_ctx, length));
+        }
+        (_, true) => {
+            done = measure_children(node, draw_ctx, length, textonly);
+        }
+        (NodeType::TSpan, _) => {
+            node.with_impl(|tspan: &NodeTSpan| {
+                done = tspan.measure(node, draw_ctx, length, textonly);
+            });
+        }
+        (NodeType::TRef, _) => {
+            node.with_impl(|tref: &NodeTRef| {
+                done = tref.measure(draw_ctx, length);
+            });
+        }
+        (_, _) => {}
+    }
+
+    drawing_ctx::state_pop(draw_ctx);
+
+    done
 }
 
 fn render_children(
@@ -550,20 +579,6 @@ pub extern "C" fn rsvg_node_chars_append(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_chars_measure(
-    raw_node: *const RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
-) -> libc::c_double {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    let mut res: libc::c_double = 0f64;
-    node.with_impl(|chars: &NodeChars| res = chars.measure(draw_ctx));
-
-    res
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_node_chars_render(
     raw_node: *const RsvgNode,
     draw_ctx: *const RsvgDrawingCtx,
@@ -600,26 +615,6 @@ pub extern "C" fn rsvg_node_tref_new(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_tref_measure(
-    raw_node: *const RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
-    raw_length: *mut libc::c_double,
-) -> glib_sys::gboolean {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    assert!(!raw_length.is_null());
-    let length: &mut f64 = unsafe { &mut *raw_length };
-
-    let mut done = false;
-    node.with_impl(|tref: &NodeTRef| {
-        done = tref.measure(draw_ctx, length);
-    });
-
-    done.to_glib()
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_node_tref_render(
     raw_node: *const RsvgNode,
     draw_ctx: *const RsvgDrawingCtx,
@@ -645,29 +640,6 @@ pub extern "C" fn rsvg_node_tspan_new(
     raw_parent: *const RsvgNode,
 ) -> *const RsvgNode {
     boxed_node_new(NodeType::TSpan, raw_parent, Box::new(NodeTSpan::new()))
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_tspan_measure(
-    raw_node: *const RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
-    raw_length: *mut libc::c_double,
-    usetextonly: glib_sys::gboolean,
-) -> glib_sys::gboolean {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    assert!(!raw_length.is_null());
-    let length: &mut f64 = unsafe { &mut *raw_length };
-
-    let textonly: bool = from_glib(usetextonly);
-
-    let mut done = false;
-    node.with_impl(|tspan: &NodeTSpan| {
-        done = tspan.measure(&node, draw_ctx, length, textonly);
-    });
-
-    done.to_glib()
 }
 
 #[no_mangle]

@@ -146,15 +146,12 @@ pub use structure::{
 
 pub use text::{
     rsvg_node_chars_append,
-    rsvg_node_chars_measure,
     rsvg_node_chars_new,
     rsvg_node_chars_render,
     rsvg_node_text_new,
     rsvg_node_tref_new,
-    rsvg_node_tref_measure,
     rsvg_node_tref_render,
     rsvg_node_tspan_new,
-    rsvg_node_tspan_measure,
     rsvg_node_tspan_render,
 };
 
