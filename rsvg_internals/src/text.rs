@@ -155,7 +155,7 @@ impl NodeTrait for NodeText {
         let mut dy = self.dy.get().normalize(draw_ctx);
 
         let state = drawing_ctx::get_current_state(draw_ctx);
-        let anchor = state::get_state_rust(state).text_anchor;
+        let anchor = state::get_state_rust(state).text_anchor.unwrap_or_default();
         let gravity = state::get_text_gravity(state);
 
         let offset = anchor_offset(node, draw_ctx, anchor, false);
@@ -305,7 +305,7 @@ impl NodeTSpan {
         let mut dy = self.dy.get().normalize(draw_ctx);
 
         let state = drawing_ctx::get_current_state(draw_ctx);
-        let anchor = state::get_state_rust(state).text_anchor;
+        let anchor = state::get_state_rust(state).text_anchor.unwrap_or_default();
         let gravity = state::get_text_gravity(state);
 
         let offset = anchor_offset(node, draw_ctx, anchor, usetextonly);
@@ -449,7 +449,10 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
         _ => pango::Alignment::Right,
     });
 
-    let t = xml_space_normalize(state::get_state_rust(state).xml_space, text);
+    let t = xml_space_normalize(
+        state::get_state_rust(state).xml_space.unwrap_or_default(),
+        text,
+    );
     layout.set_text(&t);
 
     layout

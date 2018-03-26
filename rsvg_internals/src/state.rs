@@ -30,20 +30,11 @@ pub enum RsvgState {}
 pub struct State {
     pub affine: cairo::Matrix,
 
-    pub join: StrokeLinejoin,
-    has_join: bool,
-
-    pub cap: StrokeLinecap,
-    has_cap: bool,
-
-    pub fill_rule: FillRule,
-    has_fill_rule: bool,
-
-    pub xml_space: XmlSpace,
-    has_xml_space: bool,
-
-    pub text_anchor: TextAnchor,
-    has_text_anchor: bool,
+    pub join: Option<StrokeLinejoin>,
+    pub cap: Option<StrokeLinecap>,
+    pub fill_rule: Option<FillRule>,
+    pub xml_space: Option<XmlSpace>,
+    pub text_anchor: Option<TextAnchor>,
 }
 
 impl State {
@@ -52,19 +43,10 @@ impl State {
             affine: cairo::Matrix::identity(),
 
             join: Default::default(),
-            has_join: Default::default(),
-
             cap: Default::default(),
-            has_cap: Default::default(),
-
             fill_rule: Default::default(),
-            has_fill_rule: Default::default(),
-
             xml_space: Default::default(),
-            has_xml_space: Default::default(),
-
             text_anchor: Default::default(),
-            has_text_anchor: Default::default(),
         }
     }
 
@@ -73,20 +55,18 @@ impl State {
             Attribute::StrokeLinejoin => {
                 match StrokeLinejoin::parse(value, ()) {
                     Ok(StrokeLinejoin::Inherit) => {
-                        self.join = StrokeLinejoin::default();
-                        self.has_join = false;
+                        self.join = None;
                         Ok(())
                     }
 
                     Ok(j) => {
-                        self.join = j;
-                        self.has_join = true;
+                        self.join = Some(j);
                         Ok(())
                     }
 
                     Err(e) => {
-                        self.join = StrokeLinejoin::default();
-                        self.has_join = false; // FIXME - propagate errors instead of defaulting
+                        // FIXME - propagate errors instead of defaulting
+                        self.join = None;
                         Err(e)
                     }
                 }
@@ -95,20 +75,18 @@ impl State {
             Attribute::StrokeLinecap => {
                 match StrokeLinecap::parse(value, ()) {
                     Ok(StrokeLinecap::Inherit) => {
-                        self.cap = StrokeLinecap::default();
-                        self.has_cap = false;
+                        self.cap = None;
                         Ok(())
                     }
 
                     Ok(c) => {
-                        self.cap = c;
-                        self.has_cap = true;
+                        self.cap = Some(c);
                         Ok(())
                     }
 
                     Err(e) => {
-                        self.cap = Default::default();
-                        self.has_cap = false; // FIXME - propagate errors instead of defaulting
+                        // FIXME - propagate errors instead of defaulting
+                        self.cap = None;
                         Err(e)
                     }
                 }
@@ -117,20 +95,18 @@ impl State {
             Attribute::FillRule => {
                 match FillRule::parse(value, ()) {
                     Ok(FillRule::Inherit) => {
-                        self.fill_rule = FillRule::default();
-                        self.has_fill_rule = false;
+                        self.fill_rule = None;
                         Ok(())
                     }
 
                     Ok(f) => {
-                        self.fill_rule = f;
-                        self.has_fill_rule = true;
+                        self.fill_rule = Some(f);
                         Ok(())
                     }
 
                     Err(e) => {
-                        self.fill_rule = Default::default();
-                        self.has_fill_rule = false; // FIXME - propagate errors instead of defaulting
+                        // FIXME - propagate errors instead of defaulting
+                        self.fill_rule = None;
                         Err(e)
                     }
                 }
@@ -139,14 +115,13 @@ impl State {
             Attribute::XmlSpace => {
                 match XmlSpace::parse(value, ()) {
                     Ok(s) => {
-                        self.xml_space = s;
-                        self.has_xml_space = true;
+                        self.xml_space = Some(s);
                         Ok(())
                     }
 
                     Err(e) => {
-                        self.xml_space = Default::default();
-                        self.has_xml_space = false; // FIXME - propagate errors instead of defaulting
+                        // FIXME - propagate errors instead of defaulting
+                        self.xml_space = None;
                         Err(e)
                     }
                 }
@@ -155,20 +130,18 @@ impl State {
             Attribute::TextAnchor => {
                 match TextAnchor::parse(value, ()) {
                     Ok(TextAnchor::Inherit) => {
-                        self.text_anchor = TextAnchor::default();
-                        self.has_text_anchor = false;
+                        self.text_anchor = None;
                         Ok(())
                     }
 
                     Ok(a) => {
-                        self.text_anchor = a;
-                        self.has_text_anchor = true;
+                        self.text_anchor = Some(a);
                         Ok(())
                     }
 
                     Err(e) => {
-                        self.text_anchor = Default::default();
-                        self.has_text_anchor = false; // FIXME - propagate errors instead of defaulting
+                        // FIXME - propagate errors instead of defaulting
+                        self.text_anchor = None;
                         Err(e)
                     }
                 }
@@ -546,12 +519,12 @@ pub extern "C" fn rsvg_state_rust_parse_style_pair(
     }
 }
 
-fn inherit_from_src(
+fn inherit_from_src<T>(
     inherit_fn: extern "C" fn(glib_sys::gboolean, glib_sys::gboolean) -> glib_sys::gboolean,
-    dst: bool,
-    src: bool,
+    dst: Option<T>,
+    src: Option<T>,
 ) -> bool {
-    from_glib(inherit_fn(dst.to_glib(), src.to_glib()))
+    from_glib(inherit_fn(dst.is_some().to_glib(), src.is_some().to_glib()))
 }
 
 #[no_mangle]
@@ -567,23 +540,23 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
         let dst = &mut *dst;
         let src = &*src;
 
-        if inherit_from_src(inherit_fn, dst.has_join, src.has_join) {
+        if inherit_from_src(inherit_fn, dst.join, src.join) {
             dst.join = src.join;
         }
 
-        if inherit_from_src(inherit_fn, dst.has_cap, src.has_cap) {
+        if inherit_from_src(inherit_fn, dst.cap, src.cap) {
             dst.cap = src.cap;
         }
 
-        if inherit_from_src(inherit_fn, dst.has_fill_rule, src.has_fill_rule) {
+        if inherit_from_src(inherit_fn, dst.fill_rule, src.fill_rule) {
             dst.fill_rule = src.fill_rule;
         }
 
-        if inherit_from_src(inherit_fn, dst.has_xml_space, src.has_xml_space) {
+        if inherit_from_src(inherit_fn, dst.xml_space, src.xml_space) {
             dst.xml_space = src.xml_space;
         }
 
-        if inherit_from_src(inherit_fn, dst.has_text_anchor, src.has_text_anchor) {
+        if inherit_from_src(inherit_fn, dst.text_anchor, src.text_anchor) {
             dst.text_anchor = src.text_anchor;
         }
     }
