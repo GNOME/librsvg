@@ -478,12 +478,24 @@ pub extern "C" fn rsvg_state_rust_parse_style_pair(
     }
 }
 
-fn inherit_from_src(
+fn should_inherit_from_src(
     inherit_fn: extern "C" fn(glib_sys::gboolean, glib_sys::gboolean) -> glib_sys::gboolean,
     dst: bool,
     src: bool,
 ) -> bool {
     from_glib(inherit_fn(dst.to_glib(), src.to_glib()))
+}
+
+fn inherit<T>(
+    inherit_fn: extern "C" fn(glib_sys::gboolean, glib_sys::gboolean) -> glib_sys::gboolean,
+    dst: &mut Option<T>,
+    src: &Option<T>,
+) where
+    T: Property + Copy,
+{
+    if should_inherit_from_src(inherit_fn, dst.is_some(), src.is_some()) {
+        *dst = *src;
+    }
 }
 
 #[no_mangle]
@@ -498,29 +510,11 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     let dst = unsafe { &mut *dst };
     let src = unsafe { &*src };
 
-    if inherit_from_src(inherit_fn, dst.join.is_some(), src.join.is_some()) {
-        dst.join = src.join;
-    }
-
-    if inherit_from_src(inherit_fn, dst.cap.is_some(), src.cap.is_some()) {
-        dst.cap = src.cap;
-    }
-
-    if inherit_from_src(inherit_fn, dst.fill_rule.is_some(), src.fill_rule.is_some()) {
-        dst.fill_rule = src.fill_rule;
-    }
-
-    if inherit_from_src(inherit_fn, dst.xml_space.is_some(), src.xml_space.is_some()) {
-        dst.xml_space = src.xml_space;
-    }
-
-    if inherit_from_src(
-        inherit_fn,
-        dst.text_anchor.is_some(),
-        src.text_anchor.is_some(),
-    ) {
-        dst.text_anchor = src.text_anchor;
-    }
+    inherit(inherit_fn, &mut dst.join, &src.join);
+    inherit(inherit_fn, &mut dst.cap, &src.cap);
+    inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
+    inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
+    inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
 }
 
 #[no_mangle]
