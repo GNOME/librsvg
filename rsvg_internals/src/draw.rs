@@ -31,7 +31,7 @@ pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &RsvgPathBuilde
         cr.set_fill_rule(state::get_clip_rule(state));
     } else {
         cr.set_fill_rule(cairo::FillRule::from(
-            state::get_state_rust(state).fill_rule,
+            state::get_state_rust(state).fill_rule.unwrap_or_default(),
         ));
 
         stroke_and_fill(&cr, draw_ctx);

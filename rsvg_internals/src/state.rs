@@ -34,8 +34,7 @@ pub struct State {
 
     pub cap: Option<StrokeLinecap>,
 
-    pub fill_rule: FillRule,
-    has_fill_rule: bool,
+    pub fill_rule: Option<FillRule>,
 
     pub xml_space: XmlSpace,
     has_xml_space: bool,
@@ -54,7 +53,6 @@ impl State {
             cap: Default::default(),
 
             fill_rule: Default::default(),
-            has_fill_rule: Default::default(),
 
             xml_space: Default::default(),
             has_xml_space: Default::default(),
@@ -107,20 +105,17 @@ impl State {
             Attribute::FillRule => {
                 match FillRule::parse(value, ()) {
                     Ok(FillRule::Inherit) => {
-                        self.fill_rule = FillRule::default();
-                        self.has_fill_rule = false;
+                        self.fill_rule = None;
                         Ok(())
                     }
 
                     Ok(f) => {
-                        self.fill_rule = f;
-                        self.has_fill_rule = true;
+                        self.fill_rule = Some(f);
                         Ok(())
                     }
 
                     Err(e) => {
-                        self.fill_rule = Default::default();
-                        self.has_fill_rule = false; // FIXME - propagate errors instead of defaulting
+                        self.fill_rule = None; // FIXME - propagate errors instead of defaulting
                         Err(e)
                     }
                 }
@@ -565,7 +560,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
             dst.cap = src.cap;
         }
 
-        if inherit_from_src(inherit_fn, dst.has_fill_rule, src.has_fill_rule) {
+        if inherit_from_src(inherit_fn, dst.fill_rule.is_some(), src.fill_rule.is_some()) {
             dst.fill_rule = src.fill_rule;
         }
 
