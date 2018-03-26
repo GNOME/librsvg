@@ -119,17 +119,25 @@ typedef struct _RsvgFilter RsvgFilter;
 /* Reading state for an RsvgHandle */
 typedef enum {
     RSVG_HANDLE_STATE_START,
-    RSVG_HANDLE_STATE_EXPECTING_GZ_1,
-    RSVG_HANDLE_STATE_READING_COMPRESSED,
-    RSVG_HANDLE_STATE_READING,
+    RSVG_HANDLE_STATE_LOADING,
     RSVG_HANDLE_STATE_CLOSED_OK,
     RSVG_HANDLE_STATE_CLOSED_ERROR
 } RsvgHandleState;
 
+typedef enum {
+    LOAD_STATE_START,
+    LOAD_STATE_EXPECTING_GZ_1,
+    LOAD_STATE_READING_COMPRESSED,
+    LOAD_STATE_READING,
+    LOAD_STATE_CLOSED_OK,
+    LOAD_STATE_CLOSED_ERROR
+} LoadState;
+
 struct RsvgHandlePrivate {
     RsvgHandleFlags flags;
 
-    RsvgHandleState state;
+    RsvgHandleState hstate;
+    LoadState load_state;
 
     gboolean is_disposed;
 

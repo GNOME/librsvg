@@ -1370,46 +1370,46 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
     rsvg_return_val_if_fail (handle, FALSE, error);
     priv = handle->priv;
 
-    rsvg_return_val_if_fail (priv->state == RSVG_HANDLE_STATE_START
-                             || priv->state == RSVG_HANDLE_STATE_EXPECTING_GZ_1
-                             || priv->state == RSVG_HANDLE_STATE_READING_COMPRESSED
-                             || priv->state == RSVG_HANDLE_STATE_READING,
+    rsvg_return_val_if_fail (priv->hstate == RSVG_HANDLE_STATE_START
+                             || priv->hstate == RSVG_HANDLE_STATE_LOADING,
                              FALSE,
                              error);
 
+    priv->hstate = RSVG_HANDLE_STATE_LOADING;
+
     while (count > 0) {
-        switch (priv->state) {
-        case RSVG_HANDLE_STATE_START:
+        switch (priv->load_state) {
+        case LOAD_STATE_START:
             if (buf[0] == GZ_MAGIC_0) {
-                priv->state = RSVG_HANDLE_STATE_EXPECTING_GZ_1;
+                priv->load_state = LOAD_STATE_EXPECTING_GZ_1;
                 buf++;
                 count--;
             } else {
-                priv->state = RSVG_HANDLE_STATE_READING;
+                priv->load_state = LOAD_STATE_READING;
                 return write_impl (handle, buf, count, error);
             }
 
             break;
 
-        case RSVG_HANDLE_STATE_EXPECTING_GZ_1:
+        case LOAD_STATE_EXPECTING_GZ_1:
             if (buf[0] == GZ_MAGIC_1) {
-                priv->state = RSVG_HANDLE_STATE_READING_COMPRESSED;
+                priv->load_state = LOAD_STATE_READING_COMPRESSED;
                 create_compressed_input_stream (handle);
                 buf++;
                 count--;
             } else {
-                priv->state = RSVG_HANDLE_STATE_READING;
+                priv->load_state = LOAD_STATE_READING;
                 return write_impl (handle, buf, count, error);
             }
 
             break;
 
-        case RSVG_HANDLE_STATE_READING_COMPRESSED:
+        case LOAD_STATE_READING_COMPRESSED:
             g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (priv->compressed_input_stream),
                                             g_memdup (buf, count), count, (GDestroyNotify) g_free);
             return TRUE;
 
-        case RSVG_HANDLE_STATE_READING:
+        case LOAD_STATE_READING:
             return write_impl (handle, buf, count, error);
 
         default:
@@ -1440,13 +1440,14 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
     rsvg_return_val_if_fail (handle, FALSE, error);
     priv = handle->priv;
 
-    if (priv->state == RSVG_HANDLE_STATE_CLOSED_OK
-        || priv->state == RSVG_HANDLE_STATE_CLOSED_ERROR) {
+    if (priv->hstate == RSVG_HANDLE_STATE_CLOSED_OK
+        || priv->hstate == RSVG_HANDLE_STATE_CLOSED_ERROR) {
         /* closing is idempotent */
         return TRUE;
     }
 
-    if (priv->state == RSVG_HANDLE_STATE_READING_COMPRESSED) {
+    if (priv->hstate == RSVG_HANDLE_STATE_LOADING
+        && priv->load_state == LOAD_STATE_READING_COMPRESSED) {
         gboolean ret;
 
         /* FIXME: when using rsvg_handle_write()/rsvg_handle_close(), as opposed to using the
@@ -1455,7 +1456,8 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
          *
          * We should make it so that the incoming data is decompressed and parsed on the fly.
          */
-        priv->state = RSVG_HANDLE_STATE_START;
+        priv->hstate = RSVG_HANDLE_STATE_START;
+        priv->load_state = LOAD_STATE_START;
         ret = rsvg_handle_read_stream_sync (handle, priv->compressed_input_stream, NULL, error);
         g_object_unref (priv->compressed_input_stream);
         priv->compressed_input_stream = NULL;
@@ -1466,9 +1468,9 @@ rsvg_handle_close (RsvgHandle * handle, GError ** error)
     result = close_impl (handle, error);
 
     if (result) {
-        priv->state = RSVG_HANDLE_STATE_CLOSED_OK;
+        priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
     } else {
-        priv->state = RSVG_HANDLE_STATE_CLOSED_ERROR;
+        priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
     }
 
     return result;
@@ -1513,14 +1515,14 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 
     priv = handle->priv;
 
-    g_return_val_if_fail (priv->state == RSVG_HANDLE_STATE_START, FALSE);
+    g_return_val_if_fail (priv->hstate == RSVG_HANDLE_STATE_START, FALSE);
 
     /* detect zipped streams */
     stream = g_buffered_input_stream_new (stream);
     num_read = g_buffered_input_stream_fill (G_BUFFERED_INPUT_STREAM (stream), 2, cancellable, error);
     if (num_read < 2) {
         g_object_unref (stream);
-        priv->state = RSVG_HANDLE_STATE_CLOSED_ERROR;
+        priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
         if (num_read < 0) {
             g_assert (error == NULL || *error != NULL);
         } else {
@@ -1587,9 +1589,9 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     g_clear_object (&priv->cancellable);
 
     if (res) {
-        priv->state = RSVG_HANDLE_STATE_CLOSED_OK;
+        priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
     } else {
-        priv->state = RSVG_HANDLE_STATE_CLOSED_ERROR;
+        priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
     }
 
     return res;

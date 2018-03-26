@@ -152,7 +152,8 @@ rsvg_handle_init (RsvgHandle * self)
     self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, RSVG_TYPE_HANDLE, RsvgHandlePrivate);
 
     self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
-    self->priv->state = RSVG_HANDLE_STATE_START;
+    self->priv->hstate = RSVG_HANDLE_STATE_START;
+    self->priv->load_state = LOAD_STATE_START;
     self->priv->all_nodes = g_ptr_array_new ();
     self->priv->defs = rsvg_defs_new (self);
     self->priv->handler_nest = 0;
@@ -1048,7 +1049,7 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle * handle, const char *id)
 
     g_return_val_if_fail (handle != NULL, NULL);
 
-    if (handle->priv->state != RSVG_HANDLE_STATE_CLOSED_OK)
+    if (handle->priv->hstate != RSVG_HANDLE_STATE_CLOSED_OK)
         return NULL;
 
     rsvg_handle_get_dimensions (handle, &dimensions);
