@@ -55,7 +55,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg-structure.h		\
 	librsvg/rsvg-styles.c			\
 	librsvg/rsvg-styles.h			\
-	librsvg/rsvg-text.c			\
 	librsvg/rsvg-xml.c			\
 	librsvg/rsvg-xml.h			\
 	librsvg/rsvg.h				\
