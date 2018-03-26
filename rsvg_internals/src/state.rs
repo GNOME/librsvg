@@ -30,8 +30,7 @@ pub enum RsvgState {}
 pub struct State {
     pub affine: cairo::Matrix,
 
-    pub join: StrokeLinejoin,
-    has_join: bool,
+    pub join: Option<StrokeLinejoin>,
 
     pub cap: StrokeLinecap,
     has_cap: bool,
@@ -52,7 +51,6 @@ impl State {
             affine: cairo::Matrix::identity(),
 
             join: Default::default(),
-            has_join: Default::default(),
 
             cap: Default::default(),
             has_cap: Default::default(),
@@ -73,20 +71,17 @@ impl State {
             Attribute::StrokeLinejoin => {
                 match StrokeLinejoin::parse(value, ()) {
                     Ok(StrokeLinejoin::Inherit) => {
-                        self.join = StrokeLinejoin::default();
-                        self.has_join = false;
+                        self.join = None;
                         Ok(())
                     }
 
                     Ok(j) => {
-                        self.join = j;
-                        self.has_join = true;
+                        self.join = Some(j);
                         Ok(())
                     }
 
                     Err(e) => {
-                        self.join = StrokeLinejoin::default();
-                        self.has_join = false; // FIXME - propagate errors instead of defaulting
+                        self.join = None; // FIXME - propagate errors instead of defaulting
                         Err(e)
                     }
                 }
@@ -567,7 +562,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
         let dst = &mut *dst;
         let src = &*src;
 
-        if inherit_from_src(inherit_fn, dst.has_join, src.has_join) {
+        if inherit_from_src(inherit_fn, dst.join.is_some(), src.join.is_some()) {
             dst.join = src.join;
         }
 
