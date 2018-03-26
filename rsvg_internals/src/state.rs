@@ -12,7 +12,7 @@ use length::{RsvgLength, StrokeDasharray};
 use node::RsvgNode;
 use opacity::{Opacity, OpacitySpec};
 use paint_server::PaintServer;
-use parsers::{Parse, ParseError};
+use parsers::Parse;
 use property_macros::Property;
 use util::utf8_cstr;
 

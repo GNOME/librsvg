@@ -64,3 +64,29 @@ macro_rules! make_ident_property {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use parsers::Parse;
+
+    #[test]
+    fn check_generated_property() {
+        make_ident_property! {
+            Foo,
+            default: Def,
+            inherits_automatically: true,
+
+            "def" => Def,
+            "bar" => Bar,
+            "baz" => Baz,
+        }
+
+        assert_eq!(<Foo as Default>::default(), Foo::Def);
+        assert_eq!(<Foo as Property>::inherits_automatically(), true);
+
+        assert!(<Foo as Parse>::parse("blargh", ()).is_err());
+        assert_eq!(<Foo as Parse>::parse("bar", ()), Ok(Foo::Bar));
+    }
+}
