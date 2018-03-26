@@ -13,6 +13,7 @@ use node::RsvgNode;
 use opacity::{Opacity, OpacitySpec};
 use paint_server::PaintServer;
 use parsers::{Parse, ParseError};
+use property_macros::Property;
 use util::utf8_cstr;
 
 pub enum RsvgState {}
@@ -64,49 +65,28 @@ impl State {
 
     fn parse_style_pair(&mut self, attr: Attribute, value: &str) -> Result<(), AttributeError> {
         match attr {
-            Attribute::StrokeLinejoin => match StrokeLinejoin::parse(value, ())? {
-                StrokeLinejoin::Inherit => {
-                    self.join = None;
-                }
+            Attribute::StrokeLinejoin => {
+                self.join = parse_property(value, ())?;
+            }
 
-                v => {
-                    self.join = Some(v);
-                }
-            },
+            Attribute::StrokeLinecap => {
+                self.cap = parse_property(value, ())?;
+            }
 
-            Attribute::StrokeLinecap => match StrokeLinecap::parse(value, ())? {
-                StrokeLinecap::Inherit => {
-                    self.cap = None;
-                }
-
-                v => {
-                    self.cap = Some(v);
-                }
-            },
-
-            Attribute::FillRule => match FillRule::parse(value, ())? {
-                FillRule::Inherit => {
-                    self.fill_rule = None;
-                }
-
-                v => {
-                    self.fill_rule = Some(v);
-                }
-            },
+            Attribute::FillRule => {
+                self.fill_rule = parse_property(value, ())?;
+            }
 
             Attribute::XmlSpace => {
+                // xml:space is not a property; it is a non-presentation attribute and as such
+                // cannot have the "inherit" value.  So, we don't call parse_property() for it,
+                // but rather call its parser directly.
                 self.xml_space = Some(XmlSpace::parse(value, ())?);
             }
 
-            Attribute::TextAnchor => match TextAnchor::parse(value, ())? {
-                TextAnchor::Inherit => {
-                    self.text_anchor = None;
-                }
-
-                v => {
-                    self.text_anchor = Some(v);
-                }
-            },
+            Attribute::TextAnchor => {
+                self.text_anchor = parse_property(value, ())?;
+            }
 
             _ => {
                 // Maybe it's an attribute not parsed here, but in the
@@ -115,6 +95,21 @@ impl State {
         }
 
         Ok(())
+    }
+}
+
+// Parses the `value` for the type `T` of the property, including `inherit` values.
+//
+// If the `value` is `inherit`, returns `Ok(None)`; otherwise returns
+// `Ok(Some(T))`.
+fn parse_property<T>(value: &str, data: <T as Parse>::Data) -> Result<Option<T>, <T as Parse>::Err>
+where
+    T: Property + Parse,
+{
+    if value.trim() == "inherit" {
+        Ok(None)
+    } else {
+        Parse::parse(value, data).map(Some)
     }
 }
 
