@@ -36,8 +36,7 @@ pub struct State {
 
     pub fill_rule: Option<FillRule>,
 
-    pub xml_space: XmlSpace,
-    has_xml_space: bool,
+    pub xml_space: Option<XmlSpace>,
 
     pub text_anchor: TextAnchor,
     has_text_anchor: bool,
@@ -55,7 +54,6 @@ impl State {
             fill_rule: Default::default(),
 
             xml_space: Default::default(),
-            has_xml_space: Default::default(),
 
             text_anchor: Default::default(),
             has_text_anchor: Default::default(),
@@ -124,14 +122,12 @@ impl State {
             Attribute::XmlSpace => {
                 match XmlSpace::parse(value, ()) {
                     Ok(s) => {
-                        self.xml_space = s;
-                        self.has_xml_space = true;
+                        self.xml_space = Some(s);
                         Ok(())
                     }
 
                     Err(e) => {
-                        self.xml_space = Default::default();
-                        self.has_xml_space = false; // FIXME - propagate errors instead of defaulting
+                        self.xml_space = None; // FIXME - propagate errors instead of defaulting
                         Err(e)
                     }
                 }
@@ -564,7 +560,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
             dst.fill_rule = src.fill_rule;
         }
 
-        if inherit_from_src(inherit_fn, dst.has_xml_space, src.has_xml_space) {
+        if inherit_from_src(inherit_fn, dst.xml_space.is_some(), src.xml_space.is_some()) {
             dst.xml_space = src.xml_space;
         }
 

@@ -449,7 +449,10 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
         _ => pango::Alignment::Right,
     });
 
-    let t = xml_space_normalize(state::get_state_rust(state).xml_space, text);
+    let t = xml_space_normalize(
+        state::get_state_rust(state).xml_space.unwrap_or_default(),
+        text,
+    );
     layout.set_text(&t);
 
     layout
