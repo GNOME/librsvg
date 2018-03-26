@@ -50,15 +50,15 @@ macro_rules! make_ident_property {
             }
         }
 
-        impl Parse for $name {
+        impl ::parsers::Parse for $name {
             type Data = ();
-            type Err = AttributeError;
+            type Err = ::error::AttributeError;
 
-            fn parse(s: &str, _: Self::Data) -> Result<$name, AttributeError> {
+            fn parse(s: &str, _: Self::Data) -> Result<$name, ::error::AttributeError> {
                 match s.trim() {
                     $($str_prop => Ok($name::$variant),)+
 
-                    _ => Err(AttributeError::from(ParseError::new("invalid value"))),
+                    _ => Err(::error::AttributeError::from(::parsers::ParseError::new("invalid value"))),
                 }
             }
         }
