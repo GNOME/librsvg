@@ -1,6 +1,4 @@
 use libc;
-use glib::translate::*;
-use glib_sys;
 use pango::{self, ContextExt, LayoutExt};
 use std;
 use std::cell::{Cell, RefCell};
@@ -18,14 +16,6 @@ use space::xml_space_normalize;
 use state::{self, RsvgState, TextAnchor, UnicodeBidi};
 
 extern "C" {
-    fn rsvg_text_render_children(
-        raw_node: *const RsvgNode,
-        draw_ctx: *const RsvgDrawingCtx,
-        raw_x: *mut libc::c_double,
-        raw_y: *mut libc::c_double,
-        usetextonly: glib_sys::gboolean,
-    );
-
     fn _rsvg_css_accumulate_baseline_shift(
         state: *mut RsvgState,
         draw_ctx: *const RsvgDrawingCtx,
@@ -541,9 +531,41 @@ fn render_children(
     y: &mut f64,
     textonly: bool,
 ) {
-    unsafe {
-        rsvg_text_render_children(node as *const RsvgNode, draw_ctx, x, y, textonly.to_glib())
-    };
+    drawing_ctx::push_discrete_layer(draw_ctx);
+
+    for child in node.children() {
+        render_child(&child, draw_ctx, x, y, textonly);
+    }
+
+    drawing_ctx::pop_discrete_layer(draw_ctx);
+}
+
+fn render_child(
+    node: &RsvgNode,
+    draw_ctx: *const RsvgDrawingCtx,
+    x: &mut f64,
+    y: &mut f64,
+    textonly: bool,
+) {
+    match (node.get_type(), textonly) {
+        (NodeType::Chars, _) => {
+            node.with_impl(|chars: &NodeChars| chars.render(draw_ctx, x, y));
+        }
+        (_, true) => {
+            render_children(node, draw_ctx, x, y, textonly);
+        }
+        (NodeType::TSpan, _) => {
+            node.with_impl(|tspan: &NodeTSpan| {
+                tspan.render(node, draw_ctx, x, y, textonly);
+            });
+        }
+        (NodeType::TRef, _) => {
+            node.with_impl(|tref: &NodeTRef| {
+                tref.render(draw_ctx, x, y);
+            });
+        }
+        (_, _) => {}
+    }
 }
 
 #[no_mangle]
@@ -579,26 +601,6 @@ pub extern "C" fn rsvg_node_chars_append(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_chars_render(
-    raw_node: *const RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
-    raw_x: *mut libc::c_double,
-    raw_y: *mut libc::c_double,
-) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    assert!(!raw_x.is_null());
-    assert!(!raw_y.is_null());
-    let x: &mut f64 = unsafe { &mut *raw_x };
-    let y: &mut f64 = unsafe { &mut *raw_y };
-
-    node.with_impl(|chars: &NodeChars| {
-        chars.render(draw_ctx, x, y);
-    });
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_node_text_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
@@ -615,52 +617,9 @@ pub extern "C" fn rsvg_node_tref_new(
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_node_tref_render(
-    raw_node: *const RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
-    raw_x: *mut libc::c_double,
-    raw_y: *mut libc::c_double,
-) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    assert!(!raw_x.is_null());
-    assert!(!raw_y.is_null());
-    let x: &mut f64 = unsafe { &mut *raw_x };
-    let y: &mut f64 = unsafe { &mut *raw_y };
-
-    node.with_impl(|tref: &NodeTRef| {
-        tref.render(draw_ctx, x, y);
-    });
-}
-
-#[no_mangle]
 pub extern "C" fn rsvg_node_tspan_new(
     _: *const libc::c_char,
     raw_parent: *const RsvgNode,
 ) -> *const RsvgNode {
     boxed_node_new(NodeType::TSpan, raw_parent, Box::new(NodeTSpan::new()))
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_node_tspan_render(
-    raw_node: *const RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
-    raw_x: *mut libc::c_double,
-    raw_y: *mut libc::c_double,
-    usetextonly: glib_sys::gboolean,
-) {
-    assert!(!raw_node.is_null());
-    let node: &RsvgNode = unsafe { &*raw_node };
-
-    assert!(!raw_x.is_null());
-    assert!(!raw_y.is_null());
-    let x: &mut f64 = unsafe { &mut *raw_x };
-    let y: &mut f64 = unsafe { &mut *raw_y };
-
-    let textonly: bool = from_glib(usetextonly);
-
-    node.with_impl(|tspan: &NodeTSpan| {
-        tspan.render(&node, draw_ctx, x, y, textonly);
-    });
 }
