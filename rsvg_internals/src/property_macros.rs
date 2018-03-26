@@ -33,7 +33,7 @@ macro_rules! make_ident_property {
      $($str_prop: expr => $variant: ident,)+
     ) => {
         #[repr(C)]
-        #[derive(Debug, Copy, Clone)]
+        #[derive(Debug, Copy, Clone, PartialEq)]
         pub enum $name {
             $($variant),+
         }
