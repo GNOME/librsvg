@@ -116,13 +116,6 @@ typedef struct _RsvgFilter RsvgFilter;
  */
 #define RSVG_ONE_MINUS_EPSILON (1.0 - DBL_EPSILON)
 
-struct RsvgSaxHandler {
-    void (*free) (RsvgSaxHandler * self);
-    void (*start_element) (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts);
-    void (*end_element) (RsvgSaxHandler * self, const char *name);
-    void (*characters) (RsvgSaxHandler * self, const char *ch, gssize len);
-};
-
 /* Reading state for an RsvgHandle */
 typedef enum {
     RSVG_HANDLE_STATE_START,

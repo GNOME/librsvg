@@ -95,6 +95,13 @@ double rsvg_internal_dpi_x = RSVG_DEFAULT_DPI_X;
 G_GNUC_INTERNAL
 double rsvg_internal_dpi_y = RSVG_DEFAULT_DPI_Y;
 
+struct RsvgSaxHandler {
+    void (*free) (RsvgSaxHandler * self);
+    void (*start_element) (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts);
+    void (*end_element) (RsvgSaxHandler * self, const char *name);
+    void (*characters) (RsvgSaxHandler * self, const char *ch, gssize len);
+};
+
 static xmlSAXHandler rsvgSAXHandlerStruct;
 static gboolean rsvgSAXHandlerStructInited = FALSE;
 
