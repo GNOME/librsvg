@@ -32,8 +32,7 @@ pub struct State {
 
     pub join: Option<StrokeLinejoin>,
 
-    pub cap: StrokeLinecap,
-    has_cap: bool,
+    pub cap: Option<StrokeLinecap>,
 
     pub fill_rule: FillRule,
     has_fill_rule: bool,
@@ -53,7 +52,6 @@ impl State {
             join: Default::default(),
 
             cap: Default::default(),
-            has_cap: Default::default(),
 
             fill_rule: Default::default(),
             has_fill_rule: Default::default(),
@@ -90,20 +88,17 @@ impl State {
             Attribute::StrokeLinecap => {
                 match StrokeLinecap::parse(value, ()) {
                     Ok(StrokeLinecap::Inherit) => {
-                        self.cap = StrokeLinecap::default();
-                        self.has_cap = false;
+                        self.cap = None;
                         Ok(())
                     }
 
                     Ok(c) => {
-                        self.cap = c;
-                        self.has_cap = true;
+                        self.cap = Some(c);
                         Ok(())
                     }
 
                     Err(e) => {
-                        self.cap = Default::default();
-                        self.has_cap = false; // FIXME - propagate errors instead of defaulting
+                        self.cap = None; // FIXME - propagate errors instead of defaulting
                         Err(e)
                     }
                 }
@@ -566,7 +561,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
             dst.join = src.join;
         }
 
-        if inherit_from_src(inherit_fn, dst.has_cap, src.has_cap) {
+        if inherit_from_src(inherit_fn, dst.cap.is_some(), src.cap.is_some()) {
             dst.cap = src.cap;
         }
 
