@@ -31,15 +31,13 @@
 #include "rsvg-css.h"
 #include "rsvg-shapes.h"
 
-/* Implemented in rust/src/chars.rs */
-extern double rsvg_node_chars_measure (RsvgNode *node, RsvgDrawingCtx *ctx);
-extern void rsvg_node_chars_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y);
-
 /* Implemented in rust/src/text.rs */
 extern gboolean rsvg_node_tref_measure (RsvgNode *node, RsvgDrawingCtx *ctx, double *length);
 extern void rsvg_node_tref_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y);
 extern gboolean rsvg_node_tspan_measure (RsvgNode *node, RsvgDrawingCtx *ctx, double *length, gboolean usetextonly);
 extern void rsvg_node_tspan_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y, gboolean usetextonly);
+extern double rsvg_node_chars_measure (RsvgNode *node, RsvgDrawingCtx *ctx);
+extern void rsvg_node_chars_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y);
 
 void
 rsvg_text_render_children (RsvgNode       *self,
