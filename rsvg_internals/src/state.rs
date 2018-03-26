@@ -35,15 +35,11 @@ pub enum RsvgState {}
 pub struct State {
     pub affine: cairo::Matrix,
 
-    pub join: Option<StrokeLinejoin>,
-
     pub cap: Option<StrokeLinecap>,
-
     pub fill_rule: Option<FillRule>,
-
-    pub xml_space: Option<XmlSpace>,
-
+    pub join: Option<StrokeLinejoin>,
     pub text_anchor: Option<TextAnchor>,
+    pub xml_space: Option<XmlSpace>,
 }
 
 impl State {
@@ -51,30 +47,32 @@ impl State {
         State {
             affine: cairo::Matrix::identity(),
 
-            join: Default::default(),
-
+            // please keep these sorted
             cap: Default::default(),
-
             fill_rule: Default::default(),
-
-            xml_space: Default::default(),
-
+            join: Default::default(),
             text_anchor: Default::default(),
+            xml_space: Default::default(),
         }
     }
 
     fn parse_style_pair(&mut self, attr: Attribute, value: &str) -> Result<(), AttributeError> {
+        // please keep these sorted
         match attr {
-            Attribute::StrokeLinejoin => {
-                self.join = parse_property(value, ())?;
+            Attribute::FillRule => {
+                self.fill_rule = parse_property(value, ())?;
             }
 
             Attribute::StrokeLinecap => {
                 self.cap = parse_property(value, ())?;
             }
 
-            Attribute::FillRule => {
-                self.fill_rule = parse_property(value, ())?;
+            Attribute::StrokeLinejoin => {
+                self.join = parse_property(value, ())?;
+            }
+
+            Attribute::TextAnchor => {
+                self.text_anchor = parse_property(value, ())?;
             }
 
             Attribute::XmlSpace => {
@@ -82,10 +80,6 @@ impl State {
                 // cannot have the "inherit" value.  So, we don't call parse_property() for it,
                 // but rather call its parser directly.
                 self.xml_space = Some(XmlSpace::parse(value, ())?);
-            }
-
-            Attribute::TextAnchor => {
-                self.text_anchor = parse_property(value, ())?;
             }
 
             _ => {
@@ -379,16 +373,15 @@ pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
     unsafe { &mut *rsvg_state_get_state_rust(state) }
 }
 
-// StrokeLineJoin ----------------------------------------
+// FillRule ----------------------------------------
 
 make_ident_property!(
-    StrokeLinejoin,
-    default: Miter,
+    FillRule,
+    default: NonZero,
     inherits_automatically: true,
 
-    "miter" => Miter,
-    "round" => Round,
-    "bevel" => Bevel,
+    "nonzero" => NonZero,
+    "evenodd" => EvenOdd,
 );
 
 // StrokeLinecap ----------------------------------------
@@ -403,26 +396,16 @@ make_ident_property!(
     "square" => Square,
 );
 
-// FillRule ----------------------------------------
+// StrokeLineJoin ----------------------------------------
 
 make_ident_property!(
-    FillRule,
-    default: NonZero,
+    StrokeLinejoin,
+    default: Miter,
     inherits_automatically: true,
 
-    "nonzero" => NonZero,
-    "evenodd" => EvenOdd,
-);
-
-// XmlSpace ----------------------------------------
-
-make_ident_property!(
-    XmlSpace,
-    default: Default,
-    inherits_automatically: true,
-
-    "default" => Default,
-    "preserve" => Preserve,
+    "miter" => Miter,
+    "round" => Round,
+    "bevel" => Bevel,
 );
 
 // TextAnchor --------------------------------------
@@ -435,6 +418,17 @@ make_ident_property!(
     "start" => Start,
     "middle" => Middle,
     "end" => End,
+);
+
+// XmlSpace ----------------------------------------
+
+make_ident_property!(
+    XmlSpace,
+    default: Default,
+    inherits_automatically: true,
+
+    "default" => Default,
+    "preserve" => Preserve,
 );
 
 // Rust State API for consumption from C ----------------------------------------
@@ -510,11 +504,12 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     let dst = unsafe { &mut *dst };
     let src = unsafe { &*src };
 
-    inherit(inherit_fn, &mut dst.join, &src.join);
+    // please keep these sorted
     inherit(inherit_fn, &mut dst.cap, &src.cap);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
-    inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
+    inherit(inherit_fn, &mut dst.join, &src.join);
     inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
+    inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
 }
 
 #[no_mangle]
