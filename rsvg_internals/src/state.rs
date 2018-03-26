@@ -514,7 +514,7 @@ pub extern "C" fn rsvg_state_rust_parse_style_pair(
     state: *mut State,
     attr: Attribute,
     value: *const libc::c_char,
-) {
+) -> glib_sys::gboolean {
     assert!(!state.is_null());
     assert!(!value.is_null());
 
@@ -522,7 +522,8 @@ pub extern "C" fn rsvg_state_rust_parse_style_pair(
     let value = unsafe { utf8_cstr(value) };
 
     match state.parse_style_pair(attr, value) {
-        _ => (), // FIXME: propagate errors
+        Ok(_) => true.to_glib(),
+        Err(_) => false.to_glib(),
     }
 }
 

@@ -53,7 +53,10 @@ extern void rsvg_state_rust_free(State *state);
 extern State *rsvg_state_rust_clone(State *state);
 extern cairo_matrix_t rsvg_state_rust_get_affine(State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
-extern void rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value);
+
+extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value)
+    G_GNUC_WARN_UNUSED_RESULT;
+
 extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn);
 
 #define RSVG_DEFAULT_FONT "Times New Roman"
@@ -524,8 +527,16 @@ typedef enum {
     PAIR_SOURCE_PRESENTATION_ATTRIBUTE
 } PairSource;
 
+static gboolean
+rsvg_parse_style_pair (RsvgState *state,
+                       const gchar *name,
+                       RsvgAttribute attr,
+                       const gchar *value,
+                       gboolean important,
+                       PairSource source) G_GNUC_WARN_UNUSED_RESULT;
+
 /* Parse a CSS2 style argument, setting the SVG context attributes. */
-static void
+static gboolean
 rsvg_parse_style_pair (RsvgState *state,
                        const gchar *name,
                        RsvgAttribute attr,
@@ -534,13 +545,14 @@ rsvg_parse_style_pair (RsvgState *state,
                        PairSource source)
 {
     StyleValueData *data;
+    gboolean success = TRUE;
 
     data = g_hash_table_lookup (state->styles, name);
     if (data && data->important && !important)
-        return;
+        return success;
 
     if (name == NULL || value == NULL)
-        return;
+        return success;
 
     g_hash_table_insert (state->styles,
                          (gpointer) g_strdup (name),
@@ -1097,12 +1109,13 @@ rsvg_parse_style_pair (RsvgState *state,
     break;
 
     default:
-        /* FIXME: report errors upstream */
-        rsvg_state_rust_parse_style_pair(state->state_rust,
-                                         attr,
-                                         value);
+        success = rsvg_state_rust_parse_style_pair(state->state_rust,
+                                                   attr,
+                                                   value);
         break;
     }
+
+    return success;
 }
 
 /* returns TRUE if this element should be processed according to <switch> semantics
@@ -1160,14 +1173,21 @@ rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
     const char *key;
     RsvgAttribute attr;
     const char *value;
+    gboolean success;
+
+    success = TRUE;
 
     iter = rsvg_property_bag_iter_begin (atts);
 
-    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
-        rsvg_parse_style_pair (state, key, attr, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
+    while (success && rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+        success = rsvg_parse_style_pair (state, key, attr, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
     }
 
     rsvg_property_bag_iter_end (iter);
+
+    if (!success) {
+        return; /* FIXME: propagate errors upstream */
+    }
 
     {
         /* TODO: this conditional behavior isn't quite correct, and i'm not sure it should reside here */
@@ -1214,14 +1234,15 @@ parse_style_value (const gchar *string, gchar **value, gboolean *important)
    It's known that this is _way_ out of spec. A more complete CSS2
    implementation will happen later.
 */
-void
+gboolean
 rsvg_parse_style (RsvgState *state, const char *str)
 {
     gchar **styles;
     guint i;
+    gboolean success = TRUE;
 
     styles = g_strsplit (str, ";", -1);
-    for (i = 0; i < g_strv_length (styles); i++) {
+    for (i = 0; success && i < g_strv_length (styles); i++) {
         gchar **values;
         values = g_strsplit (styles[i], ":", 2);
         if (!values)
@@ -1251,12 +1272,12 @@ rsvg_parse_style (RsvgState *state, const char *str)
                 g_strstrip (first_value);
 
                 if (rsvg_attribute_from_name (first_value, &attr)) {
-                    rsvg_parse_style_pair (state,
-                                           first_value,
-                                           attr,
-                                           style_value,
-                                           important,
-                                           PAIR_SOURCE_STYLE);
+                    success = rsvg_parse_style_pair (state,
+                                                     first_value,
+                                                     attr,
+                                                     style_value,
+                                                     important,
+                                                     PAIR_SOURCE_STYLE);
                 }
             }
 
@@ -1266,6 +1287,8 @@ rsvg_parse_style (RsvgState *state, const char *str)
         g_strfreev (values);
     }
     g_strfreev (styles);
+
+    return success;
 }
 
 static void
@@ -1510,7 +1533,9 @@ apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
     RsvgAttribute attr;
 
     if (rsvg_attribute_from_name (key, &attr)) {
-        rsvg_parse_style_pair (state, key, attr, value->value, value->important, PAIR_SOURCE_STYLE);
+        gboolean success = rsvg_parse_style_pair (
+            state, key, attr, value->value, value->important, PAIR_SOURCE_STYLE);
+        /* FIXME: propagate errors upstream */
     }
 }
 
@@ -1553,6 +1578,7 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
     const char *key;
     RsvgAttribute attr;
     const char *value;
+    gboolean success = TRUE;
 
     state = rsvg_node_get_state (node);
 
@@ -1634,10 +1660,10 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
 
     iter = rsvg_property_bag_iter_begin (atts);
 
-    while (rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
+    while (success && rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
         switch (attr) {
         case RSVG_ATTRIBUTE_STYLE:
-            rsvg_parse_style (state, value);
+            success = rsvg_parse_style (state, value);
             break;
 
         case RSVG_ATTRIBUTE_TRANSFORM:
@@ -1654,6 +1680,9 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
     }
 
     rsvg_property_bag_iter_end (iter);
+
+    /* FIXME: propagate errors upstream */
+    /* return success; */
 }
 
 RsvgState *
