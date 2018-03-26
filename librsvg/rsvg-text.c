@@ -32,11 +32,8 @@
 #include "rsvg-shapes.h"
 
 /* Implemented in rust/src/text.rs */
-extern gboolean rsvg_node_tref_measure (RsvgNode *node, RsvgDrawingCtx *ctx, double *length);
 extern void rsvg_node_tref_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y);
-extern gboolean rsvg_node_tspan_measure (RsvgNode *node, RsvgDrawingCtx *ctx, double *length, gboolean usetextonly);
 extern void rsvg_node_tspan_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y, gboolean usetextonly);
-extern double rsvg_node_chars_measure (RsvgNode *node, RsvgDrawingCtx *ctx);
 extern void rsvg_node_chars_render (RsvgNode *node, RsvgDrawingCtx * ctx, double *x, double *y);
 
 void
@@ -93,69 +90,4 @@ rsvg_text_render_children (RsvgNode       *self,
     rsvg_node_children_iter_end (iter);
 
     rsvg_pop_discrete_layer (ctx);
-}
-
-gboolean
-rsvg_text_measure_children (RsvgNode       *self,
-                            RsvgDrawingCtx *ctx,
-                            gdouble        *length,
-                            gboolean        usetextonly);
-
-static gboolean
-compute_child_length (RsvgNode       *node,
-                      RsvgDrawingCtx *ctx,
-                      gdouble        *length,
-                      gboolean        usetextonly)
-{
-    RsvgNodeType type = rsvg_node_get_type (node);
-    gboolean done;
-
-    done = FALSE;
-
-    rsvg_state_push (ctx);
-    rsvg_state_reinherit_top (ctx, rsvg_node_get_state (node), 0);
-
-    if (type == RSVG_NODE_TYPE_CHARS) {
-        *length += rsvg_node_chars_measure (node, ctx);
-    } else {
-        if (usetextonly) {
-            done = rsvg_text_measure_children (node, ctx, length, usetextonly);
-        } else {
-            if (type == RSVG_NODE_TYPE_TSPAN) {
-                done = rsvg_node_tspan_measure (node, ctx, length, usetextonly);
-            } else if (type == RSVG_NODE_TYPE_TREF) {
-                done = rsvg_node_tref_measure (node, ctx, length);
-            }
-        }
-    }
-
-    rsvg_state_pop (ctx);
-
-    return done;
-}
-
-gboolean
-rsvg_text_measure_children (RsvgNode       *self,
-                            RsvgDrawingCtx *ctx,
-                            gdouble        *length,
-                            gboolean        usetextonly)
-{
-    RsvgNodeChildrenIter *iter;
-    RsvgNode *child;
-    gboolean done = FALSE;
-
-    iter = rsvg_node_children_iter_begin (self);
-
-    while (rsvg_node_children_iter_next (iter, &child)) {
-        done = compute_child_length (child, ctx, length, usetextonly);
-        child = rsvg_node_unref (child);
-
-        if (done) {
-            break;
-        }
-    }
-
-    rsvg_node_children_iter_end (iter);
-
-    return done;
 }
