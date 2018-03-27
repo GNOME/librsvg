@@ -124,14 +124,6 @@ typedef enum {
     RSVG_HANDLE_STATE_CLOSED_ERROR
 } RsvgHandleState;
 
-typedef enum {
-    LOAD_STATE_START,
-    LOAD_STATE_EXPECTING_GZ_1,
-    LOAD_STATE_READING_COMPRESSED,
-    LOAD_STATE_READING,
-    LOAD_STATE_CLOSED
-} LoadState;
-
 typedef struct RsvgLoad RsvgLoad;
 
 struct RsvgHandlePrivate {
@@ -609,10 +601,6 @@ GInputStream *_rsvg_handle_acquire_stream (RsvgHandle *handle,
                                            const char *uri,
                                            char **content_type,
                                            GError **error);
-
-G_GNUC_INTERNAL
-xmlParserCtxtPtr rsvg_free_xml_parser_and_doc (xmlParserCtxtPtr ctxt) G_GNUC_WARN_UNUSED_RESULT;
-
 
 #define rsvg_return_if_fail(expr, error)    G_STMT_START{			\
      if G_LIKELY(expr) { } else                                     \
