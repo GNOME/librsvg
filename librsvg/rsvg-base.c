@@ -533,16 +533,6 @@ rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx)
     return draw_ctx->render->get_pango_context (draw_ctx);
 }
 
-void
-rsvg_drawing_ctx_render_surface (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
-                                 double x, double y, double w, double h)
-{
-    /* surface must be a cairo image surface */
-    g_return_if_fail (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE);
-
-    ctx->render->render_surface (ctx, surface, x, y, w, h);
-}
-
 const char *
 rsvg_get_start_marker (RsvgDrawingCtx *ctx)
 {

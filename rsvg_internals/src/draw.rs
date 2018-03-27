@@ -326,3 +326,51 @@ fn compute_text_bbox(
 
     bbox
 }
+
+pub fn draw_surface(
+    draw_ctx: *mut RsvgDrawingCtx,
+    surface: &cairo::ImageSurface,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+    clipping: bool,
+) {
+    if clipping {
+        return;
+    }
+
+    let state = drawing_ctx::get_current_state(draw_ctx);
+    let cr = drawing_ctx::get_cairo_context(draw_ctx);
+    let affine = state::get_state_rust(state).affine;
+
+    let width = surface.get_width();
+    let height = surface.get_height();
+
+    if width == 0 || height == 0 {
+        return;
+    }
+
+    let width = f64::from(width);
+    let height = f64::from(height);
+
+    let mut bbox = RsvgBbox::new(&affine);
+    bbox.set_rect(&cairo::Rectangle {
+        x,
+        y,
+        width,
+        height,
+    });
+
+    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &affine);
+    cr.scale(w / width, h / height);
+    let x = x * width / w;
+    let y = y * height / h;
+
+    cr.set_operator(state::get_comp_op(state));
+
+    cr.set_source_surface(&surface, x, y);
+    cr.paint();
+
+    drawing_ctx::insert_bbox(draw_ctx, &bbox);
+}

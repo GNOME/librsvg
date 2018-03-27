@@ -9,6 +9,7 @@ use std::ptr;
 
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
+use draw::draw_surface;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use length::*;
@@ -95,7 +96,7 @@ impl NodeTrait for NodeImage {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, _: bool) {
+    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
         if let Some(ref surface) = *self.surface.borrow() {
             let x = self.x.get().normalize(draw_ctx);
             let y = self.y.get().normalize(draw_ctx);
@@ -122,7 +123,7 @@ impl NodeTrait for NodeImage {
                 h,
             );
 
-            drawing_ctx::render_surface(draw_ctx, surface, x, y, w, h);
+            draw_surface(draw_ctx, surface, x, y, w, h, clipping);
 
             drawing_ctx::pop_discrete_layer(draw_ctx);
         }

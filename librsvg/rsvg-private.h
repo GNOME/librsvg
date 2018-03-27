@@ -208,8 +208,6 @@ struct RsvgRender {
 
     void             (*set_affine_on_cr)        (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix_t *affine);
     PangoContext    *(*get_pango_context)       (RsvgDrawingCtx *ctx);
-    void             (*render_surface)          (RsvgDrawingCtx *ctx, cairo_surface_t *surface,
-                                                 double x, double y, double w, double h);
     void             (*pop_discrete_layer)      (RsvgDrawingCtx *ctx);
     void             (*push_discrete_layer)     (RsvgDrawingCtx *ctx);
     void             (*add_clipping_rect)       (RsvgDrawingCtx *ctx, double x, double y,
@@ -471,10 +469,6 @@ void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
                                             RsvgNode *node,
                                             int dominate,
                                             gboolean clipping);
-
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_render_surface (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
-                                      double x, double y, double w, double h);
 
 G_GNUC_INTERNAL
 const char *rsvg_get_start_marker (RsvgDrawingCtx *ctx);

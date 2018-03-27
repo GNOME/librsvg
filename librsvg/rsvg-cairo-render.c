@@ -75,7 +75,6 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
     cairo_render->super.free = rsvg_cairo_render_free;
     cairo_render->super.set_affine_on_cr = rsvg_cairo_set_affine_on_cr;
     cairo_render->super.get_pango_context = rsvg_cairo_get_pango_context;
-    cairo_render->super.render_surface = rsvg_cairo_render_surface;
     cairo_render->super.pop_discrete_layer = rsvg_cairo_pop_discrete_layer;
     cairo_render->super.push_discrete_layer = rsvg_cairo_push_discrete_layer;
     cairo_render->super.add_clipping_rect = rsvg_cairo_add_clipping_rect;
