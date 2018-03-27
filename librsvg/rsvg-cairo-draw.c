@@ -403,9 +403,13 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 }
 
 void
-rsvg_cairo_push_discrete_layer (RsvgDrawingCtx * ctx)
+rsvg_cairo_push_discrete_layer (RsvgDrawingCtx * ctx, gboolean clipping)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+
+    if (clipping) {
+        return;
+    }
 
     cairo_save (render->cr);
     rsvg_cairo_push_render_stack (ctx);
@@ -501,9 +505,13 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 }
 
 void
-rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx * ctx)
+rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx * ctx, gboolean clipping)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
+
+    if (clipping) {
+        return;
+    }
 
     rsvg_cairo_pop_render_stack (ctx);
     cairo_restore (render->cr);

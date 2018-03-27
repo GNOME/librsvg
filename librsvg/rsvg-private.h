@@ -207,8 +207,6 @@ struct RsvgRender {
     void (*free) (RsvgRender * self);
 
     void             (*set_affine_on_cr)        (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix_t *affine);
-    void             (*pop_discrete_layer)      (RsvgDrawingCtx *ctx);
-    void             (*push_discrete_layer)     (RsvgDrawingCtx *ctx);
     void             (*add_clipping_rect)       (RsvgDrawingCtx *ctx, double x, double y,
                                                  double w, double h);
     cairo_surface_t *(*get_surface_of_node)     (RsvgDrawingCtx *ctx, RsvgNode * drawable,
@@ -450,9 +448,9 @@ G_GNUC_INTERNAL
 gboolean rsvg_cond_check_system_language (const char *value);
 
 G_GNUC_INTERNAL
-void rsvg_pop_discrete_layer    (RsvgDrawingCtx * ctx);
+void rsvg_pop_discrete_layer    (RsvgDrawingCtx *ctx, gboolean clipping);
 G_GNUC_INTERNAL
-void rsvg_push_discrete_layer   (RsvgDrawingCtx * ctx);
+void rsvg_push_discrete_layer   (RsvgDrawingCtx *ctx, gboolean clipping);
 
 G_GNUC_INTERNAL
 RsvgNode *rsvg_drawing_ctx_acquire_node         (RsvgDrawingCtx * ctx, const char *url);

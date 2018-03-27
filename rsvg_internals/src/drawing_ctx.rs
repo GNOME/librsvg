@@ -91,8 +91,8 @@ extern "C" {
         dominate: libc::c_int,
     );
 
-    fn rsvg_push_discrete_layer(draw_ctx: *const RsvgDrawingCtx);
-    fn rsvg_pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx);
+    fn rsvg_push_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: glib_sys::gboolean);
+    fn rsvg_pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: glib_sys::gboolean);
 
     fn rsvg_cairo_get_cairo_context(draw_ctx: *const RsvgDrawingCtx) -> *mut cairo_sys::cairo_t;
     fn rsvg_cairo_set_cairo_context(draw_ctx: *const RsvgDrawingCtx, cr: *const cairo_sys::cairo_t);
@@ -168,15 +168,15 @@ pub fn state_reinherit_top(draw_ctx: *const RsvgDrawingCtx, state: *mut RsvgStat
     }
 }
 
-pub fn push_discrete_layer(draw_ctx: *const RsvgDrawingCtx) {
+pub fn push_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: bool) {
     unsafe {
-        rsvg_push_discrete_layer(draw_ctx);
+        rsvg_push_discrete_layer(draw_ctx, clipping.to_glib());
     }
 }
 
-pub fn pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx) {
+pub fn pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: bool) {
     unsafe {
-        rsvg_pop_discrete_layer(draw_ctx);
+        rsvg_pop_discrete_layer(draw_ctx, clipping.to_glib());
     }
 }
 

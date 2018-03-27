@@ -223,7 +223,7 @@ impl Node {
         if dominate != -1 {
             drawing_ctx::state_reinherit_top(draw_ctx, self.state, dominate);
 
-            drawing_ctx::push_discrete_layer(draw_ctx);
+            drawing_ctx::push_discrete_layer(draw_ctx, clipping);
         }
 
         for child in self.children() {
@@ -235,7 +235,7 @@ impl Node {
         }
 
         if dominate != -1 {
-            drawing_ctx::pop_discrete_layer(draw_ctx);
+            drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
         }
     }
 

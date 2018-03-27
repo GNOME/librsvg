@@ -106,7 +106,7 @@ impl NodeTrait for NodeImage {
             let state = node.get_state();
 
             drawing_ctx::state_reinherit_top(draw_ctx, state, dominate);
-            drawing_ctx::push_discrete_layer(draw_ctx);
+            drawing_ctx::push_discrete_layer(draw_ctx, clipping);
 
             let aspect = self.aspect.get();
 
@@ -125,7 +125,7 @@ impl NodeTrait for NodeImage {
 
             draw_surface(draw_ctx, surface, x, y, w, h, clipping);
 
-            drawing_ctx::pop_discrete_layer(draw_ctx);
+            drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
         }
     }
 

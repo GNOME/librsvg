@@ -44,9 +44,9 @@ G_GNUC_INTERNAL
 void rsvg_cairo_set_cairo_context (RsvgDrawingCtx *ctx, cairo_t *cr);
 
 G_GNUC_INTERNAL
-void         rsvg_cairo_push_discrete_layer	    (RsvgDrawingCtx *ctx);
+void         rsvg_cairo_push_discrete_layer	    (RsvgDrawingCtx *ctx, gboolean clipping);
 G_GNUC_INTERNAL
-void         rsvg_cairo_pop_discrete_layer      (RsvgDrawingCtx *ctx);
+void         rsvg_cairo_pop_discrete_layer      (RsvgDrawingCtx *ctx, gboolean clipping);
 G_GNUC_INTERNAL
 void         rsvg_cairo_add_clipping_rect       (RsvgDrawingCtx *ctx,
                                                  double x, double y, double width, double height);

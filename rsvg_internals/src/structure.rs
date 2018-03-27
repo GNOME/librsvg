@@ -83,7 +83,7 @@ impl NodeTrait for NodeSwitch {
     fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
 
-        drawing_ctx::push_discrete_layer(draw_ctx);
+        drawing_ctx::push_discrete_layer(draw_ctx, clipping);
 
         if let Some(child) = node.children()
             .find(|c| state::get_cond_true(c.get_state()))
@@ -95,7 +95,7 @@ impl NodeTrait for NodeSwitch {
             rsvg_node_unref(boxed_child);
         }
 
-        drawing_ctx::pop_discrete_layer(draw_ctx);
+        drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
@@ -202,6 +202,7 @@ impl NodeTrait for NodeSvg {
             self.preserve_aspect_ratio.get(),
             drawing_ctx::get_current_state_affine(draw_ctx),
             draw_ctx,
+            clipping,
             || {
                 drawing_ctx::state_push(draw_ctx);
                 node.draw_children(draw_ctx, -1, clipping); // dominate==-1 so it won't reinherit or push a layer
@@ -317,13 +318,13 @@ impl NodeTrait for NodeUse {
             affine.translate(nx, ny);
             drawing_ctx::set_current_state_affine(draw_ctx, affine);
 
-            drawing_ctx::push_discrete_layer(draw_ctx);
+            drawing_ctx::push_discrete_layer(draw_ctx, clipping);
 
             let boxed_child = box_node(child.clone());
             drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 1, clipping);
             rsvg_node_unref(boxed_child);
 
-            drawing_ctx::pop_discrete_layer(draw_ctx);
+            drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
                 let do_clip = !state::is_overflow(state)
@@ -340,6 +341,7 @@ impl NodeTrait for NodeUse {
                     symbol.preserve_aspect_ratio.get(),
                     drawing_ctx::get_current_state_affine(draw_ctx),
                     draw_ctx,
+                    clipping,
                     || {
                         drawing_ctx::state_push(draw_ctx);
                         child.draw_children(draw_ctx, 1, clipping);

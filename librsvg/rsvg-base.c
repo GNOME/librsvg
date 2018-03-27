@@ -355,15 +355,15 @@ rsvg_cleanup (void)
 }
 
 void
-rsvg_pop_discrete_layer (RsvgDrawingCtx * ctx)
+rsvg_pop_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping)
 {
-    ctx->render->pop_discrete_layer (ctx);
+    rsvg_cairo_pop_discrete_layer (ctx, clipping);
 }
 
 void
-rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
+rsvg_push_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping)
 {
-    ctx->render->push_discrete_layer (ctx);
+    rsvg_cairo_push_discrete_layer (ctx, clipping);
 }
 
 /*

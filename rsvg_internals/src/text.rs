@@ -544,13 +544,13 @@ fn render_children(
     textonly: bool,
     clipping: bool,
 ) {
-    drawing_ctx::push_discrete_layer(draw_ctx);
+    drawing_ctx::push_discrete_layer(draw_ctx, clipping);
 
     for child in node.children() {
         render_child(&child, draw_ctx, x, y, textonly, clipping);
     }
 
-    drawing_ctx::pop_discrete_layer(draw_ctx);
+    drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
 }
 
 fn render_child(

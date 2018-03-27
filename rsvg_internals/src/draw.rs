@@ -15,7 +15,7 @@ use text;
 
 pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &RsvgPathBuilder, clipping: bool) {
     if !clipping {
-        drawing_ctx::push_discrete_layer(draw_ctx);
+        drawing_ctx::push_discrete_layer(draw_ctx, clipping);
     }
 
     let state = drawing_ctx::get_current_state(draw_ctx);
@@ -35,7 +35,7 @@ pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &RsvgPathBuilde
 
         stroke_and_fill(&cr, draw_ctx);
 
-        drawing_ctx::pop_discrete_layer(draw_ctx);
+        drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
     }
 }
 
