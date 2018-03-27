@@ -1,5 +1,6 @@
 use cssparser;
 use glib::translate::*;
+use glib_sys;
 use libc;
 
 use std::cell::Cell;
@@ -12,7 +13,7 @@ use handle::RsvgHandle;
 use length::*;
 use node::*;
 use opacity::*;
-use parsers::parse;
+use parsers::{parse, ParseError};
 use property_bag::PropertyBag;
 use state::{self, RsvgState};
 
@@ -77,7 +78,7 @@ impl NodeTrait for NodeStop {
                 }
 
                 Attribute::Style => {
-                    // FIXME: this is the only place where rsvg_parse_style() and
+                    // FIXME: this is the only place where rsvg_parse_style_attribute_contents() and
                     // rsvg_parse_presentation_attributes() are called outside of the
                     // rsvg-base.c machinery.  That one indirectly calls them via
                     // rsvg_parse_style_attrs().
@@ -86,7 +87,17 @@ impl NodeTrait for NodeStop {
                     // rendering time?
 
                     unsafe {
-                        rsvg_parse_style(state, value.to_glib_none().0);
+                        let success: bool = from_glib(rsvg_parse_style_attribute_contents(
+                            state,
+                            value.to_glib_none().0,
+                        ));
+
+                        if !success {
+                            return Err(NodeError::parse_error(
+                                "style",
+                                ParseError::new("could not parse style"),
+                            ));
+                        }
                     }
                 }
 
@@ -185,7 +196,10 @@ fn u32_from_rgba(rgba: cssparser::RGBA) -> u32 {
 #[allow(improper_ctypes)]
 extern "C" {
     fn rsvg_parse_presentation_attributes(state: *mut RsvgState, pbag: *const PropertyBag);
-    fn rsvg_parse_style(state: *mut RsvgState, string: *const libc::c_char);
+    fn rsvg_parse_style_attribute_contents(
+        state: *mut RsvgState,
+        string: *const libc::c_char,
+    ) -> glib_sys::gboolean;
 }
 
 #[no_mangle]

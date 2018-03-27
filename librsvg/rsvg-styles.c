@@ -1235,7 +1235,7 @@ parse_style_value (const gchar *string, gchar **value, gboolean *important)
    implementation will happen later.
 */
 gboolean
-rsvg_parse_style (RsvgState *state, const char *str)
+rsvg_parse_style_attribute_contents (RsvgState *state, const char *str)
 {
     gchar **styles;
     guint i;
@@ -1663,7 +1663,7 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
     while (success && rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
         switch (attr) {
         case RSVG_ATTRIBUTE_STYLE:
-            success = rsvg_parse_style (state, value);
+            success = rsvg_parse_style_attribute_contents (state, value);
             break;
 
         case RSVG_ATTRIBUTE_TRANSFORM:

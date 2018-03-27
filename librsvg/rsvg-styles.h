@@ -181,7 +181,7 @@ void rsvg_state_free_all    (RsvgState * state);
 G_GNUC_INTERNAL
 void rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts);
 G_GNUC_INTERNAL
-gboolean rsvg_parse_style	    (RsvgState *state, const char *str) G_GNUC_WARN_UNUSED_RESULT;
+gboolean rsvg_parse_style_attribute_contents (RsvgState *state, const char *str) G_GNUC_WARN_UNUSED_RESULT;
 G_GNUC_INTERNAL
 void rsvg_parse_cssbuffer   (RsvgHandle *handle, const char *buff, size_t buflen);
 G_GNUC_INTERNAL
