@@ -38,6 +38,7 @@ pub struct State {
     pub cap: Option<StrokeLinecap>,
     pub fill_rule: Option<FillRule>,
     pub join: Option<StrokeLinejoin>,
+    pub letter_spacing: Option<LetterSpacing>,
     pub text_anchor: Option<TextAnchor>,
     pub xml_lang: Option<XmlLang>,
     pub xml_space: Option<XmlSpace>,
@@ -52,6 +53,7 @@ impl State {
             cap: Default::default(),
             fill_rule: Default::default(),
             join: Default::default(),
+            letter_spacing: Default::default(),
             text_anchor: Default::default(),
             xml_lang: Default::default(),
             xml_space: Default::default(),
@@ -71,6 +73,10 @@ impl State {
 
             Attribute::StrokeLinejoin => {
                 self.join = parse_property(value, ())?;
+            }
+
+            Attribute::LetterSpacing => {
+                self.letter_spacing = parse_property(value, ())?;
             }
 
             Attribute::TextAnchor => {
@@ -181,7 +187,6 @@ extern "C" {
     fn rsvg_state_get_font_variant(state: *const RsvgState) -> pango_sys::PangoVariant;
     fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
     fn rsvg_state_get_font_stretch(state: *const RsvgState) -> pango_sys::PangoStretch;
-    fn rsvg_state_get_letter_spacing(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_font_decor(state: *const RsvgState) -> *const TextDecoration;
     fn rsvg_state_get_clip_rule(state: *const RsvgState) -> cairo::FillRule;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
@@ -339,10 +344,6 @@ pub fn get_font_stretch(state: *const RsvgState) -> pango::Stretch {
     unsafe { from_glib(rsvg_state_get_font_stretch(state)) }
 }
 
-pub fn get_letter_spacing(state: *const RsvgState) -> RsvgLength {
-    unsafe { rsvg_state_get_letter_spacing(state) }
-}
-
 pub fn get_font_decor(state: *const RsvgState) -> Option<FontDecor> {
     unsafe {
         let td = rsvg_state_get_font_decor(state);
@@ -418,6 +419,15 @@ make_property!(
     "miter" => Miter,
     "round" => Round,
     "bevel" => Bevel,
+);
+
+// LetterSpacing -----------------------------------
+
+make_property!(
+    LetterSpacing,
+    default: RsvgLength::default(),
+    inherits_automatically: true,
+    newtype: RsvgLength
 );
 
 // TextAnchor --------------------------------------
@@ -531,6 +541,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.cap, &src.cap);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
     inherit(inherit_fn, &mut dst.join, &src.join);
+    inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
     inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
     inherit(inherit_fn, &mut dst.xml_lang, &src.xml_lang);
     inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);

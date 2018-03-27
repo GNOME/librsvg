@@ -110,8 +110,6 @@ struct _RsvgState {
     gboolean has_text_gravity;
     UnicodeBidi unicode_bidi;
     gboolean has_unicode_bidi;
-    RsvgLength letter_spacing;
-    gboolean has_letter_spacing;
 
     guint text_offset;
 
@@ -274,9 +272,6 @@ PangoWeight rsvg_state_get_font_weight (RsvgState *state);
 
 G_GNUC_INTERNAL
 PangoStretch rsvg_state_get_font_stretch (RsvgState *state);
-
-G_GNUC_INTERNAL
-RsvgLength rsvg_state_get_letter_spacing (RsvgState *state);
 
 G_GNUC_INTERNAL
 const TextDecoration *rsvg_state_get_font_decor (RsvgState *state);

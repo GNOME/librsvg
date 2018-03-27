@@ -21,7 +21,7 @@ use node::{
 use parsers::parse;
 use property_bag::PropertyBag;
 use space::xml_space_normalize;
-use state::{self, RsvgState, TextAnchor, UnicodeBidi, XmlLang};
+use state::{self, LetterSpacing, RsvgState, TextAnchor, UnicodeBidi, XmlLang};
 
 extern "C" {
     fn _rsvg_css_accumulate_baseline_shift(
@@ -428,11 +428,11 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 
     let attr_list = pango::AttrList::new();
 
-    attr_list.insert(
-        pango::Attribute::new_letter_spacing(to_pango_units(
-            state::get_letter_spacing(state).normalize(draw_ctx),
-        )).unwrap(),
-    );
+    if let Some(LetterSpacing(ref ls)) = state::get_state_rust(state).letter_spacing {
+        attr_list.insert(
+            pango::Attribute::new_letter_spacing(to_pango_units(ls.normalize(draw_ctx))).unwrap(),
+        );
+    }
 
     if let Some(font_decor) = state::get_font_decor(state) {
         if font_decor.underline {

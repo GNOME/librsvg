@@ -6,6 +6,7 @@ use regex::Regex;
 
 use std::f64::consts::*;
 use std::ptr;
+use std::str::FromStr;
 
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
@@ -135,6 +136,14 @@ impl Parse for RsvgLength {
         parser.expect_exhausted().map_err(|_| make_err())?;
 
         Ok(length)
+    }
+}
+
+impl FromStr for RsvgLength {
+    type Err = AttributeError;
+
+    fn from_str(s: &str) -> Result<RsvgLength, AttributeError> {
+        RsvgLength::parse(s, LengthDir::Both)
     }
 }
 
