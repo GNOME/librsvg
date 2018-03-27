@@ -102,6 +102,8 @@ typedef struct {
     GString *string;
 } RsvgSaxHandlerExtra;
 
+static void init_sax_handler_struct (void);
+
 RsvgLoad *
 rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
 {
@@ -130,7 +132,7 @@ rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
 }
 
 static xmlParserCtxtPtr
-rsvg_free_xml_parser_and_doc (xmlParserCtxtPtr ctxt) G_GNUC_WARN_UNUSED_RESULT;
+free_xml_parser_and_doc (xmlParserCtxtPtr ctxt) G_GNUC_WARN_UNUSED_RESULT;
 
 /* Frees the ctxt and its ctxt->myDoc - libxml2 doesn't free them together
  * http://xmlsoft.org/html/libxml-parser.html#xmlFreeParserCtxt
@@ -138,7 +140,7 @@ rsvg_free_xml_parser_and_doc (xmlParserCtxtPtr ctxt) G_GNUC_WARN_UNUSED_RESULT;
  * Returns NULL.
  */
 static xmlParserCtxtPtr
-rsvg_free_xml_parser_and_doc (xmlParserCtxtPtr ctxt)
+free_xml_parser_and_doc (xmlParserCtxtPtr ctxt)
 {
     if (ctxt) {
         if (ctxt->myDoc) {
@@ -159,7 +161,7 @@ rsvg_load_destroy (RsvgLoad *load)
 
     g_hash_table_destroy (load->entities);
 
-    load->ctxt = rsvg_free_xml_parser_and_doc (load->ctxt);
+    load->ctxt = free_xml_parser_and_doc (load->ctxt);
 
     if (load->compressed_input_stream) {
         g_object_unref (load->compressed_input_stream);
@@ -175,7 +177,7 @@ rsvg_load_destroy (RsvgLoad *load)
 }
 
 static void
-rsvg_style_handler_free (RsvgSaxHandler * self)
+style_handler_free (RsvgSaxHandler * self)
 {
     RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
 
@@ -187,19 +189,19 @@ rsvg_style_handler_free (RsvgSaxHandler * self)
 }
 
 static void
-rsvg_style_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len)
+style_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len)
 {
     RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
     g_string_append_len (z->style, ch, len);
 }
 
 static void
-rsvg_style_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts)
+style_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts)
 {
 }
 
 static void
-rsvg_style_handler_end (RsvgSaxHandler * self, const char *name)
+style_handler_end (RsvgSaxHandler * self, const char *name)
 {
     RsvgSaxHandlerStyle *z = (RsvgSaxHandlerStyle *) self;
     RsvgSaxHandler *prev = &z->parent->super;
@@ -213,7 +215,7 @@ rsvg_style_handler_end (RsvgSaxHandler * self, const char *name)
 }
 
 static void
-rsvg_start_style (RsvgLoad *load, RsvgPropertyBag *atts)
+start_style (RsvgLoad *load, RsvgPropertyBag *atts)
 {
     RsvgSaxHandlerStyle *handler = g_new0 (RsvgSaxHandlerStyle, 1);
     RsvgPropertyBagIter *iter;
@@ -221,10 +223,10 @@ rsvg_start_style (RsvgLoad *load, RsvgPropertyBag *atts)
     RsvgAttribute attr;
     const char *value;
 
-    handler->super.free = rsvg_style_handler_free;
-    handler->super.characters = rsvg_style_handler_characters;
-    handler->super.start_element = rsvg_style_handler_start;
-    handler->super.end_element = rsvg_style_handler_end;
+    handler->super.free = style_handler_free;
+    handler->super.characters = style_handler_characters;
+    handler->super.start_element = style_handler_start;
+    handler->super.end_element = style_handler_end;
     handler->load = load;
 
     handler->style = g_string_new (NULL);
@@ -471,7 +473,7 @@ node_set_atts (RsvgNode * node, RsvgHandle *handle, const NodeCreator *creator, 
 }
 
 static void
-rsvg_standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts)
+standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag * atts)
 {
     const NodeCreator *creator;
     RsvgNode *newnode = NULL;
@@ -513,36 +515,36 @@ typedef struct _RsvgSaxHandlerXinclude {
     gboolean in_fallback;
 } RsvgSaxHandlerXinclude;
 
-static void rsvg_start_xinclude (RsvgLoad *load, RsvgPropertyBag *atts);
-static void rsvg_characters_impl (RsvgLoad *load, const char *ch, gssize len);
+static void start_xinclude (RsvgLoad *load, RsvgPropertyBag *atts);
+static void characters_impl (RsvgLoad *load, const char *ch, gssize len);
 
 static void
-rsvg_xinclude_handler_free (RsvgSaxHandler * self)
+xinclude_handler_free (RsvgSaxHandler * self)
 {
     g_free (self);
 }
 
 static void
-rsvg_xinclude_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len)
+xinclude_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len)
 {
     RsvgSaxHandlerXinclude *z = (RsvgSaxHandlerXinclude *) self;
 
     if (z->in_fallback) {
-        rsvg_characters_impl (z->load, ch, len);
+        characters_impl (z->load, ch, len);
     }
 }
 
 static void
-rsvg_xinclude_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts)
+xinclude_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts)
 {
     RsvgSaxHandlerXinclude *z = (RsvgSaxHandlerXinclude *) self;
 
     if (!z->success) {
         if (z->in_fallback) {
             if (!strcmp (name, "xi:include"))
-                rsvg_start_xinclude (z->load, atts);
+                start_xinclude (z->load, atts);
             else
-                rsvg_standard_element_start (z->load, (const char *) name, atts);
+                standard_element_start (z->load, (const char *) name, atts);
         } else if (!strcmp (name, "xi:fallback")) {
             z->in_fallback = TRUE;
         }
@@ -550,7 +552,7 @@ rsvg_xinclude_handler_start (RsvgSaxHandler * self, const char *name, RsvgProper
 }
 
 static void
-rsvg_xinclude_handler_end (RsvgSaxHandler * self, const char *name)
+xinclude_handler_end (RsvgSaxHandler * self, const char *name)
 {
     RsvgSaxHandlerXinclude *z = (RsvgSaxHandlerXinclude *) self;
 
@@ -569,8 +571,8 @@ rsvg_xinclude_handler_end (RsvgSaxHandler * self, const char *name)
 }
 
 static void
-rsvg_set_xml_parse_options(xmlParserCtxtPtr xml_parser,
-                           gboolean unlimited_size)
+set_xml_parse_options(xmlParserCtxtPtr xml_parser,
+                      gboolean unlimited_size)
 {
     int options;
 
@@ -595,8 +597,9 @@ create_xml_push_parser (RsvgLoad *load,
 {
     xmlParserCtxtPtr parser;
 
+    init_sax_handler_struct ();
     parser = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, load, NULL, 0, base_uri);
-    rsvg_set_xml_parse_options (parser, load->unlimited_size);
+    set_xml_parse_options (parser, load->unlimited_size);
 
     return parser;
 }
@@ -609,13 +612,14 @@ create_xml_stream_parser (RsvgLoad      *load,
 {
     xmlParserCtxtPtr parser;
 
+    init_sax_handler_struct ();
     parser = rsvg_create_xml_parser_from_stream (&rsvgSAXHandlerStruct,
                                                  load,
                                                  stream,
                                                  cancellable,
                                                  error);
     if (parser) {
-        rsvg_set_xml_parse_options (parser, load->unlimited_size);
+        set_xml_parse_options (parser, load->unlimited_size);
     }
 
     return parser;
@@ -623,7 +627,7 @@ create_xml_stream_parser (RsvgLoad      *load,
 
 /* http://www.w3.org/TR/xinclude/ */
 static void
-rsvg_start_xinclude (RsvgLoad *load, RsvgPropertyBag * atts)
+start_xinclude (RsvgLoad *load, RsvgPropertyBag * atts)
 {
     RsvgSaxHandlerXinclude *handler;
     const char *href = NULL;
@@ -678,7 +682,7 @@ rsvg_start_xinclude (RsvgLoad *load, RsvgPropertyBag * atts)
                     data_len = text_data_len;
                 }
 
-                rsvg_characters_impl (load, data, data_len);
+                characters_impl (load, data, data_len);
 
                 g_free (data);
 
@@ -702,7 +706,7 @@ rsvg_start_xinclude (RsvgLoad *load, RsvgPropertyBag * atts)
                 if (xml_parser) {
                     (void) xmlParseDocument (xml_parser);
 
-                    xml_parser = rsvg_free_xml_parser_and_doc (xml_parser);
+                    xml_parser = free_xml_parser_and_doc (xml_parser);
                 }
 
                 g_clear_error (&err);
@@ -715,10 +719,10 @@ rsvg_start_xinclude (RsvgLoad *load, RsvgPropertyBag * atts)
     /* needed to handle xi:fallback */
     handler = g_new0 (RsvgSaxHandlerXinclude, 1);
 
-    handler->super.free = rsvg_xinclude_handler_free;
-    handler->super.characters = rsvg_xinclude_handler_characters;
-    handler->super.start_element = rsvg_xinclude_handler_start;
-    handler->super.end_element = rsvg_xinclude_handler_end;
+    handler->super.free = xinclude_handler_free;
+    handler->super.characters = xinclude_handler_characters;
+    handler->super.start_element = xinclude_handler_start;
+    handler->super.end_element = xinclude_handler_end;
     handler->prev_handler = load->handler;
     handler->load = load;
     handler->success = success;
@@ -729,7 +733,7 @@ rsvg_start_xinclude (RsvgLoad *load, RsvgPropertyBag * atts)
 /* end xinclude */
 
 static void
-rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
+sax_start_element_cb (void *data, const xmlChar * name, const xmlChar ** atts)
 {
     RsvgPropertyBag bag;
     RsvgLoad *load = data;
@@ -747,18 +751,18 @@ rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
                 name = (const xmlChar *) (tempname + 1);
 
         if (!strcmp ((const char *) name, "style"))
-            rsvg_start_style (load, bag);
+            start_style (load, bag);
         else if (!strcmp ((const char *) name, "include"))      /* xi:include */
-            rsvg_start_xinclude (load, bag);
+            start_xinclude (load, bag);
         else
-            rsvg_standard_element_start (load, (const char *) name, bag);
+            standard_element_start (load, (const char *) name, bag);
     }
 
     rsvg_property_bag_free (bag);
 }
 
 static void
-rsvg_end_element (void *data, const xmlChar * xmlname)
+sax_end_element_cb (void *data, const xmlChar * xmlname)
 {
     RsvgLoad *load =  data;
     const char *name = (const char *) xmlname;
@@ -868,7 +872,7 @@ add_new_chars_child_to_current_node (RsvgLoad *load)
 }
 
 static void
-rsvg_characters_impl (RsvgLoad *load, const char *ch, gssize len)
+characters_impl (RsvgLoad *load, const char *ch, gssize len)
 {
     RsvgNode *node = NULL;
 
@@ -893,7 +897,7 @@ rsvg_characters_impl (RsvgLoad *load, const char *ch, gssize len)
 }
 
 static void
-rsvg_characters (void *data, const xmlChar * ch, int len)
+sax_characters_cb (void *data, const xmlChar * ch, int len)
 {
     RsvgLoad *load = data;
 
@@ -902,11 +906,11 @@ rsvg_characters (void *data, const xmlChar * ch, int len)
         return;
     }
 
-    rsvg_characters_impl (load, (const char *) ch, len);
+    characters_impl (load, (const char *) ch, len);
 }
 
 static xmlEntityPtr
-rsvg_get_entity (void *data, const xmlChar * name)
+sax_get_entity_cb (void *data, const xmlChar * name)
 {
     RsvgLoad *load = data;
     xmlEntityPtr entity;
@@ -917,8 +921,8 @@ rsvg_get_entity (void *data, const xmlChar * name)
 }
 
 static void
-rsvg_entity_decl (void *data, const xmlChar * name, int type,
-                  const xmlChar * publicId, const xmlChar * systemId, xmlChar * content)
+sax_entity_decl_cb (void *data, const xmlChar * name, int type,
+                    const xmlChar * publicId, const xmlChar * systemId, xmlChar * content)
 {
     RsvgLoad *load = data;
     xmlEntityPtr entity;
@@ -963,16 +967,16 @@ rsvg_entity_decl (void *data, const xmlChar * name, int type,
 }
 
 static void
-rsvg_unparsed_entity_decl (void *data,
-                           const xmlChar * name,
-                           const xmlChar * publicId,
-                           const xmlChar * systemId, const xmlChar * notationName)
+sax_unparsed_entity_decl_cb (void *data,
+                             const xmlChar * name,
+                             const xmlChar * publicId,
+                             const xmlChar * systemId, const xmlChar * notationName)
 {
-    rsvg_entity_decl (data, name, XML_INTERNAL_GENERAL_ENTITY, publicId, systemId, NULL);
+    sax_entity_decl_cb (data, name, XML_INTERNAL_GENERAL_ENTITY, publicId, systemId, NULL);
 }
 
 static xmlEntityPtr
-rsvg_get_parameter_entity (void *data, const xmlChar * name)
+sax_get_parameter_entity_cb (void *data, const xmlChar * name)
 {
     RsvgLoad *load = data;
     xmlEntityPtr entity;
@@ -983,7 +987,7 @@ rsvg_get_parameter_entity (void *data, const xmlChar * name)
 }
 
 static void
-rsvg_error_cb (void *data, const char *msg, ...)
+sax_error_cb (void *data, const char *msg, ...)
 {
 #ifdef G_ENABLE_DEBUG
     va_list args;
@@ -995,7 +999,7 @@ rsvg_error_cb (void *data, const char *msg, ...)
 }
 
 static void
-rsvg_processing_instruction (void *user_data, const xmlChar * target, const xmlChar * data)
+sax_processing_instruction_cb (void *user_data, const xmlChar * target, const xmlChar * data)
 {
     /* http://www.w3.org/TR/xml-stylesheet/ */
     RsvgLoad *load = user_data;
@@ -1066,29 +1070,8 @@ rsvg_processing_instruction (void *user_data, const xmlChar * target, const xmlC
     }
 }
 
-void
-rsvg_SAX_handler_struct_init (void)
-{
-    if (!rsvgSAXHandlerStructInited) {
-        rsvgSAXHandlerStructInited = TRUE;
-
-        memset (&rsvgSAXHandlerStruct, 0, sizeof (rsvgSAXHandlerStruct));
-
-        rsvgSAXHandlerStruct.getEntity = rsvg_get_entity;
-        rsvgSAXHandlerStruct.entityDecl = rsvg_entity_decl;
-        rsvgSAXHandlerStruct.unparsedEntityDecl = rsvg_unparsed_entity_decl;
-        rsvgSAXHandlerStruct.getParameterEntity = rsvg_get_parameter_entity;
-        rsvgSAXHandlerStruct.characters = rsvg_characters;
-        rsvgSAXHandlerStruct.error = rsvg_error_cb;
-        rsvgSAXHandlerStruct.cdataBlock = rsvg_characters;
-        rsvgSAXHandlerStruct.startElement = rsvg_start_element;
-        rsvgSAXHandlerStruct.endElement = rsvg_end_element;
-        rsvgSAXHandlerStruct.processingInstruction = rsvg_processing_instruction;
-    }
-}
-
 static void
-rsvg_set_error (GError **error, xmlParserCtxtPtr ctxt)
+set_error_from_xml (GError **error, xmlParserCtxtPtr ctxt)
 {
     xmlErrorPtr xerr;
 
@@ -1119,7 +1102,7 @@ write_impl (RsvgLoad *load, const guchar * buf, gsize count, GError **error)
 
     result = xmlParseChunk (load->ctxt, (char *) buf, count, 0);
     if (result != 0) {
-        rsvg_set_error (error, load->ctxt);
+        set_error_from_xml (error, load->ctxt);
         return FALSE;
     }
 
@@ -1145,12 +1128,12 @@ close_impl (RsvgLoad *load, GError ** error)
 
         result = xmlParseChunk (load->ctxt, "", 0, TRUE);
         if (result != 0) {
-            rsvg_set_error (error, load->ctxt);
-            load->ctxt = rsvg_free_xml_parser_and_doc (load->ctxt);
+            set_error_from_xml (error, load->ctxt);
+            load->ctxt = free_xml_parser_and_doc (load->ctxt);
             return FALSE;
         }
 
-        load->ctxt = rsvg_free_xml_parser_and_doc (load->ctxt);
+        load->ctxt = free_xml_parser_and_doc (load->ctxt);
     }
 
     free_element_name_stack (load);
@@ -1231,7 +1214,7 @@ rsvg_load_read_stream_sync (RsvgLoad *load,
         if (err)
             g_propagate_error (error, err);
         else
-            rsvg_set_error (error, load->ctxt);
+            set_error_from_xml (error, load->ctxt);
 
         goto out;
     }
@@ -1245,7 +1228,7 @@ rsvg_load_read_stream_sync (RsvgLoad *load,
 
   out:
 
-    load->ctxt = rsvg_free_xml_parser_and_doc (load->ctxt);
+    load->ctxt = free_xml_parser_and_doc (load->ctxt);
 
     g_object_unref (stream);
 
@@ -1351,3 +1334,23 @@ rsvg_load_close (RsvgLoad *load, GError **error)
     return result;
 }
 
+static void
+init_sax_handler_struct (void)
+{
+    if (!rsvgSAXHandlerStructInited) {
+        rsvgSAXHandlerStructInited = TRUE;
+
+        memset (&rsvgSAXHandlerStruct, 0, sizeof (rsvgSAXHandlerStruct));
+
+        rsvgSAXHandlerStruct.getEntity = sax_get_entity_cb;
+        rsvgSAXHandlerStruct.entityDecl = sax_entity_decl_cb;
+        rsvgSAXHandlerStruct.unparsedEntityDecl = sax_unparsed_entity_decl_cb;
+        rsvgSAXHandlerStruct.getParameterEntity = sax_get_parameter_entity_cb;
+        rsvgSAXHandlerStruct.characters = sax_characters_cb;
+        rsvgSAXHandlerStruct.error = sax_error_cb;
+        rsvgSAXHandlerStruct.cdataBlock = sax_characters_cb;
+        rsvgSAXHandlerStruct.startElement = sax_start_element_cb;
+        rsvgSAXHandlerStruct.endElement = sax_end_element_cb;
+        rsvgSAXHandlerStruct.processingInstruction = sax_processing_instruction_cb;
+    }
+}

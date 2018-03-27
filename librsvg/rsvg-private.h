@@ -568,8 +568,6 @@ G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dpi_y);
 
 G_GNUC_INTERNAL
-void rsvg_SAX_handler_struct_init (void);
-G_GNUC_INTERNAL
 char *rsvg_get_url_string (const char *str, const char **out_rest);
 G_GNUC_INTERNAL
 void rsvg_return_if_fail_warning (const char *pretty_function,
