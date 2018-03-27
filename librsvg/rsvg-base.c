@@ -1568,9 +1568,8 @@ rsvg_load_close (RsvgLoad *load, GError **error)
          *
          * We should make it so that the incoming data is decompressed and parsed on the fly.
          */
-        load->handle->priv->hstate = RSVG_HANDLE_STATE_START;
         load->state = LOAD_STATE_START;
-        ret = rsvg_handle_read_stream_sync (load->handle, load->compressed_input_stream, NULL, error);
+        ret = rsvg_load_read_stream_sync (load, load->compressed_input_stream, NULL, error);
         g_object_unref (load->compressed_input_stream);
         load->compressed_input_stream = NULL;
         load->state = LOAD_STATE_CLOSED;
