@@ -161,9 +161,6 @@ struct RsvgHandlePrivate {
     double dpi_x;
     double dpi_y;
 
-    GString *title;
-    GString *desc;
-
     gchar *base_uri;
     GFile *base_gfile;
 

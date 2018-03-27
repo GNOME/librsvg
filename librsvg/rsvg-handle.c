@@ -213,10 +213,6 @@ rsvg_handle_dispose (GObject *instance)
     if (self->priv->user_data_destroy)
         (*self->priv->user_data_destroy) (self->priv->user_data);
 
-    if (self->priv->title)
-        g_string_free (self->priv->title, TRUE);
-    if (self->priv->desc)
-        g_string_free (self->priv->desc, TRUE);
     if (self->priv->base_uri)
         g_free (self->priv->base_uri);
 
@@ -295,10 +291,10 @@ rsvg_handle_get_property (GObject * instance, guint prop_id, GValue * value, GPa
         g_value_set_double (value, dim.ex);
         break;
     case PROP_TITLE:
-        g_value_set_string (value, rsvg_handle_get_title (self));
+        /* deprecated */
         break;
     case PROP_DESC:
-        g_value_set_string (value, rsvg_handle_get_desc (self));
+        /* deprecated */
         break;
     case PROP_METADATA:
         g_value_set_string (value, rsvg_handle_get_metadata (self));
@@ -718,10 +714,7 @@ rsvg_handle_get_metadata (RsvgHandle * handle)
  * rsvg_handle_get_title:
  * @handle: An #RsvgHandle
  *
- * Returns the SVG's title in UTF-8 or %NULL. You must make a copy
- * of this title if you wish to use it after @handle has been freed.
- *
- * Returns: (nullable): The SVG's title
+ * Returns: (nullable): This function always returns NULL.
  *
  * Since: 2.4
  *
@@ -732,20 +725,14 @@ rsvg_handle_get_title (RsvgHandle * handle)
 {
     g_return_val_if_fail (handle, NULL);
 
-    if (handle->priv->title)
-        return handle->priv->title->str;
-    else
-        return NULL;
+    return NULL;
 }
 
 /**
  * rsvg_handle_get_desc:
  * @handle: An #RsvgHandle
  *
- * Returns the SVG's description in UTF-8 or %NULL. You must make a copy
- * of this description if you wish to use it after @handle has been freed.
- *
- * Returns: (nullable): The SVG's description
+ * Returns: (nullable): This function always returns NULL.
  *
  * Since: 2.4
  *
@@ -756,10 +743,7 @@ rsvg_handle_get_desc (RsvgHandle * handle)
 {
     g_return_val_if_fail (handle, NULL);
 
-    if (handle->priv->desc)
-        return handle->priv->desc->str;
-    else
-        return NULL;
+    return NULL;
 }
 
 /**

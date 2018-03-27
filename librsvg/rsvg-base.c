@@ -153,12 +153,7 @@ typedef struct {
     RsvgLoad *load;
     const char *name;
     GString *string;
-    GString **stringptr;
 } RsvgSaxHandlerExtra;
-
-/* hide this fact from the general public */
-typedef RsvgSaxHandlerExtra RsvgSaxHandlerTitle;
-typedef RsvgSaxHandlerExtra RsvgSaxHandlerDesc;
 
 static RsvgLoad *
 rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
@@ -546,108 +541,6 @@ rsvg_standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag *
     newnode = rsvg_node_unref (newnode);
 }
 
-/* extra (title, desc) */
-
-static void
-rsvg_extra_handler_free (RsvgSaxHandler * self)
-{
-    RsvgSaxHandlerExtra *z = (RsvgSaxHandlerExtra *) self;
-
-    if (z->stringptr) {
-        if (*z->stringptr)
-            g_string_free (*z->stringptr, TRUE);
-        *z->stringptr = z->string;
-    } else if (z->string) {
-        g_string_free (z->string, TRUE);
-    }
-
-    g_free (self);
-}
-
-static void
-rsvg_extra_handler_characters (RsvgSaxHandler * self, const char *ch, gssize len)
-{
-    RsvgSaxHandlerExtra *z = (RsvgSaxHandlerExtra *) self;
-
-    /* This isn't quite the correct behavior - in theory, any graphics
-       element may contain a title, desc, or metadata element */
-
-    if (!z->string)
-        return;
-
-    if (!ch || !len)
-        return;
-
-    g_string_append_len (z->string, ch, len);
-}
-
-static void
-rsvg_extra_handler_start (RsvgSaxHandler * self, const char *name, RsvgPropertyBag atts)
-{
-}
-
-static void
-rsvg_extra_handler_end (RsvgSaxHandler * self, const char *name)
-{
-    RsvgSaxHandlerExtra *z = (RsvgSaxHandlerExtra *) self;
-
-    if (!strcmp (name, z->name)) {
-        if (z->load->handler != NULL) {
-            z->load->handler->free (z->load->handler);
-            z->load->handler = NULL;
-        }
-    }
-}
-
-static RsvgSaxHandlerExtra *
-rsvg_start_extra (RsvgLoad *load,
-                  const char *name,
-                  GString **stringptr)
-{
-    RsvgSaxHandlerExtra *handler = g_new0 (RsvgSaxHandlerExtra, 1);
-    gboolean do_care;
-
-    /* only parse <extra> for the <svg> node.
-     * This isn't quite the correct behavior - any graphics
-     * element may contain a <extra> element.
-     */
-    do_care = load->treebase != NULL
-        && rsvg_node_is_same (load->treebase, load->currentnode);
-
-    handler->super.free = rsvg_extra_handler_free;
-    handler->super.characters = rsvg_extra_handler_characters;
-    handler->super.start_element = rsvg_extra_handler_start;
-    handler->super.end_element = rsvg_extra_handler_end;
-    handler->load = load;
-    handler->name = name; /* interned */
-    handler->string = do_care ? g_string_new (NULL) : NULL;
-    handler->stringptr = do_care ? stringptr : NULL;
-
-    load->handler = &handler->super;
-
-    return handler;
-}
-
-/* start desc */
-
-static void
-rsvg_start_desc (RsvgLoad *load)
-{
-    rsvg_start_extra (load, "desc", &load->handle->priv->desc);
-}
-
-/* end desc */
-
-/* start title */
-
-static void
-rsvg_start_title (RsvgLoad *load)
-{
-    rsvg_start_extra (load, "title", &load->handle->priv->title);
-}
-
-/* end title */
-
 /* start xinclude */
 
 typedef struct _RsvgSaxHandlerXinclude {
@@ -894,10 +787,6 @@ rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
 
         if (!strcmp ((const char *) name, "style"))
             rsvg_start_style (load, bag);
-        else if (!strcmp ((const char *) name, "title"))
-            rsvg_start_title (load);
-        else if (!strcmp ((const char *) name, "desc"))
-            rsvg_start_desc (load);
         else if (!strcmp ((const char *) name, "include"))      /* xi:include */
             rsvg_start_xinclude (load, bag);
         else
