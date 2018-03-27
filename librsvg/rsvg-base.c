@@ -97,6 +97,7 @@ double rsvg_internal_dpi_y = RSVG_DEFAULT_DPI_Y;
 
 struct RsvgLoad {
     RsvgHandle *handle;
+    gboolean unlimited_size;
 
     LoadState state;
 
@@ -160,11 +161,12 @@ typedef RsvgSaxHandlerExtra RsvgSaxHandlerTitle;
 typedef RsvgSaxHandlerExtra RsvgSaxHandlerDesc;
 
 static RsvgLoad *
-rsvg_load_new (RsvgHandle *handle)
+rsvg_load_new (RsvgHandle *handle, gboolean unlimited_size)
 {
     RsvgLoad *load = g_new0 (RsvgLoad, 1);
 
     load->handle = handle;
+    load->unlimited_size = unlimited_size;
     load->state = LOAD_STATE_START;
     load->cancellable = NULL;
     load->handler = NULL;
@@ -714,14 +716,14 @@ rsvg_xinclude_handler_end (RsvgSaxHandler * self, const char *name)
 
 static void
 rsvg_set_xml_parse_options(xmlParserCtxtPtr xml_parser,
-                           RsvgHandleFlags flags)
+                           gboolean unlimited_size)
 {
     int options;
 
     options = (XML_PARSE_NONET |
                XML_PARSE_BIG_LINES);
 
-    if (flags & RSVG_HANDLE_FLAG_UNLIMITED) {
+    if (unlimited_size) {
         options |= XML_PARSE_HUGE;
     }
 
@@ -740,7 +742,7 @@ create_xml_push_parser (RsvgLoad *load,
     xmlParserCtxtPtr parser;
 
     parser = xmlCreatePushParserCtxt (&rsvgSAXHandlerStruct, load, NULL, 0, base_uri);
-    rsvg_set_xml_parse_options (parser, load->handle->priv->flags);
+    rsvg_set_xml_parse_options (parser, load->unlimited_size);
 
     return parser;
 }
@@ -759,7 +761,7 @@ create_xml_stream_parser (RsvgLoad      *load,
                                                  cancellable,
                                                  error);
     if (parser) {
-        rsvg_set_xml_parse_options (parser, load->handle->priv->flags);
+        rsvg_set_xml_parse_options (parser, load->unlimited_size);
     }
 
     return parser;
@@ -1612,7 +1614,7 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
 
     if (priv->hstate == RSVG_HANDLE_STATE_START) {
         priv->hstate = RSVG_HANDLE_STATE_LOADING;
-        priv->load = rsvg_load_new (handle);
+        priv->load = rsvg_load_new (handle, (priv->flags & RSVG_HANDLE_FLAG_UNLIMITED) != 0);
     }
 
     g_assert (priv->hstate == RSVG_HANDLE_STATE_LOADING);
@@ -1706,7 +1708,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 
     saved_load = priv->load;
 
-    priv->load = rsvg_load_new (handle);
+    priv->load = rsvg_load_new (handle, (priv->flags & RSVG_HANDLE_FLAG_UNLIMITED) != 0);
     res = rsvg_load_read_stream_sync (priv->load, stream, cancellable, error);
     treebase = rsvg_load_destroy (priv->load);
 
