@@ -1622,6 +1622,23 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
     return rsvg_load_write (priv->load, buf, count, error);
 }
 
+static gboolean
+finish_load (RsvgHandle *handle, gboolean was_successful)
+{
+    RsvgNode *treebase = rsvg_load_destroy (handle->priv->load);
+    handle->priv->load = NULL;
+
+    if (was_successful) {
+        handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
+        handle->priv->treebase = treebase;
+    } else {
+        handle->priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
+        treebase = rsvg_node_unref (treebase);
+    }
+
+    return was_successful;
+}
+
 /**
  * rsvg_handle_close:
  * @handle: a #RsvgHandle
@@ -1638,7 +1655,6 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
 {
     RsvgHandlePrivate *priv;
     gboolean result;
-    RsvgNode *treebase;
 
     rsvg_return_val_if_fail (handle, FALSE, error);
     priv = handle->priv;
@@ -1649,18 +1665,7 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
         return TRUE;
     }
 
-    result = rsvg_load_close (priv->load, error);
-
-    treebase = rsvg_load_destroy (priv->load);
-    priv->load = NULL;
-
-    if (result) {
-        priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
-        priv->treebase = treebase;
-    } else {
-        priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
-        treebase = rsvg_node_unref (treebase);
-    }
+    result = finish_load (handle, rsvg_load_close (priv->load, error));
 
     return result;
 }
@@ -1691,8 +1696,7 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
                               GError      **error)
 {
     RsvgHandlePrivate *priv;
-    RsvgNode *treebase;
-    gboolean res;
+    gboolean result;
     RsvgLoad *saved_load;
 
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
@@ -1709,20 +1713,11 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     saved_load = priv->load;
 
     priv->load = rsvg_load_new (handle, (priv->flags & RSVG_HANDLE_FLAG_UNLIMITED) != 0);
-    res = rsvg_load_read_stream_sync (priv->load, stream, cancellable, error);
-    treebase = rsvg_load_destroy (priv->load);
+    result = finish_load (handle, rsvg_load_read_stream_sync (priv->load, stream, cancellable, error));
 
     priv->load = saved_load;
 
-    if (res) {
-        priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
-        priv->treebase = treebase;
-    } else {
-        priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
-        treebase = rsvg_node_unref (treebase);
-    }
-
-    return res;
+    return result;
 }
 
 /**
