@@ -129,15 +129,17 @@ typedef enum {
     LOAD_STATE_EXPECTING_GZ_1,
     LOAD_STATE_READING_COMPRESSED,
     LOAD_STATE_READING,
-    LOAD_STATE_CLOSED_OK,
-    LOAD_STATE_CLOSED_ERROR
+    LOAD_STATE_CLOSED
 } LoadState;
+
+typedef struct RsvgLoad RsvgLoad;
 
 struct RsvgHandlePrivate {
     RsvgHandleFlags flags;
 
     RsvgHandleState hstate;
-    LoadState load_state;
+
+    RsvgLoad *load;
 
     gboolean is_disposed;
 
@@ -148,28 +150,12 @@ struct RsvgHandlePrivate {
     GPtrArray *all_nodes;
 
     RsvgDefs *defs; /* lookup table for nodes that have an id="foo" attribute */
-    RsvgNode *currentnode;
     /* this is the root level of the displayable tree, essentially what the
        file is converted into at the end */
     RsvgNode *treebase;
 
-    /* Stack of element names while parsing; used to know when to stop parsing
-     * the current element.
-     */
-    GSList *element_name_stack;
-
     GHashTable *css_props;
 
-    /* not a handler stack. each nested handler keeps
-     * track of its parent
-     */
-    RsvgSaxHandler *handler;
-    int handler_nest;
-
-    GHashTable *entities;       /* g_malloc'd string -> xmlEntityPtr */
-
-    xmlParserCtxtPtr ctxt;
-    GError **error;
     GCancellable *cancellable;
 
     double dpi_x;
@@ -182,8 +168,6 @@ struct RsvgHandlePrivate {
     GFile *base_gfile;
 
     gboolean in_loop;		/* see get_dimension() */
-
-    GInputStream *compressed_input_stream; /* for rsvg_handle_write of svgz data */
 
     gboolean is_testing; /* Are we being run from the test suite? */
 };
@@ -601,6 +585,9 @@ char *rsvg_get_url_string (const char *str, const char **out_rest);
 G_GNUC_INTERNAL
 void rsvg_return_if_fail_warning (const char *pretty_function,
                                   const char *expression, GError ** error);
+
+G_GNUC_INTERNAL
+void rsvg_load_destroy (RsvgLoad *load);
 
 G_GNUC_INTERNAL
 char *rsvg_handle_resolve_uri (RsvgHandle *handle,

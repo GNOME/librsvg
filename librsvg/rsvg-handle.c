@@ -153,14 +153,8 @@ rsvg_handle_init (RsvgHandle * self)
 
     self->priv->flags = RSVG_HANDLE_FLAGS_NONE;
     self->priv->hstate = RSVG_HANDLE_STATE_START;
-    self->priv->load_state = LOAD_STATE_START;
     self->priv->all_nodes = g_ptr_array_new ();
     self->priv->defs = rsvg_defs_new (self);
-    self->priv->handler_nest = 0;
-    self->priv->entities = g_hash_table_new_full (g_str_hash,
-                                                  g_str_equal,
-                                                  g_free,
-                                                  (GDestroyNotify) xmlFreeNode);
     self->priv->dpi_x = rsvg_internal_dpi_x;
     self->priv->dpi_y = rsvg_internal_dpi_y;
 
@@ -169,12 +163,8 @@ rsvg_handle_init (RsvgHandle * self)
                                                    g_free,
                                                    (GDestroyNotify) g_hash_table_destroy);
 
-    self->priv->ctxt = NULL;
-    self->priv->currentnode = NULL;
     self->priv->treebase = NULL;
-    self->priv->element_name_stack = NULL;
 
-    self->priv->compressed_input_stream = NULL;
     self->priv->cancellable = NULL;
 
     self->priv->is_disposed = FALSE;
@@ -211,10 +201,6 @@ rsvg_handle_dispose (GObject *instance)
 
     self->priv->is_disposed = TRUE;
 
-    self->priv->ctxt = rsvg_free_xml_parser_and_doc (self->priv->ctxt);
-
-    g_hash_table_destroy (self->priv->entities);
-
     free_nodes (self);
 
     rsvg_defs_free (self->priv->defs);
@@ -223,7 +209,6 @@ rsvg_handle_dispose (GObject *instance)
     g_hash_table_destroy (self->priv->css_props);
 
     self->priv->treebase = rsvg_node_unref (self->priv->treebase);
-    self->priv->currentnode = rsvg_node_unref (self->priv->currentnode);
 
     if (self->priv->user_data_destroy)
         (*self->priv->user_data_destroy) (self->priv->user_data);
@@ -239,9 +224,9 @@ rsvg_handle_dispose (GObject *instance)
         g_object_unref (self->priv->base_gfile);
         self->priv->base_gfile = NULL;
     }
-    if (self->priv->compressed_input_stream) {
-        g_object_unref (self->priv->compressed_input_stream);
-        self->priv->compressed_input_stream = NULL;
+    if (self->priv->load) {
+        rsvg_load_destroy (self->priv->load);
+        self->priv->load = NULL;
     }
 
     g_clear_object (&self->priv->cancellable);
