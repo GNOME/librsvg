@@ -62,6 +62,41 @@ macro_rules! make_ident_property {
             }
         }
     };
+
+    ($name: ident,
+     default: $default: expr,
+     inherits_automatically: $inherits_automatically: expr,
+     $type: ty
+    ) => {
+        #[derive(Debug, Clone, PartialEq)]
+        pub struct $name($type);
+
+        impl Default for $name {
+            fn default() -> $name {
+                $name($default)
+            }
+        }
+
+        impl ::property_macros::Property for $name {
+            fn inherits_automatically() -> bool {
+                $inherits_automatically
+            }
+        }
+
+        impl ::parsers::Parse for $name {
+            type Data = ();
+            type Err = ::error::AttributeError;
+
+            fn parse(s: &str, _: Self::Data) -> Result<$name, ::error::AttributeError> {
+                match s.trim().parse() {
+                    Ok(val) => Ok($name(val)),
+
+                    // FIXME: should this convert the string::ParseError into AttributeError?
+                    _ => Err(::error::AttributeError::from(::parsers::ParseError::new("invalid value"))),
+                }
+            }
+        }
+    };
 }
 
 #[cfg(test)]
@@ -84,8 +119,29 @@ mod tests {
 
         assert_eq!(<Foo as Default>::default(), Foo::Def);
         assert_eq!(<Foo as Property>::inherits_automatically(), true);
-
         assert!(<Foo as Parse>::parse("blargh", ()).is_err());
         assert_eq!(<Foo as Parse>::parse("bar", ()), Ok(Foo::Bar));
+
+        make_ident_property! {
+            Bar,
+            default: "bar".to_string(),
+            inherits_automatically: true,
+            String
+        }
+
+        assert_eq!(<Bar as Default>::default(), Bar("bar".to_string()));
+        assert_eq!(<Bar as Property>::inherits_automatically(), true);
+        assert_eq!(<Bar as Parse>::parse("test", ()), Ok(Bar("test".to_string())));
+
+        make_ident_property! {
+            Baz,
+            default: 42f64,
+            inherits_automatically: true,
+            f64
+        }
+
+        assert_eq!(<Baz as Default>::default(), Baz(42f64));
+        assert_eq!(<Baz as Property>::inherits_automatically(), true);
+        assert_eq!(<Baz as Parse>::parse("42", ()), Ok(Baz(42f64)));
     }
 }
