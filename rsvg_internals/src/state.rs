@@ -178,6 +178,7 @@ extern "C" {
     fn rsvg_state_get_clip_rule(state: *const RsvgState) -> cairo::FillRule;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
+    fn rsvg_state_get_comp_op(state: *const RsvgState) -> cairo::Operator;
 
     fn rsvg_state_get_state_rust(state: *const RsvgState) -> *mut State;
 }
@@ -367,6 +368,10 @@ pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
 
 pub fn get_fill_opacity(state: *const RsvgState) -> u8 {
     unsafe { rsvg_state_get_fill_opacity(state) }
+}
+
+pub fn get_comp_op(state: *const RsvgState) -> cairo::Operator {
+    unsafe { rsvg_state_get_comp_op(state) }
 }
 
 pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
