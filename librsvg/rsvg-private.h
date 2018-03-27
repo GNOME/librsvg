@@ -207,7 +207,6 @@ struct RsvgRender {
     void (*free) (RsvgRender * self);
 
     void             (*set_affine_on_cr)        (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix_t *affine);
-    PangoContext    *(*get_pango_context)       (RsvgDrawingCtx *ctx);
     void             (*pop_discrete_layer)      (RsvgDrawingCtx *ctx);
     void             (*push_discrete_layer)     (RsvgDrawingCtx *ctx);
     void             (*add_clipping_rect)       (RsvgDrawingCtx *ctx, double x, double y,

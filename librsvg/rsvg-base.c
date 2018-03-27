@@ -33,6 +33,7 @@
 #include "rsvg-styles.h"
 #include "rsvg-io.h"
 #include "rsvg-load.h"
+#include "rsvg-cairo-draw.h"
 #include "rsvg-cairo-render.h"
 
 #include <gio/gio.h>
@@ -530,7 +531,7 @@ rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, cairo_
 PangoContext *
 rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx)
 {
-    return draw_ctx->render->get_pango_context (draw_ctx);
+    return rsvg_cairo_get_pango_context (draw_ctx);
 }
 
 const char *

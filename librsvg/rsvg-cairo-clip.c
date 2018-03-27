@@ -84,7 +84,6 @@ rsvg_cairo_clip_render_new (cairo_t *cr, RsvgCairoRender *parent)
     render->type = RSVG_RENDER_TYPE_CAIRO_CLIP;
     render->free = rsvg_cairo_clip_render_free;
     render->set_affine_on_cr = rsvg_cairo_set_affine_on_cr;
-    render->get_pango_context = rsvg_cairo_get_pango_context;
     render->pop_discrete_layer = rsvg_cairo_clip_pop_discrete_layer;
     render->push_discrete_layer = rsvg_cairo_clip_push_discrete_layer;
     render->add_clipping_rect = rsvg_cairo_clip_add_clipping_rect;
