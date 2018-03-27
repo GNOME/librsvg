@@ -32,7 +32,6 @@ macro_rules! make_ident_property {
      inherits_automatically: $inherits_automatically: expr,
      $($str_prop: expr => $variant: ident,)+
     ) => {
-        #[repr(C)]
         #[derive(Debug, Copy, Clone, PartialEq)]
         pub enum $name {
             $($variant),+
