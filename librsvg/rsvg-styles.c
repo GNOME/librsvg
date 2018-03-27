@@ -175,7 +175,6 @@ rsvg_state_init (RsvgState * state)
     state->has_stop_opacity = FALSE;
     state->has_font_size = FALSE;
     state->has_font_family = FALSE;
-    state->has_lang = FALSE;
     state->has_font_style = FALSE;
     state->has_font_variant = FALSE;
     state->has_font_weight = FALSE;
@@ -226,9 +225,6 @@ rsvg_state_finalize (RsvgState * state)
 
     g_free (state->font_family);
     state->font_family = NULL;
-
-    g_free (state->lang);
-    state->lang = NULL;
 
     g_free (state->startMarker);
     state->startMarker = NULL;
@@ -292,7 +288,6 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
     dst->mask = g_strdup (src->mask);
     dst->clip_path = g_strdup (src->clip_path);
     dst->font_family = g_strdup (src->font_family);
-    dst->lang = g_strdup (src->lang);
     dst->startMarker = g_strdup (src->startMarker);
     dst->middleMarker = g_strdup (src->middleMarker);
     dst->endMarker = g_strdup (src->endMarker);
@@ -409,12 +404,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
 
     if (function (dst->has_visible, src->has_visible))
         dst->visible = src->visible;
-
-    if (function (dst->has_lang, src->has_lang)) {
-        if (dst->has_lang)
-            g_free (dst->lang);
-        dst->lang = g_strdup (src->lang);
-    }
 
     if (function (dst->has_dash, src->has_dash)) {
         if (dst->dash) {
@@ -868,15 +857,6 @@ rsvg_parse_style_pair (RsvgState *state,
         char *save = g_strdup (rsvg_css_parse_font_family (value, &state->has_font_family));
         g_free (state->font_family);
         state->font_family = save;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_XML_LANG:
-    {
-        char *save = g_strdup (value);
-        g_free (state->lang);
-        state->lang = save;
-        state->has_lang = TRUE;
     }
     break;
 
@@ -1901,12 +1881,6 @@ guint32
 rsvg_state_get_current_color (RsvgState *state)
 {
     return state->current_color;
-}
-
-const char *
-rsvg_state_get_language (RsvgState *state)
-{
-    return state->lang;
 }
 
 UnicodeBidi

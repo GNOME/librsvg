@@ -21,7 +21,7 @@ use node::{
 use parsers::parse;
 use property_bag::PropertyBag;
 use space::xml_space_normalize;
-use state::{self, RsvgState, TextAnchor, UnicodeBidi};
+use state::{self, RsvgState, TextAnchor, UnicodeBidi, XmlLang};
 
 extern "C" {
     fn _rsvg_css_accumulate_baseline_shift(
@@ -388,7 +388,7 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
     let state = drawing_ctx::get_current_state(draw_ctx);
     let pango_context = drawing_ctx::get_pango_context(draw_ctx);
 
-    if let Some(lang) = state::get_language(state) {
+    if let Some(state::XmlLang(lang)) = state::get_state_rust(state).xml_lang {
         let pango_lang = pango::Language::from_string(&lang);
         pango_context.set_language(&pango_lang);
     }

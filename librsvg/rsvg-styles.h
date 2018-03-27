@@ -94,8 +94,6 @@ struct _RsvgState {
     gboolean has_font_size;
     char *font_family;
     gboolean has_font_family;
-    char *lang;
-    gboolean has_lang;
     PangoStyle font_style;
     gboolean has_font_style;
     PangoVariant font_variant;
@@ -252,9 +250,6 @@ RsvgLength rsvg_state_get_dash_offset (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint32 rsvg_state_get_current_color (RsvgState *state);
-
-G_GNUC_INTERNAL
-const char *rsvg_state_get_language (RsvgState *state);
 
 G_GNUC_INTERNAL
 UnicodeBidi rsvg_state_get_unicode_bidi (RsvgState *state);
