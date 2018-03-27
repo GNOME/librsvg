@@ -1,6 +1,7 @@
 use cairo;
 use cairo_sys;
 use glib::translate::*;
+use glib_sys;
 use libc;
 use pango;
 use pango_sys;
@@ -8,7 +9,6 @@ use pango_sys;
 use bbox::RsvgBbox;
 use node::NodeType;
 use node::RsvgNode;
-use path_builder::RsvgPathBuilder;
 use state::RsvgState;
 
 pub enum RsvgDrawingCtx {}
@@ -77,6 +77,7 @@ extern "C" {
         draw_ctx: *const RsvgDrawingCtx,
         node: *const RsvgNode,
         dominate: i32,
+        clipping: glib_sys::gboolean,
     );
 
     fn rsvg_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState;
@@ -93,16 +94,6 @@ extern "C" {
     fn rsvg_push_discrete_layer(draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx);
 
-    fn rsvg_drawing_ctx_render_pango_layout(
-        draw_ctx: *const RsvgDrawingCtx,
-        layout: *const pango_sys::PangoLayout,
-        x: f64,
-        y: f64,
-    );
-    fn rsvg_drawing_ctx_render_path_builder(
-        draw_ctx: *const RsvgDrawingCtx,
-        builder: *const RsvgPathBuilder,
-    );
     fn rsvg_drawing_ctx_render_surface(
         draw_ctx: *const RsvgDrawingCtx,
         surface: *const cairo_sys::cairo_surface_t,
@@ -198,23 +189,6 @@ pub fn pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx) {
     }
 }
 
-pub fn render_pango_layout(
-    draw_ctx: *const RsvgDrawingCtx,
-    layout: &pango::Layout,
-    x: f64,
-    y: f64,
-) {
-    unsafe {
-        rsvg_drawing_ctx_render_pango_layout(draw_ctx, layout.to_glib_none().0, x, y);
-    }
-}
-
-pub fn render_path_builder(draw_ctx: *const RsvgDrawingCtx, builder: &RsvgPathBuilder) {
-    unsafe {
-        rsvg_drawing_ctx_render_path_builder(draw_ctx, builder);
-    }
-}
-
 pub fn render_surface(
     draw_ctx: *const RsvgDrawingCtx,
     surface: &cairo::ImageSurface,
@@ -284,9 +258,14 @@ pub fn insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: &RsvgBbox) {
     }
 }
 
-pub fn draw_node_from_stack(draw_ctx: *const RsvgDrawingCtx, node: *const RsvgNode, dominate: i32) {
+pub fn draw_node_from_stack(
+    draw_ctx: *const RsvgDrawingCtx,
+    node: *const RsvgNode,
+    dominate: i32,
+    clipping: bool,
+) {
     unsafe {
-        rsvg_drawing_ctx_draw_node_from_stack(draw_ctx, node, dominate);
+        rsvg_drawing_ctx_draw_node_from_stack(draw_ctx, node, dominate, clipping.to_glib());
     }
 }
 

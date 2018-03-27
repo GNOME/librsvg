@@ -1,3 +1,6 @@
+use glib::translate::*;
+use glib_sys;
+
 use drawing_ctx::RsvgDrawingCtx;
 use handle::*;
 use node::*;
@@ -15,8 +18,9 @@ type CNodeSetAtts = unsafe extern "C" fn(
 type CNodeDraw = unsafe extern "C" fn(
     node: *const RsvgNode,
     node_impl: *const RsvgCNodeImpl,
-    draw_ctx: *const RsvgDrawingCtx,
+    draw_ctx: *mut RsvgDrawingCtx,
     dominate: i32,
+    clipping: glib_sys::gboolean,
 );
 type CNodeFree = unsafe extern "C" fn(node_impl: *const RsvgCNodeImpl);
 
@@ -47,13 +51,14 @@ impl NodeTrait for CNode {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
         unsafe {
             (self.draw_fn)(
                 node as *const RsvgNode,
                 self.c_node_impl,
                 draw_ctx,
                 dominate,
+                clipping.to_glib(),
             );
         }
     }

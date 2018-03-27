@@ -208,9 +208,6 @@ struct RsvgRender {
 
     void             (*set_affine_on_cr)        (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix_t *affine);
     PangoContext    *(*get_pango_context)       (RsvgDrawingCtx *ctx);
-    void             (*render_pango_layout)	(RsvgDrawingCtx *ctx, PangoLayout *layout,
-                                                 double x, double y);
-    void             (*render_path_builder)     (RsvgDrawingCtx *ctx, RsvgPathBuilder *builder);
     void             (*render_surface)          (RsvgDrawingCtx *ctx, cairo_surface_t *surface,
                                                  double x, double y, double w, double h);
     void             (*pop_discrete_layer)      (RsvgDrawingCtx *ctx);
@@ -320,7 +317,7 @@ typedef enum {
 } RsvgNodeType;
 
 typedef void (* CNodeSetAtts) (RsvgNode *node, gpointer impl, RsvgHandle *handle, RsvgPropertyBag pbag);
-typedef void (* CNodeDraw) (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate);
+typedef void (* CNodeDraw) (RsvgNode *node, gpointer impl, RsvgDrawingCtx *ctx, int dominate, gboolean clipping);
 typedef void (* CNodeFree) (gpointer impl);
 
 /* Implemented in rust/src/node.rs */
@@ -378,7 +375,7 @@ void rsvg_node_set_atts (RsvgNode *node, RsvgHandle *handle, RsvgPropertyBag att
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
-void rsvg_node_draw (RsvgNode *node, RsvgDrawingCtx *draw, int dominate);
+void rsvg_node_draw (RsvgNode *node, RsvgDrawingCtx *draw, int dominate, gboolean clipping);
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
@@ -408,7 +405,7 @@ void rsvg_node_children_iter_end (RsvgNodeChildrenIter *iter);
 
 /* Implemented in rust/src/node.rs */
 G_GNUC_INTERNAL
-void rsvg_node_draw_children (RsvgNode *node, RsvgDrawingCtx *ctx, int dominate);
+void rsvg_node_draw_children (RsvgNode *node, RsvgDrawingCtx *ctx, int dominate, gboolean clipping);
 
 typedef void (*RsvgPropertyBagEnumFunc) (const char *key, const char *value, gpointer user_data);
 
@@ -470,10 +467,10 @@ void rsvg_drawing_ctx_release_node              (RsvgDrawingCtx * ctx, RsvgNode 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, RsvgNode *node);
 G_GNUC_INTERNAL
-void rsvg_drawing_ctx_draw_node_from_stack            (RsvgDrawingCtx *ctx, RsvgNode *node, int dominate);
-
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder);
+void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
+                                            RsvgNode *node,
+                                            int dominate,
+                                            gboolean clipping);
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_render_surface (RsvgDrawingCtx * ctx, cairo_surface_t *surface,
@@ -544,11 +541,6 @@ void rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, c
 G_GNUC_INTERNAL
 PangoContext *rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx);
 
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_render_pango_layout (RsvgDrawingCtx *draw_ctx,
-                                           PangoLayout *layout,
-                                           double x,
-                                           double y);
 
 G_GNUC_INTERNAL
 double _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx);

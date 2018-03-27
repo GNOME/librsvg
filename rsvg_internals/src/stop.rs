@@ -168,7 +168,7 @@ impl NodeTrait for NodeStop {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing; paint servers are handled specially
     }
 

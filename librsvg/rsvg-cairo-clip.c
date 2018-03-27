@@ -50,18 +50,6 @@ struct RsvgCairoClipRender {
 #define RSVG_CAIRO_CLIP_RENDER(render) (_RSVG_RENDER_CIC ((render), RSVG_RENDER_TYPE_CAIRO_CLIP, RsvgCairoClipRender))
 
 static void
-rsvg_cairo_clip_render_pango_layout (RsvgDrawingCtx *ctx, PangoLayout * layout, double x, double y)
-{
-    rsvg_draw_pango_layout (ctx, layout, x, y, TRUE);
-}
-
-static void
-rsvg_cairo_clip_render_path_builder (RsvgDrawingCtx *ctx, RsvgPathBuilder *builder)
-{
-    rsvg_draw_path_builder (ctx, builder, TRUE);
-}
-
-static void
 rsvg_cairo_clip_render_surface (RsvgDrawingCtx *ctx,
                                 cairo_surface_t *surface,
                                 double src_x,
@@ -108,8 +96,6 @@ rsvg_cairo_clip_render_new (cairo_t *cr, RsvgCairoRender *parent)
     render->free = rsvg_cairo_clip_render_free;
     render->set_affine_on_cr = rsvg_cairo_set_affine_on_cr;
     render->get_pango_context = rsvg_cairo_get_pango_context;
-    render->render_pango_layout = rsvg_cairo_clip_render_pango_layout;
-    render->render_path_builder = rsvg_cairo_clip_render_path_builder;
     render->render_surface = rsvg_cairo_clip_render_surface;
     render->pop_discrete_layer = rsvg_cairo_clip_pop_discrete_layer;
     render->push_discrete_layer = rsvg_cairo_clip_push_discrete_layer;
@@ -173,7 +159,7 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox
     }
 
     rsvg_state_push (ctx);
-    rsvg_node_draw_children (node_clip_path, ctx, 0);
+    rsvg_node_draw_children (node_clip_path, ctx, 0, TRUE);
     rsvg_state_pop (ctx);
 
     if (clip_units == objectBoundingBox) {

@@ -165,18 +165,6 @@ rsvg_cairo_get_pango_context (RsvgDrawingCtx * ctx)
 }
 
 void
-rsvg_cairo_render_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, double y)
-{
-    rsvg_draw_pango_layout (ctx, layout, x, y, FALSE);
-}
-
-void
-rsvg_cairo_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
-{
-    rsvg_draw_path_builder (ctx, builder, FALSE);
-}
-
-void
 rsvg_cairo_render_surface (RsvgDrawingCtx *ctx,
                            cairo_surface_t *surface,
                            double src_x,
@@ -356,7 +344,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
     }
 
     rsvg_state_push (ctx);
-    rsvg_node_draw_children (mask, ctx, 0);
+    rsvg_node_draw_children (mask, ctx, 0, FALSE);
     rsvg_state_pop (ctx);
 
     if (content_units == objectBoundingBox) {
@@ -622,7 +610,7 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
     render = rsvg_cairo_render_new (cr, width, height);
     ctx->render = (RsvgRender *) render;
 
-    rsvg_drawing_ctx_draw_node_from_stack (ctx, drawable, 0);
+    rsvg_drawing_ctx_draw_node_from_stack (ctx, drawable, 0, FALSE);
 
     cairo_destroy (cr);
 

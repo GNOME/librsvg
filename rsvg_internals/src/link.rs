@@ -38,7 +38,7 @@ impl NodeTrait for NodeLink {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
         let link = self.link.borrow();
 
         if link.is_some() && link.as_ref().unwrap() != "" {
@@ -49,10 +49,10 @@ impl NodeTrait for NodeLink {
             drawing_ctx::get_cairo_context(draw_ctx).with_tag(
                 CAIRO_TAG_LINK,
                 attributes.as_ref().map(|i| i.as_str()),
-                || node.draw_children(draw_ctx, dominate),
+                || node.draw_children(draw_ctx, dominate, clipping),
             )
         } else {
-            node.draw_children(draw_ctx, dominate)
+            node.draw_children(draw_ctx, dominate, clipping)
         }
     }
 

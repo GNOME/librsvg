@@ -478,7 +478,10 @@ rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, Rsvg
 }
 
 void
-rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx, RsvgNode *node, int dominate)
+rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
+                                       RsvgNode *node,
+                                       int dominate,
+                                       gboolean clipping)
 {
     RsvgState *state;
     GSList *stacksave;
@@ -498,7 +501,7 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx, RsvgNode *node, int 
     if (state->visible) {
         rsvg_state_push (ctx);
 
-        rsvg_node_draw (node, ctx, dominate);
+        rsvg_node_draw (node, ctx, dominate, clipping);
 
         rsvg_state_pop (ctx);
     }
@@ -528,21 +531,6 @@ PangoContext *
 rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx)
 {
     return draw_ctx->render->get_pango_context (draw_ctx);
-}
-
-void
-rsvg_drawing_ctx_render_pango_layout (RsvgDrawingCtx *draw_ctx,
-                                      PangoLayout *layout,
-                                      double x,
-                                      double y)
-{
-    draw_ctx->render->render_pango_layout (draw_ctx, layout, x, y);
-}
-
-void
-rsvg_drawing_ctx_render_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder)
-{
-    ctx->render->render_path_builder (ctx, builder);
 }
 
 void

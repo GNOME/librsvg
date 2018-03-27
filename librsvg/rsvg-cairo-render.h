@@ -67,14 +67,6 @@ RsvgCairoRender *rsvg_cairo_render_new (cairo_t *cr, double width, double height
 G_GNUC_INTERNAL
 RsvgDrawingCtx *rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle);
 
-/* Defined in rsvg_internals/src/draw.rs */
-G_GNUC_INTERNAL
-void rsvg_draw_path_builder (RsvgDrawingCtx * ctx, RsvgPathBuilder *builder, gboolean clipping);
-
-/* Defined in rsvg_internals/src/draw.rs */
-G_GNUC_INTERNAL
-void rsvg_draw_pango_layout (RsvgDrawingCtx *ctx, PangoLayout *layout, double x, double y, gboolean clipping);
-
 G_END_DECLS
 
 #endif

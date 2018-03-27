@@ -112,11 +112,12 @@ impl NodeMarker {
     fn render(
         &self,
         node: &RsvgNode,
-        draw_ctx: *const RsvgDrawingCtx,
+        draw_ctx: *mut RsvgDrawingCtx,
         xpos: f64,
         ypos: f64,
         computed_angle: f64,
         line_width: f64,
+        clipping: bool,
     ) {
         let marker_width = self.width.get().normalize(draw_ctx);
         let marker_height = self.height.get().normalize(draw_ctx);
@@ -188,7 +189,7 @@ impl NodeMarker {
             }
         }
 
-        node.draw_children(draw_ctx, -1); // dominate=-1 so it won't reinherit state / push a layer
+        node.draw_children(draw_ctx, -1, clipping); // dominate=-1 so it won't reinherit state / push a layer
 
         drawing_ctx::state_pop(draw_ctx);
         drawing_ctx::pop_discrete_layer(draw_ctx);
@@ -240,7 +241,7 @@ impl NodeTrait for NodeMarker {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing; markers are drawn by their referencing shapes
     }
 
@@ -590,12 +591,13 @@ enum MarkerType {
 }
 
 fn emit_marker_by_name(
-    draw_ctx: *const RsvgDrawingCtx,
+    draw_ctx: *mut RsvgDrawingCtx,
     marker_name: *const libc::c_char,
     xpos: f64,
     ypos: f64,
     computed_angle: f64,
     line_width: f64,
+    clipping: bool,
 ) {
     if marker_name.is_null() {
         return;
@@ -608,7 +610,15 @@ fn emit_marker_by_name(
         let node = acquired.get();
 
         node.with_impl(|marker: &NodeMarker| {
-            marker.render(&node, draw_ctx, xpos, ypos, computed_angle, line_width)
+            marker.render(
+                &node,
+                draw_ctx,
+                xpos,
+                ypos,
+                computed_angle,
+                line_width,
+                clipping,
+            )
         });
     }
 }
@@ -663,7 +673,11 @@ fn drawing_ctx_has_markers(draw_ctx: *const RsvgDrawingCtx) -> bool {
         || !get_marker_name_from_drawing_ctx(draw_ctx, MarkerType::End).is_null())
 }
 
-pub fn render_markers_for_path_builder(builder: &RsvgPathBuilder, draw_ctx: *const RsvgDrawingCtx) {
+pub fn render_markers_for_path_builder(
+    builder: &RsvgPathBuilder,
+    draw_ctx: *mut RsvgDrawingCtx,
+    clipping: bool,
+) {
     let state = drawing_ctx::get_current_state(draw_ctx);
 
     let line_width = state::get_stroke_width(state).normalize(draw_ctx);
@@ -686,6 +700,7 @@ pub fn render_markers_for_path_builder(builder: &RsvgPathBuilder, draw_ctx: *con
                 y,
                 computed_angle,
                 line_width,
+                clipping,
             );
         },
     );

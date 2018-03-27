@@ -219,7 +219,7 @@ impl NodeTrait for NodePattern {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing; paint servers are handled specially
     }
 
@@ -407,7 +407,7 @@ fn set_pattern_on_draw_context(
 
     // Draw everything
     let pattern_node = pattern.node.clone().unwrap().upgrade().unwrap();
-    pattern_node.draw_children(draw_ctx, 2);
+    pattern_node.draw_children(draw_ctx, 2, false);
 
     // Return to the original coordinate system and rendering context
 

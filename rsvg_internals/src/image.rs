@@ -95,7 +95,7 @@ impl NodeTrait for NodeImage {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, _: bool) {
         if let Some(ref surface) = *self.surface.borrow() {
             let x = self.x.get().normalize(draw_ctx);
             let y = self.y.get().normalize(draw_ctx);

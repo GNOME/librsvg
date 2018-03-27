@@ -37,13 +37,7 @@ void rsvg_cairo_set_affine_on_cr (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix
 
 G_GNUC_INTERNAL
 PangoContext    *rsvg_cairo_get_pango_context    (RsvgDrawingCtx *ctx);
-G_GNUC_INTERNAL
-void         rsvg_cairo_render_pango_layout	    (RsvgDrawingCtx *ctx, PangoLayout *layout, 
-                                                 double x, double y);
 
-G_GNUC_INTERNAL
-void         rsvg_cairo_render_path_builder     (RsvgDrawingCtx *ctx, 
-                                                 RsvgPathBuilder *builder);
 G_GNUC_INTERNAL
 void         rsvg_cairo_render_surface          (RsvgDrawingCtx *ctx, cairo_surface_t *surface,
                                                  double x, double y, double w, double h);

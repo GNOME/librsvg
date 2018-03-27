@@ -34,8 +34,8 @@ impl NodeTrait for NodeGroup {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
-        node.draw_children(draw_ctx, dominate);
+    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
+        node.draw_children(draw_ctx, dominate, clipping);
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
@@ -57,7 +57,7 @@ impl NodeTrait for NodeDefs {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing
     }
 
@@ -80,7 +80,7 @@ impl NodeTrait for NodeSwitch {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
 
         drawing_ctx::push_discrete_layer(draw_ctx);
@@ -90,7 +90,7 @@ impl NodeTrait for NodeSwitch {
         {
             let boxed_child = box_node(child.clone());
 
-            drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0);
+            drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0, clipping);
 
             rsvg_node_unref(boxed_child);
         }
@@ -180,7 +180,7 @@ impl NodeTrait for NodeSvg {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
         let nx = self.x.get().normalize(draw_ctx);
         let ny = self.y.get().normalize(draw_ctx);
         let nw = self.w.get().normalize(draw_ctx);
@@ -204,7 +204,7 @@ impl NodeTrait for NodeSvg {
             draw_ctx,
             || {
                 drawing_ctx::state_push(draw_ctx);
-                node.draw_children(draw_ctx, -1); // dominate==-1 so it won't reinherit or push a layer
+                node.draw_children(draw_ctx, -1, clipping); // dominate==-1 so it won't reinherit or push a layer
                 drawing_ctx::state_pop(draw_ctx);
             },
         );
@@ -265,7 +265,7 @@ impl NodeTrait for NodeUse {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
         let link = self.link.borrow();
 
         if link.is_none() {
@@ -320,7 +320,7 @@ impl NodeTrait for NodeUse {
             drawing_ctx::push_discrete_layer(draw_ctx);
 
             let boxed_child = box_node(child.clone());
-            drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 1);
+            drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 1, clipping);
             rsvg_node_unref(boxed_child);
 
             drawing_ctx::pop_discrete_layer(draw_ctx);
@@ -342,7 +342,7 @@ impl NodeTrait for NodeUse {
                     draw_ctx,
                     || {
                         drawing_ctx::state_push(draw_ctx);
-                        child.draw_children(draw_ctx, 1);
+                        child.draw_children(draw_ctx, 1, clipping);
                         drawing_ctx::state_pop(draw_ctx);
                     },
                 );
@@ -388,7 +388,7 @@ impl NodeTrait for NodeSymbol {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing
     }
 

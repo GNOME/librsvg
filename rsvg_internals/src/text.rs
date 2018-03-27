@@ -5,6 +5,7 @@ use std::cell::{Cell, RefCell};
 use std::str;
 
 use attributes::Attribute;
+use draw::draw_pango_layout;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use length::*;
@@ -75,7 +76,7 @@ impl NodeChars {
         *length = f64::from(width) / f64::from(pango::SCALE);
     }
 
-    fn render(&self, draw_ctx: *const RsvgDrawingCtx, x: &mut f64, y: &mut f64) {
+    fn render(&self, draw_ctx: *mut RsvgDrawingCtx, x: &mut f64, y: &mut f64, clipping: bool) {
         let s = self.string.borrow();
         let layout = create_pango_layout(draw_ctx, &s);
         let (width, _) = layout.get_size();
@@ -89,10 +90,10 @@ impl NodeChars {
 
         let gravity = state::get_text_gravity(state);
         if gravity_is_vertical(gravity) {
-            drawing_ctx::render_pango_layout(draw_ctx, &layout, *x + offset, *y);
+            draw_pango_layout(draw_ctx, &layout, *x + offset, *y, clipping);
             *y += f64::from(width) / f64::from(pango::SCALE);
         } else {
-            drawing_ctx::render_pango_layout(draw_ctx, &layout, *x, *y - offset);
+            draw_pango_layout(draw_ctx, &layout, *x, *y - offset, clipping);
             *x += f64::from(width) / f64::from(pango::SCALE);
         }
     }
@@ -103,7 +104,7 @@ impl NodeTrait for NodeChars {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing
     }
 
@@ -146,7 +147,7 @@ impl NodeTrait for NodeText {
         Ok(())
     }
 
-    fn draw(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
 
         let mut x = self.x.get().normalize(draw_ctx);
@@ -179,7 +180,7 @@ impl NodeTrait for NodeText {
         x += dx;
         y += dy;
 
-        render_children(node, draw_ctx, &mut x, &mut y, false);
+        render_children(node, draw_ctx, &mut x, &mut y, false, clipping);
     }
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
@@ -216,7 +217,7 @@ impl NodeTRef {
         done
     }
 
-    fn render(&self, draw_ctx: *const RsvgDrawingCtx, x: &mut f64, y: &mut f64) {
+    fn render(&self, draw_ctx: *mut RsvgDrawingCtx, x: &mut f64, y: &mut f64, clipping: bool) {
         let l = self.link.borrow();
 
         if l.is_none() {
@@ -225,7 +226,7 @@ impl NodeTRef {
 
         if let Some(acquired) = drawing_ctx::get_acquired_node(draw_ctx, l.as_ref().unwrap()) {
             let c = acquired.get();
-            render_children(&c, draw_ctx, x, y, true)
+            render_children(&c, draw_ctx, x, y, true, clipping)
         }
     }
 }
@@ -242,7 +243,7 @@ impl NodeTrait for NodeTRef {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing
     }
 
@@ -293,10 +294,11 @@ impl NodeTSpan {
     fn render(
         &self,
         node: &RsvgNode,
-        draw_ctx: *const RsvgDrawingCtx,
+        draw_ctx: *mut RsvgDrawingCtx,
         x: &mut f64,
         y: &mut f64,
         usetextonly: bool,
+        clipping: bool,
     ) {
         drawing_ctx::state_push(draw_ctx);
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), 0);
@@ -336,7 +338,7 @@ impl NodeTSpan {
         }
         *y += dy;
 
-        render_children(node, draw_ctx, x, y, usetextonly);
+        render_children(node, draw_ctx, x, y, usetextonly, clipping);
 
         drawing_ctx::state_pop(draw_ctx);
     }
@@ -360,7 +362,7 @@ impl NodeTrait for NodeTSpan {
         Ok(())
     }
 
-    fn draw(&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {
+    fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {
         // nothing
     }
 
@@ -536,15 +538,16 @@ fn measure_child(
 
 fn render_children(
     node: &RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
+    draw_ctx: *mut RsvgDrawingCtx,
     x: &mut f64,
     y: &mut f64,
     textonly: bool,
+    clipping: bool,
 ) {
     drawing_ctx::push_discrete_layer(draw_ctx);
 
     for child in node.children() {
-        render_child(&child, draw_ctx, x, y, textonly);
+        render_child(&child, draw_ctx, x, y, textonly, clipping);
     }
 
     drawing_ctx::pop_discrete_layer(draw_ctx);
@@ -552,26 +555,27 @@ fn render_children(
 
 fn render_child(
     node: &RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
+    draw_ctx: *mut RsvgDrawingCtx,
     x: &mut f64,
     y: &mut f64,
     textonly: bool,
+    clipping: bool,
 ) {
     match (node.get_type(), textonly) {
         (NodeType::Chars, _) => {
-            node.with_impl(|chars: &NodeChars| chars.render(draw_ctx, x, y));
+            node.with_impl(|chars: &NodeChars| chars.render(draw_ctx, x, y, clipping));
         }
         (_, true) => {
-            render_children(node, draw_ctx, x, y, textonly);
+            render_children(node, draw_ctx, x, y, textonly, clipping);
         }
         (NodeType::TSpan, _) => {
             node.with_impl(|tspan: &NodeTSpan| {
-                tspan.render(node, draw_ctx, x, y, textonly);
+                tspan.render(node, draw_ctx, x, y, textonly, clipping);
             });
         }
         (NodeType::TRef, _) => {
             node.with_impl(|tref: &NodeTRef| {
-                tref.render(draw_ctx, x, y);
+                tref.render(draw_ctx, x, y, clipping);
             });
         }
         (_, _) => {}

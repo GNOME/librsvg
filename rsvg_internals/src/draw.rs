@@ -1,6 +1,5 @@
 use cairo;
 use glib::translate::*;
-use glib_sys;
 use pango::{self, ContextExt, LayoutExt};
 use pango_sys;
 use pangocairo;
@@ -119,7 +118,11 @@ impl From<FillRule> for cairo::FillRule {
     }
 }
 
-fn setup_cr_for_stroke(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx, state: *mut RsvgState) {
+fn setup_cr_for_stroke(
+    cr: &cairo::Context,
+    draw_ctx: *const RsvgDrawingCtx,
+    state: *mut RsvgState,
+) {
     cr.set_line_width(state::get_stroke_width(state).normalize(draw_ctx));
     cr.set_miter_limit(state::get_miter_limit(state));
     cr.set_line_cap(cairo::LineCap::from(
@@ -322,36 +325,4 @@ fn compute_text_bbox(
     }
 
     bbox
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_draw_pango_layout(
-    draw_ctx: *mut RsvgDrawingCtx,
-    layout: *mut pango_sys::PangoLayout,
-    x: f64,
-    y: f64,
-    clipping: glib_sys::gboolean,
-) {
-    assert!(!draw_ctx.is_null());
-    assert!(!layout.is_null());
-
-    let layout = unsafe { from_glib_none(layout) };
-    let clipping: bool = from_glib(clipping);
-
-    draw_pango_layout(draw_ctx, &layout, x, y, clipping);
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_draw_path_builder(
-    draw_ctx: *mut RsvgDrawingCtx,
-    raw_builder: *const RsvgPathBuilder,
-    clipping: glib_sys::gboolean,
-) {
-    assert!(!draw_ctx.is_null());
-    assert!(!raw_builder.is_null());
-
-    let builder = unsafe { &*raw_builder };
-    let clipping: bool = from_glib(clipping);
-
-    draw_path_builder(draw_ctx, builder, clipping);
 }

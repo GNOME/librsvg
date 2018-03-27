@@ -31,7 +31,7 @@ pub trait NodeTrait: Downcast {
         handle: *const RsvgHandle,
         pbag: &PropertyBag,
     ) -> NodeResult;
-    fn draw(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32);
+    fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool);
     fn get_c_impl(&self) -> *const RsvgCNodeImpl;
 }
 
@@ -187,9 +187,15 @@ impl Node {
         *self.result.borrow_mut() = self.node_impl.set_atts(node, handle, pbag);
     }
 
-    pub fn draw(&self, node: &RsvgNode, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    pub fn draw(
+        &self,
+        node: &RsvgNode,
+        draw_ctx: *mut RsvgDrawingCtx,
+        dominate: i32,
+        clipping: bool,
+    ) {
         if self.result.borrow().is_ok() {
-            self.node_impl.draw(node, draw_ctx, dominate);
+            self.node_impl.draw(node, draw_ctx, dominate, clipping);
         }
     }
 
@@ -213,7 +219,7 @@ impl Node {
         }
     }
 
-    pub fn draw_children(&self, draw_ctx: *const RsvgDrawingCtx, dominate: i32) {
+    pub fn draw_children(&self, draw_ctx: *const RsvgDrawingCtx, dominate: i32, clipping: bool) {
         if dominate != -1 {
             drawing_ctx::state_reinherit_top(draw_ctx, self.state, dominate);
 
@@ -223,7 +229,7 @@ impl Node {
         for child in self.children() {
             let boxed_child = box_node(child.clone());
 
-            drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0);
+            drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0, clipping);
 
             rsvg_node_unref(boxed_child);
         }
@@ -429,13 +435,14 @@ pub extern "C" fn rsvg_node_set_atts(
 #[no_mangle]
 pub extern "C" fn rsvg_node_draw(
     raw_node: *const RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
+    draw_ctx: *mut RsvgDrawingCtx,
     dominate: i32,
+    clipping: glib_sys::gboolean,
 ) {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
-    node.draw(node, draw_ctx, dominate);
+    node.draw(node, draw_ctx, dominate, from_glib(clipping));
 }
 
 #[no_mangle]
@@ -524,11 +531,12 @@ pub extern "C" fn rsvg_node_draw_children(
     raw_node: *const RsvgNode,
     draw_ctx: *const RsvgDrawingCtx,
     dominate: i32,
+    clipping: glib_sys::gboolean,
 ) {
     assert!(!raw_node.is_null());
     let node: &RsvgNode = unsafe { &*raw_node };
 
-    node.draw_children(draw_ctx, dominate);
+    node.draw_children(draw_ctx, dominate, from_glib(clipping));
 }
 
 #[cfg(test)]
@@ -546,7 +554,7 @@ mod tests {
             Ok(())
         }
 
-        fn draw(&self, _: &RsvgNode, _: *const RsvgDrawingCtx, _: i32) {}
+        fn draw(&self, _: &RsvgNode, _: *mut RsvgDrawingCtx, _: i32, _: bool) {}
 
         fn get_c_impl(&self) -> *const RsvgCNodeImpl {
             unreachable!();
