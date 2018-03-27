@@ -225,7 +225,8 @@ rsvg_handle_dispose (GObject *instance)
         self->priv->base_gfile = NULL;
     }
     if (self->priv->load) {
-        rsvg_load_destroy (self->priv->load);
+        RsvgNode *treebase = rsvg_load_destroy (self->priv->load);
+        treebase = rsvg_node_unref (treebase);
         self->priv->load = NULL;
     }
 

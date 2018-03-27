@@ -587,7 +587,7 @@ void rsvg_return_if_fail_warning (const char *pretty_function,
                                   const char *expression, GError ** error);
 
 G_GNUC_INTERNAL
-void rsvg_load_destroy (RsvgLoad *load);
+RsvgNode *rsvg_load_destroy (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
 
 G_GNUC_INTERNAL
 char *rsvg_handle_resolve_uri (RsvgHandle *handle,

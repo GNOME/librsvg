@@ -121,6 +121,7 @@ struct RsvgLoad {
     GSList *element_name_stack;
 
     RsvgNode *currentnode;
+    RsvgNode *treebase;
 };
 
 struct RsvgSaxHandler {
@@ -165,33 +166,45 @@ rsvg_load_new (RsvgHandle *handle)
 
     load->handle = handle;
     load->state = LOAD_STATE_START;
+    load->cancellable = NULL;
+    load->handler = NULL;
     load->handler_nest = 0;
-    load->currentnode = NULL;
-    load->element_name_stack = NULL;
 
     load->entities = g_hash_table_new_full (g_str_hash,
                                             g_str_equal,
                                             g_free,
                                             (GDestroyNotify) xmlFreeNode);
 
+    load->error = NULL;
+    load->ctxt = NULL;
+    load->compressed_input_stream = NULL;
+    load->element_name_stack = NULL;
+    load->currentnode = NULL;
+    load->treebase = NULL;
+
     return load;
 }
 
-void
+RsvgNode *
 rsvg_load_destroy (RsvgLoad *load)
 {
-    if (load->compressed_input_stream) {
-        g_object_unref (load->compressed_input_stream);
-        load->compressed_input_stream = NULL;
-    }
+    RsvgNode *treebase;
 
     g_hash_table_destroy (load->entities);
 
     load->ctxt = rsvg_free_xml_parser_and_doc (load->ctxt);
 
+    if (load->compressed_input_stream) {
+        g_object_unref (load->compressed_input_stream);
+        load->compressed_input_stream = NULL;
+    }
+
     load->currentnode = rsvg_node_unref (load->currentnode);
+    treebase = load->treebase;
 
     g_free (load);
+
+    return treebase;
 }
 
 static void
@@ -521,7 +534,7 @@ rsvg_standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag *
         rsvg_node_add_child (load->currentnode, newnode);
         load->currentnode = rsvg_node_unref (load->currentnode);
     } else if (rsvg_node_get_type (newnode) == RSVG_NODE_TYPE_SVG) {
-        load->handle->priv->treebase = rsvg_node_ref (newnode);
+        load->treebase = rsvg_node_ref (newnode);
     }
 
     load->currentnode = rsvg_node_ref (newnode);
@@ -596,8 +609,8 @@ rsvg_start_extra (RsvgLoad *load,
      * This isn't quite the correct behavior - any graphics
      * element may contain a <extra> element.
      */
-    do_care = load->handle->priv->treebase != NULL
-        && rsvg_node_is_same (load->handle->priv->treebase, load->currentnode);
+    do_care = load->treebase != NULL
+        && rsvg_node_is_same (load->treebase, load->currentnode);
 
     handler->super.free = rsvg_extra_handler_free;
     handler->super.characters = rsvg_extra_handler_characters;
@@ -1623,6 +1636,7 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
 {
     RsvgHandlePrivate *priv;
     gboolean result;
+    RsvgNode *treebase;
 
     rsvg_return_val_if_fail (handle, FALSE, error);
     priv = handle->priv;
@@ -1635,14 +1649,16 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
 
     result = rsvg_load_close (priv->load, error);
 
+    treebase = rsvg_load_destroy (priv->load);
+    priv->load = NULL;
+
     if (result) {
         priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
+        priv->treebase = treebase;
     } else {
         priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
+        treebase = rsvg_node_unref (treebase);
     }
-
-    rsvg_load_destroy (priv->load);
-    priv->load = NULL;
 
     return result;
 }
@@ -1673,7 +1689,9 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
                               GError      **error)
 {
     RsvgHandlePrivate *priv;
+    RsvgNode *treebase;
     gboolean res;
+    RsvgLoad *saved_load;
 
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (G_IS_INPUT_STREAM (stream), FALSE);
@@ -1685,14 +1703,21 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     g_return_val_if_fail (priv->hstate == RSVG_HANDLE_STATE_START, FALSE);
 
     priv->hstate = RSVG_HANDLE_STATE_LOADING;
-    priv->load = rsvg_load_new (handle);
 
+    saved_load = priv->load;
+
+    priv->load = rsvg_load_new (handle);
     res = rsvg_load_read_stream_sync (priv->load, stream, cancellable, error);
+    treebase = rsvg_load_destroy (priv->load);
+
+    priv->load = saved_load;
 
     if (res) {
         priv->hstate = RSVG_HANDLE_STATE_CLOSED_OK;
+        priv->treebase = treebase;
     } else {
         priv->hstate = RSVG_HANDLE_STATE_CLOSED_ERROR;
+        treebase = rsvg_node_unref (treebase);
     }
 
     return res;
