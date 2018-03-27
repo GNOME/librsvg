@@ -39,6 +39,7 @@ pub struct State {
     pub fill_rule: Option<FillRule>,
     pub join: Option<StrokeLinejoin>,
     pub text_anchor: Option<TextAnchor>,
+    pub xml_lang: Option<XmlLang>,
     pub xml_space: Option<XmlSpace>,
 }
 
@@ -52,6 +53,7 @@ impl State {
             fill_rule: Default::default(),
             join: Default::default(),
             text_anchor: Default::default(),
+            xml_lang: Default::default(),
             xml_space: Default::default(),
         }
     }
@@ -73,6 +75,13 @@ impl State {
 
             Attribute::TextAnchor => {
                 self.text_anchor = parse_property(value, ())?;
+            }
+
+            Attribute::XmlLang => {
+                // xml:lang is not a property; it is a non-presentation attribute and as such
+                // cannot have the "inherit" value.  So, we don't call parse_property() for it,
+                // but rather call its parser directly.
+                self.xml_lang = Some(XmlLang::parse(value, ())?);
             }
 
             Attribute::XmlSpace => {
@@ -164,7 +173,6 @@ extern "C" {
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_miter_limit(state: *const RsvgState) -> f64;
-    fn rsvg_state_get_language(state: *const RsvgState) -> *const libc::c_char;
     fn rsvg_state_get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
@@ -299,10 +307,6 @@ pub fn get_miter_limit(state: *const RsvgState) -> f64 {
     unsafe { rsvg_state_get_miter_limit(state) }
 }
 
-pub fn get_language(state: *const RsvgState) -> Option<String> {
-    unsafe { from_glib_none(rsvg_state_get_language(state)) }
-}
-
 pub fn get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi {
     unsafe { rsvg_state_get_unicode_bidi(state) }
 }
@@ -425,6 +429,15 @@ make_property!(
     "end" => End,
 );
 
+// XmlLang ----------------------------------------
+
+make_property!(
+    XmlLang,
+    default: "C".to_string(),
+    inherits_automatically: true,
+    String
+);
+
 // XmlSpace ----------------------------------------
 
 make_property!(
@@ -490,10 +503,10 @@ fn inherit<T>(
     dst: &mut Option<T>,
     src: &Option<T>,
 ) where
-    T: Property + Copy,
+    T: Property + Clone,
 {
     if should_inherit_from_src(inherit_fn, dst.is_some(), src.is_some()) {
-        *dst = *src;
+        dst.clone_from(src);
     }
 }
 
@@ -514,6 +527,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
     inherit(inherit_fn, &mut dst.join, &src.join);
     inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
+    inherit(inherit_fn, &mut dst.xml_lang, &src.xml_lang);
     inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
 }
 
