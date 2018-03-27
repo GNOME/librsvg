@@ -287,8 +287,8 @@ rsvg_start_style (RsvgLoad *load, RsvgPropertyBag *atts)
     rsvg_property_bag_iter_end (iter);
 }
 
-static void
-add_node_to_handle (RsvgHandle *handle, RsvgNode *node)
+void
+rsvg_add_node_to_handle (RsvgHandle *handle, RsvgNode *node)
 {
     g_assert (handle != NULL);
     g_assert (node != NULL);
@@ -525,7 +525,7 @@ rsvg_standard_element_start (RsvgLoad *load, const char *name, RsvgPropertyBag *
 
     push_element_name (load, name);
 
-    add_node_to_handle (load->handle, newnode);
+    rsvg_add_node_to_handle (load->handle, newnode);
 
     if (load->currentnode) {
         rsvg_node_add_child (load->currentnode, newnode);
@@ -897,7 +897,7 @@ add_new_chars_child_to_current_node (RsvgLoad *load)
     RsvgNode *node;
 
     node = rsvg_node_chars_new (load->currentnode);
-    add_node_to_handle (load->handle, node);
+    rsvg_add_node_to_handle (load->handle, node);
 
     if (load->currentnode) {
         rsvg_node_add_child (load->currentnode, node);

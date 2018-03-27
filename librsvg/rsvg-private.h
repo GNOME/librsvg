@@ -587,6 +587,9 @@ G_GNUC_INTERNAL
 RsvgNode *rsvg_load_destroy (RsvgLoad *load) G_GNUC_WARN_UNUSED_RESULT;
 
 G_GNUC_INTERNAL
+void rsvg_add_node_to_handle (RsvgHandle *handle, RsvgNode *node);
+
+G_GNUC_INTERNAL
 char *rsvg_handle_resolve_uri (RsvgHandle *handle,
                                const char *uri);
 
