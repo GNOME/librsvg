@@ -564,14 +564,6 @@ rsvg_cairo_get_surface_of_node (RsvgDrawingCtx *ctx,
     return surface;
 }
 
-void
-rsvg_cairo_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
-{
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (draw_ctx->render);
-
-    rsvg_bbox_insert (&render->bbox, bbox);
-}
-
 cairo_surface_t *
 rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf)
 {

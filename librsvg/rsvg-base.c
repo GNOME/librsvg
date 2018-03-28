@@ -573,7 +573,9 @@ rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, d
 void
 rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
 {
-    draw_ctx->render->insert_bbox (draw_ctx, bbox);
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (draw_ctx->render);
+
+    rsvg_bbox_insert (&render->bbox, bbox);
 }
 
 cairo_surface_t *
