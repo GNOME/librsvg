@@ -1936,6 +1936,12 @@ rsvg_state_get_clip_rule (RsvgState *state)
     return state->clip_rule;
 }
 
+double
+rsvg_state_get_baseline_shift (RsvgState *state)
+{
+    return state->baseline_shift;
+}
+
 RsvgPaintServer *
 rsvg_state_get_fill (RsvgState *state)
 {

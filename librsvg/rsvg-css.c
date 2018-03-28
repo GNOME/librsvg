@@ -108,7 +108,7 @@ _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx)
         if (state->has_baseline_shift) {
             double parent_font_size;
             parent_font_size = _rsvg_css_normalize_font_size (parent, ctx); /* font size from here */
-            shift = parent_font_size * state->baseline_shift;
+            shift = parent_font_size * rsvg_state_get_baseline_shift (state);
         }
         shift += _rsvg_css_accumulate_baseline_shift (parent, ctx); /* baseline-shift for parent element */
     }
