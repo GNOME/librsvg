@@ -110,7 +110,6 @@ rsvg_state_init (RsvgState * state)
 
     state->mask = NULL;
     state->opacity = 0xff;
-    state->baseline_shift = 0.;
     state->current_color = 0xff000000; /* See bgo#764808; we don't inherit CSS
                                         * from the public API, so start off with
                                         * opaque black instead of transparent.
@@ -155,7 +154,6 @@ rsvg_state_init (RsvgState * state)
     state->middleMarker = NULL;
     state->endMarker = NULL;
 
-    state->has_baseline_shift = FALSE;
     state->has_current_color = FALSE;
     state->has_flood_color = FALSE;
     state->has_flood_opacity = FALSE;
@@ -312,8 +310,6 @@ static void
 rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
                         const InheritanceFunction function, const gboolean inherituninheritables)
 {
-    if (function (dst->has_baseline_shift, src->has_baseline_shift))
-        dst->baseline_shift = src->baseline_shift;
     if (function (dst->has_current_color, src->has_current_color))
         dst->current_color = src->current_color;
     if (function (dst->has_flood_color, src->has_flood_color))
@@ -644,26 +640,6 @@ rsvg_parse_style_pair (RsvgState *state,
     {
         g_free (state->mask);
         state->mask = rsvg_get_url_string (value, NULL);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_BASELINE_SHIFT:
-    {
-        /* These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
-         * see sp_style_merge_baseline_shift_from_parent()
-         */
-        if (g_str_equal (value, "sub")) {
-           state->has_baseline_shift = TRUE;
-           state->baseline_shift = -0.2;
-        } else if (g_str_equal (value, "super")) {
-           state->has_baseline_shift = TRUE;
-           state->baseline_shift = 0.4;
-        } else if (g_str_equal (value, "baseline")) {
-           state->has_baseline_shift = TRUE;
-           state->baseline_shift = 0.;
-        } else {
-          g_warning ("value \'%s\' for attribute \'baseline-shift\' is not supported; only 'sub', 'super', and 'baseline' are supported\n", value);
-        }
     }
     break;
 
@@ -1934,12 +1910,6 @@ cairo_fill_rule_t
 rsvg_state_get_clip_rule (RsvgState *state)
 {
     return state->clip_rule;
-}
-
-double
-rsvg_state_get_baseline_shift (RsvgState *state)
-{
-    return state->baseline_shift;
 }
 
 RsvgPaintServer *

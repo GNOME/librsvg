@@ -68,8 +68,6 @@ struct _RsvgState {
     char *mask;
     char *clip_path;
     guint8 opacity;             /* 0..255 */
-    double baseline_shift;
-    gboolean has_baseline_shift;
 
     RsvgPaintServer *fill;
     gboolean has_fill_server;
@@ -278,9 +276,6 @@ const TextDecoration *rsvg_state_get_font_decor (RsvgState *state);
 
 G_GNUC_INTERNAL
 cairo_fill_rule_t rsvg_state_get_clip_rule (RsvgState *state);
-
-G_GNUC_INTERNAL
-double rsvg_state_get_baseline_shift (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_fill (RsvgState *state);

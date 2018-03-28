@@ -35,6 +35,7 @@ pub enum RsvgState {}
 pub struct State {
     pub affine: cairo::Matrix,
 
+    pub baseline_shift: Option<BaselineShift>,
     pub cap: Option<StrokeLinecap>,
     pub fill_rule: Option<FillRule>,
     pub join: Option<StrokeLinejoin>,
@@ -50,6 +51,7 @@ impl State {
             affine: cairo::Matrix::identity(),
 
             // please keep these sorted
+            baseline_shift: Default::default(),
             cap: Default::default(),
             fill_rule: Default::default(),
             join: Default::default(),
@@ -63,6 +65,10 @@ impl State {
     fn parse_style_pair(&mut self, attr: Attribute, value: &str) -> Result<(), AttributeError> {
         // please keep these sorted
         match attr {
+            Attribute::BaselineShift => {
+                self.baseline_shift = parse_property(value, ())?;
+            }
+
             Attribute::FillRule => {
                 self.fill_rule = parse_property(value, ())?;
             }
@@ -169,7 +175,6 @@ extern "C" {
     fn rsvg_state_has_overflow(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_cond_true(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_set_cond_true(state: *const RsvgState, cond_true: glib_sys::gboolean);
-    fn rsvg_state_get_baseline_shift(state: *const RsvgState) -> f64;
     fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const ColorSpec;
     fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const OpacitySpec;
     fn rsvg_state_get_stroke_dasharray(state: *const RsvgState) -> *const StrokeDasharray;
@@ -246,10 +251,6 @@ pub fn set_cond_true(state: *const RsvgState, cond_true: bool) {
     unsafe {
         rsvg_state_set_cond_true(state, cond_true.to_glib());
     }
-}
-
-pub fn get_baseline_shift(state: *const RsvgState) -> f64 {
-    unsafe { rsvg_state_get_baseline_shift(state) }
 }
 
 pub fn get_stop_color(state: *const RsvgState) -> Result<Option<Color>, AttributeError> {
@@ -397,6 +398,32 @@ pub fn get_comp_op(state: *const RsvgState) -> cairo::Operator {
 
 pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
     unsafe { &mut *rsvg_state_get_state_rust(state) }
+}
+
+// BaselineShift -----------------------------------
+
+make_property!(
+    BaselineShift,
+    default: 0f64,
+    inherits_automatically: true,
+    newtype: f64
+);
+
+impl Parse for BaselineShift {
+    type Data = ();
+    type Err = AttributeError;
+
+    // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
+    // see sp_style_merge_baseline_shift_from_parent()
+    fn parse(s: &str, _: Self::Data) -> Result<BaselineShift, ::error::AttributeError> {
+        match s.trim() {
+            "baseline" => Ok(BaselineShift(0f64)),
+            "sub" => Ok(BaselineShift(-0.2f64)),
+            "super" => Ok(BaselineShift(0.4f64)),
+
+            _ => Err(::error::AttributeError::from(::parsers::ParseError::new("invalid value"))),
+        }
+    }
 }
 
 // FillRule ----------------------------------------
@@ -563,6 +590,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     let src = unsafe { &*src };
 
     // please keep these sorted
+    inherit(inherit_fn, &mut dst.baseline_shift, &src.baseline_shift);
     inherit(inherit_fn, &mut dst.cap, &src.cap);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
     inherit(inherit_fn, &mut dst.join, &src.join);
