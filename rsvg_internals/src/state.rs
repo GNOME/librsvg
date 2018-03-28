@@ -168,6 +168,7 @@ extern "C" {
     fn rsvg_state_has_overflow(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_cond_true(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_set_cond_true(state: *const RsvgState, cond_true: glib_sys::gboolean);
+    fn rsvg_state_get_baseline_shift(state: *const RsvgState) -> f64;
     fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const ColorSpec;
     fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const OpacitySpec;
     fn rsvg_state_get_stroke_dasharray(state: *const RsvgState) -> *const StrokeDasharray;
@@ -234,6 +235,10 @@ pub fn set_cond_true(state: *const RsvgState, cond_true: bool) {
     unsafe {
         rsvg_state_set_cond_true(state, cond_true.to_glib());
     }
+}
+
+pub fn get_baseline_shift(state: *const RsvgState) -> f64 {
+    unsafe { rsvg_state_get_baseline_shift(state) }
 }
 
 pub fn get_stop_color(state: *const RsvgState) -> Result<Option<Color>, AttributeError> {
