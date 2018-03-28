@@ -67,7 +67,7 @@ macro_rules! make_property {
     ($name: ident,
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
-     newtype: $type: ty
+     newtype_from_str: $type: ty
     ) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name(pub $type);
@@ -128,18 +128,21 @@ mod tests {
             Bar,
             default: "bar".to_string(),
             inherits_automatically: true,
-            newtype: String
+            newtype_from_str: String
         }
 
         assert_eq!(<Bar as Default>::default(), Bar("bar".to_string()));
         assert_eq!(<Bar as Property>::inherits_automatically(), true);
-        assert_eq!(<Bar as Parse>::parse("test", ()), Ok(Bar("test".to_string())));
+        assert_eq!(
+            <Bar as Parse>::parse("test", ()),
+            Ok(Bar("test".to_string()))
+        );
 
         make_property! {
             Baz,
             default: 42f64,
             inherits_automatically: true,
-            newtype: f64
+            newtype_from_str: f64
         }
 
         assert_eq!(<Baz as Default>::default(), Baz(42f64));

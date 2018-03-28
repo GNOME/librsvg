@@ -427,7 +427,7 @@ make_property!(
     LetterSpacing,
     default: RsvgLength::default(),
     inherits_automatically: true,
-    newtype: RsvgLength
+    newtype_from_str: RsvgLength
 );
 
 // TextAnchor --------------------------------------
@@ -449,7 +449,7 @@ make_property!(
     XmlLang,
     default: "C".to_string(),
     inherits_automatically: true,
-    newtype: String
+    newtype_from_str: String
 );
 
 // XmlSpace ----------------------------------------
