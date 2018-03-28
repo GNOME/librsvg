@@ -89,12 +89,12 @@ macro_rules! make_property {
             type Err = ::error::AttributeError;
 
             fn parse(s: &str, _: Self::Data) -> Result<$name, ::error::AttributeError> {
-                match s.trim().parse() {
-                    Ok(val) => Ok($name(val)),
-
-                    // FIXME: should this convert the string::ParseError into AttributeError?
-                    _ => Err(::error::AttributeError::from(::parsers::ParseError::new("invalid value"))),
-                }
+                s.trim()
+                    .parse()
+                    .map(|val| $name(val))
+                    .map_err(|_| ::error::AttributeError::from(
+                        ::parsers::ParseError::new("parse error")
+                    ))
             }
         }
     };
