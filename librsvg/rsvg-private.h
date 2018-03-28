@@ -532,9 +532,6 @@ PangoContext *rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx);
 G_GNUC_INTERNAL
 double _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx);
 
-G_GNUC_INTERNAL
-double _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx);
-
 /* Implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
 RsvgLength rsvg_length_parse (const char *str, LengthDir dir);
