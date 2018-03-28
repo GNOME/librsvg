@@ -8,7 +8,7 @@ use pango_sys;
 use attributes::Attribute;
 use color::{Color, ColorSpec};
 use error::*;
-use length::{RsvgLength, StrokeDasharray};
+use length::{LengthDir, RsvgLength, StrokeDasharray};
 use node::RsvgNode;
 use opacity::{Opacity, OpacitySpec};
 use paint_server::PaintServer;
@@ -76,7 +76,7 @@ impl State {
             }
 
             Attribute::LetterSpacing => {
-                self.letter_spacing = parse_property(value, ())?;
+                self.letter_spacing = parse_property(value, LengthDir::Horizontal)?;
             }
 
             Attribute::TextAnchor => {
@@ -427,8 +427,17 @@ make_property!(
     LetterSpacing,
     default: RsvgLength::default(),
     inherits_automatically: true,
-    newtype_from_str: RsvgLength
+    newtype: RsvgLength
 );
+
+impl Parse for LetterSpacing {
+    type Data = LengthDir;
+    type Err = AttributeError;
+
+    fn parse(s: &str, dir: LengthDir) -> Result<LetterSpacing, AttributeError> {
+        Ok(LetterSpacing(RsvgLength::parse(s, dir)?))
+    }
+}
 
 // TextAnchor --------------------------------------
 

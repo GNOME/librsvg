@@ -98,6 +98,27 @@ macro_rules! make_property {
             }
         }
     };
+
+    ($name: ident,
+     default: $default: expr,
+     inherits_automatically: $inherits_automatically: expr,
+     newtype: $type: ty
+    ) => {
+        #[derive(Debug, Clone, PartialEq)]
+        pub struct $name(pub $type);
+
+        impl Default for $name {
+            fn default() -> $name {
+                $name($default)
+            }
+        }
+
+        impl ::property_macros::Property for $name {
+            fn inherits_automatically() -> bool {
+                $inherits_automatically
+            }
+        }
+    };
 }
 
 #[cfg(test)]
