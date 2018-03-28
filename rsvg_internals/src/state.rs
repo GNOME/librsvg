@@ -164,6 +164,7 @@ extern "C" {
     fn rsvg_state_free(state: *mut RsvgState);
     fn rsvg_state_reinit(state: *mut RsvgState);
     fn rsvg_state_reconstruct(state: *mut RsvgState, node: *const RsvgNode);
+    fn rsvg_state_parent(state: *mut RsvgState) -> *mut RsvgState;
     fn rsvg_state_is_overflow(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_has_overflow(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_cond_true(state: *const RsvgState) -> glib_sys::gboolean;
@@ -216,6 +217,16 @@ pub fn reinit(state: *mut RsvgState) {
 pub fn reconstruct(state: *mut RsvgState, node: *const RsvgNode) {
     unsafe {
         rsvg_state_reconstruct(state, node);
+    }
+}
+
+pub fn parent(state: *mut RsvgState) -> Option<*mut RsvgState> {
+    let parent = unsafe { rsvg_state_parent(state) };
+
+    if parent.is_null() {
+        None
+    } else {
+        Some(parent)
     }
 }
 
