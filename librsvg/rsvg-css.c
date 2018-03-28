@@ -53,8 +53,8 @@
 
 
 /* Recursive evaluation of all parent elements regarding absolute font size */
-static double
-normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
+double
+_rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
 {
     RsvgState *parent;
 
@@ -66,7 +66,7 @@ normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
 
         parent = rsvg_state_parent (state);
         if (parent) {
-            parent_size = normalize_font_size (parent, ctx);
+            parent_size = _rsvg_css_normalize_font_size (parent, ctx);
         } else {
             parent_size = 12.0;
         }
@@ -79,7 +79,7 @@ normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
 
         parent = rsvg_state_parent (state);
         if (parent) {
-            parent_size = normalize_font_size (parent, ctx);
+            parent_size = _rsvg_css_normalize_font_size (parent, ctx);
         } else {
             parent_size = 12.0;
         }
@@ -96,12 +96,6 @@ normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
     }
 }
 
-double
-rsvg_drawing_ctx_get_normalized_font_size (RsvgDrawingCtx *ctx)
-{
-    return normalize_font_size (rsvg_current_state (ctx), ctx);
-}
-
 /* Recursive evaluation of all parent elements regarding basline-shift */
 double
 _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx)
@@ -113,7 +107,7 @@ _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx)
     if (parent) {
         if (state->has_baseline_shift) {
             double parent_font_size;
-            parent_font_size = normalize_font_size (parent, ctx); /* font size from here */
+            parent_font_size = _rsvg_css_normalize_font_size (parent, ctx); /* font size from here */
             shift = parent_font_size * state->baseline_shift;
         }
         shift += _rsvg_css_accumulate_baseline_shift (parent, ctx); /* baseline-shift for parent element */

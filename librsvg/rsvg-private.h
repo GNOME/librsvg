@@ -518,9 +518,6 @@ double rsvg_length_hand_normalize (const RsvgLength *length,
                                    double font_size);
 
 G_GNUC_INTERNAL
-double rsvg_drawing_ctx_get_normalized_font_size (RsvgDrawingCtx * ctx);
-
-G_GNUC_INTERNAL
 cairo_matrix_t rsvg_drawing_ctx_get_current_state_affine (RsvgDrawingCtx *ctx);
 
 G_GNUC_INTERNAL
@@ -532,6 +529,8 @@ void rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, c
 G_GNUC_INTERNAL
 PangoContext *rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx);
 
+G_GNUC_INTERNAL
+double _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx);
 
 G_GNUC_INTERNAL
 double _rsvg_css_accumulate_baseline_shift (RsvgState * state, RsvgDrawingCtx * ctx);
