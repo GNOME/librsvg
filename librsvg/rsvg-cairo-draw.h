@@ -47,9 +47,7 @@ G_GNUC_INTERNAL
 void         rsvg_cairo_push_discrete_layer	    (RsvgDrawingCtx *ctx, gboolean clipping);
 G_GNUC_INTERNAL
 void         rsvg_cairo_pop_discrete_layer      (RsvgDrawingCtx *ctx, gboolean clipping);
-G_GNUC_INTERNAL
-void         rsvg_cairo_add_clipping_rect       (RsvgDrawingCtx *ctx,
-                                                 double x, double y, double width, double height);
+
 G_GNUC_INTERNAL
 cairo_surface_t*rsvg_cairo_get_surface_of_node  (RsvgDrawingCtx *ctx, RsvgNode *drawable, 
                                                  double width, double height);

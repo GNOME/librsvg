@@ -558,12 +558,6 @@ rsvg_get_end_marker (RsvgDrawingCtx *ctx)
     return state->endMarker;
 }
 
-void
-rsvg_drawing_ctx_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w, double h)
-{
-    ctx->render->add_clipping_rect (ctx, x, y, w, h);
-}
-
 cairo_surface_t *
 rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h)
 {

@@ -9,7 +9,7 @@ use std::ptr;
 
 use aspect_ratio::AspectRatio;
 use attributes::Attribute;
-use draw::draw_surface;
+use draw::{add_clipping_rect, draw_surface};
 use drawing_ctx::{self, RsvgDrawingCtx};
 use handle::RsvgHandle;
 use length::*;
@@ -111,7 +111,7 @@ impl NodeTrait for NodeImage {
             let aspect = self.aspect.get();
 
             if !state::is_overflow(state) && aspect.is_slice() {
-                drawing_ctx::add_clipping_rect(draw_ctx, x, y, w, h);
+                add_clipping_rect(draw_ctx, x, y, w, h);
             }
 
             let (x, y, w, h) = aspect.compute(

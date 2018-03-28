@@ -53,6 +53,14 @@ gboolean rsvg_set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
                                             RsvgBbox bbox,
                                             guint32 current_color);
 
+/* Implemented in rsvg_internals/src/draw.rs */
+G_GNUC_INTERNAL
+void rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
+                                   double x,
+                                   double y,
+                                   double w,
+                                   double h);
+
 void
 rsvg_cairo_set_affine_on_cr (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix_t *affine)
 {
@@ -515,20 +523,6 @@ rsvg_cairo_pop_discrete_layer (RsvgDrawingCtx * ctx, gboolean clipping)
 
     rsvg_cairo_pop_render_stack (ctx);
     cairo_restore (render->cr);
-}
-
-void
-rsvg_cairo_add_clipping_rect (RsvgDrawingCtx * ctx, double x, double y, double w, double h)
-{
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    cairo_t *cr = render->cr;
-    cairo_matrix_t affine;
-
-    affine = rsvg_state_get_affine (rsvg_current_state (ctx));
-    rsvg_drawing_ctx_set_affine_on_cr (ctx, cr, &affine);
-
-    cairo_rectangle (cr, x, y, w, h);
-    cairo_clip (cr);
 }
 
 cairo_surface_t *

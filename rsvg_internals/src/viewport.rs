@@ -2,6 +2,7 @@ use cairo;
 use cairo::MatrixTrait;
 
 use aspect_ratio::AspectRatio;
+use draw::add_clipping_rect;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use float_eq_cairo::ApproxEqCairo;
 use viewbox::*;
@@ -22,7 +23,7 @@ pub fn draw_in_viewport<F>(
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
     affine: cairo::Matrix,
-    draw_ctx: *const RsvgDrawingCtx,
+    draw_ctx: *mut RsvgDrawingCtx,
     clipping: bool,
     draw_fn: F,
 ) where
@@ -55,7 +56,7 @@ trait ViewportCtx {
     fn set_affine(&mut self, affine: cairo::Matrix);
 }
 
-struct RsvgDrawingCtxWrapper(pub *const RsvgDrawingCtx);
+struct RsvgDrawingCtxWrapper(pub *mut RsvgDrawingCtx);
 
 impl ViewportCtx for RsvgDrawingCtxWrapper {
     fn push_view_box(&mut self, width: f64, height: f64) {
@@ -75,7 +76,7 @@ impl ViewportCtx for RsvgDrawingCtxWrapper {
     }
 
     fn add_clipping_rect(&mut self, x: f64, y: f64, w: f64, h: f64) {
-        drawing_ctx::add_clipping_rect(self.0, x, y, w, h);
+        add_clipping_rect(self.0, x, y, w, h);
     }
 
     fn set_affine(&mut self, affine: cairo::Matrix) {

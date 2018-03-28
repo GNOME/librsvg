@@ -63,14 +63,6 @@ extern "C" {
         draw_ctx: *const RsvgDrawingCtx,
     ) -> *mut pango_sys::PangoContext;
 
-    fn rsvg_drawing_ctx_add_clipping_rect(
-        draw_ctx: *const RsvgDrawingCtx,
-        x: f64,
-        y: f64,
-        w: f64,
-        h: f64,
-    );
-
     fn rsvg_drawing_ctx_insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: *const RsvgBbox);
 
     fn rsvg_drawing_ctx_draw_node_from_stack(
@@ -222,12 +214,6 @@ pub fn set_affine_on_cr(
 
 pub fn get_pango_context(draw_ctx: *const RsvgDrawingCtx) -> pango::Context {
     unsafe { from_glib_full(rsvg_drawing_ctx_get_pango_context(draw_ctx)) }
-}
-
-pub fn add_clipping_rect(draw_ctx: *const RsvgDrawingCtx, x: f64, y: f64, w: f64, h: f64) {
-    unsafe {
-        rsvg_drawing_ctx_add_clipping_rect(draw_ctx, x, y, w, h);
-    }
 }
 
 pub fn insert_bbox(draw_ctx: *const RsvgDrawingCtx, bbox: &RsvgBbox) {

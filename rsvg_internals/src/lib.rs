@@ -37,6 +37,8 @@ pub use cond::{
     rsvg_cond_check_system_language,
 };
 
+pub use draw::rsvg_cairo_add_clipping_rect;
+
 pub use gradient::{rsvg_node_linear_gradient_new, rsvg_node_radial_gradient_new};
 
 pub use length::{
