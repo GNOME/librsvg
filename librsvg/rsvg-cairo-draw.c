@@ -61,21 +61,6 @@ void rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
                                    double w,
                                    double h);
 
-void
-rsvg_cairo_set_affine_on_cr (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix_t *affine)
-{
-    RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
-    gboolean nest = cr != render->initial_cr;
-    cairo_matrix_t matrix;
-
-    cairo_matrix_init (&matrix,
-                       affine->xx, affine->yx,
-                       affine->xy, affine->yy,
-                       affine->x0 + (nest ? 0 : render->offset_x),
-                       affine->y0 + (nest ? 0 : render->offset_y));
-    cairo_set_matrix (cr, &matrix);
-}
-
 #ifdef HAVE_PANGOFT2
 static cairo_font_options_t *
 get_font_options_for_testing (void)

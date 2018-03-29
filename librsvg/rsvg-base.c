@@ -525,7 +525,16 @@ rsvg_drawing_ctx_set_current_state_affine (RsvgDrawingCtx *ctx, cairo_matrix_t *
 void
 rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, cairo_matrix_t *affine)
 {
-    draw_ctx->render->set_affine_on_cr (draw_ctx, cr, affine);
+    RsvgCairoRender *render = RSVG_CAIRO_RENDER (draw_ctx->render);
+    gboolean nest = cr != render->initial_cr;
+    cairo_matrix_t matrix;
+
+    cairo_matrix_init (&matrix,
+                       affine->xx, affine->yx,
+                       affine->xy, affine->yy,
+                       affine->x0 + (nest ? 0 : render->offset_x),
+                       affine->y0 + (nest ? 0 : render->offset_y));
+    cairo_set_matrix (cr, &matrix);
 }
 
 PangoContext *

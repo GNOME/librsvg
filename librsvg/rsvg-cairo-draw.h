@@ -33,9 +33,6 @@
 G_BEGIN_DECLS 
 
 G_GNUC_INTERNAL
-void rsvg_cairo_set_affine_on_cr (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix_t *affine);
-
-G_GNUC_INTERNAL
 PangoContext    *rsvg_cairo_get_pango_context    (RsvgDrawingCtx *ctx);
 
 G_GNUC_INTERNAL
