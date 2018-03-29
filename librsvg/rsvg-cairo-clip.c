@@ -44,7 +44,6 @@ typedef struct RsvgCairoClipRender RsvgCairoClipRender;
 
 struct RsvgCairoClipRender {
     RsvgCairoRender super;
-    RsvgCairoRender *parent;
 };
 
 #define RSVG_CAIRO_CLIP_RENDER(render) (_RSVG_RENDER_CIC ((render), RSVG_RENDER_TYPE_CAIRO_CLIP, RsvgCairoClipRender))
@@ -85,8 +84,6 @@ rsvg_cairo_clip_render_new (cairo_t *cr, RsvgCairoRender *parent)
     cairo_render->font_config_for_testing = parent->font_config_for_testing;
     cairo_render->font_map_for_testing    = parent->font_map_for_testing;
 #endif
-
-    clip_render->parent = parent;
 
     return render;
 }
