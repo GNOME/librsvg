@@ -207,8 +207,6 @@ struct RsvgRender {
     void (*free) (RsvgRender * self);
 
     void             (*set_affine_on_cr)        (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix_t *affine);
-    cairo_surface_t *(*get_surface_of_node)     (RsvgDrawingCtx *ctx, RsvgNode * drawable,
-                                                 double w, double h);
     void             (*insert_bbox)             (RsvgDrawingCtx *ctx, RsvgBbox *bbox);
 };
 
@@ -479,8 +477,6 @@ G_GNUC_INTERNAL
 cairo_surface_t *rsvg_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf);
 G_GNUC_INTERNAL
 GdkPixbuf *rsvg_cairo_surface_to_pixbuf (cairo_surface_t *surface);
-G_GNUC_INTERNAL
-cairo_surface_t *rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h);
 
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox);

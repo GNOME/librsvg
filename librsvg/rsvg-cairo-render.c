@@ -74,7 +74,6 @@ rsvg_cairo_render_new (cairo_t * cr, double width, double height)
     cairo_render->super.type = RSVG_RENDER_TYPE_CAIRO;
     cairo_render->super.free = rsvg_cairo_render_free;
     cairo_render->super.set_affine_on_cr = rsvg_cairo_set_affine_on_cr;
-    cairo_render->super.get_surface_of_node = rsvg_cairo_get_surface_of_node;
     cairo_render->width = width;
     cairo_render->height = height;
     cairo_render->offset_x = 0;

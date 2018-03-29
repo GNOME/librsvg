@@ -558,12 +558,6 @@ rsvg_get_end_marker (RsvgDrawingCtx *ctx)
     return state->endMarker;
 }
 
-cairo_surface_t *
-rsvg_get_surface_of_node (RsvgDrawingCtx * ctx, RsvgNode * drawable, double w, double h)
-{
-    return ctx->render->get_surface_of_node (ctx, drawable, w, h);
-}
-
 void
 rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
 {
