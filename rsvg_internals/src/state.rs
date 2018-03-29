@@ -421,7 +421,9 @@ impl Parse for BaselineShift {
             "sub" => Ok(BaselineShift(-0.2f64)),
             "super" => Ok(BaselineShift(0.4f64)),
 
-            _ => Err(::error::AttributeError::from(::parsers::ParseError::new("invalid value"))),
+            _ => Err(::error::AttributeError::from(::parsers::ParseError::new(
+                "invalid value",
+            ))),
         }
     }
 }

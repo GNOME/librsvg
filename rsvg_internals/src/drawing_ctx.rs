@@ -15,10 +15,8 @@ pub enum RsvgDrawingCtx {}
 
 #[allow(improper_ctypes)]
 extern "C" {
-    fn _rsvg_css_normalize_font_size(
-        state: *mut RsvgState,
-        draw_ctx: *const RsvgDrawingCtx
-    ) -> f64;
+    fn _rsvg_css_normalize_font_size(state: *mut RsvgState, draw_ctx: *const RsvgDrawingCtx)
+        -> f64;
 
     fn rsvg_drawing_ctx_get_dpi(
         draw_ctx: *const RsvgDrawingCtx,
