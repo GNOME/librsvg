@@ -35,6 +35,7 @@ pub enum RsvgState {}
 pub struct State {
     pub affine: cairo::Matrix,
 
+    pub baseline_shift: Option<BaselineShift>,
     pub cap: Option<StrokeLinecap>,
     pub fill_rule: Option<FillRule>,
     pub join: Option<StrokeLinejoin>,
@@ -50,6 +51,7 @@ impl State {
             affine: cairo::Matrix::identity(),
 
             // please keep these sorted
+            baseline_shift: Default::default(),
             cap: Default::default(),
             fill_rule: Default::default(),
             join: Default::default(),
@@ -63,6 +65,10 @@ impl State {
     fn parse_style_pair(&mut self, attr: Attribute, value: &str) -> Result<(), AttributeError> {
         // please keep these sorted
         match attr {
+            Attribute::BaselineShift => {
+                self.baseline_shift = parse_property(value, ())?;
+            }
+
             Attribute::FillRule => {
                 self.fill_rule = parse_property(value, ())?;
             }
@@ -164,6 +170,7 @@ extern "C" {
     fn rsvg_state_free(state: *mut RsvgState);
     fn rsvg_state_reinit(state: *mut RsvgState);
     fn rsvg_state_reconstruct(state: *mut RsvgState, node: *const RsvgNode);
+    fn rsvg_state_parent(state: *mut RsvgState) -> *mut RsvgState;
     fn rsvg_state_is_overflow(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_has_overflow(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_cond_true(state: *const RsvgState) -> glib_sys::gboolean;
@@ -215,6 +222,16 @@ pub fn reinit(state: *mut RsvgState) {
 pub fn reconstruct(state: *mut RsvgState, node: *const RsvgNode) {
     unsafe {
         rsvg_state_reconstruct(state, node);
+    }
+}
+
+pub fn parent(state: *mut RsvgState) -> Option<*mut RsvgState> {
+    let parent = unsafe { rsvg_state_parent(state) };
+
+    if parent.is_null() {
+        None
+    } else {
+        Some(parent)
     }
 }
 
@@ -383,6 +400,34 @@ pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
     unsafe { &mut *rsvg_state_get_state_rust(state) }
 }
 
+// BaselineShift -----------------------------------
+
+make_property!(
+    BaselineShift,
+    default: 0f64,
+    inherits_automatically: true,
+    newtype: f64
+);
+
+impl Parse for BaselineShift {
+    type Data = ();
+    type Err = AttributeError;
+
+    // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
+    // see sp_style_merge_baseline_shift_from_parent()
+    fn parse(s: &str, _: Self::Data) -> Result<BaselineShift, ::error::AttributeError> {
+        match s.trim() {
+            "baseline" => Ok(BaselineShift(0f64)),
+            "sub" => Ok(BaselineShift(-0.2f64)),
+            "super" => Ok(BaselineShift(0.4f64)),
+
+            _ => Err(::error::AttributeError::from(::parsers::ParseError::new(
+                "invalid value",
+            ))),
+        }
+    }
+}
+
 // FillRule ----------------------------------------
 
 make_property!(
@@ -547,6 +592,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     let src = unsafe { &*src };
 
     // please keep these sorted
+    inherit(inherit_fn, &mut dst.baseline_shift, &src.baseline_shift);
     inherit(inherit_fn, &mut dst.cap, &src.cap);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
     inherit(inherit_fn, &mut dst.join, &src.join);

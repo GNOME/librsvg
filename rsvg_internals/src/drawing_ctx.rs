@@ -15,13 +15,14 @@ pub enum RsvgDrawingCtx {}
 
 #[allow(improper_ctypes)]
 extern "C" {
+    fn _rsvg_css_normalize_font_size(state: *mut RsvgState, draw_ctx: *const RsvgDrawingCtx)
+        -> f64;
+
     fn rsvg_drawing_ctx_get_dpi(
         draw_ctx: *const RsvgDrawingCtx,
         out_dpi_x: *mut f64,
         out_dpi_y: *mut f64,
     );
-
-    fn rsvg_drawing_ctx_get_normalized_font_size(draw_ctx: *const RsvgDrawingCtx) -> f64;
 
     fn rsvg_drawing_ctx_get_view_box_size(
         draw_ctx: *const RsvgDrawingCtx,
@@ -102,7 +103,7 @@ pub fn get_dpi(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
 }
 
 pub fn get_normalized_font_size(draw_ctx: *const RsvgDrawingCtx) -> f64 {
-    unsafe { rsvg_drawing_ctx_get_normalized_font_size(draw_ctx) }
+    unsafe { _rsvg_css_normalize_font_size(rsvg_current_state(draw_ctx), draw_ctx) }
 }
 
 pub fn get_view_box_size(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
