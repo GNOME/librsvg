@@ -16,6 +16,7 @@ variables:
   RUSTC_1_22:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.22"
   RUSTC_1_23:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.23"
   RUSTC_1_24:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.24"
+  RUSTC_1_25:                "registry.gitlab.com/alatiera/librsvg-oci-images/rustc:1.25"
 
   RUSTFMT_NIGHTLY:           "registry.gitlab.com/alatiera/rustfmt-oci-image/rustfmt:nightly"
   CLIPPY_NIGHTLY:            "registry.gitlab.com/alatiera/librsvg-oci-images/clippy:nightly"
@@ -241,6 +242,13 @@ rustc:1_23:
 
 rustc:1_24:
   image: $RUSTC_1_24
+  variables:
+    LIBRSVG_DEBUG: "yes"
+  <<: *rustc
+  <<: *stage_3
+
+rustc:1_25:
+  image: $RUSTC_1_25
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *rustc
