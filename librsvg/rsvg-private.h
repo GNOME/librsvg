@@ -207,7 +207,6 @@ struct RsvgRender {
     void (*free) (RsvgRender * self);
 
     void             (*set_affine_on_cr)        (RsvgDrawingCtx *ctx, cairo_t *cr, cairo_matrix_t *affine);
-    void             (*insert_bbox)             (RsvgDrawingCtx *ctx, RsvgBbox *bbox);
 };
 
 static inline RsvgRender *
