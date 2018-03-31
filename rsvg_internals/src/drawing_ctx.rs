@@ -7,17 +7,15 @@ use pango;
 use pango_sys;
 
 use bbox::RsvgBbox;
+use length::LengthUnit;
 use node::NodeType;
 use node::RsvgNode;
-use state::RsvgState;
+use state::{self, FontSize, RsvgState};
 
 pub enum RsvgDrawingCtx {}
 
 #[allow(improper_ctypes)]
 extern "C" {
-    fn _rsvg_css_normalize_font_size(state: *mut RsvgState, draw_ctx: *const RsvgDrawingCtx)
-        -> f64;
-
     fn rsvg_drawing_ctx_get_dpi(
         draw_ctx: *const RsvgDrawingCtx,
         out_dpi_x: *mut f64,
@@ -103,7 +101,29 @@ pub fn get_dpi(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
 }
 
 pub fn get_normalized_font_size(draw_ctx: *const RsvgDrawingCtx) -> f64 {
-    unsafe { _rsvg_css_normalize_font_size(rsvg_current_state(draw_ctx), draw_ctx) }
+    normalize_font_size(draw_ctx, get_current_state(draw_ctx))
+}
+
+// Recursive evaluation of all parent elements regarding absolute font size
+pub fn normalize_font_size(draw_ctx: *const RsvgDrawingCtx, state: *const RsvgState) -> f64 {
+    let font_size = state::get_state_rust(state)
+        .font_size
+        .as_ref()
+        .map_or_else(|| FontSize::default().0, |fs| fs.0);
+
+    match font_size.unit {
+        LengthUnit::Percent | LengthUnit::FontEm | LengthUnit::FontEx => {
+            parent_font_size(draw_ctx, state) * font_size.length
+        }
+        LengthUnit::RelativeLarger => parent_font_size(draw_ctx, state) * 1.2f64,
+        LengthUnit::RelativeSmaller => parent_font_size(draw_ctx, state) / 1.2f64,
+
+        _ => font_size.normalize(draw_ctx),
+    }
+}
+
+fn parent_font_size(draw_ctx: *const RsvgDrawingCtx, state: *const RsvgState) -> f64 {
+    state::parent(state).map_or(12f64, |p| normalize_font_size(draw_ctx, p))
 }
 
 pub fn get_view_box_size(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {

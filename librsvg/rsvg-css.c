@@ -51,54 +51,6 @@
 #define SETINHERIT() G_STMT_START {if (inherit != NULL) *inherit = TRUE;} G_STMT_END
 #define UNSETINHERIT() G_STMT_START {if (inherit != NULL) *inherit = FALSE;} G_STMT_END
 
-
-/* Recursive evaluation of all parent elements regarding absolute font size */
-double
-_rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
-{
-    RsvgState *parent;
-    RsvgLength font_size;
-
-    font_size = rsvg_state_get_font_size (state);
-
-    switch (font_size.unit) {
-    case LENGTH_UNIT_PERCENT:
-    case LENGTH_UNIT_FONT_EM:
-    case LENGTH_UNIT_FONT_EX: {
-        double parent_size;
-
-        parent = rsvg_state_parent (state);
-        if (parent) {
-            parent_size = _rsvg_css_normalize_font_size (parent, ctx);
-        } else {
-            parent_size = 12.0;
-        }
-        return font_size.length * parent_size;
-    }
-
-    case LENGTH_UNIT_RELATIVE_LARGER:
-    case LENGTH_UNIT_RELATIVE_SMALLER: {
-        double parent_size;
-
-        parent = rsvg_state_parent (state);
-        if (parent) {
-            parent_size = _rsvg_css_normalize_font_size (parent, ctx);
-        } else {
-            parent_size = 12.0;
-        }
-
-        if (font_size.unit == LENGTH_UNIT_RELATIVE_LARGER) {
-            return parent_size * 1.2;
-        } else {
-            return parent_size / 1.2;
-        }
-    }
-
-    default:
-        return rsvg_length_normalize (&font_size, ctx);
-    }
-}
-
 /* This is defined like this so that we can export the Rust function... just for
  * the benefit of rsvg-convert.c
  */

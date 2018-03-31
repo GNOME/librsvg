@@ -255,9 +255,6 @@ G_GNUC_INTERNAL
 PangoGravity rsvg_state_get_text_gravity (RsvgState *state);
 
 G_GNUC_INTERNAL
-RsvgLength rsvg_state_get_font_size (RsvgState *state);
-
-G_GNUC_INTERNAL
 const char *rsvg_state_get_font_family (RsvgState *state);
 
 G_GNUC_INTERNAL

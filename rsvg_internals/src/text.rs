@@ -464,7 +464,7 @@ fn accumulate_baseline_shift(draw_ctx: *const RsvgDrawingCtx) -> f64 {
     let mut state = drawing_ctx::get_current_state(draw_ctx);
     while let Some(parent) = state::parent(state) {
         if let Some(BaselineShift(ref s)) = state::get_state_rust(state).baseline_shift {
-            let parent_font_size = unsafe { _rsvg_css_normalize_font_size(parent, draw_ctx) };
+            let parent_font_size = drawing_ctx::normalize_font_size(draw_ctx, parent);
             shift += s * parent_font_size;
         }
         state = parent;

@@ -642,12 +642,3 @@ pub extern "C" fn rsvg_state_rust_set_affine(state: *mut State, affine: cairo::M
         state.affine = affine;
     }
 }
-
-#[no_mangle]
-pub extern "C" fn rsvg_state_rust_get_font_size(state: *const State) -> RsvgLength {
-    unsafe {
-        let state = &*state;
-        let FontSize(fs) = state.font_size.clone().unwrap_or_default();
-        fs
-    }
-}

@@ -53,7 +53,6 @@ extern void rsvg_state_rust_free(State *state);
 extern State *rsvg_state_rust_clone(State *state);
 extern cairo_matrix_t rsvg_state_rust_get_affine(State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
-extern RsvgLength rsvg_state_rust_get_font_size(State *state);
 
 extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value)
     G_GNUC_WARN_UNUSED_RESULT;
@@ -1854,12 +1853,6 @@ PangoGravity
 rsvg_state_get_text_gravity (RsvgState *state)
 {
     return state->text_gravity;
-}
-
-RsvgLength
-rsvg_state_get_font_size (RsvgState *state)
-{
-    return rsvg_state_rust_get_font_size (state->state_rust);
 }
 
 const char *
