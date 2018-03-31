@@ -10,7 +10,7 @@ use bbox::RsvgBbox;
 use length::LengthUnit;
 use node::NodeType;
 use node::RsvgNode;
-use state::{self, FontSize, RsvgState};
+use state::{self, BaselineShift, FontSize, RsvgState};
 
 pub enum RsvgDrawingCtx {}
 
@@ -104,8 +104,23 @@ pub fn get_normalized_font_size(draw_ctx: *const RsvgDrawingCtx) -> f64 {
     normalize_font_size(draw_ctx, get_current_state(draw_ctx))
 }
 
+pub fn get_accumulated_baseline_shift(draw_ctx: *const RsvgDrawingCtx) -> f64 {
+    let mut shift = 0f64;
+
+    let mut state = get_current_state(draw_ctx);
+    while let Some(parent) = state::parent(state) {
+        if let Some(BaselineShift(ref s)) = state::get_state_rust(state).baseline_shift {
+            let parent_font_size = normalize_font_size(draw_ctx, parent);
+            shift += s * parent_font_size;
+        }
+        state = parent;
+    }
+
+    shift
+}
+
 // Recursive evaluation of all parent elements regarding absolute font size
-pub fn normalize_font_size(draw_ctx: *const RsvgDrawingCtx, state: *const RsvgState) -> f64 {
+fn normalize_font_size(draw_ctx: *const RsvgDrawingCtx, state: *const RsvgState) -> f64 {
     let font_size = state::get_state_rust(state)
         .font_size
         .as_ref()

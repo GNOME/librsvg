@@ -21,7 +21,7 @@ use node::{
 use parsers::parse;
 use property_bag::PropertyBag;
 use space::xml_space_normalize;
-use state::{self, BaselineShift, LetterSpacing, RsvgState, TextAnchor, UnicodeBidi, XmlLang};
+use state::{self, LetterSpacing, RsvgState, TextAnchor, UnicodeBidi, XmlLang};
 
 extern "C" {
     fn _rsvg_css_normalize_font_size(
@@ -84,7 +84,7 @@ impl NodeChars {
         let state = drawing_ctx::get_current_state(draw_ctx);
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
-        let offset = baseline + accumulate_baseline_shift(draw_ctx);
+        let offset = baseline + drawing_ctx::get_accumulated_baseline_shift(draw_ctx);
 
         let gravity = state::get_text_gravity(state);
         if gravity_is_vertical(gravity) {
@@ -456,21 +456,6 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
     layout.set_text(&t);
 
     layout
-}
-
-fn accumulate_baseline_shift(draw_ctx: *const RsvgDrawingCtx) -> f64 {
-    let mut shift = 0f64;
-
-    let mut state = drawing_ctx::get_current_state(draw_ctx);
-    while let Some(parent) = state::parent(state) {
-        if let Some(BaselineShift(ref s)) = state::get_state_rust(state).baseline_shift {
-            let parent_font_size = drawing_ctx::normalize_font_size(draw_ctx, parent);
-            shift += s * parent_font_size;
-        }
-        state = parent;
-    }
-
-    shift
 }
 
 fn anchor_offset(
