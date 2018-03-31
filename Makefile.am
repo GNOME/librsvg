@@ -172,7 +172,8 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = \
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
 	$(LIBRSVG_LIBS) 	\
 	$(LIBM)			\
-	$(RUST_LIB)
+	$(RUST_LIB)		\
+	$(DLOPEN_LIBS)
 
 librsvgincdir = $(includedir)/librsvg-$(RSVG_API_VERSION)/librsvg
 librsvginc_HEADERS =			\

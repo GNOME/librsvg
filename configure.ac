@@ -67,6 +67,11 @@ PKG_PROG_PKG_CONFIG
 LT_INIT([win32-dll])
 LT_LIB_M
 
+# Check if -ldl is needed to use dlopen()
+AC_CHECK_FUNC(dlopen, [],
+              [AC_CHECK_LIB(dl, dlopen, [DLOPEN_LIBS=-ldl])])
+AC_SUBST(DLOPEN_LIBS)
+
 dnl ===========================================================================
 
 AC_CHECK_PROG(CARGO, [cargo], [yes], [no])
