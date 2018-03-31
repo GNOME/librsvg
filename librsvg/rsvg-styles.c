@@ -528,11 +528,11 @@ rsvg_parse_style_pair (RsvgState *state,
     StyleValueData *data;
     gboolean success = TRUE;
 
-    data = g_hash_table_lookup (state->styles, name);
-    if (data && data->important && !important)
+    if (name == NULL || value == NULL)
         return success;
 
-    if (name == NULL || value == NULL)
+    data = g_hash_table_lookup (state->styles, name);
+    if (data && data->important && !important)
         return success;
 
     g_hash_table_insert (state->styles,
