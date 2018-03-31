@@ -53,6 +53,7 @@ extern void rsvg_state_rust_free(State *state);
 extern State *rsvg_state_rust_clone(State *state);
 extern cairo_matrix_t rsvg_state_rust_get_affine(State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
+extern RsvgLength rsvg_state_rust_get_font_size(State *state);
 
 extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value)
     G_GNUC_WARN_UNUSED_RESULT;
@@ -138,7 +139,6 @@ rsvg_state_init (RsvgState * state)
     state->flood_opacity = 255;
 
     state->font_family = g_strdup (RSVG_DEFAULT_FONT);
-    state->font_size = rsvg_length_parse ("12.0", LENGTH_DIR_BOTH);
     state->font_style = PANGO_STYLE_NORMAL;
     state->font_variant = PANGO_VARIANT_NORMAL;
     state->font_weight = PANGO_WEIGHT_NORMAL;
@@ -170,7 +170,6 @@ rsvg_state_init (RsvgState * state)
     state->has_cond = FALSE;
     state->has_stop_color = FALSE;
     state->has_stop_opacity = FALSE;
-    state->has_font_size = FALSE;
     state->has_font_family = FALSE;
     state->has_font_style = FALSE;
     state->has_font_variant = FALSE;
@@ -354,8 +353,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     }
     if (function (dst->has_cond, src->has_cond))
         dst->cond_true = src->cond_true;
-    if (function (dst->has_font_size, src->has_font_size))
-        dst->font_size = src->font_size;
     if (function (dst->has_font_style, src->has_font_style))
         dst->font_style = src->font_style;
     if (function (dst->has_font_variant, src->has_font_variant))
@@ -814,13 +811,6 @@ rsvg_parse_style_pair (RsvgState *state,
         }
 
         state->has_stroke_opacity = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_FONT_SIZE:
-    {
-        state->font_size = rsvg_length_parse (value, LENGTH_DIR_BOTH);
-        state->has_font_size = TRUE;
     }
     break;
 
@@ -1864,6 +1854,12 @@ PangoGravity
 rsvg_state_get_text_gravity (RsvgState *state)
 {
     return state->text_gravity;
+}
+
+RsvgLength
+rsvg_state_get_font_size (RsvgState *state)
+{
+    return rsvg_state_rust_get_font_size (state->state_rust);
 }
 
 const char *

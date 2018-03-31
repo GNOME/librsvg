@@ -38,6 +38,7 @@ pub struct State {
     pub baseline_shift: Option<BaselineShift>,
     pub cap: Option<StrokeLinecap>,
     pub fill_rule: Option<FillRule>,
+    pub font_size: Option<FontSize>,
     pub join: Option<StrokeLinejoin>,
     pub letter_spacing: Option<LetterSpacing>,
     pub text_anchor: Option<TextAnchor>,
@@ -54,6 +55,7 @@ impl State {
             baseline_shift: Default::default(),
             cap: Default::default(),
             fill_rule: Default::default(),
+            font_size: Default::default(),
             join: Default::default(),
             letter_spacing: Default::default(),
             text_anchor: Default::default(),
@@ -71,6 +73,10 @@ impl State {
 
             Attribute::FillRule => {
                 self.fill_rule = parse_property(value, ())?;
+            }
+
+            Attribute::FontSize => {
+                self.font_size = parse_property(value, LengthDir::Both)?;
             }
 
             Attribute::StrokeLinecap => {
@@ -440,6 +446,24 @@ make_property!(
     "evenodd" => EvenOdd,
 );
 
+// FontSize -------------------------------------------
+
+make_property!(
+    FontSize,
+    default: RsvgLength::parse("12.0", LengthDir::Both).unwrap(),
+    inherits_automatically: true,
+    newtype: RsvgLength
+);
+
+impl Parse for FontSize {
+    type Data = LengthDir;
+    type Err = AttributeError;
+
+    fn parse(s: &str, dir: LengthDir) -> Result<FontSize, AttributeError> {
+        Ok(FontSize(RsvgLength::parse(s, dir)?))
+    }
+}
+
 // StrokeLinecap ----------------------------------------
 
 make_property!(
@@ -595,6 +619,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.baseline_shift, &src.baseline_shift);
     inherit(inherit_fn, &mut dst.cap, &src.cap);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
+    inherit(inherit_fn, &mut dst.font_size, &src.font_size);
     inherit(inherit_fn, &mut dst.join, &src.join);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
     inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
@@ -615,5 +640,14 @@ pub extern "C" fn rsvg_state_rust_set_affine(state: *mut State, affine: cairo::M
     unsafe {
         let state = &mut *state;
         state.affine = affine;
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_font_size(state: *const State) -> RsvgLength {
+    unsafe {
+        let state = &*state;
+        let FontSize(fs) = state.font_size.clone().unwrap_or_default();
+        fs
     }
 }

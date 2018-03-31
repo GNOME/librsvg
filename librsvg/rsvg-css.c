@@ -57,8 +57,11 @@ double
 _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
 {
     RsvgState *parent;
+    RsvgLength font_size;
 
-    switch (state->font_size.unit) {
+    font_size = rsvg_state_get_font_size (state);
+
+    switch (font_size.unit) {
     case LENGTH_UNIT_PERCENT:
     case LENGTH_UNIT_FONT_EM:
     case LENGTH_UNIT_FONT_EX: {
@@ -70,7 +73,7 @@ _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
         } else {
             parent_size = 12.0;
         }
-        return state->font_size.length * parent_size;
+        return font_size.length * parent_size;
     }
 
     case LENGTH_UNIT_RELATIVE_LARGER:
@@ -84,7 +87,7 @@ _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
             parent_size = 12.0;
         }
 
-        if (state->font_size.unit == LENGTH_UNIT_RELATIVE_LARGER) {
+        if (font_size.unit == LENGTH_UNIT_RELATIVE_LARGER) {
             return parent_size * 1.2;
         } else {
             return parent_size / 1.2;
@@ -92,7 +95,7 @@ _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
     }
 
     default:
-        return rsvg_length_normalize (&state->font_size, ctx);
+        return rsvg_length_normalize (&font_size, ctx);
     }
 }
 
