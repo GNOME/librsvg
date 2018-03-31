@@ -188,27 +188,6 @@ fedora:test_release:
   <<: *distro_test
   <<: *stage_3
 
-fedora:rawhide_release:
-  image: $AMD64_FEDORA_RAWHIDE
-  variables:
-    LIBRSVG_DEBUG: "no"
-  <<: *distro_test
-  <<: *stage_3
-
-opensuse:tumbleweed_release:
-  image: $AMD64_OPENSUSE_TUMBLEWEED
-  variables:
-    LIBRSVG_DEBUG: "no"
-  <<: *distro_test
-  <<: *stage_3
-
-debian:testing_release:
-  image: $AMD64_DEBIAN_TESTING
-  variables:
-    LIBRSVG_DEBUG: "no"
-  <<: *distro_test
-  <<: *stage_3
-
 debian:testing_release_i386:
   image: $I386_DEBIAN_TESTING
   variables:
