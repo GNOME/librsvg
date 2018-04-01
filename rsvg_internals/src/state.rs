@@ -36,15 +36,15 @@ pub struct State {
     pub affine: cairo::Matrix,
 
     pub baseline_shift: Option<BaselineShift>,
-    pub cap: Option<StrokeLinecap>,
     pub fill_rule: Option<FillRule>,
     pub font_family: Option<FontFamily>,
     pub font_size: Option<FontSize>,
     pub font_style: Option<FontStyle>,
     pub font_variant: Option<FontVariant>,
-    pub join: Option<StrokeLinejoin>,
     pub letter_spacing: Option<LetterSpacing>,
     pub overflow: Option<Overflow>,
+    pub stroke_line_cap: Option<StrokeLinecap>,
+    pub stroke_line_join: Option<StrokeLinejoin>,
     pub text_anchor: Option<TextAnchor>,
     pub text_decoration: Option<TextDecoration>,
     pub unicode_bidi: Option<UnicodeBidi>,
@@ -59,15 +59,15 @@ impl State {
 
             // please keep these sorted
             baseline_shift: Default::default(),
-            cap: Default::default(),
             fill_rule: Default::default(),
             font_family: Default::default(),
             font_size: Default::default(),
             font_style: Default::default(),
             font_variant: Default::default(),
-            join: Default::default(),
             letter_spacing: Default::default(),
             overflow: Default::default(),
+            stroke_line_cap: Default::default(),
+            stroke_line_join: Default::default(),
             text_anchor: Default::default(),
             text_decoration: Default::default(),
             xml_lang: Default::default(),
@@ -103,20 +103,20 @@ impl State {
                 self.font_variant = parse_property(value, ())?;
             }
 
-            Attribute::StrokeLinecap => {
-                self.cap = parse_property(value, ())?;
-            }
-
-            Attribute::StrokeLinejoin => {
-                self.join = parse_property(value, ())?;
-            }
-
             Attribute::LetterSpacing => {
                 self.letter_spacing = parse_property(value, LengthDir::Horizontal)?;
             }
 
             Attribute::Overflow => {
                 self.overflow = parse_property(value, ())?;
+            }
+
+            Attribute::StrokeLinecap => {
+                self.stroke_line_cap = parse_property(value, ())?;
+            }
+
+            Attribute::StrokeLinejoin => {
+                self.stroke_line_join = parse_property(value, ())?;
             }
 
             Attribute::TextAnchor => {
@@ -491,28 +491,6 @@ make_property!(
 );
 
 make_property!(
-    StrokeLinecap,
-    default: Butt,
-    inherits_automatically: true,
-
-    identifiers:
-    "butt" => Butt,
-    "round" => Round,
-    "square" => Square,
-);
-
-make_property!(
-    StrokeLinejoin,
-    default: Miter,
-    inherits_automatically: true,
-
-    identifiers:
-    "miter" => Miter,
-    "round" => Round,
-    "bevel" => Bevel,
-);
-
-make_property!(
     LetterSpacing,
     default: RsvgLength::default(),
     inherits_automatically: true,
@@ -538,6 +516,28 @@ make_property!(
     "hidden" => Hidden,
     "scroll" => Scroll,
     "auto" => Auto,
+);
+
+make_property!(
+    StrokeLinecap,
+    default: Butt,
+    inherits_automatically: true,
+
+    identifiers:
+    "butt" => Butt,
+    "round" => Round,
+    "square" => Square,
+);
+
+make_property!(
+    StrokeLinejoin,
+    default: Miter,
+    inherits_automatically: true,
+
+    identifiers:
+    "miter" => Miter,
+    "round" => Round,
+    "bevel" => Bevel,
 );
 
 make_property!(
@@ -687,15 +687,15 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
 
     // please keep these sorted
     inherit(inherit_fn, &mut dst.baseline_shift, &src.baseline_shift);
-    inherit(inherit_fn, &mut dst.cap, &src.cap);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
     inherit(inherit_fn, &mut dst.font_family, &src.font_family);
     inherit(inherit_fn, &mut dst.font_size, &src.font_size);
     inherit(inherit_fn, &mut dst.font_style, &src.font_style);
     inherit(inherit_fn, &mut dst.font_variant, &src.font_variant);
-    inherit(inherit_fn, &mut dst.join, &src.join);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);
+    inherit(inherit_fn, &mut dst.stroke_line_cap, &src.stroke_line_cap);
+    inherit(inherit_fn, &mut dst.stroke_line_join, &src.stroke_line_join);
     inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
     inherit(inherit_fn, &mut dst.text_decoration, &src.text_decoration);
     inherit(inherit_fn, &mut dst.unicode_bidi, &src.unicode_bidi);
