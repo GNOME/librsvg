@@ -41,6 +41,7 @@ pub struct State {
     pub font_family: Option<FontFamily>,
     pub font_size: Option<FontSize>,
     pub font_style: Option<FontStyle>,
+    pub font_variant: Option<FontVariant>,
     pub join: Option<StrokeLinejoin>,
     pub letter_spacing: Option<LetterSpacing>,
     pub overflow: Option<Overflow>,
@@ -62,6 +63,7 @@ impl State {
             font_family: Default::default(),
             font_size: Default::default(),
             font_style: Default::default(),
+            font_variant: Default::default(),
             join: Default::default(),
             letter_spacing: Default::default(),
             overflow: Default::default(),
@@ -93,6 +95,10 @@ impl State {
 
             Attribute::FontStyle => {
                 self.font_style = parse_property(value, ())?;
+            }
+
+            Attribute::FontVariant => {
+                self.font_variant = parse_property(value, ())?;
             }
 
             Attribute::StrokeLinecap => {
@@ -193,7 +199,6 @@ extern "C" {
     fn rsvg_state_get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
-    fn rsvg_state_get_font_variant(state: *const RsvgState) -> pango_sys::PangoVariant;
     fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
     fn rsvg_state_get_font_stretch(state: *const RsvgState) -> pango_sys::PangoStretch;
     fn rsvg_state_get_clip_rule(state: *const RsvgState) -> cairo::FillRule;
@@ -361,10 +366,6 @@ pub fn get_text_gravity(state: *const RsvgState) -> pango::Gravity {
     unsafe { from_glib(rsvg_state_get_text_gravity(state)) }
 }
 
-pub fn get_font_variant(state: *const RsvgState) -> pango::Variant {
-    unsafe { from_glib(rsvg_state_get_font_variant(state)) }
-}
-
 pub fn get_font_weight(state: *const RsvgState) -> pango::Weight {
     unsafe { from_glib(rsvg_state_get_font_weight(state)) }
 }
@@ -497,6 +498,18 @@ make_property!(
     "normal" => Normal,
     "italic" => Italic,
     "oblique" => Oblique,
+);
+
+// FontVariant ----------------------------------------
+
+make_property!(
+    FontVariant,
+    default: Normal,
+    inherits_automatically: true,
+
+    identifiers:
+    "normal" => Normal,
+    "small-caps" => SmallCaps,
 );
 
 // StrokeLinecap ----------------------------------------
@@ -706,6 +719,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.font_family, &src.font_family);
     inherit(inherit_fn, &mut dst.font_size, &src.font_size);
     inherit(inherit_fn, &mut dst.font_style, &src.font_style);
+    inherit(inherit_fn, &mut dst.font_variant, &src.font_variant);
     inherit(inherit_fn, &mut dst.join, &src.join);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);

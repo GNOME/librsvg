@@ -61,23 +61,6 @@ RsvgCssColorSpec rsvg_css_parse_color_ (const char       *str,
     return rsvg_css_parse_color (str, allow_inherit, allow_current_color);
 }
 
-PangoVariant
-rsvg_css_parse_font_variant (const char *str, gboolean * inherit)
-{
-    SETINHERIT ();
-
-    if (str) {
-        if (!strcmp (str, "small-caps"))
-            return PANGO_VARIANT_SMALL_CAPS;
-        else if (!strcmp (str, "inherit")) {
-            UNSETINHERIT ();
-            return PANGO_VARIANT_NORMAL;
-        }
-    }
-    UNSETINHERIT ();
-    return PANGO_VARIANT_NORMAL;
-}
-
 PangoWeight
 rsvg_css_parse_font_weight (const char *str, gboolean * inherit)
 {
