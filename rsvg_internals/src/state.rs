@@ -410,8 +410,6 @@ pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
     unsafe { &mut *rsvg_state_get_state_rust(state) }
 }
 
-// BaselineShift -----------------------------------
-
 make_property!(
     BaselineShift,
     default: 0f64,
@@ -438,8 +436,6 @@ impl Parse for BaselineShift {
     }
 }
 
-// FillRule ----------------------------------------
-
 make_property!(
     FillRule,
     default: NonZero,
@@ -450,16 +446,12 @@ make_property!(
     "evenodd" => EvenOdd,
 );
 
-// FontFamily -----------------------------------------
-
 make_property!(
     FontFamily,
     default: "Times New Roman".to_string(),
     inherits_automatically: true,
     newtype_from_str: String
 );
-
-// FontSize -------------------------------------------
 
 make_property!(
     FontSize,
@@ -477,8 +469,6 @@ impl Parse for FontSize {
     }
 }
 
-// FontStyle ------------------------------------------
-
 make_property!(
     FontStyle,
     default: Normal,
@@ -490,8 +480,6 @@ make_property!(
     "oblique" => Oblique,
 );
 
-// FontVariant ----------------------------------------
-
 make_property!(
     FontVariant,
     default: Normal,
@@ -501,8 +489,6 @@ make_property!(
     "normal" => Normal,
     "small-caps" => SmallCaps,
 );
-
-// StrokeLinecap ----------------------------------------
 
 make_property!(
     StrokeLinecap,
@@ -515,8 +501,6 @@ make_property!(
     "square" => Square,
 );
 
-// StrokeLineJoin ----------------------------------------
-
 make_property!(
     StrokeLinejoin,
     default: Miter,
@@ -527,8 +511,6 @@ make_property!(
     "round" => Round,
     "bevel" => Bevel,
 );
-
-// LetterSpacing -----------------------------------
 
 make_property!(
     LetterSpacing,
@@ -546,8 +528,6 @@ impl Parse for LetterSpacing {
     }
 }
 
-// Overflow ----------------------------------------
-
 make_property!(
     Overflow,
     default: Visible,
@@ -559,8 +539,6 @@ make_property!(
     "scroll" => Scroll,
     "auto" => Auto,
 );
-
-// TextDecoration ----------------------------------
 
 make_property!(
     TextDecoration,
@@ -585,8 +563,6 @@ impl Parse for TextDecoration {
     }
 }
 
-// TextAnchor --------------------------------------
-
 make_property!(
     TextAnchor,
     default: Start,
@@ -597,8 +573,6 @@ make_property!(
     "middle" => Middle,
     "end" => End,
 );
-
-// UnicodeBidi -------------------------------------
 
 make_property!(
     UnicodeBidi,
@@ -611,16 +585,12 @@ make_property!(
     "bidi-override" => Override,
 );
 
-// XmlLang ----------------------------------------
-
 make_property!(
     XmlLang,
     default: "C".to_string(),
     inherits_automatically: true,
     newtype_from_str: String
 );
-
-// XmlSpace ----------------------------------------
 
 make_property!(
     XmlSpace,
