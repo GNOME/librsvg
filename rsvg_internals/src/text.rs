@@ -24,6 +24,7 @@ use space::xml_space_normalize;
 use state::{
     self,
     FontFamily,
+    FontStyle,
     LetterSpacing,
     RsvgState,
     TextAnchor,
@@ -390,6 +391,16 @@ fn to_pango_units(v: f64) -> i32 {
     (v * f64::from(pango::SCALE)) as i32
 }
 
+impl From<FontStyle> for pango::Style {
+    fn from(s: FontStyle) -> pango::Style {
+        match s {
+            FontStyle::Normal => pango::Style::Normal,
+            FontStyle::Italic => pango::Style::Italic,
+            FontStyle::Oblique => pango::Style::Oblique,
+        }
+    }
+}
+
 fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::Layout {
     let state = drawing_ctx::get_current_state(draw_ctx);
     let rstate = state::get_state_rust(state);
@@ -420,7 +431,8 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
         font_desc.set_family(&font_family);
     }
 
-    font_desc.set_style(state::get_font_style(state));
+    font_desc.set_style(pango::Style::from(rstate.font_style.unwrap_or_default()));
+
     font_desc.set_variant(state::get_font_variant(state));
     font_desc.set_weight(state::get_font_weight(state));
     font_desc.set_stretch(state::get_font_stretch(state));

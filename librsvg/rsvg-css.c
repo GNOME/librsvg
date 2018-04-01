@@ -61,27 +61,6 @@ RsvgCssColorSpec rsvg_css_parse_color_ (const char       *str,
     return rsvg_css_parse_color (str, allow_inherit, allow_current_color);
 }
 
-PangoStyle
-rsvg_css_parse_font_style (const char *str, gboolean * inherit)
-{
-    SETINHERIT ();
-
-    if (str) {
-        if (!strcmp (str, "oblique"))
-            return PANGO_STYLE_OBLIQUE;
-        if (!strcmp (str, "italic"))
-            return PANGO_STYLE_ITALIC;
-        if (!strcmp (str, "normal"))
-            return PANGO_STYLE_NORMAL;
-        if (!strcmp (str, "inherit")) {
-            UNSETINHERIT ();
-            return PANGO_STYLE_NORMAL;
-        }
-    }
-    UNSETINHERIT ();
-    return PANGO_STYLE_NORMAL;
-}
-
 PangoVariant
 rsvg_css_parse_font_variant (const char *str, gboolean * inherit)
 {
