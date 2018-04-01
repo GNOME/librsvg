@@ -36,13 +36,6 @@
 
 G_BEGIN_DECLS 
 
-/* Keep in sync with rust/src/state.rs:TextDecoration */
-typedef struct {
-    gboolean overline;
-    gboolean underline;
-    gboolean strike;
-} TextDecoration;
-
 /* Keep in sync with rust/src/state.c:UnicodeBidi */
 typedef enum {
     UNICODE_BIDI_NORMAL = 0,
@@ -98,8 +91,6 @@ struct _RsvgState {
     gboolean has_font_weight;
     PangoStretch font_stretch;
     gboolean has_font_stretch;
-    TextDecoration font_decor;
-    gboolean has_font_decor;
     PangoDirection text_dir;
     gboolean has_text_dir;
     PangoGravity text_gravity;
@@ -262,9 +253,6 @@ PangoWeight rsvg_state_get_font_weight (RsvgState *state);
 
 G_GNUC_INTERNAL
 PangoStretch rsvg_state_get_font_stretch (RsvgState *state);
-
-G_GNUC_INTERNAL
-const TextDecoration *rsvg_state_get_font_decor (RsvgState *state);
 
 G_GNUC_INTERNAL
 cairo_fill_rule_t rsvg_state_get_clip_rule (RsvgState *state);

@@ -42,6 +42,7 @@ pub struct State {
     pub join: Option<StrokeLinejoin>,
     pub letter_spacing: Option<LetterSpacing>,
     pub text_anchor: Option<TextAnchor>,
+    pub text_decoration: Option<TextDecoration>,
     pub xml_lang: Option<XmlLang>,
     pub xml_space: Option<XmlSpace>,
 }
@@ -59,6 +60,7 @@ impl State {
             join: Default::default(),
             letter_spacing: Default::default(),
             text_anchor: Default::default(),
+            text_decoration: Default::default(),
             xml_lang: Default::default(),
             xml_space: Default::default(),
         }
@@ -93,6 +95,10 @@ impl State {
 
             Attribute::TextAnchor => {
                 self.text_anchor = parse_property(value, ())?;
+            }
+
+            Attribute::TextDecoration => {
+                self.text_decoration = parse_property(value, ())?;
             }
 
             Attribute::XmlLang => {
@@ -145,31 +151,6 @@ pub enum UnicodeBidi {
     Override,
 }
 
-// Keep in sync with rsvg-styles.h:TextDecoration
-#[repr(C)]
-#[derive(Copy, Clone)]
-struct TextDecoration {
-    overline: glib_sys::gboolean,
-    underline: glib_sys::gboolean,
-    strike: glib_sys::gboolean,
-}
-
-pub struct FontDecor {
-    pub overline: bool,
-    pub underline: bool,
-    pub strike: bool,
-}
-
-impl From<TextDecoration> for FontDecor {
-    fn from(td: TextDecoration) -> FontDecor {
-        FontDecor {
-            overline: from_glib(td.overline),
-            underline: from_glib(td.underline),
-            strike: from_glib(td.strike),
-        }
-    }
-}
-
 #[allow(improper_ctypes)]
 extern "C" {
     fn rsvg_state_new() -> *mut RsvgState;
@@ -201,7 +182,6 @@ extern "C" {
     fn rsvg_state_get_font_variant(state: *const RsvgState) -> pango_sys::PangoVariant;
     fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
     fn rsvg_state_get_font_stretch(state: *const RsvgState) -> pango_sys::PangoStretch;
-    fn rsvg_state_get_font_decor(state: *const RsvgState) -> *const TextDecoration;
     fn rsvg_state_get_clip_rule(state: *const RsvgState) -> cairo::FillRule;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
@@ -386,17 +366,6 @@ pub fn get_font_stretch(state: *const RsvgState) -> pango::Stretch {
     unsafe { from_glib(rsvg_state_get_font_stretch(state)) }
 }
 
-pub fn get_font_decor(state: *const RsvgState) -> Option<FontDecor> {
-    unsafe {
-        let td = rsvg_state_get_font_decor(state);
-        if td.is_null() {
-            None
-        } else {
-            Some(FontDecor::from(*td))
-        }
-    }
-}
-
 pub fn get_clip_rule(state: *const RsvgState) -> cairo::FillRule {
     unsafe { rsvg_state_get_clip_rule(state) }
 }
@@ -545,6 +514,31 @@ impl Parse for LetterSpacing {
     }
 }
 
+// TextDecoration ----------------------------------
+
+make_property!(
+    TextDecoration,
+    inherits_automatically: true,
+
+    fields:
+    overline: bool, default: false,
+    underline: bool, default: false,
+    strike: bool, default: false,
+);
+
+impl Parse for TextDecoration {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(s: &str, _: Self::Data) -> Result<TextDecoration, AttributeError> {
+        Ok(TextDecoration {
+            overline: s.contains("overline"),
+            underline: s.contains("underline"),
+            strike: s.contains("strike") || s.contains("line-through"),
+        })
+    }
+}
+
 // TextAnchor --------------------------------------
 
 make_property!(
@@ -670,6 +664,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.join, &src.join);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
     inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
+    inherit(inherit_fn, &mut dst.text_decoration, &src.text_decoration);
     inherit(inherit_fn, &mut dst.xml_lang, &src.xml_lang);
     inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
 }

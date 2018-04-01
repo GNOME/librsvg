@@ -174,7 +174,6 @@ rsvg_state_init (RsvgState * state)
     state->has_font_variant = FALSE;
     state->has_font_weight = FALSE;
     state->has_font_stretch = FALSE;
-    state->has_font_decor = FALSE;
     state->has_text_dir = FALSE;
     state->has_text_gravity = FALSE;
     state->has_unicode_bidi = FALSE;
@@ -372,8 +371,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->font_weight = src->font_weight;
     if (function (dst->has_font_stretch, src->has_font_stretch))
         dst->font_stretch = src->font_stretch;
-    if (function (dst->has_font_decor, src->has_font_decor))
-        dst->font_decor = src->font_decor;
     if (function (dst->has_text_dir, src->has_text_dir))
         dst->text_dir = src->text_dir;
     if (function (dst->has_text_gravity, src->has_text_gravity))
@@ -854,25 +851,6 @@ rsvg_parse_style_pair (RsvgState *state,
     case RSVG_ATTRIBUTE_FONT_STRETCH:
     {
         state->font_stretch = rsvg_css_parse_font_stretch (value, &state->has_font_stretch);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_TEXT_DECORATION:
-    {
-        if (g_str_equal (value, "inherit")) {
-            state->has_font_decor = FALSE;
-            state->font_decor.overline = FALSE;
-            state->font_decor.underline = FALSE;
-            state->font_decor.strike = FALSE;
-        } else {
-            if (strstr (value, "underline"))
-                state->font_decor.underline = TRUE;
-            if (strstr (value, "overline"))
-                state->font_decor.overline = TRUE;
-            if (strstr (value, "strike") || strstr (value, "line-through"))     /* strike though or line-through */
-                state->font_decor.strike = TRUE;
-            state->has_font_decor = TRUE;
-        }
     }
     break;
 
@@ -1793,16 +1771,6 @@ PangoStretch
 rsvg_state_get_font_stretch (RsvgState *state)
 {
     return state->font_stretch;
-}
-
-const TextDecoration *
-rsvg_state_get_font_decor (RsvgState *state)
-{
-    if (state->has_font_decor) {
-        return &state->font_decor;
-    } else {
-        return NULL;
-    }
 }
 
 cairo_fill_rule_t

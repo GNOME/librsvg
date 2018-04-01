@@ -432,12 +432,12 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
         );
     }
 
-    if let Some(font_decor) = state::get_font_decor(state) {
-        if font_decor.underline {
+    if let Some(ref td) = state::get_state_rust(state).text_decoration {
+        if td.underline {
             attr_list.insert(pango::Attribute::new_underline(pango::Underline::Single).unwrap());
         }
 
-        if font_decor.strike {
+        if td.strike {
             attr_list.insert(pango::Attribute::new_strikethrough(true).unwrap());
         }
     }
