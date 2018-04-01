@@ -19,10 +19,10 @@ pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &RsvgPathBuilde
     }
 
     let state = drawing_ctx::get_current_state(draw_ctx);
+    let rstate = state::get_state_rust(state);
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
-    let affine = drawing_ctx::get_current_state_affine(draw_ctx);
 
-    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &affine);
+    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &rstate.affine);
 
     builder.to_cairo(&cr);
 
@@ -376,8 +376,9 @@ pub fn draw_surface(
 }
 
 pub fn add_clipping_rect(draw_ctx: *mut RsvgDrawingCtx, x: f64, y: f64, w: f64, h: f64) {
+    let state = drawing_ctx::get_current_state(draw_ctx);
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
-    let affine = drawing_ctx::get_current_state_affine(draw_ctx);
+    let affine = state::get_state_rust(state).affine;
 
     drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &affine);
 

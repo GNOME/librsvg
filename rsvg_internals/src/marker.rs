@@ -128,7 +128,10 @@ impl NodeMarker {
             // https://www.w3.org/TR/SVG/painting.html#MarkerWidthAttribute
             return;
         }
-        let mut affine = drawing_ctx::get_current_state_affine(draw_ctx);
+
+        let state = drawing_ctx::get_current_state(draw_ctx);
+        let mut affine = state::get_state_rust(state).affine;
+
         affine.translate(xpos, ypos);
 
         let rotation = match self.orient.get() {
@@ -172,9 +175,8 @@ impl NodeMarker {
         state::reinit(state);
         state::reconstruct(state, node);
 
-        drawing_ctx::set_current_state_affine(draw_ctx, affine);
-
-        let state = drawing_ctx::get_current_state(draw_ctx);
+        let rstate = state::get_state_rust(state);
+        rstate.affine = affine;
 
         if !state::is_overflow(state) {
             if let Some(vbox) = self.vbox.get() {

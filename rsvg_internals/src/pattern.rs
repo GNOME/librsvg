@@ -19,6 +19,7 @@ use length::*;
 use node::*;
 use parsers::parse;
 use property_bag::PropertyBag;
+use state;
 use viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
@@ -302,10 +303,9 @@ fn set_pattern_on_draw_context(
         }
     }
 
-    let taffine = cairo::Matrix::multiply(
-        &pattern_affine,
-        &drawing_ctx::get_current_state_affine(draw_ctx),
-    );
+    let state = drawing_ctx::get_current_state(draw_ctx);
+    let affine = state::get_state_rust(state).affine;
+    let taffine = cairo::Matrix::multiply(&pattern_affine, &affine);
 
     let mut scwscale = (taffine.xx * taffine.xx + taffine.xy * taffine.xy).sqrt();
     let mut schscale = (taffine.yx * taffine.yx + taffine.yy * taffine.yy).sqrt();

@@ -520,12 +520,6 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
     ctx->drawsub_stack = stacksave;
 }
 
-cairo_matrix_t
-rsvg_drawing_ctx_get_current_state_affine (RsvgDrawingCtx *ctx)
-{
-    return rsvg_state_get_affine (rsvg_drawing_ctx_get_current_state (ctx));
-}
-
 void
 rsvg_drawing_ctx_set_current_state_affine (RsvgDrawingCtx *ctx, cairo_matrix_t *affine)
 {
