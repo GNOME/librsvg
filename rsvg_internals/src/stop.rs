@@ -110,9 +110,7 @@ impl NodeTrait for NodeStop {
         }
 
         let inherited_state = state::new();
-        let boxed_node = box_node(node.clone());
-        state::reconstruct(inherited_state, boxed_node);
-        rsvg_node_unref(boxed_node);
+        state::reconstruct(inherited_state, node);
 
         let mut color_rgba: cssparser::RGBA;
 

@@ -170,7 +170,7 @@ impl NodeMarker {
 
         let state = drawing_ctx::get_current_state(draw_ctx);
         state::reinit(state);
-        state::reconstruct(state, node as *const RsvgNode);
+        state::reconstruct(state, node);
 
         drawing_ctx::set_current_state_affine(draw_ctx, affine);
 

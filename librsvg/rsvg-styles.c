@@ -493,8 +493,8 @@ inheritfunction (gboolean dst, gboolean src)
     return src;
 }
 
-static void
-state_inherit (RsvgState * dst, const RsvgState * src)
+void
+rsvg_state_inherit (RsvgState *dst, const RsvgState *src)
 {
     rsvg_state_inherit_run (dst, src, inheritfunction, 1);
 }
@@ -1720,23 +1720,6 @@ rsvg_state_reinherit_top (RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
             rsvg_state_set_affine (current, current_affine);
         }
     }
-}
-
-void
-rsvg_state_reconstruct (RsvgState *state, RsvgNode *current)
-{
-    RsvgNode *currents_parent;
-
-    if (current == NULL)
-        return;
-
-    currents_parent = rsvg_node_get_parent (current);
-
-    rsvg_state_reconstruct (state, currents_parent);
-
-    currents_parent = rsvg_node_unref (currents_parent);
-
-    state_inherit (state, rsvg_node_get_state (current));
 }
 
 cairo_matrix_t

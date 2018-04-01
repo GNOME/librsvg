@@ -175,7 +175,6 @@ extern "C" {
     fn rsvg_state_new() -> *mut RsvgState;
     fn rsvg_state_free(state: *mut RsvgState);
     fn rsvg_state_reinit(state: *mut RsvgState);
-    fn rsvg_state_reconstruct(state: *mut RsvgState, node: *const RsvgNode);
     fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState;
     fn rsvg_state_is_overflow(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_has_overflow(state: *const RsvgState) -> glib_sys::gboolean;
@@ -206,6 +205,8 @@ extern "C" {
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_comp_op(state: *const RsvgState) -> cairo::Operator;
 
+    fn rsvg_state_inherit(state: *mut RsvgState, src: *const RsvgState);
+
     fn rsvg_state_get_state_rust(state: *const RsvgState) -> *mut State;
 }
 
@@ -225,9 +226,12 @@ pub fn reinit(state: *mut RsvgState) {
     }
 }
 
-pub fn reconstruct(state: *mut RsvgState, node: *const RsvgNode) {
-    unsafe {
-        rsvg_state_reconstruct(state, node);
+pub fn reconstruct(state: *mut RsvgState, node: &RsvgNode) {
+    if let Some(parent) = node.get_parent() {
+        reconstruct(state, &parent);
+        unsafe {
+            rsvg_state_inherit(state, node.get_state());
+        }
     }
 }
 
@@ -541,6 +545,16 @@ make_property!(
     "default" => Default,
     "preserve" => Preserve,
 );
+
+// C state API implemented in rust
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_reconstruct(state: *mut RsvgState, raw_node: *const RsvgNode) {
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    reconstruct(state, node);
+}
 
 // Rust State API for consumption from C ----------------------------------------
 
