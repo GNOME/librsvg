@@ -72,7 +72,7 @@ extern "C" {
         clipping: glib_sys::gboolean,
     );
 
-    fn rsvg_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState;
+    fn rsvg_drawing_ctx_get_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState;
 
     fn rsvg_state_push(draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_state_pop(draw_ctx: *const RsvgDrawingCtx);
@@ -298,7 +298,7 @@ pub fn draw_node_from_stack(
 }
 
 pub fn get_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState {
-    unsafe { rsvg_current_state(draw_ctx) }
+    unsafe { rsvg_drawing_ctx_get_current_state(draw_ctx) }
 }
 
 pub fn state_push(draw_ctx: *const RsvgDrawingCtx) {

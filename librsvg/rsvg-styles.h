@@ -191,8 +191,6 @@ G_GNUC_INTERNAL
 void       rsvg_state_pop       (RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
 void       rsvg_state_push      (RsvgDrawingCtx * ctx);
-G_GNUC_INTERNAL
-RsvgState *rsvg_current_state   (RsvgDrawingCtx * ctx);
 
 /* Implemented in rust/src/state.rs */
 G_GNUC_INTERNAL

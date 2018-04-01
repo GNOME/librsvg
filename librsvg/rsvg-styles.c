@@ -1632,12 +1632,6 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
 }
 
 RsvgState *
-rsvg_current_state (RsvgDrawingCtx * ctx)
-{
-    return ctx->state;
-}
-
-RsvgState *
 rsvg_state_parent (RsvgState * state)
 {
     return state->parent;

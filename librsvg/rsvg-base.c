@@ -366,6 +366,12 @@ rsvg_push_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping)
     rsvg_cairo_push_discrete_layer (ctx, clipping);
 }
 
+RsvgState *
+rsvg_drawing_ctx_get_current_state (RsvgDrawingCtx *ctx)
+{
+    return ctx->state;
+}
+
 /*
  * rsvg_drawing_ctx_acquire_node:
  * @ctx: The drawing context in use
@@ -513,13 +519,13 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
 cairo_matrix_t
 rsvg_drawing_ctx_get_current_state_affine (RsvgDrawingCtx *ctx)
 {
-    return rsvg_state_get_affine (rsvg_current_state (ctx));
+    return rsvg_state_get_affine (rsvg_drawing_ctx_get_current_state (ctx));
 }
 
 void
 rsvg_drawing_ctx_set_current_state_affine (RsvgDrawingCtx *ctx, cairo_matrix_t *affine)
 {
-    rsvg_state_set_affine (rsvg_current_state (ctx), *affine);
+    rsvg_state_set_affine (rsvg_drawing_ctx_get_current_state (ctx), *affine);
 }
 
 void
@@ -546,7 +552,7 @@ rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx)
 const char *
 rsvg_get_start_marker (RsvgDrawingCtx *ctx)
 {
-    RsvgState *state = rsvg_current_state (ctx);
+    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
 
     return state->startMarker;
 }
@@ -554,7 +560,7 @@ rsvg_get_start_marker (RsvgDrawingCtx *ctx)
 const char *
 rsvg_get_middle_marker (RsvgDrawingCtx *ctx)
 {
-    RsvgState *state = rsvg_current_state (ctx);
+    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
 
     return state->middleMarker;
 }
@@ -562,7 +568,7 @@ rsvg_get_middle_marker (RsvgDrawingCtx *ctx)
 const char *
 rsvg_get_end_marker (RsvgDrawingCtx *ctx)
 {
-    RsvgState *state = rsvg_current_state (ctx);
+    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
 
     return state->endMarker;
 }
