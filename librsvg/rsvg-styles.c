@@ -138,7 +138,6 @@ rsvg_state_init (RsvgState * state)
     state->font_stretch = PANGO_STRETCH_NORMAL;
     state->text_dir = PANGO_DIRECTION_LTR;
     state->text_gravity = PANGO_GRAVITY_SOUTH;
-    state->unicode_bidi = UNICODE_BIDI_NORMAL;
     state->visible = TRUE;
     state->cond_true = TRUE;
     state->filter = NULL;
@@ -167,7 +166,6 @@ rsvg_state_init (RsvgState * state)
     state->has_font_stretch = FALSE;
     state->has_text_dir = FALSE;
     state->has_text_gravity = FALSE;
-    state->has_unicode_bidi = FALSE;
     state->has_startMarker = FALSE;
     state->has_middleMarker = FALSE;
     state->has_endMarker = FALSE;
@@ -355,8 +353,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->text_dir = src->text_dir;
     if (function (dst->has_text_gravity, src->has_text_gravity))
         dst->text_gravity = src->text_gravity;
-    if (function (dst->has_unicode_bidi, src->has_unicode_bidi))
-        dst->unicode_bidi = src->unicode_bidi;
     if (function (dst->has_startMarker, src->has_startMarker)) {
         g_free (dst->startMarker);
         dst->startMarker = g_strdup (src->startMarker);
@@ -811,21 +807,6 @@ rsvg_parse_style_pair (RsvgState *state,
             state->text_dir = PANGO_DIRECTION_RTL;
         else                    /* ltr */
             state->text_dir = PANGO_DIRECTION_LTR;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_UNICODE_BIDI:
-    {
-        state->has_unicode_bidi = TRUE;
-        if (g_str_equal (value, "inherit")) {
-            state->unicode_bidi = UNICODE_BIDI_NORMAL;
-            state->has_unicode_bidi = FALSE;
-        } else if (g_str_equal (value, "embed"))
-            state->unicode_bidi = UNICODE_BIDI_EMBED;
-        else if (g_str_equal (value, "bidi-override"))
-            state->unicode_bidi = UNICODE_BIDI_OVERRIDE;
-        else                    /* normal */
-            state->unicode_bidi = UNICODE_BIDI_NORMAL;
     }
     break;
 
@@ -1658,12 +1639,6 @@ guint32
 rsvg_state_get_current_color (RsvgState *state)
 {
     return state->current_color;
-}
-
-UnicodeBidi
-rsvg_state_get_unicode_bidi (RsvgState *state)
-{
-    return state->unicode_bidi;
 }
 
 PangoDirection

@@ -421,9 +421,8 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
         pango_context.set_language(&pango_lang);
     }
 
-    let unicode_bidi = state::get_unicode_bidi(state);
-    match unicode_bidi {
-        UnicodeBidi::Override | UnicodeBidi::Embed => {
+    match rstate.unicode_bidi {
+        Some(UnicodeBidi::Override) | Some(UnicodeBidi::Embed) => {
             pango_context.set_base_dir(state::get_text_dir(state));
         }
 
