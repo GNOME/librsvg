@@ -175,6 +175,7 @@ extern "C" {
     fn rsvg_state_new() -> *mut RsvgState;
     fn rsvg_state_free(state: *mut RsvgState);
     fn rsvg_state_reinit(state: *mut RsvgState);
+    fn rsvg_state_clone(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState;
     fn rsvg_state_is_overflow(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_has_overflow(state: *const RsvgState) -> glib_sys::gboolean;
@@ -205,7 +206,10 @@ extern "C" {
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_comp_op(state: *const RsvgState) -> cairo::Operator;
 
+    fn rsvg_state_dominate(state: *mut RsvgState, src: *const RsvgState);
+    fn rsvg_state_force(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_inherit(state: *mut RsvgState, src: *const RsvgState);
+    fn rsvg_state_reinherit(state: *mut RsvgState, src: *const RsvgState);
 
     fn rsvg_state_get_state_rust(state: *const RsvgState) -> *mut State;
 }
@@ -232,6 +236,12 @@ pub fn reconstruct(state: *mut RsvgState, node: &RsvgNode) {
         unsafe {
             rsvg_state_inherit(state, node.get_state());
         }
+    }
+}
+
+pub fn clone_from(state: *mut RsvgState, src: *const RsvgState) {
+    unsafe {
+        rsvg_state_clone(state, src);
     }
 }
 
@@ -404,6 +414,24 @@ pub fn get_fill_opacity(state: *const RsvgState) -> u8 {
 
 pub fn get_comp_op(state: *const RsvgState) -> cairo::Operator {
     unsafe { rsvg_state_get_comp_op(state) }
+}
+
+pub fn dominate(state: *mut RsvgState, src: *const RsvgState) {
+    unsafe {
+        rsvg_state_dominate(state, src);
+    }
+}
+
+pub fn force(state: *mut RsvgState, src: *const RsvgState) {
+    unsafe {
+        rsvg_state_force(state, src);
+    }
+}
+
+pub fn reinherit(state: *mut RsvgState, src: *const RsvgState) {
+    unsafe {
+        rsvg_state_reinherit(state, src);
+    }
 }
 
 pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {

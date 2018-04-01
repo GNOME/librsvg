@@ -437,8 +437,8 @@ reinheritfunction (gboolean dst, gboolean src)
     return FALSE;
 }
 
-static void
-state_reinherit (RsvgState * dst, const RsvgState * src)
+void
+rsvg_state_reinherit (RsvgState *dst, const RsvgState *src)
 {
     rsvg_state_inherit_run (dst, src, reinheritfunction, 0);
 }
@@ -460,8 +460,8 @@ dominatefunction (gboolean dst, gboolean src)
     return FALSE;
 }
 
-static void
-state_dominate (RsvgState * dst, const RsvgState * src)
+void
+rsvg_state_dominate (RsvgState *dst, const RsvgState *src)
 {
     rsvg_state_inherit_run (dst, src, dominatefunction, 0);
 }
@@ -469,15 +469,15 @@ state_dominate (RsvgState * dst, const RsvgState * src)
 /* copy everything inheritable from the src to the dst */
 
 static gboolean
-clonefunction (gboolean dst, gboolean src)
+forcefunction (gboolean dst, gboolean src)
 {
     return TRUE;
 }
 
-static void
-state_override (RsvgState * dst, const RsvgState * src)
+void
+rsvg_state_force (RsvgState *dst, const RsvgState *src)
 {
-    rsvg_state_inherit_run (dst, src, clonefunction, 0);
+    rsvg_state_inherit_run (dst, src, forcefunction, 0);
 }
 
 /*
@@ -1653,7 +1653,7 @@ rsvg_state_push (RsvgDrawingCtx * ctx)
     data = rsvg_state_new ();
 
     if (baseon) {
-        state_reinherit (data, baseon);
+        rsvg_state_reinherit (data, baseon);
         rsvg_state_set_affine (data, rsvg_state_get_affine (baseon));
         data->parent = baseon;
     }
@@ -1669,57 +1669,6 @@ rsvg_state_pop (RsvgDrawingCtx * ctx)
     ctx->state = dead_state->parent;
 
     rsvg_state_free (dead_state);
-}
-
-/*
-  A function for modifying the top of the state stack depending on a 
-  flag given. If that flag is 0, style and transform will inherit 
-  normally. If that flag is 1, style will inherit normally with the
-  exception that any value explicity set on the second last level
-  will have a higher precedence than values set on the last level.
-  If the flag equals two then the style will be overridden totally
-  however the transform will be left as is. This is because of 
-  patterns which are not based on the context of their use and are 
-  rather based wholly on their own loading context. Other things
-  may want to have this totally disabled, and a value of three will
-  achieve this.
-*/
-
-void
-rsvg_state_reinherit_top (RsvgDrawingCtx * ctx, RsvgState * state, int dominate)
-{
-    RsvgState *current;
-
-    if (dominate == 3)
-        g_assert_not_reached ();
-
-    current = rsvg_current_state (ctx);
-    /*This is a special domination mode for patterns, the transform
-       is simply left as is, wheras the style is totally overridden */
-    if (dominate == 2) {
-        state_override (current, state);
-    } else {
-        RsvgState *parent= rsvg_state_parent (current);
-        cairo_matrix_t current_affine;
-        cairo_matrix_t parent_affine;
-
-        rsvg_state_clone (current, state);
-        if (parent) {
-            if (dominate)
-                state_dominate (current, parent);
-            else
-                state_reinherit (current, parent);
-
-            current_affine = rsvg_state_get_affine (current);
-            parent_affine = rsvg_state_get_affine (parent);
-
-            cairo_matrix_multiply (&current_affine,
-                                   &current_affine,
-                                   &parent_affine);
-
-            rsvg_state_set_affine (current, current_affine);
-        }
-    }
 }
 
 cairo_matrix_t

@@ -194,9 +194,6 @@ void       rsvg_state_push      (RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
 RsvgState *rsvg_current_state   (RsvgDrawingCtx * ctx);
 
-G_GNUC_INTERNAL
-void rsvg_state_reinherit_top	(RsvgDrawingCtx * ctx, RsvgState * state, int dominate);
-
 /* Implemented in rust/src/state.rs */
 G_GNUC_INTERNAL
 void rsvg_state_reconstruct (RsvgState *state, RsvgNode *current);
@@ -292,7 +289,16 @@ G_GNUC_INTERNAL
 cairo_operator_t rsvg_state_get_comp_op (RsvgState *state);
 
 G_GNUC_INTERNAL
+void rsvg_state_dominate (RsvgState *state, const RsvgState *src);
+
+G_GNUC_INTERNAL
+void rsvg_state_force (RsvgState *state, const RsvgState *src);
+
+G_GNUC_INTERNAL
 void rsvg_state_inherit (RsvgState *state, const RsvgState *src);
+
+G_GNUC_INTERNAL
+void rsvg_state_reinherit (RsvgState *state, const RsvgState *src);
 
 G_GNUC_INTERNAL
 State *rsvg_state_get_state_rust (RsvgState *state);

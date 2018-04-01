@@ -1,4 +1,5 @@
 use cairo;
+use cairo::MatrixTrait;
 use cairo_sys;
 use glib::translate::*;
 use glib_sys;
@@ -75,12 +76,6 @@ extern "C" {
 
     fn rsvg_state_push(draw_ctx: *const RsvgDrawingCtx);
     fn rsvg_state_pop(draw_ctx: *const RsvgDrawingCtx);
-
-    fn rsvg_state_reinherit_top(
-        draw_ctx: *const RsvgDrawingCtx,
-        state: *mut RsvgState,
-        dominate: libc::c_int,
-    );
 
     fn rsvg_push_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: glib_sys::gboolean);
     fn rsvg_pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: glib_sys::gboolean);
@@ -190,9 +185,42 @@ pub fn get_acquired_node_of_type(
     }
 }
 
+// A function for modifying the top of the state stack depending on a
+// flag given. If that flag is 0, style and transform will inherit
+// normally. If that flag is 1, style will inherit normally with the
+// exception that any value explicity set on the second last level
+// will have a higher precedence than values set on the last level.
+// If the flag equals two then the style will be overridden totally
+// however the transform will be left as is. This is because of
+// patterns which are not based on the context of their use and are
+// rather based wholly on their own loading context. Other things
+// may want to have this totally disabled, and a value of three will
+// achieve this.
 pub fn state_reinherit_top(draw_ctx: *const RsvgDrawingCtx, state: *mut RsvgState, dominate: i32) {
-    unsafe {
-        rsvg_state_reinherit_top(draw_ctx, state, dominate);
+    let current = get_current_state(draw_ctx);
+
+    match dominate {
+        3 => unreachable!(),
+
+        // This is a special domination mode for patterns, the transform
+        // is simply left as is, wheras the style is totally overridden
+        2 => state::force(current, state),
+
+        dominate => {
+            state::clone_from(current, state);
+
+            if let Some(parent) = state::parent(current) {
+                if dominate == 0 {
+                    state::reinherit(current, parent);
+                } else {
+                    state::dominate(current, parent);
+                }
+
+                let mut rcurrent = state::get_state_rust(current);
+                let rparent = state::get_state_rust(parent);
+                rcurrent.affine = cairo::Matrix::multiply(&rcurrent.affine, &rparent.affine);
+            }
+        }
     }
 }
 
