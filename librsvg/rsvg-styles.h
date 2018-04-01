@@ -36,13 +36,6 @@
 
 G_BEGIN_DECLS 
 
-/* Keep in sync with rust/src/state.c:UnicodeBidi */
-typedef enum {
-    UNICODE_BIDI_NORMAL = 0,
-    UNICODE_BIDI_EMBED = 1,
-    UNICODE_BIDI_OVERRIDE = 2
-} UnicodeBidi;
-
 typedef enum {
     RSVG_ENABLE_BACKGROUND_ACCUMULATE,
     RSVG_ENABLE_BACKGROUND_NEW
@@ -86,8 +79,6 @@ struct _RsvgState {
     gboolean has_text_dir;
     PangoGravity text_gravity;
     gboolean has_text_gravity;
-    UnicodeBidi unicode_bidi;
-    gboolean has_unicode_bidi;
 
     guint text_offset;
 
@@ -214,9 +205,6 @@ RsvgLength rsvg_state_get_dash_offset (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint32 rsvg_state_get_current_color (RsvgState *state);
-
-G_GNUC_INTERNAL
-UnicodeBidi rsvg_state_get_unicode_bidi (RsvgState *state);
 
 G_GNUC_INTERNAL
 PangoDirection rsvg_state_get_text_dir (RsvgState *state);

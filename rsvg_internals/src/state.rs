@@ -47,6 +47,7 @@ pub struct State {
     pub overflow: Option<Overflow>,
     pub text_anchor: Option<TextAnchor>,
     pub text_decoration: Option<TextDecoration>,
+    pub unicode_bidi: Option<UnicodeBidi>,
     pub xml_lang: Option<XmlLang>,
     pub xml_space: Option<XmlSpace>,
 }
@@ -70,6 +71,7 @@ impl State {
             text_anchor: Default::default(),
             text_decoration: Default::default(),
             xml_lang: Default::default(),
+            unicode_bidi: Default::default(),
             xml_space: Default::default(),
         }
     }
@@ -125,6 +127,10 @@ impl State {
                 self.text_decoration = parse_property(value, ())?;
             }
 
+            Attribute::UnicodeBidi => {
+                self.unicode_bidi = parse_property(value, ())?;
+            }
+
             Attribute::XmlLang => {
                 // xml:lang is not a property; it is a non-presentation attribute and as such
                 // cannot have the "inherit" value.  So, we don't call parse_property() for it,
@@ -164,17 +170,6 @@ where
     }
 }
 
-// Keep in sync with rsvg-styles.h:UnicodeBidi
-// FIXME: these are not constructed in the Rust code yet, but they are in C.  Remove this
-// when that code is moved to Rust.
-#[allow(dead_code)]
-#[repr(C)]
-pub enum UnicodeBidi {
-    Normal,
-    Embed,
-    Override,
-}
-
 #[allow(improper_ctypes)]
 extern "C" {
     fn rsvg_state_new() -> *mut RsvgState;
@@ -196,7 +191,6 @@ extern "C" {
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_miter_limit(state: *const RsvgState) -> f64;
-    fn rsvg_state_get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
     fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
@@ -352,10 +346,6 @@ pub fn get_stroke_width(state: *const RsvgState) -> RsvgLength {
 
 pub fn get_miter_limit(state: *const RsvgState) -> f64 {
     unsafe { rsvg_state_get_miter_limit(state) }
-}
-
-pub fn get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi {
-    unsafe { rsvg_state_get_unicode_bidi(state) }
 }
 
 pub fn get_text_dir(state: *const RsvgState) -> pango::Direction {
@@ -608,6 +598,19 @@ make_property!(
     "end" => End,
 );
 
+// UnicodeBidi -------------------------------------
+
+make_property!(
+    UnicodeBidi,
+    default: Normal,
+    inherits_automatically: true,
+
+    identifiers:
+    "normal" => Normal,
+    "embed" => Embed,
+    "bidi-override" => Override,
+);
+
 // XmlLang ----------------------------------------
 
 make_property!(
@@ -725,6 +728,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);
     inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
     inherit(inherit_fn, &mut dst.text_decoration, &src.text_decoration);
+    inherit(inherit_fn, &mut dst.unicode_bidi, &src.unicode_bidi);
     inherit(inherit_fn, &mut dst.xml_lang, &src.xml_lang);
     inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
 }
