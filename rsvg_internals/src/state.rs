@@ -41,6 +41,7 @@ pub struct State {
     pub font_size: Option<FontSize>,
     pub join: Option<StrokeLinejoin>,
     pub letter_spacing: Option<LetterSpacing>,
+    pub overflow: Option<Overflow>,
     pub text_anchor: Option<TextAnchor>,
     pub text_decoration: Option<TextDecoration>,
     pub xml_lang: Option<XmlLang>,
@@ -59,6 +60,7 @@ impl State {
             font_size: Default::default(),
             join: Default::default(),
             letter_spacing: Default::default(),
+            overflow: Default::default(),
             text_anchor: Default::default(),
             text_decoration: Default::default(),
             xml_lang: Default::default(),
@@ -91,6 +93,10 @@ impl State {
 
             Attribute::LetterSpacing => {
                 self.letter_spacing = parse_property(value, LengthDir::Horizontal)?;
+            }
+
+            Attribute::Overflow => {
+                self.overflow = parse_property(value, ())?;
             }
 
             Attribute::TextAnchor => {
@@ -159,8 +165,6 @@ extern "C" {
     fn rsvg_state_reinit(state: *mut RsvgState);
     fn rsvg_state_clone(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState;
-    fn rsvg_state_is_overflow(state: *const RsvgState) -> glib_sys::gboolean;
-    fn rsvg_state_has_overflow(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_get_cond_true(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_set_cond_true(state: *const RsvgState, cond_true: glib_sys::gboolean);
     fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const ColorSpec;
@@ -241,11 +245,12 @@ pub fn parent(state: *const RsvgState) -> Option<*mut RsvgState> {
 }
 
 pub fn is_overflow(state: *const RsvgState) -> bool {
-    unsafe { from_glib(rsvg_state_is_overflow(state)) }
-}
+    let rstate = get_state_rust(state);
 
-pub fn has_overflow(state: *const RsvgState) -> bool {
-    unsafe { from_glib(rsvg_state_has_overflow(state)) }
+    match rstate.overflow {
+        Some(Overflow::Auto) | Some(Overflow::Visible) => true,
+        _ => false,
+    }
 }
 
 pub fn get_cond_true(state: *const RsvgState) -> bool {
@@ -514,6 +519,20 @@ impl Parse for LetterSpacing {
     }
 }
 
+// Overflow ----------------------------------------
+
+make_property!(
+    Overflow,
+    default: Visible,
+    inherits_automatically: true,
+
+    identifiers:
+    "visible" => Visible,
+    "hidden" => Hidden,
+    "scroll" => Scroll,
+    "auto" => Auto,
+);
+
 // TextDecoration ----------------------------------
 
 make_property!(
@@ -663,6 +682,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.font_size, &src.font_size);
     inherit(inherit_fn, &mut dst.join, &src.join);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
+    inherit(inherit_fn, &mut dst.overflow, &src.overflow);
     inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
     inherit(inherit_fn, &mut dst.text_decoration, &src.text_decoration);
     inherit(inherit_fn, &mut dst.xml_lang, &src.xml_lang);

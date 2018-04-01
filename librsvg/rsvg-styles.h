@@ -69,9 +69,6 @@ struct _RsvgState {
     cairo_fill_rule_t clip_rule;
     gboolean has_clip_rule;
 
-    gboolean overflow;
-    gboolean has_overflow;
-
     RsvgPaintServer *stroke;
     gboolean has_stroke_server;
     guint8 stroke_opacity;      /* 0..255 */
@@ -190,12 +187,6 @@ cairo_matrix_t rsvg_state_get_affine (const RsvgState *state);
 
 G_GNUC_INTERNAL
 void rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine);
-
-G_GNUC_INTERNAL
-gboolean rsvg_state_is_overflow (RsvgState *state);
-
-G_GNUC_INTERNAL
-gboolean rsvg_state_has_overflow (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_stroke (RsvgState *state);

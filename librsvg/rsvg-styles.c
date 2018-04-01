@@ -133,7 +133,6 @@ rsvg_state_init (RsvgState * state)
     state->clip_rule = CAIRO_FILL_RULE_WINDING;
     state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
     state->comp_op = CAIRO_OPERATOR_OVER;
-    state->overflow = FALSE;
     state->flood_color = 0;
     state->flood_opacity = 255;
 
@@ -180,7 +179,6 @@ rsvg_state_init (RsvgState * state)
     state->has_startMarker = FALSE;
     state->has_middleMarker = FALSE;
     state->has_endMarker = FALSE;
-    state->has_overflow = FALSE;
 
     state->shape_rendering_type = SHAPE_RENDERING_AUTO;
     state->has_shape_rendering_type = FALSE;
@@ -335,8 +333,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->fill_opacity = src->fill_opacity;
     if (function (dst->has_clip_rule, src->has_clip_rule))
         dst->clip_rule = src->clip_rule;
-    if (function (dst->overflow, src->overflow))
-        dst->overflow = src->overflow;
     if (function (dst->has_stroke_server, src->has_stroke_server)) {
         rsvg_paint_server_ref (src->stroke);
         if (dst->stroke)
@@ -652,14 +648,6 @@ rsvg_parse_style_pair (RsvgState *state,
     {
         g_free (state->clip_path);
         state->clip_path = rsvg_get_url_string (value, NULL);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_OVERFLOW:
-    {
-        if (!g_str_equal (value, "inherit")) {
-            state->overflow = rsvg_css_parse_overflow (value, &state->has_overflow);
-        }
     }
     break;
 
@@ -1637,18 +1625,6 @@ void
 rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine)
 {
     rsvg_state_rust_set_affine (state->state_rust, affine);
-}
-
-gboolean
-rsvg_state_is_overflow (RsvgState *state)
-{
-    return state->overflow;
-}
-
-gboolean
-rsvg_state_has_overflow (RsvgState *state)
-{
-    return state->has_overflow;
 }
 
 RsvgPaintServer *

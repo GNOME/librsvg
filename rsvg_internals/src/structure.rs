@@ -313,9 +313,9 @@ impl NodeTrait for NodeUse {
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
 
         let state = drawing_ctx::get_current_state(draw_ctx);
+        let rstate = state::get_state_rust(state);
 
         if child.get_type() != NodeType::Symbol {
-            let rstate = state::get_state_rust(state);
             let mut affine = rstate.affine;
             affine.translate(nx, ny);
             rstate.affine = affine;
@@ -328,11 +328,9 @@ impl NodeTrait for NodeUse {
 
             drawing_ctx::pop_discrete_layer(draw_ctx, clipping);
         } else {
-            let affine = state::get_state_rust(state).affine;
-
             child.with_impl(|symbol: &NodeSymbol| {
                 let do_clip = !state::is_overflow(state)
-                    || (!state::has_overflow(state) && state::is_overflow(child.get_state()));
+                    || (rstate.overflow.is_none() && state::is_overflow(child.get_state()));
 
                 draw_in_viewport(
                     nx,
@@ -343,7 +341,7 @@ impl NodeTrait for NodeUse {
                     do_clip,
                     symbol.vbox.get(),
                     symbol.preserve_aspect_ratio.get(),
-                    affine,
+                    rstate.affine,
                     draw_ctx,
                     clipping,
                     || {
