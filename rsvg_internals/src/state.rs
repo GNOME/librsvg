@@ -38,6 +38,7 @@ pub struct State {
     pub baseline_shift: Option<BaselineShift>,
     pub cap: Option<StrokeLinecap>,
     pub fill_rule: Option<FillRule>,
+    pub font_family: Option<FontFamily>,
     pub font_size: Option<FontSize>,
     pub join: Option<StrokeLinejoin>,
     pub letter_spacing: Option<LetterSpacing>,
@@ -57,6 +58,7 @@ impl State {
             baseline_shift: Default::default(),
             cap: Default::default(),
             fill_rule: Default::default(),
+            font_family: Default::default(),
             font_size: Default::default(),
             join: Default::default(),
             letter_spacing: Default::default(),
@@ -77,6 +79,10 @@ impl State {
 
             Attribute::FillRule => {
                 self.fill_rule = parse_property(value, ())?;
+            }
+
+            Attribute::FontFamily => {
+                self.font_family = parse_property(value, ())?;
             }
 
             Attribute::FontSize => {
@@ -181,7 +187,6 @@ extern "C" {
     fn rsvg_state_get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
-    fn rsvg_state_get_font_family(state: *const RsvgState) -> *const libc::c_char;
     fn rsvg_state_get_font_style(state: *const RsvgState) -> pango_sys::PangoStyle;
     fn rsvg_state_get_font_variant(state: *const RsvgState) -> pango_sys::PangoVariant;
     fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
@@ -351,10 +356,6 @@ pub fn get_text_gravity(state: *const RsvgState) -> pango::Gravity {
     unsafe { from_glib(rsvg_state_get_text_gravity(state)) }
 }
 
-pub fn get_font_family(state: *const RsvgState) -> Option<String> {
-    unsafe { from_glib_none(rsvg_state_get_font_family(state)) }
-}
-
 pub fn get_font_style(state: *const RsvgState) -> pango::Style {
     unsafe { from_glib(rsvg_state_get_font_style(state)) }
 }
@@ -455,6 +456,15 @@ make_property!(
     identifiers:
     "nonzero" => NonZero,
     "evenodd" => EvenOdd,
+);
+
+// FontFamily -----------------------------------------
+
+make_property!(
+    FontFamily,
+    default: "Times New Roman".to_string(),
+    inherits_automatically: true,
+    newtype_from_str: String
 );
 
 // FontSize -------------------------------------------
@@ -679,6 +689,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.baseline_shift, &src.baseline_shift);
     inherit(inherit_fn, &mut dst.cap, &src.cap);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
+    inherit(inherit_fn, &mut dst.font_family, &src.font_family);
     inherit(inherit_fn, &mut dst.font_size, &src.font_size);
     inherit(inherit_fn, &mut dst.join, &src.join);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);

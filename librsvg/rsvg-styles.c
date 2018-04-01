@@ -59,8 +59,6 @@ extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute att
 
 extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn);
 
-#define RSVG_DEFAULT_FONT "Times New Roman"
-
 enum {
   SHAPE_RENDERING_AUTO = CAIRO_ANTIALIAS_DEFAULT,
   SHAPE_RENDERING_OPTIMIZE_SPEED = CAIRO_ANTIALIAS_NONE,
@@ -136,7 +134,6 @@ rsvg_state_init (RsvgState * state)
     state->flood_color = 0;
     state->flood_opacity = 255;
 
-    state->font_family = g_strdup (RSVG_DEFAULT_FONT);
     state->font_style = PANGO_STYLE_NORMAL;
     state->font_variant = PANGO_VARIANT_NORMAL;
     state->font_weight = PANGO_WEIGHT_NORMAL;
@@ -168,7 +165,6 @@ rsvg_state_init (RsvgState * state)
     state->has_cond = FALSE;
     state->has_stop_color = FALSE;
     state->has_stop_opacity = FALSE;
-    state->has_font_family = FALSE;
     state->has_font_style = FALSE;
     state->has_font_variant = FALSE;
     state->has_font_weight = FALSE;
@@ -225,9 +221,6 @@ rsvg_state_finalize (RsvgState * state)
 
     g_free (state->clip_path);
     state->clip_path = NULL;
-
-    g_free (state->font_family);
-    state->font_family = NULL;
 
     g_free (state->startMarker);
     state->startMarker = NULL;
@@ -290,7 +283,6 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
     dst->filter = g_strdup (src->filter);
     dst->mask = g_strdup (src->mask);
     dst->clip_path = g_strdup (src->clip_path);
-    dst->font_family = g_strdup (src->font_family);
     dst->startMarker = g_strdup (src->startMarker);
     dst->middleMarker = g_strdup (src->middleMarker);
     dst->endMarker = g_strdup (src->endMarker);
@@ -389,11 +381,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
             dst->shape_rendering_type = src->shape_rendering_type;
     if (function (dst->has_text_rendering_type, src->has_text_rendering_type))
             dst->text_rendering_type = src->text_rendering_type;
-
-    if (function (dst->has_font_family, src->has_font_family)) {
-        g_free (dst->font_family);      /* font_family is always set to something */
-        dst->font_family = g_strdup (src->font_family);
-    }
 
     if (function (dst->has_visible, src->has_visible))
         dst->visible = src->visible;
@@ -807,14 +794,6 @@ rsvg_parse_style_pair (RsvgState *state,
         }
 
         state->has_stroke_opacity = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_FONT_FAMILY:
-    {
-        char *save = g_strdup (rsvg_css_parse_font_family (value, &state->has_font_family));
-        g_free (state->font_family);
-        state->font_family = save;
     }
     break;
 
@@ -1717,12 +1696,6 @@ PangoGravity
 rsvg_state_get_text_gravity (RsvgState *state)
 {
     return state->text_gravity;
-}
-
-const char *
-rsvg_state_get_font_family (RsvgState *state)
-{
-    return state->font_family;
 }
 
 PangoStyle
