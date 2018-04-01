@@ -447,6 +447,8 @@ void rsvg_push_discrete_layer   (RsvgDrawingCtx *ctx, gboolean clipping);
 
 G_GNUC_INTERNAL
 RsvgState *rsvg_drawing_ctx_get_current_state   (RsvgDrawingCtx * ctx);
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_set_current_state         (RsvgDrawingCtx * ctx, RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgNode *rsvg_drawing_ctx_acquire_node         (RsvgDrawingCtx * ctx, const char *url);

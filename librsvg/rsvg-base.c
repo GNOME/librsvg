@@ -372,6 +372,12 @@ rsvg_drawing_ctx_get_current_state (RsvgDrawingCtx *ctx)
     return ctx->state;
 }
 
+void
+rsvg_drawing_ctx_set_current_state (RsvgDrawingCtx *ctx, RsvgState *state)
+{
+    ctx->state = state;
+}
+
 /*
  * rsvg_drawing_ctx_acquire_node:
  * @ctx: The drawing context in use
