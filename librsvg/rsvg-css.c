@@ -183,18 +183,6 @@ rsvg_css_parse_font_family (const char *str, gboolean * inherit)
         return str;
 }
 
-gboolean
-rsvg_css_parse_overflow (const char *str, gboolean * inherit)
-{
-    SETINHERIT ();
-    if (!strcmp (str, "visible") || !strcmp (str, "auto"))
-        return 1;
-    if (!strcmp (str, "hidden") || !strcmp (str, "scroll"))
-        return 0;
-    UNSETINHERIT ();
-    return 0;
-}
-
 static void
 rsvg_xml_noerror (void *data, xmlErrorPtr error)
 {
