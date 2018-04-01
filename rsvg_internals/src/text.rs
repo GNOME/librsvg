@@ -197,7 +197,7 @@ impl NodeTRef {
         }
     }
 
-    fn measure(&self, draw_ctx: *const RsvgDrawingCtx, length: &mut f64) -> bool {
+    fn measure(&self, draw_ctx: *mut RsvgDrawingCtx, length: &mut f64) -> bool {
         let l = self.link.borrow();
 
         if l.is_none() {
@@ -270,7 +270,7 @@ impl NodeTSpan {
     fn measure(
         &self,
         node: &RsvgNode,
-        draw_ctx: *const RsvgDrawingCtx,
+        draw_ctx: *mut RsvgDrawingCtx,
         length: &mut f64,
         usetextonly: bool,
     ) -> bool {
@@ -460,7 +460,7 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 
 fn anchor_offset(
     node: &RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
+    draw_ctx: *mut RsvgDrawingCtx,
     anchor: TextAnchor,
     textonly: bool,
 ) -> f64 {
@@ -482,7 +482,7 @@ fn anchor_offset(
 
 fn measure_children(
     node: &RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
+    draw_ctx: *mut RsvgDrawingCtx,
     length: &mut f64,
     textonly: bool,
 ) -> bool {
@@ -500,7 +500,7 @@ fn measure_children(
 
 fn measure_child(
     node: &RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
+    draw_ctx: *mut RsvgDrawingCtx,
     length: &mut f64,
     textonly: bool,
 ) -> bool {
