@@ -40,6 +40,7 @@ pub struct State {
     pub fill_rule: Option<FillRule>,
     pub font_family: Option<FontFamily>,
     pub font_size: Option<FontSize>,
+    pub font_style: Option<FontStyle>,
     pub join: Option<StrokeLinejoin>,
     pub letter_spacing: Option<LetterSpacing>,
     pub overflow: Option<Overflow>,
@@ -60,6 +61,7 @@ impl State {
             fill_rule: Default::default(),
             font_family: Default::default(),
             font_size: Default::default(),
+            font_style: Default::default(),
             join: Default::default(),
             letter_spacing: Default::default(),
             overflow: Default::default(),
@@ -87,6 +89,10 @@ impl State {
 
             Attribute::FontSize => {
                 self.font_size = parse_property(value, LengthDir::Both)?;
+            }
+
+            Attribute::FontStyle => {
+                self.font_style = parse_property(value, ())?;
             }
 
             Attribute::StrokeLinecap => {
@@ -187,7 +193,6 @@ extern "C" {
     fn rsvg_state_get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
-    fn rsvg_state_get_font_style(state: *const RsvgState) -> pango_sys::PangoStyle;
     fn rsvg_state_get_font_variant(state: *const RsvgState) -> pango_sys::PangoVariant;
     fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
     fn rsvg_state_get_font_stretch(state: *const RsvgState) -> pango_sys::PangoStretch;
@@ -356,10 +361,6 @@ pub fn get_text_gravity(state: *const RsvgState) -> pango::Gravity {
     unsafe { from_glib(rsvg_state_get_text_gravity(state)) }
 }
 
-pub fn get_font_style(state: *const RsvgState) -> pango::Style {
-    unsafe { from_glib(rsvg_state_get_font_style(state)) }
-}
-
 pub fn get_font_variant(state: *const RsvgState) -> pango::Variant {
     unsafe { from_glib(rsvg_state_get_font_variant(state)) }
 }
@@ -484,6 +485,19 @@ impl Parse for FontSize {
         Ok(FontSize(RsvgLength::parse(s, dir)?))
     }
 }
+
+// FontStyle ------------------------------------------
+
+make_property!(
+    FontStyle,
+    default: Normal,
+    inherits_automatically: true,
+
+    identifiers:
+    "normal" => Normal,
+    "italic" => Italic,
+    "oblique" => Oblique,
+);
 
 // StrokeLinecap ----------------------------------------
 
@@ -691,6 +705,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
     inherit(inherit_fn, &mut dst.font_family, &src.font_family);
     inherit(inherit_fn, &mut dst.font_size, &src.font_size);
+    inherit(inherit_fn, &mut dst.font_style, &src.font_style);
     inherit(inherit_fn, &mut dst.join, &src.join);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);
