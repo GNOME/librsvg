@@ -39,6 +39,8 @@ pub use cond::{
 
 pub use draw::rsvg_cairo_add_clipping_rect;
 
+pub use drawing_ctx::{rsvg_drawing_ctx_state_pop, rsvg_drawing_ctx_state_push};
+
 pub use gradient::{rsvg_node_linear_gradient_new, rsvg_node_radial_gradient_new};
 
 pub use length::{

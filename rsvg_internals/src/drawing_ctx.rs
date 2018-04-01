@@ -6,6 +6,7 @@ use glib_sys;
 use libc;
 use pango;
 use pango_sys;
+use std::ptr;
 
 use bbox::RsvgBbox;
 use length::LengthUnit;
@@ -17,6 +18,9 @@ pub enum RsvgDrawingCtx {}
 
 #[allow(improper_ctypes)]
 extern "C" {
+    fn rsvg_drawing_ctx_get_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState;
+    fn rsvg_drawing_ctx_set_current_state(draw_ctx: *mut RsvgDrawingCtx, state: *mut RsvgState);
+
     fn rsvg_drawing_ctx_get_dpi(
         draw_ctx: *const RsvgDrawingCtx,
         out_dpi_x: *mut f64,
@@ -71,11 +75,6 @@ extern "C" {
         dominate: i32,
         clipping: glib_sys::gboolean,
     );
-
-    fn rsvg_drawing_ctx_get_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState;
-
-    fn rsvg_state_push(draw_ctx: *const RsvgDrawingCtx);
-    fn rsvg_state_pop(draw_ctx: *const RsvgDrawingCtx);
 
     fn rsvg_push_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: glib_sys::gboolean);
     fn rsvg_pop_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: glib_sys::gboolean);
@@ -301,15 +300,21 @@ pub fn get_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState {
     unsafe { rsvg_drawing_ctx_get_current_state(draw_ctx) }
 }
 
-pub fn state_push(draw_ctx: *const RsvgDrawingCtx) {
+pub fn state_push(draw_ctx: *mut RsvgDrawingCtx) {
+    let state = state::new_with_parent(get_current_state(draw_ctx));
+
     unsafe {
-        rsvg_state_push(draw_ctx);
+        rsvg_drawing_ctx_set_current_state(draw_ctx, state);
     }
 }
 
-pub fn state_pop(draw_ctx: *const RsvgDrawingCtx) {
+pub fn state_pop(draw_ctx: *mut RsvgDrawingCtx) {
+    let state = get_current_state(draw_ctx);
+
     unsafe {
-        rsvg_state_pop(draw_ctx);
+        let parent = state::parent(state).unwrap_or(ptr::null_mut());
+        rsvg_drawing_ctx_set_current_state(draw_ctx, parent);
+        state::free(state);
     }
 }
 
@@ -327,4 +332,14 @@ impl AcquiredNode {
     pub fn get(&self) -> RsvgNode {
         unsafe { (*self.1).clone() }
     }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_drawing_ctx_state_push(draw_ctx: *mut RsvgDrawingCtx) {
+    state_push(draw_ctx);
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_drawing_ctx_state_pop(draw_ctx: *mut RsvgDrawingCtx) {
+    state_pop(draw_ctx);
 }

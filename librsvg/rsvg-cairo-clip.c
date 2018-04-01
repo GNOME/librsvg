@@ -81,9 +81,9 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgNode *node_clip_path, RsvgBbox * bbox
 
     orig_bbox = save->bbox;
 
-    rsvg_state_push (ctx);
+    rsvg_drawing_ctx_state_push (ctx);
     rsvg_node_draw_children (node_clip_path, ctx, 0, TRUE);
-    rsvg_state_pop (ctx);
+    rsvg_drawing_ctx_state_pop (ctx);
 
     if (clip_units == objectBoundingBox) {
         rsvg_state_set_affine (clip_path_state, affinesave);

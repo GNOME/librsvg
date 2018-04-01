@@ -175,7 +175,7 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
     draw->acquired_nodes = NULL;
     draw->is_testing = handle->priv->is_testing;
 
-    rsvg_state_push (draw);
+    rsvg_drawing_ctx_state_push (draw);
     state = rsvg_drawing_ctx_get_current_state (draw);
 
     state_affine = rsvg_state_get_affine (state);

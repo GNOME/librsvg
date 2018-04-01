@@ -194,7 +194,7 @@ rsvg_state_init (RsvgState * state)
     state->state_rust = rsvg_state_rust_new();
 }
 
-static RsvgState *
+RsvgState *
 rsvg_state_new_with_parent (RsvgState *parent)
 {
     RsvgState *state;
@@ -1647,22 +1647,6 @@ rsvg_state_free_all (RsvgState * state)
 
         state = parent;
     }
-}
-
-void
-rsvg_state_push (RsvgDrawingCtx * ctx)
-{
-    ctx->state = rsvg_state_new_with_parent (ctx->state);
-}
-
-void
-rsvg_state_pop (RsvgDrawingCtx * ctx)
-{
-    RsvgState *dead_state = ctx->state;
-
-    ctx->state = dead_state->parent;
-
-    rsvg_state_free (dead_state);
 }
 
 cairo_matrix_t

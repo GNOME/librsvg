@@ -160,6 +160,9 @@ G_GNUC_INTERNAL
 RsvgState *rsvg_state_new (void);
 
 G_GNUC_INTERNAL
+RsvgState *rsvg_state_new_with_parent (RsvgState *parent);
+
+G_GNUC_INTERNAL
 void rsvg_state_free (RsvgState *state);
 
 G_GNUC_INTERNAL
@@ -186,11 +189,6 @@ gboolean rsvg_parse_transform   (cairo_matrix_t *matrix, const char *src) G_GNUC
 
 G_GNUC_INTERNAL
 RsvgState *rsvg_state_parent    (RsvgState * state);
-
-G_GNUC_INTERNAL
-void       rsvg_state_pop       (RsvgDrawingCtx * ctx);
-G_GNUC_INTERNAL
-void       rsvg_state_push      (RsvgDrawingCtx * ctx);
 
 /* Implemented in rust/src/state.rs */
 G_GNUC_INTERNAL

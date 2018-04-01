@@ -173,6 +173,7 @@ impl From<TextDecoration> for FontDecor {
 #[allow(improper_ctypes)]
 extern "C" {
     fn rsvg_state_new() -> *mut RsvgState;
+    fn rsvg_state_new_with_parent(parent: *mut RsvgState) -> *mut RsvgState;
     fn rsvg_state_free(state: *mut RsvgState);
     fn rsvg_state_reinit(state: *mut RsvgState);
     fn rsvg_state_clone(state: *mut RsvgState, src: *const RsvgState);
@@ -216,6 +217,10 @@ extern "C" {
 
 pub fn new() -> *mut RsvgState {
     unsafe { rsvg_state_new() }
+}
+
+pub fn new_with_parent(parent: *mut RsvgState) -> *mut RsvgState {
+    unsafe { rsvg_state_new_with_parent(parent) }
 }
 
 pub fn free(state: *mut RsvgState) {

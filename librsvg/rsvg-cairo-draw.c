@@ -272,9 +272,9 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
         rsvg_drawing_ctx_push_view_box (ctx, 1, 1);
     }
 
-    rsvg_state_push (ctx);
+    rsvg_drawing_ctx_state_push (ctx);
     rsvg_node_draw_children (mask, ctx, 0, FALSE);
-    rsvg_state_pop (ctx);
+    rsvg_drawing_ctx_state_pop (ctx);
 
     if (content_units == objectBoundingBox) {
         RsvgState *mask_state;
