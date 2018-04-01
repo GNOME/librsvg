@@ -90,8 +90,6 @@ G_GNUC_INTERNAL
 RsvgOpacitySpec rsvg_css_parse_opacity (const char *str);
 
 G_GNUC_INTERNAL
-PangoVariant rsvg_css_parse_font_variant    (const char *str, gboolean * inherit);
-G_GNUC_INTERNAL
 PangoWeight	 rsvg_css_parse_font_weight	    (const char *str, gboolean * inherit);
 G_GNUC_INTERNAL
 PangoStretch rsvg_css_parse_font_stretch    (const char *str, gboolean * inherit);

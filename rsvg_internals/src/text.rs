@@ -25,6 +25,7 @@ use state::{
     self,
     FontFamily,
     FontStyle,
+    FontVariant,
     LetterSpacing,
     RsvgState,
     TextAnchor,
@@ -401,6 +402,15 @@ impl From<FontStyle> for pango::Style {
     }
 }
 
+impl From<FontVariant> for pango::Variant {
+    fn from(v: FontVariant) -> pango::Variant {
+        match v {
+            FontVariant::Normal => pango::Variant::Normal,
+            FontVariant::SmallCaps => pango::Variant::SmallCaps,
+        }
+    }
+}
+
 fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::Layout {
     let state = drawing_ctx::get_current_state(draw_ctx);
     let rstate = state::get_state_rust(state);
@@ -433,7 +443,10 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 
     font_desc.set_style(pango::Style::from(rstate.font_style.unwrap_or_default()));
 
-    font_desc.set_variant(state::get_font_variant(state));
+    font_desc.set_variant(pango::Variant::from(
+        rstate.font_variant.unwrap_or_default(),
+    ));
+
     font_desc.set_weight(state::get_font_weight(state));
     font_desc.set_stretch(state::get_font_stretch(state));
 
