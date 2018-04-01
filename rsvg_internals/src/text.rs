@@ -21,7 +21,15 @@ use node::{
 use parsers::parse;
 use property_bag::PropertyBag;
 use space::xml_space_normalize;
-use state::{self, LetterSpacing, RsvgState, TextAnchor, UnicodeBidi, XmlLang};
+use state::{
+    self,
+    FontFamily,
+    LetterSpacing,
+    RsvgState,
+    TextAnchor,
+    UnicodeBidi,
+    XmlLang
+};
 
 extern "C" {
     fn _rsvg_css_normalize_font_size(
@@ -384,9 +392,10 @@ fn to_pango_units(v: f64) -> i32 {
 
 fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::Layout {
     let state = drawing_ctx::get_current_state(draw_ctx);
+    let rstate = state::get_state_rust(state);
     let pango_context = drawing_ctx::get_pango_context(draw_ctx);
 
-    if let Some(XmlLang(ref lang)) = state::get_state_rust(state).xml_lang {
+    if let Some(XmlLang(ref lang)) = rstate.xml_lang {
         let pango_lang = pango::Language::from_string(&lang);
         pango_context.set_language(&pango_lang);
     }
@@ -407,7 +416,7 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 
     let mut font_desc = pango_context.get_font_description().unwrap();
 
-    if let Some(font_family) = state::get_font_family(state) {
+    if let Some(FontFamily(ref font_family)) = rstate.font_family {
         font_desc.set_family(&font_family);
     }
 
@@ -426,13 +435,13 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 
     let attr_list = pango::AttrList::new();
 
-    if let Some(LetterSpacing(ref ls)) = state::get_state_rust(state).letter_spacing {
+    if let Some(LetterSpacing(ref ls)) = rstate.letter_spacing {
         attr_list.insert(
             pango::Attribute::new_letter_spacing(to_pango_units(ls.normalize(draw_ctx))).unwrap(),
         );
     }
 
-    if let Some(ref td) = state::get_state_rust(state).text_decoration {
+    if let Some(ref td) = rstate.text_decoration {
         if td.underline {
             attr_list.insert(pango::Attribute::new_underline(pango::Underline::Single).unwrap());
         }
@@ -450,7 +459,7 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
     });
 
     let t = xml_space_normalize(
-        state::get_state_rust(state).xml_space.unwrap_or_default(),
+        rstate.xml_space.unwrap_or_default(),
         text,
     );
     layout.set_text(&t);

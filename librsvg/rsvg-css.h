@@ -97,8 +97,6 @@ G_GNUC_INTERNAL
 PangoWeight	 rsvg_css_parse_font_weight	    (const char *str, gboolean * inherit);
 G_GNUC_INTERNAL
 PangoStretch rsvg_css_parse_font_stretch    (const char *str, gboolean * inherit);
-G_GNUC_INTERNAL
-const char  *rsvg_css_parse_font_family	    (const char *str, gboolean * inherit);
 
 /* Implemented in rust/src/parsers.rs */
 G_GNUC_INTERNAL

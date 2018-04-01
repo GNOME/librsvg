@@ -169,20 +169,6 @@ rsvg_css_parse_font_stretch (const char *str, gboolean * inherit)
     return PANGO_STRETCH_NORMAL;
 }
 
-const char *
-rsvg_css_parse_font_family (const char *str, gboolean * inherit)
-{
-    SETINHERIT ();
-
-    if (!str)
-        return NULL;
-    else if (!strcmp (str, "inherit")) {
-        UNSETINHERIT ();
-        return NULL;
-    } else
-        return str;
-}
-
 static void
 rsvg_xml_noerror (void *data, xmlErrorPtr error)
 {

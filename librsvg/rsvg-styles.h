@@ -78,8 +78,6 @@ struct _RsvgState {
     double miter_limit;
     gboolean has_miter_limit;
 
-    char *font_family;
-    gboolean has_font_family;
     PangoStyle font_style;
     gboolean has_font_style;
     PangoVariant font_variant;
@@ -229,9 +227,6 @@ PangoDirection rsvg_state_get_text_dir (RsvgState *state);
 
 G_GNUC_INTERNAL
 PangoGravity rsvg_state_get_text_gravity (RsvgState *state);
-
-G_GNUC_INTERNAL
-const char *rsvg_state_get_font_family (RsvgState *state);
 
 G_GNUC_INTERNAL
 PangoStyle rsvg_state_get_font_style (RsvgState *state);
