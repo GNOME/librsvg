@@ -194,15 +194,27 @@ rsvg_state_init (RsvgState * state)
     state->state_rust = rsvg_state_rust_new();
 }
 
-RsvgState *
-rsvg_state_new (void)
+static RsvgState *
+rsvg_state_new_with_parent (RsvgState *parent)
 {
     RsvgState *state;
 
     state = g_slice_new (RsvgState);
     rsvg_state_init (state);
 
+    if (parent) {
+        rsvg_state_reinherit (state, parent);
+        rsvg_state_set_affine (state, rsvg_state_get_affine (parent));
+        state->parent = parent;
+    }
+
     return state;
+}
+
+RsvgState *
+rsvg_state_new (void)
+{
+    return rsvg_state_new_with_parent (NULL);
 }
 
 static void
@@ -1646,19 +1658,7 @@ rsvg_state_free_all (RsvgState * state)
 void
 rsvg_state_push (RsvgDrawingCtx * ctx)
 {
-    RsvgState *data;
-    RsvgState *baseon;
-
-    baseon = ctx->state;
-    data = rsvg_state_new ();
-
-    if (baseon) {
-        rsvg_state_reinherit (data, baseon);
-        rsvg_state_set_affine (data, rsvg_state_get_affine (baseon));
-        data->parent = baseon;
-    }
-
-    ctx->state = data;
+    ctx->state = rsvg_state_new_with_parent (ctx->state);
 }
 
 void
