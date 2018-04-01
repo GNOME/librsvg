@@ -199,7 +199,7 @@ G_GNUC_INTERNAL
 void rsvg_state_reconstruct (RsvgState *state, RsvgNode *current);
 
 G_GNUC_INTERNAL
-cairo_matrix_t rsvg_state_get_affine (RsvgState *state);
+cairo_matrix_t rsvg_state_get_affine (const RsvgState *state);
 
 G_GNUC_INTERNAL
 void rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine);

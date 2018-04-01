@@ -51,7 +51,7 @@ extern void rsvg_stroke_dasharray_free(RsvgStrokeDasharray *dash);
 extern State *rsvg_state_rust_new(void);
 extern void rsvg_state_rust_free(State *state);
 extern State *rsvg_state_rust_clone(State *state);
-extern cairo_matrix_t rsvg_state_rust_get_affine(State *state);
+extern cairo_matrix_t rsvg_state_rust_get_affine(const State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 
 extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value)
@@ -1672,7 +1672,7 @@ rsvg_state_pop (RsvgDrawingCtx * ctx)
 }
 
 cairo_matrix_t
-rsvg_state_get_affine (RsvgState *state)
+rsvg_state_get_affine (const RsvgState *state)
 {
     return rsvg_state_rust_get_affine (state->state_rust);
 }
