@@ -519,9 +519,6 @@ double rsvg_length_hand_normalize (const RsvgLength *length,
                                    double font_size);
 
 G_GNUC_INTERNAL
-void rsvg_drawing_ctx_set_current_state_affine (RsvgDrawingCtx *ctx, cairo_matrix_t *affine);
-
-G_GNUC_INTERNAL
 void rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, cairo_matrix_t *affine);
 
 G_GNUC_INTERNAL

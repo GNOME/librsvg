@@ -5,6 +5,7 @@ use aspect_ratio::AspectRatio;
 use draw::add_clipping_rect;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use float_eq_cairo::ApproxEqCairo;
+use state;
 use viewbox::*;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -80,7 +81,9 @@ impl ViewportCtx for RsvgDrawingCtxWrapper {
     }
 
     fn set_affine(&mut self, affine: cairo::Matrix) {
-        drawing_ctx::set_current_state_affine(self.0, affine);
+        let state = drawing_ctx::get_current_state(self.0);
+        let rstate = state::get_state_rust(state);
+        rstate.affine = affine;
     }
 }
 

@@ -50,11 +50,6 @@ extern "C" {
 
     fn rsvg_drawing_ctx_release_node(draw_ctx: *const RsvgDrawingCtx, node: *mut RsvgNode);
 
-    fn rsvg_drawing_ctx_set_current_state_affine(
-        draw_ctx: *const RsvgDrawingCtx,
-        affine: *const cairo::Matrix,
-    );
-
     fn rsvg_drawing_ctx_set_affine_on_cr(
         draw_ctx: *const RsvgDrawingCtx,
         cr: *mut cairo_sys::cairo_t,
@@ -246,12 +241,6 @@ pub fn set_cairo_context(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) {
         let raw_cr = cr.to_glib_none().0;
 
         rsvg_cairo_set_cairo_context(draw_ctx, raw_cr);
-    }
-}
-
-pub fn set_current_state_affine(draw_ctx: *const RsvgDrawingCtx, affine: cairo::Matrix) {
-    unsafe {
-        rsvg_drawing_ctx_set_current_state_affine(draw_ctx, &affine);
     }
 }
 

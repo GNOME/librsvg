@@ -403,7 +403,9 @@ fn set_pattern_on_draw_context(
     drawing_ctx::set_cairo_context(draw_ctx, &cr_pattern);
 
     // Set up transformations to be determined by the contents units
-    drawing_ctx::set_current_state_affine(draw_ctx, caffine);
+    let state = drawing_ctx::get_current_state(draw_ctx);
+    let rstate = state::get_state_rust(state);
+    rstate.affine = caffine;
 
     // Draw everything
     let pattern_node = pattern.node.clone().unwrap().upgrade().unwrap();

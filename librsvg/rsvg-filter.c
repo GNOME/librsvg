@@ -4256,7 +4256,7 @@ rsvg_filter_primitive_image_render_in (RsvgFilterPrimitiveImage *image, RsvgFilt
     if (!drawable)
         return NULL;
 
-    rsvg_drawing_ctx_set_current_state_affine (ctx, &context->paffine);
+    rsvg_state_set_affine (rsvg_drawing_ctx_get_current_state (ctx), context->paffine);
 
     result = rsvg_cairo_get_surface_of_node (ctx, drawable, context->width, context->height);
 
