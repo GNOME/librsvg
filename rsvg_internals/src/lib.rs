@@ -98,7 +98,11 @@ pub use paint_server::{
     rsvg_set_source_rsvg_paint_server,
 };
 
-pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
+pub use parsers::{
+    rsvg_css_parse_number_list,
+    rsvg_css_parse_number_optional_number,
+    rsvg_css_parse_url,
+};
 
 pub use path_builder::rsvg_path_builder_add_to_cairo_context;
 

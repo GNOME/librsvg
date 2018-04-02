@@ -693,32 +693,6 @@ rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dp
         *out_dpi_y = ctx->dpi_y;
 }
 
-char *
-rsvg_get_url_string (const char *str, const char **out_rest)
-{
-    if (!strncmp (str, "url(", 4)) {
-        const char *p = str + 4;
-        int ix;
-
-        while (g_ascii_isspace (*p))
-            p++;
-
-        for (ix = 0; p[ix]; ix++) {
-            if (p[ix] == ')') {
-                if (out_rest)
-                    *out_rest = p + ix + 1;
-
-                return g_strndup (p, ix);
-            }
-        }
-    }
-
-    if (out_rest)
-        *out_rest = NULL;
-
-    return NULL;
-}
-
 void
 rsvg_return_if_fail_warning (const char *pretty_function, const char *expression, GError ** error)
 {

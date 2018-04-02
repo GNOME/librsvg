@@ -608,21 +608,21 @@ rsvg_parse_style_pair (RsvgState *state,
     case RSVG_ATTRIBUTE_FILTER:
     {
         g_free (state->filter);
-        state->filter = rsvg_get_url_string (value, NULL);
+        state->filter = rsvg_css_parse_url (value);
     }
     break;
 
     case RSVG_ATTRIBUTE_MASK:
     {
         g_free (state->mask);
-        state->mask = rsvg_get_url_string (value, NULL);
+        state->mask = rsvg_css_parse_url (value);
     }
     break;
 
     case RSVG_ATTRIBUTE_CLIP_PATH:
     {
         g_free (state->clip_path);
-        state->clip_path = rsvg_get_url_string (value, NULL);
+        state->clip_path = rsvg_css_parse_url (value);
     }
     break;
 
@@ -851,7 +851,7 @@ rsvg_parse_style_pair (RsvgState *state,
     case RSVG_ATTRIBUTE_MARKER_START:
     {
         g_free (state->startMarker);
-        state->startMarker = rsvg_get_url_string (value, NULL);
+        state->startMarker = rsvg_css_parse_url (value);
         state->has_startMarker = TRUE;
     }
     break;
@@ -859,7 +859,7 @@ rsvg_parse_style_pair (RsvgState *state,
     case RSVG_ATTRIBUTE_MARKER_MID:
     {
         g_free (state->middleMarker);
-        state->middleMarker = rsvg_get_url_string (value, NULL);
+        state->middleMarker = rsvg_css_parse_url (value);
         state->has_middleMarker = TRUE;
     }
     break;
@@ -867,7 +867,7 @@ rsvg_parse_style_pair (RsvgState *state,
     case RSVG_ATTRIBUTE_MARKER_END:
     {
         g_free (state->endMarker);
-        state->endMarker = rsvg_get_url_string (value, NULL);
+        state->endMarker = rsvg_css_parse_url (value);
         state->has_endMarker = TRUE;
     }
     break;
@@ -881,19 +881,19 @@ rsvg_parse_style_pair (RsvgState *state,
         if (source == PAIR_SOURCE_STYLE) {
             if (!state->has_startMarker) {
                 g_free (state->startMarker);
-                state->startMarker = rsvg_get_url_string (value, NULL);
+                state->startMarker = rsvg_css_parse_url (value);
                 state->has_startMarker = TRUE;
             }
 
             if (!state->has_middleMarker) {
                 g_free (state->middleMarker);
-                state->middleMarker = rsvg_get_url_string (value, NULL);
+                state->middleMarker = rsvg_css_parse_url (value);
                 state->has_middleMarker = TRUE;
             }
 
             if (!state->has_endMarker) {
                 g_free (state->endMarker);
-                state->endMarker = rsvg_get_url_string (value, NULL);
+                state->endMarker = rsvg_css_parse_url (value);
                 state->has_endMarker = TRUE;
             }
         }
