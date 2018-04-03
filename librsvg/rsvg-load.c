@@ -24,6 +24,7 @@
 #include <libxml/uri.h>
 #include <libxml/parser.h>
 #include <libxml/parserInternals.h>
+#include <string.h>
 
 #include "rsvg-attributes.h"
 #include "rsvg-filter.h"
