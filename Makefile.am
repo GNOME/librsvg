@@ -49,7 +49,6 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	librsvg/rsvg-marker.h			\
 	librsvg/rsvg-mask.h			\
 	librsvg/rsvg-paint-server.h 		\
-	librsvg/rsvg-path-builder.h		\
 	librsvg/rsvg-private.h 			\
 	librsvg/rsvg-shapes.h			\
 	librsvg/rsvg-size-callback.c		\

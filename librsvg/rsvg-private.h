@@ -31,7 +31,6 @@
 
 #include "rsvg.h"
 #include "rsvg-attributes.h"
-#include "rsvg-path-builder.h"
 
 #include <libxml/SAX.h>
 #include <libxml/xmlmemory.h>

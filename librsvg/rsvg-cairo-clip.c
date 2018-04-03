@@ -33,7 +33,6 @@
 #include "rsvg-cairo-clip.h"
 #include "rsvg-cairo-render.h"
 #include "rsvg-styles.h"
-#include "rsvg-path-builder.h"
 #include "rsvg-structure.h"
 
 #include <math.h>

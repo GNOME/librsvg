@@ -104,8 +104,6 @@ pub use parsers::{
     rsvg_css_parse_url,
 };
 
-pub use path_builder::rsvg_path_builder_add_to_cairo_context;
-
 pub use pattern::rsvg_node_pattern_new;
 
 pub use property_bag::{

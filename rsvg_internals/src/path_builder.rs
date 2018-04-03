@@ -1,6 +1,4 @@
 use cairo;
-use cairo_sys;
-use glib::translate::*;
 
 use std::f64;
 use std::f64::consts::*;
@@ -293,19 +291,6 @@ fn clamp(val: f64, low: f64, high: f64) -> f64 {
     } else {
         val
     }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_path_builder_add_to_cairo_context(
-    raw_builder: *mut RsvgPathBuilder,
-    raw_cr: *mut cairo_sys::cairo_t,
-) {
-    assert!(!raw_builder.is_null());
-    assert!(!raw_cr.is_null());
-
-    let builder: &mut RsvgPathBuilder = unsafe { &mut (*raw_builder) };
-    let cr = unsafe { cairo::Context::from_glib_none(raw_cr) };
-    builder.to_cairo(&cr);
 }
 
 #[cfg(test)]
