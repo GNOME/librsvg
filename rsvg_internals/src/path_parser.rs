@@ -10,7 +10,7 @@ struct PathParser<'b> {
     lookahead: Option<char>,    // None if we are in EOF
     current_pos: Option<usize>, // None if the string hasn't been scanned
 
-    builder: &'b mut RsvgPathBuilder,
+    builder: &'b mut PathBuilder,
 
     // Current point; adjusted at every command
     current_x: f64,
@@ -56,7 +56,7 @@ struct PathParser<'b> {
 //     M.1-2,3E2-4
 //     M 0.1 -2 300 -4
 impl<'b> PathParser<'b> {
-    fn new(builder: &'b mut RsvgPathBuilder, path_str: &'b str) -> PathParser<'b> {
+    fn new(builder: &'b mut PathBuilder, path_str: &'b str) -> PathParser<'b> {
         PathParser {
             chars_enumerator: path_str.chars().enumerate(),
             lookahead: None,
@@ -920,7 +920,7 @@ impl Display for ParseError {
 
 pub fn parse_path_into_builder(
     path_str: &str,
-    builder: &mut RsvgPathBuilder,
+    builder: &mut PathBuilder,
 ) -> Result<(), ParseError> {
     let mut parser = PathParser::new(builder, path_str);
 
@@ -958,7 +958,7 @@ mod tests {
     ) {
         let expected_result = make_parse_result(error_pos_str, expected_error_kind);
 
-        let mut builder = RsvgPathBuilder::new();
+        let mut builder = PathBuilder::new();
         let result = parse_path_into_builder(path_str, &mut builder);
 
         let commands = builder.get_path_commands();

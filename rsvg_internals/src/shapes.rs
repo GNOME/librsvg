@@ -19,7 +19,7 @@ use property_bag::PropertyBag;
 use state::RsvgState;
 
 fn render_path_builder(
-    builder: &RsvgPathBuilder,
+    builder: &PathBuilder,
     draw_ctx: *mut RsvgDrawingCtx,
     state: *mut RsvgState,
     dominate: i32,
@@ -53,7 +53,7 @@ fn render_ellipse(
     let arc_magic: f64 = 0.5522847498;
 
     // approximate an ellipse using 4 Bézier curves
-    let mut builder = RsvgPathBuilder::new();
+    let mut builder = PathBuilder::new();
 
     builder.move_to(cx + rx, cy);
 
@@ -107,7 +107,7 @@ fn render_ellipse(
 
 // ************ NodePath ************
 struct NodePath {
-    builder: RefCell<Option<RsvgPathBuilder>>,
+    builder: RefCell<Option<PathBuilder>>,
 }
 
 impl NodePath {
@@ -122,7 +122,7 @@ impl NodeTrait for NodePath {
     fn set_atts(&self, _: &RsvgNode, _: *const RsvgHandle, pbag: &PropertyBag) -> NodeResult {
         for (_key, attr, value) in pbag.iter() {
             if attr == Attribute::D {
-                let mut builder = RsvgPathBuilder::new();
+                let mut builder = PathBuilder::new();
 
                 if path_parser::parse_path_into_builder(value, &mut builder).is_err() {
                     // FIXME: we don't propagate errors upstream, but creating a partial
@@ -200,7 +200,7 @@ impl NodeTrait for NodePoly {
 
     fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
         if let Some(ref points) = *self.points.borrow() {
-            let mut builder = RsvgPathBuilder::new();
+            let mut builder = PathBuilder::new();
 
             for (i, &(x, y)) in points.iter().enumerate() {
                 if i == 0 {
@@ -267,7 +267,7 @@ impl NodeTrait for NodeLine {
     }
 
     fn draw(&self, node: &RsvgNode, draw_ctx: *mut RsvgDrawingCtx, dominate: i32, clipping: bool) {
-        let mut builder = RsvgPathBuilder::new();
+        let mut builder = PathBuilder::new();
 
         let x1 = self.x1.get().normalize(draw_ctx);
         let y1 = self.y1.get().normalize(draw_ctx);
@@ -417,7 +417,7 @@ impl NodeTrait for NodeRect {
             rx = 0.0;
         }
 
-        let mut builder = RsvgPathBuilder::new();
+        let mut builder = PathBuilder::new();
 
         if rx == 0.0 {
             // Easy case, no rounded corners

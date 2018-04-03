@@ -9,11 +9,11 @@ use drawing_ctx::{self, RsvgDrawingCtx};
 use float_eq_cairo::ApproxEqCairo;
 use length::StrokeDasharray;
 use paint_server;
-use path_builder::RsvgPathBuilder;
+use path_builder::PathBuilder;
 use state::{self, FillRule, RsvgState, StrokeLinecap, StrokeLinejoin};
 use text;
 
-pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &RsvgPathBuilder, clipping: bool) {
+pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &PathBuilder, clipping: bool) {
     if !clipping {
         drawing_ctx::push_discrete_layer(draw_ctx, clipping);
     }

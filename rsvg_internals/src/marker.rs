@@ -319,7 +319,7 @@ fn make_line(x1: f64, y1: f64, x2: f64, y2: f64) -> Segment {
     make_curve(x1, y1, x2, y2, x1, y1, x2, y2)
 }
 
-pub fn path_builder_to_segments(builder: &RsvgPathBuilder) -> Vec<Segment> {
+pub fn path_builder_to_segments(builder: &PathBuilder) -> Vec<Segment> {
     let mut last_x: f64;
     let mut last_y: f64;
     let mut cur_x: f64;
@@ -671,7 +671,7 @@ fn drawing_ctx_has_markers(draw_ctx: *const RsvgDrawingCtx) -> bool {
 }
 
 pub fn render_markers_for_path_builder(
-    builder: &RsvgPathBuilder,
+    builder: &PathBuilder,
     draw_ctx: *mut RsvgDrawingCtx,
     clipping: bool,
 ) {
@@ -703,7 +703,7 @@ pub fn render_markers_for_path_builder(
     );
 }
 
-fn emit_markers_for_path_builder<E>(builder: &RsvgPathBuilder, emit_fn: &mut E)
+fn emit_markers_for_path_builder<E>(builder: &PathBuilder, emit_fn: &mut E)
 where
     E: FnMut(MarkerType, f64, f64, f64),
 {
@@ -967,15 +967,15 @@ mod directionality_tests {
         super::make_curve(x1, y1, x2, y2, x3, y3, x4, y4)
     }
 
-    fn test_path_builder_to_segments(builder: &RsvgPathBuilder, expected_segments: Vec<Segment>) {
+    fn test_path_builder_to_segments(builder: &PathBuilder, expected_segments: Vec<Segment>) {
         let segments = path_builder_to_segments(builder);
         assert_eq!(expected_segments, segments);
     }
 
     // Single open path; the easy case
 
-    fn setup_open_path() -> RsvgPathBuilder {
-        let mut builder = RsvgPathBuilder::new();
+    fn setup_open_path() -> PathBuilder {
+        let mut builder = PathBuilder::new();
 
         builder.move_to(10.0, 10.0);
         builder.line_to(20.0, 10.0);
@@ -992,8 +992,8 @@ mod directionality_tests {
         test_path_builder_to_segments(&setup_open_path(), expected_segments);
     }
 
-    fn setup_multiple_open_subpaths() -> RsvgPathBuilder {
-        let mut builder = RsvgPathBuilder::new();
+    fn setup_multiple_open_subpaths() -> PathBuilder {
+        let mut builder = PathBuilder::new();
 
         builder.move_to(10.0, 10.0);
         builder.line_to(20.0, 10.0);
@@ -1021,8 +1021,8 @@ mod directionality_tests {
     }
 
     // Closed subpath; must have a line segment back to the first point
-    fn setup_closed_subpath() -> RsvgPathBuilder {
-        let mut builder = RsvgPathBuilder::new();
+    fn setup_closed_subpath() -> PathBuilder {
+        let mut builder = PathBuilder::new();
 
         builder.move_to(10.0, 10.0);
         builder.line_to(20.0, 10.0);
@@ -1045,8 +1045,8 @@ mod directionality_tests {
 
     // Multiple closed subpaths; each must have a line segment back to their
     // initial points, with no degenerate segments between subpaths.
-    fn setup_multiple_closed_subpaths() -> RsvgPathBuilder {
-        let mut builder = RsvgPathBuilder::new();
+    fn setup_multiple_closed_subpaths() -> PathBuilder {
+        let mut builder = PathBuilder::new();
 
         builder.move_to(10.0, 10.0);
         builder.line_to(20.0, 10.0);
@@ -1079,8 +1079,8 @@ mod directionality_tests {
 
     // A lineto follows the first closed subpath, with no moveto to start the second subpath.
     // The lineto must start at the first point of the first subpath.
-    fn setup_no_moveto_after_closepath() -> RsvgPathBuilder {
-        let mut builder = RsvgPathBuilder::new();
+    fn setup_no_moveto_after_closepath() -> PathBuilder {
+        let mut builder = PathBuilder::new();
 
         builder.move_to(10.0, 10.0);
         builder.line_to(20.0, 10.0);
@@ -1115,8 +1115,8 @@ mod directionality_tests {
     // allow for unelided path commands, and which should
     // only build a cairo_path_t for the final rendering step.
     //
-    // fn setup_sequence_of_moveto () -> RsvgPathBuilder {
-    // let mut builder = RsvgPathBuilder::new ();
+    // fn setup_sequence_of_moveto () -> PathBuilder {
+    // let mut builder = PathBuilder::new ();
     //
     // builder.move_to (10.0, 10.0);
     // builder.move_to (20.0, 20.0);
@@ -1237,7 +1237,7 @@ mod marker_tests {
 
     #[test]
     fn emits_for_open_subpath() {
-        let mut builder = RsvgPathBuilder::new();
+        let mut builder = PathBuilder::new();
         builder.move_to(0.0, 0.0);
         builder.line_to(1.0, 0.0);
         builder.line_to(1.0, 1.0);
@@ -1265,7 +1265,7 @@ mod marker_tests {
 
     #[test]
     fn emits_for_closed_subpath() {
-        let mut builder = RsvgPathBuilder::new();
+        let mut builder = PathBuilder::new();
         builder.move_to(0.0, 0.0);
         builder.line_to(1.0, 0.0);
         builder.line_to(1.0, 1.0);

@@ -23,14 +23,13 @@ pub enum PathCommand {
     ClosePath,
 }
 
-#[repr(C)]
-pub struct RsvgPathBuilder {
+pub struct PathBuilder {
     path_commands: Vec<PathCommand>,
 }
 
-impl Default for RsvgPathBuilder {
-    fn default() -> RsvgPathBuilder {
-        RsvgPathBuilder {
+impl Default for PathBuilder {
+    fn default() -> PathBuilder {
+        PathBuilder {
             path_commands: Vec::new(),
         }
     }
@@ -58,9 +57,9 @@ impl PathCommand {
     }
 }
 
-impl RsvgPathBuilder {
-    pub fn new() -> RsvgPathBuilder {
-        RsvgPathBuilder::default()
+impl PathBuilder {
+    pub fn new() -> PathBuilder {
+        PathBuilder::default()
     }
 
     pub fn move_to(&mut self, x: f64, y: f64) {
@@ -299,7 +298,7 @@ mod tests {
 
     #[test]
     fn survives_degenerate_arcs() {
-        let mut builder = RsvgPathBuilder::new();
+        let mut builder = PathBuilder::new();
         builder.move_to(0.0, 0.0);
         builder.arc(
             0.0,
