@@ -19,10 +19,10 @@ pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &RsvgPathBuilde
     }
 
     let state = drawing_ctx::get_current_state(draw_ctx);
+    let rstate = state::get_state_rust(state);
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
-    let affine = drawing_ctx::get_current_state_affine(draw_ctx);
 
-    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &affine);
+    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &rstate.affine);
 
     builder.to_cairo(&cr);
 
@@ -123,13 +123,15 @@ fn setup_cr_for_stroke(
     draw_ctx: *const RsvgDrawingCtx,
     state: *mut RsvgState,
 ) {
+    let rstate = state::get_state_rust(state);
+
     cr.set_line_width(state::get_stroke_width(state).normalize(draw_ctx));
     cr.set_miter_limit(state::get_miter_limit(state));
     cr.set_line_cap(cairo::LineCap::from(
-        state::get_state_rust(state).cap.unwrap_or_default(),
+        rstate.stroke_line_cap.unwrap_or_default(),
     ));
     cr.set_line_join(cairo::LineJoin::from(
-        state::get_state_rust(state).join.unwrap_or_default(),
+        rstate.stroke_line_join.unwrap_or_default(),
     ));
 
     let dash = state::get_stroke_dasharray(state);
@@ -376,8 +378,9 @@ pub fn draw_surface(
 }
 
 pub fn add_clipping_rect(draw_ctx: *mut RsvgDrawingCtx, x: f64, y: f64, w: f64, h: f64) {
+    let state = drawing_ctx::get_current_state(draw_ctx);
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
-    let affine = drawing_ctx::get_current_state_affine(draw_ctx);
+    let affine = state::get_state_rust(state).affine;
 
     drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &affine);
 

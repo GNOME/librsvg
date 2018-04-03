@@ -119,6 +119,31 @@ macro_rules! make_property {
             }
         }
     };
+
+    ($name: ident,
+     inherits_automatically: $inherits_automatically: expr,
+     fields:
+     $($field_name: ident : $field_type: ty, default: $field_default : expr,)+
+    ) => {
+        #[derive(Debug, Clone, PartialEq)]
+        pub struct $name {
+            $(pub $field_name: $field_type),+
+        }
+
+        impl Default for $name {
+            fn default() -> $name {
+                $name {
+                    $($field_name: $field_default),+
+                }
+            }
+        }
+
+        impl ::property_macros::Property for $name {
+            fn inherits_automatically() -> bool {
+                $inherits_automatically
+            }
+        }
+    };
 }
 
 #[cfg(test)]

@@ -90,15 +90,9 @@ G_GNUC_INTERNAL
 RsvgOpacitySpec rsvg_css_parse_opacity (const char *str);
 
 G_GNUC_INTERNAL
-PangoStyle   rsvg_css_parse_font_style      (const char *str, gboolean * inherit);
-G_GNUC_INTERNAL
-PangoVariant rsvg_css_parse_font_variant    (const char *str, gboolean * inherit);
-G_GNUC_INTERNAL
 PangoWeight	 rsvg_css_parse_font_weight	    (const char *str, gboolean * inherit);
 G_GNUC_INTERNAL
 PangoStretch rsvg_css_parse_font_stretch    (const char *str, gboolean * inherit);
-G_GNUC_INTERNAL
-const char  *rsvg_css_parse_font_family	    (const char *str, gboolean * inherit);
 
 /* Implemented in rust/src/parsers.rs */
 G_GNUC_INTERNAL
@@ -118,8 +112,10 @@ gboolean rsvg_css_parse_number_list (const char      *in_str,
                                      gdouble        **out_list,
                                      gsize           *out_list_len);
 
+/* Implemented in rust/src/parsers.rs */
 G_GNUC_INTERNAL
-gboolean      rsvg_css_parse_overflow       (const char *str, gboolean * inherit);
+char *rsvg_css_parse_url (const char *str);
+
 G_GNUC_INTERNAL
 char        **rsvg_css_parse_xml_attribute_string   (const char *attribute_string);
 

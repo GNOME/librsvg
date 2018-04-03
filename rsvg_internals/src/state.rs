@@ -36,11 +36,18 @@ pub struct State {
     pub affine: cairo::Matrix,
 
     pub baseline_shift: Option<BaselineShift>,
-    pub cap: Option<StrokeLinecap>,
     pub fill_rule: Option<FillRule>,
-    pub join: Option<StrokeLinejoin>,
+    pub font_family: Option<FontFamily>,
+    pub font_size: Option<FontSize>,
+    pub font_style: Option<FontStyle>,
+    pub font_variant: Option<FontVariant>,
     pub letter_spacing: Option<LetterSpacing>,
+    pub overflow: Option<Overflow>,
+    pub stroke_line_cap: Option<StrokeLinecap>,
+    pub stroke_line_join: Option<StrokeLinejoin>,
     pub text_anchor: Option<TextAnchor>,
+    pub text_decoration: Option<TextDecoration>,
+    pub unicode_bidi: Option<UnicodeBidi>,
     pub xml_lang: Option<XmlLang>,
     pub xml_space: Option<XmlSpace>,
 }
@@ -52,12 +59,19 @@ impl State {
 
             // please keep these sorted
             baseline_shift: Default::default(),
-            cap: Default::default(),
             fill_rule: Default::default(),
-            join: Default::default(),
+            font_family: Default::default(),
+            font_size: Default::default(),
+            font_style: Default::default(),
+            font_variant: Default::default(),
             letter_spacing: Default::default(),
+            overflow: Default::default(),
+            stroke_line_cap: Default::default(),
+            stroke_line_join: Default::default(),
             text_anchor: Default::default(),
+            text_decoration: Default::default(),
             xml_lang: Default::default(),
+            unicode_bidi: Default::default(),
             xml_space: Default::default(),
         }
     }
@@ -73,20 +87,48 @@ impl State {
                 self.fill_rule = parse_property(value, ())?;
             }
 
-            Attribute::StrokeLinecap => {
-                self.cap = parse_property(value, ())?;
+            Attribute::FontFamily => {
+                self.font_family = parse_property(value, ())?;
             }
 
-            Attribute::StrokeLinejoin => {
-                self.join = parse_property(value, ())?;
+            Attribute::FontSize => {
+                self.font_size = parse_property(value, LengthDir::Both)?;
+            }
+
+            Attribute::FontStyle => {
+                self.font_style = parse_property(value, ())?;
+            }
+
+            Attribute::FontVariant => {
+                self.font_variant = parse_property(value, ())?;
             }
 
             Attribute::LetterSpacing => {
                 self.letter_spacing = parse_property(value, LengthDir::Horizontal)?;
             }
 
+            Attribute::Overflow => {
+                self.overflow = parse_property(value, ())?;
+            }
+
+            Attribute::StrokeLinecap => {
+                self.stroke_line_cap = parse_property(value, ())?;
+            }
+
+            Attribute::StrokeLinejoin => {
+                self.stroke_line_join = parse_property(value, ())?;
+            }
+
             Attribute::TextAnchor => {
                 self.text_anchor = parse_property(value, ())?;
+            }
+
+            Attribute::TextDecoration => {
+                self.text_decoration = parse_property(value, ())?;
+            }
+
+            Attribute::UnicodeBidi => {
+                self.unicode_bidi = parse_property(value, ())?;
             }
 
             Attribute::XmlLang => {
@@ -128,51 +170,14 @@ where
     }
 }
 
-// Keep in sync with rsvg-styles.h:UnicodeBidi
-// FIXME: these are not constructed in the Rust code yet, but they are in C.  Remove this
-// when that code is moved to Rust.
-#[allow(dead_code)]
-#[repr(C)]
-pub enum UnicodeBidi {
-    Normal,
-    Embed,
-    Override,
-}
-
-// Keep in sync with rsvg-styles.h:TextDecoration
-#[repr(C)]
-#[derive(Copy, Clone)]
-struct TextDecoration {
-    overline: glib_sys::gboolean,
-    underline: glib_sys::gboolean,
-    strike: glib_sys::gboolean,
-}
-
-pub struct FontDecor {
-    pub overline: bool,
-    pub underline: bool,
-    pub strike: bool,
-}
-
-impl From<TextDecoration> for FontDecor {
-    fn from(td: TextDecoration) -> FontDecor {
-        FontDecor {
-            overline: from_glib(td.overline),
-            underline: from_glib(td.underline),
-            strike: from_glib(td.strike),
-        }
-    }
-}
-
 #[allow(improper_ctypes)]
 extern "C" {
     fn rsvg_state_new() -> *mut RsvgState;
+    fn rsvg_state_new_with_parent(parent: *mut RsvgState) -> *mut RsvgState;
     fn rsvg_state_free(state: *mut RsvgState);
     fn rsvg_state_reinit(state: *mut RsvgState);
-    fn rsvg_state_reconstruct(state: *mut RsvgState, node: *const RsvgNode);
-    fn rsvg_state_parent(state: *mut RsvgState) -> *mut RsvgState;
-    fn rsvg_state_is_overflow(state: *const RsvgState) -> glib_sys::gboolean;
-    fn rsvg_state_has_overflow(state: *const RsvgState) -> glib_sys::gboolean;
+    fn rsvg_state_clone(state: *mut RsvgState, src: *const RsvgState);
+    fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState;
     fn rsvg_state_get_cond_true(state: *const RsvgState) -> glib_sys::gboolean;
     fn rsvg_state_set_cond_true(state: *const RsvgState, cond_true: glib_sys::gboolean);
     fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const ColorSpec;
@@ -186,25 +191,29 @@ extern "C" {
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_miter_limit(state: *const RsvgState) -> f64;
-    fn rsvg_state_get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
-    fn rsvg_state_get_font_family(state: *const RsvgState) -> *const libc::c_char;
-    fn rsvg_state_get_font_style(state: *const RsvgState) -> pango_sys::PangoStyle;
-    fn rsvg_state_get_font_variant(state: *const RsvgState) -> pango_sys::PangoVariant;
     fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
     fn rsvg_state_get_font_stretch(state: *const RsvgState) -> pango_sys::PangoStretch;
-    fn rsvg_state_get_font_decor(state: *const RsvgState) -> *const TextDecoration;
     fn rsvg_state_get_clip_rule(state: *const RsvgState) -> cairo::FillRule;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_comp_op(state: *const RsvgState) -> cairo::Operator;
+
+    fn rsvg_state_dominate(state: *mut RsvgState, src: *const RsvgState);
+    fn rsvg_state_force(state: *mut RsvgState, src: *const RsvgState);
+    fn rsvg_state_inherit(state: *mut RsvgState, src: *const RsvgState);
+    fn rsvg_state_reinherit(state: *mut RsvgState, src: *const RsvgState);
 
     fn rsvg_state_get_state_rust(state: *const RsvgState) -> *mut State;
 }
 
 pub fn new() -> *mut RsvgState {
     unsafe { rsvg_state_new() }
+}
+
+pub fn new_with_parent(parent: *mut RsvgState) -> *mut RsvgState {
+    unsafe { rsvg_state_new_with_parent(parent) }
 }
 
 pub fn free(state: *mut RsvgState) {
@@ -219,13 +228,22 @@ pub fn reinit(state: *mut RsvgState) {
     }
 }
 
-pub fn reconstruct(state: *mut RsvgState, node: *const RsvgNode) {
-    unsafe {
-        rsvg_state_reconstruct(state, node);
+pub fn reconstruct(state: *mut RsvgState, node: &RsvgNode) {
+    if let Some(parent) = node.get_parent() {
+        reconstruct(state, &parent);
+        unsafe {
+            rsvg_state_inherit(state, node.get_state());
+        }
     }
 }
 
-pub fn parent(state: *mut RsvgState) -> Option<*mut RsvgState> {
+pub fn clone_from(state: *mut RsvgState, src: *const RsvgState) {
+    unsafe {
+        rsvg_state_clone(state, src);
+    }
+}
+
+pub fn parent(state: *const RsvgState) -> Option<*mut RsvgState> {
     let parent = unsafe { rsvg_state_parent(state) };
 
     if parent.is_null() {
@@ -236,11 +254,12 @@ pub fn parent(state: *mut RsvgState) -> Option<*mut RsvgState> {
 }
 
 pub fn is_overflow(state: *const RsvgState) -> bool {
-    unsafe { from_glib(rsvg_state_is_overflow(state)) }
-}
+    let rstate = get_state_rust(state);
 
-pub fn has_overflow(state: *const RsvgState) -> bool {
-    unsafe { from_glib(rsvg_state_has_overflow(state)) }
+    match rstate.overflow {
+        Some(Overflow::Auto) | Some(Overflow::Visible) => true,
+        _ => false,
+    }
 }
 
 pub fn get_cond_true(state: *const RsvgState) -> bool {
@@ -329,10 +348,6 @@ pub fn get_miter_limit(state: *const RsvgState) -> f64 {
     unsafe { rsvg_state_get_miter_limit(state) }
 }
 
-pub fn get_unicode_bidi(state: *const RsvgState) -> UnicodeBidi {
-    unsafe { rsvg_state_get_unicode_bidi(state) }
-}
-
 pub fn get_text_dir(state: *const RsvgState) -> pango::Direction {
     unsafe { from_glib(rsvg_state_get_text_dir(state)) }
 }
@@ -341,35 +356,12 @@ pub fn get_text_gravity(state: *const RsvgState) -> pango::Gravity {
     unsafe { from_glib(rsvg_state_get_text_gravity(state)) }
 }
 
-pub fn get_font_family(state: *const RsvgState) -> Option<String> {
-    unsafe { from_glib_none(rsvg_state_get_font_family(state)) }
-}
-
-pub fn get_font_style(state: *const RsvgState) -> pango::Style {
-    unsafe { from_glib(rsvg_state_get_font_style(state)) }
-}
-
-pub fn get_font_variant(state: *const RsvgState) -> pango::Variant {
-    unsafe { from_glib(rsvg_state_get_font_variant(state)) }
-}
-
 pub fn get_font_weight(state: *const RsvgState) -> pango::Weight {
     unsafe { from_glib(rsvg_state_get_font_weight(state)) }
 }
 
 pub fn get_font_stretch(state: *const RsvgState) -> pango::Stretch {
     unsafe { from_glib(rsvg_state_get_font_stretch(state)) }
-}
-
-pub fn get_font_decor(state: *const RsvgState) -> Option<FontDecor> {
-    unsafe {
-        let td = rsvg_state_get_font_decor(state);
-        if td.is_null() {
-            None
-        } else {
-            Some(FontDecor::from(*td))
-        }
-    }
 }
 
 pub fn get_clip_rule(state: *const RsvgState) -> cairo::FillRule {
@@ -396,11 +388,27 @@ pub fn get_comp_op(state: *const RsvgState) -> cairo::Operator {
     unsafe { rsvg_state_get_comp_op(state) }
 }
 
+pub fn dominate(state: *mut RsvgState, src: *const RsvgState) {
+    unsafe {
+        rsvg_state_dominate(state, src);
+    }
+}
+
+pub fn force(state: *mut RsvgState, src: *const RsvgState) {
+    unsafe {
+        rsvg_state_force(state, src);
+    }
+}
+
+pub fn reinherit(state: *mut RsvgState, src: *const RsvgState) {
+    unsafe {
+        rsvg_state_reinherit(state, src);
+    }
+}
+
 pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
     unsafe { &mut *rsvg_state_get_state_rust(state) }
 }
-
-// BaselineShift -----------------------------------
 
 make_property!(
     BaselineShift,
@@ -428,8 +436,6 @@ impl Parse for BaselineShift {
     }
 }
 
-// FillRule ----------------------------------------
-
 make_property!(
     FillRule,
     default: NonZero,
@@ -440,33 +446,49 @@ make_property!(
     "evenodd" => EvenOdd,
 );
 
-// StrokeLinecap ----------------------------------------
+make_property!(
+    FontFamily,
+    default: "Times New Roman".to_string(),
+    inherits_automatically: true,
+    newtype_from_str: String
+);
 
 make_property!(
-    StrokeLinecap,
-    default: Butt,
+    FontSize,
+    default: RsvgLength::parse("12.0", LengthDir::Both).unwrap(),
+    inherits_automatically: true,
+    newtype: RsvgLength
+);
+
+impl Parse for FontSize {
+    type Data = LengthDir;
+    type Err = AttributeError;
+
+    fn parse(s: &str, dir: LengthDir) -> Result<FontSize, AttributeError> {
+        Ok(FontSize(RsvgLength::parse(s, dir)?))
+    }
+}
+
+make_property!(
+    FontStyle,
+    default: Normal,
     inherits_automatically: true,
 
     identifiers:
-    "butt" => Butt,
-    "round" => Round,
-    "square" => Square,
+    "normal" => Normal,
+    "italic" => Italic,
+    "oblique" => Oblique,
 );
 
-// StrokeLineJoin ----------------------------------------
-
 make_property!(
-    StrokeLinejoin,
-    default: Miter,
+    FontVariant,
+    default: Normal,
     inherits_automatically: true,
 
     identifiers:
-    "miter" => Miter,
-    "round" => Round,
-    "bevel" => Bevel,
+    "normal" => Normal,
+    "small-caps" => SmallCaps,
 );
-
-// LetterSpacing -----------------------------------
 
 make_property!(
     LetterSpacing,
@@ -484,7 +506,62 @@ impl Parse for LetterSpacing {
     }
 }
 
-// TextAnchor --------------------------------------
+make_property!(
+    Overflow,
+    default: Visible,
+    inherits_automatically: true,
+
+    identifiers:
+    "visible" => Visible,
+    "hidden" => Hidden,
+    "scroll" => Scroll,
+    "auto" => Auto,
+);
+
+make_property!(
+    StrokeLinecap,
+    default: Butt,
+    inherits_automatically: true,
+
+    identifiers:
+    "butt" => Butt,
+    "round" => Round,
+    "square" => Square,
+);
+
+make_property!(
+    StrokeLinejoin,
+    default: Miter,
+    inherits_automatically: true,
+
+    identifiers:
+    "miter" => Miter,
+    "round" => Round,
+    "bevel" => Bevel,
+);
+
+make_property!(
+    TextDecoration,
+    inherits_automatically: true,
+
+    fields:
+    overline: bool, default: false,
+    underline: bool, default: false,
+    strike: bool, default: false,
+);
+
+impl Parse for TextDecoration {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(s: &str, _: Self::Data) -> Result<TextDecoration, AttributeError> {
+        Ok(TextDecoration {
+            overline: s.contains("overline"),
+            underline: s.contains("underline"),
+            strike: s.contains("strike") || s.contains("line-through"),
+        })
+    }
+}
 
 make_property!(
     TextAnchor,
@@ -497,7 +574,16 @@ make_property!(
     "end" => End,
 );
 
-// XmlLang ----------------------------------------
+make_property!(
+    UnicodeBidi,
+    default: Normal,
+    inherits_automatically: true,
+
+    identifiers:
+    "normal" => Normal,
+    "embed" => Embed,
+    "bidi-override" => Override,
+);
 
 make_property!(
     XmlLang,
@@ -505,8 +591,6 @@ make_property!(
     inherits_automatically: true,
     newtype_from_str: String
 );
-
-// XmlSpace ----------------------------------------
 
 make_property!(
     XmlSpace,
@@ -517,6 +601,16 @@ make_property!(
     "default" => Default,
     "preserve" => Preserve,
 );
+
+// C state API implemented in rust
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_reconstruct(state: *mut RsvgState, raw_node: *const RsvgNode) {
+    assert!(!raw_node.is_null());
+    let node: &RsvgNode = unsafe { &*raw_node };
+
+    reconstruct(state, node);
+}
 
 // Rust State API for consumption from C ----------------------------------------
 
@@ -593,11 +687,18 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
 
     // please keep these sorted
     inherit(inherit_fn, &mut dst.baseline_shift, &src.baseline_shift);
-    inherit(inherit_fn, &mut dst.cap, &src.cap);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
-    inherit(inherit_fn, &mut dst.join, &src.join);
+    inherit(inherit_fn, &mut dst.font_family, &src.font_family);
+    inherit(inherit_fn, &mut dst.font_size, &src.font_size);
+    inherit(inherit_fn, &mut dst.font_style, &src.font_style);
+    inherit(inherit_fn, &mut dst.font_variant, &src.font_variant);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
+    inherit(inherit_fn, &mut dst.overflow, &src.overflow);
+    inherit(inherit_fn, &mut dst.stroke_line_cap, &src.stroke_line_cap);
+    inherit(inherit_fn, &mut dst.stroke_line_join, &src.stroke_line_join);
     inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
+    inherit(inherit_fn, &mut dst.text_decoration, &src.text_decoration);
+    inherit(inherit_fn, &mut dst.unicode_bidi, &src.unicode_bidi);
     inherit(inherit_fn, &mut dst.xml_lang, &src.xml_lang);
     inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
 }

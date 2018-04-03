@@ -446,6 +446,17 @@ G_GNUC_INTERNAL
 void rsvg_push_discrete_layer   (RsvgDrawingCtx *ctx, gboolean clipping);
 
 G_GNUC_INTERNAL
+RsvgState *rsvg_drawing_ctx_get_current_state   (RsvgDrawingCtx * ctx);
+G_GNUC_INTERNAL
+void rsvg_drawing_ctx_set_current_state         (RsvgDrawingCtx * ctx, RsvgState *state);
+
+/* Implemented in rust/src/drawing_ctx.rs */
+G_GNUC_INTERNAL
+void       rsvg_drawing_ctx_state_pop           (RsvgDrawingCtx * ctx);
+G_GNUC_INTERNAL
+void       rsvg_drawing_ctx_state_push          (RsvgDrawingCtx * ctx);
+
+G_GNUC_INTERNAL
 RsvgNode *rsvg_drawing_ctx_acquire_node         (RsvgDrawingCtx * ctx, const char *url);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_drawing_ctx_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, RsvgNodeType type);
@@ -508,19 +519,10 @@ double rsvg_length_hand_normalize (const RsvgLength *length,
                                    double font_size);
 
 G_GNUC_INTERNAL
-cairo_matrix_t rsvg_drawing_ctx_get_current_state_affine (RsvgDrawingCtx *ctx);
-
-G_GNUC_INTERNAL
-void rsvg_drawing_ctx_set_current_state_affine (RsvgDrawingCtx *ctx, cairo_matrix_t *affine);
-
-G_GNUC_INTERNAL
 void rsvg_drawing_ctx_set_affine_on_cr (RsvgDrawingCtx *draw_ctx, cairo_t *cr, cairo_matrix_t *affine);
 
 G_GNUC_INTERNAL
 PangoContext *rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx);
-
-G_GNUC_INTERNAL
-double _rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx);
 
 /* Implemented in rust/src/length.rs */
 G_GNUC_INTERNAL
@@ -536,8 +538,6 @@ void rsvg_drawing_ctx_get_view_box_size (RsvgDrawingCtx *ctx, double *out_width,
 G_GNUC_INTERNAL
 void rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dpi_y);
 
-G_GNUC_INTERNAL
-char *rsvg_get_url_string (const char *str, const char **out_rest);
 G_GNUC_INTERNAL
 void rsvg_return_if_fail_warning (const char *pretty_function,
                                   const char *expression, GError ** error);

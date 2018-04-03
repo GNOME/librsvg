@@ -39,6 +39,8 @@ pub use cond::{
 
 pub use draw::rsvg_cairo_add_clipping_rect;
 
+pub use drawing_ctx::{rsvg_drawing_ctx_state_pop, rsvg_drawing_ctx_state_push};
+
 pub use gradient::{rsvg_node_linear_gradient_new, rsvg_node_radial_gradient_new};
 
 pub use length::{
@@ -96,7 +98,11 @@ pub use paint_server::{
     rsvg_set_source_rsvg_paint_server,
 };
 
-pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
+pub use parsers::{
+    rsvg_css_parse_number_list,
+    rsvg_css_parse_number_optional_number,
+    rsvg_css_parse_url,
+};
 
 pub use path_builder::rsvg_path_builder_add_to_cairo_context;
 
@@ -121,6 +127,7 @@ pub use shapes::{
 };
 
 pub use state::{
+    rsvg_state_reconstruct,
     rsvg_state_rust_clone,
     rsvg_state_rust_free,
     rsvg_state_rust_get_affine,

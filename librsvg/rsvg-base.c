@@ -366,6 +366,18 @@ rsvg_push_discrete_layer (RsvgDrawingCtx *ctx, gboolean clipping)
     rsvg_cairo_push_discrete_layer (ctx, clipping);
 }
 
+RsvgState *
+rsvg_drawing_ctx_get_current_state (RsvgDrawingCtx *ctx)
+{
+    return ctx->state;
+}
+
+void
+rsvg_drawing_ctx_set_current_state (RsvgDrawingCtx *ctx, RsvgState *state)
+{
+    ctx->state = state;
+}
+
 /*
  * rsvg_drawing_ctx_acquire_node:
  * @ctx: The drawing context in use
@@ -500,26 +512,12 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
     state = rsvg_node_get_state (node);
 
     if (state->visible) {
-        rsvg_state_push (ctx);
-
+        rsvg_drawing_ctx_state_push (ctx);
         rsvg_node_draw (node, ctx, dominate, clipping);
-
-        rsvg_state_pop (ctx);
+        rsvg_drawing_ctx_state_pop (ctx);
     }
 
     ctx->drawsub_stack = stacksave;
-}
-
-cairo_matrix_t
-rsvg_drawing_ctx_get_current_state_affine (RsvgDrawingCtx *ctx)
-{
-    return rsvg_state_get_affine (rsvg_current_state (ctx));
-}
-
-void
-rsvg_drawing_ctx_set_current_state_affine (RsvgDrawingCtx *ctx, cairo_matrix_t *affine)
-{
-    rsvg_state_set_affine (rsvg_current_state (ctx), *affine);
 }
 
 void
@@ -546,7 +544,7 @@ rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx)
 const char *
 rsvg_get_start_marker (RsvgDrawingCtx *ctx)
 {
-    RsvgState *state = rsvg_current_state (ctx);
+    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
 
     return state->startMarker;
 }
@@ -554,7 +552,7 @@ rsvg_get_start_marker (RsvgDrawingCtx *ctx)
 const char *
 rsvg_get_middle_marker (RsvgDrawingCtx *ctx)
 {
-    RsvgState *state = rsvg_current_state (ctx);
+    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
 
     return state->middleMarker;
 }
@@ -562,7 +560,7 @@ rsvg_get_middle_marker (RsvgDrawingCtx *ctx)
 const char *
 rsvg_get_end_marker (RsvgDrawingCtx *ctx)
 {
-    RsvgState *state = rsvg_current_state (ctx);
+    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
 
     return state->endMarker;
 }
@@ -693,32 +691,6 @@ rsvg_drawing_ctx_get_dpi (RsvgDrawingCtx *ctx, double *out_dpi_x, double *out_dp
 
     if (out_dpi_y)
         *out_dpi_y = ctx->dpi_y;
-}
-
-char *
-rsvg_get_url_string (const char *str, const char **out_rest)
-{
-    if (!strncmp (str, "url(", 4)) {
-        const char *p = str + 4;
-        int ix;
-
-        while (g_ascii_isspace (*p))
-            p++;
-
-        for (ix = 0; p[ix]; ix++) {
-            if (p[ix] == ')') {
-                if (out_rest)
-                    *out_rest = p + ix + 1;
-
-                return g_strndup (p, ix);
-            }
-        }
-    }
-
-    if (out_rest)
-        *out_rest = NULL;
-
-    return NULL;
 }
 
 void

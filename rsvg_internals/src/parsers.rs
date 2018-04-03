@@ -316,6 +316,33 @@ pub extern "C" fn rsvg_css_parse_number_list(
     }.to_glib()
 }
 
+pub fn url(s: &str) -> Result<String, ParseError> {
+    let mut input = ParserInput::new(s);
+    let mut parser = Parser::new(&mut input);
+
+    let url = parser
+        .expect_url()
+        .map_err(|_| ParseError::new("expected url"))?;
+
+    parser
+        .expect_exhausted()
+        .map_err(|_| ParseError::new("expected url"))?;
+
+    Ok(url.as_ref().to_owned())
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_css_parse_url(str: *const libc::c_char) -> *mut libc::c_char {
+    assert!(!str.is_null());
+
+    let s = unsafe { utf8_cstr(str) };
+
+    match url(s) {
+        Ok(url) => url.to_glib_full(),
+        Err(_) => ptr::null_mut(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -421,5 +448,18 @@ mod tests {
         // too few
         assert!(number_list("1", ListLength::Exact(2)).is_err());
         assert!(number_list("1 2", ListLength::Exact(3)).is_err());
+    }
+
+    #[test]
+    fn parses_url() {
+        assert_eq!(url("url(foo)"), Ok("foo".to_string()));
+
+        // be permissive if the closing ) is missing
+        assert_eq!(url("url("), Ok("".to_string()));
+        assert_eq!(url("url(foo"), Ok("foo".to_string()));
+
+        assert!(url("").is_err());
+        assert!(url("foo").is_err());
+        assert!(url("url(foo)bar").is_err());
     }
 }

@@ -1,22 +1,25 @@
 use cairo;
+use cairo::MatrixTrait;
 use cairo_sys;
 use glib::translate::*;
 use glib_sys;
 use libc;
 use pango;
 use pango_sys;
+use std::ptr;
 
 use bbox::RsvgBbox;
+use length::LengthUnit;
 use node::NodeType;
 use node::RsvgNode;
-use state::RsvgState;
+use state::{self, BaselineShift, FontSize, RsvgState};
 
 pub enum RsvgDrawingCtx {}
 
 #[allow(improper_ctypes)]
 extern "C" {
-    fn _rsvg_css_normalize_font_size(state: *mut RsvgState, draw_ctx: *const RsvgDrawingCtx)
-        -> f64;
+    fn rsvg_drawing_ctx_get_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState;
+    fn rsvg_drawing_ctx_set_current_state(draw_ctx: *mut RsvgDrawingCtx, state: *mut RsvgState);
 
     fn rsvg_drawing_ctx_get_dpi(
         draw_ctx: *const RsvgDrawingCtx,
@@ -47,13 +50,6 @@ extern "C" {
 
     fn rsvg_drawing_ctx_release_node(draw_ctx: *const RsvgDrawingCtx, node: *mut RsvgNode);
 
-    fn rsvg_drawing_ctx_get_current_state_affine(draw_ctx: *const RsvgDrawingCtx) -> cairo::Matrix;
-
-    fn rsvg_drawing_ctx_set_current_state_affine(
-        draw_ctx: *const RsvgDrawingCtx,
-        affine: *const cairo::Matrix,
-    );
-
     fn rsvg_drawing_ctx_set_affine_on_cr(
         draw_ctx: *const RsvgDrawingCtx,
         cr: *mut cairo_sys::cairo_t,
@@ -71,17 +67,6 @@ extern "C" {
         node: *const RsvgNode,
         dominate: i32,
         clipping: glib_sys::gboolean,
-    );
-
-    fn rsvg_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState;
-
-    fn rsvg_state_push(draw_ctx: *const RsvgDrawingCtx);
-    fn rsvg_state_pop(draw_ctx: *const RsvgDrawingCtx);
-
-    fn rsvg_state_reinherit_top(
-        draw_ctx: *const RsvgDrawingCtx,
-        state: *mut RsvgState,
-        dominate: libc::c_int,
     );
 
     fn rsvg_push_discrete_layer(draw_ctx: *const RsvgDrawingCtx, clipping: glib_sys::gboolean);
@@ -103,7 +88,44 @@ pub fn get_dpi(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
 }
 
 pub fn get_normalized_font_size(draw_ctx: *const RsvgDrawingCtx) -> f64 {
-    unsafe { _rsvg_css_normalize_font_size(rsvg_current_state(draw_ctx), draw_ctx) }
+    normalize_font_size(draw_ctx, get_current_state(draw_ctx))
+}
+
+pub fn get_accumulated_baseline_shift(draw_ctx: *const RsvgDrawingCtx) -> f64 {
+    let mut shift = 0f64;
+
+    let mut state = get_current_state(draw_ctx);
+    while let Some(parent) = state::parent(state) {
+        if let Some(BaselineShift(ref s)) = state::get_state_rust(state).baseline_shift {
+            let parent_font_size = normalize_font_size(draw_ctx, parent);
+            shift += s * parent_font_size;
+        }
+        state = parent;
+    }
+
+    shift
+}
+
+// Recursive evaluation of all parent elements regarding absolute font size
+fn normalize_font_size(draw_ctx: *const RsvgDrawingCtx, state: *const RsvgState) -> f64 {
+    let font_size = state::get_state_rust(state)
+        .font_size
+        .as_ref()
+        .map_or_else(|| FontSize::default().0, |fs| fs.0);
+
+    match font_size.unit {
+        LengthUnit::Percent | LengthUnit::FontEm | LengthUnit::FontEx => {
+            parent_font_size(draw_ctx, state) * font_size.length
+        }
+        LengthUnit::RelativeLarger => parent_font_size(draw_ctx, state) * 1.2f64,
+        LengthUnit::RelativeSmaller => parent_font_size(draw_ctx, state) / 1.2f64,
+
+        _ => font_size.normalize(draw_ctx),
+    }
+}
+
+fn parent_font_size(draw_ctx: *const RsvgDrawingCtx, state: *const RsvgState) -> f64 {
+    state::parent(state).map_or(12f64, |p| normalize_font_size(draw_ctx, p))
 }
 
 pub fn get_view_box_size(draw_ctx: *const RsvgDrawingCtx) -> (f64, f64) {
@@ -155,9 +177,42 @@ pub fn get_acquired_node_of_type(
     }
 }
 
+// A function for modifying the top of the state stack depending on a
+// flag given. If that flag is 0, style and transform will inherit
+// normally. If that flag is 1, style will inherit normally with the
+// exception that any value explicity set on the second last level
+// will have a higher precedence than values set on the last level.
+// If the flag equals two then the style will be overridden totally
+// however the transform will be left as is. This is because of
+// patterns which are not based on the context of their use and are
+// rather based wholly on their own loading context. Other things
+// may want to have this totally disabled, and a value of three will
+// achieve this.
 pub fn state_reinherit_top(draw_ctx: *const RsvgDrawingCtx, state: *mut RsvgState, dominate: i32) {
-    unsafe {
-        rsvg_state_reinherit_top(draw_ctx, state, dominate);
+    let current = get_current_state(draw_ctx);
+
+    match dominate {
+        3 => unreachable!(),
+
+        // This is a special domination mode for patterns, the transform
+        // is simply left as is, wheras the style is totally overridden
+        2 => state::force(current, state),
+
+        dominate => {
+            state::clone_from(current, state);
+
+            if let Some(parent) = state::parent(current) {
+                if dominate == 0 {
+                    state::reinherit(current, parent);
+                } else {
+                    state::dominate(current, parent);
+                }
+
+                let mut rcurrent = state::get_state_rust(current);
+                let rparent = state::get_state_rust(parent);
+                rcurrent.affine = cairo::Matrix::multiply(&rcurrent.affine, &rparent.affine);
+            }
+        }
     }
 }
 
@@ -186,16 +241,6 @@ pub fn set_cairo_context(draw_ctx: *const RsvgDrawingCtx, cr: &cairo::Context) {
         let raw_cr = cr.to_glib_none().0;
 
         rsvg_cairo_set_cairo_context(draw_ctx, raw_cr);
-    }
-}
-
-pub fn get_current_state_affine(draw_ctx: *const RsvgDrawingCtx) -> cairo::Matrix {
-    unsafe { rsvg_drawing_ctx_get_current_state_affine(draw_ctx) }
-}
-
-pub fn set_current_state_affine(draw_ctx: *const RsvgDrawingCtx, affine: cairo::Matrix) {
-    unsafe {
-        rsvg_drawing_ctx_set_current_state_affine(draw_ctx, &affine);
     }
 }
 
@@ -235,18 +280,24 @@ pub fn draw_node_from_stack(
 }
 
 pub fn get_current_state(draw_ctx: *const RsvgDrawingCtx) -> *mut RsvgState {
-    unsafe { rsvg_current_state(draw_ctx) }
+    unsafe { rsvg_drawing_ctx_get_current_state(draw_ctx) }
 }
 
-pub fn state_push(draw_ctx: *const RsvgDrawingCtx) {
+pub fn state_push(draw_ctx: *mut RsvgDrawingCtx) {
+    let state = state::new_with_parent(get_current_state(draw_ctx));
+
     unsafe {
-        rsvg_state_push(draw_ctx);
+        rsvg_drawing_ctx_set_current_state(draw_ctx, state);
     }
 }
 
-pub fn state_pop(draw_ctx: *const RsvgDrawingCtx) {
+pub fn state_pop(draw_ctx: *mut RsvgDrawingCtx) {
+    let state = get_current_state(draw_ctx);
+
     unsafe {
-        rsvg_state_pop(draw_ctx);
+        let parent = state::parent(state).unwrap_or(ptr::null_mut());
+        rsvg_drawing_ctx_set_current_state(draw_ctx, parent);
+        state::free(state);
     }
 }
 
@@ -264,4 +315,14 @@ impl AcquiredNode {
     pub fn get(&self) -> RsvgNode {
         unsafe { (*self.1).clone() }
     }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_drawing_ctx_state_push(draw_ctx: *mut RsvgDrawingCtx) {
+    state_push(draw_ctx);
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_drawing_ctx_state_pop(draw_ctx: *mut RsvgDrawingCtx) {
+    state_pop(draw_ctx);
 }

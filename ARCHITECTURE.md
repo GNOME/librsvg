@@ -134,9 +134,9 @@ Then, `rsvg_handle_render_cairo_sub()` starts the recursive drawing
 process by calling
 `rsvg_drawing_ctx_draw_node_from_stack()`, starting at the tree root
 (`handle->priv->treebase`).  In turn, that function creates a
-temporary `state` struct by calling `rsvg_state_push()`, calls
-`rsvg_node_draw()` on the current node, and destroys the temporary
-`state` struct with `rsvg_state_pop()`.
+temporary `state` struct by calling `rsvg_drawing_ctx_state_push()`,
+calls `rsvg_node_draw()` on the current node, and destroys the temporary
+`state` struct with `rsvg_drawing_ctx_state_pop()`.
 
 Each node draws itself in the following way:
 

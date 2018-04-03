@@ -21,7 +21,17 @@ use node::{
 use parsers::parse;
 use property_bag::PropertyBag;
 use space::xml_space_normalize;
-use state::{self, BaselineShift, LetterSpacing, RsvgState, TextAnchor, UnicodeBidi, XmlLang};
+use state::{
+    self,
+    FontFamily,
+    FontStyle,
+    FontVariant,
+    LetterSpacing,
+    RsvgState,
+    TextAnchor,
+    UnicodeBidi,
+    XmlLang,
+};
 
 extern "C" {
     fn _rsvg_css_normalize_font_size(
@@ -84,7 +94,7 @@ impl NodeChars {
         let state = drawing_ctx::get_current_state(draw_ctx);
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
-        let offset = baseline + accumulate_baseline_shift(draw_ctx);
+        let offset = baseline + drawing_ctx::get_accumulated_baseline_shift(draw_ctx);
 
         let gravity = state::get_text_gravity(state);
         if gravity_is_vertical(gravity) {
@@ -197,7 +207,7 @@ impl NodeTRef {
         }
     }
 
-    fn measure(&self, draw_ctx: *const RsvgDrawingCtx, length: &mut f64) -> bool {
+    fn measure(&self, draw_ctx: *mut RsvgDrawingCtx, length: &mut f64) -> bool {
         let l = self.link.borrow();
 
         if l.is_none() {
@@ -270,7 +280,7 @@ impl NodeTSpan {
     fn measure(
         &self,
         node: &RsvgNode,
-        draw_ctx: *const RsvgDrawingCtx,
+        draw_ctx: *mut RsvgDrawingCtx,
         length: &mut f64,
         usetextonly: bool,
     ) -> bool {
@@ -382,18 +392,37 @@ fn to_pango_units(v: f64) -> i32 {
     (v * f64::from(pango::SCALE)) as i32
 }
 
+impl From<FontStyle> for pango::Style {
+    fn from(s: FontStyle) -> pango::Style {
+        match s {
+            FontStyle::Normal => pango::Style::Normal,
+            FontStyle::Italic => pango::Style::Italic,
+            FontStyle::Oblique => pango::Style::Oblique,
+        }
+    }
+}
+
+impl From<FontVariant> for pango::Variant {
+    fn from(v: FontVariant) -> pango::Variant {
+        match v {
+            FontVariant::Normal => pango::Variant::Normal,
+            FontVariant::SmallCaps => pango::Variant::SmallCaps,
+        }
+    }
+}
+
 fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::Layout {
     let state = drawing_ctx::get_current_state(draw_ctx);
+    let rstate = state::get_state_rust(state);
     let pango_context = drawing_ctx::get_pango_context(draw_ctx);
 
-    if let Some(XmlLang(ref lang)) = state::get_state_rust(state).xml_lang {
+    if let Some(XmlLang(ref lang)) = rstate.xml_lang {
         let pango_lang = pango::Language::from_string(&lang);
         pango_context.set_language(&pango_lang);
     }
 
-    let unicode_bidi = state::get_unicode_bidi(state);
-    match unicode_bidi {
-        UnicodeBidi::Override | UnicodeBidi::Embed => {
+    match rstate.unicode_bidi {
+        Some(UnicodeBidi::Override) | Some(UnicodeBidi::Embed) => {
             pango_context.set_base_dir(state::get_text_dir(state));
         }
 
@@ -407,12 +436,16 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 
     let mut font_desc = pango_context.get_font_description().unwrap();
 
-    if let Some(font_family) = state::get_font_family(state) {
+    if let Some(FontFamily(ref font_family)) = rstate.font_family {
         font_desc.set_family(&font_family);
     }
 
-    font_desc.set_style(state::get_font_style(state));
-    font_desc.set_variant(state::get_font_variant(state));
+    font_desc.set_style(pango::Style::from(rstate.font_style.unwrap_or_default()));
+
+    font_desc.set_variant(pango::Variant::from(
+        rstate.font_variant.unwrap_or_default(),
+    ));
+
     font_desc.set_weight(state::get_font_weight(state));
     font_desc.set_stretch(state::get_font_stretch(state));
 
@@ -426,18 +459,18 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 
     let attr_list = pango::AttrList::new();
 
-    if let Some(LetterSpacing(ref ls)) = state::get_state_rust(state).letter_spacing {
+    if let Some(LetterSpacing(ref ls)) = rstate.letter_spacing {
         attr_list.insert(
             pango::Attribute::new_letter_spacing(to_pango_units(ls.normalize(draw_ctx))).unwrap(),
         );
     }
 
-    if let Some(font_decor) = state::get_font_decor(state) {
-        if font_decor.underline {
+    if let Some(ref td) = rstate.text_decoration {
+        if td.underline {
             attr_list.insert(pango::Attribute::new_underline(pango::Underline::Single).unwrap());
         }
 
-        if font_decor.strike {
+        if td.strike {
             attr_list.insert(pango::Attribute::new_strikethrough(true).unwrap());
         }
     }
@@ -449,33 +482,15 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
         _ => pango::Alignment::Right,
     });
 
-    let t = xml_space_normalize(
-        state::get_state_rust(state).xml_space.unwrap_or_default(),
-        text,
-    );
+    let t = xml_space_normalize(rstate.xml_space.unwrap_or_default(), text);
     layout.set_text(&t);
 
     layout
 }
 
-fn accumulate_baseline_shift(draw_ctx: *const RsvgDrawingCtx) -> f64 {
-    let mut shift = 0f64;
-
-    let mut state = drawing_ctx::get_current_state(draw_ctx);
-    while let Some(parent) = state::parent(state) {
-        if let Some(BaselineShift(ref s)) = state::get_state_rust(state).baseline_shift {
-            let parent_font_size = unsafe { _rsvg_css_normalize_font_size(parent, draw_ctx) };
-            shift += s * parent_font_size;
-        }
-        state = parent;
-    }
-
-    shift
-}
-
 fn anchor_offset(
     node: &RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
+    draw_ctx: *mut RsvgDrawingCtx,
     anchor: TextAnchor,
     textonly: bool,
 ) -> f64 {
@@ -497,7 +512,7 @@ fn anchor_offset(
 
 fn measure_children(
     node: &RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
+    draw_ctx: *mut RsvgDrawingCtx,
     length: &mut f64,
     textonly: bool,
 ) -> bool {
@@ -515,7 +530,7 @@ fn measure_children(
 
 fn measure_child(
     node: &RsvgNode,
-    draw_ctx: *const RsvgDrawingCtx,
+    draw_ctx: *mut RsvgDrawingCtx,
     length: &mut f64,
     textonly: bool,
 ) -> bool {

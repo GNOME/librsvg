@@ -190,6 +190,7 @@ impl NodeTrait for NodeSvg {
 
         let state = drawing_ctx::get_current_state(draw_ctx);
         let do_clip = !state::is_overflow(state) && node.get_parent().is_some();
+        let affine = state::get_state_rust(state).affine;
 
         draw_in_viewport(
             nx,
@@ -200,7 +201,7 @@ impl NodeTrait for NodeSvg {
             do_clip,
             self.vbox.get(),
             self.preserve_aspect_ratio.get(),
-            drawing_ctx::get_current_state_affine(draw_ctx),
+            affine,
             draw_ctx,
             clipping,
             || {
@@ -312,11 +313,12 @@ impl NodeTrait for NodeUse {
         drawing_ctx::state_reinherit_top(draw_ctx, node.get_state(), dominate);
 
         let state = drawing_ctx::get_current_state(draw_ctx);
+        let rstate = state::get_state_rust(state);
 
         if child.get_type() != NodeType::Symbol {
-            let mut affine = drawing_ctx::get_current_state_affine(draw_ctx);
+            let mut affine = rstate.affine;
             affine.translate(nx, ny);
-            drawing_ctx::set_current_state_affine(draw_ctx, affine);
+            rstate.affine = affine;
 
             drawing_ctx::push_discrete_layer(draw_ctx, clipping);
 
@@ -328,7 +330,7 @@ impl NodeTrait for NodeUse {
         } else {
             child.with_impl(|symbol: &NodeSymbol| {
                 let do_clip = !state::is_overflow(state)
-                    || (!state::has_overflow(state) && state::is_overflow(child.get_state()));
+                    || (rstate.overflow.is_none() && state::is_overflow(child.get_state()));
 
                 draw_in_viewport(
                     nx,
@@ -339,7 +341,7 @@ impl NodeTrait for NodeUse {
                     do_clip,
                     symbol.vbox.get(),
                     symbol.preserve_aspect_ratio.get(),
-                    drawing_ctx::get_current_state_affine(draw_ctx),
+                    rstate.affine,
                     draw_ctx,
                     clipping,
                     || {

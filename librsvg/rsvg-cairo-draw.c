@@ -197,7 +197,7 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     cairo_surface_t *surface;
     cairo_t *mask_cr, *save_cr;
-    RsvgState *state = rsvg_current_state (ctx);
+    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
     guint8 *pixels;
     guint32 width = render->width, height = render->height;
     guint32 rowstride = width * 4, row, i;
@@ -272,9 +272,9 @@ rsvg_cairo_generate_mask (cairo_t * cr, RsvgNode *mask, RsvgDrawingCtx *ctx, Rsv
         rsvg_drawing_ctx_push_view_box (ctx, 1, 1);
     }
 
-    rsvg_state_push (ctx);
+    rsvg_drawing_ctx_state_push (ctx);
     rsvg_node_draw_children (mask, ctx, 0, FALSE);
-    rsvg_state_pop (ctx);
+    rsvg_drawing_ctx_state_pop (ctx);
 
     if (content_units == objectBoundingBox) {
         RsvgState *mask_state;
@@ -332,13 +332,13 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     cairo_surface_t *surface;
     cairo_t *child_cr;
     RsvgBbox *bbox;
-    RsvgState *state = rsvg_current_state (ctx);
+    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
     gboolean lateclip = FALSE;
     cairo_matrix_t affine;
 
-    if (rsvg_current_state (ctx)->clip_path) {
+    if (state->clip_path) {
         RsvgNode *node;
-        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, rsvg_current_state (ctx)->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
+        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, state->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
         if (node) {
             switch (rsvg_node_clip_path_get_units (node)) {
             case userSpaceOnUse:
@@ -415,12 +415,12 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     cairo_t *child_cr = render->cr;
     RsvgNode *lateclip = NULL;
     cairo_surface_t *surface = NULL;
-    RsvgState *state = rsvg_current_state (ctx);
+    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
     gboolean nest, needs_destroy = FALSE;
 
-    if (rsvg_current_state (ctx)->clip_path) {
+    if (state->clip_path) {
         RsvgNode *node;
-        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, rsvg_current_state (ctx)->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
+        node = rsvg_drawing_ctx_acquire_node_of_type (ctx, state->clip_path, RSVG_NODE_TYPE_CLIP_PATH);
         if (node) {
             if (rsvg_node_clip_path_get_units (node) == objectBoundingBox) {
                 lateclip = node;

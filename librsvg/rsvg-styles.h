@@ -36,20 +36,6 @@
 
 G_BEGIN_DECLS 
 
-/* Keep in sync with rust/src/state.rs:TextDecoration */
-typedef struct {
-    gboolean overline;
-    gboolean underline;
-    gboolean strike;
-} TextDecoration;
-
-/* Keep in sync with rust/src/state.c:UnicodeBidi */
-typedef enum {
-    UNICODE_BIDI_NORMAL = 0,
-    UNICODE_BIDI_EMBED = 1,
-    UNICODE_BIDI_OVERRIDE = 2
-} UnicodeBidi;
-
 typedef enum {
     RSVG_ENABLE_BACKGROUND_ACCUMULATE,
     RSVG_ENABLE_BACKGROUND_NEW
@@ -76,9 +62,6 @@ struct _RsvgState {
     cairo_fill_rule_t clip_rule;
     gboolean has_clip_rule;
 
-    gboolean overflow;
-    gboolean has_overflow;
-
     RsvgPaintServer *stroke;
     gboolean has_stroke_server;
     guint8 stroke_opacity;      /* 0..255 */
@@ -88,26 +71,14 @@ struct _RsvgState {
     double miter_limit;
     gboolean has_miter_limit;
 
-    RsvgLength font_size;
-    gboolean has_font_size;
-    char *font_family;
-    gboolean has_font_family;
-    PangoStyle font_style;
-    gboolean has_font_style;
-    PangoVariant font_variant;
-    gboolean has_font_variant;
     PangoWeight font_weight;
     gboolean has_font_weight;
     PangoStretch font_stretch;
     gboolean has_font_stretch;
-    TextDecoration font_decor;
-    gboolean has_font_decor;
     PangoDirection text_dir;
     gboolean has_text_dir;
     PangoGravity text_gravity;
     gboolean has_text_gravity;
-    UnicodeBidi unicode_bidi;
-    gboolean has_unicode_bidi;
 
     guint text_offset;
 
@@ -162,6 +133,9 @@ G_GNUC_INTERNAL
 RsvgState *rsvg_state_new (void);
 
 G_GNUC_INTERNAL
+RsvgState *rsvg_state_new_with_parent (RsvgState *parent);
+
+G_GNUC_INTERNAL
 void rsvg_state_free (RsvgState *state);
 
 G_GNUC_INTERNAL
@@ -189,30 +163,15 @@ gboolean rsvg_parse_transform   (cairo_matrix_t *matrix, const char *src) G_GNUC
 G_GNUC_INTERNAL
 RsvgState *rsvg_state_parent    (RsvgState * state);
 
+/* Implemented in rust/src/state.rs */
 G_GNUC_INTERNAL
-void       rsvg_state_pop       (RsvgDrawingCtx * ctx);
-G_GNUC_INTERNAL
-void       rsvg_state_push      (RsvgDrawingCtx * ctx);
-G_GNUC_INTERNAL
-RsvgState *rsvg_current_state   (RsvgDrawingCtx * ctx);
+void rsvg_state_reconstruct (RsvgState *state, RsvgNode *current);
 
 G_GNUC_INTERNAL
-void rsvg_state_reinherit_top	(RsvgDrawingCtx * ctx, RsvgState * state, int dominate);
-
-G_GNUC_INTERNAL
-void rsvg_state_reconstruct	(RsvgState * state, RsvgNode * current);
-
-G_GNUC_INTERNAL
-cairo_matrix_t rsvg_state_get_affine (RsvgState *state);
+cairo_matrix_t rsvg_state_get_affine (const RsvgState *state);
 
 G_GNUC_INTERNAL
 void rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine);
-
-G_GNUC_INTERNAL
-gboolean rsvg_state_is_overflow (RsvgState *state);
-
-G_GNUC_INTERNAL
-gboolean rsvg_state_has_overflow (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_stroke (RsvgState *state);
@@ -248,31 +207,16 @@ G_GNUC_INTERNAL
 guint32 rsvg_state_get_current_color (RsvgState *state);
 
 G_GNUC_INTERNAL
-UnicodeBidi rsvg_state_get_unicode_bidi (RsvgState *state);
-
-G_GNUC_INTERNAL
 PangoDirection rsvg_state_get_text_dir (RsvgState *state);
 
 G_GNUC_INTERNAL
 PangoGravity rsvg_state_get_text_gravity (RsvgState *state);
 
 G_GNUC_INTERNAL
-const char *rsvg_state_get_font_family (RsvgState *state);
-
-G_GNUC_INTERNAL
-PangoStyle rsvg_state_get_font_style (RsvgState *state);
-
-G_GNUC_INTERNAL
-PangoVariant rsvg_state_get_font_variant (RsvgState *state);
-
-G_GNUC_INTERNAL
 PangoWeight rsvg_state_get_font_weight (RsvgState *state);
 
 G_GNUC_INTERNAL
 PangoStretch rsvg_state_get_font_stretch (RsvgState *state);
-
-G_GNUC_INTERNAL
-const TextDecoration *rsvg_state_get_font_decor (RsvgState *state);
 
 G_GNUC_INTERNAL
 cairo_fill_rule_t rsvg_state_get_clip_rule (RsvgState *state);
@@ -291,6 +235,18 @@ cairo_antialias_t rsvg_state_get_text_rendering_type (RsvgState *state);
 
 G_GNUC_INTERNAL
 cairo_operator_t rsvg_state_get_comp_op (RsvgState *state);
+
+G_GNUC_INTERNAL
+void rsvg_state_dominate (RsvgState *state, const RsvgState *src);
+
+G_GNUC_INTERNAL
+void rsvg_state_force (RsvgState *state, const RsvgState *src);
+
+G_GNUC_INTERNAL
+void rsvg_state_inherit (RsvgState *state, const RsvgState *src);
+
+G_GNUC_INTERNAL
+void rsvg_state_reinherit (RsvgState *state, const RsvgState *src);
 
 G_GNUC_INTERNAL
 State *rsvg_state_get_state_rust (RsvgState *state);

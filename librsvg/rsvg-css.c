@@ -51,51 +51,6 @@
 #define SETINHERIT() G_STMT_START {if (inherit != NULL) *inherit = TRUE;} G_STMT_END
 #define UNSETINHERIT() G_STMT_START {if (inherit != NULL) *inherit = FALSE;} G_STMT_END
 
-
-/* Recursive evaluation of all parent elements regarding absolute font size */
-double
-_rsvg_css_normalize_font_size (RsvgState * state, RsvgDrawingCtx * ctx)
-{
-    RsvgState *parent;
-
-    switch (state->font_size.unit) {
-    case LENGTH_UNIT_PERCENT:
-    case LENGTH_UNIT_FONT_EM:
-    case LENGTH_UNIT_FONT_EX: {
-        double parent_size;
-
-        parent = rsvg_state_parent (state);
-        if (parent) {
-            parent_size = _rsvg_css_normalize_font_size (parent, ctx);
-        } else {
-            parent_size = 12.0;
-        }
-        return state->font_size.length * parent_size;
-    }
-
-    case LENGTH_UNIT_RELATIVE_LARGER:
-    case LENGTH_UNIT_RELATIVE_SMALLER: {
-        double parent_size;
-
-        parent = rsvg_state_parent (state);
-        if (parent) {
-            parent_size = _rsvg_css_normalize_font_size (parent, ctx);
-        } else {
-            parent_size = 12.0;
-        }
-
-        if (state->font_size.unit == LENGTH_UNIT_RELATIVE_LARGER) {
-            return parent_size * 1.2;
-        } else {
-            return parent_size / 1.2;
-        }
-    }
-
-    default:
-        return rsvg_length_normalize (&state->font_size, ctx);
-    }
-}
-
 /* This is defined like this so that we can export the Rust function... just for
  * the benefit of rsvg-convert.c
  */
@@ -104,44 +59,6 @@ RsvgCssColorSpec rsvg_css_parse_color_ (const char       *str,
                                         AllowCurrentColor allow_current_color)
 {
     return rsvg_css_parse_color (str, allow_inherit, allow_current_color);
-}
-
-PangoStyle
-rsvg_css_parse_font_style (const char *str, gboolean * inherit)
-{
-    SETINHERIT ();
-
-    if (str) {
-        if (!strcmp (str, "oblique"))
-            return PANGO_STYLE_OBLIQUE;
-        if (!strcmp (str, "italic"))
-            return PANGO_STYLE_ITALIC;
-        if (!strcmp (str, "normal"))
-            return PANGO_STYLE_NORMAL;
-        if (!strcmp (str, "inherit")) {
-            UNSETINHERIT ();
-            return PANGO_STYLE_NORMAL;
-        }
-    }
-    UNSETINHERIT ();
-    return PANGO_STYLE_NORMAL;
-}
-
-PangoVariant
-rsvg_css_parse_font_variant (const char *str, gboolean * inherit)
-{
-    SETINHERIT ();
-
-    if (str) {
-        if (!strcmp (str, "small-caps"))
-            return PANGO_VARIANT_SMALL_CAPS;
-        else if (!strcmp (str, "inherit")) {
-            UNSETINHERIT ();
-            return PANGO_VARIANT_NORMAL;
-        }
-    }
-    UNSETINHERIT ();
-    return PANGO_VARIANT_NORMAL;
 }
 
 PangoWeight
@@ -212,32 +129,6 @@ rsvg_css_parse_font_stretch (const char *str, gboolean * inherit)
     }
     UNSETINHERIT ();
     return PANGO_STRETCH_NORMAL;
-}
-
-const char *
-rsvg_css_parse_font_family (const char *str, gboolean * inherit)
-{
-    SETINHERIT ();
-
-    if (!str)
-        return NULL;
-    else if (!strcmp (str, "inherit")) {
-        UNSETINHERIT ();
-        return NULL;
-    } else
-        return str;
-}
-
-gboolean
-rsvg_css_parse_overflow (const char *str, gboolean * inherit)
-{
-    SETINHERIT ();
-    if (!strcmp (str, "visible") || !strcmp (str, "auto"))
-        return 1;
-    if (!strcmp (str, "hidden") || !strcmp (str, "scroll"))
-        return 0;
-    UNSETINHERIT ();
-    return 0;
 }
 
 static void
