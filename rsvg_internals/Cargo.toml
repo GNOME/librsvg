@@ -5,6 +5,17 @@ authors = ["Federico Mena Quintero <federico@gnome.org>"]
 workspace = "../"
 build = "build.rs"
 
+# IMPORTANT: If you add/remove/update dependencies here, please also
+# update Cargo.toml in https://gitlab.com/BuildStream/cargo-fetcher
+# (just submit a merge request there).
+#
+# BuildStream/cargo-fetcher lets GNOME's BuildStream continuous build
+# service know which dependencies are required.
+#
+# Please update your dependencies here, then run "cargo update" to
+# regenerate librsvg/Cargo.lock, and copy the resolved version numbers
+# from there into cargo-fetcher/Cargo.toml.
+
 [build-dependencies]
 phf_codegen = "0.7.21"
 
