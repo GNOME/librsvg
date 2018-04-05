@@ -36,6 +36,7 @@ pub struct State {
     pub affine: cairo::Matrix,
 
     pub baseline_shift: Option<BaselineShift>,
+    pub comp_op: Option<CompOp>,
     pub fill_rule: Option<FillRule>,
     pub font_family: Option<FontFamily>,
     pub font_size: Option<FontSize>,
@@ -60,6 +61,7 @@ impl State {
 
             // please keep these sorted
             baseline_shift: Default::default(),
+            comp_op: Default::default(),
             fill_rule: Default::default(),
             font_family: Default::default(),
             font_size: Default::default(),
@@ -83,6 +85,10 @@ impl State {
         match attr {
             Attribute::BaselineShift => {
                 self.baseline_shift = parse_property(value, ())?;
+            }
+
+            Attribute::CompOp => {
+                self.comp_op = parse_property(value, ())?;
             }
 
             Attribute::FillRule => {
@@ -203,7 +209,6 @@ extern "C" {
     fn rsvg_state_get_clip_rule(state: *const RsvgState) -> cairo::FillRule;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
-    fn rsvg_state_get_comp_op(state: *const RsvgState) -> cairo::Operator;
 
     fn rsvg_state_dominate(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_force(state: *mut RsvgState, src: *const RsvgState);
@@ -385,10 +390,6 @@ pub fn get_fill_opacity(state: *const RsvgState) -> u8 {
     unsafe { rsvg_state_get_fill_opacity(state) }
 }
 
-pub fn get_comp_op(state: *const RsvgState) -> cairo::Operator {
-    unsafe { rsvg_state_get_comp_op(state) }
-}
-
 pub fn dominate(state: *mut RsvgState, src: *const RsvgState) {
     unsafe {
         rsvg_state_dominate(state, src);
@@ -436,6 +437,38 @@ impl Parse for BaselineShift {
         }
     }
 }
+
+make_property!(
+    CompOp,
+    default: SrcOver,
+    inherits_automatically: false,
+
+    identifiers:
+    "clear" => Clear,
+    "src" => Src,
+    "dst" => Dst,
+    "src-over" => SrcOver,
+    "dst-over" => DstOver,
+    "src-in" => SrcIn,
+    "dst-in" => DstIn,
+    "src-out" => SrcOut,
+    "dst-out" => DstOut,
+    "src-atop" => SrcAtop,
+    "dst-atop" => DstAtop,
+    "xor" => Xor,
+    "plus" => Plus,
+    "multiply" => Multiply,
+    "screen" => Screen,
+    "overlay" => Overlay,
+    "darken" => Darken,
+    "lighten" => Lighten,
+    "color-dodge" => ColorDodge,
+    "color-burn" => ColorBurn,
+    "hard-light" => HardLight,
+    "soft-light" => SoftLight,
+    "difference" => Difference,
+    "exclusion" => Exclusion,
+);
 
 make_property!(
     FillRule,
@@ -686,6 +719,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     dst: *mut State,
     src: *const State,
     inherit_fn: extern "C" fn(glib_sys::gboolean, glib_sys::gboolean) -> glib_sys::gboolean,
+    inheritunheritables: glib_sys::gboolean,
 ) {
     assert!(!dst.is_null());
     assert!(!src.is_null());
@@ -714,6 +748,10 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.unicode_bidi, &src.unicode_bidi);
     inherit(inherit_fn, &mut dst.xml_lang, &src.xml_lang);
     inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
+
+    if from_glib(inheritunheritables) {
+        dst.comp_op.clone_from(&src.comp_op);
+    }
 }
 
 #[no_mangle]
@@ -729,5 +767,13 @@ pub extern "C" fn rsvg_state_rust_set_affine(state: *mut State, affine: cairo::M
     unsafe {
         let state = &mut *state;
         state.affine = affine;
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_comp_op(state: *const State) -> cairo::Operator {
+    unsafe {
+        let state = &*state;
+        cairo::Operator::from(state.comp_op.unwrap_or_default())
     }
 }

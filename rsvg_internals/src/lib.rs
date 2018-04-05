@@ -129,6 +129,7 @@ pub use state::{
     rsvg_state_rust_clone,
     rsvg_state_rust_free,
     rsvg_state_rust_get_affine,
+    rsvg_state_rust_get_comp_op,
     rsvg_state_rust_inherit_run,
     rsvg_state_rust_new,
     rsvg_state_rust_parse_style_pair,

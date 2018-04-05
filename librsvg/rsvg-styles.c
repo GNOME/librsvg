@@ -53,11 +53,12 @@ extern void rsvg_state_rust_free(State *state);
 extern State *rsvg_state_rust_clone(State *state);
 extern cairo_matrix_t rsvg_state_rust_get_affine(const State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
+extern cairo_operator_t rsvg_state_rust_get_comp_op(const State *state);
 
 extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value)
     G_GNUC_WARN_UNUSED_RESULT;
 
-extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn);
+extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn, gboolean inherituninheritables);
 
 enum {
   SHAPE_RENDERING_AUTO = CAIRO_ANTIALIAS_DEFAULT,
@@ -129,7 +130,6 @@ rsvg_state_init (RsvgState * state)
 
     state->clip_rule = CAIRO_FILL_RULE_WINDING;
     state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
-    state->comp_op = CAIRO_OPERATOR_OVER;
     state->flood_color = 0;
     state->flood_opacity = 255;
 
@@ -299,7 +299,8 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 
 static void
 rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
-                        const InheritanceFunction function, const gboolean inherituninheritables)
+                        const InheritanceFunction function,
+                        gboolean inherituninheritables)
 {
     if (function (dst->has_current_color, src->has_current_color))
         dst->current_color = src->current_color;
@@ -384,7 +385,7 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->dash_offset = src->dash_offset;
     }
 
-    rsvg_state_rust_inherit_run (dst->state_rust, src->state_rust, function);
+    rsvg_state_rust_inherit_run (dst->state_rust, src->state_rust, function, inherituninheritables);
 
     if (inherituninheritables) {
         g_free (dst->clip_path);
@@ -395,7 +396,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->filter = g_strdup (src->filter);
         dst->enable_background = src->enable_background;
         dst->opacity = src->opacity;
-        dst->comp_op = src->comp_op;
     }
 }
 
@@ -628,61 +628,6 @@ rsvg_parse_style_pair (RsvgState *state,
             state->enable_background = RSVG_ENABLE_BACKGROUND_NEW;
         else
             state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_COMP_OP:
-    {
-        if (g_str_equal (value, "clear"))
-            state->comp_op = CAIRO_OPERATOR_CLEAR;
-        else if (g_str_equal (value, "src"))
-            state->comp_op = CAIRO_OPERATOR_SOURCE;
-        else if (g_str_equal (value, "dst"))
-            state->comp_op = CAIRO_OPERATOR_DEST;
-        else if (g_str_equal (value, "src-over"))
-            state->comp_op = CAIRO_OPERATOR_OVER;
-        else if (g_str_equal (value, "dst-over"))
-            state->comp_op = CAIRO_OPERATOR_DEST_OVER;
-        else if (g_str_equal (value, "src-in"))
-            state->comp_op = CAIRO_OPERATOR_IN;
-        else if (g_str_equal (value, "dst-in"))
-            state->comp_op = CAIRO_OPERATOR_DEST_IN;
-        else if (g_str_equal (value, "src-out"))
-            state->comp_op = CAIRO_OPERATOR_OUT;
-        else if (g_str_equal (value, "dst-out"))
-            state->comp_op = CAIRO_OPERATOR_DEST_OUT;
-        else if (g_str_equal (value, "src-atop"))
-            state->comp_op = CAIRO_OPERATOR_ATOP;
-        else if (g_str_equal (value, "dst-atop"))
-            state->comp_op = CAIRO_OPERATOR_DEST_ATOP;
-        else if (g_str_equal (value, "xor"))
-            state->comp_op = CAIRO_OPERATOR_XOR;
-        else if (g_str_equal (value, "plus"))
-            state->comp_op = CAIRO_OPERATOR_ADD;
-        else if (g_str_equal (value, "multiply"))
-            state->comp_op = CAIRO_OPERATOR_MULTIPLY;
-        else if (g_str_equal (value, "screen"))
-            state->comp_op = CAIRO_OPERATOR_SCREEN;
-        else if (g_str_equal (value, "overlay"))
-            state->comp_op = CAIRO_OPERATOR_OVERLAY;
-        else if (g_str_equal (value, "darken"))
-            state->comp_op = CAIRO_OPERATOR_DARKEN;
-        else if (g_str_equal (value, "lighten"))
-            state->comp_op = CAIRO_OPERATOR_LIGHTEN;
-        else if (g_str_equal (value, "color-dodge"))
-            state->comp_op = CAIRO_OPERATOR_COLOR_DODGE;
-        else if (g_str_equal (value, "color-burn"))
-            state->comp_op = CAIRO_OPERATOR_COLOR_BURN;
-        else if (g_str_equal (value, "hard-light"))
-            state->comp_op = CAIRO_OPERATOR_HARD_LIGHT;
-        else if (g_str_equal (value, "soft-light"))
-            state->comp_op = CAIRO_OPERATOR_SOFT_LIGHT;
-        else if (g_str_equal (value, "difference"))
-            state->comp_op = CAIRO_OPERATOR_DIFFERENCE;
-        else if (g_str_equal (value, "exclusion"))
-            state->comp_op = CAIRO_OPERATOR_EXCLUSION;
-        else
-            state->comp_op = CAIRO_OPERATOR_OVER;
     }
     break;
 
@@ -1681,7 +1626,7 @@ rsvg_state_get_text_rendering_type (RsvgState *state)
 cairo_operator_t
 rsvg_state_get_comp_op (RsvgState *state)
 {
-    return state->comp_op;
+    return rsvg_state_rust_get_comp_op (state->state_rust);
 }
 
 State *
