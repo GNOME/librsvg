@@ -113,7 +113,6 @@ struct _RsvgState {
     gboolean has_middleMarker;
     gboolean has_endMarker;
 
-    cairo_operator_t comp_op;
     RsvgEnableBackgroundType enable_background;
 
     cairo_antialias_t shape_rendering_type;
