@@ -10,14 +10,7 @@ use float_eq_cairo::ApproxEqCairo;
 use length::StrokeDasharray;
 use paint_server;
 use path_builder::PathBuilder;
-use state::{
-    self,
-    FillRule,
-    RsvgState,
-    StrokeLinecap,
-    StrokeLinejoin,
-    StrokeMiterlimit,
-};
+use state::{self, CompOp, FillRule, RsvgState, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit};
 use text;
 
 pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &PathBuilder, clipping: bool) {
@@ -112,6 +105,37 @@ impl From<StrokeLinecap> for cairo::LineCap {
             StrokeLinecap::Butt => cairo::LineCap::Butt,
             StrokeLinecap::Round => cairo::LineCap::Round,
             StrokeLinecap::Square => cairo::LineCap::Square,
+        }
+    }
+}
+
+impl From<CompOp> for cairo::Operator {
+    fn from(op: CompOp) -> cairo::Operator {
+        match op {
+            CompOp::Clear => cairo::Operator::Clear,
+            CompOp::Src => cairo::Operator::Source,
+            CompOp::Dst => cairo::Operator::Dest,
+            CompOp::SrcOver => cairo::Operator::Over,
+            CompOp::DstOver => cairo::Operator::DestOver,
+            CompOp::SrcIn => cairo::Operator::In,
+            CompOp::DstIn => cairo::Operator::DestIn,
+            CompOp::SrcOut => cairo::Operator::Out,
+            CompOp::DstOut => cairo::Operator::DestOut,
+            CompOp::SrcAtop => cairo::Operator::Atop,
+            CompOp::DstAtop => cairo::Operator::DestAtop,
+            CompOp::Xor => cairo::Operator::Xor,
+            CompOp::Plus => cairo::Operator::Add,
+            CompOp::Multiply => cairo::Operator::Multiply,
+            CompOp::Screen => cairo::Operator::Screen,
+            CompOp::Overlay => cairo::Operator::Overlay,
+            CompOp::Darken => cairo::Operator::Darken,
+            CompOp::Lighten => cairo::Operator::Lighten,
+            CompOp::ColorDodge => cairo::Operator::ColorDodge,
+            CompOp::ColorBurn => cairo::Operator::ColorBurn,
+            CompOp::HardLight => cairo::Operator::HardLight,
+            CompOp::SoftLight => cairo::Operator::SoftLight,
+            CompOp::Difference => cairo::Operator::Difference,
+            CompOp::Exclusion => cairo::Operator::Exclusion,
         }
     }
 }
@@ -355,6 +379,8 @@ pub fn draw_surface(
     }
 
     let state = drawing_ctx::get_current_state(draw_ctx);
+    let rstate = state::get_state_rust(state);
+
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
     let affine = state::get_state_rust(state).affine;
 
@@ -381,7 +407,7 @@ pub fn draw_surface(
     let x = x * width / w;
     let y = y * height / h;
 
-    cr.set_operator(state::get_comp_op(state));
+    cr.set_operator(cairo::Operator::from(rstate.comp_op.unwrap_or_default()));
 
     cr.set_source_surface(&surface, x, y);
     cr.paint();

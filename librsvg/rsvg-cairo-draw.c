@@ -332,6 +332,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     cairo_t *child_cr;
     RsvgBbox *bbox;
     RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
+    cairo_operator_t comp_op = rsvg_state_get_comp_op (state);
     gboolean lateclip = FALSE;
     cairo_matrix_t affine;
 
@@ -357,7 +358,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     }
 
     if (state->opacity == 0xFF
-        && !state->filter && !state->mask && !lateclip && (state->comp_op == CAIRO_OPERATOR_OVER)
+        && !state->filter && !state->mask && !lateclip && (comp_op == CAIRO_OPERATOR_OVER)
         && (state->enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
         return;
 
@@ -415,6 +416,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     RsvgNode *lateclip = NULL;
     cairo_surface_t *surface = NULL;
     RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
+    cairo_operator_t comp_op = rsvg_state_get_comp_op (state);
     gboolean nest, needs_destroy = FALSE;
 
     if (state->clip_path) {
@@ -430,7 +432,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     }
 
     if (state->opacity == 0xFF
-        && !state->filter && !state->mask && !lateclip && (state->comp_op == CAIRO_OPERATOR_OVER)
+        && !state->filter && !state->mask && !lateclip && (comp_op == CAIRO_OPERATOR_OVER)
         && (state->enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
         return;
 
@@ -467,7 +469,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
         rsvg_drawing_ctx_release_node (ctx, lateclip);
     }
 
-    cairo_set_operator (render->cr, state->comp_op);
+    cairo_set_operator (render->cr, comp_op);
 
     if (state->mask) {
         RsvgNode *mask;
