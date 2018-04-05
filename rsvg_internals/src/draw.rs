@@ -10,7 +10,14 @@ use float_eq_cairo::ApproxEqCairo;
 use length::StrokeDasharray;
 use paint_server;
 use path_builder::PathBuilder;
-use state::{self, FillRule, RsvgState, StrokeLinecap, StrokeLinejoin};
+use state::{
+    self,
+    FillRule,
+    RsvgState,
+    StrokeLinecap,
+    StrokeLinejoin,
+    StrokeMiterlimit,
+};
 use text;
 
 pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &PathBuilder, clipping: bool) {
@@ -126,7 +133,12 @@ fn setup_cr_for_stroke(
     let rstate = state::get_state_rust(state);
 
     cr.set_line_width(state::get_stroke_width(state).normalize(draw_ctx));
-    cr.set_miter_limit(state::get_miter_limit(state));
+    cr.set_miter_limit(
+        rstate
+            .stroke_miterlimit
+            .as_ref()
+            .map_or_else(|| StrokeMiterlimit::default().0, |l| l.0),
+    );
     cr.set_line_cap(cairo::LineCap::from(
         rstate.stroke_line_cap.unwrap_or_default(),
     ));

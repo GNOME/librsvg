@@ -45,6 +45,7 @@ pub struct State {
     pub overflow: Option<Overflow>,
     pub stroke_line_cap: Option<StrokeLinecap>,
     pub stroke_line_join: Option<StrokeLinejoin>,
+    pub stroke_miterlimit: Option<StrokeMiterlimit>,
     pub text_anchor: Option<TextAnchor>,
     pub text_decoration: Option<TextDecoration>,
     pub unicode_bidi: Option<UnicodeBidi>,
@@ -68,6 +69,7 @@ impl State {
             overflow: Default::default(),
             stroke_line_cap: Default::default(),
             stroke_line_join: Default::default(),
+            stroke_miterlimit: Default::default(),
             text_anchor: Default::default(),
             text_decoration: Default::default(),
             xml_lang: Default::default(),
@@ -117,6 +119,10 @@ impl State {
 
             Attribute::StrokeLinejoin => {
                 self.stroke_line_join = parse_property(value, ())?;
+            }
+
+            Attribute::StrokeMiterlimit => {
+                self.stroke_miterlimit = parse_property(value, ())?;
             }
 
             Attribute::TextAnchor => {
@@ -190,7 +196,6 @@ extern "C" {
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
-    fn rsvg_state_get_miter_limit(state: *const RsvgState) -> f64;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
     fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
@@ -342,10 +347,6 @@ pub fn get_stroke_opacity(state: *const RsvgState) -> u8 {
 
 pub fn get_stroke_width(state: *const RsvgState) -> RsvgLength {
     unsafe { rsvg_state_get_stroke_width(state) }
-}
-
-pub fn get_miter_limit(state: *const RsvgState) -> f64 {
-    unsafe { rsvg_state_get_miter_limit(state) }
 }
 
 pub fn get_text_dir(state: *const RsvgState) -> pango::Direction {
@@ -541,6 +542,13 @@ make_property!(
 );
 
 make_property!(
+    StrokeMiterlimit,
+    default: 4f64,
+    inherits_automatically: true,
+    newtype_from_str: f64
+);
+
+make_property!(
     TextDecoration,
     inherits_automatically: true,
 
@@ -696,6 +704,11 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);
     inherit(inherit_fn, &mut dst.stroke_line_cap, &src.stroke_line_cap);
     inherit(inherit_fn, &mut dst.stroke_line_join, &src.stroke_line_join);
+    inherit(
+        inherit_fn,
+        &mut dst.stroke_miterlimit,
+        &src.stroke_miterlimit,
+    );
     inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
     inherit(inherit_fn, &mut dst.text_decoration, &src.text_decoration);
     inherit(inherit_fn, &mut dst.unicode_bidi, &src.unicode_bidi);

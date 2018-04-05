@@ -116,7 +116,6 @@ rsvg_state_init (RsvgState * state)
     state->fill_opacity = 0xff;
     state->stroke_opacity = 0xff;
     state->stroke_width = rsvg_length_parse ("1", LENGTH_DIR_BOTH);
-    state->miter_limit = 4;
 
     /* The following two start as INHERIT, even though has_stop_color and
      * has_stop_opacity get initialized to FALSE below.  This is so that the
@@ -155,7 +154,6 @@ rsvg_state_init (RsvgState * state)
     state->has_stroke_server = FALSE;
     state->has_stroke_opacity = FALSE;
     state->has_stroke_width = FALSE;
-    state->has_miter_limit = FALSE;
     state->has_dash = FALSE;
     state->has_dashoffset = FALSE;
     state->has_visible = FALSE;
@@ -329,8 +327,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->stroke_opacity = src->stroke_opacity;
     if (function (dst->has_stroke_width, src->has_stroke_width))
         dst->stroke_width = src->stroke_width;
-    if (function (dst->has_miter_limit, src->has_miter_limit))
-        dst->miter_limit = src->miter_limit;
     if (function (dst->has_stop_color, src->has_stop_color)) {
         if (dst->stop_color.kind == RSVG_CSS_COLOR_SPEC_INHERIT) {
             dst->has_stop_color = TRUE;
@@ -897,13 +893,6 @@ rsvg_parse_style_pair (RsvgState *state,
                 state->has_endMarker = TRUE;
             }
         }
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_STROKE_MITERLIMIT:
-    {
-        state->has_miter_limit = TRUE;
-        state->miter_limit = g_ascii_strtod (value, NULL);
     }
     break;
 
@@ -1583,12 +1572,6 @@ RsvgLength
 rsvg_state_get_stroke_width (RsvgState *state)
 {
     return state->stroke_width;
-}
-
-double
-rsvg_state_get_miter_limit (RsvgState *state)
-{
-    return state->miter_limit;
 }
 
 gboolean
