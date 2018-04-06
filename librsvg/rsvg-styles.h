@@ -36,6 +36,7 @@
 
 G_BEGIN_DECLS 
 
+/* Keep in sync with rust/src/state.c:EnableBackgroundC */
 typedef enum {
     RSVG_ENABLE_BACKGROUND_ACCUMULATE,
     RSVG_ENABLE_BACKGROUND_NEW
@@ -112,8 +113,6 @@ struct _RsvgState {
     gboolean has_startMarker;
     gboolean has_middleMarker;
     gboolean has_endMarker;
-
-    RsvgEnableBackgroundType enable_background;
 
     cairo_antialias_t shape_rendering_type;
     gboolean has_shape_rendering_type;
@@ -241,6 +240,9 @@ cairo_antialias_t rsvg_state_get_text_rendering_type (RsvgState *state);
 
 G_GNUC_INTERNAL
 cairo_operator_t rsvg_state_get_comp_op (RsvgState *state);
+
+G_GNUC_INTERNAL
+RsvgEnableBackgroundType rsvg_state_get_enable_background (RsvgState *state);
 
 G_GNUC_INTERNAL
 void rsvg_state_dominate (RsvgState *state, const RsvgState *src);
