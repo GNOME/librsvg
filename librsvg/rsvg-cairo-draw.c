@@ -338,6 +338,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     const char *mask;
     guint8 opacity;
     cairo_operator_t comp_op;
+    RsvgEnableBackgroundType enable_background;
     cairo_surface_t *surface;
     cairo_t *child_cr;
     RsvgBbox *bbox;
@@ -350,6 +351,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     mask = rsvg_state_get_mask (state);
     opacity = rsvg_state_get_opacity (state);
     comp_op = rsvg_state_get_comp_op (state);
+    enable_background = rsvg_state_get_enable_background (state);
 
     if (clip_path) {
         RsvgNode *node;
@@ -374,7 +376,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 
     if (opacity == 0xFF
         && !filter && !mask && !lateclip && (comp_op == CAIRO_OPERATOR_OVER)
-        && (state->enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
+        && (enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
         return;
 
     if (!filter) {
@@ -433,6 +435,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     const char *mask;
     guint8 opacity;
     cairo_operator_t comp_op;
+    RsvgEnableBackgroundType enable_background;
     cairo_t *child_cr = render->cr;
     RsvgNode *lateclip = NULL;
     cairo_surface_t *surface = NULL;
@@ -444,6 +447,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     mask = rsvg_state_get_mask (state);
     opacity = rsvg_state_get_opacity (state);
     comp_op = rsvg_state_get_comp_op (state);
+    enable_background = rsvg_state_get_enable_background (state);
 
     if (clip_path) {
         RsvgNode *node;
@@ -460,7 +464,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
     if (opacity == 0xFF
         && !filter && !mask && !lateclip && (comp_op == CAIRO_OPERATOR_OVER)
-        && (state->enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
+        && (enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
         return;
 
     surface = cairo_get_target (child_cr);

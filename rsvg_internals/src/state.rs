@@ -42,6 +42,7 @@ pub struct State {
     pub font_size: Option<FontSize>,
     pub font_style: Option<FontStyle>,
     pub font_variant: Option<FontVariant>,
+    pub enable_background: Option<EnableBackground>,
     pub letter_spacing: Option<LetterSpacing>,
     pub overflow: Option<Overflow>,
     pub stroke_line_cap: Option<StrokeLinecap>,
@@ -67,6 +68,7 @@ impl State {
             font_size: Default::default(),
             font_style: Default::default(),
             font_variant: Default::default(),
+            enable_background: Default::default(),
             letter_spacing: Default::default(),
             overflow: Default::default(),
             stroke_line_cap: Default::default(),
@@ -109,6 +111,10 @@ impl State {
 
             Attribute::FontVariant => {
                 self.font_variant = parse_property(value, ())?;
+            }
+
+            Attribute::EnableBackground => {
+                self.enable_background = parse_property(value, ())?;
             }
 
             Attribute::LetterSpacing => {
@@ -525,6 +531,16 @@ make_property!(
 );
 
 make_property!(
+    EnableBackground,
+    default: Accumulate,
+    inherits_automatically: false,
+
+    identifiers:
+    "accumulate" => Accumulate,
+    "new" => New,
+);
+
+make_property!(
     LetterSpacing,
     default: RsvgLength::default(),
     inherits_automatically: true,
@@ -751,6 +767,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
 
     if from_glib(inheritunheritables) {
         dst.comp_op.clone_from(&src.comp_op);
+        dst.enable_background.clone_from(&src.enable_background);
     }
 }
 
@@ -775,5 +792,30 @@ pub extern "C" fn rsvg_state_rust_get_comp_op(state: *const State) -> cairo::Ope
     unsafe {
         let state = &*state;
         cairo::Operator::from(state.comp_op.unwrap_or_default())
+    }
+}
+
+// Keep in sync with rsvg-styles.h:RsvgEnableBackgroundType
+#[allow(dead_code)]
+#[repr(C)]
+pub enum EnableBackgroundC {
+    Accumulate,
+    New,
+}
+
+impl From<EnableBackground> for EnableBackgroundC {
+    fn from(e: EnableBackground) -> EnableBackgroundC {
+        match e {
+            EnableBackground::Accumulate => EnableBackgroundC::Accumulate,
+            EnableBackground::New => EnableBackgroundC::New,
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_enable_background(state: *const State) -> EnableBackgroundC {
+    unsafe {
+        let state = &*state;
+        EnableBackgroundC::from(state.enable_background.unwrap_or_default())
     }
 }

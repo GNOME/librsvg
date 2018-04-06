@@ -54,6 +54,7 @@ extern State *rsvg_state_rust_clone(State *state);
 extern cairo_matrix_t rsvg_state_rust_get_affine(const State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 extern cairo_operator_t rsvg_state_rust_get_comp_op(const State *state);
+extern RsvgEnableBackgroundType rsvg_state_rust_get_enable_background(const State *state);
 
 extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value)
     G_GNUC_WARN_UNUSED_RESULT;
@@ -129,7 +130,6 @@ rsvg_state_init (RsvgState * state)
     state->stop_opacity.kind = RSVG_OPACITY_INHERIT;
 
     state->clip_rule = CAIRO_FILL_RULE_WINDING;
-    state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
     state->flood_color = 0;
     state->flood_opacity = 255;
 
@@ -394,7 +394,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->mask = g_strdup (src->mask);
         g_free (dst->filter);
         dst->filter = g_strdup (src->filter);
-        dst->enable_background = src->enable_background;
         dst->opacity = src->opacity;
     }
 }
@@ -619,15 +618,6 @@ rsvg_parse_style_pair (RsvgState *state,
     {
         g_free (state->clip_path);
         state->clip_path = rsvg_css_parse_url (value);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_ENABLE_BACKGROUND:
-    {
-        if (g_str_equal (value, "new"))
-            state->enable_background = RSVG_ENABLE_BACKGROUND_NEW;
-        else
-            state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
     }
     break;
 
@@ -1651,6 +1641,12 @@ cairo_operator_t
 rsvg_state_get_comp_op (RsvgState *state)
 {
     return rsvg_state_rust_get_comp_op (state->state_rust);
+}
+
+RsvgEnableBackgroundType
+rsvg_state_get_enable_background (RsvgState *state)
+{
+    return rsvg_state_rust_get_enable_background (state->state_rust);
 }
 
 State *
