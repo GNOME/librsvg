@@ -1495,10 +1495,34 @@ rsvg_state_get_affine (const RsvgState *state)
     return rsvg_state_rust_get_affine (state->state_rust);
 }
 
+const char *
+rsvg_state_get_clip_path (RsvgState *state)
+{
+    return state->clip_path;
+}
+
 void
 rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine)
 {
     rsvg_state_rust_set_affine (state->state_rust, affine);
+}
+
+const char *
+rsvg_state_get_filter (RsvgState *state)
+{
+    return state->filter;
+}
+
+const char *
+rsvg_state_get_mask (RsvgState *state)
+{
+    return state->mask;
+}
+
+guint8
+rsvg_state_get_opacity (RsvgState *state)
+{
+    return state->opacity;
 }
 
 RsvgPaintServer *

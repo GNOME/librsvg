@@ -171,6 +171,18 @@ G_GNUC_INTERNAL
 void rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine);
 
 G_GNUC_INTERNAL
+const char *rsvg_state_get_clip_path (RsvgState *state);
+
+G_GNUC_INTERNAL
+const char *rsvg_state_get_filter (RsvgState *state);
+
+G_GNUC_INTERNAL
+const char *rsvg_state_get_mask (RsvgState *state);
+
+G_GNUC_INTERNAL
+guint8 rsvg_state_get_opacity (RsvgState *state);
+
+G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_stroke (RsvgState *state);
 
 G_GNUC_INTERNAL
