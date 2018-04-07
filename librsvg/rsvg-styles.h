@@ -117,9 +117,6 @@ struct _RsvgState {
     cairo_antialias_t shape_rendering_type;
     gboolean has_shape_rendering_type;
 
-    cairo_antialias_t text_rendering_type;
-    gboolean has_text_rendering_type;
-
     GHashTable *styles;
 
     State *state_rust;
@@ -234,9 +231,6 @@ guint8 rsvg_state_get_fill_opacity (RsvgState *state);
 
 G_GNUC_INTERNAL
 cairo_antialias_t rsvg_state_get_shape_rendering_type (RsvgState *state);
-
-G_GNUC_INTERNAL
-cairo_antialias_t rsvg_state_get_text_rendering_type (RsvgState *state);
 
 G_GNUC_INTERNAL
 cairo_operator_t rsvg_state_get_comp_op (RsvgState *state);

@@ -10,7 +10,16 @@ use float_eq_cairo::ApproxEqCairo;
 use length::StrokeDasharray;
 use paint_server;
 use path_builder::PathBuilder;
-use state::{self, CompOp, FillRule, RsvgState, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit};
+use state::{
+    self,
+    CompOp,
+    FillRule,
+    RsvgState,
+    StrokeLinecap,
+    StrokeLinejoin,
+    StrokeMiterlimit,
+    TextRendering,
+};
 use text;
 
 pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &PathBuilder, clipping: bool) {
@@ -149,6 +158,17 @@ impl From<FillRule> for cairo::FillRule {
     }
 }
 
+impl From<TextRendering> for cairo::Antialias {
+    fn from(tr: TextRendering) -> cairo::Antialias {
+        match tr {
+            TextRendering::Auto
+            | TextRendering::OptimizeLegibility
+            | TextRendering::GeometricPrecision => cairo::Antialias::Default,
+            TextRendering::OptimizeSpeed => cairo::Antialias::None,
+        }
+    }
+}
+
 fn setup_cr_for_stroke(
     cr: &cairo::Context,
     draw_ctx: *const RsvgDrawingCtx,
@@ -255,7 +275,8 @@ pub fn draw_pango_layout(
     clipping: bool,
 ) {
     let state = drawing_ctx::get_current_state(draw_ctx);
-    let rust_state = state::get_state_rust(state);
+    let rstate = state::get_state_rust(state);
+
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
     let gravity = layout.get_context().unwrap().get_gravity();
 
@@ -265,7 +286,7 @@ pub fn draw_pango_layout(
         return;
     }
 
-    let bbox = compute_text_bbox(&ink, x, y, &rust_state.affine, gravity);
+    let bbox = compute_text_bbox(&ink, x, y, &rstate.affine, gravity);
 
     let fill = state::get_fill(state);
     let stroke = state::get_stroke(state);
@@ -274,11 +295,13 @@ pub fn draw_pango_layout(
         drawing_ctx::insert_bbox(draw_ctx, &bbox);
     }
 
-    cr.set_antialias(state::get_text_rendering_type(state));
+    cr.set_antialias(cairo::Antialias::from(
+        rstate.text_rendering.unwrap_or_default(),
+    ));
 
     setup_cr_for_stroke(&cr, draw_ctx, state);
 
-    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &rust_state.affine);
+    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &rstate.affine);
 
     let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
 

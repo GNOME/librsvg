@@ -50,6 +50,7 @@ pub struct State {
     pub stroke_miterlimit: Option<StrokeMiterlimit>,
     pub text_anchor: Option<TextAnchor>,
     pub text_decoration: Option<TextDecoration>,
+    pub text_rendering: Option<TextRendering>,
     pub unicode_bidi: Option<UnicodeBidi>,
     pub xml_lang: Option<XmlLang>,
     pub xml_space: Option<XmlSpace>,
@@ -76,6 +77,7 @@ impl State {
             stroke_miterlimit: Default::default(),
             text_anchor: Default::default(),
             text_decoration: Default::default(),
+            text_rendering: Default::default(),
             xml_lang: Default::default(),
             unicode_bidi: Default::default(),
             xml_space: Default::default(),
@@ -145,6 +147,10 @@ impl State {
                 self.text_decoration = parse_property(value, ())?;
             }
 
+            Attribute::TextRendering => {
+                self.text_rendering = parse_property(value, ())?;
+            }
+
             Attribute::UnicodeBidi => {
                 self.unicode_bidi = parse_property(value, ())?;
             }
@@ -204,7 +210,6 @@ extern "C" {
     fn rsvg_state_get_dash_offset(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
     fn rsvg_state_get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias;
-    fn rsvg_state_get_text_rendering_type(state: *const RsvgState) -> cairo::Antialias;
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
@@ -334,10 +339,6 @@ pub fn get_current_color(state: *const RsvgState) -> Color {
 
 pub fn get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias {
     unsafe { rsvg_state_get_shape_rendering_type(state) }
-}
-
-pub fn get_text_rendering_type(state: *const RsvgState) -> cairo::Antialias {
-    unsafe { rsvg_state_get_text_rendering_type(state) }
 }
 
 pub fn get_stroke<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
@@ -598,6 +599,17 @@ make_property!(
 );
 
 make_property!(
+    TextAnchor,
+    default: Start,
+    inherits_automatically: true,
+
+    identifiers:
+    "start" => Start,
+    "middle" => Middle,
+    "end" => End,
+);
+
+make_property!(
     TextDecoration,
     inherits_automatically: true,
 
@@ -621,14 +633,15 @@ impl Parse for TextDecoration {
 }
 
 make_property!(
-    TextAnchor,
-    default: Start,
+    TextRendering,
+    default: Auto,
     inherits_automatically: true,
 
     identifiers:
-    "start" => Start,
-    "middle" => Middle,
-    "end" => End,
+    "auto" => Auto,
+    "optimizeSpeed" => OptimizeSpeed,
+    "optimizeLegibility" => OptimizeLegibility,
+    "geometricPrecision" => GeometricPrecision,
 );
 
 make_property!(
@@ -761,6 +774,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     );
     inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
     inherit(inherit_fn, &mut dst.text_decoration, &src.text_decoration);
+    inherit(inherit_fn, &mut dst.text_rendering, &src.text_rendering);
     inherit(inherit_fn, &mut dst.unicode_bidi, &src.unicode_bidi);
     inherit(inherit_fn, &mut dst.xml_lang, &src.xml_lang);
     inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
