@@ -258,6 +258,10 @@ extern "C" {
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
 
+    fn rsvg_state_get_start_marker(state: *const RsvgState) -> *const libc::c_char;
+    fn rsvg_state_get_middle_marker(state: *const RsvgState) -> *const libc::c_char;
+    fn rsvg_state_get_end_marker(state: *const RsvgState) -> *const libc::c_char;
+
     fn rsvg_state_dominate(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_force(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_inherit(state: *mut RsvgState, src: *const RsvgState);
@@ -423,6 +427,39 @@ pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
 
 pub fn get_fill_opacity(state: *const RsvgState) -> u8 {
     unsafe { rsvg_state_get_fill_opacity(state) }
+}
+
+pub fn get_start_marker<'a>(state: *const RsvgState) -> Option<&'a str> {
+    unsafe {
+        let marker = rsvg_state_get_start_marker(state);
+        if marker.is_null() {
+            None
+        } else {
+            Some(utf8_cstr(marker))
+        }
+    }
+}
+
+pub fn get_middle_marker<'a>(state: *const RsvgState) -> Option<&'a str> {
+    unsafe {
+        let marker = rsvg_state_get_middle_marker(state);
+        if marker.is_null() {
+            None
+        } else {
+            Some(utf8_cstr(marker))
+        }
+    }
+}
+
+pub fn get_end_marker<'a>(state: *const RsvgState) -> Option<&'a str> {
+    unsafe {
+        let marker = rsvg_state_get_end_marker(state);
+        if marker.is_null() {
+            None
+        } else {
+            Some(utf8_cstr(marker))
+        }
+    }
 }
 
 pub fn dominate(state: *mut RsvgState, src: *const RsvgState) {

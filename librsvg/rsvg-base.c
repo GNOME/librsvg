@@ -540,30 +540,6 @@ rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx)
     return rsvg_cairo_get_pango_context (draw_ctx);
 }
 
-const char *
-rsvg_get_start_marker (RsvgDrawingCtx *ctx)
-{
-    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
-
-    return state->startMarker;
-}
-
-const char *
-rsvg_get_middle_marker (RsvgDrawingCtx *ctx)
-{
-    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
-
-    return state->middleMarker;
-}
-
-const char *
-rsvg_get_end_marker (RsvgDrawingCtx *ctx)
-{
-    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
-
-    return state->endMarker;
-}
-
 void
 rsvg_drawing_ctx_insert_bbox (RsvgDrawingCtx *draw_ctx, RsvgBbox *bbox)
 {

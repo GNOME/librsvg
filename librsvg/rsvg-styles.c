@@ -1484,6 +1484,24 @@ rsvg_state_get_enable_background (RsvgState *state)
     return rsvg_state_rust_get_enable_background (state->state_rust);
 }
 
+const char *
+rsvg_state_get_start_marker (RsvgState *state)
+{
+    return state->startMarker;
+}
+
+const char *
+rsvg_state_get_middle_marker (RsvgState *state)
+{
+    return state->middleMarker;
+}
+
+const char *
+rsvg_state_get_end_marker (RsvgState *state)
+{
+    return state->endMarker;
+}
+
 State *
 rsvg_state_get_state_rust (RsvgState *state)
 {

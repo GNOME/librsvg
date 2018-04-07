@@ -471,13 +471,6 @@ void rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
                                             gboolean clipping);
 
 G_GNUC_INTERNAL
-const char *rsvg_get_start_marker (RsvgDrawingCtx *ctx);
-G_GNUC_INTERNAL
-const char *rsvg_get_middle_marker (RsvgDrawingCtx *ctx);
-G_GNUC_INTERNAL
-const char *rsvg_get_end_marker (RsvgDrawingCtx *ctx);
-
-G_GNUC_INTERNAL
 void rsvg_render_free           (RsvgRender * render);
 
 G_GNUC_INTERNAL

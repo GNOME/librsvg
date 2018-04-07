@@ -213,6 +213,15 @@ G_GNUC_INTERNAL
 RsvgEnableBackgroundType rsvg_state_get_enable_background (RsvgState *state);
 
 G_GNUC_INTERNAL
+const char *rsvg_state_get_start_marker (RsvgState *state);
+
+G_GNUC_INTERNAL
+const char *rsvg_state_get_middle_marker (RsvgState *state);
+
+G_GNUC_INTERNAL
+const char *rsvg_state_get_end_marker (RsvgState *state);
+
+G_GNUC_INTERNAL
 void rsvg_state_dominate (RsvgState *state, const RsvgState *src);
 
 G_GNUC_INTERNAL
