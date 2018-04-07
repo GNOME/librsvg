@@ -67,8 +67,6 @@ struct _RsvgState {
     gboolean has_stroke_server;
     guint8 stroke_opacity;      /* 0..255 */
     gboolean has_stroke_opacity;
-    RsvgLength stroke_width;
-    gboolean has_stroke_width;
 
     PangoWeight font_weight;
     gboolean has_font_weight;
@@ -180,9 +178,6 @@ RsvgPaintServer *rsvg_state_get_stroke (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint8 rsvg_state_get_stroke_opacity (RsvgState *state);
-
-G_GNUC_INTERNAL
-RsvgLength rsvg_state_get_stroke_width (RsvgState *state);
 
 G_GNUC_INTERNAL
 gboolean rsvg_state_get_cond_true (RsvgState *state);

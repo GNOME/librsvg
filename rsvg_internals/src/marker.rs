@@ -20,7 +20,7 @@ use parsers::{parse, Parse};
 use parsers::ParseError;
 use path_builder::*;
 use property_bag::PropertyBag;
-use state;
+use state::{self, StrokeWidth};
 use util::utf8_cstr;
 use viewbox::*;
 
@@ -676,8 +676,11 @@ pub fn render_markers_for_path_builder(
     clipping: bool,
 ) {
     let state = drawing_ctx::get_current_state(draw_ctx);
-
-    let line_width = state::get_stroke_width(state).normalize(draw_ctx);
+    let line_width = state::get_state_rust(state)
+        .stroke_width
+        .as_ref()
+        .map_or_else(|| StrokeWidth::default().0, |w| w.0)
+        .normalize(draw_ctx);
 
     if line_width.approx_eq_cairo(&0.0) {
         return;

@@ -19,6 +19,7 @@ use state::{
     StrokeLinecap,
     StrokeLinejoin,
     StrokeMiterlimit,
+    StrokeWidth,
     TextRendering,
 };
 use text;
@@ -189,7 +190,13 @@ fn setup_cr_for_stroke(
 ) {
     let rstate = state::get_state_rust(state);
 
-    cr.set_line_width(state::get_stroke_width(state).normalize(draw_ctx));
+    cr.set_line_width(
+        rstate
+            .stroke_width
+            .as_ref()
+            .map_or_else(|| StrokeWidth::default().0, |w| w.0)
+            .normalize(draw_ctx),
+    );
     cr.set_miter_limit(
         rstate
             .stroke_miterlimit

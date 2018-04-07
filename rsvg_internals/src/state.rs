@@ -49,6 +49,7 @@ pub struct State {
     pub stroke_line_cap: Option<StrokeLinecap>,
     pub stroke_line_join: Option<StrokeLinejoin>,
     pub stroke_miterlimit: Option<StrokeMiterlimit>,
+    pub stroke_width: Option<StrokeWidth>,
     pub text_anchor: Option<TextAnchor>,
     pub text_decoration: Option<TextDecoration>,
     pub text_rendering: Option<TextRendering>,
@@ -77,6 +78,7 @@ impl State {
             stroke_line_cap: Default::default(),
             stroke_line_join: Default::default(),
             stroke_miterlimit: Default::default(),
+            stroke_width: Default::default(),
             text_anchor: Default::default(),
             text_decoration: Default::default(),
             text_rendering: Default::default(),
@@ -143,6 +145,10 @@ impl State {
 
             Attribute::StrokeMiterlimit => {
                 self.stroke_miterlimit = parse_property(value, ())?;
+            }
+
+            Attribute::StrokeWidth => {
+                self.stroke_width = parse_property(value, LengthDir::Both)?;
             }
 
             Attribute::TextAnchor => {
@@ -217,7 +223,6 @@ extern "C" {
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
-    fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
     fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
@@ -356,10 +361,6 @@ pub fn get_stroke<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
 
 pub fn get_stroke_opacity(state: *const RsvgState) -> u8 {
     unsafe { rsvg_state_get_stroke_opacity(state) }
-}
-
-pub fn get_stroke_width(state: *const RsvgState) -> RsvgLength {
-    unsafe { rsvg_state_get_stroke_width(state) }
 }
 
 pub fn get_text_dir(state: *const RsvgState) -> pango::Direction {
@@ -612,6 +613,22 @@ make_property!(
 );
 
 make_property!(
+    StrokeWidth,
+    default: RsvgLength::parse("1.0", LengthDir::Both).unwrap(),
+    inherits_automatically: true,
+    newtype: RsvgLength
+);
+
+impl Parse for StrokeWidth {
+    type Data = LengthDir;
+    type Err = AttributeError;
+
+    fn parse(s: &str, dir: LengthDir) -> Result<StrokeWidth, AttributeError> {
+        Ok(StrokeWidth(RsvgLength::parse(s, dir)?))
+    }
+}
+
+make_property!(
     TextAnchor,
     default: Start,
     inherits_automatically: true,
@@ -786,6 +803,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
         &mut dst.stroke_miterlimit,
         &src.stroke_miterlimit,
     );
+    inherit(inherit_fn, &mut dst.stroke_width, &src.stroke_width);
     inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
     inherit(inherit_fn, &mut dst.text_decoration, &src.text_decoration);
     inherit(inherit_fn, &mut dst.text_rendering, &src.text_rendering);
