@@ -24,6 +24,7 @@ use space::xml_space_normalize;
 use state::{
     self,
     FontFamily,
+    FontStretch,
     FontStyle,
     FontVariant,
     LetterSpacing,
@@ -411,6 +412,24 @@ impl From<FontVariant> for pango::Variant {
     }
 }
 
+impl From<FontStretch> for pango::Stretch {
+    fn from(s: FontStretch) -> pango::Stretch {
+        match s {
+            FontStretch::Normal => pango::Stretch::Normal,
+            FontStretch::Wider => pango::Stretch::Expanded, // not quite correct
+            FontStretch::Narrower => pango::Stretch::Condensed, // not quite correct
+            FontStretch::UltraCondensed => pango::Stretch::UltraCondensed,
+            FontStretch::ExtraCondensed => pango::Stretch::ExtraCondensed,
+            FontStretch::Condensed => pango::Stretch::Condensed,
+            FontStretch::SemiCondensed => pango::Stretch::SemiCondensed,
+            FontStretch::SemiExpanded => pango::Stretch::SemiExpanded,
+            FontStretch::Expanded => pango::Stretch::Expanded,
+            FontStretch::ExtraExpanded => pango::Stretch::ExtraExpanded,
+            FontStretch::UltraExpanded => pango::Stretch::UltraExpanded,
+        }
+    }
+}
+
 fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::Layout {
     let state = drawing_ctx::get_current_state(draw_ctx);
     let rstate = state::get_state_rust(state);
@@ -447,7 +466,10 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
     ));
 
     font_desc.set_weight(state::get_font_weight(state));
-    font_desc.set_stretch(state::get_font_stretch(state));
+
+    font_desc.set_stretch(pango::Stretch::from(
+        rstate.font_stretch.unwrap_or_default(),
+    ));
 
     let (_, dpi_y) = drawing_ctx::get_dpi(draw_ctx);
     font_desc.set_size(to_pango_units(
