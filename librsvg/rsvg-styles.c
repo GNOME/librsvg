@@ -1489,3 +1489,14 @@ rsvg_state_get_state_rust (RsvgState *state)
 {
     return state->state_rust;
 }
+
+/* This is defined like this so that we can export the Rust function... just for
+ * the benefit of rsvg-convert.c
+ */
+RsvgCssColorSpec
+rsvg_css_parse_color_ (const char       *str,
+                       AllowInherit      allow_inherit,
+                       AllowCurrentColor allow_current_color)
+{
+    return rsvg_css_parse_color (str, allow_inherit, allow_current_color);
+}
