@@ -42,6 +42,7 @@ pub struct State {
     pub font_family: Option<FontFamily>,
     pub font_size: Option<FontSize>,
     pub font_style: Option<FontStyle>,
+    pub font_stretch: Option<FontStretch>,
     pub font_variant: Option<FontVariant>,
     pub display: Option<Display>,
     pub enable_background: Option<EnableBackground>,
@@ -74,6 +75,7 @@ impl State {
             font_family: Default::default(),
             font_size: Default::default(),
             font_style: Default::default(),
+            font_stretch: Default::default(),
             font_variant: Default::default(),
             display: Default::default(),
             enable_background: Default::default(),
@@ -123,6 +125,10 @@ impl State {
 
             Attribute::FontStyle => {
                 self.font_style = parse_property(value, ())?;
+            }
+
+            Attribute::FontStretch => {
+                self.font_stretch = parse_property(value, ())?;
             }
 
             Attribute::FontVariant => {
@@ -244,7 +250,6 @@ extern "C" {
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
     fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
-    fn rsvg_state_get_font_stretch(state: *const RsvgState) -> pango_sys::PangoStretch;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
 
@@ -403,10 +408,6 @@ pub fn get_font_weight(state: *const RsvgState) -> pango::Weight {
     unsafe { from_glib(rsvg_state_get_font_weight(state)) }
 }
 
-pub fn get_font_stretch(state: *const RsvgState) -> pango::Stretch {
-    unsafe { from_glib(rsvg_state_get_font_stretch(state)) }
-}
-
 pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
     unsafe {
         let ps = rsvg_state_get_fill(state);
@@ -555,6 +556,25 @@ make_property!(
     "normal" => Normal,
     "italic" => Italic,
     "oblique" => Oblique,
+);
+
+make_property!(
+    FontStretch,
+    default: Normal,
+    inherits_automatically: true,
+
+    identifiers:
+    "normal" => Normal,
+    "wider" => Wider,
+    "narrower" => Narrower,
+    "ultra-condensed" => UltraCondensed,
+    "extra-condensed" => ExtraCondensed,
+    "condensed" => Condensed,
+    "semi-condensed" => SemiCondensed,
+    "semi-expanded" => SemiExpanded,
+    "expanded" => Expanded,
+    "extra-expanded" => ExtraExpanded,
+    "ultra-expanded" => UltraExpanded,
 );
 
 make_property!(
@@ -868,6 +888,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.font_family, &src.font_family);
     inherit(inherit_fn, &mut dst.font_size, &src.font_size);
     inherit(inherit_fn, &mut dst.font_style, &src.font_style);
+    inherit(inherit_fn, &mut dst.font_stretch, &src.font_stretch);
     inherit(inherit_fn, &mut dst.font_variant, &src.font_variant);
     inherit(inherit_fn, &mut dst.display, &src.display);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);

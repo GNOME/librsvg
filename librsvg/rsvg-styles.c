@@ -118,7 +118,6 @@ rsvg_state_init (RsvgState * state)
     state->flood_opacity = 255;
 
     state->font_weight = PANGO_WEIGHT_NORMAL;
-    state->font_stretch = PANGO_STRETCH_NORMAL;
     state->text_dir = PANGO_DIRECTION_LTR;
     state->text_gravity = PANGO_GRAVITY_SOUTH;
     state->cond_true = TRUE;
@@ -141,7 +140,6 @@ rsvg_state_init (RsvgState * state)
     state->has_stop_color = FALSE;
     state->has_stop_opacity = FALSE;
     state->has_font_weight = FALSE;
-    state->has_font_stretch = FALSE;
     state->has_text_dir = FALSE;
     state->has_text_gravity = FALSE;
     state->has_startMarker = FALSE;
@@ -315,8 +313,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->cond_true = src->cond_true;
     if (function (dst->has_font_weight, src->has_font_weight))
         dst->font_weight = src->font_weight;
-    if (function (dst->has_font_stretch, src->has_font_stretch))
-        dst->font_stretch = src->font_stretch;
     if (function (dst->has_text_dir, src->has_text_dir))
         dst->text_dir = src->text_dir;
     if (function (dst->has_text_gravity, src->has_text_gravity))
@@ -640,12 +636,6 @@ rsvg_parse_style_pair (RsvgState *state,
     case RSVG_ATTRIBUTE_FONT_WEIGHT:
     {
         state->font_weight = rsvg_css_parse_font_weight (value, &state->has_font_weight);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_FONT_STRETCH:
-    {
-        state->font_stretch = rsvg_css_parse_font_stretch (value, &state->has_font_stretch);
     }
     break;
 
@@ -1484,12 +1474,6 @@ PangoWeight
 rsvg_state_get_font_weight (RsvgState *state)
 {
     return state->font_weight;
-}
-
-PangoStretch
-rsvg_state_get_font_stretch (RsvgState *state)
-{
-    return state->font_stretch;
 }
 
 RsvgPaintServer *

@@ -68,8 +68,6 @@ struct _RsvgState {
 
     PangoWeight font_weight;
     gboolean has_font_weight;
-    PangoStretch font_stretch;
-    gboolean has_font_stretch;
     PangoDirection text_dir;
     gboolean has_text_dir;
     PangoGravity text_gravity;
@@ -206,9 +204,6 @@ PangoGravity rsvg_state_get_text_gravity (RsvgState *state);
 
 G_GNUC_INTERNAL
 PangoWeight rsvg_state_get_font_weight (RsvgState *state);
-
-G_GNUC_INTERNAL
-PangoStretch rsvg_state_get_font_stretch (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_fill (RsvgState *state);
