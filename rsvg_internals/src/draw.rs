@@ -15,6 +15,7 @@ use state::{
     CompOp,
     FillRule,
     RsvgState,
+    ShapeRendering,
     StrokeLinecap,
     StrokeLinejoin,
     StrokeMiterlimit,
@@ -50,8 +51,11 @@ pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &PathBuilder, c
 
 fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
     let state = drawing_ctx::get_current_state(draw_ctx);
+    let rstate = state::get_state_rust(state);
 
-    cr.set_antialias(state::get_shape_rendering_type(state));
+    cr.set_antialias(cairo::Antialias::from(
+        rstate.shape_rendering.unwrap_or_default(),
+    ));
 
     setup_cr_for_stroke(cr, draw_ctx, state);
 
@@ -154,6 +158,15 @@ impl From<FillRule> for cairo::FillRule {
         match f {
             FillRule::NonZero => cairo::FillRule::Winding,
             FillRule::EvenOdd => cairo::FillRule::EvenOdd,
+        }
+    }
+}
+
+impl From<ShapeRendering> for cairo::Antialias {
+    fn from(sr: ShapeRendering) -> cairo::Antialias {
+        match sr {
+            ShapeRendering::Auto | ShapeRendering::GeometricPrecision => cairo::Antialias::Default,
+            ShapeRendering::OptimizeSpeed | ShapeRendering::CrispEdges => cairo::Antialias::None,
         }
     }
 }

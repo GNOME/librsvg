@@ -114,9 +114,6 @@ struct _RsvgState {
     gboolean has_middleMarker;
     gboolean has_endMarker;
 
-    cairo_antialias_t shape_rendering_type;
-    gboolean has_shape_rendering_type;
-
     GHashTable *styles;
 
     State *state_rust;
@@ -228,9 +225,6 @@ RsvgPaintServer *rsvg_state_get_fill (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint8 rsvg_state_get_fill_opacity (RsvgState *state);
-
-G_GNUC_INTERNAL
-cairo_antialias_t rsvg_state_get_shape_rendering_type (RsvgState *state);
 
 G_GNUC_INTERNAL
 cairo_operator_t rsvg_state_get_comp_op (RsvgState *state);
