@@ -68,13 +68,6 @@ enum {
   SHAPE_RENDERING_GEOMETRIC_PRECISION = CAIRO_ANTIALIAS_DEFAULT
 };
 
-enum {
-  TEXT_RENDERING_AUTO = CAIRO_ANTIALIAS_DEFAULT,
-  TEXT_RENDERING_OPTIMIZE_SPEED = CAIRO_ANTIALIAS_NONE,
-  TEXT_RENDERING_OPTIMIZE_LEGIBILITY = CAIRO_ANTIALIAS_DEFAULT,
-  TEXT_RENDERING_GEOMETRIC_PRECISION = CAIRO_ANTIALIAS_DEFAULT
-};
-
 typedef struct _StyleValueData {
     gchar *value;
     gboolean important;
@@ -170,8 +163,6 @@ rsvg_state_init (RsvgState * state)
 
     state->shape_rendering_type = SHAPE_RENDERING_AUTO;
     state->has_shape_rendering_type = FALSE;
-    state->text_rendering_type = TEXT_RENDERING_AUTO;
-    state->has_text_rendering_type = FALSE;
 
     state->styles = g_hash_table_new_full (g_str_hash, g_str_equal,
                                            g_free, (GDestroyNotify) style_value_data_free);
@@ -364,8 +355,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     }
     if (function (dst->has_shape_rendering_type, src->has_shape_rendering_type))
             dst->shape_rendering_type = src->shape_rendering_type;
-    if (function (dst->has_text_rendering_type, src->has_text_rendering_type))
-            dst->text_rendering_type = src->text_rendering_type;
 
     if (function (dst->has_visible, src->has_visible))
         dst->visible = src->visible;
@@ -852,21 +841,6 @@ rsvg_parse_style_pair (RsvgState *state,
             state->shape_rendering_type = SHAPE_RENDERING_CRISP_EDGES;
         else if (g_str_equal (value, "geometricPrecision"))
             state->shape_rendering_type = SHAPE_RENDERING_GEOMETRIC_PRECISION;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_TEXT_RENDERING:
-    {
-        state->has_text_rendering_type = TRUE;
-
-        if (g_str_equal (value, "auto") || g_str_equal (value, "default"))
-            state->text_rendering_type = TEXT_RENDERING_AUTO;
-        else if (g_str_equal (value, "optimizeSpeed"))
-            state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_SPEED;
-        else if (g_str_equal (value, "optimizeLegibility"))
-            state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_LEGIBILITY;
-        else if (g_str_equal (value, "geometricPrecision"))
-            state->text_rendering_type = TEXT_RENDERING_GEOMETRIC_PRECISION;
     }
     break;
 
@@ -1629,12 +1603,6 @@ cairo_antialias_t
 rsvg_state_get_shape_rendering_type (RsvgState *state)
 {
     return state->shape_rendering_type;
-}
-
-cairo_antialias_t
-rsvg_state_get_text_rendering_type (RsvgState *state)
-{
-    return state->text_rendering_type;
 }
 
 cairo_operator_t
