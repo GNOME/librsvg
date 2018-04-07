@@ -60,8 +60,6 @@ struct _RsvgState {
     gboolean has_fill_server;
     guint8 fill_opacity;        /* 0..255 */
     gboolean has_fill_opacity;
-    cairo_fill_rule_t clip_rule;
-    gboolean has_clip_rule;
 
     RsvgPaintServer *stroke;
     gboolean has_stroke_server;
@@ -211,9 +209,6 @@ PangoWeight rsvg_state_get_font_weight (RsvgState *state);
 
 G_GNUC_INTERNAL
 PangoStretch rsvg_state_get_font_stretch (RsvgState *state);
-
-G_GNUC_INTERNAL
-cairo_fill_rule_t rsvg_state_get_clip_rule (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_fill (RsvgState *state);

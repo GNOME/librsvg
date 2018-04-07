@@ -36,6 +36,7 @@ pub struct State {
     pub affine: cairo::Matrix,
 
     pub baseline_shift: Option<BaselineShift>,
+    pub clip_rule: Option<ClipRule>,
     pub comp_op: Option<CompOp>,
     pub fill_rule: Option<FillRule>,
     pub font_family: Option<FontFamily>,
@@ -65,6 +66,7 @@ impl State {
 
             // please keep these sorted
             baseline_shift: Default::default(),
+            clip_rule: Default::default(),
             comp_op: Default::default(),
             fill_rule: Default::default(),
             font_family: Default::default(),
@@ -93,6 +95,10 @@ impl State {
         match attr {
             Attribute::BaselineShift => {
                 self.baseline_shift = parse_property(value, ())?;
+            }
+
+            Attribute::ClipRule => {
+                self.clip_rule = parse_property(value, ())?;
             }
 
             Attribute::CompOp => {
@@ -227,7 +233,6 @@ extern "C" {
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
     fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
     fn rsvg_state_get_font_stretch(state: *const RsvgState) -> pango_sys::PangoStretch;
-    fn rsvg_state_get_clip_rule(state: *const RsvgState) -> cairo::FillRule;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
 
@@ -379,10 +384,6 @@ pub fn get_font_stretch(state: *const RsvgState) -> pango::Stretch {
     unsafe { from_glib(rsvg_state_get_font_stretch(state)) }
 }
 
-pub fn get_clip_rule(state: *const RsvgState) -> cairo::FillRule {
-    unsafe { rsvg_state_get_clip_rule(state) }
-}
-
 pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
     unsafe {
         let ps = rsvg_state_get_fill(state);
@@ -446,6 +447,16 @@ impl Parse for BaselineShift {
         }
     }
 }
+
+make_property!(
+    ClipRule,
+    default: NonZero,
+    inherits_automatically: true,
+
+    identifiers:
+    "nonzero" => NonZero,
+    "evenodd" => EvenOdd,
+);
 
 make_property!(
     CompOp,
@@ -788,6 +799,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
 
     // please keep these sorted
     inherit(inherit_fn, &mut dst.baseline_shift, &src.baseline_shift);
+    inherit(inherit_fn, &mut dst.clip_rule, &src.clip_rule);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
     inherit(inherit_fn, &mut dst.font_family, &src.font_family);
     inherit(inherit_fn, &mut dst.font_size, &src.font_size);

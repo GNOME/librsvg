@@ -114,7 +114,6 @@ rsvg_state_init (RsvgState * state)
     state->stop_color.kind = RSVG_CSS_COLOR_SPEC_INHERIT;
     state->stop_opacity.kind = RSVG_OPACITY_INHERIT;
 
-    state->clip_rule = CAIRO_FILL_RULE_WINDING;
     state->flood_color = 0;
     state->flood_opacity = 255;
 
@@ -135,7 +134,6 @@ rsvg_state_init (RsvgState * state)
     state->has_flood_opacity = FALSE;
     state->has_fill_server = FALSE;
     state->has_fill_opacity = FALSE;
-    state->has_clip_rule = FALSE;
     state->has_stroke_server = FALSE;
     state->has_stroke_opacity = FALSE;
     state->has_dash = FALSE;
@@ -295,8 +293,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     }
     if (function (dst->has_fill_opacity, src->has_fill_opacity))
         dst->fill_opacity = src->fill_opacity;
-    if (function (dst->has_clip_rule, src->has_clip_rule))
-        dst->clip_rule = src->clip_rule;
     if (function (dst->has_stroke_server, src->has_stroke_server)) {
         rsvg_paint_server_ref (src->stroke);
         if (dst->stroke)
@@ -640,18 +636,6 @@ rsvg_parse_style_pair (RsvgState *state,
         }
 
         state->has_fill_opacity = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_CLIP_RULE:
-    {
-        state->has_clip_rule = TRUE;
-        if (g_str_equal (value, "nonzero"))
-            state->clip_rule = CAIRO_FILL_RULE_WINDING;
-        else if (g_str_equal (value, "evenodd"))
-            state->clip_rule = CAIRO_FILL_RULE_EVEN_ODD;
-        else
-            state->has_clip_rule = FALSE;
     }
     break;
 
@@ -1535,12 +1519,6 @@ PangoStretch
 rsvg_state_get_font_stretch (RsvgState *state)
 {
     return state->font_stretch;
-}
-
-cairo_fill_rule_t
-rsvg_state_get_clip_rule (RsvgState *state)
-{
-    return state->clip_rule;
 }
 
 RsvgPaintServer *

@@ -12,6 +12,7 @@ use paint_server;
 use path_builder::PathBuilder;
 use state::{
     self,
+    ClipRule,
     CompOp,
     FillRule,
     RsvgState,
@@ -38,11 +39,9 @@ pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &PathBuilder, c
     builder.to_cairo(&cr);
 
     if clipping {
-        cr.set_fill_rule(state::get_clip_rule(state));
+        cr.set_fill_rule(cairo::FillRule::from(rstate.clip_rule.unwrap_or_default()));
     } else {
-        cr.set_fill_rule(cairo::FillRule::from(
-            state::get_state_rust(state).fill_rule.unwrap_or_default(),
-        ));
+        cr.set_fill_rule(cairo::FillRule::from(rstate.fill_rule.unwrap_or_default()));
 
         stroke_and_fill(&cr, draw_ctx);
 
@@ -150,6 +149,15 @@ impl From<CompOp> for cairo::Operator {
             CompOp::SoftLight => cairo::Operator::SoftLight,
             CompOp::Difference => cairo::Operator::Difference,
             CompOp::Exclusion => cairo::Operator::Exclusion,
+        }
+    }
+}
+
+impl From<ClipRule> for cairo::FillRule {
+    fn from(c: ClipRule) -> cairo::FillRule {
+        match c {
+            ClipRule::NonZero => cairo::FillRule::Winding,
+            ClipRule::EvenOdd => cairo::FillRule::EvenOdd,
         }
     }
 }
