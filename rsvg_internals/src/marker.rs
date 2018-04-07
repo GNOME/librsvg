@@ -20,8 +20,7 @@ use parsers::{parse, Parse};
 use parsers::ParseError;
 use path_builder::*;
 use property_bag::PropertyBag;
-use state;
-use util::utf8_cstr;
+use state::{self, StrokeWidth};
 use viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -589,19 +588,13 @@ enum MarkerType {
 
 fn emit_marker_by_name(
     draw_ctx: *mut RsvgDrawingCtx,
-    marker_name: *const libc::c_char,
+    name: &str,
     xpos: f64,
     ypos: f64,
     computed_angle: f64,
     line_width: f64,
     clipping: bool,
 ) {
-    if marker_name.is_null() {
-        return;
-    }
-
-    let name = unsafe { utf8_cstr(marker_name) };
-
     if let Some(acquired) = drawing_ctx::get_acquired_node_of_type(draw_ctx, name, NodeType::Marker)
     {
         let node = acquired.get();
@@ -617,17 +610,6 @@ fn emit_marker_by_name(
                 clipping,
             )
         });
-    }
-}
-
-fn get_marker_name_from_drawing_ctx(
-    draw_ctx: *const RsvgDrawingCtx,
-    marker_type: MarkerType,
-) -> *const libc::c_char {
-    match marker_type {
-        MarkerType::Start => unsafe { rsvg_get_start_marker(draw_ctx) },
-        MarkerType::Middle => unsafe { rsvg_get_middle_marker(draw_ctx) },
-        MarkerType::End => unsafe { rsvg_get_end_marker(draw_ctx) },
     }
 }
 
@@ -658,47 +640,38 @@ fn emit_marker<E>(
     emit_fn(marker_type, x, y, orient);
 }
 
-extern "C" {
-    fn rsvg_get_start_marker(draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
-    fn rsvg_get_middle_marker(draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
-    fn rsvg_get_end_marker(draw_ctx: *const RsvgDrawingCtx) -> *const libc::c_char;
-}
-
-fn drawing_ctx_has_markers(draw_ctx: *const RsvgDrawingCtx) -> bool {
-    (!get_marker_name_from_drawing_ctx(draw_ctx, MarkerType::Start).is_null()
-        || !get_marker_name_from_drawing_ctx(draw_ctx, MarkerType::Middle).is_null()
-        || !get_marker_name_from_drawing_ctx(draw_ctx, MarkerType::End).is_null())
-}
-
 pub fn render_markers_for_path_builder(
     builder: &PathBuilder,
     draw_ctx: *mut RsvgDrawingCtx,
     clipping: bool,
 ) {
     let state = drawing_ctx::get_current_state(draw_ctx);
-
-    let line_width = state::get_stroke_width(state).normalize(draw_ctx);
+    let line_width = state::get_state_rust(state)
+        .stroke_width
+        .as_ref()
+        .map_or_else(|| StrokeWidth::default().0, |w| w.0)
+        .normalize(draw_ctx);
 
     if line_width.approx_eq_cairo(&0.0) {
         return;
     }
 
-    if !drawing_ctx_has_markers(draw_ctx) {
+    if state::get_start_marker(state).is_none() && state::get_middle_marker(state).is_none()
+        && state::get_end_marker(state).is_none()
+    {
         return;
     }
 
     emit_markers_for_path_builder(
         builder,
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
-            emit_marker_by_name(
-                draw_ctx,
-                get_marker_name_from_drawing_ctx(draw_ctx, marker_type),
-                x,
-                y,
-                computed_angle,
-                line_width,
-                clipping,
-            );
+            if let Some(marker) = match marker_type {
+                MarkerType::Start => state::get_start_marker(state),
+                MarkerType::Middle => state::get_middle_marker(state),
+                MarkerType::End => state::get_end_marker(state),
+            } {
+                emit_marker_by_name(draw_ctx, marker, x, y, computed_angle, line_width, clipping);
+            }
         },
     );
 }

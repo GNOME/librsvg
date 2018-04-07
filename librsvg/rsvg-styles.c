@@ -53,25 +53,13 @@ extern void rsvg_state_rust_free(State *state);
 extern State *rsvg_state_rust_clone(State *state);
 extern cairo_matrix_t rsvg_state_rust_get_affine(const State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
+extern cairo_operator_t rsvg_state_rust_get_comp_op(const State *state);
+extern RsvgEnableBackgroundType rsvg_state_rust_get_enable_background(const State *state);
 
 extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value)
     G_GNUC_WARN_UNUSED_RESULT;
 
-extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn);
-
-enum {
-  SHAPE_RENDERING_AUTO = CAIRO_ANTIALIAS_DEFAULT,
-  SHAPE_RENDERING_OPTIMIZE_SPEED = CAIRO_ANTIALIAS_NONE,
-  SHAPE_RENDERING_CRISP_EDGES = CAIRO_ANTIALIAS_NONE,
-  SHAPE_RENDERING_GEOMETRIC_PRECISION = CAIRO_ANTIALIAS_DEFAULT
-};
-
-enum {
-  TEXT_RENDERING_AUTO = CAIRO_ANTIALIAS_DEFAULT,
-  TEXT_RENDERING_OPTIMIZE_SPEED = CAIRO_ANTIALIAS_NONE,
-  TEXT_RENDERING_OPTIMIZE_LEGIBILITY = CAIRO_ANTIALIAS_DEFAULT,
-  TEXT_RENDERING_GEOMETRIC_PRECISION = CAIRO_ANTIALIAS_DEFAULT
-};
+extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn, gboolean inherituninheritables);
 
 typedef struct _StyleValueData {
     gchar *value;
@@ -115,8 +103,6 @@ rsvg_state_init (RsvgState * state)
     state->fill = rsvg_paint_server_parse (NULL, "#000");
     state->fill_opacity = 0xff;
     state->stroke_opacity = 0xff;
-    state->stroke_width = rsvg_length_parse ("1", LENGTH_DIR_BOTH);
-    state->miter_limit = 4;
 
     /* The following two start as INHERIT, even though has_stop_color and
      * has_stop_opacity get initialized to FALSE below.  This is so that the
@@ -128,17 +114,11 @@ rsvg_state_init (RsvgState * state)
     state->stop_color.kind = RSVG_CSS_COLOR_SPEC_INHERIT;
     state->stop_opacity.kind = RSVG_OPACITY_INHERIT;
 
-    state->clip_rule = CAIRO_FILL_RULE_WINDING;
-    state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
-    state->comp_op = CAIRO_OPERATOR_OVER;
     state->flood_color = 0;
     state->flood_opacity = 255;
 
-    state->font_weight = PANGO_WEIGHT_NORMAL;
-    state->font_stretch = PANGO_STRETCH_NORMAL;
     state->text_dir = PANGO_DIRECTION_LTR;
     state->text_gravity = PANGO_GRAVITY_SOUTH;
-    state->visible = TRUE;
     state->cond_true = TRUE;
     state->filter = NULL;
     state->clip_path = NULL;
@@ -151,29 +131,18 @@ rsvg_state_init (RsvgState * state)
     state->has_flood_opacity = FALSE;
     state->has_fill_server = FALSE;
     state->has_fill_opacity = FALSE;
-    state->has_clip_rule = FALSE;
     state->has_stroke_server = FALSE;
     state->has_stroke_opacity = FALSE;
-    state->has_stroke_width = FALSE;
-    state->has_miter_limit = FALSE;
     state->has_dash = FALSE;
     state->has_dashoffset = FALSE;
-    state->has_visible = FALSE;
     state->has_cond = FALSE;
     state->has_stop_color = FALSE;
     state->has_stop_opacity = FALSE;
-    state->has_font_weight = FALSE;
-    state->has_font_stretch = FALSE;
     state->has_text_dir = FALSE;
     state->has_text_gravity = FALSE;
     state->has_startMarker = FALSE;
     state->has_middleMarker = FALSE;
     state->has_endMarker = FALSE;
-
-    state->shape_rendering_type = SHAPE_RENDERING_AUTO;
-    state->has_shape_rendering_type = FALSE;
-    state->text_rendering_type = TEXT_RENDERING_AUTO;
-    state->has_text_rendering_type = FALSE;
 
     state->styles = g_hash_table_new_full (g_str_hash, g_str_equal,
                                            g_free, (GDestroyNotify) style_value_data_free);
@@ -301,7 +270,8 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 
 static void
 rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
-                        const InheritanceFunction function, const gboolean inherituninheritables)
+                        const InheritanceFunction function,
+                        gboolean inherituninheritables)
 {
     if (function (dst->has_current_color, src->has_current_color))
         dst->current_color = src->current_color;
@@ -317,8 +287,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     }
     if (function (dst->has_fill_opacity, src->has_fill_opacity))
         dst->fill_opacity = src->fill_opacity;
-    if (function (dst->has_clip_rule, src->has_clip_rule))
-        dst->clip_rule = src->clip_rule;
     if (function (dst->has_stroke_server, src->has_stroke_server)) {
         rsvg_paint_server_ref (src->stroke);
         if (dst->stroke)
@@ -327,10 +295,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     }
     if (function (dst->has_stroke_opacity, src->has_stroke_opacity))
         dst->stroke_opacity = src->stroke_opacity;
-    if (function (dst->has_stroke_width, src->has_stroke_width))
-        dst->stroke_width = src->stroke_width;
-    if (function (dst->has_miter_limit, src->has_miter_limit))
-        dst->miter_limit = src->miter_limit;
     if (function (dst->has_stop_color, src->has_stop_color)) {
         if (dst->stop_color.kind == RSVG_CSS_COLOR_SPEC_INHERIT) {
             dst->has_stop_color = TRUE;
@@ -345,10 +309,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     }
     if (function (dst->has_cond, src->has_cond))
         dst->cond_true = src->cond_true;
-    if (function (dst->has_font_weight, src->has_font_weight))
-        dst->font_weight = src->font_weight;
-    if (function (dst->has_font_stretch, src->has_font_stretch))
-        dst->font_stretch = src->font_stretch;
     if (function (dst->has_text_dir, src->has_text_dir))
         dst->text_dir = src->text_dir;
     if (function (dst->has_text_gravity, src->has_text_gravity))
@@ -365,13 +325,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         g_free (dst->endMarker);
         dst->endMarker = g_strdup (src->endMarker);
     }
-    if (function (dst->has_shape_rendering_type, src->has_shape_rendering_type))
-            dst->shape_rendering_type = src->shape_rendering_type;
-    if (function (dst->has_text_rendering_type, src->has_text_rendering_type))
-            dst->text_rendering_type = src->text_rendering_type;
-
-    if (function (dst->has_visible, src->has_visible))
-        dst->visible = src->visible;
 
     if (function (dst->has_dash, src->has_dash)) {
         if (dst->dash) {
@@ -388,7 +341,7 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->dash_offset = src->dash_offset;
     }
 
-    rsvg_state_rust_inherit_run (dst->state_rust, src->state_rust, function);
+    rsvg_state_rust_inherit_run (dst->state_rust, src->state_rust, function, inherituninheritables);
 
     if (inherituninheritables) {
         g_free (dst->clip_path);
@@ -397,9 +350,7 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->mask = g_strdup (src->mask);
         g_free (dst->filter);
         dst->filter = g_strdup (src->filter);
-        dst->enable_background = src->enable_background;
         dst->opacity = src->opacity;
-        dst->comp_op = src->comp_op;
     }
 }
 
@@ -626,94 +577,6 @@ rsvg_parse_style_pair (RsvgState *state,
     }
     break;
 
-    case RSVG_ATTRIBUTE_ENABLE_BACKGROUND:
-    {
-        if (g_str_equal (value, "new"))
-            state->enable_background = RSVG_ENABLE_BACKGROUND_NEW;
-        else
-            state->enable_background = RSVG_ENABLE_BACKGROUND_ACCUMULATE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_COMP_OP:
-    {
-        if (g_str_equal (value, "clear"))
-            state->comp_op = CAIRO_OPERATOR_CLEAR;
-        else if (g_str_equal (value, "src"))
-            state->comp_op = CAIRO_OPERATOR_SOURCE;
-        else if (g_str_equal (value, "dst"))
-            state->comp_op = CAIRO_OPERATOR_DEST;
-        else if (g_str_equal (value, "src-over"))
-            state->comp_op = CAIRO_OPERATOR_OVER;
-        else if (g_str_equal (value, "dst-over"))
-            state->comp_op = CAIRO_OPERATOR_DEST_OVER;
-        else if (g_str_equal (value, "src-in"))
-            state->comp_op = CAIRO_OPERATOR_IN;
-        else if (g_str_equal (value, "dst-in"))
-            state->comp_op = CAIRO_OPERATOR_DEST_IN;
-        else if (g_str_equal (value, "src-out"))
-            state->comp_op = CAIRO_OPERATOR_OUT;
-        else if (g_str_equal (value, "dst-out"))
-            state->comp_op = CAIRO_OPERATOR_DEST_OUT;
-        else if (g_str_equal (value, "src-atop"))
-            state->comp_op = CAIRO_OPERATOR_ATOP;
-        else if (g_str_equal (value, "dst-atop"))
-            state->comp_op = CAIRO_OPERATOR_DEST_ATOP;
-        else if (g_str_equal (value, "xor"))
-            state->comp_op = CAIRO_OPERATOR_XOR;
-        else if (g_str_equal (value, "plus"))
-            state->comp_op = CAIRO_OPERATOR_ADD;
-        else if (g_str_equal (value, "multiply"))
-            state->comp_op = CAIRO_OPERATOR_MULTIPLY;
-        else if (g_str_equal (value, "screen"))
-            state->comp_op = CAIRO_OPERATOR_SCREEN;
-        else if (g_str_equal (value, "overlay"))
-            state->comp_op = CAIRO_OPERATOR_OVERLAY;
-        else if (g_str_equal (value, "darken"))
-            state->comp_op = CAIRO_OPERATOR_DARKEN;
-        else if (g_str_equal (value, "lighten"))
-            state->comp_op = CAIRO_OPERATOR_LIGHTEN;
-        else if (g_str_equal (value, "color-dodge"))
-            state->comp_op = CAIRO_OPERATOR_COLOR_DODGE;
-        else if (g_str_equal (value, "color-burn"))
-            state->comp_op = CAIRO_OPERATOR_COLOR_BURN;
-        else if (g_str_equal (value, "hard-light"))
-            state->comp_op = CAIRO_OPERATOR_HARD_LIGHT;
-        else if (g_str_equal (value, "soft-light"))
-            state->comp_op = CAIRO_OPERATOR_SOFT_LIGHT;
-        else if (g_str_equal (value, "difference"))
-            state->comp_op = CAIRO_OPERATOR_DIFFERENCE;
-        else if (g_str_equal (value, "exclusion"))
-            state->comp_op = CAIRO_OPERATOR_EXCLUSION;
-        else
-            state->comp_op = CAIRO_OPERATOR_OVER;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_DISPLAY:
-    {
-        state->has_visible = TRUE;
-        if (g_str_equal (value, "none"))
-            state->visible = FALSE;
-        else if (!g_str_equal (value, "inherit"))
-            state->visible = TRUE;
-        else
-            state->has_visible = FALSE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_VISIBILITY:
-    {
-        state->has_visible = TRUE;
-        if (g_str_equal (value, "visible"))
-            state->visible = TRUE;
-        else if (!g_str_equal (value, "inherit"))
-            state->visible = FALSE;     /* collapse or hidden */
-        else
-            state->has_visible = FALSE;
-    }
-    break;
-
     case RSVG_ATTRIBUTE_FILL:
     {
         RsvgPaintServer *fill = state->fill;
@@ -739,18 +602,6 @@ rsvg_parse_style_pair (RsvgState *state,
     }
     break;
 
-    case RSVG_ATTRIBUTE_CLIP_RULE:
-    {
-        state->has_clip_rule = TRUE;
-        if (g_str_equal (value, "nonzero"))
-            state->clip_rule = CAIRO_FILL_RULE_WINDING;
-        else if (g_str_equal (value, "evenodd"))
-            state->clip_rule = CAIRO_FILL_RULE_EVEN_ODD;
-        else
-            state->has_clip_rule = FALSE;
-    }
-    break;
-
     case RSVG_ATTRIBUTE_STROKE:
     {
         RsvgPaintServer *stroke = state->stroke;
@@ -759,13 +610,6 @@ rsvg_parse_style_pair (RsvgState *state,
             rsvg_paint_server_parse (&state->has_stroke_server, value);
 
         rsvg_paint_server_unref (stroke);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_STROKE_WIDTH:
-    {
-        state->stroke_width = rsvg_length_parse (value, LENGTH_DIR_BOTH);
-        state->has_stroke_width = TRUE;
     }
     break;
 
@@ -782,18 +626,6 @@ rsvg_parse_style_pair (RsvgState *state,
         }
 
         state->has_stroke_opacity = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_FONT_WEIGHT:
-    {
-        state->font_weight = rsvg_css_parse_font_weight (value, &state->has_font_weight);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_FONT_STRETCH:
-    {
-        state->font_stretch = rsvg_css_parse_font_stretch (value, &state->has_font_stretch);
     }
     break;
 
@@ -900,49 +732,12 @@ rsvg_parse_style_pair (RsvgState *state,
     }
     break;
 
-    case RSVG_ATTRIBUTE_STROKE_MITERLIMIT:
-    {
-        state->has_miter_limit = TRUE;
-        state->miter_limit = g_ascii_strtod (value, NULL);
-    }
-    break;
-
     case RSVG_ATTRIBUTE_STROKE_DASHOFFSET:
     {
         state->has_dashoffset = TRUE;
         state->dash_offset = rsvg_length_parse (value, LENGTH_DIR_BOTH);
         if (state->dash_offset.length < 0.)
             state->dash_offset.length = 0.;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_SHAPE_RENDERING:
-    {
-        state->has_shape_rendering_type = TRUE;
-
-        if (g_str_equal (value, "auto") || g_str_equal (value, "default"))
-            state->shape_rendering_type = SHAPE_RENDERING_AUTO;
-        else if (g_str_equal (value, "optimizeSpeed"))
-            state->shape_rendering_type = SHAPE_RENDERING_OPTIMIZE_SPEED;
-        else if (g_str_equal (value, "crispEdges"))
-            state->shape_rendering_type = SHAPE_RENDERING_CRISP_EDGES;
-        else if (g_str_equal (value, "geometricPrecision"))
-            state->shape_rendering_type = SHAPE_RENDERING_GEOMETRIC_PRECISION;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_TEXT_RENDERING:
-    {
-        state->has_text_rendering_type = TRUE;
-
-        if (g_str_equal (value, "auto") || g_str_equal (value, "default"))
-            state->text_rendering_type = TEXT_RENDERING_AUTO;
-        else if (g_str_equal (value, "optimizeSpeed"))
-            state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_SPEED;
-        else if (g_str_equal (value, "optimizeLegibility"))
-            state->text_rendering_type = TEXT_RENDERING_OPTIMIZE_LEGIBILITY;
-        else if (g_str_equal (value, "geometricPrecision"))
-            state->text_rendering_type = TEXT_RENDERING_GEOMETRIC_PRECISION;
     }
     break;
 
@@ -1561,10 +1356,34 @@ rsvg_state_get_affine (const RsvgState *state)
     return rsvg_state_rust_get_affine (state->state_rust);
 }
 
+const char *
+rsvg_state_get_clip_path (RsvgState *state)
+{
+    return state->clip_path;
+}
+
 void
 rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine)
 {
     rsvg_state_rust_set_affine (state->state_rust, affine);
+}
+
+const char *
+rsvg_state_get_filter (RsvgState *state)
+{
+    return state->filter;
+}
+
+const char *
+rsvg_state_get_mask (RsvgState *state)
+{
+    return state->mask;
+}
+
+guint8
+rsvg_state_get_opacity (RsvgState *state)
+{
+    return state->opacity;
 }
 
 RsvgPaintServer *
@@ -1577,18 +1396,6 @@ guint8
 rsvg_state_get_stroke_opacity (RsvgState *state)
 {
     return state->stroke_opacity;
-}
-
-RsvgLength
-rsvg_state_get_stroke_width (RsvgState *state)
-{
-    return state->stroke_width;
-}
-
-double
-rsvg_state_get_miter_limit (RsvgState *state)
-{
-    return state->miter_limit;
 }
 
 gboolean
@@ -1653,24 +1460,6 @@ rsvg_state_get_text_gravity (RsvgState *state)
     return state->text_gravity;
 }
 
-PangoWeight
-rsvg_state_get_font_weight (RsvgState *state)
-{
-    return state->font_weight;
-}
-
-PangoStretch
-rsvg_state_get_font_stretch (RsvgState *state)
-{
-    return state->font_stretch;
-}
-
-cairo_fill_rule_t
-rsvg_state_get_clip_rule (RsvgState *state)
-{
-    return state->clip_rule;
-}
-
 RsvgPaintServer *
 rsvg_state_get_fill (RsvgState *state)
 {
@@ -1683,26 +1472,49 @@ rsvg_state_get_fill_opacity (RsvgState *state)
     return state->fill_opacity;
 }
 
-cairo_antialias_t
-rsvg_state_get_shape_rendering_type (RsvgState *state)
-{
-    return state->shape_rendering_type;
-}
-
-cairo_antialias_t
-rsvg_state_get_text_rendering_type (RsvgState *state)
-{
-    return state->text_rendering_type;
-}
-
 cairo_operator_t
 rsvg_state_get_comp_op (RsvgState *state)
 {
-    return state->comp_op;
+    return rsvg_state_rust_get_comp_op (state->state_rust);
+}
+
+RsvgEnableBackgroundType
+rsvg_state_get_enable_background (RsvgState *state)
+{
+    return rsvg_state_rust_get_enable_background (state->state_rust);
+}
+
+const char *
+rsvg_state_get_start_marker (RsvgState *state)
+{
+    return state->startMarker;
+}
+
+const char *
+rsvg_state_get_middle_marker (RsvgState *state)
+{
+    return state->middleMarker;
+}
+
+const char *
+rsvg_state_get_end_marker (RsvgState *state)
+{
+    return state->endMarker;
 }
 
 State *
 rsvg_state_get_state_rust (RsvgState *state)
 {
     return state->state_rust;
+}
+
+/* This is defined like this so that we can export the Rust function... just for
+ * the benefit of rsvg-convert.c
+ */
+RsvgCssColorSpec
+rsvg_css_parse_color_ (const char       *str,
+                       AllowInherit      allow_inherit,
+                       AllowCurrentColor allow_current_color)
+{
+    return rsvg_css_parse_color (str, allow_inherit, allow_current_color);
 }

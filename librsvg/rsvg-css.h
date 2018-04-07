@@ -89,11 +89,6 @@ typedef struct {
 G_GNUC_INTERNAL
 RsvgOpacitySpec rsvg_css_parse_opacity (const char *str);
 
-G_GNUC_INTERNAL
-PangoWeight	 rsvg_css_parse_font_weight	    (const char *str, gboolean * inherit);
-G_GNUC_INTERNAL
-PangoStretch rsvg_css_parse_font_stretch    (const char *str, gboolean * inherit);
-
 /* Implemented in rust/src/parsers.rs */
 G_GNUC_INTERNAL
 gboolean rsvg_css_parse_number_optional_number (const char *str, double *out_x, double *out_y);

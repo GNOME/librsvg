@@ -10,7 +10,19 @@ use float_eq_cairo::ApproxEqCairo;
 use length::StrokeDasharray;
 use paint_server;
 use path_builder::PathBuilder;
-use state::{self, FillRule, RsvgState, StrokeLinecap, StrokeLinejoin};
+use state::{
+    self,
+    ClipRule,
+    CompOp,
+    FillRule,
+    RsvgState,
+    ShapeRendering,
+    StrokeLinecap,
+    StrokeLinejoin,
+    StrokeMiterlimit,
+    StrokeWidth,
+    TextRendering,
+};
 use text;
 
 pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &PathBuilder, clipping: bool) {
@@ -27,11 +39,9 @@ pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &PathBuilder, c
     builder.to_cairo(&cr);
 
     if clipping {
-        cr.set_fill_rule(state::get_clip_rule(state));
+        cr.set_fill_rule(cairo::FillRule::from(rstate.clip_rule.unwrap_or_default()));
     } else {
-        cr.set_fill_rule(cairo::FillRule::from(
-            state::get_state_rust(state).fill_rule.unwrap_or_default(),
-        ));
+        cr.set_fill_rule(cairo::FillRule::from(rstate.fill_rule.unwrap_or_default()));
 
         stroke_and_fill(&cr, draw_ctx);
 
@@ -41,8 +51,11 @@ pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &PathBuilder, c
 
 fn stroke_and_fill(cr: &cairo::Context, draw_ctx: *mut RsvgDrawingCtx) {
     let state = drawing_ctx::get_current_state(draw_ctx);
+    let rstate = state::get_state_rust(state);
 
-    cr.set_antialias(state::get_shape_rendering_type(state));
+    cr.set_antialias(cairo::Antialias::from(
+        rstate.shape_rendering.unwrap_or_default(),
+    ));
 
     setup_cr_for_stroke(cr, draw_ctx, state);
 
@@ -109,11 +122,71 @@ impl From<StrokeLinecap> for cairo::LineCap {
     }
 }
 
+impl From<CompOp> for cairo::Operator {
+    fn from(op: CompOp) -> cairo::Operator {
+        match op {
+            CompOp::Clear => cairo::Operator::Clear,
+            CompOp::Src => cairo::Operator::Source,
+            CompOp::Dst => cairo::Operator::Dest,
+            CompOp::SrcOver => cairo::Operator::Over,
+            CompOp::DstOver => cairo::Operator::DestOver,
+            CompOp::SrcIn => cairo::Operator::In,
+            CompOp::DstIn => cairo::Operator::DestIn,
+            CompOp::SrcOut => cairo::Operator::Out,
+            CompOp::DstOut => cairo::Operator::DestOut,
+            CompOp::SrcAtop => cairo::Operator::Atop,
+            CompOp::DstAtop => cairo::Operator::DestAtop,
+            CompOp::Xor => cairo::Operator::Xor,
+            CompOp::Plus => cairo::Operator::Add,
+            CompOp::Multiply => cairo::Operator::Multiply,
+            CompOp::Screen => cairo::Operator::Screen,
+            CompOp::Overlay => cairo::Operator::Overlay,
+            CompOp::Darken => cairo::Operator::Darken,
+            CompOp::Lighten => cairo::Operator::Lighten,
+            CompOp::ColorDodge => cairo::Operator::ColorDodge,
+            CompOp::ColorBurn => cairo::Operator::ColorBurn,
+            CompOp::HardLight => cairo::Operator::HardLight,
+            CompOp::SoftLight => cairo::Operator::SoftLight,
+            CompOp::Difference => cairo::Operator::Difference,
+            CompOp::Exclusion => cairo::Operator::Exclusion,
+        }
+    }
+}
+
+impl From<ClipRule> for cairo::FillRule {
+    fn from(c: ClipRule) -> cairo::FillRule {
+        match c {
+            ClipRule::NonZero => cairo::FillRule::Winding,
+            ClipRule::EvenOdd => cairo::FillRule::EvenOdd,
+        }
+    }
+}
+
 impl From<FillRule> for cairo::FillRule {
     fn from(f: FillRule) -> cairo::FillRule {
         match f {
             FillRule::NonZero => cairo::FillRule::Winding,
             FillRule::EvenOdd => cairo::FillRule::EvenOdd,
+        }
+    }
+}
+
+impl From<ShapeRendering> for cairo::Antialias {
+    fn from(sr: ShapeRendering) -> cairo::Antialias {
+        match sr {
+            ShapeRendering::Auto | ShapeRendering::GeometricPrecision => cairo::Antialias::Default,
+            ShapeRendering::OptimizeSpeed | ShapeRendering::CrispEdges => cairo::Antialias::None,
+        }
+    }
+}
+
+impl From<TextRendering> for cairo::Antialias {
+    fn from(tr: TextRendering) -> cairo::Antialias {
+        match tr {
+            TextRendering::Auto
+            | TextRendering::OptimizeLegibility
+            | TextRendering::GeometricPrecision => cairo::Antialias::Default,
+            TextRendering::OptimizeSpeed => cairo::Antialias::None,
         }
     }
 }
@@ -125,8 +198,19 @@ fn setup_cr_for_stroke(
 ) {
     let rstate = state::get_state_rust(state);
 
-    cr.set_line_width(state::get_stroke_width(state).normalize(draw_ctx));
-    cr.set_miter_limit(state::get_miter_limit(state));
+    cr.set_line_width(
+        rstate
+            .stroke_width
+            .as_ref()
+            .map_or_else(|| StrokeWidth::default().0, |w| w.0)
+            .normalize(draw_ctx),
+    );
+    cr.set_miter_limit(
+        rstate
+            .stroke_miterlimit
+            .as_ref()
+            .map_or_else(|| StrokeMiterlimit::default().0, |l| l.0),
+    );
     cr.set_line_cap(cairo::LineCap::from(
         rstate.stroke_line_cap.unwrap_or_default(),
     ));
@@ -219,7 +303,8 @@ pub fn draw_pango_layout(
     clipping: bool,
 ) {
     let state = drawing_ctx::get_current_state(draw_ctx);
-    let rust_state = state::get_state_rust(state);
+    let rstate = state::get_state_rust(state);
+
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
     let gravity = layout.get_context().unwrap().get_gravity();
 
@@ -229,7 +314,7 @@ pub fn draw_pango_layout(
         return;
     }
 
-    let bbox = compute_text_bbox(&ink, x, y, &rust_state.affine, gravity);
+    let bbox = compute_text_bbox(&ink, x, y, &rstate.affine, gravity);
 
     let fill = state::get_fill(state);
     let stroke = state::get_stroke(state);
@@ -238,11 +323,13 @@ pub fn draw_pango_layout(
         drawing_ctx::insert_bbox(draw_ctx, &bbox);
     }
 
-    cr.set_antialias(state::get_text_rendering_type(state));
+    cr.set_antialias(cairo::Antialias::from(
+        rstate.text_rendering.unwrap_or_default(),
+    ));
 
     setup_cr_for_stroke(&cr, draw_ctx, state);
 
-    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &rust_state.affine);
+    drawing_ctx::set_affine_on_cr(draw_ctx, &cr, &rstate.affine);
 
     let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
 
@@ -343,6 +430,8 @@ pub fn draw_surface(
     }
 
     let state = drawing_ctx::get_current_state(draw_ctx);
+    let rstate = state::get_state_rust(state);
+
     let cr = drawing_ctx::get_cairo_context(draw_ctx);
     let affine = state::get_state_rust(state).affine;
 
@@ -369,7 +458,7 @@ pub fn draw_surface(
     let x = x * width / w;
     let y = y * height / h;
 
-    cr.set_operator(state::get_comp_op(state));
+    cr.set_operator(cairo::Operator::from(rstate.comp_op.unwrap_or_default()));
 
     cr.set_source_surface(&surface, x, y);
     cr.paint();

@@ -510,7 +510,7 @@ rsvg_drawing_ctx_draw_node_from_stack (RsvgDrawingCtx *ctx,
 
     state = rsvg_node_get_state (node);
 
-    if (state->visible) {
+    if (rsvg_state_is_visible (state)) {
         rsvg_drawing_ctx_state_push (ctx);
         rsvg_node_draw (node, ctx, dominate, clipping);
         rsvg_drawing_ctx_state_pop (ctx);
@@ -538,30 +538,6 @@ PangoContext *
 rsvg_drawing_ctx_get_pango_context (RsvgDrawingCtx *draw_ctx)
 {
     return rsvg_cairo_get_pango_context (draw_ctx);
-}
-
-const char *
-rsvg_get_start_marker (RsvgDrawingCtx *ctx)
-{
-    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
-
-    return state->startMarker;
-}
-
-const char *
-rsvg_get_middle_marker (RsvgDrawingCtx *ctx)
-{
-    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
-
-    return state->middleMarker;
-}
-
-const char *
-rsvg_get_end_marker (RsvgDrawingCtx *ctx)
-{
-    RsvgState *state = rsvg_drawing_ctx_get_current_state (ctx);
-
-    return state->endMarker;
 }
 
 void

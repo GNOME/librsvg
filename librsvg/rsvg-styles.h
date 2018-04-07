@@ -36,6 +36,7 @@
 
 G_BEGIN_DECLS 
 
+/* Keep in sync with rust/src/state.c:EnableBackgroundC */
 typedef enum {
     RSVG_ENABLE_BACKGROUND_ACCUMULATE,
     RSVG_ENABLE_BACKGROUND_NEW
@@ -59,22 +60,12 @@ struct _RsvgState {
     gboolean has_fill_server;
     guint8 fill_opacity;        /* 0..255 */
     gboolean has_fill_opacity;
-    cairo_fill_rule_t clip_rule;
-    gboolean has_clip_rule;
 
     RsvgPaintServer *stroke;
     gboolean has_stroke_server;
     guint8 stroke_opacity;      /* 0..255 */
     gboolean has_stroke_opacity;
-    RsvgLength stroke_width;
-    gboolean has_stroke_width;
-    double miter_limit;
-    gboolean has_miter_limit;
 
-    PangoWeight font_weight;
-    gboolean has_font_weight;
-    PangoStretch font_stretch;
-    gboolean has_font_stretch;
     PangoDirection text_dir;
     gboolean has_text_dir;
     PangoGravity text_gravity;
@@ -87,9 +78,6 @@ struct _RsvgState {
 
     RsvgOpacitySpec stop_opacity;
     gboolean has_stop_opacity;
-
-    gboolean visible;
-    gboolean has_visible;
 
     gboolean has_cond;
     gboolean cond_true;
@@ -114,15 +102,6 @@ struct _RsvgState {
     gboolean has_startMarker;
     gboolean has_middleMarker;
     gboolean has_endMarker;
-
-    cairo_operator_t comp_op;
-    RsvgEnableBackgroundType enable_background;
-
-    cairo_antialias_t shape_rendering_type;
-    gboolean has_shape_rendering_type;
-
-    cairo_antialias_t text_rendering_type;
-    gboolean has_text_rendering_type;
 
     GHashTable *styles;
 
@@ -174,16 +153,25 @@ G_GNUC_INTERNAL
 void rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine);
 
 G_GNUC_INTERNAL
+gboolean rsvg_state_is_visible (RsvgState *state);
+
+G_GNUC_INTERNAL
+const char *rsvg_state_get_clip_path (RsvgState *state);
+
+G_GNUC_INTERNAL
+const char *rsvg_state_get_filter (RsvgState *state);
+
+G_GNUC_INTERNAL
+const char *rsvg_state_get_mask (RsvgState *state);
+
+G_GNUC_INTERNAL
+guint8 rsvg_state_get_opacity (RsvgState *state);
+
+G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_stroke (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint8 rsvg_state_get_stroke_opacity (RsvgState *state);
-
-G_GNUC_INTERNAL
-RsvgLength rsvg_state_get_stroke_width (RsvgState *state);
-
-G_GNUC_INTERNAL
-double rsvg_state_get_miter_limit (RsvgState *state);
 
 G_GNUC_INTERNAL
 gboolean rsvg_state_get_cond_true (RsvgState *state);
@@ -213,28 +201,25 @@ G_GNUC_INTERNAL
 PangoGravity rsvg_state_get_text_gravity (RsvgState *state);
 
 G_GNUC_INTERNAL
-PangoWeight rsvg_state_get_font_weight (RsvgState *state);
-
-G_GNUC_INTERNAL
-PangoStretch rsvg_state_get_font_stretch (RsvgState *state);
-
-G_GNUC_INTERNAL
-cairo_fill_rule_t rsvg_state_get_clip_rule (RsvgState *state);
-
-G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_fill (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint8 rsvg_state_get_fill_opacity (RsvgState *state);
 
 G_GNUC_INTERNAL
-cairo_antialias_t rsvg_state_get_shape_rendering_type (RsvgState *state);
-
-G_GNUC_INTERNAL
-cairo_antialias_t rsvg_state_get_text_rendering_type (RsvgState *state);
-
-G_GNUC_INTERNAL
 cairo_operator_t rsvg_state_get_comp_op (RsvgState *state);
+
+G_GNUC_INTERNAL
+RsvgEnableBackgroundType rsvg_state_get_enable_background (RsvgState *state);
+
+G_GNUC_INTERNAL
+const char *rsvg_state_get_start_marker (RsvgState *state);
+
+G_GNUC_INTERNAL
+const char *rsvg_state_get_middle_marker (RsvgState *state);
+
+G_GNUC_INTERNAL
+const char *rsvg_state_get_end_marker (RsvgState *state);
 
 G_GNUC_INTERNAL
 void rsvg_state_dominate (RsvgState *state, const RsvgState *src);

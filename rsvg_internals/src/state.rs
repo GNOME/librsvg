@@ -36,18 +36,29 @@ pub struct State {
     pub affine: cairo::Matrix,
 
     pub baseline_shift: Option<BaselineShift>,
+    pub clip_rule: Option<ClipRule>,
+    pub comp_op: Option<CompOp>,
     pub fill_rule: Option<FillRule>,
     pub font_family: Option<FontFamily>,
     pub font_size: Option<FontSize>,
+    pub font_stretch: Option<FontStretch>,
     pub font_style: Option<FontStyle>,
     pub font_variant: Option<FontVariant>,
+    pub font_weight: Option<FontWeight>,
+    pub display: Option<Display>,
+    pub enable_background: Option<EnableBackground>,
     pub letter_spacing: Option<LetterSpacing>,
     pub overflow: Option<Overflow>,
+    pub shape_rendering: Option<ShapeRendering>,
     pub stroke_line_cap: Option<StrokeLinecap>,
     pub stroke_line_join: Option<StrokeLinejoin>,
+    pub stroke_miterlimit: Option<StrokeMiterlimit>,
+    pub stroke_width: Option<StrokeWidth>,
     pub text_anchor: Option<TextAnchor>,
     pub text_decoration: Option<TextDecoration>,
+    pub text_rendering: Option<TextRendering>,
     pub unicode_bidi: Option<UnicodeBidi>,
+    pub visibility: Option<Visibility>,
     pub xml_lang: Option<XmlLang>,
     pub xml_space: Option<XmlSpace>,
 }
@@ -59,19 +70,30 @@ impl State {
 
             // please keep these sorted
             baseline_shift: Default::default(),
+            clip_rule: Default::default(),
+            comp_op: Default::default(),
             fill_rule: Default::default(),
             font_family: Default::default(),
             font_size: Default::default(),
+            font_stretch: Default::default(),
             font_style: Default::default(),
             font_variant: Default::default(),
+            font_weight: Default::default(),
+            display: Default::default(),
+            enable_background: Default::default(),
             letter_spacing: Default::default(),
             overflow: Default::default(),
+            shape_rendering: Default::default(),
             stroke_line_cap: Default::default(),
             stroke_line_join: Default::default(),
+            stroke_miterlimit: Default::default(),
+            stroke_width: Default::default(),
             text_anchor: Default::default(),
             text_decoration: Default::default(),
-            xml_lang: Default::default(),
+            text_rendering: Default::default(),
             unicode_bidi: Default::default(),
+            visibility: Default::default(),
+            xml_lang: Default::default(),
             xml_space: Default::default(),
         }
     }
@@ -81,6 +103,14 @@ impl State {
         match attr {
             Attribute::BaselineShift => {
                 self.baseline_shift = parse_property(value, ())?;
+            }
+
+            Attribute::ClipRule => {
+                self.clip_rule = parse_property(value, ())?;
+            }
+
+            Attribute::CompOp => {
+                self.comp_op = parse_property(value, ())?;
             }
 
             Attribute::FillRule => {
@@ -95,12 +125,28 @@ impl State {
                 self.font_size = parse_property(value, LengthDir::Both)?;
             }
 
+            Attribute::FontStretch => {
+                self.font_stretch = parse_property(value, ())?;
+            }
+
             Attribute::FontStyle => {
                 self.font_style = parse_property(value, ())?;
             }
 
             Attribute::FontVariant => {
                 self.font_variant = parse_property(value, ())?;
+            }
+
+            Attribute::FontWeight => {
+                self.font_weight = parse_property(value, ())?;
+            }
+
+            Attribute::Display => {
+                self.display = parse_property(value, ())?;
+            }
+
+            Attribute::EnableBackground => {
+                self.enable_background = parse_property(value, ())?;
             }
 
             Attribute::LetterSpacing => {
@@ -111,12 +157,24 @@ impl State {
                 self.overflow = parse_property(value, ())?;
             }
 
+            Attribute::ShapeRendering => {
+                self.shape_rendering = parse_property(value, ())?;
+            }
+
             Attribute::StrokeLinecap => {
                 self.stroke_line_cap = parse_property(value, ())?;
             }
 
             Attribute::StrokeLinejoin => {
                 self.stroke_line_join = parse_property(value, ())?;
+            }
+
+            Attribute::StrokeMiterlimit => {
+                self.stroke_miterlimit = parse_property(value, ())?;
+            }
+
+            Attribute::StrokeWidth => {
+                self.stroke_width = parse_property(value, LengthDir::Both)?;
             }
 
             Attribute::TextAnchor => {
@@ -127,8 +185,16 @@ impl State {
                 self.text_decoration = parse_property(value, ())?;
             }
 
+            Attribute::TextRendering => {
+                self.text_rendering = parse_property(value, ())?;
+            }
+
             Attribute::UnicodeBidi => {
                 self.unicode_bidi = parse_property(value, ())?;
+            }
+
+            Attribute::Visibility => {
+                self.visibility = parse_property(value, ())?;
             }
 
             Attribute::XmlLang => {
@@ -185,20 +251,16 @@ extern "C" {
     fn rsvg_state_get_stroke_dasharray(state: *const RsvgState) -> *const StrokeDasharray;
     fn rsvg_state_get_dash_offset(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
-    fn rsvg_state_get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias;
-    fn rsvg_state_get_text_rendering_type(state: *const RsvgState) -> cairo::Antialias;
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
-    fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
-    fn rsvg_state_get_miter_limit(state: *const RsvgState) -> f64;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
-    fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
-    fn rsvg_state_get_font_stretch(state: *const RsvgState) -> pango_sys::PangoStretch;
-    fn rsvg_state_get_clip_rule(state: *const RsvgState) -> cairo::FillRule;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
-    fn rsvg_state_get_comp_op(state: *const RsvgState) -> cairo::Operator;
+
+    fn rsvg_state_get_start_marker(state: *const RsvgState) -> *const libc::c_char;
+    fn rsvg_state_get_middle_marker(state: *const RsvgState) -> *const libc::c_char;
+    fn rsvg_state_get_end_marker(state: *const RsvgState) -> *const libc::c_char;
 
     fn rsvg_state_dominate(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_force(state: *mut RsvgState, src: *const RsvgState);
@@ -262,6 +324,17 @@ pub fn is_overflow(state: *const RsvgState) -> bool {
     }
 }
 
+pub fn is_visible(state: *const RsvgState) -> bool {
+    let rstate = get_state_rust(state);
+
+    match (rstate.display, rstate.visibility) {
+        (None, None) => true,
+        (Some(Display::None), _) => false,
+        (_, Some(Visibility::Visible)) => true,
+        _ => false,
+    }
+}
+
 pub fn get_cond_true(state: *const RsvgState) -> bool {
     unsafe { from_glib(rsvg_state_get_cond_true(state)) }
 }
@@ -316,14 +389,6 @@ pub fn get_current_color(state: *const RsvgState) -> Color {
     Color::from(argb)
 }
 
-pub fn get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias {
-    unsafe { rsvg_state_get_shape_rendering_type(state) }
-}
-
-pub fn get_text_rendering_type(state: *const RsvgState) -> cairo::Antialias {
-    unsafe { rsvg_state_get_text_rendering_type(state) }
-}
-
 pub fn get_stroke<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
     unsafe {
         let ps = rsvg_state_get_stroke(state);
@@ -340,32 +405,12 @@ pub fn get_stroke_opacity(state: *const RsvgState) -> u8 {
     unsafe { rsvg_state_get_stroke_opacity(state) }
 }
 
-pub fn get_stroke_width(state: *const RsvgState) -> RsvgLength {
-    unsafe { rsvg_state_get_stroke_width(state) }
-}
-
-pub fn get_miter_limit(state: *const RsvgState) -> f64 {
-    unsafe { rsvg_state_get_miter_limit(state) }
-}
-
 pub fn get_text_dir(state: *const RsvgState) -> pango::Direction {
     unsafe { from_glib(rsvg_state_get_text_dir(state)) }
 }
 
 pub fn get_text_gravity(state: *const RsvgState) -> pango::Gravity {
     unsafe { from_glib(rsvg_state_get_text_gravity(state)) }
-}
-
-pub fn get_font_weight(state: *const RsvgState) -> pango::Weight {
-    unsafe { from_glib(rsvg_state_get_font_weight(state)) }
-}
-
-pub fn get_font_stretch(state: *const RsvgState) -> pango::Stretch {
-    unsafe { from_glib(rsvg_state_get_font_stretch(state)) }
-}
-
-pub fn get_clip_rule(state: *const RsvgState) -> cairo::FillRule {
-    unsafe { rsvg_state_get_clip_rule(state) }
 }
 
 pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
@@ -384,8 +429,37 @@ pub fn get_fill_opacity(state: *const RsvgState) -> u8 {
     unsafe { rsvg_state_get_fill_opacity(state) }
 }
 
-pub fn get_comp_op(state: *const RsvgState) -> cairo::Operator {
-    unsafe { rsvg_state_get_comp_op(state) }
+pub fn get_start_marker<'a>(state: *const RsvgState) -> Option<&'a str> {
+    unsafe {
+        let marker = rsvg_state_get_start_marker(state);
+        if marker.is_null() {
+            None
+        } else {
+            Some(utf8_cstr(marker))
+        }
+    }
+}
+
+pub fn get_middle_marker<'a>(state: *const RsvgState) -> Option<&'a str> {
+    unsafe {
+        let marker = rsvg_state_get_middle_marker(state);
+        if marker.is_null() {
+            None
+        } else {
+            Some(utf8_cstr(marker))
+        }
+    }
+}
+
+pub fn get_end_marker<'a>(state: *const RsvgState) -> Option<&'a str> {
+    unsafe {
+        let marker = rsvg_state_get_end_marker(state);
+        if marker.is_null() {
+            None
+        } else {
+            Some(utf8_cstr(marker))
+        }
+    }
 }
 
 pub fn dominate(state: *mut RsvgState, src: *const RsvgState) {
@@ -437,6 +511,48 @@ impl Parse for BaselineShift {
 }
 
 make_property!(
+    ClipRule,
+    default: NonZero,
+    inherits_automatically: true,
+
+    identifiers:
+    "nonzero" => NonZero,
+    "evenodd" => EvenOdd,
+);
+
+make_property!(
+    CompOp,
+    default: SrcOver,
+    inherits_automatically: false,
+
+    identifiers:
+    "clear" => Clear,
+    "src" => Src,
+    "dst" => Dst,
+    "src-over" => SrcOver,
+    "dst-over" => DstOver,
+    "src-in" => SrcIn,
+    "dst-in" => DstIn,
+    "src-out" => SrcOut,
+    "dst-out" => DstOut,
+    "src-atop" => SrcAtop,
+    "dst-atop" => DstAtop,
+    "xor" => Xor,
+    "plus" => Plus,
+    "multiply" => Multiply,
+    "screen" => Screen,
+    "overlay" => Overlay,
+    "darken" => Darken,
+    "lighten" => Lighten,
+    "color-dodge" => ColorDodge,
+    "color-burn" => ColorBurn,
+    "hard-light" => HardLight,
+    "soft-light" => SoftLight,
+    "difference" => Difference,
+    "exclusion" => Exclusion,
+);
+
+make_property!(
     FillRule,
     default: NonZero,
     inherits_automatically: true,
@@ -470,6 +586,25 @@ impl Parse for FontSize {
 }
 
 make_property!(
+    FontStretch,
+    default: Normal,
+    inherits_automatically: true,
+
+    identifiers:
+    "normal" => Normal,
+    "wider" => Wider,
+    "narrower" => Narrower,
+    "ultra-condensed" => UltraCondensed,
+    "extra-condensed" => ExtraCondensed,
+    "condensed" => Condensed,
+    "semi-condensed" => SemiCondensed,
+    "semi-expanded" => SemiExpanded,
+    "expanded" => Expanded,
+    "extra-expanded" => ExtraExpanded,
+    "ultra-expanded" => UltraExpanded,
+);
+
+make_property!(
     FontStyle,
     default: Normal,
     inherits_automatically: true,
@@ -488,6 +623,62 @@ make_property!(
     identifiers:
     "normal" => Normal,
     "small-caps" => SmallCaps,
+);
+
+make_property!(
+    FontWeight,
+    default: Normal,
+    inherits_automatically: true,
+
+    identifiers:
+    "normal" => Normal,
+    "bold" => Bold,
+    "bolder" => Bolder,
+    "lighter" => Lighter,
+    "100" => W100, // FIXME: we should use Weight(100),
+    "200" => W200, // but we need a smarter macro for that
+    "300" => W300,
+    "400" => W400,
+    "500" => W500,
+    "600" => W600,
+    "700" => W700,
+    "800" => W800,
+    "900" => W900,
+);
+
+make_property!(
+    Display,
+    default: Inline,
+    inherits_automatically: true,
+
+    identifiers:
+    "inline" => Inline,
+    "block" => Block,
+    "list-item" => ListItem,
+    "run-in" => RunIn,
+    "compact" => Compact,
+    "marker" => Marker,
+    "table" => Table,
+    "inline-table" => InlineTable,
+    "table-row-group" => TableRowGroup,
+    "table-header-group" => TableHeaderGroup,
+    "table-footer-group" => TableFooterGroup,
+    "table-row" => TableRow,
+    "table-column-group" => TableColumnGroup,
+    "table-column" => TableColumn,
+    "table-cell" => TableCell,
+    "table-caption" => TableCaption,
+    "none" => None,
+);
+
+make_property!(
+    EnableBackground,
+    default: Accumulate,
+    inherits_automatically: false,
+
+    identifiers:
+    "accumulate" => Accumulate,
+    "new" => New,
 );
 
 make_property!(
@@ -519,6 +710,18 @@ make_property!(
 );
 
 make_property!(
+    ShapeRendering,
+    default: Auto,
+    inherits_automatically: true,
+
+    identifiers:
+    "auto" => Auto,
+    "optimizeSpeed" => OptimizeSpeed,
+    "geometricPrecision" => GeometricPrecision,
+    "crispEdges" => CrispEdges,
+);
+
+make_property!(
     StrokeLinecap,
     default: Butt,
     inherits_automatically: true,
@@ -538,6 +741,40 @@ make_property!(
     "miter" => Miter,
     "round" => Round,
     "bevel" => Bevel,
+);
+
+make_property!(
+    StrokeMiterlimit,
+    default: 4f64,
+    inherits_automatically: true,
+    newtype_from_str: f64
+);
+
+make_property!(
+    StrokeWidth,
+    default: RsvgLength::parse("1.0", LengthDir::Both).unwrap(),
+    inherits_automatically: true,
+    newtype: RsvgLength
+);
+
+impl Parse for StrokeWidth {
+    type Data = LengthDir;
+    type Err = AttributeError;
+
+    fn parse(s: &str, dir: LengthDir) -> Result<StrokeWidth, AttributeError> {
+        Ok(StrokeWidth(RsvgLength::parse(s, dir)?))
+    }
+}
+
+make_property!(
+    TextAnchor,
+    default: Start,
+    inherits_automatically: true,
+
+    identifiers:
+    "start" => Start,
+    "middle" => Middle,
+    "end" => End,
 );
 
 make_property!(
@@ -564,14 +801,15 @@ impl Parse for TextDecoration {
 }
 
 make_property!(
-    TextAnchor,
-    default: Start,
+    TextRendering,
+    default: Auto,
     inherits_automatically: true,
 
     identifiers:
-    "start" => Start,
-    "middle" => Middle,
-    "end" => End,
+    "auto" => Auto,
+    "optimizeSpeed" => OptimizeSpeed,
+    "optimizeLegibility" => OptimizeLegibility,
+    "geometricPrecision" => GeometricPrecision,
 );
 
 make_property!(
@@ -583,6 +821,17 @@ make_property!(
     "normal" => Normal,
     "embed" => Embed,
     "bidi-override" => Override,
+);
+
+make_property!(
+    Visibility,
+    default: Visible,
+    inherits_automatically: true,
+
+    identifiers:
+    "visible" => Visible,
+    "hidden" => Hidden,
+    "collapse" => Collapse,
 );
 
 make_property!(
@@ -610,6 +859,11 @@ pub extern "C" fn rsvg_state_reconstruct(state: *mut RsvgState, raw_node: *const
     let node: &RsvgNode = unsafe { &*raw_node };
 
     reconstruct(state, node);
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_is_visible(state: *const RsvgState) -> glib_sys::gboolean {
+    is_visible(state).to_glib()
 }
 
 // Rust State API for consumption from C ----------------------------------------
@@ -678,6 +932,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     dst: *mut State,
     src: *const State,
     inherit_fn: extern "C" fn(glib_sys::gboolean, glib_sys::gboolean) -> glib_sys::gboolean,
+    inheritunheritables: glib_sys::gboolean,
 ) {
     assert!(!dst.is_null());
     assert!(!src.is_null());
@@ -687,20 +942,38 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
 
     // please keep these sorted
     inherit(inherit_fn, &mut dst.baseline_shift, &src.baseline_shift);
+    inherit(inherit_fn, &mut dst.clip_rule, &src.clip_rule);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
     inherit(inherit_fn, &mut dst.font_family, &src.font_family);
     inherit(inherit_fn, &mut dst.font_size, &src.font_size);
+    inherit(inherit_fn, &mut dst.font_stretch, &src.font_stretch);
     inherit(inherit_fn, &mut dst.font_style, &src.font_style);
     inherit(inherit_fn, &mut dst.font_variant, &src.font_variant);
+    inherit(inherit_fn, &mut dst.font_weight, &src.font_weight);
+    inherit(inherit_fn, &mut dst.display, &src.display);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);
+    inherit(inherit_fn, &mut dst.shape_rendering, &src.shape_rendering);
     inherit(inherit_fn, &mut dst.stroke_line_cap, &src.stroke_line_cap);
     inherit(inherit_fn, &mut dst.stroke_line_join, &src.stroke_line_join);
+    inherit(
+        inherit_fn,
+        &mut dst.stroke_miterlimit,
+        &src.stroke_miterlimit,
+    );
+    inherit(inherit_fn, &mut dst.stroke_width, &src.stroke_width);
     inherit(inherit_fn, &mut dst.text_anchor, &src.text_anchor);
     inherit(inherit_fn, &mut dst.text_decoration, &src.text_decoration);
+    inherit(inherit_fn, &mut dst.text_rendering, &src.text_rendering);
     inherit(inherit_fn, &mut dst.unicode_bidi, &src.unicode_bidi);
+    inherit(inherit_fn, &mut dst.visibility, &src.visibility);
     inherit(inherit_fn, &mut dst.xml_lang, &src.xml_lang);
     inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
+
+    if from_glib(inheritunheritables) {
+        dst.comp_op.clone_from(&src.comp_op);
+        dst.enable_background.clone_from(&src.enable_background);
+    }
 }
 
 #[no_mangle]
@@ -716,5 +989,38 @@ pub extern "C" fn rsvg_state_rust_set_affine(state: *mut State, affine: cairo::M
     unsafe {
         let state = &mut *state;
         state.affine = affine;
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_comp_op(state: *const State) -> cairo::Operator {
+    unsafe {
+        let state = &*state;
+        cairo::Operator::from(state.comp_op.unwrap_or_default())
+    }
+}
+
+// Keep in sync with rsvg-styles.h:RsvgEnableBackgroundType
+#[allow(dead_code)]
+#[repr(C)]
+pub enum EnableBackgroundC {
+    Accumulate,
+    New,
+}
+
+impl From<EnableBackground> for EnableBackgroundC {
+    fn from(e: EnableBackground) -> EnableBackgroundC {
+        match e {
+            EnableBackground::Accumulate => EnableBackgroundC::Accumulate,
+            EnableBackground::New => EnableBackgroundC::New,
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_enable_background(state: *const State) -> EnableBackgroundC {
+    unsafe {
+        let state = &*state;
+        EnableBackgroundC::from(state.enable_background.unwrap_or_default())
     }
 }
