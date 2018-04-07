@@ -66,8 +66,6 @@ struct _RsvgState {
     guint8 stroke_opacity;      /* 0..255 */
     gboolean has_stroke_opacity;
 
-    PangoWeight font_weight;
-    gboolean has_font_weight;
     PangoDirection text_dir;
     gboolean has_text_dir;
     PangoGravity text_gravity;
@@ -201,9 +199,6 @@ PangoDirection rsvg_state_get_text_dir (RsvgState *state);
 
 G_GNUC_INTERNAL
 PangoGravity rsvg_state_get_text_gravity (RsvgState *state);
-
-G_GNUC_INTERNAL
-PangoWeight rsvg_state_get_font_weight (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_fill (RsvgState *state);

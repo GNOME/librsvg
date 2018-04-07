@@ -36,20 +36,8 @@
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#include <errno.h>
-#include <math.h>
 
 #include <libxml/parser.h>
-
-#include <libcroco/libcroco.h>
-
-#define POINTS_PER_INCH (72.0)
-#define CM_PER_INCH     (2.54)
-#define MM_PER_INCH     (25.4)
-#define PICA_PER_INCH   (6.0)
-
-#define SETINHERIT() G_STMT_START {if (inherit != NULL) *inherit = TRUE;} G_STMT_END
-#define UNSETINHERIT() G_STMT_START {if (inherit != NULL) *inherit = FALSE;} G_STMT_END
 
 /* This is defined like this so that we can export the Rust function... just for
  * the benefit of rsvg-convert.c
@@ -59,45 +47,6 @@ RsvgCssColorSpec rsvg_css_parse_color_ (const char       *str,
                                         AllowCurrentColor allow_current_color)
 {
     return rsvg_css_parse_color (str, allow_inherit, allow_current_color);
-}
-
-PangoWeight
-rsvg_css_parse_font_weight (const char *str, gboolean * inherit)
-{
-    SETINHERIT ();
-    if (str) {
-        if (!strcmp (str, "lighter"))
-            return PANGO_WEIGHT_LIGHT;
-        else if (!strcmp (str, "bold"))
-            return PANGO_WEIGHT_BOLD;
-        else if (!strcmp (str, "bolder"))
-            return PANGO_WEIGHT_ULTRABOLD;
-        else if (!strcmp (str, "100"))
-            return (PangoWeight) 100;
-        else if (!strcmp (str, "200"))
-            return (PangoWeight) 200;
-        else if (!strcmp (str, "300"))
-            return (PangoWeight) 300;
-        else if (!strcmp (str, "400"))
-            return (PangoWeight) 400;
-        else if (!strcmp (str, "500"))
-            return (PangoWeight) 500;
-        else if (!strcmp (str, "600"))
-            return (PangoWeight) 600;
-        else if (!strcmp (str, "700"))
-            return (PangoWeight) 700;
-        else if (!strcmp (str, "800"))
-            return (PangoWeight) 800;
-        else if (!strcmp (str, "900"))
-            return (PangoWeight) 900;
-        else if (!strcmp (str, "inherit")) {
-            UNSETINHERIT ();
-            return PANGO_WEIGHT_NORMAL;
-        }
-    }
-
-    UNSETINHERIT ();
-    return PANGO_WEIGHT_NORMAL;
 }
 
 static void

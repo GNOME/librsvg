@@ -44,6 +44,7 @@ pub struct State {
     pub font_stretch: Option<FontStretch>,
     pub font_style: Option<FontStyle>,
     pub font_variant: Option<FontVariant>,
+    pub font_weight: Option<FontWeight>,
     pub display: Option<Display>,
     pub enable_background: Option<EnableBackground>,
     pub letter_spacing: Option<LetterSpacing>,
@@ -77,6 +78,7 @@ impl State {
             font_stretch: Default::default(),
             font_style: Default::default(),
             font_variant: Default::default(),
+            font_weight: Default::default(),
             display: Default::default(),
             enable_background: Default::default(),
             letter_spacing: Default::default(),
@@ -133,6 +135,10 @@ impl State {
 
             Attribute::FontVariant => {
                 self.font_variant = parse_property(value, ())?;
+            }
+
+            Attribute::FontWeight => {
+                self.font_weight = parse_property(value, ())?;
             }
 
             Attribute::Display => {
@@ -249,7 +255,6 @@ extern "C" {
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
-    fn rsvg_state_get_font_weight(state: *const RsvgState) -> pango_sys::PangoWeight;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
 
@@ -402,10 +407,6 @@ pub fn get_text_dir(state: *const RsvgState) -> pango::Direction {
 
 pub fn get_text_gravity(state: *const RsvgState) -> pango::Gravity {
     unsafe { from_glib(rsvg_state_get_text_gravity(state)) }
-}
-
-pub fn get_font_weight(state: *const RsvgState) -> pango::Weight {
-    unsafe { from_glib(rsvg_state_get_font_weight(state)) }
 }
 
 pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
@@ -585,6 +586,27 @@ make_property!(
     identifiers:
     "normal" => Normal,
     "small-caps" => SmallCaps,
+);
+
+make_property!(
+    FontWeight,
+    default: Normal,
+    inherits_automatically: true,
+
+    identifiers:
+    "normal" => Normal,
+    "bold" => Bold,
+    "bolder" => Bolder,
+    "lighter" => Lighter,
+    "100" => W100, // FIXME: we should use Weight(100),
+    "200" => W200, // but we need a smarter macro for that
+    "300" => W300,
+    "400" => W400,
+    "500" => W500,
+    "600" => W600,
+    "700" => W700,
+    "800" => W800,
+    "900" => W900,
 );
 
 make_property!(
@@ -890,6 +912,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.font_stretch, &src.font_stretch);
     inherit(inherit_fn, &mut dst.font_style, &src.font_style);
     inherit(inherit_fn, &mut dst.font_variant, &src.font_variant);
+    inherit(inherit_fn, &mut dst.font_weight, &src.font_weight);
     inherit(inherit_fn, &mut dst.display, &src.display);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);
