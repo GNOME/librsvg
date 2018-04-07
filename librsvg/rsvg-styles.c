@@ -61,13 +61,6 @@ extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute att
 
 extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn, gboolean inherituninheritables);
 
-enum {
-  SHAPE_RENDERING_AUTO = CAIRO_ANTIALIAS_DEFAULT,
-  SHAPE_RENDERING_OPTIMIZE_SPEED = CAIRO_ANTIALIAS_NONE,
-  SHAPE_RENDERING_CRISP_EDGES = CAIRO_ANTIALIAS_NONE,
-  SHAPE_RENDERING_GEOMETRIC_PRECISION = CAIRO_ANTIALIAS_DEFAULT
-};
-
 typedef struct _StyleValueData {
     gchar *value;
     gboolean important;
@@ -160,9 +153,6 @@ rsvg_state_init (RsvgState * state)
     state->has_startMarker = FALSE;
     state->has_middleMarker = FALSE;
     state->has_endMarker = FALSE;
-
-    state->shape_rendering_type = SHAPE_RENDERING_AUTO;
-    state->has_shape_rendering_type = FALSE;
 
     state->styles = g_hash_table_new_full (g_str_hash, g_str_equal,
                                            g_free, (GDestroyNotify) style_value_data_free);
@@ -353,8 +343,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         g_free (dst->endMarker);
         dst->endMarker = g_strdup (src->endMarker);
     }
-    if (function (dst->has_shape_rendering_type, src->has_shape_rendering_type))
-            dst->shape_rendering_type = src->shape_rendering_type;
 
     if (function (dst->has_visible, src->has_visible))
         dst->visible = src->visible;
@@ -826,21 +814,6 @@ rsvg_parse_style_pair (RsvgState *state,
         state->dash_offset = rsvg_length_parse (value, LENGTH_DIR_BOTH);
         if (state->dash_offset.length < 0.)
             state->dash_offset.length = 0.;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_SHAPE_RENDERING:
-    {
-        state->has_shape_rendering_type = TRUE;
-
-        if (g_str_equal (value, "auto") || g_str_equal (value, "default"))
-            state->shape_rendering_type = SHAPE_RENDERING_AUTO;
-        else if (g_str_equal (value, "optimizeSpeed"))
-            state->shape_rendering_type = SHAPE_RENDERING_OPTIMIZE_SPEED;
-        else if (g_str_equal (value, "crispEdges"))
-            state->shape_rendering_type = SHAPE_RENDERING_CRISP_EDGES;
-        else if (g_str_equal (value, "geometricPrecision"))
-            state->shape_rendering_type = SHAPE_RENDERING_GEOMETRIC_PRECISION;
     }
     break;
 
@@ -1597,12 +1570,6 @@ guint8
 rsvg_state_get_fill_opacity (RsvgState *state)
 {
     return state->fill_opacity;
-}
-
-cairo_antialias_t
-rsvg_state_get_shape_rendering_type (RsvgState *state)
-{
-    return state->shape_rendering_type;
 }
 
 cairo_operator_t

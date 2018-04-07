@@ -45,6 +45,7 @@ pub struct State {
     pub enable_background: Option<EnableBackground>,
     pub letter_spacing: Option<LetterSpacing>,
     pub overflow: Option<Overflow>,
+    pub shape_rendering: Option<ShapeRendering>,
     pub stroke_line_cap: Option<StrokeLinecap>,
     pub stroke_line_join: Option<StrokeLinejoin>,
     pub stroke_miterlimit: Option<StrokeMiterlimit>,
@@ -72,6 +73,7 @@ impl State {
             enable_background: Default::default(),
             letter_spacing: Default::default(),
             overflow: Default::default(),
+            shape_rendering: Default::default(),
             stroke_line_cap: Default::default(),
             stroke_line_join: Default::default(),
             stroke_miterlimit: Default::default(),
@@ -125,6 +127,10 @@ impl State {
 
             Attribute::Overflow => {
                 self.overflow = parse_property(value, ())?;
+            }
+
+            Attribute::ShapeRendering => {
+                self.shape_rendering = parse_property(value, ())?;
             }
 
             Attribute::StrokeLinecap => {
@@ -209,7 +215,6 @@ extern "C" {
     fn rsvg_state_get_stroke_dasharray(state: *const RsvgState) -> *const StrokeDasharray;
     fn rsvg_state_get_dash_offset(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
-    fn rsvg_state_get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias;
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_stroke_width(state: *const RsvgState) -> RsvgLength;
@@ -335,10 +340,6 @@ pub fn get_current_color(state: *const RsvgState) -> Color {
     let argb = unsafe { rsvg_state_get_current_color(state) };
 
     Color::from(argb)
-}
-
-pub fn get_shape_rendering_type(state: *const RsvgState) -> cairo::Antialias {
-    unsafe { rsvg_state_get_shape_rendering_type(state) }
 }
 
 pub fn get_stroke<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
@@ -570,6 +571,18 @@ make_property!(
 );
 
 make_property!(
+    ShapeRendering,
+    default: Auto,
+    inherits_automatically: true,
+
+    identifiers:
+    "auto" => Auto,
+    "optimizeSpeed" => OptimizeSpeed,
+    "geometricPrecision" => GeometricPrecision,
+    "crispEdges" => CrispEdges,
+);
+
+make_property!(
     StrokeLinecap,
     default: Butt,
     inherits_automatically: true,
@@ -765,6 +778,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.font_variant, &src.font_variant);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);
+    inherit(inherit_fn, &mut dst.shape_rendering, &src.shape_rendering);
     inherit(inherit_fn, &mut dst.stroke_line_cap, &src.stroke_line_cap);
     inherit(inherit_fn, &mut dst.stroke_line_join, &src.stroke_line_join);
     inherit(
