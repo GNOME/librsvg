@@ -43,6 +43,7 @@ pub struct State {
     pub font_size: Option<FontSize>,
     pub font_style: Option<FontStyle>,
     pub font_variant: Option<FontVariant>,
+    pub display: Option<Display>,
     pub enable_background: Option<EnableBackground>,
     pub letter_spacing: Option<LetterSpacing>,
     pub overflow: Option<Overflow>,
@@ -55,6 +56,7 @@ pub struct State {
     pub text_decoration: Option<TextDecoration>,
     pub text_rendering: Option<TextRendering>,
     pub unicode_bidi: Option<UnicodeBidi>,
+    pub visibility: Option<Visibility>,
     pub xml_lang: Option<XmlLang>,
     pub xml_space: Option<XmlSpace>,
 }
@@ -73,6 +75,7 @@ impl State {
             font_size: Default::default(),
             font_style: Default::default(),
             font_variant: Default::default(),
+            display: Default::default(),
             enable_background: Default::default(),
             letter_spacing: Default::default(),
             overflow: Default::default(),
@@ -84,8 +87,9 @@ impl State {
             text_anchor: Default::default(),
             text_decoration: Default::default(),
             text_rendering: Default::default(),
-            xml_lang: Default::default(),
             unicode_bidi: Default::default(),
+            visibility: Default::default(),
+            xml_lang: Default::default(),
             xml_space: Default::default(),
         }
     }
@@ -123,6 +127,10 @@ impl State {
 
             Attribute::FontVariant => {
                 self.font_variant = parse_property(value, ())?;
+            }
+
+            Attribute::Display => {
+                self.display = parse_property(value, ())?;
             }
 
             Attribute::EnableBackground => {
@@ -171,6 +179,10 @@ impl State {
 
             Attribute::UnicodeBidi => {
                 self.unicode_bidi = parse_property(value, ())?;
+            }
+
+            Attribute::Visibility => {
+                self.visibility = parse_property(value, ())?;
             }
 
             Attribute::XmlLang => {
@@ -294,6 +306,17 @@ pub fn is_overflow(state: *const RsvgState) -> bool {
 
     match rstate.overflow {
         Some(Overflow::Auto) | Some(Overflow::Visible) => true,
+        _ => false,
+    }
+}
+
+pub fn is_visible(state: *const RsvgState) -> bool {
+    let rstate = get_state_rust(state);
+
+    match (rstate.display, rstate.visibility) {
+        (None, None) => true,
+        (Some(Display::None), _) => false,
+        (_, Some(Visibility::Visible)) => true,
         _ => false,
     }
 }
@@ -545,6 +568,31 @@ make_property!(
 );
 
 make_property!(
+    Display,
+    default: Inline,
+    inherits_automatically: true,
+
+    identifiers:
+    "inline" => Inline,
+    "block" => Block,
+    "list-item" => ListItem,
+    "run-in" => RunIn,
+    "compact" => Compact,
+    "marker" => Marker,
+    "table" => Table,
+    "inline-table" => InlineTable,
+    "table-row-group" => TableRowGroup,
+    "table-header-group" => TableHeaderGroup,
+    "table-footer-group" => TableFooterGroup,
+    "table-row" => TableRow,
+    "table-column-group" => TableColumnGroup,
+    "table-column" => TableColumn,
+    "table-cell" => TableCell,
+    "table-caption" => TableCaption,
+    "none" => None,
+);
+
+make_property!(
     EnableBackground,
     default: Accumulate,
     inherits_automatically: false,
@@ -697,6 +745,17 @@ make_property!(
 );
 
 make_property!(
+    Visibility,
+    default: Visible,
+    inherits_automatically: true,
+
+    identifiers:
+    "visible" => Visible,
+    "hidden" => Hidden,
+    "collapse" => Collapse,
+);
+
+make_property!(
     XmlLang,
     default: "C".to_string(),
     inherits_automatically: true,
@@ -721,6 +780,11 @@ pub extern "C" fn rsvg_state_reconstruct(state: *mut RsvgState, raw_node: *const
     let node: &RsvgNode = unsafe { &*raw_node };
 
     reconstruct(state, node);
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_is_visible(state: *const RsvgState) -> glib_sys::gboolean {
+    is_visible(state).to_glib()
 }
 
 // Rust State API for consumption from C ----------------------------------------
@@ -805,6 +869,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.font_size, &src.font_size);
     inherit(inherit_fn, &mut dst.font_style, &src.font_style);
     inherit(inherit_fn, &mut dst.font_variant, &src.font_variant);
+    inherit(inherit_fn, &mut dst.display, &src.display);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);
     inherit(inherit_fn, &mut dst.shape_rendering, &src.shape_rendering);
@@ -820,6 +885,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.text_decoration, &src.text_decoration);
     inherit(inherit_fn, &mut dst.text_rendering, &src.text_rendering);
     inherit(inherit_fn, &mut dst.unicode_bidi, &src.unicode_bidi);
+    inherit(inherit_fn, &mut dst.visibility, &src.visibility);
     inherit(inherit_fn, &mut dst.xml_lang, &src.xml_lang);
     inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
 

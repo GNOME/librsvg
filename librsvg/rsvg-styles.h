@@ -83,9 +83,6 @@ struct _RsvgState {
     RsvgOpacitySpec stop_opacity;
     gboolean has_stop_opacity;
 
-    gboolean visible;
-    gboolean has_visible;
-
     gboolean has_cond;
     gboolean cond_true;
 
@@ -158,6 +155,9 @@ cairo_matrix_t rsvg_state_get_affine (const RsvgState *state);
 
 G_GNUC_INTERNAL
 void rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine);
+
+G_GNUC_INTERNAL
+gboolean rsvg_state_is_visible (RsvgState *state);
 
 G_GNUC_INTERNAL
 const char *rsvg_state_get_clip_path (RsvgState *state);

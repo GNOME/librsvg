@@ -121,7 +121,6 @@ rsvg_state_init (RsvgState * state)
     state->font_stretch = PANGO_STRETCH_NORMAL;
     state->text_dir = PANGO_DIRECTION_LTR;
     state->text_gravity = PANGO_GRAVITY_SOUTH;
-    state->visible = TRUE;
     state->cond_true = TRUE;
     state->filter = NULL;
     state->clip_path = NULL;
@@ -138,7 +137,6 @@ rsvg_state_init (RsvgState * state)
     state->has_stroke_opacity = FALSE;
     state->has_dash = FALSE;
     state->has_dashoffset = FALSE;
-    state->has_visible = FALSE;
     state->has_cond = FALSE;
     state->has_stop_color = FALSE;
     state->has_stop_opacity = FALSE;
@@ -335,9 +333,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         g_free (dst->endMarker);
         dst->endMarker = g_strdup (src->endMarker);
     }
-
-    if (function (dst->has_visible, src->has_visible))
-        dst->visible = src->visible;
 
     if (function (dst->has_dash, src->has_dash)) {
         if (dst->dash) {
@@ -587,30 +582,6 @@ rsvg_parse_style_pair (RsvgState *state,
     {
         g_free (state->clip_path);
         state->clip_path = rsvg_css_parse_url (value);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_DISPLAY:
-    {
-        state->has_visible = TRUE;
-        if (g_str_equal (value, "none"))
-            state->visible = FALSE;
-        else if (!g_str_equal (value, "inherit"))
-            state->visible = TRUE;
-        else
-            state->has_visible = FALSE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_VISIBILITY:
-    {
-        state->has_visible = TRUE;
-        if (g_str_equal (value, "visible"))
-            state->visible = TRUE;
-        else if (!g_str_equal (value, "inherit"))
-            state->visible = FALSE;     /* collapse or hidden */
-        else
-            state->has_visible = FALSE;
     }
     break;
 

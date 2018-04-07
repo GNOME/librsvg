@@ -125,6 +125,7 @@ pub use shapes::{
 };
 
 pub use state::{
+    rsvg_state_is_visible,
     rsvg_state_reconstruct,
     rsvg_state_rust_clone,
     rsvg_state_rust_free,
