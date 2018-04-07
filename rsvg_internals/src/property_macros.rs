@@ -38,17 +38,8 @@ macro_rules! make_property {
             $($variant),+
         }
 
-        impl Default for $name {
-            fn default() -> $name {
-                $name::$default
-            }
-        }
-
-        impl ::property_macros::Property for $name {
-            fn inherits_automatically() -> bool {
-                $inherits_automatically
-            }
-        }
+        impl_default!($name, $name::$default);
+        impl_property!($name, $inherits_automatically);
 
         impl ::parsers::Parse for $name {
             type Data = ();
@@ -72,17 +63,8 @@ macro_rules! make_property {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name(pub $type);
 
-        impl Default for $name {
-            fn default() -> $name {
-                $name($default)
-            }
-        }
-
-        impl ::property_macros::Property for $name {
-            fn inherits_automatically() -> bool {
-                $inherits_automatically
-            }
-        }
+        impl_default!($name, $name($default));
+        impl_property!($name, $inherits_automatically);
 
         impl ::parsers::Parse for $name {
             type Data = ();
@@ -107,17 +89,8 @@ macro_rules! make_property {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name(pub $type);
 
-        impl Default for $name {
-            fn default() -> $name {
-                $name($default)
-            }
-        }
-
-        impl ::property_macros::Property for $name {
-            fn inherits_automatically() -> bool {
-                $inherits_automatically
-            }
-        }
+        impl_default!($name, $name($default));
+        impl_property!($name, $inherits_automatically);
     };
 
     ($name: ident,
@@ -130,20 +103,29 @@ macro_rules! make_property {
             $(pub $field_name: $field_type),+
         }
 
+        impl_default!($name, $name { $($field_name: $field_default),+ });
+        impl_property!($name, $inherits_automatically);
+    };
+}
+
+macro_rules! impl_default {
+    ($name: ident, $default: expr) => {
         impl Default for $name {
             fn default() -> $name {
-                $name {
-                    $($field_name: $field_default),+
-                }
+                $default
             }
         }
+    }
+}
 
+macro_rules! impl_property {
+    ($name: ident, $inherits_automatically: expr) => {
         impl ::property_macros::Property for $name {
             fn inherits_automatically() -> bool {
                 $inherits_automatically
             }
         }
-    };
+    }
 }
 
 #[cfg(test)]
