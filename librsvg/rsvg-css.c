@@ -100,37 +100,6 @@ rsvg_css_parse_font_weight (const char *str, gboolean * inherit)
     return PANGO_WEIGHT_NORMAL;
 }
 
-PangoStretch
-rsvg_css_parse_font_stretch (const char *str, gboolean * inherit)
-{
-    SETINHERIT ();
-
-    if (str) {
-        if (!strcmp (str, "ultra-condensed"))
-            return PANGO_STRETCH_ULTRA_CONDENSED;
-        else if (!strcmp (str, "extra-condensed"))
-            return PANGO_STRETCH_EXTRA_CONDENSED;
-        else if (!strcmp (str, "condensed") || !strcmp (str, "narrower"))       /* narrower not quite correct */
-            return PANGO_STRETCH_CONDENSED;
-        else if (!strcmp (str, "semi-condensed"))
-            return PANGO_STRETCH_SEMI_CONDENSED;
-        else if (!strcmp (str, "semi-expanded"))
-            return PANGO_STRETCH_SEMI_EXPANDED;
-        else if (!strcmp (str, "expanded") || !strcmp (str, "wider"))   /* wider not quite correct */
-            return PANGO_STRETCH_EXPANDED;
-        else if (!strcmp (str, "extra-expanded"))
-            return PANGO_STRETCH_EXTRA_EXPANDED;
-        else if (!strcmp (str, "ultra-expanded"))
-            return PANGO_STRETCH_ULTRA_EXPANDED;
-        else if (!strcmp (str, "inherit")) {
-            UNSETINHERIT ();
-            return PANGO_STRETCH_NORMAL;
-        }
-    }
-    UNSETINHERIT ();
-    return PANGO_STRETCH_NORMAL;
-}
-
 static void
 rsvg_xml_noerror (void *data, xmlErrorPtr error)
 {
