@@ -13,6 +13,7 @@ use drawing_ctx::RsvgDrawingCtx;
 use error::*;
 use float_eq_cairo::ApproxEqCairo;
 use handle::RsvgHandle;
+use iri::IRI;
 use length::{LengthDir, RsvgLength};
 use node::*;
 use parsers;
@@ -646,7 +647,8 @@ pub fn render_markers_for_path_builder(
     clipping: bool,
 ) {
     let state = drawing_ctx::get_current_state(draw_ctx);
-    let line_width = state::get_state_rust(state)
+    let rstate = state::get_state_rust(state);
+    let line_width = rstate
         .stroke_width
         .as_ref()
         .map_or_else(|| StrokeWidth::default().0, |w| w.0)
@@ -656,19 +658,17 @@ pub fn render_markers_for_path_builder(
         return;
     }
 
-    if state::get_start_marker(state).is_none() && state::get_middle_marker(state).is_none()
-        && state::get_end_marker(state).is_none()
-    {
+    if rstate.marker_start.is_none() && rstate.marker_mid.is_none() && rstate.marker_end.is_none() {
         return;
     }
 
     emit_markers_for_path_builder(
         builder,
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: f64| {
-            if let Some(marker) = match marker_type {
-                MarkerType::Start => state::get_start_marker(state),
-                MarkerType::Middle => state::get_middle_marker(state),
-                MarkerType::End => state::get_end_marker(state),
+            if let Some(&IRI::Resource(ref marker)) = match marker_type {
+                MarkerType::Start => rstate.marker_start.as_ref().map(|m| &m.0),
+                MarkerType::Middle => rstate.marker_mid.as_ref().map(|m| &m.0),
+                MarkerType::End => rstate.marker_end.as_ref().map(|m| &m.0),
             } {
                 emit_marker_by_name(draw_ctx, marker, x, y, computed_angle, line_width, clipping);
             }

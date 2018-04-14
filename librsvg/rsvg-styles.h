@@ -96,13 +96,6 @@ struct _RsvgState {
     guchar flood_opacity;
     gboolean has_flood_opacity;
 
-    char *startMarker;
-    char *middleMarker;
-    char *endMarker;
-    gboolean has_startMarker;
-    gboolean has_middleMarker;
-    gboolean has_endMarker;
-
     GHashTable *styles;
 
     State *state_rust;
@@ -211,15 +204,6 @@ cairo_operator_t rsvg_state_get_comp_op (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgEnableBackgroundType rsvg_state_get_enable_background (RsvgState *state);
-
-G_GNUC_INTERNAL
-const char *rsvg_state_get_start_marker (RsvgState *state);
-
-G_GNUC_INTERNAL
-const char *rsvg_state_get_middle_marker (RsvgState *state);
-
-G_GNUC_INTERNAL
-const char *rsvg_state_get_end_marker (RsvgState *state);
 
 G_GNUC_INTERNAL
 void rsvg_state_dominate (RsvgState *state, const RsvgState *src);

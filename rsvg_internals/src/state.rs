@@ -10,6 +10,7 @@ use std::collections::HashSet;
 use attributes::Attribute;
 use color::{Color, ColorSpec};
 use error::*;
+use iri::IRI;
 use length::{LengthDir, RsvgLength, StrokeDasharray};
 use node::RsvgNode;
 use opacity::{Opacity, OpacitySpec};
@@ -50,6 +51,9 @@ pub struct State {
     pub display: Option<Display>,
     pub enable_background: Option<EnableBackground>,
     pub letter_spacing: Option<LetterSpacing>,
+    pub marker_end: Option<MarkerEnd>,
+    pub marker_mid: Option<MarkerMid>,
+    pub marker_start: Option<MarkerStart>,
     pub overflow: Option<Overflow>,
     pub shape_rendering: Option<ShapeRendering>,
     pub stroke_line_cap: Option<StrokeLinecap>,
@@ -86,6 +90,9 @@ impl State {
             display: Default::default(),
             enable_background: Default::default(),
             letter_spacing: Default::default(),
+            marker_end: Default::default(),
+            marker_mid: Default::default(),
+            marker_start: Default::default(),
             overflow: Default::default(),
             shape_rendering: Default::default(),
             stroke_line_cap: Default::default(),
@@ -104,7 +111,12 @@ impl State {
         }
     }
 
-    fn parse_style_pair(&mut self, attr: Attribute, value: &str) -> Result<(), AttributeError> {
+    fn parse_style_pair(
+        &mut self,
+        attr: Attribute,
+        value: &str,
+        accept_shorthands: bool,
+    ) -> Result<(), AttributeError> {
         // please keep these sorted
         match attr {
             Attribute::BaselineShift => {
@@ -157,6 +169,32 @@ impl State {
 
             Attribute::LetterSpacing => {
                 self.letter_spacing = parse_property(value, LengthDir::Horizontal)?;
+            }
+
+            Attribute::MarkerEnd => {
+                self.marker_end = parse_property(value, ())?;
+            }
+
+            Attribute::MarkerMid => {
+                self.marker_mid = parse_property(value, ())?;
+            }
+
+            Attribute::MarkerStart => {
+                self.marker_start = parse_property(value, ())?;
+            }
+
+            Attribute::Marker if accept_shorthands => {
+                if self.marker_end.is_none() {
+                    self.marker_end = parse_property(value, ())?;
+                }
+
+                if self.marker_mid.is_none() {
+                    self.marker_mid = parse_property(value, ())?;
+                }
+
+                if self.marker_start.is_none() {
+                    self.marker_start = parse_property(value, ())?;
+                }
             }
 
             Attribute::Overflow => {
@@ -263,10 +301,6 @@ extern "C" {
     fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
-
-    fn rsvg_state_get_start_marker(state: *const RsvgState) -> *const libc::c_char;
-    fn rsvg_state_get_middle_marker(state: *const RsvgState) -> *const libc::c_char;
-    fn rsvg_state_get_end_marker(state: *const RsvgState) -> *const libc::c_char;
 
     fn rsvg_state_dominate(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_force(state: *mut RsvgState, src: *const RsvgState);
@@ -433,39 +467,6 @@ pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
 
 pub fn get_fill_opacity(state: *const RsvgState) -> u8 {
     unsafe { rsvg_state_get_fill_opacity(state) }
-}
-
-pub fn get_start_marker<'a>(state: *const RsvgState) -> Option<&'a str> {
-    unsafe {
-        let marker = rsvg_state_get_start_marker(state);
-        if marker.is_null() {
-            None
-        } else {
-            Some(utf8_cstr(marker))
-        }
-    }
-}
-
-pub fn get_middle_marker<'a>(state: *const RsvgState) -> Option<&'a str> {
-    unsafe {
-        let marker = rsvg_state_get_middle_marker(state);
-        if marker.is_null() {
-            None
-        } else {
-            Some(utf8_cstr(marker))
-        }
-    }
-}
-
-pub fn get_end_marker<'a>(state: *const RsvgState) -> Option<&'a str> {
-    unsafe {
-        let marker = rsvg_state_get_end_marker(state);
-        if marker.is_null() {
-            None
-        } else {
-            Some(utf8_cstr(marker))
-        }
-    }
 }
 
 pub fn dominate(state: *mut RsvgState, src: *const RsvgState) {
@@ -704,6 +705,54 @@ impl Parse for LetterSpacing {
 }
 
 make_property!(
+    MarkerEnd,
+    default: IRI::None,
+    inherits_automatically: true,
+    newtype: IRI
+);
+
+impl Parse for MarkerEnd {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(s: &str, _: Self::Data) -> Result<MarkerEnd, AttributeError> {
+        Ok(MarkerEnd(IRI::parse(s, ())?))
+    }
+}
+
+make_property!(
+    MarkerMid,
+    default: IRI::None,
+    inherits_automatically: true,
+    newtype: IRI
+);
+
+impl Parse for MarkerMid {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(s: &str, _: Self::Data) -> Result<MarkerMid, AttributeError> {
+        Ok(MarkerMid(IRI::parse(s, ())?))
+    }
+}
+
+make_property!(
+    MarkerStart,
+    default: IRI::None,
+    inherits_automatically: true,
+    newtype: IRI
+);
+
+impl Parse for MarkerStart {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(s: &str, _: Self::Data) -> Result<MarkerStart, AttributeError> {
+        Ok(MarkerStart(IRI::parse(s, ())?))
+    }
+}
+
+make_property!(
     Overflow,
     default: Visible,
     inherits_automatically: true,
@@ -925,6 +974,7 @@ pub extern "C" fn rsvg_state_rust_parse_style_pair(
     state: *mut State,
     attr: Attribute,
     value: *const libc::c_char,
+    accept_shorthands: glib_sys::gboolean,
 ) -> glib_sys::gboolean {
     assert!(!state.is_null());
     assert!(!value.is_null());
@@ -932,7 +982,7 @@ pub extern "C" fn rsvg_state_rust_parse_style_pair(
     let state = unsafe { &mut *state };
     let value = unsafe { utf8_cstr(value) };
 
-    match state.parse_style_pair(attr, value) {
+    match state.parse_style_pair(attr, value, from_glib(accept_shorthands)) {
         Ok(_) => true.to_glib(),
         Err(_) => false.to_glib(),
     }
@@ -983,6 +1033,9 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.font_weight, &src.font_weight);
     inherit(inherit_fn, &mut dst.display, &src.display);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
+    inherit(inherit_fn, &mut dst.marker_end, &src.marker_end);
+    inherit(inherit_fn, &mut dst.marker_mid, &src.marker_mid);
+    inherit(inherit_fn, &mut dst.marker_start, &src.marker_start);
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);
     inherit(inherit_fn, &mut dst.shape_rendering, &src.shape_rendering);
     inherit(inherit_fn, &mut dst.stroke_line_cap, &src.stroke_line_cap);

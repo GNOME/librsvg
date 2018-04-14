@@ -57,7 +57,7 @@ extern RsvgEnableBackgroundType rsvg_state_rust_get_enable_background(const Stat
 extern gboolean rsvg_state_rust_contains_important_style(State *state, const gchar *name);
 extern gboolean rsvg_state_rust_insert_important_style(State *state, const gchar *name);
 
-extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value)
+extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value, gboolean accept_shorthands)
     G_GNUC_WARN_UNUSED_RESULT;
 
 extern void rsvg_state_rust_inherit_run(State *dst, State *src, InheritanceFunction inherit_fn, gboolean inherituninheritables);
@@ -123,9 +123,6 @@ rsvg_state_init (RsvgState * state)
     state->cond_true = TRUE;
     state->filter = NULL;
     state->clip_path = NULL;
-    state->startMarker = NULL;
-    state->middleMarker = NULL;
-    state->endMarker = NULL;
 
     state->has_current_color = FALSE;
     state->has_flood_color = FALSE;
@@ -141,9 +138,6 @@ rsvg_state_init (RsvgState * state)
     state->has_stop_opacity = FALSE;
     state->has_text_dir = FALSE;
     state->has_text_gravity = FALSE;
-    state->has_startMarker = FALSE;
-    state->has_middleMarker = FALSE;
-    state->has_endMarker = FALSE;
 
     state->state_rust = rsvg_state_rust_new();
 }
@@ -182,15 +176,6 @@ rsvg_state_finalize (RsvgState * state)
 
     g_free (state->clip_path);
     state->clip_path = NULL;
-
-    g_free (state->startMarker);
-    state->startMarker = NULL;
-
-    g_free (state->middleMarker);
-    state->middleMarker = NULL;
-
-    g_free (state->endMarker);
-    state->endMarker = NULL;
 
     rsvg_paint_server_unref (state->fill);
     state->fill = NULL;
@@ -239,9 +224,6 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
     dst->filter = g_strdup (src->filter);
     dst->mask = g_strdup (src->mask);
     dst->clip_path = g_strdup (src->clip_path);
-    dst->startMarker = g_strdup (src->startMarker);
-    dst->middleMarker = g_strdup (src->middleMarker);
-    dst->endMarker = g_strdup (src->endMarker);
     rsvg_paint_server_ref (dst->fill);
     rsvg_paint_server_ref (dst->stroke);
 
@@ -304,18 +286,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->text_dir = src->text_dir;
     if (function (dst->has_text_gravity, src->has_text_gravity))
         dst->text_gravity = src->text_gravity;
-    if (function (dst->has_startMarker, src->has_startMarker)) {
-        g_free (dst->startMarker);
-        dst->startMarker = g_strdup (src->startMarker);
-    }
-    if (function (dst->has_middleMarker, src->has_middleMarker)) {
-        g_free (dst->middleMarker);
-        dst->middleMarker = g_strdup (src->middleMarker);
-    }
-    if (function (dst->has_endMarker, src->has_endMarker)) {
-        g_free (dst->endMarker);
-        dst->endMarker = g_strdup (src->endMarker);
-    }
 
     if (function (dst->has_dash, src->has_dash)) {
         if (dst->dash) {
@@ -669,58 +639,6 @@ rsvg_parse_style_pair (RsvgState *state,
     }
     break;
 
-    case RSVG_ATTRIBUTE_MARKER_START:
-    {
-        g_free (state->startMarker);
-        state->startMarker = rsvg_css_parse_url (value);
-        state->has_startMarker = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_MARKER_MID:
-    {
-        g_free (state->middleMarker);
-        state->middleMarker = rsvg_css_parse_url (value);
-        state->has_middleMarker = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_MARKER_END:
-    {
-        g_free (state->endMarker);
-        state->endMarker = rsvg_css_parse_url (value);
-        state->has_endMarker = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_MARKER:
-    {
-        /* FIXME: ugly special case.  "marker" is a shorthand property, and can
-         * only be used in a CSS style (or style attribute in an SVG element),
-         * not as a presentation attribute.
-         */
-        if (source == PAIR_SOURCE_STYLE) {
-            if (!state->has_startMarker) {
-                g_free (state->startMarker);
-                state->startMarker = rsvg_css_parse_url (value);
-                state->has_startMarker = TRUE;
-            }
-
-            if (!state->has_middleMarker) {
-                g_free (state->middleMarker);
-                state->middleMarker = rsvg_css_parse_url (value);
-                state->has_middleMarker = TRUE;
-            }
-
-            if (!state->has_endMarker) {
-                g_free (state->endMarker);
-                state->endMarker = rsvg_css_parse_url (value);
-                state->has_endMarker = TRUE;
-            }
-        }
-    }
-    break;
-
     case RSVG_ATTRIBUTE_STROKE_DASHOFFSET:
     {
         state->has_dashoffset = TRUE;
@@ -747,7 +665,8 @@ rsvg_parse_style_pair (RsvgState *state,
     default:
         success = rsvg_state_rust_parse_style_pair(state->state_rust,
                                                    attr,
-                                                   value);
+                                                   value,
+                                                   source == PAIR_SOURCE_STYLE);
         break;
     }
 
@@ -1471,24 +1390,6 @@ RsvgEnableBackgroundType
 rsvg_state_get_enable_background (RsvgState *state)
 {
     return rsvg_state_rust_get_enable_background (state->state_rust);
-}
-
-const char *
-rsvg_state_get_start_marker (RsvgState *state)
-{
-    return state->startMarker;
-}
-
-const char *
-rsvg_state_get_middle_marker (RsvgState *state)
-{
-    return state->middleMarker;
-}
-
-const char *
-rsvg_state_get_end_marker (RsvgState *state)
-{
-    return state->endMarker;
 }
 
 State *
