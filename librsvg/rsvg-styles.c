@@ -54,6 +54,9 @@ extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 extern cairo_operator_t rsvg_state_rust_get_comp_op(const State *state);
 extern RsvgEnableBackgroundType rsvg_state_rust_get_enable_background(const State *state);
 
+extern gboolean rsvg_state_rust_contains_important_style(State *state, const gchar *name);
+extern gboolean rsvg_state_rust_insert_important_style(State *state, const gchar *name);
+
 extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value)
     G_GNUC_WARN_UNUSED_RESULT;
 
@@ -142,9 +145,6 @@ rsvg_state_init (RsvgState * state)
     state->has_middleMarker = FALSE;
     state->has_endMarker = FALSE;
 
-    state->styles = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                           g_free, (GDestroyNotify) style_value_data_free);
-
     state->state_rust = rsvg_state_rust_new();
 }
 
@@ -203,11 +203,6 @@ rsvg_state_finalize (RsvgState * state)
         state->dash = NULL;
     }
 
-    if (state->styles) {
-        g_hash_table_unref (state->styles);
-        state->styles = NULL;
-    }
-
     if (state->state_rust) {
         rsvg_state_rust_free (state->state_rust);
         state->state_rust = NULL;
@@ -249,8 +244,6 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
     dst->endMarker = g_strdup (src->endMarker);
     rsvg_paint_server_ref (dst->fill);
     rsvg_paint_server_ref (dst->stroke);
-
-    dst->styles = g_hash_table_ref (src->styles);
 
     if (src->dash) {
         dst->dash = rsvg_stroke_dasharray_clone (src->dash);
@@ -450,19 +443,17 @@ rsvg_parse_style_pair (RsvgState *state,
                        gboolean important,
                        PairSource source)
 {
-    StyleValueData *data;
     gboolean success = TRUE;
 
     if (name == NULL || value == NULL)
         return success;
 
-    data = g_hash_table_lookup (state->styles, name);
-    if (data && data->important && !important)
-        return success;
-
-    g_hash_table_insert (state->styles,
-                         (gpointer) g_strdup (name),
-                         (gpointer) style_value_data_new (value, important));
+    if (!important) {
+        if (rsvg_state_rust_contains_important_style (state->state_rust, name))
+            return success;
+    } else {
+        rsvg_state_rust_insert_important_style (state->state_rust, name);
+    }
 
     switch (attr) {
     case RSVG_ATTRIBUTE_COLOR:

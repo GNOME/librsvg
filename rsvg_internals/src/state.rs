@@ -4,6 +4,8 @@ use glib_sys;
 use libc;
 use pango;
 use pango_sys;
+use std::cell::RefCell;
+use std::collections::HashSet;
 
 use attributes::Attribute;
 use color::{Color, ColorSpec};
@@ -61,6 +63,8 @@ pub struct State {
     pub visibility: Option<Visibility>,
     pub xml_lang: Option<XmlLang>,
     pub xml_space: Option<XmlSpace>,
+
+    pub important_styles: RefCell<HashSet<String>>,
 }
 
 impl State {
@@ -95,6 +99,8 @@ impl State {
             visibility: Default::default(),
             xml_lang: Default::default(),
             xml_space: Default::default(),
+
+            important_styles: Default::default(),
         }
     }
 
@@ -887,6 +893,31 @@ pub extern "C" fn rsvg_state_rust_clone(state: *const State) -> *mut State {
     assert!(!state.is_null());
 
     unsafe { Box::into_raw(Box::new((*state).clone())) }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_contains_important_style(
+    state: *const State,
+    name: *const libc::c_char,
+) -> glib_sys::gboolean {
+    let state = unsafe { &*state };
+    let name = unsafe { utf8_cstr(name) };
+
+    state.important_styles.borrow().contains(name).to_glib()
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_insert_important_style(
+    state: *mut State,
+    name: *const libc::c_char,
+) {
+    let state = unsafe { &mut *state };
+    let name = unsafe { utf8_cstr(name) };
+
+    state
+        .important_styles
+        .borrow_mut()
+        .insert(String::from(name));
 }
 
 #[no_mangle]
