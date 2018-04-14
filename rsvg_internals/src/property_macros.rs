@@ -84,6 +84,28 @@ macro_rules! make_property {
     ($name: ident,
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
+     newtype_parse: $type: ty,
+     parse_data_type: $parse_data_type: ty
+    ) => {
+        #[derive(Debug, Clone, PartialEq)]
+        pub struct $name(pub $type);
+
+        impl_default!($name, $name($default));
+        impl_property!($name, $inherits_automatically);
+
+        impl ::parsers::Parse for $name {
+            type Data = $parse_data_type;
+            type Err = ::error::AttributeError;
+
+            fn parse(s: &str, d: Self::Data) -> Result<$name, ::error::AttributeError> {
+                Ok($name(<$type as ::parsers::Parse>::parse(s, d)?))
+            }
+        }
+    };
+
+    ($name: ident,
+     default: $default: expr,
+     inherits_automatically: $inherits_automatically: expr,
      newtype: $type: ty
     ) => {
         #[derive(Debug, Clone, PartialEq)]

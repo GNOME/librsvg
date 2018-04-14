@@ -580,17 +580,9 @@ make_property!(
     FontSize,
     default: RsvgLength::parse("12.0", LengthDir::Both).unwrap(),
     inherits_automatically: true,
-    newtype: RsvgLength
+    newtype_parse: RsvgLength,
+    parse_data_type: LengthDir
 );
-
-impl Parse for FontSize {
-    type Data = LengthDir;
-    type Err = AttributeError;
-
-    fn parse(s: &str, dir: LengthDir) -> Result<FontSize, AttributeError> {
-        Ok(FontSize(RsvgLength::parse(s, dir)?))
-    }
-}
 
 make_property!(
     FontStretch,
@@ -692,65 +684,33 @@ make_property!(
     LetterSpacing,
     default: RsvgLength::default(),
     inherits_automatically: true,
-    newtype: RsvgLength
+    newtype_parse: RsvgLength,
+    parse_data_type: LengthDir
 );
-
-impl Parse for LetterSpacing {
-    type Data = LengthDir;
-    type Err = AttributeError;
-
-    fn parse(s: &str, dir: LengthDir) -> Result<LetterSpacing, AttributeError> {
-        Ok(LetterSpacing(RsvgLength::parse(s, dir)?))
-    }
-}
 
 make_property!(
     MarkerEnd,
     default: IRI::None,
     inherits_automatically: true,
-    newtype: IRI
+    newtype_parse: IRI,
+    parse_data_type: ()
 );
-
-impl Parse for MarkerEnd {
-    type Data = ();
-    type Err = AttributeError;
-
-    fn parse(s: &str, _: Self::Data) -> Result<MarkerEnd, AttributeError> {
-        Ok(MarkerEnd(IRI::parse(s, ())?))
-    }
-}
 
 make_property!(
     MarkerMid,
     default: IRI::None,
     inherits_automatically: true,
-    newtype: IRI
+    newtype_parse: IRI,
+    parse_data_type: ()
 );
-
-impl Parse for MarkerMid {
-    type Data = ();
-    type Err = AttributeError;
-
-    fn parse(s: &str, _: Self::Data) -> Result<MarkerMid, AttributeError> {
-        Ok(MarkerMid(IRI::parse(s, ())?))
-    }
-}
 
 make_property!(
     MarkerStart,
     default: IRI::None,
     inherits_automatically: true,
-    newtype: IRI
+    newtype_parse: IRI,
+    parse_data_type: ()
 );
-
-impl Parse for MarkerStart {
-    type Data = ();
-    type Err = AttributeError;
-
-    fn parse(s: &str, _: Self::Data) -> Result<MarkerStart, AttributeError> {
-        Ok(MarkerStart(IRI::parse(s, ())?))
-    }
-}
 
 make_property!(
     Overflow,
@@ -809,17 +769,9 @@ make_property!(
     StrokeWidth,
     default: RsvgLength::parse("1.0", LengthDir::Both).unwrap(),
     inherits_automatically: true,
-    newtype: RsvgLength
+    newtype_parse: RsvgLength,
+    parse_data_type: LengthDir
 );
-
-impl Parse for StrokeWidth {
-    type Data = LengthDir;
-    type Err = AttributeError;
-
-    fn parse(s: &str, dir: LengthDir) -> Result<StrokeWidth, AttributeError> {
-        Ok(StrokeWidth(RsvgLength::parse(s, dir)?))
-    }
-}
 
 make_property!(
     TextAnchor,
