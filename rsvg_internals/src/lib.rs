@@ -57,6 +57,8 @@ pub use length::{
 
 pub use image::rsvg_node_image_new;
 
+pub use iri::rsvg_css_parse_url;
+
 pub use link::rsvg_node_link_new;
 
 pub use marker::rsvg_node_marker_new;
@@ -101,7 +103,6 @@ pub use paint_server::{
 pub use parsers::{
     rsvg_css_parse_number_list,
     rsvg_css_parse_number_optional_number,
-    rsvg_css_parse_url,
 };
 
 pub use pattern::rsvg_node_pattern_new;
@@ -186,6 +187,7 @@ mod float_eq_cairo;
 mod gradient;
 mod handle;
 mod image;
+mod iri;
 mod length;
 mod link;
 mod marker;
