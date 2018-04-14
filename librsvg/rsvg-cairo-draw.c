@@ -326,7 +326,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state;
     const char *clip_path;
-    const char *filter;
+    char *filter;
     const char *mask;
     guint8 opacity;
     cairo_operator_t comp_op;
@@ -381,6 +381,8 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 
         /* The surface reference is owned by the child_cr created below and put on the cr_stack! */
         render->surfaces_stack = g_list_prepend (render->surfaces_stack, surface);
+
+        g_free (filter);
     }
 
 #if 0
@@ -423,7 +425,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state;
     const char *clip_path;
-    const char *filter;
+    char *filter;
     const char *mask;
     guint8 opacity;
     cairo_operator_t comp_op;
@@ -476,6 +478,8 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 
             /* Don't destroy the output surface, it's owned by child_cr */
         }
+
+        g_free (filter);
     }
 
     render->cr = (cairo_t *) render->cr_stack->data;

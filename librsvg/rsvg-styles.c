@@ -31,7 +31,6 @@
 
 #include "rsvg-attributes.h"
 #include "rsvg-private.h"
-#include "rsvg-filter.h"
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
 #include "rsvg-mask.h"
@@ -53,6 +52,7 @@ extern cairo_matrix_t rsvg_state_rust_get_affine(const State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 extern cairo_operator_t rsvg_state_rust_get_comp_op(const State *state);
 extern RsvgEnableBackgroundType rsvg_state_rust_get_enable_background(const State *state);
+extern char *rsvg_state_rust_get_filter(const State *state);
 
 extern gboolean rsvg_state_rust_contains_important_style(State *state, const gchar *name);
 extern gboolean rsvg_state_rust_insert_important_style(State *state, const gchar *name);
@@ -121,7 +121,6 @@ rsvg_state_init (RsvgState * state)
     state->text_dir = PANGO_DIRECTION_LTR;
     state->text_gravity = PANGO_GRAVITY_SOUTH;
     state->cond_true = TRUE;
-    state->filter = NULL;
     state->clip_path = NULL;
 
     state->has_current_color = FALSE;
@@ -168,9 +167,6 @@ rsvg_state_new (void)
 static void
 rsvg_state_finalize (RsvgState * state)
 {
-    g_free (state->filter);
-    state->filter = NULL;
-
     g_free (state->mask);
     state->mask = NULL;
 
@@ -221,7 +217,6 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 
     *dst = *src;
     dst->parent = parent;
-    dst->filter = g_strdup (src->filter);
     dst->mask = g_strdup (src->mask);
     dst->clip_path = g_strdup (src->clip_path);
     rsvg_paint_server_ref (dst->fill);
@@ -309,8 +304,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->clip_path = g_strdup (src->clip_path);
         g_free (dst->mask);
         dst->mask = g_strdup (src->mask);
-        g_free (dst->filter);
-        dst->filter = g_strdup (src->filter);
         dst->opacity = src->opacity;
     }
 }
@@ -512,13 +505,6 @@ rsvg_parse_style_pair (RsvgState *state,
         }
 
         state->has_flood_opacity = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_FILTER:
-    {
-        g_free (state->filter);
-        state->filter = rsvg_css_parse_url (value);
     }
     break;
 
@@ -1276,10 +1262,10 @@ rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine)
     rsvg_state_rust_set_affine (state->state_rust, affine);
 }
 
-const char *
+char *
 rsvg_state_get_filter (RsvgState *state)
 {
-    return state->filter;
+    return rsvg_state_rust_get_filter (state->state_rust);
 }
 
 const char *

@@ -6,6 +6,7 @@ use pango;
 use pango_sys;
 use std::cell::RefCell;
 use std::collections::HashSet;
+use std::ptr;
 
 use attributes::Attribute;
 use color::{Color, ColorSpec};
@@ -42,6 +43,7 @@ pub struct State {
     pub clip_rule: Option<ClipRule>,
     pub comp_op: Option<CompOp>,
     pub fill_rule: Option<FillRule>,
+    pub filter: Option<Filter>,
     pub font_family: Option<FontFamily>,
     pub font_size: Option<FontSize>,
     pub font_stretch: Option<FontStretch>,
@@ -81,6 +83,7 @@ impl State {
             clip_rule: Default::default(),
             comp_op: Default::default(),
             fill_rule: Default::default(),
+            filter: Default::default(),
             font_family: Default::default(),
             font_size: Default::default(),
             font_stretch: Default::default(),
@@ -133,6 +136,10 @@ impl State {
 
             Attribute::FillRule => {
                 self.fill_rule = parse_property(value, ())?;
+            }
+
+            Attribute::Filter => {
+                self.filter = parse_property(value, ())?;
             }
 
             Attribute::FontFamily => {
@@ -567,6 +574,14 @@ make_property!(
     identifiers:
     "nonzero" => NonZero,
     "evenodd" => EvenOdd,
+);
+
+make_property!(
+    Filter,
+    default: IRI::None,
+    inherits_automatically: false,
+    newtype_parse: IRI,
+    parse_data_type: ()
 );
 
 make_property!(
@@ -1009,6 +1024,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     if from_glib(inheritunheritables) {
         dst.comp_op.clone_from(&src.comp_op);
         dst.enable_background.clone_from(&src.enable_background);
+        dst.filter.clone_from(&src.filter);
     }
 }
 
@@ -1058,5 +1074,17 @@ pub extern "C" fn rsvg_state_rust_get_enable_background(state: *const State) -> 
     unsafe {
         let state = &*state;
         EnableBackgroundC::from(state.enable_background.unwrap_or_default())
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_filter(state: *const State) -> *mut libc::c_char {
+    unsafe {
+        let state = &*state;
+
+        match state.filter {
+            Some(Filter(IRI::Resource(ref f))) => f.to_glib_full(),
+            _ => ptr::null_mut(),
+        }
     }
 }
