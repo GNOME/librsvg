@@ -38,11 +38,6 @@
 
 typedef gboolean (*InheritanceFunction) (gboolean dst_has_prop, gboolean src_has_prop);
 
-/* Defined in rust/src/length.rs */
-extern RsvgStrokeDasharray *rsvg_parse_stroke_dasharray(const char *str);
-extern RsvgStrokeDasharray *rsvg_stroke_dasharray_clone(RsvgStrokeDasharray *dash);
-extern void rsvg_stroke_dasharray_free(RsvgStrokeDasharray *dash);
-
 /* Defined in rsvg_internals/src/state.rs */
 extern State *rsvg_state_rust_new(void);
 extern void rsvg_state_rust_free(State *state);
@@ -129,7 +124,6 @@ rsvg_state_init (RsvgState * state)
     state->has_fill_opacity = FALSE;
     state->has_stroke_server = FALSE;
     state->has_stroke_opacity = FALSE;
-    state->has_dash = FALSE;
     state->has_cond = FALSE;
     state->has_stop_color = FALSE;
     state->has_stop_opacity = FALSE;
@@ -171,11 +165,6 @@ rsvg_state_finalize (RsvgState * state)
     rsvg_paint_server_unref (state->stroke);
     state->stroke = NULL;
 
-    if (state->dash) {
-        rsvg_stroke_dasharray_free (state->dash);
-        state->dash = NULL;
-    }
-
     if (state->state_rust) {
         rsvg_state_rust_free (state->state_rust);
         state->state_rust = NULL;
@@ -211,10 +200,6 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
     dst->parent = parent;
     rsvg_paint_server_ref (dst->fill);
     rsvg_paint_server_ref (dst->stroke);
-
-    if (src->dash) {
-        dst->dash = rsvg_stroke_dasharray_clone (src->dash);
-    }
 
     dst->state_rust = rsvg_state_rust_clone(src->state_rust);
 }
@@ -271,17 +256,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         dst->text_dir = src->text_dir;
     if (function (dst->has_text_gravity, src->has_text_gravity))
         dst->text_gravity = src->text_gravity;
-
-    if (function (dst->has_dash, src->has_dash)) {
-        if (dst->dash) {
-            rsvg_stroke_dasharray_free (dst->dash);
-            dst->dash = NULL;
-        }
-
-        if (src->dash) {
-            dst->dash = rsvg_stroke_dasharray_clone (src->dash);
-        }
-    }
 
     rsvg_state_rust_inherit_run (dst->state_rust, src->state_rust, function, inherituninheritables);
 
@@ -590,20 +564,6 @@ rsvg_parse_style_pair (RsvgState *state,
     {
         state->stop_opacity = rsvg_css_parse_opacity (value);
         state->has_stop_opacity = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_STROKE_DASHARRAY:
-    {
-        /* FIXME: the following returns NULL on error; find a way to propagate
-         * errors from here.
-         */
-        RsvgStrokeDasharray *dash = rsvg_parse_stroke_dasharray (value);
-
-        if (dash) {
-            state->has_dash = TRUE;
-            state->dash = dash;
-        }
     }
     break;
 
@@ -1281,12 +1241,6 @@ rsvg_state_get_stop_opacity (RsvgState *state)
     } else {
         return NULL;
     }
-}
-
-RsvgStrokeDasharray *
-rsvg_state_get_stroke_dasharray (RsvgState *state)
-{
-    return state->dash;
 }
 
 guint32
