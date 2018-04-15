@@ -51,6 +51,7 @@ extern cairo_matrix_t rsvg_state_rust_get_affine(const State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 extern cairo_operator_t rsvg_state_rust_get_comp_op(const State *state);
 extern RsvgEnableBackgroundType rsvg_state_rust_get_enable_background(const State *state);
+extern char *rsvg_state_rust_get_clip_path(const State *state);
 extern char *rsvg_state_rust_get_filter(const State *state);
 extern char *rsvg_state_rust_get_mask(const State *state);
 
@@ -120,7 +121,6 @@ rsvg_state_init (RsvgState * state)
     state->text_dir = PANGO_DIRECTION_LTR;
     state->text_gravity = PANGO_GRAVITY_SOUTH;
     state->cond_true = TRUE;
-    state->clip_path = NULL;
 
     state->has_current_color = FALSE;
     state->has_flood_color = FALSE;
@@ -166,9 +166,6 @@ rsvg_state_new (void)
 static void
 rsvg_state_finalize (RsvgState * state)
 {
-    g_free (state->clip_path);
-    state->clip_path = NULL;
-
     rsvg_paint_server_unref (state->fill);
     state->fill = NULL;
 
@@ -213,7 +210,6 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 
     *dst = *src;
     dst->parent = parent;
-    dst->clip_path = g_strdup (src->clip_path);
     rsvg_paint_server_ref (dst->fill);
     rsvg_paint_server_ref (dst->stroke);
 
@@ -295,8 +291,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     rsvg_state_rust_inherit_run (dst->state_rust, src->state_rust, function, inherituninheritables);
 
     if (inherituninheritables) {
-        g_free (dst->clip_path);
-        dst->clip_path = g_strdup (src->clip_path);
         dst->opacity = src->opacity;
     }
 }
@@ -498,13 +492,6 @@ rsvg_parse_style_pair (RsvgState *state,
         }
 
         state->has_flood_opacity = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_CLIP_PATH:
-    {
-        g_free (state->clip_path);
-        state->clip_path = rsvg_css_parse_url (value);
     }
     break;
 
@@ -1236,16 +1223,16 @@ rsvg_state_get_affine (const RsvgState *state)
     return rsvg_state_rust_get_affine (state->state_rust);
 }
 
-const char *
-rsvg_state_get_clip_path (RsvgState *state)
-{
-    return state->clip_path;
-}
-
 void
 rsvg_state_set_affine (RsvgState *state, cairo_matrix_t affine)
 {
     rsvg_state_rust_set_affine (state->state_rust, affine);
+}
+
+char *
+rsvg_state_get_clip_path (RsvgState *state)
+{
+    return rsvg_state_rust_get_clip_path (state->state_rust);
 }
 
 char *

@@ -40,6 +40,7 @@ pub struct State {
     pub affine: cairo::Matrix,
 
     pub baseline_shift: Option<BaselineShift>,
+    pub clip_path: Option<ClipPath>,
     pub clip_rule: Option<ClipRule>,
     pub comp_op: Option<CompOp>,
     pub fill_rule: Option<FillRule>,
@@ -81,6 +82,7 @@ impl State {
 
             // please keep these sorted
             baseline_shift: Default::default(),
+            clip_path: Default::default(),
             clip_rule: Default::default(),
             comp_op: Default::default(),
             fill_rule: Default::default(),
@@ -126,6 +128,10 @@ impl State {
         match attr {
             Attribute::BaselineShift => {
                 self.baseline_shift = parse_property(value, ())?;
+            }
+
+            Attribute::ClipPath => {
+                self.clip_path = parse_property(value, ())?;
             }
 
             Attribute::ClipRule => {
@@ -529,6 +535,14 @@ impl Parse for BaselineShift {
         }
     }
 }
+
+make_property!(
+    ClipPath,
+    default: IRI::None,
+    inherits_automatically: false,
+    newtype_parse: IRI,
+    parse_data_type: ()
+);
 
 make_property!(
     ClipRule,
@@ -1036,6 +1050,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
 
     if from_glib(inheritunheritables) {
+        dst.clip_path.clone_from(&src.clip_path);
         dst.comp_op.clone_from(&src.comp_op);
         dst.enable_background.clone_from(&src.enable_background);
         dst.filter.clone_from(&src.filter);
@@ -1089,6 +1104,18 @@ pub extern "C" fn rsvg_state_rust_get_enable_background(state: *const State) -> 
     unsafe {
         let state = &*state;
         EnableBackgroundC::from(state.enable_background.unwrap_or_default())
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_clip_path(state: *const State) -> *mut libc::c_char {
+    unsafe {
+        let state = &*state;
+
+        match state.clip_path {
+            Some(ClipPath(IRI::Resource(ref p))) => p.to_glib_full(),
+            _ => ptr::null_mut(),
+        }
     }
 }
 

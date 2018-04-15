@@ -51,7 +51,6 @@ typedef struct State State;
 struct _RsvgState {
     RsvgState *parent;
 
-    char *clip_path;
     guint8 opacity;             /* 0..255 */
 
     RsvgPaintServer *fill;
@@ -147,7 +146,7 @@ G_GNUC_INTERNAL
 gboolean rsvg_state_is_visible (RsvgState *state);
 
 G_GNUC_INTERNAL
-const char *rsvg_state_get_clip_path (RsvgState *state);
+char *rsvg_state_get_clip_path (RsvgState *state);
 
 G_GNUC_INTERNAL
 char *rsvg_state_get_filter (RsvgState *state);

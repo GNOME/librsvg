@@ -132,6 +132,7 @@ pub use state::{
     rsvg_state_rust_contains_important_style,
     rsvg_state_rust_free,
     rsvg_state_rust_get_affine,
+    rsvg_state_rust_get_clip_path,
     rsvg_state_rust_get_comp_op,
     rsvg_state_rust_get_enable_background,
     rsvg_state_rust_get_filter,

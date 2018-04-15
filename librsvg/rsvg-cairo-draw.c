@@ -325,7 +325,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state;
-    const char *clip_path;
+    char *clip_path;
     char *filter;
     char *mask;
     guint8 opacity;
@@ -364,6 +364,8 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
 
             rsvg_drawing_ctx_release_node (ctx, node);
         }
+
+        g_free (clip_path);
     }
 
     if (opacity == 0xFF
@@ -426,7 +428,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
 {
     RsvgCairoRender *render = RSVG_CAIRO_RENDER (ctx->render);
     RsvgState *state;
-    const char *clip_path;
+    char *clip_path;
     char *filter;
     char *mask;
     guint8 opacity;
@@ -456,6 +458,8 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
                 rsvg_drawing_ctx_release_node (ctx, node);
             }
         }
+
+        g_free (clip_path);
     }
 
     if (opacity == 0xFF
