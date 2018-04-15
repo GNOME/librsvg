@@ -12,7 +12,7 @@ use attributes::Attribute;
 use color::{Color, ColorSpec};
 use error::*;
 use iri::IRI;
-use length::{LengthDir, RsvgLength, StrokeDasharray};
+use length::{Dasharray, LengthDir, RsvgLength};
 use node::RsvgNode;
 use opacity::{Opacity, OpacitySpec};
 use paint_server::PaintServer;
@@ -317,7 +317,7 @@ extern "C" {
     fn rsvg_state_set_cond_true(state: *const RsvgState, cond_true: glib_sys::gboolean);
     fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const ColorSpec;
     fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const OpacitySpec;
-    fn rsvg_state_get_stroke_dasharray(state: *const RsvgState) -> *const StrokeDasharray;
+    fn rsvg_state_get_stroke_dasharray(state: *const RsvgState) -> *const Dasharray;
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
@@ -433,7 +433,7 @@ pub fn get_stop_opacity(state: *const RsvgState) -> Result<Option<Opacity>, Attr
     }
 }
 
-pub fn get_stroke_dasharray<'a>(state: *const RsvgState) -> Option<&'a StrokeDasharray> {
+pub fn get_stroke_dasharray<'a>(state: *const RsvgState) -> Option<&'a Dasharray> {
     let dash = unsafe { rsvg_state_get_stroke_dasharray(state) };
 
     if dash.is_null() {

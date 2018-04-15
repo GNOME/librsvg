@@ -334,13 +334,13 @@ fn viewport_percentage(x: f64, y: f64) -> f64 {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum StrokeDasharray {
+pub enum Dasharray {
     None,
     Inherit,
-    Dasharray(Vec<RsvgLength>),
+    Array(Vec<RsvgLength>),
 }
 
-impl StrokeDasharray {
+impl Dasharray {
     pub fn set_on_cairo(
         &self,
         draw_ctx: *const RsvgDrawingCtx,
@@ -348,12 +348,12 @@ impl StrokeDasharray {
         offset: &RsvgLength,
     ) {
         match *self {
-            StrokeDasharray::None | StrokeDasharray::Inherit => {
+            Dasharray::None | Dasharray::Inherit => {
                 // FIXME: for inheritance, do it in the caller
                 cr.set_dash(&[], 0.0);
             }
 
-            StrokeDasharray::Dasharray(ref dashes) => {
+            Dasharray::Array(ref dashes) => {
                 let normalized_dashes: Vec<f64> =
                     dashes.iter().map(|l| l.normalize(draw_ctx)).collect();
 
@@ -369,13 +369,13 @@ impl StrokeDasharray {
     }
 }
 
-fn parse_stroke_dash_array(s: &str) -> Result<StrokeDasharray, AttributeError> {
+fn parse_stroke_dash_array(s: &str) -> Result<Dasharray, AttributeError> {
     let s = s.trim();
 
     match s {
-        "inherit" => Ok(StrokeDasharray::Inherit),
-        "none" => Ok(StrokeDasharray::None),
-        _ => Ok(StrokeDasharray::Dasharray(parse_dash_array(s)?)),
+        "inherit" => Ok(Dasharray::Inherit),
+        "none" => Ok(Dasharray::None),
+        _ => Ok(Dasharray::Array(parse_dash_array(s)?)),
     }
 }
 
@@ -448,7 +448,7 @@ pub extern "C" fn rsvg_length_hand_normalize(
 #[no_mangle]
 pub extern "C" fn rsvg_parse_stroke_dasharray(
     string: *const libc::c_char,
-) -> *const StrokeDasharray {
+) -> *const Dasharray {
     let my_string = unsafe { &String::from_glib_none(string) };
 
     match parse_stroke_dash_array(my_string) {
@@ -460,13 +460,13 @@ pub extern "C" fn rsvg_parse_stroke_dasharray(
 
 #[no_mangle]
 pub extern "C" fn rsvg_stroke_dasharray_clone(
-    dash: *const StrokeDasharray,
-) -> *mut StrokeDasharray {
+    dash: *const Dasharray,
+) -> *mut Dasharray {
     unsafe { Box::into_raw(Box::new((*dash).clone())) }
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_stroke_dasharray_free(dash: *mut StrokeDasharray) {
+pub extern "C" fn rsvg_stroke_dasharray_free(dash: *mut Dasharray) {
     unsafe {
         Box::from_raw(dash);
     }
@@ -652,15 +652,15 @@ mod tests {
     fn parses_stroke_dasharray() {
         assert_eq!(
             parse_stroke_dash_array("none").unwrap(),
-            StrokeDasharray::None
+            Dasharray::None
         );
         assert_eq!(
             parse_stroke_dash_array("inherit").unwrap(),
-            StrokeDasharray::Inherit
+            Dasharray::Inherit
         );
         assert_eq!(
             parse_stroke_dash_array("10, 5").unwrap(),
-            StrokeDasharray::Dasharray(parse_dash_array("10, 5").unwrap())
+            Dasharray::Dasharray(parse_dash_array("10, 5").unwrap())
         );
         assert!(parse_stroke_dash_array("").is_err());
     }

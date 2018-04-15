@@ -7,7 +7,7 @@ use pangocairo;
 use bbox::RsvgBbox;
 use drawing_ctx::{self, RsvgDrawingCtx};
 use float_eq_cairo::ApproxEqCairo;
-use length::StrokeDasharray;
+use length::Dasharray;
 use paint_server;
 use path_builder::PathBuilder;
 use state::{
@@ -221,7 +221,7 @@ fn setup_cr_for_stroke(
 
     let dash = state::get_stroke_dasharray(state);
 
-    dash.unwrap_or(&StrokeDasharray::None).set_on_cairo(
+    dash.unwrap_or(&Dasharray::None).set_on_cairo(
         draw_ctx,
         cr,
         &rstate
