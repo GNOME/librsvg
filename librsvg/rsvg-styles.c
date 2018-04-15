@@ -130,7 +130,6 @@ rsvg_state_init (RsvgState * state)
     state->has_stroke_server = FALSE;
     state->has_stroke_opacity = FALSE;
     state->has_dash = FALSE;
-    state->has_dashoffset = FALSE;
     state->has_cond = FALSE;
     state->has_stop_color = FALSE;
     state->has_stop_opacity = FALSE;
@@ -282,10 +281,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
         if (src->dash) {
             dst->dash = rsvg_stroke_dasharray_clone (src->dash);
         }
-    }
-
-    if (function (dst->has_dashoffset, src->has_dashoffset)) {
-        dst->dash_offset = src->dash_offset;
     }
 
     rsvg_state_rust_inherit_run (dst->state_rust, src->state_rust, function, inherituninheritables);
@@ -595,15 +590,6 @@ rsvg_parse_style_pair (RsvgState *state,
     {
         state->stop_opacity = rsvg_css_parse_opacity (value);
         state->has_stop_opacity = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_STROKE_DASHOFFSET:
-    {
-        state->has_dashoffset = TRUE;
-        state->dash_offset = rsvg_length_parse (value, LENGTH_DIR_BOTH);
-        if (state->dash_offset.length < 0.)
-            state->dash_offset.length = 0.;
     }
     break;
 
@@ -1301,12 +1287,6 @@ RsvgStrokeDasharray *
 rsvg_state_get_stroke_dasharray (RsvgState *state)
 {
     return state->dash;
-}
-
-RsvgLength
-rsvg_state_get_dash_offset (RsvgState *state)
-{
-    return state->dash_offset;
 }
 
 guint32

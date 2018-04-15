@@ -17,6 +17,7 @@ use state::{
     FillRule,
     RsvgState,
     ShapeRendering,
+    StrokeDashoffset,
     StrokeLinecap,
     StrokeLinejoin,
     StrokeMiterlimit,
@@ -223,7 +224,10 @@ fn setup_cr_for_stroke(
     dash.unwrap_or(&StrokeDasharray::None).set_on_cairo(
         draw_ctx,
         cr,
-        &state::get_dash_offset(state),
+        &rstate
+            .stroke_dashoffset
+            .as_ref()
+            .map_or_else(|| StrokeDashoffset::default().0, |w| w.0),
     );
 }
 
