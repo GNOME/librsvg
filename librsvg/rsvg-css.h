@@ -107,10 +107,6 @@ gboolean rsvg_css_parse_number_list (const char      *in_str,
                                      gdouble        **out_list,
                                      gsize           *out_list_len);
 
-/* Implemented in rust/src/parsers.rs */
-G_GNUC_INTERNAL
-char *rsvg_css_parse_url (const char *str);
-
 G_GNUC_INTERNAL
 char        **rsvg_css_parse_xml_attribute_string   (const char *attribute_string);
 

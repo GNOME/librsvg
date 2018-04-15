@@ -57,8 +57,6 @@ pub use length::{
 
 pub use image::rsvg_node_image_new;
 
-pub use iri::rsvg_css_parse_url;
-
 pub use link::rsvg_node_link_new;
 
 pub use marker::rsvg_node_marker_new;
