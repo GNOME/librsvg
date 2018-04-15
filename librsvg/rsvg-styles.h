@@ -81,8 +81,6 @@ struct _RsvgState {
 
     RsvgStrokeDasharray *dash;
     gboolean has_dash;
-    RsvgLength dash_offset;
-    gboolean has_dashoffset;
 
     guint32 current_color;
     gboolean has_current_color;
@@ -177,9 +175,6 @@ RsvgOpacitySpec *rsvg_state_get_stop_opacity (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgStrokeDasharray *rsvg_state_get_stroke_dasharray (RsvgState *state);
-
-G_GNUC_INTERNAL
-RsvgLength rsvg_state_get_dash_offset (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint32 rsvg_state_get_current_color (RsvgState *state);

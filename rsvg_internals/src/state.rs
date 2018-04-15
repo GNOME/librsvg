@@ -60,6 +60,7 @@ pub struct State {
     pub mask: Option<Mask>,
     pub overflow: Option<Overflow>,
     pub shape_rendering: Option<ShapeRendering>,
+    pub stroke_dashoffset: Option<StrokeDashoffset>,
     pub stroke_line_cap: Option<StrokeLinecap>,
     pub stroke_line_join: Option<StrokeLinejoin>,
     pub stroke_miterlimit: Option<StrokeMiterlimit>,
@@ -102,6 +103,7 @@ impl State {
             mask: Default::default(),
             overflow: Default::default(),
             shape_rendering: Default::default(),
+            stroke_dashoffset: Default::default(),
             stroke_line_cap: Default::default(),
             stroke_line_join: Default::default(),
             stroke_miterlimit: Default::default(),
@@ -224,6 +226,10 @@ impl State {
                 self.shape_rendering = parse_property(value, ())?;
             }
 
+            Attribute::StrokeDashoffset => {
+                self.stroke_dashoffset = parse_property(value, LengthDir::Both)?;
+            }
+
             Attribute::StrokeLinecap => {
                 self.stroke_line_cap = parse_property(value, ())?;
             }
@@ -312,7 +318,6 @@ extern "C" {
     fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const ColorSpec;
     fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const OpacitySpec;
     fn rsvg_state_get_stroke_dasharray(state: *const RsvgState) -> *const StrokeDasharray;
-    fn rsvg_state_get_dash_offset(state: *const RsvgState) -> RsvgLength;
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
@@ -436,10 +441,6 @@ pub fn get_stroke_dasharray<'a>(state: *const RsvgState) -> Option<&'a StrokeDas
     } else {
         unsafe { Some(&*dash) }
     }
-}
-
-pub fn get_dash_offset(state: *const RsvgState) -> RsvgLength {
-    unsafe { rsvg_state_get_dash_offset(state) }
 }
 
 pub fn get_current_color(state: *const RsvgState) -> Color {
@@ -780,6 +781,14 @@ make_property!(
 );
 
 make_property!(
+    StrokeDashoffset,
+    default: RsvgLength::default(),
+    inherits_automatically: true,
+    newtype_parse: RsvgLength,
+    parse_data_type: LengthDir
+);
+
+make_property!(
     StrokeLinecap,
     default: Butt,
     inherits_automatically: true,
@@ -1033,6 +1042,11 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.marker_start, &src.marker_start);
     inherit(inherit_fn, &mut dst.overflow, &src.overflow);
     inherit(inherit_fn, &mut dst.shape_rendering, &src.shape_rendering);
+    inherit(
+        inherit_fn,
+        &mut dst.stroke_dashoffset,
+        &src.stroke_dashoffset,
+    );
     inherit(inherit_fn, &mut dst.stroke_line_cap, &src.stroke_line_cap);
     inherit(inherit_fn, &mut dst.stroke_line_join, &src.stroke_line_join);
     inherit(
