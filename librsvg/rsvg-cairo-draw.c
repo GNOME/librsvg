@@ -44,14 +44,6 @@
 #include <pango/pangofc-fontmap.h>
 #endif
 
-/* Implemented in rsvg_internals/src/paint_server.rs */
-G_GNUC_INTERNAL
-gboolean rsvg_set_source_rsvg_paint_server (RsvgDrawingCtx * ctx,
-                                            RsvgPaintServer * ps,
-                                            guint8 opacity,
-                                            RsvgBbox bbox,
-                                            guint32 current_color);
-
 /* Implemented in rsvg_internals/src/draw.rs */
 G_GNUC_INTERNAL
 void rsvg_cairo_add_clipping_rect (RsvgDrawingCtx *ctx,
