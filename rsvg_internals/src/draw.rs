@@ -17,6 +17,7 @@ use state::{
     FillRule,
     RsvgState,
     ShapeRendering,
+    StrokeDasharray,
     StrokeDashoffset,
     StrokeLinecap,
     StrokeLinejoin,
@@ -219,16 +220,29 @@ fn setup_cr_for_stroke(
         rstate.stroke_line_join.unwrap_or_default(),
     ));
 
-    let dash = state::get_stroke_dasharray(state);
+    match rstate.stroke_dasharray {
+        Some(StrokeDasharray(Dasharray::Array(ref dashes))) => {
+            let normalized_dashes: Vec<f64> =
+                dashes.iter().map(|l| l.normalize(draw_ctx)).collect();
 
-    dash.unwrap_or(&Dasharray::None).set_on_cairo(
-        draw_ctx,
-        cr,
-        &rstate
-            .stroke_dashoffset
-            .as_ref()
-            .map_or_else(|| StrokeDashoffset::default().0, |w| w.0),
-    );
+            let total_length = normalized_dashes.iter().fold(0.0, |acc, &len| acc + len);
+
+            if total_length > 0.0 {
+                let offset = rstate
+                    .stroke_dashoffset
+                    .as_ref()
+                    .map_or_else(|| StrokeDashoffset::default().0, |o| o.0)
+                    .normalize(draw_ctx);
+                cr.set_dash(&normalized_dashes, offset);
+            } else {
+                cr.set_dash(&[], 0.0);
+            }
+        }
+
+        _ => {
+            cr.set_dash(&[], 0.0);
+        }
+    }
 }
 
 fn compute_bbox_from_stroke_and_fill(cr: &cairo::Context, state: *mut RsvgState) -> RsvgBbox {

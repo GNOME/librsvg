@@ -1,11 +1,7 @@
-use cairo;
 use cssparser::{Parser, ParserInput, Token};
-use glib::translate::*;
 use libc;
 use regex::Regex;
-
 use std::f64::consts::*;
-use std::ptr;
 
 use drawing_ctx;
 use drawing_ctx::RsvgDrawingCtx;
@@ -336,46 +332,24 @@ fn viewport_percentage(x: f64, y: f64) -> f64 {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Dasharray {
     None,
-    Inherit,
     Array(Vec<RsvgLength>),
 }
 
-impl Dasharray {
-    pub fn set_on_cairo(
-        &self,
-        draw_ctx: *const RsvgDrawingCtx,
-        cr: &cairo::Context,
-        offset: &RsvgLength,
-    ) {
-        match *self {
-            Dasharray::None | Dasharray::Inherit => {
-                // FIXME: for inheritance, do it in the caller
-                cr.set_dash(&[], 0.0);
-            }
-
-            Dasharray::Array(ref dashes) => {
-                let normalized_dashes: Vec<f64> =
-                    dashes.iter().map(|l| l.normalize(draw_ctx)).collect();
-
-                let total_length = normalized_dashes.iter().fold(0.0, |acc, &len| acc + len);
-
-                if total_length > 0.0 {
-                    cr.set_dash(&normalized_dashes, offset.normalize(draw_ctx));
-                } else {
-                    cr.set_dash(&[], 0.0);
-                }
-            }
-        }
+impl Default for Dasharray {
+    fn default() -> Dasharray {
+        Dasharray::None
     }
 }
 
-fn parse_stroke_dash_array(s: &str) -> Result<Dasharray, AttributeError> {
-    let s = s.trim();
+impl Parse for Dasharray {
+    type Data = ();
+    type Err = AttributeError;
 
-    match s {
-        "inherit" => Ok(Dasharray::Inherit),
-        "none" => Ok(Dasharray::None),
-        _ => Ok(Dasharray::Array(parse_dash_array(s)?)),
+    fn parse(s: &str, _: Self::Data) -> Result<Dasharray, AttributeError> {
+        match s.trim() {
+            "none" => Ok(Dasharray::None),
+            _ => Ok(Dasharray::Array(parse_dash_array(s)?)),
+        }
     }
 }
 
@@ -443,33 +417,6 @@ pub extern "C" fn rsvg_length_hand_normalize(
     let length: &RsvgLength = unsafe { &*raw_length };
 
     length.hand_normalize(pixels_per_inch, width_or_height, font_size)
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_parse_stroke_dasharray(
-    string: *const libc::c_char,
-) -> *const Dasharray {
-    let my_string = unsafe { &String::from_glib_none(string) };
-
-    match parse_stroke_dash_array(my_string) {
-        Ok(dash) => Box::into_raw(Box::new(dash)),
-
-        Err(_) => ptr::null(),
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_stroke_dasharray_clone(
-    dash: *const Dasharray,
-) -> *mut Dasharray {
-    unsafe { Box::into_raw(Box::new((*dash).clone())) }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_stroke_dasharray_free(dash: *mut Dasharray) {
-    unsafe {
-        Box::from_raw(dash);
-    }
 }
 
 #[cfg(test)]
@@ -646,23 +593,6 @@ mod tests {
                 .and_then(|l| l.check_nonnegative())
                 .is_err()
         );
-    }
-
-    #[test]
-    fn parses_stroke_dasharray() {
-        assert_eq!(
-            parse_stroke_dash_array("none").unwrap(),
-            Dasharray::None
-        );
-        assert_eq!(
-            parse_stroke_dash_array("inherit").unwrap(),
-            Dasharray::Inherit
-        );
-        assert_eq!(
-            parse_stroke_dash_array("10, 5").unwrap(),
-            Dasharray::Dasharray(parse_dash_array("10, 5").unwrap())
-        );
-        assert!(parse_stroke_dash_array("").is_err());
     }
 
     #[test]

@@ -42,9 +42,6 @@ typedef enum {
     RSVG_ENABLE_BACKGROUND_NEW
 } RsvgEnableBackgroundType;
 
-/* Opaque; defined in rsvg_internals/src/length.rs */
-typedef struct RsvgStrokeDasharray RsvgStrokeDasharray;
-
 /* Opaque; defined in rsvg_internals/src/state.rs */
 typedef struct State State;
 
@@ -78,9 +75,6 @@ struct _RsvgState {
 
     gboolean has_cond;
     gboolean cond_true;
-
-    RsvgStrokeDasharray *dash;
-    gboolean has_dash;
 
     guint32 current_color;
     gboolean has_current_color;
@@ -172,9 +166,6 @@ RsvgCssColorSpec *rsvg_state_get_stop_color (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgOpacitySpec *rsvg_state_get_stop_opacity (RsvgState *state);
-
-G_GNUC_INTERNAL
-RsvgStrokeDasharray *rsvg_state_get_stroke_dasharray (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint32 rsvg_state_get_current_color (RsvgState *state);
