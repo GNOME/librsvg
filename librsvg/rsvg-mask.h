@@ -30,14 +30,9 @@
 #include "rsvg-defs.h"
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
-#include "rsvg-shapes.h"
 #include <libxml/SAX.h>
 
 G_BEGIN_DECLS 
-
-/* Implemented in rust/src/mask.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_mask_new (const char *element_name, RsvgNode *node);
 
 /* Implemented in rust/src/mask.rs */
 G_GNUC_INTERNAL

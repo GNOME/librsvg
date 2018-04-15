@@ -34,18 +34,6 @@ G_BEGIN_DECLS
 
 typedef struct _RsvgPaintServer RsvgPaintServer;
 
-/* Implemented in rust/src/gradient.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_linear_gradient_new (const char *element_name, RsvgNode *parent);
-
-/* Implemented in rust/src/gradient.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_radial_gradient_new (const char *element_name, RsvgNode *parent);
-
-/* Implemented in rust/src/pattern.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_pattern_new (const char *element_name, RsvgNode *parent);
-
 /* Create a new paint server based on a specification string. */
 /* Implemented in rust/src/paint_server.rs */
 G_GNUC_INTERNAL
@@ -58,11 +46,6 @@ void                 rsvg_paint_server_ref      (RsvgPaintServer * ps);
 /* Implemented in rust/src/paint_server.rs */
 G_GNUC_INTERNAL
 void                 rsvg_paint_server_unref    (RsvgPaintServer * ps);
-
-/* Implemented in rust/src/stop.rs */
-G_GNUC_INTERNAL
-RsvgNode *rsvg_node_stop_new (const char *element_name, RsvgNode *parent);
-
 
 G_END_DECLS
 

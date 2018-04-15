@@ -90,6 +90,58 @@ RsvgNode *rsvg_node_tref_new (const char *element_name, RsvgNode *parent);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_node_tspan_new (const char *element_name, RsvgNode *parent);
 
+/* Implemented in rust/src/marker.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_marker_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/gradient.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_linear_gradient_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/gradient.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_radial_gradient_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/pattern.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_pattern_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/stop.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_stop_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/mask.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_mask_new (const char *element_name, RsvgNode *node);
+
+/* Implemented in rust/src/shapes.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_path_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/shapes.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_polygon_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/shapes.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_polyline_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/shapes.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_line_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/shapes.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_rect_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/shapes.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_circle_new (const char *element_name, RsvgNode *parent);
+
+/* Implemented in rust/src/shapes.rs */
+G_GNUC_INTERNAL
+RsvgNode *rsvg_node_ellipse_new (const char *element_name, RsvgNode *parent);
+
 G_END_DECLS
 
 #endif                          /* RSVG_STRUCTURE_H */

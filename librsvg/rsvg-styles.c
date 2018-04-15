@@ -34,9 +34,7 @@
 #include "rsvg-filter.h"
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
-#include "rsvg-shapes.h"
 #include "rsvg-mask.h"
-#include "rsvg-marker.h"
 
 #include <libcroco/libcroco.h>
 

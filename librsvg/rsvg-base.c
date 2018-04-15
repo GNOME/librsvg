@@ -44,8 +44,6 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#include "rsvg-paint-server.h"
-
 #ifdef G_OS_WIN32
 static char *
 rsvg_realpath_utf8 (const char *filename, const char *unused)

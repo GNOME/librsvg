@@ -29,9 +29,7 @@
 #include "rsvg-attributes.h"
 #include "rsvg-filter.h"
 #include "rsvg-load.h"
-#include "rsvg-marker.h"
 #include "rsvg-mask.h"
-#include "rsvg-shapes.h"
 #include "rsvg-structure.h"
 #include "rsvg-xml.h"
 
