@@ -56,6 +56,7 @@ pub struct State {
     pub marker_end: Option<MarkerEnd>,
     pub marker_mid: Option<MarkerMid>,
     pub marker_start: Option<MarkerStart>,
+    pub mask: Option<Mask>,
     pub overflow: Option<Overflow>,
     pub shape_rendering: Option<ShapeRendering>,
     pub stroke_line_cap: Option<StrokeLinecap>,
@@ -96,6 +97,7 @@ impl State {
             marker_end: Default::default(),
             marker_mid: Default::default(),
             marker_start: Default::default(),
+            mask: Default::default(),
             overflow: Default::default(),
             shape_rendering: Default::default(),
             stroke_line_cap: Default::default(),
@@ -202,6 +204,10 @@ impl State {
                 if self.marker_start.is_none() {
                     self.marker_start = parse_property(value, ())?;
                 }
+            }
+
+            Attribute::Mask => {
+                self.mask = parse_property(value, ())?;
             }
 
             Attribute::Overflow => {
@@ -728,6 +734,14 @@ make_property!(
 );
 
 make_property!(
+    Mask,
+    default: IRI::None,
+    inherits_automatically: false,
+    newtype_parse: IRI,
+    parse_data_type: ()
+);
+
+make_property!(
     Overflow,
     default: Visible,
     inherits_automatically: true,
@@ -1025,6 +1039,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
         dst.comp_op.clone_from(&src.comp_op);
         dst.enable_background.clone_from(&src.enable_background);
         dst.filter.clone_from(&src.filter);
+        dst.mask.clone_from(&src.mask);
     }
 }
 
@@ -1084,6 +1099,18 @@ pub extern "C" fn rsvg_state_rust_get_filter(state: *const State) -> *mut libc::
 
         match state.filter {
             Some(Filter(IRI::Resource(ref f))) => f.to_glib_full(),
+            _ => ptr::null_mut(),
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_mask(state: *const State) -> *mut libc::c_char {
+    unsafe {
+        let state = &*state;
+
+        match state.mask {
+            Some(Mask(IRI::Resource(ref m))) => m.to_glib_full(),
             _ => ptr::null_mut(),
         }
     }

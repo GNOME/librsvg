@@ -135,6 +135,7 @@ pub use state::{
     rsvg_state_rust_get_comp_op,
     rsvg_state_rust_get_enable_background,
     rsvg_state_rust_get_filter,
+    rsvg_state_rust_get_mask,
     rsvg_state_rust_inherit_run,
     rsvg_state_rust_insert_important_style,
     rsvg_state_rust_new,

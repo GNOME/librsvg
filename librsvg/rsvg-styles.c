@@ -33,7 +33,6 @@
 #include "rsvg-private.h"
 #include "rsvg-css.h"
 #include "rsvg-styles.h"
-#include "rsvg-mask.h"
 
 #include <libcroco/libcroco.h>
 
@@ -53,6 +52,7 @@ extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 extern cairo_operator_t rsvg_state_rust_get_comp_op(const State *state);
 extern RsvgEnableBackgroundType rsvg_state_rust_get_enable_background(const State *state);
 extern char *rsvg_state_rust_get_filter(const State *state);
+extern char *rsvg_state_rust_get_mask(const State *state);
 
 extern gboolean rsvg_state_rust_contains_important_style(State *state, const gchar *name);
 extern gboolean rsvg_state_rust_insert_important_style(State *state, const gchar *name);
@@ -95,7 +95,6 @@ rsvg_state_init (RsvgState * state)
 
     state->parent = NULL;
 
-    state->mask = NULL;
     state->opacity = 0xff;
     state->current_color = 0xff000000; /* See bgo#764808; we don't inherit CSS
                                         * from the public API, so start off with
@@ -167,9 +166,6 @@ rsvg_state_new (void)
 static void
 rsvg_state_finalize (RsvgState * state)
 {
-    g_free (state->mask);
-    state->mask = NULL;
-
     g_free (state->clip_path);
     state->clip_path = NULL;
 
@@ -217,7 +213,6 @@ rsvg_state_clone (RsvgState * dst, const RsvgState * src)
 
     *dst = *src;
     dst->parent = parent;
-    dst->mask = g_strdup (src->mask);
     dst->clip_path = g_strdup (src->clip_path);
     rsvg_paint_server_ref (dst->fill);
     rsvg_paint_server_ref (dst->stroke);
@@ -302,8 +297,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     if (inherituninheritables) {
         g_free (dst->clip_path);
         dst->clip_path = g_strdup (src->clip_path);
-        g_free (dst->mask);
-        dst->mask = g_strdup (src->mask);
         dst->opacity = src->opacity;
     }
 }
@@ -505,13 +498,6 @@ rsvg_parse_style_pair (RsvgState *state,
         }
 
         state->has_flood_opacity = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_MASK:
-    {
-        g_free (state->mask);
-        state->mask = rsvg_css_parse_url (value);
     }
     break;
 
@@ -1268,10 +1254,10 @@ rsvg_state_get_filter (RsvgState *state)
     return rsvg_state_rust_get_filter (state->state_rust);
 }
 
-const char *
+char *
 rsvg_state_get_mask (RsvgState *state)
 {
-    return state->mask;
+    return rsvg_state_rust_get_mask (state->state_rust);
 }
 
 guint8

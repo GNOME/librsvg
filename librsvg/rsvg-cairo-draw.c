@@ -327,7 +327,7 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
     RsvgState *state;
     const char *clip_path;
     char *filter;
-    const char *mask;
+    char *mask;
     guint8 opacity;
     cairo_operator_t comp_op;
     RsvgEnableBackgroundType enable_background;
@@ -370,6 +370,8 @@ rsvg_cairo_push_render_stack (RsvgDrawingCtx * ctx)
         && !filter && !mask && !lateclip && (comp_op == CAIRO_OPERATOR_OVER)
         && (enable_background == RSVG_ENABLE_BACKGROUND_ACCUMULATE))
         return;
+
+    g_free (mask);
 
     if (!filter) {
         surface = cairo_surface_create_similar (cairo_get_target (render->cr),
@@ -426,7 +428,7 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
     RsvgState *state;
     const char *clip_path;
     char *filter;
-    const char *mask;
+    char *mask;
     guint8 opacity;
     cairo_operator_t comp_op;
     RsvgEnableBackgroundType enable_background;
@@ -506,6 +508,8 @@ rsvg_cairo_pop_render_stack (RsvgDrawingCtx * ctx)
             rsvg_cairo_generate_mask (render->cr, node, ctx, &render->bbox);
             rsvg_drawing_ctx_release_node (ctx, node);
         }
+
+        g_free (mask);
     } else if (opacity != 0xFF)
         cairo_paint_with_alpha (render->cr, (double) opacity / 255.0);
     else
