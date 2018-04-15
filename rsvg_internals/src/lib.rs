@@ -57,8 +57,6 @@ pub use length::{
 
 pub use image::rsvg_node_image_new;
 
-pub use iri::rsvg_css_parse_url;
-
 pub use link::rsvg_node_link_new;
 
 pub use marker::rsvg_node_marker_new;
@@ -100,10 +98,7 @@ pub use paint_server::{
     rsvg_set_source_rsvg_paint_server,
 };
 
-pub use parsers::{
-    rsvg_css_parse_number_list,
-    rsvg_css_parse_number_optional_number,
-};
+pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
 
 pub use pattern::rsvg_node_pattern_new;
 

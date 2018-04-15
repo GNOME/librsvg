@@ -1,13 +1,8 @@
 use cssparser::{Parser, ParserInput};
-use glib::translate::*;
-use libc;
-
-use std::ptr;
 use std::str;
 
 use parsers::Parse;
 use parsers::ParseError;
-use util::utf8_cstr;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum IRI {
@@ -44,18 +39,6 @@ impl Parse for IRI {
                 Ok(IRI::Resource(url.as_ref().to_owned()))
             }
         }
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_css_parse_url(str: *const libc::c_char) -> *mut libc::c_char {
-    assert!(!str.is_null());
-
-    let s = unsafe { utf8_cstr(str) };
-
-    match IRI::parse(s, ()) {
-        Ok(IRI::Resource(r)) => r.to_glib_full(),
-        _ => ptr::null_mut(),
     }
 }
 
