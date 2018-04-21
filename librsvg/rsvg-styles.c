@@ -101,7 +101,6 @@ rsvg_state_init (RsvgState * state)
                                         * opaque black instead of transparent.
                                         */
     state->fill = rsvg_paint_server_parse (NULL, "#000");
-    state->fill_opacity = 0xff;
     state->stroke_opacity = 0xff;
 
     /* The following two start as INHERIT, even though has_stop_color and
@@ -119,7 +118,6 @@ rsvg_state_init (RsvgState * state)
     state->has_current_color = FALSE;
     state->has_flood_color = FALSE;
     state->has_fill_server = FALSE;
-    state->has_fill_opacity = FALSE;
     state->has_stroke_server = FALSE;
     state->has_stroke_opacity = FALSE;
     state->has_stop_color = FALSE;
@@ -221,8 +219,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
             rsvg_paint_server_unref (dst->fill);
         dst->fill = src->fill;
     }
-    if (function (dst->has_fill_opacity, src->has_fill_opacity))
-        dst->fill_opacity = src->fill_opacity;
     if (function (dst->has_stroke_server, src->has_stroke_server)) {
         rsvg_paint_server_ref (src->stroke);
         if (dst->stroke)
@@ -441,22 +437,6 @@ rsvg_parse_style_pair (RsvgState *state,
         state->fill =
             rsvg_paint_server_parse (&state->has_fill_server, value);
         rsvg_paint_server_unref (fill);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_FILL_OPACITY:
-    {
-        RsvgOpacitySpec spec;
-
-        spec = rsvg_css_parse_opacity (value);
-        if (spec.kind == RSVG_OPACITY_SPECIFIED) {
-            state->fill_opacity = spec.opacity;
-        } else {
-            state->fill_opacity = 0;
-            /* FIXME: handle INHERIT and PARSE_ERROR */
-        }
-
-        state->has_fill_opacity = TRUE;
     }
     break;
 
@@ -1119,12 +1099,6 @@ RsvgPaintServer *
 rsvg_state_get_fill (RsvgState *state)
 {
     return state->fill;
-}
-
-guint8
-rsvg_state_get_fill_opacity (RsvgState *state)
-{
-    return state->fill_opacity;
 }
 
 guint32
