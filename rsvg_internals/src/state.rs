@@ -68,6 +68,7 @@ pub struct State {
     pub stroke_dashoffset: Option<StrokeDashoffset>,
     pub stroke_line_cap: Option<StrokeLinecap>,
     pub stroke_line_join: Option<StrokeLinejoin>,
+    pub stroke_opacity: Option<StrokeOpacity>,
     pub stroke_miterlimit: Option<StrokeMiterlimit>,
     pub stroke_width: Option<StrokeWidth>,
     pub text_anchor: Option<TextAnchor>,
@@ -117,6 +118,7 @@ impl State {
             stroke_dashoffset: Default::default(),
             stroke_line_cap: Default::default(),
             stroke_line_join: Default::default(),
+            stroke_opacity: Default::default(),
             stroke_miterlimit: Default::default(),
             stroke_width: Default::default(),
             text_anchor: Default::default(),
@@ -267,6 +269,10 @@ impl State {
                 self.stroke_line_join = parse_property(value, ())?;
             }
 
+            Attribute::StrokeOpacity => {
+                self.stroke_opacity = parse_property(value, ())?;
+            }
+
             Attribute::StrokeMiterlimit => {
                 self.stroke_miterlimit = parse_property(value, ())?;
             }
@@ -378,7 +384,6 @@ extern "C" {
     fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const OpacitySpec;
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
-    fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
 
     fn rsvg_state_dominate(state: *mut RsvgState, src: *const RsvgState);
@@ -505,7 +510,12 @@ pub fn get_stroke<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
 }
 
 pub fn get_stroke_opacity(state: *const RsvgState) -> u8 {
-    unsafe { rsvg_state_get_stroke_opacity(state) }
+    let rstate = get_state_rust(state);
+
+    match rstate.stroke_opacity {
+        Some(StrokeOpacity(Opacity::Specified(opacity))) => opacity_to_u8(opacity),
+        _ => 255,
+    }
 }
 
 pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
@@ -893,6 +903,13 @@ make_property!(
 );
 
 make_property!(
+    StrokeOpacity,
+    default: Opacity::Specified(1.0),
+    inherits_automatically: true,
+    newtype_from_str: Opacity
+);
+
+make_property!(
     StrokeMiterlimit,
     default: 4f64,
     inherits_automatically: true,
@@ -1164,6 +1181,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     );
     inherit(inherit_fn, &mut dst.stroke_line_cap, &src.stroke_line_cap);
     inherit(inherit_fn, &mut dst.stroke_line_join, &src.stroke_line_join);
+    inherit(inherit_fn, &mut dst.stroke_opacity, &src.stroke_opacity);
     inherit(
         inherit_fn,
         &mut dst.stroke_miterlimit,

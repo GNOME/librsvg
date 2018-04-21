@@ -101,7 +101,6 @@ rsvg_state_init (RsvgState * state)
                                         * opaque black instead of transparent.
                                         */
     state->fill = rsvg_paint_server_parse (NULL, "#000");
-    state->stroke_opacity = 0xff;
 
     /* The following two start as INHERIT, even though has_stop_color and
      * has_stop_opacity get initialized to FALSE below.  This is so that the
@@ -119,7 +118,6 @@ rsvg_state_init (RsvgState * state)
     state->has_flood_color = FALSE;
     state->has_fill_server = FALSE;
     state->has_stroke_server = FALSE;
-    state->has_stroke_opacity = FALSE;
     state->has_stop_color = FALSE;
     state->has_stop_opacity = FALSE;
 
@@ -225,8 +223,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
             rsvg_paint_server_unref (dst->stroke);
         dst->stroke = src->stroke;
     }
-    if (function (dst->has_stroke_opacity, src->has_stroke_opacity))
-        dst->stroke_opacity = src->stroke_opacity;
     if (function (dst->has_stop_color, src->has_stop_color)) {
         if (dst->stop_color.kind == RSVG_CSS_COLOR_SPEC_INHERIT) {
             dst->has_stop_color = TRUE;
@@ -448,22 +444,6 @@ rsvg_parse_style_pair (RsvgState *state,
             rsvg_paint_server_parse (&state->has_stroke_server, value);
 
         rsvg_paint_server_unref (stroke);
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_STROKE_OPACITY:
-    {
-        RsvgOpacitySpec spec;
-
-        spec = rsvg_css_parse_opacity (value);
-        if (spec.kind == RSVG_OPACITY_SPECIFIED) {
-            state->stroke_opacity = spec.opacity;
-        } else {
-            state->stroke_opacity = 0;
-            /* FIXME: handle INHERIT and PARSE_ERROR */
-        }
-
-        state->has_stroke_opacity = TRUE;
     }
     break;
 
@@ -1061,12 +1041,6 @@ RsvgPaintServer *
 rsvg_state_get_stroke (RsvgState *state)
 {
     return state->stroke;
-}
-
-guint8
-rsvg_state_get_stroke_opacity (RsvgState *state)
-{
-    return state->stroke_opacity;
 }
 
 RsvgCssColorSpec *
