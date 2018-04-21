@@ -1,22 +1,15 @@
-use glib;
-use glib_sys;
-use libc;
-
 use error::*;
 use parsers::Parse;
 use std::marker::PhantomData;
-use util::utf8_cstr;
 
 #[allow(unused_imports)]
 use std::ascii::AsciiExt;
-
-use self::glib::translate::*;
 
 // No extensions at the moment.
 static IMPLEMENTED_EXTENSIONS: &[&str] = &[];
 
 #[derive(Debug, PartialEq)]
-struct RequiredExtensions(bool);
+pub struct RequiredExtensions(pub bool);
 
 impl Parse for RequiredExtensions {
     type Data = ();
@@ -58,7 +51,7 @@ static IMPLEMENTED_FEATURES: &[&str] = &[
 ];
 
 #[derive(Debug, PartialEq)]
-struct RequiredFeatures(bool);
+pub struct RequiredFeatures(pub bool);
 
 impl Parse for RequiredFeatures {
     type Data = ();
@@ -75,7 +68,7 @@ impl Parse for RequiredFeatures {
 }
 
 #[derive(Debug, PartialEq)]
-struct SystemLanguage<'a>(bool, PhantomData<&'a i8>);
+pub struct SystemLanguage<'a>(pub bool, pub PhantomData<&'a i8>);
 
 impl<'a> Parse for SystemLanguage<'a> {
     type Data = &'a [String];
@@ -103,42 +96,6 @@ impl<'a> Parse for SystemLanguage<'a> {
                 }),
             PhantomData,
         ))
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_cond_check_required_extensions(
-    raw_value: *const libc::c_char,
-) -> glib_sys::gboolean {
-    let value = unsafe { utf8_cstr(raw_value) };
-
-    match RequiredExtensions::parse(value, ()) {
-        Ok(RequiredExtensions(res)) => res.to_glib(),
-        Err(_) => false.to_glib(),
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_cond_check_required_features(
-    raw_value: *const libc::c_char,
-) -> glib_sys::gboolean {
-    let value = unsafe { utf8_cstr(raw_value) };
-
-    match RequiredFeatures::parse(value, ()) {
-        Ok(RequiredFeatures(res)) => res.to_glib(),
-        Err(_) => false.to_glib(),
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rsvg_cond_check_system_language(
-    raw_value: *const libc::c_char,
-) -> glib_sys::gboolean {
-    let value = unsafe { utf8_cstr(raw_value) };
-
-    match SystemLanguage::parse(value, &glib::get_language_names()) {
-        Ok(SystemLanguage(res, _)) => res.to_glib(),
-        Err(_) => false.to_glib(),
     }
 }
 

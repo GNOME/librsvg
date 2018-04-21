@@ -85,9 +85,7 @@ impl NodeTrait for NodeSwitch {
 
         drawing_ctx::push_discrete_layer(draw_ctx, clipping);
 
-        if let Some(child) = node.children()
-            .find(|c| state::get_cond_true(c.get_state()))
-        {
+        if let Some(child) = node.children().find(|c| state::get_cond(c.get_state())) {
             let boxed_child = box_node(child.clone());
 
             drawing_ctx::draw_node_from_stack(draw_ctx, boxed_child, 0, clipping);
