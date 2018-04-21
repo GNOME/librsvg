@@ -161,6 +161,12 @@ G_GNUC_INTERNAL
 guint8 rsvg_state_get_fill_opacity (RsvgState *state);
 
 G_GNUC_INTERNAL
+guint32 rsvg_state_get_flood_color (RsvgState *state);
+
+G_GNUC_INTERNAL
+guint8 rsvg_state_get_flood_opacity (RsvgState *state);
+
+G_GNUC_INTERNAL
 cairo_operator_t rsvg_state_get_comp_op (RsvgState *state);
 
 G_GNUC_INTERNAL
