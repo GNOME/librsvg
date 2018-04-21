@@ -55,8 +55,6 @@ struct _RsvgState {
 
     RsvgPaintServer *stroke;
     gboolean has_stroke_server;
-    guint8 stroke_opacity;      /* 0..255 */
-    gboolean has_stroke_opacity;
 
     RsvgCssColorSpec stop_color;
     gboolean has_stop_color;
@@ -136,9 +134,6 @@ guint8 rsvg_state_get_opacity (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_stroke (RsvgState *state);
-
-G_GNUC_INTERNAL
-guint8 rsvg_state_get_stroke_opacity (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgCssColorSpec *rsvg_state_get_stop_color (RsvgState *state);
