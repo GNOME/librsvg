@@ -693,7 +693,7 @@ pub extern "C" fn rsvg_node_chars_new(raw_parent: *const RsvgNode) -> *const Rsv
     let node = boxed_node_new(NodeType::Chars, raw_parent, Box::new(NodeChars::new()));
 
     let state = rsvg_node_get_state(node);
-    state::set_cond_true(state, false);
+    state::set_cond(state, false);
 
     node
 }

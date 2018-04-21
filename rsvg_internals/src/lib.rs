@@ -31,12 +31,6 @@ pub use cnode::{rsvg_rust_cnode_get_impl, rsvg_rust_cnode_new};
 
 pub use color::{rsvg_css_parse_color, AllowCurrentColor, AllowInherit, ColorKind, ColorSpec};
 
-pub use cond::{
-    rsvg_cond_check_required_extensions,
-    rsvg_cond_check_required_features,
-    rsvg_cond_check_system_language,
-};
-
 pub use draw::rsvg_cairo_add_clipping_rect;
 
 pub use drawing_ctx::{rsvg_drawing_ctx_state_pop, rsvg_drawing_ctx_state_push};
@@ -119,6 +113,7 @@ pub use shapes::{
 
 pub use state::{
     rsvg_state_is_visible,
+    rsvg_state_parse_conditional_processing_attributes,
     rsvg_state_reconstruct,
     rsvg_state_rust_clone,
     rsvg_state_rust_contains_important_style,
