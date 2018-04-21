@@ -72,9 +72,6 @@ struct _RsvgState {
     guint32 flood_color;
     gboolean has_flood_color;
 
-    guchar flood_opacity;
-    gboolean has_flood_opacity;
-
     GHashTable *styles;
 
     State *state_rust;

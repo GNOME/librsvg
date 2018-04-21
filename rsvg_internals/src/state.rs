@@ -49,6 +49,7 @@ pub struct State {
     pub enable_background: Option<EnableBackground>,
     pub fill_rule: Option<FillRule>,
     pub filter: Option<Filter>,
+    pub flood_opacity: Option<FloodOpacity>,
     pub font_family: Option<FontFamily>,
     pub font_size: Option<FontSize>,
     pub font_stretch: Option<FontStretch>,
@@ -96,6 +97,7 @@ impl State {
             enable_background: Default::default(),
             fill_rule: Default::default(),
             filter: Default::default(),
+            flood_opacity: Default::default(),
             font_family: Default::default(),
             font_size: Default::default(),
             font_stretch: Default::default(),
@@ -171,6 +173,10 @@ impl State {
 
             Attribute::Filter => {
                 self.filter = parse_property(value, ())?;
+            }
+
+            Attribute::FloodOpacity => {
+                self.flood_opacity = parse_property(value, ())?;
             }
 
             Attribute::FontFamily => {
@@ -685,6 +691,13 @@ make_property!(
 );
 
 make_property!(
+    FloodOpacity,
+    default: Opacity::Specified(1.0),
+    inherits_automatically: true,
+    newtype_from_str: Opacity
+);
+
+make_property!(
     FontFamily,
     default: "Times New Roman".to_string(),
     inherits_automatically: true,
@@ -1112,6 +1125,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.direction, &src.direction);
     inherit(inherit_fn, &mut dst.display, &src.display);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
+    inherit(inherit_fn, &mut dst.flood_opacity, &src.flood_opacity);
     inherit(inherit_fn, &mut dst.font_family, &src.font_family);
     inherit(inherit_fn, &mut dst.font_size, &src.font_size);
     inherit(inherit_fn, &mut dst.font_stretch, &src.font_stretch);
@@ -1178,6 +1192,17 @@ pub extern "C" fn rsvg_state_rust_get_comp_op(state: *const State) -> cairo::Ope
     unsafe {
         let state = &*state;
         cairo::Operator::from(state.comp_op.unwrap_or_default())
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_flood_opacity(state: *const State) -> u8 {
+    unsafe {
+        let state = &*state;
+        match state.flood_opacity {
+            Some(FloodOpacity(Opacity::Specified(opacity))) => opacity_to_u8(opacity),
+            _ => 255,
+        }
     }
 }
 
