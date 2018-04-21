@@ -74,7 +74,7 @@ pub struct State {
     pub xml_lang: Option<XmlLang>,
     pub xml_space: Option<XmlSpace>,
 
-    pub important_styles: RefCell<HashSet<String>>,
+    important_styles: RefCell<HashSet<String>>,
 }
 
 impl State {
