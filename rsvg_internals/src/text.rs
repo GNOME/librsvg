@@ -23,6 +23,7 @@ use property_bag::PropertyBag;
 use space::xml_space_normalize;
 use state::{
     self,
+    Direction,
     FontFamily,
     FontStretch,
     FontStyle,
@@ -32,6 +33,7 @@ use state::{
     RsvgState,
     TextAnchor,
     UnicodeBidi,
+    WritingMode,
     XmlLang,
 };
 
@@ -98,8 +100,7 @@ impl NodeChars {
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
         let offset = baseline + drawing_ctx::get_accumulated_baseline_shift(draw_ctx);
 
-        let gravity = state::get_text_gravity(state);
-        if gravity_is_vertical(gravity) {
+        if state::text_gravity_is_vertical(state) {
             draw_pango_layout(draw_ctx, &layout, *x + offset, *y, clipping);
             *y += f64::from(width) / f64::from(pango::SCALE);
         } else {
@@ -167,11 +168,10 @@ impl NodeTrait for NodeText {
 
         let state = drawing_ctx::get_current_state(draw_ctx);
         let anchor = state::get_state_rust(state).text_anchor.unwrap_or_default();
-        let gravity = state::get_text_gravity(state);
 
         let offset = anchor_offset(node, draw_ctx, anchor, false);
 
-        if gravity_is_vertical(gravity) {
+        if state::text_gravity_is_vertical(state) {
             y -= offset;
             dy = match anchor {
                 TextAnchor::Start => dy,
@@ -291,8 +291,7 @@ impl NodeTSpan {
         }
 
         let state = drawing_ctx::get_current_state(draw_ctx);
-        let gravity = state::get_text_gravity(state);
-        if gravity_is_vertical(gravity) {
+        if state::text_gravity_is_vertical(state) {
             *length += self.dy.get().normalize(draw_ctx);
         } else {
             *length += self.dx.get().normalize(draw_ctx);
@@ -317,14 +316,14 @@ impl NodeTSpan {
         let mut dy = self.dy.get().normalize(draw_ctx);
 
         let state = drawing_ctx::get_current_state(draw_ctx);
+        let vertical = state::text_gravity_is_vertical(state);
         let anchor = state::get_state_rust(state).text_anchor.unwrap_or_default();
-        let gravity = state::get_text_gravity(state);
 
         let offset = anchor_offset(node, draw_ctx, anchor, usetextonly);
 
         if let Some(self_x) = self.x.get() {
             *x = self_x.normalize(draw_ctx);
-            if !gravity_is_vertical(gravity) {
+            if !vertical {
                 *x -= offset;
                 dx = match anchor {
                     TextAnchor::Start => dx,
@@ -337,7 +336,7 @@ impl NodeTSpan {
 
         if let Some(self_y) = self.y.get() {
             *y = self_y.normalize(draw_ctx);
-            if gravity_is_vertical(gravity) {
+            if vertical {
                 *y -= offset;
                 dy = match anchor {
                     TextAnchor::Start => dy,
@@ -378,15 +377,6 @@ impl NodeTrait for NodeTSpan {
 
     fn get_c_impl(&self) -> *const RsvgCNodeImpl {
         unreachable!();
-    }
-}
-
-// FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() /
-// PANGO_GRAVITY_IS_IMPROPER()?
-pub fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
-    match gravity {
-        pango::Gravity::East | pango::Gravity::West => true,
-        _ => false,
     }
 }
 
@@ -451,6 +441,46 @@ impl From<FontWeight> for pango::Weight {
     }
 }
 
+impl From<Direction> for pango::Direction {
+    fn from(d: Direction) -> pango::Direction {
+        match d {
+            Direction::Ltr => pango::Direction::Ltr,
+            Direction::Rtl => pango::Direction::Rtl,
+        }
+    }
+}
+
+impl From<Direction> for pango::Alignment {
+    fn from(d: Direction) -> pango::Alignment {
+        match d {
+            Direction::Ltr => pango::Alignment::Left,
+            Direction::Rtl => pango::Alignment::Right,
+        }
+    }
+}
+
+impl From<WritingMode> for pango::Direction {
+    fn from(m: WritingMode) -> pango::Direction {
+        match m {
+            WritingMode::LrTb | WritingMode::Lr | WritingMode::Tb | WritingMode::TbRl => {
+                pango::Direction::Ltr
+            }
+            WritingMode::RlTb | WritingMode::Rl => pango::Direction::Rtl,
+        }
+    }
+}
+
+impl From<WritingMode> for pango::Gravity {
+    fn from(m: WritingMode) -> pango::Gravity {
+        match m {
+            WritingMode::Tb | WritingMode::TbRl => pango::Gravity::East,
+            WritingMode::LrTb | WritingMode::Lr | WritingMode::RlTb | WritingMode::Rl => {
+                pango::Gravity::South
+            }
+        }
+    }
+}
+
 fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::Layout {
     let state = drawing_ctx::get_current_state(draw_ctx);
     let rstate = state::get_state_rust(state);
@@ -461,17 +491,25 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
         pango_context.set_language(&pango_lang);
     }
 
-    match rstate.unicode_bidi {
-        Some(UnicodeBidi::Override) | Some(UnicodeBidi::Embed) => {
-            pango_context.set_base_dir(state::get_text_dir(state));
+    pango_context.set_base_gravity(pango::Gravity::from(
+        rstate.writing_mode.unwrap_or_default(),
+    ));
+
+    match (rstate.unicode_bidi, rstate.direction) {
+        (Some(UnicodeBidi::Override), _) | (Some(UnicodeBidi::Embed), _) => {
+            pango_context
+                .set_base_dir(pango::Direction::from(rstate.direction.unwrap_or_default()));
         }
 
-        _ => (),
-    }
+        (_, Some(direction)) => {
+            pango_context.set_base_dir(pango::Direction::from(direction));
+        }
 
-    let gravity = state::get_text_gravity(state);
-    if gravity_is_vertical(gravity) {
-        pango_context.set_base_gravity(gravity);
+        (_, _) => {
+            pango_context.set_base_dir(pango::Direction::from(
+                rstate.writing_mode.unwrap_or_default(),
+            ));
+        }
     }
 
     let mut font_desc = pango_context.get_font_description().unwrap();
@@ -520,10 +558,7 @@ fn create_pango_layout(draw_ctx: *const RsvgDrawingCtx, text: &str) -> pango::La
 
     layout.set_attributes(&attr_list);
 
-    layout.set_alignment(match state::get_text_dir(state) {
-        pango::Direction::Ltr => pango::Alignment::Left,
-        _ => pango::Alignment::Right,
-    });
+    layout.set_alignment(pango::Alignment::from(rstate.direction.unwrap_or_default()));
 
     let t = xml_space_normalize(rstate.xml_space.unwrap_or_default(), text);
     layout.set_text(&t);

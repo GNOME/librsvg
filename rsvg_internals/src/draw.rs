@@ -25,7 +25,6 @@ use state::{
     StrokeWidth,
     TextRendering,
 };
-use text;
 
 pub fn draw_path_builder(draw_ctx: *mut RsvgDrawingCtx, builder: &PathBuilder, clipping: bool) {
     if !clipping {
@@ -399,6 +398,14 @@ pub fn draw_pango_layout(
     cr.restore();
 }
 
+// FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() ?
+fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
+    match gravity {
+        pango::Gravity::East | pango::Gravity::West => true,
+        _ => false,
+    }
+}
+
 fn compute_text_bbox(
     ink: &pango::Rectangle,
     x: f64,
@@ -415,7 +422,7 @@ fn compute_text_bbox(
     let ink_width = f64::from(ink.width);
     let ink_height = f64::from(ink.height);
 
-    if text::gravity_is_vertical(gravity) {
+    if gravity_is_vertical(gravity) {
         bbox.set_rect(&cairo::Rectangle {
             x: x + (ink_x - ink_height) / pango_scale,
             y: y + ink_y / pango_scale,
