@@ -43,6 +43,8 @@ pub struct State {
     pub clip_path: Option<ClipPath>,
     pub clip_rule: Option<ClipRule>,
     pub comp_op: Option<CompOp>,
+    pub display: Option<Display>,
+    pub enable_background: Option<EnableBackground>,
     pub fill_rule: Option<FillRule>,
     pub filter: Option<Filter>,
     pub font_family: Option<FontFamily>,
@@ -51,8 +53,6 @@ pub struct State {
     pub font_style: Option<FontStyle>,
     pub font_variant: Option<FontVariant>,
     pub font_weight: Option<FontWeight>,
-    pub display: Option<Display>,
-    pub enable_background: Option<EnableBackground>,
     pub letter_spacing: Option<LetterSpacing>,
     pub marker_end: Option<MarkerEnd>,
     pub marker_mid: Option<MarkerMid>,
@@ -87,6 +87,8 @@ impl State {
             clip_path: Default::default(),
             clip_rule: Default::default(),
             comp_op: Default::default(),
+            display: Default::default(),
+            enable_background: Default::default(),
             fill_rule: Default::default(),
             filter: Default::default(),
             font_family: Default::default(),
@@ -95,8 +97,6 @@ impl State {
             font_style: Default::default(),
             font_variant: Default::default(),
             font_weight: Default::default(),
-            display: Default::default(),
-            enable_background: Default::default(),
             letter_spacing: Default::default(),
             marker_end: Default::default(),
             marker_mid: Default::default(),
@@ -146,6 +146,14 @@ impl State {
                 self.comp_op = parse_property(value, ())?;
             }
 
+            Attribute::Display => {
+                self.display = parse_property(value, ())?;
+            }
+
+            Attribute::EnableBackground => {
+                self.enable_background = parse_property(value, ())?;
+            }
+
             Attribute::FillRule => {
                 self.fill_rule = parse_property(value, ())?;
             }
@@ -176,14 +184,6 @@ impl State {
 
             Attribute::FontWeight => {
                 self.font_weight = parse_property(value, ())?;
-            }
-
-            Attribute::Display => {
-                self.display = parse_property(value, ())?;
-            }
-
-            Attribute::EnableBackground => {
-                self.enable_background = parse_property(value, ())?;
             }
 
             Attribute::LetterSpacing => {
@@ -583,6 +583,41 @@ make_property!(
 );
 
 make_property!(
+    Display,
+    default: Inline,
+    inherits_automatically: true,
+
+    identifiers:
+    "inline" => Inline,
+    "block" => Block,
+    "list-item" => ListItem,
+    "run-in" => RunIn,
+    "compact" => Compact,
+    "marker" => Marker,
+    "table" => Table,
+    "inline-table" => InlineTable,
+    "table-row-group" => TableRowGroup,
+    "table-header-group" => TableHeaderGroup,
+    "table-footer-group" => TableFooterGroup,
+    "table-row" => TableRow,
+    "table-column-group" => TableColumnGroup,
+    "table-column" => TableColumn,
+    "table-cell" => TableCell,
+    "table-caption" => TableCaption,
+    "none" => None,
+);
+
+make_property!(
+    EnableBackground,
+    default: Accumulate,
+    inherits_automatically: false,
+
+    identifiers:
+    "accumulate" => Accumulate,
+    "new" => New,
+);
+
+make_property!(
     FillRule,
     default: NonZero,
     inherits_automatically: true,
@@ -674,41 +709,6 @@ make_property!(
     "700" => W700,
     "800" => W800,
     "900" => W900,
-);
-
-make_property!(
-    Display,
-    default: Inline,
-    inherits_automatically: true,
-
-    identifiers:
-    "inline" => Inline,
-    "block" => Block,
-    "list-item" => ListItem,
-    "run-in" => RunIn,
-    "compact" => Compact,
-    "marker" => Marker,
-    "table" => Table,
-    "inline-table" => InlineTable,
-    "table-row-group" => TableRowGroup,
-    "table-header-group" => TableHeaderGroup,
-    "table-footer-group" => TableFooterGroup,
-    "table-row" => TableRow,
-    "table-column-group" => TableColumnGroup,
-    "table-column" => TableColumn,
-    "table-cell" => TableCell,
-    "table-caption" => TableCaption,
-    "none" => None,
-);
-
-make_property!(
-    EnableBackground,
-    default: Accumulate,
-    inherits_automatically: false,
-
-    identifiers:
-    "accumulate" => Accumulate,
-    "new" => New,
 );
 
 make_property!(
@@ -1031,6 +1031,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     // please keep these sorted
     inherit(inherit_fn, &mut dst.baseline_shift, &src.baseline_shift);
     inherit(inherit_fn, &mut dst.clip_rule, &src.clip_rule);
+    inherit(inherit_fn, &mut dst.display, &src.display);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
     inherit(inherit_fn, &mut dst.font_family, &src.font_family);
     inherit(inherit_fn, &mut dst.font_size, &src.font_size);
@@ -1038,7 +1039,6 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.font_style, &src.font_style);
     inherit(inherit_fn, &mut dst.font_variant, &src.font_variant);
     inherit(inherit_fn, &mut dst.font_weight, &src.font_weight);
-    inherit(inherit_fn, &mut dst.display, &src.display);
     inherit(inherit_fn, &mut dst.letter_spacing, &src.letter_spacing);
     inherit(inherit_fn, &mut dst.marker_end, &src.marker_end);
     inherit(inherit_fn, &mut dst.marker_mid, &src.marker_mid);
