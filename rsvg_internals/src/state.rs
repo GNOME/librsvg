@@ -14,7 +14,7 @@ use error::*;
 use iri::IRI;
 use length::{Dasharray, LengthDir, RsvgLength};
 use node::RsvgNode;
-use opacity::{Opacity, OpacitySpec};
+use opacity::{Opacity, OpacitySpec, opacity_to_u8};
 use paint_server::PaintServer;
 use parsers::Parse;
 use property_bag::PropertyBag;
@@ -47,6 +47,7 @@ pub struct State {
     pub direction: Option<Direction>,
     pub display: Option<Display>,
     pub enable_background: Option<EnableBackground>,
+    pub fill_opacity: Option<FillOpacity>,
     pub fill_rule: Option<FillRule>,
     pub filter: Option<Filter>,
     pub flood_opacity: Option<FloodOpacity>,
@@ -95,6 +96,7 @@ impl State {
             direction: Default::default(),
             display: Default::default(),
             enable_background: Default::default(),
+            fill_opacity: Default::default(),
             fill_rule: Default::default(),
             filter: Default::default(),
             flood_opacity: Default::default(),
@@ -165,6 +167,10 @@ impl State {
 
             Attribute::EnableBackground => {
                 self.enable_background = parse_property(value, ())?;
+            }
+
+            Attribute::FillOpacity => {
+                self.fill_opacity = parse_property(value, ())?;
             }
 
             Attribute::FillRule => {
@@ -374,7 +380,6 @@ extern "C" {
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
-    fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
 
     fn rsvg_state_dominate(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_force(state: *mut RsvgState, src: *const RsvgState);
@@ -516,7 +521,12 @@ pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
 }
 
 pub fn get_fill_opacity(state: *const RsvgState) -> u8 {
-    unsafe { rsvg_state_get_fill_opacity(state) }
+    let rstate = get_state_rust(state);
+
+    match rstate.fill_opacity {
+        Some(FillOpacity(Opacity::Specified(opacity))) => opacity_to_u8(opacity),
+        _ => 255,
+    }
 }
 
 pub fn dominate(state: *mut RsvgState, src: *const RsvgState) {
@@ -670,6 +680,13 @@ make_property!(
     identifiers:
     "accumulate" => Accumulate,
     "new" => New,
+);
+
+make_property!(
+    FillOpacity,
+    default: Opacity::Specified(1.0),
+    inherits_automatically: true,
+    newtype_from_str: Opacity
 );
 
 make_property!(
@@ -1124,6 +1141,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.clip_rule, &src.clip_rule);
     inherit(inherit_fn, &mut dst.direction, &src.direction);
     inherit(inherit_fn, &mut dst.display, &src.display);
+    inherit(inherit_fn, &mut dst.fill_opacity, &src.fill_opacity);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
     inherit(inherit_fn, &mut dst.flood_opacity, &src.flood_opacity);
     inherit(inherit_fn, &mut dst.font_family, &src.font_family);

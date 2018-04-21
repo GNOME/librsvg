@@ -52,8 +52,6 @@ struct _RsvgState {
 
     RsvgPaintServer *fill;
     gboolean has_fill_server;
-    guint8 fill_opacity;        /* 0..255 */
-    gboolean has_fill_opacity;
 
     RsvgPaintServer *stroke;
     gboolean has_stroke_server;
@@ -153,9 +151,6 @@ guint32 rsvg_state_get_current_color (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_fill (RsvgState *state);
-
-G_GNUC_INTERNAL
-guint8 rsvg_state_get_fill_opacity (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint32 rsvg_state_get_flood_color (RsvgState *state);
