@@ -60,13 +60,6 @@ struct _RsvgState {
     guint8 stroke_opacity;      /* 0..255 */
     gboolean has_stroke_opacity;
 
-    PangoDirection text_dir;
-    gboolean has_text_dir;
-    PangoGravity text_gravity;
-    gboolean has_text_gravity;
-
-    guint text_offset;
-
     RsvgCssColorSpec stop_color;
     gboolean has_stop_color;
 
@@ -169,12 +162,6 @@ RsvgOpacitySpec *rsvg_state_get_stop_opacity (RsvgState *state);
 
 G_GNUC_INTERNAL
 guint32 rsvg_state_get_current_color (RsvgState *state);
-
-G_GNUC_INTERNAL
-PangoDirection rsvg_state_get_text_dir (RsvgState *state);
-
-G_GNUC_INTERNAL
-PangoGravity rsvg_state_get_text_gravity (RsvgState *state);
 
 G_GNUC_INTERNAL
 RsvgPaintServer *rsvg_state_get_fill (RsvgState *state);
