@@ -397,9 +397,8 @@ pub fn is_visible(state: *const RsvgState) -> bool {
     let rstate = get_state_rust(state);
 
     match (rstate.display, rstate.visibility) {
-        (None, None) => true,
         (Some(Display::None), _) => false,
-        (_, Some(Visibility::Visible)) => true,
+        (_, None) | (_, Some(Visibility::Visible)) => true,
         _ => false,
     }
 }
