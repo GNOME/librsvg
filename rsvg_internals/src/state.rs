@@ -1,4 +1,5 @@
 use cairo::{self, MatrixTrait};
+use glib;
 use glib::translate::*;
 use glib_sys;
 use libc;
@@ -8,6 +9,7 @@ use std::ptr;
 
 use attributes::Attribute;
 use color::{Color, ColorSpec};
+use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use error::*;
 use iri::IRI;
 use length::{Dasharray, LengthDir, RsvgLength};
@@ -15,6 +17,7 @@ use node::RsvgNode;
 use opacity::{Opacity, OpacitySpec};
 use paint_server::PaintServer;
 use parsers::Parse;
+use property_bag::PropertyBag;
 use property_macros::Property;
 use util::utf8_cstr;
 
@@ -75,6 +78,7 @@ pub struct State {
     pub xml_space: Option<XmlSpace>,
 
     important_styles: RefCell<HashSet<String>>,
+    cond: bool,
 }
 
 impl State {
@@ -121,6 +125,7 @@ impl State {
             xml_space: Default::default(),
 
             important_styles: Default::default(),
+            cond: true,
         }
     }
 
@@ -304,6 +309,34 @@ impl State {
 
         Ok(())
     }
+
+    pub fn parse_conditional_processing_attributes(
+        &mut self,
+        pbag: &PropertyBag,
+    ) -> Result<(), AttributeError> {
+        for (_key, attr, value) in pbag.iter() {
+            match attr {
+                Attribute::RequiredExtensions if self.cond => {
+                    self.cond =
+                        RequiredExtensions::parse(value, ()).map(|RequiredExtensions(res)| res)?;
+                }
+
+                Attribute::RequiredFeatures if self.cond => {
+                    self.cond =
+                        RequiredFeatures::parse(value, ()).map(|RequiredFeatures(res)| res)?;
+                }
+
+                Attribute::SystemLanguage if self.cond => {
+                    self.cond = SystemLanguage::parse(value, &glib::get_language_names())
+                        .map(|SystemLanguage(res, _)| res)?;
+                }
+
+                _ => {}
+            }
+        }
+
+        Ok(())
+    }
 }
 
 // Parses the `value` for the type `T` of the property, including `inherit` values.
@@ -329,8 +362,6 @@ extern "C" {
     fn rsvg_state_reinit(state: *mut RsvgState);
     fn rsvg_state_clone(state: *mut RsvgState, src: *const RsvgState);
     fn rsvg_state_parent(state: *const RsvgState) -> *mut RsvgState;
-    fn rsvg_state_get_cond_true(state: *const RsvgState) -> glib_sys::gboolean;
-    fn rsvg_state_set_cond_true(state: *const RsvgState, cond_true: glib_sys::gboolean);
     fn rsvg_state_get_stop_color(state: *const RsvgState) -> *const ColorSpec;
     fn rsvg_state_get_stop_opacity(state: *const RsvgState) -> *const OpacitySpec;
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
@@ -421,16 +452,6 @@ pub fn is_vertical(state: *const RsvgState) -> bool {
     }
 }
 
-pub fn get_cond_true(state: *const RsvgState) -> bool {
-    unsafe { from_glib(rsvg_state_get_cond_true(state)) }
-}
-
-pub fn set_cond_true(state: *const RsvgState, cond_true: bool) {
-    unsafe {
-        rsvg_state_set_cond_true(state, cond_true.to_glib());
-    }
-}
-
 pub fn get_stop_color(state: *const RsvgState) -> Result<Option<Color>, AttributeError> {
     unsafe {
         let spec_ptr = rsvg_state_get_stop_color(state);
@@ -509,6 +530,16 @@ pub fn reinherit(state: *mut RsvgState, src: *const RsvgState) {
     unsafe {
         rsvg_state_reinherit(state, src);
     }
+}
+
+pub fn get_cond(state: *mut RsvgState) -> bool {
+    get_state_rust(state).cond
+}
+
+pub fn set_cond(state: *mut RsvgState, value: bool) {
+    let rstate = get_state_rust(state);
+
+    rstate.cond = value;
 }
 
 pub fn get_state_rust<'a>(state: *const RsvgState) -> &'a mut State {
@@ -961,6 +992,21 @@ pub extern "C" fn rsvg_state_is_visible(state: *const RsvgState) -> glib_sys::gb
     is_visible(state).to_glib()
 }
 
+#[no_mangle]
+pub extern "C" fn rsvg_state_parse_conditional_processing_attributes(
+    state: *mut RsvgState,
+    pbag: *const PropertyBag,
+) -> glib_sys::gboolean {
+    let state = unsafe { &mut *state };
+    let pbag = unsafe { &*pbag };
+
+    let rstate = get_state_rust(state);
+    match rstate.parse_conditional_processing_attributes(pbag) {
+        Ok(_) => true.to_glib(),
+        Err(_) => false.to_glib(),
+    }
+}
+
 // Rust State API for consumption from C ----------------------------------------
 
 #[no_mangle]
@@ -1100,6 +1146,8 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.visibility, &src.visibility);
     inherit(inherit_fn, &mut dst.xml_lang, &src.xml_lang);
     inherit(inherit_fn, &mut dst.xml_space, &src.xml_space);
+
+    dst.cond = src.cond;
 
     if from_glib(inheritunheritables) {
         dst.clip_path.clone_from(&src.clip_path);
