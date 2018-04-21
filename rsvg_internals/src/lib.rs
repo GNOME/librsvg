@@ -121,6 +121,7 @@ pub use state::{
     rsvg_state_rust_get_affine,
     rsvg_state_rust_get_clip_path,
     rsvg_state_rust_get_comp_op,
+    rsvg_state_rust_get_flood_opacity,
     rsvg_state_rust_get_enable_background,
     rsvg_state_rust_get_filter,
     rsvg_state_rust_get_mask,
