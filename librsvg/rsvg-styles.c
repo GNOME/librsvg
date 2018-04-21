@@ -535,8 +535,8 @@ rsvg_parse_style_pair (RsvgState *state,
 
 /* returns TRUE if this element should be processed according to <switch> semantics
    http://www.w3.org/TR/SVG/struct.html#SwitchElement */
-static gboolean
-rsvg_eval_switch_attributes (RsvgPropertyBag * atts, gboolean * p_has_cond)
+static void
+rsvg_parse_conditional_processing_attributes (RsvgState * state, RsvgPropertyBag * atts)
 {
     gboolean required_features_ok = TRUE;
     gboolean required_extensions_ok = TRUE;
@@ -574,10 +574,10 @@ rsvg_eval_switch_attributes (RsvgPropertyBag * atts, gboolean * p_has_cond)
 
     rsvg_property_bag_iter_end (iter);
 
-    if (p_has_cond)
-        *p_has_cond = has_cond;
-
-    return required_features_ok && required_extensions_ok && system_language_ok;
+    if (has_cond) {
+        state->cond_true = required_features_ok && required_extensions_ok && system_language_ok;
+        state->has_cond = TRUE;
+    }
 }
 
 /* take a pair of the form (fill="#ff00ff") and parse it as a style */
@@ -602,18 +602,6 @@ rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
 
     if (!success) {
         return; /* FIXME: propagate errors upstream */
-    }
-
-    {
-        /* TODO: this conditional behavior isn't quite correct, and i'm not sure it should reside here */
-        gboolean cond_true, has_cond;
-
-        cond_true = rsvg_eval_switch_attributes (atts, &has_cond);
-
-        if (has_cond) {
-            state->cond_true = cond_true;
-            state->has_cond = TRUE;
-        }
     }
 }
 
@@ -998,6 +986,9 @@ rsvg_parse_style_attrs (RsvgHandle *handle,
     state = rsvg_node_get_state (node);
 
     rsvg_parse_presentation_attributes (state, atts);
+
+    /* TODO: i'm not sure it should reside here */
+    rsvg_parse_conditional_processing_attributes (state, atts);
 
     /* Try to properly support all of the following, including inheritance:
      * *
