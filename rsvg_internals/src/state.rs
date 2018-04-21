@@ -2,8 +2,6 @@ use cairo::{self, MatrixTrait};
 use glib::translate::*;
 use glib_sys;
 use libc;
-use pango;
-use pango_sys;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::ptr;
@@ -43,6 +41,7 @@ pub struct State {
     pub clip_path: Option<ClipPath>,
     pub clip_rule: Option<ClipRule>,
     pub comp_op: Option<CompOp>,
+    pub direction: Option<Direction>,
     pub display: Option<Display>,
     pub enable_background: Option<EnableBackground>,
     pub fill_rule: Option<FillRule>,
@@ -71,6 +70,7 @@ pub struct State {
     pub text_rendering: Option<TextRendering>,
     pub unicode_bidi: Option<UnicodeBidi>,
     pub visibility: Option<Visibility>,
+    pub writing_mode: Option<WritingMode>,
     pub xml_lang: Option<XmlLang>,
     pub xml_space: Option<XmlSpace>,
 
@@ -87,6 +87,7 @@ impl State {
             clip_path: Default::default(),
             clip_rule: Default::default(),
             comp_op: Default::default(),
+            direction: Default::default(),
             display: Default::default(),
             enable_background: Default::default(),
             fill_rule: Default::default(),
@@ -115,6 +116,7 @@ impl State {
             text_rendering: Default::default(),
             unicode_bidi: Default::default(),
             visibility: Default::default(),
+            writing_mode: Default::default(),
             xml_lang: Default::default(),
             xml_space: Default::default(),
 
@@ -144,6 +146,10 @@ impl State {
 
             Attribute::CompOp => {
                 self.comp_op = parse_property(value, ())?;
+            }
+
+            Attribute::Direction => {
+                self.display = parse_property(value, ())?;
             }
 
             Attribute::Display => {
@@ -272,6 +278,10 @@ impl State {
                 self.visibility = parse_property(value, ())?;
             }
 
+            Attribute::WritingMode => {
+                self.writing_mode = parse_property(value, ())?;
+            }
+
             Attribute::XmlLang => {
                 // xml:lang is not a property; it is a non-presentation attribute and as such
                 // cannot have the "inherit" value.  So, we don't call parse_property() for it,
@@ -326,8 +336,6 @@ extern "C" {
     fn rsvg_state_get_current_color(state: *const RsvgState) -> u32;
     fn rsvg_state_get_stroke(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_stroke_opacity(state: *const RsvgState) -> u8;
-    fn rsvg_state_get_text_dir(state: *const RsvgState) -> pango_sys::PangoDirection;
-    fn rsvg_state_get_text_gravity(state: *const RsvgState) -> pango_sys::PangoGravity;
     fn rsvg_state_get_fill(state: *const RsvgState) -> *const PaintServer;
     fn rsvg_state_get_fill_opacity(state: *const RsvgState) -> u8;
 
@@ -403,6 +411,15 @@ pub fn is_visible(state: *const RsvgState) -> bool {
     }
 }
 
+pub fn is_vertical(state: *const RsvgState) -> bool {
+    let rstate = get_state_rust(state);
+
+    match rstate.writing_mode {
+        Some(WritingMode::Tb) | Some(WritingMode::TbRl) => true,
+        _ => false,
+    }
+}
+
 pub fn get_cond_true(state: *const RsvgState) -> bool {
     unsafe { from_glib(rsvg_state_get_cond_true(state)) }
 }
@@ -457,14 +474,6 @@ pub fn get_stroke<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
 
 pub fn get_stroke_opacity(state: *const RsvgState) -> u8 {
     unsafe { rsvg_state_get_stroke_opacity(state) }
-}
-
-pub fn get_text_dir(state: *const RsvgState) -> pango::Direction {
-    unsafe { from_glib(rsvg_state_get_text_dir(state)) }
-}
-
-pub fn get_text_gravity(state: *const RsvgState) -> pango::Gravity {
-    unsafe { from_glib(rsvg_state_get_text_gravity(state)) }
 }
 
 pub fn get_fill<'a>(state: *const RsvgState) -> Option<&'a PaintServer> {
@@ -579,6 +588,16 @@ make_property!(
     "soft-light" => SoftLight,
     "difference" => Difference,
     "exclusion" => Exclusion,
+);
+
+make_property!(
+    Direction,
+    default: Ltr,
+    inherits_automatically: true,
+
+    identifiers:
+    "ltr" => Ltr,
+    "rtl" => Rtl,
 );
 
 make_property!(
@@ -896,6 +915,20 @@ make_property!(
 );
 
 make_property!(
+    WritingMode,
+    default: LrTb,
+    inherits_automatically: true,
+
+    identifiers:
+    "lr" => Lr,
+    "lr-tb" => LrTb,
+    "rl" => Rl,
+    "rl-tb" => RlTb,
+    "tb" => Tb,
+    "tb-rl" => TbRl,
+);
+
+make_property!(
     XmlLang,
     default: "C".to_string(),
     inherits_automatically: true,
@@ -1030,6 +1063,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     // please keep these sorted
     inherit(inherit_fn, &mut dst.baseline_shift, &src.baseline_shift);
     inherit(inherit_fn, &mut dst.clip_rule, &src.clip_rule);
+    inherit(inherit_fn, &mut dst.direction, &src.direction);
     inherit(inherit_fn, &mut dst.display, &src.display);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
     inherit(inherit_fn, &mut dst.font_family, &src.font_family);

@@ -113,8 +113,6 @@ rsvg_state_init (RsvgState * state)
     state->flood_color = 0;
     state->flood_opacity = 255;
 
-    state->text_dir = PANGO_DIRECTION_LTR;
-    state->text_gravity = PANGO_GRAVITY_SOUTH;
     state->cond_true = TRUE;
 
     state->has_current_color = FALSE;
@@ -127,8 +125,6 @@ rsvg_state_init (RsvgState * state)
     state->has_cond = FALSE;
     state->has_stop_color = FALSE;
     state->has_stop_opacity = FALSE;
-    state->has_text_dir = FALSE;
-    state->has_text_gravity = FALSE;
 
     state->state_rust = rsvg_state_rust_new();
 }
@@ -252,10 +248,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
     }
     if (function (dst->has_cond, src->has_cond))
         dst->cond_true = src->cond_true;
-    if (function (dst->has_text_dir, src->has_text_dir))
-        dst->text_dir = src->text_dir;
-    if (function (dst->has_text_gravity, src->has_text_gravity))
-        dst->text_gravity = src->text_gravity;
 
     rsvg_state_rust_inherit_run (dst->state_rust, src->state_rust, function, inherituninheritables);
 
@@ -513,43 +505,6 @@ rsvg_parse_style_pair (RsvgState *state,
         }
 
         state->has_stroke_opacity = TRUE;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_DIRECTION:
-    {
-        state->has_text_dir = TRUE;
-        if (g_str_equal (value, "inherit")) {
-            state->text_dir = PANGO_DIRECTION_LTR;
-            state->has_text_dir = FALSE;
-        } else if (g_str_equal (value, "rtl"))
-            state->text_dir = PANGO_DIRECTION_RTL;
-        else                    /* ltr */
-            state->text_dir = PANGO_DIRECTION_LTR;
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_WRITING_MODE:
-    {
-        /* TODO: these aren't quite right... */
-
-        state->has_text_dir = TRUE;
-        state->has_text_gravity = TRUE;
-        if (g_str_equal (value, "inherit")) {
-            state->text_dir = PANGO_DIRECTION_LTR;
-            state->has_text_dir = FALSE;
-            state->text_gravity = PANGO_GRAVITY_SOUTH;
-            state->has_text_gravity = FALSE;
-        } else if (g_str_equal (value, "lr-tb") || g_str_equal (value, "lr")) {
-            state->text_dir = PANGO_DIRECTION_LTR;
-            state->text_gravity = PANGO_GRAVITY_SOUTH;
-        } else if (g_str_equal (value, "rl-tb") || g_str_equal (value, "rl")) {
-            state->text_dir = PANGO_DIRECTION_RTL;
-            state->text_gravity = PANGO_GRAVITY_SOUTH;
-        } else if (g_str_equal (value, "tb-rl") || g_str_equal (value, "tb")) {
-            state->text_dir = PANGO_DIRECTION_LTR;
-            state->text_gravity = PANGO_GRAVITY_EAST;
-        }
     }
     break;
 
@@ -1247,18 +1202,6 @@ guint32
 rsvg_state_get_current_color (RsvgState *state)
 {
     return state->current_color;
-}
-
-PangoDirection
-rsvg_state_get_text_dir (RsvgState *state)
-{
-    return state->text_dir;
-}
-
-PangoGravity
-rsvg_state_get_text_gravity (RsvgState *state)
-{
-    return state->text_gravity;
 }
 
 RsvgPaintServer *
