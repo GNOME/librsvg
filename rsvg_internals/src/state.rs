@@ -80,7 +80,7 @@ pub struct State {
     pub xml_lang: Option<XmlLang>,
     pub xml_space: Option<XmlSpace>,
 
-    important_styles: RefCell<HashSet<String>>,
+    important_styles: RefCell<HashSet<Attribute>>,
     cond: bool,
 }
 
@@ -1079,26 +1079,18 @@ pub extern "C" fn rsvg_state_rust_clone(state: *const State) -> *mut State {
 #[no_mangle]
 pub extern "C" fn rsvg_state_rust_contains_important_style(
     state: *const State,
-    name: *const libc::c_char,
+    attr: Attribute,
 ) -> glib_sys::gboolean {
     let state = unsafe { &*state };
-    let name = unsafe { utf8_cstr(name) };
 
-    state.important_styles.borrow().contains(name).to_glib()
+    state.important_styles.borrow().contains(&attr).to_glib()
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_state_rust_insert_important_style(
-    state: *mut State,
-    name: *const libc::c_char,
-) {
+pub extern "C" fn rsvg_state_rust_insert_important_style(state: *mut State, attr: Attribute) {
     let state = unsafe { &mut *state };
-    let name = unsafe { utf8_cstr(name) };
 
-    state
-        .important_styles
-        .borrow_mut()
-        .insert(String::from(name));
+    state.important_styles.borrow_mut().insert(attr);
 }
 
 #[no_mangle]

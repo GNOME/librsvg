@@ -51,8 +51,8 @@ extern char *rsvg_state_rust_get_clip_path(const State *state);
 extern char *rsvg_state_rust_get_filter(const State *state);
 extern char *rsvg_state_rust_get_mask(const State *state);
 
-extern gboolean rsvg_state_rust_contains_important_style(State *state, const gchar *name);
-extern gboolean rsvg_state_rust_insert_important_style(State *state, const gchar *name);
+extern gboolean rsvg_state_rust_contains_important_style(State *state, RsvgAttribute attr);
+extern gboolean rsvg_state_rust_insert_important_style(State *state, RsvgAttribute attr);
 
 extern gboolean rsvg_state_rust_parse_style_pair(State *state, RsvgAttribute attr, const char *value, gboolean accept_shorthands)
     G_GNUC_WARN_UNUSED_RESULT;
@@ -326,7 +326,6 @@ typedef enum {
 
 static gboolean
 rsvg_parse_style_pair (RsvgState *state,
-                       const gchar *name,
                        RsvgAttribute attr,
                        const gchar *value,
                        gboolean important,
@@ -335,7 +334,6 @@ rsvg_parse_style_pair (RsvgState *state,
 /* Parse a CSS2 style argument, setting the SVG context attributes. */
 static gboolean
 rsvg_parse_style_pair (RsvgState *state,
-                       const gchar *name,
                        RsvgAttribute attr,
                        const gchar *value,
                        gboolean important,
@@ -343,14 +341,14 @@ rsvg_parse_style_pair (RsvgState *state,
 {
     gboolean success = TRUE;
 
-    if (name == NULL || value == NULL)
+    if (value == NULL)
         return success;
 
     if (!important) {
-        if (rsvg_state_rust_contains_important_style (state->state_rust, name))
+        if (rsvg_state_rust_contains_important_style (state->state_rust, attr))
             return success;
     } else {
-        rsvg_state_rust_insert_important_style (state->state_rust, name);
+        rsvg_state_rust_insert_important_style (state->state_rust, attr);
     }
 
     switch (attr) {
@@ -487,7 +485,7 @@ rsvg_parse_presentation_attributes (RsvgState * state, RsvgPropertyBag * atts)
     iter = rsvg_property_bag_iter_begin (atts);
 
     while (success && rsvg_property_bag_iter_next (iter, &key, &attr, &value)) {
-        success = rsvg_parse_style_pair (state, key, attr, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
+        success = rsvg_parse_style_pair (state, attr, value, FALSE, PAIR_SOURCE_PRESENTATION_ATTRIBUTE);
     }
 
     rsvg_property_bag_iter_end (iter);
@@ -568,7 +566,6 @@ rsvg_parse_style_attribute_contents (RsvgState *state, const char *str)
 
                 if (rsvg_attribute_from_name (first_value, &attr)) {
                     success = rsvg_parse_style_pair (state,
-                                                     first_value,
                                                      attr,
                                                      style_value,
                                                      important,
@@ -828,8 +825,11 @@ apply_style (const gchar *key, StyleValueData *value, gpointer user_data)
     RsvgAttribute attr;
 
     if (rsvg_attribute_from_name (key, &attr)) {
-        gboolean success = rsvg_parse_style_pair (
-            state, key, attr, value->value, value->important, PAIR_SOURCE_STYLE);
+        gboolean success = rsvg_parse_style_pair (state,
+                                                  attr,
+                                                  value->value,
+                                                  value->important,
+                                                  PAIR_SOURCE_STYLE);
         /* FIXME: propagate errors upstream */
     }
 }
