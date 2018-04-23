@@ -45,6 +45,7 @@ extern State *rsvg_state_rust_clone(State *state);
 extern cairo_matrix_t rsvg_state_rust_get_affine(const State *state);
 extern void rsvg_state_rust_set_affine(State *state, cairo_matrix_t affine);
 extern cairo_operator_t rsvg_state_rust_get_comp_op(const State *state);
+extern guint32 rsvg_state_rust_get_flood_color(const State *state);
 extern guint8 rsvg_state_rust_get_flood_opacity(const State *state);
 extern RsvgEnableBackgroundType rsvg_state_rust_get_enable_background(const State *state);
 extern char *rsvg_state_rust_get_clip_path(const State *state);
@@ -112,10 +113,7 @@ rsvg_state_init (RsvgState * state)
     state->stop_color.kind = RSVG_CSS_COLOR_SPEC_INHERIT;
     state->stop_opacity.kind = RSVG_OPACITY_INHERIT;
 
-    state->flood_color = 0;
-
     state->has_current_color = FALSE;
-    state->has_flood_color = FALSE;
     state->has_fill_server = FALSE;
     state->has_stroke_server = FALSE;
     state->has_stop_color = FALSE;
@@ -209,8 +207,6 @@ rsvg_state_inherit_run (RsvgState * dst, const RsvgState * src,
 {
     if (function (dst->has_current_color, src->has_current_color))
         dst->current_color = src->current_color;
-    if (function (dst->has_flood_color, src->has_flood_color))
-        dst->flood_color = src->flood_color;
     if (function (dst->has_fill_server, src->has_fill_server)) {
         rsvg_paint_server_ref (src->fill);
         if (dst->fill)
@@ -389,38 +385,6 @@ rsvg_parse_style_pair (RsvgState *state,
         } else {
             state->opacity = 0;
             /* FIXME: handle INHERIT and PARSE_ERROR */
-        }
-    }
-    break;
-
-    case RSVG_ATTRIBUTE_FLOOD_COLOR:
-    {
-        RsvgCssColorSpec spec;
-
-        spec = rsvg_css_parse_color (value, ALLOW_INHERIT_YES, ALLOW_CURRENT_COLOR_YES);
-        switch (spec.kind) {
-        case RSVG_CSS_COLOR_SPEC_INHERIT:
-            /* FIXME: we should inherit; see how stop-color is handled in rsvg-styles.c */
-            state->has_current_color = FALSE;
-            break;
-
-        case RSVG_CSS_COLOR_SPEC_CURRENT_COLOR:
-            /* FIXME: in the caller, fix up the current color */
-            state->has_flood_color = FALSE;
-            break;
-
-        case RSVG_CSS_COLOR_SPEC_ARGB:
-            state->flood_color = spec.argb;
-            state->has_flood_color = TRUE;
-            break;
-
-        case RSVG_CSS_COLOR_PARSE_ERROR:
-            /* FIXME: no error handling */
-            state->has_current_color = FALSE;
-            break;
-
-        default:
-            g_assert_not_reached ();
         }
     }
     break;
@@ -1078,7 +1042,7 @@ rsvg_state_get_fill (RsvgState *state)
 guint32
 rsvg_state_get_flood_color (RsvgState *state)
 {
-    return state->flood_color;
+    return rsvg_state_rust_get_flood_color (state->state_rust);
 }
 
 guint8

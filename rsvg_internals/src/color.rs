@@ -6,6 +6,17 @@ use parsers::Parse;
 use parsers::ParseError;
 use util::utf8_cstr;
 
+impl Parse for cssparser::Color {
+    type Data = ();
+    type Err = AttributeError;
+
+    fn parse(s: &str, _: Self::Data) -> Result<cssparser::Color, AttributeError> {
+        let mut input = cssparser::ParserInput::new(s);
+        cssparser::Color::parse(&mut cssparser::Parser::new(&mut input))
+            .map_err(|_| AttributeError::Parse(ParseError::new("invalid syntax for color")))
+    }
+}
+
 // There are two quirks here:
 //
 // First, we need to expose the Color algebraic type *and* a parse
@@ -135,6 +146,11 @@ fn rgba_from_argb(argb: u32) -> cssparser::RGBA {
     )
 }
 
+pub fn rgba_to_argb(rgba: cssparser::RGBA) -> u32 {
+    u32::from(rgba.alpha) << 24 | u32::from(rgba.red) << 16 | u32::from(rgba.green) << 8
+        | u32::from(rgba.blue)
+}
+
 impl From<cssparser::Color> for Color {
     fn from(c: cssparser::Color) -> Color {
         match c {
@@ -165,8 +181,7 @@ impl From<Result<Color, AttributeError>> for ColorSpec {
 
             Ok(Color::RGBA(rgba)) => ColorSpec {
                 kind: ColorKind::ARGB,
-                argb: (u32::from(rgba.alpha) << 24 | u32::from(rgba.red) << 16
-                    | u32::from(rgba.green) << 8 | u32::from(rgba.blue)),
+                argb: rgba_to_argb(rgba),
             },
 
             _ => ColorSpec {
