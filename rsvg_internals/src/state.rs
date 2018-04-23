@@ -1,4 +1,5 @@
 use cairo::{self, MatrixTrait};
+use cssparser;
 use glib;
 use glib::translate::*;
 use glib_sys;
@@ -8,7 +9,7 @@ use std::collections::HashSet;
 use std::ptr;
 
 use attributes::Attribute;
-use color::{Color, ColorSpec};
+use color::{rgba_to_argb, Color, ColorSpec};
 use cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use error::*;
 use iri::IRI;
@@ -50,6 +51,7 @@ pub struct State {
     pub fill_opacity: Option<FillOpacity>,
     pub fill_rule: Option<FillRule>,
     pub filter: Option<Filter>,
+    pub flood_color: Option<FloodColor>,
     pub flood_opacity: Option<FloodOpacity>,
     pub font_family: Option<FontFamily>,
     pub font_size: Option<FontSize>,
@@ -100,6 +102,7 @@ impl State {
             fill_opacity: Default::default(),
             fill_rule: Default::default(),
             filter: Default::default(),
+            flood_color: Default::default(),
             flood_opacity: Default::default(),
             font_family: Default::default(),
             font_size: Default::default(),
@@ -181,6 +184,10 @@ impl State {
 
             Attribute::Filter => {
                 self.filter = parse_property(value, ())?;
+            }
+
+            Attribute::FloodColor => {
+                self.flood_color = parse_property(value, ())?;
             }
 
             Attribute::FloodOpacity => {
@@ -718,6 +725,14 @@ make_property!(
 );
 
 make_property!(
+    FloodColor,
+    default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
+    inherits_automatically: true,
+    newtype_parse: cssparser::Color,
+    parse_data_type: ()
+);
+
+make_property!(
     FloodOpacity,
     default: Opacity::Specified(1.0),
     inherits_automatically: true,
@@ -1152,6 +1167,7 @@ pub extern "C" fn rsvg_state_rust_inherit_run(
     inherit(inherit_fn, &mut dst.display, &src.display);
     inherit(inherit_fn, &mut dst.fill_opacity, &src.fill_opacity);
     inherit(inherit_fn, &mut dst.fill_rule, &src.fill_rule);
+    inherit(inherit_fn, &mut dst.flood_color, &src.flood_color);
     inherit(inherit_fn, &mut dst.flood_opacity, &src.flood_opacity);
     inherit(inherit_fn, &mut dst.font_family, &src.font_family);
     inherit(inherit_fn, &mut dst.font_size, &src.font_size);
@@ -1220,6 +1236,18 @@ pub extern "C" fn rsvg_state_rust_get_comp_op(state: *const State) -> cairo::Ope
     unsafe {
         let state = &*state;
         cairo::Operator::from(state.comp_op.unwrap_or_default())
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rsvg_state_rust_get_flood_color(state: *const State) -> u32 {
+    unsafe {
+        let state = &*state;
+        match state.flood_color {
+            Some(FloodColor(cssparser::Color::RGBA(rgba))) => rgba_to_argb(rgba),
+            // FIXME: fallback to current color if Color::inherit and current color is set
+            _ => 0xff000000,
+        }
     }
 }
 
