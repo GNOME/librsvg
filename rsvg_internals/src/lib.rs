@@ -86,7 +86,6 @@ pub use paint_server::{
     rsvg_paint_server_parse,
     rsvg_paint_server_ref,
     rsvg_paint_server_unref,
-    rsvg_set_source_rsvg_paint_server,
 };
 
 pub use parsers::{rsvg_css_parse_number_list, rsvg_css_parse_number_optional_number};
